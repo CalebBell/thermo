@@ -37,13 +37,13 @@ def assert_pint_allclose(value, magnitude, units):
 
 
 def test_custom_wraps():
-    
+
     C = Stream(['ethane'], T=200*u.K, zs=[1], n=1*u.mol/u.s)
     D = Stream(['water', 'ethanol'], ns=[1, 2,]*u.mol/u.s, T=300*u.K, P=1E5*u.Pa)
     E = C + D
-    
+
     assert_pint_allclose(E.zs, [ 0.5,   0.25,  0.25], {})
-     
+
     assert_pint_allclose(E.T, 200, {'[temperature]': 1.0})
 
 

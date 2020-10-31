@@ -275,11 +275,11 @@ class CP_fluid_approximator(object):
             except:
                 '''There are several cases that assert_allclose doesn't deal
                 with well for some reason. We could increase rtol, but instead
-                the relative errors are used here to check everything is as desidred. 
-                
+                the relative errors are used here to check everything is as desidred.
+
                 Some example errors this won't trip on but assert_allclose does
                 are:
-                    
+
                 1.00014278827e-08
                 1.62767956613e-06
                 -0.0

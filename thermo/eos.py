@@ -52,10 +52,10 @@ from chemicals.utils import (Cp_minus_Cv, isobaric_expansion,
 from chemicals.utils import log, log10, exp, sqrt, copysign
 from chemicals.flash_basic import Wilson_K_value
 
-from thermo.eos_volume import (volume_solutions_mpmath, volume_solutions_mpmath_float, 
-                               volume_solutions_NR, volume_solutions_NR_low_P, 
+from thermo.eos_volume import (volume_solutions_mpmath, volume_solutions_mpmath_float,
+                               volume_solutions_NR, volume_solutions_NR_low_P,
                                volume_solutions_halley, volume_solutions_fast,
-                               volume_solutions_Cardano, volume_solutions_numpy, 
+                               volume_solutions_Cardano, volume_solutions_numpy,
                                volume_solutions_ideal)
 from thermo.eos_alpha_functions import (Poly_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_79_a_alpha)
@@ -217,7 +217,7 @@ class GCEOS(object):
     P_zero_g_cheb_coeffs = None
     P_zero_g_cheb_limits = (0.0, 0.0)
     Psat_cheb_range = (0.0, 0.0)
-    
+
     main_derivatives_and_departures = staticmethod(main_derivatives_and_departures)
 
     @property
@@ -652,7 +652,7 @@ class GCEOS(object):
         if full:
             return self.a_alpha_and_derivatives_pure(T=T)
         return self.a_alpha_pure(T)
-    
+
     def a_alpha_and_derivatives_pure(self, T):
         raise NotImplemented('a_alpha and its first and second derivatives '
                              'should be calculated by this method, in a user subclass.')
@@ -851,7 +851,7 @@ class GCEOS(object):
 #    volume_solutions = volume_solutions_fast
 #    volume_solutions = staticmethod(volume_solutions_Cardano)
     volume_solutions = staticmethod(volume_solutions_halley)
-    
+
     # Solver which actually has the roots
     volume_solutions_full = staticmethod(volume_solutions_NR)
 
@@ -895,7 +895,7 @@ class GCEOS(object):
                 Vg_mpmath = Vs_filtered[0]
             two_roots_mpmath = False
         err = 0
-        
+
         if two_roots_mpmath:
             if (not hasattr(self, 'V_l') or not hasattr(self, 'V_g')):
                 return 1.0
@@ -1461,14 +1461,14 @@ class GCEOS(object):
             # print('err', err, 'rel err', err/T, 'd_err_d_T', d_err_d_T, 'T', T)
 
             return curr_err
-        
+
         logP = log(P)
         def to_solve(T):
             global curr_err
             if fprime:
                 dPsat_dT, Psat = self.dPsat_dT(T, polish=polish, also_Psat=True)
                 curr_err = Psat - P
-                
+
                 # Log translation - tends to save a few iterations
                 err_trans = log(Psat) - logP
                 return err_trans, dPsat_dT/Psat
@@ -1784,7 +1784,7 @@ class GCEOS(object):
         T : float
             Temperature, [K]
         polish : bool, optional
-            Whether to attempt to use a numerical solver to make the solution 
+            Whether to attempt to use a numerical solver to make the solution
             more precise or not
         also_Psat : bool, optional
             Calculating `dPsat_dT` necessarily involves calculating `Psat`;
@@ -1823,7 +1823,7 @@ class GCEOS(object):
             Tc, Pc = self.Tc, self.Pc
         except:
             Tc, Pc = self.pseudo_Tc, self.pseudo_Pc
-            
+
         alpha, d_alpha_dT = a_alphas[0]*a_inv, a_alphas[1]*a_inv
         Tc_inv = 1.0/Tc
         T_inv = 1.0/T
@@ -1915,19 +1915,19 @@ class GCEOS(object):
         alpha = self.a_alpha_and_derivatives(T, full=False)/self.a
         x = alpha/Tr - 1.
         return horner(self.phi_sat_coeffs, x)
-    
+
     def dphi_sat_dT(self, T, polish=True):
         Psat = self.Psat(T, polish=polish)
         sat_eos = self.to(T=T, P=Psat)
         dfg_T, dfl_T = sat_eos.dfugacity_dT_g, sat_eos.dfugacity_dT_l
         dfg_P, dfl_P = sat_eos.dfugacity_dP_g, sat_eos.dfugacity_dP_l
         dPsat_dT = (dfg_T - dfl_T)/(dfl_P - dfg_P)
-        
+
         fugacity = sat_eos.fugacity_l
         dfugacity_sat_dT = dPsat_dT*sat_eos.dfugacity_dP_l + sat_eos.dfugacity_dT_l
-        
+
         Psat_inv = 1.0/Psat
-        
+
         return (dfugacity_sat_dT - fugacity*dPsat_dT*Psat_inv)*Psat_inv
 
     def d2phi_sat_dT2(self, T, polish=True):
@@ -2970,7 +2970,7 @@ class GCEOS(object):
 
     @property
     def beta_l(self):
-        r'''Isobaric (constant-pressure) expansion coefficient for the liquid 
+        r'''Isobaric (constant-pressure) expansion coefficient for the liquid
         phase, [1/K].
 
         .. math::
@@ -2980,7 +2980,7 @@ class GCEOS(object):
 
     @property
     def beta_g(self):
-        r'''Isobaric (constant-pressure) expansion coefficient for the gas 
+        r'''Isobaric (constant-pressure) expansion coefficient for the gas
         phase, [1/K].
 
         .. math::
@@ -2990,7 +2990,7 @@ class GCEOS(object):
 
     @property
     def kappa_l(self):
-        r'''Isothermal (constant-temperature) expansion coefficient for the liquid 
+        r'''Isothermal (constant-temperature) expansion coefficient for the liquid
         phase, [1/Pa].
 
         .. math::
@@ -3000,7 +3000,7 @@ class GCEOS(object):
 
     @property
     def kappa_g(self):
-        r'''Isothermal (constant-temperature) expansion coefficient for the gas 
+        r'''Isothermal (constant-temperature) expansion coefficient for the gas
         phase, [1/Pa].
 
         .. math::
@@ -3030,7 +3030,7 @@ class GCEOS(object):
 
     @property
     def U_dep_l(self):
-        r'''Departure molar internal energy from ideal gas behavior for the 
+        r'''Departure molar internal energy from ideal gas behavior for the
         liquid phase, [J/mol]
 
         .. math::
@@ -3040,7 +3040,7 @@ class GCEOS(object):
 
     @property
     def U_dep_g(self):
-        r'''Departure molar internal energy from ideal gas behavior for the 
+        r'''Departure molar internal energy from ideal gas behavior for the
         gas phase, [J/mol]
 
         .. math::
@@ -3050,7 +3050,7 @@ class GCEOS(object):
 
     @property
     def A_dep_l(self):
-        r'''Departure molar helmholtz energy from ideal gas behavior for the 
+        r'''Departure molar helmholtz energy from ideal gas behavior for the
         liquid phase, [J/mol]
 
         .. math::
@@ -3060,7 +3060,7 @@ class GCEOS(object):
 
     @property
     def A_dep_g(self):
-        r'''Departure molar helmholtz energy from ideal gas behavior for the 
+        r'''Departure molar helmholtz energy from ideal gas behavior for the
         gas phase, [J/mol]
 
         .. math::
@@ -3070,7 +3070,7 @@ class GCEOS(object):
 
     @property
     def d2T_dPdV_l(self):
-        r'''Second partial derivative of temperature with respect to 
+        r'''Second partial derivative of temperature with respect to
         pressure (constant volume) and then volume (constant pressure)
         for the liquid phase, [K*mol/(Pa*m^3)]
 
@@ -3090,7 +3090,7 @@ class GCEOS(object):
 
     @property
     def d2T_dPdV_g(self):
-        r'''Second partial derivative of temperature with respect to 
+        r'''Second partial derivative of temperature with respect to
         pressure (constant volume) and then volume (constant pressure)
         for the gas phase, [K*mol/(Pa*m^3)]
 
@@ -3110,7 +3110,7 @@ class GCEOS(object):
 
     @property
     def d2V_dPdT_l(self):
-        r'''Second partial derivative of volume with respect to 
+        r'''Second partial derivative of volume with respect to
         pressure (constant temperature) and then presssure (constant temperature)
         for the liquid phase, [m^3/(K*Pa*mol)]
 
@@ -3123,11 +3123,11 @@ class GCEOS(object):
             \right]\left(\frac{\partial P}{\partial V}\right)_T^{-3}
         '''
         dV_dP = self.dV_dP_l
-        return -(self.d2P_dTdV_l*self.dP_dV_l - self.dP_dT_l*self.d2P_dV2_l)*dV_dP*dV_dP*dV_dP 
+        return -(self.d2P_dTdV_l*self.dP_dV_l - self.dP_dT_l*self.d2P_dV2_l)*dV_dP*dV_dP*dV_dP
 
     @property
     def d2V_dPdT_g(self):
-        r'''Second partial derivative of volume with respect to 
+        r'''Second partial derivative of volume with respect to
         pressure (constant temperature) and then presssure (constant temperature)
         for the gas phase, [m^3/(K*Pa*mol)]
 
@@ -3140,11 +3140,11 @@ class GCEOS(object):
             \right]\left(\frac{\partial P}{\partial V}\right)_T^{-3}
         '''
         dV_dP = self.dV_dP_g
-        return -(self.d2P_dTdV_g*self.dP_dV_g - self.dP_dT_g*self.d2P_dV2_g)*dV_dP*dV_dP*dV_dP 
+        return -(self.d2P_dTdV_g*self.dP_dV_g - self.dP_dT_g*self.d2P_dV2_g)*dV_dP*dV_dP*dV_dP
 
     @property
     def d2T_dP2_l(self):
-        r'''Second partial derivative of temperature with respect to 
+        r'''Second partial derivative of temperature with respect to
         pressure (constant temperature) for the liquid phase, [K/Pa^2]
 
         .. math::
@@ -3158,7 +3158,7 @@ class GCEOS(object):
 
     @property
     def d2T_dP2_g(self):
-        r'''Second partial derivative of temperature with respect to 
+        r'''Second partial derivative of temperature with respect to
         pressure (constant volume) for the gas phase, [K/Pa^2]
 
         .. math::
@@ -3172,7 +3172,7 @@ class GCEOS(object):
 
     @property
     def d2V_dP2_l(self):
-        r'''Second partial derivative of volume with respect to 
+        r'''Second partial derivative of volume with respect to
         pressure (constant temperature) for the liquid phase, [m^3/(Pa^2*mol)]
 
         .. math::
@@ -3186,7 +3186,7 @@ class GCEOS(object):
 
     @property
     def d2V_dP2_g(self):
-        r'''Second partial derivative of volume with respect to 
+        r'''Second partial derivative of volume with respect to
         pressure (constant temperature) for the gas phase, [m^3/(Pa^2*mol)]
 
         .. math::
@@ -3200,7 +3200,7 @@ class GCEOS(object):
 
     @property
     def d2T_dV2_l(self):
-        r'''Second partial derivative of temperature with respect to 
+        r'''Second partial derivative of temperature with respect to
         volume (constant pressure) for the liquid phase, [K*mol^2/m^6]
 
         .. math::
@@ -3226,7 +3226,7 @@ class GCEOS(object):
 
     @property
     def d2T_dV2_g(self):
-        r'''Second partial derivative of temperature with respect to 
+        r'''Second partial derivative of temperature with respect to
         volume (constant pressure) for the gas phase, [K*mol^2/m^6]
 
         .. math::
@@ -3253,7 +3253,7 @@ class GCEOS(object):
 
     @property
     def d2V_dT2_l(self):
-        r'''Second partial derivative of volume with respect to 
+        r'''Second partial derivative of volume with respect to
         temperature (constant pressure) for the liquid phase, [m^3/(mol*K^2)].
 
         .. math::
@@ -3282,7 +3282,7 @@ class GCEOS(object):
 
     @property
     def d2V_dT2_g(self):
-        r'''Second partial derivative of volume with respect to 
+        r'''Second partial derivative of volume with respect to
         temperature (constant pressure) for the gas phase, [m^3/(mol*K^2)].
 
         .. math::
@@ -5079,14 +5079,14 @@ class GCEOS(object):
             {\left(P \right)}\right)^{2}}
 
         '''
-        r'''Feels like a really strange derivative. Have not been able to construct 
+        r'''Feels like a really strange derivative. Have not been able to construct
         it from others yet. Value is Symmetric - can calculate it both ways.
         Still feels like there should be a general method for obtaining these derivatives.
-        
+
         from sympy import *
         P, T, R, b, delta, epsilon = symbols('P, T, R, b, delta, epsilon')
         a_alpha, V = symbols(r'a\alpha, V', cls=Function)
-        
+
         dP_dV = 1/(1/(-R*T/(V(P) - b)**2 - a_alpha(T)*(-2*V(P) - delta)/(V(P)**2 + V(P)*delta + epsilon)**2))
         cse(diff(dP_dV, P), optimizations='basic')
         '''
@@ -5425,7 +5425,7 @@ class IG(GCEOS):
 
     def a_alpha_and_derivatives_pure(self, T):
         return (0.0, 0.0, 0.0)
-        
+
     def a_alpha_pure(self, T):
         return 0.0
 
@@ -5680,11 +5680,11 @@ class PR(GCEOS):
         d2a_alpha_dT2 = 0.5*x3*(kappa/(T*Tc) - x4/(x0*T))
 
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
-        
+
     def a_alpha_pure(self, T):
         x0 = (1.0 + self.kappa*(1.0 - (T/self.Tc)**0.5))
         return self.a*x0*x0
-    
+
     # sqrt terms:
     def P_max_at_V(self, V):
         '''

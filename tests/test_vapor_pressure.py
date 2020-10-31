@@ -41,7 +41,7 @@ def test_VaporPressure():
     Psat_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(305.))[1] for i in methods]
     Psat_exp = [11579.634014300127, 11698.02742876088, 11590.408779316374, 11659.154222044575, 11592.205263402893, 11593.661615921257, 11612.378633936816, 11350.156640503357, 12081.738947110121, 14088.453409816764, 9210.26200064024]
     assert_allclose(sorted(Psat_calcs), sorted(Psat_exp))
-    
+
     assert_allclose(EtOH.calculate(305, VDI_TABULAR), 11690.81660829924, rtol=1E-4)
 
     # Use another chemical to get in ANTOINE_EXTENDED_POLING
@@ -84,18 +84,18 @@ def test_VaporPressure_fast_Psat_best_fit():
     assert_close(corr.solve_prop(1e-5), corr.solve_prop_best_fit(1e-5), rtol=1e-10)
     assert_close(corr.solve_prop(1), corr.solve_prop_best_fit(1), rtol=1e-10)
     assert_close(corr.solve_prop(100), corr.solve_prop_best_fit(100), rtol=1e-10)
-    
+
     P_trans = exp(corr.best_fit_Tmin_value)
     assert_close(corr.solve_prop(P_trans), corr.solve_prop_best_fit(P_trans), rtol=1e-10)
     assert_close(corr.solve_prop(P_trans+1e-7), corr.solve_prop_best_fit(P_trans+1e-7), rtol=1e-10)
-    
+
     # Solver region
     assert_close(corr.solve_prop(1e5), corr.solve_prop_best_fit(1e5), rtol=1e-10)
     assert_close(corr.solve_prop(1e7), corr.solve_prop_best_fit(1e7), rtol=1e-10)
-    
+
     P_trans = exp(corr.best_fit_Tmax_value)
     assert_close(corr.solve_prop(P_trans), corr.solve_prop_best_fit(P_trans), rtol=1e-10)
     assert_close(corr.solve_prop(P_trans+1e-7), corr.solve_prop_best_fit(P_trans+1e-7), rtol=1e-10)
-    
+
     # High T
     assert_close(corr.solve_prop(1e8), corr.solve_prop_best_fit(1e8), rtol=1e-10)

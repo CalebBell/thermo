@@ -36,7 +36,7 @@ def test_Permittivity_class():
 
     with pytest.raises(Exception):
         water.test_method_validity(300, 'BADMETHOD' )
-    
+
     epsilon = water.T_dependent_property(298.15)
     assert_close(epsilon, 78.35530812232503)
     assert Permittivity(CASRN='7732-18-5').all_methods == set(['CRC', 'CRC_CONSTANT'])
@@ -67,8 +67,8 @@ def test_Permittivity_class_fuzz():
     tot_constant = sum([Permittivity(CASRN=i).calculate(T=298.15, method='CRC_CONSTANT') for i in CRC_Permittivity_data.index])
     assert_close(tot_constant, 13526.653700000023)
 
-    
-    
+
+
     sums_min, sums_avg, sums_max = 0, 0, 0
     for i in CRC_Permittivity_data.index:
         a = Permittivity(CASRN=i)

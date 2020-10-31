@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['smarts_fragment', 'Joback', 'J_BIGGS_JOBACK_SMARTS', 
+__all__ = ['smarts_fragment', 'Joback', 'J_BIGGS_JOBACK_SMARTS',
            'J_BIGGS_JOBACK_SMARTS_id_dict']
 
 from collections import namedtuple, Counter
@@ -83,7 +83,7 @@ J_BIGGS_JOBACK_SMARTS = [["Methyl","-CH3", "[CX4H3]"],
 ["Primary amino","-NH2", "[NX3H2]"],
 ["Secondary amino acyclic",">NH (nonring)", "[NX3H1;!R]"],
 ["Secondary amino cyclic",">NH (ring)", "[#7X3H1;R]"],
-["Tertiary amino", ">N- (nonring)","[#7X3H0;!$([#7](~O)~O)]"], 
+["Tertiary amino", ">N- (nonring)","[#7X3H0;!$([#7](~O)~O)]"],
 ["Imine acyclic","-N= (nonring)","[#7X2H0;!R]"],
 ["Imine cyclic","-N= (ring)","[#7X2H0;R]"],
 ["Aldimine", "=NH", "[#7X2H1]"],
@@ -198,15 +198,15 @@ for i, line in enumerate(joback_data_txt.split('\n')):
 
 def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
     r'''Fragments a molecule into a set of unique groups and counts as
-    specified by the `catalog`. The molecule can either be an rdkit 
+    specified by the `catalog`. The molecule can either be an rdkit
     molecule object, or a smiles string which will be parsed by rdkit.
     Returns a dictionary of groups and their counts according to the
     indexes of the catalog provided.
-    
+
     Parameters
     ----------
     catalog : dict
-        Dictionary indexed by keys pointing to smarts strings, [-] 
+        Dictionary indexed by keys pointing to smarts strings, [-]
     rdkitmol : mol, optional
         Molecule as rdkit object, [-]
     smi : str, optional
@@ -222,26 +222,26 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
     status : str
         A string holding an explanation of why the molecule failed to be
         fragmented, if it fails; 'OK' if it suceeds.
-        
+
     Notes
     -----
     Raises an exception if rdkit is not installed, or `smi` or `rdkitmol` is
     not defined.
-        
+
     Examples
     --------
     Acetone:
-    
+
     >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='CC(=O)C')
     ({24: 1, 1: 2}, True, 'OK')
-    
+
     Sodium sulfate, (Na2O4S):
-    
+
     >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='[O-]S(=O)(=O)[O-].[Na+].[Na+]')
     ({29: 4}, False, 'Did not match all atoms present')
-    
+
     Propionic anhydride (C6H10O3):
-        
+
     >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='CCC(=O)OC(=O)CC')
     ({1: 2, 2: 2, 28: 2}, False, 'Matched some atoms repeatedly: [4]')
     '''
@@ -256,10 +256,10 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
             success = False
             return {}, success, status
 
-    atom_count = len(rdkitmol.GetAtoms())    
+    atom_count = len(rdkitmol.GetAtoms())
     status = 'OK'
     success = True
-    
+
     counts = {}
     all_matches = {}
     for key, smart in catalog.items():
@@ -271,26 +271,26 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
         if hits:
             all_matches[key] = hits
             counts[key] = len(hits)
-        
+
     # Duplicate group cleanup
     matched_atoms = []
     for i in all_matches.values():
         for j in i:
             matched_atoms.extend(j)
-    
+
     if deduplicate:
         dups = [i for i, c in Counter(matched_atoms).items() if c > 1]
         iteration = 0
         while (dups and iteration < 100):
             dup = dups[0]
-            
+
             dup_smart_matches = []
             for group, group_match_list in all_matches.items():
                 for i, group_match_i in enumerate(group_match_list):
                     if dup in group_match_i:
                         dup_smart_matches.append((group, i, group_match_i, len(group_match_i)))
-            
-            
+
+
             sizes = [i[3] for i in dup_smart_matches]
             max_size = max(sizes)
 #            print(sizes, 'sizes', 'dup', dup, 'working_data', dup_smart_matches)
@@ -307,15 +307,15 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
                         # Not handling the case of multiple duplicate matches right, indexes changing!!!
                         del all_matches[group][idx]
                         continue
-        
+
             matched_atoms = []
             for i in all_matches.values():
                 for j in i:
                     matched_atoms.extend(j)
-        
+
             dups = [i for i, c in Counter(matched_atoms).items() if c > 1]
             iteration += 1
-    
+
     matched_atoms = set()
     for i in all_matches.values():
         for j in i:
@@ -323,7 +323,7 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
     if len(matched_atoms) != atom_count:
         status = 'Did not match all atoms present'
         success = False
-        
+
     # Check the atom aount again, this time looking for duplicate matches (only if have yet to fail)
     if success:
         matched_atoms = []
@@ -336,7 +336,7 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
         elif len(matched_atoms) > atom_count:
             status = 'Matched some atoms repeatedly: %s' %( [i for i, c in Counter(matched_atoms).items() if c > 1])
             success = False
-        
+
     return counts, success, status
 
 
@@ -346,40 +346,40 @@ class Joback(object):
     common method with low accuracy but wide applicability. This routine can be
     used with either its own automatic fragmentation routine, or user specified
     groups. It is applicable to organic compounds only, and has only 41 groups
-    with no interactions between them. Each method's documentation describes  
+    with no interactions between them. Each method's documentation describes
     its accuracy. The automatic fragmentation routine is possible only because
-    of the development of SMARTS expressions to match the Joback groups by 
+    of the development of SMARTS expressions to match the Joback groups by
     Dr. Jason Biggs. The list of SMARTS expressions
-    was posted publically on the 
-    `RDKit mailing list <https://www.mail-archive.com/rdkit-discuss@lists.sourceforge.net/msg07446.html>`_. 
-                    
+    was posted publically on the
+    `RDKit mailing list <https://www.mail-archive.com/rdkit-discuss@lists.sourceforge.net/msg07446.html>`_.
+
     Parameters
     ----------
     mol : rdkitmol or smiles str
         Input molecule for the analysis, [-]
     atom_count : int, optional
-        The total number of atoms including hydrogen in the molecule; this will 
+        The total number of atoms including hydrogen in the molecule; this will
         be counted by rdkit if it not provided, [-]
     MW : float, optional
-        Molecular weight of the molecule; this will be calculated by rdkit if  
+        Molecular weight of the molecule; this will be calculated by rdkit if
         not provided, [g/mol]
     Tb : float, optional
-        An experimentally known boiling temperature for the chemical; this 
+        An experimentally known boiling temperature for the chemical; this
         increases the accuracy of the calculated critical point if provided.
         [K]
 
     Notes
     -----
-    Be sure to check the status of the automatic fragmentation; not all 
+    Be sure to check the status of the automatic fragmentation; not all
     chemicals with the Joback method are applicable.
-    
+
     Approximately 68% of chemcials in the thermo database seem to be able to
     be estimated with the Joback method.
 
     Examples
     --------
     Analysis of Acetone:
-        
+
     >>> J = Joback('CC(=O)C')
     >>> J.Hfus(J.counts)
     5125.0
@@ -387,9 +387,9 @@ class Joback(object):
     84.69109750000001
     >>> J.status
     'OK'
-    
+
     All properties can be obtained in one go with the `estimate` method:
-        
+
     >>> pprint(J.estimate()) # doctest: +ELLIPSIS
     {'Cpig': <bound method Joback.Cpig of <thermo.joback.Joback object at 0x...>>,
      'Cpig_coeffs': [7.520000000000003,
@@ -411,32 +411,32 @@ class Joback(object):
 
     The results for propionic anhydride (if the status is not OK) should not be
     used.
-    
+
     >>> J = Joback('CCC(=O)OC(=O)CC')
     >>> J.status
     'Matched some atoms repeatedly: [4]'
     >>> J.Cpig(300)
     175.85999999999999
-    
+
     None of the routines need to use the automatic routine; they can be used
     manually too:
-        
+
     >>> Joback.Tb({1: 2, 24: 1})
     322.11
 
     References
     ----------
     .. [1] Joback, Kevin G. "A Unified Approach to Physical Property Estimation
-       Using Multivariate Statistical Techniques." Thesis, Massachusetts 
+       Using Multivariate Statistical Techniques." Thesis, Massachusetts
        Institute of Technology, 1984.
-    .. [2] Joback, K.G., and R.C. Reid. "Estimation of Pure-Component 
-       Properties from Group-Contributions." Chemical Engineering 
-       Communications 57, no. 1-6 (July 1, 1987): 233-43. 
+    .. [2] Joback, K.G., and R.C. Reid. "Estimation of Pure-Component
+       Properties from Group-Contributions." Chemical Engineering
+       Communications 57, no. 1-6 (July 1, 1987): 233-43.
        doi:10.1080/00986448708960487.
     '''
     calculated_Cpig_coeffs = None
     calculated_mul_coeffs = None
-    
+
     def __init__(self, mol, atom_count=None, MW=None, Tb=None):
         if type(mol) == Chem.rdchem.Mol:
             self.rdkitmol = mol
@@ -451,14 +451,14 @@ class Joback(object):
             self.MW = rdMolDescriptors.CalcExactMolWt(self.rdkitmol_Hs)
         else:
             self.MW = MW
-            
+
         self.counts, self.success, self.status = smarts_fragment(J_BIGGS_JOBACK_SMARTS_id_dict, rdkitmol=self.rdkitmol)
-            
+
         if Tb is not None:
             self.Tb_estimated = self.Tb(self.counts)
         else:
             self.Tb_estimated = Tb
-        
+
     def estimate(self):
         '''Method to compute all available properties with the Joback method;
         returns their results as a dict. For the tempearture dependent values
@@ -467,7 +467,7 @@ class Joback(object):
         '''
         # Pre-generate the coefficients or they will not be returned
         self.mul(300)
-        self.Cpig(300) 
+        self.Cpig(300)
         estimates = {'Tb': self.Tb(self.counts),
                      'Tm': self.Tm(self.counts),
                      'Tc': self.Tc(self.counts, self.Tb_estimated),
@@ -482,19 +482,19 @@ class Joback(object):
                      'Cpig': self.Cpig,
                      'Cpig_coeffs': self.calculated_Cpig_coeffs}
         return estimates
-        
+
     @staticmethod
     def Tb(counts):
-        r'''Estimates the normal boiling temperature of an organic compound 
+        r'''Estimates the normal boiling temperature of an organic compound
         using the Joback method as a function of chemical structure only.
-        
+
         .. math::
             T_b = 198.2 + \sum_i {T_{b,i}}
-            
+
         For 438 compounds tested by Joback, the absolute average error was
         12.91 K  and standard deviation was 17.85 K; the average relative error
-        was 3.6%. 
-            
+        was 3.6%.
+
         Parameters
         ----------
         counts : dict
@@ -505,29 +505,29 @@ class Joback(object):
         -------
         Tb : float
             Estimated normal boiling temperature, [K]
-            
+
         Examples
         --------
         >>> Joback.Tb({1: 2, 24: 1})
         322.11
-        '''        
+        '''
         tot = 0.0
         for group, count in counts.items():
             tot += joback_groups_id_dict[group].Tb*count
         Tb = 198.2 + tot
         return Tb
-    
+
     @staticmethod
     def Tm(counts):
-        r'''Estimates the melting temperature of an organic compound using the 
+        r'''Estimates the melting temperature of an organic compound using the
         Joback method as a function of chemical structure only.
-        
+
         .. math::
             T_m = 122.5 + \sum_i {T_{m,i}}
-            
+
         For 388 compounds tested by Joback, the absolute average error was
         22.6 K  and standard deviation was 24.68 K; the average relative error
-        was 11.2%. 
+        was 11.2%.
 
         Parameters
         ----------
@@ -539,36 +539,36 @@ class Joback(object):
         -------
         Tm : float
             Estimated melting temperature, [K]
-            
+
         Examples
         --------
         >>> Joback.Tm({1: 2, 24: 1})
         173.5
-        '''        
+        '''
         tot = 0.0
         for group, count in counts.items():
             tot += joback_groups_id_dict[group].Tm*count
         Tm = 122.5 + tot
         return Tm
-    
+
     @staticmethod
     def Tc(counts, Tb=None):
-        r'''Estimates the critcal temperature of an organic compound using the 
+        r'''Estimates the critcal temperature of an organic compound using the
         Joback method as a function of chemical structure only, or optionally
         improved by using an experimental boiling point. If the experimental
         boiling point is not provided it will be estimated with the Joback
         method as well.
-        
+
         .. math::
             T_c = T_b \left[0.584 + 0.965 \sum_i {T_{c,i}}
             - \left(\sum_i {T_{c,i}}\right)^2 \right]^{-1}
-            
+
         For 409 compounds tested by Joback, the absolute average error was
         4.76 K  and standard deviation was 6.94 K; the average relative error
-        was 0.81%. 
-        
+        was 0.81%.
+
         Appendix BI of Joback's work lists 409 estimated critical temperatures.
-        
+
         Parameters
         ----------
         counts : dict
@@ -581,12 +581,12 @@ class Joback(object):
         -------
         Tc : float
             Estimated critical temperature, [K]
-            
+
         Examples
         --------
         >>> Joback.Tc({1: 2, 24: 1}, Tb=322.11)
         500.5590049525365
-        '''        
+        '''
         if Tb is None:
             Tb = Joback.Tb(counts)
         tot = 0.0
@@ -597,21 +597,21 @@ class Joback(object):
 
     @staticmethod
     def Pc(counts, atom_count):
-        r'''Estimates the critcal pressure of an organic compound using the 
-        Joback method as a function of chemical structure only. This 
-        correlation was developed using the actual number of atoms forming 
+        r'''Estimates the critcal pressure of an organic compound using the
+        Joback method as a function of chemical structure only. This
+        correlation was developed using the actual number of atoms forming
         the molecule as well.
-        
+
         .. math::
             P_c = \left [0.113 + 0.0032N_A - \sum_i {P_{c,i}}\right ]^{-2}
-            
+
         In the above equation, critical pressure is calculated in bar; it is
         converted to Pa here.
-        
-        392 compounds were used by Joback in this determination, with an 
+
+        392 compounds were used by Joback in this determination, with an
         absolute average error of 2.06 bar, standard devaition 3.2 bar, and
         AARE of 5.2%.
-        
+
         Parameters
         ----------
         counts : dict
@@ -624,12 +624,12 @@ class Joback(object):
         -------
         Pc : float
             Estimated critical pressure, [Pa]
-            
+
         Examples
         --------
         >>> Joback.Pc({1: 2, 24: 1}, 10)
         4802499.604994407
-        '''        
+        '''
         tot = 0.0
         for group, count in counts.items():
             tot += joback_groups_id_dict[group].Pc*count
@@ -638,16 +638,16 @@ class Joback(object):
 
     @staticmethod
     def Vc(counts):
-        r'''Estimates the critcal volume of an organic compound using the 
-        Joback method as a function of chemical structure only. 
-        
+        r'''Estimates the critcal volume of an organic compound using the
+        Joback method as a function of chemical structure only.
+
         .. math::
             V_c = 17.5 + \sum_i {V_{c,i}}
-            
-        In the above equation, critical volume is calculated in cm^3/mol; it 
+
+        In the above equation, critical volume is calculated in cm^3/mol; it
         is converted to m^3/mol here.
-        
-        310 compounds were used by Joback in this determination, with an 
+
+        310 compounds were used by Joback in this determination, with an
         absolute average error of 7.54 cm^3/mol, standard devaition 13.16
         cm^3/mol, and AARE of 2.27%.
 
@@ -661,12 +661,12 @@ class Joback(object):
         -------
         Vc : float
             Estimated critical volume, [m^3/mol]
-            
+
         Examples
         --------
         >>> Joback.Vc({1: 2, 24: 1})
         0.0002095
-        '''        
+        '''
         tot = 0.0
         for group, count in counts.items():
             tot += joback_groups_id_dict[group].Vc*count
@@ -675,20 +675,20 @@ class Joback(object):
 
     @staticmethod
     def Hf(counts):
-        r'''Estimates the ideal-gas enthalpy of formation at 298.15 K of an  
-        organic compound using the Joback method as a function of chemical 
-        structure only. 
-        
+        r'''Estimates the ideal-gas enthalpy of formation at 298.15 K of an
+        organic compound using the Joback method as a function of chemical
+        structure only.
+
         .. math::
             H_{formation} = 68.29 + \sum_i {H_{f,i}}
-            
-        In the above equation, enthalpy of formation is calculated in kJ/mol;  
+
+        In the above equation, enthalpy of formation is calculated in kJ/mol;
         it is converted to J/mol here.
-        
-        370 compounds were used by Joback in this determination, with an 
-        absolute average error of 2.2 kcal/mol, standard devaition 2.0 
+
+        370 compounds were used by Joback in this determination, with an
+        absolute average error of 2.2 kcal/mol, standard devaition 2.0
         kcal/mol, and AARE of 15.2%.
-        
+
         Parameters
         ----------
         counts : dict
@@ -699,12 +699,12 @@ class Joback(object):
         -------
         Hf : float
             Estimated ideal-gas enthalpy of formation at 298.15 K, [J/mol]
-            
+
         Examples
         --------
         >>> Joback.Hf({1: 2, 24: 1})
         -217829.99999999997
-        '''        
+        '''
         tot = 0.0
         for group, count in counts.items():
             tot += joback_groups_id_dict[group].Hform*count
@@ -713,17 +713,17 @@ class Joback(object):
 
     @staticmethod
     def Gf(counts):
-        r'''Estimates the ideal-gas Gibbs energy of formation at 298.15 K of an  
-        organic compound using the Joback method as a function of chemical 
-        structure only. 
-        
+        r'''Estimates the ideal-gas Gibbs energy of formation at 298.15 K of an
+        organic compound using the Joback method as a function of chemical
+        structure only.
+
         .. math::
             G_{formation} = 53.88 + \sum {G_{f,i}}
-            
-        In the above equation, Gibbs energy of formation is calculated in 
+
+        In the above equation, Gibbs energy of formation is calculated in
         kJ/mol; it is converted to J/mol here.
-        
-        328 compounds were used by Joback in this determination, with an 
+
+        328 compounds were used by Joback in this determination, with an
         absolute average error of 2.0 kcal/mol, standard devaition 4.37
         kcal/mol, and AARE of 15.7%.
 
@@ -737,12 +737,12 @@ class Joback(object):
         -------
         Gf : float
             Estimated ideal-gas Gibbs energy of formation at 298.15 K, [J/mol]
-            
+
         Examples
         --------
         >>> Joback.Gf({1: 2, 24: 1})
         -154540.00000000003
-        '''        
+        '''
         tot = 0.0
         for group, count in counts.items():
             tot += joback_groups_id_dict[group].Gform*count
@@ -751,19 +751,19 @@ class Joback(object):
 
     @staticmethod
     def Hfus(counts):
-        r'''Estimates the enthalpy of fusion of an organic compound at its 
-        melting point using the Joback method as a function of chemical 
-        structure only. 
-        
+        r'''Estimates the enthalpy of fusion of an organic compound at its
+        melting point using the Joback method as a function of chemical
+        structure only.
+
         .. math::
             \Delta H_{fus} = -0.88 + \sum_i H_{fus,i}
-            
-        In the above equation, enthalpy of fusion is calculated in 
+
+        In the above equation, enthalpy of fusion is calculated in
         kJ/mol; it is converted to J/mol here.
-        
+
         For 155 compounds tested by Joback, the absolute average error was
-        485.2 cal/mol  and standard deviation was 661.4 cal/mol; the average 
-        relative error was 38.7%. 
+        485.2 cal/mol  and standard deviation was 661.4 cal/mol; the average
+        relative error was 38.7%.
 
         Parameters
         ----------
@@ -776,7 +776,7 @@ class Joback(object):
         Hfus : float
             Estimated enthalpy of fusion of the compound at its melting point,
             [J/mol]
-            
+
         Examples
         --------
         >>> Joback.Hfus({1: 2, 24: 1})
@@ -787,23 +787,23 @@ class Joback(object):
             tot += joback_groups_id_dict[group].Hfus*count
         Hfus = -0.88 + tot
         return Hfus*1000 # kJ/mol to J/mol
-    
+
     @staticmethod
     def Hvap(counts):
-        r'''Estimates the enthalpy of vaporization of an organic compound at  
-        its normal boiling point using the Joback method as a function of  
-        chemical structure only. 
-        
+        r'''Estimates the enthalpy of vaporization of an organic compound at
+        its normal boiling point using the Joback method as a function of
+        chemical structure only.
+
         .. math::
             \Delta H_{vap} = 15.30 + \sum_i H_{vap,i}
-            
-        In the above equation, enthalpy of fusion is calculated in 
+
+        In the above equation, enthalpy of fusion is calculated in
         kJ/mol; it is converted to J/mol here.
-        
+
         For 368 compounds tested by Joback, the absolute average error was
-        303.5 cal/mol  and standard deviation was 429 cal/mol; the average 
-        relative error was 3.88%. 
-        
+        303.5 cal/mol  and standard deviation was 429 cal/mol; the average
+        relative error was 3.88%.
+
         Parameters
         ----------
         counts : dict
@@ -815,7 +815,7 @@ class Joback(object):
         Hvap : float
             Estimated enthalpy of vaporization of the compound at its normal
             boiling point, [J/mol]
-            
+
         Examples
         --------
         >>> Joback.Hvap({1: 2, 24: 1})
@@ -826,22 +826,22 @@ class Joback(object):
             tot += joback_groups_id_dict[group].Hvap*count
         Hvap = 15.3 + tot
         return Hvap*1000 # kJ/mol to J/mol
-    
+
     @staticmethod
     def Cpig_coeffs(counts):
-        r'''Computes the ideal-gas polynomial heat capacity coefficients 
-        of an organic compound using the Joback method as a function of  
-        chemical structure only. 
-        
+        r'''Computes the ideal-gas polynomial heat capacity coefficients
+        of an organic compound using the Joback method as a function of
+        chemical structure only.
+
         .. math::
             C_p^{ig} = \sum_i a_i - 37.93 + \left[ \sum_i b_i + 0.210 \right] T
-            + \left[ \sum_i c_i - 3.91 \cdot 10^{-4} \right] T^2 
+            + \left[ \sum_i c_i - 3.91 \cdot 10^{-4} \right] T^2
             + \left[\sum_i d_i + 2.06 \cdot 10^{-7}\right] T^3
-        
-        288 compounds were used by Joback in this determination. No overall 
+
+        288 compounds were used by Joback in this determination. No overall
         error was reported.
 
-        The ideal gas heat capacity values used in developing the heat 
+        The ideal gas heat capacity values used in developing the heat
         capacity polynomials used 9 data points between 298 K and 1000 K.
 
         Parameters
@@ -855,7 +855,7 @@ class Joback(object):
         coefficients : list[float]
             Coefficients which will result in a calculated heat capacity in
             in units of J/mol/K, [-]
-            
+
         Examples
         --------
         >>> c = Joback.Cpig_coeffs({1: 2, 24: 1})
@@ -876,21 +876,21 @@ class Joback(object):
         c -= 3.91E-4
         d += 2.06E-7
         return [a, b, c, d]
-    
+
     @staticmethod
     def mul_coeffs(counts):
-        r'''Computes the liquid phase viscosity Joback coefficients 
-        of an organic compound using the Joback method as a function of  
-        chemical structure only. 
-        
+        r'''Computes the liquid phase viscosity Joback coefficients
+        of an organic compound using the Joback method as a function of
+        chemical structure only.
+
         .. math::
-            \mu_{liq} = \text{MW} \exp\left( \frac{ \sum_i \mu_a - 597.82}{T} 
+            \mu_{liq} = \text{MW} \exp\left( \frac{ \sum_i \mu_a - 597.82}{T}
             + \sum_i \mu_b - 11.202 \right)
-            
-        288 compounds were used by Joback in this determination. No overall 
+
+        288 compounds were used by Joback in this determination. No overall
         error was reported.
 
-        The liquid viscosity data used was specified to be at "several 
+        The liquid viscosity data used was specified to be at "several
         temperatures for each compound" only. A small and unspecified number
         of compounds were used in this estimation.
 
@@ -905,7 +905,7 @@ class Joback(object):
         coefficients : list[float]
             Coefficients which will result in a liquid viscosity in
             in units of Pa*s, [-]
-            
+
         Examples
         --------
         >>> mu_ab = Joback.mul_coeffs({1: 2, 24: 1})
@@ -923,17 +923,17 @@ class Joback(object):
         a -= 597.82
         b -= 11.202
         return [a, b]
-    
+
     def Cpig(self, T):
-        r'''Computes ideal-gas heat capacity at a specified temperature 
-        of an organic compound using the Joback method as a function of  
-        chemical structure only. 
-        
+        r'''Computes ideal-gas heat capacity at a specified temperature
+        of an organic compound using the Joback method as a function of
+        chemical structure only.
+
         .. math::
             C_p^{ig} = \sum_i a_i - 37.93 + \left[ \sum_i b_i + 0.210 \right] T
-            + \left[ \sum_i c_i - 3.91 \cdot 10^{-4} \right] T^2 
+            + \left[ \sum_i c_i - 3.91 \cdot 10^{-4} \right] T^2
             + \left[\sum_i d_i + 2.06 \cdot 10^{-7}\right] T^3
-        
+
         Parameters
         ----------
         T : float
@@ -943,7 +943,7 @@ class Joback(object):
         -------
         Cpig : float
             Ideal-gas heat capacity, [J/mol/K]
-            
+
         Examples
         --------
         >>> J = Joback('CC(=O)C')
@@ -953,16 +953,16 @@ class Joback(object):
         if self.calculated_Cpig_coeffs is None:
             self.calculated_Cpig_coeffs = Joback.Cpig_coeffs(self.counts)
         return horner(reversed(self.calculated_Cpig_coeffs), T)
-        
+
     def mul(self, T):
-        r'''Computes liquid viscosity at a specified temperature 
-        of an organic compound using the Joback method as a function of  
-        chemical structure only. 
-        
+        r'''Computes liquid viscosity at a specified temperature
+        of an organic compound using the Joback method as a function of
+        chemical structure only.
+
         .. math::
             \mu_{liq} = \text{MW} \exp\left( \frac{ \sum_i \mu_a - 597.82}{T}
             + \sum_i \mu_b - 11.202 \right)
-            
+
         Parameters
         ----------
         T : float
@@ -972,7 +972,7 @@ class Joback(object):
         -------
         mul : float
             Liquid viscosity, [Pa*s]
-            
+
         Examples
         --------
         >>> J = Joback('CC(=O)C')

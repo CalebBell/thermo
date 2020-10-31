@@ -44,41 +44,41 @@ CAS_H2O = '7732-18-5'
 
 class ChemicalConstantsPackage(object):
     properties = ('atom_fractions', 'atomss', 'Carcinogens', 'CASs', 'Ceilings', 'charges',
-                 'conductivities', 'dipoles', 'economic_statuses', 'formulas', 'Gfgs', 
-                 'Gfgs_mass', 'GWPs', 'Hcs', 'Hcs_lower', 'Hcs_lower_mass', 'Hcs_mass', 
-                 'Hfgs', 'Hfgs_mass', 'Hfus_Tms', 'Hfus_Tms_mass', 'Hsub_Tms', 
-                 'Hsub_Tms_mass', 'Hvap_298s', 'Hvap_298s_mass', 'Hvap_Tbs', 'Hvap_Tbs_mass', 
-                 'InChI_Keys', 'InChIs', 'legal_statuses', 'LFLs', 'logPs', 
+                 'conductivities', 'dipoles', 'economic_statuses', 'formulas', 'Gfgs',
+                 'Gfgs_mass', 'GWPs', 'Hcs', 'Hcs_lower', 'Hcs_lower_mass', 'Hcs_mass',
+                 'Hfgs', 'Hfgs_mass', 'Hfus_Tms', 'Hfus_Tms_mass', 'Hsub_Tms',
+                 'Hsub_Tms_mass', 'Hvap_298s', 'Hvap_298s_mass', 'Hvap_Tbs', 'Hvap_Tbs_mass',
+                 'InChI_Keys', 'InChIs', 'legal_statuses', 'LFLs', 'logPs',
                  'molecular_diameters', 'MWs', 'names', 'ODPs', 'omegas',
-                 'Parachors', 'Pcs', 'phase_STPs', 'Psat_298s', 'PSRK_groups', 
-                 'Pts', 'PubChems', 'rhocs', 'rhocs_mass', 'rhol_STPs', 
-                 'rhol_STPs_mass', 'RIs', 'S0gs', 'S0gs_mass', 'Sfgs', 
-                 'Sfgs_mass', 'similarity_variables', 'Skins', 'smiless', 
-                 'STELs', 'StielPolars', 'Stockmayers', 'Tautoignitions', 
-                 'Tbs', 'Tcs', 'Tflashs', 'Tms', 'Tts', 'TWAs', 'UFLs', 
+                 'Parachors', 'Pcs', 'phase_STPs', 'Psat_298s', 'PSRK_groups',
+                 'Pts', 'PubChems', 'rhocs', 'rhocs_mass', 'rhol_STPs',
+                 'rhol_STPs_mass', 'RIs', 'S0gs', 'S0gs_mass', 'Sfgs',
+                 'Sfgs_mass', 'similarity_variables', 'Skins', 'smiless',
+                 'STELs', 'StielPolars', 'Stockmayers', 'Tautoignitions',
+                 'Tbs', 'Tcs', 'Tflashs', 'Tms', 'Tts', 'TWAs', 'UFLs',
                  'UNIFAC_Dortmund_groups', 'UNIFAC_groups',
-                 'Van_der_Waals_areas', 'Van_der_Waals_volumes', 'Vcs', 
+                 'Van_der_Waals_areas', 'Van_der_Waals_volumes', 'Vcs',
                  'Vml_STPs', 'Vml_Tms', 'Zcs', 'UNIFAC_Rs', 'UNIFAC_Qs',
                  'rhos_Tms', 'Vms_Tms', 'solubility_parameters',
                  'Vml_60Fs', 'rhol_60Fs', 'rhol_60Fs_mass',
                  )
-    
+
     __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms')
     non_vectors = ('atom_fractions',)
     non_vectors_set = set(non_vectors)
-    
+
     def subset(self, idxs):
         is_slice = isinstance(idxs, slice)
         is_one = len(idxs) == 1
         idx = idxs[0]
-        
+
         def atindexes(values):
             if is_slice:
                 return values[idxs]
             if is_one:
                 return [values[idx]]
             return [values[i] for i in idxs]
-        
+
         new = {}
         non_vectors = self.non_vectors_set
         for p in self.properties:
@@ -87,38 +87,38 @@ class ChemicalConstantsPackage(object):
                 if v is not None and p not in non_vectors:
                     new[p] = atindexes(v)
         return ChemicalConstantsPackage(**new)
-    
+
     def __repr__(self):
         return self.make_str()
-    
+
     def make_str(self, delim=', ', properties=None):
         if properties is None:
             properties = self.properties
-        
-        
+
+
         s = 'ChemicalConstantsPackage('
         for k in properties:
             if any(i is not None for i in getattr(self, k)):
                 s += '%s=%s%s'%(k, getattr(self, k), delim)
         s = s[:-2] + ')'
         return s
-    
-    
-    
-    def __init__(self, CASs=None, names=None, MWs=None, Tms=None, Tbs=None, 
+
+
+
+    def __init__(self, CASs=None, names=None, MWs=None, Tms=None, Tbs=None,
                  # Critical state points
-                 Tcs=None, Pcs=None, Vcs=None, omegas=None, 
-                 Zcs=None, rhocs=None, rhocs_mass=None, 
+                 Tcs=None, Pcs=None, Vcs=None, omegas=None,
+                 Zcs=None, rhocs=None, rhocs_mass=None,
                  # Phase change enthalpy
                  Hfus_Tms=None, Hfus_Tms_mass=None, Hvap_Tbs=None,
-                 Hvap_Tbs_mass=None, 
+                 Hvap_Tbs_mass=None,
                  # Standard values
                  Vml_STPs=None, rhol_STPs=None, rhol_STPs_mass=None,
                  Vml_60Fs=None, rhol_60Fs=None, rhol_60Fs_mass=None,
                  # Reaction (ideal gas)
                  Hfgs=None, Hfgs_mass=None, Gfgs=None, Gfgs_mass=None,
                  Sfgs=None, Sfgs_mass=None, S0gs=None, S0gs_mass=None,
-                 
+
                  # Triple point
                  Tts=None, Pts=None, Hsub_Tms=None, Hsub_Tms_mass=None,
                  # Combustion
@@ -126,17 +126,17 @@ class ChemicalConstantsPackage(object):
                  # Fire safety
                  Tflashs=None, Tautoignitions=None, LFLs=None, UFLs=None,
                  # Other safety
-                 TWAs=None, STELs=None, Ceilings=None, Skins=None, 
+                 TWAs=None, STELs=None, Ceilings=None, Skins=None,
                  Carcinogens=None, legal_statuses=None, economic_statuses=None,
                  # Environmental
-                 GWPs=None, ODPs=None, logPs=None, 
-                 Psat_298s=None, Hvap_298s=None, Hvap_298s_mass=None, 
+                 GWPs=None, ODPs=None, logPs=None,
+                 Psat_298s=None, Hvap_298s=None, Hvap_298s_mass=None,
                  Vml_Tms=None, rhos_Tms=None, Vms_Tms=None,
-                 
+
                  # Analytical
                  RIs=None, conductivities=None,
                  # Odd constants
-                 charges=None, dipoles=None, Stockmayers=None, 
+                 charges=None, dipoles=None, Stockmayers=None,
                  molecular_diameters=None, Van_der_Waals_volumes=None,
                  Van_der_Waals_areas=None, Parachors=None, StielPolars=None,
                  atomss=None, atom_fractions=None,
@@ -146,12 +146,12 @@ class ChemicalConstantsPackage(object):
                  PubChems=None, formulas=None, smiless=None, InChIs=None,
                  InChI_Keys=None,
                  # Groups
-                 UNIFAC_groups=None, UNIFAC_Dortmund_groups=None, 
+                 UNIFAC_groups=None, UNIFAC_Dortmund_groups=None,
                  PSRK_groups=None, UNIFAC_Rs=None, UNIFAC_Qs=None,
                  ):
         self.N = N = len(MWs)
         self.cmps = range(N)
-    
+
         if atom_fractions is None: atom_fractions = [None]*N
         if atomss is None: atomss = [None]*N
         if Carcinogens is None: Carcinogens = [None]*N
@@ -323,46 +323,46 @@ class ChemicalConstantsPackage(object):
             self.water_index = CASs.index(CAS_H2O)
         except ValueError:
             self.water_index = None
-            
+
         try:
             self.n_atoms = [sum(i.values()) for i in atomss]
         except:
             self.n_atoms = None
-        
+
 
 class PropertyCorrelationPackage(object):
-    correlations = ('VaporPressures', 'SublimationPressures', 'VolumeGases', 
+    correlations = ('VaporPressures', 'SublimationPressures', 'VolumeGases',
                'VolumeLiquids', 'VolumeSolids', 'HeatCapacityGases',
                'HeatCapacityLiquids', 'HeatCapacitySolids', 'ViscosityGases',
                'ViscosityLiquids', 'ThermalConductivityGases', 'ThermalConductivityLiquids',
                'EnthalpyVaporizations', 'EnthalpySublimations', 'SurfaceTensions',
                'Permittivities',
-               
+
                'VolumeGasMixture', 'VolumeLiquidMixture', 'VolumeSolidMixture',
                'HeatCapacityGasMixture', 'HeatCapacityLiquidMixture',
-               'HeatCapacitySolidMixture', 'ViscosityGasMixture', 
+               'HeatCapacitySolidMixture', 'ViscosityGasMixture',
                'ViscosityLiquidMixture', 'ThermalConductivityGasMixture',
                'ThermalConductivityLiquidMixture', 'SurfaceTensionMixture',
                )
-    
+
     __slots__ = correlations + ('constants',)
-    
-    pure_correlations = ('VaporPressures', 'VolumeLiquids', 'VolumeGases', 
+
+    pure_correlations = ('VaporPressures', 'VolumeLiquids', 'VolumeGases',
                          'VolumeSolids', 'HeatCapacityGases', 'HeatCapacitySolids',
-                         'HeatCapacityLiquids', 'EnthalpyVaporizations', 
-                         'EnthalpySublimations', 'SublimationPressures', 
-                         'Permittivities', 'ViscosityLiquids', 'ViscosityGases', 
+                         'HeatCapacityLiquids', 'EnthalpyVaporizations',
+                         'EnthalpySublimations', 'SublimationPressures',
+                         'Permittivities', 'ViscosityLiquids', 'ViscosityGases',
                          'ThermalConductivityLiquids', 'ThermalConductivityGases',
                          'SurfaceTensions')
 
     def subset(self, idxs, skip_missing=False):
         is_slice = isinstance(idxs, slice)
-        
+
         def atindexes(values):
             if is_slice:
                 return values[idxs]
             return [values[i] for i in idxs]
-        
+
         new = {'constants': self.constants.subset(idxs)}
         for p in self.pure_correlations:
             if hasattr(self, p):
@@ -375,26 +375,26 @@ class PropertyCorrelationPackage(object):
     def __init__(self, constants, VaporPressures=None, SublimationPressures=None,
                  VolumeGases=None, VolumeLiquids=None, VolumeSolids=None,
                  HeatCapacityGases=None, HeatCapacityLiquids=None, HeatCapacitySolids=None,
-                 ViscosityGases=None, ViscosityLiquids=None, 
+                 ViscosityGases=None, ViscosityLiquids=None,
                  ThermalConductivityGases=None, ThermalConductivityLiquids=None,
                  EnthalpyVaporizations=None, EnthalpySublimations=None,
                  SurfaceTensions=None, Permittivities=None,
-                 
+
                  VolumeGasMixtureObj=None, VolumeLiquidMixtureObj=None, VolumeSolidMixtureObj=None,
                  HeatCapacityGasMixtureObj=None, HeatCapacityLiquidMixtureObj=None, HeatCapacitySolidMixtureObj=None,
                  ViscosityGasMixtureObj=None, ViscosityLiquidMixtureObj=None,
-                 ThermalConductivityGasMixtureObj=None, ThermalConductivityLiquidMixtureObj=None, 
+                 ThermalConductivityGasMixtureObj=None, ThermalConductivityLiquidMixtureObj=None,
                  SurfaceTensionMixtureObj=None, skip_missing=False,
                  ):
         self.constants = constants
         cmps = constants.cmps
-        
+
         if VaporPressures is None and not skip_missing:
             VaporPressures = [VaporPressure(Tb=constants.Tbs[i], Tc=constants.Tcs[i], Pc=constants.Pcs[i],
                                             omega=constants.omegas[i], CASRN=constants.CASs[i],
                                             best_fit=get_chemical_constants(constants.CASs[i], 'VaporPressure'))
                               for i in cmps]
-            
+
         if VolumeLiquids is None and not skip_missing:
             VolumeLiquids = [VolumeLiquid(MW=constants.MWs[i], Tb=constants.Tbs[i], Tc=constants.Tcs[i],
                               Pc=constants.Pcs[i], Vc=constants.Vcs[i], Zc=constants.Zcs[i], omega=constants.omegas[i],
@@ -403,31 +403,31 @@ class PropertyCorrelationPackage(object):
                               best_fit=get_chemical_constants(constants.CASs[i], 'VolumeLiquid'),
                               eos=None, CASRN=constants.CASs[i])
                               for i in cmps]
-            
+
         if VolumeGases is None and not skip_missing:
             VolumeGases = [VolumeGas(MW=constants.MWs[i], Tc=constants.Tcs[i], Pc=constants.Pcs[i],
                                    omega=constants.omegas[i], dipole=constants.dipoles[i],
                                    eos=None, CASRN=constants.CASs[i])
                               for i in cmps]
-            
+
         if VolumeSolids is None and not skip_missing:
             VolumeSolids = [VolumeSolid(CASRN=constants.CASs[i], MW=constants.MWs[i],
                                         Tt=constants.Tts[i], Vml_Tt=constants.Vml_Tms[i])
                               for i in cmps]
-        
+
         if HeatCapacityGases is None and not skip_missing:
             HeatCapacityGases = [HeatCapacityGas(CASRN=constants.CASs[i], MW=constants.MWs[i],
                                                  similarity_variable=constants.similarity_variables[i],
                                                  best_fit=get_chemical_constants(constants.CASs[i], 'HeatCapacityGas'))
                               for i in cmps]
-            
+
         if HeatCapacitySolids is None and not skip_missing:
             HeatCapacitySolids = [HeatCapacitySolid(MW=constants.MWs[i], similarity_variable=constants.similarity_variables[i],
                                                     CASRN=constants.CASs[i], best_fit=get_chemical_constants(constants.CASs[i], 'HeatCapacitySolid'))
                               for i in cmps]
 
         if HeatCapacityLiquids is None and not skip_missing:
-            HeatCapacityLiquids = [HeatCapacityLiquid(CASRN=constants.CASs[i], MW=constants.MWs[i], 
+            HeatCapacityLiquids = [HeatCapacityLiquid(CASRN=constants.CASs[i], MW=constants.MWs[i],
                                                       similarity_variable=constants.similarity_variables[i],
                                                       Tc=constants.Tcs[i], omega=constants.omegas[i],
                                                       Cpgm=HeatCapacityGases[i], best_fit=get_chemical_constants(constants.CASs[i], 'HeatCapacityLiquid'))
@@ -441,19 +441,19 @@ class PropertyCorrelationPackage(object):
                               for i in cmps]
 
         if EnthalpySublimations is None and not skip_missing:
-            EnthalpySublimations = [EnthalpySublimation(CASRN=constants.CASs[i], Tm=constants.Tms[i], Tt=constants.Tts[i], 
+            EnthalpySublimations = [EnthalpySublimation(CASRN=constants.CASs[i], Tm=constants.Tms[i], Tt=constants.Tts[i],
                                                        Cpg=HeatCapacityGases[i], Cps=HeatCapacitySolids[i],
                                                        Hvap=EnthalpyVaporizations[i])
                                     for i in cmps]
-            
+
         if SublimationPressures is None and not skip_missing:
             SublimationPressures = [SublimationPressure(CASRN=constants.CASs[i], Tt=constants.Tts[i], Pt=constants.Pts[i],
                                                         Hsub_t=constants.Hsub_Tms[i])
                                     for i in cmps]
-        
+
         if Permittivities is None and not skip_missing:
             Permittivities = [Permittivity(CASRN=constants.CASs[i]) for i in cmps]
-            
+
         # missing -  ThermalConductivityGas, SurfaceTension
         if ViscosityLiquids is None and not skip_missing:
             ViscosityLiquids = [ViscosityLiquid(CASRN=constants.CASs[i], MW=constants.MWs[i], Tm=constants.Tms[i],
@@ -461,7 +461,7 @@ class PropertyCorrelationPackage(object):
                                                 omega=constants.omegas[i], Psat=VaporPressures[i].T_dependent_property,
                                                 Vml=VolumeLiquids[i])
                                 for i in cmps]
-        
+
 
         if ViscosityGases is None and not skip_missing:
             ViscosityGases = [ViscosityGas(CASRN=constants.CASs[i], MW=constants.MWs[i], Tc=constants.Tcs[i],
@@ -469,9 +469,9 @@ class PropertyCorrelationPackage(object):
                                            Vmg=lambda T: VolumeGases[i](T, 101325.0)) # Might be an issue with what i refers too
                                 for i in cmps]
         if ThermalConductivityLiquids is None and not skip_missing:
-            ThermalConductivityLiquids = [ThermalConductivityLiquid(CASRN=constants.CASs[i], MW=constants.MWs[i], 
+            ThermalConductivityLiquids = [ThermalConductivityLiquid(CASRN=constants.CASs[i], MW=constants.MWs[i],
                                                                     Tm=constants.Tms[i], Tb=constants.Tbs[i],
-                                                                    Tc=constants.Tcs[i], Pc=constants.Pcs[i], 
+                                                                    Tc=constants.Tcs[i], Pc=constants.Pcs[i],
                                                                     omega=constants.omegas[i], Hfus=constants.Hfus_Tms[i])
                                                 for i in cmps]
 
@@ -487,10 +487,10 @@ class PropertyCorrelationPackage(object):
             SurfaceTensions = [SurfaceTension(CASRN=constants.CASs[i], MW=constants.MWs[i], Tb=constants.Tbs[i],
                                               Tc=constants.Tcs[i], Pc=constants.Pcs[i], Vc=constants.Vcs[i],
                                               Zc=constants.Zcs[i], omega=constants.omegas[i], StielPolar=constants.StielPolars[i],
-                                              Hvap_Tb=constants.Hvap_Tbs[i], Vml=VolumeLiquids[i].T_dependent_property, 
+                                              Hvap_Tb=constants.Hvap_Tbs[i], Vml=VolumeLiquids[i].T_dependent_property,
                                               Cpl=lambda T : property_molar_to_mass(HeatCapacityLiquids[i].T_dependent_property(T), constants.MWs[i]))
                                     for i in cmps]
-        
+
         self.VaporPressures = VaporPressures
         self.VolumeLiquids = VolumeLiquids
         self.VolumeGases = VolumeGases
@@ -536,21 +536,21 @@ class PropertyCorrelationPackage(object):
 
         if SurfaceTensionMixtureObj is None and not skip_missing:
             SurfaceTensionMixtureObj = SurfaceTensionMixture(MWs=constants.MWs, Tbs=constants.Tbs, Tcs=constants.Tcs, CASs=constants.CASs, SurfaceTensions=SurfaceTensions, VolumeLiquids=VolumeLiquids)
-        
+
         self.VolumeSolidMixture = VolumeSolidMixtureObj
         self.VolumeLiquidMixture = VolumeLiquidMixtureObj
         self.VolumeGasMixture = VolumeGasMixtureObj
-        
+
         self.HeatCapacityLiquidMixture = HeatCapacityLiquidMixtureObj
         self.HeatCapacityGasMixture = HeatCapacityGasMixtureObj
         self.HeatCapacitySolidMixture = HeatCapacitySolidMixtureObj
-        
+
         self.ViscosityLiquidMixture = ViscosityLiquidMixtureObj
         self.ViscosityGasMixture = ViscosityGasMixtureObj
-        
+
         self.ThermalConductivityLiquidMixture = ThermalConductivityLiquidMixtureObj
         self.ThermalConductivityGasMixture = ThermalConductivityGasMixtureObj
-        
+
         self.SurfaceTensionMixture = SurfaceTensionMixtureObj
 
     def as_best_fit(self, props=None):
@@ -560,7 +560,7 @@ class PropertyCorrelationPackage(object):
                 iter_props = props
             else:
                 iter_props = self.pure_correlations
-            
+
             s = '%s(' %(self.__class__.__name__)
             s += 'constants=constants, skip_missing=True,\n'
             for prop in iter_props:
@@ -570,10 +570,10 @@ class PropertyCorrelationPackage(object):
                         s += '%s=%s,\n' %(prop, self.as_best_fit(prop_attr))
                     except Exception as e:
                         print(e, prop)
-                    
+
             s += ')'
             return s
-        
+
         s = '['
         for obj in props:
             s += (obj.as_best_fit() + ',\n')
@@ -582,15 +582,15 @@ class PropertyCorrelationPackage(object):
 
 
 # Values except for omega from IAPWS; heat capacity isn't official.
-iapws_constants = ChemicalConstantsPackage(CASs=['7732-18-5'], MWs=[18.015268], omegas=[0.344], 
+iapws_constants = ChemicalConstantsPackage(CASs=['7732-18-5'], MWs=[18.015268], omegas=[0.344],
                                            Pcs=[22064000.0], Tcs=[647.096])
 global _iapws_correlations
 _iapws_correlations = None
 def iapws_correlations():
     global _iapws_correlations
     if _iapws_correlations is None:
-        _iapws_correlations = PropertyCorrelationPackage(constants=iapws_constants, 
+        _iapws_correlations = PropertyCorrelationPackage(constants=iapws_constants,
                         HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18,
                                                                                     4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))])
-        
+
     return _iapws_correlations

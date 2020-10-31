@@ -22,9 +22,9 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['tabulate_solid', 'tabulate_liq', 'tabulate_gas', 
+__all__ = ['tabulate_solid', 'tabulate_liq', 'tabulate_gas',
            'tabulate_constants', 'tabulate_streams']
-           
+
 from collections import OrderedDict
 import numpy as np
 import pandas as pd
@@ -225,7 +225,7 @@ def tabulate_constants(chemical, full=False, vertical=False):
 def tabulate_streams(names=None, *args, **kwargs):
     # Names are the names of the streams to be displayed; input
     # strings for each of them or bad things happen!
-    
+
     Ts = [i.T for i in args]
     Ps = [i.P for i in args]
     VFs = [i.V_over_F for i in args]
@@ -240,7 +240,7 @@ def tabulate_streams(names=None, *args, **kwargs):
         for CAS, i in zip(stream.CASs, stream.names):
             IDs[CAS] = i
     CASs = list(CASs) # So it can be indexed
-        
+
     mole_fractions = []
     mole_flows = []
     mass_fractions = []
@@ -267,7 +267,7 @@ def tabulate_streams(names=None, *args, **kwargs):
         mass_fractions.append(mass_fractions_i)
         mass_flows.append(mass_flows_i)
         mole_flows.append(mole_flows_i)
-        
+
     dat = OrderedDict([['Temperature, K', Ts],
                       ['Pressure, Pa', Ps],
                        ['Phase', phases],
@@ -281,7 +281,7 @@ def tabulate_streams(names=None, *args, **kwargs):
             s = 'Mole flow, mol/s %s' %IDs[CAS]
             vals = [j[i] for j in mole_flows]
             dat[s] = vals
-    
+
     if kwargs.get('Mass flows', True):
         for i, CAS in enumerate(CASs):
             s = 'Mass flow, kg/s %s' %IDs[CAS]
@@ -299,7 +299,7 @@ def tabulate_streams(names=None, *args, **kwargs):
             s = 'Mole fraction %s' %IDs[CAS]
             vals = [j[i] for j in mole_fractions]
             dat[s] = vals
-    
+
 #    print(dat, names)
     if names is None:
         df = pd.DataFrame(dat)

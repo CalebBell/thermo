@@ -44,23 +44,23 @@ folder = os.path.join(os.path.dirname(__file__), 'Misc')
 def loadChemicalConstants(data, rows=True):
     '''Accepts either a marshal-style list-of-lists with fixed indexes, or
     takes in the json-style dict-of-dicts-of-dicts.
-    Returns a dictionary of ChemicalConstants indexed by their CASs. 
+    Returns a dictionary of ChemicalConstants indexed by their CASs.
     '''
     loaded_chemicals = {}
-    
+
     def add_chemical(kwargs):
         # TODO: remove to skip a function call
         constants = ChemicalConstants(**kwargs)
         loaded_chemicals[constants.CAS] = constants
-        
-        
+
+
     if rows:
         for row in data:
-            kwargs = dict(CAS=row[0], Tc=row[1], Pc=row[2], Vc=row[3], omega=row[4], Tb=row[5], 
+            kwargs = dict(CAS=row[0], Tc=row[1], Pc=row[2], Vc=row[3], omega=row[4], Tb=row[5],
                          Tm=row[6], Tt=row[7], Pt=row[8], Hfus=row[9], Hsub=row[10], Hf=row[11],
                          dipole=row[12],
-                         HeatCapacityGas=row[13], HeatCapacityLiquid=row[14], 
-                         HeatCapacitySolid=row[15], 
+                         HeatCapacityGas=row[13], HeatCapacityLiquid=row[14],
+                         HeatCapacitySolid=row[15],
                          ThermalConductivityLiquid=row[16], ThermalConductivityGas=row[17],
                          ViscosityLiquid=row[18], ViscosityGas=row[19],
                          EnthalpyVaporization=row[20], VaporPressure=row[21], VolumeLiquid=row[22],
@@ -81,7 +81,7 @@ def loadChemicalConstants(data, rows=True):
                     Hsub=item['Hsub']['value'],
                     Hf=item['Hf']['value'],
                     dipole=item['dipole']['value'])
-            
+
             for prop_key, store in marshal_properties:
                 try:
                     prop_data = item[prop_key]
@@ -121,7 +121,7 @@ def marshal_json_data(full_data, path):
         row.append(data['Hsub']['value'])
         row.append(data['Hf']['value'])
         row.append(data['dipole']['value'])
-        
+
         for prop_key, store in marshal_properties:
             try:
                 prop_data = data[prop_key]
@@ -134,11 +134,11 @@ def marshal_json_data(full_data, path):
                     row = (Tmin, Tmax, coefficients)
             except KeyError:
                 row = (None, None, None)
-                
+
             row.append(row)
-        
+
         marshal_rows.append(row)
-        
+
     f = open(path, 'wb')
     marshal.dump(marshal_rows, f, 2)
     f.close()
@@ -149,13 +149,13 @@ def marshal_json_data(full_data, path):
 marshal_properties = [('HeatCapacityGas', True),
            ('HeatCapacityLiquid', True),
            ('HeatCapacitySolid', True),
-           
+
            ('ThermalConductivityLiquid', True),
            ('ThermalConductivityGas', True),
-           
+
            ('ViscosityLiquid', True),
            ('ViscosityGas', True),
-           
+
            ('EnthalpyVaporization', True),
            ('VaporPressure', True),
            ('VolumeLiquid', True),
@@ -173,7 +173,7 @@ if os.path.exists(binary_path):
     # the binary file is newer
     json_mtime = os.path.getmtime(json_path)
     binary_mtime = os.path.getmtime(binary_path)
-    
+
     if binary_mtime > json_mtime and os.path.getsize(binary_path) > 10000:
         from_json = False
 
@@ -194,7 +194,7 @@ if marshal_data:
         marshal_rows = marshal_json_data(full_data, binary_path)
     except:
         pass
-    
+
 if not from_json:
     marshal_rows = marshal.load(open(binary_path, 'rb'))
     loaded_chemicals = loadChemicalConstants(marshal_rows, rows=True)

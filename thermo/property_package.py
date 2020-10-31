@@ -38,7 +38,7 @@ Ideal Property Package
 
 from __future__ import division
 
-__all__ = ['PropertyPackage', 'Ideal', 'Unifac', 'GammaPhi', 
+__all__ = ['PropertyPackage', 'Ideal', 'Unifac', 'GammaPhi',
            'UnifacDortmund', 'IdealCaloric', 'GammaPhiCaloric',
            'UnifacCaloric', 'UnifacDortmundCaloric', 'Nrtl', 'WilsonPP',
            'StabilityTester',
@@ -49,10 +49,10 @@ __all__ = ['PropertyPackage', 'Ideal', 'Unifac', 'GammaPhi',
 from copy import copy
 from random import uniform, shuffle, seed
 import numpy as np
-from fluids.numerics import (OscillationError, UnconvergedError, 
+from fluids.numerics import (OscillationError, UnconvergedError,
                              ridder, derivative, caching_decorator,
-                             newton, linspace, logspace, 
-                             brenth, py_solve, 
+                             newton, linspace, logspace,
+                             brenth, py_solve,
                              oscillation_checker, secant, damping_maintain_sign,
                              oscillation_checking_wrapper)
 from fluids.constants import R, pi, N_A
@@ -85,7 +85,7 @@ def Rachford_Rice_solution_negative(zs, Ks):
         pass
     # Only here for backwards compatibility
     # Works when component compositions go negative.
-    
+
 
     Kmin = min(Ks)
     Kmax = max(Ks)
@@ -271,8 +271,8 @@ def Stateva_Tsvetkov_TPDF_eos(eos):
         zs_trial = [abs(float(i)) for i in zs]
         if sum(zs_trial) >= 1:
             zs_trial = normalize(zs_trial)
-        
-        # In some cases, 1 - x < 0 
+
+        # In some cases, 1 - x < 0
         zs_trial.append(abs(1.0 - sum(zs_trial)))
 
         eos2 = eos.to_TP_zs(T=eos.T, P=eos.P, zs=zs_trial)
@@ -298,7 +298,7 @@ def d_TPD_Michelson_modified_eos(eos):
 
 
 class StabilityTester(object):
-    
+
     def __init__(self, Tcs, Pcs, omegas, aqueous_check=False, CASs=None):
         self.Tcs = Tcs
         self.Pcs = Pcs
@@ -307,25 +307,25 @@ class StabilityTester(object):
         self.cmps = range(self.N)
         self.aqueous_check = aqueous_check
         self.CASs = CASs
-        
+
         try:
             self.water_index = CASs.index(CAS_H2O)
         except:
             self.water_index = None
-        
+
     def set_d_TPD_obj_unconstrained(self, f, T, P, zs):
         self.f_unconstrained = f
         self.T = T
         self.P = P
         self.zs = zs
-    
+
     def set_d_TPD_obj_constrained(self, f, T, P, zs):
         self.f_constrained = f
         self.T = T
         self.P = P
         self.zs = zs
 
-    def stationary_points_unconstrained(self, random=True, guesses=None, raw_guesses=None, 
+    def stationary_points_unconstrained(self, random=True, guesses=None, raw_guesses=None,
                                         fmin=1e-7, tol=1e-12, method='Nelder-Mead'):
         if not raw_guesses:
             raw_guesses = []
@@ -349,7 +349,7 @@ class StabilityTester(object):
         return results, results2
 
 
-    def stationary_points_constrained(self, random=True, guesses=None, 
+    def stationary_points_constrained(self, random=True, guesses=None,
                                       fmin=1e-7, iter=1000, tol=1e-12, method='fmin_slsqp'):
         from scipy.optimize import fmin_slsqp
         if not guesses:
@@ -357,16 +357,16 @@ class StabilityTester(object):
         results = []
         def f_ieqcons(guess):
             return 1.0 - sum(guess)
-        
+
         arr = -np.ones((len(guesses[0]) - 1))
         def fprime_ieqcons(guess):
             return arr
 #            return [[0.0]*len(guess)]
 #            return np.ones([1, len(guess)])
-        
+
         for guess in guesses:
-            
-            ans, err, _, _, _ = fmin_slsqp(self.f_constrained, x0=guess[0:-1], f_ieqcons=f_ieqcons, 
+
+            ans, err, _, _, _ = fmin_slsqp(self.f_constrained, x0=guess[0:-1], f_ieqcons=f_ieqcons,
                                           acc=tol, full_output=True, disp=False,
                                           fprime_ieqcons=fprime_ieqcons)
             # Convert the answer to a normal basis
@@ -376,7 +376,7 @@ class StabilityTester(object):
                 results.append(zs)
         return results
 
-    
+
     def random_guesses(self, N=None):
         if N is None:
             N = self.N
@@ -384,14 +384,14 @@ class StabilityTester(object):
         random_guesses = [normalize([uniform(0, 1) for _ in range(N)])
                           for k in range(N)]
         return random_guesses
-        
+
     def pure_guesses(self, zero_fraction=1E-6):
-        pure_guesses = [normalize([zero_fraction if j != k else 1 for j in self.cmps]) 
+        pure_guesses = [normalize([zero_fraction if j != k else 1 for j in self.cmps])
                        for k in self.cmps]
         return pure_guesses
-    
-    def Wilson_guesses(self, T, P, zs, powers=(1, -1, 1/3., -1/3.)): # 
-        # First K is vapor-like phase; second, liquid like 
+
+    def Wilson_guesses(self, T, P, zs, powers=(1, -1, 1/3., -1/3.)): #
+        # First K is vapor-like phase; second, liquid like
         Ks_Wilson = [Wilson_K_value(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i]) for i in self.cmps]
         Wilson_guesses = []
         for power in powers:
@@ -399,7 +399,7 @@ class StabilityTester(object):
             Wilson_guesses.append(normalize(Ys_Wilson))
 #            print(Ys_Wilson, normalize(Ys_Wilson))
         return Wilson_guesses
-    
+
     def incipient_guess_name(self, idx, expect_liquid=False,
                              expect_aqueous=False, existing_phases=0):
         if idx < 4:
@@ -418,7 +418,7 @@ class StabilityTester(object):
             return 'pure%d' %(idx-3)
         elif idx > 3+self.N:
             return 'random%d' %(idx-(3+self.N))
-    
+
     def incipient_guess_named(self, T, P, zs, name, zero_fraction=1E-6):
         N, cmps = self.N, self.cmps
         Ks_Wilson = [Wilson_K_value(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i]) for i in self.cmps]
@@ -442,28 +442,28 @@ class StabilityTester(object):
             guess = [remaining]*N
             guess[k] = main_frac
             return guess
-            
-    def incipient_guesses(self, T, P, zs, pure=True, Wilson=True, random=True, 
+
+    def incipient_guesses(self, T, P, zs, pure=True, Wilson=True, random=True,
                 zero_fraction=1E-6, expect_liquid=False, expect_aqueous=False,
                 existing_phases=0):
         N, cmps = self.N, self.cmps
         Tcs, Pcs, omegas = self.Tcs, self.Pcs, self.omegas
-        
+
         WILSON_MAX_GUESSES = 4
         PURE_MAX_GUESSES = N
         PURE_MAX = WILSON_MAX_GUESSES + PURE_MAX_GUESSES
-        
+
         if random is True:
             RANDOM_MAX_GUESSES = N
         else:
             RANDOM_MAX_GUESSES = random
-            
+
         if Wilson:
             Ks_Wilson = [0.0]*N
             P_inv, T_inv = 1.0/P, 1.0/T
             for i in cmps:
                 Ks_Wilson[i] = Pcs[i]*P_inv*exp(5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv))
-            
+
             if expect_liquid:
                 if expect_aqueous:
                     main_frac = 1.0 - zero_fraction
@@ -513,22 +513,22 @@ class StabilityTester(object):
                         guess[j] *= tot_inv
                     yield guess
                     idx += N
-    
-    def guess_generator(self, T, P, zs, pure=True, Wilson=True, random=True, 
+
+    def guess_generator(self, T, P, zs, pure=True, Wilson=True, random=True,
                 zero_fraction=1E-6):
         WILSON_MAX_GUESSES = 4
         PURE_MAX_GUESSES = self.N
         PURE_MAX = WILSON_MAX_GUESSES + PURE_MAX_GUESSES
-        
+
         if random is True:
             RANDOM_MAX_GUESSES = self.N
         else:
             RANDOM_MAX_GUESSES = random
-            
+
         RANDOM_MAX = RANDOM_MAX_GUESSES + PURE_MAX
-        
+
         max_guesses = RANDOM_MAX
-        
+
         guesses = []
         if Wilson:
             guesses.extend(self.Wilson_guesses(T, P, zs))
@@ -539,7 +539,7 @@ class StabilityTester(object):
                 guesses.extend(self.random_guesses())
             else:
                 guesses.extend(self.random_guesses(random))
-        
+
         i = 0
         while i < max_guesses:
             if i < WILSON_MAX_GUESSES:
@@ -551,8 +551,8 @@ class StabilityTester(object):
             i += 1
 
 
-        
-    def guesses(self, T, P, zs, pure=True, Wilson=True, random=True, 
+
+    def guesses(self, T, P, zs, pure=True, Wilson=True, random=True,
                 zero_fraction=1E-6):
         '''Returns mole fractions, not Ks.
         '''
@@ -567,16 +567,16 @@ class StabilityTester(object):
                 guesses.extend(self.random_guesses())
             else:
                 guesses.extend(self.random_guesses(random))
-                
+
         return guesses
-    
-    
+
+
 class PropertyPackage(object):
-    
-    
-    # Constant - if the phase fraction is this close to either the liquid or 
+
+
+    # Constant - if the phase fraction is this close to either the liquid or
     # vapor phase, round it to it
-    PHASE_ROUNDING_TOL = 1E-9 
+    PHASE_ROUNDING_TOL = 1E-9
     SUPPORTS_ZERO_FRACTIONS = True
     zero_fraction = 1E-6
     FLASH_VF_TOL = 1e-6
@@ -584,37 +584,37 @@ class PropertyPackage(object):
     T_REF_IG = 298.15
     P_REF_IG = 101325.
     P_REF_IG_INV = 1.0/P_REF_IG
-    
+
     T_MAX_FIXED = 10000.0
     T_MIN_FIXED = 1e-3
-    
+
     P_MAX_FIXED = 1e9
     P_MIN_FIXED = 1e-3
 
     def to(self, zs, T=None, P=None, VF=None):
         obj = copy(self)
         obj.flash(T=T, P=P, VF=VF, zs=zs)
-        return obj    
-    
+        return obj
+
     def __copy__(self):
         obj = self.__class__(**self.kwargs)
         return obj
-    
+
     def Tdew(self, P, zs):
         return self.to(P=P, VF=1, zs=zs).T
-    
+
     def Pdew(self, T, zs):
         return self.to(T=T, VF=1, zs=zs).P
-    
+
     def Tbubble(self, P, zs):
         return self.to(P=P, VF=0, zs=zs).T
-    
+
     def Pbubble(self, T, zs):
         return self.to(T=T, VF=0, zs=zs).P
-    
+
     def _post_flash(self):
         pass
-    
+
     def flash(self, zs, T=None, P=None, VF=None):
         '''Note: There is no caching at this layer
         '''
@@ -628,21 +628,21 @@ class PropertyPackage(object):
             phase, xs, ys, V_over_F, T = self.flash_PVF_zs(P=P, VF=VF, zs=zs)
         else:
             raise Exception('Unsupported flash requested')
-            
+
         if VF is not None:
-            # Handle the case that a non-zero VF was specified, but the flash's 
+            # Handle the case that a non-zero VF was specified, but the flash's
             # tolerance results in the phase being rounded.
             if V_over_F < self.PHASE_ROUNDING_TOL and VF > self.PHASE_ROUNDING_TOL:
                 V_over_F = VF
             elif V_over_F > 1. - self.PHASE_ROUNDING_TOL and VF < 1. - self.PHASE_ROUNDING_TOL:
                 V_over_F = VF
-        # Truncate 
+        # Truncate
         if phase  == 'l/g':
             if V_over_F < self.PHASE_ROUNDING_TOL: # liquid
                 phase, xs, ys, V_over_F = 'l', zs, None, 0.
             elif V_over_F > 1. - self.PHASE_ROUNDING_TOL:
                 phase, xs, ys, V_over_F = 'g', None, zs, 1.
-                
+
         self.T = T
         self.P = P
         self.V_over_F = V_over_F
@@ -650,9 +650,9 @@ class PropertyPackage(object):
         self.xs = xs
         self.ys = ys
         self.zs = zs
-        
+
         self._post_flash()
-        
+
     def plot_Pxy(self, T, pts=30, display=True, ignore_errors=True,
                  values=False): # pragma: no cover
         if not has_matplotlib() and values is not False:
@@ -663,7 +663,7 @@ class PropertyPackage(object):
         z2 = [1.0 - zi for zi in z1]
         Ps_dew = []
         Ps_bubble = []
-        
+
         for i in range(pts):
             try:
                 self.flash(T=T, VF=0, zs=[z1[i], z2[i]])
@@ -683,7 +683,7 @@ class PropertyPackage(object):
                     raise e
         if values:
             return z1, z2, Ps_bubble, Ps_dew
-        
+
         import matplotlib.pyplot as plt
         plt.title('Pxy diagram at T=%s K' %T)
         plt.plot(z1, Ps_dew, label='Dew pressure')
@@ -695,7 +695,7 @@ class PropertyPackage(object):
             plt.show()
         else:
             return plt
-        
+
     def plot_Txy(self, P, pts=30, display=True, ignore_errors=True,
                  values=False): # pragma: no cover
         if not has_matplotlib() and values is not False:
@@ -706,7 +706,7 @@ class PropertyPackage(object):
         z2 = [1.0 - zi for zi in z1]
         Ts_dew = []
         Ts_bubble = []
-        
+
         for i in range(pts):
             try:
                 self.flash(P=P, VF=0, zs=[z1[i], z2[i]])
@@ -737,7 +737,7 @@ class PropertyPackage(object):
             plt.show()
         else:
             return plt
-        
+
     def plot_xy(self, P=None, T=None, pts=30, display=True): # pragma: no cover
         if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
@@ -774,7 +774,7 @@ class PropertyPackage(object):
             plt.show()
         else:
             return plt
-        
+
     def plot_PT(self, zs, Pmin=None, Pmax=None, pts=50, branches=[],
                 ignore_errors=True, values=False): # pragma: no cover
         if not has_matplotlib() and not values:
@@ -833,8 +833,8 @@ class PropertyPackage(object):
                 plt.plot(Ps, Ts, label='PT curve for VF=%s'%VF)
         plt.legend(loc='best')
         plt.show()
-        
-        
+
+
     def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=[],
                 ignore_errors=True, values=False): # pragma: no cover
         if not has_matplotlib() and not values:
@@ -893,7 +893,7 @@ class PropertyPackage(object):
         plt.legend(loc='best')
         plt.show()
 
-    
+
     def plot_ternary(self, T, scale=10): # pragma: no cover
         if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
@@ -911,22 +911,22 @@ class PropertyPackage(object):
             self.flash(T=T, zs=zs, VF=0)
             P_values.append(self.P)
             return self.P
-        
+
         def P_bubble_at_T_zs(zs):
             zs = remove_zeros(zs, 1e-6)
             self.flash(T=T, zs=zs, VF=1)
             return self.P
-        
+
         import matplotlib
         import matplotlib.pyplot as plt
-        
-        
+
+
         axes_colors = {'b': 'g', 'l': 'r', 'r':'b'}
         ticks = [round(i / float(10), 1) for i in range(10+1)]
-        
+
         fig, ax = plt.subplots(1, 3, gridspec_kw = {'width_ratios':[4, 4, 1]})
         ax[0].axis("off") ; ax[1].axis("off")  ; ax[2].axis("off")
-        
+
         for axis, f, i in zip(ax[0:2], [P_dew_at_T_zs, P_bubble_at_T_zs], [0, 1]):
             figure, tax = ternary.figure(ax=axis, scale=scale)
             figure.set_size_inches(12, 4)
@@ -934,21 +934,21 @@ class PropertyPackage(object):
                 tax.heatmapf(f, boundary=True, colorbar=False, vmin=0)
             else:
                 tax.heatmapf(f, boundary=True, colorbar=False, vmin=0, vmax=max(P_values))
-        
+
             tax.boundary(linewidth=2.0)
             tax.left_axis_label("mole fraction $x_2$", offset=0.16, color=axes_colors['l'])
             tax.right_axis_label("mole fraction $x_1$", offset=0.16, color=axes_colors['r'])
             tax.bottom_axis_label("mole fraction $x_3$", offset=-0.06, color=axes_colors['b'])
-        
+
             tax.ticks(ticks=ticks, axis='rlb', linewidth=1, clockwise=True,
                       axes_colors=axes_colors, offset=0.03)
-        
+
             tax.gridlines(multiple=scale/10., linewidth=2,
                           horizontal_kwargs={'color':axes_colors['b']},
                           left_kwargs={'color':axes_colors['l']},
                           right_kwargs={'color':axes_colors['r']},
                           alpha=0.5)
-        
+
         norm = plt.Normalize(vmin=0, vmax=max(P_values))
         sm = plt.cm.ScalarMappable(cmap=plt.get_cmap('viridis'), norm=norm)
         sm._A = []
@@ -958,11 +958,11 @@ class PropertyPackage(object):
         cb.formatter.set_powerlimits((0, 0))
         cb.update_ticks()
         plt.tight_layout()
-        fig.suptitle("Bubble pressure vs composition (left) and dew pressure vs composition (right) at %s K, in Pa" %T, fontsize=14); 
+        fig.suptitle("Bubble pressure vs composition (left) and dew pressure vs composition (right) at %s K, in Pa" %T, fontsize=14);
         fig.subplots_adjust(top=0.85)
         plt.show()
 
-    def plot_TP_caloric(self, zs, Tmin=None, Tmax=None, Pmin=None, Pmax=None, 
+    def plot_TP_caloric(self, zs, Tmin=None, Tmax=None, Pmin=None, Pmax=None,
                         pts=15, prop='Hm'):  # pragma: no cover
         if prop not in ['Sm', 'Gm', 'Hm']:
             raise Exception("The only supported property plots are enthalpy "
@@ -990,8 +990,8 @@ class PropertyPackage(object):
         Ts_mesh, Ps_mesh = np.meshgrid(Ts, Ps)
         fig = plt.figure()
         ax = fig.gca(projection='3d')
-        
-        
+
+
         properties = []
         for T in Ts:
             properties2 = []
@@ -999,9 +999,9 @@ class PropertyPackage(object):
                 self.flash_caloric(zs=zs, T=T, P=P)
                 properties2.append(getattr(self, prop))
             properties.append(properties2)
-                
+
         ax.plot_surface(Ts_mesh, Ps_mesh, properties, cstride=1, rstride=1, alpha=0.5)
-        
+
         ax.yaxis.set_major_formatter(FormatStrFormatter('%.4g'))
         ax.zaxis.set_major_formatter(FormatStrFormatter('%.4g'))
         ax.xaxis.set_major_formatter(FormatStrFormatter('%.4g'))
@@ -1016,7 +1016,7 @@ class PropertyPackage(object):
     def flash_caloric(self, zs, T=None, P=None, VF=None, Hm=None, Sm=None):
         if not self.SUPPORTS_ZERO_FRACTIONS:
             zs = remove_zeros(zs, self.zero_fraction)
-            
+
         kwargs = {'zs': zs}
         try:
             if T is not None and Sm is not None:
@@ -1036,8 +1036,8 @@ class PropertyPackage(object):
                 kwargs['VF'] = VF
             else:
                 raise Exception('Flash inputs unsupported')
-    
-    
+
+
 #            ''' The routine needs to be upgraded to set these properties
 #                self.T = T
 #                self.P = P
@@ -1048,7 +1048,7 @@ class PropertyPackage(object):
 #                self.zs = zs
 #            '''
 #            self.__dict__.update(kwargs)
-    
+
             self.flash(**kwargs)
             self._post_flash()
             self.status = True
@@ -1056,7 +1056,7 @@ class PropertyPackage(object):
             # Write Nones for everything here
             self.status = e
             self._set_failure()
-            
+
     def _set_failure(self):
         self.Hm = None
         self.Sm = None
@@ -1068,18 +1068,18 @@ class PropertyPackage(object):
         self.V_over_F = None
         self.xs = None
         self.ys = None
-            
-        
-        
-        
-    def flash_PH_zs_bounded(self, P, Hm, zs, T_low=None, T_high=None, 
+
+
+
+
+    def flash_PH_zs_bounded(self, P, Hm, zs, T_low=None, T_high=None,
                             Hm_low=None, Hm_high=None):
         '''THIS DOES NOT WORK FOR PURE COMPOUNDS!!!!!!!!!!!!!
         '''
         # Begin the search at half the lowest chemical's melting point
         if T_low is None:
-            T_low = min(self.Tms)/2 
-                
+            T_low = min(self.Tms)/2
+
         # Cap the T high search at 8x the highest critical point
         # (will not work well for helium, etc.)
         if T_high is None:
@@ -1088,7 +1088,7 @@ class PropertyPackage(object):
                 T_high = 4000.0
             else:
                 T_high = max_Tc*8.0
-    
+
 #        print('T_low, T_high', T_low, T_high)
         temp_pkg_cache = []
         def PH_error(T, P, zs, H_goal):
@@ -1104,7 +1104,7 @@ class PropertyPackage(object):
             err = temp_pkg.Hm - H_goal
 #            print(T, err)
             return err
-        
+
         def PH_VF_error(VF, P, zs, H_goal):
             if not temp_pkg_cache:
                 temp_pkg = self.to(VF=VF, P=P, zs=zs)
@@ -1146,14 +1146,14 @@ class PropertyPackage(object):
                                                              T_high, Hm_high, Hm))
 
 
-    def flash_PS_zs_bounded(self, P, Sm, zs, T_low=None, T_high=None, 
+    def flash_PS_zs_bounded(self, P, Sm, zs, T_low=None, T_high=None,
                             Sm_low=None, Sm_high=None):
         '''THIS DOES NOT WORK FOR PURE COMPOUNDS!!!!!!!!!!!!!
         '''
         # Begin the search at half the lowest chemical's melting point
         if T_low is None:
-            T_low = min(self.Tms)/2 
-                
+            T_low = min(self.Tms)/2
+
         # Cap the T high search at 8x the highest critical point
         # (will not work well for helium, etc.)
         if T_high is None:
@@ -1162,7 +1162,7 @@ class PropertyPackage(object):
                 T_high = 4000
             else:
                 T_high = max_Tc*8
-    
+
         temp_pkg_cache = []
         def PS_error(T, P, zs, S_goal):
             if not temp_pkg_cache:
@@ -1173,7 +1173,7 @@ class PropertyPackage(object):
                 temp_pkg.flash(T=T, P=P, zs=zs)
             temp_pkg._post_flash()
             return temp_pkg.Sm - S_goal
-        
+
         def PS_VF_error(VF, P, zs, S_goal):
             if not temp_pkg_cache:
                 temp_pkg = self.to(VF=VF, P=P, zs=zs)
@@ -1190,8 +1190,8 @@ class PropertyPackage(object):
                 if err > 1E-3:
                     VF_goal = brenth(PS_VF_error, 0, 1, args=(P, zs, Sm))
                     return {'VF': VF_goal}
-            
-            
+
+
             return {'T': T_goal}
 
         except ValueError:
@@ -1216,7 +1216,7 @@ class PropertyPackage(object):
                                  'J/mol/K) lower than that requested (%g J/mol/K)' %(
                                                              T_high, Sm_high, Sm))
 
-    def flash_TS_zs_bounded(self, T, Sm, zs, P_low=None, P_high=None, 
+    def flash_TS_zs_bounded(self, T, Sm, zs, P_low=None, P_high=None,
                             Sm_low=None, Sm_high=None):
         # Begin the search at half the lowest chemical's melting point
         if P_high is None:
@@ -1289,14 +1289,14 @@ class PropertyPackage(object):
         for zi, Sf in zip(self.zs, self.Sfs):
             Sm += zi*Sf
         return Sm
-    
+
     @property
     def Gm_reactive(self):
         Gm = self.Hm_reactive - self.T*self.Sm_reactive
         return Gm
-    
 
-class Ideal(PropertyPackage):    
+
+class Ideal(PropertyPackage):
     def Ks(self, T, P, zs=None):
         Psats = self._Psats(T)
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
@@ -1306,12 +1306,12 @@ class Ideal(PropertyPackage):
     def _T_VF_err_ideal(self, P, VF, zs, Psats):
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
         return Rachford_Rice_solution_negative(zs=zs, Ks=Ks)[0] - VF
-        
+
     def _P_VF_err_ideal(self, T, P, VF, zs):
         Psats = self._Psats(T)
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
         return Rachford_Rice_solution_negative(zs=zs, Ks=Ks)[0] - VF
-    
+
     def _Psats(self, T):
         # Need to reset the method because for the T bounded solver,
         # will normally get a different than prefered method as it starts
@@ -1331,11 +1331,11 @@ class Ideal(PropertyPackage):
     #                print(i.CASRN)
                     Psats.append(i.extrapolate_tabular(T))
         return Psats
-        
+
     def _Tsats(self, P):
         Tsats = []
         for i in self.VaporPressures:
-            try: 
+            try:
                 Tsats.append(i.solve_prop(P))
             except:
                 error = lambda T: i.extrapolate_tabular(T) - P
@@ -1347,8 +1347,8 @@ class Ideal(PropertyPackage):
         for i in self.VaporPressures:
             dPsats_dT.append(i.T_dependent_property_derivative(T))
         return dPsats_dT
-                
-    def __init__(self, VaporPressures=None, Tms=None, Tcs=None, Pcs=None, 
+
+    def __init__(self, VaporPressures=None, Tms=None, Tcs=None, Pcs=None,
                  **kwargs):
         self.VaporPressures = VaporPressures
         self.Tms = Tms
@@ -1356,7 +1356,7 @@ class Ideal(PropertyPackage):
         self.Pcs = Pcs
         self.N = len(VaporPressures)
         self.cmps = range(self.N)
-        
+
         self.kwargs = {'VaporPressures': VaporPressures,
                        'Tms': Tms, 'Tcs': Tcs, 'Pcs': Pcs}
 
@@ -1399,11 +1399,11 @@ class Ideal(PropertyPackage):
             Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
             V_over_F, xs, ys = Rachford_Rice_solution_negative(zs=zs, Ks=Ks)
             return 'l/g', xs, ys, V_over_F
-        
-        
+
+
     def flash_TVF_zs(self, T, VF, zs):
         return self.flash_TVF_zs_ideal(T, VF, zs)
-    
+
     def flash_TVF_zs_ideal(self, T, VF, zs):
         assert 0 <= VF <= 1
         Psats = self._Psats(T)
@@ -1422,10 +1422,10 @@ class Ideal(PropertyPackage):
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
         V_over_F, xs, ys = Rachford_Rice_solution_negative(zs=zs, Ks=Ks)
         return 'l/g', xs, ys, V_over_F, P
-    
+
     def flash_PVF_zs(self, P, VF, zs):
         return self.flash_PVF_zs_ideal(P, VF, zs)
-    
+
     def flash_PVF_zs_ideal(self, P, VF, zs):
         assert 0 <= VF <= 1
         Tsats = self._Tsats(P)
@@ -1443,19 +1443,19 @@ class Ideal(PropertyPackage):
 
 class IdealCaloric(Ideal):
     P_DEPENDENT_H_LIQ = True
-    
+
     @property
     def Cplm_dep(self):
         return 0.0
-    
+
     @property
     def Cpgm_dep(self):
         return 0.0
-    
+
     @property
     def Cvlm_dep(self):
         return 0.0
-    
+
     @property
     def Cvgm_dep(self):
         return 0.0
@@ -1466,18 +1466,18 @@ class IdealCaloric(Ideal):
         for i in self.cmps:
             Cp += self.zs[i]*self.HeatCapacityLiquids[i].T_dependent_property(self.T)
         return Cp
-    
+
     @property
     def Cpgm(self):
         Cp = 0.0
         for i in self.cmps:
             Cp += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property(self.T)
         return Cp
-    
+
     @property
     def Cvgm(self):
         return self.Cpgm - R
-    
+
     @property
     def Cvlm(self):
         return self.Cplm
@@ -1491,8 +1491,8 @@ class IdealCaloric(Ideal):
         for zi, obj in zip(zs, HeatCapacityGases):
             H += zi*obj.T_dependent_property_integral(T_REF_IG, T)
         return H
-            
-            
+
+
     def Cpg_ideal(self, T, zs):
         Cp = 0.0
         HeatCapacityGases = self.HeatCapacityGases
@@ -1500,8 +1500,8 @@ class IdealCaloric(Ideal):
             Cp += zi*HeatCapacityGas.T_dependent_property(T)
         return Cp
 
-    
-    def __init__(self, VaporPressures=None, Tms=None, Tbs=None, Tcs=None, Pcs=None, 
+
+    def __init__(self, VaporPressures=None, Tms=None, Tbs=None, Tcs=None, Pcs=None,
                  HeatCapacityLiquids=None, HeatCapacityGases=None,
                  EnthalpyVaporizations=None, VolumeLiquids=None, Hfs=None,
                  Gfs=None, **kwargs):
@@ -1521,14 +1521,14 @@ class IdealCaloric(Ideal):
         self.Gfs = Gfs
         if Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
             self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
-        
+
         self.kwargs = {'VaporPressures': VaporPressures,
                        'Tms': Tms, 'Tbs': Tbs, 'Tcs': Tcs, 'Pcs': Pcs,
-                       'HeatCapacityLiquids': HeatCapacityLiquids, 
+                       'HeatCapacityLiquids': HeatCapacityLiquids,
                        'HeatCapacityGases': HeatCapacityGases,
-                       'EnthalpyVaporizations': EnthalpyVaporizations, 
+                       'EnthalpyVaporizations': EnthalpyVaporizations,
                        'VolumeLiquids': VolumeLiquids}
-        
+
 
 
     def _post_flash(self):
@@ -1541,7 +1541,7 @@ class IdealCaloric(Ideal):
         r'''Method to calculate the partial molar property for entropy,
         enthalpy, or gibbs energy. Note the partial gibbs energy is known
         as chemical potential as well.
-        
+
         .. math::
             \bar m_i = \left( \frac{\partial (n_T m)} {\partial n_i}
             \right)_{T, P, n_{j\ne i}}
@@ -1565,7 +1565,7 @@ class IdealCaloric(Ideal):
         if prop not in ('Sm', 'Gm', 'Hm'):
             raise Exception("The only supported property plots are enthalpy "
                             "('Hm'), entropy ('Sm'), and Gibbe energy ('Gm')")
-        
+
         def prop_extensive(ni, ns, i):
             ns[i] = ni
             n_tot = sum(ns)
@@ -1582,28 +1582,28 @@ class IdealCaloric(Ideal):
         r'''Method to calculate the enthalpy of an ideal mixture. This routine
         is based on "route A", where the gas heat
         capacity and enthalpy of vaporization are used.
-        
+
         The reference temperature is a property of the class; it defaults to
         298.15 K.
-        
+
         For a pure gas mixture:
-            
+
         .. math::
              H = \sum_i z_i \cdot \int_{T_{ref}}^T C_{p}^{ig}(T) dT
-             
+
         For a pure liquid mixture:
-            
+
         .. math::
              H = \sum_i z_i \left( \int_{T_{ref}}^T C_{p}^{ig}(T) dT + H_{vap, i}(T) \right)
-             
+
         For a vapor-liquid mixture:
-            
+
         .. math::
              H = \sum_i z_i \cdot \int_{T_{ref}}^T C_{p}^{ig}(T) dT
                  + \sum_i x_i\left(1 - \frac{V}{F}\right)H_{vap, i}(T)
-                 
+
         For liquids, the enthalpy contribution of pressure is:
-        
+
         .. math::
             \Delta H = \sum_i z_i (P - P_{sat, i}) V_{m, i}
 
@@ -1612,11 +1612,11 @@ class IdealCaloric(Ideal):
         H : float
             Enthalpy of the mixture with respect to the reference temperature,
             [J/mol]
-            
+
         Notes
         -----
-        The object must be flashed before this routine can be used. It 
-        depends on the properties T, zs, xs, V_over_F, HeatCapacityGases, 
+        The object must be flashed before this routine can be used. It
+        depends on the properties T, zs, xs, V_over_F, HeatCapacityGases,
         EnthalpyVaporizations, and.
         '''
         H = 0
@@ -1633,7 +1633,7 @@ class IdealCaloric(Ideal):
                 Hvap = self.EnthalpyVaporizations[i](T) # Do the transition at the temperature of the liquid
                 if Hvap is None:
                     Hvap = 0 # Handle the case of a package predicting a transition past the Tc
-                H_i = Hg298_to_T - Hvap 
+                H_i = Hg298_to_T - Hvap
                 if self.P_DEPENDENT_H_LIQ:
                     Vl = self.VolumeLiquids[i](T, P)
                     if Vl is None:
@@ -1641,11 +1641,11 @@ class IdealCaloric(Ideal):
                         # one at the boiling point (and system P)
                         Vl = self.VolumeLiquids[i](self.Tbs[i], P)
                     H_i += (P - Psats[i])*Vl
-                H += self.zs[i]*(H_i) 
+                H += self.zs[i]*(H_i)
         elif self.phase == 'l/g':
             for i in self.cmps:
                 Hg298_to_T_zi = self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
-                Hvap = self.EnthalpyVaporizations[i](T) 
+                Hvap = self.EnthalpyVaporizations[i](T)
                 if Hvap is None:
                     Hvap = 0 # Handle the case of a package predicting a transition past the Tc
                 Hvap_contrib = -self.xs[i]*(1-self.V_over_F)*Hvap
@@ -1666,14 +1666,14 @@ class IdealCaloric(Ideal):
         H = 0
         T = self.T
         T_trans = self.T_trans
-        
+
         if self.phase == 'l':
             for i in self.cmps:
                 H += self.zs[i]*self.HeatCapacityLiquids[i].T_dependent_property_integral(self.T_REF_IG, T)
         elif self.phase == 'g':
             for i in self.cmps:
                 H_to_trans = self.HeatCapacityLiquids[i].T_dependent_property_integral(self.T_REF_IG, self.T_trans[i])
-                H_trans = self.EnthalpyVaporizations[i](self.T_trans[i]) 
+                H_trans = self.EnthalpyVaporizations[i](self.T_trans[i])
                 H_to_T_gas = self.HeatCapacityGases[i].T_dependent_property_integral(self.T_trans[i], T)
                 H += self.zs[i]*(H_to_trans + H_trans + H_to_T_gas)
         elif self.phase == 'l/g':
@@ -1688,67 +1688,67 @@ class IdealCaloric(Ideal):
 
 
     def entropy_Cpg_Hvap(self):
-        r'''Method to calculate the entropy of an ideal mixture. This routine 
+        r'''Method to calculate the entropy of an ideal mixture. This routine
         is based on "route A", where only the gas heat capacity and enthalpy of
         vaporization are used.
-        
-        The reference temperature and pressure are properties of the class; it 
+
+        The reference temperature and pressure are properties of the class; it
         defaults to 298.15 K and 101325 Pa.
-        
+
         There is a contribution due to mixing:
-            
+
         .. math::
-            \Delta S_{mixing} = -R\sum_i z_i \log(z_i) 
-            
+            \Delta S_{mixing} = -R\sum_i z_i \log(z_i)
+
         The ideal gas pressure contribution is:
-            
+
         .. math::
             \Delta S_{P} = -R\log\left(\frac{P}{P_{ref}}\right)
-            
+
         For a liquid mixture or a partially liquid mixture, the entropy
         contribution is not so strong - all such pressure effects find that
         expression capped at the vapor pressure, as shown in [1]_.
-        
+
         .. math::
-            \Delta S_{P} = - \sum_i x_i\left(1 - \frac{V}{F}\right) 
+            \Delta S_{P} = - \sum_i x_i\left(1 - \frac{V}{F}\right)
             R\log\left(\frac{P_{sat, i}}{P_{ref}}\right) - \sum_i y_i\left(
             \frac{V}{F}\right) R\log\left(\frac{P}{P_{ref}}\right)
-            
-        These expressions are combined with the standard heat capacity and 
+
+        These expressions are combined with the standard heat capacity and
         enthalpy of vaporization expressions to calculate the total entropy:
-        
+
         For a pure gas mixture:
-            
+
         .. math::
              S = \Delta S_{mixing} + \Delta S_{P} + \sum_i z_i \cdot
              \int_{T_{ref}}^T \frac{C_{p}^{ig}(T)}{T} dT
-                          
+
         For a pure liquid mixture:
-            
+
         .. math::
-             S = \Delta S_{mixing} + \Delta S_{P} + \sum_i z_i \left( 
+             S = \Delta S_{mixing} + \Delta S_{P} + \sum_i z_i \left(
              \int_{T_{ref}}^T \frac{C_{p}^{ig}(T)}{T} dT + \frac{H_{vap, i}
              (T)}{T} \right)
-            
+
         For a vapor-liquid mixture:
-            
+
         .. math::
-             S = \Delta S_{mixing} + \Delta S_{P} + \sum_i z_i \cdot 
+             S = \Delta S_{mixing} + \Delta S_{P} + \sum_i z_i \cdot
              \int_{T_{ref}}^T \frac{C_{p}^{ig}(T)}{T} dT + \sum_i x_i\left(1
              - \frac{V}{F}\right)\frac{H_{vap, i}(T)}{T}
-             
+
         Returns
         -------
         S : float
             Entropy of the mixture with respect to the reference temperature,
             [J/mol/K]
-            
+
         Notes
         -----
-        The object must be flashed before this routine can be used. It 
-        depends on the properties T, P, zs, V_over_F, HeatCapacityGases, 
+        The object must be flashed before this routine can be used. It
+        depends on the properties T, P, zs, V_over_F, HeatCapacityGases,
         EnthalpyVaporizations, VaporPressures, and xs.
-        
+
         References
         ----------
         .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
@@ -1781,7 +1781,7 @@ class IdealCaloric(Ideal):
             S_P_vapor = -R*log(P/101325.) # Gas-phase ideal pressure contribution (checked repeatedly)
             for i in self.cmps:
                 Sg298_to_T_zi = self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
-                Hvap = self.EnthalpyVaporizations[i](T) 
+                Hvap = self.EnthalpyVaporizations[i](T)
                 if Hvap is None:
                     Hvap = 0 # Handle the case of a package predicting a transition past the Tc
 
@@ -1793,7 +1793,7 @@ class IdealCaloric(Ideal):
         return S
 
         # TODO
-        '''Cp_ideal, Cp_real, speed of sound -- or come up with a way for 
+        '''Cp_ideal, Cp_real, speed of sound -- or come up with a way for
         mixture to better make calls to the property package. Probably both.
         '''
 
@@ -1805,7 +1805,7 @@ class GammaPhi(PropertyPackage):
     use_phis = False
     SUPPORTS_ZERO_FRACTIONS = False
 
-    def __init__(self, VaporPressures=None, Tms=None, Tcs=None, Pcs=None, 
+    def __init__(self, VaporPressures=None, Tms=None, Tcs=None, Pcs=None,
                  **kwargs):
         self.VaporPressures = VaporPressures
         self.Tms = Tms
@@ -1813,7 +1813,7 @@ class GammaPhi(PropertyPackage):
         self.Pcs = Pcs
         self.N = len(VaporPressures)
         self.cmps = range(self.N)
-        
+
         self.kwargs = {'VaporPressures': VaporPressures,
                        'Tms': Tms, 'Tcs': Tcs, 'Pcs': Pcs}
 
@@ -1833,7 +1833,7 @@ class GammaPhi(PropertyPackage):
 
     def _T_VF_err(self, P, T, zs, Psats, Pmax, V_over_F_goal=1):
         if P < 0 or P > Pmax:
-            return 1 
+            return 1
         V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats, restart=self.__TVF_solve_cache)
         if any(i < 0 for i in xs) or any(i < 0 for i in ys):
             return -100000*(Pmax-P)/Pmax
@@ -1848,9 +1848,9 @@ class GammaPhi(PropertyPackage):
             phis_l = self.phis_l(T=T, xs=xs)
             if self.use_Poynting:
                 Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
-                return [K_value(P=P, Psat=Psats[i], gamma=gammas[i], 
+                return [K_value(P=P, Psat=Psats[i], gamma=gammas[i],
                                 phi_l=phis_l[i], phi_g=phis_g[i], Poynting=Poyntings[i]) for i in self.cmps]
-            return [K_value(P=P, Psat=Psats[i], gamma=gammas[i], 
+            return [K_value(P=P, Psat=Psats[i], gamma=gammas[i],
                             phi_l=phis_l[i], phi_g=phis_g[i]) for i in self.cmps]
         if self.use_Poynting:
             Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
@@ -1858,41 +1858,41 @@ class GammaPhi(PropertyPackage):
             return Ks
         Ks = [K_value(P=P, Psat=Psats[i], gamma=gammas[i]) for i in self.cmps]
         return Ks
-    
+
     def Poyntings(self, T, P, Psats):
-        Vmls = [VolumeLiquid.T_dependent_property(T=T) for VolumeLiquid in self.VolumeLiquids]        
+        Vmls = [VolumeLiquid.T_dependent_property(T=T) for VolumeLiquid in self.VolumeLiquids]
 #        Vmls = [VolumeLiquid(T=T, P=P) for VolumeLiquid in self.VolumeLiquids]
         return [exp(Vml*(P-Psat)/(R*T)) for Psat, Vml in zip(Psats, Vmls)]
-    
+
     def dPoyntings_dT(self, T, P, Psats=None):
         if Psats is None:
             Psats = self._Psats(T=T)
-            
+
         dPsats_dT = [VaporPressure.T_dependent_property_derivative(T=T)
                      for VaporPressure in self.VaporPressures]
 
-        Vmls = [VolumeLiquid.T_dependent_property(T=T) for VolumeLiquid in self.VolumeLiquids]                    
-        dVml_dTs = [VolumeLiquid.T_dependent_property_derivative(T=T) 
+        Vmls = [VolumeLiquid.T_dependent_property(T=T) for VolumeLiquid in self.VolumeLiquids]
+        dVml_dTs = [VolumeLiquid.T_dependent_property_derivative(T=T)
                     for VolumeLiquid in self.VolumeLiquids]
 #        Vmls = [VolumeLiquid(T=T, P=P) for VolumeLiquid in self.VolumeLiquids]
-#        dVml_dTs = [VolumeLiquid.TP_dependent_property_derivative_T(T=T, P=P) 
+#        dVml_dTs = [VolumeLiquid.TP_dependent_property_derivative_T(T=T, P=P)
 #                    for VolumeLiquid in self.VolumeLiquids]
-        
+
         x0 = 1.0/R
         x1 = 1.0/T
-        
+
         dPoyntings_dT = []
         for i in self.cmps:
             x2 = Vmls[i]
             x3 = Psats[i]
-            
+
             x4 = P - x3
             x5 = x1*x2*x4
             dPoyntings_dTi = -x0*x1*(x2*dPsats_dT[i] - x4*dVml_dTs[i] + x5)*exp(x0*x5)
             dPoyntings_dT.append(dPoyntings_dTi)
         return dPoyntings_dT
-    
-    
+
+
     def dPoyntings_dP(self, T, P, Psats=None):
         '''from sympy import *
         R, T, P, zi = symbols('R, T, P, zi')
@@ -1902,13 +1902,13 @@ class GammaPhi(PropertyPackage):
         Vmls = [VolumeLiquid(T=T, P=P) for VolumeLiquid in self.VolumeLiquids]
         if Psats is None:
             Psats = self._Psats(T=T)
-        
+
         dPoyntings_dPs = []
         for i in self.cmps:
             x0 = Vmls[i]/(R*T)
             dPoyntings_dPs.append(x0*exp(x0*(P - Psats[i])))
         return dPoyntings_dPs
-        
+
 
     def phis_g(self, T, P, ys):
         return self.eos_mix(T=T, P=P, zs=ys, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas).phis_g
@@ -1928,32 +1928,32 @@ class GammaPhi(PropertyPackage):
                 phi = obj.phi_g
             phis_sat.append(phi)
         return phis_sat
-                
+
 
     def fugacity_coefficients_l(self, T, P, xs):
         # DO NOT EDIT _ CORRECT
         gammas = self.gammas(T, xs)
         Psats = self._Psats(T=T)
-        
+
         if self.use_phis:
             phis = self.phis_l(T=T, xs=xs)
         else:
             phis = [1.0]*self.N
-            
+
         if self.use_Poynting:
             Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
         else:
             Poyntings = [1.0]*self.N
-            
+
         P_inv = 1.0/P
         return [gammas[i]*Psats[i]*Poyntings[i]*phis[i]*P_inv
                 for i in self.cmps]
-        
-        
+
+
     def lnphis_l(self, T, P, xs):
         # DO NOT EDIT _ CORRECT
-        return [log(i) for i in self.fugacity_coefficients_l(T, P, xs)]        
-        
+        return [log(i) for i in self.fugacity_coefficients_l(T, P, xs)]
+
     def fugacities_l(self, T, P, xs):
         # DO NOT EDIT _ CORRECT
         gammas = self.gammas(T, xs)
@@ -1962,7 +1962,7 @@ class GammaPhi(PropertyPackage):
             phis = self.phis_l(T=T, xs=xs)
         else:
             phis = [1.0]*self.N
-            
+
         if self.use_Poynting:
             Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
         else:
@@ -1974,8 +1974,8 @@ class GammaPhi(PropertyPackage):
     def dphis_dT(self, T, P, xs):
         Psats = self._Psats(T=T)
         gammas = self.gammas(T, xs)
-        
-        
+
+
         if self.use_Poynting:
             # Evidence suggests poynting derivatives are not worth calculating
             dPoyntings_dT = [0.0]*self.N#self.dPoyntings_dT(T, P, Psats=Psats)
@@ -1987,14 +1987,14 @@ class GammaPhi(PropertyPackage):
         dPsats_dT = [VaporPressure.T_dependent_property_derivative(T=T)
                      for VaporPressure in self.VaporPressures]
         dgammas_dT = self.dgammas_dT(T, xs)
-        
+
         if self.use_phis:
             dphis_l_sat_dT = 0.0
             phis_l_sat = self.phis_l(T, xs)
         else:
             dphis_l_sat_dT = 0.0
             phis_l_sat = [1.0]*self.N
-        
+
         dphis_dTl = []
         for i in self.cmps:
             x0 = gammas[i]
@@ -2006,12 +2006,12 @@ class GammaPhi(PropertyPackage):
             v = (x0*x4*dphis_l_sat_dT + x1*x4*dgammas_dT[i] + x2*x5*dPoyntings_dT[i] + x3*x5*dPsats_dT[i])/P
             dphis_dTl.append(v)
         return dphis_dTl
-        
+
     def dlnphis_dT(self, T, P, xs):
         dphis_dT = self.dphis_dT(T, P, xs)
         phis = self.fugacity_coefficients_l(T, P, xs)
         return [i/j for i, j in zip(dphis_dT, phis)]
-    
+
     def _Psats(self, Psats=None, T=None):
         if Psats is None:
             Psats = []
@@ -2048,90 +2048,90 @@ class GammaPhi(PropertyPackage):
             if err < 1E-7:
                 break
         return V_over_F, xs, ys
-    
 
-    
+
+
     def gammas(self, T, xs):
         return [1 for i in self.cmps]
 
     def VE_l(self):
         r'''Calculates the excess volume of a liquid phase using an
         activity coefficient model as shown in [1]_ and [2]_.
-            
+
         .. math::
-            v^E = \left(\frac{\partial g^E}{\partial P}\right)_{T, xi, xj...} 
-            
+            v^E = \left(\frac{\partial g^E}{\partial P}\right)_{T, xi, xj...}
+
         In practice, this returns 0 as no pressure-dependent activity models
         are available.
-            
+
         Returns
         -------
         VE : float
             Excess volume of the liquid phase (0), [m^3/mol]
-    
+
         Notes
         -----
         The relationship for partial excess molar volume is as follows:
-            
+
         .. math::
             \frac{\bar v_i^E}{RT} = \left(\frac{\partial \ln \gamma_i}
             {\partial P}\right)_T
-            
-            
+
+
         References
         ----------
-        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
            Butterworth-Heinemann, 1985.
-        .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process 
+        .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process
            Simulation. Weinheim, Germany: Wiley-VCH, 2012.
         '''
         return 0.0
-    
+
     def GE_l(self, T, xs):
         r'''Calculates the excess Gibbs energy of a liquid phase using an
         activity coefficient model as shown in [1]_ and [2]_.
-            
+
         .. math::
             g_E = RT\sum_i x_i \ln \gamma_i
-            
+
         Parameters
         ----------
         T : float
             Temperature of the system, [K]
         xs : list[float]
             Mole fractions of the liquid phase of the system, [-]
-    
+
         Returns
         -------
         GE : float
             Excess Gibbs energy of the liquid phase, [J/mol]
-    
+
         Notes
         -----
-        It is possible to directly calculate GE in some activity coefficient 
+        It is possible to directly calculate GE in some activity coefficient
         models, without calculating individual activity coefficients of the
         species.
-        
-        Note also the relationship of the expressions for partial excess Gibbs 
+
+        Note also the relationship of the expressions for partial excess Gibbs
         energies:
-            
+
         .. math::
             \bar g_i^E = RT\ln(\gamma_i)
-        
+
             g^E = \sum_i x_i \bar g_i^E
-            
+
         Most activity coefficient models are pressure independent, which leads
         to the relationship where excess Helmholtz energy is the same as the
         excess Gibbs energy.
-        
+
         .. math::
             G^E = A^E
-            
+
         References
         ----------
-        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
            Butterworth-Heinemann, 1985.
-        .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process 
+        .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process
            Simulation. Weinheim, Germany: Wiley-VCH, 2012.
         '''
         gammas = self.gammas(T=T, xs=xs)
@@ -2139,139 +2139,139 @@ class GammaPhi(PropertyPackage):
 
     def HE_l(self, T, xs):
         r'''Calculates the excess enthalpy of a liquid phase using an
-        activity coefficient model as shown in [1]_ and [2]_. This is an 
+        activity coefficient model as shown in [1]_ and [2]_. This is an
         expression of the Gibbs-Helmholz relation.
-            
+
         .. math::
             \frac{-h^E}{T^2} = \frac{\partial (g^E/T)}{\partial T}
-            
+
         Parameters
         ----------
         T : float
             Temperature of the system, [K]
         xs : list[float]
             Mole fractions of the liquid phase of the system, [-]
-    
+
         Returns
         -------
         HE : float
             Excess enthalpy of the liquid phase, [J/mol]
-    
+
         Notes
         -----
-        It is possible to obtain analytical results for some activity 
+        It is possible to obtain analytical results for some activity
         coefficient models; this method provides only the `derivative`
         method of scipy with its default parameters to obtain a numerical
         result.
-        
-        Note also the relationship of the expressions for partial excess 
+
+        Note also the relationship of the expressions for partial excess
         enthalpy:
-            
+
         .. math::
-            \left(\frac{\partial \ln \gamma_i}{\partial (1/T))}\right) 
-                = \frac{\bar h_i^E}{R}    
-                
+            \left(\frac{\partial \ln \gamma_i}{\partial (1/T))}\right)
+                = \frac{\bar h_i^E}{R}
+
             \left(\frac{\partial \ln \gamma_i}{\partial T}\right)
             = -\frac{\bar h_i^E}{RT^2}
 
-            
+
         Most activity coefficient models are pressure independent, so the Gibbs
         Duhem expression only has a temperature relevance.
-        
+
         .. math::
-            \sum_i x_i d \ln \gamma_i = - \frac{H^{E}}{RT^2} dT 
+            \sum_i x_i d \ln \gamma_i = - \frac{H^{E}}{RT^2} dT
             + \frac{V^E}{RT} dP
-            
+
         References
         ----------
-        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
            Butterworth-Heinemann, 1985.
-        .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process 
+        .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process
            Simulation. Weinheim, Germany: Wiley-VCH, 2012.
         '''
         to_diff = lambda T: self.GE_l(T, xs)/T
         return -derivative(to_diff, T)*T**2
-    
+
     def SE_l(self, T, xs):
         r'''Calculates the excess entropy of a liquid phase using an
         activity coefficient model as shown in [1]_ and [2]_.
-            
+
         .. math::
-            s^E = \frac{h^E - g^E }{T} 
-            
+            s^E = \frac{h^E - g^E }{T}
+
         Parameters
         ----------
         T : float
             Temperature of the system, [K]
         xs : list[float]
             Mole fractions of the liquid phase of the system, [-]
-    
+
         Returns
         -------
         SE : float
             Excess entropy of the liquid phase, [J/mol/K]
-    
+
         Notes
         -----
-        It is possible to obtain analytical results for some activity 
+        It is possible to obtain analytical results for some activity
         coefficient models; this method provides only the `derivative`
         method of scipy with its default parameters to obtain a numerical
         result for the excess enthalpy, although the excess Gibbs energy
         is exact.
-        
-        Note also the relationship of the expressions for partial excess 
-        entropy: 
-            
+
+        Note also the relationship of the expressions for partial excess
+        entropy:
+
         .. math::
             S_i^E = -R\left(T \frac{\partial \ln \gamma_i}{\partial T}
             + \ln \gamma_i\right)
 
-            
+
         References
         ----------
-        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
            Butterworth-Heinemann, 1985.
-        .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process 
+        .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process
            Simulation. Weinheim, Germany: Wiley-VCH, 2012.
         '''
         return (self.HE_l(T, xs) - self.GE_l(T, xs))/T
-    
+
     def CpE_l(self, T, xs):
         r'''Calculates the excess heat capacity of a liquid phase using an
         activity coefficient model as shown in [1]_ and [2]_.
-            
+
         .. math::
              C_{p,l}^E = \left(\frac{\partial H^E}{\partial T}\right)_{p, x}
-            
+
         Parameters
         ----------
         T : float
             Temperature of the system, [K]
         xs : list[float]
             Mole fractions of the liquid phase of the system, [-]
-    
+
         Returns
         -------
         CpE : float
             Excess heat capacity of the liquid phase, [J/mol/K]
-    
+
         Notes
         -----
         This method provides only the `derivative`
         method of scipy with its default parameters to obtain a numerical
         result for the excess enthalpy as well as the derivative of excess
         enthalpy.
-                    
+
         References
         ----------
-        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
            Butterworth-Heinemann, 1985.
-        .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process 
+        .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process
            Simulation. Weinheim, Germany: Wiley-VCH, 2012.
         '''
         to_diff = lambda T : self.HE_l(T, xs)
         return derivative(to_diff, T)
-    
+
     def gammas_infinite_dilution(self, T):
         gamma_infs = []
         for i in self.cmps:
@@ -2280,7 +2280,7 @@ class GammaPhi(PropertyPackage):
             gamma_inf = self.gammas(T=T, xs=xs)[i]
             gamma_infs.append(gamma_inf)
         return gamma_infs
-    
+
     def H_dep_g(self, T, P, ys):
         if not self.use_phis:
             return 0.0
@@ -2291,7 +2291,7 @@ class GammaPhi(PropertyPackage):
             # This really is the correct approach
             return e.H_dep_l
 
-    
+
     def S_dep_g(self, T, P, ys):
         if not self.use_phis:
             return 0.0
@@ -2301,7 +2301,7 @@ class GammaPhi(PropertyPackage):
         except AttributeError:
             # This really is the correct approach
             return e.S_dep_l
-    
+
     def enthalpy_excess(self, T, P, V_over_F, xs, ys):
         # Does this handle the transition without a discontinuity?
         H = 0
@@ -2334,11 +2334,11 @@ class GammaPhi(PropertyPackage):
         # Returns P_bubble; only thing easy to calculate
         Psats = self._Psats(Psats, T)
         cmps, N = self.cmps, self.N
-        
+
         # If there is one component, return at the saturation line
         if self.N == 1:
             return Psats[0]
-        
+
         gammas = self.gammas(T=T, xs=zs)
         P = sum([gammas[i]*zs[i]*Psats[i] for i in cmps])
         if self.use_Poynting and not self.use_phis:
@@ -2356,7 +2356,7 @@ class GammaPhi(PropertyPackage):
                     P = sum([gammas[i]*zs[i]*Psats[i]*Poyntings[i]*phis_l[i] for i in cmps])
                 else:
                     P = sum([gammas[i]*zs[i]*Psats[i]*phis_l[i] for i in cmps])
-                    
+
 
 
         # TODO: support equations of state, once you get that figured out.
@@ -2368,11 +2368,11 @@ class GammaPhi(PropertyPackage):
 
     def P_dew_at_T(self, T, zs, Psats=None):
         Psats = self._Psats(Psats, T)
-        
+
         # If there is one component, return at the saturation line
         if self.N == 1:
             return Psats[0]
-        
+
         Pmax, _, _, _ = self.P_bubble_at_T(T, zs, Psats)
         diff = 1E-7
         # EOSs do not solve at very low pressure
@@ -2387,15 +2387,15 @@ class GammaPhi(PropertyPackage):
 #            return brent(self._dew_P_UNIFAC_err, args=(T, zs, Psats, Pmax), brack=(Pmax*diff, Pmax*(1-diff), Pmax))
 #        except:
 #        return golden(self._dew_P_UNIFAC_err, args=(T, zs, Psats, Pmax), brack=(Pmax, Pmax*(1-diff)))
-#        
+#
     def flash_TVF_zs(self, T, VF, zs):
         assert 0 <= VF <= 1
         Psats = self._Psats(T=T)
-        
+
         # handle one component
         if self.N == 1:
             return 'l/g', [1.0], [1.0], VF, Psats[0]
-        
+
         Pbubble, _, ys, Ks = self.P_bubble_at_T(T=T, zs=zs, Psats=Psats)
         if VF == 0:
             P = Pbubble
@@ -2415,7 +2415,7 @@ class GammaPhi(PropertyPackage):
 #            P = brenth(self._T_VF_err, Pdew, Pbubble, args=(T, VF, zs, Psats))
             V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats)
         return 'l/g', xs, ys, V_over_F, P
-    
+
     def flash_TP_zs(self, T, P, zs):
         Psats = self._Psats(T=T)
         Pbubble, _, ys, Ks = self.P_bubble_at_T(T=T, zs=zs, Psats=Psats)
@@ -2428,8 +2428,8 @@ class GammaPhi(PropertyPackage):
         else:
             V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats)
             return 'l/g', xs, ys, V_over_F
-    
-   
+
+
     def flash_PVF_zs(self, P, VF, zs):
         if self.N == 1:
             Tsats = self._Tsats(P)
@@ -2446,7 +2446,7 @@ class GammaPhi(PropertyPackage):
         return 'l/g', xs, ys, V_over_F, T
 
 
-    def dew_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200, 
+    def dew_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200,
                                  xtol=1E-10, info=None, xs_guess=None,
                                  max_step_damping=100.0, near_critical=False,
                                  trivial_solution_tol=1e-4):
@@ -2458,19 +2458,19 @@ class GammaPhi(PropertyPackage):
         cmps = range(N)
         xs = zs if xs_guess is None else xs_guess
         def lnphis_and_derivatives(T_guess):
-            
+
             if self.use_phis:
                 ln_phis_g = [log(i) for i in self.phis_g(T=T_guess, P=P, ys=zs)]
             else:
                 ln_phis_g = [1.0]*N
             dlnphis_dT_g = [0.0]*N
-            
+
             ln_phis_l = self.lnphis_l(T_guess, P, xs)
             dlnphis_dT_l = self.dlnphis_dT(T_guess, P, xs)
 
 
             return ln_phis_l, ln_phis_g, dlnphis_dT_l, dlnphis_dT_g
-        
+
         T_guess_old = None
         successive_fails = 0
         for i in range(maxiter):
@@ -2483,7 +2483,7 @@ class GammaPhi(PropertyPackage):
                     raise ValueError("Could not calculate liquid and vapor conditions at provided initial temperature %s K" %(T_guess))
                 successive_fails += 1
                 if successive_fails >= 2:
-                    raise ValueError("Stopped convergence procedure after multiple bad steps") 
+                    raise ValueError("Stopped convergence procedure after multiple bad steps")
                 T_guess = T_guess_old + copysign(min(max_step_damping, abs(step)), step)
 #                print('fail - new T guess', T_guess)
                 ln_phis_l, ln_phis_g, dlnphis_dT_l, dlnphis_dT_g = lnphis_and_derivatives(T_guess)
@@ -2495,35 +2495,35 @@ class GammaPhi(PropertyPackage):
             dfk_dT = 0.0
             for i in cmps:
                 dfk_dT += xs[i]*(dlnphis_dT_g[i] - dlnphis_dT_l[i])
-            
+
             T_guess_old = T_guess
             step = -f_k/dfk_dT
-            
+
 #            print(xs, T_guess, step, dfk_dT)
-            
+
             if near_critical:
                 T_guess = T_guess + copysign(min(max_step_damping, abs(step)), step)
             else:
                 T_guess = T_guess + step
-            
+
             if near_critical:
                 comp_difference = sum([abs(zi - xi) for zi, xi in zip(zs, xs)])
                 if comp_difference < trivial_solution_tol:
                     raise ValueError("Converged to trivial condition, compositions of both phases equal")
-            
+
             x_sum = sum(xs)
             xs = [x/x_sum for x in xs]
-            
+
             if info is not None:
                 info[:] = xs, zs, Ks, 1.0
             if abs(T_guess - T_guess_old) < xtol:
                 T_guess = T_guess_old
                 break
-            
-                
+
+
         if abs(T_guess - T_guess_old) > xtol:
             raise ValueError("Did not converge to specified tolerance")
-                
+
         return T_guess
 
     def HE_l2(self, T, xs):
@@ -2535,7 +2535,7 @@ class GammaPhi(PropertyPackage):
         dGE_dT = self.dGE_dT(T, xs)
         GE = self.GE_l2(T, xs)
         return -T*dGE_dT + GE
- 
+
     def dHE_dx(self, T, xs):
         # Derived by hand taking into account the expression for excess enthalpy
         d2GE_dTdxs = self.d2GE_dTdxs(T, xs)
@@ -2544,10 +2544,10 @@ class GammaPhi(PropertyPackage):
 
     def dHE_dn(self, T, xs):
         return dxs_to_dns(self.dHE_dx(T, xs), xs)
-    
+
     def dnHE_dn(self, T, xs):
         return dxs_to_dn_partials(self.dHE_dx(T, xs), xs, self.HE_l2(T, xs))
-    
+
     def dSE_dx(self, T, xs):
         # Derived by hand.
         dGE_dxs = self.dGE_dxs(T, xs)
@@ -2557,7 +2557,7 @@ class GammaPhi(PropertyPackage):
 
     def dSE_dn(self, T, xs):
         return dxs_to_dns(self.dSE_dx(T, xs), xs)
-    
+
     def dnSE_dn(self, T, xs):
         return dxs_to_dn_partials(self.dSE_dx(T, xs), xs, self.SE_l(T, xs))
 
@@ -2583,14 +2583,14 @@ class GammaPhi(PropertyPackage):
     def dgammas_dx(self, T, xs):
 #        dnGE_dni = self.dnGE_dns(T, xs)
         gammas = self.gammas2(T, xs)
-        
+
         cmps = self.cmps
-        
+
         d2GE_dxixjs = self.d2GE_dxixjs(T, xs)
         d2nGE_dxjnis = d2xs_to_dxdn_partials(d2GE_dxixjs, xs)
-        
+
         RT_inv = 1.0/(R*T)
-        
+
         matrix = []
         for i in cmps:
             row = []
@@ -2600,34 +2600,34 @@ class GammaPhi(PropertyPackage):
                 row.append(v)
             matrix.append(row)
         return matrix
-        
+
     def dgammas_dT(self, T, xs):
         r'''
         .. math::
             \frac{\partial \gamma_i}{\partial T} =
-            \left(\frac{\frac{\partial^2 n G^E}{\partial T \partial n_i}}{RT} - 
+            \left(\frac{\frac{\partial^2 n G^E}{\partial T \partial n_i}}{RT} -
             \frac{{\frac{\partial n_i G^E}{\partial n_i }}}{RT^2}\right)
              \exp\left(\frac{\frac{\partial n_i G^E}{\partial n_i }}{RT}\right)
-        
+
         from sympy import *
         R, T = symbols('R, T')
         f = symbols('f', cls=Function)
         diff(exp(f(T)/(R*T)), T)
         '''
         d2nGE_dTdns = self.d2nGE_dTdns(T, xs)
-        
+
         dG_dxs = self.dGE_dxs(T, xs)
         GE = self.GE_l2(T, xs)
         dG_dns = dxs_to_dn_partials(dG_dxs, xs, GE)
-        
+
         RT_inv = 1.0/(R*T)
         return [(d2nGE_dTdns[i]*RT_inv - dG_dns[i]*RT_inv/T)*exp(dG_dns[i]*RT_inv)
                 for i in self.cmps]
 
     def d2GE_dTdns(self, T, xs):
         return dxs_to_dns(self.d2GE_dTdxs(T, xs), xs)
-    
-    
+
+
     def d2nGE_dTdns(self, T, xs):
         # needed in gammas temperature derivatives
         dGE_dT = self.dGE_dT(T, xs)
@@ -2642,7 +2642,7 @@ class GammaPhi(PropertyPackage):
         diff(simplify(-T**2*diff(f(T)/T, T)), T)
         '''
         return -T*self.dGE2_dT2(T, xs)
-    
+
     def dSE_dT(self, T, xs):
         '''from sympy import *
         T = symbols('T')
@@ -2660,26 +2660,26 @@ class GammaPhi(PropertyPackage):
 
 
 class GammaPhiCaloric(GammaPhi, IdealCaloric):
-    
+
     def _post_flash(self):
         # Cannot derive other properties with this
         self.Hm = self.enthalpy_Cpg_Hvap() + self.enthalpy_excess(T=self.T, P=self.P, V_over_F=self.V_over_F, xs=self.xs, ys=self.ys)
         self.Sm = self.entropy_Cpg_Hvap() + self.entropy_excess(T=self.T, P=self.P, V_over_F=self.V_over_F, xs=self.xs, ys=self.ys)
-        
+
         self.Gm = self.Hm - self.T*self.Sm if (self.Hm is not None and self.Sm is not None) else None
 
 
 
-    
-    def __init__(self, VaporPressures=None, Tms=None, Tbs=None, Tcs=None, 
-                 Pcs=None, omegas=None, VolumeLiquids=None, eos=None, 
+
+    def __init__(self, VaporPressures=None, Tms=None, Tbs=None, Tcs=None,
+                 Pcs=None, omegas=None, VolumeLiquids=None, eos=None,
                  eos_mix=None, HeatCapacityLiquids=None, HeatCapacityGases=None,
                  EnthalpyVaporizations=None, **kwargs):
         self.cmps = range(len(VaporPressures))
         self.N = len(VaporPressures)
         self.VaporPressures = VaporPressures
         self.omegas = omegas
-        
+
         self.Tms = Tms
         self.Tbs = Tbs
         self.Tcs = Tcs
@@ -2690,13 +2690,13 @@ class GammaPhiCaloric(GammaPhi, IdealCaloric):
         self.VolumeLiquids = VolumeLiquids
         self.eos = eos
         self.eos_mix = eos_mix
-        
+
         if eos:
             self.eos_pure_instances = [eos(Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], T=Tcs[i]*0.5, P=Pcs[i]*0.1) for i in self.cmps]
-        
+
         self.kwargs = {'VaporPressures': VaporPressures,
                        'Tms': Tms, 'Tbs': Tbs, 'Tcs': Tcs, 'Pcs': Pcs,
-                       'HeatCapacityLiquids': HeatCapacityLiquids, 
+                       'HeatCapacityLiquids': HeatCapacityLiquids,
                        'HeatCapacityGases': HeatCapacityGases,
                        'EnthalpyVaporizations': EnthalpyVaporizations,
                        'VolumeLiquids': VolumeLiquids,
@@ -2704,12 +2704,12 @@ class GammaPhiCaloric(GammaPhi, IdealCaloric):
                        'omegas': omegas}
 
 
-class Nrtl(GammaPhiCaloric):   
+class Nrtl(GammaPhiCaloric):
     def GE2(self, T, xs):
         cmps = self.cmps
         taus = self.taus(T)
         Gs = self.Gs(T, taus=taus)
-        
+
         tot = 0
         for i in self.cmps:
             sum1 = 0.0
@@ -2720,7 +2720,7 @@ class Nrtl(GammaPhiCaloric):
             t1 = sum2/sum1
             tot += xs[i]*t1
         return T*R*tot
-    
+
 
 
     def dGE_dxs(self, T, xs):
@@ -2730,17 +2730,17 @@ class Nrtl(GammaPhiCaloric):
         R, T = symbols('R, T')
         x0, x1, x2 = symbols('x0, x1, x2')
         xs = [x0, x1, x2]
-        
+
         tau00, tau01, tau02, tau10, tau11, tau12, tau20, tau21, tau22 = symbols(
             'tau00, tau01, tau02, tau10, tau11, tau12, tau20, tau21, tau22', cls=Function)
-        tau_ijs = [[tau00(T), tau01(T), tau02(T)], 
+        tau_ijs = [[tau00(T), tau01(T), tau02(T)],
                    [tau10(T), tau11(T), tau12(T)],
                    [tau20(T), tau21(T), tau22(T)]]
-        
-        
+
+
         G00, G01, G02, G10, G11, G12, G20, G21, G22 = symbols(
             'G00, G01, G02, G10, G11, G12, G20, G21, G22', cls=Function)
-        G_ijs = [[G00(T), G01(T), G02(T)], 
+        G_ijs = [[G00(T), G01(T), G02(T)],
                    [G10(T), G11(T), G12(T)],
                    [G20(T), G21(T), G22(T)]]
         ge = 0
@@ -2758,25 +2758,25 @@ class Nrtl(GammaPhiCaloric):
         taus = self.taus(T)
         alphas = self.alphas(T)
         Gs = self.Gs(T)
-        
+
         dGE_dxs = []
-        
+
         for k in cmps:
             # k is what is being differentiated
             tot = 0
             for i in cmps:
-                
+
                 # sum1 in other places
                 sum1 = 0.0
                 sum2 = 0.0
                 for j in cmps:
                     sum1 += xs[j]*Gs[j][i]
                     sum2 += xs[j]*taus[j][i]*Gs[j][i] # sum2 in other places
-                    
+
                 term0 = xs[i]*Gs[k][i]*taus[k][i]/sum1
                 term1 = -xs[i]*Gs[k][i]*sum2/(sum1*sum1)
-                
-                
+
+
                 tot += term0 + term1
                 if i == k:
                     tot += sum2/sum1
@@ -2785,7 +2785,7 @@ class Nrtl(GammaPhiCaloric):
         return dGE_dxs
 
 
-        
+
     def dGE_dT(self, T, xs):
         '''from sympy import *
         R, T, x = symbols('R, T, x')
@@ -2799,13 +2799,13 @@ class Nrtl(GammaPhiCaloric):
         cmps = self.cmps
         taus = self.taus(T)
         dtaus_dT = self.dtaus_dT(T)
-        
+
         alphas = self.alphas(T)
         dalphas_dT = self.dalphas_dT(T)
-        
+
         Gs = self.Gs(T)
         dGs_dT = self.dGs_dT(T)
-        
+
         tot = 0
         for i in self.cmps:
             sum1 = 0.0
@@ -2814,17 +2814,17 @@ class Nrtl(GammaPhiCaloric):
             sum4 = 0.0
             sum5 = 0.0
             for j in self.cmps:
-                tauji = taus[j][i] 
-                
+                tauji = taus[j][i]
+
                 Gjixj = Gs[j][i]*xs[j]
                 dGjidTxj = dGs_dT[j][i]*xs[j]
-                
+
                 sum1 += Gjixj
                 sum2 += tauji*Gjixj
                 sum3 += dGjidTxj
                 sum4 += tauji*dGjidTxj
                 sum5 += dtaus_dT[j][i]*Gjixj
-            
+
             t1 = sum2/sum1 - T*(sum2*sum3)/(sum1*sum1) + T*(sum4 + sum5)/sum1
             tot += xs[i]*t1
         return R*tot
@@ -2836,14 +2836,14 @@ class Nrtl(GammaPhiCaloric):
         m, n, o = symbols('m, n, o', cls=Function)
         r, s, t = symbols('r, s, t', cls=Function)
         u, v, w = symbols('u, v, w', cls=Function)
-        
+
         (diff(T*(m(T)*n(T) + r(T)*s(T))/(o(T) + t(T)), T, 2))
         '''
         cmps = self.cmps
         taus = self.taus(T)
         dtaus_dT = self.dtaus_dT(T)
         d2taus_dT2 = self.d2taus_dT2(T)
-        
+
         alphas = self.alphas(T)
         dalphas_dT = self.dalphas_dT(T)
 
@@ -2858,40 +2858,40 @@ class Nrtl(GammaPhiCaloric):
             sum3 = 0.0
             sum4 = 0.0
             sum5 = 0.0
-            
+
             sum6 = 0.0
             sum7 = 0.0
             sum8 = 0.0
             sum9 = 0.0
             for j in self.cmps:
-                tauji = taus[j][i] 
+                tauji = taus[j][i]
                 dtaus_dTji = dtaus_dT[j][i]
-                
+
                 Gjixj = Gs[j][i]*xs[j]
                 dGjidTxj = dGs_dT[j][i]*xs[j]
                 d2GjidT2xj = xs[j]*d2Gs_dT2[j][i]
-                
+
                 sum1 += Gjixj
                 sum2 += tauji*Gjixj
                 sum3 += dGjidTxj
-                
+
                 sum4 += tauji*dGjidTxj
                 sum5 += dtaus_dTji*Gjixj
-                
+
                 sum6 += d2GjidT2xj
-                
+
                 sum7 += tauji*d2GjidT2xj
-                
+
                 sum8 += Gjixj*d2taus_dT2[j][i]
-                
+
                 sum9 += dGjidTxj*dtaus_dTji
-                
+
             term1 = -T*sum2*(sum6 - 2.0*sum3*sum3/sum1)/sum1
             term2 = T*(sum7 + sum8 + 2.0*sum9)
             term3 = -2*T*(sum3*(sum4 + sum5))/sum1
             term4 = -2.0*(sum2*sum3)/sum1
             term5 = 2*(sum4 + sum5)
-            
+
             tot += xs[i]*(term1 + term2 + term3 + term4 + term5)/sum1
         return R*tot
 
@@ -2899,21 +2899,21 @@ class Nrtl(GammaPhiCaloric):
     def taus(self, T):
         r'''Calculate the `tau` terms for the NRTL model for a specified
         temperature.
-        
+
         .. math::
-            \tau_{ij}=A_{ij}+\frac{B_{ij}}{T}+E_{ij}\ln T + F_{ij}T 
+            \tau_{ij}=A_{ij}+\frac{B_{ij}}{T}+E_{ij}\ln T + F_{ij}T
             + \frac{G_{ij}}{T^2} + H_{ij}{T^2}
-            
-            
-        These `tau ij` values (and the coefficients) are NOT symmetric 
+
+
+        These `tau ij` values (and the coefficients) are NOT symmetric
         normally.
         '''
 #        tau_coeffs = self.tau_coeffs
         # Zero coefficients if not specified by user
 #        if tau_coeffs is None:
 #            return self.zero_coeffs
-        
-        
+
+
         tau_coeffs_A = self.tau_coeffs_A
         tau_coeffs_B = self.tau_coeffs_B
         tau_coeffs_E = self.tau_coeffs_E
@@ -2923,7 +2923,7 @@ class Nrtl(GammaPhiCaloric):
 
         if tau_coeffs_A is None:
             return self.zero_tau_coeffs_Acoeffs
-        
+
         N, cmps = self.N, self.cmps
         T2 = T*T
         Tinv = 1.0/T
@@ -2950,12 +2950,12 @@ class Nrtl(GammaPhiCaloric):
 #            tausi = taus[i]
 #            tau_coeffs_Bi = tau_coeffs_B[i]
 #            for j in cmps:
-#                tausi[j] += tau_coeffs_Bi[j]*Tinv 
+#                tausi[j] += tau_coeffs_Bi[j]*Tinv
 #        for i in cmps:
 #            tausi = taus[i]
 #            tau_coeffs_Ei = tau_coeffs_E[i]
 #            for j in cmps:
-#                tausi[j] += tau_coeffs_Ei[j]*logT 
+#                tausi[j] += tau_coeffs_Ei[j]*logT
 #        for i in cmps:
 #            tausi = taus[i]
 #            tau_coeffs_Fi = tau_coeffs_F[i]
@@ -2974,15 +2974,15 @@ class Nrtl(GammaPhiCaloric):
         return taus
 
     def dtaus_dT(self, T):
-        r'''Calculate the temperature derivative of the `tau` terms for the 
+        r'''Calculate the temperature derivative of the `tau` terms for the
         NRTL model for a specified temperature.
-        
+
         .. math::
-            \frac{\partial \tau_{ij}} {\partial T}_{P, x_i} = 
-            - \frac{B_{ij}}{T^{2}} + \frac{E_{ij}}{T} + F_{ij} 
+            \frac{\partial \tau_{ij}} {\partial T}_{P, x_i} =
+            - \frac{B_{ij}}{T^{2}} + \frac{E_{ij}}{T} + F_{ij}
             - \frac{2 G_{ij}}{T^{3}} + 2 H_{ij} T
-            
-        These `tau ij` values (and the coefficients) are NOT symmetric 
+
+        These `tau ij` values (and the coefficients) are NOT symmetric
         normally.
         '''
         # Believed all correct but not tested
@@ -2992,12 +2992,12 @@ class Nrtl(GammaPhiCaloric):
         tau_coeffs_G = self.tau_coeffs_G
         tau_coeffs_H = self.tau_coeffs_H
         cmps = self.cmps
-        
+
         Tinv = 1.0/T
         nT2inv = -Tinv*Tinv
         n2T3inv = 2.0*nT2inv*Tinv
         T2 = T + T
-        
+
         dtaus_dT = [list(l) for l in tau_coeffs_F]
         for i in cmps:
             tau_coeffs_Bi = tau_coeffs_B[i]
@@ -3009,19 +3009,19 @@ class Nrtl(GammaPhiCaloric):
             for j in cmps:
                 dtaus_dTi[j] += (nT2inv*tau_coeffs_Bi[j] + Tinv*tau_coeffs_Ei[j]
                 + n2T3inv*tau_coeffs_Gi[j] + T2*tau_coeffs_Hi[j])
-                
+
         return dtaus_dT
 
     def d2taus_dT2(self, T):
-        r'''Calculate the second temperature derivative of the `tau` terms for  
+        r'''Calculate the second temperature derivative of the `tau` terms for
         the NRTL model for a specified temperature.
-        
+
         .. math::
-            \frac{\partial^2 \tau_{ij}} {\partial T^2}_{P, x_i} = 
+            \frac{\partial^2 \tau_{ij}} {\partial T^2}_{P, x_i} =
             \frac{2 B_{ij}}{T^{3}} - \frac{E_{ij}}{T^{2}} + \frac{6 G_{ij}}
             {T^{4}} + 2 H_{ij}
-            
-        These `tau ij` values (and the coefficients) are NOT symmetric 
+
+        These `tau ij` values (and the coefficients) are NOT symmetric
         normally.
         '''
         tau_coeffs_B = self.tau_coeffs_B
@@ -3031,10 +3031,10 @@ class Nrtl(GammaPhiCaloric):
         cmps = self.cmps
 
         d2taus_dT2 = [[h + h for h in l] for l in tau_coeffs_H]
-        
+
         Tinv = 1.0/T
         Tinv2 = Tinv*Tinv
-        
+
         T3inv2 = 2.0*(Tinv2*Tinv)
         nT2inv = -Tinv*Tinv
         T4inv6 = 6.0*(Tinv2*Tinv2)
@@ -3044,21 +3044,21 @@ class Nrtl(GammaPhiCaloric):
             tau_coeffs_Gi = tau_coeffs_G[i]
             d2taus_dT2i = d2taus_dT2[i]
             for j in cmps:
-                d2taus_dT2i[j] += (T3inv2*tau_coeffs_Bi[j] 
+                d2taus_dT2i[j] += (T3inv2*tau_coeffs_Bi[j]
                                    + nT2inv*tau_coeffs_Ei[j]
                                    + T4inv6*tau_coeffs_Gi[j])
         return d2taus_dT2
 
     def d3taus_dT3(self, T):
-        r'''Calculate the third temperature derivative of the `tau` terms for  
+        r'''Calculate the third temperature derivative of the `tau` terms for
         the NRTL model for a specified temperature.
-        
+
         .. math::
-            \frac{\partial^3 \tau_{ij}} {\partial T^3}_{P, x_i} = 
+            \frac{\partial^3 \tau_{ij}} {\partial T^3}_{P, x_i} =
             - \frac{6 B_{ij}}{T^{4}} + \frac{2 E_{ij}}{T^{3}}
             - \frac{24 G_{ij}}{T^{5}}
-            
-        These `tau ij` values (and the coefficients) are NOT symmetric 
+
+        These `tau ij` values (and the coefficients) are NOT symmetric
         normally.
         '''
         tau_coeffs_B = self.tau_coeffs_B
@@ -3067,14 +3067,14 @@ class Nrtl(GammaPhiCaloric):
         N, cmps = self.N, self.cmps
 
         d3taus_dT3 = [[0.0]*N for i in cmps]
-        
+
         Tinv = 1.0/T
         T2inv = Tinv*Tinv
-        
+
         nT4inv6 = -6.0*T2inv*T2inv
         T3inv2 = 2.0*T2inv*Tinv
         T5inv24 = -24.0*(T2inv*T2inv*Tinv)
-        
+
         for i in cmps:
             tau_coeffs_Bi = tau_coeffs_B[i]
             tau_coeffs_Ei = tau_coeffs_E[i]
@@ -3082,42 +3082,42 @@ class Nrtl(GammaPhiCaloric):
             d3taus_dT3i = d3taus_dT3[i]
             for j in cmps:
                 d3taus_dT3i[j] = (nT4inv6*tau_coeffs_Bi[j]
-                                  + T3inv2*tau_coeffs_Ei[j] 
+                                  + T3inv2*tau_coeffs_Ei[j]
                                   + T5inv24*tau_coeffs_Gi[j])
         return d3taus_dT3
 
-                
-                
+
+
     def alphas(self, T):
         '''Calculates the `alpha` terms in the NRTL model for a specified
-        temperature. 
-        
+        temperature.
+
         .. math::
             \alpha_{ij}=c_{ij}+d_{ij}T
-            
+
         `alpha` values (and therefore `cij` and `dij` are normally symmetrical;
         but this is not strictly required.
-            
-        Some sources suggest the c term should be fit to a given system; but 
+
+        Some sources suggest the c term should be fit to a given system; but
         the `d` term should be fit for an entire chemical family to avoid
         overfitting.
-        
-        Recommended values for `cij` according to one source are: 
-    
+
+        Recommended values for `cij` according to one source are:
+
         0.30 Nonpolar substances with nonpolar substances; low deviation from ideality.
         0.20 Hydrocarbons that are saturated interacting with polar liquids that do not associate, or systems that for multiple liquid phases which are immiscible
-        0.47 Strongly self associative systems, interacting with non-polar substances 
-        
+        0.47 Strongly self associative systems, interacting with non-polar substances
+
         `alpha_coeffs` should be a list[list[cij, dij]] so a 3d array
         '''
         # Zero coefficients if not specified by user
-        
+
 #        N = self.N
         cmps = self.cmps
 #        alpha_coeffs = self.alpha_coeffs
 #        if alpha_coeffs is None:
 #            return self.zero_coeffs
-        
+
         alpha_coeffs_c, alpha_coeffs_d = self.alpha_coeffs_c, self.alpha_coeffs_d
 
 #        alphas = [[0.0]*N for i in cmps]
@@ -3137,35 +3137,35 @@ class Nrtl(GammaPhiCaloric):
 #                else:
 #                    c, d = alpha_coeffs_i[j]
 #                    alphas_i[j] = c + d*T
-                
+
         return alphas
-    
+
     def dalphas_dT(self, T):
         return self.alpha_coeffs_d
-    
+
     def d2alphas_dT2(self, T):
         return self.zero_coeffs
-    
+
     def Gs(self, T, alphas=None, taus=None):
         if alphas is None:
             alphas = self.alphas(T)
         if taus is None:
             taus = self.taus(T)
         cmps = self.cmps
-        
+
         Gs = []
         for i in cmps:
             alphasi = alphas[i]
             tausi = taus[i]
             Gs.append([exp(-alphasi[j]*tausi[j]) for j in cmps])
         return Gs
-    
+
     def dGs_dT(self, T, alphas=None, dalphas_dT=None, taus=None, dtaus_dT=None,
                Gs=None):
         '''from sympy import *
         T = symbols('T')
         alpha, tau = symbols('alpha, tau', cls=Function)
-        
+
         diff(exp(-alpha(T)*tau(T)), T)
         '''
         if alphas is None:
@@ -3179,7 +3179,7 @@ class Nrtl(GammaPhiCaloric):
         if Gs is None:
             Gs = self.Gs(T, alphas, taus)
         cmps = self.cmps
-        
+
         dGs_dT = []
         for i in cmps:
             alphasi = alphas[i]
@@ -3187,12 +3187,12 @@ class Nrtl(GammaPhiCaloric):
             dalphasi = dalphas_dT[i]
             dtausi = dtaus_dT[i]
             Gsi = Gs[i]
-            
+
             dGs_dT.append([(-alphasi[j]*dtausi[j] - tausi[j]*dalphasi[j])*Gsi[j]
                     for j in cmps])
         return dGs_dT
-    
-    def d2Gs_dT2(self, T, alphas=None, dalphas_dT=None, taus=None, 
+
+    def d2Gs_dT2(self, T, alphas=None, dalphas_dT=None, taus=None,
                  dtaus_dT=None, d2taus_dT2=None, Gs=None, dGs_dT=None):
         '''from sympy import *
         T = symbols('T')
@@ -3214,10 +3214,10 @@ class Nrtl(GammaPhiCaloric):
         if Gs is None:
             Gs = self.Gs(T, alphas, taus)
 #        if dGs_dT is None:
-#            dGs_dT = self.dGs_dT(T, alphas=alphas, dalphas_dT=dalphas_dT, 
+#            dGs_dT = self.dGs_dT(T, alphas=alphas, dalphas_dT=dalphas_dT,
 #                                 taus=taus, dtaus_dT=dtaus_dT, Gs=Gs)
         cmps = self.cmps
-        
+
         d2Gs_dT2 = []
         for i in cmps:
             alphasi = alphas[i]
@@ -3227,28 +3227,28 @@ class Nrtl(GammaPhiCaloric):
             d2taus_dT2i = d2taus_dT2[i]
             Gsi = Gs[i]
 #            dGs_dTi = dGs_dT[i]
-            
-            
+
+
             d2Gs_dT2_row = []
             for j in cmps:
                 t1 = alphasi[j]*dtausi[j] + tausi[j]*dalphasi[j]
-                
+
                 d2Gs_dT2_row.append((t1*t1 - alphasi[j]*d2taus_dT2i[j] - 2.0*dalphasi[j]*dtausi[j])*exp(-tausi[j]*alphasi[j])) # Gsi[j]
-            
+
             d2Gs_dT2.append(d2Gs_dT2_row)
         return d2Gs_dT2
-    
-    
+
+
     def __init__(self, VaporPressures, tau_coeffs=None, alpha_coeffs=None, Tms=None,
                  Tcs=None, Pcs=None, omegas=None, VolumeLiquids=None, eos=None,
                  eos_mix=None, HeatCapacityLiquids=None,
                  HeatCapacityGases=None,
                  EnthalpyVaporizations=None,
-                 
+
                  **kwargs):
-        
-        
-        
+
+
+
         self.tau_coeffs = tau_coeffs
         if tau_coeffs is not None:
             self.tau_coeffs_A = [[i[0] for i in l] for l in tau_coeffs]
@@ -3272,7 +3272,7 @@ class Nrtl(GammaPhiCaloric):
         else:
             self.alpha_coeffs_c = None
             self.alpha_coeffs_d = None
-        
+
         self.VaporPressures = VaporPressures
         self.Tms = Tms
         self.Tcs = Tcs
@@ -3289,9 +3289,9 @@ class Nrtl(GammaPhiCaloric):
         self.HeatCapacityLiquids = HeatCapacityLiquids
         self.HeatCapacityGases = HeatCapacityGases
         self.EnthalpyVaporizations = EnthalpyVaporizations
-        
+
         self.zero_coeffs_linear = [0.0]*self.N
-        
+
         self.zero_coeffs = [[0.0]*N for _ in range(N)]
 
         if eos:
@@ -3307,12 +3307,12 @@ class WilsonPP(GammaPhiCaloric):
     def lambdas(self, T):
         r'''Calculate the `lambda` terms for the Wilson model for a specified
         temperature.
-        
+
         .. math::
-            \Lambda_{ij} = \exp\left[a_{ij}+\frac{b_{ij}}{T}+c_{ij}\ln T 
+            \Lambda_{ij} = \exp\left[a_{ij}+\frac{b_{ij}}{T}+c_{ij}\ln T
 + d_{ij}T + \frac{e_{ij}}{T^2} + f_{ij}{T^2}\right]
-            
-            
+
+
         These `Lambda ij` values (and the coefficients) are NOT symmetric.
         '''
         # 87% of the time of this routine is the exponential.
@@ -3323,7 +3323,7 @@ class WilsonPP(GammaPhiCaloric):
         lambda_coeffs_E = self.lambda_coeffs_E
         lambda_coeffs_F = self.lambda_coeffs_F
 
-        
+
         N, cmps = self.N, self.cmps
         T2 = T*T
         Tinv = 1.0/T
@@ -3338,8 +3338,8 @@ class WilsonPP(GammaPhiCaloric):
             lambda_coeffs_Di = lambda_coeffs_D[i]
             lambda_coeffs_Ei = lambda_coeffs_E[i]
             lambda_coeffs_Fi = lambda_coeffs_F[i]
-            lambdasi = [exp(lambda_coeffs_Ai[j] + lambda_coeffs_Bi[j]*Tinv 
-                        + lambda_coeffs_Ci[j]*logT + lambda_coeffs_Di[j]*T 
+            lambdasi = [exp(lambda_coeffs_Ai[j] + lambda_coeffs_Bi[j]*Tinv
+                        + lambda_coeffs_Ci[j]*logT + lambda_coeffs_Di[j]*T
                         + lambda_coeffs_Ei[j]*T2inv + lambda_coeffs_Fi[j]*T2)
                         for j in cmps]
             lambdas.append(lambdasi)
@@ -3348,15 +3348,15 @@ class WilsonPP(GammaPhiCaloric):
     def dlambdas_dT(self, T):
         r'''Calculate the temperature derivative of the `lambda` terms for the
         Wilson model for a specified temperature.
-        
+
         .. math::
-            \frac{\partial \Lambda_{ij}}{\partial T} = 
-            \left(2 T h_{ij} + d_{ij} + \frac{c_{ij}}{T} - \frac{b_{ij}}{T^{2}} 
-            - \frac{2 e_{ij}}{T^{3}}\right) e^{T^{2} h_{ij} + T d_{ij} + a_{ij} 
-            + c_{ij} \log{\left(T \right)} + \frac{b_{ij}}{T} 
+            \frac{\partial \Lambda_{ij}}{\partial T} =
+            \left(2 T h_{ij} + d_{ij} + \frac{c_{ij}}{T} - \frac{b_{ij}}{T^{2}}
+            - \frac{2 e_{ij}}{T^{3}}\right) e^{T^{2} h_{ij} + T d_{ij} + a_{ij}
+            + c_{ij} \log{\left(T \right)} + \frac{b_{ij}}{T}
             + \frac{e_{ij}}{T^{2}}}
-            
-            
+
+
         These `Lambda ij` values (and the coefficients) are NOT symmetric.
         '''
         # 87% of the time of this routine is the exponential.
@@ -3366,16 +3366,16 @@ class WilsonPP(GammaPhiCaloric):
         lambda_coeffs_D = self.lambda_coeffs_D
         lambda_coeffs_E = self.lambda_coeffs_E
         lambda_coeffs_F = self.lambda_coeffs_F
-        
+
         cmps = self.cmps
         lambdas = self.lambdas(T)
         dlambdas_dT = []
-        
+
         T2 = T+T
         Tinv = 1.0/T
         nT2inv = -Tinv*Tinv
         nT3inv2 = 2.0*nT2inv*Tinv
-        
+
         for i in cmps:
             lambdasi = lambdas[i]
 #            lambda_coeffs_Ai = lambda_coeffs_A[i]
@@ -3394,33 +3394,33 @@ class WilsonPP(GammaPhiCaloric):
     def d2lambdas_dT2(self, T):
         r'''Calculate the second temperature derivative of the `lambda` terms
          for the Wilson model for a specified temperature.
-        
+
         .. math::
-            \frac{\partial^2 \Lambda_{ij}}{\partial^2 T} = 
+            \frac{\partial^2 \Lambda_{ij}}{\partial^2 T} =
             \left(2 f_{ij} + \left(2 T f_{ij} + d_{ij} + \frac{c_{ij}}{T}
-            - \frac{b_{ij}}{T^{2}} - \frac{2 e_{ij}}{T^{3}}\right)^{2} 
-                - \frac{c_{ij}}{T^{2}} + \frac{2 b_{ij}}{T^{3}} 
-                + \frac{6 e_{ij}}{T^{4}}\right) e^{T^{2} f_{ij} + T d_{ij} 
-                + a_{ij} + c_{ij} \log{\left(T \right)} + \frac{b_{ij}}{T} 
+            - \frac{b_{ij}}{T^{2}} - \frac{2 e_{ij}}{T^{3}}\right)^{2}
+                - \frac{c_{ij}}{T^{2}} + \frac{2 b_{ij}}{T^{3}}
+                + \frac{6 e_{ij}}{T^{4}}\right) e^{T^{2} f_{ij} + T d_{ij}
+                + a_{ij} + c_{ij} \log{\left(T \right)} + \frac{b_{ij}}{T}
                 + \frac{e_{ij}}{T^{2}}}
-            
-            
+
+
         These `Lambda ij` values (and the coefficients) are NOT symmetric.
         '''
         lambda_coeffs_B = self.lambda_coeffs_B
         lambda_coeffs_C = self.lambda_coeffs_C
         lambda_coeffs_E = self.lambda_coeffs_E
         lambda_coeffs_F = self.lambda_coeffs_F
-        
+
         cmps = self.cmps
         lambdas = self.lambdas(T)
         dlambdas_dT = self.dlambdas_dT(T)
-        
+
         Tinv = 1.0/T
         nT2inv = -Tinv*Tinv
         T3inv2 = 2.0*Tinv*Tinv*Tinv
 #        T4inv6 = 3.0*T3inv2*Tinv
-        
+
         T4inv6 = 6.0*Tinv*Tinv*Tinv*Tinv
 
         d2lambdas_dT2s = []
@@ -3437,40 +3437,40 @@ class WilsonPP(GammaPhiCaloric):
                                )*lambdasi[j] for j in cmps]
             d2lambdas_dT2s.append(d2lambdas_dT2i)
         return d2lambdas_dT2s
-        
+
     def d3lambdas_dT3(self, T):
         r'''Calculate the third temperature derivative of the `lambda` terms
          for the Wilson model for a specified temperature.
-        
+
         .. math::
-            \frac{\partial^3 \Lambda_{ij}}{\partial^3 T} = 
-            \left(3 \left(2 f_{ij} - \frac{c_{ij}}{T^{2}} + \frac{2 b_{ij}}{T^{3}} 
+            \frac{\partial^3 \Lambda_{ij}}{\partial^3 T} =
+            \left(3 \left(2 f_{ij} - \frac{c_{ij}}{T^{2}} + \frac{2 b_{ij}}{T^{3}}
             + \frac{6 e_{ij}}{T^{4}}\right) \left(2 T f_{ij} + d_{ij}
-            + \frac{c_{ij}}{T} - \frac{b_{ij}}{T^{2}} - \frac{2 e_{ij}}{T^{3}}\right) 
+            + \frac{c_{ij}}{T} - \frac{b_{ij}}{T^{2}} - \frac{2 e_{ij}}{T^{3}}\right)
             + \left(2 T f_{ij} + d_{ij} + \frac{c_{ij}}{T} - \frac{b_{ij}}{T^{2}}
-            - \frac{2 e_{ij}}{T^{3}}\right)^{3} - \frac{2 \left(- c_{ij} 
+            - \frac{2 e_{ij}}{T^{3}}\right)^{3} - \frac{2 \left(- c_{ij}
             + \frac{3 b_{ij}}{T} + \frac{12 e_{ij}}{T^{2}}\right)}{T^{3}}\right)
             e^{T^{2} f_{ij} + T d_{ij} + a_{ij} + c_{ij} \log{\left(T \right)}
             + \frac{b_{ij}}{T} + \frac{e_{ij}}{T^{2}}}
-            
+
         These `Lambda ij` values (and the coefficients) are NOT symmetric.
         '''
         lambda_coeffs_B = self.lambda_coeffs_B
         lambda_coeffs_C = self.lambda_coeffs_C
         lambda_coeffs_E = self.lambda_coeffs_E
         lambda_coeffs_F = self.lambda_coeffs_F
-        
+
         cmps = self.cmps
         lambdas = self.lambdas(T)
         dlambdas_dT = self.dlambdas_dT(T)
-        
+
         Tinv = 1.0/T
         nT2inv = -Tinv*Tinv
         T3inv2 = 2.0*Tinv*Tinv*Tinv
 #        T4inv6 = 3.0*T3inv2*Tinv
-        
+
         T4inv6 = 6.0*Tinv*Tinv*Tinv*Tinv
-        
+
         T2_12 = 12.0*Tinv*Tinv
 
         d3lambdas_dT3s = []
@@ -3485,14 +3485,14 @@ class WilsonPP(GammaPhiCaloric):
             for j in cmps:
                 term2 = (2.0*lambda_coeffs_Fi[j] + nT2inv*lambda_coeffs_Ci[j]
                          + T3inv2*lambda_coeffs_Bi[j] + T4inv6*lambda_coeffs_Ei[j])
-                
+
                 term3 = dlambdas_dTi[j]/lambdasi[j]
-                
+
                 term4 = (T3inv2*(lambda_coeffs_Ci[j] - 3.0*lambda_coeffs_Bi[j]*Tinv
                          - T2_12*lambda_coeffs_Ei[j]))
-                
+
                 d3lambdas_dT3is.append((3.0*term2*term3 + term3*term3*term3 + term4)*lambdasi[j])
-            
+
             d3lambdas_dT3s.append(d3lambdas_dT3is)
         return d3lambdas_dT3s
 
@@ -3507,27 +3507,27 @@ class WilsonPP(GammaPhiCaloric):
                 tot += xs[j]*lambdas[i][j]
             main_tot += xs[i]*log(tot)
         return -main_tot*R*T
-    
+
     def dGE_dT(self, T, xs):
         r'''
-        
+
         .. math::
             \frac{\partial G^E}{\partial T} = -R\sum_i x_i \log\left(\sum_j x_i \Lambda_{ij}\right)
             -RT\sum_i \frac{x_i \sum_j x_j \frac{\Lambda _{ij}}{\partial T}}{\sum_j x_j \Lambda_{ij}}
         '''
-        
+
         '''from sympy import *
         N = 4
         R, T = symbols('R, T')
         x1, x2, x3, x4 = symbols('x1, x2, x3, x4')
         xs = [x1, x2, x3, x4]
-        
+
         Lambda11, Lambda12, Lambda13, Lambda14, Lambda21, Lambda22, Lambda23, Lambda24, Lambda31, Lambda32, Lambda33, Lambda34, Lambda41, Lambda42, Lambda43, Lambda44 = symbols(
             'Lambda11, Lambda12, Lambda13, Lambda14, Lambda21, Lambda22, Lambda23, Lambda24, Lambda31, Lambda32, Lambda33, Lambda34, Lambda41, Lambda42, Lambda43, Lambda44', cls=Function)
-        Lambda_ijs = [[Lambda11(T), Lambda12(T), Lambda13(T), Lambda14(T)], 
+        Lambda_ijs = [[Lambda11(T), Lambda12(T), Lambda13(T), Lambda14(T)],
                    [Lambda21(T), Lambda22(T), Lambda23(T), Lambda24(T)],
-                   [Lambda31(T), Lambda32(T), Lambda33(T), Lambda34(T)], 
-                   [Lambda41(T), Lambda42(T), Lambda43(T), Lambda44(T)]]    
+                   [Lambda31(T), Lambda32(T), Lambda33(T), Lambda34(T)],
+                   [Lambda41(T), Lambda42(T), Lambda43(T), Lambda44(T)]]
         ge = 0
         for i in range(N):
             num = 0
@@ -3535,15 +3535,15 @@ class WilsonPP(GammaPhiCaloric):
                 num += Lambda_ijs[i][j]*xs[j]
             ge -= xs[i]*log(num)
         ge = ge*R*T
-        
-        
+
+
         diff(ge, T)
         '''
         cmps = self.cmps
         lambdas = self.lambdas(T)
         dlambdas_dT = self.dlambdas_dT(T)
         RT = T*R
-        
+
         xj_Lambdas_ijs = []
         for i in cmps:
             tot = 0.0
@@ -3558,20 +3558,20 @@ class WilsonPP(GammaPhiCaloric):
                 tot += xs[j]*dlambdas_dT[i][j]
             xj_dLambdas_dTijs.append(tot)
 
-        
+
         # First term, with log
         tot = 0.0
         for i in cmps:
             tot += xs[i]*log(xj_Lambdas_ijs[i])
         tot *= -R
-        
+
         # Second term
         sum1 = 0.0
         for i in cmps:
             sum1 += xs[i]*xj_dLambdas_dTijs[i]/xj_Lambdas_ijs[i]
         tot -= RT*sum1
         return tot
-            
+
     def d2GE_dT2(self, T, xs):
         r'''
         .. math::
@@ -3586,8 +3586,8 @@ class WilsonPP(GammaPhiCaloric):
         lambdas = self.lambdas(T)
         dlambdas_dT = self.dlambdas_dT(T)
         d2lambdas_dT2 = self.d2lambdas_dT2(T)
-        
-        
+
+
         xj_Lambdas_ijs = []
         for i in cmps:
             tot = 0.0
@@ -3613,7 +3613,7 @@ class WilsonPP(GammaPhiCaloric):
         sum1 = 0.0
         for i in cmps:
             sum1 += xs[i]*xj_dLambdas_dTijs[i]/xj_Lambdas_ijs[i]
-            
+
         sum0 = 0.0
         for i in cmps:
             sum0 += (xs[i]*xj_d2Lambdas_dT2ijs[i]/xj_Lambdas_ijs[i]
@@ -3633,14 +3633,14 @@ class WilsonPP(GammaPhiCaloric):
             - \frac{3x_i (\sum_j x_j \frac{\partial \Lambda_{ij}^2}{\partial T^2})  (\sum_j x_j \frac{\partial \Lambda_{ij}}{\partial T})}{(\sum_j x_j \Lambda_{ij})^2}
             + 2\frac{x_i(\sum_j x_j \frac{\partial \Lambda_{ij}}{\partial T})^3}{(\sum_j x_j \Lambda_{ij})^3}
             \right)\right]
-            
+
         '''
         cmps = self.cmps
         lambdas = self.lambdas(T)
         dlambdas_dT = self.dlambdas_dT(T)
         d2lambdas_dT2 = self.d2lambdas_dT2(T)
         d3lambdas_dT3 = self.d3lambdas_dT3(T)
-        
+
         xj_Lambdas_ijs = []
         for i in cmps:
             tot = 0.0
@@ -3678,23 +3678,23 @@ class WilsonPP(GammaPhiCaloric):
         sum_d3 = 0.0
         for i in cmps:
             sum_d3 += xs[i]*xj_d3Lambdas_dT3ijs[i]/xj_Lambdas_ijs[i]
-            
+
         sum_comb = 0.0
         for i in cmps:
             sum_comb += 3.0*xs[i]*xj_d2Lambdas_dT2ijs[i]*xj_dLambdas_dTijs[i]/(xj_Lambdas_ijs[i]*xj_Lambdas_ijs[i])
-        
+
         sum_last = 0.0
         for i in cmps:
             sum_last += 2.0*xs[i]*(xj_dLambdas_dTijs[i])**3/(xj_Lambdas_ijs[i]*xj_Lambdas_ijs[i]*xj_Lambdas_ijs[i])
-            
+
         return -R*(3.0*sum0 + T*(sum_d3 - sum_comb + sum_last))
-        
+
     def d2GE_dTdxs(self, T, xs):
         r'''
-        
+
         .. math::
-            \frac{\partial^2 G^E}{\partial x_k \partial T} = -R\left[T\left(   
-            \sum_i  \left(\frac{x_i \frac{\partial n_{ik}}{\partial T}}{\sum_j x_j \Lambda_{ij}} 
+            \frac{\partial^2 G^E}{\partial x_k \partial T} = -R\left[T\left(
+            \sum_i  \left(\frac{x_i \frac{\partial n_{ik}}{\partial T}}{\sum_j x_j \Lambda_{ij}}
             - \frac{x_i \Lambda_{ik} (\sum_j x_j \frac{\partial \Lambda_{ij}}{\partial T} )}{(\partial_j x_j \Lambda_{ij})^2}
             \right) + \frac{\sum_i x_i \frac{\partial \Lambda_{ki}}{\partial T}}{\sum_j x_j \Lambda_{kj}}
             \right)
@@ -3706,8 +3706,8 @@ class WilsonPP(GammaPhiCaloric):
         lambdas = self.lambdas(T)
         dlambdas_dT = self.dlambdas_dT(T)
         d2lambdas_dT2 = self.d2lambdas_dT2(T)
-        
-        
+
+
         xj_Lambdas_ijs = []
         for i in cmps:
             tot = 0.0
@@ -3721,31 +3721,31 @@ class WilsonPP(GammaPhiCaloric):
             for j in cmps:
                 tot += xs[j]*dlambdas_dT[i][j]
             xj_dLambdas_dTijs.append(tot)
-        
-        
+
+
         d2GE_dTdxs = []
         for k in cmps:
             tot1 = 0.0
             for i in cmps:
-                tot1 += (xs[i]*dlambdas_dT[i][k]/xj_Lambdas_ijs[i] 
+                tot1 += (xs[i]*dlambdas_dT[i][k]/xj_Lambdas_ijs[i]
                 - xs[i]*xj_dLambdas_dTijs[i]*lambdas[i][k]/(xj_Lambdas_ijs[i]*xj_Lambdas_ijs[i]))
-            
+
             tot1 += xj_dLambdas_dTijs[k]/xj_Lambdas_ijs[k]
-                
+
             tot2 = 0.0
             for i in cmps:
                 tot2 += xs[i]*lambdas[i][k]/xj_Lambdas_ijs[i]
-            
+
             dG = -R*(T*tot1 + log(xj_Lambdas_ijs[k]) + tot2)
-            
+
             d2GE_dTdxs.append(dG)
         return d2GE_dTdxs
 
-        
-        
+
+
     def dGE_dxs(self, T, xs):
         r'''
-        
+
         .. math::
             \frac{\partial G^E}{\partial x_k} = -RT\left[
             \sum_i \frac{x_i \Lambda_{ik}}{\sum_j \Lambda_{ij}x_j }
@@ -3758,13 +3758,13 @@ class WilsonPP(GammaPhiCaloric):
         R, T = symbols('R, T')
         x1, x2, x3, x4 = symbols('x1, x2, x3, x4')
         xs = [x1, x2, x3, x4]
-        
+
         Lambda11, Lambda12, Lambda13, Lambda14, Lambda21, Lambda22, Lambda23, Lambda24, Lambda31, Lambda32, Lambda33, Lambda34, Lambda41, Lambda42, Lambda43, Lambda44 = symbols(
             'Lambda11, Lambda12, Lambda13, Lambda14, Lambda21, Lambda22, Lambda23, Lambda24, Lambda31, Lambda32, Lambda33, Lambda34, Lambda41, Lambda42, Lambda43, Lambda44', cls=Function)
-        Lambda_ijs = [[Lambda11(T), Lambda12(T), Lambda13(T), Lambda14(T)], 
+        Lambda_ijs = [[Lambda11(T), Lambda12(T), Lambda13(T), Lambda14(T)],
                    [Lambda21(T), Lambda22(T), Lambda23(T), Lambda24(T)],
-                   [Lambda31(T), Lambda32(T), Lambda33(T), Lambda34(T)], 
-                   [Lambda41(T), Lambda42(T), Lambda43(T), Lambda44(T)]]    
+                   [Lambda31(T), Lambda32(T), Lambda33(T), Lambda34(T)],
+                   [Lambda41(T), Lambda42(T), Lambda43(T), Lambda44(T)]]
         ge = 0
         for i in range(N):
             num = 0
@@ -3772,21 +3772,21 @@ class WilsonPP(GammaPhiCaloric):
                 num += Lambda_ijs[i][j]*xs[j]
             ge -= xs[i]*log(num)
         ge = ge*R*T
-        
-        
+
+
         diff(ge, x1)#, diff(ge, x1, x2), diff(ge, x1, x2, x3)
         '''
         cmps = self.cmps
         lambdas = self.lambdas(T)
         mRT = -T*R
-        
+
         xj_Lambdas_ijs = []
         for i in cmps:
             tot = 0.0
             for j in cmps:
                 tot += xs[j]*lambdas[i][j]
             xj_Lambdas_ijs.append(tot)
-        
+
         # k = what is being differentiated with respect to
         dGE_dxs = []
         for k in cmps:
@@ -3794,11 +3794,11 @@ class WilsonPP(GammaPhiCaloric):
             for i in cmps:
                 tot += xs[i]*lambdas[i][k]/xj_Lambdas_ijs[i]
             tot += log(xj_Lambdas_ijs[k])
-            
+
             dGE_dxs.append(mRT*tot)
-            
+
         return dGE_dxs
-        
+
 
     def d2GE_dxixjs(self, T, xs):
         r'''
@@ -3822,7 +3822,7 @@ class WilsonPP(GammaPhiCaloric):
             xj_Lambdas_ijs.append(tot)
 
 
-        
+
         d2GE_dxixjs = []
         for k in cmps:
             dG_row = []
@@ -3845,7 +3845,7 @@ class WilsonPP(GammaPhiCaloric):
             - \frac{\Lambda_{km} \Lambda_{kn}}{(\sum_j x_j \Lambda_{kj})^2}
             - \frac{\Lambda_{mk} \Lambda_{mn}}{(\sum_j x_j \Lambda_{mj})^2}
             - \frac{\Lambda_{nk} \Lambda_{nm}}{(\sum_j x_j \Lambda_{nj})^2}
-            
+
             \right]
         '''
         # Correct, tested with sympy expanding
@@ -3859,9 +3859,9 @@ class WilsonPP(GammaPhiCaloric):
             for j in cmps:
                 tot += xs[j]*lambdas[i][j]
             xj_Lambdas_ijs.append(tot)
-        
+
         xj_Lambdas_ijs_invs = [1.0/i for i in xj_Lambdas_ijs]
-        
+
         # all the same: analytical[i][j][k] = analytical[i][k][j] = analytical[j][i][k] = analytical[j][k][i] = analytical[k][i][j] = analytical[k][j][i] = float(v)
         d2GE_dxixjs = []
         for k in cmps:
@@ -3874,7 +3874,7 @@ class WilsonPP(GammaPhiCaloric):
                         num = 2.0*xs[i]*lambdas[i][k]*lambdas[i][m]*lambdas[i][n]
                         den = xj_Lambdas_ijs_invs[i]*xj_Lambdas_ijs_invs[i]*xj_Lambdas_ijs_invs[i]
                         tot += num*den
-                    
+
                     tot -= lambdas[k][m]*lambdas[k][n]*xj_Lambdas_ijs_invs[k]*xj_Lambdas_ijs_invs[k]
                     tot -= lambdas[m][k]*lambdas[m][n]*xj_Lambdas_ijs_invs[m]*xj_Lambdas_ijs_invs[m]
                     tot -= lambdas[n][m]*lambdas[n][k]*xj_Lambdas_ijs_invs[n]*xj_Lambdas_ijs_invs[n]
@@ -3882,28 +3882,28 @@ class WilsonPP(GammaPhiCaloric):
                 dG_matrix.append(dG_row)
             d2GE_dxixjs.append(dG_matrix)
         return d2GE_dxixjs
-                    
+
     def gammas(self, T, xs, cached=None):
         lambdas = self.lambdas(T)
         return Wilson(xs=xs, params=lambdas)
-    
-        
 
-        
-        
-        
-        
-                    
+
+
+
+
+
+
+
     def __init__(self, VaporPressures, lambda_coeffs=None, Tms=None,
                  Tcs=None, Pcs=None, omegas=None, VolumeLiquids=None, eos=None,
                  eos_mix=None, HeatCapacityLiquids=None,
                  HeatCapacityGases=None,
                  EnthalpyVaporizations=None,
-                 
+
                  **kwargs):
-        
-        
-        
+
+
+
         self.lambda_coeffs = lambda_coeffs
         if lambda_coeffs is not None:
             self.lambda_coeffs_A = [[i[0] for i in l] for l in lambda_coeffs]
@@ -3919,7 +3919,7 @@ class WilsonPP(GammaPhiCaloric):
             self.lambda_coeffs_D = None
             self.lambda_coeffs_E = None
             self.lambda_coeffs_F = None
-        
+
         self.VaporPressures = VaporPressures
         self.Tms = Tms
         self.Tcs = Tcs
@@ -3936,16 +3936,16 @@ class WilsonPP(GammaPhiCaloric):
         self.HeatCapacityLiquids = HeatCapacityLiquids
         self.HeatCapacityGases = HeatCapacityGases
         self.EnthalpyVaporizations = EnthalpyVaporizations
-        
+
         self.zero_coeffs_linear = [0.0]*self.N
-        
+
         self.zero_coeffs = [[0.0]*N for _ in range(N)]
 
         if eos:
             self.eos_pure_instances = [eos(Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], T=Tcs[i]*0.5, P=Pcs[i]*0.1) for i in self.cmps]
 
 
-        
+
 class Unifac(GammaPhi):
     '''
     '''
@@ -3970,9 +3970,9 @@ class Unifac(GammaPhi):
 
         if eos:
             self.eos_pure_instances = [eos(Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], T=Tcs[i]*0.5, P=Pcs[i]*0.1) for i in self.cmps]
-        
+
         self.cache_unifac_inputs()
-        
+
     def cache_unifac_inputs(self):
         # Pre-calculate some of the inputs UNIFAC uses
         self.rs = []
@@ -3985,7 +3985,7 @@ class Unifac(GammaPhi):
                 qi += self.subgroup_data[group].Q*count
             self.rs.append(ri)
             self.qs.append(qi)
-        
+
 
         self.group_counts = {}
         for groups in self.UNIFAC_groups:
@@ -4005,13 +4005,13 @@ class UnifacDortmund(Unifac):
     subgroup_data = DOUFSG
 
     def gammas(self, T, xs, cached=None):
-        return UNIFAC_gammas(chemgroups=self.UNIFAC_groups, T=T, xs=xs, 
+        return UNIFAC_gammas(chemgroups=self.UNIFAC_groups, T=T, xs=xs,
                       cached=self.UNIFAC_cached_inputs,
                       subgroup_data=DOUFSG, interaction_data=unifac.DOUFIP2006, modified=True)
 
 
 class UnifacCaloric(Unifac, GammaPhiCaloric):
-        
+
     def __init__(self, VaporPressures, eos=None, **kwargs):
         self.cmps = range(len(VaporPressures))
         self.N = len(VaporPressures)
@@ -4020,14 +4020,14 @@ class UnifacCaloric(Unifac, GammaPhiCaloric):
         self.__dict__.update(kwargs)
         self.kwargs = {'VaporPressures': VaporPressures, 'eos': eos}
         self.kwargs.update(kwargs)
-        
+
         if eos:
             self.eos_pure_instances = [eos(Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i], T=self.Tcs[i]*0.5, P=self.Pcs[i]*0.1) for i in self.cmps]
-        
+
         self.cache_unifac_inputs()
 
 class UnifacDortmundCaloric(UnifacDortmund, GammaPhiCaloric):
-        
+
     def __init__(self, VaporPressures, eos=None, **kwargs):
         self.cmps = range(len(VaporPressures))
         self.N = len(VaporPressures)
@@ -4036,16 +4036,16 @@ class UnifacDortmundCaloric(UnifacDortmund, GammaPhiCaloric):
         self.__dict__.update(kwargs)
         self.kwargs = {'VaporPressures': VaporPressures, 'eos': eos}
         self.kwargs.update(kwargs)
-        
+
         if eos:
             self.eos_pure_instances = [eos(Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i], T=self.Tcs[i]*0.5, P=self.Pcs[i]*0.1) for i in self.cmps]
-        
+
         self.cache_unifac_inputs()
 
 
 class GceosBase(Ideal):
     # TodO move to own class
-    
+
     pure_guesses = True
     Wilson_guesses = True
     random_guesses = False
@@ -4053,10 +4053,10 @@ class GceosBase(Ideal):
     stability_maxiter = 500 # 30 good professional default; 500 used in source DTU
 #    stability_xtol = 5E-9 # 1e-12 was too strict; 1e-10 used in source DTU; 1e-9 set for some points near critical where convergence stopped; even some more stopped at higher Ts
     stability_xtol = 1e-10
-    substitution_maxiter =  100 # 1000 # 
+    substitution_maxiter =  100 # 1000 #
 #    substitution_xtol = 1e-7 # 1e-10 too strict
     substitution_xtol = 1e-12 #new, fugacity ratio - root based tolerance
-    def __init__(self, eos_mix=PRMIX, VaporPressures=None, Tms=None, Tbs=None, 
+    def __init__(self, eos_mix=PRMIX, VaporPressures=None, Tms=None, Tbs=None,
                  Tcs=None, Pcs=None, omegas=None, kijs=None, eos_kwargs=None,
                  HeatCapacityGases=None, MWs=None, atomss=None,
                  eos=None, Hfs=None, Gfs=None,
@@ -4074,14 +4074,14 @@ class GceosBase(Ideal):
         self.N = len(VaporPressures)
         self.cmps = range(self.N)
         self.HeatCapacityGases = HeatCapacityGases
-        
+
         self.Hfs = Hfs
         self.Gfs = Gfs
         if Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
             self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
 
         self.stability_tester = StabilityTester(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas)
-        
+
         self.kwargs = kwargs
         self.kwargs['HeatCapacityGases'] = HeatCapacityGases
         self.kwargs['VaporPressures'] = VaporPressures
@@ -4090,13 +4090,13 @@ class GceosBase(Ideal):
         self.kwargs['Pcs'] = Pcs
         self.kwargs['omegas'] = omegas
         self.kwargs['kijs'] = kijs
-        
+
         self.MWs = MWs
         self.atomss = atomss
-        
+
         if atomss is not None:
             self.n_atoms = [sum(i.values()) for i in atomss]
-        
+
         # No `zs`
 #        self.eos_mix_ref = self.eos_mix(T=self.T_REF_IG, P=self.P_REF_IG, Tcs=self.Tcs, Pcs=self.Pcs, kijs=self.kijs, **self.eos_kwargs)
     def eos_pure_ref(self, i=None):
@@ -4113,10 +4113,10 @@ class GceosBase(Ideal):
             eos_pure_refs = []
             for idx in self.cmps:
                 eos_pure = eos_base.to_TPV_pure(T=fake_T, P=fake_P, V=None, i=idx)
-                
+
                 eos_pure_refs.append(eos_pure)
             self.eos_pure_refs = eos_pure_refs
-            
+
             if i is None:
                 return self.eos_pure_refs
             else:
@@ -4135,7 +4135,7 @@ class GceosBase(Ideal):
 #                eos_base = self.eos_g
 #        except:
 #            eos_base = self.to_TP_zs(T=T, P=fake_P, zs=fake_zs)
-        
+
 #        for i in self.cmps:
 #            eos_pure = eos_base.to_TP_pure(T, fake_P, i)
 #            Psats.append(eos_pure.Psat(T))
@@ -4165,7 +4165,7 @@ class GceosBase(Ideal):
 #                eos_base = self.eos_g
 #        except:
 #            eos_base = self.to_TP_zs(T=fake_T, P=P, zs=fake_zs)
-#        
+#
 #        for i in self.cmps:
 #            eos_pure = eos_base.to_TP_pure(fake_T, P, i)
 #            Tsats.append(eos_pure.Tsat(P))
@@ -4179,7 +4179,7 @@ class GceosBase(Ideal):
         T_REF_IG = self.T_REF_IG
         HeatCapacityGases = self.HeatCapacityGases
         cmps = self.cmps
-        
+
         if phase == 'g':
             for zi, obj in zip(zs, HeatCapacityGases):
                 H += zi*obj.T_dependent_property(T)
@@ -4201,8 +4201,8 @@ class GceosBase(Ideal):
         elif phase == 'l/g':
             raise ValueError
         return H
-    
-    
+
+
     def dH_dP(self, P, T, V_over_F, zs, xs, ys, eos_l, eos_g, phase):
         dH = 0.0
         if phase == 'g':
@@ -4227,7 +4227,7 @@ class GceosBase(Ideal):
         T_REF_IG = self.T_REF_IG
         HeatCapacityGases = self.HeatCapacityGases
         cmps = self.cmps
-        
+
         if phase == 'g' or V_over_F == 1.0:
             for zi, obj in zip(zs, HeatCapacityGases):
                 H += zi*obj.T_dependent_property_integral(T_REF_IG, T)
@@ -4247,12 +4247,12 @@ class GceosBase(Ideal):
                 H_l = eos_l.H_dep_l
             except AttributeError:
                 H_l = eos_l.H_dep_g
-            
+
             try:
                 H_g = eos_g.H_dep_g
             except AttributeError:
                 H_g = eos_g.H_dep_l
-            
+
             dH_integrals = [obj.T_dependent_property_integral(T_REF_IG, T)for obj in HeatCapacityGases]
             for xi, yi, dH in zip(xs, ys, dH_integrals):
                 H_g += yi*dH
@@ -4287,7 +4287,7 @@ class GceosBase(Ideal):
                 S += eos_l.dS_dep_dT_g
         elif phase == 'l/g':
             raise ValueError
-                
+
         return S
 
     def dS_dP(self, P, T, V_over_F, zs, xs, ys, eos_l, eos_g, phase):
@@ -4306,10 +4306,10 @@ class GceosBase(Ideal):
                 dS += eos_l.dS_dep_dP_g
         elif phase == 'l/g':
             raise ValueError
-                
+
         return dS
-        
-        
+
+
     def entropy_eosmix(self, T, P, V_over_F, zs, xs, ys, eos_l, eos_g, phase):
         HeatCapacityGases = self.HeatCapacityGases
         cmps = self.cmps
@@ -4329,7 +4329,7 @@ class GceosBase(Ideal):
                 S += eos_g.S_dep_g
             except AttributeError:
                 S += eos_g.S_dep_l
-                
+
         elif phase == 'l' or V_over_F == 0.0:
             S -= R*sum([zi*log(zi) for zi in zs if zi > 0.0]) # ideal composition entropy composition
             S -= R*log(P*P_REF_IG_INV)
@@ -4340,7 +4340,7 @@ class GceosBase(Ideal):
                 S += eos_l.S_dep_l
             except AttributeError:
                 S += eos_l.S_dep_g
-            
+
         elif phase == 'l/g':
             S_l = 0.0
             for xi in xs:
@@ -4357,7 +4357,7 @@ class GceosBase(Ideal):
                 except ValueError:
                     pass
             S_g *= -R
-                        
+
             mRlogPratio = -R*log(P*P_REF_IG_INV)
             S_l += mRlogPratio
             S_g += mRlogPratio
@@ -4365,7 +4365,7 @@ class GceosBase(Ideal):
                 dS = HeatCapacityGases[i].T_dependent_property_integral_over_T(T_REF_IG, T)
                 S_g += ys[i]*dS
                 S_l += xs[i]*dS
-            
+
             S_g += eos_g.S_dep_g
             S_l += eos_l.S_dep_l
             S = S_g*V_over_F + S_l*(1.0 - V_over_F)
@@ -4374,15 +4374,15 @@ class GceosBase(Ideal):
     @property
     def Hlm_dep(self):
         return self.eos_l.H_dep_l
-    
+
     @property
     def Hgm_dep(self):
         return self.eos_g.H_dep_g
-    
+
     @property
     def Slm_dep(self):
         return self.eos_l.S_dep_l
-    
+
     @property
     def Sgm_dep(self):
         return self.eos_g.S_dep_g
@@ -4390,33 +4390,33 @@ class GceosBase(Ideal):
     @property
     def Cplm_dep(self):
         return self.eos_l.Cp_dep_l
-    
+
     @property
     def Cpgm_dep(self):
         return self.eos_g.Cp_dep_g
-    
+
     @property
     def Cvlm_dep(self):
         return self.eos_l.Cv_dep_l
-    
+
     @property
     def Cvgm_dep(self):
         return self.eos_g.Cv_dep_g
-    
+
     @property
     def Cpgm(self):
         Cp = 0.0
         for i in self.cmps:
             Cp += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property(self.T)
         return Cp + self.Cpgm_dep
-    
+
     @property
     def Cplm(self):
         Cp = 0.0
         for i in self.cmps:
             Cp += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property(self.T)
         return Cp + self.Cplm_dep
-    
+
     @property
     def Cvgm(self):
         return self.Cpgm - Cp_minus_Cv(T=self.T, dP_dT=self.eos_g.dP_dT_g, dP_dV=self.eos_g.dP_dV_g)
@@ -4453,7 +4453,7 @@ class GceosBase(Ideal):
                   pass
             else:
                 raise Exception('Flash inputs unsupported')
-                
+
             self.P = P
             self.T = T
             self.V_over_F = VF
@@ -4462,7 +4462,7 @@ class GceosBase(Ideal):
             self.phase = phase
             self.Hm = Hm
             self.Sm = Sm
-    
+
 #            ''' The routine needs to be upgraded to set these properties
 #                self.T = T
 #                self.P = P
@@ -4506,22 +4506,22 @@ class GceosBase(Ideal):
                 self.eos_g = self.to_TP_zs(self.T, self.P, self.ys)
         # Cannot derive other properties with this
         try:
-            self.Hm = self.enthalpy_eosmix(T=self.T, P=self.P, V_over_F=self.V_over_F, 
-                                          zs=self.zs, xs=self.xs, ys=self.ys, 
-                                          eos_l=self.eos_l, eos_g=self.eos_g, 
+            self.Hm = self.enthalpy_eosmix(T=self.T, P=self.P, V_over_F=self.V_over_F,
+                                          zs=self.zs, xs=self.xs, ys=self.ys,
+                                          eos_l=self.eos_l, eos_g=self.eos_g,
                                           phase=self.phase)
-            self.Sm = self.entropy_eosmix(T=self.T, P=self.P, V_over_F=self.V_over_F, 
-                                          zs=self.zs, xs=self.xs, ys=self.ys, 
-                                          eos_l=self.eos_l, eos_g=self.eos_g, 
+            self.Sm = self.entropy_eosmix(T=self.T, P=self.P, V_over_F=self.V_over_F,
+                                          zs=self.zs, xs=self.xs, ys=self.ys,
+                                          eos_l=self.eos_l, eos_g=self.eos_g,
                                           phase=self.phase)
             self.Gm = self.Hm - self.T*self.Sm if (self.Hm is not None and self.Sm is not None) else None
         except Exception as e:
             print(e)
             pass
-    
+
     def to_TP_zs(self, T, P, zs, fugacities=True, only_l=False, only_g=False):
         return self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
-                            zs=zs, kijs=self.kijs, T=T, P=P, 
+                            zs=zs, kijs=self.kijs, T=T, P=P,
                             fugacities=fugacities, only_l=only_l,
                             only_g=only_g, **self.eos_kwargs)
 
@@ -4530,15 +4530,15 @@ class GceosBase(Ideal):
         "From 5.9: Multiphase Split and Stability Analysis"
         phase, xs, ys, beta_y = self.flash_TP_zs(T=T, P=P, zs=zs)
         eos_l, eos_g = self.eos_l, self.eos_g
-        
+
         Ks_y = [yi/xi for yi, xi in zip(ys, xs)]
         print('2PHASE KS', Ks_y)
-        
+
         # TODO only call stability test on heavier MW phase
         def is_stable():
             stable, Ks_initial, Ks_extra = eos_l.stability_Michelsen(T=T, P=P, zs=zs,
-                                                      Ks_initial=None, 
-                                                      maxiter=self.stability_maxiter, 
+                                                      Ks_initial=None,
+                                                      maxiter=self.stability_maxiter,
                                                       xtol=self.stability_xtol)
             if not stable:
                 return stable, Ks_extra[-1]
@@ -4546,47 +4546,47 @@ class GceosBase(Ideal):
 #            print('RESULTS ZS', stable, Ks_initial, Ks_extra)
 
             stable, Ks_initial, Ks_extra = eos_l.stability_Michelsen(T=T, P=P, zs=ys,
-                                                      Ks_initial=None, 
-                                                      maxiter=self.stability_maxiter, 
+                                                      Ks_initial=None,
+                                                      maxiter=self.stability_maxiter,
                                                       xtol=self.stability_xtol)
 #            print('RESULTS YS', stable, Ks_initial, Ks_extra)
             if not stable:
                 return stable, Ks_extra[-1]
-            
+
             stable, Ks_initial, Ks_extra = eos_l.stability_Michelsen(T=T, P=P, zs=xs,
-                                                      Ks_initial=None, 
-                                                      maxiter=self.stability_maxiter, 
+                                                      Ks_initial=None,
+                                                      maxiter=self.stability_maxiter,
                                                       xtol=self.stability_xtol)
 #            print('RESULTS XS', stable, Ks_initial, Ks_extra)
 #            print('DONE STABLE PART')
-            
+
             return stable, Ks_extra[-1]
         stable, Ks_z = is_stable()
 #        print(stable, Ks_z, comp_test)
 #        Ks_z = [zi/xi for xi, zi in zip(xs, comp_test)]
 #        print(Ks_z, Ks_y)
-        
+
         print('DOING RR2 with Ks', Ks_y, Ks_z)
-        beta_y, beta_z, xs, ys, zs = Rachford_Rice_solution2(zs, Ks_y=Ks_y, 
+        beta_y, beta_z, xs, ys, zs = Rachford_Rice_solution2(zs, Ks_y=Ks_y,
                                                              Ks_z=Ks_z)
         print('done RR2; betas', beta_y, beta_z, 'fractions', xs, ys, zs)
-#        
+#
 ##        beta_z, _, _ = flash_inner_loop(comp_test, Ks_z)
 #        print(beta_z, 'beta_z', 'beta_y', beta_y)
-        
+
 # Try to hardcode them
 #        Ks_y = []
-        
+
         print(eos_l.sequential_substitution_3P(Ks_y, Ks_z, beta_y, beta_z=beta_z))
-        
-        
+
+
     def stability_test_VL(self, T, P, zs, require_convergence=False,
                           eos=None):
         if eos is None:
             eos = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
-        
+
         stable = True
-        guess_generator = self.stability_tester.guess_generator(T=T, P=P, zs=zs, 
+        guess_generator = self.stability_tester.guess_generator(T=T, P=P, zs=zs,
                                                    pure=self.pure_guesses,
                                                    Wilson=self.Wilson_guesses,
                                                    random=self.random_guesses,
@@ -4597,8 +4597,8 @@ class GceosBase(Ideal):
                 # No Ks are duplicated as of 2019-02-18
                 try:
                     stable, Ks_initial, Ks_extra = eos.stability_Michelsen(T=T, P=P, zs=zs,
-                                                              Ks_initial=Ks, 
-                                                              maxiter=self.stability_maxiter, 
+                                                              Ks_initial=Ks,
+                                                              maxiter=self.stability_maxiter,
                                                               xtol=self.stability_xtol)
                 except UnconvergedError as e:
                     if require_convergence:
@@ -4631,16 +4631,16 @@ class GceosBase(Ideal):
                 self.eos_g = eos
                 self.info = info
                 return 'g', None, [1.0], 1.0
-        
+
         try:
             G_dep_eos = min(eos.G_dep_l, eos.G_dep_g)
         except:
             G_dep_eos = eos.G_dep_g if hasattr(eos, 'G_dep_g') else eos.G_dep_l
-            
+
         # Fast path - try the flash
         if Wilson_first:
             try:
-                _, _, VF_wilson, xs_wilson, ys_wilson = flash_wilson(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, 
+                _, _, VF_wilson, xs_wilson, ys_wilson = flash_wilson(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                              P=P, T=T)
             except Exception as e:
 #                print('wilson flash init failed')
@@ -4648,9 +4648,9 @@ class GceosBase(Ideal):
 #            print(VF_wilson, xs_wilson, ys_wilson, 'VF_wilson, xs_wilson, ys_wilson')
             if 1e-7 < VF_wilson < 1.0 - 1e-7:
                 try:
-                    VF, xs, ys, eos_l, eos_g = eos.sequential_substitution_VL( 
+                    VF, xs, ys, eos_l, eos_g = eos.sequential_substitution_VL(
                                                 maxiter=self.substitution_maxiter,
-                                                xtol=self.substitution_xtol, 
+                                                xtol=self.substitution_xtol,
                                                 near_critical=True,
                                                 xs=xs_wilson, ys=ys_wilson,
                                                 info=info
@@ -4664,32 +4664,32 @@ class GceosBase(Ideal):
                         G_dep_g = eos_g.G_dep_g
                     except AttributeError:
                         G_dep_g = eos_g.G_dep_l
-                
+
                     # This comparison is not correct
                     G_TP = G_dep_l*(1.0 - VF) + G_dep_g*VF
-                    
+
 #                    print(VF)
                     if VF < 0.0 or VF > 1.0 or G_TP > G_dep_eos:
                         raise ValueError("Wilson flash converged but VF unfeasible or Gibbs energy lower than stable phase")
-                    
+
                     self.eos_l = eos_l
                     self.eos_g = eos_g
-                    
+
                     eos_l.resolve_full_alphas()
                     eos_g.resolve_full_alphas()
-                    
+
                     self.info = info
                     return phase, xs, ys, VF
-                
-                
+
+
                 except Exception as e:
 #                    print(e, 'Wilson flash fail')
                     pass
-        
-        
-        
+
+
+
         stable = True
-        guess_generator = self.stability_tester.guess_generator(T=T, P=P, zs=zs, 
+        guess_generator = self.stability_tester.guess_generator(T=T, P=P, zs=zs,
                                                    pure=self.pure_guesses,
                                                    Wilson=self.Wilson_guesses,
                                                    random=self.random_guesses,
@@ -4701,40 +4701,40 @@ class GceosBase(Ideal):
 #            print(trial_comp)
             for Ks in ([comp_i/zi for comp_i, zi in zip(trial_comp, zs)],
                         [zi/comp_i for comp_i, zi in zip(trial_comp, zs)]):
-                
+
 #                print(Ks)
                 try:
                     stable, Ks_initial, Ks_extra = eos.stability_Michelsen(T=T, P=P, zs=zs,
-                                                              Ks_initial=Ks, 
-                                                              maxiter=self.stability_maxiter, 
+                                                              Ks_initial=Ks,
+                                                              maxiter=self.stability_maxiter,
                                                               xtol=self.stability_xtol)
 #                    print(stable, Ks_initial)
-                
+
                 except UnconvergedError as e:
                     print(e, 'stability failed')
-                    
+
                     pass
                 if not stable:
 #                    print('found not stable with Ks:', Ks)
                     # two phase flash with init Ks
-                    
+
                     try:
-                        VF, xs, ys, eos_l, eos_g = eos.sequential_substitution_VL(Ks_initial=Ks_initial, 
+                        VF, xs, ys, eos_l, eos_g = eos.sequential_substitution_VL(Ks_initial=Ks_initial,
                                             maxiter=self.substitution_maxiter,
-                                            xtol=self.substitution_xtol, 
+                                            xtol=self.substitution_xtol,
                                             near_critical=True,
                                             Ks_extra=Ks_extra,
                                             info=info)
-                        
-                        
+
+
                         G_dep_l = eos_l.G_dep_l if hasattr(eos_l, 'G_dep_l') else eos_l.G_dep_g
                         G_dep_g = eos_g.G_dep_g if hasattr(eos_g, 'G_dep_g') else eos_g.G_dep_l
-                    
+
                         G_TP = G_dep_l*(1.0 - VF) + G_dep_g*VF
-                        
+
                         if VF < 0 or VF > 1 or G_TP > G_dep_eos:
                             raise ValueError("Stability test Ks flash converged but VF unfeasible or Gibbs energy higher than stable phase")
-                        
+
                         self.eos_l = eos_l
                         self.eos_g = eos_g
                         eos_l.resolve_full_alphas()
@@ -4746,18 +4746,18 @@ class GceosBase(Ideal):
 #                        print('failed convergence of SS with Ks', Ks_initial, e, 'T=%g, P=%g, zs=%s' %(T, P, zs))
                         unstable_and_failed_SS = True
                         stable = True
-                
+
 #                print('found stable with Ks:', Ks)
 #        try:
 #            print('liquid gibbs (single phase)', eos.G_dep_l)
 #        except:
 #            print('No liquid phase (pure)')
-            
+
 #        try:
 #            print('vapor gibbs (single phase)', eos.G_dep_g)
 #        except:
 #            print('No vapor phase (pure)')
-#            
+#
 #        print('After stability test, stable=%g' %(stable))
 
         if unstable_and_failed_SS:
@@ -4800,7 +4800,7 @@ class GceosBase(Ideal):
             return 'l/g', [1.0], [1.0], VF, Tsat
 #        elif 1.0 in zs:
 #            raise NotImplemented
-        
+
         if VF == 0:
             xs, ys, VF, T, eos_l, eos_g = self.bubble_T(P=P, zs=zs)
         elif VF == 1:
@@ -4810,15 +4810,15 @@ class GceosBase(Ideal):
             def err(T):
                 eos = self.to_TP_zs(T=T, P=P, zs=zs)
 #                print(eos.zs, 'eos.zs before loop')
-                VF_calc, xs, ys, eos_l, eos_g = eos.sequential_substitution_VL(Ks_initial=None, 
+                VF_calc, xs, ys, eos_l, eos_g = eos.sequential_substitution_VL(Ks_initial=None,
                                                                  maxiter=self.substitution_maxiter,
-                                                                 xtol=self.substitution_xtol, 
+                                                                 xtol=self.substitution_xtol,
                                                                  near_critical=True,
                                                                  xs=xs_guess, ys=ys_guess)
                 res[0] = (VF_calc, xs, ys, eos_l, eos_g)
 #                print(P, VF_calc - VF, res)
                 return VF_calc - VF
-            
+
             _, xs_guess, ys_guess, _, T_guess_as_pure = self.flash_PVF_zs_ideal(P=P, VF=VF, zs=zs)
 #            print(xs_guess, ys_guess, 'hi')
             T = None
@@ -4836,12 +4836,12 @@ class GceosBase(Ideal):
             if T is None:
                 T = float(brenth(err, .9*T_guess_as_pure, 1.1*T_guess_as_pure))
             VF, xs, ys, eos_l, eos_g = res[0]
-            
+
         self.eos_l = eos_l
         self.eos_g = eos_g
         return 'l/g', xs, ys, VF, T
 
-            
+
     def flash_TVF_zs(self, T, VF, zs):
         if not 0 <= VF <= 1:
             raise ValueError("Vapor fraction out of range 0 to 1")
@@ -4864,16 +4864,16 @@ class GceosBase(Ideal):
                 P = float(P)
 #                print('P guess', P)
                 eos = self.to_TP_zs(T=T, P=P, zs=zs)
-                VF_calc, xs, ys, eos_l, eos_g = eos.sequential_substitution_VL(Ks_initial=None, 
+                VF_calc, xs, ys, eos_l, eos_g = eos.sequential_substitution_VL(Ks_initial=None,
                                                                  maxiter=self.substitution_maxiter,
-                                                                 xtol=self.substitution_xtol, 
+                                                                 xtol=self.substitution_xtol,
                                                                  near_critical=True,
                                                                  xs=xs_guess, ys=ys_guess
                                                                  )
                 res[0] = (VF_calc, xs, ys, eos_l, eos_g)
 #                print(P, VF_calc - VF, res)
                 return VF_calc - VF
-            
+
             _, xs_guess, ys_guess, _, P_guess_as_pure = self.flash_TVF_zs_ideal(T=T, VF=VF, zs=zs)
             P = None
 #            print('P_guess_as_pure', P_guess_as_pure)
@@ -4897,7 +4897,7 @@ class GceosBase(Ideal):
                     pass
                     # Compute the dew and bubble points
             VF, xs, ys, eos_l, eos_g = res[0]
-            
+
         self.eos_l = eos_l
         self.eos_g = eos_g
         return 'l/g', xs, ys, VF, P
@@ -4905,7 +4905,7 @@ class GceosBase(Ideal):
     def PH_Michelson(self, T_guess, P, zs, H_goal, maxiter=100, tol=1e-6,
                      VF_guess_init=None, damping=1.0, analytical=True,
                      max_T_step=30):
-        
+
         Ks = [Wilson_K_value(T_guess, P, Tci, Pci, omega) for Pci, Tci, omega in
               zip(self.Pcs, self.Tcs, self.omegas)]
         V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
@@ -4939,7 +4939,7 @@ class GceosBase(Ideal):
             HeatCapacityGases = self.HeatCapacityGases
             dH_integrals = Hils = Higs = [obj.T_dependent_property_integral(T_REF_IG, T) for obj in HeatCapacityGases]
             Cpls = Cpgs = [obj.T_dependent_property(T) for obj in HeatCapacityGases]
-            
+
             try:
                 H_dep_g = eos_g.H_dep_g
             except AttributeError:
@@ -4957,7 +4957,7 @@ class GceosBase(Ideal):
                 dH_dep_dT_l = eos_l.dH_dep_dT_l
             except AttributeError:
                 dH_dep_dT_l = eos_l.dH_dep_dT_g
-                
+
             H_g, H_l = H_dep_g, H_dep_l
             for xi, yi, dH in zip(xs, ys, dH_integrals):
                 H_g += yi*dH
@@ -4966,31 +4966,31 @@ class GceosBase(Ideal):
 
 
 
-#            H_calc = self.enthalpy_eosmix(T, P, V_over_F, zs, xs, ys, eos_l, eos_g, 'l/g')    
+#            H_calc = self.enthalpy_eosmix(T, P, V_over_F, zs, xs, ys, eos_l, eos_g, 'l/g')
 #            print(H_calc2, H_calc, T)
             g2 = H_calc - H_goal
-            
+
             lnphis_l = eos_l.eos_lnphis_lowest_Gibbs()[0]
             lnphis_g = eos_g.eos_lnphis_lowest_Gibbs()[0]
-            
+
             Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)]
             g1 = Rachford_Rice_flash_error(V_over_F, zs, Ks)
-            
+
 #            print(T, V_over_F)
-            
+
             store['eos_l'] = eos_l
             store['eos_g'] = eos_g
             store['Ks'] = Ks
             store['xs'] = xs
             store['ys'] = ys
-            
+
             ts = [1.0 + V_over_F*(Ki - 1.0) for Ki in Ks]
-            
-            
+
+
             d_RR1_d_beta1 = 0.0
             for ti, zi, Ki in zip(ts, zs, Ks):
                 d_RR1_d_beta1 -= zi/(ti*ti)*(Ki - 1.0)*(Ki - 1.0)
-                
+
             _, dKs_dT = self.Ks_and_dKs_dT(eos_l, eos_g, xs, ys)
 
             # Derived as follows:
@@ -5005,11 +5005,11 @@ class GceosBase(Ideal):
                 den_inv = 1.0/(V_over_F*(Ki - 1.0) + 1.0)
 #                zi*dK_dTi/(VF*(Ki - 1) + 1)**2
                 d_RR1_dT +=zi*dK_dTi*den_inv*den_inv
-                
+
 #                d_RR1_dT += zi/(ti*ti)*(ti*Ki*dK_dTi - V_over_F*Ki*(Ki - 1.0)*dK_dTi)
-                
+
 #                d_RR1_dT += -V_over_F*zi*(Ki - 1.)*dK_dTi/(V_over_F*(Ki - 1.) + 1.)**2 + zi*dK_dTi/(V_over_F*(Ki - 1.) + 1.)
-            
+
 #            print('start2')
             '''Confirmed easily!
             from sympy import *
@@ -5025,7 +5025,7 @@ class GceosBase(Ideal):
 
 
 
-            
+
             # This is simply not correct!
             # Actually, this is not even used.
 #            tot1, tot2 = 0.0, 0.0
@@ -5033,18 +5033,18 @@ class GceosBase(Ideal):
 #            for dK_dT, zi, Ki in zip(dKs_dT, zs, Ks):
 #                tot1 += zi*dK_dT
 #                tot2 += (1.0 - Ki)*(1.0 - Ki)*zi
-#                
+#
 #            d_beta_d_T = tot1/tot2
 #            d_beta_d_T2 = -d_beta_d_T
-            
+
             delta = 1e-3
             Ks_perturb = [Ki + dKi*delta for Ki, dKi in zip(Ks, dKs_dT)]
             VF_perturb, xs2, ys2 = flash_inner_loop(zs, Ks_perturb, guess=V_over_F)
             d_beta_d_T = (VF_perturb - V_over_F)/delta
             d_beta_d_T2 = -d_beta_d_T
-            
-            
-            
+
+
+
             # Take the composition derivatives from the RR
             dx_dTs = [(x2 - x1)/delta for x1, x2 in zip(xs, xs2)]
             dy_dTs = [(y2 - y1)/delta for y1, y2 in zip(ys, ys2)]
@@ -5087,60 +5087,60 @@ class GceosBase(Ideal):
 
             tot1 = 0.0 # sum Hi(L)*dxi/dT
             tot2 = 0.0 # sum xi*dHil_dT = xi*Cpl
-            
+
             tot3 = 0.0 # sum Hi(g)*dyi_dT
             tot4 = 0.0 # sum yi*dHig_dT = yi*Cpg
-            
+
             # tot5 and tot6 are zero in the first point because of starting at the reference point
             tot5 = 0.0 # sum Hi(g)*yi
             tot6 = 0.0 # sum Hil*xi
             for xi, yi, Hil, Hig, Cpl, Cpg, dxi_dT, dyi_dT in zip(xs, ys, Hils, Higs, Cpls, Cpgs, dx_dTs, dy_dTs):
                 tot1 += Hil*dxi_dT
                 tot2 += xi*Cpl
-                
+
                 tot3 += Hig*dyi_dT
                 tot4 += yi*Cpg
-                
+
 #                print(Hig*yi, Hil*xi, xi, yi, Hig, Hil, 'in loop')
                 tot5 += Hig*yi
                 tot6 += Hil*xi
-                
+
 #            print(d_beta_d_T*(tot5 + H_dep_g), d_beta_d_T*(tot6 + H_dep_l), tot5, H_dep_g, tot6, H_dep_l)
             d_H_dT = ((1.0 - V_over_F)*(tot1 + tot2 + dH_dep_dT_l)
 #                       + d_beta_d_T*(tot5 + H_dep_g)
 #                       - d_beta_d_T*(tot6 + H_dep_l)
                        + V_over_F*(tot3 + tot4 + dH_dep_dT_g))
-            
+
             # Can I finite difference d_H_dT using the xs2, ys2, dH_dep_l and g?
             tot1, tot2, tot3, tot4  = 0.0, 0.0, 0.0, 0.0
-            
+
             # If H_goal is not used as part of the expression, it is the same as one of the ones above
             H_goal_inv = 1.0/H_goal
 #            H_goal_inv = 1.0
             for dK_dT, ti, zi, Ki, dx_dT, dy_dT, obj, xi, yi, dH, Cp in zip(dKs_dT, ts, zs, Ks, dx_dTs, dy_dTs, HeatCapacityGases, xs, ys, dH_integrals, Cpls):
                 x1 = dH*H_goal_inv
                 x2 = Cp
-                
+
                 tot1 += dx_dT*x1
                 tot2 += xi*H_goal_inv*x2
 
                 tot3 += dy_dT*x1
                 tot4 += yi*H_goal_inv*x2
-                
-                
-                
-            d_H_dT = (V_over_F*(tot3 + tot4 + dH_dep_dT_g) 
-            
+
+
+
+            d_H_dT = (V_over_F*(tot3 + tot4 + dH_dep_dT_g)
+
 #                       + d_beta_d_T*(tot5 + H_dep_g)
 #                       - d_beta_d_T*(tot6 + H_dep_l)
-            
+
                       + (1.0 - V_over_F)*(tot1 + tot2 + dH_dep_dT_l))
 #            print(d_H_dT, d_H_dT2, 'two values')
-            
+
             store['dKs_dT'] = dKs_dT
 #            Hg_ideal(self, T, zs), Cpg_ideal(self, T, zs)
-            
-            
+
+
 
 #            jacobian = [[d_RR1_d_beta1, d_RR1_dT], [d_H_d_beta, d_H_dT]]
             jacobian = [[d_RR1_dT, d_RR1_d_beta1], [d_H_dT, d_H_d_beta]]
@@ -5149,26 +5149,26 @@ class GceosBase(Ideal):
                 return [g1, g2], jacobian
 
             return [g1, g2]
-        
+
         def to_Jac(T_V_over_F):
             import numpy as np
 #            print('calling for jac')
             return np.array(err_fun(T_V_over_F, zs, Ks, jac=False))
-        
+
         Ts_attempt = [T_guess]
         VFs_attempt = [V_over_F]
         iter = 0
 #        analytical = False
-        
+
         while iter < maxiter:
             fcur, j_analytical = err_fun([T_guess, V_over_F], zs, Ks, jac=True)
-            
+
             err =  abs(fcur[0]) + abs(fcur[1])
 #            print(T_guess, V_over_F, fcur)
-            
+
             if err < tol:
                 break
-            
+
 #            if not analytical:
 #            try:
 #                from numdifftools.core import Jacobian
@@ -5183,49 +5183,49 @@ class GceosBase(Ideal):
 #            print('JACOBIAN RATIO', (j/j_analytical).tolist())
 #    #            print(j)
     #            print(j_analytical)
-            
+
             if analytical:
                 j = j_analytical
-            
-            
+
+
 #            break
-                
+
             dx = py_solve(j, [-v for v in fcur])
-            # The damping actually makes it take fewer iterations 
+            # The damping actually makes it take fewer iterations
 #            if abs(dx[0]) < 2 :
 #                damping = 1
             T_step = dx[0]*damping
             if abs(T_step) > max_T_step:
                 T_step = copysign(max_T_step, T_step)
             T_guess = T_guess + T_step
-                
+
             V_over_F = V_over_F + dx[1]
             # Try to reduce overstepping?
 #            if V_over_F < 0:
 #                V_over_F = 0.5*V_over_F
 #            elif V_over_F > 1:
 #                V_over_F = 1 + 0.5*(V_over_F % 1)
-                
+
 
 
 #            T_guess2, V_over_F = [xi + dxi*damping for xi, dxi in zip([T_guess, V_over_F], dx)]
 #            if abs(T_guess - T_guess2) > max_T_step:
-#                T_guess2 = 
-            
-            
+#                T_guess2 =
+
+
             dKs_dT = store['dKs_dT']
 #            _, dKs_dT = self.Ks_and_dKs_dT(store['eos_l'], store['eos_g'], store['xs'], store['ys'])
-            
+
             dT = T_guess - Ts_attempt[-1]
             Ks = store['Ks']
-            
-            
+
+
             # diff(log(f(x)), y) = Derivative(f(x), x)/f(x)
             Ks = [exp(log(K) + dK_dT/K*dT) for K, dK_dT in zip(Ks, dKs_dT)]
-            
+
             Ts_attempt.append(T_guess)
             VFs_attempt.append(V_over_F)
-            
+
             iter += 1
         if iter == maxiter:
             raise ValueError("Did not converge PH 2 phase flash")
@@ -5234,7 +5234,7 @@ class GceosBase(Ideal):
         eos_g = store['eos_g']
         xs = store['xs']
         ys = store['ys']
-        
+
         self.eos_l, self.eos_g = eos_l, eos_g
 #        print(iter)
         return 'l/g', xs, ys, V_over_F, T_guess
@@ -5244,7 +5244,7 @@ class GceosBase(Ideal):
         import numpy as np
         from numdifftools.core import Jacobian
         from fluids.numerics import py_solve
-        
+
         Ks = [Wilson_K_value(T_guess, P, Tci, Pci, omega) for Pci, Tci, omega in
               zip(self.Pcs, self.Tcs, self.omegas)]
         V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
@@ -5254,53 +5254,53 @@ class GceosBase(Ideal):
         store = {}
         Ks_prev = []
         fs_prev = []
-        
+
         eos_l = self.to_TP_zs(T=T, P=P, zs=xs, fugacities=True)
         eos_g = self.to_TP_zs(T=T, P=P, zs=ys, fugacities=True)
 
         # Calculate the enthalpy
-        H_calc = self.enthalpy_eosmix(T_guess, P, V_over_F, zs, xs, ys, eos_l, eos_g, 'l/g')        
+        H_calc = self.enthalpy_eosmix(T_guess, P, V_over_F, zs, xs, ys, eos_l, eos_g, 'l/g')
         g2 = H_calc - H_goal
 
-        # Step 5            
+        # Step 5
         lnphis_l = eos_l.eos_lnphis_lowest_Gibbs()[0]
         lnphis_g = eos_g.eos_lnphis_lowest_Gibbs()[0]
         Cp_l = self.dH_dT(T, P, V_over_F, zs, xs, ys, eos_l, eos_g, 'l')
         Cp_g = self.dH_dT(T, P, V_over_F, zs, xs, ys, eos_l, eos_g, 'g')
-        
-        # Step 6            
+
+        # Step 6
         fs = []
         for lnphi_l, lnphi_g, xi, yi in zip(lnphis_l, lnphis_g, xs, ys):
             fs.append(lnphi_g + log(yi) - lnphi_l - log(xi))
-        
+
         # Step 7
         T_guess = T_guess - g2/(V_over_F*Cp_g + (1.0 - V_over_F)*Cp_l)
-        
+
         Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)]
         V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
-        
+
         def err_fun(T_V_over_F, zs, Ks):
 #            print('calling', Ks)
             T, V_over_F = float(T_V_over_F[0]), float(T_V_over_F[1])
-            
+
             # step 8
             V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
 
             # Step 9
             eos_l = self.to_TP_zs(T=T, P=P, zs=xs, fugacities=True)
             eos_g = self.to_TP_zs(T=T, P=P, zs=ys, fugacities=True)
-            H_calc = self.enthalpy_eosmix(T_guess, P, V_over_F, zs, xs, ys, eos_l, eos_g, 'l/g')        
+            H_calc = self.enthalpy_eosmix(T_guess, P, V_over_F, zs, xs, ys, eos_l, eos_g, 'l/g')
             g2 = H_calc - H_goal
 
-            # Step 10            
+            # Step 10
             lnphis_l = eos_l.eos_lnphis_lowest_Gibbs()[0]
             lnphis_g = eos_g.eos_lnphis_lowest_Gibbs()[0]
-            
+
             fs_prev = fs
             fs = []
             for lnphi_l, lnphi_g, xi, yi in zip(lnphis_l, lnphis_g, xs, ys):
                 fs.append(lnphi_g + log(yi) - lnphi_l - log(xi))
-            
+
             Ks_prev = Ks
             Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)]
             # Step 11
@@ -5308,14 +5308,14 @@ class GceosBase(Ideal):
             for K, K_prev, dK_dT, f, f_prev in zip(Ks, Ks_prev, dKs_dT, fs, fs_prev):
                 lnK05 = log(K) + (log(K) - log(K_prev))*f_prev/((log(K) - log(K_prev))*(f - f_prev))*f
                 Ks05.append(exp(lnK05))
-            
+
             # Jacobian is supposed to be constructed based on the Ks05 and so on
             # Nothing fundamentally better anout this update; just a little cleverer.
             V_over_F_05, xs_05, ys_05 = flash_inner_loop(zs=zs, Ks=Ks05)
-            
-            
+
+
             g1 = Rachford_Rice_flash_error(V_over_F_05, zs, Ks05)
-            
+
             store['eos_l'] = eos_l
             store['eos_g'] = eos_g
             store['Ks'] = Ks
@@ -5323,47 +5323,47 @@ class GceosBase(Ideal):
             store['ys'] = ys
 
             return [g1, g2]
-        
+
         def to_Jac(T_V_over_F):
 #            print('calling for jac')
             return np.array(err_fun(T_V_over_F, zs, Ks))
-        
+
         Ts_attempt = [T_guess]
         VFs_attempt = [V_over_F]
         iter = 0
-        
+
         while iter < maxiter:
             fcur = err_fun([T_guess, V_over_F], zs, Ks)
-            
+
             err =  abs(fcur[0]) + abs(fcur[1])
 #            print(T_guess, V_over_F, fcur)
-            
+
             if err < tol:
                 break
-            
+
             j_obj = Jacobian(to_Jac, step=1e-4)
             j = j_obj([T_guess, V_over_F])
-            
-            
+
+
             break
-        
-        
-        
+
+
+
             dx = py_solve(j, [-v for v in fcur])
             T_guess, V_over_F = [xi + dxi*damping for xi, dxi in zip([T_guess, V_over_F], dx)]
-            
+
             _, dKs_dT = self.Ks_and_dKs_dT(store['eos_l'], store['eos_g'], store['xs'], store['ys'])
-            
+
             dT = T_guess - Ts_attempt[-1]
             Ks = store['Ks']
-            
-            
+
+
             # diff(log(f(x)), y) = Derivative(f(x), x)/f(x)
             Ks = [exp(log(K) + dK_dT/K*dT) for K, dK_dT in zip(Ks, dKs_dT)]
-            
+
             Ts_attempt.append(T_guess)
             VFs_attempt.append(V_over_F)
-            
+
 
     def P_HS_error_1P(self, T, P, zs, H_goal=None, S_goal=None, info=None):
         if self.N == 1:
@@ -5386,7 +5386,7 @@ class GceosBase(Ideal):
         else:
             S_calc = self.entropy_eosmix(T, P, None, zs, None, None, eos_l, eos_g, phase)
             err = S_calc - S_goal
-            
+
         if info is not None:
             info[:] = (eos_phase, phase, err)
 #        print(T, err, info)
@@ -5426,7 +5426,7 @@ class GceosBase(Ideal):
         # Begin the search at half the lowest chemical's melting point
         if T_low is None:
             T_low = 0.5*min(self.Tms)
-                
+
         # Cap the T high search at 8x the highest critical point
         # (will not work well for helium, etc.)
         if T_high is None:
@@ -5457,7 +5457,7 @@ class GceosBase(Ideal):
                 elif i == 1:
                     Tc = mixing_simple(zs, self.Tcs)
                     omega = mixing_simple(zs, self.omegas)
-                    def Dadgostar_Shaw_T_guess(Hm, MW, similarity_variable, Tc, omega, 
+                    def Dadgostar_Shaw_T_guess(Hm, MW, similarity_variable, Tc, omega,
                                                T_ref=298.15, factor=1.0):
                         H_ref = Dadgostar_Shaw_integral(T_ref, similarity_variable)
                         def err(T):
@@ -5467,13 +5467,13 @@ class GceosBase(Ideal):
                             # Limitation to higher T unfortunately
                             return ((property_mass_to_molar(dH, MW)*factor - Hvap) - Hm)
                         return newton(err, 100, high=Tc)
-                    
+
                     T_calc = Dadgostar_Shaw_T_guess(Hm, MW, sv, Tc, omega, factor=1)
                     if 1 or T_calc > 0.0:
                         yield T_calc
                 elif i == 2:
                     yield 298.15
-                    
+
             # with Hvap and Cpl can get another guess - but is a little more complicated
             except Exception as e:
 #                print(e)
@@ -5482,11 +5482,11 @@ class GceosBase(Ideal):
 
     def PS_T_guesses_1P(self, P, Sm, zs, T_guess=None):
         i = -2 if T_guess is not None else -1
-        
+
         Sm -= R*sum([zi*log(zi) for zi in zs if zi > 0.0]) # ideal composition entropy composition
         Sm -= R*log(P*self.P_REF_IG_INV)
         # It would be nice to include a non-ideal component - maybe from a virial correlation
-    
+
         while i < 3:
             try:
                 if i == -2:
@@ -5499,16 +5499,16 @@ class GceosBase(Ideal):
                     Tc = mixing_simple(zs, self.Tcs)
                     Pc = mixing_simple(zs, self.Pcs)
                     omega = mixing_simple(zs, self.omegas)
-                    
-                    
+
+
 #                    from thermo.heat_capacity import Lastovka_Shaw_integral_over_T
-#                    def Lastovka_Shaw_T_for_Sm(Sm, MW, similarity_variable, T_ref=298.15, 
+#                    def Lastovka_Shaw_T_for_Sm(Sm, MW, similarity_variable, T_ref=298.15,
 #                                               factor=1.0):
 #                        S_ref = Lastovka_Shaw_integral_over_T(T_ref, similarity_variable)
 #                        def err(T):
 #                            S1 = Lastovka_Shaw_integral_over_T(T, similarity_variable)
 #                            dS = S1 - S_ref
-#                            
+#
 #                            # May save an iteration
 #                            Tr = T/Tc
 #                            Pr = P/Pc
@@ -5532,9 +5532,9 @@ class GceosBase(Ideal):
 #                    print(T, 'guess')
 #                    if T > 10:
 #                        yield T
-                    
-                    
-                    
+
+
+
                 elif i == 0:
                     MW = mixing_simple(zs, self.MWs)
                     sv = mixing_simple(zs, self.n_atoms)/MW
@@ -5545,7 +5545,7 @@ class GceosBase(Ideal):
                 elif i == 1:
                     Tc = mixing_simple(zs, self.Tcs)
                     omega = mixing_simple(zs, self.omegas)
-                    def Dadgostar_Shaw_T_guess(Sm, MW, similarity_variable, Tc, omega, 
+                    def Dadgostar_Shaw_T_guess(Sm, MW, similarity_variable, Tc, omega,
                                                T_ref=298.15, factor=1.0):
                         S_ref = Dadgostar_Shaw_integral_over_T(T_ref, similarity_variable)
                         def err(T):
@@ -5555,20 +5555,20 @@ class GceosBase(Ideal):
                             # Limitation to higher T unfortunately
                             return ((property_mass_to_molar(dS, MW)*factor - Hvap/T) - Sm)
                         return newton(err, 100, high=Tc)
-                    
+
                     T = Dadgostar_Shaw_T_guess(Sm, MW, sv, Tc, omega, factor=1)
 #                    print(T, 'T guess liquid')
                     if T > 0.0:
                         yield T
                 elif i == 2:
                     yield 298.15
-                    
+
             except Exception as e:
 #                print(e)
                 pass
             i += 1
 
-    
+
     def PH_T_guesses_2P(self, P, Hm, zs, T_guess=None):
         i = -1 if T_guess is not None else 0
         while i < 3:
@@ -5578,9 +5578,9 @@ class GceosBase(Ideal):
                 elif i == 0 and self.N > 1:
                     MW = mixing_simple(zs, self.MWs)
                     sv = mixing_simple(zs, self.n_atoms)/MW
-                                        
+
                     def approx_H(Hm, P, MW, similarity_variable, Tcs, Pcs, omegas,
-                                 T_ref=298.15, 
+                                 T_ref=298.15,
                                  factor=1.0):
                         Tc = mixing_simple(zs, Tcs)
                         omega = mixing_simple(zs, omegas)
@@ -5594,7 +5594,7 @@ class GceosBase(Ideal):
                             H1 = Lastovka_Shaw_integral(T, similarity_variable)
                             dH = H1 - H_ref_LS
                             H_gas = property_mass_to_molar(dH, MW)*factor
-                            
+
                             if V_over_F < 1:
                                 Hvap = SMK(T, Tc, omega)
                                 H1 = Dadgostar_Shaw_integral(T, similarity_variable)
@@ -5603,19 +5603,19 @@ class GceosBase(Ideal):
                             else:
                                 H_liq = 0
                                 Hvap = 0
-                        
+
                             return H_gas*V_over_F + (1.0 - V_over_F)*(H_liq - Hvap)
-                        
+
                         def to_solve(T):
                             _, _, VF, _, _ = flash_wilson(zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, T=T, P=P)
                             H_calc = Hm_approx_basic(T=T, V_over_F=VF)
                             return H_calc - Hm
                         return secant(to_solve, 300, xtol=None, ytol=10)
-                    
+
                     yield approx_H(Hm, P, MW, sv, self.Tcs, self.Pcs, self.omegas)
                 elif i == 1:
                     yield 298.15
-                    
+
             # with Hvap and Cpl can get another guess - but is a little more complicated
             except Exception as e:
                 print(e)
@@ -5637,28 +5637,28 @@ class GceosBase(Ideal):
 
         return T, 'l/g', eos_l, VF
 
-    def flash_P_HS_1P(self, P, zs, Hm=None, Sm=None, T_guess=None, 
+    def flash_P_HS_1P(self, P, zs, Hm=None, Sm=None, T_guess=None,
                       minimum_progress=0.3):
-        r'''One phase direct solution to the pressure-enthalpy 
+        r'''One phase direct solution to the pressure-enthalpy
         or pressure-entropy flash problem.
-        
+
         The algorithm used is:
             * Obtain a temperature guess
             * Apply newton's method, calculating analytical derivatives
               (limit T steps to prevent negative temperatures (go half way);
               detect oscillations (normally when a phase change occurs))
-            * If oscillations are detected, and the system is 1 component, 
+            * If oscillations are detected, and the system is 1 component,
               solve the the saturation pressure - and try to solve the problem
               as a two-phase system
             * If oscillations are detected and the system is not 1 component
               (or the two-phase solution was not correct), use a bounded solver
-              starting with the two closest bounding values from the newton 
+              starting with the two closest bounding values from the newton
               iterations.
-              
+
         Guesses are obtained from the method `PH_T_guesses_1P`; if one guess
         does not lead to success for any method, the next is tried until all
         available guesses have been attempted.
-            
+
         '''
         solve_H = Hm is not None
         guesses = []
@@ -5666,14 +5666,14 @@ class GceosBase(Ideal):
             guess_generator = self.PH_T_guesses_1P(P, Hm, zs, T_guess=T_guess)
         else:
             guess_generator = self.PS_T_guesses_1P(P, Sm, zs, T_guess=T_guess)
-            
+
         info = []
         def to_solve(T):
             err_and_der = self.P_HS_error_and_der_1P(T, P, zs, Hm, Sm, info=info)
             return err_and_der
         to_solve, checker = oscillation_checking_wrapper(to_solve, full=True,
                                                          minimum_progress=minimum_progress)
-         
+
         ans = None
         for T_trial in guess_generator:
             guesses.append(T_trial)
@@ -5689,7 +5689,7 @@ class GceosBase(Ideal):
                     else:
                         msg = "Unexpected failure of newton's method at P=%s, Sm=%s; %s" %(P, Sm, e)
                     print(msg)
-                
+
                 wrapped_P_HS_error_1P, _, info_cache = caching_decorator(self.P_HS_error_1P, full=True)
                 if self.N > 1:
                     wrapped_P_HS_error_1P = oscillation_checking_wrapper(wrapped_P_HS_error_1P, full=False,
@@ -5716,7 +5716,7 @@ class GceosBase(Ideal):
                         except Exception as e:
 #                            print('1 Phase Bounded solver could not converge after oscillation', e)
                             pass
-                        break 
+                        break
                     else:
                         return T, phase, eos, VF
                 else:
@@ -5725,7 +5725,7 @@ class GceosBase(Ideal):
                         err_high = min(checker.ys_pos)
                         T_low = checker.xs_neg[checker.ys_neg.index(err_low)]
                         T_high = checker.xs_pos[checker.ys_pos.index(err_high)]
-                        
+
 
                         ans = brenth(wrapped_P_HS_error_1P, T_low, T_high,
                                      fa=err_low, fb=err_high, args=(P, zs, Hm, Sm),
@@ -5742,7 +5742,7 @@ class GceosBase(Ideal):
         if ans is None:
             raise ValueError("Could not converge 1 phase with any of initial guesses %s" %(guesses))
         return ans, info[1], info[0], None
-        
+
 
     def flash_PH_zs(self, P, Hm, zs, T_guess=None, xs_guess=None, ys_guess=None,
                  algorithms=[DIRECT_1P, DIRECT_2P, RIGOROUS_BISECTION],
@@ -5787,7 +5787,7 @@ class GceosBase(Ideal):
                         raise ValueError("One phase solution is unstable")
                     return phase, xs, ys, V_over_F, T
 
-                    
+
                     # A stability test is REQUIRED! Very important!
                     # Try to refactor some of the code from the PT flash.
                 elif algorithm == DIRECT_2P:
@@ -5801,13 +5801,13 @@ class GceosBase(Ideal):
                     if eos_1P is not None:
                         H_1P = self.enthalpy_eosmix(single_phase_data[-1], P, single_phase_data[-2], zs, single_phase_data[-4], single_phase_data[-3], eos_1P, eos_1P, single_phase_data[0])
                         H_2P = self.enthalpy_eosmix(T, P, V_over_F, zs, xs, ys, self.eos_l, self.eos_g, phase)
-                        
+
                         S_1P = self.entropy_eosmix(single_phase_data[-1], P, single_phase_data[-2], zs, single_phase_data[-4], single_phase_data[-3], eos_1P, eos_1P, single_phase_data[0])
                         S_2P = self.entropy_eosmix(T, P, V_over_F, zs, xs, ys, self.eos_l, self.eos_g, phase)
-                        
+
                         G_1P = H_1P - single_phase_data[-1]*S_1P
                         G_2P = H_2P - T*S_2P
-                        
+
 #                        print(T, V_over_F, S_1P, S_2P, G_1P, G_2P)
                         if (S_1P > S_2P and G_1P < G_2P) or V_over_F > 1 or V_over_F < 0:
 #                        try:
@@ -5824,19 +5824,19 @@ class GceosBase(Ideal):
 #                            G_g = self.eos_g.G_dep_l if self.eos_g.G_dep_l < self.eos_g.G_dep_g else self.eos_g.G_dep_g
 #                        except:
 #                            G_g = self.eos_g.G_dep_g if hasattr(eos, 'G_dep_g') else self.eos_g.G_dep_l
-#                    
+#
 #                        if G_1P < (1 - V_over_F)*G_l + V_over_F*G_g:
                             return single_phase_data
-                    
+
                     return phase, xs, ys, V_over_F, T
-                    
-                    
-                    
+
+
+
                     # should return phase, xs, ys, V_over_F, T
             except Exception as e:
 #                print(e)
                 pass
-    
+
     def flash_PS_zs(self, P, Sm, zs, T_guess=None, xs_guess=None, ys_guess=None,
                  algorithms=[DIRECT_1P, RIGOROUS_BISECTION],
                  maxiter=100, tol=1e-4, damping=0.5):
@@ -5882,19 +5882,19 @@ class GceosBase(Ideal):
                 pass
 
 
-    def bubble_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200, 
+    def bubble_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200,
                                     xtol=1E-10, info=None, ys_guess=None,
                                     max_step_damping=5.0, near_critical=False,
                                     trivial_solution_tol=1e-4):
         # ys_guess did not help convergence at all
         N = len(zs)
         cmps = range(N)
-                    
+
         ys = zs if ys_guess is None else ys_guess
 
         def lnphis_and_derivatives(T_guess):
             eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
-                                 zs=zs, kijs=self.kijs, T=T_guess, P=P, 
+                                 zs=zs, kijs=self.kijs, T=T_guess, P=P,
                                  only_l=True, fugacities=False,
                                  **self.eos_kwargs)
 
@@ -5904,12 +5904,12 @@ class GceosBase(Ideal):
                     dlnphis_dT_l = eos_l.dlnphis_dT('l')
                 except AttributeError:
                     ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, zs)
-                    dlnphis_dT_l = eos_l.dlnphis_dT('g')                
+                    dlnphis_dT_l = eos_l.dlnphis_dT('g')
             else:
                 ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, zs)
                 dlnphis_dT_l = eos_l.dlnphis_dT('l')
 
-            # TODO: d alpha 1 only?            
+            # TODO: d alpha 1 only?
             eos_g = eos_l.to_TP_zs_fast(T=T_guess, P=P, zs=ys, full_alphas=True, only_g=True)
 
             if near_critical:
@@ -5922,7 +5922,7 @@ class GceosBase(Ideal):
             else:
                 ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
                 dlnphis_dT_g = eos_g.dlnphis_dT('g')
-            
+
             return ln_phis_l, ln_phis_g, dlnphis_dT_l, dlnphis_dT_g, eos_l, eos_g
 
         T_guess_old = None
@@ -5937,52 +5937,52 @@ class GceosBase(Ideal):
                     raise ValueError("Could not calculate liquid and vapor conditions at provided initial temperature %s K" %(T_guess))
                 successive_fails += 1
                 if successive_fails >= 2:
-                    raise ValueError("Stopped convergence procedure after multiple bad steps") 
+                    raise ValueError("Stopped convergence procedure after multiple bad steps")
                 T_guess = T_guess_old + copysign(min(max_step_damping, abs(step)), step)
 #                print('fail - new T guess', T_guess)
                 ln_phis_l, ln_phis_g, dlnphis_dT_l, dlnphis_dT_g, eos_l, eos_g = lnphis_and_derivatives(T_guess)
-            
-            
-            
+
+
+
             Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
             f_k = sum([zs[i]*Ks[i] for i in cmps]) - 1.0
-            
+
             dfk_dT = 0.0
             for i in cmps:
                 dfk_dT += zs[i]*Ks[i]*(dlnphis_dT_l[i] - dlnphis_dT_g[i])
-            
+
 #            print('dfk_dT', dfk_dT)
             T_guess_old = T_guess
             step = -f_k/dfk_dT
-            
-            
+
+
             if near_critical:
                 T_guess = T_guess + copysign(min(max_step_damping, abs(step)), step)
             else:
                 T_guess = T_guess + step
-            
+
             ys = [zs[i]*Ks[i] for i in cmps]
-            
+
             if near_critical:
                 comp_difference = sum([abs(zi - yi) for zi, yi in zip(zs, ys)])
                 if comp_difference < trivial_solution_tol:
                     raise ValueError("Converged to trivial condition, compositions of both phases equal")
-            
+
 #            print(ys, 'ys raw')
             y_sum = sum(ys)
             ys = [y/y_sum for y in ys]
 
             if info is not None:
                 info[:] = zs, ys, Ks, eos_l, eos_g, 0.0
-            
+
 #            print(ys, T_guess, abs(T_guess - T_guess_old), dfk_dT, ys)
             if abs(T_guess - T_guess_old) < xtol:
                 T_guess = T_guess_old
                 break
-            
-                
-                
-                
+
+
+
+
         if abs(T_guess - T_guess_old) > xtol:
             raise ValueError("Did not converge to specified tolerance")
         return T_guess
@@ -6039,16 +6039,16 @@ class GceosBase(Ideal):
             V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
             err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
                   sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
-            
+
             if ys == ys_older:
                 raise ValueError("Stuck in loop")
-                
+
             xs_older, ys_older = xs, ys
             xs, ys = xs_new, ys_new
             if any(y < 0.0 for y in ys):
                 y_tot_abs = sum([abs(y) for y in ys])
                 ys = [abs(y)/y_tot_abs for y in ys]
-            
+
             if err < xtol:
                 break
         if info is not None:
@@ -6056,12 +6056,12 @@ class GceosBase(Ideal):
         return V_over_F
 
 
-    def bubble_T_growth(self, T_guess, P, zs, maxiter=200, 
+    def bubble_T_growth(self, T_guess, P, zs, maxiter=200,
                         xtol=1E-10, info=None, ys_guess=None,
                         factor=1.4, T_max=None, T_low_factor=0.25,
                         min_factor=1.05):
         if T_max is None:
-            T_max = 2*max(self.Tcs)        
+            T_max = 2*max(self.Tcs)
 
         while factor > min_factor:
             T = T_guess*T_low_factor
@@ -6082,12 +6082,12 @@ class GceosBase(Ideal):
                 except Exception as e:
                     print('Could not solve eos with P=%g' %P)
                     continue
-                
+
                 try:
                     # The root existed - try it!
                     ans = self.bubble_T_Michelsen_Mollerup(T, P=P, zs=zs,
                                                            ys_guess=ys_guess,
-                                                           maxiter=maxiter, 
+                                                           maxiter=maxiter,
                                                            xtol=xtol, info=info)
                     print('success')
                     return ans
@@ -6099,7 +6099,7 @@ class GceosBase(Ideal):
             factor = factor - abs(factor - 1)*.35
         raise ValueError("Could not converge")
 
-    
+
     def bubble_T_guess(self, P, zs, method):
         if method == 'Wilson':
             return flash_wilson(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, P=P, VF=0)
@@ -6107,7 +6107,7 @@ class GceosBase(Ideal):
             return flash_Tb_Tc_Pc(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, Tbs=self.Tbs, P=P, VF=0)
         elif method == 'IdealEOS':
             return self.flash_PVF_zs_ideal(P=P, VF=0, zs=zs)
-    
+
     def bubble_T_guesses(self, P, zs, T_guess=None):
         i = -1 if T_guess is not None else 0
         while i < 3:
@@ -6127,11 +6127,11 @@ class GceosBase(Ideal):
 #                print(e, i)
                 pass
             i += 1
-        
+
     def bubble_T(self, P, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3,
                  T_guess=None):
         info = []
-        
+
         for T_guess, xs, ys in self.bubble_T_guesses(P=P, zs=zs, T_guess=T_guess):
 #            print('starting guess', T_guess, xs, ys)
             try:
@@ -6147,15 +6147,15 @@ class GceosBase(Ideal):
                 print(exc_type, fname, exc_tb.tb_lineno)
                 print(e, 'bubble_T_Michelsen_Mollerup falure')
                 pass
-            
+
             try:
-                P = self.bubble_T_growth(T_guess=T_guess, P=P, zs=zs, 
+                P = self.bubble_T_growth(T_guess=T_guess, P=P, zs=zs,
                                                      info=info, xtol=self.FLASH_VF_TOL,
                                                      ys_guess=ys)
                 return info[0], info[1], info[5], P, info[3], info[4]
             except Exception as e:
                 print(e, 'bubble_T_Michelsen_Mollerup falure of new method')
-                pass                
+                pass
 
 
             try:
@@ -6176,7 +6176,7 @@ class GceosBase(Ideal):
             except Exception as e:
                 print('bubble T - fsolve failed with initial guess (%g):' %(T_guess)  + str(e))
                 pass
-            
+
         raise ValueError("Overall bubble P loop could not find a convergent method")
         Tmin, Tmax = self._bracket_bubble_T(P=P, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
         T = ridder(self._err_bubble_T, Tmin, Tmax, args=(P, zs, maxiter, xtol, info))
@@ -6198,7 +6198,7 @@ class GceosBase(Ideal):
             pts, mult_min, mult_max = limits
             guess_Ts = [guess*i for i in np.linspace(mult_min, mult_max, pts).tolist()]
             shuffle(guess_Ts)
-        
+
             for T in guess_Ts:
                 try:
 #                    print("Trying %f" %T)
@@ -6220,7 +6220,7 @@ class GceosBase(Ideal):
                     break
             if negative_Ts and positive_Ts:
                 break
-        
+
         T_high = positive_Ts[positive_VFs.index(min(positive_VFs))]
         T_low = negative_Ts[negative_VFs.index(max(negative_VFs))]
         return T_high, T_low
@@ -6232,7 +6232,7 @@ class GceosBase(Ideal):
         positive_VFs = []
         positive_Ts = []
         guess = flash_Tb_Tc_Pc(zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs, P=P, VF=1.0)[0]
-        
+
         eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                              zs=zs, kijs=self.kijs, T=self.T_REF_IG, P=P, **self.eos_kwargs)
 
@@ -6241,7 +6241,7 @@ class GceosBase(Ideal):
             pts, mult_min, mult_max = limits
             guess_Ts = [guess*i for i in np.linspace(mult_min, mult_max, pts).tolist()]
             shuffle(guess_Ts)
-        
+
             for T in guess_Ts:
                 try:
 #                    print("Trying %f" %T)
@@ -6255,7 +6255,7 @@ class GceosBase(Ideal):
                             diff = lambda T : eos_l._V_over_F_dew_T_inner(T=T, P=P, zs=zs)
                             second_derivative = derivative(diff, T, n=2, order=3)
                             if second_derivative > 0 and second_derivative < 1:
-        
+
                                 negative_VFs.append(ans)
                                 negative_Ts.append(T)
                         else:
@@ -6271,7 +6271,7 @@ class GceosBase(Ideal):
                     break
             if negative_Ts and positive_Ts:
                 break
-        
+
         T_high = positive_Ts[positive_VFs.index(min(positive_VFs))]
         T_low = negative_Ts[negative_VFs.index(max(negative_VFs))]
         return T_high, T_low
@@ -6289,7 +6289,7 @@ class GceosBase(Ideal):
         for i in range(maxiter):
             eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                              zs=xs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
-    
+
             Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(eos_l.phis_l, phis_g)]
             V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
             err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
@@ -6297,12 +6297,12 @@ class GceosBase(Ideal):
             xs, ys = xs_new, ys_new
             if err < xtol:
                 break
-            
+
         if info is not None:
             info[:] = xs, ys, Ks, eos_l, eos_g, V_over_F
         return V_over_F - 1.0
 
-    def dew_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200, 
+    def dew_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200,
                                  xtol=1E-10, info=None, xs_guess=None,
                                  max_step_damping=100.0, near_critical=False,
                                  trivial_solution_tol=1e-4):
@@ -6312,12 +6312,12 @@ class GceosBase(Ideal):
         # Accelerated successive substitution schemes for bubble-point and dew-point calculations
         N = len(zs)
         cmps = range(N)
-        
+
         xs = zs if xs_guess is None else xs_guess
-        
+
         def lnphis_and_derivatives(T_guess):
             eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
-                                 zs=zs, kijs=self.kijs, T=T_guess, P=P, 
+                                 zs=zs, kijs=self.kijs, T=T_guess, P=P,
                                  fugacities=False, only_g=True,
                                  **self.eos_kwargs)
             if near_critical:
@@ -6330,22 +6330,22 @@ class GceosBase(Ideal):
             else:
                 ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, zs)
                 dlnphis_dT_g = eos_g.dlnphis_dT('g')
-            
+
             eos_l = eos_g.to_TP_zs_fast(T=T_guess, P=P, zs=xs, full_alphas=True, only_l=True)
-            
+
             if near_critical:
                 try:
                     ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
                     dlnphis_dT_l = eos_l.dlnphis_dT('l')
                 except AttributeError:
                     ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, xs)
-                    dlnphis_dT_l = eos_l.dlnphis_dT('g')                
+                    dlnphis_dT_l = eos_l.dlnphis_dT('g')
             else:
                 ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
                 dlnphis_dT_l = eos_l.dlnphis_dT('l')
 
             return ln_phis_l, ln_phis_g, dlnphis_dT_l, dlnphis_dT_g, eos_l, eos_g
-        
+
         T_guess_old = None
         successive_fails = 0
         for i in range(maxiter):
@@ -6357,7 +6357,7 @@ class GceosBase(Ideal):
                     raise ValueError("Could not calculate liquid and vapor conditions at provided initial temperature %s K" %(T_guess))
                 successive_fails += 1
                 if successive_fails >= 2:
-                    raise ValueError("Stopped convergence procedure after multiple bad steps") 
+                    raise ValueError("Stopped convergence procedure after multiple bad steps")
                 T_guess = T_guess_old + copysign(min(max_step_damping, abs(step)), step)
 #                print('fail - new T guess', T_guess)
                 ln_phis_l, ln_phis_g, dlnphis_dT_l, dlnphis_dT_g, eos_l, eos_g = lnphis_and_derivatives(T_guess)
@@ -6369,49 +6369,49 @@ class GceosBase(Ideal):
             dfk_dT = 0.0
             for i in cmps:
                 dfk_dT += xs[i]*(dlnphis_dT_g[i] - dlnphis_dT_l[i])
-            
+
             T_guess_old = T_guess
             step = -f_k/dfk_dT
-            
+
 #            print(xs, T_guess, step, dfk_dT)
-            
+
             if near_critical:
                 T_guess = T_guess + copysign(min(max_step_damping, abs(step)), step)
             else:
                 T_guess = T_guess + step
-            
+
             if near_critical:
                 comp_difference = sum([abs(zi - xi) for zi, xi in zip(zs, xs)])
                 if comp_difference < trivial_solution_tol:
                     raise ValueError("Converged to trivial condition, compositions of both phases equal")
-            
+
             x_sum = sum(xs)
             xs = [x/x_sum for x in xs]
-            
+
             if info is not None:
                 info[:] = xs, zs, Ks, eos_l, eos_g, 1.0
             if abs(T_guess - T_guess_old) < xtol:
                 T_guess = T_guess_old
                 break
-            
-                
+
+
         if abs(T_guess - T_guess_old) > xtol:
             raise ValueError("Did not converge to specified tolerance")
-                
+
         return T_guess
-        
-    
-    def dew_T_growth(self, T_guess, P, zs, maxiter=200, 
+
+
+    def dew_T_growth(self, T_guess, P, zs, maxiter=200,
                      xtol=1E-10, info=None, xs_guess=None,
                      T_max=None, T_low_factor=0.9,
                      T_step=4):
         if T_max is None:
             T_pseudo = sum([zi*Tci for zi, Tci in zip(zs, self.Tcs)])
-            T_max = 1.25*T_pseudo  
+            T_max = 1.25*T_pseudo
         T_points = np.arange(T_low_factor*T_guess, T_max, step=T_step).tolist()
-        T_points.sort(key=lambda x: abs(x - T_guess))    
-        
-        
+        T_points.sort(key=lambda x: abs(x - T_guess))
+
+
         for T in T_points:
 #        while factor > min_factor:
 #            T = T_guess*T_low_factor
@@ -6432,12 +6432,12 @@ class GceosBase(Ideal):
             except Exception as e:
 #                print('Could not solve eos with P=%g' %P)
                 continue
-            
+
             try:
                 # The root existed - try it!
                 ans = self.dew_T_Michelsen_Mollerup(T, P=P, zs=zs,
                                                     xs_guess=xs_guess,
-                                                    maxiter=maxiter, 
+                                                    maxiter=maxiter,
                                                     xtol=xtol, info=info)
                 print('success')
                 return ans
@@ -6448,7 +6448,7 @@ class GceosBase(Ideal):
 
 #            factor = factor - abs(factor - 1)*.35
         raise ValueError("Could not converge")
-        
+
 
     def dew_T_guess(self, P, zs, method):
         if method == 'Wilson':
@@ -6457,7 +6457,7 @@ class GceosBase(Ideal):
             return flash_Tb_Tc_Pc(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, Tbs=self.Tbs, P=P, VF=1)
         elif method == 'IdealEOS':
             return self.flash_PVF_zs_ideal(P=P, VF=1, zs=zs)
-    
+
     def dew_T_guesses(self, P, zs, T_guess=None):
         i = -1 if T_guess is not None else 0
         while i < 3:
@@ -6493,13 +6493,13 @@ class GceosBase(Ideal):
                 pass
 
             try:
-                P = self.dew_T_growth(T_guess=T_guess, P=P, zs=zs, 
+                P = self.dew_T_growth(T_guess=T_guess, P=P, zs=zs,
                                       info=info, xtol=self.FLASH_VF_TOL,
                                       xs_guess=xs)
                 return info[0], info[1], info[5], P, info[3], info[4]
             except Exception as e:
                 print(e, 'dew_T_Michelsen_Mollerup falure of new method')
-                pass                
+                pass
 
             try:
                 try:
@@ -6535,7 +6535,7 @@ class GceosBase(Ideal):
         positive_VFs = []
         positive_Ps = []
         guess = flash_Tb_Tc_Pc(zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs, T=T, VF=1.0)[1]
-        
+
         eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                              zs=zs, kijs=self.kijs, T=T, P=self.P_REF_IG, **self.eos_kwargs)
 
@@ -6544,7 +6544,7 @@ class GceosBase(Ideal):
             pts, mult_min, mult_max = limits
             guess_Ps = [guess*10**(i) for i in np.linspace(mult_min, mult_max, pts).tolist()]
             shuffle(guess_Ps)
-        
+
             for P in guess_Ps:
                 try:
 #                    print("Trying %f" %P)
@@ -6558,7 +6558,7 @@ class GceosBase(Ideal):
 #                            diff = lambda T : eos_l._V_over_F_dew_T_inner(T=T, P=P, zs=zs)
 #                            second_derivative = derivative(diff, T, n=2, order=3)
 #                            if second_derivative > 0 and second_derivative < 1:
-#        
+#
                             negative_VFs.append(ans)
                             negative_Ps.append(P)
 #                        else:
@@ -6574,7 +6574,7 @@ class GceosBase(Ideal):
                     break
             if negative_Ps and positive_Ps:
                 break
-        
+
         P_high = positive_Ps[positive_VFs.index(min(positive_VFs))]
         P_low = negative_Ps[negative_VFs.index(max(negative_VFs))]
         return P_high, P_low
@@ -6592,7 +6592,7 @@ class GceosBase(Ideal):
         for i in range(maxiter):
             eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                              zs=xs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
-    
+
             Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(eos_l.phis_l, phis_g)]
             V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
             err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
@@ -6600,29 +6600,29 @@ class GceosBase(Ideal):
             xs, ys = xs_new, ys_new
             if err < xtol:
                 break
-            
+
         if info is not None:
             info[:] = xs, ys, Ks, eos_l, eos_g, V_over_F
         return V_over_F - 1.0
 
-    def dew_P_Michelsen_Mollerup(self, P_guess, T, zs, maxiter=200, 
+    def dew_P_Michelsen_Mollerup(self, P_guess, T, zs, maxiter=200,
                                  xtol=1E-3, info=None, xs_guess=None,
                                  near_critical=False):
         N = len(zs)
         cmps = range(N)
         xs = zs if xs_guess is None else xs_guess
-        
+
 #        if xtol < 1e-4:
 #            xtol = 1e-3
         eos_g_base = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                              zs=zs, kijs=self.kijs, T=T, P=P_guess, fugacities=False, only_g=True,
                              **self.eos_kwargs)
-                
+
         def lnphis_and_derivatives(P_guess):
             if eos_g_base.P == P_guess:
                 eos_g = eos_g_base
             else:
-                eos_g = eos_g_base.to_TP_zs_fast(T=T, P=P_guess, zs=zs, full_alphas=False, only_g=True) #  
+                eos_g = eos_g_base.to_TP_zs_fast(T=T, P=P_guess, zs=zs, full_alphas=False, only_g=True) #
 
             if near_critical:
                 try:
@@ -6637,58 +6637,58 @@ class GceosBase(Ideal):
 
 
             eos_l = eos_g_base.to_TP_zs_fast(T=T, P=P_guess, zs=xs, full_alphas=False, only_l=True)
-            
+
             if near_critical:
                 try:
                     ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
                     d_lnphis_dP_l = eos_l.dlnphis_dP('l')
                 except AttributeError:
                     ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, xs)
-                    d_lnphis_dP_l = eos_l.dlnphis_dP('g')                
+                    d_lnphis_dP_l = eos_l.dlnphis_dP('g')
             else:
                 ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
                 d_lnphis_dP_l = eos_l.dlnphis_dP('l')
-                        
+
             return ln_phis_l, ln_phis_g, d_lnphis_dP_l, d_lnphis_dP_g, eos_l, eos_g
-        
+
         for i in range(maxiter):
             ln_phis_l, ln_phis_g, d_lnphis_dP_l, d_lnphis_dP_g, eos_l, eos_g = lnphis_and_derivatives(P_guess)
-            
+
             Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
-    
+
             f_k = sum([zs[i]/Ks[i] for i in cmps]) - 1.0
-            
+
             dfk_dP = 0.0
             for i in cmps:
                 dfk_dP += zs[i]/Ks[i]*(d_lnphis_dP_g[i] - d_lnphis_dP_l[i])
-            
+
             P_guess_old = P_guess
-            
+
             step = - f_k/dfk_dP
             P_guess = P_guess + step
             xs = [zs[i]/Ks[i] for i in cmps]
-            
+
             x_sum = sum(xs)
             xs = [x/x_sum for x in xs]
 
             if info is not None:
                 info[:] = xs, zs, Ks, eos_l, eos_g, 1.0
-            
+
 #            print(xs, P_guess, step, P_guess - P_guess_old)
             if abs(P_guess - P_guess_old) < xtol:
-                P_guess = P_guess_old # avoid new step which does not have eos's evaluated at it; just use a lower tolerance 
+                P_guess = P_guess_old # avoid new step which does not have eos's evaluated at it; just use a lower tolerance
                 break
-            
+
         if abs(P_guess - P_guess_old) > xtol:
             raise ValueError("Did not converge to specified tolerance")
         return P_guess
 
-    def dew_P_growth(self, P_guess, T, zs, maxiter=200, 
+    def dew_P_growth(self, P_guess, T, zs, maxiter=200,
                      xtol=1E-4, info=None, xs_guess=None,
                      factor=1.4, P_max=None, P_low_factor=0.25,
                      min_factor=1.05):
         if P_max is None:
-            P_max = 2*max(self.Pcs)        
+            P_max = 2*max(self.Pcs)
 
         while factor > min_factor:
             P = P_guess*P_low_factor
@@ -6709,12 +6709,12 @@ class GceosBase(Ideal):
                 except Exception as e:
                     print('Could not solve eos with P=%g' %P)
                     continue
-                
+
                 try:
                     # The root existed - try it!
                     ans = self.dew_P_Michelsen_Mollerup(P, T=T, zs=zs,
                                                         xs_guess=xs_guess,
-                                                        maxiter=maxiter, 
+                                                        maxiter=maxiter,
                                                         xtol=xtol, info=info,
                                                         near_critical=True)
                     print('success')
@@ -6735,7 +6735,7 @@ class GceosBase(Ideal):
             return flash_Tb_Tc_Pc(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, Tbs=self.Tbs, T=T, VF=1)
         elif method == 'IdealEOS':
             return self.flash_TVF_zs_ideal(T=T, VF=1, zs=zs)
-    
+
     def dew_P_guesses(self, T, zs, P_guess=None):
         i = -1 if P_guess is not None else 0
         while i < 3:
@@ -6762,7 +6762,7 @@ class GceosBase(Ideal):
         for P_guess, xs, ys in self.dew_P_guesses(T=T, zs=zs, P_guess=P_guess):
             P = None
             try:
-                P = self.dew_P_Michelsen_Mollerup(P_guess=P_guess, T=T, zs=zs, 
+                P = self.dew_P_Michelsen_Mollerup(P_guess=P_guess, T=T, zs=zs,
                                                   info=info, xtol=self.FLASH_VF_TOL,
                                                   xs_guess=xs, near_critical=True,
                                                   )
@@ -6772,18 +6772,18 @@ class GceosBase(Ideal):
                 pass
 
 #            try:
-#                P = self.dew_P_growth(P_guess=P_guess, T=T, zs=zs, 
+#                P = self.dew_P_growth(P_guess=P_guess, T=T, zs=zs,
 #                                      info=info, xtol=self.FLASH_VF_TOL,
 #                                      xs_guess=xs)
 #                return info[0], info[1], info[5], P, info[3], info[4]
 #            except Exception as e:
 #                print(e, 'dew_P_Michelsen_Mollerup falure of new method')
-#                pass                
+#                pass
 
 
             # Simplest solution method
             try:
-                P = newton(self._err_dew_P, P_guess, ytol=self.FLASH_VF_TOL, 
+                P = newton(self._err_dew_P, P_guess, ytol=self.FLASH_VF_TOL,
                            args=(T, zs, maxiter, xtol, info))
             except Exception as e:
                 print('newton failed dew_P guess %g' %(P_guess), e)
@@ -6812,7 +6812,7 @@ class GceosBase(Ideal):
         positive_VFs = []
         positive_Ps = []
         guess = flash_Tb_Tc_Pc(zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs, T=T, VF=0.0)[1]
-        
+
         eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                              zs=zs, kijs=self.kijs, T=T, P=self.P_REF_IG, **self.eos_kwargs)
 
@@ -6821,7 +6821,7 @@ class GceosBase(Ideal):
             pts, mult_min, mult_max = limits
             guess_Ps = [guess*10**(i) for i in np.linspace(mult_min, mult_max, pts).tolist()]
             shuffle(guess_Ps)
-        
+
             for P in guess_Ps:
                 try:
                     ans = eos_l._V_over_F_bubble_T_inner(T=T, P=P, zs=zs, maxiter=maxiter, xtol=xtol)
@@ -6838,7 +6838,7 @@ class GceosBase(Ideal):
                     break
             if negative_Ps and positive_Ps:
                 break
-        
+
         P_high = positive_Ps[positive_VFs.index(min(positive_VFs))]
         P_low = negative_Ps[negative_VFs.index(max(negative_VFs))]
         return P_high, P_low
@@ -6855,14 +6855,14 @@ class GceosBase(Ideal):
         for i in range(maxiter):
             eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                              zs=ys, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
-            
+
 #            try:
             phis_g = eos_g.phis_g
 #            except AttributeError:
 ##                print('using liquid phis to avoid failure')
 #                phis_g = eos_g.phis_l
             Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(eos_l.phis_l, phis_g)]
-                
+
             V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
             err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
                   sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
@@ -6872,26 +6872,26 @@ class GceosBase(Ideal):
 #            print('err', err, 'xs, ys', xs, ys)
             if err < xtol:
                 break
-        
+
         if info is not None:
             info[:] = xs, ys, Ks, eos_l, eos_g, V_over_F
         return V_over_F
 
 
-    def bubble_P_Michelsen_Mollerup(self, P_guess, T, zs, maxiter=200, 
+    def bubble_P_Michelsen_Mollerup(self, P_guess, T, zs, maxiter=200,
                                     xtol=1E-1, info=None, ys_guess=None,
                                     near_critical=False, max_step_damping=1e9,
                                     trivial_solution_tol=1e-4):
         N = len(zs)
         cmps = range(N)
         ys = zs if ys_guess is None else ys_guess
-        
-        
+
+
         eos_l_base = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
-                             zs=zs, kijs=self.kijs, T=T, P=P_guess, 
+                             zs=zs, kijs=self.kijs, T=T, P=P_guess,
                              fugacities=False, only_l=True,
                              **self.eos_kwargs)
-                
+
         def lnphis_and_derivatives(P_guess):
             if eos_l_base.P == P_guess:
                 eos_l = eos_l_base
@@ -6904,13 +6904,13 @@ class GceosBase(Ideal):
                     d_lnphis_dP_l = eos_l.dlnphis_dP('l')
                 except AttributeError:
                     ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, zs)
-                    d_lnphis_dP_l = eos_l.dlnphis_dP('g')                
+                    d_lnphis_dP_l = eos_l.dlnphis_dP('g')
             else:
                 ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, zs)
                 d_lnphis_dP_l = eos_l.dlnphis_dP('l')
 
             eos_g = eos_l_base.to_TP_zs_fast(T=T, P=P_guess, zs=ys, full_alphas=False, only_g=True)
-            
+
             if near_critical:
                 try:
                     ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
@@ -6921,26 +6921,26 @@ class GceosBase(Ideal):
             else:
                 ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
                 d_lnphis_dP_g = eos_g.dlnphis_dP('g')
-                
-                        
+
+
             return ln_phis_l, ln_phis_g, d_lnphis_dP_l, d_lnphis_dP_g, eos_l, eos_g
 
 
         for i in range(maxiter):
-            
+
             ln_phis_l, ln_phis_g, d_lnphis_dP_l, d_lnphis_dP_g, eos_l, eos_g = lnphis_and_derivatives(P_guess)
             Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
             f_k = sum([zs[i]*Ks[i] for i in cmps]) - 1.0
-            
+
             dfk_dP = 0.0
             for i in cmps:
                 dfk_dP += zs[i]*Ks[i]*(d_lnphis_dP_l[i] - d_lnphis_dP_g[i])
-            
+
             P_guess_old = P_guess
-            
+
             step = - f_k/dfk_dP
-            
-            
+
+
             if near_critical:
                 P_guess = P_guess + copysign(min(max_step_damping, abs(step)), step)
             else:
@@ -6949,7 +6949,7 @@ class GceosBase(Ideal):
             ys = [zs[i]*Ks[i] for i in cmps]
             y_sum = sum(ys)
             ys = [y/y_sum for y in ys]
-            
+
 #            if near_critical:
 #                comp_difference = sum([abs(zi - yi) for zi, yi in zip(zs, ys)])
 #                if comp_difference < trivial_solution_tol:
@@ -6962,18 +6962,18 @@ class GceosBase(Ideal):
             if abs(P_guess - P_guess_old) < xtol:
                 P_guess = P_guess_old
                 break
-                
+
         if abs(P_guess - P_guess_old) > xtol:
             raise UnconvergedError("Did not converge to specified tolerance")
         return P_guess
 
 
-    def bubble_P_growth(self, P_guess, T, zs, maxiter=200, 
+    def bubble_P_growth(self, P_guess, T, zs, maxiter=200,
                         xtol=1E-4, info=None, ys_guess=None,
                         factor=1.4, P_max=None, P_low_factor=0.25,
                         min_factor=1.025, near_critical=True):
         if P_max is None:
-            P_max = 2*max(self.Pcs)        
+            P_max = 2*max(self.Pcs)
 
         while factor > min_factor:
             P = P_guess*P_low_factor
@@ -6994,12 +6994,12 @@ class GceosBase(Ideal):
                 except Exception as e:
                     print('Could not solve eos with P=%g' %P)
                     continue
-                
+
                 try:
                     # The root existed - try it!
                     ans = self.bubble_P_Michelsen_Mollerup(P, T=T, zs=zs,
                                                            ys_guess=ys_guess,
-                                                           maxiter=maxiter, 
+                                                           maxiter=maxiter,
                                                            xtol=xtol, info=info,
                                                            near_critical=near_critical)
                     print('success')
@@ -7020,7 +7020,7 @@ class GceosBase(Ideal):
             return flash_Tb_Tc_Pc(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, Tbs=self.Tbs, T=T, VF=0)
         elif method == 'IdealEOS':
             return self.flash_TVF_zs_ideal(T=T, VF=0, zs=zs)
-    
+
     def bubble_P_guesses(self, T, zs, P_guess=None):
         i = -1 if P_guess is not None else 0
         while i < 3:
@@ -7050,10 +7050,10 @@ class GceosBase(Ideal):
         maxP = max(self.Pcs)*2
         for P_guess, xs, ys in self.bubble_P_guesses(T=T, zs=zs, P_guess=P_guess):
             P = None
-            
+
             try:
 #                print(P_guess, xs, ys, 'P_guess, xs, ys')
-                P = self.bubble_P_Michelsen_Mollerup(P_guess=P_guess, T=T, zs=zs, 
+                P = self.bubble_P_Michelsen_Mollerup(P_guess=P_guess, T=T, zs=zs,
                                                      info=info, xtol=self.FLASH_VF_TOL,
                                                      ys_guess=ys, near_critical=True,
                                                      max_step_damping=max_step_damping)
@@ -7063,21 +7063,21 @@ class GceosBase(Ideal):
                 exc_type, exc_obj, exc_tb = sys.exc_info()
                 fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
                 print(exc_type, fname, exc_tb.tb_lineno)
-                
-                
+
+
                 print(exc_obj, 'bubble_P_Michelsen_Mollerup falure')
                 pass
 
             try:
-                P = self.bubble_P_growth(P_guess=P_guess, T=T, zs=zs, 
+                P = self.bubble_P_growth(P_guess=P_guess, T=T, zs=zs,
                                                      info=info, xtol=self.FLASH_VF_TOL,
                                                      ys_guess=ys)
                 return info[0], info[1], info[5], P, info[3], info[4]
             except Exception as e:
                 print(e, 'bubble_P_Michelsen_Mollerup falure of new method')
-                pass                
-            
-        
+                pass
+
+
             try:
                 P = float(newton(self._err_bubble_P, P_guess, ytol=self.FLASH_VF_TOL,
                                  args=(T, zs, maxiter, xtol, info)))
@@ -7095,13 +7095,13 @@ class GceosBase(Ideal):
                     print('bubble_P fsolve failure with guess %s' %(P_guess), e)
                     continue
             return info[0], info[1], info[5], P, info[3], info[4]
-            
+
         raise ValueError("Overall bubble P loop could not find a convergent method")
         Pmin, Pmax = self._bracket_bubble_P(T=T, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
         P = ridder(self._err_bubble_P, Pmin, Pmax, args=(T, zs, maxiter, xtol, info))
         return info[0], info[1], info[5], P, info[3], info[4]
 
- 
+
     def dew_T_envelope(self, zs, P_low=1e5, P_high=None, xtol=1E-10,
                        factor=1.02, max_step_damping=.05, min_step_termination=1,
                        min_factor_termination=1.0000001, max_P_step=1e5,
@@ -7112,7 +7112,7 @@ class GceosBase(Ideal):
         xs_known = []
         Ts_known = []
         P_points = []
-        
+
         near_critical = False
         T_low = None
         for T_guess, xs, ys in self.dew_T_guesses(P=P_low, zs=zs):
@@ -7121,7 +7121,7 @@ class GceosBase(Ideal):
                                                   xtol=self.FLASH_VF_TOL, xs_guess=xs,
                                                   max_step_damping=max_step_damping)
                 xs_low, _, _, _, _, _ = info
-                
+
             except Exception as e:
 #                print('dew_T_Michelsen_Mollerup falure on initialization', e)
                 pass
@@ -7132,22 +7132,22 @@ class GceosBase(Ideal):
         Ts_known.append(T_low)
         P_points.append(P_low)
         T_prev, xs_prev = T_low, xs_low
-        
+
         if P_high is None:
             P_high = 1.5*max(self.Pcs)
-        
+
         spec_point_working = 1e100 if spec_points is None else spec_points[0]
         if spec_point_working < P_low:
             raise ValueError("Cannot specify a point lower than the minimum pressure")
         if spec_point_working == P_low:
             spec_points = spec_points[1:]
             spec_point_working = spec_points[0]
-        
+
         P_prev = P_working = min(P_low*factor, P_low + max_P_step, spec_point_working)
         if P_prev == spec_point_working:
             spec_point_working = spec_points[1]
 
-        
+
         while P_working < P_high + P_working*(factor - 1):
             info = []
             try:
@@ -7171,18 +7171,18 @@ class GceosBase(Ideal):
             P_working_prev = P_working
             P_working = min(P_prev*factor**factor_power, P_prev + max_P_step, spec_point_working)
             # Force a different pressure if the factor has changed but not enough - still spec_point_working
-            
+
             if spec_points is not None:
                 while P_working == P_working_prev:
                     factor = 1 + (factor - 1)*0.5
                     P_working = min(P_prev*factor**factor_power, P_prev + max_P_step, spec_point_working)
-            
+
             if P_working == spec_point_working:
                 try:
                     spec_point_working = spec_points[spec_points.index(spec_point_working)+1]
                 except:
                     spec_point_working = 1e100
-            
+
             if factor < min_factor_termination and P_points[-1]*(factor-1) < min_step_termination:
                 if not near_critical:
                     factor = factor_original
@@ -7197,30 +7197,30 @@ class GceosBase(Ideal):
 #                    factor = 2.0*factor - 1.0
 #                    factor = 2.0*factor - 1.0
 #                    factor = min(factor, factor_original)
-                    
+
                 # After this fails, it would be ideal to try to keep running the envelope while decreasing pressure
-                
+
                 # Is is possible to come up with a step on zs or Ts to help?
 #                P_prev = P_working = P_working + dP_skip_step
 #                N = len(zs)
 #                cmps = range(N)
-#                
+#
 #                dP_skipped = P_working - P_points[-1]
-#                
+#
 #                dP_prev = (P_points[-1] - P_points[-2])
-#                
+#
 #                dT_dP = (Ts_known[-1] - Ts_known[-2])/dP_prev
 #                dx_dP = [(xs_known[-1][i] - xs_known[-2][i])/dP_prev for i in cmps]
-#                
+#
 #                xs_prev = [max(xs_known[-1][i] + dx_dP[i]*dP_skipped, 0) for i in cmps]
 #                xs_prev_sum = sum(xs_prev)
 #                xs_prev = [xi/xs_prev_sum for xi in xs_prev]
-#                
+#
 #                T_prev = T_prev + dT_dP*dP_skipped
-#                
+#
 #                print('dP_skipped', dP_skipped, 'dT_dP', dT_dP, 'dx_dP', dx_dP, 'xs_prev', xs_prev, 'T_prev', T_prev)
-                
-                
+
+
         return P_points, Ts_known, xs_known
 
     def bubble_T_envelope(self, zs, P_low=1e5, P_high=None, xtol=1E-10,
@@ -7241,7 +7241,7 @@ class GceosBase(Ideal):
                                                   xtol=self.FLASH_VF_TOL, ys_guess=ys,
                                                   max_step_damping=max_step_damping)
                 _, ys_low, _, _, _, _ = info
-                
+
             except Exception as e:
                 print('bubble_T_Michelsen_Mollerup falure on initialization', e)
                 pass
@@ -7255,20 +7255,20 @@ class GceosBase(Ideal):
 
         if P_high is None:
             P_high = 1.5*max(self.Pcs)
-                    
+
         spec_point_working = 1e100 if spec_points is None else spec_points[0]
         if spec_point_working < P_low:
             raise ValueError("Cannot specify a point lower than the minimum pressure")
         if spec_point_working == P_low:
             spec_points = spec_points[1:]
             spec_point_working = spec_points[0]
-        
+
         P_prev = P_working = min(P_low*factor, P_low + max_P_step, spec_point_working)
         if P_prev == spec_point_working:
             spec_point_working = spec_points[1]
-        
-        
-        
+
+
+
         while P_working < P_high + P_working*(factor - 1):
             info = []
             try:
@@ -7287,15 +7287,15 @@ class GceosBase(Ideal):
                 P_points.append(P_working)
                 ys_prev, T_prev, P_prev = ys, T, P_working
 #                print('success on P', P_working)
-                
+
                 if factor_power == -1:
                     factor = min(2.0*factor - 1.0, factor_original)
                     # try a larger delta next time
             except Exception as e:
                 factor = 1 + (factor - 1)*0.5
                 if spec_points is not None and P_working in spec_points:
-                    spec_point_working = P_working                
-                
+                    spec_point_working = P_working
+
 #                print('failed bubble T at P %g with ys %s, factor now %f' %(P_working, ys_known[-1], factor), e)
 
 #                import sys, os
@@ -7309,15 +7309,15 @@ class GceosBase(Ideal):
             while P_working == P_working_prev:
                 factor = 1 + (factor - 1)*0.5
                 P_working = min(P_prev*factor**factor_power, P_prev + max_P_step, spec_point_working)
-            
+
             if P_working == spec_point_working:
                 try:
                     spec_point_working = spec_points[spec_points.index(spec_point_working)+1]
                 except:
                     spec_point_working = 1e100
-            
-            
-            
+
+
+
             if factor < min_factor_termination and P_points[-1]*(factor-1) < min_step_termination or P_working < P_low:
                 if not near_critical:
                     factor = factor_original
@@ -7331,9 +7331,9 @@ class GceosBase(Ideal):
 ##                    factor = 2.0*factor - 1.0
 #                    factor = factor_original
 ##                    factor = min(factor, factor_original)
-                
+
         return P_points, Ts_known, ys_known
-    
+
 
 
     def bubble_P_envelope(self, zs, T_low=200, T_high=None, xtol=10,
@@ -7354,7 +7354,7 @@ class GceosBase(Ideal):
                                                   xtol=xtol, ys_guess=ys,
                                                   max_step_damping=max_step_damping)
                 _, ys_low, _, _, _, _ = info
-                
+
             except Exception as e:
                 print('bubble_P_Michelsen_Mollerup falure on initialization', e)
                 pass
@@ -7368,19 +7368,19 @@ class GceosBase(Ideal):
 
         if T_high is None:
             T_high = 1.5*max(self.Tcs)
-                    
+
         spec_point_working = 1e100 if spec_points is None else spec_points[0]
         if spec_point_working < T_low:
             raise ValueError("Cannot specify a point lower than the minimum temperature")
         if spec_point_working == T_low:
             spec_points = spec_points[1:]
             spec_point_working = spec_points[0]
-        
+
         T_prev = T_working = min(T_low*factor, T_low + max_T_step, spec_point_working)
         if T_prev == spec_point_working:
             spec_point_working = spec_points[1]
-        
-        
+
+
         successes = 0
         while T_working < T_high + T_working*(factor - 1):
             info = []
@@ -7400,7 +7400,7 @@ class GceosBase(Ideal):
                 successes += 1
                 if successes > 3:
                     factor = 2.0*factor - 1.0
-                
+
                 if factor_power == -1:
                     factor = min(2.0*factor - 1.0, factor_original)
                     # try a larger delta next time
@@ -7409,8 +7409,8 @@ class GceosBase(Ideal):
                 successes = 0
                 factor = 1 + (factor - 1)*0.5
                 if spec_points is not None and T_working in spec_points:
-                    spec_point_working = T_working                
-                
+                    spec_point_working = T_working
+
 #                print('failed bubble P at T %g with ys %s, factor now %f' %(T_working, ys_known[-1], factor), e)
 
 #                import sys, os
@@ -7424,15 +7424,15 @@ class GceosBase(Ideal):
             while T_working == T_working_prev:
                 factor = 1 + (factor - 1)*0.5
                 T_working = min(T_prev*factor**factor_power, T_prev + max_T_step, spec_point_working)
-            
+
             if T_working == spec_point_working:
                 try:
                     spec_point_working = spec_points[spec_points.index(spec_point_working)+1]
                 except:
                     spec_point_working = 1e100
-            
-            
-            
+
+
+
             if factor < min_factor_termination and T_points[-1]*(factor-1) < min_step_termination or T_working < T_low:
                 if not near_critical:
                     factor = factor_original
@@ -7446,14 +7446,14 @@ class GceosBase(Ideal):
 ##                    factor = 2.0*factor - 1.0
 #                    factor = factor_original
 ##                    factor = min(factor, factor_original)
-                
+
         return T_points, Ps_known, ys_known
-    
+
     def Ks_and_dKs_dP(self, eos_l, eos_g, xs, ys):
         import numpy as np
         eos_l.fugacities()
         eos_g.fugacities()
-        
+
         try:
             lnphis_l = eos_l.lnphis_l
             dlnphis_l_dP = eos_l.dlnphis_dP('l')
@@ -7466,16 +7466,16 @@ class GceosBase(Ideal):
         except:
             lnphis_g = eos_g.lnphis_l
             dlnphis_g_dP = eos_g.dlnphis_dP('l')
-        
-        
-        
+
+
+
         Ks = np.exp(np.array(lnphis_l) - np.array(lnphis_g))
         dKs_dP = (np.array(dlnphis_l_dP) - np.array(dlnphis_g_dP))*Ks
 #        dKs_dP = (np.array(dlnphis_g_dP) - np.array(dlnphis_l_dP))*Ks
         return Ks, dKs_dP
 
     def Ks_and_dKs_dT(self, eos_l, eos_g, xs, ys):
-        
+
         try:
             try:
                 lnphis_l = eos_l.lnphis_l
@@ -7493,15 +7493,15 @@ class GceosBase(Ideal):
             eos_l.fugacities()
             eos_g.fugacities()
             return self.Ks_and_dKs_dT(eos_l, eos_g, xs, ys)
-        
+
         Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)]
         dKs_dT = [(l - g)*Ki for l, g, Ki in zip(dlnphis_l_dT, dlnphis_g_dT, Ks)]
 
 #        dKs_dT = (np.array(dlnphis_l_dT) - np.array(dlnphis_g_dT))*Ks
 #        dKs_dT = (np.array(dlnphis_g_dT) - np.array(dlnphis_l_dT))*Ks
         return Ks, dKs_dT
-    
-    
+
+
     def d_VF_dT(self, delta=1e-4, full=True):
         # Not accurate enough
         VF1 = self.V_over_F
@@ -7511,15 +7511,15 @@ class GceosBase(Ideal):
             # flash it
             VF2, xs, ys, eos_l, eos_g = new_eos.sequential_substitution_VL(xs=self.xs, ys=self.ys)
             return (VF2 - VF1)/delta
-        
-        
-        
+
+
+
         Ks, dKs_dT = self.Ks_and_dKs_dT(self.eos_l, self.eos_g, self.xs, self.ys)
         # Perturb the Ks
         Ks2 = [Ki + dKi*delta for Ki, dKi in zip(Ks, dKs_dT)]
         VF2, _, _ = flash_inner_loop(zs, Ks2, guess=VF1)
         return (VF2 - VF1)/delta
-        
+
     def d_VF_dP(self, delta=1e-4, full=True):
         # Not accurate enough
         VF1 = self.V_over_F
@@ -7529,8 +7529,8 @@ class GceosBase(Ideal):
             # flash it
             VF2, xs, ys, eos_l, eos_g = new_eos.sequential_substitution_VL(xs=self.xs, ys=self.ys)
             return (VF2 - VF1)/delta
-        
-        
+
+
         Ks, dKs_dP = self.Ks_and_dKs_dP(self.eos_l, self.eos_g, self.xs, self.ys)
         # Perturb the Ks
         Ks2 = [Ki + dKi*delta for Ki, dKi in zip(Ks, dKs_dP)]

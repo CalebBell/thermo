@@ -23,8 +23,8 @@ SOFTWARE.'''
 from __future__ import division, print_function
 
 __all__ = ['volume_solutions_mpmath', 'volume_solutions_mpmath_float',
-           'volume_solutions_NR', 'volume_solutions_NR_low_P', 'volume_solutions_halley', 
-           'volume_solutions_fast', 'volume_solutions_Cardano', 'volume_solutions_a1', 
+           'volume_solutions_NR', 'volume_solutions_NR_low_P', 'volume_solutions_halley',
+           'volume_solutions_fast', 'volume_solutions_Cardano', 'volume_solutions_a1',
            'volume_solutions_a2', 'volume_solutions_numpy', 'volume_solutions_ideal']
 
 
@@ -39,27 +39,27 @@ from fluids.constants import R, R_inv
 try:
     1/0
     from doubledouble import DoubleDouble
-    
+
     def imag_div_dd(x0, x1, y0, y1):
         a, b, c, d = x0, x1, y0, y1
         den_inv = 1/(c*c + d*d)
         real = (a*c + b*d)*den_inv
         comp = (b*c - a*d)*den_inv
         return real, comp
-    
+
     def imag_mult_dd(x0, x1, y0, y1):
         x, y, u, v = x0, x1, y0, y1
         return x*u - y*v, x*v + y*u
-    
+
     def imag_add_dd(x0, x1, y0, y1):
         return x0 + y0, x1+y1
-    
+
     third_dd = (DoubleDouble(1)/DoubleDouble(3))
     sqrt3_dd = DoubleDouble(1.7320508075688772, 1.0035084221806902e-16) # DoubleDouble(3).root(2)
     sqrt3_quarter_dd = DoubleDouble(0.4330127018922193, 2.5087710554517254e-17)
     quarter_dd = DoubleDouble(1)/DoubleDouble(4)
-    
-    
+
+
     def cbrt_dd(x):
         # http://web.mit.edu/tabbott/Public/quaddouble-debian/qd-2.3.4-old/docs/qd.pdf
         # start off with a "good" guess
@@ -68,11 +68,11 @@ try:
         y = y + third_dd*y*(1-x*y*y*y)
     #     y = y + third_dd*y*(1-x*y*y*y)
         return 1/y
-    
-    
+
+
     def imag_cbrt_dd(xr, xc):
         y_guess = (float(xr)+float(xc)*1.0j)**(-1.0/3.)
-        
+
         yr, yc = DoubleDouble(y_guess.real), DoubleDouble(y_guess.imag)
     #     print(repr(yr), repr(yc))
         t0r, t0c = imag_mult_dd(yr, yc, yr, yc) # have y*y
@@ -82,9 +82,9 @@ try:
         t0r, t0c = imag_mult_dd(yr, yc, t0r, t0c) # have y*(1-x*y*y*y)
         t0r, t0c = imag_mult_dd(third_dd, 0.0, t0r, t0c) # have third_dd*y*(1-x*y*y*y)
         yr, yc = imag_add_dd(yr, yc, t0r, t0c) # have y
-        
+
     #     print(repr(yr), repr(yc))
-        
+
 #        t0r, t0c = imag_mult_dd(yr, yc, yr, yc) # have y*y
 #        t0r, t0c = imag_mult_dd(t0r, t0c, yr, yc) # have y*y*y
 #        t0r, t0c = imag_mult_dd(xr, xc, t0r, t0c) # have x*y*y*y
@@ -92,7 +92,7 @@ try:
 #        t0r, t0c = imag_mult_dd(yr, yc, t0r, t0c) # have y*(1-x*y*y*y)
 #        t0r, t0c = imag_mult_dd(third_dd, 0.0, t0r, t0c) # have third_dd*y*(1-x*y*y*y)
 #        yr, yc = imag_add_dd(yr, yc, t0r, t0c) # have y
-        
+
         return imag_div_dd(1.0, 0.0, yr, yc)
 except:
     pass
@@ -412,7 +412,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
         (nitrogen); goes to the other solver and it reports a wrong duplicate root
         obj = PRTranslatedConsistent(Tc=126.2, Pc=3394387.5, omega=0.04, T=3204.081632653062, P=1e9)
     '''
-    # Test the case where a_alpha is so low, even with the lowest possible volume `b`, 
+    # Test the case where a_alpha is so low, even with the lowest possible volume `b`,
     # the value of the second term plus P is equal to P.
 #        if a_alpha == 0.0:
 #            return (b + R*T/P, 0.0, 0.0)
@@ -433,7 +433,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
 #            return volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
 #        except:
 #            pass
-    
+
     RT = R*T
     RT_2 = RT + RT
     a_alpha_2 = a_alpha + a_alpha
@@ -450,7 +450,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
     c2 = (thetas + epsilons - deltas*(B + 1.0))
     d2 = -(epsilons*(B + 1.0) + thetas*etas)
     RT_P = RT*P_inv
-    
+
     V0, V1 = 0.0, 0.0
     for i in range(3):
         if i == 0:
@@ -485,7 +485,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
 #                        break # got a perfect answer
                 continue
             V = V - step/step_den
-            
+
             if (rel_err < 3e-15 or V == Vi or fval_old == fval or fval == fval_oldold
                 or (j > 10 and rel_err < 1e-12)):
                 # Conditional check probably not worth it
@@ -498,7 +498,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
 #             V1 = V
         if j != 49:
             V0 = V
-            
+
             x1, x2 = deflate_cubic_real_roots(b2, c2, d2, V*P_RT_inv)
             if x1 == 0.0:
                 return (V0, 0.0, 0.0)
@@ -506,7 +506,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
             V1 = x1*RT_P
             V2 = x2*RT_P
 #             print(V1, V2, 'deflated Vs')
-            
+
             # Fixed a lot of really bad points in the plots with these.
             # Article suggests they are not needed, but 1 is better than 11 iterations!
             V = V1
@@ -525,7 +525,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
                 fder_inv = 1.0/fder
                 step = fval*fder_inv
                 V1 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
-            
+
             # Take a step with V2
             V = V2
             x0_inv = 1.0/(V - b)
@@ -698,7 +698,7 @@ def volume_solutions_doubledouble(T, P, b, delta, epsilon, a_alpha):
 
     x4x9  = x4*x9
 #        print('x9, x0, t1, t2', float(x9), float(x0), float(t1), float(t2))
-    
+
     to_sqrt = x9*(-4*t1*t1*t1*x0 + t2*t2) # For low P, this value overflows. No ideas how to compute and not interested in it.
 #        print('to_sqrt', float(to_sqrt))
     if to_sqrt < 0.0:
@@ -707,13 +707,13 @@ def volume_solutions_doubledouble(T, P, b, delta, epsilon, a_alpha):
     else:
         sqrted = (to_sqrt).sqrt()
         imag_rt = False
-        
+
     easy_adds = -13.5*x0*t0 - 4.5*x4x9*tm1 - x4*x4x9*x5
     if imag_rt:
         v0r, v0c = easy_adds, 0.5*sqrted
     else:
         v0r, v0c = easy_adds + 0.5*sqrted, 0.0
-        
+
     x19r, x19c = imag_cbrt_dd(v0r, v0c)
     x20r, x20c = imag_div_dd(-t1, -0.0, x19r, x19c)
 
@@ -726,20 +726,20 @@ def volume_solutions_doubledouble(T, P, b, delta, epsilon, a_alpha):
     x26r, x26c = 1, -sqrt3_dd
 #        x26_inv = 0.25 + 0.433012701892219323381861585376j
     x26_invr, x26_invc = quarter_dd, sqrt3_quarter_dd
-    
+
     g0 = float(f0r - x19r + x5)
     g1 = float(f0c - x19c)
-    
+
     f1r, f1c = imag_mult_dd(x19r, x19c, x24r, x24c)
     f2r, f2c = imag_mult_dd(x25r, x25c, x24_invr, x24_invc)
 #        f2 = x25*x24_inv
     g2 = float(f1r + x22 - f2r) # try to take away decimals anywhere and more error appears.
     g3 = float(f1c - f2c)
-    
+
 #        f3 = x19*x26
     f3r, f3c = imag_mult_dd(x19r, x19c, x26r, x26c)
     f4r, f4c = imag_mult_dd(x25r, x25c, x26_invr, x26_invc) #x25*x26_inv
-    
+
     g4 = float(f3r + x22 - f4r)
     g5 = float(f3c - f4c)
     return ((g0 + g1*1j)*third,

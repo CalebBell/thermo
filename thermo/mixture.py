@@ -57,18 +57,18 @@ except: # pragma: no cover
 
 
 
-def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None, 
+def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None,
                                    Vfgs=None, ignore_exceptions=False):
     r'''Composition preprocessing function for the :obj:`thermo.mixture.Mixture`
     class, as it had grown to the size it required its own function.
-    
+
     This function accepts the possible ways of specifying composition, parses
     and checks them to an extent, and returns the same arguments it receives.
-    
+
     The tasks it performs are as follows:
-        
+
         * Check if the input ID was a string, or a 1-length list, which is one
-          of the main keys or synonyms retrievable from 
+          of the main keys or synonyms retrievable from
           :obj:`thermo.identifiers.mixture_from_any`; if it is, take the
           composition from that method (weight fractions will be returned).
         * If the ID is a string or a 1-length list, set the composition to
@@ -79,16 +79,16 @@ def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None,
           speed.
         * If the composition is a dict or OrderedDict, take the keys of it
           as the identifiers from its keys and the composition as its values.
-          
+
     If no composition has been specified after the above parsing, an exception
-    is raised. 
-    
+    is raised.
+
     If multiple ways of specifying composition were used, raise an exception.
-    
+
     If the length of the specified composition is not the same as the number
     of identifiers given, an exception is raised.
-    
-    Note this method does not normalize composition to one; or check the 
+
+    Note this method does not normalize composition to one; or check the
     identifiers are valid.
     '''
     # Test if the input ID a string or a list
@@ -168,25 +168,25 @@ def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None,
     return IDs, zs, ws, Vfls, Vfgs
 
 
-class Mixture(object): 
-    '''Creates a Mixture object which contains basic information such as 
+class Mixture(object):
+    '''Creates a Mixture object which contains basic information such as
     molecular weight and the structure of the species, as well as thermodynamic
     and transport properties as a function of two of the variables temperature,
     pressure, vapor fraction, enthalpy, or entropy.
-    
+
     The components of the mixture must be specified by specifying the names of
     the chemicals; the composition can be specified by providing any one of the
     following parameters:
-        
+
     * Mass fractions `ws`
     * Mole fractions `zs`
     * Liquid volume fractions (based on pure component densities) `Vfls`
     * Gas volume fractions (based on pure component densities) `Vfgs`
-    
+
     If volume fractions are provided, by default the pure component volumes
-    are calculated at the specified `T` and `P`. To use another reference 
-    temperature and pressure specify it as a tuple for the argument `Vf_TP`. 
-    
+    are calculated at the specified `T` and `P`. To use another reference
+    temperature and pressure specify it as a tuple for the argument `Vf_TP`.
+
     If no thermodynamic conditions are specified, or if only one of T and P
     are specifed without another thermodynamic variable as well, the T and P
     298.15 K and/or 101325 Pa will be set instead of the missing variables.
@@ -194,17 +194,17 @@ class Mixture(object):
     Parameters
     ----------
     IDs : list, optional
-        List of chemical identifiers - names, CAS numbers, SMILES or InChi 
+        List of chemical identifiers - names, CAS numbers, SMILES or InChi
         strings can all be recognized and may be mixed [-]
     zs : list or dict, optional
         Mole fractions of all components in the mixture [-]
     ws : list or dict, optional
         Mass fractions of all components in the mixture [-]
     Vfls : list or dict, optional
-        Volume fractions of all components as a hypothetical liquid phase based 
+        Volume fractions of all components as a hypothetical liquid phase based
         on pure component densities [-]
     Vfgs : list, or dict optional
-        Volume fractions of all components as a hypothetical gas phase based 
+        Volume fractions of all components as a hypothetical gas phase based
         on pure component densities [-]
     T : float, optional
         Temperature of the mixture (default 298.15 K), [K]
@@ -220,18 +220,18 @@ class Mixture(object):
         Molar entropy of the mixture, [J/mol/K]
     S : float, optional
         Mass entropy of the mixture, [J/kg/K]
-    pkg : object 
+    pkg : object
         The thermodynamic property package to use for flash calculations;
         one of the caloric packages in :obj:`thermo.property_package`;
         defaults to the ideal model [-]
     Vf_TP : tuple(2, float), optional
-        The (T, P) at which the volume fractions are specified to be at, [K] 
+        The (T, P) at which the volume fractions are specified to be at, [K]
         and [Pa]
-    
+
     Attributes
     ----------
     MW : float
-        Mole-weighted average molecular weight all chemicals in the mixture, 
+        Mole-weighted average molecular weight all chemicals in the mixture,
         [g/mol]
     IDs : list of str
         Names of all the species in the mixture as given in the input, [-]
@@ -260,7 +260,7 @@ class Mixture(object):
     omegas : list of float
         Acentric factors of all chemicals in the mixture, [-]
     StielPolars : list of float
-        Stiel Polar factors of all chemicals in the mixture, 
+        Stiel Polar factors of all chemicals in the mixture,
         see :obj:`chemicals.acentric.Stiel_polar_factor` for the definition, [-]
     Tts : list of float
         Triple temperatures of all chemicals in the mixture, [K]
@@ -275,48 +275,48 @@ class Mixture(object):
     Hsubms : list of float
         Molar enthalpy of sublimations of all chemicals in the mixture, [J/mol]
     Hfms : list of float
-        Molar enthalpy of formations of all chemicals in the mixture, [J/mol]        
+        Molar enthalpy of formations of all chemicals in the mixture, [J/mol]
     Hfs : list of float
         Enthalpy of formations of all chemicals in the mixture, [J/kg]
     Gfms : list of float
-        Molar Gibbs free energies of formation of all chemicals in the mixture, 
-        [J/mol]        
+        Molar Gibbs free energies of formation of all chemicals in the mixture,
+        [J/mol]
     Gfs : list of float
-        Gibbs free energies of formation of all chemicals in the mixture, 
+        Gibbs free energies of formation of all chemicals in the mixture,
         [J/kg]
     Sfms : list of float
-        Molar entropy of formation of all chemicals in the mixture, 
-        [J/mol/K]        
+        Molar entropy of formation of all chemicals in the mixture,
+        [J/mol/K]
     Sfs : list of float
-        Entropy of formation of all chemicals in the mixture, 
+        Entropy of formation of all chemicals in the mixture,
         [J/kg/K]
     S0ms : list of float
-        Standard absolute entropies of all chemicals in the mixture, 
-        [J/mol/K]   
+        Standard absolute entropies of all chemicals in the mixture,
+        [J/mol/K]
     S0s : list of float
-        Standard absolute entropies of all chemicals in the mixture, 
+        Standard absolute entropies of all chemicals in the mixture,
         [J/kg/K]
     Hcms : list of float
-        Molar higher heats of combustions of all chemicals in the mixture, 
+        Molar higher heats of combustions of all chemicals in the mixture,
         [J/mol]
     Hcs : list of float
-        Higher heats of combustions of all chemicals in the mixture, 
+        Higher heats of combustions of all chemicals in the mixture,
         [J/kg]
     Hcms_lower : list of float
-        Molar lower heats of combustions of all chemicals in the mixture, 
+        Molar lower heats of combustions of all chemicals in the mixture,
         [J/mol]
     Hcs_lower : list of float
-        Higher lower of combustions of all chemicals in the mixture, 
+        Higher lower of combustions of all chemicals in the mixture,
         [J/kg]
     Tflashs : list of float
         Flash points of all chemicals in the mixture, [K]
     Tautoignitions : list of float
         Autoignition points of all chemicals in the mixture, [K]
     LFLs : list of float
-        Lower flammability limits of the gases in an atmosphere at STP, mole 
+        Lower flammability limits of the gases in an atmosphere at STP, mole
         fractions, [-]
     UFLs : list of float
-        Upper flammability limit of the gases in an atmosphere at STP, mole 
+        Upper flammability limit of the gases in an atmosphere at STP, mole
         fractions, [-]
     TWAs : list of list of tuple(quantity, unit)
         Time-Weighted Average limits on worker exposure to dangerous chemicals.
@@ -331,16 +331,16 @@ class Mixture(object):
     Chemicals : list of Chemical instances
         Chemical instances used in calculating mixture properties, [-]
     dipoles : list of float
-        Dipole moments of all chemicals in the mixture in debye, 
+        Dipole moments of all chemicals in the mixture in debye,
         [3.33564095198e-30 ampere*second^2]
     Stockmayers : list of float
-        Lennard-Jones depth of potential-energy minimum over k for all 
+        Lennard-Jones depth of potential-energy minimum over k for all
         chemicals in the mixture, [K]
     molecular_diameters : list of float
         Lennard-Jones molecular diameters of all chemicals in the mixture,
         [angstrom]
     GWPs : list of float
-        Global warming potentials (default 100-year outlook) (impact/mass 
+        Global warming potentials (default 100-year outlook) (impact/mass
         chemical)/(impact/mass CO2) of all chemicals in the mixture, [-]
     ODPs : list of float
         Ozone Depletion potentials (impact/mass chemical)/(impact/mass CFC-11),
@@ -354,26 +354,26 @@ class Mixture(object):
         Phase of the chemicals in the mixture at 298.15 K and 101325 Pa; one of
         's', 'l', 'g', or 'l/g'.
     Vml_Tbs : list of float
-        Molar volumes of the chemicals in the mixture as liquids at their 
+        Molar volumes of the chemicals in the mixture as liquids at their
         normal boiling points, [m^3/mol]
     Vml_Tms : list of float
-        Molar volumes of the chemicals in the mixture as liquids at their 
+        Molar volumes of the chemicals in the mixture as liquids at their
         melting points, [m^3/mol]
     Vml_STPs : list of float
         Molar volume of the chemicals in the mixture as liquids at 298.15 K and
         101325 Pa, [m^3/mol]
     rhoml_STPs : list of float
-        Molar densities of the chemicals in the mixture as liquids at 298.15 K 
+        Molar densities of the chemicals in the mixture as liquids at 298.15 K
         and 101325 Pa, [mol/m^3]
     Vmg_STPs : list of float
-        Molar volume of the chemicals in the mixture as gases at 298.15 K and 
+        Molar volume of the chemicals in the mixture as gases at 298.15 K and
         101325 Pa, [m^3/mol]
     Vms_Tms : list of float
         Molar volumes of solid phase at the melting point [m^3/mol]
     rhos_Tms : list of float
         Mass densities of solid phase at the melting point [kg/m^3]
     Hvap_Tbms : list of float
-        Molar enthalpies of vaporization of the chemicals in the mixture at 
+        Molar enthalpies of vaporization of the chemicals in the mixture at
         their normal boiling points, [J/mol]
     Hvap_Tbs : list of float
         Mass enthalpies of vaporization of the chemicals in the mixture at
@@ -499,15 +499,15 @@ class Mixture(object):
     Examples
     --------
     Creating Mixture objects:
-        
+
     >>> Mixture(['water', 'ethanol'], Vfls=[.6, .4], T=300, P=1E5)
     <Mixture, components=['water', 'ethanol'], mole fractions=[0.8299, 0.1701], T=300.00 K, P=100000 Pa>
-    
+
     For mixtures with large numbers of components, it may be confusing to enter
     the composition separate from the names of the chemicals. For that case,
     the syntax using dictionaries as follows is supported with any composition
     specification:
-        
+
     >>> comp = OrderedDict([('methane', 0.96522),
     ...                     ('nitrogen', 0.00259),
     ...                     ('carbon dioxide', 0.00596),
@@ -549,18 +549,18 @@ class Mixture(object):
         return txt
 
     def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
-                 T=None, P=None, 
+                 T=None, P=None,
                  VF=None, H=None, Hm=None, S=None, Sm=None, pkg=None, Vf_TP=(None, None)):
         # Perofrm preprocessing of the mixture composition separately so it
         # can be tested on its own
         IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=IDs,
-                                                                 zs=zs, ws=ws, 
+                                                                 zs=zs, ws=ws,
                                                                  Vfls=Vfls,
                                                                  Vfgs=Vfgs)
         self.IDs = IDs
         self.N = len(IDs)
         self.cmps = range(self.N)
-        
+
         T_unsolved = T if T is not None else self.T_default
         P_unsolved = P if P is not None else self.P_default
         self.Chemicals = [Chemical(ID, P=P_unsolved, T=T_unsolved, autocalc=False) for ID in self.IDs]
@@ -577,9 +577,9 @@ class Mixture(object):
             self.zs = ws_to_zs(ws, self.MWs)
         elif Vfls or Vfgs:
             T_vf, P_vf = Vf_TP
-            if T_vf is None: 
+            if T_vf is None:
                 T_vf = T_unsolved
-            if P_vf is None: 
+            if P_vf is None:
                 P_vf = P_unsolved
 
             if Vfls:
@@ -606,7 +606,7 @@ class Mixture(object):
         self.set_constants()
         self.set_TP_sources()
 
-        
+
         # To preserve backwards compatibility, mixures with no other state vars
         # specified will have their T and P initialized to the values of
         # T_default and P_default (but only if the values VF, Hm, H, Sm, S are
@@ -617,7 +617,7 @@ class Mixture(object):
                 T = self.T_default
             if P is None:
                 P = self.P_default
-        
+
         self.set_property_package(pkg=pkg)
         if self.autoflash:
             self.flash_caloric(T=T, P=P, VF=VF, Hm=Hm, Sm=Sm, H=H, S=S)
@@ -631,7 +631,7 @@ class Mixture(object):
         self.names = [i.name for i in self.Chemicals]
         self.MWs = MWs = [i.MW for i in self.Chemicals]
         self.CASs = [i.CAS for i in self.Chemicals]
-        
+
         # Set lists of everything set by Chemical.set_constants
         self.Tms = [i.Tm for i in self.Chemicals]
         self.Tbs = [i.Tb for i in self.Chemicals]
@@ -660,16 +660,16 @@ class Mixture(object):
         # Chemistry - standard state
         self.Hfms = [i.Hfm for i in self.Chemicals]
         self.Hfs = [i.Hf for i in self.Chemicals]
-        
+
         self.S0ms = [i.S0m for i in self.Chemicals]
         self.S0s = [i.S0 for i in self.Chemicals]
-        
+
         self.Gfms = [i.Gfm for i in self.Chemicals]
         self.Gfs = [i.Gf for i in self.Chemicals]
-        
+
         self.Sfms = [i.Sfm for i in self.Chemicals]
         self.Sfs = [i.Sf for i in self.Chemicals]
-        
+
         # Ideal gas state
         self.Hfgms = [i.Hfgm for i in self.Chemicals]
         self.Hfgs = [i.Hfg for i in self.Chemicals]
@@ -686,13 +686,13 @@ class Mixture(object):
         # Combustion
         self.Hcms = [i.Hcm for i in self.Chemicals]
         self.Hcs = [i.Hc for i in self.Chemicals]
-        
+
         self.Hcms_lower = [i.Hcm_lower for i in self.Chemicals]
         self.Hcs_lower = [i.Hc_lower for i in self.Chemicals]
 
         self.Hcgms = [i.Hcgm for i in self.Chemicals]
         self.Hcgs = [i.Hcg for i in self.Chemicals]
-        
+
         self.Hcgms_lower = [i.Hcgm_lower for i in self.Chemicals]
         self.Hcgs_lower = [i.Hcg_lower for i in self.Chemicals]
 
@@ -728,11 +728,11 @@ class Mixture(object):
         self.Vml_STPs = Vml_STPs = [i.Vml_STP for i in self.Chemicals]
         self.rholm_STPs = [i.rhoml_STP for i in self.Chemicals]
         self.rhol_STPs = [i.rhol_STP for i in self.Chemicals]
-        
+
         self.Vml_60Fs = Vml_STPs = [i.Vml_60F for i in self.Chemicals]
         self.rhoml_60Fs = [i.rhoml_60F for i in self.Chemicals]
         self.rhol_60Fs = [i.rhol_60F for i in self.Chemicals]
-        
+
         self.Vmg_STPs = [i.Vmg_STP for i in self.Chemicals]
 
         self.Vms_Tms = [i.Vms_Tm for i in self.Chemicals]
@@ -746,13 +746,13 @@ class Mixture(object):
         self.Hvap_Tbs = [i.Hvap_Tb for i in self.Chemicals]
         self.Hvapm_298s = [i.Hvapm_298 for i in self.Chemicals]
         self.Hvap_298s = [i.Hvap_298 for i in self.Chemicals]
-        
+
     ### More stuff here
 
     def set_chemical_TP(self, T=None, P=None):
         '''Basic method to change all chemical instances to be at the T and P
         specified. If they are not specified, the the values of the mixture
-        will be used. This is not necessary for using the Mixture instance 
+        will be used. This is not necessary for using the Mixture instance
         unless values specified to chemicals are required.
         '''
         # Tempearture and Pressure Denepdence
@@ -835,7 +835,7 @@ class Mixture(object):
         if self.eos_in_a_box:
             self.eos_in_a_box.pop()
         self.eos_in_a_box.append(eos)
-        
+
     def eos_pures(self, eos=PR, T=None, P=None):
         if T is None:
             T = self.T
@@ -897,7 +897,7 @@ class Mixture(object):
             self.property_package = pkg.pkg
             self.property_package_constants = pkg # Store for use elsewhere
             return True
-        
+
         eos_mix = type(self.eos_in_a_box[0]) if self.eos_in_a_box else PRMIX
 
         if type(pkg) == type:
@@ -910,12 +910,12 @@ class Mixture(object):
                                          UNIFAC_groups=self.UNIFAC_groups, omegas=self.omegas,
                                          Hfs=self.Hfgms, Gfs=self.Gfgms,
                                          VolumeLiquids=self.VolumeLiquids, eos=type(self.Chemicals[0].eos),
-                                         eos_mix=eos_mix)        
+                                         eos_mix=eos_mix)
         else:
             # no need to initialize, already exists
             self.property_package = pkg
-        
-        
+
+
     def flash_caloric(self, T=None, P=None, VF=None, Hm=None, Sm=None,
                       H=None, S=None):
 #        '''
@@ -931,7 +931,7 @@ class Mixture(object):
         if H is not None:
             Hm = property_mass_to_molar(H, self.MW)
         if S is not None:
-            Sm = property_mass_to_molar(S, self.MW)        
+            Sm = property_mass_to_molar(S, self.MW)
         self.property_package.flash_caloric(zs=self.zs, T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
         self.status = self.property_package.status
         if self.status == True:
@@ -941,11 +941,11 @@ class Mixture(object):
             self.xs = self.property_package.xs
             self.ys = self.property_package.ys
             self.phase = self.property_package.phase
-            
+
             self.Hm = self.property_package.Hm
             self.Sm = self.property_package.Sm
             self.Gm = self.property_package.Gm
-            
+
             try:
                 self.Hm_reactive = self.property_package.Hm_reactive
                 self.H_reactive = property_molar_to_mass(self.Hm_reactive, self.MW)
@@ -961,38 +961,38 @@ class Mixture(object):
                 self.G_reactive = property_molar_to_mass(self.Gm_reactive, self.MW)
             except:
                 self.Gm_reactive = self.G_reactive = None
-            
+
             self.H = property_molar_to_mass(self.Hm, self.MW)
             self.S = property_molar_to_mass(self.Sm, self.MW)
             self.G = property_molar_to_mass(self.Gm, self.MW)
 
-            
+
             # values are None when not in the appropriate phase
             self.MWl = mixing_simple(self.xs, self.MWs) if self.xs is not None else None
             self.MWg = mixing_simple(self.ys, self.MWs) if self.ys is not None else None
             self.wsl = zs_to_ws(self.xs, self.MWs) if self.xs is not None else None
             self.wsg = zs_to_ws(self.ys, self.MWs) if self.ys is not None else None
-            
+
             if (self.MWl is not None and self.MWg is not None):
-                self.quality = self.x = vapor_mass_quality(self.V_over_F, MWl=self.MWl, MWg=self.MWg) 
+                self.quality = self.x = vapor_mass_quality(self.V_over_F, MWl=self.MWl, MWg=self.MWg)
             else:
                 self.quality = self.x = 1 if self.phase == 'g' else 0
-            
-            
+
+
             if self.xs is None:
                 self.wsl = zs_to_ws(self.ys, self.MWs)
                 self.MWl = mixing_simple(self.ys, self.MWs)
-                
+
             if self.ys is None:
                 self.MWg = mixing_simple(self.xs, self.MWs)
                 self.wsg = zs_to_ws(self.xs, self.MWs)
-            
+
             # TODO: volume fractions - attempt
 #            if (self.rhol is not None and self.rhog is not None):
-#                self.Vfg = vapor_mass_quality(self.quality, MWl=self.Vml, MWg=self.Vmg) 
+#                self.Vfg = vapor_mass_quality(self.quality, MWl=self.Vml, MWg=self.Vmg)
 #            else:
 #                self.Vfg = None
-                
+
         else:
             # flash failed. still want to set what variables that can be set though.
             for var in ['T', 'P', 'VF', 'Hm', 'Sm', 'H', 'S']:
@@ -1008,7 +1008,7 @@ class Mixture(object):
         r'''Internal energy of the mixture at its current state, in units of
         [J/mol].
 
-        This property requires that the property package of the mixture 
+        This property requires that the property package of the mixture
         found a solution to the given state variables.
         It also depends on the molar volume of the mixture at its current
         conditions.
@@ -1020,7 +1020,7 @@ class Mixture(object):
         r'''Internal energy of the mixture at its current state,
         in units of [J/kg].
 
-        This property requires that the property package of the mixture 
+        This property requires that the property package of the mixture
         found a solution to the given state variables.
         It also depends on the molar volume of the mixture at its current
         conditions.
@@ -1029,10 +1029,10 @@ class Mixture(object):
 
     @property
     def Am(self):
-        r'''Helmholtz energy of the mixture at its current state, 
+        r'''Helmholtz energy of the mixture at its current state,
         in units of [J/mol].
 
-        This property requires that the property package of the mixture 
+        This property requires that the property package of the mixture
         found a solution to the given state variables.
         It also depends on the molar volume of the mixture at its current
         conditions.
@@ -1044,7 +1044,7 @@ class Mixture(object):
         r'''Helmholtz energy of the mixture at its current state,
         in units of [J/kg].
 
-        This property requires that the property package of the mixture 
+        This property requires that the property package of the mixture
         found a solution to the given state variables.
         It also depends on the molar volume of the mixture at its current
         conditions.
@@ -1056,27 +1056,27 @@ class Mixture(object):
         r'''Dew point temperature of the mixture at its current pressure and
         composition, in units of [K].
 
-        This property requires that the property package of the mixture 
+        This property requires that the property package of the mixture
         found a solution to the given state variables.
         '''
         return self.property_package.Tdew(P=self.P, zs=self.zs)
-    
+
     @property
-    def Pdew(self):     
+    def Pdew(self):
         r'''Dew point pressure of the mixture at its current temperature and
         composition, in units of [Pa].
 
-        This property requires that the property package of the mixture 
+        This property requires that the property package of the mixture
         found a solution to the given state variables.
         '''
         return self.property_package.Pdew(T=self.T, zs=self.zs)
-    
+
     @property
     def Tbubble(self):
         r'''Bubble point temperature of the mixture at its current pressure and
         composition, in units of [K].
 
-        This property requires that the property package of the mixture 
+        This property requires that the property package of the mixture
         found a solution to the given state variables.
         '''
         return self.property_package.Tbubble(P=self.P, zs=self.zs)
@@ -1086,24 +1086,24 @@ class Mixture(object):
         r'''Bubble point pressure of the mixture at its current temperature and
         composition, in units of [Pa].
 
-        This property requires that the property package of the mixture 
+        This property requires that the property package of the mixture
         found a solution to the given state variables.
         '''
         return self.property_package.Pbubble(T=self.T, zs=self.zs)
 
 
     def Vfls(self, T=None, P=None):
-        r'''Volume fractions of all species in a hypothetical pure-liquid phase 
-        at the current or specified temperature and pressure. If temperature 
-        or pressure are specified, the non-specified property is assumed to be 
-        that of the mixture. Note this is a method, not a property. Volume 
+        r'''Volume fractions of all species in a hypothetical pure-liquid phase
+        at the current or specified temperature and pressure. If temperature
+        or pressure are specified, the non-specified property is assumed to be
+        that of the mixture. Note this is a method, not a property. Volume
         fractions are calculated based on **pure species volumes only**.
 
         Examples
         --------
         >>> Mixture(['hexane', 'pentane'], zs=[.5, .5], T=315).Vfls()
         [0.5299671144566751, 0.47003288554332484]
-        
+
         >>> S = Mixture(['hexane', 'decane'], zs=[0.25, 0.75])
         >>> S.Vfls(298.16, 101326)
         [0.18301434895886864, 0.8169856510411313]
@@ -1120,17 +1120,17 @@ class Mixture(object):
 
 
     def Vfgs(self, T=None, P=None):
-        r'''Volume fractions of all species in a hypothetical pure-gas phase 
-        at the current or specified temperature and pressure. If temperature 
-        or pressure are specified, the non-specified property is assumed to be 
-        that of the mixture. Note this is a method, not a property. Volume 
+        r'''Volume fractions of all species in a hypothetical pure-gas phase
+        at the current or specified temperature and pressure. If temperature
+        or pressure are specified, the non-specified property is assumed to be
+        that of the mixture. Note this is a method, not a property. Volume
         fractions are calculated based on **pure species volumes only**.
 
         Examples
         --------
         >>> Mixture(['sulfur hexafluoride', 'methane'], zs=[.2, .9], T=315).Vfgs()
         [0.18062059238682632, 0.8193794076131737]
-        
+
         >>> S = Mixture(['sulfur hexafluoride', 'methane'], zs=[.1, .9])
         >>> S.Vfgs(P=1E2)
         [0.0999987466608421, 0.9000012533391578]
@@ -1245,7 +1245,7 @@ class Mixture(object):
 
     @property
     def similarity_variables(self):
-        r'''Similarity variables for all chemicals in the mixture, see 
+        r'''Similarity variables for all chemicals in the mixture, see
         :obj:`chemicals.elements.similarity_variable` for the definition, [mol/g]
 
         Examples
@@ -1525,14 +1525,14 @@ class Mixture(object):
         in units of [J/m^3] at the specified `T` and `P` in the gas phase.
 
         This property depends on the bulk composition only.
-        
+
         Parameters
         ----------
         T : float, optional
             Reference temperature, [K]
         P : float, optional
             Reference pressure, [Pa]
-            
+
         Returns
         ----------
         Hc_volumetric_g : float, optional
@@ -1547,14 +1547,14 @@ class Mixture(object):
         in units of [J/m^3] at the specified `T` and `P` in the gas phase.
 
         This property depends on the bulk composition only.
-        
+
         Parameters
         ----------
         T : float, optional
             Reference temperature, [K]
         P : float, optional
             Reference pressure, [Pa]
-            
+
         Returns
         ----------
         Hc_volumetric_g : float, optional
@@ -1576,7 +1576,7 @@ class Mixture(object):
         0.0
         '''
         return sum([zi*ci for zi, ci in zip(self.zs, self.charges)])
-        
+
     ### One phase properties - calculate lazily
     @property
     def Psats(self):
@@ -1877,9 +1877,9 @@ class Mixture(object):
 
     @property
     def SGs(self):
-        r'''Specific gravity of a hypothetical solid phase of the mixture at the 
+        r'''Specific gravity of a hypothetical solid phase of the mixture at the
         specified temperature and pressure, [dimensionless].
-        The reference condition is water at 4 °C and 1 atm 
+        The reference condition is water at 4 °C and 1 atm
         (rho=999.017 kg/m^3). The SG varries with temperature and pressure
         but only very slightly.
         '''
@@ -1890,13 +1890,13 @@ class Mixture(object):
 
     @property
     def SGl(self):
-        r'''Specific gravity of a hypothetical liquid phase of the mixture at  
+        r'''Specific gravity of a hypothetical liquid phase of the mixture at
         the specified temperature and pressure, [dimensionless].
-        The reference condition is water at 4 °C and 1 atm 
+        The reference condition is water at 4 °C and 1 atm
         (rho=999.017 kg/m^3). For liquids, SG is defined that the reference
         chemical's T and P are fixed, but the chemical itself varies with
         the specified T and P.
-        
+
         Examples
         --------
         >>> Mixture('water', ws=[1], T=365).SGl
@@ -1942,7 +1942,7 @@ class Mixture(object):
     @property
     def muls(self):
         r'''Pure component viscosities of the chemicals in the mixture in the
-        liquid phase at its current temperature and pressure, in units of 
+        liquid phase at its current temperature and pressure, in units of
         [Pa*s].
 
         Examples
@@ -2451,11 +2451,11 @@ class Mixture(object):
         >>> Mixture(['nitrogen'], ws=[1]).speed_of_sound_g
         351.77445481641661
         '''
-        
-        dP_dV = 1.0/self.VolumeGasMixture.property_derivative_P(T=self.T, P=self.P, 
+
+        dP_dV = 1.0/self.VolumeGasMixture.property_derivative_P(T=self.T, P=self.P,
                                                                 zs=self.ys, ws=self.wsg, order=1)
-        
-        return speed_of_sound(V=self.Vmg, dP_dV=dP_dV, Cp=self.property_package.Cpgm, 
+
+        return speed_of_sound(V=self.Vmg, dP_dV=dP_dV, Cp=self.property_package.Cpgm,
                               Cv=self.property_package.Cvgm, MW=self.MWg)
 
     @property
@@ -2468,10 +2468,10 @@ class Mixture(object):
         >>> Mixture(['toluene'], P=1E5, T=300, ws=[1]).speed_of_sound_l
         1116.0852487852942
         '''
-        dP_dV = 1.0/self.VolumeLiquidMixture.property_derivative_P(T=self.T, P=self.P, 
+        dP_dV = 1.0/self.VolumeLiquidMixture.property_derivative_P(T=self.T, P=self.P,
                                                                 zs=self.xs, ws=self.wsl, order=1)
-        
-        return speed_of_sound(V=self.Vml, dP_dV=dP_dV, Cp=self.property_package.Cplm, 
+
+        return speed_of_sound(V=self.Vml, dP_dV=dP_dV, Cp=self.property_package.Cplm,
                               Cv=self.property_package.Cvlm, MW=self.MWl)
     @property
     def speed_of_sound(self):
@@ -2489,7 +2489,7 @@ class Mixture(object):
             return self.speed_of_sound_g
         elif self.phase == 'l/g':
             return self.speed_of_sound_g*self.x + (1.0 - self.x)*self.speed_of_sound_l
-    
+
     @property
     def isentropic_exponent(self):
         r'''Gas-phase ideal-gas isentropic exponent of the mixture at its
@@ -2732,11 +2732,11 @@ class Mixture(object):
     @property
     def SGg(self):
         r'''Specific gravity of a hypothetical gas phase of the mixture, .
-        [dimensionless]. The reference condition is air at 15.6 °C (60 °F) and 
-        1 atm (rho=1.223 kg/m^3). The definition for gases uses the 
-        compressibility factor of the reference gas and the mixture both at the 
+        [dimensionless]. The reference condition is air at 15.6 °C (60 °F) and
+        1 atm (rho=1.223 kg/m^3). The definition for gases uses the
+        compressibility factor of the reference gas and the mixture both at the
         reference conditions, not the conditions of the mixture.
-            
+
         Examples
         --------
         >>> Mixture('argon').SGg
@@ -2866,7 +2866,7 @@ class Mixture(object):
         >>> Mixture(['ethylbenzene'], ws=[1], T=550, P=3E6).Cpm
         294.18449553310046
         '''
-        return phase_select_property(phase=self.phase, s=Mixture.Cpsm, 
+        return phase_select_property(phase=self.phase, s=Mixture.Cpsm,
                                      l=Mixture.Cplm, g=Mixture.Cpgm, self=self)
 
     @property
@@ -2880,7 +2880,7 @@ class Mixture(object):
         >>> Mixture(['ethylbenzene'], ws=[1], T=550, P=3E6).Vm
         0.00017758024401627633
         '''
-        return phase_select_property(phase=self.phase, s=Mixture.Vms, 
+        return phase_select_property(phase=self.phase, s=Mixture.Vms,
                                      l=Mixture.Vml, g=Mixture.Vmg, self=self)
 
     @property
@@ -2899,7 +2899,7 @@ class Mixture(object):
             rhol, rhog = self.rhol, self.rhog
             a, b = (1.0 - self.x)/rhol, self.x/rhog
             return rhol*a/(a+b) + b/(a+b)*rhog
-        return phase_select_property(phase=self.phase, s=Mixture.rhos, 
+        return phase_select_property(phase=self.phase, s=Mixture.rhos,
                                      l=Mixture.rhol, g=Mixture.rhog, self=self)
 
     @property
@@ -2939,12 +2939,12 @@ class Mixture(object):
 
     @property
     def SG(self):
-        r'''Specific gravity of the mixture, [dimensionless]. 
-        
-        For gas-phase conditions, this is calculated at 15.6 °C (60 °F) and 1 
-        atm for the mixture and the reference fluid, air. 
-        For liquid and solid phase conditions, this is calculated based on a 
-        reference fluid of water at 4°C at 1 atm, but the with the liquid or 
+        r'''Specific gravity of the mixture, [dimensionless].
+
+        For gas-phase conditions, this is calculated at 15.6 °C (60 °F) and 1
+        atm for the mixture and the reference fluid, air.
+        For liquid and solid phase conditions, this is calculated based on a
+        reference fluid of water at 4°C at 1 atm, but the with the liquid or
         solid mixture's density at the currently specified conditions.
 
         Examples
@@ -2952,7 +2952,7 @@ class Mixture(object):
         >>> Mixture('MTBE').SG
         0.7428160596603596
         '''
-        return phase_select_property(phase=self.phase, s=Mixture.SGs, 
+        return phase_select_property(phase=self.phase, s=Mixture.SGs,
                                      l=Mixture.SGl, g=Mixture.SGg, self=self)
 
 
@@ -2991,7 +2991,7 @@ class Mixture(object):
         >>> Mixture(['water'], ws=[1]).JT
         -2.2150394958666412e-07
         '''
-        return phase_select_property(phase=self.phase, l=Mixture.JTl, 
+        return phase_select_property(phase=self.phase, l=Mixture.JTl,
                                      g=Mixture.JTg, self=self)
 
     @property
@@ -3005,7 +3005,7 @@ class Mixture(object):
         >>> Mixture(['ethanol'], ws=[1], T=400).mu
         1.1853097849748213e-05
         '''
-        return phase_select_property(phase=self.phase, l=Mixture.mul, 
+        return phase_select_property(phase=self.phase, l=Mixture.mul,
                                      g=Mixture.mug, self=self)
 
     @property
@@ -3053,7 +3053,7 @@ class Mixture(object):
         >>> Mixture(['furfural'], ws=[1]).alpha
         8.696537158635412e-08
         '''
-        return phase_select_property(phase=self.phase, l=Mixture.alphal, 
+        return phase_select_property(phase=self.phase, l=Mixture.alphal,
                                      g=Mixture.alphag, self=self)
 
     @property
@@ -3070,7 +3070,7 @@ class Mixture(object):
         >>> Mixture(['acetone'], ws=[1]).Pr
         4.183039103542711
         '''
-        return phase_select_property(phase=self.phase, l=Mixture.Prl, 
+        return phase_select_property(phase=self.phase, l=Mixture.Prl,
                                      g=Mixture.Prg, self=self)
 
     ### Standard state properties
@@ -3192,10 +3192,10 @@ class Mixture(object):
 
     @property
     def API(self):
-        r'''API gravity of the hypothetical liquid phase of the mixture, 
-        [degrees]. The reference condition is water at 15.6 °C (60 °F) and 1 atm 
+        r'''API gravity of the hypothetical liquid phase of the mixture,
+        [degrees]. The reference condition is water at 15.6 °C (60 °F) and 1 atm
         (rho=999.016 kg/m^3, standardized).
-            
+
         Examples
         --------
         >>> Mixture(['hexane', 'decane'], ws=[0.5, 0.5]).API
@@ -3264,21 +3264,21 @@ class Mixture(object):
             pass
         from thermo.chemical_package import ChemicalConstantsPackage
 
-        self._constants = ChemicalConstantsPackage(CASs=self.CASs, names=self.names, MWs=self.MWs, 
-                                                   Tms=self.Tms, Tbs=self.Tbs, 
+        self._constants = ChemicalConstantsPackage(CASs=self.CASs, names=self.names, MWs=self.MWs,
+                                                   Tms=self.Tms, Tbs=self.Tbs,
                  # Critical state points
-                 Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, omegas=self.omegas, 
-                 Zcs=self.Zcs, rhocs=self.rhocms, rhocs_mass=self.rhocs, 
+                 Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, omegas=self.omegas,
+                 Zcs=self.Zcs, rhocs=self.rhocms, rhocs_mass=self.rhocs,
                  # Phase change enthalpy
                  Hfus_Tms=self.Hfusms, Hfus_Tms_mass=self.Hfuss, Hvap_Tbs=self.Hvap_Tbms,
-                 Hvap_Tbs_mass=self.Hvap_Tbs, 
+                 Hvap_Tbs_mass=self.Hvap_Tbs,
                  # Standard values
                  Vml_STPs=self.Vml_STPs, rhol_STPs=self.rholm_STPs, rhol_STPs_mass=self.rhol_STPs,
                  Vml_60Fs=self.Vml_60Fs, rhol_60Fs=self.rholm_STPs, rhol_60Fs_mass=self.rhol_60Fs,
                  # Reaction (ideal gas)
                  Hfgs=self.Hfgms, Hfgs_mass=self.Hfgs, Gfgs=self.Gfgms, Gfgs_mass=self.Gfgs,
                  Sfgs=self.Sfgms, Sfgs_mass=self.Sfgs, S0gs=self.S0gms, S0gs_mass=self.S0gs,
-                 
+
                  # Triple point
                  Tts=self.Tts, Pts=self.Pts, Hsub_Tms=self.Hsubms, Hsub_Tms_mass=self.Hsubs,
                  # Combustion
@@ -3286,17 +3286,17 @@ class Mixture(object):
                  # Fire safety
                  Tflashs=self.Tflashs, Tautoignitions=self.Tautoignitions, LFLs=self.LFLs, UFLs=self.UFLs,
                  # Other safety
-                 TWAs=self.TWAs, STELs=self.STELs, Ceilings=self.Ceilings, Skins=self.Skins, 
+                 TWAs=self.TWAs, STELs=self.STELs, Ceilings=self.Ceilings, Skins=self.Skins,
                  Carcinogens=self.Carcinogens, legal_statuses=self.legal_statuses, economic_statuses=self.economic_statuses,
                  # Environmental
-                 GWPs=self.GWPs, ODPs=self.ODPs, logPs=self.logPs, 
-                 Psat_298s=self.Psat_298s, Hvap_298s=self.Hvapm_298s, 
+                 GWPs=self.GWPs, ODPs=self.ODPs, logPs=self.logPs,
+                 Psat_298s=self.Psat_298s, Hvap_298s=self.Hvapm_298s,
                  Hvap_298s_mass=self.Hvap_298s, Vml_Tms=self.Vml_Tms,
                  rhos_Tms=self.rhos_Tms, Vms_Tms=self.Vms_Tms,
                  # Analytical
                  RIs=self.RIs, conductivities=self.conductivities,
                  # Odd constants
-                 charges=self.charges, dipoles=self.dipoles, Stockmayers=self.Stockmayers, 
+                 charges=self.charges, dipoles=self.dipoles, Stockmayers=self.Stockmayers,
                  molecular_diameters=self.molecular_diameters, Van_der_Waals_volumes=self.Van_der_Waals_volumes,
                  Van_der_Waals_areas=self.Van_der_Waals_areas, Parachors=self.Parachors, StielPolars=self.StielPolars,
                  atomss=self.atomss, atom_fractions=self.atom_fractions,
@@ -3306,40 +3306,40 @@ class Mixture(object):
                  PubChems=self.PubChems, formulas=self.formulas, smiless=self.smiless, InChIs=self.InChIs,
                  InChI_Keys=self.InChI_Keys,
                  # Groups
-                 UNIFAC_groups=self.UNIFAC_groups, UNIFAC_Dortmund_groups=self.UNIFAC_Dortmund_groups, 
+                 UNIFAC_groups=self.UNIFAC_groups, UNIFAC_Dortmund_groups=self.UNIFAC_Dortmund_groups,
                  PSRK_groups=self.PSRK_groups)
         return self._constants
-    
-    
+
+
     def properties(self, copy_pures=True, copy_mixtures=True):
         try:
             return self._properties
         except AttributeError:
             pass
-        
+
         from thermo.chemical_package import PropertyCorrelationPackage
         constants = self.constants
         kwargs = dict(constants=constants)
         if copy_pures:
             kwargs.update(VaporPressures=self.VaporPressures, SublimationPressures=self.SublimationPressures,
                  VolumeGases=self.VolumeGases, VolumeLiquids=self.VolumeLiquids, VolumeSolids=self.VolumeSolids,
-                 HeatCapacityGases=self.HeatCapacityGases, HeatCapacityLiquids=self.HeatCapacityLiquids, 
+                 HeatCapacityGases=self.HeatCapacityGases, HeatCapacityLiquids=self.HeatCapacityLiquids,
                  HeatCapacitySolids=self.HeatCapacitySolids,
-                 ViscosityGases=self.ViscosityGases, ViscosityLiquids=self.ViscosityLiquids, 
+                 ViscosityGases=self.ViscosityGases, ViscosityLiquids=self.ViscosityLiquids,
                  ThermalConductivityGases=self.ThermalConductivityGases, ThermalConductivityLiquids=self.ThermalConductivityLiquids,
                  EnthalpyVaporizations=self.EnthalpyVaporizations, EnthalpySublimations=self.EnthalpySublimations,
                  SurfaceTensions=self.SurfaceTensions, Permittivities=self.Permittivities)
         if copy_mixtures:
-            kwargs.update(VolumeGasMixtureObj=self.VolumeGasMixture, VolumeLiquidMixtureObj=self.VolumeLiquidMixture, 
+            kwargs.update(VolumeGasMixtureObj=self.VolumeGasMixture, VolumeLiquidMixtureObj=self.VolumeLiquidMixture,
                           VolumeSolidMixtureObj=self.VolumeSolidMixture,
-                          HeatCapacityGasMixtureObj=self.HeatCapacityGasMixture, 
-                          HeatCapacityLiquidMixtureObj=self.HeatCapacityLiquidMixture, 
+                          HeatCapacityGasMixtureObj=self.HeatCapacityGasMixture,
+                          HeatCapacityLiquidMixtureObj=self.HeatCapacityLiquidMixture,
                           HeatCapacitySolidMixtureObj=self.HeatCapacitySolidMixture,
-                          ViscosityGasMixtureObj=self.ViscosityGasMixture, 
+                          ViscosityGasMixtureObj=self.ViscosityGasMixture,
                           ViscosityLiquidMixtureObj=self.ViscosityLiquidMixture,
                           ThermalConductivityGasMixtureObj=self.ThermalConductivityGasMixture,
-                          ThermalConductivityLiquidMixtureObj=self.ThermalConductivityLiquidMixture, 
+                          ThermalConductivityLiquidMixtureObj=self.ThermalConductivityLiquidMixture,
                           SurfaceTensionMixtureObj=self.SurfaceTensionMixture)
-    
+
         self._properties = PropertyCorrelationPackage(**kwargs)
         return self._properties

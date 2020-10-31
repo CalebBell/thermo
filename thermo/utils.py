@@ -47,7 +47,7 @@ def has_matplotlib():
         except:
             _has_matplotlib = False
     return _has_matplotlib
-    
+
 try:  # pragma: no cover
     from appdirs import user_data_dir, user_config_dir
     data_dir = user_config_dir('thermo')
@@ -67,7 +67,7 @@ def allclose_variable(a, b, limits, rtols=None, atols=None):
     small. Based on numpy's allclose function.
 
     Only atols or rtols needs to be specified; both are used if given.
-    
+
     Parameters
     ----------
     a, b : array_like
@@ -84,12 +84,12 @@ def allclose_variable(a, b, limits, rtols=None, atols=None):
     allclose : bool
         Returns True if the two arrays are equal within the given
         tolerances; False otherwise.
-            
+
     Examples
     --------
-    10 random similar variables, all of them matching to within 1E-5, allowing 
+    10 random similar variables, all of them matching to within 1E-5, allowing
     up to half to match up to 1E-6.
-    
+
     >>> x = [2.7244322249597719e-08, 3.0105683900110473e-10, 2.7244124924802327e-08, 3.0105259397637556e-10, 2.7243929226310193e-08, 3.0104990272770901e-10, 2.7243666849384451e-08, 3.0104101821236015e-10, 2.7243433745917367e-08, 3.0103707421519949e-10]
     >>> y = [2.7244328304561904e-08, 3.0105753470546008e-10, 2.724412872417824e-08,  3.0105303055834564e-10, 2.7243914341030203e-08, 3.0104819238021998e-10, 2.7243684057561379e-08, 3.0104299541023674e-10, 2.7243436694839306e-08, 3.010374130526363e-10]
     >>> allclose_variable(x, y, limits=[.0, .5], rtols=[1E-5, 1E-6])
@@ -102,7 +102,7 @@ def allclose_variable(a, b, limits, rtols=None, atols=None):
         rtols = [0 for i in atols]
     elif atols is None:
         atols = [0 for i in rtols]
-    
+
     for atol, rtol, lim in zip(atols, rtols, limits):
         matches = np.count_nonzero(np.isclose(a, b, rtol=rtol, atol=atol))
         if 1-matches/l > lim:
@@ -141,8 +141,8 @@ def phase_select_property(phase=None, s=None, l=None, g=None, V_over_F=None,
     -----
     Could calculate mole-fraction weighted properties for the two phase regime.
     Could also implement equilibria with solid phases.
-    
-    The use of self and fget ensures the properties not needed are not 
+
+    The use of self and fget ensures the properties not needed are not
     calculated.
 
     Examples
@@ -163,7 +163,7 @@ def phase_select_property(phase=None, s=None, l=None, g=None, V_over_F=None,
             return g.fget(self)
         return g
     elif phase is None or phase == 'two-phase':
-        return None  
+        return None
     else:
         raise Exception('Property not recognized')
 
@@ -287,69 +287,69 @@ diff(h(n1, n2)*f(n1,  n2), n1, n2)
 
 def TPD(T, zs, lnphis, ys, lnphis_test):
     r'''Function for calculating the Tangent Plane Distance function
-    according to the original Michelsen definition. More advanced 
+    according to the original Michelsen definition. More advanced
     transformations of the TPD function are available in the literature for
     performing calculations.
-    
+
     For a mixture to be stable, it is necessary and sufficient for this to
     be positive for all trial phase compositions.
-    
+
     .. math::
         \text{TPD}(y) =  \sum_{j=1}^n y_j(\mu_j (y) - \mu_j(z))
         = RT \sum_i y_i\left(\log(y_i) + \log(\phi_i(y)) - d_i(z)\right)
-        
+
         d_i(z) = \ln z_i + \ln \phi_i(z)
-        
+
     Parameters
     ----------
     T : float
         Temperature of the system, [K]
     zs : list[float]
-        Mole fractions of the phase undergoing stability 
+        Mole fractions of the phase undergoing stability
         testing (`test` phase), [-]
     lnphis : list[float]
-        Log fugacity coefficients of the phase undergoing stability 
+        Log fugacity coefficients of the phase undergoing stability
         testing (if two roots are available, always use the lower Gibbs
         energy root), [-]
     ys : list[float]
         Mole fraction trial phase composition, [-]
     lnphis_test : list[float]
-        Log fugacity coefficients of the trial phase (if two roots are 
+        Log fugacity coefficients of the trial phase (if two roots are
         available, always use the lower Gibbs energy root), [-]
-    
+
     Returns
     -------
     TPD : float
         Original Tangent Plane Distance function, [J/mol]
-        
+
     Notes
     -----
     A dimensionless version of this is often used as well, divided by
     RT.
-    
-    At the dew point (with test phase as the liquid and vapor incipient 
+
+    At the dew point (with test phase as the liquid and vapor incipient
     phase as the trial phase), TPD is zero [3]_.
-    At the bubble point (with test phase as the vapor and liquid incipient 
+    At the bubble point (with test phase as the vapor and liquid incipient
     phase as the trial phase), TPD is zero [3]_.
-    
+
     Examples
     --------
     Solved bubble point for ethane/n-pentane 50-50 wt% at 1 MPa
-    
+
     >>> from thermo.eos_mix import PRMIX
     >>> gas = PRMIX(Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0], omegas=[0.098, 0.251], kijs=[[0, 0.0078], [0.0078, 0]], zs=[0.9946656798618667, 0.005334320138133337], T=254.43857191839297, P=1000000.0)
     >>> liq = PRMIX(Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0], omegas=[0.098, 0.251], kijs=[[0, 0.0078], [0.0078, 0]], zs=[0.7058334393128614, 0.2941665606871387], T=254.43857191839297, P=1000000.0)
     >>> TPD(liq.T, liq.zs, liq.lnphis_l, gas.zs, gas.lnphis_g)
     -4.0339949303e-09
-    
+
     References
     ----------
-    .. [1] Michelsen, Michael L. "The Isothermal Flash Problem. Part I. 
+    .. [1] Michelsen, Michael L. "The Isothermal Flash Problem. Part I.
        Stability." Fluid Phase Equilibria 9, no. 1 (December 1982): 1-19.
     .. [2] Hoteit, Hussein, and Abbas Firoozabadi. "Simple Phase Stability
-       -Testing Algorithm in the Reduction Method." AIChE Journal 52, no. 
+       -Testing Algorithm in the Reduction Method." AIChE Journal 52, no.
        8 (August 1, 2006): 2909-20.
-    .. [3] Qiu, Lu, Yue Wang, Qi Jiao, Hu Wang, and Rolf D. Reitz. 
+    .. [3] Qiu, Lu, Yue Wang, Qi Jiao, Hu Wang, and Rolf D. Reitz.
        "Development of a Thermodynamically Consistent, Robust and Efficient
        Phase Equilibrium Solver and Its Validations." Fuel 115 (January 1,
        2014): 1-16. https://doi.org/10.1016/j.fuel.2013.06.039.
@@ -359,57 +359,57 @@ def TPD(T, zs, lnphis, ys, lnphis_test):
         di = log(zi) + phi_zi
         tot += yi*(log(yi) + phi_yi - di)
     return tot*R*T
-    
+
 def Stateva_Tsvetkov_TPDF(lnphis, zs, lnphis_trial, ys):
     r'''Modified Tangent Plane Distance function according to [1]_ and
     [2]_. The stationary points of a system are all zeros of this function;
     so once all zeroes have been located, the stability can be evaluated
-    at the stationary points only. It may be required to use multiple 
+    at the stationary points only. It may be required to use multiple
     guesses to find all stationary points, and there is no method of
     confirming all points have been found.
-    
+
     .. math::
         \phi(y) = \sum_i^{N} (k_{i+1}(y) - k_i(y))^2
-        
+
         k_i(y) = \ln \phi_i(y) + \ln(y_i) - d_i
-        
+
         k_{N+1}(y) = k_1(y)
 
         d_i(z) = \ln z_i + \ln \phi_i(z)
-        
+
     Parameters
     ----------
     zs : list[float]
-        Mole fractions of the phase undergoing stability 
+        Mole fractions of the phase undergoing stability
         testing (`test` phase), [-]
     lnphis : list[float]
-        Log fugacity coefficients of the phase undergoing stability 
+        Log fugacity coefficients of the phase undergoing stability
         testing (if two roots are available, always use the lower Gibbs
         energy root), [-]
     ys : list[float]
         Mole fraction trial phase composition, [-]
     lnphis_test : list[float]
-        Log fugacity coefficients of the trial phase (if two roots are 
+        Log fugacity coefficients of the trial phase (if two roots are
         available, always use the lower Gibbs energy root), [-]
-    
+
     Returns
     -------
     TPDF_Stateva_Tsvetkov : float
         Modified Tangent Plane Distance function according to [1]_, [-]
-        
+
     Notes
     -----
     In [1]_, a typo omitted the squaring of the expression. This method
     produces plots matching the shapes given in literature.
-    
+
     References
     ----------
     .. [1] Ivanov, Boyan B., Anatolii A. Galushko, and Roumiana P. Stateva.
-       "Phase Stability Analysis with Equations of State-A Fresh Look from 
-       a Different Perspective." Industrial & Engineering Chemistry 
+       "Phase Stability Analysis with Equations of State-A Fresh Look from
+       a Different Perspective." Industrial & Engineering Chemistry
        Research 52, no. 32 (August 14, 2013): 11208-23.
-    .. [2] Stateva, Roumiana P., and Stefan G. Tsvetkov. "A Diverse 
-       Approach for the Solution of the Isothermal Multiphase Flash 
+    .. [2] Stateva, Roumiana P., and Stefan G. Tsvetkov. "A Diverse
+       Approach for the Solution of the Isothermal Multiphase Flash
        Problem. Application to Vapor-Liquid-Liquid Systems." The Canadian
        Journal of Chemical Engineering 72, no. 4 (August 1, 1994): 722-34.
     '''
@@ -439,7 +439,7 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
     r'''Checks a mole balance for a group of inlet streams against outlet
     streams. Inlets and outlets must be Stream objects. The check is performed
     on a mole-basis; an exception is raised if the balance is not satisfied.
-    
+
     Parameters
     ----------
     inlets : list[Stream] or Stream
@@ -453,11 +453,11 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
     reactive : bool, optional
         Whether or not to perform the check on a reactive basis (check mass,
         not moles, and element flows as well), [-]
-    
+
     Notes
     -----
     No checks for zero flow are performed.
-    
+
     Examples
     --------
     >>> from thermo.stream import Stream
@@ -482,22 +482,22 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
     if reactive:
         # mass balance
         assert_close(sum([i.m for i in inlets]), sum([i.m for i in outlets]))
-        
+
         try:
             ws = [i.ws for i in inlets]
         except:
             ws = [i.ws() for i in inlets]
-        
+
         feed_cmps, feed_masses = mix_multiple_component_flows(IDs=feed_CASs,
-                                                              flows=[i.m for i in inlets], 
+                                                              flows=[i.m for i in inlets],
                                                               fractions=ws)
         feed_mass_flows = {i:j for i, j in zip(feed_cmps, feed_masses)}
-        
-        product_cmps, product_mols = mix_multiple_component_flows(IDs=product_CASs, 
-                                                                  flows=[i.n for i in outlets], 
+
+        product_cmps, product_mols = mix_multiple_component_flows(IDs=product_CASs,
+                                                                  flows=[i.n for i in outlets],
                                                                   fractions=[i.ns for i in outlets])
         product_mass_flows = {i:j for i, j in zip(product_cmps, product_mols)}
-        
+
         # Mass flow of each component does not balance.
 #        for CAS, flow in feed_mass_flows.items():
 #            assert_allclose(flow, product_mass_flows[CAS], rtol=rtol, atol=atol)
@@ -508,43 +508,43 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
 
         # element balance
         feed_cmps, feed_element_flows = mix_multiple_component_flows(IDs=[list(i.atoms.keys()) for i in inlets],
-                                                              flows=[i.n for i in inlets], 
+                                                              flows=[i.n for i in inlets],
                                                               fractions=[list(i.atoms.values()) for i in inlets])
         feed_element_flows = {i:j for i, j in zip(feed_cmps, feed_element_flows)}
-        
-        
+
+
         product_cmps, product_element_flows = mix_multiple_component_flows(IDs=[list(i.atoms.keys()) for i in outlets],
-                                                              flows=[i.n for i in outlets], 
+                                                              flows=[i.n for i in outlets],
                                                               fractions=[list(i.atoms.values()) for i in outlets])
         product_element_flows = {i:j for i, j in zip(product_cmps, product_element_flows)}
-        
+
         for ele, flow in feed_element_flows.items():
             assert_close(flow, product_element_flows[ele], rtol=rtol, atol=atol)
-            
+
         if set(feed_cmps) != set(product_cmps):
             raise Exception('Product and feeds have different elements in them')
-        return 
+        return
 
     feed_ns = [i.n for i in inlets]
     feed_zs = [i.zs for i in inlets]
-    
+
     product_ns = [i.n for i in outlets]
     product_zs = [i.zs for i in outlets]
-    
+
     feed_cmps, feed_mols = mix_multiple_component_flows(IDs=feed_CASs, flows=feed_ns, fractions=feed_zs)
     feed_flows = {i:j for i, j in zip(feed_cmps, feed_mols)}
-    
+
     product_cmps, product_mols = mix_multiple_component_flows(IDs=product_CASs, flows=product_ns, fractions=product_zs)
     product_flows = {i:j for i, j in zip(product_cmps, product_mols)}
 
-    # Fail on unmatching 
+    # Fail on unmatching
     if set(feed_cmps) != set(product_cmps):
         raise ValueError('Product and feeds have different components in them')
     for CAS, flow in feed_flows.items():
         assert_close(flow, product_flows[CAS], rtol=rtol, atol=atol)
 
 
-def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets, 
+def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets,
                           rtol=1E-9, atol=0.0, reactive=False):
     try:
         [_ for _ in inlets]
@@ -573,7 +573,7 @@ def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets,
             energy_in += feed.energy_reactive
     for feed in energy_inlets:
         energy_in += feed.Q
-        
+
     energy_out = 0.0
     for product in outlets:
         if not reactive:
@@ -640,7 +640,7 @@ class TDependentProperty(object):
         A function or lambda expression to transform the temperatures of
         tabular data for interpolation; e.g. 'lambda self, T: 1./T'
     interpolation_T_inv : function
-        A function or lambda expression to invert the transform of temperatures 
+        A function or lambda expression to invert the transform of temperatures
         of tabular data for interpolation; e.g. 'lambda self, x: self.Tc*(1 - x)'
     interpolation_property : function
         A function or lambda expression to transform tabular property values
@@ -705,7 +705,7 @@ class TDependentProperty(object):
     property_max = 1E4  # Arbitrary max
     T_cached = None
     locked = False
-    
+
 
 #    Tmin = None
 #    Tmax = None
@@ -715,19 +715,19 @@ class TDependentProperty(object):
         return self
 
     def __deepcopy__(self, memo):
-        # By default, share state among subsequent objects 
+        # By default, share state among subsequent objects
         return self
-    
+
     def __hash__(self):
         return hash_any_primitive([self.__class__, self.__dict__])
 
     def __call__(self, T):
-        r'''Convenience method to calculate the property; calls 
+        r'''Convenience method to calculate the property; calls
         :obj:`T_dependent_property`. Caches previously calculated value,
         which is an overhead when calculating many different values of
         a property. See :obj:`T_dependent_property` for more details as to the
         calculation procedure.
-        
+
         Parameters
         ----------
         T : float
@@ -853,67 +853,67 @@ class TDependentProperty(object):
         elif prop > self.property_max:
             return False
         return True
-    
+
     def custom_set_best_fit(self):
         pass
-    
+
     def set_best_fit(self, best_fit, set_limits=False):
         if (best_fit is not None and len(best_fit) and (best_fit[0] is not None
-           and best_fit[1] is not None and  best_fit[2] is not None) 
+           and best_fit[1] is not None and  best_fit[2] is not None)
             and not isnan(best_fit[0]) and not isnan(best_fit[1])):
             self.locked = True
             self.best_fit_Tmin = Tmin = best_fit[0]
             self.best_fit_Tmax = Tmax = best_fit[1]
             self.best_fit_coeffs = best_fit[2]
-    
+
             self.best_fit_int_coeffs = polyint(best_fit[2])
             self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff = polyint_over_x(best_fit[2])
 
             self.best_fit_d_coeffs = polyder(best_fit[2][::-1])[::-1]
             self.best_fit_d2_coeffs = polyder(self.best_fit_d_coeffs[::-1])[::-1]
-            
+
             # Extrapolation slope on high and low
-            slope_delta_T = (self.best_fit_Tmax - self.best_fit_Tmin)*.05            
-            
+            slope_delta_T = (self.best_fit_Tmax - self.best_fit_Tmin)*.05
+
             self.best_fit_Tmax_value = self.calculate(self.best_fit_Tmax, BESTFIT)
             if self.interpolation_property is not None:
                 self.best_fit_Tmax_value = self.interpolation_property(self.best_fit_Tmax_value)
-            
-                        
+
+
             # Calculate the average derivative for the last 5% of the curve
 #            fit_value_high = self.calculate(self.best_fit_Tmax - slope_delta_T, BESTFIT)
 #            if self.interpolation_property is not None:
 #                fit_value_high = self.interpolation_property(fit_value_high)
 
-#            self.best_fit_Tmax_slope = (self.best_fit_Tmax_value 
+#            self.best_fit_Tmax_slope = (self.best_fit_Tmax_value
 #                                        - fit_value_high)/slope_delta_T
             self.best_fit_Tmax_slope = horner(self.best_fit_d_coeffs, self.best_fit_Tmax)
             self.best_fit_Tmax_dT2 = horner(self.best_fit_d2_coeffs, self.best_fit_Tmax)
-            
+
 
             # Extrapolation to lower T
             self.best_fit_Tmin_value = self.calculate(self.best_fit_Tmin, BESTFIT)
             if self.interpolation_property is not None:
                 self.best_fit_Tmin_value = self.interpolation_property(self.best_fit_Tmin_value)
-            
+
 #            fit_value_low = self.calculate(self.best_fit_Tmin + slope_delta_T, BESTFIT)
 #            if self.interpolation_property is not None:
 #                fit_value_low = self.interpolation_property(fit_value_low)
-#            self.best_fit_Tmin_slope = (fit_value_low 
+#            self.best_fit_Tmin_slope = (fit_value_low
 #                                        - self.best_fit_Tmin_value)/slope_delta_T
 
             self.best_fit_Tmin_slope = horner(self.best_fit_d_coeffs, self.best_fit_Tmin)
             self.best_fit_Tmin_dT2 = horner(self.best_fit_d2_coeffs, self.best_fit_Tmin)
-            
+
             self.custom_set_best_fit()
-            
+
             if set_limits:
                 if self.Tmin is None:
                     self.Tmin = self.best_fit_Tmin
                 if self.Tmax is None:
                     self.Tmax = self.best_fit_Tmax
 
-                                    
+
     def as_best_fit(self):
         return '%s(best_fit=(%s, %s, %s))' %(self.__class__.__name__,
                   repr(self.best_fit_Tmin), repr(self.best_fit_Tmax),
@@ -1034,13 +1034,13 @@ class TDependentProperty(object):
                 methods = self.all_methods
                 if self.locked:
                     methods.add('Best fit')
-                    
+
 #        cm = plt.get_cmap('gist_rainbow')
         fig = plt.figure()
 #        ax = fig.add_subplot(111)
 #        NUM_COLORS = len(methods)
 #        ax.set_color_cycle([cm(1.*i/NUM_COLORS) for i in range(NUM_COLORS)])
-        
+
         plot_fun = {'semilogy': plt.semilogy, 'semilogx': plt.semilogx, 'plot': plt.plot}[axes]
         Ts = linspace(Tmin, Tmax, pts)
         if order == 0:
@@ -1082,7 +1082,7 @@ class TDependentProperty(object):
                     properties = [self.calculate_derivative(T=T, method=method, order=order) for T in Ts]
                     plot_fun(Ts, properties, label=method)
             plt.ylabel(self.name + ', ' + self.units + '/K^%d derivative of order %d' % (order, order))
-            
+
             title = self.name + ' derivative of order %d' % order
             if self.CASRN:
                 title += ' of ' + self.CASRN
@@ -1093,18 +1093,18 @@ class TDependentProperty(object):
             plt.show()
         else:
             return plt
-        
+
     def extrapolate_tabular(self, T):
         if 'EXTRAPOLATE_TABULAR' not in self.tabular_data:
             if self.Tmin is None or self.Tmax is None:
                 raise Exception('Could not automatically generate interpolation'
                                 ' data for property %s of %s because temperature '
                                 'limits could not be determined.' %(self.name, self.CASRN))
-            
+
             Tmin = max(20, self.Tmin)
             if self.Tb is not None:
                 Tmin = min(Tmin, self.Tb)
-            
+
             Ts = linspace(Tmin, self.Tmax, 200)
             properties = [self.T_dependent_property(T) for T in Ts]
             Ts_cleaned = []
@@ -1149,7 +1149,7 @@ class TDependentProperty(object):
         # If the interpolator and extrapolator has already been created, load it
 #        if isinstance(self.tabular_data_interpolators, dict) and key in self.tabular_data_interpolators:
 #            extrapolator, spline = self.tabular_data_interpolators[key]
-        
+
         if key in self.tabular_data_interpolators:
             extrapolator, spline = self.tabular_data_interpolators[key]
         else:
@@ -1273,9 +1273,9 @@ class TDependentProperty(object):
             raise Exception('To within the implemented temperature range, it is not possible to calculate the desired value.')
 
     def calculate_derivative(self, T, method, order=1):
-        r'''Method to calculate a derivative of a property with respect to 
-        temperature, of a given order  using a specified method. Uses SciPy's 
-        derivative function, with a delta of 1E-6 K and a number of points 
+        r'''Method to calculate a derivative of a property with respect to
+        temperature, of a given order  using a specified method. Uses SciPy's
+        derivative function, with a delta of 1E-6 K and a number of points
         equal to 2*order + 1.
 
         This method can be overwritten by subclasses who may perfer to add
@@ -1301,14 +1301,14 @@ class TDependentProperty(object):
         return derivative(self.calculate, T, dx=1e-6, args=[method], n=order, order=1+order*2)
 
     def T_dependent_property_derivative(self, T, order=1):
-        r'''Method to obtain a derivative of a property with respect to 
-        temperature, of a given order. Methods found valid by 
-        `select_valid_methods` are attempted until a method succeeds. If no 
+        r'''Method to obtain a derivative of a property with respect to
+        temperature, of a given order. Methods found valid by
+        `select_valid_methods` are attempted until a method succeeds. If no
         methods are valid and succeed, None is returned.
 
         Calls `calculate_derivative` internally to perform the actual
         calculation.
-        
+
         .. math::
             \text{derivative} = \frac{d (\text{property})}{d T}
 
@@ -1349,7 +1349,7 @@ class TDependentProperty(object):
         r'''Method to calculate the integral of a property with respect to
         temperature, using a specified method. Uses SciPy's `quad` function
         to perform the integral, with no options.
-        
+
         This method can be overwritten by subclasses who may perfer to add
         analytical methods for some or all methods as this is much faster.
 
@@ -1368,17 +1368,17 @@ class TDependentProperty(object):
         Returns
         -------
         integral : float
-            Calculated integral of the property over the given range, 
+            Calculated integral of the property over the given range,
             [`units*K`]
         '''
         return float(quad(self.calculate, T1, T2, args=(method))[0])
 
     def T_dependent_property_integral(self, T1, T2):
         r'''Method to calculate the integral of a property with respect to
-        temperature, using a specified method. Methods found valid by 
-        `select_valid_methods` are attempted until a method succeeds. If no 
+        temperature, using a specified method. Methods found valid by
+        `select_valid_methods` are attempted until a method succeeds. If no
         methods are valid and succeed, None is returned.
-        
+
         Calls `calculate_integral` internally to perform the actual
         calculation.
 
@@ -1397,7 +1397,7 @@ class TDependentProperty(object):
         Returns
         -------
         integral : float
-            Calculated integral of the property over the given range, 
+            Calculated integral of the property over the given range,
             [`units*K`]
         '''
         if self.locked:
@@ -1411,7 +1411,7 @@ class TDependentProperty(object):
 #                    return self.calculate_integral(T1, T2, self.method)
 #                except:  # pragma: no cover
 #                    pass
-                
+
         sorted_valid_methods = self.select_valid_methods(Tavg)
         for method in sorted_valid_methods:
             try:
@@ -1422,9 +1422,9 @@ class TDependentProperty(object):
 
     def calculate_integral_over_T(self, T1, T2, method):
         r'''Method to calculate the integral of a property over temperature
-        with respect to temperature, using a specified method. Uses SciPy's 
+        with respect to temperature, using a specified method. Uses SciPy's
         `quad` function to perform the integral, with no options.
-        
+
         This method can be overwritten by subclasses who may perfer to add
         analytical methods for some or all methods as this is much faster.
 
@@ -1443,20 +1443,20 @@ class TDependentProperty(object):
         Returns
         -------
         integral : float
-            Calculated integral of the property over the given range, 
+            Calculated integral of the property over the given range,
             [`units`]
         '''
         return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
 
     def T_dependent_property_integral_over_T(self, T1, T2):
-        r'''Method to calculate the integral of a property over temperature 
+        r'''Method to calculate the integral of a property over temperature
         with respect to temperature, using a specified method. Methods found
-        valid by `select_valid_methods` are attempted until a method succeeds. 
+        valid by `select_valid_methods` are attempted until a method succeeds.
         If no methods are valid and succeed, None is returned.
-        
+
         Calls `calculate_integral_over_T` internally to perform the actual
         calculation.
-        
+
         .. math::
             \text{integral} = \int_{T_1}^{T_2} \frac{\text{property}}{T} \; dT
 
@@ -1472,13 +1472,13 @@ class TDependentProperty(object):
         Returns
         -------
         integral : float
-            Calculated integral of the property over the given range, 
+            Calculated integral of the property over the given range,
             [`units`]
         '''
         if self.locked:
             return self.calculate_integral_over_T(T1, T2, BESTFIT)
-        
-        
+
+
         Tavg = 0.5*(T1+T2)
 #        if self.method:
 #            # retest within range
@@ -1487,7 +1487,7 @@ class TDependentProperty(object):
 #                    return self.calculate_integral_over_T(T1, T2, self.method)
 #                except:  # pragma: no cover
 #                    pass
-                
+
         sorted_valid_methods = self.select_valid_methods(Tavg)
         for method in sorted_valid_methods:
             try:
@@ -1613,12 +1613,12 @@ class TPDependentProperty(TDependentProperty):
     TP_cached = None
 
     def __call__(self, T, P):
-        r'''Convenience method to calculate the property; calls 
+        r'''Convenience method to calculate the property; calls
         :obj:`TP_dependent_property`. Caches previously calculated value,
         which is an overhead when calculating many different values of
         a property. See :obj:`TP_dependent_property` for more details as to the
         calculation procedure.
-        
+
         Parameters
         ----------
         T : float
@@ -1906,13 +1906,13 @@ class TPDependentProperty(TDependentProperty):
     def plot_isotherm(self, T, Pmin=None, Pmax=None, methods_P=[], pts=50,
                       only_valid=True):  # pragma: no cover
         r'''Method to create a plot of the property vs pressure at a specified
-        temperature according to either a specified list of methods, or the 
-        user methods (if set), or all methods. User-selectable number of 
+        temperature according to either a specified list of methods, or the
+        user methods (if set), or all methods. User-selectable number of
         points, and pressure range. If only_valid is set,
-        `test_method_validity_P` will be used to check if each condition in 
+        `test_method_validity_P` will be used to check if each condition in
         the specified range is valid, and `test_property_validity` will be used
-        to test the answer, and the method is allowed to fail; only the valid 
-        points will be plotted. Otherwise, the result will be calculated and 
+        to test the answer, and the method is allowed to fail; only the valid
+        points will be plotted. Otherwise, the result will be calculated and
         displayed as-is. This will not suceed if the method fails.
 
         Parameters
@@ -1978,11 +1978,11 @@ class TPDependentProperty(TDependentProperty):
 
     def plot_isobar(self, P, Tmin=None, Tmax=None, methods_P=[], pts=50,
                     only_valid=True):  # pragma: no cover
-        r'''Method to create a plot of the property vs temperature at a 
+        r'''Method to create a plot of the property vs temperature at a
         specific pressure according to
         either a specified list of methods, or user methods (if set), or all
         methods. User-selectable number of points, and temperature range. If
-        only_valid is set,`test_method_validity_P` will be used to check if 
+        only_valid is set,`test_method_validity_P` will be used to check if
         each condition in the specified range is valid, and
         `test_property_validity` will be used to test the answer, and the
         method is allowed to fail; only the valid points will be plotted.
@@ -2051,11 +2051,11 @@ class TPDependentProperty(TDependentProperty):
 
 
     def plot_TP_dependent_property(self, Tmin=None, Tmax=None, Pmin=None,
-                                   Pmax=None,  methods_P=[], pts=15, 
+                                   Pmax=None,  methods_P=[], pts=15,
                                    only_valid=True):  # pragma: no cover
-        r'''Method to create a plot of the property vs temperature and pressure 
-        according to either a specified list of methods, or user methods (if 
-        set), or all methods. User-selectable number of points for each 
+        r'''Method to create a plot of the property vs temperature and pressure
+        according to either a specified list of methods, or user methods (if
+        set), or all methods. User-selectable number of points for each
         variable. If only_valid is set,`test_method_validity_P` will be used to
         check if each condition in the specified range is valid, and
         `test_property_validity` will be used to test the answer, and the
@@ -2076,7 +2076,7 @@ class TPDependentProperty(TDependentProperty):
         methods_P : list, optional
             List of methods to consider
         pts : int, optional
-            A list of points to calculate the property at for both temperature 
+            A list of points to calculate the property at for both temperature
             and pressure; pts^2 points will be calculated.
         only_valid : bool
             If True, only plot successful methods and calculated properties,
@@ -2117,7 +2117,7 @@ class TPDependentProperty(TDependentProperty):
         Ts_mesh, Ps_mesh = np.meshgrid(Ts, Ps)
         fig = plt.figure()
         ax = fig.gca(projection='3d')
-        
+
         handles = []
         for method_P in methods_P:
             if only_valid:
@@ -2142,7 +2142,7 @@ class TPDependentProperty(TDependentProperty):
             else:
                 properties = [[self.calculate_P(T, P, method_P) for P in Ps] for T in Ts]
                 handles.append(ax.plot_surface(Ts_mesh, Ps_mesh, properties, cstride=1, rstride=1, alpha=0.5))
-        
+
         ax.yaxis.set_major_formatter(FormatStrFormatter('%.4g'))
         ax.zaxis.set_major_formatter(FormatStrFormatter('%.4g'))
         ax.xaxis.set_major_formatter(FormatStrFormatter('%.4g'))
@@ -2159,8 +2159,8 @@ class TPDependentProperty(TDependentProperty):
     def calculate_derivative_T(self, T, P, method, order=1):
         r'''Method to calculate a derivative of a temperature and pressure
         dependent property with respect to  temperature at constant pressure,
-        of a given order using a specified  method. Uses SciPy's  derivative 
-        function, with a delta of 1E-6 K and a number of points equal to 
+        of a given order using a specified  method. Uses SciPy's  derivative
+        function, with a delta of 1E-6 K and a number of points equal to
         2*order + 1.
 
         This method can be overwritten by subclasses who may perfer to add
@@ -2183,7 +2183,7 @@ class TPDependentProperty(TDependentProperty):
         Returns
         -------
         d_prop_d_T_at_P : float
-            Calculated derivative property at constant pressure, 
+            Calculated derivative property at constant pressure,
             [`units/K^order`]
         '''
         return derivative(self.calculate_P, T, dx=1e-6, args=[P, method], n=order, order=1+order*2)
@@ -2191,8 +2191,8 @@ class TPDependentProperty(TDependentProperty):
     def calculate_derivative_P(self, P, T, method, order=1):
         r'''Method to calculate a derivative of a temperature and pressure
         dependent property with respect to pressure at constant temperature,
-        of a given order using a specified method. Uses SciPy's derivative 
-        function, with a delta of 0.01 Pa and a number of points equal to 
+        of a given order using a specified method. Uses SciPy's derivative
+        function, with a delta of 0.01 Pa and a number of points equal to
         2*order + 1.
 
         This method can be overwritten by subclasses who may perfer to add
@@ -2215,7 +2215,7 @@ class TPDependentProperty(TDependentProperty):
         Returns
         -------
         d_prop_d_P_at_T : float
-            Calculated derivative property at constant temperature, 
+            Calculated derivative property at constant temperature,
             [`units/Pa^order`]
         '''
         f = lambda P: self.calculate_P(T, P, method)
@@ -2224,13 +2224,13 @@ class TPDependentProperty(TDependentProperty):
     def TP_dependent_property_derivative_T(self, T, P, order=1):
         r'''Method to calculate a derivative of a temperature and pressure
         dependent property with respect to temperature at constant pressure,
-        of a given order. Methods found valid by `select_valid_methods_P` are 
+        of a given order. Methods found valid by `select_valid_methods_P` are
         attempted until a method succeeds. If no methods are valid and succeed,
         None is returned.
 
         Calls `calculate_derivative_T` internally to perform the actual
         calculation.
-        
+
         .. math::
             \text{derivative} = \frac{d (\text{property})}{d T}|_{P}
 
@@ -2259,13 +2259,13 @@ class TPDependentProperty(TDependentProperty):
     def TP_dependent_property_derivative_P(self, T, P, order=1):
         r'''Method to calculate a derivative of a temperature and pressure
         dependent property with respect to pressure at constant temperature,
-        of a given order. Methods found valid by `select_valid_methods_P` are 
+        of a given order. Methods found valid by `select_valid_methods_P` are
         attempted until a method succeeds. If no methods are valid and succeed,
         None is returned.
 
         Calls `calculate_derivative_P` internally to perform the actual
         calculation.
-        
+
         .. math::
             \text{derivative} = \frac{d (\text{property})}{d P}|_{T}
 
@@ -2298,16 +2298,16 @@ class MixtureProperty(object):
     units = 'test units'
     property_min = 0
     property_max = 10
-                            
+
     method = None
     forced = False
     ranked_methods = []
-    
+
     TP_zs_ws_cached = (None, None, None, None)
     prop_cached = None
     _correct_pressure_pure = True
     skip_validity_check = False
-    
+
     def set_best_fit_coeffs(self):
         if all(i.locked for i in self.pure_objs):
             self.locked = True
@@ -2319,17 +2319,17 @@ class MixtureProperty(object):
                                [i.best_fit_Tmax_slope for i in pure_objs],
                                [i.best_fit_Tmax_value for i in pure_objs],
                                [i.best_fit_coeffs for i in pure_objs]]
-    
+
     @property
     def correct_pressure_pure(self):
         return self._correct_pressure_pure
-    
-    @correct_pressure_pure.setter        
+
+    @correct_pressure_pure.setter
     def correct_pressure_pure(self, v):
         if v != self._correct_pressure_pure:
             self._correct_pressure_pure = v
             self.TP_zs_ws_cached = (None, None, None, None)
-    
+
     def _complete_zs_ws(self, zs, ws):
         if zs is None and ws is None:
             raise Exception('No Composition Specified')
@@ -2337,15 +2337,15 @@ class MixtureProperty(object):
             return ws_to_zs(ws, self.MWs), ws
         elif ws is None:
             return zs, zs_to_ws(zs, self.MWs)
-        
-        
+
+
     def __call__(self, T, P, zs=None, ws=None):
-        r'''Convenience method to calculate the property; calls 
+        r'''Convenience method to calculate the property; calls
         :obj:`mixture_property`. Caches previously calculated value,
         which is an overhead when calculating many different values of
         a property. See :obj:`mixture_property` for more details as to the
         calculation procedure. One or both of `zs` and `ws` are required.
-        
+
         Parameters
         ----------
         T : float
@@ -2372,8 +2372,8 @@ class MixtureProperty(object):
             return self.prop_cached
 
     def set_user_method(self, user_methods, forced=False):
-        r'''Method to set the T, P, and composition dependent property methods 
-        desired for consideration by the user. Can be used to exclude certain 
+        r'''Method to set the T, P, and composition dependent property methods
+        desired for consideration by the user. Can be used to exclude certain
         methods which might have unacceptable accuracy.
 
         As a side effect, the previously selected method is removed when
@@ -2413,7 +2413,7 @@ class MixtureProperty(object):
 
     def select_valid_methods(self, T, P, zs, ws):
         r'''Method to obtain a sorted list of methods which are valid at `T`,
-        `P`, `zs`, `ws`, and possibly `Vfls`, according to 
+        `P`, `zs`, `ws`, and possibly `Vfls`, according to
         `test_method_validity`. Considers either only user methods
         if forced is True, or all methods. User methods are first tested
         according to their listed order, and unless forced is True, then all
@@ -2550,11 +2550,11 @@ class MixtureProperty(object):
         return None
 
     def excess_property(self, T, P, zs=None, ws=None):
-        r'''Method to calculate the excess property with sanity checking and 
+        r'''Method to calculate the excess property with sanity checking and
         without specifying a specific method. This requires the calculation of
         the property as a function of composition at the limiting concentration
         of each component. One or both of `zs` and `ws` are required.
-        
+
         .. math::
             m^E = m_{mixing} = m - \sum_i m_{i, pure}\cdot z_i
 
@@ -2584,12 +2584,12 @@ class MixtureProperty(object):
             zs2[i], ws2[i] = 1.0, 1.0
             tot += zs[i]*self.mixture_property(T, P, zs2, ws2)
         return prop - tot
-    
+
     def partial_property(self, T, P, i, zs=None, ws=None):
-        r'''Method to calculate the partial molar property with sanity checking  
+        r'''Method to calculate the partial molar property with sanity checking
         and without specifying a specific method for the specified compound
         index and composition.
-        
+
         .. math::
             \bar m_i = \left( \frac{\partial (n_T m)} {\partial n_i}
             \right)_{T, P, n_{j\ne i}}
@@ -2621,13 +2621,13 @@ class MixtureProperty(object):
             prop = self.mixture_property(T, P, zs)
             return prop*n_tot
         return derivative(prop_extensive, zs[i], dx=1E-6, args=[list(zs), i])
-    
-    
+
+
     def calculate_derivative_T(self, T, P, zs, ws, method, order=1):
-        r'''Method to calculate a derivative of a mixture property with respect 
+        r'''Method to calculate a derivative of a mixture property with respect
         to temperature at constant pressure and composition
-        of a given order using a specified  method. Uses SciPy's derivative 
-        function, with a delta of 1E-6 K and a number of points equal to 
+        of a given order using a specified  method. Uses SciPy's derivative
+        function, with a delta of 1E-6 K and a number of points equal to
         2*order + 1.
 
         This method can be overwritten by subclasses who may perfer to add
@@ -2654,16 +2654,16 @@ class MixtureProperty(object):
         Returns
         -------
         d_prop_d_T_at_P : float
-            Calculated derivative property at constant pressure, 
+            Calculated derivative property at constant pressure,
             [`units/K^order`]
         '''
         return derivative(self.calculate, T, dx=1e-6, args=[P, zs, ws, method], n=order, order=1+order*2)
 
     def calculate_derivative_P(self, P, T, zs, ws, method, order=1):
-        r'''Method to calculate a derivative of a mixture property with respect 
+        r'''Method to calculate a derivative of a mixture property with respect
         to pressure at constant temperature and composition
-        of a given order using a specified method. Uses SciPy's derivative 
-        function, with a delta of 0.01 Pa and a number of points equal to 
+        of a given order using a specified method. Uses SciPy's derivative
+        function, with a delta of 0.01 Pa and a number of points equal to
         2*order + 1.
 
         This method can be overwritten by subclasses who may perfer to add
@@ -2690,7 +2690,7 @@ class MixtureProperty(object):
         Returns
         -------
         d_prop_d_P_at_T : float
-            Calculated derivative property at constant temperature, 
+            Calculated derivative property at constant temperature,
             [`units/Pa^order`]
         '''
         f = lambda P: self.calculate(T, P, zs, ws, method)
@@ -2700,16 +2700,16 @@ class MixtureProperty(object):
     def property_derivative_T(self, T, P, zs=None, ws=None, order=1):
         r'''Method to calculate a derivative of a mixture property with respect
         to temperature at constant pressure and composition,
-        of a given order. Methods found valid by `select_valid_methods` are 
+        of a given order. Methods found valid by `select_valid_methods` are
         attempted until a method succeeds. If no methods are valid and succeed,
         None is returned.
 
         Calls `calculate_derivative_T` internally to perform the actual
         calculation.
-        
+
         .. math::
             \text{derivative} = \frac{d (\text{property})}{d T}|_{P, z}
-            
+
         One or both of `zs` and `ws` are required.
 
         Parameters
@@ -2744,13 +2744,13 @@ class MixtureProperty(object):
     def property_derivative_P(self, T, P, zs=None, ws=None, order=1):
         r'''Method to calculate a derivative of a mixture property with respect
         to pressure at constant temperature and composition,
-        of a given order. Methods found valid by `select_valid_methods` are 
+        of a given order. Methods found valid by `select_valid_methods` are
         attempted until a method succeeds. If no methods are valid and succeed,
         None is returned.
 
         Calls `calculate_derivative_P` internally to perform the actual
         calculation.
-        
+
         .. math::
             \text{derivative} = \frac{d (\text{property})}{d P}|_{T, z}
 
@@ -2782,16 +2782,16 @@ class MixtureProperty(object):
                 pass
         return None
 
-    def plot_isotherm(self, T, zs=None, ws=None, Pmin=None, Pmax=None, 
+    def plot_isotherm(self, T, zs=None, ws=None, Pmin=None, Pmax=None,
                       methods=[], pts=50, only_valid=True):  # pragma: no cover
         r'''Method to create a plot of the property vs pressure at a specified
-        temperature and composition according to either a specified list of 
+        temperature and composition according to either a specified list of
         methods, or the  user methods (if set), or all methods. User-selectable
          number of  points, and pressure range. If only_valid is set,
-        `test_method_validity` will be used to check if each condition in 
+        `test_method_validity` will be used to check if each condition in
         the specified range is valid, and `test_property_validity` will be used
-        to test the answer, and the method is allowed to fail; only the valid 
-        points will be plotted. Otherwise, the result will be calculated and 
+        to test the answer, and the method is allowed to fail; only the valid
+        points will be plotted. Otherwise, the result will be calculated and
         displayed as-is. This will not suceed if the method fails.
         One or both of `zs` and `ws` are required.
 
@@ -2859,23 +2859,23 @@ class MixtureProperty(object):
         plt.legend(loc='best')
         plt.ylabel(self.name + ', ' + self.units)
         plt.xlabel('Pressure, Pa')
-        plt.title(self.name + ' of a mixture of ' + ', '.join(self.CASs) 
+        plt.title(self.name + ' of a mixture of ' + ', '.join(self.CASs)
                   + ' at mole fractions of ' + ', '.join(str(round(i, 4)) for i in zs) + '.')
         plt.show()
 
 
-    def plot_isobar(self, P, zs=None, ws=None, Tmin=None, Tmax=None, 
+    def plot_isobar(self, P, zs=None, ws=None, Tmin=None, Tmax=None,
                     methods=[], pts=50, only_valid=True):  # pragma: no cover
-        r'''Method to create a plot of the property vs temperature at a 
+        r'''Method to create a plot of the property vs temperature at a
         specific pressure and composition according to
         either a specified list of methods, or user methods (if set), or all
         methods. User-selectable number of points, and temperature range. If
-        only_valid is set,`test_method_validity` will be used to check if 
+        only_valid is set,`test_method_validity` will be used to check if
         each condition in the specified range is valid, and
         `test_property_validity` will be used to test the answer, and the
         method is allowed to fail; only the valid points will be plotted.
         Otherwise, the result will be calculated and displayed as-is. This will
-        not suceed if the method fails. One or both of `zs` and `ws` are 
+        not suceed if the method fails. One or both of `zs` and `ws` are
         required.
 
         Parameters
@@ -2941,22 +2941,22 @@ class MixtureProperty(object):
         plt.legend(loc='best')
         plt.ylabel(self.name + ', ' + self.units)
         plt.xlabel('Temperature, K')
-        plt.title(self.name + ' of a mixture of ' + ', '.join(self.CASs) 
+        plt.title(self.name + ' of a mixture of ' + ', '.join(self.CASs)
                   + ' at mole fractions of ' + ', '.join(str(round(i, 4)) for i in zs) + '.')
         plt.show()
 
 
-    def plot_property(self, zs=None, ws=None, Tmin=None, Tmax=None, Pmin=1E5, 
+    def plot_property(self, zs=None, ws=None, Tmin=None, Tmax=None, Pmin=1E5,
                       Pmax=1E6, methods=[], pts=15, only_valid=True):  # pragma: no cover
-        r'''Method to create a plot of the property vs temperature and pressure 
-        according to either a specified list of methods, or user methods (if 
-        set), or all methods. User-selectable number of points for each 
+        r'''Method to create a plot of the property vs temperature and pressure
+        according to either a specified list of methods, or user methods (if
+        set), or all methods. User-selectable number of points for each
         variable. If only_valid is set,`test_method_validity` will be used to
         check if each condition in the specified range is valid, and
         `test_property_validity` will be used to test the answer, and the
         method is allowed to fail; only the valid points will be plotted.
         Otherwise, the result will be calculated and displayed as-is. This will
-        not suceed if the any method fails for any point. One or both of `zs` 
+        not suceed if the any method fails for any point. One or both of `zs`
         and `ws` are required.
 
         Parameters
@@ -2976,7 +2976,7 @@ class MixtureProperty(object):
         methods : list, optional
             List of methods to consider
         pts : int, optional
-            A list of points to calculate the property at for both temperature 
+            A list of points to calculate the property at for both temperature
             and pressure; pts^2 points will be calculated.
         only_valid : bool
             If True, only plot successful methods and calculated properties,
@@ -3018,7 +3018,7 @@ class MixtureProperty(object):
         Ts_mesh, Ps_mesh = np.meshgrid(Ts, Ps)
         fig = plt.figure()
         ax = fig.gca(projection='3d')
-        
+
         handles = []
         for method in methods:
             if only_valid:
@@ -3043,14 +3043,14 @@ class MixtureProperty(object):
             else:
                 properties = [[self.calculate(T, P, zs, ws, method) for P in Ps] for T in Ts]
                 handles.append(ax.plot_surface(Ts_mesh, Ps_mesh, properties, cstride=1, rstride=1, alpha=0.5))
-        
+
         ax.yaxis.set_major_formatter(FormatStrFormatter('%.4g'))
         ax.zaxis.set_major_formatter(FormatStrFormatter('%.4g'))
         ax.xaxis.set_major_formatter(FormatStrFormatter('%.4g'))
         ax.set_xlabel('Temperature, K')
         ax.set_ylabel('Pressure, Pa')
         ax.set_zlabel(self.name + ', ' + self.units)
-        plt.title(self.name + ' of a mixture of ' + ', '.join(self.CASs) 
+        plt.title(self.name + ' of a mixture of ' + ', '.join(self.CASs)
                   + ' at mole fractions of ' + ', '.join(str(round(i, 4)) for i in zs) + '.')
         plt.show(block=False)
         # The below is a workaround for a matplotlib bug
@@ -3059,19 +3059,19 @@ class MixtureProperty(object):
 
 
 class MultiCheb1D(object):
-    '''Simple class to store set of coefficients for multiple chebyshev 
+    '''Simple class to store set of coefficients for multiple chebyshev
     approximations and perform calculations from them.
     '''
     def __init__(self, points, coeffs):
         self.points = points
         self.coeffs = coeffs
         self.N = len(points)-1
-        
+
     def __call__(self, x):
         coeffs = self.coeffs[bisect_left(self.points, x)]
         return coeffs(x)
 #        return self.chebval(x, coeffs)
-                
+
     @staticmethod
     def chebval(x, c):
         # copied from numpy's source, slightly optimized

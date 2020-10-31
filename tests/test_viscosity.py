@@ -141,21 +141,21 @@ def test_ViscosityGas():
 def test_ViscosityLiquidMixture():
     # DIPPR  1983 manual example
     m = Mixture(['carbon tetrachloride', 'isopropanol'], zs=[0.5, 0.5], T=313.2)
-    
+
     ViscosityLiquids = [i.ViscosityLiquid for i in m.Chemicals]
 
     obj = ViscosityLiquidMixture(ViscosityLiquids=ViscosityLiquids, CASs=m.CASs, MWs=m.MWs)
     mu = obj.mixture_property(m.T, m.P, m.zs, m.ws)
     assert_allclose(mu, 0.0009956952502281852)
-    
+
     mu = obj.calculate(m.T, m.P, m.zs, m.ws, MIXING_LOG_MOLAR)
     assert_allclose(mu, 0.0009956952502281852)
     mu = obj.calculate(m.T, m.P, m.zs, m.ws, MIXING_LOG_MASS)
     assert_allclose(mu, 0.0008741268796817256)
-    
+
     mu = obj.calculate(m.T, m.P, m.zs, m.ws, SIMPLE)
     assert_allclose(mu, 0.0010399923381840628)
-    
+
     # Test Laliberte
     m = Mixture(['water', 'sulfuric acid'], zs=[0.5, 0.5], T=298.15)
     ViscosityLiquids = [i.ViscosityLiquid for i in m.Chemicals]
@@ -163,11 +163,11 @@ def test_ViscosityLiquidMixture():
     mu = obj.mixture_property(m.T, m.P, m.zs, m.ws)
     assert_allclose(mu, 0.024955325569420893)
     assert obj.sorted_valid_methods == [LALIBERTE_MU]
-    
+
     # Unhappy paths
     with pytest.raises(Exception):
         obj.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
-        
+
     with pytest.raises(Exception):
         obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
 
@@ -177,10 +177,10 @@ def test_ViscosityGasMixture():
     m = Mixture(['dimethyl ether', 'sulfur dioxide'], zs=[.95, .05], T=308.2)
     ViscosityGases = [i.ViscosityGas for i in m.Chemicals]
     obj = ViscosityGasMixture(MWs=m.MWs, molecular_diameters=m.molecular_diameters, Stockmayers=m.Stockmayers, CASs=m.CASs, ViscosityGases=ViscosityGases)
-    
+
     mu =  obj.mixture_property(m.T, m.P, m.zs, m.ws)
     assert_allclose(mu, 9.637173494726528e-06)
-    
+
     viscosity_gas_mixture_methods = [BROKAW, HERNING_ZIPPERER, WILKE, SIMPLE]
     mus = [obj.calculate(m.T, m.P, m.zs, m.ws, method) for method in viscosity_gas_mixture_methods]
     assert_allclose(mus, [9.637173494726528e-06, 9.672122280295219e-06, 9.642294904686337e-06, 9.638962759382555e-06])
@@ -188,6 +188,6 @@ def test_ViscosityGasMixture():
     # Unhappy paths
     with pytest.raises(Exception):
         obj.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
-        
+
     with pytest.raises(Exception):
         obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')

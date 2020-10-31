@@ -37,7 +37,7 @@ from chemicals.vapor_pressure import Psat_IAPWS, dPsat_IAPWS_dT
 def x_w_to_humidity_ratio(x_w, MW_water=18.015268, MW_dry_air=28.96546):
     r'''Convert the mole fraction of water in air to a humidity ratio.
     This is a trivial equation that does not depend on any saturation routines.
-    
+
     .. math::
         \text{HR} = \frac{x_{water} \text{MW}_{water}}{MW_{dry air}(1-x_{water})}
 
@@ -54,13 +54,13 @@ def x_w_to_humidity_ratio(x_w, MW_water=18.015268, MW_dry_air=28.96546):
     -------
     HR : float
         Humidity ratio - mass of water vapor per mass of dry air, [-]
-        
+
     Notes
     -----
     The ASHRAE handbooko simplifies the MW ratio to a number of 0.621945.
-    
+
     This calculation is equivalent to taking the mole fractions of water and
-    dry air, converting them to mass fractions, and dividing the mass fraction 
+    dry air, converting them to mass fractions, and dividing the mass fraction
     of water divided by the mass fraction of dry air.
 
     Examples
@@ -70,7 +70,7 @@ def x_w_to_humidity_ratio(x_w, MW_water=18.015268, MW_dry_air=28.96546):
 
     References
     ----------
-    .. [1] American Society of Heating, Refrigerating and Air-Conditioning 
+    .. [1] American Society of Heating, Refrigerating and Air-Conditioning
        Engineers. ASHRAE Handbook - Fundamentals. 2015.
     '''
     return MW_water*x_w/(MW_dry_air*(1.0 - x_w))
@@ -91,11 +91,11 @@ ASHRAE_RP1485_saturation_tck = implementation_optimize_tck(ASHREA_RP1485_saturat
 def water_saturation(T, P, method='ideal'):
     r'''Computes the equilibrium saturation mole fraction of water in standard
     air as a function of temperature and pressure.
-    
+
     .. math::
         x_{water} = \frac{P^{sat}_{water}(T)\cdot f(T, P)}{P}
-        
-    Where :math:`f(T, P)` is the enhancement factor, a correction for 
+
+    Where :math:`f(T, P)` is the enhancement factor, a correction for
     non-ideality.
 
     Parameters
@@ -106,21 +106,21 @@ def water_saturation(T, P, method='ideal'):
         Pressure of air, [Pa]
     method : str
         One of 'ideal' (no enhancement factor) or 'ASHRAE1485_2020' for a
-        spline fit to the ASHRAE 1485 values. 
-        
+        spline fit to the ASHRAE 1485 values.
+
     Returns
     -------
     x_w : float
         Calculated saturation mole fraction of water in air , [-]
-        
+
     Notes
     -----
     For the 'ASHRAE1485_2020' method, the average relative error is around 1e-5.
-    However, some places have relative error up to 0.005 in mole fraction. 
+    However, some places have relative error up to 0.005 in mole fraction.
     This is still substantially better than the ideal formuation. It is around
     20 times slower than the ideal formula.
-    
-    The range of validity of ASHRAE1485 is 100 Pa to 10 MPa, and -143.15 °C 
+
+    The range of validity of ASHRAE1485 is 100 Pa to 10 MPa, and -143.15 °C
     to 350 °C. The 2020 fit range is slightly less, starting at 200 K and 1 kPa
     but it does extend to the same high limits.
 
@@ -130,14 +130,14 @@ def water_saturation(T, P, method='ideal'):
     0.0353658941301301
     >>> water_saturation(T=300.0, P=1e5, method='ASHRAE1485')
     0.03551758880618026
-    
+
     >>> T, P  = 330, 92000.0
     >>> 1-water_saturation(T=T, P=P, method='ASHRAE1485')/HAPropsSI('psi_w', 'T', T, 'P', P, 'RH', 1)
     -7.29914878032e-05
-    
+
     References
     ----------
-    .. [1] American Society of Heating, Refrigerating and Air-Conditioning 
+    .. [1] American Society of Heating, Refrigerating and Air-Conditioning
        Engineers. ASHRAE Handbook - Fundamentals. 2015.
     '''
     Psat = Psat_IAPWS(T)

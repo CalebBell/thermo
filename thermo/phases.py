@@ -26,7 +26,7 @@ __all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'CEOSLiquid', 'CEOS
            'gas_phases', 'liquid_phases', 'solid_phases', 'CombinedPhase', 'CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas', 'INCOMPRESSIBLE_CONST',
            'HumidAirRP1485',
            'derivatives_thermodynamic', 'derivatives_thermodynamic_mass', 'derivatives_jacobian',
-           
+
            'VirialCorrelationsPitzerCurl', # For testing - try to get rid of
            ]
 
@@ -76,59 +76,59 @@ INCOMPRESSIBLE_CONST = 1e30
 
 
 class Phase(object):
-    
+
     '''
     For basic functionality, a subclass should implement:
-    
-    H, S, Cp, Cv
-        
 
-        
+    H, S, Cp, Cv
+
+
+
     dP_dT
     dP_dV
     d2P_dT2
     d2P_dV2
     d2P_dTdV
-    
+
     Additional functionality is enabled by the methods:
-    
-    dH_dP dS_dT dS_dP 
+
+    dH_dP dS_dT dS_dP
     d2H_dT2 d2H_dP2 d2S_dP2
-    
-    dH_dT_V dH_dP_V dH_dV_T dH_dV_P     
-    dS_dT_V dS_dP_V dS_dV_T dS_dV_P 
-    
+
+    dH_dT_V dH_dP_V dH_dV_T dH_dV_P
+    dS_dT_V dS_dP_V dS_dV_T dS_dV_P
+
     d2H_dTdP d2H_dT2_V
-    d2P_dTdP d2P_dVdP d2P_dVdT_TP d2P_dT2_PV 
-    
+    d2P_dTdP d2P_dVdP d2P_dVdT_TP d2P_dT2_PV
+
 
     '''
-    
-    
+
+
     ideal_gas_basis = False # Parameter fot has the same ideal gas Cp
     T_REF_IG = 298.15
     T_REF_IG_INV = 1.0/T_REF_IG
     P_REF_IG = 101325.
     P_REF_IG_INV = 1.0/P_REF_IG
     LOG_P_REF_IG = log(P_REF_IG)
-    
+
     T_MAX_FIXED = 10000.0
     T_MIN_FIXED = 1e-3
-    
+
     P_MAX_FIXED = 1e9
     P_MIN_FIXED = 1e-2 # 1e-3 was so low issues happened in the root stuff, could not be fixed
-    
+
     V_MIN_FIXED = 1e-9 # m^3/mol
     V_MAX_FIXED = 1e9 # m^#/mol
-    
+
     force_phase = None
 
     Psats_data = None
     Cpgs_data = None
-    Psats_locked = False 
+    Psats_locked = False
     Cpgs_locked = False
     composition_independent = False
-    
+
     def __repr__(self):
         s =  '<%s, ' %(self.__class__.__name__)
         try:
@@ -137,16 +137,16 @@ class Phase(object):
             pass
         s += '>'
         return s
-    
+
     def model_hash(self, ignore_phase=False):
         r'''
         '''
         return randint(0, 10000000)
-    
+
     def value(self, name):
         if name in ('beta_mass',):
             return self.result.value(name, self)
-        
+
         v = getattr(self, name)
         try:
             v = v()
@@ -168,7 +168,7 @@ class Phase(object):
         self.d2P_dV2()
         self.d2P_dTdV()
         self.PIP()
-    
+
     def S_phi_consistency(self):
         # From coco
         S0 = self.S_ideal_gas()
@@ -178,11 +178,11 @@ class Phase(object):
         for i in range(len(zs)):
             S0 -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
         return abs(1.0 - S0/self.S())
-    
+
 
     def H_phi_consistency(self):
         return abs(1.0 - self.H_from_phi()/self.H())
-    
+
     def G_phi_consistency(self):
         # Chapter 2 equation 31 Michaelson
         zs, T = self.zs, self.T
@@ -191,7 +191,7 @@ class Phase(object):
         G_dep_RT = sum(zs[i]*lnphis[i] for i in self.cmps)
         G_dep = G_dep_RT*R*T
         return abs(1.0 - G_dep/self.G_dep())
-    
+
     def H_dep_phi_consistency(self):
         H_dep_RT2 = 0.0
         dlnphis_dTs = self.dlnphis_dT()
@@ -224,7 +224,7 @@ class Phase(object):
         obj = sum(zs[i]*dlnphis_dP[i] for i in self.cmps)
         base = (self.Z() - 1.0)/P
         return abs(1.0 - obj/base)
-    
+
     def V_from_phi(self):
         zs, P = self.zs, self.P
         dlnphis_dP = self.dlnphis_dP()
@@ -252,46 +252,46 @@ class Phase(object):
         if self.N != 1:
             raise ValueError("Property not supported for multicomponent phases")
         return self.lnphis()[0]
-    
+
     def phi(self):
         if self.N != 1:
             raise ValueError("Property not supported for multicomponent phases")
         return self.phis()[0]
-    
+
     def fugacity(self):
         if self.N != 1:
             raise ValueError("Property not supported for multicomponent phases")
         return self.fugacities()[0]
-    
+
     def dfugacity_dT(self):
         if self.N != 1:
             raise ValueError("Property not supported for multicomponent phases")
         return self.dfugacities_dT()[0]
-    
+
     def dfugacity_dP(self):
         if self.N != 1:
             raise ValueError("Property not supported for multicomponent phases")
         return self.dfugacities_dP()[0]
-    
+
 
     def fugacities(self):
         P = self.P
         zs = self.zs
         lnphis = self.lnphis()
         return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
-    
+
     def lnfugacities(self):
         return [log(i) for i in self.fugacities()]
-    
+
     fugacities_lowest_Gibbs = fugacities
-    
+
     def dfugacities_dT(self):
         r'''
         '''
         dphis_dT = self.dphis_dT()
         P, zs = self.P, self.zs
         return [P*zs[i]*dphis_dT[i] for i in range(len(zs))]
-    
+
     def lnphis_G_min(self):
         return self.lnphis()
 
@@ -299,22 +299,22 @@ class Phase(object):
         return [trunc_exp(i) for i in self.lnphis()]
 
     def dphis_dT(self):
-        r'''Method to calculate the temperature derivative of fugacity 
+        r'''Method to calculate the temperature derivative of fugacity
         coefficients of the phase.
-        
+
         .. math::
-            \frac{\partial \phi_i}{\partial T} = \phi_i \frac{\partial 
-            \log \phi_i}{\partial T} 
+            \frac{\partial \phi_i}{\partial T} = \phi_i \frac{\partial
+            \log \phi_i}{\partial T}
 
         Returns
         -------
         dphis_dT : list[float]
             Temperature derivative of fugacity coefficients of all components
             in the phase, [1/K]
-            
+
         Notes
         -----
-        '''        
+        '''
         try:
             return self._dphis_dT
         except AttributeError:
@@ -323,7 +323,7 @@ class Phase(object):
             dlnphis_dT = self._dlnphis_dT
         except AttributeError:
             dlnphis_dT = self.dlnphis_dT()
-            
+
         try:
             phis = self._phis
         except AttributeError:
@@ -331,24 +331,24 @@ class Phase(object):
 
         self._dphis_dT = [dlnphis_dT[i]*phis[i] for i in self.cmps]
         return self._dphis_dT
-    
+
     def dphis_dP(self):
-        r'''Method to calculate the pressure derivative of fugacity 
+        r'''Method to calculate the pressure derivative of fugacity
         coefficients of the phase.
-        
+
         .. math::
-            \frac{\partial \phi_i}{\partial P} = \phi_i \frac{\partial 
-            \log \phi_i}{\partial P} 
+            \frac{\partial \phi_i}{\partial P} = \phi_i \frac{\partial
+            \log \phi_i}{\partial P}
 
         Returns
         -------
         dphis_dP : list[float]
             Pressure derivative of fugacity coefficients of all components
             in the phase, [1/Pa]
-            
+
         Notes
         -----
-        '''        
+        '''
         try:
             return self._dphis_dP
         except AttributeError:
@@ -357,7 +357,7 @@ class Phase(object):
             dlnphis_dP = self._dlnphis_dP
         except AttributeError:
             dlnphis_dP = self.dlnphis_dP()
-            
+
         try:
             phis = self._phis
         except AttributeError:
@@ -369,9 +369,9 @@ class Phase(object):
     def dfugacities_dP(self):
         r'''Method to calculate the pressure derivative of the fugacities
         of the components in the phase phase.
-        
+
         .. math::
-            \frac{\partial f_i}{\partial P} = z_i \left(P \frac{\partial 
+            \frac{\partial f_i}{\partial P} = z_i \left(P \frac{\partial
             \phi_i}{\partial P}  + \phi_i \right)
 
         Returns
@@ -379,18 +379,18 @@ class Phase(object):
         dfugacities_dP : list[float]
             Pressure derivative of fugacities of all components
             in the phase, [-]
-            
+
         Notes
         -----
         For models without pressure dependence of fugacity, the returned result
         may not be exactly zero due to inaccuracy in floating point results;
         results are likely on the order of 1e-14 or lower in that case.
-        '''        
+        '''
         try:
             dphis_dP = self._dphis_dP
         except AttributeError:
             dphis_dP = self.dphis_dP()
-            
+
         try:
             phis = self._phis
         except AttributeError:
@@ -402,7 +402,7 @@ class Phase(object):
     def dfugacities_dns(self):
         phis = self.phis()
         dlnphis_dns = self.dlnphis_dns()
-        
+
         P, zs, cmps = self.P, self.zs, self.cmps
         matrix = []
         for i in cmps:
@@ -453,7 +453,7 @@ class Phase(object):
                 except ValueError:
                     _log_zs.append(-690.7755278982137) # log(1e-300)
         return self._log_zs
-    
+
     def V_iter(self, force=False):
         return self.V()
 
@@ -465,31 +465,31 @@ class Phase(object):
         G = self.H() - self.T*self.S()
         self._G = G
         return G
-    
+
     G_min = G
-    
+
     def U(self):
         U = self.H() - self.P*self.V()
         return U
-    
+
     def A(self):
         A = self.U() - self.T*self.S()
         return A
 
     def dH_dns(self):
         return dxs_to_dns(self.dH_dzs(), self.zs)
-    
+
     def dS_dns(self):
         return dxs_to_dns(self.dS_dzs(), self.zs)
-    
+
     def dG_dT(self):
         return -self.T*self.dS_dT() - self.S() + self.dH_dT()
-    
+
     dG_dT_P = dG_dT
 
     def dG_dT_V(self):
         return -self.T*self.dS_dT_V() - self.S() + self.dH_dT_V()
-    
+
     def dG_dP(self):
         return -self.T*self.dS_dP() + self.dH_dP()
 
@@ -497,7 +497,7 @@ class Phase(object):
 
     def dG_dP_V(self):
         return -self.T*self.dS_dP_V() - self.dT_dP()*self.S() + self.dH_dP_V()
-    
+
     def dG_dV_T(self):
         return self.dG_dP_T()*self.dP_dV()
 
@@ -508,42 +508,42 @@ class Phase(object):
     def dU_dT(self):
         # Correct
         return -self.P*self.dV_dT() + self.dH_dT()
-    
+
     dU_dT_P = dU_dT
-    
+
     def dU_dT_V(self):
         return self.dH_dT_V() - self.V()*self.dP_dT()
-    
+
     def dU_dP(self):
         return -self.P*self.dV_dP() - self.V() + self.dH_dP()
-    
+
     dU_dP_T = dU_dP
-    
+
     def dU_dP_V(self):
         return self.dH_dP_V() - self.V()
-    
+
     def dU_dV_T(self):
         return self.dU_dP_T()*self.dP_dV()
 
     def dU_dV_P(self):
         return self.dU_dT_P()*self.dT_dV()
-    
+
     def dA_dT(self):
         return -self.T*self.dS_dT() - self.S() + self.dU_dT()
-    
+
     dA_dT_P = dA_dT
-    
+
     def dA_dT_V(self):
         return (self.dH_dT_V() - self.V()*self.dP_dT() - self.T*self.dS_dT_V()
                 - self.S())
 
     def dA_dP(self):
         return -self.T*self.dS_dP() + self.dU_dP()
-    
+
     dA_dP_T = dA_dP
-    
+
     def dA_dP_V(self):
-        return (self.dH_dP_V() - self.V() - self.dT_dP()*self.S() 
+        return (self.dH_dP_V() - self.V() - self.dT_dP()*self.S()
                 - self.T*self.dS_dP_V())
 
     def dA_dV_T(self):
@@ -551,22 +551,22 @@ class Phase(object):
 
     def dA_dV_P(self):
         return self.dA_dT_P()*self.dT_dV()
-    
 
 
-    
+
+
     def G_dep(self):
         G_dep = self.H_dep() - self.T*self.S_dep()
         return G_dep
-    
+
     def V_dep(self):
         # from ideal gas behavior
         V_dep = self.V() - R*self.T/self.P
         return V_dep
-    
+
     def U_dep(self):
         return self.H_dep() - self.P*self.V_dep()
-    
+
     def A_dep(self):
         return self.U_dep() - self.T*self.S_dep()
 
@@ -592,15 +592,15 @@ class Phase(object):
             S += zi*Sf
         self._S_reactive = S
         return S
-    
+
     def G_reactive(self):
         G = self.H_reactive() - self.T*self.S_reactive()
         return G
-    
+
     def U_reactive(self):
         U = self.H_reactive() - self.P*self.V()
         return U
-    
+
     def A_reactive(self):
         A = self.U_reactive() - self.T*self.S_reactive()
         return A
@@ -626,19 +626,19 @@ class Phase(object):
             Sf_ideal_gas += zi*Sf
         self._S_formation_ideal_gas = Sf_ideal_gas
         return Sf_ideal_gas
-    
+
     def G_formation_ideal_gas(self):
         Gf = self.H_formation_ideal_gas() - self.T_REF_IG*self.S_formation_ideal_gas()
         return Gf
-    
+
     def U_formation_ideal_gas(self):
         Uf = self.H_formation_ideal_gas() - self.P_REF_IG*self.V_ideal_gas()
         return Uf
-    
+
     def A_formation_ideal_gas(self):
         Af = self.U_formation_ideal_gas() - self.T_REF_IG*self.S_formation_ideal_gas()
         return Af
-    
+
     def Cv(self):
         try:
             return self._Cv
@@ -649,27 +649,27 @@ class Phase(object):
         Cp = self.Cp()
         self._Cv = Cv = Cp - Cp_m_Cv
         return Cv
-    
+
     def dCv_dT_P(self):
         r'''Method to calculate the temperature derivative of Cv, constant
         volume heat capacity, at constant pressure.
-        
+
         .. math::
-            \left(\frac{\partial C_v}{\partial T}\right)_P = 
+            \left(\frac{\partial C_v}{\partial T}\right)_P =
             - \frac{T \operatorname{dPdT_{V}}^{2}{\left(T \right)} \frac{d}{dT}
             \operatorname{dPdV_{T}}{\left(T \right)}}{\operatorname{dPdV_{T}}^{2}
             {\left(T \right)}} + \frac{2 T \operatorname{dPdT_{V}}{\left(T \right)}
             \frac{d}{d T} \operatorname{dPdT_{V}}{\left(T \right)}}
             {\operatorname{dPdV_{T}}{\left(T \right)}} + \frac{\operatorname{
-            dPdT_{V}}^{2}{\left(T \right)}}{\operatorname{dPdV_{T}}{\left(T 
+            dPdT_{V}}^{2}{\left(T \right)}}{\operatorname{dPdV_{T}}{\left(T
             \right)}} + \frac{d}{d T} \operatorname{Cp}{\left(T \right)}
 
         Returns
         -------
         dCv_dT_P : float
-           Temperature derivative of constant volume heat capacity at constant 
+           Temperature derivative of constant volume heat capacity at constant
            pressure, [J/mol/K^2]
-            
+
         Notes
         -----
         Requires `d2P_dT2_PV`, `d2P_dVdT_TP`, and `d2H_dT2`.
@@ -679,7 +679,7 @@ class Phase(object):
         x1 = x0*x0
         x2 = self.dP_dV_T()
         x3 = 1.0/x2
-        
+
         x50 = self.d2P_dT2_PV()
         x51 = self.d2P_dVdT_TP()
         x52 = self.d2H_dT2()
@@ -688,20 +688,20 @@ class Phase(object):
     def dCv_dP_T(self):
         r'''Method to calculate the pressure derivative of Cv, constant
         volume heat capacity, at constant temperature.
-        
+
         .. math::
-            \left(\frac{\partial C_v}{\partial P}\right)_T = 
+            \left(\frac{\partial C_v}{\partial P}\right)_T =
             - T \operatorname{dPdT_{V}}{\left(P \right)} \frac{d}{d P}
             \operatorname{dVdT_{P}}{\left(P \right)} - T \operatorname{
             dVdT_{P}}{\left(P \right)} \frac{d}{d P} \operatorname{dPdT_{V}}
             {\left(P \right)} + \frac{d}{d P} \operatorname{Cp}{\left(P\right)}
-            
+
         Returns
         -------
         dCv_dP_T : float
-           Pressure derivative of constant volume heat capacity at constant 
+           Pressure derivative of constant volume heat capacity at constant
            temperature, [J/mol/K/Pa]
-            
+
         Notes
         -----
         Requires `d2V_dTdP`, `d2P_dTdP`, and `d2H_dTdP`.
@@ -724,7 +724,7 @@ class Phase(object):
         T, Hfs, Sfs = self.T, self.Hfs, self.Sfs
         dG_reactive_dzs = [Hfs[i] - T*(Sfs[i] + dS_dzs[i]) + dH_dzs[i] for i in self.cmps]
         dG_reactive_dns = dxs_to_dns(dG_reactive_dzs, self.zs)
-        chemical_potentials = dns_to_dn_partials(dG_reactive_dns, self.G_reactive())   
+        chemical_potentials = dns_to_dn_partials(dG_reactive_dns, self.G_reactive())
         self._chemical_potentials = chemical_potentials
         return chemical_potentials
 #        # CORRECT DO NOT CHANGE
@@ -734,15 +734,15 @@ class Phase(object):
 #            zs = normalize(ns)
 #            return tot*self.to_TP_zs(self.T, self.P, zs).G_reactive()
 #        return jacobian(to_diff, self.zs)
-    
+
     def activities(self):
         # CORRECT DO NOT CHANGE
         fugacities = self.fugacities()
         fugacities_std = self.fugacities_std() # TODO implement
         return [fugacities[i]/fugacities_std[i] for i in self.cmps]
-    
+
     def gammas(self):
-        # For a good discussion, see 
+        # For a good discussion, see
         # Thermodynamics: Fundamentals for Applications, J. P. O'Connell, J. M. Haile
         # There is no one single definition for gamma but it is believed this is
         # the most generally used one for EOSs; and activity methods
@@ -756,21 +756,21 @@ class Phase(object):
             phi = self.to_TP_zs(T=T, P=P, zs=zeros).phis()[i]
             phis_pure.append(phi)
         return [phis[i]/phis_pure[i] for i in cmps]
-        
-        
+
+
 
     def Cp_Cv_ratio(self):
         return self.Cp()/self.Cv()
-    
+
     def Z(self):
         return self.P*self.V()/(R*self.T)
-        
+
     def rho(self):
         return 1.0/self.V()
-    
+
     def dT_dP(self):
         return 1.0/self.dP_dT()
-    
+
     def dV_dT(self):
         try:
             return self._dV_dT
@@ -778,13 +778,13 @@ class Phase(object):
             pass
         dV_dT = self._dV_dT = -self.dP_dT()/self.dP_dV()
         return dV_dT
-    
+
     def dV_dP(self):
         return -self.dV_dT()*self.dT_dP()
-    
+
     def dT_dV(self):
         return 1./self.dV_dT()
-    
+
     def d2V_dP2(self):
         inverse_dP_dV = 1.0/self.dP_dV()
         inverse_dP_dV3 = inverse_dP_dV*inverse_dP_dV*inverse_dP_dV
@@ -795,7 +795,7 @@ class Phase(object):
         inverse_dP_dT2 = dT_dP*dT_dP
         inverse_dP_dT3 = inverse_dP_dT2*dT_dP
         return -self.d2P_dT2()*inverse_dP_dT3
-    
+
     def d2T_dV2(self):
         dP_dT = self.dP_dT()
         dP_dV = self.dP_dV()
@@ -804,10 +804,10 @@ class Phase(object):
         dT_dP = self.dT_dP()
         inverse_dP_dT2 = dT_dP*dT_dP
         inverse_dP_dT3 = inverse_dP_dT2*dT_dP
-        
+
         return (-(self.d2P_dV2()*dP_dT - dP_dV*d2P_dTdV)*inverse_dP_dT2
                    +(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*inverse_dP_dT3*dP_dV)
-        
+
     def d2V_dT2(self):
         dP_dT = self.dP_dT()
         dP_dV = self.dP_dV()
@@ -818,7 +818,7 @@ class Phase(object):
         inverse_dP_dV = 1.0/dP_dV
         inverse_dP_dV2 = inverse_dP_dV*inverse_dP_dV
         inverse_dP_dV3 = inverse_dP_dV*inverse_dP_dV2
-        
+
         return  (-(d2P_dT2*dP_dV - dP_dT*d2P_dTdV)*inverse_dP_dV2
                    +(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*inverse_dP_dV3*dP_dT)
 
@@ -827,18 +827,18 @@ class Phase(object):
         dP_dV = self.dP_dV()
         d2P_dTdV = self.d2P_dTdV()
         d2P_dV2 = self.d2P_dV2()
-        
+
         inverse_dP_dV = 1.0/dP_dV
         inverse_dP_dV2 = inverse_dP_dV*inverse_dP_dV
         inverse_dP_dV3 = inverse_dP_dV*inverse_dP_dV2
-        
+
         return -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*inverse_dP_dV3
 
     def d2T_dPdV(self):
         dT_dP = self.dT_dP()
         inverse_dP_dT2 = dT_dP*dT_dP
         inverse_dP_dT3 = inverse_dP_dT2*dT_dP
-        
+
         d2P_dTdV = self.d2P_dTdV()
         dP_dT = self.dP_dT()
         dP_dV = self.dP_dV()
@@ -865,28 +865,28 @@ class Phase(object):
     def dV_dns(self):
         return dxs_to_dns(self.dV_dzs(), self.zs)
 
-    # Derived properties    
+    # Derived properties
     def PIP(self):
-        return phase_identification_parameter(self.V(), self.dP_dT(), self.dP_dV(), 
+        return phase_identification_parameter(self.V(), self.dP_dT(), self.dP_dV(),
                                               self.d2P_dV2(), self.d2P_dTdV())
-        
+
     def kappa(self):
         return isothermal_compressibility(self.V(), self.dV_dP())
-    
+
     def dkappa_dT(self):
         V, dV_dP, dV_dT, d2V_dTdP = self.V(), self.dV_dP(), self.dV_dT(), self.d2V_dTdP()
         return -d2V_dTdP/V + dV_dP*dV_dT/(V*V)
-    
+
     def isothermal_bulk_modulus(self):
         return 1.0/self.kappa()
 
     def isobaric_expansion(self):
         return isobaric_expansion(self.V(), self.dV_dT())
-    
+
     def isentropic_exponent(self):
 #        return 1.3
         return self.Cp()/self.Cv()
-    
+
     def dbeta_dT(self):
         '''
         from sympy import *
@@ -900,7 +900,7 @@ class Phase(object):
         V_inv = 1.0/self.V()
         dV_dT = self.dV_dT()
         return V_inv*(self.d2V_dT2() - dV_dT*dV_dT*V_inv)
-    
+
     def dbeta_dP(self):
         '''
         from sympy import *
@@ -909,7 +909,7 @@ class Phase(object):
         expr = 1/V(T, P)*Derivative(V(T, P), T)
         diff(expr, P)
         Derivative(V(T, P), P, T)/V(T, P) - Derivative(V(T, P), P)*Derivative(V(T, P), T)/V(T, P)**2
-        
+
         '''
         V_inv = 1.0/self.V()
         dV_dT = self.dV_dT()
@@ -919,11 +919,11 @@ class Phase(object):
 
     def Joule_Thomson(self):
         return Joule_Thomson(self.T, self.V(), self.Cp(), dV_dT=self.dV_dT(), beta=self.isobaric_expansion())
-    
+
     def speed_of_sound(self):
         # Intentionally molar
         return speed_of_sound(self.V(), self.dP_dV(), self.Cp(), self.Cv())
-    
+
     ### Compressibility factor derivatives
     def dZ_dT(self):
         T_inv = 1.0/self.T
@@ -984,16 +984,16 @@ class Phase(object):
         dV_dP = self.dV_dP()
         V = self.V()
         return -d2V_dPdT/V**2 + 2*dV_dT*dV_dP/V**3
-    
+
     def drho_dV_T(self):
         V = self.V()
         return -1.0/(V*V)
-    
+
     def drho_dT_V(self):
         return 0.0
-    
+
     # Idea gas heat capacity
-    
+
     def setup_Cpigs(self, HeatCapacityGases):
         Cpgs_data = None
         Cpgs_locked = all(i.locked for i in HeatCapacityGases) if HeatCapacityGases is not None else False
@@ -1014,25 +1014,25 @@ class Phase(object):
                               [horner_log(i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmin) -(i.best_fit_Tmin_slope*i.best_fit_Tmin + (i.best_fit_Tmin_value - i.best_fit_Tmin_slope*i.best_fit_Tmin)*log(i.best_fit_Tmin)) for i in HeatCapacityGases],
 #                              [horner_log(i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmax) for i in HeatCapacityGases],
                               [(horner_log(i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmax)
-                                - horner_log(i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmin) 
-                                + (i.best_fit_Tmin_slope*i.best_fit_Tmin + (i.best_fit_Tmin_value - i.best_fit_Tmin_slope*i.best_fit_Tmin)*log(i.best_fit_Tmin)) 
+                                - horner_log(i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmin)
+                                + (i.best_fit_Tmin_slope*i.best_fit_Tmin + (i.best_fit_Tmin_value - i.best_fit_Tmin_slope*i.best_fit_Tmin)*log(i.best_fit_Tmin))
                                 - (i.best_fit_Tmax_value -i.best_fit_Tmax*i.best_fit_Tmax_slope)*log(i.best_fit_Tmax)) for i in HeatCapacityGases],
-                              [best_fit_integral_value(T_REF_IG, i.best_fit_int_coeffs, i.best_fit_Tmin, 
+                              [best_fit_integral_value(T_REF_IG, i.best_fit_int_coeffs, i.best_fit_Tmin,
                                                        i.best_fit_Tmax, i.best_fit_Tmin_value,
                                                        i.best_fit_Tmax_value, i.best_fit_Tmin_slope,
                                                        i.best_fit_Tmax_slope) for i in HeatCapacityGases],
                               [i.best_fit_coeffs for i in HeatCapacityGases],
                               [i.best_fit_int_coeffs for i in HeatCapacityGases],
                               [i.best_fit_T_int_T_coeffs for i in HeatCapacityGases],
-                              [best_fit_integral_over_T_value(T_REF_IG, i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmin, 
+                              [best_fit_integral_over_T_value(T_REF_IG, i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmin,
                                                        i.best_fit_Tmax, i.best_fit_Tmin_value,
                                                        i.best_fit_Tmax_value, i.best_fit_Tmin_slope,
                                                        i.best_fit_Tmax_slope) for i in HeatCapacityGases],
-                              
+
                               )
         return (Cpgs_locked, Cpgs_data)
 
-    
+
     def _Cp_pure_fast(self, Cps_data):
         Cps = []
         T, cmps = self.T, self.cmps
@@ -1041,7 +1041,7 @@ class Phase(object):
         Tmin_values = Cps_data[2]
         Tmax_slopes = Cps_data[4]
         Tmax_values = Cps_data[5]
-        
+
         for i in cmps:
             if T < Tmins[i]:
                 Cp = (T -  Tmins[i])*Tmin_slopes[i] + Tmin_values[i]
@@ -1062,7 +1062,7 @@ class Phase(object):
         Tmin_values = Cps_data[2]
         Tmax_slopes = Cps_data[4]
         Tmax_values = Cps_data[5]
-        
+
         for i in cmps:
             if T < Tmins[i]:
                 dCp = Tmin_slopes[i]
@@ -1075,7 +1075,7 @@ class Phase(object):
                     Cp = T*Cp + c
             dCps.append(dCp)
         return dCps
-        
+
     def _Cp_integrals_pure_fast(self, Cps_data):
         Cp_integrals_pure = []
         T, cmps = self.T, self.cmps
@@ -1094,7 +1094,7 @@ class Phase(object):
 #                elif (T <= Tmaxes[i]):
 #                    x1 = Cps_data[2][i] - Cps_data[1][i]*Tmin
 #                    tot = Tmin*(0.5*Cps_data[1][i]*Tmin + x1)
-#                    
+#
 #                    tot1 = 0.0
 #                    for c in int_coeffs[i]:
 #                        tot1 = tot1*T + c
@@ -1104,15 +1104,15 @@ class Phase(object):
 #                else:
 #                    x1 = Cps_data[2][i] - Cps_data[1][i]*Tmin
 #                    tot = Tmin*(0.5*Cps_data[1][i]*Tmin + x1)
-#                    
+#
 #                    tot1 = Cps_data[8][i] - Cps_data[7][i]
-#                    
+#
 #                    x1 = Cps_data[5][i] - Cps_data[4][i]*Tmaxes[i]
 #                    tot2 = T*(0.5*Cps_data[4][i]*T + x1) - Tmaxes[i]*(0.5*Cps_data[4][i]*Tmaxes[i] + x1)
 #                    H = tot + tot1 + tot2
-                
-                
-                
+
+
+
             # ATTEMPT AT FAST HERE (NOW WORKING)
             if T < Tmins[i]:
                 x1 = Cps_data[2][i] - Cps_data[1][i]*Tmins[i]
@@ -1150,15 +1150,15 @@ class Phase(object):
                 S -= Cps_data[9][i]
 #                    x1 = Cps_data[2][i] - Cps_data[1][i]*Tmin
 #                    S += (Cps_data[1][i]*Tmin + x1*log(Tmin))
-            else:        
+            else:
 #                    x1 = Cps_data[2][i] - Cps_data[1][i]*Tmin
 #                    S = (Cps_data[1][i]*Tmin + x1*log(Tmin))
 #                    S += (Cps_data[10][i] - Cps_data[9][i])
-                S = Cps_data[10][i] 
+                S = Cps_data[10][i]
                 # The above should be in the constant Cps_data[10], - x2*log(Tmaxes[i]) also
                 x2 = Cps_data[5][i] - Tmaxes[i]*Cps_data[4][i]
                 S += -Cps_data[4][i]*(Tmaxes[i] - T) + x2*logT #- x2*log(Tmaxes[i])
-                
+
             Cp_integrals_over_T_pure.append(S - Cps_data[15][i])
         return Cp_integrals_over_T_pure
 
@@ -1170,7 +1170,7 @@ class Phase(object):
         if self.Cpgs_locked:
             self._Cpigs = self._Cp_pure_fast(self.Cpgs_data)
             return self._Cpigs
-                
+
         T = self.T
         self._Cpigs = [i.T_dependent_property(T) for i in self.HeatCapacityGases]
         return self._Cpigs
@@ -1194,12 +1194,12 @@ class Phase(object):
             return self._Cpig_integrals_over_T_pure
         except AttributeError:
             pass
-        
+
         if self.Cpgs_locked:
             self._Cpig_integrals_over_T_pure = self._Cp_integrals_over_T_pure_fast(self.Cpgs_data)
             return self._Cpig_integrals_over_T_pure
 
-                
+
         T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
         self._Cpig_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
                                    for obj in HeatCapacityGases]
@@ -1213,7 +1213,7 @@ class Phase(object):
         if self.Cpgs_locked:
             self._dCpigs_dT = self._dCp_dT_pure_fast(self.Cpgs_data)
             return self._dCpigs_dT
-                
+
         T = self.T
         self._dCpigs_dT = [i.T_dependent_property_derivative(T) for i in self.HeatCapacityGases]
         return self._dCpigs_dT
@@ -1227,7 +1227,7 @@ class Phase(object):
         if self.Cpls_locked:
             self._Cpls = self._Cp_pure_fast(self.Cpls_data)
             return self._Cpls
-                
+
         T = self.T
         self._Cpls = [i.T_dependent_property(T) for i in self.HeatCapacityLiquids]
         return self._Cpls
@@ -1244,7 +1244,7 @@ class Phase(object):
 #        vals = [float(quad(to_quad, self.T_REF_IG, self.T, args=i)[0]) for i in self.cmps]
 ##        print(vals, self._Cp_integrals_pure_fast(self.Cpls_data))
 #        return vals
-        
+
         if self.Cpls_locked:
             self._Cpl_integrals_pure = self._Cp_integrals_pure_fast(self.Cpls_data)
             return self._Cpl_integrals_pure
@@ -1271,7 +1271,7 @@ class Phase(object):
             self._Cpl_integrals_over_T_pure = self._Cp_integrals_over_T_pure_fast(self.Cpls_data)
             return self._Cpl_integrals_over_T_pure
 
-                
+
         T, T_REF_IG, HeatCapacityLiquids = self.T, self.T_REF_IG, self.HeatCapacityLiquids
         self._Cpl_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
                                    for obj in HeatCapacityLiquids]
@@ -1279,7 +1279,7 @@ class Phase(object):
 
     def V_ideal_gas(self):
         return R*self.T/self.P
-    
+
     def H_ideal_gas(self):
         try:
             return self._H_ideal_gas
@@ -1303,14 +1303,14 @@ class Phase(object):
         S = 0.0
         S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
         S -= R*log(P*P_REF_IG_INV)
-        
+
         for i in cmps:
             S += zs[i]*Cpig_integrals_over_T_pure[i]
         self._S_ideal_gas = S
-        
+
         # dS_ideal_gas_dP = -R/P
         return S
-    
+
     def Cp_ideal_gas(self):
         try:
             return self._Cp_ideal_gas
@@ -1322,7 +1322,7 @@ class Phase(object):
             Cp += zs[i]*Cpigs_pure[i]
         self._Cp_ideal_gas = Cp
         return Cp
-    
+
     def Cv_ideal_gas(self):
         try:
             Cp = self._Cp_ideal_gas
@@ -1332,7 +1332,7 @@ class Phase(object):
 
     def Cv_dep(self):
         return self.Cv() - self.Cv_ideal_gas()
-    
+
     def Cp_Cv_ratio_ideal_gas(self):
         return self.Cp_ideal_gas()/self.Cv_ideal_gas()
 
@@ -1347,7 +1347,7 @@ class Phase(object):
     def A_ideal_gas(self):
         A_ideal_gas = self.U_ideal_gas() - self.T*self.S_ideal_gas()
         return A_ideal_gas
-    
+
     def mechanical_critical_point(self):
         zs = self.zs
         # Get initial guess
@@ -1362,7 +1362,7 @@ class Phase(object):
         except Exception as e:
             Tmc = 300.0
             Pmc = 1e6
-        
+
         # Try to solve it
         global new
         def to_solve(TP):
@@ -1371,9 +1371,9 @@ class Phase(object):
             new = self.to_TP_zs(T=T, P=P, zs=zs)
             errs = [new.dP_drho(), new.d2P_drho2()]
             return errs
-        
+
         jac = lambda TP: jacobian(to_solve, TP, scalar=False)
-        TP, iters = newton_system(to_solve, [Tmc, Pmc], jac=jac, ytol=1e-10) 
+        TP, iters = newton_system(to_solve, [Tmc, Pmc], jac=jac, ytol=1e-10)
 #        TP = fsolve(to_solve, [Tmc, Pmc]) # fsolve handles the discontinuities badly
         T, P = float(TP[0]), float(TP[1])
         V = new.V()
@@ -1381,7 +1381,7 @@ class Phase(object):
         self._mechanical_critical_P = P
         self._mechanical_critical_V = V
         return T, P, V
-    
+
     def Tmc(self):
         try:
             return self._mechanical_critical_T
@@ -1410,7 +1410,7 @@ class Phase(object):
             self.mechanical_critical_point()
             V = self._mechanical_critical_V
         return (self.Pmc()*self.Vmc())/(R*self.Tmc())
-            
+
     def dH_dT_P(self):
         return self.dH_dT()
 
@@ -1422,10 +1422,10 @@ class Phase(object):
 
     def dS_dV_T(self):
         return self.dS_dP_T()*self.dP_dV()
-            
+
     def dS_dV_P(self):
         return self.dS_dT_P()*self.dT_dV()
-    
+
     def dP_dT_P(self):
         return 0.0
 
@@ -1443,7 +1443,7 @@ class Phase(object):
 
     def dV_dP_V(self):
         return 0.0
-    
+
     def dP_dP_T(self):
         return 1.0
 
@@ -1461,7 +1461,7 @@ class Phase(object):
 
     def dV_dV_P(self):
         return 1.0
-    
+
     d2T_dV2_P = d2T_dV2
     d2V_dT2_P = d2V_dT2
     d2V_dP2_T = d2V_dP2
@@ -1470,24 +1470,24 @@ class Phase(object):
     dV_dT_P = dV_dT
     dT_dP_V = dT_dP
     dT_dV_P = dT_dV
-    
-    
+
+
     # More derivatives - at const H, S, G, U, A
     _derivs_jacobian_x = 'V'
     _derivs_jacobian_y = 'T'
-    
+
     def _derivs_jacobian(self, a, b, c, x=_derivs_jacobian_x,
                          y=_derivs_jacobian_y):
         r'''Calculates and returns a first-order derivative of one property
         with respect to another property at constant another property.
-        
-        This is particularly useful to obtain derivatives with respect to 
+
+        This is particularly useful to obtain derivatives with respect to
         another property which is not an intensive variable in a model,
         allowing for example derivatives at constant enthalpy or Gibbs energy
         to be obtained. This formula is obtained from the first derivative
         principles of reciprocity, the chain rule, and the triple product rule
         as shown in [1]_.
-        
+
         ... math::
             \left(\frac{\partial a}{\partial b}\right)_{c}=
             \frac{\left(\frac{\partial a}{\partial x}\right)_{y}\left(
@@ -1497,12 +1497,12 @@ class Phase(object):
             \frac{\partial c}{\partial y}\right)_{x}-\left(\frac{\partial b}
             {\partial y}\right)_{x}\left(\frac{\partial c}{\partial x}
             \right)_{y}}
-    
+
         References
         ----------
         .. [1] Thorade, Matthis, and Ali Saadat. "Partial Derivatives of
-           Thermodynamic State Properties for Dynamic Simulation." 
-           Environmental Earth Sciences 70, no. 8 (April 10, 2013): 3497-3503. 
+           Thermodynamic State Properties for Dynamic Simulation."
+           Environmental Earth Sciences 70, no. 8 (April 10, 2013): 3497-3503.
            https://doi.org/10.1007/s12665-013-2394-z.
         '''
         n0 = getattr(self, 'd%s_d%s_%s'%(a, x, y))()
@@ -1510,19 +1510,19 @@ class Phase(object):
 
         n2 = getattr(self, 'd%s_d%s_%s'%(a, y, x))()
         n3 = getattr(self, 'd%s_d%s_%s'%(c, x, y))()
-        
+
         d0 = getattr(self, 'd%s_d%s_%s'%(b, x, y))()
         d1 = getattr(self, 'd%s_d%s_%s'%(c, y, x))()
-        
+
         d2 = getattr(self, 'd%s_d%s_%s'%(b, y, x))()
         d3 = getattr(self, 'd%s_d%s_%s'%(c, x, y))()
-        
+
         return (n0*n1 - n2*n3)/(d0*d1 - d2*d3)
-    
+
 
     ### Transport properties - pass them on!
     # Properties that use `constants` attributes
-    
+
     def MW(self):
         try:
             return self._MW
@@ -1534,7 +1534,7 @@ class Phase(object):
             MW += zs[i]*MWs[i]
         self._MW = MW
         return MW
-    
+
     def MW_inv(self):
         try:
             return self._MW_inv
@@ -1542,27 +1542,27 @@ class Phase(object):
             pass
         self._MW_inv = MW_inv = 1.0/self.MW()
         return MW_inv
-    
+
 #    def mu(self):
 #        return self.result.mu(self)
 
 #    def k(self):
 #        return self.result.k(self)
-#    
+#
 #    def ws(self):
 #        return self.result.ws(self)
-        
-    
+
+
 #    def atom_fractions(self):
 #        return self.result.atom_fractions(self)
-#    
+#
 #    def atom_mass_fractions(self):
 #        return self.result.atom_mass_fractions(self)
 
     def speed_of_sound_mass(self):
         # 1000**0.5 = 31.622776601683793
         return 31.622776601683793*self.MW()**-0.5*self.speed_of_sound()
-    
+
     def rho_mass(self):
         try:
             return self._rho_mass
@@ -1570,27 +1570,27 @@ class Phase(object):
             pass
         self._rho_mass = rho_mass = self.MW()/(1000.0*self.V())
         return rho_mass
-    
+
     def drho_mass_dT(self):
         r'''Method to calculate the mass density derivative with respect to
         temperature, at constant pressure.
-        
+
         .. math::
-            \left(\frac{\partial \rho}{\partial T}\right)_{P} = 
+            \left(\frac{\partial \rho}{\partial T}\right)_{P} =
             \frac{-\text{MW} \frac{\partial V_m}{\partial T}}{1000 V_m^2}
-            
+
         Returns
         -------
         drho_mass_dT : float
            Temperature derivative of mass density at constant pressure,
            [kg/m^3/K]
-            
+
         Notes
         -----
         Requires `dV_dT`, `MW`, and `V`.
-        
+
         This expression is readily obtainable with SymPy:
-        
+
         >>> from sympy import * # doctest: +SKIP
         >>> T, P, MW = symbols('T, P, MW') # doctest: +SKIP
         >>> Vm = symbols('Vm', cls=Function) # doctest: +SKIP
@@ -1611,23 +1611,23 @@ class Phase(object):
     def drho_mass_dP(self):
         r'''Method to calculate the mass density derivative with respect to
         pressure, at constant temperature.
-        
+
         .. math::
-            \left(\frac{\partial \rho}{\partial P}\right)_{T} = 
+            \left(\frac{\partial \rho}{\partial P}\right)_{T} =
             \frac{-\text{MW} \frac{\partial V_m}{\partial P}}{1000 V_m^2}
-            
+
         Returns
         -------
         drho_mass_dP : float
            Pressure derivative of mass density at constant temperature,
            [kg/m^3/Pa]
-            
+
         Notes
         -----
         Requires `dV_dP`, `MW`, and `V`.
-        
+
         This expression is readily obtainable with SymTy:
-        
+
         >>> from sympy import * # doctest: +SKIP
         >>> P, T, MW = symbols('P, T, MW') # doctest: +SKIP
         >>> Vm = symbols('Vm', cls=Function) # doctest: +SKIP
@@ -1644,13 +1644,13 @@ class Phase(object):
         dV_dP = self.dV_dP()
         self._drho_mass_dP = drho_mass_dP = -MW*dV_dP/(1000.0*V*V)
         return drho_mass_dP
-    
+
     def H_mass(self):
         try:
             return self._H_mass
         except AttributeError:
             pass
-        
+
         self._H_mass = H_mass = self.H()*1e3*self.MW_inv()
         return H_mass
 
@@ -1659,7 +1659,7 @@ class Phase(object):
             return self._S_mass
         except AttributeError:
             pass
-        
+
         self._S_mass = S_mass = self.S()*1e3*self.MW_inv()
         return S_mass
 
@@ -1668,7 +1668,7 @@ class Phase(object):
             return self._U_mass
         except AttributeError:
             pass
-        
+
         self._U_mass = U_mass = self.U()*1e3*self.MW_inv()
         return U_mass
 
@@ -1677,7 +1677,7 @@ class Phase(object):
             return self._A_mass
         except AttributeError:
             pass
-        
+
         self._A_mass = A_mass = self.A()*1e3*self.MW_inv()
         return A_mass
 
@@ -1686,7 +1686,7 @@ class Phase(object):
             return self._G_mass
         except AttributeError:
             pass
-        
+
         self._G_mass = G_mass = self.G()*1e3*self.MW_inv()
         return G_mass
 
@@ -1695,7 +1695,7 @@ class Phase(object):
             return self._Cp_mass
         except AttributeError:
             pass
-        
+
         self._Cp_mass = Cp_mass = self.Cp()*1e3*self.MW_inv()
         return Cp_mass
 
@@ -1704,54 +1704,54 @@ class Phase(object):
             return self._Cv_mass
         except AttributeError:
             pass
-        
+
         self._Cv_mass = Cv_mass = self.Cv()*1e3*self.MW_inv()
         return Cv_mass
-    
+
     def P_transitions(self):
         return []
-    
+
     def T_max_at_V(self, V):
         return None
-    
+
     def P_max_at_V(self, V):
         return None
-    
+
     def dspeed_of_sound_dT_P(self):
         r'''Method to calculate the temperature derivative of speed of sound
         at constant pressure in molar units.
-        
+
         .. math::
-            \left(\frac{\partial c{\partial T}\right)_P = 
+            \left(\frac{\partial c{\partial T}\right)_P =
             - \frac{\sqrt{- \frac{\operatorname{Cp}{\left(T \right)} V^{2}
             {\left(T \right)} \operatorname{dPdV_{T}}{\left(T \right)}}
             {\operatorname{Cv}{\left(T \right)}}} \left(- \frac{\operatorname{Cp}
             {\left(T \right)} V^{2}{\left(T \right)} \frac{d}{d T}
             \operatorname{dPdV_{T}}{\left(T \right)}}{2 \operatorname{Cv}{\left(T
-            \right)}} - \frac{\operatorname{Cp}{\left(T \right)} V{\left(T 
+            \right)}} - \frac{\operatorname{Cp}{\left(T \right)} V{\left(T
             \right)} \operatorname{dPdV_{T}}{\left(T \right)} \frac{d}{d T}
-            V{\left(T \right)}}{\operatorname{Cv}{\left(T \right)}} 
+            V{\left(T \right)}}{\operatorname{Cv}{\left(T \right)}}
             + \frac{\operatorname{Cp}{\left(T \right)} V^{2}{\left(T \right)}
             \operatorname{dPdV_{T}}{\left(T \right)} \frac{d}{d T}
             \operatorname{Cv}{\left(T \right)}}{2 \operatorname{Cv}^{2}
             {\left(T \right)}} - \frac{V^{2}{\left(T \right)} \operatorname{
             dPdV_{T}}{\left(T \right)} \frac{d}{d T} \operatorname{Cp}{\left(T
-            \right)}}{2 \operatorname{Cv}{\left(T \right)}}\right) 
-            \operatorname{Cv}{\left(T \right)}}{\operatorname{Cp}{\left(T 
+            \right)}}{2 \operatorname{Cv}{\left(T \right)}}\right)
+            \operatorname{Cv}{\left(T \right)}}{\operatorname{Cp}{\left(T
             \right)} V^{2}{\left(T \right)} \operatorname{dPdV_{T}}{\left(T
             \right)}}
 
         Returns
         -------
         dspeed_of_sound_dT_P : float
-           Temperature derivative of speed of sound at constant pressure, 
+           Temperature derivative of speed of sound at constant pressure,
            [m*kg^0.5/s/mol^0.5/K]
-            
+
         Notes
         -----
         Requires the temperature derivative of Cp and Cv both at constant
         pressure, as wel as the volume and temperature derivative of pressure,
-        calculated at constant temperature and then pressure respectively. 
+        calculated at constant temperature and then pressure respectively.
         These can be tricky to obtain.
         '''
         '''Calculation with SymPy:
@@ -1767,12 +1767,12 @@ class Phase(object):
         x4 = x0*x2
         x5 = x4/x3
         x6 = 0.5*x1
-        
+
         x50 = self.d2P_dVdT_TP()
         x51 = self.d2H_dT2()
         x52 = self.dV_dT()
         x53 = self.dCv_dT_P()
-        
+
         return (-x1*x1*x5)**0.5*(x0*x6*x50 + x2*x6*x51 + x4*x52- x5*x6*x53)/(x0*x1*x2)
 
     def dspeed_of_sound_dP_T(self):
@@ -1783,15 +1783,15 @@ class Phase(object):
         x4 = x0*x2
         x5 = x4/x3
         x6 = 0.5*x1
-        
+
         x50 = self.d2P_dVdP()
         x51 = self.d2H_dTdP()
         x52 = self.dV_dP()
         x53 = self.dCv_dP_T()
-        
+
         return (-x1*x1*x5)**0.5*(x0*x6*x50 + x2*x6*x51 + x4*x52- x5*x6*x53)/(x0*x1*x2)
-    
-    
+
+
     # Transport properties
     def mu(self):
         if isinstance(self, gas_phases):
@@ -1838,7 +1838,7 @@ class Phase(object):
         except:
             return None
         return result.betas_volume[result.phases.index(self)]
-    
+
     @property
     def VF(self):
         return self.result.gas_beta
@@ -1854,12 +1854,12 @@ for a in ('T', 'P', 'V', 'rho'):
            t = 'd%s_d%s_%s' %(a, b, c)
            setattr(Phase, t, _der)
            derivatives_jacobian.append(t)
-           
+
 derivatives_thermodynamic = ['dA_dP', 'dA_dP_T', 'dA_dP_V', 'dA_dT', 'dA_dT_P', 'dA_dT_V', 'dA_dV_P', 'dA_dV_T',
              'dCv_dP_T', 'dCv_dT_P', 'dG_dP', 'dG_dP_T', 'dG_dP_V', 'dG_dT', 'dG_dT_P', 'dG_dT_V',
-             'dG_dV_P', 'dG_dV_T', 'dH_dP', 'dH_dP_T', 'dH_dP_V', 'dH_dT', 'dH_dT_P', 'dH_dT_V', 
-             'dH_dV_P', 'dH_dV_T', 'dS_dP', 'dS_dP_T', 'dS_dP_V', 'dS_dT', 'dS_dT_P', 'dS_dT_V', 
-             'dS_dV_P', 'dS_dV_T', 'dU_dP', 'dU_dP_T', 'dU_dP_V', 'dU_dT', 'dU_dT_P', 'dU_dT_V', 
+             'dG_dV_P', 'dG_dV_T', 'dH_dP', 'dH_dP_T', 'dH_dP_V', 'dH_dT', 'dH_dT_P', 'dH_dT_V',
+             'dH_dV_P', 'dH_dV_T', 'dS_dP', 'dS_dP_T', 'dS_dP_V', 'dS_dT', 'dS_dT_P', 'dS_dT_V',
+             'dS_dV_P', 'dS_dV_T', 'dU_dP', 'dU_dP_T', 'dU_dP_V', 'dU_dT', 'dU_dT_P', 'dU_dT_V',
              'dU_dV_P', 'dU_dV_T']
 derivatives_thermodynamic_mass = []
 for attr in derivatives_thermodynamic:
@@ -1869,13 +1869,13 @@ for attr in derivatives_thermodynamic:
     s = '%s_mass_%s' %(base, end)
     setattr(Phase, s, _der)
     derivatives_thermodynamic_mass.append(s)
-    
+
 
 
 class IdealGas(Phase):
     '''DO NOT DELETE - EOS CLASS IS TOO SLOW!
     This will be important for fitting.
-    
+
     '''
     phase = 'g'
     force_phase = 'g'
@@ -1889,7 +1889,7 @@ class IdealGas(Phase):
             self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
         else:
             self.Sfs = None
-            
+
         if zs is not None:
             self.N = N = len(zs)
             self.cmps = range(N)
@@ -1906,25 +1906,25 @@ class IdealGas(Phase):
             self.T = T
         if P is not None:
             self.P = P
-        
+
     def fugacities(self):
         P = self.P
         return [P*zi for zi in self.zs]
-    
+
     def lnphis(self):
         return self.zeros1d
-    
+
     lnphis_G_min = lnphis
-    
+
     def phis(self):
         return self.ones1d
-    
+
     def dphis_dT(self):
         return self.zeros1d
 
     def dphis_dP(self):
         return self.zeros1d
-    
+
     def dlnphis_dT(self):
         return self.zeros1d
 
@@ -1940,13 +1940,13 @@ class IdealGas(Phase):
         new.cmps = self.cmps
         new.zeros1d = self.zeros1d
         new.ones1d = self.ones1d
-        
+
         new.HeatCapacityGases = self.HeatCapacityGases
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
         return new
-    
+
     def to_zs_TPV(self, zs, T=None, P=None, V=None):
         new = self.__class__.__new__(self.__class__)
         if T is not None and V is not None:
@@ -1959,22 +1959,22 @@ class IdealGas(Phase):
             raise ValueError("Two of T, P, or V are needed")
         new.P = P
         new.T = T
-        
+
         new.zs = zs
         new.N = self.N
         new.cmps = self.cmps
         new.zeros1d = self.zeros1d
         new.ones1d = self.ones1d
-        
+
         new.HeatCapacityGases = self.HeatCapacityGases
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
 
         return new
-        
+
     to = to_zs_TPV
-    
+
     ### Volumetric properties
     def V(self):
         return R*self.T/self.P
@@ -2004,41 +2004,41 @@ class IdealGas(Phase):
 
     def d2T_dV2(self):
         return 0.0
-        
+
     d2T_dV2_P = d2T_dV2
 
     def d2V_dT2(self):
         return 0.0
-        
+
     d2V_dT2_P = d2V_dT2
-    
+
     def dV_dT(self):
         return R/self.P
-    
+
     def PIP(self):
         return 1.0 # For speed
 
     def d2V_dP2(self):
         P, T = self.P, self.T
         return 2.0*R*T/(P*P*P)
-    
+
     def d2T_dP2(self):
         return 0.0
-    
+
     def dV_dP(self):
         P, T = self.P, self.T
         return -R*T/(P*P)
-    
+
     def dT_dP(self):
         return self.T/self.P
-    
+
     def dT_dV(self):
         return self.P*R_inv
-    
+
     def dV_dzs(self):
         return self.zeros1d
 
-    
+
     d2T_dV2_P = d2T_dV2
     d2V_dT2_P = d2V_dT2
     d2V_dP2_T = d2V_dP2
@@ -2047,7 +2047,7 @@ class IdealGas(Phase):
     dV_dT_P = dV_dT
     dT_dP_V = dT_dP
     dT_dV_P = dT_dV
-    
+
     ### Thermodynamic properties
 
     def H(self):
@@ -2078,12 +2078,12 @@ class IdealGas(Phase):
         S = 0.0
         S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
         S -= R*log(P*P_REF_IG_INV)
-        
+
         for i in cmps:
             S += zs[i]*Cpig_integrals_over_T_pure[i]
         self._S = S
         return S
-    
+
     def Cp(self):
         try:
             return self._Cp
@@ -2094,14 +2094,14 @@ class IdealGas(Phase):
         for i in self.cmps:
             Cp += zs[i]*Cpigs_pure[i]
         self._Cp = Cp
-        return Cp 
+        return Cp
 
     dH_dT = Cp
     dH_dT_V = Cp # H does not depend on P, so the P is increased without any effect on H
 
     def dH_dP(self):
         return 0.0
-        
+
     def d2H_dT2(self):
         try:
             return self._d2H_dT2
@@ -2116,7 +2116,7 @@ class IdealGas(Phase):
 
     def d2H_dP2(self):
         return 0.0
-        
+
     def d2H_dTdP(self):
         return 0.0
 
@@ -2126,7 +2126,7 @@ class IdealGas(Phase):
 
     def dH_dV_T(self):
         return 0.0
-        
+
     def dH_dV_P(self):
         dH_dV_P = self.dT_dV()*self.Cp()
         return dH_dV_P
@@ -2145,7 +2145,7 @@ class IdealGas(Phase):
     def d2S_dP2(self):
         P = self.P
         return R/(P*P)
-    
+
     def dS_dT_V(self):
         dS_dT_V = self.Cp()/self.T - R/self.P*self.dP_dT()
         return dS_dT_V
@@ -2153,26 +2153,26 @@ class IdealGas(Phase):
     def dS_dP_V(self):
         dS_dP_V = -R/self.P + self.Cp()/self.T*self.dT_dP()
         return dS_dP_V
-    
+
     def d2P_dTdP(self):
         return 0.0
-        
+
     def d2P_dVdP(self):
         return 0.0
-    
+
     def d2P_dVdT_TP(self):
         return 0.0
-    
+
     def d2P_dT2_PV(self):
         return 0.0
-    
+
     def dS_dzs(self):
         try:
             return self._dS_dzs
         except AttributeError:
             pass
         cmps, eos_mix = self.cmps, self.eos_mix
-    
+
         log_zs = self.log_zs()
         integrals = self.Cpig_integrals_over_T_pure()
 
@@ -2224,14 +2224,14 @@ class CEOSGas(Phase):
         else:
             self._model_hash = h
         return h
-    
+
     @property
     def phase(self):
         phase = self.eos_mix.phase
         if phase in ('l', 'g'):
             return phase
         return 'g'
-    
+
     def as_args(self):
         eos_kwargs = self.eos_kwargs.copy()
         base = 'CEOSGas(eos_class=%s, eos_kwargs=%s, HeatCapacityGases=correlations.HeatCapacityGases,'  %(self.eos_class.__name__, self.eos_kwargs)
@@ -2240,7 +2240,7 @@ class CEOSGas(Phase):
                 base += '%s=%s, ' %(s, getattr(self, s))
         base += ')'
         return base
-        
+
     def __init__(self, eos_class, eos_kwargs, HeatCapacityGases=None, Hfs=None,
                  Gfs=None, Sfs=None,
                  T=None, P=None, zs=None):
@@ -2254,13 +2254,13 @@ class CEOSGas(Phase):
         elif 'Tcs' in eos_kwargs:
             self.N = N = len(eos_kwargs['Tcs'])
             self.cmps = range(self.N)
-        
+
         self.Hfs = Hfs
         self.Gfs = Gfs
         self.Sfs = Sfs
         self.Cpgs_locked, self.Cpgs_data = self.setup_Cpigs(HeatCapacityGases)
         self.composition_independent = eos_class is IGMIX
-        
+
         if T is not None and P is not None and zs is not None:
             self.T = T
             self.P = P
@@ -2270,8 +2270,8 @@ class CEOSGas(Phase):
         else:
             eos_mix = self.eos_class(T=298.15, P=101325.0, zs=[1.0/N]*N, **self.eos_kwargs)
             self.eos_pures_STP = [eos_mix.to_TPV_pure(T=298.15, P=101325.0, V=None, i=i) for i in self.cmps]
-            
-        
+
+
     def to_TP_zs(self, T, P, zs, other_eos=None):
         # Why so slow
         new = self.__class__.__new__(self.__class__)
@@ -2289,19 +2289,19 @@ class CEOSGas(Phase):
                                                          # 1 hour on this because the heat capacity calculation was wrong
             except AttributeError:
                 new.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
-        
+
         new.eos_class = self.eos_class
         new.eos_kwargs = self.eos_kwargs
-        
+
         new.HeatCapacityGases = self.HeatCapacityGases
         new.Cpgs_data = self.Cpgs_data
         new.Cpgs_locked = self.Cpgs_locked
         new.composition_independent = self.composition_independent
-        
+
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
-        
+
         try:
             new.N = self.N
             new.cmps = self.cmps
@@ -2314,7 +2314,7 @@ class CEOSGas(Phase):
     def to_zs_TPV(self, zs, T=None, P=None, V=None):
         new = self.__class__.__new__(self.__class__)
         new.zs = zs
-        
+
         if T is not None:
             if P is not None:
                 try:
@@ -2338,20 +2338,20 @@ class CEOSGas(Phase):
             raise ValueError("Two of T, P, or V are needed")
         new.P = P
         new.T = T
-        
+
         new.eos_class = self.eos_class
         new.eos_kwargs = self.eos_kwargs
-        
+
         new.HeatCapacityGases = self.HeatCapacityGases
         new.Cpgs_data = self.Cpgs_data
         new.Cpgs_locked = self.Cpgs_locked
-        
+
         new.composition_independent = self.composition_independent
-        
+
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
-        
+
         try:
             new.N = self.N
             new.cmps = self.cmps
@@ -2360,14 +2360,14 @@ class CEOSGas(Phase):
             pass
 
         return new
-        
+
     to = to_zs_TPV
-        
+
     def V_iter(self, force=False):
         # Can be some severe issues in the very low pressure/temperature range
         # For that reason, consider not doing TV iterations.
         # Cal occur also with PV iterations
-        
+
         T, P = self.T, self.P
 #        if 0 and ((P < 1.0 or T < 1.0) or (P/T < 500.0 and T < 50.0)):
         eos_mix = self.eos_mix
@@ -2381,7 +2381,7 @@ class CEOSGas(Phase):
             return eos_mix.V_l_mpmath.real
 #        else:
 #            return self.V()
-            
+
     def lnphis_G_min(self):
         eos_mix = self.eos_mix
         if eos_mix.phase == 'l/g':
@@ -2399,19 +2399,19 @@ class CEOSGas(Phase):
         eos_mix = self.eos_mix
         if eos_mix.__class__.__name__ == 'PRMIX':
             return PR_lnphis_fastest(zs, self.T, self.P, eos_mix.kijs, self.is_liquid, self.is_gas,
-                                     eos_mix.ais, eos_mix.bs, eos_mix.a_alphas, eos_mix.a_alpha_i_roots, 
+                                     eos_mix.ais, eos_mix.bs, eos_mix.a_alphas, eos_mix.a_alpha_i_roots,
                                      eos_mix.kappas)
         return self.to_TP_zs(self.T, self.P, zs).lnphis()
-    
 
-    
+
+
     def lnphis(self):
         try:
             return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_g, self.zs)
         except AttributeError:
             return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_l, self.zs)
-        
-        
+
+
     def dlnphis_dT(self):
         try:
             return self.eos_mix.dlnphis_dT('g')
@@ -2423,14 +2423,14 @@ class CEOSGas(Phase):
             return self.eos_mix.dlnphis_dP('g')
         except:
             return self.eos_mix.dlnphis_dP('l')
-        
+
     def dlnphis_dns(self):
         eos_mix = self.eos_mix
         try:
             return eos_mix.dlnphis_dns(eos_mix.Z_g, eos_mix.zs)
         except:
             return eos_mix.dlnphis_dns(eos_mix.Z_l, eos_mix.zs)
-        
+
     def dlnphis_dzs(self):
         # Confirmed to be mole fraction derivatives - taked with sum not 1 -
         # of the log fugacity coefficients!
@@ -2443,7 +2443,7 @@ class CEOSGas(Phase):
     def fugacities_lowest_Gibbs(self):
         eos_mix = self.eos_mix
         P = self.P
-        zs = self.zs        
+        zs = self.zs
         try:
             if eos_mix.G_dep_g < eos_mix.G_dep_l:
                 lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_g, zs)
@@ -2455,7 +2455,7 @@ class CEOSGas(Phase):
             except:
                 lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_l, zs)
         return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
-        
+
 
     def gammas(self):
         #         liquid.phis()/np.array([i.phi_l for i in liquid.eos_mix.pures()])
@@ -2468,7 +2468,7 @@ class CEOSGas(Phase):
                 phis_pure.append(i.phi_l)
         return [phis[i]/phis_pure[i] for i in self.cmps]
 
-    
+
     def H_dep(self):
         try:
             return self.eos_mix.H_dep_g
@@ -2491,14 +2491,14 @@ class CEOSGas(Phase):
         try:
             return self.eos_mix.Cp_dep_g
         except AttributeError:
-            return self.eos_mix.Cp_dep_l        
-        
+            return self.eos_mix.Cp_dep_l
+
     def V(self):
         try:
             return self.eos_mix.V_g
         except AttributeError:
             return self.eos_mix.V_l
-    
+
     def dP_dT(self):
         try:
             return self.eos_mix.dP_dT_g
@@ -2514,13 +2514,13 @@ class CEOSGas(Phase):
             return self.eos_mix.dP_dV_l
 
     dP_dV_T = dP_dV
-    
+
     def d2P_dT2(self):
         try:
             return self.eos_mix.d2P_dT2_g
         except AttributeError:
             return self.eos_mix.d2P_dT2_l
-        
+
     d2P_dT2_V = d2P_dT2
 
     def d2P_dV2(self):
@@ -2528,7 +2528,7 @@ class CEOSGas(Phase):
             return self.eos_mix.d2P_dV2_g
         except AttributeError:
             return self.eos_mix.d2P_dV2_l
-        
+
     d2P_dV2_T = d2P_dV2
 
     def d2P_dTdV(self):
@@ -2536,7 +2536,7 @@ class CEOSGas(Phase):
             return self.eos_mix.d2P_dTdV_g
         except AttributeError:
             return self.eos_mix.d2P_dTdV_l
-        
+
     # because of the ideal gas model, for some reason need to use the right ones
     # FOR THIS MODEL ONLY
     def d2T_dV2(self):
@@ -2544,7 +2544,7 @@ class CEOSGas(Phase):
             return self.eos_mix.d2T_dV2_g
         except AttributeError:
             return self.eos_mix.d2T_dV2_l
-        
+
     d2T_dV2_P = d2T_dV2
 
     def d2V_dT2(self):
@@ -2552,9 +2552,9 @@ class CEOSGas(Phase):
             return self.eos_mix.d2V_dT2_g
         except AttributeError:
             return self.eos_mix.d2V_dT2_l
-        
+
     d2V_dT2_P = d2V_dT2
-    
+
     def dV_dzs(self):
         eos_mix = self.eos_mix
         try:
@@ -2562,13 +2562,13 @@ class CEOSGas(Phase):
         except AttributeError:
             dV_dzs = self.eos_mix.dV_dzs(eos_mix.Z_l, eos_mix.zs)
         return dV_dzs
-        
+
     def H(self):
         try:
             return self._H
         except AttributeError:
             pass
-        H = self.H_dep() 
+        H = self.H_dep()
         for zi, Cp_int in zip(self.zs, self.Cpig_integrals_pure()):
             H += zi*Cp_int
         self._H = H
@@ -2586,14 +2586,14 @@ class CEOSGas(Phase):
         S = 0.0
         S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
         S -= R*log(P*P_REF_IG_INV)
-        
+
         for i in cmps:
             S += zs[i]*Cpig_integrals_over_T_pure[i]
         S += self.S_dep()
         self._S = S
         return S
-    
-        
+
+
 
     def Cp(self):
         try:
@@ -2606,8 +2606,8 @@ class CEOSGas(Phase):
             Cp += zs[i]*Cpigs_pure[i]
         Cp += self.Cp_dep()
         self._Cp = Cp
-        return Cp 
-    
+        return Cp
+
     dH_dT = dH_dT_P = Cp
 
     def dH_dP(self):
@@ -2620,7 +2620,7 @@ class CEOSGas(Phase):
         except AttributeError:
             self._dH_dP = dH_dP = self.eos_mix.dH_dep_dP_l
         return dH_dP
-        
+
     def d2H_dT2(self):
         try:
             return self._d2H_dT2
@@ -2636,34 +2636,34 @@ class CEOSGas(Phase):
             dCp += self.eos_mix.d2H_dep_dT2_l
         self._d2H_dT2 = dCp
         return dCp
-    
+
     def d2H_dT2_V(self):
         # Turned out not to be needed when I thought it was - ignore this!
         dCpigs_pure = self.dCpigs_dT_pure()
         dCp, zs = 0.0, self.zs
         for i in self.cmps:
             dCp += zs[i]*dCpigs_pure[i]
-        
+
         try:
             dCp += self.eos_mix.d2H_dep_dT2_g_V
         except AttributeError:
             dCp += self.eos_mix.d2H_dep_dT2_l_V
         return dCp
-    
-    
+
+
     def d2H_dP2(self):
         try:
             return self.eos_mix.d2H_dep_dP2_g
         except AttributeError:
             return self.eos_mix.d2H_dep_dP2_l
-        
+
     def d2H_dTdP(self):
         try:
             return self.eos_mix.d2H_dep_dTdP_g
         except AttributeError:
             return self.eos_mix.d2H_dep_dTdP_l
 
-        
+
     def dH_dT_V(self):
         dH_dT_V = self.Cp_ideal_gas()
         try:
@@ -2675,7 +2675,7 @@ class CEOSGas(Phase):
     def dH_dP_V(self):
         dH_dP_V = self.Cp_ideal_gas()*self.dT_dP()
         try:
-            dH_dP_V += self.eos_mix.dH_dep_dP_g_V 
+            dH_dP_V += self.eos_mix.dH_dep_dP_g_V
         except AttributeError:
             dH_dP_V += self.eos_mix.dH_dep_dP_l_V
         return dH_dP_V
@@ -2687,7 +2687,7 @@ class CEOSGas(Phase):
         except AttributeError:
             dH_dV_T += self.eos_mix.dH_dep_dV_l_T
         return dH_dV_T
-        
+
     def dH_dV_P(self):
         dH_dV_P = self.dT_dV()*self.Cp_ideal_gas()
         try:
@@ -2742,14 +2742,14 @@ class CEOSGas(Phase):
         except AttributeError:
             d2S += self.eos_mix.d2S_dep_dP_l
         return d2S
-    
+
     def dS_dT_P(self):
         return self.dS_dT()
-    
+
     def dS_dT_V(self):
         # Good
         '''
-        # Second last bit from 
+        # Second last bit from
         from sympy import *
         T, R = symbols('T, R')
         P = symbols('P', cls=Function)
@@ -2770,42 +2770,42 @@ class CEOSGas(Phase):
         except AttributeError:
             dS_dP_V += self.eos_mix.dS_dep_dP_l_V
         return dS_dP_V
-    
+
     # The following - likely should be reimplemented generically
     # http://www.coolprop.org/_static/doxygen/html/class_cool_prop_1_1_abstract_state.html#a0815380e76a7dc9c8cc39493a9f3df46
 
     def d2P_dTdP(self):
-        
+
         try:
             return self.eos_mix.d2P_dTdP_g
         except AttributeError:
             return self.eos_mix.d2P_dTdP_l
-        
+
     def d2P_dVdP(self):
         try:
             return self.eos_mix.d2P_dVdP_g
         except AttributeError:
             return self.eos_mix.d2P_dVdP_l
-    
+
     def d2P_dVdT_TP(self):
         try:
             return self.eos_mix.d2P_dVdT_TP_g
         except AttributeError:
             return self.eos_mix.d2P_dVdT_TP_l
-    
+
     def d2P_dT2_PV(self):
         try:
             return self.eos_mix.d2P_dT2_PV_g
         except AttributeError:
             return self.eos_mix.d2P_dT2_PV_l
-    
+
     def dS_dzs(self):
         try:
             return self._dS_dzs
         except AttributeError:
             pass
         cmps, eos_mix = self.cmps, self.eos_mix
-    
+
         log_zs = self.log_zs()
         integrals = self.Cpig_integrals_over_T_pure()
 
@@ -2813,11 +2813,11 @@ class CEOSGas(Phase):
             dS_dep_dzs = self.eos_mix.dS_dep_dzs(eos_mix.Z_g, eos_mix.zs)
         except AttributeError:
             dS_dep_dzs = self.eos_mix.dS_dep_dzs(eos_mix.Z_l, eos_mix.zs)
-        
-        self._dS_dzs = [integrals[i] - R*(log_zs[i] + 1.0) + dS_dep_dzs[i] 
+
+        self._dS_dzs = [integrals[i] - R*(log_zs[i] + 1.0) + dS_dep_dzs[i]
                         for i in cmps]
         return self._dS_dzs
- 
+
     def mechanical_critical_point(self):
         zs = self.zs
         new = self.eos_mix.to_mechanical_critical_point()
@@ -2829,7 +2829,7 @@ class CEOSGas(Phase):
             V = new.V_g
         self._mechanical_critical_V = V
         return new.T, new.P, V
-    
+
     def P_transitions(self):
         e = self.eos_mix
         return e.P_discriminant_zeros_analytical(e.T, e.b, e.delta, e.epsilon, e.a_alpha, valid=True)
@@ -2850,13 +2850,13 @@ class CEOSGas(Phase):
         if T_max is not None:
             T_max = T_max*(1.0-1e-12)
         return T_max
-    
+
     def P_max_at_V(self, V):
         P_max = self.eos_mix.P_max_at_V(V)
         if P_max is not None:
             P_max = P_max*(1.0-1e-12)
         return P_max
-    
+
     def mu(self):
 #        try:
 #            return self._mu
@@ -2935,18 +2935,18 @@ class GibbsExcessLiquid(Phase):
     Hvap_data = None
     use_IG_Cp = True
     ideal_gas_basis = True
-    
+
     Cpls_locked = False
     Cpls_data = None
-    
+
     Tait_B_data = None
     Tait_C_data = None
-    def __init__(self, VaporPressures, VolumeLiquids=None, 
-                 GibbsExcessModel=None, 
+    def __init__(self, VaporPressures, VolumeLiquids=None,
+                 GibbsExcessModel=None,
                  eos_pure_instances=None,
-                 HeatCapacityGases=None, 
+                 HeatCapacityGases=None,
                  EnthalpyVaporizations=None,
-                 HeatCapacityLiquids=None, 
+                 HeatCapacityLiquids=None,
                  use_Poynting=False,
                  use_phis_sat=False,
                  use_Tait=False,
@@ -2956,27 +2956,27 @@ class GibbsExcessLiquid(Phase):
                  T=None, P=None, zs=None,
                  Psat_extrpolation='AB',
                  ):
-        '''It is quite possible to introduce a PVT relation ship for liquid 
-        density and remain thermodynamically consistent. However, must be 
-        applied on a per-component basis! This class cannot have an 
+        '''It is quite possible to introduce a PVT relation ship for liquid
+        density and remain thermodynamically consistent. However, must be
+        applied on a per-component basis! This class cannot have an
         equation-of-state for a liquid MIXTURE!
-        
+
         (it might still be nice to generalize the handling; maybe even allow)
         pure EOSs to be used too, and as a form/template for which functions to
         use).
-        
+
         In conclusion, you have
         1) The standard H/S model
         2) The H/S model with all pressure correction happening at P
         3) The inconsistent model which has no pressure dependence whatsover in H/S
            This model is required due to its popularity, not its consistency (but still volume dependency)
-           
-        All mixture volumetric properties have to be averages of the pure 
+
+        All mixture volumetric properties have to be averages of the pure
         components properties and derivatives. A Multiphase will be needed to
         allow flashes with different properties from different phases.
         '''
-        
-        
+
+
         self.VaporPressures = VaporPressures
         self.Psats_locked = all(i.locked for i in VaporPressures) if VaporPressures is not None else False
         if self.Psats_locked:
@@ -2996,13 +2996,13 @@ class GibbsExcessLiquid(Phase):
                 Psats_data.append([i.DIPPR101_ABC_high for i in VaporPressures])
             # Other option: raise?
             self.Psats_data = Psats_data
-            
+
         self.N = len(VaporPressures)
         self.cmps = range(self.N)
-            
+
         self.HeatCapacityGases = HeatCapacityGases
         self.Cpgs_locked, self.Cpgs_data = self.setup_Cpigs(HeatCapacityGases)
-        
+
         self.HeatCapacityLiquids = HeatCapacityLiquids
         if HeatCapacityLiquids is not None:
             self.Cpls_locked, self.Cpls_data = self.setup_Cpigs(HeatCapacityLiquids)
@@ -3010,8 +3010,8 @@ class GibbsExcessLiquid(Phase):
             T_REF_IG_INV = 1.0/T_REF_IG
             self.Hvaps_T_ref = [obj(T_REF_IG) for obj in EnthalpyVaporizations]
             self.dSvaps_T_ref = [T_REF_IG_INV*dH for dH in self.Hvaps_T_ref]
-            
-            
+
+
         self.VolumeLiquids = VolumeLiquids
         self.Vms_sat_locked = all(i.locked for i in VolumeLiquids) if VolumeLiquids is not None else False
         if self.Vms_sat_locked:
@@ -3029,8 +3029,8 @@ class GibbsExcessLiquid(Phase):
 #            low_fits = self.Vms_sat_data[9]
 #            for i in self.cmps:
 #                low_fits[i][0] = max(0, low_fits[i][0])
-        
-            
+
+
         self.incompressible = not use_Tait
         self.use_Tait = use_Tait
         if self.use_Tait:
@@ -3041,8 +3041,8 @@ class GibbsExcessLiquid(Phase):
                         store[i].append(d[i])
             self.Tait_B_data = Tait_B_data
             self.Tait_C_data = Tait_C_data
-            
-        
+
+
         self.EnthalpyVaporizations = EnthalpyVaporizations
         self.Hvap_locked = all(i.locked for i in EnthalpyVaporizations) if EnthalpyVaporizations is not None else False
         if self.Hvap_locked:
@@ -3051,20 +3051,20 @@ class GibbsExcessLiquid(Phase):
                               [i.best_fit_Tc for i in EnthalpyVaporizations],
                               [1.0/i.best_fit_Tc for i in EnthalpyVaporizations],
                               [i.best_fit_coeffs for i in EnthalpyVaporizations])
-        
-        
-        
+
+
+
         if GibbsExcessModel is None:
             GibbsExcessModel = IdealSolution(T=T, xs=zs)
-        
+
         self.GibbsExcessModel = GibbsExcessModel
         self.eos_pure_instances = eos_pure_instances
 #        self.VolumeLiquidMixture = VolumeLiquidMixture
-        
+
         self.use_IG_Cp = use_IG_Cp
         self.use_Poynting = use_Poynting
         self.use_phis_sat = use_phis_sat
-        
+
         if henry_components is None:
             henry_components = [False]*self.N
         self.has_henry_components = any(henry_components)
@@ -3072,7 +3072,7 @@ class GibbsExcessLiquid(Phase):
         self.henry_data = henry_data
 
         self.composition_independent = isinstance(GibbsExcessModel, IdealSolution) and not self.has_henry_components
-        
+
         self.Hfs = Hfs
         self.Gfs = Gfs
         self.Sfs = Sfs
@@ -3081,7 +3081,7 @@ class GibbsExcessLiquid(Phase):
             self.T = T
             self.P = P
             self.zs = zs
-        
+
     def to_TP_zs(self, T, P, zs):
         T_equal = hasattr(self, 'T') and T == self.T
         new = self.__class__.__new__(self.__class__)
@@ -3090,7 +3090,7 @@ class GibbsExcessLiquid(Phase):
         new.zs = zs
         new.N = self.N
         new.cmps = self.cmps
-        
+
         self.transfer_data(new, zs, T, T_equal)
         return new
 
@@ -3100,12 +3100,12 @@ class GibbsExcessLiquid(Phase):
             T_equal = T == self.T
         except:
             T_equal = False
-        
+
         new = self.__class__.__new__(self.__class__)
         new.zs = zs
         new.N = self.N
         new.cmps = self.cmps
-        
+
         if T is not None:
             if P is not None:
                 new.T = T
@@ -3122,12 +3122,12 @@ class GibbsExcessLiquid(Phase):
             new.T = T
         else:
             raise ValueError("Two of T, P, or V are needed")
-        
+
         self.transfer_data(new, zs, T, T_equal)
         return new
-    
+
     to = to_zs_TPV
-    
+
     def transfer_data(self, new, zs, T, T_equal):
         new.VaporPressures = self.VaporPressures
         new.VolumeLiquids = self.VolumeLiquids
@@ -3135,25 +3135,25 @@ class GibbsExcessLiquid(Phase):
         new.HeatCapacityGases = self.HeatCapacityGases
         new.EnthalpyVaporizations = self.EnthalpyVaporizations
         new.HeatCapacityLiquids = self.HeatCapacityLiquids
-        
-                
+
+
         new.Psats_locked = self.Psats_locked
         new.Psats_data = self.Psats_data
-        
+
         new.Cpgs_locked = self.Cpgs_locked
         new.Cpgs_data = self.Cpgs_data
-        
+
         new.Cpls_locked = self.Cpls_locked
         new.Cpls_data = self.Cpls_data
-                
+
         new.Vms_sat_locked = self.Vms_sat_locked
         new.Vms_sat_data = self.Vms_sat_data
-        
+
         new.Hvap_data = self.Hvap_data
         new.Hvap_locked = self.Hvap_locked
-        
+
         new.incompressible = self.incompressible
-        
+
         new.use_phis_sat = self.use_phis_sat
         new.use_Poynting = self.use_Poynting
         new.P_DEPENDENT_H_LIQ = self.P_DEPENDENT_H_LIQ
@@ -3162,24 +3162,24 @@ class GibbsExcessLiquid(Phase):
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
-        
+
         new.henry_data = self.henry_data
         new.henry_components = self.henry_components
         new.has_henry_components = self.has_henry_components
-        
+
         new.composition_independent = self.composition_independent
-        
+
         new.use_Tait = self.use_Tait
         new.Tait_B_data = self.Tait_B_data
         new.Tait_C_data = self.Tait_C_data
-        
-        
+
+
         if T_equal and (self.composition_independent or self.zs is zs):
             # Allow the composition inconsistency as it is harmless
             new.GibbsExcessModel = self.GibbsExcessModel
         else:
             new.GibbsExcessModel = self.GibbsExcessModel.to_T_xs(T=T, xs=zs)
-        
+
         try:
             if T_equal:
                 if not self.has_henry_components:
@@ -3189,7 +3189,7 @@ class GibbsExcessLiquid(Phase):
                         new._d2Psats_dT2 = self._d2Psats_dT2
                     except:
                         pass
-                    
+
                 try:
                     new._Vms_sat = self._Vms_sat
                     new._Vms_sat_dT = self._Vms_sat_dT
@@ -3211,14 +3211,14 @@ class GibbsExcessLiquid(Phase):
         except:
             pass
         return new
-        
-        
+
+
     def Henry_matrix(self):
         '''Generate a matrix of all component-solvent Henry's law values
         Shape N*N; solvent/solvent and gas/gas values are all None, as well
         as solvent/gas values where the parameters are unavailable.
         '''
-        
+
     def Henry_constants(self):
         '''Mix the parameters in `Henry_matrix` into values to take the place
         in Psats.
@@ -3231,15 +3231,15 @@ class GibbsExcessLiquid(Phase):
             pass
         VaporPressures, cmps = self.VaporPressures, self.cmps
         T_REF_IG = self.T_REF_IG
-        self._Psats_T_ref = [VaporPressures[i](T_REF_IG) for i in cmps] 
+        self._Psats_T_ref = [VaporPressures[i](T_REF_IG) for i in cmps]
         return self._Psats_T_ref
 
     def Psats_at(self, T):
         if self.Psats_locked:
             return self._Psats_at_locked(T, self.Psats_data, self.cmps)
         VaporPressures = self.VaporPressures
-        return [VaporPressures[i](T) for i in self.cmps] 
-    
+        return [VaporPressures[i](T) for i in self.cmps]
+
     @staticmethod
     def _Psats_at_locked(T, Psats_data, cmps):
         Psats = []
@@ -3267,7 +3267,7 @@ class GibbsExcessLiquid(Phase):
                 Psats.append(exp(Psat))
             except:
                 Psats.append(1.6549840276802644e+300)
-                
+
         return Psats
 
     def Psats(self):
@@ -3313,14 +3313,14 @@ class GibbsExcessLiquid(Phase):
                     Psats.append(Psat)
                 else:
                     Psats.append(i.extrapolate_tabular(T))
-                    
-                    
+
+
         if self.has_henry_components:
             henry_components = self.henry_components
             henry_data = self.henry_data
             cmps = self.cmps
             zs = self.zs
-            
+
             for i in cmps:
 #                Vcs = [1, 1, 1]
                 Vcs = [5.6000000000000006e-05, 0.000168, 7.340000000000001e-05]
@@ -3339,16 +3339,16 @@ class GibbsExcessLiquid(Phase):
 #                            print(log_Hi)
                             wi = zs[j]*Vcs[j]**(2.0/3.0)/sum([zs[_]*Vcs[_]**(2.0/3.0) for _ in cmps if d[_]])
 #                            print(wi)
-                            
+
                             logH += wi*log_Hi
 #                            logH += zs[j]*log_Hi
                             z_sum += zs[j]
-                    
+
 #                    print(logH, z_sum)
                     z_sum = 1
                     Psats[i] = exp(logH/z_sum)*1e5 # bar to Pa
-                    
-                
+
+
         return Psats
 
 #    def PIP(self):
@@ -3364,13 +3364,13 @@ class GibbsExcessLiquid(Phase):
         for i in cmps:
             if T < Tmins[i]:
 #                    A, B = Psats_data[9][i]
-#                    dPsat_dT = B*Tinv2*Psats[i]                    
+#                    dPsat_dT = B*Tinv2*Psats[i]
                 dPsat_dT = Psats[i]*(-coeffs_low[i][1]*Tinv2 + coeffs_low[i][2]*T_inv)
 #                    dPsat_dT = Psats_data[1][i]*Psats[i]#*exp((T - Tmins[i])*Psats_data[1][i]
                                              #   + Psats_data[2][i])
             elif T > Tmaxes[i]:
                 dPsat_dT = Psats[i]*(-coeffs_high[i][1]*Tinv2 + coeffs_high[i][2]*T_inv)
-                
+
 #                dPsat_dT = Psats_data[4][i]*Psats[i]#*exp((T - Tmaxes[i])
 #                                                    #*Psats_data[4][i]
 #                                                    #+ Psats_data[5][i])
@@ -3382,7 +3382,7 @@ class GibbsExcessLiquid(Phase):
                 dPsat_dT *= Psats[i]
             dPsats_dT.append(dPsat_dT)
         return dPsats_dT
-    
+
     def dPsats_dT_at(self, T, Psats=None):
         if Psats is None:
             Psats = self.Psats_at(T)
@@ -3411,7 +3411,7 @@ class GibbsExcessLiquid(Phase):
         self._dPsats_dT = dPsats_dT = [VaporPressure.T_dependent_property_derivative(T=T)
                      for VaporPressure in self.VaporPressures]
         return dPsats_dT
-    
+
     def d2Psats_dT2(self):
         try:
             return self._d2Psats_dT2
@@ -3440,12 +3440,12 @@ class GibbsExcessLiquid(Phase):
 #                    d2Psat_dT2 = B*Psats[i]*(B*T_inv - 2.0)*Tinv3
                     A, B, C = Psats_data[9][i]
                     x0 = (B*T_inv - C)
-                    d2Psat_dT2 = Psats[i]*(2.0*B*T_inv - C + x0*x0)*T_inv2                    
+                    d2Psat_dT2 = Psats[i]*(2.0*B*T_inv - C + x0*x0)*T_inv2
 #                    d2Psat_dT2 = Psats_data[1][i]*dPsats_dT[i]
                 elif T > Tmaxes[i]:
                     A, B, C = Psats_data[10][i]
                     x0 = (B*T_inv - C)
-                    d2Psat_dT2 = Psats[i]*(2.0*B*T_inv - C + x0*x0)*T_inv2                    
+                    d2Psat_dT2 = Psats[i]*(2.0*B*T_inv - C + x0*x0)*T_inv2
 #                    d2Psat_dT2 = Psats_data[4][i]*dPsats_dT[i]
                 else:
                     d2Psat_dT2 = 0.0
@@ -3488,7 +3488,7 @@ class GibbsExcessLiquid(Phase):
             return lnPsats
         self._lnPsats = [log(i) for i in self.Psats()]
         return self._lnPsats
-    
+
     def dlnPsats_dT(self):
         T, cmps = self.T, self.cmps
         T_inv = 1.0/T
@@ -3524,10 +3524,10 @@ class GibbsExcessLiquid(Phase):
             for i in cmps:
                 if T < Tmins[i]:
                     A, B, C = Psats_data[9][i]
-                    d2lnPsat_dT2 = (2.0*B*T_inv - C)*T_inv2                    
+                    d2lnPsat_dT2 = (2.0*B*T_inv - C)*T_inv2
                 elif T > Tmaxes[i]:
                     A, B, C = Psats_data[10][i]
-                    d2lnPsat_dT2 = (2.0*B*T_inv - C)*T_inv2                    
+                    d2lnPsat_dT2 = (2.0*B*T_inv - C)*T_inv2
 #                    d2lnPsat_dT2 = 0.0
                 else:
                     d2lnPsat_dT2 = 0.0
@@ -3642,7 +3642,7 @@ class GibbsExcessLiquid(Phase):
 #            return self._Vms_sat
             self._Vms_sat = Vms_sat = self._Vms_sat_at(T, self.Vms_sat_data, self.cmps)
             return Vms_sat
-        
+
         VolumeLiquids = self.VolumeLiquids
 #        Psats = self.Psats()
 #        self._Vms_sat = [VolumeLiquids[i](T, Psats[i]) for i in self.cmps]
@@ -3694,12 +3694,12 @@ class GibbsExcessLiquid(Phase):
             pass
 
         T = self.T
-        
+
         if self.Vms_sat_locked:
 #            self._d2Vms_sat_dT2 = evaluate_linear_fits_d2(self.Vms_sat_data, T)
 #            return self._d2Vms_sat_dT2
             d2Vms_sat_dT2 = self._d2Vms_sat_dT2 = []
-        
+
             Vms_sat_data = self.Vms_sat_data
             Tmins, Tmaxes, d2coeffs = Vms_sat_data[0], Vms_sat_data[3], Vms_sat_data[8]
             for i in self.cmps:
@@ -3726,7 +3726,7 @@ class GibbsExcessLiquid(Phase):
             self._Vms_sat_T_ref = evaluate_linear_fits(self.Vms_sat_data, T_REF_IG)
         else:
             VolumeLiquids, cmps = self.VolumeLiquids, self.cmps
-            self._Vms_sat_T_ref = [VolumeLiquids[i].T_dependent_property(T_REF_IG) for i in cmps] 
+            self._Vms_sat_T_ref = [VolumeLiquids[i].T_dependent_property(T_REF_IG) for i in cmps]
         return self._Vms_sat_T_ref
 
     def dVms_sat_dT_T_ref(self):
@@ -3739,7 +3739,7 @@ class GibbsExcessLiquid(Phase):
             self._dVms_sat_dT_T_ref = evaluate_linear_fits_d(self.Vms_sat_data, T)
         else:
             VolumeLiquids, cmps = self.VolumeLiquids, self.cmps
-            self._dVms_sat_dT_T_ref = [VolumeLiquids[i].T_dependent_property_derivative(T_REF_IG) for i in cmps] 
+            self._dVms_sat_dT_T_ref = [VolumeLiquids[i].T_dependent_property_derivative(T_REF_IG) for i in cmps]
         return self._dVms_sat_dT_T_ref
 
     def Vms(self):
@@ -3748,7 +3748,7 @@ class GibbsExcessLiquid(Phase):
 
     def dVms_dT(self):
         return self.dVms_sat_dT()
-    
+
     def d2Vms_dT2(self):
         return self.d2Vms_sat_dT2()
 
@@ -3781,8 +3781,8 @@ class GibbsExcessLiquid(Phase):
     #                    Vm = horner(coeffs[i], log(1.0 - T*Tcs_inv[i])
                 Hvaps.append(Hvap)
             return Hvaps
-        
-        self._Hvaps = Hvaps = [EnthalpyVaporizations[i](T) for i in cmps] 
+
+        self._Hvaps = Hvaps = [EnthalpyVaporizations[i](T) for i in cmps]
         for i in cmps:
             if Hvaps[i] is None:
                 Hvaps[i] = 0.0
@@ -3813,8 +3813,8 @@ class GibbsExcessLiquid(Phase):
 
                 dHvaps_dT.append(dHvap_dT)
             return dHvaps_dT
-        
-        self._dHvaps_dT = dHvaps_dT = [EnthalpyVaporizations[i].T_dependent_property_derivative(T) for i in cmps] 
+
+        self._dHvaps_dT = dHvaps_dT = [EnthalpyVaporizations[i].T_dependent_property_derivative(T) for i in cmps]
         for i in cmps:
             if dHvaps_dT[i] is None:
                 dHvaps_dT[i] = 0.0
@@ -3827,13 +3827,13 @@ class GibbsExcessLiquid(Phase):
             pass
         EnthalpyVaporizations, cmps = self.EnthalpyVaporizations, self.cmps
         T_REF_IG = self.T_REF_IG
-        self._Hvaps_T_ref = [EnthalpyVaporizations[i](T_REF_IG) for i in cmps] 
+        self._Hvaps_T_ref = [EnthalpyVaporizations[i](T_REF_IG) for i in cmps]
         return self._Hvaps_T_ref
-    
+
     def Poyntings_at(self, T, P, Psats=None, Vms=None):
         if not self.use_Poynting:
             return [1.0]*self.N
-        
+
         cmps = self.cmps
         if Psats is None:
             Psats = self.Psats_at(T)
@@ -3850,7 +3850,7 @@ class GibbsExcessLiquid(Phase):
         if not self.use_Poynting:
             self._Poyntings = [1.0]*self.N
             return self._Poyntings
-        
+
         T, P = self.T, self.P
         try:
             Psats = self._Psats
@@ -3864,7 +3864,7 @@ class GibbsExcessLiquid(Phase):
         self._Poyntings = [exp(Vml*(P-Psat)*RT_inv) for Psat, Vml in zip(Psats, Vms_sat)]
         return self._Poyntings
 
-    
+
     def dPoyntings_dT(self):
         try:
             return self._dPoyntings_dT
@@ -3873,23 +3873,23 @@ class GibbsExcessLiquid(Phase):
         if not self.use_Poynting:
             self._dPoyntings_dT = [0.0]*self.N
             return self._dPoyntings_dT
-        
+
         T, P = self.T, self.P
-            
+
         Psats = self.Psats()
         dPsats_dT = self.dPsats_dT()
         Vms = self.Vms_sat()
         dVms_sat_dT = self.dVms_sat_dT()
-        
+
         x0 = 1.0/R
         x1 = 1.0/T
         RT_inv = x0*x1
-        
+
         self._dPoyntings_dT = dPoyntings_dT = []
         for i in self.cmps:
             x2 = Vms[i]
             x3 = Psats[i]
-            
+
             x4 = P - x3
             x5 = x1*x2*x4
             dPoyntings_dTi = -RT_inv*(x2*dPsats_dT[i] - x4*dVms_sat_dT[i] + x5)*exp(x0*x5)
@@ -3899,24 +3899,24 @@ class GibbsExcessLiquid(Phase):
     def dPoyntings_dT_at(self, T, P, Psats=None, Vms=None, dPsats_dT=None, dVms_sat_dT=None):
         if not self.use_Poynting:
             return [0.0]*self.N
-        
+
         cmps = self.cmps
         if Psats is None:
             Psats = self.Psats_at(T)
-            
+
         if dPsats_dT is None:
             dPsats_dT = self.dPsats_dT_at(T, Psats)
-            
+
         if Vms is None:
             Vms = self.Vms_sat_at(T)
-            
+
         if dVms_sat_dT is None:
             dVms_sat_dT = self.dVms_sat_dT_at(T)
         x0 = 1.0/R
         x1 = 1.0/T
         dPoyntings_dT = []
         for i in self.cmps:
-            x2 = Vms[i]            
+            x2 = Vms[i]
             x4 = P - Psats[i]
             x5 = x1*x2*x4
             dPoyntings_dTi = -x0*x1*(x2*dPsats_dT[i] - x4*dVms_sat_dT[i] + x5)*exp(x0*x5)
@@ -3933,7 +3933,7 @@ class GibbsExcessLiquid(Phase):
             return self._d2Poyntings_dT2
 
         T, P = self.T, self.P
-            
+
         Psats = self.Psats()
         dPsats_dT = self.dPsats_dT()
         d2Psats_dT2 = self.d2Psats_dT2()
@@ -3968,11 +3968,11 @@ class GibbsExcessLiquid(Phase):
             x10 = x3*x6
             x50 = (x10 + x5 - x9)
             d2Poyntings_dT2i = (x12*(-x0*d2Psats_dT2[i] + x12*x50*x50
-                                    + x2*d2Vms_sat_dT2[i] - 2.0*x4*x8 + x5*x7 
+                                    + x2*d2Vms_sat_dT2[i] - 2.0*x4*x8 + x5*x7
                                     - x7*x9 + x3*c0)*exp(x10*x11))
             d2Poyntings_dT2.append(d2Poyntings_dT2i)
         return d2Poyntings_dT2
-    
+
     def dPoyntings_dP(self):
         '''from sympy import *
         R, T, P, zi = symbols('R, T, P, zi')
@@ -3988,9 +3988,9 @@ class GibbsExcessLiquid(Phase):
             return self._dPoyntings_dP
         T, P = self.T, self.P
         Psats = self.Psats()
-        
+
         Vms = self.Vms_sat()
-        
+
         self._dPoyntings_dP = dPoyntings_dPs = []
         for i in self.cmps:
             x0 = Vms[i]/(R*T)
@@ -4014,7 +4014,7 @@ class GibbsExcessLiquid(Phase):
         if not self.use_Poynting:
             self._d2Poyntings_dPdT = [0.0]*self.N
             return self._d2Poyntings_dPdT
-        
+
         try:
             Psats = self._Psats
         except AttributeError:
@@ -4035,7 +4035,7 @@ class GibbsExcessLiquid(Phase):
             Poyntings = self._Poyntings
         except AttributeError:
             Poyntings = self.Poyntings()
-        
+
         x0 = R_inv
         x1 = 1.0/self.T
         P = self.P
@@ -4051,25 +4051,25 @@ class GibbsExcessLiquid(Phase):
             d2Poyntings_dPdT.append(v)
         return d2Poyntings_dPdT
 
-        
+
     d2Poyntings_dTdP = d2Poyntings_dPdT
 
     def phis_sat_at(self, T):
         if not self.use_phis_sat:
             return [1.0]*self.N
         return [i.phi_sat(T, polish=True) for i in self.eos_pure_instances]
-        
+
     def phis_sat(self):
         try:
             return self._phis_sat
         except AttributeError:
             pass
         # Goal: Have the polynomial here. Fitting specific to the compound is required.
-    
+
         if not self.use_phis_sat:
             self._phis_sat = [1.0]*self.N
             return self._phis_sat
-        
+
         T = self.T
         self._phis_sat = [i.phi_sat(T, polish=True) for i in self.eos_pure_instances]
         return self._phis_sat
@@ -4081,7 +4081,7 @@ class GibbsExcessLiquid(Phase):
         if not self.use_phis_sat:
             return [0.0]*self.N
         return [i.dphi_sat_dT(T) for i in self.eos_pure_instances]
-                
+
     def dphis_sat_dT(self):
         try:
             return self._dphis_sat_dT
@@ -4095,7 +4095,7 @@ class GibbsExcessLiquid(Phase):
         T = self.T
         self._dphis_sat_dT = [i.dphi_sat_dT(T) for i in self.eos_pure_instances]
         return self._dphis_sat_dT
-    
+
     def d2phis_sat_dT2(self):
         # Numerically implemented
         try:
@@ -4130,7 +4130,7 @@ class GibbsExcessLiquid(Phase):
         include the effects of activity coefficients `gammas`, pressure
         correction terms `Poyntings`, and pure component saturation fugacities
         `phis_sat` as well as the pure component vapor pressures.
-        
+
         .. math::
             \phi_i = \frac{\gamma_i P_{i}^{sat} \phi_i^{sat} \text{Poynting}_i}
             {P}
@@ -4139,7 +4139,7 @@ class GibbsExcessLiquid(Phase):
         -------
         phis : list[float]
             Fugacity coefficients of all components in the phase, [-]
-            
+
         Notes
         -----
         Poyntings, gammas, and pure component saturation phis default to 1.
@@ -4153,12 +4153,12 @@ class GibbsExcessLiquid(Phase):
             gammas = self._gammas
         except AttributeError:
             gammas = self.gammas()
-            
+
         try:
             Psats = self._Psats
         except AttributeError:
             Psats = self.Psats()
-        
+
         try:
             phis_sat = self._phis_sat
         except AttributeError:
@@ -4168,23 +4168,23 @@ class GibbsExcessLiquid(Phase):
             Poyntings = self._Poyntings
         except AttributeError:
             Poyntings = self.Poyntings()
-            
+
         P_inv = 1.0/P
         self._phis = [gammas[i]*Psats[i]*Poyntings[i]*phis_sat[i]*P_inv
                 for i in self.cmps]
         return self._phis
-        
-        
+
+
     def lnphis(self):
         try:
             return self._lnphis
         except AttributeError:
             pass
-        self._lnphis = [log(i) for i in self.phis()]        
+        self._lnphis = [log(i) for i in self.phis()]
         return self._lnphis
-    
+
     lnphis_G_min = lnphis
-        
+
 #    def fugacities(self, T, P, zs):
 #        # DO NOT EDIT _ CORRECT
 #        gammas = self.gammas(T, zs)
@@ -4193,7 +4193,7 @@ class GibbsExcessLiquid(Phase):
 #            phis = self.phis(T=T, zs=zs)
 #        else:
 #            phis = [1.0]*self.N
-#            
+#
 #        if self.use_Poynting:
 #            Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
 #        else:
@@ -4211,7 +4211,7 @@ class GibbsExcessLiquid(Phase):
         T, P, zs = self.T, self.P, self.zs
         Psats = self.Psats()
         gammas = self.gammas()
-        
+
         if self.use_Poynting:
             # Evidence suggests poynting derivatives are not worth calculating
             dPoyntings_dT = self.dPoyntings_dT() #[0.0]*self.N
@@ -4221,16 +4221,16 @@ class GibbsExcessLiquid(Phase):
             Poyntings = [1.0]*self.N
 
         dPsats_dT = self.dPsats_dT()
-        
+
         dgammas_dT = self.GibbsExcessModel.dgammas_dT()
-        
+
         if self.use_phis_sat:
             dphis_sat_dT = self.dphis_sat_dT()
             phis_sat = self.phis_sat()
         else:
             dphis_sat_dT = [0.0]*self.N
             phis_sat = [1.0]*self.N
-        
+
 #        print(gammas, phis_sat, Psats, Poyntings, dgammas_dT, dPoyntings_dT, dPsats_dT)
         self._dphis_dT = dphis_dTl = []
         for i in self.cmps:
@@ -4252,22 +4252,22 @@ class GibbsExcessLiquid(Phase):
 
         gammas = self.gammas_at(T, zs)
         dgammas_dT = self.dgammas_dT_at(T, zs)
-        
+
         if self.use_Poynting:
             Poyntings = self.Poyntings_at(T, P, Psats, Vms)
             dPoyntings_dT = self.dPoyntings_dT_at(T, P, Psats=Psats, Vms=Vms, dPsats_dT=dPsats_dT, dVms_sat_dT=dVms_sat_dT)
         else:
             Poyntings = [1.0]*self.N
             dPoyntings_dT = [0.0]*self.N
-        
+
         if self.use_phis_sat:
             dphis_sat_dT = self.dphis_sat_dT_at(T)
             phis_sat = self.phis_sat_at(T)
         else:
             dphis_sat_dT = [0.0]*self.N
             phis_sat = [1.0]*self.N
-        
-        
+
+
         dphis_dT = []
         for i in self.cmps:
             x0 = gammas[i]
@@ -4283,7 +4283,7 @@ class GibbsExcessLiquid(Phase):
             phis = [gammas[i]*Psats[i]*Poyntings[i]*phis_sat[i]*P_inv for i in self.cmps]
             return dphis_dT, phis
         return dphis_dT
-        
+
     def dlnphis_dT(self):
         try:
             return self._dlnphis_dT
@@ -4295,14 +4295,14 @@ class GibbsExcessLiquid(Phase):
         return self._dlnphis_dT
 
     def dlnphis_dP(self):
-        r'''Method to calculate the pressure derivative of log fugacity 
+        r'''Method to calculate the pressure derivative of log fugacity
         coefficients of the phase. Depending on the settings of the phase, can
         include the effects of activity coefficients `gammas`, pressure
         correction terms `Poyntings`, and pure component saturation fugacities
         `phis_sat` as well as the pure component vapor pressures.
-        
+
         .. math::
-            \frac{\partial \log \phi_i}{\partial P} = 
+            \frac{\partial \log \phi_i}{\partial P} =
             \frac{\frac{\partial \text{Poynting}_i}{\partial P}}
             {\text{Poynting}_i} - \frac{1}{P}
 
@@ -4311,7 +4311,7 @@ class GibbsExcessLiquid(Phase):
         dlnphis_dP : list[float]
             Pressure derivative of log fugacity coefficients of all components
             in the phase, [1/Pa]
-            
+
         Notes
         -----
         Poyntings, gammas, and pure component saturation phis default to 1. For
@@ -4325,17 +4325,17 @@ class GibbsExcessLiquid(Phase):
             Poyntings = self._Poyntings
         except AttributeError:
             Poyntings = self.Poyntings()
-            
+
         try:
             dPoyntings_dP = self._dPoyntings_dP
         except AttributeError:
             dPoyntings_dP = self.dPoyntings_dP()
-            
+
         P_inv = 1.0/self.P
-        
+
         self._dlnphis_dP = [dPoyntings_dP[i]/Poyntings[i] - P_inv for i in self.cmps]
         return self._dlnphis_dP
-                    
+
     def gammas_at(self, T, zs):
         if self.composition_independent:
             return [1.0]*self.N
@@ -4354,7 +4354,7 @@ class GibbsExcessLiquid(Phase):
 
     def dgammas_dT(self):
         return self.GibbsExcessModel.dgammas_dT()
-        
+
     def H_old(self):
 #        try:
 #            return self._H
@@ -4372,9 +4372,9 @@ class GibbsExcessLiquid(Phase):
             Cpig_integrals_pure = self._Cpig_integrals_pure
         except AttributeError:
             Cpig_integrals_pure = self.Cpig_integrals_pure()
-                    
+
         H = 0.0
-        
+
         if P_DEPENDENT_H_LIQ:
             # Page 650  Chemical Thermodynamics for Process Simulation
             # Confirmed with CoolProp via analytical integrals
@@ -4382,7 +4382,7 @@ class GibbsExcessLiquid(Phase):
             '''
             from scipy.integrate import *
             from CoolProp.CoolProp import PropsSI
-            
+
             fluid = 'decane'
             T = 400
             Psat = PropsSI('P', 'T', T, 'Q', 0, fluid)
@@ -4391,14 +4391,14 @@ class GibbsExcessLiquid(Phase):
             Vm = 1/PropsSI('DMOLAR', 'T', T, 'Q', 0, fluid)
             Vm2 = 1/PropsSI('DMOLAR', 'T', T, 'P', P2, fluid)
             dH = PropsSI('HMOLAR', 'T', T, 'P', P2, fluid) - PropsSI('HMOLAR', 'T', T, 'Q', 0, fluid)
-            
+
             def to_int(P):
                 Vm = 1/PropsSI('DMOLAR', 'T', T, 'P', P, fluid)
                 alpha = PropsSI('ISOBARIC_EXPANSION_COEFFICIENT', 'T', T, 'P', P, fluid)
-                return Vm -alpha*T*Vm 
-            quad(to_int, Psat, P2, epsabs=1.49e-14, epsrel=1.49e-14)[0]/dH            
+                return Vm -alpha*T*Vm
+            quad(to_int, Psat, P2, epsabs=1.49e-14, epsrel=1.49e-14)[0]/dH
             '''
-            
+
             if self.use_IG_Cp:
                 try:
                     Psats = self._Psats
@@ -4416,7 +4416,7 @@ class GibbsExcessLiquid(Phase):
                     dVms_sat_dT = self._Vms_sat_dT
                 except AttributeError:
                     dVms_sat_dT = self.dVms_sat_dT()
-                
+
                 failed_dPsat_dT = False
                 try:
                     H = 0.0
@@ -4430,10 +4430,10 @@ class GibbsExcessLiquid(Phase):
                         H += zs[i]*(Cpig_integrals_pure[i] - Hvap)
                 except ZeroDivisionError:
                     failed_dPsat_dT = True
-                
+
                 if failed_dPsat_dT or isinf(H):
                     # Handle the case where vapor pressure reaches zero - needs special implementations
-                    dPsats_dT_over_Psats = self.dPsats_dT_over_Psats() 
+                    dPsats_dT_over_Psats = self.dPsats_dT_over_Psats()
                     H = 0.0
                     for i in cmps:
 #                        dV_vap = R*T/Psats[i] - Vms_sat[i]
@@ -4461,21 +4461,21 @@ class GibbsExcessLiquid(Phase):
                 dVms_sat_dT_T_ref = self.dVms_sat_dT_T_ref()
                 Vms_sat_T_ref = self.Vms_sat_T_ref()
                 Psats_T_ref = self.Psats_T_ref()
-                
+
                 Hvaps = self.Hvaps()
-                
+
                 H = 0.0
                 for i in self.cmps:
-                    H += zs[i]*(Cpl_integrals_pure[i] - Hvaps_T_ref[i]) # 
+                    H += zs[i]*(Cpl_integrals_pure[i] - Hvaps_T_ref[i]) #
                     # If we can use the liquid heat capacity and prove its consistency
-                    
+
                     # This bit is the differential with respect to pressure
                     dP = P - Psats_T_ref[i]
                     H += zs[i]*dP*(Vms_sat_T_ref[i] - T_REF_IG*dVms_sat_dT_T_ref[i])
         else:
             Hvaps = self.Hvaps()
             for i in self.cmps:
-                H += zs[i]*(Cpig_integrals_pure[i] - Hvaps[i]) 
+                H += zs[i]*(Cpig_integrals_pure[i] - Hvaps[i])
         H += self.GibbsExcessModel.HE()
 #        self._H = H
         return H
@@ -4492,7 +4492,7 @@ class GibbsExcessLiquid(Phase):
             Cpig_integrals_pure = self._Cpig_integrals_pure
         except AttributeError:
             Cpig_integrals_pure = self.Cpig_integrals_pure()
-                    
+
 #        try:
 #            Psats = self._Psats
 #        except AttributeError:
@@ -4503,7 +4503,7 @@ class GibbsExcessLiquid(Phase):
 #            dPsats_dT = self.dPsats_dT()
         dPsats_dT_over_Psats = self.dPsats_dT_over_Psats()
         use_Poynting, use_phis_sat = self.use_Poynting, self.use_phis_sat
-        
+
         if use_Poynting:
             try:
                 Poyntings = self._Poyntings
@@ -4512,7 +4512,7 @@ class GibbsExcessLiquid(Phase):
             try:
                 dPoyntings_dT = self._dPoyntings_dT
             except AttributeError:
-                dPoyntings_dT = self.dPoyntings_dT()        
+                dPoyntings_dT = self.dPoyntings_dT()
         if use_phis_sat:
             try:
                 dphis_sat_dT = self._dphis_sat_dT
@@ -4526,7 +4526,7 @@ class GibbsExcessLiquid(Phase):
         H = 0.0
         if use_Poynting and use_phis_sat:
             for i in cmps:
-                H += zs[i]*(nRT2*(dphis_sat_dT[i]/phis_sat[i] + dPsats_dT_over_Psats[i] + dPoyntings_dT[i]/Poyntings[i]) 
+                H += zs[i]*(nRT2*(dphis_sat_dT[i]/phis_sat[i] + dPsats_dT_over_Psats[i] + dPoyntings_dT[i]/Poyntings[i])
                             + Cpig_integrals_pure[i])
         elif use_Poynting:
             for i in cmps:
@@ -4537,12 +4537,12 @@ class GibbsExcessLiquid(Phase):
         else:
             for i in cmps:
                 H += zs[i]*(nRT2*dPsats_dT_over_Psats[i] + Cpig_integrals_pure[i])
-        
+
         if not self.composition_independent:
             H += self.GibbsExcessModel.HE()
         self._H = H
         return H
-            
+
     def S_old(self):
 #        try:
 #            return self._S
@@ -4553,7 +4553,7 @@ class GibbsExcessLiquid(Phase):
         '''
         from scipy.integrate import *
         from CoolProp.CoolProp import PropsSI
-        
+
         fluid = 'decane'
         T = 400
         Psat = PropsSI('P', 'T', T, 'Q', 0, fluid)
@@ -4566,7 +4566,7 @@ class GibbsExcessLiquid(Phase):
         def to_int2(P):
             Vm = 1/PropsSI('DMOLAR', 'T', T, 'P', P, fluid)
             alpha = PropsSI('ISOBARIC_EXPANSION_COEFFICIENT', 'T', T, 'P', P, fluid)
-            return -alpha*Vm 
+            return -alpha*Vm
         quad(to_int2, Psat, P2, epsabs=1.49e-14, epsrel=1.49e-14)[0]/dS
         '''
         S = 0.0
@@ -4576,12 +4576,12 @@ class GibbsExcessLiquid(Phase):
             S -= zs[i]*log_zs[i]
         S *= R
         S_base = S
-        
+
         T_inv = 1.0/T
         RT = R*T
-        
+
         P_REF_IG_INV = self.P_REF_IG_INV
-        
+
         try:
             Cpig_integrals_over_T_pure = self._Cpig_integrals_over_T_pure
         except AttributeError:
@@ -4602,13 +4602,13 @@ class GibbsExcessLiquid(Phase):
             dVms_sat_dT = self._Vms_sat_dT
         except AttributeError:
             dVms_sat_dT = self.dVms_sat_dT()
-        
+
         if self.P_DEPENDENT_H_LIQ:
             if self.use_IG_Cp:
                 failed_dPsat_dT = False
                 try:
                     for i in self.cmps:
-                        dSi = Cpig_integrals_over_T_pure[i] 
+                        dSi = Cpig_integrals_over_T_pure[i]
                         dVsat = R*T/Psats[i] - Vms_sat[i]
                         dSvap = dPsats_dT[i]*dVsat
         #                dSvap = Hvaps[i]/T # Confirmed - this line breaks everything - do not use
@@ -4628,7 +4628,7 @@ class GibbsExcessLiquid(Phase):
                 except (ZeroDivisionError, ValueError):
                     # Handle the zero division on Psat or the log getting two small
                     failed_dPsat_dT = True
-                
+
                 if failed_dPsat_dT or isinf(S):
                     S = S_base
                     # Handle the case where vapor pressure reaches zero - needs special implementations
@@ -4636,19 +4636,19 @@ class GibbsExcessLiquid(Phase):
                     lnPsats = self.lnPsats()
                     LOG_P_REF_IG = self.LOG_P_REF_IG
                     for i in cmps:
-                        dSi = Cpig_integrals_over_T_pure[i] 
+                        dSi = Cpig_integrals_over_T_pure[i]
                         dSvap = RT*dPsats_dT_over_Psats[i]
                         dSi -= dSvap
                         dSi -= R*(lnPsats[i] - LOG_P_REF_IG)#   trunc_log(Psats[i]*P_REF_IG_INV)
                         dSi -= P*dVms_sat_dT[i]
                         S += dSi*zs[i]
-                
+
                 if self.use_Tait:
                     pass
                 elif self.use_Poynting:
                     pass
 #                for i in cmps:
-                    
+
             else:
                 # mine
                 Hvaps_T_ref = self.Hvaps_T_ref()
@@ -4657,9 +4657,9 @@ class GibbsExcessLiquid(Phase):
                 T_REF_IG_INV = self.T_REF_IG_INV
                 dVms_sat_dT_T_ref = self.dVms_sat_dT_T_ref()
                 Vms_sat_T_ref = self.Vms_sat_T_ref()
-                
+
                 for i in self.cmps:
-                    dSi = Cpl_integrals_over_T_pure[i] 
+                    dSi = Cpl_integrals_over_T_pure[i]
                     dSi -= Hvaps_T_ref[i]*T_REF_IG_INV
                     # Take each component to its reference state change - saturation pressure
                     dSi -= R*log(Psats_T_ref[i]*P_REF_IG_INV)
@@ -4675,13 +4675,13 @@ class GibbsExcessLiquid(Phase):
 #                    Psats_T_ref = self.Psats_T_ref()
 #                    Cpl_integrals_over_T_pure = self.Cpl_integrals_over_T_pure()
 #                    T_REF_IG_INV = self.T_REF_IG_INV
-#                    
+#
 #                    for i in self.cmps:
-#                        dSi = -Cpl_integrals_over_T_pure[i] 
+#                        dSi = -Cpl_integrals_over_T_pure[i]
 #                        dSi -= Hvaps[i]/T
 #                        # Take each component to its reference state change - saturation pressure
 #                        dSi -= R*log(Psats[i]*P_REF_IG_INV)
-#                        
+#
 #                        dP = P - Psats[i]
 #                        # I believe should include effect of pressure on all components, regardless of phase
 #                        dSi -= dP*dVms_sat_dT[i]
@@ -4691,8 +4691,8 @@ class GibbsExcessLiquid(Phase):
             for i in cmps:
                 Sg298_to_T = Cpig_integrals_over_T_pure[i]
                 Svap = -Hvaps[i]*T_inv # Do the transition at the temperature of the liquid
-                S += zs[i]*(Sg298_to_T + Svap - R*log(P*P_REF_IG_INV)) # 
-#        self._S = 
+                S += zs[i]*(Sg298_to_T + Svap - R*log(P*P_REF_IG_INV)) #
+#        self._S =
         S = S + self.GibbsExcessModel.SE()
         return S
 
@@ -4704,7 +4704,7 @@ class GibbsExcessLiquid(Phase):
         T, P = self.T, self.P
         P_inv = 1.0/P
         zs, cmps = self.zs, self.cmps
-        
+
         log_zs = self.log_zs()
         S = 0.0
         for i in cmps:
@@ -4723,7 +4723,7 @@ class GibbsExcessLiquid(Phase):
 
         dPsats_dT_over_Psats = self.dPsats_dT_over_Psats()
         use_Poynting, use_phis_sat = self.use_Poynting, self.use_phis_sat
-        
+
         if use_Poynting:
             try:
                 Poyntings = self._Poyntings
@@ -4732,7 +4732,7 @@ class GibbsExcessLiquid(Phase):
             try:
                 dPoyntings_dT = self._dPoyntings_dT
             except AttributeError:
-                dPoyntings_dT = self.dPoyntings_dT()        
+                dPoyntings_dT = self.dPoyntings_dT()
         if use_phis_sat:
             try:
                 dphis_sat_dT = self._dphis_sat_dT
@@ -4818,7 +4818,7 @@ class GibbsExcessLiquid(Phase):
                            #x2*(x1 - x4) + x2*(T*x6 + x5) - x7*(-R*x7*Psat_inv*Psat_inv + x3 - x6),
                            #Cpigs_pure[i]
     #                       )
-                    Cp += zs[i]*(-T*(P - x0)*d2Vms_sat_dT2[i] - T*(x4 + x5)*d2Psats_dT2[i] 
+                    Cp += zs[i]*(-T*(P - x0)*d2Vms_sat_dT2[i] - T*(x4 + x5)*d2Psats_dT2[i]
                     + x2*(x1 - x4) + x2*(T*x6 + x5) - x7*(-R*x7*Psat_inv*Psat_inv + x3 - x6) + Cpigs_pure[i])
                     # The second derivative of volume is zero when extrapolating, which causes zero issues, discontinuous derivative
                 '''
@@ -4831,16 +4831,16 @@ class GibbsExcessLiquid(Phase):
                 dS_vap = dPsatdT*dV_vap
                 Hvap = T*dS_vap
                 H = zi*(Cpig_int(T) - Hvap)
-                
+
                 dP = P - Psat(T)
                 H += zi*dP*(Vmsat(T) - T*dVmsatdT)
-                
+
                 (cse(diff(H, T), optimizations='basic'))
                 '''
             except (ZeroDivisionError, ValueError):
                 # Handle the zero division on Psat or the log getting two small
                 failed_dPsat_dT = True
-            
+
             if failed_dPsat_dT or isinf(Cp) or isnan(Cp):
                 dlnPsats_dT = self.dlnPsats_dT()
                 d2lnPsats_dT2 = self.d2lnPsats_dT2()
@@ -4861,7 +4861,7 @@ class GibbsExcessLiquid(Phase):
                     dP = P
                     H += zi*dP*(Vmsat(T) - T*dVmsatdT)
                     print(simplify(expand(diff(H, T)).subs(exp(lnPsat(T)), 0)/zi))
-                    '''                
+                    '''
 #                Cp += zs[i]*(Cpigs_pure[i] - dHvaps_dT[i])
 #                Cp += zs[i]*(-T*(P - Psats[i])*d2Vms_sat_dT2[i] + (T*dVms_sat_dT[i] - Vms_sat[i])*dPsats_dT[i])
 
@@ -4869,10 +4869,10 @@ class GibbsExcessLiquid(Phase):
             dHvaps_dT = self.dHvaps_dT()
             for i in self.cmps:
                 Cp += zs[i]*(Cpigs_pure[i] - dHvaps_dT[i])
-            
+
         Cp += self.GibbsExcessModel.CpE()
         return Cp
-    
+
     def Cp(self):
         try:
             return self._Cp
@@ -4881,16 +4881,16 @@ class GibbsExcessLiquid(Phase):
         T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
         Cpigs_pure = self.Cpigs_pure()
         use_Poynting, use_phis_sat = self.use_Poynting, self.use_phis_sat
-        
+
         if use_Poynting:
             try:
                 d2Poyntings_dT2 = self._d2Poyntings_dT2
             except AttributeError:
-                d2Poyntings_dT2 = self.d2Poyntings_dT2()        
+                d2Poyntings_dT2 = self.d2Poyntings_dT2()
             try:
                 dPoyntings_dT = self._dPoyntings_dT
             except AttributeError:
-                dPoyntings_dT = self.dPoyntings_dT()        
+                dPoyntings_dT = self.dPoyntings_dT()
             try:
                 Poyntings = self._Poyntings
             except AttributeError:
@@ -4908,14 +4908,14 @@ class GibbsExcessLiquid(Phase):
                 phis_sat = self._phis_sat
             except AttributeError:
                 phis_sat = self.phis_sat()
-            
+
         dPsats_dT_over_Psats = self.dPsats_dT_over_Psats()
         d2Psats_dT2_over_Psats = self.d2Psats_dT2_over_Psats()
-        
+
         RT = R*T
         RT2 = RT*T
         RT2_2 = RT + RT
-        
+
         Cp = 0.0
         if use_Poynting and use_phis_sat:
             for i in cmps:
@@ -4923,17 +4923,17 @@ class GibbsExcessLiquid(Phase):
                 phi_inv = 1.0/phis_sat[i]
                 dPoy_ratio = dPoyntings_dT[i]*Poy_inv
                 dphi_ratio = dphis_sat_dT[i]*phi_inv
-                
+
                 a = (d2phis_sat_dT2[i]*phi_inv - dphi_ratio*dphi_ratio
                      + d2Psats_dT2_over_Psats[i] - dPsats_dT_over_Psats[i]*dPsats_dT_over_Psats[i]
                      + d2Poyntings_dT2[i]*Poy_inv - dPoy_ratio*dPoy_ratio)
-                
+
                 b = dphi_ratio + dPsats_dT_over_Psats[i] + dPoy_ratio
                 Cp -= zs[i]*(RT2*a + RT2_2*b - Cpigs_pure[i])
         elif use_Poynting:
             for i in cmps:
                 Poy_inv = 1.0/Poyntings[i]
-                dPoy_ratio = dPoyntings_dT[i]*Poy_inv                
+                dPoy_ratio = dPoyntings_dT[i]*Poy_inv
                 a = (d2Psats_dT2_over_Psats[i] - dPsats_dT_over_Psats[i]*dPsats_dT_over_Psats[i]
                      + d2Poyntings_dT2[i]*Poy_inv - dPoy_ratio*dPoy_ratio)
                 b = dPsats_dT_over_Psats[i] + dPoy_ratio
@@ -4955,7 +4955,7 @@ class GibbsExcessLiquid(Phase):
             Cp += self.GibbsExcessModel.CpE()
         self._Cp = Cp
         return Cp
-    
+
     dH_dT = Cp
 
     def dS_dT_old(self):
@@ -4982,11 +4982,11 @@ class GibbsExcessLiquid(Phase):
                     '''
                     from sympy import *
                     T, P, R, zi, P_REF_IG = symbols('T, P, R, zi, P_REF_IG')
-                    
+
                     Psat, Cpig_T_int, Vmsat = symbols('Psat, Cpig_T_int, Vmsat', cls=Function)
                     dVmsatdT = diff(Vmsat(T), T)
                     dPsatdT = diff(Psat(T), T)
-                    
+
                     S = 0
                     dSi = Cpig_T_int(T)
                     dVsat = R*T/Psat(T) - Vmsat(T)
@@ -5009,7 +5009,7 @@ class GibbsExcessLiquid(Phase):
                 except (ZeroDivisionError, ValueError):
                     # Handle the zero division on Psat or the log getting two small
                     failed_dPsat_dT = True
-                
+
             if failed_dPsat_dT:
                 lnPsats = self.lnPsats()
                 dlnPsats_dT = self.dlnPsats_dT()
@@ -5020,12 +5020,12 @@ class GibbsExcessLiquid(Phase):
                 '''
                 from sympy import *
                 T, P, R, zi, P_REF_IG = symbols('T, P, R, zi, P_REF_IG')
-                
+
                 lnPsat, Cpig_T_int, Vmsat = symbols('lnPsat, Cpig_T_int, Vmsat', cls=Function)
                 # Psat, Cpig_T_int, Vmsat = symbols('Psat, Cpig_T_int, Vmsat', cls=Function)
                 dVmsatdT = diff(Vmsat(T), T)
                 dPsatdT = diff(exp(lnPsat(T)), T)
-                
+
                 S = 0
                 dSi = Cpig_T_int(T)
                 dVsat = R*T/exp(lnPsat(T)) - Vmsat(T)
@@ -5045,7 +5045,7 @@ class GibbsExcessLiquid(Phase):
                 for i in self.cmps:
                     dS_dT -= zs[i]*(P*d2Vms_sat_dT2[i] + RT*d2lnPsats_dT2[i]
                     + 2.0*R*dlnPsats_dT[i]- Cpigs_pure[i]*T_inv)
-                
+
         dS_dT += self.GibbsExcessModel.dSE_dT()
         return dS_dT
 
@@ -5056,16 +5056,16 @@ class GibbsExcessLiquid(Phase):
             pass
         T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
         use_Poynting, use_phis_sat = self.use_Poynting, self.use_phis_sat
-        
+
         if use_Poynting:
             try:
                 d2Poyntings_dT2 = self._d2Poyntings_dT2
             except AttributeError:
-                d2Poyntings_dT2 = self.d2Poyntings_dT2()        
+                d2Poyntings_dT2 = self.d2Poyntings_dT2()
             try:
                 dPoyntings_dT = self._dPoyntings_dT
             except AttributeError:
-                dPoyntings_dT = self.dPoyntings_dT()        
+                dPoyntings_dT = self.dPoyntings_dT()
             try:
                 Poyntings = self._Poyntings
             except AttributeError:
@@ -5083,7 +5083,7 @@ class GibbsExcessLiquid(Phase):
                 phis_sat = self._phis_sat
             except AttributeError:
                 phis_sat = self.phis_sat()
-            
+
         dPsats_dT_over_Psats = self.dPsats_dT_over_Psats()
         d2Psats_dT2_over_Psats = self.d2Psats_dT2_over_Psats()
         Cpigs_pure = self.Cpigs_pure()
@@ -5091,7 +5091,7 @@ class GibbsExcessLiquid(Phase):
         T_inv = 1.0/T
         RT = R*T
         R_2 = R + R
-        
+
         dS_dT = 0.0
         if use_Poynting and use_phis_sat:
             for i in cmps:
@@ -5099,18 +5099,18 @@ class GibbsExcessLiquid(Phase):
                 phi_inv = 1.0/phis_sat[i]
                 dPoy_ratio = dPoyntings_dT[i]*Poy_inv
                 dphi_ratio = dphis_sat_dT[i]*phi_inv
-                
+
                 a = (d2phis_sat_dT2[i]*phi_inv - dphi_ratio*dphi_ratio
                      + d2Psats_dT2_over_Psats[i] - dPsats_dT_over_Psats[i]*dPsats_dT_over_Psats[i]
                      + d2Poyntings_dT2[i]*Poy_inv - dPoy_ratio*dPoy_ratio)
-                
+
                 b = dphi_ratio + dPsats_dT_over_Psats[i] + dPoy_ratio
-                
+
                 dS_dT -= zs[i]*((RT*a + b*R_2) - Cpigs_pure[i]*T_inv)
         elif use_Poynting:
             for i in cmps:
                 Poy_inv = 1.0/Poyntings[i]
-                dPoy_ratio = dPoyntings_dT[i]*Poy_inv                
+                dPoy_ratio = dPoyntings_dT[i]*Poy_inv
                 a = (d2Psats_dT2_over_Psats[i] - dPsats_dT_over_Psats[i]*dPsats_dT_over_Psats[i]
                      + d2Poyntings_dT2[i]*Poy_inv - dPoy_ratio*dPoy_ratio)
                 b = dPsats_dT_over_Psats[i] + dPoy_ratio
@@ -5151,7 +5151,7 @@ class GibbsExcessLiquid(Phase):
             for i in self.cmps:
                 Poy_inv = 1.0/Poyntings[i]
                 dH_dP += nRT2*zs[i]*Poy_inv*(d2Poyntings_dPdT[i] - dPoyntings_dP[i]*dPoyntings_dT[i]*Poy_inv)
-        
+
 #        if self.P_DEPENDENT_H_LIQ:
 #            if self.use_IG_Cp:
 #                Vms_sat = self.Vms_sat()
@@ -5256,9 +5256,9 @@ class GibbsExcessLiquid(Phase):
             pass
         if self.incompressible:
             self._dP_dV = INCOMPRESSIBLE_CONST #1.0/self.VolumeLiquidMixture.property_derivative_P(self.T, self.P, self.zs, order=1)
-            
+
         return self._dP_dV
-    
+
     def d2P_dV2(self):
         try:
             return self._d2P_dV2
@@ -5267,7 +5267,7 @@ class GibbsExcessLiquid(Phase):
         if self.incompressible:
             self._d2P_dV2 = INCOMPRESSIBLE_CONST#self.d2V_dP2()/-(self.dP_dV())**-3
         return self._d2P_dV2
-    
+
     def dP_dT(self):
         try:
             return self._dP_dT
@@ -5275,7 +5275,7 @@ class GibbsExcessLiquid(Phase):
             pass
         self._dP_dT = self.dV_dT()/-self.dP_dV()
         return self._dP_dT
-    
+
     def d2P_dTdV(self):
         try:
             return self._d2P_dTdV
@@ -5305,7 +5305,7 @@ class GibbsExcessLiquid(Phase):
                 dP_dV = 1.0/self.VolumeLiquidMixture.property_derivative_P(T, P, zs, order=1)
                 dP_dT = dV_dT/-dP_dV
                 return dP_dT
-            
+
             self._d2P_dT2 = derivative(dP_dT_for_diff, self.T)
         return self._d2P_dT2
 
@@ -5324,25 +5324,25 @@ class GibbsExcessLiquid(Phase):
             return self._Tait_Bs
         except:
             pass
-        
+
         self._Tait_Bs = evaluate_linear_fits(self.Tait_B_data, self.T)
         return self._Tait_Bs
-        
+
     def dTait_B_dTs(self):
         try:
             return self._dTait_B_dTs
         except:
             pass
-        
+
         self._dTait_B_dTs = evaluate_linear_fits_d(self.Tait_B_data, self.T)
         return self._dTait_B_dTs
-        
+
     def d2Tait_B_dT2s(self):
         try:
             return self._d2Tait_B_dT2s
         except:
             pass
-        
+
         self._d2Tait_B_dT2s = evaluate_linear_fits_d2(self.Tait_B_data, self.T)
         return self._d2Tait_B_dT2s
 
@@ -5351,28 +5351,28 @@ class GibbsExcessLiquid(Phase):
             return self._Tait_Cs
         except:
             pass
-        
+
         self._Tait_Cs = evaluate_linear_fits(self.Tait_C_data, self.T)
         return self._Tait_Cs
-        
+
     def dTait_C_dTs(self):
         try:
             return self._dTait_C_dTs
         except:
             pass
-        
+
         self._dTait_C_dTs = evaluate_linear_fits_d(self.Tait_C_data, self.T)
         return self._dTait_C_dTs
-        
+
     def d2Tait_C_dT2s(self):
         try:
             return self._d2Tait_C_dT2s
         except:
             pass
-        
+
         self._d2Tait_C_dT2s = evaluate_linear_fits_d2(self.Tait_C_data, self.T)
         return self._d2Tait_C_dT2s
-    
+
     def Tait_Vs(self):
         Vms_sat = self.Vms_sat()
         Psats = self.Psats()
@@ -5382,7 +5382,7 @@ class GibbsExcessLiquid(Phase):
         return [Vms_sat[i]*(1.0  - Tait_Cs[i]*log((Tait_Bs[i] + P)/(Tait_Bs[i] + Psats[i]) ))
                 for i in self.cmps]
 
-        
+
     def dH_dP_integrals_Tait(self):
         try:
             return self._dH_dP_integrals_Tait
@@ -5392,22 +5392,22 @@ class GibbsExcessLiquid(Phase):
         Vms_sat = self.Vms_sat()
         dVms_sat_dT = self.dVms_sat_dT()
         dPsats_dT = self.dPsats_dT()
-        
+
         Tait_Bs = self.Tait_Bs()
         Tait_Cs = self.Tait_Cs()
         dTait_C_dTs = self.dTait_C_dTs()
         dTait_B_dTs = self.dTait_B_dTs()
         T, P, zs = self.T, self.P, self.zs
-        
-        
+
+
         self._dH_dP_integrals_Tait = dH_dP_integrals_Tait = []
-        
+
 #        def to_int(P, i):
 #            l = self.to_TP_zs(T, P, zs)
 ##            def to_diff(T):
 ##                return self.to_TP_zs(T, P, zs).Tait_Vs()[i]
 ##            dV_dT = derivative(to_diff, T, dx=1e-5*T, order=11)
-#            
+#
 #            x0 = l.Vms_sat()[i]
 #            x1 = l.Tait_Cs()[i]
 #            x2 = l.Tait_Bs()[i]
@@ -5416,12 +5416,12 @@ class GibbsExcessLiquid(Phase):
 #            x5 = x3/(x2 + x4)
 #            x6 = log(x5)
 #            x7 = l.dTait_B_dTs()[i]
-#            dV_dT = (-x0*(x1*(-x5*(x7 +l.dPsats_dT()[i]) + x7)/x3 
+#            dV_dT = (-x0*(x1*(-x5*(x7 +l.dPsats_dT()[i]) + x7)/x3
 #                                   + x6*l.dTait_C_dTs()[i])
 #                        - (x1*x6 - 1.0)*l.dVms_sat_dT()[i])
-#                        
-##            print(dV_dT, dV_dT2, dV_dT/dV_dT2, T, P)   
-#            
+#
+##            print(dV_dT, dV_dT2, dV_dT/dV_dT2, T, P)
+#
 #            V = l.Tait_Vs()[i]
 #            return V - T*dV_dT
 #        from scipy.integrate import quad
@@ -5431,7 +5431,7 @@ class GibbsExcessLiquid(Phase):
 #        print(_dH_dP_integrals_Tait)
 #        self._dH_dP_integrals_Tait2 = _dH_dP_integrals_Tait
 #        return self._dH_dP_integrals_Tait2
-        
+
 #        dH_dP_integrals_Tait = []
         for i in self.cmps:
             # Very wrong according to numerical integration. Is it an issue with
@@ -5457,7 +5457,7 @@ class GibbsExcessLiquid(Phase):
             dH_dP_integrals_Tait.append(val)
 #        print(dH_dP_integrals_Tait, self._dH_dP_integrals_Tait2)
         return dH_dP_integrals_Tait
-        
+
     def mu(self):
         try:
             return self._mu
@@ -5474,16 +5474,16 @@ class GibbsExcessLiquid(Phase):
         self._k = k = self.correlations.ThermalConductivityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
         return k
 
-    
+
 class GibbsExcessSolid(GibbsExcessLiquid):
     ideal_gas_basis = True
     force_phase = 's'
     phase = 's'
-    def __init__(self, SublimationPressures, VolumeSolids=None, 
-                 GibbsExcessModel=IdealSolution(), 
+    def __init__(self, SublimationPressures, VolumeSolids=None,
+                 GibbsExcessModel=IdealSolution(),
                  eos_pure_instances=None,
                  VolumeLiquidMixture=None,
-                 HeatCapacityGases=None, 
+                 HeatCapacityGases=None,
                  EnthalpySublimations=None,
                  use_Poynting=False,
                  use_phis_sat=False,
@@ -5502,7 +5502,7 @@ Grayson_Streed_special_CASs = set(['1333-74-0', '74-82-8'])
 class GraysonStreed(Phase):
     phase = force_phase = 'l'
     # revised one
-    
+
     hydrogen_coeffs = (1.50709, 2.74283, -0.0211, 0.00011, 0.0, 0.008585, 0.0, 0.0, 0.0, 0.0)
     methane_coeffs = (1.36822, -1.54831, 0.0, 0.02889, -0.01076, 0.10486, -0.02529, 0.0, 0.0, 0.0)
     simple_coeffs = (2.05135, -2.10889, 0.0, -0.19396, 0.02282, 0.08852, 0.0, -0.00872, -0.00353, 0.00203)
@@ -5513,7 +5513,7 @@ class GraysonStreed(Phase):
         new.T = T
         new.P = P
         new.zs = zs
-        
+
         new._Tcs = self._Tcs
         new._Pcs = self._Pcs
         new._omegas = self._omegas
@@ -5521,7 +5521,7 @@ class GraysonStreed(Phase):
         new.regular = self.regular
         new.GibbsExcessModel = self.GibbsExcessModel.to_T_xs(T, zs)
         new.version = self.version
-        
+
         try:
             new.cmps = self.cmps
             new.N = self.N
@@ -5542,14 +5542,14 @@ class GraysonStreed(Phase):
             raise ValueError("Two of T, P, or V are needed")
 
     def __init__(self, Tcs, Pcs, omegas, CASs,
-                 GibbsExcessModel=IdealSolution(), 
+                 GibbsExcessModel=IdealSolution(),
                  T=None, P=None, zs=None,
                  ):
-        
+
         self.T = T
         self.P = P
         self.zs = zs
-        
+
         self.N = len(zs)
         self.cmps = range(self.N)
         self._Tcs = Tcs
@@ -5557,7 +5557,7 @@ class GraysonStreed(Phase):
         self._omegas = omegas
         self._CASs = CASs
         self.regular = [i not in Grayson_Streed_special_CASs for i in CASs]
-        
+
         self.GibbsExcessModel = GibbsExcessModel
 
     def gammas(self):
@@ -5565,7 +5565,7 @@ class GraysonStreed(Phase):
             return self.GibbsExcessModel._gammas
         except AttributeError:
             return self.GibbsExcessModel.gammas()
-        
+
     def phis(self):
         try:
             return self._phis
@@ -5576,20 +5576,20 @@ class GraysonStreed(Phase):
         except AttributeError:
             gammas = self.gammas()
         fugacity_coeffs_pure = self.nus()
-        
+
         self._phis = [gammas[i]*fugacity_coeffs_pure[i]
                 for i in self.cmps]
         return self._phis
-        
-        
+
+
     def lnphis(self):
         try:
             return self._lnphis
         except AttributeError:
             pass
-        self._lnphis = [log(i) for i in self.phis()]        
+        self._lnphis = [log(i) for i in self.phis()]
         return self._lnphis
-    
+
     lnphis_G_min = lnphis
 
     def nus(self):
@@ -5598,12 +5598,12 @@ class GraysonStreed(Phase):
         regular, CASs = self.regular, self._CASs
         nus = []
         limit_Tr = self.version > 0
-        
+
         for i in self.cmps:
             # TODO validate and take T, P derivatives; n derivatives are from regular solution only
             Tr = T/Tcs[i]
             Pr = P/Pcs[i]
-            
+
             if regular[i]:
                 coeffs = self.simple_coeffs
             elif CASs[i] == '1333-74-0':
@@ -5613,12 +5613,12 @@ class GraysonStreed(Phase):
             else:
                 raise ValueError("Fail")
             A0, A1, A2, A3, A4, A5, A6, A7, A8, A9 = coeffs
-    
+
             log10_v0 = A0 + A1/Tr + A2*Tr + A3*Tr**2 + A4*Tr**3 + (A5 + A6*Tr + A7*Tr**2)*Pr + (A8 + A9*Tr)*Pr**2 - log10(Pr)
             log10_v1 = -4.23893 + 8.65808*Tr - 1.2206/Tr - 3.15224*Tr**3 - 0.025*(Pr - 0.6)
             if Tr > 1.0 and limit_Tr:
                 log10_v1 = 1.0
-            
+
             if regular[i]:
                 v = 10.0**(log10_v0 + omegas[i]*log10_v1)
             else:
@@ -5636,13 +5636,13 @@ class ChaoSeader(GraysonStreed):
 
 from chemicals.virial import BVirial_Pitzer_Curl, Z_from_virial_density_form
 class VirialCorrelationsPitzerCurl(object):
-    
+
     def __init__(self, Tcs, Pcs, omegas):
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
         self.N = len(Tcs)
-    
+
     def C_pures(self, T):
         return [0.0]*self.N
 
@@ -5651,16 +5651,16 @@ class VirialCorrelationsPitzerCurl(object):
 
     def d2C_dT2_pures(self, T):
         return [0.0]*self.N
-    
+
     def C_interactions(self, T):
         N = self.N
         Ciij = [[0.0]*N for i in range(N)]
         Cijj = [[0.0]*N for i in range(N)]
-        
+
 #        Full return should be (Ciij, Ciji, Cjii), (Cijj, Cjij, Cjji)
 #        but due to symmetry there is only those two matrices
         return Ciij, Cijj
-    
+
     def dC_dT_interactions(self, T):
         N = self.N
         Ciij = [[0.0]*N for i in range(N)]
@@ -5672,11 +5672,11 @@ class VirialCorrelationsPitzerCurl(object):
         Ciij = [[0.0]*N for i in range(N)]
         Cijj = [[0.0]*N for i in range(N)]
         return Ciij, Cijj
-        
+
     def B_pures(self, T):
         Tcs, Pcs, omegas = self.Tcs, self.Pcs, self.omegas
         return [BVirial_Pitzer_Curl(T, Tcs[i], Pcs[i], omegas[i]) for i in range(self.N)]
-    
+
     def dB_dT_pures(self, T):
         Tcs, Pcs, omegas = self.Tcs, self.Pcs, self.omegas
         return [BVirial_Pitzer_Curl(T, Tcs[i], Pcs[i], omegas[i], 1) for i in range(self.N)]
@@ -5688,7 +5688,7 @@ class VirialCorrelationsPitzerCurl(object):
     def dB_dT_interactions(self, T):
         N = self.N
         return [[0.0]*N for i in range(N)]
-    
+
     def B_matrix(self, T):
         N = self.N
         B_mat = [[0.0]*N for i in range(N)]
@@ -5700,9 +5700,9 @@ class VirialCorrelationsPitzerCurl(object):
             for j in range(i):
                 B_mat[i][j] = B_interactions[i][j]
                 B_mat[j][i] = B_interactions[j][i]
-        
+
         return B_mat
-    
+
     def dB_dT_matrix(self, T):
         N = self.N
         B_mat = [[0.0]*N for i in range(N)]
@@ -5714,10 +5714,10 @@ class VirialCorrelationsPitzerCurl(object):
             for j in range(i):
                 B_mat[i][j] = B_interactions[i][j]
                 B_mat[j][i] = B_interactions[j][i]
-        
+
         return B_mat
-    
-    
+
+
     def d2B_dT2_pures(self, T):
         Tcs, Pcs, omegas = self.Tcs, self.Pcs, self.omegas
         return [BVirial_Pitzer_Curl(T, Tcs[i], Pcs[i], omegas[i], 2) for i in range(self.N)]
@@ -5736,11 +5736,11 @@ class VirialCorrelationsPitzerCurl(object):
             for j in range(i):
                 B_mat[i][j] = B_interactions[i][j]
                 B_mat[j][i] = B_interactions[j][i]
-        
+
         return B_mat
 
 
-    
+
 class VirialGas(Phase):
     phase = 'g'
     force_phase = 'g'
@@ -5755,7 +5755,7 @@ class VirialGas(Phase):
             self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
         else:
             self.Sfs = None
-            
+
         if zs is not None:
             self.N = N = len(zs)
             self.cmps = range(N)
@@ -5771,19 +5771,19 @@ class VirialGas(Phase):
         if T is not None and P is not None and zs is not None:
             Z = Z_from_virial_density_form(T, P, self.B(), self.C())
             self._V = Z*R*T/P
-            
+
     def V(self):
         return self._V
-    
+
     def dP_dT(self):
         r'''
-        
+
         .. math::
-            \left(\frac{\partial P}{\partial T}\right)_{V} = \frac{R \left(T 
-            \left(V \frac{d}{d T} B{\left(T \right)} + \frac{d}{d T} C{\left(T 
+            \left(\frac{\partial P}{\partial T}\right)_{V} = \frac{R \left(T
+            \left(V \frac{d}{d T} B{\left(T \right)} + \frac{d}{d T} C{\left(T
             \right)}\right) + V^{2} + V B{\left(T \right)} + C{\left(T \right)}
             \right)}{V^{3}}
-            
+
         '''
         try:
             return self._dP_dT
@@ -5792,15 +5792,15 @@ class VirialGas(Phase):
         T, V = self.T, self._V
         self._dP_dT = dP_dT = R*(T*(V*self.dB_dT() + self.dC_dT()) + V*(V + self.B()) + self.C())/(V*V*V)
         return dP_dT
-    
+
     def dP_dV(self):
         r'''
-        
+
         .. math::
             \left(\frac{\partial P}{\partial V}\right)_{T} =
-            - \frac{R T \left(V^{2} + 2 V B{\left(T \right)} + 3 C{\left(T 
+            - \frac{R T \left(V^{2} + 2 V B{\left(T \right)} + 3 C{\left(T
             \right)}\right)}{V^{4}}
-            
+
         '''
         try:
             return self._dP_dV
@@ -5809,16 +5809,16 @@ class VirialGas(Phase):
         T, V = self.T, self._V
         self._dP_dV = dP_dV = -R*T*(V*V + 2.0*V*self.B() + 3.0*self.C())/(V*V*V*V)
         return dP_dV
-   
+
     def d2P_dTdV(self):
         r'''
-        
+
         .. math::
             \left(\frac{\partial^2 P}{\partial V\partial T}\right)_{T} =
             - \frac{R \left(2 T V \frac{d}{d T} B{\left(T \right)} + 3 T
             \frac{d}{d T} C{\left(T \right)} + V^{2} + 2 V B{\left(T \right)}
             + 3 C{\left(T \right)}\right)}{V^{4}}
-            
+
         '''
         try:
             return self._d2P_dTdV
@@ -5826,19 +5826,19 @@ class VirialGas(Phase):
             pass
         T, V = self.T, self._V
         V2 = V*V
-        self._d2P_dTdV = d2P_dTdV = -R*(2.0*T*V*self.dB_dT() + 3.0*T*self.dC_dT() 
+        self._d2P_dTdV = d2P_dTdV = -R*(2.0*T*V*self.dB_dT() + 3.0*T*self.dC_dT()
         + V2 + 2.0*V*self.B() + 3.0*self.C())/(V2*V2)
-        
+
         return d2P_dTdV
 
     def d2P_dV2(self):
         r'''
-        
+
         .. math::
             \left(\frac{\partial^2 P}{\partial V^2}\right)_{T} =
             \frac{2 R T \left(V^{2} + 3 V B{\left(T \right)}
             + 6 C{\left(T \right)}\right)}{V^{5}}
-            
+
         '''
         try:
             return self._d2P_dV2
@@ -5851,13 +5851,13 @@ class VirialGas(Phase):
 
     def d2P_dT2(self):
         r'''
-        
+
         .. math::
             \left(\frac{\partial^2 P}{\partial T^2}\right)_{V} =
-            \frac{R \left(T \left(V \frac{d^{2}}{d T^{2}} B{\left(T \right)} 
+            \frac{R \left(T \left(V \frac{d^{2}}{d T^{2}} B{\left(T \right)}
             + \frac{d^{2}}{d T^{2}} C{\left(T \right)}\right) + 2 V \frac{d}{d T}
             B{\left(T \right)} + 2 \frac{d}{d T} C{\left(T \right)}\right)}{V^{3}}
-            
+
         '''
         try:
             return self._d2P_dT2
@@ -5865,19 +5865,19 @@ class VirialGas(Phase):
             pass
         T, V = self.T, self._V
         V2 = V*V
-        self._d2P_dT2 = d2P_dT2 = R*(T*(V*self.d2B_dT2() + self.d2C_dT2()) 
+        self._d2P_dT2 = d2P_dT2 = R*(T*(V*self.d2B_dT2() + self.d2C_dT2())
                               + 2.0*V*self.dB_dT() + 2.0*self.dC_dT())/(V*V*V)
         return d2P_dT2
 
     def H_dep(self):
         r'''
-        
+
         .. math::
-           H_{dep} = \frac{R T^{2} \left(2 V \frac{d}{d T} B{\left(T \right)} 
-           + \frac{d}{d T} C{\left(T \right)}\right)}{2 V^{2}} - R T \left(-1 
+           H_{dep} = \frac{R T^{2} \left(2 V \frac{d}{d T} B{\left(T \right)}
+           + \frac{d}{d T} C{\left(T \right)}\right)}{2 V^{2}} - R T \left(-1
             + \frac{V^{2} + V B{\left(T \right)} + C{\left(T \right)}}{V^{2}}
             \right)
-            
+
         '''
         '''
         from sympy import *
@@ -5886,7 +5886,7 @@ class VirialGas(Phase):
         base =Eq(P*V/(R*T), 1 + B(T)/V + C(T)/V**2)
         P_sln = solve(base, P)[0]
         Z = P_sln*V/(R*T)
-        
+
         # Two ways to compute H_dep
         Hdep2 = R*T - P_sln*V + integrate(P_sln - T*diff(P_sln, T), (V, oo, V))
         Hdep = -R*T*(Z-1) -integrate(diff(Z, T)/V, (V, oo, V))*R*T**2
@@ -5895,7 +5895,7 @@ class VirialGas(Phase):
             return self._H_dep
         except:
             pass
-        
+
         T, V = self.T, self._V
         V2 = V*V
         RT = R*T
@@ -5905,13 +5905,13 @@ class VirialGas(Phase):
 
     def dH_dep_dT(self):
         r'''
-        
+
         .. math::
-           \frac{\partial H_{dep}}{\partial T} = \frac{R \left(2 T^{2} V 
+           \frac{\partial H_{dep}}{\partial T} = \frac{R \left(2 T^{2} V
            \frac{d^{2}}{d T^{2}} B{\left(T \right)} + T^{2} \frac{d^{2}}{d T^{2}}
-           C{\left(T \right)} + 2 T V \frac{d}{d T} B{\left(T \right)} 
+           C{\left(T \right)} + 2 T V \frac{d}{d T} B{\left(T \right)}
            - 2 V B{\left(T \right)} - 2 C{\left(T \right)}\right)}{2 V^{2}}
-            
+
         '''
         try:
             return self._dH_dep_dT
@@ -5921,16 +5921,16 @@ class VirialGas(Phase):
         self._dH_dep_dT = dH_dep_dT = (R*(2.0*T*T*V*self.d2B_dT2() + T*T*self.d2C_dT2()
             + 2.0*T*V*self.dB_dT() - 2.0*V*self.B() - 2.0*self.C())/(2.0*V*V))
         return dH_dep_dT
-    
+
     def S_dep(self):
         r'''
-        
+
         .. math::
-           S_{dep} = \frac{R \left(- T \frac{d}{d T} C{\left(T \right)} + 2 V^{2} 
+           S_{dep} = \frac{R \left(- T \frac{d}{d T} C{\left(T \right)} + 2 V^{2}
            \log{\left(\frac{V^{2} + V B{\left(T \right)} + C{\left(T \right)}}
-           {V^{2}} \right)} - 2 V \left(T \frac{d}{d T} B{\left(T \right)} 
+           {V^{2}} \right)} - 2 V \left(T \frac{d}{d T} B{\left(T \right)}
             + B{\left(T \right)}\right) - C{\left(T \right)}\right)}{2 V^{2}}
-            
+
         '''
         '''
         dP_dT = diff(P_sln, T)
@@ -5941,27 +5941,27 @@ class VirialGas(Phase):
             return self._S_dep
         except:
             pass
-        
+
         T, V = self.T, self._V
         V2 = V*V
         RT = R*T
         self._S_dep = S_dep = (R*(-T*self.dC_dT() + 2*V**2*log((V**2 + V*self.B() + self.C())/V**2)
         - 2*V*(T*self.dB_dT() + self.B()) - self.C())/(2*V**2))
         return S_dep
-                
+
     def dS_dep_dT(self):
         r'''
-        
+
         .. math::
-           \frac{\partial S_{dep}}{\partial T} = \frac{R \left(2 V^{2} \left(V 
+           \frac{\partial S_{dep}}{\partial T} = \frac{R \left(2 V^{2} \left(V
            \frac{d}{d T} B{\left(T \right)} + \frac{d}{d T} C{\left(T \right)}
            \right) - \left(V^{2} + V B{\left(T \right)} + C{\left(T \right)}
-           \right) \left(T \frac{d^{2}}{d T^{2}} C{\left(T \right)} + 2 V 
-           \left(T \frac{d^{2}}{d T^{2}} B{\left(T \right)} + 2 \frac{d}{d T} 
+           \right) \left(T \frac{d^{2}}{d T^{2}} C{\left(T \right)} + 2 V
+           \left(T \frac{d^{2}}{d T^{2}} B{\left(T \right)} + 2 \frac{d}{d T}
            B{\left(T \right)}\right) + 2 \frac{d}{d T} C{\left(T \right)}
-           \right)\right)}{2 V^{2} \left(V^{2} + V B{\left(T \right)} 
+           \right)\right)}{2 V^{2} \left(V^{2} + V B{\left(T \right)}
            + C{\left(T \right)}\right)}
-            
+
         '''
         try:
             return self._dS_dep_dT
@@ -5969,11 +5969,11 @@ class VirialGas(Phase):
             pass
         T, V = self.T, self._V
         V2 = V*V
-        
+
         self._dS_dep_dT = dS_dep_dT = (R*(2.0*V2*(V*self.dB_dT() + self.dC_dT()) - (V2 + V*self.B() + self.C())*(T*self.d2C_dT2()
         + 2.0*V*(T*self.d2B_dT2() + 2.0*self.dB_dT()) + 2.0*self.dC_dT()))/(2.0*V2*(V2 + V*self.B() + self.C())))
         return dS_dep_dT
-    
+
     def to_TP_zs(self, T, P, zs):
         new = self.__class__.__new__(self.__class__)
         new.T = T
@@ -5981,7 +5981,7 @@ class VirialGas(Phase):
         new.zs = zs
         new.N = self.N
         new.cmps = self.cmps
-        
+
         new.HeatCapacityGases = self.HeatCapacityGases
         new.model = self.model
         new.Hfs = self.Hfs
@@ -5994,7 +5994,7 @@ class VirialGas(Phase):
     def to_zs_TPV(self, zs, T=None, P=None, V=None):
         new = self.__class__.__new__(self.__class__)
         new.zs = zs
-        new.N = self.N        
+        new.N = self.N
         new.HeatCapacityGases = self.HeatCapacityGases
         new.model = model = self.model
         new.Hfs = self.Hfs
@@ -6022,11 +6022,11 @@ class VirialGas(Phase):
                 C = new_tmp.C()
                 x2 = V*V + V*B + C
                 x3 = R/(V*V*V)
-                
+
                 P_err = T*x2*x3 - P
                 dP_dT = x3*(T*(V*new_tmp.dB_dT() + new_tmp.dC_dT()) + x2)
                 return P_err, dP_dT
-            
+
             T_ig = P*V/R # guess
             T = newton(err, T_ig, fprime=True, xtol=1e-15)
             new.T = T
@@ -6034,7 +6034,7 @@ class VirialGas(Phase):
             raise ValueError("Two of T, P, or V are needed")
 
         return new
-    
+
     to = to_zs_TPV
 
     def B(self):
@@ -6055,7 +6055,7 @@ class VirialGas(Phase):
             for j in range(N):
                 B += zs[j]*row[j]
             B += zs[i]*B_tmp
-                
+
         self._B = B
         return B
 
@@ -6077,7 +6077,7 @@ class VirialGas(Phase):
             for j in range(N):
                 dB_dT += zs[j]*row[j]
             dB_dT += zs[i]*dB_dT_tmp
-                
+
         self._dB_dT = dB_dT
         return dB_dT
 
@@ -6099,10 +6099,10 @@ class VirialGas(Phase):
             for j in range(N):
                 d2B_dT2 += zs[j]*row[j]
             d2B_dT2 += zs[i]*d2B_dT2_tmp
-                
+
         self._d2B_dT2 = d2B_dT2
         return d2B_dT2
-    
+
     def C(self):
         try:
             return self._C
@@ -6189,7 +6189,7 @@ class HumidAirRP1485(VirialGas):
             self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
         else:
             self.Sfs = None
-            
+
         if zs is not None:
             self.N = N = len(zs)
         elif HeatCapacityGases is not None:
@@ -6208,7 +6208,7 @@ class HumidAirRP1485(VirialGas):
             Z = Z_from_virial_density_form(T, P, self.B(), self.C())
             self._V = Z*R*T/P
             self._MW = DryAirLemmon._MW*psi_a + IAPWS95._MW*psi_w
-            
+
     def B(self):
         try:
             return self._B
@@ -6218,10 +6218,10 @@ class HumidAirRP1485(VirialGas):
         Baw = TEOS10_BAW_derivatives(self.T)[0]
         Bww = self.water.B_virial()
         psi_a, psi_w = self.psi_a, self.psi_w
-        
+
         self._B = B = psi_a*psi_a*Baa + 2.0*psi_a*psi_w*Baw + psi_w*psi_w*Bww
         return B
-    
+
     def C(self):
         try:
             return self._C
@@ -6236,11 +6236,11 @@ class HumidAirRP1485(VirialGas):
         self._C = C = (psi_a*psi_a*(Caaa + 3.0*psi_w*Caaw)
                        + psi_w*psi_w*(3.0*psi_a*Caww + psi_w*Cwww))
         return C
-        
-            
-            
-        
-    
+
+
+
+
+
 class HelmholtzEOS(Phase):
     def V(self):
         return self._V
@@ -6260,7 +6260,7 @@ class HelmholtzEOS(Phase):
             pass
         delta = self.delta
         dA_ddelta = self._dA_ddelta = self._dAr_ddelta_func(self.tau, delta) + 1./delta
-        return dA_ddelta 
+        return dA_ddelta
 
     def d2A_ddelta2(self):
         try:
@@ -6287,7 +6287,7 @@ class HelmholtzEOS(Phase):
         except:
             pass
         dA_dtau = self._dA_dtau = self._dAr_dtau_func(self.tau, self.delta) + self.dA0_dtau
-        return dA_dtau 
+        return dA_dtau
 
     def d2A_dtau2(self):
         try:
@@ -6304,7 +6304,7 @@ class HelmholtzEOS(Phase):
             pass
         self._d2A_ddeltadtau = d2A_ddeltadtau = self._d2Ar_ddeltadtau_func(self.tau, self.delta)
         return d2A_ddeltadtau
-    
+
     def d3A_ddelta2dtau(self):
         try:
             return self._d3A_ddelta2dtau
@@ -6312,7 +6312,7 @@ class HelmholtzEOS(Phase):
             pass
         self._d3A_ddelta2dtau = d3A_ddelta2dtau = self._d3Ar_ddelta2dtau_func(self.tau, self.delta)
         return d3A_ddelta2dtau
-    
+
     def d3A_ddeltadtau2(self):
         try:
             return self._d3A_ddeltadtau2
@@ -6320,7 +6320,7 @@ class HelmholtzEOS(Phase):
             pass
         self._d3A_ddeltadtau2 = d3A_ddeltadtau2 = self._d3Ar_ddeltadtau2_func(self.tau, self.delta)
         return d3A_ddeltadtau2
-    
+
     def lnphis(self):
         delta = self.delta
         try:
@@ -6333,9 +6333,9 @@ class HelmholtzEOS(Phase):
             A = self.A()
         x0 = delta*(dA_ddelta - 1.0/delta)
         lnphi = A - self.A0 + x0 - log(x0 + 1.0)
-        
+
         return [lnphi]
-    
+
     def dlnphis_dV_T(self):
         try:
             dA_ddelta = self._dA_ddelta
@@ -6347,7 +6347,7 @@ class HelmholtzEOS(Phase):
             d2A_ddelta2 = self.d2A_ddelta2()
         delta = self.delta
         rho, rho_red = 1/self._V, self.rho_red
-        x0 = self.rho_red_inv        
+        x0 = self.rho_red_inv
         rho_inv = 1.0/rho
 
         x1 = -rho_red*rho_inv
@@ -6358,7 +6358,7 @@ class HelmholtzEOS(Phase):
         dlnphi_dV_T *= -1.0/(self._V*self._V)
 
         return [dlnphi_dV_T]
-        
+
     def dlnphis_dT_V(self):
         try:
             dA_ddelta = self._dA_ddelta
@@ -6376,40 +6376,40 @@ class HelmholtzEOS(Phase):
             dA_dtau = self._dA_dtau
         except:
             dA_dtau = self.dA_dtau()
-        
+
         rho = 1.0/self._V
         rho_red_inv = self.rho_red_inv
         rho_red = self.rho_red
-        
+
         T_red, T = self.T_red, self.T
-            
+
         dlnphi_dT_V = T_red/(T*T)*(rho_red_inv*rho*d2A_ddeltadtau*(-1.0
                         + 1.0/(rho*(dA_ddelta - rho_red/rho)*rho_red_inv + 1.0))
                         - dA_dtau
                         + self.dA0_dtau)
         return [dlnphi_dT_V]
-    
+
     def dlnphis_dT_P(self):
         try:
             return self._dlnphis_dT_P
         except:
             pass
-        
+
         self._dlnphis_dT_P = dlnphis_dT_P = [self.dlnphis_dT_V()[0] - self.dlnphis_dV_T()[0]*self.dP_dT_V()/self.dP_dV_T()]
         return dlnphis_dT_P
     dlnphis_dT = dlnphis_dT_P
-    
+
     def dlnphis_dP_V(self):
         return [self.dlnphis_dT_V()[0]/self.dP_dT_V()]
-    
+
     def dlnphis_dV_P(self):
         return [self.dlnphis_dT_P()[0]/self.dV_dT_P()]
-    
+
     def dlnphis_dP_T(self):
         return [self.dlnphis_dP_V()[0] - self.dlnphis_dV_P()[0]*self.dT_dP_V()/self.dT_dV_P()]
-    
+
     dlnphis_dP = dlnphis_dP_T
-    
+
     def S(self):
         try:
             return self._S
@@ -6425,12 +6425,12 @@ class HelmholtzEOS(Phase):
             A = self.A()
         self._S = S = (self.tau*dA_dtau - A)*self.R
         return S
-    
+
     def S_dep(self):
         S_ideal = (self.tau*self.dA0_dtau - self.A0)*self.R
         return self.S() - S_ideal
 
-    
+
     def dS_dT_V(self):
         try:
             return self._dS_dT_V
@@ -6444,7 +6444,7 @@ class HelmholtzEOS(Phase):
         T, T_red = self.T, self.T_red
         self._dS_dT_V = dS_dT_V = (-T_red*T_red*d2A_dtau2)*self.R/(T*T*T)
         return dS_dT_V
-    
+
     def dS_dV_T(self):
         try:
             return self._dS_dV_T
@@ -6458,31 +6458,31 @@ class HelmholtzEOS(Phase):
             d2A_ddeltadtau = self._d2A_ddeltadtau
         except:
             d2A_ddeltadtau = self.d2A_ddeltadtau()
-            
+
         R, T, V, rho_red, T_red = self.R, self.T, self._V, self.rho_red, self.T_red
-            
+
         self._dS_dV_T = dS_dV_T = R*(dA_ddelta - T_red*d2A_ddeltadtau/(T))/(V*V*rho_red)
         return dS_dV_T
-    
+
     def dS_dP_T(self):
         # From chain rule
         return self.dS_dV_T()/self.dP_dV()
     dS_dP = dS_dP_T
-    
-    
+
+
     def dS_dT_P(self):
         try:
             return self._dS_dT_P
         except:
             pass
-        
+
         self._dS_dT_P = dS_dT_P = self.dS_dT_V() - self.dS_dV_T()*self.dP_dT_V()/self.dP_dV_T()
         return dS_dT_P
     dS_dT = dS_dT_P
 
     def dS_dP_V(self):
         return self.dS_dT_V()/self.dP_dT_V()
-    
+
     def H(self):
         try:
             return self._H
@@ -6508,11 +6508,11 @@ class HelmholtzEOS(Phase):
         H = self.H()
         dA_dtau = self.dA0_dtau
         dA_ddelta = 1./self.delta
-            
+
         H_ideal = (self.tau*dA_dtau + dA_ddelta*self.delta)*self.T*self.R
         self._H_dep = H - H_ideal
         return self._H_dep
-    
+
     def dH_dT_V(self):
         try:
             return self._dH_dT_V
@@ -6534,8 +6534,8 @@ class HelmholtzEOS(Phase):
             d2A_dtau2 = self._d2A_dtau2
         except:
             d2A_dtau2 = self.d2A_dtau2()
-            
-            
+
+
         T, T_red, V, R, rho_red = self.T, self.T_red, self._V, self.R, self.rho_red
         T_inv = 1.0/T
 
@@ -6559,7 +6559,7 @@ class HelmholtzEOS(Phase):
             d2A_ddelta2 = self._d2A_ddelta2
         except:
             d2A_ddelta2 = self.d2A_ddelta2()
-            
+
         T, T_red, V, R, rho_red = self.T, self.T_red, self._V, self.R, self.rho_red
 
         self._dH_dV_T = dH_dV_T = R*T*(-dA_ddelta/(V*V*rho_red) - d2A_ddelta2/(V*V*V*rho_red*rho_red) - T_red*d2A_ddeltadtau/(T*V*V*rho_red))
@@ -6567,7 +6567,7 @@ class HelmholtzEOS(Phase):
 
     def dH_dP_V(self):
         return self.dH_dT_V()/self.dP_dT_V()
-    
+
     def dH_dP_T(self):
         # From chain rule
         return self.dH_dV_T()/self.dP_dV()
@@ -6575,8 +6575,8 @@ class HelmholtzEOS(Phase):
 
     def dH_dV_P(self):
         return self.dH_dT_P()/self.dV_dT_P()
-    
-    
+
+
 
     def Cv(self):
         try:
@@ -6590,7 +6590,7 @@ class HelmholtzEOS(Phase):
         tau = self.tau
         self._Cv = Cv = -tau*tau*d2A_dtau2*self.R
         return Cv
-    
+
     def Cp(self):
         try:
             return self._Cp
@@ -6613,15 +6613,15 @@ class HelmholtzEOS(Phase):
             d2A_ddeltadtau = self._d2A_ddeltadtau
         except:
             d2A_ddeltadtau = self.d2A_ddeltadtau()
-        
+
         x0 = delta*dA_ddelta - delta*tau*d2A_ddeltadtau
         den = delta*(dA_ddelta + dA_ddelta + delta*d2A_ddelta2)
         self._Cp = Cp = (-tau*tau*d2A_dtau2 + x0*x0/den)*self.R
         return Cp
-    
+
     dH_dT = dH_dT_P = Cp
 
-    
+
     def dP_dT(self):
         try:
             return self._dP_dT
@@ -6637,7 +6637,7 @@ class HelmholtzEOS(Phase):
             d2A_ddeltadtau = self.d2A_ddeltadtau()
         self._dP_dT = dP_dT = self.R/self._V*self.delta*(dA_ddelta - self.tau*d2A_ddeltadtau)
         return dP_dT
-    
+
     def dP_dV(self):
         try:
             return self._dP_dV
@@ -6656,10 +6656,10 @@ class HelmholtzEOS(Phase):
         rho = self.rho()
         self._dP_dV = dP_dV = -self.R*rho*rho*self.T*delta*(2.0*dA_ddelta + delta*d2A_ddelta2)
         return dP_dV
-    
+
     dP_dT_V = dP_dT
     dP_dV_T = dP_dV
-    
+
     def d2P_dT2(self):
         try:
             return self._d2P_dT2
@@ -6668,8 +6668,8 @@ class HelmholtzEOS(Phase):
         d3A_ddeltadtau2 = self.d3A_ddeltadtau2()
         T, T_red, delta, V, rho_red, R = self.T, self.T_red, self.delta, self._V, self.rho_red, self.R
         self._d2P_dT2 = d2P_dT2 = R*T_red*T_red*d3A_ddeltadtau2/(T*T*T*V*V*rho_red)
-        return d2P_dT2        
-    
+        return d2P_dT2
+
     def d2P_dV2(self):
         try:
             return self._d2P_dV2
@@ -6693,9 +6693,9 @@ class HelmholtzEOS(Phase):
         T_red, rho_red, V, R = symbols('T_red, rho_red, V, R')
         T = symbols('T')
         rho = 1/V
-        
+
         iapws95_dA_ddelta = symbols('ddelta', cls=Function)
-        
+
         rho_red_inv = (1/rho_red)
         tau = T_red/T
         delta = rho*rho_red_inv
@@ -6704,10 +6704,10 @@ class HelmholtzEOS(Phase):
         print(diff(P,V, 2))
         '''
         R, T, V, rho_red = self.R, self.T, self._V, self.rho_red
-        
+
         self._d2P_dV2 = d2P_dV2 = R*T*(6.0*dA_ddelta + (2*d2A_ddelta2 + d3A_ddelta3/(V*rho_red))/(V*rho_red) + 4*d2A_ddelta2/(V*rho_red))/(V**4*rho_red)
         return d2P_dV2
-    
+
     def d2P_dTdV(self):
         try:
             return self._d2P_dTdV
@@ -6727,8 +6727,8 @@ class HelmholtzEOS(Phase):
             d2A_ddeltadtau = self.d2A_ddeltadtau()
         d3A_ddelta2dtau = self.d3A_ddelta2dtau()
         R, T, T_red, V, rho_red = self.R, self.T, self.T_red, self._V, self.rho_red
-        
-        self._d2P_dTdV = d2P_dTdV = R*(-2.0*dA_ddelta - d2A_ddelta2/(V*rho_red) + 2.0*T_red*d2A_ddeltadtau/T 
+
+        self._d2P_dTdV = d2P_dTdV = R*(-2.0*dA_ddelta - d2A_ddelta2/(V*rho_red) + 2.0*T_red*d2A_ddeltadtau/T
                                        + T_red*d3A_ddelta2dtau/(T*V*rho_red))/(V*V*V*rho_red)
         return d2P_dTdV
 
@@ -6746,10 +6746,10 @@ class HelmholtzEOS(Phase):
         except:
             f0 = self._d2Ar_ddeltadtau_func(tau, 1e-20)
         return -tau*tau*f0/(self.rho_red*self.T_red)
-    
+
     def d2B_virial_dT2(self):
         T, T_red, tau = self.T, self.T_red, self.tau
-        
+
         try:
             f0 = self._d2Ar_ddeltadtau_func(tau, 0.0)
         except:
@@ -6762,7 +6762,7 @@ class HelmholtzEOS(Phase):
 
     def d3B_virial_dT3(self):
         T, T_red, tau = self.T, self.T_red, self.tau
-        
+
         try:
             f0 = self._d2Ar_ddeltadtau_func(tau, 0.0)
         except:
@@ -6776,7 +6776,7 @@ class HelmholtzEOS(Phase):
         except:
             f2 = self._d4Ar_ddeltadtau3_func(tau, 1e-20)
         return (-T_red*(6.0*f0 + 6.0*tau*f1 + tau*tau*f2)/(T*T*T*T*self.rho_red))
-    
+
     def C_virial(self):
         try:
             f0 = self._d2Ar_ddelta2_func(self.tau, 0.0)
@@ -6798,7 +6798,7 @@ class HelmholtzEOS(Phase):
             f0 = self._d3Ar_ddelta2dtau_func(tau, 0.0)
         except:
             f0 = self._d3Ar_ddelta2dtau_func(tau, 1e-20)
-            
+
         try:
             f1 = self._d4Ar_ddelta2dtau2_func(tau, 0.0)
         except:
@@ -6823,12 +6823,12 @@ class DryAirLemmon(HelmholtzEOS):
     _d3Ar_ddeltadtau2_func = staticmethod(lemmon2000_air_d3Ar_ddeltadtau2)
     _d3Ar_ddelta2dtau_func = staticmethod(lemmon2000_air_d3Ar_ddelta2dtau)
     _d2Ar_ddeltadtau_func = staticmethod(lemmon2000_air_d2Ar_ddeltadtau)
-    
+
     _dAr_dtau_func = staticmethod(lemmon2000_air_dAr_dtau)
     _d2Ar_dtau2_func = staticmethod(lemmon2000_air_d2Ar_dtau2)
     _d3Ar_dtau3_func = staticmethod(lemmon2000_air_d3Ar_dtau3)
     _d4Ar_dtau4_func = staticmethod(lemmon2000_air_d4Ar_dtau4)
-    
+
     _dAr_ddelta_func = staticmethod(lemmon2000_air_dAr_ddelta)
     _d2Ar_ddelta2_func = staticmethod(lemmon2000_air_d2Ar_ddelta2)
     _d3Ar_ddelta3_func = staticmethod(lemmon2000_air_d3Ar_ddelta3)
@@ -6886,15 +6886,15 @@ class DryAirLemmon(HelmholtzEOS):
         new.T = T
         new.tau = tau = new.T_red/T
         new.delta = delta = new._rho*new.rho_red_inv
-        
+
         new.A0 = lemmon2000_air_A0(tau, delta)
         new.dA0_dtau = lemmon2000_air_dA0_dtau(tau, delta)
         new.d2A0_dtau2 = lemmon2000_air_d2A0_dtau2(tau, delta)
-        new.d3A0_dtau3 = lemmon2000_air_d3A0_dtau3(tau, delta)        
+        new.d3A0_dtau3 = lemmon2000_air_d3A0_dtau3(tau, delta)
         return new
-        
+
     to = to_zs_TPV
-    
+
     def mu(self):
         try:
             return self._mu
@@ -6910,15 +6910,15 @@ class IAPWS95(HelmholtzEOS):
     Pc = iapws95_Pc
     rhoc_mass = iapws95_rhoc
     rhoc_mass_inv = 1.0/iapws95_rhoc
-    
+
     rhoc_inv = rho_to_Vm(rhoc_mass, iapws95_MW)
     rhoc = 1.0/rhoc_inv
-    
+
     rho_red = rhoc
     rho_red_inv = rhoc_inv
-    
+
     T_red = Tc
-    
+
     _MW_kg = _MW*1e-3
     R = _MW_kg*iapws95_R # This is just the gas constant 8.314... but matching iapws to their decimals
 
@@ -6930,7 +6930,7 @@ class IAPWS95(HelmholtzEOS):
     T_MAX_FIXED = 5000.0
     T_MIN_FIXED = 245.0
 
-    _d4Ar_ddelta2dtau2_func = staticmethod(iapws95_d4Ar_ddelta2dtau2) 
+    _d4Ar_ddelta2dtau2_func = staticmethod(iapws95_d4Ar_ddelta2dtau2)
     _d3Ar_ddeltadtau2_func = staticmethod(iapws95_d3Ar_ddeltadtau2)
     _d3Ar_ddelta2dtau_func = staticmethod(iapws95_d3Ar_ddelta2dtau)
     _d2Ar_ddeltadtau_func = staticmethod(iapws95_d2Ar_ddeltadtau)
@@ -6989,11 +6989,11 @@ class IAPWS95(HelmholtzEOS):
         new.tau = tau = new.Tc/T
         new.delta = delta = rho_mass*new.rhoc_mass_inv
         new.A0, new.dA0_dtau, new.d2A0_dtau2, new.d3A0_dtau3 = iapws95_A0_tau_derivatives(tau, delta)
-        
+
         return new
-        
+
     to = to_zs_TPV
-    
+
     def mu(self):
         try:
             return self._mu
@@ -7001,7 +7001,7 @@ class IAPWS95(HelmholtzEOS):
             pass
         self.__mu_k()
         return self._mu
-    
+
     def k(self):
         try:
             return self._k
@@ -7012,12 +7012,12 @@ class IAPWS95(HelmholtzEOS):
 
     def __mu_k(self):
         drho_mass_dP = self.drho_mass_dP()
-        
+
         # TODO: curve fit drho_dP_Tr better than IAPWS did (mpmath)
         drho_dP_Tr = self.to(T=self.Tc*1.5, V=self._V, zs=[1]).drho_mass_dP()
         self._mu = mu_IAPWS(T=self.T, rho=self._rho_mass, drho_dP=drho_mass_dP,
                         drho_dP_Tr=drho_dP_Tr)
-        
+
         self._k = k_IAPWS(T=self.T, rho=self._rho_mass, Cp=self.Cp_mass(), Cv=self.Cv_mass(),
                        mu=self._mu, drho_dP=drho_mass_dP, drho_dP_Tr=drho_dP_Tr)
 
@@ -7037,10 +7037,10 @@ class IAPWS97(Phase):
     rhoc = 322.
     zs = [1.0]
     cmps = [0]
-    
+
     def mu(self):
         return mu_IAPWS(T=self.T, rho=self._rho_mass)
-    
+
     def k(self):
         # TODO add properties; even industrial formulation recommends them
         return k_IAPWS(T=self.T, rho=self._rho_mass)
@@ -7063,7 +7063,7 @@ class IAPWS97(Phase):
         self._G = G
         return G
 
-        
+
     def dG_dpi(self):
         try:
             return self._dG_dpi
@@ -7078,7 +7078,7 @@ class IAPWS97(Phase):
             dG_dpi = 1.0/pi + iapws97_dGr_dpi_region5(tau, pi)
         self._dG_dpi = dG_dpi
         return dG_dpi
-        
+
     def d2G_d2pi(self):
         try:
             return self._d2G_d2pi
@@ -7093,7 +7093,7 @@ class IAPWS97(Phase):
             d2G_d2pi = -1.0/(pi*pi) + iapws97_d2Gr_dpi2_region5(tau, pi)
         self._d2G_d2pi = d2G_d2pi
         return d2G_d2pi
-    
+
     def dG_dtau(self):
         try:
             return self._dG_dtau
@@ -7140,7 +7140,7 @@ class IAPWS97(Phase):
             d2G_dpidtau = iapws97_d2Gr_dpidtau_region5(tau, pi)
         self._d2G_dpidtau = d2G_dpidtau
         return d2G_dpidtau
-    
+
 
     ### Region 3 Helmholtz
     def A_region3(self):
@@ -7263,7 +7263,7 @@ class IAPWS97(Phase):
             new.P = P
         else:
             raise ValueError("Two of T, P, or V are needed")
-            
+
         new.region = region = iapws97_identify_region_TP(new.T, new.P)
         if region == 1:
             new.pi = P*6.049606775559589e-08 #1/16.53E6
@@ -7288,20 +7288,20 @@ class IAPWS97(Phase):
 
         new.P = P
         new.T = T
-        
+
         return new
-        
+
     to = to_zs_TPV
-    
+
     def V(self):
         return self._V
-    
+
     def U(self):
         try:
             return self._U
         except:
             pass
-            
+
         if self.region != 3:
             try:
                 dG_dtau = self._dG_dtau
@@ -7314,7 +7314,7 @@ class IAPWS97(Phase):
             U = self.R*self.T(*self.tau*dG_dtau - self.pi*dG_dpi)
         self._U = U
         return U
-    
+
     def S(self):
         try:
             return self._S
@@ -7332,7 +7332,7 @@ class IAPWS97(Phase):
             S = self.R*(self.tau*dG_dtau - G)
         self._S = S
         return S
-    
+
     def H(self):
         try:
             return self._H
@@ -7346,7 +7346,7 @@ class IAPWS97(Phase):
             H = self.R*self.T*self.tau*dG_dtau
         self._H = H
         return H
-    
+
     def Cv(self):
         try:
             return self._Cv
@@ -7369,18 +7369,18 @@ class IAPWS97(Phase):
                 d2G_d2pi = self._d2G_d2pi
             except:
                 d2G_d2pi = self.d2G_d2pi()
-            
+
             tau = self.tau
             x0 = (dG_dpi - tau*d2G_dpidtau)
             Cv = self.R*(-tau*tau*d2G_d2tau + x0*x0/d2G_d2pi)
-            
-    
+
+
     def Cp(self):
         try:
             return self._Cp
         except:
             pass
-        
+
         if self.region == 3:
             tau, delta = self.tau, self.delta # attributes set on init
             try:
@@ -7399,10 +7399,10 @@ class IAPWS97(Phase):
                 d2A_d2tau = self._d2A_d2tau
             except:
                 d2A_d2tau = self.d2A_d2tau()
-            
+
             x0 = (delta*dA_ddelta - delta*tau*d2A_ddeltadtau)
             Cp = self.R*(-tau*tau*d2A_d2tau + x0*x0/(delta*(2.0*dA_ddelta + delta*d2A_d2delta)))
-            
+
 #        self.Cp = (-self.tau**2*self.ddA_ddtau + (self.delta*self.dA_ddelta - self.delta*self.tau*self.ddA_ddelta_dtau)**2\
 #                  /(2*self.delta*self.dA_ddelta + self.delta**2*self.ddA_dddelta))*R
 
@@ -7412,7 +7412,7 @@ class IAPWS97(Phase):
         Cp *= self._MW*1e-3
         self._Cp = Cp
         return Cp
-    
+
     dH_dT = dH_dT_P = Cp
 
     ### Derivatives
@@ -7439,10 +7439,10 @@ class IAPWS97(Phase):
             except:
                 d2G_d2pi = self.d2G_d2pi()
             dV_dP = self._MW*self.R*self.T*d2G_d2pi/(1000.0*self.Pref*self.Pref)
-        
+
         self._dV_dP = dV_dP
         return dV_dP
-    
+
     def dV_dT(self):
         # similar to dV_dP
         try:
@@ -7458,13 +7458,13 @@ class IAPWS97(Phase):
                 d2G_dpidtau = self._d2G_dpidtau
             except:
                 d2G_dpidtau = self.d2G_dpidtau()
-        
-        
+
+
             dV_dT = (self._MW*self.R*dG_dpi/(1000*self.Pref)
             - self._MW*self.R*self.Tref*d2G_dpidtau/(1000*self.Pref*self.T))
         self._dV_dT = dV_dT
         return dV_dT
-            
+
     def dP_dT(self):
         try:
             return self._dP_dT
@@ -7477,14 +7477,14 @@ class IAPWS97(Phase):
 
     def dP_dV(self):
         return 1.0/self.dV_dP()
-        
-    
+
+
 
 
 # Emperically measured to be ~140 KB/instance, do not want to cache too many - 35 is 5 MB
 max_CoolProp_states = 35
 global CoolProp
-global CoolProp_constants_set 
+global CoolProp_constants_set
 CoolProp_constants_set = False
 def set_coolprop_constants():
     global CPPT_INPUTS, CPrhoT_INPUTS, CPrhoP_INPUTS, CPiP, CPiT, CPiDmolar, CPiHmolar, CPiSmolar
@@ -7499,17 +7499,17 @@ def set_coolprop_constants():
 
     CPiP, CPiT, CPiDmolar = CoolProp.iP, CoolProp.iT, CoolProp.iDmolar
     CPiHmolar, CPiSmolar = CoolProp.iHmolar, CoolProp.iSmolar
-    
+
     CPPQ_INPUTS, CPQT_INPUTS = CoolProp.PQ_INPUTS, CoolProp.QT_INPUTS
 
     CoolProp_gas_phases = set([CoolProp.iphase_gas, CoolProp.iphase_supercritical, CoolProp.iphase_unknown,
                               CoolProp.iphase_critical_point, CoolProp.iphase_supercritical_gas])
     CoolProp_liquid_phases = set([CoolProp.iphase_liquid, CoolProp.iphase_supercritical_liquid])
-    
+
     CPliquid = CoolProp.iphase_liquid
     CPgas = CoolProp.iphase_gas
     CPunknown = CoolProp.iphase_not_imposed
-    
+
     # Probably todo - hold onto ASs for up to 1 sec, then release them for reuse
     # Do not allow Phase direct access any more, use a decorator
 #    CoolProp_AS_cache = {}
@@ -7532,7 +7532,7 @@ def set_coolprop_constants():
 ##            in_use.append(AS)
 #            CoolProp_AS_cache[key] = (in_use, free)
 #            return AS
-#        
+#
 #    def free_CoolProp_AS(AS, backend, fluid):
 #        key = (backend, fluid)
 #        try:
@@ -7545,12 +7545,12 @@ def set_coolprop_constants():
 
 
     # Forget about time - just use them last; make sure the LRU is at the top
-    # 
+    #
     if not SORTED_DICT:
         caching_states_CoolProp = OrderedDict()
     else:
         caching_states_CoolProp = {}
-        
+
     def caching_state_CoolProp(backend, fluid, spec0, spec1, spec_set, phase, zs):
         # Pretty sure about as optimized as can get!
         # zs should be a tuple, not a list
@@ -7581,7 +7581,7 @@ def set_coolprop_constants():
                 # Hack - get first item in dict
                 old_key = next(iter(caching_states_CoolProp))
                 AS = caching_states_CoolProp.pop(old_key)
-            
+
             if old_key[1] != fluid or old_key[0] != backend:
                 # Handle different components - other will be gc
                 AS = CoolProp.AbstractState(backend, fluid)
@@ -7604,8 +7604,8 @@ caching_state_CoolProp = None
 class CoolPropPhase(Phase):
     prefer_phase = 8
     ideal_gas_basis = False
-    
-        
+
+
     def __repr__(self):
         if self.phase == 'g':
             s =  '<%s, ' %('CoolPropGas')
@@ -7617,13 +7617,13 @@ class CoolPropPhase(Phase):
             pass
         s += '>'
         return s
-    
+
 #    def __del__(self):
 #        # Not sustainable at all
 #        # time-based cache seems next best
 #        free_CoolProp_AS(self.AS, self.backend, self.fluid)
-        
-        
+
+
     @property
     def phase(self):
         try:
@@ -7638,7 +7638,7 @@ class CoolPropPhase(Phase):
 
     def model_hash(self, ignore_phase=False):
         return hash_any_primitive([self.backend, self.fluid, self.Hfs, self.Gfs, self.Sfs, self.__class__])
-        
+
     def __init__(self, backend, fluid,
                  T=None, P=None, zs=None,  Hfs=None,
                  Gfs=None, Sfs=None,):
@@ -7651,10 +7651,10 @@ class CoolPropPhase(Phase):
         self.Hfs = Hfs
         self.Gfs = Gfs
         self.Sfs = Sfs
-        
+
         self.backend = backend
         self.fluid = fluid
-        
+
         self.skip_comp = skip_comp = (backend in ('IF97') or fluid in ('water') or '&' not in fluid)
         if zs is None:
             zs = [1.0]
@@ -7678,7 +7678,7 @@ class CoolPropPhase(Phase):
             self._cache_easy_properties(AS)
 #        if not skip_comp and zs is None:
 #            self.zs = [1.0]
-                
+
 #            AS = get_CoolProp_AS(backend, fluid)#CoolProp.AbstractState(backend, fluid)
 #            if not skip_comp:
 #                AS.set_mole_fractions(zs)
@@ -7694,10 +7694,10 @@ class CoolPropPhase(Phase):
     @property
     def AS(self):
         return caching_state_CoolProp(*self.key)
-                
+
     def to_TP_zs(self, T, P, zs):
         return self.to_zs_TPV(T=T, P=P, zs=zs)
-    
+
     def from_AS(self, AS):
         new = self.__class__.__new__(self.__class__)
         new.N = N = self.N
@@ -7733,7 +7733,7 @@ class CoolPropPhase(Phase):
             zs_key = None
         else:
             zs_key = tuple(zs)
-        
+
         if prefer_phase is None:
             prefer_phase = self.prefer_phase
         try:
@@ -7767,14 +7767,14 @@ class CoolPropPhase(Phase):
                     key = (backend, fluid, 1.0/V, P, CPrhoP_INPUTS, prefer_phase, zs_key)
                     AS = caching_state_CoolProp(*key)
                     new.T, new.P = AS.T(), P
-        
+
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
         new.key = key
         new._cache_easy_properties(AS)
         return new
-    
+
     def _cache_easy_properties(self, AS):
         self._rho = AS.rhomolar()
         self._V = 1.0/self._rho
@@ -7782,7 +7782,7 @@ class CoolPropPhase(Phase):
         self._S = AS.smolar()
         self._Cp = AS.cpmolar()
         self._PIP = AS.PIP()
-        
+
     to = to_zs_TPV
 
     def V(self):
@@ -7799,7 +7799,7 @@ class CoolPropPhase(Phase):
         for i in self.cmps:
             lnphis.append(log(AS.fugacity_coefficient(i)))
         return lnphis
-    
+
     lnphis_G_min = lnphis
 
     def dlnphis_dT(self):
@@ -7807,42 +7807,42 @@ class CoolPropPhase(Phase):
 
     def dlnphis_dP(self):
         raise NotImplementedError("Not in CoolProp")
-        
+
     def dlnphis_dns(self):
         raise NotImplementedError("Not in CoolProp")
-        
+
     def dlnphis_dzs(self):
         raise NotImplementedError("Not in CoolProp")
-        
+
     def gammas(self):
         raise NotImplementedError("TODO")
-                
+
     def dP_dT(self):
         return self.AS.first_partial_deriv(CPiP, CPiT, CPiDmolar)
     dP_dT_V = dP_dT
-    
+
     def dP_dV(self):
         rho = self.AS.rhomolar()
         dP_drho = self.AS.first_partial_deriv(CPiP, CPiDmolar, CPiT)
         return -dP_drho*rho*rho
     dP_dV_T = dP_dV
-    
+
     def d2P_dT2(self):
         return self.AS.second_partial_deriv(CPiP, CPiT, CPiDmolar, CPiT, CPiDmolar)
     d2P_dT2_V = d2P_dT2
-    
+
     def d2P_dV2(self):
         d2P_drho2 = self.AS.second_partial_deriv(CPiP, CPiDmolar, CPiT, CPiDmolar, CPiT)
         V = self.V()
         dP_dV = self.dP_dV()
         return (d2P_drho2/-V**2 + 2.0*V*dP_dV)/-V**2
     d2P_dV2_T = d2P_dV2
-    
+
     def d2P_dTdV(self):
         d2P_dTdrho = self.AS.second_partial_deriv(CPiP, CPiT, CPiDmolar, CPiDmolar, CPiT)
         rho = self.AS.rhomolar()
         return -d2P_dTdrho*rho*rho
-    
+
     def PIP(self):
         return self._PIP
         # Saves time
@@ -7864,15 +7864,15 @@ class CoolPropPhase(Phase):
 
     def Cp_dep(self):
         raise NotImplementedError("Not in CoolProp")
-    
+
     def Cp(self):
         return self._Cp
 #        return self.AS.cpmolar()
-    dH_dT = Cp 
-    
+    dH_dT = Cp
+
     def dH_dP(self):
         return self.AS.first_partial_deriv(CoolProp.iHmolar, CPiP, CPiT)
-    
+
     def dH_dT_V(self):
         # Does not need rho multiplication
         return self.AS.first_partial_deriv(CoolProp.iHmolar, CPiT, CPiDmolar)
@@ -7883,7 +7883,7 @@ class CoolPropPhase(Phase):
     def dH_dV_T(self):
         rho = self.AS.rhomolar()
         return -self.AS.first_partial_deriv(CoolProp.iHmolar, CPiDmolar, CPiT)*rho*rho
-        
+
     def dH_dV_P(self):
         rho = self.AS.rhomolar()
         return -self.AS.first_partial_deriv(CoolProp.iHmolar, CPiDmolar, CPiP)*rho*rho
@@ -7893,16 +7893,16 @@ class CoolPropPhase(Phase):
 
     def d2H_dP2(self):
         return self.AS.second_partial_deriv(CoolProp.iHmolar, CPiP, CPiT, CPiP, CPiT)
-    
+
     def d2H_dTdP(self):
         return self.AS.second_partial_deriv(CoolProp.iHmolar, CPiT, CPiP, CPiP, CPiT)
-    
+
     def dS_dT(self):
         return self.AS.first_partial_deriv(CPiSmolar, CPiT, CPiP)
-    
+
     def dS_dP(self):
         return self.AS.first_partial_deriv(CPiSmolar, CPiP, CPiT)
-    
+
     def dS_dT_V(self):
         return self.AS.first_partial_deriv(CPiSmolar, CPiT, CPiDmolar)
 
@@ -7912,7 +7912,7 @@ class CoolPropPhase(Phase):
     def dS_dV_T(self):
         rho = self.AS.rhomolar()
         return -self.AS.first_partial_deriv(CPiSmolar, CPiDmolar, CPiT)*rho*rho
-        
+
     def dS_dV_P(self):
         rho = self.AS.rhomolar()
         return -self.AS.first_partial_deriv(CPiSmolar, CPiDmolar, CPiP)*rho*rho
@@ -7922,10 +7922,10 @@ class CoolPropPhase(Phase):
 
     def d2S_dP2(self):
         return self.AS.second_partial_deriv(CPiSmolar, CPiP, CPiT, CPiP, CPiT)
-    
+
     def d2S_dTdP(self):
         return self.AS.second_partial_deriv(CPiSmolar, CPiT, CPiP, CPiP, CPiT)
-    
+
     def mu(self):
         try:
             return self._mu
@@ -7956,18 +7956,18 @@ class CombinedPhase(Phase):
         # thermal: index
         # volume: index
         # other_props: dict[prop] = phase index
-        
+
         # may be missing S_formation_ideal_gas Hfs arg
         self.equilibrium = equilibrium
         self.thermal = thermal
         self.volume = volume
         self.other_props = other_props
-        
+
         for i, p in enumerate(phases):
             if p.T != T or p.P != P or p.zs != zs:
                 phases[i] = p.to_zs_TPV(T=T, P=P, zs=zs)
         self.phases = phases
-        
+
     def lnphis(self):
         # This style will save the getattr call but takes more time to code
         if 'lnphis' in self.other_props:
@@ -7975,14 +7975,14 @@ class CombinedPhase(Phase):
         if self.equilibrium is not None:
             return self.phases[self.equilibrium].lnphis()
         raise ValueError("No method specified")
-        
+
     def lnphis_G_min(self):
         if 'lnphis' in self.other_props:
             return self.phases[self.other_props['lnphis']].lnphis_G_min()
         if self.equilibrium is not None:
             return self.phases[self.equilibrium].lnphis_G_min()
         raise ValueError("No method specified")
-        
+
     def makeeqfun(prop_name):
         def fun(self):
             if prop_name in self.other_props:
@@ -8009,12 +8009,12 @@ class CombinedPhase(Phase):
                 return getattr(self.phases[self.volume], prop_name)()
             raise ValueError("No method specified")
         return fun
-    
+
     lnphis = makeeqfun("lnphis")
     dlnphis_dT = makeeqfun("dlnphis_dT")
     dlnphis_dP = makeeqfun("dlnphis_dP")
     dlnphis_dns = makeeqfun("dlnphis_dns")
-    
+
     V = makevolumefun("V")
     dP_dT = makevolumefun("dP_dT")
     dP_dT_V = dP_dT
@@ -8025,7 +8025,7 @@ class CombinedPhase(Phase):
     d2P_dV2 = makevolumefun("d2P_dV2")
     d2P_dV2_T = d2P_dV2
     d2P_dTdV = makevolumefun("d2P_dTdV")
-    
+
     H = makethermalfun("H")
     S = makethermalfun("S")
     Cp = makethermalfun("Cp")
@@ -8042,10 +8042,10 @@ class CombinedPhase(Phase):
     dS_dT_V = makethermalfun("dS_dT_V")
     dS_dP_V = makethermalfun("dS_dP_V")
     dS_dzs = makethermalfun("dS_dzs")
-    
-    
-    
-    
+
+
+
+
 gas_phases = (IdealGas, CEOSGas, CoolPropGas, IAPWS95Gas, VirialGas, HumidAirRP1485)
 liquid_phases = (CEOSLiquid, GibbsExcessLiquid, CoolPropLiquid, IAPWS95Liquid)
 solid_phases = (GibbsExcessSolid,)

@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['enthalpy_vaporization_methods', 'EnthalpyVaporization', 
+__all__ = ['enthalpy_vaporization_methods', 'EnthalpyVaporization',
            'enthalpy_sublimation_methods', 'EnthalpySublimation']
 
 import os
@@ -64,7 +64,7 @@ LIU = 'LIU'
 VETERE = 'VETERE'
 BESTFIT = 'Best fit'
 
-enthalpy_vaporization_methods = [DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, VDI_TABULAR, 
+enthalpy_vaporization_methods = [DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, VDI_TABULAR,
                                  MORGAN_KOBAYASHI,
                       SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER, ALIBAKHSHI,
                       CRC_HVAP_TB, CRC_HVAP_298, GHARAGHEIZI_HVAP_298,
@@ -76,7 +76,7 @@ iterating over them.'''
 class EnthalpyVaporization(TDependentProperty):
     '''Class for dealing with heat of vaporization as a function of temperature.
     Consists of three constant value data sources, one source of tabular
-    information, three coefficient-based methods, nine corresponding-states 
+    information, three coefficient-based methods, nine corresponding-states
     estimators, and the external library CoolProp.
 
     Parameters
@@ -154,11 +154,11 @@ class EnthalpyVaporization(TDependentProperty):
         Tabular data in [4]_ along the saturation curve; interpolation is as
         set by the user or the default.
     **VDI_PPDS**:
-        Coefficients for a equation form developed by the PPDS, published 
+        Coefficients for a equation form developed by the PPDS, published
         openly in [3]_. Extrapolates poorly at low temperatures.
     **DIPPR_PERRY_8E**:
         A collection of 344 coefficient sets from the DIPPR database published
-        openly in [6]_. Provides temperature limits for all its fluids. 
+        openly in [6]_. Provides temperature limits for all its fluids.
         :obj:`thermo.dippr.EQ106` is used for its fluids.
     **ALIBAKHSHI**:
         One-constant limited temperature range regression method presented
@@ -198,9 +198,9 @@ class EnthalpyVaporization(TDependentProperty):
        (December 25, 2013): 279-92. doi:10.1016/j.fluid.2013.09.021.
     .. [6] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
-    .. [7] Alibakhshi, Amin. "Enthalpy of Vaporization, Its Temperature 
-       Dependence and Correlation with Surface Tension: A Theoretical 
-       Approach." Fluid Phase Equilibria 432 (January 25, 2017): 62-69. 
+    .. [7] Alibakhshi, Amin. "Enthalpy of Vaporization, Its Temperature
+       Dependence and Correlation with Surface Tension: A Theoretical
+       Approach." Fluid Phase Equilibria 432 (January 25, 2017): 62-69.
        doi:10.1016/j.fluid.2016.10.013.
     '''
     name = 'Enthalpy of vaporization'
@@ -222,8 +222,8 @@ class EnthalpyVaporization(TDependentProperty):
     available data.'''
 
     ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, MORGAN_KOBAYASHI,
-                      SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER, VDI_TABULAR, 
-                      ALIBAKHSHI, 
+                      SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER, VDI_TABULAR,
+                      ALIBAKHSHI,
                       CRC_HVAP_TB, CRC_HVAP_298, GHARAGHEIZI_HVAP_298,
                       CLAPEYRON, RIEDEL, CHEN, VETERE, LIU]
     '''Default rankings of the available methods.'''
@@ -308,12 +308,12 @@ class EnthalpyVaporization(TDependentProperty):
             self.VDI_Tmax = Ts[-1]
             self.tabular_data[VDI_TABULAR] = (Ts, props)
             Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
-            
+
         if self.CASRN in phase_change.phase_change_data_Alibakhshi_Cs.index and self.Tc is not None:
             methods.append(ALIBAKHSHI)
             self.Alibakhshi_C = float(phase_change.phase_change_data_Alibakhshi_Cs.at[self.CASRN, 'C'])
             Tmaxs.append( max(self.Tc-100., 0) )
-            
+
         if self.CASRN in phase_change.Hvap_data_CRC.index and not isnan(phase_change.Hvap_data_CRC.at[self.CASRN, 'HvapTb']):
             methods.append(CRC_HVAP_TB)
             self.CRC_HVAP_TB_Tb = float(phase_change.Hvap_data_CRC.at[self.CASRN, 'Tb'])
@@ -345,7 +345,7 @@ class EnthalpyVaporization(TDependentProperty):
             self.VDI_PPDS_coeffs = [A, B, C, D, E]
             self.VDI_PPDS_Tc = Tc
             methods.append(VDI_PPDS)
-            Tmaxs.append(self.VDI_PPDS_Tc); 
+            Tmaxs.append(self.VDI_PPDS_Tc);
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
@@ -513,7 +513,7 @@ GHARAGHEIZI_HSUB_298 = 'GHARAGHEIZI_HSUB_298'
 GHARAGHEIZI_HSUB = 'GHARAGHEIZI_HSUB'
 CRC_HFUS_HVAP_TM = 'CRC_HFUS_HVAP_TM' # Gets Tm
 
-enthalpy_sublimation_methods = [GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM, 
+enthalpy_sublimation_methods = [GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM,
                                 GHARAGHEIZI_HSUB_298]
 '''Holds all methods available for the EnthalpySublimation class, for use in
 iterating over them.'''
@@ -521,7 +521,7 @@ iterating over them.'''
 
 class EnthalpySublimation(TDependentProperty):
     '''Class for dealing with heat of sublimation as a function of temperature.
-    Consists of one temperature-dependent method based on the heat of 
+    Consists of one temperature-dependent method based on the heat of
     sublimation at 298.15 K.
 
     Parameters
@@ -552,13 +552,13 @@ class EnthalpySublimation(TDependentProperty):
         [1]_.
     **GHARAGHEIZI_HSUB**:
         Enthalpy of sublimation at a constant temperature of 298 K as given in
-        [1]_ are adjusted using the solid and gas heat capacity functions to 
+        [1]_ are adjusted using the solid and gas heat capacity functions to
         correct for any temperature.
     **CRC_HFUS_HVAP_TM**:
-        Enthalpies of fusion in [1]_ are corrected to be enthalpies of 
-        sublimation by adding the enthalpy of vaporization at the fusion 
-        temperature, and then adjusted using the solid and gas heat capacity 
-        functions to correct for any temperature. 
+        Enthalpies of fusion in [1]_ are corrected to be enthalpies of
+        sublimation by adding the enthalpy of vaporization at the fusion
+        temperature, and then adjusted using the solid and gas heat capacity
+        functions to correct for any temperature.
 
     See Also
     --------
@@ -566,13 +566,13 @@ class EnthalpySublimation(TDependentProperty):
 
     References
     ----------
-    .. [1] Gharagheizi, Farhad, Poorandokht Ilani-Kashkouli, William E. Acree 
-       Jr., Amir H. Mohammadi, and Deresh Ramjugernath. "A Group Contribution 
-       Model for Determining the Sublimation Enthalpy of Organic Compounds at 
-       the Standard Reference Temperature of 298 K." Fluid Phase Equilibria 354 
-       (September 25, 2013): 265-doi:10.1016/j.fluid.2013.06.046. 
+    .. [1] Gharagheizi, Farhad, Poorandokht Ilani-Kashkouli, William E. Acree
+       Jr., Amir H. Mohammadi, and Deresh Ramjugernath. "A Group Contribution
+       Model for Determining the Sublimation Enthalpy of Organic Compounds at
+       the Standard Reference Temperature of 298 K." Fluid Phase Equilibria 354
+       (September 25, 2013): 265-doi:10.1016/j.fluid.2013.06.046.
     .. [2] Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of
-       Chemistry and Physics, 95E. Boca Raton, FL: CRC press, 2014.       
+       Chemistry and Physics, 95E. Boca Raton, FL: CRC press, 2014.
     '''
     name = 'Enthalpy of sublimation'
     units = 'J/mol'
@@ -590,7 +590,7 @@ class EnthalpySublimation(TDependentProperty):
     property_max = 1E6
     '''Maximum valid of heat of sublimation. A theoretical concept only.'''
 
-    ranked_methods = [GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM, 
+    ranked_methods = [GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM,
                       GHARAGHEIZI_HSUB_298]
 
     def __init__(self, CASRN='', Tm=None, Tt=None, Cpg=None, Cps=None,
@@ -634,7 +634,7 @@ class EnthalpySublimation(TDependentProperty):
             self.set_best_fit(best_fit)
 
         self.load_all_methods()
-        
+
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
@@ -656,7 +656,7 @@ class EnthalpySublimation(TDependentProperty):
         if self.CASRN in phase_change.Hfus_data_CRC.index:
             methods.append(CRC_HFUS_HVAP_TM)
             self.CRC_Hfus = phase_change.Hfus_data_CRC.at[self.CASRN, 'Hfus']
-        
+
         try:
             Tmins.append(0.01*self.Tm)
             Tmaxs.append(self.Tm)
@@ -666,7 +666,7 @@ class EnthalpySublimation(TDependentProperty):
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(i for i in Tmins if i is not None), max(i for i in Tmaxs if i is not None)
-            
+
     def calculate(self, T, method):
         r'''Method to calculate heat of sublimation of a solid at
         temperature `T` with a given method.
@@ -713,7 +713,7 @@ class EnthalpySublimation(TDependentProperty):
                 Hsub += self.Cpg.T_dependent_property_integral(T_base, T) - self.Cps.T_dependent_property_integral(T_base, T)
             except:
                 Hsub += (T - T_base)*(self.Cpg - self.Cps)
-        
+
         return Hsub
 
     def test_method_validity(self, T, method):

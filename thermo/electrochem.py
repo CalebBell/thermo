@@ -22,14 +22,14 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['conductivity', 'Laliberte_density', 'Laliberte_heat_capacity', 
-           'Laliberte_viscosity', 'Laliberte_viscosity_w', 
-           'Laliberte_viscosity_i', 'Laliberte_density_w', 
-           'Laliberte_density_i', 'Laliberte_heat_capacity_w', 
-           'Laliberte_heat_capacity_i', 'dilute_ionic_conductivity', 
-           'conductivity_McCleskey', 
+__all__ = ['conductivity', 'Laliberte_density', 'Laliberte_heat_capacity',
+           'Laliberte_viscosity', 'Laliberte_viscosity_w',
+           'Laliberte_viscosity_i', 'Laliberte_density_w',
+           'Laliberte_density_i', 'Laliberte_heat_capacity_w',
+           'Laliberte_heat_capacity_i', 'dilute_ionic_conductivity',
+           'conductivity_McCleskey',
            'conductivity_methods',
-           'thermal_conductivity_Magomedov', 'ionic_strength', 'Kweq_1981', 
+           'thermal_conductivity_Magomedov', 'ionic_strength', 'Kweq_1981',
            'Kweq_IAPWS_gas', 'Kweq_IAPWS',
            'balance_ions',
            ]
@@ -64,7 +64,7 @@ def _load_electrochem_data():
     global McCleskey_conductivities, Lange_cond_pure, _Laliberte_Density_ParametersDict
     global _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict, Laliberte_data
     global _loaded_electrochem_data
-    
+
     Lange_cond_pure = data_source('Lange Pure Species Conductivity.tsv')
     Marcus_ion_conductivities = data_source('Marcus Ion Conductivities.tsv')
     CRC_ion_conductivities = data_source('CRC conductivity infinite dilution.tsv')
@@ -78,49 +78,49 @@ def _load_electrochem_data():
         for line in f:
             values = line.strip().split('\t')
             formula, CASRN, lbt2, lbt, lbc, At2, At, Ac, B, multiplier = to_num(values)
-            McCleskey_conductivities[CASRN] = McCleskey_parameters(formula, 
+            McCleskey_conductivities[CASRN] = McCleskey_parameters(formula,
                 [lbt2, lbt, lbc], [At2, At, Ac], B, multiplier)
 
     _Laliberte_Density_ParametersDict = {}
     _Laliberte_Viscosity_ParametersDict = {}
     _Laliberte_Heat_Capacity_ParametersDict = {}
-    
-    
+
+
     # Do not re-implement with Pandas, as current methodology uses these dicts in each function
     with open(os.path.join(folder, 'Laliberte2009.tsv')) as f:
         next(f)
         for line in f:
             values = to_num(line.split('\t'))
-    
+
             _name, CASRN, _formula, _MW, c0, c1, c2, c3, c4, Tmin, Tmax, wMax, pts = values[0:13]
             if c0:
                 _Laliberte_Density_ParametersDict[CASRN] = {"Name":_name, "Formula":_formula,
                 "MW":_MW, "C0":c0, "C1":c1, "C2":c2, "C3":c3, "C4":c4, "Tmin":Tmin, "Tmax":Tmax, "wMax":wMax}
-    
+
             v1, v2, v3, v4, v5, v6, Tmin, Tmax, wMax, pts = values[13:23]
             if v1:
                 _Laliberte_Viscosity_ParametersDict[CASRN] = {"Name":_name, "Formula":_formula,
                 "MW":_MW, "V1":v1, "V2":v2, "V3":v3, "V4":v4, "V5":v5, "V6":v6, "Tmin":Tmin, "Tmax":Tmax, "wMax":wMax}
-    
+
             a1, a2, a3, a4, a5, a6, Tmin, Tmax, wMax, pts = values[23:34]
             if a1:
                 _Laliberte_Heat_Capacity_ParametersDict[CASRN] = {"Name":_name, "Formula":_formula,
                 "MW":_MW, "A1":a1, "A2":a2, "A3":a3, "A4":a4, "A5":a5, "A6":a6, "Tmin":Tmin, "Tmax":Tmax, "wMax":wMax}
     Laliberte_data = pd.read_csv(os.path.join(folder, 'Laliberte2009.tsv'),
                               sep='\t', index_col=0)
-    
+
     electrolyte_dissociation_reactions = pd.read_csv(os_path_join(folder, 'Electrolyte dissociations.tsv'), sep='\t')
 
 
-    
+
     _loaded_electrochem_data = True
-    
-    
+
+
 if PY37:
     def __getattr__(name):
         if name in ('Lange_cond_pure', 'Marcus_ion_conductivities', 'CRC_ion_conductivities',
                     'Magomedovk_thermal_cond', 'CRC_aqueous_thermodynamics',
-                    'electrolyte_dissociation_reactions', 'McCleskey_conductivities', 
+                    'electrolyte_dissociation_reactions', 'McCleskey_conductivities',
                     'Lange_cond_pure', '_Laliberte_Density_ParametersDict', '_Laliberte_Viscosity_ParametersDict',
                     '_Laliberte_Heat_Capacity_ParametersDict'):
             _load_electrochem_data()
@@ -145,7 +145,7 @@ else:
 #                          sep='\t', index_col=0)
 #
 #CRC_aqueous_thermodynamics = pd.read_csv(os.path.join(folder, 'CRC Thermodynamic Properties of Aqueous Ions.csv'),
-#                          sep='\t', index_col=0) 
+#                          sep='\t', index_col=0)
 
 #electrolyte_dissociation_reactions = pd.read_csv(os.path.join(folder, 'Electrolyte dissociations.tsv'), sep='\t')
 
@@ -249,8 +249,8 @@ def Laliberte_viscosity_i(T, w_w, v1, v2, v3, v4, v5, v6):
 
 
 def Laliberte_viscosity(T, ws, CASRNs):
-    r'''Calculate the viscosity of an aqueous mixture using the form proposed 
-    by [1]_. Parameters are loaded by the function as needed. Units are Kelvin 
+    r'''Calculate the viscosity of an aqueous mixture using the form proposed
+    by [1]_. Parameters are loaded by the function as needed. Units are Kelvin
     and Pa*s.
 
     .. math::
@@ -273,7 +273,7 @@ def Laliberte_viscosity(T, ws, CASRNs):
     Notes
     -----
     Temperature range check is not used here.
-    Check is performed using NaCl at 5 degC from the first value in [1]_'s 
+    Check is performed using NaCl at 5 degC from the first value in [1]_'s
     spreadsheet.
 
     Examples
@@ -341,15 +341,15 @@ def Laliberte_density_w(T):
        doi:10.1021/je8008123
     '''
     t = T - 273.15
-    rho_w = ((((((-2.8054253E-10*t + 1.0556302E-7)*t - 4.6170461E-5)*t 
-               - 0.0079870401)*t + 16.945176)*t + 999.83952) 
+    rho_w = ((((((-2.8054253E-10*t + 1.0556302E-7)*t - 4.6170461E-5)*t
+               - 0.0079870401)*t + 16.945176)*t + 999.83952)
         / (1.0 + 0.01687985*t))
     return rho_w
 
 
 def Laliberte_density_i(T, w_w, c0, c1, c2, c3, c4):
     r'''Calculate the density of a solute using the form proposed by Laliberte [1]_.
-    Parameters are needed, and a temperature, and water fraction. Units are 
+    Parameters are needed, and a temperature, and water fraction. Units are
     Kelvin and Pa*s.
 
     .. math::
@@ -543,7 +543,7 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
 
     .. math::
         Cp_m = w_w Cp_w + \sum w_i Cp_i
-        
+
     Parameters
     ----------
     T : float
@@ -565,7 +565,7 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
 
     Examples
     --------
-    >>> Laliberte_heat_capacity(273.15+1.5, [0.00398447], ['7647-14-5']) 
+    >>> Laliberte_heat_capacity(273.15+1.5, [0.00398447], ['7647-14-5'])
     4186.575407596064
 
     References
@@ -590,14 +590,14 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
 
 
 def dilute_ionic_conductivity(ionic_conductivities, zs, rhom):
-    r'''This function handles the calculation of the electrical conductivity of 
-    a dilute electrolytic aqueous solution. Requires the mole fractions of 
-    each ion, the molar density of the whole mixture, and ionic conductivity 
+    r'''This function handles the calculation of the electrical conductivity of
+    a dilute electrolytic aqueous solution. Requires the mole fractions of
+    each ion, the molar density of the whole mixture, and ionic conductivity
     coefficients for each ion.
-    
+
     .. math::
         \lambda = \sum_i \lambda_i^\circ z_i \rho_m
-    
+
     Parameters
     ----------
     ionic_conductivities : list[float]
@@ -614,22 +614,22 @@ def dilute_ionic_conductivity(ionic_conductivities, zs, rhom):
 
     Notes
     -----
-    The ionic conductivity coefficients should not be `equivalent` coefficients; 
+    The ionic conductivity coefficients should not be `equivalent` coefficients;
     for example, 0.0053 m^2*S/mol is the equivalent conductivity coefficient of
     Mg+2, but this method expects twice its value - 0.0106. Both are reported
     commonly in literature.
-    
+
     Water can be included in this caclulation by specifying a coefficient of
-    0. The conductivity of any electrolyte eclipses its own conductivity by 
+    0. The conductivity of any electrolyte eclipses its own conductivity by
     many orders of magnitude. Any other solvents present will affect the
-    conductivity extensively and there are few good methods to predict this 
+    conductivity extensively and there are few good methods to predict this
     effect.
 
     Examples
     --------
-    Complex mixture of electrolytes ['Cl-', 'HCO3-', 'SO4-2', 'Na+', 'K+', 
+    Complex mixture of electrolytes ['Cl-', 'HCO3-', 'SO4-2', 'Na+', 'K+',
     'Ca+2', 'Mg+2']:
-    
+
     >>> ionic_conductivities = [0.00764, 0.00445, 0.016, 0.00501, 0.00735, 0.0119, 0.01061]
     >>> zs = [0.03104, 0.00039, 0.00022, 0.02413, 0.0009, 0.0024, 0.00103]
     >>> dilute_ionic_conductivity(ionic_conductivities=ionic_conductivities, zs=zs, rhom=53865.9)
@@ -645,25 +645,25 @@ def dilute_ionic_conductivity(ionic_conductivities, zs, rhom):
 
 
 def conductivity_McCleskey(T, M, lambda_coeffs, A_coeffs, B, multiplier, rho=1000.):
-    r'''This function handles the calculation of the electrical conductivity of 
+    r'''This function handles the calculation of the electrical conductivity of
     an electrolytic aqueous solution with one electrolyte in solution. It
-    handles temperature dependency and concentrated solutions. Requires the 
+    handles temperature dependency and concentrated solutions. Requires the
     temperature of the solution; its molality, and four sets of coefficients
     `lambda_coeffs`, `A_coeffs`, `B`, and `multiplier`.
-    
+
     .. math::
         \Lambda = \frac{\kappa}{C}
-        
+
         \Lambda = \Lambda^0(t) - A(t) \frac{m^{1/2}}{1+Bm^{1/2}}
-        
+
         \Lambda^\circ(t) = c_1 t^2 + c_2 t + c_3
-        
+
         A(t) = d_1 t^2 + d_2 t + d_3
-        
+
     In the above equations, `t` is temperature in degrees Celcius;
     `m` is molality in mol/kg, and C is the concentration of the elctrolytes
     in mol/m^3, calculated as the product of density and molality.
-    
+
     Parameters
     ----------
     T : float
@@ -688,7 +688,7 @@ def conductivity_McCleskey(T, M, lambda_coeffs, A_coeffs, B, multiplier, rho=100
     Returns
     -------
     kappa : float
-        Electrical conductivity of the solution at the specified molality and 
+        Electrical conductivity of the solution at the specified molality and
         temperature [S/m]
 
     Notes
@@ -699,15 +699,15 @@ def conductivity_McCleskey(T, M, lambda_coeffs, A_coeffs, B, multiplier, rho=100
     Examples
     --------
     A 0.5 wt% solution of CaCl2, conductivity calculated in mS/cm
-    
-    >>> conductivity_McCleskey(T=293.15, M=0.045053, A_coeffs=[.03918, 3.905, 
+
+    >>> conductivity_McCleskey(T=293.15, M=0.045053, A_coeffs=[.03918, 3.905,
     ... 137.7], lambda_coeffs=[0.01124, 2.224, 72.36], B=3.8, multiplier=2)
     0.8482584585108555
 
     References
     ----------
     .. [1] McCleskey, R. Blaine. "Electrical Conductivity of Electrolytes Found
-       In Natural Waters from (5 to 90) °C." Journal of Chemical & Engineering 
+       In Natural Waters from (5 to 90) °C." Journal of Chemical & Engineering
        Data 56, no. 2 (February 10, 2011): 317-27. doi:10.1021/je101012n.
     '''
     t = T - 273.15
@@ -765,7 +765,7 @@ def conductivity(CASRN=None, get_methods=False, method=None, full_info=True):
     -----
     Only one source is available in this function. It is:
 
-        * 'LANGE_COND' which is from Lange's Handbook, Table 8.34 Electrical 
+        * 'LANGE_COND' which is from Lange's Handbook, Table 8.34 Electrical
         Conductivity of Various Pure Liquids', a compillation of data in [1]_.
 
     Examples
@@ -945,7 +945,7 @@ def Kweq_1981(T, rho_w):
     --------
     >>> -1*log10(Kweq_1981(600, 700))
     11.274522047458206
-    
+
     References
     ----------
     .. [1] Marshall, William L., and E. U. Franck. "Ion Product of Water
@@ -984,16 +984,16 @@ def Kweq_IAPWS_gas(T):
 
     Notes
     -----
-    gamma0 = 6.141500E-1; 
-    gamma1 = 4.825133E4; 
-    gamma2 = -6.770793E4; 
+    gamma0 = 6.141500E-1;
+    gamma1 = 4.825133E4;
+    gamma2 = -6.770793E4;
     gamma3 = 1.010210E7
 
     Examples
     --------
     >>> Kweq_IAPWS_gas(800)
     1.4379721554798815e-61
-    
+
     References
     ----------
     .. [1] Bandura, Andrei V., and Serguei N. Lvov. "The Ionization Constant
@@ -1018,8 +1018,8 @@ def Kweq_IAPWS(T, rho_w):
 
     .. math::
         Q = \rho \exp(\alpha_0 + \alpha_1 T^{-1} + \alpha_2 T^{-2} \rho^{2/3})
-        
-        - \log_{10} K_w = -2n \left[ \log_{10}(1+Q) - \frac{Q}{Q+1} \rho 
+
+        - \log_{10} K_w = -2n \left[ \log_{10}(1+Q) - \frac{Q}{Q+1} \rho
         (\beta_0 + \beta_1 T^{-1} + \beta_2 \rho) \right]
         -\log_{10} K_w^G + 2 \log_{10} \frac{18.015268}{1000}
 
@@ -1039,7 +1039,7 @@ def Kweq_IAPWS(T, rho_w):
     -----
     Formulation is in terms of density in g/cm^3; density
     is converted internally.
-    
+
     n = 6;
     alpha0 = -0.864671;
     alpha1 = 8659.19;
@@ -1051,7 +1051,7 @@ def Kweq_IAPWS(T, rho_w):
     Examples
     --------
     Example from IAPWS check:
-    
+
     >>> -1*log10(Kweq_IAPWS(600, 700))
     11.203153057603775
 
@@ -1082,11 +1082,11 @@ def Kweq_IAPWS(T, rho_w):
 
 
 charge_balance_methods = ['dominant', 'decrease dominant', 'increase dominant',
-                          'proportional insufficient ions increase', 
-                          'proportional excess ions decrease', 
-                          'proportional cation adjustment', 
+                          'proportional insufficient ions increase',
+                          'proportional excess ions decrease',
+                          'proportional cation adjustment',
                           'proportional anion adjustment', 'Na or Cl increase',
-                          'Na or Cl decrease', 'adjust', 'increase', 
+                          'Na or Cl decrease', 'adjust', 'increase',
                           'decrease', 'makeup']
 
 def ion_balance_adjust_wrapper(charges, zs, n_anions, n_cations,
@@ -1096,7 +1096,7 @@ def ion_balance_adjust_wrapper(charges, zs, n_anions, n_cations,
     if charge == 0:  # pragma: no cover
         raise Exception('Cannot adjust selected compound as it has no charge!')
     assert charge != 0.0
-    
+
     if selected_ion not in anions and selected_ion not in cations:
         if charge < 0.:
             anions.append(selected_ion)
@@ -1136,14 +1136,14 @@ def ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust):
     zs[adjust] = -main_tot/charges[adjust]
     if zs[adjust] < 0:
         raise Exception('A negative value of %f ion mole fraction was required to balance the charge' %zs[adjust])
-    
+
     z_water = 1. - sum(zs[0:-1])
     anion_zs = zs[0:n_anions]
     cation_zs = zs[n_anions:n_cations+n_anions]
     return anion_zs, cation_zs, z_water
 
 
-def ion_balance_dominant(impacts, balance_error, charges, zs, n_anions, 
+def ion_balance_dominant(impacts, balance_error, charges, zs, n_anions,
                          n_cations, method):
     if method == 'dominant':
         # Highest concentration species in the inferior type always gets adjusted, up or down regardless
@@ -1153,7 +1153,7 @@ def ion_balance_dominant(impacts, balance_error, charges, zs, n_anions,
             adjust = impacts.index(low)
         else:
             adjust = impacts.index(high)
-    elif method == 'decrease dominant':        
+    elif method == 'decrease dominant':
         if balance_error < 0:
             # Decrease the dominant anion
             adjust = impacts.index(min(impacts))
@@ -1170,9 +1170,9 @@ def ion_balance_dominant(impacts, balance_error, charges, zs, n_anions,
     return ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust)
 
 
-def ion_balance_proportional(anion_charges, cation_charges, zs, n_anions, 
+def ion_balance_proportional(anion_charges, cation_charges, zs, n_anions,
                              n_cations, balance_error, method):
-    '''Helper method for balance_ions for the proportional family of methods. 
+    '''Helper method for balance_ions for the proportional family of methods.
     See balance_ions for a description of the methods; parameters are fairly
     obvious.
     '''
@@ -1206,26 +1206,26 @@ def ion_balance_proportional(anion_charges, cation_charges, zs, n_anions,
     return anion_zs, cation_zs, z_water
 
 
-def balance_ions(anions, cations, anion_zs=None, cation_zs=None, 
-                 anion_concs=None, cation_concs=None, rho_w=997.1, 
+def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
+                 anion_concs=None, cation_concs=None, rho_w=997.1,
                  method='increase dominant', selected_ion=None):
-    r'''Performs an ion balance to adjust measured experimental ion 
-    compositions to electroneutrality. Can accept either the actual mole 
+    r'''Performs an ion balance to adjust measured experimental ion
+    compositions to electroneutrality. Can accept either the actual mole
     fractions of the ions, or their concentrations in units of [mg/L] as well
     for convinience.
-    
-    The default method will locate the most prevalent ion in the type of 
+
+    The default method will locate the most prevalent ion in the type of
     ion not in excess - and increase it until the two ion types balance.
 
     Parameters
     ----------
     anions : list(ChemicalMetadata)
         List of all negatively charged ions measured as being in the solution;
-        ChemicalMetadata instances or simply objects with the attributes `MW` 
+        ChemicalMetadata instances or simply objects with the attributes `MW`
         and `charge`, [-]
     cations : list(ChemicalMetadata)
         List of all positively charged ions measured as being in the solution;
-        ChemicalMetadata instances or simply objects with the attributes `MW` 
+        ChemicalMetadata instances or simply objects with the attributes `MW`
         and `charge`, [-]
     anion_zs : list, optional
         Mole fractions of each anion as measured in the aqueous solution, [-]
@@ -1235,18 +1235,18 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
         Concentrations of each anion in the aqueous solution in the units often
         reported (for convinience only) [mg/L]
     cation_concs : list, optional
-        Concentrations of each cation in the aqueous solution in the units 
+        Concentrations of each cation in the aqueous solution in the units
         often reported (for convinience only) [mg/L]
     rho_w : float, optional
         Density of the aqueous solutionr at the temperature and pressure the
         anion and cation concentrations were measured (if specified), [kg/m^3]
     method : str, optional
-        The method to use to balance the ionimbalance; one of 'dominant', 
+        The method to use to balance the ionimbalance; one of 'dominant',
         'decrease dominant', 'increase dominant',
-        'proportional insufficient ions increase', 
-        'proportional excess ions decrease', 
-        'proportional cation adjustment', 'proportional anion adjustment', 
-        'Na or Cl increase', 'Na or Cl decrease', 'adjust', 'increase', 
+        'proportional insufficient ions increase',
+        'proportional excess ions decrease',
+        'proportional cation adjustment', 'proportional anion adjustment',
+        'Na or Cl increase', 'Na or Cl decrease', 'adjust', 'increase',
         'decrease', 'makeup'].
     selected_ion : ChemicalMetadata, optional
         Some methods adjust only one user-specified ion; this is that input.
@@ -1276,14 +1276,14 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
     Notes
     -----
     The methods perform the charge balance as follows:
-        
+
     * 'dominant' : The ion with the largest mole fraction in solution has its
       concentration adjusted up or down as necessary to balance the solution.
     * 'decrease dominant' : The ion with the largest mole fraction in the type
       of ion with *excess* charge has its own mole fraction decreased to balance
       the solution.
     * 'increase dominant' : The ion with the largest mole fraction in the type
-      of ion with *insufficient* charge has its own mole fraction decreased to 
+      of ion with *insufficient* charge has its own mole fraction decreased to
       balance the solution.
     * 'proportional insufficient ions increase' : The ion charge type which is
       present insufficiently has each of the ions mole fractions *increased*
@@ -1292,35 +1292,35 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
       present in excess has each of the ions mole fractions *decreased*
       proportionally until the solution is balanced.
     * 'proportional cation adjustment' : All *cations* have their mole fractions
-      increased or decreased proportionally as necessary to balance the 
+      increased or decreased proportionally as necessary to balance the
       solution.
     * 'proportional anion adjustment' : All *anions* have their mole fractions
-      increased or decreased proportionally as necessary to balance the 
+      increased or decreased proportionally as necessary to balance the
       solution.
     * 'Na or Cl increase' : Either Na+ or Cl- is *added* to the solution until
       the solution is balanced; the species will be added if they were not
       present initially as well.
-    * 'Na or Cl decrease' : Either Na+ or Cl- is *removed* from the solution 
-      until the solution is balanced; the species will be added if they were 
+    * 'Na or Cl decrease' : Either Na+ or Cl- is *removed* from the solution
+      until the solution is balanced; the species will be added if they were
       not present initially as well.
     * 'adjust' : An ion specified with the parameter `selected_ion` has its
-      mole fraction *increased or decreased* as necessary to balance the 
-      solution. An exception is raised if the specified ion alone cannot 
+      mole fraction *increased or decreased* as necessary to balance the
+      solution. An exception is raised if the specified ion alone cannot
       balance the solution.
     * 'increase' : An ion specified with the parameter `selected_ion` has its
-      mole fraction *increased* as necessary to balance the 
-      solution. An exception is raised if the specified ion alone cannot 
+      mole fraction *increased* as necessary to balance the
+      solution. An exception is raised if the specified ion alone cannot
       balance the solution.
     * 'decrease' : An ion specified with the parameter `selected_ion` has its
-      mole fraction *decreased* as necessary to balance the 
-      solution. An exception is raised if the specified ion alone cannot 
+      mole fraction *decreased* as necessary to balance the
+      solution. An exception is raised if the specified ion alone cannot
       balance the solution.
-    * 'makeup' : Two ions ase specified as a tuple with the parameter 
-      `selected_ion`. Whichever ion type is present in the solution 
+    * 'makeup' : Two ions ase specified as a tuple with the parameter
+      `selected_ion`. Whichever ion type is present in the solution
       insufficiently is added; i.e. if the ions were Mg+2 and Cl-, and there
       was too much negative charge in the solution, Mg+2 would be added until
       the solution was balanced.
-        
+
     Examples
     --------
     >>> anions_n = ['Cl-', 'HCO3-', 'SO4-2']
@@ -1336,7 +1336,7 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
     [0.01948165456267761, 0.0006270918850647299, 0.0021906409851594564, 0.0009949857909693717]
     >>> z_water
     0.9504856267761288
-    
+
     References
     ----------
     '''
@@ -1351,12 +1351,12 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
 
     MW_water = [18.01528]
     rho_w = rho_w*1e-3 # Convert to kg/liter
-    
+
     if anion_concs is not None and cation_concs is not None:
         anion_ws = [i*1E-6/rho_w for i in anion_concs]
         cation_ws = [i*1E-6/rho_w for i in cation_concs]
         w_water = 1 - sum(anion_ws) - sum(cation_ws)
-    
+
         anion_MWs = [i.MW for i in anions]
         cation_MWs = [i.MW for i in cations]
         MWs = anion_MWs + cation_MWs + MW_water
@@ -1368,11 +1368,11 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
         else:
             zs = anion_zs + cation_zs
             zs = zs + [1 - sum(zs)]
-    
+
     impacts = [zi*ci for zi, ci in zip(zs, charges)]
     balance_error = sum(impacts)
-    
-    
+
+
     if abs(balance_error) < 1E-7:
         anion_zs = zs[0:n_anions]
         cation_zs = zs[n_anions:n_cations+n_anions]
@@ -1422,7 +1422,7 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
         raise Exception("For methods 'adjust', 'increase', 'decrease', and "
                         "'makeup', an ion must be specified with the "
                         "`selected_ion` parameter")
-        
+
     anion_zs, cation_zs, z_water = ion_balance_adjust_wrapper(charges, zs, n_anions, n_cations,
                                                               anions, cations, selected_ion, increase=increase)
     return anions, cations, anion_zs, cation_zs, z_water

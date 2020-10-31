@@ -38,19 +38,19 @@ folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
 chemsep_db_path = os.path.join(folder, 'ChemSep')
 
 
-        
+
 class InteractionParameterDB(object):
-    
+
     def __init__(self):
         self.tables = {}
         self.metadata = {}
-    
+
     def load_json(self, file, name):
         f = open(file).read()
         dat = json.loads(f)
         self.tables[name] = dat['data']
         self.metadata[name] = dat['metadata']
-        
+
     def validate_table(self, name):
         table = self.tables[name]
         meta = self.metadata[name]
@@ -63,7 +63,7 @@ class InteractionParameterDB(object):
             assert len(CASs) == components
             # Check all CAS number keys are valid
             assert all(check_CAS(i) for i in CASs)
-            
+
             values = table[key]
             for i in necessary_keys:
                 # Assert all necessary keys are present
@@ -73,8 +73,8 @@ class InteractionParameterDB(object):
                 assert val is not None
                 # Check they are not nan
                 assert not np.isnan(val)
-                
-                
+
+
     def has_ip_specific(self, name, CASs, ip):
         if self.metadata[name]['symmetric']:
             key = ' '.join(sorted_CAS_key(CASs))
@@ -94,18 +94,18 @@ class InteractionParameterDB(object):
             return self.tables[name][key][ip]
         except KeyError:
             return self.metadata[name]['missing'][ip]
-    
+
     def get_tables_with_type(self, ip_type):
         tables = []
         for key, d in self.metadata.items():
             if d['type'] == ip_type:
                 tables.append(key)
         return tables
-    
+
     def get_ip_automatic(self, CASs, ip_type, ip):
         table = self.get_tables_with_type(ip_type)[0]
         return self.get_ip_specific(table, CASs, ip)
-    
+
     def get_ip_symmetric_matrix(self, name, CASs, ip, T=298.15):
         table = self.tables[name]
         N = len(CASs)
@@ -120,7 +120,7 @@ class InteractionParameterDB(object):
                     i_ip = self.get_ip_specific(name, [CASs[i], CASs[j]], ip)
                 values[i][j] = values[j][i] = i_ip
         return np.array(values)
-        
+
     def get_ip_asymmetric_matrix(self, name, CASs, ip, T=298.15):
         table = self.tables[name]
         N = len(CASs)
@@ -133,21 +133,21 @@ class InteractionParameterDB(object):
                     i_ip = self.get_ip_specific(name, [CASs[i], CASs[j]], ip)
                 values[i][j] = i_ip
         return np.array(values)
-    
-    
+
+
 ip_files = {'ChemSep PR': os.path.join(chemsep_db_path, 'pr.json'),
             'ChemSep NRTL': os.path.join(chemsep_db_path, 'nrtl.json')}
 
 _loaded_interactions = False
 def load_all_interaction_parameters():
     global IPDB, _loaded_interactions
-    
+
     IPDB = InteractionParameterDB()
     for name, file in ip_files.items():
         IPDB.load_json(file, name)
-    
+
     _loaded_interactions = True
-    
+
 if PY37:
     def __getattr__(name):
         if name in ('IPDB',):
@@ -161,7 +161,7 @@ else:
 
 
 # Nothing wrong with storing alpha twice...
-    
+
 #
 # TODO change above models to include T dependence; need a model which has it though!
 # That probably means a user db

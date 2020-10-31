@@ -34,7 +34,7 @@ try:
     import pint
     from pint import _DEFAULT_REGISTRY as u
     from pint import DimensionalityError
-    
+
 except ImportError: # pragma: no cover
     raise ImportError('The unit handling in fluids requires the installation '
                       'of the package pint, available on pypi or from '
@@ -62,5 +62,5 @@ for name in dir(thermo):
         continue
     __all__.append(name)
     __funcs.update({name: obj})
-    
+
 globals().update(__funcs)

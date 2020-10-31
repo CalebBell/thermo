@@ -82,8 +82,8 @@ def export_all_pure_cases(verbose=False):
 
 def export_all_mix_cases(verbose=False):
     export_case(mix_cases, mix_path, verbose)
-        
-    
+
+
 
 if __name__ == '__main__':
 #    export_all_pure_cases(verbose=True)

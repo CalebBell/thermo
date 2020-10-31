@@ -36,20 +36,20 @@ def test_Mixture():
     Mixture(['water', 'ethanol'], ws=[.5, .5], T=320, P=1E5)
     Mixture(['water', 'phosphoric acid'], ws=[.5, .5], T=320, P=1E5)
     Mixture('air', T=320, P=1E5)
-    
+
     Mixture(['ethanol', 'water'], ws=[0.5, 0.5], T=500)
-    
+
     Mixture('water')
-    
+
     s = Mixture(['water', 'ethanol'], P=5200, zs=[0.5, 0.5])
     assert_allclose(s.V_over_F, 0.3061646720256255, rtol=1E-3)
-    
+
     s = Mixture(['water', 'ethanol'], P=5200, zs=[0.5, 0.5])
     assert_allclose(s.quality, 0.34745483870024646, rtol=1E-3)
-    
+
     with pytest.raises(Exception):
         Mixture(['2,2-Dichloro-1,1,1-trifluoroethane'], T=276.15, P=37000, zs=[0.5, 0.5])
-    
+
     m = Mixture(['Na+', 'Cl-', 'water'], ws=[.01, .02, .97]).charge_balance
     assert_allclose(m, -0.0023549543057603192)
 
@@ -65,11 +65,11 @@ def test_Mixture_input_basics():
         assert_allclose(m.zs, m.xs)
         assert_allclose(m.Vfls(), kwargs['Vfls'], rtol=1E-5)
         assert_allclose(m.Vfgs(), kwargs['Vfgs'])
-        
+
 def test_Mixture_input_ordered_dict():
     # Ordered dict inputs
     IDs = ['pentane', 'hexane', 'heptane']
-    kwargs = {'ws': [0.4401066297270966, 0.31540115235588945, 0.24449221791701395], 
+    kwargs = {'ws': [0.4401066297270966, 0.31540115235588945, 0.24449221791701395],
               'zs': [.5, .3, .2],
               'Vfls': [0.45711574619871703, 0.31076035223551646, 0.23212390156576654],
               'Vfgs': [0.5127892380094016, 0.2979448661739439, 0.18926589581665448]}
@@ -77,23 +77,23 @@ def test_Mixture_input_ordered_dict():
         d = OrderedDict()
         for i, j in zip(IDs, val):
             d.update({i: j})
-        
+
         m = Mixture(**{key:d})
         assert_allclose(m.zs, kwargs['zs'], rtol=1E-6)
         assert_allclose(m.zs, m.xs)
         assert_allclose(m.Vfls(), kwargs['Vfls'], rtol=1E-5)
         assert_allclose(m.Vfgs(), kwargs['Vfgs'], rtol=2E-5)
-        
+
 def test_Mixture_input_np_array():
     # numpy array inputs
     IDs = ['pentane', 'hexane', 'heptane']
-    kwargs = {'ws': np.array([0.4401066297270966, 0.31540115235588945, 0.24449221791701395]), 
+    kwargs = {'ws': np.array([0.4401066297270966, 0.31540115235588945, 0.24449221791701395]),
               'zs': np.array([.5, .3, .2]),
               'Vfls': np.array([0.45711574619871703, 0.31076035223551646, 0.23212390156576654]),
               'Vfgs': np.array([0.5127892380094016, 0.2979448661739439, 0.18926589581665448])}
-    
+
     for key, val in kwargs.items():
-        
+
         m = Mixture(IDs, **{key:val})
         assert_allclose(m.zs, kwargs['zs'], rtol=1E-6)
         assert_allclose(m.zs, m.xs)
@@ -104,20 +104,20 @@ def test_Mixture_input_odds_and_ends():
 
     with pytest.raises(Exception):
         Mixture(['water', 'ethanol'])
-        
+
     Mixture(['water'], ws=[1], T=300, P=1E5)
-    
+
     Mixture('water', ws=[1], T=365).SGl
-    
+
     # Define the composition for a pure compound to be 1 if not specified
     Mixture(['ethylene oxide'])
-    
+
     # Flash failed BC P not specified - maybe should raise exception here
     Mixture('air', VF=0.5)
 
-            
-    
-    
+
+
+
 def test_Mixture_input_vfs_TP():
     # test against the default arguments of T and P
     m0 = Mixture(['hexane', 'decane'], Vfls=[.5, .5])
@@ -148,7 +148,7 @@ def test_Mixture_calculated_Vfs():
     assert_allclose(S.Vfls(), [0.18301384717011993, 0.8169861528298801], rtol=1e-3)
     assert_allclose(S.Vfls(P=1E6), [0.18292777184777048, 0.8170722281522296], rtol=1e-3)
     assert_allclose(S.Vfls(T=299.15), [0.1830642468206885, 0.8169357531793114], rtol=1e-3)
-    
+
     # gas fractions
     S = Mixture(['hexane', 'decane'], zs=[0.25, 0.75], T=699)
     assert_allclose(S.Vfgs(700, 101326), [0.251236709756207, 0.748763290243793], rtol=1e-3)
@@ -162,12 +162,12 @@ def test_Mixture_predefined():
         assert air.CASs == ['7727-37-9', '7440-37-1', '7782-44-7']
         assert_allclose(air.zs, [0.7811979754734807, 0.009206322604387548, 0.20959570192213187], rtol=1E-4)
         assert_allclose(air.ws, [0.7557, 0.0127, 0.2316], rtol=1E-3)
-    
+
     R401A = Mixture('R401A')
     assert R401A.CASs == ['75-45-6', '75-37-6', '2837-89-0']
     assert_allclose(R401A.zs, [0.578852219944875, 0.18587468325478565, 0.2352730968003393], rtol=1E-4)
     assert_allclose(R401A.ws, [0.53, 0.13, 0.34], rtol=1E-3)
-    
+
     natural_gas = Mixture('Natural gas')
     assert natural_gas.CASs == ['74-82-8', '7727-37-9', '124-38-9', '74-84-0', '74-98-6', '75-28-5', '106-97-8', '78-78-4', '109-66-0', '110-54-3']
     assert_allclose(natural_gas.zs, [0.9652228316853225, 0.002594967217109564, 0.005955831022086067, 0.018185509193506685, 0.004595963476244077, 0.0009769695915451998, 0.001006970610302194, 0.0004729847624453981, 0.0003239924667435125, 0.0006639799746946288], rtol=1E-3)
@@ -177,12 +177,12 @@ def test_Mixture_predefined():
 def test_constant_properties():
     R_specific = Mixture(['N2', 'O2'], zs=[0.79, .21]).R_specific
     assert_allclose(R_specific, 288.1928437986195, rtol=1E-5)
-    
+
 def test_Mixture_VF_input():
     test_mix = Mixture(['ethylene oxide', 'tetrahydrofuran',  'beta-propiolactone'], ws=[6021, 111569.76, 30711.21], T=400,  VF=0.5)
     assert_allclose(test_mix.P, 370054, rtol=1E-2)
-    
-    
+
+
 def test_bubble_at_P_with_ideal_mixing():
     '''Check to see if the bubble pressure calculated from the temperature
     matches the temperature calculated by the test function'''
@@ -194,7 +194,7 @@ def test_bubble_at_P_with_ideal_mixing():
                        ws=[6021, 111569.76, 30711.21, ],
                        T=273.15 + 80,
                        P=101325 + 1.5e5)
-    
+
     T, _, _, _, _ = flash_ideal(zs=test_mix.zs, funcs=test_mix.VaporPressures,
                                 P=101325 + 1.5e5, VF=0, Tcs=test_mix.Tcs)
     assert_close(T, 367.2891791672172, rtol=1e-3)

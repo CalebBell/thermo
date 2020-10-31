@@ -38,7 +38,7 @@ def test_HeatCapacityGas():
     methods = list(EtOH.all_methods)
     methods.remove(VDI_TABULAR)
     Cps_calc = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(305))[1] for i in methods]
-    assert_allclose(sorted(Cps_calc), 
+    assert_allclose(sorted(Cps_calc),
                     sorted([66.35085001015844, 66.40063819791762, 66.25918325111196, 71.07236200126606, 65.6, 65.21]),
                     rtol=1e-5)
 
@@ -80,41 +80,41 @@ def test_HeatCapacityGas_integrals():
 
     dH2 = EtOH.calculate_integral(200, 300, 'Poling et al. (2001)')
     assert_close(dH2, 5851.1980281476)
-    
+
     dH3 = EtOH.calculate_integral(200, 300, 'Poling et al. (2001) constant')
     assert_close(dH3, 6520.999999999999)
-    
+
     dH4 = EtOH.calculate_integral(200, 300, 'CRC Standard Thermodynamic Properties of Chemical Substances')
     assert_close(dH4, 6559.999999999999)
-    
+
     dH4 = EtOH.calculate_integral(200, 300,'Lastovka and Shaw (2013)')
     assert_close(dH4, 6183.016942750752, rtol=1e-5)
 
     dH5 = EtOH.calculate_integral(200, 300,'CoolProp')
     assert_close(dH5, 5838.118293585357, rtol=5e-5)
-    
+
     dH = EtOH.calculate_integral(200, 300, 'VDI Heat Atlas')
     assert_close(dH, 6610.821140000002)
-    
+
     # Entropy integrals
     dS = EtOH.calculate_integral_over_T(200, 300, 'Poling et al. (2001)')
     assert_close(dS, 23.5341074921551)
-        
+
     dS = EtOH.calculate_integral_over_T(200, 300, 'Poling et al. (2001) constant')
     assert_close(dS, 26.4403796997334)
 
     dS = EtOH.calculate_integral_over_T(200, 300, 'TRC Thermodynamics of Organic Compounds in the Gas State (1994)')
     assert_close(dS, 23.4427894111345)
-    
+
     dS = EtOH.calculate_integral_over_T(200, 300, 'CRC Standard Thermodynamic Properties of Chemical Substances')
     assert_close(dS, 26.59851109189558)
-    
+
     dS =  EtOH.calculate_integral_over_T(200, 300, 'CoolProp')
     assert_close(dS, 23.487556909586853, rtol=1e-5)
-    
+
     dS = EtOH.calculate_integral_over_T(200, 300, 'Lastovka and Shaw (2013)')
     assert_close(dS, 24.86700348570956, rtol=1e-5)
-    
+
     dS = EtOH.calculate_integral_over_T(200, 300, 'VDI Heat Atlas')
     assert_close(dS, 26.590569427910076)
 
@@ -152,10 +152,10 @@ def test_HeatCapacitySolid_integrals():
     NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
     dH1 = NaCl.calculate_integral(100, 150, LASTOVKA_S)
     assert_close(dH1, 401.58058175282446)
-    
+
     dH2 = NaCl.calculate_integral(100, 150, CRCSTD)
     assert_close(dH2, 2525.0) # 50*50.5
-    
+
     dH3 = NaCl.calculate_integral(100, 150,  PERRY151)
     assert_close(dH3, 2367.097999999999)
 
@@ -166,18 +166,18 @@ def test_HeatCapacitySolid_integrals():
     NaCl.set_tabular_data(Ts=Ts, properties=Cps, name='stuff')
     dH4 = NaCl.calculate_integral(200, 300, 'stuff')
     assert_close(dH4, 1651.8556007162392, rtol=1E-5)
-    
+
     # Entropy integrals
     NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
     dS1 = NaCl.calculate_integral_over_T(100, 150, LASTOVKA_S)
     assert_close(dS1, 3.213071341895563)
-    
+
     dS2 = NaCl.calculate_integral_over_T(100, 150,  PERRY151)
     assert_close(dS2, 19.183508272982)
-    
+
     dS3 = NaCl.calculate_integral_over_T(100, 150, CRCSTD)
     assert_close(dS3, 20.4759879594623)
-    
+
     NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
     Ts = [200, 300, 400, 500, 600]
     Cps = [12.965044960703908, 20.206353934945987, 28.261467986645872, 37.14292010552292, 46.85389719453655]
@@ -217,15 +217,15 @@ def test_HeatCapacityLiquid():
 
 @pytest.mark.meta_T_dept
 def test_HeatCapacityLiquid_integrals():
-    from thermo.heat_capacity import (CRCSTD, COOLPROP, DADGOSTAR_SHAW, 
-                                      ROWLINSON_POLING, ROWLINSON_BONDI, 
-                                      ZABRANSKY_SPLINE, 
+    from thermo.heat_capacity import (CRCSTD, COOLPROP, DADGOSTAR_SHAW,
+                                      ROWLINSON_POLING, ROWLINSON_BONDI,
+                                      ZABRANSKY_SPLINE,
                                       ZABRANSKY_QUASIPOLYNOMIAL,
                                       ZABRANSKY_SPLINE_SAT,
                                       ZABRANSKY_QUASIPOLYNOMIAL_SAT,
                                       ZABRANSKY_QUASIPOLYNOMIAL_C,
                                       ZABRANSKY_SPLINE_C)
-    tol = HeatCapacityLiquid(CASRN='108-88-3', MW=92.13842, Tc=591.75, 
+    tol = HeatCapacityLiquid(CASRN='108-88-3', MW=92.13842, Tc=591.75,
           omega=0.257, Cpgm=115.30398669098454, similarity_variable=0.16279853724428964)
 
     propylbenzene = HeatCapacityLiquid(MW=120.19158, CASRN='103-65-1', Tc=638.35)
@@ -234,94 +234,94 @@ def test_HeatCapacityLiquid_integrals():
 
     dH = tol.calculate_integral(200, 300, CRCSTD)
     assert_close(dH, 15730)
-        
+
     dH = tol.calculate_integral(200, 300, COOLPROP)
     assert_close(dH, 14501.714588188637)
-    
+
     dH = tol.calculate_integral(200, 300, DADGOSTAR_SHAW)
     assert_close(dH, 14395.231307169146)
-    
+
     dH = tol.calculate_integral(200, 300, ROWLINSON_POLING)
     assert_close(dH, 17332.447330329327)
-    
+
     dH = tol.calculate_integral(200, 300, ROWLINSON_BONDI)
     assert_close(dH, 17161.367460370562)
-    
+
     dH = tol.calculate_integral(200, 300, ZABRANSKY_SPLINE_C)
     assert_close(dH, 14588.050659771678)
-    
+
     # Test over different coefficient sets
     dH = tol.calculate_integral(200, 500, ZABRANSKY_SPLINE_SAT)
     assert_close(dH, 52806.422778119224)
-    
+
     dH = tol.calculate_integral(200, 300, ZABRANSKY_SPLINE_SAT)
     assert_close(dH, 14588.10920744596)
-    
+
     dH = tol.calculate_integral(200, 300, ZABRANSKY_QUASIPOLYNOMIAL_C)
     assert_close(dH, 14662.031376528757)
-    
+
     dH = propylbenzene.calculate_integral(200, 300, ZABRANSKY_QUASIPOLYNOMIAL)
     assert_close(dH, 19863.944414041936)
-    
+
     dH = propylbenzene.calculate_integral(200, 300, ZABRANSKY_SPLINE)
     assert_close(dH, 19865.186385942456)
-    
+
     dH = ctp.calculate_integral(200, 300, ZABRANSKY_QUASIPOLYNOMIAL_SAT)
     assert_close(dH, 13437.28621249451)
-        
+
     # Entropy integrals
     dS = tol.calculate_integral_over_T(200, 300, CRCSTD)
     assert_close(dS, 63.779661505414275)
-    
+
     dS = tol.calculate_integral_over_T(200, 300, COOLPROP)
     assert_close(dS, 58.50970500781979)
-    
+
     dS = tol.calculate_integral_over_T(200, 300, DADGOSTAR_SHAW)
     assert_close(dS, 57.78686119989654)
-    
+
     dS = tol.calculate_integral_over_T(200, 300, ROWLINSON_POLING)
     assert_close(dS, 70.42885653432398)
-    
+
     dS = tol.calculate_integral_over_T(200, 300, ROWLINSON_BONDI)
     assert_close(dS, 69.73750128980184)
-    
+
     dS = tol.calculate_integral_over_T(200, 300, ZABRANSKY_SPLINE_C)
     assert_close(dS, 58.866392640147374)
-    
+
     dS = tol.calculate_integral_over_T(200, 300, ZABRANSKY_QUASIPOLYNOMIAL_C)
     assert_close(dS, 59.16999297436473)
-    
+
     dS = tol.calculate_integral_over_T(200, 300, ZABRANSKY_SPLINE_SAT)
     assert_close(dS, 58.86648035527116)
-         
+
     dS = tol.calculate_integral_over_T(200, 500, ZABRANSKY_SPLINE_SAT)
     assert_close(dS, 154.94766581118256)
-    
+
     dS = propylbenzene.calculate_integral_over_T(200, 300, ZABRANSKY_QUASIPOLYNOMIAL)
     assert_close(dS, 80.13493128839104)
-    
+
     dS = propylbenzene.calculate_integral_over_T(200, 300, ZABRANSKY_SPLINE)
     assert_close(dS, 80.13636874689294)
 
     dS = ctp.calculate_integral_over_T(200, 300, ZABRANSKY_QUASIPOLYNOMIAL_SAT)
     assert_close(dS, 54.34708465297109)
 
-    
-  
+
+
 def test_HeatCapacitySolidMixture():
     from thermo import Mixture
     from thermo.heat_capacity import HeatCapacitySolidMixture
-    
+
     m = Mixture(['silver', 'platinum'], ws=[0.95, 0.05])
     obj = HeatCapacitySolidMixture(CASs=m.CASs, HeatCapacitySolids=m.HeatCapacitySolids, MWs=m.MWs)
-    
+
     Cp = obj(m.T, m.P, m.zs, m.ws)
     assert_allclose(Cp, 25.32745719036059)
 
     # Unhappy paths
     with pytest.raises(Exception):
         obj.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
-        
+
     with pytest.raises(Exception):
         obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
 
@@ -329,17 +329,17 @@ def test_HeatCapacitySolidMixture():
 def test_HeatCapacityGasMixture():
     from thermo import Mixture
     from thermo.heat_capacity import HeatCapacityGasMixture
-    
+
     m = Mixture(['oxygen', 'nitrogen'], ws=[.4, .6], T=350, P=1E6)
     obj = HeatCapacityGasMixture(CASs=m.CASs, HeatCapacityGases=m.HeatCapacityGases, MWs=m.MWs)
-    
+
     Cp = obj(m.T, m.P, m.zs, m.ws)
     assert_allclose(Cp, 29.361054534307893, rtol=1e-5)
 
     # Unhappy paths
     with pytest.raises(Exception):
         obj.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
-        
+
     with pytest.raises(Exception):
         obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
 
@@ -347,16 +347,16 @@ def test_HeatCapacityGasMixture():
 def test_HeatCapacityLiquidMixture():
     from thermo import Mixture
     from thermo.heat_capacity import HeatCapacityLiquidMixture, SIMPLE
-    
+
     m = Mixture(['water', 'sodium chloride'], ws=[.9, .1], T=301.5)
     obj = HeatCapacityLiquidMixture(MWs=m.MWs, CASs=m.CASs, HeatCapacityLiquids=m.HeatCapacityLiquids)
-    
+
     Cp = obj(m.T, m.P, m.zs, m.ws)
     assert_allclose(Cp, 72.29643435124115, rtol=1e-5)
-    
+
     Cp = obj.calculate(m.T, m.P, m.zs, m.ws, SIMPLE)
     assert_allclose(Cp, 73.715439, rtol=.01)
-    
+
     m = Mixture(['toluene', 'decane'], ws=[.9, .1], T=300)
     obj = HeatCapacityLiquidMixture(CASs=m.CASs, HeatCapacityLiquids=m.HeatCapacityLiquids)
     assert_allclose(obj(m.T, m.P, m.zs, m.ws), 168.29157865567112, rtol=1E-4)
@@ -364,7 +364,7 @@ def test_HeatCapacityLiquidMixture():
     # Unhappy paths
     with pytest.raises(Exception):
         obj.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
-        
+
     with pytest.raises(Exception):
         obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
 
@@ -374,7 +374,7 @@ def test_HeatCapacityLiquidMixture():
 def test_locked_integral():
     lock_properties(True)
     obj = Chemical('water').HeatCapacityGas
-    
+
     def to_int(T):
         return obj.calculate(T, 'Best fit')
     for i in range(10):
@@ -391,7 +391,7 @@ def test_locked_integral():
 def test_locked_integral_over_T():
     lock_properties(True)
     obj = Chemical('water').HeatCapacityGas
-    
+
     def to_int(T):
         return obj.calculate(T, 'Best fit')/T
     for i in range(10):

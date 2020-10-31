@@ -112,8 +112,8 @@ def Caroll_hydrate_formation_P_pure(T, CAS):
 psi_inv = 1.0/psi
 
 def Motiee_hydrate_formation_T(P, SG):
-    r'''Calculates the hydrate formation temperature at a specified operating 
-    pressure and gas specific gravity using the correlation of Motiee (1991) 
+    r'''Calculates the hydrate formation temperature at a specified operating
+    pressure and gas specific gravity using the correlation of Motiee (1991)
     [1]_.
 
     .. math::
@@ -138,14 +138,14 @@ def Motiee_hydrate_formation_T(P, SG):
 
     Notes
     -----
-    
+
     **Confusion about constants and units in publications**
-    
-    [2]_ shows the form used here, as does [3]_ which provides a varity of 
+
+    [2]_ shows the form used here, as does [3]_ which provides a varity of
     sample points used to confirm the correlation's correctness.
     [4]_ shows the same formula used here except a sign is negated on the
     constant 150.854675.
-    [5]_ shows a different constant of -283.24469 instead of -238.24469 
+    [5]_ shows a different constant of -283.24469 instead of -238.24469
     and also claims the units are Kelvin and kPa, which is assumed to be an
     error.
 
@@ -153,20 +153,20 @@ def Motiee_hydrate_formation_T(P, SG):
     --------
     >>> Motiee_hydrate_formation_T(600.0*psi, 0.555)
     280.28189396992724
-    
+
     References
     ----------
     .. [1] Motiee, M. "Estimate Possibility of Hydrates," 1991.
-    .. [2] Chavoshi, Sakineh, Mani Safamirzaei, and F. Pajoum Shariati. 
+    .. [2] Chavoshi, Sakineh, Mani Safamirzaei, and F. Pajoum Shariati.
        "Evaluation of Empirical Correlations for Predicting Gas Hydrate
-       Formation Temperature." Gas Processing 6, no. 2 (October 1, 2018): 
-       15-36. https://doi.org/10.22108/gpj.2018.112052.1036.    
+       Formation Temperature." Gas Processing 6, no. 2 (October 1, 2018):
+       15-36. https://doi.org/10.22108/gpj.2018.112052.1036.
     .. [3] Fattah, Khaled Ahmed Abdel. "Evaluation of Empirical Correlations
-       for Natural Gas Hydrate Predictions." Сетевое Издание «Нефтегазовое 
+       for Natural Gas Hydrate Predictions." Сетевое Издание «Нефтегазовое
        Дело», no. 2 (2004).
     .. [4] Mogbolu, Peter O., and John Madu. "Prediction of Onset of Gas
-       Hydrate Formation in Offshore Operations." In SPE Nigeria Annual 
-       International Conference and Exhibition. Society of Petroleum Engineers, 
+       Hydrate Formation in Offshore Operations." In SPE Nigeria Annual
+       International Conference and Exhibition. Society of Petroleum Engineers,
        2014.
     .. [5] Carroll, John. Natural Gas Hydrates: A Guide for Engineers. Gulf
        Professional Publishing, 2014.
@@ -182,12 +182,12 @@ def Motiee_hydrate_formation_T(P, SG):
 
 
 def Towler_Mokhatab_hydrate_formation_T(P, SG):
-    r'''Calculates the hydrate formation temperature at a specified operating 
+    r'''Calculates the hydrate formation temperature at a specified operating
     pressure and gas specific gravity using the correlation of Towler and
     Mokhatab (2005) [1]_, [2]_.
 
     .. math::
-        T [^\circ F] = 13.47(\ln P \text{[psi]})) + 34.27(\ln \text{SG}) 
+        T [^\circ F] = 13.47(\ln P \text{[psi]})) + 34.27(\ln \text{SG})
         - 1.675(\ln P \text{[psi]}))(\ln \text{SG}) - 20.35
 
     Parameters
@@ -207,21 +207,21 @@ def Towler_Mokhatab_hydrate_formation_T(P, SG):
     Notes
     -----
     Easy to invert to solve for `P` given `T`.
-    
+
     Examples
     --------
     Point where the experimental value is 277.6 K:
-    
+
     >>> Towler_Mokhatab_hydrate_formation_T(600.0*psi, 0.555)
     284.23204260201555
-    
+
     References
     ----------
-    .. [1] Towler, Brian, and S. Mokhatab. "Quickly Estimate Hydrate Formation 
+    .. [1] Towler, Brian, and S. Mokhatab. "Quickly Estimate Hydrate Formation
        Conditions in Natural Gases." Hydrocarbon Processing 84 (April 1, 2005):
        61-62.
     .. [2] Mokhatab, Saeid, William A. Poe, and John Y. Mak. Handbook of
-       Natural Gas Transmission and Processing: Principles and Practices. 
+       Natural Gas Transmission and Processing: Principles and Practices.
        3rd edition. Amsterdam: Gulf Professional Publishing, 2015.
     .. [3] Carroll, John. Natural Gas Hydrates: A Guide for Engineers. Gulf
        Professional Publishing, 2014.
@@ -236,7 +236,7 @@ def Towler_Mokhatab_hydrate_formation_T(P, SG):
 
 
 def Hammerschmidt_hydrate_formation_T(P, SG=None):
-    r'''Calculates the hydrate formation temperature at a specified operating 
+    r'''Calculates the hydrate formation temperature at a specified operating
     pressure using simple correlation of Hammerschmidt (1934) [1]_.
 
     .. math::
@@ -258,32 +258,32 @@ def Hammerschmidt_hydrate_formation_T(P, SG=None):
     Notes
     -----
     Easy to invert to solve for `P` given `T`.
-    
+
     [4]_ confirms the correlation is in terms of F and psi.
-    
+
     Examples
     --------
     Point where the experimental value is 277.6 K:
-    
+
     >>> Hammerschmidt_hydrate_formation_T(600.0*psi)
     285.98414491553734
-    
+
     References
     ----------
     .. [1] Hammerschmidt, E. G. "Formation of Gas Hydrates in Natural Gas
-       Transmission Lines." Industrial & Engineering Chemistry 26, no. 8 
+       Transmission Lines." Industrial & Engineering Chemistry 26, no. 8
        (August 1, 1934): 851-55. https://doi.org/10.1021/ie50296a010.
-    .. [2] Chavoshi, Sakineh, Mani Safamirzaei, and F. Pajoum Shariati. 
+    .. [2] Chavoshi, Sakineh, Mani Safamirzaei, and F. Pajoum Shariati.
        "Evaluation of Empirical Correlations for Predicting Gas Hydrate
-       Formation Temperature." Gas Processing 6, no. 2 (October 1, 2018): 
-       15-36. https://doi.org/10.22108/gpj.2018.112052.1036.    
+       Formation Temperature." Gas Processing 6, no. 2 (October 1, 2018):
+       15-36. https://doi.org/10.22108/gpj.2018.112052.1036.
     .. [3] Fattah, Khaled Ahmed Abdel. "Evaluation of Empirical Correlations
-       for Natural Gas Hydrate Predictions." Сетевое Издание «Нефтегазовое 
+       for Natural Gas Hydrate Predictions." Сетевое Издание «Нефтегазовое
        Дело», no. 2 (2004).
     .. [4] Mohamadi-Baghmolaei, Mohamad, Abdollah Hajizadeh, Reza Azin, and
        Amir Abbas Izadpanah. "Assessing Thermodynamic Models and Introducing
-       Novel Method for Prediction of Methane Hydrate Formation." Journal of 
-       Petroleum Exploration and Production Technology 8, no. 4 (December 1, 
+       Novel Method for Prediction of Methane Hydrate Formation." Journal of
+       Petroleum Exploration and Production Technology 8, no. 4 (December 1,
        2018): 1401-12. https://doi.org/10.1007/s13202-017-0415-2.
     '''
     P *= psi_inv # Convert P to psi

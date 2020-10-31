@@ -103,9 +103,9 @@ reference_states = [IAPWS, ASHRAE, IIR, REFPROP, CHEMSEP, PRO_II, HYSYS,
 
 
 
-        
+
 class ChemicalConstants(object):
-    __slots__ = ('CAS', 'Tc', 'Pc', 'Vc', 'omega', 'Tb', 'Tm', 'Tt', 'Pt', 
+    __slots__ = ('CAS', 'Tc', 'Pc', 'Vc', 'omega', 'Tb', 'Tm', 'Tt', 'Pt',
                  'Hfus', 'Hsub', 'Hf', 'dipole',
                  'HeatCapacityGas', 'HeatCapacityLiquid', 'HeatCapacitySolid',
                  'ThermalConductivityLiquid', 'ThermalConductivityGas',
@@ -116,15 +116,15 @@ class ChemicalConstants(object):
                  )
 
     # Or can I store the actual objects without doing the searches?
-    def __init__(self, CAS, Tc=None, Pc=None, Vc=None, omega=None, Tb=None, 
+    def __init__(self, CAS, Tc=None, Pc=None, Vc=None, omega=None, Tb=None,
                  Tm=None, Tt=None, Pt=None, Hfus=None, Hsub=None, Hf=None,
                  dipole=None,
-                 HeatCapacityGas=(), HeatCapacityLiquid=(), 
-                 HeatCapacitySolid=(), 
+                 HeatCapacityGas=(), HeatCapacityLiquid=(),
+                 HeatCapacitySolid=(),
                  ThermalConductivityLiquid=(), ThermalConductivityGas=(),
                  ViscosityLiquid=(), ViscosityGas=(),
                  EnthalpyVaporization=(), VaporPressure=(), VolumeLiquid=(),
-                 SublimationPressure=(), EnthalpySublimation=(), 
+                 SublimationPressure=(), EnthalpySublimation=(),
                  SurfaceTension=(), VolumeSolid=(),
                  ):
         self.CAS = CAS
@@ -190,10 +190,10 @@ def get_chemical_constants(CAS, key):
 
 
 class Chemical(object): # pragma: no cover
-    '''Creates a Chemical object which contains basic information such as 
+    '''Creates a Chemical object which contains basic information such as
     molecular weight and the structure of the species, as well as thermodynamic
     and transport properties as a function of temperature and pressure.
-    
+
     Parameters
     ----------
     ID : str
@@ -208,22 +208,22 @@ class Chemical(object): # pragma: no cover
         Temperature of the chemical (default 298.15 K), [K]
     P : float, optional
         Pressure of the chemical (default 101325 Pa) [Pa]
-        
+
     Examples
     --------
     Creating chemical objects:
-    
+
     >>> Chemical('hexane')
     <Chemical [hexane], T=298.15 K, P=101325 Pa>
 
     >>> Chemical('CCCCCCCC', T=500, P=1E7)
     <Chemical [octane], T=500.00 K, P=10000000 Pa>
-    
+
     >>> Chemical('7440-36-0', P=1000)
     <Chemical [antimony], T=298.15 K, P=1000 Pa>
-    
+
     Getting basic properties:
-        
+
     >>> N2 = Chemical('Nitrogen')
     >>> N2.Tm, N2.Tb, N2.Tc # melting, boiling, and critical points [K]
     (63.15, 77.355, 126.2)
@@ -231,10 +231,10 @@ class Chemical(object): # pragma: no cover
     (12526.9697368421, 3394387.5)
     >>> N2.CAS, N2.formula, N2.InChI, N2.smiles, N2.atoms # CAS number, formula, InChI string, smiles string, dictionary of atomic elements and their count
     ('7727-37-9', 'N2', 'N2/c1-2', 'N#N', {'N': 2})
-    
+
     Changing the T/P of the chemical, and gettign temperature-dependent
     properties:
-        
+
     >>> N2.Cp, N2.rho, N2.mu # Heat capacity [J/kg/K], density [kg/m^3], viscosity [Pa*s]
     (1039.4978324480921, 1.1452416223829405, 1.7804740647270688e-05)
     >>> N2.calculate(T=65, P=1E6) # set it to a liquid at 65 K and 1 MPa
@@ -242,100 +242,100 @@ class Chemical(object): # pragma: no cover
     'l'
     >>> N2.Cp, N2.rho, N2.mu # properties are now of the liquid phase
     (2002.8819854804037, 861.3539919443364, 0.0002857739143670701)
-    
+
     Molar units are also available for properties:
-        
+
     >>> N2.Cpm, N2.Vm, N2.Hvapm # heat capacity [J/mol/K], molar volume [m^3/mol], enthalpy of vaporization [J/mol]
     (56.10753421205674, 3.252251717875631e-05, 5982.710998291719)
-    
+
     A great deal of properties are available; for a complete list look at the
-    attributes list. 
-    
+    attributes list.
+
     >>> N2.alpha, N2.JT # thermal diffusivity [m^2/s], Joule-Thompson coefficient [K/Pa]
     (9.874883993253272e-08, -4.0009932695519242e-07)
-    
+
     >>> N2.isentropic_exponent, N2.isobaric_expansion
     (1.4000000000000001, 0.0047654228408661571)
-    
-    For pure species, the phase is easily identified, allowing for properties 
-    to be obtained without needing to specify the phase. However, the 
+
+    For pure species, the phase is easily identified, allowing for properties
+    to be obtained without needing to specify the phase. However, the
     properties are also available in the hypothetical gas phase (when under the
     boiling point) and in the hypothetical liquid phase (when above the boiling
-    point) as these properties are needed to evaluate mixture properties. 
-    Specify the phase of a property to be retrieved by appending 'l' or 'g' or 
+    point) as these properties are needed to evaluate mixture properties.
+    Specify the phase of a property to be retrieved by appending 'l' or 'g' or
     's' to the property.
-    
+
     >>> tol = Chemical('toluene')
 
     >>> tol.rhog, tol.Cpg, tol.kg, tol.mug
     (4.241646701894199, 1126.5533755283168, 0.00941385692301755, 6.973325939594919e-06)
 
-    Temperature dependent properties are calculated by objects which provide 
-    many useful features related to the properties. To determine the 
+    Temperature dependent properties are calculated by objects which provide
+    many useful features related to the properties. To determine the
     temperature at which nitrogen has a saturation pressure of 1 MPa:
-    
+
     >>> N2.VaporPressure.solve_prop(1E6)
     103.73528598652341
-    
+
     To compute an integral of the ideal-gas heat capacity of nitrogen
     to determine the enthalpy required for a given change in temperature.
     Note the thermodynamic objects calculate values in molar units always.
-        
+
     >>> N2.HeatCapacityGas.T_dependent_property_integral(100, 120) # J/mol/K
     582.0121860897898
-    
+
     Derivatives of properties can be calculated as well, as may be needed by
     for example heat transfer calculations:
-        
+
     >>> N2.SurfaceTension.T_dependent_property_derivative(77)
     -0.00022695346296730534
-    
+
     If a property is needed at multiple temperatures or pressures, it is faster
     to use the object directly to perform the calculation rather than setting
     the conditions for the chemical.
-    
+
     >>> [N2.VaporPressure(T) for T in range(80, 120, 10)]
     [136979.4840843189, 360712.5746603142, 778846.276691705, 1466996.7208525643]
-    
-    These objects are also how the methods by which the properties are 
+
+    These objects are also how the methods by which the properties are
     calculated can be changed. To see the available methods for a property:
-        
+
     >>> N2.VaporPressure.all_methods
     set(['VDI_PPDS', 'BOILING_CRITICAL', 'WAGNER_MCGARRY', 'AMBROSE_WALTON', 'COOLPROP', 'LEE_KESLER_PSAT', 'EOS', 'ANTOINE_POLING', 'SANJARI', 'DIPPR_PERRY_8E', 'Edalat', 'WAGNER_POLING'])
-            
+
     To specify the method which should be used for calculations of a property.
     In the example below, the Lee-kesler correlation for vapor pressure is
     specified.
-        
+
     >>> N2.calculate(80)
     >>> N2.Psat
     136979.4840843189
     >>> N2.VaporPressure.set_user_methods('LEE_KESLER_PSAT')
     >>> N2.Psat
     134987.76815364443
-    
+
     For memory reduction, these objects are shared by all chemicals which are
-    the same; new instances will use the same specified methods. 
-    
+    the same; new instances will use the same specified methods.
+
     >>> N2_2 = Chemical('nitrogen')
     >>> N2_2.VaporPressure.user_methods
     ['LEE_KESLER_PSAT']
-    
+
     To disable this behavior, set thermo.chemical.caching to False.
-    
+
     >>> import thermo
     >>> thermo.chemical.caching = False
     >>> N2_3 = Chemical('nitrogen')
     >>> N2_3.VaporPressure.user_methods
     []
-    
+
     Properties may also be plotted via these objects:
-        
+
     >>> N2.VaporPressure.plot_T_dependent_property() # doctest: +SKIP
     >>> N2.VolumeLiquid.plot_isotherm(T=77, Pmin=1E5, Pmax=1E7) # doctest: +SKIP
     >>> N2.VolumeLiquid.plot_isobar(P=1E6,  Tmin=66, Tmax=120) # doctest: +SKIP
     >>> N2.VolumeLiquid.plot_TP_dependent_property(Tmin=60, Tmax=100,  Pmin=1E5, Pmax=1E7) # doctest: +SKIP
-    
+
     Attributes
     ----------
     T : float
@@ -447,26 +447,26 @@ class Chemical(object): # pragma: no cover
     Sfg : float
         Ideal-gas change of entropy of formation, [J/kg/K]
     Hcgm : float
-        Higher molar heat of combustion of the chemical in the ideal gas state, 
+        Higher molar heat of combustion of the chemical in the ideal gas state,
         [J/mol]
     Hcg : float
-        Higher heat of combustion of the chemical in the ideal gas state, 
+        Higher heat of combustion of the chemical in the ideal gas state,
         [J/kg]
     Hcgm_lower : float
-        Lower molar heat of combustion of the chemical in the ideal gas state, 
+        Lower molar heat of combustion of the chemical in the ideal gas state,
         [J/mol]
     Hcg_lower : float
-        Lower heat of combustion of the chemical in the ideal gas state, 
+        Lower heat of combustion of the chemical in the ideal gas state,
         [J/kg]
     Tflash : float
         Flash point of the chemical, [K]
     Tautoignition : float
         Autoignition point of the chemical, [K]
     LFL : float
-        Lower flammability limit of the gas in an atmosphere at STP, mole 
+        Lower flammability limit of the gas in an atmosphere at STP, mole
         fraction [-]
     UFL : float
-        Upper flammability limit of the gas in an atmosphere at STP, mole 
+        Upper flammability limit of the gas in an atmosphere at STP, mole
         fraction [-]
     TWA : tuple[quantity, unit]
         Time-Weighted Average limit on worker exposure to dangerous chemicals.
@@ -485,7 +485,7 @@ class Chemical(object): # pragma: no cover
     molecular_diameter : float
         Lennard-Jones molecular diameter, [angstrom]
     GWP : float
-        Global warming potential (default 100-year outlook) (impact/mass 
+        Global warming potential (default 100-year outlook) (impact/mass
         chemical)/(impact/mass CO2), [-]
     ODP : float
         Ozone Depletion potential (impact/mass chemical)/(impact/mass CFC-11),
@@ -867,10 +867,10 @@ class Chemical(object): # pragma: no cover
 
         self.Hfg_sources = Hfg_methods(CASRN=self.CAS)
         self.Hfg_source = self.Hfg_sources[0] if self.Hfg_sources else None
-        
+
         self.S0g_sources = S0g_methods(CASRN=self.CAS)
         self.S0g_source = self.S0g_sources[0] if self.S0g_sources else None
-        
+
 
         # Misc
         self.dipole_sources = dipole_moment_methods(CASRN=self.CAS)
@@ -890,7 +890,7 @@ class Chemical(object): # pragma: no cover
 
         self.conductivity_sources = conductivity(CASRN=self.CAS, get_methods=True)
         self.conductivity_source = self.conductivity_sources[0] if self.conductivity_sources else None
-        
+
 
 
     def set_constants(self):
@@ -917,7 +917,7 @@ class Chemical(object): # pragma: no cover
         self.Hfus = property_molar_to_mass(self.Hfusm, self.MW) if self.Hfusm is not None else None
 
 
-        
+
         # Chemical Exposure Limits
         self.TWA = TWA(self.CAS, method=self.TWA_source)
         self.STEL = STEL(self.CAS, method=self.STEL_source)
@@ -941,9 +941,9 @@ class Chemical(object): # pragma: no cover
         self.conductivity, self.conductivityT = conductivity(CASRN=self.CAS, method=self.conductivity_source)
 
 
-        
-        
-        
+
+
+
 
     def set_eos(self, T, P, eos=PR):
         try:
@@ -1003,7 +1003,7 @@ class Chemical(object): # pragma: no cover
             H_methods_fun = Hfs_methods
         else:
             H_methods_fun = H_fun = None
-            
+
         if H_fun is not None:
             self.Hf_sources = H_methods_fun(CASRN=self.CAS)
             self.Hf_source = self.Hf_sources[0] if self.Hf_sources else None
@@ -1012,8 +1012,8 @@ class Chemical(object): # pragma: no cover
             self.Hf_sources = []
             self.Hf_source = self.Hfm = None
 
-        self.Hf = property_molar_to_mass(self.Hfm, self.MW) if (self.Hfm is not None) else None        
-        
+        self.Hf = property_molar_to_mass(self.Hfm, self.MW) if (self.Hfm is not None) else None
+
         self.combustion_stoichiometry = combustion_stoichiometry(self.atoms)
         try:
             self.Hcm = HHV_stoichiometry(self.combustion_stoichiometry, Hf=self.Hfm) if self.Hfm is not None else None
@@ -1046,7 +1046,7 @@ class Chemical(object): # pragma: no cover
 
         self.S0gm = S0g(CASRN=self.CAS, method=self.S0g_source)
         self.S0g = property_molar_to_mass(self.S0gm, self.MW) if (self.S0gm is not None) else None
-        
+
         # Calculated later
         self.S0m = None
         self.S0 = None
@@ -1055,7 +1055,7 @@ class Chemical(object): # pragma: no cover
         dHfs_std = []
         S0_abs_elements = []
         coeffs_elements = []
-        
+
         for atom, count in self.atoms.items():
             try:
                 ele = periodic_table[atom]
@@ -1067,7 +1067,7 @@ class Chemical(object): # pragma: no cover
             dHfs_std.append(H0)
             S0_abs_elements.append(S0)
             coeffs_elements.append(count)
-        
+
         self.elemental_reaction_data = (dHfs_std, S0_abs_elements, coeffs_elements)
 
 
@@ -1080,7 +1080,7 @@ class Chemical(object): # pragma: no cover
         # Compute Entropy of formation
         self.Sfgm = (self.Hfgm - self.Gfgm)/298.15 if (self.Hfgm is not None and self.Gfgm is not None) else None # hardcoded
         self.Sfg = property_molar_to_mass(self.Sfgm, self.MW) if (self.Sfgm is not None) else None
-        
+
         try:
             self.Hcgm = HHV_stoichiometry(self.combustion_stoichiometry, Hf=self.Hfgm) if self.Hfgm is not None else None
         except:
@@ -1090,7 +1090,7 @@ class Chemical(object): # pragma: no cover
         self.Hcgm_lower = LHV_from_HHV(self.Hcgm, self.combustion_stoichiometry.get('H2O', 0.0)) if self.Hcgm is not None else None
         self.Hcg_lower = property_molar_to_mass(self.Hcgm_lower, self.MW) if (self.Hcgm_lower is not None) else None
 
-        
+
         try:
             self.StielPolar = Stiel_polar_factor(Psat=self.VaporPressure(T=self.Tc*0.6), Pc=self.Pc, omega=self.omega)
         except:
@@ -1106,16 +1106,16 @@ class Chemical(object): # pragma: no cover
 
         self.Vml_Tb = self.VolumeLiquid.T_dependent_property(self.Tb) if self.Tb else None
         self.Vml_Tm = self.VolumeLiquid.T_dependent_property(self.Tm) if self.Tm else None
-        
-        
+
+
         self.Vml_STP = self.VolumeLiquid.T_dependent_property(298.15)
         self.rhoml_STP = 1.0/self.Vml_STP if self.Vml_STP else None
         self.rhol_STP = Vm_to_rho(self.Vml_STP, self.MW) if self.Vml_STP else None
-        
+
         self.Vml_60F = self.VolumeLiquid.T_dependent_property(288.7055555555555)
         self.rhoml_60F = 1.0/self.Vml_60F if self.Vml_60F else None
         self.rhol_60F = Vm_to_rho(self.Vml_60F, self.MW) if self.Vml_60F else None
-        
+
         self.VolumeGas = VolumeGas(MW=self.MW, Tc=self.Tc, Pc=self.Pc,
                                    omega=self.omega, dipole=self.dipole,
                                    eos=self.eos_in_a_box, CASRN=self.CAS)
@@ -1124,7 +1124,7 @@ class Chemical(object): # pragma: no cover
 
         self.VolumeSolid = VolumeSolid(CASRN=self.CAS, MW=self.MW, Tt=self.Tt, Vml_Tt=self.Vml_Tm,
                                        best_fit=get_chemical_constants(self.CAS, 'VolumeSolid'))
-        
+
         self.Vms_Tm = self.VolumeSolid.T_dependent_property(self.Tm) if self.Tm else None
         self.rhos_Tm = Vm_to_rho(self.Vms_Tm, self.MW) if self.Vms_Tm else None
 
@@ -1138,24 +1138,24 @@ class Chemical(object): # pragma: no cover
         self.Hvap_Tbm = self.EnthalpyVaporization.T_dependent_property(self.Tb) if self.Tb else None
         self.Hvap_Tb = property_molar_to_mass(self.Hvap_Tbm, self.MW)
         self.Svap_Tbm = self.Hvap_Tb/self.Tb if (self.Tb is not None and self.Hvap_Tb is not None) else None
-        
+
         self.Hvapm_298 = self.EnthalpyVaporization.T_dependent_property(298.15)
         self.Hvap_298 = property_molar_to_mass(self.Hvapm_298, self.MW) if self.Hvapm_298 else None
-        
-        self.EnthalpySublimation = EnthalpySublimation(CASRN=self.CAS, Tm=self.Tm, Tt=self.Tt, 
+
+        self.EnthalpySublimation = EnthalpySublimation(CASRN=self.CAS, Tm=self.Tm, Tt=self.Tt,
                                                        Cpg=self.HeatCapacityGas, Cps=self.HeatCapacitySolid,
                                                        Hvap=self.EnthalpyVaporization,
                                                        best_fit=get_chemical_constants(self.CAS, 'EnthalpySublimation'))
         self.Hsubm = self.Hsub_Ttm = self.EnthalpySublimation(self.Tt) if self.Tt is not None else None
         self.Hsub = self.Hsub_Tt = property_molar_to_mass(self.Hsub_Ttm, self.MW) if self.Hsub_Ttm is not None else None
         self.Ssub_Ttm = self.Hsub_Ttm/self.Tt if (self.Tt is not None and self.Hsub_Ttm is not None) else None
-        
+
         self.Sfusm = self.Hfusm/self.Tm if (self.Tm is not None and self.Hfusm is not None) else None
-        
-        
+
+
         self.SublimationPressure = SublimationPressure(CASRN=self.CAS, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_Ttm,
                                                        best_fit=get_chemical_constants(self.CAS, 'SublimationPressure'))
-        
+
 
         self.ViscosityLiquid = ViscosityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, omega=self.omega, Psat=self.VaporPressure.T_dependent_property, Vml=self.VolumeLiquid.T_dependent_property,
                                                best_fit=get_chemical_constants(self.CAS, 'ViscosityLiquid'))
@@ -1184,7 +1184,7 @@ class Chemical(object): # pragma: no cover
         self.molecular_diameter = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, method=self.molecular_diameter_source, CASRN=self.CAS)
 
         # Adjust Gf, Hf if needed
-        try:            
+        try:
             if self.Hfgm is not None and self.Hfm is None:
                 Hfm = None
                 if self.phase_STP == 'l' and self.Hvapm_298 is not None:
@@ -1205,9 +1205,9 @@ class Chemical(object): # pragma: no cover
                     self.Hfg = property_molar_to_mass(self.Hfmg, self.MW) if (self.Hfmg is not None) else None
         except:
             pass
-        
+
         try:
-            from thermo.chemical_utils import S0_basis_converter 
+            from thermo.chemical_utils import S0_basis_converter
             if self.S0gm is not None and self.S0m is None:
                 S0m = None
                 if self.phase_STP == 'l':
@@ -1226,20 +1226,20 @@ class Chemical(object): # pragma: no cover
                 if S0gm is not None:
                     self.S0gm = S0gm
                     self.S0g = property_molar_to_mass(self.S0gm, self.MW) if (self.S0gm is not None) else None
-                    
+
         except:
             pass
-        
-        
+
+
         try:
             self.Gfm = Gibbs_formation(self.Hfm, self.S0m, *self.elemental_reaction_data)
         except:
             self.Gfm = None
         self.Gf = property_molar_to_mass(self.Gfm, self.MW) if (self.Gfm is not None) else None
-        
+
         self.Sfm = (self.Hfm - self.Gfm)/298.15 if (self.Hfm is not None and self.Gfm is not None) else None
         self.Sf = property_molar_to_mass(self.Sfm, self.MW) if (self.Sfm is not None) else None
-        
+
 
 
 
@@ -2311,12 +2311,12 @@ class Chemical(object): # pragma: no cover
 
     @property
     def SGs(self):
-        r'''Specific gravity of the solid phase of the chemical at the 
+        r'''Specific gravity of the solid phase of the chemical at the
         specified temperature and pressure, [dimensionless].
-        The reference condition is water at 4 °C and 1 atm 
+        The reference condition is water at 4 °C and 1 atm
         (rho=999.017 kg/m^3). The SG varries with temperature and pressure
         but only very slightly.
-        
+
         Examples
         --------
         >>> Chemical('iron').SGs
@@ -2329,13 +2329,13 @@ class Chemical(object): # pragma: no cover
 
     @property
     def SGl(self):
-        r'''Specific gravity of the liquid phase of the chemical at the 
+        r'''Specific gravity of the liquid phase of the chemical at the
         specified temperature and pressure, [dimensionless].
-        The reference condition is water at 4 °C and 1 atm 
+        The reference condition is water at 4 °C and 1 atm
         (rho=999.017 kg/m^3). For liquids, SG is defined that the reference
         chemical's T and P are fixed, but the chemical itself varies with
         the specified T and P.
-        
+
         Examples
         --------
         >>> Chemical('water', T=365).SGl
@@ -2345,15 +2345,15 @@ class Chemical(object): # pragma: no cover
         if rhol is not None:
             return SG(rhol)
         return None
-    
+
     @property
     def SGg(self):
         r'''Specific gravity of the gas phase of the chemical, [dimensionless].
-        The reference condition is air at 15.6 °C (60 °F) and 1 atm 
+        The reference condition is air at 15.6 °C (60 °F) and 1 atm
         (rho=1.223 kg/m^3). The definition for gases uses the compressibility
         factor of the reference gas and the chemical both at the reference
         conditions, not the conditions of the chemical.
-            
+
         Examples
         --------
         >>> Chemical('argon').SGg
@@ -2364,13 +2364,13 @@ class Chemical(object): # pragma: no cover
             rho = Vm_to_rho(Vmg, self.MW)
             return SG(rho, rho_ref=1.2231876628642968) # calculated with Mixture
         return None
-    
+
     @property
     def API(self):
         r'''API gravity of the liquid phase of the chemical, [degrees].
-        The reference condition is water at 15.6 °C (60 °F) and 1 atm 
+        The reference condition is water at 15.6 °C (60 °F) and 1 atm
         (rho=999.016 kg/m^3, standardized).
-            
+
         Examples
         --------
         >>> Chemical('water').API
@@ -2381,7 +2381,7 @@ class Chemical(object): # pragma: no cover
             rho = Vm_to_rho(Vml, self.MW)
         sg = SG(rho, rho_ref=999.016)
         return SG_to_API(sg)
-        
+
     @property
     def Bvirial(self):
         r'''Second virial coefficient of the gas phase of the chemical at its
@@ -2537,7 +2537,7 @@ class Chemical(object): # pragma: no cover
 
     @property
     def permittivity(self):
-        r'''Relative permittivity (dielectric constant) of the chemical at its 
+        r'''Relative permittivity (dielectric constant) of the chemical at its
         current temperature, [dimensionless].
 
         For calculation of this property at other temperatures,
@@ -2551,11 +2551,11 @@ class Chemical(object): # pragma: no cover
         2.49775625
         '''
         return self.Permittivity(self.T)
-    
+
     @property
     def absolute_permittivity(self):
         r'''Absolute permittivity of the chemical at its current temperature,
-        in units of [farad/meter]. Those units are equivalent to 
+        in units of [farad/meter]. Those units are equivalent to
         ampere^2*second^4/kg/m^3.
 
         Examples
@@ -2843,7 +2843,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('ethylbenzene', T=550, P=3E6).Cpm
         294.18449553310046
         '''
-        return phase_select_property(phase=self.phase, s=Chemical.Cpsm, 
+        return phase_select_property(phase=self.phase, s=Chemical.Cpsm,
                                      l=Chemical.Cplm, g=Chemical.Cpgm,
                                      self=self)
 
@@ -2863,7 +2863,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('ethylbenzene', T=550, P=3E6).Vm
         0.00017758024401627633
         '''
-        return phase_select_property(phase=self.phase, s=Chemical.Vms, 
+        return phase_select_property(phase=self.phase, s=Chemical.Vms,
                                      l=Chemical.Vml, g=Chemical.Vmg, self=self)
 
     @property
@@ -2883,7 +2883,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('decane', T=550, P=2E6).rho
         498.67008448640604
         '''
-        return phase_select_property(phase=self.phase, s=Chemical.rhos, 
+        return phase_select_property(phase=self.phase, s=Chemical.rhos,
                                      l=Chemical.rhol, g=Chemical.rhog,
                                      self=self)
 
@@ -2904,8 +2904,8 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('1-hexanol').rhom
         7983.414573003429
         '''
-        return phase_select_property(phase=self.phase, s=Chemical.rhosm, 
-                                     l=Chemical.rholm, g=Chemical.rhogm, 
+        return phase_select_property(phase=self.phase, s=Chemical.rhosm,
+                                     l=Chemical.rholm, g=Chemical.rhogm,
                                      self=self)
 
     @property
@@ -2925,12 +2925,12 @@ class Chemical(object): # pragma: no cover
 
     @property
     def SG(self):
-        r'''Specific gravity of the chemical, [dimensionless]. 
-        
-        For gas-phase conditions, this is calculated at 15.6 °C (60 °F) and 1 
-        atm for the chemical and the reference fluid, air. 
-        For liquid and solid phase conditions, this is calculated based on a 
-        reference fluid of water at 4°C at 1 atm, but the with the liquid or 
+        r'''Specific gravity of the chemical, [dimensionless].
+
+        For gas-phase conditions, this is calculated at 15.6 °C (60 °F) and 1
+        atm for the chemical and the reference fluid, air.
+        For liquid and solid phase conditions, this is calculated based on a
+        reference fluid of water at 4°C at 1 atm, but the with the liquid or
         solid chemical's density at the currently specified conditions.
 
         Examples
@@ -2949,7 +2949,7 @@ class Chemical(object): # pragma: no cover
         if rho is not None:
             return SG(rho)
         return None
-    
+
     @property
     def isobaric_expansion(self):
         r'''Isobaric (constant-pressure) expansion of the chemical at its
@@ -2969,7 +2969,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('water', T=647.2, P=22048320.0).isobaric_expansion
         0.18143324022215077
         '''
-        return phase_select_property(phase=self.phase, 
+        return phase_select_property(phase=self.phase,
                                      l=Chemical.isobaric_expansion_l,
                                      g=Chemical.isobaric_expansion_g,
                                      self=self)
@@ -2989,7 +2989,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('water').JT
         -2.2150394958666407e-07
         '''
-        return phase_select_property(phase=self.phase, l=Chemical.JTl, 
+        return phase_select_property(phase=self.phase, l=Chemical.JTl,
                                      g=Chemical.JTg, self=self)
 
     @property
@@ -3009,7 +3009,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('ethanol', T=400).mu
         1.1853097849748217e-05
         '''
-        return phase_select_property(phase=self.phase, l=Chemical.mul, 
+        return phase_select_property(phase=self.phase, l=Chemical.mul,
                                      g=Chemical.mug, self=self)
 
     @property
@@ -3029,7 +3029,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('ethanol', T=400).kg
         0.026019924109310026
         '''
-        return phase_select_property(phase=self.phase, s=None, l=Chemical.kl, 
+        return phase_select_property(phase=self.phase, s=None, l=Chemical.kl,
                                      g=Chemical.kg, self=self)
 
     @property
@@ -3061,7 +3061,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('furfural').alpha
         8.696537158635412e-08
         '''
-        return phase_select_property(phase=self.phase, l=Chemical.alphal, 
+        return phase_select_property(phase=self.phase, l=Chemical.alphal,
                                      g=Chemical.alphag, self=self)
 
     @property
@@ -3077,14 +3077,14 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('acetone').Pr
         4.183039103542709
         '''
-        return phase_select_property(phase=self.phase, l=Chemical.Prl, 
+        return phase_select_property(phase=self.phase, l=Chemical.Prl,
                                      g=Chemical.Prg, self=self)
 
     @property
     def Poynting(self):
-        r'''Poynting correction factor [dimensionless] for use in phase 
-        equilibria methods based on activity coefficients or other reference 
-        states. Performs the shortcut calculation assuming molar volume is 
+        r'''Poynting correction factor [dimensionless] for use in phase
+        equilibria methods based on activity coefficients or other reference
+        states. Performs the shortcut calculation assuming molar volume is
         independent of pressure.
 
         .. math::

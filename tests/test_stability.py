@@ -46,18 +46,18 @@ def test_C2_C5_liq_Wilson():
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     stab = StabilityTester(Tcs=Tcs, Pcs=Pcs, omegas=omegas)
 
-    assert_stab_success_2P(liq, gas, stab, 360.0, 3e6, zs, 'Wilson liquid', xs=[0.8178671482462099, 0.18213285175379013], 
+    assert_stab_success_2P(liq, gas, stab, 360.0, 3e6, zs, 'Wilson liquid', xs=[0.8178671482462099, 0.18213285175379013],
                        ys=[0.3676551321096354, 0.6323448678903647], VF=0.24884602085493626)
-    
-    
+
+
     # 30 Pa off from a bubble point near the critical point
-    assert_stab_success_2P(liq, gas, stab, 123.3+273.15, 5475679.470049857, zs, 'Wilson liquid', xs=[0.7058338708478485, 0.29416612915215135], 
+    assert_stab_success_2P(liq, gas, stab, 123.3+273.15, 5475679.470049857, zs, 'Wilson liquid', xs=[0.7058338708478485, 0.29416612915215135],
                            ys=[0.4951812815325094, 0.5048187184674905], VF=9.084070806296505e-07, SS_tol=1e-25, rtol=1e-6)
 
     # 0.1 Pa off - very stupid/bad/evil, VF cannot be pinned down to ~ a fourth digit
-    assert_stab_success_2P(liq, gas, stab, 123.3+273.15, 5475649.470049857+.01, zs, 'Wilson liquid', xs=[0.7058336795533356, 0.2941663204466643], 
+    assert_stab_success_2P(liq, gas, stab, 123.3+273.15, 5475649.470049857+.01, zs, 'Wilson liquid', xs=[0.7058336795533356, 0.2941663204466643],
                            ys=[0.49517801297865455, 0.5048219870213455], VF=3.0282003822009134e-10, SS_tol=1e-25, rtol=1e-3)
 
     # Check maxiter > 36 allowed for stab convergence; check gas converges
-    assert_stab_success_2P(liq, gas, stab, 383, 6e6, zs, 'Wilson gas', xs=[0.6068839791378426, 0.3931160208621572], 
+    assert_stab_success_2P(liq, gas, stab, 383, 6e6, zs, 'Wilson gas', xs=[0.6068839791378426, 0.3931160208621572],
                            ys=[0.7735308634810933, 0.22646913651890652], VF=0.5937688162366092, rtol=5e-6)

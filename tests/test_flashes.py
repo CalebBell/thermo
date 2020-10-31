@@ -46,24 +46,24 @@ def test_minimize_gibbs_NP_transformed():
     kijs=[[0,0, 0],[0,0, 0.0496], [0,0.0496,0]]
     zs = [1.0/3.0]*3
     N = len(zs)
-    
-    # Gas heat capacities are not strictly needed for EOS - but other models they are. 
+
+    # Gas heat capacities are not strictly needed for EOS - but other models they are.
     # Should not alter results here.
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
                           HeatCapacityGas(best_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
                           HeatCapacityGas(best_fit=(200.0, 1000.0, [-1.069661592422583e-22, -1.2992882995593864e-18, 8.808066659263286e-15, -2.1690080247294972e-11, 2.8519221306107026e-08, -2.187775092823544e-05, 0.009432620102532702, -1.5719488702446165, 217.60587499269303]))]
-    
+
     eos_kwargs = {'Pcs': Pcs, 'Tcs': Tcs, 'omegas': omegas, 'kijs': kijs}
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liq0 = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liq1 = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     betas = [ 1-0.5274853623254059, 0.5274853623254059-1e-3, 1e-3]
-    
+
     compositions_guesses =[[0.3092021726552898, 0.0026640919467415093, 0.6881337353979681],
      [0.35494971827752636, 0.6295426084023353, 0.015507673320138696],
      [.998, .001, .001]]
-    
+
     betas, compositions, phases, _, G = minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases=[liq0, gas, liq1],
                                 betas=betas, tol=1E-13, method='BFGS')
     assert_allclose(G, -6288.484102530695, rtol=1e-3)
@@ -71,7 +71,7 @@ def test_minimize_gibbs_NP_transformed():
     assert_allclose(compositions,  [[0.01710942117103125, 0.004664963388767063, 0.9782256154402017],
       [0.026792761914958576, 0.9529216972153103, 0.0202855408697312],
       [0.9999999901300325, 0.0, 9.869967458145574e-09]], rtol=1e-3, atol=1e-7)
-    
+
 def test_sequential_substitution_NP_first():
     # Test case from DWSIM - water - methane - octane
     T = 298.15
@@ -82,12 +82,12 @@ def test_sequential_substitution_NP_first():
     kijs=[[0,0, 0],[0,0, 0.0496], [0,0.0496,0]]
     zs = [1.0/3.0]*3
     N = len(zs)
-    
+
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
                           HeatCapacityGas(best_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
                           HeatCapacityGas(best_fit=(200.0, 1000.0, [-1.069661592422583e-22, -1.2992882995593864e-18, 8.808066659263286e-15, -2.1690080247294972e-11, 2.8519221306107026e-08, -2.187775092823544e-05, 0.009432620102532702, -1.5719488702446165, 217.60587499269303]))]
     eos_kwargs = dict(Tcs=Tcs, Pcs=Pcs, omegas=omegas, kijs=kijs)
-    
+
     phase_list = [CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs),
                   CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs),
                   CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)]
@@ -95,7 +95,7 @@ def test_sequential_substitution_NP_first():
                                           [0.3549497291610413, 0.6295425977084024, 0.015507673130556588],
                                           [0.9999999999999915, 1.382471293523363e-15, 7.277922055269012e-15]]
     betas_guesses = [0.5274853712846019, .2]
-    
+
     sln = sequential_substitution_NP(T=T, P=P, zs=zs, compositions_guesses=comp_guesses, phases=phase_list,
                                betas_guesses=betas_guesses, maxiter=1000, tol=1E-25,
                                trivial_solution_tol=1e-5, ref_phase=0)
@@ -103,17 +103,17 @@ def test_sequential_substitution_NP_first():
     comp_expect = [[0.02679265575830939, 0.9529209534992429, 0.02028639074244788],
           [0.017108983672010535, 0.004664632419653161, 0.978226383908336],
           [0.9999990988582429, 9.011417571269636e-07, 9.573789620423122e-17]]
-    
+
     betas_expect = [0.34816869015277496, 0.33353245486699196, 0.318298854980233]
     assert_allclose(sln[0], betas_expect, rtol=1e-7)
     assert_allclose(sln[1], comp_expect, rtol=1e-7)
     err = sln[-1]
     assert err < 1e-15
-    
+
     # Should be the same as the G minimization example
     G_check = sum([sln[0][i]*sln[2][i].G() for i in range(3)])
     assert_allclose(G_check, -6288.484949505805, rtol=1e-6)
-    
+
     # Run the same flash with different ref phases
     sln = sequential_substitution_NP(T=T, P=P, zs=zs, compositions_guesses=comp_guesses, phases=phase_list,
                                betas_guesses=betas_guesses, maxiter=1000, tol=1E-25,
@@ -140,29 +140,29 @@ def test_UNIFAC_LLE_SS():
     T = 298.15
     xs = [0.9, 0.1]
     chemgroups = [{17: 1}, {1: 1, 2: 3, 14: 1}]
-    
+
     VaporPressures = [VaporPressure(best_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317])),
                       VaporPressure(best_fit=(183.85, 563.1, [-1.369963570009104e-19, 4.601627231730426e-16, -6.744785620228449e-13, 5.655784279629317e-10, -2.986123576859473e-07, 0.00010278182137225028, -0.022995143239892296, 3.186560947413634, -210.12716900412732]))]
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
                          HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.787200194613107e-20, 1.7692887427654656e-16, -3.445247207129205e-13, 3.612771874320634e-10, -2.1953250181084466e-07, 7.707135849197655e-05, -0.014658388538054169, 1.5642629364740657, -7.614560475001724]))]
     VolumeLiquids = [VolumeLiquid(best_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652])),
                      VolumeLiquid(best_fit=(183.85, 534.945, [8.166268567991483e-24, -2.165718271472294e-20, 2.4731798748970672e-17, -1.5862095449169107e-14, 6.243674899388041e-12, -1.5433275010768489e-09, 2.3391927454003685e-07, -1.9817325459693386e-05, 0.0007969650387898196]))]
-    
+
     GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups,
                                interaction_data=LLEUFIP, subgroups=LLEUFSG, version=0)
-    
+
     liq = GibbsExcessLiquid(VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases,
-                            VolumeLiquids=VolumeLiquids, GibbsExcessModel=GE, 
+                            VolumeLiquids=VolumeLiquids, GibbsExcessModel=GE,
                             T=T, P=P, zs=xs)
-    
+
     Ks = [.5, 10]
     VF, xs_guess, ys_guess = Rachford_Rice_solution(xs, Ks)
-    
+
     VF, xs0, xs1, _, _, _, err = sequential_substitution_2P(T, P, None, xs, ys_guess, xs_guess, liq, liq, maxiter=200, V_over_F_guess=VF)
     assert abs(err) < 1e-10
     assert_close(VF, 0.8180880014378398)
     assert_close1d(xs0, [0.5336868118535731, 0.4663131881464271])
-    assert_close1d(xs1, [0.9814542533901818, 0.01854574660981835])    
+    assert_close1d(xs1, [0.9814542533901818, 0.01854574660981835])
 
 def test_dew_bubble_newton_zs():
     T, P = 370.0, 6e5
@@ -171,28 +171,28 @@ def test_dew_bubble_newton_zs():
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
                          HeatCapacityGas(best_fit=(200.0, 1000.0, [1.3740654453881647e-21, -8.344496203280677e-18, 2.2354782954548568e-14, -3.4659555330048226e-11, 3.410703030634579e-08, -2.1693611029230923e-05, 0.008373280796376588, -1.356180511425385, 175.67091124888998])),
                          HeatCapacityGas(best_fit=(50.0, 1000.0, [-9.48396765770823e-21, 4.444060985512694e-17, -8.628480671647472e-14, 8.883982004570444e-11, -5.0893293251198045e-08, 1.4947108372371731e-05, -0.0015271248410402886, 0.19186172941013854, 30.797883940134057]))]
-    
+
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     # TVF-0
-    TVF0 = dew_bubble_newton_zs(P, T, zs, liq, gas, 
-                               iter_var='P', fixed_var='T', V_over_F=0, 
+    TVF0 = dew_bubble_newton_zs(P, T, zs, liq, gas,
+                               iter_var='P', fixed_var='T', V_over_F=0,
                                maxiter=200, xtol=1E-11, comp_guess=None, debug=True)
     (iter_val, comp, iter_phase, const_phase, niter, err), cb = TVF0
-    
+
     TVF0_jac_expect = [[-1.7094866222319638, -0.060889186638232645, -0.06326258796693127, -2.623671448053193e-06], [0.04594194610061586, -2.6779244704304754, 0.09199738718637793, -2.3450702269756142e-06], [0.052225681359212524, 0.10065452377367312, -23.400784985388814, -2.3292014632919617e-06], [-1.0, -1.0, -1.0, 0.0]]
     jac_num = jacobian(lambda x: list(cb(x, jac=False)), comp + [iter_val], scalar=False, perturbation=1e-7)
     jac_analytical = [list(i) for i in cb(comp + [iter_val], jac=True)[1]]
-    
+
     assert_allclose(TVF0_jac_expect, jac_analytical, rtol=1e-7)
     assert_allclose(jac_num, jac_analytical, rtol=4e-6)
     assert_allclose(comp, [0.5959851041217594, 0.3614714142727822, 0.04254348160545845], rtol=2e-6)
     assert_allclose(iter_val, 369706.09616182366, rtol=2e-6)
-    
+
     # TVF-1
-    TVF1 = dew_bubble_newton_zs(P, T, zs, liq, gas, 
-                               iter_var='P', fixed_var='T', V_over_F=1, 
+    TVF1 = dew_bubble_newton_zs(P, T, zs, liq, gas,
+                               iter_var='P', fixed_var='T', V_over_F=1,
                                maxiter=200, xtol=1E-11, comp_guess=None, debug=True)
     (iter_val, comp, iter_phase, const_phase, niter, err), cb = TVF1
     jac_num = jacobian(lambda x: list(cb(x, jac=False)), comp + [iter_val], scalar=False, perturbation=1e-7)
@@ -202,10 +202,10 @@ def test_dew_bubble_newton_zs():
     assert_allclose(jac_num, jac_analytical, rtol=1e-5)
     assert_allclose(comp, [0.07863510496551862, 0.39728142156798496, 0.5240834734664964], rtol=1e-6)
     assert_allclose(iter_val, 196037.49251710708, rtol=1e-8)
-    
+
     # PVF-1
-    PVF1 = dew_bubble_newton_zs(T, P, zs, liq, gas, 
-                               iter_var='T', fixed_var='P', V_over_F=1, 
+    PVF1 = dew_bubble_newton_zs(T, P, zs, liq, gas,
+                               iter_var='T', fixed_var='P', V_over_F=1,
                                maxiter=200, xtol=1E-11, debug=True)
     (iter_val, comp, iter_phase, const_phase, niter, err), cb = PVF1
     jac_num = jacobian(lambda x: list(cb(x, jac=False)), comp + [iter_val], scalar=False, perturbation=1e-7)
@@ -217,8 +217,8 @@ def test_dew_bubble_newton_zs():
     assert_allclose(iter_val, 414.5860479637154)
 
     # PVF-0
-    PVF0 = dew_bubble_newton_zs(T, P, zs, liq, gas, 
-                               iter_var='T', fixed_var='P', V_over_F=0, 
+    PVF0 = dew_bubble_newton_zs(T, P, zs, liq, gas,
+                               iter_var='T', fixed_var='P', V_over_F=0,
                                maxiter=200, xtol=1E-11, debug=True)
     (iter_val, comp, iter_phase, const_phase, niter, err), cb = PVF0
     PVF0_jac_expect = [[-1.7799148067485484, -0.09576578045148737, -0.1000043126222332, 0.019325866913386947], [0.06747154401695143, -2.5608953087110042, 0.13445334461342753, 0.018884399921460383], [0.0784219794200535, 0.14964231218727547, -19.81193477319855, 0.024952816338405084], [-1.0, -1.0, -1.0, 0.0]]
@@ -231,7 +231,7 @@ def test_dew_bubble_newton_zs():
 
 
 def test_dew_bubble_Michelsen_Mollerup_pure():
-    # Only goal here is to check the trivial composition test does not 
+    # Only goal here is to check the trivial composition test does not
     # cause the pure component flash to fail
     zs = [.3, .5, .2]
     T, P = 300, 3e6
@@ -244,17 +244,17 @@ def test_dew_bubble_Michelsen_Mollerup_pure():
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
-    
+
+
     sln = dew_bubble_Michelsen_Mollerup(350, 101325, [0, 1, 0], liq, gas, iter_var='T', fixed_var='P', V_over_F=1)
-    assert_allclose(sln[0], 374.54273473073675, rtol=1e-6)                              
+    assert_allclose(sln[0], 374.54273473073675, rtol=1e-6)
     sln2 = dew_bubble_Michelsen_Mollerup(350, 101325, [0, 1, 0], liq, gas, iter_var='T', fixed_var='P', V_over_F=0)
-    assert_allclose(sln[0], sln2[0], rtol=1e-12)                              
-    
+    assert_allclose(sln[0], sln2[0], rtol=1e-12)
+
     slnP = dew_bubble_Michelsen_Mollerup(101325, 350, [0, 1, 0], liq, gas, iter_var='P', fixed_var='T', V_over_F=1)
     assert_allclose(slnP[0], 38567.9910222508, rtol=1e-6)
     slnP2 = dew_bubble_Michelsen_Mollerup(101325, 350, [0, 1, 0], liq, gas, iter_var='P', fixed_var='T', V_over_F=0)
-    assert_allclose(slnP[0], slnP2[0], rtol=1e-12)                              
+    assert_allclose(slnP[0], slnP2[0], rtol=1e-12)
 
 
 def test_stabiliy_iteration_Michelsen_zero_fraction():
@@ -279,15 +279,15 @@ def test_stabiliy_iteration_Michelsen_zero_fraction():
     kwargs = {'trial_phase': liq, 'zs_test': zs_test,
            'test_phase': gas, 'maxiter': 500, 'xtol': 5e-09}
     sln_with_zero = stabiliy_iteration_Michelsen(**kwargs)[0:-1]
-    
+
     kwargs['zs_test'] = [1e-13, 0.966916481252204-5e-14, 0.033083518747796005-5e-14]
     sln_without_zero = stabiliy_iteration_Michelsen(**kwargs)[0:-1]
     assert_allclose(sln_with_zero[-2][1:], sln_without_zero[-2][1:], rtol=1e-5)
     assert_allclose(sln_with_zero[-1][1:], sln_without_zero[-1][1:], rtol=1e-5)
     assert_allclose(sln_with_zero[-3], sln_without_zero[-3], rtol=1e-5)
 
-    
-    
+
+
 def test_SS_trivial_solution_error():
     # Would be nice to do the same test for all the accelerated ones
     # Michaelson's stab test just misses this one depending on tolerance
@@ -308,18 +308,18 @@ def test_SS_trivial_solution_error():
     kwargs = {'T': 366.66666666666674, 'P': 13335214.32163324, 'V': None, 'zs': [0.8, 0.19, 0.01],
                      'xs_guess': [0.7999903516900219, 0.1900100873837821, 0.009999561935269637],
                      'ys_guess': [0.8003317371691744, 0.18965316618684375, 0.010015061949076507],
-                     'liquid_phase': liq, 'gas_phase': gas, 
+                     'liquid_phase': liq, 'gas_phase': gas,
                      'maxiter': 10000, 'tol': 1e-13, 'V_over_F_guess': 0.028262215493598263}
     try:
         sequential_substitution_2P(**kwargs)
     except TrivialSolutionError as e:
         assert e.iterations > 5
-        
+
 #    with pytest.raises(TrivialSolutionError):
     # Case all Ks go under 1 when analytical RR was used; no longer does
-    kwargs =  {'T': 283.3333333333333, 'P': 10000000.0, 'V': None, 'zs': [0.8, 0.19, 0.01], 
-       'xs_guess': [0.8001527424635891, 0.1898414107577097, 0.010006017410413398], 
-       'ys_guess': [0.7999616931190321, 0.19003977321750912, 0.009998490870063081], 
+    kwargs =  {'T': 283.3333333333333, 'P': 10000000.0, 'V': None, 'zs': [0.8, 0.19, 0.01],
+       'xs_guess': [0.8001527424635891, 0.1898414107577097, 0.010006017410413398],
+       'ys_guess': [0.7999616931190321, 0.19003977321750912, 0.009998490870063081],
        'liquid_phase': liq, 'gas_phase': gas, 'maxiter': 10000, 'tol': 1e-11}
     sln = sequential_substitution_2P( **kwargs)
 
@@ -333,24 +333,24 @@ def test_sequential_substitution_2P_bad_Ks():
     kijs=[[0,0, 0],[0,0, 0.0496], [0,0.0496,0]]
     zs = [1.0/3.0]*3
     N = len(zs)
-    
+
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
                          HeatCapacityGas(best_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
                          HeatCapacityGas(best_fit=(200.0, 1000.0, [-1.069661592422583e-22, -1.2992882995593864e-18, 8.808066659263286e-15, -2.1690080247294972e-11, 2.8519221306107026e-08, -2.187775092823544e-05, 0.009432620102532702, -1.5719488702446165, 217.60587499269303]))]
-    constants = ChemicalConstantsPackage(Tcs=Tcs, Pcs=Pcs, omegas=omegas, MWs=[18.01528, 16.04246, 114.22852], 
+    constants = ChemicalConstantsPackage(Tcs=Tcs, Pcs=Pcs, omegas=omegas, MWs=[18.01528, 16.04246, 114.22852],
                                          CASs=['7732-18-5', '74-82-8', '111-65-9'])
     properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=HeatCapacityGases)
     eos_kwargs = dict(Tcs=Tcs, Pcs=Pcs, omegas=omegas, kijs=kijs)
-    
+
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    args = {'T': 100.0, 'P': 49417.13361323757, 'V': None, 
-            'zs': [0.3333333333333333, 0.3333333333333333, 0.3333333333333333], 
+    args = {'T': 100.0, 'P': 49417.13361323757, 'V': None,
+            'zs': [0.3333333333333333, 0.3333333333333333, 0.3333333333333333],
             'xs_guess': [7.192033774066384e-09, 0.49999999640398296, 0.4999999964039833],
             'ys_guess': [0.9999999999999992, 6.620726385780391e-16, 1.3771258889397618e-78],
             'liquid_phase': liq, 'gas_phase': gas, 'maxiter': 5000, 'tol': 1e-13,
             'V_over_F_guess': 0.33333332853864434}
-    
+
     with pytest.raises(PhaseCountReducedError):
         sequential_substitution_2P(**args)
 
@@ -361,19 +361,19 @@ def test_sequential_substitution_2P_VF_mole_not_balanced():
         VaporPressure(best_fit=(90.4, 305.312, [-1.1908381885079786e-17, 2.1355746620587145e-14, -1.66363909858873e-11, 7.380706042464946e-09, -2.052789573477409e-06, 0.00037073086909253047, -0.04336716238170919, 3.1418840094903784, -102.75040650505277])),],
         HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
         HeatCapacityGas(best_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228]))])
-    
+
     eos_kwargs = {'Pcs':constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
     gas = CEOSGas(eos_class=PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases,
                   T=298.15, P=101325.0, zs=[0.5, 0.5])
     liquid = CEOSLiquid(eos_class=PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases,
                         T=298.15, P=101325.0, zs=[0.5, 0.5])
-    
+
     zs = [0.5, 0.5]
-    kwargs = {'T': 200.0, 'P': 1000000.0, 'V': None, 'zs': zs, 
-              'xs_guess': [0.740729287458517, 0.259270712541483], 
-              'ys_guess': [0.03047428536410785, 0.969525714635892], 
+    kwargs = {'T': 200.0, 'P': 1000000.0, 'V': None, 'zs': zs,
+              'xs_guess': [0.740729287458517, 0.259270712541483],
+              'ys_guess': [0.03047428536410785, 0.969525714635892],
               'liquid_phase': liquid, 'gas_phase': gas, 'maxiter': 5000, 'tol': 1e-13, 'V_over_F_guess': None}
-        
+
     VF, xs, ys, l, g, iteration, err = sequential_substitution_2P(**kwargs)
     assert_close1d(xs, l.zs)
     err_mole_balance = 0.0
@@ -390,11 +390,11 @@ def test_existence_3P_Michelsen_Mollerup_C1_C8_H2O():
     kijs=[[0,0, 0],[0,0, 0.0496], [0,0.0496,0]]
     zs = [1.0/3.0]*3
     N = len(zs)
-    
+
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
                          HeatCapacityGas(best_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
                          HeatCapacityGas(best_fit=(200.0, 1000.0, [-1.069661592422583e-22, -1.2992882995593864e-18, 8.808066659263286e-15, -2.1690080247294972e-11, 2.8519221306107026e-08, -2.187775092823544e-05, 0.009432620102532702, -1.5719488702446165, 217.60587499269303]))]
-    constants = ChemicalConstantsPackage(Tcs=Tcs, Pcs=Pcs, omegas=omegas, MWs=[18.01528, 16.04246, 114.22852], 
+    constants = ChemicalConstantsPackage(Tcs=Tcs, Pcs=Pcs, omegas=omegas, MWs=[18.01528, 16.04246, 114.22852],
                                          CASs=['7732-18-5', '74-82-8', '111-65-9'])
     properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=HeatCapacityGases)
     eos_kwargs = dict(Tcs=Tcs, Pcs=Pcs, omegas=omegas, kijs=kijs)
@@ -416,7 +416,7 @@ def test_existence_3P_Michelsen_Mollerup_C1_C8_H2O():
     assert_allclose(phases[0].zs, [2.1263476497178064e-17, 0.9999999999999997, 2.9008596105678063e-16], atol=1e-10)
     assert_allclose(phases[1].zs, [2.5215768536531457e-09, 0.49999999873920403, 0.49999999873921913], atol=1e-7)
     assert_allclose(phases[2].zs, [0.9999999999999698, 3.0008565443049114e-14, 9.362881911968007e-69], atol=1e-10)
-    
+
     # Flash for T
     T, phases, betas, err0, err1, iterations = existence_3P_Michelsen_Mollerup(guess=120.0, fixed_val=101325.0, zs=zs, iter_phase=gas, liquid0=liq, liquid1=liq,
                                     iter_var='T', fixed_var='P',
@@ -431,8 +431,8 @@ def test_existence_3P_Michelsen_Mollerup_C1_C8_H2O():
     assert_allclose(phases[0].zs, [2.1263476497178064e-17, 0.9999999999999997, 2.9008596105678063e-16], atol=1e-10)
     assert_allclose(phases[1].zs, [2.5215768536531457e-09, 0.49999999873920403, 0.49999999873921913], atol=1e-7)
     assert_allclose(phases[2].zs, [0.9999999999999698, 3.0008565443049114e-14, 9.362881911968007e-69], atol=1e-10)
-    
-    
+
+
 def test_nonlin_equilibrium_NP():
     zs = [.8, 0.19, .01]
     # m = Mixture(['ethylene', 'ethanol', 'nitrogen'], zs=zs)
@@ -444,22 +444,22 @@ def test_nonlin_equilibrium_NP():
                                                                                     HeatCapacityGas(best_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264]))])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs,
                       omegas=constants.omegas, kijs=[[0.0, -.0057, 0.0], [-.0057, 0.0, 0.0], [0.0, 0.0, 0.0]])
-    
-    
+
+
     gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
 
     sln, flows, cb = nonlin_equilibrium_NP(T=200, P=6e5, zs=zs,
                           compositions_guesses=[[0.758180098781777, 9.774283351422276e-07, 0.24181892378988806],
      [0.19677742658588845, 0.8029423791527971, 0.0002801942613146994],
-     [0.9585779528176683, 0.03594678224988683, 0.0054752649324448545]], 
-                          betas_guesses=[0.023583969265425282, 0.20195808547331262, 0.7744579452612621], 
+     [0.9585779528176683, 0.03594678224988683, 0.0054752649324448545]],
+                          betas_guesses=[0.023583969265425282, 0.20195808547331262, 0.7744579452612621],
                             phases=[gas, liq, liq], maxiter=1000, tol=1E-7,
                             trivial_solution_tol=1e-5, ref_phase=1,
                             method='newton_system',
                                 solve_kwargs=None, debug=True)
-    
-    
+
+
     # Even got numdifftools down to max error 2.8e-6
     # vs = 1-nd.Jacobian(lambda x: np.array(to_jac(x)), step=1e-11, order=25)(np.array(flows))/jac_end
     # np.max(np.abs(vs)), np.mean(np.abs(vs))
@@ -468,7 +468,7 @@ def test_nonlin_equilibrium_NP():
     fugacities_base = sln[2][0].fugacities()
     assert_allclose(fugacities_base, sln[2][1].fugacities(), rtol=1e-5)
     assert_allclose(fugacities_base, sln[2][2].fugacities(), rtol=1e-5)
-    
+
     def to_jac(flows):
         return list(cb(flows, jac=True)[0])
     jac_end = [list(i) for i in sln[4]]
@@ -479,7 +479,7 @@ def test_nonlin_equilibrium_NP():
 
 def test_ideal_bubble_failing():
     constants = ChemicalConstantsPackage(atomss=[{'H': 2, 'O': 1}, {'C': 6, 'H': 14}, {'C': 5, 'H': 4, 'O': 2}, {'C': 2, 'H': 6, 'O': 1}], CASs=['7732-18-5', '110-54-3', '98-01-1', '64-17-5'], MWs=[18.01528, 86.17536, 96.08406000000001, 46.06844], names=['water', 'hexane', '2-furaldehyde', 'ethanol'], omegas=[0.344, 0.2975, 0.4522, 0.635], Pcs=[22048320.0, 3025000.0, 5510000.0, 6137000.0], Tcs=[647.14, 507.6, 670.0, 514.0])
-    
+
     correlations = PropertyCorrelationPackage(constants=constants, skip_missing=True,
     VaporPressures=[VaporPressure(best_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317])),
     VaporPressure(best_fit=(177.84, 507.81, [-1.604637831500919e-19, 4.982429526452368e-16, -6.744889606698199e-13, 5.223525465352799e-10, -2.5493665759436215e-07, 8.125588912741348e-05, -0.01686860265374473, 2.174938146922705, -129.28820562410874])),
@@ -497,17 +497,17 @@ def test_ideal_bubble_failing():
     HeatCapacityGas(best_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965])),
     ],
     )
-    
+
     gas = IdealGas(HeatCapacityGases=correlations.HeatCapacityGases, T=300, P=1e5, zs=[.25, .25, .25, .25])
-    
-    liquid = GibbsExcessLiquid(VaporPressures=correlations.VaporPressures, VolumeLiquids=correlations.VolumeLiquids, 
-                     GibbsExcessModel=None, 
-                     HeatCapacityGases=correlations.HeatCapacityGases, 
+
+    liquid = GibbsExcessLiquid(VaporPressures=correlations.VaporPressures, VolumeLiquids=correlations.VolumeLiquids,
+                     GibbsExcessModel=None,
+                     HeatCapacityGases=correlations.HeatCapacityGases,
                      use_Poynting=True, T=300.0, P=1e5, zs=[.25, .25, .25, .25])
     # flasher = FlashVLN(constants, correlations, gas=gas, liquids=[liquid])
     # flasher.flash(zs=[0.1, 0.2, 0.3, 0.4], P=2e5, VF=.5)
-    
-    
+
+
     res = solve_P_VF_IG_K_composition_independent(VF=.5, P=1e6, zs=[0.1, 0.2, 0.3, 0.4], gas=gas, liq=liquid, xtol=1e-10)
     # Really needs improvement
     assert_close(res[0], 460.6186021529634)
@@ -516,16 +516,16 @@ def test_ideal_bubble_failing():
 def test_flash_iapws95():
     from thermo import iapws_constants, iapws_correlations
     # TODO probably put these tests in their own file
-    
+
     liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
     gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
-    
+
     flasher = FlashPureVLS(iapws_constants, iapws_correlations(), gas, [liquid], [])
     base = flasher.flash(T=300, P=1e6)
 
     res = flasher.flash(T=300.0, VF=.3)
     assert_close(res.liquid0.G(), res.gas.G())
     assert_close(res.liquid0.P, res.gas.P)
-    
+
     assert_close(res.liquid0.rho_mass(), 996.5130274681279, rtol=1e-5)
     assert_close(res.gas.rho_mass(), 0.025589673682920137, rtol=1e-5)

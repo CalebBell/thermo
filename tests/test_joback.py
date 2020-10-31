@@ -45,10 +45,10 @@ def test_Joback_acetone():
     from rdkit.Chem import rdMolDescriptors
     for i in [Chem.MolFromSmiles('CC(=O)C'), 'CC(=O)C']:
         ex = Joback(i) # Acetone example
-        assert_allclose(ex.Tb(ex.counts), 322.11) 
+        assert_allclose(ex.Tb(ex.counts), 322.11)
         assert_allclose(ex.Tm(ex.counts), 173.5)
-        assert_allclose(ex.Tc(ex.counts), 500.5590049525365) 
-        assert_allclose(ex.Tc(ex.counts, 322.11), 500.5590049525365) 
+        assert_allclose(ex.Tc(ex.counts), 500.5590049525365)
+        assert_allclose(ex.Tc(ex.counts, 322.11), 500.5590049525365)
         assert_allclose(ex.Pc(ex.counts, ex.atom_count), 4802499.604994407)
         assert_allclose(ex.Vc(ex.counts), 0.0002095)
         assert_allclose(ex.Hf(ex.counts), -217830)
@@ -59,8 +59,8 @@ def test_Joback_acetone():
         assert_allclose(ex.Cpig(300), 75.32642000000001)
         assert_allclose(ex.mul_coeffs(ex.counts), [839.11, -14.99])
         assert_allclose(ex.mul(300), 0.0002940378347162687)
-        
-        
+
+
 @pytest.mark.slow
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
@@ -80,7 +80,7 @@ def test_Joback_database():
         except Exception as e:
             line = '%s\t%s\t%s\n' %(chem_info.CASs, chem_info.smiles, e)
         lines.append(line)
-    
+
     [f.write(line) for line in sorted(lines)]
     f.close()
-        
+

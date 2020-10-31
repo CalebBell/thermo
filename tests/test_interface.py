@@ -53,10 +53,10 @@ def test_SurfaceTension():
         EtOH.test_method_validity(300, 'BADMETHOD')
 
     # Test Aleem
-    
+
     CH4 = SurfaceTension(Tb=111.65, Cpl=2465., Hvap_Tb=510870., MW=16.04246, Vml=3.497e-05)
     assert_close(CH4.T_dependent_property(90), 0.016704545538936296)
-    
+
     assert not CH4.test_method_validity(600, 'Aleem')
     assert CH4.test_method_validity(100, 'Aleem')
 
@@ -68,18 +68,18 @@ def test_SurfaceTensionMixture():
     m = Mixture(['pentane', 'dichloromethane'], zs=[.1606, .8394], T=298.15)
     SurfaceTensions = [i.SurfaceTension for i in m.Chemicals]
     VolumeLiquids = [i.VolumeLiquid for i in m.Chemicals]
-    
+
     a = SurfaceTensionMixture(MWs=m.MWs, Tbs=m.Tbs, Tcs=m.Tcs, CASs=m.CASs, SurfaceTensions=SurfaceTensions, VolumeLiquids=VolumeLiquids)
 
     sigma = a.mixture_property(m.T, m.P, m.zs, m.ws)
     assert_close(sigma, 0.023887948426185343)
-    
+
     sigma = a.calculate(m.T, m.P, m.zs, m.ws, SIMPLE)
     assert_close(sigma, 0.025331490604571537)
-    
+
     sigmas = [a.calculate(m.T, m.P, m.zs, m.ws, i) for i in [DIGUILIOTEJA, SIMPLE, WINTERFELDSCRIVENDAVIS]]
     assert_close1d(sigmas, [0.025257338967448677, 0.025331490604571537, 0.023887948426185343])
-    
+
     with pytest.raises(Exception):
         a.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
     with pytest.raises(Exception):

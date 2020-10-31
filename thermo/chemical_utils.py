@@ -23,7 +23,7 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['standard_entropy', 'S0_basis_converter']
-           
+
 import os
 from fluids.numerics import quad, numpy as np
 import pandas as pd
@@ -53,20 +53,20 @@ def standard_entropy(c=None, dS_trans_s=None, dH_trans_s=None, T_trans_s=None,
         for dH, T in zip(dH_trans_s, T_trans_s):
             if T < T_ref or force_gas:
                 tot += dH/T
-    
+
     # Solid heat capacity integral
     if Cp_s_fun is not None:
         tot += float(quad(lambda T: Cp_s_fun(T)/T, T_low, Tm)[0])
     else:
         tot += c.HeatCapacitySolid.T_dependent_property_integral_over_T(T_low, Tm)
-    
+
     # Heat of fusion
     if force_gas or Tm < T_ref:
         if Sfusm is not None:
             tot += Sfusm
         else:
             tot += Hfusm/Tm
-    
+
     # Liquid heat capacity
     if not force_gas and Tb > T_ref:
         T_liquid_int = T_ref
@@ -77,14 +77,14 @@ def standard_entropy(c=None, dS_trans_s=None, dH_trans_s=None, T_trans_s=None,
             tot += float(quad(lambda T: Cp_l_fun(T)/T, Tm, T_liquid_int)[0])
         else:
             tot += c.HeatCapacityLiquid.T_dependent_property_integral_over_T(Tm, T_liquid_int)
-    
+
     # Heat of vaporization
     if force_gas or Tb < T_ref:
         if Svapm is not None:
             tot += Svapm
         else:
             tot += Hvapm/Tb
-        
+
     if force_gas or Tb < T_ref:
         # gas heat capacity
         if Cp_g_fun is not None:
@@ -98,7 +98,7 @@ def standard_entropy(c=None, dS_trans_s=None, dH_trans_s=None, T_trans_s=None,
 def S0_basis_converter(c, S0_liq=None, S0_gas=None, T_ref=298.15):
     r'''This function converts a liquid or gas standard entropy to the
     other. This is useful, as thermodynamic packages often work with ideal-
-    gas as the reference state and require ideal-gas Gibbs energies of 
+    gas as the reference state and require ideal-gas Gibbs energies of
     formation.
 
     Parameters
@@ -118,14 +118,14 @@ def S0_basis_converter(c, S0_liq=None, S0_gas=None, T_ref=298.15):
     Returns
     -------
     S0_calc : float
-        Standard absolute entropy of the compound at the reference temperature 
+        Standard absolute entropy of the compound at the reference temperature
         in the other state to the one provided, [J/mol]
 
     Notes
     -----
-    This function relies in accurate heat capacity curves for both the liquid 
+    This function relies in accurate heat capacity curves for both the liquid
     and gas state.
-        
+
     Examples
     --------
     >>> S0_basis_converter(Chemical('decane'), S0_liq=425.89)

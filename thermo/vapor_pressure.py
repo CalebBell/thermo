@@ -105,11 +105,11 @@ class VaporPressure(TDependentProperty):
         Coefficients were altered to be in units of Pa and Celcius.
     **DIPPR_PERRY_8E**:
         A collection of 341 coefficient sets from the DIPPR database published
-        openly in [5]_. Provides temperature limits for all its fluids. 
+        openly in [5]_. Provides temperature limits for all its fluids.
         :obj:`thermo.dippr.EQ101` is used for its fluids.
     **VDI_PPDS**:
-        Coefficients for a equation form developed by the PPDS, published 
-        openly in [4]_. 
+        Coefficients for a equation form developed by the PPDS, published
+        openly in [4]_.
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
         Range is limited to that of the equations of state it uses, as
@@ -130,7 +130,7 @@ class VaporPressure(TDependentProperty):
         Tabular data in [4]_ along the saturation curve; interpolation is as
         set by the user or the default.
     **EOS**:
-        Equation of state provided by user; must implement 
+        Equation of state provided by user; must implement
         :obj:`thermo.eos.GCEOS.Psat`
 
     See Also
@@ -187,7 +187,7 @@ class VaporPressure(TDependentProperty):
                       LEE_KESLER_PSAT, EDALAT, BOILING_CRITICAL, EOS, SANJARI]
     '''Default rankings of the available methods.'''
 
-    def __init__(self, Tb=None, Tc=None, Pc=None, omega=None, CASRN='', 
+    def __init__(self, Tb=None, Tc=None, Pc=None, omega=None, CASRN='',
                  eos=None, best_fit=None):
         self.CASRN = CASRN
         self.Tb = Tb
@@ -257,7 +257,7 @@ class VaporPressure(TDependentProperty):
             A, B, C, D, self.WAGNER_MCGARRY_Pc, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Tmin = vapor_pressure.Psat_values_WagnerMcGarry[vapor_pressure.Psat_data_WagnerMcGarry.index.get_loc(self.CASRN)].tolist()
             self.WAGNER_MCGARRY_coefs = [A, B, C, D]
             Tmins.append(self.WAGNER_MCGARRY_Tmin); Tmaxs.append(self.WAGNER_MCGARRY_Tc)
-            
+
         if self.CASRN in vapor_pressure.Psat_data_WagnerPoling.index:
             methods.append(WAGNER_POLING)
             A, B, C, D, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, Tmin, self.WAGNER_POLING_Tmax = vapor_pressure.Psat_values_WagnerPoling[vapor_pressure.Psat_data_WagnerPoling.index.get_loc(self.CASRN)].tolist()
@@ -265,7 +265,7 @@ class VaporPressure(TDependentProperty):
             self.WAGNER_POLING_Tmin = Tmin if not isnan(Tmin) else self.WAGNER_POLING_Tmax*0.1
             self.WAGNER_POLING_coefs = [A, B, C, D]
             Tmins.append(Tmin); Tmaxs.append(self.WAGNER_POLING_Tmax)
-            
+
         if self.CASRN in vapor_pressure.Psat_data_AntoineExtended.index:
             methods.append(ANTOINE_EXTENDED_POLING)
             A, B, C, Tc, to, n, E, F, self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax = vapor_pressure.Psat_values_AntoineExtended[vapor_pressure.Psat_data_AntoineExtended.index.get_loc(self.CASRN)].tolist()
@@ -441,10 +441,10 @@ class VaporPressure(TDependentProperty):
         return True
 
     def calculate_derivative(self, T, method, order=1):
-        r'''Method to calculate a derivative of a vapor pressure with respect to 
+        r'''Method to calculate a derivative of a vapor pressure with respect to
         temperature, of a given order  using a specified method. If the method
-        is BESTFIT, an anlytical derivative is used; otherwise SciPy's 
-        derivative function, with a delta of 1E-6 K and a number of points 
+        is BESTFIT, an anlytical derivative is used; otherwise SciPy's
+        derivative function, with a delta of 1E-6 K and a number of points
         equal to 2*order + 1.
 
         If the calculation does not succeed, returns the actual error
@@ -465,7 +465,7 @@ class VaporPressure(TDependentProperty):
             Calculated derivative property, [`units/K^order`]
         '''
         if order == 1 and method == BESTFIT:
-            
+
             if T < self.best_fit_Tmin:
                 return self.best_fit_Tmin_slope*exp(
                         (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope
@@ -477,8 +477,8 @@ class VaporPressure(TDependentProperty):
             else:
                 v, der = horner_and_der(self.best_fit_coeffs, T)
                 return der*exp(v)
-            
-            
+
+
         return derivative(self.calculate, T, dx=1e-6, args=[method], n=order, order=1+order*2)
 
     def custom_set_best_fit(self):
@@ -490,12 +490,12 @@ class VaporPressure(TDependentProperty):
                 v, d1, d2 = horner_and_der2(best_fit_coeffs, T_trans)
                 Psat = exp(v)
                 dPsat_dT = Psat*d1
-                d2Psat_dT2 = Psat*(d1*d1 + d2)                
-                
+                d2Psat_dT2 = Psat*(d1*d1 + d2)
+
                 A, B, C = Antoine_ABC = Antoine_coeffs_from_point(T_trans, Psat, dPsat_dT, d2Psat_dT2, base=e)
                 self.best_fit_AB = Antoine_AB_coeffs_from_point(T_trans, Psat, dPsat_dT, base=e)
                 self.DIPPR101_ABC = DIPPR101_ABC_coeffs_from_point(T_trans, Psat, dPsat_dT, d2Psat_dT2)
-                
+
                 B_OK = B > 0.0 # B is negated in this implementation, so the requirement is reversed
                 C_OK = -T_trans < C < 0.0
                 if B_OK and C_OK:
@@ -503,13 +503,13 @@ class VaporPressure(TDependentProperty):
                     break
                 else:
                     continue
-                
+
             # Calculate the extrapolation values
             v_Tmax = horner(best_fit_coeffs, Tmax)
             v, d1, d2 = horner_and_der2(best_fit_coeffs, Tmax)
             Psat = exp(v)
             dPsat_dT = Psat*d1
-            d2Psat_dT2 = Psat*(d1*d1 + d2)                
+            d2Psat_dT2 = Psat*(d1*d1 + d2)
 #                A, B, C = Antoine_ABC = Antoine_coeffs_from_point(T_trans, Psat, dPsat_dT, d2Psat_dT2, base=e)
             self.best_fit_AB_high = Antoine_AB_coeffs_from_point(Tmax, Psat, dPsat_dT, base=e)
             self.best_fit_AB_high_ABC_compat = (self.best_fit_AB_high[0], -self.best_fit_AB_high[1])
@@ -518,13 +518,13 @@ class VaporPressure(TDependentProperty):
 
         except:
             pass
-    
+
     def solve_prop_best_fit(self, goal):
         best_fit_Tmin, best_fit_Tmax = self.best_fit_Tmin, self.best_fit_Tmax
         best_fit_Tmin_slope, best_fit_Tmax_slope = self.best_fit_Tmin_slope, self.best_fit_Tmax_slope
         best_fit_Tmin_value, best_fit_Tmax_value = self.best_fit_Tmin_value, self.best_fit_Tmax_value
         coeffs = self.best_fit_coeffs
-        
+
         T_low = log(goal*exp(best_fit_Tmin*best_fit_Tmin_slope - best_fit_Tmin_value))/best_fit_Tmin_slope
         if T_low <= best_fit_Tmin:
             return T_low
@@ -539,7 +539,7 @@ class VaporPressure(TDependentProperty):
                 for c in coeffs:
                     dPsat = T*dPsat + Psat
                     Psat = T*Psat + c
-                    
+
                 return Psat - lnPGoal, dPsat
             # Guess with the two extrapolations from the linear fits
             # By definition both guesses are in the range of they would have been returned
@@ -587,10 +587,10 @@ class SublimationPressure(TDependentProperty):
 
     References
     ----------
-    .. [1] Goodman, B. T., W. V. Wilding, J. L. Oscarson, and R. L. Rowley. 
-       "Use of the DIPPR Database for the Development of QSPR Correlations: 
-       Solid Vapor Pressure and Heat of Sublimation of Organic Compounds." 
-       International Journal of Thermophysics 25, no. 2 (March 1, 2004): 
+    .. [1] Goodman, B. T., W. V. Wilding, J. L. Oscarson, and R. L. Rowley.
+       "Use of the DIPPR Database for the Development of QSPR Correlations:
+       Solid Vapor Pressure and Heat of Sublimation of Organic Compounds."
+       International Journal of Thermophysics 25, no. 2 (March 1, 2004):
        337-50. https://doi.org/10.1023/B:IJOT.0000028471.77933.80.
     '''
     name = 'Sublimation pressure'
@@ -654,7 +654,7 @@ class SublimationPressure(TDependentProperty):
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods()
-        
+
         if best_fit is not None:
             self.set_best_fit(best_fit)
             if self.Tmin is None and hasattr(self, 'best_fit_Tmin'):
@@ -721,7 +721,7 @@ class SublimationPressure(TDependentProperty):
         ranges for all coefficient-based methods. For CSP methods, the models
         are considered valid from 0 K to the critical point. For tabular data,
         extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the 
+        :obj:`tabular_extrapolation_permitted` is set; if it is, the
         extrapolation is considered valid for all temperatures.
 
         It is not guaranteed that a method will work or give an accurate

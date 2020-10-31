@@ -28,7 +28,7 @@ from chemicals.identifiers import check_CAS
 def test_fluid_props():
 #    tots = [sum([getattr(f, prop) for f in coolprop_fluids.values()]) for prop in ['Tmin', 'Tmax', 'Pmax', 'Tc', 'Pc', 'Tt', 'omega']]
 #    tots_exp = [18589.301, 71575.0, 31017000000.0, 45189.59849999997, 440791794.7987591, 18589.301, 30.90243968446593]
-              
+
 
 #    assert_allclose(tots_exp, tots)
 
@@ -68,8 +68,8 @@ def test_CoolProp_T_dependent_property():
 
     rhow = CoolProp_T_dependent_property(700, '7732-18-5', 'D', 'g')
     assert_allclose(rhow, 0.3139926976198761)
-    
-    
+
+
 @pytest.mark.slow
 def test_CP_approximators():
     from thermo.coolprop import coolprop_fluids, CP_approximators
@@ -80,6 +80,6 @@ def test_CP_approximators():
         for prop in props:
             if hasattr(obj, prop+'_g'):
                 obj.validate_prop(prop, 'g', evaluated_points=15)
-                
-                
-                
+
+
+

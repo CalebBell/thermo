@@ -59,22 +59,22 @@ class RegularSolution(GibbsExcess):
         new.xsVs = xsVs
         new.xsVs_inv = 1.0/xsVs
         return new
-    
+
 
     def GE(self):
         r'''
-        
+
         .. math::
             G^E = \frac{\sum_m \sum_n (x_m x_n V_m V_n A_{mn})}{\sum_m x_m V_m}
-        
+
         .. math::
             A_{mn} = 0.5(\delta_m - \delta_n)^2 - \delta_m \delta_n k_{mn}
-            
+
         '''
         '''
         from sympy import *
         GEvar, dGEvar_dT, GEvar_dx, dGEvar_dxixj, H = symbols("GEvar, dGEvar_dT, GEvar_dx, dGEvar_dxixj, H", cls=Function)
-        
+
         N = 3
         cmps = range(N)
         R, T = symbols('R, T')
@@ -82,10 +82,10 @@ class RegularSolution(GibbsExcess):
         Vs = V0, V1, V2 = symbols('V0, V1, V2')
         SPs = SP0, SP1, SP2 = symbols('SP0, SP1, SP2')
         l00, l01, l02, l10, l11, l12, l20, l21, l22 = symbols('l00, l01, l02, l10, l11, l12, l20, l21, l22')
-        l_ijs = [[l00, l01, l02], 
+        l_ijs = [[l00, l01, l02],
                  [l10, l11, l12],
                  [l20, l21, l22]]
-        
+
         GE = 0
         denom = sum([xs[i]*Vs[i] for i in cmps])
         num = 0
@@ -101,7 +101,7 @@ class RegularSolution(GibbsExcess):
             pass
         cmps = self.cmps
         xs, SPs, Vs, coeffs = self.xs, self.SPs, self.Vs, self.lambda_coeffs
-        
+
         num = 0.0
         for i in cmps:
             coeffsi = coeffs[i]
@@ -117,7 +117,7 @@ class RegularSolution(GibbsExcess):
     def dGE_dxs(self):
         r'''
         .. math::
-            \frac{\partial G^E}{\partial x_i} = \frac{-V_i G^E + \sum_m V_i V_m 
+            \frac{\partial G^E}{\partial x_i} = \frac{-V_i G^E + \sum_m V_i V_m
             x_m[\delta_i\delta_m(k_{mi} + k_{im}) + (\delta_i - \delta_m)^2 ]}
             {\sum_m V_m x_m}
         '''
@@ -133,9 +133,9 @@ class RegularSolution(GibbsExcess):
         cmps, xsVs_inv = self.cmps, self.xsVs_inv
         xs, SPs, Vs, coeffs = self.xs, self.SPs, self.Vs, self.lambda_coeffs
         GE = self.GE()
-        
+
         self._dGE_dxs = dGE_dxs = []
-        
+
         for i in cmps:
             # i is what is being differentiated
             tot = 0.0
@@ -153,7 +153,7 @@ class RegularSolution(GibbsExcess):
             - \frac{V_i \frac{\partial G^E}{\partial x_j}}{\sum_m V_m x_m}
             + \frac{V_i V_j[\delta_i\delta_j(k_{ji} + k_{ij}) + (\delta_i - \delta_j)^2] }{\sum_m V_m x_m}
         '''
-        
+
         '''
         d2GEdxixjs = diff((diff(GE, x0)).subs(GE, GEvar(x0, x1, x2)), x1).subs(Hi, H(x0, x1, x2))
         d2GEdxixjs
@@ -165,9 +165,9 @@ class RegularSolution(GibbsExcess):
         cmps, xsVs_inv = self.cmps, self.xsVs_inv
         xs, SPs, Vs, coeffs = self.xs, self.SPs, self.Vs, self.lambda_coeffs
         GE, dGE_dxs = self.GE(), self.dGE_dxs()
-        
+
         self._d2GE_dxixjs = d2GE_dxixjs = []
-        
+
         Hi_sums = []
         for i in cmps:
             t = 0.0
@@ -183,14 +183,14 @@ class RegularSolution(GibbsExcess):
                 SPi_m_SPj = SPs[i] - SPs[j]
                 Hi = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
                 tot = Vs[j]*(Vs[i]*GE - Hi_sums[i])*xsVs_inv*xsVs_inv - Vs[i]*dGE_dxs[j]*xsVs_inv + Vs[i]*Vs[j]*Hi*xsVs_inv
-                
+
                 row.append(tot)
             d2GE_dxixjs.append(row)
         return d2GE_dxixjs
-                
+
     def d3GE_dxixjxks(self):
         r'''
-        
+
         .. math::
             \frac{\partial^3 G^E}{\partial x_i \partial x_j \partial x_k} = \frac{-2V_iV_jV_k G^E + 2 V_j V_k H_{ij}} {(\sum_m V_m x_m)^3}
             + \frac{V_i\left(V_j\frac{\partial G^E}{\partial x_k} + V_k\frac{\partial G^E}{\partial x_j}  \right)} {(\sum_m V_m x_m)^2}
@@ -230,18 +230,18 @@ class RegularSolution(GibbsExcess):
                                  + (SPs[i]-SPs[j])**2 + (SPs[i] - SPs[k])**2
                                  )
                     firsts = -Vs[i]*d2GE_dxixjs[j][k]
-                    
-                    
-                    
+
+
+
                     tot = firsts*xsVs_inv + seconds*xsVs_inv*xsVs_inv + thirds*xsVs_inv*xsVs_inv*xsVs_inv
                     dG_row.append(tot)
                 dG_matrix.append(dG_row)
             d3GE_dxixjxks.append(dG_matrix)
         return d3GE_dxixjxks
-    
+
     def d2GE_dTdxs(self):
         return [0.0]*self.N
-       
+
     def dGE_dT(self):
         return 0.0
 

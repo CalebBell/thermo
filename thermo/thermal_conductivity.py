@@ -26,8 +26,8 @@ __all__ = [
  'ThermalConductivityGasMixture', 'ThermalConductivityLiquidMixture',
  'MAGOMEDOV', 'DIPPR_9H', 'FILIPPOV', 'LINDSAY_BROMLEY',
  'thermal_conductivity_liquid_methods', 'ThermalConductivityLiquid',
- 
- 'thermal_conductivity_gas_methods', 
+
+ 'thermal_conductivity_gas_methods',
  'thermal_conductivity_gas_methods_P', 'ThermalConductivityGas',
 
            ]
@@ -71,8 +71,8 @@ NEGLIGIBLE = 'NEGLIGIBLE'
 DIPPR_9G = 'DIPPR_9G'
 BESTFIT = 'Best fit'
 
-thermal_conductivity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, 
-                                       VDI_TABULAR, GHARAGHEIZI_L, 
+thermal_conductivity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS,
+                                       VDI_TABULAR, GHARAGHEIZI_L,
                                        SHEFFY_JOHNSON, SATO_RIEDEL,
                                        LAKSHMI_PRASAD, BAHADORI_L,
                                        NICOLA, NICOLA_ORIGINAL]
@@ -89,7 +89,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
 
     For low-pressure (at 1 atm while under the vapor pressure; along the
     saturation line otherwise) liquids, there is one source of tabular
-    information, one polynomial-based method, 7 corresponding-states estimators, 
+    information, one polynomial-based method, 7 corresponding-states estimators,
     and the external library CoolProp.
 
     For high-pressure liquids (also, <1 atm liquids), there are two
@@ -139,11 +139,11 @@ class ThermalConductivityLiquid(TPDependentProperty):
         CSP method, described in :obj:`Lakshmi_Prasad`.
     **DIPPR_PERRY_8E**:
         A collection of 340 coefficient sets from the DIPPR database published
-        openly in [3]_. Provides temperature limits for all its fluids. 
+        openly in [3]_. Provides temperature limits for all its fluids.
         :obj:`thermo.dippr.EQ100` is used for its fluids.
     **VDI_PPDS**:
-        Coefficients for a equation form developed by the PPDS, published 
-        openly in [2]_. Covers a large temperature range, but does not 
+        Coefficients for a equation form developed by the PPDS, published
+        openly in [2]_. Covers a large temperature range, but does not
         extrapolate well at very high or very low temperatures. 271 compounds.
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
@@ -209,7 +209,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
     '''Maximum valid value of liquid thermal conductivity. Generous limit.'''
 
     ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR,
-                      GHARAGHEIZI_L, SHEFFY_JOHNSON, SATO_RIEDEL, 
+                      GHARAGHEIZI_L, SHEFFY_JOHNSON, SATO_RIEDEL,
                       LAKSHMI_PRASAD, BAHADORI_L, NICOLA, NICOLA_ORIGINAL]
     '''Default rankings of the low-pressure methods.'''
     ranked_methods_P = [COOLPROP, DIPPR_9G, MISSENARD]
@@ -539,18 +539,18 @@ thermal_conductivity_liquid_mixture_methods = [MAGOMEDOV, DIPPR_9H, FILIPPOV, SI
 
 
 class ThermalConductivityLiquidMixture(MixtureProperty):
-    '''Class for dealing with thermal conductivity of a liquid mixture as a   
+    '''Class for dealing with thermal conductivity of a liquid mixture as a
     function of temperature, pressure, and composition.
     Consists of two mixing rule specific to liquid thremal conductivity, one
-    coefficient-based method for aqueous electrolytes, and mole weighted 
-    averaging. 
-         
+    coefficient-based method for aqueous electrolytes, and mole weighted
+    averaging.
+
     Prefered method is :obj:`DIPPR9H` which requires mass
-    fractions, and pure component liquid thermal conductivities. This is 
-    substantially better than the ideal mixing rule based on mole fractions, 
+    fractions, and pure component liquid thermal conductivities. This is
+    substantially better than the ideal mixing rule based on mole fractions,
     **SIMPLE**. **Filippov** is of similar accuracy but applicable to binary
     systems only.
-        
+
     Parameters
     ----------
     CASs : str, optional
@@ -561,7 +561,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
     correct_pressure_pure : bool, optional
-        Whether to try to use the better pressure-corrected pure component 
+        Whether to try to use the better pressure-corrected pure component
         models or to use only the T-only dependent pure species models, [-]
 
     Notes
@@ -596,7 +596,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     '''Mimimum valid value of liquid thermal conductivity.'''
     property_max = 10
     '''Maximum valid value of liquid thermal conductivity. Generous limit.'''
-                            
+
     ranked_methods = [DIPPR_9H, SIMPLE, MAGOMEDOV, FILIPPOV]
 
     def __init__(self, CASs=[], ThermalConductivityLiquids=[], MWs=[],
@@ -604,7 +604,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
         self.CASs = CASs
         self.ThermalConductivityLiquids = self.pure_objs = ThermalConductivityLiquids
         self.MWs = MWs
-        
+
         self._correct_pressure_pure = correct_pressure_pure
 
         self.Tmin = None
@@ -624,14 +624,14 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
-        
+
         self.set_best_fit_coeffs()
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
-        All data are stored as attributes. This method also sets :obj:`Tmin`, 
-        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        All data are stored as attributes. This method also sets :obj:`Tmin`,
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should
         work to calculate the property.
 
         Called on initialization only. See the source code for the variables at
@@ -639,7 +639,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods = [DIPPR_9H, SIMPLE]        
+        methods = [DIPPR_9H, SIMPLE]
         if len(self.CASs) == 2:
             methods.append(FILIPPOV)
         if '7732-18-5' in self.CASs and len(self.CASs)>1:
@@ -648,7 +648,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
                 methods.append(MAGOMEDOV)
                 self.wCASs = wCASs
                 self.index_w = self.CASs.index('7732-18-5')
-            
+
         self.all_methods = set(methods)
         Tmins = [i.Tmin for i in self.ThermalConductivityLiquids if i.Tmin]
         Tmaxs = [i.Tmax for i in self.ThermalConductivityLiquids if i.Tmax]
@@ -656,9 +656,9 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
             self.Tmin = max(Tmins)
         if Tmaxs:
             self.Tmax = max(Tmaxs)
-        
+
     def calculate(self, T, P, zs, ws, method):
-        r'''Method to calculate thermal conductivity of a liquid mixture at 
+        r'''Method to calculate thermal conductivity of a liquid mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
@@ -687,7 +687,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
             k_w = self.ThermalConductivityLiquids[self.index_w](T, P)
             ws = list(ws) ; ws.pop(self.index_w)
             return thermal_conductivity_Magomedov(T, P, ws, self.wCASs, k_w)
-        
+
         if self._correct_pressure_pure:
             ks = []
             for obj in self.ThermalConductivityLiquids:
@@ -697,7 +697,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
                 ks.append(k)
         else:
             ks = [i.T_dependent_property(T) for i in self.ThermalConductivityLiquids]
-        
+
         if method == SIMPLE:
             return mixing_simple(zs, ks)
         elif method == DIPPR_9H:
@@ -799,7 +799,7 @@ class ThermalConductivityGas(TPDependentProperty):
         Molar volume of the fluid at a pressure and temperature or callable for
         the same, [m^3/mol]
     Cvgm : float or callable, optional
-        Molar heat capacity of the fluid at a pressure and temperature or 
+        Molar heat capacity of the fluid at a pressure and temperature or
         or callable for the same, [J/mol/K]
     mug : float or callable, optional
         Gas viscosity of the fluid at a pressure and temperature or callable
@@ -830,11 +830,11 @@ class ThermalConductivityGas(TPDependentProperty):
         CSP method, described in :obj:`Bahadori_gas`.
     **DIPPR_PERRY_8E**:
         A collection of 345 coefficient sets from the DIPPR database published
-        openly in [3]_. Provides temperature limits for all its fluids. 
+        openly in [3]_. Provides temperature limits for all its fluids.
         :obj:`thermo.dippr.EQ102` is used for its fluids.
     **VDI_PPDS**:
-        Coefficients for a equation form developed by the PPDS, published 
-        openly in [2]_. Covers a large temperature range, but does not 
+        Coefficients for a equation form developed by the PPDS, published
+        openly in [2]_. Covers a large temperature range, but does not
         extrapolate well at very high or very low temperatures. 275 compounds.
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
@@ -1243,17 +1243,17 @@ thermal_conductivity_gas_methods = [LINDSAY_BROMLEY, SIMPLE]
 
 
 class ThermalConductivityGasMixture(MixtureProperty):
-    '''Class for dealing with thermal conductivity of a gas mixture as a   
+    '''Class for dealing with thermal conductivity of a gas mixture as a
     function of temperature, pressure, and composition.
     Consists of one mixing rule specific to gas thremal conductivity, and mole
-    weighted averaging. 
-         
+    weighted averaging.
+
     Prefered method is :obj:`Lindsay_Bromley` which requires mole
-    fractions, pure component viscosities and thermal conductivities, and the 
-    boiling point and molecular weight of each pure component. This is 
-    substantially better than the ideal mixing rule based on mole fractions, 
+    fractions, pure component viscosities and thermal conductivities, and the
+    boiling point and molecular weight of each pure component. This is
+    substantially better than the ideal mixing rule based on mole fractions,
     **SIMPLE** which is also available.
-        
+
     Parameters
     ----------
     MWs : list[float], optional
@@ -1263,13 +1263,13 @@ class ThermalConductivityGasMixture(MixtureProperty):
     CASs : str, optional
         The CAS numbers of all species in the mixture
     ThermalConductivityGases : list[ThermalConductivityGas], optional
-        ThermalConductivityGas objects created for all species in the mixture, 
+        ThermalConductivityGas objects created for all species in the mixture,
         normally created by :obj:`thermo.chemical.Chemical`.
     ViscosityGases : list[ViscosityGas], optional
-        ViscosityGas objects created for all species in the mixture, normally 
+        ViscosityGas objects created for all species in the mixture, normally
         created by :obj:`thermo.chemical.Chemical`.
     correct_pressure_pure : bool, optional
-        Whether to try to use the better pressure-corrected pure component 
+        Whether to try to use the better pressure-corrected pure component
         models or to use only the T-only dependent pure species models, [-]
 
     Notes
@@ -1297,18 +1297,18 @@ class ThermalConductivityGasMixture(MixtureProperty):
     '''Mimimum valid value of gas thermal conductivity.'''
     property_max = 10.
     '''Maximum valid value of gas thermal conductivity. Generous limit.'''
-                            
+
     ranked_methods = [LINDSAY_BROMLEY, SIMPLE]
 
-    def __init__(self, MWs=[], Tbs=[], CASs=[], ThermalConductivityGases=[], 
+    def __init__(self, MWs=[], Tbs=[], CASs=[], ThermalConductivityGases=[],
                  ViscosityGases=[], correct_pressure_pure=True):
         self.MWs = MWs
         self.Tbs = Tbs
         self.CASs = CASs
         self.ThermalConductivityGases = ThermalConductivityGases
-        self.ViscosityGases = self.pure_objs = ViscosityGases 
+        self.ViscosityGases = self.pure_objs = ViscosityGases
 
-        self._correct_pressure_pure = correct_pressure_pure                    
+        self._correct_pressure_pure = correct_pressure_pure
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -1327,15 +1327,15 @@ class ThermalConductivityGasMixture(MixtureProperty):
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
-        
+
         self.set_best_fit_coeffs()
 
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
-        All data are stored as attributes. This method also sets :obj:`Tmin`, 
-        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        All data are stored as attributes. This method also sets :obj:`Tmin`,
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should
         work to calculate the property.
 
         Called on initialization only. See the source code for the variables at
@@ -1343,7 +1343,7 @@ class ThermalConductivityGasMixture(MixtureProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods = []        
+        methods = []
         methods.append(SIMPLE)
         if none_and_length_check((self.Tbs, self.MWs)):
             methods.append(LINDSAY_BROMLEY)
@@ -1356,7 +1356,7 @@ class ThermalConductivityGasMixture(MixtureProperty):
             self.Tmax = max(Tmaxs)
 
     def calculate(self, T, P, zs, ws, method):
-        r'''Method to calculate thermal conductivity of a gas mixture at 
+        r'''Method to calculate thermal conductivity of a gas mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
@@ -1390,7 +1390,7 @@ class ThermalConductivityGasMixture(MixtureProperty):
                 ks.append(k)
         else:
             ks = [i.T_dependent_property(T) for i in self.ThermalConductivityGases]
-        
+
         if method == SIMPLE:
             return mixing_simple(zs, ks)
         elif method == LINDSAY_BROMLEY:
@@ -1409,7 +1409,7 @@ class ThermalConductivityGasMixture(MixtureProperty):
 
     def test_method_validity(self, T, P, zs, ws, method):
         r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of 
+        conditions. No methods have implemented checks or strict ranges of
         validity.
 
         Parameters

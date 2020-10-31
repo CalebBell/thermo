@@ -25,7 +25,7 @@ SOFTWARE.
 
 from __future__ import division
 
-__all__ = ['PropertyPackageConstants', 'IDEAL_PKG', 'NRTL_PKG', 'UNIFAC_PKG', 
+__all__ = ['PropertyPackageConstants', 'IDEAL_PKG', 'NRTL_PKG', 'UNIFAC_PKG',
            'UNIFAC_DORTMUND_PKG', 'PR_PKG', 'SRK_PKG']
 
 from copy import copy
@@ -53,14 +53,14 @@ UNIFAC_DORTMUND_PKG = 'Unifac Dortmund'
 PR_PKG = 'PR'
 SRK_PKG = 'SRK'
 
-property_packages = [IDEAL_PKG, NRTL_PKG, UNIFAC_PKG, UNIFAC_DORTMUND_PKG, 
+property_packages = [IDEAL_PKG, NRTL_PKG, UNIFAC_PKG, UNIFAC_DORTMUND_PKG,
                      PR_PKG, SRK_PKG]
 property_packages_cubic = [PR_PKG, SRK_PKG]
 
 property_package_to_eos = {PR_PKG: PRMIX, SRK_PKG: SRKMIX}
 property_package_to_eos_pures = {PR_PKG: PR, SRK_PKG: SRK}
 
-property_package_names_to_objs = {IDEAL_PKG: IdealCaloric, 
+property_package_names_to_objs = {IDEAL_PKG: IdealCaloric,
                                   NRTL_PKG: Nrtl, # Not complete  - enthalpy missing
                                   UNIFAC_PKG: UnifacCaloric,
                                   UNIFAC_DORTMUND_PKG: UnifacDortmundCaloric,
@@ -70,7 +70,7 @@ property_package_names_to_objs = {IDEAL_PKG: IdealCaloric,
 
 
 class PropertyPackageConstants(object):
-    '''Class to store kijs, as well as allow properties to be edited; load 
+    '''Class to store kijs, as well as allow properties to be edited; load
     them from the database and then be ready to store them.
     '''
     def __init__(self, mixture, name=IDEAL_PKG, **kwargs):
@@ -80,28 +80,28 @@ class PropertyPackageConstants(object):
         elif isinstance(mixture, Mixture):
             self.Chemicals = mixture.Chemicals
         self.name = name
-        
+
         if name not in property_packages_cubic:
             eos_mix = PRMIX
             eos = PR
         else:
             eos_mix = property_package_to_eos[name]
             eos = property_package_to_eos_pures[name]
-            
+
         self.eos = eos
         self.eos_mix = eos_mix
-            
+
         self.eos_in_a_box = [eos_mix]
-        
+
         self.pkg_obj = property_package_names_to_objs[self.name]
-                
+
         self.set_chemical_constants()
         self.set_Chemical_property_objects()
         self.set_TP_sources()
-        
+
         self.kwargs = kwargs
         self.pkg = self.new_package()
-        
+
     def new_package(self):
         pkg_args = {'VaporPressures': self.VaporPressures,
                    'Tms': self.Tms, 'Tbs': self.Tbs, 'Tcs': self.Tcs,
@@ -117,15 +117,15 @@ class PropertyPackageConstants(object):
                     'Hfs': self.Hfgms,
                     'Gfs': self.Gfgms,
                    }
-        pkg_args.update(self.kwargs) 
-        
+        pkg_args.update(self.kwargs)
+
         if self.name == UNIFAC_PKG:
             pkg_args['UNIFAC_groups'] = self.UNIFAC_groups
         elif self.name == UNIFAC_DORTMUND_PKG:
             pkg_args['UNIFAC_groups'] = self.UNIFAC_Dortmund_groups
-        
+
         return self.pkg_obj(**pkg_args)
-        
+
     def from_json(self, json):
         self.__dict__.update(json)
         self.set_Chemical_property_objects()

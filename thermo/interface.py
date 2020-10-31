@@ -39,7 +39,7 @@ from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
 
 
-    
+
 STREFPROP = 'REFPROP'
 SUPERCRITICAL = 'SUPERCRITICAL'
 SOMAYAJULU2 = 'SOMAYAJULU2'
@@ -95,7 +95,7 @@ class SurfaceTension(TDependentProperty):
         Liquid molar volume at a given temperature and pressure or callable
         for the same, [m^3/mol]
     Cpl : float or callable, optional
-        Mass heat capacity of the fluid at a pressure and temperature or 
+        Mass heat capacity of the fluid at a pressure and temperature or
         or callable for the same, [J/kg/K]
 
     Notes
@@ -181,7 +181,7 @@ class SurfaceTension(TDependentProperty):
     '''Mimimum valid value of surface tension. This occurs at the critical
     point exactly.'''
     property_max = 4.0
-    '''Maximum valid value of surface tension. Set to roughly twice that of 
+    '''Maximum valid value of surface tension. Set to roughly twice that of
     cobalt at its melting point.'''
 
     ranked_methods = [STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
@@ -294,7 +294,7 @@ class SurfaceTension(TDependentProperty):
             self.VDI_PPDS_Tc = Tc
             self.VDI_PPDS_Tm = Tm
             methods.append(VDI_PPDS)
-            Tmins.append(self.VDI_PPDS_Tm) ; Tmaxs.append(self.VDI_PPDS_Tc); 
+            Tmins.append(self.VDI_PPDS_Tm) ; Tmaxs.append(self.VDI_PPDS_Tc);
         if all((self.Tb, self.Hvap_Tb, self.MW)):
             # Cache Cpl at Tb for ease of calculation of Tmax
             self.Cpl_Tb = self.Cpl(self.Tb) if hasattr(self.Cpl, '__call__') else self.Cpl
@@ -432,11 +432,11 @@ surface_tension_mixture_methods = [WINTERFELDSCRIVENDAVIS, DIGUILIOTEJA, SIMPLE]
 
 
 class SurfaceTensionMixture(MixtureProperty):
-    '''Class for dealing with surface tension of a mixture as a function of 
+    '''Class for dealing with surface tension of a mixture as a function of
     temperature, pressure, and composition.
     Consists of two mixing rules specific to surface tension, and mole
-    weighted averaging. 
-         
+    weighted averaging.
+
     Prefered method is :obj:`Winterfeld_Scriven_Davis` which requires mole
     fractions, pure component surface tensions, and the molar density of each
     pure component. :obj:`Diguilio_Teja` is of similar accuracy, but requires
@@ -444,7 +444,7 @@ class SurfaceTensionMixture(MixtureProperty):
     as boiling points and critical points and mole fractions. An ideal mixing
     rule based on mole fractions, **SIMPLE**, is also available and is still
     relatively accurate.
-        
+
     Parameters
     ----------
     MWs : list[float], optional
@@ -456,13 +456,13 @@ class SurfaceTensionMixture(MixtureProperty):
     CASs : list[str], optional
         The CAS numbers of all species in the mixture
     SurfaceTensions : list[SurfaceTension], optional
-        SurfaceTension objects created for all species in the mixture, normally 
+        SurfaceTension objects created for all species in the mixture, normally
         created by :obj:`thermo.chemical.Chemical`.
     VolumeLiquids : list[VolumeLiquid], optional
-        VolumeLiquid objects created for all species in the mixture, normally 
+        VolumeLiquid objects created for all species in the mixture, normally
         created by :obj:`thermo.chemical.Chemical`.
     correct_pressure_pure : bool, optional
-        Whether to try to use the better pressure-corrected pure component 
+        Whether to try to use the better pressure-corrected pure component
         models or to use only the T-only dependent pure species models, [-]
 
     Notes
@@ -494,12 +494,12 @@ class SurfaceTensionMixture(MixtureProperty):
     '''Mimimum valid value of surface tension. This occurs at the critical
     point exactly.'''
     property_max = 4.0
-    '''Maximum valid value of surface tension. Set to roughly twice that of 
+    '''Maximum valid value of surface tension. Set to roughly twice that of
     cobalt at its melting point.'''
-                            
+
     ranked_methods = [WINTERFELDSCRIVENDAVIS, DIGUILIOTEJA, SIMPLE]
 
-    def __init__(self, MWs=[], Tbs=[], Tcs=[], CASs=[], SurfaceTensions=[], 
+    def __init__(self, MWs=[], Tbs=[], Tcs=[], CASs=[], SurfaceTensions=[],
                  VolumeLiquids=[], correct_pressure_pure=True):
         self.MWs = MWs
         self.Tbs = Tbs
@@ -507,7 +507,7 @@ class SurfaceTensionMixture(MixtureProperty):
         self.CASs = CASs
         self.SurfaceTensions = self.pure_objs = SurfaceTensions
         self.VolumeLiquids = VolumeLiquids
-        
+
         self._correct_pressure_pure = correct_pressure_pure
 
         self.Tmin = None
@@ -527,14 +527,14 @@ class SurfaceTensionMixture(MixtureProperty):
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
-        
+
         self.set_best_fit_coeffs()
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
-        All data are stored as attributes. This method also sets :obj:`Tmin`, 
-        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        All data are stored as attributes. This method also sets :obj:`Tmin`,
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should
         work to calculate the property.
 
         Called on initialization only. See the source code for the variables at
@@ -542,7 +542,7 @@ class SurfaceTensionMixture(MixtureProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods = []        
+        methods = []
         methods.append(SIMPLE) # Needs sigma
         methods.append(WINTERFELDSCRIVENDAVIS) # Nothing to load, needs rhoms, sigma
         if none_and_length_check((self.Tbs, self.Tcs)):
@@ -550,9 +550,9 @@ class SurfaceTensionMixture(MixtureProperty):
             if none_and_length_check([self.sigmas_Tb]):
                 methods.append(DIGUILIOTEJA)
         self.all_methods = set(methods)
-            
+
     def calculate(self, T, P, zs, ws, method):
-        r'''Method to calculate surface tension of a liquid mixture at 
+        r'''Method to calculate surface tension of a liquid mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
@@ -581,7 +581,7 @@ class SurfaceTensionMixture(MixtureProperty):
             sigmas = [i(T) for i in self.SurfaceTensions]
             return mixing_simple(zs, sigmas)
         elif method == DIGUILIOTEJA:
-            return Diguilio_Teja(T=T, xs=zs, sigmas_Tb=self.sigmas_Tb, 
+            return Diguilio_Teja(T=T, xs=zs, sigmas_Tb=self.sigmas_Tb,
                                  Tbs=self.Tbs, Tcs=self.Tcs)
         elif method == WINTERFELDSCRIVENDAVIS:
             sigmas = [i(T) for i in self.SurfaceTensions]
@@ -600,7 +600,7 @@ class SurfaceTensionMixture(MixtureProperty):
 
     def test_method_validity(self, T, P, zs, ws, method):
         r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of 
+        conditions. No methods have implemented checks or strict ranges of
         validity.
 
         Parameters

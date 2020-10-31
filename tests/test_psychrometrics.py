@@ -24,7 +24,7 @@ import pytest
 from fluids.numerics import *
 from thermo import *
 
-    
+
 def test_x_w_to_humidity_ratio():
     # Checked
     RH = x_w_to_humidity_ratio(0.031417, MW_water=18.015268, MW_dry_air=28.96546)

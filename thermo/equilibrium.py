@@ -54,7 +54,7 @@ PHASE_BULK = 'bulk'
 PHASE_REFERENCES = [PHASE_GAS, PHASE_LIQUID0, PHASE_LIQUID1, PHASE_LIQUID2,
                     PHASE_LIQUID3, PHASE_BULK_LIQUID, PHASE_WATER_LIQUID,
                     PHASE_LIGHTEST_LIQUID, PHASE_HEAVIEST_LIQUID, PHASE_SOLID0,
-                    PHASE_SOLID1, PHASE_SOLID2, PHASE_SOLID3, PHASE_BULK_SOLID, 
+                    PHASE_SOLID1, PHASE_SOLID2, PHASE_SOLID3, PHASE_BULK_SOLID,
                     PHASE_BULK]
 
 __all__.extend(['PHASE_GAS', 'PHASE_LIQUID0', 'PHASE_LIQUID1', 'PHASE_LIQUID2',
@@ -68,19 +68,19 @@ class EquilibriumState(object):
     Keep props molar, but add mass options too.
     Viscosity, thermal conductivity, atoms stuff, all there.
     Get viscosity working before figure out MW - should make more sense then!
-    
+
     Units should not have a "property package" that has any state - they should
     have a reference to a package, and call on that package when needed to generate
     one of these objects. Anything ever needed should come from this state.
     This will be a tons of functions, but that's OK.
-    
+
     NOTE: This means a stream is no longer the basis of simulation.
-    
+
     '''
     max_liquid_phases = 1
     reacted = False
     flashed = True
-    
+
     liquid_bulk = None
     solid_bulk = None
 
@@ -88,13 +88,13 @@ class EquilibriumState(object):
     T_REF_IG_INV = Phase.T_REF_IG_INV
     P_REF_IG = Phase.P_REF_IG
     P_REF_IG_INV = Phase.P_REF_IG_INV
-    
+
     def __repr__(self):
         s = '<EquilibriumState, T=%.4f, P=%.4f, zs=%s, betas=%s, phases=%s>'
         s = s %(self.T, self.P, self.zs, self.betas, self.phases)
         return s
-    
-    def __init__(self, T, P, zs, 
+
+    def __init__(self, T, P, zs,
                  gas, liquids, solids, betas,
                  flash_specs=None, flash_convergence=None,
                  constants=None, correlations=None, flasher=None,
@@ -103,16 +103,16 @@ class EquilibriumState(object):
         self.T = T
         self.P = P
         self.zs = zs
-        
+
         self.N = N = len(zs)
         self.cmps = range(N)
 
         self.gas_count = gas_count = 1 if gas is not None else 0
         self.liquid_count = liquid_count = len(liquids)
         self.solid_count = solid_count = len(solids)
-        
+
         self.phase_count = gas_count + liquid_count + solid_count
-        
+
         self.gas = gas
         self.liquids = liquids
         self.solids = solids
@@ -120,12 +120,12 @@ class EquilibriumState(object):
             self.phases = [gas] + liquids + solids
         else:
             self.phases = liquids + solids
-        
+
         self.betas = betas
         self.gas_beta = betas[0] if gas_count else 0.0
         self.liquids_betas = betas_liquids = betas[gas_count:gas_count + liquid_count]
         self.solids_betas = betas_solids = betas[gas_count + liquid_count:]
-        
+
         if liquid_count > 1:
 #                tot_inv = 1.0/sum(values)
 #                return [i*tot_inv for i in values]
@@ -177,13 +177,13 @@ class EquilibriumState(object):
         s += 'L'*len(self.liquids)
         s += 'S'*len(self.solids)
         return s
-    
+
     @property
     def VF(self):
         if self.gas is not None:
             return self.betas[0]
         return 0.0 # No gas phase
-    
+
     @property
     def betas_liquids(self):
         liquids_betas = self.liquids_betas
@@ -192,24 +192,24 @@ class EquilibriumState(object):
             tot += vi
         tot = 1.0/tot
         return [vi*tot for vi in liquids_betas]
-    
-    
+
+
     @property
     def betas_mass(self):
         phase_iter = range(self.phase_count)
         betas = self.betas
         MWs_phases = [i.MW() for i in self.phases]
-        
+
         tot = 0.0
         for i in phase_iter:
             tot += MWs_phases[i]*betas[i]
         tot_inv = 1.0/tot
         return [betas[i]*MWs_phases[i]*tot_inv for i in phase_iter]
-    
+
     @property
     def betas_states(self):
         return [self.gas_beta, sum(self.liquids_betas), sum(self.solids_betas)]
-    
+
     @property
     def betas_mass_states(self):
         g_tot = l_tot = s_tot = 0.0
@@ -219,7 +219,7 @@ class EquilibriumState(object):
         gas_MW = gas.MW()
         liq_MWs = [i.MW() for i in liquids]
         solid_MWs = [i.MW() for i in solids]
-        
+
         g_tot = gas_MW*beta_gas
         for i in range(self.liquid_count):
             l_tot += liq_MWs[i]*betas_liquids[i]
@@ -239,7 +239,7 @@ class EquilibriumState(object):
         gas_V = gas.V()
         liq_Vs = [i.V() for i in liquids]
         solid_Vs = [i.V() for i in solids]
-        
+
         g_tot = gas_V*beta_gas
         for i in range(self.liquid_count):
             l_tot += liq_Vs[i]*betas_liquids[i]
@@ -260,32 +260,32 @@ class EquilibriumState(object):
             tot += MWs_phases[i]*betas[i]
         tot_inv = 1.0/tot
         return [betas[i]*MWs_phases[i]*tot_inv for i in phase_iter]
-    
+
 
     @property
     def betas_volume(self):
         phase_iter = range(self.phase_count)
         betas = self.betas
         Vs_phases = [i.V() for i in self.phases]
-        
+
         tot = 0.0
         for i in phase_iter:
             tot += Vs_phases[i]*betas[i]
         tot_inv = 1.0/tot
         return [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
-    
+
     @property
     def betas_volume_liquids(self):
         phase_iter = range(self.liquid_count)
         betas = self.liquids_betas
         Vs_phases = [i.V() for i in self.liquids]
-        
+
         tot = 0.0
         for i in phase_iter:
             tot += Vs_phases[i]*betas[i]
         tot_inv = 1.0/tot
         return [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
-    
+
     def V_liquids_ref(self):
         T_liquid_volume_ref = self.settings.T_liquid_volume_ref
         if T_liquid_volume_ref == 298.15:
@@ -295,20 +295,20 @@ class EquilibriumState(object):
         else:
             Vls = [i(T_liquid_volume_ref) for i in self.VolumeLiquids]
         return Vls
-    
+
     def V_liquid_ref(self, phase=None):
         if phase is None:
             phase = self.bulk
             zs = self.zs
         else:
             zs = phase.zs
-            
+
         Vls = self.V_liquids_ref()
         V = 0.0
         for i in self.cmps:
             V += zs[i]*Vls[i]
         return V
-    
+
     def rho_liquid_ref(self, phase=None):
         if phase is None:
             phase = self.bulk
@@ -316,7 +316,7 @@ class EquilibriumState(object):
         V = self.V_liquid_ref(phase)
         MW = phase.MW()
         return Vm_to_rho(V, MW)
-    
+
     def atom_fractions(self, phase=None):
         r'''Dictionary of atomic fractions for each atom in the phase.
         '''
@@ -357,14 +357,14 @@ class EquilibriumState(object):
         else:
             zs = phase.zs
         return zs_to_ws(zs, self.constants.MWs)
-    
+
     def Vfls(self, phase=None):
         if phase is None:
             phase = self.bulk
             zs = self.zs
         else:
             zs = phase.zs
-            
+
         Vls = self.V_liquids_ref()
         V = 0.0
         for i in self.cmps:
@@ -381,13 +381,13 @@ class EquilibriumState(object):
         else:
             zs = phase.zs
         return zs
-    
+
     def MW(self, phase=None):
         if phase is None:
             zs = self.zs
         else:
             zs = phase.zs
-            
+
         MWs = self.constants.MWs
         MW = 0.0
         for i in self.cmps:
@@ -399,7 +399,7 @@ class EquilibriumState(object):
             zs = self.zs
         else:
             zs = phase.zs
-            
+
         Tcs = self.constants.Tcs
         Tc = 0.0
         for i in self.cmps:
@@ -411,7 +411,7 @@ class EquilibriumState(object):
             zs = self.zs
         else:
             zs = phase.zs
-            
+
         Pcs = self.constants.Pcs
         Pc = 0.0
         for i in self.cmps:
@@ -423,19 +423,19 @@ class EquilibriumState(object):
             zs = self.zs
         else:
             zs = phase.zs
-            
+
         Vcs = self.constants.Vcs
         Vc = 0.0
         for i in self.cmps:
             Vc += zs[i]*Vcs[i]
         return Vc
-        
+
     def pseudo_Zc(self, phase=None):
         if phase is None:
             zs = self.zs
         else:
             zs = phase.zs
-            
+
         Zcs = self.constants.Zcs
         Zc = 0.0
         for i in self.cmps:
@@ -444,7 +444,7 @@ class EquilibriumState(object):
 
     def quality(self):
         return vapor_mass_quality(self.gas_beta, MWl=self.liquid_bulk.MW(), MWg=self.gas.MW())
-    
+
     def Tmc(self, phase=None):
         if phase is None:
             phase = self.bulk
@@ -464,11 +464,11 @@ class EquilibriumState(object):
         if phase is None:
             phase = self.bulk
         return phase.Zmc()
-    
+
     def rho_mass(self, phase=None):
         if phase is None:
             phase = self.bulk
-        
+
         V = phase.V()
         MW = phase.MW()
         return Vm_to_rho(V, MW)
@@ -476,7 +476,7 @@ class EquilibriumState(object):
     def V_mass(self, phase=None):
         if phase is None:
             phase = self.bulk
-        
+
         V = phase.V()
         MW = phase.MW()
 #        return 1.0/((Vm)**-1*MW/1000.)
@@ -486,12 +486,12 @@ class EquilibriumState(object):
         if phase is None:
             phase = self.bulk
         return phase.H()*1e3*phase.MW_inv()
-    
+
     def S_mass(self, phase=None):
         if phase is None:
             phase = self.bulk
         return phase.S()*1e3*phase.MW_inv()
-    
+
     def U_mass(self, phase=None):
         if phase is None:
             phase = self.bulk
@@ -506,7 +506,7 @@ class EquilibriumState(object):
         if phase is None:
             phase = self.bulk
         return phase.G()*1e3*phase.MW_inv()
-    
+
     def Cp_mass(self, phase=None):
         if phase is None:
             phase = self.bulk
@@ -539,7 +539,7 @@ class EquilibriumState(object):
         for i in self.cmps:
             Cp += zs[i]*Cpigs_pure[i]
         return Cp
-    
+
     def H_dep(self, phase=None):
         if phase is None:
             phase = self.bulk
@@ -617,12 +617,12 @@ class EquilibriumState(object):
         S = 0.0
         S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
         S -= R*log(P*P_REF_IG_INV)
-        
+
         for i in cmps:
             S += zs[i]*Cpig_integrals_over_T_pure[i]
 
         return S
-    
+
     def Cv_ideal_gas(self, phase=None):
         if phase is None:
             phase = self.bulk
@@ -655,7 +655,7 @@ class EquilibriumState(object):
                 return phase.H_formation_ideal_gas()
             except:
                 pass
-        
+
         Hf = 0.0
         zs = phase.zs
         Hfgs = self.constants.Hfgs
@@ -671,7 +671,7 @@ class EquilibriumState(object):
                 return phase.S_formation_ideal_gas()
             except:
                 pass
-        
+
         Sf = 0.0
         zs = phase.zs
         Sfgs = self.constants.Sfgs
@@ -682,22 +682,22 @@ class EquilibriumState(object):
     def G_formation_ideal_gas(self, phase=None):
         Gf = self.H_formation_ideal_gas(phase) - self.T_REF_IG*self.S_formation_ideal_gas(phase)
         return Gf
-    
+
     def U_formation_ideal_gas(self, phase=None):
         Uf = self.H_formation_ideal_gas(phase) - self.P_REF_IG*self.V_ideal_gas(phase)
         return Uf
-    
+
     def A_formation_ideal_gas(self, phase=None):
         Af = self.U_formation_ideal_gas(phase) - self.T_REF_IG*self.S_formation_ideal_gas(phase)
         return Af
-    
+
     def alpha(self, phase=None):
         rho = self.rho_mass(phase)
         k = self.k(phase)
         Cp = self.Cp_mass(phase)
         return thermal_diffusivity(k=k, rho=rho, Cp=Cp)
 
-    
+
 #    def mu(self, phase=None):
 #        if phase is None:
 #            if self.phase_count == 1:
@@ -718,10 +718,10 @@ class EquilibriumState(object):
 #            return self.correlations.ViscosityLiquidMixture.mixture_property(phase.T, phase.P, phase.zs, phase.ws())
 #        else:
 #            raise NotImplementedError("no bulk methods")
-            
+
     def nu(self, phase=None):
         return self.mu()/self.rho_mass(phase)
-    
+
     def k(self, phase=None):
         if phase is None:
             if self.phase_count == 1:
@@ -737,18 +737,18 @@ class EquilibriumState(object):
         if isinstance(phase, gas_phases):
             return self.correlations.ThermalConductivityGasMixture.mixture_property(
                     phase.T, phase.P, phase.zs, phase.ws())
-            
+
         elif isinstance(phase, liquid_phases):
             return self.correlations.ThermalConductivityLiquidMixture.mixture_property(
                     phase.T, phase.P, phase.zs, phase.ws())
-            
+
         elif isinstance(phase, solid_phases):
             solid_index = phase.zs.index(1)
             return self.correlations.ThermalConductivitySolids[solid_index].mixture_property(
                     phase.T, phase.P, phase.zs, phase.ws())
         else:
             raise NotImplementedError("no bulk methods")
-    
+
     def SG(self, phase=None):
         if phase is None:
             phase = self.bulk
@@ -759,7 +759,7 @@ class EquilibriumState(object):
         for i in self.cmps:
             rho_mass_60F += ws[i]*rhol_60Fs_mass[i]
         return SG(rho_mass_60F, rho_ref=999.0170824078306)
-    
+
     def SG_gas(self, phase=None):
         if phase is None:
             phase = self.bulk
@@ -767,8 +767,8 @@ class EquilibriumState(object):
         # Standard MW of air as in dry air standard
         # It would be excessive to do a true density call
         '''Lemmon, Eric W., Richard T. Jacobsen, Steven G. Penoncello, and
-        Daniel G. Friend. "Thermodynamic Properties of Air and Mixtures of 
-        Nitrogen, Argon, and Oxygen From 60 to 2000 K at Pressures to 2000 
+        Daniel G. Friend. "Thermodynamic Properties of Air and Mixtures of
+        Nitrogen, Argon, and Oxygen From 60 to 2000 K at Pressures to 2000
         MPa." Journal of Physical and Chemical Reference Data 29, no. 3 (May
         1, 2000): 331-85. https://doi.org/10.1063/1.1285884.
         '''
@@ -779,21 +779,21 @@ class EquilibriumState(object):
 
     def V_gas_standard(self, phase=None):
         return R*self.settings.T_standard/self.settings.P_standard
-    
+
     def V_gas_normal(self, phase=None):
         return R*self.settings.T_normal/self.settings.P_normal
 
     def API(self, phase=None):
         if phase is None:
             phase = self.bulk
-        # Going to get a list of liquid phasee models, determine which model 
+        # Going to get a list of liquid phasee models, determine which model
         # to use. Construct a new phase object, get the density
-        
+
     def Bvirial(self, phase=None):
         if phase is None:
             phase = self.bulk
         return B_from_Z(phase.Z(), self.T, self.P)
-    
+
     def H_C_ratio(self, phase=None):
         if phase is None:
             phase = self.bulk
@@ -804,7 +804,7 @@ class EquilibriumState(object):
             return H/C
         except ZeroDivisionError:
             return None
-        
+
     def H_C_ratio_mass(self, phase=None):
         if phase is None:
             phase = self.bulk
@@ -815,7 +815,7 @@ class EquilibriumState(object):
             return H/C
         except ZeroDivisionError:
             return None
-    
+
     @property
     def water_phase_index(self):
         try:
@@ -826,13 +826,13 @@ class EquilibriumState(object):
             water_index = self._water_index
         except AttributeError:
             water_index = self.water_index
-            
+
         max_zw, max_phase, max_phase_idx = 0.0, None, None
         for i, l in enumerate(self.liquids):
             z_w = l.zs[water_index]
             if z_w > max_zw:
                 max_phase, max_zw, max_phase_idx = l, z_w, i
-        
+
         self._water_phase_index = max_phase_idx
         return max_phase_idx
 
@@ -867,25 +867,25 @@ class EquilibriumState(object):
             return self.liquids[self.water_phase_index]
         except:
             return None
-    
+
     @property
     def water_index(self):
         try:
             return self._water_index
         except AttributeError:
             pass
-        
+
         try:
             self._water_index = self.constants.CASs.index(CAS_H2O)
         except ValueError:
             self._water_index = None
         return self._water_index
-        
-        
+
+
     def molar_water_content(self, phase=None):
         if phase is None:
             phase = self.bulk
-            
+
         water_index = self.water_index
         if water_index is None:
             return 0.0
@@ -896,7 +896,7 @@ class EquilibriumState(object):
     def zs_no_water(self, phase=None):
         if phase is None:
             phase = self.bulk
-            
+
         water_index = self.water_index
         if water_index is None:
             return phase.zs
@@ -906,11 +906,11 @@ class EquilibriumState(object):
         for i in self.cmps:
             zs[i] *= m
         return m
-        
+
     def ws_no_water(self, phase=None):
         if phase is None:
             phase = self.bulk
-            
+
         water_index = self.water_index
         if water_index is None:
             return phase.ws()
@@ -931,7 +931,7 @@ class EquilibriumState(object):
                     phase.T, phase.P, phase.zs, phase.ws())
         if isinstance(phase, gas_phases):
             return 0
-    
+
     def Ks(self, phase):
         ref_phase = self.flash_convergence['ref_phase']
         ref_lnphis = self.phases[ref_phase].lnphis()
@@ -948,7 +948,7 @@ class EquilibriumState(object):
         if phase is None:
             phase = self.bulk
         return mixing_simple(self.constants.Hcs_mass, phase.zs)
-    
+
     def Hc_normal(self, phase=None):
         if phase is None:
             phase = self.bulk
@@ -964,12 +964,12 @@ class EquilibriumState(object):
         if phase is None:
             phase = self.bulk
         return mixing_simple(self.constants.Hcs_lower, phase.zs)
-    
+
     def Hc_lower_mass(self, phase=None):
         if phase is None:
             phase = self.bulk
         return mixing_simple(self.constants.Hcs_lower_mass, phase.ws())
-    
+
     def Hc_lower_normal(self, phase=None):
         if phase is None:
             phase = self.bulk
@@ -980,11 +980,11 @@ class EquilibriumState(object):
             phase = self.bulk
         return phase.Hc_lower()/phase.V_gas_standard()
 
-    
+
     def Wobbe_index(self, phase=None):
         if phase is None:
             phase = self.bulk
-            
+
         Hc = abs(phase.Hc())
         SG_gas = phase.SG_gas()
         return Hc*SG_gas**-0.5
@@ -992,7 +992,7 @@ class EquilibriumState(object):
     def Wobbe_index_mass(self, phase=None):
         if phase is None:
             phase = self.bulk
-            
+
         Hc = abs(phase.Hc_mass())
         SG_gas = phase.SG_gas()
         return Hc*SG_gas**-0.5
@@ -1000,7 +1000,7 @@ class EquilibriumState(object):
     def Wobbe_index_lower(self, phase=None):
         if phase is None:
             phase = self.bulk
-            
+
         Hc = abs(phase.Hc_lower())
         SG_gas = phase.SG_gas()
         return Hc*SG_gas**-0.5
@@ -1008,16 +1008,16 @@ class EquilibriumState(object):
     def Wobbe_index_lower_mass(self, phase=None):
         if phase is None:
             phase = self.bulk
-            
+
         Hc = abs(phase.Hc_lower_mass())
         SG_gas = phase.SG_gas()
         return Hc*SG_gas**-0.5
-    
-    
+
+
     def Wobbe_index_standard(self, phase=None):
         if phase is None:
             phase = self.bulk
-            
+
         Hc = abs(phase.Hc_standard())
         SG_gas = phase.SG_gas()
         return Hc*SG_gas**-0.5
@@ -1025,7 +1025,7 @@ class EquilibriumState(object):
     def Wobbe_index_normal(self, phase=None):
         if phase is None:
             phase = self.bulk
-            
+
         Hc = abs(phase.Hc_normal())
         SG_gas = phase.SG_gas()
         return Hc*SG_gas**-0.5
@@ -1033,7 +1033,7 @@ class EquilibriumState(object):
     def Wobbe_index_lower_standard(self, phase=None):
         if phase is None:
             phase = self.bulk
-            
+
         Hc = abs(phase.Hc_lower_standard())
         SG_gas = phase.SG_gas()
         return Hc*SG_gas**-0.5
@@ -1041,15 +1041,15 @@ class EquilibriumState(object):
     def Wobbe_index_lower_normal(self, phase=None):
         if phase is None:
             phase = self.bulk
-            
+
         Hc = abs(phase.Hc_lower_normal())
         SG_gas = phase.SG_gas()
         return Hc*SG_gas**-0.5
-    
+
     def value(self, name, phase=None):
         if phase is not None:
             phase_idx = self.phases.index(phase)
-        
+
         v = getattr(self, name)
         try:
             v = v()
@@ -1058,12 +1058,12 @@ class EquilibriumState(object):
         if phase is not None:
             return v[phase_idx]
         return v
-    
+
     @property
     def IDs(self):
         return self.constants.CASs
 
-        
+
 # Add some fancy things for easier access to properties
 
 def _make_getter_constants(name):
@@ -1103,7 +1103,7 @@ for name in PropertyCorrelationPackage.correlations:
     setattr(EquilibriumState, name, getter)
 
 
-### For certain properties not supported by Phases/Bulk, allow them to call up to the 
+### For certain properties not supported by Phases/Bulk, allow them to call up to the
 # EquilibriumState to get the property
 phases_properties_to_EquilibriumState = ['atom_fractions', 'atom_mass_fractions',
                                          'Hc', 'Hc_mass', 'Hc_lower', 'Hc_lower_mass', 'SG', 'SG_gas',
@@ -1112,7 +1112,7 @@ phases_properties_to_EquilibriumState = ['atom_fractions', 'atom_mass_fractions'
                                          'Hc_lower_normal', 'Hc_lower_standard',
                                          'Wobbe_index_lower_normal', 'Wobbe_index_lower_standard',
                                          'Wobbe_index_normal', 'Wobbe_index_standard',
-                                         'Wobbe_index_lower_mass', 'Wobbe_index_lower', 
+                                         'Wobbe_index_lower_mass', 'Wobbe_index_lower',
                                          'Wobbe_index_mass', 'Wobbe_index', 'V_mass',
                                          'rho_liquid_ref', 'V_liquid_ref',
                                          'molar_water_content',
@@ -1124,12 +1124,12 @@ for name in phases_properties_to_EquilibriumState:
     method = _make_getter_EquilibriumState(name)
     setattr(Phase, name, method)
 
-### For certain properties not supported by Bulk, allow them to call up to the 
+### For certain properties not supported by Bulk, allow them to call up to the
 # EquilibriumState to get the property
-Bulk_properties_to_EquilibriumState = [#'H_ideal_gas', 'Cp_ideal_gas','S_ideal_gas', 
+Bulk_properties_to_EquilibriumState = [#'H_ideal_gas', 'Cp_ideal_gas','S_ideal_gas',
        'V_ideal_gas', 'G_ideal_gas', 'U_ideal_gas',
         'Cv_ideal_gas', 'Cp_Cv_ratio_ideal_gas',
-       'A_ideal_gas', 'H_formation_ideal_gas', 'S_formation_ideal_gas', 
+       'A_ideal_gas', 'H_formation_ideal_gas', 'S_formation_ideal_gas',
        'G_formation_ideal_gas', 'U_formation_ideal_gas', 'A_formation_ideal_gas',
        'H_dep', 'S_dep', 'Cp_dep', 'Cv_dep']
 for name in Bulk_properties_to_EquilibriumState:
@@ -1138,13 +1138,13 @@ for name in Bulk_properties_to_EquilibriumState:
 
 ### For certain properties of the Bulk phase, make EquilibriumState get it from the Bulk
 bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'dH_dP', 'dS_dT', 'dS_dP',
-              #'dU_dT', 'dU_dP', 'dG_dT', 'dG_dP', 'dA_dT', 'dA_dP', 
+              #'dU_dT', 'dU_dP', 'dG_dT', 'dG_dP', 'dA_dT', 'dA_dP',
               'H_reactive', 'S_reactive', 'G_reactive', 'U_reactive', 'A_reactive',
               'Cp_Cv_ratio', 'log_zs', 'isothermal_bulk_modulus',
               'dP_dT_frozen', 'dP_dV_frozen', 'd2P_dT2_frozen', 'd2P_dV2_frozen',
               'd2P_dTdV_frozen',
               'd2P_dTdV', 'd2P_dV2', 'd2P_dT2', 'dP_dV', 'dP_dT', 'isentropic_exponent',
-              
+
               'PIP', 'kappa', 'isobaric_expansion', 'Joule_Thomson', 'speed_of_sound',
               'speed_of_sound_mass',
               'U_dep', 'G_dep', 'A_dep', 'V_dep', 'V_iter',

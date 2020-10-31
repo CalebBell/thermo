@@ -22,8 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['heat_capacity_gas_methods', 
-           'HeatCapacityGas', 
+__all__ = ['heat_capacity_gas_methods',
+           'HeatCapacityGas',
            'heat_capacity_liquid_methods',
            'HeatCapacityLiquid',
            'heat_capacity_solid_methods',
@@ -33,7 +33,7 @@ import os
 from io import open
 import numpy as np
 import pandas as pd
-from fluids.numerics import (polyint_over_x, horner_log, horner, polyint, 
+from fluids.numerics import (polyint_over_x, horner_log, horner, polyint,
                              fit_integral_linear_extrapolation,
                              fit_integral_over_T_linear_extrapolation, quad)
 from fluids.numerics import brenth, secant, polylog2
@@ -156,7 +156,7 @@ class HeatCapacityGas(TDependentProperty):
     ranked_methods = [TRCIG, POLING, COOLPROP, LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
     '''Default rankings of the available methods.'''
 
-    def __init__(self, CASRN='', MW=None, similarity_variable=None, 
+    def __init__(self, CASRN='', MW=None, similarity_variable=None,
                  best_fit=None):
         self.CASRN = CASRN
         self.MW = MW
@@ -192,10 +192,10 @@ class HeatCapacityGas(TDependentProperty):
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods()
-        
+
         if best_fit is not None:
             self.set_best_fit(best_fit)
-                                        
+
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -359,7 +359,7 @@ class HeatCapacityGas(TDependentProperty):
         r'''Method to calculate the integral of a property with respect to
         temperature, using a specified method. Implements the analytical
         integrals of all available methods except for tabular data.
-        
+
         Parameters
         ----------
         T1 : float
@@ -372,13 +372,13 @@ class HeatCapacityGas(TDependentProperty):
         Returns
         -------
         integral : float
-            Calculated integral of the property over the given range, 
+            Calculated integral of the property over the given range,
             [`units*K`]
         '''
         if method == BESTFIT:
-            return fit_integral_linear_extrapolation(T1, T2, 
-                self.best_fit_int_coeffs, self.best_fit_Tmin, 
-                self.best_fit_Tmax, self.best_fit_Tmin_value, 
+            return fit_integral_linear_extrapolation(T1, T2,
+                self.best_fit_int_coeffs, self.best_fit_Tmin,
+                self.best_fit_Tmax, self.best_fit_Tmin_value,
                 self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
                 self.best_fit_Tmax_slope)
         elif method == TRCIG:
@@ -406,9 +406,9 @@ class HeatCapacityGas(TDependentProperty):
 
     def calculate_integral_over_T(self, T1, T2, method):
         r'''Method to calculate the integral of a property over temperature
-        with respect to temperature, using a specified method. Implements the 
+        with respect to temperature, using a specified method. Implements the
         analytical integrals of all available methods except for tabular data.
-        
+
         Parameters
         ----------
         T1 : float
@@ -421,14 +421,14 @@ class HeatCapacityGas(TDependentProperty):
         Returns
         -------
         integral : float
-            Calculated integral of the property over the given range, 
+            Calculated integral of the property over the given range,
             [`units`]
         '''
         if method == BESTFIT:
-            return fit_integral_over_T_linear_extrapolation(T1, T2, 
+            return fit_integral_over_T_linear_extrapolation(T1, T2,
                 self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff,
-                self.best_fit_Tmin, self.best_fit_Tmax, 
-                self.best_fit_Tmin_value, 
+                self.best_fit_Tmin, self.best_fit_Tmax,
+                self.best_fit_Tmin_value,
                 self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
                 self.best_fit_Tmax_slope)
         elif method == TRCIG:
@@ -441,7 +441,7 @@ class HeatCapacityGas(TDependentProperty):
             return self.POLING_constant*log(T2/T1)
         elif method == POLING:
             A, B, C, D, E = self.POLING_coefs
-            S2 = ((((0.25*E)*T2 + D/3.)*T2 + 0.5*C)*T2 + B)*T2 
+            S2 = ((((0.25*E)*T2 + D/3.)*T2 + 0.5*C)*T2 + B)*T2
             S1 = ((((0.25*E)*T1 + D/3.)*T1 + 0.5*C)*T1 + B)*T1
             return R*(S2-S1 + A*log(T2/T1))
         elif method == LASTOVKA_SHAW:
@@ -601,7 +601,7 @@ class HeatCapacityLiquid(TDependentProperty):
     ranked_methods = [ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
-                      VDI_TABULAR, COOLPROP, DADGOSTAR_SHAW, ROWLINSON_POLING, 
+                      VDI_TABULAR, COOLPROP, DADGOSTAR_SHAW, ROWLINSON_POLING,
                       ROWLINSON_BONDI,
                       POLING_CONST, CRCSTD]
     '''Default rankings of the available methods.'''
@@ -646,7 +646,7 @@ class HeatCapacityLiquid(TDependentProperty):
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods()
-        
+
         if best_fit is not None:
             self.set_best_fit(best_fit)
 
@@ -844,7 +844,7 @@ class HeatCapacityLiquid(TDependentProperty):
 
     def calculate_integral(self, T1, T2, method):
         r'''Method to calculate the integral of a property with respect to
-        temperature, using a specified method.  Implements the 
+        temperature, using a specified method.  Implements the
         analytical integrals of all available methods except for tabular data,
         the case of multiple coefficient sets needed to encompass the temperature
         range of any of the ZABRANSKY methods, and the CSP methods using the
@@ -862,13 +862,13 @@ class HeatCapacityLiquid(TDependentProperty):
         Returns
         -------
         integral : float
-            Calculated integral of the property over the given range, 
+            Calculated integral of the property over the given range,
             [`units*K`]
         '''
         if method == BESTFIT:
-            return fit_integral_linear_extrapolation(T1, T2, 
-                self.best_fit_int_coeffs, self.best_fit_Tmin, 
-                self.best_fit_Tmax, self.best_fit_Tmin_value, 
+            return fit_integral_linear_extrapolation(T1, T2,
+                self.best_fit_int_coeffs, self.best_fit_Tmin,
+                self.best_fit_Tmax, self.best_fit_Tmin_value,
                 self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
                 self.best_fit_Tmax_slope)
         elif method == ZABRANSKY_SPLINE:
@@ -898,7 +898,7 @@ class HeatCapacityLiquid(TDependentProperty):
 
     def calculate_integral_over_T(self, T1, T2, method):
         r'''Method to calculate the integral of a property over temperature
-        with respect to temperature, using a specified method.   Implements the 
+        with respect to temperature, using a specified method.   Implements the
         analytical integrals of all available methods except for tabular data,
         the case of multiple coefficient sets needed to encompass the temperature
         range of any of the ZABRANSKY methods, and the CSP methods using the
@@ -916,14 +916,14 @@ class HeatCapacityLiquid(TDependentProperty):
         Returns
         -------
         integral : float
-            Calculated integral of the property over the given range, 
+            Calculated integral of the property over the given range,
             [`units`]
         '''
         if method == BESTFIT:
-            return fit_integral_over_T_linear_extrapolation(T1, T2, 
+            return fit_integral_over_T_linear_extrapolation(T1, T2,
                 self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff,
-                self.best_fit_Tmin, self.best_fit_Tmax, 
-                self.best_fit_Tmin_value, 
+                self.best_fit_Tmin, self.best_fit_Tmax,
+                self.best_fit_Tmin_value,
                 self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
                 self.best_fit_Tmax_slope)
         elif method == ZABRANSKY_SPLINE:
@@ -1188,7 +1188,7 @@ class HeatCapacitySolid(TDependentProperty):
         r'''Method to calculate the integral of a property with respect to
         temperature, using a specified method. Implements the analytical
         integrals of all available methods except for tabular data.
-        
+
         Parameters
         ----------
         T1 : float
@@ -1201,19 +1201,19 @@ class HeatCapacitySolid(TDependentProperty):
         Returns
         -------
         integral : float
-            Calculated integral of the property over the given range, 
+            Calculated integral of the property over the given range,
             [`units*K`]
         '''
         if method == BESTFIT:
-            return fit_integral_linear_extrapolation(T1, T2, 
-                self.best_fit_int_coeffs, self.best_fit_Tmin, 
-                self.best_fit_Tmax, self.best_fit_Tmin_value, 
+            return fit_integral_linear_extrapolation(T1, T2,
+                self.best_fit_int_coeffs, self.best_fit_Tmin,
+                self.best_fit_Tmax, self.best_fit_Tmin_value,
                 self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
                 self.best_fit_Tmax_slope)
         elif method == PERRY151:
-            H2 = (self.PERRY151_const*T2 + 0.5*self.PERRY151_lin*T2**2 
+            H2 = (self.PERRY151_const*T2 + 0.5*self.PERRY151_lin*T2**2
                   - self.PERRY151_quadinv/T2 + self.PERRY151_quad*T2**3/3.)
-            H1 = (self.PERRY151_const*T1 + 0.5*self.PERRY151_lin*T1**2 
+            H1 = (self.PERRY151_const*T1 + 0.5*self.PERRY151_lin*T1**2
                   - self.PERRY151_quadinv/T1 + self.PERRY151_quad*T1**3/3.)
             return (H2-H1)*calorie
         elif method == CRCSTD:
@@ -1229,9 +1229,9 @@ class HeatCapacitySolid(TDependentProperty):
 
     def calculate_integral_over_T(self, T1, T2, method):
         r'''Method to calculate the integral of a property over temperature
-        with respect to temperature, using a specified method. Implements the 
+        with respect to temperature, using a specified method. Implements the
         analytical integrals of all available methods except for tabular data.
-        
+
         Parameters
         ----------
         T1 : float
@@ -1244,18 +1244,18 @@ class HeatCapacitySolid(TDependentProperty):
         Returns
         -------
         integral : float
-            Calculated integral of the property over the given range, 
+            Calculated integral of the property over the given range,
             [`units`]
         '''
         if method == BESTFIT:
-            return fit_integral_over_T_linear_extrapolation(T1, T2, 
+            return fit_integral_over_T_linear_extrapolation(T1, T2,
                 self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff,
-                self.best_fit_Tmin, self.best_fit_Tmax, 
-                self.best_fit_Tmin_value, 
+                self.best_fit_Tmin, self.best_fit_Tmax,
+                self.best_fit_Tmin_value,
                 self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
                 self.best_fit_Tmax_slope)
         elif method == PERRY151:
-            S2 = (self.PERRY151_const*log(T2) + self.PERRY151_lin*T2 
+            S2 = (self.PERRY151_const*log(T2) + self.PERRY151_lin*T2
                   - self.PERRY151_quadinv/(2.*T2**2) + 0.5*self.PERRY151_quad*T2**2)
             S1 = (self.PERRY151_const*log(T1) + self.PERRY151_lin*T1
                   - self.PERRY151_quadinv/(2.*T1**2) + 0.5*self.PERRY151_quad*T1**2)
@@ -1284,11 +1284,11 @@ heat_capacity_solid_mixture_methods = [SIMPLE]
 
 
 class HeatCapacityLiquidMixture(MixtureProperty):
-    '''Class for dealing with liquid heat capacity of a mixture as a function  
+    '''Class for dealing with liquid heat capacity of a mixture as a function
     of temperature, pressure, and composition.
-    Consists only of mole weighted averaging, and the Laliberte method for 
+    Consists only of mole weighted averaging, and the Laliberte method for
     aqueous electrolyte solutions.
-                 
+
     Parameters
     ----------
     MWs : list[float], optional
@@ -1296,7 +1296,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     CASs : str, optional
         The CAS numbers of all species in the mixture
     HeatCapacityLiquids : list[HeatCapacityLiquid], optional
-        HeatCapacityLiquid objects created for all species in the mixture,  
+        HeatCapacityLiquid objects created for all species in the mixture,
         normally created by :obj:`thermo.chemical.Chemical`.
 
     Notes
@@ -1318,7 +1318,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     property_max = 1E4 # Originally 1E4
     '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
     the critical point, this value can be obscenely high.'''
-                            
+
     ranked_methods = [LALIBERTE, SIMPLE]
 
     def __init__(self, MWs=[], CASs=[], HeatCapacityLiquids=[]):
@@ -1347,8 +1347,8 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
-        All data are stored as attributes. This method also sets :obj:`Tmin`, 
-        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        All data are stored as attributes. This method also sets :obj:`Tmin`,
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should
         work to calculate the property.
 
         Called on initialization only. See the source code for the variables at
@@ -1356,17 +1356,17 @@ class HeatCapacityLiquidMixture(MixtureProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods = [SIMPLE]        
+        methods = [SIMPLE]
         if len(self.CASs) > 1 and '7732-18-5' in self.CASs:
-            wCASs = [i for i in self.CASs if i != '7732-18-5'] 
+            wCASs = [i for i in self.CASs if i != '7732-18-5']
             if all([i in electrochem._Laliberte_Heat_Capacity_ParametersDict for i in wCASs]):
                 methods.append(LALIBERTE)
                 self.wCASs = wCASs
                 self.index_w = self.CASs.index('7732-18-5')
         self.all_methods = set(methods)
-            
+
     def calculate(self, T, P, zs, ws, method):
-        r'''Method to calculate heat capacity of a liquid mixture at 
+        r'''Method to calculate heat capacity of a liquid mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
@@ -1405,7 +1405,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
 
     def test_method_validity(self, T, P, zs, ws, method):
         r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of 
+        conditions. No methods have implemented checks or strict ranges of
         validity.
 
         Parameters
@@ -1434,16 +1434,16 @@ class HeatCapacityLiquidMixture(MixtureProperty):
 
 
 class HeatCapacitySolidMixture(MixtureProperty):
-    '''Class for dealing with solid heat capacity of a mixture as a function of 
+    '''Class for dealing with solid heat capacity of a mixture as a function of
     temperature, pressure, and composition.
     Consists only of mole weighted averaging.
-                 
+
     Parameters
     ----------
     CASs : list[str], optional
         The CAS numbers of all species in the mixture
     HeatCapacitySolids : list[HeatCapacitySolid], optional
-        HeatCapacitySolid objects created for all species in the mixture,  
+        HeatCapacitySolid objects created for all species in the mixture,
         normally created by :obj:`thermo.chemical.Chemical`.
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
@@ -1462,7 +1462,7 @@ class HeatCapacitySolidMixture(MixtureProperty):
     '''Heat capacities have a minimum value of 0 at 0 K.'''
     property_max = 1E4
     '''Maximum value of Heat capacity; arbitrarily set.'''
-                            
+
     ranked_methods = [SIMPLE]
 
     def __init__(self, CASs=[], HeatCapacitySolids=[], MWs=[]):
@@ -1491,8 +1491,8 @@ class HeatCapacitySolidMixture(MixtureProperty):
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
-        All data are stored as attributes. This method also sets :obj:`Tmin`, 
-        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        All data are stored as attributes. This method also sets :obj:`Tmin`,
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should
         work to calculate the property.
 
         Called on initialization only. See the source code for the variables at
@@ -1500,11 +1500,11 @@ class HeatCapacitySolidMixture(MixtureProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods = [SIMPLE]        
+        methods = [SIMPLE]
         self.all_methods = set(methods)
-            
+
     def calculate(self, T, P, zs, ws, method):
-        r'''Method to calculate heat capacity of a solid mixture at 
+        r'''Method to calculate heat capacity of a solid mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
@@ -1537,7 +1537,7 @@ class HeatCapacitySolidMixture(MixtureProperty):
 
     def test_method_validity(self, T, P, zs, ws, method):
         r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of 
+        conditions. No methods have implemented checks or strict ranges of
         validity.
 
         Parameters
@@ -1565,16 +1565,16 @@ class HeatCapacitySolidMixture(MixtureProperty):
 
 
 class HeatCapacityGasMixture(MixtureProperty):
-    '''Class for dealing with the gas heat capacity of a mixture as a function  
-    of temperature, pressure, and composition. Consists only of mole weighted 
+    '''Class for dealing with the gas heat capacity of a mixture as a function
+    of temperature, pressure, and composition. Consists only of mole weighted
     averaging.
-                 
+
     Parameters
     ----------
     CASs : list[str], optional
         The CAS numbers of all species in the mixture
     HeatCapacityGases : list[HeatCapacityGas], optional
-        HeatCapacityGas objects created for all species in the mixture,  
+        HeatCapacityGas objects created for all species in the mixture,
         normally created by :obj:`thermo.chemical.Chemical`.
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
@@ -1594,7 +1594,7 @@ class HeatCapacityGasMixture(MixtureProperty):
     property_max = 1E4
     '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
     the critical point, this value can be obscenely high.'''
-                            
+
     ranked_methods = [SIMPLE]
 
     def __init__(self, CASs=[], HeatCapacityGases=[], MWs=[]):
@@ -1623,8 +1623,8 @@ class HeatCapacityGasMixture(MixtureProperty):
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
-        All data are stored as attributes. This method also sets :obj:`Tmin`, 
-        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        All data are stored as attributes. This method also sets :obj:`Tmin`,
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should
         work to calculate the property.
 
         Called on initialization only. See the source code for the variables at
@@ -1632,11 +1632,11 @@ class HeatCapacityGasMixture(MixtureProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods = [SIMPLE]        
+        methods = [SIMPLE]
         self.all_methods = set(methods)
-            
+
     def calculate(self, T, P, zs, ws, method):
-        r'''Method to calculate heat capacity of a gas mixture at 
+        r'''Method to calculate heat capacity of a gas mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
@@ -1670,7 +1670,7 @@ class HeatCapacityGasMixture(MixtureProperty):
 
     def test_method_validity(self, T, P, zs, ws, method):
         r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of 
+        conditions. No methods have implemented checks or strict ranges of
         validity.
 
         Parameters
