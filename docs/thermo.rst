@@ -12,6 +12,8 @@ Submodules
    thermo.electrochem
    thermo.eos
    thermo.eos_mix
+   thermo.eos_volume
+   thermo.eos_alpha_functions
    thermo.heat_capacity
    thermo.interface
    thermo.joback

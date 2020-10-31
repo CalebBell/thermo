@@ -23,6 +23,7 @@ SOFTWARE.'''
 import os
 
 from . import eos_alpha_functions
+from . import eos_volume
 from chemicals import acentric
 from chemicals import rachford_rice
 from chemicals import flash_basic
@@ -78,6 +79,7 @@ from . import uniquac
 from chemicals import temperature
 
 from .eos_alpha_functions import *
+from .eos_volume import *
 from chemicals.acentric import *
 from chemicals.rachford_rice import *
 from chemicals.flash_basic import *
@@ -146,8 +148,9 @@ __all__ = ['rachford_rice', 'flash_basic', 'chemical', 'chemical_package', 'comb
  'datasheet', 'dippr', 'unifac', 'stream', 'mixture', 'property_package_constants',
  'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution',
  'equilibrium', 'phase_identification', 'psychrometrics', 'temperature',
- 'eos_alpha_functions']
+ 'eos_alpha_functions', 'eos_volume']
 
+__all__.extend(eos_volume.__all__)
 __all__.extend(eos_alpha_functions.__all__)
 __all__.extend(acentric.__all__)
 __all__.extend(rachford_rice.__all__)
@@ -215,7 +218,8 @@ submodules = [chemical, chemical_package, chemical_utils, coolprop, datasheet,
               mixture, nrtl, permittivity, phase_change, phase_identification,
               phases, property_package, property_package_constants, psychrometrics,
               regular_solution, stream, thermal_conductivity, unifac, uniquac, safety,
-              utils, vapor_pressure, viscosity, volume, wilson, eos_alpha_functions]
+              utils, vapor_pressure, viscosity, volume, wilson, eos_alpha_functions,
+              eos_volume]
 
 thermo_dir = os.path.dirname(__file__)
 
