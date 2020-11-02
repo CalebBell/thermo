@@ -441,7 +441,7 @@ def test_Stateva_Tsvetkov_TPDF_SRKMIX_CH4_H2S():
             eos2 = eos.to_TP_zs(T=eos.T, P=eos.P, zs=zs_trial)
 
             Z_trial = eos_Z_trial_phase_stability(eos2, prefer, alt)
-            TPD = eos.Stateva_Tsvetkov_TPDF_broken(Z_eos, Z_trial, eos.zs, zs_trial)
+            TPD = eos._Stateva_Tsvetkov_TPDF_broken(Z_eos, Z_trial, eos.zs, zs_trial)
             return TPD
         guesses = all_guesses[i]
         expected = all_expected_SRKMIX_CH4_H2S[i]
@@ -472,7 +472,7 @@ def test_d_TPD_Michelson_modified_SRKMIX_CH4_H2S():
             ys = normalize(Ys)
             eos2 = eos.to_TP_zs(T=eos.T, P=eos.P, zs=ys)
             Z_trial = eos_Z_trial_phase_stability(eos2, prefer, alt)
-            TPD = eos.d_TPD_Michelson_modified(Z_eos, Z_trial, eos.zs, alphas)
+            TPD = eos._d_TPD_Michelson_modified(Z_eos, Z_trial, eos.zs, alphas)
             return TPD
 
         guesses = all_guesses[i]
@@ -548,7 +548,7 @@ def test_Stateva_Tsvetkov_TPDF_PRMIX_Nitrogen_Methane_Ethane():
             zs_trial = [float(zs[0]), float(zs[1]), float(1 - sum(zs))]
             eos2 = eos.to_TP_zs(T=eos.T, P=eos.P, zs=zs_trial)
             Z_trial = eos_Z_trial_phase_stability(eos2, prefer, alt)
-            TPD = eos.Stateva_Tsvetkov_TPDF_broken(Z_eos, Z_trial, eos.zs, zs_trial)
+            TPD = eos._Stateva_Tsvetkov_TPDF_broken(Z_eos, Z_trial, eos.zs, zs_trial)
             return TPD
 
         guesses = all_guesses[i]

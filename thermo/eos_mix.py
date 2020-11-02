@@ -1893,7 +1893,8 @@ class GCEOSMIX(GCEOS):
         elif phase == 'l':
             return eos.fugacities_l[i]
 
-    def Stateva_Tsvetkov_TPDF_broken(self, Zz, Zy, zs, ys):
+    def _Stateva_Tsvetkov_TPDF_broken(self, Zz, Zy, zs, ys):
+        # TODO: delete
         z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
         y_log_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
 
@@ -1913,19 +1914,7 @@ class GCEOSMIX(GCEOS):
             tot += t*t
         return tot
 
-    def d_TPD_dy(self, Zz, Zy, zs, ys):
-        # The gradient should be - for all variables
-        z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
-        y_log_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
-        gradient = []
-        for yi, phi_yi, zi, phi_zi in zip(ys, y_log_fugacity_coefficients, zs, z_log_fugacity_coefficients):
-            hi = di = log(zi) + phi_zi # same as di
-            k = log(yi) + phi_yi - hi
-            Yi = exp(-k)*yi
-            gradient.append(phi_yi + log(Yi) - di)
-        return gradient
-
-    def d_TPD_Michelson_modified(self, Zz, Zy, zs, alphas):
+    def _d_TPD_Michelson_modified(self, Zz, Zy, zs, alphas):
         r'''Modified objective function for locating the minima of the
         Tangent Plane Distance function according to [1]_, also shown in [2]_
         [2]_. The stationary points of a system are all zeros of this function;
@@ -1981,6 +1970,7 @@ class GCEOSMIX(GCEOS):
            Phase Equilibrium Solver and Its Validations." Fuel 115 (January 1,
            2014): 1-16
         '''
+        # TODO: delete
         Ys = [(alpha/2.)**2 for alpha in alphas]
         ys = normalize(Ys)
         z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
@@ -1994,39 +1984,39 @@ class GCEOSMIX(GCEOS):
         return tot
 
 
-    def TDP_Michelsen(self, phase):
+#    def TDP_Michelsen(self, phase):
+#
+#        z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
+#        y_log_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
+#        tot = 0
+#        for yi, phi_yi, zi, phi_zi in zip(ys, y_log_fugacity_coefficients, zs, z_log_fugacity_coefficients):
+#            hi = di = log(zi) + phi_zi # same as di
+#
+#            k = log(yi) + phi_yi - hi
+#            # Michaelsum doesn't do the exponents.
+#            Yi = exp(-k)*yi
+#            tot += Yi*(log(Yi) + phi_yi - hi - 1.)
+#
+#        return 1. + tot
 
-        z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
-        y_log_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
-        tot = 0
-        for yi, phi_yi, zi, phi_zi in zip(ys, y_log_fugacity_coefficients, zs, z_log_fugacity_coefficients):
-            hi = di = log(zi) + phi_zi # same as di
-
-            k = log(yi) + phi_yi - hi
-            # Michaelsum doesn't do the exponents.
-            Yi = exp(-k)*yi
-            tot += Yi*(log(Yi) + phi_yi - hi - 1.)
-
-        return 1. + tot
-
-    def TDP_Michelsen_modified(self, Zz, Zy, zs, Ys):
-        # https://www.e-education.psu.edu/png520/m17_p7.html
-        # Might as well continue
-        Ys = [abs(float(Yi)) for Yi in Ys]
-        # Ys only need to be positive
-        ys = normalize(Ys)
-
-        z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
-        y_log_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
-
-        tot = 0
-        for Yi, phi_yi, yi, zi, phi_zi in zip(Ys, y_log_fugacity_coefficients, ys, zs, z_log_fugacity_coefficients):
-            hi = di = log(zi) + phi_zi # same as di
-            tot += Yi*(log(Yi) + phi_yi - di - 1.)
-        return (1. + tot)
-    # Another formulation, returns the same answers.
-#            tot += yi*(log(sum(Ys)) +log(yi)+ log(phi_yi) - di - 1.)
-#        return (1. + sum(Ys)*tot)*1e15
+#    def TDP_Michelsen_modified(self, Zz, Zy, zs, Ys):
+#        # https://www.e-education.psu.edu/png520/m17_p7.html
+#        # Might as well continue
+#        Ys = [abs(float(Yi)) for Yi in Ys]
+#        # Ys only need to be positive
+#        ys = normalize(Ys)
+#
+#        z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
+#        y_log_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
+#
+#        tot = 0
+#        for Yi, phi_yi, yi, zi, phi_zi in zip(Ys, y_log_fugacity_coefficients, ys, zs, z_log_fugacity_coefficients):
+#            hi = di = log(zi) + phi_zi # same as di
+#            tot += Yi*(log(Yi) + phi_yi - di - 1.)
+#        return (1. + tot)
+#    # Another formulation, returns the same answers.
+##            tot += yi*(log(sum(Ys)) +log(yi)+ log(phi_yi) - di - 1.)
+##        return (1. + sum(Ys)*tot)*1e15
 
 
     def solve_T(self, P, V, quick=True, solution=None):
