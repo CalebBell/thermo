@@ -777,8 +777,6 @@ class GCEOSMIX(GCEOS):
         PRMIX(Tcs=[507.4, 540.3], Pcs=[3012000.0, 2736000.0], omegas=[0.305, 0.349], kijs=[[0.0, 0.00061], [0.00061, 0.0]], zs=[0.8193231441048036, 0.1806768558951965], T=322.29, P=101325.0)
         '''
         copy_alphas = T == self.T
-#        if copy_alphas and P == self.P and zs == self.zs:
-#            return self
         new = self.__class__.__new__(self.__class__)
         new.N = self.N
         new.cmps = self.cmps
@@ -810,12 +808,94 @@ class GCEOSMIX(GCEOS):
 
 
     def to_TP_zs(self, T, P, zs, fugacities=True, only_l=False, only_g=False):
+        r'''Method to construct a new GCEOSMIX instance at `T`, `P`, and `zs`
+        with the same parameters as the existing object. Optionally, only one
+        set of phase properties can be solved for, increasing speed. The
+        fugacities calculation can be be skipped by by setting `fugacities` to
+        False.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        P : float
+            Pressure, [Pa]
+        zs : list[float]
+            Mole fractions of each component, [-]
+        fugacities : bool
+            Whether or not to calculate and set the fugacities of each
+            component, [-]
+        only_l : bool
+            When true, if there is a liquid and a vapor root, only the liquid
+            root (and properties) will be set.
+        only_g : bool
+            When true, if there is a liquid and a vapor root, only the vapor
+            root (and properties) will be set.
+
+        Returns
+        -------
+        eos : GCEOSMIX
+            Multicomponent GCEOSMIX at the specified conditions [-]
+
+        Notes
+        -----
+        A check for whether or not `T`, `P`, and `zs` are the same as the
+        existing instance is performed; if it is, the existing object is
+        returned.
+
+        Examples
+        --------
+        >>> base = RKMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
+        >>> base.to_TP_zs(T=300, P=1e5, zs=[.1, 0.9])
+        RKMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0], [0.0, 0.0]], zs=[0.1, 0.9], T=300, P=100000.0)
+        '''
         if T != self.T or P != self.P or zs != self.zs:
             return self.__class__(T=T, P=P, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, only_l=only_l, only_g=only_g, fugacities=fugacities, **self.kwargs)
         else:
             return self
 
     def to_PV_zs(self, P, V, zs, fugacities=True, only_l=False, only_g=False):
+        r'''Method to construct a new GCEOSMIX instance at `P`, `V`, and `zs`
+        with the same parameters as the existing object. Optionally, only one
+        set of phase properties can be solved for, increasing speed. The
+        fugacities calculation can be be skipped by by setting `fugacities` to
+        False.
+
+        Parameters
+        ----------
+        P : float
+            Pressure, [Pa]
+        V : float
+            Molar volume, [m^3/mol]
+        zs : list[float]
+            Mole fractions of each component, [-]
+        fugacities : bool
+            Whether or not to calculate and set the fugacities of each
+            component, [-]
+        only_l : bool
+            When true, if there is a liquid and a vapor root, only the liquid
+            root (and properties) will be set.
+        only_g : bool
+            When true, if there is a liquid and a vapor root, only the vapor
+            root (and properties) will be set.
+
+        Returns
+        -------
+        eos : GCEOSMIX
+            Multicomponent GCEOSMIX at the specified conditions [-]
+
+        Notes
+        -----
+        A check for whether or not `P`, `V`, and `zs` are the same as the
+        existing instance is performed; if it is, the existing object is
+        returned.
+
+        Examples
+        --------
+        >>> base = RKMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
+        >>> base.to_PV_zs(V=0.004162, P=1e5, zs=[.1, 0.9])
+        RKMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0], [0.0, 0.0]], zs=[0.1, 0.9], P=100000.0, V=0.004162)
+        '''
         if P == self.P and V == self.V and zs == self.zs:
             return self
         return self.__class__(P=P, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, only_l=only_l, only_g=only_g, fugacities=fugacities, **self.kwargs)
