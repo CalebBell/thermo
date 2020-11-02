@@ -145,6 +145,7 @@ from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91
                                     PRSV_a_alphas_vectorized, PRSV_a_alpha_and_derivatives_vectorized,
                                     PRSV2_a_alphas_vectorized, PRSV2_a_alpha_and_derivatives_vectorized,
                                     APISRK_a_alphas_vectorized, APISRK_a_alpha_and_derivatives_vectorized)
+from thermo.eos_volume import volume_solutions_halley
 from thermo.eos import *
 from chemicals.rachford_rice import flash_inner_loop, Rachford_Rice_flash_error, Rachford_Rice_solution2
 from chemicals.flash_basic import K_value, Wilson_K_value
@@ -942,7 +943,9 @@ class GCEOSMIX(GCEOS):
         >>> base.state_specs, new.state_specs
         ({'T': 500.0, 'P': 1000000.0}, {'T': 1000000.0, 'V': 1.0})
         '''
-        return self.to_TV_zs(T=T, V=V, zs=self.zs)
+        if T == self.T and V == self.V:
+            return self
+        return self.__class__(T=T, V=V, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=True, **self.kwargs)
 
     def to_PV(self, P, V):
         r'''Method to construct a new EOSMIX object at the spcified `P` and `V`
@@ -974,7 +977,9 @@ class GCEOSMIX(GCEOS):
         >>> base.state_specs, new.state_specs
         ({'T': 500.0, 'P': 1000000.0}, {'P': 1000000.0, 'V': 1.0})
         '''
-        return self.to_PV_zs(P=P, V=V, zs=self.zs)
+        if T == self.T and P == self.P:
+            return self
+        return self.__class__(T=T, P=P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=True, **self.kwargs)
 
     def to_mechanical_critical_point(self):
         T, P = self.mechanical_critical_point()
@@ -1052,6 +1057,15 @@ class GCEOSMIX(GCEOS):
 
     @property
     def pseudo_Pc(self):
+        '''Apply a linear mole-fraction mixing rule to compute the average
+        critical pressure, [Pa]
+
+        Examples
+        --------
+        >>> base = RKMIX(T=150.0, P=4e6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
+        >>> base.pseudo_Pc
+        3878000.0
+        '''
         zs = self.zs
         Pcs = self.Pcs
         Pc = 0.0
@@ -1061,6 +1075,15 @@ class GCEOSMIX(GCEOS):
 
     @property
     def pseudo_omega(self):
+        '''Apply a linear mole-fraction mixing rule to compute the average
+        `omega`, [-]
+
+        Examples
+        --------
+        >>> base = RKMIX(T=150.0, P=4e6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
+        >>> base.pseudo_omega
+        0.0284
+        '''
         zs = self.zs
         omegas = self.omegas
         omega = 0.0
@@ -1070,6 +1093,15 @@ class GCEOSMIX(GCEOS):
 
     @property
     def pseudo_a(self):
+        '''Apply a linear mole-fraction mixing rule to compute the average
+        `a` coefficient, [-]
+
+        Examples
+        --------
+        >>> base = RKMIX(T=150.0, P=4e6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
+        >>> base.pseudo_a
+        0.17634464184
+        '''
         zs = self.zs
         ais = self.ais
         a = 0.0

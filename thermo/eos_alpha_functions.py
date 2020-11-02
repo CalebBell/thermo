@@ -1778,9 +1778,12 @@ class Twu91_a_alpha(a_alpha_base):
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
         ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
-        a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
+        N = len(ais)
+        a_alphas = [0.0]*N
+        da_alpha_dTs = [0.0]*N
+        d2a_alpha_dT2s = [0.0]*N
         T_inv = 1.0/T
-        for i in self.cmps:
+        for i in range(N):
             coeffs = alpha_coeffs[i]
             c0, c1, c2 = coeffs[0], coeffs[1], coeffs[2]
             Tr = T/Tcs[i]
@@ -1797,9 +1800,9 @@ class Twu91_a_alpha(a_alpha_base):
 
             d2a_alpha_dT2 = (x8*(c0*c0*x4*x4*x9 - c1 + c2*x1*x1
                                  - 2.0*x2*x7 - x6*x9 + x7 + 1.0)*T_inv*T_inv)
-            a_alphas.append(x5)
-            da_alpha_dTs.append(x8*(x1 - x7)*T_inv)
-            d2a_alpha_dT2s.append(d2a_alpha_dT2)
+            a_alphas[i] = x5
+            da_alpha_dTs[i] = x8*(x1 - x7)*T_inv
+            d2a_alpha_dT2s[i] = d2a_alpha_dT2
 
         return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 

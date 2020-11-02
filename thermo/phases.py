@@ -2324,7 +2324,7 @@ class CEOSGas(Phase):
                     new.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
             elif V is not None:
                 try:
-                    new.eos_mix = self.eos_mix.to_TV_zs(T=T, V=V, zs=zs, fugacities=False)
+                    new.eos_mix = self.eos_mix.to(T=T, V=V, zs=zs, fugacities=False)
                 except AttributeError:
                     new.eos_mix = self.eos_class(T=T, V=V, zs=zs, **self.eos_kwargs)
                 P = new.eos_mix.P

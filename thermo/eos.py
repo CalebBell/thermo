@@ -30,7 +30,7 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 #'PRVTTwu'
 ]
 
-__all__.extend(['volume_solutions_halley', 'main_derivatives_and_departures',
+__all__.extend(['main_derivatives_and_departures',
                 'main_derivatives_and_departures_VDW'])
 
 
