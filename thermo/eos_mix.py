@@ -815,11 +815,6 @@ class GCEOSMIX(GCEOS):
         else:
             return self
 
-    def to_TV_zs(self, T, V, zs, fugacities=True, only_l=False, only_g=False):
-        if T == self.T and V == self.V and zs == self.zs:
-            return self
-        return self.__class__(T=T, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, only_l=only_l, only_g=only_g, fugacities=fugacities, **self.kwargs)
-
     def to_PV_zs(self, P, V, zs, fugacities=True, only_l=False, only_g=False):
         if P == self.P and V == self.V and zs == self.zs:
             return self
@@ -875,7 +870,9 @@ class GCEOSMIX(GCEOS):
             except:
                 return self.to_TP_zs(T, P, zs, fugacities)
         elif T is not None and V is not None:
-            return self.to_TV_zs(T, V, zs, fugacities)
+            if T == self.T and V == self.V and zs == self.zs:
+                return self
+            return self.__class__(T=T, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=fugacities, **self.kwargs)
         elif P is not None and V is not None:
             return self.to_PV_zs(P, V, zs, fugacities)
         else:
