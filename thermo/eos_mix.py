@@ -1059,6 +1059,22 @@ class GCEOSMIX(GCEOS):
         return self.__class__(T=T, P=P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=True, **self.kwargs)
 
     def to_mechanical_critical_point(self):
+        r'''Method to construct a new EOSMIX object at the current object's
+        properties and composition, but which is at the mechanical critical
+        point.
+
+        Returns
+        -------
+        obj : EOSMIX
+            Pure component EOSMIX at mechanical critical point [-]
+
+
+        Examples
+        --------
+        >>> base = RKMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
+        >>> base.to_mechanical_critical_point()
+        RKMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0], [0.0, 0.0]], zs=[0.6, 0.4], T=151.861, P=3908737.9)
+        '''
         T, P = self.mechanical_critical_point()
         return self.to_TP_zs(T=T, P=P, zs=self.zs)
 
@@ -1876,41 +1892,6 @@ class GCEOSMIX(GCEOS):
             return eos.fugacities_g[i]
         elif phase == 'l':
             return eos.fugacities_l[i]
-
-
-    def fugacities_partial_derivatives(self, xs=None, ys=None):
-        # obsolete, should be deleted
-        if self.phase in ['l', 'l/g']:
-            if xs is None:
-                xs = self.zs
-            self.dphis_dni_l = [derivative(self._dphi_dn, xs[i], args=[i, 'l'], dx=1E-7, n=1) for i in self.cmps]
-            self.dfugacities_dni_l = [derivative(self._dfugacity_dn, xs[i], args=[i, 'l'], dx=1E-7, n=1) for i in self.cmps]
-            self.dlnphis_dni_l = [dphi/phi for dphi, phi in zip(self.dphis_dni_l, self.phis_l)]
-        if self.phase in ['g', 'l/g']:
-            if ys is None:
-                ys = self.zs
-            self.dphis_dni_g = [derivative(self._dphi_dn, ys[i], args=[i, 'g'], dx=1E-7, n=1) for i in self.cmps]
-            self.dfugacities_dni_g = [derivative(self._dfugacity_dn, ys[i], args=[i, 'g'], dx=1E-7, n=1) for i in self.cmps]
-            self.dlnphis_dni_g = [dphi/phi for dphi, phi in zip(self.dphis_dni_g, self.phis_g)]
-            # confirmed the relationship of the above
-            # There should be an easy way to get dfugacities_dn_g but I haven't figured it out
-
-    def fugacities_partial_derivatives_2(self, xs=None, ys=None):
-        # obsolete, should be deleted
-        if self.phase in ['l', 'l/g']:
-            if xs is None:
-                xs = self.zs
-            self.d2phis_dni2_l = [derivative(self._dphi_dn, xs[i], args=[i, 'l'], dx=1E-5, n=2) for i in self.cmps]
-            self.d2fugacities_dni2_l = [derivative(self._dfugacity_dn, xs[i], args=[i, 'l'], dx=1E-5, n=2) for i in self.cmps]
-            self.d2lnphis_dni2_l = [d2phi/phi  - dphi*dphi/(phi*phi) for d2phi, dphi, phi in zip(self.d2phis_dni2_l, self.dphis_dni_l, self.phis_l)]
-        if self.phase in ['g', 'l/g']:
-            if ys is None:
-                ys = self.zs
-            self.d2phis_dni2_g = [derivative(self._dphi_dn, ys[i], args=[i, 'g'], dx=1E-5, n=2) for i in self.cmps]
-            self.d2fugacities_dni2_g = [derivative(self._dfugacity_dn, ys[i], args=[i, 'g'], dx=1E-5, n=2) for i in self.cmps]
-            self.d2lnphis_dni2_g = [d2phi/phi  - dphi*dphi/(phi*phi) for d2phi, dphi, phi in zip(self.d2phis_dni2_g, self.dphis_dni_g, self.phis_g)]
-        # second derivative lns confirmed
-
 
     def Stateva_Tsvetkov_TPDF_broken(self, Zz, Zy, zs, ys):
         z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
