@@ -98,9 +98,15 @@ def test_ViscosityLiquid():
 def test_ViscosityGas():
     EtOH = ViscosityGas(MW=46.06844, Tc=514.0, Pc=6137000.0, Zc=0.2412, dipole=1.44, Vmg=0.02357, CASRN='64-17-5')
 
-    mug_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(298.15))[1] for i in EtOH.all_methods]
+    mug_calcs = {}
+    for i in list(EtOH.all_methods):
+        EtOH.set_user_methods(i)
+        mu = EtOH.T_dependent_property(298.15)
+        mug_calcs[i] = mu
+
+    mug_calcs2 = list(mug_calcs.values())
     mug_exp = [8.934627758386856e-06, 8.933684639927153e-06, 7.414017252400231e-06, 8.772549629893446e-06, 8.5445e-06, 7.902892297231681e-06, 8.805532218477024e-06, 7.536618820670175e-06]
-    assert_allclose(sorted(mug_calcs), sorted(mug_exp))
+    assert_allclose(sorted(mug_calcs2), sorted(mug_exp))
 
     # Test that methods return None
     EtOH.tabular_extrapolation_permitted = False

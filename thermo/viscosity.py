@@ -45,6 +45,7 @@ from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coo
 from chemicals.dippr import EQ101, EQ102
 from chemicals import viscosity
 from chemicals.viscosity import *
+from chemicals.viscosity import viscosity_gas_Gharagheizi
 
 
 
@@ -808,7 +809,7 @@ class ViscosityGas(TPDependentProperty):
             Viscosity of the gas at T and a low pressure, [Pa*s]
         '''
         if method == GHARAGHEIZI:
-            mu = Gharagheizi_gas_viscosity(T, self.Tc, self.Pc, self.MW)
+            mu = viscosity_gas_Gharagheizi(T, self.Tc, self.Pc, self.MW)
         elif method == COOLPROP:
             mu = CoolProp_T_dependent_property(T, self.CASRN, 'V', 'g')
         elif method == DIPPR_PERRY_8E:
@@ -823,7 +824,7 @@ class ViscosityGas(TPDependentProperty):
             mu = Lucas_gas(T, self.Tc, self.Pc, self.Zc, self.MW, self.dipole, CASRN=self.CASRN)
         elif method in self.tabular_data:
             mu = self.interpolate(T, method)
-        if method == BESTFIT:
+        elif method == BESTFIT:
             if T < self.best_fit_Tmin:
                 mu = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
             elif T > self.best_fit_Tmax:

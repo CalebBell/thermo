@@ -56,6 +56,8 @@ SANJARI = 'SANJARI'
 EDALAT = 'Edalat'
 EOS = 'EOS'
 BESTFIT = 'Best fit'
+BEST_FIT_AB = 'Best fit AB extrapolation'
+BEST_FIT_ABC = 'Best fit ABC extrapolation'
 
 vapor_pressure_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                           DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
@@ -347,6 +349,16 @@ class VaporPressure(TDependentProperty):
             else:
                 Psat = horner(self.best_fit_coeffs, T)
             Psat = exp(Psat)
+        elif method == BEST_FIT_AB:
+            if T < self.best_fit_Tmax:
+                return self.calculate(T, BESTFIT)
+            A, B = self.best_fit_AB_high_ABC_compat
+            return exp(A + B/T)
+        elif method == BEST_FIT_ABC:
+            if T < self.best_fit_Tmax:
+                return self.calculate(T, BESTFIT)
+            A, B, C = self.DIPPR101_ABC_high
+            return exp(A + B/T + C*log(T))
         elif method == WAGNER_MCGARRY:
             Psat = Wagner_original(T, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Pc, *self.WAGNER_MCGARRY_coefs)
         elif method == WAGNER_POLING:

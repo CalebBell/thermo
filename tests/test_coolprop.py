@@ -25,7 +25,9 @@ import pytest
 from thermo.coolprop import *
 from chemicals.identifiers import check_CAS
 
+
 def test_fluid_props():
+    has_CoolProp()
 #    tots = [sum([getattr(f, prop) for f in coolprop_fluids.values()]) for prop in ['Tmin', 'Tmax', 'Pmax', 'Tc', 'Pc', 'Tt', 'omega']]
 #    tots_exp = [18589.301, 71575.0, 31017000000.0, 45189.59849999997, 440791794.7987591, 18589.301, 30.90243968446593]
 
@@ -38,6 +40,7 @@ def test_fluid_props():
 
 
 
+@pytest.mark.CoolProp
 def test_CoolProp_T_dependent_property():
     # Below the boiling point
     rhow = CoolProp_T_dependent_property(298.15, '7732-18-5', 'D', 'l')
@@ -70,6 +73,7 @@ def test_CoolProp_T_dependent_property():
     assert_allclose(rhow, 0.3139926976198761)
 
 
+@pytest.mark.CoolProp
 @pytest.mark.slow
 def test_CP_approximators():
     from thermo.coolprop import coolprop_fluids, CP_approximators

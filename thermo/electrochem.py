@@ -115,6 +115,8 @@ def _load_electrochem_data():
 
     _loaded_electrochem_data = True
 
+McCleskey_parameters = namedtuple("McCleskey_parameters",
+                                  ["Formula", 'lambda_coeffs', 'A_coeffs', 'B', 'multiplier'])
 
 if PY37:
     def __getattr__(name):
@@ -149,8 +151,6 @@ else:
 
 #electrolyte_dissociation_reactions = pd.read_csv(os.path.join(folder, 'Electrolyte dissociations.tsv'), sep='\t')
 
-McCleskey_parameters = namedtuple("McCleskey_parameters",
-                                  ["Formula", 'lambda_coeffs', 'A_coeffs', 'B', 'multiplier'])
 
 
 

@@ -2935,6 +2935,7 @@ class GibbsExcessLiquid(Phase):
     Hvap_data = None
     use_IG_Cp = True
     ideal_gas_basis = True
+    supercritical_volumes = False
 
     Cpls_locked = False
     Cpls_data = None
@@ -2942,6 +2943,7 @@ class GibbsExcessLiquid(Phase):
     Tait_B_data = None
     Tait_C_data = None
     def __init__(self, VaporPressures, VolumeLiquids=None,
+                 VolumeSupercriticalLiquids=None,
                  GibbsExcessModel=None,
                  eos_pure_instances=None,
                  HeatCapacityGases=None,
@@ -3029,6 +3031,21 @@ class GibbsExcessLiquid(Phase):
 #            low_fits = self.Vms_sat_data[9]
 #            for i in self.cmps:
 #                low_fits[i][0] = max(0, low_fits[i][0])
+
+        self.VolumeSupercriticalLiquids = VolumeSupercriticalLiquids
+        self.Vms_supercritical_locked = all(i.locked for i in VolumeSupercriticalLiquids) if VolumeSupercriticalLiquids is not None else False
+        if self.Vms_supercritical_locked:
+            self.Vms_supercritical_data = ([i.best_fit_Tmin for i in VolumeSupercriticalLiquids],
+                                 [i.best_fit_Tmin_slope for i in VolumeSupercriticalLiquids],
+                                 [i.best_fit_Tmin_value for i in VolumeSupercriticalLiquids],
+                                 [i.best_fit_Tmax for i in VolumeSupercriticalLiquids],
+                                 [i.best_fit_Tmax_slope for i in VolumeSupercriticalLiquids],
+                                 [i.best_fit_Tmax_value for i in VolumeSupercriticalLiquids],
+                                 [i.best_fit_coeffs for i in VolumeSupercriticalLiquids],
+                                 [i.best_fit_d_coeffs for i in VolumeSupercriticalLiquids],
+                                 [i.best_fit_d2_coeffs for i in VolumeSupercriticalLiquids],
+                                 [i.best_fit_Tmin_quadratic for i in VolumeSupercriticalLiquids],
+                                 )
 
 
         self.incompressible = not use_Tait

@@ -1026,6 +1026,7 @@ class TDependentProperty(object):
                 Tmax = self.Tmax
             else:
                 raise Exception('Maximum temperature could not be auto-detected; please provide it')
+        import matplotlib.pyplot as plt
 
         if not methods:
             if self.user_methods:
@@ -1904,7 +1905,7 @@ class TPDependentProperty(TDependentProperty):
         return float(prop)
 
     def plot_isotherm(self, T, Pmin=None, Pmax=None, methods_P=[], pts=50,
-                      only_valid=True):  # pragma: no cover
+                      only_valid=True, show=True):  # pragma: no cover
         r'''Method to create a plot of the property vs pressure at a specified
         temperature according to either a specified list of methods, or the
         user methods (if set), or all methods. User-selectable number of
@@ -1933,10 +1934,13 @@ class TPDependentProperty(TDependentProperty):
             If True, only plot successful methods and calculated properties,
             and handle errors; if False, attempt calculation without any
             checking and use methods outside their bounds
+        show : bool
+            If True, displays the plot; otherwise, returns it
         '''
         # This function cannot be tested
         if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
+        import matplotlib.pyplot as plt
         if Pmin is None:
             if self.Pmin is not None:
                 Pmin = self.Pmin
@@ -1947,6 +1951,7 @@ class TPDependentProperty(TDependentProperty):
                 Pmax = self.Pmax
             else:
                 raise Exception('Maximum pressure could not be auto-detected; please provide it')
+        fig = plt.figure()
 
         if not methods_P:
             if self.user_methods_P:
@@ -1974,10 +1979,13 @@ class TPDependentProperty(TDependentProperty):
         plt.ylabel(self.name + ', ' + self.units)
         plt.xlabel('Pressure, Pa')
         plt.title(self.name + ' of ' + self.CASRN)
-        plt.show()
+        if show:
+            plt.show()
+        else:
+            return plt
 
     def plot_isobar(self, P, Tmin=None, Tmax=None, methods_P=[], pts=50,
-                    only_valid=True):  # pragma: no cover
+                    only_valid=True, show=True):  # pragma: no cover
         r'''Method to create a plot of the property vs temperature at a
         specific pressure according to
         either a specified list of methods, or user methods (if set), or all
@@ -2010,6 +2018,7 @@ class TPDependentProperty(TDependentProperty):
         '''
         if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
+        import matplotlib.pyplot as plt
         if Tmin is None:
             if self.Tmin is not None:
                 Tmin = self.Tmin
@@ -2020,17 +2029,22 @@ class TPDependentProperty(TDependentProperty):
                 Tmax = self.Tmax
             else:
                 raise Exception('Maximum pressure could not be auto-detected; please provide it')
-
+        if hasattr(P, '__call__'):
+            P_changes = True
+            P_func = P
         if not methods_P:
             if self.user_methods_P:
                 methods_P = self.user_methods_P
             else:
                 methods_P = self.all_methods_P
         Ts = linspace(Tmin, Tmax, pts)
+        fig = plt.figure()
         for method_P in methods_P:
             if only_valid:
                 properties, Ts2 = [], []
                 for T in Ts:
+                    if P_changes:
+                        P = P_func(T)
                     if self.test_method_validity_P(T, P, method_P):
                         try:
                             p = self.calculate_P(T, P, method_P)
@@ -2041,13 +2055,21 @@ class TPDependentProperty(TDependentProperty):
                             pass
                 plt.plot(Ts2, properties, label=method_P)
             else:
-                properties = [self.calculate_P(T, P, method_P) for T in Ts]
+                properties = []
+                for T in Ts:
+                    if P_changes:
+                        P = P_func(T)
+                properties.append(self.calculate_P(T, P, method_P))
+
                 plt.plot(Ts, properties, label=method_P)
         plt.legend(loc='best')
         plt.ylabel(self.name + ', ' + self.units)
         plt.xlabel('Temperature, K')
         plt.title(self.name + ' of ' + self.CASRN)
-        plt.show()
+        if show:
+            plt.show()
+        else:
+            return plt
 
 
     def plot_TP_dependent_property(self, Tmin=None, Tmax=None, Pmin=None,

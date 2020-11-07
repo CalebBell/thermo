@@ -36,7 +36,7 @@ from chemicals.utils import mixing_simple, normalize, Vfs_to_zs, ws_to_zs, zs_to
 from thermo.mixture import Mixture, preprocess_mixture_composition
 from thermo.equilibrium import EquilibriumState
 from thermo.flash import FlashBase
-from fluids.pump import voltages_1_phase_residential, voltages_3_phase, frequencies
+from fluids.pump import voltages_1_phase_residential, voltages_3_phase, residential_power_frequencies
 
 
 # Could just assume IDs is always specified and constant.
@@ -1982,7 +1982,7 @@ energy_types = {'LP_STEAM': 'Steam 50 psi',
                 'ELECTRICITY': 'Electricity',
                 'AC_ELECTRICITY': 'AC Electricity',
                 'DC_ELECTRICITY': 'DC Electricity'}
-for freq in frequencies:
+for freq in residential_power_frequencies:
     for voltage in voltages_1_phase_residential:
         energy_types['AC_ELECTRICITY_1_PHASE_%s_V_%s_Hz'% (str(voltage), str(freq))] = 'AC_ELECTRICITY 1 PHASE %s V %s Hz'% (str(voltage), str(freq))
     for voltage in voltages_3_phase:

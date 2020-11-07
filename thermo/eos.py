@@ -848,10 +848,10 @@ class GCEOS(object):
 #    volume_solutions = volume_solutions_doubledouble
 #    volume_solutions = volume_solutions_doubledouble_inline
 #    volume_solutions = volume_solutions_NR#volume_solutions_numpy#volume_solutions_NR
-#    volume_solutions= volume_solutions_numpy
+#    volume_solutions = staticmethod(volume_solutions_numpy)
 #    volume_solutions = volume_solutions_fast
-#    volume_solutions = staticmethod(volume_solutions_Cardano)
-    volume_solutions = staticmethod(volume_solutions_halley)
+    volume_solutions = staticmethod(volume_solutions_Cardano)
+#    volume_solutions = staticmethod(volume_solutions_halley)
 
     # Solver which actually has the roots
     volume_solutions_full = staticmethod(volume_solutions_NR)
@@ -1047,8 +1047,8 @@ class GCEOS(object):
 
             ax.set_yscale('log')
             ax.set_xscale('log')
-            ax.set_xlabel('T')
-            ax.set_ylabel('P')
+            ax.set_xlabel('T [K]')
+            ax.set_ylabel('P [Pa]')
 
             max_err = np.max(errs)
             if trunc_err_low is not None and max_err < trunc_err_low:

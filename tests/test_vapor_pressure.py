@@ -99,3 +99,14 @@ def test_VaporPressure_fast_Psat_best_fit():
 
     # High T
     assert_close(corr.solve_prop(1e8), corr.solve_prop_best_fit(1e8), rtol=1e-10)
+
+    # Extrapolation
+    from thermo.vapor_pressure import BESTFIT, BEST_FIT_AB, BEST_FIT_ABC
+    obj = VaporPressure(best_fit=(178.01, 591.74, [-8.638045111752356e-20, 2.995512203611858e-16, -4.5148088801006036e-13, 3.8761537879200513e-10, -2.0856828984716705e-07, 7.279010846673517e-05, -0.01641020023565049, 2.2758331029405516, -146.04484159879843]))
+    assert_close(obj.calculate(1000, BEST_FIT_AB), 78666155.90418352, rtol=1e-10)
+    assert_close(obj.calculate(1000, BEST_FIT_ABC), 156467764.5930495, rtol=1e-10)
+    
+    assert_close(obj.calculate(400, BESTFIT), 157199.6909849476, rtol=1e-10)
+    assert_close(obj.calculate(400, BEST_FIT_AB), 157199.6909849476, rtol=1e-10)
+    assert_close(obj.calculate(400, BEST_FIT_ABC), 157199.6909849476, rtol=1e-10)
+    

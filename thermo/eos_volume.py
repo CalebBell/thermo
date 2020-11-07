@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+r'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,7 +18,30 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+Some of the methods implemented here are numerical while others are analytical.
+
+
+The cubic EOS can be rearranged into the following polynomial form:
+
+.. math::
+    0 = Z^3 + (\delta' - B' - 1)Z^2 + [\theta' + \epsilon' - \delta(B'+1)]Z
+    - [\epsilon'(B'+1) + \theta'\eta']
+
+.. math::
+    B' = \frac{bP}{RT}
+
+.. math::
+    \delta' = \frac{\delta P}{RT}
+
+.. math::
+    \theta' = \frac{a\alpha P}{(RT)^2}
+
+.. math::
+    \epsilon' = \epsilon\left(\frac{P}{RT}\right)^2
+
+'''
 
 from __future__ import division, print_function
 
@@ -751,6 +774,51 @@ def volume_solutions_doubledouble(T, P, b, delta, epsilon, a_alpha):
 #                (x19*x26 + x22 - x25*x26_inv)*sixth]
 
 def volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha):
+    r'''Calculate the molar volume solutions to a cubic equation of state using
+    Cardano's formula, and a few tweaks to improve numerical precision.
+    This solution is quite fast in general although it involves powers or
+    trigonometric functions. However, it has numerical issues at many
+    seemingly random areas in the low pressure region.
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    P : float
+        Pressure, [Pa]
+    b : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    delta : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    epsilon : float
+        Coefficient calculated by EOS-specific method, [m^6/mol^2]
+    a_alpha : float
+        Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+
+    Returns
+    -------
+    Vs : list[float]
+        Three possible molar volumes, [m^3/mol]
+
+    Notes
+    -----
+
+    Two sample regions where this method does not obtain the correct solution
+    (PR EOS for hydrogen) are as follows:
+
+    .. figure:: eos/volume_error_cardano_PR_hydrogen_high.png
+       :scale: 100 %
+       :alt: PR EOS hydrogen volume error high pressure
+
+    .. figure:: eos/volume_error_cardano_PR_hydrogen_low.png
+       :scale: 100 %
+       :alt: PR EOS hydrogen volume error low pressure
+
+    References
+    ----------
+    .. [1] Reid, Robert C.; Prausnitz, John M.; Poling, Bruce E.
+       Properties of Gases and Liquids. McGraw-Hill Companies, 1987.
+    '''
     RT_inv = R_inv/T
     P_RT_inv = P*RT_inv
     B = etas = b*P_RT_inv
@@ -762,41 +830,6 @@ def volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha):
     c = (thetas + epsilons - deltas*(B + 1.0))
     d = -(epsilons*(B + 1.0) + thetas*etas)
     roots = list(roots_cubic(1.0, b, c, d))
-
-
-
-#        if 0:
-#            for i in range(3):
-#                from fluids.numerics import bisect
-#                def err(Z):
-#                    err = Z*(Z*(Z + b) + c) + d
-#                    return err
-#                for fact in (1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-4, 1e-3):
-#                    try:
-#                        roots[i] = bisect(err, roots[i].real*(1+fact), roots[i].real*(1-fact), xtol=1e-15)
-#                        break
-#                    except Exception as e:
-##                        print(e)
-#                        pass
-#                for _ in range(3):
-#                    Z = roots[i]
-##                    x0 = Z*(Z + b) + c
-##                    err = Z*x0 + d
-##                    derr = Z*(Z + Z + b) + x0
-##
-##                    roots[i] = Z - err/derr
-##
-#
-#                    x0 = Z*(Z + b) + c
-#                    err = Z*x0 + d
-#                    derr = Z*(Z + Z + b) + x0
-#                    d2err = 2.0*(3.0*Z + b)
-#
-#                    step = err/derr
-#                    step = step/(1.0 - 0.5*step*d2err/derr)
-#                    roots[i] = Z - step
-
-
     RT_P = R*T/P
     return [V*RT_P for V in roots]
 
@@ -835,7 +868,48 @@ def volume_solutions_a2(T, P, b, delta, epsilon, a_alpha):
     return [V*RT_P for V in roots]
 
 
+
 def volume_solutions_numpy(T, P, b, delta, epsilon, a_alpha):
+    r'''Calculate the molar volume solutions to a cubic equation of state using
+    NumPy's `roots` function, which is a power series iterative matrix solution
+    that is very stable but does not have full precision in some cases.
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    P : float
+        Pressure, [Pa]
+    b : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    delta : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    epsilon : float
+        Coefficient calculated by EOS-specific method, [m^6/mol^2]
+    a_alpha : float
+        Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+
+    Returns
+    -------
+    Vs : list[float]
+        Three possible molar volumes, [m^3/mol]
+
+    Notes
+    -----
+
+    A sample region where this method does not obtain the correct solution
+    (SRK EOS for ethane) is as follows:
+
+    .. figure:: eos/volume_error_numpy_SRK_ethane.png
+       :scale: 100 %
+       :alt: numpy.roots error for SRK eos using ethane_
+
+
+    References
+    ----------
+    .. [1] Reid, Robert C.; Prausnitz, John M.; Poling, Bruce E.
+       Properties of Gases and Liquids. McGraw-Hill Companies, 1987.
+    '''
     RT_inv = R_inv/T
     P_RT_inv = P*RT_inv
     B = etas = b*P_RT_inv

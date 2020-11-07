@@ -32,6 +32,7 @@ import numpy as np
 from thermo.test_utils import *
 from chemicals.exceptions import PhaseExistenceImpossible
 import sys
+from thermo import eos_volume
 try:
     import matplotlib.pyplot as plt
 except:
@@ -890,7 +891,7 @@ def test_V_error_plot(fluid, eos, P_range):
         def volume_solutions_mpmath(*args):
             if args in mem_cache:
                 return mem_cache[args]
-            Vs = GCEOS.volume_solutions_mpmath(*args)
+            Vs = eos_volume.volume_solutions_mpmath(*args)
             mem_cache[args] = Vs
             did_new_dat[0] = True
             return [float(Vi.real) + float(Vi.imag)*1.0j for Vi in Vs]
@@ -925,7 +926,7 @@ def test_V_error_plot(fluid, eos, P_range):
 
 
 #test_V_error_plot('ethane', SRK, 'low')
-#test_V_error_plot('hydrogen', PR, 'high')
+#test_V_error_plot('hydrogen', PR, 'low')
 #test_V_error_plot('ethane', SRK, 'high')
 #test_V_error_plot('decane', SRK, 'high')
 #test_V_error_plot('hydrogen', SRK, 'high')
