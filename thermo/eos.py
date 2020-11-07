@@ -850,8 +850,8 @@ class GCEOS(object):
 #    volume_solutions = volume_solutions_NR#volume_solutions_numpy#volume_solutions_NR
 #    volume_solutions = staticmethod(volume_solutions_numpy)
 #    volume_solutions = volume_solutions_fast
-    volume_solutions = staticmethod(volume_solutions_Cardano)
-#    volume_solutions = staticmethod(volume_solutions_halley)
+#    volume_solutions = staticmethod(volume_solutions_Cardano)
+    volume_solutions = staticmethod(volume_solutions_halley)
 
     # Solver which actually has the roots
     volume_solutions_full = staticmethod(volume_solutions_NR)
