@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+r'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,7 +28,6 @@ For reporting bugs, adding feature requests, or submitting pull requests,
 please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 .. contents:: :local:
-    :members:
     :undoc-members:
     :show-inheritance:
 
@@ -43,7 +42,7 @@ Peng-Robinson Family EOSs
 -------------------------
 .. autoclass:: PR
    :show-inheritance:
-   :members: A_dep_g, P_max_at_V
+   :members: a_alpha_pure, a_alpha_and_derivatives_pure,  d3a_alpha_dT3_pure, solve_T, P_max_at_V
 .. autoclass:: PR78
 .. autoclass:: PRSV
 .. autoclass:: PRSV2
@@ -72,6 +71,27 @@ Lists of Equations of State
 ---------------------------
 .. autodata:: eos_list
 .. autodata:: eos_2P_list
+
+Demonstrations of Concepts
+--------------------------
+
+Maximum Pressure at Constant Volume
+-----------------------------------
+
+Some equations of state show this behavior. At a liquid volume, if the
+temperature is increased, the pressure should increase as well to create that
+same volume. However in some cases this is not the case as can be demonstrated
+for this hypothetical dodecane-like fluid:
+
+.. plot:: plots/PR_maximum_pressure.py
+
+Through experience, it is observed that this behavior is only shown for some
+sets of critical constants. It was found that if the expression for
+:math:`\frac{\partial P}{\partial T}_{V}` is set to zero, an analytical
+expression can be determined for exactly what that maximum pressure is.
+Some EOSs implement this function as `P_max_at_V`; those that don't, and fluids
+where there is no maximum pressure, will have that method but it will return None.
+
 
 '''
 
@@ -706,7 +726,7 @@ class GCEOS(object):
             method, [J^2/mol^2/Pa/K]
         d2a_alpha_dT2 : float
             Second temperature derivative of coefficient calculated by
-            EOS-specific method, [J^2/mol^2/Pa/K**2]
+            EOS-specific method, [J^2/mol^2/Pa/K^2]
         '''
         if full:
             return self.a_alpha_and_derivatives_pure(T=T)
@@ -5393,7 +5413,7 @@ class IG(GCEOS):
     relevant thermodynamic properties. Solves the EOS on initialization.
 
     Implemented methods here are `a_alpha_and_derivatives`, which calculates
-    a_alpha and its first and second derivatives (all zero), and `solve_T`,
+    :math:`a \alpha` and its first and second derivatives (all zero), and `solve_T`,
     which from a specified `P` and `V` obtains `T`.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS; values for `Tc` and
@@ -5496,13 +5516,13 @@ class IG(GCEOS):
 
 
 class PR(GCEOS):
-    r'''Class for solving the Peng-Robinson cubic
+    r'''Class for solving the Peng-Robinson [1]_ [2]_ cubic
     equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
 
-    Implemented methods here are :obj:`PR.a_alpha_and_derivatives`, which calculates
-    a_alpha and its first and second derivatives, and :obj:`PR.solve_T`, which from a
+    The main methods here are :obj:`PR.a_alpha_and_derivatives_pure`, which calculates
+    :math:`a \alpha` and its first and second derivatives, and :obj:`PR.solve_T`, which from a
     specified `P` and `V` obtains `T`.
 
     Two of (`T`, `P`, `V`) are needed to solve the EOS.
@@ -5687,6 +5707,105 @@ class PR(GCEOS):
         self.epsilon = -b*b
         self.solve()
 
+    def a_alpha_pure(self, T):
+        r'''Method to calculate `a_alpha` for this EOS. Uses the set values of
+        `Tc`, `kappa`, and `a`.
+
+        .. math::
+            a\alpha = a \left(\kappa \left(- \frac{T^{0.5}}{Tc^{0.5}}
+            + 1\right) + 1\right)^{2}
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the value, [-]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+
+        Notes
+        -----
+        This method does not alter the object's state and the temperature
+        provided can be a different than that of the object.
+
+        Examples
+        --------
+        Dodecane at 250 K:
+
+        >>> eos = PR(Tc=658.0, Pc=1820000.0, omega=0.562, T=500., P=1e5)
+        >>> eos.a_alpha_and_derivatives_pure(250.0)
+        15.66839156301
+        '''
+        x0 = (1.0 + self.kappa*(1.0 - (T/self.Tc)**0.5))
+        return self.a*x0*x0
+
+    def a_alpha_and_derivatives_pure(self, T):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives for this EOS. Uses the set values of `Tc`, `kappa`, and `a`.
+
+        .. math::
+            a\alpha = a \left(\kappa \left(- \frac{T^{0.5}}{Tc^{0.5}}
+            + 1\right) + 1\right)^{2}
+
+        .. math::
+            \frac{d a\alpha}{dT} = - \frac{1.0 a \kappa}{T^{0.5} Tc^{0.5}}
+            \left(\kappa \left(- \frac{T^{0.5}}{Tc^{0.5}} + 1\right) + 1\right)
+
+        .. math::
+            \frac{d^2 a\alpha}{dT^2} = 0.5 a \kappa \left(- \frac{1}{T^{1.5}
+            Tc^{0.5}} \left(\kappa \left(\frac{T^{0.5}}{Tc^{0.5}} - 1\right)
+            - 1\right) + \frac{\kappa}{T^{1.0} Tc^{1.0}}\right)
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the values, [-]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dT : float
+            Temperature derivative of coefficient calculated by EOS-specific
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2 : float
+            Second temperature derivative of coefficient calculated by
+            EOS-specific method, [J^2/mol^2/Pa/K^2]
+
+        Notes
+        -----
+        This method does not alter the object's state and the temperature
+        provided can be a different than that of the object.
+
+        Examples
+        --------
+        Dodecane at 250 K:
+
+        >>> eos = PR(Tc=658.0, Pc=1820000.0, omega=0.562, T=500., P=1e5)
+        >>> eos.a_alpha_and_derivatives_pure(250.0)
+        (15.66839156301, -0.03094091246957, 9.243186769880e-05)
+        '''
+        # TODO custom water a_alpha?
+        # Peng, DY, and DB Robinson. "Two-and Three-Phase Equilibrium Calculations
+        # for Coal Gasification and Related Processes,", 1980
+        # Thermodynamics of aqueous systems with industrial applications 133 (1980): 393-414.
+        # Applies up to Tr .85.
+        # Suggested in Equations of State And PVT Analysis.
+        Tc, kappa, a = self.Tc, self.kappa, self.a
+        x0 = T**0.5
+        x1 = Tc**-0.5
+        x2 = kappa*(x0*x1 - 1.) - 1.
+        x3 = a*kappa
+        x4 = x1*x2
+
+        a_alpha = a*x2*x2
+        da_alpha_dT = x4*x3/x0
+        d2a_alpha_dT2 = 0.5*x3*(kappa/(T*Tc) - x4/(x0*T))
+
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
     def d3a_alpha_dT3_pure(self, T):
         r'''Method to calculate the third temperature derivative of `a_alpha`.
         Uses the set values of `Tc`, `kappa`, and `a`. This property is not
@@ -5710,7 +5829,16 @@ class PR(GCEOS):
 
         Notes
         -----
+        This method does not alter the object's state and the temperature
+        provided can be a different than that of the object.
 
+        Examples
+        --------
+        Dodecane at 500 K:
+
+        >>> eos = PR(Tc=658.0, Pc=1820000.0, omega=0.562, T=500., P=1e5)
+        >>> eos.d3a_alpha_dT3_pure(500.0)
+        -9.8038800671e-08
         '''
         kappa = self.kappa
         x0 = 1.0/self.Tc
@@ -5718,51 +5846,32 @@ class PR(GCEOS):
         x1 = (T*x0)**0.5
         return -self.a*0.75*kappa*(kappa*x0 - x1*(kappa*(x1 - 1.0) - 1.0)*T_inv)*T_inv*T_inv
 
-    def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
-        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and
-        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
-        documentation. Uses the set values of `Tc`, `kappa`, and `a`.
-
-        .. math::
-            a\alpha = a \left(\kappa \left(- \frac{T^{0.5}}{Tc^{0.5}}
-            + 1\right) + 1\right)^{2}
-
-        .. math::
-            \frac{d a\alpha}{dT} = - \frac{1.0 a \kappa}{T^{0.5} Tc^{0.5}}
-            \left(\kappa \left(- \frac{T^{0.5}}{Tc^{0.5}} + 1\right) + 1\right)
-
-        .. math::
-            \frac{d^2 a\alpha}{dT^2} = 0.5 a \kappa \left(- \frac{1}{T^{1.5}
-            Tc^{0.5}} \left(\kappa \left(\frac{T^{0.5}}{Tc^{0.5}} - 1\right)
-            - 1\right) + \frac{\kappa}{T^{1.0} Tc^{1.0}}\right)
-        '''
-        # TODO custom water a_alpha?
-        # Peng, DY, and DB Robinson. "Two-and Three-Phase Equilibrium Calculations
-        # for Coal Gasification and Related Processes,", 1980
-        # Thermodynamics of aqueous systems with industrial applications 133 (1980): 393-414.
-        # Applies up to Tr .85.
-        # Suggested in Equations of State And PVT Analysis.
-        Tc, kappa, a = self.Tc, self.kappa, self.a
-        x0 = T**0.5
-        x1 = Tc**-0.5
-        x2 = kappa*(x0*x1 - 1.) - 1.
-        x3 = a*kappa
-        x4 = x1*x2
-
-        a_alpha = a*x2*x2
-        da_alpha_dT = x4*x3/x0
-        d2a_alpha_dT2 = 0.5*x3*(kappa/(T*Tc) - x4/(x0*T))
-
-        return a_alpha, da_alpha_dT, d2a_alpha_dT2
-
-    def a_alpha_pure(self, T):
-        x0 = (1.0 + self.kappa*(1.0 - (T/self.Tc)**0.5))
-        return self.a*x0*x0
-
-    # sqrt terms:
     def P_max_at_V(self, V):
+        r'''Method to calculate the maximum pressure the EOS can create at a
+        constant volume, if one exists; returns None otherwise.
+
+        Parameters
+        ----------
+        V : float
+            Constant molar volume, [m^3/mol]
+
+        Returns
+        -------
+        P : float
+            Maximum possible isochoric pressure, [Pa]
+
+        Notes
+        -----
+        The analytical determination of this formula involved some part of the
+        discriminant, and much black magic.
+
+        Examples
+        --------
+        >>> e = PR(P=1e5, V=0.0001437, Tc=512.5, Pc=8084000.0, omega=0.559)
+        >>> e.P_max_at_V(e.V)
+        2247886208.7
         '''
+        '''# Partial notes on how this was determined.
         from sympy import *
         P, T, V = symbols('P, T, V', positive=True)
         Tc, Pc, omega = symbols('Tc, Pc, omega', positive=True)
@@ -5821,7 +5930,6 @@ class PR(GCEOS):
         >>> P, T, V = symbols('P, T, V')
         >>> Tc, Pc, omega = symbols('Tc, Pc, omega')
         >>> R, a, b, kappa = symbols('R, a, b, kappa')
-
         >>> a_alpha = a*(1 + kappa*(1-sqrt(T/Tc)))**2
         >>> PR_formula = R*T/(V-b) - a_alpha/(V*(V+b)+b*(V-b)) - P
         >>> #solve(PR_formula, T)
@@ -6893,7 +7001,7 @@ class VDW(GCEOS):
     relevant thermodynamic properties. Solves the EOS on initialization.
 
     Implemented methods here are `a_alpha_and_derivatives`, which sets
-    a_alpha and its first and second derivatives, and `solve_T`, which from a
+    :math:`a \alpha` and its first and second derivatives, and `solve_T`, which from a
     specified `P` and `V` obtains `T`. `main_derivatives_and_departures` is
     a re-implementation with VDW specific methods, as the general solution
     has ZeroDivisionError errors.
@@ -7145,7 +7253,7 @@ class RK(GCEOS):
     relevant thermodynamic properties. Solves the EOS on initialization.
 
     Implemented methods here are `a_alpha_and_derivatives`, which sets
-    a_alpha and its first and second derivatives, and `solve_T`, which from a
+    :math:`a \alpha` and its first and second derivatives, and `solve_T`, which from a
     specified `P` and `V` obtains `T`.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
@@ -7437,7 +7545,7 @@ class SRK(GCEOS):
     relevant thermodynamic properties. Solves the EOS on initialization.
 
     Implemented methods here are `a_alpha_and_derivatives`, which sets
-    a_alpha and its first and second derivatives, and `solve_T`, which from a
+    :math:`a \alpha` and its first and second derivatives, and `solve_T`, which from a
     specified `P` and `V` obtains `T`.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
@@ -8112,7 +8220,7 @@ class APISRK(SRK):
     relevant thermodynamic properties. Solves the EOS on initialization.
 
     Implemented methods here are `a_alpha_and_derivatives`, which sets
-    a_alpha and its first and second derivatives, and `solve_T`, which from a
+    :math:`a \alpha` and its first and second derivatives, and `solve_T`, which from a
     specified `P` and `V` obtains `T`. Two fit constants are used in this
     expresion, with an estimation scheme for the first if unavailable and the
     second may be set to zero.
@@ -8315,7 +8423,7 @@ class TWUPR(TwuPR95_a_alpha, PR):
     relevant thermodynamic properties. Solves the EOS on initialization.
 
     Implemented methods here are `a_alpha_and_derivatives`, which sets
-    a_alpha and its first and second derivatives, and `solve_T`, which from a
+    :math:`a \alpha` and its first and second derivatives, and `solve_T`, which from a
     specified `P` and `V` obtains `T`.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
@@ -8423,7 +8531,7 @@ class TWUSRK(TwuSRK95_a_alpha, SRK):
     relevant thermodynamic properties. Solves the EOS on initialization.
 
     Implemented methods here are `a_alpha_and_derivatives`, which sets
-    a_alpha and its first and second derivatives, and `solve_T`, which from a
+    :math:`a \alpha` and its first and second derivatives, and `solve_T`, which from a
     specified `P` and `V` obtains `T`.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
