@@ -70,7 +70,6 @@ Higher-Precision Solvers
 ------------------------
 .. autofunction:: volume_solutions_mpmath
 .. autofunction:: volume_solutions_mpmath_float
-.. autofunction:: volume_solutions_doubledouble
 
 '''
 
@@ -90,69 +89,66 @@ from fluids.numerics import (brenth, third, sixth, roots_cubic,
 
 from fluids.constants import R, R_inv
 
-try:
-    1/0
-    from doubledouble import DoubleDouble
-
-    def imag_div_dd(x0, x1, y0, y1):
-        a, b, c, d = x0, x1, y0, y1
-        den_inv = 1/(c*c + d*d)
-        real = (a*c + b*d)*den_inv
-        comp = (b*c - a*d)*den_inv
-        return real, comp
-
-    def imag_mult_dd(x0, x1, y0, y1):
-        x, y, u, v = x0, x1, y0, y1
-        return x*u - y*v, x*v + y*u
-
-    def imag_add_dd(x0, x1, y0, y1):
-        return x0 + y0, x1+y1
-
-    third_dd = (DoubleDouble(1)/DoubleDouble(3))
-    sqrt3_dd = DoubleDouble(1.7320508075688772, 1.0035084221806902e-16) # DoubleDouble(3).root(2)
-    sqrt3_quarter_dd = DoubleDouble(0.4330127018922193, 2.5087710554517254e-17)
-    quarter_dd = DoubleDouble(1)/DoubleDouble(4)
-
-
-    def cbrt_dd(x):
-        # http://web.mit.edu/tabbott/Public/quaddouble-debian/qd-2.3.4-old/docs/qd.pdf
-        # start off with a "good" guess
-        y = 1/DoubleDouble(float(x)**(1.0/3.))
-        y = y + third_dd*y*(1-x*y*y*y)
-        y = y + third_dd*y*(1-x*y*y*y)
-    #     y = y + third_dd*y*(1-x*y*y*y)
-        return 1/y
-
-
-    def imag_cbrt_dd(xr, xc):
-        y_guess = (float(xr)+float(xc)*1.0j)**(-1.0/3.)
-
-        yr, yc = DoubleDouble(y_guess.real), DoubleDouble(y_guess.imag)
-    #     print(repr(yr), repr(yc))
-        t0r, t0c = imag_mult_dd(yr, yc, yr, yc) # have y*y
-        t0r, t0c = imag_mult_dd(t0r, t0c, yr, yc) # have y*y*y
-        t0r, t0c = imag_mult_dd(xr, xc, t0r, t0c) # have x*y*y*y
-        t0r, t0c = imag_add_dd(1.0, 0.0, -t0r, -t0c) # have 1-x*y*y*y
-        t0r, t0c = imag_mult_dd(yr, yc, t0r, t0c) # have y*(1-x*y*y*y)
-        t0r, t0c = imag_mult_dd(third_dd, 0.0, t0r, t0c) # have third_dd*y*(1-x*y*y*y)
-        yr, yc = imag_add_dd(yr, yc, t0r, t0c) # have y
-
-    #     print(repr(yr), repr(yc))
-
-#        t0r, t0c = imag_mult_dd(yr, yc, yr, yc) # have y*y
-#        t0r, t0c = imag_mult_dd(t0r, t0c, yr, yc) # have y*y*y
-#        t0r, t0c = imag_mult_dd(xr, xc, t0r, t0c) # have x*y*y*y
-#        t0r, t0c = imag_add_dd(1.0, 0.0, -t0r, -t0c) # have 1-x*y*y*y
-#        t0r, t0c = imag_mult_dd(yr, yc, t0r, t0c) # have y*(1-x*y*y*y)
-#        t0r, t0c = imag_mult_dd(third_dd, 0.0, t0r, t0c) # have third_dd*y*(1-x*y*y*y)
-#        yr, yc = imag_add_dd(yr, yc, t0r, t0c) # have y
-
-        return imag_div_dd(1.0, 0.0, yr, yc)
-except:
-    pass
 
 
 def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, dps=30):
+    r'''Solution of this form of the cubic EOS in terms of volumes, using the
+    `mpmath` arbitrary precision library. The number of decimal places returned
+    is controlled by the `dps` parameter.
+
+    This function is the reference implementation which provides exactly
+    correct solutions; other algorithms are compared against this one.
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    P : float
+        Pressure, [Pa]
+    b : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    delta : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    epsilon : float
+        Coefficient calculated by EOS-specific method, [m^6/mol^2]
+    a_alpha : float
+        Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+    dps : int
+        Number of decimal places in the result by `mpmath`, [-]
+
+    Returns
+    -------
+    Vs : tuple[complex]
+        Three possible molar volumes, [m^3/mol]
+
+    Notes
+    -----
+    Although `mpmath` has a cubic solver, it has been found to fail to solve in
+    some cases. Accordingly, the algorithm is as follows:
+
+    Working precision is `dps` plus 40 digits; and if P < 1e-10 Pa, it is
+    `dps` plus 400 digits. The input parameters are converted exactly to `mpf`
+    objects on input.
+
+    `polyroots` from mpmath is used with `maxsteps=2000`, and extra precision
+    of 15 digits. If the solution does not converge, 20 extra digits are added
+    up to 8 times. If no solution is found, mpmath's `findroot` is called on
+    the pressure error function using three initial guesses from another solver.
+
+    Needless to say, this function is quite slow.
+
+    Examples
+    --------
+    Test case which presented issues for PR EOS (three roots were not being returned):
+
+    >>> volume_solutions_mpmath(0.01, 1e-05, 2.5405184201558786e-05, 5.081036840311757e-05, -6.454233843151321e-10, 0.3872747173781095)
+    (mpf('0.0000254054613415548712260258773060137'), mpf('4.66038025602155259976574392093252'), mpf('8309.80218708657190094424659859346'))
+
+    References
+    ----------
+    .. [1] Johansson, Fredrik. Mpmath: A Python Library for Arbitrary-Precision
+       Floating-Point Arithmetic, 2010.
+    '''
     # Tried to remove some green on physical TV with more than 30, could not
     # 30 is fine, but do not dercease further!
     # No matter the precision, still cannot get better
@@ -213,7 +209,7 @@ def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, dps=30):
             hits = [V*RT_P for V in roots]
 
     if roots is None:
-        print('trying numerical mpmath')
+#        print('trying numerical mpmath')
         guesses = volume_solutions_fast(T, P, b, delta, epsilon, a_alpha)
         RT = T*R
         def err(V):
@@ -228,15 +224,96 @@ def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, dps=30):
                 pass
         if not hits:
             raise ValueError("Could not converge any mpmath volumes")
-
+    # Return in the specified precision
+    mp.mp.dps = dps
     sort_fun = lambda x: (x.real, x.imag)
-    return list(sorted(hits, key=sort_fun))
+    return tuple(sorted(hits, key=sort_fun))
 
 def volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha):
+    r'''Simple wrapper around :obj:`volume_solutions_mpmath` which uses the
+    default parameters and returns the values as floats.
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    P : float
+        Pressure, [Pa]
+    b : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    delta : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    epsilon : float
+        Coefficient calculated by EOS-specific method, [m^6/mol^2]
+    a_alpha : float
+        Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+    dps : int
+        Number of decimal places in the result by `mpmath`, [-]
+
+    Returns
+    -------
+    Vs : tuple[complex]
+        Three possible molar volumes, [m^3/mol]
+
+    Notes
+    -----
+
+    Examples
+    --------
+    Test case which presented issues for PR EOS (three roots were not being returned):
+
+    >>> volume_solutions_mpmath_float(0.01, 1e-05, 2.5405184201558786e-05, 5.081036840311757e-05, -6.454233843151321e-10, 0.3872747173781095)
+    ((2.540546134155487e-05+0j), (4.660380256021552+0j), (8309.802187086572+0j))
+    '''
     Vs = volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha)
-    return [float(Vi.real) + float(Vi.imag)*1.0j for Vi in Vs]
+    return tuple(float(Vi.real) + float(Vi.imag)*1.0j for Vi in Vs)
 
 def volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, tries=0):
+    r'''Newton-Raphson based solver for cubic EOS volumes based on the idea
+    of initializing from an analytical solver. This algorithm can only be
+    described as a monstrous mess. It is fairly fast for most cases, but about
+    3x slower than :obj:`volume_solutions_halley`. In the worst case this
+    will fall back to `mpmath`.
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    P : float
+        Pressure, [Pa]
+    b : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    delta : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    epsilon : float
+        Coefficient calculated by EOS-specific method, [m^6/mol^2]
+    a_alpha : float
+        Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+    tries : int, optional
+        Internal parameter as this function will call itself if it needs to;
+        number of previous solve attempts, [-]
+
+    Returns
+    -------
+    Vs : tuple[complex]
+        Three possible molar volumes, [m^3/mol]
+
+    Notes
+    -----
+
+    Sample regions where this method works perfectly are shown below:
+
+    .. figure:: eos/volume_error_NR_PR_methanol_high.png
+       :scale: 70 %
+       :alt: PR EOS methanol volume error high pressure
+
+    .. figure:: eos/volume_error_NR_PR_methanol_low.png
+       :scale: 70 %
+       :alt: PR EOS methanol volume error low pressure
+
+    '''
+
+
     '''Even if mpmath is used for greater precision in the calculated root,
     it gets rounded back to a float - and then error occurs.
     Cannot beat numerical method or numpy roots!
@@ -264,7 +341,8 @@ def volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, tries=0):
             try:
                 return volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha)
             except Exception as e:
-                print(e, 'was not 2 phase')
+                pass
+#                print(e, 'was not 2 phase')
 
         try:
             return volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
@@ -389,10 +467,42 @@ def volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, tries=0):
 #            print(tries)
     return Vs
 
-def volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha,
-                              tries=0):
+def volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha):
+    r'''Newton-Raphson based solver for cubic EOS volumes designed specifically
+    for the low-pressure regime. Seeks only two possible solutions - an ideal
+    gas like one, and one near the eos covolume `b` - as the initializations are
+    `R*T/P` and `b*1.000001` .
 
-    P_inv = 1/P
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    P : float
+        Pressure, [Pa]
+    b : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    delta : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    epsilon : float
+        Coefficient calculated by EOS-specific method, [m^6/mol^2]
+    a_alpha : float
+        Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+    tries : int, optional
+        Internal parameter as this function will call itself if it needs to;
+        number of previous solve attempts, [-]
+
+    Returns
+    -------
+    Vs : tuple[complex]
+        Three possible molar volumes (third one is hardcoded to 1j), [m^3/mol]
+
+    Notes
+    -----
+    The algorithm is NR, with some checks that will switch the solver to
+    `brenth` some of the time.
+    '''
+
+    P_inv = 1.0/P
     def err_fun(V):
         denom1 = 1.0/(V*(V + delta) + epsilon)
         denom0 = 1.0/(V-b)
@@ -461,6 +571,47 @@ def volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha,
     return Vs
 
 def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
+    r'''Halley's method based solver for cubic EOS volumes based on the idea
+    of initializing from a single liquid-like guess which is solved precisely,
+    deflating the cubic analytically, solving the quadratic equation for the
+    next two volumes, and then performing two halley steps on each of them
+    to obtain the final solutions. This method does not calculate imaginary
+    roots - they are set to zero on detection. This method has been rigorously
+    tested over a wide range of conditions.
+
+    One limitation is that if `P < 1e-2` or `a_alpha < 1e-9` the NR solution
+    is called as this method has not been found to be completely suitable
+    for those conditions.
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    P : float
+        Pressure, [Pa]
+    b : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    delta : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    epsilon : float
+        Coefficient calculated by EOS-specific method, [m^6/mol^2]
+    a_alpha : float
+        Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+
+    Returns
+    -------
+    Vs : tuple[complex]
+        Three possible molar volumes, [m^3/mol]
+
+    Notes
+    -----
+    A sample region where this method works perfectly is shown below:
+
+    .. figure:: eos/volume_error_halley_PR_methanol_low.png
+       :scale: 70 %
+       :alt: PR EOS methanol volume error low pressure
+
+    '''
     '''
     Cases known to be failing:
         (nitrogen); goes to the other solver and it reports a wrong duplicate root
@@ -623,7 +774,7 @@ def volume_solutions_fast(T, P, b, delta, epsilon, a_alpha):
 
     Returns
     -------
-    Vs : list[complex]
+    Vs : tuple[complex]
         Three possible molar volumes, [m^3/mol]
 
     Notes
@@ -699,93 +850,6 @@ def volume_solutions_fast(T, P, b, delta, epsilon, a_alpha):
             (x19*x24 + x22 - x25*x24_inv)*sixth,
             (x19*x26 + x22 - x25*x26_inv)*sixth)
 
-
-
-def volume_solutions_doubledouble(T, P, b, delta, epsilon, a_alpha):
-#        print(T, P, b, delta, epsilon, a_alpha)
-    T = DoubleDouble(T)
-    P = DoubleDouble(P)
-    b = DoubleDouble(b)
-    delta = DoubleDouble(delta)
-    a_alpha = DoubleDouble(a_alpha)
-    epsilon = DoubleDouble(epsilon)
-    delta = DoubleDouble(delta)
-    R = DoubleDouble(8.31446261815324)
-    x0 = 1/P
-    x1 = P*b
-    x2 = R*T
-    x3 = P*delta
-    x4 = x1 + x2 - x3
-    x5 = x0*x4
-    x22 = x5 + x5
-    x6 = a_alpha*b
-    x7 = epsilon*x1
-    x8 = epsilon*x2
-    x9 = x0*x0
-    x10 = P*epsilon
-    x11 = delta*x1
-    x12 = delta*x2
-    x17 = -x4
-    x17_2 = x17*x17
-    x18 = x0*x17_2
-    tm1 = x12 - a_alpha + (x11  - x10)
-    t0 = x6 + x7 + x8
-    t1 = (3*tm1  + x18)
-    t2 = ((9*x0*x17*tm1) + 2*x17_2*x17*x9  - 27*t0)
-
-    x4x9  = x4*x9
-#        print('x9, x0, t1, t2', float(x9), float(x0), float(t1), float(t2))
-
-    to_sqrt = x9*(-4*t1*t1*t1*x0 + t2*t2) # For low P, this value overflows. No ideas how to compute and not interested in it.
-#        print('to_sqrt', float(to_sqrt))
-    if to_sqrt < 0.0:
-        sqrted = (-to_sqrt).sqrt()
-        imag_rt = True
-    else:
-        sqrted = (to_sqrt).sqrt()
-        imag_rt = False
-
-    easy_adds = -13.5*x0*t0 - 4.5*x4x9*tm1 - x4*x4x9*x5
-    if imag_rt:
-        v0r, v0c = easy_adds, 0.5*sqrted
-    else:
-        v0r, v0c = easy_adds + 0.5*sqrted, 0.0
-
-    x19r, x19c = imag_cbrt_dd(v0r, v0c)
-    x20r, x20c = imag_div_dd(-t1, -0.0, x19r, x19c)
-
-    f0r, f0c = imag_mult_dd(x20r, x20c, x0, 0.0)
-    x25r, x25c = 4.0*f0r, 4.0*f0c
-
-    x24r, x24c = 1, sqrt3_dd
-    x24_invr, x24_invc = quarter_dd, -sqrt3_quarter_dd
-#        x26 = -1.73205080756887729352744634151j + 1.
-    x26r, x26c = 1, -sqrt3_dd
-#        x26_inv = 0.25 + 0.433012701892219323381861585376j
-    x26_invr, x26_invc = quarter_dd, sqrt3_quarter_dd
-
-    g0 = float(f0r - x19r + x5)
-    g1 = float(f0c - x19c)
-
-    f1r, f1c = imag_mult_dd(x19r, x19c, x24r, x24c)
-    f2r, f2c = imag_mult_dd(x25r, x25c, x24_invr, x24_invc)
-#        f2 = x25*x24_inv
-    g2 = float(f1r + x22 - f2r) # try to take away decimals anywhere and more error appears.
-    g3 = float(f1c - f2c)
-
-#        f3 = x19*x26
-    f3r, f3c = imag_mult_dd(x19r, x19c, x26r, x26c)
-    f4r, f4c = imag_mult_dd(x25r, x25c, x26_invr, x26_invc) #x25*x26_inv
-
-    g4 = float(f3r + x22 - f4r)
-    g5 = float(f3c - f4c)
-    return ((g0 + g1*1j)*third,
-            (g2 + g3*1j)*sixth,
-            (g4 + g5*1j)*sixth)
-#        return [(g0 + g1*1j)*third,
-#                (g2 + g3*1j)*sixth,
-##                (x19*x24 + x22 - x25*x24_inv)*sixth,
-#                (x19*x26 + x22 - x25*x26_inv)*sixth]
 
 def volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha):
     r'''Calculate the molar volume solutions to a cubic equation of state using

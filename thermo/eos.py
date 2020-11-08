@@ -56,8 +56,7 @@ from thermo.eos_volume import (volume_solutions_mpmath, volume_solutions_mpmath_
                                volume_solutions_NR, volume_solutions_NR_low_P,
                                volume_solutions_halley, volume_solutions_fast,
                                volume_solutions_Cardano, volume_solutions_numpy,
-                               volume_solutions_ideal, volume_solutions_a1, volume_solutions_a2,
-                               volume_solutions_doubledouble)
+                               volume_solutions_ideal, volume_solutions_a1, volume_solutions_a2)
 from thermo.eos_alpha_functions import (Poly_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_79_a_alpha,
                                     TWU_a_alpha_common)
@@ -849,12 +848,9 @@ class GCEOS(object):
 
 
     # Default method
-#    volume_solutions = volume_solutions_doubledouble
-#    volume_solutions = volume_solutions_doubledouble_inline
 #    volume_solutions = volume_solutions_NR#volume_solutions_numpy#volume_solutions_NR
 #    volume_solutions = staticmethod(volume_solutions_numpy)
 #    volume_solutions = volume_solutions_fast
-#    volume_solutions = staticmethod(volume_solutions_doubledouble)
 #    volume_solutions = staticmethod(volume_solutions_Cardano)
     volume_solutions = staticmethod(volume_solutions_halley)
 
@@ -886,7 +882,7 @@ class GCEOS(object):
     def volume_error(self, only_real=True):
 #        Vs_good, Vs = self.mpmath_volumes, self.sorted_volumes
         # Compare the reals only if mpmath has the imaginary roots
-        Vs_good = self.volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
+        Vs_good = volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
         Vs_filtered = [i.real for i in Vs_good if (i.real ==0 or abs(i.imag/i.real) < 1E-20) and i.real > self.b]
         if len(Vs_filtered) in (2, 3):
             two_roots_mpmath = True
@@ -974,7 +970,7 @@ class GCEOS(object):
 #        b, T, P, epsilon, delta, a_alpha = self.b, self.T, self.P, self.epsilon, self.delta, self.a_alpha
 #        b, T, P, epsilon, delta, a_alpha = [mp.mpf(i) for i in [b, T, P, epsilon, delta, a_alpha]]
 #
-#        Vs_good = self.volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
+#        Vs_good = volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
 #        Vs_filtered = [i.real for i in Vs_good if (i.real == 0 or abs(i.imag/i.real) < 1E-20) and i.real > self.b]
 #
 #        if len(Vs_filtered) in (2, 3):
