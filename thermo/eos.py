@@ -56,7 +56,8 @@ from thermo.eos_volume import (volume_solutions_mpmath, volume_solutions_mpmath_
                                volume_solutions_NR, volume_solutions_NR_low_P,
                                volume_solutions_halley, volume_solutions_fast,
                                volume_solutions_Cardano, volume_solutions_numpy,
-                               volume_solutions_ideal)
+                               volume_solutions_ideal, volume_solutions_a1, volume_solutions_a2,
+                               volume_solutions_doubledouble)
 from thermo.eos_alpha_functions import (Poly_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_79_a_alpha,
                                     TWU_a_alpha_common)
@@ -381,6 +382,9 @@ class GCEOS(object):
         b = self.b
 #        good_roots = [i.real for i in Vs if (i.real ==0 or abs(i.imag/i.real) < 1E-12) and i.real > 0.0]
         good_roots = [i.real for i in Vs if (i.real > b and (i.real == 0.0 or abs(i.imag/i.real) < 1E-12))]
+
+        # Counter for the case of testing volume solutions that don't work
+#        good_roots = [i.real for i in Vs if (i.real > 0.0 and (i.real == 0.0 or abs(i.imag) < 1E-9))]
         good_root_count = len(good_roots)
 
         if good_root_count == 1:
@@ -850,6 +854,7 @@ class GCEOS(object):
 #    volume_solutions = volume_solutions_NR#volume_solutions_numpy#volume_solutions_NR
 #    volume_solutions = staticmethod(volume_solutions_numpy)
 #    volume_solutions = volume_solutions_fast
+#    volume_solutions = staticmethod(volume_solutions_doubledouble)
 #    volume_solutions = staticmethod(volume_solutions_Cardano)
     volume_solutions = staticmethod(volume_solutions_halley)
 
@@ -1014,7 +1019,11 @@ class GCEOS(object):
             for P in Ps:
                 kwargs['T'] = T
                 kwargs['P'] = P
-                obj = self.to(**kwargs)
+                try:
+                    obj = self.to(**kwargs)
+                except:
+                    # So bad we failed to calculate a real point
+                    val = 1.0
                 if timing:
                     t0 = perf_counter()
                     obj.volume_solutions(obj.T, obj.P, obj.b, obj.delta, obj.epsilon, obj.a_alpha)

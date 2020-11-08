@@ -899,7 +899,7 @@ def test_V_error_plot(fluid, eos, P_range):
 
     obj = VolumeWrapper(T=T, P=P, **kwargs)
 #    try:
-    errs, plot_fig = obj.volume_errors(plot=True, show=False, pts=50,
+    errs, plot_fig = obj.volume_errors(plot=True, show=False, pts=100,
                                        Tmin=1e-4, Tmax=1e4, Pmin=Pmin, Pmax=Pmax,
                                        trunc_err_low=1e-15, color_map=cm_flash_tol())
 #    except Exception as e:
@@ -928,7 +928,8 @@ def test_V_error_plot(fluid, eos, P_range):
 #test_V_error_plot('ethane', SRK, 'low')
 #test_V_error_plot('hydrogen', PR, 'low')
 #test_V_error_plot('ethane', SRK, 'high')
-#test_V_error_plot('decane', SRK, 'high')
+#test_V_error_plot('methanol', PR, 'high')
+#test_V_error_plot('methanol', PR, 'low')
 #test_V_error_plot('hydrogen', SRK, 'high')
 #test_V_error_plot('hydrogen', TWUSRKMIX, 'high')
 #test_V_error_plot('hydrogen', IGMIX, 'low')
