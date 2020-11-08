@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,7 +18,62 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains implementations of most cubic equations of state for
+pure components. This includes Peng-Robinson, SRK, Van der Waals, PRSV, TWU and
+many other variants.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. contents:: :local:
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Base Class
+----------
+.. autoclass:: GCEOS
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Peng-Robinson Family EOSs
+-------------------------
+.. autoclass:: PR
+   :show-inheritance:
+   :members: A_dep_g, P_max_at_V
+.. autoclass:: PR78
+.. autoclass:: PRSV
+.. autoclass:: PRSV2
+.. autoclass:: TWUPR
+.. autoclass:: PRTranslatedConsistent
+.. autoclass:: PRTranslatedPPJP
+
+SRK Family EOSs
+---------------
+.. autoclass:: SRK
+.. autoclass:: TWUSRK
+.. autoclass:: APISRK
+.. autoclass:: SRKTranslatedConsistent
+.. autoclass:: MSRKTranslated
+
+Other Cubic Equations of State
+------------------------------
+.. autoclass:: VDW
+.. autoclass:: RK
+
+Ideal Gas Equation of State
+---------------------------
+.. autoclass:: IG
+
+Lists of Equations of State
+---------------------------
+.. autodata:: eos_list
+.. autodata:: eos_2P_list
+
+'''
 
 from __future__ import division, print_function
 
@@ -5333,7 +5388,7 @@ class IG(GCEOS):
     It also keeps a common interface for all gas models. However, it is
     somewhat slow.
 
-    Subclasses `GCEOS`, which
+    Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
 
@@ -5442,15 +5497,15 @@ class IG(GCEOS):
 
 class PR(GCEOS):
     r'''Class for solving the Peng-Robinson cubic
-    equation of state for a pure compound. Subclasses `GCEOS`, which
+    equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
 
-    Implemented methods here are `a_alpha_and_derivatives`, which calculates
-    a_alpha and its first and second derivatives, and `solve_T`, which from a
+    Implemented methods here are :obj:`PR.a_alpha_and_derivatives`, which calculates
+    a_alpha and its first and second derivatives, and :obj:`PR.solve_T`, which from a
     specified `P` and `V` obtains `T`.
 
-    Two of `T`, `P`, and `V` are needed to solve the EOS.
+    Two of (`T`, `P`, `V`) are needed to solve the EOS.
 
     .. math::
         P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
@@ -5641,6 +5696,20 @@ class PR(GCEOS):
             \frac{d^3 a\alpha}{dT^3} = \frac{3 a\kappa \left(- \frac{\kappa}
             {Tc} + \frac{\sqrt{\frac{T}{Tc}} \left(\kappa \left(\sqrt{\frac{T}
             {Tc}} - 1\right) - 1\right)}{T}\right)}{4 T^{2}}
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the derivative, [-]
+
+        Returns
+        -------
+        d3a_alpha_dT3 : float
+            Third temperature derivative of coefficient calculated by
+            EOS-specific method, [J^2/mol^2/Pa/K^3]
+
+        Notes
+        -----
 
         '''
         kappa = self.kappa
@@ -6819,7 +6888,7 @@ class PRSV2(PR):
 
 class VDW(GCEOS):
     r'''Class for solving the Van der Waals cubic
-    equation of state for a pure compound. Subclasses `GCEOS`, which
+    equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
 
@@ -7071,7 +7140,7 @@ class VDW(GCEOS):
 
 class RK(GCEOS):
     r'''Class for solving the Redlich-Kwong cubic
-    equation of state for a pure compound. Subclasses `GCEOS`, which
+    equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
 
@@ -7363,7 +7432,7 @@ class RK(GCEOS):
 
 class SRK(GCEOS):
     r'''Class for solving the Soave-Redlich-Kwong cubic
-    equation of state for a pure compound. Subclasses `GCEOS`, which
+    equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
 
@@ -8038,7 +8107,7 @@ class SRKTranslatedConsistent(SRKTranslatedTwu):
 class APISRK(SRK):
     r'''Class for solving the Refinery Soave-Redlich-Kwong cubic
     equation of state for a pure compound shown in the API Databook [1]_.
-    Subclasses `GCEOS`, which
+    Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
 
@@ -8349,7 +8418,7 @@ class TWUPR(TwuPR95_a_alpha, PR):
 
 class TWUSRK(TwuSRK95_a_alpha, SRK):
     r'''Class for solving the Soave-Redlich-Kwong cubic
-    equation of state for a pure compound. Subclasses `GCEOS`, which
+    equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
 
@@ -8444,6 +8513,11 @@ class TWUSRK(TwuSRK95_a_alpha, SRK):
 eos_list = [IG, PR, PR78, PRSV, PRSV2, VDW, RK, SRK, APISRK, TWUPR, TWUSRK,
             PRTranslatedPPJP, SRKTranslatedPPJP,
             PRTranslatedConsistent, SRKTranslatedConsistent]
-
+'''list : List of all cubic equation of state classes.
+'''
 eos_2P_list = list(eos_list)
+'''list : List of all cubic equation of state classes that can represent
+multiple phases.
+'''
+
 eos_2P_list.remove(IG)
