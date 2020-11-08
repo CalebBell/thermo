@@ -63,16 +63,25 @@ Peng Robinson Stryjek-Vera 2
    :show-inheritance:
    :members: solve_T, a_alpha_and_derivatives_pure, a_alpha_pure
 
-Peng Robinson Twu Variant
--------------------------
+Peng Robinson Twu (1995)
+------------------------
 .. autoclass:: TWUPR
    :show-inheritance:
    :members: a_alpha_and_derivatives_pure, a_alpha_pure
 
+Peng Robinson Translated Twu (1991)
+-----------------------------------
+.. autoclass:: PRTranslatedTwu
+   :show-inheritance:
+   :members: __init__
+   :exclude-members: __init__
+
 Peng Robinson Translated-Consistent
 -----------------------------------
-
 .. autoclass:: PRTranslatedConsistent
+   :show-inheritance:
+   :members: __init__
+   :exclude-members: __init__
 
 Peng Robinson Translated (Pina-Martinez, Privat, and Jaubert Variant)
 ---------------------------------------------------------------------
@@ -133,7 +142,7 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 'IG', 'PRTranslatedPPJP', 'SRKTranslatedPPJP',
 'PRTranslatedConsistent', 'SRKTranslatedConsistent', 'MSRKTranslated',
 'SRKTranslated', 'PRTranslated', 'PRTranslatedCoqueletChapoyRichon',
-#'PRVTTwu'
+'PRTranslatedTwu'
 ]
 
 __all__.extend(['main_derivatives_and_departures',
@@ -6484,7 +6493,67 @@ class PRTranslatedCoqueletChapoyRichon(PRTranslatedMathiasCopeman):
 
 
 class PRTranslatedTwu(Twu91_a_alpha, PRTranslated):
-    pass
+    r'''Class for solving the volume translated Peng-Robinson equation of state
+    with the Twu (1991) [1]_ alpha function.
+    Subclasses :obj:`thermo.eos_alpha_functions.Twu91_a_alpha` and :obj:`PRTranslated`.
+    Solves the EOS on initialization.
+
+    .. math::
+        P = \frac{RT}{v + c - b} - \frac{a\alpha(T)}{(v+c)(v + c + b)+b(v
+        + c - b)}
+
+    .. math::
+        a=0.45724\frac{R^2T_c^2}{P_c}
+
+    .. math::
+	    b=0.07780\frac{RT_c}{P_c}
+
+    .. math::
+        \alpha = \left(\frac{T}{T_{c}}\right)^{c_{3} \left(c_{2}
+        - 1\right)} e^{c_{1} \left(- \left(\frac{T}{T_{c}}
+        \right)^{c_{2} c_{3}} + 1\right)}
+
+    Parameters
+    ----------
+    Tc : float
+        Critical temperature, [K]
+    Pc : float
+        Critical pressure, [Pa]
+    omega : float
+        Acentric factor, [-]
+    alpha_coeffs : tuple(float[3])
+        Coefficients L, M, N (also called C1, C2, C3) of TWU 1991 form, [-]
+    c : float, optional
+        Volume translation parameter, [m^3/mol]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------
+    P-T initialization:
+
+    >>> alpha_coeffs = (0.694911381318495, 0.919907783415812, 1.70412689631515)
+    >>> kwargs = dict(Tc=512.5, Pc=8084000.0, omega=0.559, alpha_coeffs=alpha_coeffs, c=-1e-6)
+    >>> eos = PRTranslatedTwu(T=300, P=1e5, **kwargs)
+    >>> eos.phase, eos.V_l, eos.V_g
+    ('l/g', 4.8918748906e-05, 0.024314406330)
+
+    Notes
+    -----
+    This variant offers substantial improvements to the PR-type EOSs - likely
+    getting about as accurate as this form of cubic equation can get.
+
+    References
+    ----------
+    .. [1] Twu, Chorng H., David Bluck, John R. Cunningham, and John E.
+       Coon. "A Cubic Equation of State with a New Alpha Function and a
+       New Mixing Rule." Fluid Phase Equilibria 69 (December 10, 1991):
+       33-50. doi:10.1016/0378-3812(91)90024-2.
+    '''
 
 class PRTranslatedConsistent(PRTranslatedTwu):
     r'''Class for solving the volume translated Le Guennec, Privat, and Jaubert
