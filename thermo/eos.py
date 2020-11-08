@@ -30,22 +30,46 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 .. contents:: :local:
 
 Base Class
-----------
+==========
 .. autoclass:: GCEOS
     :members:
     :undoc-members:
     :show-inheritance:
 
 Peng-Robinson Family EOSs
--------------------------
+=========================
+
+Peng Robinson
+-------------
 .. autoclass:: PR
    :show-inheritance:
    :members: a_alpha_pure, a_alpha_and_derivatives_pure,  d3a_alpha_dT3_pure, solve_T, P_max_at_V, c1, c2, Zc
+
+Peng Robinson (1978)
+--------------------
 .. autoclass:: PR78
+   :show-inheritance:
+   :members: low_omega_constants, high_omega_constants
+
+Peng Robinson Stryjek-Vera
+--------------------------
 .. autoclass:: PRSV
+
+Peng Robinson Stryjek-Vera 2
+----------------------------
 .. autoclass:: PRSV2
+
+Peng Robinson Twu Variant
+-------------------------
 .. autoclass:: TWUPR
+
+Peng Robinson Translated-Consistent
+-----------------------------------
+
 .. autoclass:: PRTranslatedConsistent
+
+Peng Robinson Translated (Pina-Martinez, Privat, and Jaubert Variant)
+---------------------------------------------------------------------
 .. autoclass:: PRTranslatedPPJP
 
 SRK Family EOSs
@@ -71,10 +95,11 @@ Lists of Equations of State
 .. autodata:: eos_2P_list
 
 Demonstrations of Concepts
---------------------------
+==========================
+
 
 Maximum Pressure at Constant Volume
-===================================
+-----------------------------------
 
 Some equations of state show this behavior. At a liquid volume, if the
 temperature is increased, the pressure should increase as well to create that
@@ -6200,9 +6225,9 @@ class PR(GCEOS):
 
 class PR78(PR):
     r'''Class for solving the Peng-Robinson cubic
-    equation of state for a pure compound according to the 1978 variant.
-    Subclasses `PR`, which provides everything except the variable `kappa`.
-    Solves the EOS on initialization. See `PR` for further documentation.
+    equation of state for a pure compound according to the 1978 variant [1]_ [2]_.
+    Subclasses :obj:`PR`, which provides everything except the variable `kappa`.
+    Solves the EOS on initialization. See :obj:`PR` for further documentation.
 
     .. math::
         P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
@@ -6261,6 +6286,13 @@ class PR78(PR):
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
     '''
+
+    low_omega_constants = (0.37464, 1.54226, -0.26992)
+    '''Constants for the `kappa` formula for the low-omega region.'''
+
+    high_omega_constants = (0.379642, 1.48503, - 0.164423, 0.016666)
+    '''Constants for the `kappa` formula for the high-omega region.'''
+
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
         self.Tc = Tc
         self.Pc = Pc
