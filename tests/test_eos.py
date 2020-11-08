@@ -601,7 +601,7 @@ def test_PRSV():
     # PR back calculation for T
     eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001301269135543934, P=1E6, kappa1=0.05104)
     assert_allclose(eos.T, 299)
-    T_slow = eos.solve_T(P=1E6, V=0.0001301269135543934, quick=False)
+    T_slow = eos.solve_T(P=1E6, V=0.0001301269135543934)
     assert_allclose(T_slow, 299)
 
 
