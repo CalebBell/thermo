@@ -2045,7 +2045,7 @@ class GCEOSMIX(GCEOS):
             Temperature, [K]
         '''
         # -4 goes back from object, GCEOS
-        return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick, solution=solution)
+        return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, solution=solution)
 
 
     def _err_VL_jacobian(self, lnKsVF, T, P, zs, near_critical=False,
@@ -6203,7 +6203,7 @@ class PSRKMixingRules(object):
         return a_alpha
 
     def solve_T(self, P, V, quick=True, solution=None):
-        T = GCEOS.solve_T(self, P, V, quick=quick, solution=solution)
+        T = GCEOS.solve_T(self, P, V, solution=solution)
         if hasattr(self, '_last_ge') and self._last_ge.T == T:
             self.ge_model = self._last_ge
             del self._last_ge
@@ -6563,13 +6563,13 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
             self.Tc = self.Tcs[0]
             self.Pc = self.Pcs[0]
             self.a = self.ais[0]
-            T = super(type(self).__mro__[-4], self).solve_T(P=P, V=V, quick=quick, solution=solution)
+            T = super(type(self).__mro__[-4], self).solve_T(P=P, V=V, solution=solution)
             del self.Tc
             del self.Pc
             del self.a
             return T
         else:
-            return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick, solution=solution)
+            return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, solution=solution)
 
 
     @property
@@ -7669,14 +7669,14 @@ class PRMIX(GCEOSMIX, PR):
             self.Pc = self.Pcs[0]
             self.kappa = self.kappas[0]
             self.a = self.ais[0]
-            T = super(type(self).__mro__[-4], self).solve_T(P=P, V=V, quick=quick, solution=solution)
+            T = super(type(self).__mro__[-4], self).solve_T(P=P, V=V, solution=solution)
             del self.Tc
             del self.Pc
             del self.kappa
             del self.a
             return T
         else:
-            return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick, solution=solution)
+            return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, solution=solution)
 
 class PRMIXTranslated(PRMIX):
     fugacity_coefficients = GCEOSMIX.fugacity_coefficients

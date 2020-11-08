@@ -356,7 +356,7 @@ class GCEOS(object):
             V = self.V
             if self.P is not None:
                 solution = 'g' if (only_g and not only_l) else ('l' if only_l else None)
-                self.T = self.solve_T(self.P, V, quick=True, solution=solution)
+                self.T = self.solve_T(self.P, V, solution=solution)
                 self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, pure_a_alphas=pure_a_alphas)
             elif self.T is not None:
                 self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, pure_a_alphas=pure_a_alphas)
@@ -799,13 +799,13 @@ class GCEOS(object):
         # quite costly in comparison to the extra evaluations because it
         # requires the temperature derivative of da_alpha_dT
         def to_solve(T):
-            a_alpha = self.a_alpha_and_derivatives(T, full=False, quick=False)
+            a_alpha = self.a_alpha_and_derivatives(T, full=False)
             P_calc = R*T*V_minus_b_inv - a_alpha*denominator_inv
             err = P_calc - P
             return err
 
         def to_solve_newton(T):
-            a_alpha, da_alpha_dT, _ = self.a_alpha_and_derivatives(T, full=True, quick=False)
+            a_alpha, da_alpha_dT, _ = self.a_alpha_and_derivatives(T, full=True)
             P_calc = R*T*V_minus_b_inv - a_alpha*denominator_inv
             err = P_calc - P
             derr_dT = R*V_minus_b_inv - denominator_inv*da_alpha_dT
@@ -5898,7 +5898,7 @@ class PR(GCEOS):
     # (V - b)**3*(V**2 + 2*V*b - b**2)*(P*R*Tc*V**2 + 2*P*R*Tc*V*b - P*R*Tc*b**2 - P*V*a*kappa**2 + P*a*b*kappa**2 + R*Tc*a*kappa**2 + 2*R*Tc*a*kappa + R*Tc*a)
 
 
-    def solve_T(self, P, V, quick=True, solution=None):
+    def solve_T(self, P, V, solution=None):
         r'''Method to calculate `T` from a specified `P` and `V` for the PR
         EOS. Uses `Tc`, `a`, `b`, and `kappa` as well, obtained from the
         class's namespace.
@@ -5909,9 +5909,6 @@ class PR(GCEOS):
             Pressure, [Pa]
         V : float
             Molar volume, [m^3/mol]
-        quick : bool, optional
-            Whether to use a SymPy cse-derived expression (3x faster) or
-            individual formulas
         solution : str or None, optional
             'l' or 'g' to specify a liquid of vapor solution (if one exists);
             if None, will select a solution more likely to be real (closer to
@@ -5949,158 +5946,157 @@ class PR(GCEOS):
         '''
         self.no_T_spec = True
         Tc, a, b, kappa = self.Tc, self.a, self.b, self.kappa
-        if quick:
-            # Needs to be improved to do a NR or two at the end!
-            x0 = V*V
-            x1 = R*Tc
-            x2 = x0*x1
-            x3 = kappa*kappa
-            x4 = a*x3
-            x5 = b*x4
-            x6 = 2.*V*b
-            x7 = x1*x6
-            x8 = b*b
-            x9 = x1*x8
-            x10 = V*x4
-            thing = (x2 - x10 + x5 + x7 - x9)
-            x11 = thing*thing
-            x12 = x0*x0
-            x13 = R*R
-            x14 = Tc*Tc
-            x15 = x13*x14
-            x16 = x8*x8
-            x17 = a*a
-            x18 = x3*x3
-            x19 = x17*x18
-            x20 = x0*V
-            x21 = 2.*R*Tc*a*x3
-            x22 = x8*b
-            x23 = 4.*V*x22
-            x24 = 4.*b*x20
-            x25 = a*x1
-            x26 = x25*x8
-            x27 = x26*x3
-            x28 = x0*x25
-            x29 = x28*x3
-            x30 = 2.*x8
-            x31 = (6.*V*x27 - 2.*b*x29 + x0*x13*x14*x30 + x0*x19 + x12*x15
-                   + x15*x16 - x15*x23 + x15*x24 - x19*x6 + x19*x8 - x20*x21
-                   - x21*x22)
-            V_m_b = V - b
-            x33 = 2.*(R*Tc*a*kappa)
-            x34 = P*x2
-            x35 = P*x5
-            x36 = x25*x3
-            x37 = P*x10
-            x38 = P*R*Tc
-            x39 = V*x17
-            x40 = 2.*kappa*x3
-            x41 = b*x17
-            x42 = P*a*x3
+        # Needs to be improved to do a NR or two at the end!
+        x0 = V*V
+        x1 = R*Tc
+        x2 = x0*x1
+        x3 = kappa*kappa
+        x4 = a*x3
+        x5 = b*x4
+        x6 = 2.*V*b
+        x7 = x1*x6
+        x8 = b*b
+        x9 = x1*x8
+        x10 = V*x4
+        thing = (x2 - x10 + x5 + x7 - x9)
+        x11 = thing*thing
+        x12 = x0*x0
+        x13 = R*R
+        x14 = Tc*Tc
+        x15 = x13*x14
+        x16 = x8*x8
+        x17 = a*a
+        x18 = x3*x3
+        x19 = x17*x18
+        x20 = x0*V
+        x21 = 2.*R*Tc*a*x3
+        x22 = x8*b
+        x23 = 4.*V*x22
+        x24 = 4.*b*x20
+        x25 = a*x1
+        x26 = x25*x8
+        x27 = x26*x3
+        x28 = x0*x25
+        x29 = x28*x3
+        x30 = 2.*x8
+        x31 = (6.*V*x27 - 2.*b*x29 + x0*x13*x14*x30 + x0*x19 + x12*x15
+               + x15*x16 - x15*x23 + x15*x24 - x19*x6 + x19*x8 - x20*x21
+               - x21*x22)
+        V_m_b = V - b
+        x33 = 2.*(R*Tc*a*kappa)
+        x34 = P*x2
+        x35 = P*x5
+        x36 = x25*x3
+        x37 = P*x10
+        x38 = P*R*Tc
+        x39 = V*x17
+        x40 = 2.*kappa*x3
+        x41 = b*x17
+        x42 = P*a*x3
 
-            # 2.*a*kappa - add a negative sign to get the high temperature solution
-            # sometimes it is complex!
+        # 2.*a*kappa - add a negative sign to get the high temperature solution
+        # sometimes it is complex!
 #            try:
-            root_term = sqrt(V_m_b**3*(x0 + x6 - x8)*(P*x7 -
-                                              P*x9 + x25 + x33 + x34 + x35
-                                              + x36 - x37))
+        root_term = sqrt(V_m_b**3*(x0 + x6 - x8)*(P*x7 -
+                                          P*x9 + x25 + x33 + x34 + x35
+                                          + x36 - x37))
 #            except ValueError:
 #                # negative number in sqrt
 #                return super(PR, self).solve_T(P, V)
 
-            x100 = 2.*a*kappa*x11*(root_term*(kappa + 1.))
-            x101 = (x31*V_m_b*((4.*V)*(R*Tc*a*b*kappa) + x0*x33 - x0*x35 + x12*x38
-                         + x16*x38 + x18*x39 - x18*x41 - x20*x42 - x22*x42
-                         - x23*x38 + x24*x38 + x25*x6 - x26 - x27 + x28 + x29
-                         + x3*x39 - x3*x41 + x30*x34 - x33*x8 + x36*x6
-                         + 3*x37*x8 + x39*x40 - x40*x41))
-            x102 = -Tc/(x11*x31)
+        x100 = 2.*a*kappa*x11*(root_term*(kappa + 1.))
+        x101 = (x31*V_m_b*((4.*V)*(R*Tc*a*b*kappa) + x0*x33 - x0*x35 + x12*x38
+                     + x16*x38 + x18*x39 - x18*x41 - x20*x42 - x22*x42
+                     - x23*x38 + x24*x38 + x25*x6 - x26 - x27 + x28 + x29
+                     + x3*x39 - x3*x41 + x30*x34 - x33*x8 + x36*x6
+                     + 3*x37*x8 + x39*x40 - x40*x41))
+        x102 = -Tc/(x11*x31)
 
-            T_calc = (x102*(x100 - x101)) # Normally the correct root
-            if T_calc < 0.0:
-                # Ruined, call the numerical method; sometimes it happens
+        T_calc = (x102*(x100 - x101)) # Normally the correct root
+        if T_calc < 0.0:
+            # Ruined, call the numerical method; sometimes it happens
+            return super(PR, self).solve_T(P, V, solution=solution)
+
+        Tc_inv = 1.0/Tc
+
+        T_calc_high = (x102*(-x100 - x101))
+        if solution is not None and solution == 'g':
+            T_calc = T_calc_high
+        if True:
+            c1, c2 = R/(V_m_b), a/(V*(V+b) + b*V_m_b)
+
+            rt = (T_calc*Tc_inv)**0.5
+            alpha_root = (1.0 + kappa*(1.0-rt))
+            err = c1*T_calc - alpha_root*alpha_root*c2 - P
+            if abs(err/P) > 1e-2:
+                # Numerical issue - such a bad solution we cannot converge
                 return super(PR, self).solve_T(P, V, solution=solution)
 
-            Tc_inv = 1.0/Tc
+            # Newton step - might as well compute it
+            derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc
+            T_calc = T_calc - err/derr
 
-            T_calc_high = (x102*(-x100 - x101))
-            if solution is not None and solution == 'g':
-                T_calc = T_calc_high
-            if True:
-                c1, c2 = R/(V_m_b), a/(V*(V+b) + b*V_m_b)
+            # Step 2 - cannot find occasion to need more steps, most of the time
+            # this does nothing!
+            rt = (T_calc*Tc_inv)**0.5
+            alpha_root = (1.0 + kappa*(1.0-rt))
+            err = c1*T_calc - alpha_root*alpha_root*c2 - P
+            derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc
+            T_calc = T_calc - err/derr
 
-                rt = (T_calc*Tc_inv)**0.5
-                alpha_root = (1.0 + kappa*(1.0-rt))
-                err = c1*T_calc - alpha_root*alpha_root*c2 - P
-                if abs(err/P) > 1e-2:
-                    # Numerical issue - such a bad solution we cannot converge
-                    return super(PR, self).solve_T(P, V, solution=solution)
-
-                # Newton step - might as well compute it
-                derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc
-                T_calc = T_calc - err/derr
-
-                # Step 2 - cannot find occasion to need more steps, most of the time
-                # this does nothing!
-                rt = (T_calc*Tc_inv)**0.5
-                alpha_root = (1.0 + kappa*(1.0-rt))
-                err = c1*T_calc - alpha_root*alpha_root*c2 - P
-                derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc
-                T_calc = T_calc - err/derr
-
-                return T_calc
+            return T_calc
 
 
-                c1, c2 = R/(V_m_b), a/(V*(V+b) + b*V_m_b)
+            c1, c2 = R/(V_m_b), a/(V*(V+b) + b*V_m_b)
 
-                rt = (T_calc_high*Tc_inv)**0.5
-                alpha_root = (1.0 + kappa*(1.0-rt))
-                err = c1*T_calc_high - alpha_root*alpha_root*c2 - P
+            rt = (T_calc_high*Tc_inv)**0.5
+            alpha_root = (1.0 + kappa*(1.0-rt))
+            err = c1*T_calc_high - alpha_root*alpha_root*c2 - P
 
-                # Newton step - might as well compute it
-                derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc_high
-                T_calc_high = T_calc_high - err/derr
+            # Newton step - might as well compute it
+            derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc_high
+            T_calc_high = T_calc_high - err/derr
 
-                # Step 2 - cannot find occasion to need more steps, most of the time
-                # this does nothing!
-                rt = (T_calc_high*Tc_inv)**0.5
-                alpha_root = (1.0 + kappa*(1.0-rt))
-                err = c1*T_calc_high - alpha_root*alpha_root*c2 - P
-                derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc_high
-                T_calc_high = T_calc_high - err/derr
+            # Step 2 - cannot find occasion to need more steps, most of the time
+            # this does nothing!
+            rt = (T_calc_high*Tc_inv)**0.5
+            alpha_root = (1.0 + kappa*(1.0-rt))
+            err = c1*T_calc_high - alpha_root*alpha_root*c2 - P
+            derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc_high
+            T_calc_high = T_calc_high - err/derr
 
 
 
 
 
-                delta, epsilon = self.delta, self.epsilon
-                w0 = 1.0*(delta*delta - 4.0*epsilon)**-0.5
-                w1 = delta*w0
-                w2 = 2.0*w0
+            delta, epsilon = self.delta, self.epsilon
+            w0 = 1.0*(delta*delta - 4.0*epsilon)**-0.5
+            w1 = delta*w0
+            w2 = 2.0*w0
 
-    #            print(T_calc, T_calc_high)
+#            print(T_calc, T_calc_high)
 
-                a_alpha_low = a*(1.0 + kappa*(1.0-(T_calc/Tc)**0.5))**2.0
-                a_alpha_high = a*(1.0 + kappa*(1.0-(T_calc_high/Tc)**0.5))**2.0
+            a_alpha_low = a*(1.0 + kappa*(1.0-(T_calc/Tc)**0.5))**2.0
+            a_alpha_high = a*(1.0 + kappa*(1.0-(T_calc_high/Tc)**0.5))**2.0
 
-                err_low = abs((R*T_calc/(V-b) - a_alpha_low/(V*V + delta*V + epsilon) - P))
-                err_high = abs((R*T_calc_high/(V-b) - a_alpha_high/(V*V + delta*V + epsilon) - P))
+            err_low = abs((R*T_calc/(V-b) - a_alpha_low/(V*V + delta*V + epsilon) - P))
+            err_high = abs((R*T_calc_high/(V-b) - a_alpha_high/(V*V + delta*V + epsilon) - P))
 #                print(err_low, err_high, T_calc, T_calc_high, a_alpha_low, a_alpha_high)
 
-                RT_low = R*T_calc
-                G_dep_low = (P*V - RT_low - RT_low*clog(P/RT_low*(V-b)).real
-                            - w2*a_alpha_low*catanh(2.0*V*w0 + w1).real)
+            RT_low = R*T_calc
+            G_dep_low = (P*V - RT_low - RT_low*clog(P/RT_low*(V-b)).real
+                        - w2*a_alpha_low*catanh(2.0*V*w0 + w1).real)
 
-                RT_high = R*T_calc_high
-                G_dep_high = (P*V - RT_high - RT_high*clog(P/RT_high*(V-b)).real
-                            - w2*a_alpha_high*catanh(2.0*V*w0 + w1).real)
+            RT_high = R*T_calc_high
+            G_dep_high = (P*V - RT_high - RT_high*clog(P/RT_high*(V-b)).real
+                        - w2*a_alpha_high*catanh(2.0*V*w0 + w1).real)
 
 #                print(G_dep_low, G_dep_high)
-                # ((err_low > err_high*2)) and
-                if  (T_calc.imag != 0.0 and T_calc_high.imag == 0.0) or (G_dep_high < G_dep_low and (err_high < err_low)):
-                    T_calc = T_calc_high
+            # ((err_low > err_high*2)) and
+            if  (T_calc.imag != 0.0 and T_calc_high.imag == 0.0) or (G_dep_high < G_dep_low and (err_high < err_low)):
+                T_calc = T_calc_high
 
-                return T_calc
+            return T_calc
 
 
 #            if err_high < err_low:
@@ -6143,25 +6139,25 @@ class PR(GCEOS):
             # Although 99.9 % of points anyone would likely want are plenty good,
             # there are some edge cases as P approaches T or goes under it.
 
-            c1, c2 = R/(V_m_b), a/(V*(V+b) + b*V_m_b)
-
-            rt = (T_calc*Tc_inv)**0.5
-            alpha_root = (1.0 + kappa*(1.0-rt))
-            err = c1*T_calc - alpha_root*alpha_root*c2 - P
-
-            # Newton step - might as well compute it
-            derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc
-            T_calc = T_calc - err/derr
-
-            # Step 2 - cannot find occasion to need more steps, most of the time
-            # this does nothing!
-            rt = (T_calc*Tc_inv)**0.5
-            alpha_root = (1.0 + kappa*(1.0-rt))
-            err = c1*T_calc - alpha_root*alpha_root*c2 - P
-            derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc
-            T_calc = T_calc - err/derr
-#            print(T_calc)
-            return T_calc
+#            c1, c2 = R/(V_m_b), a/(V*(V+b) + b*V_m_b)
+#
+#            rt = (T_calc*Tc_inv)**0.5
+#            alpha_root = (1.0 + kappa*(1.0-rt))
+#            err = c1*T_calc - alpha_root*alpha_root*c2 - P
+#
+#            # Newton step - might as well compute it
+#            derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc
+#            T_calc = T_calc - err/derr
+#
+#            # Step 2 - cannot find occasion to need more steps, most of the time
+#            # this does nothing!
+#            rt = (T_calc*Tc_inv)**0.5
+#            alpha_root = (1.0 + kappa*(1.0-rt))
+#            err = c1*T_calc - alpha_root*alpha_root*c2 - P
+#            derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc
+#            T_calc = T_calc - err/derr
+##            print(T_calc)
+#            return T_calc
 
 #            P_inv = 1.0/P
 #            if abs(err/P) < 1e-6:
@@ -6179,10 +6175,6 @@ class PR(GCEOS):
 #                if abs(err/P) < 1e-12:
 #                    return T_calc
 #            return T_calc
-
-
-        else:
-            return Tc*(-2*a*kappa*sqrt((V - b)**3*(V**2 + 2*V*b - b**2)*(P*R*Tc*V**2 + 2*P*R*Tc*V*b - P*R*Tc*b**2 - P*V*a*kappa**2 + P*a*b*kappa**2 + R*Tc*a*kappa**2 + 2*R*Tc*a*kappa + R*Tc*a))*(kappa + 1)*(R*Tc*V**2 + 2*R*Tc*V*b - R*Tc*b**2 - V*a*kappa**2 + a*b*kappa**2)**2 + (V - b)*(R**2*Tc**2*V**4 + 4*R**2*Tc**2*V**3*b + 2*R**2*Tc**2*V**2*b**2 - 4*R**2*Tc**2*V*b**3 + R**2*Tc**2*b**4 - 2*R*Tc*V**3*a*kappa**2 - 2*R*Tc*V**2*a*b*kappa**2 + 6*R*Tc*V*a*b**2*kappa**2 - 2*R*Tc*a*b**3*kappa**2 + V**2*a**2*kappa**4 - 2*V*a**2*b*kappa**4 + a**2*b**2*kappa**4)*(P*R*Tc*V**4 + 4*P*R*Tc*V**3*b + 2*P*R*Tc*V**2*b**2 - 4*P*R*Tc*V*b**3 + P*R*Tc*b**4 - P*V**3*a*kappa**2 - P*V**2*a*b*kappa**2 + 3*P*V*a*b**2*kappa**2 - P*a*b**3*kappa**2 + R*Tc*V**2*a*kappa**2 + 2*R*Tc*V**2*a*kappa + R*Tc*V**2*a + 2*R*Tc*V*a*b*kappa**2 + 4*R*Tc*V*a*b*kappa + 2*R*Tc*V*a*b - R*Tc*a*b**2*kappa**2 - 2*R*Tc*a*b**2*kappa - R*Tc*a*b**2 + V*a**2*kappa**4 + 2*V*a**2*kappa**3 + V*a**2*kappa**2 - a**2*b*kappa**4 - 2*a**2*b*kappa**3 - a**2*b*kappa**2))/((R*Tc*V**2 + 2*R*Tc*V*b - R*Tc*b**2 - V*a*kappa**2 + a*b*kappa**2)**2*(R**2*Tc**2*V**4 + 4*R**2*Tc**2*V**3*b + 2*R**2*Tc**2*V**2*b**2 - 4*R**2*Tc**2*V*b**3 + R**2*Tc**2*b**4 - 2*R*Tc*V**3*a*kappa**2 - 2*R*Tc*V**2*a*b*kappa**2 + 6*R*Tc*V*a*b**2*kappa**2 - 2*R*Tc*a*b**3*kappa**2 + V**2*a**2*kappa**4 - 2*V*a**2*b*kappa**4 + a**2*b**2*kappa**4))
 
 
     # starts at 0.0008793111898930736
@@ -8396,11 +8388,11 @@ class APISRK(SRK):
         self.no_T_spec = True
         if self.S2 == 0:
             self.m = self.S1
-            return SRK.solve_T(self, P, V, quick=quick, solution=solution)
+            return SRK.solve_T(self, P, V, solution=solution)
 
         else:
             # Previously coded method is  63 microseconds vs 47 here
-#            return super(SRK, self).solve_T(P, V, quick=quick)
+#            return super(SRK, self).solve_T(P, V)
             Tc, a, b, S1, S2 = self.Tc, self.a, self.b, self.S1, self.S2
             if quick:
                 x2 = R/(V-b)
