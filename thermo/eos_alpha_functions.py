@@ -1995,18 +1995,102 @@ class Chen_Yang_a_alpha(a_alpha_base):
 
 class TwuSRK95_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
-        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and
-        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
-        documentation. Uses the set values of `Tc`, `omega`, and `a`.
+        r'''Method to calculate :math:`a \alpha` and its first and second
+        derivatives for the Twu alpha function. Uses the set values of `Tc`,
+        `omega` and `a`.
 
-        Because of its similarity for the TWUPR EOS, this has been moved to an
-        external `TWU_a_alpha_common` function. See it for further
-        documentation.
+        .. math::
+            \alpha = \alpha^{(0)} + \omega(\alpha^{(1)}-\alpha^{(0)})
+
+        .. math::
+            \alpha^{(i)} = T_r^{N(M-1)}\exp[L(1-T_r^{NM})]
+
+        For sub-critical conditions:
+
+        L0, M0, N0 =  0.141599, 0.919422, 2.496441
+
+        L1, M1, N1 = 0.500315, 0.799457, 3.291790
+
+        For supercritical conditions:
+
+        L0, M0, N0 = 0.441411, 6.500018, -0.20
+
+        L1, M1, N1 = 0.032580,  1.289098, -8.0
+
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the values, [-]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dT : float
+            Temperature derivative of coefficient calculated by EOS-specific
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2 : float
+            Second temperature derivative of coefficient calculated by
+            EOS-specific method, [J^2/mol^2/Pa/K^2]
+
+        Notes
+        -----
+        This method does not alter the object's state and the temperature
+        provided can be a different than that of the object.
+
+        The derivatives are somewhat long and are not described here for
+        brevity; they are obtainable from the following SymPy expression.
+
+        >>> from sympy import *   # doctest:+SKIP
+        >>> T, Tc, omega, N1, N0, M1, M0, L1, L0 = symbols('T, Tc, omega, N1, N0, M1, M0, L1, L0')  # doctest:+SKIP
+        >>> Tr = T/Tc  # doctest:+SKIP
+        >>> alpha0 = Tr**(N0*(M0-1))*exp(L0*(1-Tr**(N0*M0)))  # doctest:+SKIP
+        >>> alpha1 = Tr**(N1*(M1-1))*exp(L1*(1-Tr**(N1*M1)))  # doctest:+SKIP
+        >>> alpha = alpha0 + omega*(alpha1-alpha0)  # doctest:+SKIP
+        >>> diff(alpha, T)  # doctest:+SKIP
+        >>> diff(alpha, T, T)  # doctest:+SKIP
         '''
         return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=True, quick=True, method='SRK')
 
     def a_alpha_pure(self, T):
+        r'''Method to calculate :math:`a \alpha` for the Twu alpha function.
+        Uses the set values of `Tc`, `omega` and `a`.
+
+        .. math::
+            \alpha = \alpha^{(0)} + \omega(\alpha^{(1)}-\alpha^{(0)})
+
+        .. math::
+            \alpha^{(i)} = T_r^{N(M-1)}\exp[L(1-T_r^{NM})]
+
+        For sub-critical conditions:
+
+        L0, M0, N0 =  0.141599, 0.919422, 2.496441
+
+        L1, M1, N1 = 0.500315, 0.799457, 3.291790
+
+        For supercritical conditions:
+
+        L0, M0, N0 = 0.441411, 6.500018, -0.20
+
+        L1, M1, N1 = 0.032580,  1.289098, -8.0
+
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the value, [-]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+
+        Notes
+        -----
+        This method does not alter the object's state and the temperature
+        provided can be a different than that of the object.
+        '''
         return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, quick=True, method='SRK')
 
     def a_alphas_vectorized(self, T):
@@ -2027,6 +2111,105 @@ class TwuSRK95_a_alpha(a_alpha_base):
 
 
 class TwuPR95_a_alpha(a_alpha_base):
+
+    def a_alpha_and_derivatives_pure(self, T):
+        r'''Method to calculate :math:`a \alpha` and its first and second
+        derivatives for the Twu alpha function. Uses the set values of `Tc`,
+        `omega` and `a`.
+
+        .. math::
+            \alpha = \alpha^{(0)} + \omega(\alpha^{(1)}-\alpha^{(0)})
+
+        .. math::
+            \alpha^{(i)} = T_r^{N(M-1)}\exp[L(1-T_r^{NM})]
+
+        For sub-critical conditions:
+
+        L0, M0, N0 =  0.125283, 0.911807,  1.948150;
+
+        L1, M1, N1 = 0.511614, 0.784054, 2.812520
+
+        For supercritical conditions:
+
+        L0, M0, N0 = 0.401219, 4.963070, -0.2;
+
+        L1, M1, N1 = 0.024955, 1.248089, -8.
+
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the values, [-]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dT : float
+            Temperature derivative of coefficient calculated by EOS-specific
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2 : float
+            Second temperature derivative of coefficient calculated by
+            EOS-specific method, [J^2/mol^2/Pa/K^2]
+
+        Notes
+        -----
+        This method does not alter the object's state and the temperature
+        provided can be a different than that of the object.
+
+        The derivatives are somewhat long and are not described here for
+        brevity; they are obtainable from the following SymPy expression.
+
+        >>> from sympy import *   # doctest:+SKIP
+        >>> T, Tc, omega, N1, N0, M1, M0, L1, L0 = symbols('T, Tc, omega, N1, N0, M1, M0, L1, L0')  # doctest:+SKIP
+        >>> Tr = T/Tc  # doctest:+SKIP
+        >>> alpha0 = Tr**(N0*(M0-1))*exp(L0*(1-Tr**(N0*M0)))  # doctest:+SKIP
+        >>> alpha1 = Tr**(N1*(M1-1))*exp(L1*(1-Tr**(N1*M1)))  # doctest:+SKIP
+        >>> alpha = alpha0 + omega*(alpha1-alpha0)  # doctest:+SKIP
+        >>> diff(alpha, T)  # doctest:+SKIP
+        >>> diff(alpha, T, T)  # doctest:+SKIP
+        '''
+        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=True, quick=True, method='PR')
+
+    def a_alpha_pure(self, T):
+        r'''Method to calculate :math:`a \alpha` for the Twu alpha function.
+        Uses the set values of `Tc`, `omega` and `a`.
+
+        .. math::
+            \alpha = \alpha^{(0)} + \omega(\alpha^{(1)}-\alpha^{(0)})
+
+        .. math::
+            \alpha^{(i)} = T_r^{N(M-1)}\exp[L(1-T_r^{NM})]
+
+        For sub-critical conditions:
+
+        L0, M0, N0 =  0.125283, 0.911807,  1.948150;
+
+        L1, M1, N1 = 0.511614, 0.784054, 2.812520
+
+        For supercritical conditions:
+
+        L0, M0, N0 = 0.401219, 4.963070, -0.2;
+
+        L1, M1, N1 = 0.024955, 1.248089, -8.
+
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the value, [-]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+
+        Notes
+        -----
+        This method does not alter the object's state and the temperature
+        provided can be a different than that of the object.
+        '''
+        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, quick=True, method='PR')
 
     def a_alphas_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais

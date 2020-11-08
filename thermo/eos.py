@@ -60,10 +60,14 @@ Peng Robinson Stryjek-Vera
 Peng Robinson Stryjek-Vera 2
 ----------------------------
 .. autoclass:: PRSV2
+   :show-inheritance:
+   :members: solve_T, a_alpha_and_derivatives_pure, a_alpha_pure
 
 Peng Robinson Twu Variant
 -------------------------
 .. autoclass:: TWUPR
+   :show-inheritance:
+   :members: a_alpha_and_derivatives_pure, a_alpha_pure
 
 Peng Robinson Translated-Consistent
 -----------------------------------
@@ -78,6 +82,8 @@ SRK Family EOSs
 ---------------
 .. autoclass:: SRK
 .. autoclass:: TWUSRK
+   :show-inheritance:
+   :members: a_alpha_and_derivatives_pure, a_alpha_pure
 .. autoclass:: APISRK
 .. autoclass:: SRKTranslatedConsistent
 .. autoclass:: MSRKTranslated
@@ -6874,8 +6880,8 @@ class PRSV2(PR):
     r'''Class for solving the Peng-Robinson-Stryjek-Vera 2 equations of state
     for a pure compound as given in [1]_. The same as the Peng-Robinson EOS,
     except with a different `kappa` formula and with three fit parameters.
-    Subclasses `PR`, which provides only several constants. See `PR` for
-    further documentation and examples. PRSV provides only one constant.
+    Subclasses :obj:`PR`, which provides only several constants. See :obj:`PR` for
+    further documentation and examples.
 
     .. math::
         P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
@@ -6928,9 +6934,6 @@ class PRSV2(PR):
 
     Notes
     -----
-    Solutions for P-V solve for `T` with SciPy's `newton` solver, as there is
-    no analytical solution for `T`
-
     Note that tabulated `kappa` values should be used with the critical
     parameters used in their fits. [1]_ considered only vapor
     pressure in fitting the parameter.
@@ -6956,16 +6959,16 @@ class PRSV2(PR):
         self.b = self.c2*R*Tc/Pc
         self.delta = 2*self.b
         self.epsilon = -self.b*self.b
-        self.kappa0 = 0.378893 + 1.4897153*omega - 0.17131848*omega*omega + 0.0196554*omega*omega*omega
+        self.kappa0 = omega*(omega*(0.0196554*omega - 0.17131848) + 1.4897153) + 0.378893
         self.kappa1, self.kappa2, self.kappa3 = kappa1, kappa2, kappa3
 
         if self.V and self.P:
             # Deal with T-solution here
             self.T = self.solve_T(self.P, self.V)
         Tr = self.T/Tc
-
-        self.kappa = self.kappa0 + ((self.kappa1 + self.kappa2*(self.kappa3
-                                     - Tr)*(1 - Tr**0.5))*(1 + Tr**0.5)*(0.7 - Tr))
+        sqrtTr = sqrt(Tr)
+        self.kappa = self.kappa0 + ((kappa1 + kappa2*(kappa3
+                                     - Tr)*(1.0 - sqrtTr))*(1.0 + sqrtTr)*(0.7 - Tr))
         self.solve()
 
     def solve_T(self, P, V, quick=True, solution=None):
@@ -6999,27 +7002,28 @@ class PRSV2(PR):
         solutions are quite far apart, with one much higher than the other;
         it is possible the solver could converge on the higher solution, so use
         `T` inputs with care. This extra solution is a perfectly valid one
-        however.
+        however. The secant method is implemented at present.
+
+        Examples
+        --------
+
+        >>> eos = PRSV2(Tc=507.6, Pc=3025000, omega=0.2975, T=400., P=1E6, kappa1=0.05104, kappa2=0.8634, kappa3=0.460)
+        >>> eos.solve_T(P=eos.P, V=eos.V_g)
+        400.0
         '''
-        # Generic solution takes 72 vs 56 microseconds for the optimized version below
-#        return super(PR, self).solve_T(P, V, quick=quick)
         self.no_T_spec = True
-        Tc, a, b, kappa0, kappa1, kappa2, kappa3 = self.Tc, self.a, self.b, self.kappa0, self.kappa1, self.kappa2, self.kappa3
-        if quick:
+        if solution is None:
+            Tc, a, b, kappa0, kappa1, kappa2, kappa3 = self.Tc, self.a, self.b, self.kappa0, self.kappa1, self.kappa2, self.kappa3
             x0 = V - b
             R_x0 = R/x0
-            x5 = (100.*(V*(V + b) + b*x0))
+            x5_inv = 1.0/(100.*(V*(V + b) + b*x0))
             x4 = 10.*kappa0
             def to_solve(T):
                 x1 = T/Tc
-                x2 = x1**0.5
+                x2 = sqrt(x1)
                 x3 = x2 - 1.
-                return (R_x0*T - a*(x3*(x4 - (kappa1 + kappa2*x3*(-kappa3 + x1))*(10.*x1 - 7.)*(x2 + 1.)) - 10.)**2/x5) - P
-        else:
-            def to_solve(T):
-                P_calc = R*T/(V - b) - a*((kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))*(-sqrt(T/Tc) + 1) + 1)**2/(V*(V + b) + b*(V - b))
-                return P_calc - P
-        if solution is None:
+                x100 = (x3*(x4 - (kappa1 + kappa2*x3*(-kappa3 + x1))*(10.*x1 - 7.)*(x2 + 1.)) - 10.)
+                return (R_x0*T - a*x100*x100*x5_inv) - P
             try:
                 return newton(to_solve, Tc*0.5)
             except:
@@ -7030,23 +7034,53 @@ class PRSV2(PR):
 
     def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate :math:`a \alpha` and its first and second
-        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and
-        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
-        documentation. Uses the set values of `Tc`, `kappa0`, `kappa1`,
+        derivatives for this EOS. Uses the set values of `Tc`, `kappa0`, `kappa1`,
         `kappa2`, `kappa3`, and `a`.
 
+        .. math::
+            \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
+
+        .. math::
+            \kappa = \kappa_0 + [\kappa_1 + \kappa_2(\kappa_3 - T_r)(1-T_r^{0.5})]
+            (1 + T_r^{0.5})(0.7 - T_r)
+
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the values, [-]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dT : float
+            Temperature derivative of coefficient calculated by EOS-specific
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2 : float
+            Second temperature derivative of coefficient calculated by
+            EOS-specific method, [J^2/mol^2/Pa/K^2]
+
+        Notes
+        -----
         The first and second derivatives of `a_alpha` are available through the
         following SymPy expression.
 
-        >>> from sympy import *
-        >>> P, T, V = symbols('P, T, V')
-        >>> Tc, Pc, omega = symbols('Tc, Pc, omega')
-        >>> R, a, b, kappa0, kappa1, kappa2, kappa3 = symbols('R, a, b, kappa0, kappa1, kappa2, kappa3')
-        >>> Tr = T/Tc
-        >>> kappa = kappa0 + (kappa1 + kappa2*(kappa3-Tr)*(1-sqrt(Tr)))*(1+sqrt(Tr))*(Rational('0.7')-Tr)
-        >>> a_alpha = a*(1 + kappa*(1-sqrt(T/Tc)))**2
-        >>> # diff(a_alpha, T)
-        >>> # diff(a_alpha, T, 2)
+        >>> from sympy import *  # doctest:+SKIP
+        >>> P, T, V = symbols('P, T, V')  # doctest:+SKIP
+        >>> Tc, Pc, omega = symbols('Tc, Pc, omega')  # doctest:+SKIP
+        >>> R, a, b, kappa0, kappa1, kappa2, kappa3 = symbols('R, a, b, kappa0, kappa1, kappa2, kappa3')  # doctest:+SKIP
+        >>> Tr = T/Tc  # doctest:+SKIP
+        >>> kappa = kappa0 + (kappa1 + kappa2*(kappa3-Tr)*(1-sqrt(Tr)))*(1+sqrt(Tr))*(Rational('0.7')-Tr)  # doctest:+SKIP
+        >>> a_alpha = a*(1 + kappa*(1-sqrt(T/Tc)))**2  # doctest:+SKIP
+        >>> diff(a_alpha, T)  # doctest:+SKIP
+        >>> diff(a_alpha, T, 2)  # doctest:+SKIP
+
+        Examples
+        --------
+        >>> eos = PRSV2(Tc=507.6, Pc=3025000, omega=0.2975, T=400., P=1E6, kappa1=0.05104, kappa2=0.8634, kappa3=0.460)
+        >>> eos.a_alpha_and_derivatives_pure(311.0)
+        (3.7245418495, -0.0066115440470, 2.05871011677e-05)
         '''
         Tc, a, kappa0, kappa1, kappa2, kappa3 = self.Tc, self.a, self.kappa0, self.kappa1, self.kappa2, self.kappa3
         x1 = T/Tc
@@ -7075,6 +7109,32 @@ class PRSV2(PR):
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def a_alpha_pure(self, T):
+        r'''Method to calculate :math:`a \alpha` for this EOS. Uses the set values of `Tc`, `kappa0`, `kappa1`,
+        `kappa2`, `kappa3`, and `a`.
+
+        .. math::
+            \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
+
+        .. math::
+            \kappa = \kappa_0 + [\kappa_1 + \kappa_2(\kappa_3 - T_r)(1-T_r^{0.5})]
+            (1 + T_r^{0.5})(0.7 - T_r)
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the values, [-]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+
+        Examples
+        --------
+        >>> eos = PRSV2(Tc=507.6, Pc=3025000, omega=0.2975, T=400., P=1E6, kappa1=0.05104, kappa2=0.8634, kappa3=0.460)
+        >>> eos.a_alpha_pure(1276.0)
+        33.321674050
+        '''
         Tc, a, kappa0, kappa1, kappa2, kappa3 = self.Tc, self.a, self.kappa0, self.kappa1, self.kappa2, self.kappa3
         Tr = T/Tc
         # TODO use self.kappa
@@ -8504,14 +8564,13 @@ class APISRK(SRK):
 
 
 class TWUPR(TwuPR95_a_alpha, PR):
-    r'''Class for solving the Twu [1]_ variant of the Peng-Robinson cubic
-    equation of state for a pure compound. Subclasses `PR`, which
+    r'''Class for solving the Twu (1995) [1]_ variant of the Peng-Robinson cubic
+    equation of state for a pure compound. Subclasses :obj:`PR`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
 
-    Implemented methods here are `a_alpha_and_derivatives`, which sets
-    :math:`a \alpha` and its first and second derivatives, and `solve_T`, which from a
-    specified `P` and `V` obtains `T`.
+    The main implemented method here is :obj:`a_alpha_and_derivatives_pure`,
+     which sets :math:`a \alpha` and its first and second derivatives.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
@@ -8596,20 +8655,6 @@ class TWUPR(TwuPR95_a_alpha, PR):
 
         self.solve()
 
-    def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` and its first and second
-        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and
-        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
-        documentation. Uses the set values of `Tc`, `omega`, and `a`.
-
-        Because of its similarity for the TWUSRK EOS, this has been moved to an
-        external `TWU_a_alpha_common` function. See it for further
-        documentation.
-        '''
-        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=True, method='PR')
-
-    def a_alpha_pure(self, T):
-        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, method='PR')
 
 class TWUSRK(TwuSRK95_a_alpha, SRK):
     r'''Class for solving the Soave-Redlich-Kwong cubic
@@ -8617,9 +8662,8 @@ class TWUSRK(TwuSRK95_a_alpha, SRK):
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
 
-    Implemented methods here are `a_alpha_and_derivatives`, which sets
-    :math:`a \alpha` and its first and second derivatives, and `solve_T`, which from a
-    specified `P` and `V` obtains `T`.
+    The main implemented method here is :obj:`a_alpha_and_derivatives_pure`,
+     which sets :math:`a \alpha` and its first and second derivatives.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
