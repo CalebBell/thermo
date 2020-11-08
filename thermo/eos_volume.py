@@ -41,16 +41,47 @@ The cubic EOS can be rearranged into the following polynomial form:
 .. math::
     \epsilon' = \epsilon\left(\frac{P}{RT}\right)^2
 
+The range of pressures, temperatures, and :math:`a \alpha` values is so large
+that almost all analytical solutions produce huge errors in some conditions.
+Because the EOS volume cannot be under `b`, this often results in a root being
+ignored where there should have been a liquid-like root detected.
+
+A number of plots showing the relative error in volume calculation are shown
+below to demonstrate how different methods work.
+
+.. contents:: :local:
+
+Analytical Solvers
+------------------
+.. autofunction:: volume_solutions_Cardano
+.. autofunction:: volume_solutions_fast
+.. autofunction:: volume_solutions_a1
+.. autofunction:: volume_solutions_a2
+.. autofunction:: volume_solutions_numpy
+.. autofunction:: volume_solutions_ideal
+
+Numerical Solvers
+-----------------
+.. autofunction:: volume_solutions_halley
+.. autofunction:: volume_solutions_NR
+.. autofunction:: volume_solutions_NR_low_P
+
+Higher-Precision Solvers
+------------------------
+.. autofunction:: volume_solutions_mpmath
+.. autofunction:: volume_solutions_mpmath_float
+.. autofunction:: volume_solutions_doubledouble
+
 '''
 
 from __future__ import division, print_function
-
 __all__ = ['volume_solutions_mpmath', 'volume_solutions_mpmath_float',
            'volume_solutions_NR', 'volume_solutions_NR_low_P', 'volume_solutions_halley',
            'volume_solutions_fast', 'volume_solutions_Cardano', 'volume_solutions_a1',
            'volume_solutions_a2', 'volume_solutions_numpy', 'volume_solutions_ideal']
 
 
+from cmath import sqrt as csqrt
 
 from fluids.numerics import (brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np,
@@ -571,7 +602,9 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
 
 def volume_solutions_fast(T, P, b, delta, epsilon, a_alpha):
     r'''Solution of this form of the cubic EOS in terms of volumes. Returns
-    three values, all with some complex part.
+    three values, all with some complex part. This is believed to be the
+    fastest analytical formula, and while it does not suffer from the same
+    errors as Cardano's formula, it has plenty of its own numerical issues.
 
     Parameters
     ----------
@@ -590,7 +623,7 @@ def volume_solutions_fast(T, P, b, delta, epsilon, a_alpha):
 
     Returns
     -------
-    Vs : list[float]
+    Vs : list[complex]
         Three possible molar volumes, [m^3/mol]
 
     Notes
@@ -605,8 +638,12 @@ def volume_solutions_fast(T, P, b, delta, epsilon, a_alpha):
     >>> CUBIC = R*T/(V-b) - a*alpha/(V*V + delta*V + epsilon) - P
     >>> #solve(CUBIC, V)
 
-    Note this approach does not have the same issues as formulas using trig
-    functions or numerical routines.
+    A sample region where this method does not obtain the correct solution
+    (PR EOS for methanol) is as follows:
+
+    .. figure:: eos/volume_error_sympy_PR_methanol_high.png
+       :scale: 70 %
+       :alt: PR EOS methanol volume error high pressure
 
     References
     ----------
@@ -614,26 +651,7 @@ def volume_solutions_fast(T, P, b, delta, epsilon, a_alpha):
        Equations of State in Low Temperature Region." Fluid Phase
        Equilibria 201, no. 2 (September 30, 2002): 287-94.
        https://doi.org/10.1016/S0378-3812(02)00072-9.
-
     '''
-#        RT_inv = R_inv/T
-#        P_RT_inv = P*RT_inv
-#        eta = b
-#        B = b*P_RT_inv
-#        deltas = delta*P_RT_inv
-#        thetas = a_alpha*P_RT_inv*RT_inv
-#        epsilons = epsilon*P_RT_inv*P_RT_inv
-#        etas = eta*P_RT_inv
-#
-#        a = 1.0
-#        b2 = (deltas - B - 1.0)
-#        c = (thetas + epsilons - deltas*(B + 1.0))
-#        d = -(epsilons*(B + 1.0) + thetas*etas)
-#        open('bcd.txt', 'a').write('\n%s' %(str([float(b2), float(c), float(d)])))
-
-
-
-
     x24 = 1.73205080756887729352744634151j + 1.
     x24_inv = 0.25 - 0.433012701892219323381861585376j
     x26 = -1.73205080756887729352744634151j + 1.
@@ -671,19 +689,15 @@ def volume_solutions_fast(T, P, b, delta, epsilon, a_alpha):
     x4x9  = x4*x9
     x19 = ((-13.5*x0*t0 - 4.5*x4x9*tm1
            - x4*x4x9*x5
-            + 0.5*((x9*(-4.*x0*t1*t1*t1 + t2*t2))+0.0j)**0.5
+            + 0.5*csqrt((x9*(-4.*x0*t1*t1*t1 + t2*t2))+0.0j)
             )+0.0j)**third
 
     x20 = -t1/x19#
     x22 = x5 + x5
     x25 = 4.*x0*x20
-    return [(x0*x20 - x19 + x5)*third,
+    return ((x0*x20 - x19 + x5)*third,
             (x19*x24 + x22 - x25*x24_inv)*sixth,
-            (x19*x26 + x22 - x25*x26_inv)*sixth]
-#        else:
-#            return [-(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P),
-#                     -(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(-1/2 - sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (-1/2 - sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P),
-#                     -(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(-1/2 + sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (-1/2 + sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P)]
+            (x19*x26 + x22 - x25*x26_inv)*sixth)
 
 
 
@@ -834,6 +848,41 @@ def volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha):
     return [V*RT_P for V in roots]
 
 def volume_solutions_a1(T, P, b, delta, epsilon, a_alpha):
+    r'''Solution of this form of the cubic EOS in terms of volumes. Returns
+    three values, all with some complex part. This uses an analytical solution
+    for the cubic equation with the leading coefficient set to 1 as in the EOS
+    case; and the analytical solution is the one recommended by Mathematica.
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    P : float
+        Pressure, [Pa]
+    b : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    delta : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    epsilon : float
+        Coefficient calculated by EOS-specific method, [m^6/mol^2]
+    a_alpha : float
+        Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+
+    Returns
+    -------
+    Vs : tuple[complex]
+        Three possible molar volumes, [m^3/mol]
+
+    Notes
+    -----
+    A sample region where this method does not obtain the correct solution
+    (PR EOS for methanol) is as follows:
+
+    .. figure:: eos/volume_error_mathematica_PR_methanol_high.png
+       :scale: 70 %
+       :alt: PR EOS methanol volume error high pressure
+
+    '''
     RT_inv = R_inv/T
     P_RT_inv = P*RT_inv
     B = etas = b*P_RT_inv
@@ -848,10 +897,44 @@ def volume_solutions_a1(T, P, b, delta, epsilon, a_alpha):
     roots = list(roots_cubic_a1(b, c, d))
 
     RT_P = R*T/P
-    return [V*RT_P for V in roots]
+    return (V*RT_P for V in roots)
 
 def volume_solutions_a2(T, P, b, delta, epsilon, a_alpha):
-    # volume_error_maple_SRK_decane_high
+    r'''Solution of this form of the cubic EOS in terms of volumes. Returns
+    three values, all with some complex part. This uses an analytical solution
+    for the cubic equation with the leading coefficient set to 1 as in the EOS
+    case; and the analytical solution is the one recommended by Maple.
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    P : float
+        Pressure, [Pa]
+    b : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    delta : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    epsilon : float
+        Coefficient calculated by EOS-specific method, [m^6/mol^2]
+    a_alpha : float
+        Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+
+    Returns
+    -------
+    Vs : tuple[complex]
+        Three possible molar volumes, [m^3/mol]
+
+    Notes
+    -----
+    A sample region where this method does not obtain the correct solution
+    (SRK EOS for decane) is as follows:
+
+    .. figure:: eos/volume_error_maple_SRK_decane_high.png
+       :scale: 70 %
+       :alt: SRK EOS decane volume error high pressure
+    '''
+    #
     RT_inv = R_inv/T
     P_RT_inv = P*RT_inv
     B = etas = b*P_RT_inv
@@ -926,6 +1009,36 @@ def volume_solutions_numpy(T, P, b, delta, epsilon, a_alpha):
     RT_P = R*T/P
     return [V*RT_P for V in roots]
 
-def volume_solutions_ideal(T, P, b, delta, epsilon, a_alpha):
-    # Saves some time
-    return [R*T/P, 0.0, 0.0]
+def volume_solutions_ideal(T, P, b=0.0, delta=0.0, epsilon=0.0, a_alpha=0.0):
+    r'''Calculate the ideal-gas molar volume in a format compatible with the
+    other cubic EOS solvers. The ideal gas volume is the first element; and the
+    secodn and third elements are zero. This is implemented to allow the
+    ideal-gas model to be compatible with the cubic models, whose equations
+    do not work with parameters of zero.
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    P : float
+        Pressure, [Pa]
+    b : float, optional
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    delta : float, optional
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    epsilon : float, optional
+        Coefficient calculated by EOS-specific method, [m^6/mol^2]
+    a_alpha : float, optional
+        Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+
+    Returns
+    -------
+    Vs : list[float]
+        Three possible molar volumes, [m^3/mol]
+
+    Examples
+    --------
+    >>> volume_solutions_ideal(T=300, P=1e7)
+    (0.0002494338785445972, 0.0, 0.0)
+    '''
+    return (R*T/P, 0.0, 0.0)
