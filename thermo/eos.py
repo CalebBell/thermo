@@ -36,11 +36,11 @@ Base Class
     :undoc-members:
     :show-inheritance:
 
-Peng-Robinson Family EOSs
-=========================
+Standard Peng-Robinson Family EOSs
+==================================
 
-Peng Robinson
--------------
+Standard Peng Robinson
+----------------------
 .. autoclass:: PR
    :show-inheritance:
    :members: a_alpha_pure, a_alpha_and_derivatives_pure,  d3a_alpha_dT3_pure, solve_T, P_max_at_V, c1, c2, Zc
@@ -69,6 +69,17 @@ Peng Robinson Twu (1995)
    :show-inheritance:
    :members: a_alpha_and_derivatives_pure, a_alpha_pure
 
+
+Volume Translated Peng-Robinson Family EOSs
+===========================================
+
+Peng Robinson Translated
+------------------------
+.. autoclass:: PRTranslated
+   :show-inheritance:
+   :members: __init__
+   :exclude-members: __init__
+
 Peng Robinson Translated Twu (1991)
 -----------------------------------
 .. autoclass:: PRTranslatedTwu
@@ -86,15 +97,36 @@ Peng Robinson Translated-Consistent
 Peng Robinson Translated (Pina-Martinez, Privat, and Jaubert Variant)
 ---------------------------------------------------------------------
 .. autoclass:: PRTranslatedPPJP
+   :show-inheritance:
+   :members: __init__
+   :exclude-members: __init__
 
-SRK Family EOSs
----------------
+Soave-Redlich-Kwong Family EOSs
+===============================
+
+Standard SRK
+------------
 .. autoclass:: SRK
+
+Twu SRK (1995)
+--------------
 .. autoclass:: TWUSRK
    :show-inheritance:
    :members: a_alpha_and_derivatives_pure, a_alpha_pure
+
+API SRK
+-------
 .. autoclass:: APISRK
+
+SRK Translated-Consistent
+-------------------------
 .. autoclass:: SRKTranslatedConsistent
+   :show-inheritance:
+   :members: __init__
+   :exclude-members: __init__
+
+MSRK Translated
+---------------
 .. autoclass:: MSRKTranslated
 
 Other Cubic Equations of State
@@ -105,6 +137,9 @@ Other Cubic Equations of State
 Ideal Gas Equation of State
 ---------------------------
 .. autoclass:: IG
+   :show-inheritance:
+   :members: volume_solutions, Zc, a, b, delta, epsilon
+
 
 Lists of Equations of State
 ---------------------------
@@ -5501,10 +5536,15 @@ class IG(GCEOS):
        Chemical Engineering Thermodynamics. Boston: McGraw-Hill, 2005.
     '''
     Zc = 1.0
+    '''float: Critical compressibility for an ideal gas is 1'''
     a = 0.0
+    '''float: `a` parameter for an ideal gas is 0'''
     b = 0.0
+    '''float: `b` parameter for an ideal gas is 0'''
     delta = 0.0
+    '''float: `delta` parameter for an ideal gas is 0'''
     epsilon = 0.0
+    '''float: `epsilon` parameter for an ideal gas is 0'''
     volume_solutions = staticmethod(volume_solutions_ideal)
 
     # Handle the properties where numerical error puts values - but they should
@@ -6331,6 +6371,62 @@ class PR78(PR):
         self.solve()
 
 class PRTranslated(PR):
+    r'''Class for solving the volume translated Peng-Robinson equation of state.
+    Subclasses :obj:`PR`. Solves the EOS on initialization.
+    This is intended as a base class for all translated variants of the
+    Peng-Robinson EOS.
+
+    .. math::
+        P = \frac{RT}{v + c - b} - \frac{a\alpha(T)}{(v+c)(v + c + b)+b(v
+        + c - b)}
+
+    .. math::
+        a=0.45724\frac{R^2T_c^2}{P_c}
+
+    .. math::
+	    b=0.07780\frac{RT_c}{P_c}
+
+    .. math::
+        \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
+
+    .. math::
+        \kappa=0.37464+1.54226\omega-0.26992\omega^2
+
+    Parameters
+    ----------
+    Tc : float
+        Critical temperature, [K]
+    Pc : float
+        Critical pressure, [Pa]
+    omega : float
+        Acentric factor, [-]
+    alpha_coeffs : tuple or None
+        Coefficients which may be specified by subclasses, [-]
+    c : float, optional
+        Volume translation parameter, [m^3/mol]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------
+    P-T initialization:
+
+    >>> eos = PRTranslated(T=305, P=1.1e5, Tc=512.5, Pc=8084000.0, omega=0.559, c=-1e-6)
+    >>> eos.phase, eos.V_l, eos.V_g
+    ('l/g', 4.90798083711e-05, 0.0224350982488)
+
+    Notes
+    -----
+
+    References
+    ----------
+    .. [1] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
+       Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
+    '''
     solve_T = GCEOS.solve_T
     P_max_at_V = GCEOS.P_max_at_V
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=0.0, T=None, P=None,
@@ -6371,8 +6467,8 @@ class PRTranslatedPPJP(PRTranslated):
     r'''Class for solving the volume translated Pina-Martinez, Privat, Jaubert,
     and Peng revision of the Peng-Robinson equation of state
     for a pure compound according to [1]_.
-    Subclasses `PR`, which provides everything except the variable `kappa`.
-    Solves the EOS on initialization. See `PR` for further documentation.
+    Subclasses :obj:`PRTranslated`, which provides everything except the variable `kappa`.
+    Solves the EOS on initialization. See :obj:`PRTranslated` for further documentation.
 
     .. math::
         P = \frac{RT}{v + c - b} - \frac{a\alpha(T)}{(v+c)(v + c + b)+b(v
@@ -6559,10 +6655,10 @@ class PRTranslatedConsistent(PRTranslatedTwu):
     r'''Class for solving the volume translated Le Guennec, Privat, and Jaubert
     revision of the Peng-Robinson equation of state
     for a pure compound according to [1]_.
-    Subclasses `PRTranslatedTwu`, which provides everything except the
+    Subclasses :obj:`PRTranslatedTwu`, which provides everything except the
     estimation of `c` and the alpha coefficients. This model's `alpha` is based
     on the TWU 1991 model; when estimating, `N` is set to 2.
-    Solves the EOS on initialization. See `PR` for further documentation.
+    Solves the EOS on initialization. See :obj:`PRTranslated` for further documentation.
 
     .. math::
         P = \frac{RT}{v + c - b} - \frac{a\alpha(T)}{(v+c)(v + c + b)+b(v
