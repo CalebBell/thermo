@@ -5694,8 +5694,8 @@ class PR(GCEOS):
 
         .. math::
             \frac{d^3 a\alpha}{dT^3} = \frac{3 a\kappa \left(- \frac{\kappa}
-            {Tc} + \frac{\sqrt{\frac{T}{Tc}} \left(\kappa \left(\sqrt{\frac{T}
-            {Tc}} - 1\right) - 1\right)}{T}\right)}{4 T^{2}}
+            {T_{c}} + \frac{\sqrt{\frac{T}{T_{c}}} \left(\kappa \left(\sqrt{\frac{T}
+            {T_{c}}} - 1\right) - 1\right)}{T}\right)}{4 T^{2}}
 
         Parameters
         ----------
@@ -6353,8 +6353,8 @@ class PRTranslatedConsistent(PRTranslatedTwu):
 	    b=0.07780\frac{RT_c}{P_c}
 
     .. math::
-        \alpha = \left(\frac{T}{Tc}\right)^{c_{3} \left(c_{2}
-        - 1\right)} e^{c_{1} \left(- \left(\frac{T}{Tc}
+        \alpha = \left(\frac{T}{T_{c}}\right)^{c_{3} \left(c_{2}
+        - 1\right)} e^{c_{1} \left(- \left(\frac{T}{T_{c}}
         \right)^{c_{2} c_{3}} + 1\right)}
 
     If `c` is not provided, it is estimated as:
@@ -6639,8 +6639,8 @@ class PRSV(PR):
 
         .. math::
             a\alpha = a \left(\left(\kappa_{0} + \kappa_{1} \left(\sqrt{\frac{
-            T}{Tc}} + 1\right) \left(- \frac{T}{Tc} + \frac{7}{10}\right)
-            \right) \left(- \sqrt{\frac{T}{Tc}} + 1\right) + 1\right)^{2}
+            T}{T_{c}}} + 1\right) \left(- \frac{T}{T_{c}} + \frac{7}{10}\right)
+            \right) \left(- \sqrt{\frac{T}{T_{c}}} + 1\right) + 1\right)^{2}
 
         >>> from sympy import *
         >>> P, T, V = symbols('P, T, V')
@@ -7151,7 +7151,7 @@ class RK(GCEOS):
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
     .. math::
-        P =\frac{RT}{V-b}-\frac{a}{V\sqrt{\frac{T}{Tc}}(V+b)}
+        P =\frac{RT}{V-b}-\frac{a}{V\sqrt{\frac{T}{T_{c}}}(V+b)}
 
     .. math::
         a=\left(\frac{R^2(T_c)^{2}}{9(\sqrt[3]{2}-1)P_c} \right)
@@ -7256,11 +7256,11 @@ class RK(GCEOS):
         documentation. Uses the set values of `a`.
 
         .. math::
-            a\alpha = \frac{a}{\sqrt{\frac{T}{Tc}}}
+            a\alpha = \frac{a}{\sqrt{\frac{T}{T_{c}}}}
 
-            \frac{d a\alpha}{dT} = - \frac{a}{2 T\sqrt{\frac{T}{Tc}}}
+            \frac{d a\alpha}{dT} = - \frac{a}{2 T\sqrt{\frac{T}{T_{c}}}}
 
-            \frac{d^2 a\alpha}{dT^2} = \frac{3 a}{4 T^{2}\sqrt{\frac{T}{Tc}}}
+            \frac{d^2 a\alpha}{dT^2} = \frac{3 a}{4 T^{2}\sqrt{\frac{T}{T_{c}}}}
         '''
         Tc = self.Tc
         sqrt_Tr_inv = (T/Tc)**-0.5
@@ -7555,15 +7555,15 @@ class SRK(GCEOS):
         documentation. Uses the set values of `Tc`, `m`, and `a`.
 
         .. math::
-            a\alpha = a \left(m \left(- \sqrt{\frac{T}{Tc}} + 1\right)
+            a\alpha = a \left(m \left(- \sqrt{\frac{T}{T_{c}}} + 1\right)
             + 1\right)^{2}
 
         .. math::
-            \frac{d a\alpha}{dT} = \frac{a m}{T} \sqrt{\frac{T}{Tc}} \left(m
-            \left(\sqrt{\frac{T}{Tc}} - 1\right) - 1\right)
+            \frac{d a\alpha}{dT} = \frac{a m}{T} \sqrt{\frac{T}{T_{c}}} \left(m
+            \left(\sqrt{\frac{T}{T_{c}}} - 1\right) - 1\right)
 
         .. math::
-            \frac{d^2 a\alpha}{dT^2} = \frac{a m \sqrt{\frac{T}{Tc}}}{2 T^{2}}
+            \frac{d^2 a\alpha}{dT^2} = \frac{a m \sqrt{\frac{T}{T_{c}}}}{2 T^{2}}
             \left(m + 1\right)
         '''
         a, Tc, m = self.a, self.Tc, self.m
@@ -8010,8 +8010,8 @@ class SRKTranslatedConsistent(SRKTranslatedTwu):
         =\frac{0.08664\cdot R T_c}{P_c}
 
     .. math::
-        \alpha = \left(\frac{T}{Tc}\right)^{c_{3} \left(c_{2}
-        - 1\right)} e^{c_{1} \left(- \left(\frac{T}{Tc}
+        \alpha = \left(\frac{T}{T_{c}}\right)^{c_{3} \left(c_{2}
+        - 1\right)} e^{c_{1} \left(- \left(\frac{T}{T_{c}}
         \right)^{c_{2} c_{3}} + 1\right)}
 
     If `c` is not provided, it is estimated as:
@@ -8204,18 +8204,18 @@ class APISRK(SRK):
             - \sqrt{T_r}}{\sqrt{T_r}}\right]^2
 
         .. math::
-            \frac{d a\alpha}{dT} = a\frac{Tc}{T^{2}} \left(- S_{2} \left(\sqrt{
-            \frac{T}{Tc}} - 1\right) + \sqrt{\frac{T}{Tc}} \left(S_{1} \sqrt{
-            \frac{T}{Tc}} + S_{2}\right)\right) \left(S_{2} \left(\sqrt{\frac{
-            T}{Tc}} - 1\right) + \sqrt{\frac{T}{Tc}} \left(S_{1} \left(\sqrt{
-            \frac{T}{Tc}} - 1\right) - 1\right)\right)
+            \frac{d a\alpha}{dT} = a\frac{T_{c}}{T^{2}} \left(- S_{2} \left(\sqrt{
+            \frac{T}{T_{c}}} - 1\right) + \sqrt{\frac{T}{T_{c}}} \left(S_{1} \sqrt{
+            \frac{T}{T_{c}}} + S_{2}\right)\right) \left(S_{2} \left(\sqrt{\frac{
+            T}{T_{c}}} - 1\right) + \sqrt{\frac{T}{T_{c}}} \left(S_{1} \left(\sqrt{
+            \frac{T}{T_{c}}} - 1\right) - 1\right)\right)
 
         .. math::
             \frac{d^2 a\alpha}{dT^2} = a\frac{1}{2 T^{3}} \left(S_{1}^{2} T
-            \sqrt{\frac{T}{Tc}} - S_{1} S_{2} T \sqrt{\frac{T}{Tc}} + 3 S_{1}
-            S_{2} Tc \sqrt{\frac{T}{Tc}} + S_{1} T \sqrt{\frac{T}{Tc}}
-            - 3 S_{2}^{2} Tc \sqrt{\frac{T}{Tc}} + 4 S_{2}^{2} Tc + 3 S_{2}
-            Tc \sqrt{\frac{T}{Tc}}\right)
+            \sqrt{\frac{T}{T_{c}}} - S_{1} S_{2} T \sqrt{\frac{T}{T_{c}}} + 3 S_{1}
+            S_{2} Tc \sqrt{\frac{T}{T_{c}}} + S_{1} T \sqrt{\frac{T}{T_{c}}}
+            - 3 S_{2}^{2} Tc \sqrt{\frac{T}{T_{c}}} + 4 S_{2}^{2} Tc + 3 S_{2}
+            Tc \sqrt{\frac{T}{T_{c}}}\right)
         '''
         # possible TODO: custom hydrogen a_alpha from
         # Graboski, Michael S., and Thomas E. Daubert. "A Modified Soave Equation
