@@ -169,7 +169,7 @@ def test_PR_quick():
     # PR back calculation for T
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013022212513965863, P=1E6)
     assert_close(eos.T, 299)
-    T_slow = eos.solve_T(P=1E6, V=0.00013022212513965863, quick=False)
+    T_slow = eos.solve_T(P=1E6, V=0.00013022212513965863)
     assert_close(T_slow, 299)
 
 
@@ -300,6 +300,17 @@ def test_PR_quick():
     base.to(V=base.V_l, P=base.P_max_at_V(base.V_l)-1)
     with pytest.raises(Exception):
         base.to(V=base.V_l, P=base.P_max_at_V(base.V_l)+1)
+        
+        
+    
+    # solve_T quick original test
+    eos = PR(Tc=658.0, Pc=1820000.0, omega=0.562, T=500., P=1e5)
+    
+    def PR_solve_T_analytical_orig(P, V, Tc, a, b, kappa):
+         return Tc*(-2*a*kappa*sqrt((V - b)**3*(V**2 + 2*V*b - b**2)*(P*R*Tc*V**2 + 2*P*R*Tc*V*b - P*R*Tc*b**2 - P*V*a*kappa**2 + P*a*b*kappa**2 + R*Tc*a*kappa**2 + 2*R*Tc*a*kappa + R*Tc*a))*(kappa + 1)*(R*Tc*V**2 + 2*R*Tc*V*b - R*Tc*b**2 - V*a*kappa**2 + a*b*kappa**2)**2 + (V - b)*(R**2*Tc**2*V**4 + 4*R**2*Tc**2*V**3*b + 2*R**2*Tc**2*V**2*b**2 - 4*R**2*Tc**2*V*b**3 + R**2*Tc**2*b**4 - 2*R*Tc*V**3*a*kappa**2 - 2*R*Tc*V**2*a*b*kappa**2 + 6*R*Tc*V*a*b**2*kappa**2 - 2*R*Tc*a*b**3*kappa**2 + V**2*a**2*kappa**4 - 2*V*a**2*b*kappa**4 + a**2*b**2*kappa**4)*(P*R*Tc*V**4 + 4*P*R*Tc*V**3*b + 2*P*R*Tc*V**2*b**2 - 4*P*R*Tc*V*b**3 + P*R*Tc*b**4 - P*V**3*a*kappa**2 - P*V**2*a*b*kappa**2 + 3*P*V*a*b**2*kappa**2 - P*a*b**3*kappa**2 + R*Tc*V**2*a*kappa**2 + 2*R*Tc*V**2*a*kappa + R*Tc*V**2*a + 2*R*Tc*V*a*b*kappa**2 + 4*R*Tc*V*a*b*kappa + 2*R*Tc*V*a*b - R*Tc*a*b**2*kappa**2 - 2*R*Tc*a*b**2*kappa - R*Tc*a*b**2 + V*a**2*kappa**4 + 2*V*a**2*kappa**3 + V*a**2*kappa**2 - a**2*b*kappa**4 - 2*a**2*b*kappa**3 - a**2*b*kappa**2))/((R*Tc*V**2 + 2*R*Tc*V*b - R*Tc*b**2 - V*a*kappa**2 + a*b*kappa**2)**2*(R**2*Tc**2*V**4 + 4*R**2*Tc**2*V**3*b + 2*R**2*Tc**2*V**2*b**2 - 4*R**2*Tc**2*V*b**3 + R**2*Tc**2*b**4 - 2*R*Tc*V**3*a*kappa**2 - 2*R*Tc*V**2*a*b*kappa**2 + 6*R*Tc*V*a*b**2*kappa**2 - 2*R*Tc*a*b**3*kappa**2 + V**2*a**2*kappa**4 - 2*V*a**2*b*kappa**4 + a**2*b**2*kappa**4))
+    T_analytical = PR_solve_T_analytical_orig(eos.P, eos.V_g, eos.Tc, eos.a, eos.b, eos.kappa)
+    assert_close(T_analytical, eos.solve_T(P=eos.P, V=eos.V_g), rtol=1e-13)
+
 
 @pytest.mark.fuzz
 def test_PR_high_pressure_not_always():

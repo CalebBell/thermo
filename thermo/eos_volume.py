@@ -350,13 +350,13 @@ def volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, tries=0):
             pass
     try:
         if tries == 0:
-            Vs = volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha)
+            Vs = list(volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha))
 #                Vs = [Vi+1e-45j for Vi in volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha, quick=True)]
         elif tries == 1:
-            Vs = volume_solutions_fast(T, P, b, delta, epsilon, a_alpha)
+            Vs = list(volume_solutions_fast(T, P, b, delta, epsilon, a_alpha))
         elif tries == 2:
             # sometimes used successfully
-            Vs = volume_solutions_a1(T, P, b, delta, epsilon, a_alpha)
+            Vs = list(volume_solutions_a1(T, P, b, delta, epsilon, a_alpha))
         # elif tries == 3:
         #     # never used successfully
         #     Vs = GCEOS.volume_solutions_a2(T, P, b, delta, epsilon, a_alpha)
@@ -365,9 +365,9 @@ def volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, tries=0):
     except:
 #            Vs = GCEOS.volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha)
         if tries == 0:
-            Vs = volume_solutions_fast(T, P, b, delta, epsilon, a_alpha)
+            Vs = list(volume_solutions_fast(T, P, b, delta, epsilon, a_alpha))
         else:
-            Vs = volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha)
+            Vs = list(volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha))
         # Zero division error is possible above
 
     RT = R*T
@@ -946,6 +946,10 @@ def volume_solutions_a1(T, P, b, delta, epsilon, a_alpha):
        :scale: 70 %
        :alt: PR EOS methanol volume error high pressure
 
+    Examples
+    --------
+    >>> volume_solutions_a1(8837.07874361444, 216556124.0631852, 0.0003990176625589891, 0.0010590390565805598, -1.5069972655436541e-07, 7.20417995032918e-15)
+    ((0.000738308-7.5337e-20j), (-0.001186094-6.52444e-20j), (0.000127055+6.52444e-20j))
     '''
     RT_inv = R_inv/T
     P_RT_inv = P*RT_inv
@@ -958,10 +962,8 @@ def volume_solutions_a1(T, P, b, delta, epsilon, a_alpha):
     c = (thetas + epsilons - deltas*(B + 1.0))
     d = -(epsilons*(B + 1.0) + thetas*etas)
 #        roots_cubic_a1, roots_cubic_a2
-    roots = list(roots_cubic_a1(b, c, d))
-
     RT_P = R*T/P
-    return (V*RT_P for V in roots)
+    return tuple(V*RT_P for V in roots_cubic_a1(b, c, d))
 
 def volume_solutions_a2(T, P, b, delta, epsilon, a_alpha):
     r'''Solution of this form of the cubic EOS in terms of volumes. Returns

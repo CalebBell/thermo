@@ -28,8 +28,6 @@ For reporting bugs, adding feature requests, or submitting pull requests,
 please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 .. contents:: :local:
-    :undoc-members:
-    :show-inheritance:
 
 Base Class
 ----------
@@ -42,7 +40,7 @@ Peng-Robinson Family EOSs
 -------------------------
 .. autoclass:: PR
    :show-inheritance:
-   :members: a_alpha_pure, a_alpha_and_derivatives_pure,  d3a_alpha_dT3_pure, solve_T, P_max_at_V
+   :members: a_alpha_pure, a_alpha_and_derivatives_pure,  d3a_alpha_dT3_pure, solve_T, P_max_at_V, c1, c2, Zc
 .. autoclass:: PR78
 .. autoclass:: PRSV
 .. autoclass:: PRSV2
@@ -76,7 +74,7 @@ Demonstrations of Concepts
 --------------------------
 
 Maximum Pressure at Constant Volume
------------------------------------
+===================================
 
 Some equations of state show this behavior. At a liquid volume, if the
 temperature is increased, the pressure should increase as well to create that
@@ -5631,16 +5629,19 @@ class PR(GCEOS):
     # X = (-1 + (6*sqrt(2)+8)**Rational(1,3) - (6*sqrt(2)-8)**Rational(1,3))/3
     # (8*(5*X+1)/(49-37*X)).evalf(40)
     c1 = 0.4572355289213821893834601962251837888504
+    '''Full value of the constant in the `a` parameter'''
     c1R2 = c1*R2
 
     # Constant part of `b`, (X/(X+3)).evalf(40)
     c2 = 0.0777960739038884559718447100373331839711
+    '''Full value of the constant in the `b` parameter'''
     c2R = c2*R
 
 #    c1, c2 = 0.45724, 0.07780
 
     # Zc is the mechanical compressibility for mixtures as well.
     Zc = 0.3074013086987038480093850966542222720096
+    '''Mechanical compressibility of Peng-Robinson EOS'''
 
     Psat_coeffs_limiting = [-3.4758880164801873, 0.7675486448347723]
 
@@ -5735,7 +5736,7 @@ class PR(GCEOS):
         Dodecane at 250 K:
 
         >>> eos = PR(Tc=658.0, Pc=1820000.0, omega=0.562, T=500., P=1e5)
-        >>> eos.a_alpha_and_derivatives_pure(250.0)
+        >>> eos.a_alpha_pure(250.0)
         15.66839156301
         '''
         x0 = (1.0 + self.kappa*(1.0 - (T/self.Tc)**0.5))
@@ -5933,6 +5934,18 @@ class PR(GCEOS):
         >>> a_alpha = a*(1 + kappa*(1-sqrt(T/Tc)))**2
         >>> PR_formula = R*T/(V-b) - a_alpha/(V*(V+b)+b*(V-b)) - P
         >>> #solve(PR_formula, T)
+
+        After careful evaluation of the results of the analytical formula,
+        it was discovered, that numerical precision issues required several
+        NR refinement iterations; at at times, when the analytical value is
+        extremely erroneous, a call to a full numerical solver not using the
+        analytical solution at all is required.
+
+        Examples
+        --------
+        >>> eos = PR(Tc=658.0, Pc=1820000.0, omega=0.562, T=500., P=1e5)
+        >>> eos.solve_T(P=eos.P, V=eos.V_g)
+        500.0000000
         '''
         self.no_T_spec = True
         Tc, a, b, kappa = self.Tc, self.a, self.b, self.kappa
