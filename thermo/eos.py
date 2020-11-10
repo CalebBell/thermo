@@ -1015,8 +1015,7 @@ class GCEOS(object):
 
     @property
     def mpmath_volumes_float(self):
-        Vs = volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
-        return [float(Vi.real) + float(Vi.imag)*1.0j for Vi in Vs]
+        Vs = volume_solutions_mpmath_float(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
 
     @property
     def mpmath_volume_ratios(self):
@@ -1447,6 +1446,161 @@ class GCEOS(object):
 
             return props, fig
 
+    def PIP_map(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
+                      pts=50, plot=False, show=False, color_map=None):
+        # TODO rename PIP_ID_map or add flag to change if it plots PIP or bools.
+        # TODO add doc
+        Ts = logspace(log10(Tmin), log10(Tmax), pts)
+        Ps = logspace(log10(Pmin), log10(Pmax), pts)
+        kwargs = {}
+        if hasattr(self, 'zs'):
+            kwargs['zs'] = self.zs
+
+        PIPs = []
+        for T in Ts:
+            PIP_row = []
+            for P in Ps:
+                kwargs['T'] = T
+                kwargs['P'] = P
+                obj = self.to(**kwargs)
+#                v = obj.discriminant
+#                # need make negatives under 1, positive above 1
+#                if v > 0.0:
+#                    v = (1.0 + (1e10 - 1.0)/(1.0 + trunc_exp(-v)))
+#                else:
+#                    v = (1e-10 + (1.0 - 1e-10)/(1.0 + trunc_exp(-v)))
+
+                if obj.phase == 'l/g':
+                    v = 1
+                elif obj.phase == 'g':
+                    v = 0
+                elif obj.phase == 'l':
+                    v = 2
+                PIP_row.append(v)
+            PIPs.append(PIP_row)
+
+        if plot:
+            import matplotlib.pyplot as plt
+            from matplotlib import ticker, cm
+            from matplotlib.colors import LogNorm
+            X, Y = np.meshgrid(Ts, Ps)
+            z = np.array(PIPs).T
+            fig, ax = plt.subplots()
+            if color_map is None:
+                color_map = cm.viridis
+
+            im = ax.pcolormesh(X, Y, z, cmap=color_map,
+#                               norm=LogNorm(vmin=1e-10, vmax=1e10)
+                               )
+            cbar = fig.colorbar(im, ax=ax)
+            cbar.set_label('PIP')
+
+            ax.set_yscale('log')
+            ax.set_xscale('log')
+            ax.set_xlabel('T [K]')
+            ax.set_ylabel('P [Pa]')
+
+
+            ax.set_title('Volume root/phase ID validation')
+            if show:
+                plt.show()
+
+            return PIPs, fig
+
+    def Psat_errors(self, Tmin=None, Tmax=None, pts=50, plot=False, show=False,
+                    trunc_err_low=1e-18, trunc_err_high=1.0, Pmin=1e-100):
+        try:
+            Tc = self.Tc
+        except:
+            Tc = self.pseudo_Tc
+
+
+        if Tmax is None:
+            Tmax = Tc
+        if Tmin is None:
+            Tmin = .1*Tc
+
+        try:
+            # Can we get the direct temperature for Pmin
+            if Pmin is not None:
+                Tmin_Pmin = self.Tsat(P=Pmin, polish=True)
+        except:
+            Tmin_Pmin = None
+
+        if Tmin_Pmin is not None:
+            Tmin = max(Tmin, Tmin_Pmin)
+
+        Ts = logspace(log10(Tmin), log10(Tmax), int(pts/3))
+        Ts[-1] = Tmax
+
+        Ts_mid = linspace(Tmin, Tmax, int(pts/3))
+
+        Ts_high = linspace(Tmax*.99, Tmax, int(pts/3))
+        Ts = list(sorted(Ts_high + Ts + Ts_mid))
+
+
+
+        Ts_worked, Psats_num, Psats_fit = [], [], []
+        for T in Ts:
+            failed = False
+            try:
+                Psats_fit.append(self.Psat(T, polish=False))
+            except NoSolutionError:
+                # Trust the fit - do not continue if no good
+                continue
+            except Exception as e:
+                raise ValueError("Failed to converge at %.16f K with unexpected error" %(T), e)
+
+            try:
+                Psat_polished = self.Psat(T, polish=True)
+                Psats_num.append(Psat_polished)
+            except Exception as e:
+                failed = True
+                raise ValueError("Failed to converge at %.16f K with unexpected error" %(T), e)
+
+            Ts_worked.append(T)
+        Ts = Ts_worked
+
+        errs = np.array([abs(i-j)/i for i, j in zip(Psats_num, Psats_fit)])
+        if plot:
+            import matplotlib.pyplot as plt
+            fig, ax1 = plt.subplots()
+            ax2 = ax1.twinx()
+            if trunc_err_low is not None:
+                errs[np.where(abs(errs) < trunc_err_low)] = trunc_err_low
+            if trunc_err_high is not None:
+                errs[np.where(abs(errs) > trunc_err_high)] = trunc_err_high
+
+            Trs = np.array(Ts)/Tc
+            ax1.plot(Trs, errs)
+
+            ax2.plot(Trs, Psats_num)
+            ax2.plot(Trs, Psats_fit)
+            ax1.set_yscale('log')
+            ax1.set_xscale('log')
+
+            ax2.set_yscale('log')
+            ax2.set_xscale('log')
+
+            ax1.set_xlabel('Tr [-]')
+            ax1.set_ylabel('AARD [-]')
+
+            ax2.set_ylabel('Psat [Pa]')
+
+            max_err = np.max(errs)
+            if trunc_err_low is not None and max_err < trunc_err_low:
+                max_err = 0
+            if trunc_err_high is not None and max_err > trunc_err_high:
+                max_err = trunc_err_high
+
+            ax1.set_title('Vapor pressure validation; max rel err %.4e' %(max_err))
+            if show:
+                plt.show()
+
+            return errs, Psats_num, Psats_fit, fig
+        else:
+            return errs, Psats_num, Psats_fit
+
     def derivatives_and_departures(self, T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=True):
 
         dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep = (
@@ -1506,54 +1660,6 @@ class GCEOS(object):
         full_volumes = [i + 0.0j for i in full_volumes]
         return tuple(sorted(full_volumes, key=sort_fun))
 
-    def PIP_map(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
-                      pts=50, plot=False, show=False, color_map=None):
-        Ts = logspace(log10(Tmin), log10(Tmax), pts)
-        Ps = logspace(log10(Pmin), log10(Pmax), pts)
-        kwargs = {}
-        if hasattr(self, 'zs'):
-            kwargs['zs'] = self.zs
-
-        PIPs = []
-        for T in Ts:
-            PIP_row = []
-            for P in Ps:
-                kwargs['T'] = T
-                kwargs['P'] = P
-                obj = self.to(**kwargs)
-                if obj.phase == 'l/g':
-                    PIP_row.append(1)
-                elif obj.phase == 'g':
-                    PIP_row.append(0)
-                elif obj.phase == 'l':
-                    PIP_row.append(2)
-            PIPs.append(PIP_row)
-
-        if plot:
-            import matplotlib.pyplot as plt
-            from matplotlib import ticker, cm
-            from matplotlib.colors import LogNorm
-            X, Y = np.meshgrid(Ts, Ps)
-            z = np.array(PIPs).T
-            fig, ax = plt.subplots()
-            if color_map is None:
-                color_map = cm.viridis
-
-            im = ax.pcolormesh(X, Y, z, cmap=color_map, )#LogNorm
-            cbar = fig.colorbar(im, ax=ax)
-            cbar.set_label('PIP')
-
-            ax.set_yscale('log')
-            ax.set_xscale('log')
-            ax.set_xlabel('T')
-            ax.set_ylabel('P')
-
-
-            ax.set_title('Volume root/phase ID validation')
-            if show:
-                plt.show()
-
-            return PIPs, fig
 
 
     @staticmethod
@@ -2213,99 +2319,6 @@ class GCEOS(object):
         dPsat_dT = (dfg_T - dfl_T)/(dfl_P - dfg_P)
         return dPsat_dT*sat_eos.dS_dep_dP_l + sat_eos.dS_dep_dT_l
 
-    def Psat_errors(self, Tmin=None, Tmax=None, pts=50, plot=False, show=False,
-                    trunc_err_low=1e-18, trunc_err_high=1.0, Pmin=1e-100):
-        try:
-            Tc = self.Tc
-        except:
-            Tc = self.pseudo_Tc
-
-
-        if Tmax is None:
-            Tmax = Tc
-        if Tmin is None:
-            Tmin = .1*Tc
-
-        try:
-            # Can we get the direct temperature for Pmin
-            if Pmin is not None:
-                Tmin_Pmin = self.Tsat(P=Pmin, polish=True)
-        except:
-            Tmin_Pmin = None
-
-        if Tmin_Pmin is not None:
-            Tmin = max(Tmin, Tmin_Pmin)
-
-        Ts = logspace(log10(Tmin), log10(Tmax), int(pts/3))
-        Ts[-1] = Tmax
-
-        Ts_mid = linspace(Tmin, Tmax, int(pts/3))
-
-        Ts_high = linspace(Tmax*.99, Tmax, int(pts/3))
-        Ts = list(sorted(Ts_high + Ts + Ts_mid))
-
-
-
-        Ts_worked, Psats_num, Psats_fit = [], [], []
-        for T in Ts:
-            failed = False
-            try:
-                Psats_fit.append(self.Psat(T, polish=False))
-            except NoSolutionError:
-                # Trust the fit - do not continue if no good
-                continue
-            except Exception as e:
-                raise ValueError("Failed to converge at %.16f K with unexpected error" %(T), e)
-
-            try:
-                Psat_polished = self.Psat(T, polish=True)
-                Psats_num.append(Psat_polished)
-            except Exception as e:
-                failed = True
-                raise ValueError("Failed to converge at %.16f K with unexpected error" %(T), e)
-
-            Ts_worked.append(T)
-        Ts = Ts_worked
-
-        errs = np.array([abs(i-j)/i for i, j in zip(Psats_num, Psats_fit)])
-        if plot:
-            import matplotlib.pyplot as plt
-            fig, ax1 = plt.subplots()
-            ax2 = ax1.twinx()
-            if trunc_err_low is not None:
-                errs[np.where(abs(errs) < trunc_err_low)] = trunc_err_low
-            if trunc_err_high is not None:
-                errs[np.where(abs(errs) > trunc_err_high)] = trunc_err_high
-
-            Trs = np.array(Ts)/Tc
-            ax1.plot(Trs, errs)
-
-            ax2.plot(Trs, Psats_num)
-            ax2.plot(Trs, Psats_fit)
-            ax1.set_yscale('log')
-            ax1.set_xscale('log')
-
-            ax2.set_yscale('log')
-            ax2.set_xscale('log')
-
-            ax1.set_xlabel('Tr [-]')
-            ax1.set_ylabel('AARD [-]')
-
-            ax2.set_ylabel('Psat [Pa]')
-
-            max_err = np.max(errs)
-            if trunc_err_low is not None and max_err < trunc_err_low:
-                max_err = 0
-            if trunc_err_high is not None and max_err > trunc_err_high:
-                max_err = trunc_err_high
-
-            ax1.set_title('Vapor pressure validation; max rel err %.4e' %(max_err))
-            if show:
-                plt.show()
-
-            return errs, Psats_num, Psats_fit, fig
-        else:
-            return errs, Psats_num, Psats_fit
 
     def a_alpha_for_V(self, T, P, V):
         # Derived with sympy
@@ -2653,7 +2666,8 @@ class GCEOS(object):
     def discriminant_at_T(self, P):
         # Only P is allowed to be varied
         RT = R*self.T
-        RT6 = RT**6
+        RT6 = RT*RT
+        RT6 *= RT6*RT6
         x0 = P*P
         x1 = P*self.b + RT
         x2 = self.a_alpha*self.b + self.epsilon*x1
@@ -2664,7 +2678,8 @@ class GCEOS(object):
         x2_2 = x2*x2
         x5_2 = x5*x5
         x6_2 = x6*x6
-        return x0*(18.0*P*x2*x5*x6 + 4.0*P*(-self.a_alpha - x3 + x4)**3
+        x7 = (-self.a_alpha - x3 + x4)
+        return x0*(18.0*P*x2*x5*x6 + 4.0*P*x7*x7*x7
                    - 27.0*x0*x2_2 - 4.0*x2*x5_2*x5 + x5_2*x6_2)/RT6
 
     def discriminant_at_T_mp(self, P):
