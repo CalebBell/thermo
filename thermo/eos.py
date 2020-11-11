@@ -129,6 +129,13 @@ API SRK
    :show-inheritance:
    :members: a_alpha_and_derivatives_pure, a_alpha_pure, solve_T
 
+SRK Translated
+--------------
+.. autoclass:: SRKTranslated
+   :show-inheritance:
+   :members: __init__
+   :exclude-members: __init__
+
 SRK Translated-Consistent
 -------------------------
 .. autoclass:: SRKTranslatedConsistent
@@ -8599,8 +8606,65 @@ class SRK(GCEOS):
         else:
             return Tc*(-2*a*m*sqrt(V*(V - b)**3*(V + b)*(P*R*Tc*V**2 + P*R*Tc*V*b - P*V*a*m**2 + P*a*b*m**2 + R*Tc*a*m**2 + 2*R*Tc*a*m + R*Tc*a))*(m + 1)*(R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)**2 + (V - b)*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2 - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4 + a**2*b**2*m**4)*(P*R*Tc*V**4 + 2*P*R*Tc*V**3*b + P*R*Tc*V**2*b**2 - P*V**3*a*m**2 + P*V*a*b**2*m**2 + R*Tc*V**2*a*m**2 + 2*R*Tc*V**2*a*m + R*Tc*V**2*a + R*Tc*V*a*b*m**2 + 2*R*Tc*V*a*b*m + R*Tc*V*a*b + V*a**2*m**4 + 2*V*a**2*m**3 + V*a**2*m**2 - a**2*b*m**4 - 2*a**2*b*m**3 - a**2*b*m**2))/((R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)**2*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2 - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4 + a**2*b**2*m**4))
 
-
 class SRKTranslated(SRK):
+    r'''Class for solving the volume translated Peng-Robinson equation of state.
+    Subclasses :obj:`SRK`. Solves the EOS on initialization.
+    This is intended as a base class for all translated variants of the
+    SRK EOS.
+
+    .. math::
+        P = \frac{RT}{V + c - b} - \frac{a\alpha(T)}{(V + c)(V + c + b)}
+
+    .. math::
+        a=\left(\frac{R^2(T_c)^{2}}{9(\sqrt[3]{2}-1)P_c} \right)
+        =\frac{0.42748\cdot R^2(T_c)^{2}}{P_c}
+
+    .. math::
+        b=\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_c}{P_c}
+        =\frac{0.08664\cdot R T_c}{P_c}
+
+    .. math::
+        \alpha(T) = \left[1 + m\left(1 - \sqrt{\frac{T}{T_c}}\right)\right]^2
+
+    .. math::
+        m = 0.480 + 1.574\omega - 0.176\omega^2
+
+    Parameters
+    ----------
+    Tc : float
+        Critical temperature, [K]
+    Pc : float
+        Critical pressure, [Pa]
+    omega : float
+        Acentric factor, [-]
+    alpha_coeffs : tuple or None
+        Coefficients which may be specified by subclasses; set to None to use
+        the original Peng-Robinson alpha function, [-]
+    c : float, optional
+        Volume translation parameter, [m^3/mol]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------
+    P-T initialization:
+
+    >>> eos = SRKTranslated(T=305, P=1.1e5, Tc=512.5, Pc=8084000.0, omega=0.559, c=-1e-6)
+    >>> eos.phase, eos.V_l, eos.V_g
+    ('l/g', 5.5131657318e-05, 0.022447661363)
+
+    Notes
+    -----
+
+    References
+    ----------
+    .. [1] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
+       Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
+    '''
     solve_T = GCEOS.solve_T
     P_max_at_V = GCEOS.P_max_at_V
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=0.0, T=None, P=None,
@@ -8701,6 +8765,7 @@ class MSRKTranslated(Soave_79_a_alpha, SRKTranslated):
     .. math::
         M = 0.4745 + 2.7349(\omega Z_c) + 6.0984(\omega Z_c)^2
 
+    .. math::
         N = 0.0674 + 2.1031(\omega Z_c) + 3.9512(\omega Z_c)^2
 
     An alternate estimation scheme is provided in [1]_, which provides
