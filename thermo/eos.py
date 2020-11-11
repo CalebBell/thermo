@@ -1165,7 +1165,32 @@ class GCEOS(object):
         return good_roots
 
 
-    def volume_error(self, only_real=True):
+    def volume_error(self):
+        r'''Method to calculate the relative absolute error in the calculated
+        molar volumes. This is computed with `mpmath`. If the number of real
+        roots is different between mpmath and the implemented solver, an
+        error of 1 is returned.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        error : float
+            relative absolute error in molar volumes , [-]
+
+        Notes
+        -----
+
+        Examples
+        --------
+
+        >>> eos = PRTranslatedTwu(T=300, P=1e5, Tc=512.5, Pc=8084000.0, omega=0.559, alpha_coeffs=(0.694911, 0.9199, 1.7), c=-1e-6)
+        >>> eos.volume_error()
+        5.2192e-17
+        '''
 #        Vs_good, Vs = self.mpmath_volumes, self.sorted_volumes
         # Compare the reals only if mpmath has the imaginary roots
         Vs_good = volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
@@ -8826,24 +8851,41 @@ class MSRKTranslated(Soave_79_a_alpha, SRKTranslated):
 
     @staticmethod
     def estimate_MN(Tc, Pc, omega, c=0.0):
-        r'''Calculate the alpha values for the SRK equation to match two pressure
+        r'''Calculate the alpha values for the MSRK equation to match two pressure
         points, and solve analytically for the M, N required to match exactly that.
         Since no experimental data is available, make it up with the original
         SRK EOS.
 
-        Make it a static method so the mixture can estimate the values as well
-        Solution code:
+        Parameters
+        ----------
+        Tc : float
+            Critical temperature, [K]
+        Pc : float
+            Critical pressure, [Pa]
+        omega : float
+            Acentric factor, [-]
+        c : float, optional
+            Volume translation parameter, [m^3/mol]
 
+        Returns
+        -------
+        M : float
+            M parameter, [-]
+        N : float
+            N parameter, [-]
 
-        from sympy import *
-        Tc, m, n = symbols('Tc, m, n')
-        T0, T1 = symbols('T_10, T_760')
-        alpha0, alpha1 = symbols('alpha_10, alpha_760')
+        Examples
+        --------
 
-        Eqs = [Eq(alpha0, 1 + (1 - T0/Tc)*(m + n/(T0/Tc))),
-               Eq(alpha1, 1 + (1 - T1/Tc)*(m + n/(T1/Tc)))]
-        solve(Eqs, [n, m])
+        >>> from sympy import *  # doctest:+SKIP
+        >>> Tc, m, n = symbols('Tc, m, n')  # doctest:+SKIP
+        >>> T0, T1 = symbols('T_10, T_760')  # doctest:+SKIP
+        >>> alpha0, alpha1 = symbols('alpha_10, alpha_760')  # doctest:+SKIP
+        >>> Eqs = [Eq(alpha0, 1 + (1 - T0/Tc)*(m + n/(T0/Tc))), Eq(alpha1, 1 + (1 - T1/Tc)*(m + n/(T1/Tc)))]  # doctest:+SKIP
+        >>> solve(Eqs, [n, m])  # doctest:+SKIP
         '''
+
+
         SRK_base = SRKTranslated(T=Tc*0.5, P=Pc*0.5, c=c, Tc=Tc, Pc=Pc, omega=omega)
         # Temperatures at 10 mmHg, 760 mmHg
         P_10, P_760 = 10.0*mmHg, 760.0*mmHg
