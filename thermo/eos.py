@@ -167,6 +167,49 @@ expression can be determined for exactly what that maximum pressure is.
 Some EOSs implement this function as `P_max_at_V`; those that don't, and fluids
 where there is no maximum pressure, will have that method but it will return None.
 
+Debug Plots to Understand EOSs
+------------------------------
+The :obj:`GCEOS.volume_errors` method shows the relative error in the volume
+solution. `mpmath` is requried for this functionality. It is not likely there
+is an error here but many problems have been found in the past.
+
+
+.. plot:: plots/PRTC_volume_error.py
+
+The :obj:`GCEOS.PT_surface_special` method shows some of the special curves of
+the EOS.
+
+.. plot:: plots/PRTC_PT_surface_special.py
+
+The :obj:`GCEOS.a_alpha_plot` method shows the alpha function curve. The
+following sample shows the SRK's default alpha function for methane.
+
+.. plot:: plots/SRK_a_alpha.py
+
+If this doesn't look healthy, that is because it is not. There are strict
+thermodynamic consistency requirements that we know of today:
+
+* The alpha function must be positive and continuous
+* The first derivative must be negative and continuous
+* The second derivative must be positive and continuous
+* The third derivative must be negative
+
+The first criterial and second criteria fail here.
+
+There are two methods to review the saturation properties solution.
+The more general way is to review saturation properties as a plot:
+
+.. plot:: plots/SRK_H_dep.py
+
+.. plot:: plots/SRK_fugacity.py
+
+The second plot is more detailed, and is focused on the direct calculation of
+vapor pressure without using an iterative solution. It shows the relative
+error of the fit, which normally way below where it would present any issue -
+only 10-100x more error than it is possible to get with floating point numbers
+at all.
+
+.. plot:: plots/SRK_Psat_error.py
 
 '''
 
@@ -821,24 +864,84 @@ class GCEOS(object):
         return self._d3a_alpha_dT3
 
 
-    def a_alpha_plot(self, Tmin=1e-4, Tmax=10000, show=True, plot=True):
-        Ts = logspace(log10(Tmin), log10(Tmax), 1000)
-        a_alphas = [self.a_alpha_and_derivatives(T, full=False) for T in Ts]
+    def a_alpha_plot(self, Tmin=1e-4, Tmax=None, pts=1000, plot=True,
+                     show=True):
+        r'''Method to create a plot of the :math:`a \alpha` parameter and its
+        first two derivatives. This easily allows identification of EOSs which
+        are displaying inconsistent behavior.
+
+        Parameters
+        ----------
+        Tmin : float
+            Minimum temperature of calculation, [K]
+        Tmax : float
+            Maximum temperature of calculation, [K]
+        pts : int, optional
+            The number of temperature points to include [-]
+        plot : bool
+            If False, the calculated values and temperatures are returned
+            without plotting the data, [-]
+        show : bool
+            Whether or not the plot should be rendered and shown; a handle to
+            it is returned if `plot` is True for other purposes such as saving
+            the plot to a file, [-]
+
+        Returns
+        -------
+        Ts : list[float]
+            Logarithmically spaced temperatures in specified range, [K]
+        a_alpha : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dT : list[float]
+            Temperature derivative of coefficient calculated by EOS-specific
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2 : list[float]
+            Second temperature derivative of coefficient calculated by
+            EOS-specific method, [J^2/mol^2/Pa/K^2]
+        fig : matplotlib.figure.Figure
+            Plotted figure, only returned if `plot` is True, [-]
+        '''
+        if Tmax is None:
+            if self.multicomponent:
+                Tc = self.pseudo_Tc
+            else:
+                Tc = self.Tc
+            Tmax = Tc*10
+
+        Ts = logspace(log10(Tmin), log10(Tmax), pts)
+
+        a_alphas = []
+        da_alphas = []
+        d2a_alphas = []
+        for T in Ts:
+            v, d1, d2 = self.a_alpha_and_derivatives(T, full=True)
+            a_alphas.append(v)
+            da_alphas.append(d1)
+            d2a_alphas.append(d2)
 
         if plot:
             import matplotlib.pyplot as plt
-            fig, ax = plt.subplots()
-            plt.semilogx(Ts, a_alphas)
+            fig = plt.figure()
+            ax1 = fig.add_subplot(111)
 
-            ax.set_xlabel('Temperature [K]')
-            ax.set_ylabel('a_alpha [J^2/mol^2/Pa]')
+            ax1.set_xlabel('Temperature [K]')
+            ln0 = ax1.plot(Ts, a_alphas, 'r', label=r'$a \alpha$ [J^2/mol^2/Pa]')
+            ln2 = ax1.plot(Ts, d2a_alphas, 'g', label='Second derivative [J^2/mol^2/Pa/K^2]')
+            ax1.set_yscale('log')
+            ax1.set_ylabel(r'$a \alpha$ and $\frac{\partial (a \alpha)^2}{\partial T^2}$')
+            ax2 = ax1.twinx()
+            ax2.set_yscale('symlog')
+            ln1 = ax2.plot(Ts, da_alphas, 'b', label='First derivative [J^2/mol^2/Pa/K]')
+            ax2.set_ylabel(r'$\frac{\partial a \alpha}{\partial T}$')
+            ax1.set_title(r'$a \alpha$ vs temperature; range %.4g to %.4g' %(max(a_alphas), min(a_alphas)))
 
-            ax.set_title('a_alpha vs temperature; range %.4g to %.4g' %(max(a_alphas), min(a_alphas)))
-
+            lines = ln0 + ln1 + ln2
+            labels = [l.get_label() for l in lines]
+            ax1.legend(lines, labels, loc=9, bbox_to_anchor=(0.5,-0.18))
             if show:
                 plt.show()
-            return Ts, a_alphas, fig
-        return Ts, a_alphas
+            return Ts, a_alphas, da_alphas, d2a_alphas, fig
+        return Ts, a_alphas, da_alphas, d2a_alphas
 
 
     def solve_T(self, P, V, quick=True, solution=None):
@@ -1144,8 +1247,53 @@ class GCEOS(object):
 
 
     def volume_errors(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
-                          pts=50, plot=False, show=False, trunc_err_low=1e-18,
-                          trunc_err_high=1.0, color_map=None, timing=False):
+                      pts=50, plot=False, show=False, trunc_err_low=1e-18,
+                      trunc_err_high=1.0, color_map=None, timing=False):
+        r'''Method to create a plot of the relative absolute error in the
+        cubic volume solution as compared to a higher-precision calculation.
+        This method is incredible valuable for the development of more reliable
+        floating-point based cubic solutions.
+
+        Parameters
+        ----------
+        Tmin : float
+            Minimum temperature of calculation, [K]
+        Tmax : float
+            Maximum temperature of calculation, [K]
+        Pmin : float
+            Minimum pressure of calculation, [Pa]
+        Pmax : float
+            Maximum pressure of calculation, [Pa]
+        pts : int, optional
+            The number of points to include in both the `x` and `y` axis;
+            the validation calculation is slow, so increasing this too much
+            is not advisable, [-]
+        plot : bool
+            If False, the calculated errors are returned without plotting
+            the data, [-]
+        show : bool
+            Whether or not the plot should be rendered and shown; a handle to
+            it is returned if `plot` is True for other purposes such as saving
+            the plot to a file, [-]
+        trunc_err_low : float
+            Minimum plotted error; values under this are rounded to 0, [-]
+        trunc_err_high : float
+            Maximum plotted error; values above this are rounded to 1, [-]
+        color_map : matplotlib.cm.ListedColormap
+            Matplotlib colormap object, [-]
+        timing : bool
+            If True, plots the time taken by the volume root calculations
+            themselves; this can reveal whether the solvers are taking fast or
+            slow paths quickly, [-]
+
+        Returns
+        -------
+        errors : list[list[float]]
+            Relative absolute errors in the volume calculation (or timings in
+            seconds if `timing` is True), [-]
+        fig : matplotlib.figure.Figure
+            Plotted figure, only returned if `plot` is True, [-]
+        '''
         if timing:
             try:
                 from time import perf_counter
@@ -1187,17 +1335,26 @@ class GCEOS(object):
             X, Y = np.meshgrid(Ts, Ps)
             z = np.array(errs).T
             fig, ax = plt.subplots()
-            if trunc_err_low is not None:
-                z[np.where(abs(z) < trunc_err_low)] = trunc_err_low
-            if trunc_err_high is not None:
-                z[np.where(abs(z) > trunc_err_high)] = trunc_err_high
+            if not timing:
+                if trunc_err_low is not None:
+                    z[np.where(abs(z) < trunc_err_low)] = trunc_err_low
+                if trunc_err_high is not None:
+                    z[np.where(abs(z) > trunc_err_high)] = trunc_err_high
 
             if color_map is None:
                 color_map = cm.viridis
 
-            im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=LogNorm(vmin=trunc_err_low, vmax=trunc_err_high))
+            if not timing:
+                norm = LogNorm(vmin=trunc_err_low, vmax=trunc_err_high)
+            else:
+                z *= 1e-6
+                norm = None
+            im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=norm)
             cbar = fig.colorbar(im, ax=ax)
-            cbar.set_label('Relative error')
+            if timing:
+                cbar.set_label('Time [us]')
+            else:
+                cbar.set_label('Relative error')
 
             ax.set_yscale('log')
             ax.set_xscale('log')
@@ -1210,16 +1367,68 @@ class GCEOS(object):
             if trunc_err_high is not None and max_err > trunc_err_high:
                 max_err = trunc_err_high
 
-            ax.set_title('Volume solution validation; max err %.4e' %(max_err))
+            if timing:
+                ax.set_title('Volume timings; max %.2e us' %(max_err*1e6))
+            else:
+                ax.set_title('Volume solution validation; max err %.4e' %(max_err))
             if show:
                 plt.show()
 
             return errs, fig
+        else:
+            return errs
 
     def PT_surface_special(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
-                      pts=50, plot=False, show=False, color_map=None,
+                      pts=50, show=False, color_map=None,
                       mechanical=True, pseudo_critical=True, Psat=True,
                       determinant_zeros=True):
+        r'''Method to create a plot of the special curves of a fluid -
+        vapor pressure, determinant zeros, pseudo critical point,
+        and mechanical critical point.
+
+        The color background is a plot of the molar volume which has the
+        minimum Gibbs energy. If shown with a sufficient number of points, the
+        curve between vapor and liquid should be shown smoothly.
+
+        Parameters
+        ----------
+        Tmin : float
+            Minimum temperature of calculation, [K]
+        Tmax : float
+            Maximum temperature of calculation, [K]
+        Pmin : float
+            Minimum pressure of calculation, [Pa]
+        Pmax : float
+            Maximum pressure of calculation, [Pa]
+        pts : int, optional
+            The number of points to include in both the `x` and `y` axis [-]
+        show : bool
+            Whether or not the plot should be rendered and shown; a handle to
+            it is returned if `plot` is True for other purposes such as saving
+            the plot to a file, [-]
+        color_map : matplotlib.cm.ListedColormap
+            Matplotlib colormap object, [-]
+        mechanical : bool
+            Whether or not to include the mechanical critical point; this is
+            the same as the critical point for a pure compound but not for a
+            mixture, [-]
+        pseudo_critical : bool
+            Whether or not to include the pseudo critical point; this is
+            the same as the critical point for a pure compound but not for a
+            mixture, [-]
+        Psat : bool
+            Whether or not to include the vapor pressure curve; for mixtures
+            this is neither the bubble nor dew curve, but rather a hypothetical
+            one which uses the same equation as the pure components, [-]
+        determinant_zeros : bool
+            Whether or not to include a curve showing when the EOS's
+            determinant hits zero, [-]
+
+        Returns
+        -------
+        fig : matplotlib.figure.Figure
+            Plotted figure, only returned if `plot` is True, [-]
+        '''
         Ts = logspace(log10(Tmin), log10(Tmax), pts)
         Ps = logspace(log10(Pmin), log10(Pmax), pts)
         kwargs = {}
@@ -1282,130 +1491,88 @@ class GCEOS(object):
                         high_det_Ps.append(P_det_max)
                         Ts_dets_high.append(T)
 
-        if plot:
-            import matplotlib.pyplot as plt
-            from matplotlib import ticker, cm
-            from matplotlib.colors import LogNorm
-            X, Y = np.meshgrid(Ts, Ps)
-            z = np.array(Vs).T
-            fig, ax = plt.subplots()
-            if color_map is None:
-                color_map = cm.viridis
+#        if plot:
+        import matplotlib.pyplot as plt
+        from matplotlib import ticker, cm
+        from matplotlib.colors import LogNorm
+        X, Y = np.meshgrid(Ts, Ps)
+        z = np.array(Vs).T
+        fig, ax = plt.subplots()
+        if color_map is None:
+            color_map = cm.viridis
 
-            im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=LogNorm())
-            cbar = fig.colorbar(im, ax=ax)
-            cbar.set_label('Volume')
+        im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=LogNorm())
+        cbar = fig.colorbar(im, ax=ax)
+        cbar.set_label('Volume [m^3/mol]')
 
-            if Psat:
-                plt.plot(Ts_Psats, Psats, label='Psat')
+        if Psat:
+            plt.plot(Ts_Psats, Psats, label='Psat')
 
-            if determinant_zeros:
-                plt.plot(Ts_dets_low, lows_det_Ps, label='Low trans')
-                plt.plot(Ts_dets_high, high_det_Ps, label='High trans')
+        if determinant_zeros:
+            plt.plot(Ts_dets_low, lows_det_Ps, label='Low trans')
+            plt.plot(Ts_dets_high, high_det_Ps, label='High trans')
 
-            if pseudo_critical:
-                plt.plot([Tc], [Pc], 'x', label='Pseudo crit')
-            if mechanical:
-                plt.plot([TP_mechanical[0]], [TP_mechanical[1]], 'o', label='Mechanical')
+        if pseudo_critical:
+            plt.plot([Tc], [Pc], 'x', label='Pseudo crit')
+        if mechanical:
+            plt.plot([TP_mechanical[0]], [TP_mechanical[1]], 'o', label='Mechanical')
 
-            ax.set_yscale('log')
-            ax.set_xscale('log')
-            ax.set_xlabel('T')
-            ax.set_ylabel('P')
+        ax.set_yscale('log')
+        ax.set_xscale('log')
+        ax.set_xlabel('T [K]')
+        ax.set_ylabel('P [Pa]')
+
+        if Psat or determinant_zeros or pseudo_critical or mechanical:
             plt.legend()
 
 
-            ax.set_title('Volume solution vs minimum Gibbs validation')
-            if show:
-                plt.show()
+        ax.set_title('Volume solution vs minimum Gibbs validation')
+        if show:
+            plt.show()
 
-            return Vs, fig
+        return fig
 
-    def a_alpha_plot(self, Tmin=1e-4, Tmax=None, pts=500, plot=False, show=False):
-        # TODO: Show check boxes for meeting criteria
-        if Tmax is None:
-            if self.multicomponent:
-                Tc = self.pseudo_Tc
-            else:
-                Tc = self.Tc
-            Tmax = Tc*10
+    def saturation_prop_plot(self, prop, Tmin=None, Tmax=None, pts=100,
+                             plot=False, show=False, both=False):
+        r'''Method to create a plot of a specified property of the EOS along
+        the (pure component) saturation line.
 
-        Ts = logspace(log10(Tmin), log10(Tmax), pts)
+        Parameters
+        ----------
+        prop : str
+            Property to be used; such as 'H_dep_l' ( when `both` is False)
+            or 'H_dep' (when `both` is True), [-]
+        Tmin : float
+            Minimum temperature of calculation; if this is too low the
+            saturation routines will stop converging, [K]
+        Tmax : float
+            Maximum temperature of calculation; cannot be above the critical
+            temperature, [K]
+        pts : int, optional
+            The number of temperature points to include [-]
+        plot : bool
+            If False, the calculated values and temperatures are returned
+            without plotting the data, [-]
+        show : bool
+            Whether or not the plot should be rendered and shown; a handle to
+            it is returned if `plot` is True for other purposes such as saving
+            the plot to a file, [-]
+        both : bool
+            When true, append '_l' and '_g' and draw both the liquid and vapor
+            property specified and return two different sets of values.
 
-        a_alphas = []
-        for T in Ts:
-            a_alpha = self.a_alpha_and_derivatives(T, full=False)
-            a_alphas.append(a_alpha)
-
-        if plot:
-            import matplotlib.pyplot as plt
-            fig, ax = plt.subplots()
-            plt.plot(Ts, a_alphas)
-
-            ax.set_yscale('log')
-#            ax.set_xscale('log')
-            ax.set_xlabel('Temperature [K]')
-            ax.set_ylabel(r'$a \alpha$')
-
-
-            ax.set_title(r'$a \alpha$ curve')
-            if show:
-                plt.show()
-
-            return a_alphas, fig
-
-
-    def volumes_G_min(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
-                      pts=50, plot=False, show=False, color_map=None):
-        Ts = logspace(log10(Tmin), log10(Tmax), pts)
-        Ps = logspace(log10(Pmin), log10(Pmax), pts)
-        kwargs = {}
-        if hasattr(self, 'zs'):
-            kwargs['zs'] = self.zs
-
-        Vs = []
-        for T in Ts:
-            V_row = []
-            for P in Ps:
-                kwargs['T'] = T
-                kwargs['P'] = P
-                obj = self.to(**kwargs)
-                if obj.phase == 'l/g':
-                    V = obj.V_l if obj.G_dep_l < obj.G_dep_g else obj.V_g
-                elif obj.phase == 'l':
-                    V = obj.V_l
-                else:
-                    V = obj.V_g
-                V_row.append(V)
-            Vs.append(V_row)
-
-        if plot:
-            import matplotlib.pyplot as plt
-            from matplotlib import ticker, cm
-            from matplotlib.colors import LogNorm
-            X, Y = np.meshgrid(Ts, Ps)
-            z = np.array(Vs).T
-            fig, ax = plt.subplots()
-            if color_map is None:
-                color_map = cm.viridis
-
-            im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=LogNorm())
-            cbar = fig.colorbar(im, ax=ax)
-            cbar.set_label('Volume')
-
-            ax.set_yscale('log')
-            ax.set_xscale('log')
-            ax.set_xlabel('T')
-            ax.set_ylabel('P')
-
-
-            ax.set_title('Volume solution vs minimum Gibbs validation')
-            if show:
-                plt.show()
-
-            return Vs, fig
-
-    def saturation_prop_plot(self, prop, Tmin=None, Tmax=None, pts=100, plot=False, show=False):
+        Returns
+        -------
+        Ts : list[float]
+            Logarithmically spaced temperatures in specified range, [K]
+        props : list[float]
+            The property specified if `both` is False; otherwise, the liquid
+            properties, [various]
+        props_g : list[float]
+            The gas properties, only returned if `both` is True, [various]
+        fig : matplotlib.figure.Figure
+            Plotted figure, only returned if `plot` is True, [-]
+        '''
         if Tmax is None:
             if self.multicomponent:
                 Tmax = self.pseudo_Tc
@@ -1420,95 +1587,102 @@ class GCEOS(object):
         if hasattr(self, 'zs'):
             kwargs['zs'] = self.zs
         props = []
+        if both:
+            props2 = []
+            prop_l = prop + '_l'
+            prop_g = prop + '_g'
+
         for T in Ts:
             kwargs['T'] = T
             kwargs['P'] = self.Psat(T)
             obj = self.to(**kwargs)
-            v = getattr(obj, prop)
-            try:
-                v = v()
-            except:
-                pass
-            props.append(v)
+            if both:
+                v = getattr(obj, prop_l)
+                try:
+                    v = v()
+                except:
+                    pass
+                props.append(v)
+
+                v = getattr(obj, prop_g)
+                try:
+                    v = v()
+                except:
+                    pass
+                props2.append(v)
+            else:
+                v = getattr(obj, prop)
+                try:
+                    v = v()
+                except:
+                    pass
+                props.append(v)
 
         if plot:
             import matplotlib.pyplot as plt
             fig, ax = plt.subplots()
-            plt.plot(Ts, props)
+
+            if both:
+                plt.plot(Ts, props, label='Liquid')
+                plt.plot(Ts, props2, label='Gas')
+                plt.legend()
+            else:
+                plt.plot(Ts, props)
 
             ax.set_xlabel('Temperature [K]')
             ax.set_ylabel(r'%s' %(prop))
 
 
-            ax.set_title(r'%s curve' %(prop))
+            ax.set_title(r'Saturation %s curve' %(prop))
             if show:
                 plt.show()
 
-            return props, fig
-
-    def PIP_map(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
-                      pts=50, plot=False, show=False, color_map=None):
-        # TODO rename PIP_ID_map or add flag to change if it plots PIP or bools.
-        # TODO add doc
-        Ts = logspace(log10(Tmin), log10(Tmax), pts)
-        Ps = logspace(log10(Pmin), log10(Pmax), pts)
-        kwargs = {}
-        if hasattr(self, 'zs'):
-            kwargs['zs'] = self.zs
-
-        PIPs = []
-        for T in Ts:
-            PIP_row = []
-            for P in Ps:
-                kwargs['T'] = T
-                kwargs['P'] = P
-                obj = self.to(**kwargs)
-#                v = obj.discriminant
-#                # need make negatives under 1, positive above 1
-#                if v > 0.0:
-#                    v = (1.0 + (1e10 - 1.0)/(1.0 + trunc_exp(-v)))
-#                else:
-#                    v = (1e-10 + (1.0 - 1e-10)/(1.0 + trunc_exp(-v)))
-
-                if obj.phase == 'l/g':
-                    v = 1
-                elif obj.phase == 'g':
-                    v = 0
-                elif obj.phase == 'l':
-                    v = 2
-                PIP_row.append(v)
-            PIPs.append(PIP_row)
-
-        if plot:
-            import matplotlib.pyplot as plt
-            from matplotlib import ticker, cm
-            from matplotlib.colors import LogNorm
-            X, Y = np.meshgrid(Ts, Ps)
-            z = np.array(PIPs).T
-            fig, ax = plt.subplots()
-            if color_map is None:
-                color_map = cm.viridis
-
-            im = ax.pcolormesh(X, Y, z, cmap=color_map,
-#                               norm=LogNorm(vmin=1e-10, vmax=1e10)
-                               )
-            cbar = fig.colorbar(im, ax=ax)
-            cbar.set_label('PIP')
-
-            ax.set_yscale('log')
-            ax.set_xscale('log')
-            ax.set_xlabel('T [K]')
-            ax.set_ylabel('P [Pa]')
-
-
-            ax.set_title('Volume root/phase ID validation')
-            if show:
-                plt.show()
-
-            return PIPs, fig
+            if both:
+                return Ts, props, props2, fig
+            return Ts, props, fig
+        if both:
+            return Ts, props, props2
+        return Ts, props
 
     def Psat_errors(self, Tmin=None, Tmax=None, pts=50, plot=False, show=False,
                     trunc_err_low=1e-18, trunc_err_high=1.0, Pmin=1e-100):
+        r'''Method to create a plot of vapor pressure and the relative error
+        of its calculation vs. the iterative `polish` approach.
+
+        Parameters
+        ----------
+        Tmin : float
+            Minimum temperature of calculation; if this is too low the
+            saturation routines will stop converging, [K]
+        Tmax : float
+            Maximum temperature of calculation; cannot be above the critical
+            temperature, [K]
+        pts : int, optional
+            The number of temperature points to include [-]
+        plot : bool
+            If False, the solution is returned without plotting the data, [-]
+        show : bool
+            Whether or not the plot should be rendered and shown; a handle to
+            it is returned if `plot` is True for other purposes such as saving
+            the plot to a file, [-]
+        trunc_err_low : float
+            Minimum plotted error; values under this are rounded to 0, [-]
+        trunc_err_high : float
+            Maximum plotted error; values above this are rounded to 1, [-]
+        Pmin : float
+            Minimum pressure for the solution to work on, [Pa]
+
+        Returns
+        -------
+        errors : list[float]
+            Absolute relative errors, [-]
+        Psats_num : list[float]
+            Vapor pressures calculated to full precision, [Pa]
+        Psats_fit : list[float]
+            Vapor pressures calculated with the fast solution, [Pa]
+        fig : matplotlib.figure.Figure
+            Plotted figure, only returned if `plot` is True, [-]
+        '''
         try:
             Tc = self.Tc
         except:
@@ -1600,6 +1774,67 @@ class GCEOS(object):
             return errs, Psats_num, Psats_fit, fig
         else:
             return errs, Psats_num, Psats_fit
+
+#    def PIP_map(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
+#                pts=50, plot=False, show=False, color_map=None):
+#        # TODO rename PIP_ID_map or add flag to change if it plots PIP or bools.
+#        # TODO add doc
+#        Ts = logspace(log10(Tmin), log10(Tmax), pts)
+#        Ps = logspace(log10(Pmin), log10(Pmax), pts)
+#        kwargs = {}
+#        if hasattr(self, 'zs'):
+#            kwargs['zs'] = self.zs
+#
+#        PIPs = []
+#        for T in Ts:
+#            PIP_row = []
+#            for P in Ps:
+#                kwargs['T'] = T
+#                kwargs['P'] = P
+#                obj = self.to(**kwargs)
+##                v = obj.discriminant
+##                # need make negatives under 1, positive above 1
+##                if v > 0.0:
+##                    v = (1.0 + (1e10 - 1.0)/(1.0 + trunc_exp(-v)))
+##                else:
+##                    v = (1e-10 + (1.0 - 1e-10)/(1.0 + trunc_exp(-v)))
+#
+#                if obj.phase == 'l/g':
+#                    v = 1
+#                elif obj.phase == 'g':
+#                    v = 0
+#                elif obj.phase == 'l':
+#                    v = 2
+#                PIP_row.append(v)
+#            PIPs.append(PIP_row)
+#
+#        if plot:
+#            import matplotlib.pyplot as plt
+#            from matplotlib import ticker, cm
+#            from matplotlib.colors import LogNorm
+#            X, Y = np.meshgrid(Ts, Ps)
+#            z = np.array(PIPs).T
+#            fig, ax = plt.subplots()
+#            if color_map is None:
+#                color_map = cm.viridis
+#
+#            im = ax.pcolormesh(X, Y, z, cmap=color_map,
+##                               norm=LogNorm(vmin=1e-10, vmax=1e10)
+#                               )
+#            cbar = fig.colorbar(im, ax=ax)
+#            cbar.set_label('PIP')
+#
+#            ax.set_yscale('log')
+#            ax.set_xscale('log')
+#            ax.set_xlabel('T [K]')
+#            ax.set_ylabel('P [Pa]')
+#
+#
+#            ax.set_title('Volume root/phase ID validation')
+#            if show:
+#                plt.show()
+#
+#            return PIPs, fig
 
     def derivatives_and_departures(self, T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=True):
 

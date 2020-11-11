@@ -308,6 +308,10 @@ autodoc_default_flags = ['undoc-members', 'show-inheritance']
 
 nbsphinx_requirejs_path = '' # fixes katex not working
 
+plot_rcparams = {'savefig.bbox': 'tight'}
+plot_apply_rcparams = True  # if context option is used
+
+
 #autodoc_default_flags = ['members', 'private-members', 'special-members',
 #                         #'undoc-members',
 #                         'show-inheritance']

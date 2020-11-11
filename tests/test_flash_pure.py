@@ -717,8 +717,10 @@ def test_V_G_min_plot(fluid, eos):
     kwargs = dict(Tc=pure_const.Tcs[0], Pc=pure_const.Pcs[0], omega=pure_const.omegas[0])
 
     gas = eos(T=T, P=P, **kwargs)
-    errs, plot_fig = gas.volumes_G_min(plot=True, show=False, pts=150,
-                                       Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9)
+    plot_fig = gas.PT_surface_special(show=False, pts=150,
+                                       Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
+                                       mechanical=False, pseudo_critical=False, Psat=False,
+                                       determinant_zeros=False)
 
 
     path = os.path.join(pure_surfaces_dir, fluid, "V_G_min")
@@ -757,7 +759,7 @@ def test_a_alpha_plot(fluid, eos):
     kwargs = dict(Tc=pure_const.Tcs[0], Pc=pure_const.Pcs[0], omega=pure_const.omegas[0])
 
     obj = eos(T=T, P=P, **kwargs)
-    a_alphas, plot_fig = obj.a_alpha_plot(Tmin=1e-4, Tmax=pure_const.Tcs[0]*30, pts=500,
+    _, _, _, _, plot_fig = obj.a_alpha_plot(Tmin=1e-4, Tmax=pure_const.Tcs[0]*30, pts=500,
                                           plot=True, show=False)
 
     plot_fig.savefig(os.path.join(path, key + '.png'))
