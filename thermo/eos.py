@@ -129,20 +129,27 @@ MSRK Translated
 ---------------
 .. autoclass:: MSRKTranslated
 
-Other Cubic Equations of State
-------------------------------
+Van der Waals Equations of State
+================================
 .. autoclass:: VDW
+   :show-inheritance:
+   :members: a_alpha_and_derivatives_pure, a_alpha_pure, solve_T, T_discriminant_zeros_analytical, P_discriminant_zeros_analytical, delta, epsilon, omega, Zc
+
+Redlich-Kwong Equations of State
+================================
 .. autoclass:: RK
+   :show-inheritance:
+   :members: a_alpha_and_derivatives_pure, a_alpha_pure, solve_T, T_discriminant_zeros_analytical, epsilon, omega, Zc, c1, c2
 
 Ideal Gas Equation of State
----------------------------
+===========================
 .. autoclass:: IG
    :show-inheritance:
    :members: volume_solutions, Zc, a, b, delta, epsilon
 
 
 Lists of Equations of State
----------------------------
+===========================
 .. autodata:: eos_list
 .. autodata:: eos_2P_list
 
@@ -7557,16 +7564,10 @@ class PRSV2(PR):
         return a*(1 + kappa*(1-sqrt(T/Tc)))**2
 
 class VDW(GCEOS):
-    r'''Class for solving the Van der Waals cubic
+    r'''Class for solving the Van der Waals [1]_ [2]_ cubic
     equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
-
-    Implemented methods here are `a_alpha_and_derivatives`, which sets
-    :math:`a \alpha` and its first and second derivatives, and `solve_T`, which from a
-    specified `P` and `V` obtains `T`. `main_derivatives_and_departures` is
-    a re-implementation with VDW specific methods, as the general solution
-    has ZeroDivisionError errors.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
@@ -7612,10 +7613,14 @@ class VDW(GCEOS):
     .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
        Butterworth-Heinemann, 1985.
     '''
-    delta = 0
-    epsilon = 0
+    delta = 0.0
+    '''`delta` is always zero for the :obj:`VDW` EOS'''
+    epsilon = 0.0
+    '''`epsilon` is always zero for the :obj:`VDW` EOS'''
     omega = None
-    Zc = 3/8.
+    '''`omega` has no impact on the :obj:`VDW` EOS'''
+    Zc = 3.0/8.
+    '''Mechanical compressibility of :obj:`VDW` EOS'''
 
     Psat_coeffs_limiting = [-3.0232164484175756, 0.20980668241160666]
 
@@ -7660,15 +7665,14 @@ class VDW(GCEOS):
         self.P = P
         self.V = V
 
-        self.a = 27.0/64.0*(R*Tc)**2/Pc
-        self.b = R*Tc/(8.*Pc)
+        Tc_Pc = Tc/Pc
+        self.a = (27.0/64.0)*R2*Tc*Tc_Pc
+        self.b = 0.125*R*Tc_Pc
         self.solve()
 
     def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate :math:`a \alpha` and its first and second
-        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and
-        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
-        documentation. Uses the set values of `a`.
+        derivatives for this EOS. Uses the set values of `a`.
 
         .. math::
             a\alpha = a
@@ -7678,14 +7682,45 @@ class VDW(GCEOS):
 
         .. math::
             \frac{d^2 a\alpha}{dT^2} = 0
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the values, [-]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dT : float
+            Temperature derivative of coefficient calculated by EOS-specific
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2 : float
+            Second temperature derivative of coefficient calculated by
+            EOS-specific method, [J^2/mol^2/Pa/K^2]
         '''
         return self.a, 0.0, 0.0
 
     def a_alpha_pure(self, T):
+        r'''Method to calculate :math:`a \alpha`. Uses the set values of `a`.
+
+        .. math::
+            a\alpha = a
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the values, [-]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        '''
         return self.a
 
     def solve_T(self, P, V, quick=True, solution=None):
-        r'''Method to calculate `T` from a specified `P` and `V` for the VDW
+        r'''Method to calculate `T` from a specified `P` and `V` for the :obj:`VDW`
         EOS. Uses `a`, and `b`, obtained from the class's namespace.
 
         .. math::
@@ -7715,7 +7750,7 @@ class VDW(GCEOS):
 
     def T_discriminant_zeros_analytical(self, valid=False):
         r'''Method to calculate the temperatures which zero the discriminant
-        function of the `VDW` eos. This is an analytical cubic function solved
+        function of the :obj:`VDW` eos. This is an analytical cubic function solved
         analytically.
 
         Parameters
@@ -7733,23 +7768,23 @@ class VDW(GCEOS):
         -----
         Calculated analytically. Derived as follows. Has multiple solutions.
 
-        >>> from sympy import *
-        >>> P, T, V, R, b, a = symbols('P, T, V, R, b, a')
-        >>> delta, epsilon = 0, 0
-        >>> eta = b
-        >>> B = b*P/(R*T)
-        >>> deltas = delta*P/(R*T)
-        >>> thetas = a*P/(R*T)**2
-        >>> epsilons = epsilon*(P/(R*T))**2
-        >>> etas = eta*P/(R*T)
-        >>> a_coeff = 1
-        >>> b_coeff = (deltas - B - 1)
-        >>> c = (thetas + epsilons - deltas*(B+1))
-        >>> d = -(epsilons*(B+1) + thetas*etas)
-        >>> disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d
-        >>> base = -(expand(disc/P**2*R**3*T**3/a))
-        >>> base_T = simplify(base*T**3)
-        >>> sln = collect(expand(base_T), T).args
+        >>> from sympy import * # doctest:+SKIP
+        >>> P, T, V, R, b, a = symbols('P, T, V, R, b, a') # doctest:+SKIP
+        >>> delta, epsilon = 0, 0 # doctest:+SKIP
+        >>> eta = b # doctest:+SKIP
+        >>> B = b*P/(R*T) # doctest:+SKIP
+        >>> deltas = delta*P/(R*T) # doctest:+SKIP
+        >>> thetas = a*P/(R*T)**2 # doctest:+SKIP
+        >>> epsilons = epsilon*(P/(R*T))**2 # doctest:+SKIP
+        >>> etas = eta*P/(R*T) # doctest:+SKIP
+        >>> a_coeff = 1 # doctest:+SKIP
+        >>> b_coeff = (deltas - B - 1) # doctest:+SKIP
+        >>> c = (thetas + epsilons - deltas*(B+1)) # doctest:+SKIP
+        >>> d = -(epsilons*(B+1) + thetas*etas) # doctest:+SKIP
+        >>> disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d # doctest:+SKIP
+        >>> base = -(expand(disc/P**2*R**3*T**3/a)) # doctest:+SKIP
+        >>> base_T = simplify(base*T**3) # doctest:+SKIP
+        >>> sln = collect(expand(base_T), T).args # doctest:+SKIP
         '''
         P, a, b = self.P, self.a_alpha, self.b
 
@@ -7773,26 +7808,52 @@ class VDW(GCEOS):
 
     @staticmethod
     def P_discriminant_zeros_analytical(T, b, delta, epsilon, a_alpha, valid=False):
-        '''
-        from sympy import *
-        P, T, V, R, b, a = symbols('P, T, V, R, b, a')
-        P_vdw = R*T/(V-b) - a/(V*V)
-        delta, epsilon = 0, 0
-        eta = b
-        B = b*P/(R*T)
-        deltas = delta*P/(R*T)
-        thetas = a*P/(R*T)**2
-        epsilons = epsilon*(P/(R*T))**2
-        etas = eta*P/(R*T)
+        r'''Method to calculate the pressures which zero the discriminant
+        function of the :obj:`VDW` eos. This is an cubic function solved
+        analytically.
 
-        a_coeff = 1
-        b_coeff = (deltas - B - 1)
-        c = (thetas + epsilons - deltas*(B+1))
-        d = -(epsilons*(B+1) + thetas*etas)
-        disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d
-        base = -(expand(disc/P**2*R**3*T**3/a))
-        collect(base, P).args
-        # disc
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        b : float
+            Coefficient calculated by EOS-specific method, [m^3/mol]
+        delta : float
+            Coefficient calculated by EOS-specific method, [m^3/mol]
+        epsilon : float
+            Coefficient calculated by EOS-specific method, [m^6/mol^2]
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        valid : bool
+            Whether to filter the calculated pressures so that they are all
+            real, and positive only, [-]
+
+        Returns
+        -------
+        P_discriminant_zeros : tuple[float]
+            Pressures which make the discriminant zero, [Pa]
+
+        Notes
+        -----
+        Calculated analytically. Derived as follows. Has multiple solutions.
+
+        >>> from sympy import * # doctest:+SKIP
+        >>> P, T, V, R, b, a = symbols('P, T, V, R, b, a') # doctest:+SKIP
+        >>> P_vdw = R*T/(V-b) - a/(V*V) # doctest:+SKIP
+        >>> delta, epsilon = 0, 0 # doctest:+SKIP
+        >>> eta = b # doctest:+SKIP
+        >>> B = b*P/(R*T) # doctest:+SKIP
+        >>> deltas = delta*P/(R*T) # doctest:+SKIP
+        >>> thetas = a*P/(R*T)**2 # doctest:+SKIP
+        >>> epsilons = epsilon*(P/(R*T))**2 # doctest:+SKIP
+        >>> etas = eta*P/(R*T) # doctest:+SKIP
+        >>> a_coeff = 1 # doctest:+SKIP
+        >>> b_coeff = (deltas - B - 1) # doctest:+SKIP
+        >>> c = (thetas + epsilons - deltas*(B+1)) # doctest:+SKIP
+        >>> d = -(epsilons*(B+1) + thetas*etas) # doctest:+SKIP
+        >>> disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d # doctest:+SKIP
+        >>> base = -(expand(disc/P**2*R**3*T**3/a)) # doctest:+SKIP
+        >>> collect(base, P).args # doctest:+SKIP
         '''
 
         T, a_alpha = self.T, self.a_alpha
@@ -7809,14 +7870,10 @@ class VDW(GCEOS):
         return roots
 
 class RK(GCEOS):
-    r'''Class for solving the Redlich-Kwong cubic
+    r'''Class for solving the Redlich-Kwong [1]_ [2]_ [3]_ cubic
     equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
-
-    Implemented methods here are `a_alpha_and_derivatives`, which sets
-    :math:`a \alpha` and its first and second derivatives, and `solve_T`, which from a
-    specified `P` and `V` obtains `T`.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
@@ -7867,10 +7924,17 @@ class RK(GCEOS):
        Butterworth-Heinemann, 1985.
     '''
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1))
+    '''Full value of the constant in the `a` parameter'''
     c2 = 0.08664034996495772158907020242607611685675 # (2**(1/3.)-1)/3
+    '''Full value of the constant in the `b` parameter'''
+
     epsilon = 0.0
+    '''`epsilon` is always zero for the :obj:`RK` EOS'''
     omega = None
+    '''`omega` has no impact on the :obj:`RK` EOS'''
     Zc = 1.0/3.
+    '''Mechanical compressibility of :obj:`RK` EOS'''
+
     c1R2, c2R = c1*R2, c2*R
 
     Psat_coeffs_limiting = [-72.700288369511583, -68.76714163049]
@@ -7914,23 +7978,38 @@ class RK(GCEOS):
         self.V = V
         self.omega = omega
 
-#        self.a = self.c1R2*Tc**2.5/Pc
         self.a = self.c1R2*Tc*Tc/Pc
         self.b = self.delta = self.c2R*Tc/Pc
         self.solve()
 
     def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate :math:`a \alpha` and its first and second
-        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and
-        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
-        documentation. Uses the set values of `a`.
+        derivatives for this EOS. Uses the set values of `a`.
 
         .. math::
             a\alpha = \frac{a}{\sqrt{\frac{T}{T_{c}}}}
 
+        .. math::
             \frac{d a\alpha}{dT} = - \frac{a}{2 T\sqrt{\frac{T}{T_{c}}}}
 
+        .. math::
             \frac{d^2 a\alpha}{dT^2} = \frac{3 a}{4 T^{2}\sqrt{\frac{T}{T_{c}}}}
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the values, [-]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dT : float
+            Temperature derivative of coefficient calculated by EOS-specific
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2 : float
+            Second temperature derivative of coefficient calculated by
+            EOS-specific method, [J^2/mol^2/Pa/K^2]
         '''
         Tc = self.Tc
         sqrt_Tr_inv = (T/Tc)**-0.5
@@ -7941,8 +8020,24 @@ class RK(GCEOS):
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def a_alpha_pure(self, T):
+        r'''Method to calculate :math:`a \alpha` for this EOS. Uses the set
+        values of `a`.
+
+        .. math::
+            a\alpha = \frac{a}{\sqrt{\frac{T}{T_{c}}}}
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the values, [-]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        '''
         Tc = self.Tc
-        sqrt_Tr_inv = (T/Tc)**-0.5
+        sqrt_Tr_inv = sqrt(Tc/T)
         return self.a*sqrt_Tr_inv
 
     def solve_T(self, P, V, quick=True, solution=None):
@@ -7973,13 +8068,12 @@ class RK(GCEOS):
         The exact solution can be derived as follows; it is excluded for
         breviety.
 
-        >>> from sympy import *
-        >>> P, T, V, R = symbols('P, T, V, R')
-        >>> Tc, Pc = symbols('Tc, Pc')
-        >>> a, b = symbols('a, b')
-
-        >>> RK = Eq(P, R*T/(V-b) - a/sqrt(T)/(V*V + b*V))
-        >>> # solve(RK, T)
+        >>> from sympy import *  # doctest:+SKIP
+        >>> P, T, V, R = symbols('P, T, V, R')  # doctest:+SKIP
+        >>> Tc, Pc = symbols('Tc, Pc')  # doctest:+SKIP
+        >>> a, b = symbols('a, b')  # doctest:+SKIP
+        >>> RK = Eq(P, R*T/(V-b) - a/sqrt(T)/(V*V + b*V))  # doctest:+SKIP
+        >>> solve(RK, T)  # doctest:+SKIP
         '''
         a, b = self.a, self.b
         a = a*self.Tc**0.5
@@ -8040,24 +8134,24 @@ class RK(GCEOS):
         -----
         Calculated analytically. Derived as follows. Has multiple solutions.
 
-        >>> from sympy import *
-        >>> P, T, V, R, b, a, Troot = symbols('P, T, V, R, b, a, Troot')
-        >>> a_alpha = a/sqrt(T)
-        >>> delta, epsilon = b, 0
-        >>> eta = b
-        >>> B = b*P/(R*T)
-        >>> deltas = delta*P/(R*T)
-        >>> thetas = a_alpha*P/(R*T)**2
-        >>> epsilons = epsilon*(P/(R*T))**2
-        >>> etas = eta*P/(R*T)
-        >>> a_coeff = 1
-        >>> b_coeff = (deltas - B - 1)
-        >>> c = (thetas + epsilons - deltas*(B+1))
-        >>> d = -(epsilons*(B+1) + thetas*etas)
-        >>> disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d
-        >>> new_disc = disc.subs(sqrt(T), Troot)
-        >>> new_T_base = expand(expand(new_disc)*Troot**15)
-        >>> ans = collect(new_T_base, Troot).args
+        >>> from sympy import *  # doctest:+SKIP
+        >>> P, T, V, R, b, a, Troot = symbols('P, T, V, R, b, a, Troot') # doctest:+SKIP
+        >>> a_alpha = a/sqrt(T) # doctest:+SKIP
+        >>> delta, epsilon = b, 0 # doctest:+SKIP
+        >>> eta = b # doctest:+SKIP
+        >>> B = b*P/(R*T) # doctest:+SKIP
+        >>> deltas = delta*P/(R*T) # doctest:+SKIP
+        >>> thetas = a_alpha*P/(R*T)**2 # doctest:+SKIP
+        >>> epsilons = epsilon*(P/(R*T))**2 # doctest:+SKIP
+        >>> etas = eta*P/(R*T) # doctest:+SKIP
+        >>> a_coeff = 1 # doctest:+SKIP
+        >>> b_coeff = (deltas - B - 1) # doctest:+SKIP
+        >>> c = (thetas + epsilons - deltas*(B+1)) # doctest:+SKIP
+        >>> d = -(epsilons*(B+1) + thetas*etas) # doctest:+SKIP
+        >>> disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d # doctest:+SKIP
+        >>> new_disc = disc.subs(sqrt(T), Troot) # doctest:+SKIP
+        >>> new_T_base = expand(expand(new_disc)*Troot**15) # doctest:+SKIP
+        >>> ans = collect(new_T_base, Troot).args # doctest:+SKIP
         '''
         P, a, b, epsilon, delta = self.P, self.a, self.b, self.epsilon, self.delta
 

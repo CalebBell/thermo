@@ -41,7 +41,7 @@ from chemicals.utils import source_path, os_path_join, can_load_data, PY37
 from fluids.numerics import newton, horner, chebval
 from chemicals.data_reader import data_source, register_df_source
 from chemicals.utils import exp, log10
-from chemicals.utils import to_num, ws_to_zs
+from chemicals.utils import to_num, ws_to_zs, mixing_simple
 from chemicals import identifiers
 import pandas as pd
 
@@ -640,7 +640,7 @@ def dilute_ionic_conductivity(ionic_conductivities, zs, rhom):
     .. [1] Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of
        Chemistry and Physics, 95E. Boca Raton, FL: CRC press, 2014.
     '''
-    return sum([ci*(zi*rhom) for zi, ci in zip(zs, ionic_conductivities)])
+    return rhom*mixing_simple(zs, ionic_conductivities)
 
 
 
@@ -907,7 +907,10 @@ def ionic_strength(mis, zis):
     .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process Simulation.
        Weinheim, Germany: Wiley-VCH, 2012.
     '''
-    return 0.5*sum([mi*zi*zi for mi, zi in zip(mis, zis)])
+    tot = 0.0
+    for i in range(len(mis)):
+        tot += mis[i]*zis[i]*zis[i]
+    return 0.5*tot
 
 
 def Kweq_1981(T, rho_w):
@@ -1095,7 +1098,7 @@ def ion_balance_adjust_wrapper(charges, zs, n_anions, n_cations,
     positive = charge > 0
     if charge == 0:  # pragma: no cover
         raise Exception('Cannot adjust selected compound as it has no charge!')
-    assert charge != 0.0
+
 
     if selected_ion not in anions and selected_ion not in cations:
         if charge < 0.:
@@ -1340,6 +1343,9 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
     References
     ----------
     '''
+    # TODO: refactor to include anion, cation charge, MW, name as arguments
+    # OK to hardcode some things for Na, CL
+    # Then make it work with numba
     anions = list(anions)
     cations = list(cations)
     n_anions = len(anions)
@@ -1363,7 +1369,7 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
         zs = ws_to_zs(anion_ws + cation_ws + [w_water], MWs)
     else:
         if anion_zs is None or cation_zs is None:
-            raise Exception('Either both of anion_concs and cation_concs or '
+            raise ValueError('Either both of anion_concs and cation_concs or '
                             'anion_zs and cation_zs must be specified.')
         else:
             zs = anion_zs + cation_zs
@@ -1417,9 +1423,9 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
         else:
             selected_ion = selected_ion[0]
     else:
-        raise Exception('method not recognized')
+        raise ValueError('method not recognized')
     if selected_ion is None:
-        raise Exception("For methods 'adjust', 'increase', 'decrease', and "
+        raise ValueError("For methods 'adjust', 'increase', 'decrease', and "
                         "'makeup', an ion must be specified with the "
                         "`selected_ion` parameter")
 

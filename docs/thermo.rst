@@ -7,6 +7,7 @@ Submodules
 .. toctree::
 
    thermo.activity
+   thermo.bulk
    thermo.chemical
    thermo.datasheet
    thermo.electrochem
@@ -14,6 +15,8 @@ Submodules
    thermo.eos_mix
    thermo.eos_volume
    thermo.eos_alpha_functions
+   thermo.equilibrium
+   thermo.flash
    thermo.heat_capacity
    thermo.interface
    thermo.joback
@@ -21,6 +24,7 @@ Submodules
    thermo.nrtl
    thermo.mixture
    thermo.permittivity
+   thermo.phases
    thermo.phase_change
    thermo.property_package
    thermo.regular_solution
