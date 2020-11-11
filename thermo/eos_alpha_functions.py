@@ -1197,9 +1197,49 @@ class a_alpha_base(object):
 
 class Poly_a_alpha(object):
     def a_alpha_and_derivatives_pure(self, T):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives given that there is a polynomial equation for
+        :math:`\alpha`.
+
+        .. math::
+            a \alpha = a\cdot \text{poly}(T)
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dTs : list[float]
+            Temperature derivative of coefficient calculated by EOS-specific
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2s : list[float]
+            Second temperature derivative of coefficient calculated by
+            EOS-specific method, [J^2/mol^2/Pa/K**2]
+
+        '''
         return horner_and_der2(self.alpha_coeffs, T)
 
     def a_alpha_pure(self, T):
+        r'''Method to calculate `a_alpha` given that there is a polynomial
+        equation for :math:`\alpha`.
+
+        .. math::
+            a \alpha = a\cdot \text{poly}(T)
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        '''
         return horner(self.alpha_coeffs, T)
 
 class Soave_1972_a_alpha(a_alpha_base):
@@ -1763,8 +1803,6 @@ class Twu91_a_alpha(a_alpha_base):
         ----------
         T : float
             Temperature, [K]
-        full : bool, optional
-            If False, calculates and returns only `a_alphas`, [-]
 
         Returns
         -------

@@ -69,6 +69,13 @@ Peng Robinson Twu (1995)
    :show-inheritance:
    :members: a_alpha_and_derivatives_pure, a_alpha_pure
 
+Peng Robinson Polynomial alpha Function
+---------------------------------------
+.. autoclass:: PRTranslatedPoly
+   :show-inheritance:
+   :members: a_alpha_and_derivatives_pure, a_alpha_pure
+
+
 
 Volume Translated Peng-Robinson Family EOSs
 ===========================================
@@ -107,6 +114,8 @@ Soave-Redlich-Kwong Family EOSs
 Standard SRK
 ------------
 .. autoclass:: SRK
+   :show-inheritance:
+   :members: c1, c2, epsilon, Zc, a_alpha_and_derivatives_pure, a_alpha_pure, P_max_at_V, solve_T
 
 Twu SRK (1995)
 --------------
@@ -117,6 +126,8 @@ Twu SRK (1995)
 API SRK
 -------
 .. autoclass:: APISRK
+   :show-inheritance:
+   :members: a_alpha_and_derivatives_pure, a_alpha_pure, solve_T
 
 SRK Translated-Consistent
 -------------------------
@@ -125,9 +136,18 @@ SRK Translated-Consistent
    :members: __init__
    :exclude-members: __init__
 
+SRK Translated (Pina-Martinez, Privat, and Jaubert Variant)
+-----------------------------------------------------------
+.. autoclass:: SRKTranslatedPPJP
+   :show-inheritance:
+   :members: __init__
+   :exclude-members: __init__
+
 MSRK Translated
 ---------------
 .. autoclass:: MSRKTranslated
+   :show-inheritance:
+   :members: estimate_MN
 
 Van der Waals Equations of State
 ================================
@@ -227,7 +247,7 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 'IG', 'PRTranslatedPPJP', 'SRKTranslatedPPJP',
 'PRTranslatedConsistent', 'SRKTranslatedConsistent', 'MSRKTranslated',
 'SRKTranslated', 'PRTranslated', 'PRTranslatedCoqueletChapoyRichon',
-'PRTranslatedTwu'
+'PRTranslatedTwu', 'PRTranslatedPoly',
 ]
 
 __all__.extend(['main_derivatives_and_departures',
@@ -5744,10 +5764,6 @@ class IG(GCEOS):
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
 
-    Implemented methods here are `a_alpha_and_derivatives`, which calculates
-    :math:`a \alpha` and its first and second derivatives (all zero), and `solve_T`,
-    which from a specified `P` and `V` obtains `T`.
-
     Two of `T`, `P`, and `V` are needed to solve the EOS; values for `Tc` and
     `Pc` and `omega`, which are not used in the calculates, are set to those of
     methane by default to allow use without specifying them.
@@ -6658,7 +6674,8 @@ class PRTranslated(PR):
     omega : float
         Acentric factor, [-]
     alpha_coeffs : tuple or None
-        Coefficients which may be specified by subclasses, [-]
+        Coefficients which may be specified by subclasses; set to None to use
+        the original Peng-Robinson alpha function, [-]
     c : float, optional
         Volume translation parameter, [m^3/mol]
     T : float, optional
@@ -6809,7 +6826,64 @@ class PRTranslatedPPJP(PRTranslated):
         return None
 
 class PRTranslatedPoly(Poly_a_alpha, PRTranslated):
-    pass
+    r'''Class for solving the volume translated Peng-Robinson equation of state
+    with a polynomial alpha function. With the right coefficients, this model
+    can reproduce any property incredibly well.
+    Subclasses :obj:`PRTranslated`. Solves the EOS on initialization.
+    This is intended as a base class for all translated variants of the
+    Peng-Robinson EOS.
+
+    .. math::
+        P = \frac{RT}{v + c - b} - \frac{a\alpha(T)}{(v+c)(v + c + b)+b(v
+        + c - b)}
+
+    .. math::
+        a=0.45724\frac{R^2T_c^2}{P_c}
+
+    .. math::
+	    b=0.07780\frac{RT_c}{P_c}
+
+    .. math::
+        \alpha(T)=f(T)
+
+    .. math::
+        \kappa=0.37464+1.54226\omega-0.26992\omega^2
+
+    Parameters
+    ----------
+    Tc : float
+        Critical temperature, [K]
+    Pc : float
+        Critical pressure, [Pa]
+    omega : float
+        Acentric factor, [-]
+    alpha_coeffs : tuple or None
+        Coefficients which may be specified by subclasses; set to None to use
+        the original Peng-Robinson alpha function, [-]
+    c : float, optional
+        Volume translation parameter, [m^3/mol]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------
+    Methanol, with alpha functions reproducing CoolProp's implementation of
+    its vapor pressure (up to 13 coefficients)
+
+    >>> alpha_coeffs_exact = [9.645280470011588e-32, -4.362226651748652e-28, 9.034194757823037e-25, -1.1343330204981244e-21, 9.632898335494218e-19, -5.841502902171077e-16, 2.601801729901228e-13, -8.615431349241052e-11, 2.1202999753932622e-08, -3.829144045293198e-06, 0.0004930777289075716, -0.04285337965522619, 2.2473964123842705, -51.13852710672087]
+    >>> kwargs = dict(Tc=512.5, Pc=8084000.0, omega=0.559, alpha_coeffs=alpha_coeffs_exact, c=1.557458e-05)
+    >>> eos = PRTranslatedPoly(T=300, P=1e5, **kwargs)
+    >>> eos.Psat(500)/PropsSI("P", 'T', 500.0, 'Q', 0, 'methanol')
+    1.0000112765
+
+    Notes
+    -----
+
+    '''
 
 class PRTranslatedMathiasCopeman(Mathias_Copeman_a_alpha, PRTranslated):
     pass
@@ -8195,14 +8269,10 @@ class RK(GCEOS):
         return roots
 
 class SRK(GCEOS):
-    r'''Class for solving the Soave-Redlich-Kwong cubic
+    r'''Class for solving the Soave-Redlich-Kwong [1]_ [2]_ [3]_ cubic
     equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
-
-    Implemented methods here are `a_alpha_and_derivatives`, which sets
-    :math:`a \alpha` and its first and second derivatives, and `solve_T`, which from a
-    specified `P` and `V` obtains `T`.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
@@ -8255,9 +8325,13 @@ class SRK(GCEOS):
        Butterworth-Heinemann, 1985.
     '''
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1))
+    '''Full value of the constant in the `a` parameter'''
     c2 = 0.08664034996495772158907020242607611685675 # (2**(1/3.)-1)/3
-    epsilon = 0
+    '''Full value of the constant in the `b` parameter'''
+    epsilon = 0.0
+    '''`epsilon` is always zero for the :obj:`SRK` EOS'''
     Zc = 1/3.
+    '''Mechanical compressibility of :obj:`SRK` EOS'''
 
     Psat_coeffs_limiting = [-3.2308843103522107, 0.7210534170705403]
 
@@ -8314,9 +8388,7 @@ class SRK(GCEOS):
 
     def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate :math:`a \alpha` and its first and second
-        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and
-        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
-        documentation. Uses the set values of `Tc`, `m`, and `a`.
+        derivatives for this EOS. Uses the set values of `Tc`, `m`, and `a`.
 
         .. math::
             a\alpha = a \left(m \left(- \sqrt{\frac{T}{T_{c}}} + 1\right)
@@ -8329,6 +8401,22 @@ class SRK(GCEOS):
         .. math::
             \frac{d^2 a\alpha}{dT^2} = \frac{a m \sqrt{\frac{T}{T_{c}}}}{2 T^{2}}
             \left(m + 1\right)
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the values, [-]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dT : float
+            Temperature derivative of coefficient calculated by EOS-specific
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2 : float
+            Second temperature derivative of coefficient calculated by
+            EOS-specific method, [J^2/mol^2/Pa/K^2]
         '''
         a, Tc, m = self.a, self.Tc, self.m
         sqTr = (T/Tc)**0.5
@@ -8338,11 +8426,53 @@ class SRK(GCEOS):
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def a_alpha_pure(self, T):
+        r'''Method to calculate :math:`a \alpha` for this EOS. Uses the set
+        values of `Tc`, `m`, and `a`.
+
+        .. math::
+            a\alpha = a \left(m \left(- \sqrt{\frac{T}{T_{c}}} + 1\right)
+            + 1\right)^{2}
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the values, [-]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        '''
         a, Tc, m = self.a, self.Tc, self.m
-        sqTr = (T/Tc)**0.5
-        return a*(m*(1. - sqTr) + 1.)**2
+        sqTr = sqrt(T/Tc)
+        x0 = (m*(1. - sqTr) + 1.)
+        return a*x0*x0
 
     def P_max_at_V(self, V):
+        r'''Method to calculate the maximum pressure the EOS can create at a
+        constant volume, if one exists; returns None otherwise.
+
+        Parameters
+        ----------
+        V : float
+            Constant molar volume, [m^3/mol]
+
+        Returns
+        -------
+        P : float
+            Maximum possible isochoric pressure, [Pa]
+
+        Notes
+        -----
+        The analytical determination of this formula involved some part of the
+        discriminant, and much black magic.
+
+        Examples
+        --------
+        >>> e = SRK(P=1e5, V=0.0001437, Tc=512.5, Pc=8084000.0, omega=0.559)
+        >>> e.P_max_at_V(e.V)
+        490523786.2
+        '''
         '''
         from sympy import *
         # Solve for when T equal
@@ -8396,12 +8526,12 @@ class SRK(GCEOS):
         The exact solution can be derived as follows; it is excluded for
         breviety.
 
-        >>> from sympy import *
-        >>> P, T, V, R, a, b, m = symbols('P, T, V, R, a, b, m')
-        >>> Tc, Pc, omega = symbols('Tc, Pc, omega')
-        >>> a_alpha = a*(1 + m*(1-sqrt(T/Tc)))**2
-        >>> SRK = R*T/(V-b) - a_alpha/(V*(V+b)) - P
-        >>> # solve(SRK, T)
+        >>> from sympy import * # doctest:+SKIP
+        >>> P, T, V, R, a, b, m = symbols('P, T, V, R, a, b, m') # doctest:+SKIP
+        >>> Tc, Pc, omega = symbols('Tc, Pc, omega') # doctest:+SKIP
+        >>> a_alpha = a*(1 + m*(1-sqrt(T/Tc)))**2 # doctest:+SKIP
+        >>> SRK = R*T/(V-b) - a_alpha/(V*(V+b)) - P # doctest:+SKIP
+        >>> solve(SRK, T) # doctest:+SKIP
         '''
         # Takes like half an hour to be derived, saved here for convenience
 #         ([(Tc*(V - b)*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2
@@ -9079,7 +9209,7 @@ class TWUPR(TwuPR95_a_alpha, PR):
     relevant thermodynamic properties. Solves the EOS on initialization.
 
     The main implemented method here is :obj:`a_alpha_and_derivatives_pure`,
-     which sets :math:`a \alpha` and its first and second derivatives.
+    which sets :math:`a \alpha` and its first and second derivatives.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
@@ -9172,7 +9302,7 @@ class TWUSRK(TwuSRK95_a_alpha, SRK):
     relevant thermodynamic properties. Solves the EOS on initialization.
 
     The main implemented method here is :obj:`a_alpha_and_derivatives_pure`,
-     which sets :math:`a \alpha` and its first and second derivatives.
+    which sets :math:`a \alpha` and its first and second derivatives.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
