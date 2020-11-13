@@ -32,6 +32,18 @@ from math import log, exp, sqrt, log10
 from fluids.numerics import linspace, derivative, logspace, assert_close, assert_close1d, assert_close2d, assert_close3d
 
 
+def main_derivatives_and_departures_slow(T, P, V, b, delta, epsilon, a_alpha,
+                                    da_alpha_dT, d2a_alpha_dT2):
+    dP_dT = R/(V - b) - da_alpha_dT/(V**2 + V*delta + epsilon)
+    dP_dV = -R*T/(V - b)**2 - (-2*V - delta)*a_alpha/(V**2 + V*delta + epsilon)**2
+    d2P_dT2 = -d2a_alpha_dT2/(V**2 + V*delta + epsilon)
+    d2P_dV2 = 2*(R*T/(V - b)**3 - (2*V + delta)**2*a_alpha/(V**2 + V*delta + epsilon)**3 + a_alpha/(V**2 + V*delta + epsilon)**2)
+    d2P_dTdV = -R/(V - b)**2 + (2*V + delta)*da_alpha_dT/(V**2 + V*delta + epsilon)**2
+    H_dep = P*V - R*T + 2*(T*da_alpha_dT - a_alpha)*catanh((2*V + delta)/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon)
+    S_dep = -R*log(V) + R*log(P*V/(R*T)) + R*log(V - b) + 2*da_alpha_dT*catanh((2*V + delta)/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon)
+    Cv_dep = -T*(sqrt(1/(delta**2 - 4*epsilon))*log(V - delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 + 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))) - sqrt(1/(delta**2 - 4*epsilon))*log(V + delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 - 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))))*d2a_alpha_dT2
+    return dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
+
 @pytest.mark.slow
 @pytest.mark.sympy
 def test_PR_with_sympy():
@@ -1526,7 +1538,7 @@ def test_fuzz_dPsat_dT():
     from thermo import eos
     eos_list = list(eos.__all__); eos_list.remove('GCEOS')
     eos_list.remove('eos_list')
-    eos_list.remove('GCEOS_DUMMY'); eos_list.remove('IG')
+    eos_list.remove('IG')
 
     Tc = 507.6
     Pc = 3025000

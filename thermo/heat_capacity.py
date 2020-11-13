@@ -30,9 +30,7 @@ __all__ = ['heat_capacity_gas_methods',
            'HeatCapacitySolid', 'HeatCapacitySolidMixture',
            'HeatCapacityGasMixture', 'HeatCapacityLiquidMixture']
 import os
-from io import open
 import numpy as np
-import pandas as pd
 from fluids.numerics import (polyint_over_x, horner_log, horner, polyint,
                              fit_integral_linear_extrapolation,
                              fit_integral_over_T_linear_extrapolation, quad)

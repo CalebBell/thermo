@@ -26,7 +26,6 @@ __all__ = ['Permittivity']
 
 import os
 import numpy as np
-import pandas as pd
 from fluids.constants import N_A, epsilon_0, k
 from chemicals.utils import isnan
 from thermo.utils import TDependentProperty

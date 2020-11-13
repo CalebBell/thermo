@@ -339,7 +339,7 @@ def test_density_extrapolation():
     assert all(abs(eos.raw_volumes[i].imag) < 1e-15 for i in (0, 1))
 
     eos = PRMIX(T=T, P=2.8E6, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
-    assert_allclose(eos.V_g_extrapolated(), 0.0005133249130364282)
+    assert_allclose(eos._V_g_extrapolated(), 0.0005133249130364282)
 
 
 

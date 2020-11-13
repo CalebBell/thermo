@@ -31,7 +31,6 @@ __all__ = ['viscosity_liquid_methods', 'viscosity_liquid_methods_P',
 
 import os
 import numpy as np
-import pandas as pd
 from fluids.numerics import newton, interp, horner
 
 from chemicals.utils import log, exp, log10

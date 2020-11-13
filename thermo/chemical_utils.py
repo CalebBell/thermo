@@ -26,7 +26,6 @@ __all__ = ['standard_entropy', 'S0_basis_converter']
 
 import os
 from fluids.numerics import quad, numpy as np
-import pandas as pd
 from chemicals.utils import isnan
 from thermo.chemical import *
 

@@ -35,6 +35,7 @@ Base Class
     :members:
     :undoc-members:
     :show-inheritance:
+    :exclude-members: P_zero_g_cheb_coeffs, P_zero_l_cheb_coeffs
 
 Standard Peng-Robinson Family EOSs
 ==================================
@@ -250,7 +251,7 @@ at all.
 from __future__ import division, print_function
 
 __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
-'APISRK', 'TWUPR', 'TWUSRK', 'eos_list', 'eos_2P_list', 'GCEOS_DUMMY',
+'APISRK', 'TWUPR', 'TWUSRK', 'eos_list', 'eos_2P_list',
 'IG', 'PRTranslatedPPJP', 'SRKTranslatedPPJP',
 'PRTranslatedConsistent', 'SRKTranslatedConsistent', 'MSRKTranslated',
 'SRKTranslated', 'PRTranslated', 'PRTranslatedCoqueletChapoyRichon',
@@ -296,7 +297,7 @@ R_inv2 = R_inv*R_inv
 
 
 def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
-                                    da_alpha_dT, d2a_alpha_dT2, quick=True):
+                                    da_alpha_dT, d2a_alpha_dT2):
     epsilon2 = epsilon + epsilon
     x0 = 1.0/(V - b)
     x1 = 1.0/(V*(V + delta) + epsilon)
@@ -340,7 +341,7 @@ def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
 
 
 def main_derivatives_and_departures_VDW(T, P, V, b, delta, epsilon, a_alpha,
-                                    da_alpha_dT, d2a_alpha_dT2, quick=True):
+                                    da_alpha_dT, d2a_alpha_dT2):
     '''Re-implementation of derivatives and excess property calculations,
     as ZeroDivisionError errors occur with the general solution. The
     following derivation is the source of these formulas.
@@ -385,61 +386,54 @@ class GCEOS(object):
     .. math::
         P=\frac{RT}{V-b}-\frac{a\alpha(T)}{V^2 + \delta V + \epsilon}
 
-    Main methods (in order they are called) are `solve`, `set_from_PT`,
-    `volume_solutions`, `set_properties_from_solution`,  and
-    `derivatives_and_departures`.
+    The main methods (in order they are called) are :obj:`GCEOS.solve`, :obj:`GCEOS.set_from_PT`,
+    :obj:`GCEOS.volume_solutions`, :obj:`GCEOS.set_properties_from_solution`,  and
+    :obj:`GCEOS.derivatives_and_departures`.
 
-    `solve` calls `check_sufficient_input`, which checks if two of `T`, `P`,
+    :obj:`GCEOS.solve` calls :obj:`GCEOS.check_sufficient_inputs`, which checks if two of `T`, `P`,
     and `V` were set. It then solves for the
-    remaining variable. If `T` is missing, method `solve_T` is used; it is
+    remaining variable. If `T` is missing, method :obj:`GCEOS.solve_T` is used; it is
     parameter specific, and so must be implemented in each specific EOS.
     If `P` is missing, it is directly calculated. If `V` is missing, it
-    is calculated with the method `volume_solutions`. At this point, either
+    is calculated with the method :obj:`GCEOS.volume_solutions`. At this point, either
     three possible volumes or one user specified volume are known. The
     value of `a_alpha`, and its first and second temperature derivative are
-    calculated with the EOS-specific method `a_alpha_and_derivatives`.
+    calculated with the EOS-specific method :obj:`GCEOS.a_alpha_and_derivatives`.
 
-    If `V` is not provided, `volume_solutions` calculates the three
+    If `V` is not provided, :obj:`GCEOS.volume_solutions` calculates the three
     possible molar volumes which are solutions to the EOS; in the single-phase
     region, only one solution is real and correct. In the two-phase region, all
     volumes are real, but only the largest and smallest solution are physically
     meaningful, with the largest being that of the gas and the smallest that of
     the liquid.
 
-    `set_from_PT` is called to sort out the possible molar volumes. For the
+    :obj:`GCEOS.set_from_PT` is called to sort out the possible molar volumes. For the
     case of a user-specified `V`, the possibility of there existing another
     solution is ignored for speed. If there is only one real volume, the
-    method `set_properties_from_solution` is called with it. If there are
-    two real volumes, `set_properties_from_solution` is called once with each
-    volume. The phase is returned by `set_properties_from_solution`, and the
+    method :obj:`GCEOS.set_properties_from_solution` is called with it. If there are
+    two real volumes, :obj:`GCEOS.set_properties_from_solution` is called once with each
+    volume. The phase is returned by :obj:`GCEOS.set_properties_from_solution`, and the
     volumes is set to either `V_l` or `V_g` as appropriate.
 
-    `set_properties_from_solution` is a beast which calculates all relevant
-    partial derivatives and properties of the EOS. 15 derivatives and excess
-    enthalpy and entropy are calculated first. If the method was called with
-    the `quick` flag, the method `derivatives_and_departures` uses a mess
-    derived with SymPy's `cse` function to perform the calculation as quickly
-    as possible. Otherwise, the independent formulas for each property are used.
-
-    `set_properties_from_solution` next calculates `beta` (isobaric expansion
-    coefficient), `kappa` (isothermal compressibility), `Cp_minus_Cv`, `Cv_dep`,
-    `Cp_dep`, `V_dep` molar volume departure, `U_dep` internal energy departure,
-    `G_dep` Gibbs energy departure, `A_dep` Helmholtz energy departure,
-    `fugacity`, and `phi` (fugacity coefficient). It then calculates
-    `PIP` or phase identification parameter, and determines the fluid phase
-    with it. Finally, it sets all these properties as attibutes or either
+    :obj:`GCEOS.set_properties_from_solution` is a large function which calculates all relevant
+    partial derivatives and properties of the EOS. 17 derivatives and excess
+    enthalpy and entropy are calculated first.
+    Finally, it sets all these properties as attibutes for either
     the liquid or gas phase with the convention of adding on `_l` or `_g` to
-    the variable names.
+    the variable names, respectively.
 
-    Attributes
-    ----------
-    a : float
-        `a` parameter of cubic EOS; formulas vary with the EOS, [Pa*m^6/mol^2]
     '''
     # Slots does not help performance in either implementation
     kwargs = {}
+    '''Dictionary which holds input parameters to an EOS which are non-standard;
+    this excludes `T`, `P`, `V`, `omega`, `Tc`, `Pc`, `Vc` but includes EOS
+    specific parameters like `S1` and `alpha_coeffs`.
+    '''
+
     N = 1
+    '''The number of components in the EOS'''
     multicomponent = False
+    '''Whether or not the EOS is multicomponent or not'''
     P_zero_l_cheb_coeffs = None
     P_zero_l_cheb_limits = (0.0, 0.0)
     P_zero_g_cheb_coeffs = None
@@ -447,7 +441,11 @@ class GCEOS(object):
     Psat_cheb_range = (0.0, 0.0)
 
     main_derivatives_and_departures = staticmethod(main_derivatives_and_departures)
-
+    '''    Attributes
+        ----------
+        a : float
+            `a` parameter of cubic EOS; formulas vary with the EOS, [Pa*m^6/mol^2]
+    '''
     @property
     def state_specs(self):
         '''Convenience method to return the two specified state specs (`T`,
@@ -562,7 +560,7 @@ class GCEOS(object):
         self.set_from_PT(self.raw_volumes, only_l=hasattr(self, 'V_l'), only_g=hasattr(self, 'V_g'))
 
     def solve_missing_volumes(self):
-        '''Generic method to ensure both volumes, if solutions are physical,
+        r'''Generic method to ensure both volumes, if solutions are physical,
         have calculated properties. This effectively un-does the optimization
         of the `only_l` and `only_g` keywords.
         '''
@@ -578,7 +576,7 @@ class GCEOS(object):
 
 
     def set_from_PT(self, Vs, only_l=False, only_g=False):
-        '''Counts the number of real volumes in `Vs`, and determines what to do.
+        r'''Counts the number of real volumes in `Vs`, and determines what to do.
         If there is only one real volume, the method
         `set_properties_from_solution` is called with it. If there are
         two real volumes, `set_properties_from_solution` is called once with
@@ -814,7 +812,7 @@ class GCEOS(object):
         dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep = (
         self.main_derivatives_and_departures(T, P, V, b, delta, epsilon,
                                              a_alpha, da_alpha_dT,
-                                             d2a_alpha_dT2, quick=quick))
+                                             d2a_alpha_dT2))
         try:
             dV_dP = 1.0/dP_dV
         except:
@@ -848,12 +846,8 @@ class GCEOS(object):
 
     def a_alpha_and_derivatives(self, T, full=True, quick=True,
                                 pure_a_alphas=True):
-        '''Dummy method to calculate :math:`a \alpha` and its first and second
-        derivatives. Should be implemented with the same function signature in
-        each EOS variant; this only raises a NotImplemented Exception.
-        Should return 'a_alpha', 'da_alpha_dT', and 'd2a_alpha_dT2'.
-
-        For use in `solve_T`, returns only `a_alpha` if `full` is False.
+        r'''Method to calculate :math:`a \alpha` and its first and second
+        derivatives.
 
         Parameters
         ----------
@@ -862,12 +856,12 @@ class GCEOS(object):
         full : bool, optional
             If False, calculates and returns only `a_alpha`, [-]
         quick : bool, optional
-            Whether to use a SymPy cse-derived expression (3x faster) or
-            individual formulas, [-]
+           Legary parameter being phased out [-]
         pure_a_alphas : bool, optional
             Whether or not to recalculate the a_alpha terms of pure components
             (for the case of mixtures only) which stay the same as the
-            composition changes (i.e in a PT flash), [-]
+            composition changes (i.e in a PT flash); does nothing in the case
+            of pure EOSs [-]
 
         Returns
         -------
@@ -885,11 +879,42 @@ class GCEOS(object):
         return self.a_alpha_pure(T)
 
     def a_alpha_and_derivatives_pure(self, T):
+        r'''Dummy method to calculate :math:`a \alpha` and its first and second
+        derivatives. Should be implemented with the same function signature in
+        each EOS variant; this only raises a NotImplemented Exception.
+        Should return 'a_alpha', 'da_alpha_dT', and 'd2a_alpha_dT2'.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dT : float
+            Temperature derivative of coefficient calculated by EOS-specific
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2 : float
+            Second temperature derivative of coefficient calculated by
+            EOS-specific method, [J^2/mol^2/Pa/K^2]
+        '''
         raise NotImplemented('a_alpha and its first and second derivatives '
                              'should be calculated by this method, in a user subclass.')
 
     @property
     def d3a_alpha_dT3(self):
+        r'''Method to calculate the third temperature derivative of
+        :math:`a \alpha`, [J^2/mol^2/Pa/K^3]. This parameter is needed for
+        some higher derivatives that are needed in some flash calculations.
+
+        Returns
+        -------
+        d3a_alpha_dT3 : float
+            Third temperature derivative of coefficient calculated by
+            EOS-specific method, [J^2/mol^2/Pa/K^3]
+        '''
         try:
             return self._d3a_alpha_dT3
         except AttributeError:
@@ -1148,17 +1173,84 @@ class GCEOS(object):
 
     @property
     def mpmath_volumes(self):
+        r'''Method to calculate to a high precision the exact roots to the
+        cubic equation, using `mpmath`.
+
+        Returns
+        -------
+        Vs : tuple[mpf]
+            3 Real or not real volumes as calculated by `mpmath`, [m^3/mol]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> eos = PRTranslatedTwu(T=300, P=1e5, Tc=512.5, Pc=8084000.0, omega=0.559, alpha_coeffs=(0.694911, 0.9199, 1.7), c=-1e-6)
+        >>> eos.mpmath_volumes
+        (mpf('0.0000489261705320261435106226558966745'), mpf('0.000541508154451321441068958547812526'), mpf('0.0243149463942697410611501615357228'))
+        '''
         return volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
 
     @property
     def mpmath_volumes_float(self):
-        Vs = volume_solutions_mpmath_float(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
+        r'''Method to calculate real roots of a cubic equation, using `mpmath`,
+        but returned as floats.
+
+        Returns
+        -------
+        Vs : list[float]
+            All volumes calculated by `mpmath`, [m^3/mol]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> eos = PRTranslatedTwu(T=300, P=1e5, Tc=512.5, Pc=8084000.0, omega=0.559, alpha_coeffs=(0.694911, 0.9199, 1.7), c=-1e-6)
+        >>> eos.mpmath_volumes_float
+        ((4.892617053202614e-05+0j), (0.0005415081544513214+0j), (0.024314946394269742+0j))
+        '''
+        return volume_solutions_mpmath_float(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
 
     @property
     def mpmath_volume_ratios(self):
-        return [i/j for i, j in zip(self.sorted_volumes, self.mpmath_volumes)]
+        r'''Method to compare, as ratios, the volumes of the implemented
+        cubic solver versus those calculated using `mpmath`.
+
+        Returns
+        -------
+        ratios : list[mpc]
+            Either 1 or 3 volume ratios as calculated by `mpmath`, [-]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> eos = PRTranslatedTwu(T=300, P=1e5, Tc=512.5, Pc=8084000.0, omega=0.559, alpha_coeffs=(0.694911, 0.9199, 1.7), c=-1e-6)
+        >>> eos.mpmath_volume_ratios
+        (mpc(real='0.99999999999999995', imag='0.0'), mpc(real='0.999999999999999965', imag='0.0'), mpc(real='1.00000000000000005', imag='0.0'))
+        '''
+        return tuple(i/j for i, j in zip(self.sorted_volumes, self.mpmath_volumes))
 
     def Vs_mpmath(self):
+        r'''Method to calculate real roots of a cubic equation, using `mpmath`.
+
+        Returns
+        -------
+        Vs : list[mpf]
+            Either 1 or 3 real volumes as calculated by `mpmath`, [m^3/mol]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> eos = PRTranslatedTwu(T=300, P=1e5, Tc=512.5, Pc=8084000.0, omega=0.559, alpha_coeffs=(0.694911, 0.9199, 1.7), c=-1e-6)
+        >>> eos.Vs_mpmath()
+        [mpf('0.0000489261705320261435106226558966745'), mpf('0.000541508154451321441068958547812526'), mpf('0.0243149463942697410611501615357228')]
+        '''
         Vs = self.mpmath_volumes
         good_roots = [i.real for i in Vs if (i.real > 0.0 and abs(i.imag/i.real) < 1E-12)]
         good_roots.sort()
@@ -1900,7 +1992,7 @@ class GCEOS(object):
         dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep = (
         self.main_derivatives_and_departures(T, P, V, b, delta, epsilon,
                                              a_alpha, da_alpha_dT,
-                                             d2a_alpha_dT2, quick=quick))
+                                             d2a_alpha_dT2))
         try:
             dV_dP = 1.0/dP_dV
         except:
@@ -1954,20 +2046,6 @@ class GCEOS(object):
         full_volumes = [i + 0.0j for i in full_volumes]
         return tuple(sorted(full_volumes, key=sort_fun))
 
-
-
-    @staticmethod
-    def main_derivatives_and_departures_slow(T, P, V, b, delta, epsilon, a_alpha,
-                                        da_alpha_dT, d2a_alpha_dT2):
-        dP_dT = R/(V - b) - da_alpha_dT/(V**2 + V*delta + epsilon)
-        dP_dV = -R*T/(V - b)**2 - (-2*V - delta)*a_alpha/(V**2 + V*delta + epsilon)**2
-        d2P_dT2 = -d2a_alpha_dT2/(V**2 + V*delta + epsilon)
-        d2P_dV2 = 2*(R*T/(V - b)**3 - (2*V + delta)**2*a_alpha/(V**2 + V*delta + epsilon)**3 + a_alpha/(V**2 + V*delta + epsilon)**2)
-        d2P_dTdV = -R/(V - b)**2 + (2*V + delta)*da_alpha_dT/(V**2 + V*delta + epsilon)**2
-        H_dep = P*V - R*T + 2*(T*da_alpha_dT - a_alpha)*catanh((2*V + delta)/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon)
-        S_dep = -R*log(V) + R*log(P*V/(R*T)) + R*log(V - b) + 2*da_alpha_dT*catanh((2*V + delta)/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon)
-        Cv_dep = -T*(sqrt(1/(delta**2 - 4*epsilon))*log(V - delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 + 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))) - sqrt(1/(delta**2 - 4*epsilon))*log(V + delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 - 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))))*d2a_alpha_dT2
-        return dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
 
     def Tsat(self, P, polish=False):
         r'''Generic method to calculate the temperature for a specified
@@ -2615,14 +2693,36 @@ class GCEOS(object):
 
 
     def a_alpha_for_V(self, T, P, V):
-        # Derived with sympy
-        '''
-        from sympy import *
-        P, T, V, R, b, a, delta, epsilon = symbols('P, T, V, R, b, a, delta, epsilon')
-        a_alpha = symbols('a_alpha')
+        r'''Method to calculate which value of :math:`a \alpha` is required for
+        a given `T`, `P` pair to match a specified `V`. This is a
+        straightforward analytical equation.
 
-        CUBIC = R*T/(V-b) - a_alpha/(V*V + delta*V + epsilon) #- P
-        cse(solve(Eq(CUBIC, P), a_alpha)[0], optimizations='basic')
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        P : float
+            Pressure, [Pa]
+        V : float
+            Molar volume, [m^3/mol]
+
+        Returns
+        -------
+        a_alpha : float
+            Value calculated to match specified volume for the current EOS,
+            [J^2/mol^2/Pa]
+
+        Notes
+        -----
+        The derivation of the solution is as follows:
+
+
+        >>> from sympy import * # doctest:+SKIP
+        >>> P, T, V, R, b, a, delta, epsilon = symbols('P, T, V, R, b, a, delta, epsilon') # doctest:+SKIP
+        >>> a_alpha = symbols('a_alpha') # doctest:+SKIP
+        >>> CUBIC = R*T/(V-b) - a_alpha/(V*V + delta*V + epsilon) # doctest:+SKIP
+        >>> solve(Eq(CUBIC, P), a_alpha)# doctest:+SKIP
+        [(-P*V**3 + P*V**2*b - P*V**2*delta + P*V*b*delta - P*V*epsilon + P*b*epsilon + R*T*V**2 + R*T*V*delta + R*T*epsilon)/(V - b)]
         '''
         b, delta, epsilon = self.b, self.delta, self.epsilon
         x0 = P*b
@@ -2634,15 +2734,42 @@ class GCEOS(object):
                  + x0*x2 + x0*x3 + x1*x2 + x1*x3)/(V - b))
 
 
-    def a_alpha_for_Psat(self, T, Psat, guess=None):
-        # For fitting
+    def a_alpha_for_Psat(self, T, Psat, a_alpha_guess=None):
+        r'''Method to calculate which value of :math:`a \alpha` is required for
+        a given `T`, `Psat` pair. This is a numerical solution, but not a very
+        complicated one.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        Psat : float
+            Vapor pressure specified, [Pa]
+        a_alpha_guess : float
+            Optionally, an initial guess for the solver [J^2/mol^2/Pa]
+
+        Returns
+        -------
+        a_alpha : float
+            Value calculated to match specified volume for the current EOS,
+            [J^2/mol^2/Pa]
+
+        Notes
+        -----
+        The implementation of this function is a direct calculation of
+        departure gibbs energy, which is equal in both phases at saturation.
+
+        Examples
+        --------
+        >>> eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+        >>> eos.a_alpha_for_Psat(T=400, Psat=5e5)
+        3.1565798926
+        '''
         P = Psat
-#        eos = self.to(T=T, P=Psat)
-#        b, delta, epsilon = eos.b, eos.delta, eos.epsilon
         b, delta, epsilon = self.b, self.delta, self.epsilon
         RT = R*T
         RT_inv = 1.0/RT
-        x0 = 1.0*(delta*delta - 4.0*epsilon)**-0.5
+        x0 = 1.0/sqrt(delta*delta - 4.0*epsilon)
         x1 = delta*x0
         x2 = 2.0*x0
 
@@ -2651,12 +2778,6 @@ class GCEOS(object):
             G_dep = (P*V - RT - RT*log(P*RT_inv*(V-b))
                       - x2*a_alpha*catanh(2.0*V*x0 + x1).real)
             return G_dep # No point going all the way to fugacity
-
-#            try:
-#                fugacity = P*exp(G_dep*RT_inv)
-#            except OverflowError:
-#                fugacity = P*trunc_exp(G_dep*RT_inv, trunc=1e308)
-#            return fugacity
 
         def err(a_alpha):
             # Needs some work right up to critical point
@@ -2669,14 +2790,14 @@ class GCEOS(object):
 #            print(V_l, V_g, a_alpha)
             return fug(V_l, a_alpha) - fug(V_g, a_alpha)
 
-        if guess is None:
+        if a_alpha_guess is None:
             try:
-                guess = self.a_alpha
+                a_alpha_guess = self.a_alpha
             except AttributeError:
-                guess = 0.002
+                a_alpha_guess = 0.002
 
         try:
-            return secant(err, guess, xtol=1e-13)
+            return secant(err, a_alpha_guess, xtol=1e-13)
         except:
             return secant(err, self.to(T=T, P=Psat).a_alpha, xtol=1e-13)
 
@@ -2832,10 +2953,6 @@ class GCEOS(object):
             # Error message
             return self.__class__(T=T, V=V, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, **self.kwargs)
 
-    def V_max_l_at_T(self):
-        # Should return the maximum liquid volume
-        pass
-
     def T_min_at_V(self, V, Pmin=1e-15):
         '''Returns the minimum temperature for the EOS to have the
         volume as specified. Under this temperature, the pressure will go
@@ -2844,8 +2961,31 @@ class GCEOS(object):
         return self.solve_T(P=Pmin, V=V)
 
     def T_max_at_V(self, V, Pmax=None):
-        # grows unbounded for all EOS?
-        # EOS should compute Pmax
+        r'''Method to calculate the maximum temperature the EOS can create at a
+        constant volume, if one exists; returns None otherwise.
+
+        Parameters
+        ----------
+        V : float
+            Constant molar volume, [m^3/mol]
+        Pmax : float
+            Maximum possible isochoric pressure, if already known [Pa]
+
+        Returns
+        -------
+        T : float
+            Maximum possible temperature, [K]
+
+        Notes
+        -----
+
+
+        Examples
+        --------
+        >>> e = PR(P=1e5, V=0.0001437, Tc=512.5, Pc=8084000.0, omega=0.559)
+        >>> e.T_max_at_V(e.V)
+        431155.513
+        '''
         if Pmax is None:
             Pmax = self.P_max_at_V(V)
         if Pmax is None:
@@ -2853,10 +2993,33 @@ class GCEOS(object):
         return self.solve_T(P=Pmax, V=V)
 
     def P_max_at_V(self, V):
-        return None
+        r'''Dummy method. The idea behind this method, which is implemented by some
+        subclasses, is to calculate the maximum pressure the EOS can create at a
+        constant volume, if one exists; returns None otherwise. This method,
+        as a dummy method, always returns None.
+
+        Parameters
+        ----------
+        V : float
+            Constant molar volume, [m^3/mol]
+
+        Returns
+        -------
+        P : float
+            Maximum possible isochoric pressure, [Pa]
+        '''
 
     @property
     def more_stable_phase(self):
+        r'''Checks the Gibbs energy of each possible phase, and returns
+        'l' if the liquid-like phase is more stable, and 'g' if the vapor-like
+        phase is more stable.
+
+        Examples
+        --------
+        >>> PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6).more_stable_phase
+        'l'
+        '''
         try:
             if self.G_dep_l < self.G_dep_g:
                 return 'l'
@@ -2869,15 +3032,96 @@ class GCEOS(object):
             except:
                 return 'l'
 
+    def discriminant(self, T=None, P=None):
+        r'''Method to compute the discriminant of the cubic volume solution
+        with the current EOS parameters, optionally at the same (assumed) `T`,
+        and `P` or at different ones, if values are specified.
 
-    def discriminant_at_P(self, T):
-        # Only T is allowed to be varied
-        # Really need T derivative of this
+        Parameters
+        ----------
+        T : float, optional
+            Temperature, [K]
+        P : float, optional
+            Pressure, [Pa]
 
-        P = self.P
-        a_alpha = self.a_alpha_and_derivatives(T, full=False, quick=True)
-        RT = R*T
-        RT6 = RT**6
+        Returns
+        -------
+        discriminant : float
+            Discriminant, [-]
+
+        Notes
+        -----
+        This call is quite quick; only :math:`a \alpha` is needed and if `T` is
+        the same as the current object than it has already been computed.
+
+        The formula is as follows:
+
+        .. math::
+            \text{discriminant} = - \left(- \frac{27 P^{2} \epsilon \left(
+            \frac{P b}{R T} + 1\right)}{R^{2} T^{2}} - \frac{27 P^{2} b
+            \operatorname{a \alpha}{\left(T \right)}}{R^{3} T^{3}}\right)
+            \left(- \frac{P^{2} \epsilon \left(\frac{P b}{R T} + 1\right)}
+            {R^{2} T^{2}} - \frac{P^{2} b \operatorname{a \alpha}{\left(T
+            \right)}}{R^{3} T^{3}}\right) + \left(- \frac{P^{2} \epsilon \left(
+            \frac{P b}{R T} + 1\right)}{R^{2} T^{2}} - \frac{P^{2} b
+            \operatorname{a \alpha}{\left(T \right)}}{R^{3} T^{3}}\right)
+            \left(- \frac{18 P b}{R T} + \frac{18 P \delta}{R T} - 18\right)
+            \left(\frac{P^{2} \epsilon}{R^{2} T^{2}} - \frac{P \delta \left(
+            \frac{P b}{R T} + 1\right)}{R T} + \frac{P \operatorname{a \alpha}
+            {\left(T \right)}}{R^{2} T^{2}}\right) - \left(- \frac{P^{2}
+            \epsilon \left(\frac{P b}{R T} + 1\right)}{R^{2} T^{2}} - \frac{
+            P^{2} b \operatorname{a \alpha}{\left(T \right)}}{R^{3} T^{3}}
+            \right) \left(- \frac{4 P b}{R T} + \frac{4 P \delta}{R T}
+            - 4\right) \left(- \frac{P b}{R T} + \frac{P \delta}{R T}
+            - 1\right)^{2} + \left(- \frac{P b}{R T} + \frac{P \delta}{R T}
+            - 1\right)^{2} \left(\frac{P^{2} \epsilon}{R^{2} T^{2}} - \frac{P
+            \delta \left(\frac{P b}{R T} + 1\right)}{R T} + \frac{P
+            \operatorname{a \alpha}{\left(T \right)}}{R^{2} T^{2}}\right)^{2}
+            - \left(\frac{P^{2} \epsilon}{R^{2} T^{2}} - \frac{P \delta \left(
+            \frac{P b}{R T} + 1\right)}{R T} + \frac{P \operatorname{a \alpha}{
+            \left(T \right)}}{R^{2} T^{2}}\right)^{2} \left(\frac{4 P^{2}
+            \epsilon}{R^{2} T^{2}} - \frac{4 P \delta \left(\frac{P b}{R T}
+            + 1\right)}{R T} + \frac{4 P \operatorname{a \alpha}{\left(T
+            \right)}}{R^{2} T^{2}}\right)
+
+        The formula is derived as follows:
+
+        >>> from sympy import *
+        >>> P, T, R, b = symbols('P, T, R, b')
+        >>> a_alpha = symbols(r'a\ \alpha', cls=Function)
+        >>> delta, epsilon = symbols('delta, epsilon')
+        >>> eta = b
+        >>> B = b*P/(R*T)
+        >>> deltas = delta*P/(R*T)
+        >>> thetas = a_alpha(T)*P/(R*T)**2
+        >>> epsilons = epsilon*(P/(R*T))**2
+        >>> etas = eta*P/(R*T)
+        >>> a = 1
+        >>> b = (deltas - B - 1)
+        >>> c = (thetas + epsilons - deltas*(B+1))
+        >>> d = -(epsilons*(B+1) + thetas*etas)
+        >>> disc = b*b*c*c - 4*a*c*c*c - 4*b*b*b*d - 27*a*a*d*d + 18*a*b*c*d
+
+        Examples
+        --------
+        >>> base = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=500.0, P=1E6)
+        >>> base.discriminant()
+        -0.001026390999
+        >>> base.discriminant(T=400)
+         0.0010458828
+        >>> base.discriminant(T=400, P=1e9)
+        12584660355.4
+        '''
+        if P is None:
+            P = self.P
+        if T is None:
+            T = self.T
+            a_alpha = self.a_alpha
+        else:
+            a_alpha = self.a_alpha_and_derivatives(T, full=False)
+        RT = R*self.T
+        RT6 = RT*RT
+        RT6 *= RT6*RT6
         x0 = P*P
         x1 = P*self.b + RT
         x2 = a_alpha*self.b + self.epsilon*x1
@@ -2888,95 +3132,14 @@ class GCEOS(object):
         x2_2 = x2*x2
         x5_2 = x5*x5
         x6_2 = x6*x6
-        return x0*(18.0*P*x2*x5*x6 + 4.0*P*(-a_alpha - x3 + x4)**3
-                   - 27.0*x0*x2_2 - 4.0*x2*x5_2*x5 + x5_2*x6_2)/RT6
-
-    def T_discriminant_zero(self):
-         Ts = logspace(log10(1), log10(1e4), 10000)
-         errs = []
-         for T in Ts:
-             erri = self.discriminant_at_P(T)
-#             if erri < 0:
-#                 erri = -log10(abs(erri))
-#             else:
-#                 erri = log10(erri)
-             errs.append(erri)
-         import matplotlib.pyplot as plt
-         plt.semilogx(Ts, errs, 'x')
-         plt.ylim((-1e-3, 1e-3))
-         plt.show()
-
-    def T_discriminant_zero_l(self, guess=None):
-        # Can also have one at g
-        global niter
-        niter = 0
-        guesses = [100, 150, 200, 250, 300, 350, 400, 450]
-        if guess is not None:
-            guesses.append(guess)
-        if self.N == 1:
-            pass
-
-        global_iter = 0
-        for T in guesses:
-            try:
-                global_iter += niter
-                niter = 0
-                T_disc = secant(self.discriminant_at_P, T, xtol=1e-10, low=1, maxiter=60, bisection=False, damping=1)
-                assert T_disc > 0 and not T_disc == 1
-                break
-            except:
-                pass
-        global_iter += niter
-        return T_disc
-
-    def T_discriminant_zero_g(self, guess=None):
-        # Can also have one at g
-        global niter
-        niter = 0
-        guesses = [700, 600, 500, 400, 300, 200]
-        if guess is not None:
-            guesses.append(guess)
-        if self.N == 1:
-            pass
-
-        global_iter = 0
-        for T in guesses:
-            try:
-                global_iter += niter
-                niter = 0
-                T_disc = secant(self.discriminant_at_P, T, xtol=1e-10, low=1, maxiter=60, bisection=False, damping=1)
-                assert T_disc > 0 and not T_disc == 1
-                break
-            except:
-                pass
-        global_iter += niter
-        return T_disc
-
-    @property
-    def discriminant(self):
-        return self.discriminant_at_T(self.P)
-
-
-    def discriminant_at_T(self, P):
-        # Only P is allowed to be varied
-        RT = R*self.T
-        RT6 = RT*RT
-        RT6 *= RT6*RT6
-        x0 = P*P
-        x1 = P*self.b + RT
-        x2 = self.a_alpha*self.b + self.epsilon*x1
-        x3 = P*self.epsilon
-        x4 = self.delta*x1
-        x5 = -P*self.delta + x1
-        x6 = self.a_alpha + x3 - x4
-        x2_2 = x2*x2
-        x5_2 = x5*x5
-        x6_2 = x6*x6
-        x7 = (-self.a_alpha - x3 + x4)
+        x7 = (-a_alpha - x3 + x4)
         return x0*(18.0*P*x2*x5*x6 + 4.0*P*x7*x7*x7
                    - 27.0*x0*x2_2 - 4.0*x2*x5_2*x5 + x5_2*x6_2)/RT6
 
-    def discriminant_at_T_mp(self, P):
+
+    def _discriminant_at_T_mp(self, P):
+        # Hopefully numerical difficulties can eventually be figured out to as to
+        # not need mpmath
         import mpmath as mp
         mp.mp.dps = 70
         P, T, b, a_alpha, delta, epsilon, R_mp = [mp.mpf(i) for i in [P, self.T, self.b, self.a_alpha, self.delta, self.epsilon, R]]
@@ -2997,12 +3160,85 @@ class GCEOS(object):
         return disc
 
     def P_discriminant_zero_l(self):
+        r'''Method to calculate the pressure which zero the discriminant
+        function of the general cubic eos, and is likely to sit on a boundary
+        between not having a liquid-like volume; and having a liquid-like volume.
+
+        Returns
+        -------
+        P_discriminant_zero_l : float
+            Pressure which make the discriminants zero at the right condition,
+            [Pa]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> eos = PRTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+        >>> P_trans = eos.P_discriminant_zero_l()
+        >>> P_trans
+        478346.37289
+
+        In this case, the discriminant transition shows the change in roots:
+
+        >>> eos.to(T=eos.T, P=P_trans*.99999999).mpmath_volumes_float
+        ((0.00013117994140177062+0j), (0.002479717165903531+0j), (0.002480236178570793+0j))
+        >>> eos.to(T=eos.T, P=P_trans*1.0000001).mpmath_volumes_float
+        ((0.0001311799413872173+0j), (0.002479976386402769-8.206310112063695e-07j), (0.002479976386402769+8.206310112063695e-07j))
+        '''
         return self._P_discriminant_zero(low=True)
 
     def P_discriminant_zero_g(self):
+        r'''Method to calculate the pressure which zero the discriminant
+        function of the general cubic eos, and is likely to sit on a boundary
+        between not having a vapor-like volume; and having a vapor-like volume.
+
+        Returns
+        -------
+        P_discriminant_zero_g : float
+            Pressure which make the discriminants zero at the right condition,
+            [Pa]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> eos = PRTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+        >>> P_trans = eos.P_discriminant_zero_g()
+        >>> P_trans
+        149960391.7
+
+        In this case, the discriminant transition does not reveal a transition
+        to two roots being available, only negative roots becoming negative
+        and imaginary.
+
+        >>> eos.to(T=eos.T, P=P_trans*.99999999).mpmath_volumes_float
+        ((-0.0001037013146195082-1.5043987866732543e-08j), (-0.0001037013146195082+1.5043987866732543e-08j), (0.00011799201928619508+0j))
+        >>> eos.to(T=eos.T, P=P_trans*1.0000001).mpmath_volumes_float
+        ((-0.00010374888853182635+0j), (-0.00010365374200380354+0j), (0.00011799201875924273+0j))
+        '''
         return self._P_discriminant_zero(low=False)
 
     def P_discriminant_zeros(self):
+        r'''Method to calculate the pressures which zero the discriminant
+        function of the general cubic eos, at the current temperature.
+
+        Returns
+        -------
+        P_discriminant_zeros : list[float]
+            Pressures which make the discriminants zero, [Pa]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> eos = PRTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+        >>> eos.P_discriminant_zeros()
+        [478346.3, 149960391.7]
+        '''
         return GCEOS.P_discriminant_zeros_analytical(self.T, self.b, self.delta, self.epsilon, self.a_alpha, valid=True)
 
     @staticmethod
@@ -3182,7 +3418,7 @@ class GCEOS(object):
         # Ps = logspace(log10(1), log10(1e10), 40000)
         # errs = []
         # for P in Ps:
-        #     erri = self.discriminant_at_T(P)
+        #     erri = self.discriminant(P=P)
         #     if erri < 0:
         #         erri = -log10(abs(erri))
         #     else:
@@ -3300,13 +3536,13 @@ class GCEOS(object):
 
         if 0:
             try:
-                P_disc = bisect(self.discriminant_at_T_mp, P_disc*(1-1e-8), P_disc*(1+1e-8), xtol=1e-18)
+                P_disc = bisect(self._discriminant_at_T_mp, P_disc*(1-1e-8), P_disc*(1+1e-8), xtol=1e-18)
             except:
                 try:
-                    P_disc = bisect(self.discriminant_at_T_mp, P_disc*(1-1e-5), P_disc*(1+1e-5), xtol=1e-18)
+                    P_disc = bisect(self._discriminant_at_T_mp, P_disc*(1-1e-5), P_disc*(1+1e-5), xtol=1e-18)
                 except:
                     try:
-                        P_disc = bisect(self.discriminant_at_T_mp, P_disc*(1-1e-2), P_disc*(1+1e-2))
+                        P_disc = bisect(self._discriminant_at_T_mp, P_disc*(1-1e-2), P_disc*(1+1e-2))
                     except:
                         pass
 
@@ -3327,14 +3563,141 @@ class GCEOS(object):
 
 
         # Can take a while to converge
-        P_disc = secant(self.discriminant_at_T, self.P, xtol=1e-7, low=1e-12, maxiter=200, bisection=True)
+        P_disc = secant(lambda P: self.discriminant(P=P), self.P, xtol=1e-7, low=1e-12, maxiter=200, bisection=True)
         if P_disc <= 0.0:
-            P_disc = secant(self.discriminant_at_T, self.P*100, xtol=1e-7, maxiter=200)
+            P_disc = secant(lambda P: self.discriminant(P=P), self.P*100, xtol=1e-7, maxiter=200)
 #            P_max = self.P*1000
-#            P_disc = brenth(self.discriminant_at_T, self.P*1e-3, P_max, rtol=1e-7, maxiter=200)
+#            P_disc = brenth(lambda P: self.discriminant(P=P), self.P*1e-3, P_max, rtol=1e-7, maxiter=200)
         return P_disc
 
-    def V_g_extrapolated(self):
+    def _plot_T_discriminant_zero(self):
+         Ts = logspace(log10(1), log10(1e4), 10000)
+         errs = []
+         for T in Ts:
+             erri = self.discriminant(T=T)
+#             if erri < 0:
+#                 erri = -log10(abs(erri))
+#             else:
+#                 erri = log10(erri)
+             errs.append(erri)
+         import matplotlib.pyplot as plt
+         plt.semilogx(Ts, errs, 'x')
+#         plt.ylim((-1e-3, 1e-3))
+         plt.show()
+
+    def T_discriminant_zero_l(self, T_guess=None):
+        r'''Method to calculate the temperature which zeros the discriminant
+        function of the general cubic eos, and is likely to sit on a boundary
+        between not having a liquid-like volume; and having a liquid-like volume.
+
+        Parameters
+        ----------
+        T_guess : float, optional
+            Temperature guess, [K]
+
+        Returns
+        -------
+        T_discriminant_zero_l : float
+            Temperature which make the discriminants zero at the right condition,
+            [K]
+
+        Notes
+        -----
+        Significant numerical issues remain in improving this method.
+
+        Examples
+        --------
+        >>> eos = PRTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+        >>> T_trans = eos.T_discriminant_zero_l()
+        >>> T_trans
+        644.3023307
+
+        In this case, the discriminant transition does not reveal a transition
+        to two roots being available, only to there being a double (imaginary)
+        root.
+
+        >>> eos.to(P=eos.P, T=T_trans).mpmath_volumes_float
+        ((9.309597822372529e-05-0.00015876248805149625j), (9.309597822372529e-05+0.00015876248805149625j), (0.005064847204219234+0j))
+        '''
+        # Can also have one at g
+        global niter
+        niter = 0
+        guesses = [100, 150, 200, 250, 300, 350, 400, 450]
+        if T_guess is not None:
+            guesses.append(T_guess)
+        if self.N == 1:
+            pass
+
+        global_iter = 0
+        for T in guesses:
+            try:
+                global_iter += niter
+                niter = 0
+                T_disc = secant(lambda T: self.discriminant(T=T), T, xtol=1e-10, low=1, maxiter=60, bisection=False, damping=1)
+                assert T_disc > 0 and not T_disc == 1
+                break
+            except:
+                pass
+        global_iter += niter
+        return T_disc
+
+    def T_discriminant_zero_g(self, T_guess=None):
+        r'''Method to calculate the temperature which zeros the discriminant
+        function of the general cubic eos, and is likely to sit on a boundary
+        between not having a vapor-like volume; and having a vapor-like volume.
+
+        Parameters
+        ----------
+        T_guess : float, optional
+            Temperature guess, [K]
+
+        Returns
+        -------
+        T_discriminant_zero_g : float
+            Temperature which make the discriminants zero at the right condition,
+            [K]
+
+        Notes
+        -----
+        Significant numerical issues remain in improving this method.
+
+        Examples
+        --------
+        >>> eos = PRTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+        >>> T_trans = eos.T_discriminant_zero_g()
+        >>> T_trans
+        644.3023307
+
+        In this case, the discriminant transition does not reveal a transition
+        to two roots being available, only to there being a double (imaginary)
+        root.
+
+        >>> eos.to(P=eos.P, T=T_trans).mpmath_volumes_float
+        ((9.309597822372529e-05-0.00015876248805149625j), (9.309597822372529e-05+0.00015876248805149625j), (0.005064847204219234+0j))
+        '''
+        global niter
+        niter = 0
+        guesses = [700, 600, 500, 400, 300, 200]
+        if T_guess is not None:
+            guesses.append(T_guess)
+        if self.N == 1:
+            pass
+
+        global_iter = 0
+        for T in guesses:
+            try:
+                global_iter += niter
+                niter = 0
+                T_disc = secant(lambda T: self.discriminant(T=T), T, xtol=1e-10, low=1, maxiter=60, bisection=False, damping=1)
+                assert T_disc > 0 and not T_disc == 1
+                break
+            except:
+                pass
+        global_iter += niter
+        return T_disc
+
+
+    def _V_g_extrapolated(self):
         P_pseudo_mc = sum([self.Pcs[i]*self.zs[i] for i in self.cmps])
         T_pseudo_mc = sum([(self.Tcs[i]*self.Tcs[j])**0.5*self.zs[j]*self.zs[i]
                            for i in self.cmps for j in self.cmps])
@@ -3476,7 +3839,7 @@ class GCEOS(object):
     @property
     def V_dep_l(self):
         r'''Departure molar volume from ideal gas behavior for the liquid phase,
-        [m^3/mol]
+        [m^3/mol].
 
         .. math::
             V_{dep} = V - \frac{RT}{P}
@@ -3486,7 +3849,7 @@ class GCEOS(object):
     @property
     def V_dep_g(self):
         r'''Departure molar volume from ideal gas behavior for the gas phase,
-        [m^3/mol]
+        [m^3/mol].
 
         .. math::
             V_{dep} = V - \frac{RT}{P}
@@ -3496,7 +3859,7 @@ class GCEOS(object):
     @property
     def U_dep_l(self):
         r'''Departure molar internal energy from ideal gas behavior for the
-        liquid phase, [J/mol]
+        liquid phase, [J/mol].
 
         .. math::
             U_{dep} = H_{dep} - P V_{dep}
@@ -3506,7 +3869,7 @@ class GCEOS(object):
     @property
     def U_dep_g(self):
         r'''Departure molar internal energy from ideal gas behavior for the
-        gas phase, [J/mol]
+        gas phase, [J/mol].
 
         .. math::
             U_{dep} = H_{dep} - P V_{dep}
@@ -3515,8 +3878,8 @@ class GCEOS(object):
 
     @property
     def A_dep_l(self):
-        r'''Departure molar helmholtz energy from ideal gas behavior for the
-        liquid phase, [J/mol]
+        r'''Departure molar Helmholtz energy from ideal gas behavior for the
+        liquid phase, [J/mol].
 
         .. math::
             A_{dep} = U_{dep} - T S_{dep}
@@ -3525,8 +3888,8 @@ class GCEOS(object):
 
     @property
     def A_dep_g(self):
-        r'''Departure molar helmholtz energy from ideal gas behavior for the
-        gas phase, [J/mol]
+        r'''Departure molar Helmholtz energy from ideal gas behavior for the
+        gas phase, [J/mol].
 
         .. math::
             A_{dep} = U_{dep} - T S_{dep}
@@ -3537,7 +3900,7 @@ class GCEOS(object):
     def d2T_dPdV_l(self):
         r'''Second partial derivative of temperature with respect to
         pressure (constant volume) and then volume (constant pressure)
-        for the liquid phase, [K*mol/(Pa*m^3)]
+        for the liquid phase, [K*mol/(Pa*m^3)].
 
         .. math::
            \left(\frac{\partial^2 T}{\partial P\partial V}\right) =
@@ -3557,7 +3920,7 @@ class GCEOS(object):
     def d2T_dPdV_g(self):
         r'''Second partial derivative of temperature with respect to
         pressure (constant volume) and then volume (constant pressure)
-        for the gas phase, [K*mol/(Pa*m^3)]
+        for the gas phase, [K*mol/(Pa*m^3)].
 
         .. math::
            \left(\frac{\partial^2 T}{\partial P\partial V}\right) =
@@ -3577,7 +3940,7 @@ class GCEOS(object):
     def d2V_dPdT_l(self):
         r'''Second partial derivative of volume with respect to
         pressure (constant temperature) and then presssure (constant temperature)
-        for the liquid phase, [m^3/(K*Pa*mol)]
+        for the liquid phase, [m^3/(K*Pa*mol)].
 
         .. math::
             \left(\frac{\partial^2 V}{\partial T\partial P}\right) =
@@ -3594,7 +3957,7 @@ class GCEOS(object):
     def d2V_dPdT_g(self):
         r'''Second partial derivative of volume with respect to
         pressure (constant temperature) and then presssure (constant temperature)
-        for the gas phase, [m^3/(K*Pa*mol)]
+        for the gas phase, [m^3/(K*Pa*mol)].
 
         .. math::
             \left(\frac{\partial^2 V}{\partial T\partial P}\right) =
@@ -3610,7 +3973,7 @@ class GCEOS(object):
     @property
     def d2T_dP2_l(self):
         r'''Second partial derivative of temperature with respect to
-        pressure (constant temperature) for the liquid phase, [K/Pa^2]
+        pressure (constant temperature) for the liquid phase, [K/Pa^2].
 
         .. math::
             \left(\frac{\partial^2 T}{\partial P^2}\right)_V = -\left(\frac{
@@ -3624,7 +3987,7 @@ class GCEOS(object):
     @property
     def d2T_dP2_g(self):
         r'''Second partial derivative of temperature with respect to
-        pressure (constant volume) for the gas phase, [K/Pa^2]
+        pressure (constant volume) for the gas phase, [K/Pa^2].
 
         .. math::
             \left(\frac{\partial^2 T}{\partial P^2}\right)_V = -\left(\frac{
@@ -3638,7 +4001,7 @@ class GCEOS(object):
     @property
     def d2V_dP2_l(self):
         r'''Second partial derivative of volume with respect to
-        pressure (constant temperature) for the liquid phase, [m^3/(Pa^2*mol)]
+        pressure (constant temperature) for the liquid phase, [m^3/(Pa^2*mol)].
 
         .. math::
             \left(\frac{\partial^2 V}{\partial P^2}\right)_T = -\left(\frac{
@@ -3652,7 +4015,7 @@ class GCEOS(object):
     @property
     def d2V_dP2_g(self):
         r'''Second partial derivative of volume with respect to
-        pressure (constant temperature) for the gas phase, [m^3/(Pa^2*mol)]
+        pressure (constant temperature) for the gas phase, [m^3/(Pa^2*mol)].
 
         .. math::
             \left(\frac{\partial^2 V}{\partial P^2}\right)_T = -\left(\frac{
@@ -3666,7 +4029,7 @@ class GCEOS(object):
     @property
     def d2T_dV2_l(self):
         r'''Second partial derivative of temperature with respect to
-        volume (constant pressure) for the liquid phase, [K*mol^2/m^6]
+        volume (constant pressure) for the liquid phase, [K*mol^2/m^6].
 
         .. math::
             \left(\frac{\partial^2 T}{\partial V^2}\right)_P = -\left[
@@ -3692,7 +4055,7 @@ class GCEOS(object):
     @property
     def d2T_dV2_g(self):
         r'''Second partial derivative of temperature with respect to
-        volume (constant pressure) for the gas phase, [K*mol^2/m^6]
+        volume (constant pressure) for the gas phase, [K*mol^2/m^6].
 
         .. math::
             \left(\frac{\partial^2 T}{\partial V^2}\right)_P = -\left[
@@ -3775,64 +4138,108 @@ class GCEOS(object):
 
     @property
     def Vc(self):
+        r'''Critical volume, [m^3/mol].
+
+        .. math::
+            V_c = \frac{Z_c R T_c}{P_c}
+
+        '''
         return self.Zc*R*self.Tc/self.Pc
 
     @property
     def rho_l(self):
+        r'''Liquid molar density, [mol/m^3].
+
+        .. math::
+            \rho_l = \frac{1}{V_l}
+
+        '''
         return 1.0/self.V_l
 
     @property
     def rho_g(self):
+        r'''Gas molar density, [mol/m^3].
+
+        .. math::
+            \rho_g = \frac{1}{V_g}
+
+        '''
         return 1.0/self.V_g
 
 
     @property
     def dZ_dT_l(self):
+        r'''Derivative of compressibility factor with respect to temperature
+        for the liquid phase, [1/K].
+
+        .. math::
+            \frac{\partial Z}{\partial T} = \frac{P}{RT}\left(
+            \frac{\partial V}{\partial T} - \frac{V}{T}
+            \right)
+
+        '''
         T_inv = 1.0/self.T
         return self.P*R_inv*T_inv*(self.dV_dT_l - self.V_l*T_inv)
 
     @property
     def dZ_dT_g(self):
+        r'''Derivative of compressibility factor with respect to temperature
+        for the gas phase, [1/K].
+
+        .. math::
+            \frac{\partial Z}{\partial T} = \frac{P}{RT}\left(
+            \frac{\partial V}{\partial T} - \frac{V}{T}
+            \right)
+
+        '''
         T_inv = 1.0/self.T
         return self.P*R_inv*T_inv*(self.dV_dT_g - self.V_g*T_inv)
 
     @property
     def dZ_dP_l(self):
-        return 1.0/(self.T*R)*(self.V_l + self.P*self.dV_dP_l)
+        r'''Derivative of compressibility factor with respect to pressure
+        for the liquid phase, [1/Pa].
+
+        .. math::
+            \frac{\partial Z}{\partial P} = \frac{1}{RT}\left(
+            V - \frac{\partial V}{\partial P}
+            \right)
+
+        '''
+        return (self.V_l + self.P*self.dV_dP_l)/(self.T*R)
 
     @property
     def dZ_dP_g(self):
-        return 1.0/(self.T*R)*(self.V_g + self.P*self.dV_dP_g)
+        r'''Derivative of compressibility factor with respect to pressure
+        for the gas phase, [1/Pa].
 
-    @property
-    def d2V_dTdP_l(self):
-        return self.d2V_dPdT_l
+        .. math::
+            \frac{\partial Z}{\partial P} = \frac{1}{RT}\left(
+            V - \frac{\partial V}{\partial P}
+            \right)
 
-    @property
-    def d2V_dTdP_g(self):
-        return self.d2V_dPdT_g
+        '''
+        return (self.V_g + self.P*self.dV_dP_g)/(self.T*R)
+
+    d2V_dTdP_l = d2V_dPdT_l
+    d2V_dTdP_g = d2V_dPdT_g
+    d2T_dVdP_l = d2T_dPdV_l
+    d2T_dVdP_g = d2T_dPdV_g
 
     @property
     def d2P_dVdT_l(self):
+        '''Alias of :obj:`GCEOS.d2P_dTdV_l`'''
         return self.d2P_dTdV_l
 
     @property
     def d2P_dVdT_g(self):
+        '''Alias of :obj:`GCEOS.d2P_dTdV_g`'''
         return self.d2P_dTdV_g
-
-    @property
-    def d2T_dVdP_l(self):
-        return self.d2T_dPdV_l
-
-    @property
-    def d2T_dVdP_g(self):
-        return self.d2T_dPdV_g
-
 
     @property
     def dP_drho_l(self):
         r'''Derivative of pressure with respect to molar density for the liquid
-        phase, [Pa/(mol/m^3)]
+        phase, [Pa/(mol/m^3)].
 
         .. math::
             \frac{\partial P}{\partial \rho} = -V^2 \frac{\partial P}{\partial V}
@@ -3842,7 +4249,7 @@ class GCEOS(object):
     @property
     def dP_drho_g(self):
         r'''Derivative of pressure with respect to molar density for the gas
-        phase, [Pa/(mol/m^3)]
+        phase, [Pa/(mol/m^3)].
 
         .. math::
             \frac{\partial P}{\partial \rho} = -V^2 \frac{\partial P}{\partial V}
@@ -3852,7 +4259,7 @@ class GCEOS(object):
     @property
     def drho_dP_l(self):
         r'''Derivative of molar density with respect to pressure for the liquid
-        phase, [(mol/m^3)/Pa]
+        phase, [(mol/m^3)/Pa].
 
         .. math::
             \frac{\partial \rho}{\partial P} = \frac{-1}{V^2} \frac{\partial V}{\partial P}
@@ -3862,7 +4269,7 @@ class GCEOS(object):
     @property
     def drho_dP_g(self):
         r'''Derivative of molar density with respect to pressure for the gas
-        phase, [(mol/m^3)/Pa]
+        phase, [(mol/m^3)/Pa].
 
         .. math::
             \frac{\partial \rho}{\partial P} = \frac{-1}{V^2} \frac{\partial V}{\partial P}
@@ -3872,7 +4279,7 @@ class GCEOS(object):
     @property
     def d2P_drho2_l(self):
         r'''Second derivative of pressure with respect to molar density for the
-        liquid phase, [Pa/(mol/m^3)^2]
+        liquid phase, [Pa/(mol/m^3)^2].
 
         .. math::
             \frac{\partial^2 P}{\partial \rho^2} = -V^2\left(
@@ -3884,7 +4291,7 @@ class GCEOS(object):
     @property
     def d2P_drho2_g(self):
         r'''Second derivative of pressure with respect to molar density for the
-        gas phase, [Pa/(mol/m^3)^2]
+        gas phase, [Pa/(mol/m^3)^2].
 
         .. math::
             \frac{\partial^2 P}{\partial \rho^2} = -V^2\left(
@@ -3896,7 +4303,7 @@ class GCEOS(object):
     @property
     def d2rho_dP2_l(self):
         r'''Second derivative of molar density with respect to pressure for the
-        liquid phase, [(mol/m^3)/Pa^2]
+        liquid phase, [(mol/m^3)/Pa^2].
 
         .. math::
             \frac{\partial^2 \rho}{\partial P^2} =
@@ -3908,7 +4315,7 @@ class GCEOS(object):
     @property
     def d2rho_dP2_g(self):
         r'''Second derivative of molar density with respect to pressure for the
-        gas phase, [(mol/m^3)/Pa^2]
+        gas phase, [(mol/m^3)/Pa^2].
 
         .. math::
             \frac{\partial^2 \rho}{\partial P^2} =
@@ -3921,27 +4328,27 @@ class GCEOS(object):
     @property
     def dT_drho_l(self):
         r'''Derivative of temperature with respect to molar density for the
-        liquid phase, [K/(mol/m^3)]
+        liquid phase, [K/(mol/m^3)].
 
         .. math::
-            \frac{\partial \T}{\partial \rho} = V^2 \frac{\partial T}{\partial V}
+            \frac{\partial T}{\partial \rho} = V^2 \frac{\partial T}{\partial V}
         '''
         return -self.V_l*self.V_l*self.dT_dV_l
 
     @property
     def dT_drho_g(self):
         r'''Derivative of temperature with respect to molar density for the
-        gas phase, [K/(mol/m^3)]
+        gas phase, [K/(mol/m^3)].
 
         .. math::
-            \frac{\partial \T}{\partial \rho} = V^2 \frac{\partial T}{\partial V}
+            \frac{\partial T}{\partial \rho} = V^2 \frac{\partial T}{\partial V}
         '''
         return -self.V_g*self.V_g*self.dT_dV_g
 
     @property
     def d2T_drho2_l(self):
         r'''Second derivative of temperature with respect to molar density for
-        the liquid phase, [K/(mol/m^3)^2]
+        the liquid phase, [K/(mol/m^3)^2].
 
         .. math::
             \frac{\partial^2 T}{\partial \rho^2} =
@@ -3952,7 +4359,7 @@ class GCEOS(object):
     @property
     def d2T_drho2_g(self):
         r'''Second derivative of temperature with respect to molar density for
-        the gas phase, [K/(mol/m^3)^2]
+        the gas phase, [K/(mol/m^3)^2].
 
         .. math::
             \frac{\partial^2 T}{\partial \rho^2} =
@@ -3964,7 +4371,7 @@ class GCEOS(object):
     @property
     def drho_dT_l(self):
         r'''Derivative of molar density with respect to temperature for the
-        liquid phase, [(mol/m^3)/K]
+        liquid phase, [(mol/m^3)/K].
 
         .. math::
             \frac{\partial \rho}{\partial T} = - \frac{1}{V^2}
@@ -3975,7 +4382,7 @@ class GCEOS(object):
     @property
     def drho_dT_g(self):
         r'''Derivative of molar density with respect to temperature for the
-        gas phase, [(mol/m^3)/K]
+        gas phase, [(mol/m^3)/K].
 
         .. math::
             \frac{\partial \rho}{\partial T} = - \frac{1}{V^2}
@@ -3986,7 +4393,7 @@ class GCEOS(object):
     @property
     def d2rho_dT2_l(self):
         r'''Second derivative of molar density with respect to temperature for
-        the liquid phase, [(mol/m^3)/K^2]
+        the liquid phase, [(mol/m^3)/K^2].
 
         .. math::
             \frac{\partial^2 \rho}{\partial T^2} =
@@ -3998,7 +4405,7 @@ class GCEOS(object):
     @property
     def d2rho_dT2_g(self):
         r'''Second derivative of molar density with respect to temperature for
-        the gas phase, [(mol/m^3)/K^2]
+        the gas phase, [(mol/m^3)/K^2].
 
         .. math::
             \frac{\partial^2 \rho}{\partial T^2} =
@@ -4010,7 +4417,7 @@ class GCEOS(object):
     @property
     def d2P_dTdrho_l(self):
         r'''Derivative of pressure with respect to molar density, and
-        temperature for the liquid phase, [Pa/(K*mol/m^3)]
+        temperature for the liquid phase, [Pa/(K*mol/m^3)].
 
         .. math::
             \frac{\partial^2 P}{\partial \rho\partial T}
@@ -4021,7 +4428,7 @@ class GCEOS(object):
     @property
     def d2P_dTdrho_g(self):
         r'''Derivative of pressure with respect to molar density, and
-        temperature for the gas phase, [Pa/(K*mol/m^3)]
+        temperature for the gas phase, [Pa/(K*mol/m^3)].
 
         .. math::
             \frac{\partial^2 P}{\partial \rho\partial T}
@@ -4032,7 +4439,7 @@ class GCEOS(object):
     @property
     def d2T_dPdrho_l(self):
         r'''Derivative of temperature with respect to molar density, and
-        pressure for the liquid phase, [K/(Pa*mol/m^3)]
+        pressure for the liquid phase, [K/(Pa*mol/m^3)].
 
         .. math::
             \frac{\partial^2 T}{\partial \rho\partial P}
@@ -4043,7 +4450,7 @@ class GCEOS(object):
     @property
     def d2T_dPdrho_g(self):
         r'''Derivative of temperature with respect to molar density, and
-        pressure for the gas phase, [K/(Pa*mol/m^3)]
+        pressure for the gas phase, [K/(Pa*mol/m^3)].
 
         .. math::
             \frac{\partial^2 T}{\partial \rho\partial P}
@@ -4054,7 +4461,7 @@ class GCEOS(object):
     @property
     def d2rho_dPdT_l(self):
         r'''Second derivative of molar density with respect to pressure
-        and temperature for the liquid phase, [(mol/m^3)/(K*Pa)]
+        and temperature for the liquid phase, [(mol/m^3)/(K*Pa)].
 
         .. math::
             \frac{\partial^2 \rho}{\partial T \partial P} =
@@ -4068,7 +4475,7 @@ class GCEOS(object):
     @property
     def d2rho_dPdT_g(self):
         r'''Second derivative of molar density with respect to pressure
-        and temperature for the gas phase, [(mol/m^3)/(K*Pa)]
+        and temperature for the gas phase, [(mol/m^3)/(K*Pa)].
 
         .. math::
             \frac{\partial^2 \rho}{\partial T \partial P} =
@@ -4082,7 +4489,7 @@ class GCEOS(object):
     @property
     def dH_dep_dT_l(self):
         r'''Derivative of departure enthalpy with respect to
-        temeprature for the liquid phase, [(J/mol)/K]
+        temperature for the liquid phase, [(J/mol)/K].
 
         .. math::
             \frac{\partial H_{dep, l}}{\partial T} = P \frac{d}{d T} V{\left (T
@@ -4112,7 +4519,7 @@ class GCEOS(object):
     @property
     def dH_dep_dT_g(self):
         r'''Derivative of departure enthalpy with respect to
-        temeprature for the gas phase, [(J/mol)/K]
+        temperature for the gas phase, [(J/mol)/K].
 
         .. math::
             \frac{\partial H_{dep, g}}{\partial T} = P \frac{d}{d T} V{\left (T
@@ -4141,7 +4548,7 @@ class GCEOS(object):
     @property
     def dH_dep_dT_l_V(self):
         r'''Derivative of departure enthalpy with respect to
-        temeprature at constant volume for the liquid phase, [(J/mol)/K]
+        temperature at constant volume for the liquid phase, [(J/mol)/K].
 
         .. math::
             \left(\frac{\partial H_{dep, l}}{\partial T}\right)_{V} =
@@ -4164,7 +4571,7 @@ class GCEOS(object):
     @property
     def dH_dep_dT_g_V(self):
         r'''Derivative of departure enthalpy with respect to
-        temeprature at constant volume for the gas phase, [(J/mol)/K]
+        temperature at constant volume for the gas phase, [(J/mol)/K].
 
         .. math::
             \left(\frac{\partial H_{dep, g}}{\partial T}\right)_{V} =
@@ -4188,7 +4595,7 @@ class GCEOS(object):
     @property
     def dH_dep_dP_l(self):
         r'''Derivative of departure enthalpy with respect to
-        pressure for the liquid phase, [(J/mol)/Pa]
+        pressure for the liquid phase, [(J/mol)/Pa].
 
         .. math::
             \frac{\partial H_{dep, l}}{\partial P} = P \frac{d}{d P} V{\left (P
@@ -4209,7 +4616,7 @@ class GCEOS(object):
     @property
     def dH_dep_dP_g(self):
         r'''Derivative of departure enthalpy with respect to
-        pressure for the gas phase, [(J/mol)/Pa]
+        pressure for the gas phase, [(J/mol)/Pa].
 
         .. math::
             \frac{\partial H_{dep, g}}{\partial P} = P \frac{d}{d P} V{\left (P
@@ -4230,7 +4637,7 @@ class GCEOS(object):
     @property
     def dH_dep_dP_l_V(self):
         r'''Derivative of departure enthalpy with respect to
-        pressure at constant volume for the gas phase, [(J/mol)/Pa]
+        pressure at constant volume for the gas phase, [(J/mol)/Pa].
 
         .. math::
             \left(\frac{\partial H_{dep, g}}{\partial P}\right)_{V} =
@@ -4263,7 +4670,7 @@ class GCEOS(object):
     @property
     def dH_dep_dP_g_V(self):
         r'''Derivative of departure enthalpy with respect to
-        pressure at constant volume for the liquid phase, [(J/mol)/Pa]
+        pressure at constant volume for the liquid phase, [(J/mol)/Pa].
 
         .. math::
             \left(\frac{\partial H_{dep, g}}{\partial P}\right)_{V} =
@@ -4295,7 +4702,7 @@ class GCEOS(object):
     @property
     def dH_dep_dV_g_T(self):
         r'''Derivative of departure enthalpy with respect to
-        volume at constant temperature for the gas phase, [J/m^3]
+        volume at constant temperature for the gas phase, [J/m^3].
 
         .. math::
             \left(\frac{\partial H_{dep, g}}{\partial V}\right)_{T} =
@@ -4307,7 +4714,7 @@ class GCEOS(object):
     @property
     def dH_dep_dV_l_T(self):
         r'''Derivative of departure enthalpy with respect to
-        volume at constant temperature for the gas phase, [J/m^3]
+        volume at constant temperature for the gas phase, [J/m^3].
 
         .. math::
             \left(\frac{\partial H_{dep, l}}{\partial V}\right)_{T} =
@@ -4319,7 +4726,7 @@ class GCEOS(object):
     @property
     def dH_dep_dV_g_P(self):
         r'''Derivative of departure enthalpy with respect to
-        volume at constant pressure for the gas phase, [J/m^3]
+        volume at constant pressure for the gas phase, [J/m^3].
 
         .. math::
             \left(\frac{\partial H_{dep, g}}{\partial V}\right)_{P} =
@@ -4331,7 +4738,7 @@ class GCEOS(object):
     @property
     def dH_dep_dV_l_P(self):
         r'''Derivative of departure enthalpy with respect to
-        volume at constant pressure for the liquid phase, [J/m^3]
+        volume at constant pressure for the liquid phase, [J/m^3].
 
         .. math::
             \left(\frac{\partial H_{dep, l}}{\partial V}\right)_{P} =
@@ -4343,7 +4750,7 @@ class GCEOS(object):
     @property
     def dS_dep_dT_l(self):
         r'''Derivative of departure entropy with respect to
-        temperature for the liquid phase, [(J/mol)/K^2]
+        temperature for the liquid phase, [(J/mol)/K^2].
 
         .. math::
             \frac{\partial S_{dep, l}}{\partial T} = - \frac{R \frac{d}{d T}
@@ -4378,7 +4785,7 @@ class GCEOS(object):
     @property
     def dS_dep_dT_g(self):
         r'''Derivative of departure entropy with respect to
-        temperature for the gas phase, [(J/mol)/K^2]
+        temperature for the gas phase, [(J/mol)/K^2].
 
         .. math::
             \frac{\partial S_{dep, g}}{\partial T} = - \frac{R \frac{d}{d T}
@@ -4414,7 +4821,7 @@ class GCEOS(object):
     @property
     def dS_dep_dT_l_V(self):
         r'''Derivative of departure entropy with respect to
-        temeprature at constant volume for the liquid phase, [(J/mol)/K^2]
+        temperature at constant volume for the liquid phase, [(J/mol)/K^2].
 
         .. math::
             \left(\frac{\partial S_{dep, l}}{\partial T}\right)_{V} =
@@ -4438,7 +4845,7 @@ class GCEOS(object):
     @property
     def dS_dep_dT_g_V(self):
         r'''Derivative of departure entropy with respect to
-        temeprature at constant volume for the gas phase, [(J/mol)/K^2]
+        temperature at constant volume for the gas phase, [(J/mol)/K^2].
 
         .. math::
             \left(\frac{\partial S_{dep, g}}{\partial T}\right)_{V} =
@@ -4462,7 +4869,7 @@ class GCEOS(object):
     @property
     def dS_dep_dP_l(self):
         r'''Derivative of departure entropy with respect to
-        pressure for the liquid phase, [(J/mol)/K/Pa]
+        pressure for the liquid phase, [(J/mol)/K/Pa].
 
         .. math::
             \frac{\partial S_{dep, l}}{\partial P} = - \frac{R \frac{d}{d P}
@@ -4489,7 +4896,7 @@ class GCEOS(object):
     @property
     def dS_dep_dP_g(self):
         r'''Derivative of departure entropy with respect to
-        pressure for the gas phase, [(J/mol)/K/Pa]
+        pressure for the gas phase, [(J/mol)/K/Pa].
 
         .. math::
             \frac{\partial S_{dep, g}}{\partial P} = - \frac{R \frac{d}{d P}
@@ -4516,7 +4923,7 @@ class GCEOS(object):
     @property
     def dS_dep_dP_g_V(self):
         r'''Derivative of departure entropy with respect to
-        pressure at constant volume for the gas phase, [(J/mol)/K/Pa]
+        pressure at constant volume for the gas phase, [(J/mol)/K/Pa].
 
         .. math::
             \left(\frac{\partial S_{dep, g}}{\partial P}\right)_{V} =
@@ -4542,7 +4949,7 @@ class GCEOS(object):
     @property
     def dS_dep_dP_l_V(self):
         r'''Derivative of departure entropy with respect to
-        pressure at constant volume for the liquid phase, [(J/mol)/K/Pa]
+        pressure at constant volume for the liquid phase, [(J/mol)/K/Pa].
 
         .. math::
             \left(\frac{\partial S_{dep, l}}{\partial P}\right)_{V} =
@@ -4568,7 +4975,7 @@ class GCEOS(object):
     @property
     def dS_dep_dV_g_T(self):
         r'''Derivative of departure entropy with respect to
-        volume at constant temperature for the gas phase, [J/K/m^3]
+        volume at constant temperature for the gas phase, [J/K/m^3].
 
         .. math::
             \left(\frac{\partial S_{dep, g}}{\partial V}\right)_{T} =
@@ -4580,7 +4987,7 @@ class GCEOS(object):
     @property
     def dS_dep_dV_l_T(self):
         r'''Derivative of departure entropy with respect to
-        volume at constant temperature for the gas phase, [J/K/m^3]
+        volume at constant temperature for the gas phase, [J/K/m^3].
 
         .. math::
             \left(\frac{\partial S_{dep, l}}{\partial V}\right)_{T} =
@@ -4592,7 +4999,7 @@ class GCEOS(object):
     @property
     def dS_dep_dV_g_P(self):
         r'''Derivative of departure entropy with respect to
-        volume at constant pressure for the gas phase, [J/K/m^3]
+        volume at constant pressure for the gas phase, [J/K/m^3].
 
         .. math::
             \left(\frac{\partial S_{dep, g}}{\partial V}\right)_{P} =
@@ -4604,7 +5011,7 @@ class GCEOS(object):
     @property
     def dS_dep_dV_l_P(self):
         r'''Derivative of departure entropy with respect to
-        volume at constant pressure for the liquid phase, [J/K/m^3]
+        volume at constant pressure for the liquid phase, [J/K/m^3].
 
         .. math::
             \left(\frac{\partial S_{dep, l}}{\partial V}\right)_{P} =
@@ -4616,7 +5023,7 @@ class GCEOS(object):
     @property
     def d2H_dep_dT2_g(self):
         r'''Second temperature derivative of departure enthalpy with respect to
-        temeprature for the gas phase, [(J/mol)/K^2]
+        temperature for the gas phase, [(J/mol)/K^2].
 
         .. math::
             \frac{\partial^2 H_{dep, g}}{\partial T^2} =
@@ -4669,7 +5076,7 @@ class GCEOS(object):
     @property
     def d2H_dep_dT2_l(self):
         r'''Second temperature derivative of departure enthalpy with respect to
-        temeprature for the liquid phase, [(J/mol)/K^2]
+        temperature for the liquid phase, [(J/mol)/K^2].
 
         .. math::
             \frac{\partial^2 H_{dep, l}}{\partial T^2} =
@@ -4722,7 +5129,7 @@ class GCEOS(object):
     @property
     def d2S_dep_dT2_g(self):
         r'''Second temperature derivative of departure entropy with respect to
-        temeprature for the gas phase, [(J/mol)/K^3]
+        temperature for the gas phase, [(J/mol)/K^3].
 
         .. math::
             \frac{\partial^2 S_{dep, g}}{\partial T^2} = - \frac{R \left(
@@ -4793,7 +5200,7 @@ class GCEOS(object):
     @property
     def d2S_dep_dT2_l(self):
         r'''Second temperature derivative of departure entropy with respect to
-        temeprature for the liquid phase, [(J/mol)/K^3]
+        temperature for the liquid phase, [(J/mol)/K^3].
 
         .. math::
             \frac{\partial^2 S_{dep, l}}{\partial T^2} = - \frac{R \left(
@@ -4864,7 +5271,7 @@ class GCEOS(object):
     @property
     def d2H_dep_dT2_g_V(self):
         r'''Second temperature derivative of departure enthalpy with respect to
-        temeprature at constant volume for the gas phase, [(J/mol)/K^2]
+        temperature at constant volume for the gas phase, [(J/mol)/K^2].
 
         .. math::
             \left(\frac{\partial^2 H_{dep, g}}{\partial T^2}\right)_V =
@@ -4892,7 +5299,7 @@ class GCEOS(object):
     @property
     def d2H_dep_dT2_l_V(self):
         r'''Second temperature derivative of departure enthalpy with respect to
-        temeprature at constant volume for the liquid phase, [(J/mol)/K^2]
+        temperature at constant volume for the liquid phase, [(J/mol)/K^2].
 
         .. math::
             \left(\frac{\partial^2 H_{dep, l}}{\partial T^2}\right)_V =
@@ -4920,7 +5327,7 @@ class GCEOS(object):
     @property
     def d2S_dep_dT2_g_V(self):
         r'''Second temperature derivative of departure entropy with respect to
-        temeprature at constant volume for the gas phase, [(J/mol)/K^3]
+        temperature at constant volume for the gas phase, [(J/mol)/K^3].
 
         .. math::
             \left(\frac{\partial^2 S_{dep, g}}{\partial T^2}\right)_V =
@@ -4959,7 +5366,7 @@ class GCEOS(object):
     @property
     def d2S_dep_dT2_l_V(self):
         r'''Second temperature derivative of departure entropy with respect to
-        temeprature at constant volume for the liquid phase, [(J/mol)/K^3]
+        temperature at constant volume for the liquid phase, [(J/mol)/K^3].
 
         .. math::
             \left(\frac{\partial^2 S_{dep, l}}{\partial T^2}\right)_V =
@@ -4997,7 +5404,8 @@ class GCEOS(object):
     @property
     def d2H_dep_dTdP_g(self):
         r'''Temperature and pressure derivative of departure enthalpy
-        at constant pressure then temperature for the gas phase, [(J/mol)/K/Pa]
+        at constant pressure then temperature for the gas phase,
+        [(J/mol)/K/Pa].
 
         .. math::
             \left(\frac{\partial^2 H_{dep, g}}{\partial T \partial P}\right)_{T, P}
@@ -5044,7 +5452,7 @@ class GCEOS(object):
     def d2H_dep_dTdP_l(self):
         r'''Temperature and pressure derivative of departure enthalpy
         at constant pressure then temperature for the liquid phase,
-        [(J/mol)/K/Pa]
+        [(J/mol)/K/Pa].
 
         .. math::
             \left(\frac{\partial^2 H_{dep, l}}{\partial T \partial P}\right)_V
@@ -5090,7 +5498,8 @@ class GCEOS(object):
     @property
     def d2S_dep_dTdP_g(self):
         r'''Temperature and pressure derivative of departure entropy
-        at constant pressure then temperature for the gas phase, [(J/mol)/K^2/Pa]
+        at constant pressure then temperature for the gas phase,
+        [(J/mol)/K^2/Pa].
 
         .. math::
             \left(\frac{\partial^2 S_{dep, g}}{\partial T \partial P}\right)_{T, P}
@@ -5165,7 +5574,8 @@ class GCEOS(object):
     @property
     def d2S_dep_dTdP_l(self):
         r'''Temperature and pressure derivative of departure entropy
-        at constant pressure then temperature for the liquid phase, [(J/mol)/K^2/Pa]
+        at constant pressure then temperature for the liquid phase,
+        [(J/mol)/K^2/Pa].
 
         .. math::
             \left(\frac{\partial^2 S_{dep, l}}{\partial T \partial P}\right)_{T, P}
@@ -5240,7 +5650,7 @@ class GCEOS(object):
     @property
     def dfugacity_dT_l(self):
         r'''Derivative of fugacity with respect to temperature for the liquid
-        phase, [Pa/K]
+        phase, [Pa/K].
 
         .. math::
             \frac{\partial (\text{fugacity})_{l}}{\partial T} = P \left(\frac{1}
@@ -5263,7 +5673,7 @@ class GCEOS(object):
     @property
     def dfugacity_dT_g(self):
         r'''Derivative of fugacity with respect to temperature for the gas
-        phase, [Pa/K]
+        phase, [Pa/K].
 
         .. math::
             \frac{\partial (\text{fugacity})_{g}}{\partial T} = P \left(\frac{1}
@@ -5286,7 +5696,7 @@ class GCEOS(object):
     @property
     def dfugacity_dP_l(self):
         r'''Derivative of fugacity with respect to pressure for the liquid
-        phase, [-]
+        phase, [-].
 
         .. math::
             \frac{\partial (\text{fugacity})_{l}}{\partial P} = \frac{P}{R T}
@@ -5306,7 +5716,7 @@ class GCEOS(object):
     @property
     def dfugacity_dP_g(self):
         r'''Derivative of fugacity with respect to pressure for the gas
-        phase, [-]
+        phase, [-].
 
         .. math::
             \frac{\partial (\text{fugacity})_{g}}{\partial P} = \frac{P}{R T}
@@ -5333,7 +5743,7 @@ class GCEOS(object):
     @property
     def dphi_dT_l(self):
         r'''Derivative of fugacity coefficient with respect to temperature for
-        the liquid phase, [1/K]
+        the liquid phase, [1/K].
 
         .. math::
             \frac{\partial \phi}{\partial T} = \left(\frac{- T \frac{\partial}
@@ -5354,7 +5764,7 @@ class GCEOS(object):
     @property
     def dphi_dT_g(self):
         r'''Derivative of fugacity coefficient with respect to temperature for
-        the gas phase, [1/K]
+        the gas phase, [1/K].
 
         .. math::
             \frac{\partial \phi}{\partial T} = \left(\frac{- T \frac{\partial}
@@ -5375,7 +5785,7 @@ class GCEOS(object):
     @property
     def dphi_dP_l(self):
         r'''Derivative of fugacity coefficient with respect to pressure for
-        the liquid phase, [1/Pa]
+        the liquid phase, [1/Pa].
 
         .. math::
             \frac{\partial \phi}{\partial P} = \frac{\left(- T \frac{\partial}
@@ -5393,7 +5803,7 @@ class GCEOS(object):
     @property
     def dphi_dP_g(self):
         r'''Derivative of fugacity coefficient with respect to pressure for
-        the gas phase, [1/Pa]
+        the gas phase, [1/Pa].
 
         .. math::
             \frac{\partial \phi}{\partial P} = \frac{\left(- T \frac{\partial}
@@ -5411,7 +5821,7 @@ class GCEOS(object):
     @property
     def dbeta_dT_g(self):
         r'''Derivative of isobaric expansion coefficient with respect to
-        temeprature for the gas phase, [1/K^2]
+        temperature for the gas phase, [1/K^2].
 
         .. math::
             \frac{\partial \beta_g}{\partial T} = \frac{\frac{\partial^{2}}
@@ -5426,7 +5836,7 @@ class GCEOS(object):
     @property
     def dbeta_dT_l(self):
         r'''Derivative of isobaric expansion coefficient with respect to
-        temeprature for the liquid phase, [1/K^2]
+        temperature for the liquid phase, [1/K^2].
 
         .. math::
             \frac{\partial \beta_l}{\partial T} = \frac{\frac{\partial^{2}}
@@ -5441,7 +5851,7 @@ class GCEOS(object):
     @property
     def dbeta_dP_g(self):
         r'''Derivative of isobaric expansion coefficient with respect to
-        pressure for the gas phase, [1/(Pa*K)]
+        pressure for the gas phase, [1/(Pa*K)].
 
         .. math::
             \frac{\partial \beta_g}{\partial P} = \frac{\frac{\partial^{2}}
@@ -5458,7 +5868,7 @@ class GCEOS(object):
     @property
     def dbeta_dP_l(self):
         r'''Derivative of isobaric expansion coefficient with respect to
-        pressure for the liquid phase, [1/(Pa*K)]
+        pressure for the liquid phase, [1/(Pa*K)].
 
         .. math::
             \frac{\partial \beta_g}{\partial P} = \frac{\frac{\partial^{2}}
@@ -5476,7 +5886,7 @@ class GCEOS(object):
     def da_alpha_dP_g_V(self):
         r'''Derivative of the `a_alpha` with respect to
         pressure at constant volume (varying T) for the gas phase,
-        [J^2/mol^2/Pa^2]
+        [J^2/mol^2/Pa^2].
 
         .. math::
             \left(\frac{\partial a \alpha}{\partial P}\right)_{V}
@@ -5489,7 +5899,7 @@ class GCEOS(object):
     def da_alpha_dP_l_V(self):
         r'''Derivative of the `a_alpha` with respect to
         pressure at constant volume (varying T) for the liquid phase,
-        [J^2/mol^2/Pa^2]
+        [J^2/mol^2/Pa^2].
 
         .. math::
             \left(\frac{\partial a \alpha}{\partial P}\right)_{V}
@@ -5502,7 +5912,7 @@ class GCEOS(object):
     def d2a_alpha_dTdP_g_V(self):
         r'''Derivative of the temperature derivative of `a_alpha` with respect
         to pressure at constant volume (varying T) for the gas phase,
-        [J^2/mol^2/Pa^2/K]
+        [J^2/mol^2/Pa^2/K].
 
         .. math::
             \left(\frac{\partial \left(\frac{\partial a \alpha}{\partial T}
@@ -5516,7 +5926,7 @@ class GCEOS(object):
     def d2a_alpha_dTdP_l_V(self):
         r'''Derivative of the temperature derivative of `a_alpha` with respect
         to pressure at constant volume (varying T) for the liquid phase,
-        [J^2/mol^2/Pa^2/K]
+        [J^2/mol^2/Pa^2/K].
 
         .. math::
             \left(\frac{\partial \left(\frac{\partial a \alpha}{\partial T}
@@ -5529,7 +5939,7 @@ class GCEOS(object):
     @property
     def d2P_dVdP_g(self):
         r'''Second derivative of pressure with respect to molar volume and
-        then pressure for the gas phase, [mol/m^3]
+        then pressure for the gas phase, [mol/m^3].
 
         .. math::
             \frac{\partial^2 P}{\partial V \partial P} =
@@ -5568,7 +5978,7 @@ class GCEOS(object):
     @property
     def d2P_dVdP_l(self):
         r'''Second derivative of pressure with respect to molar volume and
-        then pressure for the liquid phase, [mol/m^3]
+        then pressure for the liquid phase, [mol/m^3].
 
         .. math::
             \frac{\partial^2 P}{\partial V \partial P} =
@@ -5597,7 +6007,7 @@ class GCEOS(object):
     def d2P_dVdT_TP_g(self):
         r'''Second derivative of pressure with respect to molar volume and
         then temperature at constant temperature then pressure for the gas
-        phase, [Pa*mol/m^3/K]
+        phase, [Pa*mol/m^3/K].
 
         .. math::
             \left(\frac{\partial^2 P}{\partial V \partial T}\right)_{T,P} =
@@ -5633,7 +6043,7 @@ class GCEOS(object):
     def d2P_dVdT_TP_l(self):
         r'''Second derivative of pressure with respect to molar volume and
         then temperature at constant temperature then pressure for the liquid
-        phase, [Pa*mol/m^3/K]
+        phase, [Pa*mol/m^3/K].
 
         .. math::
             \left(\frac{\partial^2 P}{\partial V \partial T}\right)_{T,P} =
@@ -5669,7 +6079,7 @@ class GCEOS(object):
     def d2P_dT2_PV_g(self):
         r'''Second derivative of pressure with respect to temperature twice,
         but with pressure held constant the first time and volume held
-        constant the second time for the gas phase, [Pa/K^2]
+        constant the second time for the gas phase, [Pa/K^2].
 
         .. math::
             \left(\frac{\partial^2 P}{\partial T \partial T}\right)_{P,V} =
@@ -5698,7 +6108,7 @@ class GCEOS(object):
     def d2P_dT2_PV_l(self):
         r'''Second derivative of pressure with respect to temperature twice,
         but with pressure held constant the first time and volume held
-        constant the second time for the liquid phase, [Pa/K^2]
+        constant the second time for the liquid phase, [Pa/K^2].
 
         .. math::
             \left(\frac{\partial^2 P}{\partial T \partial T}\right)_{P,V} =
@@ -5726,8 +6136,8 @@ class GCEOS(object):
     @property
     def d2P_dTdP_g(self):
         r'''Second derivative of pressure with respect to temperature and,
-        then pressure; and with volume held constant at first, then temperature
-        for the gas phase, [1/K]
+        then pressure; and with volume held constant at first, then temperature,
+        for the gas phase, [1/K].
 
         .. math::
             \left(\frac{\partial^2 P}{\partial T \partial P}\right)_{V, T} =
@@ -5750,8 +6160,8 @@ class GCEOS(object):
     @property
     def d2P_dTdP_l(self):
         r'''Second derivative of pressure with respect to temperature and,
-        then pressure; and with volume held constant at first, then temperature
-        for the liquid phase, [1/K]
+        then pressure; and with volume held constant at first, then temperature,
+        for the liquid phase, [1/K].
 
         .. math::
             \left(\frac{\partial^2 P}{\partial T \partial P}\right)_{V, T} =
@@ -5772,19 +6182,18 @@ class GCEOS(object):
 
     @property
     def lnphi_l(self):
+        r'''The natural logarithm of the fugacity coefficient for
+        the liquid phase, [-].
+        '''
         return log(self.phi_l)
 
     @property
     def lnphi_g(self):
+        r'''The natural logarithm of the fugacity coefficient for
+        the gas phase, [-].
+        '''
         return log(self.phi_g)
 
-class GCEOS_DUMMY(GCEOS):
-    Tc = None
-    Pc = None
-    omega = None
-    def __init__(self, T=None, P=None, **kwargs):
-        self.T = T
-        self.P = P
 
 class IG(GCEOS):
     r'''Class for solving the ideal gas equation in the `GCEOS` framework.
@@ -6421,6 +6830,8 @@ class PR(GCEOS):
 
             # Newton step - might as well compute it
             derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc
+            if derr == 0.0:
+                return T_calc
             T_calc = T_calc - err/derr
 
             # Step 2 - cannot find occasion to need more steps, most of the time
@@ -6909,7 +7320,7 @@ class PRTranslatedPoly(Poly_a_alpha, PRTranslated):
     >>> alpha_coeffs_exact = [9.645280470011588e-32, -4.362226651748652e-28, 9.034194757823037e-25, -1.1343330204981244e-21, 9.632898335494218e-19, -5.841502902171077e-16, 2.601801729901228e-13, -8.615431349241052e-11, 2.1202999753932622e-08, -3.829144045293198e-06, 0.0004930777289075716, -0.04285337965522619, 2.2473964123842705, -51.13852710672087]
     >>> kwargs = dict(Tc=512.5, Pc=8084000.0, omega=0.559, alpha_coeffs=alpha_coeffs_exact, c=1.557458e-05)
     >>> eos = PRTranslatedPoly(T=300, P=1e5, **kwargs)
-    >>> eos.Psat(500)/PropsSI("P", 'T', 500.0, 'Q', 0, 'methanol')
+    >>> eos.Psat(500)/PropsSI("P", 'T', 500.0, 'Q', 0, 'methanol') # doctest:+SKIP
     1.0000112765
 
     Notes
@@ -8990,12 +9401,13 @@ class SRKTranslatedPPJP(SRK):
 class SRKTranslatedTwu(Twu91_a_alpha, SRKTranslated):
     pass
 
-class SRKTranslatedConsistent(SRKTranslatedTwu):
+class SRKTranslatedConsistent(Twu91_a_alpha, SRKTranslated):
     r'''Class for solving the volume translated Le Guennec, Privat, and Jaubert
     revision of the SRK equation of state
     for a pure compound according to [1]_.
-    Subclasses `SRKTranslatedTwu`, which provides everything except the
-    estimation of `c` and the alpha coefficients. This model's `alpha` is based
+
+
+    This model's `alpha` is based
     on the TWU 1991 model; when estimating, `N` is set to 2.
     Solves the EOS on initialization. See `SRK` for further documentation.
 

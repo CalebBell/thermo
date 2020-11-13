@@ -27,7 +27,6 @@ __all__ = ['Mixture']
 import numpy as np
 from fluids.numerics import newton
 from collections import Counter, OrderedDict
-from pprint import pprint
 
 from fluids.core import *
 from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
@@ -818,7 +817,7 @@ class Mixture(object):
             self.eos = eos(T=T, P=P, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, zs=self.zs)
         except:
             # Handle overflow errors and so on
-            self.eos = GCEOS_DUMMY(T=T, P=P)
+            self.eos = IG(T=T, P=P)
 
     @property
     def eos(self):
@@ -1358,7 +1357,7 @@ class Mixture(object):
 
         Examples
         --------
-        >>> pprint(Mixture(['oxygen', 'nitrogen'], zs=[.5, .5]).legal_statuses)
+        >>> Mixture(['oxygen', 'nitrogen'], zs=[.5, .5]).legal_statuses
         [{'DSL': 'LISTED',
           'EINECS': 'LISTED',
           'NLP': 'UNLISTED',
@@ -1379,7 +1378,7 @@ class Mixture(object):
 
         Examples
         --------
-        >>> pprint(Mixture(['o-xylene', 'm-xylene'], zs=[.5, .5]).economic_statuses)
+        >>> Mixture(['o-xylene', 'm-xylene'], zs=[.5, .5]).economic_statuses
         [["US public: {'Manufactured': 0.0, 'Imported': 0.0, 'Exported': 0.0}",
           u'100,000 - 1,000,000 tonnes per annum',
           'OECD HPV Chemicals'],
@@ -1420,7 +1419,7 @@ class Mixture(object):
 
         Examples
         --------
-        >>> pprint(Mixture(['1-pentanol', 'decane'], ws=[0.5, 0.5]).UNIFAC_groups)
+        >>> Mixture(['1-pentanol', 'decane'], ws=[0.5, 0.5]).UNIFAC_groups
         [{1: 1, 2: 4, 14: 1}, {1: 2, 2: 8}]
         '''
         return [i.UNIFAC_groups for i in self.Chemicals]
@@ -1432,7 +1431,7 @@ class Mixture(object):
 
         Examples
         --------
-        >>> pprint(Mixture(['1-pentanol', 'decane'], ws=[0.5, 0.5]).UNIFAC_Dortmund_groups)
+        >>> Mixture(['1-pentanol', 'decane'], ws=[0.5, 0.5]).UNIFAC_Dortmund_groups
         [{1: 1, 2: 4, 14: 1}, {1: 2, 2: 8}]
         '''
         return [i.UNIFAC_Dortmund_groups for i in self.Chemicals]
@@ -1444,7 +1443,7 @@ class Mixture(object):
 
         Examples
         --------
-        >>> pprint(Mixture(['1-pentanol', 'decane'], ws=[0.5, 0.5]).PSRK_groups)
+        >>> Mixture(['1-pentanol', 'decane'], ws=[0.5, 0.5]).PSRK_groups
         [{1: 1, 2: 4, 14: 1}, {1: 2, 2: 8}]
         '''
         return [i.PSRK_groups for i in self.Chemicals]

@@ -27,7 +27,6 @@ __all__ = ['enthalpy_vaporization_methods', 'EnthalpyVaporization',
 
 import os
 import numpy as np
-import pandas as pd
 
 from fluids.numerics import horner, horner_and_der
 from fluids.constants import R

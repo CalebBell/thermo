@@ -26,7 +26,6 @@ __all__ = ['has_CoolProp', 'coolprop_dict', 'CP_fluid', 'coolprop_fluids',
 'CoolProp_T_dependent_property',
 'PropsSI', 'PhaseSI','HAPropsSI', 'AbstractState']
 import os
-import json
 import numpy as np
 from fluids.numerics import assert_close1d
 from thermo.utils import data_dir, source_path

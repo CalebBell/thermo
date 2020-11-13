@@ -26,7 +26,6 @@ __all__ = ['surface_tension_methods', 'SurfaceTension',
            'surface_tension_mixture_methods', 'SurfaceTensionMixture']
 
 import os
-import pandas as pd
 import numpy as np
 from chemicals.utils import log, exp
 from chemicals.utils import mixing_simple, none_and_length_check, Vm_to_rho

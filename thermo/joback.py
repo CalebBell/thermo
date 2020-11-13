@@ -26,7 +26,6 @@ __all__ = ['smarts_fragment', 'Joback', 'J_BIGGS_JOBACK_SMARTS',
            'J_BIGGS_JOBACK_SMARTS_id_dict']
 
 from collections import namedtuple, Counter
-from pprint import pprint
 from chemicals.utils import to_num, horner, exp
 try:
     from rdkit import Chem
@@ -390,7 +389,7 @@ class Joback(object):
 
     All properties can be obtained in one go with the `estimate` method:
 
-    >>> pprint(J.estimate()) # doctest: +ELLIPSIS
+    >>> J.estimate() # doctest: +ELLIPSIS
     {'Cpig': <bound method Joback.Cpig of <thermo.joback.Joback object at 0x...>>,
      'Cpig_coeffs': [7.520000000000003,
                      0.26084,

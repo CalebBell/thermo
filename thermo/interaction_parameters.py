@@ -25,7 +25,6 @@ from __future__ import division
 __all__ = ['InteractionParameterDB']
 
 import os
-import json
 import numpy as np
 from chemicals.utils import can_load_data, PY37
 from chemicals.identifiers import check_CAS, sorted_CAS_key
@@ -46,6 +45,7 @@ class InteractionParameterDB(object):
         self.metadata = {}
 
     def load_json(self, file, name):
+        import json
         f = open(file).read()
         dat = json.loads(f)
         self.tables[name] = dat['data']

@@ -27,11 +27,17 @@ __all__ = ['tabulate_solid', 'tabulate_liq', 'tabulate_gas',
 
 from collections import OrderedDict
 import numpy as np
-import pandas as pd
 from thermo.chemical import Chemical
 
-
+global _pd
+_pd = None
+def pandas():
+    global _pd
+    if _pd is None:
+        import pandas as _pd
+    return _pd
 def tabulate_solid(chemical, Tmin=None, Tmax=None, pts=10):
+    pd = pandas()
     chem = Chemical(chemical)
 
     (rhos, Cps) = [[] for i in range(2)]
@@ -62,6 +68,7 @@ def tabulate_solid(chemical, Tmin=None, Tmax=None, pts=10):
 
 
 def tabulate_liq(chemical, Tmin=None, Tmax=None, pts=10):
+    pd = pandas()
     chem = Chemical(chemical)
 
     (rhos, Cps, mugs, kgs, Prs, alphas, isobarics, JTs, Psats, sigmas, Hvaps,
@@ -115,6 +122,7 @@ def tabulate_liq(chemical, Tmin=None, Tmax=None, pts=10):
 
 def tabulate_gas(chemical, Tmin=None, Tmax=None, pts=10):
     chem = Chemical(chemical)
+    pd = pandas()
 
     (rhos, Cps, Cvs, mugs, kgs, Prs, alphas, isobarics, isentropics, JTs) = [[] for i in range(10)]
     if not Tmin:  # pragma: no cover
@@ -160,6 +168,7 @@ def tabulate_gas(chemical, Tmin=None, Tmax=None, pts=10):
 
 
 def tabulate_constants(chemical, full=False, vertical=False):
+    pd = pandas()
     pd.set_option('display.max_rows', 100000)
     pd.set_option('display.max_columns', 100000)
 
@@ -225,7 +234,7 @@ def tabulate_constants(chemical, full=False, vertical=False):
 def tabulate_streams(names=None, *args, **kwargs):
     # Names are the names of the streams to be displayed; input
     # strings for each of them or bad things happen!
-
+    pd = pandas()
     Ts = [i.T for i in args]
     Ps = [i.P for i in args]
     VFs = [i.V_over_F for i in args]

@@ -34,7 +34,6 @@ __all__ = [
 
 import os
 import numpy as np
-import pandas as pd
 
 from fluids.numerics import horner
 from fluids.constants import R, R_inv, N_A, k

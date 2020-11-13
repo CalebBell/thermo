@@ -2917,8 +2917,19 @@ def build_CEOSLiquid():
 try:
     CEOSLiquid
 except:
+    import marshal
     # Cost is ~10 ms - must be pasted in the future!
-    exec(build_CEOSLiquid())
+    if 1:
+        f = open('/home/caleb/testCEOSLiquiddat', 'rb')
+        compiled_CEOSLiquid = marshal.load(f)
+        f.close()
+    else:
+        compiled_CEOSLiquid = compile(build_CEOSLiquid(), '<string>', 'exec')
+        f = open('/home/caleb/testCEOSLiquiddat', 'wb')
+        marshal.dump(compiled_CEOSLiquid, f)
+        f.close()
+    exec(compiled_CEOSLiquid)
+    # exec(build_CEOSLiquid())
 
 CEOSLiquid.is_gas = False
 CEOSLiquid.is_liquid = True

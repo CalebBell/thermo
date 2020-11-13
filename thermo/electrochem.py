@@ -43,7 +43,6 @@ from chemicals.data_reader import data_source, register_df_source
 from chemicals.utils import exp, log10
 from chemicals.utils import to_num, ws_to_zs, mixing_simple
 from chemicals import identifiers
-import pandas as pd
 
 
 F = e*N_A
@@ -64,6 +63,7 @@ def _load_electrochem_data():
     global McCleskey_conductivities, Lange_cond_pure, _Laliberte_Density_ParametersDict
     global _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict, Laliberte_data
     global _loaded_electrochem_data
+    import pandas as pd
 
     Lange_cond_pure = data_source('Lange Pure Species Conductivity.tsv')
     Marcus_ion_conductivities = data_source('Marcus Ion Conductivities.tsv')

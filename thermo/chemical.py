@@ -77,10 +77,7 @@ except:
 
 
 from collections import Counter
-from pprint import pprint
 
-#import warnings
-#warnings.filterwarnings("ignore")
 
 caching = True
 
@@ -952,7 +949,7 @@ class Chemical(object): # pragma: no cover
             self.eos = eos(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega)
         except:
             # Handle overflow errors and so on
-            self.eos = GCEOS_DUMMY(T=T, P=P)
+            self.eos = IG(T=T, P=P)
 
     @property
     def eos(self):
@@ -1664,12 +1661,8 @@ class Chemical(object): # pragma: no cover
 
         Examples
         --------
-        >>> pprint(Chemical('benzene').legal_status)
-        {'DSL': 'LISTED',
-         'EINECS': 'LISTED',
-         'NLP': 'UNLISTED',
-         'SPIN': 'LISTED',
-         'TSCA': 'LISTED'}
+        >>> Chemical('benzene').legal_status
+        {'DSL': 'LISTED', 'EINECS': 'LISTED', 'NLP': 'UNLISTED', 'SPIN': 'LISTED', 'TSCA': 'LISTED'}
         '''
         if self.__legal_status:
             return self.__legal_status
@@ -1683,7 +1676,7 @@ class Chemical(object): # pragma: no cover
 
         Examples
         --------
-        >>> pprint(Chemical('benzene').economic_status)
+        >>> Chemical('benzene').economic_status
         ["US public: {'Manufactured': 6165232.1, 'Imported': 463146.474, 'Exported': 271908.252}",
          u'1,000,000 - 10,000,000 tonnes per annum',
          u'Intermediate Use Only',
@@ -1703,7 +1696,7 @@ class Chemical(object): # pragma: no cover
 
         Examples
         --------
-        >>> pprint(Chemical('Cumene').UNIFAC_groups)
+        >>> Chemical('Cumene').UNIFAC_groups
         {1: 2, 9: 5, 13: 1}
         '''
         if self.__UNIFAC_groups:
@@ -1723,7 +1716,7 @@ class Chemical(object): # pragma: no cover
 
         Examples
         --------
-        >>> pprint(Chemical('Cumene').UNIFAC_Dortmund_groups)
+        >>> Chemical('Cumene').UNIFAC_Dortmund_groups
         {1: 2, 9: 5, 13: 1}
         '''
         if self.__UNIFAC_Dortmund_groups:
@@ -1743,7 +1736,7 @@ class Chemical(object): # pragma: no cover
 
         Examples
         --------
-        >>> pprint(Chemical('Cumene').PSRK_groups)
+        >>> Chemical('Cumene').PSRK_groups
         {1: 2, 9: 5, 13: 1}
         '''
         if self.__PSRK_groups:

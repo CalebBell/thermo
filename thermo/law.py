@@ -29,11 +29,8 @@ __all__ = ['DSL_data', 'CAN_DSL_flags', 'TSCA_flags', 'TSCA_data',
            'load_law_data']
 
 import os
-import zipfile
 from chemicals.identifiers import CAS_to_int
 from chemicals.utils import to_num
-import pandas as pd
-from pprint import pprint
 
 
 folder = os.path.join(os.path.dirname(__file__), 'Law')
@@ -83,6 +80,8 @@ def load_law_data():
     if DSL_data is not None:
         return None
     global TSCA_data, EINECS_data, SPIN_data, NLP_data
+    import pandas as pd
+    import zipfile
 
 # Data is stored as integers to reduce memory usage
     DSL_data = pd.read_csv(os.path.join(folder, 'Canada Feb 11 2015 - DSL.csv.gz'),
@@ -248,6 +247,8 @@ def load_economic_data():
     if HPV_data is not None:
         return None
     global _EPACDRDict, _ECHATonnageDict
+    import pandas as pd
+    import zipfile
 
     '''OECD are chemicals produced by and OECD members in > 1000 tonnes/year.'''
     HPV_data = pd.read_csv(os.path.join(folder, 'HPV 2015 March 3.csv'),
