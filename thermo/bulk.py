@@ -328,15 +328,41 @@ class Bulk(Phase):
 
 
     def MW(self):
+        r'''Method to calculate and return the molecular weight of the bulk
+        phase. This is a phase-fraction weighted calculation.
+
+        .. math::
+            \text{MW} = \sum_i^p \text{MW}_i \beta_i
+
+        Returns
+        -------
+        MW : float
+            Molecular weight, [g/mol]
+        '''
+        try:
+            return self._MW
+        except:
+            pass
         MWs = self.constants.MWs
         zs = self.zs
         MW = 0.0
         for i in range(len(MWs)):
             MW += zs[i]*MWs[i]
+        self._MW = MW
         return MW
 
     def V(self):
-        # Is there a point to anything else?
+        r'''Method to calculate and return the molar volume of the bulk phase.
+        This is a phase-fraction weighted calculation.
+
+        .. math::
+            V = \sum_i^p V_i \beta_i
+
+        Returns
+        -------
+        V : float
+            Molar volume, [m^3/mol]
+        '''
         try:
             return self._V
         except AttributeError:
@@ -350,6 +376,18 @@ class Bulk(Phase):
         return V
 
     def V_iter(self, force=False):
+        r'''Method to calculate and return the molar volume of the bulk phase,
+        with precision suitable for a `TV` calculation to calculate a matching
+        pressure. This is a phase-fraction weighted calculation.
+
+        .. math::
+            V = \sum_i^p V_i \beta_i
+
+        Returns
+        -------
+        V : float or mpf
+            Molar volume, [m^3/mol]
+        '''
         betas, phases = self.phase_fractions, self.phases
         V = 0.0
         for i in range(len(betas)):
@@ -358,6 +396,18 @@ class Bulk(Phase):
 
 
     def Cp(self):
+        r'''Method to calculate and return the constant-temperature and
+        constant phase-fraction heat capacity of the bulk phase.
+        This is a phase-fraction weighted calculation.
+
+        .. math::
+            C_p = \sum_i^p C_{p,i} \beta_i
+
+        Returns
+        -------
+        Cp : float
+            Molar heat capacity, [J/(mol*K)]
+        '''
         try:
             return self._Cp
         except AttributeError:
@@ -370,7 +420,21 @@ class Bulk(Phase):
         self._Cp = Cp
         return Cp
 
+    dH_dT = Cp
+
     def H(self):
+        r'''Method to calculate and return the constant-temperature and
+        constant phase-fraction enthalpy of the bulk phase.
+        This is a phase-fraction weighted calculation.
+
+        .. math::
+            H = \sum_i^p H_{i} \beta_i
+
+        Returns
+        -------
+        H : float
+            Molar enthalpy, [J/(mol)]
+        '''
         try:
             return self._H
         except AttributeError:
@@ -384,6 +448,18 @@ class Bulk(Phase):
         return H
 
     def S(self):
+        r'''Method to calculate and return the constant-temperature and
+        constant phase-fraction entropy of the bulk phase.
+        This is a phase-fraction weighted calculation.
+
+        .. math::
+            S = \sum_i^p S_{i} \beta_i
+
+        Returns
+        -------
+        S : float
+            Molar entropy, [J/(mol*K)]
+        '''
         try:
             return self._S
         except AttributeError:
@@ -395,19 +471,6 @@ class Bulk(Phase):
             S += betas[i]*phases[i].S()
         self._S = S
         return S
-
-    def dH_dT(self):
-        try:
-            return self._dH_dT
-        except AttributeError:
-            pass
-
-        betas, phases = self.phase_fractions, self.phases
-        dH_dT = 0.0
-        for i in range(len(betas)):
-            dH_dT += betas[i]*phases[i].dH_dT()
-        self._dH_dT = dH_dT
-        return dH_dT
 
     def dH_dP(self):
         try:
