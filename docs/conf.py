@@ -55,7 +55,8 @@ extensions = [
     'sphinx.ext.autosummary',
     'nbsphinx',
     'matplotlib.sphinxext.plot_directive',
-    'numpydoc'
+    'numpydoc',
+    'sphinx.ext.intersphinx',
 ]
 
 katex_css_path = \

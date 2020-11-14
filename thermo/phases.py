@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,7 +18,104 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+Base Class
+==========
+
+.. autoclass:: Phase
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+Ideal Gas Equation of State
+===========================
+
+.. autoclass:: IdealGas
+   :show-inheritance:
+   :members: dlnphis_dP, dlnphis_dT, dphis_dP, dphis_dT, phis, lnphis, fugacities,
+             as_args, H, S, Cp, dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, dH_dP,
+             dS_dT, dS_dP, d2H_dT2, d2H_dP2, d2S_dP2, dH_dT_V, dH_dP_V, dH_dV_T,
+             dH_dV_P, dS_dT_V, dS_dP_V
+
+Cubic Equations of State
+========================
+
+Gas Phases
+----------
+.. autoclass:: CEOSGas
+   :show-inheritance:
+   :members: __init__, as_args, to_TP_zs, V_iter, H, S, Cp, Cv, dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, dH_dP, dS_dT, dS_dP, d2H_dT2, d2H_dP2, d2S_dP2, dH_dT_V, dH_dP_V, dH_dV_T, dH_dV_P, dS_dT_V, dS_dP_V, lnphis, dlnphis_dT, dlnphis_dP
+
+Liquid Phases
+-------------
+.. autoclass:: CEOSLiquid
+   :show-inheritance:
+   :members: __init__
+
+Activity Based Liquids
+======================
+.. autoclass:: GibbsExcessLiquid
+   :show-inheritance:
+   :members:
+
+Virial Equations of State
+=========================
+
+.. autoclass:: VirialGas
+   :show-inheritance:
+   :members:
+
+
+Fundamental Equations of State
+==============================
+`HelmholtzEOS` is the base class.
+
+.. autoclass:: HelmholtzEOS
+   :show-inheritance:
+   :members:
+
+.. autoclass:: IAPWS95
+   :show-inheritance:
+   :members: T_MAX_FIXED, T_MIN_FIXED, mu, k
+
+.. autoclass:: IAPWS95Gas
+   :show-inheritance:
+   :members: force_phase
+
+.. autoclass:: IAPWS95Liquid
+   :show-inheritance:
+   :members: force_phase
+
+
+Solids Phases
+=============
+.. autoclass:: GibbsExcessSolid
+   :show-inheritance:
+   :members:
+
+CoolProp Wrapper
+================
+.. autoclass:: CoolPropGas
+   :show-inheritance:
+   :members:
+
+.. autoclass:: CoolPropLiquid
+   :show-inheritance:
+   :members:
+
+Petroleum Specific Phases
+=========================
+.. autoclass:: GraysonStreed
+   :show-inheritance:
+   :members:
+
+.. autoclass:: ChaoSeader
+   :show-inheritance:
+   :members:
+
+'''
 
 from __future__ import division
 __all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'CEOSLiquid', 'CEOSGas', 'IdealGas', 'IAPWS97', 'HelmholtzEOS',
@@ -54,7 +151,8 @@ from chemicals.thermal_conductivity import k_IAPWS
 import chemicals.iapws
 from thermo.chemical_package import iapws_correlations
 from chemicals.iapws import iapws95_d3Ar_ddelta2dtau, iapws95_d3Ar_ddeltadtau2
-
+from thermo.heat_capacity import HeatCapacityGas
+R2 = R*R
 '''
 All phase objects are immutable.
 
@@ -80,7 +178,7 @@ class Phase(object):
     '''
     For basic functionality, a subclass should implement:
 
-    H, S, Cp, Cv
+    H, S, Cp
 
 
 
@@ -96,10 +194,12 @@ class Phase(object):
     d2H_dT2 d2H_dP2 d2S_dP2
 
     dH_dT_V dH_dP_V dH_dV_T dH_dV_P
-    dS_dT_V dS_dP_V dS_dV_T dS_dV_P
+    dS_dT_V dS_dP_V
 
     d2H_dTdP d2H_dT2_V
     d2P_dTdP d2P_dVdP d2P_dVdT_TP d2P_dT2_PV
+
+    Optional ones for speed:: Cv
 
 
     '''
@@ -1163,6 +1263,17 @@ class Phase(object):
         return Cp_integrals_over_T_pure
 
     def Cpigs_pure(self):
+        r'''Method to calculate and return the ideal-gas heat capacities of
+        every component in the phase. This method is powered by the
+        `HeatCapacityGases` objects, except when all components have the same
+        heat capacity form and a fast implementation has been written for it
+        (currently only polynomials).
+
+        Returns
+        -------
+        Cp_ig : list[float]
+            Molar ideal gas heat capacities, [J/(mol*K)]
+        '''
         try:
             return self._Cpigs
         except AttributeError:
@@ -1176,6 +1287,22 @@ class Phase(object):
         return self._Cpigs
 
     def Cpig_integrals_pure(self):
+        r'''Method to calculate and return the integrals of the ideal-gas heat
+        capacities of every component in the phase from a temperature of
+        :obj:`Phase.T_REF_IG` to the system temperature. This method is powered by the
+        `HeatCapacityGases` objects, except when all components have the same
+        heat capacity form and a fast implementation has been written for it
+        (currently only polynomials).
+
+        .. math::
+            \Delta H^{ig} = \int^T_{T_{ref}} C_p^{ig} dT
+
+        Returns
+        -------
+        dH_ig : list[float]
+            Integrals of ideal gas heat capacity from the reference
+            temperature to the system temperature, [J/(mol)]
+        '''
         try:
             return self._Cpig_integrals_pure
         except AttributeError:
@@ -1190,6 +1317,23 @@ class Phase(object):
         return self._Cpig_integrals_pure
 
     def Cpig_integrals_over_T_pure(self):
+        r'''Method to calculate and return the integrals of the ideal-gas heat
+        capacities divided by temperature of every component in the phase from
+        a temperature of :obj:`Phase.T_REF_IG` to the system temperature.
+        This method is powered by the
+        `HeatCapacityGases` objects, except when all components have the same
+        heat capacity form and a fast implementation has been written for it
+        (currently only polynomials).
+
+        .. math::
+            \Delta S^{ig} = \int^T_{T_{ref}} \frac{C_p^{ig}}{T} dT
+
+        Returns
+        -------
+        dS_ig : list[float]
+            Integrals of ideal gas heat capacity over temperature from the
+            reference temperature to the system temperature, [J/(mol)]
+        '''
         try:
             return self._Cpig_integrals_over_T_pure
         except AttributeError:
@@ -1206,6 +1350,21 @@ class Phase(object):
         return self._Cpig_integrals_over_T_pure
 
     def dCpigs_dT_pure(self):
+        r'''Method to calculate and return the first temperature derivative of
+        ideal-gas heat capacities of every component in the phase. This method
+        is powered by the `HeatCapacityGases` objects, except when all
+        components have the same heat capacity form and a fast implementation
+        has been written for it (currently only polynomials).
+
+        .. math::
+            \frac{\partial C_p^{ig}}{\partial T}
+
+        Returns
+        -------
+        dCp_ig_dT : list[float]
+            First temperature derivatives of molar ideal gas heat capacities,
+            [J/(mol*K^2)]
+        '''
         try:
             return self._dCpigs_dT
         except AttributeError:
@@ -1722,7 +1881,7 @@ class Phase(object):
         at constant pressure in molar units.
 
         .. math::
-            \left(\frac{\partial c{\partial T}\right)_P =
+            \left(\frac{\partial c}{\partial T}\right)_P =
             - \frac{\sqrt{- \frac{\operatorname{Cp}{\left(T \right)} V^{2}
             {\left(T \right)} \operatorname{dPdV_{T}}{\left(T \right)}}
             {\operatorname{Cv}{\left(T \right)}}} \left(- \frac{\operatorname{Cp}
@@ -1873,6 +2032,41 @@ for attr in derivatives_thermodynamic:
 
 
 class IdealGas(Phase):
+    r'''Class for representing an ideal gas as a phase object. All departure
+    properties are zero.
+
+    .. math::
+        P = \frac{RT}{V}
+
+    Parameters
+    ----------
+    HeatCapacityGases : list[HeatCapacityGas]
+        Objects proiding pure-component heat capacity correlations, [-]
+    Hfs : list[float]
+        Molar ideal-gas standard heats of formation at 298.15 K and 1 atm,
+        [J/mol]
+    Gfs : list[float]
+        Molar ideal-gas standard Gibbs energies of formation at 298.15 K and
+        1 atm, [J/mol]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    zs : list[float], optional
+        Mole fractions of each component, [-]
+
+    Examples
+    --------
+    T-P initialization for oxygen and nitrogen, using Poling's polynomial heat
+    capacities:
+
+    >>> HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
+    ...                      HeatCapacityGas(best_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
+    >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=HeatCapacityGases)
+    >>> phase.Cp()
+    29.1733530
+
+    '''
     '''DO NOT DELETE - EOS CLASS IS TOO SLOW!
     This will be important for fitting.
 
@@ -1908,27 +2102,112 @@ class IdealGas(Phase):
             self.P = P
 
     def fugacities(self):
+        r'''Method to calculate and return the fugacities of each
+        component in the phase.
+
+        .. math::
+            \text{fugacitiy}_i = z_i P
+
+        Returns
+        -------
+        fugacities : list[float]
+            Fugacities, [Pa]
+
+        Examples
+        --------
+        >>> HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
+        ...                      HeatCapacityGas(best_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
+        >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=HeatCapacityGases)
+        >>> phase.fugacities()
+        [79000.0, 21000.0]
+        '''
         P = self.P
         return [P*zi for zi in self.zs]
 
     def lnphis(self):
+        r'''Method to calculate and return the log of fugacity coefficients of
+        each component in the phase.
+
+        .. math::
+            \ln \phi_i = 0.0
+
+        Returns
+        -------
+        lnphis : list[float]
+            Log fugacity coefficients, [-]
+        '''
         return self.zeros1d
 
     lnphis_G_min = lnphis
 
     def phis(self):
+        r'''Method to calculate and return the fugacity coefficients of
+        each component in the phase.
+
+        .. math::
+             \phi_i = 1
+
+        Returns
+        -------
+        phis : list[float]
+            Fugacity fugacity coefficients, [-]
+        '''
         return self.ones1d
 
     def dphis_dT(self):
+        r'''Method to calculate and return the temperature derivative of
+        fugacity coefficients of each component in the phase.
+
+        .. math::
+             \frac{\partial \phi_i}{\partial T} = 0
+
+        Returns
+        -------
+        dphis_dT : list[float]
+            Temperature derivative of fugacity fugacity coefficients, [1/K]
+        '''
         return self.zeros1d
 
     def dphis_dP(self):
+        r'''Method to calculate and return the pressure derivative of
+        fugacity coefficients of each component in the phase.
+
+        .. math::
+             \frac{\partial \phi_i}{\partial P} = 0
+
+        Returns
+        -------
+        dphis_dP : list[float]
+            Pressure derivative of fugacity fugacity coefficients, [1/Pa]
+        '''
         return self.zeros1d
 
     def dlnphis_dT(self):
+        r'''Method to calculate and return the temperature derivative of the
+        log of fugacity coefficients of each component in the phase.
+
+        .. math::
+             \frac{\partial \ln \phi_i}{\partial T} = 0
+
+        Returns
+        -------
+        dlnphis_dT : list[float]
+            Log fugacity coefficients, [1/K]
+        '''
         return self.zeros1d
 
     def dlnphis_dP(self):
+        r'''Method to calculate and return the pressure derivative of the
+        log of fugacity coefficients of each component in the phase.
+
+        .. math::
+             \frac{\partial \ln \phi_i}{\partial P} = 0
+
+        Returns
+        -------
+        dlnphis_dP : list[float]
+            Log fugacity coefficients, [1/Pa]
+        '''
         return self.zeros1d
 
     def to_TP_zs(self, T, P, zs):
@@ -1977,28 +2256,93 @@ class IdealGas(Phase):
 
     ### Volumetric properties
     def V(self):
+        r'''Method to calculate and return the molar volume of the phase.
+
+        .. math::
+             V = \frac{RT}{P}
+
+        Returns
+        -------
+        V : float
+            Molar volume, [m^3/mol]
+        '''
         return R*self.T/self.P
 
     def dP_dT(self):
+        r'''Method to calculate and return the first temperature derivative of
+        pressure of the phase.
+
+        .. math::
+             \frac{\partial P}{\partial T} = \frac{P}{T}
+
+        Returns
+        -------
+        dP_dT : float
+            First temperature derivative of pressure, [Pa/K]
+        '''
         return self.P/self.T
     dP_dT_V = dP_dT
 
     def dP_dV(self):
+        r'''Method to calculate and return the first volume derivative of
+        pressure of the phase.
+
+        .. math::
+             \frac{\partial P}{\partial V} = \frac{-P^2}{RT}
+
+        Returns
+        -------
+        dP_dV : float
+            First volume derivative of pressure, [Pa*mol/m^3]
+        '''
         return -self.P*self.P/(R*self.T)
 
     dP_dV_T = dP_dV
 
     def d2P_dT2(self):
+        r'''Method to calculate and return the second temperature derivative of
+        pressure of the phase.
+
+        .. math::
+             \frac{\partial^2 P}{\partial T^2} = 0
+
+        Returns
+        -------
+        d2P_dT2 : float
+            Second temperature derivative of pressure, [Pa/K^2]
+        '''
         return 0.0
     d2P_dT2_V = d2P_dT2
 
     def d2P_dV2(self):
+        r'''Method to calculate and return the second volume derivative of
+        pressure of the phase.
+
+        .. math::
+             \frac{\partial^2 P}{\partial V^2} = \frac{2P^3}{R^2T^2}
+
+        Returns
+        -------
+        d2P_dV2 : float
+            Second volume derivative of pressure, [Pa*mol^2/m^6]
+        '''
         P, T = self.P, self.T
-        return 2.0*P*P*P/(R*R*T*T)
+        return 2.0*P*P*P/(R2*T*T)
 
     d2P_dV2_T = d2P_dV2
 
     def d2P_dTdV(self):
+        r'''Method to calculate and return the second derivative of
+        pressure with respect to temperature and volume of the phase.
+
+        .. math::
+             \frac{\partial^2 P}{\partial V \partial T} = \frac{-P^2}{RT^2}
+
+        Returns
+        -------
+        d2P_dTdV : float
+            Second volume derivative of pressure, [mol*Pa^2/(J*K)]
+        '''
         P, T = self.P, self.T
         return -P*P/(R*T*T)
 
@@ -2051,6 +2395,16 @@ class IdealGas(Phase):
     ### Thermodynamic properties
 
     def H(self):
+        r'''Method to calculate and return the enthalpy of the phase.
+
+        .. math::
+            H = \sum_i z_i H_{i}^{ig}
+
+        Returns
+        -------
+        H : float
+            Molar enthalpy, [J/(mol)]
+        '''
         try:
             return self._H
         except AttributeError:
@@ -2067,6 +2421,17 @@ class IdealGas(Phase):
         return H
 
     def S(self):
+        r'''Method to calculate and return the entropy of the phase.
+
+        .. math::
+            S = \sum_i z_i S_{i}^{ig} - R\log\left(\frac{P}{P_{ref}}\right)
+            - R\sum_i z_i \log(z_i)
+
+        Returns
+        -------
+        S : float
+            Molar entropy, [J/(mol*K)]
+        '''
         try:
             return self._S
         except AttributeError:
@@ -2085,6 +2450,17 @@ class IdealGas(Phase):
         return S
 
     def Cp(self):
+        r'''Method to calculate and return the molar heat capacity of the
+        phase.
+
+        .. math::
+            C_p = \sum_i z_i C_{p,i}^{ig}
+
+        Returns
+        -------
+        Cp : float
+            Molar heat capacity, [J/(mol*K)]
+        '''
         try:
             return self._Cp
         except AttributeError:
@@ -2100,9 +2476,32 @@ class IdealGas(Phase):
     dH_dT_V = Cp # H does not depend on P, so the P is increased without any effect on H
 
     def dH_dP(self):
+        r'''Method to calculate and return the first pressure derivative of
+        molar enthalpy of the phase.
+
+        .. math::
+            \frac{\partial H}{\partial P} = 0
+
+        Returns
+        -------
+        dH_dP : float
+            First pressure derivative of molar enthalpy, [J/(mol*Pa)]
+        '''
         return 0.0
 
     def d2H_dT2(self):
+        r'''Method to calculate and return the first temperature derivative of
+        molar heat capacity of the phase.
+
+        .. math::
+            \frac{\partial C_p}{\partial T} = \sum_i z_i \frac{\partial
+            C_{p,i}^{ig}}{\partial T}
+
+        Returns
+        -------
+        d2H_dT2 : float
+            Second temperature derivative of enthalpy, [J/(mol*K^2)]
+        '''
         try:
             return self._d2H_dT2
         except AttributeError:
@@ -2115,19 +2514,79 @@ class IdealGas(Phase):
         return dCp
 
     def d2H_dP2(self):
+        r'''Method to calculate and return the second pressure derivative of
+        molar enthalpy of the phase.
+
+        .. math::
+            \frac{\partial^2 H}{\partial P^2} = 0
+
+        Returns
+        -------
+        d2H_dP2 : float
+            Second pressure derivative of molar enthalpy, [J/(mol*Pa^2)]
+        '''
         return 0.0
 
     def d2H_dTdP(self):
+        r'''Method to calculate and return the pressure derivative of
+        molar heat capacity of the phase.
+
+        .. math::
+            \frac{\partial C_p}{\partial P} = 0
+
+        Returns
+        -------
+        d2H_dTdP : float
+            First pressure derivative of heat capacity, [J/(mol*K*Pa)]
+        '''
         return 0.0
 
     def dH_dP_V(self):
+        r'''Method to calculate and return the pressure derivative of
+        molar enthalpy at constant volume of the phase.
+
+        .. math::
+            \left(\frac{\partial H}{\partial P}\right)_{V} = C_p
+            \left(\frac{\partial T}{\partial P}\right)_{V}
+
+        Returns
+        -------
+        dH_dP_V : float
+            First pressure derivative of molar enthalpy at constant volume,
+            [J/(mol*Pa)]
+        '''
         dH_dP_V = self.Cp()*self.dT_dP()
         return dH_dP_V
 
     def dH_dV_T(self):
+        r'''Method to calculate and return the volume derivative of
+        molar enthalpy at constant temperature of the phase.
+
+        .. math::
+            \left(\frac{\partial H}{\partial V}\right)_{T} = 0
+
+        Returns
+        -------
+        dH_dV_T : float
+            First pressure derivative of molar enthalpy at constant volume,
+            [J/(m^3)]
+        '''
         return 0.0
 
     def dH_dV_P(self):
+        r'''Method to calculate and return the volume derivative of
+        molar enthalpy at constant pressure of the phase.
+
+        .. math::
+            \left(\frac{\partial H}{\partial V}\right)_{P} = C_p
+            \left(\frac{\partial T}{\partial V}\right)_{P}
+
+        Returns
+        -------
+        dH_dV_T : float
+            First pressure derivative of molar enthalpy at constant volume,
+            [J/(m^3)]
+        '''
         dH_dV_P = self.dT_dV()*self.Cp()
         return dH_dV_P
 
@@ -2135,22 +2594,81 @@ class IdealGas(Phase):
         return self.Cpig_integrals_pure()
 
     def dS_dT(self):
+        r'''Method to calculate and return the first temperature derivative of
+        molar entropy of the phase.
+
+        .. math::
+            \frac{\partial S}{\partial T} = \frac{C_p}{T}
+
+        Returns
+        -------
+        dS_dT : float
+            First temperature derivative of molar entropy, [J/(mol*K^2)]
+        '''
         dS_dT = self.Cp()/self.T
         return dS_dT
     dS_dT_P = dS_dT
 
     def dS_dP(self):
+        r'''Method to calculate and return the first pressure derivative of
+        molar entropy of the phase.
+
+        .. math::
+            \frac{\partial S}{\partial P} = -\frac{R}{P}
+
+        Returns
+        -------
+        dS_dP : float
+            First pressure derivative of molar entropy, [J/(mol*K*Pa)]
+        '''
         return -R/self.P
 
     def d2S_dP2(self):
+        r'''Method to calculate and return the second pressure derivative of
+        molar entropy of the phase.
+
+        .. math::
+            \frac{\partial^2 S}{\partial P^2} = \frac{R}{P^2}
+
+        Returns
+        -------
+        d2S_dP2 : float
+            Second pressure derivative of molar entropy, [J/(mol*K*Pa^2)]
+        '''
         P = self.P
         return R/(P*P)
 
     def dS_dT_V(self):
+        r'''Method to calculate and return the first temperature derivative of
+        molar entropy at constant volume of the phase.
+
+        .. math::
+            \left(\frac{\partial S}{\partial T}\right)_V =
+            \frac{C_p}{T} - \frac{R}{P}\frac{\partial P}{\partial T}
+
+        Returns
+        -------
+        dS_dT_V : float
+            First temperature derivative of molar entropy at constant volume,
+            [J/(mol*K^2)]
+        '''
         dS_dT_V = self.Cp()/self.T - R/self.P*self.dP_dT()
         return dS_dT_V
 
     def dS_dP_V(self):
+        r'''Method to calculate and return the first pressure derivative of
+        molar entropy at constant volume of the phase.
+
+        .. math::
+            \left(\frac{\partial S}{\partial P}\right)_V =
+            \frac{-R}{P} + \frac{C_p}{T}\frac{\partial T}{\partial P}
+
+        Returns
+        -------
+        dS_dP_V : float
+            First pressure derivative of molar entropy at constant volume,
+            [J/(mol*K*Pa)]
+        '''
         dS_dP_V = -R/self.P + self.Cp()/self.T*self.dT_dP()
         return dS_dP_V
 
@@ -2406,6 +2924,16 @@ class CEOSGas(Phase):
 
 
     def lnphis(self):
+        r'''Method to calculate and return the log of fugacity coefficients of
+        each component in the phase. The calculation is performed by
+        :obj:`thermo.eos_mix.GCEOSMIX.fugacity_coefficients` or a simpler formula in the case
+        of most specific models.
+
+        Returns
+        -------
+        lnphis : list[float]
+            Log fugacity coefficients, [-]
+        '''
         try:
             return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_g, self.zs)
         except AttributeError:
@@ -2413,12 +2941,34 @@ class CEOSGas(Phase):
 
 
     def dlnphis_dT(self):
+        r'''Method to calculate and return the first temperature derivative of
+        the log of fugacity coefficients of
+        each component in the phase. The calculation is performed by
+        :obj:`thermo.eos_mix.GCEOSMIX.dlnphis_dT` or a simpler formula in the
+        case of most specific models.
+
+        Returns
+        -------
+        dlnphis_dT : list[float]
+            First temperature derivative of log fugacity coefficients, [1/K]
+        '''
         try:
             return self.eos_mix.dlnphis_dT('g')
         except:
             return self.eos_mix.dlnphis_dT('l')
 
     def dlnphis_dP(self):
+        r'''Method to calculate and return the first pressure derivative of
+        the log of fugacity coefficients of
+        each component in the phase. The calculation is performed by
+        :obj:`thermo.eos_mix.GCEOSMIX.dlnphis_dP` or a simpler formula in the
+        case of most specific models.
+
+        Returns
+        -------
+        dlnphis_dP : list[float]
+            First pressure derivative of log fugacity coefficients, [1/Pa]
+        '''
         try:
             return self.eos_mix.dlnphis_dP('g')
         except:
@@ -2494,12 +3044,32 @@ class CEOSGas(Phase):
             return self.eos_mix.Cp_dep_l
 
     def V(self):
+        r'''Method to calculate and return the molar volume of the phase.
+
+        Returns
+        -------
+        V : float
+            Molar volume, [m^3/mol]
+        '''
         try:
             return self.eos_mix.V_g
         except AttributeError:
             return self.eos_mix.V_l
 
     def dP_dT(self):
+        r'''Method to calculate and return the first temperature derivative of
+        pressure of the phase.
+
+        .. math::
+            \left(\frac{\partial P}{\partial T}\right)_V = \frac{R}{V - b}
+            - \frac{a \frac{d \alpha{\left (T \right )}}{d T}}{V^{2} + V \delta
+            + \epsilon}
+
+        Returns
+        -------
+        dP_dT : float
+            First temperature derivative of pressure, [Pa/K]
+        '''
         try:
             return self.eos_mix.dP_dT_g
         except AttributeError:
@@ -2508,6 +3078,19 @@ class CEOSGas(Phase):
     dP_dT_V = dP_dT
 
     def dP_dV(self):
+        r'''Method to calculate and return the first volume derivative of
+        pressure of the phase.
+
+        .. math::
+            \left(\frac{\partial P}{\partial V}\right)_T = - \frac{R T}{\left(
+            V - b\right)^{2}} - \frac{a \left(- 2 V - \delta\right) \alpha{
+            \left (T \right )}}{\left(V^{2} + V \delta + \epsilon\right)^{2}}
+
+        Returns
+        -------
+        dP_dV : float
+            First volume derivative of pressure, [Pa*mol/m^3]
+        '''
         try:
             return self.eos_mix.dP_dV_g
         except AttributeError:
@@ -2516,6 +3099,19 @@ class CEOSGas(Phase):
     dP_dV_T = dP_dV
 
     def d2P_dT2(self):
+        r'''Method to calculate and return the second temperature derivative of
+        pressure of the phase.
+
+        .. math::
+            \left(\frac{\partial^2  P}{\partial T^2}\right)_V =  - \frac{a
+            \frac{d^{2} \alpha{\left (T \right )}}{d T^{2}}}{V^{2} + V \delta
+            + \epsilon}
+
+        Returns
+        -------
+        d2P_dT2 : float
+            Second temperature derivative of pressure, [Pa/K^2]
+        '''
         try:
             return self.eos_mix.d2P_dT2_g
         except AttributeError:
@@ -2524,6 +3120,21 @@ class CEOSGas(Phase):
     d2P_dT2_V = d2P_dT2
 
     def d2P_dV2(self):
+        r'''Method to calculate and return the second volume derivative of
+        pressure of the phase.
+
+        .. math::
+            \left(\frac{\partial^2  P}{\partial V^2}\right)_T = 2 \left(\frac{
+            R T}{\left(V - b\right)^{3}} - \frac{a \left(2 V + \delta\right)^{
+            2} \alpha{\left (T \right )}}{\left(V^{2} + V \delta + \epsilon
+            \right)^{3}} + \frac{a \alpha{\left (T \right )}}{\left(V^{2} + V
+            \delta + \epsilon\right)^{2}}\right)
+
+        Returns
+        -------
+        d2P_dV2 : float
+            Second volume derivative of pressure, [Pa*mol^2/m^6]
+        '''
         try:
             return self.eos_mix.d2P_dV2_g
         except AttributeError:
@@ -2532,6 +3143,20 @@ class CEOSGas(Phase):
     d2P_dV2_T = d2P_dV2
 
     def d2P_dTdV(self):
+        r'''Method to calculate and return the second derivative of
+        pressure with respect to temperature and volume of the phase.
+
+        .. math::
+            \left(\frac{\partial^2 P}{\partial T \partial V}\right) = - \frac{
+            R}{\left(V - b\right)^{2}} + \frac{a \left(2 V + \delta\right)
+            \frac{d \alpha{\left (T \right )}}{d T}}{\left(V^{2} + V \delta
+            + \epsilon\right)^{2}}
+
+        Returns
+        -------
+        d2P_dTdV : float
+            Second volume derivative of pressure, [mol*Pa^2/(J*K)]
+        '''
         try:
             return self.eos_mix.d2P_dTdV_g
         except AttributeError:
@@ -7023,6 +7648,14 @@ class IAPWS95(HelmholtzEOS):
     to = to_zs_TPV
 
     def mu(self):
+        r'''Calculate and return the viscosity of water according to the IAPWS.
+        For details, see :obj:`chemicals.viscosity.mu_IAPWS`.
+
+        Returns
+        -------
+        mu : float
+            Viscosity of water, [Pa*s]
+        '''
         try:
             return self._mu
         except:
@@ -7031,6 +7664,14 @@ class IAPWS95(HelmholtzEOS):
         return self._mu
 
     def k(self):
+        r'''Calculate and return the thermal conductivity of water according to the IAPWS.
+        For details, see :obj:`chemicals.thermal_conductivity.k_IAPWS`.
+
+        Returns
+        -------
+        k : float
+            Thermal conductivity of water, [W/m/K]
+        '''
         try:
             return self._k
         except:

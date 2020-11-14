@@ -4528,10 +4528,10 @@ class GCEOSMIX(GCEOS):
         parameters.
 
         .. math::
-                \left(\frac{\partial n \log \phi}{\partial n_i}
-                \right)_{n_{k \ne i}} = \log \phi _i = \log \phi +
-                n \left(\frac{\partial \log \phi}{\partial n_i}
-                \right)_{n_{k\ne i}}
+            \left(\frac{\partial n \log \phi}{\partial n_i}
+            \right)_{n_{k \ne i}} = \log \phi _i = \log \phi +
+            n \left(\frac{\partial \log \phi}{\partial n_i}
+            \right)_{n_{k\ne i}}
 
         .. math::
             \left(\frac{\partial \log \phi }{\partial n_i}\right)_{T, P,
