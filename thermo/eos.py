@@ -422,6 +422,398 @@ class GCEOS(object):
     the liquid or gas phase with the convention of adding on `_l` or `_g` to
     the variable names, respectively.
 
+
+    Attributes
+    ----------
+    T : float
+        Temperature of cubic EOS state, [K]
+    P : float
+        Pressure of cubic EOS state, [Pa]
+    a : float
+        `a` parameter of cubic EOS; formulas vary with the EOS, [Pa*m^6/mol^2]
+    b : float
+        `b` parameter of cubic EOS; formulas vary with the EOS, [m^3/mol]
+    delta : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    epsilon : float
+        Coefficient calculated by EOS-specific method, [m^6/mol^2]
+    a_alpha : float
+        Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+    da_alpha_dT : float
+        Temperature derivative of :math:`a \alpha` calculated by EOS-specific
+        method, [J^2/mol^2/Pa/K]
+    d2a_alpha_dT2 : float
+        Second temperature derivative of :math:`a \alpha` calculated by
+        EOS-specific method, [J^2/mol^2/Pa/K**2]
+    V_l : float
+        Liquid phase molar volume, [m^3/mol]
+    V_g : float
+        Vapor phase molar volume, [m^3/mol]
+    V : float or None
+        Molar volume specified as input; otherwise None, [m^3/mol]
+    Z_l : float
+        Liquid phase compressibility, [-]
+    Z_g : float
+        Vapor phase compressibility, [-]
+    PIP_l : float
+        Liquid phase phase identification parameter, [-]
+    PIP_g : float
+        Vapor phase phase identification parameter, [-]
+    dP_dT_l : float
+        Liquid phase temperature derivative of pressure at constant volume,
+        [Pa/K].
+
+        .. math::
+            \left(\frac{\partial P}{\partial T}\right)_V = \frac{R}{V - b}
+            - \frac{a \frac{d \alpha{\left (T \right )}}{d T}}{V^{2} + V \delta
+            + \epsilon}
+    dP_dT_g : float
+        Vapor phase temperature derivative of pressure at constant volume,
+        [Pa/K].
+
+        .. math::
+            \left(\frac{\partial P}{\partial T}\right)_V = \frac{R}{V - b}
+            - \frac{a \frac{d \alpha{\left (T \right )}}{d T}}{V^{2} + V \delta
+            + \epsilon}
+    dP_dV_l : float
+        Liquid phase volume derivative of pressure at constant temperature,
+        [Pa*mol/m^3].
+
+        .. math::
+            \left(\frac{\partial P}{\partial V}\right)_T = - \frac{R T}{\left(
+            V - b\right)^{2}} - \frac{a \left(- 2 V - \delta\right) \alpha{
+            \left (T \right )}}{\left(V^{2} + V \delta + \epsilon\right)^{2}}
+    dP_dV_g : float
+        Gas phase volume derivative of pressure at constant temperature,
+        [Pa*mol/m^3].
+
+        .. math::
+            \left(\frac{\partial P}{\partial V}\right)_T = - \frac{R T}{\left(
+            V - b\right)^{2}} - \frac{a \left(- 2 V - \delta\right) \alpha{
+            \left (T \right )}}{\left(V^{2} + V \delta + \epsilon\right)^{2}}
+    dV_dT_l : float
+        Liquid phase temperature derivative of volume at constant pressure,
+        [m^3/(mol*K)].
+
+        .. math::
+            \left(\frac{\partial V}{\partial T}\right)_P =-\frac{
+            \left(\frac{\partial P}{\partial T}\right)_V}{
+            \left(\frac{\partial P}{\partial V}\right)_T}
+    dV_dT_g : float
+        Gas phase temperature derivative of volume at constant pressure,
+        [m^3/(mol*K)].
+
+        .. math::
+            \left(\frac{\partial V}{\partial T}\right)_P =-\frac{
+            \left(\frac{\partial P}{\partial T}\right)_V}{
+            \left(\frac{\partial P}{\partial V}\right)_T}
+    dV_dP_l : float
+        Liquid phase pressure derivative of volume at constant temperature,
+        [m^3/(mol*Pa)].
+
+        .. math::
+            \left(\frac{\partial V}{\partial P}\right)_T =-\frac{
+            \left(\frac{\partial V}{\partial T}\right)_P}{
+            \left(\frac{\partial P}{\partial T}\right)_V}
+    dV_dP_g : float
+        Gas phase pressure derivative of volume at constant temperature,
+        [m^3/(mol*Pa)].
+
+        .. math::
+            \left(\frac{\partial V}{\partial P}\right)_T =-\frac{
+            \left(\frac{\partial V}{\partial T}\right)_P}{
+            \left(\frac{\partial P}{\partial T}\right)_V}
+    dT_dV_l : float
+        Liquid phase volume derivative of temperature at constant pressure,
+        [K*mol/m^3].
+
+        .. math::
+            \left(\frac{\partial T}{\partial V}\right)_P = \frac{1}
+            {\left(\frac{\partial V}{\partial T}\right)_P}
+    dT_dV_g : float
+        Gas phase volume derivative of temperature at constant pressure,
+        [K*mol/m^3]. See :obj:`GCEOS.set_properties_from_solution` for
+        the formula.
+    dT_dP_l : float
+        Liquid phase pressure derivative of temperature at constant volume,
+        [K/Pa].
+
+        .. math::
+            \left(\frac{\partial T}{\partial P}\right)_V = \frac{1}
+            {\left(\frac{\partial P}{\partial T}\right)_V}
+    dT_dP_g : float
+        Gas phase pressure derivative of temperature at constant volume,
+        [K/Pa].
+
+        .. math::
+            \left(\frac{\partial T}{\partial P}\right)_V = \frac{1}
+            {\left(\frac{\partial P}{\partial T}\right)_V}
+    d2P_dT2_l : float
+        Liquid phase second derivative of pressure with respect to temperature
+        at constant volume, [Pa/K^2].
+
+        .. math::
+            \left(\frac{\partial^2  P}{\partial T^2}\right)_V =  - \frac{a
+            \frac{d^{2} \alpha{\left (T \right )}}{d T^{2}}}{V^{2} + V \delta
+            + \epsilon}
+    d2P_dT2_g : float
+        Gas phase second derivative of pressure with respect to temperature
+        at constant volume, [Pa/K^2].
+
+        .. math::
+            \left(\frac{\partial^2  P}{\partial T^2}\right)_V =  - \frac{a
+            \frac{d^{2} \alpha{\left (T \right )}}{d T^{2}}}{V^{2} + V \delta
+            + \epsilon}
+    d2P_dV2_l : float
+        Liquid phase second derivative of pressure with respect to volume
+        at constant temperature, [Pa*mol^2/m^6].
+
+        .. math::
+            \left(\frac{\partial^2  P}{\partial V^2}\right)_T = 2 \left(\frac{
+            R T}{\left(V - b\right)^{3}} - \frac{a \left(2 V + \delta\right)^{
+            2} \alpha{\left (T \right )}}{\left(V^{2} + V \delta + \epsilon
+            \right)^{3}} + \frac{a \alpha{\left (T \right )}}{\left(V^{2} + V
+            \delta + \epsilon\right)^{2}}\right)
+    d2P_dTdV_l : float
+        Liquid phase second derivative of pressure with respect to volume
+        and then temperature, [Pa*mol/(K*m^3)].
+
+        .. math::
+            \left(\frac{\partial^2 P}{\partial T \partial V}\right) = - \frac{
+            R}{\left(V - b\right)^{2}} + \frac{a \left(2 V + \delta\right)
+            \frac{d \alpha{\left (T \right )}}{d T}}{\left(V^{2} + V \delta
+            + \epsilon\right)^{2}}
+    d2P_dTdV_g : float
+        Gas phase second derivative of pressure with respect to volume
+        and then temperature, [Pa*mol/(K*m^3)].
+
+        .. math::
+            \left(\frac{\partial^2 P}{\partial T \partial V}\right) = - \frac{
+            R}{\left(V - b\right)^{2}} + \frac{a \left(2 V + \delta\right)
+            \frac{d \alpha{\left (T \right )}}{d T}}{\left(V^{2} + V \delta
+            + \epsilon\right)^{2}}
+    H_dep_l : float
+        Liquid phase departure enthalpy, [J/mol].
+
+        .. math::
+            H_{dep} = \int_{\infty}^V \left[T\frac{\partial P}{\partial T}_V
+            - P\right]dV + PV - RT= P V - R T + \frac{2}{\sqrt{
+            \delta^{2} - 4 \epsilon}} \left(T a \frac{d \alpha{\left (T \right
+            )}}{d T}  - a \alpha{\left (T \right )}\right) \operatorname{atanh}
+            {\left (\frac{2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}}
+            \right)}
+    H_dep_g : float
+        Gas phase departure enthalpy, [J/mol].
+
+        .. math::
+            H_{dep} = \int_{\infty}^V \left[T\frac{\partial P}{\partial T}_V
+            - P\right]dV + PV - RT= P V - R T + \frac{2}{\sqrt{
+            \delta^{2} - 4 \epsilon}} \left(T a \frac{d \alpha{\left (T \right
+            )}}{d T}  - a \alpha{\left (T \right )}\right) \operatorname{atanh}
+            {\left (\frac{2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}}
+            \right)}
+    S_dep_l : float
+        Liquid phase departure entropy, [J/(mol*K)].
+
+        .. math::
+            S_{dep} = \int_{\infty}^V\left[\frac{\partial P}{\partial T}
+            - \frac{R}{V}\right] dV + R\log\frac{PV}{RT} = - R \log{\left (V
+            \right )} + R \log{\left (\frac{P V}{R T} \right )} + R \log{\left
+            (V - b \right )} + \frac{2 a \frac{d\alpha{\left (T \right )}}{d T}
+            }{\sqrt{\delta^{2} - 4 \epsilon}} \operatorname{atanh}{\left (\frac
+            {2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}} \right )}
+    S_dep_g : float
+        Gas phase departure entropy, [J/(mol*K)].
+
+        .. math::
+            S_{dep} = \int_{\infty}^V\left[\frac{\partial P}{\partial T}
+            - \frac{R}{V}\right] dV + R\log\frac{PV}{RT} = - R \log{\left (V
+            \right )} + R \log{\left (\frac{P V}{R T} \right )} + R \log{\left
+            (V - b \right )} + \frac{2 a \frac{d\alpha{\left (T \right )}}{d T}
+            }{\sqrt{\delta^{2} - 4 \epsilon}} \operatorname{atanh}{\left (\frac
+            {2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}} \right )}
+    G_dep_l : float
+        Liquid phase departure Gibbs energy, [J/mol].
+
+        .. math::
+            G_{dep} = H_{dep} - T S_{dep}
+    G_dep_g : float
+        Gas phase departure Gibbs energy, [J/mol].
+
+        .. math::
+            G_{dep} = H_{dep} - T S_{dep}
+    Cp_dep_l : float
+        Liquid phase departure heat capacity, [J/(mol*K)]
+
+        .. math::
+            C_{p, dep} = (C_p-C_v)_{\text{from EOS}} + C_{v, dep} - R
+    Cp_dep_g : float
+        Gas phase departure heat capacity, [J/(mol*K)]
+
+        .. math::
+            C_{p, dep} = (C_p-C_v)_{\text{from EOS}} + C_{v, dep} - R
+    Cv_dep_l : float
+        Liquid phase departure constant volume heat capacity, [J/(mol*K)]
+
+        .. math::
+            C_{v, dep} = T\int_\infty^V \left(\frac{\partial^2 P}{\partial
+            T^2}\right) dV = - T a \left(\sqrt{\frac{1}{\delta^{2} - 4
+            \epsilon}} \log{\left (V - \frac{\delta^{2}}{2} \sqrt{\frac{1}{
+            \delta^{2} - 4 \epsilon}} + \frac{\delta}{2} + 2 \epsilon \sqrt{
+            \frac{1}{\delta^{2} - 4 \epsilon}} \right )} - \sqrt{\frac{1}{
+            \delta^{2} - 4 \epsilon}} \log{\left (V + \frac{\delta^{2}}{2}
+            \sqrt{\frac{1}{\delta^{2} - 4 \epsilon}} + \frac{\delta}{2}
+            - 2 \epsilon \sqrt{\frac{1}{\delta^{2} - 4 \epsilon}} \right )}
+            \right) \frac{d^{2} \alpha{\left (T \right )} }{d T^{2}}
+    Cv_dep_g : float
+        Gas phase departure constant volume heat capacity, [J/(mol*K)]
+
+        .. math::
+            C_{v, dep} = T\int_\infty^V \left(\frac{\partial^2 P}{\partial
+            T^2}\right) dV = - T a \left(\sqrt{\frac{1}{\delta^{2} - 4
+            \epsilon}} \log{\left (V - \frac{\delta^{2}}{2} \sqrt{\frac{1}{
+            \delta^{2} - 4 \epsilon}} + \frac{\delta}{2} + 2 \epsilon \sqrt{
+            \frac{1}{\delta^{2} - 4 \epsilon}} \right )} - \sqrt{\frac{1}{
+            \delta^{2} - 4 \epsilon}} \log{\left (V + \frac{\delta^{2}}{2}
+            \sqrt{\frac{1}{\delta^{2} - 4 \epsilon}} + \frac{\delta}{2}
+            - 2 \epsilon \sqrt{\frac{1}{\delta^{2} - 4 \epsilon}} \right )}
+            \right) \frac{d^{2} \alpha{\left (T \right )} }{d T^{2}}
+    A_dep_g
+    A_dep_l
+    beta_g
+    beta_l
+    Cp_minus_Cv_g
+    Cp_minus_Cv_l
+    d2a_alpha_dTdP_g_V
+    d2a_alpha_dTdP_l_V
+    d2H_dep_dT2_g
+    d2H_dep_dT2_g_P
+    d2H_dep_dT2_g_V
+    d2H_dep_dT2_l
+    d2H_dep_dT2_l_P
+    d2H_dep_dT2_l_V
+    d2H_dep_dTdP_g
+    d2H_dep_dTdP_l
+    d2P_drho2_g
+    d2P_drho2_l
+    d2P_dT2_PV_g
+    d2P_dT2_PV_l
+    d2P_dTdP_g
+    d2P_dTdP_l
+    d2P_dTdrho_g
+    d2P_dTdrho_l
+    d2P_dVdP_g
+    d2P_dVdP_l
+    d2P_dVdT_g
+    d2P_dVdT_l
+    d2P_dVdT_TP_g
+    d2P_dVdT_TP_l
+    d2rho_dP2_g
+    d2rho_dP2_l
+    d2rho_dPdT_g
+    d2rho_dPdT_l
+    d2rho_dT2_g
+    d2rho_dT2_l
+    d2S_dep_dT2_g
+    d2S_dep_dT2_g_V
+    d2S_dep_dT2_l
+    d2S_dep_dT2_l_V
+    d2S_dep_dTdP_g
+    d2S_dep_dTdP_l
+    d2T_dP2_g
+    d2T_dP2_l
+    d2T_dPdrho_g
+    d2T_dPdrho_l
+    d2T_dPdV_g
+    d2T_dPdV_l
+    d2T_drho2_g
+    d2T_drho2_l
+    d2T_dV2_g
+    d2T_dV2_l
+    d2T_dVdP_g
+    d2T_dVdP_l
+    d2V_dP2_g
+    d2V_dP2_l
+    d2V_dPdT_g
+    d2V_dPdT_l
+    d2V_dT2_g
+    d2V_dT2_l
+    d2V_dTdP_g
+    d2V_dTdP_l
+    d3a_alpha_dT3
+    da_alpha_dP_g_V
+    da_alpha_dP_l_V
+    dbeta_dP_g
+    dbeta_dP_l
+    dbeta_dT_g
+    dbeta_dT_l
+    dfugacity_dP_g
+    dfugacity_dP_l
+    dfugacity_dT_g
+    dfugacity_dT_l
+    dH_dep_dP_g
+    dH_dep_dP_g_V
+    dH_dep_dP_l
+    dH_dep_dP_l_V
+    dH_dep_dT_g
+    dH_dep_dT_g_V
+    dH_dep_dT_l
+    dH_dep_dT_l_V
+    dH_dep_dV_g_P
+    dH_dep_dV_g_T
+    dH_dep_dV_l_P
+    dH_dep_dV_l_T
+    dP_drho_g
+    dP_drho_l
+    dphi_dP_g
+    dphi_dP_l
+    dphi_dT_g
+    dphi_dT_l
+    drho_dP_g
+    drho_dP_l
+    drho_dT_g
+    drho_dT_l
+    dS_dep_dP_g
+    dS_dep_dP_g_V
+    dS_dep_dP_l
+    dS_dep_dP_l_V
+    dS_dep_dT_g
+    dS_dep_dT_g_V
+    dS_dep_dT_l
+    dS_dep_dT_l_V
+    dS_dep_dV_g_P
+    dS_dep_dV_g_T
+    dS_dep_dV_l_P
+    dS_dep_dV_l_T
+    dT_drho_g
+    dT_drho_l
+    dZ_dP_g
+    dZ_dP_l
+    dZ_dT_g
+    dZ_dT_l
+    fugacity_g
+    fugacity_l
+    kappa_g
+    kappa_l
+    lnphi_g
+    lnphi_l
+    more_stable_phase
+    mpmath_volume_ratios
+    mpmath_volumes
+    mpmath_volumes_float
+    phi_g
+    phi_l
+    rho_g
+    rho_l
+    sorted_volumes
+    state_specs
+    U_dep_g
+    U_dep_l
+    Vc
+    V_dep_g
+    V_dep_l
+    V_g_mpmath
+    V_l_mpmath
     '''
     # Slots does not help performance in either implementation
     kwargs = {}
@@ -441,11 +833,21 @@ class GCEOS(object):
     Psat_cheb_range = (0.0, 0.0)
 
     main_derivatives_and_departures = staticmethod(main_derivatives_and_departures)
+
+    def __init__(self, *args, **kwargs):
+#    def __dummy_document_attributes_methods__(self):
+        self.V_l = 1
+        '''Liquid phase molar volume, [m^3/mol].'''
+        self.randomtest = 1
+        '''Randomattribute test'''
+
+
     '''    Attributes
         ----------
         a : float
             `a` parameter of cubic EOS; formulas vary with the EOS, [Pa*m^6/mol^2]
     '''
+
     @property
     def state_specs(self):
         '''Convenience method to return the two specified state specs (`T`,
@@ -843,6 +1245,8 @@ class GCEOS(object):
             self.H_dep_g, self.S_dep_g, self.G_dep_g = H_dep, S_dep, G_dep,
             self.Cp_dep_g, self.Cv_dep_g = Cp_dep, Cv_dep
             return 'g'
+
+
 
     def a_alpha_and_derivatives(self, T, full=True, quick=True,
                                 pure_a_alphas=True):
@@ -2551,6 +2955,27 @@ class GCEOS(object):
         return horner(self.phi_sat_coeffs, x)
 
     def dphi_sat_dT(self, T, polish=True):
+        r'''Method to calculate the temperature derivative of saturation
+        fugacity coefficient of the
+        compound. This does require solving the EOS itself.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        polish : bool, optional
+            Whether to perform a rigorous calculation or to use a polynomial
+            fit, [-]
+
+        Returns
+        -------
+        dphi_sat_dT : float
+            First temperature derivative of fugacity coefficient along the
+            liquid-vapor saturation line, [1/K]
+
+        Notes
+        -----
+        '''
         Psat = self.Psat(T, polish=polish)
         sat_eos = self.to(T=T, P=Psat)
         dfg_T, dfl_T = sat_eos.dfugacity_dT_g, sat_eos.dfugacity_dT_l
@@ -2565,6 +2990,28 @@ class GCEOS(object):
         return (dfugacity_sat_dT - fugacity*dPsat_dT*Psat_inv)*Psat_inv
 
     def d2phi_sat_dT2(self, T, polish=True):
+        r'''Method to calculate the second temperature derivative of saturation
+        fugacity coefficient of the
+        compound. This does require solving the EOS itself.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        polish : bool, optional
+            Whether to perform a rigorous calculation or to use a polynomial
+            fit, [-]
+
+        Returns
+        -------
+        d2phi_sat_dT2 : float
+            Second temperature derivative of fugacity coefficient along the
+            liquid-vapor saturation line, [1/K^2]
+
+        Notes
+        -----
+        This is presently a numerical calculation.
+        '''
         return derivative(lambda T: self.dphi_sat_dT(T, polish=polish), T, dx=T*1e-7)
 
     def V_l_sat(self, T):
@@ -2664,6 +3111,26 @@ class GCEOS(object):
         return dPsat_dT*T*(V_g - V_l)
 
     def dH_dep_dT_sat_l(self, T, polish=False):
+        r'''Method to calculate and return the temperature derivative of
+        saturation liquid excess enthalpy.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        polish : bool, optional
+            Whether to perform a rigorous calculation or to use a polynomial
+            fit, [-]
+
+        Returns
+        -------
+        dH_dep_dT_sat_l : float
+            Liquid phase temperature derivative of excess enthalpy along the
+            liquid-vapor saturation line, [J/mol/K]
+
+        Notes
+        -----
+        '''
         sat_eos = self.to(T=T, P=self.Psat(T, polish=polish))
         dfg_T, dfl_T = sat_eos.dfugacity_dT_g, sat_eos.dfugacity_dT_l
         dfg_P, dfl_P = sat_eos.dfugacity_dP_g, sat_eos.dfugacity_dP_l
@@ -2671,6 +3138,26 @@ class GCEOS(object):
         return dPsat_dT*sat_eos.dH_dep_dP_l + sat_eos.dH_dep_dT_l
 
     def dH_dep_dT_sat_g(self, T, polish=False):
+        r'''Method to calculate and return the temperature derivative of
+        saturation vapor excess enthalpy.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        polish : bool, optional
+            Whether to perform a rigorous calculation or to use a polynomial
+            fit, [-]
+
+        Returns
+        -------
+        dH_dep_dT_sat_g : float
+            Vapor phase temperature derivative of excess enthalpy along the
+            liquid-vapor saturation line, [J/mol/K]
+
+        Notes
+        -----
+        '''
         sat_eos = self.to(T=T, P=self.Psat(T, polish=polish))
         dfg_T, dfl_T = sat_eos.dfugacity_dT_g, sat_eos.dfugacity_dT_l
         dfg_P, dfl_P = sat_eos.dfugacity_dP_g, sat_eos.dfugacity_dP_l
@@ -2678,6 +3165,26 @@ class GCEOS(object):
         return dPsat_dT*sat_eos.dH_dep_dP_g + sat_eos.dH_dep_dT_g
 
     def dS_dep_dT_sat_g(self, T, polish=False):
+        r'''Method to calculate and return the temperature derivative of
+        saturation vapor excess entropy.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        polish : bool, optional
+            Whether to perform a rigorous calculation or to use a polynomial
+            fit, [-]
+
+        Returns
+        -------
+        dS_dep_dT_sat_g : float
+            Vapor phase temperature derivative of excess entropy along the
+            liquid-vapor saturation line, [J/mol/K^2]
+
+        Notes
+        -----
+        '''
         sat_eos = self.to(T=T, P=self.Psat(T, polish=polish))
         dfg_T, dfl_T = sat_eos.dfugacity_dT_g, sat_eos.dfugacity_dT_l
         dfg_P, dfl_P = sat_eos.dfugacity_dP_g, sat_eos.dfugacity_dP_l
@@ -2685,6 +3192,26 @@ class GCEOS(object):
         return dPsat_dT*sat_eos.dS_dep_dP_g + sat_eos.dS_dep_dT_g
 
     def dS_dep_dT_sat_l(self, T, polish=False):
+        r'''Method to calculate and return the temperature derivative of
+        saturation liquid excess entropy.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        polish : bool, optional
+            Whether to perform a rigorous calculation or to use a polynomial
+            fit, [-]
+
+        Returns
+        -------
+        dS_dep_dT_sat_l : float
+            Liquid phase temperature derivative of excess entropy along the
+            liquid-vapor saturation line, [J/mol/K^2]
+
+        Notes
+        -----
+        '''
         sat_eos = self.to(T=T, P=self.Psat(T, polish=polish))
         dfg_T, dfl_T = sat_eos.dfugacity_dT_g, sat_eos.dfugacity_dT_l
         dfg_P, dfl_P = sat_eos.dfugacity_dP_g, sat_eos.dfugacity_dP_l

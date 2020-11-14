@@ -3543,16 +3543,21 @@ try:
     CEOSLiquid
 except:
     import marshal
+    loaded_data = False
     # Cost is ~10 ms - must be pasted in the future!
     if 1:
-        f = open('/home/caleb/testCEOSLiquiddat', 'rb')
-        compiled_CEOSLiquid = marshal.load(f)
-        f.close()
-    else:
-        compiled_CEOSLiquid = compile(build_CEOSLiquid(), '<string>', 'exec')
-        f = open('/home/caleb/testCEOSLiquiddat', 'wb')
-        marshal.dump(compiled_CEOSLiquid, f)
-        f.close()
+        try:
+            f = open('/home/caleb/testCEOSLiquiddat', 'rb')
+            compiled_CEOSLiquid = marshal.load(f)
+            f.close()
+            loaded_data = True
+        except:
+            pass
+        if not loaded_data:
+            compiled_CEOSLiquid = compile(build_CEOSLiquid(), '<string>', 'exec')
+            f = open('/home/caleb/testCEOSLiquiddat', 'wb')
+            marshal.dump(compiled_CEOSLiquid, f)
+            f.close()
     exec(compiled_CEOSLiquid)
     # exec(build_CEOSLiquid())
 

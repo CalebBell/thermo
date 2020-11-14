@@ -303,6 +303,7 @@ html_theme = "nature"
 numpydoc_show_class_members = True
 numpydoc_show_inherited_class_members = True
 numpydoc_class_members_toctree = False
+numpydoc_attributes_as_param_list = True
 autosummary_generate = True
 add_function_parentheses = False
 autodoc_default_flags = ['undoc-members', 'show-inheritance']
