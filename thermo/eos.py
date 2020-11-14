@@ -35,7 +35,7 @@ Base Class
     :members:
     :undoc-members:
     :show-inheritance:
-    :exclude-members: P_zero_g_cheb_coeffs, P_zero_l_cheb_coeffs
+    :exclude-members: P_zero_g_cheb_coeffs, P_zero_l_cheb_coeffs, main_derivatives_and_departures, derivatives_and_departures
 
 Standard Peng-Robinson Family EOSs
 ==================================
@@ -387,8 +387,7 @@ class GCEOS(object):
         P=\frac{RT}{V-b}-\frac{a\alpha(T)}{V^2 + \delta V + \epsilon}
 
     The main methods (in order they are called) are :obj:`GCEOS.solve`, :obj:`GCEOS.set_from_PT`,
-    :obj:`GCEOS.volume_solutions`, :obj:`GCEOS.set_properties_from_solution`,  and
-    :obj:`GCEOS.derivatives_and_departures`.
+    :obj:`GCEOS.volume_solutions`, and :obj:`GCEOS.set_properties_from_solution`.
 
     :obj:`GCEOS.solve` calls :obj:`GCEOS.check_sufficient_inputs`, which checks if two of `T`, `P`,
     and `V` were set. It then solves for the
@@ -1171,20 +1170,22 @@ class GCEOS(object):
         PIP = V*(d2P_dTdV*dT_dP - d2P_dV2*dV_dP) # phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dTdV)
          # 1 + 1e-14 - allow a few dozen unums of toleranve to keep ideal gas model a gas
         if force_l or (not force_g and PIP > 1.00000000000001):
-            self.V_l, self.Z_l, self.PIP_l = V, Z, PIP
-            self.dP_dT_l, self.dP_dV_l, self.dV_dT_l = dP_dT, dP_dV, dV_dT
-            self.dV_dP_l, self.dT_dV_l, self.dT_dP_l = dV_dP, dT_dV, dT_dP
-            self.d2P_dT2_l, self.d2P_dV2_l, self.d2P_dTdV_l = d2P_dT2, d2P_dV2, d2P_dTdV
-            self.H_dep_l, self.S_dep_l, self.G_dep_l = H_dep, S_dep, G_dep,
-            self.Cp_dep_l, self.Cv_dep_l = Cp_dep, Cv_dep
+            (self.V_l, self.Z_l, self.PIP_l, self.dP_dT_l, self.dP_dV_l,
+             self.dV_dT_l, self.dV_dP_l, self.dT_dV_l, self.dT_dP_l,
+             self.d2P_dT2_l, self.d2P_dV2_l, self.d2P_dTdV_l, self.H_dep_l,
+             self.S_dep_l, self.G_dep_l, self.Cp_dep_l, self.Cv_dep_l) = (
+                     V, Z, PIP, dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP,
+                     d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, G_dep, Cp_dep,
+                     Cv_dep)
             return 'l'
         else:
-            self.V_g, self.Z_g, self.PIP_g = V, Z, PIP
-            self.dP_dT_g, self.dP_dV_g, self.dV_dT_g = dP_dT, dP_dV, dV_dT
-            self.dV_dP_g, self.dT_dV_g, self.dT_dP_g = dV_dP, dT_dV, dT_dP
-            self.d2P_dT2_g, self.d2P_dV2_g, self.d2P_dTdV_g = d2P_dT2, d2P_dV2, d2P_dTdV
-            self.H_dep_g, self.S_dep_g, self.G_dep_g = H_dep, S_dep, G_dep,
-            self.Cp_dep_g, self.Cv_dep_g = Cp_dep, Cv_dep
+            (self.V_g, self.Z_g, self.PIP_g, self.dP_dT_g, self.dP_dV_g,
+             self.dV_dT_g, self.dV_dP_g, self.dT_dV_g, self.dT_dP_g,
+             self.d2P_dT2_g, self.d2P_dV2_g, self.d2P_dTdV_g, self.H_dep_g,
+             self.S_dep_g, self.G_dep_g, self.Cp_dep_g, self.Cv_dep_g) = (
+                     V, Z, PIP, dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP,
+                     d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, G_dep, Cp_dep,
+                     Cv_dep)
             return 'g'
 
 
