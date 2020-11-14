@@ -413,7 +413,7 @@ class GCEOS(object):
     method :obj:`GCEOS.set_properties_from_solution` is called with it. If there are
     two real volumes, :obj:`GCEOS.set_properties_from_solution` is called once with each
     volume. The phase is returned by :obj:`GCEOS.set_properties_from_solution`, and the
-    volumes is set to either `V_l` or `V_g` as appropriate.
+    volumes is set to either :obj:`GCEOS.V_l` or :obj:`GCEOS.V_g` as appropriate.
 
     :obj:`GCEOS.set_properties_from_solution` is a large function which calculates all relevant
     partial derivatives and properties of the EOS. 17 derivatives and excess
@@ -593,45 +593,17 @@ class GCEOS(object):
             \frac{d \alpha{\left (T \right )}}{d T}}{\left(V^{2} + V \delta
             + \epsilon\right)^{2}}
     H_dep_l : float
-        Liquid phase departure enthalpy, [J/mol].
-
-        .. math::
-            H_{dep} = \int_{\infty}^V \left[T\frac{\partial P}{\partial T}_V
-            - P\right]dV + PV - RT= P V - R T + \frac{2}{\sqrt{
-            \delta^{2} - 4 \epsilon}} \left(T a \frac{d \alpha{\left (T \right
-            )}}{d T}  - a \alpha{\left (T \right )}\right) \operatorname{atanh}
-            {\left (\frac{2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}}
-            \right)}
+        Liquid phase departure enthalpy, [J/mol]. See
+        :obj:`GCEOS.set_properties_from_solution` for the formula.
     H_dep_g : float
-        Gas phase departure enthalpy, [J/mol].
-
-        .. math::
-            H_{dep} = \int_{\infty}^V \left[T\frac{\partial P}{\partial T}_V
-            - P\right]dV + PV - RT= P V - R T + \frac{2}{\sqrt{
-            \delta^{2} - 4 \epsilon}} \left(T a \frac{d \alpha{\left (T \right
-            )}}{d T}  - a \alpha{\left (T \right )}\right) \operatorname{atanh}
-            {\left (\frac{2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}}
-            \right)}
+        Gas phase departure enthalpy, [J/mol]. See
+        :obj:`GCEOS.set_properties_from_solution` for the formula.
     S_dep_l : float
-        Liquid phase departure entropy, [J/(mol*K)].
-
-        .. math::
-            S_{dep} = \int_{\infty}^V\left[\frac{\partial P}{\partial T}
-            - \frac{R}{V}\right] dV + R\log\frac{PV}{RT} = - R \log{\left (V
-            \right )} + R \log{\left (\frac{P V}{R T} \right )} + R \log{\left
-            (V - b \right )} + \frac{2 a \frac{d\alpha{\left (T \right )}}{d T}
-            }{\sqrt{\delta^{2} - 4 \epsilon}} \operatorname{atanh}{\left (\frac
-            {2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}} \right )}
+        Liquid phase departure entropy, [J/(mol*K)]. See
+        :obj:`GCEOS.set_properties_from_solution` for the formula.
     S_dep_g : float
-        Gas phase departure entropy, [J/(mol*K)].
-
-        .. math::
-            S_{dep} = \int_{\infty}^V\left[\frac{\partial P}{\partial T}
-            - \frac{R}{V}\right] dV + R\log\frac{PV}{RT} = - R \log{\left (V
-            \right )} + R \log{\left (\frac{P V}{R T} \right )} + R \log{\left
-            (V - b \right )} + \frac{2 a \frac{d\alpha{\left (T \right )}}{d T}
-            }{\sqrt{\delta^{2} - 4 \epsilon}} \operatorname{atanh}{\left (\frac
-            {2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}} \right )}
+        Gas phase departure entropy, [J/(mol*K)]. See
+        :obj:`GCEOS.set_properties_from_solution` for the formula.
     G_dep_l : float
         Liquid phase departure Gibbs energy, [J/mol].
 
@@ -653,31 +625,14 @@ class GCEOS(object):
         .. math::
             C_{p, dep} = (C_p-C_v)_{\text{from EOS}} + C_{v, dep} - R
     Cv_dep_l : float
-        Liquid phase departure constant volume heat capacity, [J/(mol*K)]
+        Liquid phase departure constant volume heat capacity, [J/(mol*K)].
+        See :obj:`GCEOS.set_properties_from_solution` for
+        the formula.
 
-        .. math::
-            C_{v, dep} = T\int_\infty^V \left(\frac{\partial^2 P}{\partial
-            T^2}\right) dV = - T a \left(\sqrt{\frac{1}{\delta^{2} - 4
-            \epsilon}} \log{\left (V - \frac{\delta^{2}}{2} \sqrt{\frac{1}{
-            \delta^{2} - 4 \epsilon}} + \frac{\delta}{2} + 2 \epsilon \sqrt{
-            \frac{1}{\delta^{2} - 4 \epsilon}} \right )} - \sqrt{\frac{1}{
-            \delta^{2} - 4 \epsilon}} \log{\left (V + \frac{\delta^{2}}{2}
-            \sqrt{\frac{1}{\delta^{2} - 4 \epsilon}} + \frac{\delta}{2}
-            - 2 \epsilon \sqrt{\frac{1}{\delta^{2} - 4 \epsilon}} \right )}
-            \right) \frac{d^{2} \alpha{\left (T \right )} }{d T^{2}}
     Cv_dep_g : float
-        Gas phase departure constant volume heat capacity, [J/(mol*K)]
-
-        .. math::
-            C_{v, dep} = T\int_\infty^V \left(\frac{\partial^2 P}{\partial
-            T^2}\right) dV = - T a \left(\sqrt{\frac{1}{\delta^{2} - 4
-            \epsilon}} \log{\left (V - \frac{\delta^{2}}{2} \sqrt{\frac{1}{
-            \delta^{2} - 4 \epsilon}} + \frac{\delta}{2} + 2 \epsilon \sqrt{
-            \frac{1}{\delta^{2} - 4 \epsilon}} \right )} - \sqrt{\frac{1}{
-            \delta^{2} - 4 \epsilon}} \log{\left (V + \frac{\delta^{2}}{2}
-            \sqrt{\frac{1}{\delta^{2} - 4 \epsilon}} + \frac{\delta}{2}
-            - 2 \epsilon \sqrt{\frac{1}{\delta^{2} - 4 \epsilon}} \right )}
-            \right) \frac{d^{2} \alpha{\left (T \right )} }{d T^{2}}
+        Gas phase departure constant volume heat capacity, [J/(mol*K)].
+        See :obj:`GCEOS.set_properties_from_solution` for
+        the formula.
     A_dep_g
     A_dep_l
     beta_g
@@ -833,20 +788,6 @@ class GCEOS(object):
     Psat_cheb_range = (0.0, 0.0)
 
     main_derivatives_and_departures = staticmethod(main_derivatives_and_departures)
-
-    def __init__(self, *args, **kwargs):
-#    def __dummy_document_attributes_methods__(self):
-        self.V_l = 1
-        '''Liquid phase molar volume, [m^3/mol].'''
-        self.randomtest = 1
-        '''Randomattribute test'''
-
-
-    '''    Attributes
-        ----------
-        a : float
-            `a` parameter of cubic EOS; formulas vary with the EOS, [Pa*m^6/mol^2]
-    '''
 
     @property
     def state_specs(self):
