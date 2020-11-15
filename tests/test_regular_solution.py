@@ -27,8 +27,11 @@ from fluids.constants import R
 from thermo.activity import GibbsExcess
 from thermo import *
 import numpy as np
-from fluids.numerics import jacobian, hessian
+from fluids.numerics import jacobian, hessian, assert_close2d
 
+def test_no_interactions():
+    GE = RegularSolution(T=325.0, xs=[.25, .75], Vs=[7.421e-05, 8.068e-05], SPs=[19570.2, 18864.7])
+    assert_close2d(GE.lambda_coeffs, [[0, 0], [0, 0]], atol=0, rtol=0)
 
 def test_4_components():
 #    m = Mixture(['acetone', 'chloroform', 'methanol', 'water'], zs=xs, T=300)

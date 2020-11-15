@@ -68,7 +68,7 @@ from __future__ import division
 
 __all__ = ['GibbsExcess', 'IdealSolution']
 from chemicals.utils import exp
-from chemicals.utils import dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, d2xs_to_dxdn_partials
+from chemicals.utils import normalize, dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, d2xs_to_dxdn_partials
 from fluids.constants import R, R_inv
 
 
@@ -429,6 +429,31 @@ class GibbsExcess(object):
         # This one worked out
         return d2xs_to_dxdn_partials(self.d2GE_dxixjs(), self.xs)
 
+    def gammas_infinite_dilution(self):
+        r'''Calculate and return the infinite dilution activity coefficients
+        of each component.
+
+        Returns
+        -------
+        gammas_infinite : list[float]
+            Infinite dilution activity coefficients, [-]
+
+        Notes
+        -----
+        The algorithm is as follows. For each component, set its composition to
+        zero. Normalize the remaining compositions to 1. Create a new object
+        with that composition, and calculate the activity coefficient of the
+        component whose concentration was set to zero.
+        '''
+        T, N = self.T, self.N
+        xs_base = self.xs
+        gammas_inf = [0.0]*N
+        for i in range(N):
+            xs = list(xs_base)
+            xs[i] = 0.0
+            xs = normalize(xs)
+            gammas_inf[i] = self.to_T_xs(T, xs=xs).gammas()[i]
+        return gammas_inf
 
     def gammas(self):
         r'''Calculate and return the activity coefficients of a liquid phase
