@@ -44,9 +44,9 @@ UNIQUAC Functional Calculations
 '''
 
 from __future__ import division
-from thermo.activity import GibbsExcess
 from math import log, exp
 from fluids.constants import R
+from thermo.activity import GibbsExcess
 
 __all__ = ['UNIQUAC', 'UNIQUAC_gammas']
 
@@ -481,7 +481,6 @@ class UNIQUAC(GibbsExcess):
         nT2inv05 = 0.5*nT2inv
         T3inv = -nT2inv*Tinv
         T3inv2 = T3inv+T3inv
-        T4inv6 = 3.0*T3inv2*Tinv
         T4inv3 = 1.5*T3inv2*Tinv
         T2_12 = -12.0*nT2inv
 
@@ -554,7 +553,7 @@ class UNIQUAC(GibbsExcess):
             return self._dphis_dxs
         except AttributeError:
             pass
-        N, cmps, xs, rs = self.N, self.cmps, self.xs, self.rs
+        N, cmps, rs = self.N, self.cmps, self.rs
 
         rsxs = list(self.phis())
         rsxs_sum_inv = self._rsxs_sum_inv
@@ -589,7 +588,7 @@ class UNIQUAC(GibbsExcess):
             return self._d2phis_dxixjs
         except AttributeError:
             pass
-        N, cmps, xs, rs = self.N, self.cmps, self.xs, self.rs
+        cmps, xs, rs = self.cmps, self.xs, self.rs
 
         self.phis() # Ensure the sum is there
         rsxs_sum_inv = self._rsxs_sum_inv
@@ -610,7 +609,6 @@ class UNIQUAC(GibbsExcess):
             d2phis_dxixjsk = d2phis_dxixjs[k]
             for j in cmps:
                 # Fastest I can test
-                d2phis_dxixjskj = d2phis_dxixjsk[j]
                 d2phis_dxixjsk[j] = [rs[k]*rs[j]*t1s[i] if (i == k or i == j) and j != k
                                        else rs[k]*rs[j]*t2s[i] for i in cmps]
             d2phis_dxixjs[k][k][k] -= rs[k]*rs[k]*rsxs_sum_inv2_2
@@ -637,7 +635,7 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             pass
         cmps, xs = self.cmps, self.xs
-        rs, qs = self.rs, self.qs
+        qs = self.qs
         qsxs = [qs[i]*xs[i] for i in cmps]
         self._qsxs_sum_inv = qsxs_sum_inv = 1.0/sum(qsxs)
         # reuse the array qsxs to store thetas
@@ -664,7 +662,7 @@ class UNIQUAC(GibbsExcess):
             return self._dthetas_dxs
         except AttributeError:
             pass
-        N, cmps, xs, qs = self.N, self.cmps, self.xs, self.qs
+        N, cmps, qs = self.N, self.cmps, self.qs
 
         qsxs = list(self.thetas())
         qsxs_sum_inv = self._qsxs_sum_inv
@@ -720,7 +718,6 @@ class UNIQUAC(GibbsExcess):
             d2thetas_dxixjsk = d2thetas_dxixjs[k]
             for j in cmps:
                 # Fastest I can test
-                d2thetas_dxixjskj = d2thetas_dxixjsk[j]
                 d2thetas_dxixjsk[j] = [qs[k]*qs[j]*t1s[i] if (i == k or i == j) and j != k
                                        else qs[k]*qs[j]*t2s[i] for i in cmps]
             d2thetas_dxixjs[k][k][k] -= qs[k]*qs[k]*qsxs_sum_inv2_2
@@ -743,7 +740,7 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             taus = self.taus()
 
-        xs, cmps = self.xs, self.cmps
+        cmps = self.cmps
         self._thetaj_taus_jis = thetaj_taus_jis = []
         for i in cmps:
             tot = 0.0
@@ -768,7 +765,7 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             taus = self.taus()
 
-        xs, cmps = self.xs, self.cmps
+        cmps = self.cmps
         self._thetaj_taus_ijs = thetaj_taus_ijs = []
         for i in cmps:
             tot = 0.0
@@ -792,7 +789,7 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             dtaus_dT = self.dtaus_dT()
 
-        xs, cmps = self.xs, self.cmps
+        cmps = self.cmps
         self._thetaj_dtaus_dT_jis = thetaj_dtaus_dT_jis = []
         for i in cmps:
             tot = 0.0
@@ -818,7 +815,7 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             d2taus_dT2 = self.d2taus_dT2()
 
-        xs, cmps = self.xs, self.cmps
+        cmps = self.cmps
         self._thetaj_d2taus_dT2_jis = thetaj_d2taus_dT2_jis = []
         for i in cmps:
             tot = 0.0
@@ -841,7 +838,7 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             d3taus_dT3 = self.d3taus_dT3()
 
-        xs, cmps = self.xs, self.cmps
+        cmps = self.cmps
         self._thetaj_d3taus_dT3_jis = thetaj_d3taus_dT3_jis = []
         for i in cmps:
             tot = 0.0
@@ -872,9 +869,7 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             pass
         T, cmps, xs = self.T, self.cmps, self.xs
-        rs, qs = self.rs, self.qs
-        taus = self.taus()
-
+        qs = self.qs
         phis = self.phis()
         thetas = self.thetas()
         thetaj_taus_jis = self.thetaj_taus_jis()
@@ -1040,7 +1035,7 @@ class UNIQUAC(GibbsExcess):
         -----
         '''
         z, T, xs, cmps = self.z, self.T, self.xs, self.cmps
-        qs, rs = self.qs, self.rs
+        qs = self.qs
         taus = self.taus()
         phis = self.phis()
         dphis_dxs = self.dphis_dxs()
@@ -1112,7 +1107,7 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             pass
         z, T, xs, cmps = self.z, self.T, self.xs, self.cmps
-        qs, rs = self.qs, self.rs
+        qs = self.qs
         taus = self.taus()
         phis = self.phis()
         dphis_dxs = self.dphis_dxs()
@@ -1197,11 +1192,10 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             pass
         z, T, xs, cmps = self.z, self.T, self.xs, self.cmps
-        qs, rs = self.qs, self.rs
+        qs = self.qs
         taus = self.taus()
         phis = self.phis()
         thetas = self.thetas()
-        dtaus_dT = self.dtaus_dT()
 
         dphis_dxs = self.dphis_dxs()
         d2phis_dxixjs = self.d2phis_dxixjs()

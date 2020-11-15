@@ -47,6 +47,7 @@ def test_4_components():
      [0.0152, 0.00544, 0.02579, 0.0]]
 
     GE = RegularSolution(T, xs, Vs, SPs, lambda_coeffs)
+    assert eval(str(GE)).GE() == GE.GE()
 
     dT = 1e-7*T
     gammas_expect = [1.1928784349228994, 1.3043087978251762, 3.2795596493820955, 197.92137114651274]

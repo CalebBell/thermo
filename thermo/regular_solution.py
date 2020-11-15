@@ -136,6 +136,11 @@ class RegularSolution(GibbsExcess):
         self.xsVs = xsVs
         self.xsVs_inv = 1.0/xsVs
 
+    def __repr__(self):
+        s = '%s(T=%s, xs=%s, Vs=%s, SPs=%s, lambda_coeffs=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs),
+                self.Vs, self.SPs, self.lambda_coeffs)
+        return s
+
     def to_T_xs(self, T, xs):
         r'''Method to construct a new :obj:`RegularSolution` instance at
         temperature `T`, and mole fractions `xs`
