@@ -143,6 +143,7 @@ disable=print-statement,
         E0203,
         W0201,
         R0904, # too many public methods - seriously?
+        W0212, # Says not to do ._thing on another class
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
