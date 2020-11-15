@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,7 +18,30 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains a class :obj:`UNIQUAC` for performing activity coefficient
+calculations with the UNIQUAC model. An older, functional calculation for
+activity coefficients only is also present, :obj:`UNIQUAC_gammas`.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. contents:: :local:
+
+UNIQUAC Class
+=============
+
+.. autoclass:: UNIQUAC
+    :members: to_T_xs, GE, dGE_dT, d2GE_dT2, d3GE_dT3, d2GE_dTdxs, dGE_dxs, d2GE_dxixjs, taus, dtaus_dT, d2taus_dT2, d3taus_dT3, phis, thetas
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+UNIQUAC Functional Calculations
+===============================
+.. autofunction:: UNIQUAC_gammas
+'''
 
 from __future__ import division
 from thermo.activity import GibbsExcess
@@ -28,7 +51,127 @@ from fluids.constants import R
 __all__ = ['UNIQUAC', 'UNIQUAC_gammas']
 
 class UNIQUAC(GibbsExcess):
+    r'''Class for representing an a liquid with excess gibbs energy represented
+    by the UNIQUAC equation. This model is capable of representing VL and LL
+    behavior.
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    xs : list[float]
+        Mole fractions, [-]
+    tau_coeffs : list[list[list[float]]], optional
+        UNIQUAC parameters, indexed by [i][j] and then each value is a 6
+        element list with parameters [`a`, `b`, `c`, `d`, `e`, `f`];
+        either `tau_coeffs` or `ABCDEF` are required, [-]
+    ABCDEF : tuple[list[list[float]], 6], optional
+        Contains the following. One of `tau_coeffs` or `ABCDEF` are
+        required, [-]
+
+        a : list[list[float]]
+            `a` parameters used in calculating :obj:`UNIQUAC.taus`, [-]
+        b : list[list[float]]
+            `b` parameters used in calculating :obj:`UNIQUAC.taus`, [K]
+        c : list[list[float]]
+            `c` parameters used in calculating :obj:`UNIQUAC.taus`, [-]
+        d : list[list[float]]
+            `d` paraemeters used in calculating :obj:`UNIQUAC.taus`, [1/K]
+        e : list[list[float]]
+            `e` parameters used in calculating :obj:`UNIQUAC.taus`, [K^2]
+        f : list[list[float]]
+            `f` parameters used in calculating :obj:`UNIQUAC.taus`, [1/K^2]
+
+    Attributes
+    ----------
+    T : float
+        Temperature, [K]
+    xs : list[float]
+        Mole fractions, [-]
+
+    Notes
+    -----
+    In addition to the methods presented here, the methods of its base class
+    :obj:`thermo.activity.GibbsExcess` are available as well.
+
+    Examples
+    --------
+
+    Example 5.19 in [2]_ includes the calculation of liquid-liquid activity
+    coefficients for the water-ethanol-benzene system. Two calculations are
+    reproduced accurately here. Note that the DDBST-style coefficients assume
+    a negative sign; for compatibility, their coefficients need to have their
+    sign flipped.
+
+    >>> N = 3
+    >>> T = 25.0 + 273.15
+    >>> xs = [0.7273, 0.0909, 0.1818]
+    >>> rs = [.92, 2.1055, 3.1878]
+    >>> qs = [1.4, 1.972, 2.4]
+    >>> tausA = tausC = tausD = tausE = tausF = [[0.0]*N for i in range(N)]
+    >>> tausB = [[0, 526.02, 309.64], [-318.06, 0, -91.532], [1325.1, 302.57, 0]]
+    >>> tausB = [[-v for v in r] for r in tausB] # Flip the sign to come into UNIQUAC convention
+    >>> ABCDEF = (tausA, tausB, tausC, tausD, tausE, tausF)
+    >>> GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=ABCDEF)
+    >>> GE.gammas()
+    [1.570393328, 0.2948241614, 18.114329048]
+
+    The given values in [2]_ are [1.570, 0.2948, 18.11], matching exactly. The
+    second phase has a different composition; the expected values are
+    [8.856, 0.860, 1.425]. Once the :obj:`UNIQUAC` object has been constructed,
+    it is very easy to obtain properties at different conditions:
+
+    >>> GE.to_T_xs(T=T, xs=[1/6., 1/6., 2/3.]).gammas()
+    [8.8559908058, 0.8595242462, 1.42546014081]
+
+    The string representation of the object presents enough information to
+    reconstruct it as well.
+
+    >>> GE
+    UNIQUAC(T=298.15, xs=[0.7273, 0.0909, 0.1818], rs=[0.92, 2.1055, 3.1878], qs=[1.4, 1.972, 2.4], ABCDEF=([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[0, -526.02, -309.64], [318.06, 0, 91.532], [-1325.1, -302.57, 0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]))
+
+    The phase exposes many properties and derivatives as well.
+
+    >>> GE.GE(), GE.dGE_dT(), GE.d2GE_dT2()
+    (1843.96486834, 6.69851118521, -0.015896025970)
+    >>> GE.HE(), GE.SE(), GE.dHE_dT(), GE.dSE_dT()
+    (-153.19624152, -6.69851118521, 4.7394001431, 0.0158960259705)
+
+    Another problem is 8.32 in [1]_ - acetonitrile, benzene, n-heptane at
+    45 °C. The sign flip is needed here as well to convert their single
+    temperature-dependent values into the correct form, but it has already been
+    done to the coefficients:
+
+    >>> N = 3
+    >>> T = 45 + 273.15
+    >>> xs = [.1311, .0330, .8359]
+    >>> rs = [1.87, 3.19, 5.17]
+    >>> qs = [1.72, 2.4, 4.4]
+    >>> tausA = tausC = tausD = tausE = tausF = [[0.0]*N for i in range(N)]
+    >>> tausB = [[0.0, -60.28, -23.71], [-89.57, 0.0, 135.9], [-545.8, -245.4, 0.0]]
+    >>> ABCDEF = (tausA, tausB, tausC, tausD, tausE, tausF)
+    >>> GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=ABCDEF)
+    >>> GE.gammas()
+    [7.1533533992, 1.25052436922, 1.060392792605]
+
+    The given values in [1]_ are [7.15, 1.25, 1.06].
+
+    References
+    ----------
+    .. [1] Poling, Bruce E., John M. Prausnitz, and John P. O’Connell. The
+       Properties of Gases and Liquids. 5th edition. New York: McGraw-Hill
+       Professional, 2000.
+    .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
+       Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
+    '''
     z = 10.0
+    def __repr__(self):
+
+        s = '%s(T=%s, xs=%s, rs=%s, qs=%s, ABCDEF=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs), repr(self.rs), repr(self.qs),
+                (self.tau_coeffs_A,  self.tau_coeffs_B, self.tau_coeffs_C,
+                 self.tau_coeffs_D, self.tau_coeffs_E, self.tau_coeffs_F))
+        return s
+
     def __init__(self, T, xs, rs, qs, tau_coeffs=None,
                  ABCDEF=None):
         self.T = T
@@ -62,6 +205,28 @@ class UNIQUAC(GibbsExcess):
         self.zero_coeffs = [[0.0]*N for _ in range(N)]
 
     def to_T_xs(self, T, xs):
+        r'''Method to construct a new :obj:`UNIQUAC` instance at
+        temperature `T`, and mole fractions `xs`
+        with the same parameters as the existing object.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        xs : list[float]
+            Mole fractions of each component, [-]
+
+        Returns
+        -------
+        obj : UNIQUAC
+            New :obj:`UNIQUAC` object at the specified conditions [-]
+
+        Notes
+        -----
+        If the new temperature is the same temperature as the existing
+        temperature, if the `tau` terms or their derivatives have been
+        calculated, they will be set to the new object as well.
+        '''
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.xs = xs
@@ -95,14 +260,20 @@ class UNIQUAC(GibbsExcess):
         return new
 
     def taus(self):
-        r'''Calculate the `tau` terms for the UNIQUAC model for the system
-        temperature.
+        r'''Calculate and return the `tau` terms for the UNIQUAC model for the
+        system temperature.
 
         .. math::
             \tau_{ij} = \exp\left[a_{ij}+\frac{b_{ij}}{T}+c_{ij}\ln T
                     + d_{ij}T + \frac{e_{ij}}{T^2} + f_{ij}{T^2}\right]
 
+        Returns
+        -------
+        taus : list[list[float]]
+            tau terms, asymmetric matrix [-]
 
+        Notes
+        -----
         These `tau ij` values (and the coefficients) are NOT symmetric.
         '''
         try:
@@ -141,8 +312,8 @@ class UNIQUAC(GibbsExcess):
         return taus
 
     def dtaus_dT(self):
-        r'''Calculate the temperature derivative of the `tau` terms for the
-        UNIQUAC model for a specified temperature.
+        r'''Calculate and return the temperature derivative of the `tau` terms
+        for the UNIQUAC model for a specified temperature.
 
         .. math::
             \frac{\partial \tau_{ij}}{\partial T} =
@@ -151,8 +322,14 @@ class UNIQUAC(GibbsExcess):
             + c_{ij} \log{\left(T \right)} + \frac{b_{ij}}{T}
             + \frac{e_{ij}}{T^{2}}}
 
+        Returns
+        -------
+        dtaus_dT : list[list[float]]
+            First temperature derivatives of tau terms, asymmetric matrix [1/K]
 
-        These `tau ij` values (and the coefficients) are NOT symmetric.
+        Notes
+        -----
+        These values (and the coefficients) are NOT symmetric.
         '''
         try:
             return self._dtaus_dT
@@ -192,8 +369,8 @@ class UNIQUAC(GibbsExcess):
         return dtaus_dT
 
     def d2taus_dT2(self):
-        r'''Calculate the second temperature derivative of the `tau` terms
-         for the UNIQUAC model for a specified temperature.
+        r'''Calculate and return the second temperature derivative of the `tau`
+         terms for the UNIQUAC model for a specified temperature.
 
         .. math::
             \frac{\partial^2 \tau_{ij}}{\partial^2 T} =
@@ -204,8 +381,15 @@ class UNIQUAC(GibbsExcess):
                 + a_{ij} + c_{ij} \log{\left(T \right)} + \frac{b_{ij}}{T}
                 + \frac{e_{ij}}{T^{2}}}
 
+        Returns
+        -------
+        d2taus_dT2 : list[list[float]]
+            Second temperature derivatives of tau terms, asymmetric matrix
+            [1/K^2]
 
-        These `tau ij` values (and the coefficients) are NOT symmetric.
+        Notes
+        -----
+        These values (and the coefficients) are NOT symmetric.
         '''
         try:
             return self._d2taus_dT2
@@ -247,8 +431,8 @@ class UNIQUAC(GibbsExcess):
         return d2taus_dT2s
 
     def d3taus_dT3(self):
-        r'''Calculate the third temperature derivative of the `tau` terms
-         for the UNIQUAC model for a specified temperature.
+        r'''Calculate and return the third temperature derivative of the `tau`
+        terms for the UNIQUAC model for a specified temperature.
 
         .. math::
             \frac{\partial^3 \tau_{ij}}{\partial^3 T} =
@@ -261,7 +445,15 @@ class UNIQUAC(GibbsExcess):
             e^{T^{2} f_{ij} + T d_{ij} + a_{ij} + c_{ij} \log{\left(T \right)}
             + \frac{b_{ij}}{T} + \frac{e_{ij}}{T^{2}}}
 
-        These `tau ij` values (and the coefficients) are NOT symmetric.
+        Returns
+        -------
+        d3taus_dT3 : list[list[float]]
+            Third temperature derivatives of tau terms, asymmetric matrix
+            [1/K^3]
+
+        Notes
+        -----
+        These values (and the coefficients) are NOT symmetric.
         '''
         try:
             return self._d3taus_dT3
@@ -317,6 +509,20 @@ class UNIQUAC(GibbsExcess):
         return d3taus_dT3s
 
     def phis(self):
+        r'''Calculate and return the `phi` parameters at the system
+        composition and temperature.
+
+        .. math::
+            \phi_i = \frac{r_i x_i}{\sum_j r_j x_j}
+
+        Returns
+        -------
+        phis : list[float]
+            phi parameters, [-]
+
+        Notes
+        -----
+        '''
         try:
             return self._phis
         except AttributeError:
@@ -412,6 +618,20 @@ class UNIQUAC(GibbsExcess):
         return d2phis_dxixjs
 
     def thetas(self):
+        r'''Calculate and return the `theta` parameters at the system
+        composition and temperature.
+
+        .. math::
+            \theta_i = \frac{q_i x_i}{\sum_j q_j x_j}
+
+        Returns
+        -------
+        thetas : list[float]
+            theta parameters, [-]
+
+        Notes
+        -----
+        '''
         try:
             return self._thetas
         except AttributeError:
@@ -420,15 +640,11 @@ class UNIQUAC(GibbsExcess):
         rs, qs = self.rs, self.qs
         qsxs = [qs[i]*xs[i] for i in cmps]
         self._qsxs_sum_inv = qsxs_sum_inv = 1.0/sum(qsxs)
-
-
-
         # reuse the array qsxs to store thetas
         for i in cmps:
             qsxs[i] *= qsxs_sum_inv
         self._thetas = qsxs
         return qsxs
-
 
     def dthetas_dxs(self):
         r'''
@@ -635,11 +851,21 @@ class UNIQUAC(GibbsExcess):
         return thetaj_d3taus_dT3_jis
 
     def GE(self):
-        r'''
+        r'''Calculate and return the excess Gibbs energy of a liquid phase
+        using the UNIQUAC model.
+
         .. math::
             \frac{G^E}{RT} = \sum_i x_i \ln\frac{\phi_i}{x_i}
             + \frac{z}{2}\sum_i q_i x_i \ln\frac{\theta_i}{\phi_i}
             - \sum_i q_i x_i \ln\left(\sum_j \theta_j \tau_{ji}   \right)
+
+        Returns
+        -------
+        GE : float
+            Excess Gibbs energy, [J/mol]
+
+        Notes
+        -----
         '''
         try:
             return self._GE
@@ -665,11 +891,21 @@ class UNIQUAC(GibbsExcess):
         return gE
 
     def dGE_dT(self):
-        r'''
+        r'''Calculate and return the temperature derivative of excess Gibbs
+        energy of a liquid phase using the UNIQUAC model.
+
         .. math::
             \frac{\partial G^E}{\partial T} = \frac{G^E}{T} - RT\left(\sum_i
             \frac{q_i x_i(\sum_j \theta_j \frac{\partial \tau_{ji}}{\partial T}
             )}{\sum_j \theta_j \tau_{ji}}\right)
+
+        Returns
+        -------
+        dGE_dT : float
+            First temperature derivative of excess Gibbs energy, [J/(mol*K)]
+
+        Notes
+        -----
         '''
         try:
             return self._dGE_dT
@@ -691,7 +927,8 @@ class UNIQUAC(GibbsExcess):
         return dGE
 
     def d2GE_dT2(self):
-        r'''
+        r'''Calculate and return the second temperature derivative of excess
+        Gibbs energy of a liquid phase using the UNIQUAC model.
 
         .. math::
             \frac{\partial G^E}{\partial T^2} = -R\left[T\sum_i\left(
@@ -699,6 +936,14 @@ class UNIQUAC(GibbsExcess):
             - \frac{q_i x_i(\sum_j \theta_j \frac{\partial \tau_{ji}}{\partial T})^2}{(\sum_j \theta_j \tau_{ji})^2}
             \right) + 2\left(\sum_i \frac{q_i x_i(\sum_j \theta_j \frac{\partial \tau_{ji}}{\partial T} )}{\sum_j \theta_j \tau_{ji}}\right)
             \right]
+
+        Returns
+        -------
+        d2GE_dT2 : float
+            Second temperature derivative of excess Gibbs energy, [J/(mol*K^2)]
+
+        Notes
+        -----
         '''
         try:
             return self._d2GE_dT2
@@ -724,7 +969,9 @@ class UNIQUAC(GibbsExcess):
         return d2GE_dT2
 
     def d3GE_dT3(self):
-        r'''
+        r'''Calculate and return the third temperature derivative of excess
+        Gibbs energy of a liquid phase using the UNIQUAC model.
+
         .. math::
             \frac{\partial^3 G^E}{\partial T^3} = -R\left[T\sum_i\left(
             \frac{q_i x_i(\sum_j \theta_j \frac{\partial^3 \tau_{ji}}{\partial T^3})}{(\sum_j \theta_j \tau_{ji})}
@@ -733,6 +980,14 @@ class UNIQUAC(GibbsExcess):
             \right) + \sum_i \left(\frac{3q_i x_i(\sum_j x_j \frac{\partial^2 \tau_{ji}}{\partial T^2} ) }{\sum_j \theta_j \tau_{ji}}
             - \frac{3q_ix_i (\sum_j \theta_j \frac{\partial \tau_{ji}}{\partial T})^2}{(\sum_j \theta_j \tau_{ji})^2}
             \right)\right]
+
+        Returns
+        -------
+        d3GE_dT3 : float
+            Third temperature derivative of excess Gibbs energy, [J/(mol*K^3)]
+
+        Notes
+        -----
         '''
         try:
             return self._d3GE_dT3
@@ -760,7 +1015,8 @@ class UNIQUAC(GibbsExcess):
         return d3GE_dT3
 
     def dGE_dxs(self):
-        r'''
+        r'''Calculate and return the mole fraction derivatives of excess Gibbs
+        energy using the UNIQUAC model.
 
         .. math::
             \frac{\partial G^E}{\partial x_i} = RT\left[
@@ -774,6 +1030,14 @@ class UNIQUAC(GibbsExcess):
             + \sum_{j!= i} \frac{x_j}{\phi_j}\frac{\partial \phi_j}{\partial x_i}
             + \log\left(\frac{\phi_i}{x_i} \right)
             \right]
+
+        Returns
+        -------
+        dGE_dxs : list[float]
+            Mole fraction derivatives of excess Gibbs energy, [J/mol]
+
+        Notes
+        -----
         '''
         z, T, xs, cmps = self.z, self.T, self.xs, self.cmps
         qs, rs = self.qs, self.rs
@@ -783,13 +1047,8 @@ class UNIQUAC(GibbsExcess):
         thetas = self.thetas()
         dthetas_dxs = self.dthetas_dxs()
         thetaj_taus_jis = self.thetaj_taus_jis()
-
-
         # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
-
-
         dGE_dxs = []
-
         RT = R*T
 
         for i in cmps:
@@ -821,7 +1080,8 @@ class UNIQUAC(GibbsExcess):
         return dGE_dxs
 
     def d2GE_dTdxs(self):
-        r'''
+        r'''Calculate and return the temperature derivative of mole fraction
+        derivatives of excess Gibbs energy using the UNIQUAC model.
 
         .. math::
             \frac{\partial G^E}{\partial x_i \partial T} = R\left[-T\left\{
@@ -837,6 +1097,15 @@ class UNIQUAC(GibbsExcess):
             + \frac{x_i}{\phi_i}\left(\frac{\partial \phi_i}{\partial x_i} -\frac{\phi_i}{x_i}  \right)
             + \sum_{j\ne i} \frac{x_j}{\phi_j}\frac{\partial \phi_j}{\partial x_i}
             \right]
+
+        Returns
+        -------
+        d2GE_dTdxs : list[float]
+            Temperature derivative of mole fraction derivatives of excess Gibbs
+            energy, [J/(mol*K)]
+
+        Notes
+        -----
         '''
         try:
             return self._d2GE_dTdxs
@@ -907,6 +1176,22 @@ class UNIQUAC(GibbsExcess):
         return d2GE_dTdxs
 
     def d2GE_dxixjs(self):
+        r'''Calculate and return the second mole fraction derivatives of excess
+        Gibbs energy using the UNIQUAC model.
+
+        .. math::
+            \frac{\partial^2 g^E}{\partial x_i \partial x_j}
+
+        Returns
+        -------
+        d2GE_dxixjs : list[list[float]]
+            Second mole fraction derivatives of excess Gibbs energy, [J/mol]
+
+        Notes
+        -----
+        The formula is extremely long and painful; see the source code for
+        details.
+        '''
         try:
             return self._d2GE_dxixjs
         except AttributeError:

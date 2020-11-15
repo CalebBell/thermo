@@ -321,7 +321,6 @@ class Wilson(GibbsExcess):
         self.cmps = range(N)
 
     def __repr__(self):
-        # Other classes with different parameters should expose them here too
         s = '%s(T=%s, xs=%s, ABCDEF=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs),
                 (self.lambda_coeffs_A,  self.lambda_coeffs_B, self.lambda_coeffs_C,
                  self.lambda_coeffs_D, self.lambda_coeffs_E, self.lambda_coeffs_F))

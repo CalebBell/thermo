@@ -127,6 +127,7 @@ def test_UNIQUAC_madeup_ternary():
     tausF = [[0.0, 9.64e-8, 8.94e-8], [1.53e-7, 0.0, 1.11e-7], [7.9e-8, 2.276e-8, 0]]
     ABCDEF = (tausA, tausB, tausC, tausD, tausE, tausF)
     GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=ABCDEF)
+    assert eval(str(GE)).GE() == GE.GE()
 
     # GE
     GE_expect = 415.5805110962149
