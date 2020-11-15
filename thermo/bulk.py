@@ -18,7 +18,40 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains a phase wrapper for obtaining properties of a pseudo-phase
+made of multiple other phases. This is useful in the context of multiple liquid
+phases; or multiple solid phases; or looking at all the phases together.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. contents:: :local:
+
+Bulk Class
+==========
+.. autoclass:: Bulk
+    :members: beta, mu, betas_mass, betas_volume, MW, V, V_iter, Cp, H, S,
+              dH_dP, dS_dP, dS_dT, dG_dT, dG_dP, dU_dT, dU_dP, dA_dT, dA_dP,
+              H_reactive, S_reactive, dP_dT_frozen, dP_dV_frozen,
+              d2P_dT2_frozen, d2P_dV2_frozen, d2P_dTdV_frozen,
+              dP_dT_equilibrium, dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV,
+              isobaric_expansion, kappa, Joule_Thomson, speed_of_sound, Tmc,
+              Pmc, Vmc, Zmc, H_ideal_gas, Cp_ideal_gas, S_ideal_gas
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+Bulk Settings Class
+===================
+
+.. autoclass:: BulkSettings
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+'''
 
 from __future__ import division
 __all__ = ['Bulk', 'BulkSettings', 'default_settings']
@@ -213,6 +246,16 @@ class Bulk(Phase):
 
     @property
     def beta(self):
+        r'''Phase fraction of the bulk phase. Should always be one when
+        representing all phases of a flash; but can be less than one if
+        representing multiple solids or liquids as a single phase in a larger
+        mixture.
+
+        Returns
+        -------
+        beta : float
+            Phase fraction of bulk, [-]
+        '''
         return sum(self.phase_fractions)
 
     def mu(self):
