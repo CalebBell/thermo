@@ -745,7 +745,7 @@ class IdealSolution(GibbsExcess):
         -------
         d2GE_dTdxs : list[float]
             Temperature derivative of mole fraction derivatives of excess Gibbs
-            energy of an ideal liquid, [J/mol]
+            energy of an ideal liquid, [J/(mol*K)]
 
         Notes
         -----
