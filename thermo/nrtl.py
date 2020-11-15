@@ -18,7 +18,32 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains a class :obj:`NRTL` for performing activity coefficient
+calculations with the NRTL model. An older, functional calculation for
+activity coefficients only is also present, :obj:`NRTL_gammas`.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. contents:: :local:
+
+NRTL Class
+==========
+
+.. autoclass:: NRTL
+    :members: to_T_xs, GE, dGE_dT, d2GE_dT2, d3GE_dT3, d2GE_dTdxs, dGE_dxs, d2GE_dxixjs, d3GE_dxixjxks, taus, dtaus_dT, d2taus_dT2, d3taus_dT3, alphas, dalphas_dT, d2alphas_dT2, d3alphas_dT3, Gs, dGs_dT, d2Gs_dT2, d3Gs_dT3
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members: gammas
+
+NRTL Functional Calculations
+============================
+.. autofunction:: NRTL_gammas
+
+
+'''
 
 from __future__ import division
 from fluids.numerics import numpy as np
@@ -71,8 +96,37 @@ class NRTL(GibbsExcess):
         self._zero_coeffs = [[0.0]*N for _ in range(N)]
         return self._zero_coeffs
 
+    def __repr__(self):
+        s = '%s(T=%s, xs=%s, ABEFGHCD=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs),
+                (self.tau_coeffs_A,  self.tau_coeffs_B, self.tau_coeffs_E,
+                 self.tau_coeffs_F, self.tau_coeffs_G, self.tau_coeffs_H,
+                 self.alpha_coeffs_c, self.alpha_coeffs_d))
+        return s
+
 
     def to_T_xs(self, T, xs):
+        r'''Method to construct a new :obj:`NRTL` instance at
+        temperature `T`, and mole fractions `xs`
+        with the same parameters as the existing object.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        xs : list[float]
+            Mole fractions of each component, [-]
+
+        Returns
+        -------
+        obj : NRTL
+            New :obj:`NRTL` object at the specified conditions [-]
+
+        Notes
+        -----
+        If the new temperature is the same temperature as the existing
+        temperature, if the `tau`, `Gs`, or `alphas` terms or their derivatives
+        have been calculated, they will be set to the new object as well.
+        '''
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.xs = xs

@@ -203,6 +203,7 @@ def test_water_ethanol_methanol_madeup():
     dT = T*1e-8
     xs = [.2, .3, .5]
     GE = NRTL(T, xs, taus, alphas)
+    assert eval(str(GE)).GE() == GE.GE()
 
     # gammas
     assert_allclose(GE.gammas(), [1.7795902383749216, 1.1495597830749005, 1.0736702352016942])

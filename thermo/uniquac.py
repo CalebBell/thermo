@@ -166,7 +166,6 @@ class UNIQUAC(GibbsExcess):
     '''
     z = 10.0
     def __repr__(self):
-
         s = '%s(T=%s, xs=%s, rs=%s, qs=%s, ABCDEF=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs), repr(self.rs), repr(self.qs),
                 (self.tau_coeffs_A,  self.tau_coeffs_B, self.tau_coeffs_C,
                  self.tau_coeffs_D, self.tau_coeffs_E, self.tau_coeffs_F))
