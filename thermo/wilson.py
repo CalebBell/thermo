@@ -18,30 +18,110 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains a class :obj:`Wilson` for performing activity coefficient
+calculations with the Wilson model. An older, functional calculation for
+activity coefficients only is also present, :obj:`Wilson_gammas`.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. contents:: :local:
+
+Wilson Class
+============
+
+.. autoclass:: Wilson
+    :members: to_T_xs, GE, dGE_dT, d2GE_dT2, d3GE_dT3, d2GE_dTdxs, dGE_dxs, d2GE_dxixjs, d3GE_dxixjxks, lambdas, dlambdas_dT, d2lambdas_dT2, d3lambdas_dT3
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members: gammas
+
+Wilson Functional Calculations
+==============================
+.. autofunction:: Wilson_gammas
+
+
+'''
 
 from __future__ import division
-from thermo.activity import GibbsExcess
 from math import log, exp
 from fluids.constants import R
+from thermo.activity import GibbsExcess
 
 __all__ = ['Wilson', 'Wilson_gammas']
 
 
 class Wilson(GibbsExcess):
+    r'''Class for representing an a liquid with excess gibbs energy represented
+    by the Wilson equation. This model is capable of representing most
+    nonideal liquids for vapor-liquid equilibria, but is not recommended for
+    liquid-liquid equilibria.
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    xs : list[float]
+        Mole fractions, [-]
+
+    Attributes
+    ----------
+    T : float
+        Temperature, [K]
+    xs : list[float]
+        Mole fractions, [-]
+
+    Examples
+    --------
+    The DDBST has published some sample problems which are fun to work with.
+    Because the DDBST uses a different equation form for the coefficients than
+    this model implements, we must initialize the :obj:`Wilson` object with
+    a different method.
+
+    >>> T = 331.42
+    >>> N = 3
+    >>> Vs_ddbst = [74.04, 80.67, 40.73]
+    >>> as_ddbst = [[0, 375.2835, 31.1208], [-1722.58, 0, -1140.79], [747.217, 3596.17, 0.0]]
+    >>> bs_ddbst = [[0, -3.78434, -0.67704], [6.405502, 0, 2.59359], [-0.256645, -6.2234, 0]]
+    >>> cs_ddbst = [[0.0, 7.91073e-3, 8.68371e-4], [-7.47788e-3, 0.0, 3.1e-5], [-1.24796e-3, 3e-5, 0.0]]
+    >>> dis = eis = fis = [[0.0]*N for _ in range(N)]
+    >>> params = Wilson.from_DDBST_as_matrix(Vs=Vs_ddbst, ais=as_ddbst, bis=bs_ddbst, cis=cs_ddbst, dis=dis, eis=eis, fis=fis, unit_conversion=False)
+    >>> xs = [0.229, 0.175, 0.596]
+    >>> GE = Wilson(T=T, xs=xs, ABCDEF=params)
+    >>> GE
+    Wilson(T=331.42, xs=[0.229, 0.175, 0.596], ABCDEF=([[0.0, 3.870101271243586, 0.07939943395502425], [-6.491263271243587, 0.0, -3.276991837288562], [0.8542855660449756, 6.906801837288562, 0.0]], [[0.0, -375.2835, -31.1208], [1722.58, 0.0, 1140.79], [-747.217, -3596.17, -0.0]], [[-0.0, -0.0, -0.0], [-0.0, -0.0, -0.0], [-0.0, -0.0, -0.0]], [[-0.0, -0.00791073, -0.000868371], [0.00747788, -0.0, -3.1e-05], [0.00124796, -3e-05, -0.0]], [[-0.0, -0.0, -0.0], [-0.0, -0.0, -0.0], [-0.0, -0.0, -0.0]], [[-0.0, -0.0, -0.0], [-0.0, -0.0, -0.0], [-0.0, -0.0, -0.0]]))
+    >>> GE.GE(), GE.dGE_dT(), GE.d2GE_dT2()
+    (480.2639266306882, 4.355962766232997, -0.029130384525017247)
+    >>> GE.HE(), GE.SE(), GE.dHE_dT(), GE.dSE_dT()
+    (-963.3892533542517, -4.355962766232997, 9.654392039281216, 0.029130384525017247)
+    >>> GE.gammas()
+    [1.2233934334, 1.100945902470, 1.205289928117]
+
+
+    The solution given by the DDBST has the same values [1.223, 1.101, 1.205],
+    and can be found here:
+    http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/05.09%20Compare%20Experimental%20VLE%20to%20Wilson%20Equation%20Results.xps
+
+    References
+    ----------
+
+
+    '''
     @staticmethod
     def from_DDBST(Vi, Vj, a, b, c, d=0.0, e=0.0, f=0.0, unit_conversion=True):
         '''Converts parameters for the wilson equation in the DDBST to the
         basis used in this implementation.
         '''
         if unit_conversion:
-            R = 1.9872042586408316 # DDBST document suggests  1.9858775
+            Rg = 1.9872042586408316 # DDBST document suggests  1.9858775
         else:
-            R = 1.0 # Not used in some cases?
-        a, b = log(Vj/Vi) - b/R, -a/R
-        c, d = -d/R, -c/R
-        e = -e/R
-        f = -f/R
+            Rg = 1.0 # Not used in some cases?
+        a, b = log(Vj/Vi) - b/Rg, -a/Rg
+        c, d = -d/Rg, -c/Rg
+        e = -e/Rg
+        f = -f/Rg
         return (a, b, c, d, e, f)
 
     @staticmethod
@@ -99,6 +179,13 @@ class Wilson(GibbsExcess):
                 self.lambda_coeffs_F = None
             self.N = N = len(lambda_coeffs)
         self.cmps = range(N)
+
+    def __repr__(self):
+        # Other classes with different parameters should expose them here too
+        s = '%s(T=%s, xs=%s, ABCDEF=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs),
+                (self.lambda_coeffs_A,  self.lambda_coeffs_B, self.lambda_coeffs_C,
+                 self.lambda_coeffs_D, self.lambda_coeffs_E, self.lambda_coeffs_F))
+        return s
 
     def to_T_xs(self, T, xs):
         new = self.__class__.__new__(self.__class__)
@@ -304,7 +391,7 @@ class Wilson(GibbsExcess):
         '''
         try:
             return self._d3lambdas_dT3
-        except:
+        except AttributeError:
             pass
 
         T, cmps = self.T, self.cmps
@@ -328,7 +415,6 @@ class Wilson(GibbsExcess):
         nT2inv05 = 0.5*nT2inv
         T3inv = -nT2inv*Tinv
         T3inv2 = T3inv+T3inv
-        T4inv6 = 3.0*T3inv2*Tinv
         T4inv3 = 1.5*T3inv2*Tinv
         T2_12 = -12.0*nT2inv
 
@@ -460,6 +546,20 @@ class Wilson(GibbsExcess):
 
 
     def GE(self):
+        r'''Calculate and return the excess Gibbs energy of a liquid phase
+        represented with the Wilson model.
+
+        .. math::
+            g^E = -RT\sum_i x_i \log\left(\sum_j x_j \lambda_{i,j} \right)
+
+        Returns
+        -------
+        GE : float
+            Excess Gibbs energy of an ideal liquid, [J/mol]
+
+        Notes
+        -----
+        '''
         try:
             return self._GE
         except AttributeError:
@@ -478,13 +578,22 @@ class Wilson(GibbsExcess):
         return GE
 
     def dGE_dT(self):
-        r'''
+        r'''Calculate and return the temperature derivative of excess Gibbs
+        energy of a liquid phase represented by the Wilson model.
 
         .. math::
             \frac{\partial G^E}{\partial T} = -R\sum_i x_i \log\left(\sum_j x_i \Lambda_{ij}\right)
             -RT\sum_i \frac{x_i \sum_j x_j \frac{\Lambda _{ij}}{\partial T}}{\sum_j x_j \Lambda_{ij}}
-        '''
 
+        Returns
+        -------
+        dGE_dT : float
+            First temperature derivative of excess Gibbs energy of a
+            liquid phase represented by the Wilson model, [J/(mol*K)]
+
+        Notes
+        -----
+        '''# Derived with:
         '''from sympy import *
         N = 4
         R, T = symbols('R, T')
@@ -504,7 +613,6 @@ class Wilson(GibbsExcess):
                 num += Lambda_ijs[i][j]*xs[j]
             ge -= xs[i]*log(num)
         ge = ge*R*T
-
 
         diff(ge, T)
         '''
@@ -542,7 +650,9 @@ class Wilson(GibbsExcess):
 
 
     def d2GE_dT2(self):
-        r'''
+        r'''Calculate and return the second temperature derivative of excess
+        Gibbs energy of a liquid phase using the Wilson activity coefficient model.
+
         .. math::
             \frac{\partial^2 G^E}{\partial T^2} = -R\left[T\sum_i \left(\frac{x_i \sum_j (x_j \frac{\partial^2 \Lambda_{ij}}{\partial T^2} )}{\sum_j x_j \Lambda_{ij}}
             - \frac{x_i (\sum_j x_j \frac{\partial \Lambda_{ij}}{\partial T}  )^2}{(\sum_j x_j \Lambda_{ij})^2}
@@ -550,6 +660,14 @@ class Wilson(GibbsExcess):
             + 2\sum_i \left(\frac{x_i \sum_j  x_j \frac{\partial \Lambda_{ij}}{\partial T}}{\sum_j x_j \Lambda_{ij}}
             \right)
             \right]
+
+        Returns
+        -------
+        d2GE_dT2 : float
+            Second temperature derivative of excess Gibbs energy, [J/(mol*K^2)]
+
+        Notes
+        -----
         '''
         try:
             return self._d2GE_dT2
@@ -583,9 +701,11 @@ class Wilson(GibbsExcess):
         self._d2GE_dT2 = -R*(T*sum0 + 2.0*sum1)
         return self._d2GE_dT2
 
-
     def d3GE_dT3(self):
-        r'''
+        r'''Calculate and return the third temperature derivative of excess
+        Gibbs energy of a liquid phase using the Wilson activity coefficient
+        model.
+
         .. math::
             \frac{\partial^3 G^E}{\partial T^3} = -R\left[3\left(\frac{x_i \sum_j (x_j \frac{\partial^2 \Lambda_{ij}}{\partial T^2} )}{\sum_j x_j \Lambda_{ij}}
             - \frac{x_i (\sum_j x_j \frac{\partial \Lambda_{ij}}{\partial T}  )^2}{(\sum_j x_j \Lambda_{ij})^2}
@@ -596,6 +716,13 @@ class Wilson(GibbsExcess):
             + 2\frac{x_i(\sum_j x_j \frac{\partial \Lambda_{ij}}{\partial T})^3}{(\sum_j x_j \Lambda_{ij})^3}
             \right)\right]
 
+        Returns
+        -------
+        d3GE_dT3 : float
+            Third temperature derivative of excess Gibbs energy, [J/(mol*K^3)]
+
+        Notes
+        -----
         '''
         try:
             return self._d3GE_dT3
@@ -803,15 +930,12 @@ class Wilson(GibbsExcess):
         '''
         try:
             return self._d3GE_dxixjxks
-        except:
+        except AttributeError:
             pass
         # Correct, tested with sympy expanding
         T, xs, cmps = self.T, self.xs, self.cmps
         nRT = -R*T
         lambdas = self.lambdas()
-        xj_Lambda_ijs = self.xj_Lambda_ijs()
-
-
         try:
             xj_Lambda_ijs_inv = self._xj_Lambda_ijs_inv
         except AttributeError:

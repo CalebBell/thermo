@@ -102,6 +102,9 @@ def test_DDBST_example():
     xs = [0.229, 0.175, 0.596]
 
     GE = Wilson(T=T, xs=xs, ABCDEF=params)
+    
+    # Test __repr__ contains the needed information
+    assert eval(str(GE)).GE() == GE.GE()
 
     gammas_expect = [1.223393433488855, 1.1009459024701462, 1.2052899281172034]
     assert_allclose(GE.gammas(), gammas_expect, rtol=1e-12)
