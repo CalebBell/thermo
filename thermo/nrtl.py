@@ -89,6 +89,8 @@ class NRTL(GibbsExcess):
 
     @property
     def zero_coeffs(self):
+        '''Method to return a 2D list-of-lists of zeros.
+        '''
         try:
             return self._zero_coeffs
         except AttributeError:
@@ -265,7 +267,9 @@ class NRTL(GibbsExcess):
             tau_coeffs_Hi = tau_coeffs_H[i]
             tausi = taus[i]
             for j in cmps:
-                tausi[j] += tau_coeffs_Bi[j]*Tinv + tau_coeffs_Ei[j]*logT + tau_coeffs_Fi[j]*T + tau_coeffs_Gi[j]*T2inv + tau_coeffs_Hi[j]*T2
+                tausi[j] += (tau_coeffs_Bi[j]*Tinv + tau_coeffs_Ei[j]*logT
+                             + tau_coeffs_Fi[j]*T + tau_coeffs_Gi[j]*T2inv
+                             + tau_coeffs_Hi[j]*T2)
         return taus
 
     def dtaus_dT(self):
@@ -363,8 +367,8 @@ class NRTL(GibbsExcess):
         return d2taus_dT2
 
     def d3taus_dT3(self):
-        r'''Calculate and return the third temperature derivative of the `tau` terms for
-        the NRTL model for a specified temperature.
+        r'''Calculate and return the third temperature derivative of the `tau`
+        terms for the NRTL model for a specified temperature.
 
         .. math::
             \frac{\partial^3 \tau_{ij}} {\partial T^3}_{P, x_i} =
@@ -406,8 +410,6 @@ class NRTL(GibbsExcess):
                                   + T3inv2*tau_coeffs_Ei[j]
                                   + T5inv24*tau_coeffs_Gi[j])
         return d3taus_dT3
-
-
 
     def alphas(self):
         r'''Calculates and return the `alpha` terms in the NRTL model for a
@@ -811,7 +813,7 @@ class NRTL(GibbsExcess):
 
     def GE(self):
         r'''Calculate and return the excess Gibbs energy of a liquid phase
-        represented by the NRTL mode..
+        represented by the NRTL model.
 
         .. math::
             g^E = RT\sum_i x_i \frac{\sum_j \tau_{ji} G_{ji} x_j}
@@ -840,6 +842,17 @@ class NRTL(GibbsExcess):
         return GE
 
     def dGE_dT(self):
+        r'''Calculate and return the first tempreature derivative of excess
+        Gibbs energy of a liquid phase represented by the NRTL model.
+
+        Returns
+        -------
+        dGE_dT : float
+            First temperature derivative of excess Gibbs energy, [J/(mol*K)]
+
+        Notes
+        -----
+        '''
         '''from sympy import *
         R, T, x = symbols('R, T, x')
         g, tau = symbols('g, tau', cls=Function)
@@ -869,6 +882,17 @@ class NRTL(GibbsExcess):
 
 
     def d2GE_dT2(self):
+        r'''Calculate and return the second tempreature derivative of excess
+        Gibbs energy of a liquid phase represented by the NRTL model.
+
+        Returns
+        -------
+        d2GE_dT2 : float
+            Second temperature derivative of excess Gibbs energy, [J/(mol*K^2)]
+
+        Notes
+        -----
+        '''
         '''from sympy import *
         R, T, x = symbols('R, T, x')
         g, tau = symbols('g, tau', cls=Function)
@@ -940,6 +964,20 @@ class NRTL(GibbsExcess):
         return d2GE_dT2
 
     def dGE_dxs(self):
+        r'''Calculate and return the mole fraction derivatives of excess Gibbs
+        energy of a liquid represented by the NRTL model.
+
+        .. math::
+            \frac{\partial g^E}{\partial x_i}
+
+        Returns
+        -------
+        dGE_dxs : list[float]
+            Mole fraction derivatives of excess Gibbs energy, [J/mol]
+
+        Notes
+        -----
+        '''
         '''
         from sympy import *
         N = 3
@@ -992,7 +1030,8 @@ class NRTL(GibbsExcess):
         return dGE_dxs
 
     def d2GE_dxixjs(self):
-        r'''
+        r'''Calculate and return the second mole fraction derivatives of excess
+        Gibbs energy of a liquid represented by the NRTL model.
 
         .. math::
             \frac{\partial^2 g^E}{\partial x_i \partial x_j} = RT\left[
@@ -1004,6 +1043,14 @@ class NRTL(GibbsExcess):
             - \frac{x_k G_{ik}G_{jk}(\tau_{jk} + \tau_{ik})}{(\sum_m x_m G_{mk})^2}
             \right)
             \right]
+
+        Returns
+        -------
+        d2GE_dxixjs : list[list[float]]
+            Second mole fraction derivatives of excess Gibbs energy, [J/mol]
+
+        Notes
+        -----
         '''
         '''
         from sympy import *
@@ -1088,7 +1135,10 @@ class NRTL(GibbsExcess):
 
 
     def d2GE_dTdxs(self):
-        r'''
+        r'''Calculate and return the temperature derivative of mole fraction
+        derivatives of excess Gibbs energy of a liquid represented by the NRTL
+        model.
+
         .. math::
             \frac{\partial^2 g^E}{\partial x_i \partial T} = R\left[-T\left(
             \sum_j \left(
@@ -1105,6 +1155,15 @@ class NRTL(GibbsExcess):
             \frac{x_j G_{ij}(\sum_k x_k G_{kj}\tau_{kj})}{(\sum_k x_k G_{kj})^2} + \frac{x_j G_{ij}\tau_{ij}}{\sum_k x_k G_{kj}}
             \right)
             \right]
+
+        Returns
+        -------
+        d2GE_dTdxs : list[float]
+            Temperature derivative of mole fraction derivatives of excess Gibbs
+            energy, [J/(mol*K)]
+
+        Notes
+        -----
         '''
         try:
             return self._d2GE_dTdxs

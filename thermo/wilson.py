@@ -150,7 +150,7 @@ class Wilson(GibbsExcess):
     with a slight error from their use of 1.987 as a gas constant).
 
     References
-    ----------
+    ----------x
     .. [1] Smith, H. C. Van Ness Joseph M. Introduction to Chemical Engineering
        Thermodynamics 4th Edition, Joseph M. Smith, H. C. Van
        Ness, 1987.
