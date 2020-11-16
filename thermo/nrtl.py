@@ -56,6 +56,92 @@ __all__ = ['NRTL', 'NRTL_gammas']
 
 
 class NRTL(GibbsExcess):
+    r'''Class for representing an a liquid with excess gibbs energy represented
+    by the NRTL equation. This model is capable of representing VL and LL
+    behavior. [1]_ and [2]_ are good references on this model.
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    xs : list[float]
+        Mole fractions, [-]
+    tau_coeffs : list[list[list[float]]], optional
+        NRTL parameters, indexed by [i][j] and then each value is a 6
+        element list with parameters [`a`, `b`, `e`, `f`, `g`, `h`];
+        either (`tau_coeffs` and `alpha_coeffs`) or `ABEFGHCD` are required, [-]
+    alpha_coeffs : list[list[float]], optional
+        NRTL alpha parameters, []
+    ABEFGHCD : tuple[list[list[float]], 8], optional
+        Contains the following. One of (`tau_coeffs` and `alpha_coeffs`) or
+        `ABEFGHCD` are required, [-]
+
+        a : list[list[float]]
+            `a` parameters used in calculating :obj:`NRTL.taus`, [-]
+        b : list[list[float]]
+            `b` parameters used in calculating :obj:`NRTL.taus`, [K]
+        e : list[list[float]]
+            `e` parameters used in calculating :obj:`NRTL.taus`, [-]
+        f : list[list[float]]
+            `f` paraemeters used in calculating :obj:`NRTL.taus`, [1/K]
+        e : list[list[float]]
+            `e` parameters used in calculating :obj:`NRTL.taus`, [K^2]
+        f : list[list[float]]
+            `f` parameters used in calculating :obj:`NRTL.taus`, [1/K^2]
+        c : list[list[float]]
+            `c` parameters used in calculating :obj:`NRTL.alphas`, [-]
+        d : list[list[float]]
+            `d` paraemeters used in calculating :obj:`NRTL.alphas`, [1/K]
+
+    Attributes
+    ----------
+    T : float
+        Temperature, [K]
+    xs : list[float]
+        Mole fractions, [-]
+
+    Notes
+    -----
+    In addition to the methods presented here, the methods of its base class
+    :obj:`thermo.activity.GibbsExcess` are available as well.
+
+    Examples
+    --------
+    The DDBST has published numerous problems showing this model a simple
+    binary system, Example P05.01b in [2]_, shows how to use parameters from
+    the DDBST which are in units of calorie and need the gas constant as a
+    multiplier:
+
+    >>> from scipy.constants import calorie, R
+    >>> N = 2
+    >>> T = 70.0 + 273.15
+    >>> xs = [0.252, 0.748]
+    >>> tausA = tausE = tausF = tausG = tausH = alphaD = [[0.0]*N for i in range(N)]
+    >>> tausB = [[0, -121.2691/R*calorie], [1337.8574/R*calorie, 0]]
+    >>> alphaC =  [[0, 0.2974],[.2974, 0]]
+    >>> ABEFGHCD = (tausA, tausB, tausE, tausF, tausG, tausH, alphaC, alphaD)
+    >>> GE = NRTL(T=T, xs=xs, ABEFGHCD=ABEFGHCD)
+    >>> GE.gammas()
+    [1.93605165145, 1.15366304520]
+    >>> GE
+    NRTL(T=343.15, xs=[0.252, 0.748], ABEFGHCD=([[0.0, 0.0], [0.0, 0.0]], [[0, -61.0249799309399], [673.2359767282798, 0]], [[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]], [[0, 0.2974], [0.2974, 0]], [[0.0, 0.0], [0.0, 0.0]]))
+    >>> GE.GE(), GE.dGE_dT(), GE.d2GE_dT2()
+    (780.053057219, 0.5743500022, -0.003584843605528)
+    >>> GE.HE(), GE.SE(), GE.dHE_dT(), GE.dSE_dT()
+    (582.964853938, -0.57435000227, 1.230139083237, 0.0035848436055)
+
+    The solution given by the DDBST has the same values [1.936, 1.154],
+    and can be found here:
+    http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/P05.01b%20VLE%20Behavior%20of%20Ethanol%20-%20Water%20Using%20NRTL.xps
+
+    References
+    ----------
+    .. [1] Poling, Bruce E., John M. Prausnitz, and John P. O’Connell. The
+       Properties of Gases and Liquids. 5th edition. New York: McGraw-Hill
+       Professional, 2000.
+    .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
+       Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
+    '''
     def __init__(self, T, xs, tau_coeffs=None, alpha_coeffs=None,
                  ABEFGHCD=None):
         self.T = T
