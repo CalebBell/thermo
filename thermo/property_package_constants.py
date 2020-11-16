@@ -28,7 +28,6 @@ from __future__ import division
 __all__ = ['PropertyPackageConstants', 'IDEAL_PKG', 'NRTL_PKG', 'UNIFAC_PKG',
            'UNIFAC_DORTMUND_PKG', 'PR_PKG', 'SRK_PKG']
 
-from copy import copy
 import numpy as np
 from fluids.numerics import brenth, ridder, derivative
 

@@ -25,7 +25,6 @@ from __future__ import division
 __all__ = ['Stream', 'EnergyTypes', 'EnergyStream', 'StreamArgs', 'EquilibriumStream', 'mole_balance', 'energy_balance']
 
 import enum
-from copy import copy, deepcopy
 from collections import OrderedDict
 from numbers import Number
 

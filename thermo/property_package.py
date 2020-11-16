@@ -46,7 +46,6 @@ __all__ = ['PropertyPackage', 'Ideal', 'Unifac', 'GammaPhi',
            'Stateva_Tsvetkov_TPDF_eos', 'd_TPD_Michelson_modified_eos',
            'GceosBase']
 
-from copy import copy
 from random import uniform, shuffle, seed
 import numpy as np
 from fluids.numerics import (OscillationError, UnconvergedError,
@@ -592,6 +591,7 @@ class PropertyPackage(object):
     P_MIN_FIXED = 1e-3
 
     def to(self, zs, T=None, P=None, VF=None):
+        from copy import copy
         obj = copy(self)
         obj.flash(T=T, P=P, VF=VF, zs=zs)
         return obj

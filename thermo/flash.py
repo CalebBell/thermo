@@ -56,7 +56,6 @@ from fluids.numerics import (UnconvergedError, trunc_exp, newton,
                              make_damp_initial, newton_minimize,
                              root, minimize, fsolve)
 from fluids.numerics import py_solve, trunc_log
-from fluids.optional.pychebfun import build_solve_pychebfun
 
 from chemicals.utils import (exp, log, log10, floor, copysign, normalize,
                           mixing_simple, property_mass_to_molar, rho_to_Vm, Vm_to_rho)
