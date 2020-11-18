@@ -106,6 +106,8 @@ Other Cubic Equations of State
 ------------------------------
 .. autoclass:: thermo.eos_mix.VDWMIX
 .. autoclass:: thermo.eos_mix.RKMIX
+   :show-inheritance:
+   :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized, ddelta_dzs, ddelta_dns, d2delta_dzizjs, d2delta_dninjs, d3delta_dninjnks
 
 Ideal Gas Equation of State
 ---------------------------
@@ -6401,8 +6403,8 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
 
 
 class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
-    r'''Class for solving the Redlich Kwong cubic equation of state for a
-    mixture of any number of compounds. Subclasses `RK`. Solves the EOS on
+    r'''Class for solving the Redlich Kwong [1]_ [2]_ cubic equation of state for a
+    mixture of any number of compounds. Subclasses :obj:`thermo.eos.RK`. Solves the EOS on
     initialization and calculates fugacities for all components in all phases.
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
@@ -6444,7 +6446,8 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
     V : float, optional
         Molar volume, [m^3/mol]
     omegas : float, optional
-        Acentric factors of all compounds - Not used in equation of state!, [-]
+        Acentric factors of all compounds - Not used in this equation of
+        state!, [-]
     fugacities : bool, optional
         Whether or not to calculate fugacity related values (phis, log phis,
         and fugacities); default True, [-]
@@ -6465,8 +6468,7 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
 
     Notes
     -----
-    For P-V initializations with multiple components, SciPy's `newton` solver
-    is used to find T.
+    The PV solution for `T` is iterative.
 
     References
     ----------
@@ -6554,9 +6556,7 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
         >>> eos.a_alpha_and_derivatives_vectorized(115)
         ([0.1449810919468, 0.30019773677], [-0.000630352573681, -0.00130520755121], [8.2219900915e-06, 1.7024446320e-05])
         '''
-#        if full:
         return RK_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais)
-#        return RK_a_alphas_vectorized(T, self.Tcs, self.ais)
 
     def solve_T(self, P, V, quick=True, solution=None):
         if self.N == 1 and type(self) is RKMIX:

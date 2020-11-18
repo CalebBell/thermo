@@ -9,6 +9,7 @@ Submodules
    thermo.activity
    thermo.bulk
    thermo.chemical
+   thermo.chemical_package
    thermo.datasheet
    thermo.electrochem
    thermo.eos
@@ -27,6 +28,7 @@ Submodules
    thermo.phases
    thermo.phase_change
    thermo.property_package
+   thermo.phase_identification
    thermo.regular_solution
    thermo.stream
    thermo.thermal_conductivity
