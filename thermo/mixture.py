@@ -720,8 +720,10 @@ class Mixture(object):
 
 
         # Analytical
+        self.RI_Ts = [i.RIT for i in self.Chemicals]
         self.RIs = [i.RI for i in self.Chemicals]
         self.conductivities = [i.conductivity for i in self.Chemicals]
+        self.conductivity_Ts = [i.conductivityT for i in self.Chemicals]
 
         # Constant properties obtained from TP
         self.Vml_STPs = Vml_STPs = [i.Vml_STP for i in self.Chemicals]
@@ -3293,12 +3295,13 @@ class Mixture(object):
                  Hvap_298s_mass=self.Hvap_298s, Vml_Tms=self.Vml_Tms,
                  rhos_Tms=self.rhos_Tms, Vms_Tms=self.Vms_Tms,
                  # Analytical
-                 RIs=self.RIs, conductivities=self.conductivities,
+                 RIs=self.RIs, RI_Ts=self.RI_Ts, conductivities=self.conductivities,
+                 conductivity_Ts=self.conductivity_Ts,
                  # Odd constants
                  charges=self.charges, dipoles=self.dipoles, Stockmayers=self.Stockmayers,
                  molecular_diameters=self.molecular_diameters, Van_der_Waals_volumes=self.Van_der_Waals_volumes,
                  Van_der_Waals_areas=self.Van_der_Waals_areas, Parachors=self.Parachors, StielPolars=self.StielPolars,
-                 atomss=self.atomss, atom_fractions=self.atom_fractions,
+                 atomss=self.atomss, atom_fractions=self.atom_fractionss,
                  similarity_variables=self.similarity_variables, phase_STPs=self.phase_STPs,
                  UNIFAC_Rs=self.UNIFAC_Rs, UNIFAC_Qs=self.UNIFAC_Qs, solubility_parameters=self.solubility_parameters,
                  # Other identifiers

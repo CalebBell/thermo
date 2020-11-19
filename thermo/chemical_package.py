@@ -61,6 +61,7 @@ class ChemicalConstantsPackage(object):
                  'Vml_STPs', 'Vml_Tms', 'Zcs', 'UNIFAC_Rs', 'UNIFAC_Qs',
                  'rhos_Tms', 'Vms_Tms', 'solubility_parameters',
                  'Vml_60Fs', 'rhol_60Fs', 'rhol_60Fs_mass',
+                 'conductivity_Ts', 'RI_Ts',
                  )
 
     __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms')
@@ -134,7 +135,8 @@ class ChemicalConstantsPackage(object):
                  Vml_Tms=None, rhos_Tms=None, Vms_Tms=None,
 
                  # Analytical
-                 RIs=None, conductivities=None,
+                 RIs=None, RI_Ts=None, conductivities=None,
+                 conductivity_Ts=None,
                  # Odd constants
                  charges=None, dipoles=None, Stockmayers=None,
                  molecular_diameters=None, Van_der_Waals_volumes=None,
@@ -234,6 +236,8 @@ class ChemicalConstantsPackage(object):
         if Vml_60Fs is None: Vml_60Fs = [None]*N
         if rhol_60Fs is None: rhol_60Fs = [None]*N
         if rhol_60Fs_mass is None: rhol_60Fs_mass = [None]*N
+        if RI_Ts is None: RI_Ts = [None]*N
+        if conductivity_Ts is None: conductivity_Ts = [None]*N
 
         self.atom_fractions = atom_fractions
         self.atomss = atomss
@@ -318,6 +322,8 @@ class ChemicalConstantsPackage(object):
         self.Vml_60Fs = Vml_60Fs
         self.rhol_60Fs = rhol_60Fs
         self.rhol_60Fs_mass = rhol_60Fs_mass
+        self.conductivity_Ts = conductivity_Ts
+        self.RI_Ts = RI_Ts
 
         try:
             self.water_index = CASs.index(CAS_H2O)
@@ -329,6 +335,39 @@ class ChemicalConstantsPackage(object):
         except:
             self.n_atoms = None
 
+constants_docstrings = {'N': (int, "Number of components in the package", "[-]", None),
+'cmps': (range, "Iterator over all components", "[-]", None),
+'rhol_60Fs': ("list[float]", "Liquid standard molar densities at 60 °F", "[mol/m^3]", None),
+'atom_fractions': ("list[dict]", "Breakdown of each component into its elemental fractions, as a dict", "[-]", None),
+'atomss': ("list[dict]", "Breakdown of each component into its elements and their counts, as a dict", "[-]", None),
+'Carcinogens': ("list[dict]", "Status of each component in cancer causing registries", "[-]", None),
+'CASs': ("list[str]", "CAS registration numbers for each component", "[-]", None),
+'Ceilings': ("list[tuple[(float, str)]]", "Ceiling exposure limits to chemicals (and their units)", "[ppm or mg/m^3]", None),
+'charges': ("list[float]", "Charge number (valence) for each component", "[-]", None),
+'conductivities': ("list[float]", "Electrical conductivities for each component", "[S/m]", None),
+'conductivity_Ts': ("list[float]", "Temperatures at which the electrical conductivities for each component were measured", "[K]", None),
+'dipoles': ("list[float]", "Dipole moments for each component", "[debye]", None),
+'economic_statuses': ("list[dict]", "Status of each component in in relation to import and export rules", "[-]", None),
+'formulas': ("list[str]", "Formulas of each component", "[-]", None),
+}
+
+full_attributes_section = '''
+    Attributes
+    ----------
+'''
+for name, (var_type, desc, units, return_desc) in constants_docstrings.items():
+    type_name = var_type if type(var_type) is str else var_type.__name__
+    new = '''    %s : %s
+        %s, %s.
+''' %(name, type_name, desc, units)
+    full_attributes_section += new
+
+
+#print(full_attributes_section)
+
+
+ChemicalConstantsPackage.__doc__ = full_attributes_section
+#print(full_attributes_section)
 
 class PropertyCorrelationPackage(object):
     correlations = ('VaporPressures', 'SublimationPressures', 'VolumeGases',

@@ -28,7 +28,7 @@ from fluids.core import thermal_diffusivity
 from chemicals.utils import log, exp, normalize, zs_to_ws, vapor_mass_quality, mixing_simple, Vm_to_rho, SG
 from chemicals.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
 from thermo.phases import gas_phases, liquid_phases, solid_phases, Phase, derivatives_thermodynamic, derivatives_thermodynamic_mass, derivatives_jacobian
-from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationPackage
+from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationPackage, constants_docstrings
 from thermo.bulk import Bulk, BulkSettings, default_settings
 
 all_phases = gas_phases + liquid_phases + solid_phases
@@ -1093,6 +1093,21 @@ constant_blacklist = set(['atom_fractions'])
 for name in ChemicalConstantsPackage.properties:
     if name not in constant_blacklist:
         getter = property(_make_getter_constants(name))
+        try:
+            var_type, desc, units, return_desc = constants_docstrings[name]
+            type_name = var_type if type(var_type) is str else var_type.__name__
+            if return_desc is None:
+                return_desc = desc
+            full_desc = '''%s, %s.
+
+Returns
+-------
+%s : %s
+    %s, %s.''' %(desc, units, name, type_name, return_desc, units)
+#            print(full_desc)
+            getter.__doc__ = full_desc
+        except:
+            pass
         setattr(EquilibriumState, name, getter)
         setattr(Phase, name, getter)
 
