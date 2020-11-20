@@ -2170,7 +2170,10 @@ for a in ('T', 'P', 'V', 'rho'):
            def _der(self, a=a, b=b, c=c):
                return self._derivs_jacobian(a=a, b=b, c=c)
            t = 'd%s_d%s_%s' %(a, b, c)
+           # TODO get rho to appear right
+           doc = r'''Automatially generated derivative :math:`\left(\frac{\partial %s}{\partial %s}\right)_{%s}`''' %(a, b, c)
            setattr(Phase, t, _der)
+           _der.__doc__ = doc
            derivatives_jacobian.append(t)
 
 derivatives_thermodynamic = ['dA_dP', 'dA_dP_T', 'dA_dP_V', 'dA_dT', 'dA_dT_P', 'dA_dT_V', 'dA_dV_P', 'dA_dV_T',
