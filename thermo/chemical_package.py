@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,7 +18,40 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains classes for storing data and objects which are necessary
+for doing thermodynamic calculations. The intention for these classes is to
+serve as an in-memory storage layer between the disk and methods which do
+full thermodynamic calculations.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. contents:: :local:
+
+Chemical Constants Class
+========================
+.. autoclass:: ChemicalConstantsPackage
+    :members: subset, properties
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+Sample Class: Water
+-------------------
+.. autofunction:: iapws_correlations
+
+Property Correlations Class
+===========================
+
+.. autoclass:: PropertyCorrelationPackage
+    :members: subset, as_best_fit
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+'''
 
 from __future__ import division
 
@@ -43,7 +76,7 @@ CAS_H2O = '7732-18-5'
 
 
 class ChemicalConstantsPackage(object):
-    properties = ('atom_fractions', 'atomss', 'Carcinogens', 'CASs', 'Ceilings', 'charges',
+    non_vector_properties = ('atomss', 'Carcinogens', 'CASs', 'Ceilings', 'charges',
                  'conductivities', 'dipoles', 'economic_statuses', 'formulas', 'Gfgs',
                  'Gfgs_mass', 'GWPs', 'Hcs', 'Hcs_lower', 'Hcs_lower_mass', 'Hcs_mass',
                  'Hfgs', 'Hfgs_mass', 'Hfus_Tms', 'Hfus_Tms_mass', 'Hsub_Tms',
@@ -63,15 +96,60 @@ class ChemicalConstantsPackage(object):
                  'Vml_60Fs', 'rhol_60Fs', 'rhol_60Fs_mass',
                  'conductivity_Ts', 'RI_Ts',
                  )
+    properties = ('atom_fractions',) + non_vector_properties
+    '''Tuple of all properties that can be held by this object.'''
 
     __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms')
     non_vectors = ('atom_fractions',)
     non_vectors_set = set(non_vectors)
+    def subset(self, idxs=None, properties=None):
+        r'''Method to construct a new ChemicalConstantsPackage that removes
+        all components not specified in the `idxs` argument. Although this
+        class has a great many attributes, it is often sufficient to work with
+        a subset of those properties; and if a list of properties is provided,
+        only those properties will be added to the new object as well.
 
-    def subset(self, idxs):
+        Parameters
+        ----------
+        idxs : list[int] or Slice or None
+            Indexes of components that should be included; if None, all
+            components will be included , [-]
+        properties : tuple[str] or None
+            List of properties to be included; all properties will be included
+            if this is not specified
+
+        Returns
+        -------
+        subset_consts : ChemicalConstantsPackage
+            Object with reduced properties and or components, [-]
+
+        Notes
+        -----
+        It is not intended for properties to be edited in this object!
+        One optimization is that all entirely empty properties use the same
+        list-of-Nones.
+
+        All properties should have been specified before constructing the first
+        ChemicalConstantsPackage.
+
+        Examples
+        --------
+        >>> base = ChemicalConstantsPackage(MWs=[18.01528, 106.165, 106.165, 106.165], names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.344, 0.3118, 0.324, 0.331], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tcs=[647.14, 630.3, 616.2, 617.0])
+        >>> base.subset([0])
+        ChemicalConstantsPackage(MWs=[18.01528], names=['water'], omegas=[0.344], Pcs=[22048320.0], Tcs=[647.14])
+        >>> base.subset(slice(1,4))
+        ChemicalConstantsPackage(MWs=[106.16499999999999, 106.16499999999999, 106.16499999999999], names=['o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.3118, 0.324, 0.331], Pcs=[3732000.0, 3511000.0, 3541000.0], Tcs=[630.3, 616.2, 617.0])
+        >>> base.subset(idxs=[0, 3], properties=('names', 'MWs'))
+        ChemicalConstantsPackage(MWs=[18.01528, 106.16499999999999], names=['water', 'm-xylene'])
+        '''
+        if idxs is None:
+            idxs = self.cmps
+        if properties is None:
+            properties = self.non_vector_properties
         is_slice = isinstance(idxs, slice)
-        is_one = len(idxs) == 1
-        idx = idxs[0]
+        if not is_slice:
+            is_one = len(idxs) == 1
+            idx = idxs[0]
 
         def atindexes(values):
             if is_slice:
@@ -81,18 +159,19 @@ class ChemicalConstantsPackage(object):
             return [values[i] for i in idxs]
 
         new = {}
-        non_vectors = self.non_vectors_set
-        for p in self.properties:
-            if hasattr(self, p):
-                v = getattr(self, p)
-                if v is not None and p not in non_vectors:
-                    new[p] = atindexes(v)
+        for p in properties:
+            v = getattr(self, p)
+            if v is not None:
+                new[p] = atindexes(v)
         return ChemicalConstantsPackage(**new)
 
     def __repr__(self):
-        return self.make_str()
+        return self._make_str()
 
-    def make_str(self, delim=', ', properties=None):
+    def _make_str(self, delim=', ', properties=None):
+        '''Method to create a new string representing the
+        object.
+        '''
         if properties is None:
             properties = self.properties
 
@@ -103,8 +182,6 @@ class ChemicalConstantsPackage(object):
                 s += '%s=%s%s'%(k, getattr(self, k), delim)
         s = s[:-2] + ')'
         return s
-
-
 
     def __init__(self, CASs=None, names=None, MWs=None, Tms=None, Tbs=None,
                  # Critical state points
@@ -154,90 +231,92 @@ class ChemicalConstantsPackage(object):
         self.N = N = len(MWs)
         self.cmps = range(N)
 
-        if atom_fractions is None: atom_fractions = [None]*N
-        if atomss is None: atomss = [None]*N
-        if Carcinogens is None: Carcinogens = [None]*N
-        if CASs is None: CASs = [None]*N
-        if Ceilings is None: Ceilings = [None]*N
-        if charges is None: charges = [None]*N
-        if conductivities is None: conductivities = [None]*N
-        if dipoles is None: dipoles = [None]*N
-        if economic_statuses is None: economic_statuses = [None]*N
-        if formulas is None: formulas = [None]*N
-        if Gfgs is None: Gfgs = [None]*N
-        if Gfgs_mass is None: Gfgs_mass = [None]*N
-        if GWPs is None: GWPs = [None]*N
-        if Hcs is None: Hcs = [None]*N
-        if Hcs_lower is None: Hcs_lower = [None]*N
-        if Hcs_lower_mass is None: Hcs_lower_mass = [None]*N
-        if Hcs_mass is None: Hcs_mass = [None]*N
-        if Hfgs is None: Hfgs = [None]*N
-        if Hfgs_mass is None: Hfgs_mass = [None]*N
-        if Hfus_Tms is None: Hfus_Tms = [None]*N
-        if Hfus_Tms_mass is None: Hfus_Tms_mass = [None]*N
-        if Hsub_Tms is None: Hsub_Tms = [None]*N
-        if Hsub_Tms_mass is None: Hsub_Tms_mass = [None]*N
-        if Hvap_298s is None: Hvap_298s = [None]*N
-        if Hvap_298s_mass is None: Hvap_298s_mass = [None]*N
-        if Hvap_Tbs is None: Hvap_Tbs = [None]*N
-        if Hvap_Tbs_mass is None: Hvap_Tbs_mass = [None]*N
-        if InChI_Keys is None: InChI_Keys = [None]*N
-        if InChIs is None: InChIs = [None]*N
-        if legal_statuses is None: legal_statuses = [None]*N
-        if LFLs is None: LFLs = [None]*N
-        if logPs is None: logPs = [None]*N
-        if molecular_diameters is None: molecular_diameters = [None]*N
-        if names is None: names = [None]*N
-        if ODPs is None: ODPs = [None]*N
-        if omegas is None: omegas = [None]*N
-        if Parachors is None: Parachors = [None]*N
-        if Pcs is None: Pcs = [None]*N
-        if phase_STPs is None: phase_STPs = [None]*N
-        if Psat_298s is None: Psat_298s = [None]*N
-        if PSRK_groups is None: PSRK_groups = [None]*N
-        if Pts is None: Pts = [None]*N
-        if PubChems is None: PubChems = [None]*N
-        if rhocs is None: rhocs = [None]*N
-        if rhocs_mass is None: rhocs_mass = [None]*N
-        if rhol_STPs is None: rhol_STPs = [None]*N
-        if rhol_STPs_mass is None: rhol_STPs_mass = [None]*N
-        if RIs is None: RIs = [None]*N
-        if S0gs is None: S0gs = [None]*N
-        if S0gs_mass is None: S0gs_mass = [None]*N
-        if Sfgs is None: Sfgs = [None]*N
-        if Sfgs_mass is None: Sfgs_mass = [None]*N
-        if similarity_variables is None: similarity_variables = [None]*N
-        if Skins is None: Skins = [None]*N
-        if smiless is None: smiless = [None]*N
-        if STELs is None: STELs = [None]*N
-        if StielPolars is None: StielPolars = [None]*N
-        if Stockmayers is None: Stockmayers = [None]*N
-        if solubility_parameters is None: solubility_parameters = [None]*N
-        if Tautoignitions is None: Tautoignitions = [None]*N
-        if Tbs is None: Tbs = [None]*N
-        if Tcs is None: Tcs = [None]*N
-        if Tflashs is None: Tflashs = [None]*N
-        if Tms is None: Tms = [None]*N
-        if Tts is None: Tts = [None]*N
-        if TWAs is None: TWAs = [None]*N
-        if UFLs is None: UFLs = [None]*N
-        if UNIFAC_Dortmund_groups is None: UNIFAC_Dortmund_groups = [None]*N
-        if UNIFAC_groups is None: UNIFAC_groups = [None]*N
-        if UNIFAC_Rs is None: UNIFAC_Rs = [None]*N
-        if UNIFAC_Qs is None: UNIFAC_Qs = [None]*N
-        if Van_der_Waals_areas is None: Van_der_Waals_areas = [None]*N
-        if Van_der_Waals_volumes is None: Van_der_Waals_volumes = [None]*N
-        if Vcs is None: Vcs = [None]*N
-        if Vml_STPs is None: Vml_STPs = [None]*N
-        if Vml_Tms is None: Vml_Tms = [None]*N
-        if rhos_Tms is None: rhos_Tms = [None]*N
-        if Vms_Tms is None: Vms_Tms = [None]*N
-        if Zcs is None: Zcs = [None]*N
-        if Vml_60Fs is None: Vml_60Fs = [None]*N
-        if rhol_60Fs is None: rhol_60Fs = [None]*N
-        if rhol_60Fs_mass is None: rhol_60Fs_mass = [None]*N
-        if RI_Ts is None: RI_Ts = [None]*N
-        if conductivity_Ts is None: conductivity_Ts = [None]*N
+        empty_list = [None]*N
+
+        if atom_fractions is None: atom_fractions = empty_list
+        if atomss is None: atomss = empty_list
+        if Carcinogens is None: Carcinogens = empty_list
+        if CASs is None: CASs = empty_list
+        if Ceilings is None: Ceilings = empty_list
+        if charges is None: charges = empty_list
+        if conductivities is None: conductivities = empty_list
+        if dipoles is None: dipoles = empty_list
+        if economic_statuses is None: economic_statuses = empty_list
+        if formulas is None: formulas = empty_list
+        if Gfgs is None: Gfgs = empty_list
+        if Gfgs_mass is None: Gfgs_mass = empty_list
+        if GWPs is None: GWPs = empty_list
+        if Hcs is None: Hcs = empty_list
+        if Hcs_lower is None: Hcs_lower = empty_list
+        if Hcs_lower_mass is None: Hcs_lower_mass = empty_list
+        if Hcs_mass is None: Hcs_mass = empty_list
+        if Hfgs is None: Hfgs = empty_list
+        if Hfgs_mass is None: Hfgs_mass = empty_list
+        if Hfus_Tms is None: Hfus_Tms = empty_list
+        if Hfus_Tms_mass is None: Hfus_Tms_mass = empty_list
+        if Hsub_Tms is None: Hsub_Tms = empty_list
+        if Hsub_Tms_mass is None: Hsub_Tms_mass = empty_list
+        if Hvap_298s is None: Hvap_298s = empty_list
+        if Hvap_298s_mass is None: Hvap_298s_mass = empty_list
+        if Hvap_Tbs is None: Hvap_Tbs = empty_list
+        if Hvap_Tbs_mass is None: Hvap_Tbs_mass = empty_list
+        if InChI_Keys is None: InChI_Keys = empty_list
+        if InChIs is None: InChIs = empty_list
+        if legal_statuses is None: legal_statuses = empty_list
+        if LFLs is None: LFLs = empty_list
+        if logPs is None: logPs = empty_list
+        if molecular_diameters is None: molecular_diameters = empty_list
+        if names is None: names = empty_list
+        if ODPs is None: ODPs = empty_list
+        if omegas is None: omegas = empty_list
+        if Parachors is None: Parachors = empty_list
+        if Pcs is None: Pcs = empty_list
+        if phase_STPs is None: phase_STPs = empty_list
+        if Psat_298s is None: Psat_298s = empty_list
+        if PSRK_groups is None: PSRK_groups = empty_list
+        if Pts is None: Pts = empty_list
+        if PubChems is None: PubChems = empty_list
+        if rhocs is None: rhocs = empty_list
+        if rhocs_mass is None: rhocs_mass = empty_list
+        if rhol_STPs is None: rhol_STPs = empty_list
+        if rhol_STPs_mass is None: rhol_STPs_mass = empty_list
+        if RIs is None: RIs = empty_list
+        if S0gs is None: S0gs = empty_list
+        if S0gs_mass is None: S0gs_mass = empty_list
+        if Sfgs is None: Sfgs = empty_list
+        if Sfgs_mass is None: Sfgs_mass = empty_list
+        if similarity_variables is None: similarity_variables = empty_list
+        if Skins is None: Skins = empty_list
+        if smiless is None: smiless = empty_list
+        if STELs is None: STELs = empty_list
+        if StielPolars is None: StielPolars = empty_list
+        if Stockmayers is None: Stockmayers = empty_list
+        if solubility_parameters is None: solubility_parameters = empty_list
+        if Tautoignitions is None: Tautoignitions = empty_list
+        if Tbs is None: Tbs = empty_list
+        if Tcs is None: Tcs = empty_list
+        if Tflashs is None: Tflashs = empty_list
+        if Tms is None: Tms = empty_list
+        if Tts is None: Tts = empty_list
+        if TWAs is None: TWAs = empty_list
+        if UFLs is None: UFLs = empty_list
+        if UNIFAC_Dortmund_groups is None: UNIFAC_Dortmund_groups = empty_list
+        if UNIFAC_groups is None: UNIFAC_groups = empty_list
+        if UNIFAC_Rs is None: UNIFAC_Rs = empty_list
+        if UNIFAC_Qs is None: UNIFAC_Qs = empty_list
+        if Van_der_Waals_areas is None: Van_der_Waals_areas = empty_list
+        if Van_der_Waals_volumes is None: Van_der_Waals_volumes = empty_list
+        if Vcs is None: Vcs = empty_list
+        if Vml_STPs is None: Vml_STPs = empty_list
+        if Vml_Tms is None: Vml_Tms = empty_list
+        if rhos_Tms is None: rhos_Tms = empty_list
+        if Vms_Tms is None: Vms_Tms = empty_list
+        if Zcs is None: Zcs = empty_list
+        if Vml_60Fs is None: Vml_60Fs = empty_list
+        if rhol_60Fs is None: rhol_60Fs = empty_list
+        if rhol_60Fs_mass is None: rhol_60Fs_mass = empty_list
+        if RI_Ts is None: RI_Ts = empty_list
+        if conductivity_Ts is None: conductivity_Ts = empty_list
 
         self.atom_fractions = atom_fractions
         self.atomss = atomss
@@ -347,27 +426,111 @@ constants_docstrings = {'N': (int, "Number of components in the package", "[-]",
 'conductivities': ("list[float]", "Electrical conductivities for each component", "[S/m]", None),
 'conductivity_Ts': ("list[float]", "Temperatures at which the electrical conductivities for each component were measured", "[K]", None),
 'dipoles': ("list[float]", "Dipole moments for each component", "[debye]", None),
-'economic_statuses': ("list[dict]", "Status of each component in in relation to import and export rules", "[-]", None),
+'economic_statuses': ("list[dict]", "Status of each component in in relation to import and export from various regions", "[-]", None),
 'formulas': ("list[str]", "Formulas of each component", "[-]", None),
+'Gfgs': ("list[float]", "Ideal gas standard molar Gibbs free energy of formation for each component", "[J/mol]", None),
+'Gfgs_mass': ("list[float]", "Ideal gas standard Gibbs free energy of formation for each component", "[J/kg]", None),
+'GWPs': ("list[float]", "Global Warming Potentials for each component", " [(impact/mass chemical)/(impact/mass CO2)]", None),
+'Hcs': ("list[float]", "Higher standard molar heats of combustion for each component", "[J/mol]", None),
+'Hcs_mass': ("list[float]", "Higher standard heats of combustion for each component", "[J/kg]", None),
+'Hcs_lower': ("list[float]", "Lower standard molar heats of combustion for each component", "[J/mol]", None),
+'Hcs_lower_mass': ("list[float]", "Lower standard heats of combustion for each component", "[J/kg]", None),
+'Hfgs': ("list[float]", "Ideal gas standard molar enthalpies of formation for each component", "[J/mol]", None),
+'Hfgs_mass': ("list[float]", "Ideal gas standard enthalpies of formation for each component", "[J/kg]", None),
+'Hfus_Tms': ("list[float]", "Molar heats of fusion for each component at their respective melting points", "[J/mol]", None),
+'Hfus_Tms_mass': ("list[float]", "Heats of fusion for each component at their respective melting points", "[J/kg]", None),
+'Hsub_Tms': ("list[float]", "Heats of sublimation for each component at their respective melting points", "[J/mol]", None),
+'Hsub_Tms_mass': ("list[float]", "Heats of sublimation for each component at their respective melting points", "[J/kg]", None),
+'Hvap_298s': ("list[float]", "Molar heats of vaporization for each component at 298.15 K", "[J/mol]", None),
+'Hvap_298s_mass': ("list[float]", "Heats of vaporization for each component at 298.15 K", "[J/kg]", None),
+'Hvap_Tbs': ("list[float]", "Molar heats of vaporization for each component at their respective normal boiling points", "[J/mol]", None),
+'Hvap_Tbs_mass': ("list[float]", "Heats of vaporization for each component at their respective normal boiling points", "[J/kg]", None),
+'InChI_Keys': ("list[str]", "InChI Keys for each component", "[-]", None),
+'InChIs': ("list[str]", "InChI strings for each component", "[-]", None),
+'legal_statuses': ("list[dict]", "Status of each component in in relation to import and export rules from various regions", "[-]", None),
+'LFLs': ("list[float]", "Lower flammability limits for each component", "[-]", None),
+'logPs': ("list[float]", "Octanol-water partition coefficients for each component", "[-]", None),
+'molecular_diameters': ("list[float]", "Lennard-Jones molecular diameters for each component", "[Angstrom]", None),
+'MWs': ("list[float]", "Molecular weights for each component", "[g/mol]", None),
+'names': ("list[str]", "Names for each component", "[-]", None),
+'ODPs': ("list[float]", "Ozone Depletion Potentials for each component", "[(impact/mass chemical)/(impact/mass CFC-11)]", None),
+'omegas': ("list[float]", "Acentric factors for each component", "[-]", None),
+'Parachors': ("list[float]", "Parachors for each component", "[N^0.25*m^2.75/mol]", None),
+'Pcs': ("list[float]", "Critical pressures for each component", "[Pa]", None),
+'phase_STPs': ("list[str]", "Standard states ('g', 'l', or 's') for each component", "[-]", None),
+'Psat_298s': ("list[float]", "Vapor pressures for each component at 298.15 K", "[Pa]", None),
+'PSRK_groups': ("list[dict]", "PSRK subgroup: count groups for each component", "[-]", None),
+'Pts': ("list[float]", "Triple point pressures for each component", "[Pa]", None),
+'PubChems': ("list[int]", "Pubchem IDs for each component", "[-]", None),
+'rhocs': ("list[float]", "Molar densities at the critical point for each component", "[mol/m^3]", None),
+'rhocs_mass': ("list[float]", "Densities at the critical point for each component", "[kg/m^3]", None),
+'rhol_STPs': ("list[float]", "Molar liquid densities at STP for each component", "[mol/m^3]", None),
+'rhol_STPs_mass': ("list[float]", "Liquid densities at STP for each component", "[kg/m^3]", None),
+'RIs': ("list[float]", "Refractive indexes for each component", "[-]", None),
+'RI_Ts': ("list[float]", "Temperatures at which the refractive indexes were reported for each component", "[K]", None),
+'S0gs': ("list[float]", "Ideal gas absolute molar entropies at 298.15 K at 1 atm for each component", "[J/(mol*K)]", None),
+'S0gs_mass': ("list[float]", "Ideal gas absolute entropies at 298.15 K at 1 atm for each component", "[J/(kg*K)]", None),
+'Sfgs': ("list[float]", "Ideal gas standard molar entropies of formation for each component", "[J/(mol*K)]", None),
+'Sfgs_mass': ("list[float]", "Ideal gas standard entropies of formation for each component", "[J/(kg*K)]", None),
+'MWs': ("list[float]", "Similatiry variables for each component", "[mol/g]", None),
+'solubility_parameters': ("list[float]", "Solubility parameters for each component", "[Pa^0.5]", None),
+'Skins': ("list[bool]", "Whether each compound can be absorbed through the skin or not", "[-]", None),
+'smiless': ("list[str]", "SMILES identifiers for each component", "[-]", None),
+'STELs': ("list[tuple[(float, str)]]", "Short term exposure limits to chemicals (and their units)", "[ppm or mg/m^3]", None),
+'StielPolars': ("list[float]", "Stiel polar factors for each component", "[-]", None),
+'Stockmayers': ("list[float]", "Lennard-Jones Stockmayer parameters (depth of potential-energy minimum over k) for each component", "[K]", None),
+'Tautoignitions': ("list[float]", "Autoignition temperatures for each component", "[K]", None),
+'Tbs': ("list[float]", "Boiling temperatures for each component", "[K]", None),
+'Tcs': ("list[float]", "Critical temperatures for each component", "[K]", None),
+'Tms': ("list[float]", "Melting temperatures for each component", "[K]", None),
+'Tflashs': ("list[float]", "Flash point temperatures for each component", "[K]", None),
+'Tts': ("list[float]", "Triple point temperatures for each component", "[K]", None),
+'TWAs': ("list[tuple[(float, str)]]", "Time-weighted average exposure limits to chemicals (and their units)", "[ppm or mg/m^3]", None),
+'UFLs': ("list[float]", "Upper flammability limits for each component", "[-]", None),
+'UNIFAC_Dortmund_groups': ("list[dict]", "UNIFAC_Dortmund_group: count groups for each component", "[-]", None),
+'UNIFAC_groups': ("list[dict]", "UNIFAC_group: count groups for each component", "[-]", None),
+'UNIFAC_Rs': ("list[float]", "UNIFAC `R` parameters for each component", "[-]", None),
+'UNIFAC_Qs': ("list[float]", "UNIFAC `Q` parameters for each component", "[-]", None),
+'Van_der_Waals_areas': ("list[float]", "Unnormalized Van der Waals areas for each component", "[m^2/mol]", None),
+'Van_der_Waals_volumes': ("list[float]", "Unnormalized Van der Waals volumes for each component", "[m^3/mol]", None),
+'Vcs': ("list[float]", "Critical molar volumes for each component", "[m^3/mol]", None),
+'Vml_STPs': ("list[float]", "Liquid molar volumes for each component at STP", "[m^3/mol]", None),
+'Vms_Tms': ("list[float]", "Solid molar volumes for each component at their respective melting points", "[m^3/mol]", None),
+'Vml_60Fs': ("list[float]", "Liquid molar volumes for each component at 60 °F", "[m^3/mol]", None),
+'rhos_Tms': ("list[float]", "Solid molar densities for each component at their respective melting points", "[mol/m^3]", None),
+'rhol_60Fs': ("list[float]", "Liquid molar densities for each component at 60 °F", "[mol/m^3]", None),
+'rhol_60Fs_mass': ("list[float]", "Liquid mass densities for each component at 60 °F", "[kg/m^3]", None),
+'Zcs': ("list[float]", "Critical compressibilities for each component", "[-]", None),
+'n_atoms': ("int", "Number of total atoms in a collection of 1 molecule of each species", "[-]", None),
+'water_index': ("int", "Index of water in the package", "[-]", None),
 }
 
-full_attributes_section = '''
-    Attributes
-    ----------
+constants_doc = r'''Class for storing efficiently chemical constants for a
+group of components. All arguments are attributes. This is intended as a base
+object from which a set of thermodynamic methods can access miscellaneous for
+purposes such as phase identification or initialization.
+
+Examples
+--------
+Create a package with water and the xylenes, suitable for use with equations of
+state:
+
+>>> ChemicalConstantsPackage(MWs=[18.01528, 106.165, 106.165, 106.165], names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.344, 0.3118, 0.324, 0.331], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tcs=[647.14, 630.3, 616.2, 617.0])
+ChemicalConstantsPackage(MWs=[18.01528, 106.165, 106.165, 106.165], names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.344, 0.3118, 0.324, 0.331], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tcs=[647.14, 630.3, 616.2, 617.0])
+
+
+Attributes
+----------
 '''
 for name, (var_type, desc, units, return_desc) in constants_docstrings.items():
     type_name = var_type if type(var_type) is str else var_type.__name__
-    new = '''    %s : %s
-        %s, %s.
+    new = '''%s : %s
+    %s, %s.
 ''' %(name, type_name, desc, units)
-    full_attributes_section += new
+    constants_doc += new
 
-
-#print(full_attributes_section)
-
-
-ChemicalConstantsPackage.__doc__ = full_attributes_section
-#print(full_attributes_section)
+ChemicalConstantsPackage.__doc__ = constants_doc
+#print(constants_doc)
 
 class PropertyCorrelationPackage(object):
     correlations = ('VaporPressures', 'SublimationPressures', 'VolumeGases',

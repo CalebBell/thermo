@@ -130,6 +130,7 @@ __all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'CEOSLiquid', 'CEOS
 import sys
 from math import isinf, isnan
 from fluids.constants import R, R_inv
+import fluids.constants
 from fluids.numerics import (horner, horner_and_der, horner_and_der2, horner_log, jacobian, derivative,
                              best_fit_integral_value, best_fit_integral_over_T_value,
                              evaluate_linear_fits, evaluate_linear_fits_d,
@@ -204,6 +205,8 @@ class Phase(object):
 
     '''
 
+    R = fluids.constants.R
+    R_inv = 1.0/R
 
     ideal_gas_basis = False # Parameter fot has the same ideal gas Cp
     T_REF_IG = 298.15
@@ -239,9 +242,15 @@ class Phase(object):
         return s
 
     def model_hash(self, ignore_phase=False):
-        r'''
+        r'''Dummy method to compute a hash of a phase.
+
+        Returns
+        -------
+        hash : int
+            Hash representing the settings of the phase; phases at identical
+            `T`, `P`, `zs`, and all other parameters should have the same hash.
         '''
-        return randint(0, 10000000)
+        return randint(0, 100000000)
 
     def value(self, name):
         if name in ('beta_mass',):
@@ -256,7 +265,8 @@ class Phase(object):
 
     def compute_main_properties(self):
         '''Method which computes some basic properties. For benchmarking;
-        returns nothing.
+        accepts no arguments and returns nothing. A timer should be used
+        outside of this method.
         '''
         self.H()
         self.S()
@@ -270,6 +280,20 @@ class Phase(object):
         self.PIP()
 
     def S_phi_consistency(self):
+        r'''Method to calculate and return a consistency check between ideal
+        gas entropy behavior, and the fugacity coefficients and their
+        temperature derivatives.
+
+        .. math::
+             S = S^{ig} - \sum_{i} z_i R\left(\ln \phi_i +  T \frac{\partial \ln
+             \phi_i}{\partial T}\right)
+
+        Returns
+        -------
+        error : float
+            Relative consistency error
+            :math:`|1 - S^{\text{from phi}}/S^\text{implemented}|`, [-]
+        '''
         # From coco
         S0 = self.S_ideal_gas()
         lnphis = self.lnphis()
@@ -281,9 +305,35 @@ class Phase(object):
 
 
     def H_phi_consistency(self):
+        r'''Method to calculate and return a consistency check between ideal
+        gas enthalpy behavior, and the fugacity coefficients and their
+        temperature derivatives.
+
+        .. math::
+             H^{\text{from phi}} = H^{ig} - RT^2\sum_i z_i \frac{\partial \ln
+             \phi_i}{\partial T}
+
+        Returns
+        -------
+        error : float
+            Relative consistency error
+            :math:`|1 - H^{\text{from phi}}/H^\text{implemented}|`, [-]
+        '''
         return abs(1.0 - self.H_from_phi()/self.H())
 
-    def G_phi_consistency(self):
+    def G_dep_phi_consistency(self):
+        r'''Method to calculate and return a consistency check between
+        departure Gibbs free energy, and the fugacity coefficients.
+
+        .. math::
+             G^{\text{from phi}}_{dep} = RT\sum_i z_i \phi_i
+
+        Returns
+        -------
+        error : float
+            Relative consistency error
+            :math:`|1 - G^{\text{from phi}}_{dep}/G^\text{implemented}_{dep}|`, [-]
+        '''
         # Chapter 2 equation 31 Michaelson
         zs, T = self.zs, self.T
         G_dep_RT = 0.0
@@ -293,6 +343,20 @@ class Phase(object):
         return abs(1.0 - G_dep/self.G_dep())
 
     def H_dep_phi_consistency(self):
+        r'''Method to calculate and return a consistency check between
+        departure enthalpy, and the fugacity coefficients' temperature
+        derivatives.
+
+        .. math::
+             H^{\text{from phi}}_{dep} = -RT^2\sum_i z_i \frac{\partial \ln
+             \phi_i}{\partial T}
+
+        Returns
+        -------
+        error : float
+            Relative consistency error
+            :math:`|1 - H^{\text{from phi}}_{dep}/H^\text{implemented}_{dep}|`, [-]
+        '''
         H_dep_RT2 = 0.0
         dlnphis_dTs = self.dlnphis_dT()
         zs, T = self.zs, self.T
@@ -301,7 +365,69 @@ class Phase(object):
         H_dep = self.H_dep()
         return abs(1.0 - H_dep/H_dep_recalc)
 
+    def S_dep_phi_consistency(self):
+        r'''Method to calculate and return a consistency check between ideal
+        gas entropy behavior, and the fugacity coefficients and their
+        temperature derivatives.
+
+        .. math::
+             S_{dep}^{\text{from phi}} = - \sum_{i} z_i R\left(\ln \phi_i
+             +  T \frac{\partial \ln \phi_i}{\partial T}\right)
+
+        Returns
+        -------
+        error : float
+            Relative consistency error
+            :math:`|1 - S^{\text{from phi}}_{dep}/S^\text{implemented}_{dep}|`, [-]
+        '''
+        # From coco
+        lnphis = self.lnphis()
+        dlnphis_dT = self.dlnphis_dT()
+        T, zs = self.T, self.zs
+        S_dep = 0.0
+        for i in range(len(zs)):
+            S_dep -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
+        return abs(1.0 - S_dep/self.S_dep())
+
+    def V_phi_consistency(self):
+        r'''Method to calculate and return a consistency check between
+        molar volume, and the fugacity coefficients' pressures
+        derivatives.
+
+        .. math::
+            V^{\text{from phi P der}} = \left(\left(\sum_i z_i \frac{\partial \ln
+             \phi_i}{\partial P}\right)P + 1\right)RT/P
+
+
+        Returns
+        -------
+        error : float
+            Relative consistency error
+            :math:`|1 - V^{\text{from phi P der}}/V^\text{implemented}|`, [-]
+        '''
+        zs, P = self.zs, self.P
+        dlnphis_dP = self.dlnphis_dP()
+        lhs = sum(zs[i]*dlnphis_dP[i] for i in self.cmps)
+        Z_calc = lhs*P + 1.0
+        V_calc = Z_calc*self.R*self.T/P
+        V = self.V()
+        return abs(1.0 - V_calc/V)
+
     def H_from_phi(self):
+        r'''Method to calculate and return the enthalpy of the fluid as
+        calculated from the ideal-gas enthalpy and the the fugacity
+        coefficients' temperature derivatives.
+
+        .. math::
+             H^{\text{from phi}} = H^{ig} - RT^2\sum_i z_i \frac{\partial \ln
+             \phi_i}{\partial T}
+
+        Returns
+        -------
+        H : float
+            Enthalpy as calculated from fugacity coefficient temperature
+            derivatives [J/mol]
+        '''
         H0 = self.H_ideal_gas()
         dlnphis_dT = self.dlnphis_dT()
         T, zs = self.T, self.zs
@@ -310,6 +436,20 @@ class Phase(object):
         return H0
 
     def S_from_phi(self):
+        r'''Method to calculate and return the entropy of the fluid as
+        calculated from the ideal-gas entropy and the the fugacity
+        coefficients' temperature derivatives.
+
+        .. math::
+             S = S^{ig} - \sum_{i} z_i R\left(\ln \phi_i +  T \frac{\partial \ln
+             \phi_i}{\partial T}\right)
+
+        Returns
+        -------
+        S : float
+            Entropy as calculated from fugacity coefficient temperature
+            derivatives [J/(mol*K)]
+        '''
         S0 = self.S_ideal_gas()
         lnphis = self.lnphis()
         dlnphis_dT = self.dlnphis_dT()
@@ -318,21 +458,40 @@ class Phase(object):
             S0 -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
         return S0
 
-    def V_phi_consistency(self):
-        zs, P = self.zs, self.P
-        dlnphis_dP = self.dlnphis_dP()
-        obj = sum(zs[i]*dlnphis_dP[i] for i in self.cmps)
-        base = (self.Z() - 1.0)/P
-        return abs(1.0 - obj/base)
-
     def V_from_phi(self):
+        r'''Method to calculate and return the molar volume of the fluid as
+        calculated from the pressure derivatives of fugacity coefficients.
+
+        .. math::
+            V^{\text{from phi P der}} = \left(\left(\sum_i z_i \frac{\partial \ln
+             \phi_i}{\partial P}\right)P + 1\right)RT/P
+
+
+        Returns
+        -------
+        V : float
+            Molar volume, [m^3/mol]
+        '''
         zs, P = self.zs, self.P
         dlnphis_dP = self.dlnphis_dP()
         obj = sum(zs[i]*dlnphis_dP[i] for i in self.cmps)
         Z = P*obj + 1.0
-        return Z*R*self.T/P
+        return Z*self.R*self.T/P
 
     def G_min_criteria(self):
+        r'''Method to calculate and return the Gibbs energy criteria required
+        for comparing phase stability. This calculation can be faster
+        than calculating the full Gibbs energy. For this comparison to work,
+        all phases must use the ideal gas basis.
+
+        .. math::
+             G^{\text{criteria}} = G^{dep} + RT\sum_i z_i \ln z_i
+
+        Returns
+        -------
+        G_crit : float
+            Gibbs free energy like criteria [J/mol]
+        '''
         # Definition implemented that does not use the H, or S ideal gas contribution
         # Allows for faster checking of which phase is at lowest G, but can only
         # be used when all models use an ideal gas basis
@@ -661,7 +820,7 @@ class Phase(object):
 
     def V_dep(self):
         # from ideal gas behavior
-        V_dep = self.V() - R*self.T/self.P
+        V_dep = self.V() - self.R*self.T/self.P
         return V_dep
 
     def U_dep(self):
@@ -863,7 +1022,7 @@ class Phase(object):
         return self.Cp()/self.Cv()
 
     def Z(self):
-        return self.P*self.V()/(R*self.T)
+        return self.P*self.V()/(self.R*self.T)
 
     def rho(self):
         return 1.0/self.V()
@@ -956,7 +1115,7 @@ class Phase(object):
         return self.d2T_dPdV()
 
     def dZ_dzs(self):
-        factor = self.P/(self.T*R)
+        factor = self.P/(self.T*self.R)
         return [dV*factor for dV in self.dV_dzs()]
 
     def dZ_dns(self):
@@ -1027,10 +1186,10 @@ class Phase(object):
     ### Compressibility factor derivatives
     def dZ_dT(self):
         T_inv = 1.0/self.T
-        return self.P*R_inv*T_inv*(self.dV_dT() - self.V()*T_inv)
+        return self.P*self.R_inv*T_inv*(self.dV_dT() - self.V()*T_inv)
 
     def dZ_dP(self):
-        return 1.0/(self.T*R)*(self.V() + self.P*self.dV_dP())
+        return 1.0/(self.T*self.R)*(self.V() + self.P*self.dV_dP())
     # Could add more
 
     ### Derivatives in the molar density basis
@@ -1437,7 +1596,7 @@ class Phase(object):
         return self._Cpl_integrals_over_T_pure
 
     def V_ideal_gas(self):
-        return R*self.T/self.P
+        return self.R*self.T/self.P
 
     def H_ideal_gas(self):
         try:
@@ -1487,7 +1646,7 @@ class Phase(object):
             Cp = self._Cp_ideal_gas
         except AttributeError:
             Cp = self.Cp_ideal_gas()
-        return Cp - R
+        return Cp - self.R
 
     def Cv_dep(self):
         return self.Cv() - self.Cv_ideal_gas()
@@ -1568,7 +1727,7 @@ class Phase(object):
         except:
             self.mechanical_critical_point()
             V = self._mechanical_critical_V
-        return (self.Pmc()*self.Vmc())/(R*self.Tmc())
+        return (self.Pmc()*self.Vmc())/(self.R*self.Tmc())
 
     def dH_dT_P(self):
         return self.dH_dT()
@@ -7004,7 +7163,7 @@ class HelmholtzEOS(Phase):
         except:
             d2A_ddelta2 = self.d2A_ddelta2()
         delta = self.delta
-        rho, rho_red = 1/self._V, self.rho_red
+        rho, rho_red = 1.0/self._V, self.rho_red
         x0 = self.rho_red_inv
         rho_inv = 1.0/rho
 
@@ -7579,6 +7738,7 @@ class IAPWS95(HelmholtzEOS):
 
     _MW_kg = _MW*1e-3
     R = _MW_kg*iapws95_R # This is just the gas constant 8.314... but matching iapws to their decimals
+    R_inv = 1.0/R
 
     #R = property_mass_to_molar(iapws95_R, iapws95_MW)
     zs = [1.0]

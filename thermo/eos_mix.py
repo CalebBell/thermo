@@ -639,7 +639,7 @@ class GCEOSMIX(GCEOS):
         Parameters
         ----------
         idxs : list[int] or Slice
-            Indexese of components that should be included, [-]
+            Indexes of components that should be included, [-]
 
         Returns
         -------
