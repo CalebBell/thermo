@@ -134,6 +134,7 @@ Van der Waals Equation of State
 
 Redlich-Kwong Equation of State
 ===============================
+.. autoclass:: thermo.eos_mix.RKMIX
    :show-inheritance:
    :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized, ddelta_dzs, ddelta_dns, d2delta_dzizjs, d2delta_dninjs, d3delta_dninjnks
 
