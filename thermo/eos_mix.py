@@ -580,15 +580,15 @@ def PR_lnphis_fastest(zs, T, P, kijs, l, g, ais, bs, a_alphas, a_alpha_i_roots, 
     if l:
         # Prefer liquid, ensure V0 is the smalest root
         if V1 != 0.0:
-            if V0 > V1:
+            if V0 > V1 and V1 > b:
                 V0 = V1
-            if V0 > V2:
+            if V0 > V2 and V2 > b:
                 V0 = V2
     elif g:
         if V1 != 0.0:
-            if V0 < V1:
+            if V0 < V1 and V1 > b:
                 V0 = V1
-            if V0 < V2:
+            if V0 < V2 and V2 > b:
                 V0 = V2
     else:
         raise ValueError("Root must be specified")
