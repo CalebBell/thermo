@@ -25,8 +25,44 @@ reasons are better implemented as functions.
 Documentation is not provided for this file and no methods are intended to be
 used outside this library.
 
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 .. contents:: :local:
+
+Alpha Function Mixing Rules
+---------------------------
+These are where the bulk of the time is spent in solving the equation of state.
+For that reason, these functional forms often duplicate functionality but have
+different performance characteristics.
+
+Implementations which store N^2 matrices for other calculations:
+
+.. autofunction:: a_alpha_aijs_composition_independent
+.. autofunction:: a_alpha_aijs_composition_independent_support_zeros
+.. autofunction:: a_alpha_and_derivatives_full
+
+Compute only the alpha term itself:
+
+.. autofunction:: a_alpha_and_derivatives
+
+Faster implementations which do not store N^2 matrices:
+
+.. autofunction:: a_alpha_quadratic_terms
+.. autofunction:: a_alpha_and_derivatives_quadratic_terms
+
+Direct fugacity calls
+---------------------
+The object-oriented interface is quite convenient. However, sometimes it is
+desireable to perform a calculation at maximum speed, with no garbage collection
+and the only temperature-dependent parts re-used each calculation.
+For that reason, select equations of state have these functional forms
+implemented
+
+.. autofunction:: PR_lnphis
+.. autofunction:: PR_lnphis_fastest
+
+
 '''
 # TODO: put methods like "_fast_init_specific" in here so numba can accelerate them.
 from fluids.constants import R

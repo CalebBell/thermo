@@ -29,9 +29,6 @@ For reporting bugs, adding feature requests, or submitting pull requests,
 please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 .. contents:: :local:
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 Base Class
 ----------
@@ -45,66 +42,60 @@ Different Mixing Rules
 .. autoclass:: thermo.eos_mix.EpsilonZeroMixingRules
 .. autoclass:: thermo.eos_mix.PSRKMixingRules
 
-Alpha Function Mixing Rules
----------------------------
-These are where the bulk of the time is spent in solving the equation of state.
-For that reason, these functional forms often duplicate functionality but have
-different performance characteristics.
-
-Implementations which store N^2 matrices for other calculations:
-
-.. autofunction:: thermo.eos_mix.a_alpha_aijs_composition_independent
-.. autofunction:: thermo.eos_mix.a_alpha_aijs_composition_independent_support_zeros
-.. autofunction:: thermo.eos_mix.a_alpha_and_derivatives_full
-
-Compute only the alpha term itself:
-
-.. autofunction:: thermo.eos_mix.a_alpha_and_derivatives
-
-Faster implementations which do not store N^2 matrices:
-
-.. autofunction:: thermo.eos_mix.a_alpha_quadratic_terms
-.. autofunction:: thermo.eos_mix.a_alpha_and_derivatives_quadratic_terms
-
-Direct fugacity calls
----------------------
-The object-oriented interface is quite convenient. However, sometimes it is
-desireable to perform a calculation at maximum speed, with no garbage collection
-and the only temperature-dependent parts re-used each calculation.
-For that reason, select equations of state have these functional forms
-implemented
-
-.. autofunction:: thermo.eos_mix.PR_lnphis
-.. autofunction:: thermo.eos_mix.PR_lnphis_fastest
-
-
 Peng-Robinson Family EOSs
 -------------------------
 .. autoclass:: thermo.eos_mix.PRMIX
    :show-inheritance:
    :members: a_alphas_vectorized, a_alpha_and_derivatives_vectorized, d3a_alpha_dT3, d3a_alpha_dT3_vectorized, fugacity_coefficients, dlnphis_dT, dlnphis_dP, d_lnphi_dzs, ddelta_dzs, ddelta_dns, d2delta_dzizjs, d2delta_dninjs, d3delta_dninjnks, depsilon_dzs, depsilon_dns, d2epsilon_dzizjs, d2epsilon_dninjs, d3epsilon_dninjnks, solve_T
 .. autoclass:: thermo.eos_mix.PR78MIX
+   :members: __init__
+   :exclude-members: __init__
 .. autoclass:: thermo.eos_mix.PRSVMIX
+   :members: __init__
+   :exclude-members: __init__
 .. autoclass:: thermo.eos_mix.PRSV2MIX
+   :members: __init__
+   :exclude-members: __init__
 .. autoclass:: thermo.eos_mix.TWUPRMIX
+   :members: __init__
+   :exclude-members: __init__
 .. autoclass:: thermo.eos_mix.PRMIXTranslatedConsistent
+   :members: __init__
+   :exclude-members: __init__
 .. autoclass:: thermo.eos_mix.PRMIXTranslatedPPJP
+   :members: __init__
+   :exclude-members: __init__
 
 SRK Family EOSs
 ---------------
 .. autoclass:: thermo.eos_mix.SRKMIX
+   :members: __init__
+   :exclude-members: __init__
 .. autoclass:: thermo.eos_mix.TWUSRKMIX
+   :members: __init__
+   :exclude-members: __init__
 .. autoclass:: thermo.eos_mix.APISRKMIX
+   :members: __init__
+   :exclude-members: __init__
 .. autoclass:: thermo.eos_mix.SRKMIXTranslatedConsistent
+   :members: __init__
+   :exclude-members: __init__
 .. autoclass:: thermo.eos_mix.MSRKMIXTranslated
+   :members: __init__
+   :exclude-members: __init__
 
 Cubic Equation of State with Activity Coefficients
 --------------------------------------------------
 .. autoclass:: thermo.eos_mix.PSRK
+   :show-inheritance:
+   :members: eos_pure
 
 Other Cubic Equations of State
 ------------------------------
 .. autoclass:: thermo.eos_mix.VDWMIX
+   :show-inheritance:
+   :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized, fugacity_coefficients, ddelta_dzs, ddelta_dns, d2delta_dzizjs, d2delta_dninjs, d3delta_dninjnks
+
 .. autoclass:: thermo.eos_mix.RKMIX
    :show-inheritance:
    :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized, ddelta_dzs, ddelta_dns, d2delta_dzizjs, d2delta_dninjs, d3delta_dninjnks
@@ -112,6 +103,8 @@ Other Cubic Equations of State
 Ideal Gas Equation of State
 ---------------------------
 .. autoclass:: thermo.eos_mix.IGMIX
+   :show-inheritance:
+   :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized
 
 Lists of Equations of State
 ---------------------------
@@ -5882,6 +5875,64 @@ class PSRKMixingRules(object):
 
 
 class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
+    r'''Class for solving the ideal gas [1]_ [2]_ equation of state for a
+    mixture of any number of compounds. Subclasses :obj:`thermo.eos.IG`. Solves
+    the EOS on initialization.
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P =\frac{RT}{V}
+
+    Parameters
+    ----------
+    zs : list[float]
+        Overall mole fractions of all species, [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+    Tcs : list[float], optional
+        Critical temperatures of all compounds, [K]
+    Pcs : list[float], optional
+        Critical pressures of all compounds, [Pa]
+    omegas : list[float], optional
+        Acentric factors of all compounds - Not used in this equation of
+        state!, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 and not used[-]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optional
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
+
+    Examples
+    --------
+    T-P initialization, nitrogen-methane at 115 K and 1 MPa:
+
+    >>> eos = IGMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, .008], zs=[0.5, 0.5])
+    >>> eos.phase, eos.V_g
+    ('g', 0.0009561632010876225)
+
+    Notes
+    -----
+    Many properties of this object are zero. Many of the arguments are not used
+    and are provided for consistency only.
+
+    References
+    ----------
+    .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
+       Butterworth-Heinemann, 1985.
+    .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th
+       edition. New York: McGraw-Hill Professional, 2000.
+    '''
     eos_pure = IG
     a_alphas = None
     da_alpha_dTs = None
@@ -5913,7 +5964,8 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
     d3delta_dninjnks = property(_zeros3d)
     d3epsilon_dninjnks = property(_zeros3d)
 
-    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
+    def __init__(self, zs, T=None, P=None, V=None,
+                 Tcs=None, Pcs=None, omegas=None, kijs=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(zs)
         self.cmps = range(self.N)
@@ -5950,6 +6002,22 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
 #        self.d2a_alpha_dT2_ijs = other.d2a_alpha_dT2_ijs
 
     def a_alphas_vectorized(self, T):
+        r'''Method to calculate the pure-component `a_alphas` for the Ideal Gas
+        EOS. This vectorized implementation is added for extra speed.
+
+        .. math::
+            a\alpha = 0
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        '''
         return self.zeros1d
 
     def a_alpha_and_derivatives_vectorized(self, T):
@@ -5982,9 +6050,6 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
-#        if not full:
-#            return self.zeros1d
-#        else:
         return self.zeros1d, self.zeros1d, self.zeros1d
 
     def a_alpha_and_derivatives(self, T, full=True, quick=True,
@@ -6073,7 +6138,7 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
     only_l : bool, optional
         When true, if there is a liquid and a vapor root, only the liquid
         root (and properties) will be set; default False, [-]
-    only_g : bool, optoinal
+    only_g : bool, optional
         When true, if there is a liquid and a vapor root, only the vapor
         root (and properties) will be set; default False, [-]
 
@@ -6360,7 +6425,7 @@ class PRMIX(GCEOSMIX, PR):
     only_l : bool, optional
         When true, if there is a liquid and a vapor root, only the liquid
         root (and properties) will be set; default False, [-]
-    only_g : bool, optoinal
+    only_g : bool, optional
         When true, if there is a liquid and a vapor root, only the vapor
         root (and properties) will be set; default False, [-]
 
@@ -7796,7 +7861,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
     only_l : bool, optional
         When true, if there is a liquid and a vapor root, only the liquid
         root (and properties) will be set; default False, [-]
-    only_g : bool, optoinal
+    only_g : bool, optional
         When true, if there is a liquid and a vapor root, only the vapor
         root (and properties) will be set; default False, [-]
 
@@ -8455,6 +8520,98 @@ class MSRKMIXTranslated(Soave_79_a_alpha, SRKMIXTranslatedConsistent):
             self.fugacities()
 
 class PSRK(Mathias_Copeman_a_alpha, PSRKMixingRules, SRKMIXTranslated):
+    r'''Class for solving the Predictive Soave-Redlich-Kwong [1]_ equation of
+    state for a mixture of any number of compounds.
+    Solves the EOS on initialization.
+
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. warning::
+        This class is not complete! Fugacities and their derivatives among
+        others are not yet implemented.
+
+    .. math::
+        P = \frac{RT}{V-b} - \frac{a\alpha(T)}{V(V+b)}
+
+    .. math::
+        b = \sum_i z_i b_i
+
+    .. math::
+        a_i =\left(\frac{R^2(T_{c,i})^{2}}{9(\sqrt[3]{2}-1)P_{c,i}} \right)
+        =\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}
+
+    .. math::
+        b_i =\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_{c,i}}{P_{c,i}}
+        =\frac{0.08664\cdot R T_{c,i}}{P_{c,i}}
+
+    Parameters
+    ----------
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    omegas : float
+        Acentric factors of all compounds, [-]
+    zs : float
+        Overall mole fractions of all species, [-]
+    alpha_coeffs : list[list[float]]
+        Coefficients for
+        :obj:`thermo.eos_alpha_functions.Mathias_Copeman_a_alpha`, [-]
+    ge_model : :obj:`thermo.activity.GibbsExcess` object
+        Excess Gibbs free energy model; to match the `PSRK` model, this is
+        a :obj:`thermo.unifac.UNIFAC` object, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 [-]
+    cs : list[float], optional
+        Volume translation parameters; always zero in the original
+        implementation, [m^3/mol]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optional
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
+
+    Examples
+    --------
+    T-P initialization, equimolar CO2, n-hexane:
+
+
+    >>> from thermo.unifac import UNIFAC, PSRKIP, PSRKSG
+    >>> Tcs = [304.2, 507.4]
+    >>> Pcs = [7.37646e6, 3.014419e6]
+    >>> omegas = [0.2252, 0.2975]
+    >>> zs = [0.5, 0.5]
+    >>> Mathias_Copeman_coeffs = [[-1.7039, 0.2515, 0.8252, 1.0], [2.9173, -1.4411, 1.1061, 1.0]]
+    >>> T = 313.
+    >>> P = 1E6
+    >>> ge_model = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{117: 1}, {1:2, 2:4}], subgroups=PSRKSG, interaction_data=PSRKIP, version=0)
+    >>> eos = PSRK(Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, ge_model=ge_model, alpha_coeffs=Mathias_Copeman_coeffs, T=T, P=P)
+    >>> eos
+    PSRK(Tcs=[304.2, 507.4], Pcs=[7376460.0, 3014419.0], omegas=[0.2252, 0.2975], kijs=[[0.0, 0.0], [0.0, 0.0]], alpha_coeffs=[[-1.7039, 0.2515, 0.8252, 1.0], [2.9173, -1.4411, 1.1061, 1.0]], cs=[0.0, 0.0], ge_model=UNIFAC(T=313.0, xs=[0.5, 0.5]), zs=[0.5, 0.5], T=313.0, P=1000000.0)
+    >>> eos.phase, eos.V_l, eos.V_g
+    ('l/g', 0.000110889753959, 0.00197520225546)
+
+    Notes
+    -----
+
+    References
+    ----------
+    .. [1] Holderbaum, T., and J. Gmehling. "PSRK: A Group Contribution
+       Equation of State Based on UNIFAC.” Fluid Phase Equilibria 70, no. 2-3
+       (December 30, 1991): 251-65.
+       https://doi.org/10.1016/0378-3812(91)85038-V.
+    '''
     eos_pure = SRKTranslated
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     kwargs_linear = ('cs', 'alpha_coeffs')
@@ -8589,7 +8746,7 @@ class PR78MIX(PRMIX):
     only_l : bool, optional
         When true, if there is a liquid and a vapor root, only the liquid
         root (and properties) will be set; default False, [-]
-    only_g : bool, optoinal
+    only_g : bool, optional
         When true, if there is a liquid and a vapor root, only the vapor
         root (and properties) will be set; default False, [-]
 
@@ -8655,12 +8812,10 @@ class PR78MIX(PRMIX):
 
 
 class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
-    r'''Class for solving the Van der Waals cubic equation of state for a
-    mixture of any number of compounds. Subclasses `VDW`. Solves the EOS on
+    r'''Class for solving the Van der Waals [1]_ [2]_ cubic equation of state for a
+    mixture of any number of compounds. Solves the EOS on
     initialization and calculates fugacities for all components in all phases.
 
-    The implemented method here is `fugacity_coefficients`, which implements
-    the formula for fugacity coefficients in a mixture as given in [1]_.
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
     .. math::
@@ -8706,7 +8861,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
     only_l : bool, optional
         When true, if there is a liquid and a vapor root, only the liquid
         root (and properties) will be set; default False, [-]
-    only_g : bool, optoinal
+    only_g : bool, optional
         When true, if there is a liquid and a vapor root, only the vapor
         root (and properties) will be set; default False, [-]
 
@@ -8722,7 +8877,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
 
     Notes
     -----
-    For P-V initializations, SciPy's `newton` solver is used to find T.
+    For P-V initializations, a numerical solver is used to find T.
 
     References
     ----------
@@ -8762,6 +8917,22 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
 
     def a_alphas_vectorized(self, T):
+        r'''Method to calculate the pure-component `a_alphas` for the VDW EOS.
+        This vectorized implementation is added for extra speed.
+
+        .. math::
+            a\alpha = a
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        '''
         return self.ais
 
     def a_alpha_and_derivatives_vectorized(self, T):
@@ -8794,11 +8965,8 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
-#        if full:
         zeros = [0.0]*self.N
         return self.ais, zeros, zeros
-#        else:
-#            return self.ais
 
     def fugacity_coefficients(self, Z, zs):
         r'''Literature formula for calculating fugacity coefficients for each
@@ -9080,7 +9248,7 @@ class PRSVMIX(PRMIX, PRSV):
     only_l : bool, optional
         When true, if there is a liquid and a vapor root, only the liquid
         root (and properties) will be set; default False, [-]
-    only_g : bool, optoinal
+    only_g : bool, optional
         When true, if there is a liquid and a vapor root, only the vapor
         root (and properties) will be set; default False, [-]
 
@@ -9291,7 +9459,7 @@ class PRSV2MIX(PRMIX, PRSV2):
     only_l : bool, optional
         When true, if there is a liquid and a vapor root, only the liquid
         root (and properties) will be set; default False, [-]
-    only_g : bool, optoinal
+    only_g : bool, optional
         When true, if there is a liquid and a vapor root, only the vapor
         root (and properties) will be set; default False, [-]
 
@@ -9487,7 +9655,7 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
     only_l : bool, optional
         When true, if there is a liquid and a vapor root, only the liquid
         root (and properties) will be set; default False, [-]
-    only_g : bool, optoinal
+    only_g : bool, optional
         When true, if there is a liquid and a vapor root, only the vapor
         root (and properties) will be set; default False, [-]
 
@@ -9623,7 +9791,7 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
     only_l : bool, optional
         When true, if there is a liquid and a vapor root, only the liquid
         root (and properties) will be set; default False, [-]
-    only_g : bool, optoinal
+    only_g : bool, optional
         When true, if there is a liquid and a vapor root, only the vapor
         root (and properties) will be set; default False, [-]
 
@@ -9751,7 +9919,7 @@ class APISRKMIX(SRKMIX, APISRK):
     only_l : bool, optional
         When true, if there is a liquid and a vapor root, only the liquid
         root (and properties) will be set; default False, [-]
-    only_g : bool, optoinal
+    only_g : bool, optional
         When true, if there is a liquid and a vapor root, only the vapor
         root (and properties) will be set; default False, [-]
 

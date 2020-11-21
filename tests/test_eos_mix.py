@@ -4240,6 +4240,7 @@ def TV_PV_precision_issue():
 
 def test_PSRK_basic():
     from thermo.unifac import UNIFAC, PSRKIP, PSRKSG
+    # CO2, n-hexane
     Tcs = [304.2, 507.4]
     Pcs = [7.37646e6, 3.014419e6]
     omegas = [0.2252, 0.2975]

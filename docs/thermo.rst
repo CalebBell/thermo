@@ -14,6 +14,7 @@ Submodules
    thermo.electrochem
    thermo.eos
    thermo.eos_mix
+   thermo.eos_mix_methods
    thermo.eos_volume
    thermo.eos_alpha_functions
    thermo.equilibrium
