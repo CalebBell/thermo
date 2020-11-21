@@ -31,83 +31,120 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 .. contents:: :local:
 
 Base Class
-----------
+==========
 .. autoclass:: thermo.eos_mix.GCEOSMIX
     :members:
     :undoc-members:
     :show-inheritance:
 
 Different Mixing Rules
-----------------------
+======================
 .. autoclass:: thermo.eos_mix.EpsilonZeroMixingRules
 .. autoclass:: thermo.eos_mix.PSRKMixingRules
 
 Peng-Robinson Family EOSs
--------------------------
+=========================
+
+Standard Peng Robinson
+----------------------
 .. autoclass:: thermo.eos_mix.PRMIX
    :show-inheritance:
-   :members: a_alphas_vectorized, a_alpha_and_derivatives_vectorized, d3a_alpha_dT3, d3a_alpha_dT3_vectorized, fugacity_coefficients, dlnphis_dT, dlnphis_dP, d_lnphi_dzs, ddelta_dzs, ddelta_dns, d2delta_dzizjs, d2delta_dninjs, d3delta_dninjnks, depsilon_dzs, depsilon_dns, d2epsilon_dzizjs, d2epsilon_dninjs, d3epsilon_dninjnks, solve_T
+   :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized, d3a_alpha_dT3, d3a_alpha_dT3_vectorized, fugacity_coefficients, dlnphis_dT, dlnphis_dP, d_lnphi_dzs, ddelta_dzs, ddelta_dns, d2delta_dzizjs, d2delta_dninjs, d3delta_dninjnks, depsilon_dzs, depsilon_dns, d2epsilon_dzizjs, d2epsilon_dninjs, d3epsilon_dninjnks, solve_T
+
+Peng Robinson (1978)
+--------------------
 .. autoclass:: thermo.eos_mix.PR78MIX
    :members: __init__
    :exclude-members: __init__
+
+Peng Robinson Stryjek-Vera
+--------------------------
 .. autoclass:: thermo.eos_mix.PRSVMIX
-   :members: __init__
-   :exclude-members: __init__
+   :show-inheritance:
+   :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized
+
+Peng Robinson Stryjek-Vera 2
+----------------------------
 .. autoclass:: thermo.eos_mix.PRSV2MIX
-   :members: __init__
-   :exclude-members: __init__
+   :show-inheritance:
+   :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized
+
+Peng Robinson Twu (1995)
+------------------------
 .. autoclass:: thermo.eos_mix.TWUPRMIX
    :members: __init__
    :exclude-members: __init__
+
+Peng Robinson Translated-Consistent
+-----------------------------------
 .. autoclass:: thermo.eos_mix.PRMIXTranslatedConsistent
    :members: __init__
    :exclude-members: __init__
+
+Peng Robinson Translated (Pina-Martinez, Privat, and Jaubert Variant)
+---------------------------------------------------------------------
 .. autoclass:: thermo.eos_mix.PRMIXTranslatedPPJP
    :members: __init__
    :exclude-members: __init__
 
 SRK Family EOSs
----------------
+===============
+
+Standard SRK
+------------
 .. autoclass:: thermo.eos_mix.SRKMIX
    :members: __init__
    :exclude-members: __init__
+
+Twu SRK (1995)
+--------------
 .. autoclass:: thermo.eos_mix.TWUSRKMIX
    :members: __init__
    :exclude-members: __init__
+
+API SRK
+-------
 .. autoclass:: thermo.eos_mix.APISRKMIX
    :members: __init__
    :exclude-members: __init__
+
+SRK Translated-Consistent
+-------------------------
 .. autoclass:: thermo.eos_mix.SRKMIXTranslatedConsistent
    :members: __init__
    :exclude-members: __init__
+
+MSRK Translated
+---------------
 .. autoclass:: thermo.eos_mix.MSRKMIXTranslated
    :members: __init__
    :exclude-members: __init__
 
 Cubic Equation of State with Activity Coefficients
---------------------------------------------------
+==================================================
 .. autoclass:: thermo.eos_mix.PSRK
    :show-inheritance:
    :members: eos_pure
 
-Other Cubic Equations of State
-------------------------------
+Van der Waals Equation of State
+===============================
 .. autoclass:: thermo.eos_mix.VDWMIX
    :show-inheritance:
    :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized, fugacity_coefficients, ddelta_dzs, ddelta_dns, d2delta_dzizjs, d2delta_dninjs, d3delta_dninjnks
 
-.. autoclass:: thermo.eos_mix.RKMIX
+Redlich-Kwong Equation of State
+===============================
    :show-inheritance:
    :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized, ddelta_dzs, ddelta_dns, d2delta_dzizjs, d2delta_dninjs, d3delta_dninjnks
 
 Ideal Gas Equation of State
----------------------------
+===========================
 .. autoclass:: thermo.eos_mix.IGMIX
    :show-inheritance:
    :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized
 
 Lists of Equations of State
----------------------------
+===========================
 .. autodata:: thermo.eos_mix.eos_mix_list
 .. autodata:: thermo.eos_mix.eos_mix_no_coeffs_list
 
@@ -6441,7 +6478,7 @@ class PRMIX(GCEOSMIX, PR):
 
     Notes
     -----
-    For P-V initializations, SciPy's `newton` solver is used to find T.
+    For P-V initializations, a numerical solver is used to find T.
 
     References
     ----------
@@ -6513,6 +6550,23 @@ class PRMIX(GCEOSMIX, PR):
         self.epsilon = -b*b
 
     def a_alphas_vectorized(self, T):
+        r'''Method to calculate the pure-component `a_alphas` for the PR EOS.
+        This vectorized implementation is added for extra speed.
+
+        .. math::
+            a\alpha = a \left(\kappa \left(- \frac{T^{0.5}}{Tc^{0.5}}
+            + 1\right) + 1\right)^{2}
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        '''
         return PR_a_alphas_vectorized(T, self.Tcs, self.ais, self.kappas)
 
     def a_alpha_and_derivatives_vectorized(self, T):
@@ -7875,7 +7929,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
 
     Notes
     -----
-    For P-V initializations, SciPy's `newton` solver is used to find T.
+    For P-V initializations, a numerical solver is used to find T.
 
     References
     ----------
@@ -9267,7 +9321,7 @@ class PRSVMIX(PRMIX, PRSV):
     problem re-solved with that specified if desired. `kappa1_Tr_limit` is not
     supported for P-V inputs.
 
-    For P-V initializations, SciPy's `newton` solver is used to find T.
+    For P-V initializations, a numerical solver is used to find T.
 
     [2]_ and [3]_ are two more resources documenting the PRSV EOS. [4]_ lists
     `kappa` values for 69 additional compounds. See also `PRSV2`. Note that
@@ -9357,6 +9411,24 @@ class PRSVMIX(PRMIX, PRSV):
         self.epsilon = -b*b
 
     def a_alphas_vectorized(self, T):
+        r'''Method to calculate the pure-component `a_alphas` for the PRSV EOS.
+        This vectorized implementation is added for extra speed.
+
+        .. math::
+            a\alpha = a \left(\left(\kappa_{0} + \kappa_{1} \left(\sqrt{\frac{
+            T}{Tc}} + 1\right) \left(- \frac{T}{Tc} + \frac{7}{10}\right)
+            \right) \left(- \sqrt{\frac{T}{Tc}} + 1\right) + 1\right)^{2}
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        '''
         return PRSV_a_alphas_vectorized(T, self.Tcs, self.ais, self.kappa0s, self.kappa1s)
 
     def a_alpha_and_derivatives_vectorized(self, T):
@@ -9385,9 +9457,7 @@ class PRSVMIX(PRMIX, PRSV):
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
-#        if full:
         return PRSV_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais, self.kappa0s, self.kappa1s)
-#        return PRSV_a_alphas_vectorized(T, self.Tcs, self.ais, self.kappa0s, self.kappa1s)
 
 
 class PRSV2MIX(PRMIX, PRSV2):
@@ -9475,7 +9545,7 @@ class PRSV2MIX(PRMIX, PRSV2):
 
     Notes
     -----
-    For P-V initializations, SciPy's `newton` solver is used to find T.
+    For P-V initializations, a numerical solver is used to find T.
 
     Note that tabulated `kappa` values should be used with the critical
     parameters used in their fits. [1]_ considered only vapor
@@ -9559,6 +9629,25 @@ class PRSV2MIX(PRMIX, PRSV2):
         self.epsilon = -b*b
 
     def a_alphas_vectorized(self, T):
+        r'''Method to calculate the pure-component `a_alphas` for the PRSV2
+        EOS. This vectorized implementation is added for extra speed.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+
+        Examples
+        --------
+        >>> eos = PRSV2MIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+        >>> eos.a_alphas_vectorized(300)
+        [0.0860568595, 0.20174345803]
+        '''
         return PRSV2_a_alphas_vectorized(T, self.Tcs, self.ais, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s)
 
     def a_alpha_and_derivatives_vectorized(self, T):
@@ -9582,9 +9671,7 @@ class PRSV2MIX(PRMIX, PRSV2):
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
-#        if full:
         return PRSV2_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s)
-#        return PRSV2_a_alphas_vectorized(T, self.Tcs, self.ais, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s)
 
 
 class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
@@ -9671,7 +9758,7 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
 
     Notes
     -----
-    For P-V initializations, SciPy's `newton` solver is used to find T.
+    For P-V initializations, a numerical solver is used to find T.
     Claimed to be more accurate than the PR, PR78 and PRSV equations.
 
     References
@@ -9807,7 +9894,7 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
 
     Notes
     -----
-    For P-V initializations, SciPy's `newton` solver is used to find T.
+    For P-V initializations, a numerical solver is used to find T.
     Claimed to be more accurate than the SRK equation.
 
     References
@@ -9925,7 +10012,7 @@ class APISRKMIX(SRKMIX, APISRK):
 
     Notes
     -----
-    For P-V initializations, SciPy's `newton` solver is used to find T.
+    For P-V initializations, a numerical solver is used to find T.
 
     Examples
     --------
