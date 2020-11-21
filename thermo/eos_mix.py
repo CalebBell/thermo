@@ -4857,48 +4857,48 @@ class GCEOSMIX(GCEOS):
                 hess[i][j] = hess[j][i] = v
         return hess
 
-    @property
-    def SCp0_l(self):
-        S_dep = self.S_dep_l
-        S_dep -= R*sum([zi*log(zi) for zi in self.zs if zi > 0.0]) # ideal composition entropy composition
-        S_dep -= R*log(self.P/101325.0)
-        return S_dep
-
-    @property
-    def ACp0_l(self):
-        return self.A_dep_l - self.T*(self.SCp0_l - self.S_dep_l)
-
-    @property
-    def SCp0_g(self):
-        S_dep = self.S_dep_g
-        S_dep -= R*sum([zi*log(zi) for zi in self.zs if zi > 0.0]) # ideal composition entropy composition
-        S_dep -= R*log(self.P/101325.0)
-        return S_dep
-
-    @property
-    def ACp0_g(self):
-        return self.A_dep_g - self.T*(self.SCp0_g - self.S_dep_g)
-
-    def Scomp(self, phase):
-        v = self.T*R*sum([zi*log(zi) for zi in self.zs if zi > 0.0]) # ideal composition entropy composition
-        v += R*self.T*log(self.P/101325.0)
-        return v
-
-    @property
-    def HCp0_g(self):
-        return self.H_dep_g
-
-    @property
-    def HCp0_l(self):
-        return self.H_dep_l
-
-    @property
-    def GCp0_g(self):
-        return self.HCp0_g - self.T*self.SCp0_g
-
-    @property
-    def GCp0_l(self):
-        return self.HCp0_l - self.T*self.SCp0_l
+#    @property
+#    def SCp0_l(self):
+#        S_dep = self.S_dep_l
+#        S_dep -= R*sum([zi*log(zi) for zi in self.zs if zi > 0.0]) # ideal composition entropy composition
+#        S_dep -= R*log(self.P/101325.0)
+#        return S_dep
+#
+#    @property
+#    def ACp0_l(self):
+#        return self.A_dep_l - self.T*(self.SCp0_l - self.S_dep_l)
+#
+#    @property
+#    def SCp0_g(self):
+#        S_dep = self.S_dep_g
+#        S_dep -= R*sum([zi*log(zi) for zi in self.zs if zi > 0.0]) # ideal composition entropy composition
+#        S_dep -= R*log(self.P/101325.0)
+#        return S_dep
+#
+#    @property
+#    def ACp0_g(self):
+#        return self.A_dep_g - self.T*(self.SCp0_g - self.S_dep_g)
+#
+#    def Scomp(self, phase):
+#        v = self.T*R*sum([zi*log(zi) for zi in self.zs if zi > 0.0]) # ideal composition entropy composition
+#        v += R*self.T*log(self.P/101325.0)
+#        return v
+#
+#    @property
+#    def HCp0_g(self):
+#        return self.H_dep_g
+#
+#    @property
+#    def HCp0_l(self):
+#        return self.H_dep_l
+#
+#    @property
+#    def GCp0_g(self):
+#        return self.HCp0_g - self.T*self.SCp0_g
+#
+#    @property
+#    def GCp0_l(self):
+#        return self.HCp0_l - self.T*self.SCp0_l
 
     def dScomp_dns(self, phase):
         dP_dns_Vt = self.dP_dns_Vt(phase)
