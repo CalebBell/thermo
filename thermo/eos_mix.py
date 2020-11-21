@@ -49,7 +49,7 @@ Standard Peng Robinson
 ----------------------
 .. autoclass:: thermo.eos_mix.PRMIX
    :show-inheritance:
-   :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized, d3a_alpha_dT3, d3a_alpha_dT3_vectorized, fugacity_coefficients, dlnphis_dT, dlnphis_dP, d_lnphi_dzs, ddelta_dzs, ddelta_dns, d2delta_dzizjs, d2delta_dninjs, d3delta_dninjnks, depsilon_dzs, depsilon_dns, d2epsilon_dzizjs, d2epsilon_dninjs, d3epsilon_dninjnks, solve_T
+   :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized, d3a_alpha_dT3, d3a_alpha_dT3_vectorized, fugacity_coefficients, dlnphis_dT, dlnphis_dP, dlnphis_dzs, ddelta_dzs, ddelta_dns, d2delta_dzizjs, d2delta_dninjs, d3delta_dninjnks, depsilon_dzs, depsilon_dns, d2epsilon_dzizjs, d2epsilon_dninjs, d3epsilon_dninjnks, solve_T
 
 Peng Robinson (1978)
 --------------------
@@ -1747,8 +1747,8 @@ class GCEOSMIX(GCEOS):
 #        d_lnphi_dzs_basic_num
 #        d_lnphi_dxs = eos_l.d_lnphi_dzs_basic_num(Z_l, xs)
 #        d_lnphi_dys = eos_g.d_lnphi_dzs_basic_num(Z_g, ys)
-        d_lnphi_dxs = eos_l.d_lnphi_dzs(Z_l, xs)
-        d_lnphi_dys = eos_g.d_lnphi_dzs(Z_g, ys)
+        d_lnphi_dxs = eos_l.dlnphis_dzs(Z_l)
+        d_lnphi_dys = eos_g.dlnphis_dzs(Z_g)
 
 
 
@@ -5589,7 +5589,7 @@ class GCEOSMIX(GCEOS):
             dlnphis_dTs.append(dlnphi_dT + dG_dep_dT)
         return dlnphis_dTs
 
-    def d_lnphi_dzs(self, Z, zs):
+    def dlnphis_dzs(self, Z):
         d2dxs = self.d2lnphi_dzizjs(Z)
         d2ns = d2xs_to_dxdn_partials(d2dxs, zs)
         return d2ns
@@ -6366,9 +6366,10 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
 
 
 class PRMIX(GCEOSMIX, PR):
-    r'''Class for solving the Peng-Robinson cubic equation of state for a
-    mixture of any number of compounds. Subclasses `PR`. Solves the EOS on
-    initialization and calculates fugacities for all components in all phases.
+    r'''Class for solving the Peng-Robinson [1]_ [2]_ cubic equation of state
+    for a mixture of any number of compounds. Subclasses `PR`. Solves the EOS
+    on initialization and calculates fugacities for all components in all
+    phases.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
@@ -6566,8 +6567,19 @@ class PRMIX(GCEOSMIX, PR):
 
     @property
     def d3a_alpha_dT3(self):
-        '''Estimate of the third temperature derivative of a_alpha for a mixture
-        to avoid some very expensive compututations only.
+        r'''Method to calculate approximately the third temperature derivative
+        of `a_alpha` for the PR EOS. A rigorous calculation has not been
+        implemented.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        d3a_alpha_dT3 : float
+            Third temperature derivative :math:`a \alpha`, [J^2/mol^2/Pa/K^3]
         '''
         try:
             return self._d3a_alpha_dT3
@@ -6581,8 +6593,22 @@ class PRMIX(GCEOSMIX, PR):
         self._d3a_alpha_dT3 = tot
         return tot
 
-
     def d3a_alpha_dT3_vectorized(self, T):
+        r'''Method to calculate the third temperature derivative of
+        pure-component `a_alphas` for the PR EOS. This vectorized implementation
+        is added for extra speed.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        d3a_alpha_dT3s : list[float]
+            Third temperature derivative of coefficient calculated by
+            EOS-specific method, [J^2/mol^2/Pa/K^3]
+        '''
         ais, kappas, Tcs = self.ais, self.kappas, self.Tcs
         T_inv = 1.0/T
 
@@ -6931,9 +6957,9 @@ class PRMIX(GCEOSMIX, PR):
         Jfun_partial = nd.Jacobian(lnphis_from_zs, step=1e-4, order=2, method='central')
         return Jfun_partial(zs)
 
-    def d_lnphi_dzs(self, Z, zs):
+    def dlnphis_dzs(self, Z):
         # Is it possible to numerically evaluate different parts to try to find the problems?
-        T, P = self.T, self.P
+        T, P, zs = self.T, self.P, self.zs
         T2 = T*T
         T_inv = 1.0/T
         RT_inv = R_inv*T_inv
@@ -7058,7 +7084,7 @@ class PRMIX(GCEOSMIX, PR):
         return dlnphis_dxs#, dZ_dxs, dA_dxks, dB_dxks, dC_dxs, dD_dxs, dE_dxs, dG_dxs
 
 
-#        d_lnphi_dzs = d_lnphi_dzs_Varavei
+#        dlnphis_dzs = d_lnphi_dzs_Varavei
 
 #    def dZ_dzs(self, Z, zs):
 #        '''
@@ -7376,7 +7402,7 @@ class PRMIXTranslated(PRMIX):
     fugacity_coefficients = GCEOSMIX.fugacity_coefficients
     dlnphis_dT = GCEOSMIX.dlnphis_dT
     dlnphis_dP = GCEOSMIX.dlnphis_dP
-    d_lnphi_dzs = GCEOSMIX.d_lnphi_dzs
+    d_lnphi_dzs = GCEOSMIX.dlnphis_dzs
     P_max_at_V = GCEOSMIX.P_max_at_V
 
     # All the b derivatives happen to work out to be the same, and are checked numerically
@@ -8121,7 +8147,7 @@ class SRKMIXTranslated(SRKMIX):
     fugacity_coefficients = GCEOSMIX.fugacity_coefficients
     dlnphis_dT = GCEOSMIX.dlnphis_dT
     dlnphis_dP = GCEOSMIX.dlnphis_dP
-    d_lnphi_dzs = GCEOSMIX.d_lnphi_dzs
+    d_lnphi_dzs = GCEOSMIX.dlnphis_dzs
     P_max_at_V = GCEOSMIX.P_max_at_V
     solve_T = GCEOS.solve_T
 

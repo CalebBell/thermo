@@ -4219,9 +4219,9 @@ class CEOSGas(Phase):
         # of the log fugacity coefficients!
         eos_mix = self.eos_mix
         try:
-            return eos_mix.d_lnphi_dzs(eos_mix.Z_g, eos_mix.zs)
+            return eos_mix.dlnphis_dzs(eos_mix.Z_g)
         except:
-            return eos_mix.d_lnphi_dzs(eos_mix.Z_l, eos_mix.zs)
+            return eos_mix.dlnphis_dzs(eos_mix.Z_l)
 
     def fugacities_lowest_Gibbs(self):
         eos_mix = self.eos_mix
