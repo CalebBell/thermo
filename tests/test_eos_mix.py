@@ -3035,7 +3035,7 @@ def test_dH_dep_dnxpartial(kwargs):
         numericals = [derivative(dH_dep_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in enumerate(zs)]
 
-        assert_allclose(numericals, eos.dH_dep_dzs(eos.Z_g, zs))
+        assert_allclose(numericals, eos.dH_dep_dzs(eos.Z_g))
 
     normalization = True
     for obj in eos_mix_list:
@@ -3043,7 +3043,7 @@ def test_dH_dep_dnxpartial(kwargs):
         numericals = [derivative(dH_dep_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in enumerate(zs)]
 
-        assert_allclose(numericals, eos.dH_dep_dns(eos.Z_g, zs))
+        assert_allclose(numericals, eos.dH_dep_dns(eos.Z_g))
 
     partial_n = True
     for obj in eos_mix_list:
@@ -3051,7 +3051,7 @@ def test_dH_dep_dnxpartial(kwargs):
         numericals = [derivative(dH_dep_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in enumerate(zs)]
 
-        assert_allclose(numericals, eos.dnH_dep_dns(eos.Z_g, zs))
+        assert_allclose(numericals, eos.dnH_dep_dns(eos.Z_g))
 
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
@@ -3073,21 +3073,21 @@ def test_G_dep_dnxpartial(kwargs):
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = jacobian(G_dep_dnxpartial, zs, perturbation=1e-7)
-        analytical = eos.dG_dep_dzs(eos.Z_g, zs)
+        analytical = eos.dG_dep_dzs(eos.Z_g)
         assert_allclose(numericals, analytical, rtol=5e-7)
 
     normalization = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = jacobian(G_dep_dnxpartial, zs, perturbation=5e-7)
-        analytical = eos.dG_dep_dns(eos.Z_g, zs)
+        analytical = eos.dG_dep_dns(eos.Z_g)
         assert_allclose(numericals, analytical, rtol=1e-5)
 
     partial_n = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = jacobian(G_dep_dnxpartial, zs, perturbation=5e-7)
-        analytical = eos.dnG_dep_dns(eos.Z_g, zs)
+        analytical = eos.dnG_dep_dns(eos.Z_g)
         assert_allclose(numericals, analytical, rtol=1e-5)
 
 
@@ -3107,14 +3107,14 @@ def test_dG_dep_d2nx(kwargs):
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = hessian(G_dep_d2nxpartial, zs, perturbation=2e-4)
-        analytical = eos.d2G_dep_dzizjs(eos.Z_g, zs)
+        analytical = eos.d2G_dep_dzizjs(eos.Z_g)
         assert_allclose(numericals, analytical, rtol=5e-5)
 
     normalization = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = hessian(G_dep_d2nxpartial, zs, perturbation=2e-4)
-        analytical = eos.d2G_dep_dninjs(eos.Z_g, zs)
+        analytical = eos.d2G_dep_dninjs(eos.Z_g)
         assert_allclose(numericals, analytical, rtol=5e-4)
 
 
@@ -3136,14 +3136,14 @@ def test_lnphi_dnx(kwargs):
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = jacobian(lnphi_dnxpartial, zs, perturbation=1e-7)
-        analytical = eos.dlnphi_dzs(eos.Z_g, zs)
+        analytical = eos.dlnphi_dzs(eos.Z_g)
         assert_allclose(numericals, analytical, rtol=5e-7)
 
     normalization = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = jacobian(lnphi_dnxpartial, zs, perturbation=5e-7)
-        analytical = eos.dlnphi_dns(eos.Z_g, zs)
+        analytical = eos.dlnphi_dns(eos.Z_g)
         assert_allclose(numericals, analytical, rtol=1e-6)
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
@@ -3162,14 +3162,14 @@ def test_dlnphi_d2nx(kwargs):
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = hessian(lnphi_d2nxpartial, zs, perturbation=2e-4)
-        analytical = eos.d2lnphi_dzizjs(eos.Z_g, zs)
+        analytical = eos.d2lnphi_dzizjs(eos.Z_g)
         assert_allclose(numericals, analytical, rtol=5e-5)
 
     normalization = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = hessian(lnphi_d2nxpartial, zs, perturbation=2e-4)
-        analytical = eos.d2lnphi_dninjs(eos.Z_g, zs)
+        analytical = eos.d2lnphi_dninjs(eos.Z_g)
         assert_allclose(numericals, analytical, rtol=5e-4)
 
 
@@ -3197,21 +3197,21 @@ def test_dV_dnxpartial(kwargs):
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(dV_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dV_dzs(eos.Z_g, zs), atol=1e-16)
+        assert_allclose(numericals, eos.dV_dzs(eos.Z_g), atol=1e-16)
 
     normalization = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(dV_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dV_dns(eos.Z_g, zs), atol=1e-16)
+        assert_allclose(numericals, eos.dV_dns(eos.Z_g), atol=1e-16)
 
     partial_n = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(dV_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dnV_dns(eos.Z_g, zs))
+        assert_allclose(numericals, eos.dnV_dns(eos.Z_g))
 
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
@@ -3230,14 +3230,14 @@ def test_V_d2nx(kwargs):
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = hessian(V_d2nxpartial, zs, perturbation=1e-4)
-        analytical = eos.d2V_dzizjs(eos.Z_g, zs)
+        analytical = eos.d2V_dzizjs(eos.Z_g)
         assert_allclose(numericals, analytical, rtol=5e-5)
 
     normalization = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = hessian(V_d2nxpartial, zs, perturbation=5e-5)
-        analytical = eos.d2V_dninjs(eos.Z_g, zs)
+        analytical = eos.d2V_dninjs(eos.Z_g)
         assert_allclose(numericals, analytical, rtol=5e-4)
 
 
@@ -3265,21 +3265,21 @@ def test_dZ_dnxpartial(kwargs):
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(dZ_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dZ_dzs(eos.Z_g, zs), atol=1e-13)
+        assert_allclose(numericals, eos.dZ_dzs(eos.Z_g), atol=1e-13)
 
     normalization = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(dZ_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dZ_dns(eos.Z_g, zs), atol=1e-13)
+        assert_allclose(numericals, eos.dZ_dns(eos.Z_g), atol=1e-13)
 
     partial_n = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(dZ_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dnZ_dns(eos.Z_g, zs))
+        assert_allclose(numericals, eos.dnZ_dns(eos.Z_g))
 
 
 quaternary_dthermodynamics = dict(T=300.0, P=1e5, Tcs=[126.2, 304.2, 373.2, 304.1],
@@ -3364,9 +3364,8 @@ def test_fugacities_numerical_all_eos_mix():
         analytical = [P*i for i in eos.phis_g]
         assert_allclose(numericals, analytical)
 
-        analytical_2 = [exp(i)*P for i in GCEOSMIX.fugacity_coefficients(eos, eos.Z_g, zs)]
+        analytical_2 = [exp(i)*P for i in GCEOSMIX.fugacity_coefficients(eos, eos.Z_g)]
         assert_allclose(numericals, analytical_2)
-# test_fugacities_numerical_all_eos_mix()
 
 def test_dlnphis_dT_vs_Hdep_identity():
     liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
@@ -3441,7 +3440,7 @@ def test_d2A_dep_dninjs():
      [18357.46585631667, 4208.830036112632, -24170.42087645741]]
 
     d2A_dep_dninjs_numerical = hessian(to_hess, zs, perturbation=3e-5)
-    d2A_dep_dninjs_analytical = eos.d2A_dep_dninjs(eos.Z_l, zs)
+    d2A_dep_dninjs_analytical = eos.d2A_dep_dninjs(eos.Z_l)
     assert_allclose(d2A_dep_dninjs_expect, d2A_dep_dninjs_analytical, rtol=1e-12)
 
     assert_allclose(d2A_dep_dninjs_numerical, d2A_dep_dninjs_analytical, rtol=1.5e-4)
@@ -3513,13 +3512,13 @@ def test_lnphis_basic():
 
     phase = 'g'
     dlnphis_dns_expect = [[-0.041589990253287246, 0.013411942425344808, 0.028569754501346474, -0.017735789525360493], [0.013411942425344811, -0.004325097479659749, -0.009213200783469343, 0.005719463721095726], [0.028569754501346467, -0.00921320078346936, -0.019625701941100915, 0.012183438222223696], [-0.017735789525360493, 0.005719463721095722, 0.012183438222223696, -0.007563363145875399]]
-    dlnphis_dns_g = eos_g.dlnphis_dns(eos_g.Z_g, zs)
+    dlnphis_dns_g = eos_g.dlnphis_dns(eos_g.Z_g)
     dlnphis_dns_num = jacobian(to_diff_lnphis, zs, scalar=False, perturbation=2.5e-7)
     assert_allclose(dlnphis_dns_g, dlnphis_dns_expect, rtol=1e-10)
     assert_allclose(dlnphis_dns_num, dlnphis_dns_g, rtol=1e-6)
 
     phase = 'l'
-    dlnphis_dns_l = eos_l.dlnphis_dns(eos_l.Z_l, zs)
+    dlnphis_dns_l = eos_l.dlnphis_dns(eos_l.Z_l)
     dlnphis_dns_l_expect = [[-2.8417588759587655, 1.019086847527884, 2.1398480583755637, -1.4039897485559263], [1.0190868475278858, -0.3655127847640719, -0.767477412353023, 0.5035927397648337], [2.1398480583755637, -0.7674774123530248, -1.6114979541968093, 1.0574001572302283], [-1.4039897485559263, 0.5035927397648343, 1.0574001572302274, -0.6938490506661066]]
     dlnphis_dns_num = jacobian(to_diff_lnphis, zs, scalar=False, perturbation=1.5e-7)
     assert_allclose(dlnphis_dns_l, dlnphis_dns_l_expect, rtol=1e-10)
@@ -3651,32 +3650,32 @@ def test_PR_sample_second_derivative_symmetry():
     assert_allclose(eos_l.d2a_alpha_dninjs, np.array(eos_l.d2a_alpha_dninjs).T, rtol=tol)
     assert_allclose(eos_l.d2epsilon_dninjs, np.array(eos_l.d2epsilon_dninjs).T, rtol=tol)
     assert_allclose(eos_l.d2delta_dninjs, np.array(eos_l.d2delta_dninjs).T, rtol=tol)
-    d2V_dninjs = eos_l.d2V_dninjs(eos_l.Z_l, zs)
+    d2V_dninjs = eos_l.d2V_dninjs(eos_l.Z_l)
     assert_allclose(d2V_dninjs, np.array(d2V_dninjs).T, rtol=tol)
-    d2V_dninjs = eos_g.d2V_dninjs(eos_g.Z_g, zs)
+    d2V_dninjs = eos_g.d2V_dninjs(eos_g.Z_g)
     assert_allclose(d2V_dninjs, np.array(d2V_dninjs).T, rtol=tol)
 
 
     assert_allclose(eos_l.d2a_alpha_dzizjs, np.array(eos_l.d2a_alpha_dzizjs).T, rtol=tol)
     assert_allclose(eos_l.d2epsilon_dzizjs, np.array(eos_l.d2epsilon_dzizjs).T, rtol=tol)
     assert_allclose(eos_l.d2delta_dzizjs, np.array(eos_l.d2delta_dzizjs).T, rtol=tol)
-    d2V_dzizjs = eos_l.d2V_dzizjs(eos_l.Z_l, zs)
+    d2V_dzizjs = eos_l.d2V_dzizjs(eos_l.Z_l)
     assert_allclose(d2V_dzizjs, np.array(d2V_dzizjs).T, rtol=tol)
-    d2V_dzizjs = eos_g.d2V_dzizjs(eos_g.Z_g, zs)
+    d2V_dzizjs = eos_g.d2V_dzizjs(eos_g.Z_g)
     assert_allclose(d2V_dzizjs, np.array(d2V_dzizjs).T, rtol=tol)
 
     d2P_dninjs_Vt = eos_l.d2P_dninjs_Vt('l')
     assert_allclose(d2P_dninjs_Vt, np.array(d2P_dninjs_Vt).T, rtol=tol)
-    d2lnphi_dzizjs = eos_l.d2lnphi_dzizjs(eos_l.Z_l, eos_l.zs)
+    d2lnphi_dzizjs = eos_l.d2lnphi_dzizjs(eos_l.Z_l)
     assert_allclose(d2lnphi_dzizjs, np.array(d2lnphi_dzizjs).T, rtol=tol)
-    d2lnphi_dninjs = eos_l.d2lnphi_dninjs(eos_l.Z_l, eos_l.zs)
+    d2lnphi_dninjs = eos_l.d2lnphi_dninjs(eos_l.Z_l)
     assert_allclose(d2lnphi_dninjs, np.array(d2lnphi_dninjs).T, rtol=tol)
-    d2G_dep_dzizjs = eos_l.d2G_dep_dzizjs(eos_l.Z_l, eos_l.zs)
+    d2G_dep_dzizjs = eos_l.d2G_dep_dzizjs(eos_l.Z_l)
     assert_allclose(d2G_dep_dzizjs, np.array(d2G_dep_dzizjs).T, rtol=tol)
-    d2G_dep_dninjs = eos_l.d2G_dep_dninjs(eos_l.Z_l, eos_l.zs)
+    d2G_dep_dninjs = eos_l.d2G_dep_dninjs(eos_l.Z_l)
     assert_allclose(d2G_dep_dninjs, np.array(d2G_dep_dninjs).T, rtol=tol)
 
-    d2A_dep_dninjs = eos_l.d2A_dep_dninjs(eos_l.Z_l, eos_l.zs)
+    d2A_dep_dninjs = eos_l.d2A_dep_dninjs(eos_l.Z_l)
     assert_allclose(d2A_dep_dninjs, np.array(d2A_dep_dninjs).T, rtol=tol)
     d2A_dep_dninjs_Vt = eos_l.d2A_dep_dninjs_Vt('l')
     assert_allclose(d2A_dep_dninjs_Vt, np.array(d2A_dep_dninjs_Vt).T, rtol=tol)
@@ -3689,32 +3688,32 @@ def test_PR_sample_second_derivative_symmetry():
     assert_allclose(eos_g.d2a_alpha_dninjs, np.array(eos_g.d2a_alpha_dninjs).T, rtol=tol)
     assert_allclose(eos_g.d2epsilon_dninjs, np.array(eos_g.d2epsilon_dninjs).T, rtol=tol)
     assert_allclose(eos_g.d2delta_dninjs, np.array(eos_g.d2delta_dninjs).T, rtol=tol)
-    d2V_dninjs = eos_g.d2V_dninjs(eos_g.Z_g, zs)
+    d2V_dninjs = eos_g.d2V_dninjs(eos_g.Z_g)
     assert_allclose(d2V_dninjs, np.array(d2V_dninjs).T, rtol=tol)
-    d2V_dninjs = eos_g.d2V_dninjs(eos_g.Z_g, zs)
+    d2V_dninjs = eos_g.d2V_dninjs(eos_g.Z_g)
     assert_allclose(d2V_dninjs, np.array(d2V_dninjs).T, rtol=tol)
 
 
     assert_allclose(eos_g.d2a_alpha_dzizjs, np.array(eos_g.d2a_alpha_dzizjs).T, rtol=tol)
     assert_allclose(eos_g.d2epsilon_dzizjs, np.array(eos_g.d2epsilon_dzizjs).T, rtol=tol)
     assert_allclose(eos_g.d2delta_dzizjs, np.array(eos_g.d2delta_dzizjs).T, rtol=tol)
-    d2V_dzizjs = eos_g.d2V_dzizjs(eos_g.Z_g, zs)
+    d2V_dzizjs = eos_g.d2V_dzizjs(eos_g.Z_g)
     assert_allclose(d2V_dzizjs, np.array(d2V_dzizjs).T, rtol=tol)
-    d2V_dzizjs = eos_g.d2V_dzizjs(eos_g.Z_g, zs)
+    d2V_dzizjs = eos_g.d2V_dzizjs(eos_g.Z_g)
     assert_allclose(d2V_dzizjs, np.array(d2V_dzizjs).T, rtol=tol)
 
     d2P_dninjs_Vt = eos_g.d2P_dninjs_Vt('g')
     assert_allclose(d2P_dninjs_Vt, np.array(d2P_dninjs_Vt).T, rtol=tol)
-    d2lnphi_dzizjs = eos_g.d2lnphi_dzizjs(eos_g.Z_g, eos_g.zs)
+    d2lnphi_dzizjs = eos_g.d2lnphi_dzizjs(eos_g.Z_g)
     assert_allclose(d2lnphi_dzizjs, np.array(d2lnphi_dzizjs).T, rtol=tol)
-    d2lnphi_dninjs = eos_g.d2lnphi_dninjs(eos_g.Z_g, eos_g.zs)
+    d2lnphi_dninjs = eos_g.d2lnphi_dninjs(eos_g.Z_g)
     assert_allclose(d2lnphi_dninjs, np.array(d2lnphi_dninjs).T, rtol=tol)
-    d2G_dep_dzizjs = eos_g.d2G_dep_dzizjs(eos_g.Z_g, eos_g.zs)
+    d2G_dep_dzizjs = eos_g.d2G_dep_dzizjs(eos_g.Z_g)
     assert_allclose(d2G_dep_dzizjs, np.array(d2G_dep_dzizjs).T, rtol=tol)
-    d2G_dep_dninjs = eos_g.d2G_dep_dninjs(eos_g.Z_g, eos_g.zs)
+    d2G_dep_dninjs = eos_g.d2G_dep_dninjs(eos_g.Z_g)
     assert_allclose(d2G_dep_dninjs, np.array(d2G_dep_dninjs).T, rtol=tol)
 
-    d2A_dep_dninjs = eos_g.d2A_dep_dninjs(eos_g.Z_g, eos_g.zs)
+    d2A_dep_dninjs = eos_g.d2A_dep_dninjs(eos_g.Z_g)
     assert_allclose(d2A_dep_dninjs, np.array(d2A_dep_dninjs).T, rtol=tol)
     d2A_dep_dninjs_Vt = eos_g.d2A_dep_dninjs_Vt('g')
     assert_allclose(d2A_dep_dninjs_Vt, np.array(d2A_dep_dninjs_Vt).T, rtol=tol)
@@ -3747,14 +3746,14 @@ def test_dlnphi_dns_PR_sample():
     phase = 'g'
 
     dlnphi_dns_expect = [0.07565170840335576, -0.02467386193010729, -0.05247579321257798, 0.03278084877364815]
-    dlnphi_dns = eos_g.dlnphi_dns(eos_g.Z_g, zs)
+    dlnphi_dns = eos_g.dlnphi_dns(eos_g.Z_g)
     dlnphi_dns_num = jacobian(to_jac, zs, perturbation=2.5e-8)
     assert_allclose(dlnphi_dns, dlnphi_dns_expect, rtol=1e-10)
     assert_allclose(dlnphi_dns, dlnphi_dns_num, rtol=2e-6)
 
     phase = 'l'
     dlnphi_dns_expect = [1.9236608126782464, -0.656145489105985, -1.3868994766041807, 0.8873321488365646]
-    dlnphi_dns = eos_l.dlnphi_dns(eos_l.Z_l, zs)
+    dlnphi_dns = eos_l.dlnphi_dns(eos_l.Z_l)
     dlnphi_dns_num = jacobian(to_jac, zs, perturbation=2.5e-8)
     assert_allclose(dlnphi_dns, dlnphi_dns_expect, rtol=1e-10)
     assert_allclose(dlnphi_dns, dlnphi_dns_num, rtol=1e-6)
@@ -3780,14 +3779,14 @@ def test_dV_dns_d2V_dninjs_num_sample():
         return new.V_l
 
     phase = 'l'
-    dV_dns = eos_l.dV_dns(eos_l.Z_l, zs)
+    dV_dns = eos_l.dV_dns(eos_l.Z_l)
     dV_dns_expect = [7.5597832299419e-05, -2.7856154963635767e-05, -5.8289114483768626e-05, 3.874545526978959e-05]
     assert_allclose(dV_dns_expect, dV_dns, rtol=1e-10)
     dV_dns_num = jacobian(to_jac_V, zs, perturbation=1e-7)
     assert_allclose(dV_dns_num, dV_dns_expect, rtol=1e-7)
 
     d2V_dninjs_expect = [[0.0003621553298385026, -0.0002267708201886744, -0.00039460296493287376, 0.00012980422058581905], [-0.00022677082018867435, 0.00011809681567364595, 0.00021763153267593995, -9.593896488751985e-05], [-0.0003946029649328738, 0.0002176315326759399, 0.00039370454911576754, -0.00015972065073215533], [0.0001298042205858192, -9.59389648875198e-05, -0.0001597206507321554, 3.844527717194762e-05]]
-    d2V_dninjs = eos_l.d2V_dninjs(eos_l.Z_l, zs)
+    d2V_dninjs = eos_l.d2V_dninjs(eos_l.Z_l)
     d2V_dninjs_num = hessian(to_jac_V, zs, perturbation=4e-5)
     assert_allclose(d2V_dninjs_num, d2V_dninjs, rtol=1.5e-4)
     assert_allclose(d2V_dninjs, d2V_dninjs_expect, rtol=1e-10)
@@ -3795,14 +3794,14 @@ def test_dV_dns_d2V_dninjs_num_sample():
     # assert_allclose(nd.Hessian(to_jac_V, step=4e-5)(zs), d2V_dninjs, rtol=1e-7)
 
     phase = 'g'
-    dV_dns = eos_g.dV_dns(eos_g.Z_g, zs)
+    dV_dns = eos_g.dV_dns(eos_g.Z_g)
     dV_dns_expect = [0.0001668001885157071, -5.448938479671317e-05, -0.0001158606811425109, 7.2440156126313e-05]
     assert_allclose(dV_dns_expect, dV_dns, rtol=1e-10)
     dV_dns_num = jacobian(to_jac_V, zs, perturbation=25e-8)
     assert_allclose(dV_dns_num, dV_dns_expect, rtol=3e-7)
 
     d2V_dninjs_expect = [[-0.00044088987788337583, -7.757131783309099e-05, 2.3019124011504547e-05, -0.0002852566859105065], [-7.757131783309099e-05, 9.773049710937305e-05, 0.00014640302633090873, -3.051226852812143e-06], [2.301912401150454e-05, 0.0001464030263309087, 0.00018073925735201586, 7.514096567393496e-05], [-0.0002852566859105065, -3.0512268528121433e-06, 7.514096567393496e-05, -0.00016461632966720052]]
-    d2V_dninjs = eos_g.d2V_dninjs(eos_g.Z_g, zs)
+    d2V_dninjs = eos_g.d2V_dninjs(eos_g.Z_g)
     d2V_dninjs_num = hessian(to_jac_V, zs, perturbation=4e-5)
     assert_allclose(d2V_dninjs_num, d2V_dninjs, rtol=5e-4)
     assert_allclose(d2V_dninjs, d2V_dninjs_expect, rtol=1e-10)
@@ -3830,7 +3829,7 @@ def test_d2G_dep_dninjs_sample():
         return new.G_dep_l
 
     phase = 'l'
-    d2G_dep_dninjs = eos_l.d2G_dep_dninjs(eos_l.Z_l, zs)
+    d2G_dep_dninjs = eos_l.d2G_dep_dninjs(eos_l.Z_l)
     d2G_dep_dninjs_num = np.array(hessian(to_jac, zs, perturbation=4e-5))
     d2G_dep_dninjs_expect = [[-13904.027444500864, -516.3873193389383, 3332.201156558403, -8761.329044761345], [-516.3873193389346, 1967.9879742763017, 2651.414684829288, 566.2275423506163], [3332.201156558403, 2651.4146848292844, 2415.977051830929, 3236.3369879236607], [-8761.329044761345, 566.2275423506177, 3236.336987923659, -5131.0904892947165]]
     assert_allclose(d2G_dep_dninjs, d2G_dep_dninjs_expect, rtol=1e-10)
@@ -3838,7 +3837,7 @@ def test_d2G_dep_dninjs_sample():
 
     phase = 'g'
     d2G_dep_dninjs_expect = [[-400.9512555721441, -78.08507623085663, 11.211718829012208, -262.25550056275165], [-78.08507623085663, 93.58473600305078, 141.21377754489365, -4.962742937886635], [11.2117188290122, 141.21377754489362, 177.35971922588433, 66.26290524083636], [-262.25550056275165, -4.962742937886636, 66.26290524083636, -151.99889589589074]]
-    d2G_dep_dninjs = eos_g.d2G_dep_dninjs(eos_g.Z_g, zs)
+    d2G_dep_dninjs = eos_g.d2G_dep_dninjs(eos_g.Z_g)
     d2G_dep_dninjs_num = np.array(hessian(to_jac, zs, perturbation=10e-5))
     assert_allclose(d2G_dep_dninjs, d2G_dep_dninjs_expect, rtol=1e-10)
     assert_allclose(d2G_dep_dninjs, d2G_dep_dninjs_num, rtol=1e-3)
@@ -3864,7 +3863,7 @@ def test_d2lnphi_dninjs_sample():
         return new.lnphi_l
 
     phase = 'l'
-    d2lnphi_dninjs = eos_l.d2lnphi_dninjs(eos_l.Z_l, zs)
+    d2lnphi_dninjs = eos_l.d2lnphi_dninjs(eos_l.Z_l)
     d2lnphi_dninjs_num = np.array(hessian(to_jac, zs, perturbation=4e-5))
     d2lnphi_dninjs_expect = [[-6.689080501315258, -0.24842847604437732, 1.6030867223014982, -4.214982710070737], [-0.24842847604437557, 0.9467781934478982, 1.2755675533571427, 0.27240608003425404], [1.6030867223014982, 1.275567553357141, 1.162300999011552, 1.5569674849978443], [-4.214982710070737, 0.2724060800342547, 1.5569674849978434, -2.468513348339236]]
     assert_allclose(d2lnphi_dninjs, d2lnphi_dninjs_expect, rtol=1e-10)
@@ -3872,7 +3871,7 @@ def test_d2lnphi_dninjs_sample():
 
     phase = 'g'
     d2lnphi_dninjs_expect = [[-0.19289340705999877, -0.037565904047903664, 0.005393839310568691, -0.1261683467023644], [-0.037565904047903664, 0.045022626380554834, 0.06793645435921593, -0.0023875231224451303], [0.005393839310568688, 0.06793645435921591, 0.08532588448405505, 0.03187838266115353], [-0.1261683467023644, -0.002387523122445131, 0.03187838266115353, -0.07312506069317169]]
-    d2lnphi_dninjs = eos_g.d2lnphi_dninjs(eos_g.Z_g, zs)
+    d2lnphi_dninjs = eos_g.d2lnphi_dninjs(eos_g.Z_g)
     d2lnphi_dninjs_num = np.array(hessian(to_jac, zs, perturbation=10e-5))
     assert_allclose(d2lnphi_dninjs, d2lnphi_dninjs_expect, rtol=1e-10)
     assert_allclose(d2lnphi_dninjs, d2lnphi_dninjs_num, rtol=1e-3)

@@ -1469,7 +1469,7 @@ class GCEOSMIX(GCEOS):
         P = self.P
         zs = self.zs
         if not only_g and hasattr(self, 'V_l'):
-            self.lnphis_l = self.fugacity_coefficients(self.Z_l, zs=zs)
+            self.lnphis_l = self.fugacity_coefficients(self.Z_l)
             try:
                 self.phis_l = [exp(i) for i in self.lnphis_l]
             except:
@@ -1477,7 +1477,7 @@ class GCEOSMIX(GCEOS):
             self.fugacities_l = [phi*x*P for phi, x in zip(self.phis_l, zs)]
 
         if not only_l and hasattr(self, 'V_g'):
-            self.lnphis_g = self.fugacity_coefficients(self.Z_g, zs=zs)
+            self.lnphis_g = self.fugacity_coefficients(self.Z_g)
             try:
                 self.phis_g = [exp(i) for i in self.lnphis_g]
             except:
@@ -1546,8 +1546,8 @@ class GCEOSMIX(GCEOS):
 
     def _Stateva_Tsvetkov_TPDF_broken(self, Zz, Zy, zs, ys):
         # TODO: delete
-        z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
-        y_log_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
+        z_log_fugacity_coefficients = self.fugacity_coefficients(Zz)
+        y_log_fugacity_coefficients = self.fugacity_coefficients(Zy)
 
         kis = []
         for yi, phi_yi, zi, phi_zi in zip(ys, y_log_fugacity_coefficients, zs, z_log_fugacity_coefficients):
@@ -1624,8 +1624,8 @@ class GCEOSMIX(GCEOS):
         # TODO: delete
         Ys = [(alpha/2.)**2 for alpha in alphas]
         ys = normalize(Ys)
-        z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
-        y_log_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
+        z_log_fugacity_coefficients = self.fugacity_coefficients(Zz)
+        y_log_fugacity_coefficients = self.fugacity_coefficients(Zy)
         tot = 0
         for Yi, phi_yi, zi, phi_zi in zip(Ys, y_log_fugacity_coefficients, zs, z_log_fugacity_coefficients):
             di = log(zi) + phi_zi
@@ -1736,8 +1736,8 @@ class GCEOSMIX(GCEOS):
 #                lnphis_l = eos_l.lnphis_g
                 Z_l = eos_l.Z_g
 
-        lnphis_g = eos_g.fugacity_coefficients(Z_g, ys)
-        lnphis_l = eos_l.fugacity_coefficients(Z_l, xs)
+        lnphis_g = eos_g.fugacity_coefficients(Z_g)
+        lnphis_l = eos_l.fugacity_coefficients(Z_l)
 
         size = N + 1
         J = [[None]*size for i in range(size)]
@@ -1997,19 +1997,19 @@ class GCEOSMIX(GCEOS):
             if not near_critical:
                 eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_l=False, only_g=True, full_alphas=full_alphas)
                 eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True, only_g=False, full_alphas=full_alphas)
-                lnphis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
-                lnphis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
+                lnphis_g = eos_g.fugacity_coefficients(eos_g.Z_g)
+                lnphis_l = eos_l.fugacity_coefficients(eos_l.Z_l)
             else:
                 eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_l=False, only_g=True, full_alphas=full_alphas)
                 eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True, only_g=False, full_alphas=full_alphas)
                 try:
-                    lnphis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
+                    lnphis_g = eos_g.fugacity_coefficients(eos_g.Z_g)
                 except AttributeError:
-                    lnphis_g = eos_g.fugacity_coefficients(eos_g.Z_l, ys)
+                    lnphis_g = eos_g.fugacity_coefficients(eos_g.Z_l)
                 try:
-                    lnphis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
+                    lnphis_l = eos_l.fugacity_coefficients(eos_l.Z_l)
                 except AttributeError:
-                    lnphis_l = eos_l.fugacity_coefficients(eos_l.Z_g, xs)
+                    lnphis_l = eos_l.fugacity_coefficients(eos_l.Z_g)
 
 
 #                eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
@@ -3133,7 +3133,7 @@ class GCEOSMIX(GCEOS):
         d2a_alpha_dT2 = self.d2a_alpha_dT2
         return [2.0*(t - d2a_alpha_dT2) for t in d2a_alpha_dT2_j_rows]
 
-    def dV_dzs(self, Z, zs):
+    def dV_dzs(self, Z):
         r'''Calculates the molar volume composition derivative
         (where the mole fractions do not sum to 1). Verified numerically.
         Used in many other derivatives, and for the molar volume mole number
@@ -3171,8 +3171,6 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -3232,7 +3230,7 @@ class GCEOSMIX(GCEOS):
         return [t5*depsilon_dzs[i] - t1*da_alpha_dzs[i] + x11t2*db_dzs[i] + t6*ddelta_dzs[i]
                 for i in self.cmps]
 
-    def dV_dns(self, Z, zs):
+    def dV_dns(self, Z):
         r'''Calculates the molar volume mole number derivatives
         (where the mole fractions sum to 1). No specific formula is implemented
         for this property - it is calculated from the mole fraction derivative.
@@ -3247,17 +3245,15 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
         dV_dns : float
             Molar volume mole number derivatives, [m^3/mol^2]
         '''
-        return dxs_to_dns(self.dV_dzs(Z, zs), zs)
+        return dxs_to_dns(self.dV_dzs(Z), self.zs)
 
-    def dnV_dns(self, Z, zs):
+    def dnV_dns(self, Z):
         r'''Calculates the partial molar volume of the specified phase
         No specific formula is implemented
         for this property - it is calculated from the molar
@@ -3273,8 +3269,6 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -3283,7 +3277,7 @@ class GCEOSMIX(GCEOS):
             [m^3/mol]
         '''
         V = Z*R*self.T/self.P
-        return dxs_to_dn_partials(self.dV_dzs(Z, zs), zs, V)
+        return dxs_to_dn_partials(self.dV_dzs(Z), self.zs, V)
 
     def _d2V_dij_wrapper(self, V, d_Vs, dbs, d2bs, d_epsilons, d2_epsilons,
                          d_deltas, d2_deltas, da_alphas, d2a_alphas):
@@ -3364,7 +3358,7 @@ class GCEOSMIX(GCEOS):
             hessian.append(row)
         return hessian
 
-    def d2V_dzizjs(self, Z, zs):
+    def d2V_dzizjs(self, Z):
         r'''Calculates the molar volume second composition derivative
         (where the mole fractions do not sum to 1). Verified numerically.
         Used in many other derivatives, and for the molar volume second mole
@@ -3378,8 +3372,6 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -3400,7 +3392,7 @@ class GCEOSMIX(GCEOS):
         [(-R*T*(V(x1, x2) - b(x1, x2))*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))**3*Derivative(b(x1, x2), x1, x2) - 2*R*T*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))**3*Derivative(V(x1, x2), x1)*Derivative(V(x1, x2), x2) + 2*R*T*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))**3*Derivative(V(x1, x2), x1)*Derivative(b(x1, x2), x2) + 2*R*T*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))**3*Derivative(V(x1, x2), x2)*Derivative(b(x1, x2), x1) - 2*R*T*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))**3*Derivative(b(x1, x2), x1)*Derivative(b(x1, x2), x2) + (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))**2*Derivative(a \alpha(x1, x2), x1, x2) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*V(x1, x2)*a \alpha(x1, x2)*Derivative(delta(x1, x2), x1, x2) - 2*(V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*V(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(a \alpha(x1, x2), x2) - 2*(V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*V(x1, x2)*Derivative(V(x1, x2), x2)*Derivative(a \alpha(x1, x2), x1) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*V(x1, x2)*Derivative(a \alpha(x1, x2), x1)*Derivative(delta(x1, x2), x2) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*V(x1, x2)*Derivative(a \alpha(x1, x2), x2)*Derivative(delta(x1, x2), x1) - 2*(V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*a \alpha(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(V(x1, x2), x2) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*a \alpha(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(delta(x1, x2), x2) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*a \alpha(x1, x2)*Derivative(V(x1, x2), x2)*Derivative(delta(x1, x2), x1) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*a \alpha(x1, x2)*Derivative(epsilon(x1, x2), x1, x2) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*delta(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(a \alpha(x1, x2), x2) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*delta(x1, x2)*Derivative(V(x1, x2), x2)*Derivative(a \alpha(x1, x2), x1) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*Derivative(a \alpha(x1, x2), x1)*Derivative(epsilon(x1, x2), x2) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*Derivative(a \alpha(x1, x2), x2)*Derivative(epsilon(x1, x2), x1) + 8*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)**2*a \alpha(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(V(x1, x2), x2) + 4*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)**2*a \alpha(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(delta(x1, x2), x2) + 4*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)**2*a \alpha(x1, x2)*Derivative(V(x1, x2), x2)*Derivative(delta(x1, x2), x1) + 2*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)**2*a \alpha(x1, x2)*Derivative(delta(x1, x2), x1)*Derivative(delta(x1, x2), x2) + 8*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)*a \alpha(x1, x2)*delta(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(V(x1, x2), x2) + 2*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)*a \alpha(x1, x2)*delta(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(delta(x1, x2), x2) + 2*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)*a \alpha(x1, x2)*delta(x1, x2)*Derivative(V(x1, x2), x2)*Derivative(delta(x1, x2), x1) + 4*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)*a \alpha(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(epsilon(x1, x2), x2) + 4*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)*a \alpha(x1, x2)*Derivative(V(x1, x2), x2)*Derivative(epsilon(x1, x2), x1) + 2*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)*a \alpha(x1, x2)*Derivative(delta(x1, x2), x1)*Derivative(epsilon(x1, x2), x2) + 2*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)*a \alpha(x1, x2)*Derivative(delta(x1, x2), x2)*Derivative(epsilon(x1, x2), x1) + 2*(V(x1, x2) - b(x1, x2))**3*a \alpha(x1, x2)*delta(x1, x2)**2*Derivative(V(x1, x2), x1)*Derivative(V(x1, x2), x2) + 2*(V(x1, x2) - b(x1, x2))**3*a \alpha(x1, x2)*delta(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(epsilon(x1, x2), x2) + 2*(V(x1, x2) - b(x1, x2))**3*a \alpha(x1, x2)*delta(x1, x2)*Derivative(V(x1, x2), x2)*Derivative(epsilon(x1, x2), x1) + 2*(V(x1, x2) - b(x1, x2))**3*a \alpha(x1, x2)*Derivative(epsilon(x1, x2), x1)*Derivative(epsilon(x1, x2), x2))/((V(x1, x2) - b(x1, x2))*(-R*T*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))**2 + 2*(V(x1, x2) - b(x1, x2))**2*V(x1, x2)*a \alpha(x1, x2) + (V(x1, x2) - b(x1, x2))**2*a \alpha(x1, x2)*delta(x1, x2))*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2)))]
         '''
         V = Z*self.T*R/self.P
-        dV_dzs = self.dV_dzs(Z, zs)
+        dV_dzs = self.dV_dzs(Z)
 
         depsilon_dzs = self.depsilon_dzs
         d2epsilon_dzizjs = self.d2epsilon_dzizjs
@@ -3419,7 +3411,7 @@ class GCEOSMIX(GCEOS):
                                      d_deltas=ddelta_dzs, d2_deltas=d2delta_dzizjs,
                                      da_alphas=da_alpha_dzs, d2a_alphas=d2a_alpha_dzizjs)
 
-    def d2V_dninjs(self, Z, zs):
+    def d2V_dninjs(self, Z):
         r'''Calculates the molar volume second mole number derivatives
         (where the mole fractions sum to 1). No specific formula is implemented
         for this property - it is calculated from the second mole fraction
@@ -3435,8 +3427,6 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -3444,7 +3434,7 @@ class GCEOSMIX(GCEOS):
             Molar volume second mole number derivatives, [m^3/mol^3]
         '''
         V = Z*self.T*R/self.P
-        dV_dns = self.dV_dns(Z, zs)
+        dV_dns = self.dV_dns(Z)
 
         depsilon_dns = self.depsilon_dns
         d2epsilon_dninjs = self.d2epsilon_dninjs
@@ -3463,7 +3453,7 @@ class GCEOSMIX(GCEOS):
                                      d_deltas=ddelta_dns, d2_deltas=d2delta_dninjs,
                                      da_alphas=da_alpha_dns, d2a_alphas=d2a_alpha_dninjs)
 
-    def dZ_dzs(self, Z, zs):
+    def dZ_dzs(self, Z):
         r'''Calculates the compressibility composition derivatives
         (where the mole fractions do not sum to 1). No specific formula is
         implemented for this property - it is calculated from the
@@ -3479,8 +3469,6 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -3488,9 +3476,9 @@ class GCEOSMIX(GCEOS):
             Compressibility composition derivative, [-]
         '''
         factor = self.P/(self.T*R)
-        return [dV*factor for dV in self.dV_dzs(Z, zs)]
+        return [dV*factor for dV in self.dV_dzs(Z)]
 
-    def dZ_dns(self, Z, zs):
+    def dZ_dns(self, Z):
         r'''Calculates the compressibility mole number derivatives
         (where the mole fractions sum to 1). No specific formula is implemented
         for this property - it is calculated from the mole fraction derivative.
@@ -3505,17 +3493,15 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
         dZ_dns : float
             Compressibility number derivatives, [1/mol]
         '''
-        return dxs_to_dns(self.dZ_dzs(Z, zs), zs)
+        return dxs_to_dns(self.dZ_dzs(Z), self.zs)
 
-    def dnZ_dns(self, Z, zs):
+    def dnZ_dns(self, Z):
         r'''Calculates the partial compressibility of the specified phase
         No specific formula is implemented
         for this property - it is calculated from the compressibility
@@ -3531,8 +3517,6 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -3540,9 +3524,9 @@ class GCEOSMIX(GCEOS):
             Partial compressibility of the mixture of the specified phase,
             [-]
         '''
-        return dxs_to_dn_partials(self.dZ_dzs(Z, zs), zs, Z)
+        return dxs_to_dn_partials(self.dZ_dzs(Z), self.zs, Z)
 
-    def dH_dep_dzs(self, Z, zs):
+    def dH_dep_dzs(self, Z):
         r'''Calculates the molar departure enthalpy composition derivative
         (where the mole fractions do not sum to 1). Verified numerically.
         Useful in solving for enthalpy specifications in newton-type methods,
@@ -3580,8 +3564,6 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -3608,7 +3590,7 @@ class GCEOSMIX(GCEOS):
         depsilon_dzs = self.depsilon_dzs
         da_alpha_dzs = self.da_alpha_dzs
         da_alpha_dT_dzs = self.da_alpha_dT_dzs
-        dV_dzs = self.dV_dzs(Z, zs)
+        dV_dzs = self.dV_dzs(Z)
 
         x0 = V = Z*R*T/P
         x2 = self.delta
@@ -3641,14 +3623,14 @@ class GCEOSMIX(GCEOS):
             dH_dzs.append(value)
         return dH_dzs
 
-    def dS_dep_dzs(self, Z, zs):
-        dH_dep_dzs = self.dH_dep_dzs(Z, zs)
-        dG_dep_dzs = self.dG_dep_dzs(Z, zs)
+    def dS_dep_dzs(self, Z):
+        dH_dep_dzs = self.dH_dep_dzs(Z)
+        dG_dep_dzs = self.dG_dep_dzs(Z)
         T_inv = 1.0/self.T
         return [T_inv*(dH_dep_dzs[i] - dG_dep_dzs[i]) for i in self.cmps]
 
-    def dS_dep_dns(self, Z, zs):
-        return dxs_to_dns(self.dS_dep_dzs(Z, zs), zs)
+    def dS_dep_dns(self, Z):
+        return dxs_to_dns(self.dS_dep_dzs(Z), self.zs)
 
     def dP_dns_Vt(self, phase):
         # Checked numerically, working. Evaluated at constant temperature and total volume.
@@ -3861,7 +3843,7 @@ class GCEOSMIX(GCEOS):
 
 
 
-    def dH_dep_dns(self, Z, zs):
+    def dH_dep_dns(self, Z):
         r'''Calculates the molar departure enthalpy mole number derivatives
         (where the mole fractions sum to 1). No specific formula is implemented
         for this property - it is calculated from the mole fraction derivative.
@@ -3876,17 +3858,15 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
         dH_dep_dns : float
             Departure enthalpy mole number derivatives, [J/mol^2]
         '''
-        return dxs_to_dns(self.dH_dep_dzs(Z, zs), zs)
+        return dxs_to_dns(self.dH_dep_dzs(Z), self.zs)
 
-    def dnH_dep_dns(self, Z, zs):
+    def dnH_dep_dns(self, Z):
         r'''Calculates the partial molar departure enthalpy. No specific
         formula is implemented for this property - it is calculated from the
         mole fraction derivative.
@@ -3901,8 +3881,6 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -3916,7 +3894,7 @@ class GCEOSMIX(GCEOS):
                 F = self.H_dep_g
         except:
             F = self.H_dep_g
-        return dxs_to_dn_partials(self.dH_dep_dzs(Z, zs), zs, F)
+        return dxs_to_dn_partials(self.dH_dep_dzs(Z), self.zs, F)
 
     def _G_dep_lnphi_d_helper(self, Z, dbs, depsilons, ddelta, dVs, da_alphas,
                               G=True):
@@ -3972,7 +3950,7 @@ class GCEOSMIX(GCEOS):
             dfugacity_dns.append(diff)
         return dfugacity_dns
 
-    def dlnphi_dzs(self, Z, zs):
+    def dlnphi_dzs(self, Z):
         r'''Calculates the mixture log *fugacity coefficient* mole fraction
         derivatives (where the mole fractions do not sum to 1). No specific
         formula is implemented for this property - it is calculated from the
@@ -3988,8 +3966,6 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -3997,10 +3973,10 @@ class GCEOSMIX(GCEOS):
             Mixture log fugacity coefficient mole fraction derivatives, [-]
         '''
         return self._G_dep_lnphi_d_helper(Z, dbs=self.db_dzs, depsilons=self.depsilon_dzs,
-                                    ddelta=self.ddelta_dzs, dVs=self.dV_dzs(Z, zs),
-                                    da_alphas=self.da_alpha_dzs, G=False)
+                                          ddelta=self.ddelta_dzs, dVs=self.dV_dzs(Z),
+                                          da_alphas=self.da_alpha_dzs, G=False)
 
-    def dlnphi_dns(self, Z, zs):
+    def dlnphi_dns(self, Z):
         r'''Calculates the mixture log *fugacity coefficient* mole number
         derivatives (where the mole fractions sum to 1). No specific formula is
         implemented for this property - it is calculated from the mole fraction
@@ -4019,8 +3995,6 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -4028,10 +4002,10 @@ class GCEOSMIX(GCEOS):
             Mixture log fugacity coefficient mole number derivatives, [1/mol]
         '''
         return self._G_dep_lnphi_d_helper(Z, dbs=self.db_dns, depsilons=self.depsilon_dns,
-                                    ddelta=self.ddelta_dns, dVs=self.dV_dns(Z, zs),
-                                    da_alphas=self.da_alpha_dns, G=False)
+                                          ddelta=self.ddelta_dns, dVs=self.dV_dns(Z),
+                                          da_alphas=self.da_alpha_dns, G=False)
 
-    def dG_dep_dzs(self, Z, zs):
+    def dG_dep_dzs(self, Z):
         r'''Calculates the molar departure Gibbs energy composition derivative
         (where the mole fractions do not sum to 1). Verified numerically.
         Useful in solving for gibbs minimization calculations or for solving
@@ -4080,8 +4054,6 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -4104,10 +4076,10 @@ class GCEOSMIX(GCEOS):
         P*Derivative(V(x), x) - R*T*(Derivative(V(x), x) - Derivative(b(x), x))/(V(x) - b(x)) - 2*(-delta(x)*Derivative(delta(x), x) + 2*Derivative(epsilon(x), x))*a \alpha(x)*atanh(2*V(x)/sqrt(delta(x)**2 - 4*epsilon(x)) + delta(x)/sqrt(delta(x)**2 - 4*epsilon(x)))/(delta(x)**2 - 4*epsilon(x))**(3/2) - 2*atanh(2*V(x)/sqrt(delta(x)**2 - 4*epsilon(x)) + delta(x)/sqrt(delta(x)**2 - 4*epsilon(x)))*Derivative(a \alpha(x), x)/sqrt(delta(x)**2 - 4*epsilon(x)) - 2*(2*(-delta(x)*Derivative(delta(x), x) + 2*Derivative(epsilon(x), x))*V(x)/(delta(x)**2 - 4*epsilon(x))**(3/2) + (-delta(x)*Derivative(delta(x), x) + 2*Derivative(epsilon(x), x))*delta(x)/(delta(x)**2 - 4*epsilon(x))**(3/2) + 2*Derivative(V(x), x)/sqrt(delta(x)**2 - 4*epsilon(x)) + Derivative(delta(x), x)/sqrt(delta(x)**2 - 4*epsilon(x)))*a \alpha(x)/((1 - (2*V(x)/sqrt(delta(x)**2 - 4*epsilon(x)) + delta(x)/sqrt(delta(x)**2 - 4*epsilon(x)))**2)*sqrt(delta(x)**2 - 4*epsilon(x)))
         '''
         return self._G_dep_lnphi_d_helper(Z, dbs=self.db_dzs, depsilons=self.depsilon_dzs,
-                                    ddelta=self.ddelta_dzs, dVs=self.dV_dzs(Z, zs),
-                                    da_alphas=self.da_alpha_dzs, G=True)
+                                          ddelta=self.ddelta_dzs, dVs=self.dV_dzs(Z),
+                                          da_alphas=self.da_alpha_dzs, G=True)
 
-    def dG_dep_dns(self, Z, zs):
+    def dG_dep_dns(self, Z):
         r'''Calculates the molar departure Gibbs energy mole number derivatives
         (where the mole fractions sum to 1). No specific formula is implemented
         for this property - it is calculated from the mole fraction derivative.
@@ -4125,8 +4097,6 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -4134,10 +4104,10 @@ class GCEOSMIX(GCEOS):
             Departure Gibbs energy mole number derivatives, [J/mol^2]
         '''
         return self._G_dep_lnphi_d_helper(Z, dbs=self.db_dns, depsilons=self.depsilon_dns,
-                                    ddelta=self.ddelta_dns, dVs=self.dV_dns(Z, zs),
-                                    da_alphas=self.da_alpha_dns, G=True)
+                                          ddelta=self.ddelta_dns, dVs=self.dV_dns(Z),
+                                          da_alphas=self.da_alpha_dns, G=True)
 
-    def dnG_dep_dns(self, Z, zs):
+    def dnG_dep_dns(self, Z):
         r'''Calculates the partial molar departure Gibbs energy. No specific
         formula is implemented for this property - it is calculated from the
         mole fraction derivative.
@@ -4152,8 +4122,6 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -4167,10 +4135,10 @@ class GCEOSMIX(GCEOS):
                 F = self.G_dep_g
         except:
             F = self.G_dep_g
-        dG_dns = self.dG_dep_dns(Z, zs)
+        dG_dns = self.dG_dep_dns(Z)
         return dns_to_dn_partials(dG_dns, F)
 
-    def fugacity_coefficients(self, Z, zs):
+    def fugacity_coefficients(self, Z):
         r'''Generic formula for calculating log fugacity coefficients for each
         species in a mixture. Verified numerically. Applicable to all cubic
         equations of state which can be cast in the form used here.
@@ -4194,15 +4162,13 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
         log_phis : float
             Log fugacity coefficient for each species, [-]
         '''
-
+        zs = self.zs
         try:
             if Z == self.Z_l:
                 F = self.phi_l
@@ -4215,7 +4181,7 @@ class GCEOSMIX(GCEOS):
             logF = log(F)
         except:
             logF = -690.7755278982137
-        return dns_to_dn_partials(self.dlnphi_dns(Z, zs), logF)
+        return dns_to_dn_partials(self.dlnphi_dns(Z), logF)
 
     # This method was good until it was broke and was unable to find the error
     # Had to be recreated
@@ -4367,7 +4333,7 @@ class GCEOSMIX(GCEOS):
 
 
 
-    def d2lnphi_dzizjs(self, Z, zs):
+    def d2lnphi_dzizjs(self, Z):
         r'''Calculates the mixture log *fugacity coefficient* second mole
         fraction derivatives (where the mole fractions do not sum to 1). No
         specific formula is implemented for this property - it is calculated
@@ -4383,8 +4349,6 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -4393,8 +4357,8 @@ class GCEOSMIX(GCEOS):
             [-]
         '''
         V = Z*self.T*R/self.P
-        dV_dzs = self.dV_dzs(Z, zs)
-        d2Vs = self.d2V_dzizjs(Z, zs)
+        dV_dzs = self.dV_dzs(Z)
+        d2Vs = self.d2V_dzizjs(Z)
 
         depsilon_dzs = self.depsilon_dzs
         d2epsilon_dzizjs = self.d2epsilon_dzizjs
@@ -4412,7 +4376,7 @@ class GCEOSMIX(GCEOS):
                                      da_alphas=da_alpha_dzs, d2a_alphas=d2a_alpha_dzizjs,
                                      G=False)
 
-    def d2lnphi_dninjs(self, Z, zs):
+    def d2lnphi_dninjs(self, Z):
         r'''Calculates the mixture log *fugacity coefficient* second mole
         number derivatives (where the mole fraction sum to 1). No
         specific formula is implemented for this property - it is calculated
@@ -4428,8 +4392,6 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -4438,8 +4400,8 @@ class GCEOSMIX(GCEOS):
             [-]
         '''
         V = Z*self.T*R/self.P
-        dV_dns = self.dV_dns(Z, zs)
-        d2Vs = self.d2V_dninjs(Z, zs)
+        dV_dns = self.dV_dns(Z)
+        d2Vs = self.d2V_dninjs(Z)
 
         depsilon_dns = self.depsilon_dns
         d2epsilon_dninjs = self.d2epsilon_dninjs
@@ -4458,7 +4420,7 @@ class GCEOSMIX(GCEOS):
                                      G=False)
 
 
-    def d2G_dep_dzizjs(self, Z, zs):
+    def d2G_dep_dzizjs(self, Z):
         r'''Calculates the molar departure Gibbs energy second composition
         derivative (where the mole fractions do not sum to 1). Verified numerically.
         Useful in solving for gibbs minimization calculations or for solving
@@ -4473,8 +4435,6 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -4497,8 +4457,8 @@ class GCEOSMIX(GCEOS):
         >>> diff(G_dep, x1, x2) # doctest:+SKIP
         '''
         V = Z*self.T*R/self.P
-        dV_dzs = self.dV_dzs(Z, zs)
-        d2Vs = self.d2V_dzizjs(Z, zs)
+        dV_dzs = self.dV_dzs(Z)
+        d2Vs = self.d2V_dzizjs(Z)
 
         depsilon_dzs = self.depsilon_dzs
         d2epsilon_dzizjs = self.d2epsilon_dzizjs
@@ -4515,11 +4475,11 @@ class GCEOSMIX(GCEOS):
                                      d_deltas=ddelta_dzs, d2_deltas=d2delta_dzizjs,
                                      da_alphas=da_alpha_dzs, d2a_alphas=d2a_alpha_dzizjs,
                                      G=True)
-    def dlnphis_dns(self, Z, zs):
+    def dlnphis_dns(self, Z):
         r'''All working here.
         '''
-        dns = self.dlnphi_dns(Z, zs)
-        d2ns = self.d2lnphi_dninjs(Z, zs)
+        dns = self.dlnphi_dns(Z)
+        d2ns = self.d2lnphi_dninjs(Z)
         return d2ns_to_dn2_partials(d2ns, dns)
 
     def dlnfugacities_dns(self, phase):
@@ -4577,7 +4537,7 @@ class GCEOSMIX(GCEOS):
                 phis = self.phis_g
 
 
-        dlnphis_dns = self.dlnphis_dns(Z, zs)
+        dlnphis_dns = self.dlnphis_dns(Z)
 
         P = self.P
         cmps = self.cmps
@@ -4594,7 +4554,7 @@ class GCEOSMIX(GCEOS):
 
 
 
-    def d2G_dep_dninjs(self, Z, zs):
+    def d2G_dep_dninjs(self, Z):
         r'''Calculates the molar departure Gibbs energy mole number derivatives
         (where the mole fractions sum to 1). No specific formula is implemented
         for this property - it is calculated from the mole fraction derivative.
@@ -4609,8 +4569,6 @@ class GCEOSMIX(GCEOS):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -4618,8 +4576,8 @@ class GCEOSMIX(GCEOS):
             Departure Gibbs energy second mole number derivatives, [J/mol^3]
         '''
         V = Z*self.T*R/self.P
-        dV_dns = self.dV_dns(Z, zs)
-        d2Vs = self.d2V_dninjs(Z, zs)
+        dV_dns = self.dV_dns(Z)
+        d2Vs = self.d2V_dninjs(Z)
 
         depsilon_dns = self.depsilon_dns
         d2epsilon_dninjs = self.d2epsilon_dninjs
@@ -4720,10 +4678,10 @@ class GCEOSMIX(GCEOS):
 
 
 
-    def d2A_dep_dninjs(self, Z, zs):
+    def d2A_dep_dninjs(self, Z):
         V = Z*self.T*R/self.P
-        dV_dns = self.dV_dns(Z, zs)
-        d2Vs = self.d2V_dninjs(Z, zs)
+        dV_dns = self.dV_dns(Z)
+        d2Vs = self.d2V_dninjs(Z)
 
         depsilon_dns = self.depsilon_dns
         d2epsilon_dninjs = self.d2epsilon_dninjs
@@ -5098,7 +5056,7 @@ class GCEOSMIX(GCEOS):
         db_dns = self.db_dns
         ddelta_dns = self.ddelta_dns
         depsilon_dns = self.depsilon_dns
-        dV_dns = self.dV_dns(Z, self.zs)
+        dV_dns = self.dV_dns(Z)
 
         da_alpha_dns = self.da_alpha_dns
         da_alpha_dT_dns = self.da_alpha_dT_dns
@@ -5113,7 +5071,7 @@ class GCEOSMIX(GCEOS):
         db_dzs = self.db_dzs
         ddelta_dzs = self.ddelta_dzs
         depsilon_dzs = self.depsilon_dzs
-        dV_dzs = self.dV_dzs(Z, self.zs)
+        dV_dzs = self.dV_dzs(Z)
 
         da_alpha_dzs = self.da_alpha_dzs
         da_alpha_dT_dzs = self.da_alpha_dT_dzs
@@ -5344,11 +5302,11 @@ class GCEOSMIX(GCEOS):
                  d3V_dPdTdns, d3P_dTdVdns, d3T_dPdVdns) = self._dnz_derivatives_and_departures(V, n=n)
 
                 # V
-                dV_dep_dns = V_fun(Z, zs)
+                dV_dep_dns = V_fun(Z)
                 # G
-                dG_dep_dns = G_fun(Z, zs)
+                dG_dep_dns = G_fun(Z)
                 # H
-                dH_dep_dns = H_fun(Z, zs)
+                dH_dep_dns = H_fun(Z)
                 # U
                 dU_dep_dns = [dH_dep_dns[i] - P*dV_dep_dns[i] for i in cmps]
                 # S
@@ -5451,7 +5409,7 @@ class GCEOSMIX(GCEOS):
 
         T = self.T
         P = self.P
-        dV_dns = self.dV_dns(Z, self.zs)
+        dV_dns = self.dV_dns(Z)
         ddelta_dns = self.ddelta_dns
         depsilon_dns = self.depsilon_dns
         da_alpha_dns = self.da_alpha_dns
@@ -5569,7 +5527,7 @@ class GCEOSMIX(GCEOS):
         '''
 
         d2V_dTdns = self._dnz_derivatives_and_departures(V, n=True)[2]
-        dV_dns = self.dV_dns(Z, zs)
+        dV_dns = self.dV_dns(Z)
         db_dns = self.db_dns
         da_alpha_dns = self.da_alpha_dns
         da_alpha_dT_dns = self.da_alpha_dT_dns
@@ -5631,7 +5589,7 @@ class GCEOSMIX(GCEOS):
         return dlnphis_dTs
 
     def d_lnphi_dzs(self, Z, zs):
-        d2dxs = self.d2lnphi_dzizjs(Z, zs)
+        d2dxs = self.d2lnphi_dzizjs(Z)
         d2ns = d2xs_to_dxdn_partials(d2dxs, zs)
         return d2ns
 
@@ -6102,7 +6060,7 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
     def cleanup_a_alpha_and_derivatives(self):
         pass
 
-    def fugacity_coefficients(self, Z, zs):
+    def fugacity_coefficients(self, Z):
         return self.zeros1d
 
     def dlnphis_dT(self, phase):
@@ -6636,7 +6594,7 @@ class PRMIX(GCEOSMIX, PR):
             d3a_alpha_dT3s.append(v)
         return d3a_alpha_dT3s
 
-    def fugacity_coefficients(self, Z, zs):
+    def fugacity_coefficients(self, Z):
         r'''Literature formula for calculating fugacity coefficients for each
         species in a mixture. Verified numerically. Applicable to most
         derivatives of the Peng-Robinson equation of state as well.
@@ -6658,8 +6616,6 @@ class PRMIX(GCEOSMIX, PR):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -8019,7 +7975,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         '''
         return SRK_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais, self.ms)
 
-    def fugacity_coefficients(self, Z, zs):
+    def fugacity_coefficients(self, Z):
         r'''Literature formula for calculating fugacity coefficients for each
         species in a mixture. Verified numerically. Applicable to most
         derivatives of the SRK equation of state as well.
@@ -8041,8 +7997,6 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------
@@ -9022,7 +8976,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         zeros = [0.0]*self.N
         return self.ais, zeros, zeros
 
-    def fugacity_coefficients(self, Z, zs):
+    def fugacity_coefficients(self, Z):
         r'''Literature formula for calculating fugacity coefficients for each
         species in a mixture. Verified numerically.
         Called by `fugacities` on initialization, or by a solver routine
@@ -9036,8 +8990,6 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         ----------
         Z : float
             Compressibility of the mixture for a desired phase, [-]
-        zs : list[float], optional
-            List of mole factions, either overall or in a specific phase, [-]
 
         Returns
         -------

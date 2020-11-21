@@ -4139,12 +4139,12 @@ class CEOSGas(Phase):
             # Check both phases are solved, and complete if not
             eos_mix.solve_missing_volumes()
             if eos_mix.G_dep_l < eos_mix.G_dep_g:
-                return eos_mix.fugacity_coefficients(eos_mix.Z_l, self.zs)
-            return eos_mix.fugacity_coefficients(eos_mix.Z_g, self.zs)
+                return eos_mix.fugacity_coefficients(eos_mix.Z_l)
+            return eos_mix.fugacity_coefficients(eos_mix.Z_g)
         try:
-            return eos_mix.fugacity_coefficients(eos_mix.Z_g, self.zs)
+            return eos_mix.fugacity_coefficients(eos_mix.Z_g)
         except AttributeError:
-            return eos_mix.fugacity_coefficients(eos_mix.Z_l, self.zs)
+            return eos_mix.fugacity_coefficients(eos_mix.Z_l)
 
     def lnphis_at_zs(self, zs):
         eos_mix = self.eos_mix
@@ -4168,9 +4168,9 @@ class CEOSGas(Phase):
             Log fugacity coefficients, [-]
         '''
         try:
-            return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_g, self.zs)
+            return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_g)
         except AttributeError:
-            return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_l, self.zs)
+            return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_l)
 
 
     def dlnphis_dT(self):
@@ -4210,9 +4210,9 @@ class CEOSGas(Phase):
     def dlnphis_dns(self):
         eos_mix = self.eos_mix
         try:
-            return eos_mix.dlnphis_dns(eos_mix.Z_g, eos_mix.zs)
+            return eos_mix.dlnphis_dns(eos_mix.Z_g)
         except:
-            return eos_mix.dlnphis_dns(eos_mix.Z_l, eos_mix.zs)
+            return eos_mix.dlnphis_dns(eos_mix.Z_l)
 
     def dlnphis_dzs(self):
         # Confirmed to be mole fraction derivatives - taked with sum not 1 -
@@ -4229,14 +4229,14 @@ class CEOSGas(Phase):
         zs = self.zs
         try:
             if eos_mix.G_dep_g < eos_mix.G_dep_l:
-                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_g, zs)
+                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_g)
             else:
-                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_l, zs)
+                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_l)
         except:
             try:
-                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_g, zs)
+                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_g)
             except:
-                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_l, zs)
+                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_l)
         return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
 
 
@@ -4416,9 +4416,9 @@ class CEOSGas(Phase):
     def dV_dzs(self):
         eos_mix = self.eos_mix
         try:
-            dV_dzs = self.eos_mix.dV_dzs(eos_mix.Z_g, eos_mix.zs)
+            dV_dzs = self.eos_mix.dV_dzs(eos_mix.Z_g)
         except AttributeError:
-            dV_dzs = self.eos_mix.dV_dzs(eos_mix.Z_l, eos_mix.zs)
+            dV_dzs = self.eos_mix.dV_dzs(eos_mix.Z_l)
         return dV_dzs
 
     def H(self):
@@ -4561,9 +4561,9 @@ class CEOSGas(Phase):
             pass
         eos_mix = self.eos_mix
         try:
-            dH_dep_dzs = self.eos_mix.dH_dep_dzs(eos_mix.Z_g, eos_mix.zs)
+            dH_dep_dzs = self.eos_mix.dH_dep_dzs(eos_mix.Z_g)
         except AttributeError:
-            dH_dep_dzs = self.eos_mix.dH_dep_dzs(eos_mix.Z_l, eos_mix.zs)
+            dH_dep_dzs = self.eos_mix.dH_dep_dzs(eos_mix.Z_l)
         Cpig_integrals_pure = self.Cpig_integrals_pure()
         self._dH_dzs = [dH_dep_dzs[i] + Cpig_integrals_pure[i] for i in self.cmps]
         return self._dH_dzs
@@ -4668,9 +4668,9 @@ class CEOSGas(Phase):
         integrals = self.Cpig_integrals_over_T_pure()
 
         try:
-            dS_dep_dzs = self.eos_mix.dS_dep_dzs(eos_mix.Z_g, eos_mix.zs)
+            dS_dep_dzs = self.eos_mix.dS_dep_dzs(eos_mix.Z_g)
         except AttributeError:
-            dS_dep_dzs = self.eos_mix.dS_dep_dzs(eos_mix.Z_l, eos_mix.zs)
+            dS_dep_dzs = self.eos_mix.dS_dep_dzs(eos_mix.Z_l)
 
         self._dS_dzs = [integrals[i] - R*(log_zs[i] + 1.0) + dS_dep_dzs[i]
                         for i in cmps]
@@ -4780,6 +4780,7 @@ except:
     # Cost is ~10 ms - must be pasted in the future!
     if 1:
         try:
+            1/0
             f = open('/home/caleb/testCEOSLiquiddat', 'rb')
             compiled_CEOSLiquid = marshal.load(f)
             f.close()

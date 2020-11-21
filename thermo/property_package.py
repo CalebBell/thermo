@@ -5900,13 +5900,13 @@ class GceosBase(Ideal):
 
             if near_critical:
                 try:
-                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, zs)
+                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l)
                     dlnphis_dT_l = eos_l.dlnphis_dT('l')
                 except AttributeError:
-                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, zs)
+                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g)
                     dlnphis_dT_l = eos_l.dlnphis_dT('g')
             else:
-                ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, zs)
+                ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l)
                 dlnphis_dT_l = eos_l.dlnphis_dT('l')
 
             # TODO: d alpha 1 only?
@@ -5914,13 +5914,13 @@ class GceosBase(Ideal):
 
             if near_critical:
                 try:
-                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
+                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g)
                     dlnphis_dT_g = eos_g.dlnphis_dT('g')
                 except AttributeError:
-                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_l, ys)
+                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_l)
                     dlnphis_dT_g = eos_g.dlnphis_dT('l')
             else:
-                ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
+                ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g)
                 dlnphis_dT_g = eos_g.dlnphis_dT('g')
 
             return ln_phis_l, ln_phis_g, dlnphis_dT_l, dlnphis_dT_g, eos_l, eos_g
@@ -6322,26 +6322,26 @@ class GceosBase(Ideal):
                                  **self.eos_kwargs)
             if near_critical:
                 try:
-                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, zs)
+                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g)
                     dlnphis_dT_g = eos_g.dlnphis_dT('g')
                 except AttributeError:
-                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_l, zs)
+                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_l)
                     dlnphis_dT_g = eos_g.dlnphis_dT('l')
             else:
-                ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, zs)
+                ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g)
                 dlnphis_dT_g = eos_g.dlnphis_dT('g')
 
             eos_l = eos_g.to_TP_zs_fast(T=T_guess, P=P, zs=xs, full_alphas=True, only_l=True)
 
             if near_critical:
                 try:
-                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
+                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l)
                     dlnphis_dT_l = eos_l.dlnphis_dT('l')
                 except AttributeError:
-                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, xs)
+                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g)
                     dlnphis_dT_l = eos_l.dlnphis_dT('g')
             else:
-                ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
+                ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l)
                 dlnphis_dT_l = eos_l.dlnphis_dT('l')
 
             return ln_phis_l, ln_phis_g, dlnphis_dT_l, dlnphis_dT_g, eos_l, eos_g
@@ -6626,13 +6626,13 @@ class GceosBase(Ideal):
 
             if near_critical:
                 try:
-                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, zs)
+                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g)
                     d_lnphis_dP_g = eos_g.dlnphis_dP('g')
                 except AttributeError:
-                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_l, zs)
+                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_l)
                     d_lnphis_dP_g = eos_g.dlnphis_dP('l')
             else:
-                ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, zs)
+                ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g)
                 d_lnphis_dP_g = eos_g.dlnphis_dP('g')
 
 
@@ -6640,13 +6640,13 @@ class GceosBase(Ideal):
 
             if near_critical:
                 try:
-                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
+                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l)
                     d_lnphis_dP_l = eos_l.dlnphis_dP('l')
                 except AttributeError:
-                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, xs)
+                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g)
                     d_lnphis_dP_l = eos_l.dlnphis_dP('g')
             else:
-                ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
+                ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l)
                 d_lnphis_dP_l = eos_l.dlnphis_dP('l')
 
             return ln_phis_l, ln_phis_g, d_lnphis_dP_l, d_lnphis_dP_g, eos_l, eos_g
@@ -6900,26 +6900,26 @@ class GceosBase(Ideal):
 
             if near_critical:
                 try:
-                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, zs)
+                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l)
                     d_lnphis_dP_l = eos_l.dlnphis_dP('l')
                 except AttributeError:
-                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, zs)
+                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g)
                     d_lnphis_dP_l = eos_l.dlnphis_dP('g')
             else:
-                ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, zs)
+                ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l)
                 d_lnphis_dP_l = eos_l.dlnphis_dP('l')
 
             eos_g = eos_l_base.to_TP_zs_fast(T=T, P=P_guess, zs=ys, full_alphas=False, only_g=True)
 
             if near_critical:
                 try:
-                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
+                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g)
                     d_lnphis_dP_g = eos_g.dlnphis_dP('g')
                 except AttributeError:
-                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_l, ys)
+                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_l)
                     d_lnphis_dP_g = eos_g.dlnphis_dP('l')
             else:
-                ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
+                ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g)
                 d_lnphis_dP_g = eos_g.dlnphis_dP('g')
 
 
