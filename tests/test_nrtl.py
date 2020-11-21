@@ -132,17 +132,17 @@ def test_NRTL_slow():
     assert_allclose(gammas, gammas_expect)
 
     N = 44
-    taus = [[random.random() for i in range(N)] for j in range(N)]
-    alphas = [[random.random() for i in range(N)] for j in range(N)]
-    xs = normalize([random.random() for i in range(N)])
+    taus = [[random() for i in range(N)] for j in range(N)]
+    alphas = [[random() for i in range(N)] for j in range(N)]
+    xs = normalize([random() for i in range(N)])
     gammas = NRTL_gammas(xs=xs, taus=taus, alphas=alphas)
 
 
     # Takes 40 ms - not a great idea
     N = 200
-    taus = [[random.random() for i in range(N)] for j in range(N)]
-    alphas = [[random.random() for i in range(N)] for j in range(N)]
-    xs = normalize([random.random() for i in range(N)])
+    taus = [[random() for i in range(N)] for j in range(N)]
+    alphas = [[random() for i in range(N)] for j in range(N)]
+    xs = normalize([random() for i in range(N)])
     gammas = NRTL_gammas(xs=xs, taus=taus, alphas=alphas)
 
 def make_alphas(N):

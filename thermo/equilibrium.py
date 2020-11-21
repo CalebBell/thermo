@@ -26,6 +26,7 @@ __all__ = ['EquilibriumState']
 from fluids.constants import R, R_inv
 from fluids.core import thermal_diffusivity
 from chemicals.utils import log, exp, normalize, zs_to_ws, vapor_mass_quality, mixing_simple, Vm_to_rho, SG
+from chemicals.virial import B_from_Z
 from chemicals.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
 from thermo.phases import gas_phases, liquid_phases, solid_phases, Phase, derivatives_thermodynamic, derivatives_thermodynamic_mass, derivatives_jacobian
 from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationPackage, constants_docstrings
@@ -750,6 +751,20 @@ class EquilibriumState(object):
             raise NotImplementedError("no bulk methods")
 
     def SG(self, phase=None):
+        r'''Method to calculate and return the standard liquid specific gravity
+        of the phase, using constant liquid pure component densities not
+        calculated by the phase object, at 60 °F.
+
+        Returns
+        -------
+        SG : float
+            Specific gravity of the liquid, [-]
+
+        Notes
+        -----
+        The reference density of water is from the IAPWS-95 standard -
+        999.0170824078306 kg/m^3.
+        '''
         if phase is None:
             phase = self.bulk
         ws = phase.ws()
@@ -761,6 +776,18 @@ class EquilibriumState(object):
         return SG(rho_mass_60F, rho_ref=999.0170824078306)
 
     def SG_gas(self, phase=None):
+        r'''Method to calculate and return the specific gravity of the phase
+        with respect to a gas reference density.
+
+        Returns
+        -------
+        SG_gas : float
+            Specific gravity of the gas, [-]
+
+        Notes
+        -----
+        The reference molecular weight of air used is 28.9586 g/mol.
+        '''
         if phase is None:
             phase = self.bulk
         MW = phase.MW()
@@ -790,11 +817,34 @@ class EquilibriumState(object):
         # to use. Construct a new phase object, get the density
 
     def Bvirial(self, phase=None):
+        r'''Method to calculate and return the `B` virial coefficient of the
+        phase at its current conditions.
+
+        Returns
+        -------
+        Bvirial : float
+            Virial coefficient, [m^3/mol]
+
+        Notes
+        -----
+        '''
         if phase is None:
             phase = self.bulk
         return B_from_Z(phase.Z(), self.T, self.P)
 
     def H_C_ratio(self, phase=None):
+        r'''Method to calculate and return the atomic ratio of hydrogen atoms
+        to carbon atoms, based on the current composition of the phase.
+
+        Returns
+        -------
+        H_C_ratio : float
+            H/C ratio on a molar basis, [-]
+
+        Notes
+        -----
+        None is returned if no species are present that have carbon atoms.
+        '''
         if phase is None:
             phase = self.bulk
         atom_fractions = self.atom_fractions()
@@ -806,6 +856,18 @@ class EquilibriumState(object):
             return None
 
     def H_C_ratio_mass(self, phase=None):
+        r'''Method to calculate and return the mass ratio of hydrogen atoms
+        to carbon atoms, based on the current composition of the phase.
+
+        Returns
+        -------
+        H_C_ratio_mass : float
+            H/C ratio on a mass basis, [-]
+
+        Notes
+        -----
+        None is returned if no species are present that have carbon atoms.
+        '''
         if phase is None:
             phase = self.bulk
         atom_fractions = self.atom_mass_fractions()
@@ -894,6 +956,18 @@ class EquilibriumState(object):
         return MW_water*phase.ws()[water_index]
 
     def zs_no_water(self, phase=None):
+        r'''Method to calculate and return the mole fractions of all species
+        in the phase, normalized to a water-free basis (the mole fraction of
+        water returned is zero).
+
+        Returns
+        -------
+        zs_no_water : list[float]
+            Mole fractions on a water free basis, [-]
+
+        Notes
+        -----
+        '''
         if phase is None:
             phase = self.bulk
 
@@ -908,6 +982,18 @@ class EquilibriumState(object):
         return m
 
     def ws_no_water(self, phase=None):
+        r'''Method to calculate and return the mass fractions of all species
+        in the phase, normalized to a water-free basis (the mass fraction of
+        water returned is zero).
+
+        Returns
+        -------
+        ws_no_water : list[float]
+            Mass fractions on a water free basis, [-]
+
+        Notes
+        -----
+        '''
         if phase is None:
             phase = self.bulk
 
@@ -1079,6 +1165,7 @@ def _make_getter_correlations(name):
 def _make_getter_EquilibriumState(name):
     def get(self):
         return getattr(self.result, name)(self)
+    get.__doc__ = getattr(EquilibriumState, name).__doc__
     return get
 
 def _make_getter_bulk_props(name):

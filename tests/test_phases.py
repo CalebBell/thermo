@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from numpy.testing import assert_allclose
 import pytest
-from fluids.numerics import derivative, assert_close, jacobian, hessian
+from fluids.numerics import derivative, assert_close, jacobian, hessian, assert_close1d, assert_close2d
 
 from copy import deepcopy, copy
 from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationPackage
@@ -790,6 +790,9 @@ def test_EOSGas_phis():
 
     fugacities_expect = [20335.64774507632, 15527.946770733744, 53288.92740628939]
     assert_allclose(gas.fugacities(), fugacities_expect, rtol=1e-12)
+    
+    lnfugacities_expect = [9.920130671538276, 9.650396696889194, 10.88348384760261]
+    assert_close1d(gas.lnfugacities(), lnfugacities_expect, rtol=1e-9)
 
     dlnphis_dT_expect = [0.0001969437889400412, 0.0001955309568834383, 0.00014847122768410804]
     assert_allclose(gas.dlnphis_dT(), dlnphis_dT_expect, rtol=1e-12)
@@ -855,6 +858,8 @@ def test_EOSGas_phis():
     assert_allclose(gas.PIP(), 0.9434309912868786, rtol=1e-12)
     assert_allclose(gas.kappa(), 1.1224518535829717e-05, rtol=1e-12)
     assert_allclose(gas.isobaric_expansion(), 0.0031916020840477414, rtol=1e-12)
+    assert_close(gas.disobaric_expansion_dT(), -1.1032415832539369e-05, rtol=1e-12)
+    assert_close(gas.disobaric_expansion_dP(), 2.0265392981697534e-09, rtol=1e-12)
     assert_allclose(gas.Joule_Thomson(), 2.9206299207786268e-05, rtol=1e-12)
     assert_allclose(gas.speed_of_sound(), 55.867443841933685, rtol=1e-12)
     assert_allclose(gas.speed_of_sound(), (gas.dP_drho_S())**0.5, rtol=1e-11)

@@ -63,6 +63,8 @@ from chemicals.utils import (log, exp, phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion,
                           Joule_Thomson, speed_of_sound)
 from thermo.phases import Phase
+from thermo.phase_identification import VL_ID_PIP, S_ID_D2P_DVDT
+from thermo.phase_identification import DENSITY_MASS, PROP_SORT, WATER_NOT_SPECIAL
 
 '''Class designed to have multiple phases.
 
@@ -149,8 +151,6 @@ prop_power_methods = set([POWER_PROP_MOLE_WEIGHTED, POWER_PROP_MASS_WEIGHTED, PO
 
 
 
-from thermo.phase_identification import VL_ID_PIP, S_ID_D2P_DVDT
-from thermo.phase_identification import DENSITY_MASS, PROP_SORT, WATER_NOT_SPECIAL
 
 class BulkSettings(object):
     def __init__(self, dP_dT=MOLE_WEIGHTED, dP_dV=MOLE_WEIGHTED,

@@ -8228,7 +8228,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         self.T = T
         self.P = P
         self.V = V
-
+        # TODO if scalar
         self.ais = [self.c1*R2*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
         self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
         self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))

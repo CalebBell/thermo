@@ -40,6 +40,7 @@ Chemical Constants Class
 
 Sample Class: Water
 -------------------
+.. autodata:: iapws_constants
 .. autofunction:: iapws_correlations
 
 Property Correlations Class
@@ -529,10 +530,85 @@ for name, (var_type, desc, units, return_desc) in constants_docstrings.items():
 ''' %(name, type_name, desc, units)
     constants_doc += new
 
-ChemicalConstantsPackage.__doc__ = constants_doc
+try:
+    ChemicalConstantsPackage.__doc__ = constants_doc
+except:
+    pass # py2
 #print(constants_doc)
 
 class PropertyCorrelationPackage(object):
+    r'''Class for creating and storing `T` and `P` and `zs` dependent chemical
+    property objects. All parameters are also attributes.
+
+    Parameters
+    ----------
+    constants : :obj:`ChemicalConstantsPackage`
+        Object holding all constant properties, [-]
+    VaporPressures : list[:obj:`thermo.vapor_pressure.VaporPressure`], optional
+        Objects holding vapor pressure data and methods, [-]
+    SublimationPressures : list[:obj:`thermo.vapor_pressure.SublimationPressure`], optional
+        Objects holding sublimation pressure data and methods, [-]
+    VolumeGases : list[:obj:`thermo.volume.VolumeGas`], optional
+        Objects holding volume data and methods, [-]
+    VolumeGases : list[:obj:`thermo.volume.VolumeGas`], optional
+        Objects holding gas volume data and methods, [-]
+    VolumeLiquids : list[:obj:`thermo.volume.VolumeLiquid`], optional
+        Objects holding liquid volume data and methods, [-]
+    VolumeSolids : list[:obj:`thermo.volume.VolumeSolid`], optional
+        Objects holding solid volume data and methods, [-]
+    HeatCapacityGases : list[:obj:`thermo.heat_capacity.HeatCapacityGas`], optional
+        Objects holding gas heat capacity data and methods, [-]
+    HeatCapacityLiquids : list[:obj:`thermo.heat_capacity.HeatCapacityLiquid`], optional
+        Objects holding liquid heat capacity data and methods, [-]
+    HeatCapacitySolids : list[:obj:`thermo.heat_capacity.HeatCapacitySolid`], optional
+        Objects holding solid heat capacity data and methods, [-]
+    ViscosityGases : list[:obj:`thermo.viscosity.ViscosityGas`], optional
+        Objects holding gas viscosity data and methods, [-]
+    ViscosityLiquids : list[:obj:`thermo.viscosity.ViscosityLiquid`], optional
+        Objects holding liquid viscosity data and methods, [-]
+    ThermalConductivityGases : list[:obj:`thermo.thermal_conductivity.ThermalConductivityGas`], optional
+        Objects holding gas thermal conductivity data and methods, [-]
+    ThermalConductivityLiquids : list[:obj:`thermo.thermal_conductivity.ThermalConductivityLiquid`], optional
+        Objects holding liquid thermal conductivity data and methods, [-]
+    EnthalpyVaporizations : list[:obj:`thermo.phase_change.EnthalpyVaporization`], optional
+        Objects holding enthalpy of vaporization data and methods, [-]
+    EnthalpySublimations : list[:obj:`thermo.phase_change.EnthalpySublimation`], optional
+        Objects holding enthalpy of sublimation data and methods, [-]
+    SurfaceTensions : list[:obj:`thermo.interface.SurfaceTension`], optional
+        Objects holding surface tension data and methods, [-]
+    Permittivities : list[:obj:`thermo.permittivity.Permittivity`], optional
+        Objects holding permittivity data and methods, [-]
+    skip_missing : bool, optional
+        If False, any properties not provided will have objects created; if
+        True, no extra objects will be created.
+    VolumeSolidMixture : :obj:`thermo.volume.VolumeSolidMixture`, optional
+        Predictor object for the volume of solid mixtures, [-]
+    VolumeLiquidMixture : :obj:`thermo.volume.VolumeLiquidMixture`, optional
+        Predictor object for the volume of liquid mixtures, [-]
+    VolumeGasMixture : :obj:`thermo.volume.VolumeGasMixture`, optional
+        Predictor object for the volume of gas mixtures, [-]
+    HeatCapacityLiquidMixture : :obj:`thermo.heat_capacity.HeatCapacityLiquidMixture`, optional
+        Predictor object for the heat capacity of liquid mixtures, [-]
+    HeatCapacityGasMixture : :obj:`thermo.heat_capacity.HeatCapacityGasMixture`, optional
+        Predictor object for the heat capacity of gas mixtures, [-]
+    HeatCapacitySolidMixture : :obj:`thermo.heat_capacity.HeatCapacitySolidMixture`, optional
+        Predictor object for the heat capacity of solid mixtures, [-]
+    ViscosityLiquidMixture : :obj:`thermo.viscosity.ViscosityLiquidMixture`, optional
+        Predictor object for the viscosity of liquid mixtures, [-]
+    ViscosityGasMixture : :obj:`thermo.viscosity.ViscosityGasMixture`, optional
+        Predictor object for the viscosity of gas mixtures, [-]
+    ThermalConductivityLiquidMixture : :obj:`thermo.thermal_conductivity.ThermalConductivityLiquidMixture`, optional
+        Predictor object for the thermal conductivity of liquid mixtures, [-]
+    ThermalConductivityGasMixture : :obj:`thermo.thermal_conductivity.ThermalConductivityGasMixture`, optional
+        Predictor object for the thermal conductivity of gas mixtures, [-]
+    SurfaceTensionMixture : :obj:`thermo.interface.SurfaceTensionMixture`, optional
+        Predictor object for the surface tension of liquid mixtures, [-]
+
+    Attributes
+    ----------
+    pure_correlations : tuple(str)
+        List of all pure component property objects, [-]
+    '''
     correlations = ('VaporPressures', 'SublimationPressures', 'VolumeGases',
                'VolumeLiquids', 'VolumeSolids', 'HeatCapacityGases',
                'HeatCapacityLiquids', 'HeatCapacitySolids', 'ViscosityGases',
@@ -786,9 +862,21 @@ class PropertyCorrelationPackage(object):
 # Values except for omega from IAPWS; heat capacity isn't official.
 iapws_constants = ChemicalConstantsPackage(CASs=['7732-18-5'], MWs=[18.015268], omegas=[0.344],
                                            Pcs=[22064000.0], Tcs=[647.096])
+'''ChemicalConstantsPackage : Object intended to hold the IAPWS-95 water constants
+for use with the :obj:`thermo.phases.IAPWS95` phase object.
+'''
+
 global _iapws_correlations
 _iapws_correlations = None
 def iapws_correlations():
+    '''Function to construct a global IAPWS T/P dependent property
+    :obj:`PropertyCorrelationPackage` object.
+
+    Returns
+    -------
+    iapws_correlations : :obj:`PropertyCorrelationPackage`
+        IAPWS correlations and properties, [-]
+    '''
     global _iapws_correlations
     if _iapws_correlations is None:
         _iapws_correlations = PropertyCorrelationPackage(constants=iapws_constants,

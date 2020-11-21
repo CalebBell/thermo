@@ -500,65 +500,191 @@ class Phase(object):
         return self.G_dep() + self.T*R*sum([zs[i]*log_zs[i] for i in self.cmps])
 
     def lnphis_at_zs(self, zs):
+        r'''Method to directly calculate the log fugacity coefficients at a
+        different composition than the current phase.
+        This is implemented to allow for the possibility of more direct
+        calls to obtain fugacities than is possible with the phase interface.
+        This base method simply creates a new phase, gets its log fugacity
+        coefficients, and returns them.
+
+        Returns
+        -------
+        lnphis : list[float]
+            Log fugacity coefficients, [-]
+        '''
         return self.to_TP_zs(self.T, self.P, zs).lnphis()
 
     def fugacities_at_zs(self, zs):
+        r'''Method to directly calculate the figacities at a
+        different composition than the current phase.
+        This is implemented to allow for the possibility of more direct
+        calls to obtain fugacities than is possible with the phase interface.
+        This base method simply creates a new phase, gets its log fugacity
+        coefficients, exponentiates them, and multiplies them by `P` and
+        compositions.
+
+        Returns
+        -------
+        fugacities : list[float]
+            Fugacities, [Pa]
+        '''
         P = self.P
         lnphis = self.lnphis_at_zs(zs)
         return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
 
     def lnphi(self):
+        r'''Method to calculate and return the log of fugacity coefficient of
+        the phase; provided the phase is 1 component.
+
+        Returns
+        -------
+        lnphi : list[float]
+            Log fugacity coefficient, [-]
+        '''
         if self.N != 1:
             raise ValueError("Property not supported for multicomponent phases")
         return self.lnphis()[0]
 
     def phi(self):
+        r'''Method to calculate and return the fugacity coefficient of
+        the phase; provided the phase is 1 component.
+
+        Returns
+        -------
+        phi : list[float]
+            Fugacity coefficient, [-]
+        '''
         if self.N != 1:
             raise ValueError("Property not supported for multicomponent phases")
         return self.phis()[0]
 
     def fugacity(self):
+        r'''Method to calculate and return the fugacity of
+        the phase; provided the phase is 1 component.
+
+        Returns
+        -------
+        fugacity : list[float]
+            Fugacity, [Pa]
+        '''
         if self.N != 1:
             raise ValueError("Property not supported for multicomponent phases")
         return self.fugacities()[0]
 
     def dfugacity_dT(self):
+        r'''Method to calculate and return the temperature derivative of
+        fugacity of the phase; provided the phase is 1 component.
+
+        Returns
+        -------
+        dfugacity_dT : list[float]
+            Fugacity first temperature derivative, [Pa/K]
+        '''
         if self.N != 1:
             raise ValueError("Property not supported for multicomponent phases")
         return self.dfugacities_dT()[0]
 
     def dfugacity_dP(self):
+        r'''Method to calculate and return the pressure derivative of
+        fugacity of the phase; provided the phase is 1 component.
+
+        Returns
+        -------
+        dfugacity_dP : list[float]
+            Fugacity first pressure derivative, [-]
+        '''
         if self.N != 1:
             raise ValueError("Property not supported for multicomponent phases")
         return self.dfugacities_dP()[0]
 
 
     def fugacities(self):
+        r'''Method to calculate and return the fugacities of the phase.
+
+        .. math::
+            f_i = P z_i \exp(\ln \phi_i)
+
+        Returns
+        -------
+        fugacities : list[float]
+            Fugacities, [Pa]
+        '''
         P = self.P
         zs = self.zs
         lnphis = self.lnphis()
         return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
 
     def lnfugacities(self):
-        return [log(i) for i in self.fugacities()]
+        r'''Method to calculate and return the log of fugacities of the phase.
+
+        .. math::
+            \ln f_i = \ln\left( P z_i \exp(\ln \phi_i)\right)
+            = \log(P) + \log(z_i) + \ln \phi_i
+
+        Returns
+        -------
+        lnfugacities : list[float]
+            Log fugacities, [log(Pa)]
+        '''
+        P = self.P
+        zs = self.zs
+        lnphis = self.lnphis()
+        logP = log(P)
+        log_zs = self.log_zs()
+        return [logP + log_zs[i] + lnphis[i] for i in self.cmps]
 
     fugacities_lowest_Gibbs = fugacities
 
     def dfugacities_dT(self):
-        r'''
+        r'''Method to calculate and return the temperature derivative of fugacities
+        of the phase.
+
+        .. math::
+            \frac{\partial f_i}{\partial T} = P z_i \frac{\partial
+            \log \phi_i}{\partial T}
+
+        Returns
+        -------
+        dfugacities_dT : list[float]
+            Temperature derivative of fugacities of all components
+            in the phase, [Pa/K]
+
+        Notes
+        -----
         '''
         dphis_dT = self.dphis_dT()
         P, zs = self.P, self.zs
         return [P*zs[i]*dphis_dT[i] for i in range(len(zs))]
 
     def lnphis_G_min(self):
+        r'''Method to calculate and return the log fugacity coefficients of the
+        phase. If the phase can have multiple solutions at its `T` and `P`,
+        this method should return those with the lowest Gibbs energy. This
+        needs to be implemented on phases with that criteria like cubic EOSs.
+
+        Returns
+        -------
+        lnphis : list[float]
+            Log fugacity coefficients, [-]
+        '''
         return self.lnphis()
 
     def phis(self):
+        r'''Method to calculate and return the fugacity coefficients of the
+        phase.
+
+        .. math::
+            \phi_i = \exp (\ln \phi_i)
+
+        Returns
+        -------
+        phis : list[float]
+            Fugacity coefficients, [-]
+        '''
         return [trunc_exp(i) for i in self.lnphis()]
 
     def dphis_dT(self):
-        r'''Method to calculate the temperature derivative of fugacity
+        r'''Method to calculate and return the temperature derivative of fugacity
         coefficients of the phase.
 
         .. math::
@@ -592,7 +718,7 @@ class Phase(object):
         return self._dphis_dT
 
     def dphis_dP(self):
-        r'''Method to calculate the pressure derivative of fugacity
+        r'''Method to calculate and return the pressure derivative of fugacity
         coefficients of the phase.
 
         .. math::
@@ -626,8 +752,8 @@ class Phase(object):
         return self._dphis_dP
 
     def dfugacities_dP(self):
-        r'''Method to calculate the pressure derivative of the fugacities
-        of the components in the phase phase.
+        r'''Method to calculate and return the pressure derivative of the
+        fugacities of the components in the phase.
 
         .. math::
             \frac{\partial f_i}{\partial P} = z_i \left(P \frac{\partial
@@ -659,6 +785,32 @@ class Phase(object):
         return [zs[i]*(P*dphis_dP[i] + phis[i]) for i in self.cmps]
 
     def dfugacities_dns(self):
+        r'''Method to calculate and return the mole number derivative of the
+        fugacities of the components in the phase.
+
+        if i != j:
+
+        .. math::
+            \frac{\partial f_i}{\partial n_j} = P\phi_i z_i \left(
+            \frac{\partial \ln \phi_i}{\partial n_j} - 1
+            \right)
+
+        if i == j:
+
+        .. math::
+            \frac{\partial f_i}{\partial n_j} = P\phi_i z_i \left(
+            \frac{\partial \ln \phi_i}{\partial n_j} - 1
+            \right) + P\phi_i
+
+        Returns
+        -------
+        dfugacities_dns : list[list[float]]
+            Mole number derivatives of the fugacities of all components
+            in the phase, [Pa/mol]
+
+        Notes
+        -----
+        '''
         phis = self.phis()
         dlnphis_dns = self.dlnphis_dns()
 
@@ -674,6 +826,22 @@ class Phase(object):
         return matrix
 
     def dlnfugacities_dns(self):
+        r'''Method to calculate and return the mole number derivative of the
+        log of fugacities of the components in the phase.
+
+        .. math::
+            \frac{\partial \ln f_i}{\partial n_j} = \frac{1}{f_i}
+            \frac{\partial  f_i}{\partial n_j}
+
+        Returns
+        -------
+        dlnfugacities_dns : list[list[float]]
+            Mole number derivatives of the log of fugacities of all components
+            in the phase, [log(Pa)/mol]
+
+        Notes
+        -----
+        '''
         zs, cmps = self.zs, self.cmps
         fugacities = self.fugacities()
         dlnfugacities_dns = [list(i) for i in self.dfugacities_dns()]
@@ -685,6 +853,22 @@ class Phase(object):
         return dlnfugacities_dns
 
     def dlnfugacities_dzs(self):
+        r'''Method to calculate and return the mole fraction derivative of the
+        log of fugacities of the components in the phase.
+
+        .. math::
+            \frac{\partial \ln f_i}{\partial z_j} = \frac{1}{f_i}
+            \frac{\partial  f_i}{\partial z_j}
+
+        Returns
+        -------
+        dlnfugacities_dzs : list[list[float]]
+            Mole fraction derivatives of the log of fugacities of all components
+            in the phase, [log(Pa)]
+
+        Notes
+        -----
+        '''
         zs, cmps = self.zs, self.cmps
         fugacities = self.fugacities()
         dlnfugacities_dzs = [list(i) for i in self.dfugacities_dzs()]
@@ -695,9 +879,21 @@ class Phase(object):
                 r[j]*= fugacities_inv[i]
         return dlnfugacities_dzs
 
-
-
     def log_zs(self):
+        r'''Method to calculate and return the log of mole fractions specified.
+        These are used in calculating entropy and in many other formulas.
+
+        .. math::
+            \ln z_i
+
+        Returns
+        -------
+        log_zs : list[float]
+            Log of mole fractions, [-]
+
+        Notes
+        -----
+        '''
         try:
             return self._log_zs
         except AttributeError:
@@ -714,9 +910,35 @@ class Phase(object):
         return self._log_zs
 
     def V_iter(self, force=False):
+        r'''Method to calculate and return the volume of the phase in a way
+        suitable for a TV resolution to converge on the same pressure. This
+        often means the return value of this method is an mpmath `mpf`.
+        This dummy method simply returns the implemented V method.
+
+        Returns
+        -------
+        V : float or mpf
+            Molar volume, [m^3/mol]
+
+        Notes
+        -----
+        '''
         return self.V()
 
     def G(self):
+        r'''Method to calculate and return the Gibbs free energy of the phase.
+
+        .. math::
+            G = H - TS
+
+        Returns
+        -------
+        G : float
+            Gibbs free energy, [J/mol]
+
+        Notes
+        -----
+        '''
         try:
             return self._G
         except AttributeError:
@@ -728,109 +950,540 @@ class Phase(object):
     G_min = G
 
     def U(self):
+        r'''Method to calculate and return the internal energy of the phase.
+
+        .. math::
+            U = H - PV
+
+        Returns
+        -------
+        U : float
+            Internal energy, [J/mol]
+
+        Notes
+        -----
+        '''
         U = self.H() - self.P*self.V()
         return U
 
     def A(self):
+        r'''Method to calculate and return the Helmholtz energy of the phase.
+
+        .. math::
+            A = U - TS
+
+        Returns
+        -------
+        A : float
+            Helmholtz energy, [J/mol]
+
+        Notes
+        -----
+        '''
         A = self.U() - self.T*self.S()
         return A
 
     def dH_dns(self):
+        r'''Method to calculate and return the mole number derivative of the
+        enthalpy of the phase.
+
+        .. math::
+            \frac{\partial H}{\partial n_i}
+
+        Returns
+        -------
+        dH_dns : list[float]
+            Mole number derivatives of the enthalpy of the phase,
+            [J/mol^2]
+
+        Notes
+        -----
+        '''
         return dxs_to_dns(self.dH_dzs(), self.zs)
 
     def dS_dns(self):
+        r'''Method to calculate and return the mole number derivative of the
+        entropy of the phase.
+
+        .. math::
+            \frac{\partial S}{\partial n_i}
+
+        Returns
+        -------
+        dS_dns : list[float]
+            Mole number derivatives of the entropy of the phase,
+            [J/(mol^2*K)]
+
+        Notes
+        -----
+        '''
         return dxs_to_dns(self.dS_dzs(), self.zs)
 
     def dG_dT(self):
+        r'''Method to calculate and return the constant-pressure
+        temperature derivative of Gibbs free energy.
+
+        .. math::
+            \left(\frac{\partial G}{\partial T}\right)_{P}
+            = -T\left(\frac{\partial S}{\partial T}\right)_{P}
+            - S + \left(\frac{\partial H}{\partial T}\right)_{P}
+
+        Returns
+        -------
+        dG_dT : float
+            Constant-pressure temperature derivative of Gibbs free energy,
+            [J/(mol*K)]
+
+        Notes
+        -----
+        '''
         return -self.T*self.dS_dT() - self.S() + self.dH_dT()
 
     dG_dT_P = dG_dT
 
     def dG_dT_V(self):
+        r'''Method to calculate and return the constant-volume
+        temperature derivative of Gibbs free energy.
+
+        .. math::
+            \left(\frac{\partial G}{\partial T}\right)_{V}
+            = -T\left(\frac{\partial S}{\partial T}\right)_{V}
+            - S + \left(\frac{\partial H}{\partial T}\right)_{V}
+
+        Returns
+        -------
+        dG_dT_V : float
+            Constant-volume temperature derivative of Gibbs free energy,
+            [J/(mol*K)]
+
+        Notes
+        -----
+        '''
         return -self.T*self.dS_dT_V() - self.S() + self.dH_dT_V()
 
     def dG_dP(self):
+        r'''Method to calculate and return the constant-temperature
+        pressure derivative of Gibbs free energy.
+
+        .. math::
+            \left(\frac{\partial G}{\partial P}\right)_{T}
+            = -T\left(\frac{\partial S}{\partial P}\right)_{T}
+            + \left(\frac{\partial H}{\partial P}\right)_{T}
+
+        Returns
+        -------
+        dG_dP : float
+            Constant-temperature pressure derivative of Gibbs free energy,
+            [J/(mol*Pa)]
+
+        Notes
+        -----
+        '''
         return -self.T*self.dS_dP() + self.dH_dP()
 
     dG_dP_T = dG_dP
 
     def dG_dP_V(self):
+        r'''Method to calculate and return the constant-volume
+        pressure derivative of Gibbs free energy.
+
+        .. math::
+            \left(\frac{\partial G}{\partial P}\right)_{V}
+            = -T\left(\frac{\partial S}{\partial P}\right)_{V}
+            - S \left(\frac{\partial T}{\partial P}\right)_{V}
+            + \left(\frac{\partial H}{\partial P}\right)_{V}
+
+        Returns
+        -------
+        dG_dP_V : float
+            Constant-volume pressure derivative of Gibbs free energy,
+            [J/(mol*Pa)]
+
+        Notes
+        -----
+        '''
         return -self.T*self.dS_dP_V() - self.dT_dP()*self.S() + self.dH_dP_V()
 
     def dG_dV_T(self):
+        r'''Method to calculate and return the constant-temperature
+        volume derivative of Gibbs free energy.
+
+        .. math::
+            \left(\frac{\partial G}{\partial V}\right)_{T}
+            = \left(\frac{\partial G}{\partial P}\right)_{T}
+            \left(\frac{\partial P}{\partial V}\right)_{T}
+
+        Returns
+        -------
+        dG_dV_T : float
+            Constant-temperature volume derivative of Gibbs free energy,
+            [J/(m^3)]
+
+        Notes
+        -----
+        '''
         return self.dG_dP_T()*self.dP_dV()
 
     def dG_dV_P(self):
+        r'''Method to calculate and return the constant-pressure
+        volume derivative of Gibbs free energy.
+
+        .. math::
+            \left(\frac{\partial G}{\partial V}\right)_{P}
+            = \left(\frac{\partial G}{\partial T}\right)_{P}
+            \left(\frac{\partial T}{\partial V}\right)_{P}
+
+        Returns
+        -------
+        dG_dV_P : float
+            Constant-pressure volume derivative of Gibbs free energy,
+            [J/(m^3)]
+
+        Notes
+        -----
+        '''
         return self.dG_dT_P()*self.dT_dV()
 
 
     def dU_dT(self):
-        # Correct
+        r'''Method to calculate and return the constant-pressure
+        temperature derivative of internal energy.
+
+        .. math::
+            \left(\frac{\partial U}{\partial T}\right)_{P}
+            = -P \left(\frac{\partial V}{\partial T}\right)_{P}
+             + \left(\frac{\partial H}{\partial T}\right)_{P}
+
+        Returns
+        -------
+        dU_dT : float
+            Constant-pressure temperature derivative of internal energy,
+            [J/(mol*K)]
+
+        Notes
+        -----
+        '''
         return -self.P*self.dV_dT() + self.dH_dT()
 
     dU_dT_P = dU_dT
 
     def dU_dT_V(self):
+        r'''Method to calculate and return the constant-volume
+        temperature derivative of internal energy.
+
+        .. math::
+            \left(\frac{\partial U}{\partial T}\right)_{V}
+            = \left(\frac{\partial H}{\partial T}\right)_{V}
+             - V \left(\frac{\partial P}{\partial T}\right)_{V}
+
+        Returns
+        -------
+        dU_dT_V : float
+            Constant-volume temperature derivative of internal energy,
+            [J/(mol*K)]
+
+        Notes
+        -----
+        '''
         return self.dH_dT_V() - self.V()*self.dP_dT()
 
     def dU_dP(self):
+        r'''Method to calculate and return the constant-temperature
+        pressure derivative of internal energy.
+
+        .. math::
+            \left(\frac{\partial U}{\partial P}\right)_{T}
+            = -P \left(\frac{\partial V}{\partial P}\right)_{T}
+             - V + \left(\frac{\partial H}{\partial P}\right)_{T}
+
+        Returns
+        -------
+        dU_dP : float
+            Constant-temperature pressure derivative of internal energy,
+            [J/(mol*Pa)]
+
+        Notes
+        -----
+        '''
         return -self.P*self.dV_dP() - self.V() + self.dH_dP()
 
     dU_dP_T = dU_dP
 
     def dU_dP_V(self):
+        r'''Method to calculate and return the constant-volume
+        pressure derivative of internal energy.
+
+        .. math::
+            \left(\frac{\partial U}{\partial P}\right)_{V}
+            = \left(\frac{\partial H}{\partial P}\right)_{V}
+             - V
+
+        Returns
+        -------
+        dU_dP_V : float
+            Constant-volume pressure derivative of internal energy,
+            [J/(mol*Pa)]
+
+        Notes
+        -----
+        '''
         return self.dH_dP_V() - self.V()
 
     def dU_dV_T(self):
+        r'''Method to calculate and return the constant-temperature
+        volume derivative of internal energy.
+
+        .. math::
+            \left(\frac{\partial U}{\partial V}\right)_{T}
+            = \left(\frac{\partial U}{\partial P}\right)_{T}
+             \left(\frac{\partial P}{\partial V}\right)_{T}
+
+        Returns
+        -------
+        dU_dV_T : float
+            Constant-temperature volume derivative of internal energy,
+            [J/(m^3)]
+
+        Notes
+        -----
+        '''
         return self.dU_dP_T()*self.dP_dV()
 
     def dU_dV_P(self):
+        r'''Method to calculate and return the constant-pressure
+        volume derivative of internal energy.
+
+        .. math::
+            \left(\frac{\partial U}{\partial V}\right)_{P}
+            = \left(\frac{\partial U}{\partial T}\right)_{P}
+             \left(\frac{\partial T}{\partial V}\right)_{P}
+
+        Returns
+        -------
+        dU_dV_P : float
+            Constant-pressure volume derivative of internal energy,
+            [J/(m^3)]
+
+        Notes
+        -----
+        '''
         return self.dU_dT_P()*self.dT_dV()
 
     def dA_dT(self):
+        r'''Method to calculate and return the constant-pressure
+        temperature derivative of Helmholtz energy.
+
+        .. math::
+            \left(\frac{\partial A}{\partial T}\right)_{P}
+            = -T \left(\frac{\partial S}{\partial T}\right)_{P}
+             - S + \left(\frac{\partial U}{\partial T}\right)_{P}
+
+        Returns
+        -------
+        dA_dT : float
+            Constant-pressure temperature derivative of Helmholtz energy,
+            [J/(mol*K)]
+
+        Notes
+        -----
+        '''
         return -self.T*self.dS_dT() - self.S() + self.dU_dT()
 
     dA_dT_P = dA_dT
 
     def dA_dT_V(self):
+        r'''Method to calculate and return the constant-volume
+        temperature derivative of Helmholtz energy.
+
+        .. math::
+            \left(\frac{\partial A}{\partial T}\right)_{V}
+            =  \left(\frac{\partial H}{\partial T}\right)_{V}
+             - V \left(\frac{\partial P}{\partial T}\right)_{V}
+             - T \left(\frac{\partial S}{\partial T}\right)_{V}
+             - S
+
+        Returns
+        -------
+        dA_dT_V : float
+            Constant-volume temperature derivative of Helmholtz energy,
+            [J/(mol*K)]
+
+        Notes
+        -----
+        '''
         return (self.dH_dT_V() - self.V()*self.dP_dT() - self.T*self.dS_dT_V()
                 - self.S())
 
     def dA_dP(self):
+        r'''Method to calculate and return the constant-temperature
+        pressure derivative of Helmholtz energy.
+
+        .. math::
+            \left(\frac{\partial A}{\partial P}\right)_{T}
+            = -T \left(\frac{\partial S}{\partial P}\right)_{T}
+             + \left(\frac{\partial U}{\partial P}\right)_{T}
+
+        Returns
+        -------
+        dA_dP : float
+            Constant-temperature pressure derivative of Helmholtz energy,
+            [J/(mol*Pa)]
+
+        Notes
+        -----
+        '''
         return -self.T*self.dS_dP() + self.dU_dP()
 
     dA_dP_T = dA_dP
 
     def dA_dP_V(self):
+        r'''Method to calculate and return the constant-volume
+        pressure derivative of Helmholtz energy.
+
+        .. math::
+            \left(\frac{\partial A}{\partial P}\right)_{V}
+            = \left(\frac{\partial H}{\partial P}\right)_{V}
+            - V - S\left(\frac{\partial T}{\partial P}\right)_{V}
+            -T \left(\frac{\partial S}{\partial P}\right)_{V}
+
+        Returns
+        -------
+        dA_dP_V : float
+            Constant-volume pressure derivative of Helmholtz energy,
+            [J/(mol*Pa)]
+
+        Notes
+        -----
+        '''
         return (self.dH_dP_V() - self.V() - self.dT_dP()*self.S()
                 - self.T*self.dS_dP_V())
 
     def dA_dV_T(self):
+        r'''Method to calculate and return the constant-temperature
+        volume derivative of Helmholtz energy.
+
+        .. math::
+            \left(\frac{\partial A}{\partial V}\right)_{T}
+            = \left(\frac{\partial A}{\partial P}\right)_{T}
+              \left(\frac{\partial P}{\partial V}\right)_{T}
+
+        Returns
+        -------
+        dA_dV_T : float
+            Constant-temperature volume derivative of Helmholtz energy,
+            [J/(m^3)]
+
+        Notes
+        -----
+        '''
         return self.dA_dP_T()*self.dP_dV()
 
     def dA_dV_P(self):
+        r'''Method to calculate and return the constant-pressure
+        volume derivative of Helmholtz energy.
+
+        .. math::
+            \left(\frac{\partial A}{\partial V}\right)_{P}
+            = \left(\frac{\partial A}{\partial T}\right)_{P}
+              \left(\frac{\partial T}{\partial V}\right)_{P}
+
+        Returns
+        -------
+        dA_dV_P : float
+            Constant-pressure volume derivative of Helmholtz energy,
+            [J/(m^3)]
+
+        Notes
+        -----
+        '''
         return self.dA_dT_P()*self.dT_dV()
 
-
-
-
     def G_dep(self):
+        r'''Method to calculate and return the departure Gibbs free energy of
+        the phase.
+
+        .. math::
+            G_{dep} = H_{dep} - TS_{dep}
+
+        Returns
+        -------
+        G_dep : float
+            Departure Gibbs free energy, [J/mol]
+
+        Notes
+        -----
+        '''
         G_dep = self.H_dep() - self.T*self.S_dep()
         return G_dep
 
     def V_dep(self):
-        # from ideal gas behavior
+        r'''Method to calculate and return the departure (from ideal gas
+        behavior) molar volume of the phase.
+
+        .. math::
+            V_{dep} = V - \frac{RT}{P}
+
+        Returns
+        -------
+        V_dep : float
+            Departure molar volume, [m^3/mol]
+
+        Notes
+        -----
+        '''
         V_dep = self.V() - self.R*self.T/self.P
         return V_dep
 
     def U_dep(self):
+        r'''Method to calculate and return the departure internal energy of
+        the phase.
+
+        .. math::
+            U_{dep} = H_{dep} - PV_{dep}
+
+        Returns
+        -------
+        U_dep : float
+            Departure internal energy, [J/mol]
+
+        Notes
+        -----
+        '''
         return self.H_dep() - self.P*self.V_dep()
 
     def A_dep(self):
+        r'''Method to calculate and return the departure Helmholtz energy of
+        the phase.
+
+        .. math::
+            A_{dep} = U_{dep} - TS_{dep}
+
+        Returns
+        -------
+        A_dep : float
+            Departure Helmholtz energy, [J/mol]
+
+        Notes
+        -----
+        '''
         return self.U_dep() - self.T*self.S_dep()
 
 
     def H_reactive(self):
+        r'''Method to calculate and return the enthalpy of the phase on a
+        reactive basis, using the `Hfs` values of the phase.
+
+        .. math::
+            H_{reactive} = H + \sum_i z_i {H_{f,i}}
+
+        Returns
+        -------
+        H_reactive : float
+            Enthalpy of the phase on a reactive basis, [J/mol]
+
+        Notes
+        -----
+        '''
         try:
             return self._H_reactive
         except AttributeError:
@@ -842,6 +1495,20 @@ class Phase(object):
         return H
 
     def S_reactive(self):
+        r'''Method to calculate and return the entropy of the phase on a
+        reactive basis, using the `Sfs` values of the phase.
+
+        .. math::
+            S_{reactive} = S + \sum_i z_i {S_{f,i}}
+
+        Returns
+        -------
+        S_reactive : float
+            Entropy of the phase on a reactive basis, [J/(mol*K)]
+
+        Notes
+        -----
+        '''
         try:
             return self._S_reactive
         except:
@@ -853,18 +1520,75 @@ class Phase(object):
         return S
 
     def G_reactive(self):
+        r'''Method to calculate and return the Gibbs free energy of the phase
+        on a reactive basis.
+
+        .. math::
+            G_{reactive} = H_{reactive} - TS_{reactive}
+
+        Returns
+        -------
+        G_reactive : float
+            Gibbs free energy of the phase on a reactive basis, [J/(mol)]
+
+        Notes
+        -----
+        '''
         G = self.H_reactive() - self.T*self.S_reactive()
         return G
 
     def U_reactive(self):
+        r'''Method to calculate and return the internal energy of the phase
+        on a reactive basis.
+
+        .. math::
+            U_{reactive} = H_{reactive} - PV
+
+        Returns
+        -------
+        U_reactive : float
+            Internal energy of the phase on a reactive basis, [J/(mol)]
+
+        Notes
+        -----
+        '''
         U = self.H_reactive() - self.P*self.V()
         return U
 
     def A_reactive(self):
+        r'''Method to calculate and return the Helmholtz free energy of the
+        phase on a reactive basis.
+
+        .. math::
+            A_{reactive} = U_{reactive} - TS_{reactive}
+
+        Returns
+        -------
+        A_reactive : float
+            Helmholtz free energy of the phase on a reactive basis, [J/(mol)]
+
+        Notes
+        -----
+        '''
         A = self.U_reactive() - self.T*self.S_reactive()
         return A
 
     def H_formation_ideal_gas(self):
+        r'''Method to calculate and return the ideal-gas enthalpy of formation
+        of the phase (as if the phase was an ideal gas).
+
+        .. math::
+            H_{reactive}^{ig} = \sum_i z_i {H_{f,i}}
+
+        Returns
+        -------
+        H_formation_ideal_gas : float
+            Enthalpy of formation of the phase on a reactive basis
+            as an ideal gas, [J/mol]
+
+        Notes
+        -----
+        '''
         try:
             return self._H_formation_ideal_gas
         except AttributeError:
@@ -876,6 +1600,21 @@ class Phase(object):
         return Hf_ideal_gas
 
     def S_formation_ideal_gas(self):
+        r'''Method to calculate and return the ideal-gas entropy of formation
+        of the phase (as if the phase was an ideal gas).
+
+        .. math::
+            S_{reactive}^{ig} = \sum_i z_i {S_{f,i}}
+
+        Returns
+        -------
+        S_formation_ideal_gas : float
+            Entropy of formation of the phase on a reactive basis
+            as an ideal gas, [J/(mol*K)]
+
+        Notes
+        -----
+        '''
         try:
             return self._S_formation_ideal_gas
         except:
@@ -887,23 +1626,87 @@ class Phase(object):
         return Sf_ideal_gas
 
     def G_formation_ideal_gas(self):
+        r'''Method to calculate and return the ideal-gas Gibbs free energy of
+        formation of the phase (as if the phase was an ideal gas).
+
+        .. math::
+            G_{reactive}^{ig} = H_{reactive}^{ig} - T_{ref}^{ig}
+            S_{reactive}^{ig}
+
+        Returns
+        -------
+        G_formation_ideal_gas : float
+            Gibbs free energy of formation of the phase on a reactive basis
+            as an ideal gas, [J/(mol)]
+
+        Notes
+        -----
+        '''
         Gf = self.H_formation_ideal_gas() - self.T_REF_IG*self.S_formation_ideal_gas()
         return Gf
 
     def U_formation_ideal_gas(self):
+        r'''Method to calculate and return the ideal-gas internal energy of
+        formation of the phase (as if the phase was an ideal gas).
+
+        .. math::
+            U_{reactive}^{ig} = H_{reactive}^{ig} - P_{ref}^{ig}
+            V^{ig}
+
+        Returns
+        -------
+        U_formation_ideal_gas : float
+            Internal energy of formation of the phase on a reactive basis
+            as an ideal gas, [J/(mol)]
+
+        Notes
+        -----
+        '''
         Uf = self.H_formation_ideal_gas() - self.P_REF_IG*self.V_ideal_gas()
         return Uf
 
     def A_formation_ideal_gas(self):
+        r'''Method to calculate and return the ideal-gas Helmholtz energy of
+        formation of the phase (as if the phase was an ideal gas).
+
+        .. math::
+            A_{reactive}^{ig} = U_{reactive}^{ig} - T_{ref}^{ig}
+            S_{reactive}^{ig}
+
+        Returns
+        -------
+        A_formation_ideal_gas : float
+            Helmholtz energy of formation of the phase on a reactive basis
+            as an ideal gas, [J/(mol)]
+
+        Notes
+        -----
+        '''
         Af = self.U_formation_ideal_gas() - self.T_REF_IG*self.S_formation_ideal_gas()
         return Af
 
     def Cv(self):
+        r'''Method to calculate and return the constant-volume heat
+        capacity `Cv` of the phase.
+
+        .. math::
+            C_v = T\left(\frac{\partial P}{\partial T}\right)_V^2/
+            \left(\frac{\partial P}{\partial V}\right)_T + Cp
+
+        Returns
+        -------
+        Cv : float
+            Constant volume molar heat capacity, [J/(mol*K)]
+
+        Notes
+        -----
+        '''
         try:
             return self._Cv
         except AttributeError:
             pass
         # checks out
+
         Cp_m_Cv = Cp_minus_Cv(self.T, self.dP_dT(), self.dP_dV())
         Cp = self.Cp()
         self._Cv = Cv = Cp - Cp_m_Cv
@@ -1019,18 +1822,92 @@ class Phase(object):
 
 
     def Cp_Cv_ratio(self):
+        r'''Method to calculate and return the Cp/Cv ratio of the phase.
+
+        .. math::
+            \frac{C_p}{C_v}
+
+        Returns
+        -------
+        Cp_Cv_ratio : float
+            Cp/Cv ratio, [-]
+
+        Notes
+        -----
+        '''
         return self.Cp()/self.Cv()
 
+    isentropic_exponent = Cp_Cv_ratio
+
     def Z(self):
+        r'''Method to calculate and return the compressibility factor of the
+        phase.
+
+        .. math::
+            Z = \frac{PV}{RT}
+
+        Returns
+        -------
+        Z : float
+            Compressibility factor, [-]
+
+        Notes
+        -----
+        '''
         return self.P*self.V()/(self.R*self.T)
 
     def rho(self):
+        r'''Method to calculate and return the molar density of the
+        phase.
+
+        .. math::
+            \rho = frac{1}{V}
+
+        Returns
+        -------
+        rho : float
+            Molar density, [mol/m^3]
+
+        Notes
+        -----
+        '''
         return 1.0/self.V()
 
     def dT_dP(self):
+        r'''Method to calculate and return the constant-volume pressure
+        derivative of temperature of the phase.
+
+        .. math::
+            \left(\frac{\partial T}{\partial P}\right)_V = \frac{1}{\left(\frac{
+            \partial P}{\partial T}\right)_V}
+
+        Returns
+        -------
+        dT_dP : float
+            Constant-volume pressure derivative of temperature, [K/Pa]
+
+        Notes
+        -----
+        '''
         return 1.0/self.dP_dT()
 
     def dV_dT(self):
+        r'''Method to calculate and return the constant-pressure temperature
+        derivative of volume of the phase.
+
+        .. math::
+            \left(\frac{\partial V}{\partial T}\right)_P =
+            \frac{-\left(\frac{\partial P}{\partial T}\right)_V}
+            {\left(\frac{\partial P}{\partial V}\right)_T}
+
+        Returns
+        -------
+        dV_dT : float
+            Constant-pressure temperature derivative of volume, [m^3/(mol*K)]
+
+        Notes
+        -----
+        '''
         try:
             return self._dV_dT
         except AttributeError:
@@ -1039,12 +1916,60 @@ class Phase(object):
         return dV_dT
 
     def dV_dP(self):
+        r'''Method to calculate and return the constant-temperature pressure
+        derivative of volume of the phase.
+
+        .. math::
+            \left(\frac{\partial V}{\partial P}\right)_T =
+            {-\left(\frac{\partial V}{\partial T}\right)_P}
+            {\left(\frac{\partial T}{\partial P}\right)_V}
+
+        Returns
+        -------
+        dV_dP : float
+            Constant-temperature pressure derivative of volume, [m^3/(mol*Pa)]
+
+        Notes
+        -----
+        '''
         return -self.dV_dT()*self.dT_dP()
 
     def dT_dV(self):
+        r'''Method to calculate and return the constant-pressure volume
+        derivative of temperature of the phase.
+
+        .. math::
+            \left(\frac{\partial T}{\partial V}\right)_P =
+            \frac{1}
+            {\left(\frac{\partial V}{\partial T}\right)_P}
+
+        Returns
+        -------
+        dT_dV : float
+            Constant-pressure volume derivative of temperature, [K*m^3/(m^3)]
+
+        Notes
+        -----
+        '''
         return 1./self.dV_dT()
 
     def d2V_dP2(self):
+        r'''Method to calculate and return the constant-temperature pressure
+        derivative of volume of the phase.
+
+        .. math::
+            \left(\frac{\partial^2 V}{\partial P^2}\right)_T =
+            -\frac{\left(\frac{\partial^2 P}{\partial V^2}\right)_T}
+            {\left(\frac{\partial P}{\partial V}\right)_T^3}
+
+        Returns
+        -------
+        d2V_dP2 : float
+            Constant-temperature pressure derivative of volume, [m^3/(mol*Pa^2)]
+
+        Notes
+        -----
+        '''
         inverse_dP_dV = 1.0/self.dP_dV()
         inverse_dP_dV3 = inverse_dP_dV*inverse_dP_dV*inverse_dP_dV
         return -self.d2P_dV2()*inverse_dP_dV3
@@ -1092,6 +2017,7 @@ class Phase(object):
         inverse_dP_dV3 = inverse_dP_dV*inverse_dP_dV2
 
         return -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*inverse_dP_dV3
+    d2V_dTdP = d2V_dPdT
 
     def d2T_dPdV(self):
         dT_dP = self.dT_dP()
@@ -1104,49 +2030,172 @@ class Phase(object):
         d2P_dT2 = self.d2P_dT2()
         return -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*inverse_dP_dT3
 
-    # A few aliases
-    def d2V_dTdP(self):
-        return self.d2V_dPdT()
-
+    d2T_dVdP = d2T_dPdV
     def d2P_dVdT(self):
+        r'''Method to calculate and return the second derivative of
+        pressure with respect to temperature and volume of the phase.
+        This is an alias of `d2P_dTdV`.
+
+        .. math::
+             \frac{\partial^2 P}{\partial V \partial T}
+
+        Returns
+        -------
+        d2P_dVdT : float
+            Second volume derivative of pressure, [mol*Pa^2/(J*K)]
+        '''
         return self.d2P_dTdV()
 
-    def d2T_dVdP(self):
-        return self.d2T_dPdV()
-
     def dZ_dzs(self):
+        r'''Method to calculate and return the mole fraction derivatives of the
+        compressibility factor `Z` of the phase.
+
+        .. math::
+            \frac{\partial Z}{\partial z_i}
+
+        Returns
+        -------
+        dZ_dzs : list[float]
+            Mole fraction derivatives of the compressibility factor of the
+            phase, [-]
+
+        Notes
+        -----
+        '''
         factor = self.P/(self.T*self.R)
         return [dV*factor for dV in self.dV_dzs()]
 
     def dZ_dns(self):
+        r'''Method to calculate and return the mole number derivatives of the
+        compressibility factor `Z` of the phase.
+
+        .. math::
+            \frac{\partial Z}{\partial n_i}
+
+        Returns
+        -------
+        dZ_dns : list[float]
+            Mole number derivatives of the compressibility factor of the
+            phase, [1/mol]
+
+        Notes
+        -----
+        '''
         return dxs_to_dns(self.dZ_dzs(), self.zs)
 
     def dV_dns(self):
+        r'''Method to calculate and return the mole number derivatives of the
+        molar volume `V` of the phase.
+
+        .. math::
+            \frac{\partial V}{\partial n_i}
+
+        Returns
+        -------
+        dV_dns : list[float]
+            Mole number derivatives of the molar volume of the phase, [m^3]
+
+        Notes
+        -----
+        '''
         return dxs_to_dns(self.dV_dzs(), self.zs)
 
     # Derived properties
     def PIP(self):
+        r'''Method to calculate and return the phase identification parameter
+        of the phase.
+
+        .. math::
+            \Pi = V \left[\frac{\frac{\partial^2 P}{\partial V \partial T}}
+            {\frac{\partial P }{\partial T}}- \frac{\frac{\partial^2 P}{\partial
+            V^2}}{\frac{\partial P}{\partial V}} \right]
+
+        Returns
+        -------
+        PIP : float
+            Phase identification parameter, [-]
+        '''
         return phase_identification_parameter(self.V(), self.dP_dT(), self.dP_dV(),
                                               self.d2P_dV2(), self.d2P_dTdV())
 
     def kappa(self):
-        return isothermal_compressibility(self.V(), self.dV_dP())
+        r'''Method to calculate and return the isothermal compressibility
+        of the phase.
+
+        .. math::
+            \kappa = -\frac{1}{V}\left(\frac{\partial V}{\partial P} \right)_T
+
+        Returns
+        -------
+        kappa : float
+            Isothermal coefficient of compressibility, [1/Pa]
+        '''
+        return -1.0/self.V()*self.dV_dP()
+    isothermal_compressibility = kappa
 
     def dkappa_dT(self):
+        r'''Method to calculate and return the temperature derivative of
+        isothermal compressibility of the phase.
+
+        .. math::
+            \frac{\partial \kappa}{\partial T} = -\frac{ \left(\frac{\partial^2 V}{\partial P\partial T} \right)}{V}
+            + \frac{\left(\frac{\partial V}{\partial P} \right)_T\left(\frac{\partial V}{\partial T} \right)_P}{V^2}
+
+        Returns
+        -------
+        dkappa_dT : float
+            First temperature derivative of isothermal coefficient of
+            compressibility, [1/(Pa*K)]
+        '''
         V, dV_dP, dV_dT, d2V_dTdP = self.V(), self.dV_dP(), self.dV_dT(), self.d2V_dTdP()
         return -d2V_dTdP/V + dV_dP*dV_dT/(V*V)
 
+    disothermal_compressibility_dT = dkappa_dT
+
     def isothermal_bulk_modulus(self):
+        r'''Method to calculate and return the isothermal bulk modulus
+        of the phase.
+
+        .. math::
+            K_T = -V\left(\frac{\partial P}{\partial V} \right)_T
+
+        Returns
+        -------
+        isothermal_bulk_modulus : float
+            Isothermal bulk modulus, [Pa]
+        '''
         return 1.0/self.kappa()
 
     def isobaric_expansion(self):
-        return isobaric_expansion(self.V(), self.dV_dT())
+        r'''Method to calculate and return the isobatic expansion coefficient
+        of the phase.
 
-    def isentropic_exponent(self):
-#        return 1.3
-        return self.Cp()/self.Cv()
+        .. math::
+            \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
 
-    def dbeta_dT(self):
+        Returns
+        -------
+        beta : float
+            Isobaric coefficient of a thermal expansion, [1/K]
+        '''
+        return self.dV_dT()/self.V()
+
+    def disobaric_expansion_dT(self):
+        r'''Method to calculate and return the temperature derivative of
+        isobatic expansion coefficient of the phase.
+
+        .. math::
+            \frac{\partial \beta}{\partial T} = \frac{1}{V}\left(
+            \left(\frac{\partial^2 V}{\partial T^2} \right)_P
+            - \left(\frac{\partial V}{\partial T} \right)_P^2/V
+            \right)
+
+        Returns
+        -------
+        dbeta_dT : float
+            Temperature derivative of isobaric coefficient of a thermal
+            expansion, [1/K^2]
+        '''
         '''
         from sympy import *
         T, P = symbols('T, P')
@@ -1160,7 +2209,23 @@ class Phase(object):
         dV_dT = self.dV_dT()
         return V_inv*(self.d2V_dT2() - dV_dT*dV_dT*V_inv)
 
-    def dbeta_dP(self):
+    def disobaric_expansion_dP(self):
+        r'''Method to calculate and return the pressure derivative of
+        isobatic expansion coefficient of the phase.
+
+        .. math::
+            \frac{\partial \beta}{\partial P} = \frac{1}{V}\left(
+            \left(\frac{\partial^2 V}{\partial T\partial P} \right)
+            -\frac{ \left(\frac{\partial V}{\partial T} \right)_P
+             \left(\frac{\partial V}{\partial P} \right)_T}{V}
+            \right)
+
+        Returns
+        -------
+        dbeta_dP : float
+            Pressure derivative of isobaric coefficient of a thermal
+            expansion, [1/(K*Pa)]
+        '''
         '''
         from sympy import *
         T, P = symbols('T, P')
@@ -1174,7 +2239,6 @@ class Phase(object):
         dV_dT = self.dV_dT()
         dV_dP = self.dV_dP()
         return V_inv*(self.d2V_dTdP() - dV_dT*dV_dP*V_inv)
-
 
     def Joule_Thomson(self):
         return Joule_Thomson(self.T, self.V(), self.Cp(), dV_dT=self.dV_dT(), beta=self.isobaric_expansion())
@@ -2186,8 +3250,14 @@ derivatives_thermodynamic_mass = []
 for attr in derivatives_thermodynamic:
     def _der(self, prop=attr):
         return getattr(self, prop)()*1e3*self.MW_inv()
-    base, end = attr.split('_', maxsplit=1)
+    try:
+        base, end = attr.split('_', maxsplit=1)
+    except:
+        splits = attr.split('_')
+        base = splits[0]
+        end = '_'.join(splits[1:])
     s = '%s_mass_%s' %(base, end)
+    _der.__doc__ = 'Automatically generated derivative. %s %s' %(base, end)
     setattr(Phase, s, _der)
     derivatives_thermodynamic_mass.append(s)
 

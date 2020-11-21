@@ -60,7 +60,17 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                  'eos_mix.a_alpha_and_derivatives_quadratic_terms',
                  'eos_mix.PR_lnphis', 'eos_mix.PR_lnphis_fastest',
                  'eos_alpha_functions.PR_a_alphas_vectorized',
-                 'eos_alpha_functions.PR_a_alpha_and_derivatives_vectorized']
+                 'eos_alpha_functions.PR_a_alpha_and_derivatives_vectorized',
+                 'eos_alpha_functions.SRK_a_alphas_vectorized',
+                 'eos_alpha_functions.SRK_a_alpha_and_derivatives_vectorized',
+                 'eos_alpha_functions.RK_a_alphas_vectorized',
+                 'eos_alpha_functions.RK_a_alpha_and_derivatives_vectorized',
+                 'eos_alpha_functions.PRSV_a_alphas_vectorized',
+                 'eos_alpha_functions.PRSV_a_alpha_and_derivatives_vectorized',
+                 'eos_alpha_functions.PRSV2_a_alphas_vectorized',
+                 'eos_alpha_functions.PRSV2_a_alpha_and_derivatives_vectorized',
+                 'eos_alpha_functions.APISRK_a_alphas_vectorized',
+                 'eos_alpha_functions.APISRK_a_alpha_and_derivatives_vectorized']
     normal_fluids.numba.transform_lists_to_arrays(normal, to_change, __funcs, cache_blacklist=cache_blacklist)
 
     for mod in new_mods:

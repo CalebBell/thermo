@@ -180,7 +180,7 @@ def score_phases_VL(phases, constants, correlations, method,
 #        scores = [vapor_score_PIP(i.V(), i.dP_dT(), i.dP_dV(),
 #                                           i.d2P_dV2(), i.d2P_dVdT()) for i in phases]
     elif method == VL_ID_BS:
-        scores = [vapor_score_Bennett_Schmidt(i.dbeta_dT()) for i in phases]
+        scores = [vapor_score_Bennett_Schmidt(i.disobaric_expansion_dT()) for i in phases]
     elif method == VL_ID_TRACES:
         CASs = constants.CASs
         Tcs = constants.Tcs

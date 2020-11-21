@@ -2772,7 +2772,10 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('NH3').solubility_parameter
         24766.329043856073
         '''
-        return solubility_parameter(T=self.T, Hvapm=self.Hvapm, Vml=self.Vml)
+        try:
+            return solubility_parameter(T=self.T, Hvapm=self.Hvapm, Vml=self.Vml)
+        except:
+            return None
 
     @property
     def Parachor(self):

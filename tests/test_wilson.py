@@ -592,4 +592,4 @@ def test_multicomponent_madeup_sympy():
     assert_allclose(GE.lambdas(), lambdas_sym, rtol=1e-15)
     assert_allclose(GE.dlambdas_dT(), dlambdas_dT_sym, rtol=2e-15)
     assert_allclose(GE.d2lambdas_dT2(), d2lambdas_dT2_sym, rtol=4e-15)
-    assert_allclose(GE.d3lambdas_dT3(), d3lambdas_dT3_sym, rtol=2e-15)
+    assert_allclose(GE.d3lambdas_dT3(), d3lambdas_dT3_sym, rtol=1e-14)
