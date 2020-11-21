@@ -142,7 +142,8 @@ from chemicals.utils import (log, log10, exp, Cp_minus_Cv, phase_identification_
                           normalize, hash_any_primitive, rho_to_Vm, Vm_to_rho)
 from thermo.activity import IdealSolution
 from thermo.coolprop import has_CoolProp
-from thermo.eos_mix import IGMIX, PR_lnphis_fastest
+from thermo.eos_mix import IGMIX
+from thermo.eos_mix_methods import PR_lnphis_fastest
 from random import randint
 from collections import OrderedDict
 from chemicals.iapws import *

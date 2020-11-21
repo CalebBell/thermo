@@ -36,6 +36,7 @@ from thermo.property_package import eos_Z_test_phase_stability, eos_Z_trial_phas
 import numpy as np
 from thermo.property_package_constants import (PropertyPackageConstants,
                                                NRTL_PKG, IDEAL_PKG, PR_PKG)
+from thermo.eos_mix_methods import a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms
 
 def test_a_alpha_quadratic_terms():
     # useful test case for speed.
