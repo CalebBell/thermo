@@ -61,6 +61,7 @@ __all__ = ['ChemicalConstantsPackage', 'PropertyCorrelationPackage',
 
 from thermo.chemical import Chemical, get_chemical_constants
 from chemicals.identifiers import *
+from chemicals import identifiers
 from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture, VolumeLiquid, VolumeGas, VolumeSolid
 from thermo.permittivity import *
@@ -74,6 +75,9 @@ from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
 
 
 CAS_H2O = '7732-18-5'
+
+
+
 
 
 class ChemicalConstantsPackage(object):
@@ -183,6 +187,17 @@ class ChemicalConstantsPackage(object):
                 s += '%s=%s%s'%(k, getattr(self, k), delim)
         s = s[:-2] + ')'
         return s
+
+    @staticmethod
+    def from_IDs(IDs):
+        CASs = [CAS_from_any(ID) for ID in IDs]
+        pubchem_db = identifiers.pubchem_db
+        metadatas = [pubchem_db.search_CAS(CAS) for CAS in CASs]
+        names = [i.common_name for i in metadatas]
+        MWs = [i.MW for i in metadatas]
+        from chemicals.phase_change import Tm, Tb
+        Tms = [Tm(CAS) for CAS in CASs]
+        return Tms
 
     def __init__(self, CASs=None, names=None, MWs=None, Tms=None, Tbs=None,
                  # Critical state points

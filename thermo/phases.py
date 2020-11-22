@@ -2255,6 +2255,21 @@ class Phase(object):
 
     def dZ_dP(self):
         return 1.0/(self.T*self.R)*(self.V() + self.P*self.dV_dP())
+
+    def dZ_dV(self):
+        r'''Method to calculate and return the volume derivative of
+        compressibility of the phase.
+
+        .. math::
+            \frac{\partial Z}{\partial V} = \frac{P - \rho \left(\frac{\partial
+            P}{\partial \rho}\right)_T}{RT}
+
+        Returns
+        -------
+        dZ_dV : float
+            Volume derivative of compressibility, [mol/(m^3)]
+        '''
+        return (self.P - self.rho()*self.dP_drho())/(self.R*self.T)
     # Could add more
 
     ### Derivatives in the molar density basis

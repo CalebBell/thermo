@@ -853,6 +853,9 @@ def test_EOSGas_phis():
     # Compressibility factor
     assert_allclose(gas.dZ_dT(), 0.00017082651132311415, rtol=1e-12)
     assert_allclose(gas.dZ_dP(), -2.2171553318823896e-07, rtol=1e-12)
+    assert_close(gas.dZ_dV(), 0.6649487781161054, rtol=1e-12)
+    assert_close(derivative(lambda V: gas.to(T=gas.T, V=V, zs=zs).Z(), gas.V(), dx=gas.V()*1e-7),
+             gas.dZ_dV())
 
     # Derived properties
     assert_allclose(gas.PIP(), 0.9434309912868786, rtol=1e-12)
