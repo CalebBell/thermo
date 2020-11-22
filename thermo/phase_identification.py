@@ -83,27 +83,159 @@ from chemicals.flash_basic import Wilson_K_value
 from chemicals.utils import phase_identification_parameter, Vm_to_rho
 
 def vapor_score_Tpc(T, Tcs, zs):
+    r'''Compute a vapor score representing how vapor-like a phase is
+    (higher, above zero = more vapor like) using the following criteria
+
+    .. math::
+        T - \sum_i z_i T_{c,i}
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    Tcs : list[float]
+        Critical temperatures of all species, [K]
+    zs : list[float]
+        Mole fractions of the phase being identified, [-]
+
+    Returns
+    -------
+    score : float
+        Vapor like score, [-]
+
+    Examples
+    --------
+    A flash of equimolar CO2/n-hexane at 300 K and 1 MPa is computed, and there
+    is a two phase solution. The phase must be identified for each result:
+
+    Liquid-like phase:
+
+    >>> vapor_score_Tpc(T=300.0, Tcs=[304.2, 507.6], zs=[0.21834418746784942, 0.7816558125321506])
+    -163.18879226903942
+
+    Vapor-like phase:
+
+    >>> vapor_score_Tpc(T=300.0, Tcs=[304.2, 507.6], zs=[0.9752234962374878, 0.024776503762512052])
+    -9.239540865294941
+
+    In this result, the vapor phase is not identified as a gas at all! It has
+    a mass density of ~ 20 kg/m^3, which would usually be called a gas by most
+    people.
+
+    Notes
+    -----
+    '''
     # Does not work for pure compounds
-    # Basic
     Tpc =  0.0
     for i in range(len(zs)):
         Tpc += zs[i]*Tcs[i]
     return T - Tpc
 
 def vapor_score_Vpc(V, Vcs, zs):
-    # Basic
+    r'''Compute a vapor score representing how vapor-like a phase is
+    (higher, above zero = more vapor like) using the following criteria
+
+    .. math::
+        V - \sum_i z_i V_{c,i}
+
+    Parameters
+    ----------
+    V : float
+        Molar volume, [m^3/mol]
+    Vcs : list[float]
+        Critical molar volumes of all species, [m^3/mol]
+    zs : list[float]
+        Mole fractions of the phase being identified, [-]
+
+    Returns
+    -------
+    score : float
+        Vapor like score, [-]
+
+    Examples
+    --------
+    A flash of equimolar CO2/n-hexane at 300 K and 1 MPa is computed, and there
+    is a two phase solution. The phase must be identified for each result:
+
+    Liquid-like phase:
+
+    >>> vapor_score_Vpc(V=0.00011316308855449715, Vcs=[9.4e-05, 0.000368], zs=[0.21834418746784942, 0.7816558125321506])
+    -0.000195010604079
+
+    Vapor-like phase:
+
+    >>> vapor_score_Vpc(V=0.0023406573328250335, Vcs=[9.4e-05, 0.000368], zs=[0.9752234962374878, 0.024776503762512052])
+    0.002239868570
+
+    Notes
+    -----
+    '''
     Vpc =  0.0
     for i in range(len(zs)):
         Vpc += zs[i]*Vcs[i]
     return V - Vpc
 
 def vapor_score_Tpc_weighted(T, Tcs, Vcs, zs, r1=1.0):
-    # ECLIPSE method, r1 for tuning
+    r'''Compute a vapor score representing how vapor-like a phase is
+    (higher, above zero = more vapor like) using the following criteria, said
+    to be implemented in ECLIPSE [1]_:
+
+    .. math::
+        T - T_{pc}
+
+    .. math::
+        T_{p,c} = r_1 \frac{\sum_j x_j V_{c,j}T_{c,j}}{\sum_j x_j V_{c,j}}
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    Tcs : list[float]
+        Critical temperatures of all species, [K]
+    Vcs : list[float]
+        Critical molar volumes of all species, [m^3/mol]
+    zs : list[float]
+        Mole fractions of the phase being identified, [-]
+    r1 : float
+        Tuning factor, [-]
+
+    Returns
+    -------
+    score : float
+        Vapor like score, [-]
+
+    Examples
+    --------
+    A flash of equimolar CO2/n-hexane at 300 K and 1 MPa is computed, and there
+    is a two phase solution. The phase must be identified for each result:
+
+    Liquid-like phase:
+
+    >>> vapor_score_Tpc_weighted(T=300.0, Tcs=[304.2, 507.6], Vcs=[9.4e-05, 0.000368], zs=[0.21834418746784942, 0.7816558125321506])
+    -194.0535694431
+
+    Vapor-like phase:
+
+    >>> vapor_score_Tpc_weighted(T=300.0, Tcs=[304.2, 507.6], Vcs=[9.4e-05, 0.000368], zs=[0.9752234962374878, 0.024776503762512052])
+    -22.60037521107
+
+    As can be seen, the CO2-phase is incorrectly identified as a liquid.
+
+    Notes
+    -----
+
+    References
+    ----------
+    .. [1] Bennett, Jim, and Kurt A. G. Schmidt. "Comparison of Phase
+       Identification Methods Used in Oil Industry Flow Simulations." Energy &
+       Fuels 31, no. 4 (April 20, 2017): 3370-79.
+       https://doi.org/10.1021/acs.energyfuels.6b02316.
+    '''
     weight_sum = 0.0
     for i in range(len(zs)):
         weight_sum += zs[i]*Vcs[i]
 
-    Tpc =  0.0
+    Tpc = 0.0
     for i in range(len(zs)):
         Tpc += zs[i]*Tcs[i]*Vcs[i]
     Tpc *= r1/weight_sum
