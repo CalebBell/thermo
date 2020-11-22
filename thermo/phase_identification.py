@@ -635,7 +635,9 @@ def score_phases_VL(phases, constants, correlations, method):
     correlations : :obj:`thermo.chemical_package.PropertyCorrelationPackage`
         Correlations used in the identification, [-]
     method : str
-        Setting configuring how the scoring is performed, [-]
+        Setting configuring how the scoring is performed; one of
+        'Tpc', 'Vpc', 'Tpc Vpc weighted', 'Tpc Vpc', 'Wilson', 'Poling',
+        'PIP', 'Bennett-Schmidt', 'Traces', [-]
 
     Returns
     -------
@@ -648,17 +650,25 @@ def score_phases_VL(phases, constants, correlations, method):
     Examples
     --------
     >>> from thermo import ChemicalConstantsPackage, PropertyCorrelationPackage, CEOSGas, CEOSLiquid, PRMIX, HeatCapacityGas
-    >>> constants = ChemicalConstantsPackage(CASs=['124-38-9', '110-54-3'], MWs=[44.0095, 86.17536], names=['carbon dioxide', 'hexane'], omegas=[0.2252, 0.2975], Pcs=[7376460.0, 3025000.0], Tbs=[194.67, 341.87], Tcs=[304.2, 507.6], Tms=[216.65, 178.075])
+    >>> constants = ChemicalConstantsPackage(CASs=['124-38-9', '110-54-3'], Vcs=[9.4e-05, 0.000368], MWs=[44.0095, 86.17536], names=['carbon dioxide', 'hexane'], omegas=[0.2252, 0.2975], Pcs=[7376460.0, 3025000.0], Tbs=[194.67, 341.87], Tcs=[304.2, 507.6], Tms=[216.65, 178.075])
     >>> correlations = PropertyCorrelationPackage(constants=constants, skip_missing=True, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644])), HeatCapacityGas(best_fit=(200.0, 1000.0, [1.3740654453881647e-21, -8.344496203280677e-18, 2.2354782954548568e-14, -3.4659555330048226e-11, 3.410703030634579e-08, -2.1693611029230923e-05, 0.008373280796376588, -1.356180511425385, 175.67091124888998]))])
     >>> T, P, zs = 300.0, 1e6, [.5, .5]
     >>> eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
     >>> gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     >>> liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
 
-    Score of phase identification parameter :obj:`vapor_score_PIP`:
+    A sampling of different phase identification methods is below:
 
     >>> score_phases_VL([gas, liq], constants, correlations, method='PIP')
     [1.6409446310, -7.5692120928]
+    >>> score_phases_VL([gas, liq], constants, correlations, method='Vpc')
+    [0.00144944049, -0.0001393075288]
+    >>> score_phases_VL([gas, liq], constants, correlations, method='Tpc Vpc')
+    [113.181283525, -29.806038704]
+    >>> score_phases_VL([gas, liq], constants, correlations, method='Bennett-Schmidt')
+    [0.0003538299416, -2.72255439503e-05]
+    >>> score_phases_VL([gas, liq], constants, correlations, method='Poling')
+    [0.1767828268, -0.004516837897]
     '''
     # The higher the score (above zero), the more vapor-like
     if phases:
