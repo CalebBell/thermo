@@ -540,6 +540,9 @@ class PropertyCorrelationPackage(object):
     r'''Class for creating and storing `T` and `P` and `zs` dependent chemical
     property objects. All parameters are also attributes.
 
+    This object can be used either to hold already-created property objects;
+    or to create new ones and hold them.
+
     Parameters
     ----------
     constants : :obj:`ChemicalConstantsPackage`
@@ -608,6 +611,20 @@ class PropertyCorrelationPackage(object):
     ----------
     pure_correlations : tuple(str)
         List of all pure component property objects, [-]
+
+    Examples
+    --------
+
+    Create a package from CO2 and n-hexane, with ideal-gas heat capacities
+    provided while excluding all other properties:
+
+    >>> constants = ChemicalConstantsPackage(CASs=['124-38-9', '110-54-3'], MWs=[44.0095, 86.17536], names=['carbon dioxide', 'hexane'], omegas=[0.2252, 0.2975], Pcs=[7376460.0, 3025000.0], Tbs=[194.67, 341.87], Tcs=[304.2, 507.6], Tms=[216.65, 178.075])
+    >>> correlations = PropertyCorrelationPackage(constants=constants, skip_missing=True, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644])), HeatCapacityGas(best_fit=(200.0, 1000.0, [1.3740654453881647e-21, -8.344496203280677e-18, 2.2354782954548568e-14, -3.4659555330048226e-11, 3.410703030634579e-08, -2.1693611029230923e-05, 0.008373280796376588, -1.356180511425385, 175.67091124888998]))])
+
+    Create a package from various data files, creating all property objects:
+
+    >>> correlations = PropertyCorrelationPackage(constants=constants, skip_missing=True)
+
     '''
     correlations = ('VaporPressures', 'SublimationPressures', 'VolumeGases',
                'VolumeLiquids', 'VolumeSolids', 'HeatCapacityGases',
