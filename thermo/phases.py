@@ -2250,10 +2250,34 @@ class Phase(object):
 
     ### Compressibility factor derivatives
     def dZ_dT(self):
+        r'''Method to calculate and return the temperature derivative of
+        compressibility of the phase.
+
+        .. math::
+            \frac{\partial Z}{\partial P} = P\frac{\left(\frac{\partial
+            V}{\partial T}\right)_P - \frac{-V}{T}}{RT}
+
+        Returns
+        -------
+        dZ_dT : float
+            Temperature derivative of compressibility, [1/K]
+        '''
         T_inv = 1.0/self.T
         return self.P*self.R_inv*T_inv*(self.dV_dT() - self.V()*T_inv)
 
     def dZ_dP(self):
+        r'''Method to calculate and return the pressure derivative of
+        compressibility of the phase.
+
+        .. math::
+            \frac{\partial Z}{\partial P} = \frac{V + P\left(\frac{\partial
+            V}{\partial P}\right)_T}{RT}
+
+        Returns
+        -------
+        dZ_dP : float
+            Pressure derivative of compressibility, [1/Pa]
+        '''
         return 1.0/(self.T*self.R)*(self.V() + self.P*self.dV_dP())
 
     def dZ_dV(self):
