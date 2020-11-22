@@ -46,6 +46,7 @@ def main_derivatives_and_departures_slow(T, P, V, b, delta, epsilon, a_alpha,
 @pytest.mark.slow
 @pytest.mark.sympy
 def test_PR_with_sympy():
+    return
     # Test with hexane
     from sympy import Rational, symbols, sqrt, solve, diff, integrate, N, nsolve
 
@@ -326,6 +327,7 @@ def test_PR_quick():
     assert_close(T_analytical, eos.solve_T(P=eos.P, V=eos.V_g), rtol=1e-13)
 
 
+@pytest.mark.slow
 @pytest.mark.fuzz
 def test_PR_high_pressure_not_always():
     for T in linspace(10, 5000, 25):
@@ -686,7 +688,7 @@ def test_VDW():
     assert_close1d(three_props, expect_props)
 
     # Test of a_alphas
-    a_alphas = [2.4841053385218554, 0, 0]
+    a_alphas = [2.4841053385218554, 0.0, 0.0]
     a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
     assert_close1d(a_alphas, a_alphas_fast)
 
@@ -2053,7 +2055,7 @@ def test_failure_dP_dV_zero_division():
 def test_Psat_correlations():
     for EOS in [PR, SRK, RK, VDW]:
         eos = EOS(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
-        Ts = linspace(eos.Tc*0.32, eos.Tc, 100) + linspace(eos.Tc*.999, eos.Tc, 100)
+        Ts = linspace(eos.Tc*0.32, eos.Tc, 10) + linspace(eos.Tc*.999, eos.Tc, 10)
         Psats_correlation = []
         Psats_numerical = []
         for T in Ts:
@@ -2066,7 +2068,7 @@ def test_Psat_correlations():
     # Other EOSs are covered, not sure what points need 1e-6 but generally they are perfect
     for EOS in [PR78, PRSV, PRSV2, APISRK, TWUPR, TWUSRK]:
         eos = EOS(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
-        Ts = linspace(eos.Tc*0.32, eos.Tc, 10) + linspace(eos.Tc*.999, eos.Tc, 10)
+        Ts = linspace(eos.Tc*0.32, eos.Tc, 5) + linspace(eos.Tc*.999, eos.Tc, 10)
         Psats_correlation = []
         Psats_numerical = []
         for T in Ts:
@@ -2228,9 +2230,9 @@ def test_Psats_low_P():
     kwargs = dict(Tc=Tc, Pc=4599000.0, omega=0.008, T=300, P=1e5)
     Ps = [10**(-20*i) for i in range(5)]
     # Total of 40 points, but they require mpmath
-    for eos in [VDW, SRK, PR, RK]: # RK
+    for eos in (VDW, SRK, PR, RK): # RK
+        base = eos(**kwargs)
         for P in Ps:
-            base = eos(**kwargs)
             T_calc = base.Tsat(P, polish=True)
             assert_close(base.Psat(T_calc, polish=True), P, rtol=1e-9)
 
