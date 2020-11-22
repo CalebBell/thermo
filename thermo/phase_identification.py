@@ -137,9 +137,53 @@ def vapor_score_Wilson(T, P, zs, Tcs, Pcs, omegas):
 
 
 def vapor_score_Poling(kappa):
-    # should be tested - may need to reverse sign
+    r'''Compute a vapor score representing how vapor-like a phase is
+    (higher, above zero = more vapor like) using the isothermal compressibility
+    `kappa` concept by Poling [1]_.
+
+    .. math::
+        \text{score} = (\kappa - 0.005 \text{atm}^{-1})
+
+    Parameters
+    ----------
+    kappa : float
+        Isothermal coefficient of compressibility, [1/Pa]
+
+    Returns
+    -------
+    score : float
+        Vapor like score, [-]
+
+    Examples
+    --------
+    CO2 vapor properties computed with Peng-Robinson at 300 K and 1 bar:
+
+    >>> vapor_score_Poling(1.0054239121594122e-05)
+    1.013745778995
+
+    n-hexane liquid properties computed with Peng-Robinson at 300 K and 10 bar:
+
+    >>> vapor_score_Poling(2.121777078782957e-09)
+    -0.00478501093
+
+    Notes
+    -----
+    A second criteria which is not implemented as it does not fit with the
+    scoring concept is for liquids:
+
+    .. math::
+        \frac{0.9}{P} < \beta < \frac{3}{P}
+
+    References
+    ----------
+    .. [1] Poling, Bruce E., Edward A. Grens, and John M. Prausnitz.
+       "Thermodynamic Properties from a Cubic Equation of State: Avoiding
+       Trivial Roots and Spurious Derivatives." Industrial & Engineering
+       Chemistry Process Design and Development 20, no. 1 (January 1, 1981):
+       127-30. https://doi.org/10.1021/i200012a019.
+    '''
     # There is also a second criteria for the vapor phase
-    return kappa - 0.05e5
+    return kappa*101325 - .005
 
 def vapor_score_PIP(V, dP_dT, dP_dV, d2P_dV2, d2P_dVdT):
     r'''Compute a vapor score representing how vapor-like a phase is
@@ -203,9 +247,9 @@ def vapor_score_Bennett_Schmidt(dbeta_dT):
 
     Parameters
     ----------
-        dbeta_dT : float
-            Temperature derivative of isobaric coefficient of a thermal
-            expansion, [1/K^2]
+    dbeta_dT : float
+        Temperature derivative of isobaric coefficient of a thermal
+        expansion, [1/K^2]
 
     Returns
     -------
