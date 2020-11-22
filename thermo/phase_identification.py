@@ -111,6 +111,56 @@ def vapor_score_Tpc_weighted(T, Tcs, Vcs, zs, r1=1.0):
     return T - Tpc
 
 def vapor_score_Tpc_Vpc(T, V, Tcs, Vcs, zs):
+    r'''Compute a vapor score representing how vapor-like a phase is
+    (higher, above zero = more vapor like) using the following criteria, said
+    to be implemented in Multiflash [1]_:
+
+    .. math::
+        VT^2 - V_{pc} T_{pc}^2
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    V : float
+        Molar volume, [m^3/mol]
+    Tcs : list[float]
+        Critical temperatures of all species, [K]
+    Vcs : list[float]
+        Critical molar volumes of all species, [m^3/mol]
+    zs : list[float]
+        Mole fractions of the phase being identified, [-]
+
+    Returns
+    -------
+    score : float
+        Vapor like score, [-]
+
+    Examples
+    --------
+    A flash of equimolar CO2/n-hexane at 300 K and 1 MPa is computed, and there
+    is a two phase solution. The phase must be identified for each result:
+
+    Liquid-like phase:
+
+    >>> vapor_score_Tpc_Vpc(T=300.0, V=0.00011316308855449715, Tcs=[304.2, 507.6], Vcs=[9.4e-05, 0.000368], zs=[0.21834418746784942, 0.7816558125321506])
+    -55.932094761
+
+    Vapor-like phase:
+
+    >>> vapor_score_Tpc_Vpc(T=300.0, V=0.0023406573328250335, Tcs=[304.2, 507.6], Vcs=[9.4e-05, 0.000368], zs=[0.9752234962374878, 0.024776503762512052])
+    201.020821992
+
+    Notes
+    -----
+
+    References
+    ----------
+    .. [1] Bennett, Jim, and Kurt A. G. Schmidt. "Comparison of Phase
+       Identification Methods Used in Oil Industry Flow Simulations." Energy &
+       Fuels 31, no. 4 (April 20, 2017): 3370-79.
+       https://doi.org/10.1021/acs.energyfuels.6b02316.
+    '''
     # Basic. Different mixing rules could be used to tune the system.
     Tpc =  0.0
     for i in range(len(zs)):
@@ -122,6 +172,74 @@ def vapor_score_Tpc_Vpc(T, V, Tcs, Vcs, zs):
 
 
 def vapor_score_Wilson(T, P, zs, Tcs, Pcs, omegas):
+    r'''Compute a vapor score representing how vapor-like a phase is
+    (higher, above zero = more vapor like) using the Rachford-Rice Wilson
+    method of Perschke [1]_.
+
+    After calculating Wilson's K values, the following expression is evaluated
+    at :math:`\frac{V}{F} = 0.5`; the result is the score.
+
+    .. math::
+        \sum_i \frac{z_i(K_i-1)}{1 + \frac{V}{F}(K_i-1)}
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    P : float
+        Pressure, [Pa]
+    zs : list[float]
+        Mole fractions of the phase being identified, [-]
+    Tcs : list[float]
+        Critical temperatures of all species, [K]
+    Pcs : list[float]
+        Critical pressures of all species, [Pa]
+    omegas : list[float]
+        Acentric factors of all species, [-]
+
+    Returns
+    -------
+    score : float
+        Vapor like score, [-]
+
+    Examples
+    --------
+    A flash of equimolar CO2/n-hexane at 300 K and 1 MPa is computed, and there
+    is a two phase solution. The phase must be identified for each result:
+
+    Liquid-like phase:
+
+    >>> vapor_score_Wilson(T=300.0, P=1e6, zs=[.218, .782], Tcs=[304.2, 507.6], Pcs=[7376460.0, 3025000.0], omegas=[0.2252, 0.2975])
+    -1.16644793
+
+    Vapor-like phase:
+
+    >>> vapor_score_Wilson(T=300.0, P=1e6, zs=[.975, .025], Tcs=[304.2, 507.6], Pcs=[7376460.0, 3025000.0], omegas=[0.2252, 0.2975])
+    1.397678492
+
+    This method works well in many conditions, like the Wilson equation itself,
+    but fundamentally it cannot do a great job because it is not tied to the
+    phase model itself.
+
+    A dew point flash at P = 100 Pa for the same mixture shows both phases
+    being identified as vapor-like:
+
+    >>> T_dew = 206.40935716944634
+    >>> P = 100.0
+    >>> vapor_score_Wilson(T=T_dew, P=P, zs=[0.5, 0.5], Tcs=[304.2, 507.6], Pcs=[7376460.0, 3025000.0], omegas=[0.2252, 0.2975])
+    1.074361930956633
+    >>> vapor_score_Wilson(T=T_dew, P=P, zs=[0.00014597910182360052, 0.9998540208981763], Tcs=[304.2, 507.6], Pcs=[7376460.0, 3025000.0], omegas=[0.2252, 0.2975])
+    0.15021784286075726
+
+    Notes
+    -----
+
+    References
+    ----------
+    .. [1] Chang, Yih-Bor. "Development and Application of an Equation of State
+       Compositional Simulator," 1990.
+       https://repositories.lib.utexas.edu/handle/2152/80585.
+    '''
     N = len(zs)
     if N == 1:
         Psat = Wilson_K_value(T, P, Tcs[0], Pcs[0], omegas[0])*P
@@ -131,9 +249,9 @@ def vapor_score_Wilson(T, P, zs, Tcs, Pcs, omegas):
     # Posivie - vapor, negative - liquid
     Ks = [Wilson_K_value(T, P, Tcs[i], Pcs[i], omegas[i]) for i in range(N)]
     # Consider a vapor fraction of more than 0.5 a vapor
-    return flash_inner_loop(zs, Ks)[0] - 0.5
+#    return flash_inner_loop(zs, Ks)[0] - 0.5
     # Go back to the error once unit tested
-#    return Rachford_Rice_flash_error(V_over_F=0.5, zs=zs, Ks=Ks)
+    return Rachford_Rice_flash_error(V_over_F=0.5, zs=zs, Ks=Ks)
 
 
 def vapor_score_Poling(kappa):
@@ -182,7 +300,6 @@ def vapor_score_Poling(kappa):
        Chemistry Process Design and Development 20, no. 1 (January 1, 1981):
        127-30. https://doi.org/10.1021/i200012a019.
     '''
-    # There is also a second criteria for the vapor phase
     return kappa*101325 - .005
 
 def vapor_score_PIP(V, dP_dT, dP_dV, d2P_dV2, d2P_dVdT):
@@ -265,7 +382,7 @@ def vapor_score_Bennett_Schmidt(dbeta_dT):
 
     n-hexane liquid properties computed with Peng-Robinson at 300 K and 10 bar:
 
-    >>> vapor_score_PIP(7.558572848883679e-06)
+    >>> vapor_score_Bennett_Schmidt(7.558572848883679e-06)
     -7.558572848883679e-06
 
     References
