@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,7 +18,47 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains functions for identifying phases as liquid, solid, and
+gas.
+
+Solid identification is easy using the solid phase identification parameter.
+There is never more than one gas by definition. For pure species, the
+phase identification parameter is a clear vapor-liquid differentiator.
+However for mixtures, there is no clear calcuation that can be performed to
+identify the phase of a mixture. Many different criteria that have been
+proposed are included here.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. contents:: :local:
+
+Phase Identification Criteria
+=============================
+
+Main Interfaces
+---------------
+.. autofunction:: identify_sort_phases
+.. autofunction:: sort_phases
+.. autofunction:: identity_phase_states
+
+Scoring Functions
+-----------------
+.. autofunction:: score_phases_VL
+.. autofunction:: score_phases_S
+.. autofunction:: vapor_score_traces
+.. autofunction:: vapor_score_Tpc
+.. autofunction:: vapor_score_Vpc
+.. autofunction:: vapor_score_Tpc_weighted
+.. autofunction:: vapor_score_Tpc_Vpc
+.. autofunction:: vapor_score_Wilson
+.. autofunction:: vapor_score_Poling
+.. autofunction:: vapor_score_PIP
+.. autofunction:: vapor_score_Bennett_Schmidt
+
+'''
 
 from __future__ import division
 __all__ = ['vapor_score_Tpc', 'vapor_score_Vpc',
@@ -102,9 +142,95 @@ def vapor_score_Poling(kappa):
     return kappa - 0.05e5
 
 def vapor_score_PIP(V, dP_dT, dP_dV, d2P_dV2, d2P_dVdT):
+    r'''Compute a vapor score representing how vapor-like a phase is
+    (higher, above zero = more vapor like) using the PIP concept.
+
+    .. math::
+        \text{score} = -(\Pi - 1)
+
+    .. math::
+        \Pi = V \left[\frac{\frac{\partial^2 P}{\partial V \partial T}}
+        {\frac{\partial P }{\partial T}}- \frac{\frac{\partial^2 P}{\partial
+        V^2}}{\frac{\partial P}{\partial V}} \right]
+
+    Parameters
+    ----------
+    V : float
+        Molar volume at `T` and `P`, [m^3/mol]
+    dP_dT : float
+        Derivative of `P` with respect to `T`, [Pa/K]
+    dP_dV : float
+        Derivative of `P` with respect to `V`, [Pa*mol/m^3]
+    d2P_dV2 : float
+        Second derivative of `P` with respect to `V`, [Pa*mol^2/m^6]
+    d2P_dVdT : float
+        Second derivative of `P` with respect to both `V` and `T`, [Pa*mol/m^3/K]
+
+    Returns
+    -------
+    score : float
+        Vapor like score, [-]
+
+    Examples
+    --------
+    CO2 vapor properties computed with Peng-Robinson at 300 K and 1 bar:
+
+    >>> vapor_score_PIP(0.024809176851423774, 337.0119286073647, -4009021.959558917, 321440573.3615088, -13659.63987996052)
+    0.016373735005
+
+    n-hexane liquid properties computed with Peng-Robinson at 300 K and 10 bar:
+
+    >>> vapor_score_PIP(0.00013038156684574785, 578477.8796379718, -3614798144591.8984, 4.394997991022487e+17, -20247865009.795322)
+    -10.288635225
+
+    References
+    ----------
+    .. [1] Venkatarathnam, G., and L. R. Oellrich. "Identification of the Phase
+       of a Fluid Using Partial Derivatives of Pressure, Volume, and
+       Temperature without Reference to Saturation Properties: Applications in
+       Phase Equilibria Calculations." Fluid Phase Equilibria 301, no. 2
+       (February 25, 2011): 225-33. doi:10.1016/j.fluid.2010.12.001.
+    '''
     return -(phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dVdT) - 1.0)
 
 def vapor_score_Bennett_Schmidt(dbeta_dT):
+    r'''Compute a vapor score representing how vapor-like a phase is
+    (higher, above zero = more vapor like) using the Bennet-Schmidt
+    temperature derivative of isobaric expansion suggestion.
+
+    .. math::
+        \text{score} = -\left(\frac{\partial \beta}{\partial T}\right)
+
+    Parameters
+    ----------
+        dbeta_dT : float
+            Temperature derivative of isobaric coefficient of a thermal
+            expansion, [1/K^2]
+
+    Returns
+    -------
+    score : float
+        Vapor like score, [-]
+
+    Examples
+    --------
+    CO2 vapor properties computed with Peng-Robinson at 300 K and 1 bar:
+
+    >>> vapor_score_Bennett_Schmidt(-1.1776172267959163e-05)
+    1.1776172267959163e-05
+
+    n-hexane liquid properties computed with Peng-Robinson at 300 K and 10 bar:
+
+    >>> vapor_score_PIP(7.558572848883679e-06)
+    -7.558572848883679e-06
+
+    References
+    ----------
+    .. [1] Bennett, Jim, and Kurt A. G. Schmidt. "Comparison of Phase
+       Identification Methods Used in Oil Industry Flow Simulations." Energy &
+       Fuels 31, no. 4 (April 20, 2017): 3370-79.
+       https://doi.org/10.1021/acs.energyfuels.6b02316.
+    '''
     return -dbeta_dT
 
 def vapor_score_traces(zs, CASs, trace_CASs=['74-82-8', '7727-37-9'], Tcs=None):
@@ -149,8 +275,47 @@ def score_phases_S(phases, constants, correlations, method, S_ID_settings=None):
         scores = [i.d2P_dVdT() for i in phases]
     return scores
 
-def score_phases_VL(phases, constants, correlations, method,
-                    VL_ID_settings=None):
+def score_phases_VL(phases, constants, correlations, method):
+    r'''Score all phases given the provided parameters and a selected method.
+
+    A score above zero indicates a potential gas. More than one phase may have
+    a score above zero, in which case the highest scoring phase is the gas,
+    and the other is a liquid.
+
+    Parameters
+    ----------
+    phases : list[:obj:`thermo.phases.Phase`]
+        Phases to be identified and sorted, [-]
+    constants : :obj:`thermo.chemical_package.ChemicalConstantsPackage`
+        Constants used in the identification, [-]
+    correlations : :obj:`thermo.chemical_package.PropertyCorrelationPackage`
+        Correlations used in the identification, [-]
+    method : str
+        Setting configuring how the scoring is performed, [-]
+
+    Returns
+    -------
+    scores : list[float]
+        Scores for the phases in the order provided, [-]
+
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> from thermo import ChemicalConstantsPackage, PropertyCorrelationPackage, CEOSGas, CEOSLiquid, PRMIX, HeatCapacityGas
+    >>> constants = ChemicalConstantsPackage(CASs=['124-38-9', '110-54-3'], MWs=[44.0095, 86.17536], names=['carbon dioxide', 'hexane'], omegas=[0.2252, 0.2975], Pcs=[7376460.0, 3025000.0], Tbs=[194.67, 341.87], Tcs=[304.2, 507.6], Tms=[216.65, 178.075])
+    >>> correlations = PropertyCorrelationPackage(constants=constants, skip_missing=True, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644])), HeatCapacityGas(best_fit=(200.0, 1000.0, [1.3740654453881647e-21, -8.344496203280677e-18, 2.2354782954548568e-14, -3.4659555330048226e-11, 3.410703030634579e-08, -2.1693611029230923e-05, 0.008373280796376588, -1.356180511425385, 175.67091124888998]))])
+    >>> T, P, zs = 300.0, 1e6, [.5, .5]
+    >>> eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
+    >>> gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
+    >>> liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
+
+    Score of phase identification parameter :obj:`vapor_score_PIP`:
+
+    >>> score_phases_VL([gas, liq], constants, correlations, method='PIP')
+    [1.6409446310, -7.5692120928]
+    '''
     # The higher the score (above zero), the more vapor-like
     if phases:
         T = phases[0].T
@@ -209,7 +374,7 @@ def identity_phase_states(phases, constants, correlations, VL_method=VL_ID_PIP,
 
     if not forced:
         VL_scores = score_phases_VL(phases, constants, correlations,
-                                    method=VL_method, VL_ID_settings=VL_ID_settings)
+                                    method=VL_method)
         if not skip_solids:
             S_scores = score_phases_S(phases, constants, correlations,
                                       method=S_method, S_ID_settings=S_ID_settings)
@@ -336,6 +501,41 @@ def sort_phases(liquids, solids, constants, settings):
 
 def identify_sort_phases(phases, betas, constants, correlations, settings,
                          skip_solids=False):
+    r'''Identify and sort all phases given the provided parameters.
+
+    Parameters
+    ----------
+    phases : list[:obj:`thermo.phase.Phase`]
+        Phases to be identified and sorted, [-]
+    betas : list[float]
+        Phase molar fractions, [-]
+    constants : :obj:`thermo.chemical_package.ChemicalConstantsPackage`
+        Constants used in the identification, [-]
+    correlations : :obj:`thermo.chemical_package.PropertyCorrelationPackage`
+        Correlations used in the identification, [-]
+    settings : :obj:`thermo.bulk.BulkSettings`
+        Settings object controlling the phase ID, [-]
+    skip_solids : bool
+        Set this to True if no phases are provided which can represent a solid phase, [-]
+
+    Returns
+    -------
+    gas : :obj:`thermo.phase.Phase`
+        Gas phase, if one was identified, [-]
+    liquids : list[:obj:`thermo.phase.Phase`]
+        Liquids that were identified and sorted, [-]
+    solids : list[:obj:`thermo.phase.Phase`]
+        solids that were identified and sorted, [-]
+    betas : list[float]
+        Sorted phase molar fractions, in order (gas, liquids..., solids...) [-]
+
+    Notes
+    -----
+
+    Examples
+    --------
+
+    '''
     gas, liquids, solids = identity_phase_states(phases, constants, correlations,
                               VL_method=settings.VL_ID,
                               S_method=settings.S_ID,
