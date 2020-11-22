@@ -526,12 +526,63 @@ def vapor_score_Bennett_Schmidt(dbeta_dT):
     '''
     return -dbeta_dT
 
-def vapor_score_traces(zs, CASs, trace_CASs=['74-82-8', '7727-37-9'], Tcs=None):
+def vapor_score_traces(zs, CASs, Tcs, trace_CASs=['74-82-8', '7727-37-9'],
+                       min_trace=0.0):
+    r'''Compute a vapor score representing how vapor-like a phase is
+    (higher, above zero = more vapor like) using the concept of which phase has
+    the most of the lightest compound. This nicely sidesteps issues in many
+    other methods, at the expense that it cannot be applied when there is only
+    one phase and it is not smart enough to handle liquid-liquid cases.
+
+    If no trace components are present, the component with the lowest critical
+    temperature's concentration is returned. Because of the way this is
+    implemented, the score is always larger than 1.0.
+
+
+    Parameters
+    ----------
+    zs : list[float]
+        Mole fractions of the phase being identified, [-]
+    CASs : list[str]
+        CAS numbers of all components, [-]
+    Tcs : list[float]
+        Critical temperatures of all species, [K]
+    trace_CASs : list[str]
+        Trace components to use for identification; if more than one component
+        is given, the first component present in both `CASs` and `trace_CASs`
+        is the one used, [-]
+    min_trace : float
+        Minimum concentration to make a phase appear vapor-like; subtracted
+        from the concentration which would otherwise be returned, [-]
+
+    Returns
+    -------
+    score : float
+        Vapor like score, [-]
+
+    Examples
+    --------
+    A flash of equimolar CO2/n-hexane at 300 K and 1 MPa is computed, and there
+    is a two phase solution. The phase must be identified for each result:
+
+    Liquid-like phase:
+
+    >>> vapor_score_traces(zs=[.218, .782], Tcs=[304.2, 507.6], CASs=['124-38-9', '110-54-3'])
+    0.218
+
+    Vapor-like phase:
+
+    >>> vapor_score_traces(zs=[.975, .025], Tcs=[304.2, 507.6], CASs=['124-38-9', '110-54-3'])
+    0.975
+
+    Notes
+    -----
+    '''
     # traces should be the lightest species - high = more vapor like
     if trace_CASs is not None:
         for trace_CAS in trace_CASs:
             try:
-                return zs[CASs.index(trace_CAS)]
+                return zs[CASs.index(trace_CAS)] - min_trace
             except ValueError:
                 # trace component not in mixture
                 pass
@@ -543,7 +594,7 @@ def vapor_score_traces(zs, CASs, trace_CASs=['74-82-8', '7727-37-9'], Tcs=None):
         if Tcs[i] < Tc_min:
             comp = zs[i]
             Tc_min = Tcs[i]
-    return comp
+    return comp - min_trace
 
 
 VL_ID_TPC = 'Tpc'
