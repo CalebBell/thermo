@@ -27,7 +27,6 @@ __all__ = ['standard_entropy', 'S0_basis_converter']
 import os
 from fluids.numerics import quad, numpy as np
 from chemicals.utils import isnan
-from thermo.chemical import *
 
 
 def standard_entropy(c=None, dS_trans_s=None, dH_trans_s=None, T_trans_s=None,
@@ -127,6 +126,7 @@ def S0_basis_converter(c, S0_liq=None, S0_gas=None, T_ref=298.15):
 
     Examples
     --------
+    >>> from thermo.chemical import Chemical
     >>> S0_basis_converter(Chemical('decane'), S0_liq=425.89)
     544.679287541752
     >>> S0_basis_converter(Chemical('decane'), S0_gas=545.7)

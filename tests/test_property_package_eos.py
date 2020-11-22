@@ -36,6 +36,7 @@ from thermo.property_package_constants import (PropertyPackageConstants, PR_PKG)
 
 
 def test_bubble_T_PR():
+    # Copied to VL! Can't get last point to converge.
     Ps = np.logspace(np.log10(1e3), np.log10(8e6), 100).tolist()
     # Value working for sure!
     # A long enough list of points may reveal errors
