@@ -644,7 +644,7 @@ def test_SRKMIX_quick():
     # back calculation for T, both solutions
     for V in [4.104756961475803e-05, 0.0007110158049778292]:
         eos = SRKMIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
-        assert_allclose(eos.T, 115)
+        assert_close(eos.T, 115)
         T_slow = eos.solve_T(P=1E6, V=V, quick=False)
         assert_close(T_slow, 115)
 
@@ -732,15 +732,15 @@ def test_VDWMIX_vs_VDW():
     a_alphas = [2.4841053385218554, 0, 0]
     a_alphas_fast = eos.a_alpha_and_derivatives(299)
     assert_close1d(a_alphas, a_alphas_fast)
-    [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
+    [assert_close(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
 
     # Back calculation for P
     eos = VDWMIX(Tcs=[507.6], Pcs=[3025000], zs=[1], T=299, V=0.00022332985608164609)
-    assert_allclose(eos.P, 1E6)
+    assert_close(eos.P, 1E6)
 
     # Back calculation for T
     eos = VDWMIX(Tcs=[507.6], Pcs=[3025000], zs=[1], P=1E6, V=0.00022332985608164609)
-    assert_allclose(eos.T, 299)
+    assert_close(eos.T, 299)
 
 
 def test_VDWIX_quick():
@@ -759,9 +759,9 @@ def test_VDWIX_quick():
     # back calculation for T, both solutions
     for V in [5.881369844882989e-05, 0.0007770872375800777]:
         eos = VDWMIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
-        assert_allclose(eos.T, 115)
+        assert_close(eos.T, 115)
         T_slow = eos.solve_T(P=1E6, V=V, quick=False)
-        assert_allclose(T_slow, 115)
+        assert_close(T_slow, 115)
 
 
     # Fugacities
@@ -802,7 +802,7 @@ def test_PRSVMIX_vs_PRSV():
     # Test of a_alphas
     a_alphas = [3.812985698311453, -0.006976903474851659, 2.0026560811043733e-05]
 
-    [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
+    [assert_close(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
 
     a_alphas_fast = eos.a_alpha_and_derivatives(299)
     assert_close1d(a_alphas, a_alphas_fast, rtol=1e-12)
@@ -812,24 +812,24 @@ def test_PRSVMIX_vs_PRSV():
 
     # PR back calculation for T
     eos = PRSVMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.0001301269135543934, P=1E6, kappa1s=[0.05104])
-    assert_allclose(eos.T, 299)
+    assert_close(eos.T, 299)
     T_slow = eos.solve_T(P=1E6, V=0.0001301269135543934, quick=False)
-    assert_allclose(T_slow, 299)
+    assert_close(T_slow, 299)
 
 
     # Test the bool to control its behavior
     eos = PRSVMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=406.08, P=1E6, kappa1s=[0.05104])
-    assert_allclose(eos.kappas, 0.7977689278061457)
+    assert_close(eos.kappas[0], 0.7977689278061457)
     eos.kappa1_Tr_limit = True
     eos.__init__(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=406.08, P=1E6, kappa1s=[0.05104])
-    assert_allclose(eos.kappas, 0.8074380841890093)
+    assert_close(eos.kappas[0], 0.8074380841890093)
 
     # Test the limit is not enforced while under Tr =0.7
     eos = PRSVMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=304.56, P=1E6, kappa1s=[0.05104])
-    assert_allclose(eos.kappas, 0.8164956255888178)
+    assert_close(eos.kappas[0], 0.8164956255888178)
     eos.kappa1_Tr_limit = True
     eos.__init__(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=304.56, P=1E6, kappa1s=[0.05104])
-    assert_allclose(eos.kappas, 0.8164956255888178)
+    assert_close(eos.kappas[0], 0.8164956255888178)
 
 
 def test_PRSVMIX_quick():
@@ -3467,10 +3467,10 @@ def test_dP_dns_Vt():
     # dP_dns_Vt
     dP_dns_Vt_expect = [1008852.4623272286, 945656.6443815783, 925399.0474464404, 980456.0528080815]
     dP_dns_Vt_analytical = eos.dP_dns_Vt('g')
-    assert_allclose(dP_dns_Vt_expect, dP_dns_Vt_analytical, rtol=1e-12)
+    assert_close1d(dP_dns_Vt_expect, dP_dns_Vt_analytical, rtol=1e-12)
 
     dP_dns_Vt_numerical = jacobian(diff_for_dP_dn, zs, perturbation=1e-7)
-    assert_allclose(dP_dns_Vt_analytical, dP_dns_Vt_numerical, rtol=1e-8)
+    assert_close1d(dP_dns_Vt_analytical, dP_dns_Vt_numerical, rtol=1e-8)
 
 
     # d2P_dninjs_Vt
@@ -3480,14 +3480,14 @@ def test_dP_dns_Vt():
                             [-19515.839351858624, -68774.79519256689, -84635.02057801858, -41431.49651609236]]
 
     d2P_dninjs_Vt_analytical = eos.d2P_dninjs_Vt('g')
-    assert_allclose(d2P_dninjs_Vt_expect, d2P_dninjs_Vt_analytical, rtol=1e-12)
+    assert_close2d(d2P_dninjs_Vt_expect, d2P_dninjs_Vt_analytical, rtol=1e-12)
 
     def diff_for_dP_dn(ns):
         V = Vt/sum(ns)
         zs = normalize(ns)
         return PRMIX(T=T, V=V, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas).P
     d2P_dninjs_Vt_numerical = hessian(diff_for_dP_dn, zs, perturbation=1.5e-4)
-    assert_allclose(d2P_dninjs_Vt_numerical, d2P_dninjs_Vt_analytical, rtol=4e-4)
+    assert_close2d(d2P_dninjs_Vt_numerical, d2P_dninjs_Vt_analytical, rtol=4e-4)
 
 
 
@@ -3514,15 +3514,15 @@ def test_lnphis_basic():
     dlnphis_dns_expect = [[-0.041589990253287246, 0.013411942425344808, 0.028569754501346474, -0.017735789525360493], [0.013411942425344811, -0.004325097479659749, -0.009213200783469343, 0.005719463721095726], [0.028569754501346467, -0.00921320078346936, -0.019625701941100915, 0.012183438222223696], [-0.017735789525360493, 0.005719463721095722, 0.012183438222223696, -0.007563363145875399]]
     dlnphis_dns_g = eos_g.dlnphis_dns(eos_g.Z_g)
     dlnphis_dns_num = jacobian(to_diff_lnphis, zs, scalar=False, perturbation=2.5e-7)
-    assert_allclose(dlnphis_dns_g, dlnphis_dns_expect, rtol=1e-10)
-    assert_allclose(dlnphis_dns_num, dlnphis_dns_g, rtol=1e-6)
+    assert_close2d(dlnphis_dns_g, dlnphis_dns_expect, rtol=1e-10)
+    assert_close2d(dlnphis_dns_num, dlnphis_dns_g, rtol=1e-6)
 
     phase = 'l'
     dlnphis_dns_l = eos_l.dlnphis_dns(eos_l.Z_l)
     dlnphis_dns_l_expect = [[-2.8417588759587655, 1.019086847527884, 2.1398480583755637, -1.4039897485559263], [1.0190868475278858, -0.3655127847640719, -0.767477412353023, 0.5035927397648337], [2.1398480583755637, -0.7674774123530248, -1.6114979541968093, 1.0574001572302283], [-1.4039897485559263, 0.5035927397648343, 1.0574001572302274, -0.6938490506661066]]
     dlnphis_dns_num = jacobian(to_diff_lnphis, zs, scalar=False, perturbation=1.5e-7)
-    assert_allclose(dlnphis_dns_l, dlnphis_dns_l_expect, rtol=1e-10)
-    assert_allclose(dlnphis_dns_l, dlnphis_dns_num, rtol=2e-6)
+    assert_close2d(dlnphis_dns_l, dlnphis_dns_l_expect, rtol=1e-10)
+    assert_close2d(dlnphis_dns_l, dlnphis_dns_num, rtol=2e-6)
     # assert_allclose(nd.Jacobian(lambda x: np.array(to_diff_lnphis(x.tolist())), step=13.e-7)(np.array(zs)),
     #                 dlnphis_dns_l, rtol=1e-7)
 
@@ -3537,9 +3537,9 @@ def test_IGMIX():
     kijs = [[0, 0.038, 0.08], [0.038, 0, 0.021], [0.08, 0.021, 0]]
     eos = IGMIX(T=T, P=P, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
 
-    assert_allclose(eos.fugacities_g, [2280000.0, 760000.0, 4560000.0], rtol=1e-14)
-    assert_allclose(eos.H_dep_g, 0)
-    assert_allclose(eos.S_dep_g, 0)
+    assert_close1d(eos.fugacities_g, [2280000.0, 760000.0, 4560000.0], rtol=1e-14)
+    assert_close(eos.H_dep_g, 0)
+    assert_close(eos.S_dep_g, 0)
 
 def test_PRMIX_composition_derivatives_ternary():
 
@@ -3553,24 +3553,24 @@ def test_PRMIX_composition_derivatives_ternary():
     eos = PRMIX(T=T, P=P, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
 
     db_dzs_expect = [2.4079724954895717e-05, 2.6801366023576428e-05, 4.0480053330897585e-05]
-    assert_allclose(eos.db_dzs, db_dzs_expect, rtol=1e-12)
+    assert_close1d(eos.db_dzs, db_dzs_expect, rtol=1e-12)
     db_dns_expect = [-1.0112361132469188e-05, -7.390720063788477e-06, 6.28796724353268e-06]
-    assert_allclose(eos.db_dns, db_dns_expect, rtol=1e-12)
+    assert_close1d(eos.db_dns, db_dns_expect, rtol=1e-12)
     dnb_dns_expect = [2.4079724954895717e-05, 2.6801366023576428e-05, 4.0480053330897585e-05]
-    assert_allclose(eos.dnb_dns, dnb_dns_expect, rtol=1e-12)
+    assert_close1d(eos.dnb_dns, dnb_dns_expect, rtol=1e-12)
 
     d2b_dzizjs_expect = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-    assert_allclose(eos.d2b_dzizjs, d2b_dzizjs_expect, atol=1e-12)
+    assert_close2d(eos.d2b_dzizjs, d2b_dzizjs_expect, atol=1e-12)
 
     d2b_dninjs_expect = [[2.022472226493838e-05, 1.750308119625767e-05, 3.824393888936512e-06],
      [1.7503081196257666e-05, 1.4781440127576955e-05, 1.1027528202557974e-06],
      [3.8243938889365085e-06, 1.1027528202557974e-06, -1.257593448706536e-05]]
-    assert_allclose(eos.d2b_dninjs, d2b_dninjs_expect, rtol=1e-12)
+    assert_close2d(eos.d2b_dninjs, d2b_dninjs_expect, rtol=1e-12)
 
     d3b_dzizjzks_expect = [[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
      [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
      [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]]
-    assert_allclose(eos.d3b_dzizjzks, d3b_dzizjzks_expect, atol=1e-12)
+    assert_close3d(eos.d3b_dzizjzks, d3b_dzizjzks_expect, atol=1e-12)
 
     d3b_dninjnks_expect = [[[-6.067416679481513e-05, -5.523088465745371e-05, -2.7873510042811394e-05],
       [-5.52308846574537e-05, -4.978760252009228e-05, -2.2430227905449965e-05],
@@ -3581,7 +3581,7 @@ def test_PRMIX_composition_derivatives_ternary():
      [[-2.78735100428114e-05, -2.243022790544998e-05, 4.927146709192336e-06],
       [-2.2430227905449972e-05, -1.698694576808855e-05, 1.0370428846553765e-05],
       [4.927146709192343e-06, 1.0370428846553765e-05, 3.772780346119608e-05]]]
-    assert_allclose(eos.d3b_dninjnks, d3b_dninjnks_expect, rtol=1e-12)
+    assert_close3d(eos.d3b_dninjnks, d3b_dninjnks_expect, rtol=1e-12)
 
     da_alpha_dzs_expect = [0.3811648055400453, 0.5734845502198427, 0.9931275290717199]
     assert_allclose(eos.da_alpha_dzs, da_alpha_dzs_expect, rtol=1e-12)
