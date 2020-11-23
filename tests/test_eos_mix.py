@@ -1304,10 +1304,10 @@ def test_RKMIX_quick():
 
     # Fugacities
     eos = RKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
-    assert_allclose(eos.phis_l, [1.690029818231663, 0.11498701813658066])
-    assert_allclose(eos.phis_g, [0.8872543290701194, 0.7106636262058122])
-    assert_allclose(eos.fugacities_l ,[845014.9091158316, 57493.50906829033])
-    assert_allclose(eos.fugacities_g, [443627.1645350597, 355331.8131029061])
+    assert_close1d(eos.phis_l, [1.690029818231663, 0.11498701813658066])
+    assert_close1d(eos.phis_g, [0.8872543290701194, 0.7106636262058122])
+    assert_close1d(eos.fugacities_l ,[845014.9091158316, 57493.50906829033])
+    assert_close1d(eos.fugacities_g, [443627.1645350597, 355331.8131029061])
 
     # Test solve_T for pure component but a mixture (also PV)
     obj = RKMIX(T=115, P=1E6, Tcs=[126.1], Pcs=[33.94E5], omegas=[0.04], zs=[1.0])
@@ -1322,7 +1322,7 @@ def test_RKMIX_quick():
 
     # Check the a_alphas are the same
     pure_obj = obj.pures()[0]
-    assert_allclose([obj.a_alpha, obj.da_alpha_dT, obj.d2a_alpha_dT2],
+    assert_close1d([obj.a_alpha, obj.da_alpha_dT, obj.d2a_alpha_dT2],
                     [pure_obj.a_alpha, pure_obj.da_alpha_dT, pure_obj.d2a_alpha_dT2], rtol=1e-12)
 
     # This low T, P one failed to create before
@@ -1335,15 +1335,15 @@ def test_PRMIXTranslatedConsistent_vs_pure():
     eos = PRMIXTranslatedConsistent(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], zs=[1], T=300, P=1e6)
     eos_pure = PRTranslatedConsistent(Tc=33.2, Pc=1296960.0, omega=-0.22, T=300, P=1e6)
     eos_pure_copy = eos.pures()[0]
-    assert_allclose(eos_pure.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
-    assert_allclose(eos_pure_copy.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
+    assert_close1d(eos_pure.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
+    assert_close1d(eos_pure_copy.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
 
     # Test of a_alphas
     a_alphas_expect = (0.0002908980675477252, -7.343408956556013e-06, 1.6748923735113275e-07)
     a_alphas = eos.a_alpha_and_derivatives(eos.T)
     a_alphas_pure = eos_pure.a_alpha_and_derivatives(eos_pure.T)
-    assert_allclose(a_alphas, a_alphas_expect, rtol=1e-12)
-    assert_allclose(a_alphas, a_alphas_pure, rtol=1e-12)
+    assert_close1d(a_alphas, a_alphas_expect, rtol=1e-12)
+    assert_close1d(a_alphas, a_alphas_pure, rtol=1e-12)
 
     # Test of PV
     eos_PV = eos.to(P=eos.P, V=eos.V_l, zs=eos.zs)
@@ -1372,7 +1372,7 @@ def test_PRMIXTranslatedConsistent_vs_pure():
 
     # Misc points
     mech_crit = eos.to_mechanical_critical_point()
-    assert_allclose([mech_crit.T, mech_crit.P], [eos.Tcs[0], eos.Pcs[0]])
+    assert_close1d([mech_crit.T, mech_crit.P], [eos.Tcs[0], eos.Pcs[0]])
 
     # Different test where a_alpha is zero - first term solution
     alpha_zero = PRMIXTranslatedConsistent(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], kijs=[[0.0]], zs=[1], T=6000, P=1e2)
@@ -1386,17 +1386,17 @@ def test_PRMIXTranslatedPPJP_vs_pure():
     eos = PRMIXTranslatedPPJP(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], zs=[1], T=300, P=1e6, cs=[-1.4256e-6])
     eos_pure = PRTranslatedPPJP(Tc=33.2, Pc=1296960.0, omega=-0.22, T=300, P=1e6, c=-1.4256e-6)
     eos_pure_copy = eos.pures()[0]
-    assert_allclose(eos_pure.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
-    assert_allclose(eos_pure_copy.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
+    assert_close1d(eos_pure.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
+    assert_close1d(eos_pure_copy.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
     Vs_expect = [-2.7557919524404116e-05, 5.90161172350635e-06, 0.0025037140652460132]
-    assert_allclose(Vs_expect, eos.sorted_volumes)
+    assert_close1d(Vs_expect, eos.sorted_volumes)
 
     # Test of a_alphas
     a_alphas_expect = (0.021969565519583095, -1.16079431214164e-05, 2.2413185621355093e-08)
     a_alphas = eos.a_alpha_and_derivatives(eos.T)
     a_alphas_pure = eos_pure.a_alpha_and_derivatives(eos_pure.T)
-    assert_allclose(a_alphas, a_alphas_expect, rtol=1e-12)
-    assert_allclose(a_alphas, a_alphas_pure, rtol=1e-12)
+    assert_close1d(a_alphas, a_alphas_expect, rtol=1e-12)
+    assert_close1d(a_alphas, a_alphas_pure, rtol=1e-12)
 
     # Test of PV
     eos_PV = eos.to(P=eos.P, V=eos.V_l, zs=eos.zs)
@@ -1428,15 +1428,15 @@ def test_SRKMIXTranslatedConsistent_vs_pure():
     eos = SRKMIXTranslatedConsistent(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], zs=[1], T=300, P=1e6)
     eos_pure = SRKTranslatedConsistent(Tc=33.2, Pc=1296960.0, omega=-0.22, T=300, P=1e6)
     eos_pure_copy = eos.pures()[0]
-    assert_allclose(eos_pure.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
-    assert_allclose(eos_pure_copy.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
+    assert_close1d(eos_pure.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
+    assert_close1d(eos_pure_copy.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
 
     # Test of a_alphas
     a_alphas_expect = (1.281189532964332e-05, -5.597692089837639e-07, 2.3057572995770314e-08)
     a_alphas = eos.a_alpha_and_derivatives(eos.T)
     a_alphas_pure = eos_pure.a_alpha_and_derivatives(eos_pure.T)
-    assert_allclose(a_alphas, a_alphas_expect, rtol=1e-12)
-    assert_allclose(a_alphas, a_alphas_pure, rtol=1e-12)
+    assert_close1d(a_alphas, a_alphas_expect, rtol=1e-12)
+    assert_close1d(a_alphas, a_alphas_pure, rtol=1e-12)
 
     # Test of PV
     eos_PV = eos.to(P=eos.P, V=eos.V_l, zs=eos.zs)
@@ -1466,7 +1466,7 @@ def test_SRKMIXTranslatedConsistent_vs_pure():
 
     # Misc points
     mech_crit = eos.to_mechanical_critical_point()
-    assert_allclose([mech_crit.T, mech_crit.P], [eos.Tcs[0], eos.Pcs[0]])
+    assert_close1d([mech_crit.T, mech_crit.P], [eos.Tcs[0], eos.Pcs[0]])
 
     alpha_zero = SRKMIXTranslatedConsistent(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], kijs=[[0.0]], zs=[1], T=6000, P=1e2)
     assert 0.0 == alpha_zero.a_alpha
@@ -1501,13 +1501,13 @@ def test_fugacities_PR_vs_coolprop():
     AS.update(CP.PT_INPUTS, P, T)
 
     fugacities_CP = [AS.fugacity(0), AS.fugacity(1)]
-    assert_allclose(fugacities_CP, eos.fugacities_g, rtol=1e-13)
+    assert_close1d(fugacities_CP, eos.fugacities_g, rtol=1e-13)
 
     T, P = 300, 1e6
     eos = PRMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
     AS.update(CP.PT_INPUTS, P, T)
     fugacities_CP = [AS.fugacity(0), AS.fugacity(1)]
-    assert_allclose(fugacities_CP, eos.fugacities_l, rtol=1e-13)
+    assert_close1d(fugacities_CP, eos.fugacities_l, rtol=1e-13)
 
     # Set the coefficients back
     PRMIX.c1, PRMIX.c2 = c1, c2
@@ -1536,13 +1536,13 @@ def test_fugacities_SRK_vs_coolprop():
     AS.update(CP.PT_INPUTS, P, T)
 
     fugacities_CP = [AS.fugacity(0), AS.fugacity(1)]
-    assert_allclose(fugacities_CP, eos.fugacities_g, rtol=1e-13)
+    assert_close1d(fugacities_CP, eos.fugacities_g, rtol=1e-13)
 
     T, P = 300, 1e6
     eos = SRKMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
     AS.update(CP.PT_INPUTS, P, T)
     fugacities_CP = [AS.fugacity(0), AS.fugacity(1)]
-    assert_allclose(fugacities_CP, eos.fugacities_l, rtol=1e-13)
+    assert_close1d(fugacities_CP, eos.fugacities_l, rtol=1e-13)
 
     # Set the coefficients back
     SRKMIX.c1, SRKMIX.c2 = c1, c2
@@ -1606,11 +1606,11 @@ def test_PR_d_lbphis_dT():
 
     expected_diffs = [-0.0125202946344780, -0.00154326287196778, 0.0185468995722353]
     analytical_diffs = eos.dlnphis_dT('g')
-    assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
-    assert_allclose(expected_diffs, numerical_diffs, rtol=1e-5)
+    assert_close1d(analytical_diffs, expected_diffs, rtol=1e-11)
+    assert_close1d(expected_diffs, numerical_diffs, rtol=1e-5)
 
     analytical_diffs_generic = super(eos.__class__, eos).dlnphis_dT('g')
-    assert_allclose(analytical_diffs, analytical_diffs_generic, rtol=1e-11)
+    assert_close1d(analytical_diffs, analytical_diffs_generic, rtol=1e-11)
 
 @pytest.mark.sympy
 @pytest.mark.slow
@@ -1670,7 +1670,7 @@ def test_PR_dlnphis_dT_sympy():
 
         sympy_diffs.append(float(N(working)))
 
-    assert_allclose(diffs_implemented, sympy_diffs, rtol=1e-10)
+    assert_close1d(diffs_implemented, sympy_diffs, rtol=1e-10)
 
 def test_SRK_dlnphis_dT():
     dT = 1e-6
@@ -1689,11 +1689,11 @@ def test_SRK_dlnphis_dT():
 
     expected_diffs = [-0.013492637405729917, -0.002035560753468637, 0.019072382634936852]
     analytical_diffs = eos.dlnphis_dT('g')
-    assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
-    assert_allclose(expected_diffs, numerical_diffs, rtol=1e-5)
+    assert_close1d(analytical_diffs, expected_diffs, rtol=1e-11)
+    assert_close1d(expected_diffs, numerical_diffs, rtol=1e-5)
 
     analytical_diffs_generic = super(eos.__class__, eos).dlnphis_dT('g')
-    assert_allclose(analytical_diffs, analytical_diffs_generic, rtol=1e-11)
+    assert_close1d(analytical_diffs, analytical_diffs_generic, rtol=1e-11)
 
 
 @pytest.mark.sympy
@@ -1755,7 +1755,7 @@ def test_SRK_dlnphis_dT_sympy():
 
         sympy_diffs.append(float(N(working)))
 
-    assert_allclose(diffs_implemented, sympy_diffs, rtol=1e-10)
+    assert_close1d(diffs_implemented, sympy_diffs, rtol=1e-10)
 
 def test_VDW_dlnphis_dT():
     dT = 1e-5
@@ -1774,11 +1774,11 @@ def test_VDW_dlnphis_dT():
     expected_diffs =[-0.00457948776557392, 0.000404824835196203, 0.0105772883904069]
     analytical_diffs = eos.dlnphis_dT('g')
 
-    assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
-    assert_allclose(expected_diffs, numerical_diffs, rtol=1e-5)
+    assert_close1d(analytical_diffs, expected_diffs, rtol=1e-11)
+    assert_close1d(expected_diffs, numerical_diffs, rtol=1e-5)
 
 #    analytical_diffs_generic = super(eos.__class__, eos).dlnphis_dT('g')
-#    assert_allclose(analytical_diffs, analytical_diffs_generic, rtol=1e-11)
+#    assert_close1d(analytical_diffs, analytical_diffs_generic, rtol=1e-11)
 
 @pytest.mark.sympy
 @pytest.mark.slow
@@ -1842,7 +1842,7 @@ def test_VDW_dlnphis_dT_sympy():
 
         sympy_diffs.append(float(N(working)))
 
-    assert_allclose(diffs_implemented, sympy_diffs, rtol=1e-10)
+    assert_close1d(diffs_implemented, sympy_diffs, rtol=1e-10)
 
 
 def test_PR_dlnphis_dP():
@@ -1862,11 +1862,11 @@ def test_PR_dlnphis_dP():
     expected_diffs = [8.49254218440054e-8, -3.44512799711331e-9, -1.52343107476988e-7]
     analytical_diffs = eos.dlnphis_dP('g')
 
-    assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
-    assert_allclose(expected_diffs, numerical_diffs, rtol=1e-5)
+    assert_close1d(analytical_diffs, expected_diffs, rtol=1e-11)
+    assert_close1d(expected_diffs, numerical_diffs, rtol=1e-5)
     # Base class
     analytical_diffs = super(eos.__class__, eos).dlnphis_dP('g')
-    assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
+    assert_close1d(analytical_diffs, expected_diffs, rtol=1e-11)
 
 @pytest.mark.slow
 @pytest.mark.sympy
@@ -1922,7 +1922,7 @@ def test_PR_dlnphis_dP_sympy():
         working = working.subs(subs2)
 
         sympy_diffs.append(float((N(working))))
-    assert_allclose(sympy_diffs, diffs_implemented, rtol=1e-11)
+    assert_close1d(sympy_diffs, diffs_implemented, rtol=1e-11)
 
 
 def test_SRK_dlnphis_dP():
@@ -1941,12 +1941,12 @@ def test_SRK_dlnphis_dP():
 
     expected_diffs = [9.40786516520732e-8, 3.03133250647420e-9, -1.51771425140191e-7]
     analytical_diffs = eos.dlnphis_dP('g')
-    assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
-    assert_allclose(expected_diffs, numerical_diffs, rtol=1e-5)
+    assert_close1d(analytical_diffs, expected_diffs, rtol=1e-11)
+    assert_close1d(expected_diffs, numerical_diffs, rtol=1e-5)
 
     # Base class
     analytical_diffs = super(eos.__class__, eos).dlnphis_dP('g')
-    assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
+    assert_close1d(analytical_diffs, expected_diffs, rtol=1e-11)
 
 @pytest.mark.slow
 @pytest.mark.sympy
@@ -2000,7 +2000,7 @@ def test_SRK_dlnphis_dP_sympy():
         working = working.subs(subs2)
 
         sympy_diffs.append(float((N(working))))
-    assert_allclose(sympy_diffs, diffs_implemented, rtol=1e-11)
+    assert_close1d(sympy_diffs, diffs_implemented, rtol=1e-11)
 
 
 def test_VDW_dlnphis_dP():
@@ -2020,12 +2020,12 @@ def test_VDW_dlnphis_dP():
     expected_diffs = [4.48757918014496e-8, -1.17254464726201e-8, -1.20732168353728e-7]
     analytical_diffs = eos.dlnphis_dP('g')
 
-    assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
-    assert_allclose(expected_diffs, numerical_diffs, rtol=1e-5)
+    assert_close1d(analytical_diffs, expected_diffs, rtol=1e-11)
+    assert_close1d(expected_diffs, numerical_diffs, rtol=1e-5)
 
     # Base class - does not pass likely due to zero division error, could use more work
 #    analytical_diffs = super(eos.__class__, eos).dlnphis_dP('g')
-#    assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
+#    assert_close1d(analytical_diffs, expected_diffs, rtol=1e-11)
 
 @pytest.mark.sympy
 @pytest.mark.slow
@@ -2080,7 +2080,7 @@ def test_VDW_dlnphis_dP_sympy():
 
         sympy_diffs.append(float(N(working)))
 
-    assert_allclose(sympy_diffs, diffs_implemented, rtol=1e-11)
+    assert_close1d(sympy_diffs, diffs_implemented, rtol=1e-11)
 
 
 
@@ -2198,15 +2198,15 @@ def test_dbasic_dnxpartial():
         partial_n = False
         numericals = [derivative(db_dnxpartial, ni, dx=dx, order=order, args=(i,'b'))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.db_dzs)
+        assert_close1d(numericals, eos.db_dzs)
 
         numericals = [derivative(db_dnxpartial, ni, dx=dx, order=order, args=(i, 'a_alpha'))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.da_alpha_dzs)
+        assert_close1d(numericals, eos.da_alpha_dzs)
 
         numericals = [derivative(db_dnxpartial, ni, dx=dx, order=order, args=(i, 'da_alpha_dT'))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.da_alpha_dT_dzs)
+        assert_close1d(numericals, eos.da_alpha_dT_dzs)
 
 
 
@@ -2214,24 +2214,24 @@ def test_dbasic_dnxpartial():
         normalization = True
         numericals = [derivative(db_dnxpartial, ni, dx=dx, order=order, args=(i, 'b'))
                         for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.db_dns)
+        assert_close1d(numericals, eos.db_dns)
         numericals = [derivative(db_dnxpartial, ni, dx=dx, order=order, args=(i, 'a_alpha'))
                         for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.da_alpha_dns)
+        assert_close1d(numericals, eos.da_alpha_dns)
         numericals = [derivative(db_dnxpartial, ni, dx=dx, order=order, args=(i, 'da_alpha_dT'))
                         for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.da_alpha_dT_dns)
+        assert_close1d(numericals, eos.da_alpha_dT_dns)
 
         partial_n = True
         numericals = [derivative(db_dnxpartial, ni, dx=dx, order=order, args=(i,'b'))
                         for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dnb_dns)
+        assert_close1d(numericals, eos.dnb_dns)
         numericals = [derivative(db_dnxpartial, ni, dx=dx, order=order, args=(i,'a_alpha'))
                         for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dna_alpha_dns)
+        assert_close1d(numericals, eos.dna_alpha_dns)
         numericals = [derivative(db_dnxpartial, ni, dx=dx, order=order, args=(i,'da_alpha_dT'))
                         for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dna_alpha_dT_dns)
+        assert_close1d(numericals, eos.dna_alpha_dT_dns)
 
         c.clear()
 
@@ -2762,14 +2762,14 @@ def test_ddelta_dnx(kwargs):
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(ddelta_dnxpartial, ni, dx=1e-4, order=3, args=(i,))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.ddelta_dzs)
+        assert_close1d(numericals, eos.ddelta_dzs)
 
     normalization = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(ddelta_dnxpartial, ni, dx=1e-4, order=3, args=(i,))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.ddelta_dns)
+        assert_close1d(numericals, eos.ddelta_dns)
 #test_ddelta_dnx(ternary_basic)
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
@@ -2821,14 +2821,14 @@ def test_depsilon_dnx(kwargs):
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(depsilon_dnxpartial, ni, dx=1e-4, order=3, args=(i,))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.depsilon_dzs)
+        assert_close1d(numericals, eos.depsilon_dzs)
 
     normalization = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(depsilon_dnxpartial, ni, dx=1e-4, order=3, args=(i,))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.depsilon_dns)
+        assert_close1d(numericals, eos.depsilon_dns)
 
 #test_depsilon_dnx(ternary_basic)
 
@@ -2938,14 +2938,14 @@ def test_d2a_alpha_dT2_dnxpartial():
         eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
         numericals = [derivative(d2a_alpha_dT2_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in zip((0, 1, 2), (.7, .2, .1))]
-        assert_allclose(numericals, eos.d2a_alpha_dT2_dzs)
+        assert_close1d(numericals, eos.d2a_alpha_dT2_dzs)
 
     normalization = True
     for obj in eos_mix_list:
         eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
         numericals = [derivative(d2a_alpha_dT2_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in zip((0, 1, 2), (.7, .2, .1))]
-        assert_allclose(numericals, eos.d2a_alpha_dT2_dns)
+        assert_close1d(numericals, eos.d2a_alpha_dT2_dns)
 
 @pytest.mark.slow
 @pytest.mark.sympy
@@ -3035,7 +3035,7 @@ def test_dH_dep_dnxpartial(kwargs):
         numericals = [derivative(dH_dep_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in enumerate(zs)]
 
-        assert_allclose(numericals, eos.dH_dep_dzs(eos.Z_g))
+        assert_close1d(numericals, eos.dH_dep_dzs(eos.Z_g))
 
     normalization = True
     for obj in eos_mix_list:
@@ -3043,7 +3043,7 @@ def test_dH_dep_dnxpartial(kwargs):
         numericals = [derivative(dH_dep_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in enumerate(zs)]
 
-        assert_allclose(numericals, eos.dH_dep_dns(eos.Z_g))
+        assert_close1d(numericals, eos.dH_dep_dns(eos.Z_g))
 
     partial_n = True
     for obj in eos_mix_list:
@@ -3051,7 +3051,7 @@ def test_dH_dep_dnxpartial(kwargs):
         numericals = [derivative(dH_dep_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in enumerate(zs)]
 
-        assert_allclose(numericals, eos.dnH_dep_dns(eos.Z_g))
+        assert_close1d(numericals, eos.dnH_dep_dns(eos.Z_g))
 
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
@@ -3074,21 +3074,21 @@ def test_G_dep_dnxpartial(kwargs):
         eos = obj(zs=zs, **kwargs)
         numericals = jacobian(G_dep_dnxpartial, zs, perturbation=1e-7)
         analytical = eos.dG_dep_dzs(eos.Z_g)
-        assert_allclose(numericals, analytical, rtol=5e-7)
+        assert_close1d(numericals, analytical, rtol=5e-7)
 
     normalization = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = jacobian(G_dep_dnxpartial, zs, perturbation=5e-7)
         analytical = eos.dG_dep_dns(eos.Z_g)
-        assert_allclose(numericals, analytical, rtol=1e-5)
+        assert_close1d(numericals, analytical, rtol=1e-5)
 
     partial_n = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = jacobian(G_dep_dnxpartial, zs, perturbation=5e-7)
         analytical = eos.dnG_dep_dns(eos.Z_g)
-        assert_allclose(numericals, analytical, rtol=1e-5)
+        assert_close1d(numericals, analytical, rtol=1e-5)
 
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
@@ -3137,14 +3137,14 @@ def test_lnphi_dnx(kwargs):
         eos = obj(zs=zs, **kwargs)
         numericals = jacobian(lnphi_dnxpartial, zs, perturbation=1e-7)
         analytical = eos.dlnphi_dzs(eos.Z_g)
-        assert_allclose(numericals, analytical, rtol=5e-7)
+        assert_close1d(numericals, analytical, rtol=5e-7)
 
     normalization = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = jacobian(lnphi_dnxpartial, zs, perturbation=5e-7)
         analytical = eos.dlnphi_dns(eos.Z_g)
-        assert_allclose(numericals, analytical, rtol=1e-6)
+        assert_close1d(numericals, analytical, rtol=1e-6)
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_dlnphi_d2nx(kwargs):
@@ -3204,14 +3204,14 @@ def test_dV_dnxpartial(kwargs):
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(dV_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dV_dns(eos.Z_g), atol=1e-16)
+        assert_close1d(numericals, eos.dV_dns(eos.Z_g), atol=1e-16)
 
     partial_n = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(dV_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dnV_dns(eos.Z_g))
+        assert_close1d(numericals, eos.dnV_dns(eos.Z_g))
 
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
@@ -3265,21 +3265,21 @@ def test_dZ_dnxpartial(kwargs):
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(dZ_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dZ_dzs(eos.Z_g), atol=1e-13)
+        assert_close1d(numericals, eos.dZ_dzs(eos.Z_g), atol=1e-13)
 
     normalization = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(dZ_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dZ_dns(eos.Z_g), atol=1e-13)
+        assert_close1d(numericals, eos.dZ_dns(eos.Z_g), atol=1e-13)
 
     partial_n = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(dZ_dnxpartial, ni, dx=1e-3, order=7, args=(i,))
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dnZ_dns(eos.Z_g))
+        assert_close1d(numericals, eos.dnZ_dns(eos.Z_g))
 
 
 quaternary_dthermodynamics = dict(T=300.0, P=1e5, Tcs=[126.2, 304.2, 373.2, 304.1],
@@ -3332,13 +3332,13 @@ def test_dthermodynamics_dnxpartial(kwargs, T, P, zs):
                 normalization = False
                 numericals = [derivative(dthing_dnxpartial, ni, dx=1e-6, order=3, args=(i,))
                     for i, ni in enumerate(zs)]
-                assert_allclose(numericals, getattr(eos, attr_der_phase))
+                assert_close1d(numericals, getattr(eos, attr_der_phase))
 
                 normalization = True
                 attr_der_phase = attr_der + 'dns_%s' %phase
                 numericals = [derivative(dthing_dnxpartial, ni, dx=1e-6, order=3, args=(i,))
                     for i, ni in enumerate(zs)]
-                assert_allclose(numericals, getattr(eos, attr_der_phase))
+                assert_close1d(numericals, getattr(eos, attr_der_phase))
 
 def test_fugacities_numerical_all_eos_mix():
     liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
