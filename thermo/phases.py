@@ -2483,11 +2483,39 @@ class Phase(object):
         return -(V*V)*d2P_dTdV
 
     def d2T_dPdrho(self):
+        r'''Method to calculate and return the pressure derivative
+        and then molar density derivative of the temperature of the phase.
+
+        .. math::
+            \frac{\partial^2 T}{\partial P \partial \rho} = -V^2
+            \left(\frac{\partial^2 T}{\partial P \partial V}\right)
+
+        Returns
+        -------
+        d2T_dPdrho : float
+            Pressure derivative and then molar density derivative of the
+            temperature, [K*m^3/(Pa*mol)]
+        '''
         V = self.V()
         d2T_dPdV = self.d2T_dPdV()
         return -(V*V)*d2T_dPdV
 
     def d2rho_dPdT(self):
+        r'''Method to calculate and return the pressure derivative
+        and then temperature derivative of the molar density of the phase.
+
+        .. math::
+            \frac{\partial^2 \rho}{\partial P \partial T} = -\frac{1}{V^2}
+            \left(\frac{\partial^2 V}{\partial P \partial T}\right)
+            + \frac{2}{V^3}  \left(\frac{\partial V}{\partial T}\right)_P
+             \left(\frac{\partial V}{\partial P}\right)_T
+
+        Returns
+        -------
+        d2rho_dPdT : float
+            Pressure derivative and then temperature derivative of the
+            molar density, [mol/(m^3*K*Pa)]
+        '''
         d2V_dPdT = self.d2V_dPdT()
         dV_dT = self.dV_dT()
         dV_dP = self.dV_dP()
@@ -2495,10 +2523,33 @@ class Phase(object):
         return -d2V_dPdT/V**2 + 2*dV_dT*dV_dP/V**3
 
     def drho_dV_T(self):
+        r'''Method to calculate and return the volume derivative of
+        molar density of the phase.
+
+        .. math::
+            \frac{\partial \rho}{\partial V} = -\frac{1}{V^2}
+
+        Returns
+        -------
+        drho_dV_T : float
+            Molar density derivative of volume, [mol^2/m^6]
+        '''
         V = self.V()
         return -1.0/(V*V)
 
     def drho_dT_V(self):
+        r'''Method to calculate and return the temperature derivative of
+        molar density of the phase at constant volume.
+
+        .. math::
+            \left(\frac{\partial \rho}{\partial T}\right)_V = 0
+
+        Returns
+        -------
+        drho_dT_V : float
+            Temperature derivative of molar density of the phase at constant
+            volume, [mol/(m^3*K)]
+        '''
         return 0.0
 
     # Idea gas heat capacity
