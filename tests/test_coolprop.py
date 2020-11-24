@@ -73,17 +73,18 @@ def test_CoolProp_T_dependent_property():
     assert_allclose(rhow, 0.3139926976198761)
 
 
-@pytest.mark.CoolProp
-@pytest.mark.slow
-def test_CP_approximators():
-    from thermo.coolprop import coolprop_fluids, CP_approximators
-    for CAS in coolprop_fluids:
-        obj = CP_approximators[CAS]
-        props = ['DMOLAR', 'HMOLAR', 'SMOLAR', 'SPEED_OF_SOUND', 'CONDUCTIVITY',
-                 'VISCOSITY', 'CPMOLAR', 'CVMOLAR']
-        for prop in props:
-            if hasattr(obj, prop+'_g'):
-                obj.validate_prop(prop, 'g', evaluated_points=15)
-
-
-
+# This test was part of an earlier attempt which is no longer relevant
+#@pytest.mark.CoolProp
+#@pytest.mark.slow
+#def test_CP_approximators():
+#    from thermo.coolprop import coolprop_fluids, CP_approximators
+#    for CAS in coolprop_fluids:
+#        obj = CP_approximators[CAS]
+#        props = ['DMOLAR', 'HMOLAR', 'SMOLAR', 'SPEED_OF_SOUND', 'CONDUCTIVITY',
+#                 'VISCOSITY', 'CPMOLAR', 'CVMOLAR']
+#        for prop in props:
+#            if hasattr(obj, prop+'_g'):
+#                obj.validate_prop(prop, 'g', evaluated_points=15)
+#
+#
+#

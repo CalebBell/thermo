@@ -2700,9 +2700,30 @@ class Phase(object):
         return self._Cpl_integrals_over_T_pure
 
     def V_ideal_gas(self):
+        r'''Method to calculate and return the ideal-gas molar volume of the
+        phase.
+
+        .. math::
+            V^{ig} = \frac{RT}{P}
+
+        Returns
+        -------
+        V : float
+            Ideal gas molar volume, [m^3/mol]
+        '''
         return self.R*self.T/self.P
 
     def H_ideal_gas(self):
+        r'''Method to calculate and return the ideal-gas enthalpy of the phase.
+
+        .. math::
+            H^{ig} = \sum_i z_i {H_{i}^{ig}}
+
+        Returns
+        -------
+        H : float
+            Ideal gas enthalpy, [J/(mol)]
+        '''
         try:
             return self._H_ideal_gas
         except AttributeError:
@@ -2714,6 +2735,17 @@ class Phase(object):
         return H
 
     def S_ideal_gas(self):
+        r'''Method to calculate and return the ideal-gas entropy of the phase.
+
+        .. math::
+            S^{ig} = \sum_i z_i S_{i}^{ig} - R\log\left(\frac{P}{P_{ref}}\right)
+            - R\sum_i z_i \log(z_i)
+
+        Returns
+        -------
+        S : float
+            Ideal gas molar entropy, [J/(mol*K)]
+        '''
         try:
             return self._S_ideal_gas
         except AttributeError:
@@ -2729,11 +2761,20 @@ class Phase(object):
         for i in cmps:
             S += zs[i]*Cpig_integrals_over_T_pure[i]
         self._S_ideal_gas = S
-
-        # dS_ideal_gas_dP = -R/P
         return S
 
     def Cp_ideal_gas(self):
+        r'''Method to calculate and return the ideal-gas heat capacity of the
+        phase.
+
+        .. math::
+            C_p^{ig} = \sum_i z_i {C_{p,i}^{ig}}
+
+        Returns
+        -------
+        Cp : float
+            Ideal gas heat capacity, [J/(mol*K)]
+        '''
         try:
             return self._Cp_ideal_gas
         except AttributeError:
@@ -2746,6 +2787,17 @@ class Phase(object):
         return Cp
 
     def Cv_ideal_gas(self):
+        r'''Method to calculate and return the ideal-gas constant volume heat
+        capacity of the phase.
+
+        .. math::
+            C_v^{ig} = \sum_i z_i {C_{p,i}^{ig}} - R
+
+        Returns
+        -------
+        Cv : float
+            Ideal gas constant volume heat capacity, [J/(mol*K)]
+        '''
         try:
             Cp = self._Cp_ideal_gas
         except AttributeError:
@@ -2753,20 +2805,76 @@ class Phase(object):
         return Cp - self.R
 
     def Cv_dep(self):
+        r'''Method to calculate and return the difference between the actual
+        `Cv` and the ideal-gas constant volume heat
+        capacity :math:`C_v^{ig}` of the phase.
+
+        .. math::
+            C_v^{dep} = C_v - C_v^{ig}
+
+        Returns
+        -------
+        Cv_dep : float
+            Departure ideal gas constant volume heat capacity, [J/(mol*K)]
+        '''
         return self.Cv() - self.Cv_ideal_gas()
 
     def Cp_Cv_ratio_ideal_gas(self):
+        r'''Method to calculate and return the ratio of the ideal-gas heat
+        capacity to its constant-volume heat capacity.
+
+        .. math::
+            \frac{C_p^{ig}}{C_v^{ig}}
+
+        Returns
+        -------
+        Cp_Cv_ratio_ideal_gas : float
+            Cp/Cv for the phase as an ideal gas, [-]
+        '''
         return self.Cp_ideal_gas()/self.Cv_ideal_gas()
 
     def G_ideal_gas(self):
+        r'''Method to calculate and return the ideal-gas Gibbs free energy of
+        the phase.
+
+        .. math::
+            G^{ig} = H^{ig} - T S^{ig}
+
+        Returns
+        -------
+        G_ideal_gas : float
+            Ideal gas free energy, [J/(mol)]
+        '''
         G_ideal_gas = self.H_ideal_gas() - self.T*self.S_ideal_gas()
         return G_ideal_gas
 
     def U_ideal_gas(self):
+        r'''Method to calculate and return the ideal-gas internal energy of
+        the phase.
+
+        .. math::
+            U^{ig} = H^{ig} - P V^{ig}
+
+        Returns
+        -------
+        U_ideal_gas : float
+            Ideal gas internal energy, [J/(mol)]
+        '''
         U_ideal_gas = self.H_ideal_gas() - self.P*self.V_ideal_gas()
         return U_ideal_gas
 
     def A_ideal_gas(self):
+        r'''Method to calculate and return the ideal-gas Helmholtz energy of
+        the phase.
+
+        .. math::
+            A^{ig} = U^{ig} - T S^{ig}
+
+        Returns
+        -------
+        A_ideal_gas : float
+            Ideal gas Helmholtz free energy, [J/(mol)]
+        '''
         A_ideal_gas = self.U_ideal_gas() - self.T*self.S_ideal_gas()
         return A_ideal_gas
 
@@ -2849,21 +2957,74 @@ class Phase(object):
         return self.dS_dT_P()*self.dT_dV()
 
     def dP_dT_P(self):
+        r'''Method to calculate and return the temperature derivative of
+        temperature of the phase at constant pressure.
+
+        Returns
+        -------
+        dP_dT_P : float
+            Temperature derivative of temperature, [-]
+        '''
         return 0.0
 
     def dP_dV_P(self):
+        r'''Method to calculate and return the volume derivative of
+        pressure of the phase at constant pressure.
+
+        Returns
+        -------
+        dP_dV_P : float
+            Volume derivative of pressure of the phase at constant pressure,
+            [Pa*mol/m^3]
+        '''
         return 0.0
 
     def dT_dP_T(self):
+        r'''Method to calculate and return the pressure derivative of
+        temperature of the phase at constant temperature.
+
+        Returns
+        -------
+        dT_dP_T : float
+            Pressure derivative of temperature of the phase at constant
+            temperature, [K/Pa]
+        '''
         return 0.0
 
     def dT_dV_T(self):
+        r'''Method to calculate and return the volume derivative of
+        temperature of the phase at constant temperature.
+
+        Returns
+        -------
+        dT_dV_T : float
+            Pressure derivative of temperature of the phase at constant
+            temperature, [K*mol/m^3]
+        '''
         return 0.0
 
     def dV_dT_V(self):
+        r'''Method to calculate and return the temperature derivative of
+        volume of the phase at constant volume.
+
+        Returns
+        -------
+        dV_dT_V : float
+             Temperature derivative of volume of the phase at constant volume,
+             [m^3/(mol*K)]
+        '''
         return 0.0
 
     def dV_dP_V(self):
+        r'''Method to calculate and return the volume derivative of
+        pressure of the phase at constant volume.
+
+        Returns
+        -------
+        dV_dP_V : float
+             Pressure derivative of volume of the phase at constant pressure,
+             [m^3/(mol*Pa)]
+        '''
         return 0.0
 
     def dP_dP_T(self):
