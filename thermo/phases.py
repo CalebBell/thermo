@@ -2396,12 +2396,38 @@ class Phase(object):
         return -self.d2V_dP2()/V**2 + 2*self.dV_dP()**2/V**3
 
     def dT_drho(self):
+        r'''Method to calculate and return the molar density derivative of
+        temperature of the phase.
+
+        .. math::
+            \frac{\partial T}{\partial \rho} = -V^2\left(\frac{\partial
+            T}{\partial V}\right)_P
+
+        Returns
+        -------
+        dT_drho : float
+            Molar density derivative of temperature, [K*m^3/mol]
+        '''
         V = self.V()
         return -V*V*self.dT_dV()
 
     def d2T_drho2(self):
+        r'''Method to calculate and return the second molar density derivative
+        of temperature of the phase.
+
+        .. math::
+            \frac{\partial^2 T}{\partial \rho^2} = -V^2\left(
+            -V^2 \left(\frac{\partial^2 T}{\partial V^2}\right)_P
+            -2 V \left(\frac{\partial T}{\partial V}\right)_P
+            \right)
+
+        Returns
+        -------
+        d2T_drho2 : float
+            Second molar density derivative of temperature, [K*m^6/mol^2]
+        '''
         V = self.V()
-        return -V**2*(-V**2*self.d2T_dV2() - 2*V*self.dT_dV())
+        return V*V*V*(V*self.d2T_dV2() + 2.0*self.dT_dV())
 
     def drho_dT(self):
         V = self.V()
