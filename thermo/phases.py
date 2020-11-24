@@ -2242,9 +2242,40 @@ class Phase(object):
         return V_inv*(self.d2V_dTdP() - dV_dT*dV_dP*V_inv)
 
     def Joule_Thomson(self):
+        r'''Method to calculate and return the Joule-Thomson coefficient
+        of the phase.
+
+        .. math::
+            \mu_{JT} = \left(\frac{\partial T}{\partial P}\right)_H = \frac{1}{C_p}
+            \left[T \left(\frac{\partial V}{\partial T}\right)_P - V\right]
+            = \frac{V}{C_p}\left(\beta T-1\right)
+
+        Returns
+        -------
+        mu_JT : float
+            Joule-Thomson coefficient [K/Pa]
+        '''
         return Joule_Thomson(self.T, self.V(), self.Cp(), dV_dT=self.dV_dT(), beta=self.isobaric_expansion())
 
     def speed_of_sound(self):
+        r'''Method to calculate and return the molar speed of sound
+        of the phase.
+
+        .. math::
+            w = \left[-V^2 \left(\frac{\partial P}{\partial V}\right)_T \frac{C_p}
+            {C_v}\right]^{1/2}
+
+        A similar expression based on molar density is:
+
+        .. math::
+           w = \left[\left(\frac{\partial P}{\partial \rho}\right)_T \frac{C_p}
+           {C_v}\right]^{1/2}
+
+        Returns
+        -------
+        w : float
+            Speed of sound for a real gas, [m*kg^0.5/(s*mol^0.5)]
+        '''
         # Intentionally molar
         return speed_of_sound(self.V(), self.dP_dV(), self.Cp(), self.Cv())
 
@@ -2878,34 +2909,46 @@ class Phase(object):
         A_ideal_gas = self.U_ideal_gas() - self.T*self.S_ideal_gas()
         return A_ideal_gas
 
-    def mechanical_critical_point(self):
+    def _set_mechanical_critical_point(self):
         zs = self.zs
         # Get initial guess
         try:
             try:
                 Tcs, Pcs = self.Tcs, self.Pcs
             except:
-                Tcs, Pcs = self.eos_mix.Tcs, self.eos_mix.Pcs
-            Pmc = sum([Pcs[i]*zs[i] for i in self.cmps])
-            Tmc = sum([(Tcs[i]*Tcs[j])**0.5*zs[j]*zs[i] for i in self.cmps
-                      for j in self.cmps])
-        except Exception as e:
+                try:
+                    Tcs, Pcs = self.eos_mix.Tcs, self.eos_mix.Pcs
+                except:
+                    Tcs, Pcs = self.constants.Tcs, self.constants.Pcs
+            Pmc, Tmc = 0.0, 0.0
+            for i in self.cmps:
+                Pmc += Pcs[i]*zs[i]
+
+            Tc_rts = [sqrt(Tc) for Tc in Tcs]
+            for i in self.cmps:
+                tot = 0.0
+                for j in self.cmps:
+                    tot += zs[j]*Tc_rts[j]
+                Tmc += tot*Tc_rts[i]*zs[i]
+        except:
             Tmc = 300.0
             Pmc = 1e6
 
         # Try to solve it
-        global new
+        solution = [None]
         def to_solve(TP):
             global new
             T, P = float(TP[0]), float(TP[1])
             new = self.to_TP_zs(T=T, P=P, zs=zs)
             errs = [new.dP_drho(), new.d2P_drho2()]
+            solution[0] = new
             return errs
 
         jac = lambda TP: jacobian(to_solve, TP, scalar=False)
         TP, iters = newton_system(to_solve, [Tmc, Pmc], jac=jac, ytol=1e-10)
 #        TP = fsolve(to_solve, [Tmc, Pmc]) # fsolve handles the discontinuities badly
         T, P = float(TP[0]), float(TP[1])
+        new = solution[0]
         V = new.V()
         self._mechanical_critical_T = T
         self._mechanical_critical_P = P
@@ -2913,31 +2956,63 @@ class Phase(object):
         return T, P, V
 
     def Tmc(self):
+        r'''Method to calculate and return the mechanical critical temperature
+        of the phase.
+
+        Returns
+        -------
+        Tmc : float
+            Mechanical critical temperature, [K]
+        '''
         try:
             return self._mechanical_critical_T
         except:
-            self.mechanical_critical_point()
+            self._set_mechanical_critical_point()
             return self._mechanical_critical_T
 
     def Pmc(self):
+        r'''Method to calculate and return the mechanical critical pressure
+        of the phase.
+
+        Returns
+        -------
+        Pmc : float
+            Mechanical critical pressure, [Pa]
+        '''
         try:
             return self._mechanical_critical_P
         except:
-            self.mechanical_critical_point()
+            self._set_mechanical_critical_point()
             return self._mechanical_critical_P
 
     def Vmc(self):
+        r'''Method to calculate and return the mechanical critical volume
+        of the phase.
+
+        Returns
+        -------
+        Vmc : float
+            Mechanical critical volume, [m^3/mol]
+        '''
         try:
             return self._mechanical_critical_V
         except:
-            self.mechanical_critical_point()
+            self._set_mechanical_critical_point()
             return self._mechanical_critical_V
 
     def Zmc(self):
+        r'''Method to calculate and return the mechanical critical
+        compressibility of the phase.
+
+        Returns
+        -------
+        Zmc : float
+            Mechanical critical compressibility, [-]
+        '''
         try:
             V = self._mechanical_critical_V
         except:
-            self.mechanical_critical_point()
+            self._set_mechanical_critical_point()
             V = self._mechanical_critical_V
         return (self.Pmc()*self.Vmc())/(self.R*self.Tmc())
 
@@ -3028,21 +3103,75 @@ class Phase(object):
         return 0.0
 
     def dP_dP_T(self):
+        r'''Method to calculate and return the pressure derivative of
+        pressure of the phase at constant temperature.
+
+        Returns
+        -------
+        dP_dP_T : float
+             Pressure derivative of pressure of the phase at constant
+             temperature, [-]
+        '''
         return 1.0
 
     def dP_dP_V(self):
+        r'''Method to calculate and return the pressure derivative of
+        pressure of the phase at constant volume.
+
+        Returns
+        -------
+        dP_dP_V : float
+             Pressure derivative of pressure of the phase at constant
+             volume, [-]
+        '''
         return 1.0
 
     def dT_dT_P(self):
+        r'''Method to calculate and return the temperature derivative of
+        temperature of the phase at constant pressure.
+
+        Returns
+        -------
+        dT_dT_P : float
+             Temperature derivative of temperature of the phase at constant
+             pressure, [-]
+        '''
         return 1.0
 
     def dT_dT_V(self):
+        r'''Method to calculate and return the temperature derivative of
+        temperature of the phase at constant volume.
+
+        Returns
+        -------
+        dT_dT_V : float
+             Temperature derivative of temperature of the phase at constant
+             volume, [-]
+        '''
         return 1.0
 
     def dV_dV_T(self):
+        r'''Method to calculate and return the volume derivative of
+        volume of the phase at constant temperature.
+
+        Returns
+        -------
+        dV_dV_T : float
+             Volume derivative of volume of the phase at constant
+             temperature, [-]
+        '''
         return 1.0
 
     def dV_dV_P(self):
+        r'''Method to calculate and return the volume derivative of
+        volume of the phase at constant pressure.
+
+        Returns
+        -------
+        dV_dV_P : float
+             Volume derivative of volume of the phase at constant
+             pressure, [-]
+        '''
         return 1.0
 
     d2T_dV2_P = d2T_dV2
@@ -4876,7 +5005,7 @@ class CEOSGas(Phase):
                         for i in cmps]
         return self._dS_dzs
 
-    def mechanical_critical_point(self):
+    def _set_mechanical_critical_point(self):
         zs = self.zs
         new = self.eos_mix.to_mechanical_critical_point()
         self._mechanical_critical_T = new.T
