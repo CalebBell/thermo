@@ -2329,18 +2329,69 @@ class Phase(object):
 
     ### Derivatives in the molar density basis
     def dP_drho(self):
+        r'''Method to calculate and return the molar density derivative of
+        pressure of the phase.
+
+        .. math::
+            \frac{\partial P}{\partial \rho} = -V^2\left(\frac{\partial
+            P}{\partial V}\right)_T
+
+        Returns
+        -------
+        dP_drho : float
+            Molar density derivative of pressure, [Pa*m^3/mol]
+        '''
         V = self.V()
         return -V*V*self.dP_dV()
 
     def drho_dP(self):
+        r'''Method to calculate and return the pressure derivative of
+        molar density of the phase.
+
+        .. math::
+            \frac{\partial \rho}{\partial P} = -\frac{1}{V^2}\left(\frac{\partial
+            V}{\partial P}\right)_T
+
+        Returns
+        -------
+        drho_dP : float
+            Pressure derivative of Molar density, [mol/(Pa*m^3)]
+        '''
         V = self.V()
         return -self.dV_dP()/(V*V)
 
     def d2P_drho2(self):
+        r'''Method to calculate and return the second molar density derivative
+        of pressure of the phase.
+
+        .. math::
+            \frac{\partial^2 P}{\partial \rho^2} = -V^2\left(
+            -V^2 \left(\frac{\partial^2 P}{\partial V^2}\right)_T
+            -2 V \left(\frac{\partial P}{\partial V}\right)_T
+            \right)
+
+        Returns
+        -------
+        d2P_drho2 : float
+            Second molar density derivative of pressure, [Pa*m^6/mol^2]
+        '''
         V = self.V()
-        return -V**2*(-V**2*self.d2P_dV2() - 2*V*self.dP_dV())
+        return V*V*V*(V*self.d2P_dV2() + 2.0*self.dP_dV())
 
     def d2rho_dP2(self):
+        r'''Method to calculate and return the second pressure derivative
+        of molar density of the phase.
+
+        .. math::
+            \frac{\partial^2 \rho}{\partial P} = -\frac{1}{V^2}
+            \left(\frac{\partial^2 V}{\partial P^2}\right)_T
+            + \frac{2}{V^3} \left(\frac{\partial V}{\partial P}\right)_T^2
+
+        Returns
+        -------
+        d2rho_dP2 : float
+            Second pressure derivative of molar density, [mol^2/(Pa*m^6)]
+        '''
         V = self.V()
         return -self.d2V_dP2()/V**2 + 2*self.dV_dP()**2/V**3
 
