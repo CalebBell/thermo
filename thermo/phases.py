@@ -1976,12 +1976,54 @@ class Phase(object):
         return -self.d2P_dV2()*inverse_dP_dV3
 
     def d2T_dP2(self):
+        r'''Method to calculate and return the constant-volume second pressure
+        derivative of temperature of the phase.
+
+        .. math::
+            \left(\frac{\partial^2 T}{\partial P^2}\right)_V =
+            -\left(\frac{\partial^2 P}{\partial T^2}\right)_V
+            \left(\frac{\partial T}{\partial P}\right)_V^3
+
+        Returns
+        -------
+        d2T_dP2 : float
+            Constant-volume second pressure derivative of temperature, [K/Pa^2]
+
+        Notes
+        -----
+        '''
         dT_dP = self.dT_dP()
         inverse_dP_dT2 = dT_dP*dT_dP
         inverse_dP_dT3 = inverse_dP_dT2*dT_dP
         return -self.d2P_dT2()*inverse_dP_dT3
 
     def d2T_dV2(self):
+        r'''Method to calculate and return the constant-pressure second volume
+        derivative of temperature of the phase.
+
+        .. math::
+            \left(\frac{\partial^2 T}{\partial V^2}\right)_P = -\left[
+            \left(\frac{\partial^2 P}{\partial V^2}\right)_T
+            \left(\frac{\partial P}{\partial T}\right)_V
+            - \left(\frac{\partial P}{\partial V}\right)_T
+            \left(\frac{\partial^2 P}{\partial T \partial V}\right) \right]
+            \left(\frac{\partial P}{\partial T}\right)^{-2}_V
+            + \left[\left(\frac{\partial^2 P}{\partial T\partial V}\right)
+            \left(\frac{\partial P}{\partial T}\right)_V
+            - \left(\frac{\partial P}{\partial V}\right)_T
+            \left(\frac{\partial^2 P}{\partial T^2}\right)_V\right]
+            \left(\frac{\partial P}{\partial T}\right)_V^{-3}
+            \left(\frac{\partial P}{\partial V}\right)_T
+
+        Returns
+        -------
+        d2T_dV2 : float
+            Constant-pressure second volume derivative of temperature,
+            [K*mol^2/m^6]
+
+        Notes
+        -----
+        '''
         dP_dT = self.dP_dT()
         dP_dV = self.dP_dV()
         d2P_dTdV = self.d2P_dTdV()
@@ -1994,6 +2036,32 @@ class Phase(object):
                    +(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*inverse_dP_dT3*dP_dV)
 
     def d2V_dT2(self):
+        r'''Method to calculate and return the constant-pressure second
+        temperature derivative of volume of the phase.
+
+        .. math::
+            \left(\frac{\partial^2 V}{\partial T^2}\right)_P = -\left[
+            \left(\frac{\partial^2 P}{\partial T^2}\right)_V
+            \left(\frac{\partial P}{\partial V}\right)_T
+            - \left(\frac{\partial P}{\partial T}\right)_V
+            \left(\frac{\partial^2 P}{\partial T \partial V}\right) \right]
+            \left(\frac{\partial P}{\partial V}\right)^{-2}_T
+            + \left[\left(\frac{\partial^2 P}{\partial T\partial V}\right)
+            \left(\frac{\partial P}{\partial V}\right)_T
+            - \left(\frac{\partial P}{\partial T}\right)_V
+            \left(\frac{\partial^2 P}{\partial V^2}\right)_T\right]
+            \left(\frac{\partial P}{\partial V}\right)_T^{-3}
+            \left(\frac{\partial P}{\partial T}\right)_V
+
+        Returns
+        -------
+        d2V_dT2 : float
+            Constant-pressure second temperature derivative of volume,
+            [m^3/(mol*K^2)]
+
+        Notes
+        -----
+        '''
         dP_dT = self.dP_dT()
         dP_dV = self.dP_dV()
         d2P_dTdV = self.d2P_dTdV()
@@ -2008,6 +2076,26 @@ class Phase(object):
                    +(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*inverse_dP_dV3*dP_dT)
 
     def d2V_dPdT(self):
+        r'''Method to calculate and return the derivative of pressure and then
+        the derivative of temperature of volume of the phase.
+
+        .. math::
+            \left(\frac{\partial^2 V}{\partial T\partial P}\right) =
+            - \left[\left(\frac{\partial^2 P}{\partial T \partial V}\right)
+            \left(\frac{\partial P}{\partial V}\right)_T
+            - \left(\frac{\partial P}{\partial T}\right)_V
+            \left(\frac{\partial^2 P}{\partial V^2}\right)_T
+            \right]\left(\frac{\partial P}{\partial V}\right)_T^{-3}
+
+        Returns
+        -------
+        d2V_dPdT : float
+            Derivative of pressure and then the derivative of temperature
+            of volume, [m^3/(mol*K*Pa)]
+
+        Notes
+        -----
+        '''
         dP_dT = self.dP_dT()
         dP_dV = self.dP_dV()
         d2P_dTdV = self.d2P_dTdV()
@@ -2021,6 +2109,26 @@ class Phase(object):
     d2V_dTdP = d2V_dPdT
 
     def d2T_dPdV(self):
+        r'''Method to calculate and return the derivative of pressure and then
+        the derivative of volume of temperature of the phase.
+
+        .. math::
+           \left(\frac{\partial^2 T}{\partial P\partial V}\right) =
+            - \left[\left(\frac{\partial^2 P}{\partial T \partial V}\right)
+            \left(\frac{\partial P}{\partial T}\right)_V
+            - \left(\frac{\partial P}{\partial V}\right)_T
+            \left(\frac{\partial^2 P}{\partial T^2}\right)_V
+            \right]\left(\frac{\partial P}{\partial T}\right)_V^{-3}
+
+        Returns
+        -------
+        d2T_dPdV : float
+            Derivative of pressure and then the derivative of volume
+            of temperature, [K*mol/(Pa*m^3)]
+
+        Notes
+        -----
+        '''
         dT_dP = self.dT_dP()
         inverse_dP_dT2 = dT_dP*dT_dP
         inverse_dP_dT3 = inverse_dP_dT2*dT_dP
@@ -2554,7 +2662,7 @@ class Phase(object):
 
     # Idea gas heat capacity
 
-    def setup_Cpigs(self, HeatCapacityGases):
+    def _setup_Cpigs(self, HeatCapacityGases):
         Cpgs_data = None
         Cpgs_locked = all(i.locked for i in HeatCapacityGases) if HeatCapacityGases is not None else False
         if Cpgs_locked:
@@ -2838,7 +2946,7 @@ class Phase(object):
         return self._dCpigs_dT
 
 
-    def Cpls_pure(self):
+    def _Cpls_pure(self):
         try:
             return self._Cpls
         except AttributeError:
@@ -2851,14 +2959,14 @@ class Phase(object):
         self._Cpls = [i.T_dependent_property(T) for i in self.HeatCapacityLiquids]
         return self._Cpls
 
-    def Cpl_integrals_pure(self):
+    def _Cpl_integrals_pure(self):
         try:
             return self._Cpl_integrals_pure
         except AttributeError:
             pass
 #        def to_quad(T, i):
 #            l2 = self.to_TP_zs(T, self.P, self.zs)
-#            return l2.Cpls_pure()[i] + (l2.Vms_sat()[i] - T*l2.dVms_sat_dT()[i])*l2.dPsats_dT()[i]
+#            return l2._Cpls_pure()[i] + (l2.Vms_sat()[i] - T*l2.dVms_sat_dT()[i])*l2.dPsats_dT()[i]
 #        from scipy.integrate import quad
 #        vals = [float(quad(to_quad, self.T_REF_IG, self.T, args=i)[0]) for i in self.cmps]
 ##        print(vals, self._Cp_integrals_pure_fast(self.Cpls_data))
@@ -2873,14 +2981,14 @@ class Phase(object):
                                    for obj in HeatCapacityLiquids]
         return self._Cpl_integrals_pure
 
-    def Cpl_integrals_over_T_pure(self):
+    def _Cpl_integrals_over_T_pure(self):
         try:
             return self._Cpl_integrals_over_T_pure
         except AttributeError:
             pass
 #        def to_quad(T, i):
 #            l2 = self.to_TP_zs(T, self.P, self.zs)
-#            return (l2.Cpls_pure()[i] + (l2.Vms_sat()[i] - T*l2.dVms_sat_dT()[i])*l2.dPsats_dT()[i])/T
+#            return (l2._Cpls_pure()[i] + (l2.Vms_sat()[i] - T*l2.dVms_sat_dT()[i])*l2.dPsats_dT()[i])/T
 #        from scipy.integrate import quad
 #        vals = [float(quad(to_quad, self.T_REF_IG, self.T, args=i)[0]) for i in self.cmps]
 ##        print(vals, self._Cp_integrals_over_T_pure_fast(self.Cpls_data))
@@ -3183,18 +3291,58 @@ class Phase(object):
         return (self.Pmc()*self.Vmc())/(self.R*self.Tmc())
 
     def dH_dT_P(self):
+        r'''Method to calculate and return the temperature derivative of
+        enthalpy of the phase at constant pressure.
+
+        Returns
+        -------
+        dH_dT_P : float
+            Temperature derivative of enthalpy, [J/(mol*K)]
+        '''
         return self.dH_dT()
 
     def dH_dP_T(self):
+        r'''Method to calculate and return the pressure derivative of
+        enthalpy of the phase at constant pressure.
+
+        Returns
+        -------
+        dH_dP_T : float
+            Pressure derivative of enthalpy, [J/(mol*Pa)]
+        '''
         return self.dH_dP()
 
     def dS_dP_T(self):
+        r'''Method to calculate and return the pressure derivative of
+        entropy of the phase at constant pressure.
+
+        Returns
+        -------
+        dS_dP_T : float
+            Pressure derivative of entropy, [J/(mol*K*Pa)]
+        '''
         return self.dS_dP()
 
     def dS_dV_T(self):
+        r'''Method to calculate and return the volume derivative of
+        entropy of the phase at constant temperature.
+
+        Returns
+        -------
+        dS_dV_T : float
+            Volume derivative of entropy, [J/(K*m^3)]
+        '''
         return self.dS_dP_T()*self.dP_dV()
 
     def dS_dV_P(self):
+        r'''Method to calculate and return the volume derivative of
+        entropy of the phase at constant pressure.
+
+        Returns
+        -------
+        dS_dV_P : float
+            Volume derivative of entropy, [J/(K*m^3)]
+        '''
         return self.dS_dT_P()*self.dT_dV()
 
     def dP_dT_P(self):
@@ -3402,6 +3550,16 @@ class Phase(object):
     # Properties that use `constants` attributes
 
     def MW(self):
+        r'''Method to calculate and return molecular weight of the phase.
+
+        .. math::
+            \text{MW} = \sum_i z_i \text{MW}_i
+
+        Returns
+        -------
+        MW : float
+             Molecular weight, [g/mol]
+        '''
         try:
             return self._MW
         except AttributeError:
@@ -3414,6 +3572,17 @@ class Phase(object):
         return MW
 
     def MW_inv(self):
+        r'''Method to calculate and return inverse of molecular weight of the
+        phase.
+
+        .. math::
+            \frac{1}{\text{MW}} = \frac{1}{\sum_i z_i \text{MW}_i}
+
+        Returns
+        -------
+        MW_inv : float
+             Inverse of molecular weight, [mol/g]
+        '''
         try:
             return self._MW_inv
         except AttributeError:
@@ -3421,27 +3590,33 @@ class Phase(object):
         self._MW_inv = MW_inv = 1.0/self.MW()
         return MW_inv
 
-#    def mu(self):
-#        return self.result.mu(self)
-
-#    def k(self):
-#        return self.result.k(self)
-#
-#    def ws(self):
-#        return self.result.ws(self)
-
-
-#    def atom_fractions(self):
-#        return self.result.atom_fractions(self)
-#
-#    def atom_mass_fractions(self):
-#        return self.result.atom_mass_fractions(self)
-
     def speed_of_sound_mass(self):
+        r'''Method to calculate and return the speed of sound
+        of the phase.
+
+        .. math::
+            w = \left[-V^2 \frac{1000}{MW}\left(\frac{\partial P}{\partial V}
+            \right)_T \frac{C_p}{C_v}\right]^{1/2}
+
+        Returns
+        -------
+        w : float
+            Speed of sound for a real gas, [m/s]
+        '''
         # 1000**0.5 = 31.622776601683793
-        return 31.622776601683793*self.MW()**-0.5*self.speed_of_sound()
+        return 31.622776601683793/sqrt(self.MW())*self.speed_of_sound()
 
     def rho_mass(self):
+        r'''Method to calculate and return mass density of the phase.
+
+        .. math::
+            \rho = \frac{MW}{1000\cdot VM}
+
+        Returns
+        -------
+        rho_mass : float
+            Mass density, [kg/m^3]
+        '''
         try:
             return self._rho_mass
         except AttributeError:
@@ -3524,6 +3699,16 @@ class Phase(object):
         return drho_mass_dP
 
     def H_mass(self):
+        r'''Method to calculate and return mass enthalpy of the phase.
+
+        .. math::
+            H_{mass} = \frac{1000 H_{molar}}{MW}
+
+        Returns
+        -------
+        H_mass : float
+            Mass enthalpy, [J/kg]
+        '''
         try:
             return self._H_mass
         except AttributeError:
@@ -3533,6 +3718,16 @@ class Phase(object):
         return H_mass
 
     def S_mass(self):
+        r'''Method to calculate and return mass entropy of the phase.
+
+        .. math::
+            S_{mass} = \frac{1000 S_{molar}}{MW}
+
+        Returns
+        -------
+        S_mass : float
+            Mass enthalpy, [J/(kg*K)]
+        '''
         try:
             return self._S_mass
         except AttributeError:
@@ -3542,6 +3737,16 @@ class Phase(object):
         return S_mass
 
     def U_mass(self):
+        r'''Method to calculate and return mass internal energy of the phase.
+
+        .. math::
+            U_{mass} = \frac{1000 U_{molar}}{MW}
+
+        Returns
+        -------
+        U_mass : float
+            Mass internal energy, [J/(kg)]
+        '''
         try:
             return self._U_mass
         except AttributeError:
@@ -3551,6 +3756,16 @@ class Phase(object):
         return U_mass
 
     def A_mass(self):
+        r'''Method to calculate and return mass Helmholtz energy of the phase.
+
+        .. math::
+            A_{mass} = \frac{1000 A_{molar}}{MW}
+
+        Returns
+        -------
+        A_mass : float
+            Mass Helmholtz energy, [J/(kg)]
+        '''
         try:
             return self._A_mass
         except AttributeError:
@@ -3560,6 +3775,16 @@ class Phase(object):
         return A_mass
 
     def G_mass(self):
+        r'''Method to calculate and return mass Gibbs energy of the phase.
+
+        .. math::
+            G_{mass} = \frac{1000 G_{molar}}{MW}
+
+        Returns
+        -------
+        G_mass : float
+            Mass Gibbs energy, [J/(kg)]
+        '''
         try:
             return self._G_mass
         except AttributeError:
@@ -3569,6 +3794,17 @@ class Phase(object):
         return G_mass
 
     def Cp_mass(self):
+        r'''Method to calculate and return mass constant pressure heat capacity
+        of the phase.
+
+        .. math::
+            Cp_{mass} = \frac{1000 Cp_{molar}}{MW}
+
+        Returns
+        -------
+        Cp_mass : float
+            Mass heat capacity, [J/(kg*K)]
+        '''
         try:
             return self._Cp_mass
         except AttributeError:
@@ -3578,6 +3814,17 @@ class Phase(object):
         return Cp_mass
 
     def Cv_mass(self):
+        r'''Method to calculate and return mass constant volume heat capacity
+        of the phase.
+
+        .. math::
+            Cv_{mass} = \frac{1000 Cv_{molar}}{MW}
+
+        Returns
+        -------
+        Cv_mass : float
+            Mass constant volume heat capacity, [J/(kg*K)]
+        '''
         try:
             return self._Cv_mass
         except AttributeError:
@@ -3587,12 +3834,54 @@ class Phase(object):
         return Cv_mass
 
     def P_transitions(self):
+        r'''Dummy method. The idea behind this method is to calculate any
+        pressures (at constant temperature) which cause the phase properties to
+        become discontinuous.
+
+        Returns
+        -------
+        P_transitions : list[float]
+            Transition pressures, [Pa]
+        '''
         return []
 
     def T_max_at_V(self, V):
+        r'''Method to calculate the maximum temperature the phase can create at a
+        constant volume, if one exists; returns None otherwise.
+
+        Parameters
+        ----------
+        V : float
+            Constant molar volume, [m^3/mol]
+        Pmax : float
+            Maximum possible isochoric pressure, if already known [Pa]
+
+        Returns
+        -------
+        T : float
+            Maximum possible temperature, [K]
+
+        Notes
+        -----
+        '''
         return None
 
     def P_max_at_V(self, V):
+        r'''Dummy method. The idea behind this method, which is implemented by some
+        subclasses, is to calculate the maximum pressure the phase can create at a
+        constant volume, if one exists; returns None otherwise. This method,
+        as a dummy method, always returns None.
+
+        Parameters
+        ----------
+        V : float
+            Constant molar volume, [m^3/mol]
+
+        Returns
+        -------
+        P : float
+            Maximum possible isochoric pressure, [Pa]
+        '''
         return None
 
     def dspeed_of_sound_dT_P(self):
@@ -3654,6 +3943,44 @@ class Phase(object):
         return (-x1*x1*x5)**0.5*(x0*x6*x50 + x2*x6*x51 + x4*x52- x5*x6*x53)/(x0*x1*x2)
 
     def dspeed_of_sound_dP_T(self):
+        r'''Method to calculate the pressure derivative of speed of sound
+        at constant temperature in molar units.
+
+        .. math::
+            \left(\frac{\partial c}{\partial P}\right)_T =
+            - \frac{\sqrt{- \frac{\operatorname{Cp}{\left(P \right)} V^{2}
+            {\left(P \right)} \operatorname{dPdV_{T}}{\left(P \right)}}
+            {\operatorname{Cv}{\left(P \right)}}} \left(- \frac{
+            \operatorname{Cp}{\left(P \right)} V^{2}{\left(P \right)} \frac{d}
+            {d P} \operatorname{dPdV_{T}}{\left(P \right)}}{2 \operatorname{Cv}
+            {\left(P \right)}} - \frac{\operatorname{Cp}{\left(P \right)}
+            V{\left(P \right)} \operatorname{dPdV_{T}}{\left(P \right)}
+            \frac{d}{d P} V{\left(P \right)}}{\operatorname{Cv}{\left(P \right)
+            }} + \frac{\operatorname{Cp}{\left(P \right)} V^{2}{\left(P \right)
+            } \operatorname{dPdV_{T}}{\left(P \right)} \frac{d}{d P}
+            \operatorname{Cv}{\left(P \right)}}{2 \operatorname{Cv}^{2}{\left(P
+            \right)}} - \frac{V^{2}{\left(P \right)} \operatorname{dPdV_{T}}
+            {\left(P \right)} \frac{d}{d P} \operatorname{Cp}{\left(P \right)}}
+            {2 \operatorname{Cv}{\left(P \right)}}\right) \operatorname{Cv}
+            {\left(P \right)}}{\operatorname{Cp}{\left(P \right)} V^{2}{\left(P
+            \right)} \operatorname{dPdV_{T}}{\left(P \right)}}
+
+        Returns
+        -------
+        dspeed_of_sound_dP_T : float
+           Pressure derivative of speed of sound at constant temperature,
+           [m*kg^0.5/s/mol^0.5/Pa]
+
+        Notes
+        -----
+        '''
+        '''
+        from sympy import *
+        P = symbols('P')
+        V, dPdV_T, Cp, Cv = symbols('V, dPdV_T, Cp, Cv', cls=Function)
+        c = sqrt(-V(P)**2*dPdV_T(P)*Cp(P)/Cv(P))
+        print(latex(diff(c, P)))
+        '''
         x0 = self.Cp()
         x1 = self.V()
         x2 = self.dP_dV()
@@ -4504,7 +4831,7 @@ class CEOSGas(Phase):
         self.Hfs = Hfs
         self.Gfs = Gfs
         self.Sfs = Sfs
-        self.Cpgs_locked, self.Cpgs_data = self.setup_Cpigs(HeatCapacityGases)
+        self.Cpgs_locked, self.Cpgs_data = self._setup_Cpigs(HeatCapacityGases)
         self.composition_independent = eos_class is IGMIX
 
         if T is not None and P is not None and zs is not None:
@@ -5373,11 +5700,11 @@ class GibbsExcessLiquid(Phase):
         self.cmps = range(self.N)
 
         self.HeatCapacityGases = HeatCapacityGases
-        self.Cpgs_locked, self.Cpgs_data = self.setup_Cpigs(HeatCapacityGases)
+        self.Cpgs_locked, self.Cpgs_data = self._setup_Cpigs(HeatCapacityGases)
 
         self.HeatCapacityLiquids = HeatCapacityLiquids
         if HeatCapacityLiquids is not None:
-            self.Cpls_locked, self.Cpls_data = self.setup_Cpigs(HeatCapacityLiquids)
+            self.Cpls_locked, self.Cpls_data = self._setup_Cpigs(HeatCapacityLiquids)
             T_REF_IG = self.T_REF_IG
             T_REF_IG_INV = 1.0/T_REF_IG
             self.Hvaps_T_ref = [obj(T_REF_IG) for obj in EnthalpyVaporizations]
@@ -6844,7 +7171,7 @@ class GibbsExcessLiquid(Phase):
                 dVms_sat_dT = self.dVms_sat_dT()
                 dPsats_dT = self.dPsats_dT()
                 Hvaps_T_ref = self.Hvaps_T_ref()
-                Cpl_integrals_pure = self.Cpl_integrals_pure()
+                Cpl_integrals_pure = self._Cpl_integrals_pure()
                 dVms_sat_dT_T_ref = self.dVms_sat_dT_T_ref()
                 Vms_sat_T_ref = self.Vms_sat_T_ref()
                 Psats_T_ref = self.Psats_T_ref()
@@ -7040,7 +7367,7 @@ class GibbsExcessLiquid(Phase):
                 # mine
                 Hvaps_T_ref = self.Hvaps_T_ref()
                 Psats_T_ref = self.Psats_T_ref()
-                Cpl_integrals_over_T_pure = self.Cpl_integrals_over_T_pure()
+                Cpl_integrals_over_T_pure = self._Cpl_integrals_over_T_pure()
                 T_REF_IG_INV = self.T_REF_IG_INV
                 dVms_sat_dT_T_ref = self.dVms_sat_dT_T_ref()
                 Vms_sat_T_ref = self.Vms_sat_T_ref()
@@ -7060,11 +7387,11 @@ class GibbsExcessLiquid(Phase):
 #                    # COCO
 #                    Hvaps = self.Hvaps()
 #                    Psats_T_ref = self.Psats_T_ref()
-#                    Cpl_integrals_over_T_pure = self.Cpl_integrals_over_T_pure()
+#                    _Cpl_integrals_over_T_pure = self._Cpl_integrals_over_T_pure()
 #                    T_REF_IG_INV = self.T_REF_IG_INV
 #
 #                    for i in self.cmps:
-#                        dSi = -Cpl_integrals_over_T_pure[i]
+#                        dSi = -_Cpl_integrals_over_T_pure[i]
 #                        dSi -= Hvaps[i]/T
 #                        # Take each component to its reference state change - saturation pressure
 #                        dSi -= R*log(Psats[i]*P_REF_IG_INV)
