@@ -45,6 +45,10 @@ def loadChemicalConstants(data, rows=True):
     Returns a dictionary of ChemicalConstants indexed by their CASs.
     '''
     loaded_chemicals = {}
+    # Question: What if every database is a per-datasource one
+    # And I fit all methods to apolynom to within their range?
+    # Then we have one additional database which holds the best data source.
+    # That way, all coefficients are precisely sourced.
 
     def add_chemical(kwargs):
         # TODO: remove to skip a function call
