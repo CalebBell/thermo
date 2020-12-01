@@ -125,7 +125,8 @@ if PY37:
                     'electrolyte_dissociation_reactions', 'McCleskey_conductivities',
                     'Lange_cond_pure', '_Laliberte_Density_ParametersDict', '_Laliberte_Viscosity_ParametersDict',
                     '_Laliberte_Heat_Capacity_ParametersDict'):
-            _load_electrochem_data()
+            if not _loaded_electrochem_data:
+                _load_electrochem_data()
             return globals()[name]
         raise AttributeError("module %s has no attribute %s" %(__name__, name))
 else:
@@ -779,7 +780,7 @@ def conductivity(CASRN=None, get_methods=False, method=None, full_info=True):
     .. [1] Speight, James. Lange's Handbook of Chemistry. 16 edition.
        McGraw-Hill Professional, 2005.
     '''
-    _load_electrochem_data()
+    if not _loaded_electrochem_data: _load_electrochem_data()
     def list_methods():
         methods = []
         if CASRN in Lange_cond_pure.index:

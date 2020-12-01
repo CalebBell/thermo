@@ -423,8 +423,8 @@ class ChemicalConstantsPackage(object):
                  conductivity_Ts=conductivity_Ts,
                  charges=charges, dipoles=dipoles, Stockmayers=Stockmayers,
                  molecular_diameters=molecular_diameters, Van_der_Waals_volumes=Van_der_Waals_volumes,
-                 Van_der_Waals_areas=Van_der_Waals_areas, Parachors=Parachors, StielPolars=StielPolars,
-                 atomss=atomss, atom_fractions=atom_fractionss,
+                 Van_der_Waals_areas=Van_der_Waals_areas, #Parachors=Parachors, StielPolars=StielPolars,
+                 atomss=atomss,# atom_fractions=atom_fractionss,
                  similarity_variables=similarity_variables, phase_STPs=phase_STPs,
                  UNIFAC_Rs=UNIFAC_Rs, UNIFAC_Qs=UNIFAC_Qs, solubility_parameters=solubility_parameters,
                  # Other identifiers
