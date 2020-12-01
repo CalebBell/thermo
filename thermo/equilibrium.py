@@ -1026,14 +1026,26 @@ class EquilibriumState(object):
         return Ks
 
     def Hc(self, phase=None):
+        r'''Method to calculate and return the molar ideal-gas higher heat of
+        combustion of the object, [J/mol]
+
+        Returns
+        -------
+        Hc : float
+            Molar higher heat of combustion, [J/(mol)]
+
+        Notes
+        -----
+        '''
         if phase is None:
             phase = self.bulk
-        return mixing_simple(self.constants.Hcs, phase.ws())
+        # TODO: Looks wrong - should be zs
+        return mixing_simple(self.constants.Hcs, phase.zs)
 
     def Hc_mass(self, phase=None):
         if phase is None:
             phase = self.bulk
-        return mixing_simple(self.constants.Hcs_mass, phase.zs)
+        return mixing_simple(self.constants.Hcs_mass, phase.ws())
 
     def Hc_normal(self, phase=None):
         if phase is None:
