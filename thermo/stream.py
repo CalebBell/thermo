@@ -1263,6 +1263,25 @@ class Stream(Mixture):
     ...                     ('pentane', 0.00032),
     ...                     ('hexane', 0.00066)])
     >>> m = Stream(ws=comp, m=33)
+
+    Notes
+    -----
+
+    .. warning::
+        The Stream class is not designed for high-performance or the ability
+        to use different thermodynamic models. It is especially limited in its
+        multiphase support and the ability to solve with specifications other
+        than temperature and pressure. It is impossible to change constant
+        properties such as a compound's critical temperature in this interface.
+
+        It is recommended to switch over to the :obj:`thermo.flash` and
+        :obj:`EquilibriumStream` interfaces
+        which solves those problems and are better positioned to grow. That
+        interface also requires users to be responsible for their chemical
+        constants and pure component correlations; while default values can
+        easily be loaded for most compounds, the user is ultimately responsible
+        for them.
+
     '''
     flashed = True
     def __repr__(self): # pragma: no cover

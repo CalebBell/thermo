@@ -495,6 +495,23 @@ class Mixture(object):
     Zl_STP
     Zss
 
+    Notes
+    -----
+
+    .. warning::
+        The Mixture class is not designed for high-performance or the ability
+        to use different thermodynamic models. It is especially limited in its
+        multiphase support and the ability to solve with specifications other
+        than temperature and pressure. It is impossible to change constant
+        properties such as a compound's critical temperature in this interface.
+
+        It is recommended to switch over to the :obj:`thermo.flash` interface
+        which solves those problems and is better positioned to grow. That
+        interface also requires users to be responsible for their chemical
+        constants and pure component correlations; while default values can
+        easily be loaded for most compounds, the user is ultimately responsible
+        for them.
+
     Examples
     --------
     Creating Mixture objects:
@@ -737,6 +754,7 @@ class Mixture(object):
         self.Vmg_STPs = [i.Vmg_STP for i in self.Chemicals]
 
         self.Vms_Tms = [i.Vms_Tm for i in self.Chemicals]
+        self.rhoms_Tm = [i.rhoms_Tm for i in self.Chemicals]
         self.rhos_Tms = [i.rhos_Tm for i in self.Chemicals]
 
         self.Psat_298s = [i.Psat_298 for i in self.Chemicals]
@@ -747,6 +765,7 @@ class Mixture(object):
         self.Hvap_Tbs = [i.Hvap_Tb for i in self.Chemicals]
         self.Hvapm_298s = [i.Hvapm_298 for i in self.Chemicals]
         self.Hvap_298s = [i.Hvap_298 for i in self.Chemicals]
+        self.solubility_parameters_STP = [i.solubility_parameter_STP for i in self.Chemicals]
 
     ### More stuff here
 
@@ -3293,7 +3312,7 @@ class Mixture(object):
                  GWPs=self.GWPs, ODPs=self.ODPs, logPs=self.logPs,
                  Psat_298s=self.Psat_298s, Hvap_298s=self.Hvapm_298s,
                  Hvap_298s_mass=self.Hvap_298s, Vml_Tms=self.Vml_Tms,
-                 rhos_Tms=self.rhos_Tms, Vms_Tms=self.Vms_Tms,
+                 rhos_Tms=self.rhoms_Tm, rhos_Tms_mass=self.rhos_Tms, Vms_Tms=self.Vms_Tms,
                  # Analytical
                  RIs=self.RIs, RI_Ts=self.RI_Ts, conductivities=self.conductivities,
                  conductivity_Ts=self.conductivity_Ts,
@@ -3303,7 +3322,7 @@ class Mixture(object):
                  Van_der_Waals_areas=self.Van_der_Waals_areas, Parachors=self.Parachors, StielPolars=self.StielPolars,
                  atomss=self.atomss, atom_fractions=self.atom_fractionss,
                  similarity_variables=self.similarity_variables, phase_STPs=self.phase_STPs,
-                 UNIFAC_Rs=self.UNIFAC_Rs, UNIFAC_Qs=self.UNIFAC_Qs, solubility_parameters=self.solubility_parameters,
+                 UNIFAC_Rs=self.UNIFAC_Rs, UNIFAC_Qs=self.UNIFAC_Qs, solubility_parameters=self.solubility_parameters_STP,
                  # Other identifiers
                  PubChems=self.PubChems, formulas=self.formulas, smiless=self.smiless, InChIs=self.InChIs,
                  InChI_Keys=self.InChI_Keys,

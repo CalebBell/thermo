@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,7 +18,34 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains an implementation of the Joback group-contribution method.
+This functionality requires the RDKit library to work.
+
+For submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. warning::
+    The Joback class method does not contain all the groups for every chemical.
+    There are often multiple ways of fragmenting a chemical. Other times, the
+    fragmentation algorithm will fail. These limitations are present in both
+    the implementation and the method itself. You are welcome to seek to
+    improve this code but no to little help can be offered.
+
+.. contents:: :local:
+
+
+.. autoclass:: thermo.joback.Joback
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. autofunction:: thermo.joback.smarts_fragment
+.. autodata:: J_BIGGS_JOBACK_SMARTS
+.. autodata:: J_BIGGS_JOBACK_SMARTS_id_dict
+
+'''
 
 from __future__ import division
 

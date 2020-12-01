@@ -73,8 +73,26 @@ from thermo.utils import *
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
 from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
 
+# For Constants
+from chemicals.critical import Tc, Pc, Vc
+from chemicals.phase_change import Tb, Tm, Hfus
+from chemicals.acentric import omega, Stiel_polar_factor
+from chemicals.triple import Tt, Pt
+from chemicals.reaction import Hfs, Hfl, Hfg, S0g, S0l, S0s, Gibbs_formation, Hf_basis_converter, entropy_formation
+from chemicals.safety import T_flash, T_autoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen
+from chemicals.solubility import solubility_parameter
+from chemicals.dipole import dipole_moment as dipole
+from chemicals.lennard_jones import Stockmayer, molecular_diameter
+from chemicals.environment import GWP, ODP, logP
+from chemicals.refractivity import RI
+from chemicals.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser, molecular_weight, charge_from_formula, periodic_table, homonuclear_elements
+from chemicals.combustion import combustion_stoichiometry, HHV_stoichiometry, LHV_from_HHV
+
+from thermo.unifac import DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments, load_group_assignments_DDBST, UNIFAC_RQ, Van_der_Waals_volume, Van_der_Waals_area
+from thermo.electrochem import conductivity
 
 CAS_H2O = '7732-18-5'
+
 
 
 
@@ -97,7 +115,7 @@ class ChemicalConstantsPackage(object):
                  'UNIFAC_Dortmund_groups', 'UNIFAC_groups',
                  'Van_der_Waals_areas', 'Van_der_Waals_volumes', 'Vcs',
                  'Vml_STPs', 'Vml_Tms', 'Zcs', 'UNIFAC_Rs', 'UNIFAC_Qs',
-                 'rhos_Tms', 'Vms_Tms', 'solubility_parameters',
+                 'rhos_Tms', 'Vms_Tms', 'rhos_Tms_mass',  'solubility_parameters',
                  'Vml_60Fs', 'rhol_60Fs', 'rhol_60Fs_mass',
                  'conductivity_Ts', 'RI_Ts',
                  )
@@ -190,14 +208,230 @@ class ChemicalConstantsPackage(object):
 
     @staticmethod
     def from_IDs(IDs):
+        N = len(IDs)
         CASs = [CAS_from_any(ID) for ID in IDs]
         pubchem_db = identifiers.pubchem_db
         metadatas = [pubchem_db.search_CAS(CAS) for CAS in CASs]
         names = [i.common_name for i in metadatas]
         MWs = [i.MW for i in metadatas]
-        from chemicals.phase_change import Tm, Tb
+        PubChems = [i.pubchemid for i in metadatas]
+        formulas = [i.formula for i in metadatas]
+        smiless = [i.smiles for i in metadatas]
+        InChIs = [i.InChI for i in metadatas]
+        InChI_Keys = [i.InChI_key for i in metadatas]
+        atomss = [simple_formula_parser(f) for f in formulas]
+        similarity_variables = [similarity_variable(atoms, MW) for atoms, MW in zip(atomss, MWs)]
+        charges = [charge_from_formula(formula) for formula in formulas]
+
         Tms = [Tm(CAS) for CAS in CASs]
-        return Tms
+        Tbs = [Tb(CAS) for CAS in CASs]
+        Tcs = [Tc(CAS) for CAS in CASs]
+        Pcs = [Pc(CAS) for CAS in CASs]
+        Vcs = [Vc(CAS) for CAS in CASs]
+        omegas = [omega(CAS) for CAS in CASs]
+        dipoles = [dipole(CAS) for CAS in CASs]
+        Tts = [Tt(CAS) for CAS in CASs]
+        Pts = [Pt(CAS) for CAS in CASs]
+
+
+        Zcs = [None]*N
+        for i in range(N):
+            try:
+                Zcs[i] = Vcs[i]*Pcs[i]/(R*Tcs[i])
+            except:
+                pass
+        rhocs = [1.0/Vc if Vc else None for Vc in Vcs]
+        rhocs_mass = [1e-3*MW/Vc if Vc else None for Vc, MW in zip(Vcs, MWs)]
+
+        Hfus_Tms = [Hfus(CAS) for CAS in CASs]
+        Hfus_Tms_mass = [Hfus*1000.0/MW if Hfus is not None else None for Hfus, MW in zip(Hfus_Tms, MWs)]
+
+        EnthalpyVaporizations = [EnthalpyVaporization(CASRN=CAS, Tb=Tb, Tc=Tc, Pc=Pc, omega=omega, similarity_variable=sv)
+                                 for CAS, Tb, Tc, Pc, sv in zip(CASs, Tbs, Tcs, Pcs, similarity_variables)]
+        Hvap_Tbs = [o.T_dependent_property(Tb) if Tb else None for o, Tb, in zip(EnthalpyVaporizations, Tbs)]
+        Hvap_Tbs_mass =  [Hvap*1000.0/MW if Hvap is not None else None for Hvap, MW in zip(Hvap_Tbs, MWs)]
+
+        Hvap_298s = [o.T_dependent_property(298.15) for o in EnthalpyVaporizations]
+        Hvap_298s_mass =  [Hvap*1000.0/MW if Hvap is not None else None for Hvap, MW in zip(Hvap_298s, MWs)]
+
+        VaporPressures = [VaporPressure(Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], CASRN=CASs[i])
+                            for i in range(N)]
+        Psat_298s = [VaporPressures[i].T_dependent_property(298.15) for i in range(N)]
+
+        phase_STPs = [identify_phase(T=298.15, P=101325., Tm=Tms[i], Tb=Tbs[i], Tc=Tcs[i], Psat=Psat_298s[i]) for i in range(N)]
+
+
+        VolumeLiquids = [VolumeLiquid(MW=MWs[i], Tb=Tbs[i], Tc=Tcs[i],
+                          Pc=Pcs[i], Vc=Vcs[i], Zc=Zcs[i], omega=omegas[i], dipole=dipoles[i],
+                          Psat=VaporPressures[i].T_dependent_property, CASRN=CASs[i])
+                         for i in range(N)]
+        Vml_Tbs = [VolumeLiquids[i].T_dependent_property(Tbs[i]) if Tbs[i] is not None else None
+                   for i in range(N)]
+        Vml_Tms = [VolumeLiquids[i].T_dependent_property(Tms[i]) if Tms[i] is not None else None
+                   for i in range(N)]
+        Vml_STPs = [VolumeLiquids[i].T_dependent_property(298.15)
+                   for i in range(N)]
+        Vml_60Fs = [VolumeLiquids[i].T_dependent_property(288.7055555555555)
+                   for i in range(N)]
+        rhol_STPs = [1.0/V if V is not None else None for V in Vml_STPs]
+        rhol_60Fs = [1.0/V if V is not None else None for V in Vml_60Fs]
+        rhol_STPs_mass = [1e-3*MW/V if V is not None else None for V, MW in zip(Vml_STPs, MWs)]
+        rhol_60Fs_mass = [1e-3*MW/V if V is not None else None for V, MW in zip(Vml_60Fs, MWs)]
+
+        VolumeSolids = [VolumeSolid(CASRN=CASs[i], MW=MWs[i], Tt=Tts[i], Vml_Tt=Vml_Tms[i]) for i in range(N)]
+        Vms_Tms = [VolumeSolids[i].T_dependent_property(Tms[i]) if Tms[i] is not None else None for i in range(N)]
+        rhos_Tms = [1.0/V if V is not None else None for V in Vms_Tms]
+        rhos_Tms_mass = [1e-3*MW/V if V is not None else None for V, MW in zip(Vms_Tms, MWs)]
+
+        Hfgs = [Hfg(CAS) for CAS in CASs]
+        Hfgs_mass = [Hf*1000.0/MW if Hf is not None else None for Hf, MW in zip(Hfgs, MWs)]
+
+        S0gs = [S0g(CAS) for CAS in CASs]
+        S0gs_mass = [S0*1000.0/MW if S0 is not None else None for S0, MW in zip(S0gs, MWs)]
+
+        # Compute Gfgs
+        Gfgs = [None]*N
+        for i in range(N):
+            # Compute Gf and Gf(ig)
+            dHfs_std = []
+            S0_abs_elements = []
+            coeffs_elements = []
+            for atom, count in atomss[i].items():
+                try:
+                    ele = periodic_table[atom]
+                    H0, S0 = ele.Hf, ele.S0
+                    if ele.number in homonuclear_elements:
+                        H0, S0 = 0.5*H0, 0.5*S0
+                except KeyError:
+                    H0, S0 = None, None # D, T
+                dHfs_std.append(H0)
+                S0_abs_elements.append(S0)
+                coeffs_elements.append(count)
+
+            elemental_reaction_data = (dHfs_std, S0_abs_elements, coeffs_elements)
+            try:
+                Gfgs[i] = Gibbs_formation(Hfgs[i], S0gs[i], dHfs_std, S0_abs_elements, coeffs_elements)
+            except:
+                pass
+        Gfgs_mass = [Gf*1000.0/MW if Gf is not None else None for Gf, MW in zip(Gfgs, MWs)]
+
+        Sfgs = [(Hfgs[i] - Gfgs[i])*(1.0/298.15) if (Hfgs[i] is not None and Gfgs[i] is not None) else None
+                for i in range(N)]
+        Sfgs_mass = [Sf*1000.0/MW if Sf is not None else None for Sf, MW in zip(Sfgs, MWs)]
+
+
+        HeatCapacityGases = [HeatCapacityGas(CASRN=CASs[i], MW=MWs[i], similarity_variable=similarity_variables[i]) for i in range(N)]
+        HeatCapacitySolids = [HeatCapacitySolid(CASRN=CASs[i], MW=MWs[i], similarity_variable=similarity_variables[i]) for i in range(N)]
+        HeatCapacityLiquids = [HeatCapacityLiquid(CASRN=CASs[i], MW=MWs[i], similarity_variable=similarity_variables[i], Tc=Tcs[i], omega=omegas[i], Cpgm=HeatCapacityGases[i].T_dependent_property) for i in range(N)]
+
+        EnthalpySublimations = [EnthalpySublimation(CASRN=CASs[i], Tm=Tms[i], Tt=Tts[i],
+                                                       Cpg=HeatCapacityGases[i], Cps=HeatCapacitySolids[i],
+                                                       Hvap=EnthalpyVaporizations[i])
+                                for i in range(N)]
+
+        Hsub_Tms = [EnthalpySublimations[i].T_dependent_property(Tms[i]) if Tms[i] is not None else None
+                           for i in range(N)]
+        Hsub_Tms_mass = [Hsub*1000.0/MW if Hsub is not None else None for Hsub, MW in zip(Hsub_Tms, MWs)]
+
+
+        combustion_stoichiometries = [combustion_stoichiometry(atoms) for atoms in atomss]
+        Hcs = [None]*N
+        for i in range(N):
+            try:
+                Hcs[i] = HHV_stoichiometry(combustion_stoichiometries[i], Hf=Hfgs[i]) if Hfgs[i] is not None else None
+            except:
+                pass
+        Hcs_mass = [Hc*1000.0/MW if Hc is not None else None for Hc, MW in zip(Hcs, MWs)]
+        Hcs_lower = [LHV_from_HHV(Hcs[i], combustion_stoichiometries[i].get('H2O', 0.0)) if Hcs[i] is not None else None
+                     for i in range(N)]
+        Hcs_lower_mass = [Hc*1000.0/MW if Hc is not None else None for Hc, MW in zip(Hcs_lower, MWs)]
+
+        Tflashs = [T_flash(CAS) for CAS in CASs]
+        Tautoignitions = [T_autoignition(CAS) for CAS in CASs]
+        LFLs = [LFL(Hc=Hcs[i], atoms=atomss[i], CASRN=CASs[i]) for i in range(N)]
+        UFLs = [UFL(Hc=Hcs[i], atoms=atomss[i], CASRN=CASs[i]) for i in range(N)]
+
+        TWAs = [TWA(CAS) for CAS in CASs]
+        STELs = [STEL(CAS) for CAS in CASs]
+        Skins = [Skin(CAS) for CAS in CASs]
+        Ceilings = [Ceiling(CAS) for CAS in CASs]
+        Carcinogens = [Carcinogen(CAS) for CAS in CASs]
+
+
+        # Environmental
+        GWPs = [GWP(CAS) for CAS in CASs]
+        ODPs = [ODP(CAS) for CAS in CASs]
+        logPs = [logP(CAS) for CAS in CASs]
+
+        # Analytical
+        RIs, RI_Ts = [None]*N, [None]*N
+        for i in range(N):
+            RIs[i], RI_Ts[i] = RI(CASs[i])
+
+        conductivities, conductivity_Ts = [None]*N, [None]*N
+        for i in range(N):
+            conductivities[i], conductivity_Ts[i] = conductivity(CASs[i])
+
+
+        Stockmayers = [Stockmayer(Tm=Tms[i], Tb=Tbs[i], Tc=Tcs[i], Zc=Zcs[i], omega=omegas[i], CASRN=CASs[i]) for i in range(N)]
+        molecular_diameters = [molecular_diameter(Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i], Zc=Zcs[i], omega=omegas[i],
+                                                  Vm=Vml_Tms[i], Vb=Vml_Tbs[i], CASRN=CASs[i]) for i in range(N)]
+
+        load_group_assignments_DDBST()
+
+        UNIFAC_groups = [DDBST_UNIFAC_assignments.get(InChI_Keys[i], None) for i in range(N)]
+        UNIFAC_Dortmund_groups = [DDBST_MODIFIED_UNIFAC_assignments.get(InChI_Keys[i], None) for i in range(N)]
+        PSRK_groups = [DDBST_PSRK_assignments.get(InChI_Keys[i], None) for i in range(N)]
+
+        UNIFAC_Rs, UNIFAC_Qs = [None]*N, [None]*N
+        for i in range(N):
+            groups = UNIFAC_groups[i]
+            if groups is not None:
+                UNIFAC_Rs[i], UNIFAC_Qs[i] = UNIFAC_RQ(groups)
+
+        solubility_parameters = [solubility_parameter(T=298.15, Hvapm=Hvap_298s[i], Vml=Vml_STPs[i]) if (Hvap_298s[i] is not None and  Vml_STPs[i] is not None) else None
+                                 for i in range(N)]
+
+        Van_der_Waals_volumes = [Van_der_Waals_volume(UNIFAC_Rs[i]) if UNIFAC_Rs[i] is not None else None for i in range(N)]
+        Van_der_Waals_areas = [Van_der_Waals_area(UNIFAC_Qs[i]) if UNIFAC_Qs[i] is not None else None for i in range(N)]
+
+        SurfaceTensions = []
+#        self.SurfaceTension = SurfaceTension(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, StielPolar=self.StielPolar, Hvap_Tb=self.Hvap_Tb, Vml=self.VolumeLiquid.T_dependent_property, Cpl=Cpl_calc,
+#                                             best_fit=get_chemical_constants(self.CAS, 'SurfaceTension'))
+
+        obj = ChemicalConstantsPackage(CASs=CASs, names=names, MWs=MWs, Tms=Tms,
+                Tbs=Tbs, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, Zcs=Zcs,
+                rhocs=rhocs, rhocs_mass=rhocs_mass, Hfus_Tms=Hfus_Tms,
+                Hfus_Tms_mass=Hfus_Tms_mass, Hvap_Tbs=Hvap_Tbs,
+                Hvap_Tbs_mass=Hvap_Tbs_mass,
+
+                 Vml_STPs=Vml_STPs, rhol_STPs=rhol_STPs, rhol_STPs_mass=rhol_STPs_mass,
+                 Vml_60Fs=Vml_60Fs, rhol_60Fs=rhol_60Fs, rhol_60Fs_mass=rhol_60Fs_mass,
+
+                 Hfgs=Hfgs, Hfgs_mass=Hfgs_mass, Gfgs=Gfgs, Gfgs_mass=Gfgs_mass,
+                 Sfgs=Sfgs, Sfgs_mass=Sfgs_mass, S0gs=S0gs, S0gs_mass=S0gs_mass,
+
+                 Tts=Tts, Pts=Pts, Hsub_Tms=Hsub_Tms, Hsub_Tms_mass=Hsub_Tms_mass,
+                 Hcs=Hcs, Hcs_mass=Hcs_mass, Hcs_lower=Hcs_lower, Hcs_lower_mass=Hcs_lower_mass,
+                 Tflashs=Tflashs, Tautoignitions=Tautoignitions, LFLs=LFLs, UFLs=UFLs,
+                 TWAs=TWAs, STELs=STELs, Ceilings=Ceilings, Skins=Skins,
+                 Carcinogens=Carcinogens,
+                 Psat_298s=Psat_298s, Hvap_298s=Hvap_298s, Hvap_298s_mass=Hvap_298s_mass,
+                 Vml_Tms=Vml_Tms, Vms_Tms=Vms_Tms, rhos_Tms=rhos_Tms, rhos_Tms_mass=rhos_Tms_mass,
+
+                 RIs=RIs, RI_Ts=RI_Ts, conductivities=conductivities,
+                 conductivity_Ts=conductivity_Ts,
+                 charges=charges, dipoles=dipoles, Stockmayers=Stockmayers,
+                 molecular_diameters=molecular_diameters, Van_der_Waals_volumes=Van_der_Waals_volumes,
+                 Van_der_Waals_areas=Van_der_Waals_areas, Parachors=Parachors, StielPolars=StielPolars,
+                 atomss=atomss, atom_fractions=atom_fractionss,
+                 similarity_variables=similarity_variables, phase_STPs=phase_STPs,
+                 UNIFAC_Rs=UNIFAC_Rs, UNIFAC_Qs=UNIFAC_Qs, solubility_parameters=solubility_parameters,
+                 # Other identifiers
+                 PubChems=PubChems, formulas=formulas, smiless=smiless, InChIs=InChIs,
+                 InChI_Keys=InChI_Keys,
+                )
+        return obj
 
     def __init__(self, CASs=None, names=None, MWs=None, Tms=None, Tbs=None,
                  # Critical state points
@@ -225,7 +459,7 @@ class ChemicalConstantsPackage(object):
                  # Environmental
                  GWPs=None, ODPs=None, logPs=None,
                  Psat_298s=None, Hvap_298s=None, Hvap_298s_mass=None,
-                 Vml_Tms=None, rhos_Tms=None, Vms_Tms=None,
+                 Vml_Tms=None, rhos_Tms=None, Vms_Tms=None, rhos_Tms_mass=None,
 
                  # Analytical
                  RIs=None, RI_Ts=None, conductivities=None,
@@ -333,6 +567,7 @@ class ChemicalConstantsPackage(object):
         if rhol_60Fs_mass is None: rhol_60Fs_mass = empty_list
         if RI_Ts is None: RI_Ts = empty_list
         if conductivity_Ts is None: conductivity_Ts = empty_list
+        if rhos_Tms_mass is None: rhos_Tms_mass = empty_list
 
         self.atom_fractions = atom_fractions
         self.atomss = atomss
@@ -419,6 +654,7 @@ class ChemicalConstantsPackage(object):
         self.rhol_60Fs_mass = rhol_60Fs_mass
         self.conductivity_Ts = conductivity_Ts
         self.RI_Ts = RI_Ts
+        self.rhos_Tms_mass = rhos_Tms_mass
 
         try:
             self.water_index = CASs.index(CAS_H2O)
@@ -489,7 +725,7 @@ constants_docstrings = {'N': (int, "Number of components in the package", "[-]",
 'Sfgs': ("list[float]", "Ideal gas standard molar entropies of formation for each component", "[J/(mol*K)]", None),
 'Sfgs_mass': ("list[float]", "Ideal gas standard entropies of formation for each component", "[J/(kg*K)]", None),
 'MWs': ("list[float]", "Similatiry variables for each component", "[mol/g]", None),
-'solubility_parameters': ("list[float]", "Solubility parameters for each component", "[Pa^0.5]", None),
+'solubility_parameters': ("list[float]", "Solubility parameters for each component at 298.15 K", "[Pa^0.5]", None),
 'Skins': ("list[bool]", "Whether each compound can be absorbed through the skin or not", "[-]", None),
 'smiless': ("list[str]", "SMILES identifiers for each component", "[-]", None),
 'STELs': ("list[tuple[(float, str)]]", "Short term exposure limits to chemicals (and their units)", "[ppm or mg/m^3]", None),

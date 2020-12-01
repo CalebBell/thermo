@@ -335,6 +335,25 @@ class Chemical(object): # pragma: no cover
     >>> N2.VolumeLiquid.plot_isobar(P=1E6,  Tmin=66, Tmax=120) # doctest: +SKIP
     >>> N2.VolumeLiquid.plot_TP_dependent_property(Tmin=60, Tmax=100,  Pmin=1E5, Pmax=1E7) # doctest: +SKIP
 
+
+    Notes
+    -----
+
+    .. warning::
+        The Chemical class is not designed for high-performance or the ability
+        to use different thermodynamic models. It is especially limited in its
+        multiphase support and the ability to solve with specifications other
+        than temperature and pressure. It is impossible to change constant
+        properties such as a compound's critical temperature in this interface.
+
+        It is recommended to switch over to the :obj:`thermo.flash` interface
+        which solves those problems and is better positioned to grow. That
+        interface also requires users to be responsible for their chemical
+        constants and pure component correlations; while default values can
+        easily be loaded for most compounds, the user is ultimately responsible
+        for them.
+
+
     Attributes
     ----------
     T : float
@@ -1125,6 +1144,7 @@ class Chemical(object): # pragma: no cover
                                        best_fit=get_chemical_constants(self.CAS, 'VolumeSolid'))
 
         self.Vms_Tm = self.VolumeSolid.T_dependent_property(self.Tm) if self.Tm else None
+        self.rhoms_Tm = 1.0/self.Vms_Tm if self.Vms_Tm is not None else None
         self.rhos_Tm = Vm_to_rho(self.Vms_Tm, self.MW) if self.Vms_Tm else None
 
         self.HeatCapacityGas = HeatCapacityGas(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable, best_fit=get_chemical_constants(self.CAS, 'HeatCapacityGas'))
@@ -1238,6 +1258,8 @@ class Chemical(object): # pragma: no cover
 
         self.Sfm = (self.Hfm - self.Gfm)/298.15 if (self.Hfm is not None and self.Gfm is not None) else None
         self.Sf = property_molar_to_mass(self.Sfm, self.MW) if (self.Sfm is not None) else None
+
+        self.solubility_parameter_STP = solubility_parameter(T=298.15, Hvapm=self.Hvapm_298, Vml=self.Vml_STP) if (self.Hvapm_298 is not None and self.Vml_STP is not None) else None
 
 
 

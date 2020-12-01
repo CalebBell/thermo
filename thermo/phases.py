@@ -128,7 +128,7 @@ __all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'CEOSLiquid', 'CEOS
            ]
 
 import sys
-from math import isinf, isnan
+from math import isinf, isnan, sqrt
 from fluids.constants import R, R_inv
 import fluids.constants
 from fluids.numerics import (horner, horner_and_der, horner_and_der2, horner_log, jacobian, derivative,

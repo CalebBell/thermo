@@ -20,20 +20,16 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-.. contents:: :local:
 
-Property Package Base Class
----------------------------
-.. autoclass:: PropertyPackage
-    :members:
+.. warning::
+    These classes were a first attempt at rigorous multiphase equilibrium.
+    They may be useful in some special cases but they are not complete and
+    further development will not happen. They were never documented as well.
 
-Ideal Property Package
-----------------------
-.. autoclass:: Ideal
-    :members:
+    It is recommended to switch over to the :obj:`thermo.flash` interface
+    which seeks to be more modular, easier to maintain and extend,
+    higher-performance, and easier to modify.
 
-.. autoclass:: IdealCaloric
-    :members:
 '''
 
 from __future__ import division
