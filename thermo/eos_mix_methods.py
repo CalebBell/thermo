@@ -256,9 +256,9 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
     Parameters
     ----------
     a_alphas : list[float]
-        EOS attractive terms, [J^2/mol^2/Pa]]
+        EOS attractive terms, [J^2/mol^2/Pa]
     a_alpha_i_roots : list[float]
-        Square roots of `a_alphas` [J/mol/Pa^0.5]
+        Square roots of `a_alphas`; provided for speed [J/mol/Pa^0.5]
     T : float
         Temperature, not used, [K]
     zs : list[float]
@@ -278,6 +278,14 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
     Tried moving the i=j loop out, no difference in speed, maybe got a bit slower
     in PyPy.
 
+    Examples
+    --------
+    >>> kijs = [[0,.083],[0.083,0]]
+    >>> zs = [0.1164203, 0.8835797]
+    >>> a_alphas = [0.2491099357671155, 0.6486495863528039]
+    >>> a_alpha_i_roots = [i**0.5 for i in a_alphas]
+    >>> a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, 299.0, zs, kijs)
+    (0.58562139582, [0.35469988173, 0.61604757237])
     '''
     # This is faster in PyPy and can be made even faster optimizing a_alpha!
 #    N = len(a_alphas)
@@ -328,7 +336,119 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
 
 
 def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_i_roots,
-                                            da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs):
+                                            da_alpha_dTs, d2a_alpha_dT2s, T,
+                                            zs, kijs):
+    r'''Calculates the `a_alpha` term, and its first two temperature
+    derivatives, for an equation of state along with the
+    vector quantities needed to compute the fugacitie and temperature
+    derivatives of fugacities of the mixture. This
+    routine is efficient in both numba and PyPy.
+
+    .. math::
+        a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+
+    .. math::
+        \frac{\partial (a\alpha)}{\partial T} = \sum_i \sum_j z_i z_j
+        \frac{\partial (a\alpha)_{ij}}{\partial T}
+
+    .. math::
+        \frac{\partial^2 (a\alpha)}{\partial T^2} = \sum_i \sum_j z_i z_j
+        \frac{\partial^2 (a\alpha)_{ij}}{\partial T^2}
+
+    .. math::
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+
+    .. math::
+        \frac{\partial (a\alpha)_{ij}}{\partial T} =
+        \frac{\sqrt{\operatorname{a\alpha_{i}}{\left(T \right)} \operatorname{a\alpha_{j}}
+        {\left(T \right)}} \left(1 - k_{ij}\right) \left(\frac{\operatorname{a\alpha_{i}}
+        {\left(T \right)} \frac{d}{d T} \operatorname{a\alpha_{j}}{\left(T \right)}}{2}
+        + \frac{\operatorname{a\alpha_{j}}{\left(T \right)} \frac{d}{d T} \operatorname{
+        a\alpha_{i}}{\left(T \right)}}{2}\right)}{\operatorname{a\alpha_{i}}{\left(T \right)}
+        \operatorname{a\alpha_{j}}{\left(T \right)}}
+
+    .. math::
+        \frac{\partial^2 (a\alpha)_{ij}}{\partial T^2} =
+        - \frac{\sqrt{\operatorname{a\alpha_{i}}{\left(T \right)} \operatorname{a\alpha_{j}}
+        {\left(T \right)}} \left(k_{ij} - 1\right) \left(\frac{\left(\operatorname{
+        a\alpha_{i}}{\left(T \right)} \frac{d}{d T} \operatorname{a\alpha_{j}}{\left(T \right)}
+        + \operatorname{a\alpha_{j}}{\left(T \right)} \frac{d}{d T} \operatorname{a\alpha_{i}}
+        {\left(T \right)}\right)^{2}}{4 \operatorname{a\alpha_{i}}{\left(T \right)}
+        \operatorname{a\alpha_{j}}{\left(T \right)}} - \frac{\left(\operatorname{a\alpha_{i}}
+        {\left(T \right)} \frac{d}{d T} \operatorname{a\alpha_{j}}{\left(T \right)}
+        + \operatorname{a\alpha_{j}}{\left(T \right)} \frac{d}{d T}
+        \operatorname{a\alpha_{i}}{\left(T \right)}\right) \frac{d}{d T}
+        \operatorname{a\alpha_{j}}{\left(T \right)}}{2 \operatorname{a\alpha_{j}}
+        {\left(T \right)}} - \frac{\left(\operatorname{a\alpha_{i}}{\left(T \right)}
+        \frac{d}{d T} \operatorname{a\alpha_{j}}{\left(T \right)}
+        + \operatorname{a\alpha_{j}}{\left(T \right)} \frac{d}{d T}
+        \operatorname{a\alpha_{i}}{\left(T \right)}\right) \frac{d}{d T}
+        \operatorname{a\alpha_{i}}{\left(T \right)}}{2 \operatorname{a\alpha_{i}}
+        {\left(T \right)}} + \frac{\operatorname{a\alpha_{i}}{\left(T \right)}
+        \frac{d^{2}}{d T^{2}} \operatorname{a\alpha_{j}}{\left(T \right)}}{2}
+        + \frac{\operatorname{a\alpha_{j}}{\left(T \right)} \frac{d^{2}}{d T^{2}}
+        \operatorname{a\alpha_{i}}{\left(T \right)}}{2} + \frac{d}{d T}
+        \operatorname{a\alpha_{i}}{\left(T \right)} \frac{d}{d T}
+        \operatorname{a\alpha_{j}}{\left(T \right)}\right)}
+        {\operatorname{a\alpha_{i}}{\left(T \right)} \operatorname{a\alpha_{j}}
+        {\left(T \right)}}
+
+    The secondary values are as follows:
+
+    .. math::
+        \sum_i y_i(a\alpha)_{ij}
+
+    .. math::
+        \sum_i y_i \frac{\partial (a\alpha)_{ij}}{\partial T}
+
+    Parameters
+    ----------
+    a_alphas : list[float]
+        EOS attractive terms, [J^2/mol^2/Pa]
+    a_alpha_i_roots : list[float]
+        Square roots of `a_alphas`; provided for speed [J/mol/Pa^0.5]
+    da_alpha_dTs : list[float]
+        Temperature derivative of coefficient calculated by EOS-specific
+        method, [J^2/mol^2/Pa/K]
+    d2a_alpha_dT2s : list[float]
+        Second temperature derivative of coefficient calculated by
+        EOS-specific method, [J^2/mol^2/Pa/K**2]
+    T : float
+        Temperature, not used, [K]
+    zs : list[float]
+        Mole fractions of each species
+    kijs : list[list[float]]
+        Constant kijs, [-]
+
+    Returns
+    -------
+    a_alpha : float
+        EOS attractive term, [J^2/mol^2/Pa]
+    da_alpha_dT : float
+        Temperature derivative of coefficient calculated by EOS-specific
+        method, [J^2/mol^2/Pa/K]
+    d2a_alpha_dT2 : float
+        Second temperature derivative of coefficient calculated by
+        EOS-specific method, [J^2/mol^2/Pa/K**2]
+    a_alpha_j_rows : list[float]
+        EOS attractive term row sums, [J^2/mol^2/Pa]
+    da_alpha_dT_j_rows : list[float]
+        Temperature derivative of EOS attractive term row sums, [J^2/mol^2/Pa/K]
+
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> kijs = [[0,.083],[0.083,0]]
+    >>> zs = [0.1164203, 0.8835797]
+    >>> a_alphas = [0.2491099357671155, 0.6486495863528039]
+    >>> a_alpha_i_roots = [i**0.5 for i in a_alphas]
+    >>> da_alpha_dTs = [-0.0005102028006086241, -0.0011131153520304886]
+    >>> d2a_alpha_dT2s = [1.8651128859234162e-06, 3.884331923127011e-06]
+    >>> a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, 299.0, zs, kijs)
+    (0.58562139582, -0.001018667672, 3.56669817856e-06, [0.35469988173, 0.61604757237], [-0.000672387374, -0.001064293501])
+    '''
     N = len(a_alphas)
     a_alpha = da_alpha_dT = d2a_alpha_dT2 = 0.0
 

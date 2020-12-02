@@ -20,7 +20,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from numpy.testing import assert_allclose
 import pytest
 from fluids.numerics import derivative, assert_close, jacobian, hessian, assert_close1d, assert_close2d
 
@@ -55,9 +54,9 @@ def test_GibbbsExcessLiquid_VaporPressure():
 
     # Ingredients
     Psats_expect = [8778.910843769489, 3537.075987237396]
-    assert_allclose(liquid.Psats(), Psats_expect, rtol=1e-12)
-    assert_allclose(liquid.Psats_at(T), Psats_expect, rtol=1e-12)
-    assert_allclose(liquid.Psats_at(310.0), [15187.108461608485, 6231.649608160113], rtol=1e-12)
+    assert_close1d(liquid.Psats(), Psats_expect, rtol=1e-12)
+    assert_close1d(liquid.Psats_at(T), Psats_expect, rtol=1e-12)
+    assert_close1d(liquid.Psats_at(310.0), [15187.108461608485, 6231.649608160113], rtol=1e-12)
 
     gammas_expect = [1.0, 1.0]
     assert liquid.gammas() == gammas_expect
@@ -76,33 +75,33 @@ def test_GibbbsExcessLiquid_VaporPressure():
 
     # Fugacities and friends
     phis_expect = [0.0877891084376949, 0.035370759872373966]
-    assert_allclose(liquid.phis(), phis_expect, rtol=1e-12)
+    assert_close1d(liquid.phis(), phis_expect, rtol=1e-12)
 
     lnphis_expect = [-2.432817835720433, -3.3418697924678376]
-    assert_allclose(liquid.lnphis(), lnphis_expect, rtol=1e-12)
+    assert_close1d(liquid.lnphis(), lnphis_expect, rtol=1e-12)
 
     fugacities_expect = [3511.564337507796, 2122.245592342438]
-    assert_allclose(liquid.fugacities(), fugacities_expect, rtol=1e-12)
+    assert_close1d(liquid.fugacities(), fugacities_expect, rtol=1e-12)
 
     # Temperature derivatives
     dlnphis_dT_expect = [0.05691421137269392, 0.058786419948670225]
-    assert_allclose(liquid.dlnphis_dT(), dlnphis_dT_expect, rtol=1e-12)
+    assert_close1d(liquid.dlnphis_dT(), dlnphis_dT_expect, rtol=1e-12)
 
     dphis_dT_expect = [0.004996447873843315, 0.0020793203437609493]
-    assert_allclose(liquid.dphis_dT(), dphis_dT_expect, rtol=1e-12)
+    assert_close1d(liquid.dphis_dT(), dphis_dT_expect, rtol=1e-12)
 
     dfugacities_dT_expect = [199.8579149537326, 124.75922062565697]
-    assert_allclose(liquid.dfugacities_dT(), dfugacities_dT_expect, rtol=1e-12)
+    assert_close1d(liquid.dfugacities_dT(), dfugacities_dT_expect, rtol=1e-12)
 
     # Pressure derivatives
     dlnphis_dP_expect = [-1e-05, -1e-05]
-    assert_allclose(liquid.dlnphis_dP(), dlnphis_dP_expect, rtol=1e-12)
+    assert_close1d(liquid.dlnphis_dP(), dlnphis_dP_expect, rtol=1e-12)
 
     dphis_dP_expect = [-8.778910843769491e-07, -3.537075987237397e-07]
-    assert_allclose(liquid.dphis_dP(), dphis_dP_expect, rtol=1e-12)
+    assert_close1d(liquid.dphis_dP(), dphis_dP_expect, rtol=1e-12)
 
     dfugacities_dP_expect = [0, 0]
-    assert_allclose(liquid.dfugacities_dP(), dfugacities_dP_expect, atol=1e-15)
+    assert_close1d(liquid.dfugacities_dP(), dfugacities_dP_expect, atol=1e-15)
 
 
 def test_GibbbsExcessLiquid_VolumeLiquids():
@@ -143,20 +142,20 @@ def test_GibbbsExcessLiquid_VolumeLiquids():
 
     Vms_expect = [1.7835985614552184e-05, 5.44799706327522e-05]
     Vms_calc = liquid.Vms_sat()
-    assert_allclose(Vms_expect, Vms_calc, rtol=1e-12)
+    assert_close1d(Vms_expect, Vms_calc, rtol=1e-12)
 
     dVms_sat_dT_expect = [3.855990979785858e-09, 5.14342987163643e-08]
     dVms_sat_dT_calc = liquid.dVms_sat_dT()
-    assert_allclose(dVms_sat_dT_expect, dVms_sat_dT_calc, rtol=1e-12)
+    assert_close1d(dVms_sat_dT_expect, dVms_sat_dT_calc, rtol=1e-12)
 
     V_calc = liquid.V()
-    assert_allclose(V_calc, 3.982237662547219e-05)
+    assert_close(V_calc, 3.982237662547219e-05)
 
     liq2 = liquid.to_TP_zs(400, 1e6, zs)
-    assert_allclose(liq2.V(), 4.8251068646661126e-05)
+    assert_close(liq2.V(), 4.8251068646661126e-05)
 
-#    assert_allclose(liquid.H(), -49557.51889261903, rtol=1e-10) # poyntings?
-    assert_allclose(liquid.Hvaps(), [46687.6343559442, 45719.87039687816])
+#    assert_close(liquid.H(), -49557.51889261903, rtol=1e-10) # poyntings?
+    assert_close1d(liquid.Hvaps(), [46687.6343559442, 45719.87039687816])
 
 def test_GibbbsExcessLiquid_MiscIdeal():
     # Binary ethanol-water
@@ -209,25 +208,25 @@ def test_GibbbsExcessLiquid_MiscIdeal():
     d2P_dT2_num = derivative(lambda T: liquid.to(T=T, P=P, zs=zs).dP_dT(), T, dx=T*1e-5)
     assert_close(liquid.d2P_dT2(), d2P_dT2_num)
 
-    assert_allclose(liquid.gammas(), [1.0, 1.0], rtol=1e-12)
-    assert_allclose(liquid.phis_sat(), [1.0, 1.0], rtol=1e-12)
-    assert_allclose(liquid.Poyntings(), [1.0, 1.0], rtol=1e-12)
-    assert_allclose(liquid.phis(), [0.0004035893669389571, 0.000136992723615756], rtol=1e-12)
+    assert_close1d(liquid.gammas(), [1.0, 1.0], rtol=1e-12)
+    assert_close1d(liquid.phis_sat(), [1.0, 1.0], rtol=1e-12)
+    assert_close1d(liquid.Poyntings(), [1.0, 1.0], rtol=1e-12)
+    assert_close1d(liquid.phis(), [0.0004035893669389571, 0.000136992723615756], rtol=1e-12)
 
     dphis_dT = liquid.dphis_dT()
     dphis_dT_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).phis(), [T], scalar=False, perturbation=1e-8)
     dphis_dT_num = [i[0] for i in dphis_dT_num]
-    assert_allclose(dphis_dT, dphis_dT_num, rtol=1e-6)
+    assert_close1d(dphis_dT, dphis_dT_num, rtol=1e-6)
 
     dphis_dP = liquid.dphis_dP()
     dphis_dP_num = jacobian(lambda P: liquid.to(P=P[0], T=T, zs=zs).phis(), [P], scalar=False, perturbation=1e-8)
     dphis_dP_num = [i[0] for i in dphis_dP_num]
-    assert_allclose(dphis_dP, dphis_dP_num, rtol=1e-8)
+    assert_close1d(dphis_dP, dphis_dP_num, rtol=1e-8)
 
     # TODO dphis_dxs
     dphis_dxs_expect = [[0.0, 0.0], [0.0, 0.0]]
     dphis_dxs_num = jacobian(lambda zs: liquid.to(P=P, T=T, zs=zs).phis(), zs, scalar=False, perturbation=1e-8)
-    assert_allclose(dphis_dxs_num, dphis_dxs_expect)
+    assert_close2d(dphis_dxs_num, dphis_dxs_expect)
 
     # none of these are passing
     liquid.S_phi_consistency()
@@ -238,30 +237,30 @@ def test_GibbbsExcessLiquid_MiscIdeal():
     dPsats_dT = liquid.dPsats_dT()
     dPsats_dT_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).Psats(), [T], scalar=False, perturbation=2e-9)
     dPsats_dT_num = [i[0] for i in dPsats_dT_num]
-    assert_allclose(dPsats_dT, dPsats_dT_num, rtol=2e-7)
-    assert_allclose(dPsats_dT, [4.158045781849272, 1.4571835115958096], rtol=1e-12)
+    assert_close1d(dPsats_dT, dPsats_dT_num, rtol=2e-7)
+    assert_close1d(dPsats_dT, [4.158045781849272, 1.4571835115958096], rtol=1e-12)
 
     d2Psats_dT2 = liquid.d2Psats_dT2()
     d2Psats_dT2_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).dPsats_dT(), [T], scalar=False, perturbation=10e-9)
     d2Psats_dT2_num = [i[0] for i in d2Psats_dT2_num]
-    assert_allclose(d2Psats_dT2, d2Psats_dT2_num, rtol=5e-7)
-    assert_allclose(d2Psats_dT2, [0.38889016337503146, 0.1410925971754788], rtol=1e-12)
+    assert_close1d(d2Psats_dT2, d2Psats_dT2_num, rtol=5e-7)
+    assert_close1d(d2Psats_dT2, [0.38889016337503146, 0.1410925971754788], rtol=1e-12)
 
 
     dVms_sat_dT = liquid.dVms_sat_dT()
     dVms_sat_dT_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).Vms_sat(), [T],
                                scalar=False, perturbation=1e-6)
     dVms_sat_dT_num = [i[0] for i in dVms_sat_dT_num]
-    assert_allclose(dVms_sat_dT, dVms_sat_dT_num, rtol=1e-6)
-    assert_allclose(dVms_sat_dT, [3.855990979785858e-09, 5.14342987163643e-08], rtol=1e-12)
+    assert_close1d(dVms_sat_dT, dVms_sat_dT_num, rtol=1e-6)
+    assert_close1d(dVms_sat_dT, [3.855990979785858e-09, 5.14342987163643e-08], rtol=1e-12)
 
 
     d2Vms_sat_dT2 = liquid.d2Vms_sat_dT2()
     d2Vms_sat_dT2_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).dVms_sat_dT(),
                                  [T], scalar=False, perturbation=1e-7)
     d2Vms_sat_dT2_num = [i[0] for i in d2Vms_sat_dT2_num]
-    assert_allclose(d2Vms_sat_dT2, d2Vms_sat_dT2_num, rtol=1e-6)
-    assert_allclose(d2Vms_sat_dT2, [1.676517817298199e-11, 5.457718437885466e-10], rtol=1e-12)
+    assert_close1d(d2Vms_sat_dT2, d2Vms_sat_dT2_num, rtol=1e-6)
+    assert_close1d(d2Vms_sat_dT2, [1.676517817298199e-11, 5.457718437885466e-10], rtol=1e-12)
 
     # Do a comple more points near the second derivative
     for T in [159.11+.1, 159.11-.1, 159.11+1e-5, 159.11-1e-5]:
@@ -270,39 +269,39 @@ def test_GibbbsExcessLiquid_MiscIdeal():
         dPsats_dT = liquid.dPsats_dT()
         dPsats_dT_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).Psats(), [liquid.T], scalar=False, perturbation=10e-9)
         dPsats_dT_num = [i[0] for i in dPsats_dT_num]
-        assert_allclose(dPsats_dT, dPsats_dT_num, rtol=5e-7)
+        assert_close1d(dPsats_dT, dPsats_dT_num, rtol=5e-7)
 
         d2Psats_dT2 = liquid.d2Psats_dT2()
         d2Psats_dT2_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).dPsats_dT(), [liquid.T], scalar=False, perturbation=10e-9)
         d2Psats_dT2_num = [i[0] for i in d2Psats_dT2_num]
-        assert_allclose(d2Psats_dT2, d2Psats_dT2_num, rtol=5e-7)
+        assert_close1d(d2Psats_dT2, d2Psats_dT2_num, rtol=5e-7)
 
     T_min = liquid.VaporPressures[0].best_fit_Tmin
     liquid_under = liquid.to(T=T_min-1e-12, P=P,zs=zs)
     liquid_over = liquid.to(T=T_min+1e-12, P=P,zs=zs)
     d2Psats_dT2_under = liquid_under.d2Psats_dT2()
     d2Psats_dT2_over = liquid_over.d2Psats_dT2()
-    assert_allclose(d2Psats_dT2_under, d2Psats_dT2_over)
+    assert_close1d(d2Psats_dT2_under, d2Psats_dT2_over)
 
     dPsats_dT_under = liquid_under.dPsats_dT()
     dPsats_dT_over = liquid_over.dPsats_dT()
-    assert_allclose(dPsats_dT_under, dPsats_dT_over)
+    assert_close1d(dPsats_dT_under, dPsats_dT_over)
 
     Psats_under = liquid_under.Psats()
     Psats_over = liquid_over.Psats()
-    assert_allclose(Psats_under, Psats_over)
+    assert_close1d(Psats_under, Psats_over)
 
     # Not always true at this point
     # d2Vms_sat_dT2_under = liquid_under.d2Vms_sat_dT2()
     # d2Vms_sat_dT2_over = liquid_over.d2Vms_sat_dT2()
-    # assert_allclose(d2Vms_sat_dT2_under, d2Vms_sat_dT2_over)
+    # assert_close1d(d2Vms_sat_dT2_under, d2Vms_sat_dT2_over)
     dVms_sat_dT_under = liquid_under.dVms_sat_dT()
     dVms_sat_dT_over = liquid_over.dVms_sat_dT()
-    assert_allclose(dVms_sat_dT_under, dVms_sat_dT_over)
+    assert_close1d(dVms_sat_dT_under, dVms_sat_dT_over)
 
     Vms_sat_under = liquid_under.Vms_sat()
     Vms_sat_over = liquid_over.Vms_sat()
-    assert_allclose(Vms_sat_under, Vms_sat_over)
+    assert_close1d(Vms_sat_under, Vms_sat_over)
 
 
 
@@ -344,17 +343,17 @@ def test_GibbbsExcessLiquid_PoyntingWorking():
     assert_close(liquid.S(), -138.07941956364567)
     assert_close(liquid.G(), -17505.183873890335)
 
-    assert_allclose(liquid.phis(), [0.0001371205367872173, 0.0004047403204229314])
+    assert_close1d(liquid.phis(), [0.0001371205367872173, 0.0004047403204229314])
 
     dphis_dT = liquid.dphis_dT()
     dphis_dT_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).phis(), [T], scalar=False, perturbation=1e-8)
     dphis_dT_num = [i[0] for i in dphis_dT_num]
-    assert_allclose(dphis_dT, dphis_dT_num, rtol=1e-6)
+    assert_close1d(dphis_dT, dphis_dT_num, rtol=1e-6)
 
     dphis_dP = liquid.dphis_dP()
     dphis_dP_num = jacobian(lambda P: liquid.to(P=P[0], T=T, zs=zs).phis(), [P], scalar=False, perturbation=1e-8)
     dphis_dP_num = [i[0] for i in dphis_dP_num]
-    assert_allclose(dphis_dP, dphis_dP_num, rtol=1e-7)
+    assert_close1d(dphis_dP, dphis_dP_num, rtol=1e-7)
 
     # point under Psats - check the consistencies are still there
     liq2 = liquid.to(T=400, P=1e5, zs=zs)
@@ -388,20 +387,20 @@ def test_GibbbsExcessLiquid_PoyntingWorking():
     dPoyntings_dT = liquid.dPoyntings_dT()
     dPoyntings_dT_num = jacobian(lambda T: liquid.to(P=P, T=T[0], zs=zs).Poyntings(), [T], scalar=False, perturbation=5e-7)
     dPoyntings_dT_num = [i[0] for i in dPoyntings_dT_num]
-    assert_allclose(dPoyntings_dT, dPoyntings_dT_num, rtol=1e-6)
-    assert_allclose(dPoyntings_dT, [-3.870184881396542e-06, -9.839359563363645e-06], rtol=1e-10)
+    assert_close1d(dPoyntings_dT, dPoyntings_dT_num, rtol=1e-6)
+    assert_close1d(dPoyntings_dT, [-3.870184881396542e-06, -9.839359563363645e-06], rtol=1e-10)
 
     d2Poyntings_dT2 = liquid.d2Poyntings_dT2()
     d2Poyntings_d2T_num = jacobian(lambda T: liquid.to(P=P, T=T[0], zs=zs).dPoyntings_dT(), [T], scalar=False, perturbation=5e-7)
     d2Poyntings_d2T_num = [i[0] for i in d2Poyntings_d2T_num]
-    assert_allclose(d2Poyntings_dT2, d2Poyntings_d2T_num, rtol=1e-6)
-    assert_allclose(d2Poyntings_dT2, [3.3223074340239076e-08, 1.0293076880888814e-07], rtol=1e-10)
+    assert_close1d(d2Poyntings_dT2, d2Poyntings_d2T_num, rtol=1e-6)
+    assert_close1d(d2Poyntings_dT2, [3.3223074340239076e-08, 1.0293076880888814e-07], rtol=1e-10)
 
     d2Poyntings_dPdT = liquid.d2Poyntings_dPdT()
     d2Poyntings_dPdT_num = jacobian(lambda P: liquid.to(P=P[0], T=T, zs=zs).dPoyntings_dT(), [P], scalar=False, perturbation=5e-7)
     d2Poyntings_dPdT_num = [i[0] for i in d2Poyntings_dPdT_num]
-    assert_allclose(d2Poyntings_dPdT, d2Poyntings_dPdT_num, rtol=1e-6)
-    assert_allclose(d2Poyntings_dPdT, [-3.860719326165776e-11, -9.752519722895721e-11], rtol=1e-10)
+    assert_close1d(d2Poyntings_dPdT, d2Poyntings_dPdT_num, rtol=1e-6)
+    assert_close1d(d2Poyntings_dPdT, [-3.860719326165776e-11, -9.752519722895721e-11], rtol=1e-10)
 
 def test_GibbbsExcessLiquid_NoPoyNoGammaNoPhi():
     # Binary ethanol-water
@@ -657,7 +656,7 @@ def test_GibbsExcessLiquid_dHS_dT_low():
     assert_close(liquid.S(), -484.0343032579679, rtol=1e-12)
     assert_close(liquid.dS_dT(), 11.67894683998161, rtol=1e-11)
     assert_close(liquid.H(), -73248.63457031998, rtol=1e-12)
-    assert_allclose(liquid.dH_dT(), 93.43157471985432, rtol=1e-7)
+    assert_close(liquid.dH_dT(), 93.43157471985432, rtol=1e-7)
     assert liquid.Psats()[0] == 0.0
 
     # used to return inf but not error - now check for infinity
@@ -665,13 +664,13 @@ def test_GibbsExcessLiquid_dHS_dT_low():
     assert_close(liquid.S(), -476.1934077017887, rtol=1e-12)
     assert_close(liquid.dS_dT(), 10.749591046689055, rtol=1e-11)
     assert_close(liquid.H(), -73183.20101443084, rtol=1e-12)
-    assert_allclose(liquid.dH_dT(), 93.52144210619554, rtol=1e-7) # used to be nan
+    assert_close(liquid.dH_dT(), 93.52144210619554, rtol=1e-7) # used to be nan
 
     # Point where vapor pressure was so low the calculation was not erroring
     # but was failing for floating point errors
     liquid = liquid.to(T=16.010610610610595, P=P, zs=zs)
-    assert_allclose(liquid.dS_dT(), 5.899836993871634, rtol=1e-11)
-    assert_allclose(liquid.dH_dT(), 94.45999277445732, rtol=1e-7)
+    assert_close(liquid.dS_dT(), 5.899836993871634, rtol=1e-11)
+    assert_close(liquid.dH_dT(), 94.45999277445732, rtol=1e-7)
 
 def test_GibbsExcessLiquid_at_methods():
     constants = ChemicalConstantsPackage(Tcs=[508.1, 536.2, 512.5], Pcs=[4700000.0, 5330000.0, 8084000.0], omegas=[0.309, 0.21600000000000003, 0.5589999999999999],
@@ -694,23 +693,23 @@ def test_GibbsExcessLiquid_at_methods():
                      use_phis_sat=False)
     liq2 = liquid.to(T=285.5, P=1e4, zs=[0.2, 0.0, 0.8])
 
-    assert_allclose(liq2.Psats(), liquid.Psats_at(285.5), rtol=1e-12)
-    assert_allclose(liq2.dPsats_dT(), liquid.dPsats_dT_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.Psats(), liquid.Psats_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.dPsats_dT(), liquid.dPsats_dT_at(285.5), rtol=1e-12)
 
-    assert_allclose(liq2.Vms_sat(), liquid.Vms_sat_at(285.5), rtol=1e-12)
-    assert_allclose(liq2.dVms_sat_dT(), liquid.dVms_sat_dT_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.Vms_sat(), liquid.Vms_sat_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.dVms_sat_dT(), liquid.dVms_sat_dT_at(285.5), rtol=1e-12)
 
-    assert_allclose(liq2.phis_sat(), liquid.phis_sat_at(285.5), rtol=1e-12)
-    assert_allclose(liq2.dphis_sat_dT(), liquid.dphis_sat_dT_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.phis_sat(), liquid.phis_sat_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.dphis_sat_dT(), liquid.dphis_sat_dT_at(285.5), rtol=1e-12)
 
-    assert_allclose(liq2.gammas(), liquid.gammas_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
-    assert_allclose(liq2.dgammas_dT(), liquid.dgammas_dT_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_close1d(liq2.gammas(), liquid.gammas_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_close1d(liq2.dgammas_dT(), liquid.dgammas_dT_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
 
-    assert_allclose(liq2.Poyntings(), liquid.Poyntings_at(285.5, 1e4), rtol=1e-12)
-    assert_allclose(liq2.dPoyntings_dT(), liquid.dPoyntings_dT_at(285.5, 1e4), rtol=1e-12)
+    assert_close1d(liq2.Poyntings(), liquid.Poyntings_at(285.5, 1e4), rtol=1e-12)
+    assert_close1d(liq2.dPoyntings_dT(), liquid.dPoyntings_dT_at(285.5, 1e4), rtol=1e-12)
 
-    assert_allclose(liq2.phis(), liquid.phis_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
-    assert_allclose(liq2.dphis_dT(), liquid.dphis_dT_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_close1d(liq2.phis(), liquid.phis_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_close1d(liq2.dphis_dT(), liquid.dphis_dT_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
 
     # Without Poy, with phis sat
     eoss = [PR(Tc=constants.Tcs[i], Pc=constants.Pcs[i], omega=constants.omegas[i], T=300, P=1e5) for i in range(3)]
@@ -720,23 +719,23 @@ def test_GibbsExcessLiquid_at_methods():
                  eos_pure_instances=eoss, use_phis_sat=True)
     liq2 = liquid.to(T=285.5, P=1e4, zs=[0.2, 0.0, 0.8])
 
-    assert_allclose(liq2.Psats(), liquid.Psats_at(285.5), rtol=1e-12)
-    assert_allclose(liq2.dPsats_dT(), liquid.dPsats_dT_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.Psats(), liquid.Psats_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.dPsats_dT(), liquid.dPsats_dT_at(285.5), rtol=1e-12)
 
-    assert_allclose(liq2.Vms_sat(), liquid.Vms_sat_at(285.5), rtol=1e-12)
-    assert_allclose(liq2.dVms_sat_dT(), liquid.dVms_sat_dT_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.Vms_sat(), liquid.Vms_sat_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.dVms_sat_dT(), liquid.dVms_sat_dT_at(285.5), rtol=1e-12)
 
-    assert_allclose(liq2.phis_sat(), liquid.phis_sat_at(285.5), rtol=1e-12)
-    assert_allclose(liq2.dphis_sat_dT(), liquid.dphis_sat_dT_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.phis_sat(), liquid.phis_sat_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.dphis_sat_dT(), liquid.dphis_sat_dT_at(285.5), rtol=1e-12)
 
-    assert_allclose(liq2.gammas(), liquid.gammas_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
-    assert_allclose(liq2.dgammas_dT(), liquid.dgammas_dT_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_close1d(liq2.gammas(), liquid.gammas_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_close1d(liq2.dgammas_dT(), liquid.dgammas_dT_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
 
-    assert_allclose(liq2.Poyntings(), liquid.Poyntings_at(285.5, 1e4), rtol=1e-12)
-    assert_allclose(liq2.dPoyntings_dT(), liquid.dPoyntings_dT_at(285.5, 1e4), rtol=1e-12)
+    assert_close1d(liq2.Poyntings(), liquid.Poyntings_at(285.5, 1e4), rtol=1e-12)
+    assert_close1d(liq2.dPoyntings_dT(), liquid.dPoyntings_dT_at(285.5, 1e4), rtol=1e-12)
 
-    assert_allclose(liq2.phis(), liquid.phis_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
-    assert_allclose(liq2.dphis_dT(), liquid.dphis_dT_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_close1d(liq2.phis(), liquid.phis_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_close1d(liq2.dphis_dT(), liquid.dphis_dT_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
 
     # With poy and phi sat
     liquid = GibbsExcessLiquid(VaporPressures=VaporPressures, VolumeLiquids=VolumeLiquids,
@@ -744,23 +743,23 @@ def test_GibbsExcessLiquid_at_methods():
                  eos_pure_instances=eoss, use_phis_sat=True)
     liq2 = liquid.to(T=285.5, P=1e4, zs=[0.2, 0.0, 0.8])
 
-    assert_allclose(liq2.Psats(), liquid.Psats_at(285.5), rtol=1e-12)
-    assert_allclose(liq2.dPsats_dT(), liquid.dPsats_dT_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.Psats(), liquid.Psats_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.dPsats_dT(), liquid.dPsats_dT_at(285.5), rtol=1e-12)
 
-    assert_allclose(liq2.Vms_sat(), liquid.Vms_sat_at(285.5), rtol=1e-12)
-    assert_allclose(liq2.dVms_sat_dT(), liquid.dVms_sat_dT_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.Vms_sat(), liquid.Vms_sat_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.dVms_sat_dT(), liquid.dVms_sat_dT_at(285.5), rtol=1e-12)
 
-    assert_allclose(liq2.phis_sat(), liquid.phis_sat_at(285.5), rtol=1e-12)
-    assert_allclose(liq2.dphis_sat_dT(), liquid.dphis_sat_dT_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.phis_sat(), liquid.phis_sat_at(285.5), rtol=1e-12)
+    assert_close1d(liq2.dphis_sat_dT(), liquid.dphis_sat_dT_at(285.5), rtol=1e-12)
 
-    assert_allclose(liq2.gammas(), liquid.gammas_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
-    assert_allclose(liq2.dgammas_dT(), liquid.dgammas_dT_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_close1d(liq2.gammas(), liquid.gammas_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_close1d(liq2.dgammas_dT(), liquid.dgammas_dT_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
 
-    assert_allclose(liq2.Poyntings(), liquid.Poyntings_at(285.5, 1e4), rtol=1e-12)
-    assert_allclose(liq2.dPoyntings_dT(), liquid.dPoyntings_dT_at(285.5, 1e4), rtol=1e-12)
+    assert_close1d(liq2.Poyntings(), liquid.Poyntings_at(285.5, 1e4), rtol=1e-12)
+    assert_close1d(liq2.dPoyntings_dT(), liquid.dPoyntings_dT_at(285.5, 1e4), rtol=1e-12)
 
-    assert_allclose(liq2.phis(), liquid.phis_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
-    assert_allclose(liq2.dphis_dT(), liquid.dphis_dT_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_close1d(liq2.phis(), liquid.phis_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_close1d(liq2.dphis_dT(), liquid.dphis_dT_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
 
 
 
@@ -783,102 +782,102 @@ def test_EOSGas_phis():
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
     lnphis_expect = [-0.02360432649642419, -0.024402271514780954, -0.016769813943198587]
-    assert_allclose(gas.lnphis(), lnphis_expect, rtol=1e-12)
+    assert_close1d(gas.lnphis(), lnphis_expect, rtol=1e-12)
 
     phis_expect = [0.9766720765776962, 0.9758930568084294, 0.9833700166511827]
-    assert_allclose(gas.phis(), phis_expect, rtol=1e-12)
+    assert_close1d(gas.phis(), phis_expect, rtol=1e-12)
 
     fugacities_expect = [20335.64774507632, 15527.946770733744, 53288.92740628939]
-    assert_allclose(gas.fugacities(), fugacities_expect, rtol=1e-12)
-    
+    assert_close1d(gas.fugacities(), fugacities_expect, rtol=1e-12)
+
     lnfugacities_expect = [9.920130671538276, 9.650396696889194, 10.88348384760261]
     assert_close1d(gas.lnfugacities(), lnfugacities_expect, rtol=1e-9)
 
     dlnphis_dT_expect = [0.0001969437889400412, 0.0001955309568834383, 0.00014847122768410804]
-    assert_allclose(gas.dlnphis_dT(), dlnphis_dT_expect, rtol=1e-12)
+    assert_close1d(gas.dlnphis_dT(), dlnphis_dT_expect, rtol=1e-12)
 
     dphis_dT_expect = [0.00019234949931314953, 0.00019081730321365582, 0.00014600215363994287]
-    assert_allclose(gas.dphis_dT(), dphis_dT_expect, rtol=1e-12)
+    assert_close1d(gas.dphis_dT(), dphis_dT_expect, rtol=1e-12)
 
     dfugacities_dT_expect = [4.004979517465334, 3.036194290516665, 7.911872473981097]
-    assert_allclose(gas.dfugacities_dT(), dfugacities_dT_expect, rtol=1e-12)
+    assert_close1d(gas.dfugacities_dT(), dfugacities_dT_expect, rtol=1e-12)
 
     dlnphis_dP_expect = [-2.6201216188562436e-07, -2.709988856769895e-07, -1.857038475967749e-07]
-    assert_allclose(gas.dlnphis_dP(), dlnphis_dP_expect, rtol=1e-12)
+    assert_close1d(gas.dlnphis_dP(), dlnphis_dP_expect, rtol=1e-12)
 
     dphis_dP_expect = [-2.558999622374442e-07, -2.644659309349954e-07, -1.8261559570342924e-07]
-    assert_allclose(gas.dphis_dP(), dphis_dP_expect, rtol=1e-12)
+    assert_close1d(gas.dphis_dP(), dphis_dP_expect, rtol=1e-12)
 
     dfugacities_dP_expect = [0.21832971850726046, 0.16657322866975469, 0.5761925710704517]
-    assert_allclose(gas.dfugacities_dP(), dfugacities_dP_expect, rtol=1e-12)
+    assert_close1d(gas.dfugacities_dP(), dfugacities_dP_expect, rtol=1e-12)
 
-    assert_allclose(gas.H(), 1725.7273210879043, rtol=1e-12)
-    assert_allclose(gas.S(), 14.480694885134456, rtol=1e-12)
-    assert_allclose(gas.Cp(), 58.748474752042945, rtol=1e-12)
-    assert_allclose(gas.dH_dT(), gas.Cp(), rtol=1e-12)
-    assert_allclose(gas.dH_dP(), -0.0017158255316092434, rtol=1e-12)
-    assert_allclose(gas.dS_dT(), 0.17726291337892383, rtol=1e-12)
-    assert_allclose(gas.dS_dP(), -9.480886482495667e-05, rtol=1e-12)
+    assert_close(gas.H(), 1725.7273210879043, rtol=1e-12)
+    assert_close(gas.S(), 14.480694885134456, rtol=1e-12)
+    assert_close(gas.Cp(), 58.748474752042945, rtol=1e-12)
+    assert_close(gas.dH_dT(), gas.Cp(), rtol=1e-12)
+    assert_close(gas.dH_dP(), -0.0017158255316092434, rtol=1e-12)
+    assert_close(gas.dS_dT(), 0.17726291337892383, rtol=1e-12)
+    assert_close(gas.dS_dP(), -9.480886482495667e-05, rtol=1e-12)
 
     dH_dzs_expect = [2227.672637816117, 1886.132133010868, 1210.163163133309]
-    assert_allclose(gas.dH_dzs(), dH_dzs_expect, rtol=1e-12)
+    assert_close1d(gas.dH_dzs(), dH_dzs_expect, rtol=1e-12)
     dS_dzs_expect = [11.452747620043832, 12.611417881165302, 0.2036373977480378]
-    assert_allclose(gas.dS_dzs(), dS_dzs_expect, rtol=1e-12)
+    assert_close1d(gas.dS_dzs(), dS_dzs_expect, rtol=1e-12)
 
     # Volumetric properties - should be implemented in the model only
-    assert_allclose(gas.V(), 0.029705728448677898, rtol=1e-12)
-    assert_allclose(gas.dP_dT(), 284.342003076555, rtol=1e-12)
-    assert_allclose(gas.dP_dV(), -2999107.769105018, rtol=1e-12)
-    assert_allclose(gas.d2P_dT2(), -0.009887846156943235, rtol=1e-12)
-    assert_allclose(gas.d2P_dV2(), 197784608.40171462, rtol=1e-12)
-    assert_allclose(gas.d2P_dTdV(), -9721.251806049266, rtol=1e-12)
+    assert_close(gas.V(), 0.029705728448677898, rtol=1e-12)
+    assert_close(gas.dP_dT(), 284.342003076555, rtol=1e-12)
+    assert_close(gas.dP_dV(), -2999107.769105018, rtol=1e-12)
+    assert_close(gas.d2P_dT2(), -0.009887846156943235, rtol=1e-12)
+    assert_close(gas.d2P_dV2(), 197784608.40171462, rtol=1e-12)
+    assert_close(gas.d2P_dTdV(), -9721.251806049266, rtol=1e-12)
 
     # Volumetric properties - base class
-    assert_allclose(gas.Z(), 0.9801692315172096, rtol=1e-12)
-    assert_allclose(gas.rho(), 33.66354074527018, rtol=1e-12)
-    assert_allclose(gas.dT_dP(), 0.0035168915924488455, rtol=1e-12)
-    assert_allclose(gas.dV_dT(), 9.480886482495666e-05, rtol=1e-12)
-    assert_allclose(gas.dV_dP(), -3.334324995925092e-07, rtol=1e-12)
-    assert_allclose(gas.dT_dV(), 10547.536898013452, rtol=1e-12)
-    assert_allclose(gas.d2V_dP2(), 7.331895665172319e-12, rtol=1e-12)
-    assert_allclose(gas.d2T_dP2(), 4.301091137792481e-10, rtol=1e-12)
-    assert_allclose(gas.d2T_dV2(), 29492.455975795572, rtol=1e-12)
-    assert_allclose(gas.d2V_dT2(), -2.513377829277684e-08, rtol=1e-12)
-    assert_allclose(gas.d2V_dPdT(), -1.003984034506695e-09, rtol=1e-12)
-    assert_allclose(gas.d2T_dPdV(), 0.12152750389888099, rtol=1e-12)
+    assert_close(gas.Z(), 0.9801692315172096, rtol=1e-12)
+    assert_close(gas.rho(), 33.66354074527018, rtol=1e-12)
+    assert_close(gas.dT_dP(), 0.0035168915924488455, rtol=1e-12)
+    assert_close(gas.dV_dT(), 9.480886482495666e-05, rtol=1e-12)
+    assert_close(gas.dV_dP(), -3.334324995925092e-07, rtol=1e-12)
+    assert_close(gas.dT_dV(), 10547.536898013452, rtol=1e-12)
+    assert_close(gas.d2V_dP2(), 7.331895665172319e-12, rtol=1e-12)
+    assert_close(gas.d2T_dP2(), 4.301091137792481e-10, rtol=1e-12)
+    assert_close(gas.d2T_dV2(), 29492.455975795572, rtol=1e-12)
+    assert_close(gas.d2V_dT2(), -2.513377829277684e-08, rtol=1e-12)
+    assert_close(gas.d2V_dPdT(), -1.003984034506695e-09, rtol=1e-12)
+    assert_close(gas.d2T_dPdV(), 0.12152750389888099, rtol=1e-12)
     # aliases
-    assert_allclose(gas.d2V_dTdP(), gas.d2V_dPdT())
-    assert_allclose(gas.d2T_dPdV(), gas.d2T_dVdP())
-    assert_allclose(gas.d2P_dVdT(), gas.d2P_dTdV())
+    assert_close(gas.d2V_dTdP(), gas.d2V_dPdT())
+    assert_close(gas.d2T_dPdV(), gas.d2T_dVdP())
+    assert_close(gas.d2P_dVdT(), gas.d2P_dTdV())
     # Compressibility factor
-    assert_allclose(gas.dZ_dT(), 0.00017082651132311415, rtol=1e-12)
-    assert_allclose(gas.dZ_dP(), -2.2171553318823896e-07, rtol=1e-12)
+    assert_close(gas.dZ_dT(), 0.00017082651132311415, rtol=1e-12)
+    assert_close(gas.dZ_dP(), -2.2171553318823896e-07, rtol=1e-12)
     assert_close(gas.dZ_dV(), 0.6649487781161054, rtol=1e-12)
     assert_close(derivative(lambda V: gas.to(T=gas.T, V=V, zs=zs).Z(), gas.V(), dx=gas.V()*1e-7),
              gas.dZ_dV())
 
     # Derived properties
-    assert_allclose(gas.PIP(), 0.9434309912868786, rtol=1e-12)
-    assert_allclose(gas.kappa(), 1.1224518535829717e-05, rtol=1e-12)
-    assert_allclose(gas.isobaric_expansion(), 0.0031916020840477414, rtol=1e-12)
+    assert_close(gas.PIP(), 0.9434309912868786, rtol=1e-12)
+    assert_close(gas.kappa(), 1.1224518535829717e-05, rtol=1e-12)
+    assert_close(gas.isobaric_expansion(), 0.0031916020840477414, rtol=1e-12)
     assert_close(gas.disobaric_expansion_dT(), -1.1032415832539369e-05, rtol=1e-12)
     assert_close(gas.disobaric_expansion_dP(), 2.0265392981697534e-09, rtol=1e-12)
-    assert_allclose(gas.Joule_Thomson(), 2.9206299207786268e-05, rtol=1e-12)
-    assert_allclose(gas.speed_of_sound(), 55.867443841933685, rtol=1e-12)
-    assert_allclose(gas.speed_of_sound(), (gas.dP_drho_S())**0.5, rtol=1e-11)
+    assert_close(gas.Joule_Thomson(), 2.9206299207786268e-05, rtol=1e-12)
+    assert_close(gas.speed_of_sound(), 55.867443841933685, rtol=1e-12)
+    assert_close(gas.speed_of_sound(), (gas.dP_drho_S())**0.5, rtol=1e-11)
 
     # Molar density
-    assert_allclose(gas.dP_drho(), 2646.5035764210666, rtol=1e-12)
-    assert_allclose(gas.drho_dP(), 0.00037785703707694405, rtol=1e-12)
-    assert_allclose(gas.d2P_drho2(), -3.2210736519363414, rtol=1e-12)
-    assert_allclose(gas.d2rho_dP2(), 1.737733604711968e-10, rtol=1e-12)
-    assert_allclose(gas.dT_drho(), -9.30746617730105, rtol=1e-12)
-    assert_allclose(gas.d2T_drho2(), 0.5759354067635106, rtol=1e-12)
-    assert_allclose(gas.drho_dT(), -0.10744062679903038, rtol=1e-12)
-    assert_allclose(gas.d2rho_dT2(), 0.0007142979083006338, rtol=1e-12)
-    assert_allclose(gas.d2P_dTdrho(), 8.578327173510202, rtol=1e-12)
-    assert_allclose(gas.d2T_dPdrho(), -0.00010723955204780491, rtol=1e-12)
-    assert_allclose(gas.d2rho_dPdT(), -1.274189795242708e-06, rtol=1e-12)
+    assert_close(gas.dP_drho(), 2646.5035764210666, rtol=1e-12)
+    assert_close(gas.drho_dP(), 0.00037785703707694405, rtol=1e-12)
+    assert_close(gas.d2P_drho2(), -3.2210736519363414, rtol=1e-12)
+    assert_close(gas.d2rho_dP2(), 1.737733604711968e-10, rtol=1e-12)
+    assert_close(gas.dT_drho(), -9.30746617730105, rtol=1e-12)
+    assert_close(gas.d2T_drho2(), 0.5759354067635106, rtol=1e-12)
+    assert_close(gas.drho_dT(), -0.10744062679903038, rtol=1e-12)
+    assert_close(gas.d2rho_dT2(), 0.0007142979083006338, rtol=1e-12)
+    assert_close(gas.d2P_dTdrho(), 8.578327173510202, rtol=1e-12)
+    assert_close(gas.d2T_dPdrho(), -0.00010723955204780491, rtol=1e-12)
+    assert_close(gas.d2rho_dPdT(), -1.274189795242708e-06, rtol=1e-12)
 
     # ideal gas heat capacity functions
     # Special speed-heavy functions are implemented, so tests are good.
@@ -918,10 +917,10 @@ def test_EOSGas_phis():
         integrals_over_T_calc.append(gas2.Cpig_integrals_over_T_pure())
         dCps_dT_calc.append(gas2.dCpigs_dT_pure())
 
-    assert_allclose(Cps_expect, Cps_calc)
-    assert_allclose(integrals_expect, integrals_calc)
-    assert_allclose(integrals_over_T_expect, integrals_over_T_calc)
-    assert_allclose(dCps_expect, dCps_dT_calc)
+    assert_close2d(Cps_expect, Cps_calc)
+    assert_close2d(integrals_expect, integrals_calc)
+    assert_close2d(integrals_over_T_expect, integrals_over_T_calc)
+    assert_close2d(dCps_expect, dCps_dT_calc)
 
     assert_close(gas.S_phi_consistency(), 0, atol=1e-13)
     assert_close(gas.H_phi_consistency(), 0, atol=1e-13)
@@ -931,10 +930,10 @@ def test_EOSGas_phis():
 
 
     # Volume mole number and mole fraction derivatives
-    assert_allclose(gas.dZ_dzs(), [-0.04617398831595753, -0.04699108820323984, -0.0392358074558725])
-    assert_allclose(gas.dZ_dns(), [-0.003992163312336275, -0.004809263199618587, 0.0029460175477487582])
-    assert_allclose(gas.dV_dzs(), [-0.0013993827945232515, -0.001424146423687046, -0.0011891091908125214])
-    assert_allclose(gas.dV_dns(), [-0.00012098943270793107, -0.0001457530618717256, 8.928417100279896e-05])
+    assert_close1d(gas.dZ_dzs(), [-0.04617398831595753, -0.04699108820323984, -0.0392358074558725])
+    assert_close1d(gas.dZ_dns(), [-0.003992163312336275, -0.004809263199618587, 0.0029460175477487582])
+    assert_close1d(gas.dV_dzs(), [-0.0013993827945232515, -0.001424146423687046, -0.0011891091908125214])
+    assert_close1d(gas.dV_dns(), [-0.00012098943270793107, -0.0001457530618717256, 8.928417100279896e-05])
 
 
 
@@ -959,7 +958,7 @@ def test_chemical_potential():
                         Sfs=Sfs, Gfs=Gfs, T=T, P=P, zs=zs)
     mu_r_exp = [-188705.73988392908, -97907.9761772734, -193308.17514525697]
     mu_r_calc = liquid.chemical_potential()
-    assert_allclose(mu_r_exp, mu_r_calc, rtol=1e-9)
+    assert_close1d(mu_r_exp, mu_r_calc, rtol=1e-9)
     '''#Derived with:
     from sympy import *
     T = symbols('T')
@@ -983,10 +982,10 @@ def test_chemical_potential():
 
     # Random gamma example
     gammas_expect = [1.8877873731435573, 1.52276935445383, 1.5173639948878495]
-    assert_allclose(liquid.gammas(), gammas_expect, rtol=1e-12)
+    assert_close1d(liquid.gammas(), gammas_expect, rtol=1e-12)
 
     gammas_parent = super(CEOSLiquid, liquid).gammas()
-    assert_allclose(gammas_parent, gammas_expect, rtol=1e-12)
+    assert_close1d(gammas_parent, gammas_expect, rtol=1e-12)
 
 
 def test_EOSGas_volume_HSGUA_derivatives():
@@ -997,66 +996,66 @@ def test_EOSGas_volume_HSGUA_derivatives():
     gas = CEOSGas(PRMIX, T=330, P=1e5, zs=[1], **kwargs)
 
     dH_dT_V_num = derivative(lambda T: gas.to(V=gas.V(), T=T, zs=gas.zs).H(), gas.T, dx=gas.T*1e-6)
-    assert_allclose(dH_dT_V_num, gas.dH_dT_V(), rtol=1e-8)
+    assert_close(dH_dT_V_num, gas.dH_dT_V(), rtol=1e-8)
 
     dH_dP_V_num = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).H(), gas.P, dx=gas.P*1e-7)
-    assert_allclose(dH_dP_V_num, gas.dH_dP_V(), rtol=1e-8)
+    assert_close(dH_dP_V_num, gas.dH_dP_V(), rtol=1e-8)
 
     dH_dV_T_num = derivative(lambda V: gas.to(V=V, T=gas.T, zs=gas.zs).H(), gas.V(), dx=gas.V()*2e-7)
-    assert_allclose(dH_dV_T_num, gas.dH_dV_T(), rtol=1e-8)
+    assert_close(dH_dV_T_num, gas.dH_dV_T(), rtol=1e-8)
 
     dH_dV_P_num = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).H(), gas.V(), dx=gas.V()*1e-7)
-    assert_allclose(dH_dV_P_num, gas.dH_dV_P(), rtol=1e-8)
+    assert_close(dH_dV_P_num, gas.dH_dV_P(), rtol=1e-8)
 
 
     dS_dT_V_num = derivative(lambda T: gas.to(V=gas.V(), T=T, zs=gas.zs).S(), gas.T, dx=gas.T*1e-8)
-    assert_allclose(gas.dS_dT_V(), dS_dT_V_num, rtol=1e-7)
+    assert_close(gas.dS_dT_V(), dS_dT_V_num, rtol=1e-7)
 
     dS_dP_V_num = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).S(), gas.P, dx=gas.P*1e-7)
-    assert_allclose(gas.dS_dP_V(), dS_dP_V_num, rtol=1e-7)
+    assert_close(gas.dS_dP_V(), dS_dP_V_num, rtol=1e-7)
 
     dS_dV_T_num = derivative(lambda V: gas.to(V=V, T=gas.T, zs=gas.zs).S(), gas.V(), dx=gas.V()*1e-7)
-    assert_allclose(gas.dS_dV_T(), dS_dV_T_num, rtol=1e-7)
+    assert_close(gas.dS_dV_T(), dS_dV_T_num, rtol=1e-7)
 
     dS_dV_P_num = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).S(), gas.V(), dx=gas.V()*1e-7)
-    assert_allclose(gas.dS_dV_P(), dS_dV_P_num, rtol=1e-7)
+    assert_close(gas.dS_dV_P(), dS_dV_P_num, rtol=1e-7)
 
 
     dG_dT_V_num = derivative(lambda T: gas.to(V=gas.V(), T=T, zs=gas.zs).G(), gas.T, dx=gas.T*1e-8)
-    assert_allclose(gas.dG_dT_V(), dG_dT_V_num, rtol=1e-7)
+    assert_close(gas.dG_dT_V(), dG_dT_V_num, rtol=1e-7)
 
     dG_dP_V_num = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).G(), gas.P, dx=gas.P*1e-6)
-    assert_allclose(gas.dG_dP_V(), dG_dP_V_num, rtol=1e-7)
+    assert_close(gas.dG_dP_V(), dG_dP_V_num, rtol=1e-7)
 
     dG_dV_T_num = derivative(lambda V: gas.to(V=V, T=gas.T, zs=gas.zs).G(), gas.V(), dx=gas.V()*1e-6)
-    assert_allclose(gas.dG_dV_T(), dG_dV_T_num, rtol=1e-7)
+    assert_close(gas.dG_dV_T(), dG_dV_T_num, rtol=1e-7)
 
     dG_dV_P_num = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).G(), gas.V(), dx=gas.V()*1e-6)
-    assert_allclose(gas.dG_dV_P(), dG_dV_P_num, rtol=1e-7)
+    assert_close(gas.dG_dV_P(), dG_dV_P_num, rtol=1e-7)
 
     dU_dT_V_num = derivative(lambda T: gas.to(V=gas.V(), T=T, zs=gas.zs).U(), gas.T, dx=gas.T*1e-8)
-    assert_allclose(gas.dU_dT_V(), dU_dT_V_num)
+    assert_close(gas.dU_dT_V(), dU_dT_V_num)
 
     dU_dP_V_num = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).U(), gas.P, dx=gas.P*1e-8)
-    assert_allclose(gas.dU_dP_V(), dU_dP_V_num)
+    assert_close(gas.dU_dP_V(), dU_dP_V_num)
 
     dU_dV_T_num = derivative(lambda V: gas.to(V=V, T=gas.T, zs=gas.zs).U(), gas.V(), dx=gas.V()*1e-8)
-    assert_allclose(gas.dU_dV_T(), dU_dV_T_num)
+    assert_close(gas.dU_dV_T(), dU_dV_T_num)
 
     dU_dV_P_num = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).U(), gas.V(), dx=gas.V()*1e-8)
-    assert_allclose(gas.dU_dV_P(), dU_dV_P_num)
+    assert_close(gas.dU_dV_P(), dU_dV_P_num)
 
     dA_dT_V_num = derivative(lambda T: gas.to(V=gas.V(), T=T, zs=gas.zs).A(), gas.T, dx=gas.T*1e-8)
-    assert_allclose(gas.dA_dT_V(), dA_dT_V_num)
+    assert_close(gas.dA_dT_V(), dA_dT_V_num)
 
     dA_dP_V_num = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).A(), gas.P, dx=gas.P*1e-7)
-    assert_allclose(gas.dA_dP_V(), dA_dP_V_num)
+    assert_close(gas.dA_dP_V(), dA_dP_V_num)
 
     dA_dV_T_num = derivative(lambda V: gas.to(V=V, T=gas.T, zs=gas.zs).A(), gas.V(), dx=gas.V()*1e-8)
-    assert_allclose(gas.dA_dV_T(), dA_dV_T_num)
+    assert_close(gas.dA_dV_T(), dA_dV_T_num)
 
     dA_dV_P_num = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).A(), gas.V(), dx=gas.V()*1e-8)
-    assert_allclose(gas.dA_dV_P(), dA_dV_P_num)
+    assert_close(gas.dA_dV_P(), dA_dV_P_num)
 
 
 def test_CoolPropPhase_PR_pure():
@@ -1068,12 +1067,12 @@ def test_CoolPropPhase_PR_pure():
     # These have been tested by varing the PRMIX coefficients - they are correct,
     # and can get much closer as well when that is the case
     eos = PRMIX(Tcs=[Tc], Pcs=[Pc], omegas=[omega], T=T, P=P, zs=[1])
-    assert_allclose(CPP.V(), eos.V_l, rtol=1e-4)
-    assert_allclose(CPP.dP_dT(), eos.dP_dT_l, rtol=3e-4)
-    assert_allclose(CPP.dP_dV(), eos.dP_dV_l, rtol=5e-4)
-    assert_allclose(CPP.d2P_dT2(), eos.d2P_dT2_l, rtol=2e-4)
-    assert_allclose(CPP.d2P_dV2(), eos.d2P_dV2_l, rtol=4e-4)
-    assert_allclose(CPP.d2P_dTdV(), eos.d2P_dTdV_l, rtol=5e-4)
+    assert_close(CPP.V(), eos.V_l, rtol=1e-4)
+    assert_close(CPP.dP_dT(), eos.dP_dT_l, rtol=3e-4)
+    assert_close(CPP.dP_dV(), eos.dP_dV_l, rtol=5e-4)
+    assert_close(CPP.d2P_dT2(), eos.d2P_dT2_l, rtol=2e-4)
+    assert_close(CPP.d2P_dV2(), eos.d2P_dV2_l, rtol=4e-4)
+    assert_close(CPP.d2P_dTdV(), eos.d2P_dTdV_l, rtol=5e-4)
 
 
 def test_CoolPropPhase_Water():
@@ -1082,70 +1081,70 @@ def test_CoolPropPhase_Water():
 
     # Test the initialization methods
     CPP_TV = CPP.to(T=T, V=CPP.V(), zs=[1.0])
-    assert_allclose(CPP_TV.P, P, rtol=1e-8)
+    assert_close(CPP_TV.P, P, rtol=1e-8)
 
     CPP_PV = CPP.to(P=P, V=CPP.V(), zs=[1.0])
-    assert_allclose(CPP_PV.T, T, rtol=1e-8)
+    assert_close(CPP_PV.T, T, rtol=1e-8)
 
-    assert_allclose(CPP.H(), 1954.1678289799822)
-    assert_allclose(CPP.S(), 6.829644373073796)
-    assert_allclose(CPP.G(), CPP.AS.gibbsmolar(), rtol=1e-11)
-    assert_allclose(CPP.U(), CPP.AS.umolar(), rtol=1e-11)
-    assert_allclose(CPP.A(), CPP.AS.helmholtzmolar(), rtol=1e-9) # This one cannot go lower prec oddly
+    assert_close(CPP.H(), 1954.1678289799822)
+    assert_close(CPP.S(), 6.829644373073796)
+    assert_close(CPP.G(), CPP.AS.gibbsmolar(), rtol=1e-11)
+    assert_close(CPP.U(), CPP.AS.umolar(), rtol=1e-11)
+    assert_close(CPP.A(), CPP.AS.helmholtzmolar(), rtol=1e-9) # This one cannot go lower prec oddly
 
     dH_dT_num = derivative(lambda T: CPP.to(T=T, P=P, zs=[1]).H(), T, dx=.01)
-    assert_allclose(CPP.dH_dT(), dH_dT_num)
+    assert_close(CPP.dH_dT(), dH_dT_num)
 
     dH_dP_num = derivative(lambda P: CPP.to(T=T, P=P, zs=[1]).H(), P, dx=P*2e-5, order=7)
-    assert_allclose(CPP.dH_dP(), dH_dP_num, rtol=5e-6)
+    assert_close(CPP.dH_dP(), dH_dP_num, rtol=5e-6)
 
     d2H_dT2_num = derivative(lambda T: CPP.to(T=T, P=P, zs=[1]).dH_dT(), T, dx=T*1e-5, n=1)
-    assert_allclose(CPP.d2H_dT2(), d2H_dT2_num)
+    assert_close(CPP.d2H_dT2(), d2H_dT2_num)
 
     d2H_dP2_num = derivative(lambda P: CPP.to(T=T, P=P, zs=[1]).dH_dP(), P, dx=P*1e-3, n=1, order=5)
-    assert_allclose(CPP.d2H_dP2(), d2H_dP2_num, rtol=5e-6)
+    assert_close(CPP.d2H_dP2(), d2H_dP2_num, rtol=5e-6)
 
     d2H_dTdP_num = derivative(lambda T: CPP.to(T=T, P=P, zs=[1]).dH_dP(), T, dx=T*1e-5, n=1)
-    assert_allclose(CPP.d2H_dTdP(), d2H_dTdP_num)
+    assert_close(CPP.d2H_dTdP(), d2H_dTdP_num)
 
     dH_dT_V_num = derivative(lambda T: CPP.to(T=T, V=CPP.V(), zs=[1]).H(), T, dx=.001)
-    assert_allclose(CPP.dH_dT_V(), dH_dT_V_num)
+    assert_close(CPP.dH_dT_V(), dH_dT_V_num)
 
     dH_dP_V_num = derivative(lambda P: CPP.to(P=P, V=CPP.V(), zs=[1]).H(), P, dx=P*3e-5)
-    assert_allclose(CPP.dH_dP_V(), dH_dP_V_num, rtol=5e-6)
+    assert_close(CPP.dH_dP_V(), dH_dP_V_num, rtol=5e-6)
 
     dH_dV_T_num = derivative(lambda V: CPP.to(T=T, V=V, zs=[1]).H(), CPP.V(), dx=CPP.V()*1e-5)
-    assert_allclose(CPP.dH_dV_T(), dH_dV_T_num)
+    assert_close(CPP.dH_dV_T(), dH_dV_T_num)
 
     dH_dV_P_num = derivative(lambda V: CPP.to(P=P, V=V, zs=[1]).H(), CPP.V(), dx=CPP.V()*1e-6)
-    assert_allclose(CPP.dH_dV_P(), dH_dV_P_num)
+    assert_close(CPP.dH_dV_P(), dH_dV_P_num)
 
     dS_dT_num = derivative(lambda T: CPP.to(T=T, P=P, zs=[1]).S(), T, dx=.01)
-    assert_allclose(CPP.dS_dT(), dS_dT_num)
+    assert_close(CPP.dS_dT(), dS_dT_num)
 
     dS_dP_num = derivative(lambda P: CPP.to(T=T, P=P, zs=[1]).S(), P, dx=P*2e-4, order=7)
-    assert_allclose(CPP.dS_dP(), dS_dP_num, rtol=5e-5)
+    assert_close(CPP.dS_dP(), dS_dP_num, rtol=5e-5)
 
     d2S_dT2_num = derivative(lambda T: CPP.to(T=T, P=P, zs=[1]).dS_dT(), T, dx=T*1e-5, n=1)
-    assert_allclose(CPP.d2S_dT2(), d2S_dT2_num)
+    assert_close(CPP.d2S_dT2(), d2S_dT2_num)
 
     d2S_dP2_num = derivative(lambda P: CPP.to(T=T, P=P, zs=[1]).dS_dP(), P, dx=P*1e-3, n=1, order=5)
-    assert_allclose(CPP.d2S_dP2(), d2S_dP2_num, rtol=5e-6)
+    assert_close(CPP.d2S_dP2(), d2S_dP2_num, rtol=5e-6)
 
     d2S_dTdP_num = derivative(lambda T: CPP.to(T=T, P=P, zs=[1]).dS_dP(), T, dx=T*1e-5, n=1)
-    assert_allclose(CPP.d2S_dTdP(), d2S_dTdP_num)
+    assert_close(CPP.d2S_dTdP(), d2S_dTdP_num)
 
     dS_dT_V_num = derivative(lambda T: CPP.to(T=T, V=CPP.V(), zs=[1]).S(), T, dx=.001)
-    assert_allclose(CPP.dS_dT_V(), dS_dT_V_num)
+    assert_close(CPP.dS_dT_V(), dS_dT_V_num)
 
     dS_dP_V_num = derivative(lambda P: CPP.to(P=P, V=CPP.V(), zs=[1]).S(), P, dx=P*3e-5)
-    assert_allclose(CPP.dS_dP_V(), dS_dP_V_num, rtol=5e-6)
+    assert_close(CPP.dS_dP_V(), dS_dP_V_num, rtol=5e-6)
 
     dS_dV_T_num = derivative(lambda V: CPP.to(T=T, V=V, zs=[1]).S(), CPP.V(), dx=CPP.V()*1e-5)
-    assert_allclose(CPP.dS_dV_T(), dS_dV_T_num)
+    assert_close(CPP.dS_dV_T(), dS_dV_T_num)
 
     dS_dV_P_num = derivative(lambda V: CPP.to(P=P, V=V, zs=[1]).S(), CPP.V(), dx=CPP.V()*1e-6)
-    assert_allclose(CPP.dS_dV_P(), dS_dV_P_num)
+    assert_close(CPP.dS_dV_P(), dS_dV_P_num)
 
 def test_CoolPropPhase_Transport():
     liq = CoolPropLiquid('HEOS', 'water', T=300, P=1e5, zs=[1.0])
@@ -1193,8 +1192,8 @@ def test_dlnfugacities_SRK():
     eos_kwargs = {'Pcs': [33.94E5, 46.04E5], 'Tcs': [126.1, 190.6], 'omegas': [0.04, 0.011]}
     gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    assert_allclose(gas.dlnfugacities_dns(), dlnfugacities_dns_expect, rtol=1e-9)
-    assert_allclose(liq.dlnfugacities_dns(), dlnfugacities_dns_l_expect, rtol=1e-9)
+    assert_close2d(gas.dlnfugacities_dns(), dlnfugacities_dns_expect, rtol=1e-9)
+    assert_close2d(liq.dlnfugacities_dns(), dlnfugacities_dns_l_expect, rtol=1e-9)
 
 
 def test_viscosity_thermal_conductivity():
@@ -1490,10 +1489,10 @@ def test_IdealGas_vs_IGMIX():
     assert phase.dZ_dT() == 0.0
     assert phase.dZ_dP() == 0.0
 
-    assert_allclose(phase_EOS.dV_dzs(), [0.0, 0.0, 0.0], atol=0.0, rtol=0.0)
-    assert_allclose(phase_EOS.dZ_dzs(), [0.0, 0.0, 0.0], atol=0.0, rtol=0.0)
-    assert_allclose(phase_EOS.dV_dzs(), [0.0, 0.0, 0.0], atol=0.0, rtol=0.0)
-    assert_allclose(phase_EOS.dZ_dzs(), [0.0, 0.0, 0.0], atol=0.0, rtol=0.0)
+    assert_close1d(phase_EOS.dV_dzs(), [0.0, 0.0, 0.0], atol=0.0, rtol=0.0)
+    assert_close1d(phase_EOS.dZ_dzs(), [0.0, 0.0, 0.0], atol=0.0, rtol=0.0)
+    assert_close1d(phase_EOS.dV_dzs(), [0.0, 0.0, 0.0], atol=0.0, rtol=0.0)
+    assert_close1d(phase_EOS.dZ_dzs(), [0.0, 0.0, 0.0], atol=0.0, rtol=0.0)
 
     ### Derivatives of pressure
     assert_close(phase.dP_dV(), phase_EOS.dP_dV(), rtol=1e-11)
@@ -1528,17 +1527,17 @@ def test_IdealGas_vs_IGMIX():
     assert_close(phase.d2T_dPdV(), phase_EOS.d2T_dPdV(), rtol=1e-11)
 
     ### Phis and derivatives
-    assert_allclose(phase.phis(), phase_EOS.phis(), rtol=1e-11)
-    assert_allclose(phase.dphis_dT(), phase_EOS.dphis_dT(), rtol=1e-11)
-    assert_allclose(phase.dphis_dP(), phase_EOS.dphis_dP(), rtol=1e-11)
+    assert_close1d(phase.phis(), phase_EOS.phis(), rtol=1e-11)
+    assert_close1d(phase.dphis_dT(), phase_EOS.dphis_dT(), rtol=1e-11)
+    assert_close1d(phase.dphis_dP(), phase_EOS.dphis_dP(), rtol=1e-11)
 
-    assert_allclose(phase.lnphis(), phase_EOS.lnphis(), rtol=1e-11)
-    assert_allclose(phase.dlnphis_dT(), phase_EOS.dlnphis_dT(), rtol=1e-11)
-    assert_allclose(phase.dlnphis_dP(), phase_EOS.dlnphis_dP(), rtol=1e-11)
+    assert_close1d(phase.lnphis(), phase_EOS.lnphis(), rtol=1e-11)
+    assert_close1d(phase.dlnphis_dT(), phase_EOS.dlnphis_dT(), rtol=1e-11)
+    assert_close1d(phase.dlnphis_dP(), phase_EOS.dlnphis_dP(), rtol=1e-11)
 
-    assert_allclose(phase.fugacities(), phase_EOS.fugacities(), rtol=1e-11)
-    assert_allclose(phase.dfugacities_dT(), phase_EOS.dfugacities_dT(), rtol=1e-11)
-    assert_allclose(phase.dfugacities_dP(), phase_EOS.dfugacities_dP(), rtol=1e-11)
+    assert_close1d(phase.fugacities(), phase_EOS.fugacities(), rtol=1e-11)
+    assert_close1d(phase.dfugacities_dT(), phase_EOS.dfugacities_dT(), rtol=1e-11)
+    assert_close1d(phase.dfugacities_dP(), phase_EOS.dfugacities_dP(), rtol=1e-11)
 
     # Basic thermodynamic quantities
     assert_close(phase.H(), phase_EOS.H(), rtol=1e-11)

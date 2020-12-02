@@ -2225,10 +2225,141 @@ def chemgroups_to_matrix(chemgroups):
 
 
 class UNIFAC(GibbsExcess):
+    r'''Class for representing an a liquid with excess gibbs energy represented
+    by the UNIFAC equation. This model is capable of representing VL and LL
+    behavior, provided the correct interaction parameters are used. [1]_ and
+    [2]_ are good references on this model.
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    xs : list[float]
+        Mole fractions, [-]
+    rs : list[float]
+        `r` parameters :math:`r_i = \sum_{k=1}^{n} \nu_k R_k`, [-]
+    qs : list[float]
+        `q` parameters :math:`q_i = \sum_{k=1}^{n}\nu_k Q_k`, [-]
+    Qs : list[float]
+        `Q` parameter for each subgroup; subgroups are not required to but are
+        suggested to be sorted from lowest number to highest number, [-]
+    vs : list[list[float]]
+        Indexed by [subgroup][count], this variable is the count of each
+        subgroups in each compound, [-]
+    psi_abc : tuple(list[list[float]], 3), optional
+        `psi` interaction parameters between each subgroup; indexed
+        [subgroup][subgroup], not symmetrical; first arg is the matrix for `a`,
+        then `b`, and then `c`. Only one of `psi_abc` or `psi_coeffs` is
+        required, [-]
+    psi_coeffs : list[list[tuple(float, 3)]], optional
+        `psi` interaction parameters between each subgroup; indexed
+        [subgroup][subgroup][letter], not symmetrical. Only one of `psi_abc`
+        or `psi_coeffs` is required, [-]
+    version : int, optional
+        Which version of the model to use [-]
+
+        * 0 - original UNIFAC, OR UNIFAC LLE
+        * 1 - Dortmund UNIFAC (adds T dept, 3/4 power)
+        * 2 - PSRK (original with T dept function)
+        * 3 - VTPR (drops combinatorial term, Dortmund UNIFAC otherwise)
+        * 4 - Lyngby/Larsen has different combinatorial, 2/3 power
+        * 5 - UNIFAC KT (2 params for psi, Lyngby/Larsen formulation;
+          otherwise same as original)
+
+    Attributes
+    ----------
+    T : float
+        Temperature, [K]
+    xs : list[float]
+        Mole fractions, [-]
+
+    Notes
+    -----
+    In addition to the methods presented here, the methods of its base class
+    :obj:`thermo.activity.GibbsExcess` are available as well.
+
+    Examples
+    --------
+    The DDBST has published numerous problems showing this model a simple
+    binary system, such as example P05.22a in [2]_, with Hexane and butanone-2.
+
+    >>> from thermo.unifac import UFIP, UFSG
+    >>> GE = UNIFAC.from_subgroups(chemgroups=[{1:2, 2:4}, {1:1, 2:1, 18:1}], T=60+273.15, xs=[0.5, 0.5], version=0, interaction_data=UFIP, subgroups=UFSG)
+    >>> GE.gammas()
+    [1.4276025835, 1.3646545010]
+    >>> GE.GE(), GE.dGE_dT(), GE.d2GE_dT2()
+    (923.641197, 0.206721488, -0.00380070204)
+    >>> GE.HE(), GE.SE(), GE.dHE_dT(), GE.dSE_dT()
+    (854.77193363, -0.2067214889, 1.266203886, 0.0038007020460)
+
+    The solution given by the DDBST has the same values [1.428, 1.365],
+    and can be found here:
+    http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/05.22a%20VLE%20of%20Hexane-Butanone-2%20Via%20UNIFAC%20-%20Step%20by%20Step.xps
+
+    References
+    ----------
+    .. [1] Poling, Bruce E., John M. Prausnitz, and John P. O’Connell. The
+       Properties of Gases and Liquids. 5th edition. New York: McGraw-Hill
+       Professional, 2000.
+    .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
+       Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
+    '''
 
     @staticmethod
     def from_subgroups(T, xs, chemgroups, subgroups=None,
                        interaction_data=None, version=0):
+        r'''Method to construct a UNIFAC object from a dictionary of
+        interaction parameters parameters and a list of dictionaries of UNIFAC keys.
+        As the actual implementation is matrix based not dictionary based, this method
+        can be quite convenient.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        xs : list[float]
+            Mole fractions, [-]
+        chemgroups : list[dict]
+            List of dictionaries of subgroup IDs and their counts for all species
+            in the mixture, [-]
+        subgroups : dict[int: UNIFAC_subgroup]
+            UNIFAC subgroup data; available dictionaries in this module are UFSG
+            (original), DOUFSG (Dortmund), or NISTUFSG.
+        interaction_data : dict[int: dict[int: tuple(a_mn, b_mn, c_mn)]]
+            UNIFAC interaction parameter data; available dictionaries in this
+            module are UFIP (original), DOUFIP2006 (Dortmund parameters as
+            published by 2006), DOUFIP2016 (Dortmund parameters as published by
+            2016), and NISTUFIP ().
+        version : int, optional
+            Which version of the model to use [-]
+
+            * 0 - original UNIFAC, OR UNIFAC LLE
+            * 1 - Dortmund UNIFAC (adds T dept, 3/4 power)
+            * 2 - PSRK (original with T dept function)
+            * 3 - VTPR (drops combinatorial term, Dortmund UNIFAC otherwise)
+            * 4 - Lyngby/Larsen has different combinatorial, 2/3 power
+            * 5 - UNIFAC KT (2 params for psi, Lyngby/Larsen formulation;
+              otherwise same as original)
+
+        Returns
+        -------
+        UNIFAC : UNIFAC
+            Object for performing calculations with the UNIFAC activity
+            coefficient model, [-]
+
+        Examples
+        --------
+        Mixture of ['benzene', 'cyclohexane', 'acetone', 'ethanol']
+        according to the Dortmund UNIFAC model:
+
+        >>> from thermo.unifac import DOUFIP2006, DOUFSG
+        >>> T = 373.15
+        >>> xs = [0.2, 0.3, 0.1, 0.4]
+        >>> chemgroups = [{9: 6}, {78: 6}, {1: 1, 18: 1}, {1: 1, 2: 1, 14: 1}]
+        >>> GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=1, interaction_data=DOUFIP2006, subgroups=DOUFSG)
+        >>> GE
+        UNIFAC(T=373.15, xs=[0.2, 0.3, 0.1, 0.4], rs=[2.2578, 4.2816, 2.3373, 2.4951999999999996], qs=[2.5926, 5.181, 2.7308, 2.6616], Qs=[1.0608, 0.7081, 0.4321, 0.8927, 1.67, 0.8635], vs=[[0, 0, 1, 1], [0, 0, 0, 1], [6, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 6, 0, 0]], psi_abc=([[0.0, 0.0, 114.2, 2777.0, 433.6, -117.1], [0.0, 0.0, 114.2, 2777.0, 433.6, -117.1], [16.07, 16.07, 0.0, 3972.0, 146.2, 134.6], [1606.0, 1606.0, 3049.0, 0.0, -250.0, 3121.0], [199.0, 199.0, -57.53, 653.3, 0.0, 168.2], [170.9, 170.9, -2.619, 2601.0, 464.5, 0.0]], [[0.0, 0.0, 0.0933, -4.674, 0.1473, 0.5481], [0.0, 0.0, 0.0933, -4.674, 0.1473, 0.5481], [-0.2998, -0.2998, 0.0, -13.16, -1.237, -1.231], [-4.746, -4.746, -12.77, 0.0, 2.857, -13.69], [-0.8709, -0.8709, 1.212, -1.412, 0.0, -0.8197], [-0.8062, -0.8062, 1.094, -1.25, 0.1542, 0.0]], [[0.0, 0.0, 0.0, 0.001551, 0.0, -0.00098], [0.0, 0.0, 0.0, 0.001551, 0.0, -0.00098], [0.0, 0.0, 0.0, 0.01208, 0.004237, 0.001488], [0.0009181, 0.0009181, 0.01435, 0.0, -0.006022, 0.01446], [0.0, 0.0, -0.003715, 0.000954, 0.0, 0.0], [0.001291, 0.001291, -0.001557, -0.006309, 0.0, 0.0]]), version=1)
+        '''
         if subgroups is None:
             subgroups = UFSG
         if interaction_data is None:
@@ -2290,30 +2421,19 @@ class UNIFAC(GibbsExcess):
         debug = (rs, qs, Qs, vs, (psi_a, psi_b, psi_c))
         return UNIFAC(T=T, xs=xs, rs=rs, qs=qs, Qs=Qs, vs=vs, psi_abc=(psi_a, psi_b, psi_c), version=version)
 
-    def __make_repr__(self):  # pragma: no cover
+    def __repr__(self):  # pragma: no cover
 
         psi_abc = (self.psi_a, self.psi_b, self.psi_c)
-        s = '<UNIFAC('
+        s = 'UNIFAC('
         s += 'T=%s, xs=%s, rs=%s, qs=%s' %(self.T, self.xs, self.rs, self.qs)
         s += ', Qs=%s, vs=%s, psi_abc=%s, version=%s' %(self.Qs, self.vs,
                                                         psi_abc, self.version)
-        s += ')>'
+        s += ')'
         return s
 
 
     def __init__(self, T, xs, rs, qs, Qs, vs, psi_coeffs=None, psi_abc=None,
                  version=0):
-        '''
-
-        versions:
-
-        0 - original UNIFAC, OR UNIFAC LLE
-        1 - Dortmund UNIFAC (adds T dept, 3/4 power)
-        2 - PSRK (original with T dept function)
-        3 - VTPR (drops combinatorial term, Dortmund UNIFAC otherwise)
-        4 - Lyngby/Larsen has different combinatorial, 2/3 power
-        5 - UNIFAC KT (2 params for psi, Lyngby/Larsen formulation; otherwise same as original)
-        '''
         self.T = T
         self.xs = xs
 
@@ -2370,6 +2490,30 @@ class UNIFAC(GibbsExcess):
         self.Xs_pure()
 
     def to_T_xs(self, T, xs):
+        r'''Method to construct a new :obj:`UNIFAC` instance at
+        temperature `T`, and mole fractions `xs`
+        with the same parameters as the existing object.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        xs : list[float]
+            Mole fractions of each component, [-]
+
+        Returns
+        -------
+        obj : UNIFAC
+            New :obj:`UNIFAC` object at the specified conditions [-]
+
+        Notes
+        -----
+        If the new temperature is the same temperature as the existing
+        temperature, if the `psi` terms or their derivatives have been
+        calculated, they will be set to the new object as well.
+        If the mole fractions are the same, various subgroup terms are also
+        kept.
+        '''
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.xs = xs

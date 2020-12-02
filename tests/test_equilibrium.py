@@ -489,10 +489,10 @@ def test_two_eos_pure_flash_all_properties():
     assert_allclose([i.Cv_dep() for i in eq.phases], [0.023070609291153232, 43.71066323157659], rtol=1e-12)
 
     # Standard liquid density
-    rho_liquid_ref_expect = 784.8585085234012
-    assert_allclose(eq.rho_liquid_ref(), rho_liquid_ref_expect, rtol=1e-12)
-    assert_allclose(eq.bulk.rho_liquid_ref(), rho_liquid_ref_expect, rtol=1e-12)
-    assert_allclose([i.rho_liquid_ref() for i in eq.phases], [rho_liquid_ref_expect]*2, rtol=1e-12)
+    rho_mass_liquid_ref_expect = 784.8585085234012
+    assert_allclose(eq.rho_mass_liquid_ref(), rho_mass_liquid_ref_expect, rtol=1e-12)
+    assert_allclose(eq.bulk.rho_mass_liquid_ref(), rho_mass_liquid_ref_expect, rtol=1e-12)
+    assert_allclose([i.rho_mass_liquid_ref() for i in eq.phases], [rho_mass_liquid_ref_expect]*2, rtol=1e-12)
 
     V_liquid_ref_expect = 4.0825014511573776e-05
     assert_allclose(eq.V_liquid_ref(), V_liquid_ref_expect, rtol=1e-12)

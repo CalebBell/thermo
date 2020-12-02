@@ -36,6 +36,9 @@ Base Class
     :members:
     :undoc-members:
     :show-inheritance:
+    :exclude-members: a_alpha_and_derivatives_numpy, a_alpha_and_derivatives_py, main_derivatives_and_departures, derivatives_and_departures,
+                      sequential_substitution_3P, sequential_substitution_VL, stability_Michelsen, stabiliy_iteration_Michelsen, newton_VL, broyden2_VL,
+                      d2A_dep_dninjs, d2A_dep_dninjs_Vt, d2A_dninjs_Vt, d2A_dninjs_Vt_another, d2P_dninjs_Vt, d2nA_dninjs_Vt, d3P_dninjnks_Vt
 
 Different Mixing Rules
 ======================
@@ -785,7 +788,7 @@ class GCEOSMIX(GCEOS):
     @property
     def pseudo_Tc(self):
         '''Apply a linear mole-fraction mixing rule to compute the average
-        critical temperature, [K]
+        critical temperature, [K].
 
         Examples
         --------
@@ -803,7 +806,7 @@ class GCEOSMIX(GCEOS):
     @property
     def pseudo_Pc(self):
         '''Apply a linear mole-fraction mixing rule to compute the average
-        critical pressure, [Pa]
+        critical pressure, [Pa].
 
         Examples
         --------
@@ -821,7 +824,7 @@ class GCEOSMIX(GCEOS):
     @property
     def pseudo_omega(self):
         '''Apply a linear mole-fraction mixing rule to compute the average
-        `omega`, [-]
+        `omega`, [-].
 
         Examples
         --------
@@ -839,7 +842,7 @@ class GCEOSMIX(GCEOS):
     @property
     def pseudo_a(self):
         '''Apply a linear mole-fraction mixing rule to compute the average
-        `a` coefficient, [-]
+        `a` coefficient, [-].
 
         Examples
         --------
@@ -1210,7 +1213,8 @@ class GCEOSMIX(GCEOS):
         dGs = [[i*RT_inv for i in row] for row in v]
         return det(dGs)
 
-    def spinodal_at(self, T=None, P=None, V=None):
+    def _spinodal_at(self, T=None, P=None, V=None):
+        # TODO finish
         if T is not None:
             def to_solve(V):
                 return self._spinodal_f((T, None, V))
@@ -1942,9 +1946,6 @@ class GCEOSMIX(GCEOS):
                 Ks = Ks_initial
             V_over_F, xs, ys = flash_inner_loop(zs, Ks)
 
-
-
-
         lnKs_guess = [log(yi/xi) for yi, xi in zip(ys, xs)] + [V_over_F]
 
         info = []
@@ -2488,6 +2489,21 @@ class GCEOSMIX(GCEOS):
 
     @property
     def a_alpha_ijs(self):
+        r'''Calculate and return the matrix
+        :math:`(a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}`.
+
+        Returns
+        -------
+        a_alpha_ijs : list[list[float]]
+            `a_alpha` terms for each component with every other component,
+            [J^2/mol^2/Pa]
+
+        Notes
+        -----
+        In an earlier implementation this matrix was stored each EOS solve;
+        however, allocating that much memory becomes quite expensive for large
+        number of component cases and this is now calculated on-demand only.
+        '''
         try:
             return self._a_alpha_ijs
         except:
@@ -2496,6 +2512,30 @@ class GCEOSMIX(GCEOS):
 
     @property
     def da_alpha_dT_ijs(self):
+        r'''Calculate and return the matrix for the temperature derivatives of
+        the alpha terms.
+
+        .. math::
+            \frac{\partial (a\alpha)_{ij}}{\partial T} =
+            \frac{\sqrt{\operatorname{a\alpha_{i}}{\left(T \right)} \operatorname{a\alpha_{j}}
+            {\left(T \right)}} \left(1 - k_{ij}\right) \left(\frac{\operatorname{a\alpha_{i}}
+            {\left(T \right)} \frac{d}{d T} \operatorname{a\alpha_{j}}{\left(T \right)}}{2}
+            + \frac{\operatorname{a\alpha_{j}}{\left(T \right)} \frac{d}{d T} \operatorname{
+            a\alpha_{i}}{\left(T \right)}}{2}\right)}{\operatorname{a\alpha_{i}}{\left(T \right)}
+            \operatorname{a\alpha_{j}}{\left(T \right)}}
+
+        Returns
+        -------
+        da_alpha_dT_ijs : list[list[float]]
+            First temperature derivative of `a_alpha` terms for each component
+            with every other component, [J^2/mol^2/Pa/K]
+
+        Notes
+        -----
+        In an earlier implementation this matrix was stored each EOS solve;
+        however, allocating that much memory becomes quite expensive for large
+        number of component cases and this is now calculated on-demand only.
+        '''
         try:
             return self._da_alpha_dT_ijs
         except:
@@ -2504,6 +2544,47 @@ class GCEOSMIX(GCEOS):
 
     @property
     def d2a_alpha_dT2_ijs(self):
+        r'''Calculate and return the matrix of the second temperature
+        derivatives of the alpha terms.
+
+        .. math::
+            \frac{\partial^2 (a\alpha)_{ij}}{\partial T^2} =
+            - \frac{\sqrt{\operatorname{a\alpha_{i}}{\left(T \right)} \operatorname{a\alpha_{j}}
+            {\left(T \right)}} \left(k_{ij} - 1\right) \left(\frac{\left(\operatorname{
+            a\alpha_{i}}{\left(T \right)} \frac{d}{d T} \operatorname{a\alpha_{j}}{\left(T \right)}
+            + \operatorname{a\alpha_{j}}{\left(T \right)} \frac{d}{d T} \operatorname{a\alpha_{i}}
+            {\left(T \right)}\right)^{2}}{4 \operatorname{a\alpha_{i}}{\left(T \right)}
+            \operatorname{a\alpha_{j}}{\left(T \right)}} - \frac{\left(\operatorname{a\alpha_{i}}
+            {\left(T \right)} \frac{d}{d T} \operatorname{a\alpha_{j}}{\left(T \right)}
+            + \operatorname{a\alpha_{j}}{\left(T \right)} \frac{d}{d T}
+            \operatorname{a\alpha_{i}}{\left(T \right)}\right) \frac{d}{d T}
+            \operatorname{a\alpha_{j}}{\left(T \right)}}{2 \operatorname{a\alpha_{j}}
+            {\left(T \right)}} - \frac{\left(\operatorname{a\alpha_{i}}{\left(T \right)}
+            \frac{d}{d T} \operatorname{a\alpha_{j}}{\left(T \right)}
+            + \operatorname{a\alpha_{j}}{\left(T \right)} \frac{d}{d T}
+            \operatorname{a\alpha_{i}}{\left(T \right)}\right) \frac{d}{d T}
+            \operatorname{a\alpha_{i}}{\left(T \right)}}{2 \operatorname{a\alpha_{i}}
+            {\left(T \right)}} + \frac{\operatorname{a\alpha_{i}}{\left(T \right)}
+            \frac{d^{2}}{d T^{2}} \operatorname{a\alpha_{j}}{\left(T \right)}}{2}
+            + \frac{\operatorname{a\alpha_{j}}{\left(T \right)} \frac{d^{2}}{d T^{2}}
+            \operatorname{a\alpha_{i}}{\left(T \right)}}{2} + \frac{d}{d T}
+            \operatorname{a\alpha_{i}}{\left(T \right)} \frac{d}{d T}
+            \operatorname{a\alpha_{j}}{\left(T \right)}\right)}
+            {\operatorname{a\alpha_{i}}{\left(T \right)} \operatorname{a\alpha_{j}}
+            {\left(T \right)}}
+
+        Returns
+        -------
+        d2a_alpha_dT2_ijs : list[list[float]]
+            Second temperature derivative of `a_alpha` terms for each component
+            with every other component, [J^2/mol^2/Pa/K^2]
+
+        Notes
+        -----
+        In an earlier implementation this matrix was stored each EOS solve;
+        however, allocating that much memory becomes quite expensive for large
+        number of component cases and this is now calculated on-demand only.
+        '''
         try:
             return self._d2a_alpha_dT2_ijs
         except:

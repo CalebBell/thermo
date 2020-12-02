@@ -196,7 +196,9 @@ class BulkSettings(object):
         self.P_normal = P_normal
         self.T_standard = T_standard
         self.P_standard = P_standard
+
         self.T_liquid_volume_ref = T_liquid_volume_ref
+        '''float : Temperature of the liquid volume reference, [K]'''
 
         self.T_gas_ref = T_gas_ref
         self.P_gas_ref = P_gas_ref
