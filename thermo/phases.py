@@ -5722,7 +5722,6 @@ except:
     # Cost is ~10 ms - must be pasted in the future!
     if 1:
         try:
-            1/0
             f = open('/home/caleb/testCEOSLiquiddat', 'rb')
             compiled_CEOSLiquid = marshal.load(f)
             f.close()

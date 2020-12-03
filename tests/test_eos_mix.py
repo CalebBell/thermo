@@ -1476,6 +1476,25 @@ def test_SRKMIXTranslatedConsistent_vs_pure():
     assert_allclose(alpha_zero.V_l, alpha_zero.b + R*alpha_zero.T/alpha_zero.P, rtol=1e-12)
     assert eos.P_max_at_V(1) is None # No direct solution for P
 
+def test_PRMIXTranslated():
+    eos = PRMIXTranslated(T=115, P=1E6, cs=[-4.4e-6, -4.35e-6], Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.2, 0.8], kijs=[[0,0.03],[0.03,0]])
+    assert_close(eos.V_l, 3.907905633728006e-05, rtol=1e-9)
+    assert_close1d(eos.a_alpha_and_derivatives(eos.T), (0.26105171520330056, -0.0006787928655933264, 3.833944404601355e-06))
+
+    # Test of PV
+    eos_PV = eos.to(P=eos.P, V=eos.V_l, zs=eos.zs)
+    assert_close(eos_PV.T, eos.T, rtol=1e-9)
+
+    # Test of TV
+    eos_TV = eos.to(T=eos.T, V=eos.V_l, zs=eos.zs)
+    assert_close(eos_TV.P, eos.P, rtol=1e-9)
+
+    assert_close(eos.c, eos_PV.c, rtol=1e-14)
+    assert_close(eos.c, eos_TV.c, rtol=1e-14)
+
+    assert_close1d(eos.fugacities_l, [442838.86151181394, 108854.4858975885])
+    assert_close1d(eos.fugacities_g, [184396.97210801125, 565531.7709023315])
+
 
 @pytest.mark.slow
 @pytest.mark.CoolProp

@@ -78,6 +78,12 @@ Peng Robinson Twu (1995)
    :members: __init__
    :exclude-members: __init__
 
+Peng Robinson Translated
+-----------------------------------
+.. autoclass:: thermo.eos_mix.PRMIXTranslated
+   :members: __init__
+   :exclude-members: __init__
+
 Peng Robinson Translated-Consistent
 -----------------------------------
 .. autoclass:: thermo.eos_mix.PRMIXTranslatedConsistent
@@ -155,26 +161,29 @@ Lists of Equations of State
 '''
 from __future__ import division
 
-from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
-    a_alpha_aijs_composition_independent_support_zeros, a_alpha_and_derivatives, a_alpha_and_derivatives_full,
-    a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms)
 
 __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX',
 'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX', 'IGMIX', 'RKMIX',
-'PRMIXTranslatedConsistent', 'PRMIXTranslatedPPJP',
+'PRMIXTranslatedConsistent', 'PRMIXTranslatedPPJP', 'PRMIXTranslated',
 'SRKMIXTranslatedConsistent', 'PSRK', 'MSRKMIXTranslated',
-'eos_Z_test_phase_stability', 'eos_Z_trial_phase_stability',
 'eos_mix_list', 'eos_mix_no_coeffs_list']
 
 import sys
 import numpy as np
 from cmath import log as clog, atanh as catanh
+
 from fluids.numerics import IS_PYPY, newton_system, broyden2, UnconvergedError, trunc_exp, solve_2_direct
 from fluids.numerics.arrays import det, subset_matrix
 from fluids.constants import R
+
 from chemicals.utils import normalize, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials, hash_any_primitive
 from chemicals.utils import log, exp, sqrt
-from thermo.eos_mix_methods import a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms
+from chemicals.rachford_rice import flash_inner_loop, Rachford_Rice_flash_error, Rachford_Rice_solution2
+from chemicals.flash_basic import K_value, Wilson_K_value
+
+from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
+    a_alpha_aijs_composition_independent_support_zeros, a_alpha_and_derivatives, a_alpha_and_derivatives_full,
+    a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms)
 from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     Soave_79_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
                                     RK_a_alpha_and_derivatives_vectorized, RK_a_alphas_vectorized,
@@ -183,8 +192,6 @@ from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91
                                     PRSV2_a_alphas_vectorized, PRSV2_a_alpha_and_derivatives_vectorized,
                                     APISRK_a_alphas_vectorized, APISRK_a_alpha_and_derivatives_vectorized)
 from thermo.eos import *
-from chemicals.rachford_rice import flash_inner_loop, Rachford_Rice_flash_error, Rachford_Rice_solution2
-from chemicals.flash_basic import K_value, Wilson_K_value
 
 
 R2 = R*R
@@ -7480,6 +7487,94 @@ class PRMIX(GCEOSMIX, PR):
             return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, solution=solution)
 
 class PRMIXTranslated(PRMIX):
+    r'''Class for solving the Peng-Robinson [1]_ [2]_ translated cubic equation
+    of state for a mixture of any number of compounds. Solves the EOS
+    on initialization and calculates fugacities for all components in all
+    phases.
+
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P = \frac{RT}{v + c - b} - \frac{a\alpha(T)}{(v+c)(v + c + b)+b(v
+        + c - b)}
+
+    .. math::
+        a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+
+    .. math::
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+
+    .. math::
+        b = \sum_i z_i b_i
+
+    .. math::
+        a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
+
+    .. math::
+	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+
+    .. math::
+        \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
+
+    .. math::
+        \kappa_i=0.37464+1.54226\omega_i-0.26992\omega^2_i
+
+    Parameters
+    ----------
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    omegas : float
+        Acentric factors of all compounds, [-]
+    zs : float
+        Overall mole fractions of all species, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 [-]
+    cs : list[float], optional
+        Volume translation parameters; always zero in the original
+        implementation, [m^3/mol]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optional
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
+
+    Examples
+    --------
+    T-P initialization, nitrogen-methane at 115 K and 1 MPa:
+
+    >>> eos = PRMIXTranslated(T=115, P=1E6, cs=[-4.4e-6, -4.35e-6], Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.2, 0.8], kijs=[[0,0.03],[0.03,0]])
+    >>> eos.V_l, eos.V_g
+    (3.9079056337e-05, 0.00060231393016)
+    >>> eos.fugacities_l, eos.fugacities_g
+    ([442838.8615, 108854.48589], [184396.972, 565531.7709])
+
+    Notes
+    -----
+    For P-V initializations, a numerical solver is used to find T.
+
+    References
+    ----------
+    .. [1] Peng, Ding-Yu, and Donald B. Robinson. "A New Two-Constant Equation
+       of State." Industrial & Engineering Chemistry Fundamentals 15, no. 1
+       (February 1, 1976): 59-64. doi:10.1021/i160057a011.
+    .. [2] Robinson, Donald B., Ding-Yu Peng, and Samuel Y-K Chung. "The
+       Development of the Peng - Robinson Equation and Its Application to Phase
+       Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
+       no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
+    '''
     fugacity_coefficients = GCEOSMIX.fugacity_coefficients
     dlnphis_dT = GCEOSMIX.dlnphis_dT
     dlnphis_dP = GCEOSMIX.dlnphis_dP
@@ -7488,6 +7583,64 @@ class PRMIXTranslated(PRMIX):
 
     # All the b derivatives happen to work out to be the same, and are checked numerically
     solve_T = GCEOS.solve_T
+
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None,
+                 T=None, P=None, V=None,
+                 fugacities=True, only_l=False, only_g=False):
+
+        self.N = N = len(Tcs)
+        self.cmps = cmps = range(N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.zs = zs
+        if kijs is None:
+            kijs = [[0.0]*N for i in cmps]
+        self.kijs = kijs
+        self.T = T
+        self.P = P
+        self.V = V
+
+        c1R2, c2R = self.c1*R2, self.c2*R
+        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in cmps]
+        b0s = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+
+        if cs is None:
+            cs = [0.0]*N
+
+        self.kappas = [omega*(-0.26992*omega + 1.54226) + 0.37464 for omega in omegas]
+        self.kwargs = {'kijs': kijs, 'cs': cs}
+        self.cs = cs
+
+        b0, c = 0.0, 0.0
+        for i in cmps:
+            b0 += b0s[i]*zs[i]
+            c += cs[i]*zs[i]
+
+        self.b0s = b0s
+        self.bs = [b0s[i] - cs[i] for i in cmps]
+        self.c = c
+        self.b = b = b0 - c
+        self.delta = 2.0*(c + b0)
+        self.epsilon = -b0*b0 + c*(c + b0 + b0)
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
+
+    def _fast_init_specific(self, other):
+        self.cs = cs = other.cs
+        self.kappas = other.kappas
+        zs = self.zs
+        self.b0s = b0s = other.b0s
+        b0, c = 0.0, 0.0
+        for i in self.cmps:
+            b0 += b0s[i]*zs[i]
+            c += cs[i]*zs[i]
+        self.c = c
+        self.b = b0 - c
+        self.delta = 2.0*(c + b0)
+        self.epsilon = -b0*b0 + c*(c + b0 + b0) # Very important to be calculated exactly the same way as the other implementation
+
     @property
     def ddelta_dzs(self):
         r'''Helper method for calculating the composition derivatives of
@@ -7781,8 +7934,8 @@ class PRMIXTranslated(PRMIX):
         return d3b_dninjnks
 
 
-class PPR(Mathias_Copeman_a_alpha, PSRKMixingRules, PRMIXTranslated):
-    pass
+#class PPR(Mathias_Copeman_a_alpha, PSRKMixingRules, PRMIXTranslated):
+#    pass
 
 class PRMIXTranslatedPPJP(PRMIXTranslated):
     eos_pure = PRTranslatedPPJP
@@ -7830,21 +7983,6 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
         self.solve(only_l=only_l, only_g=only_g)
         if fugacities:
             self.fugacities()
-
-    def _fast_init_specific(self, other):
-        self.cs = cs = other.cs
-        self.kappas = other.kappas
-        zs = self.zs
-        self.b0s = b0s = other.b0s
-        b0, c = 0.0, 0.0
-        for i in self.cmps:
-            b0 += b0s[i]*zs[i]
-            c += cs[i]*zs[i]
-        self.c = c
-        self.b = b0 - c
-        self.delta = 2.0*(c + b0)
-        self.epsilon = -b0*b0 + c*(c + b0 + b0) # Very important to be calculated exactly the same way as the other implementation
-
 
 class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
     eos_pure = PRTranslatedConsistent
@@ -8046,6 +8184,23 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         self.delta = self.b
 
     def a_alphas_vectorized(self, T):
+        r'''Method to calculate the pure-component `a_alphas` for the SRK EOS.
+        This vectorized implementation is added for extra speed.
+
+        .. math::
+            a\alpha = a \left(m \left(- \sqrt{\frac{T}{Tc}} + 1\right)
+            + 1\right)^{2}
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        '''
         return SRK_a_alphas_vectorized(T, self.Tcs, self.ais, self.ms)
 
     def a_alpha_and_derivatives_vectorized(self, T):
@@ -10194,66 +10349,7 @@ class APISRKMIX(SRKMIX, APISRK):
         return GCEOSMIX.P_max_at_V(self, V)
 
 
-def eos_Z_test_phase_stability(eos):
-    try:
-        if eos.G_dep_l < eos.G_dep_g:
-            Z_eos = eos.Z_l
-            prefer, alt = 'Z_g', 'Z_l'
-        else:
-            Z_eos = eos.Z_g
-            prefer, alt =  'Z_l', 'Z_g'
-    except:
-        # Only one root - take it and set the prefered other phase to be a different type
-        Z_eos = eos.Z_g if hasattr(eos, 'Z_g') else eos.Z_l
-        prefer = 'Z_l' if hasattr(eos, 'Z_g') else 'Z_g'
-        alt = 'Z_g' if hasattr(eos, 'Z_g') else 'Z_l'
-    return Z_eos, prefer, alt
 
-
-def eos_Z_trial_phase_stability(eos, prefer, alt):
-    try:
-        if eos.G_dep_l < eos.G_dep_g:
-            Z_trial = eos.Z_l
-        else:
-            Z_trial = eos.Z_g
-    except:
-        # Only one phase, doesn't matter - only that phase will be returned
-        try:
-            Z_trial = getattr(eos, alt)
-        except:
-            Z_trial = getattr(eos, prefer)
-    return Z_trial
-
-
-def eos_lnphis_test_phase_stability(eos):
-    try:
-        if eos.G_dep_l < eos.G_dep_g:
-            lnphis_eos = eos.lnphis_l
-            prefer, alt = 'lnphis_g', 'lnphis_l'
-        else:
-            lnphis_eos = eos.lnphis_g
-            prefer, alt =  'lnphis_l', 'lnphis_g'
-    except:
-        # Only one root - take it and set the prefered other phase to be a different type
-        lnphis_eos = eos.lnphis_g if hasattr(eos, 'lnphis_g') else eos.lnphis_l
-        prefer = 'lnphis_l' if hasattr(eos, 'lnphis_g') else 'lnphis_g'
-        alt = 'lnphis_g' if hasattr(eos, 'lnphis_g') else 'lnphis_l'
-    return lnphis_eos, prefer, alt
-
-
-def eos_lnphis_trial_phase_stability(eos, prefer, alt):
-    try:
-        if eos.G_dep_l < eos.G_dep_g:
-            lnphis_trial = eos.lnphis_l
-        else:
-            lnphis_trial = eos.lnphis_g
-    except:
-        # Only one phase, doesn't matter - only that phase will be returned
-        try:
-            lnphis_trial = getattr(eos, alt)
-        except:
-            lnphis_trial = getattr(eos, prefer)
-    return lnphis_trial
 
 eos_mix_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, PRSVMIX, PRSV2MIX, TWUPRMIX,
                 TWUSRKMIX, APISRKMIX, IGMIX, RKMIX, PRMIXTranslatedConsistent,

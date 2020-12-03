@@ -52,50 +52,82 @@ Data for Original UNIFAC
 ------------------------
 .. autodata:: UFSG
 .. autodata:: UFMG
-.. autodata:: UFIP
+.. py:data:: UFIP
+
+    Interaction parameters for the original unifac model.
+
+    :type: dict[int: dict[int: float]]
 
 Data for Dortmund UNIFAC
 ------------------------
 .. autodata:: DOUFSG
 .. autodata:: DOUFMG
-.. autodata:: DOUFIP2016
+.. py:data:: DOUFIP2016
+
+    Interaction parameters for the Dornmund unifac model.
+
+    :type: dict[int: dict[int: tuple(float, 3)]]
+
 
 Data for NIST UNIFAC (2015)
 ---------------------------
 .. autodata:: NISTUFSG
 .. autodata:: NISTUFMG
-.. autodata:: NISTUFIP
+.. py:data:: NISTUFIP
+
+    Interaction parameters for the NIST (2015) unifac model.
+
+    :type: dict[int: dict[int: tuple(float, 3)]]
 
 Data for NIST KT UNIFAC (2011)
 ------------------------------
 .. autodata:: NISTKTUFSG
 .. autodata:: NISTKTUFMG
-.. autodata:: NISTKTUFIP
+.. py:data:: NISTKTUFIP
+
+    Interaction parameters for the NIST KT UNIFAC (2011) model.
+
+    :type: dict[int: dict[int: tuple(float, 3)]]
 
 Data for UNIFAC LLE
 -------------------
 .. autodata:: LLEUFSG
 .. autodata:: LLEMG
-.. autodata:: LLEUFIP
+.. py:data:: LLEUFIP
+
+    Interaction parameters for the LLE unifac model.
+
+    :type: dict[int: dict[int: float]]
 
 Data for Lyngby UNIFAC
 ----------------------
 .. autodata:: LUFSG
 .. autodata:: LUFMG
-.. autodata:: LUFIP
+.. py:data:: LUFIP
+
+    Interaction parameters for the Lyngby UNIFAC model.
+
+    :type: dict[int: dict[int: tuple(float, 3)]]
 
 Data for PSRK UNIFAC
 --------------------
 .. autodata:: PSRKSG
 .. autodata:: PSRKMG
-.. autodata:: PSRKIP
+.. py:data:: PSRKIP
+
+    Interaction parameters for the PSRKIP UNIFAC model.
+
+    :type: dict[int: dict[int: tuple(float, 3)]]
 
 Data for VTPR UNIFAC
 --------------------
 .. autodata:: VTPRSG
 .. autodata:: VTPRMG
-.. autodata:: VTPRIP
+.. py:data:: VTPRIP
 
+    Interaction parameters for the VTPRIP UNIFAC model.
+
+    :type: dict[int: dict[int: tuple(float, 3)]]
 '''
 
 from __future__ import division
@@ -1746,6 +1778,7 @@ def UNIFAC_RQ(groups, subgroup_data=None):
     .. math::
         r_i = \sum_{k=1}^{n} \nu_k R_k
 
+    .. math::
         q_i = \sum_{k=1}^{n}\nu_k Q_k
 
     Parameters
