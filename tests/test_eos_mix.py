@@ -1476,6 +1476,73 @@ def test_SRKMIXTranslatedConsistent_vs_pure():
     assert_allclose(alpha_zero.V_l, alpha_zero.b + R*alpha_zero.T/alpha_zero.P, rtol=1e-12)
     assert eos.P_max_at_V(1) is None # No direct solution for P
 
+def test_SRKMIXTranslated_vs_pure():
+    eos = SRKMIXTranslated(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], zs=[1], T=300, P=1e6, cs=[-1.2e-6])
+    eos_pure = SRKTranslated(Tc=33.2, Pc=1296960.0, omega=-0.22, T=300, P=1e6, c=-1.2e-6)
+    eos_pure_copy = eos.pures()[0]
+    assert_close1d(eos_pure.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
+    assert_close1d(eos_pure_copy.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
+
+    # Test of a_alphas
+    a_alphas_expect = (0.014083672720010676, -2.3594195225440124e-05, 5.908718415457152e-08)
+    a_alphas = eos.a_alpha_and_derivatives(eos.T)
+    a_alphas_pure = eos_pure.a_alpha_and_derivatives(eos_pure.T)
+    assert_close1d(a_alphas, a_alphas_expect, rtol=1e-12)
+    assert_close1d(a_alphas, a_alphas_pure, rtol=1e-12)
+
+    # Test of PV
+    eos_PV = eos.to(P=eos.P, V=eos.V_l, zs=eos.zs)
+    eos_pure_PV = eos_pure.to(P=eos.P, V=eos.V_l)
+    assert_close(eos_PV.T, eos.T, rtol=1e-9)
+    assert_close(eos_pure_PV.T, eos.T, rtol=1e-9)
+
+    # Test of TV
+    eos_TV = eos.to(T=eos.T, V=eos.V_l, zs=eos.zs)
+    eos_pure_TV = eos_pure.to(T=eos.T, V=eos.V_l)
+    assert_close(eos_TV.P, eos.P, rtol=1e-9)
+    assert_close(eos_pure_TV.P, eos.P, rtol=1e-9)
+
+    # Test c
+    assert_close(eos.c, eos_pure.c, rtol=1e-12)
+    assert_close(eos_pure_copy.c, eos.c, rtol=1e-12)
+
+    # Test Psat
+    assert_close(eos.Psat(eos.T), eos_pure.Psat(eos.T), rtol=1e-9)
+
+def test_PRMIXTranslated_vs_pure():
+    eos = PRMIXTranslated(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], zs=[1], T=270, P=250180153, cs=[-1.2e-6])
+    eos_pure = PRTranslated(Tc=33.2, Pc=1296960.0, omega=-0.22, T=270, P=250180153, c=-1.2e-6)
+    eos_pure_copy = eos.pures()[0]
+    assert_close1d(eos_pure.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
+    assert_close1d(eos_pure_copy.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
+
+    # Test of a_alphas
+    a_alphas_expect = (0.024692461751001493, -6.060375487555874e-06, 1.1966629383714812e-08)
+    a_alphas = eos.a_alpha_and_derivatives(eos.T)
+    a_alphas_pure = eos_pure.a_alpha_and_derivatives(eos_pure.T)
+    assert_close1d(a_alphas, a_alphas_expect, rtol=1e-12)
+    assert_close1d(a_alphas, a_alphas_pure, rtol=1e-12)
+
+    # Test of PV
+    eos_PV = eos.to(P=eos.P, V=eos.V_l, zs=eos.zs)
+    eos_pure_PV = eos_pure.to(P=eos.P, V=eos.V_l)
+    assert_close(eos_PV.T, eos.T, rtol=1e-9)
+    assert_close(eos_pure_PV.T, eos.T, rtol=1e-9)
+
+    # # Test of TV
+    eos_TV = eos.to(T=eos.T, V=eos.V_l, zs=eos.zs)
+    eos_pure_TV = eos_pure.to(T=eos.T, V=eos.V_l)
+    assert_close(eos_TV.P, eos.P, rtol=1e-9)
+    assert_close(eos_pure_TV.P, eos.P, rtol=1e-9)
+
+    # # Test c
+    assert_close(eos.c, eos_pure.c, rtol=1e-12)
+    assert_close(eos_pure_copy.c, eos.c, rtol=1e-12)
+
+    # # Test Psat
+    assert_close(eos.Psat(eos.T), eos_pure.Psat(eos.T), rtol=1e-9)
+    eos.a_alpha_and_derivatives(eos.T)
+
 def test_PRMIXTranslated():
     eos = PRMIXTranslated(T=115, P=1E6, cs=[-4.4e-6, -4.35e-6], Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.2, 0.8], kijs=[[0,0.03],[0.03,0]])
     assert_close(eos.V_l, 3.907905633728006e-05, rtol=1e-9)

@@ -604,7 +604,7 @@ def test_GibbsExcessLiquid_lnPsats():
 
     # Point where cannot calculate normally, need special math
     liquid = liquid.to(T=5, P=P, zs=zs)
-    assert_close(liquid.dPsats_dT_over_Psats(), 268.3252967590297, rtol=1e-12)
+    assert_close(liquid.dPsats_dT_over_Psats()[0], 268.3252967590297, rtol=1e-12)
 
     # High temp - avoid checking a value
     liquid = liquid.to(T=1000, P=P, zs=zs)

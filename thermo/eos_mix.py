@@ -40,11 +40,6 @@ Base Class
                       sequential_substitution_3P, sequential_substitution_VL, stability_Michelsen, stabiliy_iteration_Michelsen, newton_VL, broyden2_VL,
                       d2A_dep_dninjs, d2A_dep_dninjs_Vt, d2A_dninjs_Vt, d2A_dninjs_Vt_another, d2P_dninjs_Vt, d2nA_dninjs_Vt, d3P_dninjnks_Vt
 
-Different Mixing Rules
-======================
-.. autoclass:: thermo.eos_mix.EpsilonZeroMixingRules
-.. autoclass:: thermo.eos_mix.PSRKMixingRules
-
 Peng-Robinson Family EOSs
 =========================
 
@@ -52,13 +47,18 @@ Standard Peng Robinson
 ----------------------
 .. autoclass:: thermo.eos_mix.PRMIX
    :show-inheritance:
-   :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized, d3a_alpha_dT3, d3a_alpha_dT3_vectorized, fugacity_coefficients, dlnphis_dT, dlnphis_dP, dlnphis_dzs, ddelta_dzs, ddelta_dns, d2delta_dzizjs, d2delta_dninjs, d3delta_dninjnks, depsilon_dzs, depsilon_dns, d2epsilon_dzizjs, d2epsilon_dninjs, d3epsilon_dninjnks, solve_T
+   :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized,
+             d3a_alpha_dT3, d3a_alpha_dT3_vectorized, fugacity_coefficients,
+             dlnphis_dT, dlnphis_dP, dlnphis_dzs, ddelta_dzs, ddelta_dns,
+             d2delta_dzizjs, d2delta_dninjs, d3delta_dninjnks, depsilon_dzs,
+             depsilon_dns, d2epsilon_dzizjs, d2epsilon_dninjs,
+             d3epsilon_dninjnks
 
 Peng Robinson (1978)
 --------------------
 .. autoclass:: thermo.eos_mix.PR78MIX
-   :members: __init__
-   :exclude-members: __init__
+   :show-inheritance:
+   :members: eos_pure
 
 Peng Robinson Stryjek-Vera
 --------------------------
@@ -75,26 +75,29 @@ Peng Robinson Stryjek-Vera 2
 Peng Robinson Twu (1995)
 ------------------------
 .. autoclass:: thermo.eos_mix.TWUPRMIX
-   :members: __init__
-   :exclude-members: __init__
+   :show-inheritance:
+   :members: eos_pure
 
 Peng Robinson Translated
------------------------------------
+------------------------
 .. autoclass:: thermo.eos_mix.PRMIXTranslated
-   :members: __init__
-   :exclude-members: __init__
+   :show-inheritance:
+   :members: eos_pure, ddelta_dzs, d2delta_dzizjs, d3delta_dzizjzks, ddelta_dns,
+             d2delta_dninjs, d3delta_dninjnks, depsilon_dzs, depsilon_dns,
+             d2epsilon_dzizjs, d3epsilon_dzizjzks, d2epsilon_dninjs,
+             d3epsilon_dninjnks
 
 Peng Robinson Translated-Consistent
 -----------------------------------
 .. autoclass:: thermo.eos_mix.PRMIXTranslatedConsistent
-   :members: __init__
-   :exclude-members: __init__
+   :show-inheritance:
+   :members: eos_pure
 
 Peng Robinson Translated (Pina-Martinez, Privat, and Jaubert Variant)
 ---------------------------------------------------------------------
 .. autoclass:: thermo.eos_mix.PRMIXTranslatedPPJP
-   :members: __init__
-   :exclude-members: __init__
+   :show-inheritance:
+   :members: eos_pure
 
 SRK Family EOSs
 ===============
@@ -102,32 +105,43 @@ SRK Family EOSs
 Standard SRK
 ------------
 .. autoclass:: thermo.eos_mix.SRKMIX
-   :members: __init__
-   :exclude-members: __init__
+   :show-inheritance:
+   :members: eos_pure, dlnphis_dT, dlnphis_dP, a_alphas_vectorized,
+             a_alpha_and_derivatives_vectorized, fugacity_coefficients
+   :exclude-members:
 
 Twu SRK (1995)
 --------------
 .. autoclass:: thermo.eos_mix.TWUSRKMIX
-   :members: __init__
-   :exclude-members: __init__
+   :show-inheritance:
+   :members: eos_pure
 
 API SRK
 -------
 .. autoclass:: thermo.eos_mix.APISRKMIX
-   :members: __init__
-   :exclude-members: __init__
+   :show-inheritance:
+   :members: eos_pure
+
+SRK Translated
+--------------
+.. autoclass:: thermo.eos_mix.SRKMIXTranslated
+   :show-inheritance:
+   :members: eos_pure, ddelta_dzs, d2delta_dzizjs, d3delta_dzizjzks, ddelta_dns,
+             d2delta_dninjs, d3delta_dninjnks, depsilon_dzs, depsilon_dns,
+             d2epsilon_dzizjs, d3epsilon_dzizjzks, d2epsilon_dninjs,
+             d3epsilon_dninjnks
 
 SRK Translated-Consistent
 -------------------------
 .. autoclass:: thermo.eos_mix.SRKMIXTranslatedConsistent
-   :members: __init__
-   :exclude-members: __init__
+   :show-inheritance:
+   :members: eos_pure
 
 MSRK Translated
 ---------------
 .. autoclass:: thermo.eos_mix.MSRKMIXTranslated
-   :members: __init__
-   :exclude-members: __init__
+   :show-inheritance:
+   :members: eos_pure
 
 Cubic Equation of State with Activity Coefficients
 ==================================================
@@ -139,19 +153,32 @@ Van der Waals Equation of State
 ===============================
 .. autoclass:: thermo.eos_mix.VDWMIX
    :show-inheritance:
-   :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized, fugacity_coefficients, ddelta_dzs, ddelta_dns, d2delta_dzizjs, d2delta_dninjs, d3delta_dninjnks
+   :members: eos_pure, dlnphis_dT, dlnphis_dP, a_alphas_vectorized,
+             a_alpha_and_derivatives_vectorized, fugacity_coefficients,
+             ddelta_dzs, ddelta_dns, d2delta_dzizjs, d2delta_dninjs,
+             d3delta_dninjnks
 
 Redlich-Kwong Equation of State
 ===============================
 .. autoclass:: thermo.eos_mix.RKMIX
    :show-inheritance:
-   :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized, ddelta_dzs, ddelta_dns, d2delta_dzizjs, d2delta_dninjs, d3delta_dninjnks
+   :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized,
+             ddelta_dzs, ddelta_dns, d2delta_dzizjs, d2delta_dninjs,
+             d3delta_dninjnks
 
 Ideal Gas Equation of State
 ===========================
 .. autoclass:: thermo.eos_mix.IGMIX
    :show-inheritance:
    :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized
+
+Different Mixing Rules
+======================
+.. autoclass:: thermo.eos_mix.EpsilonZeroMixingRules
+.. autoclass:: thermo.eos_mix.PSRKMixingRules
+    :members: u, A, a_alpha_and_derivatives
+    :undoc-members:
+    :show-inheritance:
 
 Lists of Equations of State
 ===========================
@@ -166,7 +193,7 @@ __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX',
 'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX', 'IGMIX', 'RKMIX',
 'PRMIXTranslatedConsistent', 'PRMIXTranslatedPPJP', 'PRMIXTranslated',
 'SRKMIXTranslatedConsistent', 'PSRK', 'MSRKMIXTranslated',
-'eos_mix_list', 'eos_mix_no_coeffs_list']
+'eos_mix_list', 'eos_mix_no_coeffs_list', 'SRKMIXTranslated']
 
 import sys
 import numpy as np
@@ -435,8 +462,8 @@ class GCEOSMIX(GCEOS):
         Examples
         --------
         >>> base = RKMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
-        >>> base.to_TP_zs_fast(T=300)
-        PRMIX(Tcs=[507.4, 540.3], Pcs=[3012000.0, 2736000.0], omegas=[0.305, 0.349], kijs=[[0.0, 0.00061], [0.00061, 0.0]], zs=[0.8193231441048036, 0.1806768558951965], T=322.29, P=101325.0)
+        >>> base.to_TP_zs_fast(T=300, P=1e5, zs=base.zs)
+        RKMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0], [0.0, 0.0]], zs=[0.6, 0.4], T=300, P=100000.0)
         '''
         copy_alphas = T == self.T
         new = self.__class__.__new__(self.__class__)
@@ -716,9 +743,9 @@ class GCEOSMIX(GCEOS):
         >>> base.state_specs, new.state_specs
         ({'T': 500.0, 'P': 1000000.0}, {'P': 1000000.0, 'V': 1.0})
         '''
-        if T == self.T and P == self.P:
+        if V == self.V and P == self.P:
             return self
-        return self.__class__(T=T, P=P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=True, **self.kwargs)
+        return self.__class__(V=V, P=P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=True, **self.kwargs)
 
     def to_mechanical_critical_point(self):
         r'''Method to construct a new EOSMIX object at the current object's
@@ -2821,7 +2848,7 @@ class GCEOSMIX(GCEOS):
         of `epsilon`. Note this is independent of the phase.
 
         .. math::
-            \left(\frac{\partial^3 \epsilon}{\partial x_i \partial x_j \
+            \left(\frac{\partial^3 \epsilon}{\partial x_i \partial x_j
             \partial x_k }\right)_{T, P, x_{m\ne i,j,k}} =  0
 
         Returns
@@ -2842,7 +2869,7 @@ class GCEOSMIX(GCEOS):
         of `delta`. Note this is independent of the phase.
 
         .. math::
-            \left(\frac{\partial^3 \delta}{\partial x_i \partial x_j \
+            \left(\frac{\partial^3 \delta}{\partial x_i \partial x_j
             \partial x_k }\right)_{T, P, x_{m\ne i,j,k}} =  0
 
         Returns
@@ -3478,7 +3505,6 @@ class GCEOSMIX(GCEOS):
         >>> V, delta, epsilon, a_alpha, b = symbols('V, delta, epsilon, a\ \\alpha, b', cls=Function) # doctest:+SKIP
         >>> CUBIC = R*T/(V(x1, x2) - b(x1, x2)) - a_alpha(x1, x2)/(V(x1, x2)*V(x1, x2) + delta(x1, x2)*V(x1, x2) + epsilon(x1, x2)) - P # doctest:+SKIP
         >>> solve(diff(CUBIC, x1, x2), Derivative(V(x1, x2), x1, x2)) # doctest:+SKIP
-        [(-R*T*(V(x1, x2) - b(x1, x2))*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))**3*Derivative(b(x1, x2), x1, x2) - 2*R*T*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))**3*Derivative(V(x1, x2), x1)*Derivative(V(x1, x2), x2) + 2*R*T*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))**3*Derivative(V(x1, x2), x1)*Derivative(b(x1, x2), x2) + 2*R*T*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))**3*Derivative(V(x1, x2), x2)*Derivative(b(x1, x2), x1) - 2*R*T*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))**3*Derivative(b(x1, x2), x1)*Derivative(b(x1, x2), x2) + (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))**2*Derivative(a \alpha(x1, x2), x1, x2) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*V(x1, x2)*a \alpha(x1, x2)*Derivative(delta(x1, x2), x1, x2) - 2*(V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*V(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(a \alpha(x1, x2), x2) - 2*(V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*V(x1, x2)*Derivative(V(x1, x2), x2)*Derivative(a \alpha(x1, x2), x1) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*V(x1, x2)*Derivative(a \alpha(x1, x2), x1)*Derivative(delta(x1, x2), x2) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*V(x1, x2)*Derivative(a \alpha(x1, x2), x2)*Derivative(delta(x1, x2), x1) - 2*(V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*a \alpha(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(V(x1, x2), x2) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*a \alpha(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(delta(x1, x2), x2) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*a \alpha(x1, x2)*Derivative(V(x1, x2), x2)*Derivative(delta(x1, x2), x1) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*a \alpha(x1, x2)*Derivative(epsilon(x1, x2), x1, x2) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*delta(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(a \alpha(x1, x2), x2) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*delta(x1, x2)*Derivative(V(x1, x2), x2)*Derivative(a \alpha(x1, x2), x1) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*Derivative(a \alpha(x1, x2), x1)*Derivative(epsilon(x1, x2), x2) - (V(x1, x2) - b(x1, x2))**3*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))*Derivative(a \alpha(x1, x2), x2)*Derivative(epsilon(x1, x2), x1) + 8*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)**2*a \alpha(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(V(x1, x2), x2) + 4*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)**2*a \alpha(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(delta(x1, x2), x2) + 4*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)**2*a \alpha(x1, x2)*Derivative(V(x1, x2), x2)*Derivative(delta(x1, x2), x1) + 2*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)**2*a \alpha(x1, x2)*Derivative(delta(x1, x2), x1)*Derivative(delta(x1, x2), x2) + 8*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)*a \alpha(x1, x2)*delta(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(V(x1, x2), x2) + 2*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)*a \alpha(x1, x2)*delta(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(delta(x1, x2), x2) + 2*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)*a \alpha(x1, x2)*delta(x1, x2)*Derivative(V(x1, x2), x2)*Derivative(delta(x1, x2), x1) + 4*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)*a \alpha(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(epsilon(x1, x2), x2) + 4*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)*a \alpha(x1, x2)*Derivative(V(x1, x2), x2)*Derivative(epsilon(x1, x2), x1) + 2*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)*a \alpha(x1, x2)*Derivative(delta(x1, x2), x1)*Derivative(epsilon(x1, x2), x2) + 2*(V(x1, x2) - b(x1, x2))**3*V(x1, x2)*a \alpha(x1, x2)*Derivative(delta(x1, x2), x2)*Derivative(epsilon(x1, x2), x1) + 2*(V(x1, x2) - b(x1, x2))**3*a \alpha(x1, x2)*delta(x1, x2)**2*Derivative(V(x1, x2), x1)*Derivative(V(x1, x2), x2) + 2*(V(x1, x2) - b(x1, x2))**3*a \alpha(x1, x2)*delta(x1, x2)*Derivative(V(x1, x2), x1)*Derivative(epsilon(x1, x2), x2) + 2*(V(x1, x2) - b(x1, x2))**3*a \alpha(x1, x2)*delta(x1, x2)*Derivative(V(x1, x2), x2)*Derivative(epsilon(x1, x2), x1) + 2*(V(x1, x2) - b(x1, x2))**3*a \alpha(x1, x2)*Derivative(epsilon(x1, x2), x1)*Derivative(epsilon(x1, x2), x2))/((V(x1, x2) - b(x1, x2))*(-R*T*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2))**2 + 2*(V(x1, x2) - b(x1, x2))**2*V(x1, x2)*a \alpha(x1, x2) + (V(x1, x2) - b(x1, x2))**2*a \alpha(x1, x2)*delta(x1, x2))*(V(x1, x2)**2 + V(x1, x2)*delta(x1, x2) + epsilon(x1, x2)))]
         '''
         V = Z*self.T*R/self.P
         dV_dzs = self.dV_dzs(Z)
@@ -5451,7 +5477,7 @@ class GCEOSMIX(GCEOS):
         parameters.
 
         .. math::
-            \left(\frac{\partial \log \phi_i}{\partial P}\right))_{T,
+            \left(\frac{\partial \log \phi_i}{\partial P}\right)_{T,
             nj \ne i} = \frac{G_{dep}}{\partial P}_{T, n}
             +  \left(\frac{\partial^2 \log \phi}{\partial P \partial n_i}
             \right)_{T, P, n_{j \ne i}}
@@ -5563,7 +5589,7 @@ class GCEOSMIX(GCEOS):
         parameters.
 
         .. math::
-            \left(\frac{\partial \log \phi_i}{\partial T}\right))_{P,
+            \left(\frac{\partial \log \phi_i}{\partial T}\right)_{P,
             nj \ne i} = \frac{\frac{G_{dep}}{RT}}{\partial T}_{P, n}
             +  \left(\frac{\partial^2 \log \phi}{\partial T \partial n_i}
             \right)_{P, n_{j \ne i}}
@@ -5594,7 +5620,6 @@ class GCEOSMIX(GCEOS):
         >>> G_dep = H_dep - T*S_dep # doctest:+SKIP
         >>> lnphi = simplify(G_dep/(R*T)) # doctest:+SKIP
         >>> diff(diff(lnphi, T), n) # doctest:+SKIP
-        P*Derivative(V(n, T), T, n)/(R*T) - P*Derivative(V(n, T), n)/(R*T**2) + Derivative(V(n, T), T, n)/V(n, T) - Derivative(V(n, T), T)*Derivative(V(n, T), n)/V(n, T)**2 - Derivative(V(n, T), T, n)/(V(n, T) - b(n)) - (-Derivative(V(n, T), n) + Derivative(b(n), n))*Derivative(V(n, T), T)/(V(n, T) - b(n))**2 - 2*(-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*atanh(2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))*Derivative(a_alpha(n, T), T)/(R*T*(delta(n)**2 - 4*epsilon(n))**(3/2)) - 2*atanh(2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))*Derivative(a_alpha(n, T), T, n)/(R*T*sqrt(delta(n)**2 - 4*epsilon(n))) - 4*(-2*delta(n)*Derivative(delta(n), n) + 4*Derivative(epsilon(n), n))*a_alpha(n, T)*Derivative(V(n, T), T)/(R*T*(1 - (2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))**2)*(delta(n)**2 - 4*epsilon(n))**2) - 4*a_alpha(n, T)*Derivative(V(n, T), T, n)/(R*T*(1 - (2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))**2)*(delta(n)**2 - 4*epsilon(n))) - 4*Derivative(V(n, T), T)*Derivative(a_alpha(n, T), n)/(R*T*(1 - (2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))**2)*(delta(n)**2 - 4*epsilon(n))) - 2*(2*(-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*V(n, T)/(delta(n)**2 - 4*epsilon(n))**(3/2) + (-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*delta(n)/(delta(n)**2 - 4*epsilon(n))**(3/2) + 2*Derivative(V(n, T), n)/sqrt(delta(n)**2 - 4*epsilon(n)) + Derivative(delta(n), n)/sqrt(delta(n)**2 - 4*epsilon(n)))*Derivative(a_alpha(n, T), T)/(R*T*(1 - (2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))**2)*sqrt(delta(n)**2 - 4*epsilon(n))) - 4*(2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))*(4*(-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*V(n, T)/(delta(n)**2 - 4*epsilon(n))**(3/2) + 2*(-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*delta(n)/(delta(n)**2 - 4*epsilon(n))**(3/2) + 4*Derivative(V(n, T), n)/sqrt(delta(n)**2 - 4*epsilon(n)) + 2*Derivative(delta(n), n)/sqrt(delta(n)**2 - 4*epsilon(n)))*a_alpha(n, T)*Derivative(V(n, T), T)/(R*T*(1 - (2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))**2)**2*(delta(n)**2 - 4*epsilon(n))) + 2*(-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*a_alpha(n, T)*atanh(2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))/(R*T**2*(delta(n)**2 - 4*epsilon(n))**(3/2)) + 2*atanh(2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))*Derivative(a_alpha(n, T), n)/(R*T**2*sqrt(delta(n)**2 - 4*epsilon(n))) + 2*(2*(-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*V(n, T)/(delta(n)**2 - 4*epsilon(n))**(3/2) + (-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*delta(n)/(delta(n)**2 - 4*epsilon(n))**(3/2) + 2*Derivative(V(n, T), n)/sqrt(delta(n)**2 - 4*epsilon(n)) + Derivative(delta(n), n)/sqrt(delta(n)**2 - 4*epsilon(n)))*a_alpha(n, T)/(R*T**2*(1 - (2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))**2)*sqrt(delta(n)**2 - 4*epsilon(n))) + R*T*(P*Derivative(V(n, T), T)/(R*T) - P*V(n, T)/(R*T**2))*Derivative(V(n, T), n)/(P*V(n, T)**2) - R*T*(P*Derivative(V(n, T), T, n)/(R*T) - P*Derivative(V(n, T), n)/(R*T**2))/(P*V(n, T))
         '''
         T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
         if phase == 'g':
@@ -5678,8 +5703,31 @@ class GCEOSMIX(GCEOS):
         return dlnphis_dTs
 
     def dlnphis_dzs(self, Z):
+        r'''Generic formula for calculating the mole fraction derivaitves of
+        log fugacity coefficients for each species in a mixture. Verified
+        numerically. Applicable to all cubic equations of state which can be
+        cast in the form used here.
+
+        .. math::
+            \left(\frac{\partial \log \phi_i}{\partial z_i}\right)_{P,
+            z_{j \ne i}}
+
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+
+        Returns
+        -------
+        dlnphis_dzs : list[list[float]]
+            Mole fraction derivatives of log fugacity coefficient for each
+            species (such that the mole fractions do not sum to 1), [-]
+
+        Notes
+        -----
+        '''
         d2dxs = self.d2lnphi_dzizjs(Z)
-        d2ns = d2xs_to_dxdn_partials(d2dxs, zs)
+        d2ns = d2xs_to_dxdn_partials(d2dxs, self.zs)
         return d2ns
 
 class EpsilonZeroMixingRules(object):
@@ -5810,18 +5858,24 @@ class PSRKMixingRules(object):
     def a_alpha_and_derivatives(self, T, full=True, quick=True,
                                 pure_a_alphas=True):
 
-        r'''
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives for an EOS with the PSRK mixing rules. Returns
+        `a_alpha`, `da_alpha_dT`, and `d2a_alpha_dT2`.
+
+        For use in some methods, this returns only `a_alpha` if `full` is False.
 
         .. math::
-            \alpha = bRT \left[ \sum_i \frac{z_i \alpha_i}{b_i RT} + \frac{1}{A}\left(
-                    \frac{G^E}{RT} + \sum_i z_i \ln\left(\frac{b}{b_i}\right)
-                    \right)\right]
+            \alpha = bRT \left[ \sum_i \frac{z_i \alpha_i}{b_i RT}
+            + \frac{1}{A}\left(\frac{G^E}{RT} + \sum_i z_i \ln
+            \left(\frac{b}{b_i}\right) \right)\right]
 
         .. math::
             \frac{\partial \alpha}{\partial T} = RTb\left[
-                \sum_i \left(\frac{z_i \frac{\partial \alpha_i}{\partial T}}{RTb_i} -\frac{z_i\alpha_i}{RT^2b_i} \right)
-                + \frac{1}{A}\left(\frac{\frac{\partial G^E}{\partial T}}{RT} - \frac{G^E}{RT^2} \right)
-                \right] + \frac{\alpha}{T}
+            \sum_i \left(\frac{z_i \frac{\partial \alpha_i}{\partial T}}{RTb_i}
+            -\frac{z_i\alpha_i}{RT^2b_i} \right)
+            + \frac{1}{A}\left(\frac{\frac{\partial G^E}{\partial T}}{RT}
+            - \frac{G^E}{RT^2} \right)
+            \right] + \frac{\alpha}{T}
 
         .. math::
             \frac{\partial^2 \alpha}{\partial T^2} = b\left[\sum_i
@@ -5829,15 +5883,45 @@ class PSRKMixingRules(object):
             - \frac{2z_i \frac{\partial \alpha_i}{\partial T}}{T b_i}
             + \frac{2z_i\alpha_i}{T^2 b_i}
             \right)
-            + \frac{2}{T}\left[\sum_i \left(\frac{z_i\frac{\partial \alpha_i}{\partial T}}{b_i}
+            + \frac{2}{T}\left[\sum_i \left(\frac{z_i\frac{\partial \alpha_i}
+            {\partial T}}{b_i}
             - \frac{z_i \alpha_i}{T b_i}
             \right)
-            + \frac{1}{A}\left(\frac{\partial G^E}{\partial T} - \frac{G^E}{T}   \right)
-            \right]
-            + \frac{1}{A}\left(
-            \frac{\partial^2 G^E}{\partial T^2} - \frac{2}{T}\frac{\partial G^E}{\partial T} + 2\frac{G^E}{T^2}
+            + \frac{1}{A}\left(\frac{\partial G^E}{\partial T} - \frac{G^E}{T}
             \right)
             \right]
+            + \frac{1}{A}\left(
+            \frac{\partial^2 G^E}{\partial T^2} - \frac{2}{T}
+            \frac{\partial G^E}{\partial T} + 2\frac{G^E}{T^2}
+            \right)
+            \right]
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        full : bool, optional
+            If False, calculates and returns only `a_alpha`
+        quick : bool, optional
+            Only the quick variant is implemented; it is little faster anyhow
+        pure_a_alphas : bool, optional
+            Whether or not to recalculate the a_alpha terms of pure components
+            (for the case of mixtures only) which stay the same as the
+            composition changes (i.e in a PT flash), [-]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by PSRK-specific method, [J^2/mol^2/Pa]
+        da_alpha_dT : float
+            Temperature derivative of coefficient calculated by PSRK-specific
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2 : float
+            Second temperature derivative of coefficient calculated by
+            PSRK-specific method, [J^2/mol^2/Pa/K**2]
+
+        Notes
+        -----
         '''
         if pure_a_alphas:
             a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alpha_and_derivatives_vectorized(T)
@@ -6736,14 +6820,6 @@ class PRMIX(GCEOSMIX, PR):
         -------
         log_phis : float
             Log fugacity coefficient for each species, [-]
-
-        References
-        ----------
-        .. [1] Peng, Ding-Yu, and Donald B. Robinson. "A New Two-Constant
-           Equation of State." Industrial & Engineering Chemistry Fundamentals
-           15, no. 1 (February 1, 1976): 59-64. doi:10.1021/i160057a011.
-        .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
-           Butterworth-Heinemann, 1985.
         '''
         a_alpha = self.a_alpha
 #        cmps = self.cmps
@@ -6784,29 +6860,31 @@ class PRMIX(GCEOSMIX, PR):
         return [bs[i]*t51 - x0 - t50*a_alpha_j_rows[i]
                 for i in self.cmps]
 
-#        phis = []
-##        a_alpha_j_rows = []
-#        for i in cmps:
-##            a_alpha_js = a_alpha_ijs[i]
-##            b_ratio = bs[i]*b_inv
-##            sum_term = 0.0
-##            for zi, a_alpha_j_i in zip(zs, a_alpha_js):
-##                sum_term += zi*a_alpha_j_i
-##            sum_term = sum([zs[j]*a_alpha_js[j] for j in cmps])
-#
-##            t3 = b_ratio*Zm1 - x0 - x4*(x1*sum_term - b_ratio)
-#            t3 = bs[i]*t51 - x0 - t50*a_alpha_j_rows[i]
-#            # Let wherever calls the exp deal with overflow
-##            if t3 > 700.0:
-##                t3 = 700.0
-#            phis.append(t3)
-##            a_alpha_j_rows.append(sum_term)
-#
-##        self.a_alpha_j_rows = a_alpha_j_rows
-#        return phis
-
-
     def dlnphis_dT(self, phase):
+        r'''Formula for calculating the temperature derivaitve of
+        log fugacity coefficients for each species in a mixture for the
+        Peng-Robinson equation of state. Verified numerically.
+
+        .. math::
+            \left(\frac{\partial \log \phi_i}{\partial T}\right)_{P,
+            nj \ne i}
+
+        Parameters
+        ----------
+        phase : str
+            One of 'l' or 'g', [-]
+
+        Returns
+        -------
+        dlnphis_dT : float
+            Temperature derivatives of log fugacity coefficient for each species,
+            [1/K]
+
+        Notes
+        -----
+        This expression was derived using SymPy and optimized with the `cse`
+        technique.
+        '''
         zs = self.zs
         if phase == 'g':
             Z = self.Z_g
@@ -6872,6 +6950,30 @@ class PRMIX(GCEOSMIX, PR):
         return d_lnphis_dTs
 
     def dlnphis_dP(self, phase):
+        r'''Generic formula for calculating the pressure derivaitve of
+        log fugacity coefficients for each species in a mixture for the
+        Peng-Robinson EOS. Verified numerically.
+
+        .. math::
+            \left(\frac{\partial \log \phi_i}{\partial P}\right)_{T,
+            nj \ne i}
+
+        Parameters
+        ----------
+        phase : str
+            One of 'l' or 'g', [-]
+
+        Returns
+        -------
+        dlnphis_dP : float
+            Pressure derivatives of log fugacity coefficient for each species,
+            [1/Pa]
+
+        Notes
+        -----
+        This expression was derived using SymPy and optimized with the `cse`
+        technique.
+        '''
         zs = self.zs
         if phase == 'l':
             Z, dZ_dP = self.Z_l, self.dZ_dP_l
@@ -6899,9 +7001,6 @@ class PRMIX(GCEOSMIX, PR):
             x3 = bs[i]*x2
             x10 = x50*a_alpha_j_rows[i]
 #            d_lnphi_dP = dZ_dP*x3 + x15*(x10 + x3) + x9
-
-
-
             d_lnphi_dP = x16*x3 + x15*x10 + x9
             d_lnphi_dPs.append(d_lnphi_dP)
         return d_lnphi_dPs
@@ -7046,7 +7145,44 @@ class PRMIX(GCEOSMIX, PR):
         return Jfun_partial(zs)
 
     def dlnphis_dzs(self, Z):
-        # Is it possible to numerically evaluate different parts to try to find the problems?
+        r'''Calculate and return the mole fraction derivaitves of
+        log fugacity coefficients for each species in a mixture. This formula
+        is specific to the Peng-Robinson equation of state.
+
+        .. math::
+            \left(\frac{\partial \log \phi_i}{\partial z_i}\right)_{P,
+            z_{j \ne i}}
+
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+
+        Returns
+        -------
+        dlnphis_dzs : list[list[float]]
+            Mole fraction derivatives of log fugacity coefficient for each
+            species (such that the mole fractions do not sum to 1), [-]
+
+        Notes
+        -----
+        This formula is from [1]_ but is validated to match the generic
+        implementation.
+
+        Examples
+        --------
+
+        >>> kijs = [[0, 0.00076, 0.00171], [0.00076, 0, 0.00061], [0.00171, 0.00061, 0]]
+        >>> eos = PRMIX(Tcs=[469.7, 507.4, 540.3], zs=[0.8168, 0.1501, 0.0331], omegas=[0.249, 0.305, 0.349], Pcs=[3.369E6, 3.012E6, 2.736E6], T=322.29, P=101325, kijs=kijs)
+        >>> eos.dlnphis_dzs(eos.Z_l)
+        [[0.009938069276, 0.0151503498382, 0.018297235797], [-0.038517738793, -0.05958926042, -0.068438990795], [-0.07057106923, -0.10363920720, -0.14116283024]]
+
+        References
+        ----------
+        .. [1] Chang, Yih-Bor. "Development and Application of an Equation of
+           State Compositional Simulator" 1990.
+           https://repositories.lib.utexas.edu/handle/2152/80585.
+        '''
         T, P, zs = self.T, self.P, self.zs
         T2 = T*T
         T_inv = 1.0/T
@@ -7070,10 +7206,7 @@ class PRMIX(GCEOSMIX, PR):
         C = 1.0/(Z - B)
 
         Zm1 = Z - 1.0
-#        Dis = [bi/b*Zm1 for bi in self.bs] # not needed
-
         G = (Z + (1.0 + root_two)*B)/(Z + (1.0 - root_two)*B)
-
 
         t4 = 2.0/a_alpha
         t5 = -A/(two_root_two*B)
@@ -7170,56 +7303,6 @@ class PRMIX(GCEOSMIX, PR):
 
 #        return dlnphis_dxs
         return dlnphis_dxs#, dZ_dxs, dA_dxks, dB_dxks, dC_dxs, dD_dxs, dE_dxs, dG_dxs
-
-
-#        dlnphis_dzs = d_lnphi_dzs_Varavei
-
-#    def dZ_dzs(self, Z, zs):
-#        '''
-#        from fluids.numerics import derivative
-#        Tcs = [126.2, 304.2, 373.2]
-#        Pcs = [3394387.5, 7376460.0, 8936865.0]
-#        omegas = [0.04, 0.2252, 0.1]
-#        zs = [.7, .2, .1]
-#        eos = PRMIX(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
-#
-#        def dZ_dn(ni, i):
-#            zs = [.7, .2, .1]
-#            zs[i] = ni
-#            eos = PRMIX(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
-#            return eos.Z_g
-#        [derivative(dZ_dn, ni, dx=1e-3, order=17, args=(i,)) for i, ni in zip((0, 1, 2), (.7, .2, .1))], eos.d_Z_dzs(eos.Z_g, zs)
-#        '''
-#        # Not even correct for SRK eos, needs to be re derived there
-#        T, P = self.T, self.P
-#        bs, b = self.bs, self.b
-#        RT_inv = R_inv/T
-#        a_alpha_j_rows = self.a_alpha_j_rows
-#        A = self.a_alpha*P*RT_inv*RT_inv
-#        B = b*P*RT_inv
-#        C = 1.0/(Z - B)
-#
-#        Zm1 = Z - 1.0
-#
-#        t6 = P*RT_inv
-#        dB_dxks = [t6*bk for bk in bs]
-#
-#        const = (P+P)*RT_inv*RT_inv
-#        dA_dxks = [const*term_i for term_i in a_alpha_j_rows]
-#
-#        dF_dZ_inv = 1.0/(3.0*Z*Z - 2.0*Z*(1.0 - B) + (A - 3.0*B*B - 2.0*B))
-#
-#        t15 = (A - 2.0*B - 3.0*B*B + 2.0*(3.0*B + 1.0)*Z - Z*Z)
-#        BmZ = (B - Z)
-#        dZ_dxs = [(BmZ*dA_dxks[i] + t15*dB_dxks[i])*dF_dZ_inv for i in self.cmps]
-#        return dZ_dxs
-
-#    def dV_dzs(self, Z, zs):
-#        # This one is fine for all EOSs
-#        factor = self.T*R/self.P
-#        return [i*factor for i in self.dZ_dzs(Z, zs)]
-#
-#
 
     @property
     def ddelta_dzs(self):
@@ -7405,16 +7488,18 @@ class PRMIX(GCEOSMIX, PR):
 
     @property
     def d2epsilon_dninjs(self):
-        r'''Helper method for calculating the second mole number derivatives (hessian) of
-        `epsilon`. Note this is independent of the phase.
+        r'''Helper method for calculating the second mole number derivatives
+        (hessian) of `epsilon`. Note this is independent of the phase.
 
         .. math::
-            \left(\frac{\partial^2 \epsilon}{\partial n_i n_j}\right)_{T, P, n_{k\ne i,j}}
-            = -2b(2b - b_i - b_j) - 2(b - b_i)(b - b_j)
+            \left(\frac{\partial^2 \epsilon}{\partial n_i n_j}\right)_{T, P,
+            n_{k\ne i,j}}  = -2b(2b - b_i - b_j) - 2(b - b_i)(b - b_j)
+
         Returns
         -------
         d2epsilon_dninjs : list[list[float]]
-            Second mole number derivative of `epsilon` of each component, [m^6/mol^4]
+            Second mole number derivative of `epsilon` of each component,
+            [m^6/mol^4]
 
         Notes
         -----
@@ -7575,6 +7660,9 @@ class PRMIXTranslated(PRMIX):
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
     '''
+    eos_pure = PRTranslated
+    mix_kwargs_to_pure = {'cs': 'c'}
+    kwargs_linear = ('cs',)
     fugacity_coefficients = GCEOSMIX.fugacity_coefficients
     dlnphis_dT = GCEOSMIX.dlnphis_dT
     dlnphis_dP = GCEOSMIX.dlnphis_dP
@@ -7934,10 +8022,91 @@ class PRMIXTranslated(PRMIX):
         return d3b_dninjnks
 
 
-#class PPR(Mathias_Copeman_a_alpha, PSRKMixingRules, PRMIXTranslated):
-#    pass
 
 class PRMIXTranslatedPPJP(PRMIXTranslated):
+    r'''Class for solving the Pina-Martinez, Privat, Jaubert,
+    and Peng revision of the Peng-Robinson equation of state.
+
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P = \frac{RT}{v + c - b} - \frac{a\alpha(T)}{(v+c)(v + c + b)+b(v
+        + c - b)}
+
+    .. math::
+        a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+
+    .. math::
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+
+    .. math::
+        b = \sum_i z_i b_i
+
+    .. math::
+        a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
+
+    .. math::
+	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+
+    .. math::
+        \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
+
+    .. math::
+        \kappa_i=0.3919 + 1.4996 \omega - 0.2721\omega^2 + 0.1063\omega^3
+
+    Parameters
+    ----------
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    omegas : float
+        Acentric factors of all compounds, [-]
+    zs : float
+        Overall mole fractions of all species, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 [-]
+    cs : list[float], optional
+        Volume translation parameters, [m^3/mol]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optional
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
+
+    Examples
+    --------
+    T-P initialization, nitrogen-methane at 115 K and 1 MPa:
+
+    >>> eos = PRMIXTranslatedPPJP(T=115, P=1E6, cs=[-4.4e-6, -4.35e-6], Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.2, 0.8], kijs=[[0,0.03],[0.03,0]])
+    >>> eos.V_l, eos.V_g
+    (3.8989032701e-05, 0.00059686183724)
+    >>> eos.fugacities_l, eos.fugacities_g
+    ([444791.13707, 104520.280997], [184782.600238, 563352.147])
+
+    Notes
+    -----
+    For P-V initializations, a numerical solver is used to find T.
+
+    References
+    ----------
+    .. [1] Pina-Martinez, Andrés, Romain Privat, Jean-Noël Jaubert, and
+       Ding-Yu Peng. "Updated Versions of the Generalized Soave α-Function
+       Suitable for the Redlich-Kwong and Peng-Robinson Equations of State."
+       Fluid Phase Equilibria, December 7, 2018.
+       https://doi.org/10.1016/j.fluid.2018.12.007.
+    '''
     eos_pure = PRTranslatedPPJP
     mix_kwargs_to_pure = {'cs': 'c'}
     kwargs_linear = ('cs',)
@@ -7985,6 +8154,105 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
             self.fugacities()
 
 class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
+    r'''Class for solving the volume translated Le Guennec, Privat, and Jaubert
+    revision of the Peng-Robinson equation of state according to [1]_.
+
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P = \frac{RT}{v + c - b} - \frac{a\alpha(T)}{(v+c)(v + c + b)+b(v
+        + c - b)}
+
+    .. math::
+        a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+
+    .. math::
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+
+    .. math::
+        b = \sum_i z_i b_i
+
+    .. math::
+        a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
+
+    .. math::
+	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+
+    .. math::
+        \alpha_i = \left(\frac{T}{T_{c}}\right)^{c_{3} \left(c_{2}
+        - 1\right)} e^{c_{1} \left(- \left(\frac{T}{T_{c}}
+        \right)^{c_{2} c_{3}} + 1\right)}
+
+    If `c` is not provided, they are estimated as:
+
+    .. math::
+        c =\frac{R T_c}{P_c}(0.0198\omega - 0.0065)
+
+    If `alpha_coeffs` is not provided, the parameters `L` and `M` are estimated
+    from the acentric factor as follows:
+
+    .. math::
+        L = 0.1290\omega^2 + 0.6039\omega + 0.0877
+
+    .. math::
+        M = 0.1760\omega^2 - 0.2600\omega + 0.8884
+
+    Parameters
+    ----------
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    omegas : float
+        Acentric factors of all compounds, [-]
+    zs : float
+        Overall mole fractions of all species, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 [-]
+    cs : list[float], optional
+        Volume translation parameters, [m^3/mol]
+    alpha_coeffs : list[tuple(float[3])], optional
+        Coefficients L, M, N (also called C1, C2, C3) of TWU 1991 form, [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optional
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
+
+    Examples
+    --------
+    T-P initialization, nitrogen-methane at 115 K and 1 MPa:
+
+    >>> eos = PRMIXTranslatedConsistent(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.2, 0.8], kijs=[[0,0.03],[0.03,0]])
+    >>> eos.V_l, eos.V_g
+    (3.675235812e-05, 0.00059709319879)
+    >>> eos.fugacities_l, eos.fugacities_g
+    ([443454.9336, 106184.004057], [184122.74082, 563037.785])
+
+    Notes
+    -----
+    For P-V initializations, a numerical solver is used to find T.
+
+    References
+    ----------
+    .. [1] Le Guennec, Yohann, Romain Privat, and Jean-Noël Jaubert.
+       "Development of the Translated-Consistent Tc-PR and Tc-RK Cubic
+       Equations of State for a Safe and Accurate Prediction of Volumetric,
+       Energetic and Saturation Properties of Pure Compounds in the Sub- and
+       Super-Critical Domains." Fluid Phase Equilibria 429 (December 15, 2016):
+       301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
+    '''
     eos_pure = PRTranslatedConsistent
     kwargs_linear = ('cs', 'alpha_coeffs')
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
@@ -8265,16 +8533,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         -------
         log_phis : float
             Log fugacity coefficient for each species, [-]
-
-        References
-        ----------
-        .. [1] Soave, Giorgio. "Equilibrium Constants from a Modified
-           Redlich-Kwong Equation of State." Chemical Engineering Science 27,
-           no. 6 (June 1972): 1197-1203. doi:10.1016/0009-2509(72)80096-4.
-        .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
-           Butterworth-Heinemann, 1985.
         '''
-
         RT = self.T*R
         P_RT = self.P/RT
         A = self.a_alpha*self.P/(RT*RT)
@@ -8295,6 +8554,30 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
 
 
     def dlnphis_dT(self, phase):
+        r'''Formula for calculating the temperature derivaitve of
+        log fugacity coefficients for each species in a mixture for the
+        SRK equation of state. Verified numerically.
+
+        .. math::
+            \left(\frac{\partial \log \phi_i}{\partial T}\right)_{P,
+            nj \ne i}
+
+        Parameters
+        ----------
+        phase : str
+            One of 'l' or 'g', [-]
+
+        Returns
+        -------
+        dlnphis_dT : float
+            Temperature derivatives of log fugacity coefficient for each
+            species, [1/K]
+
+        Notes
+        -----
+        This expression was derived using SymPy and optimized with the `cse`
+        technique.
+        '''
         zs = self.zs
         if phase == 'g':
             Z = self.Z_g
@@ -8347,6 +8630,30 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         return d_lnphis_dTs
 
     def dlnphis_dP(self, phase):
+        r'''Generic formula for calculating the pressure derivaitve of
+        log fugacity coefficients for each species in a mixture for the
+        SRK EOS. Verified numerically.
+
+        .. math::
+            \left(\frac{\partial \log \phi_i}{\partial P}\right)_{T,
+            nj \ne i}
+
+        Parameters
+        ----------
+        phase : str
+            One of 'l' or 'g', [-]
+
+        Returns
+        -------
+        dlnphis_dP : float
+            Pressure derivatives of log fugacity coefficient for each species,
+            [1/Pa]
+
+        Notes
+        -----
+        This expression was derived using SymPy and optimized with the `cse`
+        technique.
+        '''
         zs = self.zs
         if phase == 'l':
             Z, dZ_dP = self.Z_l, self.dZ_dP_l
@@ -8367,7 +8674,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         x6 = (dZ_dP - x4)/(x5 - Z)
         x7 = a_alpha
         x9 = 1./Z
-        x10 = a_alpha*x9*(self.P*dZ_dP*x9 - 1)*RT_inv*RT_inv/((x5*x9 + 1.0))
+        x10 = a_alpha*x9*(self.P*dZ_dP*x9 - 1.0)*RT_inv*RT_inv/((x5*x9 + 1.0))
 
         x50 = 2.0/a_alpha
         d_lnphi_dPs = []
@@ -8380,6 +8687,83 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
 
 
 class SRKMIXTranslated(SRKMIX):
+    r'''Class for solving the volume translated Soave-Redlich-Kwong cubic equation of state for a
+    mixture of any number of compounds. Subclasses :obj:`SRKMIX`. Solves the EOS on
+    initialization and calculates fugacities for all components in all phases.
+
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P = \frac{RT}{V + c - b} - \frac{a\alpha(T)}{(V + c)(V + c + b)}
+
+    .. math::
+        a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+
+    .. math::
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+
+    .. math::
+        b = \sum_i z_i b_i
+
+    .. math::
+        a_i =\left(\frac{R^2(T_{c,i})^{2}}{9(\sqrt[3]{2}-1)P_{c,i}} \right)
+        =\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}
+
+    .. math::
+        b_i =\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_{c,i}}{P_{c,i}}
+        =\frac{0.08664\cdot R T_{c,i}}{P_{c,i}}
+
+    .. math::
+        \alpha(T)_i = \left[1 + m_i\left(1 - \sqrt{\frac{T}{T_{c,i}}}\right)\right]^2
+
+    .. math::
+        m_i = 0.480 + 1.574\omega_i - 0.176\omega_i^2
+
+    Parameters
+    ----------
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    omegas : float
+        Acentric factors of all compounds, [-]
+    zs : float
+        Overall mole fractions of all species, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 [-]
+    cs : list[float], optional
+        Volume translation parameters; always zero in the original
+        implementation, [m^3/mol]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optional
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
+
+    Examples
+    --------
+    T-P initialization, nitrogen-methane at 115 K and 1 MPa:
+
+    >>> eos = SRKMIXTranslated(T=115, P=1E6, cs=[-4.4e-6, -4.35e-6], Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.2, 0.8], kijs=[[0,0.03],[0.03,0]])
+    >>> eos.V_l, eos.V_g
+    (4.35928920e-05, 0.00060927202)
+
+    Notes
+    -----
+    For P-V initializations, a numerical solver is used to find T.
+
+    '''
     fugacity_coefficients = GCEOSMIX.fugacity_coefficients
     dlnphis_dT = GCEOSMIX.dlnphis_dT
     dlnphis_dP = GCEOSMIX.dlnphis_dP
@@ -8387,6 +8771,64 @@ class SRKMIXTranslated(SRKMIX):
     P_max_at_V = GCEOSMIX.P_max_at_V
     solve_T = GCEOS.solve_T
 
+    eos_pure = SRKTranslated
+    mix_kwargs_to_pure = {'cs': 'c'}
+    kwargs_linear = ('cs',)
+
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None, T=None, P=None, V=None,
+                 fugacities=True, only_l=False, only_g=False):
+        self.N = len(Tcs)
+        self.cmps = cmps = range(self.N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.zs = zs
+        if kijs is None:
+            kijs = [[0]*self.N for i in range(self.N)]
+        self.kijs = kijs
+        self.kwargs = {'kijs': kijs, 'cs': cs}
+        self.T = T
+        self.P = P
+        self.V = V
+        # TODO if scalar
+        self.ais = [self.c1*R2*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        b0s = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.ms = [0.480 + 1.574*omega - 0.176*omega*omega for omega in omegas]
+
+        if cs is None:
+            cs = [0.0]*N
+        self.cs = cs
+
+        b0, c = 0.0, 0.0
+        for i in cmps:
+            b0 += b0s[i]*zs[i]
+            c += cs[i]*zs[i]
+
+        self.b0s = b0s
+        self.bs = [b0s[i] - cs[i] for i in cmps]
+        self.c = c
+        self.b = b = b0 - c
+        self.delta = c + c + b0
+        self.epsilon = c*(b0 + c)
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
+
+    def _fast_init_specific(self, other):
+        self.cs = cs = other.cs
+        self.ms = other.ms
+        zs = self.zs
+        self.b0s = b0s = other.b0s
+
+        b0, c = 0.0, 0.0
+        for i in self.cmps:
+            b0 += b0s[i]*zs[i]
+            c += cs[i]*zs[i]
+
+        self.c = c
+        self.b = b0 - c
+        self.delta = c + c + b0
+        self.epsilon = c*(b0 + c)
 
     @property
     def ddelta_dzs(self):
@@ -8671,6 +9113,107 @@ class SRKMIXTranslated(SRKMIX):
 
 
 class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
+    r'''Class for solving the volume translated Le Guennec, Privat, and Jaubert
+    revision of the SRK equation of state according to [1]_.
+
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P = \frac{RT}{V + c - b} - \frac{a\alpha(T)}{(V + c)(V + c + b)}
+
+    .. math::
+        a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+
+    .. math::
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+
+    .. math::
+        \alpha_i = \left(\frac{T}{T_{c,i}}\right)^{c_{3} \left(c_{2}
+        - 1\right)} e^{c_{1} \left(- \left(\frac{T}{T_{c,i}}
+        \right)^{c_{2} c_{3}} + 1\right)}
+
+    .. math::
+        b = \sum_i z_i b_i
+
+    .. math::
+        a_i =\left(\frac{R^2(T_{c,i})^{2}}{9(\sqrt[3]{2}-1)P_{c,i}} \right)
+        =\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}
+
+    .. math::
+        b_i =\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_{c,i}}{P_{c,i}}
+        =\frac{0.08664\cdot R T_{c,i}}{P_{c,i}}
+
+
+    If `cs` is not provided, they are estimated as:
+
+    .. math::
+        c =\frac{R T_c}{P_c}(0.0172\omega - 0.0096)
+
+    If `alpha_coeffs` is not provided, the parameters `L` and `M` are estimated
+    from each of the acentric factors as follows:
+
+    .. math::
+        L = 0.0947\omega^2 + 0.6871\omega + 0.1508
+
+    .. math::
+        M = 0.1615\omega^2 - 0.2349\omega + 0.8876
+
+    Parameters
+    ----------
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    omegas : float
+        Acentric factors of all compounds, [-]
+    zs : float
+        Overall mole fractions of all species, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 [-]
+    cs : list[float], optional
+        Volume translation parameters, [m^3/mol]
+    alpha_coeffs : list[list[float]]
+        Coefficients for
+        :obj:`thermo.eos_alpha_functions.Twu91_a_alpha`, [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optional
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
+
+    Examples
+    --------
+    T-P initialization, nitrogen-methane at 115 K and 1 MPa:
+
+    >>> eos = SRKMIXTranslatedConsistent(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.2, 0.8], kijs=[[0,0.03],[0.03,0]])
+    >>> eos.V_l, eos.V_g
+    (3.591044498e-05, 0.0006020501621)
+
+    Notes
+    -----
+    For P-V initializations, a numerical solver is used to find T.
+
+    References
+    ----------
+    .. [1] Le Guennec, Yohann, Romain Privat, and Jean-Noël Jaubert.
+       "Development of the Translated-Consistent Tc-PR and Tc-RK Cubic
+       Equations of State for a Safe and Accurate Prediction of Volumetric,
+       Energetic and Saturation Properties of Pure Compounds in the Sub- and
+       Super-Critical Domains." Fluid Phase Equilibria 429 (December 15, 2016):
+       301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
+
+    '''
     eos_pure = SRKTranslatedConsistent
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     kwargs_linear = ('cs', 'alpha_coeffs')
@@ -8743,6 +9286,120 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
 
 
 class MSRKMIXTranslated(Soave_79_a_alpha, SRKMIXTranslatedConsistent):
+    r'''Class for solving the volume translated Soave (1980) alpha function,
+    revision of the Soave-Redlich-Kwong equation of state
+    for a pure compound according to [1]_. Uses two fitting parameters `N` and
+    `M` to more accurately fit the vapor pressure of pure species.
+
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P = \frac{RT}{V + c - b} - \frac{a\alpha(T)}{(V + c)(V + c + b)}
+
+    .. math::
+        a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+
+    .. math::
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+
+    .. math::
+        \alpha(T)_i = 1 + (1 - T_{r,i})(M + \frac{N}{T_{r,i}})
+
+    .. math::
+        b = \sum_i z_i b_i
+
+    .. math::
+        a_i =\left(\frac{R^2(T_{c,i})^{2}}{9(\sqrt[3]{2}-1)P_{c,i}} \right)
+        =\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}
+
+    .. math::
+        b_i =\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_{c,i}}{P_{c,i}}
+        =\frac{0.08664\cdot R T_{c,i}}{P_{c,i}}
+
+    This is an older correlation that offers lower accuracy on many properties
+    which were sacrificed to obtain the vapor pressure accuracy. The alpha
+    function of this EOS does not meet any of the consistency requriements for
+    alpha functions.
+
+    Coefficients can be found in [2]_, or estimated with the method in [3]_.
+    The estimation method in [3]_ works as follows, using the acentric factor
+    and true critical compressibility:
+
+    .. math::
+        M = 0.4745 + 2.7349(\omega Z_c) + 6.0984(\omega Z_c)^2
+
+    .. math::
+        N = 0.0674 + 2.1031(\omega Z_c) + 3.9512(\omega Z_c)^2
+
+    An alternate estimation scheme is provided in [1]_, which provides
+    analytical solutions to calculate the parameters `M` and `N` from two
+    points on the vapor pressure curve, suggested as 10 mmHg and 1 atm.
+    This is used as an estimation method here if the parameters are not
+    provided, and the two vapor pressure points are obtained from the original
+    SRK equation of state.
+
+    Parameters
+    ----------
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    omegas : float
+        Acentric factors of all compounds, [-]
+    zs : float
+        Overall mole fractions of all species, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 [-]
+    cs : list[float], optional
+        Volume translation parameters, [m^3/mol]
+    alpha_coeffs : list[list[float]]
+        Coefficients for
+        :obj:`thermo.eos_alpha_functions.Soave_79_a_alpha`, [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optional
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
+
+    Examples
+    --------
+    T-P initialization, nitrogen-methane at 115 K and 1 MPa:
+
+    >>> eos = MSRKMIXTranslated(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.2, 0.8], kijs=[[0,0.03],[0.03,0]])
+    >>> eos.V_l, eos.V_g
+    (3.9222990198e-05, 0.00060438075638)
+
+    Notes
+    -----
+    For P-V initializations, a numerical solver is used to find T.
+
+    References
+    ----------
+    .. [1] Soave, G. "Rigorous and Simplified Procedures for Determining
+       the Pure-Component Parameters in the Redlich—Kwong—Soave Equation of
+       State." Chemical Engineering Science 35, no. 8 (January 1, 1980):
+       1725-30. https://doi.org/10.1016/0009-2509(80)85007-X.
+    .. [2] Sandarusi, Jamal A., Arthur J. Kidnay, and Victor F. Yesavage.
+       "Compilation of Parameters for a Polar Fluid Soave-Redlich-Kwong
+       Equation of State." Industrial & Engineering Chemistry Process Design
+       and Development 25, no. 4 (October 1, 1986): 957-63.
+       https://doi.org/10.1021/i200035a020.
+    .. [3] Valderrama, Jose O., Héctor De la Puente, and Ahmed A. Ibrahim.
+       "Generalization of a Polar-Fluid Soave-Redlich-Kwong Equation of State."
+       Fluid Phase Equilibria 93 (February 11, 1994): 377-83.
+       https://doi.org/10.1016/0378-3812(94)87021-7.
+    '''
     eos_pure = MSRKTranslated
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None,
                  alpha_coeffs=None, T=None, P=None, V=None,
@@ -8869,7 +9526,7 @@ class PSRK(Mathias_Copeman_a_alpha, PSRKMixingRules, SRKMIXTranslated):
     >>> ge_model = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{117: 1}, {1:2, 2:4}], subgroups=PSRKSG, interaction_data=PSRKIP, version=0)
     >>> eos = PSRK(Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, ge_model=ge_model, alpha_coeffs=Mathias_Copeman_coeffs, T=T, P=P)
     >>> eos
-    PSRK(Tcs=[304.2, 507.4], Pcs=[7376460.0, 3014419.0], omegas=[0.2252, 0.2975], kijs=[[0.0, 0.0], [0.0, 0.0]], alpha_coeffs=[[-1.7039, 0.2515, 0.8252, 1.0], [2.9173, -1.4411, 1.1061, 1.0]], cs=[0.0, 0.0], ge_model=UNIFAC(T=313.0, xs=[0.5, 0.5]), zs=[0.5, 0.5], T=313.0, P=1000000.0)
+    PSRK(Tcs=[304.2, 507.4], Pcs=[7376460.0, 3014419.0], omegas=[0.2252, 0.2975], kijs=[[0.0, 0.0], [0.0, 0.0]], alpha_coeffs=[[-1.7039, 0.2515, 0.8252, 1.0], [2.9173, -1.4411, 1.1061, 1.0]], cs=[0.0, 0.0], ge_model=UNIFAC(T=313.0, xs=[0.5, 0.5], rs=[1.3, 4.4998000000000005], qs=[0.982, 3.856], Qs=[0.848, 0.54, 0.982], vs=[[0, 2], [0, 4], [1, 0]], psi_abc=([[0.0, 0.0, 919.8], [0.0, 0.0, 919.8], [-38.672, -38.672, 0.0]], [[0.0, 0.0, -3.9132], [0.0, 0.0, -3.9132], [0.8615, 0.8615, 0.0]], [[0.0, 0.0, 0.0046309], [0.0, 0.0, 0.0046309], [-0.0017906, -0.0017906, 0.0]]), version=0), zs=[0.5, 0.5], T=313.0, P=1000000.0)
     >>> eos.phase, eos.V_l, eos.V_g
     ('l/g', 0.000110889753959, 0.00197520225546)
 
@@ -9277,6 +9934,30 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         return phis
 
     def dlnphis_dT(self, phase):
+        r'''Formula for calculating the temperature derivaitve of
+        log fugacity coefficients for each species in a mixture for the
+        VDW equation of state. Verified numerically.
+
+        .. math::
+            \left(\frac{\partial \log \phi_i}{\partial T}\right)_{P,
+            nj \ne i}
+
+        Parameters
+        ----------
+        phase : str
+            One of 'l' or 'g', [-]
+
+        Returns
+        -------
+        dlnphis_dT : float
+            Temperature derivatives of log fugacity coefficient for each
+            species, [1/K]
+
+        Notes
+        -----
+        This expression was derived using SymPy and optimized with the `cse`
+        technique.
+        '''
         zs = self.zs
         if phase == 'g':
             Z = self.Z_g
@@ -9314,6 +9995,30 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         return d_lnphis_dTs
 
     def dlnphis_dP(self, phase):
+        r'''Generic formula for calculating the pressure derivaitve of
+        log fugacity coefficients for each species in a mixture for the
+        VDW EOS. Verified numerically.
+
+        .. math::
+            \left(\frac{\partial \log \phi_i}{\partial P}\right)_{T,
+            nj \ne i}
+
+        Parameters
+        ----------
+        phase : str
+            One of 'l' or 'g', [-]
+
+        Returns
+        -------
+        dlnphis_dP : float
+            Pressure derivatives of log fugacity coefficient for each species,
+            [1/Pa]
+
+        Notes
+        -----
+        This expression was derived using SymPy and optimized with the `cse`
+        technique.
+        '''
         zs = self.zs
         if phase == 'l':
             Z, dZ_dP = self.Z_l, self.dZ_dP_l

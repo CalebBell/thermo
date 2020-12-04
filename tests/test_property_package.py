@@ -33,6 +33,7 @@ from thermo.chemical import Chemical
 from thermo.mixture import Mixture
 from thermo.property_package_constants import PropertyPackageConstants, NRTL_PKG, PR_PKG, IDEAL_PKG
 
+@pytest.mark.deprecated
 def test_Ideal():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
 
@@ -106,6 +107,7 @@ def test_Ideal():
     vodka.flash(P=5000, VF=1, zs=[0, 1])
     vodka.flash(P=5000, VF=1, zs=[0, 1])
 
+@pytest.mark.deprecated
 def test_Ideal_composition_zeros():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
 
@@ -127,6 +129,7 @@ def test_Ideal_composition_zeros():
 
 
 
+@pytest.mark.deprecated
 def test_Ideal_single_component():
     m = Mixture(['water'], zs=[1], T=298.15)
     test_pkg = Ideal(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
@@ -210,6 +213,7 @@ def test_Ideal_single_component():
 
 
 @pytest.mark.slow
+@pytest.mark.deprecated
 def test_IdealPP_fuzz_TP_VF():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
     vodka = Ideal(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
@@ -283,6 +287,7 @@ def test_IdealPP_fuzz_TP_VF():
 
 
 @pytest.mark.slow
+@pytest.mark.deprecated
 def test_Unifac():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=6500, T=298.15)
     vodka = Unifac(m.UNIFAC_groups, m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
@@ -336,6 +341,7 @@ def test_Unifac():
     assert vodka.phase == phase_known
 
 
+@pytest.mark.deprecated
 def test_NRTL_package():
     m = Mixture(['water', 'ethanol'], zs=[1-.252, .252], T=273.15+70)
     # 6 coeggicients per row.
@@ -365,6 +371,7 @@ def test_NRTL_package():
     pp.flash(T=m.T, VF=1, zs=m.zs)
     assert_allclose(pp.P, 40485.10473289466, rtol=2e-3)
 
+@pytest.mark.deprecated
 def test_NRTL_package_constants():
     taus = [ [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [3.458, -586.1, 0, 0, 0, 0]],
          [[-0.801, 246.2, 0, 0, 0, 0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]  ]
@@ -382,6 +389,7 @@ def test_NRTL_package_constants():
 
 
 
+@pytest.mark.deprecated
 def test_Unifac_EOS_POY():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
     pkg = Unifac(UNIFAC_groups=m.UNIFAC_groups, VaporPressures=m.VaporPressures, Tms=m.Tms, Tcs=m.Tcs, Pcs=m.Pcs,
@@ -399,6 +407,7 @@ def test_Unifac_EOS_POY():
 
 @pytest.mark.fuzz
 @pytest.mark.slow
+@pytest.mark.deprecated
 def test_Unifac_fuzz():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
     vodka = Unifac(m.UNIFAC_groups, m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
@@ -431,6 +440,7 @@ def test_Unifac_fuzz():
 
 
 @pytest.mark.slow
+@pytest.mark.deprecated
 def test_UnifacDortmund():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=6500, T=298.15)
     vodka = UnifacDortmund(UNIFAC_groups=m.UNIFAC_Dortmund_groups, VaporPressures=m.VaporPressures,
@@ -484,6 +494,7 @@ def test_UnifacDortmund():
     assert vodka.phase == phase_known
 
 
+@pytest.mark.deprecated
 def test_plotting_failures():
     m = Mixture(['ethanol', 'methanol', 'water'], zs=[0.3, 0.3, 0.4], P=5000, T=298.15)
     ternary = Ideal(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
@@ -496,6 +507,7 @@ def test_plotting_failures():
         ternary.plot_xy(300)
 
 
+@pytest.mark.deprecated
 def test_IdealCaloric_single_component_H():
     w = Chemical('water')
     EnthalpyVaporization = w.EnthalpyVaporization
@@ -568,6 +580,7 @@ def test_IdealCaloric_single_component_H():
     assert_allclose(Hvap_Tc_0, Hvap_Tc_half)
 
 
+@pytest.mark.deprecated
 def test_IdealCaloric_binary_H():
 
     m = Mixture(['water', 'ethanol'], zs=[0.3, 0.7], T=298.15)
@@ -622,6 +635,7 @@ def test_IdealCaloric_binary_H():
                         + (z1*m.HeatCapacityGases[0].T_dependent_property_integral(298.15, T) + z2*m.HeatCapacityGases[1].T_dependent_property_integral(298.15, T)))
             assert_allclose(pkg_calc, hand_calc)
 
+@pytest.mark.deprecated
 def test_IdealCaloric_nitrogen_S():
 
     m = Mixture(['nitrogen'], zs=[1], T=298.15)
@@ -682,6 +696,7 @@ def test_IdealCaloric_nitrogen_S():
     assert_allclose(S1-S2, 0)
 
 
+@pytest.mark.deprecated
 def test_IdealCaloric_enthalpy_Cpl_Cpg_Hvap_binary_Tc_ref():
     w = Chemical('water')
     MeOH = Chemical('methanol')
@@ -747,6 +762,7 @@ def test_IdealCaloric_enthalpy_Cpl_Cpg_Hvap_binary_Tc_ref():
     assert_allclose(dH_hand, dH)
 
 
+@pytest.mark.deprecated
 def test_IdealCaloric_enthalpy_Cpl_Cpg_Hvap_binary_Tb_ref():
     w = Chemical('water')
     MeOH = Chemical('methanol')
@@ -823,6 +839,7 @@ def test_IdealCaloric_enthalpy_Cpl_Cpg_Hvap_binary_Tb_ref():
     assert_allclose(dH, dH_hand)
 
 
+@pytest.mark.deprecated
 def test_basic_pure_component_flash_consistency():
     pts = 11
     T = 200
@@ -842,6 +859,7 @@ def test_basic_pure_component_flash_consistency():
         assert_allclose(S_solve.VF, VF, rtol=5e-3)
 
 
+@pytest.mark.deprecated
 def test_IdealCaloric_PH():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
     pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs,
@@ -859,6 +877,7 @@ def test_IdealCaloric_PH():
             assert_allclose(T_calc['T'], T, rtol=1E-3)
 
 
+@pytest.mark.deprecated
 def test_IdealCaloric_PS():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
     pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs,
@@ -876,6 +895,7 @@ def test_IdealCaloric_PS():
             assert_allclose(T_calc['T'], T, rtol=1E-3)
 
 
+@pytest.mark.deprecated
 def test_IdealCaloric_TS():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
     pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs,
@@ -894,6 +914,7 @@ def test_IdealCaloric_TS():
             assert_allclose(P_calc['P'], P, rtol=1E-3)
 
 
+@pytest.mark.deprecated
 def test_GammaPhiBasic():
     # For the base mixture which assumes activity coefficients are one,
     # Check there is no excess enthalpy or entropy.
@@ -908,6 +929,7 @@ def test_GammaPhiBasic():
     se = a.SE_l( 400., [.5, .5])
     assert_allclose(se, 0)
 
+@pytest.mark.deprecated
 def test_PartialPropertyIdeal():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
 
@@ -923,6 +945,7 @@ def test_PartialPropertyIdeal():
     assert_allclose(a, -118882.74138254928, rtol=2e-3)
 
 
+@pytest.mark.deprecated
 def test_GammaPhiCaloricBasic():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
     pkg = GammaPhiCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs,
@@ -958,6 +981,7 @@ def test_GammaPhiCaloricBasic():
     assert_allclose(m.property_package.T, 300.)
 
 
+@pytest.mark.deprecated
 def test_UnifacCaloric():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
     pkg = UnifacCaloric(UNIFAC_groups=m.UNIFAC_groups, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs,
@@ -996,6 +1020,7 @@ def test_UnifacCaloric():
 
 
 
+@pytest.mark.deprecated
 def test_UnifacDortmundCaloric():
     m = Mixture(['hexane', '2-Butanone'], zs=[.5, .5], T=273.15 + 60)
     pkg2 = UnifacDortmundCaloric(UNIFAC_groups=m.UNIFAC_Dortmund_groups, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs,
@@ -1006,6 +1031,7 @@ def test_UnifacDortmundCaloric():
     pkg2.flash(VF=0.5, T=350, zs=m.zs)
 
 
+@pytest.mark.deprecated
 def test_Act_infinite():
     m = Mixture(['ethanol', 'water'], zs=[.5, .5], T=273.15 + 60)
     pkg2 = UnifacDortmundCaloric(UNIFAC_groups=m.UNIFAC_Dortmund_groups, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs,
@@ -1019,6 +1045,7 @@ def test_Act_infinite():
 
 
 
+@pytest.mark.deprecated
 def test_WilsonPP():
     m = Mixture(['water', 'ethanol', 'methanol', '1-pentanol', '2-pentanol', '3-pentanol',
                  '1-decanol'],

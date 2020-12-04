@@ -56,9 +56,9 @@ def test_Joback_acetone():
         assert_close(ex.Gf(ex.counts), -154540)
         assert_close(ex.Hfus(ex.counts), 5125)
         assert_close(ex.Hvap(ex.counts), 29018)
-        assert_close(ex.Cpig_coeffs(ex.counts),[7.52, 0.26084, -0.0001207, 1.546e-08] )
+        assert_close1d(ex.Cpig_coeffs(ex.counts),[7.52, 0.26084, -0.0001207, 1.546e-08] )
         assert_close(ex.Cpig(300.0), 75.32642000000001)
-        assert_close(ex.mul_coeffs(ex.counts), [839.11, -14.99])
+        assert_close1d(ex.mul_coeffs(ex.counts), [839.11, -14.99])
         assert_close(ex.mul(300.0), 0.0002940378347162687)
 
 

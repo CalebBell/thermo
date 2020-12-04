@@ -35,6 +35,7 @@ from fluids.numerics import linspace, logspace, normalize
 from thermo.property_package_constants import (PropertyPackageConstants, PR_PKG)
 
 
+@pytest.mark.deprecated
 def test_bubble_T_PR():
     # Copied to VL! Can't get last point to converge.
     Ps = np.logspace(np.log10(1e3), np.log10(8e6), 100).tolist()
@@ -55,6 +56,7 @@ def test_bubble_T_PR():
     assert_allclose(bubs, T_bubbles_expect, rtol=5e-6)
 
 
+@pytest.mark.deprecated
 def test_PR_four_bubble_dew_cases():
     m = Mixture(['furfural', 'furfuryl alcohol'], zs=[.5, .5], T=300, P=1E6)
     pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=[235.9, 250.35], Tbs=[434.65, 441.15],
@@ -68,6 +70,7 @@ def test_PR_four_bubble_dew_cases():
     assert_allclose(pkg.bubble_P(T=600, zs=m.zs)[-3], 2766476.7473238516, rtol=1e-4)
 
 
+@pytest.mark.deprecated
 def test_C1_C10_PT_flash():
 
     m = Mixture(['methane', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10'], zs=[.1]*10, T=300, P=1E6)
@@ -76,6 +79,7 @@ def test_C1_C10_PT_flash():
     pkg.flash(m.zs, T=300, P=1e5)
     assert_allclose(pkg.V_over_F, 0.3933480636546702, atol=.001)
 
+@pytest.mark.deprecated
 def test_ternary_4_flashes_2_algorithms():
     zs = [0.8168, 0.1501, 0.0331]
     m = Mixture(['n-pentane', 'n-hexane', 'heptane'], zs=zs, T=300, P=1E6)
@@ -138,6 +142,7 @@ def test_ternary_4_flashes_2_algorithms():
         assert_allclose(P, pkg.P)
 
 
+@pytest.mark.deprecated
 @pytest.mark.slow
 def test_PVF_parametric_binary_vs_CoolProp():
     import CoolProp.CoolProp as CP
@@ -186,6 +191,7 @@ def test_PVF_parametric_binary_vs_CoolProp():
 
     PRMIX.c1, PRMIX.c2 = c1, c2
 
+@pytest.mark.deprecated
 @pytest.mark.slow
 def test_PVF_parametric_binary_zs_vs_CoolProp():
     '''More advanced test of the above. Changes mole fractions.
@@ -240,6 +246,7 @@ def test_PVF_parametric_binary_zs_vs_CoolProp():
 
     PRMIX.c1, PRMIX.c2 = c1, c2
 
+@pytest.mark.deprecated
 @pytest.mark.xfail
 def test_failing_sequential_subs():
     zs = [0.8168, 0.1501, 0.0331]
@@ -258,6 +265,7 @@ def test_failing_sequential_subs():
 
 
 
+@pytest.mark.deprecated
 def test_PRMIX_pkg_H():
     zs = [0.4, 0.6]
     m = Mixture(['Ethane', 'Heptane'], zs=zs, T=300, P=1E6)
@@ -351,6 +359,7 @@ def test_PRMIX_pkg_H():
     H1 - H2
     assert_allclose(H1 - H2, -39430.7145672, rtol=1e-3)
 
+@pytest.mark.deprecated
 def test_PRMIX_pkg_S():
     zs = [0.4, 0.6]
     m = Mixture(['Ethane', 'Heptane'], zs=zs, T=300, P=1E6)
@@ -445,6 +454,7 @@ def test_PRMIX_pkg_S():
     S1 - S2
     assert_allclose(S1 - S2, -124.39457107124854, atol=1)
 
+@pytest.mark.deprecated
 def test_PRMIX_pkg_extras():
     # TODO add more properties as they are added
     zs = [0.4, 0.6]
@@ -489,6 +499,7 @@ def test_PRMIX_pkg_extras():
     assert_allclose(pkg.Cvlm_dep, 21.414531021342995, rtol=5e-5) #? maybe issue
 
 
+@pytest.mark.deprecated
 def test_azeotrope_Txy_PR():
     IDs = ['ethanol', 'benzene']
     pkg = PropertyPackageConstants(IDs, name=PR_PKG)
@@ -503,6 +514,7 @@ def test_azeotrope_Txy_PR():
     assert_allclose(Tbubbles, Tbubbles_expect, rtol=5e-5)
     assert_allclose(Tdews, Tdews_expect, rtol=5e-5)
 
+@pytest.mark.deprecated
 def test_azeotrope_Txy_PR_multiP():
     IDs = ['ethanol', 'benzene']
     pkg = PropertyPackageConstants(IDs, name=PR_PKG)
@@ -521,6 +533,7 @@ def test_azeotrope_Txy_PR_multiP():
     assert_allclose(Tbubbles_vary_P, Tbubbles_vary_P_expect, rtol=1e-5)
     assert_allclose(Tdews_vary_P, Tdews_vary_P_expect, rtol=1e-5)
 
+@pytest.mark.deprecated
 def test_azeotrope_Pxy_PR_multiT():
     IDs = ['ethanol', 'benzene']
     pkg = PropertyPackageConstants(IDs, name=PR_PKG)
@@ -538,6 +551,7 @@ def test_azeotrope_Pxy_PR_multiT():
     assert_allclose(Ps_dew_multi_T_expect, Ps_dew_multi_T, rtol=1e-6)
 
 
+@pytest.mark.deprecated
 def test_phase_envelope_ethane_pentane():
 
     IDs = ['ethane', 'n-pentane']
@@ -588,6 +602,7 @@ def test_phase_envelope_ethane_pentane():
     assert_allclose(Ts_dew_check, Ts_dew_expect, rtol=1e-5)
     assert_allclose(Ts_bubble_check, Ts_bubble_expect, rtol=1e-5)
 
+@pytest.mark.deprecated
 def test_ethane_pentane_TP_Tdew_Tbubble_TP():
     # Takes 9 seconds!
     IDs = ['ethane', 'n-pentane']
@@ -625,6 +640,8 @@ def test_ethane_pentane_TP_Tdew_Tbubble_TP():
         all_Ts.append(Ts)
         all_Ps.append(Ps)
 
+@pytest.mark.deprecated
+@pytest.mark.slow_envelope
 def test_phase_envelope_44_components():
     IDs = ['nitrogen', 'carbon dioxide', 'H2S', 'methane', 'ethane', 'propane', 'isobutane', 'butane', 'isopentane', 'pentane', 'Hexane', 'Heptane', 'Octane', 'Nonane', 'Decane', 'Undecane', 'Dodecane', 'Tridecane', 'Tetradecane', 'Pentadecane', 'Hexadecane', 'Heptadecane', 'Octadecane', 'Nonadecane', 'Eicosane', 'Heneicosane', 'Docosane', 'Tricosane', 'Tetracosane', 'Pentacosane', 'Hexacosane', 'Heptacosane', 'Octacosane', 'Nonacosane', 'Triacontane', 'Benzene', 'Toluene', 'Ethylbenzene', 'Xylene', '1,2,4-Trimethylbenzene', 'Cyclopentane', 'Methylcyclopentane', 'Cyclohexane', 'Methylcyclohexane']
     zs = [9.11975115499676e-05, 9.986813065240533e-05, 0.0010137795304828892, 0.019875879000370657, 0.013528874875432457, 0.021392773691700402, 0.00845450438914824, 0.02500218071904368, 0.016114189201071587, 0.027825798446635016, 0.05583179467176313, 0.0703116540769539, 0.07830577180555454, 0.07236459223729574, 0.0774523322851419, 0.057755091407705975, 0.04030134965162674, 0.03967043780553758, 0.03514481759005302, 0.03175471055284055, 0.025411123554079325, 0.029291866298718154, 0.012084986551713202, 0.01641114551124426, 0.01572454598093482, 0.012145363820829673, 0.01103585282423499, 0.010654818322680342, 0.008777712911254239, 0.008732073853067238, 0.007445155260036595, 0.006402875549212365, 0.0052908087849774296, 0.0048199150683177075, 0.015943943854195963, 0.004452253754752775, 0.01711981267072777, 0.0024032720444511282, 0.032178399403544646, 0.0018219517069058137, 0.003403378548794345, 0.01127516775495176, 0.015133143423489698, 0.029483213283483682]
@@ -674,6 +691,7 @@ def test_phase_envelope_44_components():
     assert_allclose(Ts_dew_check, Ts_dew_expect, rtol=1e-5)
     assert_allclose(Ts_bubble_check, Ts_bubble_expect, rtol=1e-5)
 
+@pytest.mark.deprecated
 def test_TPD_bubble_dew():
     IDs = ['ethane', 'n-pentane']
     pkg = PropertyPackageConstants(IDs, PR_PKG, kijs=[[0, 7.609447e-003], [7.609447e-003, 0]])
@@ -706,6 +724,7 @@ def test_TPD_bubble_dew():
     assert_allclose(TPD_calc, 0, atol=1e-6)
 
 
+@pytest.mark.deprecated
 def test_stab_comb_products_need_both_roots():
     comb_IDs = ['N2', 'CO2', 'O2', 'H2O']
     comb_zs = [0.5939849621247668,

@@ -54,18 +54,24 @@ __all__ = ['smarts_fragment', 'Joback', 'J_BIGGS_JOBACK_SMARTS',
 
 from collections import namedtuple, Counter
 from chemicals.utils import to_num, horner, exp
-try:
-    from rdkit import Chem
-    from rdkit.Chem import Descriptors
-    from rdkit.Chem import AllChem
-    from rdkit.Chem import rdMolDescriptors
-    hasRDKit = True
-except:
-    # pragma: no cover
-    hasRDKit = False
 
 rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
 
+loaded_rdkit = False
+Chem, Descriptors, AllChem, rdMolDescriptors = None, None, None, None
+def load_rdkit_modules():
+    global loaded_rdkit, Chem, Descriptors, AllChem, rdMolDescriptors
+    if loaded_rdkit:
+        return
+    try:
+        from rdkit import Chem
+        from rdkit.Chem import Descriptors
+        from rdkit.Chem import AllChem
+        from rdkit.Chem import rdMolDescriptors
+        loaded_rdkit = True
+    except:
+        if not hasRDKit: # pragma: no cover
+            raise Exception(rdkit_missing)
 
 # See https://www.atmos-chem-phys.net/16/4401/2016/acp-16-4401-2016.pdf for more
 # smarts patterns
@@ -119,6 +125,9 @@ J_BIGGS_JOBACK_SMARTS = [["Methyl","-CH3", "[CX4H3]"],
 ["Thiol", "-SH", "[SX2H]"],
 ["Thioether acyclic", "-S- (nonring)", "[#16X2H0;!R]"],
 ["Thioether cyclic", "-S- (ring)", "[#16X2H0;R]"]]
+'''Metadata for the Joback groups. The first element is the group name; the
+second is the group symbol; and the third is the SMARTS matching string.
+'''
 
 J_BIGGS_JOBACK_SMARTS_id_dict = {i+1: j[2] for i, j in enumerate(J_BIGGS_JOBACK_SMARTS)}
 J_BIGGS_JOBACK_SMARTS_str_dict = {i[1]: i[2] for i in J_BIGGS_JOBACK_SMARTS}
@@ -271,8 +280,8 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
     >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='CCC(=O)OC(=O)CC')
     ({1: 2, 2: 2, 28: 2}, False, 'Matched some atoms repeatedly: [4]')
     '''
-    if not hasRDKit: # pragma: no cover
-        raise Exception(rdkit_missing)
+    if not loaded_rdkit:
+        load_rdkit_modules()
     if rdkitmol is None and smi is None:
         raise Exception('Either an rdkit mol or a smiles string is required')
     if smi is not None:
@@ -464,6 +473,9 @@ class Joback(object):
     calculated_mul_coeffs = None
 
     def __init__(self, mol, atom_count=None, MW=None, Tb=None):
+        if not loaded_rdkit:
+            load_rdkit_modules()
+
         if type(mol) == Chem.rdchem.Mol:
             self.rdkitmol = mol
         else:

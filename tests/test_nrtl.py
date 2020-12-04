@@ -31,12 +31,12 @@ from thermo.nrtl import NRTL
 from random import random
 from thermo import *
 import numpy as np
-from fluids.numerics import jacobian, hessian, derivative, normalize
+from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d
 
 def test_NRTL():
     # P05.01b VLE Behavior of Ethanol - Water Using NRTL
     gammas = NRTL_gammas([0.252, 0.748], [[0, -0.178], [1.963, 0]], [[0, 0.2974],[.2974, 0]])
-    assert_allclose(gammas, [1.9363183763514304, 1.1537609663170014])
+    assert_close1d(gammas, [1.9363183763514304, 1.1537609663170014])
 
     # Test the general form against the simpler binary form
     def NRTL2(xs, taus, alpha):
@@ -49,7 +49,7 @@ def test_NRTL():
         return gamma1, gamma2
 
     gammas = NRTL2(xs=[0.252, 0.748], taus=[-0.178, 1.963], alpha=0.2974)
-    assert_allclose(gammas, [1.9363183763514304, 1.1537609663170014])
+    assert_close1d(gammas, [1.9363183763514304, 1.1537609663170014])
 
 
     # Example by
@@ -58,16 +58,16 @@ def test_NRTL():
     alpha = [[0.0, 0.4, 0.3], [0.4, 0.0, 0.3], [0.3, 0.3, 0.0]]
     xs = [.1, .3, .6]
     gammas = NRTL_gammas(xs, tau, alpha)
-    assert_allclose(gammas, [2.7175098659360413, 2.1373006474468697, 1.085133765593844])
+    assert_close1d(gammas, [2.7175098659360413, 2.1373006474468697, 1.085133765593844])
 
     # Test the values which give activity coefficients of 1:
     gammas = NRTL_gammas([0.252, 0.748], [[0, 0], [0, 0]], [[0, 0.5],[.9, 0]])
-    assert_allclose(gammas, [1, 1])
+    assert_close1d(gammas, [1, 1])
     # alpha does not matter
 
     a = b = np.zeros((6, 6)).tolist()
     gammas = NRTL_gammas([0., 1, 0, 0, 0, 0], a, b)
-    assert_allclose(gammas, [1,1,1,1,1,1])
+    assert_close1d(gammas, [1,1,1,1,1,1])
 
     # Test vs chemsep parameters, same water ethanol T and P
     T = 343.15
@@ -78,7 +78,7 @@ def test_NRTL():
 
     gammas = NRTL_gammas(xs=[0.252, 0.748], taus=[[0, tau12], [tau21, 0]],
     alphas=[[0, 0.2937],[.2937, 0]])
-    assert_allclose(gammas, [1.9853834856640085, 1.146380779201308])
+    assert_close1d(gammas, [1.9853834856640085, 1.146380779201308])
 
 
 
@@ -95,10 +95,9 @@ def test_NRTL():
     xs = [0.18736982702111407, 0.2154173017033719, 0.2717319464745698, 0.11018333572613222, 0.215297589074812]
     gammas = NRTL_gammas(xs, taus, alphas)
     gammas_expect = [2.503204848288857, 2.910723989902569, 2.2547951278295497, 2.9933258413917154, 2.694165187439594]
-    assert_allclose(gammas, gammas_expect)
+    assert_close1d(gammas, gammas_expect)
 
-@pytest.mark.slow
-def test_NRTL_slow():
+def test_NRTL_10():
     # ten component
 #    m = Mixture(['water', 'ethanol', 'methanol', '1-pentanol', '2-pentanol', '3-pentanol',
 #             '1-decanol', '2-decanol', '3-decanol', '4-decanol'],
@@ -129,8 +128,10 @@ def test_NRTL_slow():
 
     gammas = NRTL_gammas(xs=xs, taus=taus, alphas=alphas)
     gammas_expect = [1.1600804309840225, 1.0892286716705042, 1.0384940848807305, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531]
-    assert_allclose(gammas, gammas_expect)
+    assert_close1d(gammas, gammas_expect)
 
+@pytest.mark.slow
+def test_NRTL_44():
     N = 44
     taus = [[random() for i in range(N)] for j in range(N)]
     alphas = [[random() for i in range(N)] for j in range(N)]
@@ -138,6 +139,9 @@ def test_NRTL_slow():
     gammas = NRTL_gammas(xs=xs, taus=taus, alphas=alphas)
 
 
+@pytest.mark.slow
+def test_NRTL_200():
+    # ten component
     # Takes 40 ms - not a great idea
     N = 200
     taus = [[random() for i in range(N)] for j in range(N)]
@@ -206,13 +210,13 @@ def test_water_ethanol_methanol_madeup():
     assert eval(str(GE)).GE() == GE.GE()
 
     # gammas
-    assert_allclose(GE.gammas(), [1.7795902383749216, 1.1495597830749005, 1.0736702352016942])
+    assert_close1d(GE.gammas(), [1.7795902383749216, 1.1495597830749005, 1.0736702352016942])
 
     ### Tau and derivatives
     taus_expected = [[0.06687993075720595, 1.9456413587531054, 1.2322559725492486],
      [-0.04186204696272491, 0.07047352903742096, 0.007348860249786843],
      [-0.21212866478360642, 0.13596095401379812, 0.0944497207779701]]
-    assert_allclose(taus_expected, GE.taus(), rtol=1e-12)
+    assert_close2d(taus_expected, GE.taus(), rtol=1e-12)
 
     # Tau temperature derivative
     dtaus_dT_numerical = (np.array(GE.to_T_xs(T+dT, xs).taus()) - GE.taus())/dT
@@ -220,17 +224,17 @@ def test_water_ethanol_methanol_madeup():
     dtaus_dT_expected = [[0.000317271602387579, -0.004653030923421638, -0.0029936361350323625],
      [0.000406561723402744, 0.00034844970187634483, 0.0009043271077256468],
      [0.0011749522864265571, -0.00013143064874333648, 0.0005280368036263511]]
-    assert_allclose(dtaus_dT_analytical, dtaus_dT_expected, rtol=1e-12)
-    assert_allclose(dtaus_dT_numerical, dtaus_dT_analytical, rtol=4e-8)
+    assert_close2d(dtaus_dT_analytical, dtaus_dT_expected, rtol=1e-12)
+    assert_close2d(dtaus_dT_numerical, dtaus_dT_analytical, rtol=4e-8)
 
     # tau second derivative
     d2taus_dT2_analytical = GE.d2taus_dT2()
     d2taus_dT2_expected = [[7.194089397742681e-07, 3.2628265646047626e-05, 2.0866597625703075e-05],
      [-1.2443543228779117e-06, 8.394080699905074e-07, -1.169244972344292e-07],
      [-3.669244570181493e-06, 1.955896362917401e-06, 1.4794908652710361e-06]]
-    assert_allclose(d2taus_dT2_analytical, d2taus_dT2_expected, rtol=1e-12)
+    assert_close2d(d2taus_dT2_analytical, d2taus_dT2_expected, rtol=1e-12)
     d2taus_dT2_numerical = (np.array(GE.to_T_xs(T+dT, xs).dtaus_dT()) - GE.dtaus_dT())/dT
-    assert_allclose(d2taus_dT2_analytical, d2taus_dT2_numerical, rtol=4e-7)
+    assert_close2d(d2taus_dT2_analytical, d2taus_dT2_numerical, rtol=4e-7)
 
     # tau third derivative
     d3taus_dT3_analytical = GE.d3taus_dT3()
@@ -239,40 +243,40 @@ def test_water_ethanol_methanol_madeup():
      [4.116922701015044e-08, -1.4652079774338131e-08, 2.9650219270685846e-12]]
 
     # Not sure why precision of numerical test is so low, but confirmed with sympy.
-    assert_allclose(d3taus_dT3_analytical, d3taus_dT3_expected, rtol=1e-12)
+    assert_close2d(d3taus_dT3_analytical, d3taus_dT3_expected, rtol=1e-12)
     d3taus_dT3_numerical = (np.array(GE.to_T_xs(T+dT, xs).d2taus_dT2()) - GE.d2taus_dT2())/dT
-    assert_allclose(d3taus_dT3_numerical, d3taus_dT3_analytical, rtol=2e-5)
+    assert_close2d(d3taus_dT3_numerical, d3taus_dT3_analytical, rtol=2e-5)
 
     # alphas
     alphas_expect = [[0.006863, 0.3177205, 0.334215],
      [0.2971315, 0.013726, 0.328352],
      [0.3033315, 0.3111945, 0.0171575]]
-    assert_allclose(alphas_expect,  GE.alphas(), rtol=1e-12)
+    assert_close2d(alphas_expect,  GE.alphas(), rtol=1e-12)
 
     # dalphas_dT
     dalphas_dT_expect = [[2e-05, 7e-05, 0.0001], [1e-05, 4e-05, 8e-05], [1e-05, 3e-05, 5e-05]]
     dalphas_dT_analytical = GE.dalphas_dT()
-    assert_allclose(dalphas_dT_expect, dalphas_dT_analytical, rtol=1e-12)
+    assert_close2d(dalphas_dT_expect, dalphas_dT_analytical, rtol=1e-12)
     dalphas_dT_numerical = (np.array(GE.to_T_xs(T+1e-4, xs).alphas()) - GE.alphas())/1e-4
-    assert_allclose(dalphas_dT_expect, dalphas_dT_numerical)
+    assert_close2d(dalphas_dT_expect, dalphas_dT_numerical)
 
     # d2alphas_d2T
     d2alphas_d2T_numerical = (np.array(GE.to_T_xs(T+dT, xs).dalphas_dT()) - GE.dalphas_dT())/dT
     d2alphas_d2T_analytical = GE.d2alphas_dT2()
-    assert_allclose(d2alphas_d2T_analytical, [[0]*N for _ in range(N)])
-    assert_allclose(d2alphas_d2T_numerical, d2alphas_d2T_analytical, rtol=1e-12)
+    assert_close2d(d2alphas_d2T_analytical, [[0]*N for _ in range(N)])
+    assert_close2d(d2alphas_d2T_numerical, d2alphas_d2T_analytical, rtol=1e-12)
 
     # d3alphas_d3T
     d3alphas_d3T_numerical = (np.array(GE.to_T_xs(T+dT, xs).d2alphas_dT2()) - GE.d2alphas_dT2())/dT
     d3alphas_d3T_analytical = GE.d3alphas_dT3()
-    assert_allclose(d3alphas_d3T_analytical, [[0]*N for _ in range(N)])
-    assert_allclose(d3alphas_d3T_numerical, d3alphas_d3T_analytical, rtol=1e-12)
+    assert_close2d(d3alphas_d3T_analytical, [[0]*N for _ in range(N)])
+    assert_close2d(d3alphas_d3T_numerical, d3alphas_d3T_analytical, rtol=1e-12)
 
     # Gs
     Gs_expect = [[0.9995411083582052, 0.5389296989069797, 0.6624312965198783],
      [1.0125162130984628, 0.999033148043276, 0.9975898960147673],
      [1.0664605905163351, 0.9585722883795924, 0.9983807912510595]]
-    assert_allclose(Gs_expect, GE.Gs())
+    assert_close2d(Gs_expect, GE.Gs())
 
     # dGs_dT
     dGs_dT_expect = [[-3.513420602780159e-06, 0.0007233344205287423, 0.000581146010596799],
