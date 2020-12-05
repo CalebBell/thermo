@@ -124,8 +124,8 @@ def fit_cheb_poly(func, low, high, n,
 
 
 def poly_fit_statistics(func, coeffs, low, high, pts=200,
-                        interpolation_property=None, interpolation_property_inv=None,
-                        interpolation_x=lambda x: x, interpolation_x_inv=lambda x: x,
+                        interpolation_property_inv=None,
+                        interpolation_x=lambda x: x,
                         arg_func=None):
     r'''Function to check how accurate a fit function is to a polynomial.
 
@@ -143,12 +143,6 @@ def poly_fit_statistics(func, coeffs, low, high, pts=200,
         High limit of fitting range, [-]
     n : int
         Degree of polynomial fitting, [-]
-    interpolation_property : None or callable
-        When specified, this callable will transform the output of the function
-        before fitting; for example a property like vapor pressure should be
-        `interpolation_property=lambda x: log(x)` because it rises
-        exponentially. The output of the evaluated polynomial should then have
-        the reverse transform applied to it; in this case, `exp`, [-]
     interpolation_property_inv : None or callable
         When specified, this callable reverses `interpolation_property`; it
         must always be provided when `interpolation_property` is set, and it
@@ -159,10 +153,6 @@ def poly_fit_statistics(func, coeffs, low, high, pts=200,
         the critical temperature; it is normally hard for a chebyshev series
         to match this, but by setting this to lambda T: log(1. - T/Tc), this
         issue is resolved, [-]
-    interpolation_x_inv : None or callable
-        Inverse function of `interpolation_x_inv`; must always be provided when
-        `interpolation_x` is set, and it must perform the reverse transform,
-        [-]
     arg_func : None or callable
         Function which is called with the value of `x` in the original domain,
         and that returns arguments to `func`.
@@ -193,7 +183,7 @@ def poly_fit_statistics(func, coeffs, low, high, pts=200,
     calc_pts = [horner(coeffs, x) for x in all_points]
     if interpolation_property_inv:
         for i in range(pts):
-            calc_pts[i] = interpolation_x_inv(calc_pts[i])
+            calc_pts[i] = interpolation_property_inv(calc_pts[i])
 
     if arg_func is not None:
         actual_pts = [func(v, *arg_func(v)) for v in all_points_orig]

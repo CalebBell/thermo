@@ -322,8 +322,8 @@ class VaporPressure(TDependentProperty):
             self.Tmin = min(Tmins)
             self.Tmax = max(Tmaxs)
 
-    def fit_polynomial(self, method):
-        from thermo.fitting import fit_cheb_poly
+    def fit_polynomial(self, method, n=10):
+        from thermo.fitting import fit_cheb_poly, poly_fit_statistics
         interpolation_property = lambda x: log(x)
         interpolation_property_inv = lambda x: exp(x)
 
@@ -346,11 +346,16 @@ class VaporPressure(TDependentProperty):
         else:
             raise ValueError("Unknown method")
 
-        n = 10
-        coeffs = fit_cheb_poly(lambda T: self.calculate(T, method), low=low, high=high, n=n,
+        func = lambda T: self.calculate(T, method)
+        coeffs = fit_cheb_poly(func, low=low, high=high, n=n,
                       interpolation_property=interpolation_property,
                       interpolation_property_inv=interpolation_property_inv)
-        return coeffs
+
+        err_avg, err_std, min_ratio, max_ratio = poly_fit_statistics(func, coeffs=coeffs, low=low, high=high, pts=200,
+                      interpolation_property=interpolation_property,
+                      interpolation_property_inv=interpolation_property_inv)
+
+        return coeffs, (low, high), (err_avg, err_std, min_ratio, max_ratio)
 
     def calculate(self, T, method):
         r'''Method to calculate vapor pressure of a fluid at temperature `T`
