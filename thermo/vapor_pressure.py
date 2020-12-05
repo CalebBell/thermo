@@ -40,6 +40,10 @@ from chemicals import vapor_pressure
 from thermo.utils import TDependentProperty
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
 
+
+from thermo.utils import source_path
+
+
 WAGNER_MCGARRY = 'WAGNER_MCGARRY'
 WAGNER_POLING = 'WAGNER_POLING'
 ANTOINE_POLING = 'ANTOINE_POLING'
@@ -323,21 +327,32 @@ class VaporPressure(TDependentProperty):
             self.Tmax = max(Tmaxs)
 
     @staticmethod
-    def _fit_export_polynomials(start_n=3, max_n=30, eval_pts=100):
-        dat = {}
+    def _fit_export_polynomials(start_n=3, max_n=30, eval_pts=100, save=False):
+        import json
+        folder = os.path.join(source_path, 'Vapor Pressure')
+
         methods = [WAGNER_MCGARRY, WAGNER_POLING]
         indexes = [vapor_pressure.Psat_data_WagnerMcGarry.index, vapor_pressure.Psat_data_WagnerPoling.index]
 
         methods, indexes = [WAGNER_POLING], [vapor_pressure.Psat_data_WagnerPoling.index]
         for method, index in zip(methods, indexes):
+            method_dat = {}
             for CAS in index:
-                print(CAS)
+#                print(CAS)
                 obj = VaporPressure(CASRN=CAS)
                 coeffs, (low, high), stats = obj.fit_polynomial(method, n=None, start_n=start_n, max_n=max_n, eval_pts=eval_pts)
                 max_error = max(abs(1.0 - stats[2]), abs(1.0 - stats[3]))
-                dat[CAS] = {'Tmax': high, 'Tmin': low, 'error_average': stats[0],
+                method_dat[CAS] = {'Tmax': high, 'Tmin': low, 'error_average': stats[0],
                    'error_std': stats[1], 'max_error': max_error , 'method': method,
                    'coefficients': coeffs}
+
+
+            f = open(os.path.join(folder, method + '_polyfits.json'), 'w')
+            out_str = json.dumps(method_dat, sort_keys=True, indent=4, separators=(', ', ': '))
+            f.write(out_str)
+            f.close()
+
+
         return dat
 
 
