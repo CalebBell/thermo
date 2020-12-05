@@ -25,7 +25,7 @@ from __future__ import division
 __all__ = ['alpha_Twu91_objf', 'alpha_Twu91_objfc', 'fit',
            'Twu91_check_params', 'postproc_lmfit',
            'alpha_poly_objf', 'alpha_poly_objfc', 'poly_check_params',
-           'fit_cheb_poly', 'poly_fit_statistics']
+           'fit_cheb_poly', 'poly_fit_statistics', 'fit_cheb_poly_auto']
 
 from cmath import atanh as catanh
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
@@ -102,15 +102,37 @@ def fit_cheb_poly(func, low, high, n,
     if arg_func is not None:
         if interpolation_property is not None:
             def func_fun(T):
-                P = arg_func(interpolation_x_inv(T))
-                return interpolation_property(func(interpolation_x_inv(T), *arg_func(interpolation_x_inv(T))))
+                arg = interpolation_x_inv(T)
+                if arg > high_orig:
+                    arg = high_orig
+                if arg < low_orig:
+                    arg = low_orig
+                return interpolation_property(func(arg, *arg_func(arg)))
         else:
-            func_fun = lambda T : func(interpolation_x_inv(T), *arg_func(interpolation_x_inv(T)))
+            def func_fun(T):
+                arg = interpolation_x_inv(T)
+                if arg > high_orig:
+                    arg = high_orig
+                if arg < low_orig:
+                    arg = low_orig
+                return func(arg, *arg_func(arg))
     else:
         if interpolation_property is not None:
-            func_fun = lambda T : interpolation_property(func(interpolation_x_inv(T)))
+            def func_fun(T):
+                arg = interpolation_x_inv(T)
+                if arg > high_orig:
+                    arg = high_orig
+                if arg < low_orig:
+                    arg = low_orig
+                return interpolation_property(func(arg))
         else:
-            func_fun = lambda T : func(interpolation_x_inv(T))
+            def func_fun(T):
+                arg = interpolation_x_inv(T)
+                if arg > high_orig:
+                    arg = high_orig
+                if arg < low_orig:
+                    arg = low_orig
+                return func(arg)
     func_fun = np.vectorize(func_fun)
     cheb_fun = ChebTools.generate_Chebyshev_expansion(n-1, func_fun, low, high)
 
@@ -200,6 +222,71 @@ def poly_fit_statistics(func, coeffs, low, high, pts=200,
 
     max_ratio, min_ratio = max(calc_pts/actual_pts), min(calc_pts/actual_pts)
     return err_avg, err_std, min_ratio, max_ratio
+
+def select_index_from_stats(stats, ns):
+    lowest_err_avg, lowest_err_std, lowest_err = 1e100, 1e100, 1e100
+    lowest_err_avg_idx, lowest_err_std_idx, lowest_err_idx = None, None, None
+    for i, ((err_avg, err_std, min_ratio, max_ratio),n) in enumerate(zip(stats, ns)):
+        if err_avg < lowest_err_avg:
+            lowest_err_avg = err_avg
+            lowest_err_avg_idx = i
+        if err_std < lowest_err_std:
+            lowest_err_std = err_std
+            lowest_err_std_idx = i
+        lowest_err_here = max(abs(1.0 - min_ratio), abs(1.0 - max_ratio))
+        if lowest_err_here < lowest_err:
+            lowest_err = lowest_err_here
+            lowest_err_idx = i
+    if lowest_err_avg_idx == lowest_err_std_idx == lowest_err_idx:
+        return lowest_err_avg_idx
+    elif lowest_err_avg_idx == lowest_err_std_idx:
+        return lowest_err_avg_idx
+    elif lowest_err_idx == lowest_err_std_idx:
+        return lowest_err_idx
+    else:
+        return lowest_err_avg_idx
+
+def fit_many_cheb_poly(func, low, high, ns, eval_pts=30,
+                  interpolation_property=None, interpolation_property_inv=None,
+                  interpolation_x=lambda x: x, interpolation_x_inv=lambda x: x,
+                  arg_func=None):
+
+    def a_fit(n, eval_pts=eval_pts):
+        coeffs = fit_cheb_poly(func, low, high, n,
+                  interpolation_property=interpolation_property, interpolation_property_inv=interpolation_property_inv,
+                  interpolation_x=interpolation_x, interpolation_x_inv=interpolation_x_inv,
+                  arg_func=arg_func)
+        err_avg, err_std, min_ratio, max_ratio = poly_fit_statistics(func, coeffs, low, high, pts=eval_pts,
+                                interpolation_property_inv=interpolation_property_inv,
+                                interpolation_x=interpolation_x,
+                                arg_func=arg_func)
+        return coeffs, err_avg, err_std, min_ratio, max_ratio
+
+    worked_ns, worked_coeffs, worked_stats = [], [], []
+
+    for n in ns:
+        try:
+            coeffs, err_avg, err_std, min_ratio, max_ratio = a_fit(n)
+            worked_ns.append(n)
+            worked_coeffs.append(coeffs)
+            worked_stats.append((err_avg, err_std, min_ratio, max_ratio))
+        except:
+            pass
+    return worked_ns, worked_coeffs, worked_stats
+
+
+def fit_cheb_poly_auto(func, low, high, start_n=3, max_n=20, eval_pts=100,
+                  interpolation_property=None, interpolation_property_inv=None,
+                  interpolation_x=lambda x: x, interpolation_x_inv=lambda x: x,
+                  arg_func=None):
+    worked_ns, worked_coeffs, worked_stats = fit_many_cheb_poly(func, low, high, ns=range(start_n, max_n),
+                  interpolation_property=interpolation_property, interpolation_property_inv=interpolation_property_inv,
+                  interpolation_x=interpolation_x, interpolation_x_inv=interpolation_x_inv,
+                  arg_func=arg_func, eval_pts=eval_pts)
+    idx = select_index_from_stats(worked_stats, worked_ns)
+
+    return worked_ns[idx], worked_coeffs[idx], worked_stats[idx]
+
 
 # Supported methods of lmfit
 methods_uncons = ['leastsq', 'least_squares', 'nelder', 'lbfgsb', 'powell',

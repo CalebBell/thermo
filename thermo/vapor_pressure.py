@@ -322,8 +322,27 @@ class VaporPressure(TDependentProperty):
             self.Tmin = min(Tmins)
             self.Tmax = max(Tmaxs)
 
-    def fit_polynomial(self, method, n=10):
-        from thermo.fitting import fit_cheb_poly, poly_fit_statistics
+    @staticmethod
+    def _fit_export_polynomials(start_n=3, max_n=30, eval_pts=100):
+        dat = {}
+        methods = [WAGNER_MCGARRY, WAGNER_POLING]
+        indexes = [vapor_pressure.Psat_data_WagnerMcGarry.index, vapor_pressure.Psat_data_WagnerPoling.index]
+
+        methods, indexes = [WAGNER_POLING], [vapor_pressure.Psat_data_WagnerPoling.index]
+        for method, index in zip(methods, indexes):
+            for CAS in index:
+                print(CAS)
+                obj = VaporPressure(CASRN=CAS)
+                coeffs, (low, high), stats = obj.fit_polynomial(method, n=None, start_n=start_n, max_n=max_n, eval_pts=eval_pts)
+                max_error = max(abs(1.0 - stats[2]), abs(1.0 - stats[3]))
+                dat[CAS] = {'Tmax': high, 'Tmin': low, 'error_average': stats[0],
+                   'error_std': stats[1], 'max_error': max_error , 'method': method,
+                   'coefficients': coeffs}
+        return dat
+
+
+    def fit_polynomial(self, method, n=None, start_n=3, max_n=30, eval_pts=100):
+        from thermo.fitting import fit_cheb_poly, poly_fit_statistics, fit_cheb_poly_auto
         interpolation_property = lambda x: log(x)
         interpolation_property_inv = lambda x: exp(x)
 
@@ -347,15 +366,22 @@ class VaporPressure(TDependentProperty):
             raise ValueError("Unknown method")
 
         func = lambda T: self.calculate(T, method)
-        coeffs = fit_cheb_poly(func, low=low, high=high, n=n,
-                      interpolation_property=interpolation_property,
-                      interpolation_property_inv=interpolation_property_inv)
 
-        err_avg, err_std, min_ratio, max_ratio = poly_fit_statistics(func, coeffs=coeffs, low=low, high=high, pts=200,
+        if n is None:
+            n, coeffs, stats = fit_cheb_poly_auto(func, low=low, high=high,
                       interpolation_property=interpolation_property,
-                      interpolation_property_inv=interpolation_property_inv)
+                      interpolation_property_inv=interpolation_property_inv,
+                      start_n=start_n, max_n=max_n, eval_pts=eval_pts)
+        else:
 
-        return coeffs, (low, high), (err_avg, err_std, min_ratio, max_ratio)
+            coeffs = fit_cheb_poly(func, low=low, high=high, n=n,
+                          interpolation_property=interpolation_property,
+                          interpolation_property_inv=interpolation_property_inv)
+
+            stats = poly_fit_statistics(func, coeffs=coeffs, low=low, high=high, pts=eval_pts,
+                          interpolation_property_inv=interpolation_property_inv)
+
+        return coeffs, (low, high), stats
 
     def calculate(self, T, method):
         r'''Method to calculate vapor pressure of a fluid at temperature `T`
