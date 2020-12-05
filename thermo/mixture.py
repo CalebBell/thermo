@@ -31,6 +31,8 @@ from collections import Counter, OrderedDict
 from fluids.core import *
 from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
 
+from chemicals.virial import B_from_Z
+
 from thermo.chemical import Chemical
 from chemicals.identifiers import *
 from chemicals.identifiers import IDs_to_CASs
@@ -3294,13 +3296,13 @@ class Mixture(object):
                  Hvap_Tbs_mass=self.Hvap_Tbs,
                  # Standard values
                  Vml_STPs=self.Vml_STPs, rhol_STPs=self.rholm_STPs, rhol_STPs_mass=self.rhol_STPs,
-                 Vml_60Fs=self.Vml_60Fs, rhol_60Fs=self.rholm_STPs, rhol_60Fs_mass=self.rhol_60Fs,
+                 Vml_60Fs=self.Vml_60Fs, rhol_60Fs=self.rhoml_60Fs, rhol_60Fs_mass=self.rhol_60Fs,
                  # Reaction (ideal gas)
                  Hfgs=self.Hfgms, Hfgs_mass=self.Hfgs, Gfgs=self.Gfgms, Gfgs_mass=self.Gfgs,
                  Sfgs=self.Sfgms, Sfgs_mass=self.Sfgs, S0gs=self.S0gms, S0gs_mass=self.S0gs,
 
                  # Triple point
-                 Tts=self.Tts, Pts=self.Pts, Hsub_Tms=self.Hsubms, Hsub_Tms_mass=self.Hsubs,
+                 Tts=self.Tts, Pts=self.Pts, Hsub_Tts=self.Hsubms, Hsub_Tts_mass=self.Hsubs,
                  # Combustion
                  Hcs=self.Hcms, Hcs_mass=self.Hcs, Hcs_lower=self.Hcms_lower, Hcs_lower_mass=self.Hcs_lower,
                  # Fire safety

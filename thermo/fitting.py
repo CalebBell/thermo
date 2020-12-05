@@ -24,7 +24,8 @@ from __future__ import division
 
 __all__ = ['alpha_Twu91_objf', 'alpha_Twu91_objfc', 'fit',
            'Twu91_check_params', 'postproc_lmfit',
-           'alpha_poly_objf', 'alpha_poly_objfc', 'poly_check_params']
+           'alpha_poly_objf', 'alpha_poly_objfc', 'poly_check_params',
+           'fit_cheb_poly', 'poly_fit_statistics']
 
 from cmath import atanh as catanh
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
@@ -34,6 +35,181 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              horner, horner_and_der2, horner_and_der3,
                              is_poly_positive, is_poly_negative)
 from fluids.constants import R
+from numpy.polynomial.chebyshev import poly2cheb
+from numpy.polynomial.chebyshev import cheb2poly
+from numpy.polynomial.polynomial import Polynomial
+
+ChebTools = None
+def fit_cheb_poly(func, low, high, n,
+                  interpolation_property=None, interpolation_property_inv=None,
+                  interpolation_x=lambda x: x, interpolation_x_inv=lambda x: x,
+                  arg_func=None):
+    r'''Fit a function of one variable to a polynomial of degree `n` using the
+    Chebyshev approximation technique. Transformations of the base function
+    are allowed as lambdas.
+
+    Parameters
+    ----------
+    func : callable
+        Function to fit, [-]
+    low : float
+        Low limit of fitting range, [-]
+    high : float
+        High limit of fitting range, [-]
+    n : int
+        Degree of polynomial fitting, [-]
+    interpolation_property : None or callable
+        When specified, this callable will transform the output of the function
+        before fitting; for example a property like vapor pressure should be
+        `interpolation_property=lambda x: log(x)` because it rises
+        exponentially. The output of the evaluated polynomial should then have
+        the reverse transform applied to it; in this case, `exp`, [-]
+    interpolation_property_inv : None or callable
+        When specified, this callable reverses `interpolation_property`; it
+        must always be provided when `interpolation_property` is set, and it
+        must perform the reverse transform, [-]
+    interpolation_x : None or callable
+        Callable to transform the input variable to fitting. For example,
+        enthalpy of vaporization goes from a high value at low temperatures to zero at
+        the critical temperature; it is normally hard for a chebyshev series
+        to match this, but by setting this to lambda T: log(1. - T/Tc), this
+        issue is resolved, [-]
+    interpolation_x_inv : None or callable
+        Inverse function of `interpolation_x_inv`; must always be provided when
+        `interpolation_x` is set, and it must perform the reverse transform,
+        [-]
+    arg_func : None or callable
+        Function which is called with the value of `x` in the original domain,
+        and that returns arguments to `func`.
+
+    Returns
+    -------
+    coeffs : list[float]
+        Polynomial coefficients in order for evaluation by `horner`, [-]
+
+    Notes
+    -----
+    This is powered by Ian Bell's ChebTools.
+
+    '''
+    global ChebTools
+    if ChebTools is None:
+        import ChebTools
+
+    low_orig, high_orig = low, high
+    cheb_fun = None
+    low, high = interpolation_x(low_orig), interpolation_x(high_orig)
+    if arg_func is not None:
+        if interpolation_property is not None:
+            def func_fun(T):
+                P = arg_func(interpolation_x_inv(T))
+                return interpolation_property(func(interpolation_x_inv(T), *arg_func(interpolation_x_inv(T))))
+        else:
+            func_fun = lambda T : func(interpolation_x_inv(T), *arg_func(interpolation_x_inv(T)))
+    else:
+        if interpolation_property is not None:
+            func_fun = lambda T : interpolation_property(func(interpolation_x_inv(T)))
+        else:
+            func_fun = lambda T : func(interpolation_x_inv(T))
+    func_fun = np.vectorize(func_fun)
+    cheb_fun = ChebTools.generate_Chebyshev_expansion(n-1, func_fun, low, high)
+
+    coeffs = cheb_fun.coef()
+    coeffs = cheb2poly(coeffs)[::-1].tolist() # Convert to polynomial basis
+    # Mix in low high limits to make it a normal polynomial
+
+    my_poly = Polynomial([-0.5*(high + low)*2.0/(high - low), 2.0/(high - low)])
+    coeffs = horner(coeffs, my_poly).coef[::-1].tolist()
+    return coeffs
+
+
+def poly_fit_statistics(func, coeffs, low, high, pts=200,
+                        interpolation_property=None, interpolation_property_inv=None,
+                        interpolation_x=lambda x: x, interpolation_x_inv=lambda x: x,
+                        arg_func=None):
+    r'''Function to check how accurate a fit function is to a polynomial.
+
+    This function uses the asolute relative error definition.
+
+    Parameters
+    ----------
+    func : callable
+        Function to fit, [-]
+    coeffs : list[float]
+        Coefficients for calculating the property, [-]
+    low : float
+        Low limit of fitting range, [-]
+    high : float
+        High limit of fitting range, [-]
+    n : int
+        Degree of polynomial fitting, [-]
+    interpolation_property : None or callable
+        When specified, this callable will transform the output of the function
+        before fitting; for example a property like vapor pressure should be
+        `interpolation_property=lambda x: log(x)` because it rises
+        exponentially. The output of the evaluated polynomial should then have
+        the reverse transform applied to it; in this case, `exp`, [-]
+    interpolation_property_inv : None or callable
+        When specified, this callable reverses `interpolation_property`; it
+        must always be provided when `interpolation_property` is set, and it
+        must perform the reverse transform, [-]
+    interpolation_x : None or callable
+        Callable to transform the input variable to fitting. For example,
+        enthalpy of vaporization goes from a high value at low temperatures to zero at
+        the critical temperature; it is normally hard for a chebyshev series
+        to match this, but by setting this to lambda T: log(1. - T/Tc), this
+        issue is resolved, [-]
+    interpolation_x_inv : None or callable
+        Inverse function of `interpolation_x_inv`; must always be provided when
+        `interpolation_x` is set, and it must perform the reverse transform,
+        [-]
+    arg_func : None or callable
+        Function which is called with the value of `x` in the original domain,
+        and that returns arguments to `func`.
+
+    Returns
+    -------
+    err_avg : float
+        Mean error in the evaluated points, [-]
+    err_std : float
+        Standard deviation of errors in the evaluated points, [-]
+    min_ratio : float
+        Lowest ratio of calc/actual in any found points, [-]
+    max_ratio : float
+        Highest ratio of calc/actual in any found points, [-]
+
+    Notes
+    -----
+    '''
+
+    low_orig, high_orig = low, high
+    all_points_orig = linspace(low_orig, high_orig, pts)
+
+    # Get the low, high, and x points in the transformed domain
+    low, high = interpolation_x(low_orig), interpolation_x(high_orig)
+    all_points = [interpolation_x(v) for v in all_points_orig]
+
+    # Calculate the fit values
+    calc_pts = [horner(coeffs, x) for x in all_points]
+    if interpolation_property_inv:
+        for i in range(pts):
+            calc_pts[i] = interpolation_x_inv(calc_pts[i])
+
+    if arg_func is not None:
+        actual_pts = [func(v, *arg_func(v)) for v in all_points_orig]
+    else:
+        actual_pts = [func(v) for v in all_points_orig]
+
+    ARDs = [(abs((i-j)/j) if j != 0 else 0.0) for i, j in zip(calc_pts, actual_pts)]
+
+    err_avg = sum(ARDs)/pts
+    err_std = np.std(ARDs)
+
+    actual_pts = np.array(actual_pts)
+    calc_pts = np.array(calc_pts)
+
+    max_ratio, min_ratio = max(calc_pts/actual_pts), min(calc_pts/actual_pts)
+    return err_avg, err_std, min_ratio, max_ratio
 
 # Supported methods of lmfit
 methods_uncons = ['leastsq', 'least_squares', 'nelder', 'lbfgsb', 'powell',

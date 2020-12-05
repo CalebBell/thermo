@@ -322,6 +322,36 @@ class VaporPressure(TDependentProperty):
             self.Tmin = min(Tmins)
             self.Tmax = max(Tmaxs)
 
+    def fit_polynomial(self, method):
+        from thermo.fitting import fit_cheb_poly
+        interpolation_property = lambda x: log(x)
+        interpolation_property_inv = lambda x: exp(x)
+
+        if method == WAGNER_MCGARRY:
+            low, high = self.WAGNER_MCGARRY_Tmin, self.WAGNER_MCGARRY_Tc
+        elif method == WAGNER_POLING:
+            low, high = self.WAGNER_POLING_Tmin, self.WAGNER_POLING_Tmax
+        elif method == ANTOINE_EXTENDED_POLING:
+            low, high = self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax
+        elif method == ANTOINE_POLING:
+            low, high = self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax
+        elif method == DIPPR_PERRY_8E:
+            low, high = self.Perrys2_8_Tmin, self.Perrys2_8_Tmax
+        elif method == VDI_PPDS:
+            low, high = self.VDI_PPDS_Tc, self.VDI_PPDS_Tm
+        elif method == COOLPROP:
+            low, high = max(self.CP_f.Tmin, self.CP_f.Tt), min(self.CP_f.Tmax, self.CP_f.Tc)
+        elif method in [BOILING_CRITICAL, LEE_KESLER_PSAT, AMBROSE_WALTON, SANJARI, EDALAT, EOS]:
+            low, high = 0.3*self.Tc, self.Tc
+        else:
+            raise ValueError("Unknown method")
+
+        n = 10
+        coeffs = fit_cheb_poly(lambda T: self.calculate(T, method), low=low, high=high, n=n,
+                      interpolation_property=interpolation_property,
+                      interpolation_property_inv=interpolation_property_inv)
+        return coeffs
+
     def calculate(self, T, method):
         r'''Method to calculate vapor pressure of a fluid at temperature `T`
         with a given method.
@@ -386,10 +416,10 @@ class VaporPressure(TDependentProperty):
             Psat = Edalat(T, self.Tc, self.Pc, self.omega)
         elif method == EOS:
             Psat = self.eos[0].Psat(T)
-        elif method in self.tabular_data:
-            Psat = self.interpolate(T, method)
         elif method == BESTFIT:
             Psat = exp(horner(self.best_fit_coeffs, T))
+        else:
+            return self._base_calculate(T, method)
         return Psat
 
     def test_method_validity(self, T, method):

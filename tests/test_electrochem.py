@@ -35,6 +35,9 @@ from thermo.electrochem import Lange_cond_pure, Marcus_ion_conductivities, CRC_i
 from thermo.electrochem import electrolyte_dissociation_reactions as df
 from collections import Counter
 
+import thermo
+thermo.complete_lazy_loading()
+
 def test_Laliberte_viscosity_w():
     mu_w = Laliberte_viscosity_w(298)
     assert_close(mu_w, 0.0008932264487033279)

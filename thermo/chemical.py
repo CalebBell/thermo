@@ -110,7 +110,7 @@ class ChemicalConstants(object):
                  'EnthalpyVaporization', 'VaporPressure', 'VolumeLiquid',
                  'EnthalpySublimation', 'SublimationPressure', 'SurfaceTension',
                  'VolumeSolid',
-                 'VolumeSupercriticalLiquid'
+                 'VolumeSupercriticalLiquid', 'Permittivity',
                  )
 
     # Or can I store the actual objects without doing the searches?
@@ -124,6 +124,7 @@ class ChemicalConstants(object):
                  EnthalpyVaporization=(), VaporPressure=(), VolumeLiquid=(),
                  SublimationPressure=(), EnthalpySublimation=(),
                  SurfaceTension=(), VolumeSolid=(), VolumeSupercriticalLiquid=(),
+                 Permittivity=(),
                  ):
         self.CAS = CAS
         self.Tc = Tc
@@ -153,6 +154,7 @@ class ChemicalConstants(object):
         self.SurfaceTension = SurfaceTension
         self.VolumeSolid = VolumeSolid
         self.VolumeSupercriticalLiquid = VolumeSupercriticalLiquid
+        self.Permittivity = Permittivity
 
 empty_chemical_constants = ChemicalConstants(None)
 

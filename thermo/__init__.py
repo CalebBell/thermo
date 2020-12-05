@@ -224,3 +224,13 @@ submodules = [chemical, chemical_package, chemical_utils, coolprop, datasheet,
 thermo_dir = os.path.dirname(__file__)
 
 __version__ = '0.1.39'
+
+
+def complete_lazy_loading():
+    import chemicals
+    chemicals.complete_lazy_loading()
+    electrochem._load_electrochem_data()
+    interaction_parameters.IPDB
+    law.load_law_data()
+    law.load_economic_data()
+    unifac.load_unifac_ip()

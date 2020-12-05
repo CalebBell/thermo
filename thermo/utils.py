@@ -711,6 +711,9 @@ class TDependentProperty(object):
 #    Tmax = None
     ranked_methods = []
 
+    # For methods specified by a user
+    local_methods = {}
+
     def __copy__(self):
         return self
 
@@ -918,6 +921,16 @@ class TDependentProperty(object):
         return '%s(best_fit=(%s, %s, %s))' %(self.__class__.__name__,
                   repr(self.best_fit_Tmin), repr(self.best_fit_Tmax),
                   repr(self.best_fit_coeffs))
+
+
+    def _base_calculate(self, T, method):
+        if method in self.tabular_data:
+            return self.interpolate(T, method)
+        elif method in self.local_methods:
+            return self.local_methods[method][0](T)
+        else:
+            raise ValueError("Unknown method")
+
 
     def T_dependent_property(self, T):
         r'''Method to calculate the property with sanity checking and without
@@ -1195,6 +1208,17 @@ class TDependentProperty(object):
             prop = self.interpolation_property_inv(prop)
 
         return float(prop)
+
+    def add_new_method(self, f, name, Tmin, Tmax, f_der_general=None,
+                       f_der=None, f_der2=None, f_der3=None, f_int=None,
+                       f_int_over_T=None):
+        if not self.local_methods:
+            self.local_methods = local_methods = {}
+        local_methods[name] = (f, Tmin, Tmax, f_der_general, f_der, f_der2,
+                      f_der3, f_int, f_int_over_T)
+
+        if self.user_methods:
+            self.set_user_methods(self.user_methods, self.forced)
 
     def set_tabular_data(self, Ts, properties, name=None, check_properties=True):
         r'''Method to set tabular data to be used for interpolation.

@@ -3014,7 +3014,7 @@ class Phase(object):
         except AttributeError:
             pass
         if self.Cpls_locked:
-            self._Cpls = self._Cp_pure_fast(self.Cpls_data)
+            self._Cpls = self._Cp_pure_fast(self._Cpls_data)
             return self._Cpls
 
         T = self.T
@@ -3031,11 +3031,11 @@ class Phase(object):
 #            return l2._Cpls_pure()[i] + (l2.Vms_sat()[i] - T*l2.dVms_sat_dT()[i])*l2.dPsats_dT()[i]
 #        from scipy.integrate import quad
 #        vals = [float(quad(to_quad, self.T_REF_IG, self.T, args=i)[0]) for i in self.cmps]
-##        print(vals, self._Cp_integrals_pure_fast(self.Cpls_data))
+##        print(vals, self._Cp_integrals_pure_fast(self._Cpls_data))
 #        return vals
 
         if self.Cpls_locked:
-            self._Cpl_integrals_pure = self._Cp_integrals_pure_fast(self.Cpls_data)
+            self._Cpl_integrals_pure = self._Cp_integrals_pure_fast(self._Cpls_data)
             return self._Cpl_integrals_pure
 
         T, T_REF_IG, HeatCapacityLiquids = self.T, self.T_REF_IG, self.HeatCapacityLiquids
@@ -3053,11 +3053,11 @@ class Phase(object):
 #            return (l2._Cpls_pure()[i] + (l2.Vms_sat()[i] - T*l2.dVms_sat_dT()[i])*l2.dPsats_dT()[i])/T
 #        from scipy.integrate import quad
 #        vals = [float(quad(to_quad, self.T_REF_IG, self.T, args=i)[0]) for i in self.cmps]
-##        print(vals, self._Cp_integrals_over_T_pure_fast(self.Cpls_data))
+##        print(vals, self._Cp_integrals_over_T_pure_fast(self._Cpls_data))
 #        return vals
 
         if self.Cpls_locked:
-            self._Cpl_integrals_over_T_pure = self._Cp_integrals_over_T_pure_fast(self.Cpls_data)
+            self._Cpl_integrals_over_T_pure = self._Cp_integrals_over_T_pure_fast(self._Cpls_data)
             return self._Cpl_integrals_over_T_pure
 
 
@@ -5746,18 +5746,18 @@ class GibbsExcessLiquid(Phase):
     _Psats_data = None
     Psats_locked = False
     Vms_sat_locked = False
-    Vms_sat_data = None
+    _Vms_sat_data = None
     Hvap_locked = False
-    Hvap_data = None
+    _Hvap_data = None
     use_IG_Cp = True
     ideal_gas_basis = True
     supercritical_volumes = False
 
     Cpls_locked = False
-    Cpls_data = None
+    _Cpls_data = None
 
-    Tait_B_data = None
-    Tait_C_data = None
+    _Tait_B_data = None
+    _Tait_C_data = None
     def __init__(self, VaporPressures, VolumeLiquids=None,
                  VolumeSupercriticalLiquids=None,
                  GibbsExcessModel=None,
@@ -5823,7 +5823,7 @@ class GibbsExcessLiquid(Phase):
 
         self.HeatCapacityLiquids = HeatCapacityLiquids
         if HeatCapacityLiquids is not None:
-            self.Cpls_locked, self.Cpls_data = self._setup_Cpigs(HeatCapacityLiquids)
+            self.Cpls_locked, self._Cpls_data = self._setup_Cpigs(HeatCapacityLiquids)
             T_REF_IG = self.T_REF_IG
             T_REF_IG_INV = 1.0/T_REF_IG
             self.Hvaps_T_ref = [obj(T_REF_IG) for obj in EnthalpyVaporizations]
@@ -5833,7 +5833,7 @@ class GibbsExcessLiquid(Phase):
         self.VolumeLiquids = VolumeLiquids
         self.Vms_sat_locked = all(i.locked for i in VolumeLiquids) if VolumeLiquids is not None else False
         if self.Vms_sat_locked:
-            self.Vms_sat_data = ([i.best_fit_Tmin for i in VolumeLiquids],
+            self._Vms_sat_data = ([i.best_fit_Tmin for i in VolumeLiquids],
                                  [i.best_fit_Tmin_slope for i in VolumeLiquids],
                                  [i.best_fit_Tmin_value for i in VolumeLiquids],
                                  [i.best_fit_Tmax for i in VolumeLiquids],
@@ -5844,7 +5844,7 @@ class GibbsExcessLiquid(Phase):
                                  [i.best_fit_d2_coeffs for i in VolumeLiquids],
                                  [i.best_fit_Tmin_quadratic for i in VolumeLiquids],
                                  )
-#            low_fits = self.Vms_sat_data[9]
+#            low_fits = self._Vms_sat_data[9]
 #            for i in self.cmps:
 #                low_fits[i][0] = max(0, low_fits[i][0])
 
@@ -5872,14 +5872,14 @@ class GibbsExcessLiquid(Phase):
                 for (d, store) in zip(v.Tait_data(), [Tait_B_data, Tait_C_data]):
                     for i in range(len(d)):
                         store[i].append(d[i])
-            self.Tait_B_data = Tait_B_data
-            self.Tait_C_data = Tait_C_data
+            self._Tait_B_data = Tait_B_data
+            self._Tait_C_data = Tait_C_data
 
 
         self.EnthalpyVaporizations = EnthalpyVaporizations
         self.Hvap_locked = all(i.locked for i in EnthalpyVaporizations) if EnthalpyVaporizations is not None else False
         if self.Hvap_locked:
-            self.Hvap_data = ([i.best_fit_Tmin for i in EnthalpyVaporizations],
+            self._Hvap_data = ([i.best_fit_Tmin for i in EnthalpyVaporizations],
                               [i.best_fit_Tmax for i in EnthalpyVaporizations],
                               [i.best_fit_Tc for i in EnthalpyVaporizations],
                               [1.0/i.best_fit_Tc for i in EnthalpyVaporizations],
@@ -5977,12 +5977,12 @@ class GibbsExcessLiquid(Phase):
         new._Cpgs_data = self._Cpgs_data
 
         new.Cpls_locked = self.Cpls_locked
-        new.Cpls_data = self.Cpls_data
+        new._Cpls_data = self._Cpls_data
 
         new.Vms_sat_locked = self.Vms_sat_locked
-        new.Vms_sat_data = self.Vms_sat_data
+        new._Vms_sat_data = self._Vms_sat_data
 
-        new.Hvap_data = self.Hvap_data
+        new._Hvap_data = self._Hvap_data
         new.Hvap_locked = self.Hvap_locked
 
         new.incompressible = self.incompressible
@@ -6003,8 +6003,8 @@ class GibbsExcessLiquid(Phase):
         new.composition_independent = self.composition_independent
 
         new.use_Tait = self.use_Tait
-        new.Tait_B_data = self.Tait_B_data
-        new.Tait_C_data = self.Tait_C_data
+        new._Tait_B_data = self._Tait_B_data
+        new._Tait_C_data = self._Tait_C_data
 
 
         if T_equal and (self.composition_independent or self.zs is zs):
@@ -6460,7 +6460,7 @@ class GibbsExcessLiquid(Phase):
 
     def Vms_sat_at(self, T):
         if self.Vms_sat_locked:
-            return self._Vms_sat_at(T, self.Vms_sat_data, self.cmps)
+            return self._Vms_sat_at(T, self._Vms_sat_data, self.cmps)
         VolumeLiquids = self.VolumeLiquids
         return [VolumeLiquids[i].T_dependent_property(T) for i in self.cmps]
 
@@ -6471,9 +6471,9 @@ class GibbsExcessLiquid(Phase):
             pass
         T = self.T
         if self.Vms_sat_locked:
-#            self._Vms_sat = evaluate_linear_fits(self.Vms_sat_data, T)
+#            self._Vms_sat = evaluate_linear_fits(self._Vms_sat_data, T)
 #            return self._Vms_sat
-            self._Vms_sat = Vms_sat = self._Vms_sat_at(T, self.Vms_sat_data, self.cmps)
+            self._Vms_sat = Vms_sat = self._Vms_sat_at(T, self._Vms_sat_data, self.cmps)
             return Vms_sat
 
         VolumeLiquids = self.VolumeLiquids
@@ -6501,7 +6501,7 @@ class GibbsExcessLiquid(Phase):
 
     def dVms_sat_dT_at(self, T):
         if self.Vms_sat_locked:
-            return self._dVms_sat_dT_at(T, self.Vms_sat_data, self.cmps)
+            return self._dVms_sat_dT_at(T, self._Vms_sat_data, self.cmps)
         return [obj.T_dependent_property_derivative(T=T) for obj in VolumeLiquids]
 
     def dVms_sat_dT(self):
@@ -6512,8 +6512,8 @@ class GibbsExcessLiquid(Phase):
         T = self.T
 
         if self.Vms_sat_locked:
-#            self._Vms_sat_dT = evaluate_linear_fits_d(self.Vms_sat_data, T)
-            self._Vms_sat_dT = self._dVms_sat_dT_at(T, self.Vms_sat_data, self.cmps)
+#            self._Vms_sat_dT = evaluate_linear_fits_d(self._Vms_sat_data, T)
+            self._Vms_sat_dT = self._dVms_sat_dT_at(T, self._Vms_sat_data, self.cmps)
             return self._Vms_sat_dT
 
         VolumeLiquids = self.VolumeLiquids
@@ -6529,11 +6529,11 @@ class GibbsExcessLiquid(Phase):
         T = self.T
 
         if self.Vms_sat_locked:
-#            self._d2Vms_sat_dT2 = evaluate_linear_fits_d2(self.Vms_sat_data, T)
+#            self._d2Vms_sat_dT2 = evaluate_linear_fits_d2(self._Vms_sat_data, T)
 #            return self._d2Vms_sat_dT2
             d2Vms_sat_dT2 = self._d2Vms_sat_dT2 = []
 
-            Vms_sat_data = self.Vms_sat_data
+            Vms_sat_data = self._Vms_sat_data
             Tmins, Tmaxes, d2coeffs = Vms_sat_data[0], Vms_sat_data[3], Vms_sat_data[8]
             for i in self.cmps:
                 d2Vm = 0.0
@@ -6556,7 +6556,7 @@ class GibbsExcessLiquid(Phase):
             pass
         T_REF_IG = self.T_REF_IG
         if self.Vms_sat_locked:
-            self._Vms_sat_T_ref = evaluate_linear_fits(self.Vms_sat_data, T_REF_IG)
+            self._Vms_sat_T_ref = evaluate_linear_fits(self._Vms_sat_data, T_REF_IG)
         else:
             VolumeLiquids, cmps = self.VolumeLiquids, self.cmps
             self._Vms_sat_T_ref = [VolumeLiquids[i].T_dependent_property(T_REF_IG) for i in cmps]
@@ -6569,7 +6569,7 @@ class GibbsExcessLiquid(Phase):
             pass
         T_REF_IG = self.T_REF_IG
         if self.Vms_sat_locked:
-            self._dVms_sat_dT_T_ref = evaluate_linear_fits_d(self.Vms_sat_data, T)
+            self._dVms_sat_dT_T_ref = evaluate_linear_fits_d(self._Vms_sat_data, T)
         else:
             VolumeLiquids, cmps = self.VolumeLiquids, self.cmps
             self._dVms_sat_dT_T_ref = [VolumeLiquids[i].T_dependent_property_derivative(T_REF_IG) for i in cmps]
@@ -6603,7 +6603,7 @@ class GibbsExcessLiquid(Phase):
 
         self._Hvaps = Hvaps = []
         if self.Hvap_locked:
-            Hvap_data = self.Hvap_data
+            Hvap_data = self._Hvap_data
             Tmins, Tmaxes, Tcs, Tcs_inv, coeffs = Hvap_data[0], Hvap_data[1], Hvap_data[2], Hvap_data[3], Hvap_data[4]
             for i in cmps:
                 Hvap = 0.0
@@ -6630,7 +6630,7 @@ class GibbsExcessLiquid(Phase):
 
         self._dHvaps_dT = dHvaps_dT = []
         if self.Hvap_locked:
-            Hvap_data = self.Hvap_data
+            Hvap_data = self._Hvap_data
             Tmins, Tmaxes, Tcs, Tcs_inv, coeffs = Hvap_data[0], Hvap_data[1], Hvap_data[2], Hvap_data[3], Hvap_data[4]
             for i in cmps:
                 dHvap_dT = 0.0
@@ -8158,7 +8158,7 @@ class GibbsExcessLiquid(Phase):
         except:
             pass
 
-        self._Tait_Bs = evaluate_linear_fits(self.Tait_B_data, self.T)
+        self._Tait_Bs = evaluate_linear_fits(self._Tait_B_data, self.T)
         return self._Tait_Bs
 
     def dTait_B_dTs(self):
@@ -8167,7 +8167,7 @@ class GibbsExcessLiquid(Phase):
         except:
             pass
 
-        self._dTait_B_dTs = evaluate_linear_fits_d(self.Tait_B_data, self.T)
+        self._dTait_B_dTs = evaluate_linear_fits_d(self._Tait_B_data, self.T)
         return self._dTait_B_dTs
 
     def d2Tait_B_dT2s(self):
@@ -8176,7 +8176,7 @@ class GibbsExcessLiquid(Phase):
         except:
             pass
 
-        self._d2Tait_B_dT2s = evaluate_linear_fits_d2(self.Tait_B_data, self.T)
+        self._d2Tait_B_dT2s = evaluate_linear_fits_d2(self._Tait_B_data, self.T)
         return self._d2Tait_B_dT2s
 
     def Tait_Cs(self):
@@ -8185,7 +8185,7 @@ class GibbsExcessLiquid(Phase):
         except:
             pass
 
-        self._Tait_Cs = evaluate_linear_fits(self.Tait_C_data, self.T)
+        self._Tait_Cs = evaluate_linear_fits(self._Tait_C_data, self.T)
         return self._Tait_Cs
 
     def dTait_C_dTs(self):
@@ -8194,7 +8194,7 @@ class GibbsExcessLiquid(Phase):
         except:
             pass
 
-        self._dTait_C_dTs = evaluate_linear_fits_d(self.Tait_C_data, self.T)
+        self._dTait_C_dTs = evaluate_linear_fits_d(self._Tait_C_data, self.T)
         return self._dTait_C_dTs
 
     def d2Tait_C_dT2s(self):
@@ -8203,7 +8203,7 @@ class GibbsExcessLiquid(Phase):
         except:
             pass
 
-        self._d2Tait_C_dT2s = evaluate_linear_fits_d2(self.Tait_C_data, self.T)
+        self._d2Tait_C_dT2s = evaluate_linear_fits_d2(self._Tait_C_data, self.T)
         return self._d2Tait_C_dT2s
 
     def Tait_Vs(self):

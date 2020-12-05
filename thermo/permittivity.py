@@ -92,7 +92,7 @@ class Permittivity(TDependentProperty):
     ranked_methods = [CRC, CRC_CONSTANT]
     '''Default rankings of the available methods.'''
 
-    def __init__(self, CASRN=''):
+    def __init__(self, CASRN='', best_fit=None):
         self.CASRN = CASRN
 
         self.Tmin = None
@@ -125,6 +125,9 @@ class Permittivity(TDependentProperty):
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods()
+
+        if best_fit is not None:
+            self.set_best_fit(best_fit)
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
