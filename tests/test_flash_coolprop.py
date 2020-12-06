@@ -131,6 +131,7 @@ def test_PV_plot(fluid, backend):
 del test_PV_plot
 
 
+@pytest.mark.fuzz
 @pytest.mark.slow
 @pytest.mark.parametric
 @pytest.mark.parametrize("fluid", pure_fluids)
@@ -172,6 +173,8 @@ def test_TV_plot_CoolProp(fluid, backend):
     plt.close()
 #test_TV_plot_CoolProp('water', 'HEOS')
 
+@pytest.mark.fuzz
+@pytest.mark.slow
 def test_water_95():
     # TVF, PVF, TP, TV, PV are covered and optimized
     T, P = 298.15, 1e5

@@ -298,6 +298,10 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
+                       'chemicals': ('https://chemicals.readthedocs.io/en/latest/', None),
+                       'fluids': ('https://fluids.readthedocs.io/', None)}
+
 html_theme = "nature"
 
 numpydoc_show_class_members = True

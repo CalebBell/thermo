@@ -18,7 +18,41 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+
+This module contains implementations of :obj:`thermo.utils.TDependentProperty`
+representing vapor pressure and sublimation pressure. A variety of estimation
+and data methods are available as included in the `chemicals` library.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. contents:: :local:
+
+Vapor Pressure
+==============
+.. autoclass:: VaporPressure
+    :members: __call__, calculate, calculate_derivative, test_method_validity,
+              interpolation_T, interpolation_property, ranked_methods,
+              interpolation_property_inv, name, property_max, property_min,
+              sorted_valid_methods, units, all_methods, Tmin, Tmax
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: vapor_pressure_methods
+
+Sublimation Pressure
+====================
+.. autoclass:: SublimationPressure
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: sublimation_pressure_methods
+'''
 
 from __future__ import division
 
@@ -98,21 +132,21 @@ class VaporPressure(TDependentProperty):
 
     **WAGNER_MCGARRY**:
         The Wagner 3,6 original model equation documented in
-        :obj:`Wagner_original`, with data for 245 chemicals, from [1]_,
+        :obj:`chemicals.vapor_pressure.Wagner_original`, with data for 245 chemicals, from [1]_,
     **WAGNER_POLING**:
-        The Wagner 2.5, 5 model equation documented in :obj:`Wagner` in [2]_,
+        The Wagner 2.5, 5 model equation documented in :obj:`chemicals.vapor_pressure.Wagner` in [2]_,
         with data for  104 chemicals.
     **ANTOINE_EXTENDED_POLING**:
         The TRC extended Antoine model equation documented in
-        :obj:`TRC_Antoine_extended` with data for 97 chemicals in [2]_.
+        :obj:`chemicals.vapor_pressure.TRC_Antoine_extended` with data for 97 chemicals in [2]_.
     **ANTOINE_POLING**:
         Standard Antoine equation, as documented in the function
-        :obj:`Antoine` and with data for 325 fluids from [2]_.
+        :obj:`chemicals.vapor_pressure.Antoine` and with data for 325 fluids from [2]_.
         Coefficients were altered to be in units of Pa and Celcius.
     **DIPPR_PERRY_8E**:
         A collection of 341 coefficient sets from the DIPPR database published
         openly in [5]_. Provides temperature limits for all its fluids.
-        :obj:`thermo.dippr.EQ101` is used for its fluids.
+        :obj:`chemicals.dippr.EQ101` is used for its fluids.
     **VDI_PPDS**:
         Coefficients for a equation form developed by the PPDS, published
         openly in [4]_.
@@ -122,16 +156,16 @@ class VaporPressure(TDependentProperty):
         described in [3]_. Very slow.
     **BOILING_CRITICAL**:
         Fundamental relationship in thermodynamics making several
-        approximations; see :obj:`boiling_critical_relation` for details.
+        approximations; see :obj:`chemicals.vapor_pressure.boiling_critical_relation` for details.
         Least accurate method in most circumstances.
     **LEE_KESLER_PSAT**:
-        CSP method documented in :obj:`Lee_Kesler`. Widely used.
+        CSP method documented in :obj:`chemicals.vapor_pressure.Lee_Kesler`. Widely used.
     **AMBROSE_WALTON**:
-        CSP method documented in :obj:`Ambrose_Walton`.
+        CSP method documented in :obj:`chemicals.vapor_pressure.Ambrose_Walton`.
     **SANJARI**:
-        CSP method documented in :obj:`Sanjari`.
+        CSP method documented in :obj:`chemicals.vapor_pressure.Sanjari`.
     **EDALAT**:
-        CSP method documented in :obj:`Edalat`.
+        CSP method documented in :obj:`chemicals.vapor_pressure.Edalat`.
     **VDI_TABULAR**:
         Tabular data in [4]_ along the saturation curve; interpolation is as
         set by the user or the default.
@@ -141,15 +175,15 @@ class VaporPressure(TDependentProperty):
 
     See Also
     --------
-    Wagner_original
-    Wagner
-    TRC_Antoine_extended
-    Antoine
-    boiling_critical_relation
-    Lee_Kesler
-    Ambrose_Walton
-    Sanjari
-    Edalat
+    chemicals.vapor_pressure.Wagner_original
+    chemicals.vapor_pressure.Wagner
+    chemicals.vapor_pressure.TRC_Antoine_extended
+    chemicals.vapor_pressure.Antoine
+    chemicals.vapor_pressure.boiling_critical_relation
+    chemicals.vapor_pressure.Lee_Kesler
+    chemicals.vapor_pressure.Ambrose_Walton
+    chemicals.vapor_pressure.Sanjari
+    chemicals.vapor_pressure.Edalat
 
     References
     ----------
@@ -171,13 +205,22 @@ class VaporPressure(TDependentProperty):
     '''
     name = 'Vapor pressure'
     units = 'Pa'
-    interpolation_T = lambda self, T: 1./T
-    '''1/T interpolation transformation by default.'''
-    interpolation_property = lambda self, P: log(P)
-    '''log(P) interpolation transformation by default.'''
-    interpolation_property_inv = lambda self, P: exp(P)
-    '''exp(P) interpolation transformation by default; reverses
-    :obj:`interpolation_property_inv`.'''
+
+    def interpolation_T(self, T):
+        '''Function to make the data-based interpolation as linear as possible.
+        This transforms the input `T` into the `1/T` domain.'''
+        return 1./T
+
+    def interpolation_property(self, P):
+        '''log(P) interpolation transformation by default.
+        '''
+        return log(P)
+
+    def interpolation_property_inv(self, P):
+        '''exp(P) interpolation transformation by default; reverses
+        :obj:`interpolation_property_inv`.'''
+        return exp(P)
+
     tabular_extrapolation_permitted = False
     '''Disallow tabular extrapolation by default; CSP methods prefered
     normally.'''
@@ -329,6 +372,7 @@ class VaporPressure(TDependentProperty):
     @staticmethod
     def _fit_export_polynomials(start_n=3, max_n=30, eval_pts=100, save=False):
         import json
+        dat = {}
         folder = os.path.join(source_path, 'Vapor Pressure')
 
         methods = [WAGNER_MCGARRY, WAGNER_POLING]
@@ -351,6 +395,7 @@ class VaporPressure(TDependentProperty):
             out_str = json.dumps(method_dat, sort_keys=True, indent=4, separators=(', ', ': '))
             f.write(out_str)
             f.close()
+            dat[method] = method_dat
 
 
         return dat
@@ -402,7 +447,7 @@ class VaporPressure(TDependentProperty):
         r'''Method to calculate vapor pressure of a fluid at temperature `T`
         with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`thermo.utils.TDependentProperty.T_dependent_property`
         for that.
 
         Parameters
