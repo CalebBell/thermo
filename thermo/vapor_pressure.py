@@ -237,7 +237,7 @@ class VaporPressure(TDependentProperty):
     '''Default rankings of the available methods.'''
 
     def __init__(self, Tb=None, Tc=None, Pc=None, omega=None, CASRN='',
-                 eos=None, best_fit=None):
+                 eos=None, best_fit=None, load_data=True):
         self.CASRN = CASRN
         self.Tb = Tb
         self.Tc = Tc
@@ -279,7 +279,7 @@ class VaporPressure(TDependentProperty):
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
 
-        self.load_all_methods()
+        self.load_all_methods(load_data)
 
         if best_fit is not None:
             self.set_best_fit(best_fit)
@@ -288,7 +288,7 @@ class VaporPressure(TDependentProperty):
             if self.Tmax is None and hasattr(self, 'best_fit_Tmax'):
                 self.Tmax = self.best_fit_Tmax*10
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
@@ -301,58 +301,59 @@ class VaporPressure(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
-        if self.CASRN in vapor_pressure.Psat_data_WagnerMcGarry.index:
-            methods.append(WAGNER_MCGARRY)
-            A, B, C, D, self.WAGNER_MCGARRY_Pc, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Tmin = vapor_pressure.Psat_values_WagnerMcGarry[vapor_pressure.Psat_data_WagnerMcGarry.index.get_loc(self.CASRN)].tolist()
-            self.WAGNER_MCGARRY_coefs = [A, B, C, D]
-            Tmins.append(self.WAGNER_MCGARRY_Tmin); Tmaxs.append(self.WAGNER_MCGARRY_Tc)
+        if load_data:
+            if self.CASRN in vapor_pressure.Psat_data_WagnerMcGarry.index:
+                methods.append(WAGNER_MCGARRY)
+                A, B, C, D, self.WAGNER_MCGARRY_Pc, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Tmin = vapor_pressure.Psat_values_WagnerMcGarry[vapor_pressure.Psat_data_WagnerMcGarry.index.get_loc(self.CASRN)].tolist()
+                self.WAGNER_MCGARRY_coefs = [A, B, C, D]
+                Tmins.append(self.WAGNER_MCGARRY_Tmin); Tmaxs.append(self.WAGNER_MCGARRY_Tc)
 
-        if self.CASRN in vapor_pressure.Psat_data_WagnerPoling.index:
-            methods.append(WAGNER_POLING)
-            A, B, C, D, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, Tmin, self.WAGNER_POLING_Tmax = vapor_pressure.Psat_values_WagnerPoling[vapor_pressure.Psat_data_WagnerPoling.index.get_loc(self.CASRN)].tolist()
-            # Some Tmin values are missing; Arbitrary choice of 0.1 lower limit
-            self.WAGNER_POLING_Tmin = Tmin if not isnan(Tmin) else self.WAGNER_POLING_Tmax*0.1
-            self.WAGNER_POLING_coefs = [A, B, C, D]
-            Tmins.append(Tmin); Tmaxs.append(self.WAGNER_POLING_Tmax)
+            if self.CASRN in vapor_pressure.Psat_data_WagnerPoling.index:
+                methods.append(WAGNER_POLING)
+                A, B, C, D, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, Tmin, self.WAGNER_POLING_Tmax = vapor_pressure.Psat_values_WagnerPoling[vapor_pressure.Psat_data_WagnerPoling.index.get_loc(self.CASRN)].tolist()
+                # Some Tmin values are missing; Arbitrary choice of 0.1 lower limit
+                self.WAGNER_POLING_Tmin = Tmin if not isnan(Tmin) else self.WAGNER_POLING_Tmax*0.1
+                self.WAGNER_POLING_coefs = [A, B, C, D]
+                Tmins.append(Tmin); Tmaxs.append(self.WAGNER_POLING_Tmax)
 
-        if self.CASRN in vapor_pressure.Psat_data_AntoineExtended.index:
-            methods.append(ANTOINE_EXTENDED_POLING)
-            A, B, C, Tc, to, n, E, F, self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax = vapor_pressure.Psat_values_AntoineExtended[vapor_pressure.Psat_data_AntoineExtended.index.get_loc(self.CASRN)].tolist()
-            self.ANTOINE_EXTENDED_POLING_coefs = [Tc, to, A, B, C, n, E, F]
-            Tmins.append(self.ANTOINE_EXTENDED_POLING_Tmin); Tmaxs.append(self.ANTOINE_EXTENDED_POLING_Tmax)
+            if self.CASRN in vapor_pressure.Psat_data_AntoineExtended.index:
+                methods.append(ANTOINE_EXTENDED_POLING)
+                A, B, C, Tc, to, n, E, F, self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax = vapor_pressure.Psat_values_AntoineExtended[vapor_pressure.Psat_data_AntoineExtended.index.get_loc(self.CASRN)].tolist()
+                self.ANTOINE_EXTENDED_POLING_coefs = [Tc, to, A, B, C, n, E, F]
+                Tmins.append(self.ANTOINE_EXTENDED_POLING_Tmin); Tmaxs.append(self.ANTOINE_EXTENDED_POLING_Tmax)
 
-        if self.CASRN in vapor_pressure.Psat_data_AntoinePoling.index:
-            methods.append(ANTOINE_POLING)
-            A, B, C, self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax = vapor_pressure.Psat_values_AntoinePoling[vapor_pressure.Psat_data_AntoinePoling.index.get_loc(self.CASRN)].tolist()
-            self.ANTOINE_POLING_coefs = [A, B, C]
-            Tmins.append(self.ANTOINE_POLING_Tmin); Tmaxs.append(self.ANTOINE_POLING_Tmax)
+            if self.CASRN in vapor_pressure.Psat_data_AntoinePoling.index:
+                methods.append(ANTOINE_POLING)
+                A, B, C, self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax = vapor_pressure.Psat_values_AntoinePoling[vapor_pressure.Psat_data_AntoinePoling.index.get_loc(self.CASRN)].tolist()
+                self.ANTOINE_POLING_coefs = [A, B, C]
+                Tmins.append(self.ANTOINE_POLING_Tmin); Tmaxs.append(self.ANTOINE_POLING_Tmax)
 
-        if self.CASRN in vapor_pressure.Psat_data_Perrys2_8.index:
-            methods.append(DIPPR_PERRY_8E)
-            C1, C2, C3, C4, C5, self.Perrys2_8_Tmin, self.Perrys2_8_Tmax = vapor_pressure.Psat_values_Perrys2_8[vapor_pressure.Psat_data_Perrys2_8.index.get_loc(self.CASRN)].tolist()
-            self.Perrys2_8_coeffs = [C1, C2, C3, C4, C5]
-            Tmins.append(self.Perrys2_8_Tmin); Tmaxs.append(self.Perrys2_8_Tmax)
-        if has_CoolProp() and self.CASRN in coolprop_dict:
-            methods.append(COOLPROP)
-            self.CP_f = coolprop_fluids[self.CASRN]
-            Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
+            if self.CASRN in vapor_pressure.Psat_data_Perrys2_8.index:
+                methods.append(DIPPR_PERRY_8E)
+                C1, C2, C3, C4, C5, self.Perrys2_8_Tmin, self.Perrys2_8_Tmax = vapor_pressure.Psat_values_Perrys2_8[vapor_pressure.Psat_data_Perrys2_8.index.get_loc(self.CASRN)].tolist()
+                self.Perrys2_8_coeffs = [C1, C2, C3, C4, C5]
+                Tmins.append(self.Perrys2_8_Tmin); Tmaxs.append(self.Perrys2_8_Tmax)
+            if has_CoolProp() and self.CASRN in coolprop_dict:
+                methods.append(COOLPROP)
+                self.CP_f = coolprop_fluids[self.CASRN]
+                Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
 
-        if self.CASRN in miscdata.VDI_saturation_dict:
-            methods.append(VDI_TABULAR)
-            Ts, props = lookup_VDI_tabular_data(self.CASRN, 'P')
-            self.VDI_Tmin = Ts[0]
-            self.VDI_Tmax = Ts[-1]
-            self.tabular_data[VDI_TABULAR] = (Ts, props)
-            Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+            if self.CASRN in miscdata.VDI_saturation_dict:
+                methods.append(VDI_TABULAR)
+                Ts, props = lookup_VDI_tabular_data(self.CASRN, 'P')
+                self.VDI_Tmin = Ts[0]
+                self.VDI_Tmax = Ts[-1]
+                self.tabular_data[VDI_TABULAR] = (Ts, props)
+                Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
 
-        if self.CASRN in vapor_pressure.Psat_data_VDI_PPDS_3.index:
-            Tm, Tc, Pc, A, B, C, D = vapor_pressure.Psat_values_VDI_PPDS_3[vapor_pressure.Psat_data_VDI_PPDS_3.index.get_loc(self.CASRN)].tolist()
-            self.VDI_PPDS_coeffs = [A, B, C, D]
-            self.VDI_PPDS_Tc = Tc
-            self.VDI_PPDS_Tm = Tm
-            self.VDI_PPDS_Pc = Pc
-            methods.append(VDI_PPDS)
-            Tmins.append(self.VDI_PPDS_Tm); Tmaxs.append(self.VDI_PPDS_Tc)
+            if self.CASRN in vapor_pressure.Psat_data_VDI_PPDS_3.index:
+                Tm, Tc, Pc, A, B, C, D = vapor_pressure.Psat_values_VDI_PPDS_3[vapor_pressure.Psat_data_VDI_PPDS_3.index.get_loc(self.CASRN)].tolist()
+                self.VDI_PPDS_coeffs = [A, B, C, D]
+                self.VDI_PPDS_Tc = Tc
+                self.VDI_PPDS_Tm = Tm
+                self.VDI_PPDS_Pc = Pc
+                methods.append(VDI_PPDS)
+                Tmins.append(self.VDI_PPDS_Tm); Tmaxs.append(self.VDI_PPDS_Tc)
         if all((self.Tb, self.Tc, self.Pc)):
             methods.append(BOILING_CRITICAL)
             Tmins.append(0.01); Tmaxs.append(self.Tc)
