@@ -33,7 +33,7 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 Vapor Pressure
 ==============
 .. autoclass:: VaporPressure
-    :members: __call__, calculate, calculate_derivative, test_method_validity,
+    :members: calculate, calculate_derivative, test_method_validity,
               interpolation_T, interpolation_property, ranked_methods,
               interpolation_property_inv, name, property_max, property_min,
               sorted_valid_methods, units, all_methods, Tmin, Tmax
@@ -124,6 +124,15 @@ class VaporPressure(TDependentProperty):
         The CAS number of the chemical
     eos : object, optional
         Equation of State object after :obj:`thermo.eos.GCEOS`
+    best_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        vapor pressure of a species; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object. [-]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files;
+        this can be used to reduce the memory consumption of an object as well,
+        [-]
 
     Notes
     -----
@@ -299,6 +308,7 @@ class VaporPressure(TDependentProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
+        self.T_limits = T_limits = {}
         methods = []
         Tmins, Tmaxs = [], []
         if load_data:
@@ -307,6 +317,7 @@ class VaporPressure(TDependentProperty):
                 A, B, C, D, self.WAGNER_MCGARRY_Pc, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Tmin = vapor_pressure.Psat_values_WagnerMcGarry[vapor_pressure.Psat_data_WagnerMcGarry.index.get_loc(self.CASRN)].tolist()
                 self.WAGNER_MCGARRY_coefs = [A, B, C, D]
                 Tmins.append(self.WAGNER_MCGARRY_Tmin); Tmaxs.append(self.WAGNER_MCGARRY_Tc)
+                T_limits[WAGNER_MCGARRY] = (self.WAGNER_MCGARRY_Tmin, self.WAGNER_MCGARRY_Tc)
 
             if self.CASRN in vapor_pressure.Psat_data_WagnerPoling.index:
                 methods.append(WAGNER_POLING)
@@ -315,12 +326,14 @@ class VaporPressure(TDependentProperty):
                 self.WAGNER_POLING_Tmin = Tmin if not isnan(Tmin) else self.WAGNER_POLING_Tmax*0.1
                 self.WAGNER_POLING_coefs = [A, B, C, D]
                 Tmins.append(Tmin); Tmaxs.append(self.WAGNER_POLING_Tmax)
+                T_limits[WAGNER_POLING] = (Tmin, self.WAGNER_POLING_Tmax)
 
             if self.CASRN in vapor_pressure.Psat_data_AntoineExtended.index:
                 methods.append(ANTOINE_EXTENDED_POLING)
                 A, B, C, Tc, to, n, E, F, self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax = vapor_pressure.Psat_values_AntoineExtended[vapor_pressure.Psat_data_AntoineExtended.index.get_loc(self.CASRN)].tolist()
                 self.ANTOINE_EXTENDED_POLING_coefs = [Tc, to, A, B, C, n, E, F]
                 Tmins.append(self.ANTOINE_EXTENDED_POLING_Tmin); Tmaxs.append(self.ANTOINE_EXTENDED_POLING_Tmax)
+                T_limits[ANTOINE_EXTENDED_POLING] = (self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax)
 
             if self.CASRN in vapor_pressure.Psat_data_AntoinePoling.index:
                 methods.append(ANTOINE_POLING)
