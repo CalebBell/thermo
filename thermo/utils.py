@@ -891,7 +891,7 @@ class TDependentProperty(object):
         self.sorted_valid_methods = []
         self.T_cached = None
 
-    def select_valid_methods(self, T):
+    def select_valid_methods(self, T, check_validity=True):
         r'''Method to obtain a sorted list of methods which are valid at `T`
         according to `test_method_validity`. Considers either only user methods
         if forced is True, or all methods. User methods are first tested
@@ -902,6 +902,9 @@ class TDependentProperty(object):
         ----------
         T : float
             Temperature at which to test methods, [K]
+        check_validity : bool
+            Whether or not to use `test_method_validity` to check the
+            method for validity or not, [-]
 
         Returns
         -------
@@ -928,12 +931,15 @@ class TDependentProperty(object):
         if self.user_methods:
             [sorted_methods.insert(0, i) for i in reversed(self.user_methods)]
 
-        sorted_valid_methods = []
-        for method in sorted_methods:
-            if self.test_method_validity(T, method):
-                sorted_valid_methods.append(method)
+        if check_validity:
+            sorted_valid_methods = []
+            for method in sorted_methods:
+                if self.test_method_validity(T, method):
+                    sorted_valid_methods.append(method)
 
-        return sorted_valid_methods
+            return sorted_valid_methods
+        else:
+            return sorted_methods
 
     @classmethod
     def test_property_validity(self, prop):

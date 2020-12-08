@@ -285,6 +285,10 @@ class ViscosityLiquid(TPDependentProperty):
         self.load_all_methods(load_data)
         if best_fit is not None:
             self.set_best_fit(best_fit)
+        best_methods = self.select_valid_methods(T=None, check_validity=False)
+        if best_methods:
+            self.set_method(best_methods[0])
+
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
