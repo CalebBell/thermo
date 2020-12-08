@@ -98,6 +98,9 @@ class EnthalpyVaporization(TDependentProperty):
         Compressibility of gas at T or callable for the same, [-]
     CASRN : str, optional
         The CAS number of the chemical
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files;
+        [-]
 
     Notes
     -----
@@ -234,7 +237,7 @@ class EnthalpyVaporization(TDependentProperty):
 
     def __init__(self, CASRN='', Tb=None, Tc=None, Pc=None, omega=None,
                  similarity_variable=None, Psat=None, Zl=None, Zg=None,
-                 best_fit=None):
+                 best_fit=None, load_data=True):
         self.CASRN = CASRN
         self.Tb = Tb
         self.Tc = Tc
@@ -277,13 +280,13 @@ class EnthalpyVaporization(TDependentProperty):
             self.best_fit_Tc = best_fit[2]
             self.set_best_fit((best_fit[0], best_fit[1], best_fit[3]))
 
-        self.load_all_methods()
+        self.load_all_methods(load_data)
     def as_best_fit(self):
         return '%s(best_fit=(%s, %s, %s, %s))' %(self.__class__.__name__,
                   repr(self.best_fit_Tmin), repr(self.best_fit_Tmax),
                   repr(self.best_fit_Tc), repr(self.best_fit_coeffs))
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
@@ -296,34 +299,46 @@ class EnthalpyVaporization(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
-        if has_CoolProp() and self.CASRN in coolprop_dict:
-            methods.append(COOLPROP)
-            self.CP_f = coolprop_fluids[self.CASRN]
-            Tmins.append(self.CP_f.Tt); Tmaxs.append(self.CP_f.Tc)
-        if self.CASRN in miscdata.VDI_saturation_dict:
-            methods.append(VDI_TABULAR)
-            Ts, props = lookup_VDI_tabular_data(self.CASRN, 'Hvap')
-            self.VDI_Tmin = Ts[0]
-            self.VDI_Tmax = Ts[-1]
-            self.tabular_data[VDI_TABULAR] = (Ts, props)
-            Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+        if load_data:
+            if has_CoolProp() and self.CASRN in coolprop_dict:
+                methods.append(COOLPROP)
+                self.CP_f = coolprop_fluids[self.CASRN]
+                Tmins.append(self.CP_f.Tt); Tmaxs.append(self.CP_f.Tc)
+            if self.CASRN in miscdata.VDI_saturation_dict:
+                methods.append(VDI_TABULAR)
+                Ts, props = lookup_VDI_tabular_data(self.CASRN, 'Hvap')
+                self.VDI_Tmin = Ts[0]
+                self.VDI_Tmax = Ts[-1]
+                self.tabular_data[VDI_TABULAR] = (Ts, props)
+                Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
 
-        if self.CASRN in phase_change.phase_change_data_Alibakhshi_Cs.index and self.Tc is not None:
-            methods.append(ALIBAKHSHI)
-            self.Alibakhshi_C = float(phase_change.phase_change_data_Alibakhshi_Cs.at[self.CASRN, 'C'])
-            Tmaxs.append( max(self.Tc-100., 0) )
+            if self.CASRN in phase_change.phase_change_data_Alibakhshi_Cs.index and self.Tc is not None:
+                methods.append(ALIBAKHSHI)
+                self.Alibakhshi_C = float(phase_change.phase_change_data_Alibakhshi_Cs.at[self.CASRN, 'C'])
+                Tmaxs.append( max(self.Tc-100., 0) )
 
-        if self.CASRN in phase_change.Hvap_data_CRC.index and not isnan(phase_change.Hvap_data_CRC.at[self.CASRN, 'HvapTb']):
-            methods.append(CRC_HVAP_TB)
-            self.CRC_HVAP_TB_Tb = float(phase_change.Hvap_data_CRC.at[self.CASRN, 'Tb'])
-            self.CRC_HVAP_TB_Hvap = float(phase_change.Hvap_data_CRC.at[self.CASRN, 'HvapTb'])
+            if self.CASRN in phase_change.Hvap_data_CRC.index and not isnan(phase_change.Hvap_data_CRC.at[self.CASRN, 'HvapTb']):
+                methods.append(CRC_HVAP_TB)
+                self.CRC_HVAP_TB_Tb = float(phase_change.Hvap_data_CRC.at[self.CASRN, 'Tb'])
+                self.CRC_HVAP_TB_Hvap = float(phase_change.Hvap_data_CRC.at[self.CASRN, 'HvapTb'])
 
-        if self.CASRN in phase_change.Hvap_data_CRC.index and not isnan(phase_change.Hvap_data_CRC.at[self.CASRN, 'Hvap298']):
-            methods.append(CRC_HVAP_298)
-            self.CRC_HVAP_298 = float(phase_change.Hvap_data_CRC.at[self.CASRN, 'Hvap298'])
-        if self.CASRN in phase_change.Hvap_data_Gharagheizi.index:
-            methods.append(GHARAGHEIZI_HVAP_298)
-            self.GHARAGHEIZI_HVAP_298_Hvap = float(phase_change.Hvap_data_Gharagheizi.at[self.CASRN, 'Hvap298'])
+            if self.CASRN in phase_change.Hvap_data_CRC.index and not isnan(phase_change.Hvap_data_CRC.at[self.CASRN, 'Hvap298']):
+                methods.append(CRC_HVAP_298)
+                self.CRC_HVAP_298 = float(phase_change.Hvap_data_CRC.at[self.CASRN, 'Hvap298'])
+            if self.CASRN in phase_change.Hvap_data_Gharagheizi.index:
+                methods.append(GHARAGHEIZI_HVAP_298)
+                self.GHARAGHEIZI_HVAP_298_Hvap = float(phase_change.Hvap_data_Gharagheizi.at[self.CASRN, 'Hvap298'])
+            if self.CASRN in phase_change.phase_change_data_Perrys2_150.index:
+                methods.append(DIPPR_PERRY_8E)
+                Tc, C1, C2, C3, C4, self.Perrys2_150_Tmin, self.Perrys2_150_Tmax = phase_change.phase_change_values_Perrys2_150[phase_change.phase_change_data_Perrys2_150.index.get_loc(self.CASRN)].tolist()
+                self.Perrys2_150_coeffs = [Tc, C1, C2, C3, C4]
+                Tmins.append(self.Perrys2_150_Tmin); Tmaxs.append(self.Perrys2_150_Tmax)
+            if self.CASRN in phase_change.phase_change_data_VDI_PPDS_4.index:
+                Tc, A, B, C, D, E = phase_change.phase_change_values_VDI_PPDS_4[phase_change.phase_change_data_VDI_PPDS_4.index.get_loc(self.CASRN)].tolist()
+                self.VDI_PPDS_coeffs = [A, B, C, D, E]
+                self.VDI_PPDS_Tc = Tc
+                methods.append(VDI_PPDS)
+                Tmaxs.append(self.VDI_PPDS_Tc);
 
         if all((self.Tc, self.omega)):
             methods.extend(self.CSP_methods)
@@ -334,17 +349,6 @@ class EnthalpyVaporization(TDependentProperty):
         if all((self.Tb, self.Tc, self.Pc)):
             methods.extend(self.boiling_methods)
             Tmaxs.append(self.Tc); Tmins.append(0)
-        if self.CASRN in phase_change.phase_change_data_Perrys2_150.index:
-            methods.append(DIPPR_PERRY_8E)
-            Tc, C1, C2, C3, C4, self.Perrys2_150_Tmin, self.Perrys2_150_Tmax = phase_change.phase_change_values_Perrys2_150[phase_change.phase_change_data_Perrys2_150.index.get_loc(self.CASRN)].tolist()
-            self.Perrys2_150_coeffs = [Tc, C1, C2, C3, C4]
-            Tmins.append(self.Perrys2_150_Tmin); Tmaxs.append(self.Perrys2_150_Tmax)
-        if self.CASRN in phase_change.phase_change_data_VDI_PPDS_4.index:
-            Tc, A, B, C, D, E = phase_change.phase_change_values_VDI_PPDS_4[phase_change.phase_change_data_VDI_PPDS_4.index.get_loc(self.CASRN)].tolist()
-            self.VDI_PPDS_coeffs = [A, B, C, D, E]
-            self.VDI_PPDS_Tc = Tc
-            methods.append(VDI_PPDS)
-            Tmaxs.append(self.VDI_PPDS_Tc);
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
@@ -540,6 +544,9 @@ class EnthalpySublimation(TDependentProperty):
     Hvap : float of callable, optional
         Enthalpy of Vaporization at a given temperature or callable for the
         same, [J/mol]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files;
+        [-]
 
     Notes
     -----
@@ -593,7 +600,7 @@ class EnthalpySublimation(TDependentProperty):
                       GHARAGHEIZI_HSUB_298]
 
     def __init__(self, CASRN='', Tm=None, Tt=None, Cpg=None, Cps=None,
-                 Hvap=None, best_fit=None):
+                 Hvap=None, best_fit=None, load_data=True):
         self.CASRN = CASRN
         self.Tm = Tm
         self.Tt = Tt
@@ -632,9 +639,9 @@ class EnthalpySublimation(TDependentProperty):
         if best_fit is not None:
             self.set_best_fit(best_fit)
 
-        self.load_all_methods()
+        self.load_all_methods(load_data)
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
@@ -647,15 +654,15 @@ class EnthalpySublimation(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
-        if self.CASRN in phase_change.Hsub_data_Gharagheizi.index:
-            methods.append(GHARAGHEIZI_HSUB_298)
-            self.GHARAGHEIZI_Hsub = float(phase_change.Hsub_data_Gharagheizi.at[self.CASRN, 'Hsub'])
-            if self.Cpg is not None and self.Cps is not None:
-                methods.append(GHARAGHEIZI_HSUB)
-        if self.CASRN in phase_change.Hfus_data_CRC.index:
-            methods.append(CRC_HFUS_HVAP_TM)
-            self.CRC_Hfus = phase_change.Hfus_data_CRC.at[self.CASRN, 'Hfus']
-
+        if load_data:
+            if self.CASRN in phase_change.Hsub_data_Gharagheizi.index:
+                methods.append(GHARAGHEIZI_HSUB_298)
+                self.GHARAGHEIZI_Hsub = float(phase_change.Hsub_data_Gharagheizi.at[self.CASRN, 'Hsub'])
+                if self.Cpg is not None and self.Cps is not None:
+                    methods.append(GHARAGHEIZI_HSUB)
+            if self.CASRN in phase_change.Hfus_data_CRC.index:
+                methods.append(CRC_HFUS_HVAP_TM)
+                self.CRC_Hfus = phase_change.Hfus_data_CRC.at[self.CASRN, 'Hfus']
         try:
             Tmins.append(0.01*self.Tm)
             Tmaxs.append(self.Tm)

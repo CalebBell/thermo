@@ -49,6 +49,9 @@ class Permittivity(TDependentProperty):
     ----------
     CASRN : str, optional
         The CAS number of the chemical
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files;
+        [-]
 
     Notes
     -----
@@ -92,7 +95,7 @@ class Permittivity(TDependentProperty):
     ranked_methods = [CRC, CRC_CONSTANT]
     '''Default rankings of the available methods.'''
 
-    def __init__(self, CASRN='', best_fit=None):
+    def __init__(self, CASRN='', best_fit=None, load_data=True):
         self.CASRN = CASRN
 
         self.Tmin = None
@@ -124,12 +127,12 @@ class Permittivity(TDependentProperty):
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
 
-        self.load_all_methods()
+        self.load_all_methods(load_data)
 
         if best_fit is not None:
             self.set_best_fit(best_fit)
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
@@ -142,16 +145,17 @@ class Permittivity(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
-        if self.CASRN in permittivity.permittivity_data_CRC.index:
-            methods.append(CRC_CONSTANT)
-            self.CRC_CONSTANT_T, self.CRC_permittivity, A, B, C, D, Tmin, Tmax = permittivity.permittivity_values_CRC[permittivity.permittivity_data_CRC.index.get_loc(self.CASRN)].tolist()
-            self.CRC_Tmin = Tmin
-            self.CRC_Tmax = Tmax
-            self.CRC_coeffs = [0 if isnan(x) else x for x in [A, B, C, D] ]
-            if not isnan(Tmin):
-                Tmins.append(Tmin); Tmaxs.append(Tmax)
-            if self.CRC_coeffs[0]:
-                methods.append(CRC)
+        if load_data:
+            if self.CASRN in permittivity.permittivity_data_CRC.index:
+                methods.append(CRC_CONSTANT)
+                self.CRC_CONSTANT_T, self.CRC_permittivity, A, B, C, D, Tmin, Tmax = permittivity.permittivity_values_CRC[permittivity.permittivity_data_CRC.index.get_loc(self.CASRN)].tolist()
+                self.CRC_Tmin = Tmin
+                self.CRC_Tmax = Tmax
+                self.CRC_coeffs = [0 if isnan(x) else x for x in [A, B, C, D] ]
+                if not isnan(Tmin):
+                    Tmins.append(Tmin); Tmaxs.append(Tmax)
+                if self.CRC_coeffs[0]:
+                    methods.append(CRC)
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             self.Tmin = min(Tmins)

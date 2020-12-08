@@ -748,7 +748,110 @@ class TDependentProperty(object):
             self.T_cached = T
             return self.prop_cached
 
-    def set_user_methods(self, user_methods, forced=False):
+    @classmethod
+    def _fit_export_polynomials(cls, method=None, start_n=3, max_n=30,
+                                eval_pts=100, save=False):
+        import json
+        dat = {}
+        folder = os.path.join(source_path, cls.name)
+
+        sources = cls._method_indexes()
+
+        if method is None:
+            methods = list(sources.keys())
+            indexes = list(sources.values())
+        else:
+            methods = [method]
+            indexes = sources[method]
+        for method, index in zip(methods, indexes):
+            method_dat = {}
+            for CAS in index:
+                obj = cls(CASRN=CAS)
+                coeffs, (low, high), stats = obj.fit_polynomial(method, n=None, start_n=start_n, max_n=max_n, eval_pts=eval_pts)
+                max_error = max(abs(1.0 - stats[2]), abs(1.0 - stats[3]))
+                method_dat[CAS] = {'Tmax': high, 'Tmin': low, 'error_average': stats[0],
+                   'error_std': stats[1], 'max_error': max_error , 'method': method,
+                   'coefficients': coeffs}
+
+            if save:
+                f = open(os.path.join(folder, method + '_polyfits.json'), 'w')
+                out_str = json.dumps(method_dat, sort_keys=True, indent=4, separators=(', ', ': '))
+                f.write(out_str)
+                f.close()
+                dat[method] = method_dat
+
+        return dat
+
+
+    def fit_polynomial(self, method, n=None, start_n=3, max_n=30, eval_pts=100):
+        r'''Method to fit a T-dependent property to a polynomial. The degree
+        of the polynomial can be specified with the `n` parameter, or it will
+        be automatically selected for maximum accuracy.
+
+        Parameters
+        ----------
+        method : str
+            Method name to fit, [-]
+        n : int, optional
+            The degree of the polynomial, if specified
+        start_n : int
+            If `n` is not specified, all polynomials of degree `start_n` to
+            `max_n` will be tried and the highest-accuracy will be selected;
+            [-]
+        max_n : int
+            If `n` is not specified, all polynomials of degree `start_n` to
+            `max_n` will be tried and the highest-accuracy will be selected;
+            [-]
+        eval_pts : int
+            The number of points to evaluate the fitted functions at to check
+            for accuracy; more is better but slower, [-]
+
+        Returns
+        -------
+        coeffs : list[float]
+            Fit coefficients, [-]
+        Tmin : float
+            The minimum temperature used for the fitting, [K]
+        Tmax : float
+            The maximum temperature used for the fitting, [K]
+        err_avg : float
+            Mean error in the evaluated points, [-]
+        err_std : float
+            Standard deviation of errors in the evaluated points, [-]
+        min_ratio : float
+            Lowest ratio of calc/actual in any found points, [-]
+        max_ratio : float
+            Highest ratio of calc/actual in any found points, [-]
+        '''
+        # Ready to be documented
+        from thermo.fitting import fit_cheb_poly, poly_fit_statistics, fit_cheb_poly_auto
+        interpolation_property = self.interpolation_property
+        interpolation_property_inv = self.interpolation_property_inv
+
+        try:
+            low, high = self.T_limits[method]
+        except KeyError:
+            raise ValueError("Unknown method")
+
+        func = lambda T: self.calculate(T, method)
+
+        if n is None:
+            n, coeffs, stats = fit_cheb_poly_auto(func, low=low, high=high,
+                      interpolation_property=interpolation_property,
+                      interpolation_property_inv=interpolation_property_inv,
+                      start_n=start_n, max_n=max_n, eval_pts=eval_pts)
+        else:
+
+            coeffs = fit_cheb_poly(func, low=low, high=high, n=n,
+                          interpolation_property=interpolation_property,
+                          interpolation_property_inv=interpolation_property_inv)
+
+            stats = poly_fit_statistics(func, coeffs=coeffs, low=low, high=high, pts=eval_pts,
+                          interpolation_property_inv=interpolation_property_inv)
+
+        return coeffs, (low, high), stats
+
+    def set_method(self, method):
         r'''Method used to select certain property methods as having a higher
         priority than were set by default. If `forced` is true, then methods
         which were not specified are excluded from consideration.
@@ -761,7 +864,7 @@ class TDependentProperty(object):
 
         Parameters
         ----------
-        user_methods : str or list
+        method : str or list
             Methods by name to be considered or preferred
         forced : bool, optional
             If True, only the user specified methods will ever be considered;
@@ -770,12 +873,12 @@ class TDependentProperty(object):
         '''
         # Accept either a string or a list of methods, and whether
         # or not to only consider the false methods
-        if isinstance(user_methods, str):
-            user_methods = [user_methods]
+        if isinstance(method, str):
+            method = [method]
 
         # The user's order matters and is retained for use by select_valid_methods
-        self.user_methods = user_methods
-        self.forced = forced
+        self.user_methods = method
+        self.forced = True
 
         # Validate that the user's specified methods are actual methods
         if set(self.user_methods).difference(self.all_methods):
@@ -867,13 +970,16 @@ class TDependentProperty(object):
             self.locked = True
             self.best_fit_Tmin = Tmin = best_fit[0]
             self.best_fit_Tmax = Tmax = best_fit[1]
-            self.best_fit_coeffs = best_fit[2]
+            self.best_fit_coeffs = best_fit_coeffs = best_fit[2]
 
-            self.best_fit_int_coeffs = polyint(best_fit[2])
-            self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff = polyint_over_x(best_fit[2])
+            self.best_fit_int_coeffs = polyint(best_fit_coeffs)
+            self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff = polyint_over_x(best_fit_coeffs)
 
-            self.best_fit_d_coeffs = polyder(best_fit[2][::-1])[::-1]
-            self.best_fit_d2_coeffs = polyder(self.best_fit_d_coeffs[::-1])[::-1]
+            best_fit_d_coeffs = polyder(best_fit_coeffs[::-1])
+            self.best_fit_d2_coeffs = polyder(best_fit_d_coeffs[::-1])
+            self.best_fit_d2_coeffs.reverse()
+            self.best_fit_d_coeffs = best_fit_d_coeffs
+            best_fit_d_coeffs.reverse()
 
             # Extrapolation slope on high and low
             slope_delta_T = (self.best_fit_Tmax - self.best_fit_Tmin)*.05
@@ -918,7 +1024,7 @@ class TDependentProperty(object):
 
 
     def as_best_fit(self):
-        return '%s(best_fit=(%s, %s, %s))' %(self.__class__.__name__,
+        return '%s(load_data=False, best_fit=(%s, %s, %s))' %(self.__class__.__name__,
                   repr(self.best_fit_Tmin), repr(self.best_fit_Tmax),
                   repr(self.best_fit_coeffs))
 
@@ -1218,7 +1324,7 @@ class TDependentProperty(object):
                       f_der3, f_int, f_int_over_T)
 
         if self.user_methods:
-            self.set_user_methods(self.user_methods, self.forced)
+            self.set_method(self.user_methods)
 
     def set_tabular_data(self, Ts, properties, name=None, check_properties=True):
         r'''Method to set tabular data to be used for interpolation.
@@ -1256,7 +1362,7 @@ class TDependentProperty(object):
         self.user_methods.insert(0, name)
         self.all_methods.add(name)
 
-        self.set_user_methods(user_methods=self.user_methods, forced=self.forced)
+        self.set_method(method=self.user_methods)
 
     def solve_prop(self, goal, reset_method=True):
         r'''Method to solve for the temperature at which a property is at a

@@ -37,7 +37,7 @@ def test_HeatCapacityGas():
     EtOH = HeatCapacityGas(CASRN='64-17-5', similarity_variable=0.1953615, MW=46.06844)
     methods = list(EtOH.all_methods)
     methods.remove(VDI_TABULAR)
-    Cps_calc = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(305))[1] for i in methods]
+    Cps_calc = [(EtOH.set_method(i), EtOH.T_dependent_property(305))[1] for i in methods]
     assert_allclose(sorted(Cps_calc),
                     sorted([66.35085001015844, 66.40063819791762, 66.25918325111196, 71.07236200126606, 65.6, 65.21]),
                     rtol=1e-5)
@@ -48,7 +48,7 @@ def test_HeatCapacityGas():
 
 
     EtOH.tabular_extrapolation_permitted = False
-    assert [None]*6 == [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5000))[1] for i in [TRCIG, POLING, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR]]
+    assert [None]*6 == [(EtOH.set_method(i), EtOH.T_dependent_property(5000))[1] for i in [TRCIG, POLING, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR]]
 
     with pytest.raises(Exception):
         EtOH.test_method_validity('BADMETHOD', 300)
@@ -122,11 +122,11 @@ def test_HeatCapacityGas_integrals():
 @pytest.mark.meta_T_dept
 def test_HeatCapacitySolid():
     NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
-    Cps_calc =  [(NaCl.set_user_methods(i, forced=True), NaCl.T_dependent_property(298.15))[1] for i in NaCl.all_methods]
+    Cps_calc =  [(NaCl.set_method(i), NaCl.T_dependent_property(298.15))[1] for i in NaCl.all_methods]
     Cps_exp = [50.38469032, 50.5, 20.065072074682337]
     assert_allclose(sorted(Cps_calc), sorted(Cps_exp))
 
-    assert [None]*3 == [(NaCl.set_user_methods(i, forced=True), NaCl.T_dependent_property(20000))[1] for i in NaCl.all_methods]
+    assert [None]*3 == [(NaCl.set_method(i), NaCl.T_dependent_property(20000))[1] for i in NaCl.all_methods]
 
     with pytest.raises(Exception):
         NaCl.test_method_validity('BADMETHOD', 300)
@@ -189,11 +189,11 @@ def test_HeatCapacitySolid_integrals():
 @pytest.mark.meta_T_dept
 def test_HeatCapacityLiquid():
     tol = HeatCapacityLiquid(CASRN='108-88-3', MW=92.13842, Tc=591.75, omega=0.257, Cpgm=115.30398669098454, similarity_variable=0.16279853724428964)
-    Cpl_calc = [(tol.set_user_methods(i, forced=True), tol.T_dependent_property(330))[1] for i in tol.all_methods]
+    Cpl_calc = [(tol.set_method(i), tol.T_dependent_property(330))[1] for i in tol.all_methods]
     Cpls = [165.4728226923247, 166.5239869108539, 166.52164399712314, 175.3439256239127, 166.71561127721478, 157.3, 165.4554033804999, 166.69807427725885, 157.29, 167.3380448453572]
     assert_allclose(sorted(Cpl_calc), sorted(Cpls), rtol=5e-6)
 
-    assert [None]*10 == [(tol.set_user_methods(i, forced=True), tol.T_dependent_property(2000))[1] for i in tol.all_methods]
+    assert [None]*10 == [(tol.set_method(i), tol.T_dependent_property(2000))[1] for i in tol.all_methods]
 
     with pytest.raises(Exception):
         tol.test_method_validity('BADMETHOD', 300)
@@ -205,12 +205,12 @@ def test_HeatCapacityLiquid():
 
 
     propylbenzene = HeatCapacityLiquid(MW=120.19158, CASRN='103-65-1', Tc=638.35)
-    Cpl_calc = [(propylbenzene.set_user_methods(i, forced=True), propylbenzene.T_dependent_property(298.15))[1] for i in propylbenzene.all_methods]
+    Cpl_calc = [(propylbenzene.set_method(i), propylbenzene.T_dependent_property(298.15))[1] for i in propylbenzene.all_methods]
     Cpls = [214.6499551694668, 214.69679325320664, 214.7, 214.71]
     assert_allclose(sorted(Cpl_calc), sorted(Cpls))
 
     ctp = HeatCapacityLiquid(MW=118.58462, CASRN='96-43-5')
-    Cpl_calc = [(ctp.set_user_methods(i, forced=True), ctp.T_dependent_property(250))[1] for i in ctp.all_methods]
+    Cpl_calc = [(ctp.set_method(i), ctp.T_dependent_property(250))[1] for i in ctp.all_methods]
     Cpls = [134.1186737739494, 134.1496585096233]
     assert_allclose(sorted(Cpl_calc), sorted(Cpls))
 

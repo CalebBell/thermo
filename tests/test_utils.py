@@ -178,10 +178,10 @@ def test_TDependentProperty():
     # Test some failures
     with pytest.raises(Exception):
         EtOHFail = TDependentProperty(CASRN='67-56-1')
-        EtOHFail.set_user_methods([], forced=True)
+        EtOHFail.set_method([])
     with pytest.raises(Exception):
         EtOHFail = TDependentProperty(CASRN='67-56-1')
-        EtOHFail.set_user_methods(['NOTAMETHOD'])
+        EtOHFail.set_method(['NOTAMETHOD'])
     with pytest.raises(Exception):
         EtOHFail = TDependentProperty(CASRN='67-56-1')
         EtOHFail.test_method_validity(300, 'NOTAMETHOD')
@@ -189,21 +189,15 @@ def test_TDependentProperty():
 
     # Test with user methods
     EtOH = TDependentProperty(CASRN='67-56-1')
-    EtOH.set_user_methods(TEST_METHOD_1)
+    EtOH.set_method(TEST_METHOD_1)
     assert EtOH.user_methods == [TEST_METHOD_1]
     assert 1.6 == EtOH.T_dependent_property(300)
 
-    EtOH.set_user_methods(TEST_METHOD_2)
+    EtOH.set_method(TEST_METHOD_2)
     assert EtOH.user_methods == [TEST_METHOD_2]
-    assert 1.5 == EtOH.T_dependent_property(250) # Low, fails to other method though
-    EtOH.set_user_methods(TEST_METHOD_2, forced=True)
+    assert EtOH.T_dependent_property(250) is None
+    EtOH.set_method(TEST_METHOD_2)
     assert None == EtOH.T_dependent_property(250) # Test not calculated if user method not specified
-
-    EtOH.set_user_methods([TEST_METHOD_1, TEST_METHOD_2])
-    assert EtOH.user_methods == [TEST_METHOD_1, TEST_METHOD_2]
-    assert 1.6 == EtOH.T_dependent_property(300)
-    assert 1.5 == EtOH.T_dependent_property(250)
-
 
     EtOH = TDependentProperty(CASRN='67-56-1')
     Ts = [195, 205, 300, 400, 450]
@@ -227,7 +221,7 @@ def test_TDependentProperty():
 
     # Test naming and retrieving with user methods
     EtOH = TDependentProperty(CASRN='67-56-1')
-    EtOH.set_user_methods(TEST_METHOD_1)
+    EtOH.set_method(TEST_METHOD_1)
     EtOH.set_tabular_data(Ts=Ts, properties=props)
     assert EtOH.user_methods == ['Tabular data series #0', 'Test method 1']
     EtOH.set_tabular_data(Ts=Ts, properties=props, name='hi')

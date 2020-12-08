@@ -33,14 +33,14 @@ from chemicals.identifiers import check_CAS
 def test_EnthalpyVaporization():
     EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, Psat=7872.2, Zg=0.9633, Zl=0.0024, CASRN='64-17-5')
 
-    Hvap_calc =  [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(298.15))[1] for i in EtOH.all_methods]
+    Hvap_calc =  [(EtOH.set_method(i), EtOH.T_dependent_property(298.15))[1] for i in EtOH.all_methods]
     Hvap_exp = [37770.36760037247, 39369.24308334211, 40812.18023301473, 41892.47130172744, 42200.0, 42261.56271620627, 42320.0, 42413.51210041263, 42429.284285187256, 42468.433273309995, 42541.61366696268, 42829.177357564935, 42855.029051216996, 42946.68066040123, 43481.10765660416, 43587.12939847237, 44804.61582482704]
     assert_close1d(sorted(Hvap_calc), sorted(Hvap_exp))
 
-    assert [None]*17 == [(EtOH.set_user_methods(i), EtOH.T_dependent_property(5000))[1] for i in EtOH.all_methods]
+    assert [None]*17 == [(EtOH.set_method(i), EtOH.T_dependent_property(5000))[1] for i in EtOH.all_methods]
 
     EtOH = EnthalpyVaporization(CASRN='64-17-5')
-    Hvap_calc = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(298.15))[1] for i in ['GHARAGHEIZI_HVAP_298', 'CRC_HVAP_298', 'VDI_TABULAR', 'COOLPROP']]
+    Hvap_calc = [(EtOH.set_method(i), EtOH.T_dependent_property(298.15))[1] for i in ['GHARAGHEIZI_HVAP_298', 'CRC_HVAP_298', 'VDI_TABULAR', 'COOLPROP']]
     Hvap_exp = [42200.0, 42320.0, 42468.433273309995, 42413.51210041263]
     assert_close1d(Hvap_calc, Hvap_exp)
 

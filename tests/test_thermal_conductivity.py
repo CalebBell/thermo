@@ -42,9 +42,10 @@ def test_ThermalConductivityLiquid():
     EtOH = ThermalConductivityLiquid(CASRN='64-17-5', MW=46.06844, Tm=159.05, Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, Hfus=4931.0)
 
     EtOH.T_dependent_property(305.)
-    methods = list(EtOH.sorted_valid_methods)
+    all_methods = list(EtOH.sorted_valid_methods)
+    methods = list(all_methods)
     methods.remove(VDI_TABULAR)
-    kl_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(305.))[1] for i in methods]
+    kl_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(305.))[1] for i in methods]
     kl_exp = [0.162183005823234, 0.16627999999999998, 0.166302, 0.20068212675966418, 0.18526367184633258, 0.18846433785041306, 0.16837295487233528, 0.16883011582627103, 0.09330268101157643, 0.028604363267557775]
     assert_allclose(sorted(kl_calcs), sorted(kl_exp))
 
@@ -52,10 +53,10 @@ def test_ThermalConductivityLiquid():
 
 
     # Test that methods return None
-    kl_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5000))[1] for i in EtOH.sorted_valid_methods]
+    kl_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(5000))[1] for i in all_methods]
     assert [None]*11 == kl_calcs
 
-    EtOH.set_user_methods(VDI_TABULAR, forced=True)
+    EtOH.set_method(VDI_TABULAR)
     assert_allclose(EtOH.T_dependent_property(600.), 0.040117737789202995)
     EtOH.tabular_extrapolation_permitted = False
     assert None == EtOH.T_dependent_property(600.)
@@ -98,16 +99,16 @@ def test_ThermalConductivityLiquid():
 def test_ThermalConductivityGas():
     EtOH = ThermalConductivityGas(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.2412, omega=0.635, dipole=1.44, Vmg=0.02357, Cvgm=56.98, mug=7.903e-6, CASRN='64-17-5')
     EtOH.T_dependent_property(298.15)
-    kg_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(298.15))[1] for i in EtOH.sorted_valid_methods]
+    kg_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(298.15))[1] for i in EtOH.sorted_valid_methods]
     kg_exp = [0.015227631457903644, 0.015025094773729045, 0.01520257225203181, 0.01494275, 0.016338750949017277, 0.014353317470206847, 0.011676848981094841, 0.01137910777526855, 0.015427444948536088, 0.012984129385510995, 0.017556325226536728]
     assert_allclose(kg_calcs, kg_exp)
 
     # Test that those mthods which can, do, return NoneEtOH.forced_P
-    kg_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5E20))[1] for i in [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G, ELI_HANLEY, BAHADORI_G, VDI_PPDS]]
+    kg_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(5E20))[1] for i in [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G, ELI_HANLEY, BAHADORI_G, VDI_PPDS]]
     assert [None]*7 == kg_calcs
 
     # Test tabular limits/extrapolation
-    EtOH.set_user_methods(VDI_TABULAR, forced=True)
+    EtOH.set_method(VDI_TABULAR)
     assert_allclose(EtOH.T_dependent_property(600.), 0.05755089974293061)
 
     EtOH.tabular_extrapolation_permitted = False

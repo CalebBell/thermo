@@ -36,29 +36,47 @@ from thermo.viscosity import COOLPROP, LUCAS
 from thermo.mixture import Mixture
 from thermo.viscosity import LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, BROKAW, HERNING_ZIPPERER, WILKE, SIMPLE
 
+from thermo.viscosity import (COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
+                         VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
+                         VDI_TABULAR, LETSOU_STIEL, PRZEDZIECKI_SRIDHAR)
 
 @pytest.mark.meta_T_dept
 def test_ViscosityLiquid():
     EtOH = ViscosityLiquid(MW=46.06844, Tm=159.05, Tc=514.0, Pc=6137000.0, Vc=0.000168, omega=0.635, Psat=7872.16, Vml=5.8676e-5, CASRN='64-17-5')
+    EtOH.set_method(COOLPROP)
+    assert_close(EtOH.T_dependent_property(298.15), 0.0010823506202025659, rtol=1e-9)
+    EtOH.set_method(DIPPR_PERRY_8E)
+    assert_close(EtOH.T_dependent_property(298.15), 0.0010774308462863267, rtol=1e-9)
+    EtOH.set_method(VDI_PPDS)
+    assert_close(EtOH.T_dependent_property(298.15), 0.0010623746999654108, rtol=1e-9)
+    EtOH.set_method(DUTT_PRASAD)
+    assert_close(EtOH.T_dependent_property(298.15), 0.0010720812586059744, rtol=1e-9)
+    EtOH.set_method(VISWANATH_NATARAJAN_3)
+    assert_close(EtOH.T_dependent_property(298.15), 0.0031157679801337825, rtol=1e-9)
+    EtOH.set_method(VDI_TABULAR)
+    assert_close(EtOH.T_dependent_property(298.15), 0.0010713697500000004, rtol=1e-9)
+    EtOH.set_method(LETSOU_STIEL)
+    assert_close(EtOH.T_dependent_property(298.15), 0.0004191198228004421, rtol=1e-9)
+    EtOH.set_method(PRZEDZIECKI_SRIDHAR)
+    assert EtOH.T_dependent_property(298.15) is None
+    assert_close(EtOH.T_dependent_property(400.0), 0.00039598337518386806, rtol=1e-9)
 
-    mul_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(298.15))[1] for i in EtOH.all_methods]
-    mul_exp = [0.0010623746999654108, 0.0004191198228004424, 0.0010823506202025659, 0.0010720812586059742, 0.0010713697500000004, 0.0031157679801337825, 0.0010774308462863267, 0.0010823506202025659]
-    assert_close1d(sorted(mul_calcs), sorted(mul_exp))
 
-    # Test that methods return None
     EtOH.tabular_extrapolation_permitted = False
-    Vml_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(600))[1] for i in EtOH.all_methods]
-    assert [None]*8 == Vml_calcs
+    for i in EtOH.all_methods:
+        EtOH.set_method(i)
+        assert EtOH.T_dependent_property(600) is None
+
 
     with pytest.raises(Exception):
         EtOH.test_method_validity(300, 'BADMETHOD')
 
     # Acetic acid to test Viswanath_Natarajan_2_exponential
     acetic_acid = ViscosityLiquid(CASRN='64-19-7', Tc=590.7)
-    mul_calcs = [(acetic_acid.set_user_methods(i), acetic_acid.T_dependent_property(350.0))[1] for i in acetic_acid.all_methods]
+    mul_calcs = [(acetic_acid.set_method(i), acetic_acid.T_dependent_property(350.0))[1] for i in acetic_acid.all_methods]
     mul_exp = [0.0005744169247310638, 0.0005089289428076254, 0.0005799665143154318, 0.0005727888422607339, 0.000587027903931889]
     assert_close1d(sorted(mul_calcs), sorted(mul_exp))
-    assert [None]*5 == [(acetic_acid.set_user_methods(i), acetic_acid.T_dependent_property(650.0))[1] for i in acetic_acid.all_methods]
+    assert [None]*5 == [(acetic_acid.set_method(i), acetic_acid.T_dependent_property(650.0))[1] for i in acetic_acid.all_methods]
 
     # Test Viswanath_Natarajan_2 with boron trichloride
     mu = ViscosityLiquid(CASRN='10294-34-5').T_dependent_property(250)
@@ -99,7 +117,7 @@ def test_ViscosityGas():
 
     mug_calcs = {}
     for i in list(EtOH.all_methods):
-        EtOH.set_user_methods(i)
+        EtOH.set_method(i)
         mu = EtOH.T_dependent_property(298.15)
         mug_calcs[i] = mu
 
@@ -109,7 +127,7 @@ def test_ViscosityGas():
 
     # Test that methods return None
     EtOH.tabular_extrapolation_permitted = False
-    mug_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(6000))[1] for i in EtOH.all_methods]
+    mug_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(6000))[1] for i in EtOH.all_methods]
     assert [None]*8 == mug_calcs
 
     with pytest.raises(Exception):

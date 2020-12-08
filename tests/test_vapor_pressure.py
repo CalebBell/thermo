@@ -38,7 +38,7 @@ def test_VaporPressure():
     EtOH.T_dependent_property(305.)
     methods = EtOH.sorted_valid_methods
     methods.remove(VDI_TABULAR)
-    Psat_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(305.))[1] for i in methods]
+    Psat_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(305.))[1] for i in methods]
     Psat_exp = [11579.634014300127, 11698.02742876088, 11590.408779316374, 11659.154222044575, 11592.205263402893, 11593.661615921257, 11612.378633936816, 11350.156640503357, 12081.738947110121, 14088.453409816764, 9210.26200064024]
     assert_allclose(sorted(Psat_calcs), sorted(Psat_exp))
 
@@ -47,14 +47,14 @@ def test_VaporPressure():
     # Use another chemical to get in ANTOINE_EXTENDED_POLING
     a = VaporPressure(CASRN='589-81-1')
     a.T_dependent_property(410)
-    Psat_calcs = [(a.set_user_methods(i), a.T_dependent_property(410))[1] for i in a.sorted_valid_methods]
+    Psat_calcs = [(a.set_method(i), a.T_dependent_property(410))[1] for i in a.sorted_valid_methods]
     Psat_exp = [162944.82134710113, 162870.44794192078, 162865.5380455795]
     assert_allclose(Psat_calcs, Psat_exp)
 
     # Test that methods return None
     EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
     EtOH.T_dependent_property(298.15)
-    Psat_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5000))[1] for i in EtOH.sorted_valid_methods]
+    Psat_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(5000))[1] for i in EtOH.sorted_valid_methods]
     assert [None]*11 == Psat_calcs
 
     # Test interpolation, extrapolation
@@ -65,13 +65,11 @@ def test_VaporPressure():
     assert_allclose(w.T_dependent_property(305.), 4715.122890601165)
     w.tabular_extrapolation_permitted = True
     assert_allclose(w.T_dependent_property(200.), 0.5364148240126076)
-    w.tabular_extrapolation_permitted = False
-    assert_allclose(w.T_dependent_property(200.), 0.09934382362141778) # Fall back to ambrose-Walton
 
 
     # Get a check for Antoine Extended
     cycloheptane = VaporPressure(Tb=391.95, Tc=604.2, Pc=3820000.0, omega=0.2384, CASRN='291-64-5')
-    cycloheptane.set_user_methods('ANTOINE_EXTENDED_POLING', forced=True)
+    cycloheptane.set_method('ANTOINE_EXTENDED_POLING')
     assert_allclose(cycloheptane.T_dependent_property(410), 161647.35219882353)
     assert None == cycloheptane.T_dependent_property(400)
 
@@ -105,8 +103,8 @@ def test_VaporPressure_fast_Psat_best_fit():
     obj = VaporPressure(best_fit=(178.01, 591.74, [-8.638045111752356e-20, 2.995512203611858e-16, -4.5148088801006036e-13, 3.8761537879200513e-10, -2.0856828984716705e-07, 7.279010846673517e-05, -0.01641020023565049, 2.2758331029405516, -146.04484159879843]))
     assert_close(obj.calculate(1000, BEST_FIT_AB), 78666155.90418352, rtol=1e-10)
     assert_close(obj.calculate(1000, BEST_FIT_ABC), 156467764.5930495, rtol=1e-10)
-    
+
     assert_close(obj.calculate(400, BESTFIT), 157199.6909849476, rtol=1e-10)
     assert_close(obj.calculate(400, BEST_FIT_AB), 157199.6909849476, rtol=1e-10)
     assert_close(obj.calculate(400, BEST_FIT_ABC), 157199.6909849476, rtol=1e-10)
-    
+

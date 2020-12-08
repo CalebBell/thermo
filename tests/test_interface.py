@@ -33,19 +33,20 @@ def test_SurfaceTension():
     # Ethanol, test as many methods as possible at once
     EtOH = SurfaceTension(Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.24125, omega=0.635, StielPolar=-0.01266, CASRN='64-17-5')
     EtOH.T_dependent_property(305.)
-    methods = EtOH.sorted_valid_methods
-    methods.remove(VDI_TABULAR)
-    sigma_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(305.))[1] for i in methods]
+    methods = list(EtOH.sorted_valid_methods)
+    methods_nontabular = list(methods)
+    methods_nontabular.remove(VDI_TABULAR)
+    sigma_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(305.))[1] for i in methods_nontabular]
     sigma_exp = [0.021222422444285592, 0.02171156653650729, 0.02171156653650729, 0.021462066798796135, 0.02140008, 0.038055725907414066, 0.03739257387107131, 0.02645171690486362, 0.03905907338532845, 0.03670733205970745]
 
     assert_close1d(sorted(sigma_calcs), sorted(sigma_exp), rtol=1e-6)
     assert_close(EtOH.calculate(305., VDI_TABULAR), 0.021533867879206747, rtol=1E-4)
 
     # Test that methods return None
-    sigma_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5000))[1] for i in EtOH.sorted_valid_methods]
+    sigma_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(5000))[1] for i in methods]
     assert [None]*11 == sigma_calcs
 
-    EtOH.set_user_methods('VDI_TABULAR', forced=True)
+    EtOH.set_method('VDI_TABULAR')
     EtOH.tabular_extrapolation_permitted = False
     assert None == EtOH.T_dependent_property(700.)
 

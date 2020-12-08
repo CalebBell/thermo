@@ -311,7 +311,7 @@ class Chemical(object): # pragma: no cover
     >>> N2.calculate(80)
     >>> N2.Psat
     136979.4840843189
-    >>> N2.VaporPressure.set_user_methods('LEE_KESLER_PSAT')
+    >>> N2.VaporPressure.set_method('LEE_KESLER_PSAT')
     >>> N2.Psat
     134987.76815364443
 

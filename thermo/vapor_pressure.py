@@ -73,8 +73,6 @@ from chemicals.vapor_pressure import *
 from chemicals import vapor_pressure
 from thermo.utils import TDependentProperty
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
-
-
 from thermo.utils import source_path
 
 
@@ -215,17 +213,20 @@ class VaporPressure(TDependentProperty):
     name = 'Vapor pressure'
     units = 'Pa'
 
-    def interpolation_T(self, T):
+    @staticmethod
+    def interpolation_T(T):
         '''Function to make the data-based interpolation as linear as possible.
         This transforms the input `T` into the `1/T` domain.'''
         return 1./T
 
-    def interpolation_property(self, P):
+    @staticmethod
+    def interpolation_property(P):
         '''log(P) interpolation transformation by default.
         '''
         return log(P)
 
-    def interpolation_property_inv(self, P):
+    @staticmethod
+    def interpolation_property_inv(P):
         '''exp(P) interpolation transformation by default; reverses
         :obj:`interpolation_property_inv`.'''
         return exp(P)
@@ -293,9 +294,25 @@ class VaporPressure(TDependentProperty):
         if best_fit is not None:
             self.set_best_fit(best_fit)
             if self.Tmin is None and hasattr(self, 'best_fit_Tmin'):
-                self.Tmin = self.best_fit_Tmin/100
+                self.Tmin = self.best_fit_Tmin*.01
             if self.Tmax is None and hasattr(self, 'best_fit_Tmax'):
                 self.Tmax = self.best_fit_Tmax*10
+
+    @staticmethod
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        return {WAGNER_MCGARRY: vapor_pressure.Psat_data_WagnerMcGarry.index,
+                WAGNER_POLING: vapor_pressure.Psat_data_WagnerPoling.index,
+                ANTOINE_EXTENDED_POLING: vapor_pressure.Psat_data_AntoineExtended.index,
+                ANTOINE_POLING: vapor_pressure.Psat_data_AntoinePoling.index,
+                DIPPR_PERRY_8E: vapor_pressure.Psat_data_Perrys2_8.index,
+                COOLPROP: coolprop_dict,
+                VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
+                VDI_PPDS: vapor_pressure.Psat_data_VDI_PPDS_3.index,
+                }
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
@@ -326,7 +343,7 @@ class VaporPressure(TDependentProperty):
                 self.WAGNER_POLING_Tmin = Tmin if not isnan(Tmin) else self.WAGNER_POLING_Tmax*0.1
                 self.WAGNER_POLING_coefs = [A, B, C, D]
                 Tmins.append(Tmin); Tmaxs.append(self.WAGNER_POLING_Tmax)
-                T_limits[WAGNER_POLING] = (Tmin, self.WAGNER_POLING_Tmax)
+                T_limits[WAGNER_POLING] = (self.WAGNER_POLING_Tmin, self.WAGNER_POLING_Tmax)
 
             if self.CASRN in vapor_pressure.Psat_data_AntoineExtended.index:
                 methods.append(ANTOINE_EXTENDED_POLING)
@@ -340,16 +357,19 @@ class VaporPressure(TDependentProperty):
                 A, B, C, self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax = vapor_pressure.Psat_values_AntoinePoling[vapor_pressure.Psat_data_AntoinePoling.index.get_loc(self.CASRN)].tolist()
                 self.ANTOINE_POLING_coefs = [A, B, C]
                 Tmins.append(self.ANTOINE_POLING_Tmin); Tmaxs.append(self.ANTOINE_POLING_Tmax)
+                T_limits[ANTOINE_POLING] = (self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax)
 
             if self.CASRN in vapor_pressure.Psat_data_Perrys2_8.index:
                 methods.append(DIPPR_PERRY_8E)
                 C1, C2, C3, C4, C5, self.Perrys2_8_Tmin, self.Perrys2_8_Tmax = vapor_pressure.Psat_values_Perrys2_8[vapor_pressure.Psat_data_Perrys2_8.index.get_loc(self.CASRN)].tolist()
                 self.Perrys2_8_coeffs = [C1, C2, C3, C4, C5]
                 Tmins.append(self.Perrys2_8_Tmin); Tmaxs.append(self.Perrys2_8_Tmax)
+                T_limits[DIPPR_PERRY_8E] = (self.Perrys2_8_Tmin, self.Perrys2_8_Tmax)
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[self.CASRN]
                 Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
+                T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc)
 
             if self.CASRN in miscdata.VDI_saturation_dict:
                 methods.append(VDI_TABULAR)
@@ -358,6 +378,7 @@ class VaporPressure(TDependentProperty):
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
                 Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
 
             if self.CASRN in vapor_pressure.Psat_data_VDI_PPDS_3.index:
                 Tm, Tc, Pc, A, B, C, D = vapor_pressure.Psat_values_VDI_PPDS_3[vapor_pressure.Psat_data_VDI_PPDS_3.index.get_loc(self.CASRN)].tolist()
@@ -367,9 +388,11 @@ class VaporPressure(TDependentProperty):
                 self.VDI_PPDS_Pc = Pc
                 methods.append(VDI_PPDS)
                 Tmins.append(self.VDI_PPDS_Tm); Tmaxs.append(self.VDI_PPDS_Tc)
+                T_limits[VDI_PPDS] = (self.VDI_PPDS_Tm, self.VDI_PPDS_Tc)
         if all((self.Tb, self.Tc, self.Pc)):
             methods.append(BOILING_CRITICAL)
             Tmins.append(0.01); Tmaxs.append(self.Tc)
+            T_limits[BOILING_CRITICAL] = (0.01, self.Tc)
         if all((self.Tc, self.Pc, self.omega)):
             methods.append(LEE_KESLER_PSAT)
             methods.append(AMBROSE_WALTON)
@@ -377,85 +400,13 @@ class VaporPressure(TDependentProperty):
             methods.append(EDALAT)
             if self.eos:
                 methods.append(EOS)
+                T_limits[EOS] = (0.1*self.Tc, self.Tc)
             Tmins.append(0.01); Tmaxs.append(self.Tc)
+            T_limits[LEE_KESLER_PSAT] = T_limits[AMBROSE_WALTON] = T_limits[SANJARI] = T_limits[EDALAT] = (0.01, self.Tc)
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             self.Tmin = min(Tmins)
             self.Tmax = max(Tmaxs)
-
-    @staticmethod
-    def _fit_export_polynomials(start_n=3, max_n=30, eval_pts=100, save=False):
-        import json
-        dat = {}
-        folder = os.path.join(source_path, 'Vapor Pressure')
-
-        methods = [WAGNER_MCGARRY, WAGNER_POLING]
-        indexes = [vapor_pressure.Psat_data_WagnerMcGarry.index, vapor_pressure.Psat_data_WagnerPoling.index]
-
-        methods, indexes = [WAGNER_POLING], [vapor_pressure.Psat_data_WagnerPoling.index]
-        for method, index in zip(methods, indexes):
-            method_dat = {}
-            for CAS in index:
-#                print(CAS)
-                obj = VaporPressure(CASRN=CAS)
-                coeffs, (low, high), stats = obj.fit_polynomial(method, n=None, start_n=start_n, max_n=max_n, eval_pts=eval_pts)
-                max_error = max(abs(1.0 - stats[2]), abs(1.0 - stats[3]))
-                method_dat[CAS] = {'Tmax': high, 'Tmin': low, 'error_average': stats[0],
-                   'error_std': stats[1], 'max_error': max_error , 'method': method,
-                   'coefficients': coeffs}
-
-
-            f = open(os.path.join(folder, method + '_polyfits.json'), 'w')
-            out_str = json.dumps(method_dat, sort_keys=True, indent=4, separators=(', ', ': '))
-            f.write(out_str)
-            f.close()
-            dat[method] = method_dat
-
-
-        return dat
-
-
-    def fit_polynomial(self, method, n=None, start_n=3, max_n=30, eval_pts=100):
-        from thermo.fitting import fit_cheb_poly, poly_fit_statistics, fit_cheb_poly_auto
-        interpolation_property = lambda x: log(x)
-        interpolation_property_inv = lambda x: exp(x)
-
-        if method == WAGNER_MCGARRY:
-            low, high = self.WAGNER_MCGARRY_Tmin, self.WAGNER_MCGARRY_Tc
-        elif method == WAGNER_POLING:
-            low, high = self.WAGNER_POLING_Tmin, self.WAGNER_POLING_Tmax
-        elif method == ANTOINE_EXTENDED_POLING:
-            low, high = self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax
-        elif method == ANTOINE_POLING:
-            low, high = self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax
-        elif method == DIPPR_PERRY_8E:
-            low, high = self.Perrys2_8_Tmin, self.Perrys2_8_Tmax
-        elif method == VDI_PPDS:
-            low, high = self.VDI_PPDS_Tc, self.VDI_PPDS_Tm
-        elif method == COOLPROP:
-            low, high = max(self.CP_f.Tmin, self.CP_f.Tt), min(self.CP_f.Tmax, self.CP_f.Tc)
-        elif method in [BOILING_CRITICAL, LEE_KESLER_PSAT, AMBROSE_WALTON, SANJARI, EDALAT, EOS]:
-            low, high = 0.3*self.Tc, self.Tc
-        else:
-            raise ValueError("Unknown method")
-
-        func = lambda T: self.calculate(T, method)
-
-        if n is None:
-            n, coeffs, stats = fit_cheb_poly_auto(func, low=low, high=high,
-                      interpolation_property=interpolation_property,
-                      interpolation_property_inv=interpolation_property_inv,
-                      start_n=start_n, max_n=max_n, eval_pts=eval_pts)
-        else:
-
-            coeffs = fit_cheb_poly(func, low=low, high=high, n=n,
-                          interpolation_property=interpolation_property,
-                          interpolation_property_inv=interpolation_property_inv)
-
-            stats = poly_fit_statistics(func, coeffs=coeffs, low=low, high=high, pts=eval_pts,
-                          interpolation_property_inv=interpolation_property_inv)
-
-        return coeffs, (low, high), stats
 
     def calculate(self, T, method):
         r'''Method to calculate vapor pressure of a fluid at temperature `T`
@@ -550,31 +501,10 @@ class VaporPressure(TDependentProperty):
         validity : bool
             Whether or not a method is valid
         '''
-        if method == WAGNER_MCGARRY:
-            if T < self.WAGNER_MCGARRY_Tmin or T > self.WAGNER_MCGARRY_Tc:
-                return False
-        elif method == WAGNER_POLING:
-            if T < self.WAGNER_POLING_Tmin or T > self.WAGNER_POLING_Tmax:
-                return False
-        elif method == ANTOINE_EXTENDED_POLING:
-            if T < self.ANTOINE_EXTENDED_POLING_Tmin or T > self.ANTOINE_EXTENDED_POLING_Tmax:
-                return False
-        elif method == ANTOINE_POLING:
-            if T < self.ANTOINE_POLING_Tmin or T > self.ANTOINE_POLING_Tmax:
-                return False
-        elif method == DIPPR_PERRY_8E:
-            if T < self.Perrys2_8_Tmin or T > self.Perrys2_8_Tmax:
-                return False
-        elif method == VDI_PPDS:
-            if T > self.VDI_PPDS_Tc or T < self.VDI_PPDS_Tm:
-                return False
-        elif method == COOLPROP:
-            if T < self.CP_f.Tmin or T < self.CP_f.Tt or T > self.CP_f.Tmax or T > self.CP_f.Tc:
-                return False
-        elif method in [BOILING_CRITICAL, LEE_KESLER_PSAT, AMBROSE_WALTON, SANJARI, EDALAT, EOS]:
-            if T > self.Tc or T < 0:
-                return False
-            # No lower limit
+        T_limits = self.T_limits
+        if method in T_limits:
+            Tmin, Tmax = T_limits[method]
+            return Tmin <= T <= Tmax
         elif method == BESTFIT:
             validity = True
         elif method in self.tabular_data:
@@ -719,6 +649,10 @@ class SublimationPressure(TDependentProperty):
         Triple pressure, [Pa]
     Hsub_t : float, optional
         Sublimation enthalpy at the triple point, [J/mol]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files;
+        this can be used to reduce the memory consumption of an object as well,
+        [-]
 
     Notes
     -----
@@ -760,7 +694,8 @@ class SublimationPressure(TDependentProperty):
     ranked_methods = [PSUB_CLAPEYRON]
     '''Default rankings of the available methods.'''
 
-    def __init__(self, CASRN=None, Tt=None, Pt=None, Hsub_t=None, best_fit=None):
+    def __init__(self, CASRN=None, Tt=None, Pt=None, Hsub_t=None,
+                 best_fit=None, load_data=True):
         self.CASRN = CASRN
         self.Tt = Tt
         self.Pt = Pt
@@ -800,7 +735,7 @@ class SublimationPressure(TDependentProperty):
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
 
-        self.load_all_methods()
+        self.load_all_methods(load_data)
 
         if best_fit is not None:
             self.set_best_fit(best_fit)
@@ -809,7 +744,7 @@ class SublimationPressure(TDependentProperty):
             if self.Tmax is None and hasattr(self, 'best_fit_Tmax'):
                 self.Tmax = self.best_fit_Tmax*10
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
