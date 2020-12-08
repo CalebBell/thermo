@@ -976,7 +976,7 @@ class TDependentProperty(object):
             self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff = polyint_over_x(best_fit_coeffs)
 
             best_fit_d_coeffs = polyder(best_fit_coeffs[::-1])
-            self.best_fit_d2_coeffs = polyder(best_fit_d_coeffs[::-1])
+            self.best_fit_d2_coeffs = polyder(best_fit_d_coeffs)
             self.best_fit_d2_coeffs.reverse()
             self.best_fit_d_coeffs = best_fit_d_coeffs
             best_fit_d_coeffs.reverse()
