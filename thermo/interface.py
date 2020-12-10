@@ -27,7 +27,7 @@ __all__ = ['surface_tension_methods', 'SurfaceTension',
 
 import os
 import numpy as np
-from chemicals.utils import log, exp
+from chemicals.utils import log, exp, isnan
 from chemicals.utils import mixing_simple, none_and_length_check, Vm_to_rho
 from chemicals.dippr import EQ106
 from chemicals.interface import *
@@ -191,6 +191,11 @@ class SurfaceTension(TDependentProperty):
                       ZUO_STENBY, ALEEM]
     '''Default rankings of the available methods.'''
 
+    _fit_force_n = {}
+    '''Dictionary containing method: fit_n, for use in methods which should
+    only ever be fit to a specific `n` value'''
+    _fit_force_n[JASPER] = 2
+
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
                  omega=None, StielPolar=None, Hvap_Tb=None, CASRN='', Vml=None,
                  Cpl=None, best_fit=None, load_data=True):
@@ -240,6 +245,20 @@ class SurfaceTension(TDependentProperty):
         if best_fit is not None:
             self.set_best_fit(best_fit)
 
+    @staticmethod
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        return {STREFPROP: interface.sigma_data_Mulero_Cachadina.index,
+                SOMAYAJULU2: interface.sigma_data_Somayajulu2.index,
+                SOMAYAJULU: interface.sigma_data_Somayajulu.index,
+                VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
+                JASPER: interface.sigma_data_Jasper_Lange.index,
+                VDI_PPDS: interface.sigma_data_VDI_PPDS_11.index,
+                }
+
     def load_all_methods(self, load_data):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
@@ -253,22 +272,26 @@ class SurfaceTension(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
+        self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN in interface.sigma_data_Mulero_Cachadina.index:
                 methods.append(STREFPROP)
                 sigma0, n0, sigma1, n1, sigma2, n2, Tc, self.STREFPROP_Tmin, self.STREFPROP_Tmax = interface.sigma_values_Mulero_Cachadina[interface.sigma_data_Mulero_Cachadina.index.get_loc(self.CASRN)].tolist()
                 self.STREFPROP_coeffs = [sigma0, n0, sigma1, n1, sigma2, n2, Tc]
                 Tmins.append(self.STREFPROP_Tmin); Tmaxs.append(self.STREFPROP_Tmax)
+                T_limits[STREFPROP] = (self.STREFPROP_Tmin, self.STREFPROP_Tmax)
             if self.CASRN in interface.sigma_data_Somayajulu2.index:
                 methods.append(SOMAYAJULU2)
                 self.SOMAYAJULU2_Tt, self.SOMAYAJULU2_Tc, A, B, C = interface.sigma_values_Somayajulu2[interface.sigma_data_Somayajulu2.index.get_loc(self.CASRN)].tolist()
                 self.SOMAYAJULU2_coeffs = [A, B, C]
                 Tmins.append(self.SOMAYAJULU2_Tt); Tmaxs.append(self.SOMAYAJULU2_Tc)
+                T_limits[SOMAYAJULU2] = (self.SOMAYAJULU2_Tt, self.SOMAYAJULU2_Tc)
             if self.CASRN in interface.sigma_data_Somayajulu.index:
                 methods.append(SOMAYAJULU)
                 self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc, A, B, C = interface.sigma_values_Somayajulu[interface.sigma_data_Somayajulu.index.get_loc(self.CASRN)].tolist()
                 self.SOMAYAJULU_coeffs = [A, B, C]
                 Tmins.append(self.SOMAYAJULU_Tt); Tmaxs.append(self.SOMAYAJULU_Tc)
+                T_limits[SOMAYAJULU] = (self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc)
             if self.CASRN in miscdata.VDI_saturation_dict:
                 methods.append(VDI_TABULAR)
                 Ts, props = lookup_VDI_tabular_data(self.CASRN, 'sigma')
@@ -276,11 +299,18 @@ class SurfaceTension(TDependentProperty):
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
                 Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
             if self.CASRN in interface.sigma_data_Jasper_Lange.index:
                 methods.append(JASPER)
-                a, b, self.JASPER_Tmin, self.JASPER_Tmax= interface.sigma_values_Jasper_Lange[interface.sigma_data_Jasper_Lange.index.get_loc(self.CASRN)].tolist()
+                a, b, self.JASPER_Tmin, self.JASPER_Tmax = interface.sigma_values_Jasper_Lange[interface.sigma_data_Jasper_Lange.index.get_loc(self.CASRN)].tolist()
+                if isnan(self.JASPER_Tmax) or self.JASPER_Tmax == self.JASPER_Tmin:
+                    # Some data is missing; and some is on a above the limit basis
+                    self.JASPER_Tmax = a/b + 273.15
+                if isnan(self.JASPER_Tmin):
+                    self.JASPER_Tmin = 0.0
                 self.JASPER_coeffs = [a, b]
                 Tmins.append(self.JASPER_Tmin); Tmaxs.append(self.JASPER_Tmax)
+                T_limits[JASPER] = (self.JASPER_Tmin, self.JASPER_Tmax)
             if self.CASRN in interface.sigma_data_VDI_PPDS_11.index:
                 Tm, Tc, A, B, C, D, E = interface.sigma_values_VDI_PPDS_11[interface.sigma_data_VDI_PPDS_11.index.get_loc(self.CASRN)].tolist()
                 self.VDI_PPDS_coeffs = [A, B, C, D, E]
@@ -288,6 +318,7 @@ class SurfaceTension(TDependentProperty):
                 self.VDI_PPDS_Tm = Tm
                 methods.append(VDI_PPDS)
                 Tmins.append(self.VDI_PPDS_Tm) ; Tmaxs.append(self.VDI_PPDS_Tc);
+                T_limits[VDI_PPDS] = (self.VDI_PPDS_Tm, self.VDI_PPDS_Tc)
         if all((self.Tc, self.Vc, self.omega)):
             methods.append(MIQUEU)
             Tmins.append(0.0); Tmaxs.append(self.Tc)

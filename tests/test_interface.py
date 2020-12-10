@@ -61,6 +61,13 @@ def test_SurfaceTension():
     assert not CH4.test_method_validity(600, 'Aleem')
     assert CH4.test_method_validity(100, 'Aleem')
 
+@pytest.mark.meta_T_dept
+def test_SurfaceTensionJasperMissingLimits():
+    obj = SurfaceTension(CASRN='110-01-0')
+    assert_close(obj.calculate(obj.JASPER_Tmax, 'JASPER'), 0, atol=1e-10)
+
+    obj = SurfaceTension(CASRN='14901-07-6')
+    assert_close(obj.calculate(obj.JASPER_Tmax, 'JASPER'), 0, atol=1e-10)
 
 
 def test_SurfaceTensionMixture():

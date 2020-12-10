@@ -329,7 +329,7 @@ class ViscosityLiquid(TPDependentProperty):
             if self.CASRN in viscosity.mu_data_VN2.index:
                 methods.append(VISWANATH_NATARAJAN_2)
                 A, B, self.VISWANATH_NATARAJAN_2_Tmin, self.VISWANATH_NATARAJAN_2_Tmax = viscosity.mu_values_VN2[viscosity.mu_data_VN2.index.get_loc(self.CASRN)].tolist()
-                self.VISWANATH_NATARAJAN_2_coeffs = [A - 4.605170185988092, B] # log(100), 4.605170185988092
+                self.VISWANATH_NATARAJAN_2_coeffs = [A - 4.605170185988092, B] # log(100) = 4.605170185988092
                 Tmins.append(self.VISWANATH_NATARAJAN_2_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_2_Tmax)
             if self.CASRN in viscosity.mu_data_VN2E.index:
                 methods.append(VISWANATH_NATARAJAN_2E)

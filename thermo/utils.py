@@ -714,6 +714,10 @@ class TDependentProperty(object):
     # For methods specified by a user
     local_methods = {}
 
+    _fit_force_n = {}
+    '''Dictionary containing method: fit_n, for use in methods which should
+    only ever be fit to a specific `n` value'''
+
     def __copy__(self):
         return self
 
@@ -762,12 +766,14 @@ class TDependentProperty(object):
             indexes = list(sources.values())
         else:
             methods = [method]
-            indexes = sources[method]
+            indexes = [sources[method]]
         for method, index in zip(methods, indexes):
             method_dat = {}
+            n = cls._fit_force_n.get(method, None)
             for CAS in index:
+#                print(CAS)
                 obj = cls(CASRN=CAS)
-                coeffs, (low, high), stats = obj.fit_polynomial(method, n=None, start_n=start_n, max_n=max_n, eval_pts=eval_pts)
+                coeffs, (low, high), stats = obj.fit_polynomial(method, n=n, start_n=start_n, max_n=max_n, eval_pts=eval_pts)
                 max_error = max(abs(1.0 - stats[2]), abs(1.0 - stats[3]))
                 method_dat[CAS] = {'Tmax': high, 'Tmin': low, 'error_average': stats[0],
                    'error_std': stats[1], 'max_error': max_error , 'method': method,
