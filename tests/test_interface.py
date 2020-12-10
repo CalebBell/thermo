@@ -69,6 +69,11 @@ def test_SurfaceTensionJasperMissingLimits():
     obj = SurfaceTension(CASRN='14901-07-6')
     assert_close(obj.calculate(obj.JASPER_Tmax, 'JASPER'), 0, atol=1e-10)
 
+@pytest.mark.meta_T_dept
+def test_SurfaceTensionVDITabularMissingZeroLimits():
+    obj = SurfaceTension(CASRN='7782-41-4')
+    assert_close(obj.calculate(144.41, 'VDI_TABULAR'), 0, atol=1e-10)
+
 
 def test_SurfaceTensionMixture():
     from thermo.mixture import Mixture
