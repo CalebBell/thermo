@@ -771,7 +771,7 @@ class TDependentProperty(object):
             method_dat = {}
             n = cls._fit_force_n.get(method, None)
             for CAS in index:
-#                print(CAS)
+                print(CAS)
                 obj = cls(CASRN=CAS)
                 coeffs, (low, high), stats = obj.fit_polynomial(method, n=n, start_n=start_n, max_n=max_n, eval_pts=eval_pts)
                 max_error = max(abs(1.0 - stats[2]), abs(1.0 - stats[3]))

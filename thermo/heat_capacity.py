@@ -211,12 +211,14 @@ class HeatCapacityGas(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
+        self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN in heat_capacity.TRC_gas_data.index:
                 methods.append(TRCIG)
                 self.TRCIG_Tmin, self.TRCIG_Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = heat_capacity.TRC_gas_values[heat_capacity.TRC_gas_data.index.get_loc(self.CASRN)].tolist()
                 self.TRCIG_coefs = [a0, a1, a2, a3, a4, a5, a6, a7]
                 Tmins.append(self.TRCIG_Tmin); Tmaxs.append(self.TRCIG_Tmax)
+                T_limits[TRCIG] = (self.TRCIG_Tmin, self.TRCIG_Tmax)
             if self.CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[self.CASRN, 'a0']):
                 POLING_Tmin, POLING_Tmax, a0, a1, a2, a3, a4, Cpg, Cpl = heat_capacity.Cp_values_Poling[heat_capacity.Cp_data_Poling.index.get_loc(self.CASRN)].tolist()
                 methods.append(POLING)
@@ -229,14 +231,17 @@ class HeatCapacityGas(TDependentProperty):
                 self.POLING_Tmax = POLING_Tmax
                 Tmaxs.append(POLING_Tmax)
                 self.POLING_coefs = [a0, a1, a2, a3, a4]
+                T_limits[POLING] = (POLING_Tmin, POLING_Tmax)
             if self.CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[self.CASRN, 'Cpg']):
                 methods.append(POLING_CONST)
                 self.POLING_T = 298.15
                 self.POLING_constant = float(heat_capacity.Cp_data_Poling.at[self.CASRN, 'Cpg'])
+                T_limits[POLING_CONST] = (self.POLING_T, self.POLING_T)
             if self.CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cpg']):
                 methods.append(CRCSTD)
                 self.CRCSTD_T = 298.15
                 self.CRCSTD_constant = float(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cpg'])
+                T_limits[CRCSTD] = (self.CRCSTD_T, self.CRCSTD_T)
             if self.CASRN in miscdata.VDI_saturation_dict:
                 # NOTE: VDI data is for the saturation curve, i.e. at increasing
                 # pressure; it is normally substantially higher than the ideal gas
@@ -247,15 +252,33 @@ class HeatCapacityGas(TDependentProperty):
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
                 Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[self.CASRN]
-                Tmins.append(self.CP_f.Tt); Tmaxs.append(self.CP_f.Tc)
+                Tmin = max(self.CP_f.Tt, self.CP_f.Tmin)
+                Tmax = min(self.CP_f.Tc, self.CP_f.Tmax)
+                Tmins.append(Tmin); Tmaxs.append(Tmax)
+                T_limits[COOLPROP] = (Tmin, Tmax)
         if self.MW and self.similarity_variable:
             methods.append(LASTOVKA_SHAW)
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
+
+    @staticmethod
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        return {TRCIG: heat_capacity.TRC_gas_data.index,
+                POLING: [i for i in heat_capacity.Cp_data_Poling.index if not isnan(heat_capacity.Cp_data_Poling.at[i, 'a0'])],
+                POLING_CONST: [i for i in heat_capacity.Cp_data_Poling.index if not isnan(heat_capacity.Cp_data_Poling.at[i, 'Cpg'])],
+                CRCSTD: [i for i in heat_capacity.CRC_standard_data.index if not isnan(heat_capacity.CRC_standard_data.at[i, 'Cpg'])],
+                COOLPROP: coolprop_dict,
+                VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
+                }
 
     def calculate(self, T, method):
         r'''Method to calculate surface tension of a liquid at temperature `T`
@@ -286,7 +309,7 @@ class HeatCapacityGas(TDependentProperty):
         elif method == TRCIG:
             Cp = TRCCp(T, *self.TRCIG_coefs)
         elif method == COOLPROP:
-            Cp = PropsSI('Cp0molar', 'T', T,'P', 101325.0, self.CASRN)
+            Cp = PropsSI('Cp0molar', 'T', T,'P', 10132500.0, self.CASRN)
         elif method == POLING:
             Cp = R*(self.POLING_coefs[0] + self.POLING_coefs[1]*T
             + self.POLING_coefs[2]*T**2 + self.POLING_coefs[3]*T**3

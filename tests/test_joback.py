@@ -62,6 +62,7 @@ def test_Joback_acetone():
         assert_close(ex.mul(300.0), 0.0002940378347162687)
 
 
+@pytest.mark.fuzz
 @pytest.mark.slow
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
