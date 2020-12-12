@@ -1106,6 +1106,11 @@ class HeatCapacitySolid(TDependentProperty):
     ranked_methods = [PERRY151, CRCSTD, LASTOVKA_S]
     '''Default rankings of the available methods.'''
 
+    _fit_force_n = {}
+    '''Dictionary containing method: fit_n, for use in methods which should
+    only ever be fit to a specific `n` value'''
+    _fit_force_n[CRCSTD] = 1
+
     def __init__(self, CASRN='', similarity_variable=None, MW=None,
                  best_fit=None, load_data=True):
         self.similarity_variable = similarity_variable
@@ -1146,6 +1151,14 @@ class HeatCapacitySolid(TDependentProperty):
         if best_fit is not None:
             self.set_best_fit(best_fit)
 
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        return {PERRY151: [i for i in heat_capacity.Cp_dict_PerryI.keys() if 'c' in heat_capacity.Cp_dict_PerryI[i]],
+                CRCSTD: [i for i in heat_capacity.CRC_standard_data.index if not isnan(heat_capacity.CRC_standard_data.at[i, 'Cps'])],
+                }
     def load_all_methods(self, load_data):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
@@ -1159,6 +1172,7 @@ class HeatCapacitySolid(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
+        self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN and self.CASRN in heat_capacity.Cp_dict_PerryI and 'c' in heat_capacity.Cp_dict_PerryI[self.CASRN]:
                 self.PERRY151_Tmin = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Tmin'] if heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Tmin'] else 0
@@ -1169,9 +1183,11 @@ class HeatCapacitySolid(TDependentProperty):
                 self.PERRY151_quadinv = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Quadinv']
                 methods.append(PERRY151)
                 Tmins.append(self.PERRY151_Tmin); Tmaxs.append(self.PERRY151_Tmax)
+                T_limits[PERRY151] = (self.PERRY151_Tmin, self.PERRY151_Tmax)
             if self.CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cps']):
                 self.CRCSTD_Cp = float(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cps'])
                 methods.append(CRCSTD)
+                T_limits[CRCSTD] = (298.15, 298.15)
         if self.MW and self.similarity_variable:
             methods.append(LASTOVKA_S)
             Tmins.append(1.0); Tmaxs.append(10000)
