@@ -102,6 +102,9 @@ def test_fit_cheb_poly():
         x =  log(1. - T/Tc)
         assert_close(SMK(T, Tc=Tc, omega=0.04), horner(coeffs_linear_short_SMK_x_trans, x), rtol=1e-7)
 
+    # Case with one coefficient and no T bounds
+    assert_close1d(fit_cheb_poly(func=lambda T: 102.5, low=298.15, high=298.15, n=1), [102.5])
+
 def test_Twu91_check_params():
     assert Twu91_check_params((0.694911381318495, 0.919907783415812, 1.70412689631515)) # Ian Bell, methanol
     assert not Twu91_check_params((0.81000842, 0.94790489, 1.49618907)) # Fit without constraints for methanol

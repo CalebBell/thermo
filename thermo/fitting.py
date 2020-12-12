@@ -134,14 +134,18 @@ def fit_cheb_poly(func, low, high, n,
                     arg = low_orig
                 return func(arg)
     func_fun = np.vectorize(func_fun)
-    cheb_fun = ChebTools.generate_Chebyshev_expansion(n-1, func_fun, low, high)
+    if n == 1:
+        coeffs = [func_fun(0.5*(low + high)).tolist()]
+    else:
+        cheb_fun = ChebTools.generate_Chebyshev_expansion(n-1, func_fun, low, high)
 
-    coeffs = cheb_fun.coef()
-    coeffs = cheb2poly(coeffs)[::-1].tolist() # Convert to polynomial basis
+        coeffs = cheb_fun.coef()
+        coeffs = cheb2poly(coeffs)[::-1].tolist() # Convert to polynomial basis
     # Mix in low high limits to make it a normal polynomial
-
-    my_poly = Polynomial([-0.5*(high + low)*2.0/(high - low), 2.0/(high - low)])
-    coeffs = horner(coeffs, my_poly).coef[::-1].tolist()
+    if high != low:
+        # Handle the case of no transformation, no limits
+        my_poly = Polynomial([-0.5*(high + low)*2.0/(high - low), 2.0/(high - low)])
+        coeffs = horner(coeffs, my_poly).coef[::-1].tolist()
     return coeffs
 
 

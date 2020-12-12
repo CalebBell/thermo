@@ -157,6 +157,13 @@ class HeatCapacityGas(TDependentProperty):
     ranked_methods = [TRCIG, POLING, COOLPROP, LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
     '''Default rankings of the available methods.'''
 
+
+    _fit_force_n = {}
+    '''Dictionary containing method: fit_n, for use in methods which should
+    only ever be fit to a specific `n` value'''
+    _fit_force_n[CRCSTD] = 1
+    _fit_force_n[POLING_CONST] = 1
+
     def __init__(self, CASRN='', MW=None, similarity_variable=None,
                  best_fit=None, load_data=True):
         self.CASRN = CASRN
@@ -309,7 +316,12 @@ class HeatCapacityGas(TDependentProperty):
         elif method == TRCIG:
             Cp = TRCCp(T, *self.TRCIG_coefs)
         elif method == COOLPROP:
-            Cp = PropsSI('Cp0molar', 'T', T,'P', 10132500.0, self.CASRN)
+            try:
+                # Some cases due to melting point need a high pressure
+                Cp = PropsSI('Cp0molar', 'T', T,'P', 10132500.0, self.CASRN)
+            except:
+                # And some cases don't converge at high P
+                Cp = PropsSI('Cp0molar', 'T', T,'P', 101325.0, self.CASRN)
         elif method == POLING:
             Cp = R*(self.POLING_coefs[0] + self.POLING_coefs[1]*T
             + self.POLING_coefs[2]*T**2 + self.POLING_coefs[3]*T**3

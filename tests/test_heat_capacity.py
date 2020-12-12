@@ -73,8 +73,14 @@ def test_HeatCapacityGas():
     assert not isnan(obj.POLING_Tmax)
 
 
+    # flash not converge due to melting P
     obj = HeatCapacityGas(CASRN='106-97-8')
     assert_close(obj.calculate(134.895, COOLPROP), 64.30715649610785)
+
+    # flash not converge at high P
+    obj = HeatCapacityGas(CASRN='306-83-2')
+    assert_close(obj.calculate(obj.T_limits[COOLPROP][0], COOLPROP), 72.45489837498226, rtol=1e-7)
+
 
 
 @pytest.mark.meta_T_dept
