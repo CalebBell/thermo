@@ -646,6 +646,11 @@ class HeatCapacityLiquid(TDependentProperty):
                       POLING_CONST, CRCSTD]
     '''Default rankings of the available methods.'''
 
+    _fit_force_n = {}
+    '''Dictionary containing method: fit_n, for use in methods which should
+    only ever be fit to a specific `n` value'''
+    _fit_force_n[CRCSTD] = 1
+    _fit_force_n[POLING_CONST] = 1
 
     def __init__(self, CASRN='', MW=None, similarity_variable=None, Tc=None,
                  omega=None, Cpgm=None, best_fit=None, load_data=True):
@@ -690,6 +695,24 @@ class HeatCapacityLiquid(TDependentProperty):
         if best_fit is not None:
             self.set_best_fit(best_fit)
 
+    @staticmethod
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        return {ZABRANSKY_SPLINE: list(heat_capacity.zabransky_dict_const_s),
+                ZABRANSKY_QUASIPOLYNOMIAL: list(heat_capacity.zabransky_dict_const_p),
+                ZABRANSKY_SPLINE_C: list(heat_capacity.zabransky_dict_iso_s),
+                ZABRANSKY_QUASIPOLYNOMIAL_C: list(heat_capacity.zabransky_dict_iso_p),
+                ZABRANSKY_SPLINE_SAT: list(heat_capacity.zabransky_dict_sat_s),
+                ZABRANSKY_QUASIPOLYNOMIAL_SAT: list(heat_capacity.zabransky_dict_sat_p),
+                POLING_CONST: [i for i in heat_capacity.Cp_data_Poling.index if not isnan(heat_capacity.Cp_data_Poling.at[i, 'Cpl'])],
+                CRCSTD: [i for i in heat_capacity.CRC_standard_data.index if not isnan(heat_capacity.CRC_standard_data.at[i, 'Cpl'])],
+                COOLPROP: coolprop_dict,
+                VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
+                }
+
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
@@ -703,34 +726,43 @@ class HeatCapacityLiquid(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
+        self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN in heat_capacity.zabransky_dict_const_s:
                 methods.append(ZABRANSKY_SPLINE)
                 self.Zabransky_spline = heat_capacity.zabransky_dict_const_s[self.CASRN]
+                T_limits[ZABRANSKY_SPLINE] = (self.Zabransky_spline.Tmin, self.Zabransky_spline.Tmax)
             if self.CASRN in heat_capacity.zabransky_dict_const_p:
                 methods.append(ZABRANSKY_QUASIPOLYNOMIAL)
                 self.Zabransky_quasipolynomial = heat_capacity.zabransky_dict_const_p[self.CASRN]
+                T_limits[ZABRANSKY_QUASIPOLYNOMIAL] = (self.Zabransky_quasipolynomial.Tmin, self.Zabransky_quasipolynomial.Tmax)
             if self.CASRN in heat_capacity.zabransky_dict_iso_s:
                 methods.append(ZABRANSKY_SPLINE_C)
                 self.Zabransky_spline_iso = heat_capacity.zabransky_dict_iso_s[self.CASRN]
+                T_limits[ZABRANSKY_SPLINE_C] = (self.Zabransky_spline_iso.Tmin, self.Zabransky_spline_iso.Tmax)
             if self.CASRN in heat_capacity.zabransky_dict_iso_p:
                 methods.append(ZABRANSKY_QUASIPOLYNOMIAL_C)
                 self.Zabransky_quasipolynomial_iso = heat_capacity.zabransky_dict_iso_p[self.CASRN]
+                T_limits[ZABRANSKY_QUASIPOLYNOMIAL_C] = (self.Zabransky_quasipolynomial_iso.Tmin, self.Zabransky_quasipolynomial_iso.Tmax)
             if self.CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[self.CASRN, 'Cpl']):
                 methods.append(POLING_CONST)
                 self.POLING_T = 298.15
                 self.POLING_constant = float(heat_capacity.Cp_data_Poling.at[self.CASRN, 'Cpl'])
+                T_limits[POLING_CONST] = (298.15, 298.15)
             if self.CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cpl']):
                 methods.append(CRCSTD)
                 self.CRCSTD_T = 298.15
                 self.CRCSTD_constant = float(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cpl'])
+                T_limits[CRCSTD] = (298.15, 298.15)
             # Saturation functions
             if self.CASRN in heat_capacity.zabransky_dict_sat_s:
                 methods.append(ZABRANSKY_SPLINE_SAT)
                 self.Zabransky_spline_sat = heat_capacity.zabransky_dict_sat_s[self.CASRN]
+                T_limits[ZABRANSKY_SPLINE_SAT] = (self.Zabransky_spline_sat.Tmin, self.Zabransky_spline_sat.Tmax)
             if self.CASRN in heat_capacity.zabransky_dict_sat_p:
                 methods.append(ZABRANSKY_QUASIPOLYNOMIAL_SAT)
                 self.Zabransky_quasipolynomial_sat = heat_capacity.zabransky_dict_sat_p[self.CASRN]
+                T_limits[ZABRANSKY_QUASIPOLYNOMIAL_SAT] = (self.Zabransky_quasipolynomial_sat.Tmin, self.Zabransky_quasipolynomial_sat.Tmax)
             if self.CASRN in miscdata.VDI_saturation_dict:
                 # NOTE: VDI data is for the saturation curve, i.e. at increasing
                 # pressure; it is normally substantially higher than the ideal gas
@@ -741,10 +773,14 @@ class HeatCapacityLiquid(TDependentProperty):
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
                 Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[self.CASRN]
-                Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tmax)
+                Tmin = max(self.CP_f.Tt, self.CP_f.Tmin)
+                Tmax = min(self.CP_f.Tc, self.CP_f.Tmax)
+                Tmins.append(Tmin); Tmaxs.append(Tmax)
+                T_limits[COOLPROP] = (Tmin, Tmax)
         if self.Tc and self.omega:
             methods.extend([ROWLINSON_POLING, ROWLINSON_BONDI])
         if self.MW and self.similarity_variable:
