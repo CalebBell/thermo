@@ -71,6 +71,12 @@ def test_HeatCapacityGas():
     assert not isnan(obj.Tmin)
     assert not isnan(obj.POLING_Tmin)
     assert not isnan(obj.POLING_Tmax)
+
+
+    obj = HeatCapacityGas(CASRN='106-97-8')
+    assert_close(obj.calculate(134.895, COOLPROP), 64.30715649610785)
+
+
 @pytest.mark.meta_T_dept
 def test_HeatCapacityGas_integrals():
     # Enthalpy integrals
