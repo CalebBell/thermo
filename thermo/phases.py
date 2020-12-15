@@ -4961,8 +4961,12 @@ class CEOSGas(Phase):
             self.eos_mix = eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
             self.eos_pures_STP = [eos_mix.to_TPV_pure(T=298.15, P=101325.0, V=None, i=i) for i in self.cmps]
         else:
-            eos_mix = self.eos_class(T=298.15, P=101325.0, zs=[1.0/N]*N, **self.eos_kwargs)
+            zs = [1.0/N]*N
+            self.eos_mix = eos_mix = self.eos_class(T=298.15, P=101325.0, zs=zs, **self.eos_kwargs)
             self.eos_pures_STP = [eos_mix.to_TPV_pure(T=298.15, P=101325.0, V=None, i=i) for i in self.cmps]
+            self.T = 298.15
+            self.P = 101325.0
+            self.zs = zs
 
 
     def to_TP_zs(self, T, P, zs, other_eos=None):

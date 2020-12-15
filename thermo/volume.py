@@ -922,7 +922,8 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
                 Vm = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
             else:
                 Vm = horner(self.best_fit_coeffs, T)
-        else: raise ValueError("Unrecognized method")
+        else:
+            raise ValueError("Unrecognized method")
         return Vm
 
     def calculate_P(self, T, P, method):
@@ -953,7 +954,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
             try:
                 Vm = self.eos[0].V_l
             except AttributeError:
-                Vm = None
+                Vm =  self.eos[0].V_g
         elif method in self.tabular_data:
             Vm = self.interpolate_P(T, P, method)
         return Vm

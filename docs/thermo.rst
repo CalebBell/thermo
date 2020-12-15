@@ -41,3 +41,5 @@ Submodules
    thermo.wilson
    thermo.uniquac
 
+   tutorial_phases_and_flash.rst
+

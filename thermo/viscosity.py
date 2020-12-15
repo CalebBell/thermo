@@ -207,7 +207,7 @@ class ViscosityLiquid(TPDependentProperty):
     '''No interpolation transformation by default.'''
     tabular_extrapolation_permitted = True
     '''Allow tabular extrapolation by default.'''
-    property_min = 0
+    property_min = 0.0
     '''Mimimum valid value of liquid viscosity.'''
     property_max = 2E8
     '''Maximum valid value of liquid viscosity. Generous limit, as
@@ -304,11 +304,13 @@ class ViscosityLiquid(TPDependentProperty):
         '''
         methods, methods_P = [], []
         Tmins, Tmaxs = [], []
+        self.T_limits = T_limits = {}
         if load_data:
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 methods.append(COOLPROP); methods_P.append(COOLPROP)
                 self.CP_f = coolprop_fluids[self.CASRN]
                 Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
+                T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc)
             if self.CASRN in miscdata.VDI_saturation_dict:
                 methods.append(VDI_TABULAR)
                 Ts, props = lookup_VDI_tabular_data(self.CASRN, 'Mu (l)')
@@ -316,33 +318,40 @@ class ViscosityLiquid(TPDependentProperty):
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
                 Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
             if self.CASRN in viscosity.mu_data_Dutt_Prasad.index:
                 methods.append(DUTT_PRASAD)
                 A, B, C, self.DUTT_PRASAD_Tmin, self.DUTT_PRASAD_Tmax = viscosity.mu_values_Dutt_Prasad[viscosity.mu_data_Dutt_Prasad.index.get_loc(self.CASRN)].tolist()
                 self.DUTT_PRASAD_coeffs = [A - 3.0, B, C]
                 Tmins.append(self.DUTT_PRASAD_Tmin); Tmaxs.append(self.DUTT_PRASAD_Tmax)
+                T_limits[DUTT_PRASAD] = (self.DUTT_PRASAD_Tmin, self.DUTT_PRASAD_Tmax)
             if self.CASRN in viscosity.mu_data_VN3.index:
                 methods.append(VISWANATH_NATARAJAN_3)
                 A, B, C, self.VISWANATH_NATARAJAN_3_Tmin, self.VISWANATH_NATARAJAN_3_Tmax = viscosity.mu_values_VN3[viscosity.mu_data_VN3.index.get_loc(self.CASRN)].tolist()
                 self.VISWANATH_NATARAJAN_3_coeffs = [A - 3.0, B, C]
                 Tmins.append(self.VISWANATH_NATARAJAN_3_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_3_Tmax)
+                T_limits[VISWANATH_NATARAJAN_3] = (self.VISWANATH_NATARAJAN_3_Tmin, self.VISWANATH_NATARAJAN_3_Tmax)
             if self.CASRN in viscosity.mu_data_VN2.index:
                 methods.append(VISWANATH_NATARAJAN_2)
                 A, B, self.VISWANATH_NATARAJAN_2_Tmin, self.VISWANATH_NATARAJAN_2_Tmax = viscosity.mu_values_VN2[viscosity.mu_data_VN2.index.get_loc(self.CASRN)].tolist()
                 self.VISWANATH_NATARAJAN_2_coeffs = [A - 4.605170185988092, B] # log(100) = 4.605170185988092
                 Tmins.append(self.VISWANATH_NATARAJAN_2_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_2_Tmax)
+                T_limits[VISWANATH_NATARAJAN_2] = (self.VISWANATH_NATARAJAN_2_Tmin, self.VISWANATH_NATARAJAN_2_Tmax)
             if self.CASRN in viscosity.mu_data_VN2E.index:
                 methods.append(VISWANATH_NATARAJAN_2E)
                 C, D, self.VISWANATH_NATARAJAN_2E_Tmin, self.VISWANATH_NATARAJAN_2E_Tmax = viscosity.mu_values_VN2E[viscosity.mu_data_VN2E.index.get_loc(self.CASRN)].tolist()
                 self.VISWANATH_NATARAJAN_2E_coeffs = [C, D]
                 Tmins.append(self.VISWANATH_NATARAJAN_2E_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_2E_Tmax)
+                T_limits[VISWANATH_NATARAJAN_2E] = (self.VISWANATH_NATARAJAN_2E_Tmin, self.VISWANATH_NATARAJAN_2E_Tmax)
             if self.CASRN in viscosity.mu_data_Perrys_8E_2_313.index:
                 methods.append(DIPPR_PERRY_8E)
                 C1, C2, C3, C4, C5, self.Perrys2_313_Tmin, self.Perrys2_313_Tmax = viscosity.mu_values_Perrys_8E_2_313[viscosity.mu_data_Perrys_8E_2_313.index.get_loc(self.CASRN)].tolist()
                 self.Perrys2_313_coeffs = [C1, C2, C3, C4, C5]
                 Tmins.append(self.Perrys2_313_Tmin); Tmaxs.append(self.Perrys2_313_Tmax)
+                T_limits[DIPPR_PERRY_8E] = (self.Perrys2_313_Tmin, self.Perrys2_313_Tmax)
             if self.CASRN in viscosity.mu_data_VDI_PPDS_7.index:
                 methods.append(VDI_PPDS)
+                # No temperature limits - ideally could use critical point
                 self.VDI_PPDS_coeffs = viscosity.mu_values_PPDS_7[viscosity.mu_data_VDI_PPDS_7.index.get_loc(self.CASRN)].tolist()
         if all((self.MW, self.Tc, self.Pc, self.omega)):
             methods.append(LETSOU_STIEL)
