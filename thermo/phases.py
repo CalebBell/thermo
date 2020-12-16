@@ -5773,6 +5773,7 @@ class GibbsExcessLiquid(Phase):
                  use_phis_sat=False,
                  use_Tait=False,
                  use_IG_Cp=True,
+                 use_eos_volume=False,
                  Hfs=None, Gfs=None, Sfs=None,
                  henry_components=None, henry_data=None,
                  T=None, P=None, zs=None,
@@ -5833,9 +5834,9 @@ class GibbsExcessLiquid(Phase):
             self.Hvaps_T_ref = [obj(T_REF_IG) for obj in EnthalpyVaporizations]
             self.dSvaps_T_ref = [T_REF_IG_INV*dH for dH in self.Hvaps_T_ref]
 
-
+        self.use_eos_volume = use_eos_volume
         self.VolumeLiquids = VolumeLiquids
-        self.Vms_sat_locked = all(i.locked for i in VolumeLiquids) if VolumeLiquids is not None else False
+        self.Vms_sat_locked = ((not use_eos_volume and all(i.locked for i in VolumeLiquids)) if VolumeLiquids is not None else False)
         if self.Vms_sat_locked:
             self._Vms_sat_data = ([i.best_fit_Tmin for i in VolumeLiquids],
                                  [i.best_fit_Tmin_slope for i in VolumeLiquids],
@@ -5995,6 +5996,7 @@ class GibbsExcessLiquid(Phase):
         new.use_Poynting = self.use_Poynting
         new.P_DEPENDENT_H_LIQ = self.P_DEPENDENT_H_LIQ
         new.use_IG_Cp = self.use_IG_Cp
+        new.use_eos_volume = self.use_eos_volume
 
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
@@ -6479,6 +6481,22 @@ class GibbsExcessLiquid(Phase):
 #            return self._Vms_sat
             self._Vms_sat = Vms_sat = self._Vms_sat_at(T, self._Vms_sat_data, self.cmps)
             return Vms_sat
+        elif self.use_eos_volume:
+            Vms = []
+            eoss = self.eos_pure_instances
+            Psats = self.Psats()
+            for i, e in enumerate(eoss):
+                if T < e.Tc:
+                    Vms.append(e.V_l_sat(T))
+                else:
+                    e = e.to(T=T, P=Psats[i])
+                    try:
+                        Vms.append(e.V_l)
+                    except:
+                        Vms.append(e.V_g)
+            self._Vms_sat = Vms
+            return Vms
+
 
         VolumeLiquids = self.VolumeLiquids
 #        Psats = self.Psats()

@@ -1882,14 +1882,16 @@ class GCEOS(object):
     def PT_surface_special(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
                       pts=50, show=False, color_map=None,
                       mechanical=True, pseudo_critical=True, Psat=True,
-                      determinant_zeros=True):
+                      determinant_zeros=True, phase_ID_transition=True,
+                      base_property='V'):
         r'''Method to create a plot of the special curves of a fluid -
         vapor pressure, determinant zeros, pseudo critical point,
         and mechanical critical point.
 
-        The color background is a plot of the molar volume which has the
-        minimum Gibbs energy. If shown with a sufficient number of points, the
-        curve between vapor and liquid should be shown smoothly.
+        The color background is a plot of the molar volume (by default) which
+        has the minimum Gibbs energy (by default). If shown with a sufficient
+        number of points, the curve between vapor and liquid should be shown
+        smoothly.
 
         Parameters
         ----------
@@ -1924,6 +1926,11 @@ class GCEOS(object):
         determinant_zeros : bool
             Whether or not to include a curve showing when the EOS's
             determinant hits zero, [-]
+        phase_ID_transition : bool
+            Whether or not to show a curve of where the PIP hits 1 exactly, [-]
+        base_property : str
+            The property which should be plotted; '_l' and '_g' are added
+            automatically according to the selected phase, [-]
 
         Returns
         -------
@@ -1936,6 +1943,9 @@ class GCEOS(object):
         if hasattr(self, 'zs'):
             kwargs['zs'] = self.zs
 
+        l_prop = base_property + '_l'
+        g_prop = base_property + '_g'
+        base_positive = True
         Vs = []
         for T in Ts:
             V_row = []
@@ -1944,12 +1954,13 @@ class GCEOS(object):
                 kwargs['P'] = P
                 obj = self.to(**kwargs)
                 if obj.phase == 'l/g':
-                    V = obj.V_l if obj.G_dep_l < obj.G_dep_g else obj.V_g
+                    V = getattr(obj, l_prop) if obj.G_dep_l < obj.G_dep_g else getattr(obj, g_prop)
                 elif obj.phase == 'l':
-                    V = obj.V_l
+                    V = getattr(obj, l_prop)
                 else:
-                    V = obj.V_g
+                    V = getattr(obj, g_prop)
                 V_row.append(V)
+                base_positive = base_positive and V > 0.0
             Vs.append(V_row)
 
         if self.multicomponent:
@@ -1968,6 +1979,15 @@ class GCEOS(object):
                 P = self.Psat(T)
                 Ts_Psats.append(T)
                 Psats.append(P)
+        if phase_ID_transition:
+            Pmin_Psat = max(1e-20, Pmin)
+            Tmin_ID = self.Tsat(Pmin_Psat)
+            Tmax_ID = Tmax
+            phase_ID_Ts = linspace(Tmin_ID, Tmax_ID, pts)
+            low_P_limit = min(1e-4, Pmin)
+            phase_ID_Ps = [self.P_PIP_transition(T, low_P_limit=low_P_limit)
+            for T in phase_ID_Ts]
+
 
         if mechanical:
             if self.multicomponent:
@@ -1992,6 +2012,7 @@ class GCEOS(object):
                         high_det_Ps.append(P_det_max)
                         Ts_dets_high.append(T)
 
+
 #        if plot:
         import matplotlib.pyplot as plt
         from matplotlib import ticker, cm
@@ -2002,9 +2023,10 @@ class GCEOS(object):
         if color_map is None:
             color_map = cm.viridis
 
-        im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=LogNorm())
+        norm = LogNorm() if base_positive else None
+        im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=norm)
         cbar = fig.colorbar(im, ax=ax)
-        cbar.set_label('Volume [m^3/mol]')
+        cbar.set_label('%s' %base_property)
 
         if Psat:
             plt.plot(Ts_Psats, Psats, label='Psat')
@@ -2017,17 +2039,20 @@ class GCEOS(object):
             plt.plot([Tc], [Pc], 'x', label='Pseudo crit')
         if mechanical:
             plt.plot([TP_mechanical[0]], [TP_mechanical[1]], 'o', label='Mechanical')
+        if phase_ID_transition:
+            plt.plot(phase_ID_Ts, phase_ID_Ps, label='PIP=1')
 
         ax.set_yscale('log')
         ax.set_xscale('log')
         ax.set_xlabel('T [K]')
         ax.set_ylabel('P [Pa]')
 
-        if Psat or determinant_zeros or pseudo_critical or mechanical:
+        if (Psat or determinant_zeros or pseudo_critical or mechanical
+            or phase_ID_transition):
             plt.legend()
 
 
-        ax.set_title('Volume solution vs minimum Gibbs validation')
+        ax.set_title('%s vs minimum Gibbs validation' %(base_property))
         if show:
             plt.show()
 
@@ -4168,6 +4193,74 @@ class GCEOS(object):
                 pass
         global_iter += niter
         return T_disc
+
+    def P_PIP_transition(self, T, low_P_limit=0.0):
+        r'''Method to calculate the pressure which makes the phase
+        identification parameter exactly 1.
+
+        Parameters
+        ----------
+        T_guess : float, optional
+            Temperature guess, [K]
+
+        Returns
+        -------
+        T_discriminant_zero_g : float
+            Temperature which make the discriminants zero at the right condition,
+            [K]
+
+        Notes
+        -----
+        Significant numerical issues remain in improving this method.
+
+        Examples
+        --------
+        >>> eos = PRTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+        >>> T_trans = eos.T_discriminant_zero_g()
+        >>> T_trans
+        644.3023307
+
+        In this case, the discriminant transition does not reveal a transition
+        to two roots being available, only to there being a double (imaginary)
+        root.
+
+        >>> eos.to(P=eos.P, T=T_trans).mpmath_volumes_float
+        ((9.309597822372529e-05-0.00015876248805149625j), (9.309597822372529e-05+0.00015876248805149625j), (0.005064847204219234+0j))
+        '''
+        subcritical = T < self.Tc
+        if subcritical:
+            return low_P_limit
+        else:
+            def to_solve(P):
+                e = self.to(T=T, P=P)
+                # TODO: as all a_alpha is the same for all conditions, should be
+                # able to derive a direct expression for this from the EOS which
+                # only uses a volume solution
+                # TODO: should be able to get the derivative of PIP w.r.t. pressure
+                if hasattr(e, 'V_l'):
+                    return e.PIP_l-1.0
+                else:
+                    return e.PIP_g-1.0
+        try:
+            # Near the critical point these equations turn extremely nasty!
+            # bisection is the most reliable solver
+            if subcritical:
+                Psat = self.Psat(T)
+                low, high = 10.0*Psat, Psat
+            else:
+                low, high = 1e-3, 1e11
+            P = bisect(to_solve, low, high)
+            return P
+        except:
+            err_low = to_solve(low_P_limit)
+            if abs(err_low) < 1e-9:
+                # Well above the critical point all solutions except the
+                # zero-pressure limit have PIP values above 1
+                # This corresponds to the JT inversion temperature at a
+                # pressure of zero.
+                return low_P_limit
+            raise ValueError("Could not converge")
+
 
 
     def _V_g_extrapolated(self):
