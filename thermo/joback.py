@@ -52,6 +52,7 @@ from __future__ import division
 __all__ = ['smarts_fragment', 'Joback', 'J_BIGGS_JOBACK_SMARTS',
            'J_BIGGS_JOBACK_SMARTS_id_dict']
 
+from operator import itemgetter
 from collections import namedtuple, Counter
 from chemicals.utils import to_num, horner, exp
 
@@ -223,7 +224,39 @@ O=CH- (aldehyde) 	0.0379 	0.0030 	82 	72.24 	36.90 	-162.03 	-143.48 	3.09E+1 	-
 
 joback_groups_str_dict = {}
 joback_groups_id_dict = {}
-JOBACK = namedtuple('JOBACK', 'i, name, Tc, Pc, Vc, Tb, Tm, Hform, Gform, Cpa, Cpb, Cpc, Cpd, Hfus, Hvap, mua, mub')
+#JOBACK = namedtuple('JOBACK', 'i, name, Tc, Pc, Vc, Tb, Tm, Hform, Gform, Cpa, Cpb, Cpc, Cpd, Hfus, Hvap, mua, mub')
+
+class JOBACK(object):
+    __slots__ = ('i', 'name', 'Tc', 'Pc', 'Vc', 'Tb', 'Tm', 'Hform',
+                 'Gform', 'Cpa', 'Cpb', 'Cpc', 'Cpd', 'Hfus', 'Hvap',
+                 'mua', 'mub')
+    def __init__(self, i, name, Tc, Pc, Vc, Tb, Tm, Hform, Gform, Cpa, Cpb,
+                 Cpc, Cpd, Hfus, Hvap, mua, mub):
+        self.i = i
+        self.name = name
+        self.Tc = Tc
+        self.Pc = Pc
+        self.Vc = Vc
+        self.Tb = Tb
+        self.Tm = Tm
+        self.Hform = Hform
+        self.Gform = Gform
+        self.Cpa = Cpa
+        self.Cpb = Cpb
+        self.Cpc = Cpc
+        self.Cpd = Cpd
+        self.Hfus = Hfus
+        self.Hvap = Hvap
+        self.mua = mua
+        self.mub = mub
+
+    def __repr__(self):
+        return '''JOBACK(i=%r, name=%r, Tc=%r, Pc=%r, Vc=%r, Tb=%r, Tm=%r, Hform=%r, Gform=%r,
+Cpa=%r, Cpb=%r, Cpc=%r, Cpd=%r, Hfus=%r, Hvap=%r, mua=%r, mub=%r)''' % (
+        self.i, self.name, self.Tc, self.Pc, self.Vc, self.Tb, self.Tm,
+        self.Hform, self.Gform, self.Cpa, self.Cpb, self.Cpc, self.Cpd,
+        self.Hfus, self.Hvap, self.mua, self.mub)
+
 for i, line in enumerate(joback_data_txt.split('\n')):
     parsed = to_num(line.split('\t'))
     j = JOBACK(i+1, *parsed)

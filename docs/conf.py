@@ -45,6 +45,7 @@ import os
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 import thermo
+from thermo import *
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',

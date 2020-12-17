@@ -22,6 +22,7 @@ SOFTWARE.'''
 
 from numpy.testing import assert_allclose
 import pytest
+from fluids.core import C2K
 import thermo
 from chemicals.utils import *
 from thermo import *
@@ -151,14 +152,14 @@ def test_flash_combustion_products():
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas, 'kijs': kijs}
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     flasher = FlashVL(constants, correlations, liq, gas)
     res = flasher.flash(T=T, P=P, zs=zs)
-    
+
     assert res.gas
     assert res.phase == 'V'
-    
-    
+
+
 def test_bubble_T_PR_VL():
     # Last point at 8e6 Pa not yet found.
 
@@ -172,11 +173,11 @@ def test_bubble_T_PR_VL():
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     flasher = FlashVL(constants, correlations, liq, gas)
     res = flasher.flash(P=7.93e6, VF=0, zs=zs)
     assert_close(res.T, 419.0621213529388, rtol=1e-6)
-    
+
 def test_PR_four_bubble_dew_cases_VL():
     zs=[.5, .5]
     T=300.0
@@ -188,14 +189,14 @@ def test_PR_four_bubble_dew_cases_VL():
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     flasher = FlashVL(constants, correlations, liq, gas)
     assert_close(flasher.flash(P=1e6, VF=0, zs=zs).T, 539.1838522423529, rtol=1e-6)
     assert_close(flasher.flash(P=1e6, VF=1, zs=zs).T, 540.2081697501809, rtol=1e-6)
     assert_close(flasher.flash(T=600.0, VF=0, zs=zs).P, 2766476.7473238464, rtol=1e-6)
     assert_close(flasher.flash(T=600.0, VF=1, zs=zs).P, 2702616.6490743402, rtol=1e-6)
-    
-    
+
+
 def test_C1_C10_PT_flash_VL():
     IDs = ['methane', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10']
     zs=[.1]*10
@@ -216,7 +217,37 @@ def test_C1_C10_PT_flash_VL():
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     flasher = FlashVL(constants, correlations, liq, gas)
     res = flasher.flash(T=T, P=P, zs=zs)
     assert_close(res.VF, 0.3933480634014041, rtol=1e-5)
+
+
+
+def test_combustion_products():
+    from chemicals.combustion import fuel_air_spec_solver
+    IDs = ['methane', 'carbon dioxide', 'ethane', 'propane',
+           'isobutane', 'butane', '2-methylbutane', 'pentane',
+           'hexane', 'nitrogen', 'oxygen', 'water']
+
+    T = C2K(15)
+    P = 1e5
+    zs_fuel = [0.9652228316853225, 0.0059558310220860665, 0.018185509193506685, 0.004595963476244076,
+               0.0009769695915451998, 0.001006970610302194, 0.000472984762445398, 0.0003239924667435125,
+               0.0006639799746946288, 0.002594967217109564, 0.0, 0.0]
+    zs_fuel = normalize(zs_fuel)
+    zs_air = [0.0]*9 + [0.79, 0.21] + [0.0]
+
+    constants, properties = ChemicalConstantsPackage.from_IDs(IDs)
+    combustion = fuel_air_spec_solver(zs_air=zs_air, zs_fuel=zs_fuel, CASs=constants.CASs,
+                                      atomss=constants.atomss, n_fuel=1.0, O2_excess=0.1)
+    zs = combustion['zs_out']
+
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
+    gas = CEOSGas(PRMIX, eos_kwargs, T=T, P=P, zs=zs, HeatCapacityGases=properties.HeatCapacityGases)
+    liquid = CEOSLiquid(PRMIX, eos_kwargs, T=T, P=P, zs=zs, HeatCapacityGases=properties.HeatCapacityGases)
+
+    flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
+    res = flasher.flash(T=400.0, P=1e5, zs=zs)
+    assert res.phase_count == 1
+    assert res.gas is not None

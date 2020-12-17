@@ -43,6 +43,8 @@ from fluids.units import wraps_numpydoc, wrap_numpydoc_obj
 
 __funcs = {}
 
+failed_wrapping = False
+
 
 for name in dir(thermo):
     obj = getattr(thermo, name)
@@ -51,9 +53,13 @@ for name in dir(thermo):
 #        obj = wraps_numpydoc(u)(obj)
     elif type(obj) == type and (obj in [thermo.Chemical, thermo.Mixture, thermo.Stream]
                                  or thermo.eos.GCEOS in obj.__mro__):
+        if obj in (thermo.eos_mix.PSRKMixingRules, thermo.eos_mix.PSRK):
+            # Not yet implemented
+            continue
         try:
             obj = wrap_numpydoc_obj(obj)
         except Exception as e:
+            failed_wrapping = True
             print('Current implementation of %s contains documentation not '
                   'parseable and cound not be wrapped to use pint:' %str(obj))
             print(e)

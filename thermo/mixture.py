@@ -25,17 +25,19 @@ from __future__ import division
 __all__ = ['Mixture']
 
 import numpy as np
-from fluids.numerics import newton
 from collections import Counter, OrderedDict
 
+from fluids.numerics import newton
 from fluids.core import *
 from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
 
 from chemicals.virial import B_from_Z
-
-from thermo.chemical import Chemical
 from chemicals.identifiers import *
 from chemicals.identifiers import IDs_to_CASs
+from chemicals.utils import *
+from chemicals.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
+
+from thermo.chemical import Chemical
 from thermo.thermal_conductivity import ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture
 from thermo.permittivity import *
@@ -43,19 +45,8 @@ from thermo.heat_capacity import HeatCapacitySolidMixture, HeatCapacityGasMixtur
 from thermo.interface import SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquidMixture, ViscosityGasMixture
 from thermo.utils import *
-from chemicals.utils import *
-from chemicals.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
 from thermo.eos import *
 from thermo.eos_mix import *
-
-# RDKIT
-try:
-    from rdkit import Chem
-    from rdkit.Chem import Descriptors
-    from rdkit.Chem import AllChem
-except: # pragma: no cover
-    pass
-
 
 
 def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None,
@@ -3280,6 +3271,10 @@ class Mixture(object):
 
     @property
     def constants(self):
+        r'''Returns a :obj:`thermo.chemical_package.ChemicalConstantsPackage
+        instance with constants from the mixture, [-].
+
+        '''
         try:
             return self._constants
         except AttributeError:

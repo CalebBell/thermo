@@ -115,8 +115,8 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
 #        g = gas_phase.to_TP_zs(T=T, P=P, zs=ys)
 #        l = liquid_phase.to_TP_zs(T=T, P=P, zs=xs)
 
-#        l = liquid_phase.to_zs_TPV(xs, T=T, P=P, V=V)
-#        g = gas_phase.to_zs_TPV(ys, T=T, P=P, V=V)
+#        l = liquid_phase.to(xs, T=T, P=P, V=V)
+#        g = gas_phase.to(ys, T=T, P=P, V=V)
 #        lnphis_g = g.lnphis()
 #        lnphis_l = l.lnphis()
         lnphis_g = gas_phase.lnphis_at_zs(ys)
@@ -159,8 +159,8 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
 #                        xs_working = normalize([step*xo + (1.0 - step)*xi for xi, xo in zip(ys, ys_old)])
 #                         ys_working = normalize([step*xo + (1.0 - step)*xi for xo, xi in zip(xs, xs_old)])
 #                         xs_working = normalize([step*xo + (1.0 - step)*xi for xo, xi in zip(ys, ys_old)])
-#                         g = gas_phase.to_zs_TPV(ys_working, T=T, P=P, V=V)
-#                         l = liquid_phase.to_zs_TPV(xs_working, T=T, P=P, V=V)
+#                         g = gas_phase.to(ys_working, T=T, P=P, V=V)
+#                         l = liquid_phase.to(xs_working, T=T, P=P, V=V)
 #                         lnphis_g = g.lnphis()
 #                         lnphis_l = l.lnphis()
 #                         try:
@@ -171,8 +171,8 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
 
                         V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks_working, guess=V_over_F)
 #                        V_over_F_G = min(max(V_over_F, 0), 1)
-                        g = gas_phase.to_zs_TPV(ys_new, T=T, P=P, V=V)
-                        l = liquid_phase.to_zs_TPV(xs_new, T=T, P=P, V=V)
+                        g = gas_phase.to(ys_new, T=T, P=P, V=V)
+                        l = liquid_phase.to(xs_new, T=T, P=P, V=V)
                         G = g.G()*V_over_F_G + (1.0 - V_over_F_G)*l.G()
                         print('step', step, G, V_over_F, Ks)
                         step *= 0.5
@@ -193,8 +193,8 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
                     ys_new = normalize([step*xo + (1.0 - step)*xi for xo, xi in zip(ys, ys_old)])
                     xs_new = normalize([step*xo + (1.0 - step)*xi for xo, xi in zip(xs, xs_old)])
                     # V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks_working, guess=V_over_F)
-                    l = liquid_phase.to_zs_TPV(xs_new, T=T, P=P, V=V)
-                    g = gas_phase.to_zs_TPV(ys_new, T=T, P=P, V=V)
+                    l = liquid_phase.to(xs_new, T=T, P=P, V=V)
+                    g = gas_phase.to(ys_new, T=T, P=P, V=V)
                     # lnphis_g = g.lnphis()
                     # lnphis_l = l.lnphis()
                     print('step', step, V_over_F, g.Z())
@@ -270,8 +270,8 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
                 # return V_over_F, xs, ys, l, g, iteration, err
 
             # Temporary!
-            g = gas_phase.to_zs_TPV(ys_old, T=T, P=P, V=V)
-            l = liquid_phase.to_zs_TPV(xs_old, T=T, P=P, V=V)
+            g = gas_phase.to(ys_old, T=T, P=P, V=V)
+            l = liquid_phase.to(xs_old, T=T, P=P, V=V)
             return V_over_F_old, xs_old, ys_old, l, g, iteration, err
         # elif err < tol and limited_Z:
         #     print(l.fugacities()/np.array(g.fugacities()))
@@ -1564,8 +1564,8 @@ def dew_P_newton(P_guess, T, zs, liquid_phase, gas_phase,
         xs = [zs[i]/(1.0 + V_over_F*(Ks[i] - 1.0)) for i in cmps]
         ys = [Ks[i]*xs[i] for i in cmps]
 
-        g = gas_phase.to_zs_TPV(ys, T=T, P=P, V=V)
-        l = liquid_phase.to_zs_TPV(xs, T=T, P=P, V=V)
+        g = gas_phase.to(ys, T=T, P=P, V=V)
+        l = liquid_phase.to(xs, T=T, P=P, V=V)
 
         fugacities_l = l.fugacities()
         fugacities_g = g.fugacities()
@@ -1630,8 +1630,8 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
         iter_val = iter_vals[-1]
 
         kwargs[iter_var] = iter_val
-        p_iter = iter_phase.to_zs_TPV(comp, **kwargs)
-        p_const = const_phase.to_zs_TPV(zs, **kwargs)
+        p_iter = iter_phase.to(comp, **kwargs)
+        p_const = const_phase.to(zs, **kwargs)
 
         lnphis_iter = p_iter.lnphis()
         lnphis_const = p_const.lnphis()
@@ -1773,8 +1773,8 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
                             else:
                                 split *= 1.000000001
                         kwargs[iter_var] = guess = split
-                        iter_phase = iter_phase.to_zs_TPV(zs=comp_guess, **kwargs)
-                        const_phase = const_phase.to_zs_TPV(zs=zs, **kwargs)
+                        iter_phase = iter_phase.to(zs=comp_guess, **kwargs)
+                        const_phase = const_phase.to(zs=zs, **kwargs)
                         lnphis_const = const_phase.lnphis()
                         dlnphis_dvar_const = dlnphis_diter_var_const(const_phase)
                         print('adj iter phase', split)
@@ -1795,10 +1795,10 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
                             else:
                                 split *= 1.000000001
                         kwargs[iter_var] = guess = split
-                        const_phase = const_phase.to_zs_TPV(zs=zs, **kwargs)
+                        const_phase = const_phase.to(zs=zs, **kwargs)
                         lnphis_const = const_phase.lnphis()
                         dlnphis_dvar_const = dlnphis_diter_var_const(const_phase)
-                        iter_phase = iter_phase.to_zs_TPV(zs=comp_guess, **kwargs)
+                        iter_phase = iter_phase.to(zs=comp_guess, **kwargs)
                         # Also need to adjust the other phase to keep it in sync
 
                         print('adj const phase', split)
@@ -2436,7 +2436,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
             p = solved_phase
         else:
             phase_kwargs[iter_var] = guess
-            p = phase.to_zs_TPV(**phase_kwargs)
+            p = phase.to(**phase_kwargs)
 
         err = spec_fun(p) - spec_val
 #        err = (spec_fun(p) - spec_val)/spec_val
@@ -2473,7 +2473,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
             else:
                 dummy_iter = guess
             phase_kwargs[iter_var] = dummy_iter # Dummy pressure does not matter
-            phase_temp = phase.to_zs_TPV(**phase_kwargs)
+            phase_temp = phase.to(**phase_kwargs)
 
             lower_phase, higher_phase = None, None
             delta = 1e-9
@@ -2492,9 +2492,9 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
                 # not_separated = True
                 # while not_separated:
                 P_higher = transitions[0]*(1.0 + delta)  # Dummy pressure does not matter
-                lower_phase = phase.to_zs_TPV(T=fixed_var_val, zs=zs, P=P_higher)
+                lower_phase = phase.to(T=fixed_var_val, zs=zs, P=P_higher)
                 P_lower = transitions[0]*(1.0 - delta)  # Dummy pressure does not matter
-                higher_phase = phase.to_zs_TPV(T=fixed_var_val, zs=zs, P=P_lower)
+                higher_phase = phase.to(T=fixed_var_val, zs=zs, P=P_lower)
                 under_trans, above_trans = lower_phase.V(), higher_phase.V()
                 not_separated = isclose(under_trans, above_trans, rel_tol=1e-3)
                 # delta *= 10
@@ -3307,8 +3307,8 @@ def sequential_substitution_2P_sat(T, P, V, zs_dry, xs_guess, ys_guess, liquid_p
         zs = normalize(zs)
 #         print(zs, p0, p1)
 
-        g = gas_phase.to_zs_TPV(ys, T=T, P=P, V=V)
-        l = liquid_phase.to_zs_TPV(xs, T=T, P=P, V=V)
+        g = gas_phase.to(ys, T=T, P=P, V=V)
+        l = liquid_phase.to(xs, T=T, P=P, V=V)
         lnphis_g = g.lnphis()
         lnphis_l = l.lnphis()
 
@@ -3445,8 +3445,8 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
             p0, p1 = step(p0, p1, spec_err, spec_err_old, step_der), p0
         TPV_args[iter_var] = p0
 
-        g = gas_phase.to_zs_TPV(ys, **TPV_args)
-        l = liquid_phase.to_zs_TPV(xs, **TPV_args)
+        g = gas_phase.to(ys, **TPV_args)
+        l = liquid_phase.to(xs, **TPV_args)
         lnphis_g = g.lnphis()
         lnphis_l = l.lnphis()
 
@@ -3555,8 +3555,8 @@ def sequential_substitution_2P_double(zs, xs_guess, ys_guess, liquid_phase,
         TPV_args[iter_var0] = iter0_val
         TPV_args[iter_var1] = iter1_val
 
-        g = gas_phase.to_zs_TPV(zs=ys, **TPV_args)
-        l = liquid_phase.to_zs_TPV(zs=xs, **TPV_args)
+        g = gas_phase.to(zs=ys, **TPV_args)
+        l = liquid_phase.to(zs=xs, **TPV_args)
         lnphis_g = g.lnphis()
         lnphis_l = l.lnphis()
 
@@ -4146,7 +4146,7 @@ class FlashBase(object):
     P_MIN_FIXED = Phase.P_MIN_FIXED
 
     def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
-              S=None, U=None, G=None, A=None, rho_mass=None, solution=None,
+              S=None, U=None, G=None, A=None, solution=None,
               retry=False,
               hot_start=None, dest=None):
         '''
@@ -4175,9 +4175,6 @@ class FlashBase(object):
 #                                           V=V, H=H, S=S, U=U, G=G, A=A,
 #                                           solution=solution, retry=retry,
 #                                           hot_start=hot_start)
-        if rho_mass is not None:
-            V = rho_to_Vm(rho_mass, mixing_simple(zs, constants.MWs))
-
         T_spec = T is not None
         P_spec = P is not None
         V_spec = V is not None
@@ -6388,12 +6385,12 @@ class FlashPureVLS(FlashBase):
             raise ValueError("Did not recognize solution %s" %(solution))
 
         if self.VL_only_CoolProp:
-            sln = self.gas.to_zs_TPV(zs, T=T, P=P, V=V, prefer_phase=8)
+            sln = self.gas.to(zs, T=T, P=P, V=V, prefer_phase=8)
 #            if sln.phase == 'l':
 #                return None, [sln], [], betas, None
             return None, [], [sln], betas, None
         elif self.VL_only_CEOSs_same and V is None and solution is None:
-            gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
+            gas = self.gas.to(zs=zs, T=T, P=P, V=V)
             if gas.eos_mix.phase == 'l/g':
                 gas.eos_mix.solve_missing_volumes()
                 if gas.eos_mix.G_dep_l < gas.eos_mix.G_dep_g:
@@ -6405,14 +6402,14 @@ class FlashPureVLS(FlashBase):
             else:
                 return None, [gas], [], betas, None
         elif self.VL_IG_activity and self.VL_IG_hack and V is None and solution is None:
-            l = self.liquid.to_zs_TPV(zs=zs, T=T, P=P, V=V)
+            l = self.liquid.to(zs=zs, T=T, P=P, V=V)
             if P > l.Psats()[0]:
                 return None, [l], [], betas, None
             else:
-                gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
+                gas = self.gas.to(zs=zs, T=T, P=P, V=V)
                 return gas, [], [], betas, None
         elif self.VL_only_CEOSs_same and V is not None and (T is not None or P is not None) and solution is None:
-            gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
+            gas = self.gas.to(zs=zs, T=T, P=P, V=V)
             if gas.eos_mix.phase == 'g':
                 return gas, [], [], betas, None
             else:
@@ -6421,25 +6418,25 @@ class FlashPureVLS(FlashBase):
             if T is not None:
                 if T > iapws95_Tc:
                     # super critical no matter what
-                    gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
+                    gas = self.gas.to(zs=zs, T=T, P=P, V=V)
                     return gas, [], [], betas, None
                 elif P is not None:
                     Psat = iapws95_Psat(T)
                     if P < Psat:
-                        gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
+                        gas = self.gas.to(zs=zs, T=T, P=P, V=V)
                         return gas, [], [], betas, None
                     else:
-                        l = self.liquid.to_zs_TPV(zs=zs, T=T, P=P, V=V)
+                        l = self.liquid.to(zs=zs, T=T, P=P, V=V)
                         return None, [l], [], betas, None
                 elif V is not None:
                     rhol_sat = iapws95_rhol_sat(T)
                     rho_mass = Vm_to_rho(V, iapws95_MW)
                     if rho_mass >= rhol_sat:
-                        l = self.liquid.to_zs_TPV(zs=zs, T=T, V=V)
+                        l = self.liquid.to(zs=zs, T=T, V=V)
                         return None, [l], [], betas, None
                     rhog_sat = iapws95_rhog_sat(T)
                     if rho_mass <= rhog_sat:
-                        gas = self.gas.to_zs_TPV(zs=zs, T=T, V=V)
+                        gas = self.gas.to(zs=zs, T=T, V=V)
                         return gas, [], [], betas, None
                     # There is no feasible solution between the two curves
 
@@ -6448,31 +6445,31 @@ class FlashPureVLS(FlashBase):
                 try:
                     Tsat = iapws95_Tsat(P)
                     if T < Tsat:
-                        l = self.liquid.to_zs_TPV(zs=zs, T=T, V=V)
+                        l = self.liquid.to(zs=zs, T=T, V=V)
                         return None, [l], [], betas, None
                     else:
-                        gas = self.gas.to_zs_TPV(zs=zs, T=T, V=V)
+                        gas = self.gas.to(zs=zs, T=T, V=V)
                         return gas, [], [], betas, None
                 except:
-                    l = self.liquid.to_zs_TPV(zs=zs, T=T, V=V)
+                    l = self.liquid.to(zs=zs, T=T, V=V)
                     return None, [l], [], betas, None
                 # TODO more logic
 
         if self.gas_count:
-            gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
+            gas = self.gas.to(zs=zs, T=T, P=P, V=V)
             G_min, lowest_phase = fun(gas), gas
         else:
             G_min, lowest_phase = 1e100, None
             gas = None
         for l in self.liquids:
-            l = l.to_zs_TPV(zs=zs, T=T, P=P, V=V)
+            l = l.to(zs=zs, T=T, P=P, V=V)
             G = fun(l)
             if G < G_min:
                 G_min, lowest_phase = G, l
             liquids.append(l)
 
         for s in self.solids:
-            s = s.to_zs_TPV(zs=zs, T=T, P=P, V=V)
+            s = s.to(zs=zs, T=T, P=P, V=V)
             G = fun(s)
             if G < G_min:
                 G_min, lowest_phase = G, s
@@ -6491,7 +6488,11 @@ class FlashPureVLS(FlashBase):
             Psat = self.gas.eos_pures_STP[0].Psat(T)
         #
         else:
-            Psat = self.correlations.VaporPressures[0](T)
+            try:
+                Psat = self.correlations.VaporPressures[0](T)
+            except:
+                # Last resort
+                Psat = 1e5
         return Psat
 
     def flash_TVF(self, T, VF=None, zs=None, hot_start=None):
@@ -6897,11 +6898,11 @@ class FlashPureVLS(FlashBase):
 
                 try:
                     phase_kwargs[iter_var] = min_bound
-                    p = phase.to_zs_TPV(**phase_kwargs)
+                    p = phase.to(**phase_kwargs)
                     phases_at_min.append(p)
 
                     phase_kwargs[iter_var] = max_bound
-                    p = phase.to_zs_TPV(**phase_kwargs)
+                    p = phase.to(**phase_kwargs)
                     phases_at_max.append(p)
 
                     low, high = getattr(phases_at_min[-1], spec)(), getattr(phases_at_max[-1], spec)()

@@ -24,6 +24,7 @@ from __future__ import division
 
 __all__ = ['Chemical', 'reference_states']
 
+from collections import Counter
 
 from fluids.constants import epsilon_0
 
@@ -65,18 +66,6 @@ from thermo.eos_mix import *
 from thermo.unifac import DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments, load_group_assignments_DDBST, UNIFAC_RQ, Van_der_Waals_volume, Van_der_Waals_area
 
 
-
-# RDKIT
-try:
-    from rdkit import Chem
-    from rdkit.Chem import Descriptors
-    from rdkit.Chem import AllChem
-except:
-    # pragma: no cover
-    pass
-
-
-from collections import Counter
 
 
 caching = True
@@ -825,6 +814,8 @@ class Chemical(object): # pragma: no cover
         <IPython.core.display.HTML object>
         '''
         try:
+            from rdkit import Chem
+            from rdkit.Chem import AllChem
             import py3Dmol
             from IPython.display import display
             if Hs:
@@ -1561,6 +1552,7 @@ class Chemical(object): # pragma: no cover
             if not self.rdkitmol:
                 return charge_from_formula(self.formula)
             else:
+                from rdkit import Chem
                 return Chem.GetFormalCharge(self.rdkitmol)
         except:
             return charge_from_formula(self.formula)
@@ -1576,7 +1568,8 @@ class Chemical(object): # pragma: no cover
         7
         '''
         try:
-            return Chem.Descriptors.RingCount(self.rdkitmol)
+            from rdkit.Chem import Descriptors
+            return Descriptors.RingCount(self.rdkitmol)
         except:
             return None
 
@@ -1591,7 +1584,8 @@ class Chemical(object): # pragma: no cover
         3
         '''
         try:
-            return Chem.Descriptors.NumAromaticRings(self.rdkitmol)
+            from rdkit.Chem import Descriptors
+            return Descriptors.NumAromaticRings(self.rdkitmol)
         except:
             return None
 
@@ -1607,6 +1601,7 @@ class Chemical(object): # pragma: no cover
             return self.__rdkitmol
         else:
             try:
+                from rdkit import Chem
                 self.__rdkitmol = Chem.MolFromSmiles(self.smiles)
                 return self.__rdkitmol
             except:
@@ -1624,6 +1619,7 @@ class Chemical(object): # pragma: no cover
             return self.__rdkitmol_Hs
         else:
             try:
+                from rdkit import Chem
                 self.__rdkitmol_Hs = Chem.AddHs(self.rdkitmol)
                 return self.__rdkitmol_Hs
             except:

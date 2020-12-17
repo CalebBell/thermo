@@ -120,7 +120,7 @@ def test_PRMIX_quick():
     for V in [3.625736293970586e-05, 0.0007006659231347704]:
         eos = PRMIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
         assert_close(eos.T, 115.0)
-        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        T_slow = eos.solve_T(P=1E6, V=V)
         assert_close(T_slow, 115.0)
 
 
@@ -577,7 +577,7 @@ def test_PRMIX_VS_PR():
     # PR back calculation for T
     eos = PRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.00013022212513965833, P=1E6)
     assert_close(eos.T, 299)
-    T_slow = eos.solve_T(P=1E6, V=0.00013022212513965833, quick=False)
+    T_slow = eos.solve_T(P=1E6, V=0.00013022212513965833)
     assert_close(T_slow, 299)
 
 
@@ -645,7 +645,7 @@ def test_SRKMIX_quick():
     for V in [4.104756961475803e-05, 0.0007110158049778292]:
         eos = SRKMIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
         assert_close(eos.T, 115)
-        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        T_slow = eos.solve_T(P=1E6, V=V)
         assert_close(T_slow, 115)
 
 
@@ -696,7 +696,7 @@ def test_SRKMIX_vs_SRK():
     # PR back calculation for T
     eos = SRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.0001468210773547259, P=1E6)
     assert_close(eos.T, 299)
-    T_slow = eos.solve_T(P=1E6, V=0.0001468210773547259, quick=False)
+    T_slow = eos.solve_T(P=1E6, V=0.0001468210773547259)
     assert_close(T_slow, 299)
 
     # Derivatives
@@ -760,7 +760,7 @@ def test_VDWIX_quick():
     for V in [5.881369844882989e-05, 0.0007770872375800777]:
         eos = VDWMIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
         assert_close(eos.T, 115)
-        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        T_slow = eos.solve_T(P=1E6, V=V)
         assert_close(T_slow, 115)
 
 
@@ -813,7 +813,7 @@ def test_PRSVMIX_vs_PRSV():
     # PR back calculation for T
     eos = PRSVMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.0001301269135543934, P=1E6, kappa1s=[0.05104])
     assert_close(eos.T, 299)
-    T_slow = eos.solve_T(P=1E6, V=0.0001301269135543934, quick=False)
+    T_slow = eos.solve_T(P=1E6, V=0.0001301269135543934)
     assert_close(T_slow, 299)
 
 
@@ -850,7 +850,7 @@ def test_PRSVMIX_quick():
     for V in [3.623553616564366e-05, 0.0007002423865480607]:
         eos = PRSVMIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
         assert_allclose(eos.T, 115)
-        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        T_slow = eos.solve_T(P=1E6, V=V)
         assert_allclose(T_slow, 115)
 
 
@@ -902,7 +902,7 @@ def test_PRSV2MIX_vs_PRSV():
     # PSRV2 back calculation for T
     eos = PRSV2MIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.00013018825759153257, P=1E6, kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
     assert_allclose(eos.T, 299)
-    T_slow = eos.solve_T(P=1E6, V=0.00013018825759153257, quick=False)
+    T_slow = eos.solve_T(P=1E6, V=0.00013018825759153257)
     assert_allclose(T_slow, 299)
 
     # Check this is the same as PRSV
@@ -932,7 +932,7 @@ def test_PRSV2MIX_quick():
     for V in [3.623553616564366e-05, 0.0007002423865480607]:
         eos = PRSV2MIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
         assert_allclose(eos.T, 115)
-        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        T_slow = eos.solve_T(P=1E6, V=V)
         assert_allclose(T_slow, 115)
 
 
@@ -984,7 +984,7 @@ def test_TWUPRMIX_vs_TWUPR():
     # back calculation for T
     eos = TWUPRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.00013017554170570767, P=1E6)
     assert_allclose(eos.T, 299)
-    T_slow = eos.solve_T(P=1E6, V=0.00013017554170570767, quick=False)
+    T_slow = eos.solve_T(P=1E6, V=0.00013017554170570767)
     assert_allclose(T_slow, 299)
 
 
@@ -1033,7 +1033,7 @@ def test_TWUPRMIX_quick():
     for V in [3.624571041690618e-05, 0.0007004401318229852]:
         eos = TWUPRMIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
         assert_allclose(eos.T, 115)
-        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        T_slow = eos.solve_T(P=1E6, V=V)
         assert_allclose(T_slow, 115)
 
 
@@ -1083,7 +1083,7 @@ def test_TWUSRKMIX_vs_TWUSRK():
     # back calculation for T
     eos = TWUSRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.00014689222296622483, P=1E6)
     assert_allclose(eos.T, 299)
-    T_slow = eos.solve_T(P=1E6, V=0.00014689222296622483, quick=False)
+    T_slow = eos.solve_T(P=1E6, V=0.00014689222296622483)
     assert_allclose(T_slow, 299)
 
 
@@ -1132,7 +1132,7 @@ def test_TWUSRKMIX_quick():
     for V in [4.108792754297647e-05, 0.0007117073252579778]:
         eos = TWUSRKMIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
         assert_allclose(eos.T, 115)
-        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        T_slow = eos.solve_T(P=1E6, V=V)
         assert_allclose(T_slow, 115)
 
 
@@ -1183,7 +1183,7 @@ def test_APISRKMIX_vs_APISRK():
     # SRK back calculation for T
     eos = APISRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.00014681828835112518, P=1E6)
     assert_allclose(eos.T, 299)
-    T_slow = eos.solve_T(P=1E6, V=0.00014681828835112518, quick=False)
+    T_slow = eos.solve_T(P=1E6, V=0.00014681828835112518)
     assert_allclose(T_slow, 299)
     # with a S1 set
     # NOTE! There is another solution to the below case with T=2.9237332747177884 K. Prefer not to return it.
@@ -1192,7 +1192,7 @@ def test_APISRKMIX_vs_APISRK():
     eos = APISRKMIX(Tcs=[514.0], Pcs=[6137000], zs=[1], omegas=[0.635], S2s=[-0.216396], P=1E6, V=7.184693818446427e-05)
     assert_allclose(eos.T, 299)
 
-    T_slow = eos.solve_T(P=1E6, V=7.184693818446427e-05, quick=False)
+    T_slow = eos.solve_T(P=1E6, V=7.184693818446427e-05)
     assert_allclose(T_slow, 299)
 
 
@@ -1244,7 +1244,7 @@ def test_APISRKMIX_quick():
     for V in [4.1015923107747434e-05, 0.0007104688303034478]:
         eos = APISRKMIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
         assert_allclose(eos.T, 115)
-        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        T_slow = eos.solve_T(P=1E6, V=V)
         assert_allclose(T_slow, 115)
 
 
@@ -1299,7 +1299,7 @@ def test_RKMIX_quick():
     for V in [4.04841478191211e-05, 0.0007006060586399438]:
         eos = RKMIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
         assert_allclose(eos.T, 115)
-        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        T_slow = eos.solve_T(P=1E6, V=V)
         assert_allclose(T_slow, 115)
 
     # Fugacities
@@ -1314,7 +1314,7 @@ def test_RKMIX_quick():
     for V in [5.9099600832651364e-05, 0.0008166666387475041]:
         eos = obj.to(V=V, P=obj.P, zs=[1.0])
         assert_allclose(eos.T, 115)
-        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        T_slow = eos.solve_T(P=1E6, V=V)
         assert_allclose(T_slow, 115)
 
         eos = obj.to(V=V, T=obj.T, zs=[1.0])

@@ -1869,3 +1869,27 @@ def test_VF_S_cases():
         high = flasher.flash(S=base.S(), VF=VF, solution='high')
         assert_allclose(high.T, T_high, rtol=1e-5)
         assert_allclose(high.S(), base.S(), rtol=1e-7)
+
+
+
+def test_methanol_inconsistent_full_example():
+    from thermo.heat_capacity import POLING
+
+    CpObj = HeatCapacityGas(CASRN='67-56-1')
+    CpObj.set_method(POLING)
+    constants = ChemicalConstantsPackage(Tcs=[512.5], Pcs=[8084000.0], omegas=[0.559], MWs=[32.04186], CASs=['67-56-1'])
+    HeatCapacityGases = [CpObj]
+
+    correlations = PropertyCorrelationPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+    liquid = CEOSLiquid(PRMIX, HeatCapacityGases=HeatCapacityGases, eos_kwargs=eos_kwargs)
+    gas = CEOSGas(PRMIX, HeatCapacityGases=HeatCapacityGases, eos_kwargs=eos_kwargs)
+    SRK_gas = CEOSGas(SRKMIX, HeatCapacityGases=HeatCapacityGases, eos_kwargs=eos_kwargs)
+
+    # Known to not converge at higher T
+    flasher_inconsistent = FlashPureVLS(constants, correlations, gas=SRK_gas, liquids=[liquid], solids=[])
+    res = flasher_inconsistent.flash(T=400.0, VF=1)
+
+    assert_close(res.P, 797342.226264512)
+    assert_close(res.gas.rho_mass(), 8.416881310028323)
+    assert_close(res.liquid0.rho_mass(), 568.7838890605196)

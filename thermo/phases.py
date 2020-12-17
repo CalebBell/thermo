@@ -46,7 +46,10 @@ Gas Phases
 ----------
 .. autoclass:: CEOSGas
    :show-inheritance:
-   :members: __init__, as_args, to_TP_zs, V_iter, H, S, Cp, Cv, dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, dH_dP, dS_dT, dS_dP, d2H_dT2, d2H_dP2, d2S_dP2, dH_dT_V, dH_dP_V, dH_dV_T, dH_dV_P, dS_dT_V, dS_dP_V, lnphis, dlnphis_dT, dlnphis_dP
+   :members: __init__, as_args, to_TP_zs, V_iter, H, S, Cp, Cv, dP_dT, dP_dV,
+             d2P_dT2, d2P_dV2, d2P_dTdV, dH_dP, dS_dT, dS_dP, d2H_dT2, d2H_dP2,
+             d2S_dP2, dH_dT_V, dH_dP_V, dH_dV_T, dH_dV_P, dS_dT_V, dS_dP_V,
+             lnphis, dlnphis_dT, dlnphis_dP
 
 Liquid Phases
 -------------
@@ -285,7 +288,217 @@ class Phase(object):
             pass
         return v
 
-    def compute_main_properties(self):
+    ### Methods that should be implemented by subclasses
+
+    def to_TP_zs(self, T, P, zs):
+        r'''Method to create a new Phase object with the same constants as the
+        existing Phase but at a different `T` and `P`.
+
+        Parameters
+        ----------
+        zs : list[float]
+            Molar composition of the new phase, [-]
+        T : float
+            Temperature of the new phase, [K]
+        P : float
+            Pressure of the new phase, [Pa]
+
+        Returns
+        -------
+        new_phase : Phase
+            New phase at the specified conditions, [-]
+
+        Notes
+        -----
+        This method is marginally faster than :obj:`Phase.to` as it does not
+        need to check what the inputs are.
+
+        Examples
+        --------
+
+        >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[])
+        >>> phase.to_TP_zs(T=1e5, P=1e3, zs=[.5, .5])
+        <IdealGas, T=100000 K, P=1000 Pa>
+        '''
+        raise NotImplementedError("Must be implemented by subphases")
+
+    def to(self, zs, T=None, P=None, V=None):
+        r'''Method to create a new Phase object with the same constants as the
+        existing Phase but at different conditions. Mole fractions `zs` are
+        always required and any two of `T`, `P`, and `V` are required.
+
+        Parameters
+        ----------
+        zs : list[float]
+            Molar composition of the new phase, [-]
+        T : float, optional
+            Temperature of the new phase, [K]
+        P : float, optional
+            Pressure of the new phase, [Pa]
+        V : float, optional
+            Molar volume of the new phase, [m^3/mol]
+
+        Returns
+        -------
+        new_phase : Phase
+            New phase at the specified conditions, [-]
+
+        Notes
+        -----
+
+        Examples
+        --------
+
+        These sample cases illustrate the three combinations of inputs.
+        Note that some thermodynamic models may have multiple solutions for
+        some inputs!
+
+        >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[])
+        >>> phase.to(T=1e5, P=1e3, zs=[.5, .5])
+        <IdealGas, T=100000 K, P=1000 Pa>
+        >>> phase.to(V=1e-4, P=1e3, zs=[.1, .9])
+        <IdealGas, T=0.0120272 K, P=1000 Pa>
+        >>> phase.to(T=1e5, V=1e12, zs=[.2, .8])
+        <IdealGas, T=100000 K, P=8.31446e-07 Pa>
+
+        '''
+        raise NotImplementedError("Must be implemented by subphases")
+
+    def V(self):
+        r'''Method to return the molar volume of the phase.
+
+        Returns
+        -------
+        V : float
+            Molar volume, [m^3/mol]
+        '''
+        raise NotImplementedError("Must be implemented by subphases")
+
+    def dP_dT(self):
+        r'''Method to calculate and return the first temperature derivative of
+        pressure of the phase.
+
+        Returns
+        -------
+        dP_dT : float
+            First temperature derivative of pressure, [Pa/K]
+        '''
+        raise NotImplementedError("Must be implemented by subphases")
+
+    def dP_dV(self):
+        r'''Method to calculate and return the first volume derivative of
+        pressure of the phase.
+
+        Returns
+        -------
+        dP_dV : float
+            First volume derivative of pressure, [Pa*mol/m^3]
+        '''
+        raise NotImplementedError("Must be implemented by subphases")
+
+    def d2P_dT2(self):
+        r'''Method to calculate and return the second temperature derivative of
+        pressure of the phase.
+
+        Returns
+        -------
+        d2P_dT2 : float
+            Second temperature derivative of pressure, [Pa/K^2]
+        '''
+        raise NotImplementedError("Must be implemented by subphases")
+
+    def d2P_dV2(self):
+        r'''Method to calculate and return the second volume derivative of
+        pressure of the phase.
+
+        Returns
+        -------
+        d2P_dV2 : float
+            Second volume derivative of pressure, [Pa*mol^2/m^6]
+        '''
+        raise NotImplementedError("Must be implemented by subphases")
+
+    def d2P_dTdV(self):
+        r'''Method to calculate and return the second derivative of
+        pressure with respect to temperature and volume of the phase.
+
+        Returns
+        -------
+        d2P_dTdV : float
+            Second volume derivative of pressure, [mol*Pa^2/(J*K)]
+        '''
+        raise NotImplementedError("Must be implemented by subphases")
+
+    def lnphis(self):
+        r'''Method to calculate and return the log of fugacity coefficients of
+        each component in the phase.
+
+        Returns
+        -------
+        lnphis : list[float]
+            Log fugacity coefficients, [-]
+        '''
+        raise NotImplementedError("Must be implemented by subphases")
+
+    def dlnphis_dT(self):
+        r'''Method to calculate and return the temperature derivative of the
+        log of fugacity coefficients of each component in the phase.
+
+        Returns
+        -------
+        dlnphis_dT : list[float]
+            First temperature derivative of log fugacity coefficients, [1/K]
+        '''
+        raise NotImplementedError("Must be implemented by subphases")
+
+    def dlnphis_dP(self):
+        r'''Method to calculate and return the pressure derivative of the
+        log of fugacity coefficients of each component in the phase.
+
+        Returns
+        -------
+        dlnphis_dP : list[float]
+            First pressure derivative of log fugacity coefficients, [1/Pa]
+        '''
+        raise NotImplementedError("Must be implemented by subphases")
+
+    def H(self):
+        r'''Method to calculate and return the enthalpy of the phase.
+        The reference state for most subclasses is an ideal-gas enthalpy of
+        zero at 298.15 K and 101325 Pa.
+
+        Returns
+        -------
+        H : float
+            Molar enthalpy, [J/(mol)]
+        '''
+        raise NotImplementedError("Must be implemented by subphases")
+
+    def S(self):
+        r'''Method to calculate and return the entropy of the phase.
+        The reference state for most subclasses is an ideal-gas entropy of
+        zero at 298.15 K and 101325 Pa.
+
+        Returns
+        -------
+        S : float
+            Molar entropy, [J/(mol*K)]
+        '''
+        raise NotImplementedError("Must be implemented by subphases")
+
+    def Cp(self):
+        r'''Method to calculate and return the constant-pressure heat capacity
+        of the phase.
+
+        Returns
+        -------
+        Cp : float
+            Molar heat capacity, [J/(mol*K)]
+        '''
+        raise NotImplementedError("Must be implemented by subphases")
+
+    ### Benchmarking methods
+    def _compute_main_properties(self):
         '''Method which computes some basic properties. For benchmarking;
         accepts no arguments and returns nothing. A timer should be used
         outside of this method.
@@ -301,6 +514,7 @@ class Phase(object):
         self.d2P_dTdV()
         self.PIP()
 
+    ### Consistency Checks
     def S_phi_consistency(self):
         r'''Method to calculate and return a consistency check between ideal
         gas entropy behavior, and the fugacity coefficients and their
@@ -4401,7 +4615,7 @@ class IdealGas(Phase):
         new.Sfs = self.Sfs
         return new
 
-    def to_zs_TPV(self, zs, T=None, P=None, V=None):
+    def to(self, zs, T=None, P=None, V=None):
         new = self.__class__.__new__(self.__class__)
         if T is not None and V is not None:
             P = R*T/V
@@ -4427,7 +4641,6 @@ class IdealGas(Phase):
 
         return new
 
-    to = to_zs_TPV
 
     ### Volumetric properties
     def V(self):
@@ -4968,8 +5181,50 @@ class CEOSGas(Phase):
             self.P = 101325.0
             self.zs = zs
 
-
     def to_TP_zs(self, T, P, zs, other_eos=None):
+        r'''Method to create a new Phase object with the same constants as the
+        existing Phase but at a different `T` and `P`. This method has a
+        special parameter `other_eos`.
+        This is added to allow a gas-type phase to be created from
+        a liquid-type phase at the same conditions (and vice-versa),
+        as :obj:`GCEOSMIX <thermo.eos_mix.GCEOSMIX>` objects were designed to
+        have vapor and liquid properties in the same phase. This argument is
+        mostly for internal use.
+
+        Parameters
+        ----------
+        zs : list[float]
+            Molar composition of the new phase, [-]
+        T : float
+            Temperature of the new phase, [K]
+        P : float
+            Pressure of the new phase, [Pa]
+        other_eos : obj:`GCEOSMIX <thermo.eos_mix.GCEOSMIX> object
+            Other equation of state object at the same conditions, [-]
+
+        Returns
+        -------
+        new_phase : Phase
+            New phase at the specified conditions, [-]
+
+        Notes
+        -----
+        This method is marginally faster than :obj:`Phase.to` as it does not
+        need to check what the inputs are.
+
+        Examples
+        --------
+
+        >>> from thermo.eos_mix import PRMIX
+        >>> eos_kwargs = dict(Tcs=[305.32, 369.83], Pcs=[4872000.0, 4248000.0], omegas=[0.098, 0.152])
+        >>> gas = CEOSGas(PRMIX, T=300.0, P=1e6, zs=[.2, .8], eos_kwargs=eos_kwargs)
+        >>> liquid = CEOSLiquid(PRMIX, T=500.0, P=1e7, zs=[.3, .7], eos_kwargs=eos_kwargs)
+        >>> new_liq = liquid.to_TP_zs(T=gas.T, P=gas.P, zs=gas.zs, other_eos=gas.eos_mix)
+        >>> new_liq
+        <CEOSLiquid, T=300 K, P=1e+06 Pa>
+        >>> new_liq.eos_mix is gas.eos_mix
+        True
+        '''
         # Why so slow
         new = self.__class__.__new__(self.__class__)
         new.T = T
@@ -5008,7 +5263,7 @@ class CEOSGas(Phase):
 
         return new
 
-    def to_zs_TPV(self, zs, T=None, P=None, V=None):
+    def to(self, zs, T=None, P=None, V=None):
         new = self.__class__.__new__(self.__class__)
         new.zs = zs
 
@@ -5057,8 +5312,6 @@ class CEOSGas(Phase):
             pass
 
         return new
-
-    to = to_zs_TPV
 
     def V_iter(self, force=False):
         # Can be some severe issues in the very low pressure/temperature range
@@ -5933,7 +6186,7 @@ class GibbsExcessLiquid(Phase):
         return new
 
 
-    def to_zs_TPV(self, zs, T=None, P=None, V=None):
+    def to(self, zs, T=None, P=None, V=None):
         try:
             T_equal = T == self.T
         except:
@@ -5963,8 +6216,6 @@ class GibbsExcessLiquid(Phase):
 
         self.transfer_data(new, zs, T, T_equal)
         return new
-
-    to = to_zs_TPV
 
     def transfer_data(self, new, zs, T, T_equal):
         new.VaporPressures = self.VaporPressures
@@ -8385,7 +8636,7 @@ class GraysonStreed(Phase):
 
         return new
 
-    def to_zs_TPV(self, zs, T=None, P=None, V=None):
+    def to(self, zs, T=None, P=None, V=None):
         if T is not None:
             if P is not None:
                 return self.to_TP_zs(T=T, P=P, zs=zs)
@@ -8846,7 +9097,7 @@ class VirialGas(Phase):
         new._V = Z*R*T/P
         return new
 
-    def to_zs_TPV(self, zs, T=None, P=None, V=None):
+    def to(self, zs, T=None, P=None, V=None):
         new = self.__class__.__new__(self.__class__)
         new.zs = zs
         new.N = self.N
@@ -8889,8 +9140,6 @@ class VirialGas(Phase):
             raise ValueError("Two of T, P, or V are needed")
 
         return new
-
-    to = to_zs_TPV
 
     def B(self):
         try:
@@ -9720,7 +9969,7 @@ class DryAirLemmon(HelmholtzEOS):
         new.d3A0_dtau3 = lemmon2000_air_d3A0_dtau3(tau, delta)
         return new
 
-    def to_zs_TPV(self, zs, T=None, P=None, V=None):
+    def to(self, zs, T=None, P=None, V=None):
         new = self.__class__.__new__(self.__class__)
         new.zs = zs
         if T is not None and P is not None:
@@ -9748,7 +9997,6 @@ class DryAirLemmon(HelmholtzEOS):
         new.d3A0_dtau3 = lemmon2000_air_d3A0_dtau3(tau, delta)
         return new
 
-    to = to_zs_TPV
 
     def mu(self):
         try:
@@ -9818,7 +10066,7 @@ class IAPWS95(HelmholtzEOS):
         new.A0, new.dA0_dtau, new.d2A0_dtau2, new.d3A0_dtau3 = iapws95_A0_tau_derivatives(tau, delta)
         return new
 
-    def to_zs_TPV(self, zs, T=None, P=None, V=None):
+    def to(self, zs, T=None, P=None, V=None):
         new = self.__class__.__new__(self.__class__)
         new.zs = zs
         if T is not None and P is not None:
@@ -9848,7 +10096,6 @@ class IAPWS95(HelmholtzEOS):
 
         return new
 
-    to = to_zs_TPV
 
     def mu(self):
         r'''Calculate and return the viscosity of water according to the IAPWS.
@@ -10113,7 +10360,7 @@ class IAPWS97(Phase):
             self.pi = P*1e-6
             self.tau = 1000.0/T
 
-    def to_zs_TPV(self, zs, T=None, P=None, V=None):
+    def to(self, zs, T=None, P=None, V=None):
         new = self.__class__.__new__(self.__class__)
         new.zs = zs
 
@@ -10162,8 +10409,6 @@ class IAPWS97(Phase):
         new.T = T
 
         return new
-
-    to = to_zs_TPV
 
     def V(self):
         return self._V
@@ -10568,7 +10813,7 @@ class CoolPropPhase(Phase):
         return caching_state_CoolProp(*self.key)
 
     def to_TP_zs(self, T, P, zs):
-        return self.to_zs_TPV(T=T, P=P, zs=zs)
+        return self.to(T=T, P=P, zs=zs)
 
     def from_AS(self, AS):
         new = self.__class__.__new__(self.__class__)
@@ -10593,7 +10838,7 @@ class CoolPropPhase(Phase):
         new.key = (backend, fluid, self._rho, T, CPrhoT_INPUTS, CPunknown, zs_key)
         return new
 
-    def to_zs_TPV(self, zs, T=None, P=None, V=None, prefer_phase=None):
+    def to(self, zs, T=None, P=None, V=None, prefer_phase=None):
         new = self.__class__.__new__(self.__class__)
         new.zs = zs
         new.N = self.N
@@ -10654,8 +10899,6 @@ class CoolPropPhase(Phase):
         self._S = AS.smolar()
         self._Cp = AS.cpmolar()
         self._PIP = AS.PIP()
-
-    to = to_zs_TPV
 
     def V(self):
         return self._V
@@ -10837,7 +11080,7 @@ class CombinedPhase(Phase):
 
         for i, p in enumerate(phases):
             if p.T != T or p.P != P or p.zs != zs:
-                phases[i] = p.to_zs_TPV(T=T, P=P, zs=zs)
+                phases[i] = p.to(T=T, P=P, zs=zs)
         self.phases = phases
 
     def lnphis(self):

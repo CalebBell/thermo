@@ -1639,7 +1639,7 @@ def test_IAPWS95_initialization():
     liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
     objs = [liquid.to(T=300.0, P=1e5, zs=[1]),
            liquid.to_TP_zs(T=300.0, P=1e5, zs=[1]),
-           liquid.to_zs_TPV(T=300.0, P=1e5, zs=[1]),
+           liquid.to(T=300.0, P=1e5, zs=[1]),
            IAPWS95Gas(T=300, P=1e5, zs=[1]),
            IAPWS95(T=300, P=1e5, zs=[1]),
 
@@ -1651,7 +1651,7 @@ def test_IAPWS95_initialization():
         assert_close(liquid.tau, same_point.tau, rtol=1e-16)
         assert_close(liquid.delta, same_point.delta, rtol=1e-15)
 
-    objs = [liquid.to_zs_TPV(T=300.0, V=liquid.V(), zs=[1]),
+    objs = [liquid.to(T=300.0, V=liquid.V(), zs=[1]),
             liquid.to(T=300.0, V=liquid.V(), zs=[1]),
             liquid.to(P=1e5, V=liquid.V(), zs=[1])]
 

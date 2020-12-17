@@ -35,7 +35,8 @@ Base Class
     :members:
     :undoc-members:
     :show-inheritance:
-    :exclude-members: _P_zero_g_cheb_coeffs, _P_zero_l_cheb_coeffs, main_derivatives_and_departures, derivatives_and_departures
+    :exclude-members: _P_zero_g_cheb_coeffs, _P_zero_l_cheb_coeffs,
+                      main_derivatives_and_departures, derivatives_and_departures
 
 Standard Peng-Robinson Family EOSs
 ==================================
@@ -44,7 +45,8 @@ Standard Peng Robinson
 ----------------------
 .. autoclass:: PR
    :show-inheritance:
-   :members: a_alpha_pure, a_alpha_and_derivatives_pure,  d3a_alpha_dT3_pure, solve_T, P_max_at_V, c1, c2, Zc
+   :members: a_alpha_pure, a_alpha_and_derivatives_pure, d3a_alpha_dT3_pure,
+             solve_T, P_max_at_V, c1, c2, Zc
 
 Peng Robinson (1978)
 --------------------
@@ -444,6 +446,8 @@ class GCEOS(object):
     d2a_alpha_dT2 : float
         Second temperature derivative of :math:`a \alpha` calculated by
         EOS-specific method, [J^2/mol^2/Pa/K**2]
+    Zc : float
+        Critical compressibility of cubic EOS state, [-]
     V_l : float
         Liquid phase molar volume, [m^3/mol]
     V_g : float
@@ -632,6 +636,11 @@ class GCEOS(object):
         Gas phase departure constant volume heat capacity, [J/(mol*K)].
         See :obj:`GCEOS.set_properties_from_solution` for
         the formula.
+    c1 : float
+        Full value of the constant in the `a` parameter, set in some EOSs, [-]
+    c2 : float
+        Full value of the constant in the `b` parameter, set in some EOSs, [-]
+
     A_dep_g
     A_dep_l
     beta_g
@@ -787,6 +796,9 @@ class GCEOS(object):
     Psat_cheb_range = (0.0, 0.0)
 
     main_derivatives_and_departures = staticmethod(main_derivatives_and_departures)
+
+    c1 = None
+    c2 = None
 
     @property
     def state_specs(self):
@@ -1353,7 +1365,7 @@ class GCEOS(object):
         return Ts, a_alphas, da_alphas, d2a_alphas
 
 
-    def solve_T(self, P, V, quick=True, solution=None):
+    def solve_T(self, P, V, solution=None):
         '''Generic method to calculate `T` from a specified `P` and `V`.
         Provides SciPy's `newton` solver, and iterates to solve the general
         equation for `P`, recalculating `a_alpha` as a function of temperature
@@ -1365,10 +1377,6 @@ class GCEOS(object):
             Pressure, [Pa]
         V : float
             Molar volume, [m^3/mol]
-        quick : bool, optional
-            Whether to use a SymPy cse-derived expression (3x faster) or
-            individual formulas - not applicable where a numerical solver is
-            used.
         solution : str or None, optional
             'l' or 'g' to specify a liquid of vapor solution (if one exists);
             if None, will select a solution more likely to be real (closer to
@@ -1883,7 +1891,8 @@ class GCEOS(object):
                       pts=50, show=False, color_map=None,
                       mechanical=True, pseudo_critical=True, Psat=True,
                       determinant_zeros=True, phase_ID_transition=True,
-                      base_property='V'):
+                      base_property='V', base_min=None, base_max=None,
+                      base_selection='Gmin'):
         r'''Method to create a plot of the special curves of a fluid -
         vapor pressure, determinant zeros, pseudo critical point,
         and mechanical critical point.
@@ -1895,42 +1904,54 @@ class GCEOS(object):
 
         Parameters
         ----------
-        Tmin : float
+        Tmin : float, optional
             Minimum temperature of calculation, [K]
-        Tmax : float
+        Tmax : float, optional
             Maximum temperature of calculation, [K]
-        Pmin : float
+        Pmin : float, optional
             Minimum pressure of calculation, [Pa]
-        Pmax : float
+        Pmax : float, optional
             Maximum pressure of calculation, [Pa]
         pts : int, optional
             The number of points to include in both the `x` and `y` axis [-]
-        show : bool
+        show : bool, optional
             Whether or not the plot should be rendered and shown; a handle to
             it is returned if `plot` is True for other purposes such as saving
             the plot to a file, [-]
-        color_map : matplotlib.cm.ListedColormap
+        color_map : matplotlib.cm.ListedColormap, optional
             Matplotlib colormap object, [-]
-        mechanical : bool
+        mechanical : bool, optional
             Whether or not to include the mechanical critical point; this is
             the same as the critical point for a pure compound but not for a
             mixture, [-]
-        pseudo_critical : bool
+        pseudo_critical : bool, optional
             Whether or not to include the pseudo critical point; this is
             the same as the critical point for a pure compound but not for a
             mixture, [-]
-        Psat : bool
+        Psat : bool, optional
             Whether or not to include the vapor pressure curve; for mixtures
             this is neither the bubble nor dew curve, but rather a hypothetical
             one which uses the same equation as the pure components, [-]
-        determinant_zeros : bool
+        determinant_zeros : bool, optional
             Whether or not to include a curve showing when the EOS's
             determinant hits zero, [-]
-        phase_ID_transition : bool
+        phase_ID_transition : bool, optional
             Whether or not to show a curve of where the PIP hits 1 exactly, [-]
-        base_property : str
+        base_property : str, optional
             The property which should be plotted; '_l' and '_g' are added
             automatically according to the selected phase, [-]
+        base_min : float, optional
+            If specified, the `base` property will values will be limited to
+            this value at the minimum, [-]
+        base_max : float, optional
+            If specified, the `base` property will values will be limited to
+            this value at the maximum, [-]
+        base_selection : str, optional
+            For the base property, there are often two possible phases and but
+            only one value can be plotted; use 'l' to pefer liquid-like values,
+            'g' to prefer gas-like values, and 'Gmin' to prefer values of the
+            phase with the lowest Gibbs energy, [-]
+
 
         Returns
         -------
@@ -1954,11 +1975,20 @@ class GCEOS(object):
                 kwargs['P'] = P
                 obj = self.to(**kwargs)
                 if obj.phase == 'l/g':
-                    V = getattr(obj, l_prop) if obj.G_dep_l < obj.G_dep_g else getattr(obj, g_prop)
+                    if base_selection == 'Gmin':
+                        V = getattr(obj, l_prop) if obj.G_dep_l < obj.G_dep_g else getattr(obj, g_prop)
+                    elif base_selection == 'l':
+                        V = getattr(obj, l_prop)
+                    elif base_selection == 'g':
+                        V = getattr(obj, g_prop)
+                    else:
+                        raise ValueError("Unknown value for base_selection")
                 elif obj.phase == 'l':
                     V = getattr(obj, l_prop)
                 else:
                     V = getattr(obj, g_prop)
+                if base_max is not None and V > base_max: V = base_max
+                if base_min is not None and V < base_min: V = base_min
                 V_row.append(V)
                 base_positive = base_positive and V > 0.0
             Vs.append(V_row)
@@ -1972,6 +2002,8 @@ class GCEOS(object):
             Pmax_Psat = min(Pc, Pmax)
             Pmin_Psat = max(1e-20, Pmin)
             Tmin_Psat, Tmax_Psat = self.Tsat(Pmin_Psat), self.Tsat(Pmax_Psat)
+            if Tmin_Psat < Tmin or Tmin_Psat > Tmax: Tmin_Psat = Tmin
+            if Tmax_Psat > Tmax or Tmax_Psat < Tmin: Tmax_Psat = Tmax
 
             Ts_Psats = []
             Psats = []
@@ -4196,36 +4228,47 @@ class GCEOS(object):
 
     def P_PIP_transition(self, T, low_P_limit=0.0):
         r'''Method to calculate the pressure which makes the phase
-        identification parameter exactly 1.
+        identification parameter exactly 1. There are three regions for this
+        calculation:
+
+            * subcritical - PIP = 1 for the gas-like phase at P = 0
+            * initially supercritical - PIP = 1 on a curve starting at the
+              critical point, increasing for a while, decreasing for a while,
+              and then curving sharply back to a zero pressure.
+            * later supercritical - PIP = 1 for the liquid-like phase at P = 0
 
         Parameters
         ----------
-        T_guess : float, optional
-            Temperature guess, [K]
+        T : float
+            Temperature for the calculation, [K]
+        low_P_limit : float
+            What value to return for the subcritical and later region, [Pa]
 
         Returns
         -------
-        T_discriminant_zero_g : float
-            Temperature which make the discriminants zero at the right condition,
-            [K]
+        P : float
+            Pressure which makes the PIP = 1, [Pa]
 
         Notes
         -----
-        Significant numerical issues remain in improving this method.
+        The transition between the region where this function returns values
+        and the high temperature region that doesn't is the Joule-Thomson
+        inversion point at a pressure of zero and can be directly solved for.
 
         Examples
         --------
         >>> eos = PRTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
-        >>> T_trans = eos.T_discriminant_zero_g()
-        >>> T_trans
-        644.3023307
-
-        In this case, the discriminant transition does not reveal a transition
-        to two roots being available, only to there being a double (imaginary)
-        root.
-
-        >>> eos.to(P=eos.P, T=T_trans).mpmath_volumes_float
-        ((9.309597822372529e-05-0.00015876248805149625j), (9.309597822372529e-05+0.00015876248805149625j), (0.005064847204219234+0j))
+        >>> eos.P_PIP_transition(100)
+        0.0
+        >>> low_T = eos.to(T=100.0, P=eos.P_PIP_transition(100, low_P_limit=1e-5))
+        >>> low_T.PIP_l, low_T.PIP_g
+        (45.778088191, 0.9999999997903)
+        >>> initial_super = eos.to(T=600.0, P=eos.P_PIP_transition(600))
+        >>> initial_super.P, initial_super.PIP_g
+        (6456282.17132, 0.999999999999)
+        >>> high_T = eos.to(T=900.0, P=eos.P_PIP_transition(900, low_P_limit=1e-5))
+        >>> high_T.P, high_T.PIP_g
+        (12536704.763, 0.9999999999)
         '''
         subcritical = T < self.Tc
         if subcritical:
@@ -6833,24 +6876,24 @@ class IG(GCEOS):
     def _zero(self): return 0.0
     def _set_nothing(self, thing): return
 
-    d2T_dV2_g = property(_zero, _set_nothing)
-    d2V_dT2_g = property(_zero, _set_nothing)
-    G_dep_g = property(_zero, _set_nothing)
-    H_dep_g = property(_zero, _set_nothing)
-    S_dep_g = property(_zero, _set_nothing)
-    U_dep_g = property(_zero, _set_nothing)
-    A_dep_g = property(_zero, _set_nothing)
-    V_dep_g = property(_zero, _set_nothing)
-    Cp_dep_g = property(_zero, _set_nothing)
+    d2T_dV2_g = property(_zero, fset=_set_nothing, doc=GCEOS.d2T_dV2_g.__doc__)
+    d2V_dT2_g = property(_zero, fset=_set_nothing, doc=GCEOS.d2V_dT2_g.__doc__)
+    U_dep_g = property(_zero, fset=_set_nothing, doc=GCEOS.U_dep_g.__doc__)
+    A_dep_g = property(_zero, fset=_set_nothing, doc=GCEOS.A_dep_g.__doc__)
+    V_dep_g = property(_zero, fset=_set_nothing, doc=GCEOS.V_dep_g.__doc__)
+    G_dep_g = property(_zero, fset=_set_nothing, doc='Departure Gibbs free energy of an ideal gas is zero, [J/(mol)]')
+    H_dep_g = property(_zero, fset=_set_nothing, doc='Departure enthalpy of an ideal gas is zero, [J/(mol)]')
+    S_dep_g = property(_zero, fset=_set_nothing, doc='Departure entropy of an ideal gas is zero, [J/(mol*K)]')
+    Cp_dep_g = property(_zero, fset=_set_nothing, doc='Departure heat capacity of an ideal gas is zero, [J/(mol*K)]')
 
     # Replace methods
-    dH_dep_dP_g = property(_zero, doc=GCEOS.dH_dep_dP_g)
-    dH_dep_dT_g = property(_zero, doc=GCEOS.dH_dep_dT_g)
-    dS_dep_dP_g = property(_zero, doc=GCEOS.dS_dep_dP_g)
-    dS_dep_dT_g = property(_zero, doc=GCEOS.dS_dep_dT_g)
-    dfugacity_dT_g = property(_zero, doc=GCEOS.dfugacity_dT_g)
-    dphi_dP_g = property(_zero, doc=GCEOS.dphi_dP_g)
-    dphi_dT_g = property(_zero, doc=GCEOS.dphi_dT_g)
+    dH_dep_dP_g = property(_zero, doc=GCEOS.dH_dep_dP_g.__doc__)
+    dH_dep_dT_g = property(_zero, doc=GCEOS.dH_dep_dT_g.__doc__)
+    dS_dep_dP_g = property(_zero, doc=GCEOS.dS_dep_dP_g.__doc__)
+    dS_dep_dT_g = property(_zero, doc=GCEOS.dS_dep_dT_g.__doc__)
+    dfugacity_dT_g = property(_zero, doc=GCEOS.dfugacity_dT_g.__doc__)
+    dphi_dP_g = property(_zero, doc=GCEOS.dphi_dP_g.__doc__)
+    dphi_dT_g = property(_zero, doc=GCEOS.dphi_dT_g.__doc__)
 
 
     def __init__(self, Tc=190.564, Pc=4599000.0, omega=0.008, T=None, P=None,
@@ -6865,12 +6908,68 @@ class IG(GCEOS):
         self.solve()
 
     def a_alpha_and_derivatives_pure(self, T):
+        r'''Method to calculate :math:`a \alpha` and its first and second
+        derivatives for this EOS. All values are zero.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the values, [-]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dT : float
+            Temperature derivative of coefficient calculated by EOS-specific
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2 : float
+            Second temperature derivative of coefficient calculated by
+            EOS-specific method, [J^2/mol^2/Pa/K^2]
+
+        '''
         return (0.0, 0.0, 0.0)
 
     def a_alpha_pure(self, T):
+        r'''Method to calculate :math:`a \alpha` for the ideal gas law, which
+        is zero.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the values, [-]
+
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        '''
         return 0.0
 
-    def solve_T(self, P, V, quick=True, solution=None):
+    def solve_T(self, P, V, solution=None):
+        r'''Method to calculate `T` from a specified `P` and `V` for the
+        ideal gas equation of state.
+
+        .. math::
+            T = \fraac{PV}{R}
+
+        Parameters
+        ----------
+        P : float
+            Pressure, [Pa]
+        V : float
+            Molar volume, [m^3/mol]
+        solution : str or None, optional
+            Not used, [-]
+
+        Returns
+        -------
+        T : float
+            Temperature, [K]
+
+        Notes
+        -----
+        '''
         self.no_T_spec = True
         return P*V*R_inv
 
@@ -8476,7 +8575,7 @@ class PRSV2(PR):
                                      - Tr)*(1.0 - sqrtTr))*(1.0 + sqrtTr)*(0.7 - Tr))
         self.solve()
 
-    def solve_T(self, P, V, quick=True, solution=None):
+    def solve_T(self, P, V, solution=None):
         r'''Method to calculate `T` from a specified `P` and `V` for the PRSV2
         EOS. Uses `Tc`, `a`, `b`, `kappa0`, `kappa1`, `kappa2`, and `kappa3`
         as well, obtained from the class's namespace.
@@ -8487,9 +8586,6 @@ class PRSV2(PR):
             Pressure, [Pa]
         V : float
             Molar volume, [m^3/mol]
-        quick : bool, optional
-            Whether to use a SymPy cse-derived expression (somewhat faster) or
-            individual formulas.
         solution : str or None, optional
             'l' or 'g' to specify a liquid of vapor solution (if one exists);
             if None, will select a solution more likely to be real (closer to
@@ -8802,7 +8898,7 @@ class VDW(GCEOS):
         '''
         return self.a
 
-    def solve_T(self, P, V, quick=True, solution=None):
+    def solve_T(self, P, V, solution=None):
         r'''Method to calculate `T` from a specified `P` and `V` for the :obj:`VDW`
         EOS. Uses `a`, and `b`, obtained from the class's namespace.
 
@@ -8816,8 +8912,6 @@ class VDW(GCEOS):
             Pressure, [Pa]
         V : float
             Molar volume, [m^3/mol]
-        quick : bool, optional
-            Not used, [-]
         solution : str or None, optional
             'l' or 'g' to specify a liquid of vapor solution (if one exists);
             if None, will select a solution more likely to be real (closer to
@@ -8844,7 +8938,7 @@ class VDW(GCEOS):
 
         Returns
         -------
-        T_discriminant_zeros : float
+        T_discriminant_zeros : list[float]
             Temperatures which make the discriminant zero, [K]
 
         Notes
@@ -9123,7 +9217,7 @@ class RK(GCEOS):
         sqrt_Tr_inv = sqrt(Tc/T)
         return self.a*sqrt_Tr_inv
 
-    def solve_T(self, P, V, quick=True, solution=None):
+    def solve_T(self, P, V, solution=None):
         r'''Method to calculate `T` from a specified `P` and `V` for the RK
         EOS. Uses `a`, and `b`, obtained from the class's namespace.
 
@@ -9133,9 +9227,6 @@ class RK(GCEOS):
             Pressure, [Pa]
         V : float
             Molar volume, [m^3/mol]
-        quick : bool, optional
-            Whether to use a SymPy cse-derived expression (3x faster) or
-            individual formulas
         solution : str or None, optional
             'l' or 'g' to specify a liquid of vapor solution (if one exists);
             if None, will select a solution more likely to be real (closer to
@@ -9507,7 +9598,7 @@ class SRK(GCEOS):
         return P_max
 
 
-    def solve_T(self, P, V, quick=True, solution=None):
+    def solve_T(self, P, V, solution=None):
         r'''Method to calculate `T` from a specified `P` and `V` for the SRK
         EOS. Uses `a`, `b`, and `Tc` obtained from the class's namespace.
 
@@ -9517,9 +9608,6 @@ class SRK(GCEOS):
             Pressure, [Pa]
         V : float
             Molar volume, [m^3/mol]
-        quick : bool, optional
-            Whether to use a SymPy cse-derived expression (3x faster) or
-            individual formulas
         solution : str or None, optional
             'l' or 'g' to specify a liquid of vapor solution (if one exists);
             if None, will select a solution more likely to be real (closer to
@@ -9569,7 +9657,7 @@ class SRK(GCEOS):
 #                              - 2*V*a**2*b*m**4 + a**2*b**2*m**4))])
         self.no_T_spec = True
         a, b, Tc, m = self.a, self.b, self.Tc, self.m
-        if quick:
+        if True:
             x0 = R*Tc
             x1 = V*b
             x2 = x0*x1
@@ -10221,7 +10309,7 @@ class APISRK(SRK):
         a, Tc, S1, S2 = self.a, self.Tc, self.S1, self.S2
         return a*(S1*(-(T/Tc)**0.5 + 1.) + S2*(-(T/Tc)**0.5 + 1)*(T/Tc)**-0.5 + 1)**2
 
-    def solve_T(self, P, V, quick=True, solution=None):
+    def solve_T(self, P, V, solution=None):
         r'''Method to calculate `T` from a specified `P` and `V` for the API
         SRK EOS. Uses `a`, `b`, and `Tc` obtained from the class's namespace.
 
@@ -10231,9 +10319,6 @@ class APISRK(SRK):
             Pressure, [Pa]
         V : float
             Molar volume, [m^3/mol]
-        quick : bool, optional
-            Whether to use a SymPy cse-derived expression (3x faster) or
-            individual formulas
         solution : str or None, optional
             'l' or 'g' to specify a liquid of vapor solution (if one exists);
             if None, will select a solution more likely to be real (closer to
@@ -10260,17 +10345,12 @@ class APISRK(SRK):
             # Previously coded method is  63 microseconds vs 47 here
 #            return super(SRK, self).solve_T(P, V)
             Tc, a, b, S1, S2 = self.Tc, self.a, self.b, self.S1, self.S2
-            if quick:
-                x2 = R/(V-b)
-                x3 = (V*(V + b))
-                def to_solve(T):
-                    x0 = (T/Tc)**0.5
-                    x1 = x0 - 1.
-                    return (x2*T - a*(S1*x1 + S2*x1/x0 - 1.)**2/x3) - P
-            else:
-                def to_solve(T):
-                    P_calc = R*T/(V - b) - a*(S1*(-sqrt(T/Tc) + 1) + S2*(-sqrt(T/Tc) + 1)/sqrt(T/Tc) + 1)**2/(V*(V + b))
-                    return P_calc - P
+            x2 = R/(V-b)
+            x3 = (V*(V + b))
+            def to_solve(T):
+                x0 = (T/Tc)**0.5
+                x1 = x0 - 1.
+                return (x2*T - a*(S1*x1 + S2*x1/x0 - 1.)**2/x3) - P
 
         if solution is None:
             try:

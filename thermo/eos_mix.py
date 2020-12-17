@@ -757,7 +757,6 @@ class GCEOSMIX(GCEOS):
         obj : EOSMIX
             Pure component EOSMIX at mechanical critical point [-]
 
-
         Examples
         --------
         >>> base = RKMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
@@ -6118,19 +6117,171 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
         N, cmps = self.N, self.cmps
         return [[[0.0]*N for _ in cmps] for _ in self.cmps]
 
+    @property
+    def ddelta_dzs(self):
+        r'''Helper method for calculating the composition derivatives of
+        `delta`. Note this is independent of the phase.
 
-    ddelta_dzs = property(_zeros1d)
-    ddelta_dns = property(_zeros1d)
-    depsilon_dzs = property(_zeros1d)
-    depsilon_dns = property(_zeros1d)
+        .. math::
+            \left(\frac{\partial \delta}{\partial x_i}\right)_{T, P, x_{i\ne j}}
+            = 0
 
-    d2delta_dzizjs = property(_zeros2d)
-    d2delta_dninjs = property(_zeros2d)
-    d2epsilon_dzizjs = property(_zeros2d)
-    d2epsilon_dninjs = property(_zeros2d)
+        Returns
+        -------
+        ddelta_dzs : list[float]
+            Composition derivative of `delta` of each component, [m^3/mol]
+        '''
+        return self.zeros1d
 
-    d3delta_dninjnks = property(_zeros3d)
-    d3epsilon_dninjnks = property(_zeros3d)
+    @property
+    def ddelta_dns(self):
+        r'''Helper method for calculating the mole number derivatives of
+        `delta`. Note this is independent of the phase.
+
+        .. math::
+            \left(\frac{\partial \delta}{\partial n_i}\right)_{T, P, n_{i\ne j}}
+            = 0
+
+        Returns
+        -------
+        ddelta_dns : list[float]
+            Mole number derivative of `delta` of each component, [m^3/mol^2]
+        '''
+        return self.zeros1d
+
+    @property
+    def depsilon_dzs(self):
+        r'''Helper method for calculating the composition derivatives of
+        `epsilon`. Note this is independent of the phase.
+
+        .. math::
+            \left(\frac{\partial \epsilon}{\partial x_i}\right)_{T, P, x_{i\ne j}}
+            = 0
+
+        Returns
+        -------
+        depsilon_dzs : list[float]
+            Composition derivative of `epsilon` of each component, [m^6/mol^2]
+        '''
+        return self.zeros1d
+
+    @property
+    def depsilon_dns(self):
+        r'''Helper method for calculating the mole number derivatives of
+        `epsilon`. Note this is independent of the phase.
+
+        .. math::
+            \left(\frac{\partial \epsilon}{\partial n_i}\right)_{T, P, n_{i\ne j}}
+            = 0
+
+        Returns
+        -------
+        depsilon_dns : list[float]
+            Composition derivative of `epsilon` of each component, [m^6/mol^3]
+        '''
+        return self.zeros1d
+
+    @property
+    def d2delta_dzizjs(self):
+        r'''Helper method for calculating the second composition derivatives (hessian) of
+        `delta`. Note this is independent of the phase.
+
+        .. math::
+            \left(\frac{\partial^2 \delta}{\partial x_i\partial x_j}\right)_{T, P, x_{k\ne i,j}}
+            = 0
+
+        Returns
+        -------
+        d2delta_dzizjs : list[float]
+            Second Composition derivative of `delta` of each component, [m^3/mol]
+        '''
+        return self.zeros2d
+
+    @property
+    def d2delta_dninjs(self):
+        r'''Helper method for calculating the second mole number derivatives (hessian) of
+        `delta`. Note this is independent of the phase.
+
+        .. math::
+            \left(\frac{\partial^2 \delta}{\partial n_i \partial n_j}\right)_{T, P, n_{k\ne i,j}}
+            = 0
+
+        Returns
+        -------
+        d2delta_dninjs : list[list[float]]
+            Second mole number derivative of `delta` of each component, [m^3/mol^3]
+
+        '''
+        return self.zeros2d
+
+    @property
+    def d2epsilon_dzizjs(self):
+        r'''Helper method for calculating the second composition derivatives (hessian)
+        of `epsilon`. Note this is independent of the phase.
+
+        .. math::
+            \left(\frac{\partial^2 \epsilon}{\partial x_i \partial x_j}\right)_{T, P, x_{k\ne i,j}}
+            = 0
+
+        Returns
+        -------
+        d2epsilon_dzizjs : list[list[float]]
+            Second composition derivative of `epsilon` of each component, [m^6/mol^2]
+        '''
+        return self.zeros2d
+
+    @property
+    def d2epsilon_dninjs(self):
+        r'''Helper method for calculating the second mole number derivatives
+        (hessian) of `epsilon`. Note this is independent of the phase.
+
+        .. math::
+            \left(\frac{\partial^2 \epsilon}{\partial n_i n_j}\right)_{T, P,
+            n_{k\ne i,j}}  = 0
+
+        Returns
+        -------
+        d2epsilon_dninjs : list[list[float]]
+            Second mole number derivative of `epsilon` of each component,
+            [m^6/mol^4]
+        '''
+        return self.zeros2d
+
+    @property
+    def d3delta_dninjnks(self):
+        r'''Helper method for calculating the third partial mole number
+        derivatives of `delta`. Note this is independent of the phase.
+
+        .. math::
+            \left(\frac{\partial^3 \delta}{\partial n_i \partial n_j \partial n_k }
+            \right)_{T, P,
+            n_{m \ne i,j,k}} = 0
+
+        Returns
+        -------
+        d3delta_dninjnks : list[list[list[float]]]
+            Third mole number derivative of `delta` of each component,
+            [m^3/mol^4]
+        '''
+        return self._zeros3d()
+
+    @property
+    def d3epsilon_dninjnks(self):
+        r'''Helper method for calculating the third partial mole number
+        derivatives of `epsilon`. Note this is independent of the phase.
+
+        .. math::
+            \left(\frac{\partial^3 \epsilon}{\partial n_i \partial n_j \partial n_k }
+            \right)_{T, P,
+            n_{m \ne i,j,k}} = 0
+
+        Returns
+        -------
+        d3epsilon_dninjnks : list[list[list[float]]]
+            Third mole number derivative of `epsilon` of each component,
+            [m^6/mol^5]
+        '''
+        return self._zeros3d()
 
     def __init__(self, zs, T=None, P=None, V=None,
                  Tcs=None, Pcs=None, omegas=None, kijs=None,
@@ -6226,32 +6377,72 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
         if full:
             return 0.0, 0.0, 0.0
         return 0.0
-
-    def setup_a_alpha_and_derivatives(self, i, T=None):
-        pass
-
-    def cleanup_a_alpha_and_derivatives(self):
-        pass
+    a_alpha_and_derivatives.__doc__ = GCEOSMIX.a_alpha_and_derivatives.__doc__
 
     def fugacity_coefficients(self, Z):
+        r'''Calculate and return the fugacity coefficients of the ideal-gas
+        phase (0 by definition).
+
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+
+        Returns
+        -------
+        log_phis : float
+            Log fugacity coefficient for each species, [-]
+        '''
         return self.zeros1d
 
     def dlnphis_dT(self, phase):
+        r'''Calculate and return the temperature derivative of fugacity
+        coefficients of the ideal-gas phase (0 by definition).
+
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+
+        Returns
+        -------
+        dlnphis_dT : float
+            Temperature derivatives of log fugacity coefficient for each
+            species, [1/K]
+        '''
         return self.zeros1d
 
     def dlnphis_dP(self, phase):
+        r'''Calculate and return the pressure derivative of fugacity
+        coefficients of the ideal-gas phase (0 by definition).
+
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+
+        Returns
+        -------
+        dlnphis_dP : float
+            Pressure derivatives of log fugacity coefficient for each
+            species, [1/Pa]
+        '''
         return self.zeros1d
+
     @property
     def a_alpha_ijs(self):
         return self.zeros2d
+    a_alpha_ijs.__doc__ = GCEOSMIX.a_alpha_ijs.__doc__
 
     @property
     def da_alpha_dT_ijs(self):
         return self.zeros2d
+    da_alpha_dT_ijs.__doc__ = GCEOSMIX.da_alpha_dT_ijs.__doc__
 
     @property
     def d2a_alpha_dT2_ijs(self):
         return self.zeros2d
+    d2a_alpha_dT2_ijs.__doc__ = GCEOSMIX.d2a_alpha_dT2_ijs.__doc__
 
 
 class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
@@ -6410,7 +6601,7 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
         '''
         return RK_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais)
 
-    def solve_T(self, P, V, quick=True, solution=None):
+    def solve_T(self, P, V, solution=None):
         if self.N == 1 and type(self) is RKMIX:
             self.Tc = self.Tcs[0]
             self.Pc = self.Pcs[0]
