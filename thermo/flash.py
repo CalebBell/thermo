@@ -18,7 +18,55 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains classes and functions for performing flash calculations.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. contents:: :local:
+
+Main Interfaces
+===============
+
+Pure Components
+---------------
+.. autoclass:: FlashPureVLS
+   :show-inheritance:
+   :members: __init__
+   :exclude-members: __init__
+
+Vapor-Liquid Systems
+--------------------
+.. autoclass:: FlashVL
+   :show-inheritance:
+   :members: __init__
+   :exclude-members: __init__
+
+Vapor and Multiple Liquid Systems
+---------------------------------
+.. autoclass:: FlashVLN
+   :show-inheritance:
+   :members: __init__
+   :exclude-members: __init__
+
+Base Flash Class
+----------------
+.. autoclass:: FlashBase
+   :show-inheritance:
+   :members: flash
+   :exclude-members:
+
+
+Specific Flash Calculations
+===========================
+It is recommended to use the Flash classes, which are designed to have generic
+interfaces. The implemented specific flash algorithms may be changed in the
+future, but reading them may be helpful for instructive purposes.
+
+'''
+# sequential_substitution_2P sequential_substitution_NP nonlin_equilibrium_NP nonlin_spec_NP nonlin_2P nonlin_2P_HSGUAbeta dew_bubble_newton_zs TPV_solve_HSGUA_1P
 
 from __future__ import division
 __all__ = ['sequential_substitution_2P', 'sequential_substitution_GDEM3_2P',
@@ -2604,7 +2652,8 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
 
 def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
                        spec, iter_var, constants, correlations, last_conv=None,
-                       oscillation_detection=True):
+                       oscillation_detection=True, guess_maxiter=50,
+                       guess_xtol=1e-7, maxiter=80, xtol=1e-10):
     # TODO: replace oscillation detection with bounding parameters and translation
     # The cost should be less.
 
@@ -2647,7 +2696,7 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
             guess = TPV_solve_HSGUA_guesses_1P(zs, method, constants, correlations,
                                fixed_var_val, spec_val,
                                iter_var=iter_var, fixed_var=fixed_var, spec=spec,
-                               maxiter=50, xtol=1E-7, ytol=abs(spec_val)*1e-5,
+                               maxiter=guess_maxiter, xtol=guess_xtol, ytol=abs(spec_val)*1e-5,
                                bounded=True, min_bound=min_bound, max_bound=max_bound,
                                user_guess=None, last_conv=last_conv, T_ref=298.15,
                                P_ref=101325.0)
@@ -2658,12 +2707,12 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
 
     ytol = 1e-8*abs(spec_val)
 
-    if iter_var == 'T' and spec  in ('S', 'H'):
+    if iter_var == 'T' and spec in ('S', 'H'):
         ytol = ytol/100
 
     _, phase, iterations, err = TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val=fixed_var_val, spec_val=spec_val, ytol=ytol,
                                                    iter_var=iter_var, fixed_var=fixed_var, spec=spec, oscillation_detection=oscillation_detection,
-                                                   minimum_progress=1e-4, maxiter=80, fprime=True,
+                                                   minimum_progress=1e-4, maxiter=maxiter, fprime=True, xtol=xtol,
                                                    bounded=True, min_bound=min_bound, max_bound=max_bound)
     T, P = phase.T, phase.P
     return T, P, phase, iterations, err
@@ -3801,6 +3850,9 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
     global V_over_F_guess
     V_over_F_guess = 0.5
 
+    cmps = constants.cmps
+    Tcs, Pcs, omegas = constants.Tcs, constants.Pcs, constants.omegas
+
     if fixed_var == iter_var:
         raise ValueError("Fixed variable cannot be the same as iteration variable")
     if fixed_var not in ('T', 'P', 'V'):
@@ -3937,10 +3989,14 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
 
     if method == IDEAL_WILSON or method == SHAW_ELEMENTAL:
         if iter_P:
-            T_inv = 1.0/T
-            Ks_P = [Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv))) for i in cmps]
+            if fixed_T:
+                T_inv = 1.0/T
+                Ks_P = [Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv))) for i in cmps]
             def flash_model(T, P, zs):
                 global V_over_F_guess
+                if not fixed_T:
+                    T_inv = 1.0/T
+                    Ks_P = [Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv))) for i in cmps]
                 P_inv = 1.0/P
                 Ks = [Ki*P_inv for Ki in Ks_P]
 
@@ -3985,9 +4041,7 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
 
     if method == SHAW_ELEMENTAL:
         VolumeLiquids = correlations.VolumeLiquids
-        Tcs, Pcs, omegas = constants.Tcs, constants.Pcs, constants.omegas
         MWs, n_atoms = constants.MWs, constants.n_atoms
-        cmps = constants.cmps
 
         def H_model_g(T, P, zs):
             MW_g, sv_g = 0.0, 0.0
@@ -4139,24 +4193,97 @@ empty_list = []
 
 
 class FlashBase(object):
-    T_MAX_FIXED = Phase.T_MAX_FIXED
-    T_MIN_FIXED = Phase.T_MIN_FIXED
+    r'''Base class for performing flash calculations. All Flash objects need
+    to inherit from this, and common methods can be added to it.
 
-    P_MAX_FIXED = Phase.P_MAX_FIXED
+
+    Attributes
+    ----------
+    T_MIN_FIXED : float
+        Absolute minimum temperature to search for a valid flash, [K]
+    T_MAX_FIXED : float
+        Absolute maximum temperature to search for a valid flash, [K]
+    P_MIN_FIXED : float
+        Absolute minimum pressure to search for a valid flash, [Pa]
+    P_MAX_FIXED : float
+        Absolute maximum pressure to search for a valid flash, [Pa]
+    '''
+
+    T_MIN_FIXED = Phase.T_MIN_FIXED
+    T_MAX_FIXED = Phase.T_MAX_FIXED
+
     P_MIN_FIXED = Phase.P_MIN_FIXED
+    P_MAX_FIXED = Phase.P_MAX_FIXED
 
     def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
-              S=None, U=None, G=None, A=None, solution=None,
-              retry=False,
-              hot_start=None, dest=None):
-        '''
-        solution : str or int
-           When multiple solutions exist, they will be sorted by T (and then P)
-           increasingly; this number will index into the multiple solution
-           array. Strings are intended to be shortcuts for certain solutions.
-           Negative indexing is supported.
+              S=None, G=None, U=None, A=None, solution=None, hot_start=None,
+              retry=False, dest=None):
+        r'''Method to perform a flash calculation and return the result as an
+        :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>` object.
+        This generic interface allows flashes with any combination of valid
+        specifications; if a flash is unimplemented and error will be raised.
 
-           Can this be made part of the multiphase flash?
+        Parameters
+        ----------
+        zs : list[float], optional
+            Mole fractions of each component, required unless there is only
+            one component, [-]
+        T : float, optional
+            Temperature, [K]
+        P : float, optional
+            Pressure, [Pa]
+        VF : float, optional
+            Vapor fraction, [-]
+        SF : float, optional
+            Solid fraction, [-]
+        V : float, optional
+            Molar volume of the overall bulk, [m^3/mol]
+        H : float, optional
+            Molar enthalpy of the overall bulk, [J/mol]
+        S : float, optional
+            Molar entropy of the overall bulk, [J/(mol*K)]
+        G : float, optional
+            Molar Gibbs free energy of the overall bulk, [J/mol]
+        U : float, optional
+            Molar internal energy of the overall bulk, [J/mol]
+        A : float, optional
+            Molar Helmholtz energy of the overall bulk, [J/mol]
+        solution : str or int, optional
+           When multiple solutions exist, if more than one is found they will
+           be sorted by T (and then P) increasingly; this number will index
+           into the multiple solution array. Negative indexing is supported.
+           'high' is an alias for 0, and 'low' an alias for -1. Setting this
+           parameter may make a flash slower because in some cases more checks
+           are performed. [-]
+        hot_start : :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>`
+            A previously converged flash or initial guessed state from which
+            the flash can begin; this parameter can save time in some cases,
+            [-]
+        retry : bool
+            Usually for flashes like UV or PH, there are multiple sets of
+            possible iteration variables. For the UV case, the prefered
+            iteration variable is P, so each iteration a PV solve is done on
+            the phase; but equally the flash can be done iterating on
+            `T`, where a TV solve is done on the phase each iteration.
+            Depending on the tolerances, the flash type, the thermodynamic
+            consistency of the phase, and other factors, it is possible the
+            flash can fail. If `retry` is set to True, the alternate variable
+            set will be iterated as a backup if the first flash fails. [-]
+        dest : None or :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>` or :obj:`EquilibriumStream <thermo.stream.EquilibriumStream>`
+            What type of object the flash result is set into; leave as None to
+            obtain the normal `EquilibriumState` results, [-]
+
+        Returns
+        -------
+        results : :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>`
+            Equilibrium object containing the state of the phases after the
+            flash calculation [-]
+
+        Notes
+        -----
+
+        Examples
+        --------
         '''
         if zs is None:
             if self.N == 1:
@@ -5173,6 +5300,178 @@ def deduplicate_stab_results(results, tol_frac_err=5e-3):
     return good_results
 
 class FlashVL(FlashBase):
+    r'''Class for performing flash calculations on one and
+    two phase vapor and liquid multicomponent systems. Use :obj:`FlashVLN` for
+    systems which can have multiple liquid phases.
+
+    The minimum information that is needed is:
+
+    * MWs
+    * Vapor pressure curve
+    * Functioning enthalpy models for each phase
+
+    Parameters
+    ----------
+    constants : :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>` object
+        Package of chemical constants; these are used as boundaries at times,
+        initial guesses other times, and in all cases these properties are
+        accessible as attributes of the resulting
+        :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>` object, [-]
+    correlations : :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`
+        Package of chemical T-dependent properties; these are used as boundaries at times,
+        for initial guesses other times, and in all cases these properties are
+        accessible as attributes of the resulting
+        :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>` object, [-]
+    gas : :obj:`Phase <thermo.phases.Phase>` object
+        A single phase which can represent the gas phase, [-]
+    liquid : :obj:`Phase <thermo.phases.Phase>`
+        A single phase which can represent the liquid phase, [-]
+    settings : :obj:`BulkSettings <thermo.bulk.BulkSettings>` object
+        Object containing settings for calculating bulk and transport
+        properties, [-]
+
+    Attributes
+    ----------
+    PT_SS_MAXITER : int
+        Maximum number of sequential substitution iterations to try when
+        converging a two-phase solution, [-]
+    PT_SS_TOL : float
+        Convergence tolerance in sequential substitution [-]
+    PT_SS_POLISH : bool
+        When set to True, flashes which are very near a vapor fraction of 0 or
+        1 are converged to a higher tolerance to ensure the solution is
+        correct; without this, a flash might converge to a vapor fraction of
+        -1e-7 and be called single phase, but with this the correct solution
+        may be found to be 1e-8 and will be correctly returned as two phase.[-]
+    PT_SS_POLISH_VF : float
+        What tolerance to a vapor fraction of 0 or 1; this is an absolute
+        vapor fraction value, [-]
+    PT_SS_POLISH_MAXITER : int
+        Maximum number of sequential substitution iterations to try when
+        converging a two-phase solution that has been detected to be very
+        sensitive, with a vapor fraction near 0 or 1 [-]
+    PT_SS_POLISH_TOL : float
+        Convergence tolerance in sequential substitution when
+        converging a two-phase solution that has been detected to be very
+        sensitive, with a vapor fraction near 0 or 1 [-]
+    PT_STABILITY_MAXITER : int
+        Maximum number of iterations to try when converging a stability test,
+        [-]
+    PT_STABILITY_XTOL : float
+        Convergence tolerance in the stability test [-]
+    DEW_BUBBLE_QUASI_NEWTON_XTOL : float
+        Convergence tolerance in quasi-Newton bubble and dew point flashes, [-]
+    DEW_BUBBLE_QUASI_NEWTON_MAXITER : int
+        Maximum number of iterations to use in quasi-Newton bubble and dew
+        point flashes, [-]
+    DEW_BUBBLE_NEWTON_XTOL : float
+        Convergence tolerance in Newton bubble and dew point flashes, [-]
+    DEW_BUBBLE_NEWTON_MAXITER : int
+        Maximum number of iterations to use in Newton bubble and dew
+        point flashes, [-]
+    TPV_HSGUA_BISECT_XTOL : float
+        Tolerance in the iteration variable when converging a flash with one
+        (`T`, `P`, `V`) spec and one (`H`, `S`, `G`, `U`, `A`) spec using a
+        bisection-type solver, [-]
+    TPV_HSGUA_BISECT_YTOL : float
+        Absolute tolerance in the (`H`, `S`, `G`, `U`, `A`) spec when
+        converging a flash with one (`T`, `P`, `V`) spec and one (`H`, `S`,
+        `G`, `U`, `A`) spec using a bisection-type solver, [-]
+    TPV_HSGUA_BISECT_YTOL_ONLY : bool
+        When True, the `TPV_HSGUA_BISECT_XTOL` setting is ignored and the flash
+        is considered converged once `TPV_HSGUA_BISECT_YTOL` is satisfied, [-]
+    TPV_HSGUA_NEWTON_XTOL : float
+        Tolerance in the iteration variable when converging a flash with one
+        (`T`, `P`, `V`) spec and one (`H`, `S`, `G`, `U`, `A`) spec using a
+        full newton solver, [-]
+    TPV_HSGUA_NEWTON_MAXITER : float
+        Absolute tolerance in the (`H`, `S`, `G`, `U`, `A`) spec when
+        converging a flash with one (`T`, `P`, `V`) spec and one (`H`, `S`,
+        `G`, `U`, `A`) spec using full newton solver, [-]
+    HSGUA_NEWTON_ANALYTICAL_JAC : bool
+        Whether or not to calculate the full newton jacobian analytically or
+        numerically; this would need to be set to False if the phase objects
+        used in the flash do not have complete analytical derivatives
+        implemented, [-]
+
+
+    Notes
+    -----
+    The algorithms in this object are mostly from [1]_, [2]_ and [3]_.
+    Sequential substitution without acceleration is used by default to converge
+    two-phase systems.
+
+    Quasi-newton methods are used by default to converge bubble and dew point
+    calculations.
+
+    Flashes with one (`T`, `P`, `V`) spec and one (`H`, `S`, `G`, `U`, `A`)
+    spec are solved by a 1D search over PT flashes.
+
+    Additional information that can be provided in the
+    :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>`
+    object and :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`
+    object that may help convergence is:
+
+    * `Tc`, `Pc`, `omega`, `Tb`, and `atoms`
+    * Gas heat capacity correlations
+    * Liquid molar volume correlations
+    * Heat of vaporization correlations
+
+    .. warning::
+        If this flasher is used on systems that can form two or more liquid
+        phases, and the flash specs are in that region, there is no guarantee
+        which solution is returned. Sometimes it is almost random, jumping
+        back and forth and providing nasty discontinuities.
+
+    Examples
+    --------
+    For the system methane-ethane-nitrogen with a composition
+    [0.965, 0.018, 0.017], calculate the vapor fraction of the system and
+    equilibrium phase compositions at 110 K and 1 bar. Use the Peng-Robinson
+    equation of state and the chemsep sample interaction parameter database.
+
+    >>> from thermo import ChemicalConstantsPackage, CEOSGas, CEOSLiquid, PRMIX, FlashVL
+    >>> from thermo.interaction_parameters import IPDB
+    >>> constants, properties = ChemicalConstantsPackage.from_IDs(['methane', 'ethane', 'nitrogen'])
+    >>> kijs = IPDB.get_ip_asymmetric_matrix('ChemSep PR', constants.CASs, 'kij')
+    >>> kijs
+    [[0.0, -0.0059, 0.0289], [-0.0059, 0.0, 0.0533], [0.0289, 0.0533, 0.0]]
+    >>> eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas, 'kijs': kijs}
+    >>> gas = CEOSGas(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    >>> liquid = CEOSLiquid(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    >>> flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
+    >>> zs = [0.965, 0.018, 0.017]
+    >>> PT = flasher.flash(T=110.0, P=1e5, zs=zs)
+    >>> PT.VF, PT.gas.zs, PT.liquid0.zs
+    (0.10365, [0.881788, 2.6758e-05, 0.11818], [0.97462, 0.02007, 0.005298])
+
+    A few more flashes with the same system to showcase the functionality
+    of the :obj:`flash <FlashBase.flash>` interface:
+
+    >>> flasher.flash(P=1e5, VF=1, zs=zs).T
+    133.6
+    >>> flasher.flash(T=133, VF=0, zs=zs).P
+    518367.4
+    >>> flasher.flash(P=PT.P, H=PT.H(), zs=zs).T
+    110.0
+    >>> flasher.flash(P=PT.P, S=PT.S(), zs=zs).T
+    110.0
+    >>> flasher.flash(T=PT.T, H=PT.H(), zs=zs).T
+    110.0
+    >>> flasher.flash(T=PT.T, S=PT.S(), zs=zs]).T
+    110.0
+
+
+    References
+    ----------
+    .. [1] Michelsen, Michael L., and Jørgen M. Mollerup. Thermodynamic Models:
+       Fundamentals & Computational Aspects. Tie-Line Publications, 2007.
+    .. [2] Poling, Bruce E., John M. Prausnitz, and John P. O’Connell. The
+       Properties of Gases and Liquids. 5th edition. New York: McGraw-Hill
+       Professional, 2000.
+    .. [3] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
+       Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
+    '''
     PT_SS_MAXITER = 5000
     PT_SS_TOL = 1e-13
 
@@ -5189,10 +5488,10 @@ class FlashVL(FlashBase):
     PT_algorithms = [sequential_substitution_2P, sequential_substitution_Mehra_2P,
                      sequential_substitution_GDEM3_2P, nonlin_2P_newton]
 
-    stability_maxiter = 500 # 30 good professional default; 500 used in source DTU
-    stability_xtol = 5E-9 # 1e-12 was too strict; 1e-10 used in source DTU; 1e-9 set for some points near critical where convergence stopped; even some more stopped at higher Ts
+    PT_STABILITY_MAXITER = 500 # 30 good professional default; 500 used in source DTU
+    PT_STABILITY_XTOL = 5E-9 # 1e-12 was too strict; 1e-10 used in source DTU; 1e-9 set for some points near critical where convergence stopped; even some more stopped at higher Ts
 
-    SS_acceleration = False
+    SS_ACCELERATION = False
     SS_acceleration_method = None
 
     VF_guess_methods = [WILSON_GUESS, IDEAL_PSAT, TB_TC_GUESS]
@@ -5204,26 +5503,31 @@ class FlashVL(FlashBase):
 
     VF_flash_algos = [SS_VF_simultaneous]
 
-    dew_bubble_xtol = 1e-8
-    dew_bubble_newton_xtol = 1e-5
-    dew_bubble_maxiter = 200
+    DEW_BUBBLE_QUASI_NEWTON_XTOL = 1e-8
+    DEW_BUBBLE_NEWTON_XTOL = 1e-5
+    DEW_BUBBLE_QUASI_NEWTON_MAXITER = 200
+    DEW_BUBBLE_NEWTON_MAXITER = 200
 
-    HSGUA_BISECT_XTOL = 1e-9
-    HSGUA_BISECT_RELTOL = 1e-6
-    HSGUA_BISECT_YTOL_ONLY = True
+    TPV_HSGUA_BISECT_XTOL = 1e-9
+    TPV_HSGUA_BISECT_YTOL = 1e-6
+    TPV_HSGUA_BISECT_YTOL_ONLY = True
 
-    HSGUA_NEWTON_XTOL = 1e-9
-    HSGUA_NEWTON_MAXITER = 1000
-    HSGUA_NEWTON_SOLVER = 'hybr'
+    TPV_HSGUA_NEWTON_XTOL = 1e-9
+    TPV_HSGUA_NEWTON_MAXITER = 1000
+    TPV_HSGUA_NEWTON_SOLVER = 'hybr'
     HSGUA_NEWTON_ANALYTICAL_JAC = True
 
     solids = None
     K_composition_independent = False
-    # TODO - add nested PT? Probably more reliable than SS_VF_simultaneous
-    def __init__(self, constants, correlations, liquid, gas, settings=default_settings):
+
+    max_liquids = 1
+    max_phases = 2
+
+    def __init__(self, constants, correlations, gas, liquid, settings=default_settings):
         self.constants = constants
         self.correlations = correlations
         self.liquid = liquid
+        self.liquids = liquids = [liquid]
         self.gas = gas
         self.settings = settings
         self.N = constants.N
@@ -5238,6 +5542,43 @@ class FlashVL(FlashBase):
         self.K_composition_independent = gas.composition_independent and liquid.composition_independent
         self.ideal_gas_basis = gas.ideal_gas_basis and liquid.ideal_gas_basis
 
+        if gas is None:
+            raise ValueError("Gas model is required")
+        if liquid is None:
+            raise ValueError("Liquid model is required")
+
+        #
+        self.phases = [gas, liquid]
+
+        liquids_to_unique_liquids = []
+        unique_liquids, unique_liquid_hashes = [], []
+        for i, l in enumerate(liquids):
+            h = l.model_hash()
+            if h not in unique_liquid_hashes:
+                unique_liquid_hashes.append(h)
+                unique_liquids.append(l)
+                liquids_to_unique_liquids.append(i)
+            else:
+                liquids_to_unique_liquids.append(unique_liquid_hashes.index(h))
+        if gas:
+            gas_hash = gas.model_hash(True)
+
+        gas_to_unique_liquid = None
+        for i, l in enumerate(liquids):
+            h = l.model_hash(True)
+            if gas_hash == h:
+                gas_to_unique_liquid = liquids_to_unique_liquids[i]
+                break
+
+        self.gas_to_unique_liquid = gas_to_unique_liquid
+        self.liquids_to_unique_liquids = liquids_to_unique_liquids
+
+        self.unique_liquids = unique_liquids
+        self.unique_liquid_count = len(unique_liquids)
+        self.unique_phases = [gas] + unique_liquids
+        self.unique_phase_count = 1 + self.unique_liquid_count
+        self.unique_liquid_hashes = unique_liquid_hashes
+
     def flash_TVF(self, T, VF, zs, solution=None, hot_start=None):
         return self.flash_TVF_2P(T, VF, zs, self.liquid, self.gas, solution=solution, hot_start=hot_start)
 
@@ -5250,9 +5591,9 @@ class FlashVL(FlashBase):
 
         constants, correlations = self.constants, self.correlations
 
-        dew_bubble_xtol = self.dew_bubble_xtol
-        dew_bubble_newton_xtol = self.dew_bubble_newton_xtol
-        dew_bubble_maxiter = self.dew_bubble_maxiter
+        dew_bubble_xtol = self.DEW_BUBBLE_QUASI_NEWTON_XTOL
+        dew_bubble_newton_xtol = self.DEW_BUBBLE_NEWTON_XTOL
+        dew_bubble_maxiter = self.DEW_BUBBLE_QUASI_NEWTON_MAXITER
 
         if hot_start is not None:
             P, xs, ys = hot_start.P, hot_start.liquid0.zs, hot_start.gas.zs
@@ -5318,9 +5659,9 @@ class FlashVL(FlashBase):
             return T, l, g, iterations, err
         constants, correlations = self.constants, self.correlations
 
-        dew_bubble_xtol = self.dew_bubble_xtol
-        dew_bubble_maxiter = self.dew_bubble_maxiter
-        dew_bubble_newton_xtol = self.dew_bubble_newton_xtol
+        dew_bubble_xtol = self.DEW_BUBBLE_QUASI_NEWTON_XTOL
+        dew_bubble_maxiter = self.DEW_BUBBLE_QUASI_NEWTON_MAXITER
+        dew_bubble_newton_xtol = self.DEW_BUBBLE_NEWTON_XTOL
         if hot_start is not None:
             T, xs, ys = hot_start.T, hot_start.liquid0.zs, hot_start.gas.zs
         else:
@@ -5401,7 +5742,7 @@ class FlashVL(FlashBase):
         for i, trial_comp in enumerate(gen):
                 try:
                     sln = stabiliy_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase,
-                                 maxiter=self.stability_maxiter, xtol=self.stability_xtol)
+                                                       maxiter=self.PT_STABILITY_MAXITER, xtol=self.PT_STABILITY_XTOL)
                     sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs, dG_RT = sln
                     lnK_2_tot = 0.0
                     for k in self.cmps:
@@ -5509,7 +5850,7 @@ class FlashVL(FlashBase):
 #        for i, trial_comp in enumerate(gen):
 #                try:
 #                    sln = stabiliy_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase,
-#                                 maxiter=self.stability_maxiter, xtol=self.stability_xtol)
+#                                 maxiter=self.PT_STABILITY_MAXITER, xtol=self.PT_STABILITY_XTOL)
 #                    sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs = sln
 #                    lnK_2_tot = 0.0
 #                    for k in self.cmps:
@@ -5605,6 +5946,179 @@ class FlashVL(FlashBase):
 
 
         return self.flash_TP_stability_test(T, P, zs, self.liquid, self.gas, solution=solution)
+
+    def flash_TPV_HSGUA(self, fixed_val, spec_val, fixed_var='P', spec='H',
+                        iter_var='T', zs=None, solution=None,
+                        selection_fun_1P=None, hot_start=None):
+
+        constants, correlations = self.constants, self.correlations
+        if solution is None:
+            if fixed_var == 'P' and spec == 'H':
+                fun = lambda obj: -obj.S()
+            elif fixed_var == 'P' and spec == 'S':
+                fun = lambda obj: obj.H() # Michaelson
+            elif fixed_var == 'V' and spec == 'U':
+                fun = lambda obj: -obj.S()
+            elif fixed_var == 'V' and spec == 'S':
+                fun = lambda obj: obj.U()
+            elif fixed_var == 'P' and spec == 'U':
+                fun = lambda obj: -obj.S() # promising
+            else:
+                fun = lambda obj: obj.G()
+        else:
+            if solution == 'high':
+                fun = lambda obj: -obj.value(iter_var)
+            elif solution == 'low':
+                fun = lambda obj: obj.value(iter_var)
+            elif callable(solution):
+                fun = solution
+            else:
+                raise ValueError("Unrecognized solution")
+
+        if selection_fun_1P is None:
+            def selection_fun_1P(new, prev):
+                if new[-1] < prev[-1]:
+                    return True
+                return False
+
+        try:
+            solutions_1P = []
+            G_min = 1e100
+            results_G_min_1P = None
+            for phase in self.unique_phases:
+                try:
+                    T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_val, spec_val, fixed_var=fixed_var,
+                                                                      spec=spec, iter_var=iter_var, constants=constants, correlations=correlations)
+                    G = fun(phase)
+                    new = [T, phase, iterations, err, G]
+                    if results_G_min_1P is None or selection_fun_1P(new, results_G_min_1P):
+                        G_min = G
+                        results_G_min_1P = new
+
+                    solutions_1P.append(new)
+                except Exception as e:
+#                    print(e)
+                    solutions_1P.append(None)
+        except:
+            pass
+
+        if 1:
+            try:
+                res, flash_convergence = self.solve_PT_HSGUA_NP_guess_bisect(zs, fixed_val, spec_val,
+                                                               fixed_var=fixed_var, spec=spec, iter_var=iter_var)
+                return None, res.phases, [], res.betas, flash_convergence
+            except:
+                g, ls, ss, betas, flash_convergence = self.solve_PT_HSGUA_NP_guess_newton_2P(zs, fixed_val, spec_val,
+                                                                                             fixed_var=fixed_var,
+                                                                                             spec=spec,
+                                                                                             iter_var=iter_var)
+                return g, ls, ss, betas, flash_convergence
+        if 1:
+            g, ls, ss, betas, flash_convergence = self.solve_PT_HSGUA_NP_guess_newton_2P(zs, fixed_val, spec_val,
+                                                           fixed_var=fixed_var, spec=spec, iter_var=iter_var)
+            return g, ls, ss, betas, flash_convergence
+
+# Need to return g, ls, ss, betas, flash_convergence
+
+    def bounds_PT_HSGUA(self, iter_var='T'):
+        if iter_var == 'T':
+            min_bound = Phase.T_MIN_FIXED
+            max_bound = Phase.T_MAX_FIXED
+            for p in self.phases:
+                if isinstance(p, CoolPropPhase):
+                    min_bound = max(p.AS.Tmin(), min_bound)
+                    max_bound = min(p.AS.Tmax(), max_bound)
+        elif iter_var == 'P':
+            min_bound = Phase.P_MIN_FIXED*(1.0 - 1e-12)
+            max_bound = Phase.P_MAX_FIXED*(1.0 + 1e-12)
+            for p in self.phases:
+                if isinstance(p, CoolPropPhase):
+                    AS = p.AS
+                    max_bound = min(AS.pmax()*(1.0 - 1e-7), max_bound)
+                    min_bound = max(AS.trivial_keyed_output(CPiP_min)*(1.0 + 1e-7), min_bound)
+        elif iter_var == 'V':
+            min_bound = Phase.V_MIN_FIXED
+            max_bound = Phase.V_MAX_FIXED
+        return min_bound, max_bound
+
+    def solve_PT_HSGUA_NP_guess_newton_2P(self, zs, fixed_val, spec_val,
+                                          fixed_var='P', spec='H', iter_var='T'):
+        phases = self.phases
+        constants = self.constants
+        correlations = self.correlations
+        min_bound, max_bound = self.bounds_PT_HSGUA()
+        init_methods = [SHAW_ELEMENTAL, IDEAL_WILSON]
+
+        for method in init_methods:
+            try:
+                guess, VF, xs, ys = TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
+                               fixed_val, spec_val,
+                               iter_var=iter_var, fixed_var=fixed_var, spec=spec,
+                               maxiter=50, xtol=1E-5, ytol=None,
+                               bounded=False, min_bound=min_bound, max_bound=max_bound,
+                               user_guess=None, last_conv=None, T_ref=298.15,
+                               P_ref=101325.0)
+
+                break
+            except Exception as e:
+                print(e)
+                pass
+
+        sln = nonlin_spec_NP(guess, fixed_val, spec_val, zs, [xs, ys], [1.0-VF, VF],
+                             [self.liquids[0], self.gas], iter_var=iter_var, fixed_var=fixed_var, spec=spec,
+                             maxiter=self.TPV_HSGUA_NEWTON_MAXITER, tol=self.TPV_HSGUA_NEWTON_XTOL,
+                             trivial_solution_tol=1e-5, ref_phase=-1,
+                             method=self.TPV_HSGUA_NEWTON_SOLVER,
+                             solve_kwargs=None, debug=False,
+                             analytical_jac=self.HSGUA_NEWTON_ANALYTICAL_JAC)
+        iter_val, betas, compositions, phases, errs, _, iterations = sln
+
+        return None, phases, [], betas, {'errs': errs, 'iterations': iterations}
+
+
+
+    def solve_PT_HSGUA_NP_guess_bisect(self, zs, fixed_val, spec_val,
+                                       fixed_var='P', spec='H', iter_var='T'):
+        phases = self.phases
+        constants = self.constants
+        correlations = self.correlations
+        min_bound, max_bound = self.bounds_PT_HSGUA()
+
+        init_methods = [SHAW_ELEMENTAL, IDEAL_WILSON]
+
+        for method in init_methods:
+            try:
+                guess, VF, xs, ys = TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
+                               fixed_val, spec_val,
+                               iter_var=iter_var, fixed_var=fixed_var, spec=spec,
+                               maxiter=50, xtol=1E-5, ytol=None,
+                               bounded=False, min_bound=min_bound, max_bound=max_bound,
+                               user_guess=None, last_conv=None, T_ref=298.15,
+                               P_ref=101325.0)
+
+                break
+            except Exception as e:
+                print(e)
+                pass
+        sln = []
+        global iterations
+        iterations = 0
+        kwargs = {fixed_var: fixed_val, 'zs': zs}
+        def to_solve(iter_val):
+            global iterations
+            iterations += 1
+            kwargs[iter_var] = iter_val
+            res = self.flash(**kwargs)
+            err = getattr(res, spec)() - spec_val
+            sln[:] = (res, iter_val)
+            return err
+
+        ytol = abs(spec_val)*self.TPV_HSGUA_BISECT_YTOL
+        sln_val = secant(to_solve, guess, xtol=self.TPV_HSGUA_BISECT_XTOL, ytol=ytol,
+                         require_xtol=self.TPV_HSGUA_BISECT_YTOL_ONLY, require_eval=True, bisection=True,
+                         low=min_bound, high=max_bound)
+        return sln[0], {'iterations': iterations, 'err': sln[1]}
+
 
 
 class FlashVLN(FlashVL):
@@ -6059,179 +6573,6 @@ class FlashVLN(FlashVL):
 
     # Vapor fraction flashes - if anything other than VF=1, need a 3 phase stability test
 
-    def flash_TPV_HSGUA(self, fixed_val, spec_val, fixed_var='P', spec='H',
-                        iter_var='T', zs=None, solution=None,
-                        selection_fun_1P=None, hot_start=None):
-
-        constants, correlations = self.constants, self.correlations
-        if solution is None:
-            if fixed_var == 'P' and spec == 'H':
-                fun = lambda obj: -obj.S()
-            elif fixed_var == 'P' and spec == 'S':
-                fun = lambda obj: obj.H() # Michaelson
-            elif fixed_var == 'V' and spec == 'U':
-                fun = lambda obj: -obj.S()
-            elif fixed_var == 'V' and spec == 'S':
-                fun = lambda obj: obj.U()
-            elif fixed_var == 'P' and spec == 'U':
-                fun = lambda obj: -obj.S() # promising
-            else:
-                fun = lambda obj: obj.G()
-        else:
-            if solution == 'high':
-                fun = lambda obj: -obj.value(iter_var)
-            elif solution == 'low':
-                fun = lambda obj: obj.value(iter_var)
-            elif callable(solution):
-                fun = solution
-            else:
-                raise ValueError("Unrecognized solution")
-
-        if selection_fun_1P is None:
-            def selection_fun_1P(new, prev):
-                if new[-1] < prev[-1]:
-                    return True
-                return False
-
-        try:
-            solutions_1P = []
-            G_min = 1e100
-            results_G_min_1P = None
-            for phase in self.unique_phases:
-                try:
-                    T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_val, spec_val, fixed_var=fixed_var,
-                                                                      spec=spec, iter_var=iter_var, constants=constants, correlations=correlations)
-                    G = fun(phase)
-                    new = [T, phase, iterations, err, G]
-                    if results_G_min_1P is None or selection_fun_1P(new, results_G_min_1P):
-                        G_min = G
-                        results_G_min_1P = new
-
-                    solutions_1P.append(new)
-                except Exception as e:
-#                    print(e)
-                    solutions_1P.append(None)
-        except:
-            pass
-
-        if 1:
-            try:
-                res, flash_convergence = self.solve_PT_HSGUA_NP_guess_bisect(zs, fixed_val, spec_val,
-                                                               fixed_var=fixed_var, spec=spec, iter_var=iter_var)
-                return None, res.phases, [], res.betas, flash_convergence
-            except:
-                g, ls, ss, betas, flash_convergence = self.solve_PT_HSGUA_NP_guess_newton_2P(zs, fixed_val, spec_val,
-                                                                                             fixed_var=fixed_var,
-                                                                                             spec=spec,
-                                                                                             iter_var=iter_var)
-                return g, ls, ss, betas, flash_convergence
-        if 1:
-            g, ls, ss, betas, flash_convergence = self.solve_PT_HSGUA_NP_guess_newton_2P(zs, fixed_val, spec_val,
-                                                           fixed_var=fixed_var, spec=spec, iter_var=iter_var)
-            return g, ls, ss, betas, flash_convergence
-
-# Need to return g, ls, ss, betas, flash_convergence
-
-    def bounds_PT_HSGUA(self, iter_var='T'):
-        if iter_var == 'T':
-            min_bound = Phase.T_MIN_FIXED
-            max_bound = Phase.T_MAX_FIXED
-            for p in self.phases:
-                if isinstance(p, CoolPropPhase):
-                    min_bound = max(p.AS.Tmin(), min_bound)
-                    max_bound = min(p.AS.Tmax(), max_bound)
-        elif iter_var == 'P':
-            min_bound = Phase.P_MIN_FIXED*(1.0 - 1e-12)
-            max_bound = Phase.P_MAX_FIXED*(1.0 + 1e-12)
-            for p in self.phases:
-                if isinstance(p, CoolPropPhase):
-                    AS = p.AS
-                    max_bound = min(AS.pmax()*(1.0 - 1e-7), max_bound)
-                    min_bound = max(AS.trivial_keyed_output(CPiP_min)*(1.0 + 1e-7), min_bound)
-        elif iter_var == 'V':
-            min_bound = Phase.V_MIN_FIXED
-            max_bound = Phase.V_MAX_FIXED
-        return min_bound, max_bound
-
-    def solve_PT_HSGUA_NP_guess_newton_2P(self, zs, fixed_val, spec_val,
-                                          fixed_var='P', spec='H', iter_var='T'):
-        phases = self.phases
-        constants = self.constants
-        correlations = self.correlations
-        min_bound, max_bound = self.bounds_PT_HSGUA()
-        init_methods = [SHAW_ELEMENTAL, IDEAL_WILSON]
-
-        for method in init_methods:
-            try:
-                guess, VF, xs, ys = TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
-                               fixed_val, spec_val,
-                               iter_var=iter_var, fixed_var=fixed_var, spec=spec,
-                               maxiter=50, xtol=1E-5, ytol=None,
-                               bounded=False, min_bound=min_bound, max_bound=max_bound,
-                               user_guess=None, last_conv=None, T_ref=298.15,
-                               P_ref=101325.0)
-
-                break
-            except Exception as e:
-                print(e)
-                pass
-
-        sln = nonlin_spec_NP(guess, fixed_val, spec_val, zs, [xs, ys], [1.0-VF, VF],
-                             [self.liquids[0], self.gas], iter_var=iter_var, fixed_var=fixed_var, spec=spec,
-                             maxiter=self.HSGUA_NEWTON_MAXITER, tol=self.HSGUA_NEWTON_XTOL,
-                             trivial_solution_tol=1e-5, ref_phase=-1,
-                             method=self.HSGUA_NEWTON_SOLVER,
-                             solve_kwargs=None, debug=False,
-                             analytical_jac=self.HSGUA_NEWTON_ANALYTICAL_JAC)
-        iter_val, betas, compositions, phases, errs, _, iterations = sln
-
-        return None, phases, [], betas, {'errs': errs, 'iterations': iterations}
-
-
-
-    def solve_PT_HSGUA_NP_guess_bisect(self, zs, fixed_val, spec_val,
-                                       fixed_var='P', spec='H', iter_var='T'):
-        phases = self.phases
-        constants = self.constants
-        correlations = self.correlations
-        min_bound, max_bound = self.bounds_PT_HSGUA()
-
-        init_methods = [SHAW_ELEMENTAL, IDEAL_WILSON]
-
-        for method in init_methods:
-            try:
-                guess, VF, xs, ys = TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
-                               fixed_val, spec_val,
-                               iter_var=iter_var, fixed_var=fixed_var, spec=spec,
-                               maxiter=50, xtol=1E-5, ytol=None,
-                               bounded=False, min_bound=min_bound, max_bound=max_bound,
-                               user_guess=None, last_conv=None, T_ref=298.15,
-                               P_ref=101325.0)
-
-                break
-            except Exception as e:
-                print(e)
-                pass
-        sln = []
-        global iterations
-        iterations = 0
-        kwargs = {fixed_var: fixed_val, 'zs': zs}
-        def to_solve(iter_val):
-            global iterations
-            iterations += 1
-            kwargs[iter_var] = iter_val
-            res = self.flash(**kwargs)
-            err = getattr(res, spec)() - spec_val
-            sln[:] = (res, iter_val)
-            return err
-
-        ytol = abs(spec_val)*self.HSGUA_BISECT_RELTOL
-        sln_val = secant(to_solve, guess, xtol=self.HSGUA_BISECT_XTOL, ytol=ytol,
-               require_xtol=self.HSGUA_BISECT_YTOL_ONLY, require_eval=True, bisection=True,
-               low=min_bound, high=max_bound)
-        return sln[0], {'iterations': iterations, 'err': sln[1]}
-
-
 
 
 '''
@@ -6274,16 +6615,194 @@ spec_to_iter_vars_backup =  {(True, False, False, True, False, False) : ('T', 'H
 }
 
 class FlashPureVLS(FlashBase):
-    '''
-    TODO: Get quick version with equivalent features so can begin
-    UNIT TESTING THE Phases and equilibrium state code. Also this code.
+    r'''Class for performing flash calculations on pure-component systems.
+    This class is subtantially more robust than using multicomponent algorithms
+    on pure species. It is also faster. All parameters are also attributes.
 
-    But working on all the phases of water can wait.
+    The minimum information that is needed is:
+
+    * MW
+    * Vapor pressure curve if including liquids
+    * Sublimation pressure curve if including solids
+    * Functioning enthalpy models for each phase
+
+    Parameters
+    ----------
+    constants : :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>` object
+        Package of chemical constants; these are used as boundaries at times,
+        initial guesses other times, and in all cases these properties are
+        accessible as attributes of the resulting
+        :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>` object, [-]
+    correlations : :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`
+        Package of chemical T-dependent properties; these are used as boundaries at times,
+        for initial guesses other times, and in all cases these properties are
+        accessible as attributes of the resulting
+        :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>` object, [-]
+    gas : :obj:`Phase <thermo.phases.Phase>` object
+        A single phase which can represent the gas phase, [-]
+    liquids : list[:obj:`Phase <thermo.phases.Phase>`]
+        A list of phases for representing the liquid phase; normally only one
+        liquid phase is present for a pure-component system, but multiple
+        liquids are allowed for the really weird cases like having both
+        parahydrogen and orthohydrogen. The liquid phase which calculates a
+        lower Gibbs free energy is always used. [-]
+    solids : list[:obj:`Phase <thermo.phases.Phase>`]
+        A list of phases for representing the solid phase; it is very common
+        for multiple solid forms of a compound to exist. For water ice, the
+        list is very long - normally ice is in phase Ih but other phases are Ic,
+        II, III, IV, V, VI, VII, VIII, IX, X, XI, XII, XIII, XIV, XV, XVI,
+        Square ice, and Amorphous ice. It is less common for there to be
+        published, reliable, thermodynamic models for these different phases;
+        for water there is the IAPWS-06 model for Ih, and another model
+        `here <https://aip.scitation.org/doi/10.1063/1.1931662>`_
+        for phases Ih, Ic, II, III, IV, V, VI, IX, XI, XII. [-]
+    settings : :obj:`BulkSettings <thermo.bulk.BulkSettings>` object
+        Object containing settings for calculating bulk and transport
+        properties, [-]
+
+    Attributes
+    ----------
+    VL_IG_hack : bool
+        Whether or not to trust the saturation curve of the liquid phase;
+        applied automatically to the
+        :obj:`GibbsExcessLiquid <thermo.phases.GibbsExcessLiquid>`
+        phase if there is a single liquid only, [-]
+    VL_EOS_hacks : bool
+        Whether or not to trust the saturation curve of the EOS liquid phase;
+        applied automatically to the
+        :obj:`CEOSLiquid <thermo.phases.CEOSLiquid>`
+        phase if there is a single liquid only, [-]
+    TPV_HSGUA_guess_maxiter : int
+        Maximum number of iterations to try when converging a shortcut model
+        for flashes with one (`T`, `P`, `V`) spec and one (`H`, `S`, `G`, `U`,
+        `A`) spec, [-]
+    TPV_HSGUA_guess_xtol : float
+        Convergence tolerance in the iteration variable when converging a
+        shortcut model for flashes with one (`T`, `P`, `V`) spec and one (`H`,
+        `S`, `G`, `U`, `A`) spec, [-]
+    TPV_HSGUA_maxiter : int
+        Maximum number of iterations to try when converging a flashes with one
+        (`T`, `P`, `V`) spec and one (`H`, `S`, `G`, `U`, `A`) spec; this is
+        on a per-phase basis, so if there is a liquid and a gas phase, the
+        maximum number of iterations that could end up being tried would be
+        twice this, [-]
+    TPV_HSGUA_xtol : float
+        Convergence tolerance in the iteration variable dimension when
+        converging a flash with one (`T`, `P`, `V`) spec and one (`H`, `S`,
+        `G`, `U`, `A`) spec, [-]
+    TVF_maxiter : int
+        Maximum number of iterations to try when converging a flashes with a
+        temperature and vapor fraction specification, [-]
+    TVF_xtol : float
+        Convergence tolerance in the temperature dimension when converging a
+        flashes with a temperature and vapor fraction specification, [-]
+    PVF_maxiter : int
+        Maximum number of iterations to try when converging a flashes with a
+        pressure and vapor fraction specification, [-]
+    PVF_xtol : float
+        Convergence tolerance in the pressure dimension when converging a
+        flashes with a pressure and vapor fraction specification, [-]
+    TSF_maxiter : int
+        Maximum number of iterations to try when converging a flashes with a
+        temperature and solid fraction specification, [-]
+    TSF_xtol : float
+        Convergence tolerance in the temperature dimension when converging a
+        flashes with a temperature and solid fraction specification, [-]
+    PSF_maxiter : int
+        Maximum number of iterations to try when converging a flashes with a
+        pressure and solid fraction specification, [-]
+    PSF_xtol : float
+        Convergence tolerance in the pressure dimension when converging a
+        flashes with a pressure and solid fraction specification, [-]
+
+
+    Notes
+    -----
+    The algorithms in this object are mostly from [1]_ and [2]_, and they all
+    boil down to newton methods with analytical derivatives and the phase with
+    the lowest Gibbs energy being the most stable if there are multiple
+    solutions.
+
+    Phase input combinations which have specific simplifying assumptions
+    (and thus more speed) are:
+
+    * a :obj:`CEOSLiquid <thermo.phases.CEOSLiquid>` and a :obj:`CEOSGas <thermo.phases.CEOSGas>` with the same (consistent) parameters
+    * a :obj:`CEOSGas <thermo.phases.CEOSGas>` with the :obj:`IGMIX <thermo.eos_mix.IGMIX>` eos and a :obj:`GibbsExcessLiquid <thermo.phases.GibbsExcessLiquid>`
+    * a :obj:`IAPWS95Liquid <thermo.phases.IAPWS95Liquid>` and a :obj:`IAPWS95Gas <thermo.phases.IAPWS95Gas>`
+    * a :obj:`CoolPropLiquid <thermo.phases.CoolPropLiquid>` and a :obj:`CoolPropGas <thermo.phases.CoolPropGas>`
+
+    Additional information that can be provided in the
+    :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>`
+    object and :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`
+    object that may help convergence is:
+
+    * `Tc`, `Pc`, `omega`, `Tb`, and `atoms`
+    * Gas heat capacity correlations
+    * Liquid molar volume correlations
+    * Heat of vaporization correlations
+
+    Examples
+    --------
+
+    Create all the necessary objects using all of the default parameters for
+    decane and do a flash at 300 K and 1 bar:
+
+    >>> from thermo import ChemicalConstantsPackage, PRMIX, CEOSLiquid, CEOSGas, FlashPureVLS
+    >>> constants, correlations = ChemicalConstantsPackage.from_IDs(['decane'])
+    >>> eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+    >>> liquid = CEOSLiquid(PRMIX, HeatCapacityGases=correlations.HeatCapacityGases, eos_kwargs=eos_kwargs)
+    >>> gas = CEOSGas(PRMIX, HeatCapacityGases=correlations.HeatCapacityGases, eos_kwargs=eos_kwargs)
+    >>> flasher = FlashPureVLS(constants, correlations, gas=gas, liquids=[liquid], solids=[])
+    >>> flasher.flash(T=300, P=1e5)
+    <EquilibriumState, T=300.0000, P=100000.0000, zs=[1.0], betas=[1.0], phases=[<CEOSLiquid, T=300 K, P=100000 Pa>]>
+
+    Working with steam:
+
+    >>> from thermo import FlashPureVLS, IAPWS95Liquid, IAPWS95Gas, iapws_constants, iapws_correlations
+    >>> liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
+    >>> gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
+    >>> flasher = FlashPureVLS(iapws_constants, iapws_correlations, gas, [liquid], [])
+    >>> PT = flasher.flash(T=800.0, P=1e7)
+    >>> PT.rho_mass()
+    29.1071839176
+    >>> flasher.flash(T=600, VF=.5)
+    <EquilibriumState, T=600.0000, P=12344824.3572, zs=[1.0], betas=[0.5, 0.5], phases=[<IAPWS95Gas, T=600 K, P=1.23448e+07 Pa>, <IAPWS95Liquid, T=600 K, P=1.23448e+07 Pa>]>
+    >>> flasher.flash(T=600.0, H=50802)
+    <EquilibriumState, T=600.0000, P=10000469.1288, zs=[1.0], betas=[1.0], phases=[<IAPWS95Gas, T=600 K, P=1.00005e+07 Pa>]>
+    >>> flasher.flash(P=1e7, S=104.)
+    <EquilibriumState, T=599.6790, P=10000000.0000, zs=[1.0], betas=[1.0], phases=[<IAPWS95Gas, T=599.679 K, P=1e+07 Pa>]>
+    >>> flasher.flash(V=.00061, U=55850)
+    <EquilibriumState, T=800.5922, P=10144789.0899, zs=[1.0], betas=[1.0], phases=[<IAPWS95Gas, T=800.592 K, P=1.01448e+07 Pa>]>
+
+    References
+    ----------
+    .. [1] Poling, Bruce E., John M. Prausnitz, and John P. O’Connell. The
+       Properties of Gases and Liquids. 5th edition. New York: McGraw-Hill
+       Professional, 2000.
+    .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
+       Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
     VF_interpolators_built = False
     N = 1
     VL_EOS_hacks = True
     VL_IG_hack = True
+
+    TPV_HSGUA_guess_maxiter = 50
+    TPV_HSGUA_guess_xtol = 1e-7
+    TPV_HSGUA_maxiter = 80
+    TPV_HSGUA_xtol = 1e-10
+
+    TVF_maxiter = 200
+    TVF_xtol = 1e-10
+
+    PVF_maxiter = 200
+    PVF_xtol = 1e-10
+
+    TSF_maxiter = 200
+    TSF_xtol = 1e-10
+
+    PSF_maxiter = 200
+    PSF_xtol = 1e-10
 
     def __repr__(self):
         return "FlashPureVLS(gas=%s, liquids=%s, solids=%s)" %(self.gas, self.liquids, self.solids)
@@ -6362,7 +6881,9 @@ class FlashPureVLS(FlashBase):
         self.unique_liquids = unique_liquids
         self.unique_liquid_count = len(unique_liquids)
         self.unique_phases = [gas] + unique_liquids if gas is not None else unique_liquids
-        self.unique_phase_count = 1 + self.unique_liquid_count
+        if solids:
+            self.unique_phases += solids
+        self.unique_phase_count = (1 if gas is not None else 0) + self.unique_liquid_count + len(solids)
         self.unique_liquid_hashes = unique_liquid_hashes
 
 
@@ -6526,8 +7047,8 @@ class FlashPureVLS(FlashBase):
             return Psat, sat_liq, gas, 0, 0.0
 
         liquids = [l.to_TP_zs(T, Psat, zs) for l in self.liquids]
-#        return TVF_pure_newton(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
-        Psat, l, g, iterations, err = TVF_pure_secant(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
+#        return TVF_pure_newton(Psat, T, liquids, gas, maxiter=self.TVF_maxiter, xtol=self.TVF_xtol)
+        Psat, l, g, iterations, err = TVF_pure_secant(Psat, T, liquids, gas, maxiter=self.TVF_maxiter, xtol=self.TVF_xtol)
         if l.Z() == g.Z():
             raise PhaseExistenceImpossible("Converged to trivial solution", zs=zs, T=T)
 
@@ -6568,7 +7089,7 @@ class FlashPureVLS(FlashBase):
             Tsat = self.correlations.VaporPressures[0].solve_prop(P)
         gas = self.gas.to_TP_zs(Tsat, P, zs)
         liquids = [l.to_TP_zs(Tsat, P, zs) for l in self.liquids]
-        Tsat, l, g, iterations, err = PVF_pure_newton(Tsat, P, liquids, gas, maxiter=200, xtol=1E-10)
+        Tsat, l, g, iterations, err = PVF_pure_newton(Tsat, P, liquids, gas, maxiter=self.PVF_maxiter, xtol=self.PVF_xtol)
         if l.Z() == g.Z():
             raise PhaseExistenceImpossible("Converged to trivial solution", zs=zs, P=P)
         return Tsat, l, g, iterations, err
@@ -6589,7 +7110,7 @@ class FlashPureVLS(FlashBase):
             Psub = 1e6
 
         return TSF_pure_newton(Psub, T, try_phases, self.solids,
-                               maxiter=200, xtol=1E-10)
+                               maxiter=self.TSF_maxiter, xtol=self.TSF_xtol)
 
     def flash_PSF(self, P, SF=None, zs=None, hot_start=None):
         if P < self.constants.Pts[0]:
@@ -6600,7 +7121,7 @@ class FlashPureVLS(FlashBase):
             Tsub = 1e6
 
         return PSF_pure_newton(Tsub, P, try_phases, self.solids,
-                               maxiter=200, xtol=1E-10)
+                               maxiter=self.PSF_maxiter, xtol=self.PSF_xtol)
 
 
     def flash_double(self, spec_0_val, spec_1_val, spec_0_var, spec_1_var):
@@ -6650,7 +7171,9 @@ class FlashPureVLS(FlashBase):
                 # TODO: use has_VL to bound the solver
                 T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var,
                                                                   spec=spec, iter_var=iter_var, constants=constants, correlations=correlations, last_conv=last_conv,
-                                                                  oscillation_detection=cubic)
+                                                                  oscillation_detection=cubic,
+                                                                  guess_maxiter=self.TPV_HSGUA_guess_maxiter, guess_xtol=self.TPV_HSGUA_guess_xtol,
+                                                                  maxiter=self.TPV_HSGUA_maxiter, xtol=self.TPV_HSGUA_xtol)
                 if cubic:
                     phase.eos_mix.solve_missing_volumes()
                     if phase.eos_mix.phase == 'l/g':
@@ -6753,7 +7276,10 @@ class FlashPureVLS(FlashBase):
                 # TODO: for eoss wit boundaries, and well behaved fluids, only solve ocne instead of twice (i.e. per phase, doubling the computation.)
                 try:
                     T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var,
-                                                                      spec=spec, iter_var=iter_var, constants=constants, correlations=correlations)
+                                                                      spec=spec, iter_var=iter_var, constants=constants, correlations=correlations,
+                                                                      guess_maxiter=self.TPV_HSGUA_guess_maxiter, guess_xtol=self.TPV_HSGUA_guess_xtol,
+                                                                      maxiter=self.TPV_HSGUA_maxiter, xtol=self.TPV_HSGUA_xtol)
+
                     G = fun(phase)
                     new = [T, phase, iterations, err, G]
                     if results_G_min_1P is None or selection_fun_1P(new, results_G_min_1P):

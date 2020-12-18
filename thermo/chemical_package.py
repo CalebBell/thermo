@@ -33,30 +33,27 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 Chemical Constants Class
 ========================
 .. autoclass:: ChemicalConstantsPackage
-    :members: subset, properties
+    :members: subset, properties, correlations_from_IDs, constants_from_IDs, from_IDs,
     :undoc-members:
-    :show-inheritance:
     :exclude-members:
 
-Sample Class: Water
--------------------
-.. autodata:: iapws_constants
-.. autofunction:: iapws_correlations
-
-Property Correlations Class
+Chemical Correlations Class
 ===========================
 
-.. autoclass:: PropertyCorrelationPackage
-    :members: subset, as_best_fit
+.. autoclass:: PropertyCorrelationsPackage
+    :members: subset
     :undoc-members:
-    :show-inheritance:
     :exclude-members:
 
+Sample Constants and Correlations
+=================================
+.. autodata:: iapws_constants
+.. autodata:: iapws_correlations
 '''
 
 from __future__ import division
 
-__all__ = ['ChemicalConstantsPackage', 'PropertyCorrelationPackage',
+__all__ = ['ChemicalConstantsPackage', 'PropertyCorrelationsPackage',
            'iapws_constants', 'iapws_correlations']
 
 from fluids.constants import R
@@ -98,7 +95,21 @@ CAS_H2O = '7732-18-5'
 
 
 
-
+warn_chemicals_msg ='''`chemicals <https://github.com/CalebBell/chemicals>`_ is a
+            project with a focus on collecting data and
+            correlations from various sources. In no way is it a project to
+            critically evaluate these and provide recommendations. You are
+            strongly encouraged to check values from it and modify them
+            if you want different values. If you believe there is a value
+            which has a typographical error please report it to the
+            `chemicals <https://github.com/CalebBell/chemicals>`_
+            project. If data is missing or not as accuracte
+            as you would like, and you know of a better method or source,
+            new methods and sources can be added to
+            `chemicals <https://github.com/CalebBell/chemicals>`_
+            fairly easily once the data entry is complete.
+            It is not feasible to add individual components,
+            so please submit a complete table of data from the source.'''
 
 
 class ChemicalConstantsPackage(object):
@@ -224,15 +235,100 @@ class ChemicalConstantsPackage(object):
 
     @staticmethod
     def constants_from_IDs(IDs):
+        r'''Method to construct a new `ChemicalConstantsPackage` with loaded
+        parameters from the `chemicals library <https://github.com/CalebBell/chemicals>`_,
+        using whatever default methods and values happen to be in that library.
+        Expect values to change over time.
+
+        Parameters
+        ----------
+        IDs : list[str]
+            Identifying strings for each compound;
+            most identifiers are accepted and all inputs are documented in
+            :obj:`chemicals.identifiers.search_chemical`, [-]
+
+        Returns
+        -------
+        constants : ChemicalConstantsPackage
+            New `ChemicalConstantsPackage` with loaded values, [-]
+
+        Notes
+        -----
+
+        .. warning::
+            %s
+
+        Examples
+        --------
+        >>> constants = ChemicalConstantsPackage.constants_from_IDs(IDs=['water', 'hexane'])
+        '''
         return ChemicalConstantsPackage._from_IDs(IDs, correlations=False)
+    constants_from_IDs.__func__.__doc__ = constants_from_IDs.__func__.__doc__ %(warn_chemicals_msg)
 
     @staticmethod
     def correlations_from_IDs(IDs):
+        r'''Method to construct a new `PropertyCorrelationsPackage` with loaded
+        parameters from the `chemicals library <https://github.com/CalebBell/chemicals>`_,
+        using whatever default methods and values happen to be in that library.
+        Expect values to change over time.
+
+        Parameters
+        ----------
+        IDs : list[str]
+            Identifying strings for each compound;
+            most identifiers are accepted and all inputs are documented in
+            :obj:`chemicals.identifiers.search_chemical`, [-]
+
+        Returns
+        -------
+        correlations : PropertyCorrelationsPackage
+            New `PropertyCorrelationsPackage` with loaded values, [-]
+
+        Notes
+        -----
+
+        .. warning::
+            %s
+
+        Examples
+        --------
+        >>> correlations = ChemicalConstantsPackage.constants_from_IDs(IDs=['ethanol', 'methanol'])
+        '''
         return ChemicalConstantsPackage._from_IDs(IDs, correlations=True)[1]
+    correlations_from_IDs.__func__.__doc__ = correlations_from_IDs.__func__.__doc__ %(warn_chemicals_msg)
 
     @staticmethod
     def from_IDs(IDs):
+        r'''Method to construct a new `ChemicalConstantsPackage` and
+        `PropertyCorrelationsPackage` with loaded
+        parameters from the `chemicals library <https://github.com/CalebBell/chemicals>`_,
+        using whatever default methods and values happen to be in that library.
+        Expect values to change over time.
+
+        Parameters
+        ----------
+        IDs : list[str]
+            Identifying strings for each compound;
+            most identifiers are accepted and all inputs are documented in
+            :obj:`chemicals.identifiers.search_chemical`, [-]
+
+        Returns
+        -------
+        constants : PropertyCorrelationsPackage
+            New `PropertyCorrelationsPackage` with loaded values, [-]
+
+        Notes
+        -----
+
+        .. warning::
+            %s
+
+        Examples
+        --------
+        >>> constants, correlations = ChemicalConstantsPackage.from_IDs(IDs=['water', 'decane'])
+        '''
         return ChemicalConstantsPackage._from_IDs(IDs, correlations=True)
+    from_IDs.__func__.__doc__ = from_IDs.__func__.__doc__ %(warn_chemicals_msg)
 
     @staticmethod
     def _from_IDs(IDs, correlations=False):
@@ -589,13 +685,13 @@ class ChemicalConstantsPackage(object):
                                                           Cvgm=Cvgm_calcs[i], mug=ViscosityGases[i].T_dependent_property,
                                                           best_fit=get_chemical_constants(CASs[i], 'ThermalConductivityGas'))
                                                           for i in range(N)]
-        properties = PropertyCorrelationPackage(constants, VaporPressures=VaporPressures, SublimationPressures=SublimationPressures,
-                         VolumeGases=VolumeGases, VolumeLiquids=VolumeLiquids, VolumeSolids=VolumeSolids,
-                         HeatCapacityGases=HeatCapacityGases, HeatCapacityLiquids=HeatCapacityLiquids, HeatCapacitySolids=HeatCapacitySolids,
-                         ViscosityGases=ViscosityGases, ViscosityLiquids=ViscosityLiquids,
-                         ThermalConductivityGases=ThermalConductivityGases, ThermalConductivityLiquids=ThermalConductivityLiquids,
-                         EnthalpyVaporizations=EnthalpyVaporizations, EnthalpySublimations=EnthalpySublimations,
-                         SurfaceTensions=SurfaceTensions, Permittivities=Permittivities)
+        properties = PropertyCorrelationsPackage(constants, VaporPressures=VaporPressures, SublimationPressures=SublimationPressures,
+                                                 VolumeGases=VolumeGases, VolumeLiquids=VolumeLiquids, VolumeSolids=VolumeSolids,
+                                                 HeatCapacityGases=HeatCapacityGases, HeatCapacityLiquids=HeatCapacityLiquids, HeatCapacitySolids=HeatCapacitySolids,
+                                                 ViscosityGases=ViscosityGases, ViscosityLiquids=ViscosityLiquids,
+                                                 ThermalConductivityGases=ThermalConductivityGases, ThermalConductivityLiquids=ThermalConductivityLiquids,
+                                                 EnthalpyVaporizations=EnthalpyVaporizations, EnthalpySublimations=EnthalpySublimations,
+                                                 SurfaceTensions=SurfaceTensions, Permittivities=Permittivities)
         return constants, properties
 
 
@@ -984,7 +1080,7 @@ except:
     pass # py2
 #print(constants_doc)
 
-class PropertyCorrelationPackage(object):
+class PropertyCorrelationsPackage(object):
     r'''Class for creating and storing `T` and `P` and `zs` dependent chemical
     property objects. All parameters are also attributes.
 
@@ -1067,11 +1163,11 @@ class PropertyCorrelationPackage(object):
     provided while excluding all other properties:
 
     >>> constants = ChemicalConstantsPackage(CASs=['124-38-9', '110-54-3'], MWs=[44.0095, 86.17536], names=['carbon dioxide', 'hexane'], omegas=[0.2252, 0.2975], Pcs=[7376460.0, 3025000.0], Tbs=[194.67, 341.87], Tcs=[304.2, 507.6], Tms=[216.65, 178.075])
-    >>> correlations = PropertyCorrelationPackage(constants=constants, skip_missing=True, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644])), HeatCapacityGas(best_fit=(200.0, 1000.0, [1.3740654453881647e-21, -8.344496203280677e-18, 2.2354782954548568e-14, -3.4659555330048226e-11, 3.410703030634579e-08, -2.1693611029230923e-05, 0.008373280796376588, -1.356180511425385, 175.67091124888998]))])
+    >>> correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644])), HeatCapacityGas(best_fit=(200.0, 1000.0, [1.3740654453881647e-21, -8.344496203280677e-18, 2.2354782954548568e-14, -3.4659555330048226e-11, 3.410703030634579e-08, -2.1693611029230923e-05, 0.008373280796376588, -1.356180511425385, 175.67091124888998]))])
 
     Create a package from various data files, creating all property objects:
 
-    >>> correlations = PropertyCorrelationPackage(constants=constants, skip_missing=True)
+    >>> correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=False)
 
     '''
     correlations = ('VaporPressures', 'SublimationPressures', 'VolumeGases',
@@ -1088,7 +1184,7 @@ class PropertyCorrelationPackage(object):
                'ThermalConductivityLiquidMixture', 'SurfaceTensionMixture',
                )
 
-    __slots__ = correlations + ('constants',)
+    __slots__ = correlations + ('constants', 'skip_missing')
 
     pure_correlations = ('VaporPressures', 'VolumeLiquids', 'VolumeGases',
                          'VolumeSolids', 'HeatCapacityGases', 'HeatCapacitySolids',
@@ -1098,7 +1194,24 @@ class PropertyCorrelationPackage(object):
                          'ThermalConductivityLiquids', 'ThermalConductivityGases',
                          'SurfaceTensions')
 
-    def subset(self, idxs, skip_missing=False):
+    def subset(self, idxs):
+        r'''Method to construct a new PropertyCorrelationsPackage that removes
+        all components not specified in the `idxs` argument.
+
+        Parameters
+        ----------
+        idxs : list[int] or Slice or None
+            Indexes of components that should be included; if None, all
+            components will be included , [-]
+
+        Returns
+        -------
+        subset_correlations : PropertyCorrelationsPackage
+            Object with components, [-]
+
+        Notes
+        -----
+        '''
         is_slice = isinstance(idxs, slice)
 
         def atindexes(values):
@@ -1112,7 +1225,7 @@ class PropertyCorrelationPackage(object):
                 v = getattr(self, p)
                 if v is not None:
                     new[p] = atindexes(v)
-        return PropertyCorrelationPackage(skip_missing=skip_missing, **new)
+        return PropertyCorrelationsPackage(skip_missing=self.skip_missing, **new)
 
 
     def __init__(self, constants, VaporPressures=None, SublimationPressures=None,
@@ -1130,6 +1243,7 @@ class PropertyCorrelationPackage(object):
                  SurfaceTensionMixtureObj=None, skip_missing=False,
                  ):
         self.constants = constants
+        self.skip_missing = skip_missing
         cmps = constants.cmps
 
         if VaporPressures is None and not skip_missing:
@@ -1327,25 +1441,12 @@ class PropertyCorrelationPackage(object):
 # Values except for omega from IAPWS; heat capacity isn't official.
 iapws_constants = ChemicalConstantsPackage(CASs=['7732-18-5'], MWs=[18.015268], omegas=[0.344],
                                            Pcs=[22064000.0], Tcs=[647.096])
-'''ChemicalConstantsPackage : Object intended to hold the IAPWS-95 water constants
+''':obj:`ChemicalConstantsPackage` : Object intended to hold the IAPWS-95 water constants
 for use with the :obj:`thermo.phases.IAPWS95` phase object.
 '''
 
-global _iapws_correlations
-_iapws_correlations = None
-def iapws_correlations():
-    '''Function to construct a global IAPWS T/P dependent property
-    :obj:`PropertyCorrelationPackage` object.
+iapws_correlations = PropertyCorrelationsPackage(constants=iapws_constants, skip_missing=True,
+                                                 HeatCapacityGases=[HeatCapacityGas(load_data=False, best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18,
+                                                                            4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))])
+''':obj:`PropertyCorrelationsPackage`: IAPWS correlations and properties, [-]'''
 
-    Returns
-    -------
-    iapws_correlations : :obj:`PropertyCorrelationPackage`
-        IAPWS correlations and properties, [-]
-    '''
-    global _iapws_correlations
-    if _iapws_correlations is None:
-        _iapws_correlations = PropertyCorrelationPackage(constants=iapws_constants,
-                        HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18,
-                                                                                    4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))])
-
-    return _iapws_correlations

@@ -3335,7 +3335,7 @@ class Mixture(object):
         except AttributeError:
             pass
 
-        from thermo.chemical_package import PropertyCorrelationPackage
+        from thermo.chemical_package import PropertyCorrelationsPackage
         constants = self.constants
         kwargs = dict(constants=constants)
         if copy_pures:
@@ -3359,5 +3359,5 @@ class Mixture(object):
                           ThermalConductivityLiquidMixtureObj=self.ThermalConductivityLiquidMixture,
                           SurfaceTensionMixtureObj=self.SurfaceTensionMixture)
 
-        self._properties = PropertyCorrelationPackage(**kwargs)
+        self._properties = PropertyCorrelationsPackage(**kwargs)
         return self._properties

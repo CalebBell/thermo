@@ -29,7 +29,7 @@ from chemicals.utils import log, exp, normalize, zs_to_ws, vapor_mass_quality, m
 from chemicals.virial import B_from_Z
 from chemicals.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
 from thermo.phases import gas_phases, liquid_phases, solid_phases, Phase, derivatives_thermodynamic, derivatives_thermodynamic_mass, derivatives_jacobian
-from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationPackage, constants_docstrings
+from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationsPackage, constants_docstrings
 from thermo.bulk import Bulk, BulkSettings, default_settings
 
 all_phases = gas_phases + liquid_phases + solid_phases
@@ -2153,7 +2153,7 @@ def _make_getter_correlations(name):
         return getattr(self.correlations, name)
 
     text = '''Wrapper to obtain the list of %s objects of the associated
-:obj:`thermo.chemical_package.PropertyCorrelationPackage`.''' %(name)
+:obj:`thermo.chemical_package.PropertyCorrelationsPackage`.''' %(name)
     get.__doc__ = text
     return get
 
@@ -2199,7 +2199,7 @@ Returns
 
 ### For the temperature-dependent correlations, allow them to be retrieved by their
 # name from the EquilibriumState ONLY
-for name in PropertyCorrelationPackage.correlations:
+for name in PropertyCorrelationsPackage.correlations:
     getter = property(_make_getter_correlations(name))
     setattr(EquilibriumState, name, getter)
 

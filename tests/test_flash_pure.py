@@ -104,7 +104,7 @@ VolumeLiquids = [VolumeLiquid(best_fit=(273.17, 637.096, [9.00307261049824e-24, 
                  VolumeLiquid(best_fit=(309.58, 729.5999999999999, [7.45473064887452e-24, -2.89457102830013e-20, 4.867041417017972e-17, -4.6252122183399004e-14, 2.7157887108452537e-11, -1.0085443480134824e-08, 2.3130153268044497e-06, -0.0002992756488164552, 0.01705648133237398])),
                  VolumeLiquid(best_fit=(13.967, 29.3074, [1.338998655322118e-14, -2.2300738749278554e-12, 1.6125645123435388e-10, -6.603182508985557e-09, 1.6732222054898376e-07, -2.6846339878160216e-06, 2.6629092007736217e-05, -0.0001490816582989168, 0.0003852732680036591]))]
 
-correlations = PropertyCorrelationPackage(constants=constants, skip_missing=True, VolumeLiquids=VolumeLiquids, VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases)
+correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True, VolumeLiquids=VolumeLiquids, VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases)
 
 from thermo.eos_mix import eos_mix_list
 
@@ -154,7 +154,7 @@ def test_PV_plot(fluid, eos, auto_range):
     m = Mixture([fluid], zs=zs, T=T, P=P)
     pure_const = m.constants
     HeatCapacityGases = m.HeatCapacityGases
-    pure_props = PropertyCorrelationPackage(pure_const, HeatCapacityGases=HeatCapacityGases)
+    pure_props = PropertyCorrelationsPackage(pure_const, HeatCapacityGases=HeatCapacityGases)
     '''
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
@@ -996,7 +996,7 @@ def test_some_flashes_bad(hacks):
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [7.444966286051841e-23, 9.444106746563928e-20,
                             -1.2490299714587002e-15, 2.6693560979905865e-12, -2.5695131746723413e-09, 1.2022442523089315e-06,
                             -0.00021492132731007108, 0.016616385291696574, 32.84274656062226]))]
-    correlations = PropertyCorrelationPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                  HeatCapacityGases=HeatCapacityGases)
 
@@ -1013,7 +1013,7 @@ def test_EOS_dew_bubble_same_eos_id():
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [7.444966286051841e-23, 9.444106746563928e-20,
                             -1.2490299714587002e-15, 2.6693560979905865e-12, -2.5695131746723413e-09, 1.2022442523089315e-06,
                             -0.00021492132731007108, 0.016616385291696574, 32.84274656062226]))]
-    correlations = PropertyCorrelationPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                  HeatCapacityGases=HeatCapacityGases)
     liquid = CEOSLiquid(SRKMIX, T=330, P=1e5, zs=[1], **kwargs)
@@ -1033,7 +1033,7 @@ def test_VS_issue_PRSV(hacks):
     constants = ChemicalConstantsPackage(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], MWs=[282.54748], CASs=['112-95-8'])
     HeatCapacityGases = [HeatCapacityGas(best_fit=(200.0, 1000.0, [-2.075118433508619e-20, 1.0383055980949049e-16, -2.1577805903757125e-13, 2.373511052680461e-10, -1.4332562489496906e-07, 4.181755403465859e-05, -0.0022544761674344544, -0.15965342941876415, 303.71771182550816]))]
 
-    correlations = PropertyCorrelationPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                     HeatCapacityGases=HeatCapacityGases)
 
@@ -1053,7 +1053,7 @@ def test_PS_1P_vs_VL_issue0(hacks):
 
     constants = ChemicalConstantsPackage(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], MWs=[18.01528],  CASs=['7732-18-5'],)
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))]
-    correlations = PropertyCorrelationPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                  HeatCapacityGases=HeatCapacityGases)
 
@@ -1225,7 +1225,7 @@ def test_TS_EOS_fast_path(hacks):
     constants = ChemicalConstantsPackage(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], MWs=[18.01528],  CASs=['7732-18-5'],)
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))]
     VaporPressures = [VaporPressure(best_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))]
-    correlations = PropertyCorrelationPackage(constants, VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    correlations = PropertyCorrelationsPackage(constants, VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                  HeatCapacityGases=HeatCapacityGases)
 
@@ -1256,7 +1256,7 @@ def test_EOS_TP_HSGUA_sln_in_VF(hacks):
     constants = ChemicalConstantsPackage(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], MWs=[18.01528],  CASs=['7732-18-5'],)
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))]
     VaporPressures = [VaporPressure(best_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))]
-    correlations = PropertyCorrelationPackage(constants, VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    correlations = PropertyCorrelationsPackage(constants, VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                  HeatCapacityGases=HeatCapacityGases)
 
@@ -1281,7 +1281,7 @@ def test_EOS_TP_HSGUA_missing_return_value():
     no return value was given.
     '''
     constants = ChemicalConstantsPackage(CASs=['124-38-9'], MWs=[44.0095], omegas=[0.2252], Pcs=[7376460.0], Tcs=[304.2])
-    correlations = PropertyCorrelationPackage(skip_missing=True, constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644]))])
+    correlations = PropertyCorrelationsPackage(skip_missing=True, constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644]))])
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                     HeatCapacityGases=correlations.HeatCapacityGases)
     liquid = CEOSLiquid(PRMIX, T=300, P=1e6, zs=[1], **kwargs)
@@ -1294,7 +1294,7 @@ def test_EOS_TP_HSGUA_missing_return_value():
 def test_EOS_water_hot_start():
     constants = ChemicalConstantsPackage(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], MWs=[18.01528],  CASs=['7732-18-5'],)
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))]
-    correlations = PropertyCorrelationPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                  HeatCapacityGases=HeatCapacityGases)
 
@@ -1427,7 +1427,7 @@ def test_flash_identical_two_liquids():
     '''
     constants = ChemicalConstantsPackage(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], MWs=[18.01528],  CASs=['7732-18-5'],)
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))]
-    correlations = PropertyCorrelationPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                  HeatCapacityGases=HeatCapacityGases)
 
@@ -1444,7 +1444,7 @@ def test_flash_liquid_only():
     # Test with only one liquid and no gas
     constants = ChemicalConstantsPackage(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], MWs=[18.01528],  CASs=['7732-18-5'],)
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))]
-    correlations = PropertyCorrelationPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                  HeatCapacityGases=HeatCapacityGases)
 
@@ -1459,7 +1459,7 @@ def test_flash_gas_only():
     # Test with one gas and no liquids
     constants = ChemicalConstantsPackage(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], MWs=[18.01528],  CASs=['7732-18-5'],)
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))]
-    correlations = PropertyCorrelationPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                  HeatCapacityGases=HeatCapacityGases)
 
@@ -1475,13 +1475,13 @@ def test_flash_gas_only():
 def test_VL_EOSMIX_fast_return(hacks):
     T, P, zs = 298.15, 101325.0, [1.0]
     constants = ChemicalConstantsPackage(atom_fractions={'H': 0.6666666666666666, 'O': 0.3333333333333333}, atomss=[{'H': 2, 'O': 1}],CASs=['7732-18-5'], charges=[0], conductivities=[4e-06], dipoles=[1.85], formulas=['H2O'], Gfgs=[-228554.325], Gfgs_mass=[-12686692.9073542], Hcs=[0.0], Hcs_lower=[0.0], Hcs_lower_mass=[0.0], Hcs_mass=[0.0], Hfgs=[-241822.0], Hfgs_mass=[-13423160.783512661], Hfus_Tms=[6010.0], Hfus_Tms_mass=[333605.69472136983], Hvap_298s=[43991.076027756884], Hvap_298s_mass=[2441875.7869850975], Hvap_Tbs=[40643.402624176735], Hvap_Tbs_mass=[2256051.6752543803], InChI_Keys=['XLYOFNOQVPJJNP-UHFFFAOYSA-N'], InChIs=['H2O/h1H2'], logPs=[-1.38], molecular_diameters=[3.24681], MWs=[18.01528], names=['water'], omegas=[0.344], Parachors=[9.368511392279435e-06], Pcs=[22048320.0], phase_STPs=['l'], Psat_298s=[3170.146712628533], PSRK_groups=[{16: 1}], Pts=[610.8773135731733], PubChems=[962], rhocs=[17857.142857142855], rhocs_mass=[321.7014285714285], rhol_STPs=[55287.70167376968], rhol_STPs_mass=[996.0234262094295], S0gs=[188.8], S0gs_mass=[10479.992539666328], Sfgs=[-44.499999999999964], Sfgs_mass=[-2470.1253602497413], similarity_variables=[0.16652530518537598], smiless=['O'], StielPolars=[0.023222134391615246], Stockmayers=[501.01], Tbs=[373.124], Tcs=[647.14], Tms=[273.15], Tts=[273.15], UNIFAC_Dortmund_groups=[{16: 1}], UNIFAC_groups=[{16: 1}], Van_der_Waals_areas=[350000.0], Van_der_Waals_volumes=[1.39564e-05], Vcs=[5.6000000000000006e-05], Vml_STPs=[1.808720510576827e-05], Vml_Tms=[1.801816212354171e-05], Zcs=[0.22947273972184645], UNIFAC_Rs=[0.92], UNIFAC_Qs=[1.4], rhos_Tms=[1126.700421021929], Vms_Tms=[1.5989414456471007e-05], solubility_parameters=[47931.929488349415], Vml_60Fs=[1.8036021352672155e-05], rhol_60Fs=[55287.70167376968], rhol_60Fs_mass=[998.8500039855475])
-    properties = PropertyCorrelationPackage(constants=constants, skip_missing=True,
-                                            HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))],
-                                            VolumeLiquids=[VolumeLiquid(best_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]))],
-                                            VaporPressures=[VaporPressure(best_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))],
-                                            EnthalpyVaporizations=[EnthalpyVaporization(best_fit=(273.17, 642.095, 647.14, [3.897048781581251, 94.88210726884502, 975.3860042050983, 5488.360052656942, 18273.86104025691, 36258.751893749475, 42379.63786686855, 39492.82327945519, 58540.84902227406]))],
-                                            ViscosityLiquids=[ViscosityLiquid(best_fit=(273.17, 647.086, [-3.2967840446295976e-19, 1.083422738340624e-15, -1.5170905583877102e-12, 1.1751285808764222e-09, -5.453683174592268e-07, 0.00015251508129341616, -0.024118558027652552, 1.7440690494170135, -24.96090630337129]))],
-                                            ViscosityGases=[ViscosityGas(best_fit=(273.16, 1073.15, [-1.1818252575481647e-27, 6.659356591849417e-24, -1.5958127917299133e-20, 2.1139343137119052e-17, -1.6813187290802144e-14, 8.127448028541097e-12, -2.283481528583874e-09, 3.674008403495927e-07, -1.9313694390100466e-05]))])
+    properties = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+                                             HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))],
+                                             VolumeLiquids=[VolumeLiquid(best_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]))],
+                                             VaporPressures=[VaporPressure(best_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))],
+                                             EnthalpyVaporizations=[EnthalpyVaporization(best_fit=(273.17, 642.095, 647.14, [3.897048781581251, 94.88210726884502, 975.3860042050983, 5488.360052656942, 18273.86104025691, 36258.751893749475, 42379.63786686855, 39492.82327945519, 58540.84902227406]))],
+                                             ViscosityLiquids=[ViscosityLiquid(best_fit=(273.17, 647.086, [-3.2967840446295976e-19, 1.083422738340624e-15, -1.5170905583877102e-12, 1.1751285808764222e-09, -5.453683174592268e-07, 0.00015251508129341616, -0.024118558027652552, 1.7440690494170135, -24.96090630337129]))],
+                                             ViscosityGases=[ViscosityGas(best_fit=(273.16, 1073.15, [-1.1818252575481647e-27, 6.659356591849417e-24, -1.5958127917299133e-20, 2.1139343137119052e-17, -1.6813187290802144e-14, 8.127448028541097e-12, -2.283481528583874e-09, 3.674008403495927e-07, -1.9313694390100466e-05]))])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas,
     alpha_coeffs=[[0.3872, 0.87587208, 1.9668]], cs=[5.2711E-6])
     gas = CEOSGas(PRMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
@@ -1516,7 +1516,7 @@ def test_APISRK_multiple_T_slns():
     constants = ChemicalConstantsPackage(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], MWs=[282.54748], CASs=['112-95-8'])
     HeatCapacityGases = [HeatCapacityGas(best_fit=(200.0, 1000.0, [-2.075118433508619e-20, 1.0383055980949049e-16, -2.1577805903757125e-13, 2.373511052680461e-10, -1.4332562489496906e-07, 4.181755403465859e-05, -0.0022544761674344544, -0.15965342941876415, 303.71771182550816]))]
 
-    correlations = PropertyCorrelationPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                     HeatCapacityGases=HeatCapacityGases)
 
@@ -1560,7 +1560,7 @@ def test_IG_liq_poy_flashes(hacks):
     VaporPressures = [VaporPressure(best_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))]
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))]
     VolumeLiquids = [VolumeLiquid(best_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]))]
-    correlations = PropertyCorrelationPackage(constants, skip_missing=True, VolumeLiquids=VolumeLiquids, VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases)
+    correlations = PropertyCorrelationsPackage(constants, skip_missing=True, VolumeLiquids=VolumeLiquids, VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases)
     liquid = GibbsExcessLiquid(VaporPressures=VaporPressures,
                                HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
@@ -1880,7 +1880,7 @@ def test_methanol_inconsistent_full_example():
     constants = ChemicalConstantsPackage(Tcs=[512.5], Pcs=[8084000.0], omegas=[0.559], MWs=[32.04186], CASs=['67-56-1'])
     HeatCapacityGases = [CpObj]
 
-    correlations = PropertyCorrelationPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
     liquid = CEOSLiquid(PRMIX, HeatCapacityGases=HeatCapacityGases, eos_kwargs=eos_kwargs)
     gas = CEOSGas(PRMIX, HeatCapacityGases=HeatCapacityGases, eos_kwargs=eos_kwargs)

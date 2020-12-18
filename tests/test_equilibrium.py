@@ -31,7 +31,7 @@ from thermo.vapor_pressure import VaporPressure, SublimationPressure
 from thermo.volume import *
 from thermo.heat_capacity import *
 from thermo.phase_change import *
-from thermo import ChemicalConstantsPackage, PropertyCorrelationPackage
+from thermo import ChemicalConstantsPackage, PropertyCorrelationsPackage
 from thermo.flash import FlashPureVLS
 
 def test_two_eos_pure_flash_all_properties():
@@ -68,9 +68,9 @@ def test_two_eos_pure_flash_all_properties():
     VolumeSolids = [VolumeSolid(best_fit=(52.677, 175.59, [3.9379562779372194e-30, 1.4859309728437516e-27, 3.897856765862211e-24, 5.012758300685479e-21, 7.115820892078097e-18,
                                                            9.987967202910477e-15, 1.4030825662633013e-11, 1.970935889948393e-08, 2.7686131179275174e-05])),]
 
-    correlations = PropertyCorrelationPackage(constants, VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases, HeatCapacityLiquids=HeatCapacityLiquids, VolumeLiquids=VolumeLiquids,
-                              EnthalpyVaporizations=EnthalpyVaporizations, HeatCapacitySolids=HeatCapacitySolids, SublimationPressures=SublimationPressures,
-                              EnthalpySublimations=EnthalpySublimations, VolumeSolids=VolumeSolids)
+    correlations = PropertyCorrelationsPackage(constants, VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases, HeatCapacityLiquids=HeatCapacityLiquids, VolumeLiquids=VolumeLiquids,
+                                               EnthalpyVaporizations=EnthalpyVaporizations, HeatCapacitySolids=HeatCapacitySolids, SublimationPressures=SublimationPressures,
+                                               EnthalpySublimations=EnthalpySublimations, VolumeSolids=VolumeSolids)
 
     eos_liquid = CEOSLiquid(PRMIX, dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas), HeatCapacityGases=HeatCapacityGases,
                             Hfs=constants.Hfgs, Sfs=constants.Sfgs, Gfs=constants.Gfgs)

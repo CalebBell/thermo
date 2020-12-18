@@ -41,7 +41,7 @@ def test_C2_C5_PR():
                                          names=['ethane', 'pentane'], MWs=[30.06904, 72.14878])
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228])),
                          HeatCapacityGas(best_fit=(200.0, 1000.0, [7.537198394065234e-22, -4.946850205122326e-18, 1.4223747507170372e-14, -2.3451318313798008e-11, 2.4271676873997662e-08, -1.6055220805830093e-05, 0.006379734000450042, -1.0360272314628292, 141.84695243411866]))]
-    correlations = PropertyCorrelationPackage(constants, HeatCapacityGases=HeatCapacityGases)
+    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases)
     zs = ws_to_zs(MWs=constants.MWs, ws=[.5, .5])
 
 
@@ -49,7 +49,7 @@ def test_C2_C5_PR():
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    flasher = FlashVL(constants, correlations, liq, gas)
+    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
     # Check there are two phases near the dew point. don't bother checking the composition most of the time.
 
     # When this test was written, case is still valid for a dP of 0.00000001 Pa
@@ -98,8 +98,8 @@ def test_flash_TP_K_composition_idependent_unhappiness():
                      HeatCapacityGases=HeatCapacityGases, use_Poynting=True,
                      use_phis_sat=False)
 
-    correlations = PropertyCorrelationPackage(constants=constants, skip_missing=True, HeatCapacityGases=HeatCapacityGases,
-                               VolumeLiquids=VolumeLiquids, VaporPressures=VaporPressures)
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True, HeatCapacityGases=HeatCapacityGases,
+                                               VolumeLiquids=VolumeLiquids, VaporPressures=VaporPressures)
 
     T, P = 350.0, 1e6
     zs = [0.2, 0.0, 0.8]
@@ -143,8 +143,8 @@ def test_flash_combustion_products():
     T = 794.5305048838037
     zs = [0.5939849621247668, 0.112781954982051, 0.0676691730155464, 0.2255639098776358]
     constants = ChemicalConstantsPackage(atomss=[{'N': 2}, {'C': 1, 'O': 2}, {'O': 2}, {'H': 2, 'O': 1}], CASs=['7727-37-9', '124-38-9', '7782-44-7', '7732-18-5'], MWs=[28.0134, 44.0095, 31.9988, 18.01528], names=['nitrogen', 'carbon dioxide', 'oxygen', 'water'], omegas=[0.04, 0.2252, 0.021, 0.344], Pcs=[3394387.5, 7376460.0, 5042945.25, 22048320.0], Tbs=[77.355, 194.67, 90.18799999999999, 373.124], Tcs=[126.2, 304.2, 154.58, 647.14], Tms=[63.15, 216.65, 54.36, 273.15])
-    correlations = PropertyCorrelationPackage(constants=constants, skip_missing=True,
-        HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+                                               HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
                            HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644])),
                            HeatCapacityGas(best_fit=(50.0, 1000.0, [7.682842888382947e-22, -3.3797331490434755e-18, 6.036320672021355e-15, -5.560319277907492e-12, 2.7591871443240986e-09, -7.058034933954475e-07, 9.350023770249747e-05, -0.005794412013028436, 29.229215579932934])),
                            HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))])
@@ -153,7 +153,7 @@ def test_flash_combustion_products():
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
 
-    flasher = FlashVL(constants, correlations, liq, gas)
+    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
     res = flasher.flash(T=T, P=P, zs=zs)
 
     assert res.gas
@@ -164,8 +164,8 @@ def test_bubble_T_PR_VL():
     # Last point at 8e6 Pa not yet found.
 
     constants = ChemicalConstantsPackage(CASs=['124-38-9', '110-54-3'], MWs=[44.0095, 86.17536], names=['carbon dioxide', 'hexane'], omegas=[0.2252, 0.2975], Pcs=[7376460.0, 3025000.0], Tbs=[194.67, 341.87], Tcs=[304.2, 507.6], Tms=[216.65, 178.075])
-    correlations = PropertyCorrelationPackage(constants=constants, skip_missing=True,
-    HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644])),
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+                                               HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644])),
                        HeatCapacityGas(best_fit=(200.0, 1000.0, [1.3740654453881647e-21, -8.344496203280677e-18, 2.2354782954548568e-14, -3.4659555330048226e-11, 3.410703030634579e-08, -2.1693611029230923e-05, 0.008373280796376588, -1.356180511425385, 175.67091124888998]))])
     zs = [.5, .5]
     T = 300.0
@@ -174,7 +174,7 @@ def test_bubble_T_PR_VL():
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
 
-    flasher = FlashVL(constants, correlations, liq, gas)
+    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
     res = flasher.flash(P=7.93e6, VF=0, zs=zs)
     assert_close(res.T, 419.0621213529388, rtol=1e-6)
 
@@ -183,14 +183,14 @@ def test_PR_four_bubble_dew_cases_VL():
     T=300.0
     P=1E6
     constants = ChemicalConstantsPackage(CASs=['98-01-1', '98-00-0'], MWs=[96.08406000000001, 98.09994], names=['2-furaldehyde', 'furfuryl alcohol'], omegas=[0.4522, 0.7340000000000001], Pcs=[5510000.0, 5350000.0], Tbs=[434.65, 441.15], Tcs=[670.0, 632.0], Tms=[235.9, 250.35])
-    correlations = PropertyCorrelationPackage(constants=constants, skip_missing=True,
-        HeatCapacityGases=[HeatCapacityGas(best_fit=(298, 1000, [4.245751608816354e-21, -2.470461837781697e-17, 6.221823690784335e-14, -8.847967216702641e-11, 7.749899297737877e-08, -4.250059888737765e-05, 0.013882452355067994, -2.1404621487165327, 185.84988012691903])),
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+                                               HeatCapacityGases=[HeatCapacityGas(best_fit=(298, 1000, [4.245751608816354e-21, -2.470461837781697e-17, 6.221823690784335e-14, -8.847967216702641e-11, 7.749899297737877e-08, -4.250059888737765e-05, 0.013882452355067994, -2.1404621487165327, 185.84988012691903])),
                            HeatCapacityGas(best_fit=(250.35, 632.0, [-9.534610090167143e-20, 3.4583416772306854e-16, -5.304513883184021e-13, 4.410937690059558e-10, -2.0905505018557675e-07, 5.20661895325169e-05, -0.004134468659764938, -0.3746374641720497, 114.90130267531933]))])
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
 
-    flasher = FlashVL(constants, correlations, liq, gas)
+    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
     assert_close(flasher.flash(P=1e6, VF=0, zs=zs).T, 539.1838522423529, rtol=1e-6)
     assert_close(flasher.flash(P=1e6, VF=1, zs=zs).T, 540.2081697501809, rtol=1e-6)
     assert_close(flasher.flash(T=600.0, VF=0, zs=zs).P, 2766476.7473238464, rtol=1e-6)
@@ -203,8 +203,8 @@ def test_C1_C10_PT_flash_VL():
     T=300.0
     P=1E5
     constants = ChemicalConstantsPackage(CASs=['74-82-8', '74-84-0', '74-98-6', '106-97-8', '109-66-0', '110-54-3', '142-82-5', '111-65-9', '111-84-2', '124-18-5'], MWs=[16.04246, 30.06904, 44.09562, 58.1222, 72.14878, 86.17536, 100.20194000000001, 114.22852, 128.2551, 142.28168], names=['methane', 'ethane', 'propane', 'butane', 'pentane', 'hexane', 'heptane', 'octane', 'nonane', 'decane'], omegas=[0.008, 0.098, 0.152, 0.193, 0.251, 0.2975, 0.3457, 0.39399999999999996, 0.444, 0.49], Pcs=[4599000.0, 4872000.0, 4248000.0, 3796000.0, 3370000.0, 3025000.0, 2740000.0, 2490000.0, 2290000.0, 2110000.0], Tbs=[111.65, 184.55, 231.04, 272.65, 309.21, 341.87, 371.53, 398.77, 423.95, 447.25], Tcs=[190.56400000000002, 305.32, 369.83, 425.12, 469.7, 507.6, 540.2, 568.7, 594.6, 611.7], Tms=[90.75, 90.3, 85.5, 135.05, 143.15, 178.075, 182.15, 216.3, 219.9, 243.225])
-    correlations = PropertyCorrelationPackage(constants=constants, skip_missing=True,
-    HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+                                               HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
                         HeatCapacityGas(best_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228])),
                         HeatCapacityGas(best_fit=(50.0, 1000.0, [7.008452174279456e-22, -1.7927920989992578e-18, 1.1218415948991092e-17, 4.23924157032547e-12, -5.279987063309569e-09, 2.5119646468572195e-06, -0.0004080663744697597, 0.1659704314379956, 26.107282495650367])),
                         HeatCapacityGas(best_fit=(200.0, 1000.0, [-2.608494166540452e-21, 1.3127902917979555e-17, -2.7500977814441112e-14, 3.0563338307642794e-11, -1.866070373718589e-08, 5.4505831355984375e-06, -0.00024022110003950325, 0.04007078628096955, 55.70646822218319])),
@@ -218,7 +218,7 @@ def test_C1_C10_PT_flash_VL():
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
 
-    flasher = FlashVL(constants, correlations, liq, gas)
+    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
     res = flasher.flash(T=T, P=P, zs=zs)
     assert_close(res.VF, 0.3933480634014041, rtol=1e-5)
 

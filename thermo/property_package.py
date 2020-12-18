@@ -4076,7 +4076,7 @@ class GceosBase(Ideal):
     random_guesses = False
     zero_fraction_guesses = 1E-6
     stability_maxiter = 500 # 30 good professional default; 500 used in source DTU
-#    stability_xtol = 5E-9 # 1e-12 was too strict; 1e-10 used in source DTU; 1e-9 set for some points near critical where convergence stopped; even some more stopped at higher Ts
+#    PT_STABILITY_XTOL = 5E-9 # 1e-12 was too strict; 1e-10 used in source DTU; 1e-9 set for some points near critical where convergence stopped; even some more stopped at higher Ts
     stability_xtol = 1e-10
     substitution_maxiter =  100 # 1000 #
 #    substitution_xtol = 1e-7 # 1e-10 too strict

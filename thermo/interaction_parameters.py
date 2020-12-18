@@ -26,6 +26,7 @@ __all__ = ['InteractionParameterDB']
 
 import os
 import numpy as np
+from math import isnan
 from chemicals.utils import can_load_data, PY37
 from chemicals.identifiers import check_CAS, sorted_CAS_key
 
@@ -72,7 +73,7 @@ class InteractionParameterDB(object):
                 # Check they are not None
                 assert val is not None
                 # Check they are not nan
-                assert not np.isnan(val)
+                assert not isnan(val)
 
 
     def has_ip_specific(self, name, CASs, ip):
@@ -119,7 +120,7 @@ class InteractionParameterDB(object):
                 else:
                     i_ip = self.get_ip_specific(name, [CASs[i], CASs[j]], ip)
                 values[i][j] = values[j][i] = i_ip
-        return np.array(values)
+        return values
 
     def get_ip_asymmetric_matrix(self, name, CASs, ip, T=298.15):
         table = self.tables[name]
@@ -132,7 +133,7 @@ class InteractionParameterDB(object):
                 else:
                     i_ip = self.get_ip_specific(name, [CASs[i], CASs[j]], ip)
                 values[i][j] = i_ip
-        return np.array(values)
+        return values
 
 
 ip_files = {'ChemSep PR': os.path.join(chemsep_db_path, 'pr.json'),
