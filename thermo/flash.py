@@ -59,11 +59,11 @@ Base Flash Class
    :exclude-members:
 
 
-Specific Flash Calculations
-===========================
+Specific Flash Algorithms
+=========================
 It is recommended to use the Flash classes, which are designed to have generic
 interfaces. The implemented specific flash algorithms may be changed in the
-future, but reading them may be helpful for instructive purposes.
+future, but reading their source code may be helpful for instructive purposes.
 
 '''
 # sequential_substitution_2P sequential_substitution_NP nonlin_equilibrium_NP nonlin_spec_NP nonlin_2P nonlin_2P_HSGUAbeta dew_bubble_newton_zs TPV_solve_HSGUA_1P
@@ -3994,12 +3994,13 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
                 Ks_P = [Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv))) for i in cmps]
             def flash_model(T, P, zs):
                 global V_over_F_guess
+                P_inv = 1.0/P
                 if not fixed_T:
                     T_inv = 1.0/T
-                    Ks_P = [Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv))) for i in cmps]
-                P_inv = 1.0/P
-                Ks = [Ki*P_inv for Ki in Ks_P]
-
+                    Ks_P_local = [Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv))) for i in cmps]
+                    Ks = [Ki*P_inv for Ki in Ks_P_local]
+                else:
+                    Ks = [Ki*P_inv for Ki in Ks_P]
                 K_low, K_high = False, False
                 for i in cmps:
                     if zs[i] != 0.0:
@@ -5458,7 +5459,7 @@ class FlashVL(FlashBase):
     110.0
     >>> flasher.flash(T=PT.T, H=PT.H(), zs=zs).T
     110.0
-    >>> flasher.flash(T=PT.T, S=PT.S(), zs=zs]).T
+    >>> flasher.flash(T=PT.T, S=PT.S(), zs=zs).T
     110.0
 
 
@@ -6085,6 +6086,7 @@ class FlashVL(FlashBase):
         min_bound, max_bound = self.bounds_PT_HSGUA()
 
         init_methods = [SHAW_ELEMENTAL, IDEAL_WILSON]
+        guess = None
 
         for method in init_methods:
             try:
@@ -6097,9 +6099,18 @@ class FlashVL(FlashBase):
                                P_ref=101325.0)
 
                 break
+            except NotImplementedError:
+                continue
             except Exception as e:
-                print(e)
+                #print(e)
                 pass
+        if guess is None:
+            if iter_var == 'T':
+                guess = 298.15
+            elif iter_var == 'P':
+                guess = 101325.0
+            elif iter_var == 'V':
+                guess = 0.024465403697038125
         sln = []
         global iterations
         iterations = 0
@@ -6122,6 +6133,111 @@ class FlashVL(FlashBase):
 
 
 class FlashVLN(FlashVL):
+    r'''Class for performing flash calculations on multiphase vapor-liquid
+    systems. This rigorous class does not make any assumptions and will search
+    for up to the maximum amount of liquid phases specified by the user. Vapor
+    and each liquid phase do not need to use a consistent thermodynamic model.
+
+    The minimum information that is needed is:
+
+    * MWs
+    * Vapor pressure curve
+    * Functioning enthalpy models for each phase
+
+    Parameters
+    ----------
+    constants : :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>` object
+        Package of chemical constants; these are used as boundaries at times,
+        initial guesses other times, and in all cases these properties are
+        accessible as attributes of the resulting
+        :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>` object, [-]
+    correlations : :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`
+        Package of chemical T-dependent properties; these are used as boundaries at times,
+        for initial guesses other times, and in all cases these properties are
+        accessible as attributes of the resulting
+        :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>` object, [-]
+    gas : :obj:`Phase <thermo.phases.Phase>` object
+        A single phase which can represent the gas phase, [-]
+    liquids : list[:obj:`Phase <thermo.phases.Phase>`]
+        A list of phase objects that can represent the liquid phases;
+        if working with a VLL system with a consistent model, specify the same
+        liquid phase twice; the length of this list is the maximum number of
+        liquid phases that will be searched for, [-]
+    solids : list[:obj:`Phase <thermo.phases.Phase>`]
+        Not used, [-]
+    settings : :obj:`BulkSettings <thermo.bulk.BulkSettings>` object
+        Object containing settings for calculating bulk and transport
+        properties, [-]
+
+    Attributes
+    ----------
+    SS_NP_MAXITER : int
+        Maximum number of sequential substitution iterations to try when
+        converging a three or more phase solution, [-]
+    SS_NP_TOL : float
+        Convergence tolerance in sequential substitution for a three or more
+        phase solution [-]
+    SS_NP_TRIVIAL_TOL : float
+        Tolerance at which to quick a three-phase flash because it is
+        converging to the trivial solution, [-]
+    SS_STAB_AQUEOUS_CHECK : bool
+        If True, the first three-phase stability check will be on water (if
+        it is present) as it forms a three-phase solution more than any
+        other component, [-]
+    DOUBLE_CHECK_2P : bool
+        This parameter should be set to True if any issues in the solution are
+        noticed. It can slow down two-phase solution. It ensures that all
+        potential vapor-liquid and liquid-liquid phase pairs are searched for
+        stability, instead of testing first for a vapor-liquid solution and
+        then moving on to a three phase flash if an instability is detected,
+        [-]
+
+    Notes
+    -----
+    The algorithms in this object are mostly from [1]_, [2]_ and [3]_.
+    Sequential substitution without acceleration is used by default to converge
+    multiphase systems.
+
+    Additional information that can be provided in the
+    :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>`
+    object and :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`
+    object that may help convergence is:
+
+    * `Tc`, `Pc`, `omega`, `Tb`, and `atoms`
+    * Gas heat capacity correlations
+    * Liquid molar volume correlations
+    * Heat of vaporization correlations
+
+    Examples
+    --------
+    A three-phase flash of butanol, water, and ethanol with the SRK EOS without
+    BIPs:
+
+    >>> from thermo import ChemicalConstantsPackage, CEOSGas, CEOSLiquid, SRKMIX, FlashVLN, PropertyCorrelationsPackage, HeatCapacityGas
+    >>> constants = ChemicalConstantsPackage(Tcs=[563.0, 647.14, 514.0], Pcs=[4414000.0, 22048320.0, 6137000.0], omegas=[0.59, 0.344, 0.635], MWs=[74.1216, 18.01528, 46.06844], CASs=['71-36-3', '7732-18-5', '64-17-5'])
+    >>> properties = PropertyCorrelationsPackage(constants=constants,
+    ...                                     HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.787200194613107e-20, 1.7692887427654656e-16, -3.445247207129205e-13, 3.612771874320634e-10, -2.1953250181084466e-07, 7.707135849197655e-05, -0.014658388538054169, 1.5642629364740657, -7.614560475001724])),
+    ...                                     HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+    ...                                     HeatCapacityGas(best_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965])),], )
+    >>> eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+    >>> gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    >>> liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    >>> flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
+    >>> res = flashN.flash(T=361, P=1e5, zs=[.25, 0.7, .05])
+    >>> res.phase_count
+    3
+
+
+    References
+    ----------
+    .. [1] Michelsen, Michael L., and Jørgen M. Mollerup. Thermodynamic Models:
+       Fundamentals & Computational Aspects. Tie-Line Publications, 2007.
+    .. [2] Poling, Bruce E., John M. Prausnitz, and John P. O’Connell. The
+       Properties of Gases and Liquids. 5th edition. New York: McGraw-Hill
+       Professional, 2000.
+    .. [3] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
+       Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
+    '''
 
     SS_NP_MAXITER = FlashVL.PT_SS_MAXITER
     SS_NP_TRIVIAL_TOL = 5e-5

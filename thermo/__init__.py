@@ -76,6 +76,7 @@ from . import chemical_utils
 from . import wilson
 from . import nrtl
 from . import uniquac
+from . import bulk
 from chemicals import temperature
 
 from .eos_alpha_functions import *
@@ -102,6 +103,7 @@ from .joback import *
 from chemicals.identifiers import *
 from .interaction_parameters import *
 from .law import *
+from .bulk import *
 from chemicals.lennard_jones import *
 from chemicals.miscdata import *
 from .mixture import *
@@ -148,7 +150,7 @@ __all__ = ['rachford_rice', 'flash_basic', 'chemical', 'chemical_package', 'comb
  'datasheet', 'dippr', 'unifac', 'stream', 'mixture', 'property_package_constants',
  'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution',
  'equilibrium', 'phase_identification', 'psychrometrics', 'temperature',
- 'eos_alpha_functions', 'eos_volume']
+ 'eos_alpha_functions', 'eos_volume', 'bulk']
 
 __all__.extend(eos_volume.__all__)
 __all__.extend(eos_alpha_functions.__all__)
@@ -205,6 +207,7 @@ __all__.extend(regular_solution.__all__)
 __all__.extend(equilibrium.__all__)
 __all__.extend(psychrometrics.__all__)
 __all__.extend(temperature.__all__)
+__all__.extend(bulk.__all__)
 
 
 # backwards compatibility hack to allow thermo.chemical.Mixture to still be importable

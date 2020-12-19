@@ -21,6 +21,7 @@ Submodules
    thermo.flash
    thermo.heat_capacity
    thermo.interface
+   thermo.interaction_parameters
    thermo.joback
    thermo.law
    thermo.nrtl

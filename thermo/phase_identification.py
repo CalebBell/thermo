@@ -23,26 +23,36 @@ SOFTWARE.
 This module contains functions for identifying phases as liquid, solid, and
 gas.
 
-Solid identification is easy using the solid phase identification parameter.
+Solid identification is easy using the
+:obj:`phase identification parameter <chemicals.utils.phase_identification_parameter_phase>`.
 There is never more than one gas by definition. For pure species, the
-phase identification parameter is a clear vapor-liquid differentiator.
+phase identification parameter is a clear vapor-liquid differentiator in the
+subcritical region and it provides line starting at the critical point for the
+supercritical region.
+
 However for mixtures, there is no clear calcuation that can be performed to
 identify the phase of a mixture. Many different criteria that have been
-proposed are included here.
+proposed are included here. The
+:obj:`phase identification parameter or PIP <chemicals.utils.phase_identification_parameter_phase>`.
+is recommended in general and is the default.
 
 For reporting bugs, adding feature requests, or submitting pull requests,
 please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 .. contents:: :local:
 
-Phase Identification Criteria
-=============================
+Phase Identification
+====================
 
-Main Interfaces
----------------
+Main Interface
+--------------
 .. autofunction:: identify_sort_phases
-.. autofunction:: sort_phases
+
+Secondary Interfaces
+--------------------
 .. autofunction:: identity_phase_states
+.. autodata:: VL_ID_METHODS
+.. autodata:: S_ID_METHODS
 
 Scoring Functions
 -----------------
@@ -57,6 +67,10 @@ Scoring Functions
 .. autofunction:: vapor_score_Poling
 .. autofunction:: vapor_score_PIP
 .. autofunction:: vapor_score_Bennett_Schmidt
+
+Sorting Phases
+==============
+.. autofunction:: sort_phases
 
 '''
 
@@ -74,7 +88,11 @@ __all__ = ['vapor_score_Tpc', 'vapor_score_Vpc',
 
            'WATER_FIRST', 'WATER_LAST', 'WATER_NOT_SPECIAL',
            'WATER_SORT_METHODS', 'KEY_COMPONENTS_SORT', 'PROP_SORT',
-           'SOLID_SORT_METHODS', 'LIQUID_SORT_METHODS'
+           'SOLID_SORT_METHODS', 'LIQUID_SORT_METHODS',
+
+           'VL_ID_TPC', 'VL_ID_VPC', 'VL_ID_TPC_VC_WEIGHTED', 'VL_ID_TPC_VPC',
+           'VL_ID_WILSON', 'VL_ID_POLING', 'VL_ID_PIP', 'VL_ID_BS', 'VL_ID_TRACES',
+           'VL_ID_METHODS', 'S_ID_D2P_DVDT', 'S_ID_METHODS',
            ]
 
 
@@ -609,11 +627,40 @@ VL_ID_TRACES = 'Traces'
 
 VL_ID_METHODS = [VL_ID_TPC, VL_ID_VPC, VL_ID_TPC_VC_WEIGHTED, VL_ID_TPC_VPC,
                  VL_ID_WILSON, VL_ID_POLING, VL_ID_PIP, VL_ID_BS, VL_ID_TRACES]
-
+'''List of all the methods available to perform the Vapor-Liquid phase ID.
+'''
 S_ID_D2P_DVDT = 'd2P_dVdT'
 S_ID_METHODS = [S_ID_D2P_DVDT]
+'''List of all the methods available to perform the solid-liquid phase ID.
+'''
 
-def score_phases_S(phases, constants, correlations, method, S_ID_settings=None):
+def score_phases_S(phases, constants, correlations, method=S_ID_D2P_DVDT,
+                   S_ID_settings=None):
+    r'''Score all phases according to how wolid they appear given the
+    provided parameters and a selected method.
+
+    A score above zero indicates a solid. More than one phase may have
+    a score above zero. A score under zero means the phase is a liquid or gas.
+
+    Parameters
+    ----------
+    phases : list[:obj:`thermo.phases.Phase`]
+        Phases to be identified and sorted, [-]
+    constants : :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>`
+        Constants used in the identification, [-]
+    correlations : :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`
+        Correlations used in the identification, [-]
+    method : str
+        Setting configuring how the scoring is performed; one of
+        ('d2P_dVdT',), [-]
+    S_ID_settings : dict[str : float] or None, optional
+        Additional configuration options for solid-liquid phase ID, [-]
+
+    Returns
+    -------
+    scores : list[float]
+        Scores for the phases in the order provided, [-]
+    '''
     # The higher the score (above zero), the more solid-like
     if method == S_ID_D2P_DVDT:
         scores = [i.d2P_dVdT() for i in phases]
@@ -630,9 +677,9 @@ def score_phases_VL(phases, constants, correlations, method):
     ----------
     phases : list[:obj:`thermo.phases.Phase`]
         Phases to be identified and sorted, [-]
-    constants : :obj:`thermo.chemical_package.ChemicalConstantsPackage`
+    constants : :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>`
         Constants used in the identification, [-]
-    correlations : :obj:`thermo.chemical_package.PropertyCorrelationPackage`
+    correlations : :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`
         Correlations used in the identification, [-]
     method : str
         Setting configuring how the scoring is performed; one of
@@ -711,7 +758,37 @@ def identity_phase_states(phases, constants, correlations, VL_method=VL_ID_PIP,
                           S_method=S_ID_D2P_DVDT,
                           VL_ID_settings=None, S_ID_settings=None,
                           skip_solids=False):
-    # TODO - unit test
+    r'''Identify and the actial phase of all the given phases given the
+    provided settings.
+
+    Parameters
+    ----------
+    phases : list[:obj:`Phase <thermo.phases.Phase>`]
+        Phases to be identified and sorted, [-]
+    constants : :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>`
+        Constants used in the identification, [-]
+    correlations : :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`
+        Correlations used in the identification, [-]
+    VL_method : str, optional
+        One of :obj:`VL_ID_METHODS`, [-]
+    S_method : str, optional
+        One of :obj:`S_ID_METHODS`, [-]
+    VL_ID_settings : dict[str : float] or None, optional
+        Additional configuration options for vapor-liquid phase ID, [-]
+    S_ID_settings : dict[str : float] or None, optional
+        Additional configuration options for solid-liquid phase ID, [-]
+    skip_solids : bool
+        Set this to True if no phases are provided which can represent a solid phase, [-]
+
+    Returns
+    -------
+    gas : :obj:`Phase <thermo.phases.Phase>`
+        Gas phase, if one was identified, [-]
+    liquids : list[:obj:`Phase <thermo.phases.Phase>`]
+        Liquids that were identified and sorted, [-]
+    solids : list[:obj:`Phase <thermo.phases.Phase>`]
+        Solids that were identified and sorted, [-]
+    '''
     # TODO - optimize
     # Takes a while
 
@@ -790,7 +867,8 @@ SOLID_SORT_METHODS = LIQUID_SORT_METHODS = [PROP_SORT, KEY_COMPONENTS_SORT]
 
 def key_cmp_sort(phases, cmps, cmps_neg):
     # TODO
-    return phases
+    raise NotImplementedError
+#    return phases
 
 def mini_sort_phases(phases, sort_method, prop, cmps, cmps_neg,
                      reverse=True, constants=None):
@@ -819,9 +897,48 @@ def mini_sort_phases(phases, sort_method, prop, cmps, cmps_neg,
             phases.reverse()
     elif sort_method == KEY_COMPONENTS_SORT:
         phases = key_cmp_sort(phases, cmps, cmps_neg)
+        if not reverse:
+            phases.reverse()
     return phases
 
 def sort_phases(liquids, solids, constants, settings):
+    r'''Identify and sort all phases given the provided parameters.
+    This is not a thermodynamic concept; it is just a convinience
+    method to make the results of the flash more consistent, because
+    the flash algorithms don't care about density or ordering
+    the phases.
+
+    Parameters
+    ----------
+    liquids : list[:obj:`Phase <thermo.phases.Phase>`]
+        Liquids that were identified, [-]
+    solids : list[:obj:`Phase <thermo.phases.Phase>`]
+        Solids that were identified, [-]
+    constants : :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>`
+        Constants used in the identification, [-]
+    correlations : :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`
+        Correlations used in the identification, [-]
+    settings : :obj:`BulkSettings <thermo.bulk.BulkSettings>`
+        Settings object controlling the phase sorting, [-]
+
+    Returns
+    -------
+    liquids : list[:obj:`Phase <thermo.phases.Phase>`]
+        Liquids that were identified and sorted, [-]
+    solids : list[:obj:`Phase <thermo.phases.Phase>`]
+        Solids that were identified and sorted, [-]
+
+    Notes
+    -----
+    The settings object uses the preferences
+    `liquid_sort_method`, `liquid_sort_prop`,
+    `liquid_sort_cmps`, `liquid_sort_cmps_neg`,
+    and `phase_sort_higher_first`.
+
+    Examples
+    --------
+
+    '''
 
     if len(liquids) > 1:
         liquids = mini_sort_phases(liquids, sort_method=settings.liquid_sort_method,
@@ -843,7 +960,7 @@ def sort_phases(liquids, solids, constants, settings):
                     if settings.water_sort == WATER_LAST:
                         liquids.append(water)
                     elif settings.water_sort == WATER_FIRST:
-                        liquids.insert(water)
+                        liquids.insert(0, water)
     if len(solids) > 1:
         solids = mini_sort_phases(solids, sort_method=settings.solid_sort_method,
                          prop=setings.solid_sort_prop,
@@ -859,35 +976,60 @@ def identify_sort_phases(phases, betas, constants, correlations, settings,
 
     Parameters
     ----------
-    phases : list[:obj:`thermo.phase.Phase`]
+    phases : list[:obj:`Phase <thermo.phases.Phase>`]
         Phases to be identified and sorted, [-]
     betas : list[float]
         Phase molar fractions, [-]
-    constants : :obj:`thermo.chemical_package.ChemicalConstantsPackage`
+    constants : :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>`
         Constants used in the identification, [-]
-    correlations : :obj:`thermo.chemical_package.PropertyCorrelationsPackage`
+    correlations : :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`
         Correlations used in the identification, [-]
-    settings : :obj:`thermo.bulk.BulkSettings`
+    settings : :obj:`BulkSettings <thermo.bulk.BulkSettings>`
         Settings object controlling the phase ID, [-]
     skip_solids : bool
         Set this to True if no phases are provided which can represent a solid phase, [-]
 
     Returns
     -------
-    gas : :obj:`thermo.phase.Phase`
+    gas : :obj:`Phase <thermo.phases.Phase>`
         Gas phase, if one was identified, [-]
-    liquids : list[:obj:`thermo.phase.Phase`]
+    liquids : list[:obj:`Phase <thermo.phases.Phase>`]
         Liquids that were identified and sorted, [-]
-    solids : list[:obj:`thermo.phase.Phase`]
-        solids that were identified and sorted, [-]
+    solids : list[:obj:`Phase <thermo.phases.Phase>`]
+        Solids that were identified and sorted, [-]
     betas : list[float]
         Sorted phase molar fractions, in order (gas, liquids..., solids...) [-]
 
     Notes
     -----
+    This step is very important as although phase objects are
+    designed to represent a single phase, cubic equations of state
+    can be switched back and forth by the flash algorithms.
+    Thermodynamics doesn't care about gases, liquids, or solids;
+    it just cares about minimizing Gibbs energy!
 
     Examples
     --------
+    A butanol-water-ethanol flash yields three phases. For brevity we skip
+    the flash and initialize our `gas`, `liq0`, and `liq1` object with the
+    correct phase composition. Then we identify the phases into liquid,
+    gas, and solid.
+
+    >>> from thermo import ChemicalConstantsPackage, PropertyCorrelationsPackage, HeatCapacityGas, SRKMIX, CEOSGas, CEOSLiquid
+    >>> constants = ChemicalConstantsPackage(Tcs=[563.0, 647.14, 514.0], Vcs=[0.000274, 5.6e-05, 0.000168], Pcs=[4414000.0, 22048320.0, 6137000.0], omegas=[0.59, 0.344, 0.635], MWs=[74.1216, 18.01528, 46.06844], CASs=['71-36-3', '7732-18-5', '64-17-5'])
+    >>> properties = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+    ...                                     HeatCapacityGases=[HeatCapacityGas(load_data=False, best_fit=(50.0, 1000.0, [-3.787200194613107e-20, 1.7692887427654656e-16, -3.445247207129205e-13, 3.612771874320634e-10, -2.1953250181084466e-07, 7.707135849197655e-05, -0.014658388538054169, 1.5642629364740657, -7.614560475001724])),
+    ...                                     HeatCapacityGas(load_data=False, best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+    ...                                     HeatCapacityGas(load_data=False, best_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965])),], )
+    >>> eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+    >>> gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    >>> liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    >>> T, P = 361, 1e5
+    >>> gas = gas.to(T=T, P=P, zs=[0.2384009970908655, 0.5786839935180925, 0.1829150093910419])
+    >>> liq0 = liq.to(T=T, P=P, zs=[7.619975052238032e-05, 0.9989622883894993, 0.0009615118599781474])
+    >>> liq1 = liq.to(T=T, P=P, zs=[0.6793120076703771, 0.19699746328631124, 0.12369052904331178])
+    >>> identity_phase_states(phases=[liq0, liq1, gas], constants=constants, correlations=properties, VL_method='PIP')
+    (<CEOSGas, T=361 K, P=100000 Pa>, [<CEOSLiquid, T=361 K, P=100000 Pa>, <CEOSLiquid, T=361 K, P=100000 Pa>], [])
 
     '''
     gas, liquids, solids = identity_phase_states(phases, constants, correlations,

@@ -835,5 +835,8 @@ class SublimationPressure(TDependentProperty):
         else:
             raise Exception('Method not valid')
         return True
-
+try:
+    SublimationPressure.custom_set_best_fit = VaporPressure.custom_set_best_fit
+except:
+    pass
 

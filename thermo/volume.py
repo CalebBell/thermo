@@ -1975,6 +1975,11 @@ class VolumeSolid(TDependentProperty):
             raise Exception('Method not valid')
         return validity
 
+try:
+    VolumeSolid.custom_set_best_fit = VolumeLiquid.custom_set_best_fit
+except:
+    pass
+
 
 volume_solid_mixture_methods = [SIMPLE]
 

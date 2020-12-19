@@ -44,9 +44,9 @@ Create a :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstan
 
 >>> constants = ChemicalConstantsPackage(Tcs=[512.5], Pcs=[8084000.0], omegas=[0.559], MWs=[32.04186], CASs=['67-56-1'])
 
-Create a :obj:`PropertyCorrelationPackage <thermo.chemical_package.PropertyCorrelationPackage>` object which holds temperature-dependent property objects, also setting `skip_missing` to True so no database lookups are performed:
+Create a :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>` object which holds temperature-dependent property objects, also setting `skip_missing` to True so no database lookups are performed:
 
->>> correlations = PropertyCorrelationPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+>>> correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
 
 Create liquid and gas cubic phase objects using the :obj:`Peng-Robinson equation of state <thermo.eos_mix.PRMIX>`:
 
