@@ -35,8 +35,7 @@ from math import *
 def test_VaporPressure():
     # Ethanol, test as many methods asa possible at once
     EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
-    EtOH.T_dependent_property(305.)
-    methods = EtOH.sorted_valid_methods
+    methods = list(EtOH.available_methods)
     methods.remove(VDI_TABULAR)
     Psat_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(305.))[1] for i in methods]
     Psat_exp = [11579.634014300127, 11698.02742876088, 11590.408779316374, 11659.154222044575, 11592.205263402893, 11593.661615921257, 11612.378633936816, 11350.156640503357, 12081.738947110121, 14088.453409816764, 9210.26200064024]
@@ -46,16 +45,15 @@ def test_VaporPressure():
 
     # Use another chemical to get in ANTOINE_EXTENDED_POLING
     a = VaporPressure(CASRN='589-81-1')
-    a.T_dependent_property(410)
-    Psat_calcs = [(a.set_method(i), a.T_dependent_property(410))[1] for i in a.sorted_valid_methods]
+    Psat_calcs = [(a.set_method(i), a.T_dependent_property(410))[1] for i in a.available_methods]
     Psat_exp = [162944.82134710113, 162870.44794192078, 162865.5380455795]
-    assert_allclose(Psat_calcs, Psat_exp)
+    assert_allclose(sorted(Psat_calcs), sorted(Psat_exp))
 
     # Test that methods return None
     EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
     EtOH.T_dependent_property(298.15)
-    Psat_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(5000))[1] for i in EtOH.sorted_valid_methods]
-    assert [None]*11 == Psat_calcs
+    Psat_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(5000))[1] for i in EtOH.available_methods]
+    assert [None]*12 == Psat_calcs
 
     # Test interpolation, extrapolation
     w = VaporPressure(Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344, CASRN='7732-18-5')

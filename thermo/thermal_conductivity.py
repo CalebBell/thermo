@@ -281,6 +281,10 @@ class ThermalConductivityLiquid(TPDependentProperty):
         self.load_all_methods(load_data)
         if best_fit is not None:
             self.set_best_fit(best_fit)
+        else:
+            methods = self.select_valid_methods(T=None, check_validity=False)
+            if methods:
+                self.set_method(methods[0])
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
@@ -305,9 +309,11 @@ class ThermalConductivityLiquid(TPDependentProperty):
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
                 Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
             if has_CoolProp() and self.CASRN in coolprop_dict:
-                methods.append(COOLPROP); methods_P.append(COOLPROP)
-                self.CP_f = coolprop_fluids[self.CASRN]
-                Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
+                CP_f = coolprop_fluids[self.CASRN]
+                if CP_f.has_k:
+                    self.CP_f = CP_f
+                    methods.append(COOLPROP); methods_P.append(COOLPROP)
+                    Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
             if self.CASRN in thermal_conductivity.k_data_Perrys_8E_2_315.index:
                 methods.append(DIPPR_PERRY_8E)
                 C1, C2, C3, C4, C5, self.Perrys2_315_Tmin, self.Perrys2_315_Tmax = thermal_conductivity.k_values_Perrys_8E_2_315[thermal_conductivity.k_data_Perrys_8E_2_315.index.get_loc(self.CASRN)].tolist()
@@ -985,6 +991,10 @@ class ThermalConductivityGas(TPDependentProperty):
         self.load_all_methods(load_data)
         if best_fit is not None:
             self.set_best_fit(best_fit)
+        else:
+            methods = self.select_valid_methods(T=None, check_validity=False)
+            if methods:
+                self.set_method(methods[0])
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
@@ -1009,9 +1019,11 @@ class ThermalConductivityGas(TPDependentProperty):
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
                 Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
             if has_CoolProp() and self.CASRN in coolprop_dict:
-                methods.append(COOLPROP); methods_P.append(COOLPROP)
-                self.CP_f = coolprop_fluids[self.CASRN]
-                Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
+                CP_f = coolprop_fluids[self.CASRN]
+                if CP_f.has_k:
+                    self.CP_f = CP_f
+                    methods.append(COOLPROP); methods_P.append(COOLPROP)
+                    Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
             if self.CASRN in thermal_conductivity.k_data_Perrys_8E_2_314.index:
                 methods.append(DIPPR_PERRY_8E)
                 C1, C2, C3, C4, self.Perrys2_314_Tmin, self.Perrys2_314_Tmax = thermal_conductivity.k_values_Perrys_8E_2_314[thermal_conductivity.k_data_Perrys_8E_2_314.index.get_loc(self.CASRN)].tolist()

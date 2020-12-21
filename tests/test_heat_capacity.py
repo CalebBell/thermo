@@ -150,7 +150,6 @@ def test_HeatCapacitySolid():
     Ts = [200, 300, 400, 500, 600]
     Cps = [12.965044960703908, 20.206353934945987, 28.261467986645872, 37.14292010552292, 46.85389719453655]
     NaCl.set_tabular_data(Ts=Ts, properties=Cps, name='stuff')
-    NaCl.forced = True
     assert_close(NaCl.T_dependent_property(275), 18.320355898506502, rtol=1E-5)
 
     NaCl.tabular_extrapolation_permitted = False

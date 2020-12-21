@@ -131,6 +131,10 @@ class Permittivity(TDependentProperty):
 
         if best_fit is not None:
             self.set_best_fit(best_fit)
+        else:
+            methods = self.select_valid_methods(T=None, check_validity=False)
+            if methods:
+                self.set_method(methods[0])
 
     def load_all_methods(self, load_data):
         r'''Method which picks out coefficients for the specified chemical

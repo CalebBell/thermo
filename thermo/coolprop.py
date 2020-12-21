@@ -117,11 +117,22 @@ coolprop_dict = ['100-41-4', '10024-97-2', '102687-65-0', '106-42-3',
 '811-97-2', '95-47-6']
 
 
+CoolProp_has_mu_CASs = set(['74-82-8', '109-66-0', '67-56-1', '115-07-1', '76-16-4', '75-72-9', '811-97-2', '75-73-0', '1717-00-6', '75-68-3', '76-19-7', '431-89-0', '431-63-0', '690-39-1', '115-25-3', '75-69-4', '75-71-8', '420-46-2', '306-83-2', '102687-65-0', '754-12-1', '29118-24-9', '2837-89-0', '75-37-6', '75-45-6', '460-73-1', '75-10-5', '354-33-6', '75-46-7', 'R404A.PPF', 'R407C.PPF', 'R410A.PPF', 'R507A.PPF', '2551-62-4', '108-88-3', '7732-18-5', '108-38-3', '106-97-8', '124-18-5', '111-84-2', '111-65-9', '112-40-3', '142-82-5', '110-54-3', '74-98-6', '95-47-6', '106-42-3', 'AIR.PPF', '7440-37-1', '7727-37-9', '7782-44-7', '7664-41-7', '71-43-2', '124-38-9', '110-82-7', '287-92-3', '78-78-4', '115-10-6', '74-84-0', '64-17-5', '7789-20-0', '7440-59-7', '1333-74-0', '7783-06-4', '75-28-5'])
+CoolProp_has_k_CASs = set(['74-82-8', '67-56-1', '115-07-1', '76-16-4', '75-72-9', '75-73-0', '1717-00-6', '75-68-3', '76-19-7', '431-89-0', '431-63-0', '690-39-1', '115-25-3', '2837-89-0', '460-73-1', '75-10-5', '811-97-2', '75-69-4', '75-71-8', '420-46-2', '75-45-6', '306-83-2', '754-12-1', '29118-24-9', '354-33-6', '75-37-6', '75-46-7', 'R404A.PPF', 'R407C.PPF', 'R410A.PPF', 'R507A.PPF', '2551-62-4', '108-88-3', '7732-18-5', '106-97-8', '124-18-5', '111-84-2', '111-65-9', '112-40-3', '142-82-5', '110-54-3', '74-98-6', 'AIR.PPF', '7440-37-1', '7727-37-9', '7782-44-7', '7664-41-7', '71-43-2', '124-38-9', '109-66-0', '287-92-3', '78-78-4', '74-84-0', '64-17-5', '100-41-4', '108-38-3', '95-47-6', '106-42-3', '7789-20-0', '7440-59-7', '1333-74-0p', '1333-74-0', '75-28-5'])
+
+
 class CP_fluid(object):
     # Basic object to store constants for a coolprop fluid, much faster than
     # calling coolprop to retrieve the data when needed
     __slots__ = ['Tmin', 'Tmax', 'Pmax', 'has_melting_line', 'Tc', 'Pc', 'Tt',
-                 'omega', 'HEOS']
+                 'omega', 'HEOS', 'CAS']
+    @property
+    def has_k(self):
+        return self.CAS in CoolProp_has_k_CASs
+
+    @property
+    def has_mu(self):
+        return self.CAS in CoolProp_has_mu_CASs
 
     def as_json(self):
         return {k: getattr(self, k) for k in self.__slots__}
@@ -131,7 +142,7 @@ class CP_fluid(object):
         return self
 
     def __init__(self, Tmin, Tmax, Pmax, has_melting_line, Tc, Pc, Tt, omega,
-                 HEOS):
+                 HEOS, CAS):
         self.Tmin = Tmin
         self.Tmax = Tmax
         self.Pmax = Pmax
@@ -141,6 +152,7 @@ class CP_fluid(object):
         self.Tt = Tt
         self.omega = omega
         self.HEOS = HEOS
+        self.CAS = CAS
 
 
 # Store the propoerties in a dict of CP_fluid instances
@@ -163,7 +175,7 @@ def store_coolprop_fluids():
         HEOS = AbstractState("HEOS", CASRN)
         coolprop_fluids[CASRN] = CP_fluid(Tmin=HEOS.Tmin(), Tmax=HEOS.Tmax(), Pmax=HEOS.pmax(),
                        has_melting_line=HEOS.has_melting_line(), Tc=HEOS.T_critical(), Pc=HEOS.p_critical(),
-                       Tt=HEOS.Ttriple(), omega=HEOS.acentric_factor(), HEOS=None)
+                       Tt=HEOS.Ttriple(), omega=HEOS.acentric_factor(), HEOS=None, CAS=CASRN)
 
     data = {CASRN: coolprop_fluids[CASRN].as_json() for CASRN in coolprop_dict}
     ver = CoolProp.__version__
@@ -186,7 +198,7 @@ def load_coolprop_fluids():
         d = data[CASRN]
         coolprop_fluids[CASRN] = CP_fluid(Tmin=d['Tmin'], Tmax=d['Tmax'], Pmax=d['Pmax'],
                        has_melting_line=d['has_melting_line'], Tc=d['Tc'], Pc=d['Pc'],
-                       Tt=d['Tt'], omega=d['omega'], HEOS=None)
+                       Tt=d['Tt'], omega=d['omega'], HEOS=None, CAS=CASRN)
 
 
 

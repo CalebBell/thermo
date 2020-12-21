@@ -356,6 +356,10 @@ class VolumeLiquid(TPDependentProperty):
         self.load_all_methods(load_data)
         if best_fit is not None:
             self.set_best_fit(best_fit)
+        else:
+            methods = self.select_valid_methods(T=None, check_validity=False)
+            if methods:
+                self.set_method(methods[0])
 
     def custom_set_best_fit(self):
         try:
@@ -1456,6 +1460,9 @@ class VolumeGas(TPDependentProperty):
         properties; filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
+        methods = self.select_valid_methods_P(T=None, P=None, check_validity=False)
+        if methods:
+            self.set_user_methods_P(methods[0], forced_P=True)
 
     def load_all_methods(self, load_data):
         r'''Method which picks out coefficients for the specified chemical
@@ -1876,6 +1883,10 @@ class VolumeSolid(TDependentProperty):
         self.load_all_methods(load_data)
         if best_fit is not None:
             self.set_best_fit(best_fit)
+        else:
+            methods = self.select_valid_methods(T=None, check_validity=False)
+            if methods:
+                self.set_method(methods[0])
 
 
     def load_all_methods(self, load_data=True):

@@ -163,21 +163,20 @@ def test_ViscosityGas():
 
 def test_ViscosityLiquidMixture():
     # DIPPR  1983 manual example
-    m = Mixture(['carbon tetrachloride', 'isopropanol'], zs=[0.5, 0.5], T=313.2)
+    ViscosityLiquids = [ViscosityLiquid(CASRN=CAS) for CAS in ['56-23-5', '67-63-0']]
+    for obj in ViscosityLiquids:
+        obj.set_method(DIPPR_PERRY_8E)
 
-    ViscosityLiquids = [i.ViscosityLiquid for i in m.Chemicals]
+    T, P, zs, ws = 313.2, 101325.0, [0.5, 0.5], [0.7190741374767832, 0.2809258625232169]
+    obj = ViscosityLiquidMixture(ViscosityLiquids=ViscosityLiquids, CASs=['56-23-5', '67-63-0'], MWs=[153.8227, 60.09502])
+    mu = obj.mixture_property(T, P, zs, ws)
+    assert_close(mu, 0.0009948528627794172)
 
-    obj = ViscosityLiquidMixture(ViscosityLiquids=ViscosityLiquids, CASs=m.CASs, MWs=m.MWs)
-    mu = obj.mixture_property(m.T, m.P, m.zs, m.ws)
-    assert_close(mu, 0.0009956952502281852)
+    mu = obj.calculate(T, P, zs, ws, MIXING_LOG_MOLAR)
+    assert_close(mu, 0.0009948528627794172)
 
-    mu = obj.calculate(m.T, m.P, m.zs, m.ws, MIXING_LOG_MOLAR)
-    assert_close(mu, 0.0009956952502281852)
-    mu = obj.calculate(m.T, m.P, m.zs, m.ws, MIXING_LOG_MASS)
-    assert_close(mu, 0.0008741268796817256)
-
-    mu = obj.calculate(m.T, m.P, m.zs, m.ws, SIMPLE)
-    assert_close(mu, 0.0010399923381840628)
+    mu = obj.calculate(T, P, zs, ws, SIMPLE)
+    assert_close(mu, 0.001039155803329608)
 
     # Test Laliberte
     m = Mixture(['water', 'sulfuric acid'], zs=[0.5, 0.5], T=298.15)

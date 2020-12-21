@@ -297,6 +297,10 @@ class VaporPressure(TDependentProperty):
                 self.Tmin = self.best_fit_Tmin*.01
             if self.Tmax is None and hasattr(self, 'best_fit_Tmax'):
                 self.Tmax = self.best_fit_Tmax*10
+        else:
+            methods = self.select_valid_methods(T=None, check_validity=False)
+            if methods:
+                self.set_method(methods[0])
 
     @staticmethod
     def _method_indexes():
@@ -743,6 +747,10 @@ class SublimationPressure(TDependentProperty):
                 self.Tmin = self.best_fit_Tmin/100
             if self.Tmax is None and hasattr(self, 'best_fit_Tmax'):
                 self.Tmax = self.best_fit_Tmax*10
+        else:
+            methods = self.select_valid_methods(T=None, check_validity=False)
+            if methods:
+                self.set_method(methods[0])
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical

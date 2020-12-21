@@ -48,7 +48,9 @@ def test_Chemical_properties():
 
     pentane = Chemical('pentane')
     assert_allclose(pentane.Tt, 143.47)
-    assert_allclose(pentane.Pt, 0.07098902774226569)
+
+    # Vapor pressure correlation did not extend down far enough once made strict
+#    assert_allclose(pentane.Pt, 0.07098902774226569)
 
     assert_allclose(pentane.Hfus, 116426.08509804323, rtol=1E-3)
     assert_allclose(pentane.Hfusm, 8400.0, rtol=1E-3)
@@ -109,7 +111,9 @@ def test_Chemical_properties_T_dependent_constants():
     assert_allclose(w.Vml_Tb, 1.8829559687798784e-05, rtol=1e-4)
     assert_allclose(w.Vml_Tm, 1.7908144191247533e-05, rtol=1e-4)
     assert_allclose(w.Vml_STP, 1.8069338439592963e-05, rtol=1e-4)
-    assert_allclose(w.Vmg_STP, 0.023505766772305356, rtol=1e-4)
+
+    # VolumeGas will no longer extrapolate
+#    assert_allclose(w.Vmg_STP, 0.023505766772305356, rtol=1e-4)
 
 
     assert_allclose(w.Hvap_Tb, 2256470.870516969, rtol=1e-4)

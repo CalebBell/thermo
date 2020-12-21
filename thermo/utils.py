@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -592,34 +592,38 @@ BESTFIT = 'Best fit'
 
 
 class TDependentProperty(object):
-    '''Class for calculating temperature-dependent chemical properties. Should load
-    all data about a given chemical on creation. As data is often stored in pandas
-    DataFrames, this means that creation is slow. However, the calculation of
-    a property at a given temperature is very fast. As coefficients are stored
-    in every instance, a user could alter them from those loaded by default.
+    '''Class for calculating temperature-dependent chemical properties.
 
-    Designed to intelligently select which method to use at a given temperature,
-    according to (1) selections made by the user specifying a list of ordered
-    method preferences and (2) by using a default list of preferred methods.
+    On creation, a :obj:`TDependentProperty` examines all the possible methods
+    implemented for calculating the property, loads whichever coefficients it
+    needs (unless `load_data` is set to False), examines its input parameters,
+    and selects the method it prefers. This method will continue to be used for
+    all calculations until the method is changed by a call to :obj:`set_method`.
 
-    All methods should have defined criteria for determining if they are valid before
+    The default list of preferred method orderings is at :obj:`ranked_methods`
+    for all properties; the order can be modified there in-place, and this
+    will take effect on all new :obj:`TDependentProperty` instances created.
+
+    All methods have defined criteria for determining if they are valid before
     calculation, i.e. a minimum and maximum temperature for coefficients to be
     valid. For constant property values used due to lack of
     temperature-dependent data, a short range is normally specified as valid.
-    It is not assumed that any given method will succeed; for example many expressions are
-    not mathematically valid past the critical point. If the method raises an
-    exception, the next method is tried until either one method works or all
-    the supposedly valid have been
-    exhausted. Furthermore, all properties returned by the method are checked
-    by a sanity function :obj:`test_property_validity`, which has sanity checks for
-    all properties.
 
-    Works nicely with tabular data, which is interpolated from if specified.
-    Interpolation is cubic-spline based if 5 or more points are given, and
-    linearly interpolated with if few points are given. Extrapolation is
-    permitted if :obj:`tabular_extrapolation_permitted` is set to True.
-    For both interpolation and
-    extrapolation, a transform may be applied so that a property such as
+    It is not assumed that a specified method will succeed; for example many
+    expressions are not mathematically valid past the critical point, and in
+    some cases there is no easy way to etermine the temperature where a
+    property stops being reasonable.
+
+    Accordingly, all properties calculated are checked
+    by a sanity function :obj:`test_property_validity <TDependentProperty.test_property_validity>`,
+    which has basic sanity checks. If the property is not reasonable, None is
+    returned.
+
+    This framework also supports tabular data, which is interpolated from if
+    specified. Interpolation is cubic-spline based if 5 or more points are
+    given, and linearly interpolated with if few points are given. Tabular
+    extrapolation is permitted if :obj:`tabular_extrapolation_permitted` is set to True.
+    For both interpolation and extrapolation, a transform may be applied so that a property such as
     vapor pressure can be interpolated non-linearly. These are functions or
     lambda expressions which must be set for the variables :obj:`interpolation_T`,
     :obj:`interpolation_property`, and :obj:`interpolation_property_inv`.
@@ -697,6 +701,8 @@ class TDependentProperty(object):
     interpolation_T_inv = None
     interpolation_property = None
     interpolation_property_inv = None
+
+    extrapolation = 'linear'
 
     method = None
     forced = False
@@ -788,6 +794,12 @@ class TDependentProperty(object):
 
         return dat
 
+    def _extrapolate_linear(self, method):
+        pass
+
+    def _set_linear_extrapolation_coeffs(self, method):
+        pass
+
 
     def fit_polynomial(self, method, n=None, start_n=3, max_n=30, eval_pts=100):
         r'''Method to fit a T-dependent property to a polynomial. The degree
@@ -872,30 +884,34 @@ class TDependentProperty(object):
         ----------
         method : str or list
             Methods by name to be considered or preferred
-        forced : bool, optional
-            If True, only the user specified methods will ever be considered;
-            if False other methods will be considered if no user methods
-            suceed
         '''
+        if method not in self.all_methods:
+            raise ValueError("The given methods is not available for this chemical")
         # Accept either a string or a list of methods, and whether
         # or not to only consider the false methods
-        if isinstance(method, str):
-            method = [method]
+#        if isinstance(method, str):
+#            method = [method]
+#
+#        # The user's order matters and is retained for use by select_valid_methods
+#        self.user_methods = method
+#        self.forced = True
 
-        # The user's order matters and is retained for use by select_valid_methods
-        self.user_methods = method
-        self.forced = True
-
+#        if self.
         # Validate that the user's specified methods are actual methods
-        if set(self.user_methods).difference(self.all_methods):
-            raise Exception("One of the given methods is not available for this chemical")
-        if not self.user_methods and self.forced:
-            raise Exception('Only user specified methods are considered when forced is True, but no methods were provided')
-
-        # Remove previously selected methods
-        self.method = None
-        self.sorted_valid_methods = []
+#        if set(self.user_methods).difference(self.all_methods):
+#        if not self.user_methods and self.forced:
+#            raise Exception('Only user specified methods are considered when forced is True, but no methods were provided')
+#
+#        # Remove previously selected methods
+        self.method = method
+#        self.sorted_valid_methods = []
         self.T_cached = None
+
+    @property
+    def available_methods(self):
+        # All tabular data is also in all_methods
+        # now local methods is in all_methods too
+        return list(self.all_methods) #+ list(self.local_methods.keys()) #+ list(self.tabular_data.keys())
 
     def select_valid_methods(self, T, check_validity=True):
         r'''Method to obtain a sorted list of methods which are valid at `T`
@@ -920,22 +936,25 @@ class TDependentProperty(object):
         '''
         # Consider either only the user's methods or all methods
         # Tabular data will be in both when inserted
-        if self.forced:
-            considered_methods = list(self.user_methods)
-        else:
-            considered_methods = list(self.all_methods)
+#        if self.forced:
+#            considered_methods = [self.method]
+#        else:
+        considered_methods = list(self.all_methods)
 
         # User methods (incl. tabular data); add back later, after ranking the rest
-        if self.user_methods:
-            [considered_methods.remove(i) for i in self.user_methods]
+#        if self.user_methods:
+#            [considered_methods.remove(i) for i in self.user_methods]
+        if self.method is not None:
+            considered_methods.remove(self.method)
 
         # Index the rest of the methods by ranked_methods, and add them to a list, sorted_methods
         preferences = sorted([self.ranked_methods.index(i) for i in considered_methods])
         sorted_methods = [self.ranked_methods[i] for i in preferences]
 
         # Add back the user's methods to the top, in order.
-        if self.user_methods:
-            [sorted_methods.insert(0, i) for i in reversed(self.user_methods)]
+        if self.method is not None:
+            sorted_methods.insert(0, self.method)
+#            [sorted_methods.insert(0, i) for i in reversed(self.user_methods)]
 
         if check_validity:
             sorted_valid_methods = []
@@ -1094,20 +1113,45 @@ class TDependentProperty(object):
 #                except:  # pragma: no cover
 #                    pass
 
-        # get valid methods at T, and try them until one yields a valid
-        # property; store the method and return the answer
-        self.sorted_valid_methods = self.select_valid_methods(T)
-        for method in self.sorted_valid_methods:
+        method = self.method
+        if method is None:
+            return None
+        try:
+            T_low, T_high = self.T_limits[method]
+            in_range = T_low <= T <= T_high
+        except (KeyError, AttributeError):
+            in_range = self.test_method_validity(T, method)
+
+        # Temporary - hope to make unified extrapolation behavior
+        if not in_range and method in self.tabular_data and self.tabular_extrapolation_permitted:
+            in_range = True
+
+
+        if in_range:
             try:
                 prop = self.calculate(T, method)
-                if self.test_property_validity(prop):
-                    self.method = method
-                    return prop
-            except:  # pragma: no cover
-                pass
+            except:
+                return None
+            if self.test_property_validity(prop):
+                #self.method = method
+                return prop
 
         # Function returns None if it does not work.
         return None
+        # get valid methods at T, and try them until one yields a valid
+        # property; store the method and return the answer
+        # self.sorted_valid_methods = self.select_valid_methods(T)
+        # for method in self.sorted_valid_methods:
+        #     try:
+        #         prop = self.calculate(T, method)
+        #         if self.test_property_validity(prop):
+        #             self.method = method
+        #             return prop
+        #     except:  # pragma: no cover
+        #         pass
+        #
+        # # Function returns None if it does not work.
+        # return None
 
 #    def plot(self, Tmin=None, Tmax=None, methods=[], pts=50, only_valid=True, order=0): # pragma: no cover
 #            return self.plot_T_dependent_property(Tmin=Tmin, Tmax=Tmax, methods=methods, pts=pts, only_valid=only_valid, order=order)
@@ -1160,12 +1204,9 @@ class TDependentProperty(object):
         import matplotlib.pyplot as plt
 
         if not methods:
-            if self.user_methods:
-                methods = self.user_methods
-            else:
-                methods = self.all_methods
-                if self.locked:
-                    methods.add('Best fit')
+            methods = self.all_methods
+            if self.locked:
+                methods.add('Best fit')
 
 #        cm = plt.get_cmap('gist_rainbow')
         fig = plt.figure()
@@ -1334,7 +1375,7 @@ class TDependentProperty(object):
             self.local_methods = local_methods = {}
         local_methods[name] = (f, Tmin, Tmax, f_der_general, f_der, f_der2,
                       f_der3, f_int, f_int_over_T)
-
+        self.all_methods.add(name)
         if self.user_methods:
             self.set_method(self.user_methods)
 
@@ -1371,10 +1412,9 @@ class TDependentProperty(object):
         self.tabular_data[name] = (Ts, properties)
 
         self.method = None
-        self.user_methods.insert(0, name)
         self.all_methods.add(name)
 
-        self.set_method(method=self.user_methods)
+        self.set_method(method=name)
 
     def solve_prop(self, goal, reset_method=True):
         r'''Method to solve for the temperature at which a property is at a
@@ -1819,7 +1859,7 @@ class TPDependentProperty(TDependentProperty):
         self.sorted_valid_methods_P = []
         self.TP_cached = None
 
-    def select_valid_methods_P(self, T, P):
+    def select_valid_methods_P(self, T, P, check_validity=True):
         r'''Method to obtain a sorted list methods which are valid at `T`
         according to `test_method_validity`. Considers either only user methods
         if forced is True, or all methods. User methods are first tested
@@ -1832,6 +1872,9 @@ class TPDependentProperty(TDependentProperty):
             Temperature at which to test methods, [K]
         P : float
             Pressure at which to test methods, [Pa]
+        check_validity : bool
+            Whether or not to use `test_method_validity` to check the
+            method for validity or not, [-]
 
         Returns
         -------
@@ -1853,6 +1896,9 @@ class TPDependentProperty(TDependentProperty):
 
         if self.user_methods_P:
             [sorted_methods.insert(0, i) for i in reversed(self.user_methods_P)]
+
+        if not check_validity:
+            return sorted_methods
 
         sorted_valid_methods_P = []
         for method in sorted_methods:

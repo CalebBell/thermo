@@ -285,9 +285,10 @@ class ViscosityLiquid(TPDependentProperty):
         self.load_all_methods(load_data)
         if best_fit is not None:
             self.set_best_fit(best_fit)
-        best_methods = self.select_valid_methods(T=None, check_validity=False)
-        if best_methods:
-            self.set_method(best_methods[0])
+        else:
+            methods = self.select_valid_methods(T=None, check_validity=False)
+            if methods:
+                self.set_method(methods[0])
 
 
     def load_all_methods(self, load_data=True):
@@ -307,10 +308,12 @@ class ViscosityLiquid(TPDependentProperty):
         self.T_limits = T_limits = {}
         if load_data:
             if has_CoolProp() and self.CASRN in coolprop_dict:
-                methods.append(COOLPROP); methods_P.append(COOLPROP)
-                self.CP_f = coolprop_fluids[self.CASRN]
-                Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
-                T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc)
+                CP_f = coolprop_fluids[self.CASRN]
+                if CP_f.has_mu:
+                    self.CP_f = CP_f
+                    methods.append(COOLPROP); methods_P.append(COOLPROP)
+                    Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
+                    T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc)
             if self.CASRN in miscdata.VDI_saturation_dict:
                 methods.append(VDI_TABULAR)
                 Ts, props = lookup_VDI_tabular_data(self.CASRN, 'Mu (l)')
@@ -759,6 +762,10 @@ class ViscosityGas(TPDependentProperty):
         self.load_all_methods(load_data)
         if best_fit is not None:
             self.set_best_fit(best_fit)
+        else:
+            methods = self.select_valid_methods(T=None, check_validity=False)
+            if methods:
+                self.set_method(methods[0])
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
@@ -783,9 +790,12 @@ class ViscosityGas(TPDependentProperty):
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
                 Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
             if has_CoolProp() and self.CASRN in coolprop_dict:
-                methods.append(COOLPROP); methods_P.append(COOLPROP)
-                self.CP_f = coolprop_fluids[self.CASRN]
-                Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tmax)
+                CP_f = coolprop_fluids[self.CASRN]
+                if CP_f.has_mu:
+                    self.CP_f = CP_f
+                    methods.append(COOLPROP); methods_P.append(COOLPROP)
+#                    T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tmax)
+                    Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tmax)
             if self.CASRN in viscosity.mu_data_Perrys_8E_2_312.index:
                 methods.append(DIPPR_PERRY_8E)
                 C1, C2, C3, C4, self.Perrys2_312_Tmin, self.Perrys2_312_Tmax = viscosity.mu_values_Perrys_8E_2_312[viscosity.mu_data_Perrys_8E_2_312.index.get_loc(self.CASRN)].tolist()

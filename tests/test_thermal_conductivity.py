@@ -42,7 +42,7 @@ def test_ThermalConductivityLiquid():
     EtOH = ThermalConductivityLiquid(CASRN='64-17-5', MW=46.06844, Tm=159.05, Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, Hfus=4931.0)
 
     EtOH.T_dependent_property(305.)
-    all_methods = list(EtOH.sorted_valid_methods)
+    all_methods = EtOH.available_methods
     methods = list(all_methods)
     methods.remove(VDI_TABULAR)
     kl_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(305.))[1] for i in methods]
@@ -98,10 +98,10 @@ def test_ThermalConductivityLiquid():
 @pytest.mark.meta_T_dept
 def test_ThermalConductivityGas():
     EtOH = ThermalConductivityGas(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.2412, omega=0.635, dipole=1.44, Vmg=0.02357, Cvgm=56.98, mug=7.903e-6, CASRN='64-17-5')
-    EtOH.T_dependent_property(298.15)
-    kg_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(298.15))[1] for i in EtOH.sorted_valid_methods]
+    all_methods = EtOH.available_methods
+    kg_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(298.15))[1] for i in all_methods]
     kg_exp = [0.015227631457903644, 0.015025094773729045, 0.01520257225203181, 0.01494275, 0.016338750949017277, 0.014353317470206847, 0.011676848981094841, 0.01137910777526855, 0.015427444948536088, 0.012984129385510995, 0.017556325226536728]
-    assert_allclose(kg_calcs, kg_exp)
+    assert_allclose(sorted(kg_calcs), sorted(kg_exp))
 
     # Test that those mthods which can, do, return NoneEtOH.forced_P
     kg_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(5E20))[1] for i in [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G, ELI_HANLEY, BAHADORI_G, VDI_PPDS]]

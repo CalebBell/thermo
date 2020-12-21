@@ -276,11 +276,16 @@ class EnthalpyVaporization(TDependentProperty):
         self.all_methods = set()
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
+        self.load_all_methods(load_data)
+
         if best_fit is not None:
             self.best_fit_Tc = best_fit[2]
             self.set_best_fit((best_fit[0], best_fit[1], best_fit[3]))
+        else:
+            methods = self.select_valid_methods(T=None, check_validity=False)
+            if methods:
+                self.set_method(methods[0])
 
-        self.load_all_methods(load_data)
     def as_best_fit(self):
         return '%s(best_fit=(%s, %s, %s, %s))' %(self.__class__.__name__,
                   repr(self.best_fit_Tmin), repr(self.best_fit_Tmax),
@@ -636,10 +641,15 @@ class EnthalpySublimation(TDependentProperty):
         self.all_methods = set()
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
+        self.load_all_methods(load_data)
+
         if best_fit is not None:
             self.set_best_fit(best_fit)
+        else:
+            methods = self.select_valid_methods(T=None, check_validity=False)
+            if methods:
+                self.set_method(methods[0])
 
-        self.load_all_methods(load_data)
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical

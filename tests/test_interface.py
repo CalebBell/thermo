@@ -32,8 +32,7 @@ from fluids.numerics import assert_close, assert_close1d
 def test_SurfaceTension():
     # Ethanol, test as many methods as possible at once
     EtOH = SurfaceTension(Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.24125, omega=0.635, StielPolar=-0.01266, CASRN='64-17-5')
-    EtOH.T_dependent_property(305.)
-    methods = list(EtOH.sorted_valid_methods)
+    methods = list(EtOH.available_methods)
     methods_nontabular = list(methods)
     methods_nontabular.remove(VDI_TABULAR)
     sigma_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(305.))[1] for i in methods_nontabular]

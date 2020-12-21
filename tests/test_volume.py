@@ -87,7 +87,7 @@ def test_VolumeLiquid():
     EtOH = VolumeLiquid(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.24125, omega=0.635, dipole=1.44, CASRN='64-17-5')
     EtOH.T_dependent_property(305.) # Initialize the sorted_valid_methods
     EtOH.tabular_extrapolation_permitted = False
-    Vml_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(600))[1] for i in EtOH.sorted_valid_methods]
+    Vml_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(600))[1] for i in EtOH.available_methods]
     assert [None]*14 == Vml_calcs
 
     EtOH.set_method('VDI_TABULAR')
@@ -180,6 +180,11 @@ def test_VolumeSolid():
     assert_allclose(8.055e-05, BaN2O6.T_dependent_property(250))
     BaN2O6.tabular_extrapolation_permitted = False
     BaN2O6.test_method_validity(150, 'fake')
+
+@pytest.mark.meta_T_dept
+def test_VolumeSolid_works_with_no_data():
+    # Test pentane has no property but that it succeeds
+    VolumeSolid(CASRN='109-66-0').T_dependent_property(300)
 
 
 

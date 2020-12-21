@@ -182,6 +182,9 @@ def test_Mixture_VF_input():
     test_mix = Mixture(['ethylene oxide', 'tetrahydrofuran',  'beta-propiolactone'], ws=[6021, 111569.76, 30711.21], T=400,  VF=0.5)
     assert_allclose(test_mix.P, 370054, rtol=1E-2)
 
+def test_mixtures_from_property_calcs():
+    m = Mixture(['carbon tetrachloride', 'isopropanol'], zs=[0.5, 0.5], T=313.2)
+
 
 def test_bubble_at_P_with_ideal_mixing():
     '''Check to see if the bubble pressure calculated from the temperature

@@ -244,6 +244,11 @@ class SurfaceTension(TDependentProperty):
         self.load_all_methods(load_data)
         if best_fit is not None:
             self.set_best_fit(best_fit)
+        else:
+            methods = self.select_valid_methods(T=None, check_validity=False)
+            if methods:
+                self.set_method(methods[0])
+
 
     @staticmethod
     def _method_indexes():

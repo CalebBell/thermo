@@ -165,7 +165,7 @@ class HeatCapacityGas(TDependentProperty):
     _fit_force_n[POLING_CONST] = 1
 
     def __init__(self, CASRN='', MW=None, similarity_variable=None,
-                 best_fit=None, load_data=True):
+                 best_fit=None, load_data=True, extrapolation='linear'):
         self.CASRN = CASRN
         self.MW = MW
         self.similarity_variable = similarity_variable
@@ -203,6 +203,10 @@ class HeatCapacityGas(TDependentProperty):
 
         if best_fit is not None:
             self.set_best_fit(best_fit)
+        else:
+            methods = self.select_valid_methods(T=None, check_validity=False)
+            if methods:
+                self.set_method(methods[0])
 
 
     def load_all_methods(self, load_data=True):
@@ -243,12 +247,12 @@ class HeatCapacityGas(TDependentProperty):
                 methods.append(POLING_CONST)
                 self.POLING_T = 298.15
                 self.POLING_constant = float(heat_capacity.Cp_data_Poling.at[self.CASRN, 'Cpg'])
-                T_limits[POLING_CONST] = (self.POLING_T, self.POLING_T)
+                T_limits[POLING_CONST] = (self.POLING_T-50.0, self.POLING_T+50.0)
             if self.CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cpg']):
                 methods.append(CRCSTD)
                 self.CRCSTD_T = 298.15
                 self.CRCSTD_constant = float(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cpg'])
-                T_limits[CRCSTD] = (self.CRCSTD_T, self.CRCSTD_T)
+                T_limits[CRCSTD] = (self.CRCSTD_T-50.0, self.CRCSTD_T+50.0)
             if self.CASRN in miscdata.VDI_saturation_dict:
                 # NOTE: VDI data is for the saturation curve, i.e. at increasing
                 # pressure; it is normally substantially higher than the ideal gas
@@ -694,6 +698,10 @@ class HeatCapacityLiquid(TDependentProperty):
 
         if best_fit is not None:
             self.set_best_fit(best_fit)
+        else:
+            methods = self.select_valid_methods(T=None, check_validity=False)
+            if methods:
+                self.set_method(methods[0])
 
     @staticmethod
     def _method_indexes():
@@ -748,12 +756,12 @@ class HeatCapacityLiquid(TDependentProperty):
                 methods.append(POLING_CONST)
                 self.POLING_T = 298.15
                 self.POLING_constant = float(heat_capacity.Cp_data_Poling.at[self.CASRN, 'Cpl'])
-                T_limits[POLING_CONST] = (298.15, 298.15)
+                T_limits[POLING_CONST] = (298.15-50.0, 298.15+50.0)
             if self.CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cpl']):
                 methods.append(CRCSTD)
                 self.CRCSTD_T = 298.15
                 self.CRCSTD_constant = float(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cpl'])
-                T_limits[CRCSTD] = (298.15, 298.15)
+                T_limits[CRCSTD] = (298.15-50.0, 298.15+50.0)
             # Saturation functions
             if self.CASRN in heat_capacity.zabransky_dict_sat_s:
                 methods.append(ZABRANSKY_SPLINE_SAT)
@@ -1112,10 +1120,11 @@ class HeatCapacitySolid(TDependentProperty):
     _fit_force_n[CRCSTD] = 1
 
     def __init__(self, CASRN='', similarity_variable=None, MW=None,
-                 best_fit=None, load_data=True):
+                 best_fit=None, load_data=True, extrapolation='linear'):
         self.similarity_variable = similarity_variable
         self.MW = MW
         self.CASRN = CASRN
+        self.extrapolation = extrapolation
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -1150,6 +1159,10 @@ class HeatCapacitySolid(TDependentProperty):
 
         if best_fit is not None:
             self.set_best_fit(best_fit)
+        else:
+            methods = self.select_valid_methods(T=None, check_validity=False)
+            if methods:
+                self.set_method(methods[0])
 
     def _method_indexes():
         '''Returns a dictionary of method: index for all methods
