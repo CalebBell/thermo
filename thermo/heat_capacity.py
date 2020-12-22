@@ -207,6 +207,7 @@ class HeatCapacityGas(TDependentProperty):
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
                 self.set_method(methods[0])
+        self.extrapolation = extrapolation
 
 
     def load_all_methods(self, load_data=True):
@@ -273,6 +274,7 @@ class HeatCapacityGas(TDependentProperty):
                 T_limits[COOLPROP] = (Tmin, Tmax)
         if self.MW and self.similarity_variable:
             methods.append(LASTOVKA_SHAW)
+            T_limits[LASTOVKA_SHAW] = (1e-3, 1e5)
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
@@ -657,7 +659,8 @@ class HeatCapacityLiquid(TDependentProperty):
     _fit_force_n[POLING_CONST] = 1
 
     def __init__(self, CASRN='', MW=None, similarity_variable=None, Tc=None,
-                 omega=None, Cpgm=None, best_fit=None, load_data=True):
+                 omega=None, Cpgm=None, best_fit=None, load_data=True,
+                 extrapolation='linear'):
         self.CASRN = CASRN
         self.MW = MW
         self.Tc = Tc
@@ -702,6 +705,7 @@ class HeatCapacityLiquid(TDependentProperty):
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
                 self.set_method(methods[0])
+        self.extrapolation = extrapolation
 
     @staticmethod
     def _method_indexes():
@@ -786,13 +790,17 @@ class HeatCapacityLiquid(TDependentProperty):
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[self.CASRN]
                 Tmin = max(self.CP_f.Tt, self.CP_f.Tmin)
-                Tmax = min(self.CP_f.Tc, self.CP_f.Tmax)
+                Tmax = min(self.CP_f.Tc*.9999, self.CP_f.Tmax)
                 Tmins.append(Tmin); Tmaxs.append(Tmax)
                 T_limits[COOLPROP] = (Tmin, Tmax)
         if self.Tc and self.omega:
             methods.extend([ROWLINSON_POLING, ROWLINSON_BONDI])
+            limits_Tc = (0.3*self.Tc, self.Tc-1e-5)
+            T_limits[ROWLINSON_POLING] = limits_Tc
+            T_limits[ROWLINSON_BONDI] = limits_Tc
         if self.MW and self.similarity_variable:
             methods.append(DADGOSTAR_SHAW)
+            T_limits[DADGOSTAR_SHAW] = (1e-3, self.Tc if self.Tc is not None else 10000)
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             # TODO: More Tmin, Tmax ranges
@@ -826,15 +834,15 @@ class HeatCapacityLiquid(TDependentProperty):
             else:
                 return horner(self.best_fit_coeffs, T)
         elif method == ZABRANSKY_SPLINE:
-            return self.Zabransky_spline.calculate(T)
+            return self.Zabransky_spline.force_calculate(T)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL:
             return self.Zabransky_quasipolynomial.calculate(T)
         elif method == ZABRANSKY_SPLINE_C:
-            return self.Zabransky_spline_iso.calculate(T)
+            return self.Zabransky_spline_iso.force_calculate(T)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
             return self.Zabransky_quasipolynomial_iso.calculate(T)
         elif method == ZABRANSKY_SPLINE_SAT:
-            return self.Zabransky_spline_sat.calculate(T)
+            return self.Zabransky_spline_sat.force_calculate(T)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
             return self.Zabransky_quasipolynomial_sat.calculate(T)
         elif method == COOLPROP:
@@ -1124,7 +1132,6 @@ class HeatCapacitySolid(TDependentProperty):
         self.similarity_variable = similarity_variable
         self.MW = MW
         self.CASRN = CASRN
-        self.extrapolation = extrapolation
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -1163,6 +1170,7 @@ class HeatCapacitySolid(TDependentProperty):
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
                 self.set_method(methods[0])
+        self.extrapolation = extrapolation
 
     def _method_indexes():
         '''Returns a dictionary of method: index for all methods
@@ -1204,6 +1212,7 @@ class HeatCapacitySolid(TDependentProperty):
         if self.MW and self.similarity_variable:
             methods.append(LASTOVKA_S)
             Tmins.append(1.0); Tmaxs.append(10000)
+            T_limits[LASTOVKA_S] = (1.0, 1e4)
             # Works above roughly 1 K up to 10K.
         self.all_methods = set(methods)
         if Tmins and Tmaxs:

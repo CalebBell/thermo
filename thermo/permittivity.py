@@ -95,7 +95,8 @@ class Permittivity(TDependentProperty):
     ranked_methods = [CRC, CRC_CONSTANT]
     '''Default rankings of the available methods.'''
 
-    def __init__(self, CASRN='', best_fit=None, load_data=True):
+    def __init__(self, CASRN='', best_fit=None, load_data=True,
+                 extrapolation='linear'):
         self.CASRN = CASRN
 
         self.Tmin = None
@@ -135,6 +136,7 @@ class Permittivity(TDependentProperty):
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
                 self.set_method(methods[0])
+        self.extrapolation = extrapolation
 
     def load_all_methods(self, load_data):
         r'''Method which picks out coefficients for the specified chemical
@@ -149,17 +151,20 @@ class Permittivity(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
+        self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN in permittivity.permittivity_data_CRC.index:
                 methods.append(CRC_CONSTANT)
                 self.CRC_CONSTANT_T, self.CRC_permittivity, A, B, C, D, Tmin, Tmax = permittivity.permittivity_values_CRC[permittivity.permittivity_data_CRC.index.get_loc(self.CASRN)].tolist()
+                T_limits[CRC_CONSTANT] = (self.CRC_CONSTANT_T, self.CRC_CONSTANT_T)
                 self.CRC_Tmin = Tmin
                 self.CRC_Tmax = Tmax
                 self.CRC_coeffs = [0 if isnan(x) else x for x in [A, B, C, D] ]
-                if not isnan(Tmin):
+                if self.CRC_coeffs[0] and not isnan(Tmin):
                     Tmins.append(Tmin); Tmaxs.append(Tmax)
-                if self.CRC_coeffs[0]:
                     methods.append(CRC)
+                    T_limits[CRC] = (Tmin, Tmax)
+
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             self.Tmin = min(Tmins)

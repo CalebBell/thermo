@@ -247,7 +247,7 @@ class VaporPressure(TDependentProperty):
     '''Default rankings of the available methods.'''
 
     def __init__(self, Tb=None, Tc=None, Pc=None, omega=None, CASRN='',
-                 eos=None, best_fit=None, load_data=True):
+                 eos=None, best_fit=None, load_data=True, extrapolation='AntoineAB|DIPPR101_ABC'):
         self.CASRN = CASRN
         self.Tb = Tb
         self.Tc = Tc
@@ -301,6 +301,7 @@ class VaporPressure(TDependentProperty):
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
                 self.set_method(methods[0])
+        self.extrapolation = extrapolation
 
     @staticmethod
     def _method_indexes():
@@ -558,9 +559,7 @@ class VaporPressure(TDependentProperty):
             else:
                 v, der = horner_and_der(self.best_fit_coeffs, T)
                 return der*exp(v)
-
-
-        return derivative(self.calculate, T, dx=1e-6, args=[method], n=order, order=1+order*2)
+        return super(VaporPressure, self).calculate_derivative(T, method, order)
 
     def custom_set_best_fit(self):
         try:

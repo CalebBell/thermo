@@ -47,6 +47,7 @@ def test_HeatCapacityGas():
 
 
 
+    EtOH.extrapolation = None
     EtOH.tabular_extrapolation_permitted = False
     assert [None]*6 == [(EtOH.set_method(i), EtOH.T_dependent_property(5000))[1] for i in [TRCIG, POLING, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR]]
 
@@ -80,6 +81,21 @@ def test_HeatCapacityGas():
     # flash not converge at high P
     obj = HeatCapacityGas(CASRN='306-83-2')
     assert_close(obj.calculate(obj.T_limits[COOLPROP][0], COOLPROP), 72.45489837498226, rtol=1e-7)
+
+
+@pytest.mark.meta_T_dept
+def test_HeatCapacityGas_linear_extrapolation():
+    CpObj = HeatCapacityGas(CASRN='67-56-1', extrapolation='linear')
+    CpObj.set_method(TRCIG)
+    assert_close(CpObj.T_dependent_property(CpObj.TRCIG_Tmax),
+                 CpObj.T_dependent_property(CpObj.TRCIG_Tmax-1e-6))
+    assert_close(CpObj.T_dependent_property(CpObj.TRCIG_Tmax),
+                 CpObj.T_dependent_property(CpObj.TRCIG_Tmax+1e-6))
+
+    assert_close(CpObj.T_dependent_property(CpObj.TRCIG_Tmin),
+                 CpObj.T_dependent_property(CpObj.TRCIG_Tmin-1e-6))
+    assert_close(CpObj.T_dependent_property(CpObj.TRCIG_Tmin),
+                 CpObj.T_dependent_property(CpObj.TRCIG_Tmin+1e-6))
 
 
 
@@ -138,6 +154,7 @@ def test_HeatCapacitySolid():
     Cps_exp = [50.38469032, 50.5, 20.065072074682337]
     assert_allclose(sorted(Cps_calc), sorted(Cps_exp))
 
+    NaCl.extrapolation = None
     assert [None]*3 == [(NaCl.set_method(i), NaCl.T_dependent_property(20000))[1] for i in NaCl.all_methods]
 
     with pytest.raises(Exception):
@@ -204,6 +221,7 @@ def test_HeatCapacityLiquid():
     Cpls = [165.4728226923247, 166.5239869108539, 166.52164399712314, 175.3439256239127, 166.71561127721478, 157.3, 165.4554033804999, 166.69807427725885, 157.29, 167.3380448453572]
     assert_allclose(sorted(Cpl_calc), sorted(Cpls), rtol=5e-6)
 
+    tol.extrapolation = None
     assert [None]*10 == [(tol.set_method(i), tol.T_dependent_property(2000))[1] for i in tol.all_methods]
 
     with pytest.raises(Exception):

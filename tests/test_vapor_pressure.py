@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 from fluids.numerics import assert_close, derivative, assert_close1d
 from thermo.vapor_pressure import *
-from thermo.vapor_pressure import VDI_TABULAR
+from thermo.vapor_pressure import VDI_TABULAR, WAGNER_MCGARRY
 from chemicals.identifiers import check_CAS
 from math import *
 
@@ -51,7 +51,7 @@ def test_VaporPressure():
 
     # Test that methods return None
     EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
-    EtOH.T_dependent_property(298.15)
+    EtOH.extrapolation = None
     Psat_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(5000))[1] for i in EtOH.available_methods]
     assert [None]*12 == Psat_calcs
 
@@ -68,11 +68,30 @@ def test_VaporPressure():
     # Get a check for Antoine Extended
     cycloheptane = VaporPressure(Tb=391.95, Tc=604.2, Pc=3820000.0, omega=0.2384, CASRN='291-64-5')
     cycloheptane.set_method('ANTOINE_EXTENDED_POLING')
+    cycloheptane.extrapolation = None
     assert_allclose(cycloheptane.T_dependent_property(410), 161647.35219882353)
     assert None == cycloheptane.T_dependent_property(400)
 
     with pytest.raises(Exception):
         cycloheptane.test_method_validity(300, 'BADMETHOD')
+
+
+@pytest.mark.meta_T_dept
+def test_VaporPressure_extrapolation_AB():
+    obj = VaporPressure(Tb=309.21, Tc=469.7, Pc=3370000.0, omega=0.251, CASRN='109-66-0', load_data=True, extrapolation='AntoineAB')
+    obj.set_method(WAGNER_MCGARRY)
+    obj.calculate_derivative(300, WAGNER_MCGARRY)
+
+    assert_close(obj.T_dependent_property(obj.WAGNER_MCGARRY_Tc),
+                 obj.T_dependent_property(obj.WAGNER_MCGARRY_Tc-1e-6))
+    assert_close(obj.T_dependent_property(obj.WAGNER_MCGARRY_Tc),
+                 obj.T_dependent_property(obj.WAGNER_MCGARRY_Tc+1e-6))
+
+    assert_close(obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin),
+                 obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin-1e-6))
+    assert_close(obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin),
+                 obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin+1e-6))
+
 
 def test_VaporPressure_fast_Psat_best_fit():
     corr = VaporPressure(best_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))

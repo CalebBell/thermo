@@ -111,6 +111,49 @@ def test_ViscosityLiquid():
     with pytest.raises(Exception):
         EtOH.test_method_validity_P(300, 1E5, 'BADMETHOD')
 
+
+@pytest.mark.meta_T_dept
+def test_ViscosityLiquid_PPDS9_limits():
+    assert ViscosityLiquid(CASRN='7553-56-2').T_limits[VDI_PPDS][1] < 793.019
+
+    # Case where the singularity is at 164.8
+    low, high = ViscosityLiquid(CASRN='7440-63-3', Tm=161.4, Tc=289.733).T_limits[VDI_PPDS]
+    assert high == 289.733
+    assert low > 164.8
+    assert low < 174.8
+
+    # Case where missing critical temperature
+    obj = ViscosityLiquid(CASRN='10097-32-2', Tm=265.925)
+    low, high = obj.T_limits[VDI_PPDS]
+    assert low == 265.925
+    assert high > 400
+    assert high < obj.VDI_PPDS_coeffs[2]
+
+    # Case that gets to take the two limits
+    obj = ViscosityLiquid(CASRN='7647-01-0', Tm=203.55, Tc=324.6)
+    low, high = obj.T_limits[VDI_PPDS]
+    assert low, high == (203.55, 324.6)
+
+    # Case where Tc is past negative slope
+    obj = ViscosityLiquid(CASRN='7664-41-7', Tm=195.45, Tc=405.6)
+    low, high = obj.T_limits[VDI_PPDS]
+    assert low == obj.Tm
+    assert high <373.726
+
+    # Case where we need a solver to find min T.
+    obj = ViscosityLiquid(CASRN='75-15-0', Tm=161.15, Tc=552.0)
+    low, high = obj.T_limits[VDI_PPDS]
+    assert_close(high, 370.9503355938449)
+    assert low == obj.Tm
+
+    # TODO: figure out an alcorithm which does not chop off
+    # the coefficients and shrink the range in this case
+#    obj = ViscosityLiquid(CASRN='75-71-8', Tm=115.15, Tc=385.0)
+#    low, high = obj.T_limits[VDI_PPDS]
+
+
+
+
 @pytest.mark.meta_T_dept
 def test_ViscosityGas():
     EtOH = ViscosityGas(MW=46.06844, Tc=514.0, Pc=6137000.0, Zc=0.2412, dipole=1.44, Vmg=0.02357, CASRN='64-17-5')
@@ -126,6 +169,7 @@ def test_ViscosityGas():
     assert_close1d(sorted(mug_calcs2), sorted(mug_exp))
 
     # Test that methods return None
+    EtOH.extrapolation = None
     EtOH.tabular_extrapolation_permitted = False
     mug_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(6000))[1] for i in EtOH.all_methods]
     assert [None]*8 == mug_calcs

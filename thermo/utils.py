@@ -33,8 +33,9 @@ from bisect import bisect_left
 import numpy as np
 from fluids.numerics import quad, brenth, newton, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders, assert_close
 from fluids.constants import R
-from chemicals.utils import isnan, isinf, log, exp, ws_to_zs, zs_to_ws
+from chemicals.utils import isnan, isinf, log, exp, ws_to_zs, zs_to_ws, e
 from chemicals.utils import mix_multiple_component_flows, hash_any_primitive
+from chemicals.vapor_pressure import Antoine, Antoine_coeffs_from_point, Antoine_AB_coeffs_from_point, DIPPR101_ABC_coeffs_from_point
 
 global _has_matplotlib
 _has_matplotlib = None
@@ -1133,7 +1134,13 @@ class TDependentProperty(object):
             except:
                 return None
             if self.test_property_validity(prop):
-                #self.method = method
+                return prop
+        elif self._extrapolation is not None:
+            try:
+                prop = self.extrapolate(T, method)
+            except:
+                return None
+            if self.test_property_validity(prop):
                 return prop
 
         # Function returns None if it does not work.
@@ -1192,6 +1199,12 @@ class TDependentProperty(object):
         if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
         if Tmin is None:
+#            if methods:
+#                try:
+#                    T_limits = self.T_limits
+#                    Tmin = min(T_limits[m][0] for m in methods)
+#                except:
+#                    Tmin = self.Tmin
             if self.Tmin is not None:
                 Tmin = self.Tmin
             else:
@@ -1481,7 +1494,12 @@ class TDependentProperty(object):
         derivative : float
             Calculated derivative property, [`units/K^order`]
         '''
-        return derivative(self.calculate, T, dx=1e-6, args=[method], n=order, order=1+order*2)
+        try:
+            return derivative(self.calculate, T, dx=T*1e-6, args=[method], n=order, order=1+order*2)
+        except:
+            Tmin, Tmax = self.T_limits[method]
+            return derivative(self.calculate, T, dx=T*1e-6, args=[method], n=order, order=1+order*2,
+                              lower_limit=Tmin, upper_limit=Tmax)
 
     def T_dependent_property_derivative(self, T, order=1):
         r'''Method to obtain a derivative of a property with respect to
@@ -1678,6 +1696,123 @@ class TDependentProperty(object):
             except:
                 pass
         return None
+
+    @property
+    def extrapolation(self):
+        return self._extrapolation
+
+    @extrapolation.setter
+    def extrapolation(self, extrapolation):
+        self._extrapolation = extrapolation
+        if extrapolation is None:
+            self.extrapolation_split = False
+            return
+        self.extrapolation_split = '|' in extrapolation
+
+        if not self.extrapolation_split:
+            extrapolations = [extrapolation]
+            self._extrapolation_low = self._extrapolation_high = extrapolation
+        else:
+            extrapolations = extrapolation.split('|')
+            if len(extrapolations) != 2:
+                raise ValueError("Must have only two extrapolation methods")
+            self._extrapolation_low, self._extrapolation_high = extrapolations
+            if extrapolations[0] == extrapolations[1]:
+                extrapolations.pop()
+
+        T_limits = self.T_limits
+        for extrapolation in extrapolations:
+
+            if extrapolation == 'linear':
+                self.linear_extrapolation_coeffs = linear_extrapolation_coeffs = {}
+                for m in self.all_methods:
+                    Tmin, Tmax = T_limits[m]
+                    try:
+                        v_low = self.calculate(T=Tmin, method=m)
+                        d_low = self.calculate_derivative(T=Tmin, method=m, order=1)
+                    except:
+                        v_low, d_low = None, None
+                    try:
+                        v_high = self.calculate(T=Tmax, method=m)
+                        d_high = self.calculate_derivative(T=Tmax, method=m, order=1)
+                    except:
+                        v_high, d_high = None, None
+                    linear_extrapolation_coeffs[m] = (v_low, d_low, v_high, d_high)
+            elif extrapolation == 'AntoineAB':
+                self.Antoine_AB_coeffs = Antoine_AB_coeffs = {}
+                for m in self.all_methods:
+                    Tmin, Tmax = T_limits[m]
+                    try:
+                        v_low = self.calculate(T=Tmin, method=m)
+                        d_low = self.calculate_derivative(T=Tmin, method=m, order=1)
+                        AB_low = Antoine_AB_coeffs_from_point(T=Tmin, Psat=v_low, dPsat_dT=d_low, base=e)
+                    except:
+                        AB_low = None
+                    try:
+                        v_high = self.calculate(T=Tmax, method=m)
+                        d_high = self.calculate_derivative(T=Tmax, method=m, order=1)
+                        AB_high = Antoine_AB_coeffs_from_point(T=Tmax, Psat=v_high, dPsat_dT=d_high, base=e)
+                    except:
+                        AB_high = None
+                    Antoine_AB_coeffs[m] = (AB_low, AB_high)
+            elif extrapolation == 'DIPPR101_ABC':
+                self.DIPPR101_ABC_coeffs = DIPPR101_ABC_coeffs = {}
+                for m in self.all_methods:
+                    Tmin, Tmax = T_limits[m]
+                    try:
+                        v_low = self.calculate(T=Tmin, method=m)
+                        d0_low = self.calculate_derivative(T=Tmin, method=m, order=1)
+                        d1_low = self.calculate_derivative(T=Tmin, method=m, order=2)
+                        DIPPR101_ABC_low = DIPPR101_ABC_coeffs_from_point(Tmin, v_low, d0_low, d1_low)
+                    except:
+                        DIPPR101_ABC_low = None
+                    try:
+                        v_high = self.calculate(T=Tmax, method=m)
+                        d0_high = self.calculate_derivative(T=Tmax, method=m, order=1)
+                        d1_high = self.calculate_derivative(T=Tmax, method=m, order=2)
+                        DIPPR101_ABC_high = DIPPR101_ABC_coeffs_from_point(Tmax, v_high, d0_high, d1_high)
+                    except:
+                        DIPPR101_ABC_high = None
+                    DIPPR101_ABC_coeffs[m] = (DIPPR101_ABC_low, DIPPR101_ABC_high)
+
+
+            # Compute the ends
+    def extrapolate(self, T, method):
+        T_limits = self.T_limits
+        if T < 0.0:
+            raise ValueError("Negative temperature")
+        T_low, T_high = T_limits[method]
+        if T <= T_low:
+            extrapolation = self._extrapolation_low
+        elif T >= T_high:
+            extrapolation = self._extrapolation_high
+        else:
+            raise ValueError("Not outside normal range")
+
+        if extrapolation == 'linear':
+            v_low, d_low, v_high, d_high = self.linear_extrapolation_coeffs[method]
+            if T <= T_low:
+                if v_low is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
+                return v_low + d_low*(T - T_low)
+            elif T >= T_high:
+                if v_high is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
+                return v_high + d_high*(T - T_high)
+        elif extrapolation == 'AntoineAB':
+            T_low, T_high = T_limits[method]
+            AB_low, AB_high = self.Antoine_AB_coeffs[method]
+            if T <= T_low:
+                if AB_low is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
+                return Antoine(T, A=AB_low[0], B=AB_low[1], C=0.0, base=e)
+            elif T >= T_high:
+                if AB_high is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
+                return Antoine(T, A=AB_high[0], B=AB_high[1], C=0.0, base=e)
+        elif extrapolation == 'DIPPR101_ABC':
+            pass
+
 
 
     # Dummy functions, always to be overwritten, only for testing

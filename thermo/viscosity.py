@@ -31,9 +31,9 @@ __all__ = ['viscosity_liquid_methods', 'viscosity_liquid_methods_P',
 
 import os
 import numpy as np
-from fluids.numerics import newton, interp, horner
+from fluids.numerics import newton, interp, horner, brenth
 
-from chemicals.utils import log, exp, log10
+from chemicals.utils import log, exp, log10, isinf
 from chemicals.utils import none_and_length_check, mixing_simple, mixing_logarithmic
 from thermo.utils import TPDependentProperty, MixtureProperty
 from chemicals import miscdata
@@ -44,7 +44,7 @@ from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coo
 from chemicals.dippr import EQ101, EQ102
 from chemicals import viscosity
 from chemicals.viscosity import *
-from chemicals.viscosity import viscosity_gas_Gharagheizi
+from chemicals.viscosity import viscosity_gas_Gharagheizi, dPPDS9_dT
 
 
 
@@ -222,7 +222,7 @@ class ViscosityLiquid(TPDependentProperty):
 
     def __init__(self, CASRN='', MW=None, Tm=None, Tc=None, Pc=None, Vc=None,
                  omega=None, Psat=None, Vml=None, best_fit=None,
-                 load_data=True):
+                 load_data=True, extrapolation=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tm = Tm
@@ -289,6 +289,7 @@ class ViscosityLiquid(TPDependentProperty):
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
                 self.set_method(methods[0])
+        self.extrapolation = extrapolation
 
 
     def load_all_methods(self, load_data=True):
@@ -355,13 +356,59 @@ class ViscosityLiquid(TPDependentProperty):
             if self.CASRN in viscosity.mu_data_VDI_PPDS_7.index:
                 methods.append(VDI_PPDS)
                 # No temperature limits - ideally could use critical point
-                self.VDI_PPDS_coeffs = viscosity.mu_values_PPDS_7[viscosity.mu_data_VDI_PPDS_7.index.get_loc(self.CASRN)].tolist()
+                self.VDI_PPDS_coeffs = VDI_PPDS_coeffs = viscosity.mu_values_PPDS_7[viscosity.mu_data_VDI_PPDS_7.index.get_loc(self.CASRN)].tolist()
+                low = low_orig = min(self.VDI_PPDS_coeffs[2], self.VDI_PPDS_coeffs[3])# + 5.0
+                high = high_orig = max(self.VDI_PPDS_coeffs[2], self.VDI_PPDS_coeffs[3])# - 5.0
+                if low > 0.0:
+                    dmu_low_under, mu_low_under = dPPDS9_dT(low*0.9995, *VDI_PPDS_coeffs)
+                    dmu_low_above, mu_low_above = dPPDS9_dT(low*1.0005, *VDI_PPDS_coeffs)
+                if high > 0.0:
+                    dmu_high_under, mu_high_under = dPPDS9_dT(high*0.9995, *VDI_PPDS_coeffs)
+                    dmu_high_above, mu_high_above = dPPDS9_dT(high*1.0005, *VDI_PPDS_coeffs)
+                if self.Tm is not None:
+                    dmu_Tm, mu_Tm = dPPDS9_dT(self.Tm, *VDI_PPDS_coeffs)
+                if self.Tc is not None:
+                    dmu_Tc_under, mu_Tc_under = dPPDS9_dT(self.Tc, *VDI_PPDS_coeffs)
+
+
+                if high > 0.0 and low < 0.0 or isinf(dmu_low_under) or isinf(dmu_low_above):
+                    # high + a few K as lower limit
+                    low = 0.1*high
+                    high = high-1.0
+                else:
+                    low, high = low + 5.0, high + 5.0
+                if self.Tm is not None:
+                    low = self.Tm
+                if self.Tc is not None:
+                    if dmu_Tc_under < 0.0:
+                        high = self.Tc
+                if self.Tm is not None and self.Tc is not None and low_orig < 0 and self.Tm < high_orig < self.Tc and dmu_Tc_under < 0.0:
+                    low = high_orig + 1.0
+                if high == high_orig:
+                    high -= 1.0
+
+                dmu_low, mu_low = dPPDS9_dT(low, *VDI_PPDS_coeffs)
+                dmu_high, mu_high = dPPDS9_dT(high, *VDI_PPDS_coeffs)
+                if dmu_low*dmu_high < 0.0:
+                    def to_solve(T):
+                        return dPPDS9_dT(T, *VDI_PPDS_coeffs)[0]
+                    T_switch = brenth(to_solve, low, high)
+                    if dmu_high > 0.0:
+                        high = T_switch
+                    else:
+                        low = T_switch
+
+                T_limits[VDI_PPDS] = (low, high)
+                Tmins.append(low); Tmaxs.append(high)
+
         if all((self.MW, self.Tc, self.Pc, self.omega)):
             methods.append(LETSOU_STIEL)
             Tmins.append(self.Tc/4); Tmaxs.append(self.Tc) # TODO: test model at low T
+            T_limits[LETSOU_STIEL] = (self.Tc/4, self.Tc)
         if all((self.MW, self.Tm, self.Tc, self.Pc, self.Vc, self.omega, self.Vml)):
             methods.append(PRZEDZIECKI_SRIDHAR)
             Tmins.append(self.Tm); Tmaxs.append(self.Tc) # TODO: test model at Tm
+            T_limits[LETSOU_STIEL] = (self.Tm, self.Tc)
         if all([self.Tc, self.Pc, self.omega]):
             methods_P.append(LUCAS)
         self.all_methods = set(methods)
@@ -448,6 +495,11 @@ class ViscosityLiquid(TPDependentProperty):
         validity : bool
             Whether or not a method is valid
         '''
+        try:
+            low, high = self.T_limits[method]
+            return low <= T <= high
+        except:
+            pass
         if method == DUTT_PRASAD:
             if T < self.DUTT_PRASAD_Tmin or T > self.DUTT_PRASAD_Tmax:
                 return False
@@ -478,11 +530,15 @@ class ViscosityLiquid(TPDependentProperty):
             A, B, C, D, E = self.VDI_PPDS_coeffs
             term = (C - T)/(T - D)
             # Derived with sympy
-            if term > 0:
-                der = E*((-C + T)/(D - T))**(1/3.)*(A + 4*B*(-C + T)/(D - T))*(C - D)*exp(((-C + T)/(D - T))**(1/3.)*(A + B*(-C + T)/(D - T)))/(3*(C - T)*(D - T))
-            else:
-                der = E*((C - T)/(D - T))**(1/3.)*(-A*(C - D)*(D - T)**6 + B*(C - D)*(C - T)*(D - T)**5 + 3*B*(C - T)**2*(D - T)**5 - 3*B*(C - T)*(D - T)**6)*exp(-((C - T)/(D - T))**(1/3.)*(A*(D - T) - B*(C - T))/(D - T))/(3*(C - T)*(D - T)**7)
-            return der < 0
+            return True
+            try:
+                if term > 0:
+                    der = E*((-C + T)/(D - T))**(1/3.)*(A + 4*B*(-C + T)/(D - T))*(C - D)*exp(((-C + T)/(D - T))**(1/3.)*(A + B*(-C + T)/(D - T)))/(3*(C - T)*(D - T))
+                else:
+                    der = E*((C - T)/(D - T))**(1/3.)*(-A*(C - D)*(D - T)**6 + B*(C - D)*(C - T)*(D - T)**5 + 3*B*(C - T)**2*(D - T)**5 - 3*B*(C - T)*(D - T)**6)*exp(-((C - T)/(D - T))**(1/3.)*(A*(D - T) - B*(C - T))/(D - T))/(3*(C - T)*(D - T)**7)
+                return der < 0
+            except:
+                return False
         elif method == BESTFIT:
             validity = True
         elif method in self.tabular_data:
@@ -700,7 +756,8 @@ class ViscosityGas(TPDependentProperty):
     '''Default rankings of the high-pressure methods.'''
 
     def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, Zc=None,
-                 dipole=None, Vmg=None, best_fit=None, load_data=True):
+                 dipole=None, Vmg=None, best_fit=None, load_data=True,
+                 extrapolation='linear'):
         self.CASRN = CASRN
         self.MW = MW
         self.Tc = Tc
@@ -767,6 +824,8 @@ class ViscosityGas(TPDependentProperty):
             if methods:
                 self.set_method(methods[0])
 
+        self.extrapolation = extrapolation
+
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
@@ -781,6 +840,7 @@ class ViscosityGas(TPDependentProperty):
         '''
         methods, methods_P = [], []
         Tmins, Tmaxs = [], []
+        self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN in miscdata.VDI_saturation_dict:
                 methods.append(VDI_TABULAR)
@@ -789,6 +849,7 @@ class ViscosityGas(TPDependentProperty):
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
                 Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 CP_f = coolprop_fluids[self.CASRN]
                 if CP_f.has_mu:
@@ -796,25 +857,30 @@ class ViscosityGas(TPDependentProperty):
                     methods.append(COOLPROP); methods_P.append(COOLPROP)
 #                    T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tmax)
                     Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tmax)
+                    T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tmax*.9999)
             if self.CASRN in viscosity.mu_data_Perrys_8E_2_312.index:
                 methods.append(DIPPR_PERRY_8E)
                 C1, C2, C3, C4, self.Perrys2_312_Tmin, self.Perrys2_312_Tmax = viscosity.mu_values_Perrys_8E_2_312[viscosity.mu_data_Perrys_8E_2_312.index.get_loc(self.CASRN)].tolist()
                 self.Perrys2_312_coeffs = [C1, C2, C3, C4]
                 Tmins.append(self.Perrys2_312_Tmin); Tmaxs.append(self.Perrys2_312_Tmax)
+                T_limits[DIPPR_PERRY_8E] = (self.Perrys2_312_Tmin, self.Perrys2_312_Tmax)
             if self.CASRN in viscosity.mu_data_VDI_PPDS_8.index:
                 methods.append(VDI_PPDS)
                 self.VDI_PPDS_coeffs = viscosity.mu_values_PPDS_8[viscosity.mu_data_VDI_PPDS_8.index.get_loc(self.CASRN)].tolist()
                 self.VDI_PPDS_coeffs.reverse() # in format for horner's scheme
+                T_limits[VDI_PPDS] = (1e-3, 10000)
         if all([self.Tc, self.Pc, self.MW]):
             methods.append(GHARAGHEIZI)
             methods.append(YOON_THODOS)
             methods.append(STIEL_THODOS)
             Tmins.append(0); Tmaxs.append(5E3)  # Intelligently set limit
+            T_limits[YOON_THODOS] = T_limits[STIEL_THODOS] = T_limits[GHARAGHEIZI] = (1e-3, 5E3)
             # GHARAGHEIZI turns nonsesical at ~15 K, YOON_THODOS fine to 0 K,
             # same as STIEL_THODOS
         if all([self.Tc, self.Pc, self.Zc, self.MW]):
             methods.append(LUCAS_GAS)
             Tmins.append(0); Tmaxs.append(1E3)
+            T_limits[LUCAS_GAS] = (1e-3, 1E3)
         self.all_methods = set(methods)
         self.all_methods_P = set(methods_P)
         if Tmins and Tmaxs:

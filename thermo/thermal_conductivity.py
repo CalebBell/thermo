@@ -37,7 +37,7 @@ import numpy as np
 
 from fluids.numerics import horner
 from fluids.constants import R, R_inv, N_A, k
-from chemicals.utils import log, exp
+from chemicals.utils import log, exp, sqrt
 from chemicals.utils import mixing_simple, none_and_length_check
 from chemicals.dippr import EQ100, EQ102
 from chemicals.thermal_conductivity import *
@@ -219,7 +219,8 @@ class ThermalConductivityLiquid(TPDependentProperty):
 
 
     def __init__(self, CASRN='', MW=None, Tm=None, Tb=None, Tc=None, Pc=None,
-                 omega=None, Hfus=None, best_fit=None, load_data=True):
+                 omega=None, Hfus=None, best_fit=None, load_data=True,
+                 extrapolation='linear'):
         self.CASRN = CASRN
         self.MW = MW
         self.Tm = Tm
@@ -285,6 +286,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
                 self.set_method(methods[0])
+        self.extrapolation = extrapolation
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
@@ -300,6 +302,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
         '''
         methods, methods_P = [], []
         Tmins, Tmaxs = [], []
+        self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN in miscdata.VDI_saturation_dict:
                 methods.append(VDI_TABULAR)
@@ -308,24 +311,30 @@ class ThermalConductivityLiquid(TPDependentProperty):
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
                 Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 CP_f = coolprop_fluids[self.CASRN]
                 if CP_f.has_k:
                     self.CP_f = CP_f
                     methods.append(COOLPROP); methods_P.append(COOLPROP)
                     Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
+                    T_limits[COOLPROP] = (self.CP_f.Tmin*1.001, self.CP_f.Tc*0.9999)
             if self.CASRN in thermal_conductivity.k_data_Perrys_8E_2_315.index:
                 methods.append(DIPPR_PERRY_8E)
                 C1, C2, C3, C4, C5, self.Perrys2_315_Tmin, self.Perrys2_315_Tmax = thermal_conductivity.k_values_Perrys_8E_2_315[thermal_conductivity.k_data_Perrys_8E_2_315.index.get_loc(self.CASRN)].tolist()
                 self.Perrys2_315_coeffs = [C1, C2, C3, C4, C5]
                 Tmins.append(self.Perrys2_315_Tmin); Tmaxs.append(self.Perrys2_315_Tmax)
+                T_limits[DIPPR_PERRY_8E] = (self.Perrys2_315_Tmin, self.Perrys2_315_Tmax)
             if self.CASRN in thermal_conductivity.k_data_VDI_PPDS_9.index:
                 A, B, C, D, E = thermal_conductivity.k_values_VDI_PPDS_9[thermal_conductivity.k_data_VDI_PPDS_9.index.get_loc(self.CASRN)].tolist()
                 self.VDI_PPDS_coeffs = [A, B, C, D, E]
                 self.VDI_PPDS_coeffs.reverse()
                 methods.append(VDI_PPDS)
+                T_limits[VDI_PPDS] = (1e-3, 1e4)
         if self.MW:
             methods.extend([BAHADORI_L, LAKSHMI_PRASAD])
+            T_limits[BAHADORI_L] = (1e-3, 1e4)
+            T_limits[LAKSHMI_PRASAD] = (1e-3, 50.0*(131.0*sqrt(self.MW) + 2771.0)/(50.0*self.MW**0.5 + 197.0))
             # Tmin and Tmax are not extended by these simple models, who often
             # give values of 0; BAHADORI_L even has 3 roots.
             # LAKSHMI_PRASAD works down to 0 K, and has an upper limit of
@@ -334,17 +343,22 @@ class ThermalConductivityLiquid(TPDependentProperty):
         if all([self.MW, self.Tm]):
             methods.append(SHEFFY_JOHNSON)
             Tmins.append(0); Tmaxs.append(self.Tm + 793.65)
+            T_limits[SHEFFY_JOHNSON] = (1e-3, self.Tm + 793.65)
             # Works down to 0, has a nice limit at T = Tm+793.65 from Sympy
         if all([self.Tb, self.Pc, self.omega]):
             methods.append(GHARAGHEIZI_L)
+            T_limits[GHARAGHEIZI_L] = (self.Tb, self.Tc)
             Tmins.append(self.Tb); Tmaxs.append(self.Tc)
             # Chosen as the model is weird
         if all([self.Tc, self.Pc, self.omega]):
             methods.append(NICOLA)
+            T_limits[NICOLA] = (0.01*self.Tc, self.Tc)
         if all([self.Tb, self.Tc]):
             methods.append(SATO_RIEDEL)
+            T_limits[SATO_RIEDEL] = (0.01*self.Tb, self.Tc)
         if all([self.Hfus, self.Tc, self.omega]):
             methods.append(NICOLA_ORIGINAL)
+            T_limits[NICOLA_ORIGINAL] = (0.01*self.Tc, self.Tc)
         if all([self.Tc, self.Pc]):
             methods_P.extend([DIPPR_9G, MISSENARD])
         self.all_methods = set(methods)
@@ -925,7 +939,7 @@ class ThermalConductivityGas(TPDependentProperty):
 
     def __init__(self, CASRN='', MW=None, Tb=None, Tc=None, Pc=None, Vc=None,
                  Zc=None, omega=None, dipole=None, Vmg=None, Cvgm=None, mug=None,
-                 best_fit=None, load_data=True):
+                 best_fit=None, load_data=True, extrapolation='linear'):
         self.CASRN = CASRN
         self.MW = MW
         self.Tb = Tb
@@ -996,6 +1010,8 @@ class ThermalConductivityGas(TPDependentProperty):
             if methods:
                 self.set_method(methods[0])
 
+        self.extrapolation = extrapolation
+
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
@@ -1010,6 +1026,7 @@ class ThermalConductivityGas(TPDependentProperty):
         '''
         methods, methods_P = [], []
         Tmins, Tmaxs = [], []
+        self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN in miscdata.VDI_saturation_dict:
                 methods.append(VDI_TABULAR)
@@ -1018,41 +1035,51 @@ class ThermalConductivityGas(TPDependentProperty):
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
                 Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 CP_f = coolprop_fluids[self.CASRN]
                 if CP_f.has_k:
                     self.CP_f = CP_f
                     methods.append(COOLPROP); methods_P.append(COOLPROP)
                     Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
+                    T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc*0.9999)
             if self.CASRN in thermal_conductivity.k_data_Perrys_8E_2_314.index:
                 methods.append(DIPPR_PERRY_8E)
                 C1, C2, C3, C4, self.Perrys2_314_Tmin, self.Perrys2_314_Tmax = thermal_conductivity.k_values_Perrys_8E_2_314[thermal_conductivity.k_data_Perrys_8E_2_314.index.get_loc(self.CASRN)].tolist()
                 self.Perrys2_314_coeffs = [C1, C2, C3, C4]
                 Tmins.append(self.Perrys2_314_Tmin); Tmaxs.append(self.Perrys2_314_Tmax)
+                T_limits[DIPPR_PERRY_8E] = (self.Perrys2_314_Tmin, self.Perrys2_314_Tmax)
             if self.CASRN in thermal_conductivity.k_data_VDI_PPDS_10.index:
                 A, B, C, D, E = thermal_conductivity.k_values_VDI_PPDS_10[thermal_conductivity.k_data_VDI_PPDS_10.index.get_loc(self.CASRN)].tolist()
                 self.VDI_PPDS_coeffs = [A, B, C, D, E]
                 self.VDI_PPDS_coeffs.reverse()
                 methods.append(VDI_PPDS)
+                T_limits[VDI_PPDS] = (1e-3, 10000.0)
         if all((self.MW, self.Tb, self.Pc, self.omega)):
             methods.append(GHARAGHEIZI_G)
             # Turns negative at low T; do not set Tmin
             Tmaxs.append(3000)
+            T_limits[GHARAGHEIZI_G] = (1e-3, 3000.0)
         if all((self.Cvgm, self.mug, self.MW, self.Tc)):
             methods.append(DIPPR_9B)
             Tmins.append(0.01); Tmaxs.append(1E4)  # No limit here
+            T_limits[DIPPR_9B] = (1e-2, 1e4)
         if all((self.Cvgm, self.mug, self.MW, self.Tc, self.omega)):
             methods.append(CHUNG)
             Tmins.append(0.01); Tmaxs.append(1E4)  # No limit
+            T_limits[CHUNG] = (1e-2, 1e4)
         if all((self.Cvgm, self.MW, self.Tc, self.Vc, self.Zc, self.omega)):
             methods.append(ELI_HANLEY)
             Tmaxs.append(1E4)  # Numeric error at low T
+            T_limits[ELI_HANLEY] = (self.Tc*0.4, 1e4)
         if all((self.Cvgm, self.mug, self.MW)):
             methods.append(EUCKEN_MOD)
             methods.append(EUCKEN)
             Tmins.append(0.01); Tmaxs.append(1E4)  # No limits
+            T_limits[EUCKEN] = T_limits[EUCKEN_MOD] = (1e-2, 1e4)
         if self.MW:
             methods.append(BAHADORI_G)
+            T_limits[BAHADORI_G] = (1e-2, 1e4)
             # Terrible method, so don't set methods
         if all([self.MW, self.Tc, self.Vc, self.Zc, self.omega]):
             methods_P.append(ELI_HANLEY_DENSE)

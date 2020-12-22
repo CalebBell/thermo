@@ -53,6 +53,7 @@ def test_ThermalConductivityLiquid():
 
 
     # Test that methods return None
+    EtOH.extrapolation = None
     kl_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(5000))[1] for i in all_methods]
     assert [None]*11 == kl_calcs
 
@@ -103,6 +104,7 @@ def test_ThermalConductivityGas():
     kg_exp = [0.015227631457903644, 0.015025094773729045, 0.01520257225203181, 0.01494275, 0.016338750949017277, 0.014353317470206847, 0.011676848981094841, 0.01137910777526855, 0.015427444948536088, 0.012984129385510995, 0.017556325226536728]
     assert_allclose(sorted(kg_calcs), sorted(kg_exp))
 
+    EtOH.extrapolation = None
     # Test that those mthods which can, do, return NoneEtOH.forced_P
     kg_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(5E20))[1] for i in [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G, ELI_HANLEY, BAHADORI_G, VDI_PPDS]]
     assert [None]*7 == kg_calcs

@@ -292,7 +292,7 @@ class VolumeLiquid(TPDependentProperty):
 
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
                  omega=None, dipole=None, Psat=None, CASRN='', eos=None,
-                 best_fit=None, load_data=True):
+                 best_fit=None, load_data=True, extrapolation=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tb = Tb
@@ -360,6 +360,7 @@ class VolumeLiquid(TPDependentProperty):
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
                 self.set_method(methods[0])
+        self.extrapolation = extrapolation
 
     def custom_set_best_fit(self):
         try:
@@ -810,7 +811,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
     '''
     def __init__(self, MW=None, Tc=None, Pc=None,
                  omega=None,  Psat=None, CASRN='', eos=None,
-                 best_fit=None):
+                 best_fit=None, extrapolation=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tc = Tc
@@ -870,6 +871,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         self.load_all_methods()
         if best_fit is not None:
             self.set_best_fit(best_fit)
+        self.extrapolation = extrapolation
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -886,14 +888,17 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         methods = []
         methods_P = []
         Tmins, Tmaxs = [], []
+        self.T_limits = T_limits = {}
         if has_CoolProp() and self.CASRN in coolprop_dict:
             methods_P.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]
             Tmins.append(self.CP_f.Tc); Tmaxs.append(self.CP_f.Tmax)
+            T_limits[COOLPROP] = (self.CP_f.Tc, self.CP_f.Tmax)
         if all((self.Tc, self.Pc, self.omega)):
             if self.eos:
                 methods_P.append(EOS)
                 Tmins.append(self.Tc)
+                T_limits[EOS] = (self.Tc, self.Tc*100)
 
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
@@ -1476,19 +1481,26 @@ class VolumeGas(TPDependentProperty):
         to reset the parameters.
         '''
         methods_P = [IDEAL]
+        self.T_limits = T_limits = {}
         # no point in getting Tmin, Tmax
         if all((self.Tc, self.Pc, self.omega)):
             methods_P.extend([TSONOPOULOS_EXTENDED, TSONOPOULOS, ABBOTT,
                             PITZER_CURL])
             if self.eos:
                 methods_P.append(EOS)
+            T_limits[TSONOPOULOS_EXTENDED] = (1e-4, 1e5)
+            T_limits[TSONOPOULOS] = (1e-4, 1e5)
+            T_limits[ABBOTT] = (1e-4, 1e5)
+            T_limits[PITZER_CURL] = (1e-4, 1e5)
         if load_data:
             if self.CASRN in volume.rho_data_CRC_virial.index:
                 methods_P.append(CRC_VIRIAL)
                 self.CRC_VIRIAL_coeffs = volume.rho_values_CRC_virial[volume.rho_data_CRC_virial.index.get_loc(self.CASRN)].tolist()
+                T_limits[CRC_VIRIAL] = (1e-4, 1e5)
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 methods_P.append(COOLPROP)
                 self.CP_f = coolprop_fluids[self.CASRN]
+                T_limits[CRC_VIRIAL] = (self.CP_f.Tmin, self.CP_f.Tmax)
         self.all_methods_P = set(methods_P)
 
     def calculate_P(self, T, P, method):
@@ -1845,7 +1857,7 @@ class VolumeSolid(TDependentProperty):
     '''Default rankings of the available methods.'''
 
     def __init__(self, CASRN='', MW=None, Tt=None, Vml_Tt=None, best_fit=None,
-                 load_data=True):
+                 load_data=True, extrapolation='linear'):
         self.CASRN = CASRN
         self.MW = MW
         self.Tt = Tt
@@ -1888,6 +1900,8 @@ class VolumeSolid(TDependentProperty):
             if methods:
                 self.set_method(methods[0])
 
+        self.extrapolation = extrapolation
+
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
@@ -1901,12 +1915,15 @@ class VolumeSolid(TDependentProperty):
         to reset the parameters.
         '''
         methods = []
+        self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN in volume.rho_data_CRC_inorg_s_const.index:
                 methods.append(CRC_INORG_S)
                 self.CRC_INORG_S_Vm = float(volume.rho_data_CRC_inorg_s_const.at[self.CASRN, 'Vm'])
+                T_limits[CRC_INORG_S] = (1e-4, 1e4)
         if all((self.Tt, self.Vml_Tt, self.MW)):
             methods.append(GOODMAN)
+            T_limits[GOODMAN] = (1e-4, self.Tt)
         self.all_methods = set(methods)
 
     def calculate(self, T, method):

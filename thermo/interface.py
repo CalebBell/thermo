@@ -198,7 +198,7 @@ class SurfaceTension(TDependentProperty):
 
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
                  omega=None, StielPolar=None, Hvap_Tb=None, CASRN='', Vml=None,
-                 Cpl=None, best_fit=None, load_data=True):
+                 Cpl=None, best_fit=None, load_data=True, extrapolation=None):
         self.MW = MW
         self.Tb = Tb
         self.Tc = Tc
@@ -248,6 +248,7 @@ class SurfaceTension(TDependentProperty):
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
                 self.set_method(methods[0])
+        self.extrapolation = extrapolation
 
 
     @staticmethod
