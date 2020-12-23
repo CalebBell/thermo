@@ -18,7 +18,29 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains implementations of :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+representing liquid permittivity. A variety of estimation
+and data methods are available as included in the `chemicals` library.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. contents:: :local:
+
+Pure Liquid Permittivity
+========================
+.. autoclass:: Permittivity
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: permittivity_methods
+'''
 
 from __future__ import division
 
@@ -36,7 +58,7 @@ from chemicals import permittivity
 CRC = 'CRC'
 CRC_CONSTANT = 'CRC_CONSTANT'
 permittivity_methods = [CRC, CRC_CONSTANT]
-'''Holds all methods available for the Permittivity class, for use in
+'''Holds all methods available for the :obj:`Permittivity` class, for use in
 iterating over them.'''
 
 
@@ -50,8 +72,18 @@ class Permittivity(TDependentProperty):
     CASRN : str, optional
         The CAS number of the chemical
     load_data : bool, optional
-        If False, do not load property coefficients from data sources in files;
+        If False, do not load property coefficients from data sources in files
         [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        permittivity of the compound; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default method if provided. [-]
 
     Notes
     -----
@@ -86,17 +118,17 @@ class Permittivity(TDependentProperty):
     '''No interpolation transformation by default.'''
     tabular_extrapolation_permitted = True
     '''Allow tabular extrapolation by default.'''
-    property_min = 1
+    property_min = 1.0
     '''Relative permittivity must always be larger than 1; nothing is better
     than a vacuum.'''
-    property_max = 1000
+    property_max = 1000.0
     '''Maximum valid of permittivity; highest in the data available is ~240.'''
 
     ranked_methods = [CRC, CRC_CONSTANT]
     '''Default rankings of the available methods.'''
 
-    def __init__(self, CASRN='', best_fit=None, load_data=True,
-                 extrapolation='linear'):
+    def __init__(self, CASRN='', load_data=True, extrapolation='linear',
+                 poly_fit=None):
         self.CASRN = CASRN
 
         self.Tmin = None
@@ -119,10 +151,7 @@ class Permittivity(TDependentProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
+        at a specific temperature; set by :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`.'''
 
         self.all_methods = set()
         '''Set of all methods available for a given CASRN and properties;
@@ -130,8 +159,8 @@ class Permittivity(TDependentProperty):
 
         self.load_all_methods(load_data)
 
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
         else:
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
@@ -174,7 +203,7 @@ class Permittivity(TDependentProperty):
         r'''Method to calculate permittivity of a liquid at temperature `T`
         with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters

@@ -223,9 +223,9 @@ def test_TDependentProperty():
     EtOH = TDependentProperty(CASRN='67-56-1')
     EtOH.set_method(TEST_METHOD_1)
     EtOH.set_tabular_data(Ts=Ts, properties=props)
-    assert set(EtOH.available_methods) == set(['Tabular data series #0', 'Test method 1', 'Test method 2'])
+    assert set(EtOH.all_methods) == set(['Tabular data series #0', 'Test method 1', 'Test method 2'])
     EtOH.set_tabular_data(Ts=Ts, properties=props, name='hi')
-    assert set(EtOH.available_methods) == set(['hi', 'Tabular data series #0', 'Test method 1', 'Test method 2'])
+    assert set(EtOH.all_methods) == set(['hi', 'Tabular data series #0', 'Test method 1', 'Test method 2'])
 
     with pytest.raises(Exception):
         EtOH.set_tabular_data(Ts=[195, 205, 300, 400, 450], properties=[1.2, 1.3, 1.7, 1.9, -1], name='awesome')

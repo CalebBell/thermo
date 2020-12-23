@@ -18,7 +18,95 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains implementations of :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+representing liquid, vapor, and solid volume. A variety of estimation
+and data methods are available as included in the `chemicals` library.
+Additionally liquid, vapor, and solid mixture volume predictor objects
+are implemented subclassing :obj:`MixtureProperty <thermo.utils.MixtureProperty>`.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+
+.. contents:: :local:
+
+Pure Liquid Volume
+==================
+.. autoclass:: VolumeLiquid
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods,
+              calculate_P, test_method_validity_P, ranked_methods_P
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: volume_liquid_methods
+.. autodata:: volume_liquid_methods_P
+
+Pure Gas Volume
+===============
+.. autoclass:: VolumeGas
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods,
+              calculate_P, test_method_validity_P, ranked_methods_P
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: volume_gas_methods
+
+Pure Solid Volume
+=================
+.. autoclass:: VolumeSolid
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: volume_solid_methods
+
+Mixture Liquid Volume
+=====================
+.. autoclass:: VolumeLiquidMixture
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: volume_liquid_mixture_methods
+
+Mixture Gas Volume
+==================
+.. autoclass:: VolumeGasMixture
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: volume_gas_mixture_methods
+
+Mixture Solid Volume
+====================
+.. autoclass:: VolumeSolidMixture
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: volume_solid_mixture_methods
+'''
 
 from __future__ import division
 
@@ -101,11 +189,11 @@ volume_liquid_methods = [PERRYDIPPR, VDI_PPDS, COOLPROP, MMSNM0FIT, VDI_TABULAR,
                          CRC_INORG_L_CONST, MMSNM0, HTCOSTALD,
                          YEN_WOODS_SAT, RACKETT, YAMADA_GUNN,
                          BHIRUD_NORMAL, TOWNSEND_HALES, CAMPBELL_THODOS, EOS]
-'''Holds all low-pressure methods available for the VolumeLiquid class, for use
+'''Holds all low-pressure methods available for the :obj:`VolumeLiquid` class, for use
 in iterating over them.'''
 
 volume_liquid_methods_P = [COOLPROP, COSTALD_COMPRESSED, EOS]
-'''Holds all high-pressure methods available for the VolumeLiquid class, for
+'''Holds all high-pressure methods available for the :obj:`VolumeLiquid` class, for
 use in iterating over them.'''
 
 
@@ -147,8 +235,18 @@ class VolumeLiquid(TPDependentProperty):
     eos : object, optional
         Equation of State object after :obj:`thermo.eos.GCEOS`
     load_data : bool, optional
-        If False, do not load property coefficients from data sources in files;
+        If False, do not load property coefficients from data sources in files
         [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        volume of the compound; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default method if provided. [-]
 
     Notes
     -----
@@ -165,43 +263,43 @@ class VolumeLiquid(TPDependentProperty):
         344 fluids. Temperature limits are available for all fluids. Believed
         very accurate.
     **VDI_PPDS**:
-        Coefficients for a equation form developed by the PPDS (:obj:`EQ116` in
+        Coefficients for a equation form developed by the PPDS (:obj:`EQ116 <chemicals.dippr.EQ116>` in
         terms of mass density), published
         openly in [3]_. Valid up to the critical temperature, and extrapolates
         to very low temperatures well.
     **MMSNM0FIT**:
-        Uses a fit coefficient for better accuracy in the :obj:`SNM0` method,
+        Uses a fit coefficient for better accuracy in the :obj:`SNM0 <chemicals.volume.SNM0>` method,
         Coefficients available for 73 fluids from [2]_. Valid to the critical
         point.
     **HTCOSTALDFIT**:
-        A method with two fit coefficients to the :obj:`COSTALD` method.
+        A method with two fit coefficients to the :obj:`COSTALD <chemicals.volume.COSTALD>` method.
         Coefficients available for 192 fluids, from [3]_. Valid to the critical
         point.
     **RACKETTFIT**:
-        The :obj:`Racket` method, with a fit coefficient Z_RA. Data is
+        The :obj:`Rackett <chemicals.volume.Rackett>` method, with a fit coefficient Z_RA. Data is
         available for 186 fluids, from [3]_. Valid to the critical point.
     **CRC_INORG_L**:
         Single-temperature coefficient linear model in terms of mass density
         for the density of inorganic liquids; converted to molar units
         internally. Data is available for 177 fluids normally valid over a
         narrow range above the melting point, from [4]_; described in
-        :obj:`CRC_inorganic`.
+        :obj:`CRC_inorganic <chemicals.volume.CRC_inorganic>`.
     **MMSNM0**:
-        CSP method, described in :obj:`SNM0`.
+        CSP method, described in :obj:`SNM0 <chemicals.volume.SNM0>`.
     **HTCOSTALD**:
-        CSP method, described in :obj:`COSTALD`.
+        CSP method, described in :obj:`COSTALD <chemicals.volume.COSTALD>`.
     **YEN_WOODS_SAT**:
-        CSP method, described in :obj:`Yen_Woods_saturation`.
+        CSP method, described in :obj:`Yen_Woods_saturation <chemicals.volume.Yen_Woods_saturation>`.
     **RACKETT**:
-        CSP method, described in :obj:`Rackett`.
+        CSP method, described in :obj:`Rackett <chemicals.volume.Rackett>`.
     **YAMADA_GUNN**:
-        CSP method, described in :obj:`Yamada_Gunn`.
+        CSP method, described in :obj:`Yamada_Gunn <chemicals.volume.Yamada_Gunn>`.
     **BHIRUD_NORMAL**:
-        CSP method, described in :obj:`Bhirud_normal`.
+        CSP method, described in :obj:`Bhirud_normal <chemicals.volume.Bhirud_normal>`.
     **TOWNSEND_HALES**:
-        CSP method, described in :obj:`Townsend_Hales`.
+        CSP method, described in :obj:`Townsend_Hales <chemicals.volume.Townsend_Hales>`.
     **CAMPBELL_THODOS**:
-        CSP method, described in :obj:`Campbell_Thodos`.
+        CSP method, described in :obj:`Campbell_Thodos <chemicals.volume.Campbell_Thodos>`.
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
         Range is limited to that of the equations of state it uses, as
@@ -217,8 +315,8 @@ class VolumeLiquid(TPDependentProperty):
     High pressure methods:
 
     **COSTALD_COMPRESSED**:
-        CSP method, described in :obj:`COSTALD_compressed`. Calculates a
-        low-pressure molar volume first, using `T_dependent_property`.
+        CSP method, described in :obj:`COSTALD_compressed <chemicals.volume.COSTALD_compressed>`. Calculates a
+        low-pressure molar volume first, using :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`.
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
         Range is limited to that of the equations of state it uses, as
@@ -229,16 +327,16 @@ class VolumeLiquid(TPDependentProperty):
 
     See Also
     --------
-    Yen_Woods_saturation
-    Rackett
-    Yamada_Gunn
-    Townsend_Hales
-    Bhirud_normal
-    COSTALD
-    Campbell_Thodos
-    SNM0
-    CRC_inorganic
-    COSTALD_compressed
+    chemicals.volume.Yen_Woods_saturation
+    chemicals.volume.Rackett
+    chemicals.volume.Yamada_Gunn
+    chemicals.volume.Townsend_Hales
+    chemicals.volume.Bhirud_normal
+    chemicals.volume.COSTALD
+    chemicals.volume.Campbell_Thodos
+    chemicals.volume.SNM0
+    chemicals.volume.CRC_inorganic
+    chemicals.volume.COSTALD_compressed
 
     References
     ----------
@@ -292,7 +390,7 @@ class VolumeLiquid(TPDependentProperty):
 
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
                  omega=None, dipole=None, Psat=None, CASRN='', eos=None,
-                 best_fit=None, load_data=True, extrapolation=None):
+                 load_data=True, extrapolation=None, poly_fit=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tb = Tb
@@ -336,16 +434,13 @@ class VolumeLiquid(TPDependentProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
+        at a specific temperature; set by :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`.'''
         self.sorted_valid_methods_P = []
         '''sorted_valid_methods_P, list: Stored methods which were found valid
-        at a specific temperature; set by `TP_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
+        at a specific temperature; set by :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`.'''
         self.user_methods_P = []
         '''user_methods_P, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `TP_dependent_property`.'''
+        in a ranked order of preference; set by :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`.'''
 
         self.all_methods = set()
         '''Set of all low-pressure methods available for a given CASRN and
@@ -354,22 +449,22 @@ class VolumeLiquid(TPDependentProperty):
         '''Set of all high-pressure methods available for a given CASRN and
         properties; filled by :obj:`load_all_methods`.'''
         self.load_all_methods(load_data)
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
         else:
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
                 self.set_method(methods[0])
         self.extrapolation = extrapolation
 
-    def custom_set_best_fit(self):
+    def _custom_set_poly_fit(self):
         try:
-            Tmin, Tmax = self.best_fit_Tmin, self.best_fit_Tmax
-            best_fit_coeffs = self.best_fit_coeffs
-            v_Tmin = horner(best_fit_coeffs, Tmin)
+            Tmin, Tmax = self.poly_fit_Tmin, self.poly_fit_Tmax
+            poly_fit_coeffs = self.poly_fit_coeffs
+            v_Tmin = horner(poly_fit_coeffs, Tmin)
             for T_trans in linspace(Tmin, Tmax, 25):
                 # Create a new polynomial approximating the fit at T_trans;
-                p = quadratic_from_f_ders(Tmin, *horner_and_der2(best_fit_coeffs, T_trans))
+                p = quadratic_from_f_ders(Tmin, *horner_and_der2(poly_fit_coeffs, T_trans))
                 # Evaluate the first and second derivative at Tmin
                 v_Tmin_refit, d1_Tmin, d2_Tmin = horner_and_der2(p, Tmin)
                 # If the first derivative is negative (volume liquid should always be posisitive except for water)
@@ -383,7 +478,7 @@ class VolumeLiquid(TPDependentProperty):
                     d2_Tmin = d1_Tmin/Tmin
                 self._Tmin_T_trans = T_trans
                 p = quadratic_from_f_ders(Tmin, v_Tmin, d1_Tmin, d2_Tmin)
-                self.best_fit_Tmin_quadratic = p
+                self.poly_fit_Tmin_quadratic = p
                 break
 
         except:
@@ -496,12 +591,16 @@ class VolumeLiquid(TPDependentProperty):
 
         self.all_methods = set(methods)
         self.all_methods_P = set(methods_P)
+        for m in self.ranked_methods_P:
+            if m in self.all_methods_P:
+                self.method_P = m
+                break
 
     def calculate(self, T, method):
         r'''Method to calculate low-pressure liquid molar volume at tempearture
         `T` with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters
@@ -517,12 +616,12 @@ class VolumeLiquid(TPDependentProperty):
             Molar volume of the liquid at T and a low pressure, [m^3/mol]
         '''
         if method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                Vm = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                Vm = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            if T < self.poly_fit_Tmin:
+                Vm = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
+            elif T > self.poly_fit_Tmax:
+                Vm = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
-                Vm = horner(self.best_fit_coeffs, T)
+                Vm = horner(self.poly_fit_coeffs, T)
         elif method == RACKETT:
             Vm = Rackett(T, self.Tc, self.Pc, self.Zc)
         elif method == YAMADA_GUNN:
@@ -569,7 +668,7 @@ class VolumeLiquid(TPDependentProperty):
         r'''Method to calculate pressure-dependent liquid molar volume at
         temperature `T` and pressure `P` with a given method.
 
-        This method has no exception handling; see `TP_dependent_property`
+        This method has no exception handling; see :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`
         for that.
 
         Parameters
@@ -748,11 +847,11 @@ class VolumeLiquid(TPDependentProperty):
         return B_data, C_data
 
 volume_supercritical_liquid_methods = []
-'''Holds all low-pressure methods available for the VolumeSupercriticalLiquid class, for use
+'''Holds all low-pressure methods available for the :obj:`VolumeSupercriticalLiquid` class, for use
 in iterating over them.'''
 
 volume_supercritical_liquid_methods_P = [COOLPROP, EOS]
-'''Holds all high-pressure methods available for the VolumeSupercriticalLiquid class, for
+'''Holds all high-pressure methods available for the :obj:`VolumeSupercriticalLiquid` class, for
 use in iterating over them.'''
 
 
@@ -811,7 +910,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
     '''
     def __init__(self, MW=None, Tc=None, Pc=None,
                  omega=None,  Psat=None, CASRN='', eos=None,
-                 best_fit=None, extrapolation=None):
+                 poly_fit=None, extrapolation=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tc = Tc
@@ -851,16 +950,13 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
+        at a specific temperature; set by :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`.'''
         self.sorted_valid_methods_P = []
         '''sorted_valid_methods_P, list: Stored methods which were found valid
-        at a specific temperature; set by `TP_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
+        at a specific temperature; set by :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`.'''
         self.user_methods_P = []
         '''user_methods_P, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `TP_dependent_property`.'''
+        in a ranked order of preference; set by :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`.'''
 
         self.all_methods = set()
         '''Set of all low-pressure methods available for a given CASRN and
@@ -869,8 +965,8 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         '''Set of all high-pressure methods available for a given CASRN and
         properties; filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
         self.extrapolation = extrapolation
 
     def load_all_methods(self):
@@ -910,7 +1006,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         r'''Method to calculate low-pressure liquid molar volume at tempearture
         `T` with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters
@@ -926,12 +1022,12 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
             Molar volume of the liquid at T and a supercritical pressure, [m^3/mol]
         '''
         if method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                Vm = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                Vm = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            if T < self.poly_fit_Tmin:
+                Vm = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
+            elif T > self.poly_fit_Tmax:
+                Vm = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
-                Vm = horner(self.best_fit_coeffs, T)
+                Vm = horner(self.poly_fit_coeffs, T)
         else:
             raise ValueError("Unrecognized method")
         return Vm
@@ -940,7 +1036,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         r'''Method to calculate pressure-dependent liquid molar volume at
         temperature `T` and pressure `P` with a given method.
 
-        This method has no exception handling; see `TP_dependent_property`
+        This method has no exception handling; see :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`
         for that.
 
         Parameters
@@ -1051,8 +1147,12 @@ SIMPLE = 'SIMPLE'
 RACKETT = 'RACKETT'
 RACKETT_PARAMETERS = 'RACKETT Parameters'
 volume_liquid_mixture_methods = [LALIBERTE, SIMPLE, COSTALD_MIXTURE_FIT, RACKETT_PARAMETERS, COSTALD, RACKETT]
+'''Holds all low-pressure methods available for the :obj:`VolumeLiquidMixture` class, for use
+in iterating over them.'''
 
 volume_liquid_mixture_P_methods = [COSTALD]
+'''Holds all high-pressure methods available for the :obj:`VolumeLiquidMixture` class, for use
+in iterating over them.'''
 
 class VolumeLiquidMixture(MixtureProperty):
     '''Class for dealing with the molar volume of a liquid mixture as a
@@ -1081,8 +1181,7 @@ class VolumeLiquidMixture(MixtureProperty):
     CASs : list[str], optional
         The CAS numbers of all species in the mixture
     VolumeLiquids : list[VolumeLiquid], optional
-        VolumeLiquid objects created for all species in the mixture,
-        normally created by :obj:`thermo.chemical.Chemical`.
+        VolumeLiquid objects created for all species in the mixture, [-]
     correct_pressure_pure : bool, optional
         Whether to try to use the better pressure-corrected pure component
         models or to use only the T-only dependent pure species models, [-]
@@ -1096,18 +1195,18 @@ class VolumeLiquidMixture(MixtureProperty):
         Aqueous electrolyte model equation with coefficients; see
         :obj:`thermo.electrochem.Laliberte_density` for more details.
     **COSTALD mixture**:
-        CSP method described in :obj:`COSTALD_mixture`.
+        CSP method described in :obj:`COSTALD_mixture <chemicals.volume.COSTALD_mixture>`.
     **COSTALD mixture parameters**:
-        CSP method described in :obj:`COSTALD_mixture`, with two mixture
+        CSP method described in :obj:`COSTALD_mixture <chemicals.volume.COSTALD_mixture>`, with two mixture
         composition independent fit coefficients, `Vc` and `omega`.
     **RACKETT**:
-        CSP method described in :obj:`Rackett_mixture`.
+        CSP method described in :obj:`Rackett_mixture <chemicals.volume.Rackett_mixture>`.
     **RACKETT Parameters**:
-        CSP method described in :obj:`Rackett_mixture`, but with a mixture
+        CSP method described in :obj:`Rackett_mixture <chemicals.volume.Rackett_mixture>`, but with a mixture
         independent fit coefficient for compressibility factor for each species.
     **SIMPLE**:
         Linear mole fraction mixing rule described in
-        :obj:`thermo.utils.mixing_simple`; also known as Amgat's law.
+        :obj:`mixing_simple <chemicals.utils.mixing_simple>`; also known as Amgat's law.
 
     See Also
     --------
@@ -1151,16 +1250,16 @@ class VolumeLiquidMixture(MixtureProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `mixture_property`.'''
+        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.user_methods = []
         '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `mixture_property`.'''
+        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
 
-        self.set_best_fit_coeffs()
+        self.set_poly_fit_coeffs()
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -1197,14 +1296,18 @@ class VolumeLiquidMixture(MixtureProperty):
                 methods.append(LALIBERTE)
                 self.wCASs = wCASs
                 self.index_w = self.CASs.index('7732-18-5')
-        self.all_methods = set(methods)
+        self.all_methods = all_methods = set(methods)
+        for m in self.ranked_methods:
+            if m in all_methods:
+                self.method = m
+                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate molar volume of a liquid mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
-        This method has no exception handling; see `mixture_property`
+        This method has no exception handling; see :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`
         for that.
 
         Parameters
@@ -1297,7 +1400,7 @@ IDEAL = 'IDEAL'
 NONE = 'NONE'
 volume_gas_methods = [COOLPROP, EOS, CRC_VIRIAL, TSONOPOULOS_EXTENDED, TSONOPOULOS,
                       ABBOTT, PITZER_CURL, IDEAL]
-'''Holds all methods available for the VolumeGas class, for use in
+'''Holds all methods available for the :obj:`VolumeGas` class, for use in
 iterating over them.'''
 
 
@@ -1325,8 +1428,18 @@ class VolumeGas(TPDependentProperty):
     dipole : float, optional
         Dipole, [debye]
     load_data : bool, optional
-        If False, do not load property coefficients from data sources in files;
+        If False, do not load property coefficients from data sources in files
         [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        volume of the compound; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default low-pressure method if provided. [-]
 
     Notes
     -----
@@ -1346,17 +1459,17 @@ class VolumeGas(TPDependentProperty):
 
     **TSONOPOULOS_EXTENDED**:
         CSP method for second virial coefficients, described in
-        :obj:`thermo.virial.BVirial_Tsonopoulos_extended`
+        :obj:`chemicals.virial.BVirial_Tsonopoulos_extended`
     **TSONOPOULOS**:
         CSP method for second virial coefficients, described in
-        :obj:`thermo.virial.BVirial_Tsonopoulos`
+        :obj:`chemicals.virial.BVirial_Tsonopoulos`
     **ABBOTT**:
         CSP method for second virial coefficients, described in
-        :obj:`thermo.virial.BVirial_Abbott`. This method is the simplest CSP
+        :obj:`chemicals.virial.BVirial_Abbott`. This method is the simplest CSP
         method implemented.
     **PITZER_CURL**:
         CSP method for second virial coefficients, described in
-        :obj:`thermo.virial.BVirial_Pitzer_Curl`.
+        :obj:`chemicals.virial.BVirial_Pitzer_Curl`.
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
         Range is limited to that of the equations of state it uses, as
@@ -1413,7 +1526,8 @@ class VolumeGas(TPDependentProperty):
 
 
     def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, omega=None,
-                 dipole=None, eos=None, load_data=True):
+                 dipole=None, eos=None, load_data=True, extrapolation=None,
+                 poly_fit=None):
         # Only use TPDependentPropoerty functions here
         self.CASRN = CASRN
         self.MW = MW
@@ -1455,10 +1569,10 @@ class VolumeGas(TPDependentProperty):
 
         self.sorted_valid_methods_P = []
         '''sorted_valid_methods_P, list: Stored methods which were found valid
-        at a specific temperature; set by `TP_dependent_property`.'''
+        at a specific temperature; set by :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`.'''
         self.user_methods_P = []
         '''user_methods_P, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `TP_dependent_property`.'''
+        in a ranked order of preference; set by :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`.'''
 
         self.all_methods_P = set()
         '''Set of all high-pressure methods available for a given CASRN and
@@ -1467,7 +1581,8 @@ class VolumeGas(TPDependentProperty):
         self.load_all_methods(load_data)
         methods = self.select_valid_methods_P(T=None, P=None, check_validity=False)
         if methods:
-            self.set_user_methods_P(methods[0], forced_P=True)
+            self.set_user_methods_P(methods[0], forced_P=False)
+        self.extrapolation = extrapolation
 
     def load_all_methods(self, load_data):
         r'''Method which picks out coefficients for the specified chemical
@@ -1502,12 +1617,16 @@ class VolumeGas(TPDependentProperty):
                 self.CP_f = coolprop_fluids[self.CASRN]
                 T_limits[CRC_VIRIAL] = (self.CP_f.Tmin, self.CP_f.Tmax)
         self.all_methods_P = set(methods_P)
+        for m in self.ranked_methods_P:
+            if m in self.all_methods_P:
+                self.method_P = m
+                break
 
     def calculate_P(self, T, P, method):
         r'''Method to calculate pressure-dependent gas molar volume at
         temperature `T` and pressure `P` with a given method.
 
-        This method has no exception handling; see `TP_dependent_property`
+        This method has no exception handling; see :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`
         for that.
 
         Parameters
@@ -1617,6 +1736,9 @@ class VolumeGas(TPDependentProperty):
 
 
 volume_gas_mixture_methods = [EOS, SIMPLE, IDEAL]
+'''Holds all methods available for the :obj:`VolumeGasMixture` class, for use
+in iterating over them.'''
+
 
 
 
@@ -1634,11 +1756,9 @@ class VolumeGasMixture(MixtureProperty):
     CASs : list[str], optional
         The CAS numbers of all species in the mixture
     VolumeGases : list[VolumeGas], optional
-        VolumeGas objects created for all species in the mixture,
-        normally created by :obj:`thermo.chemical.Chemical`.
+        VolumeGas objects created for all species in the mixture, [-]
     eos : container[EOS Object], optional
-        Equation of state object, normally created by
-        :obj:`thermo.chemical.Mixture`.
+        Equation of state mixture object, [-]
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
 
@@ -1648,19 +1768,18 @@ class VolumeGasMixture(MixtureProperty):
     :obj:`volume_gas_mixture_methods`.
 
     **EOS**:
-        Equation of State object, normally provided by
-        :obj:`thermo.chemical.Mixture`. See :obj:`thermo.eos_mix` for more
+        Equation of state mixture object; see :obj:`thermo.eos_mix` for more
         details.
     **SIMPLE**:
         Linear mole fraction mixing rule described in
-        :obj:`thermo.utils.mixing_simple`; more correct than the ideal gas
+        :obj:`mixing_simple <chemicals.utils.mixing_simple>`; more correct than the ideal gas
         law.
     **IDEAL**:
         The ideal gas law.
 
     See Also
     --------
-    ideal_gas
+    chemicals.volume.ideal_gas
     :obj:`thermo.eos_mix`
 
     References
@@ -1694,16 +1813,16 @@ class VolumeGasMixture(MixtureProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `mixture_property`.'''
+        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.user_methods = []
         '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `mixture_property`.'''
+        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
 
-        self.set_best_fit_coeffs()
+        self.set_poly_fit_coeffs()
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -1720,14 +1839,18 @@ class VolumeGasMixture(MixtureProperty):
         methods = [SIMPLE, IDEAL]
         if self.eos:
             methods.append(EOS)
-        self.all_methods = set(methods)
+        self.all_methods = all_methods =  set(methods)
+        for m in self.ranked_methods:
+            if m in all_methods:
+                self.method = m
+                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate molar volume of a gas mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
-        This method has no exception handling; see `mixture_property`
+        This method has no exception handling; see :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`
         for that.
 
         Parameters
@@ -1792,7 +1915,7 @@ class VolumeGasMixture(MixtureProperty):
 GOODMAN = 'GOODMAN'
 CRC_INORG_S = 'CRC_INORG_S'
 volume_solid_methods = [GOODMAN, CRC_INORG_S]
-'''Holds all methods available for the VolumeSolid class, for use in
+'''Holds all methods available for the :obj:`VolumeSolid` class, for use in
 iterating over them.'''
 
 
@@ -1812,8 +1935,18 @@ class VolumeSolid(TDependentProperty):
     Vml_Tt : float, optional
         Liquid molar volume at the triple point
     load_data : bool, optional
-        If False, do not load property coefficients from data sources in files;
+        If False, do not load property coefficients from data sources in files
         [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        volume of the compound; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default method if provided. [-]
 
     Notes
     -----
@@ -1826,11 +1959,11 @@ class VolumeSolid(TDependentProperty):
         Constant values in [1]_, for 1872 chemicals.
     **GOODMAN**:
         Simple method using the liquid molar volume. Good up to 0.3*Tt.
-        See :obj:`Goodman` for details.
+        See :obj:`Goodman <chemicals.volume.Goodman>` for details.
 
     See Also
     --------
-    Goodman
+    chemicals.volume.Goodman
 
     References
     ----------
@@ -1856,8 +1989,8 @@ class VolumeSolid(TDependentProperty):
     ranked_methods = [CRC_INORG_S, GOODMAN]  #
     '''Default rankings of the available methods.'''
 
-    def __init__(self, CASRN='', MW=None, Tt=None, Vml_Tt=None, best_fit=None,
-                 load_data=True, extrapolation='linear'):
+    def __init__(self, CASRN='', MW=None, Tt=None, Vml_Tt=None, load_data=True,
+                 extrapolation='linear', poly_fit=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tt = Tt
@@ -1883,18 +2016,15 @@ class VolumeSolid(TDependentProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
+        at a specific temperature; set by :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`.'''
 
         self.all_methods = set()
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
         else:
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
@@ -1930,7 +2060,7 @@ class VolumeSolid(TDependentProperty):
         r'''Method to calculate the molar volume of a solid at tempearture `T`
         with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters
@@ -1950,12 +2080,12 @@ class VolumeSolid(TDependentProperty):
         elif method == GOODMAN:
             Vms = Goodman(T, self.Tt, self.Vml_Tt)
         if method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                Vms = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                Vms = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            if T < self.poly_fit_Tmin:
+                Vms = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
+            elif T > self.poly_fit_Tmax:
+                Vms = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
-                Vms = horner(self.best_fit_coeffs, T)
+                Vms = horner(self.poly_fit_coeffs, T)
         elif method in self.tabular_data:
             Vms = self.interpolate(T, method)
         return Vms
@@ -2004,12 +2134,14 @@ class VolumeSolid(TDependentProperty):
         return validity
 
 try:
-    VolumeSolid.custom_set_best_fit = VolumeLiquid.custom_set_best_fit
+    VolumeSolid._custom_set_poly_fit = VolumeLiquid._custom_set_poly_fit
 except:
     pass
 
 
 volume_solid_mixture_methods = [SIMPLE]
+'''Holds all methods available for the :obj:`VolumeSolidMixture` class, for use
+in iterating over them.'''
 
 class VolumeSolidMixture(MixtureProperty):
     '''Class for dealing with the molar volume of a solid mixture as a
@@ -2021,8 +2153,7 @@ class VolumeSolidMixture(MixtureProperty):
     CASs : list[str], optional
         The CAS numbers of all species in the mixture
     VolumeSolids : list[VolumeSolid], optional
-        VolumeSolid objects created for all species in the mixture,
-        normally created by :obj:`thermo.chemical.Chemical`.
+        VolumeSolid objects created for all species in the mixture, [-]
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
 
@@ -2033,7 +2164,7 @@ class VolumeSolidMixture(MixtureProperty):
 
     **SIMPLE**:
         Linear mole fraction mixing rule described in
-        :obj:`thermo.utils.mixing_simple`.
+        :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
     '''
     name = 'Solid molar volume'
     units = 'm^3/mol'
@@ -2060,16 +2191,16 @@ class VolumeSolidMixture(MixtureProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `mixture_property`.'''
+        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.user_methods = []
         '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `mixture_property`.'''
+        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
 
-        self.set_best_fit_coeffs()
+        self.set_poly_fit_coeffs()
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -2084,14 +2215,18 @@ class VolumeSolidMixture(MixtureProperty):
         to reset the parameters.
         '''
         methods = [SIMPLE]
-        self.all_methods = set(methods)
+        self.all_methods = all_methods = set(methods)
+        for m in self.ranked_methods:
+            if m in all_methods:
+                self.method = m
+                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate molar volume of a solid mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
-        This method has no exception handling; see `mixture_property`
+        This method has no exception handling; see :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`
         for that.
 
         Parameters

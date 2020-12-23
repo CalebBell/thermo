@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,7 +18,43 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains implementations of :obj:`thermo.utils.TDependentProperty`
+representing enthalpy of vaporization and enthalpy of sublimation. A variety of
+estimation and data methods are available as included in the `chemicals` library.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. contents:: :local:
+
+Enthalpy of Vaporization
+========================
+.. autoclass:: EnthalpyVaporization
+    :members: calculate, test_method_validity,
+              interpolation_T, interpolation_property,
+              interpolation_property_inv, name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods, Watson_exponent
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: enthalpy_vaporization_methods
+
+Enthalpy of Sublimation
+=======================
+.. autoclass:: EnthalpySublimation
+    :members: calculate, test_method_validity,
+              interpolation_T, interpolation_property,
+              interpolation_property_inv, name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: enthalpy_sublimation_methods
+'''
 
 from __future__ import division
 
@@ -99,8 +135,18 @@ class EnthalpyVaporization(TDependentProperty):
     CASRN : str, optional
         The CAS number of the chemical
     load_data : bool, optional
-        If False, do not load property coefficients from data sources in files;
+        If False, do not load property coefficients from data sources in files
         [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        enthalpy of vaporization of the compound; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default method if provided. [-]
 
     Notes
     -----
@@ -108,45 +154,45 @@ class EnthalpyVaporization(TDependentProperty):
     :obj:`enthalpy_vaporization_methods`.
 
     **CLAPEYRON**:
-        The Clapeyron fundamental model desecribed in :obj:`Clapeyron`.
+        The Clapeyron fundamental model desecribed in :obj:`Clapeyron <chemicals.phase_change.Clapeyron>`.
         This is the model which uses `Zl`, `Zg`, and `Psat`, all of which
         must be set at each temperature change to allow recalculation of
         the heat of vaporization.
     **MORGAN_KOBAYASHI**:
-        The MK CSP model equation documented in :obj:`MK`.
+        The MK CSP model equation documented in :obj:`MK <chemicals.phase_change.MK>`.
     **SIVARAMAN_MAGEE_KOBAYASHI**:
-        The SMK CSP model equation documented in :obj:`SMK`.
+        The SMK CSP model equation documented in :obj:`SMK <chemicals.phase_change.SMK>`.
     **VELASCO**:
-        The Velasco CSP model equation documented in :obj:`Velasco`.
+        The Velasco CSP model equation documented in :obj:`Velasco <chemicals.phase_change.Velasco>`.
     **PITZER**:
-        The Pitzer CSP model equation documented in :obj:`Pitzer`.
+        The Pitzer CSP model equation documented in :obj:`Pitzer <chemicals.phase_change.Pitzer>`.
     **RIEDEL**:
         The Riedel CSP model equation, valid at the boiling point only,
-        documented in :obj:`Riedel`. This is adjusted with the :obj:`Watson`
+        documented in :obj:`Riedel <chemicals.phase_change.Riedel>`. This is adjusted with the :obj:`Watson <chemicals.phase_change.Watson>`
         equation unless `Tc` is not available.
     **CHEN**:
         The Chen CSP model equation, valid at the boiling point only,
-        documented in :obj:`Chen`. This is adjusted with the :obj:`Watson`
+        documented in :obj:`Chen <chemicals.phase_change.Chen>`. This is adjusted with the :obj:`Watson <chemicals.phase_change.Watson>`
         equation unless `Tc` is not available.
     **VETERE**:
         The Vetere CSP model equation, valid at the boiling point only,
-        documented in :obj:`Vetere`. This is adjusted with the :obj:`Watson`
+        documented in :obj:`Vetere <chemicals.phase_change.Vetere>`. This is adjusted with the :obj:`Watson <chemicals.phase_change.Watson>`
         equation unless `Tc` is not available.
     **LIU**:
         The Liu CSP model equation, valid at the boiling point only,
-        documented in :obj:`Liu`. This is adjusted with the :obj:`Watson`
+        documented in :obj:`Liu <chemicals.phase_change.Liu>`. This is adjusted with the :obj:`Watson <chemicals.phase_change.Watson>`
         equation unless `Tc` is not available.
     **CRC_HVAP_TB**:
         The constant value available in [4]_ at the normal boiling point. This
-        is adusted  with the :obj:`Watson` equation unless `Tc` is not
+        is adusted  with the :obj:`Watson <chemicals.phase_change.Watson>` equation unless `Tc` is not
         available. Data is available for 707 chemicals.
     **CRC_HVAP_298**:
         The constant value available in [4]_ at 298.15 K. This
-        is adusted  with the :obj:`Watson` equation unless `Tc` is not
+        is adusted  with the :obj:`Watson <chemicals.phase_change.Watson>` equation unless `Tc` is not
         available. Data is available for 633 chemicals.
     **GHARAGHEIZI_HVAP_298**:
         The constant value available in [5]_ at 298.15 K. This
-        is adusted  with the :obj:`Watson` equation unless `Tc` is not
+        is adusted  with the :obj:`Watson <chemicals.phase_change.Watson>` equation unless `Tc` is not
         available. Data is available for 2730 chemicals.
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
@@ -161,7 +207,7 @@ class EnthalpyVaporization(TDependentProperty):
     **DIPPR_PERRY_8E**:
         A collection of 344 coefficient sets from the DIPPR database published
         openly in [6]_. Provides temperature limits for all its fluids.
-        :obj:`thermo.dippr.EQ106` is used for its fluids.
+        :obj:`chemicals.dippr.EQ106` is used for its fluids.
     **ALIBAKHSHI**:
         One-constant limited temperature range regression method presented
         in [7]_, with constants for ~2000 chemicals from the DIPPR database.
@@ -170,15 +216,15 @@ class EnthalpyVaporization(TDependentProperty):
 
     See Also
     --------
-    MK
-    SMK
-    Velasco
-    Clapeyron
-    Riedel
-    Chen
-    Vetere
-    Liu
-    Watson
+    chemicals.phase_change.MK
+    chemicals.phase_change.SMK
+    chemicals.phase_change.Velasco
+    chemicals.phase_change.Clapeyron
+    chemicals.phase_change.Riedel
+    chemicals.phase_change.Chen
+    chemicals.phase_change.Vetere
+    chemicals.phase_change.Liu
+    chemicals.phase_change.Watson
 
     References
     ----------
@@ -222,6 +268,9 @@ class EnthalpyVaporization(TDependentProperty):
     property_max = 1E6
     '''Maximum valid of heat of vaporization. Set to twice the value in the
     available data.'''
+    critical_zero = True
+    '''Whether or not the property is declining and reaching zero at the
+    critical point.'''
 
     ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, MORGAN_KOBAYASHI,
                       SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER, VDI_TABULAR,
@@ -237,7 +286,7 @@ class EnthalpyVaporization(TDependentProperty):
 
     def __init__(self, CASRN='', Tb=None, Tc=None, Pc=None, omega=None,
                  similarity_variable=None, Psat=None, Zl=None, Zg=None,
-                 best_fit=None, load_data=True, extrapolation=None):
+                 load_data=True, extrapolation='Watson', poly_fit=None):
         self.CASRN = CASRN
         self.Tb = Tb
         self.Tc = Tc
@@ -268,29 +317,25 @@ class EnthalpyVaporization(TDependentProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
-
+        at a specific temperature; set by :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods(load_data)
 
-        if best_fit is not None:
-            self.best_fit_Tc = best_fit[2]
-            self.set_best_fit((best_fit[0], best_fit[1], best_fit[3]))
+        if poly_fit is not None:
+            self.poly_fit_Tc = poly_fit[2]
+            self._set_poly_fit((poly_fit[0], poly_fit[1], poly_fit[3]))
         else:
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
                 self.set_method(methods[0])
         self.extrapolation = extrapolation
 
-    def as_best_fit(self):
-        return '%s(best_fit=(%s, %s, %s, %s))' %(self.__class__.__name__,
-                  repr(self.best_fit_Tmin), repr(self.best_fit_Tmax),
-                  repr(self.best_fit_Tc), repr(self.best_fit_coeffs))
+    def as_poly_fit(self):
+        return '%s(poly_fit=(%s, %s, %s, %s))' %(self.__class__.__name__,
+                  repr(self.poly_fit_Tmin), repr(self.poly_fit_Tmax),
+                  repr(self.poly_fit_Tc), repr(self.poly_fit_coeffs))
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
@@ -360,7 +405,7 @@ class EnthalpyVaporization(TDependentProperty):
                 self.VDI_PPDS_Tc = Tc
                 methods.append(VDI_PPDS)
                 Tmaxs.append(self.VDI_PPDS_Tc);
-                T_limits[DIPPR_PERRY_8E] = (0.1*self.VDI_PPDS_Tc, self.VDI_PPDS_Tc)
+                T_limits[VDI_PPDS] = (0.1*self.VDI_PPDS_Tc, self.VDI_PPDS_Tc)
         if all((self.Tc, self.omega)):
             methods.extend(self.CSP_methods)
             Tmaxs.append(self.Tc); Tmins.append(0)
@@ -383,7 +428,7 @@ class EnthalpyVaporization(TDependentProperty):
         r'''Method to calculate heat of vaporization of a liquid at
         temperature `T` with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters
@@ -399,10 +444,10 @@ class EnthalpyVaporization(TDependentProperty):
             Heat of vaporization of the liquid at T, [J/mol]
         '''
         if method == BESTFIT:
-            if T > self.best_fit_Tc:
+            if T > self.poly_fit_Tc:
                 Hvap = 0
             else:
-                Hvap = horner(self.best_fit_coeffs, log(1.0 - T/self.best_fit_Tc))
+                Hvap = horner(self.poly_fit_coeffs, log(1.0 - T/self.poly_fit_Tc))
 
         elif method == COOLPROP:
             Hvap = PropsSI('HMOLAR', 'T', T, 'Q', 1, self.CASRN) - PropsSI('HMOLAR', 'T', T, 'Q', 0, self.CASRN)
@@ -472,7 +517,7 @@ class EnthalpyVaporization(TDependentProperty):
 
         The constant methods **CRC_HVAP_TB**, **CRC_HVAP_298**, and
         **GHARAGHEIZI_HVAP** are adjusted for temperature dependence according
-        to the :obj:`Watson` equation, with a temperature exponent as set in
+        to the :obj:`Watson <chemicals.phase_change.Watson>` equation, with a temperature exponent as set in
         :obj:`Watson_exponent`, usually regarded as 0.38. However, if Tc is
         not set, then the adjustment cannot be made. In that case the methods
         are considered valid for within 5 K of their boiling point or 298.15 K
@@ -571,8 +616,18 @@ class EnthalpySublimation(TDependentProperty):
         Enthalpy of Vaporization at a given temperature or callable for the
         same, [J/mol]
     load_data : bool, optional
-        If False, do not load property coefficients from data sources in files;
+        If False, do not load property coefficients from data sources in files
         [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        enthalpy of sublimation of the compound; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default method if provided. [-]
 
     Notes
     -----
@@ -626,7 +681,7 @@ class EnthalpySublimation(TDependentProperty):
                       GHARAGHEIZI_HSUB_298]
 
     def __init__(self, CASRN='', Tm=None, Tt=None, Cpg=None, Cps=None,
-                 Hvap=None, best_fit=None, load_data=True, extrapolation=None):
+                 Hvap=None, load_data=True, extrapolation=None, poly_fit=None):
         self.CASRN = CASRN
         self.Tm = Tm
         self.Tt = Tt
@@ -654,18 +709,15 @@ class EnthalpySublimation(TDependentProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
+        at a specific temperature; set by :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`.'''
 
         self.all_methods = set()
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods(load_data)
 
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
         else:
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
@@ -715,7 +767,7 @@ class EnthalpySublimation(TDependentProperty):
         r'''Method to calculate heat of sublimation of a solid at
         temperature `T` with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters
@@ -731,12 +783,12 @@ class EnthalpySublimation(TDependentProperty):
             Heat of sublimation of the solid at T, [J/mol]
         '''
         if method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                Hsub = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                Hsub = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            if T < self.poly_fit_Tmin:
+                Hsub = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
+            elif T > self.poly_fit_Tmax:
+                Hsub = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
-                Hsub = horner(self.best_fit_coeffs, T)
+                Hsub = horner(self.poly_fit_coeffs, T)
 
         elif method == GHARAGHEIZI_HSUB_298:
             Hsub = self.GHARAGHEIZI_Hsub

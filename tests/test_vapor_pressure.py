@@ -35,7 +35,7 @@ from math import *
 def test_VaporPressure():
     # Ethanol, test as many methods asa possible at once
     EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
-    methods = list(EtOH.available_methods)
+    methods = list(EtOH.all_methods)
     methods.remove(VDI_TABULAR)
     Psat_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(305.))[1] for i in methods]
     Psat_exp = [11579.634014300127, 11698.02742876088, 11590.408779316374, 11659.154222044575, 11592.205263402893, 11593.661615921257, 11612.378633936816, 11350.156640503357, 12081.738947110121, 14088.453409816764, 9210.26200064024]
@@ -45,14 +45,14 @@ def test_VaporPressure():
 
     # Use another chemical to get in ANTOINE_EXTENDED_POLING
     a = VaporPressure(CASRN='589-81-1')
-    Psat_calcs = [(a.set_method(i), a.T_dependent_property(410))[1] for i in a.available_methods]
+    Psat_calcs = [(a.set_method(i), a.T_dependent_property(410))[1] for i in list(a.all_methods)]
     Psat_exp = [162944.82134710113, 162870.44794192078, 162865.5380455795]
     assert_allclose(sorted(Psat_calcs), sorted(Psat_exp))
 
     # Test that methods return None
     EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
     EtOH.extrapolation = None
-    Psat_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(5000))[1] for i in EtOH.available_methods]
+    Psat_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(5000))[1] for i in list(EtOH.all_methods)]
     assert [None]*12 == Psat_calcs
 
     # Test interpolation, extrapolation
@@ -75,6 +75,22 @@ def test_VaporPressure():
     with pytest.raises(Exception):
         cycloheptane.test_method_validity(300, 'BADMETHOD')
 
+@pytest.mark.meta_T_dept
+def test_VaporPressure_extrapolation_solve_prop():
+    cycloheptane = VaporPressure(Tb=391.95, Tc=604.2, Pc=3820000.0, omega=0.2384, CASRN='291-64-5')
+    cycloheptane.set_method('ANTOINE_EXTENDED_POLING')
+    cycloheptane.extrapolation = 'AntoineAB|DIPPR101_ABC'
+    cycloheptane.T_dependent_property(T=4000)
+
+    assert_close(cycloheptane.solve_prop(1), 187.25621087267422)
+
+    assert_close(cycloheptane.solve_prop(1e-20), 60.677576120119156)
+
+    assert_close(cycloheptane.solve_prop(1e5), 391.3576035137979)
+    assert_close(cycloheptane.solve_prop(1e6), 503.31772463155266)
+    assert_close(cycloheptane.solve_prop(1e7), 711.8413525223378)
+    assert_close(cycloheptane.solve_prop(3e7), 1948.671863697868)
+
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_extrapolation_AB():
@@ -82,42 +98,46 @@ def test_VaporPressure_extrapolation_AB():
     obj.set_method(WAGNER_MCGARRY)
     obj.calculate_derivative(300, WAGNER_MCGARRY)
 
-    assert_close(obj.T_dependent_property(obj.WAGNER_MCGARRY_Tc),
-                 obj.T_dependent_property(obj.WAGNER_MCGARRY_Tc-1e-6))
-    assert_close(obj.T_dependent_property(obj.WAGNER_MCGARRY_Tc),
-                 obj.T_dependent_property(obj.WAGNER_MCGARRY_Tc+1e-6))
+    for extrapolation in ('AntoineAB', 'DIPPR101_ABC', 'AntoineAB|AntoineAB', 'DIPPR101_ABC|DIPPR101_ABC',
+                          'DIPPR101_ABC|AntoineAB', 'AntoineAB|DIPPR101_ABC'):
+        obj.extrapolation = extrapolation
 
-    assert_close(obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin),
-                 obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin-1e-6))
-    assert_close(obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin),
-                 obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin+1e-6))
+        assert_close(obj.T_dependent_property(obj.WAGNER_MCGARRY_Tc),
+                     obj.T_dependent_property(obj.WAGNER_MCGARRY_Tc-1e-6))
+        assert_close(obj.T_dependent_property(obj.WAGNER_MCGARRY_Tc),
+                     obj.T_dependent_property(obj.WAGNER_MCGARRY_Tc+1e-6))
+
+        assert_close(obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin),
+                     obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin-1e-6))
+        assert_close(obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin),
+                     obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin+1e-6))
 
 
-def test_VaporPressure_fast_Psat_best_fit():
-    corr = VaporPressure(best_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))
+def test_VaporPressure_fast_Psat_poly_fit():
+    corr = VaporPressure(poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))
     # Low temperature values - up to 612 Pa
-    assert_close(corr.solve_prop(1e-5), corr.solve_prop_best_fit(1e-5), rtol=1e-10)
-    assert_close(corr.solve_prop(1), corr.solve_prop_best_fit(1), rtol=1e-10)
-    assert_close(corr.solve_prop(100), corr.solve_prop_best_fit(100), rtol=1e-10)
+    assert_close(corr.solve_prop(1e-5), corr.solve_prop_poly_fit(1e-5), rtol=1e-10)
+    assert_close(corr.solve_prop(1), corr.solve_prop_poly_fit(1), rtol=1e-10)
+    assert_close(corr.solve_prop(100), corr.solve_prop_poly_fit(100), rtol=1e-10)
 
-    P_trans = exp(corr.best_fit_Tmin_value)
-    assert_close(corr.solve_prop(P_trans), corr.solve_prop_best_fit(P_trans), rtol=1e-10)
-    assert_close(corr.solve_prop(P_trans+1e-7), corr.solve_prop_best_fit(P_trans+1e-7), rtol=1e-10)
+    P_trans = exp(corr.poly_fit_Tmin_value)
+    assert_close(corr.solve_prop(P_trans), corr.solve_prop_poly_fit(P_trans), rtol=1e-10)
+    assert_close(corr.solve_prop(P_trans+1e-7), corr.solve_prop_poly_fit(P_trans+1e-7), rtol=1e-10)
 
     # Solver region
-    assert_close(corr.solve_prop(1e5), corr.solve_prop_best_fit(1e5), rtol=1e-10)
-    assert_close(corr.solve_prop(1e7), corr.solve_prop_best_fit(1e7), rtol=1e-10)
+    assert_close(corr.solve_prop(1e5), corr.solve_prop_poly_fit(1e5), rtol=1e-10)
+    assert_close(corr.solve_prop(1e7), corr.solve_prop_poly_fit(1e7), rtol=1e-10)
 
-    P_trans = exp(corr.best_fit_Tmax_value)
-    assert_close(corr.solve_prop(P_trans), corr.solve_prop_best_fit(P_trans), rtol=1e-10)
-    assert_close(corr.solve_prop(P_trans+1e-7), corr.solve_prop_best_fit(P_trans+1e-7), rtol=1e-10)
+    P_trans = exp(corr.poly_fit_Tmax_value)
+    assert_close(corr.solve_prop(P_trans), corr.solve_prop_poly_fit(P_trans), rtol=1e-10)
+    assert_close(corr.solve_prop(P_trans+1e-7), corr.solve_prop_poly_fit(P_trans+1e-7), rtol=1e-10)
 
     # High T
-    assert_close(corr.solve_prop(1e8), corr.solve_prop_best_fit(1e8), rtol=1e-10)
+    assert_close(corr.solve_prop(1e8), corr.solve_prop_poly_fit(1e8), rtol=1e-10)
 
     # Extrapolation
     from thermo.vapor_pressure import BESTFIT, BEST_FIT_AB, BEST_FIT_ABC
-    obj = VaporPressure(best_fit=(178.01, 591.74, [-8.638045111752356e-20, 2.995512203611858e-16, -4.5148088801006036e-13, 3.8761537879200513e-10, -2.0856828984716705e-07, 7.279010846673517e-05, -0.01641020023565049, 2.2758331029405516, -146.04484159879843]))
+    obj = VaporPressure(poly_fit=(178.01, 591.74, [-8.638045111752356e-20, 2.995512203611858e-16, -4.5148088801006036e-13, 3.8761537879200513e-10, -2.0856828984716705e-07, 7.279010846673517e-05, -0.01641020023565049, 2.2758331029405516, -146.04484159879843]))
     assert_close(obj.calculate(1000, BEST_FIT_AB), 78666155.90418352, rtol=1e-10)
     assert_close(obj.calculate(1000, BEST_FIT_ABC), 156467764.5930495, rtol=1e-10)
 
@@ -125,3 +145,18 @@ def test_VaporPressure_fast_Psat_best_fit():
     assert_close(obj.calculate(400, BEST_FIT_AB), 157199.6909849476, rtol=1e-10)
     assert_close(obj.calculate(400, BEST_FIT_ABC), 157199.6909849476, rtol=1e-10)
 
+@pytest.mark.meta_T_dept
+def test_VaporPressure_extrapolation_no_validation():
+    N2 = VaporPressure(CASRN='7727-37-9', extrapolation='DIPPR101_ABC')
+    N2.set_method(WAGNER_MCGARRY)
+    assert N2(298.15) is not None
+    assert N2(1000.15) is not None
+
+
+def test_VaporPressure_fast_Psat_poly_fit_extrapolation():
+    obj = VaporPressure(poly_fit=(175.7, 512.49, [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10,
+                                                -2.443464113936029e-07, 7.893819658700523e-05, -0.016615779444332356, 2.1842496316772264, -134.19766175812708]))
+    obj.extrapolation = 'AntoineAB|DIPPR101_ABC'
+    assert_close(obj.solve_prop(.0000000000001), 3.2040851644645945)
+    assert_close(obj.solve_prop(300), 237.7793675652309)
+    assert_close(obj.solve_prop(1e8), 1186.892195405922)

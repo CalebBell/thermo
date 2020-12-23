@@ -1314,28 +1314,28 @@ class Ideal(PropertyPackage):
         # at the boundaries
         Psats = []
         for i in self.VaporPressures:
-            if i.locked:
-                Psats.append(i(T))
-            else:
-                if T < i.Tmax:
-                    i.method = None
-                    Psat = i(T)
-                    if Psat is None:
-                        Psat = i.extrapolate_tabular(T)
-                    Psats.append(Psat)
-                else:
-    #                print(i.CASRN)
-                    Psats.append(i.extrapolate_tabular(T))
+            Psats.append(i(T))
+#            if i.locked:
+#            else:
+#                if T < i.Tmax:
+#                    #i.method = None
+#                    Psat = i(T)
+#                    if Psat is None:
+#                        Psat = i.extrapolate_tabular(T)
+#                    Psats.append(Psat)
+#                else:
+#    #                print(i.CASRN)
+#                    Psats.append(i.extrapolate_tabular(T))
         return Psats
 
     def _Tsats(self, P):
         Tsats = []
         for i in self.VaporPressures:
-            try:
-                Tsats.append(i.solve_prop(P))
-            except:
-                error = lambda T: i.extrapolate_tabular(T) - P
-                Tsats.append(brenth(error, i.Tmax, i.Tmax*5))
+#            try:
+            Tsats.append(i.solve_prop(P))
+#            except:
+#                error = lambda T: i.extrapolate_tabular(T) - P
+#                Tsats.append(brenth(error, i.Tmax, i.Tmax*5))
         return Tsats
 
     def _d_Psats_dT(self, T):
@@ -2012,14 +2012,14 @@ class GammaPhi(PropertyPackage):
         if Psats is None:
             Psats = []
             for i in self.VaporPressures:
-                if i.locked:
-                    Psats.append(i(T))
-                else:
-                    if T < i.Tmax:
-                        i.method = None
-                        Psats.append(i(T))
-                    else:
-                        Psats.append(i.extrapolate_tabular(T))
+#                if i.locked:
+                Psats.append(i(T))
+#                else:
+#                    if T < i.Tmax:
+#                        #i.method = None
+#                        Psats.append(i(T))
+#                    else:
+#                        Psats.append(i.extrapolate_tabular(T))
             return Psats
         else:
             return Psats

@@ -228,7 +228,7 @@ def test_ViscosityLiquidMixture():
     obj = ViscosityLiquidMixture(ViscosityLiquids=ViscosityLiquids, CASs=m.CASs, MWs=m.MWs)
     mu = obj.mixture_property(m.T, m.P, m.zs, m.ws)
     assert_close(mu, 0.024955325569420893)
-    assert obj.sorted_valid_methods == [LALIBERTE_MU]
+    assert obj.method == LALIBERTE_MU
 
     # Unhappy paths
     with pytest.raises(Exception):

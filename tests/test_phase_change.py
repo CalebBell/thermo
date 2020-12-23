@@ -37,6 +37,8 @@ def test_EnthalpyVaporization():
     Hvap_exp = [37770.36760037247, 39369.24308334211, 40812.18023301473, 41892.47130172744, 42200.0, 42261.56271620627, 42320.0, 42413.51210041263, 42429.284285187256, 42468.433273309995, 42541.61366696268, 42829.177357564935, 42855.029051216996, 42946.68066040123, 43481.10765660416, 43587.12939847237, 44804.61582482704]
     assert_close1d(sorted(Hvap_calc), sorted(Hvap_exp))
 
+
+    EtOH.extrapolation = None
     assert [None]*17 == [(EtOH.set_method(i), EtOH.T_dependent_property(5000))[1] for i in EtOH.all_methods]
 
     EtOH = EnthalpyVaporization(CASRN='64-17-5')
@@ -64,3 +66,18 @@ def test_EnthalpyVaporization():
 
     with pytest.raises(Exception):
         EtOH.test_method_validity('BADMETHOD', 300)
+
+
+@pytest.mark.meta_T_dept
+def test_EnthalpyVaporization_Watson_extrapolation():
+    from thermo.phase_change import COOLPROP
+    obj = EnthalpyVaporization(CASRN='7732-18-5', Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344,
+                         similarity_variable=0.16652530518537598, Psat=3167, Zl=1.0, Zg=0.96,
+                         extrapolation='Watson')
+    obj.set_method(COOLPROP)
+    assert 0 == obj(obj.Tc)
+    assert_close(obj(1e-5), 54787.16649491286, rtol=1e-4)
+
+    assert_close(obj.solve_prop(5e4), 146.3404577534453)
+    assert_close(obj.solve_prop(1), 647.1399999389462)
+    assert_close(obj.solve_prop(1e-20), 647.13999999983)

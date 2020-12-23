@@ -18,7 +18,46 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains implementations of :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+representing liquid-air surface tension. A variety of estimation
+and data methods are available as included in the `chemicals` library.
+Additionally a liquid mixture surface tension predictor objects
+are implemented subclassing :obj:`MixtureProperty <thermo.utils.MixtureProperty>`.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+
+.. contents:: :local:
+
+Pure Liquid Surface Tension
+===========================
+.. autoclass:: SurfaceTension
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: surface_tension_methods
+
+Mixture Liquid Heat Capacity
+============================
+.. autoclass:: SurfaceTensionMixture
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: surface_tension_mixture_methods
+
+
+'''
 
 from __future__ import division
 
@@ -59,7 +98,7 @@ NONE = 'NONE'
 surface_tension_methods = [STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
                            JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
                            ZUO_STENBY, ALEEM]
-'''Holds all methods available for the SurfaceTension class, for use in
+'''Holds all methods available for the :obj:`SurfaceTension` class, for use in
 iterating over them.'''
 
 
@@ -97,8 +136,18 @@ class SurfaceTension(TDependentProperty):
         Mass heat capacity of the fluid at a pressure and temperature or
         or callable for the same, [J/kg/K]
     load_data : bool, optional
-        If False, do not load property coefficients from data sources in files;
+        If False, do not load property coefficients from data sources in files
         [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        surface tension of the compound; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default low-pressure method if provided. [-]
 
     Notes
     -----
@@ -107,45 +156,45 @@ class SurfaceTension(TDependentProperty):
 
     **STREFPROP**:
         The REFPROP coefficient-based method, documented in the function
-        :obj:`REFPROP_sigma` for 115 fluids from [5]_.
+        :obj:`REFPROP_sigma <chemicals.interface.REFPROP_sigma>` for 115 fluids from [5]_.
     **SOMAYAJULU and SOMAYAJULU2**:
         The Somayajulu coefficient-based method,
-        documented in the function :obj:`Somayajulu`. Both methods have data
+        documented in the function :obj:`Somayajulu <chemicals.interface.Somayajulu>`. Both methods have data
         for 64 fluids. The first data set if from [1]_, and the second
         from [2]_. The later, revised coefficients should be used prefered.
     **JASPER**:
         Fit with a single temperature coefficient from Jaspen (1972)
-        as documented in the function :obj:`Jasper`. Data for 522 fluids is
+        as documented in the function :obj:`Jasper <chemicals.interface.Jasper>`. Data for 522 fluids is
         available, as shown in [4]_ but originally in [3]_.
     **BROCK_BIRD**:
-        CSP method documented in :obj:`Brock_Bird`.
+        CSP method documented in :obj:`Brock_Bird <chemicals.interface.Brock_Bird>`.
         Most popular estimation method; from 1955.
     **SASTRI_RAO**:
-        CSP method documented in :obj:`Sastri_Rao`.
+        CSP method documented in :obj:`Sastri_Rao <chemicals.interface.Sastri_Rao>`.
         Second most popular estimation method; from 1995.
     **PITZER**:
-        CSP method documented in :obj:`Pitzer_sigma`; from 1958.
+        CSP method documented in :obj:`Pitzer_sigma <chemicals.interface.Pitzer_sigma>`; from 1958.
     **ZUO_STENBY**:
-        CSP method documented in :obj:`Zuo_Stenby`; from 1997.
+        CSP method documented in :obj:`Zuo_Stenby <chemicals.interface.Zuo_Stenby>`; from 1997.
     **MIQUEU**:
-        CSP method documented in :obj:`Miqueu`.
+        CSP method documented in :obj:`Miqueu <chemicals.interface.Miqueu>`.
     **ALEEM**:
-        CSP method documented in :obj:`Aleem`.
+        CSP method documented in :obj:`Aleem <chemicals.interface.Aleem>`.
     **VDI_TABULAR**:
         Tabular data in [6]_ along the saturation curve; interpolation is as
         set by the user or the default.
 
     See Also
     --------
-    REFPROP_sigma
-    Somayajulu
-    Jasper
-    Brock_Bird
-    Sastri_Rao
-    Pitzer
-    Zuo_Stenby
-    Miqueu
-    Aleem
+    chemicals.interface.REFPROP_sigma
+    chemicals.interface.Somayajulu
+    chemicals.interface.Jasper
+    chemicals.interface.Brock_Bird
+    chemicals.interface.Sastri_Rao
+    chemicals.interface.Pitzer
+    chemicals.interface.Zuo_Stenby
+    chemicals.interface.Miqueu
+    chemicals.interface.Aleem
 
     References
     ----------
@@ -185,6 +234,9 @@ class SurfaceTension(TDependentProperty):
     property_max = 4.0
     '''Maximum valid value of surface tension. Set to roughly twice that of
     cobalt at its melting point.'''
+    critical_zero = True
+    '''Whether or not the property is declining and reaching zero at the
+    critical point.'''
 
     ranked_methods = [STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
                       JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
@@ -198,7 +250,7 @@ class SurfaceTension(TDependentProperty):
 
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
                  omega=None, StielPolar=None, Hvap_Tb=None, CASRN='', Vml=None,
-                 Cpl=None, best_fit=None, load_data=True, extrapolation=None):
+                 Cpl=None, load_data=True, extrapolation=None, poly_fit=None):
         self.MW = MW
         self.Tb = Tb
         self.Tc = Tc
@@ -232,18 +284,15 @@ class SurfaceTension(TDependentProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
+        at a specific temperature; set by :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`.'''
 
         self.all_methods = set()
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
         else:
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
@@ -358,7 +407,7 @@ class SurfaceTension(TDependentProperty):
         r'''Method to calculate surface tension of a liquid at temperature `T`
         with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters
@@ -470,6 +519,8 @@ SIMPLE = 'Simple'
 NONE = 'None'
 
 surface_tension_mixture_methods = [WINTERFELDSCRIVENDAVIS, DIGUILIOTEJA, SIMPLE]
+'''Holds all methods available for the :obj:`SurfaceTensionMixture` class, for use in
+iterating over them.'''
 
 
 class SurfaceTensionMixture(MixtureProperty):
@@ -478,9 +529,9 @@ class SurfaceTensionMixture(MixtureProperty):
     Consists of two mixing rules specific to surface tension, and mole
     weighted averaging.
 
-    Prefered method is :obj:`Winterfeld_Scriven_Davis` which requires mole
+    Prefered method is :obj:`Winterfeld_Scriven_Davis <chemicals.interface.Winterfeld_Scriven_Davis>` which requires mole
     fractions, pure component surface tensions, and the molar density of each
-    pure component. :obj:`Diguilio_Teja` is of similar accuracy, but requires
+    pure component. :obj:`Diguilio_Teja <chemicals.interface.Diguilio_Teja>` is of similar accuracy, but requires
     the surface tensions of pure components at their boiling points, as well
     as boiling points and critical points and mole fractions. An ideal mixing
     rule based on mole fractions, **SIMPLE**, is also available and is still
@@ -497,11 +548,9 @@ class SurfaceTensionMixture(MixtureProperty):
     CASs : list[str], optional
         The CAS numbers of all species in the mixture
     SurfaceTensions : list[SurfaceTension], optional
-        SurfaceTension objects created for all species in the mixture, normally
-        created by :obj:`thermo.chemical.Chemical`.
+        SurfaceTension objects created for all species in the mixture [-]
     VolumeLiquids : list[VolumeLiquid], optional
-        VolumeLiquid objects created for all species in the mixture, normally
-        created by :obj:`thermo.chemical.Chemical`.
+        VolumeLiquid objects created for all species in the mixture [-]
     correct_pressure_pure : bool, optional
         Whether to try to use the better pressure-corrected pure component
         models or to use only the T-only dependent pure species models, [-]
@@ -512,16 +561,16 @@ class SurfaceTensionMixture(MixtureProperty):
     :obj:`surface_tension_mixture_methods`.
 
     **WINTERFELDSCRIVENDAVIS**:
-        Mixing rule described in :obj:`Winterfeld_Scriven_Davis`.
+        Mixing rule described in :obj:`Winterfeld_Scriven_Davis <chemicals.interface.Winterfeld_Scriven_Davis>`.
     **DIGUILIOTEJA**:
-        Mixing rule described in :obj:`Diguilio_Teja`.
+        Mixing rule described in :obj:`Diguilio_Teja <chemicals.interface.Diguilio_Teja>`.
     **SIMPLE**:
-        Mixing rule described in :obj:`thermo.utils.mixing_simple`.
+        Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
 
     See Also
     --------
-    Winterfeld_Scriven_Davis
-    Diguilio_Teja
+    chemicals.interface.Winterfeld_Scriven_Davis
+    chemicals.interface.Diguilio_Teja
 
     References
     ----------
@@ -560,16 +609,16 @@ class SurfaceTensionMixture(MixtureProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `mixture_property`.'''
+        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.user_methods = []
         '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `mixture_property`.'''
+        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
 
-        self.set_best_fit_coeffs()
+        self.set_poly_fit_coeffs()
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -590,14 +639,18 @@ class SurfaceTensionMixture(MixtureProperty):
             self.sigmas_Tb = [i(Tb) for i, Tb in zip(self.SurfaceTensions, self.Tbs)]
             if none_and_length_check([self.sigmas_Tb]):
                 methods.append(DIGUILIOTEJA)
-        self.all_methods = set(methods)
+        self.all_methods = all_methods = set(methods)
+        for m in self.ranked_methods:
+            if m in all_methods:
+                self.method = m
+                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate surface tension of a liquid mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
-        This method has no exception handling; see `mixture_property`
+        This method has no exception handling; see :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`
         for that.
 
         Parameters

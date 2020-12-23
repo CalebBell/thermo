@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,7 +18,94 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains implementations of :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+representing liquid, vapor, and solid heat capacity. A variety of estimation
+and data methods are available as included in the `chemicals` library.
+Additionally liquid, vapor, and solid mixture heat capacity predictor objects
+are implemented subclassing  :obj:`MixtureProperty <thermo.utils.MixtureProperty>`.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+
+.. contents:: :local:
+
+Pure Liquid Heat Capacity
+=========================
+.. autoclass:: HeatCapacityLiquid
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: heat_capacity_liquid_methods
+
+Pure Gas Heat Capacity
+======================
+.. autoclass:: HeatCapacityGas
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: heat_capacity_gas_methods
+
+Pure Solid Heat Capacity
+========================
+.. autoclass:: HeatCapacitySolid
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: heat_capacity_solid_methods
+
+Mixture Liquid Heat Capacity
+============================
+.. autoclass:: HeatCapacityLiquidMixture
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: heat_capacity_liquid_mixture_methods
+
+
+Mixture Gas Heat Capacity
+=========================
+.. autoclass:: HeatCapacityGasMixture
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: heat_capacity_gas_mixture_methods
+
+Mixture Solid Heat Capacity
+===========================
+.. autoclass:: HeatCapacitySolidMixture
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: heat_capacity_solid_mixture_methods
+
+'''
 
 from __future__ import division
 
@@ -60,7 +147,7 @@ COOLPROP = 'CoolProp'
 BESTFIT = 'Best fit'
 heat_capacity_gas_methods = [COOLPROP, TRCIG, POLING, LASTOVKA_SHAW, CRCSTD,
                              POLING_CONST, VDI_TABULAR]
-'''Holds all methods available for the HeatCapacityGas class, for use in
+'''Holds all methods available for the :obj:`HeatCapacityGas` class, for use in
 iterating over them.'''
 
 
@@ -79,15 +166,25 @@ class HeatCapacityGas(TDependentProperty):
     similarity_variable : float, optional
         similarity variable, n_atoms/MW, [mol/g]
     load_data : bool, optional
-        If False, do not load property coefficients from data sources in files;
+        If False, do not load property coefficients from data sources in files
         [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        heat capacity of the compound; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default method if provided. [-]
 
     Notes
     -----
     A string holding each method's name is assigned to the following variables
     in this module, intended as the most convenient way to refer to a method.
     To iterate over all methods, use the list stored in
-    :obj:`heat_capacity_gas_methods`.
+    :obj:`heat_capacity_liquid_methods`.
 
     **TRCIG**:
         A rigorous expression derived in [1]_ for modeling gas heat capacity.
@@ -102,7 +199,7 @@ class HeatCapacityGas(TDependentProperty):
     **LASTOVKA_SHAW**:
         A basic estimation method using the `similarity variable` concept;
         requires only molecular structure, so is very convenient. See
-        :obj:`Lastovka_Shaw` for details.
+        :obj:`Lastovka_Shaw <chemicals.heat_capacity.Lastovka_Shaw>` for details.
     **CRCSTD**:
         Constant values tabulated in [4]_ at 298.15 K; data is available for
         533 gases.
@@ -115,10 +212,10 @@ class HeatCapacityGas(TDependentProperty):
 
     See Also
     --------
-    TRCCp
-    Lastovka_Shaw
-    Rowlinson_Poling
-    Rowlinson_Bondi
+    chemicals.heat_capacity.TRCCp
+    chemicals.heat_capacity.Lastovka_Shaw
+    chemicals.heat_capacity.Rowlinson_Poling
+    chemicals.heat_capacity.Rowlinson_Bondi
 
     References
     ----------
@@ -165,7 +262,7 @@ class HeatCapacityGas(TDependentProperty):
     _fit_force_n[POLING_CONST] = 1
 
     def __init__(self, CASRN='', MW=None, similarity_variable=None,
-                 best_fit=None, load_data=True, extrapolation='linear'):
+                 load_data=True, extrapolation='linear', poly_fit=None):
         self.CASRN = CASRN
         self.MW = MW
         self.similarity_variable = similarity_variable
@@ -190,19 +287,15 @@ class HeatCapacityGas(TDependentProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
-
+        at a specific temperature; set by :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
 
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
         else:
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
@@ -297,7 +390,7 @@ class HeatCapacityGas(TDependentProperty):
         r'''Method to calculate surface tension of a liquid at temperature `T`
         with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters
@@ -313,12 +406,12 @@ class HeatCapacityGas(TDependentProperty):
             Calculated heat capacity, [J/mol/K]
         '''
         if method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                Cp = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                Cp = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            if T < self.poly_fit_Tmin:
+                Cp = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
+            elif T > self.poly_fit_Tmax:
+                Cp = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
-                Cp = horner(self.best_fit_coeffs, T)
+                Cp = horner(self.poly_fit_coeffs, T)
         elif method == TRCIG:
             Cp = TRCCp(T, *self.TRCIG_coefs)
         elif method == COOLPROP:
@@ -350,7 +443,7 @@ class HeatCapacityGas(TDependentProperty):
         'TRC' and 'Poling' both have minimum and maimum temperatures. The
         constant temperatures in POLING_CONST and CRCSTD are considered valid
         for 50 degrees around their specified temperatures.
-        :obj:`Lastovka_Shaw` is considered valid for the whole range of
+        :obj:`Lastovka_Shaw <chemicals.heat_capacity.Lastovka_Shaw>` is considered valid for the whole range of
         temperatures.
 
         It is not guaranteed that a method will work or give an accurate
@@ -420,10 +513,10 @@ class HeatCapacityGas(TDependentProperty):
         '''
         if method == BESTFIT:
             return fit_integral_linear_extrapolation(T1, T2,
-                self.best_fit_int_coeffs, self.best_fit_Tmin,
-                self.best_fit_Tmax, self.best_fit_Tmin_value,
-                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
-                self.best_fit_Tmax_slope)
+                self.poly_fit_int_coeffs, self.poly_fit_Tmin,
+                self.poly_fit_Tmax, self.poly_fit_Tmin_value,
+                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
+                self.poly_fit_Tmax_slope)
         elif method == TRCIG:
             H2 = TRCCp_integral(T2, *self.TRCIG_coefs)
             H1 = TRCCp_integral(T1, *self.TRCIG_coefs)
@@ -469,11 +562,11 @@ class HeatCapacityGas(TDependentProperty):
         '''
         if method == BESTFIT:
             return fit_integral_over_T_linear_extrapolation(T1, T2,
-                self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff,
-                self.best_fit_Tmin, self.best_fit_Tmax,
-                self.best_fit_Tmin_value,
-                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
-                self.best_fit_Tmax_slope)
+                self.poly_fit_T_int_T_coeffs, self.poly_fit_log_coeff,
+                self.poly_fit_Tmin, self.poly_fit_Tmax,
+                self.poly_fit_Tmin_value,
+                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
+                self.poly_fit_Tmax_slope)
         elif method == TRCIG:
             S2 = TRCCp_integral_over_T(T2, *self.TRCIG_coefs)
             S1 = TRCCp_integral_over_T(T1, *self.TRCIG_coefs)
@@ -509,19 +602,12 @@ ROWLINSON_POLING = 'Rowlinson and Poling (2001)'
 ROWLINSON_BONDI = 'Rowlinson and Bondi (1969)'
 DADGOSTAR_SHAW = 'Dadgostar and Shaw (2011)'
 
-
-#ZABRANSKY_TO_DICT = {ZABRANSKY_SPLINE: heat_capacity.zabransky_dict_const_s,
-#                     ZABRANSKY_QUASIPOLYNOMIAL: heat_capacity.zabransky_dict_const_p,
-#                     ZABRANSKY_SPLINE_C: heat_capacity.zabransky_dict_iso_s,
-#                     ZABRANSKY_QUASIPOLYNOMIAL_C: heat_capacity.zabransky_dict_iso_p,
-#                     ZABRANSKY_SPLINE_SAT: heat_capacity.zabransky_dict_sat_s,
-#                     ZABRANSKY_QUASIPOLYNOMIAL_SAT: heat_capacity.zabransky_dict_sat_p}
 heat_capacity_liquid_methods = [ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
                       VDI_TABULAR, ROWLINSON_POLING, ROWLINSON_BONDI, COOLPROP,
                       DADGOSTAR_SHAW, POLING_CONST, CRCSTD]
-'''Holds all methods available for the HeatCapacityLiquid class, for use in
+'''Holds all methods available for the :obj:`HeatCapacityLiquid class`, for use in
 iterating over them.'''
 
 
@@ -546,66 +632,93 @@ class HeatCapacityLiquid(TDependentProperty):
     Cpgm : float or callable, optional
         Idea-gas molar heat capacity at T or callable for the same, [J/mol/K]
     load_data : bool, optional
-        If False, do not load property coefficients from data sources in files;
+        If False, do not load property coefficients from data sources in files
         [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        heat capacity of the compound; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default method if provided. [-]
 
     Notes
     -----
     A string holding each method's name is assigned to the following variables
     in this module, intended as the most convenient way to refer to a method.
     To iterate over all methods, use the list stored in
-    :obj:`heat_capacity_gas_methods`.
+    :obj:`heat_capacity_liquid_methods`.
 
     **ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL, ZABRANSKY_SPLINE_C,
     and ZABRANSKY_QUASIPOLYNOMIAL_C**:
+
         Rigorous expressions developed in [1]_ following critical evaluation
         of the available data. The spline methods use the form described in
-        :obj:`Zabransky_cubic` over short ranges with varying coefficients
+        :obj:`Zabransky_cubic <chemicals.heat_capacity.Zabransky_cubic>` over short ranges with varying coefficients
         to obtain a wider range. The quasi-polynomial methods use the form
-        described in :obj:`Zabransky_quasi_polynomial`, more suitable for
+        described in :obj:`Zabransky_quasi_polynomial <chemicals.heat_capacity.Zabransky_quasi_polynomial>`, more suitable for
         extrapolation, and over then entire range. Respectively, there is data
         available for 588, 146, 51, and 26 chemicals. 'C' denotes constant-
         pressure data available from more precise experiments. The others
         are heat capacity values averaged over a temperature changed.
+
     **ZABRANSKY_SPLINE_SAT and ZABRANSKY_QUASIPOLYNOMIAL_SAT**:
+
         Rigorous expressions developed in [1]_ following critical evaluation
         of the available data. The spline method use the form described in
-        :obj:`Zabransky_cubic` over short ranges with varying coefficients
+        :obj:`Zabransky_cubic <chemicals.heat_capacity.Zabransky_cubic>` over short ranges with varying coefficients
         to obtain a wider range. The quasi-polynomial method use the form
-        described in :obj:`Zabransky_quasi_polynomial`, more suitable for
+        described in :obj:`Zabransky_quasi_polynomial <chemicals.heat_capacity.Zabransky_quasi_polynomial>`, more suitable for
         extrapolation, and over their entire range. Respectively, there is data
         available for 203, and 16 chemicals. Note that these methods are for
         the saturation curve!
+
     **VDI_TABULAR**:
+
         Tabular data up to the critical point available in [5]_. Note that this
         data is along the saturation curve.
+
     **ROWLINSON_POLING**:
-        CSP method described in :obj:`Rowlinson_Poling`. Requires a ideal gas
+
+        CSP method described in :obj:`Rowlinson_Poling <chemicals.heat_capacity.Rowlinson_Poling>`. Requires a ideal gas
         heat capacity value at the same temperature as it is to be calculated.
+
     **ROWLINSON_BONDI**:
-        CSP method described in :obj:`Rowlinson_Bondi`. Requires a ideal gas
+
+        CSP method described in :obj:`Rowlinson_Bondi <chemicals.heat_capacity.Rowlinson_Bondi>`. Requires a ideal gas
         heat capacity value at the same temperature as it is to be calculated.
+
     **COOLPROP**:
+
         CoolProp external library; with select fluids from its library.
         Range is limited to that of the equations of state it uses, as
         described in [3]_. Very slow.
+
     **DADGOSTAR_SHAW**:
+
         A basic estimation method using the `similarity variable` concept;
         requires only molecular structure, so is very convenient. See
-        :obj:`Dadgostar_Shaw` for details.
+        :obj:`Dadgostar_Shaw <chemicals.heat_capacity.Dadgostar_Shaw>` for details.
+
     **POLING_CONST**:
+
         Constant values in [2]_ at 298.15 K; available for 245 liquids.
+
     **CRCSTD**:
+
         Constant values tabulated in [4]_ at 298.15 K; data is available for 433
         liquids.
 
     See Also
     --------
-    Zabransky_quasi_polynomial
-    Zabransky_cubic
-    Rowlinson_Poling
-    Rowlinson_Bondi
-    Dadgostar_Shaw
+    chemicals.heat_capacity.Zabransky_quasi_polynomial
+    chemicals.heat_capacity.Zabransky_cubic
+    chemicals.heat_capacity.Rowlinson_Poling
+    chemicals.heat_capacity.Rowlinson_Bondi
+    chemicals.heat_capacity.Dadgostar_Shaw
 
     References
     ----------
@@ -659,8 +772,8 @@ class HeatCapacityLiquid(TDependentProperty):
     _fit_force_n[POLING_CONST] = 1
 
     def __init__(self, CASRN='', MW=None, similarity_variable=None, Tc=None,
-                 omega=None, Cpgm=None, best_fit=None, load_data=True,
-                 extrapolation='linear'):
+                 omega=None, Cpgm=None, load_data=True,
+                 extrapolation='linear',  poly_fit=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tc = Tc
@@ -688,19 +801,15 @@ class HeatCapacityLiquid(TDependentProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
-
+        at a specific temperature; set by :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
 
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
         else:
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
@@ -811,7 +920,7 @@ class HeatCapacityLiquid(TDependentProperty):
         r'''Method to calculate heat capacity of a liquid at temperature `T`
         with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters
@@ -827,12 +936,12 @@ class HeatCapacityLiquid(TDependentProperty):
             Heat capacity of the liquid at T, [J/mol/K]
         '''
         if method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                return (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                return (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            if T < self.poly_fit_Tmin:
+                return (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
+            elif T > self.poly_fit_Tmax:
+                return (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
-                return horner(self.best_fit_coeffs, T)
+                return horner(self.poly_fit_coeffs, T)
         elif method == ZABRANSKY_SPLINE:
             return self.Zabransky_spline.force_calculate(T)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL:
@@ -868,8 +977,8 @@ class HeatCapacityLiquid(TDependentProperty):
     def test_method_validity(self, T, method):
         r'''Method to check the validity of a method. Follows the given
         ranges for all coefficient-based methods. For the CSP method
-        :obj:`Rowlinson_Poling`, the model is considered valid for all
-        temperatures. The simple method :obj:`Dadgostar_Shaw` is considered
+        :obj:`Rowlinson_Poling <chemicals.heat_capacity.Rowlinson_Poling>`, the model is considered valid for all
+        temperatures. The simple method :obj:`Dadgostar_Shaw <chemicals.heat_capacity.Dadgostar_Shaw>` is considered
         valid for all temperatures. For tabular data,
         extrapolation outside of the range is used if
         :obj:`tabular_extrapolation_permitted` is set; if it is, the
@@ -960,10 +1069,10 @@ class HeatCapacityLiquid(TDependentProperty):
         '''
         if method == BESTFIT:
             return fit_integral_linear_extrapolation(T1, T2,
-                self.best_fit_int_coeffs, self.best_fit_Tmin,
-                self.best_fit_Tmax, self.best_fit_Tmin_value,
-                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
-                self.best_fit_Tmax_slope)
+                self.poly_fit_int_coeffs, self.poly_fit_Tmin,
+                self.poly_fit_Tmax, self.poly_fit_Tmin_value,
+                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
+                self.poly_fit_Tmax_slope)
         elif method == ZABRANSKY_SPLINE:
             return self.Zabransky_spline.calculate_integral(T1, T2)
         elif method == ZABRANSKY_SPLINE_C:
@@ -1014,11 +1123,11 @@ class HeatCapacityLiquid(TDependentProperty):
         '''
         if method == BESTFIT:
             return fit_integral_over_T_linear_extrapolation(T1, T2,
-                self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff,
-                self.best_fit_Tmin, self.best_fit_Tmax,
-                self.best_fit_Tmin_value,
-                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
-                self.best_fit_Tmax_slope)
+                self.poly_fit_T_int_T_coeffs, self.poly_fit_log_coeff,
+                self.poly_fit_Tmin, self.poly_fit_Tmax,
+                self.poly_fit_Tmin_value,
+                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
+                self.poly_fit_Tmax_slope)
         elif method == ZABRANSKY_SPLINE:
             return self.Zabransky_spline.calculate_integral_over_T(T1, T2)
         elif method == ZABRANSKY_SPLINE_C:
@@ -1046,7 +1155,7 @@ class HeatCapacityLiquid(TDependentProperty):
 LASTOVKA_S = 'Lastovka, Fulem, Becerra and Shaw (2008)'
 PERRY151 = '''Perry's Table 2-151'''
 heat_capacity_solid_methods = [PERRY151, CRCSTD, LASTOVKA_S]
-'''Holds all methods available for the HeatCapacitySolid class, for use in
+'''Holds all methods available for the :obj:`HeatCapacitySolid` class, for use in
 iterating over them.'''
 
 
@@ -1064,8 +1173,18 @@ class HeatCapacitySolid(TDependentProperty):
     CASRN : str, optional
         The CAS number of the chemical
     load_data : bool, optional
-        If False, do not load property coefficients from data sources in files;
+        If False, do not load property coefficients from data sources in files
         [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        heat capacity of the compound; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default method if provided. [-]
 
     Notes
     -----
@@ -1089,11 +1208,11 @@ class HeatCapacitySolid(TDependentProperty):
     **LASTOVKA_S**:
         A basic estimation method using the `similarity variable` concept;
         requires only molecular structure, so is very convenient. See
-        :obj:`Lastovka_solid` for details.
+        :obj:`Lastovka_solid <chemicals.heat_capacity.Lastovka_solid>` for details.
 
     See Also
     --------
-    Lastovka_solid
+    chemicals.heat_capacity.Lastovka_solid
 
     References
     ----------
@@ -1128,7 +1247,7 @@ class HeatCapacitySolid(TDependentProperty):
     _fit_force_n[CRCSTD] = 1
 
     def __init__(self, CASRN='', similarity_variable=None, MW=None,
-                 best_fit=None, load_data=True, extrapolation='linear'):
+                 load_data=True, extrapolation='linear', poly_fit=None):
         self.similarity_variable = similarity_variable
         self.MW = MW
         self.CASRN = CASRN
@@ -1153,10 +1272,7 @@ class HeatCapacitySolid(TDependentProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
+        at a specific temperature; set by :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`.'''
 
         self.all_methods = set()
         '''Set of all methods available for a given CASRN and properties;
@@ -1164,8 +1280,8 @@ class HeatCapacitySolid(TDependentProperty):
 
         self.load_all_methods(load_data)
 
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
         else:
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
@@ -1223,7 +1339,7 @@ class HeatCapacitySolid(TDependentProperty):
         r'''Method to calculate heat capacity of a solid at temperature `T`
         with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters
@@ -1239,12 +1355,12 @@ class HeatCapacitySolid(TDependentProperty):
             Heat capacity of the solid at T, [J/mol/K]
         '''
         if method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                Cp = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                Cp = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            if T < self.poly_fit_Tmin:
+                Cp = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
+            elif T > self.poly_fit_Tmax:
+                Cp = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
-                Cp = horner(self.best_fit_coeffs, T)
+                Cp = horner(self.poly_fit_coeffs, T)
         elif method == PERRY151:
             Cp = (self.PERRY151_const + self.PERRY151_lin*T
             + self.PERRY151_quadinv/T**2 + self.PERRY151_quad*T**2)*calorie
@@ -1264,7 +1380,7 @@ class HeatCapacitySolid(TDependentProperty):
         extrapolation outside of the range is used if
         :obj:`tabular_extrapolation_permitted` is set; if it is, the
         extrapolation is considered valid for all temperatures.
-        For the :obj:`Lastovka_solid` method, it is considered valid under
+        For the :obj:`Lastovka_solid <chemicals.heat_capacity.Lastovka_solid>` method, it is considered valid under
         10000K.
 
         It is not guaranteed that a method will work or give an accurate
@@ -1326,10 +1442,10 @@ class HeatCapacitySolid(TDependentProperty):
         '''
         if method == BESTFIT:
             return fit_integral_linear_extrapolation(T1, T2,
-                self.best_fit_int_coeffs, self.best_fit_Tmin,
-                self.best_fit_Tmax, self.best_fit_Tmin_value,
-                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
-                self.best_fit_Tmax_slope)
+                self.poly_fit_int_coeffs, self.poly_fit_Tmin,
+                self.poly_fit_Tmax, self.poly_fit_Tmin_value,
+                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
+                self.poly_fit_Tmax_slope)
         elif method == PERRY151:
             H2 = (self.PERRY151_const*T2 + 0.5*self.PERRY151_lin*T2**2
                   - self.PERRY151_quadinv/T2 + self.PERRY151_quad*T2**3/3.)
@@ -1369,11 +1485,11 @@ class HeatCapacitySolid(TDependentProperty):
         '''
         if method == BESTFIT:
             return fit_integral_over_T_linear_extrapolation(T1, T2,
-                self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff,
-                self.best_fit_Tmin, self.best_fit_Tmax,
-                self.best_fit_Tmin_value,
-                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
-                self.best_fit_Tmax_slope)
+                self.poly_fit_T_int_T_coeffs, self.poly_fit_log_coeff,
+                self.poly_fit_Tmin, self.poly_fit_Tmax,
+                self.poly_fit_Tmin_value,
+                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
+                self.poly_fit_Tmax_slope)
         elif method == PERRY151:
             S2 = (self.PERRY151_const*log(T2) + self.PERRY151_lin*T2
                   - self.PERRY151_quadinv/(2.*T2**2) + 0.5*self.PERRY151_quad*T2**2)
@@ -1399,8 +1515,16 @@ class HeatCapacitySolid(TDependentProperty):
 SIMPLE = 'SIMPLE'
 LALIBERTE = 'Laliberte'
 heat_capacity_gas_mixture_methods = [SIMPLE]
+'''Holds all methods available for the :obj:`HeatCapacityGasMixture` class, for use in
+iterating over them.'''
+
 heat_capacity_liquid_mixture_methods = [LALIBERTE, SIMPLE]
+'''Holds all methods available for the :obj:`HeatCapacityLiquidMixture` class, for use in
+iterating over them.'''
+
 heat_capacity_solid_mixture_methods = [SIMPLE]
+'''Holds all methods available for the :obj:`HeatCapacitySolidMixture` class, for use in
+iterating over them.'''
 
 
 class HeatCapacityLiquidMixture(MixtureProperty):
@@ -1416,8 +1540,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     CASs : str, optional
         The CAS numbers of all species in the mixture
     HeatCapacityLiquids : list[HeatCapacityLiquid], optional
-        HeatCapacityLiquid objects created for all species in the mixture,
-        normally created by :obj:`thermo.chemical.Chemical`.
+        HeatCapacityLiquid objects created for all species in the mixture [-]
 
     Notes
     -----
@@ -1428,7 +1551,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
         Electrolyte model equation with coefficients; see
         :obj:`thermo.electrochem.Laliberte_heat_capacity` for more details.
     **SIMPLE**:
-        Mixing rule described in :obj:`thermo.utils.mixing_simple`.
+        Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
     '''
     name = 'Liquid heat capacity'
     units = 'J/mol'
@@ -1455,10 +1578,10 @@ class HeatCapacityLiquidMixture(MixtureProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `mixture_property`.'''
+        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.user_methods = []
         '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `mixture_property`.'''
+        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
@@ -1483,14 +1606,18 @@ class HeatCapacityLiquidMixture(MixtureProperty):
                 methods.append(LALIBERTE)
                 self.wCASs = wCASs
                 self.index_w = self.CASs.index('7732-18-5')
-        self.all_methods = set(methods)
+        self.all_methods = all_methods = set(methods)
+        for m in self.ranked_methods:
+            if m in all_methods:
+                self.method = m
+                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate heat capacity of a liquid mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
-        This method has no exception handling; see `mixture_property`
+        This method has no exception handling; see :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`
         for that.
 
         Parameters
@@ -1563,8 +1690,7 @@ class HeatCapacitySolidMixture(MixtureProperty):
     CASs : list[str], optional
         The CAS numbers of all species in the mixture
     HeatCapacitySolids : list[HeatCapacitySolid], optional
-        HeatCapacitySolid objects created for all species in the mixture,
-        normally created by :obj:`thermo.chemical.Chemical`.
+        HeatCapacitySolid objects created for all species in the mixture [-]
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
 
@@ -1574,7 +1700,7 @@ class HeatCapacitySolidMixture(MixtureProperty):
     :obj:`heat_capacity_solid_mixture_methods`.
 
     **SIMPLE**:
-        Mixing rule described in :obj:`thermo.utils.mixing_simple`.
+        Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
     '''
     name = 'Solid heat capacity'
     units = 'J/mol'
@@ -1599,10 +1725,10 @@ class HeatCapacitySolidMixture(MixtureProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `mixture_property`.'''
+        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.user_methods = []
         '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `mixture_property`.'''
+        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
@@ -1621,14 +1747,18 @@ class HeatCapacitySolidMixture(MixtureProperty):
         to reset the parameters.
         '''
         methods = [SIMPLE]
-        self.all_methods = set(methods)
+        self.all_methods = all_methods = set(methods)
+        for m in self.ranked_methods:
+            if m in all_methods:
+                self.method = m
+                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate heat capacity of a solid mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
-        This method has no exception handling; see `mixture_property`
+        This method has no exception handling; see :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`
         for that.
 
         Parameters
@@ -1694,8 +1824,7 @@ class HeatCapacityGasMixture(MixtureProperty):
     CASs : list[str], optional
         The CAS numbers of all species in the mixture
     HeatCapacityGases : list[HeatCapacityGas], optional
-        HeatCapacityGas objects created for all species in the mixture,
-        normally created by :obj:`thermo.chemical.Chemical`.
+        HeatCapacityGas objects created for all species in the mixture [-]
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
 
@@ -1705,7 +1834,7 @@ class HeatCapacityGasMixture(MixtureProperty):
     :obj:`heat_capacity_gas_mixture_methods`.
 
     **SIMPLE**:
-        Mixing rule described in :obj:`thermo.utils.mixing_simple`.
+        Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
     '''
     name = 'Gas heat capacity'
     units = 'J/mol'
@@ -1731,10 +1860,10 @@ class HeatCapacityGasMixture(MixtureProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `mixture_property`.'''
+        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.user_methods = []
         '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `mixture_property`.'''
+        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
@@ -1753,14 +1882,18 @@ class HeatCapacityGasMixture(MixtureProperty):
         to reset the parameters.
         '''
         methods = [SIMPLE]
-        self.all_methods = set(methods)
+        self.all_methods = all_methods = set(methods)
+        for m in self.ranked_methods:
+            if m in all_methods:
+                self.method = m
+                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate heat capacity of a gas mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
-        This method has no exception handling; see `mixture_property`
+        This method has no exception handling; see :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`
         for that.
 
         Parameters

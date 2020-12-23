@@ -87,7 +87,7 @@ def test_VolumeLiquid():
     EtOH = VolumeLiquid(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.24125, omega=0.635, dipole=1.44, CASRN='64-17-5')
     EtOH.T_dependent_property(305.) # Initialize the sorted_valid_methods
     EtOH.tabular_extrapolation_permitted = False
-    Vml_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(600))[1] for i in EtOH.available_methods]
+    Vml_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(600))[1] for i in list(EtOH.all_methods)]
     assert [None]*14 == Vml_calcs
 
     EtOH.set_method('VDI_TABULAR')
@@ -146,23 +146,23 @@ def test_VolumeLiquid():
 @pytest.mark.meta_T_dept
 def test_VolumeLiquidPolynomialTmin():
     # toluene
-    v = VolumeLiquid(best_fit=(178.01, 581.75, [2.2801490297347937e-23, -6.411956871696508e-20, 7.723152902379232e-17, -5.197203733189603e-14, 2.1348482785660093e-11, -5.476649499770259e-09, 8.564670053875876e-07, -7.455178589434267e-05, 0.0028545812080104068]))
-    assert v._Tmin_T_trans == v.best_fit_Tmin
-    assert_allclose(v.best_fit_Tmin_quadratic, [2.159638355215081e-10, 0.0, 8.76710398245817e-05])
+    v = VolumeLiquid(poly_fit=(178.01, 581.75, [2.2801490297347937e-23, -6.411956871696508e-20, 7.723152902379232e-17, -5.197203733189603e-14, 2.1348482785660093e-11, -5.476649499770259e-09, 8.564670053875876e-07, -7.455178589434267e-05, 0.0028545812080104068]))
+    assert v._Tmin_T_trans == v.poly_fit_Tmin
+    assert_allclose(v.poly_fit_Tmin_quadratic, [2.159638355215081e-10, 0.0, 8.76710398245817e-05])
 
     # methanol
-    v = VolumeLiquid(best_fit=(175.7, 502.5, [3.5725079384600736e-23, -9.031033742820083e-20, 9.819637959370411e-17, -5.993173551565636e-14, 2.2442465416964825e-11, -5.27776114586072e-09, 7.610461006178106e-07, -6.148574498547711e-05, 0.00216398089328537]))
-    assert v._Tmin_T_trans == v.best_fit_Tmin
-    assert_allclose(v.best_fit_Tmin_quadratic, [9.044411973585966e-11, 0.0, 3.2636013401752355e-05])
+    v = VolumeLiquid(poly_fit=(175.7, 502.5, [3.5725079384600736e-23, -9.031033742820083e-20, 9.819637959370411e-17, -5.993173551565636e-14, 2.2442465416964825e-11, -5.27776114586072e-09, 7.610461006178106e-07, -6.148574498547711e-05, 0.00216398089328537]))
+    assert v._Tmin_T_trans == v.poly_fit_Tmin
+    assert_allclose(v.poly_fit_Tmin_quadratic, [9.044411973585966e-11, 0.0, 3.2636013401752355e-05])
 
     # furufryl alcohol
-    v = VolumeLiquid(best_fit=(189.6, 568.8000000000001, [6.647049391841594e-25, -1.8278965754470383e-21, 2.170226311490262e-18, -1.4488205117650477e-15, 5.940737543663388e-13, -1.529528764741801e-10, 2.4189938181664235e-08, -2.0920414326130236e-06, 0.00014008105452139704]))
-    assert v._Tmin_T_trans == v.best_fit_Tmin
-    assert_allclose(v.best_fit_Tmin_quadratic, [1.0450567029924047e-10, 2.3832444455827036e-08, 6.0795970965526267e-05])
+    v = VolumeLiquid(poly_fit=(189.6, 568.8000000000001, [6.647049391841594e-25, -1.8278965754470383e-21, 2.170226311490262e-18, -1.4488205117650477e-15, 5.940737543663388e-13, -1.529528764741801e-10, 2.4189938181664235e-08, -2.0920414326130236e-06, 0.00014008105452139704]))
+    assert v._Tmin_T_trans == v.poly_fit_Tmin
+    assert_allclose(v.poly_fit_Tmin_quadratic, [1.0450567029924047e-10, 2.3832444455827036e-08, 6.0795970965526267e-05])
 
     # Water - may change, second should always be zero
-    v = VolumeLiquid(best_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]))
-    assert_allclose(v.best_fit_Tmin_quadratic,  [8.382589086490995e-12, 0.0, 1.739254665187681e-05])
+    v = VolumeLiquid(poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]))
+    assert_allclose(v.poly_fit_Tmin_quadratic,  [8.382589086490995e-12, 0.0, 1.739254665187681e-05])
 
 
 @pytest.mark.meta_T_dept

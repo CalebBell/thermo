@@ -18,7 +18,47 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains base classes for temperature `T`, pressure `P`, and
+composition `zs` dependent properties. These power the various interfaces for
+each property.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/chemicals/>`_.
+
+.. contents:: :local:
+
+Temperature Dependent
+---------------------
+.. autoclass:: TDependentProperty
+   :members: name, units, extrapolation, property_min, property_max,
+             critical_zero, ranked_methods, __call__, fit_polynomial,
+             set_method, select_valid_methods, test_property_validity,
+             T_dependent_property, plot_T_dependent_property, interpolate,
+             add_new_method, set_tabular_data, solve_prop,
+             calculate_derivative, T_dependent_property_derivative,
+             calculate_integral, T_dependent_property_integral,
+             calculate_integral_over_T, T_dependent_property_integral_over_T,
+             extrapolate, test_method_validity, calculate, tabular_extrapolation_permitted,
+             interpolation_T, interpolation_T_inv, interpolation_property,  interpolation_property_inv
+   :undoc-members:
+
+Temperature and Pressure Dependent
+----------------------------------
+.. autoclass:: TPDependentProperty
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Temperature, Pressure, and Composition Dependent
+------------------------------------------------
+.. autoclass:: MixtureProperty
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+'''
 
 from __future__ import division
 
@@ -31,11 +71,15 @@ import os
 from cmath import sqrt as csqrt
 from bisect import bisect_left
 import numpy as np
-from fluids.numerics import quad, brenth, newton, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders, assert_close
+from fluids.numerics import quad, brenth, newton, secant, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders, assert_close
 from fluids.constants import R
 from chemicals.utils import isnan, isinf, log, exp, ws_to_zs, zs_to_ws, e
 from chemicals.utils import mix_multiple_component_flows, hash_any_primitive
 from chemicals.vapor_pressure import Antoine, Antoine_coeffs_from_point, Antoine_AB_coeffs_from_point, DIPPR101_ABC_coeffs_from_point
+from chemicals.dippr import EQ101
+from chemicals.phase_change import Watson, Watson_n
+
+
 
 global _has_matplotlib
 _has_matplotlib = None
@@ -629,6 +673,21 @@ class TDependentProperty(object):
     lambda expressions which must be set for the variables :obj:`interpolation_T`,
     :obj:`interpolation_property`, and :obj:`interpolation_property_inv`.
 
+    The extrapolation methods available are as follows:
+
+        * 'linear' - fits the model at its temperature limits to a linear model
+        * 'AntoineAB' - fits the model to :obj:`Antoine <chemicals.vapor_pressure.Antoine>`'s
+          equation at the temperature limits using only the A and B coefficient
+        * 'DIPPR101_ABC' - fits the model at its temperature limits to the
+          :obj:`EQ101 <chemicals.dippr.EQ101>` equation
+        * 'Watson' - fits the model to the Heat of Vaporization model
+          :obj:`Watson <chemicals.phase_change.Watson>`
+
+    It is possible to use different extrapolation methods for the
+    low-temperature and the high-temperature region. Specify the extrapolation
+    parameter with the '|' symbols between the two methods; the first method
+    is used for low-temperature, and the second for the high-temperature.
+
     Attributes
     ----------
     name : str
@@ -681,17 +740,15 @@ class TDependentProperty(object):
         Constant list of ranked methods by default
     tabular_data : dict
         Stores all user-supplied property data for interpolation in format
-        {name: (Ts, properties)}
+        {name: (Ts, properties)}, [-]
     tabular_data_interpolators : dict
         Stores all interpolation objects, idexed by name and property
         transform methods with the format {(name, interpolation_T,
         interpolation_property, interpolation_property_inv):
-        (extrapolator, spline)}
-    sorted_valid_methods : list
-        Sorted and valid methods stored from the last T_dependent_property
-        call
-    user_methods : list
-        Sorted methods as specified by the user
+        (extrapolator, spline)}, [-]
+    all_methods : set
+        Set of all methods available for a given CASRN and set of properties,
+        [-]
     '''
     # Dummy properties
     name = 'Property name'
@@ -713,6 +770,9 @@ class TDependentProperty(object):
     T_cached = None
     locked = False
 
+    critical_zero = False
+    '''Whether or not the property is declining and reaching zero at the
+    critical point.'''
 
 #    Tmin = None
 #    Tmax = None
@@ -737,9 +797,9 @@ class TDependentProperty(object):
 
     def __call__(self, T):
         r'''Convenience method to calculate the property; calls
-        :obj:`T_dependent_property`. Caches previously calculated value,
+        :obj::obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`. Caches previously calculated value,
         which is an overhead when calculating many different values of
-        a property. See :obj:`T_dependent_property` for more details as to the
+        a property. See :obj::obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>` for more details as to the
         calculation procedure.
 
         Parameters
@@ -758,6 +818,21 @@ class TDependentProperty(object):
             self.prop_cached = self.T_dependent_property(T)
             self.T_cached = T
             return self.prop_cached
+
+    def _set_common_attributes(self):
+
+        self.tabular_data = {}
+        '''tabular_data, dict: Stored (Ts, properties) for any
+        tabular data; indexed by provided or autogenerated name.'''
+        self.tabular_data_interpolators = {}
+        '''tabular_data_interpolators, dict: Stored (extrapolator,
+        spline) tuples which are interp1d instances for each set of tabular
+        data; indexed by tuple of (name, interpolation_T,
+        interpolation_property, interpolation_property_inv) to ensure that
+        if an interpolation transform is altered, the old interpolator which
+        had been created is no longer used.'''
+
+        self.all_methods = set()
 
     @classmethod
     def _fit_export_polynomials(cls, method=None, start_n=3, max_n=30,
@@ -794,13 +869,6 @@ class TDependentProperty(object):
                 dat[method] = method_dat
 
         return dat
-
-    def _extrapolate_linear(self, method):
-        pass
-
-    def _set_linear_extrapolation_coeffs(self, method):
-        pass
-
 
     def fit_polynomial(self, method, n=None, start_n=3, max_n=30, eval_pts=100):
         r'''Method to fit a T-dependent property to a polynomial. The degree
@@ -888,31 +956,8 @@ class TDependentProperty(object):
         '''
         if method not in self.all_methods:
             raise ValueError("The given methods is not available for this chemical")
-        # Accept either a string or a list of methods, and whether
-        # or not to only consider the false methods
-#        if isinstance(method, str):
-#            method = [method]
-#
-#        # The user's order matters and is retained for use by select_valid_methods
-#        self.user_methods = method
-#        self.forced = True
-
-#        if self.
-        # Validate that the user's specified methods are actual methods
-#        if set(self.user_methods).difference(self.all_methods):
-#        if not self.user_methods and self.forced:
-#            raise Exception('Only user specified methods are considered when forced is True, but no methods were provided')
-#
-#        # Remove previously selected methods
         self.method = method
-#        self.sorted_valid_methods = []
         self.T_cached = None
-
-    @property
-    def available_methods(self):
-        # All tabular data is also in all_methods
-        # now local methods is in all_methods too
-        return list(self.all_methods) #+ list(self.local_methods.keys()) #+ list(self.tabular_data.keys())
 
     def select_valid_methods(self, T, check_validity=True):
         r'''Method to obtain a sorted list of methods which are valid at `T`
@@ -992,73 +1037,75 @@ class TDependentProperty(object):
             return False
         return True
 
-    def custom_set_best_fit(self):
+    def _custom_set_poly_fit(self):
         pass
 
-    def set_best_fit(self, best_fit, set_limits=False):
-        if (best_fit is not None and len(best_fit) and (best_fit[0] is not None
-           and best_fit[1] is not None and  best_fit[2] is not None)
-            and not isnan(best_fit[0]) and not isnan(best_fit[1])):
+    def _set_poly_fit(self, poly_fit, set_limits=False):
+        if (poly_fit is not None and len(poly_fit) and (poly_fit[0] is not None
+           and poly_fit[1] is not None and  poly_fit[2] is not None)
+            and not isnan(poly_fit[0]) and not isnan(poly_fit[1])):
             self.locked = True
-            self.best_fit_Tmin = Tmin = best_fit[0]
-            self.best_fit_Tmax = Tmax = best_fit[1]
-            self.best_fit_coeffs = best_fit_coeffs = best_fit[2]
+            self.method = BESTFIT
+            self.poly_fit_Tmin = Tmin = poly_fit[0]
+            self.poly_fit_Tmax = Tmax = poly_fit[1]
+            self.T_limits[BESTFIT] = (Tmin, Tmax)
+            self.poly_fit_coeffs = poly_fit_coeffs = poly_fit[2]
 
-            self.best_fit_int_coeffs = polyint(best_fit_coeffs)
-            self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff = polyint_over_x(best_fit_coeffs)
+            self.poly_fit_int_coeffs = polyint(poly_fit_coeffs)
+            self.poly_fit_T_int_T_coeffs, self.poly_fit_log_coeff = polyint_over_x(poly_fit_coeffs)
 
-            best_fit_d_coeffs = polyder(best_fit_coeffs[::-1])
-            self.best_fit_d2_coeffs = polyder(best_fit_d_coeffs)
-            self.best_fit_d2_coeffs.reverse()
-            self.best_fit_d_coeffs = best_fit_d_coeffs
-            best_fit_d_coeffs.reverse()
+            poly_fit_d_coeffs = polyder(poly_fit_coeffs[::-1])
+            self.poly_fit_d2_coeffs = polyder(poly_fit_d_coeffs)
+            self.poly_fit_d2_coeffs.reverse()
+            self.poly_fit_d_coeffs = poly_fit_d_coeffs
+            poly_fit_d_coeffs.reverse()
 
             # Extrapolation slope on high and low
-            slope_delta_T = (self.best_fit_Tmax - self.best_fit_Tmin)*.05
+            slope_delta_T = (self.poly_fit_Tmax - self.poly_fit_Tmin)*.05
 
-            self.best_fit_Tmax_value = self.calculate(self.best_fit_Tmax, BESTFIT)
+            self.poly_fit_Tmax_value = self.calculate(self.poly_fit_Tmax, BESTFIT)
             if self.interpolation_property is not None:
-                self.best_fit_Tmax_value = self.interpolation_property(self.best_fit_Tmax_value)
+                self.poly_fit_Tmax_value = self.interpolation_property(self.poly_fit_Tmax_value)
 
 
             # Calculate the average derivative for the last 5% of the curve
-#            fit_value_high = self.calculate(self.best_fit_Tmax - slope_delta_T, BESTFIT)
+#            fit_value_high = self.calculate(self.poly_fit_Tmax - slope_delta_T, BESTFIT)
 #            if self.interpolation_property is not None:
 #                fit_value_high = self.interpolation_property(fit_value_high)
 
-#            self.best_fit_Tmax_slope = (self.best_fit_Tmax_value
+#            self.poly_fit_Tmax_slope = (self.poly_fit_Tmax_value
 #                                        - fit_value_high)/slope_delta_T
-            self.best_fit_Tmax_slope = horner(self.best_fit_d_coeffs, self.best_fit_Tmax)
-            self.best_fit_Tmax_dT2 = horner(self.best_fit_d2_coeffs, self.best_fit_Tmax)
+            self.poly_fit_Tmax_slope = horner(self.poly_fit_d_coeffs, self.poly_fit_Tmax)
+            self.poly_fit_Tmax_dT2 = horner(self.poly_fit_d2_coeffs, self.poly_fit_Tmax)
 
 
             # Extrapolation to lower T
-            self.best_fit_Tmin_value = self.calculate(self.best_fit_Tmin, BESTFIT)
+            self.poly_fit_Tmin_value = self.calculate(self.poly_fit_Tmin, BESTFIT)
             if self.interpolation_property is not None:
-                self.best_fit_Tmin_value = self.interpolation_property(self.best_fit_Tmin_value)
+                self.poly_fit_Tmin_value = self.interpolation_property(self.poly_fit_Tmin_value)
 
-#            fit_value_low = self.calculate(self.best_fit_Tmin + slope_delta_T, BESTFIT)
+#            fit_value_low = self.calculate(self.poly_fit_Tmin + slope_delta_T, BESTFIT)
 #            if self.interpolation_property is not None:
 #                fit_value_low = self.interpolation_property(fit_value_low)
-#            self.best_fit_Tmin_slope = (fit_value_low
-#                                        - self.best_fit_Tmin_value)/slope_delta_T
+#            self.poly_fit_Tmin_slope = (fit_value_low
+#                                        - self.poly_fit_Tmin_value)/slope_delta_T
 
-            self.best_fit_Tmin_slope = horner(self.best_fit_d_coeffs, self.best_fit_Tmin)
-            self.best_fit_Tmin_dT2 = horner(self.best_fit_d2_coeffs, self.best_fit_Tmin)
+            self.poly_fit_Tmin_slope = horner(self.poly_fit_d_coeffs, self.poly_fit_Tmin)
+            self.poly_fit_Tmin_dT2 = horner(self.poly_fit_d2_coeffs, self.poly_fit_Tmin)
 
-            self.custom_set_best_fit()
+            self._custom_set_poly_fit()
 
             if set_limits:
                 if self.Tmin is None:
-                    self.Tmin = self.best_fit_Tmin
+                    self.Tmin = self.poly_fit_Tmin
                 if self.Tmax is None:
-                    self.Tmax = self.best_fit_Tmax
+                    self.Tmax = self.poly_fit_Tmax
 
 
-    def as_best_fit(self):
-        return '%s(load_data=False, best_fit=(%s, %s, %s))' %(self.__class__.__name__,
-                  repr(self.best_fit_Tmin), repr(self.best_fit_Tmax),
-                  repr(self.best_fit_coeffs))
+    def as_poly_fit(self):
+        return '%s(load_data=False, poly_fit=(%s, %s, %s))' %(self.__class__.__name__,
+                  repr(self.poly_fit_Tmin), repr(self.poly_fit_Tmax),
+                  repr(self.poly_fit_coeffs))
 
 
     def _base_calculate(self, T, method):
@@ -1137,11 +1184,11 @@ class TDependentProperty(object):
                 return prop
         elif self._extrapolation is not None:
             try:
-                prop = self.extrapolate(T, method)
+                return self.extrapolate(T, method)
             except:
                 return None
-            if self.test_property_validity(prop):
-                return prop
+            #if self.test_property_validity(prop):
+            #    return prop
 
         # Function returns None if it does not work.
         return None
@@ -1280,28 +1327,28 @@ class TDependentProperty(object):
         else:
             return plt
 
-    def extrapolate_tabular(self, T):
-        if 'EXTRAPOLATE_TABULAR' not in self.tabular_data:
-            if self.Tmin is None or self.Tmax is None:
-                raise Exception('Could not automatically generate interpolation'
-                                ' data for property %s of %s because temperature '
-                                'limits could not be determined.' %(self.name, self.CASRN))
-
-            Tmin = max(20, self.Tmin)
-            if self.Tb is not None:
-                Tmin = min(Tmin, self.Tb)
-
-            Ts = linspace(Tmin, self.Tmax, 200)
-            properties = [self.T_dependent_property(T) for T in Ts]
-            Ts_cleaned = []
-            properties_cleaned = []
-            for T, p in zip(Ts, properties):
-                if p is not None:
-                    Ts_cleaned.append(T)
-                    properties_cleaned.append(p)
-            self.tabular_data['EXTRAPOLATE_TABULAR'] = (Ts_cleaned, properties_cleaned)
-        return self.interpolate(T, 'EXTRAPOLATE_TABULAR')
-
+#    def extrapolate_tabular(self, T):
+#        if 'EXTRAPOLATE_TABULAR' not in self.tabular_data:
+#            if self.Tmin is None or self.Tmax is None:
+#                raise Exception('Could not automatically generate interpolation'
+#                                ' data for property %s of %s because temperature '
+#                                'limits could not be determined.' %(self.name, self.CASRN))
+#
+#            Tmin = max(20, self.Tmin)
+#            if hasattr(self, 'Tb') and self.Tb is not None:
+#                Tmin = min(Tmin, self.Tb)
+#
+#            Ts = linspace(Tmin, self.Tmax, 200)
+#            properties = [self.T_dependent_property(T) for T in Ts]
+#            Ts_cleaned = []
+#            properties_cleaned = []
+#            for T, p in zip(Ts, properties):
+#                if p is not None:
+#                    Ts_cleaned.append(T)
+#                    properties_cleaned.append(p)
+#            self.tabular_data['EXTRAPOLATE_TABULAR'] = (Ts_cleaned, properties_cleaned)
+#        return self.interpolate(T, 'EXTRAPOLATE_TABULAR')
+#
 
     def interpolate(self, T, name):
         r'''Method to perform interpolation on a given tabular data set
@@ -1389,8 +1436,6 @@ class TDependentProperty(object):
         local_methods[name] = (f, Tmin, Tmax, f_der_general, f_der, f_der2,
                       f_der3, f_int, f_int_over_T)
         self.all_methods.add(name)
-        if self.user_methods:
-            self.set_method(self.user_methods)
 
     def set_tabular_data(self, Ts, properties, name=None, check_properties=True):
         r'''Method to set tabular data to be used for interpolation.
@@ -1429,44 +1474,40 @@ class TDependentProperty(object):
 
         self.set_method(method=name)
 
-    def solve_prop(self, goal, reset_method=True):
+    def solve_prop(self, goal):
         r'''Method to solve for the temperature at which a property is at a
-        specified value. `T_dependent_property` is used to calculate the value
-        of the property as a function of temperature; if `reset_method` is True,
-        the best method is used at each temperature as the solver seeks a
-        solution. This slows the solution moderately.
+        specified value. :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>` is used to calculate the value
+        of the property as a function of temperature.
 
         Checks the given property value with `test_property_validity` first
-        and raises an exception if it is not valid. Requires that Tmin and
-        Tmax have been set to know what range to search within.
-
-        Search is performed with the brenth solver from SciPy.
+        and raises an exception if it is not valid.
 
         Parameters
         ----------
         goal : float
             Propoerty value desired, [`units`]
-        reset_method : bool
-            Whether or not to reset the method as the solver searches
 
         Returns
         -------
         T : float
             Temperature at which the property is the specified value [K]
         '''
-        if self.Tmin is None or self.Tmax is None:
-            raise Exception('Both a minimum and a maximum value are not present indicating there is not enough data for temperature dependency.')
+#        if self.Tmin is None or self.Tmax is None:
+#            raise Exception('Both a minimum and a maximum value are not present indicating there is not enough data for temperature dependency.')
         if not self.test_property_validity(goal):
             raise Exception('Input property is not considered plausible; no method would calculate it.')
 
         def error(T):
-            if reset_method:
-                self.method = None
             return self.T_dependent_property(T) - goal
-        try:
-            return brenth(error, self.Tmin, self.Tmax)
-        except ValueError:
-            raise Exception('To within the implemented temperature range, it is not possible to calculate the desired value.')
+        T_limits = self.T_limits[self.method]
+        if self.extrapolation is None:
+            try:
+                return brenth(error, T_limits[0], T_limits[1])
+            except ValueError:
+                raise Exception('To within the implemented temperature range, it is not possible to calculate the desired value.')
+        else:
+            high = self.Tc if self.critical_zero and self.Tc is not None else None
+            return secant(error, x0=T_limits[0], x1=T_limits[1], low=1e-4, xtol=1e-12, bisection=True, high=high)
 
     def calculate_derivative(self, T, method, order=1):
         r'''Method to calculate a derivative of a property with respect to
@@ -1529,15 +1570,8 @@ class TDependentProperty(object):
             try:
                 return self.calculate_derivative(T, BESTFIT, order)
             except Exception as e:
-#                print(e)
                 pass
-#        if self.method:
-#            # retest within range
-#            if self.test_method_validity(T, self.method):
-#                try:
-#                    return self.calculate_derivative(T, self.method, order)
-#                except:  # pragma: no cover
-#                    pass
+
         sorted_valid_methods = self.select_valid_methods(T)
         for method in sorted_valid_methods:
             try:
@@ -1699,6 +1733,10 @@ class TDependentProperty(object):
 
     @property
     def extrapolation(self):
+        '''The string setting of the current extrapolation settings.
+        This can be set to a new value to change which extrapolation setting
+        is used.
+        '''
         return self._extrapolation
 
     @extrapolation.setter
@@ -1774,44 +1812,107 @@ class TDependentProperty(object):
                     except:
                         DIPPR101_ABC_high = None
                     DIPPR101_ABC_coeffs[m] = (DIPPR101_ABC_low, DIPPR101_ABC_high)
+            elif extrapolation == 'Watson':
+                self.Watson_coeffs = Watson_coeffs = {}
+                for m in self.all_methods:
+                    Tmin, Tmax = T_limits[m]
+                    delta = (Tmax-Tmin)*1e-4
+                    try:
+                        v0_low = self.calculate(T=Tmin, method=m)
+                        v1_low = self.calculate(T=Tmin+delta, method=m)
+                        n_low = Watson_n(Tmin, Tmin+delta, v0_low, v1_low, self.Tc)
+                    except:
+                        v0_low, v1_low, n_low = None, None, None
+                    try:
+                        v0_high = self.calculate(T=Tmax, method=m)
+                        v1_high = self.calculate(T=Tmax-delta, method=m)
+                        n_high = Watson_n(Tmax, Tmax-delta, v0_high, v1_high, self.Tc)
+                    except:
+                        v0_high, v1_high, n_high = None, None, None
+                    Watson_coeffs[m] = (v0_low, n_low, v0_high, n_high)
+            else:
+                raise ValueError("Could not recognize extrapolation setting")
 
 
-            # Compute the ends
-    def extrapolate(self, T, method):
+    def extrapolate(self, T, method, in_range='error'):
+        r'''Method to perform extrapolation on a given method according to the
+        :obj:`extrapolation` setting.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to extrapolate the property, [K]
+        method : str
+            The method to use, [-]
+        in_range : str
+            How to handle inputs which are not outside the temperature limits;
+            set to 'low' to use the low T extrapolation, 'high' to use the
+            high T extrapolation, and 'error' or anything else to raise an
+            error in those cases, [-]
+
+        Returns
+        -------
+        prop : float
+            Calculated property, [`units`]
+        '''
         T_limits = self.T_limits
         if T < 0.0:
             raise ValueError("Negative temperature")
         T_low, T_high = T_limits[method]
-        if T <= T_low:
+        if T <= T_low or in_range == 'low':
+            low = True
             extrapolation = self._extrapolation_low
-        elif T >= T_high:
+        elif T >= T_high or in_range == 'high':
+            low = False
             extrapolation = self._extrapolation_high
         else:
             raise ValueError("Not outside normal range")
 
         if extrapolation == 'linear':
             v_low, d_low, v_high, d_high = self.linear_extrapolation_coeffs[method]
-            if T <= T_low:
+            if low:
                 if v_low is None:
                     raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
                 return v_low + d_low*(T - T_low)
-            elif T >= T_high:
+            else:
                 if v_high is None:
                     raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
                 return v_high + d_high*(T - T_high)
         elif extrapolation == 'AntoineAB':
             T_low, T_high = T_limits[method]
             AB_low, AB_high = self.Antoine_AB_coeffs[method]
-            if T <= T_low:
+            if low:
                 if AB_low is None:
                     raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
                 return Antoine(T, A=AB_low[0], B=AB_low[1], C=0.0, base=e)
-            elif T >= T_high:
+            else:
                 if AB_high is None:
                     raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
                 return Antoine(T, A=AB_high[0], B=AB_high[1], C=0.0, base=e)
         elif extrapolation == 'DIPPR101_ABC':
-            pass
+            T_low, T_high = T_limits[method]
+            DIPPR101_ABC_low, DIPPR101_ABC_high = self.DIPPR101_ABC_coeffs[method]
+            if low:
+                if DIPPR101_ABC_low is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
+                return EQ101(T, DIPPR101_ABC_low[0], DIPPR101_ABC_low[1], DIPPR101_ABC_low[2], 0.0, 0.0)
+            else:
+                if DIPPR101_ABC_high is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
+                return EQ101(T, DIPPR101_ABC_high[0], DIPPR101_ABC_high[1], DIPPR101_ABC_high[2], 0.0, 0.0)
+        elif extrapolation == 'Watson':
+            T_low, T_high = T_limits[method]
+            v0_low, n_low, v0_high, n_high = self.Watson_coeffs[method]
+            if low:
+                if v0_low is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
+                return Watson(T, Hvap_ref=v0_low, T_ref=T_low, Tc=self.Tc, exponent=n_low)
+            else:
+                if v0_high is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
+                return Watson(T, Hvap_ref=v0_high, T_ref=T_high, Tc=self.Tc, exponent=n_high)
+
+
 
 
 
@@ -1831,9 +1932,6 @@ class TDependentProperty(object):
         self.ranked_methods = [TEST_METHOD_2, TEST_METHOD_1]  # Never changes
         self.tabular_data = {}
         self.tabular_data_interpolators = {}
-
-        self.sorted_valid_methods = []
-        self.user_methods = []
 
     def load_all_methods(self):
         r'''Method to load all data, and set all_methods based on the available
@@ -1932,9 +2030,9 @@ class TPDependentProperty(TDependentProperty):
 
     def __call__(self, T, P):
         r'''Convenience method to calculate the property; calls
-        :obj:`TP_dependent_property`. Caches previously calculated value,
+        :obj::obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`. Caches previously calculated value,
         which is an overhead when calculating many different values of
-        a property. See :obj:`TP_dependent_property` for more details as to the
+        a property. See :obj::obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>` for more details as to the
         calculation procedure.
 
         Parameters
@@ -2084,15 +2182,14 @@ class TPDependentProperty(TDependentProperty):
 #
         # get valid methods at T, and try them until one yields a valid
         # property; store the method_P and return the answer
-        self.sorted_valid_methods_P = self.select_valid_methods_P(T, P)
-        for method_P in self.sorted_valid_methods_P:
-            try:
-                prop = self.calculate_P(T, P, method_P)
-                if self.test_property_validity(prop):
-                    self.method_P = method_P
-                    return prop
-            except:  # pragma: no cover
-                pass
+#        self.sorted_valid_methods_P = self.select_valid_methods_P(T, P)
+#        for method_P in self.sorted_valid_methods_P:
+        try:
+            prop = self.calculate_P(T, P, self.method_P)
+            if self.test_property_validity(prop):
+                return prop
+        except:  # pragma: no cover
+            pass
         # Function returns None if it does not work.
         return None
 
@@ -2142,11 +2239,12 @@ class TPDependentProperty(TDependentProperty):
             name = 'Tabular data series #' + str(len(self.tabular_data))  # Will overwrite a poorly named series
         self.tabular_data[name] = (Ts, Ps, properties)
 
-        self.method_P = None
-        self.user_methods_P.insert(0, name)
+        self.method_P = name
+#        self.user_methods_P.insert(0, name)
         self.all_methods_P.add(name)
 
-        self.set_user_methods_P(user_methods_P=self.user_methods_P, forced_P=self.forced_P)
+
+#        self.set_user_methods_P(user_methods_P=self.user_methods_P, forced_P=self.forced_P)
 
     def interpolate_P(self, T, P, name):
         r'''Method to perform interpolation on a given tabular data set
@@ -2178,13 +2276,17 @@ class TPDependentProperty(TDependentProperty):
             Calculated property, [`units`]
         '''
         key = (name, self.interpolation_T, id(self.interpolation_P), id(self.interpolation_property), id(self.interpolation_property_inv))
+        Ts, Ps, properties = self.tabular_data[name]
+        if not self.tabular_extrapolation_permitted:
+            if T < Ts[0] or T > Ts[-1] or P < Ps[0] or P > Ps[-1]:
+                raise ValueError("Extrapolation not permitted and conditions outside of range")
 
         # If the interpolator and extrapolator has already been created, load it
         if key in self.tabular_data_interpolators:
             extrapolator, spline = self.tabular_data_interpolators[key]
         else:
             from scipy.interpolate import interp2d
-            Ts, Ps, properties = self.tabular_data[name]
+
 
             if self.interpolation_T:  # Transform ths Ts with interpolation_T if set
                 Ts2 = [self.interpolation_T(T2) for T2 in Ts]
@@ -2653,17 +2755,17 @@ class MixtureProperty(object):
     _correct_pressure_pure = True
     skip_validity_check = False
 
-    def set_best_fit_coeffs(self):
+    def set_poly_fit_coeffs(self):
         if all(i.locked for i in self.pure_objs):
             self.locked = True
             pure_objs = self.pure_objs
-            self.best_fit_data = [[i.best_fit_Tmin for i in pure_objs],
-                               [i.best_fit_Tmin_slope for i in pure_objs],
-                               [i.best_fit_Tmin_value for i in pure_objs],
-                               [i.best_fit_Tmax for i in pure_objs],
-                               [i.best_fit_Tmax_slope for i in pure_objs],
-                               [i.best_fit_Tmax_value for i in pure_objs],
-                               [i.best_fit_coeffs for i in pure_objs]]
+            self.poly_fit_data = [[i.poly_fit_Tmin for i in pure_objs],
+                               [i.poly_fit_Tmin_slope for i in pure_objs],
+                               [i.poly_fit_Tmin_value for i in pure_objs],
+                               [i.poly_fit_Tmax for i in pure_objs],
+                               [i.poly_fit_Tmax_slope for i in pure_objs],
+                               [i.poly_fit_Tmax_value for i in pure_objs],
+                               [i.poly_fit_coeffs for i in pure_objs]]
 
     @property
     def correct_pressure_pure(self):
@@ -2686,9 +2788,9 @@ class MixtureProperty(object):
 
     def __call__(self, T, P, zs=None, ws=None):
         r'''Convenience method to calculate the property; calls
-        :obj:`mixture_property`. Caches previously calculated value,
+        :obj::obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`. Caches previously calculated value,
         which is an overhead when calculating many different values of
-        a property. See :obj:`mixture_property` for more details as to the
+        a property. See :obj::obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>` for more details as to the
         calculation procedure. One or both of `zs` and `ws` are required.
 
         Parameters
@@ -2881,15 +2983,14 @@ class MixtureProperty(object):
 #
         # get valid methods at conditions, and try them until one yields a valid
         # property; store the method and return the answer
-        self.sorted_valid_methods = self.select_valid_methods(T, P, zs, ws)
-        for method in self.sorted_valid_methods:
-            try:
-                prop = self.calculate(T, P, zs, ws, method)
-                if self.test_property_validity(prop):
-                    self.method = method
-                    return prop
-            except:  # pragma: no cover
-                pass
+#        self.sorted_valid_methods = self.select_valid_methods(T, P, zs, ws)
+        #for method in self.sorted_valid_methods:
+        try:
+            prop = self.calculate(T, P, zs, ws, self.method)
+            if self.test_property_validity(prop):
+                return prop
+        except:  # pragma: no cover
+            pass
 
         # Function returns None if it does not work.
         return None
@@ -3132,7 +3233,7 @@ class MixtureProperty(object):
         r'''Method to create a plot of the property vs pressure at a specified
         temperature and composition according to either a specified list of
         methods, or the  user methods (if set), or all methods. User-selectable
-         number of  points, and pressure range. If only_valid is set,
+        number of  points, and pressure range. If only_valid is set,
         `test_method_validity` will be used to check if each condition in
         the specified range is valid, and `test_property_validity` will be used
         to test the answer, and the method is allowed to fail; only the valid

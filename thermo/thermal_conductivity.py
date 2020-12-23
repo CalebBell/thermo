@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,7 +18,72 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains implementations of :obj:`TPDependentProperty <thermo.utils.TPDependentProperty>`
+representing liquid and vapor thermal conductivity. A variety of estimation
+and data methods are available as included in the `chemicals` library.
+Additionally liquid and vapor mixture thermal conductivity predictor objects
+are implemented subclassing  :obj:`MixtureProperty <thermo.utils.MixtureProperty>`.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+
+.. contents:: :local:
+
+Pure Liquid Thermal Conductivity
+================================
+.. autoclass:: ThermalConductivityLiquid
+    :members: calculate, calculate_P, test_method_validity, test_method_validity_P,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods, ranked_methods_P
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: thermal_conductivity_liquid_methods
+.. autodata:: thermal_conductivity_liquid_methods_P
+
+Pure Gas Thermal Conductivity
+=============================
+.. autoclass:: ThermalConductivityGas
+    :members: calculate, calculate_P, test_method_validity, test_method_validity_P,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods, ranked_methods_P
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: thermal_conductivity_gas_methods
+.. autodata:: thermal_conductivity_gas_methods_P
+
+
+Mixture Liquid Thermal Conductivity
+===================================
+.. autoclass:: ThermalConductivityLiquidMixture
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: thermal_conductivity_liquid_mixture_methods
+
+Mixture Gas Thermal Conductivity
+================================
+.. autoclass:: ThermalConductivityGasMixture
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: thermal_conductivity_gas_mixture_methods
+
+'''
 
 from __future__ import division
 
@@ -75,11 +140,11 @@ thermal_conductivity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS,
                                        SHEFFY_JOHNSON, SATO_RIEDEL,
                                        LAKSHMI_PRASAD, BAHADORI_L,
                                        NICOLA, NICOLA_ORIGINAL]
-'''Holds all low-pressure methods available for the ThermalConductivityLiquid
+'''Holds all low-pressure methods available for the :obj:`ThermalConductivityLiquid`
 class, for use in iterating over them.'''
 
 thermal_conductivity_liquid_methods_P = [COOLPROP, DIPPR_9G, MISSENARD]
-'''Holds all high-pressure methods available for the ThermalConductivityLiquid
+'''Holds all high-pressure methods available for the :obj:`ThermalConductivityLiquid`
 class, for use in iterating over them.'''
 
 class ThermalConductivityLiquid(TPDependentProperty):
@@ -113,8 +178,18 @@ class ThermalConductivityLiquid(TPDependentProperty):
     Hfus : float, optional
         Heat of fusion, [J/mol]
     load_data : bool, optional
-        If False, do not load property coefficients from data sources in files;
+        If False, do not load property coefficients from data sources in files
         [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        viscosity of the compound; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default low-pressure method if provided. [-]
 
     Notes
     -----
@@ -126,23 +201,23 @@ class ThermalConductivityLiquid(TPDependentProperty):
     Low pressure methods:
 
     **GHARAGHEIZI_L**:
-        CSP method, described in :obj:`Gharagheizi_liquid`.
+        CSP method, described in :obj:`Gharagheizi_liquid <chemicals.thermal_conductivity.Gharagheizi_liquid>`.
     **SATO_RIEDEL**:
-        CSP method, described in :obj:`Sato_Riedel`.
+        CSP method, described in :obj:`Sato_Riedel <chemicals.thermal_conductivity.Sato_Riedel>`.
     **NICOLA**:
-        CSP method, described in :obj:`Nicola`.
+        CSP method, described in :obj:`Nicola <chemicals.thermal_conductivity.Nicola>`.
     **NICOLA_ORIGINAL**:
-        CSP method, described in :obj:`Nicola_original`.
+        CSP method, described in :obj:`Nicola_original <chemicals.thermal_conductivity.Nicola_original>`.
     **SHEFFY_JOHNSON**:
-        CSP method, described in :obj:`Sheffy_Johnson`.
+        CSP method, described in :obj:`Sheffy_Johnson <chemicals.thermal_conductivity.Sheffy_Johnson>`.
     **BAHADORI_L**:
-        CSP method, described in :obj:`Bahadori_liquid`.
+        CSP method, described in :obj:`Bahadori_liquid <chemicals.thermal_conductivity.Bahadori_liquid>`.
     **LAKSHMI_PRASAD**:
-        CSP method, described in :obj:`Lakshmi_Prasad`.
+        CSP method, described in :obj:`Lakshmi_Prasad <chemicals.thermal_conductivity.Lakshmi_Prasad>`.
     **DIPPR_PERRY_8E**:
         A collection of 340 coefficient sets from the DIPPR database published
         openly in [3]_. Provides temperature limits for all its fluids.
-        :obj:`thermo.dippr.EQ100` is used for its fluids.
+        :obj:`EQ100 <chemicals.dippr.EQ100>` is used for its fluids.
     **VDI_PPDS**:
         Coefficients for a equation form developed by the PPDS, published
         openly in [2]_. Covers a large temperature range, but does not
@@ -158,11 +233,11 @@ class ThermalConductivityLiquid(TPDependentProperty):
     High pressure methods:
 
     **DIPPR_9G**:
-        CSP method, described in :obj:`DIPPR9G`. Calculates a
-        low-pressure thermal conductivity first, using `T_dependent_property`.
+        CSP method, described in :obj:`DIPPR9G <chemicals.thermal_conductivity.DIPPR9G>`. Calculates a
+        low-pressure thermal conductivity first from the low-pressure method.
     **MISSENARD**:
-        CSP method, described in :obj:`Missenard`. Calculates a
-        low-pressure thermal conductivity first, using `T_dependent_property`.
+        CSP method, described in :obj:`Missenard <chemicals.thermal_conductivity.Missenard>`. Calculates a
+        low-pressure thermal conductivity first from the low-pressure method.
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
         Range is limited to that of the equations of state it uses, as
@@ -171,15 +246,15 @@ class ThermalConductivityLiquid(TPDependentProperty):
 
     See Also
     --------
-    Sheffy_Johnson
-    Sato_Riedel
-    Lakshmi_Prasad
-    Gharagheizi_liquid
-    Nicola_original
-    Nicola
-    Bahadori_liquid
-    DIPPR9G
-    Missenard
+    chemicals.thermal_conductivity.Sheffy_Johnson
+    chemicals.thermal_conductivity.Sato_Riedel
+    chemicals.thermal_conductivity.Lakshmi_Prasad
+    chemicals.thermal_conductivity.Gharagheizi_liquid
+    chemicals.thermal_conductivity.Nicola_original
+    chemicals.thermal_conductivity.Nicola
+    chemicals.thermal_conductivity.Bahadori_liquid
+    chemicals.thermal_conductivity.DIPPR9G
+    chemicals.thermal_conductivity.Missenard
 
     References
     ----------
@@ -205,9 +280,9 @@ class ThermalConductivityLiquid(TPDependentProperty):
     '''No interpolation transformation by default.'''
     tabular_extrapolation_permitted = True
     '''Allow tabular extrapolation by default.'''
-    property_min = 0
+    property_min = 0.0
     '''Mimimum valid value of liquid thermal conductivity.'''
-    property_max = 10
+    property_max = 10.0
     '''Maximum valid value of liquid thermal conductivity. Generous limit.'''
 
     ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR,
@@ -219,8 +294,8 @@ class ThermalConductivityLiquid(TPDependentProperty):
 
 
     def __init__(self, CASRN='', MW=None, Tm=None, Tb=None, Tc=None, Pc=None,
-                 omega=None, Hfus=None, best_fit=None, load_data=True,
-                 extrapolation='linear'):
+                 omega=None, Hfus=None, load_data=True,
+                 extrapolation='linear', poly_fit=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tm = Tm
@@ -259,19 +334,6 @@ class ThermalConductivityLiquid(TPDependentProperty):
         if an interpolation transform is altered, the old interpolator which
         had been created is no longer used.'''
 
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
-        self.sorted_valid_methods_P = []
-        '''sorted_valid_methods_P, list: Stored methods which were found valid
-        at a specific temperature; set by `TP_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
-        self.user_methods_P = []
-        '''user_methods_P, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `TP_dependent_property`.'''
-
         self.all_methods = set()
         '''Set of all low-pressure methods available for a given CASRN and
         properties; filled by :obj:`load_all_methods`.'''
@@ -280,8 +342,8 @@ class ThermalConductivityLiquid(TPDependentProperty):
         properties; filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
         else:
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
@@ -365,12 +427,16 @@ class ThermalConductivityLiquid(TPDependentProperty):
         self.all_methods_P = set(methods_P)
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
+        for m in self.ranked_methods_P:
+            if m in self.all_methods_P:
+                self.method_P = m
+                break
 
     def calculate(self, T, method):
         r'''Method to calculate low-pressure liquid thermal conductivity at
         tempearture `T` with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters
@@ -408,19 +474,19 @@ class ThermalConductivityLiquid(TPDependentProperty):
         elif method in self.tabular_data:
             kl = self.interpolate(T, method)
         elif method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                kl = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                kl = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            if T < self.poly_fit_Tmin:
+                kl = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
+            elif T > self.poly_fit_Tmax:
+                kl = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
-                kl = horner(self.best_fit_coeffs, T)
+                kl = horner(self.poly_fit_coeffs, T)
         return kl
 
     def calculate_P(self, T, P, method):
         r'''Method to calculate pressure-dependent liquid thermal conductivity
         at temperature `T` and pressure `P` with a given method.
 
-        This method has no exception handling; see `TP_dependent_property`
+        This method has no exception handling; see :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`
         for that.
 
         Parameters
@@ -559,6 +625,8 @@ FILIPPOV = 'Filippov'
 SIMPLE = 'Simple'
 
 thermal_conductivity_liquid_mixture_methods = [MAGOMEDOV, DIPPR_9H, FILIPPOV, SIMPLE]
+'''Holds all mixing rules available for the :obj:`ThermalConductivityLiquidMixture`
+class, for use in iterating over them.'''
 
 
 class ThermalConductivityLiquidMixture(MixtureProperty):
@@ -566,21 +634,21 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     function of temperature, pressure, and composition.
     Consists of two mixing rule specific to liquid thremal conductivity, one
     coefficient-based method for aqueous electrolytes, and mole weighted
-    averaging.
+    averaging. Most but not all methods are shown in [1]_.
 
-    Prefered method is :obj:`DIPPR9H` which requires mass
+    Prefered method is :obj:`DIPPR9H <chemicals.thermal_conductivity.DIPPR9H>` which requires mass
     fractions, and pure component liquid thermal conductivities. This is
     substantially better than the ideal mixing rule based on mole fractions,
-    **SIMPLE**. **Filippov** is of similar accuracy but applicable to binary
-    systems only.
+    **SIMPLE**. :obj:`Filippov <chemicals.thermal_conductivity.Filippov>`
+    is of similar accuracy but applicable to binary systems only.
 
     Parameters
     ----------
     CASs : str, optional
-        The CAS numbers of all species in the mixture
+        The CAS numbers of all species in the mixture, [-]
     ThermalConductivityLiquids : list[ThermalConductivityLiquid], optional
         ThermalConductivityLiquid objects created for all species in the
-        mixture, normally created by :obj:`thermo.chemical.Chemical`.
+        mixture, [-]
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
     correct_pressure_pure : bool, optional
@@ -593,20 +661,20 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     :obj:`thermal_conductivity_liquid_mixture_methods`.
 
     **DIPPR9H**:
-        Mixing rule described in :obj:`DIPPR9H`.
+        Mixing rule described in :obj:`DIPPR9H <chemicals.thermal_conductivity.DIPPR9H>`.
     **Filippov**:
-        Mixing rule described in :obj:`Filippov`; for two binary systems only.
+        Mixing rule described in :obj:`Filippov <chemicals.thermal_conductivity.Filippov>`; for two binary systems only.
     **Magomedov**:
         Coefficient-based method for aqueous electrolytes only, described in
         :obj:`thermo.electrochem.thermal_conductivity_Magomedov`.
     **SIMPLE**:
-        Mixing rule described in :obj:`thermo.utils.mixing_simple`.
+        Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
 
     See Also
     --------
-    DIPPR9H
-    Filippov
-    thermal_conductivity_Magomedov
+    chemicals.thermal_conductivity.DIPPR9H
+    chemicals.thermal_conductivity.Filippov
+    chemicals.thermal_conductivity.thermal_conductivity_Magomedov
 
     References
     ----------
@@ -620,7 +688,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     property_max = 10
     '''Maximum valid value of liquid thermal conductivity. Generous limit.'''
 
-    ranked_methods = [DIPPR_9H, SIMPLE, MAGOMEDOV, FILIPPOV]
+    ranked_methods = [MAGOMEDOV, DIPPR_9H, SIMPLE, FILIPPOV]
 
     def __init__(self, CASs=[], ThermalConductivityLiquids=[], MWs=[],
                  correct_pressure_pure=True):
@@ -639,16 +707,16 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `mixture_property`.'''
+        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.user_methods = []
         '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `mixture_property`.'''
+        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
 
-        self.set_best_fit_coeffs()
+        self.set_poly_fit_coeffs()
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -672,20 +740,24 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
                 self.wCASs = wCASs
                 self.index_w = self.CASs.index('7732-18-5')
 
-        self.all_methods = set(methods)
+        self.all_methods = all_methods = set(methods)
         Tmins = [i.Tmin for i in self.ThermalConductivityLiquids if i.Tmin]
         Tmaxs = [i.Tmax for i in self.ThermalConductivityLiquids if i.Tmax]
         if Tmins:
             self.Tmin = max(Tmins)
         if Tmaxs:
             self.Tmax = max(Tmaxs)
+        for m in self.ranked_methods:
+            if m in all_methods:
+                self.method = m
+                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate thermal conductivity of a liquid mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
-        This method has no exception handling; see `mixture_property`
+        This method has no exception handling; see :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`
         for that.
 
         Parameters
@@ -779,11 +851,11 @@ DIPPR_9B = 'DIPPR_9B'
 thermal_conductivity_gas_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI_G,
                                     DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD,
                                     EUCKEN, BAHADORI_G]
-'''Holds all low-pressure methods available for the ThermalConductivityGas
+'''Holds all low-pressure methods available for the :obj:`ThermalConductivityGas`
 class, for use in iterating over them.'''
 thermal_conductivity_gas_methods_P = [COOLPROP, ELI_HANLEY_DENSE, CHUNG_DENSE,
                                       STIEL_THODOS_DENSE]
-'''Holds all high-pressure methods available for the ThermalConductivityGas
+'''Holds all high-pressure methods available for the :obj:`ThermalConductivityGas`
 class, for use in iterating over them.'''
 
 class ThermalConductivityGas(TPDependentProperty):
@@ -828,8 +900,18 @@ class ThermalConductivityGas(TPDependentProperty):
         Gas viscosity of the fluid at a pressure and temperature or callable
         for the same, [Pa*s]
     load_data : bool, optional
-        If False, do not load property coefficients from data sources in files;
+        If False, do not load property coefficients from data sources in files
         [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        viscosity of the compound; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default low-pressure method if provided. [-]
 
     Notes
     -----
@@ -841,23 +923,23 @@ class ThermalConductivityGas(TPDependentProperty):
     Low pressure methods:
 
     **GHARAGHEIZI_G**:
-        CSP method, described in :obj:`Gharagheizi_gas`.
+        CSP method, described in :obj:`Gharagheizi_gas <chemicals.thermal_conductivity.Gharagheizi_gas>`.
     **DIPPR_9B**:
-        CSP method, described in :obj:`DIPPR9B`.
+        CSP method, described in :obj:`DIPPR9B <chemicals.thermal_conductivity.DIPPR9B>`.
     **CHUNG**:
-        CSP method, described in :obj:`Chung`.
+        CSP method, described in :obj:`Chung <chemicals.thermal_conductivity.Chung>`.
     **ELI_HANLEY**:
-        CSP method, described in :obj:`Eli_Hanley`.
+        CSP method, described in :obj:`Eli_Hanley <chemicals.thermal_conductivity.Eli_Hanley>`.
     **EUCKEN_MOD**:
-        CSP method, described in :obj:`Eucken_modified`.
+        CSP method, described in :obj:`Eucken_modified <chemicals.thermal_conductivity.Eucken_modified>`.
     **EUCKEN**:
-        CSP method, described in :obj:`Eucken`.
+        CSP method, described in :obj:`Eucken <chemicals.thermal_conductivity.Eucken>`.
     **BAHADORI_G**:
-        CSP method, described in :obj:`Bahadori_gas`.
+        CSP method, described in :obj:`Bahadori_gas <chemicals.thermal_conductivity.Bahadori_gas>`.
     **DIPPR_PERRY_8E**:
         A collection of 345 coefficient sets from the DIPPR database published
         openly in [3]_. Provides temperature limits for all its fluids.
-        :obj:`thermo.dippr.EQ102` is used for its fluids.
+        :obj:`chemicals.dippr.EQ102` is used for its fluids.
     **VDI_PPDS**:
         Coefficients for a equation form developed by the PPDS, published
         openly in [2]_. Covers a large temperature range, but does not
@@ -873,14 +955,14 @@ class ThermalConductivityGas(TPDependentProperty):
     High pressure methods:
 
     **STIEL_THODOS_DENSE**:
-        CSP method, described in :obj:`Stiel_Thodos_dense`. Calculates a
-        low-pressure thermal conductivity first, using `T_dependent_property`.
+        CSP method, described in :obj:`Stiel_Thodos_dense <chemicals.thermal_conductivity.Stiel_Thodos_dense>`. Calculates a
+        low-pressure thermal conductivity first.
     **ELI_HANLEY_DENSE**:
-        CSP method, described in :obj:`Eli_Hanley_dense`. Calculates a
-        low-pressure thermal conductivity first, using `T_dependent_property`.
+        CSP method, described in :obj:`Eli_Hanley_dense <chemicals.thermal_conductivity.Eli_Hanley_dense>`. Calculates a
+        low-pressure thermal conductivity first.
     **CHUNG_DENSE**:
-        CSP method, described in :obj:`Chung_dense`. Calculates a
-        low-pressure thermal conductivity first, using `T_dependent_property`.
+        CSP method, described in :obj:`Chung_dense <chemicals.thermal_conductivity.Chung_dense>`. Calculates a
+        low-pressure thermal conductivity first.
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
         Range is limited to that of the equations of state it uses, as
@@ -889,16 +971,16 @@ class ThermalConductivityGas(TPDependentProperty):
 
     See Also
     --------
-    Bahadori_gas
-    Gharagheizi_gas
-    Eli_Hanley
-    Chung
-    DIPPR9B
-    Eucken_modified
-    Eucken
-    Stiel_Thodos_dense
-    Eli_Hanley_dense
-    Chung_dense
+    chemicals.thermal_conductivity.Bahadori_gas
+    chemicals.thermal_conductivity.Gharagheizi_gas
+    chemicals.thermal_conductivity.Eli_Hanley
+    chemicals.thermal_conductivity.Chung
+    chemicals.thermal_conductivity.DIPPR9B
+    chemicals.thermal_conductivity.Eucken_modified
+    chemicals.thermal_conductivity.Eucken
+    chemicals.thermal_conductivity.Stiel_Thodos_dense
+    chemicals.thermal_conductivity.Eli_Hanley_dense
+    chemicals.thermal_conductivity.Chung_dense
 
     References
     ----------
@@ -939,7 +1021,7 @@ class ThermalConductivityGas(TPDependentProperty):
 
     def __init__(self, CASRN='', MW=None, Tb=None, Tc=None, Pc=None, Vc=None,
                  Zc=None, omega=None, dipole=None, Vmg=None, Cvgm=None, mug=None,
-                 best_fit=None, load_data=True, extrapolation='linear'):
+                 load_data=True, extrapolation='linear', poly_fit=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tb = Tb
@@ -982,19 +1064,6 @@ class ThermalConductivityGas(TPDependentProperty):
         if an interpolation transform is altered, the old interpolator which
         had been created is no longer used.'''
 
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
-        self.sorted_valid_methods_P = []
-        '''sorted_valid_methods_P, list: Stored methods which were found valid
-        at a specific temperature; set by `TP_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
-        self.user_methods_P = []
-        '''user_methods_P, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `TP_dependent_property`.'''
-
         self.all_methods = set()
         '''Set of all low-pressure methods available for a given CASRN and
         properties; filled by :obj:`load_all_methods`.'''
@@ -1003,8 +1072,8 @@ class ThermalConductivityGas(TPDependentProperty):
         properties; filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
         else:
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
@@ -1091,12 +1160,16 @@ class ThermalConductivityGas(TPDependentProperty):
         self.all_methods_P = set(methods_P)
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
+        for m in self.ranked_methods_P:
+            if m in self.all_methods_P:
+                self.method_P = m
+                break
 
     def calculate(self, T, method):
         r'''Method to calculate low-pressure gas thermal conductivity at
         tempearture `T` with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters
@@ -1141,12 +1214,12 @@ class ThermalConductivityGas(TPDependentProperty):
         elif method == COOLPROP:
             kg = CoolProp_T_dependent_property(T, self.CASRN, 'L', 'g')
         elif method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                kg = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                kg = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            if T < self.poly_fit_Tmin:
+                kg = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
+            elif T > self.poly_fit_Tmax:
+                kg = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
-                kg = horner(self.best_fit_coeffs, T)
+                kg = horner(self.poly_fit_coeffs, T)
         elif method in self.tabular_data:
             kg = self.interpolate(T, method)
         return kg
@@ -1155,7 +1228,7 @@ class ThermalConductivityGas(TPDependentProperty):
         r'''Method to calculate pressure-dependent gas thermal conductivity
         at temperature `T` and pressure `P` with a given method.
 
-        This method has no exception handling; see `TP_dependent_property`
+        This method has no exception handling; see :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`
         for that.
 
         Parameters
@@ -1285,8 +1358,9 @@ class ThermalConductivityGas(TPDependentProperty):
 
 
 LINDSAY_BROMLEY = 'LINDSAY_BROMLEY'
-thermal_conductivity_gas_methods = [LINDSAY_BROMLEY, SIMPLE]
-
+thermal_conductivity_gas_mixture_methods = [LINDSAY_BROMLEY, SIMPLE]
+'''Holds all mixing rules available for the :obj:`ThermalConductivityGasMixture`
+class, for use in iterating over them.'''
 
 class ThermalConductivityGasMixture(MixtureProperty):
     '''Class for dealing with thermal conductivity of a gas mixture as a
@@ -1294,11 +1368,12 @@ class ThermalConductivityGasMixture(MixtureProperty):
     Consists of one mixing rule specific to gas thremal conductivity, and mole
     weighted averaging.
 
-    Prefered method is :obj:`Lindsay_Bromley` which requires mole
+    Prefered method is :obj:`Lindsay_Bromley <chemicals.thermal_conductivity.Lindsay_Bromley>` which requires mole
     fractions, pure component viscosities and thermal conductivities, and the
     boiling point and molecular weight of each pure component. This is
     substantially better than the ideal mixing rule based on mole fractions,
-    **SIMPLE** which is also available.
+    **SIMPLE** which is also available. More information on this topic can
+    be found in [1]_.
 
     Parameters
     ----------
@@ -1310,10 +1385,9 @@ class ThermalConductivityGasMixture(MixtureProperty):
         The CAS numbers of all species in the mixture
     ThermalConductivityGases : list[ThermalConductivityGas], optional
         ThermalConductivityGas objects created for all species in the mixture,
-        normally created by :obj:`thermo.chemical.Chemical`.
+        [-]
     ViscosityGases : list[ViscosityGas], optional
-        ViscosityGas objects created for all species in the mixture, normally
-        created by :obj:`thermo.chemical.Chemical`.
+        ViscosityGas objects created for all species in the mixture, [-]
     correct_pressure_pure : bool, optional
         Whether to try to use the better pressure-corrected pure component
         models or to use only the T-only dependent pure species models, [-]
@@ -1324,13 +1398,13 @@ class ThermalConductivityGasMixture(MixtureProperty):
     :obj:`thermal_conductivity_gas_methods`.
 
     **LINDSAY_BROMLEY**:
-        Mixing rule described in :obj:`Lindsay_Bromley`.
+        Mixing rule described in :obj:`Lindsay_Bromley <chemicals.thermal_conductivity.Lindsay_Bromley>`.
     **SIMPLE**:
-        Mixing rule described in :obj:`thermo.utils.mixing_simple`.
+        Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
 
     See Also
     --------
-    Lindsay_Bromley
+    chemicals.thermal_conductivity.Lindsay_Bromley
 
     References
     ----------
@@ -1365,16 +1439,16 @@ class ThermalConductivityGasMixture(MixtureProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `mixture_property`.'''
+        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.user_methods = []
         '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `mixture_property`.'''
+        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
 
-        self.set_best_fit_coeffs()
+        self.set_poly_fit_coeffs()
 
 
     def load_all_methods(self):
@@ -1393,20 +1467,24 @@ class ThermalConductivityGasMixture(MixtureProperty):
         methods.append(SIMPLE)
         if none_and_length_check((self.Tbs, self.MWs)):
             methods.append(LINDSAY_BROMLEY)
-        self.all_methods = set(methods)
+        self.all_methods = all_methods = set(methods)
         Tmins = [i.Tmin for i in self.ThermalConductivityGases if i.Tmin]
         Tmaxs = [i.Tmax for i in self.ThermalConductivityGases if i.Tmax]
         if Tmins:
             self.Tmin = max(Tmins)
         if Tmaxs:
             self.Tmax = max(Tmaxs)
+        for m in self.ranked_methods:
+            if m in all_methods:
+                self.method = m
+                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate thermal conductivity of a gas mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
-        This method has no exception handling; see `mixture_property`
+        This method has no exception handling; see :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`
         for that.
 
         Parameters

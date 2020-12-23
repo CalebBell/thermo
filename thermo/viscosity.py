@@ -18,14 +18,80 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains implementations of :obj:`TPDependentProperty <thermo.utils.TPDependentProperty>`
+representing liquid and vapor viscosity. A variety of estimation
+and data methods are available as included in the `chemicals` library.
+Additionally liquid and vapor mixture viscosity predictor objects
+are implemented subclassing  :obj:`MixtureProperty <thermo.utils.MixtureProperty>`.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+
+.. contents:: :local:
+
+Pure Liquid Viscosity
+=====================
+.. autoclass:: ViscosityLiquid
+    :members: calculate, calculate_P, test_method_validity, test_method_validity_P,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods, ranked_methods_P
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: viscosity_liquid_methods
+.. autodata:: viscosity_liquid_methods_P
+
+Pure Gas Viscosity
+==================
+.. autoclass:: ViscosityGas
+    :members: calculate, calculate_P, test_method_validity, test_method_validity_P,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods, ranked_methods_P
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: viscosity_gas_methods
+.. autodata:: viscosity_gas_methods_P
+
+Mixture Liquid Viscosity
+========================
+.. autoclass:: ViscosityLiquidMixture
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: viscosity_liquid_mixture_methods
+
+Mixture Gas Viscosity
+=====================
+.. autoclass:: ViscosityGasMixture
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: viscosity_gas_mixture_methods
+
+
+'''
 
 from __future__ import division
 
 __all__ = ['viscosity_liquid_methods', 'viscosity_liquid_methods_P',
            'ViscosityLiquid', 'ViscosityGas', 'viscosity_gas_methods',
            'viscosity_gas_methods_P', 'ViscosityLiquidMixture',
-           'ViscosityGasMixture',
+           'ViscosityGasMixture', 'viscosity_liquid_mixture_methods',
+           'viscosity_gas_mixture_methods',
            'MIXING_LOG_MOLAR', 'MIXING_LOG_MASS',
            'BROKAW', 'HERNING_ZIPPERER', 'WILKE']
 
@@ -111,8 +177,18 @@ class ViscosityLiquid(TPDependentProperty):
         Liquid molar volume at a given temperature and pressure or callable
         for the same, [m^3/mol]
     load_data : bool, optional
-        If False, do not load property coefficients from data sources in files;
+        If False, do not load property coefficients from data sources in files
         [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        viscosity of the compound; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default low-pressure method if provided. [-]
 
     Notes
     -----
@@ -141,7 +217,7 @@ class ViscosityLiquid(TPDependentProperty):
     **DIPPR_PERRY_8E**:
         A collection of 337 coefficient sets from the DIPPR database published
         openly in [4]_. Provides temperature limits for all its fluids.
-        :obj:`thermo.dippr.EQ101` is used for its fluids.
+        :obj:`EQ101 <chemicals.dippr.EQ101>` is used for its fluids.
     **LETSOU_STIEL**:
         CSP method, described in :obj:`chemicals.viscosity.Letsou_Stiel`.
     **PRZEDZIECKI_SRIDHAR**:
@@ -165,21 +241,21 @@ class ViscosityLiquid(TPDependentProperty):
 
     **LUCAS**:
         CSP method, described in :obj:`chemicals.viscosity.Lucas`. Calculates a
-        low-pressure liquid viscosity first, using `T_dependent_property`.
+        low-pressure liquid viscosity as its input.
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
         Range is limited to that of the equations of state it uses, as
-        described in [5]_. Very slow, but unparalled in accuracy for pressure
+        described in [2]_. Very slow, but unparalled in accuracy for pressure
         dependence.
 
     See Also
     --------
-    Viswanath_Natarajan_3
-    Viswanath_Natarajan_2
-    Viswanath_Natarajan_2_exponential
-    Letsou_Stiel
-    Przedziecki_Sridhar
-    Lucas
+    chemicals.viscosity.Viswanath_Natarajan_3
+    chemicals.viscosity.Viswanath_Natarajan_2
+    chemicals.viscosity.Viswanath_Natarajan_2_exponential
+    chemicals.viscosity.Letsou_Stiel
+    chemicals.viscosity.Przedziecki_Sridhar
+    chemicals.viscosity.Lucas
 
     References
     ----------
@@ -221,8 +297,8 @@ class ViscosityLiquid(TPDependentProperty):
     '''Default rankings of the high-pressure methods.'''
 
     def __init__(self, CASRN='', MW=None, Tm=None, Tc=None, Pc=None, Vc=None,
-                 omega=None, Psat=None, Vml=None, best_fit=None,
-                 load_data=True, extrapolation=None):
+                 omega=None, Psat=None, Vml=None, load_data=True,
+                 extrapolation=None, poly_fit=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tm = Tm
@@ -262,29 +338,20 @@ class ViscosityLiquid(TPDependentProperty):
         if an interpolation transform is altered, the old interpolator which
         had been created is no longer used.'''
 
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
         self.sorted_valid_methods_P = []
         '''sorted_valid_methods_P, list: Stored methods which were found valid
-        at a specific temperature; set by `TP_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
+        at a specific temperature; set by :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`.'''
         self.user_methods_P = []
         '''user_methods_P, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `TP_dependent_property`.'''
+        in a ranked order of preference; set by :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`.'''
 
-        self.all_methods = set()
-        '''Set of all low-pressure methods available for a given CASRN and
-        properties; filled by :obj:`load_all_methods`.'''
         self.all_methods_P = set()
         '''Set of all high-pressure methods available for a given CASRN and
         properties; filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
         else:
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
@@ -415,12 +482,17 @@ class ViscosityLiquid(TPDependentProperty):
         self.all_methods_P = set(methods_P)
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
+        for m in self.ranked_methods_P:
+            if m in self.all_methods_P:
+                self.method_P = m
+                break
+
 
     def calculate(self, T, method):
         r'''Method to calculate low-pressure liquid viscosity at tempearture
         `T` with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters
@@ -459,13 +531,13 @@ class ViscosityLiquid(TPDependentProperty):
         elif method == VDI_PPDS:
             return PPDS9(T, *self.VDI_PPDS_coeffs)
         elif method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                mu = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                mu = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            if T < self.poly_fit_Tmin:
+                mu = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
+            elif T > self.poly_fit_Tmax:
+                mu = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
                 mu = 0.0
-                for c in self.best_fit_coeffs:
+                for c in self.poly_fit_coeffs:
                     mu = mu*T + c
             mu = exp(mu)
         elif method in self.tabular_data:
@@ -555,7 +627,7 @@ class ViscosityLiquid(TPDependentProperty):
         r'''Method to calculate pressure-dependent liquid viscosity at
         temperature `T` and pressure `P` with a given method.
 
-        This method has no exception handling; see `TP_dependent_property`
+        This method has no exception handling; see :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`
         for that.
 
         Parameters
@@ -666,8 +738,18 @@ class ViscosityGas(TPDependentProperty):
     Vmg : float, optional
         Molar volume of the fluid at a pressure and temperature, [m^3/mol]
     load_data : bool, optional
-        If False, do not load property coefficients from data sources in files;
+        If False, do not load property coefficients from data sources in files
         [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        viscosity of the compound; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default low-pressure method if provided. [-]
 
     Notes
     -----
@@ -714,10 +796,10 @@ class ViscosityGas(TPDependentProperty):
 
     See Also
     --------
-    Gharagheizi_gas_viscosity
-    Yoon_Thodos
-    Stiel_Thodos
-    Lucas_gas
+    chemicals.viscosity.Gharagheizi_gas_viscosity
+    chemicals.viscosity.Yoon_Thodos
+    chemicals.viscosity.Stiel_Thodos
+    chemicals.viscosity.Lucas_gas
 
     References
     ----------
@@ -756,8 +838,8 @@ class ViscosityGas(TPDependentProperty):
     '''Default rankings of the high-pressure methods.'''
 
     def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, Zc=None,
-                 dipole=None, Vmg=None, best_fit=None, load_data=True,
-                 extrapolation='linear'):
+                 dipole=None, Vmg=None, load_data=True,
+                 extrapolation='linear', poly_fit=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tc = Tc
@@ -796,18 +878,12 @@ class ViscosityGas(TPDependentProperty):
         if an interpolation transform is altered, the old interpolator which
         had been created is no longer used.'''
 
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
         self.sorted_valid_methods_P = []
         '''sorted_valid_methods_P, list: Stored methods which were found valid
-        at a specific temperature; set by `TP_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
+        at a specific temperature; set by :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`.'''
         self.user_methods_P = []
         '''user_methods_P, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `TP_dependent_property`.'''
+        in a ranked order of preference; set by :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`.'''
 
         self.all_methods = set()
         '''Set of all low-pressure methods available for a given CASRN and
@@ -817,8 +893,8 @@ class ViscosityGas(TPDependentProperty):
         properties; filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
         else:
             methods = self.select_valid_methods(T=None, check_validity=False)
             if methods:
@@ -885,12 +961,16 @@ class ViscosityGas(TPDependentProperty):
         self.all_methods_P = set(methods_P)
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
+        for m in self.ranked_methods_P:
+            if m in self.all_methods_P:
+                self.method_P = m
+                break
 
     def calculate(self, T, method):
         r'''Method to calculate low-pressure gas viscosity at
         tempearture `T` with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters
@@ -922,13 +1002,13 @@ class ViscosityGas(TPDependentProperty):
         elif method in self.tabular_data:
             mu = self.interpolate(T, method)
         elif method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                mu = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                mu = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            if T < self.poly_fit_Tmin:
+                mu = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
+            elif T > self.poly_fit_Tmax:
+                mu = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
                 mu = 0.0
-                for c in self.best_fit_coeffs:
+                for c in self.poly_fit_coeffs:
                     mu = mu*T + c
         return mu
 
@@ -991,7 +1071,7 @@ class ViscosityGas(TPDependentProperty):
         r'''Method to calculate pressure-dependent gas viscosity
         at temperature `T` and pressure `P` with a given method.
 
-        This method has no exception handling; see `TP_dependent_property`
+        This method has no exception handling; see :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`
         for that.
 
         Parameters
@@ -1059,6 +1139,8 @@ MIXING_LOG_MASS = 'Logarithmic mixing, mass'
 SIMPLE = 'Simple'
 
 viscosity_liquid_mixture_methods = [LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, SIMPLE]
+'''Holds all mixing rules available for the :obj:`ViscosityLiquidMixture`
+class, for use in iterating over them.'''
 
 
 class ViscosityLiquidMixture(MixtureProperty):
@@ -1067,7 +1149,7 @@ class ViscosityLiquidMixture(MixtureProperty):
     Consists of one electrolyte-specific method, and logarithmic rules based
     on either mole fractions of mass fractions.
 
-    Prefered method is :obj:`mixing_logarithmic` with mole
+    Prefered method is :obj:`mixing_logarithmic <chemicals.utils.mixing_logarithmic>` with mole
     fractions, or **Laliberte** if the mixture is aqueous and has electrolytes.
 
     Parameters
@@ -1075,8 +1157,7 @@ class ViscosityLiquidMixture(MixtureProperty):
     CASs : list[str], optional
         The CAS numbers of all species in the mixture
     ViscosityLiquids : list[ViscosityLiquid], optional
-        ViscosityLiquid objects created for all species in the mixture,
-        normally created by :obj:`thermo.chemical.Chemical`.
+        ViscosityLiquid objects created for all species in the mixture, [-]
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
     correct_pressure_pure : bool, optional
@@ -1093,13 +1174,13 @@ class ViscosityLiquidMixture(MixtureProperty):
         :obj:`thermo.electrochem.Laliberte_viscosity` for more details.
     **MIXING_LOG_MOLAR**:
         Logarithmic mole fraction mixing rule described in
-        :obj:`thermo.utils.mixing_logarithmic`.
+        :obj:`chemicals.utils.mixing_logarithmic`.
     **MIXING_LOG_MASS**:
         Logarithmic mole fraction mixing rule described in
-        :obj:`thermo.utils.mixing_logarithmic`.
+        :obj:`chemicals.utils.mixing_logarithmic`.
     **SIMPLE**:
         Linear mole fraction mixing rule described in
-        :obj:`thermo.utils.mixing_simple`.
+        :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
 
     See Also
     --------
@@ -1135,17 +1216,8 @@ class ViscosityLiquidMixture(MixtureProperty):
         '''Maximum temperature at which no method can calculate the
         liquid viscosity above.'''
 
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `mixture_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `mixture_property`.'''
-        self.all_methods = set()
-        '''Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
-        self.set_best_fit_coeffs()
+        self.set_poly_fit_coeffs()
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -1166,20 +1238,24 @@ class ViscosityLiquidMixture(MixtureProperty):
                 methods.append(LALIBERTE_MU)
                 self.wCASs = wCASs
                 self.index_w = self.CASs.index('7732-18-5')
-        self.all_methods = set(methods)
+        self.all_methods = all_methods = set(methods)
         Tmins = [i.Tmin for i in self.ViscosityLiquids if i.Tmin]
         Tmaxs = [i.Tmax for i in self.ViscosityLiquids if i.Tmax]
         if Tmins:
             self.Tmin = max(Tmins)
         if Tmaxs:
             self.Tmax = max(Tmaxs)
+        for m in self.ranked_methods:
+            if m in all_methods:
+                self.method = m
+                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate viscosity of a liquid mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
-        This method has no exception handling; see `mixture_property`
+        This method has no exception handling; see :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`
         for that.
 
         Parameters
@@ -1213,14 +1289,14 @@ class ViscosityLiquidMixture(MixtureProperty):
                 mus.append(mu)
         else:
             if self.locked:
-                best_fit_data = self.best_fit_data
-                Tmins, Tmaxs, coeffs = best_fit_data[0], best_fit_data[3], best_fit_data[6]
+                poly_fit_data = self.poly_fit_data
+                Tmins, Tmaxs, coeffs = poly_fit_data[0], poly_fit_data[3], poly_fit_data[6]
                 mus = []
                 for i in range(len(zs)):
                     if T < Tmins[i]:
-                        mu = (T - Tmins[i])*best_fit_data[1][i] + best_fit_data[2][i]
+                        mu = (T - Tmins[i])*poly_fit_data[1][i] + poly_fit_data[2][i]
                     elif T > Tmaxs[i]:
-                        mu = (T - Tmaxs[i])*best_fit_data[4][i] + best_fit_data[5][i]
+                        mu = (T - Tmaxs[i])*poly_fit_data[4][i] + poly_fit_data[5][i]
                     else:
                         mu = 0.0
                         for c in coeffs[i]:
@@ -1277,7 +1353,7 @@ class ViscosityLiquidMixture(MixtureProperty):
         if method in self.all_methods:
             return True
         else:
-            raise Exception('Method not valid')
+            raise ValueError('Method not valid')
 
 
 
@@ -1286,6 +1362,9 @@ BROKAW = 'Brokaw'
 HERNING_ZIPPERER = 'Herning-Zipperer'
 WILKE = 'Wilke'
 viscosity_gas_mixture_methods = [BROKAW, HERNING_ZIPPERER, WILKE, SIMPLE]
+'''Holds all mixing rules available for the :obj:`ViscosityGasMixture`
+class, for use in iterating over them.'''
+
 
 
 class ViscosityGasMixture(MixtureProperty):
@@ -1294,7 +1373,7 @@ class ViscosityGasMixture(MixtureProperty):
     Consists of three gas viscosity specific mixing rules and a mole-weighted
     simple mixing rule.
 
-    Prefered method is :obj:`Brokaw`.
+    Prefered method is :obj:`Brokaw <chemicals.viscosity.Brokaw>`.
 
     Parameters
     ----------
@@ -1308,8 +1387,7 @@ class ViscosityGasMixture(MixtureProperty):
     CASs : list[str], optional
         The CAS numbers of all species in the mixture
     ViscosityGases : list[ViscosityGas], optional
-        ViscosityGas objects created for all species in the mixture,
-        normally created by :obj:`thermo.chemical.Chemical`.
+        ViscosityGas objects created for all species in the mixture, [-]
     correct_pressure_pure : bool, optional
         Whether to try to use the better pressure-corrected pure component
         models or to use only the T-only dependent pure species models, [-]
@@ -1320,19 +1398,19 @@ class ViscosityGasMixture(MixtureProperty):
     :obj:`viscosity_liquid_mixture_methods`.
 
     **Brokaw**:
-        Mixing rule described in :obj:`Brokaw`.
+        Mixing rule described in :obj:`Brokaw <chemicals.viscosity.Brokaw>`.
     **Herning-Zipperer**:
-        Mixing rule described in :obj:`Herning_Zipperer`.
+        Mixing rule described in :obj:`Herning_Zipperer <chemicals.viscosity.Herning_Zipperer>`.
     **Wilke**:
-        Mixing rule described in :obj:`Wilke`.
+        Mixing rule described in :obj:`Wilke <chemicals.viscosity.Wilke>`.
     **SIMPLE**:
-        Mixing rule described in :obj:`thermo.utils.mixing_simple`.
+        Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
 
     See Also
     --------
-    Brokaw
-    Herning_Zipperer
-    Wilke
+    chemicals.viscosity.Brokaw
+    chemicals.viscosity.Herning_Zipperer
+    chemicals.viscosity.Wilke
 
     References
     ----------
@@ -1371,18 +1449,9 @@ class ViscosityGasMixture(MixtureProperty):
         '''Maximum temperature at which no method can calculate the
         gas viscosity above.'''
 
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `mixture_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `mixture_property`.'''
-        self.all_methods = set()
-        '''Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
 
-        self.set_best_fit_coeffs()
+        self.set_poly_fit_coeffs()
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -1401,20 +1470,25 @@ class ViscosityGasMixture(MixtureProperty):
             methods.append(BROKAW)
         if none_and_length_check([self.MWs]):
             methods.extend([WILKE, HERNING_ZIPPERER])
-        self.all_methods = set(methods)
+
+        self.all_methods = all_methods = set(methods)
         Tmins = [i.Tmin for i in self.ViscosityGases if i.Tmin]
         Tmaxs = [i.Tmax for i in self.ViscosityGases if i.Tmax]
         if Tmins:
             self.Tmin = max(Tmins)
         if Tmaxs:
             self.Tmax = max(Tmaxs)
+        for m in self.ranked_methods:
+            if m in all_methods:
+                self.method = m
+                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate viscosity of a gas mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
-        This method has no exception handling; see `mixture_property`
+        This method has no exception handling; see :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`
         for that.
 
         Parameters
@@ -1444,14 +1518,14 @@ class ViscosityGasMixture(MixtureProperty):
                 mus.append(mu)
         else:
             if self.locked:
-                best_fit_data = self.best_fit_data
-                Tmins, Tmaxs, coeffs = best_fit_data[0], best_fit_data[3], best_fit_data[6]
+                poly_fit_data = self.poly_fit_data
+                Tmins, Tmaxs, coeffs = poly_fit_data[0], poly_fit_data[3], poly_fit_data[6]
                 mus = []
                 for i in range(len(zs)):
                     if T < Tmins[i]:
-                        mu = (T - Tmins[i])*best_fit_data[1][i] + best_fit_data[2][i]
+                        mu = (T - Tmins[i])*poly_fit_data[1][i] + poly_fit_data[2][i]
                     elif T > Tmaxs[i]:
-                        mu = (T - Tmaxs[i])*best_fit_data[4][i] + best_fit_data[5][i]
+                        mu = (T - Tmaxs[i])*poly_fit_data[4][i] + poly_fit_data[5][i]
                     else:
                         mu = 0.0
                         for c in coeffs[i]:

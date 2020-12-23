@@ -50,7 +50,7 @@ def test_Chemical_properties():
     assert_allclose(pentane.Tt, 143.47)
 
     # Vapor pressure correlation did not extend down far enough once made strict
-#    assert_allclose(pentane.Pt, 0.07098902774226569)
+    assert_allclose(pentane.Pt, 0.12218586819726474)
 
     assert_allclose(pentane.Hfus, 116426.08509804323, rtol=1E-3)
     assert_allclose(pentane.Hfusm, 8400.0, rtol=1E-3)

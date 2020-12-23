@@ -20,6 +20,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+.. contents:: :local:
+
 Base Class
 ==========
 
@@ -135,7 +137,7 @@ from math import isinf, isnan, sqrt
 from fluids.constants import R, R_inv
 import fluids.constants
 from fluids.numerics import (horner, horner_and_der, horner_and_der2, horner_log, jacobian, derivative,
-                             best_fit_integral_value, best_fit_integral_over_T_value,
+                             poly_fit_integral_value, poly_fit_integral_over_T_value,
                              evaluate_linear_fits, evaluate_linear_fits_d,
                              evaluate_linear_fits_d2, quadratic_from_f_ders,
                              newton_system, trunc_log, trunc_exp, newton)
@@ -2943,35 +2945,35 @@ class Phase(object):
         Cpgs_locked = all(i.locked for i in HeatCapacityGases) if HeatCapacityGases is not None else False
         if Cpgs_locked:
             T_REF_IG = self.T_REF_IG
-            Cpgs_data = ([i.best_fit_Tmin for i in HeatCapacityGases],
-                              [i.best_fit_Tmin_slope for i in HeatCapacityGases],
-                              [i.best_fit_Tmin_value for i in HeatCapacityGases],
-                              [i.best_fit_Tmax for i in HeatCapacityGases],
-                              [i.best_fit_Tmax_slope for i in HeatCapacityGases],
-                              [i.best_fit_Tmax_value for i in HeatCapacityGases],
-                              [i.best_fit_log_coeff for i in HeatCapacityGases],
-#                              [horner(i.best_fit_int_coeffs, i.best_fit_Tmin) for i in HeatCapacityGases],
-                              [horner(i.best_fit_int_coeffs, i.best_fit_Tmin) - i.best_fit_Tmin*(0.5*i.best_fit_Tmin_slope*i.best_fit_Tmin + i.best_fit_Tmin_value - i.best_fit_Tmin_slope*i.best_fit_Tmin) for i in HeatCapacityGases],
-#                              [horner(i.best_fit_int_coeffs, i.best_fit_Tmax) for i in HeatCapacityGases],
-                              [horner(i.best_fit_int_coeffs, i.best_fit_Tmax) - horner(i.best_fit_int_coeffs, i.best_fit_Tmin) + i.best_fit_Tmin*(0.5*i.best_fit_Tmin_slope*i.best_fit_Tmin + i.best_fit_Tmin_value - i.best_fit_Tmin_slope*i.best_fit_Tmin) for i in HeatCapacityGases],
-#                              [horner_log(i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmin) for i in HeatCapacityGases],
-                              [horner_log(i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmin) -(i.best_fit_Tmin_slope*i.best_fit_Tmin + (i.best_fit_Tmin_value - i.best_fit_Tmin_slope*i.best_fit_Tmin)*log(i.best_fit_Tmin)) for i in HeatCapacityGases],
-#                              [horner_log(i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmax) for i in HeatCapacityGases],
-                              [(horner_log(i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmax)
-                                - horner_log(i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmin)
-                                + (i.best_fit_Tmin_slope*i.best_fit_Tmin + (i.best_fit_Tmin_value - i.best_fit_Tmin_slope*i.best_fit_Tmin)*log(i.best_fit_Tmin))
-                                - (i.best_fit_Tmax_value -i.best_fit_Tmax*i.best_fit_Tmax_slope)*log(i.best_fit_Tmax)) for i in HeatCapacityGases],
-                              [best_fit_integral_value(T_REF_IG, i.best_fit_int_coeffs, i.best_fit_Tmin,
-                                                       i.best_fit_Tmax, i.best_fit_Tmin_value,
-                                                       i.best_fit_Tmax_value, i.best_fit_Tmin_slope,
-                                                       i.best_fit_Tmax_slope) for i in HeatCapacityGases],
-                              [i.best_fit_coeffs for i in HeatCapacityGases],
-                              [i.best_fit_int_coeffs for i in HeatCapacityGases],
-                              [i.best_fit_T_int_T_coeffs for i in HeatCapacityGases],
-                              [best_fit_integral_over_T_value(T_REF_IG, i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmin,
-                                                       i.best_fit_Tmax, i.best_fit_Tmin_value,
-                                                       i.best_fit_Tmax_value, i.best_fit_Tmin_slope,
-                                                       i.best_fit_Tmax_slope) for i in HeatCapacityGases],
+            Cpgs_data = ([i.poly_fit_Tmin for i in HeatCapacityGases],
+                              [i.poly_fit_Tmin_slope for i in HeatCapacityGases],
+                              [i.poly_fit_Tmin_value for i in HeatCapacityGases],
+                              [i.poly_fit_Tmax for i in HeatCapacityGases],
+                              [i.poly_fit_Tmax_slope for i in HeatCapacityGases],
+                              [i.poly_fit_Tmax_value for i in HeatCapacityGases],
+                              [i.poly_fit_log_coeff for i in HeatCapacityGases],
+#                              [horner(i.poly_fit_int_coeffs, i.poly_fit_Tmin) for i in HeatCapacityGases],
+                              [horner(i.poly_fit_int_coeffs, i.poly_fit_Tmin) - i.poly_fit_Tmin*(0.5*i.poly_fit_Tmin_slope*i.poly_fit_Tmin + i.poly_fit_Tmin_value - i.poly_fit_Tmin_slope*i.poly_fit_Tmin) for i in HeatCapacityGases],
+#                              [horner(i.poly_fit_int_coeffs, i.poly_fit_Tmax) for i in HeatCapacityGases],
+                              [horner(i.poly_fit_int_coeffs, i.poly_fit_Tmax) - horner(i.poly_fit_int_coeffs, i.poly_fit_Tmin) + i.poly_fit_Tmin*(0.5*i.poly_fit_Tmin_slope*i.poly_fit_Tmin + i.poly_fit_Tmin_value - i.poly_fit_Tmin_slope*i.poly_fit_Tmin) for i in HeatCapacityGases],
+#                              [horner_log(i.poly_fit_T_int_T_coeffs, i.poly_fit_log_coeff, i.poly_fit_Tmin) for i in HeatCapacityGases],
+                              [horner_log(i.poly_fit_T_int_T_coeffs, i.poly_fit_log_coeff, i.poly_fit_Tmin) -(i.poly_fit_Tmin_slope*i.poly_fit_Tmin + (i.poly_fit_Tmin_value - i.poly_fit_Tmin_slope*i.poly_fit_Tmin)*log(i.poly_fit_Tmin)) for i in HeatCapacityGases],
+#                              [horner_log(i.poly_fit_T_int_T_coeffs, i.poly_fit_log_coeff, i.poly_fit_Tmax) for i in HeatCapacityGases],
+                              [(horner_log(i.poly_fit_T_int_T_coeffs, i.poly_fit_log_coeff, i.poly_fit_Tmax)
+                                - horner_log(i.poly_fit_T_int_T_coeffs, i.poly_fit_log_coeff, i.poly_fit_Tmin)
+                                + (i.poly_fit_Tmin_slope*i.poly_fit_Tmin + (i.poly_fit_Tmin_value - i.poly_fit_Tmin_slope*i.poly_fit_Tmin)*log(i.poly_fit_Tmin))
+                                - (i.poly_fit_Tmax_value -i.poly_fit_Tmax*i.poly_fit_Tmax_slope)*log(i.poly_fit_Tmax)) for i in HeatCapacityGases],
+                              [poly_fit_integral_value(T_REF_IG, i.poly_fit_int_coeffs, i.poly_fit_Tmin,
+                                                       i.poly_fit_Tmax, i.poly_fit_Tmin_value,
+                                                       i.poly_fit_Tmax_value, i.poly_fit_Tmin_slope,
+                                                       i.poly_fit_Tmax_slope) for i in HeatCapacityGases],
+                              [i.poly_fit_coeffs for i in HeatCapacityGases],
+                              [i.poly_fit_int_coeffs for i in HeatCapacityGases],
+                              [i.poly_fit_T_int_T_coeffs for i in HeatCapacityGases],
+                              [poly_fit_integral_over_T_value(T_REF_IG, i.poly_fit_T_int_T_coeffs, i.poly_fit_log_coeff, i.poly_fit_Tmin,
+                                                       i.poly_fit_Tmax, i.poly_fit_Tmin_value,
+                                                       i.poly_fit_Tmax_value, i.poly_fit_Tmin_slope,
+                                                       i.poly_fit_Tmax_slope) for i in HeatCapacityGases],
 
                               )
         return (Cpgs_locked, Cpgs_data)
@@ -4449,8 +4451,8 @@ class IdealGas(Phase):
     T-P initialization for oxygen and nitrogen, using Poling's polynomial heat
     capacities:
 
-    >>> HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
-    ...                      HeatCapacityGas(best_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
+    >>> HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
+    ...                      HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
     >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=HeatCapacityGases)
     >>> phase.Cp()
     29.1733530
@@ -4504,8 +4506,8 @@ class IdealGas(Phase):
 
         Examples
         --------
-        >>> HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
-        ...                      HeatCapacityGas(best_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
+        >>> HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
+        ...                      HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
         >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=HeatCapacityGases)
         >>> phase.fugacities()
         [79000.0, 21000.0]
@@ -6056,18 +6058,18 @@ class GibbsExcessLiquid(Phase):
         self.VaporPressures = VaporPressures
         self.Psats_locked = all(i.locked for i in VaporPressures) if VaporPressures is not None else False
         if self.Psats_locked:
-            Psats_data = [[i.best_fit_Tmin for i in VaporPressures],
-                               [i.best_fit_Tmin_slope for i in VaporPressures],
-                               [i.best_fit_Tmin_value for i in VaporPressures],
-                               [i.best_fit_Tmax for i in VaporPressures],
-                               [i.best_fit_Tmax_slope for i in VaporPressures],
-                               [i.best_fit_Tmax_value for i in VaporPressures],
-                               [i.best_fit_coeffs for i in VaporPressures],
-                               [i.best_fit_d_coeffs for i in VaporPressures],
-                               [i.best_fit_d2_coeffs for i in VaporPressures],
+            Psats_data = [[i.poly_fit_Tmin for i in VaporPressures],
+                               [i.poly_fit_Tmin_slope for i in VaporPressures],
+                               [i.poly_fit_Tmin_value for i in VaporPressures],
+                               [i.poly_fit_Tmax for i in VaporPressures],
+                               [i.poly_fit_Tmax_slope for i in VaporPressures],
+                               [i.poly_fit_Tmax_value for i in VaporPressures],
+                               [i.poly_fit_coeffs for i in VaporPressures],
+                               [i.poly_fit_d_coeffs for i in VaporPressures],
+                               [i.poly_fit_d2_coeffs for i in VaporPressures],
                                [i.DIPPR101_ABC for i in VaporPressures]]
             if Psat_extrpolation == 'AB':
-                Psats_data.append([i.best_fit_AB_high_ABC_compat + (0.0,) for i in VaporPressures])
+                Psats_data.append([i.poly_fit_AB_high_ABC_compat + (0.0,) for i in VaporPressures])
             elif Psat_extrpolation == 'ABC':
                 Psats_data.append([i.DIPPR101_ABC_high for i in VaporPressures])
             # Other option: raise?
@@ -6091,16 +6093,16 @@ class GibbsExcessLiquid(Phase):
         self.VolumeLiquids = VolumeLiquids
         self.Vms_sat_locked = ((not use_eos_volume and all(i.locked for i in VolumeLiquids)) if VolumeLiquids is not None else False)
         if self.Vms_sat_locked:
-            self._Vms_sat_data = ([i.best_fit_Tmin for i in VolumeLiquids],
-                                 [i.best_fit_Tmin_slope for i in VolumeLiquids],
-                                 [i.best_fit_Tmin_value for i in VolumeLiquids],
-                                 [i.best_fit_Tmax for i in VolumeLiquids],
-                                 [i.best_fit_Tmax_slope for i in VolumeLiquids],
-                                 [i.best_fit_Tmax_value for i in VolumeLiquids],
-                                 [i.best_fit_coeffs for i in VolumeLiquids],
-                                 [i.best_fit_d_coeffs for i in VolumeLiquids],
-                                 [i.best_fit_d2_coeffs for i in VolumeLiquids],
-                                 [i.best_fit_Tmin_quadratic for i in VolumeLiquids],
+            self._Vms_sat_data = ([i.poly_fit_Tmin for i in VolumeLiquids],
+                                 [i.poly_fit_Tmin_slope for i in VolumeLiquids],
+                                 [i.poly_fit_Tmin_value for i in VolumeLiquids],
+                                 [i.poly_fit_Tmax for i in VolumeLiquids],
+                                 [i.poly_fit_Tmax_slope for i in VolumeLiquids],
+                                 [i.poly_fit_Tmax_value for i in VolumeLiquids],
+                                 [i.poly_fit_coeffs for i in VolumeLiquids],
+                                 [i.poly_fit_d_coeffs for i in VolumeLiquids],
+                                 [i.poly_fit_d2_coeffs for i in VolumeLiquids],
+                                 [i.poly_fit_Tmin_quadratic for i in VolumeLiquids],
                                  )
 #            low_fits = self._Vms_sat_data[9]
 #            for i in self.cmps:
@@ -6109,16 +6111,16 @@ class GibbsExcessLiquid(Phase):
         self.VolumeSupercriticalLiquids = VolumeSupercriticalLiquids
         self.Vms_supercritical_locked = all(i.locked for i in VolumeSupercriticalLiquids) if VolumeSupercriticalLiquids is not None else False
         if self.Vms_supercritical_locked:
-            self.Vms_supercritical_data = ([i.best_fit_Tmin for i in VolumeSupercriticalLiquids],
-                                 [i.best_fit_Tmin_slope for i in VolumeSupercriticalLiquids],
-                                 [i.best_fit_Tmin_value for i in VolumeSupercriticalLiquids],
-                                 [i.best_fit_Tmax for i in VolumeSupercriticalLiquids],
-                                 [i.best_fit_Tmax_slope for i in VolumeSupercriticalLiquids],
-                                 [i.best_fit_Tmax_value for i in VolumeSupercriticalLiquids],
-                                 [i.best_fit_coeffs for i in VolumeSupercriticalLiquids],
-                                 [i.best_fit_d_coeffs for i in VolumeSupercriticalLiquids],
-                                 [i.best_fit_d2_coeffs for i in VolumeSupercriticalLiquids],
-                                 [i.best_fit_Tmin_quadratic for i in VolumeSupercriticalLiquids],
+            self.Vms_supercritical_data = ([i.poly_fit_Tmin for i in VolumeSupercriticalLiquids],
+                                 [i.poly_fit_Tmin_slope for i in VolumeSupercriticalLiquids],
+                                 [i.poly_fit_Tmin_value for i in VolumeSupercriticalLiquids],
+                                 [i.poly_fit_Tmax for i in VolumeSupercriticalLiquids],
+                                 [i.poly_fit_Tmax_slope for i in VolumeSupercriticalLiquids],
+                                 [i.poly_fit_Tmax_value for i in VolumeSupercriticalLiquids],
+                                 [i.poly_fit_coeffs for i in VolumeSupercriticalLiquids],
+                                 [i.poly_fit_d_coeffs for i in VolumeSupercriticalLiquids],
+                                 [i.poly_fit_d2_coeffs for i in VolumeSupercriticalLiquids],
+                                 [i.poly_fit_Tmin_quadratic for i in VolumeSupercriticalLiquids],
                                  )
 
 
@@ -6137,11 +6139,11 @@ class GibbsExcessLiquid(Phase):
         self.EnthalpyVaporizations = EnthalpyVaporizations
         self.Hvap_locked = all(i.locked for i in EnthalpyVaporizations) if EnthalpyVaporizations is not None else False
         if self.Hvap_locked:
-            self._Hvap_data = ([i.best_fit_Tmin for i in EnthalpyVaporizations],
-                              [i.best_fit_Tmax for i in EnthalpyVaporizations],
-                              [i.best_fit_Tc for i in EnthalpyVaporizations],
-                              [1.0/i.best_fit_Tc for i in EnthalpyVaporizations],
-                              [i.best_fit_coeffs for i in EnthalpyVaporizations])
+            self._Hvap_data = ([i.poly_fit_Tmin for i in EnthalpyVaporizations],
+                              [i.poly_fit_Tmax for i in EnthalpyVaporizations],
+                              [i.poly_fit_Tc for i in EnthalpyVaporizations],
+                              [1.0/i.poly_fit_Tc for i in EnthalpyVaporizations],
+                              [i.poly_fit_coeffs for i in EnthalpyVaporizations])
 
 
 
@@ -6389,21 +6391,7 @@ class GibbsExcessLiquid(Phase):
 
         self._Psats = Psats = []
         for i in self.VaporPressures:
-        # Need to reset the method because for the T bounded solver,
-        # will normally get a different than prefered method as it starts
-        # at the boundaries
-            if i.locked:
-                Psats.append(i(T))
-            else:
-                if T < i.Tmax:
-                    i.method = None
-                    Psat = i(T)
-                    if Psat is None:
-                        Psat = i.extrapolate_tabular(T)
-                    Psats.append(Psat)
-                else:
-                    Psats.append(i.extrapolate_tabular(T))
-
+            Psats.append(i.T_dependent_property(T))
 
         if self.has_henry_components:
             henry_components = self.henry_components
