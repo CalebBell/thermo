@@ -1229,15 +1229,15 @@ def test_viscosity_thermal_conductivity():
                       VaporPressure(poly_fit=(175.7, 512.49, [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10, -2.443464113936029e-07, 7.893819658700523e-05, -0.016615779444332356, 2.1842496316772264, -134.19766175812708]))]
 
     ViscosityGasMixtureObj = ViscosityGasMixture(ViscosityGases=ViscosityGases)
-    ViscosityGasMixtureObj.set_user_method('Simple', forced=True)
+    ViscosityGasMixtureObj.method = 'Simple'
     ViscosityLiquidMixtureObj = ViscosityLiquidMixture(ViscosityLiquids=ViscosityLiquids, correct_pressure_pure=False)
-    ViscosityLiquidMixtureObj.set_user_method('Simple', forced=True)
+    ViscosityLiquidMixtureObj.method = 'Simple'
 
     ThermalConductivityLiquidMixtureObj = ThermalConductivityLiquidMixture(ThermalConductivityLiquids=ThermalConductivityLiquids)
-    ThermalConductivityLiquidMixtureObj.set_user_method('Simple', forced=True)
+    ThermalConductivityLiquidMixtureObj.method = 'Simple'
 
     ThermalConductivityGasMixtureObj = ThermalConductivityGasMixture(ThermalConductivityGases=ThermalConductivityGases)
-    ThermalConductivityGasMixtureObj.set_user_method('Simple', forced=True)
+    ThermalConductivityGasMixtureObj.method = 'Simple'
 
     correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True, HeatCapacityGases=HeatCapacityGases,
                                                ViscosityLiquids=ViscosityLiquids, ViscosityGases=ViscosityGases,

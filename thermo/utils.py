@@ -2743,17 +2743,21 @@ class MixtureProperty(object):
 
     name = 'Test'
     units = 'test units'
-    property_min = 0
-    property_max = 10
-
-    method = None
-    forced = False
+    property_min = 0.0
+    property_max = 10.0
     ranked_methods = []
-
     TP_zs_ws_cached = (None, None, None, None)
     prop_cached = None
     _correct_pressure_pure = True
-    skip_validity_check = False
+    _method = None
+
+    skip_prop_validity_check = False
+    '''Flag to disable checking the output of the value. Saves a little time.
+    '''
+    skip_method_validity_check = False
+    '''Flag to disable checking the validity of the method at the
+    specified conditions. Saves a little time.
+    '''
 
     def set_poly_fit_coeffs(self):
         if all(i.locked for i in self.pure_objs):
@@ -2768,7 +2772,24 @@ class MixtureProperty(object):
                                [i.poly_fit_coeffs for i in pure_objs]]
 
     @property
+    def method(self):
+        r'''Method to set the T, P, and composition dependent property method
+        desired. See the `all_methods` attribute for a list of methods valid
+        for the specified chemicals and inputs.
+        '''
+        return self._method
+
+    @method.setter
+    def method(self, method):
+        self._method = method
+        self.TP_zs_ws_cached = (None, None, None, None)
+
+    @property
     def correct_pressure_pure(self):
+        r'''Method to set the pressure-dependence of the model;
+        if set to False, only temperature dependence is used, and if
+        True, temperature and pressure dependence are used.
+        '''
         return self._correct_pressure_pure
 
     @correct_pressure_pure.setter
@@ -2817,94 +2838,6 @@ class MixtureProperty(object):
             self.prop_cached = self.mixture_property(T, P, zs, ws)
             self.TP_zs_ws_cached = (T, P, zs, ws)
             return self.prop_cached
-
-    def set_user_method(self, user_methods, forced=False):
-        r'''Method to set the T, P, and composition dependent property methods
-        desired for consideration by the user. Can be used to exclude certain
-        methods which might have unacceptable accuracy.
-
-        As a side effect, the previously selected method is removed when
-        this method is called to ensure user methods are tried in the desired
-        order.
-
-        Parameters
-        ----------
-        user_methods : str or list
-            Methods by name to be considered for calculation of the mixture
-            property, ordered by preference.
-        forced : bool, optional
-            If True, only the user specified methods will ever be considered;
-            if False, other methods will be considered if no user methods
-            suceed.
-        '''
-        # Accept either a string or a list of methods, and whether
-        # or not to only consider the false methods
-        if isinstance(user_methods, str):
-            user_methods = [user_methods]
-
-        # The user's order matters and is retained for use by select_valid_methods
-        self.user_methods = user_methods
-        self.forced = forced
-
-        # Validate that the user's specified methods are actual methods
-        if set(self.user_methods).difference(self.all_methods):
-            raise Exception("One of the given methods is not available for this mixture")
-        if not self.user_methods and self.forced:
-            raise Exception('Only user specified methods are considered when forced is True, but no methods were provided')
-
-        self.user_preferred_method = user_methods[0]
-        # Remove previously selected methods
-        self.method = None
-        self.sorted_valid_methods = []
-        self.TP_zs_ws_cached = (None, None, None, None)
-
-    def select_valid_methods(self, T, P, zs, ws):
-        r'''Method to obtain a sorted list of methods which are valid at `T`,
-        `P`, `zs`, `ws`, and possibly `Vfls`, according to
-        `test_method_validity`. Considers either only user methods
-        if forced is True, or all methods. User methods are first tested
-        according to their listed order, and unless forced is True, then all
-        methods are tested and sorted by their order in `ranked_methods`.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the methods, [K]
-        P : float
-            Pressure at which to test the methods, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-
-        Returns
-        -------
-        sorted_valid_methods : list
-            Sorted lists of methods valid at the given conditions according to
-            `test_method_validity`
-        '''
-        # Consider either only the user's methods or all methods
-        # Tabular data will be in both when inserted
-        considered_methods = list(self.user_methods) if self.forced else list(self.all_methods)
-
-        # User methods (incl. tabular data); add back later, after ranking the rest
-        if self.user_methods:
-            [considered_methods.remove(i) for i in self.user_methods]
-
-        # Index the rest of the methods by ranked_methods, and add them to a list, sorted_methods
-        preferences = sorted([self.ranked_methods.index(i) for i in considered_methods])
-        sorted_methods = [self.ranked_methods[i] for i in preferences]
-
-        # Add back the user's methods to the top, in order.
-        if self.user_methods:
-            [sorted_methods.insert(0, i) for i in reversed(self.user_methods)]
-
-        sorted_valid_methods = []
-        for method in sorted_methods:
-            if self.test_method_validity(T, P, zs, ws, method):
-                sorted_valid_methods.append(method)
-
-        return sorted_valid_methods
 
     @classmethod
     def test_property_validity(self, prop):
@@ -2968,27 +2901,18 @@ class MixtureProperty(object):
         '''
         if zs is None or ws is None:
             zs, ws = self._complete_zs_ws(zs, ws)
-        if self.skip_validity_check:
-            return self.calculate(T, P, zs, ws, self.user_preferred_method)
-        # Optimistic track, with the already set method
-#        if self.method:
-#            # retest within range
-#            if self.test_method_validity(T, P, zs, ws, self.method):
-#                try:
-#                    prop = self.calculate(T, P, zs, ws, self.method)
-#                    if self.test_property_validity(prop):
-#                        return prop
-#                except:  # pragma: no cover
-#                    pass
-#
-        # get valid methods at conditions, and try them until one yields a valid
-        # property; store the method and return the answer
-#        self.sorted_valid_methods = self.select_valid_methods(T, P, zs, ws)
-        #for method in self.sorted_valid_methods:
         try:
-            prop = self.calculate(T, P, zs, ws, self.method)
-            if self.test_property_validity(prop):
+            method = self._method
+            if not self.skip_method_validity_check:
+                if not self.test_method_validity(T, P, zs, ws, method):
+                    return None
+
+            prop = self.calculate(T, P, zs, ws, self._method)
+            if self.skip_prop_validity_check:
                 return prop
+            else:
+                if self.test_property_validity(prop):
+                    return prop
         except:  # pragma: no cover
             pass
 
@@ -3178,12 +3102,10 @@ class MixtureProperty(object):
         '''
         if zs is None or ws is None:
             zs, ws = self._complete_zs_ws(zs, ws)
-        sorted_valid_methods = self.select_valid_methods(T, P, zs, ws)
-        for method in sorted_valid_methods:
-            try:
-                return self.calculate_derivative_T(T, P, zs, ws, method, order)
-            except:
-                pass
+        try:
+            return self.calculate_derivative_T(T, P, zs, ws, self._method, order)
+        except:
+            pass
         return None
 
 
@@ -3220,19 +3142,17 @@ class MixtureProperty(object):
         '''
         if zs is None or ws is None:
             zs, ws = self._complete_zs_ws(zs, ws)
-        sorted_valid_methods = self.select_valid_methods(T, P, zs, ws)
-        for method in sorted_valid_methods:
-            try:
-                return self.calculate_derivative_P(P, T, zs, ws, method, order)
-            except:
-                pass
+        try:
+            return self.calculate_derivative_P(P, T, zs, ws, self._method, order)
+        except:
+            pass
         return None
 
     def plot_isotherm(self, T, zs=None, ws=None, Pmin=None, Pmax=None,
                       methods=[], pts=50, only_valid=True):  # pragma: no cover
         r'''Method to create a plot of the property vs pressure at a specified
         temperature and composition according to either a specified list of
-        methods, or the  user methods (if set), or all methods. User-selectable
+        methods, or the set method. User-selectable
         number of  points, and pressure range. If only_valid is set,
         `test_method_validity` will be used to check if each condition in
         the specified range is valid, and `test_property_validity` will be used
@@ -3281,10 +3201,7 @@ class MixtureProperty(object):
                 raise Exception('Maximum pressure could not be auto-detected; please provide it')
 
         if not methods:
-            if self.user_methods:
-                methods = self.user_methods
-            else:
-                methods = self.all_methods
+            methods = [self._method]
         Ps = linspace(Pmin, Pmax, pts)
         for method in methods:
             if only_valid:
@@ -3314,8 +3231,7 @@ class MixtureProperty(object):
                     methods=[], pts=50, only_valid=True):  # pragma: no cover
         r'''Method to create a plot of the property vs temperature at a
         specific pressure and composition according to
-        either a specified list of methods, or user methods (if set), or all
-        methods. User-selectable number of points, and temperature range. If
+        either a specified list of methods, or the selected method. User-selectable number of points, and temperature range. If
         only_valid is set,`test_method_validity` will be used to check if
         each condition in the specified range is valid, and
         `test_property_validity` will be used to test the answer, and the
@@ -3363,10 +3279,7 @@ class MixtureProperty(object):
                 raise Exception('Maximum pressure could not be auto-detected; please provide it')
 
         if not methods:
-            if self.user_methods:
-                methods = self.user_methods
-            else:
-                methods = self.all_methods
+            methods = [self._method]
         Ts = linspace(Tmin, Tmax, pts)
         for method in methods:
             if only_valid:
@@ -3395,8 +3308,8 @@ class MixtureProperty(object):
     def plot_property(self, zs=None, ws=None, Tmin=None, Tmax=None, Pmin=1E5,
                       Pmax=1E6, methods=[], pts=15, only_valid=True):  # pragma: no cover
         r'''Method to create a plot of the property vs temperature and pressure
-        according to either a specified list of methods, or user methods (if
-        set), or all methods. User-selectable number of points for each
+        according to either a specified list of methods, or the selected method.
+        User-selectable number of points for each
         variable. If only_valid is set,`test_method_validity` will be used to
         check if each condition in the specified range is valid, and
         `test_property_validity` will be used to test the answer, and the
@@ -3458,7 +3371,7 @@ class MixtureProperty(object):
                 raise Exception('Maximum pressure could not be auto-detected; please provide it')
 
         if not methods:
-            methods = self.user_methods if self.user_methods else self.all_methods
+            methods = [self._method]
         Ps = np.linspace(Pmin, Pmax, pts)
         Ts = np.linspace(Tmin, Tmax, pts)
         Ts_mesh, Ps_mesh = np.meshgrid(Ts, Ps)

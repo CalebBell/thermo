@@ -7,6 +7,8 @@ Contents:
    :maxdepth: 10
 
    modules
+   property_objects
+   tutorial_phases_and_flash
 
 
 Indices and tables
