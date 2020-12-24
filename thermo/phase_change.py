@@ -62,9 +62,8 @@ __all__ = ['enthalpy_vaporization_methods', 'EnthalpyVaporization',
            'enthalpy_sublimation_methods', 'EnthalpySublimation']
 
 import os
-import numpy as np
 
-from fluids.numerics import horner, horner_and_der
+from fluids.numerics import horner, horner_and_der, numpy as np
 from fluids.constants import R
 
 from chemicals.utils import log, isnan
@@ -74,6 +73,7 @@ from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
 from chemicals import phase_change
 from chemicals.phase_change import *
+
 from thermo.vapor_pressure import VaporPressure
 from thermo.utils import TDependentProperty
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids

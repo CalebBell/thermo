@@ -69,9 +69,7 @@ __all__ = ['has_matplotlib', 'Stateva_Tsvetkov_TPDF', 'TPD',
 
 import os
 from cmath import sqrt as csqrt
-from bisect import bisect_left
-import numpy as np
-from fluids.numerics import quad, brenth, newton, secant, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders, assert_close
+from fluids.numerics import quad, brenth, newton, secant, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders, assert_close, numpy as np
 from fluids.constants import R
 from chemicals.utils import isnan, isinf, log, exp, ws_to_zs, zs_to_ws, e
 from chemicals.utils import mix_multiple_component_flows, hash_any_primitive
@@ -3427,6 +3425,7 @@ class MultiCheb1D(object):
         self.N = len(points)-1
 
     def __call__(self, x):
+        from bisect import bisect_left
         coeffs = self.coeffs[bisect_left(self.points, x)]
         return coeffs(x)
 #        return self.chebval(x, coeffs)

@@ -24,8 +24,6 @@ from __future__ import division
 
 __all__ = ['Chemical', 'reference_states']
 
-from collections import Counter
-
 from fluids.constants import epsilon_0
 
 from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat

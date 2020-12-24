@@ -26,10 +26,8 @@ __all__ = ['has_CoolProp', 'coolprop_dict', 'CP_fluid', 'coolprop_fluids',
 'CoolProp_T_dependent_property',
 'PropsSI', 'PhaseSI','HAPropsSI', 'AbstractState']
 import os
-import numpy as np
-from fluids.numerics import assert_close1d
+from fluids.numerics import assert_close1d, numpy as np
 from thermo.utils import data_dir, source_path
-from bisect import bisect_left
 
 #try:
 #    import CoolProp
@@ -88,7 +86,6 @@ def AbstractState(*args, **kwargs):
     return _AbstractState(*args, **kwargs)
 
 
-folder = os.path.join(os.path.dirname(__file__), 'Misc')
 
 # Load the constants, store
 
@@ -212,6 +209,7 @@ class MultiCheb1D(object):
         self.N = len(points)-1
 
     def __call__(self, x):
+        from bisect import bisect_left
         i = bisect_left(self.points, x)
         if i == 0:
             if x == self.points[0]:
@@ -391,6 +389,8 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
         raise Exception('Error in CoolProp property function')
 
 if has_CoolProp and 0:
+    folder = os.path.join(os.path.dirname(__file__), 'Misc')
+
     f = open(os.path.join(folder, 'CoolProp vapor properties fits.json'), 'r')
     vapor_properties = json.load(f)
     f.close()

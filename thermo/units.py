@@ -52,7 +52,8 @@ for name in dir(thermo):
         pass
 #        obj = wraps_numpydoc(u)(obj)
     elif type(obj) == type and (obj in [thermo.Chemical, thermo.Mixture, thermo.Stream]
-                                 or thermo.eos.GCEOS in obj.__mro__):
+                                 or thermo.eos.GCEOS in obj.__mro__
+                                 or thermo.activity.GibbsExcess in obj.__mro__):
         if obj in (thermo.eos_mix.PSRKMixingRules, thermo.eos_mix.PSRK):
             # Not yet implemented
             continue

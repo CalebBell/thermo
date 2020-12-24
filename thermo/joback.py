@@ -53,7 +53,6 @@ __all__ = ['smarts_fragment', 'Joback', 'J_BIGGS_JOBACK_SMARTS',
            'J_BIGGS_JOBACK_SMARTS_id_dict']
 
 from operator import itemgetter
-from collections import namedtuple, Counter
 from chemicals.utils import to_num, horner, exp
 
 rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
@@ -323,6 +322,7 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
             status = 'Failed to construct mol'
             success = False
             return {}, success, status
+    from collections import Counter
 
     atom_count = len(rdkitmol.GetAtoms())
     status = 'OK'

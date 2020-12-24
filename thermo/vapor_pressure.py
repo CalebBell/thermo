@@ -64,9 +64,8 @@ __all__ = ['vapor_pressure_methods', 'VaporPressure', 'SublimationPressure',
 
 import os
 from fluids.constants import R
-from fluids.numerics import polyint_over_x, horner_log, horner, polyint, horner_and_der2, horner_and_der, derivative, newton, linspace
+from fluids.numerics import polyint_over_x, horner_log, horner, polyint, horner_and_der2, horner_and_der, derivative, newton, linspace, numpy as np
 
-import numpy as np
 from math import e
 from chemicals.utils import log, exp, isnan
 from chemicals.dippr import EQ101
