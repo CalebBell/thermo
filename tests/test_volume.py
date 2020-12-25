@@ -77,7 +77,11 @@ def test_VolumeLiquid():
     EtOH = VolumeLiquid(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.24125, omega=0.635, dipole=1.44, CASRN='64-17-5')
     methods = list(EtOH.all_methods)
     methods.remove(VDI_TABULAR)
-    Vm_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(305.))[1] for i in methods]
+
+    Vm_calcs = []
+    for i in methods:
+        EtOH.method = i
+        Vm_calcs.append(EtOH.T_dependent_property(305.))
 
     Vm_exp = [5.905316741206586e-05, 5.784760660832295e-05, 5.7594571728502063e-05, 5.594757794216803e-05, 5.912157674597306e-05, 5.9082910221835385e-05, 5.526836182702171e-05, 5.821947224585489e-05, 5.1921776627430897e-05, 5.9680793094807483e-05, 5.4848470492414296e-05, 5.507075716132008e-05, 5.3338182234795054e-05]
     assert_allclose(sorted(Vm_calcs), sorted(Vm_exp), rtol=1e-5)
@@ -87,10 +91,15 @@ def test_VolumeLiquid():
     EtOH = VolumeLiquid(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.24125, omega=0.635, dipole=1.44, CASRN='64-17-5')
     EtOH.T_dependent_property(305.) # Initialize the sorted_valid_methods
     EtOH.tabular_extrapolation_permitted = False
-    Vml_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(600))[1] for i in list(EtOH.all_methods)]
+
+    Vml_calcs = []
+    for i in list(EtOH.all_methods):
+        EtOH.method = i
+        Vml_calcs.append(EtOH.T_dependent_property(600))
+
     assert [None]*14 == Vml_calcs
 
-    EtOH.set_method('VDI_TABULAR')
+    EtOH.method = 'VDI_TABULAR'
     EtOH.tabular_extrapolation_permitted = True
     assert_allclose(EtOH.T_dependent_property(700.), 0.0005648005718236466)
 
@@ -98,12 +107,18 @@ def test_VolumeLiquid():
         EtOH.test_method_validity(300, 'BADMETHOD')
 
     SnCl4 = VolumeLiquid(CASRN='7646-78-8')
-    Vm_calcs = [(SnCl4.set_method(i), SnCl4.T_dependent_property(305.))[1] for i in SnCl4.all_methods]
-
+    Vm_calcs = []
+    for i in SnCl4.all_methods:
+        SnCl4.method = i
+        Vm_calcs.append(SnCl4.T_dependent_property(305.))
 
     # Get MMC parameter
     SO2 = VolumeLiquid(MW=64.0638, Tb=263.1, Tc=430.8, Pc=7884098.25, Vc=0.000122, Zc=0.26853, omega=0.251, dipole=1.63, CASRN='7446-09-5')
-    Vm_calcs = [(SO2.set_method(i), SO2.T_dependent_property(200.))[1] for i in SO2.all_methods]
+    Vm_calcs = []
+    for i in SO2.all_methods:
+        SO2.method = i
+        Vm_calcs.append(SO2.T_dependent_property(200.))
+
     Vm_exp = [3.9697664371887463e-05, 3.748481829074182e-05, 4.0256041843356724e-05, 3.982522377343308e-05, 4.062166881078707e-05, 4.0608189210203123e-05, 3.949103647364349e-05, 3.994849780626379e-05, 4.109189955368007e-05, 3.965944731935354e-05, 4.0948267317531393e-05, 4.0606869929178414e-05, 4.060446067691708e-05, 3.993451478384902e-05]
     assert_allclose(sorted(Vm_calcs), sorted(Vm_exp), rtol=3e-5)
 

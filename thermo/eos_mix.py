@@ -6432,17 +6432,27 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
     @property
     def a_alpha_ijs(self):
         return self.zeros2d
-    a_alpha_ijs.__doc__ = GCEOSMIX.a_alpha_ijs.__doc__
+
+    try:
+        a_alpha_ijs.__doc__ = GCEOSMIX.a_alpha_ijs.__doc__
+    except:
+        pass
 
     @property
     def da_alpha_dT_ijs(self):
         return self.zeros2d
-    da_alpha_dT_ijs.__doc__ = GCEOSMIX.da_alpha_dT_ijs.__doc__
+    try:
+        da_alpha_dT_ijs.__doc__ = GCEOSMIX.da_alpha_dT_ijs.__doc__
+    except:
+        pass
 
     @property
     def d2a_alpha_dT2_ijs(self):
         return self.zeros2d
-    d2a_alpha_dT2_ijs.__doc__ = GCEOSMIX.d2a_alpha_dT2_ijs.__doc__
+    try:
+        d2a_alpha_dT2_ijs.__doc__ = GCEOSMIX.d2a_alpha_dT2_ijs.__doc__
+    except:
+        pass
 
 
 class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):

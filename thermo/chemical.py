@@ -262,7 +262,7 @@ class Chemical(object): # pragma: no cover
     many useful features related to the properties. To determine the
     temperature at which nitrogen has a saturation pressure of 1 MPa:
 
-    >>> N2.VaporPressure.solve_prop(1E6)
+    >>> N2.VaporPressure.solve_property(1E6)
     103.73528598652341
 
     To compute an integral of the ideal-gas heat capacity of nitrogen
@@ -298,7 +298,7 @@ class Chemical(object): # pragma: no cover
     >>> N2.calculate(80)
     >>> N2.Psat
     136979.4840843189
-    >>> N2.VaporPressure.set_method('LEE_KESLER_PSAT')
+    >>> N2.VaporPressure.method = 'LEE_KESLER_PSAT'
     >>> N2.Psat
     134987.76815364443
 
@@ -2543,7 +2543,7 @@ class Chemical(object): # pragma: no cover
         --------
         >>> Chemical('water', T=320).sigma
         0.06855002575793023
-        >>> Chemical('water', T=320).SurfaceTension.solve_prop(0.05)
+        >>> Chemical('water', T=320).SurfaceTension.solve_property(0.05)
         416.8307110842183
         '''
         return self.SurfaceTension(self.T)
@@ -3133,7 +3133,7 @@ class Chemical(object): # pragma: no cover
         return None
 
     def Tsat(self, P):
-        return self.VaporPressure.solve_prop(P)
+        return self.VaporPressure.solve_property(P)
 
     ### Convenience Dimensionless numbers
     def Reynolds(self, V=None, D=None):

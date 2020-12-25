@@ -1876,7 +1876,7 @@ def test_methanol_inconsistent_full_example():
     from thermo.heat_capacity import POLING
 
     CpObj = HeatCapacityGas(CASRN='67-56-1')
-    CpObj.set_method(POLING)
+    CpObj.method = POLING
     constants = ChemicalConstantsPackage(Tcs=[512.5], Pcs=[8084000.0], omegas=[0.559], MWs=[32.04186], CASs=['67-56-1'])
     HeatCapacityGases = [CpObj]
 

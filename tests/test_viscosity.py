@@ -43,28 +43,28 @@ from thermo.viscosity import (COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, V
 @pytest.mark.meta_T_dept
 def test_ViscosityLiquid():
     EtOH = ViscosityLiquid(MW=46.06844, Tm=159.05, Tc=514.0, Pc=6137000.0, Vc=0.000168, omega=0.635, Psat=7872.16, Vml=5.8676e-5, CASRN='64-17-5')
-    EtOH.set_method(COOLPROP)
+    EtOH.method = (COOLPROP)
     assert_close(EtOH.T_dependent_property(298.15), 0.0010823506202025659, rtol=1e-9)
-    EtOH.set_method(DIPPR_PERRY_8E)
+    EtOH.method = (DIPPR_PERRY_8E)
     assert_close(EtOH.T_dependent_property(298.15), 0.0010774308462863267, rtol=1e-9)
-    EtOH.set_method(VDI_PPDS)
+    EtOH.method = (VDI_PPDS)
     assert_close(EtOH.T_dependent_property(298.15), 0.0010623746999654108, rtol=1e-9)
-    EtOH.set_method(DUTT_PRASAD)
+    EtOH.method = (DUTT_PRASAD)
     assert_close(EtOH.T_dependent_property(298.15), 0.0010720812586059744, rtol=1e-9)
-    EtOH.set_method(VISWANATH_NATARAJAN_3)
+    EtOH.method = (VISWANATH_NATARAJAN_3)
     assert_close(EtOH.T_dependent_property(298.15), 0.0031157679801337825, rtol=1e-9)
-    EtOH.set_method(VDI_TABULAR)
+    EtOH.method = (VDI_TABULAR)
     assert_close(EtOH.T_dependent_property(298.15), 0.0010713697500000004, rtol=1e-9)
-    EtOH.set_method(LETSOU_STIEL)
+    EtOH.method = (LETSOU_STIEL)
     assert_close(EtOH.T_dependent_property(298.15), 0.0004191198228004421, rtol=1e-9)
-    EtOH.set_method(PRZEDZIECKI_SRIDHAR)
+    EtOH.method = (PRZEDZIECKI_SRIDHAR)
     assert EtOH.T_dependent_property(298.15) is None
     assert_close(EtOH.T_dependent_property(400.0), 0.00039598337518386806, rtol=1e-9)
 
 
     EtOH.tabular_extrapolation_permitted = False
     for i in EtOH.all_methods:
-        EtOH.set_method(i)
+        EtOH.method = i
         assert EtOH.T_dependent_property(600) is None
 
 
@@ -73,10 +73,19 @@ def test_ViscosityLiquid():
 
     # Acetic acid to test Viswanath_Natarajan_2_exponential
     acetic_acid = ViscosityLiquid(CASRN='64-19-7', Tc=590.7)
-    mul_calcs = [(acetic_acid.set_method(i), acetic_acid.T_dependent_property(350.0))[1] for i in acetic_acid.all_methods]
+    mul_calcs = []
+    for i in acetic_acid.all_methods:
+        acetic_acid.method = i
+        mul_calcs.append(acetic_acid.T_dependent_property(350.0))
+
     mul_exp = [0.0005744169247310638, 0.0005089289428076254, 0.0005799665143154318, 0.0005727888422607339, 0.000587027903931889]
     assert_close1d(sorted(mul_calcs), sorted(mul_exp))
-    assert [None]*5 == [(acetic_acid.set_method(i), acetic_acid.T_dependent_property(650.0))[1] for i in acetic_acid.all_methods]
+
+    mul_missing = []
+    for i in acetic_acid.all_methods:
+        acetic_acid.method = i
+        mul_missing.append(acetic_acid.T_dependent_property(650.0))
+    assert [None]*5 == mul_missing
 
     # Test Viswanath_Natarajan_2 with boron trichloride
     mu = ViscosityLiquid(CASRN='10294-34-5').T_dependent_property(250)
@@ -160,7 +169,7 @@ def test_ViscosityGas():
 
     mug_calcs = {}
     for i in list(EtOH.all_methods):
-        EtOH.set_method(i)
+        EtOH.method = i
         mu = EtOH.T_dependent_property(298.15)
         mug_calcs[i] = mu
 
@@ -171,7 +180,10 @@ def test_ViscosityGas():
     # Test that methods return None
     EtOH.extrapolation = None
     EtOH.tabular_extrapolation_permitted = False
-    mug_calcs = [(EtOH.set_method(i), EtOH.T_dependent_property(6000))[1] for i in EtOH.all_methods]
+    mug_calcs = []
+    for i in EtOH.all_methods:
+        EtOH.method = i
+        mug_calcs.append(EtOH.T_dependent_property(6000))
     assert [None]*8 == mug_calcs
 
     with pytest.raises(Exception):
@@ -209,7 +221,7 @@ def test_ViscosityLiquidMixture():
     # DIPPR  1983 manual example
     ViscosityLiquids = [ViscosityLiquid(CASRN=CAS) for CAS in ['56-23-5', '67-63-0']]
     for obj in ViscosityLiquids:
-        obj.set_method(DIPPR_PERRY_8E)
+        obj.method = DIPPR_PERRY_8E
 
     T, P, zs, ws = 313.2, 101325.0, [0.5, 0.5], [0.7190741374767832, 0.2809258625232169]
     obj = ViscosityLiquidMixture(ViscosityLiquids=ViscosityLiquids, CASs=['56-23-5', '67-63-0'], MWs=[153.8227, 60.09502])

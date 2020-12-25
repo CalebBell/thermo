@@ -110,3 +110,12 @@ def test_custom_wraps():
 def test_no_bad_units():
     assert not thermo.units.failed_wrapping
 
+
+def test_wrap_UNIFAC_classmethod():
+    from thermo.unifac import DOUFIP2006, DOUFSG
+    T = 373.15*u.K
+    xs = [0.2, 0.3, 0.1, 0.4]
+    chemgroups = [{9: 6}, {78: 6}, {1: 1, 18: 1}, {1: 1, 2: 1, 14: 1}]
+    GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=1, interaction_data=DOUFIP2006, subgroups=DOUFSG)
+    assert_pint_allclose(GE.GE(), 1292.0910446403327, u.J/u.mol)
+

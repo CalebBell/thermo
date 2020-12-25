@@ -33,16 +33,26 @@ from chemicals.identifiers import check_CAS
 def test_EnthalpyVaporization():
     EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, Psat=7872.2, Zg=0.9633, Zl=0.0024, CASRN='64-17-5')
 
-    Hvap_calc =  [(EtOH.set_method(i), EtOH.T_dependent_property(298.15))[1] for i in EtOH.all_methods]
+    Hvap_calc = []
+    for i in EtOH.all_methods:
+        EtOH.method = i
+        Hvap_calc.append(EtOH.T_dependent_property(298.15))
+
     Hvap_exp = [37770.36760037247, 39369.24308334211, 40812.18023301473, 41892.47130172744, 42200.0, 42261.56271620627, 42320.0, 42413.51210041263, 42429.284285187256, 42468.433273309995, 42541.61366696268, 42829.177357564935, 42855.029051216996, 42946.68066040123, 43481.10765660416, 43587.12939847237, 44804.61582482704]
     assert_close1d(sorted(Hvap_calc), sorted(Hvap_exp))
 
 
     EtOH.extrapolation = None
-    assert [None]*17 == [(EtOH.set_method(i), EtOH.T_dependent_property(5000))[1] for i in EtOH.all_methods]
+    for i in EtOH.all_methods:
+        EtOH.method = i
+        assert EtOH.T_dependent_property(5000) is None
+
 
     EtOH = EnthalpyVaporization(CASRN='64-17-5')
-    Hvap_calc = [(EtOH.set_method(i), EtOH.T_dependent_property(298.15))[1] for i in ['GHARAGHEIZI_HVAP_298', 'CRC_HVAP_298', 'VDI_TABULAR', 'COOLPROP']]
+    Hvap_calc = []
+    for i in ['GHARAGHEIZI_HVAP_298', 'CRC_HVAP_298', 'VDI_TABULAR', 'COOLPROP']:
+        EtOH.method = i
+        Hvap_calc.append(EtOH.T_dependent_property(298.15))
     Hvap_exp = [42200.0, 42320.0, 42468.433273309995, 42413.51210041263]
     assert_close1d(Hvap_calc, Hvap_exp)
 
@@ -74,10 +84,10 @@ def test_EnthalpyVaporization_Watson_extrapolation():
     obj = EnthalpyVaporization(CASRN='7732-18-5', Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344,
                          similarity_variable=0.16652530518537598, Psat=3167, Zl=1.0, Zg=0.96,
                          extrapolation='Watson')
-    obj.set_method(COOLPROP)
+    obj.method == COOLPROP
     assert 0 == obj(obj.Tc)
     assert_close(obj(1e-5), 54787.16649491286, rtol=1e-4)
 
-    assert_close(obj.solve_prop(5e4), 146.3404577534453)
-    assert_close(obj.solve_prop(1), 647.1399999389462)
-    assert_close(obj.solve_prop(1e-20), 647.13999999983)
+    assert_close(obj.solve_property(5e4), 146.3404577534453)
+    assert_close(obj.solve_property(1), 647.1399999389462)
+    assert_close(obj.solve_property(1e-20), 647.13999999983)

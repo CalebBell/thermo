@@ -270,10 +270,6 @@ class VaporPressure(TDependentProperty):
         '''Maximum temperature at which no method can calculate vapor pressure
         above; by definition the critical point.'''
 
-        self.method = None
-        '''The method was which was last used successfully to calculate a property;
-        set only after the first property calculation.'''
-
         super(VaporPressure, self)._set_common_attributes()
 
 
@@ -286,9 +282,9 @@ class VaporPressure(TDependentProperty):
             if self.Tmax is None and hasattr(self, 'poly_fit_Tmax'):
                 self.Tmax = self.poly_fit_Tmax*10
         else:
-            methods = self.select_valid_methods(T=None, check_validity=False)
+            methods = self.valid_methods(T=None)
             if methods:
-                self.set_method(methods[0])
+                self.method = methods[0]
         self.extrapolation = extrapolation
 
     @staticmethod
@@ -708,9 +704,9 @@ class SublimationPressure(TDependentProperty):
             if self.Tmax is None and hasattr(self, 'poly_fit_Tmax'):
                 self.Tmax = self.poly_fit_Tmax*10
         else:
-            methods = self.select_valid_methods(T=None, check_validity=False)
+            methods = self.valid_methods(T=None)
             if methods:
-                self.set_method(methods[0])
+                self.method = methods[0]
         self.extrapolation = extrapolation
 
     def load_all_methods(self, load_data=True):

@@ -34,9 +34,9 @@ Temperature Dependent
 .. autoclass:: TDependentProperty
    :members: name, units, extrapolation, property_min, property_max,
              critical_zero, ranked_methods, __call__, fit_polynomial,
-             set_method, select_valid_methods, test_property_validity,
+             set_method, valid_methods, test_property_validity,
              T_dependent_property, plot_T_dependent_property, interpolate,
-             add_new_method, set_tabular_data, solve_prop,
+             add_new_method, set_tabular_data, solve_property,
              calculate_derivative, T_dependent_property_derivative,
              calculate_integral, T_dependent_property_integral,
              calculate_integral_over_T, T_dependent_property_integral_over_T,
@@ -760,7 +760,7 @@ class TDependentProperty(object):
 
     extrapolation = 'linear'
 
-    method = None
+    _method = None
     forced = False
 
     property_min = 0
@@ -936,58 +936,50 @@ class TDependentProperty(object):
 
         return coeffs, (low, high), stats
 
-    def set_method(self, method):
-        r'''Method used to select certain property methods as having a higher
-        priority than were set by default. If `forced` is true, then methods
-        which were not specified are excluded from consideration.
+    @property
+    def method(self):
+        r'''Method used to set or get a specific property method.
 
-        As a side effect, `method` is removed to ensure than the new methods
-        will be used in calculations afterwards.
-
-        An exception is raised if any of the methods specified aren't available
-        for the chemical. An exception is raised if no methods are provided.
+        An exception is raised if the method specified isnt't available
+        for the chemical with the provided information.
 
         Parameters
         ----------
         method : str or list
             Methods by name to be considered or preferred
         '''
-        if method not in self.all_methods:
-            raise ValueError("The given methods is not available for this chemical")
-        self.method = method
-        self.T_cached = None
+        return self._method
 
-    def select_valid_methods(self, T, check_validity=True):
-        r'''Method to obtain a sorted list of methods which are valid at `T`
-        according to `test_method_validity`. Considers either only user methods
-        if forced is True, or all methods. User methods are first tested
-        according to their listed order, and unless forced is True, then all
-        methods are tested and sorted by their order in `ranked_methods`.
+    @method.setter
+    def method(self, method):
+        if method not in self.all_methods and method != BESTFIT:
+            raise ValueError("The given methods is not available for this chemical")
+        self.T_cached = None
+        self._method = method
+
+    def valid_methods(self, T=None):
+        r'''Method to obtain a sorted list of methods that have data
+        available to be used. The methods are ranked in the following order:
+
+        * The currently selected method is first (if one is selected)
+        * Other available methods are ranked by the attribute `ranked_methods`
+
+        If `T` is provided, the methods will be checked against the temperature
+        limits of the correlations as well.
 
         Parameters
         ----------
-        T : float
+        T : float or None
             Temperature at which to test methods, [K]
-        check_validity : bool
-            Whether or not to use `test_method_validity` to check the
-            method for validity or not, [-]
 
         Returns
         -------
         sorted_valid_methods : list
             Sorted lists of methods valid at T according to
-            `test_method_validity`
+            `test_method_validity`, [-]
         '''
-        # Consider either only the user's methods or all methods
-        # Tabular data will be in both when inserted
-#        if self.forced:
-#            considered_methods = [self.method]
-#        else:
         considered_methods = list(self.all_methods)
 
-        # User methods (incl. tabular data); add back later, after ranking the rest
-#        if self.user_methods:
-#            [considered_methods.remove(i) for i in self.user_methods]
         if self.method is not None:
             considered_methods.remove(self.method)
 
@@ -998,9 +990,8 @@ class TDependentProperty(object):
         # Add back the user's methods to the top, in order.
         if self.method is not None:
             sorted_methods.insert(0, self.method)
-#            [sorted_methods.insert(0, i) for i in reversed(self.user_methods)]
 
-        if check_validity:
+        if T is not None:
             sorted_valid_methods = []
             for method in sorted_methods:
                 if self.test_method_validity(T, method):
@@ -1117,7 +1108,7 @@ class TDependentProperty(object):
 
     def T_dependent_property(self, T):
         r'''Method to calculate the property with sanity checking and without
-        specifying a specific method. `select_valid_methods` is used to obtain
+        specifying a specific method. `valid_methods` is used to obtain
         a sorted list of methods to try. Methods are then tried in order until
         one succeeds. The methods are allowed to fail, and their results are
         checked with `test_property_validity`. On success, the used method
@@ -1128,7 +1119,7 @@ class TDependentProperty(object):
         valid, it is then used to calculate the property. The result is checked
         for validity, and returned if it is valid. If either of the checks fail,
         the function retrieves a full list of valid methods with
-        `select_valid_methods` and attempts them as described above.
+        `valid_methods` and attempts them as described above.
 
         If no methods are found which succeed, returns None.
 
@@ -1192,7 +1183,7 @@ class TDependentProperty(object):
         return None
         # get valid methods at T, and try them until one yields a valid
         # property; store the method and return the answer
-        # self.sorted_valid_methods = self.select_valid_methods(T)
+        # self.sorted_valid_methods = self.valid_methods(T)
         # for method in self.sorted_valid_methods:
         #     try:
         #         prop = self.calculate(T, method)
@@ -1467,12 +1458,10 @@ class TDependentProperty(object):
             name = 'Tabular data series #' + str(len(self.tabular_data))  # Will overwrite a poorly named series
         self.tabular_data[name] = (Ts, properties)
 
-        self.method = None
         self.all_methods.add(name)
+        self.method = name
 
-        self.set_method(method=name)
-
-    def solve_prop(self, goal):
+    def solve_property(self, goal):
         r'''Method to solve for the temperature at which a property is at a
         specified value. :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>` is used to calculate the value
         of the property as a function of temperature.
@@ -1506,6 +1495,33 @@ class TDependentProperty(object):
         else:
             high = self.Tc if self.critical_zero and self.Tc is not None else None
             return secant(error, x0=T_limits[0], x1=T_limits[1], low=1e-4, xtol=1e-12, bisection=True, high=high)
+
+    def _calculate_derivative_transformed(self, T, method, order=1):
+        r'''Basic funtion which wraps calculate_derivative such that the output
+        of the derivative is in the transformed basis.'''
+        if self.interpolation_property is None and self.interpolation_T is None:
+            return self.calculate_derivative(T, method, order=1)
+
+        interpolation_T = self.interpolation_T
+        if interpolation_T is None:
+            interpolation_T = lambda T: T
+        interpolation_property = self.interpolation_property
+        if interpolation_property is None:
+            interpolation_property = lambda x: x
+
+        try:
+            return derivative(lambda T_trans: (interpolation_property(self.calculate(interpolation_T(T_trans), method=method))),
+                              interpolation_T(T), dx=interpolation_T(T)*1e-6, n=order, order=1+order*2)
+        except:
+            Tmin, Tmax = self.T_limits[method]
+            Tmin_trans, Tmax_trans = interpolation_T(Tmin), interpolation_T(Tmax)
+            lower_limit = min(Tmin_trans, Tmax_trans)
+            upper_limit = max(Tmin_trans, Tmax_trans)
+
+            return derivative(lambda T_trans: interpolation_property(self.calculate(interpolation_T(T_trans), method=method)),
+                              interpolation_T(T),
+                              dx=interpolation_T(T)*1e-6, n=order, order=1+order*2,
+                              lower_limit=lower_limit, upper_limit=upper_limit)
 
     def calculate_derivative(self, T, method, order=1):
         r'''Method to calculate a derivative of a property with respect to
@@ -1543,7 +1559,7 @@ class TDependentProperty(object):
     def T_dependent_property_derivative(self, T, order=1):
         r'''Method to obtain a derivative of a property with respect to
         temperature, of a given order. Methods found valid by
-        `select_valid_methods` are attempted until a method succeeds. If no
+        `valid_methods` are attempted until a method succeeds. If no
         methods are valid and succeed, None is returned.
 
         Calls `calculate_derivative` internally to perform the actual
@@ -1570,7 +1586,7 @@ class TDependentProperty(object):
             except Exception as e:
                 pass
 
-        sorted_valid_methods = self.select_valid_methods(T)
+        sorted_valid_methods = self.valid_methods(T)
         for method in sorted_valid_methods:
             try:
                 return self.calculate_derivative(T, method, order)
@@ -1609,7 +1625,7 @@ class TDependentProperty(object):
     def T_dependent_property_integral(self, T1, T2):
         r'''Method to calculate the integral of a property with respect to
         temperature, using a specified method. Methods found valid by
-        `select_valid_methods` are attempted until a method succeeds. If no
+        `valid_methods` are attempted until a method succeeds. If no
         methods are valid and succeed, None is returned.
 
         Calls `calculate_integral` internally to perform the actual
@@ -1645,7 +1661,7 @@ class TDependentProperty(object):
 #                except:  # pragma: no cover
 #                    pass
 
-        sorted_valid_methods = self.select_valid_methods(Tavg)
+        sorted_valid_methods = self.valid_methods(Tavg)
         for method in sorted_valid_methods:
             try:
                 return self.calculate_integral(T1, T2, method)
@@ -1684,7 +1700,7 @@ class TDependentProperty(object):
     def T_dependent_property_integral_over_T(self, T1, T2):
         r'''Method to calculate the integral of a property over temperature
         with respect to temperature, using a specified method. Methods found
-        valid by `select_valid_methods` are attempted until a method succeeds.
+        valid by `valid_methods` are attempted until a method succeeds.
         If no methods are valid and succeed, None is returned.
 
         Calls `calculate_integral_over_T` internally to perform the actual
@@ -1721,7 +1737,7 @@ class TDependentProperty(object):
 #                except:  # pragma: no cover
 #                    pass
 
-        sorted_valid_methods = self.select_valid_methods(Tavg)
+        sorted_valid_methods = self.valid_methods(Tavg)
         for method in sorted_valid_methods:
             try:
                 return self.calculate_integral_over_T(T1, T2, method)
@@ -1761,16 +1777,26 @@ class TDependentProperty(object):
 
             if extrapolation == 'linear':
                 self.linear_extrapolation_coeffs = linear_extrapolation_coeffs = {}
+                interpolation_T = self.interpolation_T
+                interpolation_property = self.interpolation_property
+                interpolation_property_inv = self.interpolation_property_inv
+
                 for m in self.all_methods:
                     Tmin, Tmax = T_limits[m]
+                    if interpolation_T is not None:
+                        Tmin_trans, Tmax_trans = interpolation_T(Tmin), interpolation_T(Tmax)
                     try:
                         v_low = self.calculate(T=Tmin, method=m)
-                        d_low = self.calculate_derivative(T=Tmin, method=m, order=1)
+                        if interpolation_property is not None:
+                            v_low = interpolation_property(v_low)
+                        d_low = self._calculate_derivative_transformed(T=Tmin, method=m, order=1)
                     except:
                         v_low, d_low = None, None
                     try:
                         v_high = self.calculate(T=Tmax, method=m)
-                        d_high = self.calculate_derivative(T=Tmax, method=m, order=1)
+                        if interpolation_property is not None:
+                            v_high = interpolation_property(v_high)
+                        d_high = self._calculate_derivative_transformed(T=Tmax, method=m, order=1)
                     except:
                         v_high, d_high = None, None
                     linear_extrapolation_coeffs[m] = (v_low, d_low, v_high, d_high)
@@ -1868,14 +1894,27 @@ class TDependentProperty(object):
 
         if extrapolation == 'linear':
             v_low, d_low, v_high, d_high = self.linear_extrapolation_coeffs[method]
+            interpolation_T = self.interpolation_T
+            interpolation_property_inv = self.interpolation_property_inv
+            if interpolation_T is not None:
+                T_low, T_high = interpolation_T(T_low), interpolation_T(T_high)
+                T = interpolation_T(T)
+
             if low:
                 if v_low is None:
                     raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
-                return v_low + d_low*(T - T_low)
+                val = v_low + d_low*(T - T_low)
+                if interpolation_property_inv is not None:
+                    val = interpolation_property_inv(val)
+                return val
             else:
                 if v_high is None:
                     raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
-                return v_high + d_high*(T - T_high)
+                val = v_high + d_high*(T - T_high)
+                if interpolation_property_inv is not None:
+                    val = interpolation_property_inv(val)
+                return val
+
         elif extrapolation == 'AntoineAB':
             T_low, T_high = T_limits[method]
             AB_low, AB_high = self.Antoine_AB_coeffs[method]
@@ -2075,7 +2114,7 @@ class TPDependentProperty(TDependentProperty):
         if isinstance(user_methods_P, str):
             user_methods_P = [user_methods_P]
 
-        # The user's order matters and is retained for use by select_valid_methods
+        # The user's order matters and is retained for use by valid_methods
         self.user_methods_P = user_methods_P
         self.forced_P = forced_P
 
@@ -2113,7 +2152,7 @@ class TPDependentProperty(TDependentProperty):
             Sorted lists of methods valid at T and P according to
             `test_method_validity`
         '''
-        # Same as select_valid_methods but with _P added to variables
+        # Same as valid_methods but with _P added to variables
         if self.forced_P:
             considered_methods = list(self.user_methods_P)
         else:
@@ -2865,7 +2904,7 @@ class MixtureProperty(object):
 
     def mixture_property(self, T, P, zs=None, ws=None):
         r'''Method to calculate the property with sanity checking and without
-        specifying a specific method. `select_valid_methods` is used to obtain
+        specifying a specific method. `valid_methods` is used to obtain
         a sorted list of methods to try. Methods are then tried in order until
         one succeeds. The methods are allowed to fail, and their results are
         checked with `test_property_validity`. On success, the used method
@@ -2876,7 +2915,7 @@ class MixtureProperty(object):
         valid, it is then used to calculate the property. The result is checked
         for validity, and returned if it is valid. If either of the checks fail,
         the function retrieves a full list of valid methods with
-        `select_valid_methods` and attempts them as described above.
+        `valid_methods` and attempts them as described above.
 
         If no methods are found which succeed, returns None.
         One or both of `zs` and `ws` are required.
@@ -3068,7 +3107,7 @@ class MixtureProperty(object):
     def property_derivative_T(self, T, P, zs=None, ws=None, order=1):
         r'''Method to calculate a derivative of a mixture property with respect
         to temperature at constant pressure and composition,
-        of a given order. Methods found valid by `select_valid_methods` are
+        of a given order. Methods found valid by `valid_methods` are
         attempted until a method succeeds. If no methods are valid and succeed,
         None is returned.
 
@@ -3110,7 +3149,7 @@ class MixtureProperty(object):
     def property_derivative_P(self, T, P, zs=None, ws=None, order=1):
         r'''Method to calculate a derivative of a mixture property with respect
         to pressure at constant temperature and composition,
-        of a given order. Methods found valid by `select_valid_methods` are
+        of a given order. Methods found valid by `valid_methods` are
         attempted until a method succeeds. If no methods are valid and succeed,
         None is returned.
 

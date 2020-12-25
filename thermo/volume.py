@@ -452,9 +452,9 @@ class VolumeLiquid(TPDependentProperty):
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
         else:
-            methods = self.select_valid_methods(T=None, check_validity=False)
+            methods = self.valid_methods(T=None)
             if methods:
-                self.set_method(methods[0])
+                self.method = methods[0]
         self.extrapolation = extrapolation
 
     def _custom_set_poly_fit(self):
@@ -2026,9 +2026,9 @@ class VolumeSolid(TDependentProperty):
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
         else:
-            methods = self.select_valid_methods(T=None, check_validity=False)
+            methods = self.valid_methods(T=None)
             if methods:
-                self.set_method(methods[0])
+                self.method = methods[0]
 
         self.extrapolation = extrapolation
 

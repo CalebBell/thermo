@@ -75,6 +75,63 @@ Each correlation is associated with temperature limits. These can be inspected a
 Because there is often a need to obtain a property outside the range of the correlation, there are some extrapolation methods available; depending on the method these may be enabled by default.
 The full list of extrapolation methods can be see :obj:`here <thermo.utils.TDependentProperty>`.
 
+For vapor pressure, there are actually two separate extrapolation techniques used, one for the low-pressure and thermodynamically reasonable region and another for extrapolating even past the critical point. This can be useful for obtaining initial estimates of phase equilibrium.
+
+The low-pressure region uses :math:`\log(P_{sat}) = A - B/T`, where the coefficients `A` and `B` are calculated from the low-temperature limit and its temperature derivative. The default high-temperature extrapolation is :math:`P_{sat} = \exp\left(A + B/T + C\log(T)\right)`. The coefficients are also determined from the high-temperature limits and its first two temperature derivatives.
+
+When extrapolation is turned on, it is used automatically if a property is requested out of range:
+
+>>> ethanol_psat(100.0), ethanol_psat(1000)
+(1.0475e-11, 3.4945e+22)
+
+The default extrapolation methods may be changed in the future, but can be manually specified also. For example, if the `linear` extrapolation method is set, extrapolation will be linear instead of using those fit equations. Because not all properties are suitable for linear extrapolation, some methods have a default `transform` to make the property behave as linearly as possible. This is also used in tabular interpolation:
+
+>>> ethanol_psat.extrapolation = 'linear'
+>>> ethanol_psat(100.0), ethanol_psat(1000)
+(1.0475e-11, 385182009.4)
+
+The low-temperature linearly extrapolated value is actually the same as before, because it performs a 1/T transform and a log(P) transform on the output, which results in the fit being the same as the default equation for vapor pressure.
+
+To better understand what methods are available, the `valid_methods` method checks all available correlations against their temperature limits.
+
+>>> ethanol_psat.valid_methods(100)
+['AMBROSE_WALTON', 'LEE_KESLER_PSAT', 'Edalat', 'BOILING_CRITICAL', 'SANJARI']
+
+If the temperature is not provided, all available methods are returned; the returned value always favors the methods by the ranking defined in thermo.
+
+>>> ethanol_psat.valid_methods()
+['WAGNER_MCGARRY', 'WAGNER_POLING', 'DIPPR_PERRY_8E', 'VDI_PPDS', 'COOLPROP', 'ANTOINE_POLING', 'VDI_TABULAR', 'AMBROSE_WALTON', 'LEE_KESLER_PSAT', 'Edalat', 'BOILING_CRITICAL', 'SANJARI']
+
+It is also possible to compare the correlations graphically.
+
+>>> ethanol_psat.plot_T_dependent_property(Tmin=300)
+
+There is also functionality for reversing the calculation - finding out which temperature produces a specific property value. For vapor pressure, we can find out the normal boiling point as follows:
+
+>>> ethanol_psat.solve_property(101325)
+351.43136
+
+Functionality for calculating the derivative of the property is also implemented:
+
+>>> ethanol_psat.T_dependent_property_derivative(300)
+498.882
+
+Functionality for integrating over a property is also implemented; in the heat capacity case this represents a change in enthalpy:
+
+>>> CH4_Cp = HeatCapacityGas(CASRN='74-82-8')
+>>> CH4_Cp.method = 'Poling et al. (2001)'
+>>> CH4_Cp.T_dependent_property_integral(300, 500)
+8158.64
+
+Because entropy is also needed, the integral of the property over T is implemented too:
+
+>>> CH4_Cp.T_dependent_property_integral_over_T(300, 500)
+20.6088
+
+Where it speed is important, these integrals are implemented analytically; otherwise the integration is performed numerically.
+
+Temperature and Pressure Dependent Properties
+---------------------------------------------
 
 
 

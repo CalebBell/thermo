@@ -2899,7 +2899,7 @@ def TPV_solve_HSGUA_guesses_1P(zs, method, constants, correlations,
         def T_from_V(V, P):
             T_calc = 0.
             for i in cmps:
-                T_calc += zs[i]*VolumeLiquids[i].solve_prop(V)
+                T_calc += zs[i]*VolumeLiquids[i].solve_property(V)
             return T_calc
 
 
@@ -3978,7 +3978,7 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
     def T_from_V_l(V, P, zs):
         T_calc = 0.
         for i in cmps:
-            T_calc += zs[i]*VolumeLiquids[i].solve_prop(V)
+            T_calc += zs[i]*VolumeLiquids[i].solve_property(V)
         return T_calc
 
     def V_model_g(T, P, zs):
@@ -7202,7 +7202,7 @@ class FlashPureVLS(FlashBase):
             sat_liq = self.liquid.to(T=Tsat, V=1e-3*iapws95_MW/iapws95_rhol_sat(Tsat), zs=zs)
             return Tsat, sat_liq, sat_gas, 0, 0.0
         else:
-            Tsat = self.correlations.VaporPressures[0].solve_prop(P)
+            Tsat = self.correlations.VaporPressures[0].solve_property(P)
         gas = self.gas.to_TP_zs(Tsat, P, zs)
         liquids = [l.to_TP_zs(Tsat, P, zs) for l in self.liquids]
         Tsat, l, g, iterations, err = PVF_pure_newton(Tsat, P, liquids, gas, maxiter=self.PVF_maxiter, xtol=self.PVF_xtol)
@@ -7230,7 +7230,7 @@ class FlashPureVLS(FlashBase):
 
     def flash_PSF(self, P, SF=None, zs=None, hot_start=None):
         if P < self.constants.Pts[0]:
-            Tsub = self.correlations.SublimationPressures[0].solve_prop(P)
+            Tsub = self.correlations.SublimationPressures[0].solve_property(P)
             try_phases = [self.gas] + self.liquids
         else:
             try_phases = self.liquids
@@ -8008,7 +8008,7 @@ class FlashPureVLS(FlashBase):
         import matplotlib.pyplot as plt
         Psat_obj = self.correlations.VaporPressures[0]
 
-        Tsat = Psat_obj.solve_prop(P)
+        Tsat = Psat_obj.solve_property(P)
         Tmax = Psat_obj.Tmax
         Tmin = Psat_obj.Tmin
 

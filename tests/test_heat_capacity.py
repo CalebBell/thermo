@@ -37,7 +37,12 @@ def test_HeatCapacityGas():
     EtOH = HeatCapacityGas(CASRN='64-17-5', similarity_variable=0.1953615, MW=46.06844)
     methods = list(EtOH.all_methods)
     methods.remove(VDI_TABULAR)
-    Cps_calc = [(EtOH.set_method(i), EtOH.T_dependent_property(305))[1] for i in methods]
+    Cps_calc = []
+    for i in methods:
+        EtOH.method = i
+        Cps_calc.append(EtOH.T_dependent_property(305))
+
+
     assert_allclose(sorted(Cps_calc),
                     sorted([66.35085001015844, 66.40063819791762, 66.25918325111196, 71.07236200126606, 65.6, 65.21]),
                     rtol=1e-5)
@@ -49,7 +54,12 @@ def test_HeatCapacityGas():
 
     EtOH.extrapolation = None
     EtOH.tabular_extrapolation_permitted = False
-    assert [None]*6 == [(EtOH.set_method(i), EtOH.T_dependent_property(5000))[1] for i in [TRCIG, POLING, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR]]
+    Cp_missing = []
+    for i in [TRCIG, POLING, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR]:
+        EtOH.method = i
+        Cp_missing.append( EtOH.T_dependent_property(5000))
+
+    assert [None]*6 == Cp_missing
 
     with pytest.raises(Exception):
         EtOH.test_method_validity('BADMETHOD', 300)
@@ -86,7 +96,7 @@ def test_HeatCapacityGas():
 @pytest.mark.meta_T_dept
 def test_HeatCapacityGas_linear_extrapolation():
     CpObj = HeatCapacityGas(CASRN='67-56-1', extrapolation='linear')
-    CpObj.set_method(TRCIG)
+    CpObj.method = TRCIG
     assert_close(CpObj.T_dependent_property(CpObj.TRCIG_Tmax),
                  CpObj.T_dependent_property(CpObj.TRCIG_Tmax-1e-6))
     assert_close(CpObj.T_dependent_property(CpObj.TRCIG_Tmax),
@@ -150,12 +160,19 @@ def test_HeatCapacityGas_integrals():
 @pytest.mark.meta_T_dept
 def test_HeatCapacitySolid():
     NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
-    Cps_calc =  [(NaCl.set_method(i), NaCl.T_dependent_property(298.15))[1] for i in NaCl.all_methods]
+
+    Cps_calc = []
+    for i in NaCl.all_methods:
+        NaCl.method = i
+        Cps_calc.append(NaCl.T_dependent_property(298.15))
+
     Cps_exp = [50.38469032, 50.5, 20.065072074682337]
     assert_allclose(sorted(Cps_calc), sorted(Cps_exp))
 
     NaCl.extrapolation = None
-    assert [None]*3 == [(NaCl.set_method(i), NaCl.T_dependent_property(20000))[1] for i in NaCl.all_methods]
+    for i in NaCl.all_methods:
+        NaCl.method = i
+        assert NaCl.T_dependent_property(20000) is None
 
     with pytest.raises(Exception):
         NaCl.test_method_validity('BADMETHOD', 300)
@@ -217,12 +234,20 @@ def test_HeatCapacitySolid_integrals():
 @pytest.mark.meta_T_dept
 def test_HeatCapacityLiquid():
     tol = HeatCapacityLiquid(CASRN='108-88-3', MW=92.13842, Tc=591.75, omega=0.257, Cpgm=115.30398669098454, similarity_variable=0.16279853724428964)
-    Cpl_calc = [(tol.set_method(i), tol.T_dependent_property(330))[1] for i in tol.all_methods]
+    Cpl_calc = []
+    for i in tol.all_methods:
+        tol.method = i
+        Cpl_calc.append(tol.T_dependent_property(330))
+
+
     Cpls = [165.4728226923247, 166.5239869108539, 166.52164399712314, 175.3439256239127, 166.71561127721478, 157.3, 165.4554033804999, 166.69807427725885, 157.29, 167.3380448453572]
     assert_allclose(sorted(Cpl_calc), sorted(Cpls), rtol=5e-6)
 
     tol.extrapolation = None
-    assert [None]*10 == [(tol.set_method(i), tol.T_dependent_property(2000))[1] for i in tol.all_methods]
+    for i in tol.all_methods:
+        tol.method = i
+        assert tol.T_dependent_property(2000) is None
+
 
     with pytest.raises(Exception):
         tol.test_method_validity('BADMETHOD', 300)
@@ -234,12 +259,23 @@ def test_HeatCapacityLiquid():
 
 
     propylbenzene = HeatCapacityLiquid(MW=120.19158, CASRN='103-65-1', Tc=638.35)
-    Cpl_calc = [(propylbenzene.set_method(i), propylbenzene.T_dependent_property(298.15))[1] for i in propylbenzene.all_methods]
+
+    Cpl_calc = []
+    for i in propylbenzene.all_methods:
+        propylbenzene.method = i
+        Cpl_calc.append(propylbenzene.T_dependent_property(298.15))
+
+
     Cpls = [214.6499551694668, 214.69679325320664, 214.7, 214.71]
     assert_allclose(sorted(Cpl_calc), sorted(Cpls))
 
     ctp = HeatCapacityLiquid(MW=118.58462, CASRN='96-43-5')
-    Cpl_calc = [(ctp.set_method(i), ctp.T_dependent_property(250))[1] for i in ctp.all_methods]
+
+    Cpl_calc = []
+    for i in ctp.all_methods:
+        ctp.method = i
+        Cpl_calc.append(ctp.T_dependent_property(250))
+
     Cpls = [134.1186737739494, 134.1496585096233]
     assert_allclose(sorted(Cpl_calc), sorted(Cpls))
 

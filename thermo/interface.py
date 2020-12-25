@@ -294,9 +294,9 @@ class SurfaceTension(TDependentProperty):
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
         else:
-            methods = self.select_valid_methods(T=None, check_validity=False)
+            methods = self.valid_methods(T=None)
             if methods:
-                self.set_method(methods[0])
+                self.method = methods[0]
         self.extrapolation = extrapolation
 
 
@@ -392,7 +392,7 @@ class SurfaceTension(TDependentProperty):
                 methods.append(ALEEM)
                 # Tmin and Tmax for this method is known
                 Tmax_possible = self.Tb + self.Hvap_Tb/self.Cpl_Tb
-                # This method will ruin solve_prop as it is typically valid
+                # This method will ruin solve_property as it is typically valid
                 # well above Tc. If Tc is available, limit it to that.
                 if self.Tc:
                     Tmax_possible = min(self.Tc, Tmax_possible)

@@ -1332,7 +1332,7 @@ class Ideal(PropertyPackage):
         Tsats = []
         for i in self.VaporPressures:
 #            try:
-            Tsats.append(i.solve_prop(P))
+            Tsats.append(i.solve_property(P))
 #            except:
 #                error = lambda T: i.extrapolate_tabular(T) - P
 #                Tsats.append(brenth(error, i.Tmax, i.Tmax*5))

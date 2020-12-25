@@ -148,10 +148,10 @@ def test_TDependentProperty():
     # With pytest.raise(Exception) BAD METHOD here
     # TODO: Interpolate
 
-    # Test select_valid_methods without user_methods
-    assert [TEST_METHOD_2, TEST_METHOD_1] == EtOH.select_valid_methods(320) # Both in range, correctly ordered
-    assert [TEST_METHOD_1] == EtOH.select_valid_methods(210) # Choice 2 but only one available
-    assert [TEST_METHOD_2] == EtOH.select_valid_methods(390) # Choice 1 but only one available
+    # Test valid_methods without user_methods
+    assert [TEST_METHOD_2, TEST_METHOD_1] == EtOH.valid_methods(320)  # Both in range, correctly ordered
+    assert [TEST_METHOD_1] == EtOH.valid_methods(210)  # Choice 2 but only one available
+    assert [TEST_METHOD_2] == EtOH.valid_methods(390)  # Choice 1 but only one available
 
     # Test calculate
     # Mid, all methods, and with __call__, twice
@@ -178,10 +178,10 @@ def test_TDependentProperty():
     # Test some failures
     with pytest.raises(Exception):
         EtOHFail = TDependentProperty(CASRN='67-56-1')
-        EtOHFail.set_method([])
+        EtOHFail.method = None
     with pytest.raises(Exception):
         EtOHFail = TDependentProperty(CASRN='67-56-1')
-        EtOHFail.set_method(['NOTAMETHOD'])
+        EtOHFail.method = ['NOTAMETHOD']
     with pytest.raises(Exception):
         EtOHFail = TDependentProperty(CASRN='67-56-1')
         EtOHFail.test_method_validity(300, 'NOTAMETHOD')
@@ -189,14 +189,14 @@ def test_TDependentProperty():
 
     # Test with user methods
     EtOH = TDependentProperty(CASRN='67-56-1')
-    EtOH.set_method(TEST_METHOD_1)
+    EtOH.method = TEST_METHOD_1
     assert EtOH.user_methods == [TEST_METHOD_1]
     assert 1.6 == EtOH.T_dependent_property(300)
 
-    EtOH.set_method(TEST_METHOD_2)
+    EtOH.method = TEST_METHOD_2
     assert EtOH.user_methods == [TEST_METHOD_2]
     assert EtOH.T_dependent_property(250) is None
-    EtOH.set_method(TEST_METHOD_2)
+    EtOH.method = METHOD_2
     assert None == EtOH.T_dependent_property(250) # Test not calculated if user method not specified
 
     EtOH = TDependentProperty(CASRN='67-56-1')
@@ -221,7 +221,7 @@ def test_TDependentProperty():
 
     # Test naming and retrieving with user methods
     EtOH = TDependentProperty(CASRN='67-56-1')
-    EtOH.set_method(TEST_METHOD_1)
+    EtOH.method = TEST_METHOD_1
     EtOH.set_tabular_data(Ts=Ts, properties=props)
     assert set(EtOH.all_methods) == set(['Tabular data series #0', 'Test method 1', 'Test method 2'])
     EtOH.set_tabular_data(Ts=Ts, properties=props, name='hi')

@@ -125,7 +125,7 @@ it are included as possible. All methods can be visualized independently:
 
 .. code-block:: python
 
-    >>> Chemical('toluene').VaporPressure.solve_prop(2E5)
+    >>> Chemical('toluene').VaporPressure.solve_property(2E5)
     409.5909115602903
     >>> Chemical('toluene').SurfaceTension.plot_T_dependent_property()
 
