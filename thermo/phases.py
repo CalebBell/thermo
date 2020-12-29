@@ -37,9 +37,9 @@ Ideal Gas Equation of State
 .. autoclass:: IdealGas
    :show-inheritance:
    :members: dlnphis_dP, dlnphis_dT, dphis_dP, dphis_dT, phis, lnphis, fugacities,
-             as_args, H, S, Cp, dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, dH_dP,
+             H, S, Cp, dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, dH_dP,
              dS_dT, dS_dP, d2H_dT2, d2H_dP2, d2S_dP2, dH_dT_V, dH_dP_V, dH_dV_T,
-             dH_dV_P, dS_dT_V, dS_dP_V
+             dH_dV_P, dS_dT_V, dS_dP_V, __repr__
 
 Cubic Equations of State
 ========================
@@ -48,29 +48,24 @@ Gas Phases
 ----------
 .. autoclass:: CEOSGas
    :show-inheritance:
-   :members: __init__, as_args, to_TP_zs, V_iter, H, S, Cp, Cv, dP_dT, dP_dV,
+   :members: to_TP_zs, V_iter, H, S, Cp, Cv, dP_dT, dP_dV,
              d2P_dT2, d2P_dV2, d2P_dTdV, dH_dP, dS_dT, dS_dP, d2H_dT2, d2H_dP2,
              d2S_dP2, dH_dT_V, dH_dP_V, dH_dV_T, dH_dV_P, dS_dT_V, dS_dP_V,
-             lnphis, dlnphis_dT, dlnphis_dP
+             lnphis, dlnphis_dT, dlnphis_dP, __repr__
 
 Liquid Phases
 -------------
 .. autoclass:: CEOSLiquid
    :show-inheritance:
    :members: __init__
+   :exclude-members: __init__
 
 Activity Based Liquids
 ======================
 .. autoclass:: GibbsExcessLiquid
    :show-inheritance:
-   :members:
-
-Virial Equations of State
-=========================
-
-.. autoclass:: VirialGas
-   :show-inheritance:
-   :members:
+   :members: __init__
+   :exclude-members: __init__
 
 
 Fundamental Equations of State
@@ -79,7 +74,10 @@ Fundamental Equations of State
 
 .. autoclass:: HelmholtzEOS
    :show-inheritance:
-   :members:
+   :members: to_TP_zs, V_iter, H, S, Cp, Cv, dP_dT, dP_dV,
+             d2P_dT2, d2P_dV2, d2P_dTdV, dH_dP, dS_dT, dS_dP,
+             dH_dT_V, dH_dP_V, dH_dV_T, dH_dV_P, dS_dT_V, dS_dP_V,
+             lnphis, dlnphis_dT, dlnphis_dP, __repr__
 
 .. autoclass:: IAPWS95
    :show-inheritance:
@@ -94,35 +92,50 @@ Fundamental Equations of State
    :members: force_phase
 
 
-Solids Phases
-=============
-.. autoclass:: GibbsExcessSolid
-   :show-inheritance:
-   :members:
-
 CoolProp Wrapper
 ================
 .. autoclass:: CoolPropGas
    :show-inheritance:
-   :members:
+   :members: __init__
+   :exclude-members: __init__
 
 .. autoclass:: CoolPropLiquid
    :show-inheritance:
-   :members:
+   :members: __init__
+   :exclude-members: __init__
 
+'''
+from __future__ import division
+
+'''
+# Not ready to be documented or exposed
 Petroleum Specific Phases
 =========================
 .. autoclass:: GraysonStreed
    :show-inheritance:
-   :members:
+   :members: __init__
+   :exclude-members: __init__
 
 .. autoclass:: ChaoSeader
+   :show-inheritance:
+   :members: __init__
+   :exclude-members: __init__
+
+Solids Phases
+=============
+.. autoclass:: GibbsExcessSolid
+   :show-inheritance:
+   :members: __init__
+   :exclude-members: __init__
+
+Virial Equations of State
+=========================
+
+.. autoclass:: VirialGas
    :show-inheritance:
    :members:
 
 '''
-
-from __future__ import division
 __all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'CEOSLiquid', 'CEOSGas', 'IdealGas', 'IAPWS97', 'HelmholtzEOS',
            'IAPWS95', 'IAPWS95Gas', 'IAPWS95Liquid', 'DryAirLemmon', 'VirialGas',
            'gas_phases', 'liquid_phases', 'solid_phases', 'CombinedPhase', 'CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas', 'INCOMPRESSIBLE_CONST',
@@ -240,7 +253,7 @@ class Phase(object):
     Cpgs_locked = False
     composition_independent = False
 
-    def __repr__(self):
+    def __str__(self):
         s =  '<%s, ' %(self.__class__.__name__)
         try:
             s += 'T=%g K, P=%g Pa' %(self.T, self.P)
@@ -4492,6 +4505,38 @@ class IdealGas(Phase):
         if P is not None:
             self.P = P
 
+    def __repr__(self):
+        r'''Method to create a string representation of the phase object, with
+        the goal of making it easy to obtain standalone code which reproduces
+        the current state of the phase. This is extremely helpful in creating
+        new test cases.
+
+        Returns
+        -------
+        recreation : str
+            String which is valid Python and recreates the current state of
+            the object if ran, [-]
+
+        Examples
+        --------
+        >>> from thermo import HeatCapacityGas, IdealGas
+        >>> HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
+        ...                      HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
+        >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=HeatCapacityGases)
+        >>> phase
+        'IdealGas(HeatCapacityGases=[HeatCapacityGas(extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [-8.231317991971707e-12, 1.3053706310500586e-08, 5.820123832707268e-07, -0.0021700747433379955, 29.424883205644317])), HeatCapacityGas(extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [1.48828880864943e-11, -4.9886775708919434e-08, 5.4709164027448316e-05, -0.014916145936966912, 30.18149930389626]))], T=300, P=100000.0, zs=[0.79, 0.21])'
+
+        '''
+        Cpgs = ', '.join(str(o) for o in self.HeatCapacityGases)
+        base = 'IdealGas(HeatCapacityGases=[%s], '  %(Cpgs,)
+        for s in ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs'):
+            if hasattr(self, s) and getattr(self, s) is not None:
+                base += '%s=%s, ' %(s, getattr(self, s))
+        if base[-2:] == ', ':
+            base = base[:-2]
+        base += ')'
+        return base
+
     def fugacities(self):
         r'''Method to calculate and return the fugacities of each
         component in the phase.
@@ -5108,6 +5153,49 @@ class IdealGas(Phase):
         return k
 
 class CEOSGas(Phase):
+    r'''Class for representing a cubic equation of state gas phase
+    as a phase object. All departure
+    properties are actually calculated by the code in :obj:`thermo.eos` and
+    :obj:`thermo.eos_mix`.
+
+    .. math::
+        P=\frac{RT}{V-b}-\frac{a\alpha(T)}{V^2 + \delta V + \epsilon}
+
+    Parameters
+    ----------
+    eos_class : :obj:`thermo.eos_mix.GCEOSMIX`
+        EOS class, [-]
+    eos_kwargs : dict
+        Parameters to be passed to the created EOS, [-]
+    HeatCapacityGases : list[HeatCapacityGas]
+        Objects proiding pure-component heat capacity correlations, [-]
+    Hfs : list[float]
+        Molar ideal-gas standard heats of formation at 298.15 K and 1 atm,
+        [J/mol]
+    Gfs : list[float]
+        Molar ideal-gas standard Gibbs energies of formation at 298.15 K and
+        1 atm, [J/mol]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    zs : list[float], optional
+        Mole fractions of each component, [-]
+
+    Examples
+    --------
+    T-P initialization for oxygen and nitrogen with the PR EOS, using Poling's
+    polynomial heat capacities:
+
+    >>> from thermo import HeatCapacityGas, PRMIX, CEOSGas
+    >>> eos_kwargs = dict(Tcs=[154.58, 126.2], Pcs=[5042945.25, 3394387.5], omegas=[0.021, 0.04], kijs=[[0.0, -0.0159], [-0.0159, 0.0]])
+    >>> HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
+    ...                      HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
+    >>> phase = CEOSGas(eos_class=PRMIX, eos_kwargs=eos_kwargs, T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=HeatCapacityGases)
+    >>> phase.Cp()
+    29.2285050
+
+    '''
     is_gas = True
     is_liquid = False
     ideal_gas_basis = True
@@ -5123,7 +5211,7 @@ class CEOSGas(Phase):
             except AttributeError:
                 pass
         to_hash = [self.eos_class, self.eos_kwargs,
-                                   self.Hfs, self.Gfs, self.Sfs, self.HeatCapacityGases]
+                   self.Hfs, self.Gfs, self.Sfs, self.HeatCapacityGases]
         if not ignore_phase:
             to_hash.append(self.__class__)
         h =  hash_any_primitive(to_hash)
@@ -5140,12 +5228,37 @@ class CEOSGas(Phase):
             return phase
         return 'g'
 
-    def as_args(self):
-        eos_kwargs = self.eos_kwargs.copy()
-        base = 'CEOSGas(eos_class=%s, eos_kwargs=%s, HeatCapacityGases=correlations.HeatCapacityGases,'  %(self.eos_class.__name__, self.eos_kwargs)
+    def __repr__(self):
+        r'''Method to create a string representation of the phase object, with
+        the goal of making it easy to obtain standalone code which reproduces
+        the current state of the phase. This is extremely helpful in creating
+        new test cases.
+
+        Returns
+        -------
+        recreation : str
+            String which is valid Python and recreates the current state of
+            the object if ran, [-]
+
+        Examples
+        --------
+        >>> from thermo import HeatCapacityGas, PRMIX, CEOSGas
+        >>> eos_kwargs = dict(Tcs=[154.58, 126.2], Pcs=[5042945.25, 3394387.5], omegas=[0.021, 0.04], kijs=[[0.0, -0.0159], [-0.0159, 0.0]])
+        >>> HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
+        ...                      HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
+        >>> phase = CEOSGas(eos_class=PRMIX, eos_kwargs=eos_kwargs, T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=HeatCapacityGases)
+        >>> phase
+        'CEOSGas(eos_class=PRMIX, eos_kwargs={"Tcs": [154.58, 126.2], "Pcs": [5042945.25, 3394387.5], "omegas": [0.021, 0.04], "kijs": [[0.0, -0.0159], [-0.0159, 0.0]]}, HeatCapacityGases=[HeatCapacityGas(extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [-8.231317991971707e-12, 1.3053706310500586e-08, 5.820123832707268e-07, -0.0021700747433379955, 29.424883205644317])), HeatCapacityGas(extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [1.48828880864943e-11, -4.9886775708919434e-08, 5.4709164027448316e-05, -0.014916145936966912, 30.18149930389626]))], T=300, P=100000.0, zs=[0.79, 0.21])'
+
+        '''
+        eos_kwargs = str(self.eos_kwargs).replace("'", '"')
+        Cpgs = ', '.join(str(o) for o in self.HeatCapacityGases)
+        base = 'CEOSGas(eos_class=%s, eos_kwargs=%s, HeatCapacityGases=[%s], '  %(self.eos_class.__name__, eos_kwargs, Cpgs)
         for s in ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs'):
             if hasattr(self, s) and getattr(self, s) is not None:
                 base += '%s=%s, ' %(s, getattr(self, s))
+        if base[-2:] == ', ':
+            base = base[:-2]
         base += ')'
         return base
 
@@ -5806,6 +5919,20 @@ class CEOSGas(Phase):
         return self.dS_dT()
 
     def dS_dT_V(self):
+        r'''Method to calculate and return the first temperature derivative of
+        molar entropy at constant volume of the phase.
+
+        .. math::
+            \left(\frac{\partial S}{\partial T}\right)_V =
+            \frac{C_p^{ig}}{T} - \frac{R}{P}\frac{\partial P}{\partial T}
+            + \left(\frac{\partial S_{dep}}{\partial T}\right)_V
+
+        Returns
+        -------
+        dS_dT_V : float
+            First temperature derivative of molar entropy at constant volume,
+            [J/(mol*K^2)]
+        '''
         # Good
         '''
         # Second last bit from
@@ -10711,7 +10838,7 @@ class CoolPropPhase(Phase):
     ideal_gas_basis = False
 
 
-    def __repr__(self):
+    def __str__(self):
         if self.phase == 'g':
             s =  '<%s, ' %('CoolPropGas')
         else:

@@ -189,6 +189,10 @@ class ThermalConductivityLiquid(TPDependentProperty):
         horner's method, and the input variable and output are transformed by
         the default transformations of this object; used instead of any other
         default low-pressure method if provided. [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -294,7 +298,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
 
     def __init__(self, CASRN='', MW=None, Tm=None, Tb=None, Tc=None, Pc=None,
                  omega=None, Hfus=None, load_data=True,
-                 extrapolation='linear', poly_fit=None):
+                 extrapolation='linear', poly_fit=None, method=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tm = Tm
@@ -303,6 +307,22 @@ class ThermalConductivityLiquid(TPDependentProperty):
         self.Pc = Pc
         self.omega = omega
         self.Hfus = Hfus
+
+        self.kwargs = kwargs = {}
+        if MW is not None:
+            kwargs['MW'] = MW
+        if Tb is not None:
+            kwargs['Tb'] = Tb
+        if Tc is not None:
+            kwargs['Tc'] = Tc
+        if Pc is not None:
+            kwargs['Pc'] = Pc
+        if Tm is not None:
+            kwargs['Tm'] = Tm
+        if Hfus is not None:
+            kwargs['Hfus'] = Hfus
+        if omega is not None:
+            kwargs['omega'] = omega
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -343,6 +363,8 @@ class ThermalConductivityLiquid(TPDependentProperty):
         self.load_all_methods(load_data)
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
+        elif method is not None:
+            self.method = method
         else:
             methods = self.valid_methods(T=None)
             if methods:
@@ -911,6 +933,10 @@ class ThermalConductivityGas(TPDependentProperty):
         horner's method, and the input variable and output are transformed by
         the default transformations of this object; used instead of any other
         default low-pressure method if provided. [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -1020,7 +1046,8 @@ class ThermalConductivityGas(TPDependentProperty):
 
     def __init__(self, CASRN='', MW=None, Tb=None, Tc=None, Pc=None, Vc=None,
                  Zc=None, omega=None, dipole=None, Vmg=None, Cvgm=None, mug=None,
-                 load_data=True, extrapolation='linear', poly_fit=None):
+                 load_data=True, extrapolation='linear', poly_fit=None,
+                 method=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tb = Tb
@@ -1033,6 +1060,30 @@ class ThermalConductivityGas(TPDependentProperty):
         self.Vmg = Vmg
         self.Cvgm = Cvgm
         self.mug = mug
+
+        self.kwargs = kwargs = {}
+        if MW is not None:
+            kwargs['MW'] = MW
+        if Tb is not None:
+            kwargs['Tb'] = Tb
+        if Tc is not None:
+            kwargs['Tc'] = Tc
+        if Pc is not None:
+            kwargs['Pc'] = Pc
+        if Vc is not None:
+            kwargs['Vc'] = Vc
+        if Zc is not None:
+            kwargs['Zc'] = Zc
+        if omega is not None:
+            kwargs['omega'] = omega
+        if dipole is not None:
+            kwargs['dipole'] = dipole
+        if Vmg is not None:
+            kwargs['Vmg'] = Vmg
+        if Cvgm is not None:
+            kwargs['Cvgm'] = Cvgm
+        if mug is not None:
+            kwargs['mug'] = mug
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -1073,6 +1124,8 @@ class ThermalConductivityGas(TPDependentProperty):
         self.load_all_methods(load_data)
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
+        elif method is not None:
+            self.method = method
         else:
             methods = self.valid_methods(T=None)
             if methods:

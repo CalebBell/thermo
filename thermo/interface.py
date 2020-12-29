@@ -148,6 +148,10 @@ class SurfaceTension(TDependentProperty):
         horner's method, and the input variable and output are transformed by
         the default transformations of this object; used instead of any other
         default low-pressure method if provided. [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -250,7 +254,8 @@ class SurfaceTension(TDependentProperty):
 
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
                  omega=None, StielPolar=None, Hvap_Tb=None, CASRN='', Vml=None,
-                 Cpl=None, load_data=True, extrapolation=None, poly_fit=None):
+                 Cpl=None, load_data=True, extrapolation=None, poly_fit=None,
+                 method=None):
         self.MW = MW
         self.Tb = Tb
         self.Tc = Tc
@@ -263,6 +268,30 @@ class SurfaceTension(TDependentProperty):
         self.CASRN = CASRN
         self.Vml = Vml
         self.Cpl = Cpl
+
+        self.kwargs = kwargs = {}
+        if MW is not None:
+            kwargs['MW'] = MW
+        if Tb is not None:
+            kwargs['Tb'] = Tb
+        if Tc is not None:
+            kwargs['Tc'] = Tc
+        if Pc is not None:
+            kwargs['Pc'] = Pc
+        if Vc is not None:
+            kwargs['Vc'] = Vc
+        if Zc is not None:
+            kwargs['Zc'] = Zc
+        if omega is not None:
+            kwargs['omega'] = omega
+        if StielPolar is not None:
+            kwargs['StielPolar'] = StielPolar
+        if Hvap_Tb is not None:
+            kwargs['Hvap_Tb'] = Hvap_Tb
+        if Vml is not None:
+            kwargs['Vml'] = Vml
+        if Cpl is not None:
+            kwargs['Cpl'] = Cpl
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -293,6 +322,8 @@ class SurfaceTension(TDependentProperty):
         self.load_all_methods(load_data)
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
+        elif method is not None:
+            self.method = method
         else:
             methods = self.valid_methods(T=None)
             if methods:

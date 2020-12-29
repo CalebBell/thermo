@@ -178,13 +178,17 @@ class HeatCapacityGas(TDependentProperty):
         horner's method, and the input variable and output are transformed by
         the default transformations of this object; used instead of any other
         default method if provided. [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
     A string holding each method's name is assigned to the following variables
     in this module, intended as the most convenient way to refer to a method.
     To iterate over all methods, use the list stored in
-    :obj:`heat_capacity_liquid_methods`.
+    :obj:`heat_capacity_gas_methods`.
 
     **TRCIG**:
         A rigorous expression derived in [1]_ for modeling gas heat capacity.
@@ -216,6 +220,13 @@ class HeatCapacityGas(TDependentProperty):
     chemicals.heat_capacity.Lastovka_Shaw
     chemicals.heat_capacity.Rowlinson_Poling
     chemicals.heat_capacity.Rowlinson_Bondi
+
+    Examples
+    --------
+
+    >>> CpGas = HeatCapacityGas(CASRN='142-82-5', MW=100.2, similarity_variable=0.2295)
+    >>> CpGas(700)
+    317.244
 
     References
     ----------
@@ -262,10 +273,17 @@ class HeatCapacityGas(TDependentProperty):
     _fit_force_n[POLING_CONST] = 1
 
     def __init__(self, CASRN='', MW=None, similarity_variable=None,
-                 load_data=True, extrapolation='linear', poly_fit=None):
+                 load_data=True, extrapolation='linear', poly_fit=None,
+                 method=None):
         self.CASRN = CASRN
         self.MW = MW
         self.similarity_variable = similarity_variable
+
+        self.kwargs = kwargs = {}
+        if similarity_variable is not None:
+            kwargs['similarity_variable'] = similarity_variable
+        if MW is not None:
+            kwargs['MW'] = MW
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -296,6 +314,8 @@ class HeatCapacityGas(TDependentProperty):
 
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
+        elif method is not None:
+            self.method = method
         else:
             methods = self.valid_methods(T=None)
             if methods:
@@ -644,6 +664,10 @@ class HeatCapacityLiquid(TDependentProperty):
         horner's method, and the input variable and output are transformed by
         the default transformations of this object; used instead of any other
         default method if provided. [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -720,6 +744,12 @@ class HeatCapacityLiquid(TDependentProperty):
     chemicals.heat_capacity.Rowlinson_Bondi
     chemicals.heat_capacity.Dadgostar_Shaw
 
+    Examples
+    --------
+    >>> CpLiquid = HeatCapacityLiquid(CASRN='142-82-5', MW=100.2, similarity_variable=0.2295, Tc=540.2, omega=0.3457, Cpgm=165.2)
+    >>> CpLiquid(300)
+    221.9267
+
     References
     ----------
     .. [1] Zabransky, M., V. Ruzicka Jr, V. Majer, and Eugene S. Domalski.
@@ -773,13 +803,25 @@ class HeatCapacityLiquid(TDependentProperty):
 
     def __init__(self, CASRN='', MW=None, similarity_variable=None, Tc=None,
                  omega=None, Cpgm=None, load_data=True,
-                 extrapolation='linear',  poly_fit=None):
+                 extrapolation='linear',  poly_fit=None, method=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tc = Tc
         self.omega = omega
         self.Cpgm = Cpgm
         self.similarity_variable = similarity_variable
+
+        self.kwargs = kwargs = {}
+        if MW is not None:
+            kwargs['MW'] = MW
+        if similarity_variable is not None:
+            kwargs['similarity_variable'] = similarity_variable
+        if Tc is not None:
+            kwargs['Tc'] = Tc
+        if omega is not None:
+            kwargs['omega'] = omega
+        if Cpgm is not None:
+            kwargs['Cpgm'] = Cpgm
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -810,6 +852,8 @@ class HeatCapacityLiquid(TDependentProperty):
 
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
+        elif method is not None:
+            self.method = method
         else:
             methods = self.valid_methods(T=None)
             if methods:
@@ -1185,6 +1229,10 @@ class HeatCapacitySolid(TDependentProperty):
         horner's method, and the input variable and output are transformed by
         the default transformations of this object; used instead of any other
         default method if provided. [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -1213,6 +1261,12 @@ class HeatCapacitySolid(TDependentProperty):
     See Also
     --------
     chemicals.heat_capacity.Lastovka_solid
+
+    Examples
+    --------
+    >>> CpSolid = HeatCapacitySolid(CASRN='142-82-5', MW=100.2, similarity_variable=0.2295)
+    >>> CpSolid(200)
+    131.205824
 
     References
     ----------
@@ -1246,8 +1300,10 @@ class HeatCapacitySolid(TDependentProperty):
     only ever be fit to a specific `n` value'''
     _fit_force_n[CRCSTD] = 1
 
+
     def __init__(self, CASRN='', similarity_variable=None, MW=None,
-                 load_data=True, extrapolation='linear', poly_fit=None):
+                 load_data=True, extrapolation='linear', poly_fit=None,
+                 method=None):
         self.similarity_variable = similarity_variable
         self.MW = MW
         self.CASRN = CASRN
@@ -1282,11 +1338,19 @@ class HeatCapacitySolid(TDependentProperty):
 
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
+        elif method is not None:
+            self.method = method
         else:
             methods = self.valid_methods(T=None)
             if methods:
                 self.method = methods[0]
         self.extrapolation = extrapolation
+
+        self.kwargs = kwargs = {}
+        if similarity_variable is not None:
+            kwargs['similarity_variable'] = similarity_variable
+        if MW is not None:
+            kwargs['MW'] = MW
 
     def _method_indexes():
         '''Returns a dictionary of method: index for all methods

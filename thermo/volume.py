@@ -247,6 +247,10 @@ class VolumeLiquid(TPDependentProperty):
         horner's method, and the input variable and output are transformed by
         the default transformations of this object; used instead of any other
         default method if provided. [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -390,7 +394,8 @@ class VolumeLiquid(TPDependentProperty):
 
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
                  omega=None, dipole=None, Psat=None, CASRN='', eos=None,
-                 load_data=True, extrapolation=None, poly_fit=None):
+                 load_data=True, extrapolation=None, poly_fit=None,
+                 method=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tb = Tb
@@ -402,6 +407,28 @@ class VolumeLiquid(TPDependentProperty):
         self.dipole = dipole
         self.Psat = Psat
         self.eos = eos
+
+        self.kwargs = kwargs = {}
+        if MW is not None:
+            kwargs['MW'] = MW
+        if Tb is not None:
+            kwargs['Tb'] = Tb
+        if Tc is not None:
+            kwargs['Tc'] = Tc
+        if Pc is not None:
+            kwargs['Pc'] = Pc
+        if Vc is not None:
+            kwargs['Vc'] = Vc
+        if Zc is not None:
+            kwargs['Zc'] = Zc
+        if omega is not None:
+            kwargs['omega'] = omega
+        if dipole is not None:
+            kwargs['dipole'] = dipole
+        if Psat is not None:
+            kwargs['Psat'] = Psat
+        if eos is not None:
+            kwargs['eos'] = eos
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -451,6 +478,8 @@ class VolumeLiquid(TPDependentProperty):
         self.load_all_methods(load_data)
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
+        elif method is not None:
+            self.method = method
         else:
             methods = self.valid_methods(T=None)
             if methods:
@@ -1440,6 +1469,10 @@ class VolumeGas(TPDependentProperty):
         horner's method, and the input variable and output are transformed by
         the default transformations of this object; used instead of any other
         default low-pressure method if provided. [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -1527,7 +1560,7 @@ class VolumeGas(TPDependentProperty):
 
     def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, omega=None,
                  dipole=None, eos=None, load_data=True, extrapolation=None,
-                 poly_fit=None):
+                 poly_fit=None, method=None):
         # Only use TPDependentPropoerty functions here
         self.CASRN = CASRN
         self.MW = MW
@@ -1536,6 +1569,20 @@ class VolumeGas(TPDependentProperty):
         self.omega = omega
         self.dipole = dipole
         self.eos = eos
+
+        self.kwargs = kwargs = {}
+        if MW is not None:
+            kwargs['MW'] = MW
+        if Tc is not None:
+            kwargs['Tc'] = Tc
+        if Pc is not None:
+            kwargs['Pc'] = Pc
+        if omega is not None:
+            kwargs['omega'] = omega
+        if dipole is not None:
+            kwargs['dipole'] = dipole
+        if eos is not None:
+            kwargs['eos'] = eos
 
         self.Tmin = 0
         '''Minimum temperature at which no method can calculate the
@@ -1579,9 +1626,12 @@ class VolumeGas(TPDependentProperty):
         properties; filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
-        methods = self.select_valid_methods_P(T=None, P=None, check_validity=False)
-        if methods:
-            self.set_user_methods_P(methods[0], forced_P=False)
+        if method is not None:
+            self.set_user_methods_P(method)
+        else:
+            methods = self.select_valid_methods_P(T=None, P=None, check_validity=False)
+            if methods:
+                self.set_user_methods_P(methods[0], forced_P=False)
         self.extrapolation = extrapolation
 
     def load_all_methods(self, load_data):
@@ -1947,6 +1997,10 @@ class VolumeSolid(TDependentProperty):
         horner's method, and the input variable and output are transformed by
         the default transformations of this object; used instead of any other
         default method if provided. [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -1990,11 +2044,19 @@ class VolumeSolid(TDependentProperty):
     '''Default rankings of the available methods.'''
 
     def __init__(self, CASRN='', MW=None, Tt=None, Vml_Tt=None, load_data=True,
-                 extrapolation='linear', poly_fit=None):
+                 extrapolation='linear', poly_fit=None, method=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tt = Tt
         self.Vml_Tt = Vml_Tt
+
+        self.kwargs = kwargs = {}
+        if MW is not None:
+            kwargs['MW'] = MW
+        if Tt is not None:
+            kwargs['Tt'] = Tt
+        if Vml_Tt is not None:
+            kwargs['Vml_Tt'] = Vml_Tt
 
         self.Tmin = 1e-2
         '''Minimum temperature at which no method can calculate the
@@ -2025,6 +2087,8 @@ class VolumeSolid(TDependentProperty):
         self.load_all_methods(load_data)
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
+        elif method is not None:
+            self.method = method
         else:
             methods = self.valid_methods(T=None)
             if methods:

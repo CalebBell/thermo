@@ -147,6 +147,10 @@ class EnthalpyVaporization(TDependentProperty):
         horner's method, and the input variable and output are transformed by
         the default transformations of this object; used instead of any other
         default method if provided. [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -286,7 +290,8 @@ class EnthalpyVaporization(TDependentProperty):
 
     def __init__(self, CASRN='', Tb=None, Tc=None, Pc=None, omega=None,
                  similarity_variable=None, Psat=None, Zl=None, Zg=None,
-                 load_data=True, extrapolation='Watson', poly_fit=None):
+                 load_data=True, extrapolation='Watson', poly_fit=None,
+                 method=None):
         self.CASRN = CASRN
         self.Tb = Tb
         self.Tc = Tc
@@ -296,6 +301,24 @@ class EnthalpyVaporization(TDependentProperty):
         self.Psat = Psat
         self.Zl = Zl
         self.Zg = Zg
+
+        self.kwargs = kwargs = {}
+        if Tb is not None:
+            kwargs['Tb'] = Tb
+        if Tc is not None:
+            kwargs['Tc'] = Tc
+        if Pc is not None:
+            kwargs['Pc'] = Pc
+        if omega is not None:
+            kwargs['omega'] = omega
+        if similarity_variable is not None:
+            kwargs['similarity_variable'] = similarity_variable
+        if Zl is not None:
+            kwargs['Zl'] = Zl
+        if Zg is not None:
+            kwargs['Zg'] = Zg
+        if Psat is not None:
+            kwargs['Psat'] = Psat
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -326,6 +349,8 @@ class EnthalpyVaporization(TDependentProperty):
         if poly_fit is not None:
             self.poly_fit_Tc = poly_fit[2]
             self._set_poly_fit((poly_fit[0], poly_fit[1], poly_fit[3]))
+        elif method is not None:
+            self.method = method
         else:
             methods = self.valid_methods(T=None)
             if methods:
@@ -628,6 +653,10 @@ class EnthalpySublimation(TDependentProperty):
         horner's method, and the input variable and output are transformed by
         the default transformations of this object; used instead of any other
         default method if provided. [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -681,13 +710,27 @@ class EnthalpySublimation(TDependentProperty):
                       GHARAGHEIZI_HSUB_298]
 
     def __init__(self, CASRN='', Tm=None, Tt=None, Cpg=None, Cps=None,
-                 Hvap=None, load_data=True, extrapolation=None, poly_fit=None):
+                 Hvap=None, load_data=True, extrapolation=None, poly_fit=None,
+                 method=None):
         self.CASRN = CASRN
         self.Tm = Tm
         self.Tt = Tt
         self.Cpg = Cpg
         self.Cps = Cps
         self.Hvap = Hvap
+
+        self.kwargs = kwargs = {}
+        if Tt is not None:
+            kwargs['Tt'] = Tt
+        if Tm is not None:
+            kwargs['Tm'] = Tm
+        if Cpg is not None:
+            kwargs['Cpg'] = Cpg
+        if Hvap is not None:
+            kwargs['Hvap'] = Hvap
+        if Cps is not None:
+            kwargs['Cps'] = Cps
+
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -718,6 +761,8 @@ class EnthalpySublimation(TDependentProperty):
 
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
+        elif method is not None:
+            self.method = method
         else:
             methods = self.valid_methods(T=None)
             if methods:

@@ -138,6 +138,10 @@ class VaporPressure(TDependentProperty):
         horner's method, and the input variable and output are transformed by
         the default transformations of this object; used instead of any other
         default method if provided . [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -254,13 +258,26 @@ class VaporPressure(TDependentProperty):
 
     def __init__(self, Tb=None, Tc=None, Pc=None, omega=None, CASRN='',
                  eos=None, load_data=True,
-                 extrapolation='AntoineAB|DIPPR101_ABC', poly_fit=None):
+                 extrapolation='AntoineAB|DIPPR101_ABC', poly_fit=None,
+                 method=None):
         self.CASRN = CASRN
         self.Tb = Tb
         self.Tc = Tc
         self.Pc = Pc
         self.omega = omega
         self.eos = eos
+
+        self.kwargs = kwargs = {}
+        if Tb is not None:
+            kwargs['Tb'] = Tb
+        if Tc is not None:
+            kwargs['Tc'] = Tc
+        if Pc is not None:
+            kwargs['Pc'] = Pc
+        if omega is not None:
+            kwargs['omega'] = omega
+        if eos is not None:
+            kwargs['eos'] = eos
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate vapor pressure
@@ -281,6 +298,8 @@ class VaporPressure(TDependentProperty):
                 self.Tmin = self.poly_fit_Tmin*.01
             if self.Tmax is None and hasattr(self, 'poly_fit_Tmax'):
                 self.Tmax = self.poly_fit_Tmax*10
+        elif method is not None:
+            self.method = method
         else:
             methods = self.valid_methods(T=None)
             if methods:
@@ -640,6 +659,20 @@ class SublimationPressure(TDependentProperty):
         If False, do not load property coefficients from data sources in files;
         this can be used to reduce the memory consumption of an object as well,
         [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        vapor pressure of a species; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default method if provided . [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -679,11 +712,19 @@ class SublimationPressure(TDependentProperty):
     '''Default rankings of the available methods.'''
 
     def __init__(self, CASRN=None, Tt=None, Pt=None, Hsub_t=None,
-                 poly_fit=None, load_data=True, extrapolation=None):
+                 load_data=True, extrapolation=None, poly_fit=None,
+                 method=None):
         self.CASRN = CASRN
         self.Tt = Tt
         self.Pt = Pt
         self.Hsub_t = Hsub_t
+        self.kwargs = kwargs = {}
+        if Tt is not None:
+            kwargs['Tt'] = Tt
+        if Pt is not None:
+            kwargs['Pt'] = Pt
+        if Hsub_t is not None:
+            kwargs['Hsub_t'] = Hsub_t
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate sublimation pressure
@@ -703,6 +744,8 @@ class SublimationPressure(TDependentProperty):
                 self.Tmin = self.poly_fit_Tmin/100
             if self.Tmax is None and hasattr(self, 'poly_fit_Tmax'):
                 self.Tmax = self.poly_fit_Tmax*10
+        elif method is not None:
+            self.method = method
         else:
             methods = self.valid_methods(T=None)
             if methods:

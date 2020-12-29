@@ -189,6 +189,10 @@ class ViscosityLiquid(TPDependentProperty):
         horner's method, and the input variable and output are transformed by
         the default transformations of this object; used instead of any other
         default low-pressure method if provided. [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -298,7 +302,7 @@ class ViscosityLiquid(TPDependentProperty):
 
     def __init__(self, CASRN='', MW=None, Tm=None, Tc=None, Pc=None, Vc=None,
                  omega=None, Psat=None, Vml=None, load_data=True,
-                 extrapolation=None, poly_fit=None):
+                 extrapolation=None, poly_fit=None, method=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tm = Tm
@@ -308,6 +312,24 @@ class ViscosityLiquid(TPDependentProperty):
         self.omega = omega
         self.Psat = Psat
         self.Vml = Vml
+
+        self.kwargs = kwargs = {}
+        if MW is not None:
+            kwargs['MW'] = MW
+        if Tm is not None:
+            kwargs['Tm'] = Tm
+        if Tc is not None:
+            kwargs['Tc'] = Tc
+        if Pc is not None:
+            kwargs['Pc'] = Pc
+        if Vc is not None:
+            kwargs['Vc'] = Vc
+        if omega is not None:
+            kwargs['omega'] = omega
+        if Vml is not None:
+            kwargs['Vml'] = Vml
+        if Psat is not None:
+            kwargs['Psat'] = Psat
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -352,6 +374,8 @@ class ViscosityLiquid(TPDependentProperty):
         self.load_all_methods(load_data)
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
+        elif method is not None:
+            self.method = method
         else:
             methods = self.valid_methods(T=None)
             if methods:
@@ -750,6 +774,10 @@ class ViscosityGas(TPDependentProperty):
         horner's method, and the input variable and output are transformed by
         the default transformations of this object; used instead of any other
         default low-pressure method if provided. [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -839,7 +867,7 @@ class ViscosityGas(TPDependentProperty):
 
     def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, Zc=None,
                  dipole=None, Vmg=None, load_data=True,
-                 extrapolation='linear', poly_fit=None):
+                 extrapolation='linear', poly_fit=None, method=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tc = Tc
@@ -847,6 +875,20 @@ class ViscosityGas(TPDependentProperty):
         self.Zc = Zc
         self.dipole = dipole
         self.Vmg = Vmg
+
+        self.kwargs = kwargs = {}
+        if MW is not None:
+            kwargs['MW'] = MW
+        if Tc is not None:
+            kwargs['Tc'] = Tc
+        if Pc is not None:
+            kwargs['Pc'] = Pc
+        if Zc is not None:
+            kwargs['Zc'] = Zc
+        if dipole is not None:
+            kwargs['dipole'] = dipole
+        if Vmg is not None:
+            kwargs['Vmg'] = Vmg
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -895,6 +937,8 @@ class ViscosityGas(TPDependentProperty):
         self.load_all_methods(load_data)
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
+        elif method is not None:
+            self.method = method
         else:
             methods = self.valid_methods(T=None)
             if methods:

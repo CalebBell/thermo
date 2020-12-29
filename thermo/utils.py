@@ -34,7 +34,7 @@ Temperature Dependent
 .. autoclass:: TDependentProperty
    :members: name, units, extrapolation, property_min, property_max,
              critical_zero, ranked_methods, __call__, fit_polynomial,
-             set_method, valid_methods, test_property_validity,
+             method, valid_methods, test_property_validity,
              T_dependent_property, plot_T_dependent_property, interpolate,
              add_new_method, set_tabular_data, solve_property,
              calculate_derivative, T_dependent_property_derivative,
@@ -641,7 +641,8 @@ class TDependentProperty(object):
     implemented for calculating the property, loads whichever coefficients it
     needs (unless `load_data` is set to False), examines its input parameters,
     and selects the method it prefers. This method will continue to be used for
-    all calculations until the method is changed by a call to :obj:`set_method`.
+    all calculations until the method is changed by setting a new method
+    to the to :obj:`method` attribute.
 
     The default list of preferred method orderings is at :obj:`ranked_methods`
     for all properties; the order can be modified there in-place, and this
@@ -792,6 +793,21 @@ class TDependentProperty(object):
 
     def __hash__(self):
         return hash_any_primitive([self.__class__, self.__dict__])
+
+    def __repr__(self):
+        clsname = self.__class__.__name__
+        base = '%s(' % (clsname)
+        if self.CASRN:
+            base += 'CASRN="%s", ' %(self.CASRN)
+        for k, v in self.kwargs.items():
+            base += '%s=%s, ' %(k, v)
+        base += 'extrapolation="%s", ' %(self.extrapolation)
+        base += 'method="%s", ' %(self.method)
+        if hasattr(self, 'poly_fit_Tmin') and self.poly_fit_Tmin is not None:
+            base += 'poly_fit=(%s, %s, %s), ' %(self.poly_fit_Tmin, self.poly_fit_Tmax, self.poly_fit_coeffs)
+        if base[-2:] == ', ':
+            base = base[:-2]
+        return base + ')'
 
     def __call__(self, T):
         r'''Convenience method to calculate the property; calls

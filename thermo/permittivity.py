@@ -84,6 +84,10 @@ class Permittivity(TDependentProperty):
         horner's method, and the input variable and output are transformed by
         the default transformations of this object; used instead of any other
         default method if provided. [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -126,11 +130,11 @@ class Permittivity(TDependentProperty):
 
     ranked_methods = [CRC, CRC_CONSTANT]
     '''Default rankings of the available methods.'''
+    kwargs = {}
 
     def __init__(self, CASRN='', load_data=True, extrapolation='linear',
-                 poly_fit=None):
+                 poly_fit=None, method=None):
         self.CASRN = CASRN
-
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
         permittivity under.'''
@@ -161,6 +165,8 @@ class Permittivity(TDependentProperty):
 
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
+        elif method is not None:
+            self.method = method
         else:
             methods = self.valid_methods(T=None)
             if methods:
