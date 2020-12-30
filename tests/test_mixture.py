@@ -185,6 +185,13 @@ def test_Mixture_VF_input():
 def test_mixtures_from_property_calcs():
     m = Mixture(['carbon tetrachloride', 'isopropanol'], zs=[0.5, 0.5], T=313.2)
 
+    m = Mixture(['oxygen', 'nitrogen'], ws=[.4, .6], T=350, P=1E6)
+
+    m = Mixture(['water', 'sodium chloride'], ws=[.9, .1], T=301.5)
+
+    m = Mixture(['toluene', 'decane'], ws=[.9, .1], T=300)
+
+
 
 def test_bubble_at_P_with_ideal_mixing():
     '''Check to see if the bubble pressure calculated from the temperature

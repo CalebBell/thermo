@@ -302,7 +302,7 @@ class ViscosityLiquid(TPDependentProperty):
 
     def __init__(self, CASRN='', MW=None, Tm=None, Tc=None, Pc=None, Vc=None,
                  omega=None, Psat=None, Vml=None, load_data=True,
-                 extrapolation=None, poly_fit=None, method=None):
+                 extrapolation=None, poly_fit=None, method=None, method_P=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tm = Tm
@@ -380,6 +380,16 @@ class ViscosityLiquid(TPDependentProperty):
             methods = self.valid_methods(T=None)
             if methods:
                 self.method = methods[0]
+
+        if method_P is not None:
+            self.method_P = method_P
+        else:
+            for m in self.ranked_methods_P:
+                if m in self.all_methods_P:
+                    self.method_P = m
+                    break
+
+
         self.extrapolation = extrapolation
 
 
@@ -506,10 +516,6 @@ class ViscosityLiquid(TPDependentProperty):
         self.all_methods_P = set(methods_P)
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
-        for m in self.ranked_methods_P:
-            if m in self.all_methods_P:
-                self.method_P = m
-                break
 
 
     def calculate(self, T, method):

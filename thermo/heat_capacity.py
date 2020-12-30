@@ -143,7 +143,7 @@ POLING_CONST = 'Poling et al. (2001) constant'
 CRCSTD = 'CRC Standard Thermodynamic Properties of Chemical Substances'
 VDI_TABULAR = 'VDI Heat Atlas'
 LASTOVKA_SHAW = 'Lastovka and Shaw (2013)'
-COOLPROP = 'CoolProp'
+COOLPROP = 'COOLPROP'
 BESTFIT = 'Best fit'
 heat_capacity_gas_methods = [COOLPROP, TRCIG, POLING, LASTOVKA_SHAW, CRCSTD,
                              POLING_CONST, VDI_TABULAR]

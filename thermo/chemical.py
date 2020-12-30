@@ -2197,8 +2197,9 @@ class Chemical(object): # pragma: no cover
         kg/m^3, the fundamental equation of state performs poorly.
 
         >>> He = Chemical('helium', T=15E6, P=26.5E15)
-        >>> He.VolumeGas.set_user_methods_P(['IDEAL']); He.rhog
-        850477.8065477367
+        >>> He.VolumeGas.method_P = 'IDEAL'
+        >>> He.rhog
+        850477.8
 
         The ideal-gas law performs somewhat better, but vastly overshoots
         the density prediction.

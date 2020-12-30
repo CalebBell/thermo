@@ -20,9 +20,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from numpy.testing import assert_allclose
 import numpy as np
 import pytest
+from chemicals.utils import ws_to_zs
 from thermo.heat_capacity import *
 from thermo.heat_capacity import TRCIG, POLING, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR
 from random import uniform
@@ -43,23 +43,20 @@ def test_HeatCapacityGas():
         Cps_calc.append(EtOH.T_dependent_property(305))
 
 
-    assert_allclose(sorted(Cps_calc),
+    assert_close1d(sorted(Cps_calc),
                     sorted([66.35085001015844, 66.40063819791762, 66.25918325111196, 71.07236200126606, 65.6, 65.21]),
                     rtol=1e-5)
 
     # VDI interpolation, treat separately due to change in behavior of scipy in 0.19
-    assert_allclose(EtOH.calculate(305, VDI_TABULAR), 74.6763493522965, rtol=1E-4)
+    assert_close(EtOH.calculate(305, VDI_TABULAR), 74.6763493522965, rtol=1E-4)
 
 
 
     EtOH.extrapolation = None
     EtOH.tabular_extrapolation_permitted = False
-    Cp_missing = []
     for i in [TRCIG, POLING, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR]:
         EtOH.method = i
-        Cp_missing.append( EtOH.T_dependent_property(5000))
-
-    assert [None]*6 == Cp_missing
+        assert EtOH.T_dependent_property(5000) is None
 
     with pytest.raises(Exception):
         EtOH.test_method_validity('BADMETHOD', 300)
@@ -71,8 +68,7 @@ def test_HeatCapacityGas():
     Ts = [200, 250, 300, 400, 450]
     props = [1.2, 1.3, 1.4, 1.5, 1.6]
     EtOH.set_tabular_data(Ts=Ts, properties=props, name='test_set')
-    EtOH.forced = True
-    assert_allclose(1.35441088517, EtOH.T_dependent_property(275), rtol=2E-4)
+    assert_close(1.35441088517, EtOH.T_dependent_property(275), rtol=2E-4)
 
     assert None == EtOH.T_dependent_property(5000)
 
@@ -128,7 +124,7 @@ def test_HeatCapacityGas_integrals():
     dH4 = EtOH.calculate_integral(200, 300,'Lastovka and Shaw (2013)')
     assert_close(dH4, 6183.016942750752, rtol=1e-5)
 
-    dH5 = EtOH.calculate_integral(200, 300,'CoolProp')
+    dH5 = EtOH.calculate_integral(200, 300,'COOLPROP')
     assert_close(dH5, 5838.118293585357, rtol=5e-5)
 
     dH = EtOH.calculate_integral(200, 300, 'VDI Heat Atlas')
@@ -147,7 +143,7 @@ def test_HeatCapacityGas_integrals():
     dS = EtOH.calculate_integral_over_T(200, 300, 'CRC Standard Thermodynamic Properties of Chemical Substances')
     assert_close(dS, 26.59851109189558)
 
-    dS =  EtOH.calculate_integral_over_T(200, 300, 'CoolProp')
+    dS =  EtOH.calculate_integral_over_T(200, 300, 'COOLPROP')
     assert_close(dS, 23.487556909586853, rtol=1e-5)
 
     dS = EtOH.calculate_integral_over_T(200, 300, 'Lastovka and Shaw (2013)')
@@ -167,7 +163,7 @@ def test_HeatCapacitySolid():
         Cps_calc.append(NaCl.T_dependent_property(298.15))
 
     Cps_exp = [50.38469032, 50.5, 20.065072074682337]
-    assert_allclose(sorted(Cps_calc), sorted(Cps_exp))
+    assert_close1d(sorted(Cps_calc), sorted(Cps_exp))
 
     NaCl.extrapolation = None
     for i in NaCl.all_methods:
@@ -186,8 +182,8 @@ def test_HeatCapacitySolid():
     NaCl.set_tabular_data(Ts=Ts, properties=Cps, name='stuff')
     assert_close(NaCl.T_dependent_property(275), 18.320355898506502, rtol=1E-5)
 
-    NaCl.tabular_extrapolation_permitted = False
-    assert None == NaCl.T_dependent_property(601)
+    NaCl.extrapolation = None
+    assert NaCl.T_dependent_property(601) is None
 
 
 @pytest.mark.meta_T_dept
@@ -241,7 +237,7 @@ def test_HeatCapacityLiquid():
 
 
     Cpls = [165.4728226923247, 166.5239869108539, 166.52164399712314, 175.3439256239127, 166.71561127721478, 157.3, 165.4554033804999, 166.69807427725885, 157.29, 167.3380448453572]
-    assert_allclose(sorted(Cpl_calc), sorted(Cpls), rtol=5e-6)
+    assert_close1d(sorted(Cpl_calc), sorted(Cpls), rtol=5e-6)
 
     tol.extrapolation = None
     for i in tol.all_methods:
@@ -267,7 +263,7 @@ def test_HeatCapacityLiquid():
 
 
     Cpls = [214.6499551694668, 214.69679325320664, 214.7, 214.71]
-    assert_allclose(sorted(Cpl_calc), sorted(Cpls))
+    assert_close1d(sorted(Cpl_calc), sorted(Cpls))
 
     ctp = HeatCapacityLiquid(MW=118.58462, CASRN='96-43-5')
 
@@ -277,7 +273,7 @@ def test_HeatCapacityLiquid():
         Cpl_calc.append(ctp.T_dependent_property(250))
 
     Cpls = [134.1186737739494, 134.1496585096233]
-    assert_allclose(sorted(Cpl_calc), sorted(Cpls))
+    assert_close1d(sorted(Cpl_calc), sorted(Cpls))
 
 
 @pytest.mark.meta_T_dept
@@ -381,7 +377,7 @@ def test_HeatCapacitySolidMixture():
     obj = HeatCapacitySolidMixture(CASs=m.CASs, HeatCapacitySolids=m.HeatCapacitySolids, MWs=m.MWs)
 
     Cp = obj(m.T, m.P, m.zs, m.ws)
-    assert_allclose(Cp, 25.32745719036059)
+    assert_close(Cp, 25.32745719036059)
 
     # Unhappy paths
     with pytest.raises(Exception):
@@ -392,14 +388,15 @@ def test_HeatCapacitySolidMixture():
 
 
 def test_HeatCapacityGasMixture():
-    from thermo import Mixture
-    from thermo.heat_capacity import HeatCapacityGasMixture
+    # oxygen and nitrogen
 
-    m = Mixture(['oxygen', 'nitrogen'], ws=[.4, .6], T=350, P=1E6)
-    obj = HeatCapacityGasMixture(CASs=m.CASs, HeatCapacityGases=m.HeatCapacityGases, MWs=m.MWs)
+#    m = Mixture(['oxygen', 'nitrogen'], ws=[.4, .6], T=350, P=1E6)
+    HeatCapacityGases = [HeatCapacityGas(CASRN="7782-44-7", similarity_variable=0.06250234383789392, MW=31.9988, extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [7.682842888382947e-22, -3.3797331490434755e-18, 6.036320672021355e-15, -5.560319277907492e-12, 2.7591871443240986e-09, -7.058034933954475e-07, 9.350023770249747e-05, -0.005794412013028436, 29.229215579932934])),
+                         HeatCapacityGas(CASRN="7727-37-9", similarity_variable=0.07139440410660612, MW=28.0134, extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264]))]
+    obj = HeatCapacityGasMixture(CASs=['7782-44-7', '7727-37-9'], HeatCapacityGases=HeatCapacityGases, MWs=[31.9988, 28.0134])
 
-    Cp = obj(m.T, m.P, m.zs, m.ws)
-    assert_allclose(Cp, 29.361054534307893, rtol=1e-5)
+    Cp = obj(350.0, P=1e5, ws=[.4, .6])
+    assert_close(Cp, 29.359579781030867, rtol=1e-5)
 
     # Unhappy paths
     with pytest.raises(Exception):
@@ -408,37 +405,43 @@ def test_HeatCapacityGasMixture():
     with pytest.raises(Exception):
         obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
 
+
+def test_HeatCapacityLiquidMixture_aqueous():
+    from thermo.heat_capacity import HeatCapacityLiquidMixture, SIMPLE
+
+    HeatCapacityLiquids = [HeatCapacityLiquid(method='COOLPROP', CASRN="7732-18-5", MW=18.01528, similarity_variable=0.16652530518537598, Tc=647.14, omega=0.344, extrapolation="linear"),
+                           HeatCapacityLiquid(CASRN="7647-14-5", MW=58.44277, similarity_variable=0.034221512772238546, Tc=3400.0, omega=0.1894, extrapolation="linear", method="Best fit", poly_fit=(1077.15, 3400.0, [-1.7104845836996866e-36, 3.0186209409101436e-32, -2.2964525212600158e-28, 9.82884046707168e-25, -2.585879179539946e-21, 4.276734025134063e-18, -0.00016783912672163547, 0.1862851719065294, -12.936804011905963]))]
+
+    obj = HeatCapacityLiquidMixture(MWs=[18.01528, 58.44277], CASs=['7732-18-5', '7647-14-5'], HeatCapacityLiquids=HeatCapacityLiquids)
+
+    Cp = obj(T=301.5, P=101325.0, ws=[.9, .1])
+    assert_close(Cp, 72.29666542719279, rtol=1e-5)
+    ws = [.9, .1]
+    zs = ws_to_zs(ws=ws, MWs=[18.01528, 58.44277])
+
+    Cp = obj.calculate(T=301.5, P=101325.0, zs=zs, ws=[.9, .1], method=SIMPLE)
+    assert_close(Cp, 77.08377446120679, rtol=1e-7)
 
 def test_HeatCapacityLiquidMixture():
     from thermo import Mixture
-    from thermo.heat_capacity import HeatCapacityLiquidMixture, SIMPLE
-
-    m = Mixture(['water', 'sodium chloride'], ws=[.9, .1], T=301.5)
-    obj = HeatCapacityLiquidMixture(MWs=m.MWs, CASs=m.CASs, HeatCapacityLiquids=m.HeatCapacityLiquids)
-
-    Cp = obj(m.T, m.P, m.zs, m.ws)
-    assert_allclose(Cp, 72.29643435124115, rtol=1e-5)
-
-    Cp = obj.calculate(m.T, m.P, m.zs, m.ws, SIMPLE)
-    assert_allclose(Cp, 73.715439, rtol=.01)
-
-    m = Mixture(['toluene', 'decane'], ws=[.9, .1], T=300)
-    obj = HeatCapacityLiquidMixture(CASs=m.CASs, HeatCapacityLiquids=m.HeatCapacityLiquids)
-    assert_allclose(obj(m.T, m.P, m.zs, m.ws), 168.29157865567112, rtol=1E-4)
+    ws = [.9, .1]
+    zs = ws_to_zs(ws=ws, MWs=[92.13842, 142.28168])
+    m = Mixture(['toluene', 'decane'], ws=ws, T=300)
+    obj = HeatCapacityLiquidMixture(CASs=['108-88-3', '124-18-5'], HeatCapacityLiquids=m.HeatCapacityLiquids, MWs=[92.13842, 142.28168])
+    assert_close(obj(300.0, P=101325.0, zs=zs, ws=ws), 168.29157865567112, rtol=1E-4)
 
     # Unhappy paths
     with pytest.raises(Exception):
-        obj.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+        obj.calculate(300.0, P=101325.0, zs=zs, ws=ws, method='BADMETHOD')
 
     with pytest.raises(Exception):
-        obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+        obj.test_method_validity(300.0, P=101325.0, zs=zs, ws=ws, method='BADMETHOD')
 
 
 @pytest.mark.slow
 @pytest.mark.fuzz
 def test_locked_integral():
-    lock_properties(True)
-    obj = Chemical('water').HeatCapacityGas
+    obj = HeatCapacityGas(load_data=False, CASRN="7732-18-5", similarity_variable=0.16652530518537598, MW=18.01528, extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))
 
     def to_int(T):
         return obj.calculate(T, 'Best fit')
@@ -448,14 +451,12 @@ def test_locked_integral():
         quad_ans = quad(to_int, T1, T2)[0]
         analytical_ans = obj.calculate_integral(T1, T2, "Best fit")
         assert_close(quad_ans, analytical_ans, rtol=1e-6)
-    lock_properties(False)
 
 
 @pytest.mark.slow
 @pytest.mark.fuzz
 def test_locked_integral_over_T():
-    lock_properties(True)
-    obj = Chemical('water').HeatCapacityGas
+    obj = HeatCapacityGas(load_data=False, CASRN="7732-18-5", similarity_variable=0.16652530518537598, MW=18.01528, extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))
 
     def to_int(T):
         return obj.calculate(T, 'Best fit')/T
@@ -465,4 +466,3 @@ def test_locked_integral_over_T():
         quad_ans = quad(to_int, T1, T2)[0]
         analytical_ans = obj.calculate_integral_over_T(T1, T2, "Best fit")
         assert_close(quad_ans, analytical_ans, rtol=1e-5)
-    lock_properties(False)

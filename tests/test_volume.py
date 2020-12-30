@@ -35,14 +35,21 @@ from chemicals.utils import Vm_to_rho
 def test_VolumeGas():
     eos = [PR(T=300, P=1E5, Tc=430.8, Pc=7884098.25, omega=0.251)]
     SO2 = VolumeGas(CASRN='7446-09-5', MW=64.0638,  Tc=430.8, Pc=7884098.25, omega=0.251, dipole=1.63, eos=eos)
-    Vm_calcs = [(SO2.set_user_methods_P(i, forced_P=True), SO2.TP_dependent_property(305, 1E5))[1] for i in SO2.all_methods_P]
+
+    Vm_calcs = []
+    for i in SO2.all_methods_P:
+        SO2.method_P = i
+        Vm_calcs.append(SO2.TP_dependent_property(305, 1E5))
+
+
     Vm_exp = [0.025024302563892417, 0.02499978619699621, 0.02499586901117375, 0.02499627309459868, 0.02499978619699621, 0.024971467450477493, 0.02535910239]
     assert_allclose(sorted(Vm_calcs), sorted(Vm_exp), rtol=1e-5)
 
     # Test that methods return None
-    assert [None]*7 == [(SO2.set_user_methods_P(i, forced_P=True), SO2.TP_dependent_property(-100, 1E5))[1] for i in SO2.all_methods_P]
-    assert [None]*7 == [(SO2.set_user_methods_P(i, forced_P=True), SO2.TP_dependent_property(100, -1E5))[1] for i in SO2.all_methods_P]
-
+    for i in SO2.all_methods_P:
+        SO2.method_P = i
+        assert SO2.TP_dependent_property(-100, 1E5) is None
+        assert SO2.TP_dependent_property(100, -1E5) is None
 
     with pytest.raises(Exception):
         SO2.test_method_validity_P(300, 1E5, 'BADMETHOD')
@@ -66,7 +73,7 @@ def test_VolumeGas():
 
     # Test CRC Virial data
     H2 = VolumeGas(CASRN='1333-74-0')
-    H2.set_user_methods_P('CRC_VIRIAL', forced_P=True)
+    H2.method_P = 'CRC_VIRIAL'
     assert_allclose(H2.TP_dependent_property(300, 1E5), 0.024958843346854165)
 
 

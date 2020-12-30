@@ -20,7 +20,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 import pandas as pd
@@ -44,9 +43,9 @@ def test_VaporPressure():
         Psat_calcs.append(EtOH.T_dependent_property(305.))
 
     Psat_exp = [11579.634014300127, 11698.02742876088, 11590.408779316374, 11659.154222044575, 11592.205263402893, 11593.661615921257, 11612.378633936816, 11350.156640503357, 12081.738947110121, 14088.453409816764, 9210.26200064024]
-    assert_allclose(sorted(Psat_calcs), sorted(Psat_exp))
+    assert_close1d(sorted(Psat_calcs), sorted(Psat_exp))
 
-    assert_allclose(EtOH.calculate(305, VDI_TABULAR), 11690.81660829924, rtol=1E-4)
+    assert_close(EtOH.calculate(305, VDI_TABULAR), 11690.81660829924, rtol=1E-4)
 
     # Use another chemical to get in ANTOINE_EXTENDED_POLING
     a = VaporPressure(CASRN='589-81-1')
@@ -58,7 +57,7 @@ def test_VaporPressure():
 
 
     Psat_exp = [162944.82134710113, 162870.44794192078, 162865.5380455795]
-    assert_allclose(sorted(Psat_calcs), sorted(Psat_exp))
+    assert_close1d(sorted(Psat_calcs), sorted(Psat_exp))
 
     # Test that methods return None
     EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
@@ -69,19 +68,19 @@ def test_VaporPressure():
 
     # Test interpolation, extrapolation
     w = VaporPressure(Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344, CASRN='7732-18-5')
-    Ts = np.linspace(300, 350, 10)
+    Ts = linspace(300, 350, 10)
     Ps = [3533.918074415897, 4865.419832056078, 6612.2351036034115, 8876.854141719203, 11780.097759775277, 15462.98385942125, 20088.570250257424, 25843.747665059742, 32940.95821687677, 41619.81654904555]
     w.set_tabular_data(Ts=Ts, properties=Ps)
-    assert_allclose(w.T_dependent_property(305.), 4715.122890601165)
+    assert_close(w.T_dependent_property(305.), 4715.122890601165)
     w.tabular_extrapolation_permitted = True
-    assert_allclose(w.T_dependent_property(200.), 0.5364148240126076)
+    assert_close(w.T_dependent_property(200.), 0.5364148240126076)
 
 
     # Get a check for Antoine Extended
     cycloheptane = VaporPressure(Tb=391.95, Tc=604.2, Pc=3820000.0, omega=0.2384, CASRN='291-64-5')
     cycloheptane.method = ('ANTOINE_EXTENDED_POLING')
     cycloheptane.extrapolation = None
-    assert_allclose(cycloheptane.T_dependent_property(410), 161647.35219882353)
+    assert_close(cycloheptane.T_dependent_property(410), 161647.35219882353)
     assert None == cycloheptane.T_dependent_property(400)
 
     with pytest.raises(Exception):

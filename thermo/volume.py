@@ -1560,7 +1560,7 @@ class VolumeGas(TPDependentProperty):
 
     def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, omega=None,
                  dipole=None, eos=None, load_data=True, extrapolation=None,
-                 poly_fit=None, method=None):
+                 poly_fit=None, method=None, method_P=None):
         # Only use TPDependentPropoerty functions here
         self.CASRN = CASRN
         self.MW = MW
@@ -1626,12 +1626,12 @@ class VolumeGas(TPDependentProperty):
         properties; filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
-        if method is not None:
-            self.set_user_methods_P(method)
+        if method_P is not None:
+            self.method_P = method_P
         else:
             methods = self.select_valid_methods_P(T=None, P=None, check_validity=False)
             if methods:
-                self.set_user_methods_P(methods[0], forced_P=False)
+                self.method_P = methods[0]
         self.extrapolation = extrapolation
 
     def load_all_methods(self, load_data):

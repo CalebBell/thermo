@@ -55,10 +55,10 @@ def test_Permittivity_class():
     permittivities = [87.75556413000001, 83.530500320000016, 79.48208925000003, 75.610330919999996, 71.915225330000013, 68.396772480000024, 65.05497237000003, 61.889825000000044, 58.901330369999997, 56.08948848]
     w.set_tabular_data(Ts=Ts, properties=permittivities)
     assert_close(w.T_dependent_property(305.), 75.95500925000006)
-    w.tabular_extrapolation_permitted = True
+    w.extrapolation = 'interp1d'
     assert_close(w.T_dependent_property(200.), 115.79462395999997)
-    w.tabular_extrapolation_permitted = False
-    assert None == w.T_dependent_property(200.)
+    w.extrapolation = None
+    assert w.T_dependent_property(200.) is None
 
 @pytest.mark.slow
 @pytest.mark.fuzz

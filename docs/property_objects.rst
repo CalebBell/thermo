@@ -39,7 +39,7 @@ Various data files will be searched to see if information such as Antoine coeffi
 
 >>> useless_psat = VaporPressure(CASRN='64-17-5', load_data=False)
 
-As many methods may be available, a single method is always selected automatically during initialization. This method can be inspected with the `method` property; if no methods are available, `method` will be None.
+As many methods may be available, a single method is always selected automatically during initialization. This method can be inspected with the `method` property; if no methods are available, `method` will be None. `method` is also a valid parameter when constructing the object, but if the method specified is not available an exception will be raised.
 
 >>> ethanol_psat.method, useless_psat.method
 ('WAGNER_MCGARRY', None)
@@ -134,6 +134,8 @@ Temperature and Pressure Dependent Properties
 ---------------------------------------------
 
 
+Mixture Properties
+------------------
 
 Notes
 -----
