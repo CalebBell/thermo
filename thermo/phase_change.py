@@ -345,6 +345,7 @@ class EnthalpyVaporization(TDependentProperty):
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
 
         if poly_fit is not None:
             self.poly_fit_Tc = poly_fit[2]
@@ -355,7 +356,6 @@ class EnthalpyVaporization(TDependentProperty):
             methods = self.valid_methods(T=None)
             if methods:
                 self.method = methods[0]
-        self.extrapolation = extrapolation
 
     def as_poly_fit(self):
         return '%s(poly_fit=(%s, %s, %s, %s))' %(self.__class__.__name__,
@@ -758,6 +758,7 @@ class EnthalpySublimation(TDependentProperty):
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
 
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
@@ -767,7 +768,6 @@ class EnthalpySublimation(TDependentProperty):
             methods = self.valid_methods(T=None)
             if methods:
                 self.method = methods[0]
-        self.extrapolation = extrapolation
 
 
     def load_all_methods(self, load_data=True):

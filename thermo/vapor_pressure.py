@@ -291,6 +291,7 @@ class VaporPressure(TDependentProperty):
 
 
         self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
 
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
@@ -304,7 +305,6 @@ class VaporPressure(TDependentProperty):
             methods = self.valid_methods(T=None)
             if methods:
                 self.method = methods[0]
-        self.extrapolation = extrapolation
 
     @staticmethod
     def _method_indexes():
@@ -550,18 +550,21 @@ class VaporPressure(TDependentProperty):
             Calculated derivative property, [`units/K^order`]
         '''
         if order == 1 and method == BESTFIT:
+            # if T < self.poly_fit_Tmin:
+            #     return self.poly_fit_Tmin_slope*exp(
+            #             (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope
+            #             + self.poly_fit_Tmin_value)
+            # elif T > self.poly_fit_Tmax:
+            #     return self.poly_fit_Tmax_slope*exp((T - self.poly_fit_Tmax)
+            #                                         *self.poly_fit_Tmax_slope
+            #                                         + self.poly_fit_Tmax_value)
+            # else:
+            v, der = horner_and_der(self.poly_fit_coeffs, T)
+            return der*exp(v)
+        elif order == 2 and method == BESTFIT:
+            v, der, der2 = horner_and_der2(self.poly_fit_coeffs, T)
+            return (der*der + der2)*exp(v)
 
-            if T < self.poly_fit_Tmin:
-                return self.poly_fit_Tmin_slope*exp(
-                        (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope
-                        + self.poly_fit_Tmin_value)
-            elif T > self.poly_fit_Tmax:
-                return self.poly_fit_Tmax_slope*exp((T - self.poly_fit_Tmax)
-                                                    *self.poly_fit_Tmax_slope
-                                                    + self.poly_fit_Tmax_value)
-            else:
-                v, der = horner_and_der(self.poly_fit_coeffs, T)
-                return der*exp(v)
         return super(VaporPressure, self).calculate_derivative(T, method, order)
 
     def _custom_set_poly_fit(self):
@@ -737,6 +740,7 @@ class SublimationPressure(TDependentProperty):
         super(SublimationPressure, self)._set_common_attributes()
 
         self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
 
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
@@ -750,7 +754,6 @@ class SublimationPressure(TDependentProperty):
             methods = self.valid_methods(T=None)
             if methods:
                 self.method = methods[0]
-        self.extrapolation = extrapolation
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical

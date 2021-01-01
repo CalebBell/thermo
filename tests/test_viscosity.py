@@ -54,7 +54,7 @@ def test_ViscosityLiquid():
     EtOH.method = (VISWANATH_NATARAJAN_3)
     assert_close(EtOH.T_dependent_property(298.15), 0.0031157679801337825, rtol=1e-9)
     EtOH.method = (VDI_TABULAR)
-    assert_close(EtOH.T_dependent_property(298.15), 0.0010713697500000004, rtol=1e-9)
+    assert_close(EtOH.T_dependent_property(310), 0.0008726933038017184, rtol=1e-9)
     EtOH.method = (LETSOU_STIEL)
     assert_close(EtOH.T_dependent_property(298.15), 0.0004191198228004421, rtol=1e-9)
     EtOH.method = (PRZEDZIECKI_SRIDHAR)
@@ -62,7 +62,7 @@ def test_ViscosityLiquid():
     assert_close(EtOH.T_dependent_property(400.0), 0.00039598337518386806, rtol=1e-9)
 
 
-    EtOH.tabular_extrapolation_permitted = False
+    EtOH.extrapolation = None
     for i in EtOH.all_methods:
         EtOH.method = i
         assert EtOH.T_dependent_property(600) is None
@@ -72,25 +72,18 @@ def test_ViscosityLiquid():
         EtOH.test_method_validity(300, 'BADMETHOD')
 
     # Acetic acid to test Viswanath_Natarajan_2_exponential
-    acetic_acid = ViscosityLiquid(CASRN='64-19-7', Tc=590.7)
-    mul_calcs = []
+    acetic_acid = ViscosityLiquid(CASRN='64-19-7', Tc=590.7, method=VISWANATH_NATARAJAN_2E)
+    assert_close(acetic_acid.T_dependent_property(350.0), 0.000587027903931889, rtol=1e-12)
+
+    acetic_acid.extrapolation = None
     for i in acetic_acid.all_methods:
         acetic_acid.method = i
-        mul_calcs.append(acetic_acid.T_dependent_property(350.0))
-
-    mul_exp = [0.0005744169247310638, 0.0005089289428076254, 0.0005799665143154318, 0.0005727888422607339, 0.000587027903931889]
-    assert_close1d(sorted(mul_calcs), sorted(mul_exp))
-
-    mul_missing = []
-    for i in acetic_acid.all_methods:
-        acetic_acid.method = i
-        mul_missing.append(acetic_acid.T_dependent_property(650.0))
-    assert [None]*5 == mul_missing
+        assert acetic_acid.T_dependent_property(650.0) is None
 
     # Test Viswanath_Natarajan_2 with boron trichloride
     mu = ViscosityLiquid(CASRN='10294-34-5').T_dependent_property(250)
     assert_close(mu, 0.0003389255178814321)
-    assert None == ViscosityLiquid(CASRN='10294-34-5').T_dependent_property(350)
+    assert None == ViscosityLiquid(CASRN='10294-34-5', extrapolation=None).T_dependent_property(350)
 
 
     # Ethanol compressed
@@ -107,7 +100,7 @@ def test_ViscosityLiquid():
     Ts = [275, 300, 350]
     Ps = [1E5, 5E5, 1E6]
     TP_data = [[0.0017455993713216815, 0.0010445175985089377, 0.00045053170256051774], [0.0017495149679815605, 0.0010472128172002075, 0.000452108003076486], [0.0017543973013034444, 0.0010505716944451827, 0.00045406921275411145]]
-    EtOH.set_tabular_data_P(Ts, Ps, TP_data, name='CPdata')
+    EtOH.add_tabular_data_P(Ts, Ps, TP_data, name='CPdata')
     recalc_pts = [[EtOH.TP_dependent_property(T, P) for T in Ts] for P in Ps]
     assert_close2d(TP_data, recalc_pts)
 
@@ -167,24 +160,29 @@ def test_ViscosityLiquid_PPDS9_limits():
 def test_ViscosityGas():
     EtOH = ViscosityGas(MW=46.06844, Tc=514.0, Pc=6137000.0, Zc=0.2412, dipole=1.44, Vmg=0.02357, CASRN='64-17-5')
 
-    mug_calcs = {}
-    for i in list(EtOH.all_methods):
-        EtOH.method = i
-        mu = EtOH.T_dependent_property(298.15)
-        mug_calcs[i] = mu
+    EtOH.method = VDI_PPDS
+    assert_close(EtOH.T_dependent_property(305), 9.13079342291875e-06)
+    EtOH.method = YOON_THODOS
+    assert_close(EtOH.T_dependent_property(305), 7.584977640806432e-06)
+    EtOH.method = STIEL_THODOS
+    assert_close(EtOH.T_dependent_property(305), 7.699272212598415e-06)
+    EtOH.method = GHARAGHEIZI
+    assert_close(EtOH.T_dependent_property(305), 8.12922040122556e-06)
+    EtOH.method = LUCAS_GAS
+    assert_close(EtOH.T_dependent_property(305), 9.008160864895763e-06)
+    EtOH.method = VDI_TABULAR
+    assert_close(EtOH.T_dependent_property(305), 8.761390047621239e-06)
+    EtOH.method = DIPPR_PERRY_8E
+    assert_close(EtOH.T_dependent_property(305), 9.129674918795814e-06)
+    EtOH.method = COOLPROP
+    assert_close(EtOH.T_dependent_property(305), 8.982631881778473e-06)
 
-    mug_calcs2 = list(mug_calcs.values())
-    mug_exp = [8.934627758386856e-06, 8.933684639927153e-06, 7.414017252400231e-06, 8.772549629893446e-06, 8.5445e-06, 7.902892297231681e-06, 8.805532218477024e-06, 7.536618820670175e-06]
-    assert_close1d(sorted(mug_calcs2), sorted(mug_exp))
 
     # Test that methods return None
     EtOH.extrapolation = None
-    EtOH.tabular_extrapolation_permitted = False
-    mug_calcs = []
     for i in EtOH.all_methods:
         EtOH.method = i
-        mug_calcs.append(EtOH.T_dependent_property(6000))
-    assert [None]*8 == mug_calcs
+        assert EtOH.T_dependent_property(6000) is None
 
     with pytest.raises(Exception):
         EtOH.test_method_validity(300, 'BADMETHOD')
@@ -202,7 +200,7 @@ def test_ViscosityGas():
     Ts = [400, 500, 550]
     Ps = [1E3, 1E4, 1E5]
     TP_data = [[1.18634700291489e-05, 1.4762189560203758e-05, 1.6162732753470533e-05], [1.1862505513959454e-05, 1.4762728590964208e-05, 1.6163602669178767e-05], [1.1853229260926176e-05, 1.4768417536555742e-05, 1.617257402798515e-05]]
-    EtOH.set_tabular_data_P(Ts, Ps, TP_data, name='CPdata')
+    EtOH.add_tabular_data_P(Ts, Ps, TP_data, name='CPdata')
     recalc_pts = [[EtOH.TP_dependent_property(T, P) for T in Ts] for P in Ps]
     assert_close2d(TP_data, recalc_pts)
 

@@ -320,6 +320,7 @@ class SurfaceTension(TDependentProperty):
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
         elif method is not None:
@@ -328,7 +329,6 @@ class SurfaceTension(TDependentProperty):
             methods = self.valid_methods(T=None)
             if methods:
                 self.method = methods[0]
-        self.extrapolation = extrapolation
 
 
     @staticmethod

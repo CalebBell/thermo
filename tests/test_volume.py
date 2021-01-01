@@ -62,7 +62,7 @@ def test_VolumeGas():
     Ps = [5E3, 1E4, 5E4]
 
     TP_data = [[0.6646136629870959, 0.8312205608372635, 0.9976236498685168], [0.33203434186506636, 0.4154969056659669, 0.49875532241189763], [0.06596765735649, 0.08291758227639608, 0.09966060658661156]]
-    EtOH.set_tabular_data_P(Ts, Ps, TP_data, name='CPdata')
+    EtOH.add_tabular_data_P(Ts, Ps, TP_data, name='CPdata')
     recalc_pts = [[EtOH.TP_dependent_property(T, P) for T in Ts] for P in Ps]
     assert_allclose(TP_data, recalc_pts)
 
@@ -107,7 +107,7 @@ def test_VolumeLiquid():
     assert [None]*14 == Vml_calcs
 
     EtOH.method = 'VDI_TABULAR'
-    EtOH.tabular_extrapolation_permitted = True
+    EtOH.extrapolation = 'interp1d'
     assert_allclose(EtOH.T_dependent_property(700.), 0.0005648005718236466)
 
     with pytest.raises(Exception):
@@ -152,7 +152,7 @@ def test_VolumeLiquid():
     Ts = [275, 300, 350]
     Ps = [1E5, 5E5, 1E6]
     TP_data = [[5.723868454722602e-05, 5.879532690584185e-05, 6.242643879647073e-05], [5.721587962307716e-05, 5.8767676310784456e-05, 6.238352991918547e-05], [5.718753361659462e-05, 5.8733341196316644e-05, 6.23304095312013e-05]]
-    EtOH.set_tabular_data_P(Ts, Ps, TP_data, name='CPdata')
+    EtOH.add_tabular_data_P(Ts, Ps, TP_data, name='CPdata')
     recalc_pts = [[EtOH.TP_dependent_property(T, P) for T in Ts] for P in Ps]
     assert_allclose(TP_data, recalc_pts)
 
@@ -198,7 +198,7 @@ def test_VolumeSolid():
         VolumeSolid(CASRN='10022-31-8').test_method_validity(200, 'BADMETHOD')
 
     BaN2O6 = VolumeSolid(CASRN='10022-31-8')
-    BaN2O6.set_tabular_data([200,300], [8.06e-5, 8.05e-5], 'fake')
+    BaN2O6.add_tabular_data([200, 300], [8.06e-5, 8.05e-5], 'fake')
     assert_allclose(8.055e-05, BaN2O6.T_dependent_property(250))
     BaN2O6.tabular_extrapolation_permitted = False
     BaN2O6.test_method_validity(150, 'fake')

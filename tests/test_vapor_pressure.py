@@ -70,9 +70,9 @@ def test_VaporPressure():
     w = VaporPressure(Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344, CASRN='7732-18-5')
     Ts = linspace(300, 350, 10)
     Ps = [3533.918074415897, 4865.419832056078, 6612.2351036034115, 8876.854141719203, 11780.097759775277, 15462.98385942125, 20088.570250257424, 25843.747665059742, 32940.95821687677, 41619.81654904555]
-    w.set_tabular_data(Ts=Ts, properties=Ps)
+    w.add_tabular_data(Ts=Ts, properties=Ps)
     assert_close(w.T_dependent_property(305.), 4715.122890601165)
-    w.tabular_extrapolation_permitted = True
+    w.extrapolation = 'interp1d'
     assert_close(w.T_dependent_property(200.), 0.5364148240126076)
 
 
@@ -141,8 +141,17 @@ def test_VaporPressure_extrapolation_solve_prop():
 
     assert_close(cycloheptane.solve_property(1e5), 391.3576035137979)
     assert_close(cycloheptane.solve_property(1e6), 503.31772463155266)
-    assert_close(cycloheptane.solve_property(1e7), 711.8413525223378)
-    assert_close(cycloheptane.solve_property(3e7), 1948.671863697868)
+    assert_close(cycloheptane.solve_property(1e7), 711.8060977006566)
+    assert_close(cycloheptane.solve_property(3e7), 979.2319342086599)
+
+def test_VaporPressure_bestfit_derivatives():
+    obj = VaporPressure(poly_fit=(175.7, 512.49, [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10,
+                                                -2.443464113936029e-07, 7.893819658700523e-05, -0.016615779444332356, 2.1842496316772264, -134.19766175812708]))
+    assert_close(obj.T_dependent_property(300), 18601.061401014867, rtol=1e-11)
+    assert_close(obj.T_dependent_property_derivative(300), 954.1652489206775, rtol=1e-11)
+    assert_close(obj.T_dependent_property_derivative(300, order=2), 41.8787546283273, rtol=1e-11)
+    assert_close(derivative(obj.T_dependent_property, 300, dx=300*1e-7), obj.T_dependent_property_derivative(300))
+    assert_close(derivative(obj.T_dependent_property_derivative, 300, dx=300*1e-7), obj.T_dependent_property_derivative(300, order=2))
 
 
 @pytest.mark.meta_T_dept
@@ -212,4 +221,4 @@ def test_VaporPressure_fast_Psat_poly_fit_extrapolation():
     obj.extrapolation = 'AntoineAB|DIPPR101_ABC'
     assert_close(obj.solve_property(.0000000000001), 3.2040851644645945)
     assert_close(obj.solve_property(300), 237.7793675652309)
-    assert_close(obj.solve_property(1e8), 1186.892195405922)
+    assert_close(obj.solve_property(1e8), 661.6135315674736)

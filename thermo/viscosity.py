@@ -93,7 +93,10 @@ __all__ = ['viscosity_liquid_methods', 'viscosity_liquid_methods_P',
            'ViscosityGasMixture', 'viscosity_liquid_mixture_methods',
            'viscosity_gas_mixture_methods',
            'MIXING_LOG_MOLAR', 'MIXING_LOG_MASS',
-           'BROKAW', 'HERNING_ZIPPERER', 'WILKE']
+           'BROKAW', 'HERNING_ZIPPERER', 'WILKE',
+           'DUTT_PRASAD', 'VISWANATH_NATARAJAN_3', 'VISWANATH_NATARAJAN_2',
+           'VISWANATH_NATARAJAN_2E', 'LETSOU_STIEL', 'PRZEDZIECKI_SRIDHAR',
+           'LUCAS', 'GHARAGHEIZI', 'YOON_THODOS', 'STIEL_THODOS', 'LUCAS_GAS']
 
 import os
 import numpy as np
@@ -112,16 +115,9 @@ from chemicals import viscosity
 from chemicals.viscosity import *
 from chemicals.viscosity import viscosity_gas_Gharagheizi, dPPDS9_dT
 
+from thermo.utils import NEGLIGIBLE, DIPPR_PERRY_8E, BESTFIT, VDI_TABULAR, VDI_PPDS, COOLPROP
 
 
-
-
-
-NONE = 'NONE'
-VDI_TABULAR = 'VDI_TABULAR'
-VDI_PPDS = 'VDI_PPDS'
-COOLPROP = 'COOLPROP'
-SUPERCRITICAL = 'SUPERCRITICAL'
 DUTT_PRASAD = 'DUTT_PRASAD'
 VISWANATH_NATARAJAN_3 = 'VISWANATH_NATARAJAN_3'
 VISWANATH_NATARAJAN_2 = 'VISWANATH_NATARAJAN_2'
@@ -129,9 +125,6 @@ VISWANATH_NATARAJAN_2E = 'VISWANATH_NATARAJAN_2E'
 LETSOU_STIEL = 'LETSOU_STIEL'
 PRZEDZIECKI_SRIDHAR = 'PRZEDZIECKI_SRIDHAR'
 LUCAS = 'LUCAS'
-NEGLIGIBLE = 'NEGLIGIBLE'
-DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
-BESTFIT = 'Best fit'
 
 viscosity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                          VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
@@ -277,14 +270,25 @@ class ViscosityLiquid(TPDependentProperty):
     '''
     name = 'liquid viscosity'
     units = 'Pa*s'
-    interpolation_T = None
-    '''No interpolation transformation by default.'''
-    interpolation_P = None
-    '''No interpolation transformation by default.'''
-    interpolation_property = None
-    '''No interpolation transformation by default.'''
-    interpolation_property_inv = None
-    '''No interpolation transformation by default.'''
+
+    @staticmethod
+    def interpolation_T(T):
+        '''Function to make the data-based interpolation as linear as possible.
+        This transforms the input `T` into the `1/T` domain.'''
+        return 1./T
+
+    @staticmethod
+    def interpolation_property(P):
+        '''log(P) interpolation transformation by default.
+        '''
+        return log(P)
+
+    @staticmethod
+    def interpolation_property_inv(P):
+        '''exp(P) interpolation transformation by default; reverses
+        :obj:`interpolation_property_inv`.'''
+        return exp(P)
+
     tabular_extrapolation_permitted = True
     '''Allow tabular extrapolation by default.'''
     property_min = 0.0
@@ -302,7 +306,7 @@ class ViscosityLiquid(TPDependentProperty):
 
     def __init__(self, CASRN='', MW=None, Tm=None, Tc=None, Pc=None, Vc=None,
                  omega=None, Psat=None, Vml=None, load_data=True,
-                 extrapolation=None, poly_fit=None, method=None, method_P=None):
+                 extrapolation='linear', poly_fit=None, method=None, method_P=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tm = Tm
@@ -360,18 +364,13 @@ class ViscosityLiquid(TPDependentProperty):
         if an interpolation transform is altered, the old interpolator which
         had been created is no longer used.'''
 
-        self.sorted_valid_methods_P = []
-        '''sorted_valid_methods_P, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`.'''
-        self.user_methods_P = []
-        '''user_methods_P, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`.'''
-
         self.all_methods_P = set()
         '''Set of all high-pressure methods available for a given CASRN and
         properties; filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
+
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
         elif method is not None:
@@ -388,10 +387,6 @@ class ViscosityLiquid(TPDependentProperty):
                 if m in self.all_methods_P:
                     self.method_P = m
                     break
-
-
-        self.extrapolation = extrapolation
-
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
@@ -509,7 +504,7 @@ class ViscosityLiquid(TPDependentProperty):
         if all((self.MW, self.Tm, self.Tc, self.Pc, self.Vc, self.omega, self.Vml)):
             methods.append(PRZEDZIECKI_SRIDHAR)
             Tmins.append(self.Tm); Tmaxs.append(self.Tc) # TODO: test model at Tm
-            T_limits[LETSOU_STIEL] = (self.Tm, self.Tc)
+            T_limits[PRZEDZIECKI_SRIDHAR] = (self.Tm, self.Tc)
         if all([self.Tc, self.Pc, self.omega]):
             methods_P.append(LUCAS)
         self.all_methods = set(methods)
@@ -720,7 +715,7 @@ class ViscosityLiquid(TPDependentProperty):
                 if T < Ts[0] or T > Ts[-1] or P < Ps[0] or P > Ps[-1]:
                     validity = False
         else:
-            raise Exception('Method not valid')
+            raise ValueError('Method not valid')
         return validity
 
 
@@ -941,6 +936,8 @@ class ViscosityGas(TPDependentProperty):
         properties; filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
+
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
         elif method is not None:
@@ -950,7 +947,6 @@ class ViscosityGas(TPDependentProperty):
             if methods:
                 self.method = methods[0]
 
-        self.extrapolation = extrapolation
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical

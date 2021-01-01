@@ -27,19 +27,46 @@ from thermo.phase_change import *
 from chemicals.miscdata import CRC_inorganic_data, CRC_organic_data
 from chemicals.identifiers import check_CAS
 
-
+from thermo.phase_change import COOLPROP, VDI_PPDS, CLAPEYRON, LIU, ALIBAKHSHI, MORGAN_KOBAYASHI, VELASCO, PITZER, RIEDEL, SIVARAMAN_MAGEE_KOBAYASHI, CHEN, CRC_HVAP_TB, DIPPR_PERRY_8E, VETERE, CRC_HVAP_298, VDI_TABULAR, GHARAGHEIZI_HVAP_298
 
 @pytest.mark.meta_T_dept
 def test_EnthalpyVaporization():
     EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, Psat=7872.2, Zg=0.9633, Zl=0.0024, CASRN='64-17-5')
 
-    Hvap_calc = []
-    for i in EtOH.all_methods:
-        EtOH.method = i
-        Hvap_calc.append(EtOH.T_dependent_property(298.15))
-
-    Hvap_exp = [37770.36760037247, 39369.24308334211, 40812.18023301473, 41892.47130172744, 42200.0, 42261.56271620627, 42320.0, 42413.51210041263, 42429.284285187256, 42468.433273309995, 42541.61366696268, 42829.177357564935, 42855.029051216996, 42946.68066040123, 43481.10765660416, 43587.12939847237, 44804.61582482704]
-    assert_close1d(sorted(Hvap_calc), sorted(Hvap_exp))
+    EtOH.method = COOLPROP
+    assert_close(EtOH.T_dependent_property(305), 42062.9371631488)
+    EtOH.method = VDI_PPDS
+    assert_close(EtOH.T_dependent_property(305), 42099.23631527565)
+    EtOH.method = CLAPEYRON
+    assert_close(EtOH.T_dependent_property(305), 39904.512005771176)
+    EtOH.method = LIU
+    assert_close(EtOH.T_dependent_property(305), 40315.087291316195)
+    EtOH.method = ALIBAKHSHI
+    assert_close(EtOH.T_dependent_property(305), 39244.0137575973)
+    EtOH.method = MORGAN_KOBAYASHI
+    assert_close(EtOH.T_dependent_property(305), 42182.87752489718)
+    EtOH.method = VELASCO
+    assert_close(EtOH.T_dependent_property(305), 43056.23753606326)
+    EtOH.method = PITZER
+    assert_close(EtOH.T_dependent_property(305), 41716.88048400951)
+    EtOH.method = RIEDEL
+    assert_close(EtOH.T_dependent_property(305), 44258.89496024996)
+    EtOH.method = SIVARAMAN_MAGEE_KOBAYASHI
+    assert_close(EtOH.T_dependent_property(305), 42279.09568184713)
+    EtOH.method = CHEN
+    assert_close(EtOH.T_dependent_property(305), 42951.50714053451)
+    EtOH.method = CRC_HVAP_TB
+    assert_close(EtOH.T_dependent_property(305), 42423.58947282491)
+    EtOH.method = DIPPR_PERRY_8E
+    assert_close(EtOH.T_dependent_property(305), 42115.102057622214)
+    EtOH.method = VETERE
+    assert_close(EtOH.T_dependent_property(305), 41382.22039928848)
+    EtOH.method = CRC_HVAP_298
+    assert_close(EtOH.T_dependent_property(305), 41804.5417918726)
+    EtOH.method = VDI_TABULAR
+    assert_close(EtOH.T_dependent_property(305), 42119.6665416816)
+    EtOH.method = GHARAGHEIZI_HVAP_298
+    assert_close(EtOH.T_dependent_property(305), 41686.00339359697)
 
 
     EtOH.extrapolation = None
@@ -48,12 +75,12 @@ def test_EnthalpyVaporization():
         assert EtOH.T_dependent_property(5000) is None
 
 
-    EtOH = EnthalpyVaporization(CASRN='64-17-5')
+    EtOH = EnthalpyVaporization(CASRN='64-17-5', Tc=514.0)
     Hvap_calc = []
     for i in ['GHARAGHEIZI_HVAP_298', 'CRC_HVAP_298', 'VDI_TABULAR', 'COOLPROP']:
         EtOH.method = i
-        Hvap_calc.append(EtOH.T_dependent_property(298.15))
-    Hvap_exp = [42200.0, 42320.0, 42468.433273309995, 42413.51210041263]
+        Hvap_calc.append(EtOH.T_dependent_property(310.0))
+    Hvap_exp = [41304.19234346344, 41421.6450231131, 41857.962450207546, 41796.56243049473]
     assert_close1d(Hvap_calc, Hvap_exp)
 
     # Test Clapeyron, without Zl
@@ -67,7 +94,7 @@ def test_EnthalpyVaporization():
 
     Ts = [200, 250, 300, 400, 450]
     props = [46461.62768429649, 44543.08561867195, 42320.381894706225, 34627.726535926406, 27634.46144486471]
-    EtOH.set_tabular_data(Ts=Ts, properties=props, name='CPdata')
+    EtOH.add_tabular_data(Ts=Ts, properties=props, name='CPdata')
     EtOH.forced = True
     assert_close(43499.47575887933, EtOH.T_dependent_property(275), rtol=1E-4)
 

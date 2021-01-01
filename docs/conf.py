@@ -300,6 +300,9 @@ texinfo_documents = [
 #texinfo_no_detailmenu = False
 
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
+                       'numpy': ('http://docs.scipy.org/doc/numpy', None),
+                       'scipy': ('http://docs.scipy.org/doc/scipy/reference', None),
+                       'matplotlib': ('http://matplotlib.sourceforge.net', None),
                        'chemicals': ('https://chemicals.readthedocs.io/en/latest/', None),
                        'fluids': ('https://fluids.readthedocs.io/', None)}
 

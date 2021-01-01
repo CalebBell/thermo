@@ -476,6 +476,8 @@ class VolumeLiquid(TPDependentProperty):
         '''Set of all high-pressure methods available for a given CASRN and
         properties; filled by :obj:`load_all_methods`.'''
         self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
+
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
         elif method is not None:
@@ -484,7 +486,6 @@ class VolumeLiquid(TPDependentProperty):
             methods = self.valid_methods(T=None)
             if methods:
                 self.method = methods[0]
-        self.extrapolation = extrapolation
 
     def _custom_set_poly_fit(self):
         try:
@@ -994,9 +995,10 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         '''Set of all high-pressure methods available for a given CASRN and
         properties; filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
+        self.extrapolation = extrapolation
+
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
-        self.extrapolation = extrapolation
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -1626,13 +1628,14 @@ class VolumeGas(TPDependentProperty):
         properties; filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
+
         if method_P is not None:
             self.method_P = method_P
         else:
             methods = self.select_valid_methods_P(T=None, P=None, check_validity=False)
             if methods:
                 self.method_P = methods[0]
-        self.extrapolation = extrapolation
 
     def load_all_methods(self, load_data):
         r'''Method which picks out coefficients for the specified chemical
@@ -1694,6 +1697,8 @@ class VolumeGas(TPDependentProperty):
             Molar volume of the gas at T and P, [m^3/mol]
         '''
         if method == EOS:
+            if T < 0.0 or P < 0.0:
+                return None
             self.eos[0] = self.eos[0].to_TP(T=T, P=P)
             Vm = self.eos[0].V_g
         elif method == TSONOPOULOS_EXTENDED:
@@ -2085,6 +2090,8 @@ class VolumeSolid(TDependentProperty):
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
+
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
         elif method is not None:
@@ -2094,7 +2101,6 @@ class VolumeSolid(TDependentProperty):
             if methods:
                 self.method = methods[0]
 
-        self.extrapolation = extrapolation
 
 
     def load_all_methods(self, load_data=True):

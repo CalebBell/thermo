@@ -204,11 +204,11 @@ def test_TDependentProperty():
     props = [1.2, 1.3, 1.7, 1.9, 2.5]
 
     # Test naming and retrieving
-    EtOH.set_tabular_data(Ts=Ts, properties=props)
+    EtOH.add_tabular_data(Ts=Ts, properties=props)
     assert set(['Tabular data series #0', 'Test method 1', 'Test method 2']) == EtOH.all_methods
-    EtOH.set_tabular_data(Ts=Ts, properties=props)
+    EtOH.add_tabular_data(Ts=Ts, properties=props)
     assert set(['Tabular data series #1','Tabular data series #0', 'Test method 1', 'Test method 2']) == EtOH.all_methods
-    EtOH.set_tabular_data(Ts=Ts, properties=props, name='awesome')
+    EtOH.add_tabular_data(Ts=Ts, properties=props, name='awesome')
     assert set(['awesome', 'Tabular data series #1','Tabular data series #0', 'Test method 1', 'Test method 2']) == EtOH.all_methods
 
 
@@ -222,15 +222,15 @@ def test_TDependentProperty():
     # Test naming and retrieving with user methods
     EtOH = TDependentProperty(CASRN='67-56-1')
     EtOH.method = TEST_METHOD_1
-    EtOH.set_tabular_data(Ts=Ts, properties=props)
+    EtOH.add_tabular_data(Ts=Ts, properties=props)
     assert set(EtOH.all_methods) == set(['Tabular data series #0', 'Test method 1', 'Test method 2'])
-    EtOH.set_tabular_data(Ts=Ts, properties=props, name='hi')
+    EtOH.add_tabular_data(Ts=Ts, properties=props, name='hi')
     assert set(EtOH.all_methods) == set(['hi', 'Tabular data series #0', 'Test method 1', 'Test method 2'])
 
     with pytest.raises(Exception):
-        EtOH.set_tabular_data(Ts=[195, 205, 300, 400, 450], properties=[1.2, 1.3, 1.7, 1.9, -1], name='awesome')
+        EtOH.add_tabular_data(Ts=[195, 205, 300, 400, 450], properties=[1.2, 1.3, 1.7, 1.9, -1], name='awesome')
 
-    EtOH.set_tabular_data(Ts=[195, 205, 300, 400, 450], properties=[1.2, 1.3, 1.7, 1.9, -1], name='awesome', check_properties=False)
+    EtOH.add_tabular_data(Ts=[195, 205, 300, 400, 450], properties=[1.2, 1.3, 1.7, 1.9, -1], name='awesome', check_properties=False)
 
 
     # Test interpolation
@@ -239,7 +239,7 @@ def test_TDependentProperty():
     props = [1.2, 1.3, 1.4, 1.5, 1.6]
 
     # Test the cubic spline
-    EtOH.set_tabular_data(Ts=Ts, properties=props, name='test_set')
+    EtOH.add_tabular_data(Ts=Ts, properties=props, name='test_set')
     assert_allclose(1.2,  EtOH.T_dependent_property(200))
     assert_allclose(1.1, EtOH.T_dependent_property(150))
     assert_allclose(1.7, EtOH.T_dependent_property(500))
@@ -253,7 +253,7 @@ def test_TDependentProperty():
     props = [1.2, 1.3, 1.5, 1.6]
 
     # Test the cubic spline
-    EtOH.set_tabular_data(Ts=Ts, properties=props, name='test_set')
+    EtOH.add_tabular_data(Ts=Ts, properties=props, name='test_set')
     assert_allclose(4/3.,EtOH.T_dependent_property(275))
 
     # Set the interpolation methods
@@ -265,7 +265,7 @@ def test_TDependentProperty():
     EtOH.interpolation_property_inv = lambda prop: 1./prop
 
     # Test the linear interpolation with transform
-    EtOH.set_tabular_data(Ts=Ts, properties=props, name='test_set')
+    EtOH.add_tabular_data(Ts=Ts, properties=props, name='test_set')
     assert_allclose(1.336126372035137, EtOH.T_dependent_property(275))
 
 
@@ -276,7 +276,7 @@ def test_TDependentProperty():
 
     # Test naming and retrieving
     with pytest.raises(Exception):
-        EtOH.set_tabular_data(Ts=Ts, properties=props)
+        EtOH.add_tabular_data(Ts=Ts, properties=props)
 
 del test_TDependentProperty
 

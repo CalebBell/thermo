@@ -42,6 +42,22 @@ Pure Liquid Thermal Conductivity
     :show-inheritance:
     :exclude-members:
 
+The following variables are available to specify which method to use.
+
+.. data:: COOLPROP
+.. data:: DIPPR_PERRY_8E
+.. data:: VDI_PPDS
+.. data:: VDI_TABULAR
+.. data:: GHARAGHEIZI_L
+.. data:: SHEFFY_JOHNSON
+.. data:: SATO_RIEDEL
+.. data:: LAKSHMI_PRASAD
+.. data:: BAHADORI_L
+.. data:: NICOLA
+.. data:: NICOLA_ORIGINAL
+
+The following variables contain lists of available methods.
+
 .. autodata:: thermal_conductivity_liquid_methods
 .. autodata:: thermal_conductivity_liquid_methods_P
 
@@ -95,6 +111,9 @@ __all__ = [
  'thermal_conductivity_gas_methods',
  'thermal_conductivity_gas_methods_P', 'ThermalConductivityGas',
 
+'GHARAGHEIZI_L', 'NICOLA', 'NICOLA_ORIGINAL', 'SATO_RIEDEL', 'SHEFFY_JOHNSON',
+'BAHADORI_L', 'LAKSHMI_PRASAD', 'MISSENARD', 'DIPPR_9G',
+
            ]
 
 import os
@@ -115,11 +134,9 @@ from thermo import electrochem
 from thermo.electrochem import thermal_conductivity_Magomedov
 
 
+from thermo.utils import NEGLIGIBLE, DIPPR_PERRY_8E, BESTFIT, VDI_TABULAR, VDI_PPDS, COOLPROP
 
 
-VDI_TABULAR = 'VDI_TABULAR'
-VDI_PPDS = 'VDI_PPDS'
-COOLPROP = 'COOLPROP'
 GHARAGHEIZI_L = 'GHARAGHEIZI_L'
 NICOLA = 'NICOLA'
 NICOLA_ORIGINAL = 'NICOLA_ORIGINAL'
@@ -128,11 +145,7 @@ SHEFFY_JOHNSON = 'SHEFFY_JOHNSON'
 BAHADORI_L = 'BAHADORI_L'
 LAKSHMI_PRASAD = 'LAKSHMI_PRASAD'
 MISSENARD = 'MISSENARD'
-NONE = 'NONE'
-DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
-NEGLIGIBLE = 'NEGLIGIBLE'
 DIPPR_9G = 'DIPPR_9G'
-BESTFIT = 'Best fit'
 
 thermal_conductivity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS,
                                        VDI_TABULAR, GHARAGHEIZI_L,
@@ -361,6 +374,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
         properties; filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
         elif method is not None:
@@ -369,7 +383,6 @@ class ThermalConductivityLiquid(TPDependentProperty):
             methods = self.valid_methods(T=None)
             if methods:
                 self.method = methods[0]
-        self.extrapolation = extrapolation
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
@@ -1122,6 +1135,8 @@ class ThermalConductivityGas(TPDependentProperty):
         properties; filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
+
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
         elif method is not None:
@@ -1131,7 +1146,6 @@ class ThermalConductivityGas(TPDependentProperty):
             if methods:
                 self.method = methods[0]
 
-        self.extrapolation = extrapolation
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical

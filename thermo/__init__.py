@@ -238,6 +238,10 @@ def complete_lazy_loading():
     law.load_economic_data()
     unifac.load_unifac_ip()
     unifac.load_group_assignments_DDBST()
+    try:
+        import CoolProp
+    except:
+        pass
 if hasattr(os, '_called_from_test'):
     # pytest timings are hard to measure with lazy loading
     complete_lazy_loading()

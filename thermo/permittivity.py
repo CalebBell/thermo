@@ -162,6 +162,7 @@ class Permittivity(TDependentProperty):
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
 
         if poly_fit is not None:
             self._set_poly_fit(poly_fit)
@@ -171,7 +172,6 @@ class Permittivity(TDependentProperty):
             methods = self.valid_methods(T=None)
             if methods:
                 self.method = methods[0]
-        self.extrapolation = extrapolation
 
     def load_all_methods(self, load_data):
         r'''Method which picks out coefficients for the specified chemical

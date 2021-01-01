@@ -1,7 +1,6 @@
 Introduction to Phase and Flash Calculations
 ============================================
-
-I have programmed interfaces for doing property calculations three times now, and have settled on the current interface which is designed around the following principles:
+The framework for performing phase and flash calculations is designed around the following principles:
 
 * Immutability
 * Calculations are completely independent from any databases or lookups - every input must be provided as input
@@ -10,11 +9,6 @@ I have programmed interfaces for doing property calculations three times now, an
 * Allow options to restart a flash from a nearby previously calculated result, with options to skip checking the result for stability
 * Use very tight tolerances on all calculations
 * Expose all constants used by algorithms
-
-After a couple of iterations, the interface which is found to work best for 
-
->>> constants = ChemicalConstantsPackage(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], MWs=[282.54748], CASs=['112-95-8'])
->>> from thermo.phases import Phase
 
 Phase Objects
 -------------
@@ -35,7 +29,7 @@ Obtain a heat capacity object, and select a source:
 
 >>> from thermo.heat_capacity import POLING
 >>> CpObj = HeatCapacityGas(CASRN='67-56-1')
->>> CpObj.set_method(POLING)
+>>> CpObj.method = POLING
 >>> CpObj.POLING_coefs # Show the coefficients
 [4.714, -0.006986, 4.211e-05, -4.443e-08, 1.535e-11]
 >>> HeatCapacityGases = [CpObj]

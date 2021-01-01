@@ -53,7 +53,6 @@ def test_HeatCapacityGas():
 
 
     EtOH.extrapolation = None
-    EtOH.tabular_extrapolation_permitted = False
     for i in [TRCIG, POLING, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR]:
         EtOH.method = i
         assert EtOH.T_dependent_property(5000) is None
@@ -67,7 +66,7 @@ def test_HeatCapacityGas():
 
     Ts = [200, 250, 300, 400, 450]
     props = [1.2, 1.3, 1.4, 1.5, 1.6]
-    EtOH.set_tabular_data(Ts=Ts, properties=props, name='test_set')
+    EtOH.add_tabular_data(Ts=Ts, properties=props, name='test_set')
     assert_close(1.35441088517, EtOH.T_dependent_property(275), rtol=2E-4)
 
     assert None == EtOH.T_dependent_property(5000)
@@ -179,7 +178,7 @@ def test_HeatCapacitySolid():
     NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
     Ts = [200, 300, 400, 500, 600]
     Cps = [12.965044960703908, 20.206353934945987, 28.261467986645872, 37.14292010552292, 46.85389719453655]
-    NaCl.set_tabular_data(Ts=Ts, properties=Cps, name='stuff')
+    NaCl.add_tabular_data(Ts=Ts, properties=Cps, name='stuff')
     assert_close(NaCl.T_dependent_property(275), 18.320355898506502, rtol=1E-5)
 
     NaCl.extrapolation = None
@@ -204,7 +203,7 @@ def test_HeatCapacitySolid_integrals():
     NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
     Ts = [200, 300, 400, 500, 600]
     Cps = [12.965044960703908, 20.206353934945987, 28.261467986645872, 37.14292010552292, 46.85389719453655]
-    NaCl.set_tabular_data(Ts=Ts, properties=Cps, name='stuff')
+    NaCl.add_tabular_data(Ts=Ts, properties=Cps, name='stuff')
     dH4 = NaCl.calculate_integral(200, 300, 'stuff')
     assert_close(dH4, 1651.8556007162392, rtol=1E-5)
 
@@ -222,7 +221,7 @@ def test_HeatCapacitySolid_integrals():
     NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
     Ts = [200, 300, 400, 500, 600]
     Cps = [12.965044960703908, 20.206353934945987, 28.261467986645872, 37.14292010552292, 46.85389719453655]
-    NaCl.set_tabular_data(Ts=Ts, properties=Cps, name='stuff')
+    NaCl.add_tabular_data(Ts=Ts, properties=Cps, name='stuff')
     dS4 = NaCl.calculate_integral_over_T(100, 150, 'stuff')
     assert_close(dS4, 3.00533159156869)
 
@@ -370,21 +369,26 @@ def test_HeatCapacityLiquid_integrals():
 
 
 def test_HeatCapacitySolidMixture():
-    from thermo import Mixture
-    from thermo.heat_capacity import HeatCapacitySolidMixture
+    MWs = [107.8682, 195.078]
+    ws = [0.95, 0.05]
+    zs = ws_to_zs(ws=ws, MWs=MWs)
+    T = 298.15
+    P = 101325.0
+#    m = Mixture(['silver', 'platinum'], ws)
+    HeatCapacitySolids = [HeatCapacitySolid(CASRN="7440-22-4", similarity_variable=0.009270572791610502, MW=107.8682, extrapolation="linear", method="Best fit", poly_fit=(273.0, 1234.0, [-1.3937807081430088e-31, 7.536244381034841e-28, -1.690680423482461e-24, 2.0318654521005364e-21, -1.406580331667692e-18, 5.582457975071205e-16, 0.0062759999998829325, 23.430400000009975])),
+                          HeatCapacitySolid(CASRN="7440-06-4", similarity_variable=0.005126154666338593, MW=195.078, extrapolation="linear", method="Best fit", poly_fit=(273.0, 1873.0, [3.388131789017202e-37, -6.974130474513008e-33, 4.1785562369164175e-29, -1.19324731353925e-25, 1.8802914323231756e-22, -1.7047279440501588e-19, 8.714473096125867e-17, 0.004853439999977098, 24.76928000000236]))]
 
-    m = Mixture(['silver', 'platinum'], ws=[0.95, 0.05])
-    obj = HeatCapacitySolidMixture(CASs=m.CASs, HeatCapacitySolids=m.HeatCapacitySolids, MWs=m.MWs)
+    obj = HeatCapacitySolidMixture(CASs=['7440-22-4', '7440-06-4'], HeatCapacitySolids=HeatCapacitySolids, MWs=MWs)
 
-    Cp = obj(m.T, m.P, m.zs, m.ws)
-    assert_close(Cp, 25.32745719036059)
+    Cp = obj(T, P, zs, ws)
+    assert_close(Cp, 25.327457963474732)
 
     # Unhappy paths
     with pytest.raises(Exception):
-        obj.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+        obj.calculate(T, P, zs, ws, 'BADMETHOD')
 
     with pytest.raises(Exception):
-        obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+        obj.test_method_validity(T, P, zs, ws, 'BADMETHOD')
 
 
 def test_HeatCapacityGasMixture():
@@ -423,11 +427,15 @@ def test_HeatCapacityLiquidMixture_aqueous():
     assert_close(Cp, 77.08377446120679, rtol=1e-7)
 
 def test_HeatCapacityLiquidMixture():
-    from thermo import Mixture
     ws = [.9, .1]
-    zs = ws_to_zs(ws=ws, MWs=[92.13842, 142.28168])
-    m = Mixture(['toluene', 'decane'], ws=ws, T=300)
-    obj = HeatCapacityLiquidMixture(CASs=['108-88-3', '124-18-5'], HeatCapacityLiquids=m.HeatCapacityLiquids, MWs=[92.13842, 142.28168])
+    MWs = [92.13842, 142.28168]
+    zs = ws_to_zs(ws=ws, MWs=MWs)
+#    m = Mixture(['toluene', 'decane'], ws=ws, T=300)
+
+    HeatCapacityLiquids = [HeatCapacityLiquid(CASRN="108-88-3", MW=92.13842, similarity_variable=0.16279853724428964, Tc=591.75, omega=0.257, extrapolation="linear", method="Best fit", poly_fit=(162.0, 570.0, [7.171090290089724e-18, -1.8175720506858e-14, 1.9741936612209287e-11, -1.1980168324612502e-08, 4.438245228007343e-06, -0.0010295403891115538, 0.1475922271028815, -12.06203901868023, 565.3058820511594])),
+                           HeatCapacityLiquid(CASRN="124-18-5", MW=142.28168, similarity_variable=0.22490597524572384, Tc=611.7, omega=0.49, extrapolation="linear", method="Best fit", poly_fit=(247.0, 462.4, [-1.0868671859366803e-16, 3.1665821629357415e-13, -4.003344986303024e-10, 2.8664283740244695e-07, -0.00012702231712595518, 0.03563345983140416, -6.170059527783799, 601.9757437895033, -25015.243163919513]))]
+
+    obj = HeatCapacityLiquidMixture(CASs=['108-88-3', '124-18-5'], HeatCapacityLiquids=HeatCapacityLiquids, MWs=MWs)
     assert_close(obj(300.0, P=101325.0, zs=zs, ws=ws), 168.29157865567112, rtol=1E-4)
 
     # Unhappy paths
