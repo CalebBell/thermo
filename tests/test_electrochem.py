@@ -94,6 +94,10 @@ def test_Laliberte_heat_capacity():
     Cp = Laliberte_heat_capacity(273.15+1.5, [0.00398447], ['7647-14-5'])
     assert_close(Cp, 4186.566417712068, rtol=1E-5)
 
+def test_Laliberte_heat_capacity_mix():
+    Cp = Laliberte_heat_capacity_mix(T=278.15, ws=[0.00581, 0.002], a1s=[-0.0693559668993322, -0.103713247177424], a2s=[-0.0782134167486952, -0.0647453826944371], a3s=[3.84798479408635, 2.92191453087969], a4s=[-11.2762109247072, -5.48799065938436], a5s=[8.73187698542672, 2.41768600041476], a6s=[1.81245930472755, 1.32062411084408])
+    assert_close(Cp, 4154.788562680796, rtol=1e-10)
+
 @pytest.mark.scipy
 @pytest.mark.fuzz
 def test_Laliberte_heat_capacity_w():
