@@ -3,7 +3,6 @@ os:
   - osx
   - linux
 compiler:
-  - "2.7"
   - "3.5"
   - "3.6"
   - "3.7"
@@ -29,6 +28,5 @@ install:
   - python setup.py -q install
 script:
   - cd tests
-  - py.test . -v --cov-report html --cov=thermo --cov-report term-missing -m "not meta_Chemical and not slow and not rdkit";
 after_success:
   - coveralls
