@@ -145,7 +145,7 @@ __all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'CEOSLiquid', 'CEOS
            'VirialCorrelationsPitzerCurl', # For testing - try to get rid of
            ]
 
-import sys
+import sys, os
 from math import isinf, isnan, sqrt
 from fluids.constants import R, R_inv
 import fluids.constants
@@ -6109,9 +6109,14 @@ except:
     import marshal
     loaded_data = False
     # Cost is ~10 ms - must be pasted in the future!
-    if 1:
+    try:  # pragma: no cover
+        from appdirs import user_data_dir, user_config_dir
+        data_dir = user_config_dir('thermo')
+    except ImportError:  # pragma: no cover
+        data_dir = ''
+    if data_dir:
         try:
-            f = open('/home/caleb/testCEOSLiquiddat', 'rb')
+            f = open(os.path.join(data_dir, 'CEOSLiquid.dat'), 'rb')
             compiled_CEOSLiquid = marshal.load(f)
             f.close()
             loaded_data = True
@@ -6119,9 +6124,11 @@ except:
             pass
         if not loaded_data:
             compiled_CEOSLiquid = compile(build_CEOSLiquid(), '<string>', 'exec')
-            f = open('/home/caleb/testCEOSLiquiddat', 'wb')
+            f = open(os.path.join(data_dir, 'CEOSLiquid.dat'), 'wb')
             marshal.dump(compiled_CEOSLiquid, f)
             f.close()
+    else:
+        compiled_CEOSLiquid = compile(build_CEOSLiquid(), '<string>', 'exec')
     exec(compiled_CEOSLiquid)
     # exec(build_CEOSLiquid())
 

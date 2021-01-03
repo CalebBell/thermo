@@ -1376,7 +1376,7 @@ def ion_balance_adjust_wrapper(charges, zs, n_anions, n_cations,
     charge = selected_ion.charge
     positive = charge > 0
     if charge == 0:  # pragma: no cover
-        raise Exception('Cannot adjust selected compound as it has no charge!')
+        raise ValueError('Cannot adjust selected compound as it has no charge!')
 
 
     if selected_ion not in anions and selected_ion not in cations:
@@ -1407,9 +1407,9 @@ def ion_balance_adjust_wrapper(charges, zs, n_anions, n_cations,
     anion_zs, cation_zs, z_water = ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust=adjust)
     new_zi = cation_zs[cation_index] if positive else anion_zs[anion_index]
     if increase == True and new_zi < old_zi:
-        raise Exception('Adjusting specified ion %s resulted in a decrease of its quantity but an increase was specified' % selected_ion.formula)
+        raise ValueError('Adjusting specified ion %s resulted in a decrease of its quantity but an increase was specified' % selected_ion.formula)
     elif increase == False and new_zi > old_zi:
-        raise Exception('Adjusting specified ion %s resulted in a increase of its quantity but an decrease was specified' % selected_ion.formula)
+        raise ValueError('Adjusting specified ion %s resulted in a increase of its quantity but an decrease was specified' % selected_ion.formula)
     return anion_zs, cation_zs, z_water
 
 
@@ -1417,7 +1417,7 @@ def ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust):
     main_tot = sum([zs[i]*charges[i] for i in range(len(charges)) if i != adjust])
     zs[adjust] = -main_tot/charges[adjust]
     if zs[adjust] < 0:
-        raise Exception('A negative value of %f ion mole fraction was required to balance the charge' %zs[adjust])
+        raise ValueError('A negative value of %f ion mole fraction was required to balance the charge' %zs[adjust])
 
     z_water = 1. - sum(zs[0:-1])
     anion_zs = zs[0:n_anions]
@@ -1448,7 +1448,7 @@ def ion_balance_dominant(impacts, balance_error, charges, zs, n_anions,
         else:
             adjust = impacts.index(min(impacts))
     else:
-        raise Exception('Allowable methods are %s' %charge_balance_methods)
+        raise ValueError('Allowable methods are %s' %charge_balance_methods)
     return ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust)
 
 
