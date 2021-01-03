@@ -89,7 +89,7 @@ attribute of this module.
 
 .. ipython::
 
-    In [1]: from thermo.electrochem import Magomedovk_thermal_cond, McCleskey_conductivities, CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions, rho_dict_Laliberte, Cp_dict_Laliberte, Laliberte_data, mu_dict_Laliberte
+    In [1]: from thermo.electrochem import Magomedovk_thermal_cond, McCleskey_conductivities, CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions, Laliberte_data
 
     In [2]: Magomedovk_thermal_cond
 
@@ -169,32 +169,6 @@ def _load_electrochem_data():
             formula, CASRN, lbt2, lbt, lbc, At2, At, Ac, B, multiplier = to_num(values)
             McCleskey_conductivities[CASRN] = McCleskey_parameters(formula,
                 [lbt2, lbt, lbc], [At2, At, Ac], B, multiplier)
-
-    rho_dict_Laliberte = {}
-    mu_dict_Laliberte = {}
-    Cp_dict_Laliberte = {}
-
-
-    # Do not re-implement with Pandas, as current methodology uses these dicts in each function
-    with open(os.path.join(folder, 'Laliberte2009.tsv')) as f:
-        next(f)
-        for line in f:
-            values = to_num(line.split('\t'))
-
-            _name, CASRN, _formula, _MW, c0, c1, c2, c3, c4, Tmin, Tmax, wMax, pts = values[0:13]
-            if c0:
-                rho_dict_Laliberte[CASRN] = {"Name":_name, "Formula":_formula,
-                "MW":_MW, "C0":c0, "C1":c1, "C2":c2, "C3":c3, "C4":c4, "Tmin":Tmin, "Tmax":Tmax, "wMax":wMax}
-
-            v1, v2, v3, v4, v5, v6, Tmin, Tmax, wMax, pts = values[13:23]
-            if v1:
-                mu_dict_Laliberte[CASRN] = {"Name":_name, "Formula":_formula,
-                "MW":_MW, "V1":v1, "V2":v2, "V3":v3, "V4":v4, "V5":v5, "V6":v6, "Tmin":Tmin, "Tmax":Tmax, "wMax":wMax}
-
-            a1, a2, a3, a4, a5, a6, Tmin, Tmax, wMax, pts = values[23:34]
-            if a1:
-                Cp_dict_Laliberte[CASRN] = {"Name":_name, "Formula":_formula,
-                "MW":_MW, "A1":a1, "A2":a2, "A3":a3, "A4":a4, "A5":a5, "A6":a6, "Tmin":Tmin, "Tmax":Tmax, "wMax":wMax}
     Laliberte_data = pd.read_csv(os.path.join(folder, 'Laliberte2009.tsv'),
                               sep='\t', index_col=1)
 
@@ -221,8 +195,10 @@ if PY37:
         if name in ('Lange_cond_pure', 'Marcus_ion_conductivities', 'CRC_ion_conductivities',
                     'Magomedovk_thermal_cond', 'CRC_aqueous_thermodynamics',
                     'electrolyte_dissociation_reactions', 'McCleskey_conductivities',
-                    'Lange_cond_pure', 'rho_dict_Laliberte', 'mu_dict_Laliberte',
-                    'Cp_dict_Laliberte', 'Laliberte_data'):
+                    'Lange_cond_pure',
+#                    'rho_dict_Laliberte', 'mu_dict_Laliberte',
+#                    'Cp_dict_Laliberte',
+                    'Laliberte_data'):
             if not _loaded_electrochem_data:
                 _load_electrochem_data()
             return globals()[name]
