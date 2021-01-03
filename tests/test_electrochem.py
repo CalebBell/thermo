@@ -47,6 +47,11 @@ def test_Laliberte_viscosity_i():
     mu = Laliberte_viscosity_i(273.15+5, 1-0.005810, d["V1"], d["V2"], d["V3"], d["V4"], d["V5"], d["V6"] )
     assert_close(mu, 0.0042540255333087936)
 
+def test_Laliberte_viscosity_mix():
+    mu = Laliberte_viscosity_mix(T=278.15, ws=[0.00581, 0.002], V1s=[16.221788633396, 69.5769240055845], V2s=[1.32293086770011, 4.17047793905946], V3s=[1.48485985010431, 3.57817553622189], V4s=[0.00746912559657377, 0.0116677996754397], V5s=[30.7802007540575, 13897.6652650556], V6s=[2.05826852322558, 20.8027689840251])
+    assert_close(mu, 0.0015377348091189648, rtol=1e-13)
+
+
 
 def test_Laliberte_viscosity():
     mu_i = Laliberte_viscosity(273.15+5, [0.005810], ['7647-14-5'])

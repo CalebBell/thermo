@@ -23,7 +23,8 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['conductivity', 'Laliberte_density', 'Laliberte_heat_capacity',
-           'Laliberte_viscosity', 'Laliberte_viscosity_w',
+           'Laliberte_viscosity','Laliberte_viscosity_mix',
+           'Laliberte_viscosity_w',
            'Laliberte_viscosity_i', 'Laliberte_density_w',
            'Laliberte_density_i', 'Laliberte_heat_capacity_w',
            'Laliberte_heat_capacity_i', 'dilute_ionic_conductivity',
@@ -226,8 +227,18 @@ def Laliberte_viscosity_i(T, w_w, v1, v2, v3, v4, v5, v6):
         Temperature of fluid, [K]
     w_w : float
         Weight fraction of water in the solution, [-]
-    v1-v6 : floats
-        Function fit parameters
+    v1 : float
+        Fit parameter, [-]
+    v2 : float
+        Fit parameter, [-]
+    v3 : float
+        Fit parameter, [-]
+    v4 : float
+        Fit parameter, [1/degC]
+    v5 : float
+        Fit parameter, [-]
+    v6 : float
+        Fit parameter, [-]
 
     Returns
     -------
@@ -252,10 +263,65 @@ def Laliberte_viscosity_i(T, w_w, v1, v2, v3, v4, v5, v6):
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
     '''
-    t = T - 273.15
+    t = T - 273.15 # convert to C
     mu_i = exp((v1*(1.0 - w_w)**v2 + v3)/(v4*t + 1.0))/(v5*(1.0 - w_w)**v6 + 1.0)
     return mu_i*1e-3
 
+def Laliberte_viscosity_mix(T, ws, V1s, V2s, V3s, V4s, V5s, V6s):
+    r'''Calculate the viscosity of an aqueous mixture using the form proposed
+    by [1]_. All parameters must be provided in this implementation.
+
+    .. math::
+        \mu_m = \mu_w^{w_w} \Pi\mu_i^{w_i}
+
+    Parameters
+    ----------
+    T : float
+        Temperature of fluid, [K]
+    ws : array
+        Weight fractions of fluid components other than water, [-]
+    v1 : list[float]
+        Fit parameter, [-]
+    v2 : list[float]
+        Fit parameter, [-]
+    v3 : list[float]
+        Fit parameter, [-]
+    v4 : list[float]
+        Fit parameter, [1/degC]
+    v5 : list[float]
+        Fit parameter, [-]
+    v6 : list[float]
+        Fit parameter, [-]
+
+    Returns
+    -------
+    mu : float
+        Viscosity of aqueous mixture, [Pa*s]
+
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> Laliberte_viscosity_mix(T=278.15, ws=[0.00581, 0.002], V1s=[16.221788633396, 69.5769240055845], V2s=[1.32293086770011, 4.17047793905946], V3s=[1.48485985010431, 3.57817553622189], V4s=[0.00746912559657377, 0.0116677996754397], V5s=[30.7802007540575, 13897.6652650556], V6s=[2.05826852322558, 20.8027689840251])
+    0.0015377348091189648
+
+    References
+    ----------
+    .. [1] Laliberte, Marc. "A Model for Calculating the Heat Capacity of
+       Aqueous Solutions, with Updated Density and Viscosity Data." Journal of
+       Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
+       doi:10.1021/je8008123
+    '''
+    mu_w = Laliberte_viscosity_w(T)*1000.
+    w_w = 1.0 - sum(ws)
+    mu = mu_w**(w_w)
+    factor = 1.0
+    for i in range(len(ws)):
+        mu_i = Laliberte_viscosity_i(T, w_w, V1s[i], V2s[i], V3s[i], V4s[i], V5s[i], V6s[i])*1000.
+        factor *= mu_i**(ws[i])
+    mu *= factor
+    return mu*1e-3
 
 def Laliberte_viscosity(T, ws, CASRNs):
     r'''Calculate the viscosity of an aqueous mixture using the form proposed
@@ -276,8 +342,8 @@ def Laliberte_viscosity(T, ws, CASRNs):
 
     Returns
     -------
-    mu_i : float
-        Solute partial viscosity, [Pa*s]
+    mu : float
+        Viscosity of aqueous mixture, [Pa*s]
 
     Notes
     -----
@@ -298,14 +364,16 @@ def Laliberte_viscosity(T, ws, CASRNs):
        doi:10.1021/je8008123
     '''
     if not _loaded_electrochem_data: _load_electrochem_data()
-    mu_w = Laliberte_viscosity_w(T)*1000.
-    w_w = 1.0 - sum(ws)
-    mu = mu_w**(w_w)
+    V1s, V2s, V3s, V4s, V5s, V6s = [], [], [], [], [], []
     for i in range(len(CASRNs)):
         d = _Laliberte_Viscosity_ParametersDict[CASRNs[i]]
-        mu_i = Laliberte_viscosity_i(T, w_w, d["V1"], d["V2"], d["V3"], d["V4"], d["V5"], d["V6"])*1000.
-        mu = mu_i**(ws[i])*mu
-    return mu*1e-3
+        V1s.append(d['V1'])
+        V2s.append(d['V2'])
+        V3s.append(d['V3'])
+        V4s.append(d['V4'])
+        V5s.append(d['V5'])
+        V6s.append(d['V6'])
+    return Laliberte_viscosity_mix(T, ws, V1s, V2s, V3s, V4s, V5s, V6s)
 
 
 ### Laliberty Density Functions
