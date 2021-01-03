@@ -58,7 +58,7 @@ from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture
 from thermo.utils import *
 from thermo.law import legal_status, economic_status
-from thermo.electrochem import conductivity
+from thermo.electrochem import conductivity, conductivity_methods
 from thermo.eos import *
 from thermo.eos_mix import *
 from thermo.unifac import DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments, load_group_assignments_DDBST, UNIFAC_RQ, Van_der_Waals_volume, Van_der_Waals_area
@@ -897,7 +897,7 @@ class Chemical(object): # pragma: no cover
         self.RI_sources = RI_methods(CASRN=self.CAS)
         self.RI_source = self.RI_sources[0] if self.RI_sources else None
 
-        self.conductivity_sources = conductivity(CASRN=self.CAS, get_methods=True)
+        self.conductivity_sources = conductivity_methods(CASRN=self.CAS)
         self.conductivity_source = self.conductivity_sources[0] if self.conductivity_sources else None
 
 

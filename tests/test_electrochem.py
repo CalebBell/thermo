@@ -179,16 +179,16 @@ def test_cond_pure():
     assert Lange_cond_pure.shape == (124, 3)
 
 def test_conductivity():
-    tots_calc = list(pd.DataFrame([conductivity(CASRN=CASRN, full_info=True) for CASRN in Lange_cond_pure.index]).sum())
+    tots_calc = list(pd.DataFrame([conductivity(CASRN=CASRN) for CASRN in Lange_cond_pure.index]).sum())
     tots = [4742961.0185758611, 35024.150000000067]
     assert_close1d(tots_calc, tots)
 
 
-    assert conductivity(CASRN='234-34-44', full_info=False) == None
+    assert conductivity(CASRN='234-34-44') == (None, None)
     with pytest.raises(Exception):
         conductivity(CASRN='7732-18-5', method='BADMETHOD')
 
-    assert conductivity('7732-18-5', full_info=False) == 4e-06
+    assert conductivity('7732-18-5')[0] == 4e-06
 
 
 def test_Marcus_ion_conductivities():
@@ -264,7 +264,6 @@ def test_thermal_conductivity_Magomedov():
     kl =  thermal_conductivity_Magomedov(293., 1E6, [.25], ['7758-94-3'], k_w=0.59827)
     assert_close(kl, 0.548654049375)
 
-    # TODO: reconsider this behavior
     with pytest.raises(Exception):
         thermal_conductivity_Magomedov(293., 1E6, [.25], ['7758-94-3'])
 

@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['conductivity', 'Laliberte_density', 'Laliberte_heat_capacity',
+__all__ = ['Laliberte_density', 'Laliberte_heat_capacity',
            'Laliberte_viscosity','Laliberte_viscosity_mix',
            'Laliberte_viscosity_w',
            'Laliberte_viscosity_i', 'Laliberte_density_w',
@@ -30,8 +30,8 @@ __all__ = ['conductivity', 'Laliberte_density', 'Laliberte_heat_capacity',
            'Laliberte_heat_capacity_i','Laliberte_heat_capacity_mix',
            'dilute_ionic_conductivity',
            'conductivity_McCleskey',
-           'conductivity_methods',
-           'thermal_conductivity_Magomedov', 'ionic_strength', 'Kweq_1981',
+           'conductivity', 'conductivity_methods', 'conductivity_all_methods',
+           'thermal_conductivity_Magomedov', 'Magomedov_mix', 'ionic_strength', 'Kweq_1981',
            'Kweq_IAPWS_gas', 'Kweq_IAPWS',
            'balance_ions',
            ]
@@ -949,12 +949,35 @@ def conductivity_McCleskey(T, M, lambda_coeffs, A_coeffs, B, multiplier, rho=100
 
 
 LANGE_COND = "LANGE_COND"
-NONE = 'None'
 
-conductivity_methods = [LANGE_COND]
+conductivity_all_methods = [LANGE_COND]
 
+def conductivity_methods(CASRN):
+    """Return all methods available to obtain electrical conductivity for the
+    specified chemical.
 
-def conductivity(CASRN=None, get_methods=False, method=None, full_info=True):
+    Parameters
+    ----------
+    CASRN : str
+        CASRN, [-]
+
+    Returns
+    -------
+    methods : list[str]
+        Methods which can be used to obtain electrical conductivity with the
+        given inputs.
+
+    See Also
+    --------
+    conductivity
+    """
+    if not _loaded_electrochem_data: _load_electrochem_data()
+    methods = []
+    if CASRN in Lange_cond_pure.index:
+        methods.append(LANGE_COND)
+    return methods
+
+def conductivity(CASRN, method=None):
     r'''This function handles the retrieval of a chemical's conductivity.
     Lookup is based on CASRNs. Will automatically select a data source to use
     if no method is provided; returns None if the data is not available.
@@ -972,21 +995,12 @@ def conductivity(CASRN=None, get_methods=False, method=None, full_info=True):
         Electrical conductivity of the fluid, [S/m]
     T : float, only returned if full_info == True
         Temperature at which conductivity measurement was made
-    methods : list, only returned if get_methods == True
-        List of methods which can be used to obtain RI with the given inputs
 
     Other Parameters
     ----------------
     method : string, optional
         A string for the method name to use, as defined by constants in
         conductivity_methods
-    get_methods : bool, optional
-        If True, function will determine which methods can be used to obtain
-        conductivity for the desired chemical, and will return methods instead
-        of conductivity
-    full_info : bool, optional
-        If True, function will return the temperature at which the conductivity
-        reading was made
 
     Notes
     -----
@@ -1007,36 +1021,67 @@ def conductivity(CASRN=None, get_methods=False, method=None, full_info=True):
        McGraw-Hill Professional, 2005.
     '''
     if not _loaded_electrochem_data: _load_electrochem_data()
-    def list_methods():
-        methods = []
-        if CASRN in Lange_cond_pure.index:
-            methods.append(LANGE_COND)
-        methods.append(NONE)
-        return methods
-    if get_methods:
-        return list_methods()
-    if not method:
-        method = list_methods()[0]
-    if method == LANGE_COND:
+    if method == LANGE_COND or (method is None and CASRN in Lange_cond_pure.index):
         kappa = float(Lange_cond_pure.at[CASRN, 'Conductivity'])
-        if full_info:
-            T = float(Lange_cond_pure.at[CASRN, 'T'])
-
-    elif method == NONE:
-        kappa, T = None, None
+        T = float(Lange_cond_pure.at[CASRN, 'T'])
+        return (kappa, T)
+    elif method is None:
+        return (None, None)
     else:
-        raise Exception('Failure in in function')
+        raise ValueError('Unrecognized method')
 
-    if full_info:
-        return kappa, T
-    else:
-        return kappa
+def Magomedov_mix(T, P, ws, Ais, k_w):
+    r'''Calculate the thermal conductivity of an aqueous mixture of
+    electrolytes using the correlation proposed by Magomedov [1]_.
+    All coefficients and the thermal conductivity of pure water must be
+    provided.
 
+    .. math::
+        \lambda = \lambda_w\left[ 1 - \sum_{i=1}^n A_i (w_i + 2\times10^{-4}
+        w_i^3)\right] - 2\times10^{-8} PT\sum_{i=1}^n w_i
 
+    Parameters
+    ----------
+    T : float
+        Temperature of liquid [K]
+    P : float
+        Pressure of the liquid [Pa]
+    ws : list[float]
+        Weight fractions of liquid components other than water, [-]
+    Ais : list[float]
+        `Ai` coefficients which were regressed, [-]
+    k_w : float
+        Liquid thermal condiuctivity or pure water at T and P, [W/m/K]
 
+    Returns
+    -------
+    kl : float
+        Liquid thermal condiuctivity, [W/m/K]
 
+    Notes
+    -----
+    Range from 273 K to 473 K, P from 0.1 MPa to 100 MPa. C from 0 to 25 mass%.
+    Internal untis are MPa for pressure and weight percent.
 
-def thermal_conductivity_Magomedov(T, P, ws, CASRNs, k_w=None):
+    Examples
+    --------
+    >>> Magomedov_mix(293., 1E6, [.25], [0.00294], k_w=0.59827)
+    0.548654049375
+
+    References
+    ----------
+    .. [1] Magomedov, U. B. "The Thermal Conductivity of Binary and
+       Multicomponent Aqueous Solutions of Inorganic Substances at High
+       Parameters of State." High Temperature 39, no. 2 (March 1, 2001):
+       221-26. doi:10.1023/A:1017518731726.
+    '''
+    P = P*1e-6 # Convert to MPa
+    sum1 = 0.0
+    for i in range(len(ws)):
+        sum1 += Ais[i]*ws[i]*(1.0 + 2.0*ws[i]*ws[i])
+    return k_w*(1.0 - sum1*100.0) - 2E-6*P*T*sum(ws)
+
+def thermal_conductivity_Magomedov(T, P, ws, CASRNs, k_w):
     r'''Calculate the thermal conductivity of an aqueous mixture of
     electrolytes using the form proposed by Magomedov [1]_.
     Parameters are loaded by the function as needed. Function will fail if an
@@ -1084,16 +1129,8 @@ def thermal_conductivity_Magomedov(T, P, ws, CASRNs, k_w=None):
        Parameters of State." High Temperature 39, no. 2 (March 1, 2001):
        221-26. doi:10.1023/A:1017518731726.
     '''
-    P = P/1E6
-    ws = [i*100 for i in ws]
-    if not k_w:
-        raise Exception('k_w correlation must be provided')
-
-    sum1 = 0
-    for i, CASRN in enumerate(CASRNs):
-        Ai = float(Magomedovk_thermal_cond.at[CASRN, 'Ai'])
-        sum1 += Ai*(ws[i] + 2E-4*ws[i]**3)
-    return k_w*(1 - sum1) - 2E-8*P*T*sum(ws)
+    Ais = [float(Magomedovk_thermal_cond.at[CASRN, 'Ai']) for CASRN in CASRNs]
+    return Magomedov_mix(T, P, ws, Ais, k_w)
 
 
 def ionic_strength(mis, zis):
@@ -1184,7 +1221,7 @@ def Kweq_1981(T, rho_w):
        and Its Background." Journal of Physical and Chemical Reference Data 10,
        no. 2 (April 1, 1981): 295-304. doi:10.1063/1.555643.
     '''
-    rho_w = rho_w/1000.
+    rho_w = rho_w*1e-3
     A = -4.098
     B = -3245.2
     C = 2.2362E5
@@ -1193,7 +1230,9 @@ def Kweq_1981(T, rho_w):
     F = -1262.3
     G = 8.5641E5
     T2 = T*T
-    return 10**(A + B/T + C/(T2) + D/(T2*T) + (E + F/T + G/T2)*log10(rho_w))
+    T_inv = 1.0/T
+    T_inv2 = T_inv*T_inv
+    return 10.0**(A + B*T_inv + C*T_inv2 + D/(T2*T) + (E + F*T_inv+ G*T_inv2)*log10(rho_w))
 
 
 def Kweq_IAPWS_gas(T):
