@@ -778,6 +778,14 @@ class SublimationPressure(TDependentProperty):
             self.Tmin = min(Tmins)
             self.Tmax = max(Tmaxs)
 
+    @staticmethod
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        return {}
+
     def calculate(self, T, method):
         r'''Method to calculate sublimation pressure of a fluid at temperature
         `T` with a given method.

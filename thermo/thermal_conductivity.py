@@ -129,7 +129,7 @@ from chemicals import thermal_conductivity
 from thermo.utils import TPDependentProperty, MixtureProperty
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
-from thermo.coolprop import has_CoolProp, coolprop_dict, coolprop_fluids, CoolProp_T_dependent_property, PropsSI, PhaseSI
+from thermo.coolprop import has_CoolProp, coolprop_dict, coolprop_fluids, CoolProp_T_dependent_property, PropsSI, PhaseSI, CoolProp_failing_PT_flashes
 from thermo import electrochem
 from thermo.electrochem import thermal_conductivity_Magomedov
 
@@ -465,6 +465,18 @@ class ThermalConductivityLiquid(TPDependentProperty):
             if m in self.all_methods_P:
                 self.method_P = m
                 break
+
+    @staticmethod
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        return {COOLPROP : [CAS for CAS in coolprop_dict if (coolprop_fluids[CAS].has_k and CAS not in CoolProp_failing_PT_flashes)],
+                VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
+                DIPPR_PERRY_8E: thermal_conductivity.k_data_Perrys_8E_2_315.index,
+                VDI_PPDS: thermal_conductivity.k_data_VDI_PPDS_9.index,
+                }
 
     def calculate(self, T, method):
         r'''Method to calculate low-pressure liquid thermal conductivity at
@@ -1230,6 +1242,18 @@ class ThermalConductivityGas(TPDependentProperty):
             if m in self.all_methods_P:
                 self.method_P = m
                 break
+
+    @staticmethod
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        return {COOLPROP : [CAS for CAS in coolprop_dict if (coolprop_fluids[CAS].has_k and CAS not in CoolProp_failing_PT_flashes)],
+                VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
+                DIPPR_PERRY_8E: thermal_conductivity.k_data_Perrys_8E_2_314.index,
+                VDI_PPDS: thermal_conductivity.k_data_VDI_PPDS_10.index,
+                }
 
     def calculate(self, T, method):
         r'''Method to calculate low-pressure gas thermal conductivity at

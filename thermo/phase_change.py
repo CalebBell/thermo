@@ -822,6 +822,14 @@ class EnthalpySublimation(TDependentProperty):
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(i for i in Tmins if i is not None), max(i for i in Tmaxs if i is not None)
 
+    @staticmethod
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        return {}
+
     def calculate(self, T, method):
         r'''Method to calculate heat of sublimation of a solid at
         temperature `T` with a given method.
