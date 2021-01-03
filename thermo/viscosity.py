@@ -1034,7 +1034,9 @@ class ViscosityGas(TPDependentProperty):
         that use data files to retrieve constants. The use of this function
         ensures the data files are not loaded until they are needed.
         '''
-        return {COOLPROP : [CAS for CAS in coolprop_dict if coolprop_fluids[CAS].has_mu],
+        CoolProp_failing_flashes = set(['115-07-1', '115-25-3', '1717-00-6', '420-46-2',
+                                        '431-63-0', '431-89-0', '690-39-1', '75-68-3', '75-69-4', '75-71-8', '75-72-9', '75-73-0', '76-19-7'])
+        return {COOLPROP : [CAS for CAS in coolprop_dict if (coolprop_fluids[CAS].has_mu and CAS not in CoolProp_failing_flashes)],
                 VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
                 DIPPR_PERRY_8E: viscosity.mu_data_Perrys_8E_2_312.index,
                 VDI_PPDS: viscosity.mu_data_VDI_PPDS_8.index,
