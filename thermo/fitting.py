@@ -283,7 +283,7 @@ def fit_cheb_poly_auto(func, low, high, start_n=3, max_n=20, eval_pts=100,
                   interpolation_property=None, interpolation_property_inv=None,
                   interpolation_x=lambda x: x, interpolation_x_inv=lambda x: x,
                   arg_func=None):
-    worked_ns, worked_coeffs, worked_stats = fit_many_cheb_poly(func, low, high, ns=range(start_n, max_n),
+    worked_ns, worked_coeffs, worked_stats = fit_many_cheb_poly(func, low, high, ns=range(start_n, max_n+1),
                   interpolation_property=interpolation_property, interpolation_property_inv=interpolation_property_inv,
                   interpolation_x=interpolation_x, interpolation_x_inv=interpolation_x_inv,
                   arg_func=arg_func, eval_pts=eval_pts)

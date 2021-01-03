@@ -666,7 +666,7 @@ class ChemicalConstantsPackage(object):
                                                     poly_fit=get_chemical_constants(CASs[i], 'SublimationPressure'))
                                                     for i in range(N)]
 
-        Permittivities = [Permittivity(CASRN=CASs[i], poly_fit=get_chemical_constants(CASs[i], 'Permittivity')) for i in range(N)]
+        PermittivityLiquids = [PermittivityLiquid(CASRN=CASs[i], poly_fit=get_chemical_constants(CASs[i], 'PermittivityLiquid')) for i in range(N)]
 
         ViscosityLiquids = [ViscosityLiquid(CASRN=CASs[i], MW=MWs[i], Tm=Tms[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i], omega=omegas[i], Psat=VaporPressures[i].T_dependent_property,
                                             Vml=VolumeLiquids[i].T_dependent_property, poly_fit=get_chemical_constants(CASs[i], 'ViscosityLiquid')) for i in range(N)]
@@ -691,7 +691,7 @@ class ChemicalConstantsPackage(object):
                                                  ViscosityGases=ViscosityGases, ViscosityLiquids=ViscosityLiquids,
                                                  ThermalConductivityGases=ThermalConductivityGases, ThermalConductivityLiquids=ThermalConductivityLiquids,
                                                  EnthalpyVaporizations=EnthalpyVaporizations, EnthalpySublimations=EnthalpySublimations,
-                                                 SurfaceTensions=SurfaceTensions, Permittivities=Permittivities)
+                                                 SurfaceTensions=SurfaceTensions, PermittivityLiquids=PermittivityLiquids)
         return constants, properties
 
 
@@ -1123,7 +1123,7 @@ class PropertyCorrelationsPackage(object):
         Objects holding enthalpy of sublimation data and methods, [-]
     SurfaceTensions : list[:obj:`thermo.interface.SurfaceTension`], optional
         Objects holding surface tension data and methods, [-]
-    Permittivities : list[:obj:`thermo.permittivity.Permittivity`], optional
+    PermittivityLiquids : list[:obj:`thermo.permittivity.PermittivityLiquid`], optional
         Objects holding permittivity data and methods, [-]
     skip_missing : bool, optional
         If False, any properties not provided will have objects created; if
@@ -1175,7 +1175,7 @@ class PropertyCorrelationsPackage(object):
                'HeatCapacityLiquids', 'HeatCapacitySolids', 'ViscosityGases',
                'ViscosityLiquids', 'ThermalConductivityGases', 'ThermalConductivityLiquids',
                'EnthalpyVaporizations', 'EnthalpySublimations', 'SurfaceTensions',
-               'Permittivities',
+               'PermittivityLiquids',
 
                'VolumeGasMixture', 'VolumeLiquidMixture', 'VolumeSolidMixture',
                'HeatCapacityGasMixture', 'HeatCapacityLiquidMixture',
@@ -1190,7 +1190,7 @@ class PropertyCorrelationsPackage(object):
                          'VolumeSolids', 'HeatCapacityGases', 'HeatCapacitySolids',
                          'HeatCapacityLiquids', 'EnthalpyVaporizations',
                          'EnthalpySublimations', 'SublimationPressures',
-                         'Permittivities', 'ViscosityLiquids', 'ViscosityGases',
+                         'PermittivityLiquids', 'ViscosityLiquids', 'ViscosityGases',
                          'ThermalConductivityLiquids', 'ThermalConductivityGases',
                          'SurfaceTensions')
 
@@ -1234,7 +1234,7 @@ class PropertyCorrelationsPackage(object):
                  ViscosityGases=None, ViscosityLiquids=None,
                  ThermalConductivityGases=None, ThermalConductivityLiquids=None,
                  EnthalpyVaporizations=None, EnthalpySublimations=None,
-                 SurfaceTensions=None, Permittivities=None,
+                 SurfaceTensions=None, PermittivityLiquids=None,
 
                  VolumeGasMixtureObj=None, VolumeLiquidMixtureObj=None, VolumeSolidMixtureObj=None,
                  HeatCapacityGasMixtureObj=None, HeatCapacityLiquidMixtureObj=None, HeatCapacitySolidMixtureObj=None,
@@ -1308,8 +1308,8 @@ class PropertyCorrelationsPackage(object):
                                                         Hsub_t=constants.Hsub_Tts[i])
                                     for i in cmps]
 
-        if Permittivities is None and not skip_missing:
-            Permittivities = [Permittivity(CASRN=constants.CASs[i]) for i in cmps]
+        if PermittivityLiquids is None and not skip_missing:
+            PermittivityLiquids = [PermittivityLiquid(CASRN=constants.CASs[i]) for i in cmps]
 
         # missing -  ThermalConductivityGas, SurfaceTension
         if ViscosityLiquids is None and not skip_missing:
@@ -1358,7 +1358,7 @@ class PropertyCorrelationsPackage(object):
         self.EnthalpyVaporizations = EnthalpyVaporizations
         self.EnthalpySublimations = EnthalpySublimations
         self.SublimationPressures = SublimationPressures
-        self.Permittivities = Permittivities
+        self.PermittivityLiquids = PermittivityLiquids
         self.ViscosityLiquids = ViscosityLiquids
         self.ViscosityGases = ViscosityGases
         self.ThermalConductivityLiquids = ThermalConductivityLiquids

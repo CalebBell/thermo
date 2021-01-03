@@ -29,9 +29,9 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 .. contents:: :local:
 
-Pure Liquid Permittivity
+Pure Liquid PermittivityLiquid
 ========================
-.. autoclass:: Permittivity
+.. autoclass:: PermittivityLiquid
     :members: calculate, test_method_validity,
               name, property_max, property_min,
               units, Tmin, Tmax, ranked_methods
@@ -44,7 +44,7 @@ Pure Liquid Permittivity
 
 from __future__ import division
 
-__all__ = ['Permittivity']
+__all__ = ['PermittivityLiquid']
 
 import os
 import numpy as np
@@ -58,11 +58,11 @@ from chemicals import permittivity
 CRC = 'CRC'
 CRC_CONSTANT = 'CRC_CONSTANT'
 permittivity_methods = [CRC, CRC_CONSTANT]
-'''Holds all methods available for the :obj:`Permittivity` class, for use in
+'''Holds all methods available for the :obj:`PermittivityLiquid` class, for use in
 iterating over them.'''
 
 
-class Permittivity(TDependentProperty):
+class PermittivityLiquid(TDependentProperty):
     r'''Class for dealing with liquid permittivity as a function of temperature.
     Consists of one temperature-dependent simple expression and one constant
     value source.
@@ -112,7 +112,7 @@ class Permittivity(TDependentProperty):
     .. [1] Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of
        Chemistry and Physics. [Boca Raton, FL]: CRC press, 2014.
     '''
-    name = 'relative permittivity'
+    name = 'liquid relative permittivity'
     units = '-'
     interpolation_T = None
     '''No interpolation transformation by default.'''
@@ -131,6 +131,25 @@ class Permittivity(TDependentProperty):
     ranked_methods = [CRC, CRC_CONSTANT]
     '''Default rankings of the available methods.'''
     kwargs = {}
+
+    _fit_force_n = {}
+    '''Dictionary containing method: fit_n, for use in methods which should
+    only ever be fit to a specific `n` value'''
+    _fit_force_n[CRC_CONSTANT] = 1
+
+    _fit_max_n = {CRC: 4}
+
+    @staticmethod
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        A = permittivity.permittivity_data_CRC['A'].values
+        return {CRC_CONSTANT: permittivity.permittivity_data_CRC.index,
+                CRC: [CAS for i, CAS in enumerate(permittivity.permittivity_data_CRC.index)
+                      if not isnan(A[i])],
+                }
 
     def __init__(self, CASRN='', load_data=True, extrapolation='linear',
                  poly_fit=None, method=None):
@@ -270,6 +289,6 @@ class Permittivity(TDependentProperty):
                 if T < Ts[0] or T > Ts[-1]:
                     validity = False
         else:
-            raise Exception('Method not valid')
+            raise ValueError('Method not valid')
         return validity
 

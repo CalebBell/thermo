@@ -812,6 +812,10 @@ class TDependentProperty(object):
     '''Dictionary containing method: fit_n, for use in methods which should
     only ever be fit to a specific `n` value'''
 
+    _fit_max_n = {}
+    '''Dictionary containing method: max_n, for use in methods which should
+    only ever be fit to a `n` value equal to or less than `n`'''
+
     def __copy__(self):
         return self
 
@@ -884,6 +888,8 @@ class TDependentProperty(object):
 
         sources = cls._method_indexes()
 
+        fit_max_n = cls._fit_max_n
+
         if method is None:
             methods = list(sources.keys())
             indexes = list(sources.values())
@@ -893,10 +899,11 @@ class TDependentProperty(object):
         for method, index in zip(methods, indexes):
             method_dat = {}
             n = cls._fit_force_n.get(method, None)
+            max_n_method = fit_max_n[method] if method in fit_max_n else max_n
             for CAS in index:
                 print(CAS)
                 obj = cls(CASRN=CAS)
-                coeffs, (low, high), stats = obj.fit_polynomial(method, n=n, start_n=start_n, max_n=max_n, eval_pts=eval_pts)
+                coeffs, (low, high), stats = obj.fit_polynomial(method, n=n, start_n=start_n, max_n=max_n_method, eval_pts=eval_pts)
                 max_error = max(abs(1.0 - stats[2]), abs(1.0 - stats[3]))
                 method_dat[CAS] = {'Tmax': high, 'Tmin': low, 'error_average': stats[0],
                    'error_std': stats[1], 'max_error': max_error , 'method': method,

@@ -31,7 +31,7 @@ from chemicals.permittivity import *
 @pytest.mark.meta_T_dept
 def test_Permittivity_class():
     # Test some cases
-    water = Permittivity(CASRN='7732-18-5')
+    water = PermittivityLiquid(CASRN='7732-18-5')
     assert (False, False) == (water.test_property_validity(2000), water.test_property_validity(-10))
 
     with pytest.raises(Exception):
@@ -39,18 +39,18 @@ def test_Permittivity_class():
 
     epsilon = water.T_dependent_property(298.15)
     assert_close(epsilon, 78.35530812232503)
-    assert Permittivity(CASRN='7732-18-5').all_methods == set(['CRC', 'CRC_CONSTANT'])
+    assert PermittivityLiquid(CASRN='7732-18-5').all_methods == set(['CRC', 'CRC_CONSTANT'])
 
-    assert Permittivity(CASRN='132451235-2151234-1234123').all_methods == set()
-    assert Permittivity(CASRN='132451235-2151234-1234123').T_dependent_property(300) is None
+    assert PermittivityLiquid(CASRN='132451235-2151234-1234123').all_methods == set()
+    assert PermittivityLiquid(CASRN='132451235-2151234-1234123').T_dependent_property(300) is None
 
-    assert False == Permittivity(CASRN='7732-18-5').test_method_validity(228.15, 'CRC_CONSTANT')
-    assert False == Permittivity(CASRN='7732-18-5').test_method_validity(228.15, 'CRC')
+    assert False == PermittivityLiquid(CASRN='7732-18-5').test_method_validity(228.15, 'CRC_CONSTANT')
+    assert False == PermittivityLiquid(CASRN='7732-18-5').test_method_validity(228.15, 'CRC')
 
 
 
     # Tabular data
-    w = Permittivity(CASRN='7732-18-5')
+    w = PermittivityLiquid(CASRN='7732-18-5')
     Ts = linspace(273, 372, 10)
     permittivities = [87.75556413000001, 83.530500320000016, 79.48208925000003, 75.610330919999996, 71.915225330000013, 68.396772480000024, 65.05497237000003, 61.889825000000044, 58.901330369999997, 56.08948848]
     w.add_tabular_data(Ts=Ts, properties=permittivities)
@@ -64,14 +64,14 @@ def test_Permittivity_class():
 @pytest.mark.fuzz
 @pytest.mark.meta_T_dept
 def test_Permittivity_class_fuzz():
-    tot_constant = sum([Permittivity(CASRN=i).calculate(T=298.15, method='CRC_CONSTANT') for i in CRC_Permittivity_data.index])
+    tot_constant = sum([PermittivityLiquid(CASRN=i).calculate(T=298.15, method='CRC_CONSTANT') for i in CRC_Permittivity_data.index])
     assert_close(tot_constant, 13526.653700000023)
 
 
 
     sums_min, sums_avg, sums_max = 0, 0, 0
     for i in CRC_Permittivity_data.index:
-        a = Permittivity(CASRN=i)
+        a = PermittivityLiquid(CASRN=i)
         if 'CRC' in a.all_methods:
             sums_min += a.calculate(a.CRC_Tmin, 'CRC')
             sums_avg += a.calculate((a.CRC_Tmax+a.CRC_Tmin)/2., 'CRC')

@@ -565,7 +565,7 @@ class Chemical(object): # pragma: no cover
         methods loaded for the chemical; performs the actual calculations of
         surface tension of the chemical.
     Permittivity : object
-        Instance of :obj:`thermo.permittivity.Permittivity`, with data and
+        Instance of :obj:`thermo.permittivity.PermittivityLiquid`, with data and
         methods loaded for the chemical; performs the actual calculations of
         permittivity of the chemical.
     Psat_298 : float
@@ -1185,7 +1185,7 @@ class Chemical(object): # pragma: no cover
         self.SurfaceTension = SurfaceTension(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, StielPolar=self.StielPolar, Hvap_Tb=self.Hvap_Tb, Vml=self.VolumeLiquid.T_dependent_property, Cpl=Cpl_calc,
                                              poly_fit=get_chemical_constants(self.CAS, 'SurfaceTension'))
 
-        self.Permittivity = Permittivity(CASRN=self.CAS)
+        self.Permittivity = PermittivityLiquid(CASRN=self.CAS)
 
 
         # set molecular_diameter; depends on Vml_Tb, Vml_Tm
@@ -2556,7 +2556,7 @@ class Chemical(object): # pragma: no cover
 
         For calculation of this property at other temperatures,
         or specifying manually the method used to calculate it, and more - see
-        the object oriented interface :obj:`thermo.permittivity.Permittivity`;
+        the object oriented interface :obj:`thermo.permittivity.PermittivityLiquid`;
         each Chemical instance creates one to actually perform the calculations.
 
         Examples

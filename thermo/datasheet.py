@@ -113,7 +113,7 @@ def tabulate_liq(chemical, Tmin=None, Tmax=None, pts=10):
     data['Thermal diffusivity, m^2/s'] = alphas
     data['Isobaric expansion, 1/K'] = isobarics
     data['Joule-Thompson expansion coefficient, K/Pa'] = JTs
-    data['Permittivity'] = permittivities
+    data['PermittivityLiquid'] = permittivities
 
     df = pd.DataFrame(data, index=Ts)
     df.index.name = 'T, K'
