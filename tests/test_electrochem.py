@@ -30,7 +30,7 @@ from chemicals.elements import charge_from_formula, nested_formula_parser
 from thermo.electrochem import *
 from chemicals.identifiers import check_CAS, CAS_from_any, pubchem_db, serialize_formula
 from math import log10
-from thermo.electrochem import Lange_cond_pure, Marcus_ion_conductivities, CRC_ion_conductivities, Magomedovk_thermal_cond, CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions, McCleskey_conductivities, Lange_cond_pure, Laliberte_data
+from thermo.electrochem import cond_data_Lange, Marcus_ion_conductivities, CRC_ion_conductivities, Magomedovk_thermal_cond, CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions, cond_data_McCleskey, cond_data_Lange, Laliberte_data
 
 from thermo.electrochem import electrolyte_dissociation_reactions as df
 from collections import Counter
@@ -167,15 +167,15 @@ def test_dissociation_reactions():
 
 
 def test_cond_pure():
-    tots_calc = [Lange_cond_pure[i].sum() for i in ['Conductivity', 'T']]
+    tots_calc = [cond_data_Lange[i].sum() for i in ['Conductivity', 'T']]
     tots = [4742961.018575863, 35024.150000000001]
     assert_close1d(tots_calc, tots)
 
-    assert Lange_cond_pure.index.is_unique
-    assert Lange_cond_pure.shape == (124, 3)
+    assert cond_data_Lange.index.is_unique
+    assert cond_data_Lange.shape == (124, 3)
 
 def test_conductivity():
-    tots_calc = list(pd.DataFrame([conductivity(CASRN=CASRN) for CASRN in Lange_cond_pure.index]).sum())
+    tots_calc = list(pd.DataFrame([conductivity(CASRN=CASRN) for CASRN in cond_data_Lange.index]).sum())
     tots = [4742961.0185758611, 35024.150000000067]
     assert_close1d(tots_calc, tots)
 
@@ -642,11 +642,12 @@ def test_conductivity_McCleskey():
 
     # 6.531 exp
 
+@pytest.mark.slow
 def test_McCleskey_data():
     # Check the CAS lookups
-    for CAS, d in McCleskey_conductivities.items():
+    for CAS in cond_data_McCleskey.index:
         assert pubchem_db.search_CAS(CAS).CASs == CAS
 
     # Check the formula lookups
-    for CAS, d in McCleskey_conductivities.items():
-        assert CAS_from_any(d.Formula) == CAS
+    for CAS, formula in zip(cond_data_McCleskey.index, cond_data_McCleskey['formula']):
+        assert CAS_from_any(formula) == CAS

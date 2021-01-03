@@ -89,19 +89,17 @@ attribute of this module.
 
 .. ipython::
 
-    In [1]: from thermo.electrochem import Magomedovk_thermal_cond, McCleskey_conductivities, CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions, Laliberte_data
+    In [1]: from thermo.electrochem import Magomedovk_thermal_cond, cond_data_McCleskey, CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions, Laliberte_data
 
     In [2]: Magomedovk_thermal_cond
 
-    In [3]: McCleskey_conductivities
+    In [3]: cond_data_McCleskey
 
     In [4]: CRC_aqueous_thermodynamics
 
     In [5]: electrolyte_dissociation_reactions
 
     In [6]: Laliberte_data
-
-"""
 
 '''
 
@@ -147,57 +145,36 @@ register_df_source(folder, 'CRC Thermodynamic Properties of Aqueous Ions.tsv')
 
 _loaded_electrochem_data = False
 def _load_electrochem_data():
-    global Lange_cond_pure, Marcus_ion_conductivities, CRC_ion_conductivities, Magomedovk_thermal_cond
+    global cond_data_Lange, Marcus_ion_conductivities, CRC_ion_conductivities, Magomedovk_thermal_cond
     global CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions
-    global McCleskey_conductivities, Lange_cond_pure, rho_dict_Laliberte
-    global mu_dict_Laliberte, Cp_dict_Laliberte, Laliberte_data
+    global rho_dict_Laliberte
+    global mu_dict_Laliberte, Cp_dict_Laliberte, Laliberte_data, cond_data_McCleskey
     global _loaded_electrochem_data
     import pandas as pd
 
-    Lange_cond_pure = data_source('Lange Pure Species Conductivity.tsv')
+    cond_data_Lange = data_source('Lange Pure Species Conductivity.tsv')
     Marcus_ion_conductivities = data_source('Marcus Ion Conductivities.tsv')
     CRC_ion_conductivities = data_source('CRC conductivity infinite dilution.tsv')
 
     Magomedovk_thermal_cond = data_source('Magomedov Thermal Conductivity.tsv')
     CRC_aqueous_thermodynamics = data_source('CRC Thermodynamic Properties of Aqueous Ions.tsv')
 
-    McCleskey_conductivities = {}
-    with open(os_path_join(folder, 'McCleskey Electrical Conductivity.tsv')) as f:
-        next(f)
-        for line in f:
-            values = line.strip().split('\t')
-            formula, CASRN, lbt2, lbt, lbc, At2, At, Ac, B, multiplier = to_num(values)
-            McCleskey_conductivities[CASRN] = McCleskey_parameters(formula,
-                [lbt2, lbt, lbc], [At2, At, Ac], B, multiplier)
     Laliberte_data = pd.read_csv(os.path.join(folder, 'Laliberte2009.tsv'),
                               sep='\t', index_col=1)
+
+    cond_data_McCleskey = pd.read_csv(os.path.join(folder, 'McCleskey Electrical Conductivity.tsv'),
+                                      sep='\t', index_col=1)
 
     electrolyte_dissociation_reactions = pd.read_csv(os_path_join(folder, 'Electrolyte dissociations.tsv'), sep='\t')
     _loaded_electrochem_data = True
 
 
-class McCleskey_parameters(object):
-    __slots__ = ("Formula", 'lambda_coeffs', 'A_coeffs', 'B', 'multiplier')
-    def __init__(self, Formula, lambda_coeffs, A_coeffs, B, multiplier):
-        self.Formula = Formula
-        self.lambda_coeffs = lambda_coeffs
-        self.A_coeffs = A_coeffs
-        self.B = B
-        self.multiplier = multiplier
-
-    def __repr__(self):
-        return '''McCleskey_parameters(Formula=%r, lambda_coeffs=%r, A_coeffs=%r, B=%r, multiplier=%r)''' % (
-                self.Formula, self.lambda_coeffs, self.A_coeffs, self.B, self.multiplier)
-
-
 if PY37:
     def __getattr__(name):
-        if name in ('Lange_cond_pure', 'Marcus_ion_conductivities', 'CRC_ion_conductivities',
+        if name in ('cond_data_Lange', 'Marcus_ion_conductivities', 'CRC_ion_conductivities',
                     'Magomedovk_thermal_cond', 'CRC_aqueous_thermodynamics',
-                    'electrolyte_dissociation_reactions', 'McCleskey_conductivities',
-                    'Lange_cond_pure',
-#                    'rho_dict_Laliberte', 'mu_dict_Laliberte',
-#                    'Cp_dict_Laliberte',
+                    'electrolyte_dissociation_reactions',
+                    'cond_data_Lange', 'cond_data_McCleskey',
                     'Laliberte_data'):
             if not _loaded_electrochem_data:
                 _load_electrochem_data()
@@ -1008,7 +985,7 @@ def conductivity_methods(CASRN):
     """
     if not _loaded_electrochem_data: _load_electrochem_data()
     methods = []
-    if CASRN in Lange_cond_pure.index:
+    if CASRN in cond_data_Lange.index:
         methods.append(LANGE_COND)
     return methods
 
@@ -1056,9 +1033,9 @@ def conductivity(CASRN, method=None):
        McGraw-Hill Professional, 2005.
     '''
     if not _loaded_electrochem_data: _load_electrochem_data()
-    if method == LANGE_COND or (method is None and CASRN in Lange_cond_pure.index):
-        kappa = float(Lange_cond_pure.at[CASRN, 'Conductivity'])
-        T = float(Lange_cond_pure.at[CASRN, 'T'])
+    if method == LANGE_COND or (method is None and CASRN in cond_data_Lange.index):
+        kappa = float(cond_data_Lange.at[CASRN, 'Conductivity'])
+        T = float(cond_data_Lange.at[CASRN, 'T'])
         return (kappa, T)
     elif method is None:
         return (None, None)
