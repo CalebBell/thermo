@@ -410,7 +410,9 @@ class Mixture(object):
     isentropic_exponent
     isentropic_exponents
     isobaric_expansion
+    isobaric_expansion_g
     isobaric_expansion_gs
+    isobaric_expansion_l
     isobaric_expansion_ls
     IUPAC_names
     JT
@@ -1743,7 +1745,7 @@ class Mixture(object):
     @property
     def Vmss(self):
         r'''Pure component solid-phase molar volumes of the chemicals in the
-        mixture at its current temperature, in units of [mol/m^3].
+        mixture at its current temperature, in units of [m^3/mol].
 
         Examples
         --------
@@ -1755,7 +1757,7 @@ class Mixture(object):
     @property
     def Vmls(self):
         r'''Pure component liquid-phase molar volumes of the chemicals in the
-        mixture at its current temperature and pressure, in units of [mol/m^3].
+        mixture at its current temperature and pressure, in units of [m^3/mol].
 
         Examples
         --------
@@ -1767,7 +1769,7 @@ class Mixture(object):
     @property
     def Vmgs(self):
         r'''Pure component gas-phase molar volumes of the chemicals in the
-        mixture at its current temperature and pressure, in units of [mol/m^3].
+        mixture at its current temperature and pressure, in units of [m^3/mol].
 
         Examples
         --------
@@ -2711,7 +2713,7 @@ class Mixture(object):
     @property
     def Vml(self):
         r'''Liquid-phase molar volume of the mixture at its current
-        temperature, pressure, and composition in units of [mol/m^3]. For
+        temperature, pressure, and composition in units of [m^3/mol]. For
         calculation of this property at other temperatures or pressures or
         compositions, or specifying manually the method used to calculate it,
         and more - see the object oriented interface
@@ -2728,7 +2730,7 @@ class Mixture(object):
     @property
     def Vmg(self):
         r'''Gas-phase molar volume of the mixture at its current
-        temperature, pressure, and composition in units of [mol/m^3]. For
+        temperature, pressure, and composition in units of [m^3/mol]. For
         calculation of this property at other temperatures or pressures or
         compositions, or specifying manually the method used to calculate it,
         and more - see the object oriented interface
@@ -2989,6 +2991,44 @@ class Mixture(object):
                                      g=Mixture.isobaric_expansion_g, self=self)
 
     @property
+    def isobaric_expansion_g(self):
+        r'''Isobaric (constant-pressure) expansion of the gas phase of the
+        mixture at its current temperature and pressure, in units of [1/K].
+        Available only if single phase.
+
+        .. math::
+            \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
+
+        Examples
+        --------
+        >>> Mixture(['argon'], ws=[1], T=647.1, P=22048320.0).isobaric_expansion_g
+        0.0015661100323025273
+        '''
+        dV_dT = self.VolumeGasMixture.property_derivative_T(self.T, self.P, self.zs, self.ws)
+        Vm = self.Vmg
+        if dV_dT and Vm:
+            return isobaric_expansion(V=Vm, dV_dT=dV_dT)
+
+    @property
+    def isobaric_expansion_l(self):
+        r'''Isobaric (constant-pressure) expansion of the liquid phase of the
+        mixture at its current temperature and pressure, in units of [1/K].
+        Available only if single phase.
+
+        .. math::
+            \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
+
+        Examples
+        --------
+        >>> Mixture(['argon'], ws=[1], T=647.1, P=22048320.0).isobaric_expansion_l
+        0.001859152875154442
+        '''
+        dV_dT = self.VolumeLiquidMixture.property_derivative_T(self.T, self.P, self.zs, self.ws)
+        Vm = self.Vml
+        if dV_dT and Vm:
+            return isobaric_expansion(V=Vm, dV_dT=dV_dT)
+
+    @property
     def JT(self):
         r'''Joule Thomson coefficient of the mixture at its
         current phase, temperature, and pressure in units of [K/Pa].
@@ -3091,7 +3131,7 @@ class Mixture(object):
     @property
     def Vml_STP(self):
         r'''Liquid-phase molar volume of the mixture at 298.15 K and 101.325 kPa,
-        and the current composition in units of [mol/m^3].
+        and the current composition in units of [m^3/mol].
 
         Examples
         --------
@@ -3103,7 +3143,7 @@ class Mixture(object):
     @property
     def Vmg_STP(self):
         r'''Gas-phase molar volume of the mixture at 298.15 K and 101.325 kPa,
-        and the current composition in units of [mol/m^3].
+        and the current composition in units of [m^3/mol].
 
         Examples
         --------
