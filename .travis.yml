@@ -3,8 +3,6 @@ os:
   - osx
   - linux
 compiler:
-  - "3.5"
-  - "3.6"
   - "3.7"
 env:
   - SCIPY_VER="scipy>=0.18.0" 
@@ -30,3 +28,6 @@ script:
   - cd tests
 after_success:
   - coveralls
+branches:
+  only:
+  - release

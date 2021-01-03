@@ -4,7 +4,6 @@ build: false
 
 environment:
   matrix:
-    - PYTHON: 3.5
     - PYTHON: 3.7
 
 platform:
@@ -33,3 +32,6 @@ install:
 
 test_script:
   - cmd: 
+branches:
+  only:
+    - release
