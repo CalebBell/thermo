@@ -1,4 +1,4 @@
-thermo.bulk module
-==================
+Bulk Phases (thermo.bulk)
+=========================
 
 .. automodule:: thermo.bulk

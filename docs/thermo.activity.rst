@@ -1,4 +1,4 @@
-thermo.activity module
-======================
+Activity Coefficients (thermo.activity)
+=======================================
 
 .. automodule:: thermo.activity

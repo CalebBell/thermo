@@ -1,5 +1,5 @@
 ======
-thermo
+Thermo
 ======
 
 .. image:: http://img.shields.io/pypi/v/thermo.svg?style=flat
@@ -8,9 +8,6 @@ thermo
 .. image:: http://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat
    :target: https://thermo.readthedocs.io/en/latest/
    :alt: Documentation
-.. image:: http://img.shields.io/travis/CalebBell/thermo/master.svg?style=flat
-   :target: https://travis-ci.org/CalebBell/thermo
-   :alt: Build_status
 .. image:: http://img.shields.io/badge/license-MIT-blue.svg?style=flat
    :target: https://github.com/CalebBell/thermo/blob/master/LICENSE.txt
    :alt: license
@@ -23,9 +20,6 @@ thermo
 .. image:: https://badges.gitter.im/CalebBell/thermo.svg
    :alt: Join the chat at https://gitter.im/CalebBell/thermo
    :target: https://gitter.im/CalebBell/thermo
-.. image:: http://img.shields.io/appveyor/ci/calebbell/thermo.svg
-   :target: https://ci.appveyor.com/project/calebbell/thermo/branch/master
-   :alt: Build_status
 .. image:: https://zenodo.org/badge/62404647.svg
    :alt: Zendo
    :target: https://zenodo.org/badge/latestdoi/62404647
@@ -33,22 +27,19 @@ thermo
 
 .. contents::
 
-What is thermo?
+What is Thermo?
 ---------------
 
-thermo is open-source software for engineers, scientists, technicians and
+Thermo is open-source software for engineers, scientists, technicians and
 anyone trying to understand the universe in more detail. It facilitates 
 the retrieval of constants of chemicals, the calculation of temperature
 and pressure dependent chemical properties (both thermodynamic and 
-transport), the calculation of the same for chemical mixtures (including
-phase equilibria), and assorted information of a regulatory or legal 
-nature about chemicals.
+transport), and the calculation of the same for chemical mixtures (including
+phase equilibria) using various models.
 
-The thermo library depends on the SciPy library to povide numerical constants,
-interpolation, integration, differentiation, and numerical solving functionality.
-thermo all operating systems which support Python, is quick to install, and is 
-free of charge. thermo is designed to be easy to use while still providing powerful
-functionality. If you need to know something about a chemical, give thermo a try.
+Thermo runs on all operating systems which support Python, is quick to install, and is
+free of charge. Thermo is designed to be easy to use while still providing powerful
+functionality. If you need to know something about a chemical or mixture, give thermo a try.
 
 Installation
 ------------
@@ -187,5 +178,5 @@ Citation
 
 To cite thermo in publications use::
 
-    Caleb Bell and Contributors (2016-2020). thermo: Chemical properties component of Chemical Engineering Design Library (ChEDL)
+    Caleb Bell and Contributors (2016-2021). Thermo: Chemical properties component of Chemical Engineering Design Library (ChEDL)
     https://github.com/CalebBell/thermo.

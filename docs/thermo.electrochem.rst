@@ -1,5 +1,5 @@
-thermo.electrochem module
-=========================
+Electrochemistry (thermo.electrochem)
+=====================================
 
 .. automodule:: thermo.electrochem
     :members:

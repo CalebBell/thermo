@@ -1,9 +1,3 @@
-thermo package
-==============
-
-Submodules
-----------
-
 .. toctree::
 
    thermo.activity
