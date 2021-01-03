@@ -99,13 +99,7 @@ attribute of this module.
 
     In [5]: electrolyte_dissociation_reactions
 
-    In [6]: rho_dict_Laliberte
-
-    In [7]: Cp_dict_Laliberte
-
-    In [8]: mu_dict_Laliberte
-
-    In [9]: Laliberte_data
+    In [6]: Laliberte_data
 
 """
 
@@ -432,14 +426,14 @@ def Laliberte_viscosity(T, ws, CASRNs):
     '''
     if not _loaded_electrochem_data: _load_electrochem_data()
     v1s, v2s, v3s, v4s, v5s, v6s = [], [], [], [], [], []
-    for i in range(len(CASRNs)):
-        d = mu_dict_Laliberte[CASRNs[i]]
-        v1s.append(d['V1'])
-        v2s.append(d['V2'])
-        v3s.append(d['V3'])
-        v4s.append(d['V4'])
-        v5s.append(d['V5'])
-        v6s.append(d['V6'])
+    for CAS in CASRNs:
+        dat = Laliberte_data.loc[CAS].values
+        v1s.append(float(dat[12]))
+        v2s.append(float(dat[13]))
+        v3s.append(float(dat[14]))
+        v4s.append(float(dat[15]))
+        v5s.append(float(dat[16]))
+        v6s.append(float(dat[17]))
     return Laliberte_viscosity_mix(T, ws, v1s, v2s, v3s, v4s, v5s, v6s)
 
 
@@ -634,13 +628,14 @@ def Laliberte_density(T, ws, CASRNs):
     '''
     if not _loaded_electrochem_data: _load_electrochem_data()
     c0s, c1s, c2s, c3s, c4s = [], [], [], [], []
-    for i in range(len(CASRNs)):
-        d = rho_dict_Laliberte[CASRNs[i]]
-        c0s.append(d["C0"])
-        c1s.append(d["C1"])
-        c2s.append(d["C2"])
-        c3s.append(d["C3"])
-        c4s.append(d["C4"])
+    for CAS in CASRNs:
+        dat = Laliberte_data.loc[CAS].values
+        c0s.append(float(dat[3]))
+        c1s.append(float(dat[4]))
+        c2s.append(float(dat[5]))
+        c3s.append(float(dat[6]))
+        c4s.append(float(dat[7]))
+
     return Laliberte_density_mix(T, ws, c0s, c1s, c2s, c3s, c4s)
 #
 
@@ -669,7 +664,7 @@ Laliberte_heat_capacity_coeffs = [4228.506275726314, 13.859638974036017,
 ]
 
 def iapws95_Cpl_mass_sat(T):
-    # Just works
+    # Just works. Returns saturation liuquid heat capacity in J/kg/K
     tau = iapws95_Tc/T
     rho = iapws95_rhol_sat(T)
     delta = rho*iapws95_rhoc_inv
@@ -867,14 +862,14 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
     '''
     if not _loaded_electrochem_data: _load_electrochem_data()
     a1s, a2s, a3s, a4s, a5s, a6s = [], [], [], [], [], []
-    for i in range(len(CASRNs)):
-        d = Cp_dict_Laliberte[CASRNs[i]]
-        a1s.append(d["A1"])
-        a2s.append(d["A2"])
-        a3s.append(d["A3"])
-        a4s.append(d["A4"])
-        a5s.append(d["A5"])
-        a6s.append(d["A6"])
+    for CAS in CASRNs:
+        dat = Laliberte_data.loc[CAS].values
+        a1s.append(float(dat[22]))
+        a2s.append(float(dat[23]))
+        a3s.append(float(dat[24]))
+        a4s.append(float(dat[25]))
+        a5s.append(float(dat[26]))
+        a6s.append(float(dat[27]))
     return Laliberte_heat_capacity_mix(T, ws, a1s, a2s, a3s, a4s, a5s, a6s)
 
 ### Electrical Conductivity

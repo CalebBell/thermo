@@ -28,10 +28,9 @@ from fluids.numerics import assert_close, assert_close1d
 import pandas as pd
 from chemicals.elements import charge_from_formula, nested_formula_parser
 from thermo.electrochem import *
-from thermo.electrochem import _Laliberte_Density_ParametersDict, _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict
 from chemicals.identifiers import check_CAS, CAS_from_any, pubchem_db, serialize_formula
 from math import log10
-from thermo.electrochem import Lange_cond_pure, Marcus_ion_conductivities, CRC_ion_conductivities, Magomedovk_thermal_cond, CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions, McCleskey_conductivities, Lange_cond_pure, _Laliberte_Density_ParametersDict, _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict, Laliberte_data
+from thermo.electrochem import Lange_cond_pure, Marcus_ion_conductivities, CRC_ion_conductivities, Magomedovk_thermal_cond, CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions, McCleskey_conductivities, Lange_cond_pure, Laliberte_data
 
 from thermo.electrochem import electrolyte_dissociation_reactions as df
 from collections import Counter
@@ -44,8 +43,7 @@ def test_Laliberte_viscosity_w():
     assert_close(mu_w, 0.0008932264487033279)
 
 def test_Laliberte_viscosity_i():
-    d =  _Laliberte_Viscosity_ParametersDict['7647-14-5']
-    mu = Laliberte_viscosity_i(273.15+5, 1-0.005810, d["V1"], d["V2"], d["V3"], d["V4"], d["V5"], d["V6"] )
+    mu = Laliberte_viscosity_i(273.15+5, 1-0.005810, 16.221788633396, 1.32293086770011, 1.48485985010431, 0.00746912559657377, 30.7802007540575, 2.05826852322558)
     assert_close(mu, 0.0042540255333087936)
 
 def test_Laliberte_viscosity_mix():
@@ -66,8 +64,7 @@ def test_Laliberte_density_w():
 
 
 def test_Laliberte_density_i():
-    d = _Laliberte_Density_ParametersDict['7647-14-5']
-    rho = Laliberte_density_i(273.15+0, 1-0.0037838838, d["C0"], d["C1"], d["C2"], d["C3"], d["C4"])
+    rho = Laliberte_density_i(273.15+0, 1-0.0037838838, -0.00324112223655149, 0.0636354335906616, 1.01371399467365, 0.0145951015210159, 3317.34854426537)
     assert_close(rho, 3761.8917585699983)
 
 
@@ -85,8 +82,7 @@ def test_Laliberte_heat_capacity_w():
 
 
 def test_Laliberte_heat_capacity_i():
-    d = _Laliberte_Heat_Capacity_ParametersDict['7647-14-5']
-    Cpi = Laliberte_heat_capacity_i(1.5+273.15, 1-0.00398447, d["A1"], d["A2"], d["A3"], d["A4"], d["A5"], d["A6"])
+    Cpi = Laliberte_heat_capacity_i(1.5+273.15, 1-0.00398447, -0.0693559668993322, -0.0782134167486952, 3.84798479408635, -11.2762109247072, 8.73187698542672, 1.81245930472755)
     assert_close(Cpi, -2930.7353945880477)
 
 

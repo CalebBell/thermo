@@ -1322,11 +1322,38 @@ class VolumeLiquidMixture(MixtureProperty):
                     methods.append(RACKETT_PARAMETERS)
 
         if len(self.CASs) > 1 and '7732-18-5' in self.CASs:
-            wCASs = [i for i in self.CASs if i != '7732-18-5']
-            if all([i in electrochem._Laliberte_Density_ParametersDict for i in wCASs]):
+            Laliberte_data = electrochem.Laliberte_data
+            v1s, v2s, v3s, v4s, v5s, v6s = [], [], [], [], [], []
+            laliberte_incomplete = False
+            for CAS in self.CASs:
+                if CAS == '7732-18-5':
+                    continue
+                if CAS in Laliberte_data.index:
+                    dat = Laliberte_data.loc[CAS].values
+                    if isnan(dat[12]):
+                        laliberte_incomplete = True
+                        break
+                    v1s.append(float(dat[12]))
+                    v2s.append(float(dat[13]))
+                    v3s.append(float(dat[14]))
+                    v4s.append(float(dat[15]))
+                    v5s.append(float(dat[16]))
+                    v6s.append(float(dat[17]))
+                else:
+                    laliberte_incomplete = True
+                    break
+            if not laliberte_incomplete:
+                self.Laliberte_v1s = v1s
+                self.Laliberte_v2s = v2s
+                self.Laliberte_v3s = v3s
+                self.Laliberte_v4s = v4s
+                self.Laliberte_v5s = v5s
+                self.Laliberte_v6s = v6s
+                wCASs = [i for i in self.CASs if i != '7732-18-5']
                 methods.append(LALIBERTE)
                 self.wCASs = wCASs
                 self.index_w = self.CASs.index('7732-18-5')
+
         self.all_methods = all_methods = set(methods)
         for m in self.ranked_methods:
             if m in all_methods:

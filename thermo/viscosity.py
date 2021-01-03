@@ -102,7 +102,7 @@ import os
 import numpy as np
 from fluids.numerics import newton, interp, horner, brenth
 
-from chemicals.utils import log, exp, log10, isinf
+from chemicals.utils import log, exp, log10, isinf, isnan
 from chemicals.utils import none_and_length_check, mixing_simple, mixing_logarithmic
 from thermo.utils import TPDependentProperty, MixtureProperty
 from chemicals import miscdata
@@ -1309,10 +1309,38 @@ class ViscosityLiquidMixture(MixtureProperty):
         methods = [MIXING_LOG_MOLAR, MIXING_LOG_MASS, SIMPLE]
         if len(self.CASs) > 1 and '7732-18-5' in self.CASs:
             wCASs = [i for i in self.CASs if i != '7732-18-5']
-            if all([i in electrochem._Laliberte_Viscosity_ParametersDict for i in wCASs]):
+            Laliberte_data = electrochem.Laliberte_data
+            laliberte_incomplete = False
+
+            v1s, v2s, v3s, v4s, v5s, v6s = [], [], [], [], [], []
+            for CAS in wCASs:
+                if CAS in Laliberte_data.index:
+                    dat = Laliberte_data.loc[CAS].values
+                    if isnan(dat[12]):
+                        laliberte_incomplete = True
+                        break
+                    v1s.append(float(dat[12]))
+                    v2s.append(float(dat[13]))
+                    v3s.append(float(dat[14]))
+                    v4s.append(float(dat[15]))
+                    v5s.append(float(dat[16]))
+                    v6s.append(float(dat[17]))
+                else:
+                    laliberte_incomplete = True
+                    break
+            if not laliberte_incomplete:
                 methods.append(LALIBERTE_MU)
                 self.wCASs = wCASs
                 self.index_w = self.CASs.index('7732-18-5')
+                self.Laliberte_v1s = v1s
+                self.Laliberte_v2s = v2s
+                self.Laliberte_v3s = v3s
+                self.Laliberte_v4s = v4s
+                self.Laliberte_v5s = v5s
+                self.Laliberte_v6s = v6s
+
+
+
         self.all_methods = all_methods = set(methods)
         Tmins = [i.Tmin for i in self.ViscosityLiquids if i.Tmin]
         Tmaxs = [i.Tmax for i in self.ViscosityLiquids if i.Tmax]

@@ -1665,11 +1665,39 @@ class HeatCapacityLiquidMixture(MixtureProperty):
         '''
         methods = [SIMPLE]
         if len(self.CASs) > 1 and '7732-18-5' in self.CASs:
+            Laliberte_data = electrochem.Laliberte_data
+            a1s, a2s, a3s, a4s, a5s, a6s = [], [], [], [], [], []
+            laliberte_incomplete = False
+            for CAS in self.CASs:
+                if CAS == '7732-18-5':
+                    continue
+                if CAS in Laliberte_data.index:
+                    dat = Laliberte_data.loc[CAS].values
+                    if isnan(dat[22]):
+                        laliberte_incomplete = True
+                        break
+                    a1s.append(float(dat[22]))
+                    a2s.append(float(dat[23]))
+                    a3s.append(float(dat[24]))
+                    a4s.append(float(dat[25]))
+                    a5s.append(float(dat[26]))
+                    a6s.append(float(dat[27]))
+                else:
+                    laliberte_incomplete = True
+                    break
+
+            if not laliberte_incomplete:
+                self.Laliberte_a1s = a1s
+                self.Laliberte_a2s = a2s
+                self.Laliberte_a3s = a3s
+                self.Laliberte_a4s = a4s
+                self.Laliberte_a5s = a5s
+                self.Laliberte_a6s = a6s
+
             wCASs = [i for i in self.CASs if i != '7732-18-5']
-            if all([i in electrochem._Laliberte_Heat_Capacity_ParametersDict for i in wCASs]):
-                methods.append(LALIBERTE)
-                self.wCASs = wCASs
-                self.index_w = self.CASs.index('7732-18-5')
+            methods.append(LALIBERTE)
+            self.wCASs = wCASs
+            self.index_w = self.CASs.index('7732-18-5')
         self.all_methods = all_methods = set(methods)
         for m in self.ranked_methods:
             if m in all_methods:
