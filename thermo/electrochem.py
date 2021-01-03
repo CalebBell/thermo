@@ -18,7 +18,98 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains models for:
+
+    * Pure substance electrical conductivity lookups
+    * Correlations for aqueous electrolyte heat capacity, density, and viscosity
+    * Aqueous electrolyte conductivity
+    * Water equilibrium constants
+    * Balancing experimental ion analysis results so as to meet the
+      electroneutrality condition
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/chemicals/>`_.
+
+.. contents:: :local:
+
+Aqueous Electrolyte Density
+---------------------------
+.. autofunction:: Laliberte_density
+.. autofunction:: Laliberte_density_mix
+.. autofunction:: Laliberte_density_i
+.. autofunction:: Laliberte_density_w
+
+Aqueous Electrolyte Heat Capacity
+-----------------------------------
+.. autofunction:: Laliberte_heat_capacity
+.. autofunction:: Laliberte_heat_capacity_mix
+.. autofunction:: Laliberte_heat_capacity_i
+.. autofunction:: Laliberte_heat_capacity_w
+
+Aqueous Electrolyte Viscosity
+-----------------------------
+.. autofunction:: Laliberte_viscosity
+.. autofunction:: Laliberte_viscosity_mix
+.. autofunction:: Laliberte_viscosity_i
+.. autofunction:: Laliberte_viscosity_w
+
+Aqueous Electrolyte Thermal Conductivity
+----------------------------------------
+.. autofunction:: thermal_conductivity_Magomedov
+.. autofunction:: Magomedov_mix
+
+Aqueous Electrolyte Electrical Conductivity
+-------------------------------------------
+.. autofunction:: dilute_ionic_conductivity
+.. autofunction:: conductivity_McCleskey
+.. autofunction:: ionic_strength
+
+Pure Liquid Electrical Conductivity
+-----------------------------------
+.. autofunction:: conductivity
+.. autofunction:: conductivity_methods
+.. autodata:: conductivity_all_methods
+
+Water Dissociation Equilibrium
+------------------------------
+.. autofunction:: Kweq_IAPWS
+.. autofunction:: Kweq_IAPWS_gas
+.. autofunction:: Kweq_1981
+
+Balancing Ions
+--------------
+.. autofunction:: balance_ions
+
+Fit Coefficients and Data
+-------------------------
+All of these coefficients are lazy-loaded, so they must be accessed as an
+attribute of this module.
+
+.. ipython::
+
+    In [1]: from thermo.electrochem import Magomedovk_thermal_cond, McCleskey_conductivities, CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions, rho_dict_Laliberte, Cp_dict_Laliberte, Laliberte_data, mu_dict_Laliberte
+
+    In [2]: Magomedovk_thermal_cond
+
+    In [3]: McCleskey_conductivities
+
+    In [4]: CRC_aqueous_thermodynamics
+
+    In [5]: electrolyte_dissociation_reactions
+
+    In [6]: rho_dict_Laliberte
+
+    In [7]: Cp_dict_Laliberte
+
+    In [8]: mu_dict_Laliberte
+
+    In [9]: Laliberte_data
+
+"""
+
+'''
 
 from __future__ import division
 
@@ -28,8 +119,7 @@ __all__ = ['Laliberte_density', 'Laliberte_heat_capacity',
            'Laliberte_viscosity_i', 'Laliberte_density_w',
            'Laliberte_density_i', 'Laliberte_density_mix', 'Laliberte_heat_capacity_w',
            'Laliberte_heat_capacity_i','Laliberte_heat_capacity_mix',
-           'dilute_ionic_conductivity',
-           'conductivity_McCleskey',
+           'dilute_ionic_conductivity', 'conductivity_McCleskey',
            'conductivity', 'conductivity_methods', 'conductivity_all_methods',
            'thermal_conductivity_Magomedov', 'Magomedov_mix', 'ionic_strength', 'Kweq_1981',
            'Kweq_IAPWS_gas', 'Kweq_IAPWS',
@@ -65,8 +155,8 @@ _loaded_electrochem_data = False
 def _load_electrochem_data():
     global Lange_cond_pure, Marcus_ion_conductivities, CRC_ion_conductivities, Magomedovk_thermal_cond
     global CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions
-    global McCleskey_conductivities, Lange_cond_pure, _Laliberte_Density_ParametersDict
-    global _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict, Laliberte_data
+    global McCleskey_conductivities, Lange_cond_pure, rho_dict_Laliberte
+    global mu_dict_Laliberte, Cp_dict_Laliberte, Laliberte_data
     global _loaded_electrochem_data
     import pandas as pd
 
@@ -86,9 +176,9 @@ def _load_electrochem_data():
             McCleskey_conductivities[CASRN] = McCleskey_parameters(formula,
                 [lbt2, lbt, lbc], [At2, At, Ac], B, multiplier)
 
-    _Laliberte_Density_ParametersDict = {}
-    _Laliberte_Viscosity_ParametersDict = {}
-    _Laliberte_Heat_Capacity_ParametersDict = {}
+    rho_dict_Laliberte = {}
+    mu_dict_Laliberte = {}
+    Cp_dict_Laliberte = {}
 
 
     # Do not re-implement with Pandas, as current methodology uses these dicts in each function
@@ -99,20 +189,20 @@ def _load_electrochem_data():
 
             _name, CASRN, _formula, _MW, c0, c1, c2, c3, c4, Tmin, Tmax, wMax, pts = values[0:13]
             if c0:
-                _Laliberte_Density_ParametersDict[CASRN] = {"Name":_name, "Formula":_formula,
+                rho_dict_Laliberte[CASRN] = {"Name":_name, "Formula":_formula,
                 "MW":_MW, "C0":c0, "C1":c1, "C2":c2, "C3":c3, "C4":c4, "Tmin":Tmin, "Tmax":Tmax, "wMax":wMax}
 
             v1, v2, v3, v4, v5, v6, Tmin, Tmax, wMax, pts = values[13:23]
             if v1:
-                _Laliberte_Viscosity_ParametersDict[CASRN] = {"Name":_name, "Formula":_formula,
+                mu_dict_Laliberte[CASRN] = {"Name":_name, "Formula":_formula,
                 "MW":_MW, "V1":v1, "V2":v2, "V3":v3, "V4":v4, "V5":v5, "V6":v6, "Tmin":Tmin, "Tmax":Tmax, "wMax":wMax}
 
             a1, a2, a3, a4, a5, a6, Tmin, Tmax, wMax, pts = values[23:34]
             if a1:
-                _Laliberte_Heat_Capacity_ParametersDict[CASRN] = {"Name":_name, "Formula":_formula,
+                Cp_dict_Laliberte[CASRN] = {"Name":_name, "Formula":_formula,
                 "MW":_MW, "A1":a1, "A2":a2, "A3":a3, "A4":a4, "A5":a5, "A6":a6, "Tmin":Tmin, "Tmax":Tmax, "wMax":wMax}
     Laliberte_data = pd.read_csv(os.path.join(folder, 'Laliberte2009.tsv'),
-                              sep='\t', index_col=0)
+                              sep='\t', index_col=1)
 
     electrolyte_dissociation_reactions = pd.read_csv(os_path_join(folder, 'Electrolyte dissociations.tsv'), sep='\t')
     _loaded_electrochem_data = True
@@ -137,8 +227,8 @@ if PY37:
         if name in ('Lange_cond_pure', 'Marcus_ion_conductivities', 'CRC_ion_conductivities',
                     'Magomedovk_thermal_cond', 'CRC_aqueous_thermodynamics',
                     'electrolyte_dissociation_reactions', 'McCleskey_conductivities',
-                    'Lange_cond_pure', '_Laliberte_Density_ParametersDict', '_Laliberte_Viscosity_ParametersDict',
-                    '_Laliberte_Heat_Capacity_ParametersDict'):
+                    'Lange_cond_pure', 'rho_dict_Laliberte', 'mu_dict_Laliberte',
+                    'Cp_dict_Laliberte', 'Laliberte_data'):
             if not _loaded_electrochem_data:
                 _load_electrochem_data()
             return globals()[name]
@@ -146,34 +236,6 @@ if PY37:
 else:
     if can_load_data:
         _load_electrochem_data()
-
-
-
-#Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange Pure Species Conductivity.tsv'),
-#                          sep='\t', index_col=0)
-#
-#Marcus_ion_conductivities = pd.read_csv(os.path.join(folder, 'Marcus Ion Conductivities.tsv'),
-#                          sep='\t', index_col=0)
-#
-#CRC_ion_conductivities = pd.read_csv(os.path.join(folder, 'CRC conductivity infinite dilution.tsv'),
-#                          sep='\t', index_col=0)
-#
-#Magomedovk_thermal_cond = pd.read_csv(os.path.join(folder, 'Magomedov Thermal Conductivity.tsv'),
-#                          sep='\t', index_col=0)
-#
-#CRC_aqueous_thermodynamics = pd.read_csv(os.path.join(folder, 'CRC Thermodynamic Properties of Aqueous Ions.csv'),
-#                          sep='\t', index_col=0)
-
-#electrolyte_dissociation_reactions = pd.read_csv(os.path.join(folder, 'Electrolyte dissociations.tsv'), sep='\t')
-
-
-
-
-#Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange Pure Species Conductivity.tsv'),
-#                          sep='\t', index_col=0)
-
-
-
 
 ### Laliberty Viscosity Functions
 
@@ -371,7 +433,7 @@ def Laliberte_viscosity(T, ws, CASRNs):
     if not _loaded_electrochem_data: _load_electrochem_data()
     v1s, v2s, v3s, v4s, v5s, v6s = [], [], [], [], [], []
     for i in range(len(CASRNs)):
-        d = _Laliberte_Viscosity_ParametersDict[CASRNs[i]]
+        d = mu_dict_Laliberte[CASRNs[i]]
         v1s.append(d['V1'])
         v2s.append(d['V2'])
         v3s.append(d['V3'])
@@ -573,7 +635,7 @@ def Laliberte_density(T, ws, CASRNs):
     if not _loaded_electrochem_data: _load_electrochem_data()
     c0s, c1s, c2s, c3s, c4s = [], [], [], [], []
     for i in range(len(CASRNs)):
-        d = _Laliberte_Density_ParametersDict[CASRNs[i]]
+        d = rho_dict_Laliberte[CASRNs[i]]
         c0s.append(d["C0"])
         c1s.append(d["C1"])
         c2s.append(d["C2"])
@@ -665,7 +727,8 @@ def Laliberte_heat_capacity_w(T):
     '''
     if T > 365.1800756083714: # 92, when the fits crossover
         return iapws95_Cpl_mass_sat(T)
-    return chebval(0.012903225806451612892*(T - 335.64999999999997726), Laliberte_heat_capacity_coeffs)
+    return chebval(0.012903225806451612892*(T - 335.64999999999997726),
+                   Laliberte_heat_capacity_coeffs)
 
 
 def Laliberte_heat_capacity_i(T, w_w, a1, a2, a3, a4, a5, a6):
@@ -758,7 +821,8 @@ def Laliberte_heat_capacity_mix(T, ws, a1s, a2s, a3s, a4s, a5s, a6s):
     Cp = w_w*Cp_w
 
     for i in range(len(ws)):
-        Cp_i = Laliberte_heat_capacity_i(T, w_w, a1s[i], a2s[i], a3s[i], a4s[i], a5s[i], a6s[i])
+        Cp_i = Laliberte_heat_capacity_i(T, w_w, a1s[i], a2s[i], a3s[i],
+                                         a4s[i], a5s[i], a6s[i])
         Cp += ws[i]*Cp_i
     return Cp
 
@@ -804,7 +868,7 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
     if not _loaded_electrochem_data: _load_electrochem_data()
     a1s, a2s, a3s, a4s, a5s, a6s = [], [], [], [], [], []
     for i in range(len(CASRNs)):
-        d = _Laliberte_Heat_Capacity_ParametersDict[CASRNs[i]]
+        d = Cp_dict_Laliberte[CASRNs[i]]
         a1s.append(d["A1"])
         a2s.append(d["A2"])
         a3s.append(d["A3"])
@@ -993,7 +1057,7 @@ def conductivity(CASRN, method=None):
     -------
     kappa : float
         Electrical conductivity of the fluid, [S/m]
-    T : float, only returned if full_info == True
+    T : float
         Temperature at which conductivity measurement was made
 
     Other Parameters
@@ -1007,8 +1071,8 @@ def conductivity(CASRN, method=None):
     Only one source is available in this function. It is:
 
         * 'LANGE_COND' which is from Lange's Handbook, Table 8.34 Electrical
-        Conductivity of Various Pure Liquids', a compillation of data in [1]_.
-        The individual datapoints in this source are not cited at all.
+          Conductivity of Various Pure Liquids', a compillation of data in [1]_.
+          The individual datapoints in this source are not cited at all.
 
     Examples
     --------

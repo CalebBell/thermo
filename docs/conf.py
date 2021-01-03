@@ -56,6 +56,8 @@ extensions = [
     'sphinx.ext.autosummary',
     'nbsphinx',
     'matplotlib.sphinxext.plot_directive',
+    'IPython.sphinxext.ipython_console_highlighting',
+    'IPython.sphinxext.ipython_directive',
     'numpydoc',
     'sphinx.ext.intersphinx',
 ]

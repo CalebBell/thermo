@@ -29,7 +29,7 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 .. contents:: :local:
 
-Pure Liquid PermittivityLiquid
+Pure Liquid Permittivity
 ========================
 .. autoclass:: PermittivityLiquid
     :members: calculate, test_method_validity,
