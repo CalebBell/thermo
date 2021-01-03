@@ -109,7 +109,7 @@ from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
 from thermo import electrochem
 from thermo.electrochem import Laliberte_viscosity
-from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property
+from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property, CoolProp_failing_PT_flashes
 from chemicals.dippr import EQ101, EQ102
 from chemicals import viscosity
 from chemicals.viscosity import *
@@ -518,7 +518,7 @@ class ViscosityLiquid(TPDependentProperty):
         that use data files to retrieve constants. The use of this function
         ensures the data files are not loaded until they are needed.
         '''
-        return {COOLPROP : [CAS for CAS in coolprop_dict if coolprop_fluids[CAS].has_mu],
+        return {COOLPROP : [CAS for CAS in coolprop_dict if (coolprop_fluids[CAS].has_mu and CAS not in CoolProp_failing_PT_flashes)],
                 VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
                 DUTT_PRASAD: viscosity.mu_data_Dutt_Prasad.index,
                 VISWANATH_NATARAJAN_3: viscosity.mu_data_VN3.index,
@@ -1034,9 +1034,7 @@ class ViscosityGas(TPDependentProperty):
         that use data files to retrieve constants. The use of this function
         ensures the data files are not loaded until they are needed.
         '''
-        CoolProp_failing_flashes = set(['115-07-1', '115-25-3', '1717-00-6', '420-46-2',
-                                        '431-63-0', '431-89-0', '690-39-1', '75-68-3', '75-69-4', '75-71-8', '75-72-9', '75-73-0', '76-19-7'])
-        return {COOLPROP : [CAS for CAS in coolprop_dict if (coolprop_fluids[CAS].has_mu and CAS not in CoolProp_failing_flashes)],
+        return {COOLPROP : [CAS for CAS in coolprop_dict if (coolprop_fluids[CAS].has_mu and CAS not in CoolProp_failing_PT_flashes)],
                 VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
                 DIPPR_PERRY_8E: viscosity.mu_data_Perrys_8E_2_312.index,
                 VDI_PPDS: viscosity.mu_data_VDI_PPDS_8.index,
