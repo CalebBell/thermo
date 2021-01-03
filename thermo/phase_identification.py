@@ -1028,9 +1028,9 @@ def identify_sort_phases(phases, betas, constants, correlations, settings,
     >>> gas = gas.to(T=T, P=P, zs=[0.2384009970908655, 0.5786839935180925, 0.1829150093910419])
     >>> liq0 = liq.to(T=T, P=P, zs=[7.619975052238032e-05, 0.9989622883894993, 0.0009615118599781474])
     >>> liq1 = liq.to(T=T, P=P, zs=[0.6793120076703771, 0.19699746328631124, 0.12369052904331178])
-    >>> identity_phase_states(phases=[liq0, liq1, gas], constants=constants, correlations=properties, VL_method='PIP')
-    (<CEOSGas, T=361 K, P=100000 Pa>, [<CEOSLiquid, T=361 K, P=100000 Pa>, <CEOSLiquid, T=361 K, P=100000 Pa>], [])
-
+    >>> res = identity_phase_states(phases=[liq0, liq1, gas], constants=constants, correlations=properties, VL_method='PIP')
+    >>> res[0] is gas, res[1][0] is liq0, res[1][1] is liq1, res[2]
+    (True, True, True, [])
     '''
     gas, liquids, solids = identity_phase_states(phases, constants, correlations,
                               VL_method=settings.VL_ID,

@@ -58,7 +58,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
 
     to_change = ['eos.volume_solutions_halley', 'eos_mix.a_alpha_quadratic_terms',
                  'eos_mix.a_alpha_and_derivatives_quadratic_terms',
-                 'eos_mix.PR_lnphis', 'eos_mix.PR_lnphis_fastest',
+#                 'eos_mix.PR_lnphis', 'eos_mix.PR_lnphis_fastest',
                  'eos_alpha_functions.PR_a_alphas_vectorized',
                  'eos_alpha_functions.PR_a_alpha_and_derivatives_vectorized',
                  'eos_alpha_functions.SRK_a_alphas_vectorized',

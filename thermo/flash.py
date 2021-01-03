@@ -6869,7 +6869,7 @@ class FlashPureVLS(FlashBase):
     >>> liquid = CEOSLiquid(PRMIX, HeatCapacityGases=correlations.HeatCapacityGases, eos_kwargs=eos_kwargs)
     >>> gas = CEOSGas(PRMIX, HeatCapacityGases=correlations.HeatCapacityGases, eos_kwargs=eos_kwargs)
     >>> flasher = FlashPureVLS(constants, correlations, gas=gas, liquids=[liquid], solids=[])
-    >>> flasher.flash(T=300, P=1e5)
+    >>> print(flasher.flash(T=300, P=1e5))
     <EquilibriumState, T=300.0000, P=100000.0000, zs=[1.0], betas=[1.0], phases=[<CEOSLiquid, T=300 K, P=100000 Pa>]>
 
     Working with steam:
@@ -6881,13 +6881,13 @@ class FlashPureVLS(FlashBase):
     >>> PT = flasher.flash(T=800.0, P=1e7)
     >>> PT.rho_mass()
     29.1071839176
-    >>> flasher.flash(T=600, VF=.5)
+    >>> print(flasher.flash(T=600, VF=.5))
     <EquilibriumState, T=600.0000, P=12344824.3572, zs=[1.0], betas=[0.5, 0.5], phases=[<IAPWS95Gas, T=600 K, P=1.23448e+07 Pa>, <IAPWS95Liquid, T=600 K, P=1.23448e+07 Pa>]>
-    >>> flasher.flash(T=600.0, H=50802)
+    >>> print(flasher.flash(T=600.0, H=50802))
     <EquilibriumState, T=600.0000, P=10000469.1288, zs=[1.0], betas=[1.0], phases=[<IAPWS95Gas, T=600 K, P=1.00005e+07 Pa>]>
-    >>> flasher.flash(P=1e7, S=104.)
+    >>> print(flasher.flash(P=1e7, S=104.))
     <EquilibriumState, T=599.6790, P=10000000.0000, zs=[1.0], betas=[1.0], phases=[<IAPWS95Gas, T=599.679 K, P=1e+07 Pa>]>
-    >>> flasher.flash(V=.00061, U=55850)
+    >>> print(flasher.flash(V=.00061, U=55850))
     <EquilibriumState, T=800.5922, P=10144789.0899, zs=[1.0], betas=[1.0], phases=[<IAPWS95Gas, T=800.592 K, P=1.01448e+07 Pa>]>
 
     References

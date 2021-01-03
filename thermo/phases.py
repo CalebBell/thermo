@@ -333,7 +333,7 @@ class Phase(object):
 
         >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[])
         >>> phase.to_TP_zs(T=1e5, P=1e3, zs=[.5, .5])
-        <IdealGas, T=100000 K, P=1000 Pa>
+        IdealGas(HeatCapacityGases=[], T=100000.0, P=1000.0, zs=[0.5, 0.5])
         '''
         raise NotImplementedError("Must be implemented by subphases")
 
@@ -370,11 +370,11 @@ class Phase(object):
 
         >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[])
         >>> phase.to(T=1e5, P=1e3, zs=[.5, .5])
-        <IdealGas, T=100000 K, P=1000 Pa>
+        IdealGas(HeatCapacityGases=[], T=100000.0, P=1000.0, zs=[0.5, 0.5])
         >>> phase.to(V=1e-4, P=1e3, zs=[.1, .9])
-        <IdealGas, T=0.0120272 K, P=1000 Pa>
+        IdealGas(HeatCapacityGases=[], T=0.012027235504, P=1000.0, zs=[0.1, 0.9])
         >>> phase.to(T=1e5, V=1e12, zs=[.2, .8])
-        <IdealGas, T=100000 K, P=8.31446e-07 Pa>
+        IdealGas(HeatCapacityGases=[], T=100000.0, P=8.31446261e-07, zs=[0.2, 0.8])
 
         '''
         raise NotImplementedError("Must be implemented by subphases")
@@ -4524,7 +4524,7 @@ class IdealGas(Phase):
         ...                      HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
         >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=HeatCapacityGases)
         >>> phase
-        'IdealGas(HeatCapacityGases=[HeatCapacityGas(extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [-8.231317991971707e-12, 1.3053706310500586e-08, 5.820123832707268e-07, -0.0021700747433379955, 29.424883205644317])), HeatCapacityGas(extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [1.48828880864943e-11, -4.9886775708919434e-08, 5.4709164027448316e-05, -0.014916145936966912, 30.18149930389626]))], T=300, P=100000.0, zs=[0.79, 0.21])'
+        IdealGas(HeatCapacityGases=[HeatCapacityGas(extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [-8.231317991971707e-12, 1.3053706310500586e-08, 5.820123832707268e-07, -0.0021700747433379955, 29.424883205644317])), HeatCapacityGas(extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [1.48828880864943e-11, -4.9886775708919434e-08, 5.4709164027448316e-05, -0.014916145936966912, 30.18149930389626]))], T=300, P=100000.0, zs=[0.79, 0.21])
 
         '''
         Cpgs = ', '.join(str(o) for o in self.HeatCapacityGases)
@@ -5248,12 +5248,15 @@ class CEOSGas(Phase):
         ...                      HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
         >>> phase = CEOSGas(eos_class=PRMIX, eos_kwargs=eos_kwargs, T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=HeatCapacityGases)
         >>> phase
-        'CEOSGas(eos_class=PRMIX, eos_kwargs={"Tcs": [154.58, 126.2], "Pcs": [5042945.25, 3394387.5], "omegas": [0.021, 0.04], "kijs": [[0.0, -0.0159], [-0.0159, 0.0]]}, HeatCapacityGases=[HeatCapacityGas(extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [-8.231317991971707e-12, 1.3053706310500586e-08, 5.820123832707268e-07, -0.0021700747433379955, 29.424883205644317])), HeatCapacityGas(extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [1.48828880864943e-11, -4.9886775708919434e-08, 5.4709164027448316e-05, -0.014916145936966912, 30.18149930389626]))], T=300, P=100000.0, zs=[0.79, 0.21])'
+        CEOSGas(eos_class=PRMIX, eos_kwargs={"Tcs": [154.58, 126.2], "Pcs": [5042945.25, 3394387.5], "omegas": [0.021, 0.04], "kijs": [[0.0, -0.0159], [-0.0159, 0.0]]}, HeatCapacityGases=[HeatCapacityGas(extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [-8.231317991971707e-12, 1.3053706310500586e-08, 5.820123832707268e-07, -0.0021700747433379955, 29.424883205644317])), HeatCapacityGas(extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [1.48828880864943e-11, -4.9886775708919434e-08, 5.4709164027448316e-05, -0.014916145936966912, 30.18149930389626]))], T=300, P=100000.0, zs=[0.79, 0.21])
 
         '''
         eos_kwargs = str(self.eos_kwargs).replace("'", '"')
-        Cpgs = ', '.join(str(o) for o in self.HeatCapacityGases)
-        base = 'CEOSGas(eos_class=%s, eos_kwargs=%s, HeatCapacityGases=[%s], '  %(self.eos_class.__name__, eos_kwargs, Cpgs)
+        try:
+            Cpgs = ', '.join(str(o) for o in self.HeatCapacityGases)
+        except:
+            Cpgs = ''
+        base = '%s(eos_class=%s, eos_kwargs=%s, HeatCapacityGases=[%s], '  %(self.__class__.__name__, self.eos_class.__name__, eos_kwargs, Cpgs)
         for s in ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs'):
             if hasattr(self, s) and getattr(self, s) is not None:
                 base += '%s=%s, ' %(s, getattr(self, s))
@@ -5336,7 +5339,7 @@ class CEOSGas(Phase):
         >>> liquid = CEOSLiquid(PRMIX, T=500.0, P=1e7, zs=[.3, .7], eos_kwargs=eos_kwargs)
         >>> new_liq = liquid.to_TP_zs(T=gas.T, P=gas.P, zs=gas.zs, other_eos=gas.eos_mix)
         >>> new_liq
-        <CEOSLiquid, T=300 K, P=1e+06 Pa>
+        CEOSLiquid(eos_class=PRMIX, eos_kwargs={"Tcs": [305.32, 369.83], "Pcs": [4872000.0, 4248000.0], "omegas": [0.098, 0.152]}, HeatCapacityGases=[], T=300.0, P=1000000.0, zs=[0.2, 0.8])
         >>> new_liq.eos_mix is gas.eos_mix
         True
         '''
@@ -9461,6 +9464,35 @@ class HumidAirRP1485(VirialGas):
 
 
 class HelmholtzEOS(Phase):
+
+    def __repr__(self):
+        r'''Method to create a string representation of the phase object, with
+        the goal of making it easy to obtain standalone code which reproduces
+        the current state of the phase. This is extremely helpful in creating
+        new test cases.
+
+        Returns
+        -------
+        recreation : str
+            String which is valid Python and recreates the current state of
+            the object if ran, [-]
+
+        Examples
+        --------
+        >>> from thermo import IAPWS95Gas
+        >>> phase = IAPWS95Gas(T=300, P=1e5, zs=[1])
+        >>> phase
+        IAPWS95Gas(T=300, P=100000.0, zs=[1.0])
+        '''
+        base = '%s('  %(self.__class__.__name__)
+        for s in ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs'):
+            if hasattr(self, s) and getattr(self, s) is not None:
+                base += '%s=%s, ' %(s, getattr(self, s))
+        if base[-2:] == ', ':
+            base = base[:-2]
+        base += ')'
+        return base
+
     def V(self):
         return self._V
 

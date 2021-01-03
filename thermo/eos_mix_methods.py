@@ -285,6 +285,7 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
     >>> a_alphas = [0.2491099357671155, 0.6486495863528039]
     >>> a_alpha_i_roots = [i**0.5 for i in a_alphas]
     >>> a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, 299.0, zs, kijs)
+    >>> a_alpha, a_alpha_j_rows
     (0.58562139582, [0.35469988173, 0.61604757237])
     '''
     # This is faster in PyPy and can be made even faster optimizing a_alpha!
@@ -446,7 +447,7 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_i_roots,
     >>> a_alpha_i_roots = [i**0.5 for i in a_alphas]
     >>> da_alpha_dTs = [-0.0005102028006086241, -0.0011131153520304886]
     >>> d2a_alpha_dT2s = [1.8651128859234162e-06, 3.884331923127011e-06]
-    >>> a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, 299.0, zs, kijs)
+    >>> a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_i_roots, da_alpha_dTs, d2a_alpha_dT2s, 299.0, zs, kijs)
     (0.58562139582, -0.001018667672, 3.56669817856e-06, [0.35469988173, 0.61604757237], [-0.000672387374, -0.001064293501])
     '''
     N = len(a_alphas)

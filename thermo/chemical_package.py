@@ -188,9 +188,9 @@ class ChemicalConstantsPackage(object):
         >>> base.subset([0])
         ChemicalConstantsPackage(MWs=[18.01528], names=['water'], omegas=[0.344], Pcs=[22048320.0], Tcs=[647.14])
         >>> base.subset(slice(1,4))
-        ChemicalConstantsPackage(MWs=[106.16499999999999, 106.16499999999999, 106.16499999999999], names=['o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.3118, 0.324, 0.331], Pcs=[3732000.0, 3511000.0, 3541000.0], Tcs=[630.3, 616.2, 617.0])
+        ChemicalConstantsPackage(MWs=[106.165, 106.165, 106.165], names=['o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.3118, 0.324, 0.331], Pcs=[3732000.0, 3511000.0, 3541000.0], Tcs=[630.3, 616.2, 617.0])
         >>> base.subset(idxs=[0, 3], properties=('names', 'MWs'))
-        ChemicalConstantsPackage(MWs=[18.01528, 106.16499999999999], names=['water', 'm-xylene'])
+        ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
         '''
         if idxs is None:
             idxs = self.cmps

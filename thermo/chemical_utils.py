@@ -128,9 +128,9 @@ def S0_basis_converter(c, S0_liq=None, S0_gas=None, T_ref=298.15):
     --------
     >>> from thermo.chemical import Chemical
     >>> S0_basis_converter(Chemical('decane'), S0_liq=425.89)
-    544.679287541752
+    544.6792
     >>> S0_basis_converter(Chemical('decane'), S0_gas=545.7)
-    426.91071245824804
+    426.9107
     '''
     if S0_liq is None and S0_gas is None:
         raise ValueError("Provide either a liquid or a gas standard absolute entropy")

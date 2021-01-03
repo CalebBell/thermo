@@ -300,7 +300,7 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
     Acetone:
 
     >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='CC(=O)C')
-    ({24: 1, 1: 2}, True, 'OK')
+    ({1: 2, 24: 1}, True, 'OK')
 
     Sodium sulfate, (Na2O4S):
 
@@ -458,23 +458,8 @@ class Joback(object):
 
     All properties can be obtained in one go with the `estimate` method:
 
-    >>> J.estimate() # doctest: +ELLIPSIS
-    {'Cpig': <bound method Joback.Cpig of <thermo.joback.Joback object at 0x...>>,
-     'Cpig_coeffs': [7.520000000000003,
-                     0.26084,
-                     -0.0001207,
-                     1.545999999999998e-08],
-     'Gf': -154540.00000000003,
-     'Hf': -217829.99999999997,
-     'Hfus': 5125.0,
-     'Hvap': 29018.0,
-     'Pc': 4802499.604994407,
-     'Tb': 322.11,
-     'Tc': 500.5590049525365,
-     'Tm': 173.5,
-     'Vc': 0.0002095,
-     'mul': <bound method Joback.mul of <thermo.joback.Joback object at 0x...>>,
-     'mul_coeffs': [839.1099999999998, -14.99]}
+    >>> J.estimate(callables=False)
+    {'Tb': 322.11, 'Tm': 173.5, 'Tc': 500.5590049525365, 'Pc': 4802499.604994407, 'Vc': 0.0002095, 'Hf': -217829.99999999997, 'Gf': -154540.00000000003, 'Hfus': 5125.0, 'Hvap': 29018.0, 'mul_coeffs': [839.1099999999998, -14.99], 'Cpig_coeffs': [7.520000000000003, 0.26084, -0.0001207, 1.545999999999998e-08]}
 
 
     The results for propionic anhydride (if the status is not OK) should not be
@@ -530,7 +515,7 @@ class Joback(object):
         else:
             self.Tb_estimated = Tb
 
-    def estimate(self):
+    def estimate(self, callables=True):
         '''Method to compute all available properties with the Joback method;
         returns their results as a dict. For the tempearture dependent values
         Cpig and mul, both the coefficients and objects to perform calculations
@@ -548,10 +533,11 @@ class Joback(object):
                      'Gf': self.Gf(self.counts),
                      'Hfus': self.Hfus(self.counts),
                      'Hvap': self.Hvap(self.counts),
-                     'mul': self.mul,
                      'mul_coeffs': self.calculated_mul_coeffs,
-                     'Cpig': self.Cpig,
                      'Cpig_coeffs': self.calculated_Cpig_coeffs}
+        if callables:
+            estimates['mul'] = self.mul
+            estimates['Cpig'] = self.Cpig
         return estimates
 
     @staticmethod
