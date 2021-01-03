@@ -26,8 +26,9 @@ __all__ = ['conductivity', 'Laliberte_density', 'Laliberte_heat_capacity',
            'Laliberte_viscosity','Laliberte_viscosity_mix',
            'Laliberte_viscosity_w',
            'Laliberte_viscosity_i', 'Laliberte_density_w',
-           'Laliberte_density_i', 'Laliberte_heat_capacity_w',
-           'Laliberte_heat_capacity_i', 'dilute_ionic_conductivity',
+           'Laliberte_density_i', 'Laliberte_density_mix', 'Laliberte_heat_capacity_w',
+           'Laliberte_heat_capacity_i','Laliberte_heat_capacity_mix',
+           'dilute_ionic_conductivity',
            'conductivity_McCleskey',
            'conductivity_methods',
            'thermal_conductivity_Magomedov', 'ionic_strength', 'Kweq_1981',
@@ -44,6 +45,10 @@ from chemicals.utils import exp, log10
 from chemicals.utils import to_num, ws_to_zs, mixing_simple
 from chemicals import identifiers
 
+# For saturation properties of water
+from chemicals.iapws import (iapws95_rhoc_inv, iapws95_Tc, iapws95_R,
+                             iapws95_rhol_sat, iapws95_d2A0_dtau2, iapws95_d2Ar_dtau2,
+                             iapws95_dAr_ddelta, iapws95_d2Ar_ddeltadtau, iapws95_d2Ar_ddelta2)
 
 F = e*N_A
 
@@ -267,7 +272,7 @@ def Laliberte_viscosity_i(T, w_w, v1, v2, v3, v4, v5, v6):
     mu_i = exp((v1*(1.0 - w_w)**v2 + v3)/(v4*t + 1.0))/(v5*(1.0 - w_w)**v6 + 1.0)
     return mu_i*1e-3
 
-def Laliberte_viscosity_mix(T, ws, V1s, V2s, V3s, V4s, V5s, V6s):
+def Laliberte_viscosity_mix(T, ws, v1s, v2s, v3s, v4s, v5s, v6s):
     r'''Calculate the viscosity of an aqueous mixture using the form proposed
     by [1]_. All parameters must be provided in this implementation.
 
@@ -280,17 +285,17 @@ def Laliberte_viscosity_mix(T, ws, V1s, V2s, V3s, V4s, V5s, V6s):
         Temperature of fluid, [K]
     ws : array
         Weight fractions of fluid components other than water, [-]
-    v1 : list[float]
+    v1s : list[float]
         Fit parameter, [-]
-    v2 : list[float]
+    v2s : list[float]
         Fit parameter, [-]
-    v3 : list[float]
+    v3s : list[float]
         Fit parameter, [-]
-    v4 : list[float]
+    v4s : list[float]
         Fit parameter, [1/degC]
-    v5 : list[float]
+    v5s : list[float]
         Fit parameter, [-]
-    v6 : list[float]
+    v6s : list[float]
         Fit parameter, [-]
 
     Returns
@@ -303,7 +308,7 @@ def Laliberte_viscosity_mix(T, ws, V1s, V2s, V3s, V4s, V5s, V6s):
 
     Examples
     --------
-    >>> Laliberte_viscosity_mix(T=278.15, ws=[0.00581, 0.002], V1s=[16.221788633396, 69.5769240055845], V2s=[1.32293086770011, 4.17047793905946], V3s=[1.48485985010431, 3.57817553622189], V4s=[0.00746912559657377, 0.0116677996754397], V5s=[30.7802007540575, 13897.6652650556], V6s=[2.05826852322558, 20.8027689840251])
+    >>> Laliberte_viscosity_mix(T=278.15, ws=[0.00581, 0.002], v1s=[16.221788633396, 69.5769240055845], v2s=[1.32293086770011, 4.17047793905946], v3s=[1.48485985010431, 3.57817553622189], v4s=[0.00746912559657377, 0.0116677996754397], v5s=[30.7802007540575, 13897.6652650556], v6s=[2.05826852322558, 20.8027689840251])
     0.0015377348091189648
 
     References
@@ -318,7 +323,7 @@ def Laliberte_viscosity_mix(T, ws, V1s, V2s, V3s, V4s, V5s, V6s):
     mu = mu_w**(w_w)
     factor = 1.0
     for i in range(len(ws)):
-        mu_i = Laliberte_viscosity_i(T, w_w, V1s[i], V2s[i], V3s[i], V4s[i], V5s[i], V6s[i])*1000.
+        mu_i = Laliberte_viscosity_i(T, w_w, v1s[i], v2s[i], v3s[i], v4s[i], v5s[i], v6s[i])*1000.
         factor *= mu_i**(ws[i])
     mu *= factor
     return mu*1e-3
@@ -364,16 +369,16 @@ def Laliberte_viscosity(T, ws, CASRNs):
        doi:10.1021/je8008123
     '''
     if not _loaded_electrochem_data: _load_electrochem_data()
-    V1s, V2s, V3s, V4s, V5s, V6s = [], [], [], [], [], []
+    v1s, v2s, v3s, v4s, v5s, v6s = [], [], [], [], [], []
     for i in range(len(CASRNs)):
         d = _Laliberte_Viscosity_ParametersDict[CASRNs[i]]
-        V1s.append(d['V1'])
-        V2s.append(d['V2'])
-        V3s.append(d['V3'])
-        V4s.append(d['V4'])
-        V5s.append(d['V5'])
-        V6s.append(d['V6'])
-    return Laliberte_viscosity_mix(T, ws, V1s, V2s, V3s, V4s, V5s, V6s)
+        v1s.append(d['V1'])
+        v2s.append(d['V2'])
+        v3s.append(d['V3'])
+        v4s.append(d['V4'])
+        v5s.append(d['V5'])
+        v6s.append(d['V6'])
+    return Laliberte_viscosity_mix(T, ws, v1s, v2s, v3s, v4s, v5s, v6s)
 
 
 ### Laliberty Density Functions
@@ -439,8 +444,16 @@ def Laliberte_density_i(T, w_w, c0, c1, c2, c3, c4):
         Temperature of fluid [K]
     w_w : float
         Weight fraction of water in the solution, [-]
-    c0-c4 : floats
-        Function fit parameters, [-]
+    c0 : float
+        Fit coefficient, [-]
+    c1 : float
+        Fit coefficient, [-]
+    c2 : float
+        Fit coefficient, [-]
+    c3 : float
+        Fit coefficient, [1/degC]
+    c4 : float
+        Fit coefficient, [degC]
 
     Returns
     -------
@@ -468,6 +481,57 @@ def Laliberte_density_i(T, w_w, c0, c1, c2, c3, c4):
     tc4 = t + c4
     return ((c0*(1.0 - w_w)+c1)*exp(1E-6*tc4*tc4))/((1.0 - w_w) + c2 + c3*t)
 
+def Laliberte_density_mix(T, ws, c0s, c1s, c2s, c3s, c4s):
+    r'''Calculate the density of an aqueous electrolyte mixture using the form proposed by [1]_.
+    All parameters must be provided to the function. Units are Kelvin and Pa*s.
+
+    .. math::
+        \rho_m = \left(\frac{w_w}{\rho_w} + \sum_i \frac{w_i}{\rho_{app_i}}\right)^{-1}
+
+    Parameters
+    ----------
+    T : float
+        Temperature of fluid [K]
+    ws : array
+        Weight fractions of fluid components other than water
+    c0s : list[float]
+        Fit coefficient, [-]
+    c1s : list[float]
+        Fit coefficient, [-]
+    c2s : list[float]
+        Fit coefficient, [-]
+    c3s : list[float]
+        Fit coefficient, [1/degC]
+    c4s : list[float]
+        Fit coefficient, [degC]
+
+    Returns
+    -------
+    rho : float
+        Solution density, [kg/m^3]
+
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> Laliberte_density_mix(T=278.15, ws=[0.00581, 0.002], c0s=[-0.00324112223655149, 0.967814929691928], c1s=[0.0636354335906616, 5.540434135986], c2s=[1.01371399467365, 1.10374669742622], c3s=[0.0145951015210159, 0.0123340782160061], c4s=[3317.34854426537, 2589.61875022366])
+    1005.6947727219
+
+    References
+    ----------
+    .. [1] Laliberte, Marc. "A Model for Calculating the Heat Capacity of
+       Aqueous Solutions, with Updated Density and Viscosity Data." Journal of
+       Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
+       doi:10.1021/je8008123
+    '''
+    rho_w = Laliberte_density_w(T)
+    w_w = 1.0 - sum(ws)
+    rho = w_w/rho_w
+    for i in range(len(ws)):
+        rho_i = Laliberte_density_i(T, w_w, c0s[i], c1s[i], c2s[i], c3s[i], c4s[i])
+        rho = rho + ws[i]/rho_i
+    return 1./rho
 
 def Laliberte_density(T, ws, CASRNs):
     r'''Calculate the density of an aqueous electrolyte mixture using the form proposed by [1]_.
@@ -487,7 +551,7 @@ def Laliberte_density(T, ws, CASRNs):
 
     Returns
     -------
-    rho_i : float
+    rho : float
         Solution density, [kg/m^3]
 
     Notes
@@ -507,33 +571,71 @@ def Laliberte_density(T, ws, CASRNs):
        doi:10.1021/je8008123
     '''
     if not _loaded_electrochem_data: _load_electrochem_data()
-    rho_w = Laliberte_density_w(T)
-    w_w = 1.0 - sum(ws)
-    rho = w_w/rho_w
+    c0s, c1s, c2s, c3s, c4s = [], [], [], [], []
     for i in range(len(CASRNs)):
         d = _Laliberte_Density_ParametersDict[CASRNs[i]]
-        rho_i = Laliberte_density_i(T, w_w, d["C0"], d["C1"], d["C2"], d["C3"], d["C4"])
-        rho = rho + ws[i]/rho_i
-    return 1./rho
-
+        c0s.append(d["C0"])
+        c1s.append(d["C1"])
+        c2s.append(d["C2"])
+        c3s.append(d["C3"])
+        c4s.append(d["C4"])
+    return Laliberte_density_mix(T, ws, c0s, c1s, c2s, c3s, c4s)
+#
 
 ### Laliberty Heat Capacity Functions
 
-_T_array = [-15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140]
-_Cp_array = [4294.03, 4256.88, 4233.58, 4219.44, 4204.95, 4195.45, 4189.1, 4184.8, 4181.9, 4180.02, 4178.95, 4178.86, 4178.77, 4179.56, 4180.89, 4182.77, 4185.17, 4188.1, 4191.55, 4195.52, 4200.01, 4205.02, 4210.57, 4216.64, 4223.23, 4230.36, 4238.07, 4246.37, 4255.28, 4264.84, 4275.08, 4286.04]
-#Laliberte_heat_capacity_w_interp = interp1d(_T_array, _Cp_array, kind='cubic')
 
 # 1e-6 average error on cubic spline git
-Laliberte_heat_capacity_coeffs = [4228.506275726314, 13.859638974036017, 51.12143245170611, -12.90387025377214, 7.992709462644314, -3.737776928318681, 1.6667217703320034, -0.7011591222507434, 0.47615741350304575, -0.493658639074539, 0.45382402984949977, -0.2979206670910628, 0.0818355999576994, 0.1113371262709677, -0.21771870666886173, 0.23339766592859235, -0.1854788014782116, 0.08676288798618259, 0.03621105533331104, -0.1282405541135745, 0.15239930922413691, -0.10788380795227681, 0.028345111214775898, 0.035069303368203464, -0.06495590102171889, 0.07363090302945352, -0.06331457054710654, 0.02942889002358129, 0.020298208143387342, -0.05909390678584714, 0.05963564932631016, -0.02516892518832492, -0.012125676723016454, 0.02583462983905349, -0.019854257138064213, 0.013767379089216547, -0.012529247440497215, 0.004935128815787948, 0.012004756458708243, -0.023387087952343677, 0.01519082828964713, 0.0054837626370698445, -0.01605331777994934, 0.006710668291447064, 0.006166715295293557, -0.004472342227487047, -0.006087884102271346, 0.007269043765461447, 0.0039102753200097595, -0.005634128353356971]
+# 1e-6 average error on cubic spline git
+Laliberte_heat_capacity_coeffs = [4228.506275726314, 13.859638974036017,
+    51.12143245170611, -12.90387025377214, 7.992709462644314, -
+    3.737776928318681, 1.6667217703320034, -0.7011591222507434,
+    0.47615741350304575, -0.493658639074539, 0.45382402984949977, -
+    0.2979206670910628, 0.0818355999576994, 0.1113371262709677, -
+    0.21771870666886173, 0.23339766592859235, -0.1854788014782116,
+    0.08676288798618259, 0.03621105533331104, -0.1282405541135745,
+    0.15239930922413691, -0.10788380795227681, 0.028345111214775898,
+    0.035069303368203464, -0.06495590102171889, 0.07363090302945352, -
+    0.06331457054710654, 0.02942889002358129, 0.020298208143387342, -
+    0.05909390678584714, 0.05963564932631016, -0.02516892518832492, -
+    0.012125676723016454, 0.02583462983905349, -0.019854257138064213,
+    0.013767379089216547, -0.012529247440497215, 0.004935128815787948,
+    0.012004756458708243, -0.023387087952343677, 0.01519082828964713,
+    0.0054837626370698445, -0.01605331777994934, 0.006710668291447064,
+    0.006166715295293557, -0.004472342227487047, -0.006087884102271346,
+    0.007269043765461447, 0.0039102753200097595, -0.005634128353356971
+]
+
+def iapws95_Cpl_mass_sat(T):
+    # Just works
+    tau = iapws95_Tc/T
+    rho = iapws95_rhol_sat(T)
+    delta = rho*iapws95_rhoc_inv
+    d2A0_dtau2 = iapws95_d2A0_dtau2(tau, delta)
+    d2Ar_dtau2 = iapws95_d2Ar_dtau2(tau, delta)
+    dAr_ddelta = iapws95_dAr_ddelta(tau, delta)
+    d2Ar_ddeltadtau = iapws95_d2Ar_ddeltadtau(tau, delta)
+    d2Ar_ddelta2 = iapws95_d2Ar_ddelta2(tau, delta)
+
+    x0 = (1.0 + delta*dAr_ddelta - delta*tau*d2Ar_ddeltadtau)
+    Cp = iapws95_R*(-tau*tau*(d2A0_dtau2 + d2Ar_dtau2) + x0*x0/(1.0 + 2.0*delta*dAr_ddelta + delta*delta*d2Ar_ddelta2))
+    return Cp
 
 def Laliberte_heat_capacity_w(T):
-    r'''Calculate the heat capacity of water using the interpolation proposed
-     by [1]_. No parameters are needed, just a temperature.
+    r'''Calculate the heat capacity of pure water in a fast but similar way as
+    in [1]_. [1]_ suggested the following interpolatative scheme, using points
+    calculated from IAPWS-97 at a pressure of 0.1 MPa up to 95 °C and then at
+    saturation pressure. The maximum temperature of [1]_ is 140 °C.
 
     .. math::
         Cp_w = Cp_1 + (Cp_2-Cp_1) \left( \frac{t-t_1}{t_2-t_1}\right)
         + \frac{(Cp_3 - 2Cp_2 + Cp_1)}{2}\left( \frac{t-t_1}{t_2-t_1}\right)
         \left( \frac{t-t_1}{t_2-t_1}-1\right)
+
+    In this implementation, the heat capacity of water is calculated from a
+    chebyshev approximation of the scheme of [1]_ up to ~92 °C and then the
+    heat capacity comes directly from IAPWS-95 at higher temperatures, also
+    at the saturation pressure. There is no discontinuity between the methods.
 
     Parameters
     ----------
@@ -548,9 +650,6 @@ def Laliberte_heat_capacity_w(T):
     Notes
     -----
     Units are Kelvin and J/kg/K.
-    Original source not cited.
-    No temperature range is used.
-    The original equation is not used, but rather a cubic scipy interpolation routine.
 
     Examples
     --------
@@ -564,6 +663,8 @@ def Laliberte_heat_capacity_w(T):
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
     '''
+    if T > 365.1800756083714: # 92, when the fits crossover
+        return iapws95_Cpl_mass_sat(T)
     return chebval(0.012903225806451612892*(T - 335.64999999999997726), Laliberte_heat_capacity_coeffs)
 
 
@@ -573,6 +674,8 @@ def Laliberte_heat_capacity_i(T, w_w, a1, a2, a3, a4, a5, a6):
 
     .. math::
         Cp_i = a_1 e^\alpha + a_5(1-w_w)^{a_6}
+
+    .. math::
         \alpha = a_2 t + a_3 \exp(0.01t) + a_4(1-w_w)
 
     Parameters
@@ -612,6 +715,52 @@ def Laliberte_heat_capacity_i(T, w_w, a1, a2, a3, a4, a5, a6):
     Cp_i = a1*exp(alpha) + a5*(1. - w_w)**a6
     return Cp_i*1000.
 
+def Laliberte_heat_capacity_mix(T, ws, a1s, a2s, a3s, a4s, a5s, a6s):
+    r'''Calculate the heat capacity of an aqueous electrolyte mixture using the
+    form proposed by [1]_. All parameters must be provided to this function.
+
+    .. math::
+        Cp_m = w_w Cp_w + \sum w_i Cp_i
+
+    Parameters
+    ----------
+    T : float
+        Temperature of fluid [K]
+    ws : array
+        Weight fractions of fluid components other than water
+    CASRNs : array
+        CAS numbers of the fluid components other than water
+
+    Returns
+    -------
+    Cp : float
+        Solution heat capacity, [J/kg/K]
+
+    Notes
+    -----
+    A temperature range check is not included in this function.
+    Units are Kelvin and J/kg/K.
+
+    Examples
+    --------
+    >>> Laliberte_heat_capacity(273.15+1.5, [0.00398447], ['7647-14-5'])
+    4186.575407596064
+
+    References
+    ----------
+    .. [1] Laliberte, Marc. "A Model for Calculating the Heat Capacity of
+       Aqueous Solutions, with Updated Density and Viscosity Data." Journal of
+       Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
+       doi:10.1021/je8008123
+    '''
+    Cp_w = Laliberte_heat_capacity_w(T)
+    w_w = 1.0 - sum(ws)
+    Cp = w_w*Cp_w
+
+    for i in range(len(ws)):
+        Cp_i = Laliberte_heat_capacity_i(T, w_w, a1s[i], a2s[i], a3s[i], a4s[i], a5s[i], a6s[i])
+        Cp += ws[i]*Cp_i
+    return Cp
 
 def Laliberte_heat_capacity(T, ws, CASRNs):
     r'''Calculate the heat capacity of an aqueous electrolyte mixture using the
@@ -637,7 +786,7 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
 
     Notes
     -----
-    Temperature range check is not implemented.
+    A temperature range check is not included in this function.
     Units are Kelvin and J/kg/K.
 
     Examples
@@ -653,15 +802,16 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
        doi:10.1021/je8008123
     '''
     if not _loaded_electrochem_data: _load_electrochem_data()
-    Cp_w = Laliberte_heat_capacity_w(T)
-    w_w = 1.0 - sum(ws)
-    Cp = w_w*Cp_w
-
+    a1s, a2s, a3s, a4s, a5s, a6s = [], [], [], [], [], []
     for i in range(len(CASRNs)):
         d = _Laliberte_Heat_Capacity_ParametersDict[CASRNs[i]]
-        Cp_i = Laliberte_heat_capacity_i(T, w_w, d["A1"], d["A2"], d["A3"], d["A4"], d["A5"], d["A6"])
-        Cp = Cp + ws[i]*Cp_i
-    return Cp
+        a1s.append(d["A1"])
+        a2s.append(d["A2"])
+        a3s.append(d["A3"])
+        a4s.append(d["A4"])
+        a5s.append(d["A5"])
+        a6s.append(d["A6"])
+    return Laliberte_heat_capacity_mix(T, ws, a1s, a2s, a3s, a4s, a5s, a6s)
 
 ### Electrical Conductivity
 

@@ -21,6 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from numpy.testing import assert_allclose
+from fluids.numerics import linspace
 import pytest
 import numpy as np
 from fluids.numerics import assert_close, assert_close1d
@@ -48,7 +49,7 @@ def test_Laliberte_viscosity_i():
     assert_close(mu, 0.0042540255333087936)
 
 def test_Laliberte_viscosity_mix():
-    mu = Laliberte_viscosity_mix(T=278.15, ws=[0.00581, 0.002], V1s=[16.221788633396, 69.5769240055845], V2s=[1.32293086770011, 4.17047793905946], V3s=[1.48485985010431, 3.57817553622189], V4s=[0.00746912559657377, 0.0116677996754397], V5s=[30.7802007540575, 13897.6652650556], V6s=[2.05826852322558, 20.8027689840251])
+    mu = Laliberte_viscosity_mix(T=278.15, ws=[0.00581, 0.002], v1s=[16.221788633396, 69.5769240055845], v2s=[1.32293086770011, 4.17047793905946], v3s=[1.48485985010431, 3.57817553622189], v4s=[0.00746912559657377, 0.0116677996754397], v5s=[30.7802007540575, 13897.6652650556], v6s=[2.05826852322558, 20.8027689840251])
     assert_close(mu, 0.0015377348091189648, rtol=1e-13)
 
 
@@ -74,6 +75,9 @@ def test_Laliberte_density():
     rho = Laliberte_density(273.15, [0.0037838838], ['7647-14-5'])
     assert_close(rho, 1002.6250120185854)
 
+def test_Laliberte_density_mix():
+    rho = Laliberte_density_mix(T=278.15, ws=[0.00581, 0.002], c0s=[-0.00324112223655149, 0.967814929691928], c1s=[0.0636354335906616, 5.540434135986], c2s=[1.01371399467365, 1.10374669742622], c3s=[0.0145951015210159, 0.0123340782160061], c4s=[3317.34854426537, 2589.61875022366])
+    assert_close(rho, 1005.6947727219127, rtol=1e-13)
 
 def test_Laliberte_heat_capacity_w():
     rhow = Laliberte_heat_capacity_w(273.15+3.56)
@@ -90,6 +94,17 @@ def test_Laliberte_heat_capacity():
     Cp = Laliberte_heat_capacity(273.15+1.5, [0.00398447], ['7647-14-5'])
     assert_close(Cp, 4186.566417712068, rtol=1E-5)
 
+@pytest.mark.scipy
+@pytest.mark.fuzz
+def test_Laliberte_heat_capacity_w():
+    from scipy.interpolate import interp1d
+    _T_array = [-15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140]
+    _Cp_array = [4294.03, 4256.88, 4233.58, 4219.44, 4204.95, 4195.45, 4189.1, 4184.8, 4181.9, 4180.02, 4178.95, 4178.86, 4178.77, 4179.56, 4180.89, 4182.77, 4185.17, 4188.1, 4191.55, 4195.52, 4200.01, 4205.02, 4210.57, 4216.64, 4223.23, 4230.36, 4238.07, 4246.37, 4255.28, 4264.84, 4275.08, 4286.04]
+    Laliberte_heat_capacity_w_interp = interp1d(_T_array, _Cp_array, kind='cubic')
+    for T in linspace(_T_array[0], 92.0, 1000):
+        assert_close(Laliberte_heat_capacity_w_interp(T),
+                     Laliberte_heat_capacity_w(T+273.15),
+                     rtol=1e-5)
 
 
 @pytest.mark.slow
