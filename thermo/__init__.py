@@ -56,7 +56,6 @@ from . import phases
 from . import phase_identification
 from . import property_package
 from . import property_package_constants
-from . import psychrometrics
 from chemicals import reaction
 from chemicals import refractivity
 from . import regular_solution
@@ -110,7 +109,6 @@ from .mixture import *
 from .permittivity import *
 from .phase_change import *
 from .phases import *
-from .psychrometrics import *
 from .phase_identification import *
 from .property_package import *
 from .property_package_constants import *
@@ -149,7 +147,7 @@ __all__ = ['rachford_rice', 'flash_basic', 'chemical', 'chemical_package', 'comb
  'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop',
  'datasheet', 'dippr', 'unifac', 'stream', 'mixture', 'property_package_constants',
  'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution',
- 'equilibrium', 'phase_identification', 'psychrometrics', 'temperature',
+ 'equilibrium', 'phase_identification', 'temperature',
  'eos_alpha_functions', 'eos_volume', 'bulk']
 
 __all__.extend(eos_volume.__all__)
@@ -205,7 +203,6 @@ __all__.extend(nrtl.__all__)
 __all__.extend(uniquac.__all__)
 __all__.extend(regular_solution.__all__)
 __all__.extend(equilibrium.__all__)
-__all__.extend(psychrometrics.__all__)
 __all__.extend(temperature.__all__)
 __all__.extend(bulk.__all__)
 
@@ -219,7 +216,7 @@ submodules = [chemical, chemical_package, chemical_utils, coolprop, datasheet,
               electrochem, eos, eos_mix, equilibrium, flash, heat_capacity,
               identifiers, interaction_parameters, interface, joback, law,
               mixture, nrtl, permittivity, phase_change, phase_identification,
-              phases, property_package, property_package_constants, psychrometrics,
+              phases, property_package, property_package_constants,
               regular_solution, stream, thermal_conductivity, unifac, uniquac, safety,
               utils, vapor_pressure, viscosity, volume, wilson, eos_alpha_functions,
               eos_volume]
