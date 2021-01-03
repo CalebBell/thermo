@@ -76,7 +76,7 @@ from chemicals.phase_change import *
 
 from thermo.vapor_pressure import VaporPressure
 from thermo.utils import TDependentProperty
-from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
+from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids, CoolProp_failing_PT_flashes
 
 
 COOLPROP = 'COOLPROP'
@@ -448,6 +448,20 @@ class EnthalpyVaporization(TDependentProperty):
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
+
+    @staticmethod
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        return {COOLPROP : [CAS for CAS in coolprop_dict if (CAS not in CoolProp_failing_PT_flashes)],
+                VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
+                DIPPR_PERRY_8E: phase_change.phase_change_data_Perrys2_150.index,
+                VDI_PPDS: phase_change.phase_change_data_VDI_PPDS_4.index,
+                }
+
+
 
     def calculate(self, T, method):
         r'''Method to calculate heat of vaporization of a liquid at
