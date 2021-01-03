@@ -35,10 +35,9 @@ __all__ = ['conductivity', 'Laliberte_density', 'Laliberte_heat_capacity',
            ]
 
 import os
-from collections import namedtuple
 from fluids.constants import e, N_A
-from chemicals.utils import source_path, os_path_join, can_load_data, PY37
 from fluids.numerics import newton, horner, chebval
+from chemicals.utils import source_path, os_path_join, can_load_data, PY37
 from chemicals.data_reader import data_source, register_df_source
 from chemicals.utils import exp, log10
 from chemicals.utils import to_num, ws_to_zs, mixing_simple
@@ -110,13 +109,22 @@ def _load_electrochem_data():
                               sep='\t', index_col=0)
 
     electrolyte_dissociation_reactions = pd.read_csv(os_path_join(folder, 'Electrolyte dissociations.tsv'), sep='\t')
-
-
-
     _loaded_electrochem_data = True
 
-McCleskey_parameters = namedtuple("McCleskey_parameters",
-                                  ["Formula", 'lambda_coeffs', 'A_coeffs', 'B', 'multiplier'])
+
+class McCleskey_parameters(object):
+    __slots__ = ("Formula", 'lambda_coeffs', 'A_coeffs', 'B', 'multiplier')
+    def __init__(self, Formula, lambda_coeffs, A_coeffs, B, multiplier):
+        self.Formula = Formula
+        self.lambda_coeffs = lambda_coeffs
+        self.A_coeffs = A_coeffs
+        self.B = B
+        self.multiplier = multiplier
+
+    def __repr__(self):
+        return '''McCleskey_parameters(Formula=%r, lambda_coeffs=%r, A_coeffs=%r, B=%r, multiplier=%r)''' % (
+                self.Formula, self.lambda_coeffs, self.A_coeffs, self.B, self.multiplier)
+
 
 if PY37:
     def __getattr__(name):
