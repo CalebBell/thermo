@@ -512,6 +512,22 @@ class ViscosityLiquid(TPDependentProperty):
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
 
+    @staticmethod
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        return {COOLPROP : [CAS for CAS in coolprop_dict if coolprop_fluids[CAS].has_mu],
+                VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
+                DUTT_PRASAD: viscosity.mu_data_Dutt_Prasad.index,
+                VISWANATH_NATARAJAN_3: viscosity.mu_data_VN3.index,
+                VISWANATH_NATARAJAN_2: viscosity.mu_data_VN2.index,
+                VISWANATH_NATARAJAN_2E: viscosity.mu_data_VN2E.index,
+                DIPPR_PERRY_8E: viscosity.mu_data_Perrys_8E_2_313.index,
+                VDI_PPDS: viscosity.mu_data_VDI_PPDS_7.index,
+                }
+
 
     def calculate(self, T, method):
         r'''Method to calculate low-pressure liquid viscosity at tempearture
@@ -1011,6 +1027,19 @@ class ViscosityGas(TPDependentProperty):
             if m in self.all_methods_P:
                 self.method_P = m
                 break
+
+    @staticmethod
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        return {COOLPROP : [CAS for CAS in coolprop_dict if coolprop_fluids[CAS].has_mu],
+                VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
+                DIPPR_PERRY_8E: viscosity.mu_data_Perrys_8E_2_312.index,
+                VDI_PPDS: viscosity.mu_data_VDI_PPDS_8.index,
+                }
+
 
     def calculate(self, T, method):
         r'''Method to calculate low-pressure gas viscosity at
