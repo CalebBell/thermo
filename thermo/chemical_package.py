@@ -263,7 +263,11 @@ class ChemicalConstantsPackage(object):
         >>> constants = ChemicalConstantsPackage.constants_from_IDs(IDs=['water', 'hexane'])
         '''
         return ChemicalConstantsPackage._from_IDs(IDs, correlations=False)
-    constants_from_IDs.__func__.__doc__ = constants_from_IDs.__func__.__doc__ %(warn_chemicals_msg)
+
+    try:
+        constants_from_IDs.__func__.__doc__ = constants_from_IDs.__func__.__doc__ %(warn_chemicals_msg)
+    except:
+        pass
 
     @staticmethod
     def correlations_from_IDs(IDs):
@@ -295,7 +299,10 @@ class ChemicalConstantsPackage(object):
         >>> correlations = ChemicalConstantsPackage.constants_from_IDs(IDs=['ethanol', 'methanol'])
         '''
         return ChemicalConstantsPackage._from_IDs(IDs, correlations=True)[1]
-    correlations_from_IDs.__func__.__doc__ = correlations_from_IDs.__func__.__doc__ %(warn_chemicals_msg)
+    try:
+        correlations_from_IDs.__func__.__doc__ = correlations_from_IDs.__func__.__doc__ %(warn_chemicals_msg)
+    except:
+        pass
 
     @staticmethod
     def from_IDs(IDs):
@@ -328,7 +335,11 @@ class ChemicalConstantsPackage(object):
         >>> constants, correlations = ChemicalConstantsPackage.from_IDs(IDs=['water', 'decane'])
         '''
         return ChemicalConstantsPackage._from_IDs(IDs, correlations=True)
-    from_IDs.__func__.__doc__ = from_IDs.__func__.__doc__ %(warn_chemicals_msg)
+
+    try:
+        from_IDs.__func__.__doc__ = from_IDs.__func__.__doc__ %(warn_chemicals_msg)
+    except:
+        pass
 
     @staticmethod
     def _from_IDs(IDs, correlations=False):
