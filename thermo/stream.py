@@ -34,7 +34,7 @@ from chemicals.exceptions import OverspeficiedError
 from chemicals.utils import mixing_simple, normalize, Vfs_to_zs, ws_to_zs, zs_to_ws
 from thermo.mixture import Mixture, preprocess_mixture_composition
 from thermo.equilibrium import EquilibriumState
-from thermo.flash import FlashBase
+from thermo.flash import Flash
 from fluids.pump import voltages_1_phase_residential, voltages_3_phase, residential_power_frequencies
 
 
@@ -74,7 +74,7 @@ class StreamArgs(object):
         self.Q_TP = Q_TP
         # pkg should be either a property package or property package constants
         self.pkg = self.property_package = self.property_package_constants = pkg
-        self.equilibrium_pkg = isinstance(pkg, FlashBase)
+        self.equilibrium_pkg = isinstance(pkg, Flash)
 
         composition_specs = state_specs = flow_specs = 0
         if zs is not None:

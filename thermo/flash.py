@@ -53,7 +53,7 @@ Vapor and Multiple Liquid Systems
 
 Base Flash Class
 ----------------
-.. autoclass:: FlashBase
+.. autoclass:: Flash
    :show-inheritance:
    :members: flash
    :exclude-members:
@@ -4193,7 +4193,7 @@ one_in_list = [1.0]
 empty_list = []
 
 
-class FlashBase(object):
+class Flash(object):
     r'''Base class for performing flash calculations. All Flash objects need
     to inherit from this, and common methods can be added to it.
 
@@ -5300,7 +5300,7 @@ def deduplicate_stab_results(results, tol_frac_err=5e-3):
             good_results.append(t)
     return good_results
 
-class FlashVL(FlashBase):
+class FlashVL(Flash):
     r'''Class for performing flash calculations on one and
     two phase vapor and liquid multicomponent systems. Use :obj:`FlashVLN` for
     systems which can have multiple liquid phases.
@@ -5447,7 +5447,7 @@ class FlashVL(FlashBase):
     (0.10365, [0.881788, 2.6758e-05, 0.11818], [0.97462, 0.02007, 0.005298])
 
     A few more flashes with the same system to showcase the functionality
-    of the :obj:`flash <FlashBase.flash>` interface:
+    of the :obj:`flash <Flash.flash>` interface:
 
     >>> flasher.flash(P=1e5, VF=1, zs=zs).T
     133.6
@@ -6730,7 +6730,7 @@ spec_to_iter_vars_backup =  {(True, False, False, True, False, False) : ('T', 'H
                              (False, False, True, False, False, True) : ('V', 'U', 'T'),
 }
 
-class FlashPureVLS(FlashBase):
+class FlashPureVLS(Flash):
     r'''Class for performing flash calculations on pure-component systems.
     This class is subtantially more robust than using multicomponent algorithms
     on pure species. It is also faster. All parameters are also attributes.

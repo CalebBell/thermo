@@ -18,7 +18,25 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+
+This module contains an object designed to store the result of a flash
+calculation and provide convinient access to all properties of the calculated
+phases and bulks.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. contents:: :local:
+
+EquilibriumState
+================
+.. autoclass:: EquilibriumState
+    :members:
+    :undoc-members:
+    :exclude-members:
+'''
 
 from __future__ import division
 __all__ = ['EquilibriumState']
@@ -65,17 +83,59 @@ __all__.extend(['PHASE_GAS', 'PHASE_LIQUID0', 'PHASE_LIQUID1', 'PHASE_LIQUID2',
                 'PHASE_BULK', 'PHASE_REFERENCES'])
 
 class EquilibriumState(object):
-    '''Goal is to retrieve literally every thing about the flashed phases here.
-    Keep props molar, but add mass options too.
-    Viscosity, thermal conductivity, atoms stuff, all there.
-    Get viscosity working before figure out MW - should make more sense then!
+    r'''Class to represent a thermodynamic equilibrium state with one or more
+    phases in it. This object is designed to be the output of the
+    :obj:`thermo.flash.Flasher` interface and to provide easy acess to all
+    properties of the mixture.
 
-    Units should not have a "property package" that has any state - they should
-    have a reference to a package, and call on that package when needed to generate
-    one of these objects. Anything ever needed should come from this state.
-    This will be a tons of functions, but that's OK.
+    Properties like :obj:`Cp <EquilibriumState.Cp>` are calculated using the
+    mixing rules configured by the
+    :obj:`BulkSettings <thermo.bulk.BulkSettings>` object. For states with a
+    single phase, this will always reduce to the properties of that phase.
 
-    NOTE: This means a stream is no longer the basis of simulation.
+    This interface allows calculation of thermodynamic properties,
+    and transport properties. Both molar and mass outputs are provided, as
+    separate calls (ex. :obj:`Cp <EquilibriumState.Cp>` and
+    :obj:`Cp_mass <EquilibriumState.Cp_mass>`).
+
+    Parameters
+    ----------
+    T : float
+        Temperature of state, [K]
+    P : float
+        Pressure of state, [Pa]
+    zs : list[float]
+        Overall mole fractions of all species in the state, [-]
+    gas : :obj:`Phase <thermo.phases.Phase>`
+        The calcualted gas phase object, if one was found, [-]
+    liquids : list[:obj:`Phase <thermo.phases.Phase>`]
+        A list of liquid phase objects, if any were found, [-]
+    solids : list[:obj:`Phase <thermo.phases.Phase>`]
+        A list of solid phase objects, if any were found, [-]
+    betas : list[float]
+        Molar phase fractions of every phase, ordered [`gas beta`,
+        `liquid beta0`, `liquid beta1`, ..., `solid beta0`, `solid beta1`, ...]
+    flash_specs : dict[str : float], optional
+        A dictionary containing the specifications for the flash calculations,
+        [-]
+    flash_convergence : dict[str : float], optional
+        A dictionary containing the convergence results for the flash
+        calculations; this is to help support development of the library only
+        and the contents of this dictionary is subject to change, [-]
+    constants : :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>`, optional
+        Package of chemical constants; all cases these properties are
+        accessible as attributes of this object, [-]
+        :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>` object, [-]
+    correlations : :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`, optional
+        Package of chemical T-dependent properties; these properties are
+        accessible as attributes of this object object, [-]
+    flasher : :obj:`Flash <thermo.flash.Flash>` object, optional
+        This reference can be provided to this object to allow the object to
+        return properties which are themselves calculated from results of flash
+        calculations, [-]
+    settings : :obj:`BulkSettings <thermo.bulk.BulkSettings>`, optional
+        Object containing settings for calculating bulk and transport
+        properties, [-]
 
     '''
     max_liquid_phases = 1
