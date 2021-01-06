@@ -287,30 +287,9 @@ class GCEOSMIX(GCEOS):
     r'''Class for solving a generic pressure-explicit three-parameter cubic
     equation of state for a mixture. Does not implement any parameters itself;
     must be subclassed by a mixture equation of state class which subclasses it.
-    No routines for partial molar properties for a generic cubic equation of
-    state have yet been implemented, although that would be desireable.
-    The only partial molar property which is currently used is fugacity, which
-    must be implemented in each mixture EOS that subclasses this.
 
     .. math::
         P=\frac{RT}{V-b}-\frac{a\alpha(T)}{V^2 + \delta V + \epsilon}
-
-    Main methods are `fugacities`, `solve_T`, and `a_alpha_and_derivatives`.
-
-    `fugacities` is a helper method intended as a common interface for setting
-    fugacities of each species in each phase; it calls `fugacity_coefficients`
-    to actually calculate them, but that is not implemented here. This should
-    be used when performing flash calculations, where fugacities are needed
-    repeatedly. The fugacities change as a function of liquid/gas phase
-    composition, but the entire EOS need not be solved to recalculate them.
-
-    `solve_T` is a wrapper around `GCEOS`'s `solve_T`; the only difference is
-    to use half the average mixture's critical temperature as the initial
-    guess.
-
-    `a_alpha_and_derivatives` implements the Van der Waals mixing rules for a
-    mixture. It calls `a_alpha_and_derivatives` from the pure-component EOS for
-    each species via multiple inheritance.
     '''
     nonstate_constants = ('N', 'cmps', 'Tcs', 'Pcs', 'omegas', 'kijs', 'kwargs', 'ais', 'bs')
     mix_kwargs_to_pure = {}
@@ -3738,12 +3717,60 @@ class GCEOSMIX(GCEOS):
         return dH_dzs
 
     def dS_dep_dzs(self, Z):
+        r'''Calculates the molar departure entropy composition derivative
+        (where the mole fractions do not sum to 1). Verified numerically.
+        Useful in solving for entropy specifications in newton-type methods,
+        and forms the basis for the molar departure entropy mole number
+        derivative and molar partial departure entropy.
+
+        .. math::
+            \left(\frac{\partial S_{dep}}{\partial x_i}\right)_{T, P,
+            x_{i\ne j}}  = \frac{1}{T}\left(
+             \left(\frac{\partial H_{dep}}{\partial x_i}\right)_{T, P,
+            x_{i\ne j}}
+             -  \left(\frac{\partial G_{dep}}{\partial x_i}\right)_{T, P,
+            x_{i\ne j}}
+            \right)
+
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+
+        Returns
+        -------
+        dS_dep_dzs : float
+            Departure entropy composition derivatives, [J/mol/K]
+
+        Notes
+        -----
+        '''
         dH_dep_dzs = self.dH_dep_dzs(Z)
         dG_dep_dzs = self.dG_dep_dzs(Z)
         T_inv = 1.0/self.T
         return [T_inv*(dH_dep_dzs[i] - dG_dep_dzs[i]) for i in self.cmps]
 
     def dS_dep_dns(self, Z):
+        r'''Calculates the molar departure entropy mole number derivatives
+        (where the mole fractions sum to 1). No specific formula is implemented
+        for this property - it is calculated from the mole fraction derivative.
+
+        .. math::
+            \left(\frac{\partial S_{dep}}{\partial n_i}\right)_{T, P,
+            n_{i\ne j}} = f\left(  \left(\frac{\partial S_{dep}}{\partial x_i}\right)_{T, P,
+            x_{i\ne j}}
+            \right)
+
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+
+        Returns
+        -------
+        dS_dep_dns : float
+            Departure entropy mole number derivatives, [J/mol^2/K]
+        '''
         return dxs_to_dns(self.dS_dep_dzs(Z), self.zs)
 
     def dP_dns_Vt(self, phase):

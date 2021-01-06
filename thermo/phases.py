@@ -4400,14 +4400,23 @@ class Phase(object):
 
 derivatives_jacobian = []
 
-for a in ('T', 'P', 'V', 'rho'):
-    for b in ('T', 'P', 'V', 'rho'):
-        for c in ('H', 'S', 'G', 'U', 'A'):
-           def _der(self, a=a, b=b, c=c):
-               return self._derivs_jacobian(a=a, b=b, c=c)
+prop_iter = (('T', 'P', 'V', 'rho'), ('T', 'P', 'V', r'\rho'), ('K', 'Pa', 'm^3/mol', 'mol/m^3'), ('temperature', 'pressure', 'volume', 'density'))
+for a, a_str, a_units, a_name in zip(*prop_iter):
+    for b, b_str, b_units, b_name in zip(*prop_iter):
+        for c, c_name in zip(('H', 'S', 'G', 'U', 'A'), ('enthalpy', 'entropy', 'Gibbs energy', 'internal energy', 'Helmholtz energy')):
+           def _der(self, property=a, differentiate_by=b, at_constant=c):
+               return self._derivs_jacobian(a=property, b=differentiate_by, c=at_constant)
            t = 'd%s_d%s_%s' %(a, b, c)
-           # TODO get rho to appear right
-           doc = r'''Automatially generated derivative :math:`\left(\frac{\partial %s}{\partial %s}\right)_{%s}`''' %(a, b, c)
+           doc = r'''Method to calculate and return the %s derivative of %s of the phase at constant %s.
+
+    .. math::
+        \left(\frac{\partial %s}{\partial %s}\right)_{%s}
+
+Returns
+-------
+%s : float
+    The %s derivative of %s of the phase at constant %s, [%s/%s]
+''' %(b_name, a_name, c_name, a_str, b_str, c, t, b_name, a_name, c_name, a_units, b_units)
            setattr(Phase, t, _der)
            _der.__doc__ = doc
            derivatives_jacobian.append(t)
@@ -4419,6 +4428,16 @@ derivatives_thermodynamic = ['dA_dP', 'dA_dP_T', 'dA_dP_V', 'dA_dT', 'dA_dT_P', 
              'dS_dV_P', 'dS_dV_T', 'dU_dP', 'dU_dP_T', 'dU_dP_V', 'dU_dT', 'dU_dT_P', 'dU_dT_V',
              'dU_dV_P', 'dU_dV_T']
 derivatives_thermodynamic_mass = []
+
+prop_names = {'A' : 'Helmholtz energy',
+              'G': 'Gibbs free energy',
+              'U': 'internal energy',
+              'H': 'enthalpy',
+              'S': 'entropy',
+              'T': 'temperature',
+              'P': 'pressure',
+              'V': 'volume', 'Cv': 'Constant-volume heat capacity'}
+prop_units = {'Cv': 'J/(mol*K)', 'A': 'J/mol', 'G': 'J/mol', 'H': 'J/mol', 'S': 'J/(mol*K)', 'U': 'J/mol', 'T': 'K', 'P': 'Pa', 'V': 'm^3/mol'}
 for attr in derivatives_thermodynamic:
     def _der(self, prop=attr):
         return getattr(self, prop)()*1e3*self.MW_inv()
@@ -4428,11 +4447,30 @@ for attr in derivatives_thermodynamic:
         splits = attr.split('_')
         base = splits[0]
         end = '_'.join(splits[1:])
+
+    vals = attr.replace('d', '').split('_')
+    try:
+        prop, diff_by, at_constant = vals
+    except:
+        prop, diff_by = vals
+        at_constant = 'T' if diff_by == 'P' else 'P'
     s = '%s_mass_%s' %(base, end)
-    _der.__doc__ = 'Automatically generated derivative. %s %s' %(base, end)
+
+    doc = r'''Method to calculate and return the %s derivative of mass %s of the phase at constant %s.
+
+    .. math::
+        \left(\frac{\partial %s_{\text{mass}}}{\partial %s}\right)_{%s}
+
+Returns
+-------
+%s : float
+    The %s derivative of mass %s of the phase at constant %s, [%s/%s]
+''' %(prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop, diff_by, at_constant, s, prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop_units[prop], prop_units[diff_by])
+
+    _der.__doc__ = doc#'Automatically generated derivative. %s %s' %(base, end)
     setattr(Phase, s, _der)
     derivatives_thermodynamic_mass.append(s)
-
+del prop_names, prop_units
 
 
 class IdealGas(Phase):

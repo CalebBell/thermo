@@ -85,7 +85,7 @@ __all__.extend(['PHASE_GAS', 'PHASE_LIQUID0', 'PHASE_LIQUID1', 'PHASE_LIQUID2',
 class EquilibriumState(object):
     r'''Class to represent a thermodynamic equilibrium state with one or more
     phases in it. This object is designed to be the output of the
-    :obj:`thermo.flash.Flasher` interface and to provide easy acess to all
+    :obj:`thermo.flash.Flash` interface and to provide easy acess to all
     properties of the mixture.
 
     Properties like :obj:`Cp <EquilibriumState.Cp>` are calculated using the
@@ -137,6 +137,64 @@ class EquilibriumState(object):
         Object containing settings for calculating bulk and transport
         properties, [-]
 
+    Examples
+    --------
+    The following sample shows a flash for the CO2-n-hexane system with all
+    constants provided, using no data from thermo.
+
+    >>> constants = ChemicalConstantsPackage(names=['carbon dioxide', 'hexane'], CASs=['124-38-9', '110-54-3'], MWs=[44.0095, 86.17536], omegas=[0.2252, 0.2975], Pcs=[7376460.0, 3025000.0], Tbs=[194.67, 341.87], Tcs=[304.2, 507.6], Tms=[216.65, 178.075])
+    >>> correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+    ...                                            HeatCapacityGases=[HeatCapacityGas(poly_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644])),
+    ...                                                               HeatCapacityGas(poly_fit=(200.0, 1000.0, [1.3740654453881647e-21, -8.344496203280677e-18, 2.2354782954548568e-14, -3.4659555330048226e-11, 3.410703030634579e-08, -2.1693611029230923e-05, 0.008373280796376588, -1.356180511425385, 175.67091124888998]))])
+    >>> eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
+    >>> gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases)
+    >>> liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases)
+    >>> flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
+    >>> state = flasher.flash(P=1e5, T=196.0, zs=[0.5, 0.5])
+    >>> type(state)
+    thermo.equilibrium.EquilibriumState
+    >>> state.phase_count
+    2
+    >>> state.bulk.Cp()
+    108.3164692
+    >>> state.flash_specs
+    {'zs': [0.5, 0.5], 'T': 196.0, 'P': 100000.0}
+    >>> state.Tms
+    [216.65, 178.075]
+    >>> state.liquid0.H()
+    -34376.4853
+    >>> state.gas.H()
+    -3608.0551
+
+    Attributes
+    ----------
+    gas_count : int
+        Number of gas phases present (0 or 1), [-]
+    liquid_count : int
+        Number of liquid phases present, [-]
+    solid_count : int
+        Number of solid phases present, [-]
+    phase_count : int
+        Number of phases present, [-]
+    gas_beta : float
+        Molar phase fraction of the gas phase; 0 if no gas phase is present,
+        [-]
+    liquids_betas : list[float]
+        Liquid molar phase fractions, [-]
+    solids_betas : list[float]
+        Solid molar phase fractions, [-]
+    liquid_zs : list[float]
+        Overall mole fractions of each component in the overall liquid phase,
+        [-]
+    liquid_bulk : :obj:`Bulk<thermo.bulk.Bulk>`
+        Liquid phase bulk, [-]
+    solid_zs : list[float]
+        Overall mole fractions of each component in the overall solid phase,
+        [-]
+    solid_bulk : :obj:`Bulk<thermo.bulk.Bulk>`
+        Liquid phase bulk, [-]
+    bulk : :obj:`Bulk<thermo.bulk.Bulk>`
+        Overall phase bulk, [-]
     '''
     max_liquid_phases = 1
     reacted = False
@@ -1744,6 +1802,17 @@ class EquilibriumState(object):
 
     @property
     def water_index(self):
+        r'''The index of the component water in the components. None if water
+        is not present. Water is recognized by its CAS number.
+
+        Returns
+        -------
+        water_index : int
+            The index of the component water, [-]
+
+        Notes
+        -----
+        '''
         try:
             return self._water_index
         except AttributeError:
@@ -1833,7 +1902,6 @@ class EquilibriumState(object):
             ws[i] *= m
         return m
 
-    @property
     def sigma(self, phase=None):
         if phase is None:
             phase = self.bulk
@@ -1844,11 +1912,44 @@ class EquilibriumState(object):
         if isinstance(phase, gas_phases):
             return 0
 
-    def Ks(self, phase):
-        ref_phase = self.flash_convergence['ref_phase']
-        ref_lnphis = self.phases[ref_phase].lnphis()
-        lnphis = phase.lnphis()
-        Ks = [exp(l - g) for l, g in zip(ref_lnphis, lnphis)]
+    def Ks(self, phase, phase_ref=None):
+        r'''Method to calculate and return the K-values of each phase.
+        These are NOT just liquid-vapor K values; these are thermodynamic K
+        values. The reference phase can be specified with `phase_ref`, and then
+        the K-values will be with respect to that phase.
+
+        .. math::
+            K_i = \frac{z_{i, \text{phase}}}{z_{i, \text{ref phase}}}
+
+        If no reference phase is provided, the following criteria is used to
+        select one:
+
+            * If the flash algorithm provided a reference phase, use that
+            * Otherwise use the liquid0 phase if one is present
+            * Otherwise use the solid0 phase if one is present
+            * Otherwise use the gas phase if one is present
+
+        Returns
+        -------
+        Ks : list[float]
+            Equilibrium K values, [-]
+
+        Notes
+        -----
+        '''
+        if phase_ref is None:
+            try:
+                ref_phase = self.flash_convergence['ref_phase']
+            except:
+                if self.liquid_count:
+                    ref_phase = self.liquid0
+                elif self.solid_count:
+                    ref_phase = self.solid0
+                else:
+                    ref_phase = self.gas
+        ref_zs = phase_ref.zs
+        zs = phase.zs
+        Ks = [g/l for l, g in zip(ref_zs, zs)]
         return Ks
 
     def Hc(self, phase=None):
@@ -2197,17 +2298,43 @@ class EquilibriumState(object):
             return v[phase_idx]
         return v
 
+
     @property
     def IDs(self):
         '''Alias of CASs.'''
         return self.constants.CASs
 
     def API(self, phase=None):
+        r'''Method to calculate and return the API of the phase.
+
+        .. math::
+            \text{API gravity} = \frac{141.5}{\text{SG}} - 131.5
+
+        Returns
+        -------
+        API : float
+            API of the fluid [-]
+        '''
         if phase is None:
             phase = self.bulk
-        # Going to get a list of liquid phasee models, determine which model
-        # to use. Construct a new phase object, get the density
+        return 141.5/phase.SG() - 131.5
 
+    def V_iter(self, phase=None, force=False):
+        if phase is None:
+            phase = self.bulk
+        return phase.V_iter(force=force)
+
+    try:
+        V_iter.__doc__ = Phase.V_iter.__doc__
+    except:
+        pass
+
+
+_add_attrs_doc = []
+for s in dir(EquilibriumState):
+    obj = getattr(EquilibriumState, s)
+    if type(obj) is property:
+        _add_attrs_doc.append(s)
 
 # Add some fancy things for easier access to properties
 
@@ -2221,7 +2348,7 @@ def _make_getter_correlations(name):
         return getattr(self.correlations, name)
 
     text = '''Wrapper to obtain the list of %s objects of the associated
-:obj:`thermo.chemical_package.PropertyCorrelationsPackage`.''' %(name)
+:obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`.''' %(name)
     get.__doc__ = text
     return get
 
@@ -2233,9 +2360,12 @@ def _make_getter_EquilibriumState(name):
 
 def _make_getter_bulk_props(name):
     def get(self):
-        return getattr(self.bulk, name)
+        return getattr(self.bulk, name)()
     try:
-        get.__doc__ = getattr(Bulk, name).__doc__
+        doc = getattr(Bulk, name).__doc__
+        if doc is None:
+            doc = getattr(Phase, name).__doc__
+        get.__doc__ = doc
     except:
         pass
     return get
@@ -2246,6 +2376,7 @@ constant_blacklist = set(['atom_fractions'])
 
 for name in ChemicalConstantsPackage.properties:
     if name not in constant_blacklist:
+        _add_attrs_doc.append(name)
         getter = property(_make_getter_constants(name))
         try:
             var_type, desc, units, return_desc = constants_docstrings[name]
@@ -2270,11 +2401,12 @@ Returns
 for name in PropertyCorrelationsPackage.correlations:
     getter = property(_make_getter_correlations(name))
     setattr(EquilibriumState, name, getter)
+    _add_attrs_doc.append(name)
 
 
 ### For certain properties not supported by Phases/Bulk, allow them to call up to the
 # EquilibriumState to get the property
-phases_properties_to_EquilibriumState = ['atom_fractions', 'atom_mass_fractions',
+phases_properties_to_EquilibriumState = ['atom_fractions', 'atom_mass_fractions','API',
                                          'Hc', 'Hc_mass', 'Hc_lower', 'Hc_lower_mass', 'SG', 'SG_gas',
                                          'pseudo_Tc', 'pseudo_Pc', 'pseudo_Vc', 'pseudo_Zc',
                                          'V_gas_standard', 'V_gas_normal', 'Hc_normal', 'Hc_standard',
@@ -2316,7 +2448,7 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
 
               'PIP', 'kappa', 'isobaric_expansion', 'Joule_Thomson', 'speed_of_sound',
               'speed_of_sound_mass',
-              'U_dep', 'G_dep', 'A_dep', 'V_dep', 'V_iter',
+              'U_dep', 'G_dep', 'A_dep', 'V_dep',
               'mu',
               ]
 bulk_props += derivatives_thermodynamic
@@ -2325,7 +2457,12 @@ bulk_props += derivatives_jacobian
 
 for name in bulk_props:
     # Maybe take this out and implement it manually for performance?
-    getter = property(_make_getter_bulk_props(name))
+    getter = _make_getter_bulk_props(name)
     setattr(EquilibriumState, name, getter)
 
 
+try:
+    EquilibriumState.__doc__ = EquilibriumState.__doc__ +'\n    ' + '\n    '.join(_add_attrs_doc)
+except:
+    pass
+del _add_attrs_doc

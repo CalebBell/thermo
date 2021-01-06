@@ -798,7 +798,9 @@ class GCEOS(object):
     main_derivatives_and_departures = staticmethod(main_derivatives_and_departures)
 
     c1 = None
+    '''Parameter used by some equations of state in the `a` calculation'''
     c2 = None
+    '''Parameter used by some equations of state in the `b` calculation'''
 
     @property
     def state_specs(self):
