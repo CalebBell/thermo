@@ -160,7 +160,7 @@ __all__.extend(chemical.__all__)
 __all__.extend(combustion.__all__)
 __all__.extend(critical.__all__)
 __all__.extend(coolprop.__all__)
-__all__.extend(dipole.__all__)
+#__all__.extend(dipole.__all__)
 __all__.extend(dippr.__all__)
 __all__.extend(datasheet.__all__)
 __all__.extend(electrochem.__all__)
@@ -208,8 +208,11 @@ __all__.extend(bulk.__all__)
 
 
 # backwards compatibility hack to allow thermo.chemical.Mixture to still be importable
-chemical.__dict__['Mixture'] = mixture.Mixture
-chemical.__dict__['Stream'] = stream.Stream
+try:
+    chemical.__dict__['Mixture'] = mixture.Mixture
+    chemical.__dict__['Stream'] = stream.Stream
+except:
+    pass
 # However, they cannot go in thermo.chemical's __all__ or they will appear in the
 # documentation and Sphinx currently has no wat to exclude them
 submodules = [chemical, chemical_package, chemical_utils, coolprop, datasheet,
@@ -221,7 +224,10 @@ submodules = [chemical, chemical_package, chemical_utils, coolprop, datasheet,
               utils, vapor_pressure, viscosity, volume, wilson, eos_alpha_functions,
               eos_volume]
 
-thermo_dir = os.path.dirname(__file__)
+try:
+    thermo_dir = os.path.dirname(__file__)
+except:
+    thermo_dir = ''
 
 __version__ = '0.1.39'
 

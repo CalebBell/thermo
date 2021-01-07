@@ -24,9 +24,12 @@ from __future__ import division
 
 __all__ = ['Stream', 'EnergyTypes', 'EnergyStream', 'StreamArgs', 'EquilibriumStream', 'mole_balance', 'energy_balance']
 
-import enum
-from collections import OrderedDict
-from numbers import Number
+#import enum
+try:
+    from collections import OrderedDict
+except:
+    pass
+#from numbers import Number
 
 from fluids.constants import R
 from chemicals.utils import property_molar_to_mass, property_mass_to_molar, solve_flow_composition_mix
@@ -2006,7 +2009,10 @@ for freq in residential_power_frequencies:
     for voltage in voltages_3_phase:
         energy_types['AC_ELECTRICITY_3_PHASE_%s_V_%s_Hz'% (str(voltage), str(freq))] = 'AC_ELECTRICITY 3 PHASE %s V %s Hz'%  (str(voltage), str(freq))
 
-EnergyTypes = enum.Enum('EnergyTypes', energy_types)
+try:
+    EnergyTypes = enum.Enum('EnergyTypes', energy_types)
+except:
+    EnergyTypes = ''
 
 
 class EnergyStream(object):
@@ -2022,7 +2028,7 @@ class EnergyStream(object):
     def __repr__(self):
         return '<Energy stream, Q=%s W, medium=%s>' %(self.Q, self.medium.value)
 
-    def __init__(self, Q, medium=EnergyTypes.ELECTRICITY):
+    def __init__(self, Q, medium=None):
         self.medium = medium
         # isinstance test is slow, especially with Number - faster to check float and int first
         if not (Q is None or isinstance(Q, (float, int, Number))):

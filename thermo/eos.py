@@ -264,7 +264,7 @@ __all__.extend(['main_derivatives_and_departures',
                 'main_derivatives_and_departures_VDW'])
 
 
-from cmath import atanh as catanh, log as clog
+#from cmath import atanh as catanh, log as clog
 from math import isnan
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, newton,
