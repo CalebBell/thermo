@@ -6878,24 +6878,47 @@ class IG(GCEOS):
     def _zero(self): return 0.0
     def _set_nothing(self, thing): return
 
-    d2T_dV2_g = property(_zero, fset=_set_nothing, doc=GCEOS.d2T_dV2_g.__doc__)
-    d2V_dT2_g = property(_zero, fset=_set_nothing, doc=GCEOS.d2V_dT2_g.__doc__)
-    U_dep_g = property(_zero, fset=_set_nothing, doc=GCEOS.U_dep_g.__doc__)
-    A_dep_g = property(_zero, fset=_set_nothing, doc=GCEOS.A_dep_g.__doc__)
-    V_dep_g = property(_zero, fset=_set_nothing, doc=GCEOS.V_dep_g.__doc__)
-    G_dep_g = property(_zero, fset=_set_nothing, doc='Departure Gibbs free energy of an ideal gas is zero, [J/(mol)]')
-    H_dep_g = property(_zero, fset=_set_nothing, doc='Departure enthalpy of an ideal gas is zero, [J/(mol)]')
-    S_dep_g = property(_zero, fset=_set_nothing, doc='Departure entropy of an ideal gas is zero, [J/(mol*K)]')
-    Cp_dep_g = property(_zero, fset=_set_nothing, doc='Departure heat capacity of an ideal gas is zero, [J/(mol*K)]')
+    try:
+        try:
+            doc = GCEOS.d2T_dV2_g.__doc__
+        except:
+            doc = ''
+        d2T_dV2_g = property(_zero, fset=_set_nothing, doc=doc)
+        try:
+            doc = GCEOS.d2V_dT2_g.__doc__
+        except:
+            doc = ''
+        d2V_dT2_g = property(_zero, fset=_set_nothing, doc=doc)
+        try:
+            doc = GCEOS.U_dep_g.__doc__
+        except:
+            doc = ''
+        U_dep_g = property(_zero, fset=_set_nothing, doc=doc)
+        try:
+            doc = GCEOS.A_dep_g.__doc__
+        except:
+            doc = ''
+        A_dep_g = property(_zero, fset=_set_nothing, doc=doc)
+        try:
+            doc = GCEOS.V_dep_g.__doc__
+        except:
+            doc = ''
+            V_dep_g = property(_zero, fset=_set_nothing, doc=doc)
+        G_dep_g = property(_zero, fset=_set_nothing, doc='Departure Gibbs free energy of an ideal gas is zero, [J/(mol)]')
+        H_dep_g = property(_zero, fset=_set_nothing, doc='Departure enthalpy of an ideal gas is zero, [J/(mol)]')
+        S_dep_g = property(_zero, fset=_set_nothing, doc='Departure entropy of an ideal gas is zero, [J/(mol*K)]')
+        Cp_dep_g = property(_zero, fset=_set_nothing, doc='Departure heat capacity of an ideal gas is zero, [J/(mol*K)]')
+        # Replace methods
+        dH_dep_dP_g = property(_zero, doc=GCEOS.dH_dep_dP_g.__doc__)
+        dH_dep_dT_g = property(_zero, doc=GCEOS.dH_dep_dT_g.__doc__)
+        dS_dep_dP_g = property(_zero, doc=GCEOS.dS_dep_dP_g.__doc__)
+        dS_dep_dT_g = property(_zero, doc=GCEOS.dS_dep_dT_g.__doc__)
+        dfugacity_dT_g = property(_zero, doc=GCEOS.dfugacity_dT_g.__doc__)
+        dphi_dP_g = property(_zero, doc=GCEOS.dphi_dP_g.__doc__)
+        dphi_dT_g = property(_zero, doc=GCEOS.dphi_dT_g.__doc__)
 
-    # Replace methods
-    dH_dep_dP_g = property(_zero, doc=GCEOS.dH_dep_dP_g.__doc__)
-    dH_dep_dT_g = property(_zero, doc=GCEOS.dH_dep_dT_g.__doc__)
-    dS_dep_dP_g = property(_zero, doc=GCEOS.dS_dep_dP_g.__doc__)
-    dS_dep_dT_g = property(_zero, doc=GCEOS.dS_dep_dT_g.__doc__)
-    dfugacity_dT_g = property(_zero, doc=GCEOS.dfugacity_dT_g.__doc__)
-    dphi_dP_g = property(_zero, doc=GCEOS.dphi_dP_g.__doc__)
-    dphi_dT_g = property(_zero, doc=GCEOS.dphi_dT_g.__doc__)
+    except:
+        pass
 
 
     def __init__(self, Tc=190.564, Pc=4599000.0, omega=0.008, T=None, P=None,

@@ -65,12 +65,12 @@ __all__ = ['surface_tension_methods', 'SurfaceTension',
            'surface_tension_mixture_methods', 'SurfaceTensionMixture']
 
 import os
-import numpy as np
 from chemicals.utils import log, exp, isnan
 from chemicals.utils import mixing_simple, none_and_length_check, Vm_to_rho
 from chemicals.dippr import EQ106
 from chemicals.interface import *
 from chemicals import interface
+from fluids.numerics import numpy as np
 from fluids.constants import N_A, k
 from thermo.utils import TDependentProperty, MixtureProperty
 from chemicals import miscdata

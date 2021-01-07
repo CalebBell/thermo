@@ -196,10 +196,9 @@ __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX',
 'eos_mix_list', 'eos_mix_no_coeffs_list', 'SRKMIXTranslated']
 
 import sys
-import numpy as np
 from cmath import log as clog, atanh as catanh
 
-from fluids.numerics import IS_PYPY, newton_system, broyden2, UnconvergedError, trunc_exp, solve_2_direct
+from fluids.numerics import numpy as np, IS_PYPY, newton_system, broyden2, UnconvergedError, trunc_exp, solve_2_direct
 from fluids.numerics.arrays import det, subset_matrix
 from fluids.constants import R
 

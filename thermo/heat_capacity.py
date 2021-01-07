@@ -117,10 +117,10 @@ __all__ = ['heat_capacity_gas_methods',
            'HeatCapacitySolid', 'HeatCapacitySolidMixture',
            'HeatCapacityGasMixture', 'HeatCapacityLiquidMixture']
 import os
-import numpy as np
 from fluids.numerics import (polyint_over_x, horner_log, horner, polyint,
                              fit_integral_linear_extrapolation,
-                             fit_integral_over_T_linear_extrapolation, quad)
+                             fit_integral_over_T_linear_extrapolation, quad,
+                             numpy as np)
 from fluids.numerics import brenth, secant, polylog2
 from fluids.constants import R, calorie
 from chemicals.heat_capacity import *

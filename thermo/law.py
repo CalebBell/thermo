@@ -30,10 +30,9 @@ __all__ = ['DSL_data', 'CAN_DSL_flags', 'TSCA_flags', 'TSCA_data',
 
 import os
 from chemicals.identifiers import CAS_to_int
-from chemicals.utils import to_num
+from chemicals.utils import to_num, os_path_join
 
 
-folder = os.path.join(os.path.dirname(__file__), 'Law')
 
 DSL = 'DSL'
 TSCA = 'TSCA'
@@ -82,6 +81,8 @@ def load_law_data():
     global TSCA_data, EINECS_data, SPIN_data, NLP_data
     import pandas as pd
     import zipfile
+    folder = os_path_join(os.path.dirname(__file__), 'Law')
+
 
 # Data is stored as integers to reduce memory usage
     DSL_data = pd.read_csv(os.path.join(folder, 'Canada Feb 11 2015 - DSL.csv.gz'),
@@ -249,6 +250,8 @@ def load_economic_data():
     global _EPACDRDict, _ECHATonnageDict
     import pandas as pd
     import zipfile
+    folder = os_path_join(os.path.dirname(__file__), 'Law')
+
 
     '''OECD are chemicals produced by and OECD members in > 1000 tonnes/year.'''
     HPV_data = pd.read_csv(os.path.join(folder, 'HPV 2015 March 3.csv'),

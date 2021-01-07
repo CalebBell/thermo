@@ -47,7 +47,7 @@ from __future__ import division
 __all__ = ['PermittivityLiquid']
 
 import os
-import numpy as np
+from fluids.numerics import numpy as np
 from fluids.constants import N_A, epsilon_0, k
 from chemicals.utils import isnan
 from thermo.utils import TDependentProperty
