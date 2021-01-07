@@ -24,7 +24,7 @@ from __future__ import division
 
 __all__ = ['Mixture']
 
-#from collections import OrderedDict
+from collections import OrderedDict
 
 from fluids.numerics import newton, numpy as np
 from fluids.core import *
