@@ -4404,10 +4404,10 @@ prop_iter = (('T', 'P', 'V', 'rho'), ('T', 'P', 'V', r'\rho'), ('K', 'Pa', 'm^3/
 for a, a_str, a_units, a_name in zip(*prop_iter):
     for b, b_str, b_units, b_name in zip(*prop_iter):
         for c, c_name in zip(('H', 'S', 'G', 'U', 'A'), ('enthalpy', 'entropy', 'Gibbs energy', 'internal energy', 'Helmholtz energy')):
-           def _der(self, property=a, differentiate_by=b, at_constant=c):
-               return self._derivs_jacobian(a=property, b=differentiate_by, c=at_constant)
-           t = 'd%s_d%s_%s' %(a, b, c)
-           doc = r'''Method to calculate and return the %s derivative of %s of the phase at constant %s.
+            def _der(self, property=a, differentiate_by=b, at_constant=c):
+                return self._derivs_jacobian(a=property, b=differentiate_by, c=at_constant)
+            t = 'd%s_d%s_%s' %(a, b, c)
+            doc = r'''Method to calculate and return the %s derivative of %s of the phase at constant %s.
 
     .. math::
         \left(\frac{\partial %s}{\partial %s}\right)_{%s}
@@ -4417,9 +4417,12 @@ Returns
 %s : float
     The %s derivative of %s of the phase at constant %s, [%s/%s]
 ''' %(b_name, a_name, c_name, a_str, b_str, c, t, b_name, a_name, c_name, a_units, b_units)
-           setattr(Phase, t, _der)
-           _der.__doc__ = doc
-           derivatives_jacobian.append(t)
+            setattr(Phase, t, _der)
+            try:
+                _der.__doc__ = doc
+            except:
+                pass
+            derivatives_jacobian.append(t)
 
 derivatives_thermodynamic = ['dA_dP', 'dA_dP_T', 'dA_dP_V', 'dA_dT', 'dA_dT_P', 'dA_dT_V', 'dA_dV_P', 'dA_dV_T',
              'dCv_dP_T', 'dCv_dT_P', 'dG_dP', 'dG_dP_T', 'dG_dP_V', 'dG_dT', 'dG_dT_P', 'dG_dT_V',
@@ -4466,8 +4469,10 @@ Returns
 %s : float
     The %s derivative of mass %s of the phase at constant %s, [%s/%s]
 ''' %(prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop, diff_by, at_constant, s, prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop_units[prop], prop_units[diff_by])
-
-    _der.__doc__ = doc#'Automatically generated derivative. %s %s' %(base, end)
+    try:
+        _der.__doc__ = doc#'Automatically generated derivative. %s %s' %(base, end)
+    except:
+        pass
     setattr(Phase, s, _der)
     derivatives_thermodynamic_mass.append(s)
 del prop_names, prop_units
@@ -6141,34 +6146,39 @@ def build_CEOSLiquid():
 #    print(source)
     return source
 
-try:
-    CEOSLiquid
-except:
-    import marshal
-    loaded_data = False
-    # Cost is ~10 ms - must be pasted in the future!
-    try:  # pragma: no cover
-        from appdirs import user_data_dir, user_config_dir
-        data_dir = user_config_dir('thermo')
-    except ImportError:  # pragma: no cover
-        data_dir = ''
-    if data_dir:
-        try:
-            f = open(os.path.join(data_dir, 'CEOSLiquid.dat'), 'rb')
-            compiled_CEOSLiquid = marshal.load(f)
-            f.close()
-            loaded_data = True
-        except:
-            pass
-        if not loaded_data:
+from fluids.numerics import is_micropython
+if not is_micropython:
+    try:
+        CEOSLiquid
+    except:
+        loaded_data = False
+        # Cost is ~10 ms - must be pasted in the future!
+        try:  # pragma: no cover
+            from appdirs import user_data_dir, user_config_dir
+            data_dir = user_config_dir('thermo')
+        except ImportError:  # pragma: no cover
+            data_dir = ''
+        if data_dir:
+            import marshal
+            try:
+                f = open(os.path.join(data_dir, 'CEOSLiquid.dat'), 'rb')
+                compiled_CEOSLiquid = marshal.load(f)
+                f.close()
+                loaded_data = True
+            except:
+                pass
+            if not loaded_data:
+                compiled_CEOSLiquid = compile(build_CEOSLiquid(), '<string>', 'exec')
+                f = open(os.path.join(data_dir, 'CEOSLiquid.dat'), 'wb')
+                marshal.dump(compiled_CEOSLiquid, f)
+                f.close()
+        else:
             compiled_CEOSLiquid = compile(build_CEOSLiquid(), '<string>', 'exec')
-            f = open(os.path.join(data_dir, 'CEOSLiquid.dat'), 'wb')
-            marshal.dump(compiled_CEOSLiquid, f)
-            f.close()
-    else:
-        compiled_CEOSLiquid = compile(build_CEOSLiquid(), '<string>', 'exec')
-    exec(compiled_CEOSLiquid)
-    # exec(build_CEOSLiquid())
+        exec(compiled_CEOSLiquid)
+        # exec(build_CEOSLiquid())
+else:
+    class CEOSLiquid(object):
+        pass
 
 CEOSLiquid.is_gas = False
 CEOSLiquid.is_liquid = True

@@ -46,13 +46,11 @@ from __future__ import division
 __all__ = ['InteractionParameterDB']
 
 import os
-import numpy as np
 from math import isnan
+from fluids.numerics import numpy as np
 from chemicals.utils import can_load_data, PY37
 from chemicals.identifiers import check_CAS, sorted_CAS_key
 
-folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
-chemsep_db_path = os.path.join(folder, 'ChemSep')
 
 
 
@@ -349,12 +347,15 @@ class InteractionParameterDB(object):
         return values
 
 
-ip_files = {'ChemSep PR': os.path.join(chemsep_db_path, 'pr.json'),
-            'ChemSep NRTL': os.path.join(chemsep_db_path, 'nrtl.json')}
-
 _loaded_interactions = False
 def load_all_interaction_parameters():
     global IPDB, _loaded_interactions
+
+    ip_files = {'ChemSep PR': os.path.join(chemsep_db_path, 'pr.json'),
+                'ChemSep NRTL': os.path.join(chemsep_db_path, 'nrtl.json')}
+    folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
+    chemsep_db_path = os.path.join(folder, 'ChemSep')
+
 
     IPDB = InteractionParameterDB()
     for name, file in ip_files.items():

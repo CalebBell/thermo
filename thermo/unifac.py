@@ -148,7 +148,6 @@ import os
 from fluids.constants import R
 from chemicals.utils import log, exp, dxs_to_dns, can_load_data, PY37
 from thermo.activity import GibbsExcess
-folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
 
 
 class UNIFAC_subgroup(object):
@@ -1658,6 +1657,8 @@ global _unifac_ip_loaded
 _unifac_ip_loaded = False
 def load_unifac_ip():
     global _unifac_ip_loaded, UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP, NISTKTUFIP, PSRKIP, VTPRIP
+    folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
+
     UFIP = {i: {} for i in list(range(1, 52)) + [55, 84, 85]}
     with open(os.path.join(folder, 'UNIFAC original interaction parameters.tsv')) as f:
         for line in f:
@@ -1754,6 +1755,7 @@ def load_group_assignments_DDBST():
     # Do not allow running multiple times
     if DDBST_UNIFAC_assignments:
         return None
+    folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
     with open(os.path.join(folder, 'DDBST UNIFAC assignments.tsv')) as f:
         _group_assignments = [DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments]
         for line in f.readlines():

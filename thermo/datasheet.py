@@ -26,7 +26,7 @@ __all__ = ['tabulate_solid', 'tabulate_liq', 'tabulate_gas',
            'tabulate_constants', 'tabulate_streams']
 
 from collections import OrderedDict
-import numpy as np
+from fluids.numerics import numpy as np
 from thermo.chemical import Chemical
 
 global _pd

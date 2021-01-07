@@ -24,10 +24,9 @@ from __future__ import division
 
 __all__ = ['Mixture']
 
-import numpy as np
-from collections import Counter, OrderedDict
+from collections import OrderedDict
 
-from fluids.numerics import newton
+from fluids.numerics import newton, numpy as np
 from fluids.core import *
 from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
 

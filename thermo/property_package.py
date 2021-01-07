@@ -42,14 +42,16 @@ __all__ = ['PropertyPackage', 'Ideal', 'Unifac', 'GammaPhi',
            'Stateva_Tsvetkov_TPDF_eos', 'd_TPD_Michelson_modified_eos',
            'GceosBase']
 
-from random import uniform, shuffle, seed
-import numpy as np
+try:
+    from random import uniform, shuffle, seed
+except:
+    pass
 from fluids.numerics import (OscillationError, UnconvergedError,
                              ridder, derivative, caching_decorator,
                              newton, linspace, logspace,
                              brenth, py_solve,
                              oscillation_checker, secant, damping_maintain_sign,
-                             oscillation_checking_wrapper)
+                             oscillation_checking_wrapper, numpy as np)
 from fluids.constants import R, pi, N_A
 from chemicals.utils import log, log10, exp, copysign, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, remove_zeros, normalize, Cp_minus_Cv, mixing_simple, property_mass_to_molar
 from thermo.utils import has_matplotlib

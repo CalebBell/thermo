@@ -228,7 +228,6 @@ two_root_two = 2*2**0.5
 root_two = sqrt(2.)
 root_two_m1 = root_two - 1.0
 root_two_p1 = root_two + 1.0
-log_min = log(sys.float_info.min)
 
 c1R2_PR = PR.c1R2
 c2R_PR = PR.c2R
@@ -6403,7 +6402,10 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
         if full:
             return 0.0, 0.0, 0.0
         return 0.0
-    a_alpha_and_derivatives.__doc__ = GCEOSMIX.a_alpha_and_derivatives.__doc__
+    try:
+        a_alpha_and_derivatives.__doc__ = GCEOSMIX.a_alpha_and_derivatives.__doc__
+    except:
+        pass
 
     def fugacity_coefficients(self, Z):
         r'''Calculate and return the fugacity coefficients of the ideal-gas

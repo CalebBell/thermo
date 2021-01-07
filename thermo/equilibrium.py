@@ -2349,13 +2349,19 @@ def _make_getter_correlations(name):
 
     text = '''Wrapper to obtain the list of %s objects of the associated
 :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`.''' %(name)
-    get.__doc__ = text
+    try:
+        get.__doc__ = text
+    except:
+        pass
     return get
 
 def _make_getter_EquilibriumState(name):
     def get(self):
         return getattr(self.result, name)(self)
-    get.__doc__ = getattr(EquilibriumState, name).__doc__
+    try:
+        get.__doc__ = getattr(EquilibriumState, name).__doc__
+    except:
+        pass
     return get
 
 def _make_getter_bulk_props(name):

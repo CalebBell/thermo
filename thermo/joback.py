@@ -52,7 +52,6 @@ from __future__ import division
 __all__ = ['smarts_fragment', 'Joback', 'J_BIGGS_JOBACK_SMARTS',
            'J_BIGGS_JOBACK_SMARTS_id_dict']
 
-from operator import itemgetter
 from chemicals.utils import to_num, horner, exp
 
 rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
