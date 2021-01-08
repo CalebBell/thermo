@@ -4997,8 +4997,8 @@ class GceosBase(Ideal):
 #            print(H_calc2, H_calc, T)
             g2 = H_calc - H_goal
 
-            lnphis_l = eos_l.eos_lnphis_lowest_Gibbs()[0]
-            lnphis_g = eos_g.eos_lnphis_lowest_Gibbs()[0]
+            lnphis_l = eos_l._eos_lnphis_lowest_Gibbs()[0]
+            lnphis_g = eos_g._eos_lnphis_lowest_Gibbs()[0]
 
             Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)]
             g1 = Rachford_Rice_flash_error(V_over_F, zs, Ks)
@@ -5290,8 +5290,8 @@ class GceosBase(Ideal):
         g2 = H_calc - H_goal
 
         # Step 5
-        lnphis_l = eos_l.eos_lnphis_lowest_Gibbs()[0]
-        lnphis_g = eos_g.eos_lnphis_lowest_Gibbs()[0]
+        lnphis_l = eos_l._eos_lnphis_lowest_Gibbs()[0]
+        lnphis_g = eos_g._eos_lnphis_lowest_Gibbs()[0]
         Cp_l = self.dH_dT(T, P, V_over_F, zs, xs, ys, eos_l, eos_g, 'l')
         Cp_g = self.dH_dT(T, P, V_over_F, zs, xs, ys, eos_l, eos_g, 'g')
 
@@ -5320,8 +5320,8 @@ class GceosBase(Ideal):
             g2 = H_calc - H_goal
 
             # Step 10
-            lnphis_l = eos_l.eos_lnphis_lowest_Gibbs()[0]
-            lnphis_g = eos_g.eos_lnphis_lowest_Gibbs()[0]
+            lnphis_l = eos_l._eos_lnphis_lowest_Gibbs()[0]
+            lnphis_g = eos_g._eos_lnphis_lowest_Gibbs()[0]
 
             fs_prev = fs
             fs = []

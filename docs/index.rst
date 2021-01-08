@@ -6,6 +6,7 @@ Contents:
 .. toctree::
    :maxdepth: 3
 
+   cubic_equations_of_state
    property_objects
    tutorial_phases_and_flash
    modules

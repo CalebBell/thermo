@@ -38,7 +38,8 @@ Base Class
     :show-inheritance:
     :exclude-members: a_alpha_and_derivatives_numpy, a_alpha_and_derivatives_py, main_derivatives_and_departures, derivatives_and_departures,
                       sequential_substitution_3P, sequential_substitution_VL, stability_Michelsen, stabiliy_iteration_Michelsen, newton_VL, broyden2_VL,
-                      d2A_dep_dninjs, d2A_dep_dninjs_Vt, d2A_dninjs_Vt, d2A_dninjs_Vt_another, d2P_dninjs_Vt, d2nA_dninjs_Vt, d3P_dninjnks_Vt
+                      d2A_dep_dninjs, d2A_dep_dninjs_Vt, d2A_dninjs_Vt, d2A_dninjs_Vt_another, d2P_dninjs_Vt, d2nA_dninjs_Vt, d3P_dninjnks_Vt,
+                      dScomp_dns, d2Scomp_dninjs, dA_dep_dns_Vt, dP_dns_Vt
 
 Peng-Robinson Family EOSs
 =========================
@@ -219,6 +220,10 @@ from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91
                                     APISRK_a_alphas_vectorized, APISRK_a_alpha_and_derivatives_vectorized)
 from thermo.eos import *
 
+try:
+    zeros, array, npexp = np.zeros, np.array, np.exp
+except:
+    pass
 
 R2 = R*R
 R_inv = 1.0/R
@@ -292,12 +297,16 @@ class GCEOSMIX(GCEOS):
     nonstate_constants = ('N', 'cmps', 'Tcs', 'Pcs', 'omegas', 'kijs', 'kwargs', 'ais', 'bs')
     mix_kwargs_to_pure = {}
     kwargs_square = ('kijs',)
+    '''Tuple of 2D arguments used by the specific EOS.
+    '''
     kwargs_linear = tuple()
+    '''Tuple of 1D arguments used by the specific EOS in addition to the conventional ones.
+    '''
     multicomponent = True
     scalar = True
 
-    def subset(self, idxs):
-        r'''Method to construct a new EOSMIX that removes all components
+    def subset(self, idxs, **state_specs):
+        r'''Method to construct a new :obj:`GCEOSMIX` that removes all components
         not specified in the `idxs` argument.
 
         Parameters
@@ -307,14 +316,18 @@ class GCEOSMIX(GCEOS):
 
         Returns
         -------
-        subset_eos : EOSMIX
-            Multicomponent EOSMIX at the same specified specs but with a
+        subset_eos : :obj:`GCEOSMIX`
+            Multicomponent :obj:`GCEOSMIX` at the same specified specs but with a
             composition normalized to 1 and with fewer components, [-]
+        state_specs : float
+            Keyword arguments which can be any of `T`, `P`, `V`, `zs`; `zs`
+            is optional, as are (`T`, `P`, `V`), but if any of (`T`, `P`, `V`)
+            are specified, a second one is required as well, [various]
 
         Notes
         -----
-        Subclassing equations of state require their `kwargs_linear` and
-        `kwargs_square` attributes to be correct for this to work.
+        Subclassing equations of state require their :obj:`kwargs_linear <GCEOSMIX.kwargs_linear>` and
+        :obj:`kwargs_square <GCEOSMIX.kwargs_square>` attributes to be correct for this to work.
         `Tcs`, `Pcs`, and `omegas` are always assumed to be used.
 
         Examples
@@ -323,6 +336,10 @@ class GCEOSMIX(GCEOS):
         >>> PR3 = PRMIX(Tcs=[469.7, 507.4, 540.3], zs=[0.8168, 0.1501, 0.0331], omegas=[0.249, 0.305, 0.349], Pcs=[3.369E6, 3.012E6, 2.736E6], T=322.29, P=101325.0, kijs=kijs)
         >>> PR3.subset([1,2])
         PRMIX(Tcs=[507.4, 540.3], Pcs=[3012000.0, 2736000.0], omegas=[0.305, 0.349], kijs=[[0.0, 0.00061], [0.00061, 0.0]], zs=[0.8193231441048036, 0.1806768558951965], T=322.29, P=101325.0)
+        >>> PR3.subset([1,2], T=500.0, P=1e5, zs=[.2, .8])
+        PRMIX(Tcs=[507.4, 540.3], Pcs=[3012000.0, 2736000.0], omegas=[0.305, 0.349], kijs=[[0.0, 0.00061], [0.00061, 0.0]], zs=[0.2, 0.8], T=500.0, P=100000.0)
+        >>> PR3.subset([1,2], zs=[.2, .8])
+        PRMIX(Tcs=[507.4, 540.3], Pcs=[3012000.0, 2736000.0], omegas=[0.305, 0.349], kijs=[[0.0, 0.00061], [0.00061, 0.0]], zs=[0.2, 0.8], T=322.29, P=101325.0)
         '''
         is_slice = isinstance(idxs, slice)
 
@@ -333,16 +350,21 @@ class GCEOSMIX(GCEOS):
             def atindexes(values):
                 return [values[i] for i in idxs]
 
-        kwargs = self.state_specs
+        if state_specs:
+            kwargs = state_specs
+            if len(kwargs) == 1 and 'zs' in kwargs:
+                kwargs.update(self.state_specs)
+        else:
+            kwargs = self.state_specs
 
-
-        zs = atindexes(self.zs)
-        if not zs:
-            raise ValueError("Cannot create an EOS without any components selected")
-        zs_tot_inv = 1.0/sum(zs)
-        for i in range(len(zs)):
-            zs[i] *= zs_tot_inv
-        kwargs['zs'] = zs
+        if 'zs' not in kwargs:
+            zs = atindexes(self.zs)
+            zs_tot_inv = 1.0/sum(zs)
+            for i in range(len(zs)):
+                zs[i] *= zs_tot_inv
+            if not zs:
+                raise ValueError("Cannot create an EOS without any components selected")
+            kwargs['zs'] = zs
         kwargs['Tcs'] = atindexes(self.Tcs)
         kwargs['Pcs'] = atindexes(self.Pcs)
         kwargs['omegas'] = atindexes(self.omegas)
@@ -403,7 +425,7 @@ class GCEOSMIX(GCEOS):
         return s
 
     def to_TP_zs_fast(self, T, P, zs, only_l=False, only_g=False, full_alphas=True):
-        r'''Method to construct a new GCEOSMIX instance with the same
+        r'''Method to construct a new :obj:`GCEOSMIX` instance with the same
         parameters as the existing object. If both instances are at the same
         temperature, `a_alphas` and `da_alpha_dTs` and `d2a_alpha_dT2s` are
         shared between the instances. It is always assumed the new object has
@@ -430,8 +452,8 @@ class GCEOSMIX(GCEOS):
 
         Returns
         -------
-        eos : GCEOSMIX
-            Multicomponent GCEOSMIX at the specified conditions [-]
+        eos : :obj:`GCEOSMIX`
+            Multicomponent :obj:`GCEOSMIX` at the specified conditions [-]
 
         Notes
         -----
@@ -474,7 +496,7 @@ class GCEOSMIX(GCEOS):
 
 
     def to_TP_zs(self, T, P, zs, fugacities=True, only_l=False, only_g=False):
-        r'''Method to construct a new GCEOSMIX instance at `T`, `P`, and `zs`
+        r'''Method to construct a new :obj:`GCEOSMIX` instance at `T`, `P`, and `zs`
         with the same parameters as the existing object. Optionally, only one
         set of phase properties can be solved for, increasing speed. The
         fugacities calculation can be be skipped by by setting `fugacities` to
@@ -500,8 +522,8 @@ class GCEOSMIX(GCEOS):
 
         Returns
         -------
-        eos : GCEOSMIX
-            Multicomponent GCEOSMIX at the specified conditions [-]
+        eos : :obj:`GCEOSMIX`
+            Multicomponent :obj:`GCEOSMIX` at the specified conditions [-]
 
         Notes
         -----
@@ -521,7 +543,7 @@ class GCEOSMIX(GCEOS):
             return self
 
     def to_PV_zs(self, P, V, zs, fugacities=True, only_l=False, only_g=False):
-        r'''Method to construct a new GCEOSMIX instance at `P`, `V`, and `zs`
+        r'''Method to construct a new :obj:`GCEOSMIX` instance at `P`, `V`, and `zs`
         with the same parameters as the existing object. Optionally, only one
         set of phase properties can be solved for, increasing speed. The
         fugacities calculation can be be skipped by by setting `fugacities` to
@@ -547,8 +569,8 @@ class GCEOSMIX(GCEOS):
 
         Returns
         -------
-        eos : GCEOSMIX
-            Multicomponent GCEOSMIX at the specified conditions [-]
+        eos : :obj:`GCEOSMIX`
+            Multicomponent :obj:`GCEOSMIX` at the specified conditions [-]
 
         Notes
         -----
@@ -567,7 +589,7 @@ class GCEOSMIX(GCEOS):
         return self.__class__(P=P, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, only_l=only_l, only_g=only_g, fugacities=fugacities, **self.kwargs)
 
     def to(self, zs=None, T=None, P=None, V=None, fugacities=True):
-        r'''Method to construct a new EOSMIX object at two of `T`, `P` or `V`
+        r'''Method to construct a new :obj:`GCEOSMIX` object at two of `T`, `P` or `V`
         with the specified composition.
         In the event the specs match those of the current object, it will be
         returned unchanged.
@@ -587,8 +609,8 @@ class GCEOSMIX(GCEOS):
 
         Returns
         -------
-        obj : EOSMIX
-            Pure component EOSMIX at the two specified specs, [-]
+        obj : :obj:`GCEOSMIX`
+            Pure component :obj:`GCEOSMIX` at the two specified specs, [-]
 
         Notes
         -----
@@ -625,7 +647,7 @@ class GCEOSMIX(GCEOS):
             return self.__class__(T=T, P=P, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=fugacities, **self.kwargs)
 
     def to_TP(self, T, P):
-        r'''Method to construct a new EOSMIX object at the spcified `T` and `P`
+        r'''Method to construct a new :obj:`GCEOSMIX` object at the spcified `T` and `P`
         with the current composition. In the event the `T` and `P` match the
         current object's `T` and `P`, it will be returned unchanged.
 
@@ -638,8 +660,8 @@ class GCEOSMIX(GCEOS):
 
         Returns
         -------
-        obj : EOSMIX
-            Pure component EOSMIX at specified `T` and `P`, [-]
+        obj : :obj:`GCEOSMIX`
+            Pure component :obj:`GCEOSMIX` at specified `T` and `P`, [-]
 
         Notes
         -----
@@ -657,7 +679,7 @@ class GCEOSMIX(GCEOS):
         return self.to_TP_zs(T, P, zs=self.zs)
 
     def to_TV(self, T, V):
-        r'''Method to construct a new EOSMIX object at the spcified `T` and `V`
+        r'''Method to construct a new :obj:`GCEOSMIX` object at the spcified `T` and `V`
         with the current composition. In the event the `T` and `V` match the
         current object's `T` and `V`, it will be returned unchanged.
 
@@ -670,8 +692,8 @@ class GCEOSMIX(GCEOS):
 
         Returns
         -------
-        obj : EOSMIX
-            Pure component EOSMIX at specified `T` and `V`, [-]
+        obj : :obj:`GCEOSMIX`
+            Pure component :obj:`GCEOSMIX` at specified `T` and `V`, [-]
 
         Notes
         -----
@@ -691,7 +713,7 @@ class GCEOSMIX(GCEOS):
         return self.__class__(T=T, V=V, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=True, **self.kwargs)
 
     def to_PV(self, P, V):
-        r'''Method to construct a new EOSMIX object at the spcified `P` and `V`
+        r'''Method to construct a new :obj:`GCEOSMIX` object at the spcified `P` and `V`
         with the current composition. In the event the `P` and `V` match the
         current object's `P` and `V`, it will be returned unchanged.
 
@@ -704,8 +726,8 @@ class GCEOSMIX(GCEOS):
 
         Returns
         -------
-        obj : EOSMIX
-            Pure component EOSMIX at specified `P` and `V`, [-]
+        obj : :obj:`GCEOSMIX`
+            Pure component :obj:`GCEOSMIX` at specified `P` and `V`, [-]
 
         Notes
         -----
@@ -725,14 +747,14 @@ class GCEOSMIX(GCEOS):
         return self.__class__(V=V, P=P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=True, **self.kwargs)
 
     def to_mechanical_critical_point(self):
-        r'''Method to construct a new EOSMIX object at the current object's
+        r'''Method to construct a new :obj:`GCEOSMIX` object at the current object's
         properties and composition, but which is at the mechanical critical
         point.
 
         Returns
         -------
-        obj : EOSMIX
-            Pure component EOSMIX at mechanical critical point [-]
+        obj : :obj:`GCEOSMIX`
+            Pure component :obj:`GCEOSMIX` at mechanical critical point [-]
 
         Examples
         --------
@@ -890,13 +912,10 @@ class GCEOSMIX(GCEOS):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives for an EOS with the Van der Waals mixing rules. Uses the
         parent class's interface to compute pure component values. Returns
-        `a_alpha`, `da_alpha_dT`, and `d2a_alpha_dT2`. Calls
-        `setup_a_alpha_and_derivatives` before calling
-        `a_alpha_and_derivatives` for each species, which typically sets `a`
-        and `Tc`. Calls `cleanup_a_alpha_and_derivatives` to remove the set
-        properties after the calls are done.
+        `a_alpha`, `da_alpha_dT`, and `d2a_alpha_dT2`.
 
-        For use in `solve_T` this returns only `a_alpha` if `full` is False.
+        For use in :obj:`solve_T <GCEOSMIX.solve_T>` this returns only
+        `a_alpha` if `full` is False.
 
         .. math::
             a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
@@ -954,7 +973,7 @@ class GCEOSMIX(GCEOS):
 #                    self.setup_a_alpha_and_derivatives(i, T=T)
 #                    # Abuse method resolution order to call the a_alpha_and_derivatives
 #                    # method of the original pure EOS
-#                    # -4 goes back from object, GCEOS, SINGLEPHASEEOS, up to GCEOSMIX
+#                    # -4 goes back from object, GCEOS, SINGLEPHASEEOS, up to :obj:`GCEOSMIX`
 #                    #
 #                    ds = method_obj.a_alpha_and_derivatives_pure(T)
 #                    a_alphas.append(ds[0])
@@ -1388,7 +1407,7 @@ class GCEOSMIX(GCEOS):
         are the minimum. This is just from floating point precision.
 
         It can also be checked looking at the calculated molar volumes - all
-        three (available with `sorted_volumes`) will be very close (1e-5
+        three (available with :obj:`sorted_volumes <GCEOSMIX.sorted_volumes>`) will be very close (1e-5
         difference in practice), again differing because of floating point
         error.
 
@@ -1427,7 +1446,7 @@ class GCEOSMIX(GCEOS):
         phases present, using either the overall mole fractions for both phases
         or using specified mole fractions for each phase.
 
-        Requires `fugacity_coefficients` to be implemented by each subclassing
+        Requires :obj:`fugacity_coefficients <GCEOSMIX.fugacity_coefficients>` to be implemented by each subclassing
         EOS.
 
         In addition to setting `fugacities_l` and/or `fugacities_g`, this also
@@ -1453,7 +1472,7 @@ class GCEOSMIX(GCEOS):
 
         Notes
         -----
-        It is helpful to check that `fugacity_coefficients` has been
+        It is helpful to check that :obj:`fugacity_coefficients <GCEOSMIX.fugacity_coefficients>` has been
         implemented correctly using the following expression, from [1]_.
 
         .. math::
@@ -1481,27 +1500,34 @@ class GCEOSMIX(GCEOS):
         .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
            Butterworth-Heinemann, 1985.
         '''
-        P = self.P
-        zs = self.zs
+        P, zs, scalar = self.P, self.zs, self.scalar
         if not only_g and hasattr(self, 'V_l'):
-            self.lnphis_l = self.fugacity_coefficients(self.Z_l)
-            try:
-                self.phis_l = [exp(i) for i in self.lnphis_l]
-            except:
-                self.phis_l = [trunc_exp(i, trunc=1e308) for i in self.lnphis_l]
-            self.fugacities_l = [phi*x*P for phi, x in zip(self.phis_l, zs)]
+            self.lnphis_l = lnphis_l = self.fugacity_coefficients(self.Z_l)
+            if scalar:
+                try:
+                    self.phis_l = [exp(i) for i in lnphis_l]
+                except:
+                    self.phis_l = [trunc_exp(i, trunc=1e308) for i in lnphis_l]
+                self.fugacities_l = [phi*x*P for phi, x in zip(self.phis_l, zs)]
+            else:
+                self.phis_l = phis_l = npexp(lnphis_l)
+                self.fugacities_l = zs*P*phis_l
 
         if not only_l and hasattr(self, 'V_g'):
-            self.lnphis_g = self.fugacity_coefficients(self.Z_g)
-            try:
-                self.phis_g = [exp(i) for i in self.lnphis_g]
-            except:
-                self.phis_g = [trunc_exp(i, trunc=1e308) for i in self.lnphis_g]
+            self.lnphis_g = lnphis_g = self.fugacity_coefficients(self.Z_g)
+            if scalar:
+                try:
+                    self.phis_g = phis_g = [exp(i) for i in lnphis_g]
+                except:
+                    self.phis_g = phis_g = [trunc_exp(i, trunc=1e308) for i in lnphis_g]
+                self.fugacities_g = [phi*y*P for phi, y in zip(phis_g, zs)]
+            else:
+                self.phis_g = phis_g = npexp(lnphis_g)
+                self.fugacities_g = zs*P*phis_g
 
-            self.fugacities_g = [phi*y*P for phi, y in zip(self.phis_g, zs)]
 
 
-    def eos_lnphis_lowest_Gibbs(self):
+    def _eos_lnphis_lowest_Gibbs(self):
         try:
             try:
                 if self.G_dep_l < self.G_dep_g:
@@ -1513,10 +1539,11 @@ class GCEOSMIX(GCEOS):
                 return (self.lnphis_g, 'g') if hasattr(self, 'Z_g') else (self.lnphis_l, 'l')
         except:
             self.fugacities()
-            return self.eos_fugacities_lowest_Gibbs()
+            return self._eos_fugacities_lowest_Gibbs()
 
 
-    def eos_fugacities_lowest_Gibbs(self):
+    def _eos_fugacities_lowest_Gibbs(self):
+        # TODO delete with property_package.py
         try:
             try:
                 if self.G_dep_l < self.G_dep_g:
@@ -1528,7 +1555,7 @@ class GCEOSMIX(GCEOS):
                 return (self.fugacities_g, 'g') if hasattr(self, 'Z_g') else (self.fugacities_l, 'l')
         except:
             self.fugacities()
-            return self.eos_fugacities_lowest_Gibbs()
+            return self._eos_fugacities_lowest_Gibbs()
 
 
     def _dphi_dn(self, zi, i, phase):
@@ -1689,7 +1716,7 @@ class GCEOSMIX(GCEOS):
         r'''Generic method to calculate `T` from a specified `P` and `V`.
         Provides SciPy's `newton` solver, and iterates to solve the general
         equation for `P`, recalculating `a_alpha` as a function of temperature
-        using `a_alpha_and_derivatives` each iteration.
+        using :obj:`a_alpha_and_derivatives <GCEOSMIX.a_alpha_and_derivatives>` each iteration.
 
         Parameters
         ----------
@@ -2194,7 +2221,7 @@ class GCEOSMIX(GCEOS):
         # If one phase is present - use that phase as the reference phase.
         # Otherwise, consider the phase with the lowest Gibbs excess energy as
         # the stable phase
-        fugacities_ref, fugacities_ref_phase = eos_ref.eos_fugacities_lowest_Gibbs()
+        fugacities_ref, fugacities_ref_phase = eos_ref._eos_fugacities_lowest_Gibbs()
 #        print(fugacities_ref, fugacities_ref_phase, 'fugacities_ref, fugacities_ref_phase')
 
         if Ks_initial is None:
@@ -2219,7 +2246,7 @@ class GCEOSMIX(GCEOS):
             # IT IS NOT PERMISSIBLE TO DO ONLY ONE ROOT! 2019-03-20
             # Breaks lots of stabilities.
             eos_test = self.to_TP_zs_fast(T=T, P=P, zs=zs_test_normalized, only_l=False, only_g=False, full_alphas=False)
-            fugacities_test, fugacities_phase = eos_test.eos_fugacities_lowest_Gibbs()
+            fugacities_test, fugacities_phase = eos_test._eos_fugacities_lowest_Gibbs()
 
             if fugacities_ref_phase == fugacities_phase:
                 same_phase_count += 1.0
@@ -4615,14 +4642,57 @@ class GCEOSMIX(GCEOS):
                                      da_alphas=da_alpha_dzs, d2a_alphas=d2a_alpha_dzizjs,
                                      G=True)
     def dlnphis_dns(self, Z):
-        r'''All working here.
+        r'''Generic formula for calculating the mole number derivaitves of
+        log fugacity coefficients for each species in a mixture. Verified
+        numerically. Applicable to all cubic equations of state which can be
+        cast in the form used here.
+
+        .. math::
+            \left(\frac{\partial \log \phi_i}{\partial n_i}\right)_{P,
+            n_{j \ne i}}
+
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+
+        Returns
+        -------
+        dlnphis_dns : list[list[float]]
+            Mole number derivatives of log fugacity coefficient for each
+            species, [-]
+
+        Notes
+        -----
         '''
         dns = self.dlnphi_dns(Z)
         d2ns = self.d2lnphi_dninjs(Z)
         return d2ns_to_dn2_partials(d2ns, dns)
 
     def dlnfugacities_dns(self, phase):
-        # Great
+        r'''Generic formula for calculating the mole number derivaitves of
+        log fugacities for each species in a mixture. Verified
+        numerically. Applicable to all cubic equations of state which can be
+        cast in the form used here.
+
+        .. math::
+            \left(\frac{\partial \log f_i}{\partial n_i}\right)_{P,
+            n_{j \ne i}}
+
+        Parameters
+        ----------
+        phase : str
+            One of 'l' or 'g', [-]
+
+        Returns
+        -------
+        dlnfugacities_dns : list[list[float]]
+            Mole number derivatives of log fugacities for each
+            species, [-]
+
+        Notes
+        -----
+        '''
         zs, cmps = self.zs, self.cmps
         if phase == 'l':
             Z = self.Z_l
@@ -4647,7 +4717,28 @@ class GCEOSMIX(GCEOS):
         return dlnfugacities_dns
 
     def dfugacities_dns(self, phase):
-        # Good
+        r'''Generic formula for calculating the mole number derivaitves of
+        fugacities for each species in a mixture. Verified
+        numerically. Applicable to all cubic equations of state which can be
+        cast in the form used here.
+
+        .. math::
+            \left(\frac{\partial f_i}{\partial n_i}\right)_{P,
+            n_{j \ne i}}
+
+        Parameters
+        ----------
+        phase : str
+            One of 'l' or 'g', [-]
+
+        Returns
+        -------
+        dfugacities_dns : list[list[float]]
+            Mole number derivatives of fugacities for each species, [-]
+
+        Notes
+        -----
+        '''
         '''
         from sympy import *
         phifun1, phifun2 = symbols('phifun1, phifun2', cls=Function)
@@ -6140,7 +6231,10 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
 
     def _zeros3d(self):
         N, cmps = self.N, self.cmps
-        return [[[0.0]*N for _ in cmps] for _ in self.cmps]
+        if self.scalar:
+            return [[[0.0]*N for _ in cmps] for _ in cmps]
+        else:
+            return zeros((N, N, N))
 
     @property
     def ddelta_dzs(self):
@@ -6317,8 +6411,13 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
+        self.scalar = scalar = type(Tcs) is list
+        if scalar:
+            self.zeros2d = zeros2d = [[0.0]*N for _ in self.cmps]
+        else:
+            self.zeros2d = zeros2d = zeros((N, N))
         if kijs is None:
-            kijs = [[0.0]*N for i in self.cmps]
+            kijs = zeros2d
         self.kijs = kijs
         self.kwargs = {'kijs': kijs}
         self.T = T
@@ -6326,10 +6425,7 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
         self.V = V
 
         self.b = 0.0
-        self.bs = self.ais = self.zeros1d = [0.0]*N
-
-        self.zeros2d = [[0.0]*N for _ in self.cmps]
-#        self.a_alpha_ijs = self.da_alpha_dT_ijs = self.d2a_alpha_dT2_ijs = self.zeros2d
+        self.bs = self.ais = self.zeros1d = zeros2d[0]
 
         self.solve(only_l=only_l, only_g=only_g)
         if fugacities:
@@ -6341,9 +6437,6 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
         self.b = other.b
         self.zeros1d = other.zeros1d
         self.zeros2d = other.zeros2d
-#        self.a_alpha_ijs = other.a_alpha_ijs
-#        self.da_alpha_dT_ijs = other.da_alpha_dT_ijs
-#        self.d2a_alpha_dT2_ijs = other.d2a_alpha_dT2_ijs
 
     def a_alphas_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` for the Ideal Gas
@@ -6485,7 +6578,7 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
 
 class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
     r'''Class for solving the Redlich Kwong [1]_ [2]_ cubic equation of state for a
-    mixture of any number of compounds. Subclasses :obj:`thermo.eos.RK`. Solves the EOS on
+    mixture of any number of compounds. Subclasses :obj:`thermo.eos.RK` . Solves the EOS on
     initialization and calculates fugacities for all components in all phases.
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
@@ -6598,6 +6691,28 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
         self.b = self.delta = b
 
     def a_alphas_vectorized(self, T):
+        r'''Method to calculate the pure-component `a_alphas` for the RK EOS.
+        This vectorized implementation is added for extra speed.
+
+        .. math::
+            a\alpha = \frac{a}{\sqrt{\frac{T}{Tc}}}
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+
+        Examples
+        --------
+        >>> eos = RKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+        >>> eos.a_alphas_vectorized(115)
+        [0.1449810919468, 0.30019773677]
+        '''
         return RK_a_alphas_vectorized(T, self.Tcs, self.ais)
 
     def a_alpha_and_derivatives_vectorized(self, T):
@@ -7026,7 +7141,7 @@ class PRMIX(GCEOSMIX, PR):
         r'''Literature formula for calculating fugacity coefficients for each
         species in a mixture. Verified numerically. Applicable to most
         derivatives of the Peng-Robinson equation of state as well.
-        Called by `fugacities` on initialization, or by a solver routine
+        Called by :obj:`fugacities <GCEOSMIX.fugacities>` on initialization, or by a solver routine
         which is performing a flash calculation.
 
         .. math::
@@ -8556,10 +8671,10 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
 
 class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
     r'''Class for solving the Soave-Redlich-Kwong cubic equation of state for a
-    mixture of any number of compounds. Subclasses `SRK`. Solves the EOS on
+    mixture of any number of compounds. Solves the EOS on
     initialization and calculates fugacities for all components in all phases.
 
-    The implemented method here is `fugacity_coefficients`, which implements
+    The implemented method here is :obj:`fugacity_coefficients <SRKMIX.fugacity_coefficients>`, which implements
     the formula for fugacity coefficients in a mixture as given in [1]_.
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
@@ -8739,7 +8854,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         r'''Literature formula for calculating fugacity coefficients for each
         species in a mixture. Verified numerically. Applicable to most
         derivatives of the SRK equation of state as well.
-        Called by `fugacities` on initialization, or by a solver routine
+        Called by :obj:`fugacities <GCEOSMIX.fugacities>` on initialization, or by a solver routine
         which is performing a flash calculation.
 
         .. math::
@@ -9910,7 +10025,7 @@ class PR78MIX(PRMIX):
     Examples
     --------
     T-P initialization, nitrogen-methane at 115 K and 1 MPa, with modified
-    acentric factors to show the difference between `PRMIX`
+    acentric factors to show the difference between :obj:`PRMIX`
 
     >>> eos = PR78MIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.6, 0.7], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     >>> eos.V_l, eos.V_g
@@ -10389,11 +10504,11 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
 
 class PRSVMIX(PRMIX, PRSV):
     r'''Class for solving the Peng-Robinson-Stryjek-Vera equations of state for
-    a mixture as given in [1]_.  Subclasses `PRMIX` and `PRSV`.
+    a mixture as given in [1]_.  Subclasses :obj:`PRMIX` and :obj:`PRSV <thermo.eos.PRSV>`.
     Solves the EOS on initialization and calculates fugacities for all
     components in all phases.
 
-    Inherits the method of calculating fugacity coefficients from `PRMIX`.
+    Inherits the method of calculating fugacity coefficients from :obj:`PRMIX`.
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
     .. math::
@@ -10473,7 +10588,7 @@ class PRSVMIX(PRMIX, PRSV):
     For P-V initializations, a numerical solver is used to find T.
 
     [2]_ and [3]_ are two more resources documenting the PRSV EOS. [4]_ lists
-    `kappa` values for 69 additional compounds. See also `PRSV2`. Note that
+    `kappa` values for 69 additional compounds. See also :obj:`PRSV2MIX`. Note that
     tabulated `kappa` values should be used with the critical parameters used
     in their fits. Both [1]_ and [4]_ only considered vapor pressure in fitting
     the parameter.
@@ -10611,11 +10726,11 @@ class PRSVMIX(PRMIX, PRSV):
 
 class PRSV2MIX(PRMIX, PRSV2):
     r'''Class for solving the Peng-Robinson-Stryjek-Vera 2 equations of state
-    for a Mixture as given in [1]_.  Subclasses `PRMIX` and `PRSV2`.
+    for a Mixture as given in [1]_.  Subclasses :obj:`PRMIX` and `PRSV2 <thermo.eos.PRSV2>`.
     Solves the EOS on initialization and calculates fugacities for all
     components in all phases.
 
-    Inherits the method of calculating fugacity coefficients from `PRMIX`.
+    Inherits the method of calculating fugacity coefficients from :obj:`PRMIX`.
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
     .. math::
@@ -10825,7 +10940,7 @@ class PRSV2MIX(PRMIX, PRSV2):
 
 class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
     r'''Class for solving the Twu [1]_ variant of the Peng-Robinson cubic
-    equation of state for a mixture. Subclasses `TWUPR`. Solves the EOS on
+    equation of state for a mixture. Solves the EOS on
     initialization and calculates fugacities for all components in all phases.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
@@ -10959,7 +11074,7 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
 
 class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
     r'''Class for solving the Twu variant of the Soave-Redlich-Kwong cubic
-    equation of state for a mixture. Subclasses `TWUSRK`. Solves the EOS on
+    equation of state for a mixture. Solves the EOS on
     initialization and calculates fugacities for all components in all phases.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
@@ -11094,7 +11209,7 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
 class APISRKMIX(SRKMIX, APISRK):
     r'''Class for solving the Refinery Soave-Redlich-Kwong cubic
     equation of state for a mixture of any number of compounds, as shown in the
-    API Databook [1]_. Subclasses `APISRK`. Solves the EOS on
+    API Databook [1]_. Subclasses :obj:`APISRK <thermo.eos.APISRK>`. Solves the EOS on
     initialization and calculates fugacities for all components in all phases.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
@@ -11288,7 +11403,12 @@ class APISRKMIX(SRKMIX, APISRK):
 eos_mix_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, PRSVMIX, PRSV2MIX, TWUPRMIX,
                 TWUSRKMIX, APISRKMIX, IGMIX, RKMIX, PRMIXTranslatedConsistent,
                 PRMIXTranslatedPPJP, SRKMIXTranslatedConsistent]
+'''List of all exported EOS classes.
+'''
 eos_mix_no_coeffs_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, TWUPRMIX, TWUSRKMIX,
                           IGMIX, RKMIX, PRMIXTranslatedConsistent,
                           PRMIXTranslatedPPJP, SRKMIXTranslatedConsistent]
+'''List of all exported EOS classes that do not require special parameters
+or can fill in their special parameters from other specified parameters.
+'''
 

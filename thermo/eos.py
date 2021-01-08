@@ -34,6 +34,7 @@ Base Class
 .. autoclass:: GCEOS
     :members:
     :undoc-members:
+    :special-members: __repr__
     :show-inheritance:
     :exclude-members: _P_zero_g_cheb_coeffs, _P_zero_l_cheb_coeffs,
                       main_derivatives_and_departures, derivatives_and_departures
@@ -448,6 +449,13 @@ class GCEOS(object):
         EOS-specific method, [J^2/mol^2/Pa/K**2]
     Zc : float
         Critical compressibility of cubic EOS state, [-]
+    phase : str
+        One of 'l', 'g', or 'l/g' to represent whether or not there is a
+        liquid-like solution, vapor-like solution, or both available, [-]
+    raw_volumes : list[(float, complex), 3]
+        Calculated molar volumes from the volume solver; depending on the state
+        and selected volume solver, imaginary volumes may be represented by 0
+        or -1j to save the time of actually calculating them, [m^3/mol]
     V_l : float
         Liquid phase molar volume, [m^3/mol]
     V_g : float
@@ -829,6 +837,18 @@ class GCEOS(object):
         all parameters so as to make it easy to construct new instances from
         states. Includes the two specified state variables, `Tc`, `Pc`, `omega`
         and any `kwargs`.
+
+        Returns
+        -------
+        recreation : str
+            String which is valid Python and recreates the current state of
+            the object if ran, [-]
+
+        Examples
+        --------
+        >>> eos = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400.0, P=1e6)
+        >>> eos
+        PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400.0, P=1000000.0)
         '''
         s = '%s(Tc=%s, Pc=%s, omega=%s, ' %(self.__class__.__name__, repr(self.Tc), repr(self.Pc), repr(self.omega))
         for k, v in self.kwargs.items():
@@ -1026,8 +1046,7 @@ class GCEOS(object):
 
         dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP, d2P_dT2, d2P_dV2, d2V_dT2,
         d2V_dP2, d2T_dV2, d2T_dP2, d2V_dPdT, d2P_dTdV, d2T_dPdV, H_dep, S_dep,
-        G_dep
-        and PIP.
+        G_dep and PIP.
 
         Parameters
         ----------

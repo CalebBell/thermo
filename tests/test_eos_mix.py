@@ -4503,3 +4503,21 @@ def test_missing_alphas_working():
     new.to_TP_zs_fast(320.5, 1e5, base.zs)
 
 
+def test_IGMIX_numpy():
+    eos = IGMIX(T=115, P=1E6, Tcs=np.array([126.1, 190.6]), Pcs=np.array([33.94E5, 46.04E5]), omegas=np.array([0.04, .008]), zs=np.array([0.5, 0.5]))
+    ddelta_dzs = eos.ddelta_dzs
+    assert type(ddelta_dzs) is np.ndarray
+    assert np.all(ddelta_dzs == 0)
+    eos2 = eos.to(T=304.0, P=1e4)
+
+    assert type(eos2.bs) is np.ndarray
+    assert np.all(eos2.bs == 0)
+
+    assert type(eos2.lnphis_g) is np.ndarray
+    assert np.all(eos2.lnphis_g == 0)
+
+    assert type(eos2.phis_g) is np.ndarray
+    assert np.all(eos2.phis_g == 1)
+
+    assert type(eos2.fugacities_g) is np.ndarray
+    assert np.all(eos2.fugacities_g == eos2.P*eos2.zs)
