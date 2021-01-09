@@ -5510,7 +5510,7 @@ class CEOSGas(Phase):
         eos_mix = self.eos_mix
         if eos_mix.__class__.__name__ == 'PRMIX':
             return PR_lnphis_fastest(zs, self.T, self.P, eos_mix.kijs, self.is_liquid, self.is_gas,
-                                     eos_mix.ais, eos_mix.bs, eos_mix.a_alphas, eos_mix.a_alpha_i_roots,
+                                     eos_mix.ais, eos_mix.bs, eos_mix.a_alphas, eos_mix.a_alpha_roots,
                                      eos_mix.kappas)
         return self.to_TP_zs(self.T, self.P, zs).lnphis()
 
@@ -6161,6 +6161,7 @@ if not is_micropython:
         if data_dir:
             import marshal
             try:
+                1/0
                 f = open(os.path.join(data_dir, 'CEOSLiquid.dat'), 'rb')
                 compiled_CEOSLiquid = marshal.load(f)
                 f.close()

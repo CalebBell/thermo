@@ -66,8 +66,14 @@ implemented
 '''
 # TODO: put methods like "_fast_init_specific" in here so numba can accelerate them.
 from fluids.constants import R
+from fluids.numerics import numpy as np
 from math import sqrt, log
 from thermo.eos_volume import volume_solutions_halley
+
+__all__ = ['a_alpha_aijs_composition_independent',
+           'a_alpha_and_derivatives', 'a_alpha_and_derivatives_full',
+           'a_alpha_quadratic_terms', 'a_alpha_and_derivatives_quadratic_terms',
+           'PR_lnphis', 'PR_lnphis_fastest']
 
 R2 = R*R
 R_inv = 1.0/R
@@ -77,33 +83,73 @@ root_two_m1 = root_two - 1.0
 root_two_p1 = root_two + 1.0
 
 def a_alpha_aijs_composition_independent(a_alphas, kijs):
+    r'''Calculates the matrix :math:`(a\alpha)_{ij}` as well as the array
+    :math:`\sqrt{(a\alpha)_{i}}` and the matrix
+    :math:`\frac{1}{\sqrt{(a\alpha)_{i}}\sqrt{(a\alpha)_{j}}}`.
+
+    .. math::
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+
+    This routine is efficient in both numba and PyPy, but it is generally
+    better to avoid calculating and storing **any** N^2 matrices. However,
+    this particular calculation only depends on `T` so in some circumstances
+    this can be feasible.
+
+    Parameters
+    ----------
+    a_alphas : list[float]
+        EOS attractive terms, [J^2/mol^2/Pa]
+    kijs : list[list[float]]
+        Constant kijs, [-]
+
+    Returns
+    -------
+    a_alpha_ijs : list[list[float]]
+        Matrix of :math:`(1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}`, [J^2/mol^2/Pa]
+    a_alpha_roots : list[float]
+        Array of :math:`\sqrt{(a\alpha)_{i}}` values, [J/mol/Pa^0.5]
+    a_alpha_ij_roots_inv : list[list[float]]
+        Matrix of :math:`\frac{1}{\sqrt{(a\alpha)_{i}}\sqrt{(a\alpha)_{j}}}`,
+        [mol^2*Pa/J^2]
+
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> kijs = [[0,.083],[0.083,0]]
+    >>> a_alphas = [0.2491099357671155, 0.6486495863528039]
+    >>> a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
+    >>> a_alpha_ijs
+    [[0.249109935767, 0.36861239374], [0.36861239374, 0.64864958635]]
+    >>> a_alpha_roots
+    [0.49910914213, 0.80538784840]
+    >>> a_alpha_ij_roots_inv
+    [[4.0142919105, 2.487707997796], [0.0, 1.54166443799]]
+    '''
     N = len(a_alphas)
-    cmps = range(N)
+    _sqrt = sqrt
 
-    a_alpha_ijs = [[0.0]*N for _ in cmps]
-    a_alpha_i_roots = [a_alpha_i**0.5 for a_alpha_i in a_alphas]
-#    a_alpha_i_roots_inv = [1.0/i for i in a_alpha_i_roots] # Storing this to avoid divisions was not faster when tested
-    # Tried optimization - skip the divisions - can just store the inverses of a_alpha_i_roots and do another multiplication
-    # Store the inverses of a_alpha_ij_roots
-    a_alpha_ij_roots_inv = [[0.0]*N for _ in cmps]
+    a_alpha_ijs = [[0.0]*N for _ in range(N)] # numba: comment
+#    a_alpha_ijs = np.zeros((N, N)) # numba: uncomment
+    a_alpha_roots = [0.0]*N
+    for i in range(N):
+        a_alpha_roots[i] = _sqrt(a_alphas[i])
 
-    for i in cmps:
+    a_alpha_ij_roots_inv = [[0.0]*N for _ in range(N)] # numba: comment
+#    a_alpha_ij_roots_inv = np.zeros((N, N)) # numba: uncomment
+
+    for i in range(N):
         kijs_i = kijs[i]
-        a_alpha_i = a_alphas[i]
         a_alpha_ijs_is = a_alpha_ijs[i]
         a_alpha_ij_roots_i_inv = a_alpha_ij_roots_inv[i]
         # Using range like this saves 20% of the comp time for 44 components!
-        a_alpha_i_root_i = a_alpha_i_roots[i]
+        a_alpha_i_root_i = a_alpha_roots[i]
         for j in range(i, N):
-#        for j in cmps:
-#            # TODo range
-#            if j < i:
-#                continue
-            term = a_alpha_i_root_i*a_alpha_i_roots[j]
-#            a_alpha_ij_roots_i_inv[j] = a_alpha_i_roots_inv[i]*a_alpha_i_roots_inv[j]#1.0/term
-            a_alpha_ij_roots_i_inv[j] = 1.0/term
+            term = a_alpha_i_root_i*a_alpha_roots[j]
+            a_alpha_ij_roots_i_inv[j] = a_alpha_ij_roots_inv[j][i] = 1.0/term
             a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*term
-    return a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv
+    return a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv
 
 
 def a_alpha_aijs_composition_independent_support_zeros(a_alphas, kijs):
@@ -112,7 +158,7 @@ def a_alpha_aijs_composition_independent_support_zeros(a_alphas, kijs):
     cmps = range(N)
 
     a_alpha_ijs = [[0.0] * N for _ in cmps]
-    a_alpha_i_roots = [a_alpha_i ** 0.5 for a_alpha_i in a_alphas]
+    a_alpha_roots = [a_alpha_i ** 0.5 for a_alpha_i in a_alphas]
     a_alpha_ij_roots_inv = [[0.0] * N for _ in cmps]
 
     for i in cmps:
@@ -120,24 +166,24 @@ def a_alpha_aijs_composition_independent_support_zeros(a_alphas, kijs):
         a_alpha_i = a_alphas[i]
         a_alpha_ijs_is = a_alpha_ijs[i]
         a_alpha_ij_roots_i_inv = a_alpha_ij_roots_inv[i]
-        a_alpha_i_root_i = a_alpha_i_roots[i]
+        a_alpha_i_root_i = a_alpha_roots[i]
         for j in range(i, N):
-            term = a_alpha_i_root_i * a_alpha_i_roots[j]
+            term = a_alpha_i_root_i * a_alpha_roots[j]
             try:
                 a_alpha_ij_roots_i_inv[j] = 1.0/term
             except ZeroDivisionError:
                 a_alpha_ij_roots_i_inv[j] = 1e100
             a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j]) * term
-    return a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv
+    return a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv
 
 
 def a_alpha_and_derivatives(a_alphas, T, zs, kijs, a_alpha_ijs=None,
-                            a_alpha_i_roots=None, a_alpha_ij_roots_inv=None):
+                            a_alpha_roots=None, a_alpha_ij_roots_inv=None):
     N = len(a_alphas)
     da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
 
-    if a_alpha_ijs is None or a_alpha_i_roots is None or a_alpha_ij_roots_inv is None:
-        a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
+    if a_alpha_ijs is None or a_alpha_roots is None or a_alpha_ij_roots_inv is None:
+        a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
 
     a_alpha = 0.0
     for i in range(N):
@@ -153,22 +199,143 @@ def a_alpha_and_derivatives(a_alphas, T, zs, kijs, a_alpha_ijs=None,
 
 
 def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
-                                 kijs, a_alpha_ijs=None, a_alpha_i_roots=None,
-                                 a_alpha_ij_roots_inv=None,
-                                 second_derivative=False):
+                                 kijs, a_alpha_ijs=None, a_alpha_roots=None,
+                                 a_alpha_ij_roots_inv=None):
+    r'''Calculates the `a_alpha` term, and its first two temperature
+    derivatives, for an equation of state along with the
+    matrix quantities calculated in the process.
+
+    .. math::
+        a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+
+    .. math::
+        \frac{\partial (a\alpha)}{\partial T} = \sum_i \sum_j z_i z_j
+        \frac{\partial (a\alpha)_{ij}}{\partial T}
+
+    .. math::
+        \frac{\partial^2 (a\alpha)}{\partial T^2} = \sum_i \sum_j z_i z_j
+        \frac{\partial^2 (a\alpha)_{ij}}{\partial T^2}
+
+    .. math::
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+
+    .. math::
+        \frac{\partial (a\alpha)_{ij}}{\partial T} =
+        \frac{\sqrt{\operatorname{a\alpha_{i}}{\left(T \right)} \operatorname{a\alpha_{j}}
+        {\left(T \right)}} \left(1 - k_{ij}\right) \left(\frac{\operatorname{a\alpha_{i}}
+        {\left(T \right)} \frac{d}{d T} \operatorname{a\alpha_{j}}{\left(T \right)}}{2}
+        + \frac{\operatorname{a\alpha_{j}}{\left(T \right)} \frac{d}{d T} \operatorname{
+        a\alpha_{i}}{\left(T \right)}}{2}\right)}{\operatorname{a\alpha_{i}}{\left(T \right)}
+        \operatorname{a\alpha_{j}}{\left(T \right)}}
+
+    .. math::
+        \frac{\partial^2 (a\alpha)_{ij}}{\partial T^2} =
+        - \frac{\sqrt{\operatorname{a\alpha_{i}}{\left(T \right)} \operatorname{a\alpha_{j}}
+        {\left(T \right)}} \left(k_{ij} - 1\right) \left(\frac{\left(\operatorname{
+        a\alpha_{i}}{\left(T \right)} \frac{d}{d T} \operatorname{a\alpha_{j}}{\left(T \right)}
+        + \operatorname{a\alpha_{j}}{\left(T \right)} \frac{d}{d T} \operatorname{a\alpha_{i}}
+        {\left(T \right)}\right)^{2}}{4 \operatorname{a\alpha_{i}}{\left(T \right)}
+        \operatorname{a\alpha_{j}}{\left(T \right)}} - \frac{\left(\operatorname{a\alpha_{i}}
+        {\left(T \right)} \frac{d}{d T} \operatorname{a\alpha_{j}}{\left(T \right)}
+        + \operatorname{a\alpha_{j}}{\left(T \right)} \frac{d}{d T}
+        \operatorname{a\alpha_{i}}{\left(T \right)}\right) \frac{d}{d T}
+        \operatorname{a\alpha_{j}}{\left(T \right)}}{2 \operatorname{a\alpha_{j}}
+        {\left(T \right)}} - \frac{\left(\operatorname{a\alpha_{i}}{\left(T \right)}
+        \frac{d}{d T} \operatorname{a\alpha_{j}}{\left(T \right)}
+        + \operatorname{a\alpha_{j}}{\left(T \right)} \frac{d}{d T}
+        \operatorname{a\alpha_{i}}{\left(T \right)}\right) \frac{d}{d T}
+        \operatorname{a\alpha_{i}}{\left(T \right)}}{2 \operatorname{a\alpha_{i}}
+        {\left(T \right)}} + \frac{\operatorname{a\alpha_{i}}{\left(T \right)}
+        \frac{d^{2}}{d T^{2}} \operatorname{a\alpha_{j}}{\left(T \right)}}{2}
+        + \frac{\operatorname{a\alpha_{j}}{\left(T \right)} \frac{d^{2}}{d T^{2}}
+        \operatorname{a\alpha_{i}}{\left(T \right)}}{2} + \frac{d}{d T}
+        \operatorname{a\alpha_{i}}{\left(T \right)} \frac{d}{d T}
+        \operatorname{a\alpha_{j}}{\left(T \right)}\right)}
+        {\operatorname{a\alpha_{i}}{\left(T \right)} \operatorname{a\alpha_{j}}
+        {\left(T \right)}}
+
+
+    Parameters
+    ----------
+    a_alphas : list[float]
+        EOS attractive terms, [J^2/mol^2/Pa]
+    da_alpha_dTs : list[float]
+        Temperature derivative of coefficient calculated by EOS-specific
+        method, [J^2/mol^2/Pa/K]
+    d2a_alpha_dT2s : list[float]
+        Second temperature derivative of coefficient calculated by
+        EOS-specific method, [J^2/mol^2/Pa/K**2]
+    T : float
+        Temperature, not used, [K]
+    zs : list[float]
+        Mole fractions of each species
+    kijs : list[list[float]]
+        Constant kijs, [-]
+    a_alpha_ijs : list[list[float]], optional
+        Matrix of :math:`(1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}`, [J^2/mol^2/Pa]
+    a_alpha_roots : list[float], optional
+        Array of :math:`\sqrt{(a\alpha)_{i}}` values, [J/mol/Pa^0.5]
+    a_alpha_ij_roots_inv : list[list[float]], optional
+        Matrix of :math:`\frac{1}{\sqrt{(a\alpha)_{i}}\sqrt{(a\alpha)_{j}}}`,
+        [mol^2*Pa/J^2]
+
+    Returns
+    -------
+    a_alpha : float
+        EOS attractive term, [J^2/mol^2/Pa]
+    da_alpha_dT : float
+        Temperature derivative of coefficient calculated by EOS-specific
+        method, [J^2/mol^2/Pa/K]
+    d2a_alpha_dT2 : float
+        Second temperature derivative of coefficient calculated by
+        EOS-specific method, [J^2/mol^2/Pa/K**2]
+    a_alpha_ijs : list[list[float]], optional
+        Matrix of :math:`(1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}`,
+        [J^2/mol^2/Pa]
+    da_alpha_dT_ijs : list[list[float]], optional
+        Matrix of :math:`\frac{\partial (a\alpha)_{ij}}{\partial T}`,
+        [J^2/mol^2/Pa/K]
+    d2a_alpha_dT2_ijs : list[list[float]], optional
+        Matrix of :math:`\frac{\partial^2 (a\alpha)_{ij}}{\partial T^2}`,
+        [J^2/mol^2/Pa/K^2]
+
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> kijs = [[0,.083],[0.083,0]]
+    >>> zs = [0.1164203, 0.8835797]
+    >>> a_alphas = [0.2491099357671155, 0.6486495863528039]
+    >>> da_alpha_dTs = [-0.0005102028006086241, -0.0011131153520304886]
+    >>> d2a_alpha_dT2s = [1.8651128859234162e-06, 3.884331923127011e-06]
+    >>> a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs = a_alpha_and_derivatives_full(a_alphas=a_alphas, da_alpha_dTs=da_alpha_dTs, d2a_alpha_dT2s=d2a_alpha_dT2s, T=299.0, zs=zs, kijs=kijs)
+    >>> a_alpha, da_alpha_dT, d2a_alpha_dT2
+    (0.58562139582, -0.001018667672, 3.56669817856e-06)
+    >>> a_alpha_ijs
+    [[0.2491099357, 0.3686123937], [0.36861239374, 0.64864958635]]
+    >>> da_alpha_dT_ijs
+    [[-0.000510202800, -0.0006937567844], [-0.000693756784, -0.00111311535]]
+    >>> d2a_alpha_dT2_ijs
+    [[1.865112885e-06, 2.4734471244e-06], [2.4734471244e-06, 3.8843319e-06]]
+    '''
     # For 44 components, takes 150 us in PyPy.
 
     N = len(a_alphas)
-    cmps = range(N)
     da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
 
-    if a_alpha_ijs is None or a_alpha_i_roots is None or a_alpha_ij_roots_inv is None:
-        a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
+    if a_alpha_ijs is None or a_alpha_roots is None or a_alpha_ij_roots_inv is None:
+        a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
 
-    z_products = [[zs[i]*zs[j] for j in cmps] for i in cmps]
+    z_products = [[zs[i]*zs[j] for j in range(N)] for i in range(N)] # numba : delete
+#    z_products = np.zeros((N, N)) # numba: uncomment
+#    for i in range(N): # numba: uncomment
+#        for j in range(N): # numba: uncomment
+#            z_products[i][j] = zs[i]*zs[j] # numba: uncomment
+
 
     a_alpha = 0.0
-    for i in cmps:
+    for i in range(N):
         a_alpha_ijs_i = a_alpha_ijs[i]
         z_products_i = z_products[i]
         for j in range(i):
@@ -176,13 +343,14 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
             a_alpha += term + term
         a_alpha += a_alpha_ijs_i[i]*z_products_i[i]
 
-    da_alpha_dT_ijs = [[0.0]*N for _ in cmps]
-    if second_derivative:
-        d2a_alpha_dT2_ijs = [[0.0]*N for _ in cmps]
+    da_alpha_dT_ijs = [[0.0]*N for _ in range(N)] # numba : delete
+#    da_alpha_dT_ijs = np.zeros((N, N)) # numba: uncomment
+    d2a_alpha_dT2_ijs = [[0.0]*N for _ in range(N)] # numba : delete
+#    d2a_alpha_dT2_ijs = np.zeros((N, N)) # numba: uncomment
 
     d2a_alpha_dT2_ij = 0.0
 
-    for i in cmps:
+    for i in range(N):
         kijs_i = kijs[i]
         a_alphai = a_alphas[i]
         z_products_i = z_products[i]
@@ -191,7 +359,7 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
         a_alpha_ij_roots_inv_i = a_alpha_ij_roots_inv[i]
         da_alpha_dT_ijs_i = da_alpha_dT_ijs[i]
 
-        for j in cmps:
+        for j in range(N):
 #        for j in range(0, i+1):
             if j < i:
 #                # skip the duplicates
@@ -220,8 +388,7 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
             d2a_alpha_dT2_ij = kij_m1*(  (x0*(
             -0.5*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2_i)
             - da_alpha_dT_i*da_alpha_dT_j) +.25*x1_x2*x1_x2)/(x0_05_inv*x0*x0))
-            if second_derivative:
-                d2a_alpha_dT2_ijs[i][j] = d2a_alpha_dT2_ijs[j][i] = d2a_alpha_dT2_ij
+            d2a_alpha_dT2_ijs[i][j] = d2a_alpha_dT2_ijs[j][i] = d2a_alpha_dT2_ij
 
             d2a_alpha_dT2_ij *= zi_zj
 
@@ -232,12 +399,10 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
                 da_alpha_dT += da_alpha_dT_ij
                 d2a_alpha_dT2 += d2a_alpha_dT2_ij
 
-    if second_derivative:
-        return a_alpha, da_alpha_dT, d2a_alpha_dT2, d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs
-    return a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs
+    return a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs
 
 
-def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
+def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs):
     r'''Calculates the `a_alpha` term for an equation of state along with the
     vector quantities needed to compute the fugacities of the mixture. This
     routine is efficient in both numba and PyPy.
@@ -257,7 +422,7 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
     ----------
     a_alphas : list[float]
         EOS attractive terms, [J^2/mol^2/Pa]
-    a_alpha_i_roots : list[float]
+    a_alpha_roots : list[float]
         Square roots of `a_alphas`; provided for speed [J/mol/Pa^0.5]
     T : float
         Temperature, not used, [K]
@@ -283,8 +448,8 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
     >>> kijs = [[0,.083],[0.083,0]]
     >>> zs = [0.1164203, 0.8835797]
     >>> a_alphas = [0.2491099357671155, 0.6486495863528039]
-    >>> a_alpha_i_roots = [i**0.5 for i in a_alphas]
-    >>> a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, 299.0, zs, kijs)
+    >>> a_alpha_roots = [i**0.5 for i in a_alphas]
+    >>> a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, 299.0, zs, kijs)
     >>> a_alpha, a_alpha_j_rows
     (0.58562139582, [0.35469988173, 0.61604757237])
     '''
@@ -294,9 +459,9 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
 #    a_alpha = 0.0
 #    for i in range(N):
 #        kijs_i = kijs[i]
-#        a_alpha_i_root_i = a_alpha_i_roots[i]
+#        a_alpha_i_root_i = a_alpha_roots[i]
 #        for j in range(i):
-#            a_alpha_ijs_ij = (1. - kijs_i[j])*a_alpha_i_root_i*a_alpha_i_roots[j]
+#            a_alpha_ijs_ij = (1. - kijs_i[j])*a_alpha_i_root_i*a_alpha_roots[j]
 #            t200 = a_alpha_ijs_ij*zs[i]
 #            a_alpha_j_rows[j] += t200
 #            a_alpha_j_rows[i] += zs[j]*a_alpha_ijs_ij
@@ -313,7 +478,7 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
     a_alpha_j_rows = [0.0]*N
     things0 = [0.0]*N
     for i in range(N):
-        things0[i] = a_alpha_i_roots[i]*zs[i]
+        things0[i] = a_alpha_roots[i]*zs[i]
 
     a_alpha = 0.0
     i = 0
@@ -329,14 +494,14 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
         i += 1
 
     for i in range(N):
-        a_alpha_j_rows[i] *= a_alpha_i_roots[i]
+        a_alpha_j_rows[i] *= a_alpha_roots[i]
         a_alpha_j_rows[i] += (1. -  kijs[i][i])*a_alphas[i]*zs[i]
         a_alpha += a_alpha_j_rows[i]*zs[i]
 
     return a_alpha, a_alpha_j_rows
 
 
-def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_i_roots,
+def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
                                             da_alpha_dTs, d2a_alpha_dT2s, T,
                                             zs, kijs):
     r'''Calculates the `a_alpha` term, and its first two temperature
@@ -406,7 +571,7 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_i_roots,
     ----------
     a_alphas : list[float]
         EOS attractive terms, [J^2/mol^2/Pa]
-    a_alpha_i_roots : list[float]
+    a_alpha_roots : list[float]
         Square roots of `a_alphas`; provided for speed [J/mol/Pa^0.5]
     da_alpha_dTs : list[float]
         Temperature derivative of coefficient calculated by EOS-specific
@@ -444,10 +609,10 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_i_roots,
     >>> kijs = [[0,.083],[0.083,0]]
     >>> zs = [0.1164203, 0.8835797]
     >>> a_alphas = [0.2491099357671155, 0.6486495863528039]
-    >>> a_alpha_i_roots = [i**0.5 for i in a_alphas]
+    >>> a_alpha_roots = [i**0.5 for i in a_alphas]
     >>> da_alpha_dTs = [-0.0005102028006086241, -0.0011131153520304886]
     >>> d2a_alpha_dT2s = [1.8651128859234162e-06, 3.884331923127011e-06]
-    >>> a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_i_roots, da_alpha_dTs, d2a_alpha_dT2s, 299.0, zs, kijs)
+    >>> a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots, da_alpha_dTs, d2a_alpha_dT2s, 299.0, zs, kijs)
     (0.58562139582, -0.001018667672, 3.56669817856e-06, [0.35469988173, 0.61604757237], [-0.000672387374, -0.001064293501])
     '''
     N = len(a_alphas)
@@ -462,7 +627,7 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_i_roots,
     # If d2a_alpha_dT2s were all halved, could save one more multiply
     for i in range(N):
         kijs_i = kijs[i]
-        a_alpha_i_root_i = a_alpha_i_roots[i]
+        a_alpha_i_root_i = a_alpha_roots[i]
 
         # delete these references?
         a_alphai = a_alphas[i]
@@ -472,7 +637,7 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_i_roots,
 
         for j in range(i):
             # TODO: optimize this, compute a_alpha after
-            v0 = a_alpha_i_root_i*a_alpha_i_roots[j]
+            v0 = a_alpha_i_root_i*a_alpha_roots[j]
             a_alpha_ijs_ij = (1. - kijs_i[j])*v0
             t200 = a_alpha_ijs_ij*zs[i]
             a_alpha_j_rows[j] += t200
@@ -548,7 +713,7 @@ def PR_lnphis(T, P, Z, b, a_alpha, zs, bs, a_alpha_j_rows):
     return lnphis
 
 
-def PR_lnphis_fastest(zs, T, P, kijs, l, g, ais, bs, a_alphas, a_alpha_i_roots, kappas):
+def PR_lnphis_fastest(zs, T, P, kijs, l, g, ais, bs, a_alphas, a_alpha_roots, kappas):
     # Uses precomputed values
     # Only creates its own arrays for a_alpha_j_rows and PR_lnphis
     N = len(bs)
@@ -558,7 +723,7 @@ def PR_lnphis_fastest(zs, T, P, kijs, l, g, ais, bs, a_alphas, a_alpha_i_roots, 
     delta = 2.0*b
     epsilon = -b*b
 
-    a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs)
+    a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs)
     V0, V1, V2 = volume_solutions_halley(T, P, b, delta, epsilon, a_alpha)
     if l:
         # Prefer liquid, ensure V0 is the smalest root

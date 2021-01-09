@@ -57,8 +57,10 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
         conv_fun = numba.jit
 
     to_change = ['eos.volume_solutions_halley', 'eos_mix.a_alpha_quadratic_terms',
-                 'eos_mix.a_alpha_and_derivatives_quadratic_terms',
-#                 'eos_mix.PR_lnphis', 'eos_mix.PR_lnphis_fastest',
+                 'eos_mix_methods.a_alpha_and_derivatives_quadratic_terms',
+#                 'eos_mix_methods.PR_lnphis', 'eos_mix_methods.PR_lnphis_fastest',
+                 'eos_mix_methods.a_alpha_aijs_composition_independent',
+                 'eos_mix_methods.a_alpha_and_derivatives_full',
                  'eos_alpha_functions.PR_a_alphas_vectorized',
                  'eos_alpha_functions.PR_a_alpha_and_derivatives_vectorized',
                  'eos_alpha_functions.SRK_a_alphas_vectorized',
@@ -75,6 +77,11 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
 
     for mod in new_mods:
         mod.__dict__.update(__funcs)
+        try:
+            __all__.extend(mod.__all__)
+        except AttributeError:
+            pass
+
 
     __funcs['eos'].GCEOS.volume_solutions = staticmethod(__funcs['volume_solutions_halley'])
     __funcs['eos'].GCEOS.main_derivatives_and_departures = staticmethod(__funcs['main_derivatives_and_departures'])

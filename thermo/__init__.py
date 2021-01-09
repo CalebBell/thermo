@@ -77,8 +77,10 @@ from . import nrtl
 from . import uniquac
 from . import bulk
 from chemicals import temperature
+from . import eos_mix_methods
 
 from .eos_alpha_functions import *
+from .eos_mix_methods import *
 from .eos_volume import *
 from chemicals.acentric import *
 from chemicals.rachford_rice import *
@@ -148,7 +150,7 @@ __all__ = ['rachford_rice', 'flash_basic', 'chemical', 'chemical_package', 'comb
  'datasheet', 'dippr', 'unifac', 'stream', 'mixture', 'property_package_constants',
  'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution',
  'equilibrium', 'phase_identification', 'temperature',
- 'eos_alpha_functions', 'eos_volume', 'bulk']
+ 'eos_alpha_functions', 'eos_volume', 'bulk', 'eos_mix_methods']
 
 __all__.extend(eos_volume.__all__)
 __all__.extend(eos_alpha_functions.__all__)
@@ -205,6 +207,7 @@ __all__.extend(regular_solution.__all__)
 __all__.extend(equilibrium.__all__)
 __all__.extend(temperature.__all__)
 __all__.extend(bulk.__all__)
+__all__.extend(eos_mix_methods.__all__)
 
 
 # backwards compatibility hack to allow thermo.chemical.Mixture to still be importable
@@ -222,7 +225,7 @@ submodules = [chemical, chemical_package, chemical_utils, coolprop, datasheet,
               phases, property_package, property_package_constants,
               regular_solution, stream, thermal_conductivity, unifac, uniquac, safety,
               utils, vapor_pressure, viscosity, volume, wilson, eos_alpha_functions,
-              eos_volume]
+              eos_volume, eos_mix_methods]
 
 try:
     thermo_dir = os.path.dirname(__file__)

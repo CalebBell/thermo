@@ -1509,7 +1509,7 @@ class GCEOS(object):
                         pass
         try:
             del self.a_alpha_ijs
-            del self.a_alpha_i_roots
+            del self.a_alpha_roots
             del self.a_alpha_ij_roots_inv
         except AttributeError:
             pass
