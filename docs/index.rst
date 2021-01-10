@@ -7,6 +7,7 @@ Contents:
    :maxdepth: 3
 
    cubic_equations_of_state
+   activity_coefficients
    property_objects
    tutorial_phases_and_flash
    modules

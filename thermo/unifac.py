@@ -2315,8 +2315,9 @@ class UNIFAC(GibbsExcess):
 
     Examples
     --------
-    The DDBST has published numerous problems showing this model a simple
-    binary system, such as example P05.22a in [2]_, with Hexane and butanone-2.
+    The DDBST has published numerous sample problems using UNIFAC; a simple
+    binary system from example P05.22a in [2]_ with n-hexane and butanone-2
+    is shown below:
 
     >>> from thermo.unifac import UFIP, UFSG
     >>> GE = UNIFAC.from_subgroups(chemgroups=[{1:2, 2:4}, {1:1, 2:1, 18:1}], T=60+273.15, xs=[0.5, 0.5], version=0, interaction_data=UFIP, subgroups=UFSG)

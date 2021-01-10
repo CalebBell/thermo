@@ -1310,6 +1310,7 @@ def NRTL_gammas(xs, taus, alphas):
         {\left ({\tau_{ij}-\frac{\displaystyle\sum_{m=1}^{n}{x_{m}\tau_{mj}
         G_{mj}}}{\displaystyle\sum_{k=1}^{n}{x_{k}G_{kj}}}}\right )}
 
+    .. math::
         G_{ij}=\text{exp}\left ({-\alpha_{ij}\tau_{ij}}\right )
 
     Parameters

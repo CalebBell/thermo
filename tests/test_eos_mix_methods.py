@@ -102,3 +102,19 @@ def test_a_alpha_aijs_composition_independent():
     assert_close2d(a_alpha_ijs, [[0.2491099357671155, 0.3686123937424334], [0.3686123937424334, 0.6486495863528038]], rtol=1e-13)
     assert_close1d(a_alpha_roots, [0.4991091421393877, 0.8053878484015039], rtol=1e-13)
     assert_close1d(a_alpha_ij_roots_inv,  [[4.014291910599931, 2.4877079977965977], [2.4877079977965977, 1.5416644379945614]], rtol=1e-13)
+
+
+def test_PR_lnphis_fastest():
+    kwargs = dict(Tcs=[190.56400000000002, 305.32, 369.83, 126.2],
+                  Pcs=[4599000.0, 4872000.0, 4248000.0, 3394387.5],
+                  omegas=[0.008, 0.098, 0.152, 0.04],
+                  zs=[.1, .2, .3, .4],
+                  kijs=[[0.0, -0.0059, 0.0119, 0.0289], [-0.0059, 0.0, 0.0011, 0.0533], [0.0119, 0.0011, 0.0, 0.0878], [0.0289, 0.0533, 0.0878, 0.0]])
+    eos = PRMIX(T=200, P=1e5, **kwargs)
+    expect = eos.lnphis_l
+    calc = PR_lnphis_fastest(eos.zs, eos.T, eos.P, eos.kijs, True, False, eos.ais, eos.bs, eos.a_alphas, eos.a_alpha_roots, eos.kappas)
+    assert_close(expect, calc, rtol=1e-14)
+
+    expect = eos.lnphis_g
+    calc = PR_lnphis_fastest(eos.zs, eos.T, eos.P, eos.kijs, False, True, eos.ais, eos.bs, eos.a_alphas, eos.a_alpha_roots, eos.kappas)
+    assert_close(expect, calc, rtol=1e-14)
