@@ -42,8 +42,41 @@ from __future__ import division
 from thermo.activity import GibbsExcess
 from chemicals.utils import log, exp
 from fluids.constants import R
+from fluids.numerics import numpy as np
+
+try:
+    zeros = np.zeros
+except:
+    pass
 
 __all__ = ['RegularSolution']
+
+
+def regular_solution_GE(SPs, coeffs, xsVs, N, xsVs_sum_inv):
+    num = 0.0
+    for i in range(N):
+        coeffsi = coeffs[i]
+        for j in range(N):
+            SPi_m_SPj = SPs[i] - SPs[j]
+            Aij = 0.5*SPi_m_SPj*SPi_m_SPj + coeffsi[j]*SPs[i]*SPs[j]
+            num += xsVs[i]*xsVs[j]*Aij
+    GE = num*xsVs_sum_inv
+    return GE
+
+
+def regular_solution_dGE_dxs(SPs, Vs, coeffs, xsVs, N, xsVs_sum_inv, GE, dGE_dxs=None):
+    if dGE_dxs is None:
+        dGE_dxs = [0.0]*N
+    for i in range(N):
+        # i is what is being differentiated
+        tot = 0.0
+        for j in range(N):
+            SPi_m_SPj = SPs[i] - SPs[j]
+            Hij = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
+            tot += Vs[i]*xsVs[j]*Hij
+        dGE_dxs[i] = (tot - GE*Vs[i])*xsVs_sum_inv
+    return dGE_dxs
+
 
 class RegularSolution(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
@@ -124,17 +157,31 @@ class RegularSolution(GibbsExcess):
         self.Vs = Vs
         self.SPs = SPs
         self.N = N = len(Vs)
-        self.cmps = range(N)
+        self.scalar = scalar = type(Vs) is list
+        self.cmps = cmps = range(N)
 
         if lambda_coeffs is None:
-            lambda_coeffs = [[0.0]*N for i in range(N)]
+            if scalar:
+                lambda_coeffs = [[0.0]*N for i in range(N)]
+            else:
+                lambda_coeffs = zeros((N, N))
         self.lambda_coeffs = lambda_coeffs
 
-        xsVs = 0.0
-        for i in self.cmps:
-            xsVs += xs[i]*Vs[i]
+        if scalar:
+            xsVs = []
+            xsVs_sum = 0.0
+            for i in cmps:
+                xV = xs[i]*Vs[i]
+                xsVs_sum += xV
+                xsVs.append(xV)
+
+        else:
+            xsVs =  (xs*Vs)
+            xsVs_sum = xsVs.sum()
+
         self.xsVs = xsVs
-        self.xsVs_inv = 1.0/xsVs
+        self.xsVs_sum = xsVs_sum
+        self.xsVs_sum_inv = 1.0/xsVs_sum
 
     def __repr__(self):
         s = '%s(T=%s, xs=%s, Vs=%s, SPs=%s, lambda_coeffs=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs),
@@ -169,12 +216,21 @@ class RegularSolution(GibbsExcess):
         new.N = self.N
         new.lambda_coeffs = self.lambda_coeffs
         new.cmps = self.cmps
+        new.scalar = scalar = self.scalar
 
-        xsVs = 0.0
-        for i in self.cmps:
-            xsVs += xs[i]*Vs[i]
+        if scalar:
+            xsVs = []
+            xsVs_sum = 0.0
+            for i in self.cmps:
+                xV = xs[i]*Vs[i]
+                xsVs_sum += xV
+                xsVs.append(xV)
+        else:
+            xsVs = xs*Vs
+            xsVs_sum = xsVs.sum()
         new.xsVs = xsVs
-        new.xsVs_inv = 1.0/xsVs
+        new.xsVs_sum = xsVs_sum
+        new.xsVs_sum_inv = 1.0/xsVs_sum
         return new
 
 
@@ -224,18 +280,7 @@ class RegularSolution(GibbsExcess):
             return self._GE
         except AttributeError:
             pass
-        cmps = self.cmps
-        xs, SPs, Vs, coeffs = self.xs, self.SPs, self.Vs, self.lambda_coeffs
-
-        num = 0.0
-        for i in cmps:
-            coeffsi = coeffs[i]
-            for j in cmps:
-                SPi_m_SPj = SPs[i] - SPs[j]
-                Aij = 0.5*SPi_m_SPj*SPi_m_SPj + coeffsi[j]*SPs[i]*SPs[j]
-                num += xs[i]*xs[j]*Vs[i]*Vs[j]*Aij
-        GE = num*self.xsVs_inv
-        self._GE = GE
+        GE = self._GE = regular_solution_GE(self.SPs, self.lambda_coeffs, self.xsVs, self.N, self.xsVs_sum_inv)
         return GE
 
 
@@ -265,20 +310,23 @@ class RegularSolution(GibbsExcess):
             return self._dGE_dxs
         except AttributeError:
             pass
-        cmps, xsVs_inv = self.cmps, self.xsVs_inv
-        xs, SPs, Vs, coeffs = self.xs, self.SPs, self.Vs, self.lambda_coeffs
-        GE = self.GE()
+#        N, xsVs_sum_inv, xsVs = self.N, self.xsVs_sum_inv, self.xsVs
+#        SPs, Vs, coeffs = self.SPs, self.Vs, self.lambda_coeffs
+        try:
+            GE = self._GE
+        except:
+            GE = self.GE()
 
-        self._dGE_dxs = dGE_dxs = []
+        self._dGE_dxs = dGE_dxs = regular_solution_dGE_dxs(self.SPs, self.Vs, self.lambda_coeffs, self.xsVs, self.N, self.xsVs_sum_inv, GE)
 
-        for i in cmps:
-            # i is what is being differentiated
-            tot = 0.0
-            for j in cmps:
-                SPi_m_SPj = SPs[i] - SPs[j]
-                Hij = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
-                tot += Vs[i]*Vs[j]*xs[j]*Hij
-            dGE_dxs.append((tot - GE*Vs[i])*xsVs_inv)
+#        for i in range(N):
+#            # i is what is being differentiated
+#            tot = 0.0
+#            for j in range(N):
+#                SPi_m_SPj = SPs[i] - SPs[j]
+#                Hij = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
+#                tot += Vs[i]*xsVs[j]*Hij
+#            dGE_dxs.append((tot - GE*Vs[i])*xsVs_sum_inv)
         return dGE_dxs
 
     def d2GE_dxixjs(self):
@@ -306,30 +354,37 @@ class RegularSolution(GibbsExcess):
             return self._d2GE_dxixjs
         except AttributeError:
             pass
-        cmps, xsVs_inv = self.cmps, self.xsVs_inv
+        N, xsVs_sum_inv = self.N, self.xsVs_sum_inv
         xs, SPs, Vs, coeffs = self.xs, self.SPs, self.Vs, self.lambda_coeffs
+        xsVs = self.xsVs
         GE, dGE_dxs = self.GE(), self.dGE_dxs()
 
-        self._d2GE_dxixjs = d2GE_dxixjs = []
+        if self.scalar:
+            d2GE_dxixjs = [[0.0]*N for i in range(N)]
+        else:
+            d2GE_dxixjs = zeros((N, N))
+        self._d2GE_dxixjs = d2GE_dxixjs
 
-        Hi_sums = []
-        for i in cmps:
+        # Shared between two things need to make a separate function
+        Hi_sums = [0.0]*N
+        for i in range(N):
             t = 0.0
-            for j in cmps:
+            for j in range(N):
                 SPi_m_SPj = SPs[i] - SPs[j]
                 Hi = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
-                t += Vs[i]*Vs[j]*xs[j]*Hi
-            Hi_sums.append(t)
+                t += Vs[i]*xsVs[j]*Hi
+            Hi_sums[i] = t
 
-        for i in cmps:
-            row = []
-            for j in cmps:
+        for i in range(N):
+            row = d2GE_dxixjs[i]
+            v0 = (Vs[i]*GE - Hi_sums[i])*xsVs_sum_inv*xsVs_sum_inv
+            v1 = Vs[i]*xsVs_sum_inv
+            for j in range(N):
                 SPi_m_SPj = SPs[i] - SPs[j]
                 Hi = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
-                tot = Vs[j]*(Vs[i]*GE - Hi_sums[i])*xsVs_inv*xsVs_inv - Vs[i]*dGE_dxs[j]*xsVs_inv + Vs[i]*Vs[j]*Hi*xsVs_inv
+                tot = Vs[j]*v0 + v1*(Vs[j]*Hi - dGE_dxs[j])
 
-                row.append(tot)
-            d2GE_dxixjs.append(row)
+                row[j] = tot
         return d2GE_dxixjs
 
     def d3GE_dxixjxks(self):
@@ -354,10 +409,11 @@ class RegularSolution(GibbsExcess):
             return self._d3GE_dxixjxks
         except:
             pass
-        cmps, xsVs_inv = self.cmps, self.xsVs_inv
+        cmps, xsVs_sum_inv = self.cmps, self.xsVs_sum_inv
         xs, SPs, Vs, coeffs = self.xs, self.SPs, self.Vs, self.lambda_coeffs
         GE, dGE_dxs, d2GE_dxixjs = self.GE(), self.dGE_dxs(), self.d2GE_dxixjs()
 
+        # Shared between two things need to make a separate function
         Hi_sums = []
         for i in cmps:
             t = 0.0
@@ -386,7 +442,7 @@ class RegularSolution(GibbsExcess):
 
 
 
-                    tot = firsts*xsVs_inv + seconds*xsVs_inv*xsVs_inv + thirds*xsVs_inv*xsVs_inv*xsVs_inv
+                    tot = firsts*xsVs_sum_inv + seconds*xsVs_sum_inv*xsVs_sum_inv + thirds*xsVs_sum_inv*xsVs_sum_inv*xsVs_sum_inv
                     dG_row.append(tot)
                 dG_matrix.append(dG_row)
             d3GE_dxixjxks.append(dG_matrix)
