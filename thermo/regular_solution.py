@@ -72,9 +72,14 @@ def regular_solution_GE(SPs, coeffs, xsVs, N, xsVs_sum_inv):
         tot = 0.0
         for j in range(N):
             SPi_m_SPj = SPs[i] - SPs[j]
-            Aij = 0.5*SPi_m_SPj*SPi_m_SPj + coeffsi[j]*SPs[i]*SPs[j]
-            tot += xsVs[j]*Aij
-        num += tot*xsVs[i]
+            tot += xsVs[j]*SPi_m_SPj*SPi_m_SPj
+        tot *= 0.5
+
+        tot2 = 0.0
+        for j in range(N):
+            # could facot out a the  xsVs[j]*SPs[j] into a single term
+            tot2 += xsVs[j]*SPs[j]*coeffsi[j]
+        num += (tot + tot2*SPs[i])*xsVs[i]
     GE = num*xsVs_sum_inv
     return GE
 
