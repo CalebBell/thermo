@@ -492,8 +492,8 @@ class GibbsExcess(object):
         except:
             pass
         # Matches the gamma formulation perfectly
-        dG_dxs = self.dGE_dxs()
         GE = self.GE()
+        dG_dxs = self.dGE_dxs()
         if self.scalar:
             dG_dns = dxs_to_dn_partials(dG_dxs, self.xs, GE)
             RT_inv = 1.0/(R*self.T)

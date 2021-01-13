@@ -462,7 +462,7 @@ class RegularSolution(GibbsExcess):
         try:
             dGE_dxs = self._dGE_dxs
         except:
-            dGE_dxs = sef.dGE_dxs()
+            dGE_dxs = self.dGE_dxs()
         try:
             d2GE_dxixjs = self._d2GE_dxixjs
         except:
