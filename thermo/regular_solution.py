@@ -45,11 +45,24 @@ from fluids.constants import R
 from fluids.numerics import numpy as np
 
 try:
-    zeros = np.zeros
+    zeros, npsum = np.zeros, np.sum
 except:
     pass
 
 __all__ = ['RegularSolution']
+
+
+def regular_solution_Hi_sums(SPs, Vs, coeffs, xsVs, N, Hi_sums=None):
+    if Hi_sums is None:
+        Hi_sums = [0.0]*N
+    for i in range(N):
+        t = 0.0
+        for j in range(N):
+            SPi_m_SPj = SPs[i] - SPs[j]
+            Hi = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
+            t += Vs[i]*xsVs[j]*Hi
+        Hi_sums[i] = t
+    return Hi_sums
 
 
 def regular_solution_GE(SPs, coeffs, xsVs, N, xsVs_sum_inv):
@@ -64,18 +77,53 @@ def regular_solution_GE(SPs, coeffs, xsVs, N, xsVs_sum_inv):
     return GE
 
 
-def regular_solution_dGE_dxs(SPs, Vs, coeffs, xsVs, N, xsVs_sum_inv, GE, dGE_dxs=None):
+def regular_solution_dGE_dxs(Hi_sums, Vs, N, xsVs_sum_inv, GE, dGE_dxs=None):
     if dGE_dxs is None:
         dGE_dxs = [0.0]*N
     for i in range(N):
         # i is what is being differentiated
-        tot = 0.0
+        dGE_dxs[i] = (Hi_sums[i] - GE*Vs[i])*xsVs_sum_inv
+    return dGE_dxs
+
+def regular_solution_d2GE_dxixjs(Vs, SPs, N, GE, Hi_sums, dGE_dxs, coeffs, xsVs_sum_inv, d2GE_dxixjs=None):
+    if d2GE_dxixjs is None:
+        d2GE_dxixjs = [[0.0]*N for i in range(N)] # numba: delete
+#        d2GE_dxixjs = zeros((N, N)) # numba: uncomment
+
+    for i in range(N):
+        row = d2GE_dxixjs[i]
+        v0 = (Vs[i]*GE - Hi_sums[i])*xsVs_sum_inv*xsVs_sum_inv
+        v1 = Vs[i]*xsVs_sum_inv
         for j in range(N):
             SPi_m_SPj = SPs[i] - SPs[j]
-            Hij = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
-            tot += Vs[i]*xsVs[j]*Hij
-        dGE_dxs[i] = (tot - GE*Vs[i])*xsVs_sum_inv
-    return dGE_dxs
+            Hi = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
+            tot = Vs[j]*v0 + v1*(Vs[j]*Hi - dGE_dxs[j])
+
+            row[j] = tot
+    return d2GE_dxixjs
+
+def regular_solution_d3GE_dxixjxks(Vs, SPs, N, GE, Hi_sums, dGE_dxs, d2GE_dxixjs, coeffs, xsVs_sum_inv, d3GE_dxixjxks=None):
+
+    # all the same: analytical[i][j][k] = analytical[i][k][j] = analytical[j][i][k] = analytical[j][k][i] = analytical[k][i][j] = analytical[k][j][i] = float(v)
+    for i in range(N):
+        dG_matrix = d3GE_dxixjxks[i]
+        for j in range(N):
+            dG_row = dG_matrix[j]
+            for k in range(N):
+                tot = 0.0
+                thirds = -2.0*Vs[i]*Vs[j]*Vs[k]*GE + 2.0*Vs[j]*Vs[k]*Hi_sums[i]
+                seconds = Vs[i]*(Vs[j]*dGE_dxs[k] + Vs[k]*dGE_dxs[j])
+                seconds -= Vs[i]*Vs[j]*Vs[k]*(
+                            SPs[i]*(SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPs[k]*(coeffs[i][k] + coeffs[k][i]))
+                             + (SPs[i]-SPs[j])**2 + (SPs[i] - SPs[k])**2
+                             )
+                firsts = -Vs[i]*d2GE_dxixjs[j][k]
+
+
+
+                tot = firsts*xsVs_sum_inv + seconds*xsVs_sum_inv*xsVs_sum_inv + thirds*xsVs_sum_inv*xsVs_sum_inv*xsVs_sum_inv
+                dG_row[k] = tot
+    return d3GE_dxixjxks
 
 
 class RegularSolution(GibbsExcess):
@@ -227,7 +275,7 @@ class RegularSolution(GibbsExcess):
                 xsVs.append(xV)
         else:
             xsVs = xs*Vs
-            xsVs_sum = xsVs.sum()
+            xsVs_sum = float(npsum(xsVs))
         new.xsVs = xsVs
         new.xsVs_sum = xsVs_sum
         new.xsVs_sum_inv = 1.0/xsVs_sum
@@ -310,24 +358,23 @@ class RegularSolution(GibbsExcess):
             return self._dGE_dxs
         except AttributeError:
             pass
-#        N, xsVs_sum_inv, xsVs = self.N, self.xsVs_sum_inv, self.xsVs
-#        SPs, Vs, coeffs = self.SPs, self.Vs, self.lambda_coeffs
         try:
             GE = self._GE
         except:
             GE = self.GE()
 
-        self._dGE_dxs = dGE_dxs = regular_solution_dGE_dxs(self.SPs, self.Vs, self.lambda_coeffs, self.xsVs, self.N, self.xsVs_sum_inv, GE)
-
-#        for i in range(N):
-#            # i is what is being differentiated
-#            tot = 0.0
-#            for j in range(N):
-#                SPi_m_SPj = SPs[i] - SPs[j]
-#                Hij = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
-#                tot += Vs[i]*xsVs[j]*Hij
-#            dGE_dxs.append((tot - GE*Vs[i])*xsVs_sum_inv)
+        self._dGE_dxs = dGE_dxs = regular_solution_dGE_dxs(self.Hi_sums(), self.Vs, self.N, self.xsVs_sum_inv, GE)
         return dGE_dxs
+
+    def Hi_sums(self):
+        try:
+            return self._Hi_sums
+        except:
+            pass
+        self._Hi_sums = Hi_sums = regular_solution_Hi_sums(self.SPs, self.Vs, self.lambda_coeffs, self.xsVs, self.N)
+        return Hi_sums
+
+
 
     def d2GE_dxixjs(self):
         r'''Calculate and return the second mole fraction derivatives of excess
@@ -354,37 +401,28 @@ class RegularSolution(GibbsExcess):
             return self._d2GE_dxixjs
         except AttributeError:
             pass
-        N, xsVs_sum_inv = self.N, self.xsVs_sum_inv
-        xs, SPs, Vs, coeffs = self.xs, self.SPs, self.Vs, self.lambda_coeffs
-        xsVs = self.xsVs
-        GE, dGE_dxs = self.GE(), self.dGE_dxs()
+        try:
+            GE = self._GE
+        except:
+            GE = self.GE()
+        try:
+            dGE_dxs = self._dGE_dxs
+        except:
+            dGE_dxs = self.dGE_dxs()
+        N = self.N
 
         if self.scalar:
             d2GE_dxixjs = [[0.0]*N for i in range(N)]
         else:
             d2GE_dxixjs = zeros((N, N))
+
+        try:
+            Hi_sums = self._Hi_sums
+        except:
+            Hi_sums = self.Hi_sums()
+
+        d2GE_dxixjs = regular_solution_d2GE_dxixjs(self.Vs, self.SPs, N, GE, Hi_sums, dGE_dxs, self.lambda_coeffs, self.xsVs_sum_inv, d2GE_dxixjs)
         self._d2GE_dxixjs = d2GE_dxixjs
-
-        # Shared between two things need to make a separate function
-        Hi_sums = [0.0]*N
-        for i in range(N):
-            t = 0.0
-            for j in range(N):
-                SPi_m_SPj = SPs[i] - SPs[j]
-                Hi = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
-                t += Vs[i]*xsVs[j]*Hi
-            Hi_sums[i] = t
-
-        for i in range(N):
-            row = d2GE_dxixjs[i]
-            v0 = (Vs[i]*GE - Hi_sums[i])*xsVs_sum_inv*xsVs_sum_inv
-            v1 = Vs[i]*xsVs_sum_inv
-            for j in range(N):
-                SPi_m_SPj = SPs[i] - SPs[j]
-                Hi = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
-                tot = Vs[j]*v0 + v1*(Vs[j]*Hi - dGE_dxs[j])
-
-                row[j] = tot
         return d2GE_dxixjs
 
     def d3GE_dxixjxks(self):
@@ -409,43 +447,31 @@ class RegularSolution(GibbsExcess):
             return self._d3GE_dxixjxks
         except:
             pass
-        cmps, xsVs_sum_inv = self.cmps, self.xsVs_sum_inv
-        xs, SPs, Vs, coeffs = self.xs, self.SPs, self.Vs, self.lambda_coeffs
-        GE, dGE_dxs, d2GE_dxixjs = self.GE(), self.dGE_dxs(), self.d2GE_dxixjs()
+        N = self.N
+        try:
+            GE = self._GE
+        except:
+            GE = self.GE()
+        try:
+            dGE_dxs = self._dGE_dxs
+        except:
+            dGE_dxs = sef.dGE_dxs()
+        try:
+            d2GE_dxixjs = self._d2GE_dxixjs
+        except:
+            d2GE_dxixjs = self.d2GE_dxixjs()
+        try:
+            Hi_sums = self._Hi_sums
+        except:
+            Hi_sums = self.Hi_sums()
 
-        # Shared between two things need to make a separate function
-        Hi_sums = []
-        for i in cmps:
-            t = 0.0
-            for j in cmps:
-                SPi_m_SPj = SPs[i] - SPs[j]
-                Hi = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
-                t += Vs[i]*Vs[j]*xs[j]*Hi
-            Hi_sums.append(t)
+        if self.scalar:
+            d3GE_dxixjxks = [[[0.0]*N for _ in range(N)] for _ in range(N)]
+        else:
+            d3GE_dxixjxks = zeros((N, N, N))
 
-        # all the same: analytical[i][j][k] = analytical[i][k][j] = analytical[j][i][k] = analytical[j][k][i] = analytical[k][i][j] = analytical[k][j][i] = float(v)
-        self._d3GE_dxixjxks = d3GE_dxixjxks = []
-        for i in cmps:
-            dG_matrix = []
-            for j in cmps:
-                dG_row = []
-                for k in cmps:
-                    tot = 0.0
-#                    if j == k:
-                    thirds = -2.0*Vs[i]*Vs[j]*Vs[k]*GE + 2.0*Vs[j]*Vs[k]*Hi_sums[i]
-                    seconds = Vs[i]*(Vs[j]*dGE_dxs[k] + Vs[k]*dGE_dxs[j])
-                    seconds -= Vs[i]*Vs[j]*Vs[k]*(
-                                SPs[i]*(SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPs[k]*(coeffs[i][k] + coeffs[k][i]))
-                                 + (SPs[i]-SPs[j])**2 + (SPs[i] - SPs[k])**2
-                                 )
-                    firsts = -Vs[i]*d2GE_dxixjs[j][k]
-
-
-
-                    tot = firsts*xsVs_sum_inv + seconds*xsVs_sum_inv*xsVs_sum_inv + thirds*xsVs_sum_inv*xsVs_sum_inv*xsVs_sum_inv
-                    dG_row.append(tot)
-                dG_matrix.append(dG_row)
-            d3GE_dxixjxks.append(dG_matrix)
+        d3GE_dxixjxks = regular_solution_d3GE_dxixjxks(self.Vs, self.SPs, self.N, GE, Hi_sums, dGE_dxs, d2GE_dxixjs, self.lambda_coeffs, self.xsVs_sum_inv, d3GE_dxixjxks)
+        self._d3GE_dxixjxks = d3GE_dxixjxks
         return d3GE_dxixjxks
 
     def d2GE_dTdxs(self):
@@ -464,7 +490,9 @@ class RegularSolution(GibbsExcess):
         Notes
         -----
         '''
-        return [0.0]*self.N
+        if self.scalar:
+            return [0.0]*self.N
+        return zeros(N)
 
     def dGE_dT(self):
         r'''Calculate and return the temperature derivative of excess Gibbs

@@ -78,6 +78,7 @@ from . import uniquac
 from . import bulk
 from chemicals import temperature
 from . import eos_mix_methods
+from . import activity
 
 from .eos_alpha_functions import *
 from .eos_mix_methods import *
@@ -135,6 +136,7 @@ from .nrtl import *
 from .uniquac import *
 from .equilibrium import *
 from chemicals.temperature import *
+from .activity import *
 
 #from chemicals import *
 
@@ -150,7 +152,7 @@ __all__ = ['rachford_rice', 'flash_basic', 'chemical', 'chemical_package', 'comb
  'datasheet', 'dippr', 'unifac', 'stream', 'mixture', 'property_package_constants',
  'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution',
  'equilibrium', 'phase_identification', 'temperature',
- 'eos_alpha_functions', 'eos_volume', 'bulk', 'eos_mix_methods']
+ 'eos_alpha_functions', 'eos_volume', 'bulk', 'eos_mix_methods', 'activity']
 
 __all__.extend(eos_volume.__all__)
 __all__.extend(eos_alpha_functions.__all__)
@@ -208,6 +210,7 @@ __all__.extend(equilibrium.__all__)
 __all__.extend(temperature.__all__)
 __all__.extend(bulk.__all__)
 __all__.extend(eos_mix_methods.__all__)
+__all__.extend(activity.__all__)
 
 
 # backwards compatibility hack to allow thermo.chemical.Mixture to still be importable
@@ -218,7 +221,7 @@ except:
     pass
 # However, they cannot go in thermo.chemical's __all__ or they will appear in the
 # documentation and Sphinx currently has no wat to exclude them
-submodules = [chemical, chemical_package, chemical_utils, coolprop, datasheet,
+submodules = [activity, chemical, chemical_package, chemical_utils, coolprop, datasheet,
               electrochem, eos, eos_mix, equilibrium, flash, heat_capacity,
               identifiers, interaction_parameters, interface, joback, law,
               mixture, nrtl, permittivity, phase_change, phase_identification,

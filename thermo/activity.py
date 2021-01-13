@@ -67,10 +67,27 @@ References
 from __future__ import division
 
 __all__ = ['GibbsExcess', 'IdealSolution']
+from fluids.constants import R, R_inv
+from fluids.numerics import numpy as np
 from chemicals.utils import exp
 from chemicals.utils import normalize, dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, d2xs_to_dxdn_partials
-from fluids.constants import R, R_inv
 
+try:
+    npexp = np.exp
+except:
+    pass
+
+def gibbs_excess_gammas(xs, dG_dxs, GE, T, gammas=None):
+    xdx_totF = GE
+    N = len(xs)
+    for i in range(N):
+        xdx_totF -= xs[i]*dG_dxs[i]
+    RT_inv = R_inv/T
+    if gammas is None:
+        gammas = [0.0]*N
+    for i in range(N):
+        gammas[i] = exp((dG_dxs[i] + xdx_totF)*RT_inv)
+    return gammas
 
 class GibbsExcess(object):
     r'''Class for representing an activity coefficient model.
@@ -477,10 +494,14 @@ class GibbsExcess(object):
         # Matches the gamma formulation perfectly
         dG_dxs = self.dGE_dxs()
         GE = self.GE()
-        dG_dns = dxs_to_dn_partials(dG_dxs, self.xs, GE)
-        RT_inv = 1.0/(R*self.T)
-        self._gammas = [exp(i*RT_inv) for i in dG_dns]
-        return self._gammas
+        if self.scalar:
+            dG_dns = dxs_to_dn_partials(dG_dxs, self.xs, GE)
+            RT_inv = 1.0/(R*self.T)
+            gammas = [exp(i*RT_inv) for i in dG_dns]
+        else:
+            gammas = gibbs_excess_gammas(self.xs, dG_dxs, GE, self.T)
+        self._gammas = gammas
+        return gammas
 
     def _gammas_dGE_dxs(self):
         try:

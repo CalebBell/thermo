@@ -30,6 +30,7 @@ import numba
 import thermo
 import fluids
 import fluids.numba
+from numba.core.registry import CPUDispatcher
 normal_fluids = fluids
 normal = thermo
 
@@ -56,11 +57,28 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
     else:
         conv_fun = numba.jit
 
+    import chemicals.numba
+    for name in dir(chemicals.numba):
+        obj = getattr(chemicals.numba, name)
+        if isinstance(obj, CPUDispatcher):
+            __funcs[name] = obj
+
+    for mod in new_mods:
+        mod.__dict__.update(__funcs)
+
     to_change = ['eos.volume_solutions_halley', 'eos_mix.a_alpha_quadratic_terms',
                  'eos_mix_methods.a_alpha_and_derivatives_quadratic_terms',
                  'eos_mix_methods.PR_lnphis', 'eos_mix_methods.PR_lnphis_fastest',
                  'eos_mix_methods.a_alpha_aijs_composition_independent',
                  'eos_mix_methods.a_alpha_and_derivatives_full',
+
+                 'regular_solution.regular_solution_Hi_sums',
+                 'regular_solution.regular_solution_dGE_dxs',
+                 'regular_solution.regular_solution_d2GE_dxixjs',
+                 'regular_solution.regular_solution_d3GE_dxixjxks',
+                 'regular_solution.RegularSolution',
+                 'activity.gibbs_excess_gammas',
+
                  'eos_alpha_functions.PR_a_alphas_vectorized',
                  'eos_alpha_functions.PR_a_alpha_and_derivatives_vectorized',
                  'eos_alpha_functions.SRK_a_alphas_vectorized',
@@ -74,6 +92,8 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                  'eos_alpha_functions.APISRK_a_alphas_vectorized',
                  'eos_alpha_functions.APISRK_a_alpha_and_derivatives_vectorized']
     normal_fluids.numba.transform_lists_to_arrays(normal, to_change, __funcs, cache_blacklist=cache_blacklist)
+
+
 
     for mod in new_mods:
         mod.__dict__.update(__funcs)
