@@ -22,20 +22,17 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['DSL_data', 'CAN_DSL_flags', 'TSCA_flags', 'TSCA_data', 
-           'EINECS_data', 'SPIN_data', 'NLP_data', 'legal_status_methods', 
-           'legal_status', 'HPV_data', '_ECHATonnageDict', '_EPACDRDict', 
+__all__ = ['DSL_data', 'CAN_DSL_flags', 'TSCA_flags', 'TSCA_data',
+           'EINECS_data', 'SPIN_data', 'NLP_data', 'legal_status_methods',
+           'legal_status', 'HPV_data', '_ECHATonnageDict', '_EPACDRDict',
            'economic_status', 'economic_status_methods', 'load_economic_data',
            'load_law_data']
 
 import os
-import zipfile
-from thermo.utils import to_num, CAS2int
-import pandas as pd
-from pprint import pprint
+from chemicals.identifiers import CAS_to_int
+from chemicals.utils import to_num, os_path_join
 
 
-folder = os.path.join(os.path.dirname(__file__), 'Law')
 
 DSL = 'DSL'
 TSCA = 'TSCA'
@@ -55,7 +52,7 @@ CAN_DSL_flags = {0: LISTED,
                  2: 'Significant New Activity (SNAc)',
                  3: 'Ministerial Condition pertaining to this substance',
                  4: 'Domestic Substances List, removed (DSL_REM)',
-                 5: 'Minister of the Environment has imposed a Ministerial ' 
+                 5: 'Minister of the Environment has imposed a Ministerial '
                     'Prohibition pertaining to this substance'}
 
 
@@ -82,21 +79,25 @@ def load_law_data():
     if DSL_data is not None:
         return None
     global TSCA_data, EINECS_data, SPIN_data, NLP_data
+    import pandas as pd
+    import zipfile
+    folder = os_path_join(os.path.dirname(__file__), 'Law')
+
 
 # Data is stored as integers to reduce memory usage
     DSL_data = pd.read_csv(os.path.join(folder, 'Canada Feb 11 2015 - DSL.csv.gz'),
                            sep='\t', index_col=0, compression='gzip')
-    
+
     TSCA_data = pd.read_csv(os.path.join(folder, 'TSCA Inventory 2016-01.csv.gz'),
                            sep='\t', index_col=0, compression='gzip')
-    
-    
+
+
     EINECS_data = pd.read_csv(os.path.join(folder, 'EINECS 2015-03.csv.gz'),
                               index_col=0, compression='gzip')
-    
+
     SPIN_data = pd.read_csv(os.path.join(folder, 'SPIN Inventory 2015-03.csv.gz'),
                            compression='gzip', index_col=0)
-    
+
     NLP_data = pd.read_csv(os.path.join(folder, 'EC Inventory No Longer Polymers (NLP).csv'),
                            sep='\t', index_col=0)
     # 161162-67-6 is not a valid CAS number and was removed.
@@ -104,7 +105,7 @@ def load_law_data():
 legal_status_methods = [COMBINED, DSL, TSCA, EINECS, SPIN, NLP]
 
 
-def legal_status(CASRN, Method=None, AvailableMethods=False, CASi=None):
+def legal_status(CASRN, method=None, get_methods=False, CASi=None):
     r'''Looks up the legal status of a chemical according to either a specifc
     method or with all methods.
 
@@ -121,16 +122,16 @@ def legal_status(CASRN, Method=None, AvailableMethods=False, CASi=None):
     -------
     status : str or dict
         Legal status information [-]
-    methods : list, only returned if AvailableMethods == True
+    methods : list, only returned if get_methods == True
         List of methods which can be used to obtain legal status with the
         given inputs
 
     Other Parameters
     ----------------
-    Method : string, optional
+    method : string, optional
         A string for the method name to use, as defined by constants in
         legal_status_methods
-    AvailableMethods : bool, optional
+    get_methods : bool, optional
         If True, function will determine which methods can be used to obtain
         the legal status for the desired chemical, and will return methods
         instead of the status
@@ -181,12 +182,8 @@ def legal_status(CASRN, Method=None, AvailableMethods=False, CASi=None):
 
     Examples
     --------
-    >>> pprint(legal_status('64-17-5'))
-    {'DSL': 'LISTED',
-     'EINECS': 'LISTED',
-     'NLP': 'UNLISTED',
-     'SPIN': 'LISTED',
-     'TSCA': 'LISTED'}
+    >>> legal_status('64-17-5')
+    {'DSL': 'LISTED', 'TSCA': 'LISTED', 'EINECS': 'LISTED', 'NLP': 'UNLISTED', 'SPIN': 'LISTED'}
 
     References
     ----------
@@ -201,18 +198,18 @@ def legal_status(CASRN, Method=None, AvailableMethods=False, CASi=None):
     '''
     load_law_data()
     if not CASi:
-        CASi = CAS2int(CASRN)
+        CASi = CAS_to_int(CASRN)
     methods = [COMBINED, DSL, TSCA, EINECS, NLP, SPIN]
-    if AvailableMethods:
+    if get_methods:
         return methods
-    if not Method:
-        Method = methods[0]
-    if Method == DSL:
+    if not method:
+        method = methods[0]
+    if method == DSL:
         if CASi in DSL_data.index:
             status = CAN_DSL_flags[DSL_data.at[CASi, 'Registry']]
         else:
             status = UNLISTED
-    elif Method == TSCA:
+    elif method == TSCA:
         if CASi in TSCA_data.index:
             data = TSCA_data.loc[CASi].to_dict()
             if any(data.values()):
@@ -221,55 +218,46 @@ def legal_status(CASRN, Method=None, AvailableMethods=False, CASi=None):
                 status = LISTED
         else:
             status = UNLISTED
-    elif Method == EINECS:
+    elif method == EINECS:
         if CASi in EINECS_data.index:
             status = LISTED
         else:
             status = UNLISTED
-    elif Method == NLP:
+    elif method == NLP:
         if CASi in NLP_data.index:
             status = LISTED
         else:
             status = UNLISTED
-    elif Method == SPIN:
+    elif method == SPIN:
         if CASi in SPIN_data.index:
             status = LISTED
         else:
             status = UNLISTED
-    elif Method == COMBINED:
+    elif method == COMBINED:
         status = {}
         for method in methods[1:]:
-            status[method] = legal_status(CASRN, Method=method, CASi=CASi)
+            status[method] = legal_status(CASRN, method=method, CASi=CASi)
     else:
         raise Exception('Failure in in function')
     return status
 
-#print  legal_status(CASRN='64-17-5')
-#for i in [DSL, TSCA, EINECS, SPIN, NLP]:
-#    print  legal_status(CASRN='64-17-5', Method=i)
-#print 'hi'
-
-#print legal_status(CASRN='13775-50-3', Method=DSL)
-#print legal_status(CASRN='52-89-1')
-# _ECHATonnageDict, _EPACDRDict
-# 2.135340690612793, 3.499225616455078
-#print legal_status(CASRN='1648727-81-4')
-
-
-
 HPV_data, _EPACDRDict, _ECHATonnageDict = [None]*3
-                                          
+
 def load_economic_data():
     global HPV_data
     if HPV_data is not None:
         return None
     global _EPACDRDict, _ECHATonnageDict
-    
+    import pandas as pd
+    import zipfile
+    folder = os_path_join(os.path.dirname(__file__), 'Law')
+
+
     '''OECD are chemicals produced by and OECD members in > 1000 tonnes/year.'''
     HPV_data = pd.read_csv(os.path.join(folder, 'HPV 2015 March 3.csv'),
                            sep='\t', index_col=0)
     # 13061-29-2 not valid and removed
-    
+
     _ECHATonnageDict = {}
     with zipfile.ZipFile(os.path.join(folder, 'ECHA Tonnage Bands.csv.zip')) as z:
         with z.open(z.namelist()[0]) as f:
@@ -283,14 +271,14 @@ def load_economic_data():
                         _ECHATonnageDict[CAS].append(band)
                 else:
                     _ECHATonnageDict[CAS] = [band]
-    
-    
+
+
     _EPACDRDict = {}
     with open(os.path.join(folder, 'EPA 2012 Chemical Data Reporting.csv')) as f:
         '''EPA summed reported chemical usages. In metric tonnes/year after conversion.
         Many producers keep their date confidential.
         This was originally in terms of lb/year, but rounded to the nearest kg.
-    
+
         '''
         next(f)
         for line in f:
@@ -307,26 +295,24 @@ OECD = 'OECD high production volume chemicals'
 economic_status_methods = [EPACDR, ECHA, OECD]
 
 
-def economic_status(CASRN, Method=None, AvailableMethods=False):  # pragma: no cover
+def economic_status(CASRN, method=None, get_methods=False):  # pragma: no cover
     '''Look up the economic status of a chemical.
 
     This API is considered experimental, and is expected to be removed in a
     future release in favor of a more complete object-oriented interface.
 
-    >>> pprint(economic_status(CASRN='98-00-0'))
-    ["US public: {'Manufactured': 0.0, 'Imported': 10272.711, 'Exported': 184.127}",
-     u'10,000 - 100,000 tonnes per annum',
-     'OECD HPV Chemicals']
+    >>> economic_status(CASRN='98-00-0')
+    ["US public: {'Manufactured': 0.0, 'Imported': 10272.711, 'Exported': 184.127}", '10,000 - 100,000 tonnes per annum', 'OECD HPV Chemicals']
 
     >>> economic_status(CASRN='13775-50-3')  # SODIUM SESQUISULPHATE
     []
-    >>> economic_status(CASRN='98-00-0', Method='OECD high production volume chemicals')
+    >>> economic_status(CASRN='98-00-0', method='OECD high production volume chemicals')
     'OECD HPV Chemicals'
-    >>> economic_status(CASRN='98-01-1', Method='European Chemicals Agency Total Tonnage Bands')
-    [u'10,000 - 100,000 tonnes per annum']
+    >>> economic_status(CASRN='98-01-1', method='European Chemicals Agency Total Tonnage Bands')
+    ['10,000 - 100,000 tonnes per annum']
     '''
     load_economic_data()
-    CASi = CAS2int(CASRN)
+    CASi = CAS_to_int(CASRN)
 
     def list_methods():
         methods = []
@@ -339,18 +325,18 @@ def economic_status(CASRN, Method=None, AvailableMethods=False):  # pragma: no c
             methods.append(OECD)
         methods.append(NONE)
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
     # This is the calculate, given the method section
-    if Method == EPACDR:
+    if method == EPACDR:
         status = 'US public: ' + str(_EPACDRDict[CASRN])
-    elif Method == ECHA:
+    elif method == ECHA:
         status = _ECHATonnageDict[CASRN]
-    elif Method == OECD:
+    elif method == OECD:
         status = 'OECD HPV Chemicals'
-    elif Method == 'Combined':
+    elif method == 'Combined':
         status = []
         if CASRN in _EPACDRDict:
             status += ['US public: ' + str(_EPACDRDict[CASRN])]
@@ -358,7 +344,7 @@ def economic_status(CASRN, Method=None, AvailableMethods=False):  # pragma: no c
             status += _ECHATonnageDict[CASRN]
         if CASi in HPV_data.index:
             status += ['OECD HPV Chemicals']
-    elif Method == NONE:
+    elif method == NONE:
         status = None
     else:
         raise Exception('Failure in in function')

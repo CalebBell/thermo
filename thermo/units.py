@@ -34,7 +34,7 @@ try:
     import pint
     from pint import _DEFAULT_REGISTRY as u
     from pint import DimensionalityError
-    
+
 except ImportError: # pragma: no cover
     raise ImportError('The unit handling in fluids requires the installation '
                       'of the package pint, available on pypi or from '
@@ -43,16 +43,24 @@ from fluids.units import wraps_numpydoc, wrap_numpydoc_obj
 
 __funcs = {}
 
+failed_wrapping = False
+
 
 for name in dir(thermo):
     obj = getattr(thermo, name)
     if isinstance(obj, types.FunctionType):
         pass
 #        obj = wraps_numpydoc(u)(obj)
-    elif type(obj) == type and obj in [thermo.Chemical, thermo.Mixture, thermo.Stream]:
+    elif type(obj) == type and (obj in [thermo.Chemical, thermo.Mixture, thermo.Stream]
+                                 or thermo.eos.GCEOS in obj.__mro__
+                                 or thermo.activity.GibbsExcess in obj.__mro__):
+        if obj in (thermo.eos_mix.PSRKMixingRules, thermo.eos_mix.PSRK):
+            # Not yet implemented
+            continue
         try:
             obj = wrap_numpydoc_obj(obj)
         except Exception as e:
+            failed_wrapping = True
             print('Current implementation of %s contains documentation not '
                   'parseable and cound not be wrapped to use pint:' %str(obj))
             print(e)
@@ -62,5 +70,5 @@ for name in dir(thermo):
         continue
     __all__.append(name)
     __funcs.update({name: obj})
-    
+
 globals().update(__funcs)

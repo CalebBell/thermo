@@ -1,0 +1,2697 @@
+{
+    "100-41-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            185.96
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "101-81-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            266.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "103-65-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            214.71
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "104-51-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            243.39
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "105-05-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            239.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "105-30-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            249.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "105-37-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            197.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "105-54-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            255.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "105-66-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            257.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "10544-72-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            142.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "106-27-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            320.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "106-36-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            229.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "106-42-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            181.66
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "106-93-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            135.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "106-97-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            142.89
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "106-98-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            124.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "106-99-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            125.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "1067-08-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            245.89
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "107-00-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            122.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "107-06-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            126.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "107-10-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            136.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "107-18-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            138.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "107-31-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            119.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "107-83-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            193.93
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "107-87-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            184.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "107-92-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            177.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "1071-26-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            283.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "108-08-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            224.22
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "108-10-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            209.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "108-24-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            124.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "108-38-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            188.44
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "108-39-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            225.02
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "108-47-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            186.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "108-48-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            184.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "108-64-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            253.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "108-67-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            209.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "108-87-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            184.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "108-88-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            157.29
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "108-90-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            150.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "108-99-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            158.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "109-06-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            158.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "109-52-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            210.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "109-60-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            202.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "109-66-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            167.19
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "109-67-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            154.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "109-73-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            294.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "109-89-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            178.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "109-94-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            146.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "109-97-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            127.74
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "109-99-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            124.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "110-00-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            114.64
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "110-02-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            123.88
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "110-19-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            241.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "110-45-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            241.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "110-54-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            195.43
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "110-74-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            178.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "110-82-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            156.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "110-86-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            132.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "1108-89-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            159.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "111-27-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            232.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "111-65-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            254.15
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "111-66-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            241.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "111-70-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            270.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "111-84-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            284.45
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "111-87-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            302.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "112-30-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            366.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "112-40-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            375.47
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "112-41-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            360.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "112-95-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            627.45
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "1120-21-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            345.05
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "115-07-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            112.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "1186-53-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            252.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "120-92-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            154.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "123-51-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            211.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "123-86-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            228.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "123-91-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            154.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "123-92-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            265.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "124-07-02": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            298.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "124-11-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            271.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "124-18-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            314.54
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "13465-07-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            92.74
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "13845-23-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            123.42
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "13845-24-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            184.78
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "13845-25-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            154.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "141-78-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            170.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "142-29-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            122.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "142-82-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            224.98
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "143-08-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            334.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "1640-89-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            186.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "16747-38-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            275.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "1759-58-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            190.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "20291-95-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            306.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "2207-04-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            210.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "2532-58-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            190.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "287-23-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            109.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "287-92-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            126.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "288-14-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            96.48
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "291-64-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            200.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "292-64-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            215.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "302-01-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            96.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "307-34-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            429.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "3221-61-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            271.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "352-93-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            171.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "431-89-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            137.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "463-82-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            172.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "464-06-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            213.51
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "493-01-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            232.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "493-02-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            228.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "496-11-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            190.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "503-74-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            197.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "505-22-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            143.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "513-35-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            152.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "526-73-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            216.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "534-22-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            143.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "538-93-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            241.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "539-82-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            257.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "540-42-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            268.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "540-54-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            131.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "540-84-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            238.55
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "541-31-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            200.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "542-55-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            217.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "544-76-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            501.45
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "547-63-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            191.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "56-23-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            131.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "560-21-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            245.56
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "562-49-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            214.76
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "563-16-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            246.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "563-45-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            156.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "563-80-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            180.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "564-02-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            245.39
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "565-59-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            218.28
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "565-75-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            248.61
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "583-48-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            246.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "583-58-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            189.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "583-61-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            189.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "584-94-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            248.78
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "589-34-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            221.25
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "589-38-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            216.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "589-43-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            250.08
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "589-53-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            251.08
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "589-55-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            317.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "589-62-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            337.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "589-81-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            250.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "589-93-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            183.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "589-98-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            338.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "590-18-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            127.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "590-35-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            221.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "590-73-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            249.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "591-22-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            186.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "591-76-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            222.97
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "591-78-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            213.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "592-13-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            249.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "592-27-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            251.99
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "592-41-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            183.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "592-76-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            211.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "593-45-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            564.45
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "594-82-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            279.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "598-75-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            245.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "60-29-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            172.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "609-26-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            248.91
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "617-78-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            219.58
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "619-99-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            250.29
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "62-53-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            191.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "622-96-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            210.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "623-37-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            269.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "623-42-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            200.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "624-24-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            229.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "624-89-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            144.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "627-19-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            167.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "627-20-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            151.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "628-32-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            197.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "629-50-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            406.89
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "629-59-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            438.48
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "629-62-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            469.95
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "629-78-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            534.34
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "629-92-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            595.94
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "638-49-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            243.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "64-17-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            112.25
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "64-18-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            99.17
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "64-19-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            123.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "644-49-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            254.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "67-56-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            81.08
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "67-63-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            154.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "67-64-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            126.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "67-66-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            113.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "71-23-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            143.73
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "71-36-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            177.06
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "71-41-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            208.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "71-43-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            135.95
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "7154-79-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            284.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "7154-80-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            295.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "74-84-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            231.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "74-87-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            81.84
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "74-89-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            102.09
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "74-93-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            90.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "74-96-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            99.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "74-98-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            120.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "7446-11-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            226.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-00-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            106.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-04-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            129.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-08-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            117.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-09-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            100.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-18-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            118.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-28-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            142.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-31-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            163.88
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-34-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            126.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-37-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            118.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-43-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            108.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-45-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            110.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-50-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            136.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-52-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            106.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-65-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            220.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-68-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            130.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-69-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            121.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-71-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            119.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-83-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            188.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "75-85-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            247.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "7664-39-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            52.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "7664-41-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            83.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "7726-95-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            75.67
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "7732-18-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            75.29
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "7783-06-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            74.68
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "7789-20-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            84.35
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "78-78-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            164.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "78-81-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            194.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "78-83-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            183.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "78-92-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            199.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "78-93-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            158.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "79-09-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            152.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "79-20-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            143.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "79-29-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            188.66
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "79-31-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            173.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "872-05-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            300.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "90-12-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            224.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "91-22-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            194.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "92-52-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            250.95
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "95-47-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            188.07
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "95-63-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            215.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "96-14-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            190.66
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "96-22-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            191.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "96-37-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            158.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "96-41-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            184.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "97-62-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            222.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "98-82-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            213.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }, 
+    "99-87-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            237.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "Poling et al. (2001) constant"
+    }
+}

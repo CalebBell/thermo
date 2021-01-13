@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,15 +18,41 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains a class :obj:`NRTL` for performing activity coefficient
+calculations with the NRTL model. An older, functional calculation for
+activity coefficients only is also present, :obj:`NRTL_gammas`.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. contents:: :local:
+
+NRTL Class
+==========
+
+.. autoclass:: NRTL
+    :members: to_T_xs, GE, dGE_dT, d2GE_dT2, d2GE_dTdxs, dGE_dxs, d2GE_dxixjs, taus, dtaus_dT, d2taus_dT2, d3taus_dT3, alphas, Gs, dGs_dT, d2Gs_dT2, d3Gs_dT3
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members: gammas
+    :member-order: bysource
+
+NRTL Functional Calculations
+============================
+.. autofunction:: NRTL_gammas
+
+
+'''
 
 from __future__ import division
 from fluids.numerics import numpy as np
-from thermo.activity import GibbsExcess, NRTL_gammas
+from thermo.activity import GibbsExcess
 from math import log, exp
 from fluids.constants import R
 
-__all__ = ['NRTL']
+__all__ = ['NRTL', 'NRTL_gammas']
 
 
 with_numba = True
@@ -57,13 +83,99 @@ else:
     
 @jitclass(spec)
 class NRTL(GibbsExcess):
-    def __init__(self, T, xs, tau_coeffs=None, alpha_coeffs=None, 
+    r'''Class for representing an a liquid with excess gibbs energy represented
+    by the NRTL equation. This model is capable of representing VL and LL
+    behavior. [1]_ and [2]_ are good references on this model.
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    xs : list[float]
+        Mole fractions, [-]
+    tau_coeffs : list[list[list[float]]], optional
+        NRTL parameters, indexed by [i][j] and then each value is a 6
+        element list with parameters [`a`, `b`, `e`, `f`, `g`, `h`];
+        either (`tau_coeffs` and `alpha_coeffs`) or `ABEFGHCD` are required, [-]
+    alpha_coeffs : list[list[float]], optional
+        NRTL alpha parameters, []
+    ABEFGHCD : tuple[list[list[float]], 8], optional
+        Contains the following. One of (`tau_coeffs` and `alpha_coeffs`) or
+        `ABEFGHCD` are required, [-]
+
+        a : list[list[float]]
+            `a` parameters used in calculating :obj:`NRTL.taus`, [-]
+        b : list[list[float]]
+            `b` parameters used in calculating :obj:`NRTL.taus`, [K]
+        e : list[list[float]]
+            `e` parameters used in calculating :obj:`NRTL.taus`, [-]
+        f : list[list[float]]
+            `f` paraemeters used in calculating :obj:`NRTL.taus`, [1/K]
+        e : list[list[float]]
+            `e` parameters used in calculating :obj:`NRTL.taus`, [K^2]
+        f : list[list[float]]
+            `f` parameters used in calculating :obj:`NRTL.taus`, [1/K^2]
+        c : list[list[float]]
+            `c` parameters used in calculating :obj:`NRTL.alphas`, [-]
+        d : list[list[float]]
+            `d` paraemeters used in calculating :obj:`NRTL.alphas`, [1/K]
+
+    Attributes
+    ----------
+    T : float
+        Temperature, [K]
+    xs : list[float]
+        Mole fractions, [-]
+
+    Notes
+    -----
+    In addition to the methods presented here, the methods of its base class
+    :obj:`thermo.activity.GibbsExcess` are available as well.
+
+    Examples
+    --------
+    The DDBST has published numerous problems showing this model a simple
+    binary system, Example P05.01b in [2]_, shows how to use parameters from
+    the DDBST which are in units of calorie and need the gas constant as a
+    multiplier:
+
+    >>> from scipy.constants import calorie, R
+    >>> N = 2
+    >>> T = 70.0 + 273.15
+    >>> xs = [0.252, 0.748]
+    >>> tausA = tausE = tausF = tausG = tausH = alphaD = [[0.0]*N for i in range(N)]
+    >>> tausB = [[0, -121.2691/R*calorie], [1337.8574/R*calorie, 0]]
+    >>> alphaC =  [[0, 0.2974],[.2974, 0]]
+    >>> ABEFGHCD = (tausA, tausB, tausE, tausF, tausG, tausH, alphaC, alphaD)
+    >>> GE = NRTL(T=T, xs=xs, ABEFGHCD=ABEFGHCD)
+    >>> GE.gammas()
+    [1.93605165145, 1.15366304520]
+    >>> GE
+    NRTL(T=343.15, xs=[0.252, 0.748], ABEFGHCD=([[0.0, 0.0], [0.0, 0.0]], [[0, -61.0249799309399], [673.2359767282798, 0]], [[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]], [[0, 0.2974], [0.2974, 0]], [[0.0, 0.0], [0.0, 0.0]]))
+    >>> GE.GE(), GE.dGE_dT(), GE.d2GE_dT2()
+    (780.053057219, 0.5743500022, -0.003584843605528)
+    >>> GE.HE(), GE.SE(), GE.dHE_dT(), GE.dSE_dT()
+    (582.964853938, -0.57435000227, 1.230139083237, 0.0035848436055)
+
+    The solution given by the DDBST has the same values [1.936, 1.154],
+    and can be found here:
+    http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/P05.01b%20VLE%20Behavior%20of%20Ethanol%20-%20Water%20Using%20NRTL.xps
+
+    References
+    ----------
+    .. [1] Poling, Bruce E., John M. Prausnitz, and John P. O’Connell. The
+       Properties of Gases and Liquids. 5th edition. New York: McGraw-Hill
+       Professional, 2000.
+    .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
+       Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
+    '''
+    def __init__(self, T, xs, tau_coeffs=None, alpha_coeffs=None,
                  ABEFGHCD=None):
         self.T = T
         self.xs = xs
 
         if ABEFGHCD is not None:
-            (self.tau_coeffs_A, self.tau_coeffs_B, self.tau_coeffs_E, 
+            (self.tau_coeffs_A, self.tau_coeffs_B, self.tau_coeffs_E,
             self.tau_coeffs_F, self.tau_coeffs_G, self.tau_coeffs_H,
             self.alpha_coeffs_c, self.alpha_coeffs_d) = ABEFGHCD
             self.N = N = len(self.tau_coeffs_A)
@@ -77,7 +189,7 @@ class NRTL(GibbsExcess):
                 self.tau_coeffs_H = [[i[5] for i in l] for l in tau_coeffs]
             else:
                 raise ValueError("`tau_coeffs` is required")
-    
+
             if alpha_coeffs is not None:
                 self.alpha_coeffs_c = [[i[0] for i in l] for l in alpha_coeffs]
                 self.alpha_coeffs_d = [[i[1] for i in l] for l in alpha_coeffs]
@@ -85,116 +197,131 @@ class NRTL(GibbsExcess):
                 raise ValueError("`alpha_coeffs` is required")
 
             self.N = N = len(self.tau_coeffs_A)
-            
-        self.cmps = arange(N)
-        
+
+        self.cmps = range(N)
+
     @property
     def zero_coeffs(self):
+        '''Method to return a 2D list-of-lists of zeros.
+        '''
         try:
             return self._zero_coeffs
-        except Exception:
+        except AttributeError:
             pass
         N = self.N
-        self._zero_coeffs = np.zeros((N, N), dtype=np.float64)
-#        self._zero_coeffs = [[0.0]*N for _ in arange(N)]
+        self._zero_coeffs = [[0.0]*N for _ in range(N)]
         return self._zero_coeffs
 
-        
+    def __repr__(self):
+        s = '%s(T=%s, xs=%s, ABEFGHCD=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs),
+                (self.tau_coeffs_A,  self.tau_coeffs_B, self.tau_coeffs_E,
+                 self.tau_coeffs_F, self.tau_coeffs_G, self.tau_coeffs_H,
+                 self.alpha_coeffs_c, self.alpha_coeffs_d))
+        return s
+
+
     def to_T_xs(self, T, xs):
+        r'''Method to construct a new :obj:`NRTL` instance at
+        temperature `T`, and mole fractions `xs`
+        with the same parameters as the existing object.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        xs : list[float]
+            Mole fractions of each component, [-]
+
+        Returns
+        -------
+        obj : NRTL
+            New :obj:`NRTL` object at the specified conditions [-]
+
+        Notes
+        -----
+        If the new temperature is the same temperature as the existing
+        temperature, if the `tau`, `Gs`, or `alphas` terms or their derivatives
+        have been calculated, they will be set to the new object as well.
+        '''
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.xs = xs
         new.N = self.N
         new.cmps = self.cmps
-        (new.tau_coeffs_A, new.tau_coeffs_B, new.tau_coeffs_E, 
+        (new.tau_coeffs_A, new.tau_coeffs_B, new.tau_coeffs_E,
          new.tau_coeffs_F, new.tau_coeffs_G, new.tau_coeffs_H,
-         new.alpha_coeffs_c, new.alpha_coeffs_d) = (self.tau_coeffs_A, self.tau_coeffs_B, self.tau_coeffs_E, 
+         new.alpha_coeffs_c, new.alpha_coeffs_d) = (self.tau_coeffs_A, self.tau_coeffs_B, self.tau_coeffs_E,
                          self.tau_coeffs_F, self.tau_coeffs_G, self.tau_coeffs_H,
                          self.alpha_coeffs_c, self.alpha_coeffs_d)
-        
+
         if T == self.T:
             try:
                 new._taus = self._taus
-            except Exception:
+            except AttributeError:
                 pass
             try:
                 new._dtaus_dT = self._dtaus_dT
-            except Exception:
+            except AttributeError:
                 pass
             try:
                 new._d2taus_dT2 = self._d2taus_dT2
-            except Exception:
+            except AttributeError:
                 pass
             try:
                 new._d3taus_dT3 = self._d3taus_dT3
-            except Exception:
+            except AttributeError:
                 pass
             try:
                 new._alphas = self._alphas
-            except Exception:
+            except AttributeError:
                 pass
             try:
                 new._Gs = self._Gs
-            except Exception:
+            except AttributeError:
                 pass
             try:
                 new._dGs_dT = self._dGs_dT
-            except Exception:
+            except AttributeError:
                 pass
             try:
-                new._d2Gs_dT2 = self._d2Gs_dT2 
-            except Exception:
+                new._d2Gs_dT2 = self._d2Gs_dT2
+            except AttributeError:
                 pass
             try:
                 new._d3Gs_dT3 = self._d3Gs_dT3
-            except Exception:
+            except AttributeError:
                 pass
-            
+
         try:
             new._zero_coeffs = self.zero_coeffs
-        except Exception:
+        except AttributeError:
             pass
-            
+
         return new
 
-    def GE(self):
-        try:
-            return self._GE
-        except Exception:
-            pass
-        cmps = self.cmps
-        xj_Gs_jis_inv, xj_Gs_taus_jis = self.xj_Gs_jis_inv(), self.xj_Gs_taus_jis()
-        T, xs = self.T, self.xs
-        
-        tot = 0.0
-        for i in cmps:
-            tot += xs[i]*xj_Gs_taus_jis[i]*xj_Gs_jis_inv[i]
-        self._GE = GE = T*R*tot
-        return GE
-    
     def gammas(self):
         try:
             return self._gammas
-        except Exception:
+        except AttributeError:
             pass
         try:
             taus = self._taus
-        except Exception:
+        except AttributeError:
             taus = self.taus()
         try:
             Gs = self._Gs
-        except Exception:
+        except AttributeError:
             Gs = self.Gs()
-            
+
         xs, cmps = self.xs, self.cmps
-            
+
         xj_Gs_jis_inv, xj_Gs_taus_jis = self.xj_Gs_jis_inv(), self.xj_Gs_taus_jis()
-        
+
         self._gammas = gammas = []
-        
+
         t0s = [xs[j]*xj_Gs_jis_inv[j] for j in cmps]
         t1s = [xj_Gs_taus_jis[j]*xj_Gs_jis_inv[j] for j in cmps]
-        
+
         for i in cmps:
             tot = xj_Gs_taus_jis[i]*xj_Gs_jis_inv[i]
             Gsi = Gs[i]
@@ -202,28 +329,33 @@ class NRTL(GibbsExcess):
             for j in cmps:
                 # Possible to factor out some terms which depend on j only; or to index taus, Gs separately
                 tot += t0s[j]*Gsi[j]*(tausi[j] - t1s[j])
-            
+
             gammas.append(exp(tot))
-       
+
 #        self._gammas = gammas = NRTL_gammas(xs=self.xs, taus=taus, alphas=alphas)
         return gammas
 
 
     def taus(self):
-        r'''Calculate the `tau` terms for the NRTL model for a specified
-        temperature.
-        
+        r'''Calculate and return the `tau` terms for the NRTL model for a
+        specified temperature.
+
         .. math::
-            \tau_{ij}=A_{ij}+\frac{B_{ij}}{T}+E_{ij}\ln T + F_{ij}T 
+            \tau_{ij}=A_{ij}+\frac{B_{ij}}{T}+E_{ij}\ln T + F_{ij}T
             + \frac{G_{ij}}{T^2} + H_{ij}{T^2}
-            
-            
-        These `tau ij` values (and the coefficients) are NOT symmetric 
-        normally.
+
+        Returns
+        -------
+        taus : list[list[float]]
+            tau terms, asymmetric matrix [-]
+
+        Notes
+        -----
+        These `tau ij` values (and the coefficients) are NOT symmetric.
         '''
         try:
             return self._taus
-        except Exception:
+        except AttributeError:
             pass
         tau_coeffs_A = self.tau_coeffs_A
         tau_coeffs_B = self.tau_coeffs_B
@@ -248,24 +380,31 @@ class NRTL(GibbsExcess):
             tau_coeffs_Hi = tau_coeffs_H[i]
             tausi = taus[i]
             for j in cmps:
-                tausi[j] += tau_coeffs_Bi[j]*Tinv + tau_coeffs_Ei[j]*logT + tau_coeffs_Fi[j]*T + tau_coeffs_Gi[j]*T2inv + tau_coeffs_Hi[j]*T2
+                tausi[j] += (tau_coeffs_Bi[j]*Tinv + tau_coeffs_Ei[j]*logT
+                             + tau_coeffs_Fi[j]*T + tau_coeffs_Gi[j]*T2inv
+                             + tau_coeffs_Hi[j]*T2)
         return taus
 
     def dtaus_dT(self):
-        r'''Calculate the temperature derivative of the `tau` terms for the 
-        NRTL model for a specified temperature.
-        
+        r'''Calculate and return the temperature derivative of the `tau` terms
+        for the NRTL model for a specified temperature.
+
         .. math::
-            \frac{\partial \tau_{ij}} {\partial T}_{P, x_i} = 
-            - \frac{B_{ij}}{T^{2}} + \frac{E_{ij}}{T} + F_{ij} 
+            \frac{\partial \tau_{ij}} {\partial T}_{P, x_i} =
+            - \frac{B_{ij}}{T^{2}} + \frac{E_{ij}}{T} + F_{ij}
             - \frac{2 G_{ij}}{T^{3}} + 2 H_{ij} T
-            
-        These `tau ij` values (and the coefficients) are NOT symmetric 
-        normally.
+
+        Returns
+        -------
+        dtaus_dT : list[list[float]]
+            First temperature derivative of tau terms, asymmetric matrix [1/K]
+
+        Notes
+        -----
         '''
         try:
             return self._dtaus_dT
-        except Exception:
+        except AttributeError:
             pass
         # Believed all correct but not tested
         tau_coeffs_B = self.tau_coeffs_B
@@ -274,12 +413,12 @@ class NRTL(GibbsExcess):
         tau_coeffs_G = self.tau_coeffs_G
         tau_coeffs_H = self.tau_coeffs_H
         T, cmps = self.T, self.cmps
-        
+
         Tinv = 1.0/T
         nT2inv = -Tinv*Tinv
         n2T3inv = 2.0*nT2inv*Tinv
         T2 = T + T
-        
+
         self._dtaus_dT = dtaus_dT = [list(l) for l in tau_coeffs_F]
         for i in cmps:
             tau_coeffs_Bi = tau_coeffs_B[i]
@@ -291,24 +430,29 @@ class NRTL(GibbsExcess):
             for j in cmps:
                 dtaus_dTi[j] += (nT2inv*tau_coeffs_Bi[j] + Tinv*tau_coeffs_Ei[j]
                 + n2T3inv*tau_coeffs_Gi[j] + T2*tau_coeffs_Hi[j])
-                
+
         return dtaus_dT
 
     def d2taus_dT2(self):
-        r'''Calculate the second temperature derivative of the `tau` terms for  
+        r'''Calculate and return the second temperature derivative of the `tau` terms for
         the NRTL model for a specified temperature.
-        
+
         .. math::
-            \frac{\partial^2 \tau_{ij}} {\partial T^2}_{P, x_i} = 
+            \frac{\partial^2 \tau_{ij}} {\partial T^2}_{P, x_i} =
             \frac{2 B_{ij}}{T^{3}} - \frac{E_{ij}}{T^{2}} + \frac{6 G_{ij}}
             {T^{4}} + 2 H_{ij}
-            
-        These `tau ij` values (and the coefficients) are NOT symmetric 
-        normally.
+
+        Returns
+        -------
+        d2taus_dT2 : list[list[float]]
+            Second temperature derivative of tau terms, asymmetric matrix [1/K^2]
+
+        Notes
+        -----
         '''
         try:
             return self._d2taus_dT2
-        except Exception:
+        except AttributeError:
             pass
         tau_coeffs_B = self.tau_coeffs_B
         tau_coeffs_E = self.tau_coeffs_E
@@ -317,10 +461,10 @@ class NRTL(GibbsExcess):
         T, cmps = self.T, self.cmps
 
         self._d2taus_dT2 = d2taus_dT2 = [[h + h for h in l] for l in tau_coeffs_H]
-        
+
         Tinv = 1.0/T
         Tinv2 = Tinv*Tinv
-        
+
         T3inv2 = 2.0*(Tinv2*Tinv)
         nT2inv = -Tinv*Tinv
         T4inv6 = 6.0*(Tinv2*Tinv2)
@@ -330,40 +474,45 @@ class NRTL(GibbsExcess):
             tau_coeffs_Gi = tau_coeffs_G[i]
             d2taus_dT2i = d2taus_dT2[i]
             for j in cmps:
-                d2taus_dT2i[j] += (T3inv2*tau_coeffs_Bi[j] 
+                d2taus_dT2i[j] += (T3inv2*tau_coeffs_Bi[j]
                                    + nT2inv*tau_coeffs_Ei[j]
                                    + T4inv6*tau_coeffs_Gi[j])
         return d2taus_dT2
 
     def d3taus_dT3(self):
-        r'''Calculate the third temperature derivative of the `tau` terms for  
-        the NRTL model for a specified temperature.
-        
+        r'''Calculate and return the third temperature derivative of the `tau`
+        terms for the NRTL model for a specified temperature.
+
         .. math::
-            \frac{\partial^3 \tau_{ij}} {\partial T^3}_{P, x_i} = 
+            \frac{\partial^3 \tau_{ij}} {\partial T^3}_{P, x_i} =
             - \frac{6 B_{ij}}{T^{4}} + \frac{2 E_{ij}}{T^{3}}
             - \frac{24 G_{ij}}{T^{5}}
-            
-        These `tau ij` values (and the coefficients) are NOT symmetric 
-        normally.
+
+        Returns
+        -------
+        d3taus_dT3 : list[list[float]]
+            Third temperature derivative of tau terms, asymmetric matrix [1/K^3]
+
+        Notes
+        -----
         '''
         try:
             return self._d3taus_dT3
-        except Exception:
+        except AttributeError:
             pass
         tau_coeffs_B = self.tau_coeffs_B
         tau_coeffs_E = self.tau_coeffs_E
         tau_coeffs_G = self.tau_coeffs_G
         T, N, cmps = self.T, self.N, self.cmps
         self._d3taus_dT3 = d3taus_dT3 = [[0.0]*N for i in cmps]
-        
+
         Tinv = 1.0/T
         T2inv = Tinv*Tinv
-        
+
         nT4inv6 = -6.0*T2inv*T2inv
         T3inv2 = 2.0*T2inv*Tinv
         T5inv24 = -24.0*(T2inv*T2inv*Tinv)
-        
+
         for i in cmps:
             tau_coeffs_Bi = tau_coeffs_B[i]
             tau_coeffs_Ei = tau_coeffs_E[i]
@@ -371,37 +520,42 @@ class NRTL(GibbsExcess):
             d3taus_dT3i = d3taus_dT3[i]
             for j in cmps:
                 d3taus_dT3i[j] = (nT4inv6*tau_coeffs_Bi[j]
-                                  + T3inv2*tau_coeffs_Ei[j] 
+                                  + T3inv2*tau_coeffs_Ei[j]
                                   + T5inv24*tau_coeffs_Gi[j])
         return d3taus_dT3
 
-                
-                
     def alphas(self):
-        '''Calculates the `alpha` terms in the NRTL model for a specified
-        temperature. 
-        
+        r'''Calculates and return the `alpha` terms in the NRTL model for a
+        specified temperature.
+
         .. math::
-            \alpha_{ij}=c_{ij}+d_{ij}T
-            
+            \alpha_{ij}=c_{ij} + d_{ij}T
+
+        Returns
+        -------
+        alphas : list[list[float]]
+            alpha terms, possibly asymmetric matrix [-]
+
+        Notes
+        -----
         `alpha` values (and therefore `cij` and `dij` are normally symmetrical;
         but this is not strictly required.
-            
-        Some sources suggest the c term should be fit to a given system; but 
+
+        Some sources suggest the c term should be fit to a given system; but
         the `d` term should be fit for an entire chemical family to avoid
         overfitting.
-        
-        Recommended values for `cij` according to one source are: 
-    
+
+        Recommended values for `cij` according to one source are:
+
         0.30 Nonpolar substances with nonpolar substances; low deviation from ideality.
         0.20 Hydrocarbons that are saturated interacting with polar liquids that do not associate, or systems that for multiple liquid phases which are immiscible
-        0.47 Strongly self associative systems, interacting with non-polar substances 
-        
+        0.47 Strongly self associative systems, interacting with non-polar substances
+
         `alpha_coeffs` should be a list[list[cij, dij]] so a 3d array
         '''
         try:
             return self._alphas
-        except Exception:
+        except AttributeError:
             pass
         T, cmps = self.T, self.cmps
         alpha_coeffs_c, alpha_coeffs_d = self.alpha_coeffs_c, self.alpha_coeffs_d
@@ -411,50 +565,77 @@ class NRTL(GibbsExcess):
             alpha_coeffs_ci = alpha_coeffs_c[i]
             alpha_coeffs_di = alpha_coeffs_d[i]
             alphas.append([alpha_coeffs_ci[j] + alpha_coeffs_di[j]*T for j in cmps])
-                
+
         return alphas
-    
+
     def dalphas_dT(self):
+        '''Keep it as a function in case this needs to become more complicated.'''
         return self.alpha_coeffs_d
-    
+
     def d2alphas_dT2(self):
+        '''Keep it as a function in case this needs to become more complicated.'''
         return self.zero_coeffs
 
     def d3alphas_dT3(self):
+        '''Keep it as a function in case this needs to become more complicated.'''
         return self.zero_coeffs
-    
+
     def Gs(self):
+        r'''Calculates and return the `G` terms in the NRTL model for a
+        specified temperature.
+
+        .. math::
+            G_{ij}=\exp(-\alpha_{ij}\tau_{ij})
+
+        Returns
+        -------
+        Gs : list[list[float]]
+            G terms, asymmetric matrix [-]
+
+        Notes
+        -----
+        '''
         try:
             return self._Gs
-        except Exception:
+        except AttributeError:
             pass
         alphas = self.alphas()
         taus = self.taus()
         cmps = self.cmps
-        
+
         self._Gs = Gs = []
         for i in cmps:
             alphasi = alphas[i]
             tausi = taus[i]
             Gs.append([exp(-alphasi[j]*tausi[j]) for j in cmps])
         return Gs
-    
+
     def dGs_dT(self):
-        r'''
+        r'''Calculates and return the first temperature derivative of `G` terms
+        in the NRTL model for a specified temperature.
+
         .. math::
-            \left(- \alpha{\left(T \right)} \frac{d}{d T} \tau{\left(T \right)}
+            \frac{\partial G_{ij}}{\partial T} = \left(- \alpha{\left(T \right)} \frac{d}{d T} \tau{\left(T \right)}
             - \tau{\left(T \right)} \frac{d}{d T} \alpha{\left(T \right)}\right)
             e^{- \alpha{\left(T \right)} \tau{\left(T \right)}}
-        
-        from sympy import *
-        T = symbols('T')
-        alpha, tau = symbols('alpha, tau', cls=Function)
-        
-        diff(exp(-alpha(T)*tau(T)), T)
+
+        Returns
+        -------
+        dGs_dT : list[list[float]]
+            Temperature derivative of G terms, asymmetric matrix [1/K]
+
+        Notes
+        -----
+        Derived with SymPy:
+
+        >>> from sympy import * # doctest:+SKIP
+        >>> T = symbols('T') # doctest:+SKIP
+        >>> alpha, tau = symbols('alpha, tau', cls=Function) # doctest:+SKIP
+        >>> diff(exp(-alpha(T)*tau(T)), T) # doctest:+SKIP
         '''
         try:
             return self._dGs_dT
-        except Exception:
+        except AttributeError:
             pass
         alphas = self.alphas()
         dalphas_dT = self.dalphas_dT()
@@ -462,7 +643,7 @@ class NRTL(GibbsExcess):
         dtaus_dT = self.dtaus_dT()
         Gs = self.Gs()
         cmps = self.cmps
-        
+
         self._dGs_dT = dGs_dT = []
         for i in cmps:
             alphasi = alphas[i]
@@ -470,27 +651,42 @@ class NRTL(GibbsExcess):
             dalphasi = dalphas_dT[i]
             dtausi = dtaus_dT[i]
             Gsi = Gs[i]
-            
+
             dGs_dT.append([(-alphasi[j]*dtausi[j] - tausi[j]*dalphasi[j])*Gsi[j]
                     for j in cmps])
         return dGs_dT
-    
+
     def d2Gs_dT2(self):
-        r'''
+        r'''Calculates and return the second temperature derivative of `G` terms
+        in the NRTL model for a specified temperature.
+
         .. math::
-            \left(\left(\alpha{\left(T \right)} \frac{d}{d T} \tau{\left(T \right)} + \tau{\left(T \right)} \frac{d}{d T} \alpha{\left(T \right)}\right)^{2} - \alpha{\left(T \right)} \frac{d^{2}}{d T^{2}} \tau{\left(T \right)} - 2 \frac{d}{d T} \alpha{\left(T \right)} \frac{d}{d T} \tau{\left(T \right)}\right) e^{- \alpha{\left(T \right)} \tau{\left(T \right)}}
-        
-        
-        from sympy import *
-        T = symbols('T')
-        alpha, tau = symbols('alpha, tau', cls=Function)
-        expr = diff(exp(-alpha(T)*tau(T)), T, 2)
-        expr = ((alpha(T)*Derivative(tau(T), T) + tau(T)*Derivative(alpha(T), T))**2 - alpha(T)*Derivative(tau(T), (T, 2)) - 2*Derivative(alpha(T), T)*Derivative(tau(T), T))*exp(-alpha(T)*tau(T))
-        simplify(expr)
+            \frac{\partial^2 G_{ij}}{\partial T^2} = \left(\left(\alpha{\left(T
+            \right)} \frac{d}{d T} \tau{\left(T \right)} + \tau{\left(T
+            \right)} \frac{d}{d T} \alpha{\left(T \right)}\right)^{2}
+            - \alpha{\left(T \right)} \frac{d^{2}}{d T^{2}} \tau{\left(T
+            \right)} - 2 \frac{d}{d T} \alpha{\left(T \right)} \frac{d}{d T}
+            \tau{\left(T \right)}\right) e^{- \alpha{\left(T \right)}
+            \tau{\left(T \right)}}
+
+
+        Returns
+        -------
+        d2Gs_dT2 : list[list[float]]
+            Second temperature derivative of G terms, asymmetric matrix [1/K^2]
+
+        Notes
+        -----
+        Derived with SymPy:
+
+        >>> from sympy import * # doctest:+SKIP
+        >>> T = symbols('T') # doctest:+SKIP
+        >>> alpha, tau = symbols('alpha, tau', cls=Function) # doctest:+SKIP
+        >>> diff(exp(-alpha(T)*tau(T)), T, 2) # doctest:+SKIP
         '''
         try:
             return self._d2Gs_dT2
-        except Exception:
+        except AttributeError:
             pass
         alphas = self.alphas()
         dalphas_dT = self.dalphas_dT()
@@ -499,7 +695,7 @@ class NRTL(GibbsExcess):
         d2taus_dT2 = self.d2taus_dT2()
         Gs = self.Gs()
         cmps = self.cmps
-        
+
         self._d2Gs_dT2 = d2Gs_dT2 = []
         for i in cmps:
             alphasi = alphas[i]
@@ -508,30 +704,49 @@ class NRTL(GibbsExcess):
             dtausi = dtaus_dT[i]
             d2taus_dT2i = d2taus_dT2[i]
             Gsi = Gs[i]
-            
+
             d2Gs_dT2_row = []
             for j in cmps:
                 t1 = alphasi[j]*dtausi[j] + tausi[j]*dalphasi[j]
-                d2Gs_dT2_row.append((t1*t1 - alphasi[j]*d2taus_dT2i[j] 
+                d2Gs_dT2_row.append((t1*t1 - alphasi[j]*d2taus_dT2i[j]
                                      - 2.0*dalphasi[j]*dtausi[j])*Gsi[j])
             d2Gs_dT2.append(d2Gs_dT2_row)
         return d2Gs_dT2
-    
+
     def d3Gs_dT3(self):
-        '''
-        ... math::
-            - \left(\alpha{\left(T \right)} \frac{d}{d T} \tau{\left(T \right)} + \tau{\left(T \right)} \frac{d}{d T} \alpha{\left(T \right)}\right)^{3} + \left(3 \alpha{\left(T \right)} \frac{d}{d T} \tau{\left(T \right)} + 3 \tau{\left(T \right)} \frac{d}{d T} \alpha{\left(T \right)}\right) \left(\alpha{\left(T \right)} \frac{d^{2}}{d T^{2}} \tau{\left(T \right)} + 2 \frac{d}{d T} \alpha{\left(T \right)} \frac{d}{d T} \tau{\left(T \right)}\right) - \alpha{\left(T \right)} \frac{d^{3}}{d T^{3}} \tau{\left(T \right)} - 3 \frac{d}{d T} \alpha{\left(T \right)} \frac{d^{2}}{d T^{2}} \tau{\left(T \right)}
-        '''
-        '''
-        from sympy import *
-        T = symbols('T')
-        alpha, tau = symbols('alpha, tau', cls=Function)
-        expr = diff(exp(-alpha(T)*tau(T)), T, 3)
-        expr.subs(Derivative(alpha(T), T, T, T), 0).subs(Derivative(alpha(T), T, T),  0)
+        r'''Calculates and return the third temperature derivative of `G` terms
+        in the NRTL model for a specified temperature.
+
+        .. math::
+            \frac{\partial^3 G_{ij}}{\partial T^3} = \left(\alpha{\left(T
+            \right)} \frac{d}{d T} \tau{\left(T \right)} + \tau{\left(T
+            \right)} \frac{d}{d T} \alpha{\left(T \right)}\right)^{3} + \left(3
+            \alpha{\left(T \right)} \frac{d}{d T} \tau{\left(T \right)}
+            + 3 \tau{\left(T \right)} \frac{d}{d T} \alpha{\left(T \right)}
+            \right) \left(\alpha{\left(T \right)} \frac{d^{2}}{d T^{2}}
+            \tau{\left(T \right)} + 2 \frac{d}{d T} \alpha{\left(T \right)}
+            \frac{d}{d T} \tau{\left(T \right)}\right) - \alpha{\left(T
+            \right)} \frac{d^{3}}{d T^{3}} \tau{\left(T \right)}
+            - 3 \frac{d}{d T} \alpha{\left(T \right)} \frac{d^{2}}{d T^{2}}
+            \tau{\left(T \right)}
+
+        Returns
+        -------
+        d3Gs_dT3 : list[list[float]]
+            Third temperature derivative of G terms, asymmetric matrix [1/K^3]
+
+        Notes
+        -----
+        Derived with SymPy:
+
+        >>> from sympy import * # doctest:+SKIP
+        >>> T = symbols('T') # doctest:+SKIP
+        >>> alpha, tau = symbols('alpha, tau', cls=Function) # doctest:+SKIP
+        >>> diff(exp(-alpha(T)*tau(T)), T, 3) # doctest:+SKIP
         '''
         try:
             return self._d3Gs_dT3
-        except Exception:
+        except AttributeError:
             pass
         cmps = self.cmps
         alphas = self.alphas()
@@ -556,7 +771,7 @@ class NRTL(GibbsExcess):
                 x0 = alphasi[j]
                 x1 = tausi[j]
                 x2 = dalphasi[j]
-                
+
                 x3 = d2taus_dT2i[j]
                 x4 = dtaus_dTi[j]
                 x5 = x0*x4 + x1*x2
@@ -566,71 +781,20 @@ class NRTL(GibbsExcess):
         return d3Gs_dT3
 
 
-    def dGE_dxs(self):
-        '''
-        from sympy import *
-        N = 3
-        R, T = symbols('R, T')
-        x0, x1, x2 = symbols('x0, x1, x2')
-        xs = [x0, x1, x2]
-        
-        tau00, tau01, tau02, tau10, tau11, tau12, tau20, tau21, tau22 = symbols(
-            'tau00, tau01, tau02, tau10, tau11, tau12, tau20, tau21, tau22', cls=Function)
-        tau_ijs = [[tau00(T), tau01(T), tau02(T)], 
-                   [tau10(T), tau11(T), tau12(T)],
-                   [tau20(T), tau21(T), tau22(T)]]
-        
-        
-        G00, G01, G02, G10, G11, G12, G20, G21, G22 = symbols(
-            'G00, G01, G02, G10, G11, G12, G20, G21, G22', cls=Function)
-        G_ijs = [[G00(T), G01(T), G02(T)], 
-                   [G10(T), G11(T), G12(T)],
-                   [G20(T), G21(T), G22(T)]]
-        ge = 0
-        for i in [2]:#range(0):
-            num = 0
-            den = 0
-            for j in range(N):
-                num += tau_ijs[j][i]*G_ijs[j][i]*xs[j]
-                den += G_ijs[j][i]*xs[j]
-            ge += xs[i]*num/den
-        ge = ge#*R*T
-        diff(ge, x1), diff(ge, x2)
-        '''
-        try:
-            return self._dGE_dxs
-        except Exception:
-            pass
-        T, xs, cmps = self.T, self.xs, self.cmps
-        RT = R*T
-        taus = self.taus()
-        Gs = self.Gs()
-        xj_Gs_jis_inv = self.xj_Gs_jis_inv()
-        xj_Gs_taus_jis = self.xj_Gs_taus_jis()
-        
-        self._dGE_dxs = dGE_dxs = []
-        
-        for k in cmps:
-            # k is what is being differentiated
-            tot = xj_Gs_taus_jis[k]*xj_Gs_jis_inv[k]
-            for i in cmps:
-                tot += xs[i]*xj_Gs_jis_inv[i]*Gs[k][i]*(taus[k][i] - xj_Gs_jis_inv[i]*xj_Gs_taus_jis[i])
-            dGE_dxs.append(tot*RT)
-        return dGE_dxs
 
     def xj_Gs_jis(self):
         # sum1
         try:
             return self._xj_Gs_jis
-        except Exception:
+        except AttributeError:
             pass
         try:
             Gs = self._Gs
-        except Exception:
+        except AttributeError:
             Gs = self.Gs()
         try:
             taus = self._taus
-        except Exception:
+        except AttributeError:
             taus = self.taus()
 
         xs, cmps = self.xs, self.cmps
@@ -646,18 +810,18 @@ class NRTL(GibbsExcess):
             xj_Gs_jis.append(tot1)
             xj_Gs_taus_jis.append(tot2)
         return xj_Gs_jis
-    
+
     def xj_Gs_jis_inv(self):
         try:
             return self._xj_Gs_jis_inv
-        except Exception:
+        except AttributeError:
             pass
 
         try:
             xj_Gs_jis = self._xj_Gs_jis
-        except Exception:
+        except AttributeError:
             xj_Gs_jis = self.xj_Gs_jis()
-        
+
         self._xj_Gs_jis_inv = [1.0/i for i in xj_Gs_jis]
         return self._xj_Gs_jis_inv
 
@@ -665,20 +829,20 @@ class NRTL(GibbsExcess):
         # sum2
         try:
             return self._xj_Gs_taus_jis
-        except Exception:
+        except AttributeError:
             self.xj_Gs_jis()
             return self._xj_Gs_taus_jis
-        
+
         try:
             Gs = self._Gs
-        except Exception:
+        except AttributeError:
             Gs = self.Gs()
 
         try:
             taus = self._taus
-        except Exception:
+        except AttributeError:
             taus = self.taus()
-        
+
         xs, cmps = self.xs, self.cmps
         self._xj_Gs_taus_jis = xj_Gs_taus_jis = []
 
@@ -689,19 +853,19 @@ class NRTL(GibbsExcess):
                 tot += xs[j]*Gs[j][i]*taus[j][i]
             xj_Gs_taus_jis.append(tot)
         return xj_Gs_taus_jis
-        
-        
+
+
     def xj_dGs_dT_jis(self):
         # sum3
         try:
             return self._xj_dGs_dT_jis
-        except Exception:
+        except AttributeError:
             pass
         try:
             dGs_dT = self._dGs_dT
-        except Exception:
+        except AttributeError:
             dGs_dT = self.dGs_dT()
-        
+
         xs, cmps = self.xs, self.cmps
         self._xj_dGs_dT_jis = xj_dGs_dT_jis = []
         for i in cmps:
@@ -715,20 +879,20 @@ class NRTL(GibbsExcess):
         # sum4
         try:
             return self._xj_taus_dGs_dT_jis
-        except Exception:
+        except AttributeError:
             pass
         xs, cmps = self.xs, self.cmps
         try:
             dGs_dT = self._dGs_dT
-        except Exception:
+        except AttributeError:
             dGs_dT = self.dGs_dT()
         try:
             taus = self._taus
-        except Exception:
+        except AttributeError:
             taus = self.taus()
-            
+
         self._xj_taus_dGs_dT_jis = xj_taus_dGs_dT_jis = []
-            
+
         for i in cmps:
             tot = 0.0
             for j in cmps:
@@ -740,18 +904,18 @@ class NRTL(GibbsExcess):
         # sum5
         try:
             return self._xj_Gs_dtaus_dT_jis
-        except Exception:
+        except AttributeError:
             pass
         xs, cmps = self.xs, self.cmps
         try:
             dtaus_dT = self._dtaus_dT
-        except Exception:
+        except AttributeError:
             dtaus_dT = self.dtaus_dT()
         try:
             Gs = self._Gs
-        except Exception:
+        except AttributeError:
             Gs = self.Gs()
-        
+
         self._xj_Gs_dtaus_dT_jis = xj_Gs_dtaus_dT_jis = []
         for i in cmps:
             tot = 0.0
@@ -759,10 +923,229 @@ class NRTL(GibbsExcess):
                 tot += xs[j]*Gs[j][i]*dtaus_dT[j][i]
             xj_Gs_dtaus_dT_jis.append(tot)
         return xj_Gs_dtaus_dT_jis
-            
+
+    def GE(self):
+        r'''Calculate and return the excess Gibbs energy of a liquid phase
+        represented by the NRTL model.
+
+        .. math::
+            g^E = RT\sum_i x_i \frac{\sum_j \tau_{ji} G_{ji} x_j}
+            {\sum_j G_{ji}x_j}
+
+        Returns
+        -------
+        GE : float
+            Excess Gibbs energy, [J/mol]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._GE
+        except AttributeError:
+            pass
+        cmps = self.cmps
+        xj_Gs_jis_inv, xj_Gs_taus_jis = self.xj_Gs_jis_inv(), self.xj_Gs_taus_jis()
+        T, xs = self.T, self.xs
+
+        tot = 0.0
+        for i in cmps:
+            tot += xs[i]*xj_Gs_taus_jis[i]*xj_Gs_jis_inv[i]
+        self._GE = GE = T*R*tot
+        return GE
+
+    def dGE_dT(self):
+        r'''Calculate and return the first tempreature derivative of excess
+        Gibbs energy of a liquid phase represented by the NRTL model.
+
+        Returns
+        -------
+        dGE_dT : float
+            First temperature derivative of excess Gibbs energy, [J/(mol*K)]
+
+        Notes
+        -----
+        '''
+        '''from sympy import *
+        R, T, x = symbols('R, T, x')
+        g, tau = symbols('g, tau', cls=Function)
+        m, n, o = symbols('m, n, o', cls=Function)
+        r, s, t = symbols('r, s, t', cls=Function)
+        u, v, w = symbols('u, v, w', cls=Function)
+        diff(T* (m(T)*n(T) + r(T)*s(T) + u(T)*v(T))/(o(T) + t(T) + w(T)), T)
+        '''
+        try:
+            return self._dGE_dT
+        except AttributeError:
+            pass
+        T, xs, cmps = self.T, self.xs, self.cmps
+
+        xj_Gs_jis_inv = self.xj_Gs_jis_inv() # sum1 inv
+        xj_Gs_taus_jis = self.xj_Gs_taus_jis() # sum2
+        xj_dGs_dT_jis = self.xj_dGs_dT_jis() # sum3
+        xj_taus_dGs_dT_jis = self.xj_taus_dGs_dT_jis() # sum4
+        xj_Gs_dtaus_dT_jis = self.xj_Gs_dtaus_dT_jis() # sum5
+
+        tot = 0.0
+        for i in cmps:
+            tot += (xs[i]*(xj_Gs_taus_jis[i] + T*((xj_taus_dGs_dT_jis[i] + xj_Gs_dtaus_dT_jis[i])
+                    - (xj_Gs_taus_jis[i]*xj_dGs_dT_jis[i])*xj_Gs_jis_inv[i]))*xj_Gs_jis_inv[i])
+        self._dGE_dT = R*tot
+        return self._dGE_dT
+
+
+    def d2GE_dT2(self):
+        r'''Calculate and return the second tempreature derivative of excess
+        Gibbs energy of a liquid phase represented by the NRTL model.
+
+        Returns
+        -------
+        d2GE_dT2 : float
+            Second temperature derivative of excess Gibbs energy, [J/(mol*K^2)]
+
+        Notes
+        -----
+        '''
+        '''from sympy import *
+        R, T, x = symbols('R, T, x')
+        g, tau = symbols('g, tau', cls=Function)
+        m, n, o = symbols('m, n, o', cls=Function)
+        r, s, t = symbols('r, s, t', cls=Function)
+        u, v, w = symbols('u, v, w', cls=Function)
+
+        (diff(T*(m(T)*n(T) + r(T)*s(T))/(o(T) + t(T)), T, 2))
+        '''
+        try:
+            return self._d2GE_dT2
+        except AttributeError:
+            pass
+        T, xs, cmps = self.T, self.xs, self.cmps
+        taus = self.taus()
+        dtaus_dT = self.dtaus_dT()
+        d2taus_dT2 = self.d2taus_dT2()
+
+        alphas = self.alphas()
+        dalphas_dT = self.dalphas_dT()
+
+        Gs = self.Gs()
+        dGs_dT = self.dGs_dT()
+        d2Gs_dT2 = self.d2Gs_dT2()
+
+        tot = 0
+        for i in cmps:
+            sum1 = 0.0
+            sum2 = 0.0
+            sum3 = 0.0
+            sum4 = 0.0
+            sum5 = 0.0
+
+            sum6 = 0.0
+            sum7 = 0.0
+            sum8 = 0.0
+            sum9 = 0.0
+            for j in cmps:
+                tauji = taus[j][i]
+                dtaus_dTji = dtaus_dT[j][i]
+
+                Gjixj = Gs[j][i]*xs[j]
+                dGjidTxj = dGs_dT[j][i]*xs[j]
+                d2GjidT2xj = xs[j]*d2Gs_dT2[j][i]
+
+                sum1 += Gjixj
+                sum2 += tauji*Gjixj
+                sum3 += dGjidTxj
+
+                sum4 += tauji*dGjidTxj
+                sum5 += dtaus_dTji*Gjixj
+
+                sum6 += d2GjidT2xj
+
+                sum7 += tauji*d2GjidT2xj
+
+                sum8 += Gjixj*d2taus_dT2[j][i]
+
+                sum9 += dGjidTxj*dtaus_dTji
+
+            term1 = -T*sum2*(sum6 - 2.0*sum3*sum3/sum1)/sum1
+            term2 = T*(sum7 + sum8 + 2.0*sum9)
+            term3 = -2*T*(sum3*(sum4 + sum5))/sum1
+            term4 = -2.0*(sum2*sum3)/sum1
+            term5 = 2*(sum4 + sum5)
+
+            tot += xs[i]*(term1 + term2 + term3 + term4 + term5)/sum1
+        self._d2GE_dT2 = d2GE_dT2 = R*tot
+        return d2GE_dT2
+
+    def dGE_dxs(self):
+        r'''Calculate and return the mole fraction derivatives of excess Gibbs
+        energy of a liquid represented by the NRTL model.
+
+        .. math::
+            \frac{\partial g^E}{\partial x_i}
+
+        Returns
+        -------
+        dGE_dxs : list[float]
+            Mole fraction derivatives of excess Gibbs energy, [J/mol]
+
+        Notes
+        -----
+        '''
+        '''
+        from sympy import *
+        N = 3
+        R, T = symbols('R, T')
+        x0, x1, x2 = symbols('x0, x1, x2')
+        xs = [x0, x1, x2]
+
+        tau00, tau01, tau02, tau10, tau11, tau12, tau20, tau21, tau22 = symbols(
+            'tau00, tau01, tau02, tau10, tau11, tau12, tau20, tau21, tau22', cls=Function)
+        tau_ijs = [[tau00(T), tau01(T), tau02(T)],
+                   [tau10(T), tau11(T), tau12(T)],
+                   [tau20(T), tau21(T), tau22(T)]]
+
+
+        G00, G01, G02, G10, G11, G12, G20, G21, G22 = symbols(
+            'G00, G01, G02, G10, G11, G12, G20, G21, G22', cls=Function)
+        G_ijs = [[G00(T), G01(T), G02(T)],
+                   [G10(T), G11(T), G12(T)],
+                   [G20(T), G21(T), G22(T)]]
+        ge = 0
+        for i in [2]:#range(0):
+            num = 0
+            den = 0
+            for j in range(N):
+                num += tau_ijs[j][i]*G_ijs[j][i]*xs[j]
+                den += G_ijs[j][i]*xs[j]
+            ge += xs[i]*num/den
+        ge = ge#*R*T
+        diff(ge, x1), diff(ge, x2)
+        '''
+        try:
+            return self._dGE_dxs
+        except AttributeError:
+            pass
+        T, xs, cmps = self.T, self.xs, self.cmps
+        RT = R*T
+        taus = self.taus()
+        Gs = self.Gs()
+        xj_Gs_jis_inv = self.xj_Gs_jis_inv()
+        xj_Gs_taus_jis = self.xj_Gs_taus_jis()
+
+        self._dGE_dxs = dGE_dxs = []
+
+        for k in cmps:
+            # k is what is being differentiated
+            tot = xj_Gs_taus_jis[k]*xj_Gs_jis_inv[k]
+            for i in cmps:
+                tot += xs[i]*xj_Gs_jis_inv[i]*Gs[k][i]*(taus[k][i] - xj_Gs_jis_inv[i]*xj_Gs_taus_jis[i])
+            dGE_dxs.append(tot*RT)
+        return dGE_dxs
+
     def d2GE_dxixjs(self):
-        r'''
-        
+        r'''Calculate and return the second mole fraction derivatives of excess
+        Gibbs energy of a liquid represented by the NRTL model.
+
         .. math::
             \frac{\partial^2 g^E}{\partial x_i \partial x_j} = RT\left[
             + \frac{G_{ij}\tau_{ij}}{\sum_m x_m G_{mj}}
@@ -773,6 +1156,14 @@ class NRTL(GibbsExcess):
             - \frac{x_k G_{ik}G_{jk}(\tau_{jk} + \tau_{ik})}{(\sum_m x_m G_{mk})^2}
             \right)
             \right]
+
+        Returns
+        -------
+        d2GE_dxixjs : list[list[float]]
+            Second mole fraction derivatives of excess Gibbs energy, [J/mol]
+
+        Notes
+        -----
         '''
         '''
         from sympy import *
@@ -780,27 +1171,27 @@ class NRTL(GibbsExcess):
         R, T = symbols('R, T')
         x0, x1, x2 = symbols('x0, x1, x2')
         xs = [x0, x1, x2]
-        
+
         tau00, tau01, tau02, tau10, tau11, tau12, tau20, tau21, tau22 = symbols(
             'tau00, tau01, tau02, tau10, tau11, tau12, tau20, tau21, tau22', cls=Function)
-        tau_ijs = [[tau00(T), tau01(T), tau02(T)], 
+        tau_ijs = [[tau00(T), tau01(T), tau02(T)],
                    [tau10(T), tau11(T), tau12(T)],
                    [tau20(T), tau21(T), tau22(T)]]
-        
-        
+
+
         G00, G01, G02, G10, G11, G12, G20, G21, G22 = symbols(
             'G00, G01, G02, G10, G11, G12, G20, G21, G22', cls=Function)
-        G_ijs = [[G00(T), G01(T), G02(T)], 
+        G_ijs = [[G00(T), G01(T), G02(T)],
                    [G10(T), G11(T), G12(T)],
                    [G20(T), G21(T), G22(T)]]
-        
+
         tauG00, tauG01, tauG02, tauG10, tauG11, tauG12, tauG20, tauG21, tauG22 = symbols(
             'tauG00, tauG01, tauG02, tauG10, tauG11, tauG12, tauG20, tauG21, tauG22', cls=Function)
-        tauG_ijs = [[tauG00(T), tauG01(T), tauG02(T)], 
+        tauG_ijs = [[tauG00(T), tauG01(T), tauG02(T)],
                    [tauG10(T), tauG11(T), tauG12(T)],
                    [tauG20(T), tauG21(T), tauG22(T)]]
-        
-        
+
+
         ge = 0
         for i in range(N):#range(0):
             num = 0
@@ -809,15 +1200,15 @@ class NRTL(GibbsExcess):
         #         num += G_ijs[j][i]*tau_ijs[j][i]*xs[j]
                 num += tauG_ijs[j][i]*xs[j]
                 den += G_ijs[j][i]*xs[j]
-                
+
             ge += xs[i]*num/den
         ge = ge#R*T
-        
+
         diff(ge, x0, x1)
         '''
         try:
             return self._d2GE_dxixjs
-        except Exception:
+        except AttributeError:
             pass
         T, xs, cmps = self.T, self.xs, self.cmps
         taus = self.taus()
@@ -826,10 +1217,10 @@ class NRTL(GibbsExcess):
         xj_Gs_jis_inv = self.xj_Gs_jis_inv()
         xj_Gs_taus_jis = self.xj_Gs_taus_jis()
         RT = R*T
-        
+
         self._d2GE_dxixjs = d2GE_dxixjs = []
-        
-        
+
+
         for i in cmps:
             row = []
             for j in cmps:
@@ -837,27 +1228,30 @@ class NRTL(GibbsExcess):
                 # two small terms
                 tot += Gs[i][j]*taus[i][j]*xj_Gs_jis_inv[j]
                 tot += Gs[j][i]*taus[j][i]*xj_Gs_jis_inv[i]
-                
+
                 # Two large terms
                 tot -= xj_Gs_taus_jis[j]*Gs[i][j]*(xj_Gs_jis_inv[j]*xj_Gs_jis_inv[j])
                 tot -= xj_Gs_taus_jis[i]*Gs[j][i]*(xj_Gs_jis_inv[i]*xj_Gs_jis_inv[i])
-                
+
                 # Three terms
                 for k in cmps:
                     tot += 2.0*xs[k]*xj_Gs_taus_jis[k]*Gs[i][k]*Gs[j][k]*(xj_Gs_jis_inv[k]*xj_Gs_jis_inv[k]*xj_Gs_jis_inv[k])
-                    
+
                 # 6 terms
                 for k in cmps:
                     tot -= xs[k]*Gs[i][k]*Gs[j][k]*(taus[j][k] + taus[i][k])*xj_Gs_jis_inv[k]*xj_Gs_jis_inv[k]
-                
+
                 tot *= RT
                 row.append(tot)
             d2GE_dxixjs.append(row)
         return d2GE_dxixjs
-                
-    
+
+
     def d2GE_dTdxs(self):
-        r'''
+        r'''Calculate and return the temperature derivative of mole fraction
+        derivatives of excess Gibbs energy of a liquid represented by the NRTL
+        model.
+
         .. math::
             \frac{\partial^2 g^E}{\partial x_i \partial T} = R\left[-T\left(
             \sum_j \left(
@@ -874,26 +1268,35 @@ class NRTL(GibbsExcess):
             \frac{x_j G_{ij}(\sum_k x_k G_{kj}\tau_{kj})}{(\sum_k x_k G_{kj})^2} + \frac{x_j G_{ij}\tau_{ij}}{\sum_k x_k G_{kj}}
             \right)
             \right]
+
+        Returns
+        -------
+        d2GE_dTdxs : list[float]
+            Temperature derivative of mole fraction derivatives of excess Gibbs
+            energy, [J/(mol*K)]
+
+        Notes
+        -----
         '''
         try:
             return self._d2GE_dTdxs
-        except Exception:
+        except AttributeError:
             pass
-        
+
         sum1 = self.xj_Gs_jis_inv()
         sum2 = self.xj_Gs_taus_jis()
         sum3 = self.xj_dGs_dT_jis()
         sum4 = self.xj_taus_dGs_dT_jis()
         sum5 = self.xj_Gs_dtaus_dT_jis()
-        
-        
+
+
         T, xs, cmps = self.T, self.xs, self.cmps
         taus = self.taus()
         dtaus_dT = self.dtaus_dT()
-        
+
         Gs = self.Gs()
         dGs_dT = self.dGs_dT()
-        
+
         xs_sum1s = [xs[i]*sum1[i] for i in cmps]
         sum1_sum2s = [sum1[i]*sum2[i] for i in cmps]
 
@@ -901,117 +1304,136 @@ class NRTL(GibbsExcess):
         for i in cmps:
             others = sum1_sum2s[i]
             tot1 = sum1[i]*(sum3[i]*sum1_sum2s[i] - (sum5[i] + sum4[i])) # Last singleton and second last singleton
-            
+
             Gsi = Gs[i]
             tausi = taus[i]
             for j in cmps:
                 t0 = sum1_sum2s[j]*dGs_dT[i][j]
                 t0 += sum1[j]*Gsi[j]*(sum3[j]*(tausi[j] - sum1_sum2s[j] - sum1_sum2s[j]) + sum5[j] + sum4[j]) # Could store and factor this stuff out but just makes it slower
                 t0 -= (Gsi[j]*dtaus_dT[i][j] + tausi[j]*dGs_dT[i][j])
-                
+
                 tot1 += t0*xs_sum1s[j]
-            
+
                 others += xs_sum1s[j]*Gsi[j]*(tausi[j] - sum1_sum2s[j])
-                
+
             dG = -R*(T*tot1 - others)
             d2GE_dTdxs.append(dG)
         return d2GE_dTdxs
-        
-    def dGE_dT(self):
-        '''from sympy import *
-        R, T, x = symbols('R, T, x')
-        g, tau = symbols('g, tau', cls=Function)
-        m, n, o = symbols('m, n, o', cls=Function)
-        r, s, t = symbols('r, s, t', cls=Function)
-        u, v, w = symbols('u, v, w', cls=Function)
-        diff(T* (m(T)*n(T) + r(T)*s(T) + u(T)*v(T))/(o(T) + t(T) + w(T)), T)
-        '''
-        try:
-            return self._dGE_dT
-        except Exception:
-            pass
-        T, xs, cmps = self.T, self.xs, self.cmps
-        
-        xj_Gs_jis_inv = self.xj_Gs_jis_inv() # sum1 inv
-        xj_Gs_taus_jis = self.xj_Gs_taus_jis() # sum2
-        xj_dGs_dT_jis = self.xj_dGs_dT_jis() # sum3
-        xj_taus_dGs_dT_jis = self.xj_taus_dGs_dT_jis() # sum4
-        xj_Gs_dtaus_dT_jis = self.xj_Gs_dtaus_dT_jis() # sum5
-        
-        tot = 0.0
-        for i in cmps:
-            tot += (xs[i]*(xj_Gs_taus_jis[i] + T*((xj_taus_dGs_dT_jis[i] + xj_Gs_dtaus_dT_jis[i])
-                    - (xj_Gs_taus_jis[i]*xj_dGs_dT_jis[i])*xj_Gs_jis_inv[i]))*xj_Gs_jis_inv[i])  
-        self._dGE_dT = R*tot
-        return self._dGE_dT
 
-    def d2GE_dT2(self):
-        '''from sympy import *
-        R, T, x = symbols('R, T, x')
-        g, tau = symbols('g, tau', cls=Function)
-        m, n, o = symbols('m, n, o', cls=Function)
-        r, s, t = symbols('r, s, t', cls=Function)
-        u, v, w = symbols('u, v, w', cls=Function)
-        
-        (diff(T*(m(T)*n(T) + r(T)*s(T))/(o(T) + t(T)), T, 2))
-        '''
-        try:
-            return self._d2GE_dT2
-        except Exception:
-            pass
-        T, xs, cmps = self.T, self.xs, self.cmps
-        taus = self.taus()
-        dtaus_dT = self.dtaus_dT()
-        d2taus_dT2 = self.d2taus_dT2()
-        
-        alphas = self.alphas()
-        dalphas_dT = self.dalphas_dT()
 
-        Gs = self.Gs()
-        dGs_dT = self.dGs_dT()
-        d2Gs_dT2 = self.d2Gs_dT2()
 
-        tot = 0
-        for i in cmps:
-            sum1 = 0.0
-            sum2 = 0.0
-            sum3 = 0.0
-            sum4 = 0.0
-            sum5 = 0.0
-            
-            sum6 = 0.0
-            sum7 = 0.0
-            sum8 = 0.0
-            sum9 = 0.0
-            for j in cmps:
-                tauji = taus[j][i] 
-                dtaus_dTji = dtaus_dT[j][i]
-                
-                Gjixj = Gs[j][i]*xs[j]
-                dGjidTxj = dGs_dT[j][i]*xs[j]
-                d2GjidT2xj = xs[j]*d2Gs_dT2[j][i]
-                
-                sum1 += Gjixj
-                sum2 += tauji*Gjixj
-                sum3 += dGjidTxj
-                
-                sum4 += tauji*dGjidTxj
-                sum5 += dtaus_dTji*Gjixj
-                
-                sum6 += d2GjidT2xj
-                
-                sum7 += tauji*d2GjidT2xj
-                
-                sum8 += Gjixj*d2taus_dT2[j][i]
-                
-                sum9 += dGjidTxj*dtaus_dTji
-                
-            term1 = -T*sum2*(sum6 - 2.0*sum3*sum3/sum1)/sum1
-            term2 = T*(sum7 + sum8 + 2.0*sum9)
-            term3 = -2*T*(sum3*(sum4 + sum5))/sum1
-            term4 = -2.0*(sum2*sum3)/sum1
-            term5 = 2*(sum4 + sum5)
-            
-            tot += xs[i]*(term1 + term2 + term3 + term4 + term5)/sum1
-        self._d2GE_dT2 = d2GE_dT2 = R*tot
-        return d2GE_dT2
+
+def NRTL_gammas(xs, taus, alphas):
+    r'''Calculates the activity coefficients of each species in a mixture
+    using the Non-Random Two-Liquid (NRTL) method, given their mole fractions,
+    dimensionless interaction parameters, and nonrandomness constants. Those
+    are normally correlated with temperature in some form, and need to be
+    calculated separately.
+
+    .. math::
+        \ln(\gamma_i)=\frac{\displaystyle\sum_{j=1}^{n}{x_{j}\tau_{ji}G_{ji}}}
+        {\displaystyle\sum_{k=1}^{n}{x_{k}G_{ki}}}+\sum_{j=1}^{n}
+        {\frac{x_{j}G_{ij}}{\displaystyle\sum_{k=1}^{n}{x_{k}G_{kj}}}}
+        {\left ({\tau_{ij}-\frac{\displaystyle\sum_{m=1}^{n}{x_{m}\tau_{mj}
+        G_{mj}}}{\displaystyle\sum_{k=1}^{n}{x_{k}G_{kj}}}}\right )}
+
+    .. math::
+        G_{ij}=\text{exp}\left ({-\alpha_{ij}\tau_{ij}}\right )
+
+    Parameters
+    ----------
+    xs : list[float]
+        Liquid mole fractions of each species, [-]
+    taus : list[list[float]]
+        Dimensionless interaction parameters of each compound with each other,
+        [-]
+    alphas : list[list[float]]
+        Nonrandomness constants of each compound interacting with each other, [-]
+
+    Returns
+    -------
+    gammas : list[float]
+        Activity coefficient for each species in the liquid mixture, [-]
+
+    Notes
+    -----
+    This model needs N^2 parameters.
+
+    One common temperature dependence of the nonrandomness constants is:
+
+    .. math::
+        \alpha_{ij}=c_{ij}+d_{ij}T
+
+    Most correlations for the interaction parameters include some of the terms
+    shown in the following form:
+
+    .. math::
+        \tau_{ij}=A_{ij}+\frac{B_{ij}}{T}+\frac{C_{ij}}{T^{2}}+D_{ij}
+        \ln{\left ({T}\right )}+E_{ij}T^{F_{ij}}
+
+    The original form of this model used the temperature dependence of taus in
+    the form (values can be found in the literature, often with units of
+    calories/mol):
+
+    .. math::
+        \tau_{ij}=\frac{b_{ij}}{RT}
+
+    For this model to produce ideal acitivty coefficients (gammas = 1),
+    all interaction parameters should be 0; the value of alpha does not impact
+    the calculation when that is the case.
+
+    Examples
+    --------
+    Ethanol-water example, at 343.15 K and 1 MPa:
+
+    >>> NRTL_gammas(xs=[0.252, 0.748], taus=[[0, -0.178], [1.963, 0]],
+    ... alphas=[[0, 0.2974],[.2974, 0]])
+    [1.9363183763514304, 1.1537609663170014]
+
+    References
+    ----------
+    .. [1] Renon, Henri, and J. M. Prausnitz. "Local Compositions in
+       Thermodynamic Excess Functions for Liquid Mixtures." AIChE Journal 14,
+       no. 1 (1968): 135-144. doi:10.1002/aic.690140124.
+    .. [2] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey.
+       Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim:
+       Wiley-VCH, 2012.
+    '''
+    gammas = []
+    cmps = range(len(xs))
+    # Gs does not depend on composition
+    Gs = []
+    for i in cmps:
+        alphasi = alphas[i]
+        tausi = taus[i]
+        Gs.append([exp(-alphasi[j]*tausi[j]) for j in cmps])
+
+
+    td2s = []
+    tn3s = []
+    for j in cmps:
+        td2 = 0.0
+        tn3 = 0.0
+        for k in cmps:
+            xkGkj = xs[k]*Gs[k][j]
+            td2 += xkGkj
+            tn3 += xkGkj*taus[k][j]
+        td2 = 1.0/td2
+        td2xj = td2*xs[j]
+        td2s.append(td2xj)
+        tn3s.append(tn3*td2*td2xj)
+
+    for i in cmps:
+        tn1, td1, total2 = 0., 0., 0.
+        Gsi = Gs[i]
+        tausi = taus[i]
+        for j in cmps:
+            xjGji = xs[j]*Gs[j][i]
+
+            td1 += xjGji
+            tn1 += xjGji*taus[j][i]
+            total2 += Gsi[j]*(tausi[j]*td2s[j] - tn3s[j])
+
+        gamma = exp(tn1/td1 + total2)
+        gammas.append(gamma)
+    return gammas

@@ -40,12 +40,12 @@ def flash_rounding(x):
 def pkg_tabular_data_TP(IDs, pkg_ID, zs, P_pts=50, T_pts=50, T_min=None,
                         T_max=None, P_min=None, P_max=None, attrs=default_attrs):
     pkg = PropertyPackageConstants(IDs, pkg_ID)
-    
+
     if T_min is None:
         T_min = min(i for i in pkg.Tms if i is not None)
     if T_max is None:
         T_max = max(i for i in pkg.Tcs if i is not None)*2
-    
+
     if P_min is None:
         P_min = 100
     if P_max is None:
@@ -65,18 +65,18 @@ def pkg_tabular_data_TP(IDs, pkg_ID, zs, P_pts=50, T_pts=50, T_min=None,
                 print(e, T, P, IDs, pkg_ID, zs)
             data_row.append(row)
         data.append(data_row)
-    
+
     metadata = {'spec':('T', 'P'), 'pkg': pkg_ID, 'zs': zs, 'IDs': IDs,
                 'T_min': T_min, 'T_max': T_max, 'P_min': P_min, 'P_max': P_max,
                 'Ts': Ts, 'Ps': Ps}
-    
+
     return Ts, Ps, data, metadata
 
 
 def pkg_tabular_data_TVF(IDs, pkg_ID, zs, VF_pts=50, T_pts=50, T_min=None,
                          T_max=None, VF_min=None, VF_max=None, attrs=default_attrs):
     pkg = PropertyPackageConstants(IDs, pkg_ID)
-    
+
     if T_min is None:
         T_min = min(i for i in pkg.Tms if i is not None)
     if T_max is None:
@@ -84,7 +84,7 @@ def pkg_tabular_data_TVF(IDs, pkg_ID, zs, VF_pts=50, T_pts=50, T_min=None,
             T_max = pkg.Tcs[0]
         else:
             T_max = max(i for i in pkg.Tcs if i is not None)*2
-    
+
     if VF_min is None:
         VF_min = 0.0
     if VF_max is None:
@@ -105,18 +105,18 @@ def pkg_tabular_data_TVF(IDs, pkg_ID, zs, VF_pts=50, T_pts=50, T_min=None,
                 print(e, T, VF, IDs, pkg_ID, zs)
             data_row.append(row)
         data.append(data_row)
-    
+
     metadata = {'spec':('T', 'VF'), 'pkg': pkg_ID, 'zs': zs, 'IDs': IDs,
                 'T_min': T_min, 'T_max': T_max, 'VF_min': VF_min, 'VF_max': VF_max,
                 'Ts': Ts, 'VFs': VFs}
-    
-    
+
+
     return Ts, VFs, data, metadata
 
 def pkg_tabular_data_PVF(IDs, pkg_ID, zs, VF_pts=50, P_pts=50, P_min=None,
                          P_max=None, VF_min=None, VF_max=None, attrs=default_attrs):
     pkg = PropertyPackageConstants(IDs, pkg_ID)
-    
+
     if P_min is None:
         P_min = 100.0
     if P_max is None:
@@ -124,7 +124,7 @@ def pkg_tabular_data_PVF(IDs, pkg_ID, zs, VF_pts=50, P_pts=50, P_min=None,
             P_max = pkg.Pcs[0]
         else:
             P_max = max(i for i in pkg.Pcs if i is not None)*2
-    
+
     if VF_min is None:
         VF_min = 0.0
     if VF_max is None:
@@ -145,12 +145,12 @@ def pkg_tabular_data_PVF(IDs, pkg_ID, zs, VF_pts=50, P_pts=50, P_min=None,
                 print(e, P, VF, IDs, pkg_ID, zs)
             data_row.append(row)
         data.append(data_row)
-    
+
     metadata = {'spec':('P', 'VF'), 'pkg': pkg_ID, 'zs': zs, 'IDs': IDs,
                 'P_min': P_min, 'P_max': P_max, 'VF_min': VF_min, 'VF_max': VF_max,
                 'Ps': Ps, 'VFs': VFs}
-    
-    
+
+
     return Ps, VFs, data, metadata
 
 
@@ -158,7 +158,7 @@ def pkg_tabular_data_PH(IDs, pkg_ID, zs, P_pts=50, H_pts=50, H_min=None,
                         H_max=None, P_min=None, P_max=None, attrs=default_attrs):
     pkg = PropertyPackageConstants(IDs, pkg_ID).pkg
 
-    
+
     if P_min is None:
         P_min = 100
     if P_max is None:
@@ -167,17 +167,17 @@ def pkg_tabular_data_PH(IDs, pkg_ID, zs, P_pts=50, H_pts=50, H_min=None,
     if H_min is None or H_max is None:
         T_min = min(i for i in pkg.Tms if i is not None)
         T_max = max(i for i in pkg.Tcs if i is not None)*2
-        
+
         Hm_range = []
         for P in (P_min, P_max):
             for T in (T_min, T_max):
                 pkg.flash(T=T, P=P, zs=zs)
                 Hm_range.append(pkg.Hm)
-    
+
         if H_min is None:
             H_min = min(Hm_range)
         if H_max is None:
-            H_max = max(Hm_range)   
+            H_max = max(Hm_range)
 
     Hs = linspace(H_min, H_max, H_pts)
     Ps = logspace(log10(P_min), log10(P_max), P_pts)
@@ -190,11 +190,11 @@ def pkg_tabular_data_PH(IDs, pkg_ID, zs, P_pts=50, H_pts=50, H_min=None,
             row = tuple(flash_rounding(getattr(pkg, s)) for s in attrs)
             data_row.append(row)
         data.append(data_row)
-    
+
     metadata = {'spec':('P', 'H'), 'pkg': pkg_ID, 'zs': zs, 'IDs': IDs,
                 'H_min': H_min, 'H_max': H_max, 'P_min': P_min, 'P_max': P_max,
                 'Hs': Hs, 'Ps': Ps}
-    
+
     return Hs, Ps, data, metadata
 
 
@@ -202,7 +202,7 @@ def pkg_tabular_data_PS(IDs, pkg_ID, zs, P_pts=50, S_pts=50, S_min=None,
                         S_max=None, P_min=None, P_max=None, attrs=default_attrs):
     pkg = PropertyPackageConstants(IDs, pkg_ID).pkg
 
-    
+
     if P_min is None:
         P_min = 100
     if P_max is None:
@@ -211,17 +211,17 @@ def pkg_tabular_data_PS(IDs, pkg_ID, zs, P_pts=50, S_pts=50, S_min=None,
     if S_min is None or S_max is None:
         T_min = min(i for i in pkg.Tms if i is not None)
         T_max = max(i for i in pkg.Tcs if i is not None)*2
-        
+
         Sm_range = []
         for P in (P_min, P_max):
             for T in (T_min, T_max):
                 pkg.flash(T=T, P=P, zs=zs)
                 Sm_range.append(pkg.Sm)
-    
+
         if S_min is None:
             S_min = min(Sm_range)
         if S_max is None:
-            S_max = max(Sm_range)   
+            S_max = max(Sm_range)
 
     Ss = linspace(S_min, S_max, S_pts)
     Ps = logspace(log10(P_min), log10(P_max), P_pts)
@@ -234,11 +234,11 @@ def pkg_tabular_data_PS(IDs, pkg_ID, zs, P_pts=50, S_pts=50, S_min=None,
             row = tuple(flash_rounding(getattr(pkg, s)) for s in attrs)
             data_row.append(row)
         data.append(data_row)
-    
+
     metadata = {'spec':('P', 'S'), 'pkg': pkg_ID, 'zs': zs, 'IDs': IDs,
                 'S_min': S_min, 'S_max': S_max, 'P_min': P_min, 'P_max': P_max,
                 'Ss': Ss, 'Ps': Ps}
-    
+
     return Ss, Ps, data, metadata
 
 
@@ -274,17 +274,17 @@ def save_tabular_data_as_json(specs0, specs1, metadata, data, attrs, path):
 
     '''
     data_json = []
-    
+
     for row, spec0 in zip(data, specs0):
         new_rows = []
-        
+
         for i, spec1 in enumerate(specs1):
             new_rows.append({k: v for k, v in zip(attrs, row[i])})
         data_json.append(new_rows)
-    
+
     metadata['attrs'] = attrs
     json_result = {'metadata': metadata, 'tabular_data': data_json}
-    
+
     fp = open(path, 'w')
     json.dump(json_result, fp, sort_keys=True, indent=2)
     fp.close()

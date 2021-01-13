@@ -31,24 +31,24 @@ from thermo.interaction_parameters import IPDB
 
 def run_validate_db():
     from thermo.interaction_parameters import ip_files
-    
+
     for name in ip_files.keys():
         IPDB.validate_table(name)
-        
+
 def test_basic_chemsep_PR():
     kij = IPDB.get_ip_specific('ChemSep PR', ['124-38-9', '67-56-1'], 'kij')
     assert_allclose(kij, 0.0583)
-    
+
     kij_auto = IPDB.get_ip_automatic(['124-38-9', '67-56-1'], 'PR kij', 'kij')
     assert_allclose(kij, kij_auto)
-    
+
     kij_missing = IPDB.get_ip_specific('ChemSep PR', ['1249-38-9', '67-56-1'], 'kij')
     assert kij_missing == 0
     assert False == IPDB.has_ip_specific('ChemSep PR', ['1249-38-9', '67-56-1'], 'kij')
     assert True == IPDB.has_ip_specific('ChemSep PR', ['124-38-9', '67-56-1'], 'kij')
 
     assert IPDB.get_tables_with_type('PR kij') == ['ChemSep PR']
-    
+
     # interaction parameter matrix
     kij_C1C4 = IPDB.get_ip_symmetric_matrix('ChemSep PR', ['74-82-8', '74-84-0', '74-98-6', '106-97-8'], 'kij')
     kij_C1C4_known = [[0.0, -0.0059, 0.0119, 0.0185],
@@ -59,12 +59,12 @@ def test_basic_chemsep_PR():
     # Test for asymetric works the same since the model is asymmetric
     kij_C1C4 = IPDB.get_ip_symmetric_matrix('ChemSep PR', ['74-82-8', '74-84-0', '74-98-6', '106-97-8'], 'kij')
     assert_allclose(kij_C1C4, kij_C1C4_known)
-                    
+
 
 def test_basic_chemsep_NRTL():
     # ethanol water, converted to metric, simple T dependence
     bijs = IPDB.get_ip_asymmetric_matrix('ChemSep NRTL', ['64-17-5', '7732-18-5'], 'bij')
-    
+
     alphas_known = [[0.0, 0.2937, 0.3009], [0.2937, 0.0, 0.2999], [0.3009, 0.2999, 0.0]]
     # Test is works both symmetric and asymmetric
     alphas = IPDB.get_ip_asymmetric_matrix('ChemSep NRTL', ['64-17-5', '7732-18-5', '67-56-1'], 'alphaij')

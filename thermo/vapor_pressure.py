@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,279 +18,64 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+
+This module contains implementations of :obj:`thermo.utils.TDependentProperty`
+representing vapor pressure and sublimation pressure. A variety of estimation
+and data methods are available as included in the `chemicals` library.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. contents:: :local:
+
+Vapor Pressure
+==============
+.. autoclass:: VaporPressure
+    :members: calculate, test_method_validity,
+              interpolation_T, interpolation_property,
+              interpolation_property_inv, name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: vapor_pressure_methods
+
+Sublimation Pressure
+====================
+.. autoclass:: SublimationPressure
+    :members: calculate, test_method_validity,
+              interpolation_T, interpolation_property,
+              interpolation_property_inv, name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: sublimation_pressure_methods
+'''
 
 from __future__ import division
 
-__all__ = ['WagnerMcGarry', 'AntoinePoling', 'WagnerPoling', 'AntoineExtended',
-           'Antoine', 'Wagner_original', 'Wagner', 'TRC_Antoine_extended', 
-           'vapor_pressure_methods', 'VaporPressure', 'Perrys2_8', 'VDI_PPDS_3',
-           'boiling_critical_relation', 'Lee_Kesler', 'Ambrose_Walton', 
-           'Edalat', 'Sanjari', 'Psub_Clapeyron', 'SublimationPressure']
+__all__ = ['vapor_pressure_methods', 'VaporPressure', 'SublimationPressure',
+           'sublimation_pressure_methods']
 
 import os
 from fluids.constants import R
-from fluids.numerics import polyint_over_x, horner_log, horner, polyint, horner_and_der, derivative
+from fluids.numerics import polyint_over_x, horner_log, horner, polyint, horner_and_der2, horner_and_der, derivative, newton, linspace, numpy as np
 
-import numpy as np
-import pandas as pd
-from thermo.utils import log, exp, isnan
-from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
+from math import e
+from chemicals.utils import log, exp, isnan
+from chemicals.dippr import EQ101
+from chemicals import miscdata
+from chemicals.miscdata import lookup_VDI_tabular_data
+from chemicals.vapor_pressure import *
+from chemicals import vapor_pressure
 from thermo.utils import TDependentProperty
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
-from thermo.dippr import EQ101
-
-folder = os.path.join(os.path.dirname(__file__), 'Vapor Pressure')
-
-WagnerMcGarry = pd.read_csv(os.path.join(folder, 'Wagner Original McGarry.tsv'),
-                            sep='\t', index_col=0)
-_WagnerMcGarry_values = WagnerMcGarry.values
-
-AntoinePoling = pd.read_csv(os.path.join(folder, 'Antoine Collection Poling.tsv'),
-                            sep='\t', index_col=0)
-_AntoinePoling_values = AntoinePoling.values
-
-WagnerPoling = pd.read_csv(os.path.join(folder, 'Wagner Collection Poling.tsv'),
-                           sep='\t', index_col=0)
-_WagnerPoling_values = WagnerPoling.values
-
-AntoineExtended = pd.read_csv(os.path.join(folder, 'Antoine Extended Collection Poling.tsv'),
-                              sep='\t', index_col=0)
-_AntoineExtended_values = AntoineExtended.values
-
-Perrys2_8 = pd.read_csv(os.path.join(folder, 'Table 2-8 Vapor Pressure of Inorganic and Organic Liquids.tsv'),
-                          sep='\t', index_col=0)
-_Perrys2_8_values = Perrys2_8.values
-
-VDI_PPDS_3 = pd.read_csv(os.path.join(folder, 'VDI PPDS Boiling temperatures at different pressures.tsv'),
-                          sep='\t', index_col=0)
-_VDI_PPDS_3_values = VDI_PPDS_3.values
-
-
-def Antoine(T, A, B, C, base=10.0):
-    r'''Calculates vapor pressure of a chemical using the Antoine equation.
-    Parameters `A`, `B`, and `C` are chemical-dependent. Parameters can be 
-    found in numerous sources; however units of the coefficients used vary.
-    Originally proposed by Antoine (1888) [2]_.
-
-    .. math::
-        \log_{\text{base}} P^{\text{sat}} = A - \frac{B}{T+C}
-
-    Parameters
-    ----------
-    T : float
-        Temperature of fluid, [K]
-    A, B, C : floats
-        Regressed coefficients for Antoine equation for a chemical
-
-    Returns
-    -------
-    Psat : float
-        Vapor pressure calculated with coefficients [Pa]
-    
-    Other Parameters
-    ----------------
-    Base : float
-        Optional base of logarithm; 10 by default
-
-    Notes
-    -----
-    Assumes coefficients are for calculating vapor pressure in Pascal. 
-    Coefficients should be consistent with input temperatures in Kelvin;
-    however, if both the given temperature and units are specific to degrees
-    Celcius, the result will still be correct.
-    
-    **Converting units in input coefficients:**
-    
-        * **ln to log10**: Divide A and B by ln(10)=2.302585 to change  
-          parameters for a ln equation to a log10 equation.
-        * **log10 to ln**: Multiply A and B by ln(10)=2.302585 to change 
-          parameters for a log equation to a ln equation.
-        * **mmHg to Pa**: Add log10(101325/760)= 2.1249 to A.
-        * **kPa to Pa**: Add log_{base}(1000)= 6.908 to A for log(base)
-        * **°C to K**: Subtract 273.15 from C only!
-
-    Examples
-    --------
-    Methane, coefficients from [1]_, at 100 K:
-    
-    >>> Antoine(100.0, 8.7687, 395.744, -6.469)
-    34478.367349639906
-    
-    Tetrafluoromethane, coefficients from [1]_, at 180 K
-    
-    >>> Antoine(180, A=8.95894, B=510.595, C=-15.95)
-    702271.0518579542
-    
-    Oxygen at 94.91 K, with coefficients from [3]_ in units of °C, mmHg, log10,
-    showing the conversion of coefficients A (mmHg to Pa) and C (°C to K)
-    
-    >>> Antoine(94.91, 6.83706+2.1249, 339.2095, 268.70-273.15)
-    162978.88655572367
-
-    References
-    ----------
-    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
-       New York: McGraw-Hill Professional, 2000.
-    .. [2] Antoine, C. 1888. Tensions des Vapeurs: Nouvelle Relation Entre les 
-       Tensions et les Tempé. Compt.Rend. 107:681-684.
-    .. [3] Yaws, Carl L. The Yaws Handbook of Vapor Pressure: Antoine 
-       Coefficients. 1 edition. Houston, Tex: Gulf Publishing Company, 2007.
-    '''
-    return base**(A - B/(T + C))
-
-
-def TRC_Antoine_extended(T, Tc, to, A, B, C, n, E, F):
-    r'''Calculates vapor pressure of a chemical using the TRC Extended Antoine
-    equation. Parameters are chemical dependent, and said to be from the 
-    Thermodynamics Research Center (TRC) at Texas A&M. Coefficients for various
-    chemicals can be found in [1]_.
-
-    .. math::
-        \log_{10} P^{sat} = A - \frac{B}{T + C} + 0.43429x^n + Ex^8 + Fx^{12}
-        
-        x = \max \left(\frac{T-t_o-273.15}{T_c}, 0 \right)
-
-    Parameters
-    ----------
-    T : float
-        Temperature of fluid, [K]
-    A, B, C, n, E, F : floats
-        Regressed coefficients for the Antoine Extended (TRC) equation,
-        specific for each chemical, [-]
-
-    Returns
-    -------
-    Psat : float
-        Vapor pressure calculated with coefficients [Pa]
-    
-    Notes
-    -----
-    Assumes coefficients are for calculating vapor pressure in Pascal. 
-    Coefficients should be consistent with input temperatures in Kelvin;
-
-    Examples
-    --------
-    Tetrafluoromethane, coefficients from [1]_, at 180 K:
-    
-    >>> TRC_Antoine_extended(180.0, 227.51, -120., 8.95894, 510.595, -15.95, 
-    ... 2.41377, -93.74, 7425.9) 
-    706317.0898414153
-
-    References
-    ----------
-    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
-       New York: McGraw-Hill Professional, 2000.
-    '''
-    x = max((T - to - 273.15)/Tc, 0.)
-    return 10.**(A - B/(T+C) + 0.43429*x**n + E*x**8 + F*x**12)
-
-
-def Wagner_original(T, Tc, Pc, a, b, c, d):
-    r'''Calculates vapor pressure using the Wagner equation (3, 6 form).
-
-    Requires critical temperature and pressure as well as four coefficients
-    specific to each chemical.
-
-    .. math::
-        \ln P^{sat}= \ln P_c + \frac{a\tau + b \tau^{1.5} + c\tau^3 + d\tau^6}
-        {T_r}
-        
-        \tau = 1 - \frac{T}{T_c}
-
-    Parameters
-    ----------
-    T : float
-        Temperature of fluid, [K]
-    Tc : float
-        Critical temperature, [K]
-    Pc : float
-        Critical pressure, [Pa]
-    a, b, c, d : floats
-        Parameters for wagner equation. Specific to each chemical. [-]
-
-    Returns
-    -------
-    Psat : float
-        Vapor pressure at T [Pa]
-
-    Notes
-    -----
-    Warning: Pc is often treated as adjustable constant.
-
-    Examples
-    --------
-    Methane, coefficients from [2]_, at 100 K.
-
-    >>> Wagner_original(100.0, 190.53, 4596420., a=-6.00435, b=1.1885, 
-    ... c=-0.834082, d=-1.22833)
-    34520.44601450496
-
-    References
-    ----------
-    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
-       New York: McGraw-Hill Professional, 2000.
-    .. [2] McGarry, Jack. "Correlation and Prediction of the Vapor Pressures of
-       Pure Liquids over Large Pressure Ranges." Industrial & Engineering
-       Chemistry Process Design and Development 22, no. 2 (April 1, 1983):
-       313-22. doi:10.1021/i200021a023.
-    '''
-    Tr = T/Tc
-    tau = 1.0 - Tr
-    tau3 = tau*tau*tau
-    return Pc*exp((a*tau + b*tau**1.5 + c*tau3 + d*tau3*tau3)/Tr)
-
-
-def Wagner(T, Tc, Pc, a, b, c, d):
-    r'''Calculates vapor pressure using the Wagner equation (2.5, 5 form).
-
-    Requires critical temperature and pressure as well as four coefficients
-    specific to each chemical.
-
-    .. math::
-        \ln P^{sat}= \ln P_c + \frac{a\tau + b \tau^{1.5} + c\tau^{2.5}
-        + d\tau^5} {T_r}
-
-        \tau = 1 - \frac{T}{T_c}
-
-    Parameters
-    ----------
-    T : float
-        Temperature of fluid, [K]
-    Tc : float
-        Critical temperature, [K]
-    Pc : float
-        Critical pressure, [Pa]
-    a, b, c, d : floats
-        Parameters for wagner equation. Specific to each chemical. [-]
-
-    Returns
-    -------
-    Psat : float
-        Vapor pressure at T [Pa]
-
-    Notes
-    -----
-    Warning: Pc is often treated as adjustable constant.
-
-    Examples
-    --------
-    Methane, coefficients from [2]_, at 100 K.
-
-    >>> Wagner(100., 190.551, 4599200, -6.02242, 1.26652, -0.5707, -1.366)
-    34415.00476263708
-
-    References
-    ----------
-    .. [1] Wagner, W. "New Vapour Pressure Measurements for Argon and Nitrogen and
-       a New Method for Establishing Rational Vapour Pressure Equations."
-       Cryogenics 13, no. 8 (August 1973): 470-82. doi:10.1016/0011-2275(73)90003-9
-    .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
-       New York: McGraw-Hill Professional, 2000.
-    '''
-    Tr = T/Tc
-    tau = 1.0 - T/Tc
-    return Pc*exp((a*tau + b*tau**1.5 + c*tau**2.5 + d*tau**5)/Tr)
+from thermo.utils import source_path
 
 
 WAGNER_MCGARRY = 'WAGNER_MCGARRY'
@@ -309,6 +94,8 @@ SANJARI = 'SANJARI'
 EDALAT = 'Edalat'
 EOS = 'EOS'
 BESTFIT = 'Best fit'
+BEST_FIT_AB = 'Best fit AB extrapolation'
+BEST_FIT_ABC = 'Best fit ABC extrapolation'
 
 vapor_pressure_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                           DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
@@ -337,6 +124,24 @@ class VaporPressure(TDependentProperty):
         The CAS number of the chemical
     eos : object, optional
         Equation of State object after :obj:`thermo.eos.GCEOS`
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files;
+        this can be used to reduce the memory consumption of an object as well,
+        [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        vapor pressure of a species; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default method if provided . [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -345,58 +150,58 @@ class VaporPressure(TDependentProperty):
 
     **WAGNER_MCGARRY**:
         The Wagner 3,6 original model equation documented in
-        :obj:`Wagner_original`, with data for 245 chemicals, from [1]_,
+        :obj:`chemicals.vapor_pressure.Wagner_original`, with data for 245 chemicals, from [1]_,
     **WAGNER_POLING**:
-        The Wagner 2.5, 5 model equation documented in :obj:`Wagner` in [2]_,
+        The Wagner 2.5, 5 model equation documented in :obj:`chemicals.vapor_pressure.Wagner` in [2]_,
         with data for  104 chemicals.
     **ANTOINE_EXTENDED_POLING**:
         The TRC extended Antoine model equation documented in
-        :obj:`TRC_Antoine_extended` with data for 97 chemicals in [2]_.
+        :obj:`chemicals.vapor_pressure.TRC_Antoine_extended` with data for 97 chemicals in [2]_.
     **ANTOINE_POLING**:
         Standard Antoine equation, as documented in the function
-        :obj:`Antoine` and with data for 325 fluids from [2]_.
+        :obj:`chemicals.vapor_pressure.Antoine` and with data for 325 fluids from [2]_.
         Coefficients were altered to be in units of Pa and Celcius.
     **DIPPR_PERRY_8E**:
         A collection of 341 coefficient sets from the DIPPR database published
-        openly in [5]_. Provides temperature limits for all its fluids. 
-        :obj:`thermo.dippr.EQ101` is used for its fluids.
+        openly in [5]_. Provides temperature limits for all its fluids.
+        :obj:`chemicals.dippr.EQ101` is used for its fluids.
     **VDI_PPDS**:
-        Coefficients for a equation form developed by the PPDS, published 
-        openly in [4]_. 
+        Coefficients for a equation form developed by the PPDS, published
+        openly in [4]_.
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
         Range is limited to that of the equations of state it uses, as
         described in [3]_. Very slow.
     **BOILING_CRITICAL**:
         Fundamental relationship in thermodynamics making several
-        approximations; see :obj:`boiling_critical_relation` for details.
+        approximations; see :obj:`chemicals.vapor_pressure.boiling_critical_relation` for details.
         Least accurate method in most circumstances.
     **LEE_KESLER_PSAT**:
-        CSP method documented in :obj:`Lee_Kesler`. Widely used.
+        CSP method documented in :obj:`chemicals.vapor_pressure.Lee_Kesler`. Widely used.
     **AMBROSE_WALTON**:
-        CSP method documented in :obj:`Ambrose_Walton`.
+        CSP method documented in :obj:`chemicals.vapor_pressure.Ambrose_Walton`.
     **SANJARI**:
-        CSP method documented in :obj:`Sanjari`.
+        CSP method documented in :obj:`chemicals.vapor_pressure.Sanjari`.
     **EDALAT**:
-        CSP method documented in :obj:`Edalat`.
+        CSP method documented in :obj:`chemicals.vapor_pressure.Edalat`.
     **VDI_TABULAR**:
         Tabular data in [4]_ along the saturation curve; interpolation is as
         set by the user or the default.
     **EOS**:
-        Equation of state provided by user; must implement 
+        Equation of state provided by user; must implement
         :obj:`thermo.eos.GCEOS.Psat`
 
     See Also
     --------
-    Wagner_original
-    Wagner
-    TRC_Antoine_extended
-    Antoine
-    boiling_critical_relation
-    Lee_Kesler
-    Ambrose_Walton
-    Sanjari
-    Edalat
+    chemicals.vapor_pressure.Wagner_original
+    chemicals.vapor_pressure.Wagner
+    chemicals.vapor_pressure.TRC_Antoine_extended
+    chemicals.vapor_pressure.Antoine
+    chemicals.vapor_pressure.boiling_critical_relation
+    chemicals.vapor_pressure.Lee_Kesler
+    chemicals.vapor_pressure.Ambrose_Walton
+    chemicals.vapor_pressure.Sanjari
+    chemicals.vapor_pressure.Edalat
 
     References
     ----------
@@ -418,16 +223,27 @@ class VaporPressure(TDependentProperty):
     '''
     name = 'Vapor pressure'
     units = 'Pa'
-    interpolation_T = lambda self, T: 1./T
-    '''1/T interpolation transformation by default.'''
-    interpolation_property = lambda self, P: log(P)
-    '''log(P) interpolation transformation by default.'''
-    interpolation_property_inv = lambda self, P: exp(P)
-    '''exp(P) interpolation transformation by default; reverses
-    :obj:`interpolation_property_inv`.'''
+
+    @staticmethod
+    def interpolation_T(T):
+        '''Function to make the data-based interpolation as linear as possible.
+        This transforms the input `T` into the `1/T` domain.'''
+        return 1./T
+
+    @staticmethod
+    def interpolation_property(P):
+        '''log(P) interpolation transformation by default.
+        '''
+        return log(P)
+
+    @staticmethod
+    def interpolation_property_inv(P):
+        '''exp(P) interpolation transformation by default; reverses
+        :obj:`interpolation_property_inv`.'''
+        return exp(P)
+
     tabular_extrapolation_permitted = False
-    '''Disallow tabular extrapolation by default; CSP methods prefered
-    normally.'''
+    '''Disallow tabular extrapolation by default.'''
     property_min = 0
     '''Mimimum valid value of vapor pressure.'''
     property_max = 1E10
@@ -440,14 +256,28 @@ class VaporPressure(TDependentProperty):
                       LEE_KESLER_PSAT, EDALAT, BOILING_CRITICAL, EOS, SANJARI]
     '''Default rankings of the available methods.'''
 
-    def __init__(self, Tb=None, Tc=None, Pc=None, omega=None, CASRN='', 
-                 eos=None, best_fit=None):
+    def __init__(self, Tb=None, Tc=None, Pc=None, omega=None, CASRN='',
+                 eos=None, load_data=True,
+                 extrapolation='AntoineAB|DIPPR101_ABC', poly_fit=None,
+                 method=None):
         self.CASRN = CASRN
         self.Tb = Tb
         self.Tc = Tc
         self.Pc = Pc
         self.omega = omega
         self.eos = eos
+
+        self.kwargs = kwargs = {}
+        if Tb is not None:
+            kwargs['Tb'] = Tb
+        if Tc is not None:
+            kwargs['Tc'] = Tc
+        if Pc is not None:
+            kwargs['Pc'] = Pc
+        if omega is not None:
+            kwargs['omega'] = omega
+        if eos is not None:
+            kwargs['eos'] = eos
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate vapor pressure
@@ -457,42 +287,42 @@ class VaporPressure(TDependentProperty):
         '''Maximum temperature at which no method can calculate vapor pressure
         above; by definition the critical point.'''
 
-        self.method = None
-        '''The method was which was last used successfully to calculate a property;
-        set only after the first property calculation.'''
+        super(VaporPressure, self)._set_common_attributes()
 
-        self.tabular_data = {}
-        '''tabular_data, dict: Stored (Ts, properties) for any
-        tabular data; indexed by provided or autogenerated name.'''
-        self.tabular_data_interpolators = {}
-        '''tabular_data_interpolators, dict: Stored (extrapolator,
-        spline) tuples which are interp1d instances for each set of tabular
-        data; indexed by tuple of (name, interpolation_T,
-        interpolation_property, interpolation_property_inv) to ensure that
-        if an interpolation transform is altered, the old interpolator which
-        had been created is no longer used.'''
 
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
+        self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
 
-        self.all_methods = set()
-        '''Set of all methods available for a given CASRN and properties;
-        filled by :obj:`load_all_methods`.'''
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
+            if self.Tmin is None and hasattr(self, 'poly_fit_Tmin'):
+                self.Tmin = self.poly_fit_Tmin*.01
+            if self.Tmax is None and hasattr(self, 'poly_fit_Tmax'):
+                self.Tmax = self.poly_fit_Tmax*10
+        elif method is not None:
+            self.method = method
+        else:
+            methods = self.valid_methods(T=None)
+            if methods:
+                self.method = methods[0]
 
-        self.load_all_methods()
+    @staticmethod
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        return {WAGNER_MCGARRY: vapor_pressure.Psat_data_WagnerMcGarry.index,
+                WAGNER_POLING: vapor_pressure.Psat_data_WagnerPoling.index,
+                ANTOINE_EXTENDED_POLING: vapor_pressure.Psat_data_AntoineExtended.index,
+                ANTOINE_POLING: vapor_pressure.Psat_data_AntoinePoling.index,
+                DIPPR_PERRY_8E: vapor_pressure.Psat_data_Perrys2_8.index,
+                COOLPROP: coolprop_dict,
+                VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
+                VDI_PPDS: vapor_pressure.Psat_data_VDI_PPDS_3.index,
+                }
 
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
-            if self.Tmin is None and hasattr(self, 'best_fit_Tmin'):
-                self.Tmin = self.best_fit_Tmin/100
-            if self.Tmax is None and hasattr(self, 'best_fit_Tmax'):
-                self.Tmax = self.best_fit_Tmax*10
-
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
@@ -503,63 +333,74 @@ class VaporPressure(TDependentProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
+        self.T_limits = T_limits = {}
         methods = []
         Tmins, Tmaxs = [], []
-        if self.CASRN in WagnerMcGarry.index:
-            methods.append(WAGNER_MCGARRY)
-            _, A, B, C, D, self.WAGNER_MCGARRY_Pc, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Tmin = _WagnerMcGarry_values[WagnerMcGarry.index.get_loc(self.CASRN)].tolist()
-            self.WAGNER_MCGARRY_coefs = [A, B, C, D]
-            Tmins.append(self.WAGNER_MCGARRY_Tmin); Tmaxs.append(self.WAGNER_MCGARRY_Tc)
-            
-        if self.CASRN in WagnerPoling.index:
-            methods.append(WAGNER_POLING)
-            _, A, B, C, D, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, Tmin, self.WAGNER_POLING_Tmax = _WagnerPoling_values[WagnerPoling.index.get_loc(self.CASRN)].tolist()
-            # Some Tmin values are missing; Arbitrary choice of 0.1 lower limit
-            self.WAGNER_POLING_Tmin = Tmin if not isnan(Tmin) else self.WAGNER_POLING_Tmax*0.1
-            self.WAGNER_POLING_coefs = [A, B, C, D]
-            Tmins.append(Tmin); Tmaxs.append(self.WAGNER_POLING_Tmax)
-            
-        if self.CASRN in AntoineExtended.index:
-            methods.append(ANTOINE_EXTENDED_POLING)
-            _, A, B, C, Tc, to, n, E, F, self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax = _AntoineExtended_values[AntoineExtended.index.get_loc(self.CASRN)].tolist()
-            self.ANTOINE_EXTENDED_POLING_coefs = [Tc, to, A, B, C, n, E, F]
-            Tmins.append(self.ANTOINE_EXTENDED_POLING_Tmin); Tmaxs.append(self.ANTOINE_EXTENDED_POLING_Tmax)
+        if load_data:
+            if self.CASRN in vapor_pressure.Psat_data_WagnerMcGarry.index:
+                methods.append(WAGNER_MCGARRY)
+                A, B, C, D, self.WAGNER_MCGARRY_Pc, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Tmin = vapor_pressure.Psat_values_WagnerMcGarry[vapor_pressure.Psat_data_WagnerMcGarry.index.get_loc(self.CASRN)].tolist()
+                self.WAGNER_MCGARRY_coefs = [A, B, C, D]
+                Tmins.append(self.WAGNER_MCGARRY_Tmin); Tmaxs.append(self.WAGNER_MCGARRY_Tc)
+                T_limits[WAGNER_MCGARRY] = (self.WAGNER_MCGARRY_Tmin, self.WAGNER_MCGARRY_Tc)
 
-        if self.CASRN in AntoinePoling.index:
-            methods.append(ANTOINE_POLING)
-            _, A, B, C, self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax = _AntoinePoling_values[AntoinePoling.index.get_loc(self.CASRN)].tolist()
-            self.ANTOINE_POLING_coefs = [A, B, C]
-            Tmins.append(self.ANTOINE_POLING_Tmin); Tmaxs.append(self.ANTOINE_POLING_Tmax)
+            if self.CASRN in vapor_pressure.Psat_data_WagnerPoling.index:
+                methods.append(WAGNER_POLING)
+                A, B, C, D, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, Tmin, self.WAGNER_POLING_Tmax = vapor_pressure.Psat_values_WagnerPoling[vapor_pressure.Psat_data_WagnerPoling.index.get_loc(self.CASRN)].tolist()
+                # Some Tmin values are missing; Arbitrary choice of 0.1 lower limit
+                self.WAGNER_POLING_Tmin = Tmin if not isnan(Tmin) else self.WAGNER_POLING_Tmax*0.1
+                self.WAGNER_POLING_coefs = [A, B, C, D]
+                Tmins.append(Tmin); Tmaxs.append(self.WAGNER_POLING_Tmax)
+                T_limits[WAGNER_POLING] = (self.WAGNER_POLING_Tmin, self.WAGNER_POLING_Tmax)
 
-        if self.CASRN in Perrys2_8.index:
-            methods.append(DIPPR_PERRY_8E)
-            _, C1, C2, C3, C4, C5, self.Perrys2_8_Tmin, self.Perrys2_8_Tmax = _Perrys2_8_values[Perrys2_8.index.get_loc(self.CASRN)].tolist()
-            self.Perrys2_8_coeffs = [C1, C2, C3, C4, C5]
-            Tmins.append(self.Perrys2_8_Tmin); Tmaxs.append(self.Perrys2_8_Tmax)
-        if has_CoolProp and self.CASRN in coolprop_dict:
-            methods.append(COOLPROP)
-            self.CP_f = coolprop_fluids[self.CASRN]
-            Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
+            if self.CASRN in vapor_pressure.Psat_data_AntoineExtended.index:
+                methods.append(ANTOINE_EXTENDED_POLING)
+                A, B, C, Tc, to, n, E, F, self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax = vapor_pressure.Psat_values_AntoineExtended[vapor_pressure.Psat_data_AntoineExtended.index.get_loc(self.CASRN)].tolist()
+                self.ANTOINE_EXTENDED_POLING_coefs = [Tc, to, A, B, C, n, E, F]
+                Tmins.append(self.ANTOINE_EXTENDED_POLING_Tmin); Tmaxs.append(self.ANTOINE_EXTENDED_POLING_Tmax)
+                T_limits[ANTOINE_EXTENDED_POLING] = (self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax)
 
-        if self.CASRN in _VDISaturationDict:
-            methods.append(VDI_TABULAR)
-            Ts, props = VDI_tabular_data(self.CASRN, 'P')
-            self.VDI_Tmin = Ts[0]
-            self.VDI_Tmax = Ts[-1]
-            self.tabular_data[VDI_TABULAR] = (Ts, props)
-            Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+            if self.CASRN in vapor_pressure.Psat_data_AntoinePoling.index:
+                methods.append(ANTOINE_POLING)
+                A, B, C, self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax = vapor_pressure.Psat_values_AntoinePoling[vapor_pressure.Psat_data_AntoinePoling.index.get_loc(self.CASRN)].tolist()
+                self.ANTOINE_POLING_coefs = [A, B, C]
+                Tmins.append(self.ANTOINE_POLING_Tmin); Tmaxs.append(self.ANTOINE_POLING_Tmax)
+                T_limits[ANTOINE_POLING] = (self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax)
 
-        if self.CASRN in VDI_PPDS_3.index:
-            _,  Tm, Tc, Pc, A, B, C, D = _VDI_PPDS_3_values[VDI_PPDS_3.index.get_loc(self.CASRN)].tolist()
-            self.VDI_PPDS_coeffs = [A, B, C, D]
-            self.VDI_PPDS_Tc = Tc
-            self.VDI_PPDS_Tm = Tm
-            self.VDI_PPDS_Pc = Pc
-            methods.append(VDI_PPDS)
-            Tmins.append(self.VDI_PPDS_Tm); Tmaxs.append(self.VDI_PPDS_Tc)
+            if self.CASRN in vapor_pressure.Psat_data_Perrys2_8.index:
+                methods.append(DIPPR_PERRY_8E)
+                C1, C2, C3, C4, C5, self.Perrys2_8_Tmin, self.Perrys2_8_Tmax = vapor_pressure.Psat_values_Perrys2_8[vapor_pressure.Psat_data_Perrys2_8.index.get_loc(self.CASRN)].tolist()
+                self.Perrys2_8_coeffs = [C1, C2, C3, C4, C5]
+                Tmins.append(self.Perrys2_8_Tmin); Tmaxs.append(self.Perrys2_8_Tmax)
+                T_limits[DIPPR_PERRY_8E] = (self.Perrys2_8_Tmin, self.Perrys2_8_Tmax)
+            if has_CoolProp() and self.CASRN in coolprop_dict:
+                methods.append(COOLPROP)
+                self.CP_f = coolprop_fluids[self.CASRN]
+                Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
+                T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc)
+
+            if self.CASRN in miscdata.VDI_saturation_dict:
+                methods.append(VDI_TABULAR)
+                Ts, props = lookup_VDI_tabular_data(self.CASRN, 'P')
+                self.VDI_Tmin = Ts[0]
+                self.VDI_Tmax = Ts[-1]
+                self.tabular_data[VDI_TABULAR] = (Ts, props)
+                Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
+
+            if self.CASRN in vapor_pressure.Psat_data_VDI_PPDS_3.index:
+                Tm, Tc, Pc, A, B, C, D = vapor_pressure.Psat_values_VDI_PPDS_3[vapor_pressure.Psat_data_VDI_PPDS_3.index.get_loc(self.CASRN)].tolist()
+                self.VDI_PPDS_coeffs = [A, B, C, D]
+                self.VDI_PPDS_Tc = Tc
+                self.VDI_PPDS_Tm = Tm
+                self.VDI_PPDS_Pc = Pc
+                methods.append(VDI_PPDS)
+                Tmins.append(self.VDI_PPDS_Tm); Tmaxs.append(self.VDI_PPDS_Tc)
+                T_limits[VDI_PPDS] = (self.VDI_PPDS_Tm, self.VDI_PPDS_Tc)
         if all((self.Tb, self.Tc, self.Pc)):
             methods.append(BOILING_CRITICAL)
             Tmins.append(0.01); Tmaxs.append(self.Tc)
+            T_limits[BOILING_CRITICAL] = (0.01, self.Tc)
         if all((self.Tc, self.Pc, self.omega)):
             methods.append(LEE_KESLER_PSAT)
             methods.append(AMBROSE_WALTON)
@@ -567,7 +408,9 @@ class VaporPressure(TDependentProperty):
             methods.append(EDALAT)
             if self.eos:
                 methods.append(EOS)
+                T_limits[EOS] = (0.1*self.Tc, self.Tc)
             Tmins.append(0.01); Tmaxs.append(self.Tc)
+            T_limits[LEE_KESLER_PSAT] = T_limits[AMBROSE_WALTON] = T_limits[SANJARI] = T_limits[EDALAT] = (0.01, self.Tc)
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             self.Tmin = min(Tmins)
@@ -577,7 +420,7 @@ class VaporPressure(TDependentProperty):
         r'''Method to calculate vapor pressure of a fluid at temperature `T`
         with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`thermo.utils.TDependentProperty.T_dependent_property`
         for that.
 
         Parameters
@@ -593,13 +436,23 @@ class VaporPressure(TDependentProperty):
             Vapor pressure at T, [pa]
         '''
         if method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                Psat = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                Psat = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            if T < self.poly_fit_Tmin:
+                Psat = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
+            elif T > self.poly_fit_Tmax:
+                Psat = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
-                Psat = horner(self.best_fit_coeffs, T)
+                Psat = horner(self.poly_fit_coeffs, T)
             Psat = exp(Psat)
+        elif method == BEST_FIT_AB:
+            if T < self.poly_fit_Tmax:
+                return self.calculate(T, BESTFIT)
+            A, B = self.poly_fit_AB_high_ABC_compat
+            return exp(A + B/T)
+        elif method == BEST_FIT_ABC:
+            if T < self.poly_fit_Tmax:
+                return self.calculate(T, BESTFIT)
+            A, B, C = self.DIPPR101_ABC_high
+            return exp(A + B/T + C*log(T))
         elif method == WAGNER_MCGARRY:
             Psat = Wagner_original(T, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Pc, *self.WAGNER_MCGARRY_coefs)
         elif method == WAGNER_POLING:
@@ -627,10 +480,10 @@ class VaporPressure(TDependentProperty):
             Psat = Edalat(T, self.Tc, self.Pc, self.omega)
         elif method == EOS:
             Psat = self.eos[0].Psat(T)
-        elif method in self.tabular_data:
-            Psat = self.interpolate(T, method)
         elif method == BESTFIT:
-            Psat = exp(horner(self.best_fit_coeffs, T))
+            Psat = exp(horner(self.poly_fit_coeffs, T))
+        else:
+            return self._base_calculate(T, method)
         return Psat
 
     def test_method_validity(self, T, method):
@@ -656,31 +509,10 @@ class VaporPressure(TDependentProperty):
         validity : bool
             Whether or not a method is valid
         '''
-        if method == WAGNER_MCGARRY:
-            if T < self.WAGNER_MCGARRY_Tmin or T > self.WAGNER_MCGARRY_Tc:
-                return False
-        elif method == WAGNER_POLING:
-            if T < self.WAGNER_POLING_Tmin or T > self.WAGNER_POLING_Tmax:
-                return False
-        elif method == ANTOINE_EXTENDED_POLING:
-            if T < self.ANTOINE_EXTENDED_POLING_Tmin or T > self.ANTOINE_EXTENDED_POLING_Tmax:
-                return False
-        elif method == ANTOINE_POLING:
-            if T < self.ANTOINE_POLING_Tmin or T > self.ANTOINE_POLING_Tmax:
-                return False
-        elif method == DIPPR_PERRY_8E:
-            if T < self.Perrys2_8_Tmin or T > self.Perrys2_8_Tmax:
-                return False
-        elif method == VDI_PPDS:
-            if T > self.VDI_PPDS_Tc or T < self.VDI_PPDS_Tm:
-                return False
-        elif method == COOLPROP:
-            if T < self.CP_f.Tmin or T < self.CP_f.Tt or T > self.CP_f.Tmax or T > self.CP_f.Tc:
-                return False
-        elif method in [BOILING_CRITICAL, LEE_KESLER_PSAT, AMBROSE_WALTON, SANJARI, EDALAT, EOS]:
-            if T > self.Tc or T < 0:
-                return False
-            # No lower limit
+        T_limits = self.T_limits
+        if method in T_limits:
+            Tmin, Tmax = T_limits[method]
+            return Tmin <= T <= Tmax
         elif method == BESTFIT:
             validity = True
         elif method in self.tabular_data:
@@ -694,10 +526,10 @@ class VaporPressure(TDependentProperty):
         return True
 
     def calculate_derivative(self, T, method, order=1):
-        r'''Method to calculate a derivative of a vapor pressure with respect to 
+        r'''Method to calculate a derivative of a vapor pressure with respect to
         temperature, of a given order  using a specified method. If the method
-        is BESTFIT, an anlytical derivative is used; otherwise SciPy's 
-        derivative function, with a delta of 1E-6 K and a number of points 
+        is BESTFIT, an anlytical derivative is used; otherwise SciPy's
+        derivative function, with a delta of 1E-6 K and a number of points
         equal to 2*order + 1.
 
         If the calculation does not succeed, returns the actual error
@@ -718,386 +550,91 @@ class VaporPressure(TDependentProperty):
             Calculated derivative property, [`units/K^order`]
         '''
         if order == 1 and method == BESTFIT:
-            
-            if T < self.best_fit_Tmin:
-                return self.best_fit_Tmin_slope*exp(
-                        (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope
-                        + self.best_fit_Tmin_value)
-            elif T > self.best_fit_Tmax:
-                return self.best_fit_Tmax_slope*exp((T - self.best_fit_Tmax)
-                                                    *self.best_fit_Tmax_slope
-                                                    + self.best_fit_Tmax_value)
-            else:
-                v, der = horner_and_der(self.best_fit_coeffs, T)
-                return der*exp(v)
-            
-            
-        return derivative(self.calculate, T, dx=1e-6, args=[method], n=order, order=1+order*2)
-
-### CSP Methods
-
-def boiling_critical_relation(T, Tb, Tc, Pc):
-    r'''Calculates vapor pressure of a fluid at arbitrary temperatures using a
-    CSP relationship as in [1]_; requires a chemical's critical temperature
-    and pressure as well as boiling point.
-
-    The vapor pressure is given by:
-
-    .. math::
-        \ln P^{sat}_r = h\left( 1 - \frac{1}{T_r}\right)
-
-        h = T_{br} \frac{\ln(P_c/101325)}{1-T_{br}}
-
-    Parameters
-    ----------
-    T : float
-        Temperature of fluid [K]
-    Tb : float
-        Boiling temperature of fluid [K]
-    Tc : float
-        Critical temperature of fluid [K]
-    Pc : float
-        Critical pressure of fluid [Pa]
-
-    Returns
-    -------
-    Psat : float
-        Vapor pressure at T [Pa]
-
-    Notes
-    -----
-    Units are Pa. Formulation makes intuitive sense; a logarithmic form of
-    interpolation.
-
-    Examples
-    --------
-    Example as in [1]_ for ethylbenzene
-
-    >>> boiling_critical_relation(347.2, 409.3, 617.1, 36E5)
-    15209.467273093938
-
-    References
-    ----------
-    .. [1] Reid, Robert C..; Prausnitz, John M.;; Poling, Bruce E.
-       The Properties of Gases and Liquids. McGraw-Hill Companies, 1987.
-    '''
-    Tbr = Tb/Tc
-    Tr = T/Tc
-    h = Tbr*log(Pc/101325.)/(1 - Tbr)
-    return exp(h*(1-1/Tr))*Pc
-
-
-def Lee_Kesler(T, Tc, Pc, omega):
-    r'''Calculates vapor pressure of a fluid at arbitrary temperatures using a
-    CSP relationship by [1]_; requires a chemical's critical temperature and
-    acentric factor.
-
-    The vapor pressure is given by:
-
-    .. math::
-        \ln P^{sat}_r = f^{(0)} + \omega f^{(1)}
-
-        f^{(0)} = 5.92714-\frac{6.09648}{T_r}-1.28862\ln T_r + 0.169347T_r^6
-
-        f^{(1)} = 15.2518-\frac{15.6875}{T_r} - 13.4721 \ln T_r + 0.43577T_r^6
-
-    Parameters
-    ----------
-    T : float
-        Temperature of fluid [K]
-    Tc : float
-        Critical temperature of fluid [K]
-    Pc : float
-        Critical pressure of fluid [Pa]
-    omega : float
-        Acentric factor [-]
-
-    Returns
-    -------
-    Psat : float
-        Vapor pressure at T [Pa]
-
-    Notes
-    -----
-    This equation appears in [1]_ in expanded form.
-    The reduced pressure form of the equation ensures predicted vapor pressure 
-    cannot surpass the critical pressure.
-
-    Examples
-    --------
-    Example from [2]_; ethylbenzene at 347.2 K.
-
-    >>> Lee_Kesler(347.2, 617.1, 36E5, 0.299)
-    13078.694162949312
-
-    References
-    ----------
-    .. [1] Lee, Byung Ik, and Michael G. Kesler. "A Generalized Thermodynamic
-       Correlation Based on Three-Parameter Corresponding States." AIChE Journal
-       21, no. 3 (1975): 510-527. doi:10.1002/aic.690210313.
-    .. [2] Reid, Robert C..; Prausnitz, John M.;; Poling, Bruce E.
-       The Properties of Gases and Liquids. McGraw-Hill Companies, 1987.
-    '''
-    Tr = T/Tc
-    f0 = 5.92714 - 6.09648/Tr - 1.28862*log(Tr) + 0.169347*Tr**6
-    f1 = 15.2518 - 15.6875/Tr - 13.4721*log(Tr) + 0.43577*Tr**6
-    return exp(f0 + omega*f1)*Pc
-
-
-def Ambrose_Walton(T, Tc, Pc, omega):
-    r'''Calculates vapor pressure of a fluid at arbitrary temperatures using a
-    CSP relationship by [1]_; requires a chemical's critical temperature and
-    acentric factor.
-
-    The vapor pressure is given by:
-
-    .. math::
-        \ln P_r=f^{(0)}+\omega f^{(1)}+\omega^2f^{(2)}
-
-        f^{(0)}=\frac{-5.97616\tau + 1.29874\tau^{1.5}- 0.60394\tau^{2.5}
-        -1.06841\tau^5}{T_r}
-
-        f^{(1)}=\frac{-5.03365\tau + 1.11505\tau^{1.5}- 5.41217\tau^{2.5}
-        -7.46628\tau^5}{T_r}
-
-        f^{(2)}=\frac{-0.64771\tau + 2.41539\tau^{1.5}- 4.26979\tau^{2.5}
-        +3.25259\tau^5}{T_r}
-
-        \tau = 1-T_{r}
-
-    Parameters
-    ----------
-    T : float
-        Temperature of fluid [K]
-    Tc : float
-        Critical temperature of fluid [K]
-    Pc : float
-        Critical pressure of fluid [Pa]
-    omega : float
-        Acentric factor [-]
-
-    Returns
-    -------
-    Psat : float
-        Vapor pressure at T [Pa]
-
-    Notes
-    -----
-    Somewhat more accurate than the :obj:`Lee_Kesler` formulation.
-
-    Examples
-    --------
-    Example from [2]_; ethylbenzene at 347.25 K.
-
-    >>> Ambrose_Walton(347.25, 617.15, 36.09E5, 0.304)
-    13278.878504306222
-
-    References
-    ----------
-    .. [1] Ambrose, D., and J. Walton. "Vapour Pressures up to Their Critical
-       Temperatures of Normal Alkanes and 1-Alkanols." Pure and Applied
-       Chemistry 61, no. 8 (1989): 1395-1403. doi:10.1351/pac198961081395.
-    .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
-       New York: McGraw-Hill Professional, 2000.
-    '''
-    Tr = T/Tc
-    tau = 1.0 - Tr
-    tau15 = tau**1.5
-    tau25 = tau*tau15
-    tau5 = tau25*tau25
-    f0 = (-5.97616*tau + 1.29874*tau15 - 0.60394*tau25 - 1.06841*tau5)
-    f1 = (-5.03365*tau + 1.11505*tau15 - 5.41217*tau25 - 7.46628*tau5)
-    f2 = (-0.64771*tau + 2.41539*tau15 - 4.26979*tau25 + 3.25259*tau5)
-    return Pc*exp((f0 + omega*(f1 + f2*omega))/Tr)
-
-
-def Sanjari(T, Tc, Pc, omega):
-    r'''Calculates vapor pressure of a fluid at arbitrary temperatures using a
-    CSP relationship by [1]_. Requires a chemical's critical temperature,
-    pressure, and acentric factor. Although developed for refrigerants,
-    this model should have some general predictive ability.
-
-    The vapor pressure of a chemical at `T` is given by:
-
-    .. math::
-        P^{sat} = P_c\exp(f^{(0)} + \omega f^{(1)} + \omega^2 f^{(2)})
-
-        f^{(0)} = a_1 + \frac{a_2}{T_r} + a_3\ln T_r + a_4 T_r^{1.9}
-
-        f^{(1)} = a_5 + \frac{a_6}{T_r} + a_7\ln T_r + a_8 T_r^{1.9}
-
-        f^{(2)} = a_9 + \frac{a_{10}}{T_r} + a_{11}\ln T_r + a_{12} T_r^{1.9}
-
-    Parameters
-    ----------
-    T : float
-        Temperature of fluid [K]
-    Tc : float
-        Critical temperature of fluid [K]
-    Pc : float
-        Critical pressure of fluid [Pa]
-    omega : float
-        Acentric factor [-]
-
-    Returns
-    -------
-    Psat : float
-        Vapor pressure, [Pa]
-
-    Notes
-    -----
-    a[1-12] are as follows:
-    6.83377, -5.76051, 0.90654, -1.16906,
-    5.32034, -28.1460, -58.0352, 23.57466,
-    18.19967, 16.33839, 65.6995, -35.9739.
-
-    For a claimed fluid not included in the regression, R128, the claimed AARD
-    was 0.428%. A re-calculation using 200 data points from 125.45 K to
-    343.90225 K evenly spaced by 1.09775 K as generated by NIST Webbook April
-    2016 produced an AARD of 0.644%. It is likely that the author's regression
-    used more precision in its coefficients than was shown here. Nevertheless,
-    the function is reproduced as shown in [1]_.
-
-    For Tc=808 K, Pc=1100000 Pa, omega=1.1571, this function actually declines
-    after 770 K.
-
-    Examples
-    --------
-    >>> Sanjari(347.2, 617.1, 36E5, 0.299)
-    13651.916109552498
-
-    References
-    ----------
-    .. [1] Sanjari, Ehsan, Mehrdad Honarmand, Hamidreza Badihi, and Ali
-       Ghaheri. "An Accurate Generalized Model for Predict Vapor Pressure of
-       Refrigerants." International Journal of Refrigeration 36, no. 4
-       (June 2013): 1327-32. doi:10.1016/j.ijrefrig.2013.01.007.
-    '''
-    Tr = T/Tc
-    f0 = 6.83377 + -5.76051/Tr + 0.90654*log(Tr) + -1.16906*Tr**1.9
-    f1 = 5.32034 + -28.1460/Tr + -58.0352*log(Tr) + 23.57466*Tr**1.9
-    f2 = 18.19967 + 16.33839/Tr + 65.6995*log(Tr) + -35.9739*Tr**1.9
-    return Pc*exp(f0 + omega*f1 + omega**2*f2)
-
-
-def Edalat(T, Tc, Pc, omega):
-    r'''Calculates vapor pressure of a fluid at arbitrary temperatures using a
-    CSP relationship by [1]_. Requires a chemical's critical temperature,
-    pressure, and acentric factor. Claimed to have a higher accuracy than the
-    Lee-Kesler CSP relationship.
-
-    The vapor pressure of a chemical at `T` is given by:
-
-    .. math::
-        \ln(P^{sat}/P_c) = \frac{a\tau + b\tau^{1.5} + c\tau^3 + d\tau^6}
-        {1-\tau}
-        
-        a = -6.1559 - 4.0855\omega
-        
-        b = 1.5737 - 1.0540\omega - 4.4365\times 10^{-3} d
-        
-        c = -0.8747 - 7.8874\omega
-        
-        d = \frac{1}{-0.4893 - 0.9912\omega + 3.1551\omega^2}
-        
-        \tau = 1 - \frac{T}{T_c}
-        
-    Parameters
-    ----------
-    T : float
-        Temperature of fluid [K]
-    Tc : float
-        Critical temperature of fluid [K]
-    Pc : float
-        Critical pressure of fluid [Pa]
-    omega : float
-        Acentric factor [-]
-
-    Returns
-    -------
-    Psat : float
-        Vapor pressure, [Pa]
-
-    Notes
-    -----
-    [1]_ found an average error of 6.06% on 94 compounds and 1106 data points.
-    
-    Examples
-    --------
-    >>> Edalat(347.2, 617.1, 36E5, 0.299)
-    13461.273080743307
-
-    References
-    ----------
-    .. [1] Edalat, M., R. B. Bozar-Jomehri, and G. A. Mansoori. "Generalized 
-       Equation Predicts Vapor Pressure of Hydrocarbons." Oil and Gas Journal; 
-       91:5 (February 1, 1993).
-    '''
-    tau = 1. - T/Tc
-    a = -6.1559 - 4.0855*omega
-    c = -0.8747 - 7.8874*omega
-    d = 1./(-0.4893 - 0.9912*omega + 3.1551*omega**2)
-    b = 1.5737 - 1.0540*omega - 4.4365E-3*d
-    lnPr = (a*tau + b*tau**1.5 + c*tau**3 + d*tau**6)/(1.-tau)
-    return exp(lnPr)*Pc
-
-
-### Sublimation Pressure
-
-def Psub_Clapeyron(T, Tt, Pt, Hsub_t):
-    r'''Calculates sublimation pressure of a solid at arbitrary temperatures
-    using an approximate themodynamic identity - the Clapeyron equation as
-    described in [1]_ and [2]_.
-    Requires a chemical's triple temperature, triple pressure, and triple
-    enthalpy of sublimation.
-
-    The sublimation pressure of a chemical at `T` is given by:
-
-    .. math::
-        \ln \frac{P}{P_{tp}} = -\frac{\Delta H_{sub}}{R}
-        \left(\frac{1}{T}-\frac{1}{T_{tp}} \right)
-        
-    Parameters
-    ----------
-    T : float
-        Temperature of solid [K]
-    Tt : float
-        Triple temperature of solid [K]
-    Pt : float
-        Truple pressure of solid [Pa]
-    Hsub_t : float
-        Enthalpy of fusion at the triple point of the chemical, [J/mol]
-
-    Returns
-    -------
-    Psub : float
-        Sublimation pressure, [Pa]
-
-    Notes
-    -----
-    Does not seem to capture the decrease in sublimation pressure quickly
-    enough.
-    
-    Examples
-    --------
-    >>> Psub_Clapeyron(250, Tt=273.15, Pt=611.0, Hsub_t=51100.0)
-    76.06457150831804
-    >>> Psub_Clapeyron(300, Tt=273.15, Pt=611.0, Hsub_t=51100.0)
-    4577.282832876156
-    
-    References
-    ----------
-    .. [1] Goodman, B. T., W. V. Wilding, J. L. Oscarson, and R. L. Rowley. 
-       "Use of the DIPPR Database for the Development of QSPR Correlations: 
-       Solid Vapor Pressure and Heat of Sublimation of Organic Compounds." 
-       International Journal of Thermophysics 25, no. 2 (March 1, 2004): 
-       337-50. https://doi.org/10.1023/B:IJOT.0000028471.77933.80.
-    .. [2] Feistel, Rainer, and Wolfgang Wagner. "Sublimation Pressure and 
-       Sublimation Enthalpy of H2O Ice Ih between 0 and 273.16K." Geochimica et
-       Cosmochimica Acta 71, no. 1 (January 1, 2007): 36-45. 
-       https://doi.org/10.1016/j.gca.2006.08.034.
-    '''
-    return Pt*exp(Hsub_t*(T - Tt)/(R*T*Tt))
+            # if T < self.poly_fit_Tmin:
+            #     return self.poly_fit_Tmin_slope*exp(
+            #             (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope
+            #             + self.poly_fit_Tmin_value)
+            # elif T > self.poly_fit_Tmax:
+            #     return self.poly_fit_Tmax_slope*exp((T - self.poly_fit_Tmax)
+            #                                         *self.poly_fit_Tmax_slope
+            #                                         + self.poly_fit_Tmax_value)
+            # else:
+            v, der = horner_and_der(self.poly_fit_coeffs, T)
+            return der*exp(v)
+        elif order == 2 and method == BESTFIT:
+            v, der, der2 = horner_and_der2(self.poly_fit_coeffs, T)
+            return (der*der + der2)*exp(v)
+
+        return super(VaporPressure, self).calculate_derivative(T, method, order)
+
+    def _custom_set_poly_fit(self):
+        try:
+            Tmin, Tmax = self.poly_fit_Tmin, self.poly_fit_Tmax
+            poly_fit_coeffs = self.poly_fit_coeffs
+            v_Tmin = horner(poly_fit_coeffs, Tmin)
+            for T_trans in linspace(Tmin, Tmax, 25):
+                v, d1, d2 = horner_and_der2(poly_fit_coeffs, T_trans)
+                Psat = exp(v)
+                dPsat_dT = Psat*d1
+                d2Psat_dT2 = Psat*(d1*d1 + d2)
+
+                A, B, C = Antoine_ABC = Antoine_coeffs_from_point(T_trans, Psat, dPsat_dT, d2Psat_dT2, base=e)
+                self.poly_fit_AB = Antoine_AB_coeffs_from_point(T_trans, Psat, dPsat_dT, base=e)
+                self.DIPPR101_ABC = DIPPR101_ABC_coeffs_from_point(T_trans, Psat, dPsat_dT, d2Psat_dT2)
+
+                B_OK = B > 0.0 # B is negated in this implementation, so the requirement is reversed
+                C_OK = -T_trans < C < 0.0
+                if B_OK and C_OK:
+                    self.poly_fit_Antoine = Antoine_ABC
+                    break
+                else:
+                    continue
+
+            # Calculate the extrapolation values
+            v_Tmax = horner(poly_fit_coeffs, Tmax)
+            v, d1, d2 = horner_and_der2(poly_fit_coeffs, Tmax)
+            Psat = exp(v)
+            dPsat_dT = Psat*d1
+            d2Psat_dT2 = Psat*(d1*d1 + d2)
+#                A, B, C = Antoine_ABC = Antoine_coeffs_from_point(T_trans, Psat, dPsat_dT, d2Psat_dT2, base=e)
+            self.poly_fit_AB_high = Antoine_AB_coeffs_from_point(Tmax, Psat, dPsat_dT, base=e)
+            self.poly_fit_AB_high_ABC_compat = (self.poly_fit_AB_high[0], -self.poly_fit_AB_high[1])
+            self.DIPPR101_ABC_high = DIPPR101_ABC_coeffs_from_point(Tmax, Psat, dPsat_dT, d2Psat_dT2)
+
+
+        except:
+            pass
+
+    def solve_prop_poly_fit(self, goal):
+        poly_fit_Tmin, poly_fit_Tmax = self.poly_fit_Tmin, self.poly_fit_Tmax
+        poly_fit_Tmin_slope, poly_fit_Tmax_slope = self.poly_fit_Tmin_slope, self.poly_fit_Tmax_slope
+        poly_fit_Tmin_value, poly_fit_Tmax_value = self.poly_fit_Tmin_value, self.poly_fit_Tmax_value
+        coeffs = self.poly_fit_coeffs
+
+        T_low = log(goal*exp(poly_fit_Tmin*poly_fit_Tmin_slope - poly_fit_Tmin_value))/poly_fit_Tmin_slope
+        if T_low <= poly_fit_Tmin:
+            return T_low
+        T_high = log(goal*exp(poly_fit_Tmax*poly_fit_Tmax_slope - poly_fit_Tmax_value))/poly_fit_Tmax_slope
+        if T_high >= poly_fit_Tmax:
+            return T_high
+        else:
+            lnPGoal = log(goal)
+            def to_solve(T):
+                # dPsat and Psat are both in log basis
+                dPsat = Psat = 0.0
+                for c in coeffs:
+                    dPsat = T*dPsat + Psat
+                    Psat = T*Psat + c
+
+                return Psat - lnPGoal, dPsat
+            # Guess with the two extrapolations from the linear fits
+            # By definition both guesses are in the range of they would have been returned
+            if T_low > poly_fit_Tmax:
+                T_low = poly_fit_Tmax
+            if T_high < poly_fit_Tmin:
+                T_high = poly_fit_Tmin
+            T = newton(to_solve, 0.5*(T_low + T_high), fprime=True, low=poly_fit_Tmin, high=poly_fit_Tmax)
+            return T
 
 
 PSUB_CLAPEYRON = 'PSUB_CLAPEYRON'
@@ -1121,6 +658,24 @@ class SublimationPressure(TDependentProperty):
         Triple pressure, [Pa]
     Hsub_t : float, optional
         Sublimation enthalpy at the triple point, [J/mol]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files;
+        this can be used to reduce the memory consumption of an object as well,
+        [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        vapor pressure of a species; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default method if provided . [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -1128,33 +683,30 @@ class SublimationPressure(TDependentProperty):
     :obj:`sublimation_pressure_methods`.
 
     **PSUB_CLAPEYRON**:
-        Clapeyron thermodynamic identity, :obj:`Psub_Clapeyron`,
+        Clapeyron thermodynamic identity, :obj:`Psub_Clapeyron <chemicals.vapor_pressure.Psub_Clapeyron>`
 
     See Also
     --------
-    Psub_Clapeyron
+    chemicals.vapor_pressure.Psub_Clapeyron
 
     References
     ----------
-    .. [1] Goodman, B. T., W. V. Wilding, J. L. Oscarson, and R. L. Rowley. 
-       "Use of the DIPPR Database for the Development of QSPR Correlations: 
-       Solid Vapor Pressure and Heat of Sublimation of Organic Compounds." 
-       International Journal of Thermophysics 25, no. 2 (March 1, 2004): 
+    .. [1] Goodman, B. T., W. V. Wilding, J. L. Oscarson, and R. L. Rowley.
+       "Use of the DIPPR Database for the Development of QSPR Correlations:
+       Solid Vapor Pressure and Heat of Sublimation of Organic Compounds."
+       International Journal of Thermophysics 25, no. 2 (March 1, 2004):
        337-50. https://doi.org/10.1023/B:IJOT.0000028471.77933.80.
     '''
     name = 'Sublimation pressure'
     units = 'Pa'
-    interpolation_T = lambda self, T: 1./T
-    '''1/T interpolation transformation by default.'''
-    interpolation_property = lambda self, P: log(P)
-    '''log(P) interpolation transformation by default.'''
-    interpolation_property_inv = lambda self, P: exp(P)
-    '''exp(P) interpolation transformation by default; reverses
-    :obj:`interpolation_property_inv`.'''
+
+    interpolation_T = staticmethod(VaporPressure.interpolation_T)
+    interpolation_property = staticmethod(VaporPressure.interpolation_property)
+    interpolation_property_inv = staticmethod(VaporPressure.interpolation_property_inv)
+
     tabular_extrapolation_permitted = False
-    '''Disallow tabular extrapolation by default; CSP methods prefered
-    normally.'''
-    property_min = 1e-100
+    '''Disallow tabular extrapolation by default.'''
+    property_min = 1e-300
     '''Mimimum valid value of sublimation pressure.'''
     property_max = 1e5
     '''Maximum valid value of sublimation pressure. Set to 1 bar tentatively.'''
@@ -1162,11 +714,20 @@ class SublimationPressure(TDependentProperty):
     ranked_methods = [PSUB_CLAPEYRON]
     '''Default rankings of the available methods.'''
 
-    def __init__(self, CASRN=None, Tt=None, Pt=None, Hsub_t=None, best_fit=None):
+    def __init__(self, CASRN=None, Tt=None, Pt=None, Hsub_t=None,
+                 load_data=True, extrapolation=None, poly_fit=None,
+                 method=None):
         self.CASRN = CASRN
         self.Tt = Tt
         self.Pt = Pt
         self.Hsub_t = Hsub_t
+        self.kwargs = kwargs = {}
+        if Tt is not None:
+            kwargs['Tt'] = Tt
+        if Pt is not None:
+            kwargs['Pt'] = Pt
+        if Hsub_t is not None:
+            kwargs['Hsub_t'] = Hsub_t
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate sublimation pressure
@@ -1176,42 +737,25 @@ class SublimationPressure(TDependentProperty):
         '''Maximum temperature at which no method can calculate sublimation pressure
         above; by definition the critical point.'''
 
-        self.method = None
-        '''The method was which was last used successfully to calculate a property;
-        set only after the first property calculation.'''
+        super(SublimationPressure, self)._set_common_attributes()
 
-        self.tabular_data = {}
-        '''tabular_data, dict: Stored (Ts, properties) for any
-        tabular data; indexed by provided or autogenerated name.'''
-        self.tabular_data_interpolators = {}
-        '''tabular_data_interpolators, dict: Stored (extrapolator,
-        spline) tuples which are interp1d instances for each set of tabular
-        data; indexed by tuple of (name, interpolation_T,
-        interpolation_property, interpolation_property_inv) to ensure that
-        if an interpolation transform is altered, the old interpolator which
-        had been created is no longer used.'''
+        self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
 
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
+            if self.Tmin is None and hasattr(self, 'poly_fit_Tmin'):
+                self.Tmin = self.poly_fit_Tmin/100
+            if self.Tmax is None and hasattr(self, 'poly_fit_Tmax'):
+                self.Tmax = self.poly_fit_Tmax*10
+        elif method is not None:
+            self.method = method
+        else:
+            methods = self.valid_methods(T=None)
+            if methods:
+                self.method = methods[0]
 
-        self.all_methods = set()
-        '''Set of all methods available for a given CASRN and properties;
-        filled by :obj:`load_all_methods`.'''
-
-        self.load_all_methods()
-        
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
-            if self.Tmin is None and hasattr(self, 'best_fit_Tmin'):
-                self.Tmin = self.best_fit_Tmin/100
-            if self.Tmax is None and hasattr(self, 'best_fit_Tmax'):
-                self.Tmax = self.best_fit_Tmax*10
-
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
@@ -1224,19 +768,29 @@ class SublimationPressure(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
+        self.T_limits = T_limits = {}
         if all((self.Tt, self.Pt, self.Hsub_t)):
             methods.append(PSUB_CLAPEYRON)
             Tmins.append(1.0); Tmaxs.append(self.Tt*1.5)
+            T_limits[PSUB_CLAPEYRON] = (1.0, self.Tt*1.5)
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             self.Tmin = min(Tmins)
             self.Tmax = max(Tmaxs)
 
+    @staticmethod
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        return {}
+
     def calculate(self, T, method):
         r'''Method to calculate sublimation pressure of a fluid at temperature
         `T` with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters
@@ -1252,12 +806,12 @@ class SublimationPressure(TDependentProperty):
             Sublimation pressure at T, [pa]
         '''
         if method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                Psub = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                Psub = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            if T < self.poly_fit_Tmin:
+                Psub = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
+            elif T > self.poly_fit_Tmax:
+                Psub = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
-                Psub = horner(self.best_fit_coeffs, T)
+                Psub = horner(self.poly_fit_coeffs, T)
             Psub = exp(Psub)
         elif method == PSUB_CLAPEYRON:
             Psub = max(Psub_Clapeyron(T, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_t), 1e-200)
@@ -1270,7 +824,7 @@ class SublimationPressure(TDependentProperty):
         ranges for all coefficient-based methods. For CSP methods, the models
         are considered valid from 0 K to the critical point. For tabular data,
         extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the 
+        :obj:`tabular_extrapolation_permitted` is set; if it is, the
         extrapolation is considered valid for all temperatures.
 
         It is not guaranteed that a method will work or give an accurate
@@ -1302,5 +856,8 @@ class SublimationPressure(TDependentProperty):
         else:
             raise Exception('Method not valid')
         return True
-
+try:
+    SublimationPressure._custom_set_poly_fit = VaporPressure._custom_set_poly_fit
+except:
+    pass
 

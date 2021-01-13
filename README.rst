@@ -1,16 +1,13 @@
 ======
-thermo
+Thermo
 ======
 
 .. image:: http://img.shields.io/pypi/v/thermo.svg?style=flat
    :target: https://pypi.python.org/pypi/thermo
    :alt: Version_status
 .. image:: http://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat
-   :target: https://thermo.readthedocs.io/en/latest/
+   :target: https://thermo.readthedocs.io/
    :alt: Documentation
-.. image:: http://img.shields.io/travis/CalebBell/thermo/master.svg?style=flat
-   :target: https://travis-ci.org/CalebBell/thermo
-   :alt: Build_status
 .. image:: http://img.shields.io/badge/license-MIT-blue.svg?style=flat
    :target: https://github.com/CalebBell/thermo/blob/master/LICENSE.txt
    :alt: license
@@ -23,9 +20,6 @@ thermo
 .. image:: https://badges.gitter.im/CalebBell/thermo.svg
    :alt: Join the chat at https://gitter.im/CalebBell/thermo
    :target: https://gitter.im/CalebBell/thermo
-.. image:: http://img.shields.io/appveyor/ci/calebbell/thermo.svg
-   :target: https://ci.appveyor.com/project/calebbell/thermo/branch/master
-   :alt: Build_status
 .. image:: https://zenodo.org/badge/62404647.svg
    :alt: Zendo
    :target: https://zenodo.org/badge/latestdoi/62404647
@@ -33,22 +27,19 @@ thermo
 
 .. contents::
 
-What is thermo?
+What is Thermo?
 ---------------
 
-thermo is open-source software for engineers, scientists, technicians and
+Thermo is open-source software for engineers, scientists, technicians and
 anyone trying to understand the universe in more detail. It facilitates 
 the retrieval of constants of chemicals, the calculation of temperature
 and pressure dependent chemical properties (both thermodynamic and 
-transport), the calculation of the same for chemical mixtures (including
-phase equilibria), and assorted information of a regulatory or legal 
-nature about chemicals.
+transport), and the calculation of the same for chemical mixtures (including
+phase equilibria) using various models.
 
-The thermo library depends on the SciPy library to povide numerical constants,
-interpolation, integration, differentiation, and numerical solving functionality.
-thermo all operating systems which support Python, is quick to install, and is 
-free of charge. thermo is designed to be easy to use while still providing powerful
-functionality. If you need to know something about a chemical, give thermo a try.
+Thermo runs on all operating systems which support Python, is quick to install, and is
+free of charge. Thermo is designed to be easy to use while still providing powerful
+functionality. If you need to know something about a chemical or mixture, give thermo a try.
 
 Installation
 ------------
@@ -59,6 +50,11 @@ https://pypi.python.org/pypi/thermo/
 If you have an installation of Python with pip, simple install it with:
 
     $ pip install thermo
+    
+Alternatively, if you are using `conda <https://conda.io/en/latest/>`_ as your package management, you can simply
+install thermo in your environment from `conda-forge <https://conda-forge.org/>`_ channel with:
+
+    $ conda install -c conda-forge thermo
 
 To get the git version, run:
 
@@ -125,7 +121,7 @@ it are included as possible. All methods can be visualized independently:
 
 .. code-block:: python
 
-    >>> Chemical('toluene').VaporPressure.solve_prop(2E5)
+    >>> Chemical('toluene').VaporPressure.solve_property(2E5)
     409.5909115602903
     >>> Chemical('toluene').SurfaceTension.plot_T_dependent_property()
 
@@ -139,66 +135,16 @@ mixtures.
     >>> from thermo.chemical import Mixture
     >>> vodka = Mixture(['water', 'ethanol'], Vfls=[.6, .4], T=300, P=1E5)
     >>> vodka.Prl,vodka.Prg
-    (35.130757024029364, 0.9490586345579207)
+    (35.13075699606542, 0.9822705235442692)
     >>> air = Mixture('air', T=400, P=1e5)
     >>> air.Cp
-    1013.7956176577834
+    1013.7956176577836
 
 Roadmap
 -------
 
-This library includes a huge database of (70000+) chemicals taken from the PubChem
-database (selected by the availability of CAS numbers, which all data included here 
-is indexed by). Regretably, only ~20000 of those have even one chemical property
-apart from metadata (molecular weight, etc.). Some niche aspects (ions, ionic 
-liquids) have been poorly served by the PubChem, and so extra databases manually
-curated for these are in development. 
-
-The Chemical and Mixture classes may be subject to considerably change in the
-interests of performance in the future. Because of this, they have been poorly
-documented and tested. However, each individual property method is mature and
-not expected to change. Documentation and testing are huge strengths, and
-it is intended to keep up the current quality of both.
-
-A number of features have been worked on but are not yet included in this 
-library, not ordered by any priority.
-
-Phase equilibria according to activity coefficient methods (NRTL, UNIQUAC, 
-Wilson, Van Laar, Margules): Functionality has been tentatively created, but
-is not included due to the lack of coefficient databases. Suggestions would
-be very welcome. UNIFAC has been tested, but is also not included due to the
-lack of automatic group contribution assignment.
-
-Rigorous equations of state for excess properties, and phase equilibria:
-Tested EOSs are PR, LK, VdW, SRK, BWRS, and a few others. The holdup here
-is the determination of analytical expressions for their partial 
-derivatives of mixtures. SymPy is immensely helpful, and has been used to
-successfully obtain specific values of those derivatives at specific points.
-Unfortunately, most listed forms as in Walas (1985) are incorrect. If
-expressions are not eventually found, this will be implemented with numerical
-derivatives only.
-
-Fundamental Equations of State: The IAPWS-95 model, and that of 20 fluids
-in "Short Fundamental Equations of State for 20 Industrial Fluids" have
-been implemented. However, they are quite slow in Python - taking 2-10 ms
-to solve. This can be reduced to ~1-2 ms if Cython is used, however, this
-means that distribution through PyPi because harder. Suggestions about
-this are welcome. Currently, the phenomenal library CoolProp is used instead;
-which has already been packaged for PyPi. Even if custom code is released
-for these EOS, CoolProp will remain prioritized; developed in C++, it is
-simply much faster than code can be in pure Python.
-
-Electrolyte models: The Pitzer, Bromley, and LIQUAC models have been in
-development along with parameter databases for them. The ion database
-currently has ~300 species, few of them with much data available.
-Phase equilibria with these models is also in progress.
-
-Safety information, regulatory information, and economic data for chemicals:
-This functionality has been included, but is not yet very mature. This is 
-a low priority.
-
-Development follows pep8 and uses pytest for testing. Both Python 2 and 3 are
-supported.
+The author's main development item is phase equilibrium, a particularly
+tricky area.
 
 Latest source code
 ------------------
@@ -232,5 +178,5 @@ Citation
 
 To cite thermo in publications use::
 
-    Caleb Bell (2016). thermo: Chemical properties component of Chemical Engineering Design Library (ChEDL)
+    Caleb Bell and Contributors (2016-2021). Thermo: Chemical properties component of Chemical Engineering Design Library (ChEDL)
     https://github.com/CalebBell/thermo.

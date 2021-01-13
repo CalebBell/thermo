@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,32 +18,144 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains functions and classes related to the UNIFAC and its many
+variants. The bulk of the code relates to calculating derivativies, or
+is tables of data.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_
+or contact the author at Caleb.Andrew.Bell@gmail.com.
+
+.. contents:: :local:
+
+Main Model (Object-Oriented)
+----------------------------
+.. autoclass:: UNIFAC
+    :members:
+
+Main Model (Functional)
+-----------------------
+.. autofunction:: UNIFAC_gammas
+.. autofunction:: UNIFAC_psi
+
+Misc Functions
+--------------
+.. autofunction:: UNIFAC_RQ
+.. autofunction:: Van_der_Waals_volume
+.. autofunction:: Van_der_Waals_area
+.. autofunction:: chemgroups_to_matrix
+.. autofunction:: load_group_assignments_DDBST
+
+Data for Original UNIFAC
+------------------------
+.. autodata:: UFSG
+.. autodata:: UFMG
+.. py:data:: UFIP
+
+    Interaction parameters for the original unifac model.
+
+    :type: dict[int: dict[int: float]]
+
+Data for Dortmund UNIFAC
+------------------------
+.. autodata:: DOUFSG
+.. autodata:: DOUFMG
+.. py:data:: DOUFIP2016
+
+    Interaction parameters for the Dornmund unifac model.
+
+    :type: dict[int: dict[int: tuple(float, 3)]]
+
+
+Data for NIST UNIFAC (2015)
+---------------------------
+.. autodata:: NISTUFSG
+.. autodata:: NISTUFMG
+.. py:data:: NISTUFIP
+
+    Interaction parameters for the NIST (2015) unifac model.
+
+    :type: dict[int: dict[int: tuple(float, 3)]]
+
+Data for NIST KT UNIFAC (2011)
+------------------------------
+.. autodata:: NISTKTUFSG
+.. autodata:: NISTKTUFMG
+.. py:data:: NISTKTUFIP
+
+    Interaction parameters for the NIST KT UNIFAC (2011) model.
+
+    :type: dict[int: dict[int: tuple(float, 3)]]
+
+Data for UNIFAC LLE
+-------------------
+.. autodata:: LLEUFSG
+.. autodata:: LLEMG
+.. py:data:: LLEUFIP
+
+    Interaction parameters for the LLE unifac model.
+
+    :type: dict[int: dict[int: float]]
+
+Data for Lyngby UNIFAC
+----------------------
+.. autodata:: LUFSG
+.. autodata:: LUFMG
+.. py:data:: LUFIP
+
+    Interaction parameters for the Lyngby UNIFAC model.
+
+    :type: dict[int: dict[int: tuple(float, 3)]]
+
+Data for PSRK UNIFAC
+--------------------
+.. autodata:: PSRKSG
+.. autodata:: PSRKMG
+.. py:data:: PSRKIP
+
+    Interaction parameters for the PSRKIP UNIFAC model.
+
+    :type: dict[int: dict[int: tuple(float, 3)]]
+
+Data for VTPR UNIFAC
+--------------------
+.. autodata:: VTPRSG
+.. autodata:: VTPRMG
+.. py:data:: VTPRIP
+
+    Interaction parameters for the VTPRIP UNIFAC model.
+
+    :type: dict[int: dict[int: tuple(float, 3)]]
+'''
 
 from __future__ import division
 
-__all__ = ['UNIFAC_gammas','UNIFAC',  'GibbsExcess', 
-           'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', 'UFMG', 
-           'DOUFIP2016', 'DOUFIP2006', 'UFIP', 'DDBST_UNIFAC_assignments', 
+__all__ = ['UNIFAC_gammas','UNIFAC', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', 'UFMG',
+
+           'DDBST_UNIFAC_assignments',
            'DDBST_MODIFIED_UNIFAC_assignments', 'DDBST_PSRK_assignments',
+
            'UNIFAC_RQ', 'Van_der_Waals_volume', 'Van_der_Waals_area',
-           'load_group_assignments_DDBST', 'DDBST_UNIFAC_assignments', 
-           'DDBST_MODIFIED_UNIFAC_assignments', 'DDBST_PSRK_assignments',
-           'PSRKIP', 'PSRKSG', 'LLEUFIP', 'LLEUFSG', 'LLEMG', 
-           'LUFIP', 'LUFSG']
+           'load_group_assignments_DDBST',
+
+           'PSRKSG', 'LLEUFSG', 'LLEMG',
+            'LUFSG', 'NISTUFSG', 'NISTUFMG',
+           'VTPRSG', 'VTPRMG', 'NISTKTUFSG', 'NISTKTUFMG',
+           'LUFMG', 'PSRKMG']
 import os
-from thermo.utils import log, exp
+from fluids.constants import R
+from chemicals.utils import log, exp, dxs_to_dns, can_load_data, PY37
 from thermo.activity import GibbsExcess
-from thermo.utils import R
-folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
 
 
 class UNIFAC_subgroup(object):
     __slots__ = ['group', 'main_group_id', 'main_group', 'R', 'Q', 'smarts']
-    
-    def __repr__(self):
+
+    def __repr__(self):   # pragma: no cover
         return '<%s>' %self.group
-        
+
     def __init__(self, group, main_group_id, main_group, R, Q, smarts=None):
         self.group = group
         self.main_group_id = main_group_id
@@ -142,7 +254,7 @@ UFSG[23] = UNIFAC_subgroup('HCOO', 12, 'HCOO', 1.242, 1.188, smarts='[CX3;H1](=[
 UFSG[24] = UNIFAC_subgroup('CH3O', 13, 'CH2O', 1.145, 1.088, smarts='[CH3][O]')
 UFSG[25] = UNIFAC_subgroup('CH2O', 13, 'CH2O', 0.9183, 0.78, smarts='[CH2][O]')
 UFSG[26] = UNIFAC_subgroup('CHO', 13, 'CH2O', 0.6908, 0.468, smarts='[C;H1][O]')
-UFSG[27] = UNIFAC_subgroup('THF', 13, 'CH2O', 0.9183, 1.1, smarts='[CX4,CX3;H2,H1;R][OX2;R]') # CX3, H1 needed to allow 290-67-5 and 255-37-8 but adds a lot of false positives; 
+UFSG[27] = UNIFAC_subgroup('THF', 13, 'CH2O', 0.9183, 1.1, smarts='[CX4,CX3;H2,H1;R][OX2;R]') # CX3, H1 needed to allow 290-67-5 and 255-37-8 but adds a lot of false positives;
 UFSG[28] = UNIFAC_subgroup('CH3NH2', 14, 'CNH2', 1.5959, 1.544, smarts='[CX4;H3][NX3;H2]') # Perfect
 UFSG[29] = UNIFAC_subgroup('CH2NH2', 14, 'CNH2', 1.3692, 1.236, smarts='[CX4;H2][NX3;H2]')
 UFSG[30] = UNIFAC_subgroup('CHNH2', 14, 'CNH2', 1.1417, 0.924, smarts='[CX4;H1][NX3;H2]')
@@ -324,7 +436,7 @@ DOUFSG[86] = UNIFAC_subgroup('NMP', 46, 'CY-CONC', 3.981, 3.2)
 DOUFSG[87] = UNIFAC_subgroup('NEP', 46, 'CY-CONC', 3.7543, 2.892)
 DOUFSG[88] = UNIFAC_subgroup('NIPP', 46, 'CY-CONC', 3.5268, 2.58)
 DOUFSG[89] = UNIFAC_subgroup('NTBP', 46, 'CY-CONC', 3.2994, 2.352)
-# Is 90 missing? 
+# Is 90 missing?
 DOUFSG[91] = UNIFAC_subgroup('CONH2', 47, 'CONR', 1.4515, 1.248)
 DOUFSG[92] = UNIFAC_subgroup('CONHCH3', 47, 'CONR', 1.5, 1.08)
 # 93, 98, 99 missing but inteaction parameters are available.
@@ -423,6 +535,199 @@ DOUFMG[91] = ('OTF', [197])
 # Added Rev 6
 DOUFMG[61] = ('SULFIDES', [122, 123, 124])
 DOUFMG[93] = ('DISULFIDES', [201])
+
+
+VTPRSG = {}
+
+#  subgroup = (subgroup, #maingroup, maingroup, R, Q)
+VTPRSG = {}
+VTPRSG[1] = UNIFAC_subgroup('CH3', 1, 'CH2', None, 1.2958, smarts=DOUFSG[1].smarts)
+VTPRSG[2] = UNIFAC_subgroup('CH2', 1, 'CH2', None, 0.9471, smarts=DOUFSG[2].smarts)
+VTPRSG[3] = UNIFAC_subgroup('CH', 1, 'CH2', None, 0.2629, smarts=DOUFSG[3].smarts)
+VTPRSG[4] = UNIFAC_subgroup('C', 1, 'CH2', None, 0, smarts=DOUFSG[4].smarts)
+
+VTPRSG[5] = UNIFAC_subgroup('CH2=CH', 2, 'C=C', None, 1.1507, smarts=DOUFSG[5].smarts)
+VTPRSG[6] = UNIFAC_subgroup('CH=CH', 2, 'C=C', None, 1.3221, smarts=DOUFSG[6].smarts)
+VTPRSG[7] = UNIFAC_subgroup('CH2=C', 2, 'C=C', None, 0.9889, smarts=DOUFSG[7].smarts)
+VTPRSG[8] = UNIFAC_subgroup('CH=C', 2, 'C=C', None, 0.6760, smarts=DOUFSG[8].smarts)
+VTPRSG[70] = UNIFAC_subgroup('C=C', 2, 'C=C', None, 0.4850, smarts=DOUFSG[70].smarts)
+VTPRSG[97] = UNIFAC_subgroup('Allene', 2, 'Allene', None, 1.1287, smarts=None)
+VTPRSG[98] = UNIFAC_subgroup('=CHCH=', 2, '=CHCH=', None, 1.7345, smarts=None)
+VTPRSG[99] = UNIFAC_subgroup('=CCH=', 2, '=CCH=', None, 3.5331, smarts=None)
+VTPRSG[250] = UNIFAC_subgroup('H2C=CH2', 2, 'H2C=CH2', None, 0.6758, smarts=None)
+
+VTPRSG[9] = UNIFAC_subgroup('ACH', 3, 'ACH', None, 0.4972, smarts=DOUFSG[9].smarts)
+VTPRSG[10] = UNIFAC_subgroup('AC', 3, 'ACH', None, 0.1885, smarts=DOUFSG[10].smarts)
+
+VTPRSG[11] = UNIFAC_subgroup('ACCH3', 4, 'ACCH2', None, 1.4843, smarts=DOUFSG[11].smarts)
+VTPRSG[12] = UNIFAC_subgroup('ACCH2', 4, 'ACCH2', None, 1.1356, smarts=DOUFSG[12].smarts)
+VTPRSG[13] = UNIFAC_subgroup('ACCH', 4, 'ACCH2', None, 0.4514, smarts=DOUFSG[13].smarts)
+
+VTPRSG[14] = UNIFAC_subgroup('OH(P)', 5, 'OH', None, 1.0189, smarts=DOUFSG[14].smarts)
+VTPRSG[81] = UNIFAC_subgroup('OH(S)', 5, 'OH', None, 0.9326, smarts=DOUFSG[81].smarts)
+VTPRSG[82] = UNIFAC_subgroup('OH(T)', 5, 'OH', None, 0.8727, smarts=DOUFSG[82].smarts)
+
+VTPRSG[15] = UNIFAC_subgroup('CH3OH', 6, 'CH3OH', None, 0.8779, smarts=DOUFSG[15].smarts)
+
+VTPRSG[16] = UNIFAC_subgroup('H2O', 7, 'H2O', None, 1.5576, smarts=DOUFSG[16].smarts)
+
+VTPRSG[17] = UNIFAC_subgroup('ACOH', 8, 'ACOH', None, 0.9013, smarts=DOUFSG[17].smarts)
+
+VTPRSG[18] = UNIFAC_subgroup('CH3CO', 9, 'CH2CO', None, 1.448, smarts=DOUFSG[18].smarts)
+VTPRSG[19] = UNIFAC_subgroup('CH2CO', 9, 'CH2CO', None, 1.18, smarts=DOUFSG[19].smarts)
+
+VTPRSG[20] = UNIFAC_subgroup('CHO', 10, 'CHO', None, 0.948, smarts=DOUFSG[20].smarts)
+
+VTPRSG[21] = UNIFAC_subgroup('CH3COO', 11, 'CCOO', None, 1.728, smarts=DOUFSG[21].smarts)
+VTPRSG[22] = UNIFAC_subgroup('CH2COO', 11, 'CCOO', None, 1.42, smarts=DOUFSG[22].smarts)
+VTPRSG[129] = UNIFAC_subgroup('CHCOO', 11, 'CCOO', None, 1.221, smarts=None)
+VTPRSG[180] = UNIFAC_subgroup('CHCOO', 11, 'CCOO', None, 0.88, smarts=None)
+
+VTPRSG[23] = UNIFAC_subgroup('HCOO', 12, 'HCOO', None, 1.1880, smarts=DOUFSG[23].smarts)
+
+VTPRSG[24] = UNIFAC_subgroup('CH3O', 13, 'CH2O', None, 1.088, smarts=DOUFSG[24].smarts)
+VTPRSG[25] = UNIFAC_subgroup('CH2O', 13, 'CH2O', None, 0.78, smarts=DOUFSG[25].smarts)
+VTPRSG[26] = UNIFAC_subgroup('CHO', 13, 'CH2O', None, 0.468, smarts=DOUFSG[26].smarts)
+
+VTPRSG[28] = UNIFAC_subgroup('CH3NH2', 14, 'CH2NH2', None, 1.2260, smarts=DOUFSG[28].smarts)
+VTPRSG[29] = UNIFAC_subgroup('CH2NH2', 14, 'CH2NH2', None, 1.2360, smarts=DOUFSG[29].smarts)
+VTPRSG[30] = UNIFAC_subgroup('CHNH2', 14, 'CH2NH2', None, 1.1868, smarts=DOUFSG[30].smarts)
+VTPRSG[85] = UNIFAC_subgroup('CNH2', 14, 'CH2NH2', None, 1.1527, smarts=DOUFSG[85].smarts)
+
+VTPRSG[31] = UNIFAC_subgroup('CH3NH', 15, 'CH2NH', None, 1.2440, smarts=DOUFSG[31].smarts)
+VTPRSG[32] = UNIFAC_subgroup('CH2NH', 15, 'CH2NH', None, 0.936, smarts=DOUFSG[32].smarts)
+VTPRSG[33] = UNIFAC_subgroup('CHNH', 15, 'CH2NH', None, 0.6240, smarts=DOUFSG[33].smarts)
+VTPRSG[34] = UNIFAC_subgroup('CH3N', 16, '(C)3N', None, 0.94, smarts=DOUFSG[34].smarts)
+VTPRSG[35] = UNIFAC_subgroup('CH2N', 16, '(C)3N', None, 0.632, smarts=DOUFSG[35].smarts)
+VTPRSG[36] = UNIFAC_subgroup('ACNH2', 17, 'ACNH2', None, 0.8160, smarts=DOUFSG[36].smarts)
+VTPRSG[40] = UNIFAC_subgroup('CH3CN', 19, 'CH2CN', None, 1.5302, smarts=DOUFSG[40].smarts)
+VTPRSG[41] = UNIFAC_subgroup('CH2CN', 19, 'CH2CN', None, 1.4492, smarts=DOUFSG[41].smarts)
+VTPRSG[44] = UNIFAC_subgroup('CH2CL', 21, 'CCL', None, 1.264, smarts=DOUFSG[44].smarts)
+VTPRSG[45] = UNIFAC_subgroup('CHCL', 21, 'CCL', None, 0.952, smarts=DOUFSG[45].smarts)
+VTPRSG[46] = UNIFAC_subgroup('CCL', 21, 'CCL', None, 0.724, smarts=DOUFSG[46].smarts)
+VTPRSG[47] = UNIFAC_subgroup('CH2CL2', 22, 'CCL2', None, 1.9880, smarts=DOUFSG[47].smarts)
+VTPRSG[48] = UNIFAC_subgroup('CHCL2', 22, 'CCL2', None, 1.6840, smarts=DOUFSG[48].smarts)
+VTPRSG[49] = UNIFAC_subgroup('CCL2', 22, 'CCL2', None, 1.4480, smarts=DOUFSG[49].smarts)
+VTPRSG[51] = UNIFAC_subgroup('CCL3', 23, 'CCL3', None, 2.1840, smarts=DOUFSG[51].smarts)
+VTPRSG[52] = UNIFAC_subgroup('CCL4', 24, 'CCL4', None, 3.1836, smarts=DOUFSG[52].smarts)
+
+VTPRSG[53] = UNIFAC_subgroup('ACCL', 25, 'ACCL', None, 0.3177, smarts=DOUFSG[53].smarts) # Q not verified - from DO, not listed, in 2016 paper
+
+VTPRSG[59] = UNIFAC_subgroup('CH3SH', 29, 'CH3SH', None, 1.762, smarts=DOUFSG[59].smarts)# Q not verified - from DO, not listed, in 2016 paper
+VTPRSG[60] = UNIFAC_subgroup('CH2SH', 29, 'CH3SH', None, 1.316, smarts=DOUFSG[60].smarts)# Q not verified - from DO, not listed, in 2016 paper
+
+VTPRSG[58] = UNIFAC_subgroup('CS2', 28, 'CS2', None, 1.65, smarts=DOUFSG[58].smarts)
+VTPRSG[61] = UNIFAC_subgroup('FURFURAL', 30, 'FURFURAL', None, 2.0363, smarts=DOUFSG[61].smarts)
+VTPRSG[62] = UNIFAC_subgroup('DOH', 31, 'DOH', None, 2.2480, smarts=DOUFSG[62].smarts)
+VTPRSG[63] = UNIFAC_subgroup('I', 32, 'I', None, 0.9920, smarts=DOUFSG[63].smarts)
+VTPRSG[64] = UNIFAC_subgroup('BR', 33, 'BR', None, 0.8320, smarts=DOUFSG[64].smarts)
+VTPRSG[67] = UNIFAC_subgroup('DMSO', 35, 'DMSO', None, 2.4720, smarts=DOUFSG[67].smarts)
+VTPRSG[72] = UNIFAC_subgroup('DMF', 39, 'DMF', None, 2.7360, smarts=DOUFSG[72].smarts)
+VTPRSG[73] = UNIFAC_subgroup('HCON(..', 39, 'DMF', None, 2.1200, smarts=DOUFSG[73].smarts)
+VTPRSG[78] = UNIFAC_subgroup('CY-CH2', 42, 'CY-CH2', None, 0.8635, smarts=DOUFSG[78].smarts)
+VTPRSG[79] = UNIFAC_subgroup('CY-CH', 42, 'CY-CH2', None, 0.1071, smarts=DOUFSG[79].smarts)
+VTPRSG[80] = UNIFAC_subgroup('CY-C', 42, 'CY-CH2', None, 0, smarts=DOUFSG[80].smarts)
+VTPRSG[27] = UNIFAC_subgroup('THF', 43, 'CY-CH2O', None, 2.3637, smarts=DOUFSG[27].smarts)
+VTPRSG[83] = UNIFAC_subgroup('CY-CH2O', 43, 'CY-CH2O', None, 1.4, smarts=DOUFSG[83].smarts)
+VTPRSG[84] = UNIFAC_subgroup('TRIOXAN', 43, 'CY-CH2O', None, 1.0116, smarts=DOUFSG[84].smarts)
+VTPRSG[50] = UNIFAC_subgroup('CHCL3', 45, 'CHCL3', None, 2.4100, smarts=DOUFSG[50].smarts)
+VTPRSG[86] = UNIFAC_subgroup('NMP', 46, 'CY-CONC', None, 3.2, smarts=DOUFSG[86].smarts)
+VTPRSG[87] = UNIFAC_subgroup('NEP', 46, 'CY-CONC', None, 2.892, smarts=DOUFSG[87].smarts)
+VTPRSG[88] = UNIFAC_subgroup('NIPP', 46, 'CY-CONC', None, 2.58, smarts=DOUFSG[88].smarts)
+VTPRSG[89] = UNIFAC_subgroup('NTBP', 46, 'CY-CONC', None, 2.352, smarts=DOUFSG[89].smarts)
+VTPRSG[107] = UNIFAC_subgroup('H2COCH', 53, 'EPOXIDES', None, 1.8031, smarts=DOUFSG[107].smarts)
+VTPRSG[108] = UNIFAC_subgroup('COCH', 53, 'EPOXIDES', None, 0.3418, smarts=DOUFSG[108].smarts)
+VTPRSG[109] = UNIFAC_subgroup('HCOCH', 53, 'EPOXIDES', None, 0.6538, smarts=DOUFSG[109].smarts)
+VTPRSG[119] = UNIFAC_subgroup('H2COCH2', 53, 'EPOXIDES', None, 1.123, smarts=DOUFSG[119].smarts)
+VTPRSG[153] = UNIFAC_subgroup('H2COC', 53, 'EPOXIDES', None, 0.6538, smarts=DOUFSG[153].smarts)
+VTPRSG[116] = UNIFAC_subgroup('AC-CHO', 57, 'AC-CHO', None, 1.0, smarts=None)
+VTPRSG[139] = UNIFAC_subgroup('CF2H', 68, 'CF2H', None, 1.6643, smarts=None)
+VTPRSG[140] = UNIFAC_subgroup('CF2H2', 68, 'CF2H', None, 1.3304, smarts=None)
+VTPRSG[142] = UNIFAC_subgroup('CF2Cl', 70, 'CF2Cl2', None, 1.8506, smarts=None)
+VTPRSG[143] = UNIFAC_subgroup('CF2Cl2', 70, 'CF2Cl2', None, 2.5974, smarts=None)
+VTPRSG[148] = UNIFAC_subgroup('CF3Br', 70, 'CF2Cl2', None, 2.5104, smarts=None)
+
+VTPRSG[146] = UNIFAC_subgroup('CF4', 73, 'CF4', None, 1.8400, smarts=None)
+VTPRSG[300] = UNIFAC_subgroup('NH3', 150, 'NH3', None, 0.7780, smarts=None)
+VTPRSG[306] = UNIFAC_subgroup('CO2', 151, 'CO2', None, 0.982, smarts=None)
+VTPRSG[307] = UNIFAC_subgroup('CH4', 152, 'CH4', None, 1.124, smarts=None)
+VTPRSG[308] = UNIFAC_subgroup('O2', 153, 'O2', None, 0.849, smarts=None)
+VTPRSG[305] = UNIFAC_subgroup('Ar', 154, 'Ar', None, 1.116, smarts=None)
+VTPRSG[304] = UNIFAC_subgroup('N2', 155, 'N2', None, 0.93, smarts=None)
+VTPRSG[303] = UNIFAC_subgroup('H2S', 156, 'H2S', None, 1.202, smarts=None)
+VTPRSG[302] = UNIFAC_subgroup('H2', 157, 'H2', None, 0.571, smarts=None)
+VTPRSG[309] = UNIFAC_subgroup('D2', 157, 'D2', None, 0.527, smarts=None)
+VTPRSG[301] = UNIFAC_subgroup('CO', 158, 'CO', None, 0.8280, smarts=None)
+VTPRSG[310] = UNIFAC_subgroup('SO2', 160, 'SO2', None, 1.1640, smarts=None)
+VTPRSG[312] = UNIFAC_subgroup('N2O', 162, 'N2O', None, 0.8880, smarts=None)
+VTPRSG[314] = UNIFAC_subgroup('He', 164, 'He', None, 0.9850, smarts=None)
+VTPRSG[315] = UNIFAC_subgroup('Ne', 165, 'Ne', None, 0.9860, smarts=None)
+VTPRSG[319] = UNIFAC_subgroup('HCl', 169, 'HCl', None, 1.2560, smarts=None)
+VTPRSG[345] = UNIFAC_subgroup('Hg', 185, 'Hg', None, 7.9616, smarts=None)
+
+# From Present Status of the Group Contribution Equation of State VTPR and Typical Applications for Process Development
+VTPRSG[54] = UNIFAC_subgroup('CH3NO2', 26, 'CNO2', None, 1.8285, smarts=DOUFSG[54].smarts)
+VTPRSG[55] = UNIFAC_subgroup('CH2NO2', 26, 'CNO2', None, 1.56, smarts=DOUFSG[55].smarts)
+VTPRSG[56] = UNIFAC_subgroup('CHNO2', 26, 'CNO2', None, 1.248, smarts=DOUFSG[56].smarts)
+
+
+VTPRMG = {1: ("CH2", [1, 2, 3, 4]),
+2: ("H2C=CH2", [5, 6, 7, 8, 70, 97, 98, 99, 250]),
+3: ("ACH", [9, 10]),
+4: ("ACCH2", [11, 12, 13]),
+5: ("OH", [14, 81, 82]),
+6: ("CH3OH", [15]),
+7: ("H2O", [16]),
+8: ("ACOH", [17]),
+9: ("CH2CO", [18, 19]),
+10: ("CHO", [20]),
+11: ("CCOO", [21, 22, 129, 180]),
+12: ("HCOO", [23]),
+13: ("CH2O", [24, 25, 26]),
+14: ("CH2NH2", [28, 29, 30, 85]),
+15: ("CH2NH", [31, 32, 33]),
+16: ("(C)3N", [34, 35]),
+17: ("ACNH2", [36]),
+19: ("CH2CN", [40, 41]),
+21: ("CCL", [44, 45, 46]),
+22: ("CCL2", [47, 48, 49]),
+23: ("CCL3", [51]),
+24: ("CCL4", [52]),
+25: ("ACCL", [53]),
+26: ("CNO2", [54, 55, 56]),
+28: ("CS2", [58]),
+29: ("CH3SH", [59, 60]),
+30: ("FURFURAL", [61]),
+31: ("DOH", [62]),
+32: ("I", [63]),
+33: ("BR", [64]),
+35: ("DMSO", [67]),
+39: ("DMF", [72, 73]),
+42: ("CY-CH2", [78, 79, 80]),
+43: ("CY-CH2O", [27, 83, 84]),
+45: ("CHCL3", [50]),
+46: ("CY-CONC", [86, 87, 88, 89]),
+53: ("EPOXIDES", [107, 108, 109, 119, 153]),
+57: ("AC-CHO", [116]),
+68: ("CF2H", [139, 140]),
+70: ("CF2Cl2", [142, 143, 148]),
+73: ("CF4", [146]),
+150: ("NH3", [300]),
+151: ("CO2", [306]),
+152: ("CH4", [307]),
+153: ("O2", [308]),
+154: ("Ar", [305]),
+155: ("N2", [304]),
+156: ("H2S", [303]),
+157: ("D2", [302, 309]),
+158: ("CO", [301]),
+160: ("SO2", [310]),
+162: ("N2O", [312]),
+164: ("He", [314]),
+165: ("Ne", [315]),
+169: ("HCl", [319]),
+185: ("Hg", [345]),
+}
 
 
 NISTUFMG = {}
@@ -839,6 +1144,89 @@ PSRKSG[148] = UNIFAC_subgroup('O3', 84, 'O3', 1.1000, 1.2700)
 PSRKSG[149] = UNIFAC_subgroup('CLNO', 85, 'CLNO', 1.4800, 1.3400)
 PSRKSG[152] = UNIFAC_subgroup('CNH2', 14, 'CNH2', 0.9147, 0.6140)
 
+PSRKMG = {1: ("CH2", [1, 2, 3, 4]),
+2: ("C=C", [5, 6, 7, 8, 70, 109]),
+3: ("ACH", [9, 10]),
+4: ("ACCH2", [11, 12, 13]),
+5: ("OH", [14]),
+6: ("CH3OH", [15]),
+7: ("H2O", [16]),
+8: ("ACOH", [17]),
+9: ("CH2CO", [18, 19]),
+10: ("CHO", [20]),
+11: ("CCOO", [21, 22]),
+12: ("HCOO", [23]),
+13: ("CH2O", [24, 25, 26, 27]),
+14: ("CNH2", [28, 29, 30, 152]),
+15: ("CNH", [31, 32, 33]),
+16: ("(C)3N", [34, 35]),
+17: ("ACNH2", [36]),
+18: ("PYRIDINE", [37, 38, 39]),
+19: ("CCN", [40, 41]),
+20: ("COOH", [42, 43]),
+21: ("CCL", [44, 45, 46]),
+22: ("CCL2", [47, 48, 49]),
+23: ("CCL3", [50, 51]),
+24: ("CCL4", [52]),
+25: ("ACCL", [53]),
+26: ("CNO2", [54, 55, 56]),
+27: ("ACNO2", [57]),
+28: ("CS2", [58]),
+29: ("CH3SH", [59, 60, 134, 135]),
+30: ("FURFURAL", [61]),
+31: ("DOH", [62]),
+32: ("I", [63]),
+33: ("BR", [64]),
+34: ("C=-C", [65, 66, 110]),
+35: ("DMSO", [67]),
+36: ("ACRY", [68]),
+37: ("CLCC", [69]),
+38: ("ACF", [71]),
+39: ("DMF", [72, 73]),
+40: ("CF2", [74, 75, 76]),
+41: ("COO", [77]),
+42: ("SIH2", [78, 79, 80, 81]),
+43: ("SIO", [82, 83, 84]),
+44: ("NMP", [85]),
+45: ("CCLF", [86, 87, 88, 89, 90, 91, 92, 93]),
+46: ("CON (AM)", [94, 95, 96, 97, 98, 99]),
+47: ("OCCOH", [100, 101]),
+48: ("CH2S", [102, 103, 104]),
+49: ("MORPH", [105]),
+50: ("THIOPHEN", [106, 107, 108]),
+51: ("EPOXY", [136, 137, 138, 139, 140, 141]),
+55: ("NH3", [111]),
+56: ("CO2", [117]),
+57: ("CH4", [118]),
+58: ("O2", [119]),
+59: ("AR", [116]),
+60: ("N2", [115]),
+61: ("H2S", [114]),
+62: ("H2", [113, 120]),
+63: ("CO", [112]),
+65: ("SO2", [121]),
+66: ("NO", [122]),
+67: ("N2O", [123]),
+68: ("SF6", [124]),
+69: ("HE", [125]),
+70: ("NE", [126]),
+71: ("KR", [127]),
+72: ("XE", [128]),
+73: ("HF", [129]),
+74: ("HCL", [130]),
+75: ("HBR", [131]),
+76: ("HI", [132]),
+77: ("COS", [133]),
+78: ("F2", [142]),
+79: ("CL2", [143]),
+80: ("BR2", [144]),
+81: ("HCN", [145]),
+82: ("NO2", [146]),
+83: ("CF4", [147]),
+84: ("O3", [148]),
+85: ("CLNO", [149]),
+}
+
 LLEUFSG = {}
 # LLEUFSG[subgroup ID] = (subgroup formula, main group ID, subgroup R, subgroup Q)
 LLEUFSG[1] = UNIFAC_subgroup('CH3', 1, 'CH2', 0.9011, 0.848, smarts=UFSG[1].smarts)
@@ -973,7 +1361,7 @@ LLEMG = {   1: ("CH2", [1, 2, 3, 4]),
 '''
 Larsen, Bent L., Peter Rasmussen, and Aage Fredenslund. "A Modified UNIFAC
 Group-Contribution Model for Prediction of Phase Equilibria and Heats of Mixing."
-Industrial & Engineering Chemistry Research 26, no. 11 (November 1, 1987): 
+Industrial & Engineering Chemistry Research 26, no. 11 (November 1, 1987):
 2274-86. https://doi.org/10.1021/ie00071a018.
 '''
 LUFSG = {}
@@ -1043,64 +1431,313 @@ LUFSG[44] = UNIFAC_subgroup('CCL3', 20, 'CCL3', 2.6401, 2.184, smarts=UFSG[51].s
 
 LUFSG[45] = UNIFAC_subgroup('CCL4', 21, 'CCL4', 3.39, 2.91, smarts=UFSG[52].smarts)
 
+LUFMG = {1: ("CH2", [1, 2, 3, 4]),
+2: ("C=C", [5, 6, 7, 8, 9]),
+3: ("ACH", [10, 11]),
+4: ("OH", [12]),
+5: ("CH3OH", [13]),
+6: ("H2O", [14]),
+7: ("CH2CO", [15, 16]),
+8: ("CHO", [17]),
+9: ("CCOO", [18, 19]),
+10: ("CH2O", [20, 21, 22, 23]),
+11: ("NH2", [24]),
+12: ("CNH2NG", [25, 26, 27]),
+13: ("CH2N", [28, 29]),
+14: ("ANH2", [30]),
+15: ("PYRIDINE", [31, 32, 33]),
+16: ("CCN", [34, 35]),
+17: ("COOH", [36]),
+18: ("CCL", [37, 38, 39]),
+19: ("CCL2", [40, 41, 42]),
+20: ("CCL3", [43, 44]),
+21: ("CCL4", [45]),
+}
 
+NISTKTUFSG = {}
+NISTKTUFSG[1] = UNIFAC_subgroup("CH3-", 1, 'C', 0.9011, 0.848)
+NISTKTUFSG[2] = UNIFAC_subgroup("-CH2-", 1, 'C', 0.6744, 0.54)
+NISTKTUFSG[3] = UNIFAC_subgroup("-CH<", 1, 'C', 0.4469, 0.228)
+NISTKTUFSG[4] = UNIFAC_subgroup(">C<", 1, 'C', 0.2195, 0)
+NISTKTUFSG[5] = UNIFAC_subgroup("CH2=CH-", 2, 'C=C', 1.3454, 1.176)
+NISTKTUFSG[6] = UNIFAC_subgroup("-CH=CH-", 2, 'C=C', 1.1167, 0.867)
+NISTKTUFSG[7] = UNIFAC_subgroup("CH2=C<", 2, 'C=C', 1.1173, 0.988)
+NISTKTUFSG[8] = UNIFAC_subgroup("-CH=C<", 2, 'C=C', 0.8886, 0.676)
+NISTKTUFSG[9] = UNIFAC_subgroup(">C=C<", 2, 'C=C', 0.6605, 0.485)
+NISTKTUFSG[15] = UNIFAC_subgroup("-ACH-", 3, 'ACH', 0.5313, 0.4)
+NISTKTUFSG[16] = UNIFAC_subgroup(">AC- (link)", 3, 'ACH', 0.3652, 0.12)
+NISTKTUFSG[17] = UNIFAC_subgroup(">AC- (cond)", 3, 'ACH', 0.3125, 0.084)
+NISTKTUFSG[18] = UNIFAC_subgroup(">AC-CH3", 4, 'ACCH2', 1.2663, 0.968)
+NISTKTUFSG[19] = UNIFAC_subgroup(">AC-CH2-", 4, 'ACCH2', 1.0396, 0.66)
+NISTKTUFSG[20] = UNIFAC_subgroup(">AC-CH<", 4, 'ACCH2', 0.8121, 0.348)
+NISTKTUFSG[21] = UNIFAC_subgroup(">AC-C<-", 4, 'ACCH2', 0.5847, 0.084)
+NISTKTUFSG[34] = UNIFAC_subgroup("-OH(primary)", 5, 'OH', 1, 1.2)
+NISTKTUFSG[204] = UNIFAC_subgroup("-OH(secondary)", 5, 'OH', 1, 1.2)
+NISTKTUFSG[205] = UNIFAC_subgroup("-OH(tertiary)", 5, 'OH', 1, 1.2)
+NISTKTUFSG[35] = UNIFAC_subgroup("CH3OH", 6, 'CH2OH', 1.4311, 1.432)
+NISTKTUFSG[36] = UNIFAC_subgroup("H2O", 7, 'H2O', 0.92, 1.4)
+NISTKTUFSG[37] = UNIFAC_subgroup(">AC-OH", 8, 'ACOH', 0.8952, 0.68)
+NISTKTUFSG[42] = UNIFAC_subgroup("CH3-CO-", 9, 'CH2CO', 1.6724, 1.488)
+NISTKTUFSG[43] = UNIFAC_subgroup("-CH2-CO-", 9, 'CH2CO', 1.4457, 1.18)
+NISTKTUFSG[44] = UNIFAC_subgroup(">CH-CO-", 9, 'CH2CO', 1.2182, 0.868)
+NISTKTUFSG[45] = UNIFAC_subgroup("->C-CO-", 9, 'CH2CO', 0.9908, 0.64)
+NISTKTUFSG[48] = UNIFAC_subgroup("-CHO", 10, 'CHO', 0.998, 0.948)
+NISTKTUFSG[51] = UNIFAC_subgroup("CH3-COO-", 11, 'CCOO', 1.9031, 1.728)
+NISTKTUFSG[52] = UNIFAC_subgroup("-CH2-COO-", 11, 'CCOO', 1.6764, 1.42)
+NISTKTUFSG[53] = UNIFAC_subgroup(">CH-COO-", 11, 'CCOO', 1.4489, 1.108)
+NISTKTUFSG[54] = UNIFAC_subgroup("->C-COO-", 11, 'CCOO', 1.2215, 0.88)
+NISTKTUFSG[55] = UNIFAC_subgroup("HCOO-", 12, 'HCOO', 1.242, 1.188)
+NISTKTUFSG[59] = UNIFAC_subgroup("CH3-O-", 13, 'CH2O', 1.145, 1.088)
+NISTKTUFSG[60] = UNIFAC_subgroup("-CH2-O-", 13, 'CH2O', 0.9183, 0.78)
+NISTKTUFSG[61] = UNIFAC_subgroup(">CH-O-", 13, 'CH2O', 0.6908, 0.468)
+NISTKTUFSG[62] = UNIFAC_subgroup("->CO-", 13, 'CH2O', 0.9183, 0.24)
+NISTKTUFSG[63] = UNIFAC_subgroup("-CH2-O- (cy)", 'CH2O', None, 0.9183, 1.1)
+NISTKTUFSG[66] = UNIFAC_subgroup("CH3-NH2", 14, 'CNH2', 1.5959, 1.544)
+NISTKTUFSG[67] = UNIFAC_subgroup("-CH2-NH2", 14, 'CNH2', 1.3692, 1.236)
+NISTKTUFSG[68] = UNIFAC_subgroup(">CH-NH2", 14, 'CNH2', 1.1417, 0.924)
+NISTKTUFSG[69] = UNIFAC_subgroup("->C-NH2", 14, 'CNH2', 0.9275, 0.696)
+NISTKTUFSG[71] = UNIFAC_subgroup("CH3-NH-", 15, '(C)2NH', 1.4337, 1.244)
+NISTKTUFSG[72] = UNIFAC_subgroup("-CH2-NH-", 15, '(C)2NH', 1.207, 0.936)
+NISTKTUFSG[73] = UNIFAC_subgroup(">CH-NH-", 15, '(C)2NH', 0.9795, 0.624)
+NISTKTUFSG[74] = UNIFAC_subgroup("CH3-N<", 16, '(C)3N', 1.1865, 0.94)
+NISTKTUFSG[75] = UNIFAC_subgroup("-CH2-N<", 16, '(C)3N', 0.9597, 0.632)
+NISTKTUFSG[79] = UNIFAC_subgroup(">AC-NH2", 17, 'ACNH2', 1.06, 0.816)
+NISTKTUFSG[80] = UNIFAC_subgroup(">AC-NH-", 17, 'ACNH2', 0.8978, 0.516)
+NISTKTUFSG[81] = UNIFAC_subgroup(">AC-N<", 17, 'ACNH2', 0.6506, 0.212)
+NISTKTUFSG[76] = UNIFAC_subgroup("C5H5N", 18, 'Pyridine', 2.9993, 2.113)
+NISTKTUFSG[77] = UNIFAC_subgroup("C5H4N-", 18, 'Pyridine', 2.8332, 1.833)
+NISTKTUFSG[78] = UNIFAC_subgroup("C5H3N<", 18, 'Pyridine', 2.667, 1.553)
+NISTKTUFSG[85] = UNIFAC_subgroup("CH3-CN", 19, 'CCN', 1.8701, 1.724)
+NISTKTUFSG[86] = UNIFAC_subgroup("-CH2-CN", 19, 'CCN', 1.6434, 1.416)
+NISTKTUFSG[87] = UNIFAC_subgroup(">CH-CN", 19, 'CCN', 1.416, 1.104)
+NISTKTUFSG[88] = UNIFAC_subgroup("->C-CN", 19, 'CCN', 1.1885, 0.876)
+NISTKTUFSG[94] = UNIFAC_subgroup("-COOH", 20, 'COOH', 1.3013, 1.224)
+NISTKTUFSG[95] = UNIFAC_subgroup("HCOOH", 20, 'COOH', 1.528, 1.532)
+NISTKTUFSG[99] = UNIFAC_subgroup("-CH2-Cl", 21, 'CCl', 1.4654, 1.264)
+NISTKTUFSG[100] = UNIFAC_subgroup(">CH-Cl", 21, 'CCl', 1.238, 0.952)
+NISTKTUFSG[101] = UNIFAC_subgroup("->CCl", 21, 'CCl', 1.0106, 0.724)
+NISTKTUFSG[102] = UNIFAC_subgroup("CH2Cl2", 22, 'CCl2', 2.2564, 1.988)
+NISTKTUFSG[103] = UNIFAC_subgroup("-CHCl2", 22, 'CCl2', 2.0606, 1.684)
+NISTKTUFSG[104] = UNIFAC_subgroup(">CCl2", 22, 'CCl2', 1.8016, 1.448)
+NISTKTUFSG[105] = UNIFAC_subgroup("CHCl3", 23, 'CCl3', 2.87, 2.41)
+NISTKTUFSG[106] = UNIFAC_subgroup("-CCl3", 23, 'CCl3', 2.6401, 2.184)
+NISTKTUFSG[107] = UNIFAC_subgroup("CCl4", 24, 'CCl4', 3.39, 2.91)
+NISTKTUFSG[109] = UNIFAC_subgroup(">AC-Cl", 25, 'ACCl', 1.1562, 0.844)
+NISTKTUFSG[132] = UNIFAC_subgroup("CH3-NO2", 26, 'CNO2', 2.0086, 1.868)
+NISTKTUFSG[133] = UNIFAC_subgroup("-CH2-NO2", 26, 'CNO2', 1.7818, 1.56)
+NISTKTUFSG[134] = UNIFAC_subgroup(">CH-NO2", 26, 'CNO2', 1.5544, 1.248)
+NISTKTUFSG[135] = UNIFAC_subgroup("->C-NO2", 26, 'CNO2', 1.327, 1.02)
+NISTKTUFSG[136] = UNIFAC_subgroup(">AC-NO2", 27, 'ACNO2', 1.4199, 1.104)
+NISTKTUFSG[146] = UNIFAC_subgroup("CS2", 28, 'CS2', 2.057, 1.65)
+NISTKTUFSG[138] = UNIFAC_subgroup("CH3-SH", 29, 'CH3SH', 1.877, 1.676)
+NISTKTUFSG[139] = UNIFAC_subgroup("-CH2-SH", 29, 'CH3SH', 1.651, 1.368)
+NISTKTUFSG[140] = UNIFAC_subgroup(">CH-SH", 29, 'CH3SH', 1.4232, 0.228)
+NISTKTUFSG[141] = UNIFAC_subgroup("->C-SH", 29, 'CH3SH', 1.1958, 0)
+NISTKTUFSG[50] = UNIFAC_subgroup("C5H4O2", 30, 'Furfural', 3.168, 2.484)
+NISTKTUFSG[38] = UNIFAC_subgroup("(CH2OH)2", 31, 'DOH', 2.4088, 2.248)
+NISTKTUFSG[128] = UNIFAC_subgroup("-I", 32, 'I', 1.264, 0.992)
+NISTKTUFSG[130] = UNIFAC_subgroup("-Br", 33, 'Br', 0.9492, 0.832)
+NISTKTUFSG[13] = UNIFAC_subgroup("CH≡C-", 34, 'C=-C', 1.292, 1.088)
+NISTKTUFSG[14] = UNIFAC_subgroup("-C≡C-", 34, 'C=-C', 1.0613, 0.784)
+NISTKTUFSG[153] = UNIFAC_subgroup("DMSO", 35, 'DMSO', 2.8266, 2.472)
+NISTKTUFSG[90] = UNIFAC_subgroup("CH2=CH-CN", 36, 'ACRY', 2.3144, 2.052)
+NISTKTUFSG[108] = UNIFAC_subgroup("Cl(C=C)", 37, 'Cl(C=C)', 0.791, 0.724)
+NISTKTUFSG[118] = UNIFAC_subgroup(">AC-F", 38, 'ACF', 0.6948, 0.524)
+NISTKTUFSG[161] = UNIFAC_subgroup("DMF", 39, 'DMF', 3.0856, 2.736)
+NISTKTUFSG[162] = UNIFAC_subgroup("-CON(CH3)2", 39, 'DMF', 2.8589, 2.428)
+NISTKTUFSG[163] = UNIFAC_subgroup("-CON(CH2)(CH3)-", 39, 'DMF', 2.6322, 2.12)
+NISTKTUFSG[164] = UNIFAC_subgroup("HCON(CH2)2<", 39, 'DMF', 2.6322, 2.12)
+NISTKTUFSG[165] = UNIFAC_subgroup("-CON(CH2)2<", 39, 'DMF', 2.4054, 1.812)
+NISTKTUFSG[111] = UNIFAC_subgroup("CHF3", 40, 'CF2', 1.5781, 1.548)
+NISTKTUFSG[112] = UNIFAC_subgroup("-CF3", 40, 'CF2', 1.406, 1.38)
+NISTKTUFSG[113] = UNIFAC_subgroup("-CHF2", 40, 'CF2', 1.2011, 1.108)
+NISTKTUFSG[114] = UNIFAC_subgroup(">CF2", 40, 'CF2', 1.0105, 0.92)
+NISTKTUFSG[115] = UNIFAC_subgroup("-CH2F", 40, 'CF2', 1.0514, 0.98)
+NISTKTUFSG[116] = UNIFAC_subgroup(">CH-F", 40, 'CF2', 0.824, 0.668)
+NISTKTUFSG[117] = UNIFAC_subgroup("->CF", 40, 'CF2', 0.615, 0.46)
+NISTKTUFSG[58] = UNIFAC_subgroup("-COO-", 41, 'COO', 1.38, 1.2)
+NISTKTUFSG[197] = UNIFAC_subgroup("SiH3-", 42, 'SiH2', 1.6035, 1.263)
+NISTKTUFSG[198] = UNIFAC_subgroup("-SiH2-", 42, 'SiH2', 1.4443, 1.006)
+NISTKTUFSG[199] = UNIFAC_subgroup(">SiH-", 42, 'SiH2', 1.2853, 0.749)
+NISTKTUFSG[200] = UNIFAC_subgroup(">Si<", 42, 'SiH2', 1.047, 0.41)
+NISTKTUFSG[201] = UNIFAC_subgroup("-SiH2-O-", 43, 'SiO', 1.4838, 1.062)
+NISTKTUFSG[202] = UNIFAC_subgroup(">SiH-O-", 43, 'SiO', 1.303, 0.764)
+NISTKTUFSG[203] = UNIFAC_subgroup("->Si-O-", 43, 'SiO', 1.1044, 0.466)
+NISTKTUFSG[195] = UNIFAC_subgroup("NMP", 44, 'NMP', 3.981, 3.2)
+NISTKTUFSG[120] = UNIFAC_subgroup("CCl3F", 45, 'CClF', 3.0356, 2.644)
+NISTKTUFSG[121] = UNIFAC_subgroup("-CCl2F", 45, 'CClF', 2.2287, 1.916)
+NISTKTUFSG[122] = UNIFAC_subgroup("HCCl2F", 45, 'CClF', 2.406, 2.116)
+NISTKTUFSG[123] = UNIFAC_subgroup("-HCClF", 45, 'CClF', 1.6493, 1.416)
+NISTKTUFSG[124] = UNIFAC_subgroup("-CClF2", 45, 'CClF', 1.8174, 1.648)
+NISTKTUFSG[125] = UNIFAC_subgroup("HCClF2", 45, 'CClF', 1.967, 1.828)
+NISTKTUFSG[126] = UNIFAC_subgroup("CClF3", 45, 'CClF', 2.1721, 2.1)
+NISTKTUFSG[127] = UNIFAC_subgroup("CCl2F2", 45, 'CClF', 2.6243, 2.376)
+NISTKTUFSG[166] = UNIFAC_subgroup("-CONH(CH3)", 46, 'CONCH2', 2.205, 1.884)
+NISTKTUFSG[167] = UNIFAC_subgroup("HCONH(CH2)-", 46, 'CONCH2', 2.205, 1.884)
+NISTKTUFSG[168] = UNIFAC_subgroup("-CONH(CH2)-", 46, 'CONCH2', 1.9782, 1.576)
+NISTKTUFSG[169] = UNIFAC_subgroup("-CONH2", 46, 'CONCH2', 1.4661, 1.336)
+NISTKTUFSG[39] = UNIFAC_subgroup("-O-CH2-CH2-OH", 47, 'OCCOH', 2.1226, 1.904)
+NISTKTUFSG[40] = UNIFAC_subgroup("-O-CH-CH2-OH", 47, 'OCCOH', 1.8952, 1.592)
+NISTKTUFSG[41] = UNIFAC_subgroup("-O-CH2-CH-OH", 47, 'OCCOH', 1.8952, 1.592)
+NISTKTUFSG[142] = UNIFAC_subgroup("CH3-S-", 48, 'CH2S', 1.613, 1.368)
+NISTKTUFSG[143] = UNIFAC_subgroup("-CH2-S-", 48, 'CH2S', 1.3863, 1.06)
+NISTKTUFSG[144] = UNIFAC_subgroup(">CH-S-", 48, 'CH2S', 1.1589, 0.748)
+NISTKTUFSG[145] = UNIFAC_subgroup("->C-S-", 48, 'CH2S', 0.9314, 0.52)
+NISTKTUFSG[196] = UNIFAC_subgroup("MORPHOLIN", 49, 'Morpholin', 3.474, 2.796)
+NISTKTUFSG[147] = UNIFAC_subgroup("THIOPHENE", 50, 'THIOPHENE', 2.8569, 2.14)
+NISTKTUFSG[148] = UNIFAC_subgroup("C4H3S-", 50, 'THIOPHENE', 2.6908, 1.86)
+NISTKTUFSG[149] = UNIFAC_subgroup("C4H2S<", 50, 'THIOPHENE', 2.5247, 1.58)
+NISTKTUFSG[27] = UNIFAC_subgroup("-CH2- (cy)", 51, 'CH2(cyc)', 0.6744, 0.54)
+NISTKTUFSG[28] = UNIFAC_subgroup(">CH- (cy)", 51, 'CH2(cyc)', 0.4469, 0.228)
+NISTKTUFSG[29] = UNIFAC_subgroup(">C< (cy)", 51, 'CH2(cyc)', 0.2195, 0)
+NISTKTUFSG[30] = UNIFAC_subgroup("-CH=CH- (cy)", 52, 'C=C(cyc)', 1.1167, 0.867)
+NISTKTUFSG[31] = UNIFAC_subgroup("CH2=C< (cy)", 52, 'C=C(cyc)', 1.1173, 0.988)
+NISTKTUFSG[32] = UNIFAC_subgroup("-CH=C< (cy)", 52, 'C=C(cyc)', 0.8886, 0.676)
 
+NISTKTUFMG = {1: ("C", [1, 2, 3, 4]),
+2: ("C=C", [5, 6, 7, 8, 9]),
+3: ("ACH", [15, 16, 17]),
+4: ("ACCH2", [18, 19, 20, 21]),
+5: ("OH", [34, 204, 205]),
+6: ("CH2OH", [35]),
+7: ("H2O", [36]),
+8: ("ACOH", [37]),
+9: ("CH2CO", [42, 43, 44, 45]),
+10: ("CHO", [48]),
+11: ("CCOO", [51, 52, 53, 54]),
+12: ("HCOO", [55]),
+13: ("CH2O", [59, 60, 61, 62]),
+14: ("CNH2", [66, 67, 68, 69]),
+15: ("(C)2NH", [71, 72, 73]),
+16: ("(C)3N", [74, 75]),
+17: ("ACNH2", [79, 80, 81]),
+18: ("Pyridine", [76, 77, 78]),
+19: ("CCN", [85, 86, 87, 88]),
+20: ("COOH", [94, 95]),
+21: ("CCl", [99, 100, 101]),
+22: ("CCl2", [102, 103, 104]),
+23: ("CCl3", [105, 106]),
+24: ("CCl4", [107]),
+25: ("ACCl", [109]),
+26: ("CNO2", [132, 133, 134, 135]),
+27: ("ACNO2", [136]),
+28: ("CS2", [146]),
+29: ("CH3SH", [138, 139, 140, 141]),
+30: ("Furfural", [50]),
+31: ("DOH", [38]),
+32: ("I", [128]),
+33: ("Br", [130]),
+34: ("C=-C", [13, 14]),
+35: ("DMSO", [153]),
+36: ("ACRY", [90]),
+37: ("Cl(C=C)", [108]),
+38: ("ACF", [118]),
+39: ("DMF", [161, 162, 163, 164, 165]),
+40: ("CF2", [111, 112, 113, 114, 115, 116, 117]),
+41: ("COO", [58]),
+42: ("SiH2", [197, 198, 199, 200]),
+43: ("SiO", [201, 202, 203]),
+44: ("NMP", [195]),
+45: ("CClF", [120, 121, 122, 123, 124, 125, 126, 127]),
+46: ("CONCH2", [166, 167, 168, 169]),
+47: ("OCCOH", [39, 40, 41]),
+48: ("CH2S", [142, 143, 144, 145]),
+49: ("Morpholin", [196]),
+50: ("THIOPHENE", [147, 148, 149]),
+51: ("CH2(cyc)", [27, 28, 29]),
+52: ("C=C(cyc)", [30, 31, 32]),
+}
 
-'''Compared to storing the values in dict[(int1, int2)] = (values), 
-the dict-in-dict structure is found emperically to take 111608 bytes vs. 
+'''Compared to storing the values in dict[(int1, int2)] = (values),
+the dict-in-dict structure is found emperically to take 111608 bytes vs.
 79096 bytes, or 30% less memory.
 '''
 
-UFIP = {i: {} for i in list(range(1, 52)) + [55, 84, 85]}
-with open(os.path.join(folder, 'UNIFAC original interaction parameters.tsv')) as f:
-    for line in f:
-        maingroup1, maingroup2, interaction_parameter = line.strip('\n').split('\t')
-        # Index by both int, order maters, to only one parameter.
-        UFIP[int(maingroup1)][int(maingroup2)] = float(interaction_parameter)
+global _unifac_ip_loaded
+_unifac_ip_loaded = False
+def load_unifac_ip():
+    global _unifac_ip_loaded, UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP, NISTKTUFIP, PSRKIP, VTPRIP
+    folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
+
+    UFIP = {i: {} for i in list(range(1, 52)) + [55, 84, 85]}
+    with open(os.path.join(folder, 'UNIFAC original interaction parameters.tsv')) as f:
+        for line in f:
+            maingroup1, maingroup2, interaction_parameter = line.strip('\n').split('\t')
+            # Index by both int, order maters, to only one parameter.
+            UFIP[int(maingroup1)][int(maingroup2)] = float(interaction_parameter)
 
 
-LLEUFIP = {i: {} for i in list(range(1, 33))}
-with open(os.path.join(folder, 'UNIFAC LLE interaction parameters.tsv')) as f:
-    for line in f:
-        maingroup1, maingroup2, interaction_parameter = line.strip('\n').split('\t')
-        LLEUFIP[int(maingroup1)][int(maingroup2)] = float(interaction_parameter)
+    LLEUFIP = {i: {} for i in list(range(1, 33))}
+    with open(os.path.join(folder, 'UNIFAC LLE interaction parameters.tsv')) as f:
+        for line in f:
+            maingroup1, maingroup2, interaction_parameter = line.strip('\n').split('\t')
+            LLEUFIP[int(maingroup1)][int(maingroup2)] = float(interaction_parameter)
 
-LUFIP = {i: {} for i in list(range(1, 22))}
-with open(os.path.join(folder, 'UNIFAC Lyngby interaction parameters.tsv')) as f:
-    for line in f:
-        maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
-        LUFIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
-
-
-DOUFIP2006 = {i: {} for i in DOUFMG.keys()}
-with open(os.path.join(folder, 'UNIFAC modified Dortmund interaction parameters 2006.tsv')) as f:
-    for line in f:
-        maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
-        DOUFIP2006[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
-
-DOUFIP2016 = {i: {} for i in list(DOUFMG.keys())+[50, 77, 98, 99]}
-# Some of the groups have no public parameters unfortunately
-with open(os.path.join(folder, 'UNIFAC modified Dortmund interaction parameters.tsv')) as f:
-    for line in f:
-        maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
-        DOUFIP2016[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+    LUFIP = {i: {} for i in list(range(1, 22))}
+    with open(os.path.join(folder, 'UNIFAC Lyngby interaction parameters.tsv')) as f:
+        for line in f:
+            maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
+            LUFIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
 
 
-#NISTUFIP = {i: {} for i in list(NISTUFMG.keys())}
-NISTUFIP = {i: {} for i in range(400)}
+    DOUFIP2006 = {i: {} for i in DOUFMG.keys()}
+    with open(os.path.join(folder, 'UNIFAC modified Dortmund interaction parameters 2006.tsv')) as f:
+        for line in f:
+            maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
+            DOUFIP2006[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
 
-with open(os.path.join(folder, 'UNIFAC modified NIST 2015 interaction parameters.tsv')) as f:
-    for line in f:
-        maingroup1, maingroup2, a, b, c, Tmin, Tmax = line.strip('\n').split('\t')
-        NISTUFIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+    DOUFIP2016 = {i: {} for i in list(DOUFMG.keys())+[50, 77, 98, 99]}
+    # Some of the groups have no public parameters unfortunately
+    with open(os.path.join(folder, 'UNIFAC modified Dortmund interaction parameters.tsv')) as f:
+        for line in f:
+            maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
+            DOUFIP2016[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
 
-PSRKIP = {i: {} for i in range(400)}
 
-with open(os.path.join(folder, 'PSRK interaction parameters.tsv')) as f:
-    for line in f:
-        maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
-        PSRKIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+    #NISTUFIP = {i: {} for i in list(NISTUFMG.keys())}
+    NISTUFIP = {i: {} for i in list(range(87)) + [92, 94, 95, 96] }
 
+    with open(os.path.join(folder, 'UNIFAC modified NIST 2015 interaction parameters.tsv')) as f:
+        for line in f:
+            maingroup1, maingroup2, a, b, c, Tmin, Tmax = line.strip('\n').split('\t')
+            NISTUFIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+
+    NISTKTUFIP = {i: {} for i in range(1, 53) }
+    with open(os.path.join(folder, 'NIST KT 2011 interaction parameters.tsv')) as f:
+        for line in f:
+            maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
+            NISTKTUFIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+
+
+    PSRKIP = {i: {} for i in range(1, 86)}
+
+    with open(os.path.join(folder, 'PSRK interaction parameters.tsv')) as f:
+        for line in f:
+            maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
+            PSRKIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+
+
+    VTPRIP = {i: {} for i in range(1, 200)}
+    # Three existing documents
+    for name in ('VTPR 2012 interaction parameters.tsv', 'VTPR 2014 interaction parameters.tsv', 'VTPR 2016 interaction parameters.tsv'):
+        with open(os.path.join(folder, name)) as f:
+            for line in f:
+                maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
+                VTPRIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+
+    _unifac_ip_loaded = True
+
+
+if PY37:
+    def __getattr__(name):
+        if name in ('UFIP', 'LLEUFIP', 'LUFIP', 'DOUFIP2006', 'DOUFIP2016',
+                    'NISTUFIP', 'NISTKTUFIP', 'PSRKIP', 'VTPRIP'):
+            load_unifac_ip()
+            return globals()[name]
+        raise AttributeError("module %s has no attribute %s" %(__name__, name))
+else:
+    if can_load_data:
+        load_unifac_ip()
 
 
 
@@ -1118,6 +1755,7 @@ def load_group_assignments_DDBST():
     # Do not allow running multiple times
     if DDBST_UNIFAC_assignments:
         return None
+    folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
     with open(os.path.join(folder, 'DDBST UNIFAC assignments.tsv')) as f:
         _group_assignments = [DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments]
         for line in f.readlines():
@@ -1136,12 +1774,13 @@ def load_group_assignments_DDBST():
 def UNIFAC_RQ(groups, subgroup_data=None):
     r'''Calculates UNIFAC parameters R and Q for a chemical, given a dictionary
     of its groups, as shown in [1]_. Most UNIFAC methods use the same subgroup
-    values; however, a dictionary of `UNIFAC_subgroup` instances may be 
+    values; however, a dictionary of `UNIFAC_subgroup` instances may be
     specified as an optional second parameter.
 
     .. math::
-        r_i = \sum_{k=1}^{n} \nu_k R_k 
-        
+        r_i = \sum_{k=1}^{n} \nu_k R_k
+
+    .. math::
         q_i = \sum_{k=1}^{n}\nu_k Q_k
 
     Parameters
@@ -1166,10 +1805,10 @@ def UNIFAC_RQ(groups, subgroup_data=None):
     Examples
     --------
     Hexane
-    
+
     >>> UNIFAC_RQ({1:2, 2:4})
     (4.4998000000000005, 3.856)
-    
+
     References
     ----------
     .. [1] Gmehling, Jurgen. Chemical Thermodynamics: For Process Simulation.
@@ -1193,7 +1832,7 @@ def Van_der_Waals_volume(R):
 
     .. math::
         V_{wk} = 15.17R_k
-        
+
     Parameters
     ----------
     R : float
@@ -1209,26 +1848,26 @@ def Van_der_Waals_volume(R):
     The volume was originally given in cm^3/mol, but is converted to SI here.
 
     Examples
-    --------    
+    --------
     >>> Van_der_Waals_volume(4.4998)
     6.826196599999999e-05
-    
+
     References
     ----------
-    .. [1] Wei, James, Morton M. Denn, John H. Seinfeld, Arup Chakraborty, 
-       Jackie Ying, Nicholas Peppas, and George Stephanopoulos. Molecular 
+    .. [1] Wei, James, Morton M. Denn, John H. Seinfeld, Arup Chakraborty,
+       Jackie Ying, Nicholas Peppas, and George Stephanopoulos. Molecular
        Modeling and Theory in Chemical Engineering. Academic Press, 2001.
     '''
     return R*1.517e-05
 
 
 def Van_der_Waals_area(Q):
-    r'''Calculates a species Van der Waals molar surface area with the UNIFAC 
+    r'''Calculates a species Van der Waals molar surface area with the UNIFAC
     method, given a species's Q parameter.
 
     .. math::
         A_{wk} = 2.5\times 10^9 Q_k
-        
+
     Parameters
     ----------
     Q : float
@@ -1244,37 +1883,37 @@ def Van_der_Waals_area(Q):
     The volume was originally given in cm^2/mol, but is converted to SI here.
 
     Examples
-    --------    
+    --------
     >>> Van_der_Waals_area(3.856)
     964000.0
-    
+
     References
     ----------
-    .. [1] Wei, James, Morton M. Denn, John H. Seinfeld, Arup Chakraborty, 
-       Jackie Ying, Nicholas Peppas, and George Stephanopoulos. Molecular 
+    .. [1] Wei, James, Morton M. Denn, John H. Seinfeld, Arup Chakraborty,
+       Jackie Ying, Nicholas Peppas, and George Stephanopoulos. Molecular
        Modeling and Theory in Chemical Engineering. Academic Press, 2001.
     '''
     return Q*250000.0
 
 
-def UNIFAC_psi(T, subgroup1, subgroup2, subgroup_data, interaction_data, 
+def UNIFAC_psi(T, subgroup1, subgroup2, subgroup_data, interaction_data,
                modified=False):
-    r'''Calculates the interaction parameter psi(m, n) for two UNIFAC 
-    subgroups, given the system temperature, the UNIFAC subgroups considered 
-    for the variant of UNIFAC used, the interaction parameters for the 
-    variant of UNIFAC used, and whether or not the temperature dependence is 
+    r'''Calculates the interaction parameter psi(m, n) for two UNIFAC
+    subgroups, given the system temperature, the UNIFAC subgroups considered
+    for the variant of UNIFAC used, the interaction parameters for the
+    variant of UNIFAC used, and whether or not the temperature dependence is
     modified from the original form, as shown below.
 
     Original temperature dependence:
-        
+
     .. math::
         \Psi_{mn} = \exp\left(\frac{-a_{mn}}{T}\right)
-        
+
     Modified temperature dependence:
-        
+
     .. math::
         \Psi_{mn} = \exp\left(\frac{-a_{mn} - b_{mn}T - c_{mn}T^2}{T}\right)
-        
+
     Parameters
     ----------
     T : float
@@ -1304,20 +1943,20 @@ def UNIFAC_psi(T, subgroup1, subgroup2, subgroup_data, interaction_data,
     Examples
     --------
     >>> from thermo.unifac import UFSG, UFIP, DOUFSG, DOUFIP2006
-    
+
     >>> UNIFAC_psi(307, 18, 1, UFSG, UFIP)
     0.9165248264184787
-    
+
     >>> UNIFAC_psi(373.15, 9, 78, DOUFSG, DOUFIP2006, modified=True)
     1.3703140538273264
-    
+
     References
     ----------
     .. [1] Gmehling, Jurgen. Chemical Thermodynamics: For Process Simulation.
        Weinheim, Germany: Wiley-VCH, 2012.
     .. [2] Fredenslund, Aage, Russell L. Jones, and John M. Prausnitz. "Group
-       Contribution Estimation of Activity Coefficients in Nonideal Liquid 
-       Mixtures." AIChE Journal 21, no. 6 (November 1, 1975): 1086-99. 
+       Contribution Estimation of Activity Coefficients in Nonideal Liquid
+       Mixtures." AIChE Journal 21, no. 6 (November 1, 1975): 1086-99.
        doi:10.1002/aic.690210607.
     '''
     main1 = subgroup_data[subgroup1].main_group_id
@@ -1335,15 +1974,15 @@ def UNIFAC_psi(T, subgroup1, subgroup2, subgroup_data, interaction_data,
             return 1.
 
 
-def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None, 
+def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
                   interaction_data=None, modified=False):
-    r'''Calculates activity coefficients using the UNIFAC model (optionally 
-    modified), given a mixture's temperature, liquid mole fractions, 
-    and optionally the subgroup data and interaction parameter data of your 
-    choice. The default is to use the original UNIFAC model, with the latest 
-    parameters published by DDBST. The model supports modified forms (Dortmund, 
+    r'''Calculates activity coefficients using the UNIFAC model (optionally
+    modified), given a mixture's temperature, liquid mole fractions,
+    and optionally the subgroup data and interaction parameter data of your
+    choice. The default is to use the original UNIFAC model, with the latest
+    parameters published by DDBST. The model supports modified forms (Dortmund,
     NIST) when the `modified` parameter is True.
-            
+
     Parameters
     ----------
     T : float
@@ -1351,15 +1990,15 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
     xs : list[float]
         Mole fractions of all species in the system in the liquid phase, [-]
     chemgroups : list[dict]
-        List of dictionaries of subgroup IDs and their counts for all species 
+        List of dictionaries of subgroup IDs and their counts for all species
         in the mixture, [-]
     subgroup_data : dict[UNIFAC_subgroup]
         UNIFAC subgroup data; available dictionaries in this module are UFSG
         (original), DOUFSG (Dortmund), or NISTUFSG ([4]_).
     interaction_data : dict[dict[tuple(a_mn, b_mn, c_mn)]]
-        UNIFAC interaction parameter data; available dictionaries in this 
-        module are UFIP (original), DOUFIP2006 (Dortmund parameters as 
-        published by 2006), DOUFIP2016 (Dortmund parameters as published by 
+        UNIFAC interaction parameter data; available dictionaries in this
+        module are UFIP (original), DOUFIP2006 (Dortmund parameters as
+        published by 2006), DOUFIP2016 (Dortmund parameters as published by
         2016), and NISTUFIP ([4]_).
     modified : bool
         True if using the modified form and temperature dependence, otherwise
@@ -1373,114 +2012,115 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
     Notes
     -----
     The actual implementation of UNIFAC is formulated slightly different than
-    the formulas above for computational efficiency. DDBST switched to using 
+    the formulas above for computational efficiency. DDBST switched to using
     the more efficient forms in their publication, but the numerical results
     are identical.
-    
+
     The model is as follows:
-        
+
     .. math::
         \ln \gamma_i =  \ln \gamma_i^c + \ln \gamma_i^r
-        
+
     **Combinatorial component**
-    
+
     .. math::
-        \ln \gamma_i^c = \ln \frac{\phi_i}{x_i} + \frac{z}{2} q_i 
+        \ln \gamma_i^c = \ln \frac{\phi_i}{x_i} + \frac{z}{2} q_i
         \ln\frac{\theta_i}{\phi_i} + L_i - \frac{\phi_i}{x_i}
         \sum_{j=1}^{n} x_j L_j
-        
+
     .. math::
-        \theta_i = \frac{x_i q_i}{\sum_{j=1}^{n} x_j q_j} 
-        
+        \theta_i = \frac{x_i q_i}{\sum_{j=1}^{n} x_j q_j}
+
     .. math::
          \phi_i = \frac{x_i r_i}{\sum_{j=1}^{n} x_j r_j}
-         
+
     .. math::
          L_i = 5(r_i - q_i)-(r_i-1)
-   
+
     **Residual component**
-    
+
     .. math::
         \ln \gamma_i^r = \sum_{k}^n \nu_k^{(i)} \left[ \ln \Gamma_k
         - \ln \Gamma_k^{(i)} \right]
-        
+
     .. math::
-        \ln \Gamma_k = Q_k \left[1 - \ln \sum_m \Theta_m \Psi_{mk} - \sum_m 
+        \ln \Gamma_k = Q_k \left[1 - \ln \sum_m \Theta_m \Psi_{mk} - \sum_m
         \frac{\Theta_m \Psi_{km}}{\sum_n \Theta_n \Psi_{nm}}\right]
-        
+
     .. math::
         \Theta_m = \frac{Q_m X_m}{\sum_{n} Q_n X_n}
-        
+
     .. math::
         X_m = \frac{ \sum_j \nu^j_m x_j}{\sum_j \sum_n \nu_n^j x_j}
-        
+
     **R and Q**
-    
+
     .. math::
-        r_i = \sum_{k=1}^{n} \nu_k R_k 
-        
+        r_i = \sum_{k=1}^{n} \nu_k R_k
+
     .. math::
         q_i = \sum_{k=1}^{n}\nu_k Q_k
-    
+
     The newer forms of UNIFAC (Dortmund, NIST) calculate the combinatorial
     part slightly differently:
-        
+
     .. math::
         \ln \gamma_i^c = 1 - {V'}_i + \ln({V'}_i) - 5q_i \left(1
         - \frac{V_i}{F_i}+ \ln\left(\frac{V_i}{F_i}\right)\right)
-        
+
     .. math::
         V'_i = \frac{r_i^{3/4}}{\sum_j r_j^{3/4}x_j}
-    
+
     .. math::
         V_i = \frac{r_i}{\sum_j r_j x_j}
-        
+
     .. math::
         F_i = \frac{q_i}{\sum_j q_j x_j}
-    
-    Although this form looks substantially different than the original, it 
+
+    Although this form looks substantially different than the original, it
     infact reverts to the original form if only :math:`V'_i` is replaced by
     :math:`V_i`. This is more clear when looking at the full rearranged form as
     in [3]_.
-    
-    In some publications such as [5]_, the nomenclature is such that 
+
+    In some publications such as [5]_, the nomenclature is such that
     :math:`\theta_i` and :math:`\phi` do not contain the top :math:`x_i`,
-    making :math:`\theta_i = F_i` and  :math:`\phi_i = V_i`. [5]_ is also 
+    making :math:`\theta_i = F_i` and  :math:`\phi_i = V_i`. [5]_ is also
     notable for having supporting information containing very nice sets of
     analytical derivatives.
-    
-    UNIFAC LLE uses the original formulation of UNIFAC, and otherwise only 
+
+    UNIFAC LLE uses the original formulation of UNIFAC, and otherwise only
     different interaction parameters.
 
     Examples
     --------
     >>> UNIFAC_gammas(T=333.15, xs=[0.5, 0.5], chemgroups=[{1:2, 2:4}, {1:1, 2:1, 18:1}])
-    [1.4276025835624173, 1.3646545010104225]
-    
-    >>> UNIFAC_gammas(373.15, [0.2, 0.3, 0.2, 0.2], 
+    [1.427602583562, 1.364654501010]
+
+    >>> from thermo.unifac import DOUFIP2006
+    >>> UNIFAC_gammas(373.15, [0.2, 0.3, 0.2, 0.2],
     ... [{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}],
     ... subgroup_data=DOUFSG, interaction_data=DOUFIP2006, modified=True)
-    [1.186431113706829, 1.440280133911197, 1.204479833499608, 1.9720706090299824]
+    [1.1864311137, 1.44028013391, 1.20447983349, 1.972070609029]
 
     References
     ----------
     .. [1] Gmehling, Jurgen. Chemical Thermodynamics: For Process Simulation.
        Weinheim, Germany: Wiley-VCH, 2012.
     .. [2] Fredenslund, Aage, Russell L. Jones, and John M. Prausnitz. "Group
-       Contribution Estimation of Activity Coefficients in Nonideal Liquid 
-       Mixtures." AIChE Journal 21, no. 6 (November 1, 1975): 1086-99. 
+       Contribution Estimation of Activity Coefficients in Nonideal Liquid
+       Mixtures." AIChE Journal 21, no. 6 (November 1, 1975): 1086-99.
        doi:10.1002/aic.690210607.
-    .. [3] Jakob, Antje, Hans Grensemann, Jürgen Lohmann, and Jürgen Gmehling. 
-       "Further Development of Modified UNIFAC (Dortmund):  Revision and 
-       Extension 5." Industrial & Engineering Chemistry Research 45, no. 23 
+    .. [3] Jakob, Antje, Hans Grensemann, Jürgen Lohmann, and Jürgen Gmehling.
+       "Further Development of Modified UNIFAC (Dortmund):  Revision and
+       Extension 5." Industrial & Engineering Chemistry Research 45, no. 23
        (November 1, 2006): 7924-33. doi:10.1021/ie060355c.
-    .. [4] Kang, Jeong Won, Vladimir Diky, and Michael Frenkel. "New Modified 
-       UNIFAC Parameters Using Critically Evaluated Phase Equilibrium Data." 
-       Fluid Phase Equilibria 388 (February 25, 2015): 128-41. 
+    .. [4] Kang, Jeong Won, Vladimir Diky, and Michael Frenkel. "New Modified
+       UNIFAC Parameters Using Critically Evaluated Phase Equilibrium Data."
+       Fluid Phase Equilibria 388 (February 25, 2015): 128-41.
        doi:10.1016/j.fluid.2014.12.042.
-    .. [5] Jäger, Andreas, Ian H. Bell, and Cornelia Breitkopf. "A 
+    .. [5] Jäger, Andreas, Ian H. Bell, and Cornelia Breitkopf. "A
        Theoretically Based Departure Function for Multi-Fluid Mixture Models."
-       Fluid Phase Equilibria 469 (August 15, 2018): 56-69. 
+       Fluid Phase Equilibria 469 (August 15, 2018): 56-69.
        https://doi.org/10.1016/j.fluid.2018.04.015.
     '''
     cmps = range(len(xs))
@@ -1489,6 +2129,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
     else:
         subgroups = subgroup_data
     if interaction_data is None:
+        if not _unifac_ip_loaded: load_unifac_ip()
         interactions = UFIP
     else:
         interactions = interaction_data
@@ -1505,7 +2146,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
                 qi += subgroups[group].Q*count
             rs.append(ri)
             qs.append(qi)
-        
+
 
         group_counts = {}
         for groups in chemgroups:
@@ -1516,7 +2157,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
                     group_counts[group] = count
     else:
         rs, qs, group_counts = cached
-    
+
     # Sum the denominator for calculating Xs
     group_sum = sum(count*xs[i] for i in cmps for count in chemgroups[i].values())
 
@@ -1524,7 +2165,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
     # Xms stored in group_count_xs, length number of independent groups
     group_count_xs = {}
     for group in group_counts:
-        tot_numerator = sum(chemgroups[i][group]*xs[i] for i in cmps if group in chemgroups[i])        
+        tot_numerator = sum(chemgroups[i][group]*xs[i] for i in cmps if group in chemgroups[i])
         group_count_xs[group] = tot_numerator/group_sum
 #    print(group_count_xs, 'group_count_xs')
 
@@ -1544,7 +2185,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
 #    print(loggammacs)
 
     Q_sum_term = sum([subgroups[group].Q*group_count_xs[group] for group in group_counts])
-    
+
     # theta(m) for an overall mixture composition
     area_fractions = {group: subgroups[group].Q*group_count_xs[group]/Q_sum_term
                       for group in group_counts.keys()}
@@ -1564,30 +2205,30 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
             sum3 = sum(area_fractions[n]*UNIFAC_psis[m][n] for n in group_counts)
             sum2 -= area_fractions[m]*UNIFAC_psis[m][k]/sum3
         loggamma_groups[k] = subgroups[k].Q*(1. - log(sum1) + sum2)
-    
+
     loggammars = []
     for groups in chemgroups:
         # Most of this is for the pure-component bit of the residual
         chem_loggamma_groups = {}
         chem_group_sum = sum(groups.values())
-        
+
         # Xm = chem_group_count_xs
         chem_group_count_xs = {group: count/chem_group_sum for group, count in groups.items()}
 #        print('Xm', chem_group_count_xs)
-    
+
         # denominator of term used to compute Theta(m)
         Q_sum_term = sum([subgroups[group].Q*chem_group_count_xs[group] for group in groups])
-        
+
         # Theta(m) = chem_area_fractions (dict indexed by main group)
         chem_area_fractions = {group: subgroups[group].Q*chem_group_count_xs[group]/Q_sum_term
                                for group in groups.keys()}
 #        print('Theta(m)', chem_area_fractions)
-        
+
         for k in groups:
             sum1, sum2 = 0., 0.
             for m in groups:
                 sum1 += chem_area_fractions[m]*UNIFAC_psis[k][m]
-                
+
                 # sum3 should be cached
                 sum3 = sum(chem_area_fractions[n]*UNIFAC_psis[m][n] for n in groups)
                 sum2 -= chem_area_fractions[m]*UNIFAC_psis[m][k]/sum3
@@ -1604,7 +2245,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
 def chemgroups_to_matrix(chemgroups):
     r'''
     Index by [group index][compound index]
-    
+
     >>> chemgroups_to_matrix([{9: 6}, {2: 6}, {1: 1, 18: 1}, {1: 1, 2: 1, 14: 1}])
     [[0, 0, 1, 1], [0, 6, 0, 1], [6, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]
     '''
@@ -1614,21 +2255,161 @@ def chemgroups_to_matrix(chemgroups):
     [all_keys.update(i.keys()) for i in chemgroups]
     for k in sorted(list(all_keys)):
         matrix.append([l[k] if k in l else 0 for l in chemgroups])
+#        matrix.append([float(l[k]) if k in l else 0.0 for l in chemgroups]) # Cannot notice performance improvement
     return matrix
 
 
 class UNIFAC(GibbsExcess):
-    
+    r'''Class for representing an a liquid with excess gibbs energy represented
+    by the UNIFAC equation. This model is capable of representing VL and LL
+    behavior, provided the correct interaction parameters are used. [1]_ and
+    [2]_ are good references on this model.
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    xs : list[float]
+        Mole fractions, [-]
+    rs : list[float]
+        `r` parameters :math:`r_i = \sum_{k=1}^{n} \nu_k R_k`, [-]
+    qs : list[float]
+        `q` parameters :math:`q_i = \sum_{k=1}^{n}\nu_k Q_k`, [-]
+    Qs : list[float]
+        `Q` parameter for each subgroup; subgroups are not required to but are
+        suggested to be sorted from lowest number to highest number, [-]
+    vs : list[list[float]]
+        Indexed by [subgroup][count], this variable is the count of each
+        subgroups in each compound, [-]
+    psi_abc : tuple(list[list[float]], 3), optional
+        `psi` interaction parameters between each subgroup; indexed
+        [subgroup][subgroup], not symmetrical; first arg is the matrix for `a`,
+        then `b`, and then `c`. Only one of `psi_abc` or `psi_coeffs` is
+        required, [-]
+    psi_coeffs : list[list[tuple(float, 3)]], optional
+        `psi` interaction parameters between each subgroup; indexed
+        [subgroup][subgroup][letter], not symmetrical. Only one of `psi_abc`
+        or `psi_coeffs` is required, [-]
+    version : int, optional
+        Which version of the model to use [-]
+
+        * 0 - original UNIFAC, OR UNIFAC LLE
+        * 1 - Dortmund UNIFAC (adds T dept, 3/4 power)
+        * 2 - PSRK (original with T dept function)
+        * 3 - VTPR (drops combinatorial term, Dortmund UNIFAC otherwise)
+        * 4 - Lyngby/Larsen has different combinatorial, 2/3 power
+        * 5 - UNIFAC KT (2 params for psi, Lyngby/Larsen formulation;
+          otherwise same as original)
+
+    Attributes
+    ----------
+    T : float
+        Temperature, [K]
+    xs : list[float]
+        Mole fractions, [-]
+
+    Notes
+    -----
+    In addition to the methods presented here, the methods of its base class
+    :obj:`thermo.activity.GibbsExcess` are available as well.
+
+    Examples
+    --------
+    The DDBST has published numerous sample problems using UNIFAC; a simple
+    binary system from example P05.22a in [2]_ with n-hexane and butanone-2
+    is shown below:
+
+    >>> from thermo.unifac import UFIP, UFSG
+    >>> GE = UNIFAC.from_subgroups(chemgroups=[{1:2, 2:4}, {1:1, 2:1, 18:1}], T=60+273.15, xs=[0.5, 0.5], version=0, interaction_data=UFIP, subgroups=UFSG)
+    >>> GE.gammas()
+    [1.4276025835, 1.3646545010]
+    >>> GE.GE(), GE.dGE_dT(), GE.d2GE_dT2()
+    (923.641197, 0.206721488, -0.00380070204)
+    >>> GE.HE(), GE.SE(), GE.dHE_dT(), GE.dSE_dT()
+    (854.77193363, -0.2067214889, 1.266203886, 0.0038007020460)
+
+    The solution given by the DDBST has the same values [1.428, 1.365],
+    and can be found here:
+    http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/05.22a%20VLE%20of%20Hexane-Butanone-2%20Via%20UNIFAC%20-%20Step%20by%20Step.xps
+
+    References
+    ----------
+    .. [1] Poling, Bruce E., John M. Prausnitz, and John P. O’Connell. The
+       Properties of Gases and Liquids. 5th edition. New York: McGraw-Hill
+       Professional, 2000.
+    .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
+       Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
+    '''
+
     @staticmethod
-    def from_subgroups(T, xs, chemgroups, subgroups=UFSG,
-                       interaction_data=UFIP, version=0):
+    def from_subgroups(T, xs, chemgroups, subgroups=None,
+                       interaction_data=None, version=0):
+        r'''Method to construct a UNIFAC object from a dictionary of
+        interaction parameters parameters and a list of dictionaries of UNIFAC keys.
+        As the actual implementation is matrix based not dictionary based, this method
+        can be quite convenient.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        xs : list[float]
+            Mole fractions, [-]
+        chemgroups : list[dict]
+            List of dictionaries of subgroup IDs and their counts for all species
+            in the mixture, [-]
+        subgroups : dict[int: UNIFAC_subgroup]
+            UNIFAC subgroup data; available dictionaries in this module are UFSG
+            (original), DOUFSG (Dortmund), or NISTUFSG.
+        interaction_data : dict[int: dict[int: tuple(a_mn, b_mn, c_mn)]]
+            UNIFAC interaction parameter data; available dictionaries in this
+            module are UFIP (original), DOUFIP2006 (Dortmund parameters as
+            published by 2006), DOUFIP2016 (Dortmund parameters as published by
+            2016), and NISTUFIP ().
+        version : int, optional
+            Which version of the model to use [-]
+
+            * 0 - original UNIFAC, OR UNIFAC LLE
+            * 1 - Dortmund UNIFAC (adds T dept, 3/4 power)
+            * 2 - PSRK (original with T dept function)
+            * 3 - VTPR (drops combinatorial term, Dortmund UNIFAC otherwise)
+            * 4 - Lyngby/Larsen has different combinatorial, 2/3 power
+            * 5 - UNIFAC KT (2 params for psi, Lyngby/Larsen formulation;
+              otherwise same as original)
+
+        Returns
+        -------
+        UNIFAC : UNIFAC
+            Object for performing calculations with the UNIFAC activity
+            coefficient model, [-]
+
+        Examples
+        --------
+        Mixture of ['benzene', 'cyclohexane', 'acetone', 'ethanol']
+        according to the Dortmund UNIFAC model:
+
+        >>> from thermo.unifac import DOUFIP2006, DOUFSG
+        >>> T = 373.15
+        >>> xs = [0.2, 0.3, 0.1, 0.4]
+        >>> chemgroups = [{9: 6}, {78: 6}, {1: 1, 18: 1}, {1: 1, 2: 1, 14: 1}]
+        >>> GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=1, interaction_data=DOUFIP2006, subgroups=DOUFSG)
+        >>> GE
+        UNIFAC(T=373.15, xs=[0.2, 0.3, 0.1, 0.4], rs=[2.2578, 4.2816, 2.3373, 2.4951999999999996], qs=[2.5926, 5.181, 2.7308, 2.6616], Qs=[1.0608, 0.7081, 0.4321, 0.8927, 1.67, 0.8635], vs=[[0, 0, 1, 1], [0, 0, 0, 1], [6, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 6, 0, 0]], psi_abc=([[0.0, 0.0, 114.2, 2777.0, 433.6, -117.1], [0.0, 0.0, 114.2, 2777.0, 433.6, -117.1], [16.07, 16.07, 0.0, 3972.0, 146.2, 134.6], [1606.0, 1606.0, 3049.0, 0.0, -250.0, 3121.0], [199.0, 199.0, -57.53, 653.3, 0.0, 168.2], [170.9, 170.9, -2.619, 2601.0, 464.5, 0.0]], [[0.0, 0.0, 0.0933, -4.674, 0.1473, 0.5481], [0.0, 0.0, 0.0933, -4.674, 0.1473, 0.5481], [-0.2998, -0.2998, 0.0, -13.16, -1.237, -1.231], [-4.746, -4.746, -12.77, 0.0, 2.857, -13.69], [-0.8709, -0.8709, 1.212, -1.412, 0.0, -0.8197], [-0.8062, -0.8062, 1.094, -1.25, 0.1542, 0.0]], [[0.0, 0.0, 0.0, 0.001551, 0.0, -0.00098], [0.0, 0.0, 0.0, 0.001551, 0.0, -0.00098], [0.0, 0.0, 0.0, 0.01208, 0.004237, 0.001488], [0.0009181, 0.0009181, 0.01435, 0.0, -0.006022, 0.01446], [0.0, 0.0, -0.003715, 0.000954, 0.0, 0.0], [0.001291, 0.001291, -0.001557, -0.006309, 0.0, 0.0]]), version=1)
+        '''
+        if subgroups is None:
+            subgroups = UFSG
+        if interaction_data is None:
+            if not _unifac_ip_loaded: load_unifac_ip()
+            interaction_data = UFIP
         rs = []
         qs = []
         for groups in chemgroups:
             ri = 0.
             qi = 0.
             for subgroup_idx, count in groups.items():
-                ri += subgroups[subgroup_idx].R*count
+                if version != 3:
+                    ri += subgroups[subgroup_idx].R*count
+
                 qi += subgroups[subgroup_idx].Q*count
             rs.append(ri)
             qs.append(qi)
@@ -1642,14 +2423,14 @@ class UNIFAC(GibbsExcess):
                     group_counts[subgroup] += count
                 except KeyError:
                     group_counts[subgroup] = count
-        
+
         # Convert group counts into a list, sorted by index (lowest subgroup index is first element, highest subgroup index is the last)
         subgroup_list = list(sorted(group_counts.keys()))
         group_counts_list = [c for _, c in sorted(zip(group_counts.keys(), group_counts.values()))]
 
         Qs = [subgroups[group].Q for group in subgroup_list]
         vs = chemgroups_to_matrix(chemgroups)
-        
+
         psi_a, psi_b, psi_c = [], [], []
         for sub1 in subgroup_list:
             a_row, b_row, c_row = [], [], []
@@ -1671,32 +2452,33 @@ class UNIFAC(GibbsExcess):
                         b_row.append(0.0)
                         c_row.append(0.0)
             psi_a.append(a_row), psi_b.append(b_row), psi_c.append(c_row)
-            
-            
+
+
         debug = (rs, qs, Qs, vs, (psi_a, psi_b, psi_c))
         return UNIFAC(T=T, xs=xs, rs=rs, qs=qs, Qs=Qs, vs=vs, psi_abc=(psi_a, psi_b, psi_c), version=version)
-            
+
+    def __repr__(self):  # pragma: no cover
+
+        psi_abc = (self.psi_a, self.psi_b, self.psi_c)
+        s = 'UNIFAC('
+        s += 'T=%s, xs=%s, rs=%s, qs=%s' %(self.T, self.xs, self.rs, self.qs)
+        s += ', Qs=%s, vs=%s, psi_abc=%s, version=%s' %(self.Qs, self.vs,
+                                                        psi_abc, self.version)
+        s += ')'
+        return s
+
+
     def __init__(self, T, xs, rs, qs, Qs, vs, psi_coeffs=None, psi_abc=None,
                  version=0):
-        '''
-        
-        versions: 
-            
-        0 - original UNIFAC, OR UNIFAC LLE
-        1 - Dortmund UNIFAC (adds T dept, 3/4 power)
-        2 - PSRK (original with T dept function)
-        3 - VTPR (drops combinatorial term, Dortmund UNIFAC otherwise)
-        4 - Lyngby/Larsen has different combinatorial, 2/3 poewr
-        '''
         self.T = T
         self.xs = xs
-        
+
         # rs - 1d index by [component] parameter, calculated using the chemical's subgroups and their count
         self.rs = rs
         # qs - 1d index by [component] parameter, calculated using the chemical's subgroups and their count
         self.qs = qs
         self.Qs = Qs
-        
+
         # [subgroup][component] = number of subgroup in component where subgroup
         # is an index, numbered sequentially by the number of subgroups in the mixture
         self.vs = vs
@@ -1707,7 +2489,7 @@ class UNIFAC(GibbsExcess):
         # Indexed by index of the subgroup in the mixture, again sorted lowest first
         if psi_abc is not None:
             self.psi_a, self.psi_b, self.psi_c = psi_abc
-        
+
         else:
             if psi_coeffs is None:
                 raise ValueError("Missing psis")
@@ -1715,58 +2497,237 @@ class UNIFAC(GibbsExcess):
             self.psi_b = [[i[1] for i in l] for l in psi_coeffs]
             self.psi_c = [[i[2] for i in l] for l in psi_coeffs]
         self.N_groups = len(self.psi_a)
-        self.groups = range(self.N_groups) # iterator over the number of 
+        self.groups = groups = range(self.N_groups) # iterator over the number of
         self.N = N = len(rs)
-        self.cmps = range(N)
+        self.cmps = cmps = range(N)
         self.version = version
-        self.skip_comb = version == 4
-        
+        self.skip_comb = version == 3
+
         if self.version == 1:
             power = 0.75
-            self.rs_34 = [i**power for i in rs]
+            self.rs_34 = [ri**power for ri in rs]
         elif self.version == 4:
             power = 2.0/3.0 # Lyngby
-            # Magically works in the various functions without change
-            self.rs_34 = [i**power for i in rs]
+            # works in the various functions without change as never taking the der w.r.t. r
+            self.rs_34 = [ri**power for ri in rs]
 
-        self.cmp_v_count = [sum(vs[group][i] for group in self.groups) for i in self.cmps]
-        
+        self.cmp_v_count = cmp_v_count = []
+        for i in cmps:
+            tot = 0
+            for group in groups:
+                tot += vs[group][i]
+            cmp_v_count.append(tot)
+
         # Matrix of [component][list(indexes to groups in component)], list of list
-        self.cmp_group_idx = [[j for j in self.groups if vs[j][i]] for i in self.cmps]
+        self.cmp_group_idx = [[j for j in groups if vs[j][i]] for i in cmps]
+
+        # Calculate the composition and temperature independent parameters on initialization
+        self.Thetas_pure()
+        self.Xs_pure()
 
     def to_T_xs(self, T, xs):
+        r'''Method to construct a new :obj:`UNIFAC` instance at
+        temperature `T`, and mole fractions `xs`
+        with the same parameters as the existing object.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        xs : list[float]
+            Mole fractions of each component, [-]
+
+        Returns
+        -------
+        obj : UNIFAC
+            New :obj:`UNIFAC` object at the specified conditions [-]
+
+        Notes
+        -----
+        If the new temperature is the same temperature as the existing
+        temperature, if the `psi` terms or their derivatives have been
+        calculated, they will be set to the new object as well.
+        If the mole fractions are the same, various subgroup terms are also
+        kept.
+        '''
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.xs = xs
         new.N = self.N
         new.cmps = self.cmps
-        
+
         new.N_groups = self.N_groups
         new.groups = self.groups
-        
+
         new.rs = self.rs
         new.qs = self.qs
         new.Qs = self.Qs
         new.vs = self.vs
         new.cmp_v_count = self.cmp_v_count
         new.cmp_group_idx = self.cmp_group_idx
-        
+
         new.version = self.version
         new.skip_comb = self.skip_comb
-        
+
         new.psi_a, new.psi_b, new.psi_c = self.psi_a, self.psi_b, self.psi_c
 
         try:
             new.rs_34 = self.rs_34
         except AttributeError:
             pass
-        
+
+        new._Thetas_pure = self._Thetas_pure
+        new._Xs_pure = self._Xs_pure
         if T == self.T:
-            pass
+            # interaction parameters that depend on T only
+            try:
+                new._psis = self._psis
+            except AttributeError:
+                pass
+            try:
+                new._dpsis_dT = self._dpsis_dT
+            except AttributeError:
+                pass
+            try:
+                new._d2psis_dT2 = self._d2psis_dT2
+            except AttributeError:
+                pass
+            try:
+                new._d3psis_dT3 = self._d3psis_dT3
+            except AttributeError:
+                pass
+
+            # pure parameters that depend on T only
+            try:
+                new._lnGammas_subgroups_pure = self._lnGammas_subgroups_pure
+            except AttributeError:
+                pass
+            try:
+                new._dlnGammas_subgroups_pure_dT = self._dlnGammas_subgroups_pure_dT
+            except AttributeError:
+                pass
+            try:
+                new._d2lnGammas_subgroups_pure_dT2 = self._d2lnGammas_subgroups_pure_dT2
+            except AttributeError:
+                pass
+            try:
+                new._d3lnGammas_subgroups_pure_dT3 = self._d3lnGammas_subgroups_pure_dT3
+            except AttributeError:
+                pass
+        if xs == self.xs:
+            try:
+                new._Fis = self._Fis
+            except AttributeError:
+                pass
+            try:
+                new.qx_sum_inv = self.qx_sum_inv
+            except AttributeError:
+                pass
+            try:
+                new._dFis_dxs = self._dFis_dxs
+            except AttributeError:
+                pass
+            try:
+                new._d2Fis_dxixjs = self._d2Fis_dxixjs
+            except AttributeError:
+                pass
+            try:
+                new._d3Fis_dxixjxks = self._d3Fis_dxixjxks
+            except AttributeError:
+                pass
+            try:
+                new._Vis_modified = self._Vis_modified
+                new.r34x_sum_inv = self.r34x_sum_inv
+            except AttributeError:
+                pass
+            try:
+                new._dVis_modified_dxs = self._dVis_modified_dxs
+            except AttributeError:
+                pass
+            try:
+                new._d2Vis_modified_dxixjs = self._d2Vis_modified_dxixjs
+            except AttributeError:
+                pass
+            try:
+                new._d3Vis_modified_dxixjxks = self._d3Vis_modified_dxixjxks
+            except AttributeError:
+                pass
+            # composition dependent - parameters not using psis
+            try:
+                new._Xs = self._Xs
+            except AttributeError:
+                pass
+            try:
+                new._Thetas = self._Thetas
+                new.Thetas_sum_inv = self.Thetas_sum_inv
+            except AttributeError:
+                pass
+            try:
+                new.Xs_sum_inv = self.Xs_sum_inv
+            except AttributeError:
+                pass
+            try:
+                new._dThetas_dxs = self._dThetas_dxs
+            except AttributeError:
+                pass
+            try:
+                new._d2Thetas_dxixjs = self._d2Thetas_dxixjs
+            except AttributeError:
+                pass
+            try:
+                new._lngammas_c = self._lngammas_c
+            except AttributeError:
+                pass
+            try:
+                new._dlngammas_c_dxs = self._dlngammas_c_dxs
+            except AttributeError:
+                pass
+            try:
+                new._d2lngammas_c_dxixjs = self._d2lngammas_c_dxixjs
+            except AttributeError:
+                pass
+            try:
+                new._d3lngammas_c_dxixjxks = self._d3lngammas_c_dxixjxks
+            except AttributeError:
+                pass
+
+        # gammas, theta_psi_sums, _theta_psi_sum_inv, lngammas_subgroups, lngammas_r
+        # SHOULD NOT be moved to a new class - use the same class if T and x is the same!
+
         return new
 
 
     def psis(self):
+        r'''Calculate the :math:`\Psi` term matrix for all groups interacting
+        with all other groups.
+
+        The main model calculates it as a function of three coefficients;
+
+        .. math::
+            \Psi_{mn} = \exp\left(\frac{-a_{mn} - b_{mn}T - c_{mn}T^2}{T}\right)
+
+        Only the first, `a` coefficient, is used in the original UNIFAC model
+        as well as the UNIFAC-LLE model, so the expression simplifies to:
+
+        .. math::
+            \Psi_{mn} = \exp\left(\frac{-a_{mn}}{T}\right)
+
+        For the Lyngby model, the temperature dependence is modified slightly,
+        as follows:
+
+        .. math::
+            \Psi_{mk} = e^{\frac{- a_{1} - a_{2} \left(T - T_{0}\right) - a_{3}
+            \left(T \log{\left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)}{T}}
+
+        with :math:`T_0 = 298.15` K and the `a` coefficients are specific to
+        each pair of main groups, and they are asymmetric, so
+        :math:`a_{0,mk} \ne a_{0,km}`.
+
+        Returns
+        -------
+        psis : list[list[float]]
+            `psi` terms, size subgroups x subgroups [-]
+        '''
         try:
             return self._psis
         except AttributeError:
@@ -1775,7 +2736,7 @@ class UNIFAC(GibbsExcess):
         mT_inv = -1.0/T
         psi_a, psi_b, psi_c = self.psi_a, self.psi_b, self.psi_c
         self._psis = psis = []
-        if self.version == 4:
+        if self.version in (4, 5):
             T0 = 298.15
             TmT0 = T - T0
             B = T*log(T0/T) + T - T0
@@ -1794,8 +2755,46 @@ class UNIFAC(GibbsExcess):
                 a_row, b_row, c_row = psi_a[i], psi_b[i], psi_c[i]
                 psis.append([exp(a_row[j]*mT_inv - b_row[j] - c_row[j]*T) for j in groups])
         return psis
-    
+
     def dpsis_dT(self):
+        r'''Calculate the :math:`\Psi` term first temperature derivative
+        matrix for all groups interacting with all other groups.
+
+        The main model calculates the derivative as a function of three
+        coefficients;
+
+        .. math::
+            \frac{\partial \Psi_{mn}}{\partial T} = \left(\frac{- 2 T c_{mn}
+            - b_{mn}}{T} - \frac{- T^{2} c_{mn} - T b_{mn} - a_{mn}}{T^{2}}
+            \right) e^{\frac{- T^{2} c_{mn} - T b_{mn} - a_{mn}}{T}}
+
+        Only the first, `a` coefficient, is used in the original UNIFAC model
+        as well as the UNIFAC-LLE model, so the expression simplifies to:
+
+        .. math::
+            \frac{\partial \Psi_{mn}}{\partial T} = \frac{a_{mn}
+            e^{- \frac{a_{mn}}{T}}}{T^{2}}
+
+        For the Lyngby model, the first temperature derivative is:
+
+        .. math::
+            \frac{\partial \Psi_{mk}}{\partial T} = \left(\frac{- a_{2} - a_{3}
+            \log{\left(\frac{T_{0}}{T} \right)}}{T} - \frac{- a_{1} - a_{2}
+            \left(T - T_{0}\right) - a_{3} \left(T \log{\left(\frac{T_{0}}{T}
+            \right)} + T - T_{0}\right)}{T^{2}}\right) e^{\frac{- a_{1} - a_{2}
+            \left(T - T_{0}\right) - a_{3} \left(T \log{\left(\frac{T_{0}}{T}
+            \right)} + T - T_{0}\right)}{T}}
+
+        with :math:`T_0 = 298.15` K and the `a` coefficients are specific to
+        each pair of main groups, and they are asymmetric, so
+        :math:`a_{0,mk} \ne a_{0,km}`.
+
+        Returns
+        -------
+        dpsis_dT : list[list[float]]
+            First temperature derivative of`psi` terms, size subgroups x
+            subgroups [-]
+        '''
         try:
             return self._dpsis_dT
         except AttributeError:
@@ -1804,10 +2803,10 @@ class UNIFAC(GibbsExcess):
             psis = self._psis
         except AttributeError:
             psis = self.psis()
-            
+
         T, groups = self.T, self.groups
         psi_a, psi_c = self.psi_a, self.psi_c
-        
+
         T2_inv = 1.0/(T*T)
         self._dpsis_dT = dpsis_dT = []
         if self.version == 4:
@@ -1820,10 +2819,8 @@ class UNIFAC(GibbsExcess):
             B = T*x0 + T - T0
             for i in groups:
                 psis_row, a_row, b_row, c_row = psis[i], psi_a[i], psi_b[i], psi_c[i]
-#                tf3 = b_row[j] + c_row[j]*x0
-#                f = a_row[j] + b_row[j]*TmT0 + c_row[j]*B
                 dpsis_dT.append([psis_row[j]*(mT_inv*(b_row[j] + c_row[j]*x0) +  (a_row[j] + b_row[j]*TmT0 + c_row[j]*B)*T2_inv) for j in groups])
-            
+
         else:
             for i in groups:
                 psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
@@ -1831,6 +2828,51 @@ class UNIFAC(GibbsExcess):
         return dpsis_dT
 
     def d2psis_dT2(self):
+        r'''Calculate the :math:`\Psi` term second temperature derivative
+        matrix for all groups interacting with all other groups.
+
+        The main model calculates the derivative as a function of three
+        coefficients;
+
+        .. math::
+            \frac{\partial^2 \Psi_{mn}}{\partial T^2} = \frac{\left(- 2 c_{mn}
+            + \frac{2 \left(2 T c_{mn} + b_{mn}\right)}{T} + \frac{\left(2 T
+            c_{mn} + b_{mn} - \frac{T^{2} c_{mn} + T b_{mn} + a_{mn}}{T}
+            \right)^{2}}{T} - \frac{2 \left(T^{2} c_{mn} + T b_{mn} + a_{mn}
+            \right)}{T^{2}}\right) e^{- \frac{T^{2} c_{mn} + T b_{mn} + a_{mn}}
+            {T}}}{T}
+
+        Only the first, `a` coefficient, is used in the original UNIFAC model
+        as well as the UNIFAC-LLE model, so the expression simplifies to:
+
+        .. math::
+            \frac{\partial^2 \Psi_{mn}}{\partial T^2} = \frac{a_{mn} \left(-2
+            + \frac{a_{mn}}{T}\right) e^{- \frac{a_{mn}}{T}}}{T^{3}}
+
+        For the Lyngby model, the second temperature derivative is:
+
+        .. math::
+            \frac{\partial^2 \Psi_{mk}}{\partial T^2} = \frac{\left(2 a_{2}
+            + 2 a_{3} \log{\left(\frac{T_{0}}{T} \right)} + a_{3} + \left(a_{2}
+            + a_{3} \log{\left(\frac{T_{0}}{T} \right)} - \frac{a_{1} + a_{2}
+            \left(T - T_{0}\right) + a_{3} \left(T \log{\left(\frac{T_{0}}{T}
+            \right)} + T - T_{0}\right)}{T}\right)^{2} - \frac{2 \left(a_{1}
+            + a_{2} \left(T - T_{0}\right) + a_{3} \left(T \log{\left(
+            \frac{T_{0}}{T} \right)} + T - T_{0}\right)\right)}{T}\right)
+            e^{- \frac{a_{1} + a_{2} \left(T - T_{0}\right) + a_{3} \left(
+            T \log{\left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)}{T}}}
+            {T^{2}}
+
+        with :math:`T_0 = 298.15` K and the `a` coefficients are specific to
+        each pair of main groups, and they are asymmetric, so
+        :math:`a_{0,mk} \ne a_{0,km}`.
+
+        Returns
+        -------
+        d2psis_dT2 : list[list[float]]
+            Second temperature derivative of`psi` terms, size subgroups x
+            subgroups [-]
+        '''
         try:
             return self._d2psis_dT2
         except AttributeError:
@@ -1839,24 +2881,100 @@ class UNIFAC(GibbsExcess):
             psis = self._psis
         except AttributeError:
             psis = self.psis()
-            
+
         T, groups = self.T, self.groups
         psi_a, psi_c = self.psi_a, self.psi_c
         mT2_inv = -1.0/(T*T)
         T3_inv_m2 = -2.0/(T*T*T)
-        
+
         self._d2psis_dT2 = d2psis_dT2 = []
-        for i in groups:
-            psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
-            row = []
-            for j in groups:
-                x0 = c_row[j] + mT2_inv*a_row[j]
-                row.append((x0*x0 + T3_inv_m2*a_row[j])*psis_row[j])
-            d2psis_dT2.append(row)
+        if self.version == 4:
+            psi_b = self.psi_b
+            T0 = 298.15
+            T_inv = 1.0/T
+            T2_inv = T_inv*T_inv
+            TmT0 = T - T0
+            x0 = log(T0/T)
+            B = T*x0 + T - T0
+            for i in groups:
+                psis_row, a_row, b_row, c_row = psis[i], psi_a[i], psi_b[i], psi_c[i]
+                row = []
+                for j in groups:
+                    a1, a2, a3 = a_row[j], b_row[j], c_row[j]
+                    tf2 = a1 + a2*(T - T0) + a3*(T*log(T0/T) + T - T0)
+                    tf3 = b_row[j] + c_row[j]*x0
+
+                    x1 = (tf3 - tf2*T_inv)
+                    v = T2_inv*psis_row[j]*(a3 + 2.0*tf3 + x1*x1 - 2.0*tf2*T_inv)
+                    row.append(v)
+                d2psis_dT2.append(row)
+
+        else:
+            for i in groups:
+                psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
+                row = []
+                for j in groups:
+                    x0 = c_row[j] + mT2_inv*a_row[j]
+                    row.append((x0*x0 + T3_inv_m2*a_row[j])*psis_row[j])
+                d2psis_dT2.append(row)
         return d2psis_dT2
-    
-    
+
+
     def d3psis_dT3(self):
+        r'''Calculate the :math:`\Psi` term third temperature derivative
+        matrix for all groups interacting with all other groups.
+
+        The main model calculates the derivative as a function of three
+        coefficients;
+
+        .. math::
+            \frac{\partial^3 \Psi_{mn}}{\partial T^3} = \frac{\left(6 c_{mn}
+            + 6 \left(c_{mn} - \frac{2 T c_{mn} + b_{mn}}{T} + \frac{T^{2}
+            c_{mn} + T b_{mn} + a_{mn}}{T^{2}}\right) \left(2 T c_{mn} + b_{mn}
+                - \frac{T^{2} c_{mn} + T b_{mn} + a_{mn}}{T}\right) - \frac{6
+            \left(2 T c_{mn} + b_{mn}\right)}{T} - \frac{\left(2 T c_{mn}
+            + b_{mn} - \frac{T^{2} c_{mn} + T b_{mn} + a_{mn}}{T}\right)^{3}}
+            {T} + \frac{6 \left(T^{2} c_{mn} + T b_{mn} + a_{mn}\right)}{T^{2}}
+            \right) e^{- \frac{T^{2} c_{mn} + T b_{mn} + a_{mn}}{T}}}{T^{2}}
+
+        Only the first, `a` coefficient, is used in the original UNIFAC model
+        as well as the UNIFAC-LLE model, so the expression simplifies to:
+
+        .. math::
+            \frac{\partial^3 \Psi_{mn}}{\partial T^3} = \frac{a_{mn} \left(6
+            - \frac{6 a_{mn}}{T} + \frac{a_{mn}^{2}}{T^{2}}\right) e^{-
+            \frac{a_{mn}}{T}}}{T^{4}}
+
+        For the Lyngby model, the third temperature derivative is:
+
+        .. math::
+            \frac{\partial^3 \Psi_{mk}}{\partial T^3} =
+            - \frac{\left(6 a_{2} + 6 a_{3} \log{\left(\frac{T_{0}}{T} \right)}
+            + 4 a_{3} + \left(a_{2} + a_{3} \log{\left(\frac{T_{0}}{T} \right)}
+            - \frac{a_{1} + a_{2} \left(T - T_{0}\right) + a_{3} \left(T \log{
+            \left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)}{T}\right)^{3}
+            + 3 \left(a_{2} + a_{3} \log{\left(\frac{T_{0}}{T} \right)}
+            - \frac{a_{1} + a_{2} \left(T - T_{0}\right) + a_{3} \left(T \log{
+            \left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)}{T}\right) \left(
+            2 a_{2} + 2 a_{3} \log{\left(\frac{T_{0}}{T} \right)} + a_{3}
+            - \frac{2 \left(a_{1} + a_{2} \left(T - T_{0}\right) + a_{3} \left(
+            T \log{\left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)\right)}{T}
+            \right) - \frac{6 \left(a_{1} + a_{2} \left(T - T_{0}\right)
+            + a_{3} \left(T \log{\left(\frac{T_{0}}{T} \right)} + T - T_{0}
+            \right)\right)}{T}\right) e^{- \frac{a_{1} + a_{2} \left(T - T_{0}
+            \right) + a_{3} \left(T \log{\left(\frac{T_{0}}{T} \right)}
+            + T - T_{0}\right)}{T}}}{T^{3}}
+
+        with :math:`T_0 = 298.15` K and the `a` coefficients are specific to
+        each pair of main groups, and they are asymmetric, so
+        :math:`a_{0,mk} \ne a_{0,km}`.
+
+        Returns
+        -------
+        d3psis_dT3 : list[list[float]]
+            Third temperature derivative of`psi` terms, size subgroups x
+            subgroups [-]
+        '''
         try:
             return self._d3psis_dT3
         except AttributeError:
@@ -1865,27 +2983,64 @@ class UNIFAC(GibbsExcess):
             psis = self._psis
         except AttributeError:
             psis = self.psis()
-            
+
         T, groups = self.T, self.groups
         psi_a, psi_c = self.psi_a, self.psi_c
-        
+
         nT2_inv = -1.0/(T*T)
         T3_inv_6 = 6.0/(T*T*T)
         T4_inv_6 = 6.0/(T*T*T*T)
-        
+
         self._d3psis_dT3 = d3psis_dT3 = []
+        if self.version == 4:
+            psi_b = self.psi_b
+            T0 = 298.15
+            T_inv = 1.0/T
+            nT3_inv = -T_inv*T_inv*T_inv
+            TmT0 = T - T0
+            x0 = log(T0/T)
+            B = T*x0 + T - T0
+            for i in groups:
+                psis_row, a_row, b_row, c_row = psis[i], psi_a[i], psi_b[i], psi_c[i]
+                row = []
+                for j in groups:
+                    a1, a2, a3 = a_row[j], b_row[j], c_row[j]
+                    tf2 = a1 + a2*TmT0 + a3*B
+                    tf3 = b_row[j] + c_row[j]*x0
+                    x6 = tf2*T_inv
+                    x5 = (tf3 - x6)
+                    v = nT3_inv*psis_row[j]*(4.0*a3 + 6.0*tf3 + x5*x5*x5
+                                        + 3.0*(x5)*(a3 + tf3 + tf3 - 2.0*x6)
+                                        - 6.0*x6)
+                    row.append(v)
+                d3psis_dT3.append(row)
 
-        for i in groups:
-            psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
-            row = []
-            for j in groups:
-                x0 = c_row[j] + nT2_inv*a_row[j]
-                row.append((x0*(T3_inv_6*a_row[j] - x0*x0) + T4_inv_6*a_row[j])*psis_row[j])
-
-            d3psis_dT3.append(row)
+        else:
+            for i in groups:
+                psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
+                row = []
+                for j in groups:
+                    x0 = c_row[j] + nT2_inv*a_row[j]
+                    row.append((x0*(T3_inv_6*a_row[j] - x0*x0) + T4_inv_6*a_row[j])*psis_row[j])
+                d3psis_dT3.append(row)
         return d3psis_dT3
-                
+
     def Vis(self):
+        r'''Calculate the :math:`V_i` terms used in calculating the
+        combinatorial part. A function of mole fractions and the parameters
+        `r` only.
+
+        .. math::
+            V_i = \frac{r_i}{\sum_j r_j x_j}
+
+        This is used in the UNIFAC, UNIFAC-LLE, UNIFAC Dortmund, UNIFAC-NIST,
+        and PSRK models.
+
+        Returns
+        -------
+        Vis : list[float]
+            `V` terms size number of components, [-]
+        '''
         try:
             return self._Vis
         except:
@@ -1898,8 +3053,26 @@ class UNIFAC(GibbsExcess):
         self.rx_sum_inv = tot
         self._Vis = [rs[i]*tot for i in cmps]
         return self._Vis
-    
+
     def dVis_dxs(self):
+        r'''Calculate the mole fraction derivative of the :math:`V_i` terms
+        used in calculating the combinatorial part. A function of mole
+        fractions and the parameters `r` only.
+
+        .. math::
+            \frac{\partial V_i}{\partial x_j} = -r_i r_j V_{sum}^2
+
+        .. math::
+            V_{sum} = \frac{1}{\sum_j r_j x_j}
+
+        This is used in the UNIFAC, UNIFAC-LLE, UNIFAC Dortmund, UNIFAC-NIST,
+        and PSRK models.
+
+        Returns
+        -------
+        dVis_dxs : list[list[float]]
+            `V` terms size number of components by number of components, [-]
+        '''
         try:
             return self._dVis_dxs
         except AttributeError:
@@ -1909,15 +3082,35 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             self.Vis()
             rx_sum_inv = self.rx_sum_inv
-            
+
         rs = self.rs
         mrx_sum_inv2 = -rx_sum_inv*rx_sum_inv
-        
+
         dVis = [[ri*rj*mrx_sum_inv2 for rj in rs] for ri in rs]
         self._dVis_dxs = dVis
         return dVis
-    
+
     def d2Vis_dxixjs(self):
+        r'''Calculate the second mole fraction derivative of the :math:`V_i`
+        terms used in calculating the combinatorial part. A function of mole
+        fractions and the parameters `r` only.
+
+        .. math::
+            \frac{\partial V_i}{\partial x_j \partial x_k} =
+            2 r_i r_j r_k V_{sum}^3
+
+        .. math::
+            V_{sum} = \frac{1}{\sum_j r_j x_j}
+
+        This is used in the UNIFAC, UNIFAC-LLE, UNIFAC Dortmund, UNIFAC-NIST,
+        and PSRK models.
+
+        Returns
+        -------
+        d2Vis_dxixjs : list[list[list[float]]]
+            `V` terms size number of components by number of components by
+            number of components, [-]
+        '''
         try:
             return self._d2Vis_dxixjs
         except AttributeError:
@@ -1932,8 +3125,28 @@ class UNIFAC(GibbsExcess):
         d2Vis = [[[ri*rj*rk*rx_sum_inv3_2 for rk in rs] for rj in rs] for ri in rs]
         self._d2Vis_dxixjs = d2Vis
         return d2Vis
-    
+
     def d3Vis_dxixjxks(self):
+        r'''Calculate the third mole fraction derivative of the :math:`V_i`
+        terms used in calculating the combinatorial part. A function of mole
+        fractions and the parameters `r` only.
+
+        .. math::
+            \frac{\partial V_i}{\partial x_j \partial x_k \partial x_m} =
+            -6 r_i r_j r_k r_m V_{sum}^4
+
+        .. math::
+            V_{sum} = \frac{1}{\sum_j r_j x_j}
+
+        This is used in the UNIFAC, UNIFAC-LLE, UNIFAC Dortmund, UNIFAC-NIST,
+        and PSRK models.
+
+        Returns
+        -------
+        d3Vis_dxixjxks : list[list[list[list[float]]]]
+            `V` terms size number of components by number of components by
+            number of components by number of components, [-]
+        '''
         try:
             return self._d3Vis_dxixjxks
         except AttributeError:
@@ -1945,23 +3158,59 @@ class UNIFAC(GibbsExcess):
             rx_sum_inv = self.rx_sum_inv
         rs = self.rs
         mrx_sum_inv4_6 = -6.0*rx_sum_inv*rx_sum_inv*rx_sum_inv*rx_sum_inv
-        
+
         d3Vis = [[[[ri*rj*rk*rl*mrx_sum_inv4_6 for rl in rs] for rk in rs]
                                                for rj in rs] for ri in rs]
         self._d3Vis_dxixjxks = d3Vis
         return d3Vis
 
     def Fis(self):
+        r'''Calculate the :math:`F_i` terms used in calculating the
+        combinatorial part. A function of mole fractions and the parameters
+        `q` only.
+
+        .. math::
+            F_i = \frac{q_i}{\sum_j q_j x_j}
+
+        This is used in the UNIFAC, UNIFAC-LLE, UNIFAC Dortmund, UNIFAC-NIST,
+        and PSRK models.
+
+        Returns
+        -------
+        Fis : list[float]
+            `F` terms size number of components, [-]
+        '''
+        try:
+            return self._Fis
+        except AttributeError:
+            pass
         qs, xs, cmps = self.qs, self.xs, self.cmps
         tot = 0.0
         for i in cmps:
             tot += qs[i]*xs[i]
-        tot = 1.0/tot
-        Fis = [qs[i]*tot for i in cmps]
-        self.qx_sum_inv = tot
+        self.qx_sum_inv = tot = 1.0/tot
+        self._Fis = Fis = [qi*tot for qi in qs]
         return Fis
 
     def dFis_dxs(self):
+        r'''Calculate the mole fraction derivative of the :math:`F_i` terms
+        used in calculating the combinatorial part. A function of mole
+        fractions and the parameters `q` only.
+
+        .. math::
+            \frac{\partial F_i}{\partial x_j} = -q_i q_j G_{sum}^2
+
+        .. math::
+            G_{sum} = \frac{1}{\sum_j q_j x_j}
+
+        This is used in the UNIFAC, UNIFAC-LLE, UNIFAC Dortmund, UNIFAC-NIST,
+        and PSRK models.
+
+        Returns
+        -------
+        dFis_dxs : list[list[float]]
+            `F` terms size number of components by number of components, [-]
+        '''
         try:
             return self._dFis_dxs
         except AttributeError:
@@ -1971,15 +3220,35 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             self.Fis()
             qx_sum_inv = self.qx_sum_inv
-            
+
         qs = self.qs
         mqx_sum_inv2 = -qx_sum_inv*qx_sum_inv
-        
+
         dFis = [[qi*qj*mqx_sum_inv2 for qj in qs] for qi in qs]
         self._dFis_dxs = dFis
         return dFis
 
     def d2Fis_dxixjs(self):
+        r'''Calculate the second mole fraction derivative of the :math:`F_i`
+        terms used in calculating the combinatorial part. A function of mole
+        fractions and the parameters `q` only.
+
+        .. math::
+            \frac{\partial F_i}{\partial x_j \partial x_k} =
+            2 q_i q_j q_k G_{sum}^3
+
+        .. math::
+            G_{sum} = \frac{1}{\sum_j q_j x_j}
+
+        This is used in the UNIFAC, UNIFAC-LLE, UNIFAC Dortmund, UNIFAC-NIST,
+        and PSRK models.
+
+        Returns
+        -------
+        d2Fis_dxixjs : list[list[list[float]]]
+            `F` terms size number of components by number of components by
+            number of components, [-]
+        '''
         try:
             return self._d2Fis_dxixjs
         except AttributeError:
@@ -1989,7 +3258,7 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             self.Fis()
             qx_sum_inv = self.qx_sum_inv
-            
+
         qs = self.qs
 
         qx_sum_inv3_2 = 2.0*qx_sum_inv*qx_sum_inv*qx_sum_inv
@@ -1998,6 +3267,26 @@ class UNIFAC(GibbsExcess):
         return d2Fis
 
     def d3Fis_dxixjxks(self):
+        r'''Calculate the third mole fraction derivative of the :math:`F_i`
+        terms used in calculating the combinatorial part. A function of mole
+        fractions and the parameters `q` only.
+
+        .. math::
+            \frac{\partial F_i}{\partial x_j \partial x_k \partial x_m} =
+            -6 q_i q_j q_k q_m G_{sum}^4
+
+        .. math::
+            G_{sum} = \frac{1}{\sum_j q_j x_j}
+
+        This is used in the UNIFAC, UNIFAC-LLE, UNIFAC Dortmund, UNIFAC-NIST,
+        and PSRK models.
+
+        Returns
+        -------
+        d3Fis_dxixjxks : list[list[list[list[float]]]]
+            `F` terms size number of components by number of components by
+            number of components by number of components, [-]
+        '''
         try:
             return self._d3Fis_dxixjxks
         except AttributeError:
@@ -2009,18 +3298,30 @@ class UNIFAC(GibbsExcess):
             qx_sum_inv = self.qx_sum_inv
         qs = self.qs
         mqx_sum_inv4_6 = -6.0*qx_sum_inv*qx_sum_inv*qx_sum_inv*qx_sum_inv
-        
+
         d3Fis = [[[[qi*qj*qk*ql*mqx_sum_inv4_6 for ql in qs] for qk in qs]
                                                for qj in qs] for qi in qs]
         self._d3Fis_dxixjxks = d3Fis
         return d3Fis
 
+    def Vis_modified(self):
+        r'''Calculate the :math:`V_i'` terms used in calculating the
+        combinatorial part. A function of mole fractions and the parameters
+        `r` only.
 
-    def Vis_Dortmund(self):
-        # To include Lyngby model, need to refactor to make power generic as it
-        # uses 2/3 instead
+        .. math::
+            V_i' = \frac{r_i^n}{\sum_j r_j^n x_j}
+
+        This is used in the UNIFAC Dortmund and UNIFAC-NIST model with
+        n=0.75, and the Lyngby model with n=2/3.
+
+        Returns
+        -------
+        Vis_modified : list[float]
+            Modified `V` terms size number of components, [-]
+        '''
         try:
-            return self._Vis_Dortmund
+            return self._Vis_modified
         except:
             pass
         rs_34, xs, cmps = self.rs_34, self.xs, self.cmps
@@ -2029,62 +3330,132 @@ class UNIFAC(GibbsExcess):
             tot += rs_34[i]*xs[i]
         tot = 1.0/tot
         self.r34x_sum_inv = tot
-        self._Vis_Dortmund = [rs_34[i]*tot for i in cmps]
-        return self._Vis_Dortmund
-    
-    def dVis_Dortmund_dxs(self):
+        self._Vis_modified = [rs_34[i]*tot for i in cmps]
+        return self._Vis_modified
+
+    def dVis_modified_dxs(self):
+        r'''Calculate the mole fraction derivative of the :math:`V_i'` terms
+        used in calculating the combinatorial part. A function of mole
+        fractions and the parameters `r` only.
+
+        .. math::
+            \frac{\partial V_i'}{\partial x_j} = -r_i^n r_j^n V_{sum}^2
+
+        .. math::
+            V_{sum} = \frac{1}{\sum_j r_j^n x_j}
+
+        This is used in the UNIFAC Dortmund and UNIFAC-NIST model with
+        n=0.75, and the Lyngby model with n=2/3.
+
+        Returns
+        -------
+        dVis_modified_dxs : list[list[float]]
+            `V'` terms size number of components by number of components, [-]
+        '''
         try:
-            return self._dVis_Dortmund_dxs
+            return self._dVis_modified_dxs
         except AttributeError:
             pass
         try:
             r34x_sum_inv = self.r34x_sum_inv
         except AttributeError:
-            self.Vis_Dortmund()
+            self.Vis_modified()
             r34x_sum_inv = self.r34x_sum_inv
-            
+
         rs_34 = self.rs_34
         mr34x_sum_inv2 = -r34x_sum_inv*r34x_sum_inv
-        
-        dVis_Dortmund = [[ri*rj*mr34x_sum_inv2 for rj in rs_34] for ri in rs_34]
-        self._dVis_Dortmund_dxs = dVis_Dortmund
-        return dVis_Dortmund
-    
-    def d2Vis_Dortmund_dxixjs(self):
+
+        dVis_modified = [[ri*rj*mr34x_sum_inv2 for rj in rs_34] for ri in rs_34]
+        self._dVis_modified_dxs = dVis_modified
+        return dVis_modified
+
+    def d2Vis_modified_dxixjs(self):
+        r'''Calculate the second mole fraction derivative of the :math:`V_i'`
+        terms used in calculating the combinatorial part. A function of mole
+        fractions and the parameters `r` only.
+
+        .. math::
+            \frac{\partial V_i'}{\partial x_j \partial x_k} =
+            2 r_i^n r_j^n r_k^n V_{sum}^3
+
+        .. math::
+            V_{sum} = \frac{1}{\sum_j r_j^n x_j}
+
+        This is used in the UNIFAC Dortmund and UNIFAC-NIST model with
+        n=0.75, and the Lyngby model with n=2/3.
+
+        Returns
+        -------
+        d2Vis_modified_dxixjs : list[list[list[float]]]
+            `V'` terms size number of components by number of components by
+            number of components, [-]
+        '''
         try:
-            return self._d2Vis_Dortmund_dxixjs
+            return self._d2Vis_modified_dxixjs
         except AttributeError:
             pass
         try:
             r34x_sum_inv = self.r34x_sum_inv
         except AttributeError:
-            self.Vis_Dortmund()
+            self.Vis_modified()
             r34x_sum_inv = self.r34x_sum_inv
         rs_34 = self.rs_34
         r34x_sum_inv3_2 = 2.0*r34x_sum_inv*r34x_sum_inv*r34x_sum_inv
-        d2Vis_Dortmund = [[[ri*rj*rk*r34x_sum_inv3_2 for rk in rs_34] for rj in rs_34] for ri in rs_34]
-        self._d2Vis_Dortmund_dxixjs = d2Vis_Dortmund
-        return d2Vis_Dortmund
-    
-    def d3Vis_Dortmund_dxixjxks(self):
+        d2Vis_modified = [[[ri*rj*rk*r34x_sum_inv3_2 for rk in rs_34] for rj in rs_34] for ri in rs_34]
+        self._d2Vis_modified_dxixjs = d2Vis_modified
+        return d2Vis_modified
+
+    def d3Vis_modified_dxixjxks(self):
+        r'''Calculate the third mole fraction derivative of the :math:`V_i'`
+        terms used in calculating the combinatorial part. A function of mole
+        fractions and the parameters `r` only.
+
+        .. math::
+            \frac{\partial V_i'}{\partial x_j \partial x_k \partial x_m} =
+            -6 r_i^n r_j^n r_k^n r_m^n V_{sum}^4
+
+        .. math::
+            V_{sum} = \frac{1}{\sum_j r_j x_j}
+
+        This is used in the UNIFAC Dortmund and UNIFAC-NIST model with
+        n=0.75, and the Lyngby model with n=2/3.
+
+        Returns
+        -------
+        d3Vis_modified_dxixjxks : list[list[list[list[float]]]]
+            `V'` terms size number of components by number of components by
+            number of components by number of components, [-]
+        '''
         try:
-            return self._d3Vis_Dortmund_dxixjxks
+            return self._d3Vis_modified_dxixjxks
         except AttributeError:
             pass
         try:
             r34x_sum_inv = self.r34x_sum_inv
         except AttributeError:
-            self.Vis_Dortmund()
+            self.Vis_modified()
             r34x_sum_inv = self.r34x_sum_inv
         rs_34 = self.rs_34
         mr34x_sum_inv4_6 = -6.0*r34x_sum_inv*r34x_sum_inv*r34x_sum_inv*r34x_sum_inv
-        
-        d3Vis_Dortmund = [[[[ri*rj*rk*rl*mr34x_sum_inv4_6 for rl in rs_34] for rk in rs_34]
+
+        d3Vis_modified = [[[[ri*rj*rk*rl*mr34x_sum_inv4_6 for rl in rs_34] for rk in rs_34]
                                                for rj in rs_34] for ri in rs_34]
-        self._d3Vis_Dortmund_dxixjxks = d3Vis_Dortmund
-        return d3Vis_Dortmund
-    
+        self._d3Vis_modified_dxixjxks = d3Vis_modified
+        return d3Vis_modified
+
     def Xs(self):
+        r'''Calculate the :math:`X_m` parameters
+        used in calculating the residual part. A function of mole
+        fractions and group counts only.
+
+        .. math::
+            X_m = \frac{ \sum_j \nu^j_m x_j}{\sum_j \sum_n \nu_n^j x_j}
+
+        Returns
+        -------
+        Xs : list[float]
+           :math:`X_m` terms, size number of subgroups, [-]
+        '''
         try:
             return self._Xs
         except AttributeError:
@@ -2099,217 +3470,786 @@ class UNIFAC(GibbsExcess):
             for j in cmps:
                 tot += vs[i][j]*xs[j]
             subgroup_sums.append(tot)
-            
+
         self.subgroup_sums = subgroup_sums # Used in several derivatives
         self.Xs_sum_inv = sum_inv = 1.0/sum(subgroup_sums)
-
         self._Xs = Xs = [subgroup_sums[i]*sum_inv for i in groups]
-
         return Xs
-    
+
+    def _Xs_sum_inv(self):
+        try:
+            return self.Xs_sum_inv
+        except AttributeError:
+            self.Xs()
+            return self.Xs_sum_inv
+
     def Thetas(self):
+        r'''Calculate the :math:`\Theta_m` parameters
+        used in calculating the residual part. A function of mole
+        fractions and group counts only.
+
+        .. math::
+            \Theta_m = \frac{Q_m X_m}{\sum_{n} Q_n X_n}
+
+        Returns
+        -------
+        Thetas : list[float]
+           :math:`\Theta_m` terms, size number of subgroups, [-]
+        '''
         try:
             return self._Thetas
         except AttributeError:
             pass
         Qs, groups = self.Qs, self.groups
-        Xs = self.Xs()
-        
+        try:
+            Xs = self._Xs
+        except AttributeError:
+            Xs = self.Xs()
+
         tot = 0.0
         for i in groups:
             tot += Xs[i]*Qs[i]
         self.Thetas_sum_inv = tot_inv = 1.0/tot
         self._Thetas = Thetas = [Qs[i]*Xs[i]*tot_inv for i in groups]
         return Thetas
-    
+
+    def _Thetas_sum_inv(self):
+        try:
+            return self.Thetas_sum_inv
+        except AttributeError:
+            self.Thetas()
+            return self.Thetas_sum_inv
+
     def dThetas_dxs(self):
+        r'''Calculate the mole fraction derivatives of the :math:`\Theta_m`
+        parameters. A function of mole fractions and group counts only.
+
+        .. math::
+            \frac{\partial \Theta_i}{\partial x_j} =
+            FGQ_i\left[FG (\nu x)_{sum,i}
+            \left(\sum_k^{gr} FQ_k  (\nu)_{sum,j} (\nu x)_{sum,k}
+            -\sum_k^{gr} Q_k \nu_{k,j}
+            \right)
+            - F (\nu)_{sum,j}(\nu x)_{sum,i} + \nu_{ij}
+            \right]
+
+        .. math::
+            G = \frac{1}{\sum_j Q_j X_j}
+
+        .. math::
+            F = \frac{1}{\sum_j \sum_n \nu_n^j x_j}
+
+        .. math::
+            (\nu)_{sum,i} = \sum_j \nu_{j,i}
+
+        .. math::
+            (\nu x)_{sum,i} = \sum_j \nu_{i,j}x_j
+
+        Returns
+        -------
+        dThetas_dxs : list[list[float]]
+           Mole fraction derivatives of :math:`\Theta_m` terms, size number of
+           subgroups by mole fractions and indexed in that order, [-]
+        '''
         try:
             return self._dThetas_dxs
         except AttributeError:
             pass
-        
-        F = self.Xs_sum_inv
-        G = self.Thetas_sum_inv
+
+        try:
+            F = self.Xs_sum_inv
+        except AttributeError:
+            F = self._Xs_sum_inv()
+        try:
+            G = self.Thetas_sum_inv
+        except AttributeError:
+            G = self._Thetas_sum_inv()
         Qs, cmps, groups, xs = self.Qs, self.cmps, self.groups, self.xs
-        Xs = self.Xs()
-        Thetas = self.Thetas()
+        # Xs_sum_inv and Thetas_sum_inv have already calculated _Xs, _Thetas
+        Xs = self._Xs
+        Thetas = self._Thetas
         vs = self.vs
-        
-        VS = [sum(vs[j][i] for j in groups) for i in cmps]
-        VSXS = [sum(vs[i][j]*xs[j] for j in cmps) for i in groups]
-        
+
+        VS = self.cmp_v_count#[sum(vs[j][i] for j in groups) for i in cmps]
+        try:
+            VSXS = self.VSXS
+        except AttributeError:
+            VSXS = self._VSXS()
+
+        tot0 = 0.0
+        for k in groups:
+            tot0 += Qs[k]*VSXS[k]
+        tot0*= F
+
+        tots = []
+        for j in cmps:
+            tot1 = 0.0
+            for k in groups:
+                tot1 -= Qs[k]*vs[k][j]
+            tots.append(F*(G*(tot0*VS[j] + tot1) - VS[j]))
+
+        FG = F*G
         # Index [subgroup][component]
         self._dThetas_dxs = dThetas_dxs = []
         for i in groups:
-            Qi = Qs[i]
+            c = FG*Qs[i]
             row = []
             for j in cmps:
-                tot = 0.0
-                for k in groups:
-                    tot += F*Qs[k]*VS[j]*VSXS[k] - Qs[k]*vs[k][j]
-                
-                v = F*G*Qi*(F*G*VSXS[i]*tot - F*VS[j]*VSXS[i] + vs[i][j])
-                row.append(v)
+                row.append(c*(VSXS[i]*tots[j] + vs[i][j]))
             dThetas_dxs.append(row)
         return dThetas_dxs
 
     def d2Thetas_dxixjs(self):
+        r'''Calculate the mole fraction derivatives of the :math:`\Theta_m`
+        parameters. A function of mole fractions and group counts only.
+
+        .. math::
+            \frac{\partial^2 \Theta_i}{\partial x_j \partial x_k} =
+            \frac{Q_i}{\sum_n Q_n (\nu x)_{sum,n}}\left[
+            -F(\nu)_{sum,j} \nu_{i,k} - F (\nu)_{sum,k}\nu_{i,j}
+            + 2F^2(\nu)_{sum,j} (\nu)_{sum,k} (\nu x)_{sum,i}
+            + \frac{F (\nu x)_{sum,i}\left[
+            \sum_n(-2 F Q_n (\nu)_{sum,j} (\nu)_{sum,k}
+            (\nu x)_{sum,n} + Q_n (\nu)_{sum,j} \nu_{n,k} + Q_n (\nu)_{sum,k}\nu_{n,j}
+            )\right] }
+            {\sum_n^{gr} Q_n (\nu x)_{sum,n} }
+            + \frac{2(\nu x)_{sum,i}(\sum_n^{gr}[-FQ_n (\nu)_{sum,j} (\nu x)_{sum,n} + Q_n \nu_{n,j}])
+            (\sum_n^{gr}[-FQ_n (\nu)_{sum,k} (\nu x)_{sum,n} + Q_n \nu_{n,k}])  }
+            {\left( \sum_n^{gr} Q_n (\nu x)_{sum,n} \right)^2}
+            - \frac{\nu_{i,j}(\sum_n^{gr} -FQ_n (\nu)_{sum,k} (\nu x)_{sum,n} + Q_n \nu_{n,k} )}
+            {\left( \sum_n^{gr} Q_n (\nu x)_{sum,n} \right)}
+            - \frac{\nu_{i,k}(\sum_n^{gr} -FQ_n (\nu)_{sum,j} (\nu x)_{sum,n} + Q_n \nu_{n,j} )}
+            {\left( \sum_n^{gr} Q_n (\nu x)_{sum,n} \right)}
+            + \frac{F(\nu)_{sum,j} (\nu x)_{sum,i} (\sum_n^{gr} -FQ_n (\nu)_{sum,k}
+            (\nu x)_{sum,n} + Q_n \nu_{n,k})}
+            {\left(\sum_n^{gr} Q_n (\nu x)_{sum,n} \right)}
+            + \frac{F(\nu)_{sum,k} (\nu x)_{sum,i} (\sum_n^{gr} -FQ_n (\nu)_{sum,j}
+            (\nu x)_{sum,n} + Q_n \nu_{n,j})}
+            {\left(\sum_n^{gr} Q_n (\nu x)_{sum,n} \right)}
+            \right]
+
+        .. math::
+            G = \frac{1}{\sum_j Q_j X_j}
+
+        .. math::
+            F = \frac{1}{\sum_j \sum_n \nu_n^j x_j}
+
+        .. math::
+            (\nu)_{sum,i} = \sum_j \nu_{j,i}
+
+        .. math::
+            (\nu x)_{sum,i} = \sum_j \nu_{i,j}x_j
+
+        Returns
+        -------
+        d2Thetas_dxixjs : list[list[list[float]]]
+           :math:`\Theta_m` terms, size number of subgroups by mole fractions
+           and indexed in that order, [-]
+        '''
         try:
             return self._d2Thetas_dxixjs
         except AttributeError:
             pass
-                
-        F = self.Xs_sum_inv
-        G = self.Thetas_sum_inv
+
+        try:
+            F = self.Xs_sum_inv
+        except AttributeError:
+            F = self._Xs_sum_inv()
+        try:
+            G = self.Thetas_sum_inv
+        except AttributeError:
+            G = self._Thetas_sum_inv()
         Qs, cmps, groups, xs = self.Qs, self.cmps, self.groups, self.xs
         vs = self.vs
-        
-        
-        VS = [sum(vs[j][i] for j in groups) for i in cmps]
-        VSXS = [sum(vs[i][j]*xs[j] for j in cmps) for i in groups]
-        
-        QsVSXS = [Qs[i]*VSXS[i] for i in groups]
-        QsVSXS_sum_inv = 1.0/sum(QsVSXS)
-        
+
+        VS = self.cmp_v_count
+        try:
+            VSXS = self.VSXS
+        except AttributeError:
+            VSXS = self._VSXS()
+
+        QsVSXS = 0.0
+        for i in groups:
+            QsVSXS += Qs[i]*VSXS[i]
+        QsVSXS_sum_inv = 1.0/QsVSXS
+
+        tot1s = []
+        for j in cmps:
+            nffVSj = -F*VS[j]
+            v = 0.0
+            for n in groups:
+                v += Qs[n]*(nffVSj*VSXS[n] + vs[n][j])
+            tot1s.append(v)
+        n2F = -2.0*F
+        F2_2 = 2.0*F*F
+        QsVSXS_sum_inv2 = 2.0*QsVSXS_sum_inv
+
         # Index [comp][comp][subgroup]
         self._d2Thetas_dxixjs = d2Thetas_dxixjs = []
         for j in cmps:
             matrix = []
             for k in cmps:
                 row = []
+                n2FVsK = n2F*VS[k]
+                tot0 = 0.0
+                for n in groups:
+                    tot0 += Qs[n]*(VS[j]*(n2FVsK*VSXS[n] + vs[n][k]) + VS[k]*vs[n][j])
+                tot0 = tot0*F*QsVSXS_sum_inv
+
                 for i in groups:
-                    tot0, tot1, tot2 = 0.0, 0.0, 0.0
-                    for n in groups:
-                        tot0 += -2.0*F*Qs[n]*VS[j]*VS[k]*VSXS[n] + Qs[n]*VS[j]*vs[n][k] + Qs[n]*VS[k]*vs[n][j]
+#                    tot0, tot1, tot2 = 0.0, 0.0, 0.0
+#                    for n in groups:
+#                        # dep on k, j only; some sep
+#                        tot0 += -2.0*F*Qs[n]*VS[j]*VS[k]*VSXS[n] + Qs[n]*VS[j]*vs[n][k] + Qs[n]*VS[k]*vs[n][j]
                         # These are each used in three places
-                        tot1 += -F*Qs[n]*VS[j]*VSXS[n] + Qs[n]*vs[n][j]
-                        tot2 += -F*Qs[n]*VS[k]*VSXS[n] + Qs[n]*vs[n][k]
-                        
-                    v = -F*VS[j]*vs[i][k] - F*VS[k]*vs[i][j]
-                    v += 2.0*F*F*VS[j]*VS[k]*VSXS[i]
-                    
-                    v += F*VSXS[i]*tot0*QsVSXS_sum_inv
-                    
-                    v += 2.0*VSXS[i]*tot1*tot2*QsVSXS_sum_inv*QsVSXS_sum_inv
+#                        tot1 += -F*Qs[n]*VS[j]*VSXS[n] + Qs[n]*vs[n][j]
+#                        tot2 += -F*Qs[n]*VS[k]*VSXS[n] + Qs[n]*vs[n][k]
+                    v = -F*(VS[j]*vs[i][k] + VS[k]*vs[i][j]) + VSXS[i]*tot0 + F2_2*VS[j]*VS[k]*VSXS[i]
 
-                    # For both of these duplicate terms, j goes with k; k with j                    
-                    v -= vs[i][j]*tot2*QsVSXS_sum_inv
-                    v -= vs[i][k]*tot1*QsVSXS_sum_inv
-                    
-                    v += F*VS[j]*VSXS[i]*tot2*QsVSXS_sum_inv
-                    v += F*VS[k]*VSXS[i]*tot1*QsVSXS_sum_inv
+#                    v = -F*VS[j]*vs[i][k] - F*VS[k]*vs[i][j]
+#                    v += F2_2*VS[j]*VS[k]*VSXS[i]
+#                    v += VSXS[i]*tot0
 
-                    # Constant multiplier
-                    v *= Qs[i]*QsVSXS_sum_inv
-                        
-                    row.append(v)
+#                    v += QsVSXS_sum_inv2*VSXS[i]*tot1s[j]*tot1s[k]*QsVSXS_sum_inv
+#
+#                    # For both of these duplicate terms, j goes with k; k with j
+#                    v -= vs[i][j]*tot1s[k]*QsVSXS_sum_inv
+#                    v -= vs[i][k]*tot1s[j]*QsVSXS_sum_inv
+#
+#                    v += F*VS[j]*VSXS[i]*tot1s[k]*QsVSXS_sum_inv
+#                    v += F*VS[k]*VSXS[i]*tot1s[j]*QsVSXS_sum_inv
+
+                    v += QsVSXS_sum_inv*(QsVSXS_sum_inv2*VSXS[i]*tot1s[j]*tot1s[k]
+                         - vs[i][j]*tot1s[k] - vs[i][k]*tot1s[j]
+                         + F*VSXS[i]*(VS[j]*tot1s[k] + VS[k]*tot1s[j]))
+
+                    row.append(v*Qs[i]*QsVSXS_sum_inv)
                 matrix.append(row)
             d2Thetas_dxixjs.append(matrix)
         return d2Thetas_dxixjs
 
-
-
-    def lnGammas_subgroups(self):
-        # Temperature and composition dependent!
+    def _VSXS(self):
         try:
-            return self._lnGammas_subgroups
+            return self.VSXS
         except AttributeError:
             pass
-        Thetas, Qs = self.Thetas(), self.Qs
-        psis = self.psis()
-        cmps, groups = self.cmps, self.groups
-        
-        self._lnGammas_subgroups = lnGammas_subgroups = []
-        for k in groups:
-            log_sum = 0.0
-            for m in groups:
-                log_sum += Thetas[m]*psis[m][k]
-            log_sum = log(log_sum)
-            
-            last = 0.0
-            for m in groups:
-                sub_subs = 0.0
-                for n in groups:
-                    sub_subs += Thetas[n]*psis[n][m]
-                last += Thetas[m]*psis[k][m]/sub_subs
-                
-            v = Qs[k]*(1.0 - log_sum - last)
-            lnGammas_subgroups.append(v)
-        return lnGammas_subgroups
-    
-    
-    def dlnGammas_subgroups_dxs(self):
-        try:
-            return self._dlnGammas_subgroups_dxs
-        except:
-            pass
-        Thetas, Qs = self.Thetas(), self.Qs
-        psis = self.psis()
-        dThetas_dxs = self.dThetas_dxs()
+        self.VSXS = VSXS = []
+        groups, cmps, vs, xs = self.groups, self.cmps, self.vs, self.xs
+        for i in groups:
+            v = 0.0
+            for j in cmps:
+                v += vs[i][j]*xs[j]
+            VSXS.append(v)
+        return VSXS
 
-        cmps, groups = self.cmps, self.groups
-        
-        Theta_Psi_sum_invs = [1.0/sum(Thetas[k]*psis[k][j] for k in groups) for j in groups]
-        self.Theta_Psi_sum_invs = Theta_Psi_sum_invs
-        
-        # Index by [subgroup][component]
-        tot0s, tot1s = [], []
+    def _Theta_Psi_sums(self):
+        r'''
+        Computes the following term for each group `k`, size number of groups.
+
+        .. math::
+            \sum_m \Theta_m \Psi_{mk}
+        '''
+        try:
+            return self.Theta_Psi_sums
+        except AttributeError:
+            self.Theta_Psi_sums = Theta_Psi_sums = []
+        try:
+            Thetas = self._Thetas
+        except AttributeError:
+            Thetas = self.Thetas()
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+        groups = self.groups
         for k in groups:
-            row0, row1 = [], []
+            tot = 0.0
+            for m in groups:
+                tot += Thetas[m]*psis[m][k]
+            Theta_Psi_sums.append(tot)
+        return Theta_Psi_sums
+
+    def _Theta_Psi_sum_invs(self):
+        r'''
+        Computes the following term for each group `k`, size number of groups.
+
+        .. math::
+            U(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+        '''
+        try:
+            return self.Theta_Psi_sum_invs
+        except AttributeError:
+            try:
+                Theta_Psi_sums = self.Theta_Psi_sums
+            except AttributeError:
+                Theta_Psi_sums = self._Theta_Psi_sums()
+        self.Theta_Psi_sum_invs = [1.0/v for v in Theta_Psi_sums]
+        return self.Theta_Psi_sum_invs
+
+    def _Ws(self):
+        r'''
+        Computes the following for each `k` and each `i`, indexed by [k][i]
+        `k` is in groups, and `i` is in components.
+
+        .. math::
+            W(k,i) = \sum_m^{gr} \psi_{m,k} \frac{\partial \theta_m}{\partial x_i}
+        '''
+        try:
+            return self.Ws
+        except AttributeError:
+            pass
+
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+        try:
+            dThetas_dxs = self._dThetas_dxs
+        except AttributeError:
+            dThetas_dxs = self.dThetas_dxs()
+        cmps, groups = self.cmps, self.groups
+
+        tot0s = []
+        for k in groups:
+            row0 = []
             for i in cmps:
-                tot0, tot1 = 0.0, 0.0
+                tot0 = 0.0
                 for m in groups:
                     tot0 += psis[m][k]*dThetas_dxs[m][i]
-                    tot1 += psis[k][m]*dThetas_dxs[m][i]
-                
                 row0.append(tot0)
-                row1.append(tot1)
             tot0s.append(row0)
-            tot1s.append(row1)
-            
-        self._Ws = tot0s
-        self._Ys = tot1s
-                
-        matrix = []
-        for k in groups:
-            row = []
-            for i in cmps:
-                tot = -tot0s[k][i]*Theta_Psi_sum_invs[k]
-                for m in groups:
-                    tot -= psis[k][m]*dThetas_dxs[m][i]*Theta_Psi_sum_invs[m]
+        self.Ws = tot0s
+        return tot0s
 
-                    tot += tot0s[m][i]*Thetas[m]*psis[k][m]*Theta_Psi_sum_invs[m]**2
+#    def _Ys(self):
+#        # Turned out not to be used anywhere
+#        r'''
+#        Computes the following for each `k` and each `i`, indexed by [k][i].
+#        `k` is in groups, and `i` is in components.
+#
+#        .. math::
+#            Y(k,i) = \sum_m^{gr} \psi_{k,m} \frac{\partial \theta_m}{\partial x_i}
+#        '''
+#        try:
+#            psis = self._psis
+#        except AttributeError:
+#            psis = self.psis()
+#        try:
+#            dThetas_dxs = self._dThetas_dxs
+#        except AttributeError:
+#            dThetas_dxs = self.dThetas_dxs()
+#        cmps, groups = self.cmps, self.groups
+#
+#        tots = []
+#        for k in groups:
+#            row = []
+#            for i in cmps:
+#                tot = 0.0
+#                for m in groups:
+#                    tot += psis[k][m]*dThetas_dxs[m][i]
+#                row.append(tot)
+#            tots.append(row)
+#        self.Ys = tots
+#        return tots
 
-                row.append(tot*Qs[k])
-            matrix.append(row)
-                
-        
-        
-        self._dlnGammas_subgroups_dxs = matrix
-        return matrix
-    
-    def d2lnGammas_subgroups_dTdxs(self):
+    def _Fs(self):
+        r'''Computes the following:
+
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+        '''
         try:
-            return self._d2lnGammas_subgroups_dTdxs
-        except:
+            return self.Fs
+        except AttributeError:
             pass
-        Thetas, Qs = self.Thetas(), self.Qs
-        psis, dpsis_dT = self.psis(), self.dpsis_dT()
-        dThetas_dxs = self.dThetas_dxs()
-        
-        self.dlnGammas_subgroups_dxs() # make sure dependent variables are calculated
-        cmps, groups = self.cmps, self.groups
+        try:
+            Thetas = self._Thetas
+        except AttributeError:
+            Thetas = self.Thetas()
+        try:
+            dpsis_dT = self._dpsis_dT
+        except AttributeError:
+            dpsis_dT = self.dpsis_dT()
 
-        Zs = self.Theta_Psi_sum_invs
-        Ws, Ys = self._Ws, self._Ys
-        
-        Bs = []
+        groups = self.groups
+        self.Fs = Fs = []
         for k in groups:
             tot = 0.0
             for m in groups:
                 tot += Thetas[m]*dpsis_dT[m][k]
-            Bs.append(tot)
-            
+            Fs.append(tot)
+        return Fs
+
+    def _Gs(self):
+        r'''Computes the following:
+
+        .. math::
+            G(k) = \sum_m^{gr} \theta_m \frac{\partial^2 \psi_{m,k}}{\partial T^2}
+        '''
+        try:
+            return self.Gs
+        except AttributeError:
+            pass
+        try:
+            Thetas = self._Thetas
+        except AttributeError:
+            Thetas = self.Thetas()
+        try:
+            d2psis_dT2 = self._d2psis_dT2
+        except AttributeError:
+            d2psis_dT2 = self.d2psis_dT2()
+
+        groups = self.groups
+        self.Gs = Gs = []
+        for k in groups:
+            tot = 0.0
+            for m in groups:
+                tot += Thetas[m]*d2psis_dT2[m][k]
+            Gs.append(tot)
+        return Gs
+
+    def _Hs(self):
+        r'''Computes the following:
+
+        .. math::
+            H(k) = \sum_m^{gr} \theta_m \frac{\partial^3 \psi_{m,k}}{\partial T^3}
+        '''
+        try:
+            return self.Hs
+        except AttributeError:
+            pass
+        try:
+            Thetas = self._Thetas
+        except AttributeError:
+            Thetas = self.Thetas()
+        try:
+            d3psis_dT3 = self._d3psis_dT3
+        except AttributeError:
+            d3psis_dT3 = self.d3psis_dT3()
+
+        groups = self.groups
+        self.Hs = Hs = []
+        for k in groups:
+            tot = 0.0
+            for m in groups:
+                tot += Thetas[m]*d3psis_dT3[m][k]
+            Hs.append(tot)
+        return Hs
+
+    def _Theta_pure_Psi_sums(self):
+        try:
+            return self.Theta_pure_Psi_sums
+        except AttributeError:
+            pass
+        Thetas_pure = self._Thetas_pure
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+
+        groups, cmps = self.groups, self.cmps
+        self.Theta_pure_Psi_sums = Theta_pure_Psi_sums = []
+        for i in cmps:
+            row = []
+            Thetas_pure_i = Thetas_pure[i]
+            for k in groups:
+                tot = 0.0
+                for m in groups:
+                    tot += Thetas_pure_i[m]*psis[m][k]
+                row.append(tot)
+            Theta_pure_Psi_sums.append(row)
+        return Theta_pure_Psi_sums
+
+    def _Theta_pure_Psi_sum_invs(self):
+        r'''
+        Computes the following term for each group `k`, size number of groups.
+
+        .. math::
+            U(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+        '''
+        try:
+            return self.Theta_pure_Psi_sum_invs
+        except AttributeError:
+            try:
+                Theta_pure_Psi_sums = self.Theta_pure_Psi_sums
+            except AttributeError:
+                Theta_pure_Psi_sums = self._Theta_pure_Psi_sums()
+        self.Theta_pure_Psi_sum_invs = [[1.0/v for v in row] for row in Theta_pure_Psi_sums]
+        return self.Theta_pure_Psi_sum_invs
+
+    def _Fs_pure(self):
+        r'''Computes the following:
+
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+        '''
+        try:
+            return self.Fs_pure
+        except AttributeError:
+            pass
+        Thetas_pure = self._Thetas_pure
+        try:
+            dpsis_dT = self._dpsis_dT
+        except AttributeError:
+            dpsis_dT = self.dpsis_dT()
+
+        groups, cmps = self.groups, self.cmps
+        self.Fs_pure = Fs_pure = []
+        for i in cmps:
+            row = []
+            Thetas_pure_i = Thetas_pure[i]
+            for k in groups:
+                tot = 0.0
+                for m in groups:
+                    tot += Thetas_pure_i[m]*dpsis_dT[m][k]
+                row.append(tot)
+            Fs_pure.append(row)
+        return Fs_pure
+
+    def _Gs_pure(self):
+        r'''Computes the following:
+
+        .. math::
+            G(k) = \sum_m^{gr} \theta_m \frac{\partial^2 \psi_{m,k}}{\partial T^2}
+        '''
+        try:
+            return self.Gs_pure
+        except AttributeError:
+            pass
+        Thetas_pure = self._Thetas_pure
+        try:
+            d2psis_dT2 = self._d2psis_dT2
+        except AttributeError:
+            d2psis_dT2 = self.d2psis_dT2()
+
+        groups, cmps = self.groups, self.cmps
+        self.Gs_pure = Gs_pure = []
+        for i in cmps:
+            row = []
+            Thetas_pure_i = Thetas_pure[i]
+            for k in groups:
+                tot = 0.0
+                for m in groups:
+                    tot += Thetas_pure_i[m]*d2psis_dT2[m][k]
+                row.append(tot)
+            Gs_pure.append(row)
+        return Gs_pure
+
+    def _Hs_pure(self):
+        r'''Computes the following:
+
+        .. math::
+            H(k) = \sum_m^{gr} \theta_m \frac{\partial^3 \psi_{m,k}}{\partial T^3}
+        '''
+        try:
+            return self.Hs_pure
+        except AttributeError:
+            pass
+        Thetas_pure = self._Thetas_pure
+        try:
+            d3psis_dT3 = self._d3psis_dT3
+        except AttributeError:
+            d3psis_dT3 = self.d3psis_dT3()
+
+        groups, cmps = self.groups, self.cmps
+        self.Hs_pure = Hs_pure = []
+        for i in cmps:
+            row = []
+            Thetas_pure_i = Thetas_pure[i]
+            for k in groups:
+                tot = 0.0
+                for m in groups:
+                    tot += Thetas_pure_i[m]*d3psis_dT3[m][k]
+                row.append(tot)
+            Hs_pure.append(row)
+        return Hs_pure
+
+    def lnGammas_subgroups(self):
+        r'''Calculate the :math:`\ln \Gamma_k` parameters for the phase;
+        depends on the phases's composition and temperature.
+
+        .. math::
+            \ln \Gamma_k = Q_k \left[1 - \ln \sum_m \Theta_m \Psi_{mk} - \sum_m
+            \frac{\Theta_m \Psi_{km}}{\sum_n \Theta_n \Psi_{nm}}\right]
+
+        Returns
+        -------
+        lnGammas_subgroups : list[float]
+           Gamma parameters for each subgroup, size number of subgroups, [-]
+        '''
+        try:
+            return self._lnGammas_subgroups
+        except AttributeError:
+            pass
+        try:
+            Thetas = self._Thetas
+        except AttributeError:
+            Thetas = self.Thetas()
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+        try:
+            Theta_Psi_sums = self.Theta_Psi_sums
+        except AttributeError:
+            Theta_Psi_sums = self._Theta_Psi_sums()
+        try:
+            Theta_Psi_sum_invs = self.Theta_Psi_sum_invs
+        except AttributeError:
+            Theta_Psi_sum_invs = self._Theta_Psi_sum_invs()
+
+        cmps, groups, Qs = self.cmps, self.groups, self.Qs
+
+        self._lnGammas_subgroups = lnGammas_subgroups = []
+        for k in groups:
+            psisk = psis[k]
+            last = 1.0
+            for m in groups:
+                last -= Thetas[m]*Theta_Psi_sum_invs[m]*psisk[m]
+            lnGammas_subgroups.append(Qs[k]*(last - log(Theta_Psi_sums[k])))
+        return lnGammas_subgroups
+
+    def dlnGammas_subgroups_dxs(self):
+        r'''Calculate the mole fraction derivatives of the :math:`\ln \Gamma_k`
+        parameters for the phase; depends on the phases's composition and
+        temperature.
+
+        .. math::
+            \frac{\partial \ln \Gamma_k}{\partial x_i} = Q_k\left(
+            -\frac{\sum_m^{gr} \psi_{m,k} \frac{\partial \theta_m}{\partial x_i}}{\sum_m^{gr} \theta_m \psi_{m,k}}
+            - \sum_m^{gr} \frac{\psi_{k,m} \frac{\partial \theta_m}{\partial x_i}}{\sum_n^{gr} \theta_n \psi_{n,m}}
+            + \sum_m^{gr}  \frac{(\sum_n^{gr} \psi_{n,m}\frac{\partial \theta_n}{\partial x_i})\theta_m \psi_{k,m}}{(\sum_n^{gr} \theta_n \psi_{n,m})^2}
+            \right)
+
+        The group W is used internally as follows to simplfy the number of
+        evaluations.
+
+        .. math::
+            W(k,i) = \sum_m^{gr} \psi_{m,k} \frac{\partial \theta_m}{\partial x_i}
+
+        Returns
+        -------
+        dlnGammas_subgroups_dxs : list[list[float]]
+           Mole fraction derivatives of Gamma parameters for each subgroup,
+           size number of subgroups by number of components and indexed in
+           that order, [-]
+        '''
+        try:
+            return self._dlnGammas_subgroups_dxs
+        except AttributeError:
+            pass
+
+        try:
+            Thetas = self._Thetas
+        except AttributeError:
+            Thetas = self.Thetas()
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+        try:
+            Theta_Psi_sum_invs = self.Theta_Psi_sum_invs
+        except AttributeError:
+            Theta_Psi_sum_invs = self._Theta_Psi_sum_invs()
+        try:
+            dThetas_dxs = self._dThetas_dxs
+        except AttributeError:
+            dThetas_dxs = self.dThetas_dxs()
+        try:
+            Ws = self.Ws
+        except AttributeError:
+            Ws = self._Ws()
+        cmps, groups, Qs = self.cmps, self.groups, self.Qs
+
+        self._dlnGammas_subgroups_dxs = matrix = []
+        for k in groups:
+            row = []
+            for i in cmps:
+                tot = -Ws[k][i]*Theta_Psi_sum_invs[k]
+                for m in groups:
+                    tot -= psis[k][m]*Theta_Psi_sum_invs[m]*(dThetas_dxs[m][i]
+                           - Ws[m][i]*Theta_Psi_sum_invs[m]*Thetas[m])
+                row.append(tot*Qs[k])
+            matrix.append(row)
+        return matrix
+
+    def d2lnGammas_subgroups_dTdxs(self):
+        r'''Calculate the temperature and mole fraction derivatives of the
+        :math:`\ln \Gamma_k` parameters for the phase; depends on the phases's
+        composition and temperature.
+
+        .. math::
+            \frac{\partial^2 \ln \Gamma_k}{\partial x_i \partial T} = -Q_k\left(
+            D(k,i) Z(k) - B(k)W(k,i) Z(k)^2
+            + \sum_m^{gr} (Z(m) \frac{\partial \theta_m}{\partial x_i}\frac{\partial \psi_{k,m}}{\partial T})
+            -\sum_m^{gr} (B(m) Z(m)^2 \psi_{k,m} \frac{\partial \theta_m}{\partial x_i})
+            -\sum_m^{gr}(D(m,i) Z(m)^2 \theta_m \psi_{k,m})
+            - \sum_m^{gr} (W(m,i) Z(m)^2 \theta_m \frac{\partial \psi_{k,m}}{\partial T})
+            + \sum_m^{gr} 2 B(m) W(m,i) Z(m)^3 \theta_m \psi_{k,m}
+            \right)
+
+        The following groups are used as follows to simplfy the number of
+        evaluations:
+
+        .. math::
+            W(k,i) = \sum_m^{gr} \psi_{m,k} \frac{\partial \theta_m}{\partial x_i}
+
+        .. math::
+            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{mk}}
+
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+
+        In the below expression, k` refers to a group, and `i` refers to a
+        component.
+
+        .. math::
+            D(k,i) = \sum_m^{gr} \frac{\partial \theta_m}{\partial x_i}
+            \frac{\partial \psi_{m,k}}{\partial T}
+
+        Returns
+        -------
+        d2lnGammas_subgroups_dTdxs : list[list[float]]
+           Temperature and mole fraction derivatives of Gamma parameters for
+           each subgroup, size number of subgroups by number of components and
+           indexed in that order, [1/K]
+        '''
+        try:
+            return self._d2lnGammas_subgroups_dTdxs
+        except:
+            pass
+        try:
+            Thetas = self._Thetas
+        except AttributeError:
+            Thetas = self.Thetas()
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+        try:
+            dpsis_dT = self._dpsis_dT
+        except AttributeError:
+            dpsis_dT = self.dpsis_dT()
+        try:
+            dThetas_dxs = self._dThetas_dxs
+        except AttributeError:
+            dThetas_dxs = self.dThetas_dxs()
+        try:
+            Zs = self.Theta_Psi_sum_invs
+        except AttributeError:
+            Zs = self._Theta_Psi_sum_invs()
+        try:
+            Ws = self.Ws
+        except AttributeError:
+            Ws = self._Ws()
+        cmps, groups, Qs = self.cmps, self.groups, self.Qs
+
+        try:
+            Fs = self.Fs
+        except AttributeError:
+            Fs = self._Fs()
+
+        # Could be stored as a function - not needed elsewhere though
         Ds = []
         for k in groups:
             row = []
@@ -2319,78 +4259,153 @@ class UNIFAC(GibbsExcess):
                     tot += dThetas_dxs[m][j]*dpsis_dT[m][k]
                 row.append(tot)
             Ds.append(row)
-        
-        
+
+        Zs2 = [Zi*Zi for Zi in Zs]
+        FsZs3Thetas2 = [2.0*Fs[m]*Zs2[m]*Zs[m]*Thetas[m] for m in groups]
+
         self._d2lnGammas_subgroups_dTdxs = d2lnGammas_subgroups_dTdxs = []
-        
+
         for k in groups:
             row = []
             for i in cmps:
-                v = Ds[k][i]*Zs[k] - Bs[k]*Ws[k][i]*Zs[k]**2
+                v = Zs[k]*(Ds[k][i] - Fs[k]*Ws[k][i]*Zs[k])
                 for m in groups:
-                    v += Zs[m]*dThetas_dxs[m][i]*dpsis_dT[k][m]
-                    v -= Bs[m]*Zs[m]**2*psis[k][m]*dThetas_dxs[m][i]
-                    v -= Ds[m][i]*Zs[m]**2*Thetas[m]*psis[k][m]
-                    v -= Ws[m][i]*Zs[m]**2*Thetas[m]*dpsis_dT[k][m]
-                    v += 2.0*Bs[m]*Ws[m][i]*Zs[m]**3*Thetas[m]*psis[k][m]
+                    v += dThetas_dxs[m][i]*Zs[m]*(dpsis_dT[k][m] - Fs[m]*Zs[m]*psis[k][m])
+                    v -= Zs2[m]*Thetas[m]*(Ds[m][i]*psis[k][m] + Ws[m][i]*dpsis_dT[k][m])
+                    v += FsZs3Thetas2[m]*Ws[m][i]*psis[k][m]
                 row.append(-v*Qs[k])
             d2lnGammas_subgroups_dTdxs.append(row)
         return d2lnGammas_subgroups_dTdxs
 
 
     def d2lnGammas_subgroups_dxixjs(self):
+        r'''Calculate the second mole fraction derivatives of the
+        :math:`\ln \Gamma_k`  parameters for the phase; depends on the phases's
+        composition and temperature.
+
+        .. math::
+            \frac{\partial^2 \ln \Gamma_k}{\partial x_i \partial x_j} = -Q_k\left(
+            -Z(k) K(k,i,j) - \sum_m^{gr} Z(m)^2 K(m,i,j)\theta_m \psi_{k,m}
+            -W(k,i) W(k,j) Z(k)^2
+            + \sum_m^{gr} Z_m \psi_{k,m} \frac{\partial^2 \theta_m}{\partial x_i \partial x_j}
+            - \sum_m \left(W(m,j) Z(m)^2 \psi_{k,m} \frac{\partial \theta_m}{\partial x_i}
+            + W(m,i) Z(m)^2 \psi(k,m) \frac{\partial \theta_m}{\partial x_j}\right)
+            + \sum_m^{gr} 2 W(m,i) W(m,j) Z(m)^3 \theta_m \psi_{k,m}\right)
+
+
+        The following groups are used as follows to simplfy the number of
+        evaluations:
+
+        .. math::
+            W(k,i) = \sum_m^{gr} \psi_{m,k} \frac{\partial \theta_m}{\partial x_i}
+
+        .. math::
+            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{mk}}
+
+        .. math::
+            K(k, i, j) = \sum_m^{gr} \psi_{m,k} \frac{\partial^2 \theta_m}{\partial x_i \partial x_j}
+
+        Returns
+        -------
+        d2lnGammas_subgroups_dxixjs : list[list[list[float]]]
+           Second mole fraction derivatives of Gamma parameters for each
+           subgroup, size number of components by number of components by
+           number of subgroups and indexed in that order, [-]
+        '''
         try:
             return self._d2lnGammas_subgroups_dxixjs
         except:
             pass
-        Thetas, Qs = self.Thetas(), self.Qs
-        psis = self.psis()
-        dThetas_dxs, d2Thetas_dxixjs = self.dThetas_dxs(), self.d2Thetas_dxixjs()
-        
-        self.dlnGammas_subgroups_dxs() # make sure dependent variables are calculated
 
-        cmps, groups = self.cmps, self.groups
-        
-        Zs = self.Theta_Psi_sum_invs
-        Ws, Ys = self._Ws, self._Ys
-        
-        def K(k, i, j):
-            # k: group
-            # i, j : mole fracions derivavtive indexes
-            tot = 0.0
-            for m in groups:
-                # Index [comp][comp][subgroup] for d2Thetas_dxixjs
-                tot += psis[m][k]*d2Thetas_dxixjs[i][j][m]
-            return tot
-        
+        try:
+            Thetas = self._Thetas
+        except AttributeError:
+            Thetas = self.Thetas()
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+        try:
+            dThetas_dxs = self._dThetas_dxs
+        except AttributeError:
+            dThetas_dxs = self.dThetas_dxs()
+        try:
+            d2Thetas_dxixjs = self._d2Thetas_dxixjs
+        except AttributeError:
+            d2Thetas_dxixjs = self.d2Thetas_dxixjs()
+        try:
+            Zs = self.Theta_Psi_sum_invs
+        except AttributeError:
+            Zs = self._Theta_Psi_sum_invs()
+        try:
+            Ws = self.Ws
+        except AttributeError:
+            Ws = self._Ws()
+
+        cmps, groups, Qs = self.cmps, self.groups, self.Qs
+
+#        def K(k, i, j):
+#            # k: group
+#            # i, j : mole fracions derivavtive indexes
+#            totK = 0.0
+#            row = d2Thetas_dxixjs[i][j]
+#            for m in groups:
+#                # Index [comp][comp][subgroup] for d2Thetas_dxixjs
+#                totK += psis[m][k]*row[m]
+#            return totK
+
+        K_row = [0.0]*self.N_groups
         # Index [comp][comp][subgroup]
         self._d2lnGammas_subgroups_dxixjs = d2lnGammas_subgroups_dxixjs = []
         for i in cmps:
             matrix = []
             for j in cmps:
+                d2Thetas_dxixjs_ij = d2Thetas_dxixjs[i][j]
+
                 row = []
                 for k in groups:
-                    v = Zs[k]*K(k, i, j)
-                    v -= Ws[k][i]*Ws[k][j]*Zs[k]**2
+                    totK = 0.0
                     for m in groups:
-                        v -= Zs[m]**2*K(m, i, j)*Thetas[m]*psis[k][m]
-                        
-                        v += Zs[m]*psis[k][m]*d2Thetas_dxixjs[i][j][m]
-                        
-                        v -= Ws[m][j]*Zs[m]**2*psis[k][m]*dThetas_dxs[m][i] + Ws[m][i]*Zs[m]**2*psis[k][m]*dThetas_dxs[m][j]
-                        
-                        v += 2.0*Ws[m][i]*Ws[m][j]*Zs[m]**3*Thetas[m]*psis[k][m]
+                        totK += psis[m][k]*d2Thetas_dxixjs_ij[m]
+                    K_row[k] = totK   #K(k, i, j)
+#                Krow = [K(k, i, j) for k in groups]
+
+                for k in groups:
+                    v = 0.0
+                    for m in groups:
+                        d = d2Thetas_dxixjs_ij[m]
+#                        d += (2.0*Ws[m][i]*Ws[m][j]*Zs[m] - K_row[m])*Zs[m]*Thetas[m]
+#                        d -= Zs[m]*(Ws[m][j]*dThetas_dxs[m][i] + Ws[m][i]*dThetas_dxs[m][j])
+                        d += Zs[m]*((2.0*Ws[m][i]*Ws[m][j]*Zs[m] - K_row[m])*Thetas[m]
+                                    - (Ws[m][j]*dThetas_dxs[m][i] + Ws[m][i]*dThetas_dxs[m][j]))
+                        v += d*psis[k][m]*Zs[m]
+
+                    # psis[k][m] can be factored here
+                    v += Zs[k]*(K_row[k] - Ws[k][i]*Ws[k][j]*Zs[k])
                     row.append(-v*Qs[k])
                 matrix.append(row)
             d2lnGammas_subgroups_dxixjs.append(matrix)
         return d2lnGammas_subgroups_dxixjs
-                    
-        
 
-    
     @staticmethod
-    def dlnGammas_subgroups_dT_meth(groups, Qs, psis, dpsis_dT, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum):
-        # TODO document
+    def _dlnGammas_subgroups_dT_meth(groups, Qs, psis, dpsis_dT, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum):
+        r'''
+
+        .. math::
+            \frac{\partial \ln \Gamma_i}{\partial T} = Q_i\left(
+            \sum_j^{gr} Z(j) \left[{\theta_j \frac{\partial \psi_{i,j}}{\partial T}}
+            + {\theta_j \psi_{i,j} F(j)}Z(j) \right]- F(i) Z(i)
+            \right)
+
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+
+        .. math::
+            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+
+        '''
+        # Theta_Psi_sum_invs = Z
+        # Theta_dPsidT_sum = F
         row = []
         for i in groups:
             psisi, dpsis_dTi = psis[i], dpsis_dT[i]
@@ -2398,71 +4413,194 @@ class UNIFAC(GibbsExcess):
             for j in groups:
                 tot += (psisi[j]*Theta_dPsidT_sum[j]*Theta_Psi_sum_invs[j]
                        - dpsis_dTi[j])*Theta_Psi_sum_invs[j]*Thetas[j]
+
             v = Qs[i]*(tot - Theta_dPsidT_sum[i]*Theta_Psi_sum_invs[i])
             row.append(v)
         return row
-    
+
     def dlnGammas_subgroups_dT(self):
+        r'''Calculate the first temperature derivative of the
+        :math:`\ln \Gamma_k`  parameters for the phase; depends on the phases's
+        composition and temperature.
+
+        .. math::
+            \frac{\partial \ln \Gamma_i}{\partial T} = Q_i\left(
+            \sum_j^{gr} Z(j) \left[{\theta_j \frac{\partial \psi_{i,j}}{\partial T}}
+            + {\theta_j \psi_{i,j} F(j)}Z(j) \right]- F(i) Z(i)
+            \right)
+
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+
+        .. math::
+            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+
+        Returns
+        -------
+        dlnGammas_subgroups_dT : list[float]
+           First temperature derivative of ln Gamma parameters for each
+           subgroup, size number of subgroups, [1/K]
+        '''
         try:
             return self._dlnGammas_subgroups_dT
         except:
             pass
-        Xs, Thetas, Qs = self.Xs(), self.Thetas(), self.Qs
-        psis, dpsis_dT = self.psis(), self.dpsis_dT()
-        cmps, groups = self.cmps, self.groups
-        
-        Theta_Psi_sum_invs = [1.0/sum(Thetas[k]*psis[k][j] for k in groups) for j in groups]
-        Theta_dPsidT_sum = [sum(Thetas[k]*dpsis_dT[k][j] for k in groups) for j in groups]
-        
-        row = UNIFAC.dlnGammas_subgroups_dT_meth(groups, Qs, psis, dpsis_dT, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum)
-        
-        self._dlnGammas_subgroups_dT = row
+        try:
+            Thetas = self._Thetas
+        except AttributeError:
+            Thetas = self.Thetas()
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+        try:
+            dpsis_dT = self._dpsis_dT
+        except AttributeError:
+            dpsis_dT = self.dpsis_dT()
+        try:
+            Zs = self.Theta_Psi_sum_invs
+        except AttributeError:
+            Zs = self._Theta_Psi_sum_invs()
+        try:
+            Fs = self.Fs
+        except AttributeError:
+            Fs = self._Fs()
+        cmps, groups, Qs = self.cmps, self.groups, self.Qs
+        self._dlnGammas_subgroups_dT = row = UNIFAC._dlnGammas_subgroups_dT_meth(groups, Qs, psis, dpsis_dT, Thetas, Zs, Fs)
         return row
 
     @staticmethod
-    def d2lnGammas_subgroups_dT2_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum):
-        # TODO document
+    def _d2lnGammas_subgroups_dT2_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum):
+        r'''
+        .. math::
+            \frac{\partial^2 \ln \Gamma_i}{\partial T^2} = -Q_i\left[
+            Z(i)G(i) - F(i)^2 Z(i)^2 + \sum_j\left(
+            \theta_j Z(j)\frac{\partial^2 \psi_{i,j}}{\partial T}
+            - Z(j)^2 \left(G(j)\theta_j \psi_{i,j} + 2 F_j \theta_j \frac{\partial \psi_{i,j}}{\partial T}\right)
+            + 2Z(j)^3F(j)^2 \theta_j \psi_{i,j}
+            \right)\right]
 
-        Us_inv, Fs, Gs = Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+
+        .. math::
+            G(k) = \sum_m^{gr} \theta_m \frac{\partial^2 \psi_{m,k}}{\partial T^2}
+
+        .. math::
+            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+
+        '''
+        Zs, Fs, Gs = Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum
+        Fs2Zs3Theta2 = [2.0*Fs[j]*Fs[j]*Thetas[j]*Zs[j]*Zs[j]*Zs[j] for j in groups]
         row = []
         for i in groups:
-            # TODO optimize
             tot0 = 0.0
             for j in groups:
-                tot0 += Thetas[j]*d2psis_dT2[i][j]*Us_inv[j]
-                tot0 -= (Gs[j]*Thetas[j]*psis[i][j] + 2.0*Fs[j]*Thetas[j]*dpsis_dT[i][j])*Us_inv[j]*Us_inv[j]
-                tot0 += 2.0*Fs[j]*Fs[j]*Thetas[j]*psis[i][j]*Us_inv[j]*Us_inv[j]*Us_inv[j]
-                
-            v = -Qs[i]*(Gs[i]*Us_inv[i] - Fs[i]*Fs[i]*Us_inv[i]*Us_inv[i] + tot0)
+                tot0 += Zs[j]*Thetas[j]*(d2psis_dT2[i][j] - (Gs[j]*psis[i][j] + 2.0*Fs[j]*dpsis_dT[i][j])*Zs[j])
+                tot0 += Fs2Zs3Theta2[j]*psis[i][j]
+            v = Qs[i]*(Zs[i]*(Fs[i]*Fs[i]*Zs[i] - Gs[i]) - tot0)
             row.append(v)
         return row
 
-
-                
     def d2lnGammas_subgroups_dT2(self):
+        r'''Calculate the second temperature derivative of the
+        :math:`\ln \Gamma_k`  parameters for the phase; depends on the phases's
+        composition and temperature.
+
+        .. math::
+            \frac{\partial^2 \ln \Gamma_i}{\partial T^2} = -Q_i\left[
+            Z(i)G(i) - F(i)^2 Z(i)^2 + \sum_j\left(
+            \theta_j Z(j)\frac{\partial^2 \psi_{i,j}}{\partial T}
+            - Z(j)^2 \left(G(j)\theta_j \psi_{i,j} + 2 F_j \theta_j \frac{\partial \psi_{i,j}}{\partial T}\right)
+            + 2Z(j)^3F(j)^2 \theta_j \psi_{i,j}
+            \right)\right]
+
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+
+        .. math::
+            G(k) = \sum_m^{gr} \theta_m \frac{\partial^2 \psi_{m,k}}{\partial T^2}
+
+        .. math::
+            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+
+        Returns
+        -------
+        d2lnGammas_subgroups_dT2 : list[float]
+           Second temperature derivative of ln Gamma parameters for each
+           subgroup, size number of subgroups, [1/K^2]
+        '''
         try:
             return self._d2lnGammas_subgroups_dT2
         except:
             pass
-        Xs, Thetas, Qs = self.Xs(), self.Thetas(), self.Qs
-        psis, dpsis_dT, d2psis_dT2 = self.psis(), self.dpsis_dT(), self.d2psis_dT2()
-        cmps, groups = self.cmps, self.groups
+        try:
+            Thetas = self._Thetas
+        except AttributeError:
+            Thetas = self.Thetas()
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+        try:
+            dpsis_dT = self._dpsis_dT
+        except AttributeError:
+            dpsis_dT = self.dpsis_dT()
+        try:
+            d2psis_dT2 = self._d2psis_dT2
+        except AttributeError:
+            d2psis_dT2 = self.d2psis_dT2()
+        try:
+            Zs = self.Theta_Psi_sum_invs
+        except AttributeError:
+            Zs = self._Theta_Psi_sum_invs()
+        try:
+            Fs = self.Fs
+        except AttributeError:
+            Fs = self._Fs()
+        try:
+            Gs = self.Gs
+        except AttributeError:
+            Gs = self._Gs()
+        cmps, groups, Qs = self.cmps, self.groups, self.Qs
 
-        Theta_Psi_sum_invs = [1.0/sum(Thetas[k]*psis[k][j] for k in groups) for j in groups]
-        Theta_dPsidT_sum = [sum(Thetas[k]*dpsis_dT[k][j] for k in groups) for j in groups]
-        Theta_d2PsidT2_sum = [sum(Thetas[k]*d2psis_dT2[k][j] for k in groups) for j in groups]
-        
-        row = UNIFAC.d2lnGammas_subgroups_dT2_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas, 
-                                                   Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum)
-
-        self._d2lnGammas_subgroups_dT2 = row
+        self._d2lnGammas_subgroups_dT2 = row = UNIFAC._d2lnGammas_subgroups_dT2_meth(
+                        groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas, Zs, Fs, Gs)
         return row
 
     @staticmethod
-    def d3lnGammas_subgroups_dT3_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3, 
+    def _d3lnGammas_subgroups_dT3_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3,
                                       Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum,
                                       Theta_d2PsidT2_sum, Theta_d3PsidT3_sum):
-        # TODO document
+        r'''
+
+        .. math::
+            \frac{\partial^3 \ln \Gamma_i}{\partial T^3} =Q_i\left[-H(i) Z(i)
+            - 2F(i)^3 Z(i)^3 + 3F(i) G(i) Z(i)^2+ \left(
+            -\theta_j Z(j) \frac{\partial^3 \psi}{\partial T^3}
+            + H(j) Z(j)^2 \theta(j)\psi_{i,j}
+            - 6F(j)^2 Z(j)^3 \theta_j \frac{\partial \psi_{i,j}}{\partial T}
+            + 3 F(j) Z(j)^2 \theta(j) \frac{\partial^2 \psi_{i,j}}{\partial T^2}
+            ++ 3G(j) \theta(j) Z(j)^2 \frac{\partial \psi_{i,j}}{\partial T}
+            + 6F(j)^3 \theta(j) Z(j)^4 \psi_{i,j}
+            - 6F(j) G(j) \theta(j) Z(j)^3 \psi_{i,j}
+            \right)
+            \right]
+
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+
+        .. math::
+            G(k) = \sum_m^{gr} \theta_m \frac{\partial^2 \psi_{m,k}}{\partial T^2}
+
+        .. math::
+            H(k) = \sum_m^{gr} \theta_m \frac{\partial^3 \psi_{m,k}}{\partial T^3}
+
+        .. math::
+            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+
+        '''
+        # TODO optimize
 
         Us_inv, Fs, Gs, Hs = Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum, Theta_d3PsidT3_sum
         row = []
@@ -2473,38 +4611,114 @@ class UNIFAC(GibbsExcess):
                 tot += Hs[j]*Thetas[j]*psis[i][j]*Us_inv[j]*Us_inv[j]
                 tot -= 6.0*Fs[j]*Fs[j]*Thetas[j]*dpsis_dT[i][j]*Us_inv[j]*Us_inv[j]*Us_inv[j]
                 tot += 3.0*Fs[j]*Thetas[j]*d2psis_dT2[i][j]*Us_inv[j]*Us_inv[j]
-                
+
                 tot += 3.0*Gs[j]*Thetas[j]*dpsis_dT[i][j]*Us_inv[j]*Us_inv[j]
                 tot += 6.0*Fs[j]**3*Thetas[j]*psis[i][j]*Us_inv[j]**4
                 tot -= 6.0*Fs[j]*Gs[j]*Thetas[j]*psis[i][j]*Us_inv[j]**3
 
-                
+
             v = Qs[i]*(-Hs[i]*Us_inv[i] - 2.0*Fs[i]**3*Us_inv[i]**3 + 3.0*Fs[i]*Gs[i]*Us_inv[i]**2 + tot)
             row.append(v)
         return row
 
     def d3lnGammas_subgroups_dT3(self):
+        r'''Calculate the third temperature derivative of the
+        :math:`\ln \Gamma_k`  parameters for the phase; depends on the phases's
+        composition and temperature.
+
+        .. math::
+            \frac{\partial^3 \ln \Gamma_i}{\partial T^3} =Q_i\left[-H(i) Z(i)
+            - 2F(i)^3 Z(i)^3 + 3F(i) G(i) Z(i)^2+ \left(
+            -\theta_j Z(j) \frac{\partial^3 \psi}{\partial T^3}
+            + H(j) Z(j)^2 \theta(j)\psi_{i,j}
+            - 6F(j)^2 Z(j)^3 \theta_j \frac{\partial \psi_{i,j}}{\partial T}
+            + 3 F(j) Z(j)^2 \theta(j) \frac{\partial^2 \psi_{i,j}}{\partial T^2}
+            ++ 3G(j) \theta(j) Z(j)^2 \frac{\partial \psi_{i,j}}{\partial T}
+            + 6F(j)^3 \theta(j) Z(j)^4 \psi_{i,j}
+            - 6F(j) G(j) \theta(j) Z(j)^3 \psi_{i,j}
+            \right)
+            \right]
+
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+
+        .. math::
+            G(k) = \sum_m^{gr} \theta_m \frac{\partial^2 \psi_{m,k}}{\partial T^2}
+
+        .. math::
+            H(k) = \sum_m^{gr} \theta_m \frac{\partial^3 \psi_{m,k}}{\partial T^3}
+
+        .. math::
+            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+
+        Returns
+        -------
+        d3lnGammas_subgroups_dT3 : list[float]
+           Third temperature derivative of ln Gamma parameters for each
+           subgroup, size number of subgroups, [1/K^3]
+        '''
         try:
             return self._d3lnGammas_subgroups_dT3
         except:
             pass
-        Xs, Thetas, Qs = self.Xs(), self.Thetas(), self.Qs
-        psis, dpsis_dT, d2psis_dT2, d3psis_dT3 = self.psis(), self.dpsis_dT(), self.d2psis_dT2(), self.d3psis_dT3()
-        cmps, groups = self.cmps, self.groups
+        try:
+            Thetas = self._Thetas
+        except AttributeError:
+            Thetas = self.Thetas()
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+        try:
+            dpsis_dT = self._dpsis_dT
+        except AttributeError:
+            dpsis_dT = self.dpsis_dT()
+        try:
+            d2psis_dT2 = self._d2psis_dT2
+        except AttributeError:
+            d2psis_dT2 = self.d2psis_dT2()
+        try:
+            d3psis_dT3 = self._d3psis_dT3
+        except AttributeError:
+            d3psis_dT3 = self.d3psis_dT3()
+        try:
+            Zs = self.Theta_Psi_sum_invs
+        except AttributeError:
+            Zs = self._Theta_Psi_sum_invs()
+        try:
+            Fs = self.Fs
+        except AttributeError:
+            Fs = self._Fs()
+        try:
+            Gs = self.Gs
+        except AttributeError:
+            Gs = self._Gs()
+        try:
+            Hs = self.Hs
+        except AttributeError:
+            Hs = self._Hs()
+        cmps, groups, Qs = self.cmps, self.groups, self.Qs
 
-        Theta_Psi_sum_invs = [1.0/sum(Thetas[k]*psis[k][j] for k in groups) for j in groups]
-        Theta_dPsidT_sum = [sum(Thetas[k]*dpsis_dT[k][j] for k in groups) for j in groups]
-        Theta_d2PsidT2_sum = [sum(Thetas[k]*d2psis_dT2[k][j] for k in groups) for j in groups]
-        Theta_d3PsidT3_sum = [sum(Thetas[k]*d3psis_dT3[k][j] for k in groups) for j in groups]
-        
-        row = UNIFAC.d3lnGammas_subgroups_dT3_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3, 
-                                      Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum,
-                                      Theta_d2PsidT2_sum, Theta_d3PsidT3_sum)
-        
+        row = UNIFAC._d3lnGammas_subgroups_dT3_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3,
+                                                   Thetas, Zs, Fs, Gs, Hs)
+
         self._d3lnGammas_subgroups_dT3 = row
         return row
-        
+
     def Xs_pure(self):
+        r'''Calculate the :math:`X_m` parameters for each chemical in the
+        mixture as a pure species, used in calculating the residual part. A
+        function of group counts only, not even mole fractions or temperature.
+
+        .. math::
+            X_m = \frac{\nu_m}{\sum^{gr}_n \nu_n}
+
+        Returns
+        -------
+        Xs_pure : list[list[float]]
+           :math:`X_m` terms, size number of subgroups by number of components
+           and indexed in that order, [-]
+        '''
         try:
             return self._Xs_pure
         except AttributeError:
@@ -2512,7 +4726,7 @@ class UNIFAC(GibbsExcess):
         # Independent of mole fractions and temperature
         vs, cmp_v_count = self.vs, self.cmp_v_count
         cmps, groups = self.cmps, self.groups
-        
+
         Xs_pure = []
         for i in groups:
             row = []
@@ -2521,14 +4735,27 @@ class UNIFAC(GibbsExcess):
             Xs_pure.append(row)
         self._Xs_pure = Xs_pure
         return Xs_pure
-    
+
     def Thetas_pure(self):
+        r'''Calculate the :math:`\Theta_m` parameters for each chemical in the
+        mixture as a pure species, used in calculating the residual part.
+        A function of group counts only.
+
+        .. math::
+            \Theta_m = \frac{Q_m X_m}{\sum_{n} Q_n X_n}
+
+        Returns
+        -------
+        Thetas_pure : list[list[float]]
+           :math:`\Theta_m` terms, size number of components by number of
+           subgroups and indexed in that order, [-]
+        '''
         # Composition and temperature independent
         try:
             return self._Thetas_pure
         except AttributeError:
             pass
-        
+
         Xs_pure, Qs = self.Xs_pure(), self.Qs
         cmps, groups = self.cmps, self.groups
         Thetas_pure = []
@@ -2540,86 +4767,189 @@ class UNIFAC(GibbsExcess):
             tot_inv = 1.0/tot
             row = [Qs[j]*Xs_pure[j][i]*tot_inv for j in groups]
             Thetas_pure.append(row)
-        
+
         # Revised! Keep in order [component][subgroup]
 #         Get indexing convention back to [subgroup][component]
         self._Thetas_pure = Thetas_pure# = list(map(list, zip(*Thetas_pure)))
         return Thetas_pure
 
-    
+
     def lnGammas_subgroups_pure(self):
-        # Temperature dependent only!
+        r'''Calculate the :math:`\ln \Gamma_k` pure component parameters for
+        the phase; depends on the phases's temperature only.
+
+        .. math::
+            \ln \Gamma_k = Q_k \left[1 - \ln \sum_m \Theta_m \Psi_{mk} - \sum_m
+            \frac{\Theta_m \Psi_{km}}{\sum_n \Theta_n \Psi_{nm}}\right]
+
+        In this model, the :math:`\Theta` values come from the
+        :obj:`UNIFAC.Thetas_pure` method, where each compound is assumed to be
+        pure.
+
+        Returns
+        -------
+        lnGammas_subgroups_pure : list[list[float]]
+           Gamma parameters for each subgroup, size number of subgroups by
+           number of components and indexed in that order, [-]
+        '''
         try:
             return self._lnGammas_subgroups_pure
         except AttributeError:
             pass
-        Xs_pure, Thetas_pure, Qs = self.Xs_pure(), self.Thetas_pure(), self.Qs
-        psis = self.psis()
-        cmps, groups = self.cmps, self.groups
-        
-        cmp_group_idx = self.cmp_group_idx
-        
-        matrix = []
-        for i in cmps:
-            groups2 = cmp_group_idx[i]
-            row = []
-            for k in groups:
-                log_sum = 0.0
-                for m in groups2:
-                    log_sum += Thetas_pure[i][m]*psis[m][k]
-                log_sum = log(log_sum)
-                
-                last = 0.0
-                for m in groups2:
-                    sub_subs = 0.0
-                    for n in groups:
-                        sub_subs += Thetas_pure[i][n]*psis[n][m]
-                    last += Thetas_pure[i][m]*psis[k][m]/sub_subs
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+        cmps, groups, Qs = self.cmps, self.groups, self.Qs
+        Thetas_pure, cmp_group_idx = self._Thetas_pure, self.cmp_group_idx
 
-                v = Qs[k]*(1.0 - log_sum - last)
+        matrix = []
+#        for i in cmps:
+#            groups2 = cmp_group_idx[i]
+#            Thetas_purei = Thetas_pure[i]
+#            row = []
+#            for k in groups:
+
+
+        for k in groups:
+            row = []
+            for i in cmps:
+                groups2 = cmp_group_idx[i]
+                Thetas_purei = Thetas_pure[i]
                 if k not in groups2:
                     v = 0.0
+                else:
+                    psisk = psis[k]
+                    log_sum = 0.0
+                    for m in groups2:
+                        log_sum += Thetas_purei[m]*psis[m][k]
+                    log_sum = log(log_sum)
+
+                    last = 0.0
+                    for m in groups2:
+                        sub_subs = 0.0
+                        for n in groups:
+                            sub_subs += Thetas_purei[n]*psis[n][m]
+                        last += Thetas_purei[m]*psisk[m]/sub_subs
+
+                    v = Qs[k]*(1.0 - log_sum - last)
                 row.append(v)
             matrix.append(row)
-            
-        # Transpose
-        self._lnGammas_subgroups_pure = lnGammas_subgroups_pure = list(map(list, zip(*matrix)))
+
+        self._lnGammas_subgroups_pure = lnGammas_subgroups_pure = matrix#list(map(list, zip(*matrix)))
         return lnGammas_subgroups_pure
 
     def dlnGammas_subgroups_pure_dT(self):
+        r'''Calculate the first temperature derivative of :math:`\ln \Gamma_k`
+        pure component parameters for the phase; depends on the phases's
+        temperature only.
+
+        .. math::
+            \frac{\partial \ln \Gamma_i}{\partial T} = Q_i\left(
+            \sum_j^{gr} Z(j) \left[{\theta_j \frac{\partial \psi_{i,j}}{\partial T}}
+            + {\theta_j \psi_{i,j} F(j)}Z(j) \right]- F(i) Z(i)
+            \right)
+
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+
+        .. math::
+            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+
+        In this model, the :math:`\Theta` values come from the
+        :obj:`UNIFAC.Thetas_pure` method, where each compound is assumed to be
+        pure.
+
+        Returns
+        -------
+        dlnGammas_subgroups_pure_dT : list[list[float]]
+           First temperature derivative of ln Gamma parameters for each
+           subgroup, size number of subgroups by number of components and
+           indexed in that order, [1/K]
+        '''
+        # Temperature dependent only!
         try:
             return self._dlnGammas_subgroups_pure_dT
         except:
             pass
-
-        Xs_pure, Thetas_pure, Qs = self.Xs_pure(), self.Thetas_pure(), self.Qs
-        psis, dpsis_dT = self.psis(), self.dpsis_dT()
-        cmps, groups = self.cmps, self.groups
+        # The followign are calculated on initialization - no caching needed
+        Xs_pure = self._Xs_pure
+        Thetas_pure = self._Thetas_pure
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+        try:
+            dpsis_dT = self._dpsis_dT
+        except AttributeError:
+            dpsis_dT = self.dpsis_dT()
+        cmps, groups, Qs = self.cmps, self.groups, self.Qs
         cmp_group_idx = self.cmp_group_idx
-        
+
+        try:
+            Theta_pure_Psi_sum_invs = self.Theta_pure_Psi_sum_invs
+        except AttributeError:
+            Theta_pure_Psi_sum_invs = self._Theta_pure_Psi_sum_invs()
+        try:
+            Fs_pure = self.Fs_pure
+        except AttributeError:
+            Fs_pure = self._Fs_pure()
+
         # Index by [component][subgroup]
-        Theta_Psi_sum_pure_invs = [[1.0/sum(Thetas_pure[i][k]*psis[k][j] for k in groups) for j in groups] for i in cmps]
-        Theta_dPsidT_sum_pure = [[sum(Thetas_pure[i][k]*dpsis_dT[k][j] for k in groups) for j in groups] for i in cmps]
-        
+
         mat = []
         for m in cmps:
             groups2 = cmp_group_idx[m]
             Thetas = Thetas_pure[m]
-            Theta_Psi_sum_invs = Theta_Psi_sum_pure_invs[m]
-            Theta_dPsidT_sum = Theta_dPsidT_sum_pure[m]
-            
-            row = UNIFAC.dlnGammas_subgroups_dT_meth(groups, Qs, psis, dpsis_dT, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum)
+            Theta_Psi_sum_invs = Theta_pure_Psi_sum_invs[m]
+            Theta_dPsidT_sum = Fs_pure[m]
+
+            row = UNIFAC._dlnGammas_subgroups_dT_meth(groups, Qs, psis, dpsis_dT,
+                                                      Thetas, Theta_Psi_sum_invs,
+                                                      Theta_dPsidT_sum)
             for i in groups:
                 if i not in groups2:
                     row[i] = 0.0
             mat.append(row)
-            
+
         mat = list(map(list, zip(*mat)))
         # Index by [subgroup][component]
         self._dlnGammas_subgroups_pure_dT = mat
         return mat
 
     def d2lnGammas_subgroups_pure_dT2(self):
+        r'''Calculate the second temperature derivative of :math:`\ln \Gamma_k`
+        pure component parameters for the phase; depends on the phases's
+        temperature only.
+
+        .. math::
+            \frac{\partial^2 \ln \Gamma_i}{\partial T^2} = -Q_i\left[
+            Z(i)G(i) - F(i)^2 Z(i)^2 + \sum_j\left(
+            \theta_j Z(j)\frac{\partial^2 \psi_{i,j}}{\partial T}
+            - Z(j)^2 \left(G(j)\theta_j \psi_{i,j} + 2 F_j \theta_j \frac{\partial \psi_{i,j}}{\partial T}\right)
+            + 2Z(j)^3F(j)^2 \theta_j \psi_{i,j}
+            \right)\right]
+
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+
+        .. math::
+            G(k) = \sum_m^{gr} \theta_m \frac{\partial^2 \psi_{m,k}}{\partial T^2}
+
+        .. math::
+            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+
+        In this model, the :math:`\Theta` values come from the
+        :obj:`UNIFAC.Thetas_pure` method, where each compound is assumed to be
+        pure.
+
+        Returns
+        -------
+        d2lnGammas_subgroups_pure_dT2 : list[list[float]]
+           Second temperature derivative of ln Gamma parameters for each
+           subgroup, size number of subgroups by number of components and
+           indexed in that order, [1/K^2]
+        '''
         try:
             return self._d2lnGammas_subgroups_pure_dT2
         except:
@@ -2629,69 +4959,151 @@ class UNIFAC(GibbsExcess):
         psis, dpsis_dT, d2psis_dT2 = self.psis(), self.dpsis_dT(), self.d2psis_dT2()
         cmps, groups = self.cmps, self.groups
         cmp_group_idx = self.cmp_group_idx
-        
+
         # Index by [component][subgroup]
-        Theta_Psi_sum_pure_invs = [[1.0/sum(Thetas_pure[i][k]*psis[k][j] for k in groups) for j in groups] for i in cmps]
-        Theta_dPsidT_sum_pure = [[sum(Thetas_pure[i][k]*dpsis_dT[k][j] for k in groups) for j in groups] for i in cmps]
-        Theta_d2PsidT2_sum_pure = [[sum(Thetas_pure[i][k]*d2psis_dT2[k][j] for k in groups) for j in groups] for i in cmps]
-        
+        try:
+            Theta_pure_Psi_sum_invs = self.Theta_pure_Psi_sum_invs
+        except AttributeError:
+            Theta_pure_Psi_sum_invs = self._Theta_pure_Psi_sum_invs()
+        try:
+            Fs_pure = self.Fs_pure
+        except AttributeError:
+            Fs_pure = self._Fs_pure()
+        try:
+            Gs_pure = self.Gs_pure
+        except AttributeError:
+            Gs_pure = self._Gs_pure()
+#        Theta_pure_Psi_sum_invs = [[1.0/sum(Thetas_pure[i][k]*psis[k][j] for k in groups) for j in groups] for i in cmps]
+#        Theta_dPsidT_sum_pure = [[sum(Thetas_pure[i][k]*dpsis_dT[k][j] for k in groups) for j in groups] for i in cmps]
+#        Theta_d2PsidT2_sum_pure = [[sum(Thetas_pure[i][k]*d2psis_dT2[k][j] for k in groups) for j in groups] for i in cmps]
+
         mat = []
         for m in cmps:
             groups2 = cmp_group_idx[m]
             Thetas = Thetas_pure[m]
-            Theta_Psi_sum_invs = Theta_Psi_sum_pure_invs[m]
-            Theta_dPsidT_sum = Theta_dPsidT_sum_pure[m]
-            Theta_d2PsidT2_sum = Theta_d2PsidT2_sum_pure[m]
-            
-            row = UNIFAC.d2lnGammas_subgroups_dT2_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum)
+            Theta_Psi_sum_invs = Theta_pure_Psi_sum_invs[m]
+            Theta_dPsidT_sum = Fs_pure[m]
+            Theta_d2PsidT2_sum = Gs_pure[m]
+
+            row = UNIFAC._d2lnGammas_subgroups_dT2_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum)
             for i in groups:
                 if i not in groups2:
                     row[i] = 0.0
             mat.append(row)
-            
+
         mat = list(map(list, zip(*mat)))
         # Index by [subgroup][component]
         self._d2lnGammas_subgroups_pure_dT2 = mat
         return mat
 
     def d3lnGammas_subgroups_pure_dT3(self):
+        r'''Calculate the third temperature derivative of :math:`\ln \Gamma_k`
+        pure component parameters for the phase; depends on the phases's
+        temperature only.
+
+        .. math::
+            \frac{\partial^3 \ln \Gamma_i}{\partial T^3} =Q_i\left[-H(i) Z(i)
+            - 2F(i)^3 Z(i)^3 + 3F(i) G(i) Z(i)^2+ \left(
+            -\theta_j Z(j) \frac{\partial^3 \psi}{\partial T^3}
+            + H(j) Z(j)^2 \theta(j)\psi_{i,j}
+            - 6F(j)^2 Z(j)^3 \theta_j \frac{\partial \psi_{i,j}}{\partial T}
+            + 3 F(j) Z(j)^2 \theta(j) \frac{\partial^2 \psi_{i,j}}{\partial T^2}
+            ++ 3G(j) \theta(j) Z(j)^2 \frac{\partial \psi_{i,j}}{\partial T}
+            + 6F(j)^3 \theta(j) Z(j)^4 \psi_{i,j}
+            - 6F(j) G(j) \theta(j) Z(j)^3 \psi_{i,j}
+            \right)
+            \right]
+
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+
+        .. math::
+            G(k) = \sum_m^{gr} \theta_m \frac{\partial^2 \psi_{m,k}}{\partial T^2}
+
+        .. math::
+            H(k) = \sum_m^{gr} \theta_m \frac{\partial^3 \psi_{m,k}}{\partial T^3}
+
+        .. math::
+            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+
+        In this model, the :math:`\Theta` values come from the
+        :obj:`UNIFAC.Thetas_pure` method, where each compound is assumed to be
+        pure.
+
+        Returns
+        -------
+        d3lnGammas_subgroups_pure_dT3 : list[list[float]]
+           Third temperature derivative of ln Gamma parameters for each
+           subgroup, size number of subgroups by number of components and
+           indexed in that order, [1/K^3]
+        '''
         try:
             return self._d3lnGammas_subgroups_pure_dT3
         except:
             pass
-
         Xs_pure, Thetas_pure, Qs = self.Xs_pure(), self.Thetas_pure(), self.Qs
         psis, dpsis_dT, d2psis_dT2, d3psis_dT3 = self.psis(), self.dpsis_dT(), self.d2psis_dT2(), self.d3psis_dT3()
         cmps, groups = self.cmps, self.groups
         cmp_group_idx = self.cmp_group_idx
-        
+
         # Index by [component][subgroup]
-        Theta_Psi_sum_pure_invs = [[1.0/sum(Thetas_pure[i][k]*psis[k][j] for k in groups) for j in groups] for i in cmps]
-        Theta_dPsidT_sum_pure = [[sum(Thetas_pure[i][k]*dpsis_dT[k][j] for k in groups) for j in groups] for i in cmps]
-        Theta_d2PsidT2_sum_pure = [[sum(Thetas_pure[i][k]*d2psis_dT2[k][j] for k in groups) for j in groups] for i in cmps]
-        Theta_d3PsidT3_sum_pure = [[sum(Thetas_pure[i][k]*d3psis_dT3[k][j] for k in groups) for j in groups] for i in cmps]
+#        Theta_Psi_sum_pure_invs = [[1.0/sum(Thetas_pure[i][k]*psis[k][j] for k in groups) for j in groups] for i in cmps]
+#        Theta_dPsidT_sum_pure = [[sum(Thetas_pure[i][k]*dpsis_dT[k][j] for k in groups) for j in groups] for i in cmps]
+#        Theta_d2PsidT2_sum_pure = [[sum(Thetas_pure[i][k]*d2psis_dT2[k][j] for k in groups) for j in groups] for i in cmps]
+#        Theta_d3PsidT3_sum_pure = [[sum(Thetas_pure[i][k]*d3psis_dT3[k][j] for k in groups) for j in groups] for i in cmps]
+
+        try:
+            Theta_pure_Psi_sum_invs = self.Theta_pure_Psi_sum_invs
+        except AttributeError:
+            Theta_pure_Psi_sum_invs = self._Theta_pure_Psi_sum_invs()
+        try:
+            Fs_pure = self.Fs_pure
+        except AttributeError:
+            Fs_pure = self._Fs_pure()
+        try:
+            Gs_pure = self.Gs_pure
+        except AttributeError:
+            Gs_pure = self._Gs_pure()
+        try:
+            Hs_pure = self.Hs_pure
+        except AttributeError:
+            Hs_pure = self._Hs_pure()
 
         mat = []
         for m in cmps:
             groups2 = cmp_group_idx[m]
             Thetas = Thetas_pure[m]
-            Theta_Psi_sum_invs = Theta_Psi_sum_pure_invs[m]
-            Theta_dPsidT_sum = Theta_dPsidT_sum_pure[m]
-            Theta_d2PsidT2_sum = Theta_d2PsidT2_sum_pure[m]
-            Theta_d3PsidT3_sum = Theta_d3PsidT3_sum_pure[m]
-            
-            row = UNIFAC.d3lnGammas_subgroups_dT3_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum, Theta_d3PsidT3_sum)
+            Theta_Psi_sum_invs = Theta_pure_Psi_sum_invs[m]
+            Theta_dPsidT_sum = Fs_pure[m]
+            Theta_d2PsidT2_sum = Gs_pure[m]
+            Theta_d3PsidT3_sum = Hs_pure[m]
+
+            row = UNIFAC._d3lnGammas_subgroups_dT3_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum, Theta_d3PsidT3_sum)
             for i in groups:
                 if i not in groups2:
                     row[i] = 0.0
             mat.append(row)
-            
+
         mat = list(map(list, zip(*mat)))
         # Index by [subgroup][component]
         self._d3lnGammas_subgroups_pure_dT3 = mat
         return mat
-    
+
     def lngammas_r(self):
+        r'''Calculates the residual part of the UNIFAC model.
+
+        .. math::
+            \ln \gamma_i^r = \sum_{k}^{gr} \nu_k^{(i)} \left[ \ln \Gamma_k
+            - \ln \Gamma_k^{(i)} \right]
+
+        where the second Gamma is the pure-component Gamma of group `k` in
+        component `i`.
+
+        Returns
+        -------
+        lngammas_r : list[float]
+            Residual lngammas terms, size number of components [-]
+        '''
         try:
             return self._lngammas_r
         except AttributeError:
@@ -2700,17 +5112,34 @@ class UNIFAC(GibbsExcess):
         lnGammas_subgroups = self.lnGammas_subgroups()
         vs = self.vs
         cmps, groups = self.cmps, self.groups
-        
+
         self._lngammas_r = lngammas_r = []
         for i in cmps:
             tot = 0.0
             for k in groups:
                 tot += vs[k][i]*(lnGammas_subgroups[k] - lnGammas_subgroups_pure[k][i])
             lngammas_r.append(tot)
-            
+
         return lngammas_r
-    
+
     def dlngammas_r_dT(self):
+        r'''Calculates the first temperature derivative of the residual part of
+        the UNIFAC model.
+
+        .. math::
+            \frac{\partial \ln \gamma_i^r}{\partial T} = \sum_{k}^{gr}
+            \nu_k^{(i)} \left[ \frac{\partial \ln \Gamma_k}{\partial T}
+            - \frac{\partial \ln \Gamma_k^{(i)}}{\partial T} \right]
+
+        where the second Gamma is the pure-component Gamma of group `k` in
+        component `i`.
+
+        Returns
+        -------
+        dlngammas_r_dT : list[float]
+            Residual lngammas terms first temperature derivative, size number
+            of components [1/K]
+        '''
         try:
             return self._dlngammas_r_dT
         except AttributeError:
@@ -2719,18 +5148,35 @@ class UNIFAC(GibbsExcess):
         dlnGammas_subgroups_dT = self.dlnGammas_subgroups_dT()
         vs = self.vs
         cmps, groups = self.cmps, self.groups
-        
+
         self._dlngammas_r_dT = dlngammas_r_dT = []
         for i in cmps:
             tot = 0.0
             for k in groups:
                 tot += vs[k][i]*(dlnGammas_subgroups_dT[k] - dlnGammas_subgroups_pure_dT[k][i])
             dlngammas_r_dT.append(tot)
-            
+
         return dlngammas_r_dT
     dlngammas_dT = dlngammas_r_dT
 
     def d2lngammas_r_dT2(self):
+        r'''Calculates the second temperature derivative of the residual part of
+        the UNIFAC model.
+
+        .. math::
+            \frac{\partial^2 \ln \gamma_i^r}{\partial T^2} = \sum_{k}^{gr}
+            \nu_k^{(i)} \left[ \frac{\partial^2 \ln \Gamma_k}{\partial T^2}
+            - \frac{\partial^2 \ln \Gamma_k^{(i)}}{\partial T^2} \right]
+
+        where the second Gamma is the pure-component Gamma of group `k` in
+        component `i`.
+
+        Returns
+        -------
+        d2lngammas_r_dT2 : list[float]
+            Residual lngammas terms second temperature derivative, size number
+            of components [1/K^2]
+        '''
         try:
             return self._d2lngammas_r_dT2
         except AttributeError:
@@ -2739,18 +5185,35 @@ class UNIFAC(GibbsExcess):
         d2lnGammas_subgroups_dT2 = self.d2lnGammas_subgroups_dT2()
         vs = self.vs
         cmps, groups = self.cmps, self.groups
-        
+
         self._d2lngammas_r_dT2 = d2lngammas_r_dT2 = []
         for i in cmps:
             tot = 0.0
             for k in groups:
                 tot += vs[k][i]*(d2lnGammas_subgroups_dT2[k] - d2lnGammas_subgroups_pure_dT2[k][i])
             d2lngammas_r_dT2.append(tot)
-            
+
         return d2lngammas_r_dT2
     d2lngammas_dT2 = d2lngammas_r_dT2
 
     def d3lngammas_r_dT3(self):
+        r'''Calculates the third temperature derivative of the residual part of
+        the UNIFAC model.
+
+        .. math::
+            \frac{\partial^3 \ln \gamma_i^r}{\partial T^3} = \sum_{k}^{gr}
+            \nu_k^{(i)} \left[ \frac{\partial^23\ln \Gamma_k}{\partial T^3}
+            - \frac{\partial^3 \ln \Gamma_k^{(i)}}{\partial T^3} \right]
+
+        where the second Gamma is the pure-component Gamma of group `k` in
+        component `i`.
+
+        Returns
+        -------
+        d3lngammas_r_dT3 : list[float]
+            Residual lngammas terms third temperature derivative, size number
+            of components [1/K^3]
+        '''
         try:
             return self._d3lngammas_r_dT3
         except AttributeError:
@@ -2759,26 +5222,38 @@ class UNIFAC(GibbsExcess):
         d3lnGammas_subgroups_dT3 = self.d3lnGammas_subgroups_dT3()
         vs = self.vs
         cmps, groups = self.cmps, self.groups
-        
+
         self._d3lngammas_r_dT3 = d3lngammas_r_dT3 = []
         for i in cmps:
             tot = 0.0
             for k in groups:
                 tot += vs[k][i]*(d3lnGammas_subgroups_dT3[k] - d3lnGammas_subgroups_pure_dT3[k][i])
             d3lngammas_r_dT3.append(tot)
-            
+
         return d3lngammas_r_dT3
     d3lngammas_dT3 = d3lngammas_r_dT3
 
     def dlngammas_r_dxs(self):
+        r'''Calculates the first mole fraction derivative of the residual part
+        of the UNIFAC model.
+
+        .. math::
+            \frac{\partial \ln \gamma_i^r}{\partial x_j} = \sum_{m}^{gr} \nu_m^{(i)}
+            \frac{\partial \ln \Gamma_m}{\partial x_j}
+
+        Returns
+        -------
+        dlngammas_r_dxs : list[list[float]]
+            First mole fraction derivative of residual lngammas terms, size
+            number of components by number of components [-]
+        '''
         try:
             return self._dlngammas_r_dxs
         except AttributeError:
             pass
-        vs = self.vs
-        cmps, groups = self.cmps, self.groups
+        vs, cmps, groups = self.vs, self.cmps, self.groups
         dlnGammas_subgroups_dxs = self.dlnGammas_subgroups_dxs()
-        
+
         self._dlngammas_r_dxs = dlngammas_r_dxs = []
         for i in cmps:
             row = []
@@ -2788,10 +5263,25 @@ class UNIFAC(GibbsExcess):
                     tot += vs[m][i]*dlnGammas_subgroups_dxs[m][j]
                 row.append(tot)
             dlngammas_r_dxs.append(row)
-            
+
         return dlngammas_r_dxs
 
     def d2lngammas_r_dTdxs(self):
+        r'''Calculates the first mole fraction derivative of the temperature
+        derivative of the residual part of the UNIFAC model.
+
+        .. math::
+            \frac{\partial^2 \ln \gamma_i^r}{\partial x_j \partial T} =
+            \sum_{m}^{gr} \nu_m^{(i)} \frac{\partial^2 \ln \Gamma_m}
+            {\partial x_j \partial T}
+
+        Returns
+        -------
+        d2lngammas_r_dTdxs : list[list[float]]
+            First mole fraction derivative and temperature derivative of
+            residual lngammas terms, size number of components by number of
+            components [-]
+        '''
         try:
             return self._d2lngammas_r_dTdxs
         except AttributeError:
@@ -2799,7 +5289,7 @@ class UNIFAC(GibbsExcess):
         vs = self.vs
         cmps, groups = self.cmps, self.groups
         d2lnGammas_subgroups_dTdxs = self.d2lnGammas_subgroups_dTdxs()
-        
+
         self._d2lngammas_r_dTdxs = d2lngammas_r_dTdxs = []
         for i in cmps:
             row = []
@@ -2809,10 +5299,24 @@ class UNIFAC(GibbsExcess):
                     tot += vs[m][i]*d2lnGammas_subgroups_dTdxs[m][j]
                 row.append(tot)
             d2lngammas_r_dTdxs.append(row)
-            
+
         return d2lngammas_r_dTdxs
-    
+
     def d2lngammas_r_dxixjs(self):
+        r'''Calculates the second mole fraction derivative of the residual part
+        of the UNIFAC model.
+
+        .. math::
+            \frac{\partial^2 \ln \gamma_i^r}{\partial x_j^2} = \sum_{m}^{gr}
+            \nu_m^{(i)} \frac{\partial^2 \ln \Gamma_m}{\partial x_j^2}
+
+        Returns
+        -------
+        d2lngammas_r_dxixjs : list[list[list[float]]]
+            Second mole fraction derivative of the residual lngammas terms,
+            size number of components by number of components by number of
+            components [-]
+        '''
         try:
             return self._d2lngammas_r_dxixjs
         except AttributeError:
@@ -2820,7 +5324,7 @@ class UNIFAC(GibbsExcess):
         vs = self.vs
         cmps, groups = self.cmps, self.groups
         d2lnGammas_subgroups_dxixjs = self.d2lnGammas_subgroups_dxixjs()
-        
+
         self._d2lngammas_r_dxixjs = d2lngammas_r_dxixjs = []
         for i in cmps:
             matrix = []
@@ -2828,36 +5332,62 @@ class UNIFAC(GibbsExcess):
                 row = []
                 for k in cmps:
                     tot = 0.0
+                    r = d2lnGammas_subgroups_dxixjs[j][k]
                     for m in groups:
-                        tot += vs[m][i]*d2lnGammas_subgroups_dxixjs[j][k][m]
+                        tot += vs[m][i]*r[m]
                     row.append(tot)
                 matrix.append(row)
             d2lngammas_r_dxixjs.append(matrix)
-            
+
         return d2lngammas_r_dxixjs
-    
+
     def GE(self):
+        r'''Calculate the excess Gibbs energy with the UNIFAC model.
+
+        .. math::
+            G^E = RT\sum_i x_i \left(\ln \gamma_i^c + \ln \gamma_i^r \right)
+
+        For the VTPR model, the combinatorial component is set to zero.
+
+        Returns
+        -------
+        GE : float
+            Excess Gibbs energy, [J/mol]
+        '''
         try:
             return self._GE
         except AttributeError:
             pass
         T, xs, cmps = self.T, self.xs, self.cmps
         lngammas_r = self.lngammas_r()
-        
+
+        GE = 0.0
         if self.skip_comb:
-            GE = 0.0
             for i in cmps:
                 GE += xs[i]*lngammas_r[i]
         else:
             lngammas_c = self.lngammas_c()
-            GE = 0.0
             for i in cmps:
                 GE += xs[i]*(lngammas_c[i] + lngammas_r[i])
         GE *= R*T
         self._GE = GE
         return GE
-    
+
     def dGE_dxs(self):
+        r'''Calculate the first composition derivative of excess Gibbs energy
+        with the UNIFAC model.
+
+        .. math::
+            \frac{\partial G^E}{\partial x_i} = RT\left(\ln \gamma_i^c
+            + \ln \gamma_i^r \right)
+            + RT\sum_j x_j \left(\frac{\partial \ln \gamma_j^c}{\partial x_i}
+            + \frac{\partial \ln \gamma_j^r}{\partial x_i} \right)
+
+        Returns
+        -------
+        dGE_dxs : list[float]
+            First composition derivative of excess Gibbs energy, [J/mol]
+        '''
         try:
             return self._dGE_dxs
         except AttributeError:
@@ -2870,7 +5400,7 @@ class UNIFAC(GibbsExcess):
             dlngammas_c_dxs = self.dlngammas_c_dxs()
         RT = R*T
         dGE_dxs = []
-        
+
         if skip_comb:
             for i in cmps:
                 dGE = lngammas_r[i]
@@ -2883,13 +5413,29 @@ class UNIFAC(GibbsExcess):
                 for j in cmps:
                     dGE += xs[j]*(dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i])
                 dGE_dxs.append(dGE*RT)
-            
-            
-            
+
         self._dGE_dxs = dGE_dxs
         return dGE_dxs
 
     def d2GE_dTdxs(self):
+        r'''Calculate the first composition derivative and temperature
+        derivative of excess Gibbs energy with the UNIFAC model.
+
+        .. math::
+            \frac{\partial^2 G^E}{\partial T\partial x_i} =
+            RT\left(\frac{\partial \ln \gamma_i^r}{\partial T}
+            + \sum_j x_j \frac{\partial \ln \gamma_j^r}{\partial x_i}  \right)
+            + R\left[ \frac{\partial \ln \gamma_i^c}{\partial x_i}
+            + \frac{\partial \ln \gamma_i^r}{\partial x_i}
+            + \sum_j x_j \left( \frac{\partial \ln \gamma_j^c}{\partial x_i}
+            + \frac{\partial \ln \gamma_j^r}{\partial x_i}\right)\right]
+
+        Returns
+        -------
+        dGE_dxs : list[float]
+            First composition derivative and first temperature derivative of
+            excess Gibbs energy, [J/mol/K]
+        '''
         try:
             return self._d2GE_dTdxs
         except AttributeError:
@@ -2899,11 +5445,11 @@ class UNIFAC(GibbsExcess):
         dlngammas_r_dxs = self.dlngammas_r_dxs()
         dlngammas_r_dT = self.dlngammas_r_dT()
         d2lngammas_r_dTdxs = self.d2lngammas_r_dTdxs()
-        
+
         if not skip_comb:
             lngammas_c = self.lngammas_c()
             dlngammas_c_dxs = self.dlngammas_c_dxs()
-        
+
         d2GE_dTdxs = []
         if skip_comb:
             for i in cmps:
@@ -2911,39 +5457,54 @@ class UNIFAC(GibbsExcess):
                 for j in cmps:
                     dGE += xs[j]*(dlngammas_r_dxs[j][i] + T*d2lngammas_r_dTdxs[j][i])
                 d2GE_dTdxs.append(dGE*R)
-            
+
         else:
             for i in cmps:
-                dGE = lngammas_r[i] + lngammas_c[i]
-                dGE += T*dlngammas_r_dT[i]
+                dGE = lngammas_r[i] + lngammas_c[i] + T*dlngammas_r_dT[i]
                 for j in cmps:
                     dGE += xs[j]*(dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i])
                     dGE += T*xs[j]*d2lngammas_r_dTdxs[j][i] # ji should be consistent in all of them
-    #                dGE += xs[j]*(dlngammas_c_dxs[i][j] + dlngammas_r_dxs[i][j])
-    #                dGE += T*xs[j]*d2lngammas_r_dTdxs[i][j] # ji should be consistent in all of them
-                
+
                 d2GE_dTdxs.append(dGE*R)
         self._d2GE_dTdxs = d2GE_dTdxs
         return d2GE_dTdxs
 
-
     def d2GE_dxixjs(self):
+        r'''Calculate the second composition derivative of excess Gibbs energy
+        with the UNIFAC model.
+
+        .. math::
+            \frac{\partial^2 G^E}{\partial x_j \partial x_k} = RT
+            \left[\sum_i \left(
+            \frac{\partial \ln \gamma_i^c}{\partial x_j \partial x_k}
+            + \frac{\partial \ln \gamma_i^r}{\partial x_j \partial x_k}
+            \right)
+            + \frac{\partial \ln \gamma_j^c}{\partial x_k}
+            + \frac{\partial \ln \gamma_j^r}{\partial x_k}
+            + \frac{\partial \ln \gamma_k^c}{\partial x_j}
+            + \frac{\partial \ln \gamma_k^r}{\partial x_j}\right]
+
+        Returns
+        -------
+        d2GE_dxixjs : list[list[float]]
+            Second composition derivative of excess Gibbs energy, [J/mol]
+        '''
         try:
             return self._d2GE_dxixjs
         except AttributeError:
             pass
         T, xs, cmps, skip_comb = self.T, self.xs, self.cmps, self.skip_comb
-        
+
         dlngammas_r_dxs = self.dlngammas_r_dxs()
         d2lngammas_r_dxixjs = self.d2lngammas_r_dxixjs()
-        
+
         if not skip_comb:
             dlngammas_c_dxs = self.dlngammas_c_dxs()
             d2lngammas_c_dxixjs = self.d2lngammas_c_dxixjs()
-        
+
         RT = R*T
         d2GE_dxixjs = []
-        
+
         if skip_comb:
             for i in cmps:
                 row = []
@@ -2959,7 +5520,7 @@ class UNIFAC(GibbsExcess):
                 for j in cmps:
                     dGE = dlngammas_c_dxs[i][j] + dlngammas_r_dxs[i][j]
                     dGE += dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i]
-                    
+
                     for k in cmps:
                         dGE += xs[k]*(d2lngammas_c_dxixjs[k][i][j] + d2lngammas_r_dxixjs[k][i][j])
                     row.append(dGE*RT)
@@ -2968,33 +5529,46 @@ class UNIFAC(GibbsExcess):
         return d2GE_dxixjs
 
     def dGE_dT(self):
+        r'''Calculate the first temperature derivative of excess Gibbs energy
+        with the UNIFAC model.
+
+        .. math::
+            \frac{\partial G^E}{\partial T} =
+            RT\sum_i x_i \frac{\partial \ln \gamma_i^r}{\partial T}
+            + \frac{G^E}{T}
+
+        Returns
+        -------
+        dGE_dT : float
+            First temperature derivative of excess Gibbs energy, [J/mol/K]
+        '''
         try:
             return self._dGE_dT
         except AttributeError:
             pass
-        T, xs, cmps, skip_comb = self.T, self.xs, self.cmps, self.skip_comb
-        lngammas_r = self.lngammas_r()
+        T, xs, cmps = self.T, self.xs, self.cmps
         dlngammas_r_dT = self.dlngammas_r_dT()
-        
-        if not skip_comb:
-            lngammas_c = self.lngammas_c()
-        dGE_dT = 0.0
-        tot0, tot1 = 0.0, 0.0
-        if skip_comb:
-            for i in cmps:
-                tot0 += xs[i]*dlngammas_r_dT[i]
-                tot1 += xs[i]*lngammas_r[i]
-        else:
-            for i in cmps:
-                tot0 += xs[i]*dlngammas_r_dT[i]
-                tot1 += xs[i]*(lngammas_c[i] + lngammas_r[i])
-            
-        dGE_dT = R*T*tot0 + R*tot1
-        
-        self._dGE_dT = dGE_dT
+
+        tot = 0.0
+        for i in cmps:
+            tot += xs[i]*dlngammas_r_dT[i]
+        self._dGE_dT = dGE_dT = R*T*tot + self.GE()/T
         return dGE_dT
 
     def d2GE_dT2(self):
+        r'''Calculate the second temperature derivative of excess Gibbs energy
+        with the UNIFAC model.
+
+        .. math::
+            \frac{\partial^2 G^E}{\partial T^2} =
+            RT\sum_i x_i \frac{\partial^2 \ln \gamma_i^r}{\partial T^2}
+            + 2R\sum_i x_i \frac{\partial \ln \gamma_i^r}{\partial T}
+
+        Returns
+        -------
+        d2GE_dT2 : float
+            Second temperature derivative of excess Gibbs energy, [J/mol/K^2]
+        '''
         try:
             return self._d2GE_dT2
         except AttributeError:
@@ -3005,13 +5579,25 @@ class UNIFAC(GibbsExcess):
         tot0, tot1 = 0.0, 0.0
         for i in cmps:
             tot0 += xs[i]*d2lngammas_r_dT2[i]
-            tot1 += 2.0*xs[i]*(dlngammas_r_dT[i])
-            
-        d2GE_dT2 = R*(T*tot0 + tot1)
-        self._d2GE_dT2 = d2GE_dT2
+            tot1 += xs[i]*dlngammas_r_dT[i] # This line same as the dGE_dT
+
+        self._d2GE_dT2 = d2GE_dT2 = R*(T*tot0 + (tot1 + tot1))
         return d2GE_dT2
 
     def d3GE_dT3(self):
+        r'''Calculate the third temperature derivative of excess Gibbs energy
+        with the UNIFAC model.
+
+        .. math::
+            \frac{\partial^3 G^E}{\partial T^3} =
+            RT\sum_i x_i \frac{\partial^3 \ln \gamma_i^r}{\partial T^3}
+            + 3R\sum_i x_i \frac{\partial^2 \ln \gamma_i^r}{\partial T^2}
+
+        Returns
+        -------
+        d3GE_dT3 : float
+            Third temperature derivative of excess Gibbs energy, [J/mol/K^3]
+        '''
         try:
             return self._d3GE_dT3
         except AttributeError:
@@ -3023,175 +5609,409 @@ class UNIFAC(GibbsExcess):
         tot0, tot1 = 0.0, 0.0
         for i in cmps:
             tot0 += xs[i]*d3lngammas_r_dT3[i]
-            tot1 += 3.0*xs[i]*(d2lngammas_r_dT2[i])
-            
-        d3GE_dT3 = R*(T*tot0 + tot1)
-        
+            tot1 += xs[i]*d2lngammas_r_dT2[i] # This line same as the d2GE_dT2
+
+        d3GE_dT3 = R*(T*tot0 + 3.0*tot1)
+
         self._d3GE_dT3 = d3GE_dT3
         return d3GE_dT3
 
     def gammas(self):
+        r'''Calculates the activity coefficients with the UNIFAC model.
+
+        .. math::
+            \gamma_i =  \exp\left(\ln \gamma_i^c + \ln \gamma_i^r \right)
+
+        For the VTPR variant, the combinatorial part is skipped:
+
+        .. math::
+            \gamma_i = \exp(\ln \gamma_i^r)
+
+        Returns
+        -------
+        gammas : list[float]
+            Activity coefficients, size number of components [-]
+        '''
         try:
             return self._gammas
         except:
             pass
         xs, cmps = self.xs, self.cmps
-        lngammas_r = self.lngammas_r()
+        try:
+            lngammas_r = self._lngammas_r
+        except AttributeError:
+            lngammas_r = self.lngammas_r()
         if self.skip_comb:
             gammas = [exp(ri) for ri in lngammas_r]
         else:
-            lngammas_c = self.lngammas_c()
+            try:
+                lngammas_c = self._lngammas_c
+            except AttributeError:
+                lngammas_c = self.lngammas_c()
             gammas = [exp(lngammas_r[i] + lngammas_c[i]) for i in cmps]
         self._gammas = gammas
         return gammas
-    
+
+    def dgammas_dT(self):
+        r'''Calculates the first temperature derivative of activity
+        coefficients with the UNIFAC model.
+
+        .. math::
+            \frac{\partial \gamma_i}{\partial T} = \gamma_i\frac{\partial \ln
+            \gamma_i^r}{\partial T}
+
+        Returns
+        -------
+        dgammas_dT : list[float]
+            First temperature derivative of activity coefficients, size number
+            of components [1/K]
+        '''
+        try:
+            return self._dgammas_dT
+        except:
+            pass
+        try:
+            gammas = self._gammas
+        except AttributeError:
+            gammas = self.gammas()
+        try:
+            dlngammas_r_dT = self._dlngammas_r_dT
+        except AttributeError:
+            dlngammas_r_dT = self.dlngammas_r_dT()
+        self._dgammas_dT = dgammas_dT = [dlngammas_r_dT[i]*gammas[i] for i in self.cmps]
+        return dgammas_dT
+
+    def dgammas_dns(self):
+        try:
+            return self._dgammas_dns
+        except AttributeError:
+            pass
+        dgammas_dxs = self.dgammas_dxs()
+        xs = self.xs
+        self._dgammas_dns = dgammas_dns = []
+        for row in self.cmps:
+            dgammas_dns.append(dxs_to_dns(dgammas_dxs[row], xs))
+        return dgammas_dns
+
+    def dgammas_dxs(self):
+        r'''Calculates the first mole fraction derivative of activity
+        coefficients with the UNIFAC model.
+
+        .. math::
+            \frac{\partial \gamma_i}{\partial x_j} = \gamma_i
+            \left(\frac{\partial \ln \gamma_i^r}{\partial x_j}
+            + \frac{\partial \ln \gamma_i^c}{\partial x_j}
+            \right)
+
+        For the VTPR variant, the combinatorial part is skipped:
+
+        .. math::
+            \frac{\partial \gamma_i}{\partial x_j} = \gamma_i
+            \left(\frac{\partial \ln \gamma_i^r}{\partial x_j}
+            \right)
+
+        Returns
+        -------
+        dgammas_dxs : list[list[float]]
+            First mole fraction derivative of activity coefficients, size
+            number of components by number of components [-]
+        '''
+        try:
+            return self._dgammas_dxs
+        except:
+            pass
+        try:
+            gammas = self._gammas
+        except AttributeError:
+            gammas = self.gammas()
+
+
+        xs, cmps = self.xs, self.cmps
+        try:
+            dlngammas_r_dxs = self._dlngammas_r_dxs
+        except AttributeError:
+            dlngammas_r_dxs = self.dlngammas_r_dxs()
+        if self.skip_comb:
+            dgammas_dxs = [[dlngammas_r_dxs[i][j]*gammas[i] for j in cmps] for i in cmps]
+        else:
+            try:
+                dlngammas_c_dxs = self._dlngammas_c_dxs
+            except AttributeError:
+                dlngammas_c_dxs = self.dlngammas_c_dxs()
+            dgammas_dxs = [[(dlngammas_r_dxs[i][j]+dlngammas_c_dxs[i][j])*gammas[i] for j in cmps] for i in cmps]
+        self._dgammas_dxs = dgammas_dxs
+        return dgammas_dxs
+
     def lngammas_c(self):
-        r'''
-        
+        r'''Calculates the combinatorial part of the UNIFAC model. For the
+        modified UNIFAC model, the equation is as follows; for the original
+        UNIFAC and UNIFAC LLE, replace :math:`V_i'` with :math:`V_i`.
+
         .. math::
             \ln \gamma_i^c = 1 - {V'}_i + \ln({V'}_i) - 5q_i \left(1
             - \frac{V_i}{F_i}+ \ln\left(\frac{V_i}{F_i}\right)\right)
-            
-        .. math::
-            V'_i = \frac{r_i^{3/4}}{\sum_j r_j^{3/4}x_j}
-        
-        .. math::
-            V_i = \frac{r_i}{\sum_j r_j x_j}
-            
-        .. math::
-            F_i = \frac{q_i}{\sum_j q_j x_j}
 
+        For the Lyngby model:
+
+        .. math::
+            \ln \gamma_i^c = \ln \left(V_i'\right) + 1
+            - V_i'
+
+        Returns
+        -------
+        lngammas_c : list[float]
+            Combinatorial lngammas terms, size number of components [-]
         '''
         try:
             return self._lngammas_c
         except AttributeError:
             pass
-        Vis = self.Vis()
+        try:
+            Vis = self._Vis
+        except AttributeError:
+            Vis = self.Vis()
+        try:
+            Fis = self._Fis
+        except AttributeError:
+            Fis = self.Fis()
         cmps, version, qs = self.cmps, self.version, self.qs
         if self.version in (1, 4):
-            Vis_Dortmund = self.Vis_Dortmund()
+            try:
+                Vis_modified = self._Vis_modified
+            except AttributeError:
+                Vis_modified = self.Vis_modified()
         else:
-            Vis_Dortmund = Vis
-        Fis = self.Fis()
-        
+            Vis_modified = Vis
+
         lngammas_c = []
-        for i in cmps:
-            Vi_Fi = Vis[i]/Fis[i]
-            val = (1.0 - Vis_Dortmund[i] + log(Vis_Dortmund[i])
-                    - 5.0*qs[i]*(1.0 - Vi_Fi + log(Vi_Fi)))
-            lngammas_c.append(val)
-            
+        if version == 4:
+            xs = self.xs
+            for i in cmps:
+                r = Vis_modified[i] # In the definition of V' used here, there is no mole fraction division needed
+                val = log(r) + 1.0 - r
+                lngammas_c.append(val)
+        else:
+            for i in cmps:
+                Vi_Fi = Vis[i]/Fis[i]
+                val = (1.0 - Vis_modified[i] + log(Vis_modified[i])
+                        - 5.0*qs[i]*(1.0 - Vi_Fi + log(Vi_Fi)))
+                lngammas_c.append(val)
+
         self._lngammas_c = lngammas_c
         return lngammas_c
-    
+
     def dlngammas_c_dT(self):
-        return [0.0]*self.N
-    
-    def d2lngammas_c_dT2(self):
-        return [0.0]*self.N
-    
-    def d3lngammas_c_dT3(self):
-        return [0.0]*self.N
-       
-    def d2lngammas_c_dTdx(self):
-        # Since T derivative is zero
+        r'''Temperature derivatives of the combinatorial part of the UNIFAC
+        model. Zero in all variations.
+
+        .. math::
+            \frac{\partial \ln \gamma_i^c}{\partial T} = 0
+
+        Returns
+        -------
+        dlngammas_c_dT : list[float]
+            Combinatorial lngammas term temperature derivatives, size number of
+            components, [-]
+        '''
         return [0.0]*self.N
 
-            
-    def dlngammas_c_dxs(self):
-        r'''
+    def d2lngammas_c_dT2(self):
+        r'''Second temperature derivatives of the combinatorial part of the
+        UNIFAC model. Zero in all variations.
+
         .. math::
-            \frac{\partial \ln \gamma^c_i}{\partial x_j} = 
-            -5q_i\left[ \left( \frac{\frac{\partial V_i}{\partial x_j}}{F_i} - \frac{V_i \frac{\partial F_i}{\partial x_j}}{F_i^2}
-            \right)\frac{F_i}{V_i} - \frac{\frac{\partial V_i}{\partial x_j}}{F_i} 
+            \frac{\partial^2 \ln \gamma_i^c}{\partial T^2} = 0
+
+        Returns
+        -------
+        d2lngammas_c_dT2 : list[float]
+            Combinatorial lngammas term second temperature derivatives, size
+            number of components, [-]
+        '''
+        return [0.0]*self.N
+
+    def d3lngammas_c_dT3(self):
+        r'''Third temperature derivatives of the combinatorial part of the
+        UNIFAC model. Zero in all variations.
+
+        .. math::
+            \frac{\partial^3 \ln \gamma_i^c}{\partial T^3} = 0
+
+        Returns
+        -------
+        d3lngammas_c_dT3 : list[float]
+            Combinatorial lngammas term second temperature derivatives, size
+            number of components, [-]
+        '''
+        return [0.0]*self.N
+
+    def d2lngammas_c_dTdx(self):
+        r'''Second temperature derivative and first mole fraction derivative of
+        the combinatorial part of the UNIFAC model. Zero in all variations.
+
+        .. math::
+            \frac{\partial^3 \ln \gamma_i^c}{\partial T^2 \partial x_j} = 0
+
+        Returns
+        -------
+        d2lngammas_c_dTdx : list[list[float]]
+            Combinatorial lngammas term second temperature derivatives, size
+            number of components by number of components, [-]
+        '''
+        return [0.0]*self.N
+
+    def dlngammas_c_dxs(self):
+        r'''First composition derivative of
+        the combinatorial part of the UNIFAC model. For the modified UNIFAC
+        model, the equation is as follows; for the original UNIFAC and UNIFAC
+        LLE, replace :math:`V_i'` with :math:`V_i`.
+
+        .. math::
+            \frac{\partial \ln \gamma^c_i}{\partial x_j} =
+            -5q_i\left[ \left( \frac{\frac{\partial V_i}{\partial x_j}}{F_i}
+            - \frac{V_i \frac{\partial F_i}{\partial x_j}}{F_i^2}
+            \right)\frac{F_i}{V_i} - \frac{\frac{\partial V_i}{\partial x_j}}{F_i}
             + \frac{V_i\frac{\partial F_i}{\partial x_j}}{F_i^2}
             \right]
-              - \frac{\partial V_i'}{\partial x_j} 
-              + \frac{\frac{\partial V_i'}{\partial x_j}}{V_i'}
-              
+            - \frac{\partial V_i'}{\partial x_j}
+            + \frac{\frac{\partial V_i'}{\partial x_j}}{V_i'}
+
+        For the Lyngby model, the following equations are used:
+
+        .. math::
+            \frac{\partial \ln \gamma^c_i}{\partial x_j} =
+            \frac{-\partial V_i'}{\partial x_j} + \frac{1}{V_i'}
+            \frac{\partial V_i'}{\partial x_j}
+
+        Returns
+        -------
+        dlngammas_c_dxs : list[list[float]]
+            Combinatorial lngammas term first composition derivative, size
+            number of components by number of components, [-]
         '''
         try:
             return self._dlngammas_c_dxs
         except AttributeError:
             pass
         cmps, version, qs = self.cmps, self.version, self.qs
-        Vis = self.Vis()
-        dVis_dxs = self.dVis_dxs()
+        try:
+            Vis = self._Vis
+        except AttributeError:
+            Vis = self.Vis()
+        try:
+            dVis_dxs = self._dVis_dxs
+        except AttributeError:
+            dVis_dxs = self.dVis_dxs()
+        try:
+            Fis = self._Fis
+        except AttributeError:
+            Fis = self.Fis()
+        try:
+            dFis_dxs = self._dFis_dxs
+        except AttributeError:
+            dFis_dxs = self.dFis_dxs()
 
-        Fis = self.Fis()
-        dFis_dxs = self.dFis_dxs()
-        
-        if self.version in (1, 4):
-            Vis_Dortmund = self.Vis_Dortmund()
-            dVis_Dortmund_dxs = self.dVis_Dortmund_dxs()
+        if version in (1, 4):
+            try:
+                Vis_modified = self._Vis_modified
+            except AttributeError:
+                Vis_modified = self.Vis_modified()
+            try:
+                dVis_modified_dxs = self._dVis_modified_dxs
+            except AttributeError:
+                dVis_modified_dxs = self.dVis_modified_dxs()
         else:
-            Vis_Dortmund = Vis
-            dVis_Dortmund_dxs = dVis_dxs
-            
+            Vis_modified = Vis
+            dVis_modified_dxs = dVis_dxs
+
         # index style - [THE GAMMA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
-        
+
         dlngammas_c_dxs = []
-        for i in cmps:
-            row = []
-            Fi_inv = 1.0/Fis[i]
-            for j in cmps:
-                val = -5.0*qs[i]*((dVis_dxs[i][j] - Vis[i]*dFis_dxs[i][j]*Fi_inv)/Vis[i]
-                - dVis_dxs[i][j]*Fi_inv + Vis[i]*dFis_dxs[i][j]*Fi_inv*Fi_inv
-                ) - dVis_Dortmund_dxs[i][j] + dVis_Dortmund_dxs[i][j]/Vis_Dortmund[i]
-                row.append(val)
-            
-            dlngammas_c_dxs.append(row)
-            
+
+        if version == 4:
+            xs = self.xs
+            for i in cmps:
+                row = []
+                for j in cmps:
+                    v = -dVis_modified_dxs[i][j] + dVis_modified_dxs[i][j]/Vis_modified[i]
+                    row.append(v)
+                dlngammas_c_dxs.append(row)
+        else:
+            for i in cmps:
+                row = []
+                Fi_inv = 1.0/Fis[i]
+                for j in cmps:
+                    val = -5.0*qs[i]*((dVis_dxs[i][j] - Vis[i]*dFis_dxs[i][j]*Fi_inv)/Vis[i]
+                    - dVis_dxs[i][j]*Fi_inv + Vis[i]*dFis_dxs[i][j]*Fi_inv*Fi_inv
+                    ) - dVis_modified_dxs[i][j] + dVis_modified_dxs[i][j]/Vis_modified[i]
+                    row.append(val)
+                dlngammas_c_dxs.append(row)
+
         self._dlngammas_c_dxs = dlngammas_c_dxs
         return dlngammas_c_dxs
 
     ''' Sympy code used to get these derivatives - not yet validated with numerical values from SymPy!
         Second and third derivative formulas generated with SymPy.
     from sympy import *
-    
+
     N = 3
     cmps = range(N)
     xs = x0, x1, x2 = symbols('x0, x1, x2')
     rs = r0, r1, r2 = symbols('r0, r1, r2')
     qs = q0, q1, q2 = symbols('q0, q1, q2') # Pure component property (made from subgroups, but known)
-    
+
     rsxs = sum([rs[i]*xs[i] for i in cmps])
     Vis = [rs[i]/rsxs for i in cmps]
-    
+
     qsxs = sum([qs[i]*xs[i] for i in cmps])
     Fis = [qs[i]/qsxs for i in cmps]
-    
+
     Vis = V0, V1, V2 = symbols('V0, V1, V2', cls=Function)
     VisD = V0D, V1D, V2D = symbols('V0D, V1D, V2D', cls=Function)
     Fis = F0, F1, F2 = symbols('F0, F1, F2', cls=Function)
     Vis = [Vis[i](x0, x1, x2) for i in cmps]
     VisD = [VisD[i](x0, x1, x2) for i in cmps]
     Fis = [Fis[i](x0, x1, x2) for i in cmps]
-    
+
     loggammacs = [1 - VisD[i] + log(VisD[i]) - 5*qs[i]*(1 - Vis[i]/Fis[i]
                   + log(Vis[i]/Fis[i])) for i in cmps]
     # Variable to use for substitutions
     Vi, ViD, Fi, xj, xk, xm, qi = symbols('V_i, Vi\', F_i, x_j, x_k, x_m, q_i')
-    
+
     # First derivative
     good_first = diff(loggammacs[0], x1).subs(V0(x0, x1, x2), Vi).subs(F0(x0, x1, x2), Fi).subs(V0D(x0, x1, x2), ViD).subs(x1, xj).subs(q0, qi)
     good_first = simplify(expand(simplify(good_first)))
-    
+
     # Second derivative
     good_second = diff(loggammacs[0], x1, x2).subs(V0(x0, x1, x2), Vi).subs(F0(x0, x1, x2), Fi).subs(V0D(x0, x1, x2), ViD).subs(x1, xj).subs(x2, xk).subs(q0, qi)
-    
+
     # Third derivative
     good_third = diff(loggammacs[0], x0, x1, x2).subs(V0(x0, x1, x2), Vi).subs(F0(x0, x1, x2), Fi).subs(V0D(x0, x1, x2), ViD).subs(x0, xj).subs(x1, xk).subs(x2, xm).subs(q0, qi)
     good_third = simplify(good_third)
-
-
     '''
+
+    '''For the Lyngby model composition derivatives remaining:
+
+    from sympy import *
+    N = 4
+    cmps = range(N)
+    xs = x0, x1, x2, x3 = symbols('x0, x1, x2, x3')
+    Vis = V0, V1, V2, V3 = symbols('V0, V1, V2, V3', cls=Function)
+    Vis = [Vis[i](x0, x1, x2, x3) for i in cmps]
+    loggammacs = [1 + log(Vis[i]/xs[i]) - Vis[i]/xs[i] for i in cmps]
+    diff(loggammacs[0], xs[1], xs[2])
+    '''
+
     def d2lngammas_c_dxixjs(self):
-        r'''
+        r'''Second composition derivative of
+        the combinatorial part of the UNIFAC model. For the modified UNIFAC
+        model, the equation is as follows; for the original UNIFAC and UNIFAC
+        LLE, replace :math:`V_i'` with :math:`V_i`.
+
         .. math::
-            \frac{\partial \ln \gamma^c_i}{\partial x_j \partial x_k} = 
+            \frac{\partial \ln \gamma^c_i}{\partial x_j \partial x_k} =
             5 q_{i} \left(\frac{- \frac{d^{2}}{d x_{k}d x_{j}} V_{i} + \frac{V_{i}
-            \frac{d^{2}}{d x_{k}d x_{j}} F_{i}}{F_{i}} + \frac{\frac{d}{d x_{j}} F_{i} 
+            \frac{d^{2}}{d x_{k}d x_{j}} F_{i}}{F_{i}} + \frac{\frac{d}{d x_{j}} F_{i}
             \frac{d}{d x_{k}} V_{i}}{F_{i}} + \frac{\frac{d}{d x_{k}} F_{i}
             \frac{d}{d x_{j}} V_{i}}{F_{i}} - \frac{2 V_{i} \frac{d}{d x_{j}}
             F_{i} \frac{d}{d x_{k}} F_{i}}{F_{i}^{2}}}{V_{i}} + \frac{\left(
@@ -3201,119 +6021,200 @@ class UNIFAC(GibbsExcess):
             \frac{d}{d x_{j}} V_{i} - \frac{V_{i} \frac{d}{d x_{j}} F_{i}}{
             F_{i}}\right) \frac{d}{d x_{k}} F_{i}}{F_{i} V_{i}} - \frac{V_{i}
             \frac{d^{2}}{d x_{k}d x_{j}} F_{i}}{F_{i}^{2}} - \frac{\frac{d}
-            {d x_{j}} F_{i} \frac{d}{d x_{k}} V_{i}}{F_{i}^{2}} 
+            {d x_{j}} F_{i} \frac{d}{d x_{k}} V_{i}}{F_{i}^{2}}
             - \frac{\frac{d}{d x_{k}} F_{i} \frac{d}{d x_{j}} V_{i}}{F_{i}^{2}}
             + \frac{2 V_{i} \frac{d}{d x_{j}} F_{i} \frac{d}{d x_{k}} F_{i}}
-            {F_{i}^{3}}\right) - \frac{d^{2}}{d x_{k}d x_{j}} Vi' 
+            {F_{i}^{3}}\right) - \frac{d^{2}}{d x_{k}d x_{j}} Vi'
             + \frac{\frac{d^{2}}{d x_{k}d x_{j}} Vi'}{Vi'} - \frac{\frac{d}
             {d x_{j}} Vi' \frac{d}{d x_{k}} Vi'}{Vi'^{2}}
-            
+
+        For the Lyngby model, the following equations are used:
+
+        .. math::
+            \frac{\partial^2 \ln \gamma^c_i}{\partial x_j \partial x_k} =
+            -\frac{\partial^2 V_i'}{\partial x_j \partial x_k}
+            + \frac{1}{V_i'} \frac{\partial^2 V_i'}{\partial x_j \partial x_k}
+            - \frac{1}{\left(V_i'\right)^2} \frac{\partial V_i'}{\partial x_j}
+             \frac{\partial V_i'}{\partial x_k}
+
+        Returns
+        -------
+        d2lngammas_c_dxixjs : list[list[list[float]]]
+            Combinatorial lngammas term second composition derivative, size
+            number of components by number of components by number of
+            components, [-]
         '''
         try:
             return self._d2lngammas_c_dxixjs
         except AttributeError:
             pass
         cmps, version, qs = self.cmps, self.version, self.qs
-        Vis = self.Vis()
-        dVis_dxs = self.dVis_dxs()
-        d2Vis_dxixjs = self.d2Vis_dxixjs()
+        try:
+            Vis = self._Vis
+        except AttributeError:
+            Vis = self.Vis()
+        try:
+            dVis_dxs = self._dVis_dxs
+        except AttributeError:
+            dVis_dxs = self.dVis_dxs()
+        try:
+            d2Vis_dxixjs = self._d2Vis_dxixjs
+        except AttributeError:
+            d2Vis_dxixjs = self.d2Vis_dxixjs()
+        try:
+            Fis = self._Fis
+        except AttributeError:
+            Fis = self.Fis()
+        try:
+            dFis_dxs = self._dFis_dxs
+        except AttributeError:
+            dFis_dxs = self.dFis_dxs()
+        try:
+            d2Fis_dxixjs = self._d2Fis_dxixjs
+        except AttributeError:
+            d2Fis_dxixjs = self.d2Fis_dxixjs()
 
-        Fis = self.Fis()
-        dFis_dxs = self.dFis_dxs()
-        d2Fis_dxixjs = self.d2Fis_dxixjs()
-        
         if self.version in (1, 4):
-            Vis_Dortmund = self.Vis_Dortmund()
-            dVis_Dortmund_dxs = self.dVis_Dortmund_dxs()
-            d2Vis_Dortmund_dxixjs = self.d2Vis_Dortmund_dxixjs()
+            try:
+                Vis_modified = self._Vis_modified
+            except AttributeError:
+                Vis_modified = self.Vis_modified()
+            try:
+                dVis_modified_dxs = self._dVis_modified_dxs
+            except AttributeError:
+                dVis_modified_dxs = self.dVis_modified_dxs()
+            try:
+                d2Vis_modified_dxixjs = self._d2Vis_modified_dxixjs
+            except AttributeError:
+                d2Vis_modified_dxixjs = self.d2Vis_modified_dxixjs()
         else:
-            Vis_Dortmund = Vis
-            dVis_Dortmund_dxs = dVis_dxs
-            d2Vis_Dortmund_dxixjs = d2Vis_dxixjs
+            Vis_modified = Vis
+            dVis_modified_dxs = dVis_dxs
+            d2Vis_modified_dxixjs = d2Vis_dxixjs
 
         d2lngammas_c_dxixjs = []
-        for i in cmps:
-            Vi = Vis[i]
-            qi = qs[i]
-            ViD = Vis_Dortmund[i]
-            ViD_inv2 = 1.0/(ViD*ViD)
-            Fi = Fis[i]
-            x1 = 1.0/Fi
-            x4 = x1*x1
-            Fi_inv3 = x1*x1*x1
-            x5 = Vis[i]*x4
-            x15 = 1.0/Vi
-            Vi_inv2 = x15*x15
-            matrix = []
-            for j in cmps:
-                x6 = dFis_dxs[i][j]
-                x10 = dVis_dxs[i][j]
-                dViD_dxj = dVis_Dortmund_dxs[i][j]
-                row = []
-                for k in cmps:
-                    x0 = d2Vis_Dortmund_dxixjs[i][j][k]
-                    x2 = d2Vis_dxixjs[i][j][k]
-                    x3 = d2Fis_dxixjs[i][j][k]
-                    x7 = dVis_dxs[i][k]
-                    dViD_dxk = dVis_Dortmund_dxs[i][k]
-                    x8 = x6*x7
-                    x9 = dFis_dxs[i][k]
-                    x11 = x10*x9
-                    x12 = 2.0*x6*x9
-                    
-                    x13 = Vi*x1
-                    x14 = x10 - x13*x6
-                    
-                    val = (5.0*qi*(-x1*x14*x15*x9 + x1*x2 - x11*x4
-                                   + x15*(x1*x11 + x1*x8 - x12*x5 + x13*x3 - x2)
-                                   - x3*x5 - x4*x8 + x14*x7*Vi_inv2 + Vi*x12*Fi_inv3) 
-                            - x0 + x0/ViD - dViD_dxj*dViD_dxk*ViD_inv2
-                            )
-                    row.append(val)
-                matrix.append(row)
-            d2lngammas_c_dxixjs.append(matrix)
-            
+
+        if version == 4:
+            for i in cmps:
+                Vi = Vis_modified[i]
+                matrix = []
+                for j in cmps:
+                    row = []
+                    for k in cmps:
+                        val = -d2Vis_modified_dxixjs[i][j][k] + 1.0/Vi*d2Vis_modified_dxixjs[i][j][k]
+                        val -= 1.0/Vi**2*dVis_modified_dxs[i][j]*dVis_modified_dxs[i][k]
+                        row.append(val)
+                    matrix.append(row)
+
+                d2lngammas_c_dxixjs.append(matrix)
+
+        else:
+            for i in cmps:
+                Vi = Vis[i]
+                qi = qs[i]
+                ViD = Vis_modified[i]
+                ViD_inv2 = 1.0/(ViD*ViD)
+                Fi = Fis[i]
+                x1 = 1.0/Fi
+                x4 = x1*x1
+                Fi_inv3 = x1*x1*x1
+                x5 = Vis[i]*x4
+                x15 = 1.0/Vi
+                Vi_inv2 = x15*x15
+                matrix = []
+                for j in cmps:
+                    x6 = dFis_dxs[i][j]
+                    x10 = dVis_dxs[i][j]
+                    dViD_dxj = dVis_modified_dxs[i][j]
+                    row = []
+                    for k in cmps:
+                        x0 = d2Vis_modified_dxixjs[i][j][k]
+                        x2 = d2Vis_dxixjs[i][j][k]
+                        x3 = d2Fis_dxixjs[i][j][k]
+                        x7 = dVis_dxs[i][k]
+                        dViD_dxk = dVis_modified_dxs[i][k]
+                        x8 = x6*x7
+                        x9 = dFis_dxs[i][k]
+                        x11 = x10*x9
+                        x12 = 2.0*x6*x9
+
+                        x13 = Vi*x1
+                        x14 = x10 - x13*x6
+
+                        val = (5.0*qi*(-x1*x14*x15*x9 + x1*x2 - x11*x4
+                                       + x15*(x1*x11 + x1*x8 - x12*x5 + x13*x3 - x2)
+                                       - x3*x5 - x4*x8 + x14*x7*Vi_inv2 + Vi*x12*Fi_inv3)
+                                - x0 + x0/ViD - dViD_dxj*dViD_dxk*ViD_inv2
+                                )
+                        row.append(val)
+                    matrix.append(row)
+                d2lngammas_c_dxixjs.append(matrix)
+
         self._d2lngammas_c_dxixjs = d2lngammas_c_dxixjs
         return d2lngammas_c_dxixjs
 
     def d3lngammas_c_dxixjxks(self):
-        r'''
-        
+        r'''Third composition derivative of
+        the combinatorial part of the UNIFAC model. For the modified UNIFAC
+        model, the equation is as follows; for the original UNIFAC and UNIFAC
+        LLE, replace :math:`V_i'` with :math:`V_i`.
+
         .. math::
             \frac{\partial \ln \gamma^c_i}{\partial x_j \partial x_k
-            \partial x_m} = - \frac{d^{3}}{d x_{m}d x_{k}d x_{j}} Vi' 
-            + \frac{\frac{d^{3}}{d x_{m}d x_{k}d x_{j}} Vi'}{Vi'} 
+            \partial x_m} = - \frac{d^{3}}{d x_{m}d x_{k}d x_{j}} Vi'
+            + \frac{\frac{d^{3}}{d x_{m}d x_{k}d x_{j}} Vi'}{Vi'}
             - \frac{\frac{d}{d x_{j}} Vi' \frac{d^{2}}{d x_{m}d x_{k}} Vi'}
-            {Vi'^{2}} - \frac{\frac{d}{d x_{k}} Vi' \frac{d^{2}}{d x_{m}d 
+            {Vi'^{2}} - \frac{\frac{d}{d x_{k}} Vi' \frac{d^{2}}{d x_{m}d
             x_{j}} Vi'}{Vi'^{2}} - \frac{\frac{d}{d x_{m}} Vi' \frac{d^{2}}
-            {d x_{k}d x_{j}} Vi'}{Vi'^{2}} + \frac{2 \frac{d}{d x_{j}} Vi' 
+            {d x_{k}d x_{j}} Vi'}{Vi'^{2}} + \frac{2 \frac{d}{d x_{j}} Vi'
             \frac{d}{d x_{k}} Vi' \frac{d}{d x_{m}} Vi'}{Vi'^{3}} - \frac{5
-            q_{i} \frac{d^{3}}{d x_{m}d x_{k}d x_{j}} V_{i}}{V_{i}} 
-            + \frac{5 q_{i} \frac{d}{d x_{j}} V_{i} \frac{d^{2}}{d x_{m}d x_{k}} V_{i}}{V_{i}^{2}} 
-            + \frac{5 q_{i} \frac{d}{d x_{k}} V_{i} \frac{d^{2}}{d x_{m}d x_{j}} V_{i}}{V_{i}^{2}} 
-            + \frac{5 q_{i} \frac{d}{d x_{m}} V_{i} \frac{d^{2}}{d x_{k}d x_{j}} V_{i}}{V_{i}^{2}} 
-            - \frac{10 q_{i} \frac{d}{d x_{j}} V_{i} \frac{d}{d x_{k}} V_{i} \frac{d}{d x_{m}} V_{i}}{V_{i}^{3}} 
-            + \frac{5 q_{i} \frac{d^{3}}{d x_{m}d x_{k}d x_{j}} F_{i}}{F_{i}} 
-            + \frac{5 q_{i} \frac{d^{3}}{d x_{m}d x_{k}d x_{j}} V_{i}}{F_{i}} 
-            - \frac{5 V_{i} q_{i} \frac{d^{3}}{d x_{m}d x_{k}d x_{j}} F_{i}}{F_{i}^{2}} 
-            - \frac{5 q_{i} \frac{d}{d x_{j}} F_{i} \frac{d^{2}}{d x_{m}d x_{k}} F_{i}}{F_{i}^{2}} 
-            - \frac{5 q_{i} \frac{d}{d x_{j}} F_{i} \frac{d^{2}}{d x_{m}d x_{k}} V_{i}}{F_{i}^{2}} 
-            - \frac{5 q_{i} \frac{d}{d x_{k}} F_{i} \frac{d^{2}}{d x_{m}d x_{j}} F_{i}}{F_{i}^{2}} 
-            - \frac{5 q_{i} \frac{d}{d x_{k}} F_{i} \frac{d^{2}}{d x_{m}d x_{j}} V_{i}}{F_{i}^{2}} 
-            - \frac{5 q_{i} \frac{d}{d x_{m}} F_{i} \frac{d^{2}}{d x_{k}d x_{j}} F_{i}}{F_{i}^{2}} 
-            - \frac{5 q_{i} \frac{d}{d x_{m}} F_{i} \frac{d^{2}}{d x_{k}d x_{j}} V_{i}}{F_{i}^{2}} 
-            - \frac{5 q_{i} \frac{d}{d x_{j}} V_{i} \frac{d^{2}}{d x_{m}d x_{k}} F_{i}}{F_{i}^{2}} 
-            - \frac{5 q_{i} \frac{d}{d x_{k}} V_{i} \frac{d^{2}}{d x_{m}d x_{j}} F_{i}}{F_{i}^{2}} 
-            - \frac{5 q_{i} \frac{d}{d x_{m}} V_{i} \frac{d^{2}}{d x_{k}d x_{j}} F_{i}}{F_{i}^{2}} 
-            + \frac{10 V_{i} q_{i} \frac{d}{d x_{j}} F_{i} \frac{d^{2}}{d x_{m}d x_{k}} F_{i}}{F_{i}^{3}} 
-            + \frac{10 V_{i} q_{i} \frac{d}{d x_{k}} F_{i} \frac{d^{2}}{d x_{m}d x_{j}} F_{i}}{F_{i}^{3}} 
-            + \frac{10 V_{i} q_{i} \frac{d}{d x_{m}} F_{i} \frac{d^{2}}{d x_{k}d x_{j}} F_{i}}{F_{i}^{3}} 
-            + \frac{10 q_{i} \frac{d}{d x_{j}} F_{i} \frac{d}{d x_{k}} F_{i} \frac{d}{d x_{m}} F_{i}}{F_{i}^{3}} 
-            + \frac{10 q_{i} \frac{d}{d x_{j}} F_{i} \frac{d}{d x_{k}} F_{i} \frac{d}{d x_{m}} V_{i}}{F_{i}^{3}} 
-            + \frac{10 q_{i} \frac{d}{d x_{j}} F_{i} \frac{d}{d x_{m}} F_{i} \frac{d}{d x_{k}} V_{i}}{F_{i}^{3}} 
-            + \frac{10 q_{i} \frac{d}{d x_{k}} F_{i} \frac{d}{d x_{m}} F_{i} \frac{d}{d x_{j}} V_{i}}{F_{i}^{3}} 
+            q_{i} \frac{d^{3}}{d x_{m}d x_{k}d x_{j}} V_{i}}{V_{i}}
+            + \frac{5 q_{i} \frac{d}{d x_{j}} V_{i} \frac{d^{2}}{d x_{m}d x_{k}} V_{i}}{V_{i}^{2}}
+            + \frac{5 q_{i} \frac{d}{d x_{k}} V_{i} \frac{d^{2}}{d x_{m}d x_{j}} V_{i}}{V_{i}^{2}}
+            + \frac{5 q_{i} \frac{d}{d x_{m}} V_{i} \frac{d^{2}}{d x_{k}d x_{j}} V_{i}}{V_{i}^{2}}
+            - \frac{10 q_{i} \frac{d}{d x_{j}} V_{i} \frac{d}{d x_{k}} V_{i} \frac{d}{d x_{m}} V_{i}}{V_{i}^{3}}
+            + \frac{5 q_{i} \frac{d^{3}}{d x_{m}d x_{k}d x_{j}} F_{i}}{F_{i}}
+            + \frac{5 q_{i} \frac{d^{3}}{d x_{m}d x_{k}d x_{j}} V_{i}}{F_{i}}
+            - \frac{5 V_{i} q_{i} \frac{d^{3}}{d x_{m}d x_{k}d x_{j}} F_{i}}{F_{i}^{2}}
+            - \frac{5 q_{i} \frac{d}{d x_{j}} F_{i} \frac{d^{2}}{d x_{m}d x_{k}} F_{i}}{F_{i}^{2}}
+            - \frac{5 q_{i} \frac{d}{d x_{j}} F_{i} \frac{d^{2}}{d x_{m}d x_{k}} V_{i}}{F_{i}^{2}}
+            - \frac{5 q_{i} \frac{d}{d x_{k}} F_{i} \frac{d^{2}}{d x_{m}d x_{j}} F_{i}}{F_{i}^{2}}
+            - \frac{5 q_{i} \frac{d}{d x_{k}} F_{i} \frac{d^{2}}{d x_{m}d x_{j}} V_{i}}{F_{i}^{2}}
+            - \frac{5 q_{i} \frac{d}{d x_{m}} F_{i} \frac{d^{2}}{d x_{k}d x_{j}} F_{i}}{F_{i}^{2}}
+            - \frac{5 q_{i} \frac{d}{d x_{m}} F_{i} \frac{d^{2}}{d x_{k}d x_{j}} V_{i}}{F_{i}^{2}}
+            - \frac{5 q_{i} \frac{d}{d x_{j}} V_{i} \frac{d^{2}}{d x_{m}d x_{k}} F_{i}}{F_{i}^{2}}
+            - \frac{5 q_{i} \frac{d}{d x_{k}} V_{i} \frac{d^{2}}{d x_{m}d x_{j}} F_{i}}{F_{i}^{2}}
+            - \frac{5 q_{i} \frac{d}{d x_{m}} V_{i} \frac{d^{2}}{d x_{k}d x_{j}} F_{i}}{F_{i}^{2}}
+            + \frac{10 V_{i} q_{i} \frac{d}{d x_{j}} F_{i} \frac{d^{2}}{d x_{m}d x_{k}} F_{i}}{F_{i}^{3}}
+            + \frac{10 V_{i} q_{i} \frac{d}{d x_{k}} F_{i} \frac{d^{2}}{d x_{m}d x_{j}} F_{i}}{F_{i}^{3}}
+            + \frac{10 V_{i} q_{i} \frac{d}{d x_{m}} F_{i} \frac{d^{2}}{d x_{k}d x_{j}} F_{i}}{F_{i}^{3}}
+            + \frac{10 q_{i} \frac{d}{d x_{j}} F_{i} \frac{d}{d x_{k}} F_{i} \frac{d}{d x_{m}} F_{i}}{F_{i}^{3}}
+            + \frac{10 q_{i} \frac{d}{d x_{j}} F_{i} \frac{d}{d x_{k}} F_{i} \frac{d}{d x_{m}} V_{i}}{F_{i}^{3}}
+            + \frac{10 q_{i} \frac{d}{d x_{j}} F_{i} \frac{d}{d x_{m}} F_{i} \frac{d}{d x_{k}} V_{i}}{F_{i}^{3}}
+            + \frac{10 q_{i} \frac{d}{d x_{k}} F_{i} \frac{d}{d x_{m}} F_{i} \frac{d}{d x_{j}} V_{i}}{F_{i}^{3}}
             - \frac{30 V_{i} q_{i} \frac{d}{d x_{j}} F_{i} \frac{d}{d x_{k}} F_{i} \frac{d}{d x_{m}} F_{i}}{F_{i}^{4}}
-            
+
+        For the Lyngby model, the following equations are used:
+
+        .. math::
+            \frac{\partial^3 \ln \gamma^c_i}{\partial x_j \partial x_k \partial
+            x_m} = \frac{\partial^3 V_i'}{\partial x_j \partial x_k \partial
+            x_m}\left(\frac{1}{V_i'} - 1\right)
+            - \frac{1}{(V_i')^2}\left(
+            \frac{\partial V_i'}{\partial x_j}\frac{\partial V_i'}{\partial x_k \partial x_m}
+            + \frac{\partial V_i'}{\partial x_k}\frac{\partial V_i'}{\partial x_j \partial x_m}
+            + \frac{\partial V_i'}{\partial x_m}\frac{\partial V_i'}{\partial x_j \partial x_k}
+            \right)
+            + \frac{2}{(V_i')^3}\frac{\partial V_i'}{\partial x_j}
+            \frac{\partial V_i'}{\partial x_k}\frac{\partial V_i'}{\partial x_m}
+
+
+        Returns
+        -------
+        d3lngammas_c_dxixjxks : list[list[list[list[float]]]]
+            Combinatorial lngammas term third composition derivative, size
+            number of components by number of components by number of
+            components by number of components, [-]
         '''
         try:
             return self._d3lngammas_c_dxixjxks
@@ -3329,78 +6230,99 @@ class UNIFAC(GibbsExcess):
         dFis_dxs = self.dFis_dxs()
         d2Fis_dxixjs = self.d2Fis_dxixjs()
         d3Fis_dxixjxks = self.d3Fis_dxixjxks()
-        
-        if self.version in (1, 4):
-            Vis_Dortmund = self.Vis_Dortmund()
-            dVis_Dortmund_dxs = self.dVis_Dortmund_dxs()
-            d2Vis_Dortmund_dxixjs = self.d2Vis_Dortmund_dxixjs()
-            d3Vis_Dortmund_dxixjxks = self.d3Vis_Dortmund_dxixjxks()
+
+        if version in (1, 4):
+            Vis_modified = self.Vis_modified()
+            dVis_modified_dxs = self.dVis_modified_dxs()
+            d2Vis_modified_dxixjs = self.d2Vis_modified_dxixjs()
+            d3Vis_modified_dxixjxks = self.d3Vis_modified_dxixjxks()
         else:
-            Vis_Dortmund = Vis
-            dVis_Dortmund_dxs = dVis_dxs
-            d2Vis_Dortmund_dxixjs = d2Vis_dxixjs
-            d3Vis_Dortmund_dxixjxks = d3Vis_dxixjxks
-        
+            Vis_modified = Vis
+            dVis_modified_dxs = dVis_dxs
+            d2Vis_modified_dxixjs = d2Vis_dxixjs
+            d3Vis_modified_dxixjxks = d3Vis_dxixjxks
+
         d3lngammas_c_dxixjxks = []
-        
-        for i in cmps:
-            Vi = Vis[i]
-            ViD = Vis_Dortmund[i]
-            Fi = Fis[i]
-            qi = qs[i]
-            third = []
-            for j in cmps:
-                hess = []
-                for k in cmps:
-                    row = []
-                    for m in cmps:
-                        x0 = d3Vis_Dortmund_dxixjxks[i][j][k][m]#Derivative(ViD, xj, xk, xm)
-                        x1 = 1/Fis[i]#1/Fi
-                        x2 = 5.0*qs[i]
-                        x3 = x2*d3Fis_dxixjxks[i][j][k][m]#Derivative(Fi, xj, xk, xm)
-                        x4 = x2*d3Vis_dxixjxks[i][j][k][m]#Derivative(Vi, xj, xk, xm)
-                        x5 = Vis_Dortmund[i]**-2#ViD**(-2)
-                        x6 = dVis_Dortmund_dxs[i][j]#Derivative(ViD, xj)
-                        x7 = dVis_Dortmund_dxs[i][k]#Derivative(ViD, xk)
-                        x8 = dVis_Dortmund_dxs[i][m]#Derivative(ViD, xm)
-                        x9 = Fis[i]**-2#Fi**(-2)
-                        x10 = x2*x9
-                        x11 = dFis_dxs[i][j]#Derivative(Fi, xj)
-                        x12 = d2Fis_dxixjs[i][k][m]#Derivative(Fi, xk, xm)
-                        x13 = x11*x12
-                        x14 = d2Vis_dxixjs[i][k][m]#Derivative(Vi, xk, xm)
-                        x15 = d2Fis_dxixjs[i][j][m]#Derivative(Fi, xj, xm)
-                        x16 = dFis_dxs[i][k]#Derivative(Fi, xk)
-                        x17 = x10*x16
-                        x18 = d2Vis_dxixjs[i][j][m]#Derivative(Vi, xj, xm)
-                        x19 = d2Fis_dxixjs[i][j][k]#Derivative(Fi, xj, xk)
-                        x20 = dFis_dxs[i][m]#Derivative(Fi, xm)
-                        x21 = x10*x20
-                        x22 = d2Vis_dxixjs[i][j][k]#Derivative(Vi, xj, xk)
-                        x23 = dVis_dxs[i][j]#Derivative(Vi, xj)
-                        x24 = dVis_dxs[i][k]#Derivative(Vi, xk)
-                        x25 = dVis_dxs[i][m]#Derivative(Vi, xm)
-                        x26 = x2/Vis[i]**2
-                        x27 = Fis[i]**(-3)
-                        x28 = 10*qs[i]
-                        x29 = x27*x28
-                        x30 = Vi*x29
-                        x31 = x11*x16
-                        x32 = x20*x29
-                        x33 = x25*x28        
-                        val = (-Vi*x3*x9 - x0 + x1*x3 + x1*x4 - x10*x11*x14 - x10*x12*x23 
-                               - x10*x13 - x10*x15*x24 - x10*x19*x25 + x11*x24*x32 + x13*x30 
-                               + x14*x23*x26 + x15*x16*x30 - x15*x17 + x16*x23*x32 - x17*x18 
-                               + x18*x24*x26 + x19*x20*x30 - x19*x21 - x21*x22 + x22*x25*x26 
-                               + x27*x31*x33 + x31*x32 - x5*x6*d2Vis_Dortmund_dxixjs[i][k][m]
-                               - x5*x7*d2Vis_Dortmund_dxixjs[i][j][m]
-                               - x5*x8*d2Vis_Dortmund_dxixjs[i][j][k]
-                               + x0/ViD + 2*x6*x7*x8/ViD**3 - x4/Vi - x23*x24*x33/Vi**3 - 30*Vi*qi*x20*x31/Fi**4)
-                        
-                        row.append(val)
-                    hess.append(row)
-                third.append(hess)
-            d3lngammas_c_dxixjxks.append(third)
-        
+
+        if version == 4:
+            for i in cmps:
+                Vi = Vis_modified[i]
+                third = []
+                for j in cmps:
+                    hess = []
+                    for k in cmps:
+                        row = []
+                        for m in cmps:
+                            val = d3Vis_modified_dxixjxks[i][j][k][m]*(1.0/Vi - 1.0)
+                            val-= 1.0/Vi**2*  (dVis_modified_dxs[i][j]*d2Vis_modified_dxixjs[i][k][m]
+                                             + dVis_modified_dxs[i][k]*d2Vis_modified_dxixjs[i][j][m]
+                                             + dVis_modified_dxs[i][m]*d2Vis_modified_dxixjs[i][j][k])
+
+                            val += 2.0/Vi**3*dVis_modified_dxs[i][j]*dVis_modified_dxs[i][k]*dVis_modified_dxs[i][m]
+
+                            row.append(val)
+                        hess.append(row)
+                    third.append(hess)
+                d3lngammas_c_dxixjxks.append(third)
+        else:
+            for i in cmps:
+                Vi = Vis[i]
+                ViD = Vis_modified[i]
+                Fi = Fis[i]
+                qi = qs[i]
+                third = []
+                for j in cmps:
+                    hess = []
+                    for k in cmps:
+                        row = []
+                        for m in cmps:
+                            x0 = d3Vis_modified_dxixjxks[i][j][k][m]#Derivative(ViD, xj, xk, xm)
+                            x1 = 1/Fis[i]#1/Fi
+                            x2 = 5.0*qs[i]
+                            x3 = x2*d3Fis_dxixjxks[i][j][k][m]#Derivative(Fi, xj, xk, xm)
+                            x4 = x2*d3Vis_dxixjxks[i][j][k][m]#Derivative(Vi, xj, xk, xm)
+                            x5 = Vis_modified[i]**-2#ViD**(-2)
+                            x6 = dVis_modified_dxs[i][j]#Derivative(ViD, xj)
+                            x7 = dVis_modified_dxs[i][k]#Derivative(ViD, xk)
+                            x8 = dVis_modified_dxs[i][m]#Derivative(ViD, xm)
+                            x9 = Fis[i]**-2#Fi**(-2)
+                            x10 = x2*x9
+                            x11 = dFis_dxs[i][j]#Derivative(Fi, xj)
+                            x12 = d2Fis_dxixjs[i][k][m]#Derivative(Fi, xk, xm)
+                            x13 = x11*x12
+                            x14 = d2Vis_dxixjs[i][k][m]#Derivative(Vi, xk, xm)
+                            x15 = d2Fis_dxixjs[i][j][m]#Derivative(Fi, xj, xm)
+                            x16 = dFis_dxs[i][k]#Derivative(Fi, xk)
+                            x17 = x10*x16
+                            x18 = d2Vis_dxixjs[i][j][m]#Derivative(Vi, xj, xm)
+                            x19 = d2Fis_dxixjs[i][j][k]#Derivative(Fi, xj, xk)
+                            x20 = dFis_dxs[i][m]#Derivative(Fi, xm)
+                            x21 = x10*x20
+                            x22 = d2Vis_dxixjs[i][j][k]#Derivative(Vi, xj, xk)
+                            x23 = dVis_dxs[i][j]#Derivative(Vi, xj)
+                            x24 = dVis_dxs[i][k]#Derivative(Vi, xk)
+                            x25 = dVis_dxs[i][m]#Derivative(Vi, xm)
+                            x26 = x2/Vis[i]**2
+                            x27 = Fis[i]**(-3)
+                            x28 = 10*qs[i]
+                            x29 = x27*x28
+                            x30 = Vi*x29
+                            x31 = x11*x16
+                            x32 = x20*x29
+                            x33 = x25*x28
+                            val = (-Vi*x3*x9 - x0 + x1*x3 + x1*x4 - x10*x11*x14 - x10*x12*x23
+                                   - x10*x13 - x10*x15*x24 - x10*x19*x25 + x11*x24*x32 + x13*x30
+                                   + x14*x23*x26 + x15*x16*x30 - x15*x17 + x16*x23*x32 - x17*x18
+                                   + x18*x24*x26 + x19*x20*x30 - x19*x21 - x21*x22 + x22*x25*x26
+                                   + x27*x31*x33 + x31*x32 - x5*x6*d2Vis_modified_dxixjs[i][k][m]
+                                   - x5*x7*d2Vis_modified_dxixjs[i][j][m]
+                                   - x5*x8*d2Vis_modified_dxixjs[i][j][k]
+                                   + x0/ViD + 2*x6*x7*x8/ViD**3 - x4/Vi - x23*x24*x33/Vi**3 - 30*Vi*qi*x20*x31/Fi**4)
+
+                            row.append(val)
+                        hess.append(row)
+                    third.append(hess)
+                d3lngammas_c_dxixjxks.append(third)
+
         self._d3lngammas_c_dxixjxks = d3lngammas_c_dxixjxks
         return d3lngammas_c_dxixjxks

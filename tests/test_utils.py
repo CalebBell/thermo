@@ -23,150 +23,33 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 import numpy as np
+from chemicals.utils import *
 from thermo.utils import *
 from thermo.stream import Stream
+from fluids.numerics import assert_close, assert_close1d
 
+def test_allclose_variable():
+    x = [2.7244322249597719e-08, 3.0105683900110473e-10, 2.7244124924802327e-08, 3.0105259397637556e-10, 2.7243929226310193e-08, 3.0104990272770901e-10, 2.7243666849384451e-08, 3.0104101821236015e-10, 2.7243433745917367e-08, 3.0103707421519949e-10]
+    y = [2.7244328304561904e-08, 3.0105753470546008e-10, 2.724412872417824e-08,  3.0105303055834564e-10, 2.7243914341030203e-08, 3.0104819238021998e-10, 2.7243684057561379e-08, 3.0104299541023674e-10, 2.7243436694839306e-08, 3.010374130526363e-10]
 
-def test_to_num():
-    assert to_num(['1', '1.1', '1E5', '0xB4', '']) == [1.0, 1.1, 100000.0, '0xB4', None]
-
-
-def test_remove_zeros():
-    a = remove_zeros([0, 1e-9, 1], 1e-12)
-    assert type(a) == list
-    assert_allclose(a, [9.99999998999e-13, 9.99999998999e-10, 0.999999998999])
-    b = remove_zeros(np.array([0, 1e-9, 1]), 1e-12)
-    assert_allclose(b, [9.99999998999e-13, 9.99999998999e-10, 0.999999998999])
-    assert type(b) == np.ndarray
-    
-    assert remove_zeros([.3, .2, .5], 1e-12) == [0.3, 0.2, 0.5]
-    
-    c = remove_zeros(np.array([.3, .2, .5]), 1e-12)
-    assert_allclose(c, [.3, .2, .5])
-    assert type(c) == np.ndarray
-
-
-def test_none_and_length_check():
-    assert True == none_and_length_check([[1,2,3]])
-    
-    assert True == none_and_length_check(([1, 1], [1, 1], [1, 30], [10,0]), length=2)
-    assert True == none_and_length_check(([1, 1], [1, 1], [1, 30], [10,0]))
-
-    assert False == none_and_length_check(([1, 1], [None, 1], [1, 30], [10,0]), length=2)
-    assert False == none_and_length_check(([None, 1], [1, 1], [1, 30], [10,0]))
-    assert False == none_and_length_check(([1, 1], [None, 1], [1, None], [10,0]), length=2)
-    assert False == none_and_length_check(([None, 1], [1, 1], [1, 30], [None,0]))
-
-    assert False == none_and_length_check(([1, 1, 1], [1, 1], [1, 30], [10,0]), length=2)
-    assert False == none_and_length_check(([1, 1], [1, 1, 1], [1, 30], [10,0]))
-    assert False == none_and_length_check(([1, 1, 1], [1, 1], [1, 30, 1], [10,0]), length=2)
-    assert False == none_and_length_check(([1, 1], [1, 1, 1], [1, 30], [10,0, 1]))
-    assert False == none_and_length_check(([1, 1, 1], [1, 1, 1], [1, 30, 1], [10,0]), length=3)
-    assert False == none_and_length_check(([1, 1], [1, 1, 1], [1, 30, 1], [10,0, 1]))
-
-    assert True == none_and_length_check(([1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1]), length=8)
-    assert True == none_and_length_check(([1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1]))
-
-    assert False == none_and_length_check(([1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1]), length=9)
-    assert False == none_and_length_check(([1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1]), length=7)
-    assert False == none_and_length_check(([1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, None]), length=8)
-    assert False == none_and_length_check(([1, 1, None, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1]), length=8)
-
-    # Test list input instead of tuples
-    assert True == none_and_length_check([[1, 1], [1, 1], [1, 30], [10,0]], length=2)
-    assert True == none_and_length_check([[1, 1], [1, 1], [1, 30], [10,0]])
-
-    assert True == none_and_length_check([[1, 1], [1, 1], [1, 30], [10,0]], length=2)
-    assert True == none_and_length_check([[1, 1], [1, 1], [1, 30], [10,0]])
-
-    # Test with numpy arrays
-    assert True == none_and_length_check((np.array([1, 1, 1, 1, 1, 1, 1, 1]), np.array([1, 1, 1, 1, 1, 1, 1, 1]), [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1]), length=8)
-    assert False == none_and_length_check((np.array([1, 1, 1, 1, 1, 1, 1]), np.array([1, 1, 1, 1, 1, 1, 1, 1]), [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1]), length=8)
-    assert False == none_and_length_check((np.array([1, 1, 1, 1, 1, 1, 1, 7]), np.array([1, 1, 1, 1, 1, 1, 1, 1]), [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1]), length=7)
-    assert True == none_and_length_check(np.array([[1, 1], [1, 1], [1, 30], [10,0]]))
-
-    assert True == none_and_length_check(np.array([[1, 1], [1, 1], [1, 30], [10,0]]))
-    assert True == none_and_length_check(np.array([[1, 1], [1, 1], [1, 30], [10,0]]), length=2)
-    assert False == none_and_length_check(np.array([[1, 1], [1, 1], [1, 30], [10,0]]), length=3)
-    assert False == none_and_length_check(np.array([[1, 1], [1, 1, 10], [1, 30], [10,0]]), length=3)
-
-
-
-def test_CAS2int():
-    assert CAS2int('7704-34-9') == 7704349
+    assert allclose_variable(x, y, limits=[.0, .5], rtols=[1E-5, 1E-6])
 
     with pytest.raises(Exception):
-        CAS2int(7704349)
-
-def test_int2CAS():
-    assert int2CAS(7704349) == '7704-34-9'
+        assert allclose_variable(x, y, limits=[.0, .1], rtols=[1E-5, 1E-6])
 
     with pytest.raises(Exception):
-        CAS2int(7704349.0)
+        allclose_variable(x, y[1:], limits=[.0, .5], rtols=[1E-5, 1E-6])
+
+    with pytest.raises(Exception):
+        ans = allclose_variable(x, y, limits=[.0, .1])
 
 
-def test_zs_to_ws():
-    ws_calc = zs_to_ws([0.5, 0.5], [10, 20])
-    ws = [0.3333333333333333, 0.6666666666666666]
-    assert_allclose(ws_calc, ws)
+    x = [1,1,1,1,1,1,1,1,1]
+    y = [.9,.9,.9,.9,.9,.9,.9,.9, .9]
+    assert allclose_variable(x, y, limits=[.0], atols=[.1])
 
 
-def test_ws_to_zs():
-    zs_calc = ws_to_zs([0.3333333333333333, 0.6666666666666666], [10, 20])
-    zs = [0.5, 0.5]
-    assert_allclose(zs_calc, zs)
 
-
-def test_zs_to_Vfs():
-    Vfs_calc = zs_to_Vfs([0.637, 0.363], [8.0234e-05, 9.543e-05])
-    Vfs = [0.5960229712956298, 0.4039770287043703]
-    assert_allclose(Vfs_calc, Vfs)
-
-
-def test_Vfs_to_zs():
-    zs_calc = Vfs_to_zs([0.596, 0.404], [8.0234e-05, 9.543e-05])
-    zs = [0.6369779395901142, 0.3630220604098858]
-    assert_allclose(zs_calc, zs)
-
-
-def test_B_To_Z():
-    Z_calc = B_to_Z(-0.0015, 300, 1E5)
-    assert_allclose(Z_calc, 0.9398638020957176)
-
-
-def test_B_from_Z():
-    B_calc = B_from_Z(0.94, 300, 1E5)
-    assert_allclose(B_calc, -0.0014966032712675846)
-
-
-def test_Z():
-    Z_calc = Z(600, P=1E6, V=0.00463)
-    assert_allclose(Z_calc, 0.9281016730797027)
-
-def test_vapor_mass_quality():
-    x = vapor_mass_quality(0.5, 60, 30)
-    assert_allclose(x, 1/3.)
-
-def test_Vm_to_rho():
-    rho = Vm_to_rho(0.000132, 86.18)
-    assert_allclose(rho, 652.8787878787879)
-
-
-def test_rho_to_Vm():
-    Vm = rho_to_Vm(652.9, 86.18)
-    assert_allclose(Vm, 0.00013199571144126206)
-    assert_allclose(652.9, Vm_to_rho(rho_to_Vm(652.9, 86.18), 86.18))
-
-
-def test_isentropic_exponent():
-    k = isentropic_exponent(33.6, 25.27)
-    assert_allclose(k, 1.329639889196676)
-
-    
-def test_Parachor():
-    P = Parachor(100.15888, 800.8088185536124, 4.97865317223119, 0.02672166960656005)
-    assert_allclose(P, 5.088443542210164e-05)
-    
 
 def test_phase_select_property():
     assert 150 == phase_select_property(phase='s', s=150, l=10)
@@ -180,22 +63,48 @@ def test_phase_select_property():
 
 
 
-def test_mixing_simple():
-    prop = mixing_simple([0.1, 0.9], [0.01, 0.02])
-    assert_allclose(prop, 0.019)
+def test_identify_phase():
+    # Above the melting point, higher pressure than the vapor pressure
+    assert 'l' == identify_phase(T=280, P=101325, Tm=273.15, Psat=991)
 
-    assert None == mixing_simple([0.01, 0.02], [0.1])
+    # Above the melting point, lower pressure than the vapor pressure
+    assert 'g' == identify_phase(T=480, P=101325, Tm=273.15, Psat=1791175)
 
-def test_mixing_logarithmic():
-    prop = mixing_logarithmic([0.1, 0.9], [0.01, 0.02])
-    assert_allclose(prop, 0.01866065983073615)
+    # Above the melting point, above the critical pressure (no vapor pressure available)
+    assert 'g' == identify_phase(T=650, P=10132500000, Tm=273.15, Psat=None, Tc=647.3)
 
-    assert None == mixing_logarithmic([0.1], [0.01, 0.02])
+    # No vapor pressure specified, under the melting point
+    assert 's' == identify_phase(T=250, P=100, Tm=273.15)
 
-def test_normalize():
-    fractions_calc = normalize([3, 2, 1])
-    fractions = [0.5, 0.3333333333333333, 0.16666666666666666]
-    assert_allclose(fractions, fractions_calc)
+    # No data, returns None
+    assert None == identify_phase(T=500, P=101325)
+
+    # No Tm, under Tb, at normal atmospheric pressure
+    assert 'l' == identify_phase(T=200, P=101325, Tb=373.15)
+
+    # Incorrect case by design:
+    # at 371 K, Psat is 93753 Pa, meaning the actual phase is gas
+    assert 'l' == identify_phase(T=371, P=91000, Tb=373.15)
+
+    # Very likely wrong, pressure has dropped substantially
+    # Consider behavior
+    assert 'l' == identify_phase(T=373.14, P=91327, Tb=373.15)
+
+    # Above Tb, while still atmospheric == gas
+    assert 'g' == identify_phase(T=400, P=101325, Tb=373.15)
+
+    # Above Tb, 1 MPa == None - don't try to guess
+    assert None == identify_phase(T=400, P=1E6, Tb=373.15)
+
+    # Another wrong point - at 1 GPa, should actually be a solid as well
+    assert 'l' == identify_phase(T=371, P=1E9, Tb=373.15)
+
+    # At the critical point, consider it a gas
+    assert 'g' == identify_phase(T=647.3, P=22048320.0, Tm=273.15, Psat=22048320.0, Tc=647.3)
+
+    # Just under the critical point
+    assert 'l' == identify_phase(T=647.2, P=22048320.0, Tm=273.15, Psat=22032638.96749514, Tc=647.3)
+
 
 
 def test_TDependentProperty():
@@ -239,14 +148,14 @@ def test_TDependentProperty():
     # With pytest.raise(Exception) BAD METHOD here
     # TODO: Interpolate
 
-    # Test select_valid_methods without user_methods
-    assert [TEST_METHOD_2, TEST_METHOD_1] == EtOH.select_valid_methods(320) # Both in range, correctly ordered
-    assert [TEST_METHOD_1] == EtOH.select_valid_methods(210) # Choice 2 but only one available
-    assert [TEST_METHOD_2] == EtOH.select_valid_methods(390) # Choice 1 but only one available
+    # Test valid_methods without user_methods
+    assert [TEST_METHOD_2, TEST_METHOD_1] == EtOH.valid_methods(320)  # Both in range, correctly ordered
+    assert [TEST_METHOD_1] == EtOH.valid_methods(210)  # Choice 2 but only one available
+    assert [TEST_METHOD_2] == EtOH.valid_methods(390)  # Choice 1 but only one available
 
     # Test calculate
     # Mid, all methods, and with __call__, twice
-    assert 1.9 == EtOH.T_dependent_property(300)    
+    assert 1.9 == EtOH.T_dependent_property(300)
     assert 1.9 == EtOH(300)
     assert 1.9 == EtOH(300)
     assert 1.9 == EtOH.calculate(300, TEST_METHOD_2)
@@ -269,10 +178,10 @@ def test_TDependentProperty():
     # Test some failures
     with pytest.raises(Exception):
         EtOHFail = TDependentProperty(CASRN='67-56-1')
-        EtOHFail.set_user_methods([], forced=True)
+        EtOHFail.method = None
     with pytest.raises(Exception):
         EtOHFail = TDependentProperty(CASRN='67-56-1')
-        EtOHFail.set_user_methods(['NOTAMETHOD'])
+        EtOHFail.method = ['NOTAMETHOD']
     with pytest.raises(Exception):
         EtOHFail = TDependentProperty(CASRN='67-56-1')
         EtOHFail.test_method_validity(300, 'NOTAMETHOD')
@@ -280,32 +189,26 @@ def test_TDependentProperty():
 
     # Test with user methods
     EtOH = TDependentProperty(CASRN='67-56-1')
-    EtOH.set_user_methods(TEST_METHOD_1)
+    EtOH.method = TEST_METHOD_1
     assert EtOH.user_methods == [TEST_METHOD_1]
     assert 1.6 == EtOH.T_dependent_property(300)
 
-    EtOH.set_user_methods(TEST_METHOD_2)
+    EtOH.method = TEST_METHOD_2
     assert EtOH.user_methods == [TEST_METHOD_2]
-    assert 1.5 == EtOH.T_dependent_property(250) # Low, fails to other method though
-    EtOH.set_user_methods(TEST_METHOD_2, forced=True)
+    assert EtOH.T_dependent_property(250) is None
+    EtOH.method = METHOD_2
     assert None == EtOH.T_dependent_property(250) # Test not calculated if user method not specified
-
-    EtOH.set_user_methods([TEST_METHOD_1, TEST_METHOD_2])
-    assert EtOH.user_methods == [TEST_METHOD_1, TEST_METHOD_2]
-    assert 1.6 == EtOH.T_dependent_property(300)
-    assert 1.5 == EtOH.T_dependent_property(250)
-
 
     EtOH = TDependentProperty(CASRN='67-56-1')
     Ts = [195, 205, 300, 400, 450]
     props = [1.2, 1.3, 1.7, 1.9, 2.5]
 
     # Test naming and retrieving
-    EtOH.set_tabular_data(Ts=Ts, properties=props)
+    EtOH.add_tabular_data(Ts=Ts, properties=props)
     assert set(['Tabular data series #0', 'Test method 1', 'Test method 2']) == EtOH.all_methods
-    EtOH.set_tabular_data(Ts=Ts, properties=props)
+    EtOH.add_tabular_data(Ts=Ts, properties=props)
     assert set(['Tabular data series #1','Tabular data series #0', 'Test method 1', 'Test method 2']) == EtOH.all_methods
-    EtOH.set_tabular_data(Ts=Ts, properties=props, name='awesome')
+    EtOH.add_tabular_data(Ts=Ts, properties=props, name='awesome')
     assert set(['awesome', 'Tabular data series #1','Tabular data series #0', 'Test method 1', 'Test method 2']) == EtOH.all_methods
 
 
@@ -318,16 +221,16 @@ def test_TDependentProperty():
 
     # Test naming and retrieving with user methods
     EtOH = TDependentProperty(CASRN='67-56-1')
-    EtOH.set_user_methods(TEST_METHOD_1)
-    EtOH.set_tabular_data(Ts=Ts, properties=props)
-    assert EtOH.user_methods == ['Tabular data series #0', 'Test method 1']
-    EtOH.set_tabular_data(Ts=Ts, properties=props, name='hi')
-    assert EtOH.user_methods == ['hi', 'Tabular data series #0', 'Test method 1']
+    EtOH.method = TEST_METHOD_1
+    EtOH.add_tabular_data(Ts=Ts, properties=props)
+    assert set(EtOH.all_methods) == set(['Tabular data series #0', 'Test method 1', 'Test method 2'])
+    EtOH.add_tabular_data(Ts=Ts, properties=props, name='hi')
+    assert set(EtOH.all_methods) == set(['hi', 'Tabular data series #0', 'Test method 1', 'Test method 2'])
 
     with pytest.raises(Exception):
-        EtOH.set_tabular_data(Ts=[195, 205, 300, 400, 450], properties=[1.2, 1.3, 1.7, 1.9, -1], name='awesome')
+        EtOH.add_tabular_data(Ts=[195, 205, 300, 400, 450], properties=[1.2, 1.3, 1.7, 1.9, -1], name='awesome')
 
-    EtOH.set_tabular_data(Ts=[195, 205, 300, 400, 450], properties=[1.2, 1.3, 1.7, 1.9, -1], name='awesome', check_properties=False)
+    EtOH.add_tabular_data(Ts=[195, 205, 300, 400, 450], properties=[1.2, 1.3, 1.7, 1.9, -1], name='awesome', check_properties=False)
 
 
     # Test interpolation
@@ -336,7 +239,7 @@ def test_TDependentProperty():
     props = [1.2, 1.3, 1.4, 1.5, 1.6]
 
     # Test the cubic spline
-    EtOH.set_tabular_data(Ts=Ts, properties=props, name='test_set')
+    EtOH.add_tabular_data(Ts=Ts, properties=props, name='test_set')
     assert_allclose(1.2,  EtOH.T_dependent_property(200))
     assert_allclose(1.1, EtOH.T_dependent_property(150))
     assert_allclose(1.7, EtOH.T_dependent_property(500))
@@ -350,7 +253,7 @@ def test_TDependentProperty():
     props = [1.2, 1.3, 1.5, 1.6]
 
     # Test the cubic spline
-    EtOH.set_tabular_data(Ts=Ts, properties=props, name='test_set')
+    EtOH.add_tabular_data(Ts=Ts, properties=props, name='test_set')
     assert_allclose(4/3.,EtOH.T_dependent_property(275))
 
     # Set the interpolation methods
@@ -362,7 +265,7 @@ def test_TDependentProperty():
     EtOH.interpolation_property_inv = lambda prop: 1./prop
 
     # Test the linear interpolation with transform
-    EtOH.set_tabular_data(Ts=Ts, properties=props, name='test_set')
+    EtOH.add_tabular_data(Ts=Ts, properties=props, name='test_set')
     assert_allclose(1.336126372035137, EtOH.T_dependent_property(275))
 
 
@@ -373,172 +276,15 @@ def test_TDependentProperty():
 
     # Test naming and retrieving
     with pytest.raises(Exception):
-        EtOH.set_tabular_data(Ts=Ts, properties=props)
+        EtOH.add_tabular_data(Ts=Ts, properties=props)
 
-
-def test_Z_from_virial_density_form():
-    Z_calc = Z_from_virial_density_form(300, 122057.233762653, 1E-4, 1E-5, 1E-6, 1E-7)
-    assert_allclose(Z_calc, 1.2843494052609186)
-    
-    Z_calc = Z_from_virial_density_form(300, 102031.881198762, 1e-4, 1e-5, 1e-6)
-    assert_allclose(Z_calc, 1.0736323841544937)
-
-    Z_calc = Z_from_virial_density_form(300, 96775.8831504971, 1e-4, 1e-5)
-    assert_allclose(Z_calc, 1.018326089216066)
-    
-    Z_calc = Z_from_virial_density_form(300, 95396.3561037084, 1e-4)
-    assert_allclose(Z_calc,  1.003809998713499)
-    
-    assert_allclose(1, Z_from_virial_density_form(300, 95396.3561037084))
-    
-    '''B-only solution, derived as follows:
-    
-    >>> B, C, D, E = symbols('B, C, D, E')
-    >>> P, V, Z, R, T = symbols('P, V, Z, R, T', positive=True, real=True, nonzero=True)
-    >>> rho = 1/V
-    >>> to_slv = Eq(P*V/R/T, 1 + B*rho)
-    >>> slns = solve(to_slv, V)
-    >>> simplify(slns[1]*P/R/T)
-    1/2 + sqrt(4*B*P + R*T)/(2*sqrt(R)*sqrt(T))
-    
-    To check this, simply disable the if statement and allow the numerical 
-    algorithm to run.
-    '''
-
-
-def test_Z_from_virial_pressure_form():
-    Z_calc = Z_from_virial_pressure_form(102919.99946855308, 4.032286555169439e-09, 1.6197059494442215e-13, 6.483855042486911e-19)
-    assert_allclose(Z_calc, 1.00283753944)
-    
-    Z_calc = Z_from_virial_pressure_form(102847.17619188508, 4.032286555169439e-09, 1.6197059494442215e-13)
-    assert_allclose(Z_calc, 1.00212796)
-
-    Z_calc = Z_from_virial_pressure_form(102671.27455742132, 4.032286555169439e-09)
-    assert_allclose(Z_calc, 1.000414)
-    
-    Z_calc = Z_calc = Z_from_virial_pressure_form(102671.27455742132)
-    assert_allclose(Z_calc, 1)
-
-
-def test_isobaric_expansion():
-    beta = isobaric_expansion(0.000130229900873546, 1.58875261849113e-7)
-    assert_allclose(beta, 0.0012199599384121608)
-    
-def test_isothermal_compressibility():
-    kappa = isothermal_compressibility(0.000130229900873546, -2.72902118209903e-13)
-    assert_allclose(2.09554116511916e-9, kappa)
-    
-
-def test_phase_identification_parameter():
-    PIP = phase_identification_parameter(0.000130229900874, 582169.397484, -3.66431747236e+12, 4.48067893805e+17, -20518995218.2)
-    assert_allclose(PIP, 11.33428990564796)
-    
-    assert 'l' == phase_identification_parameter_phase(-20518995218.2, 0.000130229900874, 582169.397484, -3.66431747236e+12, 4.48067893805e+17)
-    # Artificially give a value to make it be solid
-    assert 's' == phase_identification_parameter_phase(+20518995218.2)
-
-def test_Cp_minus_Cv():
-    d = Cp_minus_Cv(299, 582232.475794113, -3665180614672.253)
-    assert_allclose(d, 27.654681381642394)
-
-
-def test_speed_of_sound():
-    # Matches exactly
-    w = speed_of_sound(V=0.00229754, dP_dV=-3.5459e+08, Cp=153.235, Cv=132.435, MW=67.152)
-    assert_allclose(w, 179.5868138460819)
-    
-    # No MW version
-    w = speed_of_sound(V=0.00229754, dP_dV=-3.5459e+08, Cp=153.235, Cv=132.435)
-    assert_allclose(w, 46.537593457316525)
-    
-    
-def test_mu_JT():
-    # Matches exactly
-    mu_JT = Joule_Thomson(T=390, V=0.00229754, Cp=153.235, dV_dT=1.226396e-05)
-    assert_allclose(mu_JT, 1.621956080529905e-05)
-    
-    mu_JT = Joule_Thomson(T=390, V=0.00229754, Cp=153.235, beta=0.005337865717245402)
-    assert_allclose(mu_JT, 1.621956080529905e-05)
-
-    with pytest.raises(Exception):
-        Joule_Thomson(T=390, V=0.00229754, Cp=153.235)
-        
-def test_API_SG():
-    SG = API_to_SG(60.62)
-    assert_allclose(SG, 0.7365188423901728)
-    
-    API = SG_to_API(0.7365)
-    assert_allclose(API, 60.62491513917175)
-    
-def test_SG():
-    sg = SG(860)
-    assert_allclose(sg, 0.8608461408159591)
-
-
-def test_allclose_variable():
-    x = [2.7244322249597719e-08, 3.0105683900110473e-10, 2.7244124924802327e-08, 3.0105259397637556e-10, 2.7243929226310193e-08, 3.0104990272770901e-10, 2.7243666849384451e-08, 3.0104101821236015e-10, 2.7243433745917367e-08, 3.0103707421519949e-10]
-    y = [2.7244328304561904e-08, 3.0105753470546008e-10, 2.724412872417824e-08,  3.0105303055834564e-10, 2.7243914341030203e-08, 3.0104819238021998e-10, 2.7243684057561379e-08, 3.0104299541023674e-10, 2.7243436694839306e-08, 3.010374130526363e-10]
-
-    assert allclose_variable(x, y, limits=[.0, .5], rtols=[1E-5, 1E-6])
-        
-    with pytest.raises(Exception):
-        assert allclose_variable(x, y, limits=[.0, .1], rtols=[1E-5, 1E-6])
-        
-    with pytest.raises(Exception):
-        allclose_variable(x, y[1:], limits=[.0, .5], rtols=[1E-5, 1E-6])
-
-    with pytest.raises(Exception):
-        ans = allclose_variable(x, y, limits=[.0, .1])
-
-
-    x = [1,1,1,1,1,1,1,1,1]
-    y = [.9,.9,.9,.9,.9,.9,.9,.9, .9]
-    assert allclose_variable(x, y, limits=[.0], atols=[.1])
-
-
-def test_horner():
-    assert horner([1,2,3], 3) == 18
-    
-@pytest.mark.sympy
-def test_polylog2():
-    x = polylog2(0.5)
-    assert_allclose(x, 0.5822405264516294)
-    
-    from sympy import polylog
-    xs = np.linspace(0,0.99999, 50)
-    ys_act = [float(polylog(2, x)) for x in xs]
-    ys = [polylog2(x) for x in xs]
-    assert_allclose(ys, ys_act, rtol=1E-7, atol=1E-10)
-    
-    
-def test_mix_component_flows():
-    names, flows = mix_component_flows(['7732-18-5', '64-17-5'], ['7732-18-5', '67-56-1'], 1, 1, [0.5, 0.5], [0.5, 0.5])
-    assert names == ['64-17-5', '67-56-1', '7732-18-5']
-    assert_allclose(flows, [ 0.5,  0.5,  1.])
-    
-    names, flows = mix_component_flows(['7732-18-5', '67-56-1'], ['7732-18-5', '67-56-1'], 1, 1, [0.2, 0.8], [0.3, 0.7])
-    assert names == ['7732-18-5', '67-56-1']
-    assert_allclose(flows,  [0.5, 1.5])
-    
-def test_mix_multiple_component_flows():
-    names, flows = mix_multiple_component_flows([['7732-18-5', '64-17-5'], ['7732-18-5', '67-56-1']], [1, 1], [[0.5, 0.5], [0.5, 0.5]])
-    assert names == ['64-17-5', '67-56-1', '7732-18-5']
-    assert_allclose(flows, [ 0.5,  0.5,  1.])
-    
-    args = ([['7732-18-5', '64-17-5'], ['7732-18-5', '64-17-5'], ['7732-18-5', '67-56-1'], ['7732-18-5', '67-56-1']], [1, 1, 1, 1], [[0.5, 0.5], [0.5, 0.5], [0.5, 0.5], [0.5, 0.5]])
-    names, flows = mix_multiple_component_flows(*args)
-    assert names == ['64-17-5', '67-56-1', '7732-18-5']
-    assert_allclose(flows, [1.0, 1.0, 2.0])
-
-    names, flows = mix_multiple_component_flows([['7732-18-5', '64-17-5']], [1], [[0.5 , 0.5]])
-    assert names == ['7732-18-5', '64-17-5']
-    assert_allclose(flows, [ 0.5, 0.5,])
+del test_TDependentProperty
 
 def test_assert_component_balance():
     f1 = Stream(['water', 'ethanol', 'pentane'], zs=[.5, .4, .1], T=300, P=1E6, n=50)
     f2 = Stream(['water', 'methanol'], zs=[.5, .5], T=300, P=9E5, n=25)
     f3 = Stream(IDs=['109-66-0', '64-17-5', '67-56-1', '7732-18-5'], ns=[5.0, 20.0, 12.5, 37.5], T=300, P=850000)
-    
+
     assert_component_balance([f1, f2], f3)
 
     f3 = Stream(IDs=['109-66-0', '64-17-5', '67-56-1', '7732-18-5'], ns=[6.0, 20.0, 12.5, 37.5], T=300, P=850000)
@@ -546,198 +292,34 @@ def test_assert_component_balance():
         assert_component_balance([f1, f2], f3)
 
 
-def test_solve_flow_composition_mix():
-    from thermo.utils import solve_flow_composition_mix
-    Fs = [3600, None, None, None, None]
-    zs = [None, .1, .2, None, None]
-    ws = [None, None, None, .01, .02]
-    MWs = [18.01528, 46.06844, 32.04186, 72.151, 142.286]
-    Fs, zs, ws = solve_flow_composition_mix(Fs, zs, ws, MWs)
-    Fs_expect = [3600, 519.3039148597746, 1038.6078297195493, 17.44015034881175, 17.687253669610733]
-    zs_expect = [0.6932356751002142, 0.1, 0.2, 0.003358370666918819, 0.0034059542328670383]
-    ws_expect = [0.5154077420893427, 0.19012206531421305, 0.26447019259644433, 0.01, 0.02]
-    
-    assert_allclose(Fs, Fs_expect)
-    assert_allclose(ws, ws_expect)
-    assert_allclose(zs, zs_expect)
-
-
-    Fs = [3600, 519.3039148597746, None, None, None]
-    zs = [None, None, .2, None, None]
-    ws = [None, None, None, .01, .02]
-    Fs, zs, ws = solve_flow_composition_mix(Fs, zs, ws, MWs)
-    assert_allclose(Fs, Fs_expect)
-    assert_allclose(ws, ws_expect)
-    assert_allclose(zs, zs_expect)
-
-    Fs = [3600, 519.3039148597746, 1038.6078297195493, None, None]
-    zs = [None, None, None, None, None]
-    ws = [None, None, None, .01, .02]
-    Fs, zs, ws = solve_flow_composition_mix(Fs, zs, ws, MWs)
-    assert_allclose(Fs, Fs_expect)
-    assert_allclose(ws, ws_expect)
-    assert_allclose(zs, zs_expect)
-    
-    Fs = [3600, 519.3039148597746, 1038.6078297195493, None, None]
-    zs = [None, None, None, 0.003358370666918819, None]
-    ws = [None, None, None, None, .02]
-    Fs, zs, ws = solve_flow_composition_mix(Fs, zs, ws, MWs)
-    assert_allclose(Fs, Fs_expect)
-    assert_allclose(ws, ws_expect)
-    assert_allclose(zs, zs_expect)
-
-    Fs = [None, None, None, None, 17.687253669610733]
-    zs = [0.6932356751002142, .1, .2, None, None]
-    ws = [None, None, None, .01, None]
-    Fs, zs, ws = solve_flow_composition_mix(Fs, zs, ws, MWs)
-    assert_allclose(Fs, Fs_expect)
-    assert_allclose(ws, ws_expect)
-    assert_allclose(zs, zs_expect)
-
-    Fs = [None, None, None, None, 17.687253669610733]
-    zs = [0.6932356751002142, .1, .2, 0.003358370666918816, None]
-    ws = [None, None, None, None, None]
-    Fs, zs, ws = solve_flow_composition_mix(Fs, zs, ws, MWs)
-    assert_allclose(Fs, Fs_expect)
-    assert_allclose(ws, ws_expect)
-    assert_allclose(zs, zs_expect)
-
-    Fs = [3600., 519.3039148597746, None, None, 17.687253669610733]
-    zs = [None, None, .2, 0.003358370666918816, None]
-    ws = [None, None, None, None, None]
-    Fs, zs, ws = solve_flow_composition_mix(Fs, zs, ws, MWs)
-    assert_allclose(Fs, Fs_expect)
-    assert_allclose(ws, ws_expect)
-    assert_allclose(zs, zs_expect)
-    
-    Fs = [3600.0, 519.3039148597746, 1038.6078297195495, 17.440150348811738, 17.687253669610733]
-    zs = [None, None, None, None, None]
-    ws = [None, None, None, None, None]
-    Fs, zs, ws = solve_flow_composition_mix(Fs, zs, ws, MWs)
-    assert_allclose(Fs, Fs_expect)
-    assert_allclose(ws, ws_expect)
-    assert_allclose(zs, zs_expect)
-
-    # Solve a large-scale problem
-    from random import uniform, randint
-    N = 1000
-    Fs = [3600]
-    zs = [None]
-    ws = [None]
-    MWs = [18.015]
-    for i in range(1, N):
-        Fs.append(None)
-        frac = uniform(1e-3/N, 1e-2/N)
-        if randint(0, 1):
-            zs.append(frac)
-            ws.append(None)
-        else:
-            zs.append(None)
-            ws.append(frac)
-        MWs.append(uniform(100, 200))
-        
-    Fs_calc, zs_calc, ws_calc = solve_flow_composition_mix(Fs, zs, ws, MWs)
-    
-
-    '''
-    For 4 mass specs, 16 calcs; for 15 mass specs, 225 mw multipliy calcs; numerical solver is
-    needed.
-    
-    Very fast. Can cache more on the iterations.
-    
-    Does not work without at least one mole flow spec. Mass flow specs should be converted to mole flows first.
-    
-    
-    Derived from the following sympy code:
-    from sympy import *
-    F1, F2, F3, F4, F5, F6, F7, F8, F9, MW1, MW2, MW3, MW4, MW5, MW6, MW7, MW8, MW9, Ft = symbols(
-        'F1, F2, F3, F4, F5, F6, F7, F8, F9, MW1, MW2, MW3, MW4, MW5, MW6, MW7, MW8, MW9, Ft')
-    
-    x2, x3, x4, x5 = symbols('x2, x3, x4, x5')
-    w6, w7, w8, w9 = symbols('w6, w7, w8, w9')
-    
-    F2 = Ft*x2
-    F3 = Ft*x3
-    F4 = Ft*x4
-    F5 = Ft*x5
-    
-    Eq1 = Eq(Ft, F1 + F2 + F3 + F4 + F5 + F6 + F7 + F8 + F9)
-    
-    den = F1/Ft*MW1 + F2/Ft*MW2 + F3/Ft*MW3 + F4/Ft*MW4 + F5/Ft*MW5 + F6/Ft*MW6 + F7/Ft*MW7 + F8/Ft*MW8 + F9/Ft*MW9
-    
-    Eq6 = Eq(w6, F6/Ft*MW6/(den))
-    Eq7 = Eq(w7, F7/Ft*MW7/(den))
-    Eq8 = Eq(w8, F8/Ft*MW8/(den))
-    Eq9 = Eq(w9, F9/Ft*MW9/(den))
-    
-    m_ans = solve([Eq6, Eq7, Eq8, Eq9], [F6, F7, F8, F9])
-    {F7: -w7*(F1*MW1 + Ft*MW2*x2 + Ft*MW3*x3 + Ft*MW4*x4 + Ft*MW5*x5)/(MW7*(w6 + w7 + w8 + w9 - 1)),
-     F6: -w6*(F1*MW1 + Ft*MW2*x2 + Ft*MW3*x3 + Ft*MW4*x4 + Ft*MW5*x5)/(MW6*(w6 + w7 + w8 + w9 - 1)),
-     F9: -w9*(F1*MW1 + Ft*MW2*x2 + Ft*MW3*x3 + Ft*MW4*x4 + Ft*MW5*x5)/(MW9*(w6 + w7 + w8 + w9 - 1)),
-     F8: -w8*(F1*MW1 + Ft*MW2*x2 + Ft*MW3*x3 + Ft*MW4*x4 + Ft*MW5*x5)/(MW8*(w6 + w7 + w8 + w9 - 1))}
-    '''
-
-
-def test_dxs_to_dns():
-    ans = dxs_to_dns([-0.0028, -0.00719, -0.00859], [0.7, 0.2, 0.1])
-    assert_allclose(ans, [0.001457, -0.0029330000000000003, -0.004333])
-
-def test_dns_to_dn_partials():    
-    ans = dns_to_dn_partials([0.001459, -0.002939, -0.004334], -0.0016567)
-    assert_allclose(ans, [-0.0001977000000000001, -0.0045957, -0.0059907])
-
-def test_dxs_to_dn_partials():    
-    ans = dxs_to_dn_partials([-0.0026404, -0.00719, -0.00859], [0.7, 0.2, 0.1], -0.0016567)
-    assert_allclose(ans, [-0.00015182, -0.00470142, -0.00610142])
-
 #@pytest.xfail
-#def test_d2xs_to_dxdn_partials():  
+#def test_d2xs_to_dxdn_partials():
 #    # Test point from NRTL 7 component case
-#    d2xs = [[-14164.982925400864, -1650.9734661913312, -3993.3175265949762, -62.6722341322099, -123.58209476593841, -100.73815079566052, 124.51146594599442], 
-#            [-1650.9734661913312, -3110.806662503744, -2454.5259032930726, -3197.1128126224253, -3248.801743741809, -3201.823885463643, -3107.7104581189647], 
-#            [-3993.3175265949762, -2454.5259032930726, -2807.019056119142, -2779.7897798711624, -2647.1996028443173, -2681.4895374221956, -2608.413525790121], 
-#            [-62.67223413220967, -3197.1128126224253, -2779.789779871163, -3444.429626351257, -3482.230779295255, -3493.566631342506, -3511.9530683201706], 
+#    d2xs = [[-14164.982925400864, -1650.9734661913312, -3993.3175265949762, -62.6722341322099, -123.58209476593841, -100.73815079566052, 124.51146594599442],
+#            [-1650.9734661913312, -3110.806662503744, -2454.5259032930726, -3197.1128126224253, -3248.801743741809, -3201.823885463643, -3107.7104581189647],
+#            [-3993.3175265949762, -2454.5259032930726, -2807.019056119142, -2779.7897798711624, -2647.1996028443173, -2681.4895374221956, -2608.413525790121],
+#            [-62.67223413220967, -3197.1128126224253, -2779.789779871163, -3444.429626351257, -3482.230779295255, -3493.566631342506, -3511.9530683201706],
 #            [-123.58209476593834, -3248.801743741809, -2647.1996028443173, -3482.230779295255, -3445.5549400048712, -3491.151162774257, -3533.2346085085373],
-#            [-100.73815079566063, -3201.823885463643, -2681.4895374221956, -3493.566631342506, -3491.151162774257, -3430.5646123588135, -3572.42095177791], 
+#            [-100.73815079566063, -3201.823885463643, -2681.4895374221956, -3493.566631342506, -3491.151162774257, -3430.5646123588135, -3572.42095177791],
 #            [124.5114659459945, -3107.7104581189656, -2608.413525790121, -3511.9530683201706, -3533.2346085085373, -3572.42095177791, -3762.5337853652773]]
 #    xs = [0.14285714285714288, 0.14285714285714288, 0.14285714285714288, 0.14285714285714288, 0.14285714285714288, 0.14285714285714288, 0.14285714285714288]
-#    
-#    dxdn_partials_expect = [[-11311.87507798158, 1202.1343812279529, -1140.2096791756921, 2790.4356132870744, 2729.5257526533455, 2752.3696966236234, 2977.6193133652787], 
+#
+#    dxdn_partials_expect = [[-11311.87507798158, 1202.1343812279529, -1140.2096791756921, 2790.4356132870744, 2729.5257526533455, 2752.3696966236234, 2977.6193133652787],
 #                            [1202.1343812279529, -257.69881508445997, 398.5819441262115, -344.0049652031412, -395.6938963225248, -348.7160380443588, -254.60261069968055],
-#                            [-1140.2096791756921, 398.5819441262115, 46.08879130014202, 73.31806754812169, 205.90824457496683, 171.61830999708855, 244.6943216291629], 
+#                            [-1140.2096791756921, 398.5819441262115, 46.08879130014202, 73.31806754812169, 205.90824457496683, 171.61830999708855, 244.6943216291629],
 #                            [2790.4356132870744, -344.0049652031412, 73.31806754812123, -591.3217789319729, -629.1229318759711, -640.4587839232217, -658.8452209008865],
-#                            [2729.525752653346, -395.6938963225248, 205.90824457496683, -629.1229318759711, -592.4470925855871, -638.043315354973, -680.1267610892533], 
-#                            [2752.3696966236234, -348.7160380443588, 171.61830999708855, -640.4587839232217, -638.043315354973, -577.4567649395294, -719.3131043586259], 
+#                            [2729.525752653346, -395.6938963225248, 205.90824457496683, -629.1229318759711, -592.4470925855871, -638.043315354973, -680.1267610892533],
+#                            [2752.3696966236234, -348.7160380443588, 171.61830999708855, -640.4587839232217, -638.043315354973, -577.4567649395294, -719.3131043586259],
 #                            [2977.6193133652787, -254.60261069968146, 244.6943216291629, -658.8452209008865, -680.1267610892533, -719.3131043586259, -909.4259379459932]]
-#    
+#
 #    assert_allclose(d2xs_to_dxdn_partials(d2xs, xs), dxdn_partials_expect, rtol=1e-12)
-#    
+#
 #    # Test point from PRMIX 4 component case
-#    d2xs = [[-6.952875483186023, -14.979399633475984, -17.522090915754813, -10.65365339636402], 
+#    d2xs = [[-6.952875483186023, -14.979399633475984, -17.522090915754813, -10.65365339636402],
 #            [-14.979402266584334, -32.271902511452495, -37.749926454582365, -22.952429693998027],
 #            [-17.522094231005436, -37.74992695476248, -44.157823503862645, -26.84851092876711],
 #            [-10.653655611967368, -22.952429843075773, -26.848510659085093, -16.32423342050014]]
 #    xs = [0.004326109046411728, 0.004737414608367706, 0.04809035601246753, 0.9428461203327531]
-#    
+#
 #    dxdn_partials_expect = [[4.035568664220445, 8.694305121638651, 10.170128177986037, 6.183565242595064], [-3.990958119177865, -8.59819775633786, -10.057707360841516, -6.1152110550389445], [-6.5336500835989675, -14.076222199647844, -16.465604410121795, -10.011292289808026], [0.3347885354391007, 0.7212749120388615, 0.8437084346557562, 0.5129852184589438]]
 #    assert_allclose(d2xs_to_dxdn_partials(d2xs, xs), dxdn_partials_expect, rtol=1e-12)
-
-
-def test_dxs_to_dxsn1():
-    dxsm1_calc = dxs_to_dxsn1([-2651.3181821109024, -2085.574403592012, -2295.0860830203587])
-    dxsm1_expect = [-356.23209909054367, 209.51167942834672]
-    assert_allclose(dxsm1_calc, dxsm1_expect, rtol=1e-12)
-    
-    
-def test_d2xs_to_d2xsn1():
-    test_data = [[-4622.597669746761, 1098.2168754455354, -1014.6525577464832, 210.01951660524486, 974.1035993187835], 
-                 [1098.2168754455347, -2340.178897128616, -791.9786180652402, 384.16062898478407, 2502.1075882633986],
-                 [-1014.6525577464832, -791.9786180652403, -6071.991240755533, 3359.1726518884193, 1823.0297151891225],
-                 [210.01951660524486, 384.16062898478407, 3359.1726518884193, -2723.623727200983, 319.21808436722444],
-                 [974.1035993187835, 2502.1075882633972, 1823.0297151891225, 319.21808436722444, -5223.4014263476565]]
-    d2xsn1_expect = [[-11794.206294731985, -7601.395738484303, -9035.187298602046, -6306.7035934284195],
-                     [-7601.395738484303, -12567.79550000307, -10340.517347865418, -7660.566469993495], 
-                     [-9035.187298602046, -10340.517347865418, -14941.452097481435, -4006.4765740155844],
-                     [-6306.7035934284195, -7660.566469993495, -4006.4765740155844, -8585.461322283089]]
-    assert_allclose(d2xs_to_d2xsn1(test_data), d2xsn1_expect, rtol=1e-12)
-    

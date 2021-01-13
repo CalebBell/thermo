@@ -23,8 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.law import *
-from thermo.utils import int2CAS
-from thermo.identifiers import checkCAS
+from chemicals.identifiers import check_CAS, int_to_CAS
 
 load_law_data()
 load_economic_data()
@@ -38,7 +37,7 @@ def test_DSL_data():
     assert DSL_data['Registry'].sum() == 48363
     assert DSL_data.shape == (73036, 1)
 
-    assert all([checkCAS(int2CAS(i)) for i in DSL_data.index])
+    assert all([check_CAS(int_to_CAS(i)) for i in DSL_data.index])
 
 
 @pytest.mark.slow
@@ -50,7 +49,7 @@ def test_TSCA_data():
     assert TSCA_data.index.is_unique
     assert TSCA_data.shape == (67635, 13)
 
-    assert all([checkCAS(int2CAS(i)) for i in TSCA_data.index])
+    assert all([check_CAS(int_to_CAS(i)) for i in TSCA_data.index])
 
 
 @pytest.mark.slow
@@ -59,7 +58,7 @@ def test_EINECS_data():
     assert EINECS_data.shape == (100203, 0)
     assert sum(list(EINECS_data.index))  == 4497611272838
 
-    assert all([checkCAS(int2CAS(i)) for i in EINECS_data.index])
+    assert all([check_CAS(int_to_CAS(i)) for i in EINECS_data.index])
 
 
 @pytest.mark.slow
@@ -68,7 +67,7 @@ def test_SPIN_data():
     assert SPIN_data.shape == (26023, 0)
     assert sum(list(SPIN_data.index)) == 1666688770043
 
-    assert all([checkCAS(int2CAS(i)) for i in SPIN_data.index])
+    assert all([check_CAS(int_to_CAS(i)) for i in SPIN_data.index])
 
 
 def test_NLP_data():
@@ -76,7 +75,7 @@ def test_NLP_data():
     assert NLP_data.shape == (698, 0)
     assert sum(list(NLP_data.index)) == 83268755392
 
-    assert all([checkCAS(int2CAS(i)) for i in NLP_data.index])
+    assert all([check_CAS(int_to_CAS(i)) for i in NLP_data.index])
 
 
 def test_HPV_data():
@@ -84,7 +83,8 @@ def test_HPV_data():
     assert HPV_data.shape == (5067, 0)
     assert sum(list(HPV_data.index)) == 176952023632
 
-    assert all([checkCAS(int2CAS(i)) for i in HPV_data.index])
+    for i in HPV_data.index:
+        assert check_CAS(int_to_CAS(i))
 
 
 def test_legal_status():
@@ -97,7 +97,7 @@ def test_legal_status():
     UNLISTED = 'UNLISTED'
     LISTED = 'LISTED'
 
-    
+
     hit = legal_status(CASRN='1648727-81-4')
     hit_desc = {TSCA: sorted([TSCA_flags['N'], TSCA_flags['P'], TSCA_flags['XU']]),
                 SPIN: UNLISTED, DSL: UNLISTED, EINECS: UNLISTED, NLP: UNLISTED}
@@ -121,9 +121,9 @@ def test_legal_status():
     assert hit == hit_desc
 
     for Method, hit in zip([DSL, TSCA, EINECS, SPIN, NLP], [LISTED, LISTED, LISTED, LISTED, UNLISTED]):
-        assert hit == legal_status(CASRN='64-17-5', Method=Method)
+        assert hit == legal_status(CASRN='64-17-5', method=Method)
 
-    assert legal_status(CASRN='1648727-81-4', AvailableMethods=True) == [COMBINED, DSL, TSCA, EINECS, NLP, SPIN]
+    assert legal_status(CASRN='1648727-81-4', get_methods=True) == [COMBINED, DSL, TSCA, EINECS, NLP, SPIN]
 
     with pytest.raises(Exception):
         legal_status()
@@ -132,4 +132,4 @@ def test_legal_status():
         legal_status(CASRN=1648727814)
 
     with pytest.raises(Exception):
-        legal_status(CASRN='1648727-81-4', Method='BADMETHOD')
+        legal_status(CASRN='1648727-81-4', method='BADMETHOD')

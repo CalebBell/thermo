@@ -1,51 +1,39 @@
-thermo package
-==============
-
-Submodules
-----------
-
 .. toctree::
 
-   thermo.acentric
    thermo.activity
+   thermo.bulk
    thermo.chemical
-   thermo.combustion
-   thermo.critical
+   thermo.chemical_package
    thermo.datasheet
-   thermo.dipole
-   thermo.dippr
    thermo.electrochem
-   thermo.elements
    thermo.eos
    thermo.eos_mix
-   thermo.environment
+   thermo.eos_mix_methods
+   thermo.eos_volume
+   thermo.eos_alpha_functions
+   thermo.equilibrium
+   thermo.flash
    thermo.heat_capacity
-   thermo.identifiers
    thermo.interface
+   thermo.interaction_parameters
    thermo.joback
    thermo.law
-   thermo.lennard_jones
    thermo.nrtl
-   thermo.miscdata
    thermo.mixture
    thermo.permittivity
+   thermo.phases
    thermo.phase_change
    thermo.property_package
-   thermo.reaction
+   thermo.phase_identification
    thermo.regular_solution
-   thermo.refractivity
-   thermo.safety
-   thermo.solubility
    thermo.stream
-   thermo.temperature
    thermo.thermal_conductivity
-   thermo.triple
    thermo.unifac
    thermo.utils
    thermo.vapor_pressure
-   thermo.virial
    thermo.viscosity
    thermo.volume
    thermo.wilson
    thermo.uniquac
+
 

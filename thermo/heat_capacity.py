@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,683 +18,136 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains implementations of :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+representing liquid, vapor, and solid heat capacity. A variety of estimation
+and data methods are available as included in the `chemicals` library.
+Additionally liquid, vapor, and solid mixture heat capacity predictor objects
+are implemented subclassing  :obj:`MixtureProperty <thermo.utils.MixtureProperty>`.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+
+.. contents:: :local:
+
+Pure Liquid Heat Capacity
+=========================
+.. autoclass:: HeatCapacityLiquid
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: heat_capacity_liquid_methods
+
+Pure Gas Heat Capacity
+======================
+.. autoclass:: HeatCapacityGas
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: heat_capacity_gas_methods
+
+Pure Solid Heat Capacity
+========================
+.. autoclass:: HeatCapacitySolid
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: heat_capacity_solid_methods
+
+Mixture Liquid Heat Capacity
+============================
+.. autoclass:: HeatCapacityLiquidMixture
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: heat_capacity_liquid_mixture_methods
+
+
+Mixture Gas Heat Capacity
+=========================
+.. autoclass:: HeatCapacityGasMixture
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: heat_capacity_gas_mixture_methods
+
+Mixture Solid Heat Capacity
+===========================
+.. autoclass:: HeatCapacitySolidMixture
+    :members: calculate, test_method_validity,
+              name, property_max, property_min,
+              units, Tmin, Tmax, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: heat_capacity_solid_mixture_methods
+
+'''
 
 from __future__ import division
 
-__all__ = ['Poling_data', 'TRC_gas_data', '_PerryI', 'CRC_standard_data', 
-           'Lastovka_Shaw', 'Lastovka_Shaw_integral', 
-           'Lastovka_Shaw_integral_over_T',
-           'Lastovka_Shaw_T_for_Hm', 'Lastovka_Shaw_T_for_Sm',
-           'TRCCp',  'Dadgostar_Shaw_integral',
-           'Dadgostar_Shaw_integral_over_T',
-           'TRCCp_integral', 'TRCCp_integral_over_T', 
-           'heat_capacity_gas_methods', 'HeatCapacityGas', 
-           'Rowlinson_Poling', 'Rowlinson_Bondi', 'Dadgostar_Shaw', 
-           'Zabransky_quasi_polynomial', 'Zabransky_quasi_polynomial_integral',
-           'Zabransky_quasi_polynomial_integral_over_T', 'Zabransky_cubic', 
-           'Zabransky_cubic_integral', 'Zabransky_cubic_integral_over_T',
-           'Zabransky_quasipolynomial', 'Zabransky_spline',
-           'ZABRANSKY_TO_DICT', 'heat_capacity_liquid_methods', 
-           'HeatCapacityLiquid', 'Lastovka_solid', 'Lastovka_solid_integral', 
-           'Lastovka_solid_integral_over_T', 'heat_capacity_solid_methods', 
-           'HeatCapacitySolid', 'HeatCapacitySolidMixture', 
+__all__ = ['heat_capacity_gas_methods',
+           'HeatCapacityGas',
+           'heat_capacity_liquid_methods',
+           'HeatCapacityLiquid',
+           'heat_capacity_solid_methods',
+           'HeatCapacitySolid', 'HeatCapacitySolidMixture',
            'HeatCapacityGasMixture', 'HeatCapacityLiquidMixture']
 import os
-from io import open
-from thermo.utils import log, exp, polylog2, isnan
-import numpy as np
-import pandas as pd
-from fluids.numerics import (polyint_over_x, horner_log, horner, polyint, 
+from fluids.numerics import (polyint_over_x, horner_log, horner, polyint,
                              fit_integral_linear_extrapolation,
-                             fit_integral_over_T_linear_extrapolation)
-from fluids.numerics import py_newton as newton, py_brenth as brenth, secant
-
-from scipy.integrate import quad
-from thermo.utils import R, calorie
-from thermo.utils import (to_num, property_molar_to_mass, none_and_length_check,
+                             fit_integral_over_T_linear_extrapolation, quad,
+                             numpy as np)
+from fluids.numerics import brenth, secant, polylog2
+from fluids.constants import R, calorie
+from chemicals.heat_capacity import *
+from chemicals.utils import log, exp, isnan
+from chemicals.utils import (to_num, property_molar_to_mass, none_and_length_check,
                           mixing_simple, property_mass_to_molar)
-from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
-from thermo.electrochem import (Laliberte_heat_capacity,
-                                _Laliberte_Heat_Capacity_ParametersDict)
+from chemicals import heat_capacity
+from chemicals import miscdata
+from chemicals.miscdata import lookup_VDI_tabular_data
+from thermo import electrochem
+from thermo.electrochem import Laliberte_heat_capacity
 from thermo.utils import TDependentProperty, MixtureProperty
 from thermo.coolprop import *
 from cmath import log as clog, exp as cexp
 
-                         
-                         
-                         
-folder = os.path.join(os.path.dirname(__file__), 'Heat Capacity')
 
-
-Poling_data = pd.read_csv(os.path.join(folder,
-                       'PolingDatabank.tsv'), sep='\t',
-                       index_col=0)
-_Poling_data_values = Poling_data.values
-
-
-TRC_gas_data = pd.read_csv(os.path.join(folder,
-                       'TRC Thermodynamics of Organic Compounds in the Gas State.tsv'), sep='\t',
-                       index_col=0)
-_TRC_gas_data_values = TRC_gas_data.values
-
-
-
-_PerryI = {}
-with open(os.path.join(folder, 'Perrys Table 2-151.tsv'), encoding='utf-8') as f:
-    '''Read in a dict of heat capacities of irnorganic and elemental solids.
-    These are in section 2, table 151 in:
-    Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
-    Eighth Edition. McGraw-Hill Professional, 2007.
-
-    Formula:
-    Cp(Cal/mol/K) = Const + Lin*T + Quadinv/T^2 + Quadinv*T^2
-
-    Phases: c, gls, l, g.
-    '''
-    next(f)
-    for line in f:
-        values = to_num(line.strip('\n').split('\t'))
-        (CASRN, _formula, _phase, _subphase, Const, Lin, Quadinv, Quad, Tmin,
-         Tmax, err) = values
-        if Lin is None:
-            Lin = 0
-        if Quadinv is None:
-            Quadinv = 0
-        if Quad is None:
-            Quad = 0
-        if CASRN in _PerryI and CASRN:
-            a = _PerryI[CASRN]
-            a.update({_phase: {"Formula": _formula, "Phase": _phase,
-                               "Subphase": _subphase, "Const": Const,
-                               "Lin": Lin, "Quadinv": Quadinv, "Quad": Quad,
-                               "Tmin": Tmin, "Tmax": Tmax, "Error": err}})
-            _PerryI[CASRN] = a
-        else:
-            _PerryI[CASRN] = {_phase: {"Formula": _formula, "Phase": _phase,
-                                       "Subphase": _subphase, "Const": Const,
-                                       "Lin": Lin, "Quadinv": Quadinv,
-                                       "Quad": Quad, "Tmin": Tmin,
-                                       "Tmax": Tmax, "Error": err}}
-
-
-#    '''Read in a dict of 2481 thermodynamic property sets of different phases from:
-#        Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of
-#        Chemistry and Physics. [Boca Raton, FL]: CRC press, 2014.
-#        Warning: 11 duplicated chemicals are present and currently clobbered.
-CRC_standard_data = pd.read_csv(os.path.join(folder,
-                       'CRC Standard Thermodynamic Properties of Chemical Substances.tsv'), sep='\t',
-                       index_col=0)
-
-
-
-### Heat capacities of gases
-
-def Lastovka_Shaw(T, similarity_variable, cyclic_aliphatic=False):
-    r'''Calculate ideal-gas constant-pressure heat capacitiy with the similarity
-    variable concept and method as shown in [1]_.
-
-    .. math::
-        C_p^0 = \left(A_2 + \frac{A_1 - A_2}{1 + \exp(\frac{\alpha-A_3}{A_4})}\right)
-        + (B_{11} + B_{12}\alpha)\left(-\frac{(C_{11} + C_{12}\alpha)}{T}\right)^2
-        \frac{\exp(-(C_{11} + C_{12}\alpha)/T)}{[1-\exp(-(C_{11}+C_{12}\alpha)/T)]^2}\\
-        + (B_{21} + B_{22}\alpha)\left(-\frac{(C_{21} + C_{22}\alpha)}{T}\right)^2
-        \frac{\exp(-(C_{21} + C_{22}\alpha)/T)}{[1-\exp(-(C_{21}+C_{22}\alpha)/T)]^2}
-
-    Parameters
-    ----------
-    T : float
-        Temperature of gas [K]
-    similarity_variable : float
-        similarity variable as defined in [1]_, [mol/g]
-
-    Returns
-    -------
-    Cpg : float
-        Gas constant-pressure heat capacitiy, [J/kg/K]
-
-    Notes
-    -----
-    Original model is in terms of J/g/K. Note that the model is for predicting
-    mass heat capacity, not molar heat capacity like most other methods!
-
-    A1 = 0.58, A2 = 1.25, A3 = 0.17338003, A4 = 0.014, B11 = 0.73917383,
-    B12 = 8.88308889, C11 = 1188.28051, C12 = 1813.04613, B21 = 0.0483019,
-    B22 = 4.35656721, C21 = 2897.01927, C22 = 5987.80407.
-
-    Examples
-    --------
-    >>> Lastovka_Shaw(1000.0, 0.1333)
-    2467.113309084757
-
-    References
-    ----------
-    .. [1] Lastovka, Vaclav, and John M. Shaw. "Predictive Correlations for
-       Ideal Gas Heat Capacities of Pure Hydrocarbons and Petroleum Fractions."
-       Fluid Phase Equilibria 356 (October 25, 2013): 338-370.
-       doi:10.1016/j.fluid.2013.07.023.
-    '''
-    a = similarity_variable
-    if cyclic_aliphatic:
-        A1 = -0.1793547
-        A2 = 3.86944439
-        first = A1 + A2*a
-    else:
-        A1 = 0.58
-        A2 = 1.25
-        A3 = 0.17338003 # 803 instead of 8003 in another paper
-        A4 = 0.014
-        first = A2 + (A1-A2)/(1. + exp((a - A3)/A4))
-        # Personal communication confirms the change
-
-    T_inv = 1.0/T
-    B11 = 0.73917383
-    B12 = 8.88308889
-    C11 = 1188.28051
-    C12 = 1813.04613
-    B21 = 0.0483019
-    B22 = 4.35656721
-    C21 = 2897.01927
-    C22 = 5987.80407
-    C11_C12a_T =(C11+C12*a)*T_inv
-    expm_C11_C12a_T = exp(-C11_C12a_T)
-    x1 = 1.0/(1.0 - expm_C11_C12a_T)
-    
-    C21_C22a_T = (C21+C22*a)*T_inv
-    expm_C21_C22a_T = exp(-C21_C22a_T)
-    x2 = 1.0/(1.0 - expm_C21_C22a_T)
-    
-    Cp = first + (B11 + B12*a)*(C11_C12a_T*C11_C12a_T)*expm_C11_C12a_T*x1*x1
-    Cp += (B21 + B22*a)*(C21_C22a_T*C21_C22a_T)*expm_C21_C22a_T*x2*x2
-    return Cp*1000. # J/g/K to J/kg/K
-
-
-def Lastovka_Shaw_integral(T, similarity_variable, cyclic_aliphatic=False):
-    r'''Calculate the integral of ideal-gas constant-pressure heat capacitiy 
-    with the similarity variable concept and method as shown in [1]_.
-
-    Parameters
-    ----------
-    T : float
-        Temperature of gas [K]
-    similarity_variable : float
-        similarity variable as defined in [1]_, [mol/g]
-
-    Returns
-    -------
-    H : float
-        Difference in enthalpy from 0 K, [J/kg]
-
-    Notes
-    -----
-    Original model is in terms of J/g/K. Note that the model is for predicting
-    mass heat capacity, not molar heat capacity like most other methods!
-    Integral was computed with SymPy.
-
-    See Also
-    --------
-    Lastovka_Shaw
-    Lastovka_Shaw_integral_over_T
-
-    Examples
-    --------
-    >>> Lastovka_Shaw_integral(300.0, 0.1333)
-    5283095.816018478
-
-    References
-    ----------
-    .. [1] Lastovka, Vaclav, and John M. Shaw. "Predictive Correlations for
-       Ideal Gas Heat Capacities of Pure Hydrocarbons and Petroleum Fractions."
-       Fluid Phase Equilibria 356 (October 25, 2013): 338-370.
-       doi:10.1016/j.fluid.2013.07.023.
-    '''
-    a = similarity_variable
-    if cyclic_aliphatic:
-        A1 = -0.1793547
-        A2 = 3.86944439
-        first = A1 + A2*a
-    else:
-        A1 = 0.58
-        A2 = 1.25
-        A3 = 0.17338003 # 803 instead of 8003 in another paper
-        A4 = 0.014
-        first = A2 + (A1-A2)/(1.+exp((a-A3)/A4)) # One reference says exp((a-A3)/A4)
-        # Personal communication confirms the change
-
-    B11 = 0.73917383
-    B12 = 8.88308889
-    C11 = 1188.28051
-    C12 = 1813.04613
-    B21 = 0.0483019
-    B22 = 4.35656721
-    C21 = 2897.01927
-    C22 = 5987.80407
-    x1 = -C11 - C12*a
-    x2 = -C21 - C22*a
-    
-    return 1000.*(T*first - (B11 + B12*a)*(x1*x1)/(x1 - x1*exp(x1/T)) 
-                  - (B21 + B22*a)*(x2*x2)/(x2 - x2*exp(x2/T)))
-
-
-def Lastovka_Shaw_integral_over_T(T, similarity_variable, cyclic_aliphatic=False):
-    r'''Calculate the integral over temperature of ideal-gas constant-pressure 
-    heat capacitiy with the similarity variable concept and method as shown in
-    [1]_.
-
-    Parameters
-    ----------
-    T : float
-        Temperature of gas [K]
-    similarity_variable : float
-        similarity variable as defined in [1]_, [mol/g]
-
-    Returns
-    -------
-    S : float
-        Difference in entropy from 0 K, [J/kg/K]
-
-    Notes
-    -----
-    Original model is in terms of J/g/K. Note that the model is for predicting
-    mass heat capacity, not molar heat capacity like most other methods!
-    Integral was computed with SymPy.
-
-    See Also
-    --------
-    Lastovka_Shaw
-    Lastovka_Shaw_integral
-
-    Examples
-    --------
-    >>> Lastovka_Shaw_integral_over_T(300.0, 0.1333)
-    3609.791928945323
-
-    References
-    ----------
-    .. [1] Lastovka, Vaclav, and John M. Shaw. "Predictive Correlations for
-       Ideal Gas Heat Capacities of Pure Hydrocarbons and Petroleum Fractions."
-       Fluid Phase Equilibria 356 (October 25, 2013): 338-370.
-       doi:10.1016/j.fluid.2013.07.023.
-    '''
-    a = similarity_variable
-    if cyclic_aliphatic:
-        A1 = -0.1793547
-        A2 = 3.86944439
-        first = A1 + A2*a
-    else:
-        A1 = 0.58
-        A2 = 1.25
-        A3 = 0.17338003 # 803 instead of 8003 in another paper
-        A4 = 0.014
-        first = A2 + (A1-A2)/(1. + cexp((a - A3)/A4))
-
-    T_inv = 1.0/T
-    a2 = a*a
-    B11 = 0.73917383
-    B12 = 8.88308889
-    C11 = 1188.28051
-    C12 = 1813.04613
-    B21 = 0.0483019
-    B22 = 4.35656721
-    C21 = 2897.01927
-    C22 = 5987.80407
-    S = (first*clog(T) + (-B11 - B12*a)*clog(cexp((-C11 - C12*a)*T_inv) - 1.) 
-        + (-B11*C11 - B11*C12*a - B12*C11*a - B12*C12*a2)/(T*cexp((-C11
-        - C12*a)*T_inv) - T) - (B11*C11 + B11*C12*a + B12*C11*a + B12*C12*a2)*T_inv)
-    S += ((-B21 - B22*a)*clog(cexp((-C21 - C22*a)*T_inv) - 1.) + (-B21*C21 - B21*C22*a
-        - B22*C21*a - B22*C22*a2)/(T*cexp((-C21 - C22*a)*T_inv) - T) - (B21*C21
-        + B21*C22*a + B22*C21*a + B22*C22*a2)*T_inv)
-    # There is a non-real component, but it is only a function of similariy 
-    # variable and so will always cancel out.
-    return S.real*1000.
-
-
-def Lastovka_Shaw_T_for_Hm(Hm, MW, similarity_variable, T_ref=298.15, 
-                           factor=1.0):
-    r'''Uses the Lastovka-Shaw ideal-gas heat capacity correlation to solve for
-    the temperature which has a specified `Hm`, as is required in PH flashes,
-    as shown in [1]_.
-
-    Parameters
-    ----------
-    Hm : float
-        Molar enthalpy spec, [J/mol]
-    MW : float
-        Molecular weight of the pure compound or mixture average, [g/mol]
-    similarity_variable : float
-        Similarity variable as defined in [1]_, [mol/g]
-    T_ref : float, optional
-        Reference enthlapy temperature, [K]
-    factor : float, optional
-        A factor to increase or decrease the predicted value of the 
-        method, [-]
-
-    Returns
-    -------
-    T : float
-        Temperature of gas to meet the molar enthalpy spec, [K]
-
-    Notes
-    -----
-
-    See Also
-    --------
-    Lastovka_Shaw
-    Lastovka_Shaw_integral
-    Lastovka_Shaw_integral_over_T
-
-    Examples
-    --------
-    >>> Lastovka_Shaw_T_for_Hm(Hm=55000, MW=80.0, similarity_variable=0.23)
-    600.0943429567604
-    
-    References
-    ----------
-    .. [1] Lastovka, Vaclav, and John M. Shaw. "Predictive Correlations for
-       Ideal Gas Heat Capacities of Pure Hydrocarbons and Petroleum Fractions."
-       Fluid Phase Equilibria 356 (October 25, 2013): 338-370.
-       doi:10.1016/j.fluid.2013.07.023.
-    '''
-    H_ref = Lastovka_Shaw_integral(T_ref, similarity_variable)
-    def err(T):
-        H1 = Lastovka_Shaw_integral(T, similarity_variable)
-        dH = H1 - H_ref
-        err = (property_mass_to_molar(dH, MW)*factor - Hm)
-        return err
-    try:
-        return newton(err, 500, ytol=1e-4)
-    except:
-        try:
-            return brenth(err, 1e-3, 1e5)
-        except Exception as e:
-            if err(1e-11) > 0:
-                raise ValueError("For gas only enthalpy spec to be correct, "
-                                 "model requires negative temperature")
-            raise e
-
-
-def Lastovka_Shaw_T_for_Sm(Sm, MW, similarity_variable, T_ref=298.15, 
-                           factor=1.0):
-    r'''Uses the Lastovka-Shaw ideal-gas heat capacity correlation to solve for
-    the temperature which has a specified `Sm`, as is required in PS flashes,
-    as shown in [1]_.
-
-    Parameters
-    ----------
-    Sm : float
-        Molar entropy spec, [J/mol/K]
-    MW : float
-        Molecular weight of the pure compound or mixture average, [g/mol]
-    similarity_variable : float
-        Similarity variable as defined in [1]_, [mol/g]
-    T_ref : float, optional
-        Reference enthlapy temperature, [K]
-    factor : float, optional
-        A factor to increase or decrease the predicted value of the 
-        method, [-]
-
-    Returns
-    -------
-    T : float
-        Temperature of gas to meet the molar entropy spec, [K]
-
-    Notes
-    -----
-
-    See Also
-    --------
-    Lastovka_Shaw
-    Lastovka_Shaw_integral
-    Lastovka_Shaw_integral_over_T
-
-    Examples
-    --------
-    >>> Lastovka_Shaw_T_for_Sm(Sm=112.80, MW=72.151, similarity_variable=0.2356)
-    603.4298291570277
-    
-    References
-    ----------
-    .. [1] Lastovka, Vaclav, and John M. Shaw. "Predictive Correlations for
-       Ideal Gas Heat Capacities of Pure Hydrocarbons and Petroleum Fractions."
-       Fluid Phase Equilibria 356 (October 25, 2013): 338-370.
-       doi:10.1016/j.fluid.2013.07.023.
-    '''
-    S_ref = Lastovka_Shaw_integral_over_T(T_ref, similarity_variable)
-    def err(T):
-        S1 = Lastovka_Shaw_integral_over_T(T, similarity_variable)
-        dS = S1 - S_ref
-        err = (property_mass_to_molar(dS, MW)*factor - Sm)
-#         print(T, err)
-        return err
-    try:
-        return secant(err, 500, ytol=1e-4, high=10000)
-    except Exception as e:
-        try:
-            return brenth(err, 1e-3, 1e5)
-        except Exception as e:
-            if err(1e-11) > 0:
-                raise ValueError("For gas only entropy spec to be correct, "
-                                 "model requires negative temperature")
-            raise e
-
-
-def TRCCp(T, a0, a1, a2, a3, a4, a5, a6, a7):
-    r'''Calculates ideal gas heat capacity using the model developed in [1]_.
-
-    The ideal gas heat capacity is given by:
-
-    .. math::
-        C_p = R\left(a_0 + (a_1/T^2) \exp(-a_2/T) + a_3 y^2
-        + (a_4 - a_5/(T-a_7)^2 )y^j \right)
-
-        y = \frac{T-a_7}{T+a_6} \text{ for } T > a_7 \text{ otherwise } 0
-
-    Parameters
-    ----------
-    T : float
-        Temperature [K]
-    a1-a7 : float
-        Coefficients
-
-    Returns
-    -------
-    Cp : float
-        Ideal gas heat capacity , [J/mol/K]
-
-    Notes
-    -----
-    j is set to 8. Analytical integrals are available for this expression.
-
-    Examples
-    --------
-    >>> TRCCp(300, 4.0, 7.65E5, 720., 3.565, -0.052, -1.55E6, 52., 201.)
-    42.06525682312236
-
-    References
-    ----------
-    .. [1] Kabo, G. J., and G. N. Roganov. Thermodynamics of Organic Compounds
-       in the Gas State, Volume II: V. 2. College Station, Tex: CRC Press, 1994.
-    '''
-    if T <= a7:
-        y = 0.
-    else:
-        y = (T - a7)/(T + a6)
-    T2 = T*T
-    y2 = y*y
-    T_m_a7 = T - a7
-    try:
-        Cp = R*(a0 + (a1/T2)*exp(-a2/T) + a3*y2 + (a4 - a5/(T_m_a7*T_m_a7))*y2*y2*y2*y2)
-    except ZeroDivisionError:
-        # When T_m_a7 approaches 0, T = a7
-        Cp = R*(a0 + (a1/T2)*exp(-a2/T) + a3*y2 + (a4)*y2*y2*y2*y2)
-    return Cp
-
-
-def TRCCp_integral(T, a0, a1, a2, a3, a4, a5, a6, a7, I=0):
-    r'''Integrates ideal gas heat capacity using the model developed in [1]_.
-    Best used as a delta only.
-
-    The difference in enthalpy with respect to 0 K is given by:
-
-    .. math::
-        \frac{H(T) - H^{ref}}{RT} = a_0 + a_1x(a_2)/(a_2T) + I/T + h(T)/T
-        
-        h(T) = (a_5 + a_7)\left[(2a_3 + 8a_4)\ln(1-y)+ \left\{a_3\left(1 + 
-        \frac{1}{1-y}\right) + a_4\left(7 + \frac{1}{1-y}\right)\right\}y
-        + a_4\left\{3y^2 + (5/3)y^3 + y^4 + (3/5)y^5 + (1/3)y^6\right\} 
-        + (1/7)\left\{a_4 - \frac{a_5}{(a_6+a_7)^2}\right\}y^7\right]
-        
-        h(T) = 0 \text{ for } T \le a_7
-
-        y = \frac{T-a_7}{T+a_6} \text{ for } T > a_7 \text{ otherwise } 0
-
-    Parameters
-    ----------
-    T : float
-        Temperature [K]
-    a1-a7 : float
-        Coefficients
-    I : float, optional
-        Integral offset
-
-    Returns
-    -------
-    H-H(0) : float
-        Difference in enthalpy from 0 K , [J/mol]
-
-    Notes
-    -----
-    Analytical integral as provided in [1]_ and verified with numerical
-    integration. 
-
-    Examples
-    --------
-    >>> TRCCp_integral(298.15, 4.0, 7.65E5, 720., 3.565, -0.052, -1.55E6, 52., 
-    ... 201., 1.2)
-    10802.532600592816
-    
-    References
-    ----------
-    .. [1] Kabo, G. J., and G. N. Roganov. Thermodynamics of Organic Compounds
-       in the Gas State, Volume II: V. 2. College Station, Tex: CRC Press, 1994.
-    '''
-    if T <= a7:
-        y = 0.
-    else:
-        y = (T - a7)/(T + a6)
-    y2 = y*y
-    y4 = y2*y2
-    if T <= a7:
-        h = 0.0
-    else:
-        first = a6 + a7
-        one_m_y = 1.0 - y
-        second = (2.*a3 + 8.*a4)*log(one_m_y)
-        third = (a3*(1. + 1./(one_m_y)) + a4*(7. + 1./(one_m_y)))*y
-        fourth = a4*(3.*y2 + 5./3.*y*y2 + y4 + 0.6*y4*y + 1/3.*y4*y2)
-        fifth = 1/7.*(a4 - a5/(first*first))*y4*y2*y
-        h = first*(second + third + fourth + fifth)
-    return (a0 + a1*exp(-a2/T)/(a2*T) + I/T + h/T)*R*T
-
-
-def TRCCp_integral_over_T(T, a0, a1, a2, a3, a4, a5, a6, a7, J=0):
-    r'''Integrates ideal gas heat capacity over T using the model developed in 
-    [1]_. Best used as a delta only.
-
-    The difference in ideal-gas entropy with respect to 0 K is given by:
-
-    .. math::
-        \frac{S^\circ}{R} = J + a_0\ln T + \frac{a_1}{a_2^2}\left(1
-        + \frac{a_2}{T}\right)x(a_2) + s(T)
-
-        s(T) = \left[\left\{a_3 + \left(\frac{a_4 a_7^2 - a_5}{a_6^2}\right)
-        \left(\frac{a_7}{a_6}\right)^4\right\}\left(\frac{a_7}{a_6}\right)^2
-        \ln z + (a_3 + a_4)\ln\left(\frac{T+a_6}{a_6+a_7}\right)
-        +\sum_{i=1}^7 \left\{\left(\frac{a_4 a_7^2 - a_5}{a_6^2}\right)\left(
-        \frac{-a_7}{a_6}\right)^{6-i} - a_4\right\}\frac{y^i}{i}
-        - \left\{\frac{a_3}{a_6}(a_6 + a_7) + \frac{a_5 y^6}{7a_7(a_6+a_7)}
-        \right\}y\right]
-
-        s(T) = 0 \text{ for } T \le a_7
-        
-        z = \frac{T}{T+a_6} \cdot \frac{a_7 + a_6}{a_7}
-
-        y = \frac{T-a_7}{T+a_6} \text{ for } T > a_7 \text{ otherwise } 0
-
-    Parameters
-    ----------
-    T : float
-        Temperature [K]
-    a1-a7 : float
-        Coefficients
-    J : float, optional
-        Integral offset
-
-    Returns
-    -------
-    S-S(0) : float
-        Difference in entropy from 0 K , [J/mol/K]
-
-    Notes
-    -----
-    Analytical integral as provided in [1]_ and verified with numerical
-    integration. 
-
-    Examples
-    --------
-    >>> TRCCp_integral_over_T(300, 4.0, 124000, 245, 50.539, -49.469, 
-    ... 220440000, 560, 78)
-    213.80148972435018
-    
-    References
-    ----------
-    .. [1] Kabo, G. J., and G. N. Roganov. Thermodynamics of Organic Compounds
-       in the Gas State, Volume II: V. 2. College Station, Tex: CRC Press, 1994.
-    '''
-    # Possible optimizations: pre-cache as much as possible.
-    # If this were replaced by a cache, much of this would not need to be computed.
-    if T <= a7:
-        y = 0.
-    else:
-        y = (T - a7)/(T + a6)
-
-    x3 = a7 + a6
-    z = T/(T + a6)*x3/a7
-    if T <= a7:
-        s = 0.
-    else:
-        a72 = a7*a7
-        a62 = a6*a6
-        a7_a6 = a7/a6 # a7/a6
-        a7_a6_2 = a7_a6*a7_a6
-        a7_a6_4 = a7_a6_2*a7_a6_2
-        x1 = (a4*a72 - a5)/a62 # part of third, sum
-        first = (a3 + ((a4*a72 - a5)/a62)*a7_a6_4)*a7_a6_2*log(z)
-        second = (a3 + a4)*log((T + a6)/(x3))
-        third = 0.0
-        y_pow = 1.0
-        a7_a6_pow = (a7_a6)**6
-
-        for i in range(1, 8):
-            y_pow = y_pow*y
-            a7_a6_pow = a7_a6_pow/-a7_a6
-            third += (x1*a7_a6_pow - a4)*y_pow/i
-        fourth = -(a3/a6*(x3) + a5*y_pow/y/(7.*a7*(x3)))*y
-        s = first + second + third + fourth
-    return R*(J + a0*log(T) + a1/(a2*a2)*(1. + a2/T)*exp(-a2/T) + s)
-    
-    
 TRCIG = 'TRC Thermodynamics of Organic Compounds in the Gas State (1994)'
 POLING = 'Poling et al. (2001)'
 POLING_CONST = 'Poling et al. (2001) constant'
 CRCSTD = 'CRC Standard Thermodynamic Properties of Chemical Substances'
 VDI_TABULAR = 'VDI Heat Atlas'
 LASTOVKA_SHAW = 'Lastovka and Shaw (2013)'
-COOLPROP = 'CoolProp'
+COOLPROP = 'COOLPROP'
 BESTFIT = 'Best fit'
 heat_capacity_gas_methods = [COOLPROP, TRCIG, POLING, LASTOVKA_SHAW, CRCSTD,
                              POLING_CONST, VDI_TABULAR]
-'''Holds all methods available for the HeatCapacityGas class, for use in
+'''Holds all methods available for the :obj:`HeatCapacityGas` class, for use in
 iterating over them.'''
 
 
@@ -712,6 +165,23 @@ class HeatCapacityGas(TDependentProperty):
         Molecular weight, [g/mol]
     similarity_variable : float, optional
         similarity variable, n_atoms/MW, [mol/g]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files
+        [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        heat capacity of the compound; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default method if provided. [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -733,7 +203,7 @@ class HeatCapacityGas(TDependentProperty):
     **LASTOVKA_SHAW**:
         A basic estimation method using the `similarity variable` concept;
         requires only molecular structure, so is very convenient. See
-        :obj:`Lastovka_Shaw` for details.
+        :obj:`Lastovka_Shaw <chemicals.heat_capacity.Lastovka_Shaw>` for details.
     **CRCSTD**:
         Constant values tabulated in [4]_ at 298.15 K; data is available for
         533 gases.
@@ -746,10 +216,17 @@ class HeatCapacityGas(TDependentProperty):
 
     See Also
     --------
-    TRCCp
-    Lastovka_Shaw
-    Rowlinson_Poling
-    Rowlinson_Bondi
+    chemicals.heat_capacity.TRCCp
+    chemicals.heat_capacity.Lastovka_Shaw
+    chemicals.heat_capacity.Rowlinson_Poling
+    chemicals.heat_capacity.Rowlinson_Bondi
+
+    Examples
+    --------
+
+    >>> CpGas = HeatCapacityGas(CASRN='142-82-5', MW=100.2, similarity_variable=0.2295)
+    >>> CpGas(700)
+    317.244
 
     References
     ----------
@@ -788,11 +265,25 @@ class HeatCapacityGas(TDependentProperty):
     ranked_methods = [TRCIG, POLING, COOLPROP, LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
     '''Default rankings of the available methods.'''
 
-    def __init__(self, CASRN='', MW=None, similarity_variable=None, 
-                 best_fit=None):
+
+    _fit_force_n = {}
+    '''Dictionary containing method: fit_n, for use in methods which should
+    only ever be fit to a specific `n` value'''
+    _fit_force_n[CRCSTD] = 1
+    _fit_force_n[POLING_CONST] = 1
+
+    def __init__(self, CASRN='', MW=None, similarity_variable=None,
+                 load_data=True, extrapolation='linear', poly_fit=None,
+                 method=None):
         self.CASRN = CASRN
         self.MW = MW
         self.similarity_variable = similarity_variable
+
+        self.kwargs = kwargs = {}
+        if similarity_variable is not None:
+            kwargs['similarity_variable'] = similarity_variable
+        if MW is not None:
+            kwargs['MW'] = MW
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -814,22 +305,25 @@ class HeatCapacityGas(TDependentProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
-
+        at a specific temperature; set by :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
 
-        self.load_all_methods()
-        
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
-                                        
+        self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
 
-    def load_all_methods(self):
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
+        elif method is not None:
+            self.method = method
+        else:
+            methods = self.valid_methods(T=None)
+            if methods:
+                self.method = methods[0]
+
+
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
@@ -842,49 +336,81 @@ class HeatCapacityGas(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
-        if self.CASRN in TRC_gas_data.index:
-            methods.append(TRCIG)
-            _, self.TRCIG_Tmin, self.TRCIG_Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = _TRC_gas_data_values[TRC_gas_data.index.get_loc(self.CASRN)].tolist()
-            self.TRCIG_coefs = [a0, a1, a2, a3, a4, a5, a6, a7]
-            Tmins.append(self.TRCIG_Tmin); Tmaxs.append(self.TRCIG_Tmax)
-        if self.CASRN in Poling_data.index and not isnan(Poling_data.at[self.CASRN, 'a0']):
-            _, self.POLING_Tmin, self.POLING_Tmax, a0, a1, a2, a3, a4, Cpg, Cpl = _Poling_data_values[Poling_data.index.get_loc(self.CASRN)].tolist()
-            methods.append(POLING)
-            self.POLING_coefs = [a0, a1, a2, a3, a4]
-            Tmins.append(self.POLING_Tmin); Tmaxs.append(self.POLING_Tmax)
-        if self.CASRN in Poling_data.index and not isnan(Poling_data.at[self.CASRN, 'Cpg']):
-            methods.append(POLING_CONST)
-            self.POLING_T = 298.15
-            self.POLING_constant = float(Poling_data.at[self.CASRN, 'Cpg'])
-        if self.CASRN in CRC_standard_data.index and not isnan(CRC_standard_data.at[self.CASRN, 'Cpg']):
-            methods.append(CRCSTD)
-            self.CRCSTD_T = 298.15
-            self.CRCSTD_constant = float(CRC_standard_data.at[self.CASRN, 'Cpg'])
-        if self.CASRN in _VDISaturationDict:
-            # NOTE: VDI data is for the saturation curve, i.e. at increasing
-            # pressure; it is normally substantially higher than the ideal gas
-            # value
-            methods.append(VDI_TABULAR)
-            Ts, props = VDI_tabular_data(self.CASRN, 'Cp (g)')
-            self.VDI_Tmin = Ts[0]
-            self.VDI_Tmax = Ts[-1]
-            self.tabular_data[VDI_TABULAR] = (Ts, props)
-            Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
-        if has_CoolProp and self.CASRN in coolprop_dict:
-            methods.append(COOLPROP)
-            self.CP_f = coolprop_fluids[self.CASRN]
-            Tmins.append(self.CP_f.Tt); Tmaxs.append(self.CP_f.Tc)
+        self.T_limits = T_limits = {}
+        if load_data:
+            if self.CASRN in heat_capacity.TRC_gas_data.index:
+                methods.append(TRCIG)
+                self.TRCIG_Tmin, self.TRCIG_Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = heat_capacity.TRC_gas_values[heat_capacity.TRC_gas_data.index.get_loc(self.CASRN)].tolist()
+                self.TRCIG_coefs = [a0, a1, a2, a3, a4, a5, a6, a7]
+                Tmins.append(self.TRCIG_Tmin); Tmaxs.append(self.TRCIG_Tmax)
+                T_limits[TRCIG] = (self.TRCIG_Tmin, self.TRCIG_Tmax)
+            if self.CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[self.CASRN, 'a0']):
+                POLING_Tmin, POLING_Tmax, a0, a1, a2, a3, a4, Cpg, Cpl = heat_capacity.Cp_values_Poling[heat_capacity.Cp_data_Poling.index.get_loc(self.CASRN)].tolist()
+                methods.append(POLING)
+                if isnan(POLING_Tmin):
+                    POLING_Tmin = 50.0
+                if isnan(POLING_Tmax):
+                    POLING_Tmax = 1000.0
+                self.POLING_Tmin = POLING_Tmin
+                Tmins.append(POLING_Tmin)
+                self.POLING_Tmax = POLING_Tmax
+                Tmaxs.append(POLING_Tmax)
+                self.POLING_coefs = [a0, a1, a2, a3, a4]
+                T_limits[POLING] = (POLING_Tmin, POLING_Tmax)
+            if self.CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[self.CASRN, 'Cpg']):
+                methods.append(POLING_CONST)
+                self.POLING_T = 298.15
+                self.POLING_constant = float(heat_capacity.Cp_data_Poling.at[self.CASRN, 'Cpg'])
+                T_limits[POLING_CONST] = (self.POLING_T-50.0, self.POLING_T+50.0)
+            if self.CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cpg']):
+                methods.append(CRCSTD)
+                self.CRCSTD_T = 298.15
+                self.CRCSTD_constant = float(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cpg'])
+                T_limits[CRCSTD] = (self.CRCSTD_T-50.0, self.CRCSTD_T+50.0)
+            if self.CASRN in miscdata.VDI_saturation_dict:
+                # NOTE: VDI data is for the saturation curve, i.e. at increasing
+                # pressure; it is normally substantially higher than the ideal gas
+                # value
+                methods.append(VDI_TABULAR)
+                Ts, props = lookup_VDI_tabular_data(self.CASRN, 'Cp (g)')
+                self.VDI_Tmin = Ts[0]
+                self.VDI_Tmax = Ts[-1]
+                self.tabular_data[VDI_TABULAR] = (Ts, props)
+                Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
+            if has_CoolProp() and self.CASRN in coolprop_dict:
+                methods.append(COOLPROP)
+                self.CP_f = coolprop_fluids[self.CASRN]
+                Tmin = max(self.CP_f.Tt, self.CP_f.Tmin)
+                Tmax = min(self.CP_f.Tc, self.CP_f.Tmax)
+                Tmins.append(Tmin); Tmaxs.append(Tmax)
+                T_limits[COOLPROP] = (Tmin, Tmax)
         if self.MW and self.similarity_variable:
             methods.append(LASTOVKA_SHAW)
+            T_limits[LASTOVKA_SHAW] = (1e-3, 1e5)
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
+
+    @staticmethod
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        return {TRCIG: heat_capacity.TRC_gas_data.index,
+                POLING: [i for i in heat_capacity.Cp_data_Poling.index if not isnan(heat_capacity.Cp_data_Poling.at[i, 'a0'])],
+                POLING_CONST: [i for i in heat_capacity.Cp_data_Poling.index if not isnan(heat_capacity.Cp_data_Poling.at[i, 'Cpg'])],
+                CRCSTD: [i for i in heat_capacity.CRC_standard_data.index if not isnan(heat_capacity.CRC_standard_data.at[i, 'Cpg'])],
+                COOLPROP: coolprop_dict,
+                VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
+                }
 
     def calculate(self, T, method):
         r'''Method to calculate surface tension of a liquid at temperature `T`
         with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters
@@ -900,16 +426,21 @@ class HeatCapacityGas(TDependentProperty):
             Calculated heat capacity, [J/mol/K]
         '''
         if method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                Cp = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                Cp = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            if T < self.poly_fit_Tmin:
+                Cp = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
+            elif T > self.poly_fit_Tmax:
+                Cp = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
-                Cp = horner(self.best_fit_coeffs, T)
+                Cp = horner(self.poly_fit_coeffs, T)
         elif method == TRCIG:
             Cp = TRCCp(T, *self.TRCIG_coefs)
         elif method == COOLPROP:
-            Cp = PropsSI('Cp0molar', 'T', T,'P', 101325.0, self.CASRN)
+            try:
+                # Some cases due to melting point need a high pressure
+                Cp = PropsSI('Cp0molar', 'T', T,'P', 10132500.0, self.CASRN)
+            except:
+                # And some cases don't converge at high P
+                Cp = PropsSI('Cp0molar', 'T', T,'P', 101325.0, self.CASRN)
         elif method == POLING:
             Cp = R*(self.POLING_coefs[0] + self.POLING_coefs[1]*T
             + self.POLING_coefs[2]*T**2 + self.POLING_coefs[3]*T**3
@@ -932,7 +463,7 @@ class HeatCapacityGas(TDependentProperty):
         'TRC' and 'Poling' both have minimum and maimum temperatures. The
         constant temperatures in POLING_CONST and CRCSTD are considered valid
         for 50 degrees around their specified temperatures.
-        :obj:`Lastovka_Shaw` is considered valid for the whole range of
+        :obj:`Lastovka_Shaw <chemicals.heat_capacity.Lastovka_Shaw>` is considered valid for the whole range of
         temperatures.
 
         It is not guaranteed that a method will work or give an accurate
@@ -984,7 +515,7 @@ class HeatCapacityGas(TDependentProperty):
         r'''Method to calculate the integral of a property with respect to
         temperature, using a specified method. Implements the analytical
         integrals of all available methods except for tabular data.
-        
+
         Parameters
         ----------
         T1 : float
@@ -997,15 +528,15 @@ class HeatCapacityGas(TDependentProperty):
         Returns
         -------
         integral : float
-            Calculated integral of the property over the given range, 
+            Calculated integral of the property over the given range,
             [`units*K`]
         '''
         if method == BESTFIT:
-            return fit_integral_linear_extrapolation(T1, T2, 
-                self.best_fit_int_coeffs, self.best_fit_Tmin, 
-                self.best_fit_Tmax, self.best_fit_Tmin_value, 
-                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
-                self.best_fit_Tmax_slope)
+            return fit_integral_linear_extrapolation(T1, T2,
+                self.poly_fit_int_coeffs, self.poly_fit_Tmin,
+                self.poly_fit_Tmax, self.poly_fit_Tmin_value,
+                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
+                self.poly_fit_Tmax_slope)
         elif method == TRCIG:
             H2 = TRCCp_integral(T2, *self.TRCIG_coefs)
             H1 = TRCCp_integral(T1, *self.TRCIG_coefs)
@@ -1031,9 +562,9 @@ class HeatCapacityGas(TDependentProperty):
 
     def calculate_integral_over_T(self, T1, T2, method):
         r'''Method to calculate the integral of a property over temperature
-        with respect to temperature, using a specified method. Implements the 
+        with respect to temperature, using a specified method. Implements the
         analytical integrals of all available methods except for tabular data.
-        
+
         Parameters
         ----------
         T1 : float
@@ -1046,16 +577,16 @@ class HeatCapacityGas(TDependentProperty):
         Returns
         -------
         integral : float
-            Calculated integral of the property over the given range, 
+            Calculated integral of the property over the given range,
             [`units`]
         '''
         if method == BESTFIT:
-            return fit_integral_over_T_linear_extrapolation(T1, T2, 
-                self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff,
-                self.best_fit_Tmin, self.best_fit_Tmax, 
-                self.best_fit_Tmin_value, 
-                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
-                self.best_fit_Tmax_slope)
+            return fit_integral_over_T_linear_extrapolation(T1, T2,
+                self.poly_fit_T_int_T_coeffs, self.poly_fit_log_coeff,
+                self.poly_fit_Tmin, self.poly_fit_Tmax,
+                self.poly_fit_Tmin_value,
+                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
+                self.poly_fit_Tmax_slope)
         elif method == TRCIG:
             S2 = TRCCp_integral_over_T(T2, *self.TRCIG_coefs)
             S1 = TRCCp_integral_over_T(T1, *self.TRCIG_coefs)
@@ -1066,7 +597,7 @@ class HeatCapacityGas(TDependentProperty):
             return self.POLING_constant*log(T2/T1)
         elif method == POLING:
             A, B, C, D, E = self.POLING_coefs
-            S2 = ((((0.25*E)*T2 + D/3.)*T2 + 0.5*C)*T2 + B)*T2 
+            S2 = ((((0.25*E)*T2 + D/3.)*T2 + 0.5*C)*T2 + B)*T2
             S1 = ((((0.25*E)*T1 + D/3.)*T1 + 0.5*C)*T1 + B)*T1
             return R*(S2-S1 + A*log(T2/T1))
         elif method == LASTOVKA_SHAW:
@@ -1077,833 +608,6 @@ class HeatCapacityGas(TDependentProperty):
             return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
         else:
             raise Exception('Method not valid')
-
-
-### Heat capacities of liquids
-
-def Rowlinson_Poling(T, Tc, omega, Cpgm):
-    r'''Calculate liquid constant-pressure heat capacitiy with the [1]_ CSP method.
-
-    This equation is not terrible accurate.
-
-    The heat capacity of a liquid is given by:
-
-    .. math::
-        \frac{Cp^{L} - Cp^{g}}{R} = 1.586 + \frac{0.49}{1-T_r} +
-        \omega\left[ 4.2775 + \frac{6.3(1-T_r)^{1/3}}{T_r} + \frac{0.4355}{1-T_r}\right]
-
-    Parameters
-    ----------
-    T : float
-        Temperature of fluid [K]
-    Tc : float
-        Critical temperature of fluid [K]
-    omega : float
-        Acentric factor for fluid, [-]
-    Cpgm : float
-        Constant-pressure gas heat capacity, [J/mol/K]
-
-    Returns
-    -------
-    Cplm : float
-        Liquid constant-pressure heat capacitiy, [J/mol/K]
-
-    Notes
-    -----
-    Poling compared 212 substances, and found error at 298K larger than 10%
-    for 18 of them, mostly associating. Of the other 194 compounds, AARD is 2.5%.
-
-    Examples
-    --------
-    >>> Rowlinson_Poling(350.0, 435.5, 0.203, 91.21)
-    143.80194441498296
-
-    References
-    ----------
-    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
-       New York: McGraw-Hill Professional, 2000.
-    '''
-    Tr = T/Tc
-    Cplm = Cpgm+ R*(1.586 + 0.49/(1.-Tr) + omega*(4.2775
-    + 6.3*(1-Tr)**(1/3.)/Tr + 0.4355/(1.-Tr)))
-    return Cplm
-
-
-def Rowlinson_Bondi(T, Tc, omega, Cpgm):
-    r'''Calculate liquid constant-pressure heat capacitiy with the CSP method
-    shown in [1]_.
-
-    The heat capacity of a liquid is given by:
-
-    .. math::
-        \frac{Cp^L - Cp^{ig}}{R} = 1.45 + 0.45(1-T_r)^{-1} + 0.25\omega
-        [17.11 + 25.2(1-T_r)^{1/3}T_r^{-1} + 1.742(1-T_r)^{-1}]
-
-    Parameters
-    ----------
-    T : float
-        Temperature of fluid [K]
-    Tc : float
-        Critical temperature of fluid [K]
-    omega : float
-        Acentric factor for fluid, [-]
-    Cpgm : float
-        Constant-pressure gas heat capacity, [J/mol/K]
-
-    Returns
-    -------
-    Cplm : float
-        Liquid constant-pressure heat capacitiy, [J/mol/K]
-
-    Notes
-    -----
-    Less accurate than `Rowlinson_Poling`.
-
-    Examples
-    --------
-    >>> Rowlinson_Bondi(T=373.28, Tc=535.55, omega=0.323, Cpgm=119.342)
-    175.39760730048116
-
-    References
-    ----------
-    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
-       New York: McGraw-Hill Professional, 2000.
-    .. [2] Gesellschaft, V. D. I., ed. VDI Heat Atlas. 2nd edition.
-       Berlin; New York:: Springer, 2010.
-    .. [3] J.S. Rowlinson, Liquids and Liquid Mixtures, 2nd Ed.,
-       Butterworth, London (1969).
-    '''
-    Tr = T/Tc
-    Cplm = Cpgm + R*(1.45 + 0.45/(1.-Tr) + 0.25*omega*(17.11
-    + 25.2*(1-Tr)**(1/3.)/Tr + 1.742/(1.-Tr)))
-    return Cplm
-
-
-def Dadgostar_Shaw(T, similarity_variable):
-    r'''Calculate liquid constant-pressure heat capacitiy with the similarity
-    variable concept and method as shown in [1]_.
-
-    .. math::
-        C_{p} = 24.5(a_{11}\alpha + a_{12}\alpha^2)+ (a_{21}\alpha
-        + a_{22}\alpha^2)T +(a_{31}\alpha + a_{32}\alpha^2)T^2
-
-    Parameters
-    ----------
-    T : float
-        Temperature of liquid [K]
-    similarity_variable : float
-        similarity variable as defined in [1]_, [mol/g]
-
-    Returns
-    -------
-    Cpl : float
-        Liquid constant-pressure heat capacitiy, [J/kg/K]
-
-    Notes
-    -----
-    Many restrictions on its use.
-
-    Original model is in terms of J/g/K. Note that the model is for predicting
-    mass heat capacity, not molar heat capacity like most other methods!
-
-    a11 = -0.3416; a12 = 2.2671; a21 = 0.1064; a22 = -0.3874l;
-    a31 = -9.8231E-05; a32 = 4.182E-04
-
-    Examples
-    --------
-    >>> Dadgostar_Shaw(355.6, 0.139)
-    1802.5291501191516
-
-    References
-    ----------
-    .. [1] Dadgostar, Nafiseh, and John M. Shaw. "A Predictive Correlation for
-       the Constant-Pressure Specific Heat Capacity of Pure and Ill-Defined
-       Liquid Hydrocarbons." Fluid Phase Equilibria 313 (January 15, 2012):
-       211-226. doi:10.1016/j.fluid.2011.09.015.
-    '''
-    a = similarity_variable
-    a11 = -0.3416
-    a12 = 2.2671
-    a21 = 0.1064
-    a22 = -0.3874
-    a31 = -9.8231E-05
-    a32 = 4.182E-04
-
-    # Didn't seem to improve the comparison; sum of errors on some
-    # points included went from 65.5  to 286.
-    # Author probably used more precision in their calculation.
-#    theta = 151.8675
-#    constant = 3*R*(theta/T)**2*exp(theta/T)/(exp(theta/T)-1)**2
-    constant = 24.5
-
-    Cp = (constant*(a11*a + a12*a**2) + (a21*a + a22*a**2)*T
-          + (a31*a + a32*a**2)*T**2)
-    Cp = Cp*1000 # J/g/K to J/kg/K
-    return Cp
-
-
-def Dadgostar_Shaw_integral(T, similarity_variable):
-    r'''Calculate the integral of liquid constant-pressure heat capacitiy 
-    with the similarity variable concept and method as shown in [1]_.
-
-    Parameters
-    ----------
-    T : float
-        Temperature of gas [K]
-    similarity_variable : float
-        similarity variable as defined in [1]_, [mol/g]
-
-    Returns
-    -------
-    H : float
-        Difference in enthalpy from 0 K, [J/kg]
-
-    Notes
-    -----
-    Original model is in terms of J/g/K. Note that the model is for predicting
-    mass heat capacity, not molar heat capacity like most other methods!
-    Integral was computed with SymPy.
-
-    See Also
-    --------
-    Dadgostar_Shaw
-    Dadgostar_Shaw_integral_over_T
-
-    Examples
-    --------
-    >>> Dadgostar_Shaw_integral(300.0, 0.1333)
-    238908.15142664989
-
-    References
-    ----------
-    .. [1] Dadgostar, Nafiseh, and John M. Shaw. "A Predictive Correlation for
-       the Constant-Pressure Specific Heat Capacity of Pure and Ill-Defined
-       Liquid Hydrocarbons." Fluid Phase Equilibria 313 (January 15, 2012):
-       211-226. doi:10.1016/j.fluid.2011.09.015.
-    '''
-    a = similarity_variable
-    a2 = a*a
-    T2 = T*T
-    a11 = -0.3416
-    a12 = 2.2671
-    a21 = 0.1064
-    a22 = -0.3874
-    a31 = -9.8231E-05
-    a32 = 4.182E-04
-    constant = 24.5
-    H = T2*T/3.*(a2*a32 + a*a31) + T2*0.5*(a2*a22 + a*a21) + T*constant*(a2*a12 + a*a11)
-    return H*1000. # J/g/K to J/kg/K
-
-
-def Dadgostar_Shaw_integral_over_T(T, similarity_variable):
-    r'''Calculate the integral of liquid constant-pressure heat capacitiy 
-    with the similarity variable concept and method as shown in [1]_.
-
-    Parameters
-    ----------
-    T : float
-        Temperature of gas [K]
-    similarity_variable : float
-        similarity variable as defined in [1]_, [mol/g]
-
-    Returns
-    -------
-    S : float
-        Difference in entropy from 0 K, [J/kg/K]
-
-    Notes
-    -----
-    Original model is in terms of J/g/K. Note that the model is for predicting
-    mass heat capacity, not molar heat capacity like most other methods!
-    Integral was computed with SymPy.
-
-    See Also
-    --------
-    Dadgostar_Shaw
-    Dadgostar_Shaw_integral
-
-    Examples
-    --------
-    >>> Dadgostar_Shaw_integral_over_T(300.0, 0.1333)
-    1201.1409113147927
-
-    References
-    ----------
-    .. [1] Dadgostar, Nafiseh, and John M. Shaw. "A Predictive Correlation for
-       the Constant-Pressure Specific Heat Capacity of Pure and Ill-Defined
-       Liquid Hydrocarbons." Fluid Phase Equilibria 313 (January 15, 2012):
-       211-226. doi:10.1016/j.fluid.2011.09.015.
-    '''
-    a = similarity_variable
-    a2 = a*a
-    a11 = -0.3416
-    a12 = 2.2671
-    a21 = 0.1064
-    a22 = -0.3874
-    a31 = -9.8231E-05
-    a32 = 4.182E-04
-    constant = 24.5
-    S = T*T*0.5*(a2*a32 + a*a31) + T*(a2*a22 + a*a21) + a*constant*(a*a12 + a11)*log(T)
-    return S*1000. # J/g/K to J/kg/K
-
-
-class Zabransky_quasipolynomial(object):
-    r'''Quasi-polynomial object for calculating the heat capacity of a chemical.
-    Implements the enthalpy and entropy integrals as well.
-
-    .. math::
-        \frac{C}{R}=A_1\ln(1-T_r) + \frac{A_2}{1-T_r}
-        + \sum_{j=0}^m A_{j+3} T_r^j
-
-    Parameters
-    ----------
-    CAS : str
-        CAS number.
-    name : str
-        Name of the chemical as given in [1]_.
-    uncertainty : str
-        Uncertainty class of the heat capacity as given in [1]_.
-    Tmin : float
-        Minimum temperature any experimental data was available at.
-    Tmax : float
-        Maximum temperature any experimental data was available at.
-    Tc : float
-        Critical temperature of the chemical, as used in the formula.
-    coeffs : list[float]
-        Six coefficients for the equation.
-
-    References
-    ----------
-    .. [1] Zabransky, M., V. Ruzicka Jr, V. Majer, and Eugene S. Domalski.
-       Heat Capacity of Liquids: Critical Review and Recommended Values.
-       2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
-    '''
-    __slots__ = ['CAS', 'name', 'uncertainty', 'Tmin', 'Tmax', 'Tc', 'coeffs']
-    def __init__(self, CAS, name, uncertainty, Tmin, Tmax, Tc, coeffs):
-        self.CAS = CAS
-        '''CAS number.'''
-        self.name = name
-        '''Name of the chemical.'''
-        self.uncertainty = uncertainty
-        '''Uncertainty class of the heat capacity.'''
-        self.Tmin = Tmin
-        '''Minimum temperature any experimental data was available at.'''
-        self.Tmax = Tmax
-        '''Maximum temperature any experimental data was available at.'''
-        self.Tc = Tc 
-        '''Critical temperature of the chemical, as used in the formula.'''
-        self.coeffs = coeffs
-        '''Six coefficients for the equation.'''
-
-    def calculate(self, T):
-        r'''Method to actually calculate heat capacity as a function of 
-        temperature.
-            
-        Parameters
-        ----------
-        T : float
-            Temperature, [K]
-
-        Returns
-        -------
-        Cp : float
-            Liquid heat capacity as T, [J/mol/K]
-        '''        
-        return Zabransky_quasi_polynomial(T, self.Tc, *self.coeffs)
-                                          
-    def calculate_integral(self, T1, T2):
-        r'''Method to compute the enthalpy integral of heat capacity from 
-         `T1` to `T2`.
-            
-        Parameters
-        ----------
-        T1 : float
-            Initial temperature, [K]
-        T2 : float
-            Final temperature, [K]
-            
-        Returns
-        -------
-        dH : float
-            Enthalpy difference between `T1` and `T2`, [J/mol]
-        '''        
-        return (Zabransky_quasi_polynomial_integral(T2, self.Tc, *self.coeffs)
-               - Zabransky_quasi_polynomial_integral(T1, self.Tc, *self.coeffs))
-    
-    def calculate_integral_over_T(self, T1, T2):
-        r'''Method to compute the entropy integral of heat capacity from 
-         `T1` to `T2`.
-            
-        Parameters
-        ----------
-        T1 : float
-            Initial temperature, [K]
-        T2 : float
-            Final temperature, [K]
-            
-        Returns
-        -------
-        dS : float
-            Entropy difference between `T1` and `T2`, [J/mol/K]
-        '''        
-        return (Zabransky_quasi_polynomial_integral_over_T(T2, self.Tc, *self.coeffs)
-               - Zabransky_quasi_polynomial_integral_over_T(T1, self.Tc, *self.coeffs))
-
-        
-class Zabransky_spline(object):
-    r'''Implementation of the cubic spline method presented in [1]_ for 
-    calculating the heat capacity of a chemical.
-    Implements the enthalpy and entropy integrals as well.
-
-    .. math::
-        \frac{C}{R}=\sum_{j=0}^3 A_{j+1} \left(\frac{T}{100}\right)^j
-
-    Parameters
-    ----------
-    CAS : str
-        CAS number.
-    name : str
-        Name of the chemical as in [1]_.
-    uncertainty : str
-        Uncertainty class of the heat capacity as in [1]_.
-
-        References
-    ----------
-    .. [1] Zabransky, M., V. Ruzicka Jr, V. Majer, and Eugene S. Domalski.
-       Heat Capacity of Liquids: Critical Review and Recommended Values.
-       2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
-    '''
-    __slots__ = ['Ts', 'coeff_sets', 'n', 'CAS', 'name', 'uncertainty']
-    def __init__(self, CAS, name, uncertainty):
-        self.CAS = CAS
-        '''CAS number.'''
-        self.name = name
-        '''Name of the chemical.'''
-        self.uncertainty = uncertainty
-        '''Uncertainty class of the heat capacity.'''
-        self.Ts = []
-        '''Temperatures at which the coefficient sets transition.'''
-        self.coeff_sets = []
-        '''Actual coefficients used to describe the chemical.'''
-        self.n = 0
-        '''Number of coefficient sets used to describe the chemical.'''
-        
-    def add_coeffs(self, Tmin, Tmax, coeffs):
-        '''Called internally during the parsing of the Zabransky database, to
-        add coefficients as they are read one per line'''
-        self.n += 1
-        if not self.Ts:
-            self.Ts = [Tmin, Tmax]
-            self.coeff_sets = [coeffs]
-        else:
-            for ind, T in enumerate(self.Ts):
-                if Tmin < T:
-                    # Under an existing coefficient set - assume Tmax will come from another set
-                    self.Ts.insert(ind, Tmin) 
-                    self.coeff_sets.insert(ind, coeffs)
-                    return
-            # Must be appended to end instead
-            self.Ts.append(Tmax)
-            self.coeff_sets.append(coeffs)
-       
-    def _coeff_ind_from_T(self, T):
-        '''Determines the index at which the coefficients for the current
-        temperature are stored in `coeff_sets`.
-        '''
-        # DO NOT CHANGE
-        if self.n == 1:
-            return 0
-        for i in range(self.n):
-            if T <= self.Ts[i+1]:
-                return i
-        return self.n - 1
-
-    def calculate(self, T):
-        r'''Method to actually calculate heat capacity as a function of 
-        temperature.
-            
-        Parameters
-        ----------
-        T : float
-            Temperature, [K]
-
-        Returns
-        -------
-        Cp : float
-            Liquid heat capacity as T, [J/mol/K]
-        '''        
-        return Zabransky_cubic(T, *self.coeff_sets[self._coeff_ind_from_T(T)])
-
-    def calculate_integral(self, T1, T2):
-        r'''Method to compute the enthalpy integral of heat capacity from 
-        `T1` to `T2`. Analytically integrates across the piecewise spline
-        as necessary.
-            
-        Parameters
-        ----------
-        T1 : float
-            Initial temperature, [K]
-        T2 : float
-            Final temperature, [K]
-            
-        Returns
-        -------
-        dS : float
-            Enthalpy difference between `T1` and `T2`, [J/mol/K]
-        '''        
-        # Simplify the problem so we can assume T2 >= T1
-        if T2 < T1:
-            flipped = True
-            T1, T2 = T2, T1
-        else:
-            flipped = False
-        
-        # Fastest case - only one coefficient set, occurs surprisingly often
-        if self.n == 1:
-            dH = (Zabransky_cubic_integral(T2, *self.coeff_sets[0])
-                  - Zabransky_cubic_integral(T1, *self.coeff_sets[0]))
-        else:
-            ind_T1, ind_T2 = self._coeff_ind_from_T(T1), self._coeff_ind_from_T(T2)
-            # Second fastest case - both are in the same coefficient set
-            if ind_T1 == ind_T2:
-                dH = (Zabransky_cubic_integral(T2, *self.coeff_sets[ind_T2])
-                        - Zabransky_cubic_integral(T1, *self.coeff_sets[ind_T1]))
-            # Fo through the loop if we need to - inevitably slow 
-            else:
-                dH = (Zabransky_cubic_integral(self.Ts[ind_T1], *self.coeff_sets[ind_T1])
-                      - Zabransky_cubic_integral(T1, *self.coeff_sets[ind_T1]))
-                for i in range(ind_T1, ind_T2):
-                    diff =(Zabransky_cubic_integral(self.Ts[i+1], *self.coeff_sets[i])
-                          - Zabransky_cubic_integral(self.Ts[i], *self.coeff_sets[i]))
-                    dH += diff
-                end = (Zabransky_cubic_integral(T2, *self.coeff_sets[ind_T2])
-                      - Zabransky_cubic_integral(self.Ts[ind_T2], *self.coeff_sets[ind_T2]))
-                dH += end
-        return -dH if flipped else dH
-
-    def calculate_integral_over_T(self, T1, T2):
-        r'''Method to compute the entropy integral of heat capacity from 
-        `T1` to `T2`. Analytically integrates across the piecewise spline
-        as necessary.
-            
-        Parameters
-        ----------
-        T1 : float
-            Initial temperature, [K]
-        T2 : float
-            Final temperature, [K]
-            
-        Returns
-        -------
-        dS : float
-            Entropy difference between `T1` and `T2`, [J/mol/K]
-        '''        
-        # Simplify the problem so we can assume T2 >= T1
-        if T2 < T1:
-            flipped = True
-            T1, T2 = T2, T1
-        else:
-            flipped = False
-        
-        # Fastest case - only one coefficient set, occurs surprisingly often
-        if self.n == 1:
-            dS = (Zabransky_cubic_integral_over_T(T2, *self.coeff_sets[0])
-                  - Zabransky_cubic_integral_over_T(T1, *self.coeff_sets[0]))
-        else:
-            ind_T1, ind_T2 = self._coeff_ind_from_T(T1), self._coeff_ind_from_T(T2)
-            # Second fastest case - both are in the same coefficient set
-            if ind_T1 == ind_T2:
-                dS = (Zabransky_cubic_integral_over_T(T2, *self.coeff_sets[ind_T2])
-                        - Zabransky_cubic_integral_over_T(T1, *self.coeff_sets[ind_T1]))
-            # Fo through the loop if we need to - inevitably slow 
-            else:
-                dS = (Zabransky_cubic_integral_over_T(self.Ts[ind_T1], *self.coeff_sets[ind_T1])
-                      - Zabransky_cubic_integral_over_T(T1, *self.coeff_sets[ind_T1]))
-                for i in range(ind_T1, ind_T2):
-                    diff =(Zabransky_cubic_integral_over_T(self.Ts[i+1], *self.coeff_sets[i])
-                          - Zabransky_cubic_integral_over_T(self.Ts[i], *self.coeff_sets[i]))
-                    dS += diff
-                end = (Zabransky_cubic_integral_over_T(T2, *self.coeff_sets[ind_T2])
-                      - Zabransky_cubic_integral_over_T(self.Ts[ind_T2], *self.coeff_sets[ind_T2]))
-                dS += end
-        return -dS if flipped else dS
-
-zabransky_dict_sat_s = {}
-zabransky_dict_sat_p = {}
-zabransky_dict_const_s = {}
-zabransky_dict_const_p = {}
-zabransky_dict_iso_s = {}
-zabransky_dict_iso_p = {}
-
-# C means average heat capacity values, from less rigorous experiments
-# sat means heat capacity along the saturation line
-# p means constant-pressure values, 
-type_to_zabransky_dict = {('C', True): zabransky_dict_const_s, 
-                       ('C', False):   zabransky_dict_const_p,
-                       ('sat', True):  zabransky_dict_sat_s,
-                       ('sat', False): zabransky_dict_sat_p,
-                       ('p', True):    zabransky_dict_iso_s,
-                       ('p', False):   zabransky_dict_iso_p}
-
-                     
-with open(os.path.join(folder, 'Zabransky.tsv'), encoding='utf-8') as f:
-    next(f)
-    for line in f:
-        values = to_num(line.strip('\n').split('\t'))
-        (CAS, name, Type, uncertainty, Tmin, Tmax, a1s, a2s, a3s, a4s, a1p, a2p, a3p, a4p, a5p, a6p, Tc) = values
-        spline = bool(a1s) # False if Quasypolynomial, True if spline
-        d = type_to_zabransky_dict[(Type, spline)]
-        if spline:
-            if CAS not in d:
-                d[CAS] = Zabransky_spline(CAS, name, uncertainty)
-            d[CAS].add_coeffs(Tmin, Tmax, [a1s, a2s, a3s, a4s])
-        else:
-            # No duplicates for quasipolynomials
-            d[CAS] = Zabransky_quasipolynomial(CAS, name, uncertainty, Tmin, Tmax, 
-                                           Tc, [a1p, a2p, a3p, a4p, a5p, a6p])
-
-def Zabransky_quasi_polynomial(T, Tc, a1, a2, a3, a4, a5, a6):
-    r'''Calculates liquid heat capacity using the model developed in [1]_.
-
-    .. math::
-        \frac{C}{R}=A_1\ln(1-T_r) + \frac{A_2}{1-T_r}
-        + \sum_{j=0}^m A_{j+3} T_r^j
-
-    Parameters
-    ----------
-    T : float
-        Temperature [K]
-    Tc : float
-        Critical temperature of fluid, [K]
-    a1-a6 : float
-        Coefficients
-
-    Returns
-    -------
-    Cp : float
-        Liquid heat capacity, [J/mol/K]
-
-    Notes
-    -----
-    Used only for isobaric heat capacities, not saturation heat capacities.
-    Designed for reasonable extrapolation behavior caused by using the reduced
-    critical temperature. Used by the authors of [1]_ when critical temperature
-    was available for the fluid.
-    Analytical integrals are available for this expression.
-
-    Examples
-    --------
-    >>> Zabransky_quasi_polynomial(330, 591.79, -3.12743, 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
-    165.4728226923247
-
-    References
-    ----------
-    .. [1] Zabransky, M., V. Ruzicka Jr, V. Majer, and Eugene S. Domalski.
-       Heat Capacity of Liquids: Critical Review and Recommended Values.
-       2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
-    '''
-    Tr = T/Tc
-    return R*(a1*log(1.0-Tr) + a2/(1.0-Tr) + a3 + Tr*(Tr*(Tr*a6 + a5) + a4))
-
-
-def Zabransky_quasi_polynomial_integral(T, Tc, a1, a2, a3, a4, a5, a6):
-    r'''Calculates the integral of liquid heat capacity using the  
-    quasi-polynomial model developed in [1]_.
-
-    Parameters
-    ----------
-    T : float
-        Temperature [K]
-    a1-a6 : float
-        Coefficients
-
-    Returns
-    -------
-    H : float
-        Difference in enthalpy from 0 K, [J/mol]
-
-    Notes
-    -----
-    The analytical integral was derived with SymPy; it is a simple polynomial
-    plus some logarithms.
-
-    Examples
-    --------
-    >>> H2 = Zabransky_quasi_polynomial_integral(300, 591.79, -3.12743, 
-    ... 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
-    >>> H1 = Zabransky_quasi_polynomial_integral(200, 591.79, -3.12743, 
-    ... 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
-    >>> H2 - H1
-    14662.026406892925
-
-    References
-    ----------
-    .. [1] Zabransky, M., V. Ruzicka Jr, V. Majer, and Eugene S. Domalski.
-       Heat Capacity of Liquids: Critical Review and Recommended Values.
-       2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
-    '''
-    Tc2 = Tc*Tc
-    Tc3 = Tc2*Tc
-    term = T - Tc
-    return R*(T*(T*(T*(T*a6/(4.*Tc3) + a5/(3.*Tc2)) + a4/(2.*Tc)) - a1 + a3) 
-              + T*a1*log(1. - T/Tc) - 0.5*Tc*(a1 + a2)*log(term*term))
-
-
-def Zabransky_quasi_polynomial_integral_over_T(T, Tc, a1, a2, a3, a4, a5, a6):
-    r'''Calculates the integral of liquid heat capacity over T using the 
-    quasi-polynomial model  developed in [1]_.
-
-    Parameters
-    ----------
-    T : float
-        Temperature [K]
-    a1-a6 : float
-        Coefficients
-
-    Returns
-    -------
-    S : float
-        Difference in entropy from 0 K, [J/mol/K]
-
-    Notes
-    -----
-    The analytical integral was derived with Sympy. It requires the 
-    Polylog(2,x) function, which is unimplemented in SciPy. A very accurate 
-    numerical approximation was implemented as :obj:`thermo.utils.polylog2`.
-    Relatively slow due to the use of that special function.
-
-    Examples
-    --------
-    >>> S2 = Zabransky_quasi_polynomial_integral_over_T(300, 591.79, -3.12743, 
-    ... 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
-    >>> S1 = Zabransky_quasi_polynomial_integral_over_T(200, 591.79, -3.12743, 
-    ... 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
-    >>> S2 - S1
-    59.16997291893654
-    
-    References
-    ----------
-    .. [1] Zabransky, M., V. Ruzicka Jr, V. Majer, and Eugene S. Domalski.
-       Heat Capacity of Liquids: Critical Review and Recommended Values.
-       2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
-    '''
-    term = T - Tc
-    logT = log(T)
-    Tc2 = Tc*Tc
-    Tc3 = Tc2*Tc
-    return R*(a3*logT -a1*polylog2(T/Tc) - a2*(-logT + 0.5*log(term*term))
-              + T*(T*(T*a6/(3.*Tc3) + a5/(2.*Tc2)) + a4/Tc))
-
-
-def Zabransky_cubic(T, a1, a2, a3, a4):
-    r'''Calculates liquid heat capacity using the model developed in [1]_.
-
-    .. math::
-        \frac{C}{R}=\sum_{j=0}^3 A_{j+1} \left(\frac{T}{100}\right)^j
-
-    Parameters
-    ----------
-    T : float
-        Temperature [K]
-    a1-a4 : float
-        Coefficients
-
-    Returns
-    -------
-    Cp : float
-        Liquid heat capacity, [J/mol/K]
-
-    Notes
-    -----
-    Most often form used in [1]_.
-    Analytical integrals are available for this expression.
-
-    Examples
-    --------
-    >>> Zabransky_cubic(298.15, 20.9634, -10.1344, 2.8253, -0.256738)
-    75.31462591538556
-
-    References
-    ----------
-    .. [1] Zabransky, M., V. Ruzicka Jr, V. Majer, and Eugene S. Domalski.
-       Heat Capacity of Liquids: Critical Review and Recommended Values.
-       2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
-    '''
-    T = T/100.
-    return R*(((a4*T + a3)*T + a2)*T + a1)
-
-
-def Zabransky_cubic_integral(T, a1, a2, a3, a4):
-    r'''Calculates the integral of liquid heat capacity using the model 
-    developed in [1]_.
-
-    Parameters
-    ----------
-    T : float
-        Temperature [K]
-    a1-a4 : float
-        Coefficients
-
-    Returns
-    -------
-    H : float
-        Difference in enthalpy from 0 K, [J/mol]
-
-    Notes
-    -----
-    The analytical integral was derived with Sympy; it is a simple polynomial.
-
-    Examples
-    --------
-    >>> Zabransky_cubic_integral(298.15, 20.9634, -10.1344, 2.8253, -0.256738)
-    31051.679845520586
-
-    References
-    ----------
-    .. [1] Zabransky, M., V. Ruzicka Jr, V. Majer, and Eugene S. Domalski.
-       Heat Capacity of Liquids: Critical Review and Recommended Values.
-       2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
-    '''
-    T = T/100.
-    return 100*R*T*(T*(T*(T*a4*0.25 + a3/3.) + a2*0.5) + a1)
-
-
-def Zabransky_cubic_integral_over_T(T, a1, a2, a3, a4):
-    r'''Calculates the integral of liquid heat capacity over T using the model 
-    developed in [1]_.
-
-    Parameters
-    ----------
-    T : float
-        Temperature [K]
-    a1-a4 : float
-        Coefficients
-
-    Returns
-    -------
-    S : float
-        Difference in entropy from 0 K, [J/mol/K]
-
-    Notes
-    -----
-    The analytical integral was derived with Sympy; it is a simple polynomial,
-    plus a logarithm
-
-    Examples
-    --------
-    >>> Zabransky_cubic_integral_over_T(298.15, 20.9634, -10.1344, 2.8253, 
-    ... -0.256738)
-    24.73245695987246
-
-    References
-    ----------
-    .. [1] Zabransky, M., V. Ruzicka Jr, V. Majer, and Eugene S. Domalski.
-       Heat Capacity of Liquids: Critical Review and Recommended Values.
-       2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
-    '''
-    T = T/100.
-    return R*(T*(T*(T*a4/3 + a3/2) + a2) + a1*log(T))
-
 
 
 
@@ -1918,19 +622,12 @@ ROWLINSON_POLING = 'Rowlinson and Poling (2001)'
 ROWLINSON_BONDI = 'Rowlinson and Bondi (1969)'
 DADGOSTAR_SHAW = 'Dadgostar and Shaw (2011)'
 
-
-ZABRANSKY_TO_DICT = {ZABRANSKY_SPLINE: zabransky_dict_const_s,
-                     ZABRANSKY_QUASIPOLYNOMIAL: zabransky_dict_const_p,
-                     ZABRANSKY_SPLINE_C: zabransky_dict_iso_s,
-                     ZABRANSKY_QUASIPOLYNOMIAL_C: zabransky_dict_iso_p,
-                     ZABRANSKY_SPLINE_SAT: zabransky_dict_sat_s,
-                     ZABRANSKY_QUASIPOLYNOMIAL_SAT: zabransky_dict_sat_p}
 heat_capacity_liquid_methods = [ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
                       VDI_TABULAR, ROWLINSON_POLING, ROWLINSON_BONDI, COOLPROP,
                       DADGOSTAR_SHAW, POLING_CONST, CRCSTD]
-'''Holds all methods available for the HeatCapacityLiquid class, for use in
+'''Holds all methods available for the :obj:`HeatCapacityLiquid class`, for use in
 iterating over them.'''
 
 
@@ -1954,64 +651,104 @@ class HeatCapacityLiquid(TDependentProperty):
         Acentric factor, [-]
     Cpgm : float or callable, optional
         Idea-gas molar heat capacity at T or callable for the same, [J/mol/K]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files
+        [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        heat capacity of the compound; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default method if provided. [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
     A string holding each method's name is assigned to the following variables
     in this module, intended as the most convenient way to refer to a method.
     To iterate over all methods, use the list stored in
-    :obj:`heat_capacity_gas_methods`.
+    :obj:`heat_capacity_liquid_methods`.
 
     **ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL, ZABRANSKY_SPLINE_C,
     and ZABRANSKY_QUASIPOLYNOMIAL_C**:
+
         Rigorous expressions developed in [1]_ following critical evaluation
         of the available data. The spline methods use the form described in
-        :obj:`Zabransky_cubic` over short ranges with varying coefficients
+        :obj:`Zabransky_cubic <chemicals.heat_capacity.Zabransky_cubic>` over short ranges with varying coefficients
         to obtain a wider range. The quasi-polynomial methods use the form
-        described in :obj:`Zabransky_quasi_polynomial`, more suitable for
+        described in :obj:`Zabransky_quasi_polynomial <chemicals.heat_capacity.Zabransky_quasi_polynomial>`, more suitable for
         extrapolation, and over then entire range. Respectively, there is data
         available for 588, 146, 51, and 26 chemicals. 'C' denotes constant-
         pressure data available from more precise experiments. The others
         are heat capacity values averaged over a temperature changed.
+
     **ZABRANSKY_SPLINE_SAT and ZABRANSKY_QUASIPOLYNOMIAL_SAT**:
+
         Rigorous expressions developed in [1]_ following critical evaluation
         of the available data. The spline method use the form described in
-        :obj:`Zabransky_cubic` over short ranges with varying coefficients
+        :obj:`Zabransky_cubic <chemicals.heat_capacity.Zabransky_cubic>` over short ranges with varying coefficients
         to obtain a wider range. The quasi-polynomial method use the form
-        described in :obj:`Zabransky_quasi_polynomial`, more suitable for
+        described in :obj:`Zabransky_quasi_polynomial <chemicals.heat_capacity.Zabransky_quasi_polynomial>`, more suitable for
         extrapolation, and over their entire range. Respectively, there is data
         available for 203, and 16 chemicals. Note that these methods are for
         the saturation curve!
+
     **VDI_TABULAR**:
+
         Tabular data up to the critical point available in [5]_. Note that this
         data is along the saturation curve.
+
     **ROWLINSON_POLING**:
-        CSP method described in :obj:`Rowlinson_Poling`. Requires a ideal gas
+
+        CSP method described in :obj:`Rowlinson_Poling <chemicals.heat_capacity.Rowlinson_Poling>`. Requires a ideal gas
         heat capacity value at the same temperature as it is to be calculated.
+
     **ROWLINSON_BONDI**:
-        CSP method described in :obj:`Rowlinson_Bondi`. Requires a ideal gas
+
+        CSP method described in :obj:`Rowlinson_Bondi <chemicals.heat_capacity.Rowlinson_Bondi>`. Requires a ideal gas
         heat capacity value at the same temperature as it is to be calculated.
+
     **COOLPROP**:
+
         CoolProp external library; with select fluids from its library.
         Range is limited to that of the equations of state it uses, as
         described in [3]_. Very slow.
+
     **DADGOSTAR_SHAW**:
+
         A basic estimation method using the `similarity variable` concept;
         requires only molecular structure, so is very convenient. See
-        :obj:`Dadgostar_Shaw` for details.
+        :obj:`Dadgostar_Shaw <chemicals.heat_capacity.Dadgostar_Shaw>` for details.
+
     **POLING_CONST**:
+
         Constant values in [2]_ at 298.15 K; available for 245 liquids.
+
     **CRCSTD**:
-        Consta values tabulated in [4]_ at 298.15 K; data is available for 433
+
+        Constant values tabulated in [4]_ at 298.15 K; data is available for 433
         liquids.
 
     See Also
     --------
-    Zabransky_quasi_polynomial
-    Zabransky_cubic
-    Rowlinson_Poling
-    Rowlinson_Bondi
-    Dadgostar_Shaw
+    chemicals.heat_capacity.Zabransky_quasi_polynomial
+    chemicals.heat_capacity.Zabransky_cubic
+    chemicals.heat_capacity.Rowlinson_Poling
+    chemicals.heat_capacity.Rowlinson_Bondi
+    chemicals.heat_capacity.Dadgostar_Shaw
+
+    Examples
+    --------
+    >>> CpLiquid = HeatCapacityLiquid(CASRN='142-82-5', MW=100.2, similarity_variable=0.2295, Tc=540.2, omega=0.3457, Cpgm=165.2)
+    >>> CpLiquid(300)
+    221.9267
 
     References
     ----------
@@ -2053,20 +790,38 @@ class HeatCapacityLiquid(TDependentProperty):
     ranked_methods = [ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
-                      VDI_TABULAR, COOLPROP, DADGOSTAR_SHAW, ROWLINSON_POLING, 
+                      VDI_TABULAR, COOLPROP, DADGOSTAR_SHAW, ROWLINSON_POLING,
                       ROWLINSON_BONDI,
                       POLING_CONST, CRCSTD]
     '''Default rankings of the available methods.'''
 
+    _fit_force_n = {}
+    '''Dictionary containing method: fit_n, for use in methods which should
+    only ever be fit to a specific `n` value'''
+    _fit_force_n[CRCSTD] = 1
+    _fit_force_n[POLING_CONST] = 1
 
     def __init__(self, CASRN='', MW=None, similarity_variable=None, Tc=None,
-                 omega=None, Cpgm=None, best_fit=None):
+                 omega=None, Cpgm=None, load_data=True,
+                 extrapolation='linear',  poly_fit=None, method=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tc = Tc
         self.omega = omega
         self.Cpgm = Cpgm
         self.similarity_variable = similarity_variable
+
+        self.kwargs = kwargs = {}
+        if MW is not None:
+            kwargs['MW'] = MW
+        if similarity_variable is not None:
+            kwargs['similarity_variable'] = similarity_variable
+        if Tc is not None:
+            kwargs['Tc'] = Tc
+        if omega is not None:
+            kwargs['omega'] = omega
+        if Cpgm is not None:
+            kwargs['Cpgm'] = Cpgm
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -2088,21 +843,42 @@ class HeatCapacityLiquid(TDependentProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
-
+        at a specific temperature; set by :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
 
-        self.load_all_methods()
-        
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
+        self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
 
-    def load_all_methods(self):
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
+        elif method is not None:
+            self.method = method
+        else:
+            methods = self.valid_methods(T=None)
+            if methods:
+                self.method = methods[0]
+
+    @staticmethod
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        return {ZABRANSKY_SPLINE: list(heat_capacity.zabransky_dict_const_s),
+                ZABRANSKY_QUASIPOLYNOMIAL: list(heat_capacity.zabransky_dict_const_p),
+                ZABRANSKY_SPLINE_C: list(heat_capacity.zabransky_dict_iso_s),
+                ZABRANSKY_QUASIPOLYNOMIAL_C: list(heat_capacity.zabransky_dict_iso_p),
+                ZABRANSKY_SPLINE_SAT: list(heat_capacity.zabransky_dict_sat_s),
+                ZABRANSKY_QUASIPOLYNOMIAL_SAT: list(heat_capacity.zabransky_dict_sat_p),
+                POLING_CONST: [i for i in heat_capacity.Cp_data_Poling.index if not isnan(heat_capacity.Cp_data_Poling.at[i, 'Cpl'])],
+                CRCSTD: [i for i in heat_capacity.CRC_standard_data.index if not isnan(heat_capacity.CRC_standard_data.at[i, 'Cpl'])],
+                COOLPROP: coolprop_dict,
+                VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
+                }
+
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
@@ -2115,51 +891,69 @@ class HeatCapacityLiquid(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
-        if self.CASRN in zabransky_dict_const_s:
-            methods.append(ZABRANSKY_SPLINE)
-            self.Zabransky_spline = zabransky_dict_const_s[self.CASRN]
-        if self.CASRN in zabransky_dict_const_p:
-            methods.append(ZABRANSKY_QUASIPOLYNOMIAL)
-            self.Zabransky_quasipolynomial = zabransky_dict_const_p[self.CASRN]
-        if self.CASRN in zabransky_dict_iso_s:
-            methods.append(ZABRANSKY_SPLINE_C)
-            self.Zabransky_spline_iso = zabransky_dict_iso_s[self.CASRN]
-        if self.CASRN in zabransky_dict_iso_p:
-            methods.append(ZABRANSKY_QUASIPOLYNOMIAL_C)
-            self.Zabransky_quasipolynomial_iso = zabransky_dict_iso_p[self.CASRN]
-        if self.CASRN in Poling_data.index and not isnan(Poling_data.at[self.CASRN, 'Cpl']):
-            methods.append(POLING_CONST)
-            self.POLING_T = 298.15
-            self.POLING_constant = float(Poling_data.at[self.CASRN, 'Cpl'])
-        if self.CASRN in CRC_standard_data.index and not isnan(CRC_standard_data.at[self.CASRN, 'Cpl']):
-            methods.append(CRCSTD)
-            self.CRCSTD_T = 298.15
-            self.CRCSTD_constant = float(CRC_standard_data.at[self.CASRN, 'Cpl'])
-        # Saturation functions
-        if self.CASRN in zabransky_dict_sat_s:
-            methods.append(ZABRANSKY_SPLINE_SAT)
-            self.Zabransky_spline_sat = zabransky_dict_sat_s[self.CASRN]
-        if self.CASRN in zabransky_dict_sat_p:
-            methods.append(ZABRANSKY_QUASIPOLYNOMIAL_SAT)
-            self.Zabransky_quasipolynomial_sat = zabransky_dict_sat_p[self.CASRN]
-        if self.CASRN in _VDISaturationDict:
-            # NOTE: VDI data is for the saturation curve, i.e. at increasing
-            # pressure; it is normally substantially higher than the ideal gas
-            # value
-            methods.append(VDI_TABULAR)
-            Ts, props = VDI_tabular_data(self.CASRN, 'Cp (l)')
-            self.VDI_Tmin = Ts[0]
-            self.VDI_Tmax = Ts[-1]
-            self.tabular_data[VDI_TABULAR] = (Ts, props)
-            Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+        self.T_limits = T_limits = {}
+        if load_data:
+            if self.CASRN in heat_capacity.zabransky_dict_const_s:
+                methods.append(ZABRANSKY_SPLINE)
+                self.Zabransky_spline = heat_capacity.zabransky_dict_const_s[self.CASRN]
+                T_limits[ZABRANSKY_SPLINE] = (self.Zabransky_spline.Tmin, self.Zabransky_spline.Tmax)
+            if self.CASRN in heat_capacity.zabransky_dict_const_p:
+                methods.append(ZABRANSKY_QUASIPOLYNOMIAL)
+                self.Zabransky_quasipolynomial = heat_capacity.zabransky_dict_const_p[self.CASRN]
+                T_limits[ZABRANSKY_QUASIPOLYNOMIAL] = (self.Zabransky_quasipolynomial.Tmin, self.Zabransky_quasipolynomial.Tmax)
+            if self.CASRN in heat_capacity.zabransky_dict_iso_s:
+                methods.append(ZABRANSKY_SPLINE_C)
+                self.Zabransky_spline_iso = heat_capacity.zabransky_dict_iso_s[self.CASRN]
+                T_limits[ZABRANSKY_SPLINE_C] = (self.Zabransky_spline_iso.Tmin, self.Zabransky_spline_iso.Tmax)
+            if self.CASRN in heat_capacity.zabransky_dict_iso_p:
+                methods.append(ZABRANSKY_QUASIPOLYNOMIAL_C)
+                self.Zabransky_quasipolynomial_iso = heat_capacity.zabransky_dict_iso_p[self.CASRN]
+                T_limits[ZABRANSKY_QUASIPOLYNOMIAL_C] = (self.Zabransky_quasipolynomial_iso.Tmin, self.Zabransky_quasipolynomial_iso.Tmax)
+            if self.CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[self.CASRN, 'Cpl']):
+                methods.append(POLING_CONST)
+                self.POLING_T = 298.15
+                self.POLING_constant = float(heat_capacity.Cp_data_Poling.at[self.CASRN, 'Cpl'])
+                T_limits[POLING_CONST] = (298.15-50.0, 298.15+50.0)
+            if self.CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cpl']):
+                methods.append(CRCSTD)
+                self.CRCSTD_T = 298.15
+                self.CRCSTD_constant = float(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cpl'])
+                T_limits[CRCSTD] = (298.15-50.0, 298.15+50.0)
+            # Saturation functions
+            if self.CASRN in heat_capacity.zabransky_dict_sat_s:
+                methods.append(ZABRANSKY_SPLINE_SAT)
+                self.Zabransky_spline_sat = heat_capacity.zabransky_dict_sat_s[self.CASRN]
+                T_limits[ZABRANSKY_SPLINE_SAT] = (self.Zabransky_spline_sat.Tmin, self.Zabransky_spline_sat.Tmax)
+            if self.CASRN in heat_capacity.zabransky_dict_sat_p:
+                methods.append(ZABRANSKY_QUASIPOLYNOMIAL_SAT)
+                self.Zabransky_quasipolynomial_sat = heat_capacity.zabransky_dict_sat_p[self.CASRN]
+                T_limits[ZABRANSKY_QUASIPOLYNOMIAL_SAT] = (self.Zabransky_quasipolynomial_sat.Tmin, self.Zabransky_quasipolynomial_sat.Tmax)
+            if self.CASRN in miscdata.VDI_saturation_dict:
+                # NOTE: VDI data is for the saturation curve, i.e. at increasing
+                # pressure; it is normally substantially higher than the ideal gas
+                # value
+                methods.append(VDI_TABULAR)
+                Ts, props = lookup_VDI_tabular_data(self.CASRN, 'Cp (l)')
+                self.VDI_Tmin = Ts[0]
+                self.VDI_Tmax = Ts[-1]
+                self.tabular_data[VDI_TABULAR] = (Ts, props)
+                Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
+            if has_CoolProp() and self.CASRN in coolprop_dict:
+                methods.append(COOLPROP)
+                self.CP_f = coolprop_fluids[self.CASRN]
+                Tmin = max(self.CP_f.Tt, self.CP_f.Tmin)
+                Tmax = min(self.CP_f.Tc*.9999, self.CP_f.Tmax)
+                Tmins.append(Tmin); Tmaxs.append(Tmax)
+                T_limits[COOLPROP] = (Tmin, Tmax)
         if self.Tc and self.omega:
             methods.extend([ROWLINSON_POLING, ROWLINSON_BONDI])
-        if has_CoolProp and self.CASRN in coolprop_dict:
-            methods.append(COOLPROP)
-            self.CP_f = coolprop_fluids[self.CASRN]
-            Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tmax)
+            limits_Tc = (0.3*self.Tc, self.Tc-1e-5)
+            T_limits[ROWLINSON_POLING] = limits_Tc
+            T_limits[ROWLINSON_BONDI] = limits_Tc
         if self.MW and self.similarity_variable:
             methods.append(DADGOSTAR_SHAW)
+            T_limits[DADGOSTAR_SHAW] = (1e-3, self.Tc if self.Tc is not None else 10000)
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             # TODO: More Tmin, Tmax ranges
@@ -2170,7 +964,7 @@ class HeatCapacityLiquid(TDependentProperty):
         r'''Method to calculate heat capacity of a liquid at temperature `T`
         with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters
@@ -2186,22 +980,22 @@ class HeatCapacityLiquid(TDependentProperty):
             Heat capacity of the liquid at T, [J/mol/K]
         '''
         if method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                return (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                return (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            if T < self.poly_fit_Tmin:
+                return (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
+            elif T > self.poly_fit_Tmax:
+                return (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
-                return horner(self.best_fit_coeffs, T)
+                return horner(self.poly_fit_coeffs, T)
         elif method == ZABRANSKY_SPLINE:
-            return self.Zabransky_spline.calculate(T)
+            return self.Zabransky_spline.force_calculate(T)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL:
             return self.Zabransky_quasipolynomial.calculate(T)
         elif method == ZABRANSKY_SPLINE_C:
-            return self.Zabransky_spline_iso.calculate(T)
+            return self.Zabransky_spline_iso.force_calculate(T)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
             return self.Zabransky_quasipolynomial_iso.calculate(T)
         elif method == ZABRANSKY_SPLINE_SAT:
-            return self.Zabransky_spline_sat.calculate(T)
+            return self.Zabransky_spline_sat.force_calculate(T)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
             return self.Zabransky_quasipolynomial_sat.calculate(T)
         elif method == COOLPROP:
@@ -2227,8 +1021,8 @@ class HeatCapacityLiquid(TDependentProperty):
     def test_method_validity(self, T, method):
         r'''Method to check the validity of a method. Follows the given
         ranges for all coefficient-based methods. For the CSP method
-        :obj:`Rowlinson_Poling`, the model is considered valid for all
-        temperatures. The simple method :obj:`Dadgostar_Shaw` is considered
+        :obj:`Rowlinson_Poling <chemicals.heat_capacity.Rowlinson_Poling>`, the model is considered valid for all
+        temperatures. The simple method :obj:`Dadgostar_Shaw <chemicals.heat_capacity.Dadgostar_Shaw>` is considered
         valid for all temperatures. For tabular data,
         extrapolation outside of the range is used if
         :obj:`tabular_extrapolation_permitted` is set; if it is, the
@@ -2251,13 +1045,13 @@ class HeatCapacityLiquid(TDependentProperty):
         '''
         validity = True
         if method == ZABRANSKY_SPLINE:
-            if T < self.Zabransky_spline.Ts[0] or T > self.Zabransky_spline.Ts[-1]:
+            if T < self.Zabransky_spline.Tmin or T > self.Zabransky_spline.Tmax:
                 return False
         elif method == ZABRANSKY_SPLINE_C:
-            if T < self.Zabransky_spline_iso.Ts[0] or T > self.Zabransky_spline_iso.Ts[-1]:
+            if T < self.Zabransky_spline_iso.Tmin or T > self.Zabransky_spline_iso.Tmax:
                 return False
         elif method == ZABRANSKY_SPLINE_SAT:
-            if T < self.Zabransky_spline_sat.Ts[0] or T > self.Zabransky_spline_sat.Ts[-1]:
+            if T < self.Zabransky_spline_sat.Tmin or T > self.Zabransky_spline_sat.Tmax:
                 return False
         elif method == ZABRANSKY_QUASIPOLYNOMIAL:
             if T > self.Zabransky_quasipolynomial.Tc:
@@ -2296,7 +1090,7 @@ class HeatCapacityLiquid(TDependentProperty):
 
     def calculate_integral(self, T1, T2, method):
         r'''Method to calculate the integral of a property with respect to
-        temperature, using a specified method.  Implements the 
+        temperature, using a specified method.  Implements the
         analytical integrals of all available methods except for tabular data,
         the case of multiple coefficient sets needed to encompass the temperature
         range of any of the ZABRANSKY methods, and the CSP methods using the
@@ -2314,15 +1108,15 @@ class HeatCapacityLiquid(TDependentProperty):
         Returns
         -------
         integral : float
-            Calculated integral of the property over the given range, 
+            Calculated integral of the property over the given range,
             [`units*K`]
         '''
         if method == BESTFIT:
-            return fit_integral_linear_extrapolation(T1, T2, 
-                self.best_fit_int_coeffs, self.best_fit_Tmin, 
-                self.best_fit_Tmax, self.best_fit_Tmin_value, 
-                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
-                self.best_fit_Tmax_slope)
+            return fit_integral_linear_extrapolation(T1, T2,
+                self.poly_fit_int_coeffs, self.poly_fit_Tmin,
+                self.poly_fit_Tmax, self.poly_fit_Tmin_value,
+                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
+                self.poly_fit_Tmax_slope)
         elif method == ZABRANSKY_SPLINE:
             return self.Zabransky_spline.calculate_integral(T1, T2)
         elif method == ZABRANSKY_SPLINE_C:
@@ -2350,7 +1144,7 @@ class HeatCapacityLiquid(TDependentProperty):
 
     def calculate_integral_over_T(self, T1, T2, method):
         r'''Method to calculate the integral of a property over temperature
-        with respect to temperature, using a specified method.   Implements the 
+        with respect to temperature, using a specified method.   Implements the
         analytical integrals of all available methods except for tabular data,
         the case of multiple coefficient sets needed to encompass the temperature
         range of any of the ZABRANSKY methods, and the CSP methods using the
@@ -2368,16 +1162,16 @@ class HeatCapacityLiquid(TDependentProperty):
         Returns
         -------
         integral : float
-            Calculated integral of the property over the given range, 
+            Calculated integral of the property over the given range,
             [`units`]
         '''
         if method == BESTFIT:
-            return fit_integral_over_T_linear_extrapolation(T1, T2, 
-                self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff,
-                self.best_fit_Tmin, self.best_fit_Tmax, 
-                self.best_fit_Tmin_value, 
-                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
-                self.best_fit_Tmax_slope)
+            return fit_integral_over_T_linear_extrapolation(T1, T2,
+                self.poly_fit_T_int_T_coeffs, self.poly_fit_log_coeff,
+                self.poly_fit_Tmin, self.poly_fit_Tmax,
+                self.poly_fit_Tmin_value,
+                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
+                self.poly_fit_Tmax_slope)
         elif method == ZABRANSKY_SPLINE:
             return self.Zabransky_spline.calculate_integral_over_T(T1, T2)
         elif method == ZABRANSKY_SPLINE_C:
@@ -2402,197 +1196,10 @@ class HeatCapacityLiquid(TDependentProperty):
             return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
         else:
             raise Exception('Method not valid')
-
-
-### Solid
-
-def Lastovka_solid(T, similarity_variable):
-    r'''Calculate solid constant-pressure heat capacitiy with the similarity
-    variable concept and method as shown in [1]_.
-
-    .. math::
-        C_p = 3(A_1\alpha + A_2\alpha^2)R\left(\frac{\theta}{T}\right)^2
-        \frac{\exp(\theta/T)}{[\exp(\theta/T)-1]^2}
-        + (C_1\alpha + C_2\alpha^2)T + (D_1\alpha + D_2\alpha^2)T^2
-
-    Parameters
-    ----------
-    T : float
-        Temperature of solid [K]
-    similarity_variable : float
-        similarity variable as defined in [1]_, [mol/g]
-
-    Returns
-    -------
-    Cps : float
-        Solid constant-pressure heat capacitiy, [J/kg/K]
-
-    Notes
-    -----
-    Many restrictions on its use. Trained on data with MW from 12.24 g/mol
-    to 402.4 g/mol, C mass fractions from 61.3% to 95.2%,
-    H mass fractions from 3.73% to 15.2%, N mass fractions from 0 to 15.4%,
-    O mass fractions from 0 to 18.8%, and S mass fractions from 0 to 29.6%.
-    Recommended for organic compounds with low mass fractions of hetero-atoms
-    and especially when molar mass exceeds 200 g/mol. This model does not show
-    and effects of phase transition but should not be used passed the triple
-    point.
-
-    Original model is in terms of J/g/K. Note that the model s for predicting
-    mass heat capacity, not molar heat capacity like most other methods!
-
-    A1 = 0.013183; A2 = 0.249381; theta = 151.8675; C1 = 0.026526;
-    C2 = -0.024942; D1 = 0.000025; D2 = -0.000123.
-
-    Examples
-    --------
-    >>> Lastovka_solid(300, 0.2139)
-    1682.063629222013
-
-    References
-    ----------
-    .. [1] Laštovka, Václav, Michal Fulem, Mildred Becerra, and John M. Shaw.
-       "A Similarity Variable for Estimating the Heat Capacity of Solid Organic
-       Compounds: Part II. Application: Heat Capacity Calculation for
-       Ill-Defined Organic Solids." Fluid Phase Equilibria 268, no. 1-2
-       (June 25, 2008): 134-41. doi:10.1016/j.fluid.2008.03.018.
-    '''
-    A1 = 0.013183
-    A2 = 0.249381
-    theta = 151.8675
-    C1 = 0.026526
-    C2 = -0.024942
-    D1 = 0.000025
-    D2 = -0.000123
-
-    Cp = (3*(A1*similarity_variable + A2*similarity_variable**2)*R*(theta/T
-    )**2*exp(theta/T)/(exp(theta/T)-1)**2
-    + (C1*similarity_variable + C2*similarity_variable**2)*T
-    + (D1*similarity_variable + D2*similarity_variable**2)*T**2)
-    Cp = Cp*1000 # J/g/K to J/kg/K
-    return Cp
-
-
-def Lastovka_solid_integral(T, similarity_variable):
-    r'''Integrates solid constant-pressure heat capacitiy with the similarity
-    variable concept and method as shown in [1]_.
-    
-    Uses a explicit form as derived with Sympy.
-
-    Parameters
-    ----------
-    T : float
-        Temperature of solid [K]
-    similarity_variable : float
-        similarity variable as defined in [1]_, [mol/g]
-
-    Returns
-    -------
-    H : float
-        Difference in enthalpy from 0 K, [J/kg]
-
-    Notes
-    -----
-    Original model is in terms of J/g/K. Note that the model is for predicting
-    mass heat capacity, not molar heat capacity like most other methods!
-
-    See Also
-    --------
-    Lastovka_solid
-
-    Examples
-    --------
-    >>> Lastovka_solid_integral(300, 0.2139)
-    283246.1242170376
-
-    References
-    ----------
-    .. [1] Laštovka, Václav, Michal Fulem, Mildred Becerra, and John M. Shaw.
-       "A Similarity Variable for Estimating the Heat Capacity of Solid Organic
-       Compounds: Part II. Application: Heat Capacity Calculation for
-       Ill-Defined Organic Solids." Fluid Phase Equilibria 268, no. 1-2
-       (June 25, 2008): 134-41. doi:10.1016/j.fluid.2008.03.018.
-    '''
-    A1 = 0.013183
-    A2 = 0.249381
-    theta = 151.8675
-    C1 = 0.026526
-    C2 = -0.024942
-    D1 = 0.000025
-    D2 = -0.000123
-    similarity_variable2 = similarity_variable*similarity_variable
-    
-    return (T*T*T*(1000.*D1*similarity_variable/3. 
-        + 1000.*D2*similarity_variable2/3.) + T*T*(500.*C1*similarity_variable 
-        + 500.*C2*similarity_variable2)
-        + (3000.*A1*R*similarity_variable*theta
-        + 3000.*A2*R*similarity_variable2*theta)/(exp(theta/T) - 1.))
-
-
-def Lastovka_solid_integral_over_T(T, similarity_variable):
-    r'''Integrates over T solid constant-pressure heat capacitiy with the 
-    similarity variable concept and method as shown in [1]_.
-    
-    Uses a explicit form as derived with Sympy.
-
-    Parameters
-    ----------
-    T : float
-        Temperature of solid [K]
-    similarity_variable : float
-        similarity variable as defined in [1]_, [mol/g]
-
-    Returns
-    -------
-    S : float
-        Difference in entropy from 0 K, [J/kg/K]
-
-    Notes
-    -----
-    Original model is in terms of J/g/K. Note that the model is for predicting
-    mass heat capacity, not molar heat capacity like most other methods!
-
-    See Also
-    --------
-    Lastovka_solid
-
-    Examples
-    --------
-    >>> Lastovka_solid_integral_over_T(300, 0.2139)
-    1947.553552666818
-
-    References
-    ----------
-    .. [1] Laštovka, Václav, Michal Fulem, Mildred Becerra, and John M. Shaw.
-       "A Similarity Variable for Estimating the Heat Capacity of Solid Organic
-       Compounds: Part II. Application: Heat Capacity Calculation for
-       Ill-Defined Organic Solids." Fluid Phase Equilibria 268, no. 1-2
-       (June 25, 2008): 134-41. doi:10.1016/j.fluid.2008.03.018.
-    '''
-    A1 = 0.013183
-    A2 = 0.249381
-    theta = 151.8675
-    C1 = 0.026526
-    C2 = -0.024942
-    D1 = 0.000025
-    D2 = -0.000123
-    
-    sim2 = similarity_variable*similarity_variable
-    exp_theta_T = exp(theta/T)
-    
-    return (-3000.*R*similarity_variable*(A1 + A2*similarity_variable)*log(exp_theta_T - 1.) 
-    + T**2*(500.*D1*similarity_variable + 500.*D2*sim2)
-    + T*(1000.*C1*similarity_variable + 1000.*C2*sim2)
-    + (3000.*A1*R*similarity_variable*theta 
-    + 3000.*A2*R*sim2*theta)/(T*exp_theta_T - T) 
-    + (3000.*A1*R*similarity_variable*theta 
-    + 3000.*A2*R*sim2*theta)/T)
-
-
 LASTOVKA_S = 'Lastovka, Fulem, Becerra and Shaw (2008)'
 PERRY151 = '''Perry's Table 2-151'''
 heat_capacity_solid_methods = [PERRY151, CRCSTD, LASTOVKA_S]
-'''Holds all methods available for the HeatCapacitySolid class, for use in
+'''Holds all methods available for the :obj:`HeatCapacitySolid` class, for use in
 iterating over them.'''
 
 
@@ -2609,6 +1216,23 @@ class HeatCapacitySolid(TDependentProperty):
         Molecular weight, [g/mol]
     CASRN : str, optional
         The CAS number of the chemical
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files
+        [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    poly_fit : tuple(float, float, list[float]), optional
+        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
+        heat capacity of the compound; the coefficients are evaluated with
+        horner's method, and the input variable and output are transformed by
+        the default transformations of this object; used instead of any other
+        default method if provided. [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
 
     Notes
     -----
@@ -2632,11 +1256,17 @@ class HeatCapacitySolid(TDependentProperty):
     **LASTOVKA_S**:
         A basic estimation method using the `similarity variable` concept;
         requires only molecular structure, so is very convenient. See
-        :obj:`Lastovka_solid` for details.
+        :obj:`Lastovka_solid <chemicals.heat_capacity.Lastovka_solid>` for details.
 
     See Also
     --------
-    Lastovka_solid
+    chemicals.heat_capacity.Lastovka_solid
+
+    Examples
+    --------
+    >>> CpSolid = HeatCapacitySolid(CASRN='142-82-5', MW=100.2, similarity_variable=0.2295)
+    >>> CpSolid(200)
+    131.205824
 
     References
     ----------
@@ -2665,7 +1295,15 @@ class HeatCapacitySolid(TDependentProperty):
     ranked_methods = [PERRY151, CRCSTD, LASTOVKA_S]
     '''Default rankings of the available methods.'''
 
-    def __init__(self, CASRN='', similarity_variable=None, MW=None, best_fit=None):
+    _fit_force_n = {}
+    '''Dictionary containing method: fit_n, for use in methods which should
+    only ever be fit to a specific `n` value'''
+    _fit_force_n[CRCSTD] = 1
+
+
+    def __init__(self, CASRN='', similarity_variable=None, MW=None,
+                 load_data=True, extrapolation='linear', poly_fit=None,
+                 method=None):
         self.similarity_variable = similarity_variable
         self.MW = MW
         self.CASRN = CASRN
@@ -2690,21 +1328,39 @@ class HeatCapacitySolid(TDependentProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
+        at a specific temperature; set by :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`.'''
 
         self.all_methods = set()
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
 
-        self.load_all_methods()
+        self.load_all_methods(load_data)
+        self.extrapolation = extrapolation
 
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
+        if poly_fit is not None:
+            self._set_poly_fit(poly_fit)
+        elif method is not None:
+            self.method = method
+        else:
+            methods = self.valid_methods(T=None)
+            if methods:
+                self.method = methods[0]
 
-    def load_all_methods(self):
+        self.kwargs = kwargs = {}
+        if similarity_variable is not None:
+            kwargs['similarity_variable'] = similarity_variable
+        if MW is not None:
+            kwargs['MW'] = MW
+
+    def _method_indexes():
+        '''Returns a dictionary of method: index for all methods
+        that use data files to retrieve constants. The use of this function
+        ensures the data files are not loaded until they are needed.
+        '''
+        return {PERRY151: [i for i in heat_capacity.Cp_dict_PerryI.keys() if 'c' in heat_capacity.Cp_dict_PerryI[i]],
+                CRCSTD: [i for i in heat_capacity.CRC_standard_data.index if not isnan(heat_capacity.CRC_standard_data.at[i, 'Cps'])],
+                }
+    def load_all_methods(self, load_data):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
@@ -2717,21 +1373,26 @@ class HeatCapacitySolid(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
-        if self.CASRN and self.CASRN in _PerryI and 'c' in _PerryI[self.CASRN]:
-            self.PERRY151_Tmin = _PerryI[self.CASRN]['c']['Tmin'] if _PerryI[self.CASRN]['c']['Tmin'] else 0
-            self.PERRY151_Tmax = _PerryI[self.CASRN]['c']['Tmax'] if _PerryI[self.CASRN]['c']['Tmax'] else 2000
-            self.PERRY151_const = _PerryI[self.CASRN]['c']['Const']
-            self.PERRY151_lin = _PerryI[self.CASRN]['c']['Lin']
-            self.PERRY151_quad = _PerryI[self.CASRN]['c']['Quad']
-            self.PERRY151_quadinv = _PerryI[self.CASRN]['c']['Quadinv']
-            methods.append(PERRY151)
-            Tmins.append(self.PERRY151_Tmin); Tmaxs.append(self.PERRY151_Tmax)
-        if self.CASRN in CRC_standard_data.index and not isnan(CRC_standard_data.at[self.CASRN, 'Cpc']):
-            self.CRCSTD_Cp = float(CRC_standard_data.at[self.CASRN, 'Cpc'])
-            methods.append(CRCSTD)
+        self.T_limits = T_limits = {}
+        if load_data:
+            if self.CASRN and self.CASRN in heat_capacity.Cp_dict_PerryI and 'c' in heat_capacity.Cp_dict_PerryI[self.CASRN]:
+                self.PERRY151_Tmin = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Tmin'] if heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Tmin'] else 0
+                self.PERRY151_Tmax = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Tmax'] if heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Tmax'] else 2000
+                self.PERRY151_const = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Const']
+                self.PERRY151_lin = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Lin']
+                self.PERRY151_quad = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Quad']
+                self.PERRY151_quadinv = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Quadinv']
+                methods.append(PERRY151)
+                Tmins.append(self.PERRY151_Tmin); Tmaxs.append(self.PERRY151_Tmax)
+                T_limits[PERRY151] = (self.PERRY151_Tmin, self.PERRY151_Tmax)
+            if self.CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cps']):
+                self.CRCSTD_Cp = float(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cps'])
+                methods.append(CRCSTD)
+                T_limits[CRCSTD] = (298.15, 298.15)
         if self.MW and self.similarity_variable:
             methods.append(LASTOVKA_S)
             Tmins.append(1.0); Tmaxs.append(10000)
+            T_limits[LASTOVKA_S] = (1.0, 1e4)
             # Works above roughly 1 K up to 10K.
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
@@ -2742,7 +1403,7 @@ class HeatCapacitySolid(TDependentProperty):
         r'''Method to calculate heat capacity of a solid at temperature `T`
         with a given method.
 
-        This method has no exception handling; see `T_dependent_property`
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
         for that.
 
         Parameters
@@ -2758,12 +1419,12 @@ class HeatCapacitySolid(TDependentProperty):
             Heat capacity of the solid at T, [J/mol/K]
         '''
         if method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                Cp = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                Cp = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            if T < self.poly_fit_Tmin:
+                Cp = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
+            elif T > self.poly_fit_Tmax:
+                Cp = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
-                Cp = horner(self.best_fit_coeffs, T)
+                Cp = horner(self.poly_fit_coeffs, T)
         elif method == PERRY151:
             Cp = (self.PERRY151_const + self.PERRY151_lin*T
             + self.PERRY151_quadinv/T**2 + self.PERRY151_quad*T**2)*calorie
@@ -2783,7 +1444,7 @@ class HeatCapacitySolid(TDependentProperty):
         extrapolation outside of the range is used if
         :obj:`tabular_extrapolation_permitted` is set; if it is, the
         extrapolation is considered valid for all temperatures.
-        For the :obj:`Lastovka_solid` method, it is considered valid under
+        For the :obj:`Lastovka_solid <chemicals.heat_capacity.Lastovka_solid>` method, it is considered valid under
         10000K.
 
         It is not guaranteed that a method will work or give an accurate
@@ -2827,7 +1488,7 @@ class HeatCapacitySolid(TDependentProperty):
         r'''Method to calculate the integral of a property with respect to
         temperature, using a specified method. Implements the analytical
         integrals of all available methods except for tabular data.
-        
+
         Parameters
         ----------
         T1 : float
@@ -2840,19 +1501,19 @@ class HeatCapacitySolid(TDependentProperty):
         Returns
         -------
         integral : float
-            Calculated integral of the property over the given range, 
+            Calculated integral of the property over the given range,
             [`units*K`]
         '''
         if method == BESTFIT:
-            return fit_integral_linear_extrapolation(T1, T2, 
-                self.best_fit_int_coeffs, self.best_fit_Tmin, 
-                self.best_fit_Tmax, self.best_fit_Tmin_value, 
-                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
-                self.best_fit_Tmax_slope)
+            return fit_integral_linear_extrapolation(T1, T2,
+                self.poly_fit_int_coeffs, self.poly_fit_Tmin,
+                self.poly_fit_Tmax, self.poly_fit_Tmin_value,
+                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
+                self.poly_fit_Tmax_slope)
         elif method == PERRY151:
-            H2 = (self.PERRY151_const*T2 + 0.5*self.PERRY151_lin*T2**2 
+            H2 = (self.PERRY151_const*T2 + 0.5*self.PERRY151_lin*T2**2
                   - self.PERRY151_quadinv/T2 + self.PERRY151_quad*T2**3/3.)
-            H1 = (self.PERRY151_const*T1 + 0.5*self.PERRY151_lin*T1**2 
+            H1 = (self.PERRY151_const*T1 + 0.5*self.PERRY151_lin*T1**2
                   - self.PERRY151_quadinv/T1 + self.PERRY151_quad*T1**3/3.)
             return (H2-H1)*calorie
         elif method == CRCSTD:
@@ -2868,9 +1529,9 @@ class HeatCapacitySolid(TDependentProperty):
 
     def calculate_integral_over_T(self, T1, T2, method):
         r'''Method to calculate the integral of a property over temperature
-        with respect to temperature, using a specified method. Implements the 
+        with respect to temperature, using a specified method. Implements the
         analytical integrals of all available methods except for tabular data.
-        
+
         Parameters
         ----------
         T1 : float
@@ -2883,18 +1544,18 @@ class HeatCapacitySolid(TDependentProperty):
         Returns
         -------
         integral : float
-            Calculated integral of the property over the given range, 
+            Calculated integral of the property over the given range,
             [`units`]
         '''
         if method == BESTFIT:
-            return fit_integral_over_T_linear_extrapolation(T1, T2, 
-                self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff,
-                self.best_fit_Tmin, self.best_fit_Tmax, 
-                self.best_fit_Tmin_value, 
-                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
-                self.best_fit_Tmax_slope)
+            return fit_integral_over_T_linear_extrapolation(T1, T2,
+                self.poly_fit_T_int_T_coeffs, self.poly_fit_log_coeff,
+                self.poly_fit_Tmin, self.poly_fit_Tmax,
+                self.poly_fit_Tmin_value,
+                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
+                self.poly_fit_Tmax_slope)
         elif method == PERRY151:
-            S2 = (self.PERRY151_const*log(T2) + self.PERRY151_lin*T2 
+            S2 = (self.PERRY151_const*log(T2) + self.PERRY151_lin*T2
                   - self.PERRY151_quadinv/(2.*T2**2) + 0.5*self.PERRY151_quad*T2**2)
             S1 = (self.PERRY151_const*log(T1) + self.PERRY151_lin*T1
                   - self.PERRY151_quadinv/(2.*T1**2) + 0.5*self.PERRY151_quad*T1**2)
@@ -2918,16 +1579,24 @@ class HeatCapacitySolid(TDependentProperty):
 SIMPLE = 'SIMPLE'
 LALIBERTE = 'Laliberte'
 heat_capacity_gas_mixture_methods = [SIMPLE]
+'''Holds all methods available for the :obj:`HeatCapacityGasMixture` class, for use in
+iterating over them.'''
+
 heat_capacity_liquid_mixture_methods = [LALIBERTE, SIMPLE]
+'''Holds all methods available for the :obj:`HeatCapacityLiquidMixture` class, for use in
+iterating over them.'''
+
 heat_capacity_solid_mixture_methods = [SIMPLE]
+'''Holds all methods available for the :obj:`HeatCapacitySolidMixture` class, for use in
+iterating over them.'''
 
 
 class HeatCapacityLiquidMixture(MixtureProperty):
-    '''Class for dealing with liquid heat capacity of a mixture as a function  
+    '''Class for dealing with liquid heat capacity of a mixture as a function
     of temperature, pressure, and composition.
-    Consists only of mole weighted averaging, and the Laliberte method for 
+    Consists only of mole weighted averaging, and the Laliberte method for
     aqueous electrolyte solutions.
-                 
+
     Parameters
     ----------
     MWs : list[float], optional
@@ -2935,8 +1604,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     CASs : str, optional
         The CAS numbers of all species in the mixture
     HeatCapacityLiquids : list[HeatCapacityLiquid], optional
-        HeatCapacityLiquid objects created for all species in the mixture,  
-        normally created by :obj:`thermo.chemical.Chemical`.
+        HeatCapacityLiquid objects created for all species in the mixture [-]
 
     Notes
     -----
@@ -2947,7 +1615,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
         Electrolyte model equation with coefficients; see
         :obj:`thermo.electrochem.Laliberte_heat_capacity` for more details.
     **SIMPLE**:
-        Mixing rule described in :obj:`thermo.utils.mixing_simple`.
+        Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
     '''
     name = 'Liquid heat capacity'
     units = 'J/mol'
@@ -2957,7 +1625,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     property_max = 1E4 # Originally 1E4
     '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
     the critical point, this value can be obscenely high.'''
-                            
+
     ranked_methods = [LALIBERTE, SIMPLE]
 
     def __init__(self, MWs=[], CASs=[], HeatCapacityLiquids=[]):
@@ -2974,10 +1642,10 @@ class HeatCapacityLiquidMixture(MixtureProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `mixture_property`.'''
+        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.user_methods = []
         '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `mixture_property`.'''
+        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
@@ -2986,8 +1654,8 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
-        All data are stored as attributes. This method also sets :obj:`Tmin`, 
-        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        All data are stored as attributes. This method also sets :obj:`Tmin`,
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should
         work to calculate the property.
 
         Called on initialization only. See the source code for the variables at
@@ -2995,21 +1663,53 @@ class HeatCapacityLiquidMixture(MixtureProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods = [SIMPLE]        
+        methods = [SIMPLE]
         if len(self.CASs) > 1 and '7732-18-5' in self.CASs:
-            wCASs = [i for i in self.CASs if i != '7732-18-5'] 
-            if all([i in _Laliberte_Heat_Capacity_ParametersDict for i in wCASs]):
-                methods.append(LALIBERTE)
-                self.wCASs = wCASs
-                self.index_w = self.CASs.index('7732-18-5')
-        self.all_methods = set(methods)
-            
+            Laliberte_data = electrochem.Laliberte_data
+            a1s, a2s, a3s, a4s, a5s, a6s = [], [], [], [], [], []
+            laliberte_incomplete = False
+            for CAS in self.CASs:
+                if CAS == '7732-18-5':
+                    continue
+                if CAS in Laliberte_data.index:
+                    dat = Laliberte_data.loc[CAS].values
+                    if isnan(dat[22]):
+                        laliberte_incomplete = True
+                        break
+                    a1s.append(float(dat[22]))
+                    a2s.append(float(dat[23]))
+                    a3s.append(float(dat[24]))
+                    a4s.append(float(dat[25]))
+                    a5s.append(float(dat[26]))
+                    a6s.append(float(dat[27]))
+                else:
+                    laliberte_incomplete = True
+                    break
+
+            if not laliberte_incomplete:
+                self.Laliberte_a1s = a1s
+                self.Laliberte_a2s = a2s
+                self.Laliberte_a3s = a3s
+                self.Laliberte_a4s = a4s
+                self.Laliberte_a5s = a5s
+                self.Laliberte_a6s = a6s
+
+            wCASs = [i for i in self.CASs if i != '7732-18-5']
+            methods.append(LALIBERTE)
+            self.wCASs = wCASs
+            self.index_w = self.CASs.index('7732-18-5')
+        self.all_methods = all_methods = set(methods)
+        for m in self.ranked_methods:
+            if m in all_methods:
+                self.method = m
+                break
+
     def calculate(self, T, P, zs, ws, method):
-        r'''Method to calculate heat capacity of a liquid mixture at 
+        r'''Method to calculate heat capacity of a liquid mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
-        This method has no exception handling; see `mixture_property`
+        This method has no exception handling; see :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`
         for that.
 
         Parameters
@@ -3044,7 +1744,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
 
     def test_method_validity(self, T, P, zs, ws, method):
         r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of 
+        conditions. No methods have implemented checks or strict ranges of
         validity.
 
         Parameters
@@ -3073,17 +1773,16 @@ class HeatCapacityLiquidMixture(MixtureProperty):
 
 
 class HeatCapacitySolidMixture(MixtureProperty):
-    '''Class for dealing with solid heat capacity of a mixture as a function of 
+    '''Class for dealing with solid heat capacity of a mixture as a function of
     temperature, pressure, and composition.
     Consists only of mole weighted averaging.
-                 
+
     Parameters
     ----------
     CASs : list[str], optional
         The CAS numbers of all species in the mixture
     HeatCapacitySolids : list[HeatCapacitySolid], optional
-        HeatCapacitySolid objects created for all species in the mixture,  
-        normally created by :obj:`thermo.chemical.Chemical`.
+        HeatCapacitySolid objects created for all species in the mixture [-]
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
 
@@ -3093,7 +1792,7 @@ class HeatCapacitySolidMixture(MixtureProperty):
     :obj:`heat_capacity_solid_mixture_methods`.
 
     **SIMPLE**:
-        Mixing rule described in :obj:`thermo.utils.mixing_simple`.
+        Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
     '''
     name = 'Solid heat capacity'
     units = 'J/mol'
@@ -3101,7 +1800,7 @@ class HeatCapacitySolidMixture(MixtureProperty):
     '''Heat capacities have a minimum value of 0 at 0 K.'''
     property_max = 1E4
     '''Maximum value of Heat capacity; arbitrarily set.'''
-                            
+
     ranked_methods = [SIMPLE]
 
     def __init__(self, CASs=[], HeatCapacitySolids=[], MWs=[]):
@@ -3118,10 +1817,10 @@ class HeatCapacitySolidMixture(MixtureProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `mixture_property`.'''
+        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.user_methods = []
         '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `mixture_property`.'''
+        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
@@ -3130,8 +1829,8 @@ class HeatCapacitySolidMixture(MixtureProperty):
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
-        All data are stored as attributes. This method also sets :obj:`Tmin`, 
-        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        All data are stored as attributes. This method also sets :obj:`Tmin`,
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should
         work to calculate the property.
 
         Called on initialization only. See the source code for the variables at
@@ -3139,15 +1838,19 @@ class HeatCapacitySolidMixture(MixtureProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods = [SIMPLE]        
-        self.all_methods = set(methods)
-            
+        methods = [SIMPLE]
+        self.all_methods = all_methods = set(methods)
+        for m in self.ranked_methods:
+            if m in all_methods:
+                self.method = m
+                break
+
     def calculate(self, T, P, zs, ws, method):
-        r'''Method to calculate heat capacity of a solid mixture at 
+        r'''Method to calculate heat capacity of a solid mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
-        This method has no exception handling; see `mixture_property`
+        This method has no exception handling; see :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`
         for that.
 
         Parameters
@@ -3176,7 +1879,7 @@ class HeatCapacitySolidMixture(MixtureProperty):
 
     def test_method_validity(self, T, P, zs, ws, method):
         r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of 
+        conditions. No methods have implemented checks or strict ranges of
         validity.
 
         Parameters
@@ -3204,17 +1907,16 @@ class HeatCapacitySolidMixture(MixtureProperty):
 
 
 class HeatCapacityGasMixture(MixtureProperty):
-    '''Class for dealing with the gas heat capacity of a mixture as a function  
-    of temperature, pressure, and composition. Consists only of mole weighted 
+    '''Class for dealing with the gas heat capacity of a mixture as a function
+    of temperature, pressure, and composition. Consists only of mole weighted
     averaging.
-                 
+
     Parameters
     ----------
     CASs : list[str], optional
         The CAS numbers of all species in the mixture
     HeatCapacityGases : list[HeatCapacityGas], optional
-        HeatCapacityGas objects created for all species in the mixture,  
-        normally created by :obj:`thermo.chemical.Chemical`.
+        HeatCapacityGas objects created for all species in the mixture [-]
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
 
@@ -3224,7 +1926,7 @@ class HeatCapacityGasMixture(MixtureProperty):
     :obj:`heat_capacity_gas_mixture_methods`.
 
     **SIMPLE**:
-        Mixing rule described in :obj:`thermo.utils.mixing_simple`.
+        Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
     '''
     name = 'Gas heat capacity'
     units = 'J/mol'
@@ -3233,7 +1935,7 @@ class HeatCapacityGasMixture(MixtureProperty):
     property_max = 1E4
     '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
     the critical point, this value can be obscenely high.'''
-                            
+
     ranked_methods = [SIMPLE]
 
     def __init__(self, CASs=[], HeatCapacityGases=[], MWs=[]):
@@ -3250,10 +1952,10 @@ class HeatCapacityGasMixture(MixtureProperty):
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `mixture_property`.'''
+        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.user_methods = []
         '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `mixture_property`.'''
+        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
@@ -3262,8 +1964,8 @@ class HeatCapacityGasMixture(MixtureProperty):
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
-        All data are stored as attributes. This method also sets :obj:`Tmin`, 
-        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        All data are stored as attributes. This method also sets :obj:`Tmin`,
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should
         work to calculate the property.
 
         Called on initialization only. See the source code for the variables at
@@ -3271,15 +1973,19 @@ class HeatCapacityGasMixture(MixtureProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods = [SIMPLE]        
-        self.all_methods = set(methods)
-            
+        methods = [SIMPLE]
+        self.all_methods = all_methods = set(methods)
+        for m in self.ranked_methods:
+            if m in all_methods:
+                self.method = m
+                break
+
     def calculate(self, T, P, zs, ws, method):
-        r'''Method to calculate heat capacity of a gas mixture at 
+        r'''Method to calculate heat capacity of a gas mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
-        This method has no exception handling; see `mixture_property`
+        This method has no exception handling; see :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`
         for that.
 
         Parameters
@@ -3309,7 +2015,7 @@ class HeatCapacityGasMixture(MixtureProperty):
 
     def test_method_validity(self, T, P, zs, ws, method):
         r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of 
+        conditions. No methods have implemented checks or strict ranges of
         validity.
 
         Parameters

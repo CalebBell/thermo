@@ -23,15 +23,17 @@ SOFTWARE.'''
 import os
 from numpy.testing import assert_allclose
 import pytest
+from fluids.numerics import assert_close, assert_close1d
 from thermo.joback import *
 from thermo.joback import J_BIGGS_JOBACK_SMARTS_id_dict
 
-from thermo.identifiers import pubchem_db
+from chemicals.identifiers import pubchem_db
 
 folder = os.path.join(os.path.dirname(__file__), 'Data')
 
 try:
     import rdkit
+    from rdkit import Chem
 except:
     rdkit = None
 
@@ -44,27 +46,28 @@ def test_Joback_acetone():
     from rdkit.Chem import rdMolDescriptors
     for i in [Chem.MolFromSmiles('CC(=O)C'), 'CC(=O)C']:
         ex = Joback(i) # Acetone example
-        assert_allclose(ex.Tb(ex.counts), 322.11) 
-        assert_allclose(ex.Tm(ex.counts), 173.5)
-        assert_allclose(ex.Tc(ex.counts), 500.5590049525365) 
-        assert_allclose(ex.Tc(ex.counts, 322.11), 500.5590049525365) 
-        assert_allclose(ex.Pc(ex.counts, ex.atom_count), 4802499.604994407)
-        assert_allclose(ex.Vc(ex.counts), 0.0002095)
-        assert_allclose(ex.Hf(ex.counts), -217830)
-        assert_allclose(ex.Gf(ex.counts), -154540)
-        assert_allclose(ex.Hfus(ex.counts), 5125)
-        assert_allclose(ex.Hvap(ex.counts), 29018)
-        assert_allclose(ex.Cpig_coeffs(ex.counts),[7.52, 0.26084, -0.0001207, 1.546e-08] )
-        assert_allclose(ex.Cpig(300), 75.32642000000001)
-        assert_allclose(ex.mul_coeffs(ex.counts), [839.11, -14.99])
-        assert_allclose(ex.mul(300), 0.0002940378347162687)
-        
-        
+        assert_close(ex.Tb(ex.counts), 322.11)
+        assert_close(ex.Tm(ex.counts), 173.5)
+        assert_close(ex.Tc(ex.counts), 500.5590049525365)
+        assert_close(ex.Tc(ex.counts, 322.11), 500.5590049525365)
+        assert_close(ex.Pc(ex.counts, ex.atom_count), 4802499.604994407)
+        assert_close(ex.Vc(ex.counts), 0.0002095)
+        assert_close(ex.Hf(ex.counts), -217830)
+        assert_close(ex.Gf(ex.counts), -154540)
+        assert_close(ex.Hfus(ex.counts), 5125)
+        assert_close(ex.Hvap(ex.counts), 29018)
+        assert_close1d(ex.Cpig_coeffs(ex.counts),[7.52, 0.26084, -0.0001207, 1.546e-08] )
+        assert_close(ex.Cpig(300.0), 75.32642000000001)
+        assert_close1d(ex.mul_coeffs(ex.counts), [839.11, -14.99])
+        assert_close(ex.mul(300.0), 0.0002940378347162687)
+
+
+@pytest.mark.fuzz
 @pytest.mark.slow
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_Joback_database():
-    [pubchem_db.autoload_next() for i in range(10)]
+    pubchem_db.autoload_main_db()
 
     f = open(os.path.join(folder, 'joback_log.txt'), 'w')
     from rdkit import Chem
@@ -79,7 +82,7 @@ def test_Joback_database():
         except Exception as e:
             line = '%s\t%s\t%s\n' %(chem_info.CASs, chem_info.smiles, e)
         lines.append(line)
-    
+
     [f.write(line) for line in sorted(lines)]
     f.close()
-        
+

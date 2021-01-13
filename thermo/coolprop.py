@@ -22,29 +22,77 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['has_CoolProp', 'coolprop_dict', 'CP_fluid', 'coolprop_fluids', 
-'CoolProp_T_dependent_property',
-'PropsSI', 'PhaseSI', 'CP', 'AbstractState']
+__all__ = ['has_CoolProp', 'coolprop_dict', 'CP_fluid', 'coolprop_fluids',
+'CoolProp_T_dependent_property', 'CoolProp_failing_PT_flashes',
+'PropsSI', 'PhaseSI','HAPropsSI', 'AbstractState']
 import os
-import json
-import numpy as np
-from numpy.testing import assert_allclose
-from bisect import bisect_left
+from fluids.numerics import assert_close1d, numpy as np
+from thermo.utils import data_dir, source_path
 
-try:
-    from CoolProp.CoolProp import PropsSI, PhaseSI
-    import CoolProp.CoolProp as CP
-    from CoolProp import AbstractState
-    has_CoolProp = True
-except ImportError:  # pragma: no cover
-    has_CoolProp = False
-    PropsSI, PhaseSI, CP, AbstractState = [None, None, None, None]
+#try:
+#    import CoolProp
+#    has_CoolProp = True
+##    CPiP_min = CP.iP_min
+#except:  # pragma: no cover
+#    # Don't just except
+#    has_CoolProp = False
 #has_CoolProp = False # For testing
 
+CPiP_min = 17
+global _PropsSI
 
-folder = os.path.join(os.path.dirname(__file__), 'Misc')
+global _has_CoolProp
+_has_CoolProp = None
+def has_CoolProp():
+    global _has_CoolProp
+    if _has_CoolProp is None:
+        try:
+            import CoolProp
+            load_coolprop_fluids()
+            _has_CoolProp = True
+        except:
+            _has_CoolProp = False
+    return _has_CoolProp
+
+_PropsSI = None
+def PropsSI(*args, **kwargs):
+    global _PropsSI
+    if _PropsSI is None:
+        from CoolProp.CoolProp import PropsSI as _PropsSI
+    return _PropsSI(*args, **kwargs)
+
+global _HAPropsSI
+_HAPropsSI = None
+def HAPropsSI(*args, **kwargs):
+    global _HAPropsSI
+    if _HAPropsSI is None:
+        from CoolProp.CoolProp import HAPropsSI as _HAPropsSI
+    return _HAPropsSI(*args, **kwargs)
+
+global _PhaseSI
+_PhaseSI = None
+def PhaseSI(*args, **kwargs):
+    global _PhaseSI
+    if _PhaseSI is None:
+        from CoolProp.CoolProp import PhaseSI as _PhaseSI
+    return _PhaseSI(*args, **kwargs)
+
+global _AbstractState
+_AbstractState = None
+def AbstractState(*args, **kwargs):
+    global _AbstractState
+    if _AbstractState is None:
+        from CoolProp.CoolProp import AbstractState as _AbstractState
+    return _AbstractState(*args, **kwargs)
 
 
+
+# Load the constants, store
+
+
+
+
+# CoolProp.FluidsList() indicates some new fluids have been added
 # All of these can be inputs to the PropsSI function!
 coolprop_dict = ['100-41-4', '10024-97-2', '102687-65-0', '106-42-3',
 '106-97-8', '106-98-9', '107-46-0', '107-51-7', '107-52-8', '107-83-5',
@@ -66,19 +114,37 @@ coolprop_dict = ['100-41-4', '10024-97-2', '102687-65-0', '106-42-3',
 '811-97-2', '95-47-6']
 
 
+CoolProp_has_mu_CASs = set(['74-82-8', '109-66-0', '67-56-1', '115-07-1', '76-16-4', '75-72-9', '811-97-2', '75-73-0', '1717-00-6', '75-68-3', '76-19-7', '431-89-0', '431-63-0', '690-39-1', '115-25-3', '75-69-4', '75-71-8', '420-46-2', '306-83-2', '102687-65-0', '754-12-1', '29118-24-9', '2837-89-0', '75-37-6', '75-45-6', '460-73-1', '75-10-5', '354-33-6', '75-46-7', 'R404A.PPF', 'R407C.PPF', 'R410A.PPF', 'R507A.PPF', '2551-62-4', '108-88-3', '7732-18-5', '108-38-3', '106-97-8', '124-18-5', '111-84-2', '111-65-9', '112-40-3', '142-82-5', '110-54-3', '74-98-6', '95-47-6', '106-42-3', 'AIR.PPF', '7440-37-1', '7727-37-9', '7782-44-7', '7664-41-7', '71-43-2', '124-38-9', '110-82-7', '287-92-3', '78-78-4', '115-10-6', '74-84-0', '64-17-5', '7789-20-0', '7440-59-7', '1333-74-0', '7783-06-4', '75-28-5'])
+CoolProp_has_k_CASs = set(['74-82-8', '67-56-1', '115-07-1', '76-16-4', '75-72-9', '75-73-0', '1717-00-6', '75-68-3', '76-19-7', '431-89-0', '431-63-0', '690-39-1', '115-25-3', '2837-89-0', '460-73-1', '75-10-5', '811-97-2', '75-69-4', '75-71-8', '420-46-2', '75-45-6', '306-83-2', '754-12-1', '29118-24-9', '354-33-6', '75-37-6', '75-46-7', 'R404A.PPF', 'R407C.PPF', 'R410A.PPF', 'R507A.PPF', '2551-62-4', '108-88-3', '7732-18-5', '106-97-8', '124-18-5', '111-84-2', '111-65-9', '112-40-3', '142-82-5', '110-54-3', '74-98-6', 'AIR.PPF', '7440-37-1', '7727-37-9', '7782-44-7', '7664-41-7', '71-43-2', '124-38-9', '109-66-0', '287-92-3', '78-78-4', '74-84-0', '64-17-5', '100-41-4', '108-38-3', '95-47-6', '106-42-3', '7789-20-0', '7440-59-7', '1333-74-0p', '1333-74-0', '75-28-5'])
+
+CoolProp_k_failing_CASs = set(['100-41-4', '2837-89-0', '460-73-1', '75-10-5', '75-45-6'])
+
+CoolProp_failing_PT_flashes = set(['115-07-1', '115-25-3', '1717-00-6', '420-46-2',
+                                '431-63-0', '431-89-0', '690-39-1', '75-68-3', '75-69-4', '75-71-8', '75-72-9', '75-73-0', '76-19-7',
+                                '110-82-7', '7782-44-7'])
+
 class CP_fluid(object):
     # Basic object to store constants for a coolprop fluid, much faster than
     # calling coolprop to retrieve the data when needed
     __slots__ = ['Tmin', 'Tmax', 'Pmax', 'has_melting_line', 'Tc', 'Pc', 'Tt',
-                 'omega', 'HEOS']
-    
+                 'omega', 'HEOS', 'CAS']
+    @property
+    def has_k(self):
+        return self.CAS in CoolProp_has_k_CASs and self.CAS not in CoolProp_k_failing_CASs
+
+    @property
+    def has_mu(self):
+        return self.CAS in CoolProp_has_mu_CASs
+
+    def as_json(self):
+        return {k: getattr(self, k) for k in self.__slots__}
     def __deepcopy__(self, memo):
         # AbstractState("HEOS", CAS) has no deep copy;
         # fortunately, none is needed, so we can just return the existing copy
         return self
 
     def __init__(self, Tmin, Tmax, Pmax, has_melting_line, Tc, Pc, Tt, omega,
-                 HEOS):
+                 HEOS, CAS):
         self.Tmin = Tmin
         self.Tmax = Tmax
         self.Pmax = Pmax
@@ -88,44 +154,82 @@ class CP_fluid(object):
         self.Tt = Tt
         self.omega = omega
         self.HEOS = HEOS
+        self.CAS = CAS
 
 
 # Store the propoerties in a dict of CP_fluid instances
 coolprop_fluids = {}
-if has_CoolProp:
+# if has_CoolProp:
+#     #for fluid in CP.FluidsList():
+#     #    CASRN = CP.get_fluid_param_string(fluid, 'CAS')
+#     for CASRN in coolprop_dict:
+#         # TODO find other way of getting the data faster - there is no way
+#         # TODO use appdirs, store this data as a cache
+#         HEOS = AbstractState("HEOS", CASRN)
+#         coolprop_fluids[CASRN] = CP_fluid(Tmin=HEOS.Tmin(), Tmax=HEOS.Tmax(), Pmax=HEOS.pmax(),
+#                        has_melting_line=HEOS.has_melting_line(), Tc=HEOS.T_critical(), Pc=HEOS.p_critical(),
+#                        Tt=HEOS.Ttriple(), omega=HEOS.acentric_factor(), HEOS=None)
+
+def store_coolprop_fluids():
+    import CoolProp
+    import json
     for CASRN in coolprop_dict:
         HEOS = AbstractState("HEOS", CASRN)
         coolprop_fluids[CASRN] = CP_fluid(Tmin=HEOS.Tmin(), Tmax=HEOS.Tmax(), Pmax=HEOS.pmax(),
                        has_melting_line=HEOS.has_melting_line(), Tc=HEOS.T_critical(), Pc=HEOS.p_critical(),
-                       Tt=HEOS.Ttriple(), omega=HEOS.acentric_factor(), HEOS=HEOS)
+                       Tt=HEOS.Ttriple(), omega=HEOS.acentric_factor(), HEOS=None, CAS=CASRN)
+
+    data = {CASRN: coolprop_fluids[CASRN].as_json() for CASRN in coolprop_dict}
+    ver = CoolProp.__version__
+    file = open(os.path.join(data_dir, 'CoolPropFluids%s.json' %ver), 'w')
+    json.dump(data, file)
+    file.close()
+
+def load_coolprop_fluids():
+    import json
+    import CoolProp
+    ver = CoolProp.__version__
+    pth = os.path.join(data_dir, 'CoolPropFluids%s.json' %ver)
+    try:
+        file = open(pth, 'r')
+    except:
+        store_coolprop_fluids()
+        file = open(pth, 'r')
+    data = json.load(file)
+    for CASRN in coolprop_dict:
+        d = data[CASRN]
+        coolprop_fluids[CASRN] = CP_fluid(Tmin=d['Tmin'], Tmax=d['Tmax'], Pmax=d['Pmax'],
+                       has_melting_line=d['has_melting_line'], Tc=d['Tc'], Pc=d['Pc'],
+                       Tt=d['Tt'], omega=d['omega'], HEOS=None, CAS=CASRN)
 
 
 
 class MultiCheb1D(object):
-    '''Simple class to store set of coefficients for multiple chebshev 
+    '''Simple class to store set of coefficients for multiple chebshev
     approximations and perform calculations from them.
     '''
     def __init__(self, points, coeffs):
         self.points = points
         self.coeffs = coeffs
         self.N = len(points)-1
-        
+
     def __call__(self, x):
+        from bisect import bisect_left
         i = bisect_left(self.points, x)
         if i == 0:
             if x == self.points[0]:
                 # catch the case of being exactly on the lower limit
-                i = 1 
+                i = 1
             else:
                 raise Exception('Requested value is under the limits')
         if i > self.N:
             raise Exception('Requested value is above the limits')
-        
+
         coeffs = self.coeffs[i-1]
         a, b = self.points[i-1], self.points[i]
         x = (2.0*x-a-b)/(b-a)
         return self.chebval(x, coeffs)
-                
+
     @staticmethod
     def chebval(x, c):
         # copied from numpy's source, slightly optimized
@@ -147,10 +251,10 @@ class CP_fluid_approximator(object):
     CoolProp chemical's properties. This could apply equally well to REFPROP.
     '''
     __slots__ = ['CAS', 'Tmin', 'Tmax', 'Pmax', 'has_melting_line', 'Tc', 'Pc', 'Tt',
-                 'omega', 'HEOS', 'DMOLAR_g', 'HMOLAR_g', 'SMOLAR_g', 
-                 'SPEED_OF_SOUND_g', 'CONDUCTIVITY_g', 'VISCOSITY_g', 
+                 'omega', 'HEOS', 'DMOLAR_g', 'HMOLAR_g', 'SMOLAR_g',
+                 'SPEED_OF_SOUND_g', 'CONDUCTIVITY_g', 'VISCOSITY_g',
                  'CPMOLAR_g', 'CVMOLAR_g', 'DMOLAR_l', 'HMOLAR_l', 'SMOLAR_l',
-                 'SPEED_OF_SOUND_l', 'CONDUCTIVITY_l', 'VISCOSITY_l', 
+                 'SPEED_OF_SOUND_l', 'CONDUCTIVITY_l', 'VISCOSITY_l',
                  'CPMOLAR_l', 'CVMOLAR_l', 'CP0MOLAR']
     def calculate(self, T, prop, phase):
         assert phase in ['l', 'g']
@@ -161,7 +265,7 @@ class CP_fluid_approximator(object):
         except AttributeError:
             raise Exception('Given chemical does not have a fit available for '
                             'that property and phase')
-            
+
     def validate_prop(self, prop, phase, evaluated_points=30):
         phase_key = '_g' if phase == 'g' else '_l'
         name = prop + phase_key
@@ -181,15 +285,15 @@ class CP_fluid_approximator(object):
 #            print(prop, self.CAS, prop_approx[0], prop_calc[0])
 
             try:
-                assert_allclose(prop_approx, prop_calc, rtol=1E-7, atol=1E-9)
+                assert_close1d(prop_approx, prop_calc, rtol=1E-7, atol=1E-9)
             except:
                 '''There are several cases that assert_allclose doesn't deal
                 with well for some reason. We could increase rtol, but instead
-                the relative errors are used here to check everything is as desidred. 
-                
+                the relative errors are used here to check everything is as desidred.
+
                 Some example errors this won't trip on but assert_allclose does
                 are:
-                    
+
                 1.00014278827e-08
                 1.62767956613e-06
                 -0.0
@@ -206,9 +310,9 @@ class CP_fluid_approximator(object):
 
 
 
-#        
-    
-            
+#
+
+
 
 def CoolProp_T_dependent_property(T, CASRN, prop, phase):
     r'''Calculates a property of a chemical in either the liquid or gas phase
@@ -289,23 +393,25 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
     else:
         raise Exception('Error in CoolProp property function')
 
-if has_CoolProp:
+if has_CoolProp and 0:
+    folder = os.path.join(os.path.dirname(__file__), 'Misc')
+
     f = open(os.path.join(folder, 'CoolProp vapor properties fits.json'), 'r')
     vapor_properties = json.load(f)
     f.close()
-    
+
     f = open(os.path.join(folder, 'CoolProp CP0MOLAR fits.json'), 'r')
     idea_gas_heat_capacity = json.load(f)
     f.close()
-    
+
     CP_approximators = {}
-    
+
     for CAS in coolprop_dict:
         obj = CP_fluid_approximator()
         CP_approximators[CAS] = obj
         obj.CAS = CAS
         HEOS = AbstractState("HEOS", CAS)
-        
+
         obj.Tmin = HEOS.Tmin()
         obj.Tmax = HEOS.Tmax()
         obj.Pmax = HEOS.pmax()
@@ -314,20 +420,20 @@ if has_CoolProp:
         obj.Pc = HEOS.p_critical(),
         obj.Tt = HEOS.Ttriple()
         obj.omega = HEOS.acentric_factor()
-        
-        
+
+
         if CAS in vapor_properties:
             for key, value in vapor_properties[CAS].items():
                 chebcoeffs, limits = value
                 limits = [limits[0][0]] + [i[1] for i in limits]
                 approximator = MultiCheb1D(limits, chebcoeffs)
                 setattr(obj, key+'_g', approximator)
-                
+
         if CAS in idea_gas_heat_capacity:
             chebcoeffs, Tmin, Tmax = idea_gas_heat_capacity[CAS]['CP0MOLAR']
             approximator = MultiCheb1D([Tmin, Tmax], chebcoeffs)
             setattr(obj, 'CP0MOLAR', approximator)
-        
+
 #            obj.validate_prop('CP0MOLAR', 'g')
 
 
