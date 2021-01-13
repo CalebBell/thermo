@@ -60,8 +60,8 @@ def regular_solution_Hi_sums(SPs, Vs, coeffs, xsVs, N, Hi_sums=None):
         for j in range(N):
             SPi_m_SPj = SPs[i] - SPs[j]
             Hi = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
-            t += Vs[i]*xsVs[j]*Hi
-        Hi_sums[i] = t
+            t += xsVs[j]*Hi
+        Hi_sums[i] = Vs[i]*t
     return Hi_sums
 
 
@@ -69,10 +69,12 @@ def regular_solution_GE(SPs, coeffs, xsVs, N, xsVs_sum_inv):
     num = 0.0
     for i in range(N):
         coeffsi = coeffs[i]
+        tot = 0.0
         for j in range(N):
             SPi_m_SPj = SPs[i] - SPs[j]
             Aij = 0.5*SPi_m_SPj*SPi_m_SPj + coeffsi[j]*SPs[i]*SPs[j]
-            num += xsVs[i]*xsVs[j]*Aij
+            tot += xsVs[j]*Aij
+        num += tot*xsVs[i]
     GE = num*xsVs_sum_inv
     return GE
 
