@@ -66,6 +66,7 @@ def regular_solution_Hi_sums(SPs, Vs, coeffs, xsVs, N, Hi_sums=None):
 
 
 def regular_solution_GE(SPs, coeffs, xsVs, N, xsVs_sum_inv):
+    # This can have its speed improved
     num = 0.0
     for i in range(N):
         coeffsi = coeffs[i]
