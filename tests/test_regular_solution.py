@@ -28,6 +28,8 @@ from thermo.activity import GibbsExcess
 from thermo import *
 import numpy as np
 from fluids.numerics import jacobian, hessian, assert_close, assert_close1d, assert_close2d, assert_close3d
+from random import random
+from chemicals import normalize
 
 def test_no_interactions():
     GE = RegularSolution(T=325.0, xs=[.25, .75], Vs=[7.421e-05, 8.068e-05], SPs=[19570.2, 18864.7])
@@ -132,3 +134,16 @@ def test_4_components():
                             [3714.462825687298, 3607.836718555389, 7134.805582069884, 7459.310988306651],
                             [7499.862362680743, 7807.307245181044, 7459.310988306651, 6343.066547716518]]]
     assert_close3d(d3GE_dxixjxks_analytical, d3GE_dxixjxks_sympy, rtol=1e-12)
+
+def test_create_many_components_regular_solution():
+    # Just create it. This can be used for easy benchmarking.
+    N = 10
+    xs = normalize([random() for _ in range(N)])
+    xs2 = normalize([random() for _ in range(N)])
+    SPs = [50000.0*random() for _ in range(N)]
+    Vs = [1e-5*random() for _ in range(N)]
+
+    T = 300.0
+    lambda_coeffs = [[random()*1e-4 for _ in range(N)] for _ in range(N)]
+
+    GE = RegularSolution(T, xs, Vs, SPs, lambda_coeffs)

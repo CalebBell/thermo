@@ -28,6 +28,8 @@ from random import random
 from fluids.constants import *
 from fluids.numerics import assert_close, assert_close1d, assert_close2d
 from numpy.testing import assert_allclose
+from chemicals import normalize
+
 import pytest
 try:
     import numba
@@ -134,3 +136,26 @@ def test_a_alpha_and_derivatives_full():
     assert_close1d(da_alpha_dT_ijs, da_alpha_dT_ijs0, rtol=1e-13)
     assert_close1d(d2a_alpha_dT2_ijs0, d2a_alpha_dT2_ijs, rtol=1e-13)
 
+
+@mark_as_numba
+def test_RegularSolution_numba():
+    N = 200
+    xs = normalize([random() for _ in range(N)])
+    xs2 = normalize([random() for _ in range(N)])
+    SPs = [50000.0*random() for _ in range(N)]
+    Vs = [1e-5*random() for _ in range(N)]
+
+
+    T = 300.0
+    lambda_coeffs = [[random()*1e-4 for _ in range(N)] for _ in range(N)]
+
+    GE = RegularSolution(T, xs, Vs, SPs, lambda_coeffs)
+    xsnp = np.array(xs)
+    xs2np = np.array(xs2)
+    Vsnp = np.array(Vs)
+    SPsnp = np.array(SPs)
+    lambda_coeffsnp = np.array(lambda_coeffs)
+
+    GE = RegularSolution(T, xsnp, Vsnp, SPsnp, lambda_coeffsnp)
+    GE.gammas()
+    GE.to_T_xs(T=T+1.0, xs=xs2np).gammas()
