@@ -283,18 +283,18 @@ def test_water_ethanol_methanol_madeup():
      [-0.00012189042196807427, -7.594411991210204e-06, -0.00029680845584651057],
      [-0.000377824327942326, 3.529622902294454e-05, -1.3759961112813966e-05]]
     dGs_dT_analytical = GE.dGs_dT()
-    assert_allclose(dGs_dT_expect, dGs_dT_analytical, rtol=1e-12)
+    assert_close2d(dGs_dT_expect, dGs_dT_analytical, rtol=1e-12)
     dGs_dT_numerical = (np.array(GE.to_T_xs(T+ 2.5e-5, xs).Gs()) - GE.Gs())/2.5e-5
-    assert_allclose(dGs_dT_numerical, dGs_dT_expect, rtol=3e-7) # Closest I could get
+    assert_close2d(dGs_dT_numerical, dGs_dT_expect, rtol=3e-7) # Closest I could get
 
     # d2Gs_dT2
     d2Gs_dT2_expect = [[-1.7607728438831442e-08, -4.264997204215131e-06, -3.7132987505208185e-06],
      [3.808051820202208e-07, -3.9301868673119065e-08, -1.773565965539868e-08],
      [1.2957622532360591e-06, -5.745898135094948e-07, -7.78717985147786e-08]]
     d2Gs_dT2_analytical = GE.d2Gs_dT2()
-    assert_allclose(d2Gs_dT2_expect, d2Gs_dT2_analytical, rtol=1e-12)
+    assert_close2d(d2Gs_dT2_expect, d2Gs_dT2_analytical, rtol=1e-12)
     d2Gs_dT2_numerical = (np.array(GE.to_T_xs(T+4e-6, xs).dGs_dT()) - GE.dGs_dT())/4e-6
-    assert_allclose(d2Gs_dT2_numerical, d2Gs_dT2_analytical, rtol=2e-6)
+    assert_close2d(d2Gs_dT2_numerical, d2Gs_dT2_analytical, rtol=2e-6)
 
     # d3Gs_dT3
     d3Gs_dT3_analytical = GE.d3Gs_dT3()
@@ -302,18 +302,18 @@ def test_water_ethanol_methanol_madeup():
      [-3.894534156411875e-09, -9.978151596051988e-11, -4.934296656436311e-09],
      [-1.448282405010784e-08, 4.1384450135276364e-09, -2.1839009944794027e-10]]
     d3Gs_dT3_numerical = (np.array(GE.to_T_xs(T+dT, xs).d2Gs_dT2()) - GE.d2Gs_dT2())/dT
-    assert_allclose(d3Gs_dT3_analytical, d3Gs_dT3_numerical, rtol=1e-7)
-    assert_allclose(d3Gs_dT3_expect, d3Gs_dT3_analytical, rtol=1e-12)
+    assert_close2d(d3Gs_dT3_analytical, d3Gs_dT3_numerical, rtol=1e-7)
+    assert_close2d(d3Gs_dT3_expect, d3Gs_dT3_analytical, rtol=1e-12)
 
     # dGE_dT
     dGE_dT_expect = 2.258093406765717
     dGE_dT_analytical = GE.dGE_dT()
-    assert_allclose(dGE_dT_expect, dGE_dT_analytical, rtol=1e-12)
+    assert_close(dGE_dT_expect, dGE_dT_analytical, rtol=1e-12)
 
     def to_diff(T):
         return GE.to_T_xs(T, xs).GE()
     dGE_dT_numerical = derivative(to_diff, T, dx=1, order=17)
-    assert_allclose(dGE_dT_analytical, dGE_dT_numerical, rtol=1e-12)
+    assert_close(dGE_dT_analytical, dGE_dT_numerical, rtol=1e-12)
 
     # d2GE_dT2
     def to_diff(T):
@@ -322,8 +322,8 @@ def test_water_ethanol_methanol_madeup():
     d2GE_dT2_numerical = derivative(to_diff, T, dx=5, order=17)
     d2GE_dT2_expected = 0.007412479461681191
     d2GE_dT2_analytical = GE.d2GE_dT2()
-    assert_allclose(d2GE_dT2_expected, d2GE_dT2_analytical, rtol=1e-12)
-    assert_allclose(d2GE_dT2_numerical, d2GE_dT2_analytical, rtol=1e-12)
+    assert_close(d2GE_dT2_expected, d2GE_dT2_analytical, rtol=1e-12)
+    assert_close(d2GE_dT2_numerical, d2GE_dT2_analytical, rtol=1e-12)
 
     # dGE_dxs
     def to_jac(xs):
@@ -331,9 +331,9 @@ def test_water_ethanol_methanol_madeup():
 
     dGE_dxs_analytical = GE.dGE_dxs()
     dGE_dxs_expected = [1644.4832445701338, 397.6635234141318, 202.8071951151063]
-    assert_allclose(dGE_dxs_analytical, dGE_dxs_expected, rtol=1e-12)
+    assert_close1d(dGE_dxs_analytical, dGE_dxs_expected, rtol=1e-12)
     dGE_dxs_numerical = jacobian(to_jac, xs, perturbation=1e-8)
-    assert_allclose(dGE_dxs_numerical, dGE_dxs_expected, rtol=1e-7)
+    assert_close1d(dGE_dxs_numerical, dGE_dxs_expected, rtol=1e-7)
 
 
 
@@ -345,18 +345,18 @@ def test_water_ethanol_methanol_madeup():
      [1208.6126803238276, -468.99032836115686, -202.0508751128366],
      [-48.852543427058606, -202.0508751128365, 140.77154243852513]]
     d2GE_dxixjs_analytical = GE.d2GE_dxixjs()
-    assert_allclose(d2GE_dxixjs_expect, d2GE_dxixjs_analytical, rtol=1e-12)
+    assert_close2d(d2GE_dxixjs_expect, d2GE_dxixjs_analytical, rtol=1e-12)
     d2GE_dxixjs_numerical = hessian(to_hess, xs, perturbation=5e-5)
-    assert_allclose(d2GE_dxixjs_numerical, d2GE_dxixjs_analytical, rtol=3e-4)
+    assert_close2d(d2GE_dxixjs_numerical, d2GE_dxixjs_analytical, rtol=3e-4)
 
 
     # d2GE_dTdxs - matched really well
     d2GE_dTdxs_expect = [3.053720836458414, 1.8759446742883084, 2.1691316743750826]
     d2GE_dTdxs_analytical = GE.d2GE_dTdxs()
-    assert_allclose(d2GE_dTdxs_expect, d2GE_dTdxs_analytical, rtol=1e-12)
+    assert_close1d(d2GE_dTdxs_expect, d2GE_dTdxs_analytical, rtol=1e-12)
 
     def to_jac(xs):
         return GE.to_T_xs(T, xs).dGE_dT()
 
     d2GE_dTdxs_numerical = jacobian(to_jac, xs, perturbation=3e-8)
-    assert_allclose(d2GE_dTdxs_analytical, d2GE_dTdxs_numerical, rtol=1e-7)
+    assert_close1d(d2GE_dTdxs_analytical, d2GE_dTdxs_numerical, rtol=1e-7)
