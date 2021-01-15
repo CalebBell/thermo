@@ -21,7 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from math import exp, log
-from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 from fluids.constants import calorie, R
@@ -31,23 +30,23 @@ from thermo.uniquac import UNIQUAC
 from random import random
 from thermo import *
 import numpy as np
-from fluids.numerics import jacobian, hessian, derivative, normalize
+from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d, assert_close3d
 
 def test_UNIQUAC_functional():
     # P05.01c VLE Behavior of Ethanol - Water Using UNIQUAC
     # http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/P05.01c%20VLE%20Behavior%20of%20Ethanol%20-%20Water%20Using%20UNIQUAC.xps
 
     gammas = UNIQUAC_gammas(xs=[0.252, 0.748], rs=[2.1055, 0.9200], qs=[1.972, 1.400], taus=[[1.0, 1.0919744384510301], [0.37452902779205477, 1.0]])
-    assert_allclose(gammas, [2.35875137797083, 1.2442093415968987])
+    assert_close1d(gammas, [2.35875137797083, 1.2442093415968987])
 
     # Example 8.3  in [2]_ for solubility of benzene (2) in ethanol (1) at 260 K.
     # Worked great here
     gammas = UNIQUAC_gammas(xs=[.7566, .2434], rs=[2.1055, 3.1878], qs=[1.972, 2.4], taus=[[1.0, 1.17984681869376], [0.22826016391070073, 1.0]])
-    assert_allclose(gammas, [1.0826343452263132, 3.0176007269546083])
+    assert_close1d(gammas, [1.0826343452263132, 3.0176007269546083])
 
     # Example 7.3 in [2], for electrolytes
     gammas = UNIQUAC_gammas(xs=[0.05, 0.025, 0.925], rs=[1., 1., 0.92], qs=[1., 1., 1.4], taus=[[1.0, 0.4052558731309731, 2.7333668483468143], [21.816716876191823, 1.0, 0.06871094878791346], [0.4790878929721784, 3.3901086879605944, 1.0]])
-    assert_allclose(gammas, [0.3838177662072466, 0.49469915162858774, 1.0204435746722416])
+    assert_close1d(gammas, [0.3838177662072466, 0.49469915162858774, 1.0204435746722416])
 
 
     def UNIQUAC_original_form(xs, rs, qs, taus):
@@ -73,13 +72,13 @@ def test_UNIQUAC_functional():
         return gammas
 
     gammas = UNIQUAC_original_form(xs=[.7566, .2434], rs=[2.1055, 3.1878], qs=[1.972, 2.4], taus=[[1.0, 1.17984681869376], [0.22826016391070073, 1.0]])
-    assert_allclose(gammas, [1.0826343452263132, 3.0176007269546083])
+    assert_close1d(gammas, [1.0826343452263132, 3.0176007269546083])
 
     gammas = UNIQUAC_original_form(xs=[0.252, 0.748], rs=[2.1055, 0.9200], qs=[1.972, 1.400], taus=[[1.0, 1.0919744384510301], [0.37452902779205477, 1.0]])
-    assert_allclose(gammas, [2.35875137797083, 1.2442093415968987])
+    assert_close1d(gammas, [2.35875137797083, 1.2442093415968987])
 
     gammas = UNIQUAC_original_form(xs=[0.05, 0.025, 0.925], rs=[1., 1., 0.92], qs=[1., 1., 1.4], taus=[[1.0, 0.4052558731309731, 2.7333668483468143], [21.816716876191823, 1.0, 0.06871094878791346], [0.4790878929721784, 3.3901086879605944, 1.0]])
-    assert_allclose(gammas, [0.3838177662072466, 0.49469915162858774, 1.0204435746722416])
+    assert_close1d(gammas, [0.3838177662072466, 0.49469915162858774, 1.0204435746722416])
 
 
 def make_rsqs(N):
@@ -132,40 +131,40 @@ def test_UNIQUAC_madeup_ternary():
     # GE
     GE_expect = 415.5805110962149
     GE_analytical = GE.GE()
-    assert_allclose(GE_expect, GE_analytical, rtol=1e-13)
+    assert_close(GE_expect, GE_analytical, rtol=1e-13)
     gammas = UNIQUAC_gammas(taus=GE.taus(), rs=rs, qs=qs, xs=xs)
     GE_identity = R*T*sum(xi*log(gamma) for xi, gamma in zip(xs, gammas))
-    assert_allclose(GE_identity, GE_analytical, rtol=1e-12)
+    assert_close(GE_identity, GE_analytical, rtol=1e-12)
 
     # dGE_dT
     dGE_dT_expect = 0.9907140284750982
     dGE_dT_analytical = GE.dGE_dT()
     dGE_dT_numerical = derivative(lambda T: GE.to_T_xs(T, xs).GE(), T, order=7, dx=T*1e-3)
-    assert_allclose(dGE_dT_analytical, dGE_dT_numerical, rtol=1e-12)
-    assert_allclose(dGE_dT_expect, dGE_dT_analytical, rtol=1e-13)
+    assert_close(dGE_dT_analytical, dGE_dT_numerical, rtol=1e-12)
+    assert_close(dGE_dT_expect, dGE_dT_analytical, rtol=1e-13)
 
     # d2GE_dT2
     d2GE_dT2_expect = -0.007148011229475758
     d2GE_dT2_analytical = GE.d2GE_dT2()
     d2GE_dT2_numerical = derivative(lambda T: GE.to_T_xs(T, xs).dGE_dT(), T, order=7, dx=T*1e-3)
-    assert_allclose(d2GE_dT2_expect, d2GE_dT2_analytical, rtol=1e-12)
-    assert_allclose(d2GE_dT2_analytical, d2GE_dT2_numerical, rtol=1e-12)
+    assert_close(d2GE_dT2_expect, d2GE_dT2_analytical, rtol=1e-12)
+    assert_close(d2GE_dT2_analytical, d2GE_dT2_numerical, rtol=1e-12)
 
     # d3GE_dT3
     d3GE_dT3_expect = 2.4882477326368877e-05
     d3GE_dT3_analytical = GE.d3GE_dT3()
-    assert_allclose(d3GE_dT3_expect, d3GE_dT3_analytical, rtol=1e-13)
+    assert_close(d3GE_dT3_expect, d3GE_dT3_analytical, rtol=1e-13)
     d3GE_dT3_numerical = derivative(lambda T: GE.to_T_xs(T, xs).d2GE_dT2(), T, order=11, dx=T*1e-2)
-    assert_allclose(d3GE_dT3_analytical, d3GE_dT3_numerical, rtol=1e-12)
+    assert_close(d3GE_dT3_analytical, d3GE_dT3_numerical, rtol=1e-12)
 
     # dphis_dxs
     dphis_dxs_analytical = GE.dphis_dxs()
     dphis_dxs_expect = [[0.9223577846000854, -0.4473196931643269, -0.2230519905531248],
      [-0.3418381934661886, 1.094722540086528, -0.19009311780433752],
      [-0.5805195911338968, -0.6474028469222008, 0.41314510835746243]]
-    assert_allclose(dphis_dxs_expect, dphis_dxs_analytical, rtol=1e-12)
+    assert_close2d(dphis_dxs_expect, dphis_dxs_analytical, rtol=1e-12)
     dphis_dxs_numerical = jacobian(lambda xs: GE.to_T_xs(T, xs).phis(), xs, scalar=False, perturbation=2e-8)
-    assert_allclose(dphis_dxs_numerical, dphis_dxs_analytical, rtol=3e-8)
+    assert_close2d(dphis_dxs_numerical, dphis_dxs_analytical, rtol=3e-8)
 
     # d2phis_dxixjs - checked to the last decimal with sympy
     d2phis_dxixjs_expect = [[[-2.441416183656415, 0.9048216556030662, 1.536594528053349],
@@ -179,9 +178,9 @@ def test_UNIQUAC_madeup_ternary():
       [0.32831771310273056, 0.27980444182238084, -0.6081221549251116]]]
 
     d2phis_dxixjs_analytical = GE.d2phis_dxixjs()
-    assert_allclose(d2phis_dxixjs_analytical, d2phis_dxixjs_expect, rtol=1e-12)
+    assert_close3d(d2phis_dxixjs_analytical, d2phis_dxixjs_expect, rtol=1e-12)
     d2phis_dxixjs_numerical = hessian(lambda xs: GE.to_T_xs(T, xs).phis(), xs, scalar=False, perturbation=1e-5)
-    assert_allclose(d2phis_dxixjs_numerical, d2phis_dxixjs_analytical, rtol=8e-5)
+    assert_close3d(d2phis_dxixjs_numerical, d2phis_dxixjs_analytical, rtol=8e-5)
 
 
     d2thetas_dxixjs_expect = [[[-2.346422740416712, 0.7760247163009644, 1.5703980241157476],
@@ -194,9 +193,9 @@ def test_UNIQUAC_madeup_ternary():
       [0.6225054627376287, -0.5624465978146614, -0.06005886492296719],
       [0.3698870633362176, 0.2916190647283637, -0.6615061280645813]]]
     d2thetas_dxixjs_analytical = GE.d2thetas_dxixjs()
-    assert_allclose(d2thetas_dxixjs_analytical, d2thetas_dxixjs_expect, rtol=1e-12)
+    assert_close3d(d2thetas_dxixjs_analytical, d2thetas_dxixjs_expect, rtol=1e-12)
     d2thetas_dxixjs_numerical = hessian(lambda xs: GE.to_T_xs(T, xs).thetas(), xs, scalar=False, perturbation=2e-5)
-    assert_allclose(d2thetas_dxixjs_numerical, d2thetas_dxixjs_analytical, rtol=1e-4)
+    assert_close3d(d2thetas_dxixjs_numerical, d2thetas_dxixjs_analytical, rtol=1e-4)
 
     def to_jac(xs):
         return GE.to_T_xs(T, xs).GE()
@@ -204,9 +203,9 @@ def test_UNIQUAC_madeup_ternary():
     # Obtained 12 decimals of precision with numdifftools
     dGE_dxs_analytical = GE.dGE_dxs()
     dGE_dxs_expect = [-2651.3181821109024, -2085.574403592012, -2295.0860830203587]
-    assert_allclose(dGE_dxs_analytical, dGE_dxs_expect, rtol=1e-12)
+    assert_close1d(dGE_dxs_analytical, dGE_dxs_expect, rtol=1e-12)
     dGE_dxs_numerical = jacobian(to_jac, xs, perturbation=1e-8)
-    assert_allclose(dGE_dxs_numerical, dGE_dxs_analytical, rtol=1e-6)
+    assert_close1d(dGE_dxs_numerical, dGE_dxs_analytical, rtol=1e-6)
 
     # d2GE_dxixjs
 
@@ -218,5 +217,5 @@ def test_UNIQUAC_madeup_ternary():
      [-6687.099054095988, -2811.283290487096, -1228.622385377738],
      [-1549.3754436994557, -1228.622385377738, -3667.3880987585053]]
     d2GE_dxixjs_analytical = GE.d2GE_dxixjs()
-    assert_allclose(d2GE_dxixjs_numerical, d2GE_dxixjs_analytical, rtol=1e-4)
-    assert_allclose(d2GE_dxixjs_analytical, d2GE_dxixjs_sympy, rtol=1e-12)
+    assert_close2d(d2GE_dxixjs_numerical, d2GE_dxixjs_analytical, rtol=1e-4)
+    assert_close2d(d2GE_dxixjs_analytical, d2GE_dxixjs_sympy, rtol=1e-12)
