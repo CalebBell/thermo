@@ -21,7 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from math import exp, log
-from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 from fluids.constants import calorie, R

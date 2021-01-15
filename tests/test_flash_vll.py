@@ -20,10 +20,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from numpy.testing import assert_allclose
 import pytest
 import thermo
 from thermo import *
+from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d
 from fluids.numerics import *
 from math import *
 import json
@@ -63,8 +63,8 @@ def test_water_C1_C8():
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     res = flashN.flash(T=T, P=P, zs=zs)
 
-    assert_allclose(res.water_phase.zs, [0.9999990988582429, 9.011417571269618e-07, 9.57378962042325e-17])
-    assert_allclose(res.gas.zs, [0.026792655758364814, 0.9529209534990141, 0.020286390742620692])
+    assert_close1d(res.water_phase.zs, [0.9999990988582429, 9.011417571269618e-07, 9.57378962042325e-17])
+    assert_close1d(res.gas.zs, [0.026792655758364814, 0.9529209534990141, 0.020286390742620692])
     assert res.phase_count == 3
 
 
@@ -110,11 +110,11 @@ def test_water_C1_C8():
     # point where aqueous phase was not happening, only two liquids; I fixed it by trying water stab first
     res = flashN.flash(T=307.838, P=8.191e6, zs=zs)
     zs_water_expect = [0.9999189354094269, 8.106459057259032e-05, 5.225089428308217e-16]
-    assert_allclose(res.water_phase.zs, zs_water_expect, rtol=1e-5)
+    assert_close1d(res.water_phase.zs, zs_water_expect, rtol=1e-5)
     zs_gas_expect = [0.0014433546288458944, 0.9952286230641441, 0.0033280223070098593]
-    assert_allclose(res.gas.zs, zs_gas_expect, rtol=1e-5)
+    assert_close1d(res.gas.zs, zs_gas_expect, rtol=1e-5)
     zs_other_expect = [0.018970964990697076, 0.3070011367278533, 0.6740278982814496]
-    assert_allclose(res.lightest_liquid.zs, zs_other_expect, rtol=1e-5)
+    assert_close1d(res.lightest_liquid.zs, zs_other_expect, rtol=1e-5)
 
     # Point where failures are happening with DOUBLE_CHECK_2P
     flashN.DOUBLE_CHECK_2P = True
@@ -126,7 +126,7 @@ def test_water_C1_C8():
     res = flashN.flash(T=100.0, P=49417.13361323757, zs=zs)
     assert res.phase_count == 2
     assert res.gas is not None
-    assert_allclose(res.water_phase.zs, [0.9999999999999996, 3.2400602001103857e-16, 1.2679535429897556e-61], atol=1e-10)
+    assert_close1d(res.water_phase.zs, [0.9999999999999996, 3.2400602001103857e-16, 1.2679535429897556e-61], atol=1e-10)
 
     # Another point - the RR solution went so far it had a compositions smaller than 1e-16 causing issues
     res = flashN.flash(T=100.0, P=294705.1702551713, zs=zs)
@@ -184,8 +184,8 @@ def test_C1_to_C5_water_gas():
     res = flashN.flash(T=T, P=P, zs=zs)
 
     assert res.phase_count == 3
-    assert_allclose(res.betas[0], 0.9254860647854957, rtol=1e-6)
-    assert_allclose(res.liquids_betas[res.water_phase_index], 0.027819781620531732, rtol=1e-5)
+    assert_close(res.betas[0], 0.9254860647854957, rtol=1e-6)
+    assert_close(res.liquids_betas[res.water_phase_index], 0.027819781620531732, rtol=1e-5)
 
     # Gibbs optimizer cannot find anything else for a third phase
     assert 2 == flashN.flash(T=273.15-130, P=1e6, zs=zs).phase_count
@@ -217,7 +217,7 @@ def test_C1_C8_water_TEG():
     flashN = FlashVLN(constants, properties, liquids=[liq, liq, liq], gas=gas)
     VLL = flashN.flash(T=T, P=P, zs=zs)
     assert VLL.phase_count == 3
-    assert_allclose(VLL.gas.zs, [0.9588632822157593, 0.014347647576433926, 2.8303984647442933e-06, 0.02678623980934197], )
+    assert_close1d(VLL.gas.zs, [0.9588632822157593, 0.014347647576433926, 2.8303984647442933e-06, 0.02678623980934197], )
 
 
 def test_C5_C6_C7():
@@ -244,7 +244,7 @@ def test_C5_C6_C7():
 
     # Extremely low pressure point - genuinely is a VL point, but G is lower by a tiny amount
     res = flashN.flash(T=T, P=P, zs=zs)
-    assert_allclose(res.betas, [0.9973290812443733, 0.00267091875562675])
+    assert_close1d(res.betas, [0.9973290812443733, 0.00267091875562675])
 
 def test_binary_LLL_specified_still_one_phase():
     T = 167.54
@@ -289,15 +289,15 @@ def test_binary_phase_switch():
 
 
     LL = flashN.flash(P=P+100, T=T, zs=zs)
-    assert_allclose(LL.lightest_liquid.zs, [0.9145548102807435, 0.08544518971925665])
-    assert_allclose(LL.heaviest_liquid.zs, [0.5653776843338143, 0.4346223156661858])
+    assert_close1d(LL.lightest_liquid.zs, [0.9145548102807435, 0.08544518971925665])
+    assert_close1d(LL.heaviest_liquid.zs, [0.5653776843338143, 0.4346223156661858])
     assert LL.phase_count == 2
     VL = flashN.flash(P=P-100, T=T, zs=zs)
     assert VL.phase_count == 2
     rhos_expect = [106.06889300473189, 562.1609367529746]
-    assert_allclose(rhos_expect, [i.rho_mass() for i in VL.phases], rtol=1e-5)
-    assert_allclose(VL.liquid0.zs, [0.5646523538677704, 0.43534764613222976])
-    assert_allclose(VL.gas.zs, [0.9963432818384895, 0.0036567181615104662])
+    assert_close1d(rhos_expect, [i.rho_mass() for i in VL.phases], rtol=1e-5)
+    assert_close1d(VL.liquid0.zs, [0.5646523538677704, 0.43534764613222976])
+    assert_close1d(VL.gas.zs, [0.9963432818384895, 0.0036567181615104662])
 
 def test_three_phase_ethylene_ethanol_nitrogen():
     zs = [.8, 0.19, .01]
@@ -324,9 +324,9 @@ def test_three_phase_ethylene_ethanol_nitrogen():
     # over 1000 iterations to converge
     many_iter_VL = flashN.flash(T=266.66666666666663, P=7498942.093324558, zs=zs)
     flashN.PT_SS_TOL = 1e-20
-    assert_allclose([588.7927414481507, 473.2881762757268], [i.rho_mass() for i in many_iter_VL.phases], rtol=1e-5)
-    assert_allclose(many_iter_VL.betas, [0.1646137076373939, 0.8353862923626061], rtol=2e-3)
-    assert_allclose(many_iter_VL.G(), 3725.6090821958787, atol=1)
+    assert_close1d([588.7927414481507, 473.2881762757268], [i.rho_mass() for i in many_iter_VL.phases], rtol=1e-5)
+    assert_close1d(many_iter_VL.betas, [0.1646137076373939, 0.8353862923626061], rtol=2e-3)
+    assert_close(many_iter_VL.G(), 3725.6090821958787, atol=1)
     flashN.PT_SS_TOL = 1e-13
 
     # SS trivial solution to all Ks under 1
@@ -336,17 +336,17 @@ def test_three_phase_ethylene_ethanol_nitrogen():
 
     # point RR was making SS convergence die
     bad_RR = flashN.flash(T=220.2020202020202, P=37649358.067924485, zs=zs)
-    assert_allclose(bad_RR.betas, [0.13605690662613873, 0.8639430933738612], rtol=1e-5)
+    assert_close1d(bad_RR.betas, [0.13605690662613873, 0.8639430933738612], rtol=1e-5)
 
     # Point where the three phase calculations converge to negative betas
     false3P = flashN.flash(T=288.56, P=7.3318e6, zs=zs)
-    assert_allclose(false3P.betas, [0.24304503666565203, 0.756954963334348], rtol=1e-5)
+    assert_close1d(false3P.betas, [0.24304503666565203, 0.756954963334348], rtol=1e-5)
     assert false3P.liquid0
     assert false3P.liquid1
 
     # Three phase region point
     res = flashN.flash(T=200, P=6e5, zs=zs)
-    assert_allclose(res.G(), -2873.6029915490544, rtol=1e-5)
+    assert_close(res.G(), -2873.6029915490544, rtol=1e-5)
     assert res.phase_count == 3
 
 def test_ethanol_water_cyclohexane_3_liquids():
@@ -369,8 +369,8 @@ def test_ethanol_water_cyclohexane_3_liquids():
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     res = flashN.flash(T=150, P=1e6, zs=zs)
     assert len(res.liquids) == 3
-    assert_allclose(res.heaviest_liquid.zs, [7.29931119445944e-08, 0.9999999270068883, 1.6797752584629787e-26], atol=1e-15)
-    assert_allclose(res.lightest_liquid.zs, [0.9938392499953312, 0.0035632064699575947, 0.0025975435347112977])
+    assert_close1d(res.heaviest_liquid.zs, [7.29931119445944e-08, 0.9999999270068883, 1.6797752584629787e-26], atol=1e-15)
+    assert_close1d(res.lightest_liquid.zs, [0.9938392499953312, 0.0035632064699575947, 0.0025975435347112977])
 
 def test_butanol_water_ethanol_3P():
     zs = [.25, 0.7, .05]
@@ -399,24 +399,24 @@ def test_butanol_water_ethanol_3P():
 
     #  Some bad logic in LL
     failed_logic_LL = flashN.flash(T=186.48648648648657, P=120526.09368708414, zs=zs)
-    assert_allclose(failed_logic_LL.betas, [0.6989623717730211, 0.3010376282269789])
+    assert_close1d(failed_logic_LL.betas, [0.6989623717730211, 0.3010376282269789])
 
 
     # Test 5 points going  through LL to VL to VLL to VL again to V
     res = flashN.flash(T=354, P=1e5, zs=zs) # LL
-    assert_allclose([i.rho_mass() for i in res.phases], [722.1800166595312, 656.8373555931618])
+    assert_close1d([i.rho_mass() for i in res.phases], [722.1800166595312, 656.8373555931618])
     res = flashN.flash(T=360, P=1e5, zs=zs) # VL
-    assert_allclose([i.rho_mass() for i in res.phases], [1.390005729844191, 718.4273271368141])
+    assert_close1d([i.rho_mass() for i in res.phases], [1.390005729844191, 718.4273271368141])
 
     res = flashN.flash(T=361, P=1e5, zs=zs) # VLL
-    assert_allclose(res.water_phase.zs, [7.619975052224755e-05, 0.9989622883894996, 0.0009615118599771799])
-    assert_allclose(res.gas.zs, [0.2384009970908654, 0.57868399351809, 0.18291500939104438])
+    assert_close1d(res.water_phase.zs, [7.619975052224755e-05, 0.9989622883894996, 0.0009615118599771799])
+    assert_close1d(res.gas.zs, [0.2384009970908654, 0.57868399351809, 0.18291500939104438])
     assert res.phase_count == 3
 
     res = flashN.flash(T=364, P=1e5, zs=zs) # VL
-    assert_allclose([i.rho_mass() for i in res.phases], [1.203792756430329, 715.8202252076906])
+    assert_close1d([i.rho_mass() for i in res.phases], [1.203792756430329, 715.8202252076906])
     res = flashN.flash(T=366, P=1e5, zs=zs) # V
-    assert_allclose([i.rho_mass() for i in res.phases], [1.1145608982480968])
+    assert_close1d([i.rho_mass() for i in res.phases], [1.1145608982480968])
 
 def test_VLL_PR_random0_wrong_stab_test():
     # Example was truly random, from a phase plot
@@ -438,10 +438,10 @@ def test_VLL_PR_random0_wrong_stab_test():
 
     res = flashN.flash(T=T, P=P, zs=zs)
     assert res.phase_count == 3
-    assert_allclose(res.betas[0], 0.09417025397035537)
+    assert_close(res.betas[0], 0.09417025397035537)
     zs_heavy = res.heaviest_liquid.zs
     zs_heavy_expect = [0.01668931264853162, 0.05103372454391458, 0.09312148233246491, 0.013032991760234687, 0.8261224887148544]
-    assert_allclose(zs_heavy, zs_heavy_expect, rtol=1e-5)
+    assert_close1d(zs_heavy, zs_heavy_expect, rtol=1e-5)
 
 def test_LLL_PR_random1_missing_LLL_trivial_gas():
     constants = ChemicalConstantsPackage(Tcs=[676.0, 653.0, 269.0, 591.3, 575.6], Pcs=[4000000.0, 14692125.0, 4855494.0, 3880747.0, 3140000.0], omegas=[0.7206, 0.32799999999999996, 0.1599, 0.3691, 0.4345], MWs=[90.121, 32.04516, 32.11726, 104.21378, 116.15828], CASs=['107-88-0', '302-01-2', '7803-62-5', '628-29-5', '123-86-4'])
@@ -462,9 +462,9 @@ def test_LLL_PR_random1_missing_LLL_trivial_gas():
     assert res.gas is None
 
     zs_heavy = [5.663363025793038e-08, 0.9999982518756677, 1.6914852598251962e-06, 5.442002170065923e-12, 2.849791556763424e-16]
-    assert_allclose(res.heaviest_liquid.zs, zs_heavy, rtol=1e-4)
+    assert_close1d(res.heaviest_liquid.zs, zs_heavy, rtol=1e-4)
     zs_lightest = [0.5958582108826934, 0.005355183270131757, 0.14526839894298765, 0.16882402594657384, 0.08469418095761332]
-    assert_allclose(res.lightest_liquid.zs, zs_lightest, rtol=1e-5)
+    assert_close1d(res.lightest_liquid.zs, zs_lightest, rtol=1e-5)
 
 
 def test_LLL_random2_decrease_tolerance_similar_comp_stab():
@@ -487,9 +487,9 @@ def test_LLL_random2_decrease_tolerance_similar_comp_stab():
 
     res = flashN.flash(T=T, P=P, zs=zs)
     zs_light_expect = [0.7405037446267929, 0.021794147548270967, 0.0001428606542343683, 0.0006934327486605817, 0.00010382544098221231, 0.23676198898105874]
-    assert_allclose(res.lightest_liquid.zs, zs_light_expect, rtol=1e-4)
+    assert_close1d(res.lightest_liquid.zs, zs_light_expect, rtol=1e-4)
     zs_heavy_expect = [1.6221123733069825e-20, 0.22762091600367182, 0.2569470513971517, 0.2570722261924367, 0.2581212217153263, 0.0002385846914132562]
-    assert_allclose(res.heaviest_liquid.zs, zs_heavy_expect, rtol=1e-4, atol=1e-10)
+    assert_close1d(res.heaviest_liquid.zs, zs_heavy_expect, rtol=1e-4, atol=1e-10)
     assert 3 == res.phase_count
 
 
@@ -513,13 +513,13 @@ def test_VLLL_water_C1_C8_iron():
 
     res = flashN.flash(T=T, P=P, zs=zs)
     zs_water = [0.9999990592468204, 9.407531795083966e-07, 1.4320610523053124e-16, 2.6913157388219106e-61]
-    assert_allclose(res.water_phase.zs, zs_water, atol=1e-10, rtol=1e-5)
+    assert_close1d(res.water_phase.zs, zs_water, atol=1e-10, rtol=1e-5)
     # print(res.water_phase.zs)
     zs_gas = [0.03040532892726872, 0.9468785790243984, 0.022716092048333275, 7.628086086087928e-78]
-    assert_allclose(res.gas.zs, zs_gas, atol=1e-10, rtol=1e-5)
-    assert_allclose(res.heaviest_liquid.zs, [0, 0, 0, 1], atol=1e-20)
+    assert_close1d(res.gas.zs, zs_gas, atol=1e-10, rtol=1e-5)
+    assert_close1d(res.heaviest_liquid.zs, [0, 0, 0, 1], atol=1e-20)
     zs_light = [0.01803214863396999, 0.005375612317521824, 0.976592239048508, 6.778321658412194e-74]
-    assert_allclose(res.lightest_liquid.zs, zs_light, rtol=1e-5, atol=1e-10)
+    assert_close1d(res.lightest_liquid.zs, zs_light, rtol=1e-5, atol=1e-10)
 
 def test_VLLLL_first():
     # Lots of bugs/confusion here, but it works
@@ -566,7 +566,7 @@ def test_problem_1_Ivanov_CH4_H2S():
     assert res.gas is not None
     assert res.phase_count == 2
     betas_expect = [0.9713327921217155, 0.028667207878284473]
-    assert_allclose(res.betas, betas_expect, rtol=1e-5)
+    assert_close1d(res.betas, betas_expect, rtol=1e-5)
     res = flashN.flash(T=T, P=P, zs=[0.93, 0.07])
     assert res.liquid0 is not None
     assert res.phase_count == 1
@@ -577,7 +577,7 @@ def test_problem_1_Ivanov_CH4_H2S():
     flashN.DOUBLE_CHECK_2P = True
     res = flashN.flash(T=100.0, P=10000.0, zs=[.5, .5])
     rhos_expect = [0.19372650512324788, 1057.7834954440648]
-    assert_allclose(rhos_expect, [i.rho_mass() for i in res.phases], rtol=1e-5)
+    assert_close1d(rhos_expect, [i.rho_mass() for i in res.phases], rtol=1e-5)
 
     # flashN.flash(T=100.0, P=74989.42093324558, zs=[.5, .5]) should be tested - cycle - but is not because slow
     # flashN.flash(T=100.0, P=133352.1432163324, zs=[.5, .5]) # should also be tested - unconverged error
@@ -586,13 +586,13 @@ def test_problem_1_Ivanov_CH4_H2S():
     res = flashN.flash(T=T, P=P, zs=[.5, .5])
     assert res.phase_count == 2
     rhos_expect = [877.5095175225118, 275.14553695914424]
-    assert_allclose(rhos_expect, [i.rho_mass() for i in res.phases])
+    assert_close1d(rhos_expect, [i.rho_mass() for i in res.phases])
     flashN.DOUBLE_CHECK_2P = False
 
     res = flashN.flash(T=T, P=P, zs=[.112, .888])
     rhos_expect = [877.5095095098309, 275.14542288743456]
-    assert_allclose(rhos_expect, [i.rho_mass() for i in res.phases])
-    assert_allclose(res.betas, [0.9992370056503082, 0.0007629943496918543], rtol=1e-5, atol=1e-6)
+    assert_close1d(rhos_expect, [i.rho_mass() for i in res.phases])
+    assert_close1d(res.betas, [0.9992370056503082, 0.0007629943496918543], rtol=1e-5, atol=1e-6)
 
     res = flashN.flash(T=T, P=P, zs=[.11, .89])
     assert res.liquid0 is not None
@@ -623,9 +623,9 @@ def test_problem_2_Ivanov_CH4_propane():
     # Fixd by comparing the composition of the spawned phase to the feed
     res = flashN.flash(T=221.2346408571431, P=5168385.0, zs=[.9, .1])
     res.flash_convergence, res, #res.gas.zs, res.liquid0.zs
-    assert_allclose(res.betas, [0.8330903352232165, 0.16690966477678348], rtol=1e-5)
+    assert_close1d(res.betas, [0.8330903352232165, 0.16690966477678348], rtol=1e-5)
     rhos_expect = [70.51771075659963, 423.8157580854203]
-    assert_allclose([i.rho_mass() for i in res.phases], rhos_expect)
+    assert_close1d([i.rho_mass() for i in res.phases], rhos_expect)
 
 
 def test_problem_3_Ivanov_N2_ethane():
@@ -682,7 +682,7 @@ def test_problem_4_Ivanov_CO2_CH4():
     # done with evo algorithm
     res = flashN.flash(T=T, P=P, zs=[.43, .57])
     betas_expect = [0.04855003898294571, 0.9514499610170543]
-    assert_allclose(betas_expect, res.betas, rtol=1e-5)
+    assert_close1d(betas_expect, res.betas, rtol=1e-5)
     assert res.gas is not None
 
 def test_problem_5_Ivanov_N2_CH4_Ethane():
@@ -753,16 +753,16 @@ def test_problem_6_Ivanov_CH4_CO2_H2S():
     res = flashN.flash(T=137.17862396147322, P=562341.3251903491, zs=zs_list[1])
     assert res.gas is not None
     assert res.phase_count == 3
-    assert_allclose(res.lightest_liquid.rho_mass(), 1141.0138231355213)
-    assert_allclose(res.heaviest_liquid.rho_mass(), 1197.8947471324532)
+    assert_close(res.lightest_liquid.rho_mass(), 1141.0138231355213)
+    assert_close(res.heaviest_liquid.rho_mass(), 1197.8947471324532)
 
     # Another point with a similar issue, same fix fixes it; otherwise the first three phase
     # solution converges to a negative beta; tries to form a new gas I think
     res = flashN.flash(T=120, P=181659.97883753508, zs=zs_list[0])
     assert res.gas is not None
     assert res.phase_count == 3
-    assert_allclose(res.lightest_liquid.rho_mass(), 1169.2257099718627)
-    assert_allclose(res.heaviest_liquid.rho_mass(), 1423.134620262134)
+    assert_close(res.lightest_liquid.rho_mass(), 1169.2257099718627)
+    assert_close(res.heaviest_liquid.rho_mass(), 1423.134620262134)
 
 
 def test_problem_7_Ivanov_CH4_CO2_C6_H2S():
@@ -794,7 +794,7 @@ def test_problem_7_Ivanov_CH4_CO2_C6_H2S():
     # Test has only one point
     # Failed to make the third phase
     res = flashN.flash(T=T, P=P, zs=zs)
-    assert_allclose(res.G(), 980.5900455260398, rtol=1e-6)
+    assert_close(res.G(), 980.5900455260398, rtol=1e-6)
     assert res.phase_count == 3
 
 def test_problem_8_Ivanov():
@@ -830,9 +830,9 @@ def test_problem_8_Ivanov():
     # LL point
     res = flashN.flash(T=T, P=P, zs=zs)
     rhos_expect = [507.6192989020208, 458.7217528598331]
-    assert_allclose(rhos_expect, [i.rho_mass() for i in res.phases], rtol=1e-5)
+    assert_close1d(rhos_expect, [i.rho_mass() for i in res.phases], rtol=1e-5)
     assert res.liquid1 is not None
-    assert_allclose(res.betas, [0.43700616001533293, 0.562993839984667], rtol=1e-5)
+    assert_close1d(res.betas, [0.43700616001533293, 0.562993839984667], rtol=1e-5)
 
     # Extremely stupid point - 3000 iterations, G is 1E-7 relative lower with three phase than 2
     # Solution: Acceleration
@@ -880,7 +880,7 @@ def test_problem_9_Ivanov():
 
     # Could not get a three phase system out of it
     res = flashN.flash(T=T, P=P, zs=zs)
-    assert_allclose(res.betas, [0.8263155779926616, 0.17368442200733836], rtol=1e-5)
+    assert_close1d(res.betas, [0.8263155779926616, 0.17368442200733836], rtol=1e-5)
 
 
 def test_problem_10_Ivanov():
@@ -914,8 +914,8 @@ def test_problem_10_Ivanov():
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
 
     res = flashN.flash(T=T, P=P, zs=zs)
-    assert_allclose(res.betas, [0.730991626075863, 0.269008373924137], rtol=1e-5)
-    assert_allclose([i.rho_mass() for i in res.phases], [16.370044743837063, 558.9020870173408], rtol=1e-5)
+    assert_close1d(res.betas, [0.730991626075863, 0.269008373924137], rtol=1e-5)
+    assert_close1d([i.rho_mass() for i in res.phases], [16.370044743837063, 558.9020870173408], rtol=1e-5)
 
 
 def test_problem_11_Ivanov():
@@ -949,9 +949,9 @@ def test_problem_11_Ivanov():
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
 
     res = flashN.flash(T=T, P=P, zs=zs)
-    assert_allclose(res.betas, [0.832572052180253, 0.16742794781974701], rtol=1e-5)
+    assert_close1d(res.betas, [0.832572052180253, 0.16742794781974701], rtol=1e-5)
     rhos_expect = [41.59446117573929, 472.28905699434006]
-    assert_allclose([i.rho_mass() for i in res.phases], [41.59446117573929, 472.28905699434006], rtol=1e-5)
+    assert_close1d([i.rho_mass() for i in res.phases], [41.59446117573929, 472.28905699434006], rtol=1e-5)
 
 
 def test_problem_12_Ivanov():
@@ -986,9 +986,9 @@ def test_problem_12_Ivanov():
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
 
     res = flashN.flash(T=T, P=P, zs=zs)
-    assert_allclose(res.betas, [0.9734828879098508, 0.026517112090149175], atol=1e-7, rtol=1e-5)
+    assert_close1d(res.betas, [0.9734828879098508, 0.026517112090149175], atol=1e-7, rtol=1e-5)
     rhos_expect = [82.83730342326865, 501.1504212828749]
-    assert_allclose([i.rho_mass() for i in res.phases], rhos_expect, rtol=1e-5)
+    assert_close1d([i.rho_mass() for i in res.phases], rhos_expect, rtol=1e-5)
 
 
 def test_phases_at():

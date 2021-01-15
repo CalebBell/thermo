@@ -20,7 +20,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from numpy.testing import assert_allclose
 import pytest
 from fluids.core import C2K
 import thermo
@@ -126,7 +125,7 @@ def test_flash_TP_K_composition_idependent_unhappiness():
 
     # phis_at for liquids was broken, breaking this calculation
     res = flashN.flash(T=285.5, P=1e4, zs=zs)
-    assert_allclose(res.betas, [0.21860038882559643, 0.7813996111744036])
+    assert_close1d(res.betas, [0.21860038882559643, 0.7813996111744036])
     assert res.phase_count == 2
 
     # Two cases RR was working on Ks less than 1, and coming up with a made up VF
