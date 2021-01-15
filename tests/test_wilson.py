@@ -29,14 +29,14 @@ from fluids.constants import R
 from thermo.activity import GibbsExcess
 from thermo import *
 import numpy as np
-from fluids.numerics import jacobian, hessian, derivative, normalize
+from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d, assert_close3d
 
 
 def test_Wilson():
     # P05.01a VLE Behavior of Ethanol - Water Using Wilson
     # http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/P05.01a%20VLE%20Behavior%20of%20Ethanol%20-%20Water%20Using%20Wilson.xps
     gammas = Wilson_gammas([0.252, 0.748], [[1, 0.154], [0.888, 1]])
-    assert_allclose(gammas, [1.8814926087178843, 1.1655774931125487])
+    assert_close1d(gammas, [1.8814926087178843, 1.1655774931125487])
 
     # Test the general form against the simpler binary form
     def Wilson2(molefracs, lambdas):
@@ -49,7 +49,7 @@ def test_Wilson():
         return [gamma1, gamma2]
     gammas = Wilson2([0.252, 0.748], [0.154, 0.888])
 
-    assert_allclose(gammas, [1.8814926087178843, 1.1655774931125487])
+    assert_close1d(gammas, [1.8814926087178843, 1.1655774931125487])
 
     # Test 3 parameter version:
     # 05.09 Compare Experimental VLE to Wilson Equation Results
@@ -60,11 +60,11 @@ def test_Wilson():
               [3.26947621620298, 1, 1.16749678447695],
               [0.37280197780932, 0.01917909648619, 1]]
     gammas = Wilson_gammas(xs, params)
-    assert_allclose(gammas, [1.22339343348885, 1.10094590247015, 1.2052899281172])
+    assert_close1d(gammas, [1.22339343348885, 1.10094590247015, 1.2052899281172])
 
     # Test the values which produce gamma = 1
     gammas = Wilson_gammas([0.252, 0.748], [[1, 1], [1, 1]])
-    assert_allclose(gammas, [1, 1])
+    assert_close1d(gammas, [1, 1])
 
 def test_DDBST_example():
     # One good numerical example - acetone, chloroform, methanol
@@ -92,82 +92,82 @@ def test_DDBST_example():
 
     C_expect = E_expect = F_expect = [[0.0]*N for _ in range(N)]
 
-    assert_allclose(params[0], A_expect, rtol=1e-12, atol=0)
-    assert_allclose(params[1], B_expect, rtol=1e-12, atol=0)
-    assert_allclose(params[2], C_expect, rtol=1e-12, atol=0)
-    assert_allclose(params[3], D_expect, rtol=1e-12, atol=0)
-    assert_allclose(params[4], E_expect, rtol=1e-12, atol=0)
-    assert_allclose(params[5], F_expect, rtol=1e-12, atol=0)
+    assert_close2d(params[0], A_expect, rtol=1e-12, atol=0)
+    assert_close2d(params[1], B_expect, rtol=1e-12, atol=0)
+    assert_close2d(params[2], C_expect, rtol=1e-12, atol=0)
+    assert_close2d(params[3], D_expect, rtol=1e-12, atol=0)
+    assert_close2d(params[4], E_expect, rtol=1e-12, atol=0)
+    assert_close2d(params[5], F_expect, rtol=1e-12, atol=0)
 
     xs = [0.229, 0.175, 0.596]
 
     GE = Wilson(T=T, xs=xs, ABCDEF=params)
-    
+
     # Test __repr__ contains the needed information
     assert eval(str(GE)).GE() == GE.GE()
 
     gammas_expect = [1.223393433488855, 1.1009459024701462, 1.2052899281172034]
-    assert_allclose(GE.gammas(), gammas_expect, rtol=1e-12)
-    assert_allclose(GibbsExcess.gammas(GE), gammas_expect)
+    assert_close1d(GE.gammas(), gammas_expect, rtol=1e-12)
+    assert_close1d(GibbsExcess.gammas(GE), gammas_expect)
 
     lambdas = GE.lambdas()
     lambdas_expect = [[1.0, 1.1229699812593041, 0.7391181616283594],
                      [3.2694762162029805, 1.0, 1.1674967844769508],
                      [0.37280197780931773, 0.019179096486191153, 1.0]]
-    assert_allclose(lambdas, lambdas_expect, rtol=1e-12)
+    assert_close2d(lambdas, lambdas_expect, rtol=1e-12)
 
     dlambdas_dT = GE.dlambdas_dT()
     dlambdas_dT_expect = [[0.0, -0.005046703220379676, -0.0004324140595259853],
                          [-0.026825598419319092, 0.0, -0.012161812924715213],
                          [0.003001348681882189, 0.0006273541924400231, 0.0]]
-    assert_allclose(dlambdas_dT, dlambdas_dT_expect)
+    assert_close2d(dlambdas_dT, dlambdas_dT_expect)
 
     dT = T*1e-8
     dlambdas_dT_numerical = (np.array(GE.to_T_xs(T+dT, xs).lambdas()) - GE.to_T_xs(T, xs).lambdas())/dT
-    assert_allclose(dlambdas_dT, dlambdas_dT_numerical, rtol=1e-7)
+    assert_close2d(dlambdas_dT, dlambdas_dT_numerical, rtol=1e-7)
 
 
     d2lambdas_dT2 = GE.d2lambdas_dT2()
     d2lambdas_dT2_expect = [[0.0, -4.73530781420922e-07, -1.0107624477842068e-06],
                              [0.000529522489227112, 0.0, 0.0001998633344112975],
                              [8.85872572550323e-06, 1.6731622007033546e-05, 0.0]]
-    assert_allclose(d2lambdas_dT2, d2lambdas_dT2_expect, rtol=1e-12)
+    assert_close2d(d2lambdas_dT2, d2lambdas_dT2_expect, rtol=1e-12)
 
     d2lambdas_dT2_numerical = (np.array(GE.to_T_xs(T+dT, xs).dlambdas_dT()) - GE.to_T_xs(T, xs).dlambdas_dT())/dT
-    assert_allclose(d2lambdas_dT2, d2lambdas_dT2_numerical, rtol=2e-5)
+    assert_close2d(d2lambdas_dT2, d2lambdas_dT2_numerical, rtol=2e-5)
 
     d3lambdas_dT3 = GE.d3lambdas_dT3()
     d3lambdas_dT3_expect = [[0.0, 4.1982403087995867e-07, 1.3509359183777608e-08],
                              [-1.2223067176509094e-05, 0.0, -4.268843384910971e-06],
                              [-3.6571009680721684e-08, 3.3369718709496133e-07, 0.0]]
-    assert_allclose(d3lambdas_dT3, d3lambdas_dT3_expect, rtol=1e-12)
+    assert_close2d(d3lambdas_dT3, d3lambdas_dT3_expect, rtol=1e-12)
 
     d3lambdas_dT3_numerical = (np.array(GE.to_T_xs(T+dT, xs).d2lambdas_dT2()) - GE.to_T_xs(T, xs).d2lambdas_dT2())/dT
-    assert_allclose(d3lambdas_dT3, d3lambdas_dT3_numerical, rtol=1e-7)
+    assert_close2d(d3lambdas_dT3, d3lambdas_dT3_numerical, rtol=1e-7)
 
     # Gammas
     assert_allclose(GE.GE(), 480.2639266306882, rtol=1e-12)
     gammas = GE.gammas()
     GE_from_gammas = R*T*sum(xi*log(gamma) for xi, gamma in zip(xs, gammas))
-    assert_allclose(GE_from_gammas, GE.GE(), rtol=1e-12)
+    assert_close(GE_from_gammas, GE.GE(), rtol=1e-12)
 
     # dGE dT
     dGE_dT_numerical = ((np.array(GE.to_T_xs(T+dT, xs).GE()) - np.array(GE.GE()))/dT)
     dGE_dT_analytical = GE.dGE_dT()
-    assert_allclose(dGE_dT_analytical, 4.355962766232997, rtol=1e-12)
-    assert_allclose(dGE_dT_numerical, dGE_dT_analytical)
+    assert_close(dGE_dT_analytical, 4.355962766232997, rtol=1e-12)
+    assert_close(dGE_dT_numerical, dGE_dT_analytical)
 
     # d2GE dT2
     d2GE_dT2_numerical = ((np.array(GE.to_T_xs(T+dT, xs).dGE_dT()) - np.array(GE.dGE_dT()))/dT)
     d2GE_dT2_analytical = GE.d2GE_dT2()
-    assert_allclose(d2GE_dT2_analytical, -0.02913038452501723, rtol=1e-12)
-    assert_allclose(d2GE_dT2_analytical, d2GE_dT2_numerical, rtol=1e-8)
+    assert_close(d2GE_dT2_analytical, -0.02913038452501723, rtol=1e-12)
+    assert_close(d2GE_dT2_analytical, d2GE_dT2_numerical, rtol=1e-8)
 
     # d3GE dT3
     d3GE_dT3_numerical = ((np.array(GE.to_T_xs(T+dT, xs).d2GE_dT2()) - np.array(GE.d2GE_dT2()))/dT)
     d3GE_dT3_analytical = GE.d3GE_dT3()
-    assert_allclose(d3GE_dT3_analytical, -0.00019988744724590656, rtol=1e-12)
-    assert_allclose(d3GE_dT3_numerical, d3GE_dT3_analytical, rtol=1e-7)
+    assert_close(d3GE_dT3_analytical, -0.00019988744724590656, rtol=1e-12)
+    assert_close(d3GE_dT3_numerical, d3GE_dT3_analytical, rtol=1e-7)
 
     # d2GE_dTdxs
     def dGE_dT_diff(xs):
@@ -176,8 +176,8 @@ def test_DDBST_example():
     d2GE_dTdxs_numerical = jacobian(dGE_dT_diff, xs, perturbation=1e-7)
     d2GE_dTdxs_analytical = GE.d2GE_dTdxs()
     d2GE_dTdxs_expect = [-10.187806161151178, 13.956324059647034, -6.825249918548414]
-    assert_allclose(d2GE_dTdxs_analytical, d2GE_dTdxs_expect, rtol=1e-12)
-    assert_allclose(d2GE_dTdxs_numerical, d2GE_dTdxs_analytical, rtol=1e-7)
+    assert_close1d(d2GE_dTdxs_analytical, d2GE_dTdxs_expect, rtol=1e-12)
+    assert_close1d(d2GE_dTdxs_numerical, d2GE_dTdxs_analytical, rtol=1e-7)
 
     # dGE_dxs
     def dGE_dx_diff(xs):
@@ -186,8 +186,8 @@ def test_DDBST_example():
     dGE_dxs_numerical = jacobian(dGE_dx_diff, xs, perturbation=1e-7)
     dGE_dxs_analytical = GE.dGE_dxs()
     dGE_dxs_expect = [-2199.97589893946, -2490.5759162306463, -2241.05706053718]
-    assert_allclose(dGE_dxs_analytical, dGE_dxs_expect, rtol=1e-12)
-    assert_allclose(dGE_dxs_analytical, dGE_dxs_numerical, rtol=1e-7)
+    assert_close1d(dGE_dxs_analytical, dGE_dxs_expect, rtol=1e-12)
+    assert_close1d(dGE_dxs_analytical, dGE_dxs_numerical, rtol=1e-7)
 
     # d2GE_dxixjs
     d2GE_dxixjs_numerical = hessian(dGE_dx_diff, xs, perturbation=1e-5)
@@ -195,8 +195,8 @@ def test_DDBST_example():
     d2GE_dxixjs_expect = [[-3070.205333938506, -7565.029777297412, -1222.5200812237945],
      [-7565.029777297412, -2156.7810946064815, -1083.4743126696396],
      [-1222.5200812237945, -1083.4743126696396, -3835.5941234746824]]
-    assert_allclose(d2GE_dxixjs_analytical, d2GE_dxixjs_expect, rtol=1e-12)
-    assert_allclose(d2GE_dxixjs_analytical, d2GE_dxixjs_numerical, rtol=1e-4)
+    assert_close2d(d2GE_dxixjs_analytical, d2GE_dxixjs_expect, rtol=1e-12)
+    assert_close2d(d2GE_dxixjs_analytical, d2GE_dxixjs_numerical, rtol=1e-4)
 
     # d3GE_dxixjxks - very limited accuracy.
     def d2GE_dxixj_diff(xs):
@@ -214,8 +214,8 @@ def test_DDBST_example():
      [[556.3625424156469, 4549.175136703877, 501.6902853815977],
       [4549.175136703877, 375.411480265151, -40.241279667700574],
       [501.6902853815964, -40.24127966770071, 6254.612872590844]]]
-    assert_allclose(d3GE_dxixjxks_analytical, d3GE_dxixjxks_expect, rtol=1e-12)
-    assert_allclose(d3GE_dxixjxks_numerical, d3GE_dxixjxks_analytical, rtol=1e-3)
+    assert_close3d(d3GE_dxixjxks_analytical, d3GE_dxixjxks_expect, rtol=1e-12)
+    assert_close3d(d3GE_dxixjxks_numerical, d3GE_dxixjxks_analytical, rtol=1e-3)
 
 
     ### TEST WHICH ARE COMMON TO ALL GibbsExcess classes
@@ -226,32 +226,32 @@ def test_DDBST_example():
         return GE.to_T_xs(T, xs).GE()/T
 
     HE_numerical = -derivative(diff_for_HE, T, order=13)*T**2
-    assert_allclose(HE_analytical, HE_numerical, rtol=1e-12)
+    assert_close(HE_analytical, HE_numerical, rtol=1e-12)
 
 
     SE_expected = -4.355962766232997
     SE_analytical = GE.SE()
     assert_allclose(SE_expected, SE_analytical, rtol=1e-12)
     SE_check = (GE.HE() - GE.GE())/T
-    assert_allclose(SE_analytical, SE_check, rtol=1e-12)
+    assert_close(SE_analytical, SE_check, rtol=1e-12)
 
 
     def diff_for_Cp(T):
         return GE.to_T_xs(T, xs).HE()
     Cp_expected = 9.65439203928121
     Cp_analytical = GE.CpE()
-    assert_allclose(Cp_expected, Cp_analytical, rtol=1e-12)
+    assert_close(Cp_expected, Cp_analytical, rtol=1e-12)
     Cp_numerical = derivative(diff_for_Cp, T, order=13)
-    assert_allclose(Cp_numerical, Cp_analytical, rtol=1e-12)
+    assert_close(Cp_numerical, Cp_analytical, rtol=1e-12)
 
 
     def diff_for_dS_dT(T):
         return GE.to_T_xs(T, xs).SE()
     dS_dT_expected = 0.02913038452501723
     dS_dT_analytical = GE.dSE_dT()
-    assert_allclose(dS_dT_expected, dS_dT_analytical, rtol=1e-12)
+    assert_close(dS_dT_expected, dS_dT_analytical, rtol=1e-12)
     dS_dT_numerical = derivative(diff_for_dS_dT, T, order=9)
-    assert_allclose(dS_dT_analytical, dS_dT_numerical, rtol=1e-12)
+    assert_close(dS_dT_analytical, dS_dT_numerical, rtol=1e-12)
 
 
     def diff_for_dHE_dx(xs):
@@ -259,9 +259,9 @@ def test_DDBST_example():
 
     dHE_dx_expected = [1176.4668189892636, -7115.980836078867, 20.96726746813556]
     dHE_dx_analytical = GE.dHE_dxs()
-    assert_allclose(dHE_dx_expected, dHE_dx_analytical, rtol=1e-12)
+    assert_close1d(dHE_dx_expected, dHE_dx_analytical, rtol=1e-12)
     dHE_dx_numerical = jacobian(diff_for_dHE_dx, xs, perturbation=5e-7)
-    assert_allclose(dHE_dx_expected, dHE_dx_numerical, rtol=4e-6)
+    assert_close1d(dHE_dx_expected, dHE_dx_numerical, rtol=4e-6)
 
 
     def diff_for_dHE_dn(xs):
@@ -270,10 +270,10 @@ def test_DDBST_example():
 
     dHE_dn_expected = [2139.856072343515, -6152.591582724615, 984.3565208223869]
     dHE_dn_analytical = GE.dHE_dns()
-    assert_allclose(dHE_dn_expected, dHE_dn_analytical, rtol=1e-12)
+    assert_close1d(dHE_dn_expected, dHE_dn_analytical, rtol=1e-12)
 
     dHE_dn_numerical = jacobian(diff_for_dHE_dn, xs, perturbation=5e-7)
-    assert_allclose(dHE_dn_expected, dHE_dn_numerical, rtol=1e-6)
+    assert_close1d(dHE_dn_expected, dHE_dn_numerical, rtol=1e-6)
 
 
     def diff_for_dnHE_dn(xs):
@@ -283,10 +283,10 @@ def test_DDBST_example():
 
     dnHE_dn_expected = [1176.4668189892634, -7115.980836078867, 20.967267468135258]
     dnHE_dn_analytical = GE.dnHE_dns()
-    assert_allclose(dnHE_dn_expected, dnHE_dn_analytical, rtol=1e-12)
+    assert_close1d(dnHE_dn_expected, dnHE_dn_analytical, rtol=1e-12)
 
     dnHE_dn_numerical = jacobian(diff_for_dnHE_dn, xs, perturbation=5e-7)
-    assert_allclose(dnHE_dn_analytical, dnHE_dn_numerical, rtol=2e-6)
+    assert_close1d(dnHE_dn_analytical, dnHE_dn_numerical, rtol=2e-6)
 
 
     def diff_for_dSE_dx(xs):
@@ -294,9 +294,9 @@ def test_DDBST_example():
 
     dSE_dx_expected = [10.187806161151178, -13.956324059647036, 6.825249918548415]
     dSE_dx_analytical = GE.dSE_dxs()
-    assert_allclose(dSE_dx_expected, dSE_dx_analytical, rtol=1e-12)
+    assert_close1d(dSE_dx_expected, dSE_dx_analytical, rtol=1e-12)
     dSE_dx_numerical = jacobian(diff_for_dSE_dx, xs, perturbation=5e-7)
-    assert_allclose(dSE_dx_expected, dSE_dx_numerical, rtol=4e-6)
+    assert_close1d(dSE_dx_expected, dSE_dx_numerical, rtol=4e-6)
 
 
     def diff_for_dSE_dns(xs):
@@ -305,10 +305,10 @@ def test_DDBST_example():
 
     dSE_dns_expected = [6.2293063092309335, -17.91482391156728, 2.8667500666281707]
     dSE_dns_analytical = GE.dSE_dns()
-    assert_allclose(dSE_dns_expected, dSE_dns_analytical, rtol=1e-12)
+    assert_close1d(dSE_dns_expected, dSE_dns_analytical, rtol=1e-12)
 
     dSE_dns_numerical = jacobian(diff_for_dSE_dns, xs, perturbation=5e-7)
-    assert_allclose(dSE_dns_expected, dSE_dns_numerical, rtol=1e-6)
+    assert_close1d(dSE_dns_expected, dSE_dns_numerical, rtol=1e-6)
 
 
     def diff_for_dnSE_dn(xs):
@@ -318,10 +318,10 @@ def test_DDBST_example():
 
     dnSE_dn_expected = [1.8733435429979384, -22.270786677800274, -1.489212699604825]
     dnSE_dn_analytical = GE.dnSE_dns()
-    assert_allclose(dnSE_dn_expected, dnSE_dn_analytical, rtol=1e-12)
+    assert_close1d(dnSE_dn_expected, dnSE_dn_analytical, rtol=1e-12)
 
     dnSE_dn_numerical = jacobian(diff_for_dnSE_dn, xs, perturbation=5e-7)
-    assert_allclose(dnSE_dn_analytical, dnSE_dn_numerical, rtol=2e-6)
+    assert_close1d(dnSE_dn_analytical, dnSE_dn_numerical, rtol=2e-6)
 
 
     def diff_for_dGE_dn(xs):
@@ -330,10 +330,10 @@ def test_DDBST_example():
 
     dGE_dn_expected = [75.3393753381988, -215.2606419529875, 34.25821374047882]
     dGE_dn_analytical = GE.dGE_dns()
-    assert_allclose(dGE_dn_expected, dGE_dn_analytical, rtol=1e-12)
+    assert_close1d(dGE_dn_expected, dGE_dn_analytical, rtol=1e-12)
 
     dGE_dn_numerical = jacobian(diff_for_dGE_dn, xs, perturbation=5e-7)
-    assert_allclose(dGE_dn_expected, dGE_dn_numerical, rtol=1e-5)
+    assert_close1d(dGE_dn_expected, dGE_dn_numerical, rtol=1e-5)
 
     def diff_for_dnGE_dn(xs):
         nt = sum(xs)
@@ -342,10 +342,10 @@ def test_DDBST_example():
 
     dnGE_dn_expected = [555.6033019688871, 265.0032846777008, 514.5221403711671]
     dnGE_dn_analytical = GE.dnGE_dns()
-    assert_allclose(dnGE_dn_expected, dnGE_dn_analytical, rtol=1e-12)
+    assert_close1d(dnGE_dn_expected, dnGE_dn_analytical, rtol=1e-12)
 
     dnGE_dn_numerical = jacobian(diff_for_dnGE_dn, xs, perturbation=5e-7)
-    assert_allclose(dnGE_dn_analytical, dnGE_dn_numerical, rtol=2e-6)
+    assert_close1d(dnGE_dn_analytical, dnGE_dn_numerical, rtol=2e-6)
 
 
 
@@ -361,8 +361,8 @@ def test_DDBST_example():
       [-1.9215360979146614, 0.23923983797040177, 0.668061736204089],
       [0.6705598284218852, 0.7313784266789759, -0.47239836472723573]]
 
-    assert_allclose(dgammas_dns_analytical, dgammas_dn_numerical, rtol=1e-5)
-    assert_allclose(dgammas_dns_analytical, dgammas_dn_expect, rtol=1e-11)
+    assert_close2d(dgammas_dns_analytical, dgammas_dn_numerical, rtol=1e-5)
+    assert_close2d(dgammas_dns_analytical, dgammas_dn_expect, rtol=1e-11)
 
     '''# Using numdifftools, the result was confirmed to the four last decimal places (rtol=12-13).
     from numdifftools import Jacobian
@@ -372,22 +372,22 @@ def test_DDBST_example():
     dgammas_dT_numerical = ((np.array(GE.to_T_xs(T+dT, xs).gammas()) - np.array(GE.gammas()))/dT)
     dgammas_dT_analytical = GE.dgammas_dT()
     dgammas_dT_expect = [-0.001575992756074107, 0.008578456201039092, -2.7672076632932624e-05]
-    assert_allclose(dgammas_dT_analytical, dgammas_dT_expect, rtol=1e-12)
-    assert_allclose(dgammas_dT_numerical, dgammas_dT_analytical, rtol=2e-6)
+    assert_close1d(dgammas_dT_analytical, dgammas_dT_expect, rtol=1e-12)
+    assert_close1d(dgammas_dT_numerical, dgammas_dT_analytical, rtol=2e-6)
 
 
     d2GE_dTdns_expect = [-6.229306309230934, 17.91482391156728, -2.8667500666281702]
     d2GE_dTdns_analytical = GE.d2GE_dTdns()
     d2GE_dTdns_numerical = ((np.array(GE.to_T_xs(T+dT, xs).dGE_dns()) - np.array(GE.dGE_dns()))/dT)
-    assert_allclose(d2GE_dTdns_expect, d2GE_dTdns_analytical, rtol=1e-12)
-    assert_allclose(d2GE_dTdns_analytical, d2GE_dTdns_numerical, rtol=1e-7)
+    assert_close1d(d2GE_dTdns_expect, d2GE_dTdns_analytical, rtol=1e-12)
+    assert_close1d(d2GE_dTdns_analytical, d2GE_dTdns_numerical, rtol=1e-7)
 
 
     d2nGE_dTdns_expect = [-1.8733435429979375, 22.270786677800274, 1.4892126996048267]
     d2nGE_dTdns_analytical = GE.d2nGE_dTdns()
     d2nGE_dTdns_numerical = ((np.array(GE.to_T_xs(T+dT, xs).dnGE_dns()) - np.array(GE.dnGE_dns()))/dT)
-    assert_allclose(d2nGE_dTdns_expect, d2nGE_dTdns_analytical, rtol=1e-12)
-    assert_allclose(d2nGE_dTdns_analytical, d2nGE_dTdns_numerical, rtol=1e-6)
+    assert_close1d(d2nGE_dTdns_expect, d2nGE_dTdns_analytical, rtol=1e-12)
+    assert_close1d(d2nGE_dTdns_analytical, d2nGE_dTdns_numerical, rtol=1e-6)
 
 
     def to_diff_dnGE2_dninj(ns):
@@ -400,8 +400,8 @@ def test_DDBST_example():
      [-4809.450576389066, 598.7981063018656, 1672.104888238707],
      [1533.0591196845517, 1672.1048882387074, -1080.0149225663358]]
 
-    assert_allclose(d2nGE_dninjs_analytical, d2nGE_dninjs_expect, rtol=1e-12)
-    assert_allclose(d2nGE_dninjs_numerical, d2nGE_dninjs_analytical, rtol=1e-4)
+    assert_close2d(d2nGE_dninjs_analytical, d2nGE_dninjs_expect, rtol=1e-12)
+    assert_close2d(d2nGE_dninjs_numerical, d2nGE_dninjs_analytical, rtol=1e-4)
 
 
 def test_multicomnent_madeup():
@@ -475,8 +475,8 @@ def test_multicomnent_madeup():
                           [0.00027384494917044615, 0.0008057486827319439, 0.001089620949611226, -0.000800537779412656, 8.220344880607542e-05, 0.0006666235375135453, -0.0005573837108687875],
                           [0.00022537157737850808, 0.0008117920594539006, 0.0010915605157597842, -0.0007424034499493812, -0.0007702925324798186, 8.014036862597122e-05, -0.0005807961723267018],
                           [9.912129903248681e-06, 0.001142970658771038, 0.00112743688620555, 0.0006908346953600135, 0.0006797401776554298, 0.000661487700579681, 7.80163901524144e-05]]
-    assert_allclose(dlambdas_dT_analytical, dlambdas_dT_expect, rtol=1e-13)
-    assert_allclose(GE.dlambdas_dT(), dlambdas_dT_numerical, rtol=4e-7)
+    assert_close2d(dlambdas_dT_analytical, dlambdas_dT_expect, rtol=1e-13)
+    assert_close2d(GE.dlambdas_dT(), dlambdas_dT_numerical, rtol=4e-7)
 
 
     d2lambdas_dT2_expect = [[3.9148862097941074e-07, -1.1715575536585707e-06, 2.841056708836699e-06, -3.4348594220311783e-06, -3.3305413029034426e-06, -3.30503660953987e-06, -3.6315706582334585e-06],
@@ -489,8 +489,8 @@ def test_multicomnent_madeup():
 
     d2lambdas_dT2_analytical = GE.d2lambdas_dT2()
     d2lambdas_dT2_numerical = ((np.array(GE.to_T_xs(T=T+dT, xs=xs).dlambdas_dT()) - np.array(GE.dlambdas_dT()))/dT)
-    assert_allclose(d2lambdas_dT2_analytical, d2lambdas_dT2_expect, rtol=1e-13)
-    assert_allclose(d2lambdas_dT2_numerical, d2lambdas_dT2_analytical, rtol=1e-7)
+    assert_close2d(d2lambdas_dT2_analytical, d2lambdas_dT2_expect, rtol=1e-13)
+    assert_close2d(d2lambdas_dT2_numerical, d2lambdas_dT2_analytical, rtol=1e-7)
 
     d3lambdas_dT3_expect = [[-2.458523153557734e-09, 1.075750588231061e-08, -2.5272393065722066e-08, 2.4517104581274395e-08, 2.431790858429151e-08, 2.427274202635229e-08, 1.9490204463227542e-08],
                             [-8.757802083086752e-09, -2.2542994182376097e-09, 2.274425631180586e-08, -6.272451551020672e-08, -6.401893152558163e-08, -5.9505339021928453e-08, -1.3924656024261e-07],
@@ -502,8 +502,8 @@ def test_multicomnent_madeup():
 
     d3lambdas_dT3_analytical = GE.d3lambdas_dT3()
     d3lambdas_dT3_numerical = ((np.array(GE.to_T_xs(T=T+dT, xs=xs).d2lambdas_dT2()) - np.array(GE.d2lambdas_dT2()))/dT)
-    assert_allclose(d3lambdas_dT3_analytical, d3lambdas_dT3_expect, rtol=1e-13)
-    assert_allclose(d3lambdas_dT3_numerical, d3lambdas_dT3_analytical, rtol=2e-7)
+    assert_close2d(d3lambdas_dT3_analytical, d3lambdas_dT3_expect, rtol=1e-13)
+    assert_close2d(d3lambdas_dT3_numerical, d3lambdas_dT3_analytical, rtol=2e-7)
 
 
 @pytest.mark.slow
