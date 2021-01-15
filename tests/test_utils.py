@@ -20,13 +20,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 from chemicals.utils import *
 from thermo.utils import *
 from thermo.stream import Stream
-from fluids.numerics import assert_close, assert_close1d
+from fluids.numerics import assert_close, assert_close1d, assert_close2d
 
 def test_allclose_variable():
     x = [2.7244322249597719e-08, 3.0105683900110473e-10, 2.7244124924802327e-08, 3.0105259397637556e-10, 2.7243929226310193e-08, 3.0104990272770901e-10, 2.7243666849384451e-08, 3.0104101821236015e-10, 2.7243433745917367e-08, 3.0103707421519949e-10]
@@ -240,10 +239,10 @@ def test_TDependentProperty():
 
     # Test the cubic spline
     EtOH.add_tabular_data(Ts=Ts, properties=props, name='test_set')
-    assert_allclose(1.2,  EtOH.T_dependent_property(200))
-    assert_allclose(1.1, EtOH.T_dependent_property(150))
-    assert_allclose(1.7, EtOH.T_dependent_property(500))
-    assert_allclose(1.35441088517, EtOH.T_dependent_property(275), rtol=1E-3)
+    assert_close(1.2,  EtOH.T_dependent_property(200))
+    assert_close(1.1, EtOH.T_dependent_property(150))
+    assert_close(1.7, EtOH.T_dependent_property(500))
+    assert_close(1.35441088517, EtOH.T_dependent_property(275), rtol=1E-3)
     EtOH.tabular_extrapolation_permitted = False
     assert None == EtOH.T_dependent_property(500)
 
@@ -254,7 +253,7 @@ def test_TDependentProperty():
 
     # Test the cubic spline
     EtOH.add_tabular_data(Ts=Ts, properties=props, name='test_set')
-    assert_allclose(4/3.,EtOH.T_dependent_property(275))
+    assert_close(4/3.,EtOH.T_dependent_property(275))
 
     # Set the interpolation methods
     EtOH = TDependentProperty(CASRN='67-56-1')
@@ -266,7 +265,7 @@ def test_TDependentProperty():
 
     # Test the linear interpolation with transform
     EtOH.add_tabular_data(Ts=Ts, properties=props, name='test_set')
-    assert_allclose(1.336126372035137, EtOH.T_dependent_property(275))
+    assert_close(1.336126372035137, EtOH.T_dependent_property(275))
 
 
     # Test uneven temperature spaces
@@ -312,7 +311,7 @@ def test_assert_component_balance():
 #                            [2752.3696966236234, -348.7160380443588, 171.61830999708855, -640.4587839232217, -638.043315354973, -577.4567649395294, -719.3131043586259],
 #                            [2977.6193133652787, -254.60261069968146, 244.6943216291629, -658.8452209008865, -680.1267610892533, -719.3131043586259, -909.4259379459932]]
 #
-#    assert_allclose(d2xs_to_dxdn_partials(d2xs, xs), dxdn_partials_expect, rtol=1e-12)
+#    assert_close2d(d2xs_to_dxdn_partials(d2xs, xs), dxdn_partials_expect, rtol=1e-12)
 #
 #    # Test point from PRMIX 4 component case
 #    d2xs = [[-6.952875483186023, -14.979399633475984, -17.522090915754813, -10.65365339636402],
@@ -322,4 +321,4 @@ def test_assert_component_balance():
 #    xs = [0.004326109046411728, 0.004737414608367706, 0.04809035601246753, 0.9428461203327531]
 #
 #    dxdn_partials_expect = [[4.035568664220445, 8.694305121638651, 10.170128177986037, 6.183565242595064], [-3.990958119177865, -8.59819775633786, -10.057707360841516, -6.1152110550389445], [-6.5336500835989675, -14.076222199647844, -16.465604410121795, -10.011292289808026], [0.3347885354391007, 0.7212749120388615, 0.8437084346557562, 0.5129852184589438]]
-#    assert_allclose(d2xs_to_dxdn_partials(d2xs, xs), dxdn_partials_expect, rtol=1e-12)
+#    assert_close2d(d2xs_to_dxdn_partials(d2xs, xs), dxdn_partials_expect, rtol=1e-12)
