@@ -20,12 +20,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from numpy.testing import assert_allclose
 import pytest
 import thermo
 from thermo import *
 from thermo.coolprop import *
 from thermo.phases import CoolPropGas, CoolPropLiquid
+from fluids.numerics import assert_close
 from fluids.numerics import *
 from math import *
 import json
@@ -131,7 +131,7 @@ def test_PV_plot(fluid, backend):
 del test_PV_plot
 
 
-@pytest.mark.fuzz
+@pytest.mark.plot
 @pytest.mark.slow
 @pytest.mark.parametric
 @pytest.mark.parametrize("fluid", pure_fluids)
@@ -175,6 +175,7 @@ def test_TV_plot_CoolProp(fluid, backend):
 
 @pytest.mark.fuzz
 @pytest.mark.slow
+@pytest.mark.plot
 def test_water_95():
     # TVF, PVF, TP, TV, PV are covered and optimized
     T, P = 298.15, 1e5
@@ -205,35 +206,35 @@ def test_water_95():
         for P in Ps:
             res = flasher.flash(T=T, P=P)
             H_base = PropsSI('HMOLAR', 'T', T, 'P', P, fluid)
-            assert_allclose(res.H(), H_base, rtol=1e-12)
+            assert_close(res.H(), H_base, rtol=1e-12)
 
             # TV flash
             res_TV = flasher.flash(T=T, V=res.V())
-            assert_allclose(res_TV.H(), H_base, rtol=1e-6) # Some error in here 2e-7 worked
+            assert_close(res_TV.H(), H_base, rtol=1e-6) # Some error in here 2e-7 worked
 
             # PV flash - some failures near triple point
             if T > Tmin_PV:
                 res_PV = flasher.flash(P=P, V=res.V())
-                assert_allclose(res_PV.T, T, rtol=1e-7)
+                assert_close(res_PV.T, T, rtol=1e-7)
 
     Ps_sat = logspace(log10(PropsSI('PMIN', fluid)*(1.0 + 1e-5)), log10(PropsSI('PCRIT', fluid)*(1.0 - 1e-5)), pts)
     for P in Ps_sat:
         res = flasher.flash(P=P, VF=0.5)
         T_base = PropsSI('T', 'Q', 0.5, 'P', P, fluid)
-        assert_allclose(T_base, res.T, rtol=1e-12)
+        assert_close(T_base, res.T, rtol=1e-12)
 
     Ts_sat = linspace(PropsSI('TMIN', fluid)*(1+1e-7), PropsSI('TCRIT', fluid)*(1.0 - 1e-7), pts)
     for T in Ts_sat:
         res = flasher.flash(T=T, VF=0.5)
         P_base = PropsSI('P', 'Q', 0.5, 'T', T, fluid)
-        assert_allclose(P_base, res.P, rtol=1e-12)
+        assert_close(P_base, res.P, rtol=1e-12)
 
     # Test some hard points
     # Critical point
     Tc, Pc = PropsSI('TCRIT', fluid), PropsSI('PCRIT', fluid)
     H_base = PropsSI('HMOLAR', 'T', Tc, 'P', Pc, fluid)
     H_flashed = flasher.flash(T=Tc, P=Pc).H()
-    assert_allclose(H_base, H_flashed)
+    assert_close(H_base, H_flashed)
 
     # Minimum temperature and maximum temperature
     # Only had an issue with P min
@@ -241,8 +242,8 @@ def test_water_95():
     for P in Ps:
         H_base = PropsSI('HMOLAR', 'T', T_min, 'P', P, fluid)
         H_flashed = flasher.flash(T=T_min, P=P).H()
-        assert_allclose(H_base, H_flashed)
+        assert_close(H_base, H_flashed)
 
         H_base = PropsSI('HMOLAR', 'T', T_max, 'P', P, fluid)
         H_flashed = flasher.flash(T=T_max, P=P).H()
-        assert_allclose(H_base, H_flashed)
+        assert_close(H_base, H_flashed)
