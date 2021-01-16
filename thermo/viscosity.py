@@ -1066,7 +1066,7 @@ class ViscosityGas(TPDependentProperty):
         elif method == DIPPR_PERRY_8E:
             mu = EQ102(T, *self.Perrys2_312_coeffs)
         elif method == VDI_PPDS:
-            mu =  horner(self.VDI_PPDS_coeffs, T)
+            mu = horner(self.VDI_PPDS_coeffs, T)
         elif method == YOON_THODOS:
             mu = Yoon_Thodos(T, self.Tc, self.Pc, self.MW)
         elif method == STIEL_THODOS:

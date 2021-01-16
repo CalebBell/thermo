@@ -47,8 +47,8 @@ Various data files will be searched to see if information such as Antoine coeffi
 
 >>> useless_psat = VaporPressure(CASRN='64-17-5', load_data=False)
 
-Object Methods
-^^^^^^^^^^^^^^
+Temperature-dependent Methods
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 As many methods may be available, a single method is always selected automatically during initialization. This method can be inspected with the :obj:`method <thermo.utils.TDependentProperty.method>` property; if no methods are available, `method` will be None. `method` is also a valid parameter when constructing the object, but if the method specified is not available an exception will be raised.
 
@@ -277,7 +277,87 @@ Optionally, some derivatives and integrals can be provided for new methods as we
 
 Temperature and Pressure Dependent Properties
 ---------------------------------------------
+The pressure dependent objects work much like the temperature dependent ones; in fact, they subclass :obj:`TDependentProperty <thermo.utils.TDependentProperty>`.
+They have many new methods that require pressure as an input however. They work in two parts: a low-pressure correlation component, and a high-pressure correlation component. The high-pressure component usually but not always requires a low-pressure calculation to be performed first as its input.
 
+Creating Objects
+^^^^^^^^^^^^^^^^
+
+All arguments and information the property object requires must be provided in the constructor of the object. If a piece of information is not provided, whichever methods require it will not be available for that object. Many pressure-dependent property correlations are actually dependent on other properties being calculated first. A mapping of those dependencies is as follows:
+
+
+* Liquid molar volume: Depends on :obj:`VaporPressure <thermo.vapor_pressure.VaporPressure>`
+* Gas viscosity: Depends on :obj:`VolumeGas <thermo.volume.VolumeGas>`
+* Liquid viscosity: Depends on  :obj:`VaporPressure <thermo.vapor_pressure.VaporPressure>`
+* Gas thermal conductivity: Depends on :obj:`VolumeGas <thermo.volume.VolumeGas>`, :obj:`HeatCapacityGas <thermo.heat_capacity.HeatCapacityGas>`, :obj:`ViscosityGas <thermo.viscosity.ViscosityGas>`
+
+
+The required input objects should be created first, and provided as an input to the dependent object:
+
+>>> water_psat = VaporPressure(Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344, CASRN='7732-18-5')
+>>> water_mu = ViscosityLiquid(CASRN="7732-18-5", MW=18.01528, Tm=273.15, Tc=647.14, Pc=22048320.0, Vc=5.6e-05, omega=0.344, method="DIPPR_PERRY_8E", Psat=water_psat, method_P="LUCAS")
+
+Various data files will be searched to see if information such as DIPPR expression coefficients are available for the compound during the initialization. This behavior can be avoided by setting the optional `load_data` argument to False.
+
+Pressure-dependent Methods
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The pressure and temperature dependent object selects a low-pressure and a high-pressure method automatically during initialization.
+These method can be inspected with the :obj:`method <thermo.utils.TPDependentProperty.method>` and :obj:`method_P <thermo.utils.TPDependentProperty.method_P>` properties.
+If no low-pressure methods are available, `method` will be None. If no high-pressure methods are available, `method_P` will be None. `method` and `method_P` are also valid parameters when constructing the object, but if either of the methods specified is not available an exception will be raised.
+
+>>> water_mu.method, water_mu.method_P
+('DIPPR_PERRY_8E', 'LUCAS')
+
+All available low-pressure methods can be found by inspecting the :obj:`all_methods <thermo.utils.TPDependentProperty.all_methods>` attribute:
+
+>>> water_mu.all_methods
+{'COOLPROP', 'DIPPR_PERRY_8E', 'VISWANATH_NATARAJAN_3', 'VDI_PPDS', 'LETSOU_STIEL'}
+
+All available high-pressure methods can be found by inspecting the :obj:`all_methods_P <thermo.utils.TPDependentProperty.all_methods_P>` attribute:
+
+>>> water_mu.all_methods_P
+{'COOLPROP', 'LUCAS'}
+
+Changing the low-pressure method or the high-pressure method is as easy as setting a new value to the attribute:
+
+>>> water_mu.method = 'VDI_PPDS'
+>>> water_mu.method
+'VDI_PPDS'
+>>> water_mu.method_P = 'COOLPROP'
+>>> water_mu.method_P
+'COOLPROP'
+
+Calculating Properties
+^^^^^^^^^^^^^^^^^^^^^^
+
+Calculation of the property at a specific temperature and pressure is as easy as calling the object which triggers the :obj:`__call__ <thermo.utils.TPDependentProperty.__call__>` method:
+
+>>> water_mu.method = 'VDI_PPDS'
+>>> water_mu.method_P = 'COOLPROP'
+>>> water_mu(T=300.0, P=1e5)
+0.000853742
+
+This is actually a cached wrapper around the specific call, :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`:
+
+>>> water_mu.TP_dependent_property(300.0, P=1e5)
+0.000853742
+
+The caching of :obj:`__call__ <thermo.utils.TPDependentProperty.__call__>` is quite basic - the previously specified temperature and pressure are stored, and if the new `T` and `P` are the same as the previous `T` and `P` the previously calculated result is returned.
+
+There is a lower-level interface for calculating properties with a specified method by name, :obj:`calculate_P <thermo.utils.TDependentProperty.calculate_P>`. :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>` is a wrapper around  :obj:`calculate_P <thermo.utils.TDependentProperty.calculate_P>` that includes validation of the result.
+
+>>> water_mu.calculate_P(T=300.0, P=1e5, method='COOLPROP')
+0.000853742
+>>> water_mu.calculate_P(T=300.0, P=1e5, method='LUCAS')
+0.000865292
+
+The above examples all show using calculating the property with a pressure specified. The same :obj:`TDependentProperty <thermo.utils.TDependentProperty>` methods are available too, so all the low-pressure calculation calls are also available.
+
+>>> water_mu.calculate(T=300.0, method='VISWANATH_NATARAJAN_3')
+0.000856467
+>>> water_mu.T_dependent_property(T=400.0) 
+0.000217346
 
 Mixture Properties
 ------------------
