@@ -2202,7 +2202,10 @@ class TPDependentProperty(TDependentProperty):
         if (T, P) == self.TP_cached:
             return self.prop_cached
         else:
-            self.prop_cached = self.TP_or_T_dependent_property(T, P)
+            if P is not None:
+                self.prop_cached = self.TP_dependent_property(T, P)
+            else:
+                self.prop_cached = self.T_dependent_property(T)
             self.TP_cached = (T, P)
             return self.prop_cached
 

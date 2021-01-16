@@ -1637,7 +1637,7 @@ class IdealCaloric(Ideal):
                     if Vl is None:
                         # Handle an inability to get a liquid volume by taking
                         # one at the boiling point (and system P)
-                        Vl = self.VolumeLiquids[i](self.Tbs[i], P)
+                        Vl = self.VolumeLiquids[i].TP_or_T_dependent_property(self.Tbs[i], P)
                     H_i += (P - Psats[i])*Vl
                 H += self.zs[i]*(H_i)
         elif self.phase == 'l/g':
