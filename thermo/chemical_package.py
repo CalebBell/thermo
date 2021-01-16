@@ -33,7 +33,8 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 Chemical Constants Class
 ========================
 .. autoclass:: ChemicalConstantsPackage
-    :members: subset, properties, correlations_from_IDs, constants_from_IDs, from_IDs,
+    :members: subset, properties, correlations_from_IDs, constants_from_IDs,
+              from_IDs, with_new_constants, as_JSON, from_JSON
     :undoc-members:
     :exclude-members:
 
@@ -61,6 +62,8 @@ from fluids.constants import R
 from thermo.chemical import Chemical, get_chemical_constants
 from chemicals.identifiers import *
 from chemicals import identifiers
+from chemicals.utils import hash_any_primitive
+
 from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture, VolumeLiquid, VolumeGas, VolumeSolid
 from thermo.permittivity import *
@@ -90,8 +93,17 @@ from chemicals.combustion import combustion_stoichiometry, HHV_stoichiometry, LH
 from thermo.unifac import DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments, load_group_assignments_DDBST, UNIFAC_RQ, Van_der_Waals_volume, Van_der_Waals_area
 from thermo.electrochem import conductivity
 from thermo.law import legal_status, economic_status
+from thermo.eos import PR
 
 CAS_H2O = '7732-18-5'
+
+global json
+json = None
+def get_json():
+    global json
+    if json is None:
+        import json
+    return json
 
 
 
@@ -151,6 +163,120 @@ class ChemicalConstantsPackage(object):
             if getattr(self, prop) == empty_list:
                 missing.append(prop)
         return tuple(missing)
+
+    @property
+    def __dict__(self):
+        new = {}
+        properties = self.properties
+        for p in properties:
+            v = getattr(self, p)
+            if v is not None:
+                new[p] = v
+        return new
+
+    def as_JSON(self):
+        r'''Method to create a JSON serialization of the chemical constants
+        package which can be stored, and reloaded later.
+
+        Returns
+        -------
+        json_repr : str
+            Json representation, [-]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
+        >>> string = constants.as_JSON()
+        >>> type(string)
+        str
+        '''
+        if json is None:
+            get_json()
+        return json.dumps(self.__dict__)
+
+    @classmethod
+    def from_JSON(cls, string):
+        r'''Method to create a ChemicalConstantsPackage from a JSON
+        serialization of another ChemicalConstantsPackage.
+
+        Parameters
+        ----------
+        json_repr : str
+            Json representation, [-]
+
+        Returns
+        -------
+        constants : ChemicalConstantsPackage
+            Newly created object from the json serialization, [-]
+
+        Notes
+        -----
+        It is important that the input string be in the same format as that
+        created by :obj:`ChemicalConstantsPackage.as_JSON`.
+
+        Examples
+        --------
+        >>> constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
+        >>> string = constants.as_JSON()
+        >>> new_constants  = ChemicalConstantsPackage.from_JSON(string)
+        >>> assert hash(new_constants) == hash(constants)
+        '''
+        if json is None:
+            get_json()
+        d = json.loads(string)
+
+        for k in ('TWAs', 'STELs'):
+            # tuple gets converted to a json list
+            l = d[k]
+            d[k] = [tuple(v) if v is not None else v for v in l]
+
+        for k in ('PSRK_groups', 'UNIFAC_Dortmund_groups', 'UNIFAC_groups'):
+            # keys are stored as strings and not ints
+            d[k] = [{int(k): v for k, v in r.items()} if r is not None else r for r in d[k]]
+
+        return cls(**d)
+
+    def __hash__(self):
+        hashes = []
+        for k in self.properties:
+            hashes.append(hash_any_primitive(getattr(self, k)))
+        return hash_any_primitive(hashes)
+
+    def with_new_constants(self, **kwargs):
+        r'''Method to construct a new ChemicalConstantsPackage that replaces or
+        adds one or more properties for all components.
+
+        Parameters
+        ----------
+        kwargs : dict[str: list[float]]
+            Properties specified by name [various]
+
+        Returns
+        -------
+        new_constants : ChemicalConstantsPackage
+            Object with new and/or replaced properties, [-]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> base = ChemicalConstantsPackage(MWs=[18.01528, 106.165, 106.165, 106.165], names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.344, 0.3118, 0.324, 0.331], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tcs=[647.14, 630.3, 616.2, 617.0])
+        >>> base.with_new_constants(Tms=[40.0, 20.0, 10.0, 30.0], omegas=[0.0, 0.1, 0.2, 0.3])
+        ChemicalConstantsPackage(MWs=[18.01528, 106.165, 106.165, 106.165], names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.0, 0.1, 0.2, 0.3], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tcs=[647.14, 630.3, 616.2, 617.0], Tms=[40.0, 20.0, 10.0, 30.0])
+        '''
+        new = {}
+        properties = self.non_vector_properties
+        for p in properties:
+            v = getattr(self, p)
+            if v is not None:
+                new[p] = v
+        new.update(kwargs)
+        return ChemicalConstantsPackage(**new)
+
 
     def subset(self, idxs=None, properties=None):
         r'''Method to construct a new ChemicalConstantsPackage that removes

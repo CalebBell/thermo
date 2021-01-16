@@ -26,7 +26,7 @@ from thermo import *
 from math import *
 from random import random
 from fluids.constants import *
-from fluids.numerics import assert_close, assert_close1d, assert_close2d
+from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d
 from numpy.testing import assert_allclose
 from chemicals import normalize
 
@@ -88,6 +88,40 @@ def test_PRMIX_outputs_inputs_np():
         assert_close1d(getattr(eos, attr), getattr(eos_np, attr), rtol=1e-14)
         assert type(getattr(eos, attr)) is list
         assert type(getattr(eos_np, attr)) is np.ndarray
+
+def test_IdealSolution_np_out():
+    from thermo.numba import IdealSolution
+    from thermo.numba import IdealSolution as IdealSolutionnp
+    model = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
+    modelnp = IdealSolutionnp(T=300.0, xs=np.array([.1, .2, .3, .4]))
+    modelnp2 = modelnp.to_T_xs(T=310.0, xs=np.array([.2, .2, .2, .4]))
+
+
+    vec_attrs = ['gammas', 'd2GE_dTdxs', 'dGE_dxs']
+
+    for attr in vec_attrs:
+        assert_close1d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-14)
+        assert_close1d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-14)
+        assert type(getattr(model, attr)()) is list
+        assert type(getattr(modelnp, attr)()) is np.ndarray
+        assert type(getattr(modelnp2, attr)()) is np.ndarray
+
+    mat_attrs = ['d2GE_dxixjs']
+    for attr in mat_attrs:
+        assert_close2d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-14)
+        assert_close2d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-14)
+        assert type(getattr(model, attr)()) is list
+        assert type(getattr(modelnp, attr)()) is np.ndarray
+        assert type(getattr(modelnp2, attr)()) is np.ndarray
+
+    attrs_3d = ['d3GE_dxixjxks']
+    for attr in attrs_3d:
+        assert_close3d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-14)
+        assert_close3d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-14)
+        assert type(getattr(model, attr)()) is list
+        assert type(getattr(modelnp, attr)()) is np.ndarray
+        assert type(getattr(modelnp2, attr)()) is np.ndarray
+
 
 
 

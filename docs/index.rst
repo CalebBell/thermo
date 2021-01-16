@@ -9,6 +9,7 @@ Contents:
    cubic_equations_of_state
    activity_coefficients
    property_objects
+   chemical_package_tutorial
    tutorial_phases_and_flash
    modules
 

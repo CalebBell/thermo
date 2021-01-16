@@ -20,10 +20,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from numpy.testing import assert_allclose
 import pytest
 import thermo
 from thermo import *
+from fluids.numerics import assert_close, assert_close1d, assert_close2d
 from fluids.numerics import *
 from math import *
 import json
@@ -1006,7 +1006,7 @@ def test_some_flashes_bad(hacks):
     flasher = FlashPureVLS(constants, correlations, gas, [liquid], [])
     flasher.VL_only_CEOSs_same = hacks
 
-    assert_allclose(flasher.flash(T=800, P=1e7).G(), flasher.flash(T=725.87092453, P=1e7).G(), rtol=1e-10)
+    assert_close(flasher.flash(T=800, P=1e7).G(), flasher.flash(T=725.87092453, P=1e7).G(), rtol=1e-10)
 
 def test_EOS_dew_bubble_same_eos_id():
     constants = ChemicalConstantsPackage(Tcs=[405.6], Pcs=[11277472.5], omegas=[0.25], MWs=[17.03052], CASs=['7664-41-7'])
@@ -1043,7 +1043,7 @@ def test_VS_issue_PRSV(hacks):
     flasher = FlashPureVLS(constants, correlations, gas, [liquid], [])
     flasher.VL_only_CEOSs_same = hacks
     obj = flasher.flash(T=7196.856730011477, P=212095088.7920158)
-    assert_allclose(obj.T, flasher.flash(V=obj.V(), S=obj.S()).T)
+    assert_close(obj.T, flasher.flash(V=obj.V(), S=obj.S()).T)
 
 @pytest.mark.parametrize("hacks", [True, False])
 def test_PS_1P_vs_VL_issue0(hacks):
@@ -1065,7 +1065,7 @@ def test_PS_1P_vs_VL_issue0(hacks):
     for P in (0.01, 0.015361749466718281):
         obj = flasher.flash(T=166.0882782627715, P=P)
         hit = flasher.flash(P=obj.P, S=obj.S())
-        assert_allclose(hit.T, obj.T)
+        assert_close(hit.T, obj.T)
 
 
 @pytest.mark.parametrize("hacks", [True, False])
@@ -1109,10 +1109,10 @@ def test_SRK_high_P_PV_failure(hacks):
     base = flasher.flash(T=T, P=P)
 
     PV = flasher.flash(P=P, V=base.V(), solution='low')
-    assert_allclose(T, PV.T, rtol=1e-7)
+    assert_close(T, PV.T, rtol=1e-7)
 
     PV = flasher.flash(P=P, V=base.V(), solution='high')
-    assert_allclose(242348.637577, PV.T, rtol=1e-7)
+    assert_close(242348.637577, PV.T, rtol=1e-7)
 
 @pytest.mark.parametrize("hacks", [True, False])
 def test_ethane_PH_failure_high_P(hacks):
@@ -1154,7 +1154,7 @@ def test_SRK_high_PT_on_VS_failure(hacks):
     base = flasher.flash(T=T, P=P)
 
     VS = flasher.flash(S=base.S(), V=base.V())
-    assert_allclose(T, VS.T, rtol=1e-7)
+    assert_close(T, VS.T, rtol=1e-7)
 
     # Point where max P becomes negative - check it is not used
     obj = flasher.flash(T=24.53751106639818, P=33529.24149249553)
@@ -1177,7 +1177,7 @@ def test_APISRK_VS_at_Pmax_error_failure(hacks):
     base = flasher.flash(T=T, P=P)
 
     VS = flasher.flash(S=base.S(), V=base.V())
-    assert_allclose(T, VS.T, rtol=1e-7)
+    assert_close(T, VS.T, rtol=1e-7)
 
 @pytest.mark.parametrize("hacks", [True, False])
 def test_Twu_missing_Pmax_on_VS_failure(hacks):
@@ -1195,7 +1195,7 @@ def test_Twu_missing_Pmax_on_VS_failure(hacks):
         flasher.VL_only_CEOSs_same = hacks
         base = flasher.flash(T=T, P=P)
         VS = flasher.flash(S=base.S(), V=base.V())
-        assert_allclose(T, VS.T, rtol=1e-7)
+        assert_close(T, VS.T, rtol=1e-7)
 
 @pytest.mark.parametrize("hacks", [True, False])
 def test_TWU_SRK_PR_T_alpha_interp_failure(hacks):
@@ -1217,7 +1217,7 @@ def test_TWU_SRK_PR_T_alpha_interp_failure(hacks):
         base = flasher.flash(T=T, P=P)
 
         PV = flasher.flash(P=P, V=base.V())
-        assert_allclose(T, PV.T, rtol=1e-8)
+        assert_close(T, PV.T, rtol=1e-8)
 
 
 @pytest.mark.parametrize("hacks", [True, False])
@@ -1249,7 +1249,7 @@ def test_TS_EOS_fast_path(hacks):
     res_base = flasher.flash(T=T, VF=.3)
     S_base = res_base.S()
     res = flasher.flash(T=T, S=S_base)
-    assert_allclose(res.P, res_base.P)
+    assert_close(res.P, res_base.P)
 
 @pytest.mark.parametrize("hacks", [True, False])
 def test_EOS_TP_HSGUA_sln_in_VF(hacks):
@@ -1343,18 +1343,18 @@ def test_PRMIXTranslatedConsistent_VS_low_prec_failure():
 
     for P in [109.85411419875584, 1.7575106248547927]:
         base = flasher.flash(T=T, P=P, zs=zs)
-        recalc = flasher.flash(S=base.S(), V=base.V_iter(True), zs=zs)
-        assert_allclose(base.T, recalc.T, rtol=1e-9)
+        recalc = flasher.flash(S=base.S(), V=base.V_iter(force=True), zs=zs)
+        assert_close(base.T, recalc.T, rtol=1e-9)
 
     # VU failure
     base = flasher.flash(T=2682.6958, P=1e-2, zs=zs)
     recalc = flasher.flash(U=base.U(), V=base.V(), zs=[1])
-    assert_allclose(base.T, recalc.T, rtol=1e-7)
+    assert_close(base.T, recalc.T, rtol=1e-7)
 
     # VH failure
     base = flasher.flash(T=10000, P=596362331.6594564, zs=zs)
     recalc = flasher.flash(H=base.H(), V=base.V(), zs=zs)
-    assert_allclose(base.T, recalc.T, rtol=1e-7)
+    assert_close(base.T, recalc.T, rtol=1e-7)
 
     # TV failure - check the higher precision iteraitons are happening
     flashes_base, flashes_new, errs = flasher.TPV_inputs(spec0='T', spec1='P', check0='T', check1='V', prop0='P',
@@ -1383,7 +1383,7 @@ def test_PRMIXTranslatedConsistent_TV_epsilon_consistency_with_fast():
 
     base = flasher.flash(T=T, P=P, zs=zs)
     recalc = flasher.flash(T=base.T, V=base.phases[0].V_iter(), zs=zs)
-    assert_allclose(base.P, recalc.P, rtol=1e-7)
+    assert_close(base.P, recalc.P, rtol=1e-7)
 
 def test_SRKMIXTranslatedConsistent_PV_consistency_issue():
 
@@ -1419,7 +1419,7 @@ def test_TWU_SRK_PR_T_alpha_interp_failure_2():
         base = flasher.flash(T=T, P=P)
 
         PV = flasher.flash(P=P, V=base.V())
-        assert_allclose(T, PV.T, rtol=1e-6)
+        assert_close(T, PV.T, rtol=1e-6)
 
 def test_flash_identical_two_liquids():
     '''Just checks that two flashes, one with two liquids and one with one
@@ -1528,12 +1528,12 @@ def test_APISRK_multiple_T_slns():
     for T, sln in zip([10000, 10000, 10000, 6741.680441295266, 6741.680441295266],
                       [None, 'high', lambda obj: obj.G(), 'low', lambda obj: obj.T]):
         obj = flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1], solution=sln)
-        assert_allclose(obj.T, T)
+        assert_close(obj.T, T)
 
     for T, sln in zip([140184.08901758507, 140184.08901758507, 140184.08901758507, 7220.8089999999975, 7220.8089999999975],
                       [None, 'high', lambda obj: obj.G(), 'low', lambda obj: obj.T]):
         obj = flasher.flash(V=0.0006354909990692889, P=359381366.3805, zs=[1], solution=sln)
-        assert_allclose(obj.T, T)
+        assert_close(obj.T, T)
 
 
 @pytest.mark.parametrize("hacks", [True, False])
@@ -1621,7 +1621,7 @@ def test_IG_liq_poy_flashes(hacks):
         res =  flasher.flash(T=1000, P=1e10)
         assert res.liquid0 is not None
         assert 1 == res.phase_count
-        assert_allclose(res.liquid0.lnphis(), [199.610302])
+        assert_close1d(res.liquid0.lnphis(), [199.610302])
 
     # Vapor fraction flashes
     res = flasher.flash(T=646, VF=0)
@@ -1640,7 +1640,7 @@ def test_IG_liq_poy_flashes(hacks):
 
     # PH
     res = flasher.flash(H=-43925.16879798105, P=1e5)
-    assert_allclose(res.T, 300.0)
+    assert_close(res.T, 300.0)
 
 def test_VF_H_cases():
     T, P, zs = 350.0, 1e5, [1.0]
@@ -1671,12 +1671,12 @@ def test_VF_H_cases():
     for VF, T_low, T_high in zip(VFs_two, Ts_two_low, Ts_two_high):
         base = flasher.flash(T=T_low, VF=VF)
         low = flasher.flash(H=base.H(), VF=VF, solution='low')
-        assert_allclose(low.T, base.T, rtol=1e-8)
-        assert_allclose(low.H(), base.H(), rtol=1e-7)
+        assert_close(low.T, base.T, rtol=1e-8)
+        assert_close(low.H(), base.H(), rtol=1e-7)
 
         high = flasher.flash(H=base.H(), VF=VF, solution='high')
-        assert_allclose(high.T, T_high, rtol=1e-8)
-        assert_allclose(high.H(), base.H(), rtol=1e-7)
+        assert_close(high.T, T_high, rtol=1e-8)
+        assert_close(high.H(), base.H(), rtol=1e-7)
 
 
     solutions = ['mid', 'low', 'high']
@@ -1693,7 +1693,7 @@ def test_VF_H_cases():
         base = flasher.flash(T=T, VF=VF)
         for s in solutions:
             new = flasher.flash(H=base.H(), VF=VF, solution=s)
-            assert_allclose(new.T, base.T, rtol=1e-8)
+            assert_close(new.T, base.T, rtol=1e-8)
 
 
 def test_VF_U_cases():
@@ -1721,12 +1721,12 @@ def test_VF_U_cases():
     for VF, T_low, T_high in zip(VFs_two, Ts_two_low, Ts_two_high):
         base = flasher.flash(T=T_low, VF=VF)
         low = flasher.flash(U=base.U(), VF=VF, solution='low')
-        assert_allclose(low.T, base.T, rtol=1e-8)
-        assert_allclose(low.U(), base.U(), rtol=1e-7)
+        assert_close(low.T, base.T, rtol=1e-8)
+        assert_close(low.U(), base.U(), rtol=1e-7)
 
         high = flasher.flash(U=base.U(), VF=VF, solution='high')
-        assert_allclose(high.T, T_high, rtol=1e-8)
-        assert_allclose(high.U(), base.U(), rtol=1e-7)
+        assert_close(high.T, T_high, rtol=1e-8)
+        assert_close(high.U(), base.U(), rtol=1e-7)
 
 
     solutions = ['mid', 'low', 'high']
@@ -1739,7 +1739,7 @@ def test_VF_U_cases():
         base = flasher.flash(T=T, VF=VF)
         for s in solutions:
             new = flasher.flash(U=base.U(), VF=VF, solution=s)
-            assert_allclose(new.T, base.T, rtol=1e-8)
+            assert_close(new.T, base.T, rtol=1e-8)
 
 
 def test_VF_A_cases():
@@ -1762,12 +1762,12 @@ def test_VF_A_cases():
     for VF, T_low, T_high in zip(VFs_two, Ts_two_low, Ts_two_high):
         base = flasher.flash(T=T_low, VF=VF)
         low = flasher.flash(A=base.A(), VF=VF, solution='low')
-        assert_allclose(low.T, base.T, rtol=1e-8)
-        assert_allclose(low.A(), base.A(), rtol=1e-7)
+        assert_close(low.T, base.T, rtol=1e-8)
+        assert_close(low.A(), base.A(), rtol=1e-7)
 
         high = flasher.flash(A=base.A(), VF=VF, solution='high')
-        assert_allclose(high.T, T_high, rtol=1e-8)
-        assert_allclose(high.A(), base.A(), rtol=1e-7)
+        assert_close(high.T, T_high, rtol=1e-8)
+        assert_close(high.A(), base.A(), rtol=1e-7)
 
 
     solutions = ['mid', 'low', 'high']
@@ -1778,7 +1778,7 @@ def test_VF_A_cases():
         base = flasher.flash(T=T, VF=VF)
         for s in solutions:
             new = flasher.flash(A=base.A(), VF=VF, solution=s)
-            assert_allclose(new.T, base.T, rtol=1e-8)
+            assert_close(new.T, base.T, rtol=1e-8)
 
 def test_VF_G_cases():
     # No double solutions for G - almost no need to iterate
@@ -1803,7 +1803,7 @@ def test_VF_G_cases():
         base = flasher.flash(T=T, VF=VF)
         for s in solutions:
             new = flasher.flash(G=base.G(), VF=VF, solution=s)
-            assert_allclose(new.T, base.T, rtol=1e-8)
+            assert_close(new.T, base.T, rtol=1e-8)
 
 
 def test_VF_S_cases():
@@ -1832,12 +1832,12 @@ def test_VF_S_cases():
     for VF, T_low, T_high in zip(VFs_two, Ts_two_low, Ts_two_high):
         base = flasher.flash(T=T_low, VF=VF)
         low = flasher.flash(S=base.S(), VF=VF, solution='low')
-        assert_allclose(low.T, base.T, rtol=1e-5)
-        assert_allclose(low.S(), base.S(), rtol=1e-7)
+        assert_close(low.T, base.T, rtol=1e-5)
+        assert_close(low.S(), base.S(), rtol=1e-7)
 
         high = flasher.flash(S=base.S(), VF=VF, solution='high')
-        assert_allclose(high.T, T_high, rtol=1e-5)
-        assert_allclose(high.S(), base.S(), rtol=1e-7)
+        assert_close(high.T, T_high, rtol=1e-5)
+        assert_close(high.S(), base.S(), rtol=1e-7)
 
 
     solutions = ['mid', 'low', 'high']
@@ -1848,7 +1848,7 @@ def test_VF_S_cases():
         base = flasher.flash(T=T, VF=VF)
         for s in solutions:
             new = flasher.flash(S=base.S(), VF=VF, solution=s)
-            assert_allclose(new.T, base.T, rtol=1e-8)
+            assert_close(new.T, base.T, rtol=1e-8)
 
 
     VFs_three = [0.5714271428571429, 0.5714271428571429, 0.5714271428571429, 0.5714271428571429]
@@ -1859,16 +1859,16 @@ def test_VF_S_cases():
     for VF, T_low, T_mid, T_high in zip(VFs_three, Ts_three_low, Ts_three_mid, Ts_three_high):
         base = flasher.flash(T=T_low, VF=VF)
         low = flasher.flash(S=base.S(), VF=VF, solution='low')
-        assert_allclose(low.T, base.T, rtol=1e-5)
-        assert_allclose(low.S(), base.S(), rtol=1e-7)
+        assert_close(low.T, base.T, rtol=1e-5)
+        assert_close(low.S(), base.S(), rtol=1e-7)
 
         mid = flasher.flash(S=base.S(), VF=VF, solution='mid')
-        assert_allclose(mid.T, T_mid, rtol=1e-5)
-        assert_allclose(mid.S(), base.S(), rtol=1e-7)
+        assert_close(mid.T, T_mid, rtol=1e-5)
+        assert_close(mid.S(), base.S(), rtol=1e-7)
 
         high = flasher.flash(S=base.S(), VF=VF, solution='high')
-        assert_allclose(high.T, T_high, rtol=1e-5)
-        assert_allclose(high.S(), base.S(), rtol=1e-7)
+        assert_close(high.T, T_high, rtol=1e-5)
+        assert_close(high.S(), base.S(), rtol=1e-7)
 
 
 

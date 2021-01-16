@@ -73,7 +73,7 @@ from chemicals.utils import exp
 from chemicals.utils import normalize, dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, d2xs_to_dxdn_partials
 
 try:
-    npexp = np.exp
+    npexp, ones, zeros = np.exp, np.ones, np.zeros
 except:
     pass
 
@@ -675,6 +675,7 @@ class IdealSolution(GibbsExcess):
             self.xs = xs
             self.N = len(xs)
             self.cmps = range(self.N)
+            self.scalar = type(xs) is list
 
     def to_T_xs(self, T, xs):
         r'''Method to construct a new :obj:`IdealSolution` instance at
@@ -705,6 +706,7 @@ class IdealSolution(GibbsExcess):
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.xs = xs
+        new.scalar = self.scalar
         new.N = len(xs)
         new.cmps = range(new.N)
         return new
@@ -796,7 +798,9 @@ class IdealSolution(GibbsExcess):
         Notes
         -----
         '''
-        return [0.0 for i in self.cmps]
+        if self.scalar:
+            return [0.0 for i in self.cmps]
+        return zeros(self.N)
 
     def dGE_dxs(self):
         r'''Calculate and return the mole fraction derivatives of excess Gibbs
@@ -814,7 +818,9 @@ class IdealSolution(GibbsExcess):
         Notes
         -----
         '''
-        return [0.0 for i in self.cmps]
+        if self.scalar:
+            return [0.0 for i in self.cmps]
+        return zeros(self.N)
 
     def d2GE_dxixjs(self):
         r'''Calculate and return the second mole fraction derivatives of excess
@@ -833,7 +839,9 @@ class IdealSolution(GibbsExcess):
         -----
         '''
         N = self.N
-        return [[0.0]*N for i in self.cmps]
+        if self.scalar:
+            return [[0.0]*N for i in self.cmps]
+        return zeros((N, N))
 
     def d3GE_dxixjxks(self):
         r'''Calculate and return the third mole fraction derivatives of excess
@@ -852,10 +860,15 @@ class IdealSolution(GibbsExcess):
         -----
         '''
         N, cmps = self.N, self.cmps
-        return [[[0.0]*N for i in cmps] for j in cmps]
+        if self.scalar:
+            return [[[0.0]*N for i in cmps] for j in cmps]
+        return zeros((N, N, N))
 
     def gammas(self):
-        return [1.0 for i in self.cmps]
+        if self.scalar:
+            return [1.0 for i in self.cmps]
+        else:
+            return ones(self.N)
 
     try:
         gammas.__doc__ = GibbsExcess.__doc__
