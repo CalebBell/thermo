@@ -96,6 +96,30 @@ def gibbs_excess_dHE_dxs(dGE_dxs, d2GE_dTdxs, N, T, dHE_dxs=None):
         dHE_dxs[i] = -T*d2GE_dTdxs[i] + dGE_dxs[i]
     return dHE_dxs
 
+
+def gibbs_excess_dgammas_dns(xs, gammas, d2GE_dxixjs, N, T, dgammas_dns=None, vec0=None):
+    if vec0 is None:
+        vec0 = [0.0]*N
+    if dgammas_dns is None:
+        dgammas_dns = [[0.0]*N for _ in range(N)] # numba : delete
+#        dgammas_dns = zeros((N, N)) # numba : uncomment
+
+    for j in range(N):
+        tot = 0.0
+        row = d2GE_dxixjs[j]
+        for k in range(N):
+            tot += xs[k]*row[k]
+        vec0[j] = tot
+
+    RT_inv = R_inv/(T)
+
+    for i in range(N):
+        gammai_RT = gammas[i]*RT_inv
+        for j in range(N):
+            dgammas_dns[i][j] = gammai_RT*(d2GE_dxixjs[i][j] - vec0[j])
+
+    return dgammas_dns
+
 class GibbsExcess(object):
     r'''Class for representing an activity coefficient model.
     While these are typically presented as tools to compute activity
@@ -561,31 +585,27 @@ class GibbsExcess(object):
         gammas = self.gammas()
         N = self.N
         xs = self.xs
-
         d2GE_dxixjs = self.d2GE_dxixjs()
-#        d2nGE_dxjnis = d2xs_to_dxdn_partials(d2GE_dxixjs, xs)
-#
-#
-        double_sums = [0.0]*N
-        for j in range(N):
-            tot = 0.0
-            for k in range(N):
-                tot += xs[k]*d2GE_dxixjs[j][k]
-            double_sums[j] = tot
-#
-#        return [[ for j in range(N)]
-#                 for i in range(N)]
-        RT_inv = R_inv/(self.T)
 
-        self._dgammas_dns = matrix = []
-        for i in range(N):
-            row = []
-            gammai_RT = gammas[i]*RT_inv
-            for j in range(N):
-                v = gammai_RT*(d2GE_dxixjs[i][j] - double_sums[j])
-                row.append(v)
-            matrix.append(row)
-        return matrix
+        self._dgammas_dns = dgammas_dns = gibbs_excess_dgammas_dns(xs, gammas, d2GE_dxixjs, N, self.T)
+#        double_sums = [0.0]*N
+#        for j in range(N):
+#            tot = 0.0
+#            for k in range(N):
+#                tot += xs[k]*d2GE_dxixjs[j][k]
+#            double_sums[j] = tot
+#
+#        RT_inv = R_inv/(self.T)
+#
+#        self._dgammas_dns = matrix = []
+#        for i in range(N):
+#            row = []
+#            gammai_RT = gammas[i]*RT_inv
+#            for j in range(N):
+#                v = gammai_RT*(d2GE_dxixjs[i][j] - double_sums[j])
+#                row.append(v)
+#            matrix.append(row)
+        return dgammas_dns
 
 #    def dgammas_dxs(self):
         # TODO - compare with UNIFAC, which has a dx derivative working
