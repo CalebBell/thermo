@@ -120,6 +120,24 @@ def gibbs_excess_dgammas_dns(xs, gammas, d2GE_dxixjs, N, T, dgammas_dns=None, ve
 
     return dgammas_dns
 
+def gibbs_excess_dgammas_dT(xs, GE, dGE_dT, dG_dxs, d2GE_dTdxs, N, T, dgammas_dT=None):
+    if dgammas_dT is None:
+        dgammas_dT = [0.0]*N
+
+    xdx_totF0 = dGE_dT
+    for j in range(N):
+        xdx_totF0 -= xs[j]*d2GE_dTdxs[j]
+    xdx_totF1 = GE
+    for j in range(N):
+        xdx_totF1 -= xs[j]*dG_dxs[j]
+
+    T_inv = 1.0/T
+    RT_inv = R_inv*T_inv
+    for i in range(N):
+        dG_dni = xdx_totF1 + dG_dxs[i]
+        dgammas_dT[i] = RT_inv*(d2GE_dTdxs[i] - dG_dni*T_inv + xdx_totF0)*exp(dG_dni*RT_inv)
+    return dgammas_dT
+
 class GibbsExcess(object):
     r'''Class for representing an activity coefficient model.
     While these are typically presented as tools to compute activity
@@ -665,7 +683,6 @@ class GibbsExcess(object):
             \frac{{\frac{\partial n_i G^E}{\partial n_i }}}{RT^2}\right)
              \exp\left(\frac{\frac{\partial n_i G^E}{\partial n_i }}{RT}\right)
 
-
         Returns
         -------
         dgammas_dT : list[float]
@@ -684,18 +701,26 @@ class GibbsExcess(object):
             return self._dgammas_dT
         except AttributeError:
             pass
-        d2nGE_dTdns = self.d2nGE_dTdns()
-
-        dG_dxs = self.dGE_dxs()
+        N, T, xs = self.N, self.T, self.xs
+        dGE_dT = self.dGE_dT()
         GE = self.GE()
-        dG_dns = dxs_to_dn_partials(dG_dxs, self.xs, GE)
-
-        T_inv = 1.0/self.T
-        RT_inv = R_inv*T_inv
-        self._dgammas_dT = dgammas_dT = []
-        for i in self.cmps:
-            x1 = dG_dns[i]*T_inv
-            dgammas_dT.append(RT_inv*(d2nGE_dTdns[i] - x1)*exp(dG_dns[i]*RT_inv))
+        dG_dxs = self.dGE_dxs()
+        d2GE_dTdxs = self.d2GE_dTdxs()
+        dgammas_dT = gibbs_excess_dgammas_dT(xs, GE, dGE_dT, dG_dxs, d2GE_dTdxs, N, T)
+#        xdx_totF0 = dGE_dT
+#        for j in range(N):
+#            xdx_totF0 -= xs[j]*d2GE_dTdxs[j]
+#        xdx_totF1 = GE
+#        for j in range(N):
+#            xdx_totF1 -= xs[j]*dG_dxs[j]
+#
+#        T_inv = 1.0/self.T
+#        RT_inv = R_inv*T_inv
+#        dgammas_dT = [0.0]*N
+#        for i in range(N):
+#            dG_dni = xdx_totF1 + dG_dxs[i]
+#            dgammas_dT[i] = RT_inv*(d2GE_dTdxs[i] - dG_dni*T_inv + xdx_totF0)*exp(dG_dni*RT_inv)
+        self._dgammas_dT = dgammas_dT
         return dgammas_dT
 
 
