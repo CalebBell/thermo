@@ -97,7 +97,7 @@ def test_IdealSolution_np_out():
     modelnp2 = modelnp.to_T_xs(T=310.0, xs=np.array([.2, .2, .2, .4]))
 
 
-    vec_attrs = ['gammas', 'd2GE_dTdxs', 'dGE_dxs', 'dHE_dxs']
+    vec_attrs = ['gammas', 'd2GE_dTdxs', 'dGE_dxs', 'dHE_dxs', 'gammas_infinite_dilution']
 
     for attr in vec_attrs:
         assert_close1d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-14)

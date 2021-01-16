@@ -73,7 +73,7 @@ from chemicals.utils import exp
 from chemicals.utils import normalize, dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, d2xs_to_dxdn_partials
 
 try:
-    npexp, ones, zeros = np.exp, np.ones, np.zeros
+    npexp, ones, zeros, array = np.exp, np.ones, np.zeros, np.array
 except:
     pass
 
@@ -285,12 +285,21 @@ class GibbsExcess(object):
         # (-Derivative(G(T), T) + Derivative(H(T), T))/T - (-G(T) + H(T))/T**2
         '''
         # excess entropy temperature derivative
-        H = self.HE()
-        dHdT = self.dHE_dT()
-        dGdT = self.dGE_dT()
-        G = self.GE()
+        dHE_dT = self.dHE_dT()
+        try:
+            HE = self._HE
+        except:
+            HE = self.HE()
+        try:
+            dGE_dT = self._dGE_dT
+        except:
+            dGE_dT = self.dGE_dT()
+        try:
+            GE = self._GE
+        except:
+            GE = self.GE()
         T_inv = 1.0/self.T
-        return T_inv*(-dGdT + dHdT - (-G + H)*T_inv)
+        return T_inv*(-dGE_dT + dHE_dT - (HE - GE)*T_inv)
 
     def dSE_dxs(self):
         r'''Calculate and return the mole fraction derivative of excess
@@ -473,9 +482,14 @@ class GibbsExcess(object):
         '''
         T, N = self.T, self.N
         xs_base = self.xs
-        gammas_inf = [0.0]*N
+        if self.scalar:
+            gammas_inf = [0.0]*N
+            copy_fun = list
+        else:
+            gammas_inf = zeros(N)
+            copy_fun = array
         for i in range(N):
-            xs = list(xs_base)
+            xs = copy_fun(xs_base)
             xs[i] = 0.0
             xs = normalize(xs)
             gammas_inf[i] = self.to_T_xs(T, xs=xs).gammas()[i]
