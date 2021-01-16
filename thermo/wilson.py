@@ -297,6 +297,7 @@ class Wilson(GibbsExcess):
     def __init__(self, T, xs, lambda_coeffs=None, ABCDEF=None):
         self.T = T
         self.xs = xs
+        self.scalar = scalar = type(xs) is list
         self.lambda_coeffs = lambda_coeffs
         if ABCDEF is not None:
             (self.lambda_coeffs_A, self.lambda_coeffs_B, self.lambda_coeffs_C,
@@ -352,6 +353,7 @@ class Wilson(GibbsExcess):
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.xs = xs
+        new.scalar = self.scalar
         new.N = self.N
         new.cmps = self.cmps
         (new.lambda_coeffs_A, new.lambda_coeffs_B, new.lambda_coeffs_C,

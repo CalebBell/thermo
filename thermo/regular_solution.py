@@ -500,7 +500,7 @@ class RegularSolution(GibbsExcess):
         '''
         if self.scalar:
             return [0.0]*self.N
-        return zeros(N)
+        return zeros(self.N)
 
     def dGE_dT(self):
         r'''Calculate and return the temperature derivative of excess Gibbs

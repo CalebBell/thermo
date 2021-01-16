@@ -308,6 +308,7 @@ class GibbsExcess(object):
         .. math::
             \frac{\partial S^E}{\partial x_i} = \frac{1}{T}\left( \frac{\partial h^E}
             {\partial x_i} - \frac{\partial g^E}{\partial x_i}\right)
+            = -\frac{\partial^2 g^E}{\partial x_i \partial T}
 
         Returns
         -------
@@ -322,12 +323,16 @@ class GibbsExcess(object):
             return self._dSE_dxs
         except:
             pass
-        # Derived by hand.
-        dGE_dxs = self.dGE_dxs()
-        dHE_dxs = self.dHE_dxs()
-        T_inv = 1.0/self.T
-        self._dSE_dxs = [T_inv*(dHE_dxs[i] - dGE_dxs[i]) for i in self.cmps]
-        return self._dSE_dxs
+        try:
+            d2GE_dTdxs = self._d2GE_dTdxs
+        except:
+            d2GE_dTdxs = self.d2GE_dTdxs()
+        if self.scalar:
+            dSE_dxs = [-v for v in d2GE_dTdxs]
+        else:
+            dSE_dxs = -d2GE_dTdxs
+        self._dSE_dxs = dSE_dxs
+        return dSE_dxs
 
     def dSE_dns(self):
         r'''Calculate and return the mole number derivative of excess

@@ -173,7 +173,7 @@ def test_a_alpha_and_derivatives_full():
 
 @mark_as_numba
 def test_RegularSolution_numba():
-    N = 200
+    N = 20
     xs = normalize([random() for _ in range(N)])
     xs2 = normalize([random() for _ in range(N)])
     SPs = [50000.0*random() for _ in range(N)]
@@ -193,3 +193,5 @@ def test_RegularSolution_numba():
     GE = RegularSolution(T, xsnp, Vsnp, SPsnp, lambda_coeffsnp)
     GE.gammas()
     GE.to_T_xs(T=T+1.0, xs=xs2np).gammas()
+
+    assert_close1d(GE.d2GE_dTdxs(), [0.0]*N, atol=0)
