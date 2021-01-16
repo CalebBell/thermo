@@ -606,23 +606,6 @@ class GibbsExcess(object):
         d2GE_dxixjs = self.d2GE_dxixjs()
 
         self._dgammas_dns = dgammas_dns = gibbs_excess_dgammas_dns(xs, gammas, d2GE_dxixjs, N, self.T)
-#        double_sums = [0.0]*N
-#        for j in range(N):
-#            tot = 0.0
-#            for k in range(N):
-#                tot += xs[k]*d2GE_dxixjs[j][k]
-#            double_sums[j] = tot
-#
-#        RT_inv = R_inv/(self.T)
-#
-#        self._dgammas_dns = matrix = []
-#        for i in range(N):
-#            row = []
-#            gammai_RT = gammas[i]*RT_inv
-#            for j in range(N):
-#                v = gammai_RT*(d2GE_dxixjs[i][j] - double_sums[j])
-#                row.append(v)
-#            matrix.append(row)
         return dgammas_dns
 
 #    def dgammas_dxs(self):
@@ -707,19 +690,6 @@ class GibbsExcess(object):
         dG_dxs = self.dGE_dxs()
         d2GE_dTdxs = self.d2GE_dTdxs()
         dgammas_dT = gibbs_excess_dgammas_dT(xs, GE, dGE_dT, dG_dxs, d2GE_dTdxs, N, T)
-#        xdx_totF0 = dGE_dT
-#        for j in range(N):
-#            xdx_totF0 -= xs[j]*d2GE_dTdxs[j]
-#        xdx_totF1 = GE
-#        for j in range(N):
-#            xdx_totF1 -= xs[j]*dG_dxs[j]
-#
-#        T_inv = 1.0/self.T
-#        RT_inv = R_inv*T_inv
-#        dgammas_dT = [0.0]*N
-#        for i in range(N):
-#            dG_dni = xdx_totF1 + dG_dxs[i]
-#            dgammas_dT[i] = RT_inv*(d2GE_dTdxs[i] - dG_dni*T_inv + xdx_totF0)*exp(dG_dni*RT_inv)
         self._dgammas_dT = dgammas_dT
         return dgammas_dT
 

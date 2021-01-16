@@ -97,7 +97,9 @@ def test_IdealSolution_np_out():
     modelnp2 = modelnp.to_T_xs(T=310.0, xs=np.array([.2, .2, .2, .4]))
 
 
-    vec_attrs = ['gammas', 'd2GE_dTdxs', 'dGE_dxs', 'dHE_dxs', 'gammas_infinite_dilution']
+    vec_attrs = ['gammas', '_gammas_dGE_dxs', 'd2GE_dTdxs', 'dGE_dxs', 'dHE_dxs', 'gammas_infinite_dilution', 'dHE_dns',
+                'dnHE_dns', 'dSE_dxs', 'dSE_dns', 'dnSE_dns', 'dGE_dns', 'dnGE_dns', 'd2GE_dTdns',
+                'd2nGE_dTdns', 'dgammas_dT']
 
     for attr in vec_attrs:
         assert_close1d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-14)
@@ -106,7 +108,7 @@ def test_IdealSolution_np_out():
         assert type(getattr(modelnp, attr)()) is np.ndarray
         assert type(getattr(modelnp2, attr)()) is np.ndarray
 
-    mat_attrs = ['d2GE_dxixjs']
+    mat_attrs = ['d2GE_dxixjs', 'd2nGE_dninjs', 'dgammas_dns']
     for attr in mat_attrs:
         assert_close2d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-14)
         assert_close2d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-14)
