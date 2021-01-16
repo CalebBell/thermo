@@ -559,19 +559,30 @@ class GibbsExcess(object):
         except AttributeError:
             pass
         gammas = self.gammas()
-        cmps = self.cmps
+        N = self.N
+        xs = self.xs
 
         d2GE_dxixjs = self.d2GE_dxixjs()
-        d2nGE_dxjnis = d2xs_to_dxdn_partials(d2GE_dxixjs, self.xs)
-
-        RT_inv = 1.0/(R*self.T)
+#        d2nGE_dxjnis = d2xs_to_dxdn_partials(d2GE_dxixjs, xs)
+#
+#
+        double_sums = [0.0]*N
+        for j in range(N):
+            tot = 0.0
+            for k in range(N):
+                tot += xs[k]*d2GE_dxixjs[j][k]
+            double_sums[j] = tot
+#
+#        return [[ for j in range(N)]
+#                 for i in range(N)]
+        RT_inv = R_inv/(self.T)
 
         self._dgammas_dns = matrix = []
-        for i in cmps:
+        for i in range(N):
             row = []
-            gammai = gammas[i]
-            for j in cmps:
-                v = gammai*d2nGE_dxjnis[i][j]*RT_inv
+            gammai_RT = gammas[i]*RT_inv
+            for j in range(N):
+                v = gammai_RT*(d2GE_dxixjs[i][j] - double_sums[j])
                 row.append(v)
             matrix.append(row)
         return matrix
