@@ -40,16 +40,27 @@ Temperature Dependent
              calculate_derivative, T_dependent_property_derivative,
              calculate_integral, T_dependent_property_integral,
              calculate_integral_over_T, T_dependent_property_integral_over_T,
-             extrapolate, test_method_validity, calculate, tabular_extrapolation_permitted,
+             extrapolate, test_method_validity, calculate,
              interpolation_T, interpolation_T_inv, interpolation_property,  interpolation_property_inv, T_limits, all_methods
    :undoc-members:
 
 Temperature and Pressure Dependent
 ----------------------------------
 .. autoclass:: TPDependentProperty
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members: name, units, extrapolation, property_min, property_max,
+             ranked_methods, __call__,
+             method, valid_methods, test_property_validity,
+             add_method, add_tabular_data, solve_property,
+             extrapolate, test_method_validity, calculate,
+             interpolation_T, interpolation_T_inv, interpolation_property,
+             interpolation_property_inv, T_limits, all_methods, all_methods_P,
+             method_P, select_valid_methods_P, TP_dependent_property,
+             TP_or_T_dependent_property, add_tabular_data_P, plot_isotherm,
+             plot_isobar, plot_TP_dependent_property, calculate_derivative_T,
+             calculate_derivative_P, TP_dependent_property_derivative_T,
+             TP_dependent_property_derivative_P
+   :undoc-members:
+   :show-inheritance:
 
 Temperature, Pressure, and Composition Dependent
 ------------------------------------------------
@@ -702,31 +713,24 @@ class TDependentProperty(object):
     Attributes
     ----------
     name : str
-        The name of the property being calculated
+        The name of the property being calculated, [-]
     units : str
-        The units of the property
+        The units of the property, [-]
     method : str
-        The method was which was last used successfully to calculate a property;
-        set only after the first property calculation.
-    forced : bool
-        If True, only user specified methods will be considered; otherwise all
-        methods will be considered if none of the user specified methods succeed
-    interpolation_T : function
+        The method to be used for property calculations, [-]
+    interpolation_T : callable or None
         A function or lambda expression to transform the temperatures of
         tabular data for interpolation; e.g. 'lambda self, T: 1./T'
-    interpolation_T_inv : function
+    interpolation_T_inv : callable or None
         A function or lambda expression to invert the transform of temperatures
         of tabular data for interpolation; e.g. 'lambda self, x: self.Tc*(1 - x)'
-    interpolation_property : function
+    interpolation_property : callable or None
         A function or lambda expression to transform tabular property values
         prior to interpolation; e.g. 'lambda self, P: log(P)'
-    interpolation_property_inv : function
+    interpolation_property_inv : callable or None
         A function or property expression to transform interpolated property
         values from the transform performed by :obj:`interpolation_property` back
         to their actual form, e.g.  'lambda self, P: exp(P)'
-    tabular_extrapolation_permitted : bool
-        Whether or not to allow extrapolation from tabulated data for a
-        property
     Tmin : float
         Maximum temperature at which no method can calculate the property above;
         set based on rough rules for some methods. Used to solve for a
@@ -2154,10 +2158,54 @@ class TDependentProperty(object):
 
 class TPDependentProperty(TDependentProperty):
     '''Class for calculating temperature and pressure dependent chemical
-    properties.'''
+    properties.
+
+    On creation, a :obj:`TPDependentProperty` examines all the possible methods
+    implemented for calculating the property, loads whichever coefficients it
+    needs (unless `load_data` is set to False), examines its input parameters,
+    and selects the method it prefers. This method will continue to be used for
+    all calculations until the method is changed by setting a new method
+    to the to :obj:`method` attribute.
+
+    Because many pressure dependent property methods are implemented as a
+    low-pressure correlation and a high-pressure correlation, this class
+    works essentially the same as :obj:`TDependentProperty` but with extra
+    methods that accept pressure as a parameter.
+
+    The object also selects the pressure-dependent method it prefers.
+    This method will continue to be used for all pressure-dependent
+    calculations until the pressure-dependent method is changed by setting a
+    new method_P to the to :obj:`method_P` attribute.
+
+    The default list of preferred pressure-dependent method orderings is at
+    :obj:`ranked_methods_P`
+    for all properties; the order can be modified there in-place, and this
+    will take effect on all new :obj:`TPDependentProperty` instances created
+    but NOT on existing instances.
+
+    Tabular data can be provided as either temperature-dependent or
+    pressure-dependent data. The same `extrapolation` settings as in
+    :obj:`TDependentProperty` are implemented here for the low-pressure
+    correlations.
+
+    In addition to the methods and attributes shown here, all those from
+    :obj:`TPDependentProperty` are also available.
+
+    Attributes
+    ----------
+    method_P : str
+        The method was which was last used successfully to calculate a property;
+        set only after the first property calculation.
+    method : str
+        The method to be used for property calculations, [-]
+    '''
     interpolation_P = None
-    forced_P = False
-    TP_cached = None
+    TP_cached = (None, None)
+    '''Previously specified `T` and `P` in the calculation.'''
+
+    all_methods_P = set()
+    '''Set of all pressure-dependent methods loaded and ready to use for the
+    chemical property.'''
 
     @property
     def method_P(self):
@@ -2182,9 +2230,9 @@ class TPDependentProperty(TDependentProperty):
 
     def __call__(self, T, P):
         r'''Convenience method to calculate the property; calls
-        :obj::obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`. Caches previously calculated value,
+        :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`. Caches previously calculated value,
         which is an overhead when calculating many different values of
-        a property. See :obj::obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>` for more details as to the
+        a property. See :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>` for more details as to the
         calculation procedure.
 
         Parameters
@@ -2209,12 +2257,17 @@ class TPDependentProperty(TDependentProperty):
             self.TP_cached = (T, P)
             return self.prop_cached
 
-    def select_valid_methods_P(self, T, P, check_validity=True):
-        r'''Method to obtain a sorted list methods which are valid at `T`
-        according to :obj:`test_method_validity`. Considers either only user methods
-        if forced is True, or all methods. User methods are first tested
-        according to their listed order, and unless forced is True, then all
-        methods are tested and sorted by their order in :obj:`ranked_methods`.
+    def select_valid_methods_P(self, T=None, P=None):
+        r'''Method to obtain a sorted list of high-pressure methods that have
+        data available to be used. The methods are ranked in the following
+        order:
+
+        * The currently selected :obj:`method_P` is first (if one is selected)
+        * Other available pressure-depenent methods are ranked by the attribute
+          :obj:`ranked_methods_P`
+
+        If `T` and `P` are provided, the methods will be checked against the
+        temperature and pressure limits of the correlations as well.
 
         Parameters
         ----------
@@ -2222,57 +2275,41 @@ class TPDependentProperty(TDependentProperty):
             Temperature at which to test methods, [K]
         P : float
             Pressure at which to test methods, [Pa]
-        check_validity : bool
-            Whether or not to use :obj:`test_method_validity` to check the
-            method for validity or not, [-]
 
         Returns
         -------
         sorted_valid_methods_P : list
             Sorted lists of methods valid at T and P according to
-            :obj:`test_method_validity`
+            :obj:`test_method_validity_P`
         '''
-        # Same as valid_methods but with _P added to variables
-        if self.forced_P:
-            considered_methods = list(self.user_methods_P)
-        else:
-            considered_methods = list(self.all_methods_P)
+        considered_methods = list(self.all_methods_P)
 
-        if self.user_methods_P:
-            [considered_methods.remove(i) for i in self.user_methods_P]
+        if self._method_P is not None:
+            considered_methods.remove(self._method_P)
 
         preferences = sorted([self.ranked_methods_P.index(i) for i in considered_methods])
         sorted_methods = [self.ranked_methods_P[i] for i in preferences]
 
-        if self.user_methods_P:
-            [sorted_methods.insert(0, i) for i in reversed(self.user_methods_P)]
+        if self._method_P is not None:
+            sorted_methods.insert(0, self._method_P)
 
-        if not check_validity:
+        if T is not None and P is not None:
+            sorted_valid_methods_P = []
+            for method in sorted_methods:
+                if self.test_method_validity_P(T, P, method):
+                    sorted_valid_methods_P.append(method)
+            return sorted_valid_methods_P
+        else:
             return sorted_methods
 
-        sorted_valid_methods_P = []
-        for method in sorted_methods:
-            if self.test_method_validity_P(T, P, method):
-                sorted_valid_methods_P.append(method)
-
-        return sorted_valid_methods_P
 
     def TP_dependent_property(self, T, P):
-        r'''Method to calculate the property with sanity checking and without
-        specifying a specific method. :obj:`select_valid_methods_P` is used to obtain
-        a sorted list of methods to try. Methods are then tried in order until
-        one succeeds. The methods are allowed to fail, and their results are
-        checked with :obj:`test_property_validity`. On success, the used method
-        is stored in the variable :obj:`method_P`.
+        r'''Method to calculate the property given a temperature and pressure
+        according to the selected :obj:`method_P` and :obj:`method`.
+        The pressure-dependent method is always used and required to succeed.
+        The result is checked with :obj:`test_property_validity`.
 
-        If :obj:`method_P` is set, this method is first checked for validity with
-        :obj:`test_method_validity_P` for the specified temperature, and if it is
-        valid, it is then used to calculate the property. The result is checked
-        for validity, and returned if it is valid. If either of the checks fail,
-        the function retrieves a full list of valid methods with
-        :obj:`select_valid_methods_P` and attempts them as described above.
-
-        If no methods are found which succeed, returns None.
+        If the method does not succeed, returns None.
 
         Parameters
         ----------
@@ -2286,21 +2323,6 @@ class TPDependentProperty(TDependentProperty):
         prop : float
             Calculated property, [`units`]
         '''
-        # Optimistic track, with the already set method
-#        if self.method_P:
-#            # retest within range
-#            if self.test_method_validity_P(T, P, self.method_P):
-#                try:
-#                    prop = self.calculate_P(T, P, self.method_P)
-#                    if self.test_property_validity(prop):
-#                        return prop
-#                except:  # pragma: no cover
-#                    pass
-#
-        # get valid methods at T, and try them until one yields a valid
-        # property; store the method_P and return the answer
-#        self.sorted_valid_methods_P = self.select_valid_methods_P(T, P)
-#        for method_P in self.sorted_valid_methods_P:
         try:
             prop = self.calculate_P(T, P, self._method_P)
             if self.test_property_validity(prop):
@@ -2311,8 +2333,32 @@ class TPDependentProperty(TDependentProperty):
         return None
 
     def TP_or_T_dependent_property(self, T, P):
-#        self.method = None
-#        self.method_P = None
+        r'''Method to calculate the property given a temperature and pressure
+        according to the selected :obj:`method_P` and :obj:`method`.
+        The pressure-dependent method is always tried.
+        The result is checked with :obj:`test_property_validity`.
+
+        If the pressure-dependent method does not succeed, the low-pressure
+        method is tried and its result is returned.
+
+        .. warning::
+            It can seem like a good idea to switch between a low-pressure and
+            a high-pressure method if the high pressure method is not working,
+            however it can cause discontinuities and prevent numerical methods
+            from converging
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the property, [K]
+        P : float
+            Pressure at which to calculate the property, [Pa]
+
+        Returns
+        -------
+        prop : float
+            Calculated property, [`units`]
+        '''
         if P is not None:
             prop = self.TP_dependent_property(T, P)
         if P is None or prop is None:
@@ -2634,7 +2680,7 @@ class TPDependentProperty(TDependentProperty):
         Pmax : float
             Maximum pressure, to stop calculating the property, [Pa]
         methods_P : list, optional
-            List of methods to consider
+            List of methods to plot
         pts : int, optional
             A list of points to calculate the property at for both temperature
             and pressure; pts^2 points will be calculated.
@@ -2648,6 +2694,7 @@ class TPDependentProperty(TDependentProperty):
         from mpl_toolkits.mplot3d import axes3d
         from matplotlib.ticker import FormatStrFormatter
         import numpy.ma as ma
+        import matplotlib.pyplot as plt
 
         if Pmin is None:
             if self.Pmin is not None:
@@ -2700,7 +2747,7 @@ class TPDependentProperty(TDependentProperty):
                 properties = ma.masked_invalid(np.array(properties, dtype=np.float).T)
                 handles.append(ax.plot_surface(Ts_mesh, Ps_mesh, properties, cstride=1, rstride=1, alpha=0.5))
             else:
-                properties = [[self.calculate_P(T, P, method_P) for P in Ps] for T in Ts]
+                properties = np.array([[self.calculate_P(T, P, method_P) for T in Ts] for P in Ps])
                 handles.append(ax.plot_surface(Ts_mesh, Ps_mesh, properties, cstride=1, rstride=1, alpha=0.5))
 
         ax.yaxis.set_major_formatter(FormatStrFormatter('%.4g'))
@@ -2742,7 +2789,7 @@ class TPDependentProperty(TDependentProperty):
 
         Returns
         -------
-        d_prop_d_T_at_P : float
+        dprop_dT_P : float
             Calculated derivative property at constant pressure,
             [`units/K^order`]
         '''
@@ -2774,7 +2821,7 @@ class TPDependentProperty(TDependentProperty):
 
         Returns
         -------
-        d_prop_d_P_at_T : float
+        dprop_dP_T : float
             Calculated derivative property at constant temperature,
             [`units/Pa^order`]
         '''
@@ -2784,9 +2831,7 @@ class TPDependentProperty(TDependentProperty):
     def TP_dependent_property_derivative_T(self, T, P, order=1):
         r'''Method to calculate a derivative of a temperature and pressure
         dependent property with respect to temperature at constant pressure,
-        of a given order. Methods found valid by :obj:`select_valid_methods_P` are
-        attempted until a method succeeds. If no methods are valid and succeed,
-        None is returned.
+        of a given order, according to the selected :obj:`method_P`.
 
         Calls :obj:`calculate_derivative_T` internally to perform the actual
         calculation.
@@ -2805,23 +2850,19 @@ class TPDependentProperty(TDependentProperty):
 
         Returns
         -------
-        d_prop_d_T_at_P : float
+        dprop_dT_P : float
             Calculated derivative property, [`units/K^order`]
         '''
-        sorted_valid_methods_P = self.select_valid_methods_P(T, P)
-        for method in sorted_valid_methods_P:
-            try:
-                return self.calculate_derivative_T(T, P, method, order)
-            except:
-                pass
+        try:
+            return self.calculate_derivative_T(T, P, self._method_P, order)
+        except:
+            pass
         return None
 
     def TP_dependent_property_derivative_P(self, T, P, order=1):
         r'''Method to calculate a derivative of a temperature and pressure
         dependent property with respect to pressure at constant temperature,
-        of a given order. Methods found valid by :obj:`select_valid_methods_P` are
-        attempted until a method succeeds. If no methods are valid and succeed,
-        None is returned.
+        of a given order, according to the selected :obj:`method_P`.
 
         Calls :obj:`calculate_derivative_P` internally to perform the actual
         calculation.
@@ -2840,15 +2881,13 @@ class TPDependentProperty(TDependentProperty):
 
         Returns
         -------
-        d_prop_d_P_at_T : float
+        dprop_dP_T : float
             Calculated derivative property, [`units/Pa^order`]
         '''
-        sorted_valid_methods_P = self.select_valid_methods_P(T, P)
-        for method in sorted_valid_methods_P:
-            try:
-                return self.calculate_derivative_P(P, T, method, order)
-            except:
-                pass
+        try:
+            return self.calculate_derivative_P(P, T, self._method_P, order)
+        except:
+            pass
         return None
 
 
@@ -2922,9 +2961,9 @@ class MixtureProperty(object):
 
     def __call__(self, T, P, zs=None, ws=None):
         r'''Convenience method to calculate the property; calls
-        :obj::obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`. Caches previously calculated value,
+        :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`. Caches previously calculated value,
         which is an overhead when calculating many different values of
-        a property. See :obj::obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>` for more details as to the
+        a property. See :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>` for more details as to the
         calculation procedure. One or both of `zs` and `ws` are required.
 
         Parameters
