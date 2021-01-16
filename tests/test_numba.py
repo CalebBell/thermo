@@ -90,14 +90,14 @@ def test_PRMIX_outputs_inputs_np():
         assert type(getattr(eos_np, attr)) is np.ndarray
 
 def test_IdealSolution_np_out():
-    from thermo.numba import IdealSolution
+    from thermo import IdealSolution
     from thermo.numba import IdealSolution as IdealSolutionnp
     model = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
     modelnp = IdealSolutionnp(T=300.0, xs=np.array([.1, .2, .3, .4]))
     modelnp2 = modelnp.to_T_xs(T=310.0, xs=np.array([.2, .2, .2, .4]))
 
 
-    vec_attrs = ['gammas', 'd2GE_dTdxs', 'dGE_dxs']
+    vec_attrs = ['gammas', 'd2GE_dTdxs', 'dGE_dxs', 'dHE_dxs']
 
     for attr in vec_attrs:
         assert_close1d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-14)

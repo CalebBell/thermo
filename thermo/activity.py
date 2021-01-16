@@ -89,6 +89,13 @@ def gibbs_excess_gammas(xs, dG_dxs, GE, T, gammas=None):
         gammas[i] = exp((dG_dxs[i] + xdx_totF)*RT_inv)
     return gammas
 
+def gibbs_excess_dHE_dxs(dGE_dxs, d2GE_dTdxs, N, T, dHE_dxs=None):
+    if dHE_dxs is None:
+        dHE_dxs = [0.0]*N
+    for i in range(N):
+        dHE_dxs[i] = -T*d2GE_dTdxs[i] + dGE_dxs[i]
+    return dHE_dxs
+
 class GibbsExcess(object):
     r'''Class for representing an activity coefficient model.
     While these are typically presented as tools to compute activity
@@ -177,15 +184,17 @@ class GibbsExcess(object):
         -----
         '''
         try:
-            self._dHE_dxs
+            return self._dHE_dxs
         except:
             pass
         # Derived by hand taking into account the expression for excess enthalpy
         d2GE_dTdxs = self.d2GE_dTdxs()
-        dGE_dxs = self.dGE_dxs()
-        T = self.T
-        self._dHE_dxs = [-T*d2GE_dTdxs[i] + dGE_dxs[i] for i in self.cmps]
-        return self._dHE_dxs
+        try:
+            dGE_dxs = self._dGE_dxs
+        except:
+            dGE_dxs = self.dGE_dxs()
+        self._dHE_dxs = dHE_dxs = gibbs_excess_dHE_dxs(dGE_dxs, d2GE_dTdxs, self.N, self.T)
+        return dHE_dxs
 
     def dHE_dns(self):
         r'''Calculate and return the mole number derivative of excess
