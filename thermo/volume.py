@@ -1660,7 +1660,7 @@ class VolumeGas(TPDependentProperty):
         if method_P is not None:
             self.method_P = method_P
         else:
-            methods = self.select_valid_methods_P(T=None, P=None)
+            methods = self.valid_methods_P(T=None, P=None)
             if methods:
                 self.method_P = methods[0]
 

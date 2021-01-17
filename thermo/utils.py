@@ -54,7 +54,7 @@ Temperature and Pressure Dependent
              extrapolate, test_method_validity, calculate,
              interpolation_T, interpolation_T_inv, interpolation_property,
              interpolation_property_inv, T_limits, all_methods, all_methods_P,
-             method_P, select_valid_methods_P, TP_dependent_property,
+             method_P, valid_methods_P, TP_dependent_property,
              TP_or_T_dependent_property, add_tabular_data_P, plot_isotherm,
              plot_isobar, plot_TP_dependent_property, calculate_derivative_T,
              calculate_derivative_P, TP_dependent_property_derivative_T,
@@ -1544,7 +1544,6 @@ class TDependentProperty(object):
 
         def error(T):
             err = self.T_dependent_property(T) - goal
-            print(err, T)
             return err
         T_limits = self.T_limits[self.method]
         if self.extrapolation is None:
@@ -2257,7 +2256,7 @@ class TPDependentProperty(TDependentProperty):
             self.TP_cached = (T, P)
             return self.prop_cached
 
-    def select_valid_methods_P(self, T=None, P=None):
+    def valid_methods_P(self, T=None, P=None):
         r'''Method to obtain a sorted list of high-pressure methods that have
         data available to be used. The methods are ranked in the following
         order:

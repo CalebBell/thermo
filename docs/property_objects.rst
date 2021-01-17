@@ -122,7 +122,7 @@ To better understand what methods are available, the :obj:`valid_methods <thermo
 >>> ethanol_psat.valid_methods(100)
 ['AMBROSE_WALTON', 'LEE_KESLER_PSAT', 'Edalat', 'BOILING_CRITICAL', 'SANJARI']
 
-If the temperature is not provided, all available methods are returned; the returned value always favors the methods by the ranking defined in thermo.
+If the temperature is not provided, all available methods are returned; the returned value favors the methods by the ranking defined in thermo, with the currently selected method as the first item.
 
 >>> ethanol_psat.valid_methods()
 ['WAGNER_MCGARRY', 'WAGNER_POLING', 'DIPPR_PERRY_8E', 'VDI_PPDS', 'COOLPROP', 'ANTOINE_POLING', 'VDI_TABULAR', 'AMBROSE_WALTON', 'LEE_KESLER_PSAT', 'Edalat', 'BOILING_CRITICAL', 'SANJARI']
@@ -358,6 +358,75 @@ The above examples all show using calculating the property with a pressure speci
 0.000856467
 >>> water_mu.T_dependent_property(T=400.0) 
 0.000217346
+
+Limits and Extrapolation
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The same temperature limits and low-pressure extrapolation methods are available as for :obj:`TDependentProperty <thermo.utils.TDependentProperty>`.
+
+>>> water_mu.valid_methods(T=480)
+['DIPPR_PERRY_8E', 'COOLPROP', 'VDI_PPDS', 'LETSOU_STIEL']
+>>> water_mu.extrapolation
+'linear'
+
+To better understand what methods are available, the :obj:`valid_methods_P <thermo.utils.TDependentProperty.valid_methods_P>` method checks all available high-pressure correlations against their temperature and pressure limits.
+
+>>> water_mu.valid_methods_P(T=300, P=1e9)
+['LUCAS', 'COOLPROP']
+>>> water_mu.valid_methods_P(T=300, P=1e10)
+['LUCAS']
+>>> water_mu.valid_methods_P(T=900, P=1e6)
+['LUCAS']
+
+If the temperature and pressure are not provided, all available methods are returned; the returned value favors the methods by the ranking defined in thermo, with the currently selected method as the first item.
+
+>>> water_mu.valid_methods_P()
+['LUCAS', 'COOLPROP']
+
+Calculating Conditions From Properties
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The method is :obj:`solve_property <thermo.utils.TDependentProperty.solve_property>` works only on the low-pressure correlations.
+
+>>> water_mu.solve_property(1e-3)
+294.0711641
+
+Property Derivatives
+^^^^^^^^^^^^^^^^^^^^
+
+Functionality for calculating the temperature derivative of the property is implemented twice; as :obj:`T_dependent_property_derivative <thermo.utils.TDependentProperty.T_dependent_property_derivative>` using the low-pressure correlations, and as :obj:`TP_dependent_property_derivative_T <thermo.utils.TPDependentProperty.TP_dependent_property_derivative_T>` using the high-pressure correlations that require pressure as an input.
+
+>>> water_mu.T_dependent_property_derivative(300)
+-1.893961e-05
+>>> water_mu.TP_dependent_property_derivative_T(300, P=1e7)
+-1.927268e-05
+
+The derivatives are numerical unless a special implementation has been added to the property's :obj:`calculate_derivative_T <thermo.utils.TPDependentProperty.calculate_derivative_T>`  and/or :obj:`calculate_derivative <thermo.utils.TDependentProperty.calculate_derivative>` method.
+
+Higher order derivatives are available as well with the `order` argument.
+
+>>> water_mu.T_dependent_property_derivative(300.0, order=2)
+5.923372e-07
+>>> water_mu.TP_dependent_property_derivative_T(300.0, P=1e6, order=2)
+-1.40946e-06
+
+Functionality for calculating the pressure derivative of the property is also implemented as :obj:`TP_dependent_property_derivative_P <thermo.utils.TPDependentProperty.TP_dependent_property_derivative_P>`:
+
+>>> water_mu.TP_dependent_property_derivative_P(P=5e7, T=400)
+4.27782809e-13
+
+The derivatives are numerical unless a special implementation has been added to the property's  :obj:`calculate_derivative_P <thermo.utils.TPDependentProperty.calculate_derivative_P>` method.
+
+Higher order derivatives are available as well with the `order` argument.
+
+>>> water_mu.TP_dependent_property_derivative_P(P=5e7, T=400, order=2)
+-1.1858461e-15
+
+Property Integrals
+^^^^^^^^^^^^^^^^^^
+The same functionality for integrating over a property as in temperature-dependent objects is available, but only for integrating over temperature using low pressure correlations. No other use cases have been identified requiring integration over high-pressure conditions.
+
+>>> water_mu.T_dependent_property_integral(300, 400) # Integrating over viscosity has no physical meaning
+0.04243
 
 Mixture Properties
 ------------------
