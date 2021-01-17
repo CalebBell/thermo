@@ -1486,8 +1486,9 @@ class TDependentProperty(object):
         r'''Method to set tabular data to be used for interpolation.
         Ts must be in increasing order. If no name is given, data will be
         assigned the name 'Tabular data series #x', where x is the number of
-        previously added tabular data series. The name is added to all
-        methods and iserted at the start of user methods,
+        previously added tabular data series.
+
+        After adding the data, this method becomes the selected method.
 
         Parameters
         ----------
@@ -2369,8 +2370,11 @@ class TPDependentProperty(TDependentProperty):
         r'''Method to set tabular data to be used for interpolation.
         Ts and Psmust be in increasing order. If no name is given, data will be
         assigned the name 'Tabular data series #x', where x is the number of
-        previously added tabular data series. The name is added to all
-        methods and is inserted at the start of user methods,
+        previously added tabular data series.
+
+        After adding the data, this method becomes the selected high-pressure
+        method.
+
 
         Parameters
         ----------
@@ -2379,7 +2383,8 @@ class TPDependentProperty(TDependentProperty):
         Ps : array-like
             Increasing array of pressures at which properties are specified, [Pa]
         properties : array-like
-            List of properties at Ts, [`units`]
+            List of properties at `Ts` and `Ps`; the data should be indexed
+            [P][T], [`units`]
         name : str, optional
             Name assigned to the data
         check_properties : bool
@@ -2479,7 +2484,7 @@ class TPDependentProperty(TDependentProperty):
         if self.interpolation_T:
             T = self.interpolation_T(T)
         if self.interpolation_P:
-            P = self.interpolation_T(P)
+            P = self.interpolation_P(P)
         prop = tool(T, P)  # either spline, or linear interpolation
 
         if self.interpolation_property:
@@ -2537,10 +2542,7 @@ class TPDependentProperty(TDependentProperty):
         fig = plt.figure()
 
         if not methods_P:
-            if self.user_methods_P:
-                methods_P = self.user_methods_P
-            else:
-                methods_P = self.all_methods_P
+            methods_P = self.all_methods_P
         Ps = linspace(Pmin, Pmax, pts)
         for method_P in methods_P:
             if only_valid:
@@ -2615,11 +2617,10 @@ class TPDependentProperty(TDependentProperty):
         if hasattr(P, '__call__'):
             P_changes = True
             P_func = P
+        else:
+            P_changes = False
         if not methods_P:
-            if self.user_methods_P:
-                methods_P = self.user_methods_P
-            else:
-                methods_P = self.all_methods_P
+            methods_P = self.all_methods_P
         Ts = linspace(Tmin, Tmax, pts)
         fig = plt.figure()
         for method_P in methods_P:

@@ -383,6 +383,25 @@ If the temperature and pressure are not provided, all available methods are retu
 >>> water_mu.valid_methods_P()
 ['LUCAS', 'COOLPROP']
 
+Plotting
+^^^^^^^^
+
+It is possible to compare the correlations graphically with the method :obj:`plot_TP_dependent_property <thermo.utils.TPDependentProperty.plot_TP_dependent_property>`.
+
+>>> water_mu.plot_TP_dependent_property(Tmin=400, Pmin=1e5, Pmax=1e8, methods_P=['COOLPROP','LUCAS'], pts=15, only_valid=False)
+
+.. plot:: plots/viscosity_water_0.py
+
+This can be a little confusing; but isotherms and isobars can be plotted as well, which are more straight forward. The respective methods are :obj:`plot_isotherm <thermo.utils.TPDependentProperty.plot_isotherm>` and :obj:`plot_isobar <thermo.utils.TPDependentProperty.plot_isobar>`:
+
+>>> water_mu.plot_isotherm(T=350, Pmin=1e5, Pmax=1e7, pts=50)
+
+.. plot:: plots/viscosity_water_1.py
+
+>>> water_mu.plot_isobar(P=1e7, Tmin=300, Tmax=600, pts=50)
+
+.. plot:: plots/viscosity_water_2.py
+
 Calculating Conditions From Properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The method is :obj:`solve_property <thermo.utils.TDependentProperty.solve_property>` works only on the low-pressure correlations.
@@ -423,10 +442,32 @@ Higher order derivatives are available as well with the `order` argument.
 
 Property Integrals
 ^^^^^^^^^^^^^^^^^^
-The same functionality for integrating over a property as in temperature-dependent objects is available, but only for integrating over temperature using low pressure correlations. No other use cases have been identified requiring integration over high-pressure conditions.
+The same functionality for integrating over a property as in temperature-dependent objects is available, but only for integrating over temperature using low pressure correlations. No other use cases have been identified requiring integration over high-pressure conditions, or integration over the pressure domain.
 
 >>> water_mu.T_dependent_property_integral(300, 400) # Integrating over viscosity has no physical meaning
 0.04243
+
+Using Tabular Data
+^^^^^^^^^^^^^^^^^^
+
+If there are experimentally available data for a property at high and low pressure, an interpolation table can be created and used as follows. The CoolProp method is used to generate a small table, and is then added as a new method in the example below.
+
+>>> from thermo import *
+>>> import numpy as np
+>>> Ts = [300, 400, 500]
+>>> Ps = [1e5, 1e6, 1e7]
+>>> table = [[water_mu.calculate_P(T, P, "COOLPROP") for T in Ts] for P in Ps]
+>>> water_mu.method_P
+'LUCAS'
+>>> water_mu.add_tabular_data_P(Ts, Ps, table)
+>>> water_mu.method_P
+'Tabular data series #0'
+>>> water_mu(400, 1e7), water_mu.calculate_P(400, 1e7, "COOLPROP")
+(0.000221166933349, 0.000221166933349)
+>>> water_mu(450, 5e6), water_mu.calculate_P(450, 5e6, "COOLPROP")
+(0.00011340, 0.00015423)
+
+The more data points used, the closer a property will match.
 
 Mixture Properties
 ------------------

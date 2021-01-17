@@ -271,6 +271,12 @@ class ViscosityLiquid(TPDependentProperty):
     units = 'Pa*s'
 
     @staticmethod
+    def interpolation_P(P):
+        '''log(P) interpolation transformation by default.
+        '''
+        return log(P)
+
+    @staticmethod
     def interpolation_T(T):
         '''Function to make the data-based interpolation as linear as possible.
         This transforms the input `T` into the `1/T` domain.'''
