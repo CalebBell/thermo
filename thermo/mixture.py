@@ -600,9 +600,8 @@ class Mixture(object):
             else:
                 Vfs = Vfgs if sum(Vfgs) == 1 else [Vfgi/sum(Vfgs) for Vfgi in Vfgs]
                 VolumeObjects = self.VolumeGases
-                Vms_TP = self.Vmgs
-                if (T_vf != T or P_vf != P):
-                    Vms_TP = [ideal_gas(T_vf, P_vf)]*self.N
+                #Vms_TP = self.Vmgs
+                Vms_TP = [ideal_gas(T_vf, P_vf)]*self.N
 
             if (T_vf != T or P_vf != P) and Vfls:
                 Vms_TP = [i(T_vf, P_vf) for i in VolumeObjects]

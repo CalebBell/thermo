@@ -34,7 +34,8 @@ except:
 from fluids.constants import R
 from chemicals.utils import property_molar_to_mass, property_mass_to_molar, solve_flow_composition_mix
 from chemicals.exceptions import OverspeficiedError
-from chemicals.utils import mixing_simple, normalize, Vfs_to_zs, ws_to_zs, zs_to_ws
+from chemicals.volume import ideal_gas
+from chemicals.utils import mixing_simple, normalize, Vfs_to_zs, ws_to_zs, zs_to_ws, Vm_to_rho
 from thermo.mixture import Mixture, preprocess_mixture_composition
 from thermo.equilibrium import EquilibriumState
 from thermo.flash import Flash
@@ -1414,7 +1415,7 @@ class Stream(Mixture):
             try:
                 if isinstance(Qgs, (OrderedDict, dict)):
                     Qgs = Qgs.values()
-                self.n = sum([Q/Vmg for Q, Vmg in zip(Qgs, self.Vmgs)])
+                self.n = sum([Q/Vmg for Q, Vmg in zip(Qgs, [ideal_gas(T, P)]*self.N)])
             except:
                 raise Exception('Gas molar volume could not be calculated to determine the flow rate of the stream.')
         elif energy is not None:
@@ -1457,7 +1458,7 @@ class Stream(Mixture):
         except:
             pass
         try:
-            self.Qgs = [m/rho for m, rho in zip(self.ms, self.rhogs)]
+            self.Qgs = [m/Vm_to_rho(ideal_gas(self.T, self.P), MW=MW) for m, MW in zip(self.ms, self.MWs)]
         except:
             pass
         try:
