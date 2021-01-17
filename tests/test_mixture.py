@@ -58,7 +58,7 @@ def test_Mixture_input_basics():
     # liquid fractions, gas fractions (liq/gas are with volumes of pure components at T and P)
     kwargs = {'ws': [0.5, 0.5], 'zs': [0.7188789914193495, 0.2811210085806504],
               'Vfls': [0.44054617180108374, 0.5594538281989162],
-              'Vfgs': [0.7229421485513368, 0.2770578514486633]}
+              'Vfgs': [0.7188789914193495, 0.2811210085806504]}
     for key, val in kwargs.items():
         m = Mixture(['water', 'ethanol'], **{key:val})
         assert_allclose(m.zs, kwargs['zs'], rtol=1E-6)
@@ -72,7 +72,7 @@ def test_Mixture_input_ordered_dict():
     kwargs = {'ws': [0.4401066297270966, 0.31540115235588945, 0.24449221791701395],
               'zs': [.5, .3, .2],
               'Vfls': [0.45711574619871703, 0.31076035223551646, 0.23212390156576654],
-              'Vfgs': [0.5127892380094016, 0.2979448661739439, 0.18926589581665448]}
+              'Vfgs': [.5, .3, .2]}
     for key, val in kwargs.items():
         d = OrderedDict()
         for i, j in zip(IDs, val):
@@ -90,7 +90,7 @@ def test_Mixture_input_np_array():
     kwargs = {'ws': np.array([0.4401066297270966, 0.31540115235588945, 0.24449221791701395]),
               'zs': np.array([.5, .3, .2]),
               'Vfls': np.array([0.45711574619871703, 0.31076035223551646, 0.23212390156576654]),
-              'Vfgs': np.array([0.5127892380094016, 0.2979448661739439, 0.18926589581665448])}
+              'Vfgs': np.array([.5, .3, .2])}
 
     for key, val in kwargs.items():
 
@@ -151,10 +151,10 @@ def test_Mixture_calculated_Vfs():
 
     # gas fractions
     S = Mixture(['hexane', 'decane'], zs=[0.25, 0.75], T=699)
-    assert_allclose(S.Vfgs(700, 101326), [0.251236709756207, 0.748763290243793], rtol=1e-3)
-    assert_allclose(S.Vfgs(), [0.25124363058052673, 0.7487563694194732], rtol=1e-3)
-    assert_allclose(S.Vfgs(P=101326), [0.2512436429605387, 0.7487563570394613], rtol=1e-3)
-    assert_allclose(S.Vfgs(T=699), [0.25124363058052673, 0.7487563694194732], rtol=1e-3)
+    assert_allclose(S.Vfgs(700, 101326), [0.25, 0.75], rtol=1e-3)
+    assert_allclose(S.Vfgs(), [0.25, 0.75], rtol=1e-3)
+    assert_allclose(S.Vfgs(P=101326), [0.25, 0.75], rtol=1e-3)
+    assert_allclose(S.Vfgs(T=699), [0.25, 0.75], rtol=1e-3)
 
 def test_Mixture_predefined():
     for name in ['Air', 'air', u'Air', ['air']]:

@@ -31,6 +31,7 @@ from fluids.core import *
 from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
 
 from chemicals.virial import B_from_Z
+from chemicals.volume import ideal_gas
 from chemicals.identifiers import *
 from chemicals.identifiers import IDs_to_CASs
 from chemicals.utils import *
@@ -600,8 +601,10 @@ class Mixture(object):
                 Vfs = Vfgs if sum(Vfgs) == 1 else [Vfgi/sum(Vfgs) for Vfgi in Vfgs]
                 VolumeObjects = self.VolumeGases
                 Vms_TP = self.Vmgs
+                if (T_vf != T or P_vf != P):
+                    Vms_TP = [ideal_gas(T_vf, P_vf)]*self.N
 
-            if T_vf != T or P_vf != P:
+            if (T_vf != T or P_vf != P) and Vfls:
                 Vms_TP = [i(T_vf, P_vf) for i in VolumeObjects]
             self.zs = Vfs_to_zs(Vfs, Vms_TP)
             self.ws = zs_to_ws(self.zs, self.MWs)
@@ -1149,16 +1152,17 @@ class Mixture(object):
         >>> S.Vfgs(P=1E2)
         [0.0999987466608421, 0.9000012533391578]
         '''
-        if (T is None or T == self.T) and (P is None or P == self.P):
-            Vmgs = self.Vmgs
-        else:
-            if T is None: T = self.T
-            if P is None: P = self.P
-            Vmgs = [i(T, P) for i in self.VolumeGases]
-        if none_and_length_check([Vmgs]):
-            return zs_to_Vfs(self.zs, Vmgs)
-        return None
-
+        return self.zs
+#        if (T is None or T == self.T) and (P is None or P == self.P):
+#            Vmgs = self.Vmgs
+#        else:
+#            if T is None: T = self.T
+#            if P is None: P = self.P
+#            Vmgs = [i(T, P) for i in self.VolumeGases]
+#        if none_and_length_check([Vmgs]):
+#            return zs_to_Vfs(self.zs, Vmgs)
+#        return None
+#
     def compound_index(self, CAS):
         try:
             return self.CASs.index(CAS)
