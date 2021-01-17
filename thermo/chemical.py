@@ -36,6 +36,7 @@ from chemicals.critical import Tc, Pc, Vc, Tc_methods, Pc_methods, Vc_methods
 from chemicals.acentric import omega, Stiel_polar_factor, omega_methods
 from chemicals.triple import Tt, Pt, Tt_methods, Pt_methods
 from chemicals.virial import B_from_Z
+from chemicals.volume import ideal_gas
 from chemicals.reaction import Hfg_methods, S0g_methods, Hfl_methods, Hfs_methods, Hfs, Hfl, Hfg, S0g, S0l, S0s, Gibbs_formation, Hf_basis_converter, entropy_formation
 from chemicals.combustion import combustion_stoichiometry, HHV_stoichiometry, LHV_from_HHV
 from chemicals.safety import T_flash, T_autoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, T_flash_methods, T_autoignition_methods, LFL_methods, UFL_methods, TWA_methods, STEL_methods, Ceiling_methods, Skin_methods, Carcinogen_methods
@@ -582,7 +583,8 @@ class Chemical(object): # pragma: no cover
     rhoml_STP : float
         Molar density of liquid phase at 298.15 K and 101325 Pa [mol/m^3]
     Vmg_STP : float
-        Molar volume of gas phase at 298.15 K and 101325 Pa [m^3/mol]
+        Molar volume of gas phase at 298.15 K and 101325 Pa according to
+        the ideal gas law, [m^3/mol]
     Vms_Tm : float
         Molar volume of solid phase at the melting point [m^3/mol]
     rhos_Tm : float
@@ -744,11 +746,11 @@ class Chemical(object): # pragma: no cover
             return None
         if T:
             if T < 0:
-                raise Exception('Negative value specified for Chemical temperature - aborting!')
+                raise ValueError('Negative value specified for Chemical temperature - aborting!')
             self.T = T
         if P:
             if P < 0:
-                raise Exception('Negative value specified for Chemical pressure - aborting!')
+                raise ValueError('Negative value specified for Chemical pressure - aborting!')
             self.P = P
 
         if self.autocalc:
@@ -1129,7 +1131,7 @@ class Chemical(object): # pragma: no cover
                                    omega=self.omega, dipole=self.dipole,
                                    eos=self.eos_in_a_box, CASRN=self.CAS)
 
-        self.Vmg_STP = self.VolumeGas.TP_dependent_property(298.15, 101325)
+        self.Vmg_STP = ideal_gas(T=298.15, P=101325)
 
         self.VolumeSolid = VolumeSolid(CASRN=self.CAS, MW=self.MW, Tt=self.Tt, Vml_Tt=self.Vml_Tm,
                                        poly_fit=get_chemical_constants(self.CAS, 'VolumeSolid'))
@@ -2135,6 +2137,20 @@ class Chemical(object): # pragma: no cover
         return self.VolumeGas(self.T, self.P)
 
     @property
+    def Vmg_ideal(self):
+        r'''Gas-phase molar volume of the chemical at its current
+        temperature and pressure calculated with the ideal-gas law,
+        in units of [m^3/mol].
+
+        Examples
+        --------
+
+        >>> Chemical('helium', T=300.0, P=1e5).Vmg_ideal
+        0.0249433878544
+        '''
+        return ideal_gas(T=self.T, P=self.P)
+
+    @property
     def rhos(self):
         r'''Solid-phase mass density of the chemical at its current temperature,
         in units of [kg/m^3]. For calculation of this property at
@@ -2804,16 +2820,20 @@ class Chemical(object): # pragma: no cover
         .. math::
             P = \frac{\sigma^{0.25} MW}{\rho_L - \rho_V}
 
-        Calculated based on surface tension, density of the liquid and gas
+        Calculated based on surface tension, density of the liquid
         phase, and molecular weight. For uses of this property, see
         :obj:`thermo.utils.Parachor`.
+
+        The gas density is calculated using the ideal-gas law.
 
         Examples
         --------
         >>> Chemical('octane').Parachor
-        6.291693072841486e-05
+        6.2e-05
         '''
-        sigma, rhol, rhog = self.sigma, self.rhol, self.rhog
+        sigma, rhol = self.sigma, self.rhol
+
+        rhog = Vm_to_rho(ideal_gas(T=self.T, P=self.P), MW=self.MW)
         if all((sigma, rhol, rhog, self.MW)):
             return Parachor(sigma=sigma, MW=self.MW, rhol=rhol, rhog=rhog)
         return None

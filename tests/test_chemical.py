@@ -112,8 +112,7 @@ def test_Chemical_properties_T_dependent_constants():
     assert_allclose(w.Vml_Tm, 1.7908144191247533e-05, rtol=1e-4)
     assert_allclose(w.Vml_STP, 1.8069338439592963e-05, rtol=1e-4)
 
-    # VolumeGas will no longer extrapolate
-#    assert_allclose(w.Vmg_STP, 0.023505766772305356, rtol=1e-4)
+    assert_allclose(w.Vmg_STP, 0.024465403697038125, rtol=1e-4)
 
 
     assert_allclose(w.Hvap_Tb, 2256470.870516969, rtol=1e-4)
@@ -127,6 +126,7 @@ def test_Chemical_properties_T_dependent():
     # T-only dependent properties (always or at the moment)
     # Keep the order of the tests matching the order of the code
     w = Chemical('water', T=300, P=1E5)
+    s = Chemical('water', T=500, P=1E5)
     Pd = Chemical('palladium')
 
     assert_allclose(w.Psat, 3533.918074415897, rtol=1e-4)
@@ -147,30 +147,30 @@ def test_Chemical_properties_T_dependent():
 
     assert_allclose(Pd.Vms, 8.86833333333333e-06, rtol=1e-4)
     assert_allclose(w.Vml, 1.8077520828345428e-05, rtol=1e-4)
-    assert_allclose(w.Vmg, 0.02401190487463453, rtol=1e-4)
+    assert_allclose(w.Vmg_ideal, 0.02494338785445972, rtol=1e-4)
 
     assert_allclose(Pd.rhos, 12000.000000000005, rtol=1e-4)
     assert_allclose(w.rhol, 996.5570041967351, rtol=1e-4)
-    assert_allclose(w.rhog, 0.7502645081286664, rtol=1e-4)
+    assert_allclose(s.rhog, 0.4351403649367513, rtol=1e-4)
 
     assert_allclose(Pd.rhosm, 112760.75925577903, rtol=1e-4)
     assert_allclose(w.rholm, 55317.319752828436, rtol=1e-4)
-    assert_allclose(w.rhogm, 41.646008728627386, rtol=1e-4)
+    assert_allclose(s.rhogm, 24.153960689856124, rtol=1e-4)
 
     assert_allclose(Pd.Zs, 0.00036248477437931853, rtol=1e-4)
     assert_allclose(w.Zl, 0.0007247422467681115, rtol=1e-4)
-    assert_allclose(w.Zg, 0.9626564423998831, rtol=1e-4)
+    assert_allclose(s.Zg, 0.9958810199872231, rtol=1e-4)
 
-    assert_allclose(w.Bvirial, -0.0009314745253654686, rtol=1e-4)
+    assert_allclose(s.Bvirial, -0.0001712355267057688, rtol=1e-4)
 
     assert_allclose(w.isobaric_expansion_l, 0.00027479530461365189, rtol=1E-3)
-    assert_allclose(w.isobaric_expansion_g, 0.004082110714805371, rtol=1E-3)
+    assert_allclose(s.isobaric_expansion_g, 0.0020332741204046327, rtol=1E-3)
 
     assert_allclose(w.mul, 0.0008537426062537152, rtol=1e-4)
-    assert_allclose(w.mug, 9.759577077891826e-06, rtol=1e-4)
+    assert_allclose(s.mug, 1.729908278164999e-05, rtol=1e-4)
 
     assert_allclose(w.kl, 0.6094991151038377, rtol=1e-4)
-    assert_allclose(w.kg, 0.018984360775888904, rtol=1e-4)
+    assert_allclose(s.kg, 0.036031817846801754, rtol=1e-4)
 
     assert_allclose(w.sigma, 0.07176932405246211, rtol=1e-4)
 
@@ -178,16 +178,16 @@ def test_Chemical_properties_T_dependent():
     assert_allclose(w.absolute_permittivity, 6.879730496854497e-10, rtol=1e-4)
 
     assert_allclose(w.JTl, -2.2029508371866032e-07, rtol=1E-3)
-    assert_allclose(w.JTg, 0.00016057626157512468, rtol=1E-3)
+    assert_allclose(s.JTg, 1.9548097005716312e-05, rtol=1E-3)
 
     assert_allclose(w.nul, 8.566921938819405e-07, rtol=1E-3)
-    assert_allclose(w.nug, 1.3008181744108452e-05, rtol=1E-3)
+    assert_allclose(s.nug, 3.975517827256603e-05, rtol=1E-3)
 
     assert_allclose(w.Prl, 5.854395582989558, rtol=1E-3)
-    assert_allclose(w.Prg, 0.9585466341264076, rtol=1E-3)
+    assert_allclose(s.Prg, 0.9390303617687221, rtol=1E-3)
 
     assert_allclose(w.solubility_parameter, 47863.51384219548, rtol=1e-4)
-    assert_allclose(w.Parachor, 9.363768522707514e-06, rtol=1e-4)
+    assert_allclose(w.Parachor, 9.363505073270296e-06, rtol=5e-4)
 
     # Poynting factor
     assert_allclose(Chemical('pentane', T=300, P=1E7).Poynting, 1.5743051250679803, atol=.02)

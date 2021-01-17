@@ -1120,7 +1120,7 @@ class HeatCapacityLiquid(TDependentProperty):
         elif method == ZABRANSKY_SPLINE:
             return self.Zabransky_spline.calculate_integral(T1, T2)
         elif method == ZABRANSKY_SPLINE_C:
-            return self.Zabransky_spline_iso.calculate_integral(T1, T2)
+            return self.Zabransky_spline_iso.force_calculate_integral(T1, T2)
         elif method == ZABRANSKY_SPLINE_SAT:
             return self.Zabransky_spline_sat.calculate_integral(T1, T2)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL:

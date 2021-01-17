@@ -721,6 +721,7 @@ class VolumeLiquid(TPDependentProperty):
             if P > Psat:
                 Vm = COSTALD_compressed(T, P, Psat, self.Tc, self.Pc, self.omega, Vm)
         elif method == COOLPROP:
+#            assert PhaseSI('T', T, 'P', P, self.CASRN) == 'liquid'
             Vm = 1./PropsSI('DMOLAR', 'T', T, 'P', P, self.CASRN)
         elif method == EOS:
             self.eos[0] = self.eos[0].to_TP(T=T, P=P)
@@ -1748,6 +1749,7 @@ class VolumeGas(TPDependentProperty):
         elif method == IDEAL:
             Vm = ideal_gas(T, P)
         elif method == COOLPROP:
+            assert PhaseSI('T', T, 'P', P, self.CASRN) in ['gas', 'supercritical_gas', 'supercritical', 'supercritical_liquid']
             Vm = 1./PropsSI('DMOLAR', 'T', T, 'P', P, self.CASRN)
         elif method in self.tabular_data:
             Vm = self.interpolate_P(T, P, method)
