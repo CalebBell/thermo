@@ -52,7 +52,7 @@ except:
 __all__ = ['RegularSolution']
 
 
-def regular_solution_Hi_sums(SPs, Vs, coeffs, xsVs, N, Hi_sums=None):
+def regular_solution_Hi_sums(SPs, Vs, xsVs, coeffs, N, Hi_sums=None):
     if Hi_sums is None:
         Hi_sums = [0.0]*N
     for i in range(N):
@@ -65,7 +65,7 @@ def regular_solution_Hi_sums(SPs, Vs, coeffs, xsVs, N, Hi_sums=None):
     return Hi_sums
 
 
-def regular_solution_GE(SPs, coeffs, xsVs, N, xsVs_sum_inv):
+def regular_solution_GE(SPs, xsVs, coeffs, N, xsVs_sum_inv):
     # This can have its speed improved
     num = 0.0
     for i in range(N):
@@ -85,7 +85,7 @@ def regular_solution_GE(SPs, coeffs, xsVs, N, xsVs_sum_inv):
     return GE
 
 
-def regular_solution_dGE_dxs(Hi_sums, Vs, N, xsVs_sum_inv, GE, dGE_dxs=None):
+def regular_solution_dGE_dxs(Vs, Hi_sums, N, xsVs_sum_inv, GE, dGE_dxs=None):
     if dGE_dxs is None:
         dGE_dxs = [0.0]*N
     for i in range(N):
@@ -93,7 +93,7 @@ def regular_solution_dGE_dxs(Hi_sums, Vs, N, xsVs_sum_inv, GE, dGE_dxs=None):
         dGE_dxs[i] = (Hi_sums[i] - GE*Vs[i])*xsVs_sum_inv
     return dGE_dxs
 
-def regular_solution_d2GE_dxixjs(Vs, SPs, N, GE, Hi_sums, dGE_dxs, coeffs, xsVs_sum_inv, d2GE_dxixjs=None):
+def regular_solution_d2GE_dxixjs(Vs, SPs, Hi_sums, dGE_dxs, N, GE, coeffs, xsVs_sum_inv, d2GE_dxixjs=None):
     if d2GE_dxixjs is None:
         d2GE_dxixjs = [[0.0]*N for i in range(N)] # numba: delete
 #        d2GE_dxixjs = zeros((N, N)) # numba: uncomment
@@ -110,7 +110,8 @@ def regular_solution_d2GE_dxixjs(Vs, SPs, N, GE, Hi_sums, dGE_dxs, coeffs, xsVs_
             row[j] = tot
     return d2GE_dxixjs
 
-def regular_solution_d3GE_dxixjxks(Vs, SPs, N, GE, Hi_sums, dGE_dxs, d2GE_dxixjs, coeffs, xsVs_sum_inv, d3GE_dxixjxks=None):
+def regular_solution_d3GE_dxixjxks(Vs, SPs, Hi_sums, dGE_dxs, N, GE, xsVs_sum_inv, d2GE_dxixjs, coeffs,
+                                   d3GE_dxixjxks=None):
 
     # all the same: analytical[i][j][k] = analytical[i][k][j] = analytical[j][i][k] = analytical[j][k][i] = analytical[k][i][j] = analytical[k][j][i] = float(v)
     for i in range(N):
@@ -336,7 +337,7 @@ class RegularSolution(GibbsExcess):
             return self._GE
         except AttributeError:
             pass
-        GE = self._GE = regular_solution_GE(self.SPs, self.lambda_coeffs, self.xsVs, self.N, self.xsVs_sum_inv)
+        GE = self._GE = regular_solution_GE(self.SPs, self.xsVs, self.lambda_coeffs, self.N, self.xsVs_sum_inv)
         return GE
 
 
@@ -371,7 +372,7 @@ class RegularSolution(GibbsExcess):
         except:
             GE = self.GE()
 
-        self._dGE_dxs = dGE_dxs = regular_solution_dGE_dxs(self.Hi_sums(), self.Vs, self.N, self.xsVs_sum_inv, GE)
+        self._dGE_dxs = dGE_dxs = regular_solution_dGE_dxs(self.Vs, self.Hi_sums(), self.N, self.xsVs_sum_inv, GE)
         return dGE_dxs
 
     def Hi_sums(self):
@@ -379,7 +380,7 @@ class RegularSolution(GibbsExcess):
             return self._Hi_sums
         except:
             pass
-        self._Hi_sums = Hi_sums = regular_solution_Hi_sums(self.SPs, self.Vs, self.lambda_coeffs, self.xsVs, self.N)
+        self._Hi_sums = Hi_sums = regular_solution_Hi_sums(self.SPs, self.Vs, self.xsVs, self.lambda_coeffs, self.N)
         return Hi_sums
 
     def d2GE_dxixjs(self):
@@ -427,7 +428,8 @@ class RegularSolution(GibbsExcess):
         except:
             Hi_sums = self.Hi_sums()
 
-        d2GE_dxixjs = regular_solution_d2GE_dxixjs(self.Vs, self.SPs, N, GE, Hi_sums, dGE_dxs, self.lambda_coeffs, self.xsVs_sum_inv, d2GE_dxixjs)
+        d2GE_dxixjs = regular_solution_d2GE_dxixjs(self.Vs, self.SPs, Hi_sums, dGE_dxs, N, GE, self.lambda_coeffs,
+                                                   self.xsVs_sum_inv, d2GE_dxixjs)
         self._d2GE_dxixjs = d2GE_dxixjs
         return d2GE_dxixjs
 
@@ -476,7 +478,9 @@ class RegularSolution(GibbsExcess):
         else:
             d3GE_dxixjxks = zeros((N, N, N))
 
-        d3GE_dxixjxks = regular_solution_d3GE_dxixjxks(self.Vs, self.SPs, self.N, GE, Hi_sums, dGE_dxs, d2GE_dxixjs, self.lambda_coeffs, self.xsVs_sum_inv, d3GE_dxixjxks)
+        d3GE_dxixjxks = regular_solution_d3GE_dxixjxks(self.Vs, self.SPs, Hi_sums, dGE_dxs, self.N, GE,
+                                                       self.xsVs_sum_inv, d2GE_dxixjs, self.lambda_coeffs,
+                                                       d3GE_dxixjxks)
         self._d3GE_dxixjxks = d3GE_dxixjxks
         return d3GE_dxixjxks
 
