@@ -77,6 +77,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                  'regular_solution.regular_solution_d2GE_dxixjs',
                  'regular_solution.regular_solution_d3GE_dxixjxks',
                  'regular_solution.RegularSolution',
+                 'wilson.Wilson',
                  'activity.gibbs_excess_gammas', 'activity.gibbs_excess_dHE_dxs',
                  'activity.gibbs_excess_dgammas_dns', 'activity.gibbs_excess_dgammas_dT',
 

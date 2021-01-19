@@ -112,6 +112,9 @@ def regular_solution_d2GE_dxixjs(Vs, SPs, Hi_sums, dGE_dxs, N, GE, coeffs, xsVs_
 
 def regular_solution_d3GE_dxixjxks(Vs, SPs, Hi_sums, dGE_dxs, N, GE, xsVs_sum_inv, d2GE_dxixjs, coeffs,
                                    d3GE_dxixjxks=None):
+    if d3GE_dxixjxks is None:
+        d3GE_dxixjxks = [[[0.0]*N for _ in range(N)] for _ in range(N)] # numba: delete
+#        d3GE_dxixjxks = zeros((N, N, N)) # numba: uncomment
 
     # all the same: analytical[i][j][k] = analytical[i][k][j] = analytical[j][i][k] = analytical[j][k][i] = analytical[k][i][j] = analytical[k][j][i] = float(v)
     for i in range(N):
