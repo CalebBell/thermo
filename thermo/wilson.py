@@ -48,9 +48,41 @@ Wilson Functional Calculations
 from __future__ import division
 from math import log, exp
 from fluids.constants import R
+from fluids.numerics import numpy as np
 from thermo.activity import GibbsExcess
 
+try:
+    zeros, npsum = np.zeros, np.sum
+except:
+    pass
+
 __all__ = ['Wilson', 'Wilson_gammas']
+
+
+def nrtl_lambdas(T, N, A, B, C, D, E, F, lambdas=None):
+    if lambdas is None:
+        lambdas = [[0.0]*N for i in range(N)] # numba: delete
+#        lambdas = zeros((N, N)) # numba: uncomment
+
+    T2 = T*T
+    Tinv = 1.0/T
+    T2inv = Tinv*Tinv
+    logT = log(T)
+    for i in range(N):
+        Ai = A[i]
+        Bi = B[i]
+        Ci = C[i]
+        Di = D[i]
+        Ei = E[i]
+        Fi = F[i]
+        lambdais = lambdas[i]
+        # TODO: might be more efficient to pass over this matrix later,
+        # and compute all the exps
+        for j in range(N):
+            lambdais[j] = exp(Ai[j] + Bi[j]*Tinv
+                    + Ci[j]*logT + Di[j]*T
+                    + Ei[j]*T2inv + Fi[j]*T2)
+    return lambdas
 
 
 class Wilson(GibbsExcess):
@@ -404,35 +436,41 @@ class Wilson(GibbsExcess):
             return self._lambdas
         except AttributeError:
             pass
-        # 87% of the time of this routine is the exponential.
-        lambda_coeffs_A = self.lambda_coeffs_A
-        lambda_coeffs_B = self.lambda_coeffs_B
-        lambda_coeffs_C = self.lambda_coeffs_C
-        lambda_coeffs_D = self.lambda_coeffs_D
-        lambda_coeffs_E = self.lambda_coeffs_E
-        lambda_coeffs_F = self.lambda_coeffs_F
-        T = self.T
-        cmps = self.cmps
 
-        T2 = T*T
-        Tinv = 1.0/T
-        T2inv = Tinv*Tinv
-        logT = log(T)
+        lambdas = nrtl_lambdas(self.T, self.N, self.lambda_coeffs_A, self.lambda_coeffs_B,
+                     self.lambda_coeffs_C, self.lambda_coeffs_D,
+                     self.lambda_coeffs_E, self.lambda_coeffs_F)
 
-        self._lambdas = lambdas = []
-        for i in cmps:
-            lambda_coeffs_Ai = lambda_coeffs_A[i]
-            lambda_coeffs_Bi = lambda_coeffs_B[i]
-            lambda_coeffs_Ci = lambda_coeffs_C[i]
-            lambda_coeffs_Di = lambda_coeffs_D[i]
-            lambda_coeffs_Ei = lambda_coeffs_E[i]
-            lambda_coeffs_Fi = lambda_coeffs_F[i]
-            lambdasi = [exp(lambda_coeffs_Ai[j] + lambda_coeffs_Bi[j]*Tinv
-                        + lambda_coeffs_Ci[j]*logT + lambda_coeffs_Di[j]*T
-                        + lambda_coeffs_Ei[j]*T2inv + lambda_coeffs_Fi[j]*T2)
-                        for j in cmps]
-            lambdas.append(lambdasi)
 
+#        # 87% of the time of this routine is the exponential.
+#        lambda_coeffs_A = self.lambda_coeffs_A
+#        lambda_coeffs_B = self.lambda_coeffs_B
+#        lambda_coeffs_C = self.lambda_coeffs_C
+#        lambda_coeffs_D = self.lambda_coeffs_D
+#        lambda_coeffs_E = self.lambda_coeffs_E
+#        lambda_coeffs_F = self.lambda_coeffs_F
+#        T = self.T
+#        N = self.N
+#
+#        T2 = T*T
+#        Tinv = 1.0/T
+#        T2inv = Tinv*Tinv
+#        logT = log(T)
+#
+        self._lambdas = lambdas
+#        for i in range(N):
+#            lambda_coeffs_Ai = lambda_coeffs_A[i]
+#            lambda_coeffs_Bi = lambda_coeffs_B[i]
+#            lambda_coeffs_Ci = lambda_coeffs_C[i]
+#            lambda_coeffs_Di = lambda_coeffs_D[i]
+#            lambda_coeffs_Ei = lambda_coeffs_E[i]
+#            lambda_coeffs_Fi = lambda_coeffs_F[i]
+#            lambdasi = [exp(lambda_coeffs_Ai[j] + lambda_coeffs_Bi[j]*Tinv
+#                        + lambda_coeffs_Ci[j]*logT + lambda_coeffs_Di[j]*T
+#                        + lambda_coeffs_Ei[j]*T2inv + lambda_coeffs_Fi[j]*T2)
+#                        for j in range(N)]
+#            lambdas.append(lambdasi)
+#
         return lambdas
 
     def dlambdas_dT(self):
@@ -466,7 +504,7 @@ class Wilson(GibbsExcess):
         lambda_coeffs_E = self.lambda_coeffs_E
         lambda_coeffs_F = self.lambda_coeffs_F
 
-        T, cmps = self.T, self.cmps
+        T, N = self.T, self.N
         try:
             lambdas = self._lambdas
         except AttributeError:
@@ -478,7 +516,7 @@ class Wilson(GibbsExcess):
         nT2inv = -Tinv*Tinv
         nT3inv2 = 2.0*nT2inv*Tinv
 
-        for i in cmps:
+        for i in range(N):
             lambdasi = lambdas[i]
             lambda_coeffs_Bi = lambda_coeffs_B[i]
             lambda_coeffs_Ci = lambda_coeffs_C[i]
@@ -488,7 +526,7 @@ class Wilson(GibbsExcess):
             dlambdas_dTi = [(T2*lambda_coeffs_Fi[j] + lambda_coeffs_Di[j]
                              + lambda_coeffs_Ci[j]*Tinv + lambda_coeffs_Bi[j]*nT2inv
                              + lambda_coeffs_Ei[j]*nT3inv2)*lambdasi[j]
-                            for j in cmps]
+                            for j in range(N)]
             dlambdas_dT.append(dlambdas_dTi)
         return dlambdas_dT
 
@@ -523,7 +561,7 @@ class Wilson(GibbsExcess):
         lambda_coeffs_C = self.lambda_coeffs_C
         lambda_coeffs_E = self.lambda_coeffs_E
         lambda_coeffs_F = self.lambda_coeffs_F
-        T, cmps = self.T, self.cmps
+        T, N = self.T, self.N
 
         try:
             lambdas = self._lambdas
@@ -540,7 +578,7 @@ class Wilson(GibbsExcess):
         T4inv6 = 3.0*T3inv2*Tinv
 
         self._d2lambdas_dT2 = d2lambdas_dT2s = []
-        for i in cmps:
+        for i in range(N):
             lambdasi = lambdas[i]
             dlambdas_dTi = dlambdas_dT[i]
             lambda_coeffs_Bi = lambda_coeffs_B[i]
@@ -550,7 +588,7 @@ class Wilson(GibbsExcess):
             d2lambdas_dT2i = [(2.0*lambda_coeffs_Fi[j] + nT2inv*lambda_coeffs_Ci[j]
                              + T3inv2*lambda_coeffs_Bi[j] + T4inv6*lambda_coeffs_Ei[j]
                                )*lambdasi[j] + dlambdas_dTi[j]*dlambdas_dTi[j]/lambdasi[j]
-                             for j in cmps]
+                             for j in range(N)]
             d2lambdas_dT2s.append(d2lambdas_dT2i)
         return d2lambdas_dT2s
 
@@ -584,7 +622,7 @@ class Wilson(GibbsExcess):
         except AttributeError:
             pass
 
-        T, cmps = self.T, self.cmps
+        T, N = self.T, self.N
         lambda_coeffs_B = self.lambda_coeffs_B
         lambda_coeffs_C = self.lambda_coeffs_C
         lambda_coeffs_E = self.lambda_coeffs_E
@@ -609,7 +647,7 @@ class Wilson(GibbsExcess):
         T2_12 = -12.0*nT2inv
 
         self._d3lambdas_dT3 = d3lambdas_dT3s = []
-        for i in cmps:
+        for i in range(N):
             lambdasi = lambdas[i]
             dlambdas_dTi = dlambdas_dT[i]
             lambda_coeffs_Bi = lambda_coeffs_B[i]
@@ -617,7 +655,7 @@ class Wilson(GibbsExcess):
             lambda_coeffs_Ei = lambda_coeffs_E[i]
             lambda_coeffs_Fi = lambda_coeffs_F[i]
             d3lambdas_dT3is = []
-            for j in cmps:
+            for j in range(N):
                 term2 = (lambda_coeffs_Fi[j] + nT2inv05*lambda_coeffs_Ci[j]
                          + T3inv*lambda_coeffs_Bi[j] + T4inv3*lambda_coeffs_Ei[j])
 
