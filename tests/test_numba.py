@@ -125,6 +125,57 @@ def test_IdealSolution_np_out():
         assert type(getattr(modelnp2, attr)()) is np.ndarray
 
 
+def test_Wilson_numpy_output():
+    T = 331.42
+    N = 3
+
+    from thermo.numba import Wilson as Wilsonnp
+    A = [[0.0, 3.870101271243586, 0.07939943395502425],
+                 [-6.491263271243587, 0.0, -3.276991837288562],
+                 [0.8542855660449756, 6.906801837288562, 0.0]]
+    B = [[0.0, -375.2835, -31.1208],
+                 [1722.58, 0.0, 1140.79],
+                 [-747.217, -3596.17, -0.0]]
+    D = [[-0.0, -0.00791073, -0.000868371],
+                 [0.00747788, -0.0, -3.1e-05],
+                 [0.00124796, -3e-05, -0.0]]
+
+    C = E = F = [[0.0]*N for _ in range(N)]
+
+    xs = [0.229, 0.175, 0.596]
+
+    model = thermo.wilson.Wilson(T=T, xs=xs, ABCDEF=(A, B, C, D, E, F))
+    modelnp = Wilsonnp(T=T, xs=np.array(xs), ABCDEF=(np.array(A), np.array(B), np.array(C), np.array(D), np.array(E), np.array(F)))
+    modelnp2 = modelnp.to_T_xs(T=T, xs=np.array(xs))
+
+    vec_attrs = ['dGE_dxs', 'gammas', '_gammas_dGE_dxs',
+                 'd2GE_dTdxs', 'dHE_dxs', 'gammas_infinite_dilution', 'dHE_dns',
+                'dnHE_dns', 'dSE_dxs', 'dSE_dns', 'dnSE_dns', 'dGE_dns', 'dnGE_dns', 'd2GE_dTdns',
+                'd2nGE_dTdns', 'dgammas_dT']
+
+    for attr in vec_attrs:
+        assert_close1d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+        assert_close1d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+        assert type(getattr(model, attr)()) is list
+        assert type(getattr(modelnp, attr)()) is np.ndarray
+        assert type(getattr(modelnp2, attr)()) is np.ndarray
+
+    mat_attrs = ['d2GE_dxixjs', 'd2nGE_dninjs', 'dgammas_dns']
+    for attr in mat_attrs:
+        assert_close2d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+        assert_close2d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+        assert type(getattr(model, attr)()) is list
+        assert type(getattr(modelnp, attr)()) is np.ndarray
+        assert type(getattr(modelnp2, attr)()) is np.ndarray
+
+    attrs_3d = ['d3GE_dxixjxks']
+    for attr in attrs_3d:
+        assert_close3d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+        assert_close3d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+        assert type(getattr(model, attr)()) is list
+        assert type(getattr(modelnp, attr)()) is np.ndarray
+        assert type(getattr(modelnp2, attr)()) is np.ndarray
+
 
 
 @mark_as_numba

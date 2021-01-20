@@ -593,3 +593,35 @@ def test_multicomponent_madeup_sympy():
     assert_allclose(GE.dlambdas_dT(), dlambdas_dT_sym, rtol=2e-15)
     assert_allclose(GE.d2lambdas_dT2(), d2lambdas_dT2_sym, rtol=4e-15)
     assert_allclose(GE.d3lambdas_dT3(), d3lambdas_dT3_sym, rtol=1e-14)
+
+
+def test_lambdas_performance_np():
+    return # not used yet
+    N = 3
+    A = np.random.random((N, N))
+    B = np.random.random((N, N))*-3000
+    D = np.random.random((N, N))*-1e-3
+
+    C = np.random.random((N, N))*1e-6
+    E = np.random.random((N, N))*1e-7
+    F = np.random.random((N, N))*1e-8
+    T = 300.0
+    xs = np.abs(np.random.random(N))
+    xs = xs/xs.sum()
+
+    GE = Wilson(T=T, xs=xs, ABCDEF=(A, B, C, D, E, F))
+
+
+def test_lambdas_performance_py():
+    return # not used yet
+    from random import random
+    import thermo
+    N = 3
+    A = [[random() for _ in range(N)] for _ in range(N)]
+    B = [[random()*-3000.0 for _ in range(N)] for _ in range(N)]
+    D = [[random()*-1e-3 for _ in range(N)] for _ in range(N)]
+    C = [[random()*1e-6 for _ in range(N)] for _ in range(N)]
+    E = [[random()*1e-7 for _ in range(N)] for _ in range(N)]
+    F = [[random()*1e-8 for _ in range(N)] for _ in range(N)]
+    out = [[0.0]*N for _ in range(N)]
+    thermo.wilson.wilson_lambdas(400.0, N, A, B, C, D, E, F, out)
