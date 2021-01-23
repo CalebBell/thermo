@@ -1393,10 +1393,10 @@ class GCEOSMIX(GCEOS):
            Process Simulation." AIChE Journal 30, no. 2 (June 17, 2004):
            182-86. https://doi.org/10.1002/aic.690300203.
         '''
-        zs, Tcs, Pcs = self.zs, self.Tcs, self.Pcs
-        Pmc = sum([Pcs[i]*zs[i] for i in self.cmps])
-        Tmc = sum([(Tcs[i]*Tcs[j])**0.5*zs[j]*zs[i] for i in self.cmps
-                  for j in self.cmps])
+        zs, Tcs, Pcs, N = self.zs, self.Tcs, self.Pcs, self.N
+        Pmc = sum([Pcs[i]*zs[i] for i in range(N)])
+        Tmc = sum([sqrt(Tcs[i]*Tcs[j])*zs[j]*zs[i] for i in range(N)
+                  for j in range(N)])
         TP, iterations = newton_system(self._mechanical_critical_point_f_jac,
                                        x0=[Tmc, Pmc], jac=True, ytol=1e-10,
                                        xtol=1e-12,
@@ -1708,7 +1708,7 @@ class GCEOSMIX(GCEOS):
                          err_also=False, info=None):
         if info is None:
             info = []
-        N, cmps = self.N, self.cmps
+        N = self.N
         lnKs = lnKsVF[:-1]
         Ks = [exp(lnKi) for lnKi in lnKs]
         VF = float(lnKsVF[-1])
@@ -1769,15 +1769,15 @@ class GCEOSMIX(GCEOS):
         # Was not correct when compared to numerical solution
         Ksm1 = [Ki - 1.0 for Ki in Ks]
         RR_denoms_inv2 = []
-        for i in cmps:
+        for i in range(N):
             t = 1.0 + VF*Ksm1[i]
             RR_denoms_inv2.append(1.0/(t*t))
 
-        RR_terms = [zs[k]*Ksm1[k]*RR_denoms_inv2[k] for k in cmps]
-        for i in cmps:
+        RR_terms = [zs[k]*Ksm1[k]*RR_denoms_inv2[k] for k in range(N)]
+        for i in range(N):
             value = 0.0
             d_lnphi_dxs_i, d_lnphi_dys_i = d_lnphi_dxs[i], d_lnphi_dys[i]
-            for k in cmps:
+            for k in range(N):
                 # pretty sure indexing is right in the below expression
                 value += RR_terms[k]*(d_lnphi_dxs_i[k] - Ks[k]*d_lnphi_dys_i[k])
             J[i][-1] = value
@@ -1794,12 +1794,12 @@ class GCEOSMIX(GCEOS):
         # Can flip around the indexing of i, j on the d_lnphi_ds but still no fix
         # unsure of correct order!
         # Reveals bugs in d_lnphi_dxs though.
-        zsKsRRinvs2 = [zs[j]*Ks[j]*RR_denoms_inv2[j] for j in cmps]
+        zsKsRRinvs2 = [zs[j]*Ks[j]*RR_denoms_inv2[j] for j in range(N)]
         one_m_VF = 1.0 - VF
-        for i in cmps: # to N is CORRECT/MATCHES JACOBIAN NUMERICALLY
+        for i in range(N): # to N is CORRECT/MATCHES JACOBIAN NUMERICALLY
             Ji = J[i]
             d_lnphi_dxs_is, d_lnphi_dys_is = d_lnphi_dxs[i], d_lnphi_dys[i]
-            for j in cmps: # to N is CORRECT/MATCHES JACOBIAN NUMERICALLY
+            for j in range(N): # to N is CORRECT/MATCHES JACOBIAN NUMERICALLY
                 value = 1.0 if i == j else 0.0
 #                value = 0.0
 #                value += delta(i, j)
@@ -1812,7 +1812,7 @@ class GCEOSMIX(GCEOS):
         # Last row except last value  - good, working
         # Diff of RR w.r.t each log K
         bottom_row = J[-1]
-        for j in cmps:
+        for j in range(N):
 #            value = 0.0
 #            RR_l =
 #            RR_l = -Ks[j]*zs[j]*VF/(1.0 + VF*(Ks[j] - 1.0))**2.0
@@ -1832,7 +1832,7 @@ class GCEOSMIX(GCEOS):
 #
         # Last value - good, working, being overwritten
         dF_ncp1_dB = 0.0
-        for i in cmps:
+        for i in range(N):
             dF_ncp1_dB -= RR_terms[i]*Ksm1[i]
         J[-1][-1] = dF_ncp1_dB
 
@@ -2442,13 +2442,13 @@ class GCEOSMIX(GCEOS):
 ##        except:
 ##            pass
 #        zs = self.zs
-#        cmps = self.cmps
+#        N = self.N
 #        a_alpha_ijs = self.a_alpha_ijs
 #        a_alpha_j_rows = []
-#        for i in cmps:
+#        for i in range(N):
 #            l = a_alpha_ijs[i]
 #            sum_term = 0.0
-#            for j in cmps:
+#            for j in range(N):
 #                sum_term += zs[j]*l[j]
 #            a_alpha_j_rows.append(sum_term)
 #        self.a_alpha_j_rows = a_alpha_j_rows
@@ -2607,7 +2607,7 @@ class GCEOSMIX(GCEOS):
 
         da_alpha_dT_j_rows = [0.0]*self.N
 
-        for i in self.cmps:
+        for i in range(self.N):
             l = da_alpha_dT_ijs[i]
             for j in range(i):
                 da_alpha_dT_j_rows[j] += zs[i]*l[j]
@@ -2632,7 +2632,7 @@ class GCEOSMIX(GCEOS):
 
         zs = self.zs
         d2a_alpha_dT2_j_rows = [0.0]*self.N
-        for i in self.cmps:
+        for i in range(self.N):
             l = d2a_alpha_dT2_ijs[i]
             for j in range(i):
                 d2a_alpha_dT2_j_rows[j] += zs[i]*l[j]
@@ -2730,7 +2730,7 @@ class GCEOSMIX(GCEOS):
         '''
         N = self.N
         if self.scalar:
-            return [[0.0]*N for i in self.cmps]
+            return [[0.0]*N for i in range(N)]
         return zeros((N, N))
 
     @property
@@ -2788,8 +2788,7 @@ class GCEOSMIX(GCEOS):
         '''
         N = self.N
         if self.scalar:
-            cmps = self.cmps
-            return [[[0.0]*N for _ in cmps] for _ in cmps]
+            return [[[0.0]*N for _ in range(N)] for _ in range(N)]
         else:
             return zeros((N, N, N))
 
@@ -2853,9 +2852,9 @@ class GCEOSMIX(GCEOS):
         -----
         This derivative is checked numerically.
         '''
-        N, cmps = self.N, self.cmps
+        N = self.N
         if self.scalar:
-            return [[[0.0]*N for _ in cmps] for _ in cmps]
+            return [[[0.0]*N for _ in range(N)] for _ in range(N)]
         else:
             return zeros((N, N, N))
 
@@ -2878,9 +2877,9 @@ class GCEOSMIX(GCEOS):
         -----
         This derivative is checked numerically.
         '''
-        N, cmps = self.N, self.cmps
+        N = self.N
         if self.scalar:
-            return [[[0.0]*N for _ in cmps] for _ in cmps]
+            return [[[0.0]*N for _ in range(N)] for _ in range(N)]
         else:
             return zeros((N, N, N))
 
@@ -3027,18 +3026,18 @@ class GCEOSMIX(GCEOS):
             a_alpha_j_rows = self._a_alpha_j_rows
         a_alpha = self.a_alpha
         a_alpha_ijs = self.a_alpha_ijs
-        N, cmps = self.N, self.cmps
+        N = self.N
         zs = self.zs
         a_alpha3 = 3.0*a_alpha
 
-        hessian = [[0.0]*N for _ in cmps]
-        for i in cmps:
+        hessian = [[0.0]*N for _ in range(N)]
+        for i in range(N):
             for j in range(i+1):
                 if i == j:
                     term = 2.0*a_alpha_j_rows[i]
                 else:
                     term = 0.0
-                    for k in cmps:
+                    for k in range(N):
                         term += zs[k]*(a_alpha_ijs[i][k] + a_alpha_ijs[j][k])
 
                 hessian[i][j] = hessian[j][i] = 2.0*(a_alpha3 + a_alpha_ijs[i][j] -2.0*term)
@@ -3066,8 +3065,8 @@ class GCEOSMIX(GCEOS):
         -----
         This derivative is checked numerically.
         '''
-        N, cmps = self.N, self.cmps
-        return [[[0.0]*N for _ in cmps] for _ in cmps]
+        N = self.N
+        return [[[0.0]*N for _ in range(N)] for _ in range(N)]
 
     @property
     def d3a_alpha_dninjnks(self):
@@ -3096,17 +3095,17 @@ class GCEOSMIX(GCEOS):
         # Each term is of similar magnitude, so likely would notice if brokwn
         a_alpha = self.a_alpha
         a_alpha_ijs = self.a_alpha_ijs
-        cmps = self.cmps
+        N = self.N
         zs = self.zs
         a_alpha6 = -6.0*a_alpha
         matrix = []
-        for i in cmps:
+        for i in range(N):
             l = []
-            for j in cmps:
+            for j in range(N):
                 row = []
-                for k in cmps:
+                for k in range(N):
                     mid = a_alpha_ijs[i][j] + a_alpha_ijs[i][k] + a_alpha_ijs[j][k]
-                    last = sum(zs[m]*(a_alpha_ijs[i][m] + a_alpha_ijs[j][m] + a_alpha_ijs[k][m]) for m in cmps)
+                    last = sum(zs[m]*(a_alpha_ijs[i][m] + a_alpha_ijs[j][m] + a_alpha_ijs[k][m]) for m in range(N))
                     ele = 4.0*(a_alpha6 - mid + 3.0*last)
                     row.append(ele)
                 l.append(row)
@@ -3352,7 +3351,7 @@ class GCEOSMIX(GCEOS):
         x11t2 = x11*t2
 
         return [t5*depsilon_dzs[i] - t1*da_alpha_dzs[i] + x11t2*db_dzs[i] + t6*ddelta_dzs[i]
-                for i in self.cmps]
+                for i in range(self.N)]
 
     def dV_dns(self, Z):
         r'''Calculates the molar volume mole number derivatives
