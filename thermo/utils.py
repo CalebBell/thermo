@@ -83,12 +83,24 @@ import os
 from cmath import sqrt as csqrt
 from fluids.numerics import quad, brenth, newton, secant, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders, assert_close, numpy as np
 from fluids.constants import R
-from chemicals.utils import isnan, isinf, log, exp, ws_to_zs, zs_to_ws, e
+from chemicals.utils import PY37, isnan, isinf, log, exp, ws_to_zs, zs_to_ws, e
 from chemicals.utils import mix_multiple_component_flows, hash_any_primitive
 from chemicals.vapor_pressure import Antoine, Antoine_coeffs_from_point, Antoine_AB_coeffs_from_point, DIPPR101_ABC_coeffs_from_point
 from chemicals.dippr import EQ101
 from chemicals.phase_change import Watson, Watson_n
 
+
+global json
+
+if PY37:
+    def __getattr__(name):
+        global json
+        if name == 'json':
+            import json
+            return json
+        raise AttributeError("module %s has no attribute %s" %(__name__, name))
+else:
+    import json
 
 NEGLIGIBLE = 'NEGLIGIBLE'
 DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'

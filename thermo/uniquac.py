@@ -1203,7 +1203,6 @@ class UNIQUAC(GibbsExcess):
         d2thetas_dxixjs = self.d2thetas_dxixjs()
 
         thetaj_taus_jis = self.thetaj_taus_jis()
-        thetaj_dtaus_dT_jis = self.thetaj_dtaus_dT_jis()
         RT = R*T
 
         # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]

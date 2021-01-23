@@ -728,7 +728,6 @@ class IdealSolution(GibbsExcess):
         if xs is not None:
             self.xs = xs
             self.N = len(xs)
-            self.cmps = range(self.N)
             self.scalar = type(xs) is list
         else:
             self.scalar = True
@@ -764,7 +763,6 @@ class IdealSolution(GibbsExcess):
         new.xs = xs
         new.scalar = self.scalar
         new.N = len(xs)
-        new.cmps = range(new.N)
         return new
 
     def GE(self):
@@ -855,7 +853,7 @@ class IdealSolution(GibbsExcess):
         -----
         '''
         if self.scalar:
-            return [0.0 for i in self.cmps]
+            return [0.0]*self.N
         return zeros(self.N)
 
     def dGE_dxs(self):
@@ -875,7 +873,7 @@ class IdealSolution(GibbsExcess):
         -----
         '''
         if self.scalar:
-            return [0.0 for i in self.cmps]
+            return [0.0]*self.N
         return zeros(self.N)
 
     def d2GE_dxixjs(self):
@@ -896,7 +894,7 @@ class IdealSolution(GibbsExcess):
         '''
         N = self.N
         if self.scalar:
-            return [[0.0]*N for i in self.cmps]
+            return [[0.0]*N for i in range(self.N)]
         return zeros((N, N))
 
     def d3GE_dxixjxks(self):
@@ -915,14 +913,14 @@ class IdealSolution(GibbsExcess):
         Notes
         -----
         '''
-        N, cmps = self.N, self.cmps
+        N = self.N
         if self.scalar:
-            return [[[0.0]*N for i in cmps] for j in cmps]
+            return [[[0.0]*N for i in range(N)] for j in range(N)]
         return zeros((N, N, N))
 
     def gammas(self):
         if self.scalar:
-            return [1.0 for i in self.cmps]
+            return [1.0]*self.N
         else:
             return ones(self.N)
 

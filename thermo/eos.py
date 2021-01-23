@@ -279,8 +279,9 @@ from fluids.constants import mmHg, R
 
 from chemicals.utils import (Cp_minus_Cv, isobaric_expansion,
                           isothermal_compressibility,
-                          phase_identification_parameter)
+                          phase_identification_parameter, hash_any_primitive)
 from chemicals.utils import log, log10, exp, sqrt, copysign
+from thermo import utils
 from chemicals.flash_basic import Wilson_K_value
 
 from thermo.eos_volume import (volume_solutions_mpmath, volume_solutions_mpmath_float,
@@ -377,6 +378,7 @@ def main_derivatives_and_departures_VDW(T, P, V, b, delta, epsilon, a_alpha,
     S_dep = R*(-log(V) + log(V - b)) + R*log(P*V/(R*T))
     Cv_dep = 0
     return [dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep]
+
 
 class GCEOS(object):
     r'''Class for solving a generic Pressure-explicit three-parameter cubic
@@ -810,6 +812,43 @@ class GCEOS(object):
     c2 = None
     '''Parameter used by some equations of state in the `b` calculation'''
 
+    nonstate_constants = ('Tc', 'Pc', 'omega', 'kwargs', 'a', 'b', 'delta', 'epsilon')
+
+
+    def model_hash(self):
+        r'''Basic method to calculate a hash of the non-state parts of the model
+        critical constants, kijs, volume translation coefficient `cs`, other
+        variables stored as `kwargs`. This is useful for comparing to models to
+        determine if they are the same, i.e. in a VLL flash it is important to
+        know if both liquids have the same model.
+
+        Note that the hashes should only be compared on the same system running
+        in the same process!
+
+        This works for pure components and mixtures.
+        '''
+        try:
+            return self._model_hash
+        except AttributeError:
+            pass
+#        print('start')
+        h = hash(self.__class__)
+#        print(h)
+
+        for s in self.nonstate_constants:
+#            if hasattr(self, s):
+#                print(s, getattr(self, s))
+#                if s == 'kijs':
+#                    print([id(i) for r in self.kijs for i in r])
+            try:
+                h = hash((h, s, hash_any_primitive(getattr(self, s))))
+            except AttributeError:
+                pass
+#                print(h)
+#        print('end')
+        self._model_hash = h
+        return h
+
     @property
     def state_specs(self):
         '''Convenience method to return the two specified state specs (`T`,
@@ -862,6 +901,84 @@ class GCEOS(object):
             s += 'T=%s, P=%s' %(repr(self.T), repr(self.P))
         s += ')'
         return s
+
+    def as_JSON(self):
+        r'''Method to create a JSON serialization of the eos
+        which can be stored, and reloaded later.
+
+        Returns
+        -------
+        json_repr : str
+            Json representation, [-]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> eos = MSRKTranslated(Tc=507.6, Pc=3025000, omega=0.2975, c=22.0561E-6, M=0.7446, N=0.2476, T=250., P=1E6)
+        >>> string = eos.as_JSON()
+        >>> type(string)
+        str
+        '''
+        # vaguely jsonpickle compatible
+        self.__dict__["py/object"] = "thermo.eos.%s" %(self.__class__.__name__)
+        ans = utils.json.dumps(self.__dict__)
+        del self.__dict__["py/object"]
+        return ans
+
+    @classmethod
+    def from_JSON(cls, string):
+        r'''Method to create a eos from a JSON
+        serialization of another eos.
+
+        Parameters
+        ----------
+        json_repr : str
+            Json representation, [-]
+
+        Returns
+        -------
+        eos : GCEOS
+            Newly created object from the json serialization, [-]
+
+        Notes
+        -----
+        It is important that the input string be in the same format as that
+        created by :obj:`GCEOS.as_JSON`.
+
+        Examples
+        --------
+        >>> eos = MSRKTranslated(Tc=507.6, Pc=3025000, omega=0.2975, c=22.0561E-6, M=0.7446, N=0.2476, T=250., P=1E6)
+        >>> string = eos.as_JSON()
+        >>> new_eos = GCEOS.from_JSON(string)
+        >>> assert eos.__dict__ == new_eos.__dict__
+        '''
+        d = utils.json.loads(string)
+        eos_name = d['py/object']
+        del d['py/object']
+
+        try:
+            d['raw_volumes'] = tuple(d['raw_volumes'])
+        except:
+            pass
+
+        try:
+            d['alpha_coeffs'] = tuple(d['alpha_coeffs'])
+        except:
+            pass
+
+        try:
+            d['kwargs']['alpha_coeffs'] = tuple(d['kwargs']['alpha_coeffs'])
+        except:
+            pass
+
+        eos_name = eos_name.split('.')[-1]
+        eos = eos_dict[eos_name]
+
+        new = eos.__new__(eos)
+        new.__dict__ = d
+        return new
 
     def check_sufficient_inputs(self):
         '''Method to an exception if none of the pairs (T, P), (T, V), or
@@ -1283,8 +1400,8 @@ class GCEOS(object):
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K^2]
         '''
-        raise NotImplemented('a_alpha and its first and second derivatives '
-                             'should be calculated by this method, in a user subclass.')
+        raise NotImplementedError('a_alpha and its first and second derivatives '
+                                  'should be calculated by this method, in a user subclass.')
 
     @property
     def d3a_alpha_dT3(self):
@@ -2902,7 +3019,7 @@ class GCEOS(object):
             x = alpha/Tr - 1.
             y = horner(self.Psat_coeffs_critical, x)
             dy_dT = T_inv*(Tc*d_alpha_dT - Tc*alpha*T_inv)*horner(self.Psat_coeffs_critical_der, x)
-            dPsat_dT = c*(T*dy_dT*Tc_inv + y*Tc_inv)
+            dPsat_dT = Pc*(T*dy_dT*Tc_inv + y*Tc_inv)
             if also_Psat:
                 Psat = y*Tr*Pc
                 return dPsat_dT, Psat
@@ -3539,8 +3656,8 @@ class GCEOS(object):
         '''
         if Pmax is None:
             Pmax = self.P_max_at_V(V)
-        if Pmax is None:
-            return None
+            if Pmax is None:
+                return None
         return self.solve_T(P=Pmax, V=V)
 
     def P_max_at_V(self, V):
@@ -3559,6 +3676,7 @@ class GCEOS(object):
         P : float
             Maximum possible isochoric pressure, [Pa]
         '''
+        return None
 
     @property
     def more_stable_phase(self):
@@ -4334,7 +4452,7 @@ class GCEOS(object):
         V_pseudo_mc = (self.Zc*R*T_pseudo_mc)/P_pseudo_mc
         rho_pseudo_mc = 1.0/V_pseudo_mc
 
-        P_discriminant = self.P_discriminant_zero_l()
+        P_disc = self.P_discriminant_zero_l()
 
         try:
             P_low = max(P_disc - 10.0, 1e-3)
@@ -9077,10 +9195,10 @@ class VDW(GCEOS):
         >>> collect(base, P).args # doctest:+SKIP
         '''
 
-        T, a_alpha = self.T, self.a_alpha
+#        T, a_alpha = self.T, self.a_alpha
+#        a = a_alpha
+#        b, epsilon, delta = self.b, self.epsilon, self.delta
         a = a_alpha
-        b, epsilon, delta = self.b, self.epsilon, self.delta
-
         d = 4*b - a/(R*T)
         c = (12*b**2/(R*T) - 20*a*b/(R**2*T**2) + 4*a**2/(R**3*T**3))
         b_coeff = (12*b**3/(R**2*T**2) + 8*a*b**2/(R**3*T**3))
@@ -9315,15 +9433,12 @@ class RK(GCEOS):
                     (0.381571414184444*x6 + 0.873580464736299*x8)**2]
             try:
                 self.no_T_spec = True
-                if quick:
-                    x1 = -1.j*1.7320508075688772 + 1.
-                    x2 = V - b
-                    x3 = x2/R
-                    x4 = V + b
-                    x5 = (1.7320508075688772*(x2*x2*(-4.*P*P*P*x3 + 27.*a*a/(V*V*x4*x4))/(R*R))**0.5 - 9.*a*x3/(V*x4) +0j)**(1./3.)
-                    T_sln = (3.3019272488946263*(11.537996562459266*P*x3/(x1*x5) + 1.2599210498948732*x1*x5)**2/144.0).real
-                else:
-                    T_sln = ((-(-1/2 + sqrt(3)*1j/2)*(sqrt(729*(-V*a + a*b)**2/(R*V**2 + R*V*b)**2 + 108*(-P*V + P*b)**3/R**3)/2 + 27*(-V*a + a*b)/(2*(R*V**2 + R*V*b))+0j)**(1/3)/3 + (-P*V + P*b)/(R*(-1/2 + sqrt(3)*1j/2)*(sqrt(729*(-V*a + a*b)**2/(R*V**2 + R*V*b)**2 + 108*(-P*V + P*b)**3/R**3)/2 + 27*(-V*a + a*b)/(2*(R*V**2 + R*V*b))+0j)**(1/3)))**2).real
+                x1 = -1.j*1.7320508075688772 + 1.
+                x2 = V - b
+                x3 = x2/R
+                x4 = V + b
+                x5 = (1.7320508075688772*(x2*x2*(-4.*P*P*P*x3 + 27.*a*a/(V*V*x4*x4))/(R*R))**0.5 - 9.*a*x3/(V*x4) +0j)**(1./3.)
+                T_sln = (3.3019272488946263*(11.537996562459266*P*x3/(x1*x5) + 1.2599210498948732*x1*x5)**2/144.0).real
                 if T_sln > 1e-3:
                     return T_sln
             except:
@@ -10598,7 +10713,7 @@ class TWUSRK(TwuSRK95_a_alpha, SRK):
 
 
 eos_list = [IG, PR, PR78, PRSV, PRSV2, VDW, RK, SRK, APISRK, TWUPR, TWUSRK,
-            PRTranslatedPPJP, SRKTranslatedPPJP,
+            PRTranslatedPPJP, SRKTranslatedPPJP, MSRKTranslated,
             PRTranslatedConsistent, SRKTranslatedConsistent]
 '''list : List of all cubic equation of state classes.
 '''
@@ -10608,3 +10723,7 @@ multiple phases.
 '''
 
 eos_2P_list.remove(IG)
+
+eos_dict = {c.__name__: c for c in eos_list}
+'''dict : Dict of all cubic equation of state classes, indexed by their class name.
+'''

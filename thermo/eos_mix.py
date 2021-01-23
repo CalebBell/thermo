@@ -203,7 +203,7 @@ from fluids.numerics import numpy as np, IS_PYPY, newton_system, broyden2, Uncon
 from fluids.numerics.arrays import det, subset_matrix
 from fluids.constants import R
 
-from chemicals.utils import normalize, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials, hash_any_primitive
+from chemicals.utils import normalize, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials
 from chemicals.utils import log, exp, sqrt
 from chemicals.rachford_rice import flash_inner_loop, Rachford_Rice_flash_error, Rachford_Rice_solution2
 from chemicals.flash_basic import K_value, Wilson_K_value
@@ -376,37 +376,6 @@ class GCEOSMIX(GCEOS):
         return self.__class__(**kwargs)
 
 
-    def model_hash(self):
-        r'''Basic method to calculate a hash of the non-state parts of the model -
-        critical constants, kijs, volume translation coefficient `cs`, other
-        variables stored as `kwargs`. This is useful for comparing to models to
-        determine if they are the same, i.e. in a VLL flash it is important to
-        know if both liquids have the same model.
-
-        Note that the hashes should only be compared on the same system running
-        in the same process!
-        '''
-        try:
-            return self._model_hash
-        except AttributeError:
-            pass
-#        print('start')
-        h = hash(self.__class__)
-#        print(h)
-
-        for s in self.nonstate_constants:
-#            if hasattr(self, s):
-#                print(s, getattr(self, s))
-#                if s == 'kijs':
-#                    print([id(i) for r in self.kijs for i in r])
-            try:
-                h = hash((h, s, hash_any_primitive(getattr(self, s))))
-            except AttributeError:
-                pass
-#                print(h)
-#        print('end')
-        self._model_hash = h
-        return h
 
 
     def __repr__(self):

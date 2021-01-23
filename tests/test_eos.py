@@ -1545,18 +1545,13 @@ def test_Tsat_issues_extrapolation():
 
 
 def test_fuzz_dPsat_dT():
-    from thermo import eos
-    eos_list = list(eos.__all__); eos_list.remove('GCEOS')
-    eos_list.remove('eos_list')
-    eos_list.remove('IG')
-
     Tc = 507.6
     Pc = 3025000
     omega = 0.2975
 
     e = PR(T=400, P=1E5, Tc=507.6, Pc=3025000, omega=0.2975)
-    dPsats_dT_expect = [938.8330442120659, 10288.110417535852, 38843.65395496486]
-    assert_close1d([e.dPsat_dT(300), e.dPsat_dT(400), e.dPsat_dT(500)], dPsats_dT_expect)
+    dPsats_dT_expect = [938.8330442120659, 10288.110417535852, 38843.65395496486, 42138.50972119547]
+    assert_close1d([e.dPsat_dT(300), e.dPsat_dT(400), e.dPsat_dT(500), e.dPsat_dT(507.59)], dPsats_dT_expect)
 
 @pytest.mark.slow
 def test_fuzz_dPsat_dT_full():
@@ -1606,7 +1601,8 @@ def test_Hvaps():
                  SRKTranslatedPPJP: 31715.83940885055,
                  PRTranslatedConsistent: 31419.504797000944,
                  PRSV: 31035.43366905585,
-                 PRTranslatedPPJP: 31257.15735072686}
+                 PRTranslatedPPJP: 31257.15735072686,
+                 MSRKTranslated: 31548.838206563854}
 
     for eos in eos_iter:
         e = eos(Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
@@ -1640,7 +1636,8 @@ def test_V_l_sats():
                         SRKTranslatedPPJP: 0.00014738204921603808,
                         PRTranslatedConsistent: 0.00013147170331755256,
                         PRSV: 0.00013068338288565773,
-                        PRTranslatedPPJP: 0.00013056689289733488}
+                        PRTranslatedPPJP: 0.00013056689289733488,
+                        MSRKTranslated:0.00014744370993727}
 
     for eos in eos_iter:
         e = eos(Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
@@ -1673,7 +1670,8 @@ def test_V_g_sats():
                         SRKTranslatedPPJP: 0.11374298620644632,
                         PRTranslatedConsistent: 0.11144255765526169,
                         PRSV: 0.10979545797759405,
-                        PRTranslatedPPJP: 0.1129148079163081}
+                        PRTranslatedPPJP: 0.1129148079163081,
+                        MSRKTranslated: 0.11231040560602985}
 
 
 

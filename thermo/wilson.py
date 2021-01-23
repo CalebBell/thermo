@@ -53,7 +53,7 @@ from thermo.activity import GibbsExcess
 
 try:
     zeros, npsum, nplog = np.zeros, np.sum, np.log
-except:
+except AttributeError:
     pass
 
 __all__ = ['Wilson', 'Wilson_gammas']
@@ -568,7 +568,6 @@ class Wilson(GibbsExcess):
         self.T = T
         self.xs = xs
         self.scalar = scalar = type(xs) is list
-        self.lambda_coeffs = lambda_coeffs
         if ABCDEF is not None:
             (self.lambda_coeffs_A, self.lambda_coeffs_B, self.lambda_coeffs_C,
             self.lambda_coeffs_D, self.lambda_coeffs_E, self.lambda_coeffs_F) = ABCDEF
@@ -589,7 +588,6 @@ class Wilson(GibbsExcess):
                 self.lambda_coeffs_E = None
                 self.lambda_coeffs_F = None
             self.N = N = len(lambda_coeffs)
-        self.cmps = range(N)
 
     def __repr__(self):
         s = '%s(T=%s, xs=%s, ABCDEF=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs),
@@ -625,7 +623,6 @@ class Wilson(GibbsExcess):
         new.xs = xs
         new.scalar = self.scalar
         new.N = self.N
-        new.cmps = self.cmps
         (new.lambda_coeffs_A, new.lambda_coeffs_B, new.lambda_coeffs_C,
          new.lambda_coeffs_D, new.lambda_coeffs_E, new.lambda_coeffs_F) = (
                  self.lambda_coeffs_A, self.lambda_coeffs_B, self.lambda_coeffs_C,
@@ -797,10 +794,6 @@ class Wilson(GibbsExcess):
             return self._d2lambdas_dT2
         except AttributeError:
             pass
-        lambda_coeffs_B = self.lambda_coeffs_B
-        lambda_coeffs_C = self.lambda_coeffs_C
-        lambda_coeffs_E = self.lambda_coeffs_E
-        lambda_coeffs_F = self.lambda_coeffs_F
         T, N = self.T, self.N
 
         try:
@@ -1061,9 +1054,9 @@ class Wilson(GibbsExcess):
             log_xj_Lambda_ijs = self.log_xj_Lambda_ijs()
 
         if self.scalar:
-            xs, cmps = self.xs, self.cmps
+            xs, N = self.xs, self.N
             GE = 0.0
-            for i in cmps:
+            for i in range(N):
                 GE += xs[i]*log_xj_Lambda_ijs[i]
         else:
             GE = float((self.xs*log_xj_Lambda_ijs).sum())
