@@ -7781,12 +7781,12 @@ class PRMIX(GCEOSMIX, PR):
         '''
         bs = self.bs
         b = self.b
-        cmps = self.cmps
+        N = self.N
         bb = b + b
         d2epsilon_dninjs = []
-        for i in cmps:
+        for i in range(N):
             l = []
-            for j in cmps:
+            for j in range(N):
                 bi, bj = bs[i], bs[j]
                 v = -bb*(bb - (bi + bj))  -2.0*(b - bi)*(b - bj)
                 l.append(v)
@@ -7817,7 +7817,6 @@ class PRMIX(GCEOSMIX, PR):
         '''
         b = self.b
         bs = self.bs
-        cmps = self.cmps
         d3b_dninjnks = []
         for bi in bs:
             d3b_dnjnks = []
@@ -7957,15 +7956,15 @@ class PRMIXTranslated(PRMIX):
         self.omegas = omegas
         self.zs = zs
         if kijs is None:
-            kijs = [[0.0]*N for i in cmps]
+            kijs = [[0.0]*N for i in range(N)]
         self.kijs = kijs
         self.T = T
         self.P = P
         self.V = V
 
         c1R2, c2R = self.c1*R2, self.c2*R
-        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in cmps]
-        b0s = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in range(N)]
+        b0s = [c2R*Tcs[i]/Pcs[i] for i in range(N)]
 
         if cs is None:
             cs = [0.0]*N
@@ -7975,12 +7974,12 @@ class PRMIXTranslated(PRMIX):
         self.cs = cs
 
         b0, c = 0.0, 0.0
-        for i in cmps:
+        for i in range(N):
             b0 += b0s[i]*zs[i]
             c += cs[i]*zs[i]
 
         self.b0s = b0s
-        self.bs = [b0s[i] - cs[i] for i in cmps]
+        self.bs = [b0s[i] - cs[i] for i in range(N)]
         self.c = c
         self.b = b = b0 - c
         self.delta = 2.0*(c + b0)
@@ -7995,7 +7994,7 @@ class PRMIXTranslated(PRMIX):
         zs = self.zs
         self.b0s = b0s = other.b0s
         b0, c = 0.0, 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             b0 += b0s[i]*zs[i]
             c += cs[i]*zs[i]
         self.c = c
@@ -8022,8 +8021,8 @@ class PRMIXTranslated(PRMIX):
         -----
         This derivative is checked numerically.
         '''
-        b0s, cs = self.b0s, self.cs
-        return [2.0*(cs[i] + b0s[i]) for i in self.cmps]
+        b0s, cs, N = self.b0s, self.cs, self.N
+        return [2.0*(cs[i] + b0s[i]) for i in range(N)]
 
     # Zero in both cases
     d2delta_dzizjs = PRMIX.d2delta_dzizjs
@@ -8048,8 +8047,8 @@ class PRMIXTranslated(PRMIX):
         -----
         This derivative is checked numerically.
         '''
-        b0s, cs, delta = self.b0s, self.cs, self.delta
-        return [2.0*(cs[i] + b0s[i]) - delta for i in self.cmps]
+        b0s, cs, delta, N = self.b0s, self.cs, self.delta, self.N
+        return [2.0*(cs[i] + b0s[i]) - delta for i in range(N)]
 
 
     @property
@@ -8071,11 +8070,11 @@ class PRMIXTranslated(PRMIX):
         -----
         This derivative is checked numerically.
         '''
-        cmps, b0s, cs, delta = self.cmps, self.b0s, self.cs, self.delta
+        N, b0s, cs, delta = self.N, self.b0s, self.cs, self.delta
         d2b_dninjs = []
-        for i in cmps:
+        for i in range(N):
             t = delta - b0s[i] - cs[i]
-            d2b_dninjs.append([2.0*(t - b0s[j] - cs[j]) for j in cmps])
+            d2b_dninjs.append([2.0*(t - b0s[j] - cs[j]) for j in range(N)])
         return d2b_dninjs
 
     @property
@@ -8100,17 +8099,16 @@ class PRMIXTranslated(PRMIX):
         -----
         This derivative is checked numerically.
         '''
-        cmps, b0s, cs, delta = self.cmps, self.b0s, self.cs, self.delta
+        N, b0s, cs, delta = self.N, self.b0s, self.cs, self.delta
         delta_six = 6.0*delta
         bs = self.bs
-        cmps = self.cmps
         d3delta_dninjnks = []
-        for i in cmps:
+        for i in range(N):
             b0ici = b0s[i] + cs[i]
             d3b_dnjnks = []
-            for j in cmps:
+            for j in range(N):
                 b0jcj = b0s[j] + cs[j]
-                d3b_dnjnks.append([4.0*(b0ici + b0jcj + b0s[k] + cs[k]) - delta_six for k in cmps])
+                d3b_dnjnks.append([4.0*(b0ici + b0jcj + b0s[k] + cs[k]) - delta_six for k in range(N)])
             d3delta_dninjnks.append(d3b_dnjnks)
         return d3delta_dninjnks
 
@@ -8134,10 +8132,10 @@ class PRMIXTranslated(PRMIX):
         This derivative is checked numerically.
         '''
         epsilon, c, b = self.epsilon, self.c, self.b
-        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        N, b0s, cs = self.N, self.b0s, self.cs
         b0 = b + c
         return [cs[i]*(2.0*b0 + c) + c*(2.0*b0s[i] + cs[i]) - 2.0*b0*b0s[i]
-                for i in cmps]
+                for i in range(N)]
 
     @property
     def depsilon_dns(self):
@@ -8160,12 +8158,12 @@ class PRMIXTranslated(PRMIX):
         This derivative is checked numerically.
         '''
         epsilon, c, b = self.epsilon, self.c, self.b
-        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        N, b0s, cs = self.N, self.b0s, self.cs
         b0 = b + c
         return [(2.0*b0*(b0 - b0s[i]) - c*(2.0*b0 - 2.0*b0s[i] + c - cs[i])
                  - (c-cs[i])*(2.0*b0 + c)
                  )
-                for i in cmps]
+                for i in range(N)]
 
     @property
     def d2epsilon_dzizjs(self):
@@ -8185,9 +8183,9 @@ class PRMIXTranslated(PRMIX):
         -----
         This derivative is checked numerically.
         '''
-        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        N, b0s, cs = self.N, self.b0s, self.cs
         return [[2.0*(-b0s[i]*b0s[j] + b0s[i]*cs[j] + b0s[j]*cs[i] + cs[i]*cs[j])
-                 for i in cmps] for j in cmps]
+                 for i in range(N)] for j in range(N)]
 
     d3epsilon_dzizjzks = GCEOSMIX.d3epsilon_dzizjzks # Zeros
 
@@ -8216,12 +8214,12 @@ class PRMIXTranslated(PRMIX):
         '''
         # Not trusted yet - numerical check does not have enough digits
         epsilon, c, b = self.epsilon, self.c, self.b
-        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        N, b0s, cs = self.N, self.b0s, self.cs
         b0 = b + c
         d2epsilon_dninjs = []
-        for i in cmps:
+        for i in range(N):
             l = []
-            for j in cmps:
+            for j in range(N):
                 v = (-2.0*b0*(2.0*b0 - b0s[i] - b0s[j])
                 + c*(4.0*b0 - 2.0*b0s[i] -2.0*b0s[j] + 2.0*c - cs[i] - cs[j])
                 - 2.0*(b0 - b0s[i])*(b0 - b0s[j])
@@ -8264,14 +8262,14 @@ class PRMIXTranslated(PRMIX):
         This derivative is checked numerically.
         '''
         epsilon, c, b = self.epsilon, self.c, self.b
-        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        N, b0s, cs = self.N, self.b0s, self.cs
         b0 = b + c
         d3b_dninjnks = []
-        for i in cmps:
+        for i in range(N):
             d3b_dnjnks = []
-            for j in cmps:
+            for j in range(N):
                 row = []
-                for k in cmps:
+                for k in range(N):
                     term = (4.0*b0*(3.0*b0 - b0s[i] - b0s[j] - b0s[k])
                     -2.0*c*(6.0*b0 + 3.0*c - 2.0*(b0s[i] + b0s[j] + b0s[k]) -(cs[i] + cs[j] + cs[k]))
 
@@ -8395,15 +8393,15 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
         self.omegas = omegas
         self.zs = zs
         if kijs is None:
-            kijs = [[0.0]*N for i in cmps]
+            kijs = [[0.0]*N for i in range(N)]
         self.kijs = kijs
         self.T = T
         self.P = P
         self.V = V
 
         c1R2, c2R = self.c1*R2, self.c2*R
-        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in cmps]
-        b0s = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in range(N)]
+        b0s = [c2R*Tcs[i]/Pcs[i] for i in range(N)]
 
         if cs is None:
             cs = [0.0]*N
@@ -8413,12 +8411,12 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
         self.cs = cs
 
         b0, c = 0.0, 0.0
-        for i in cmps:
+        for i in range(N):
             b0 += b0s[i]*zs[i]
             c += cs[i]*zs[i]
 
         self.b0s = b0s
-        self.bs = [b0s[i] - cs[i] for i in cmps]
+        self.bs = [b0s[i] - cs[i] for i in range(N)]
         self.c = c
         self.b = b = b0 - c
         self.delta = 2.0*(c + b0)
@@ -8536,28 +8534,28 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
                  alpha_coeffs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
-        self.cmps = cmps = range(N)
+        self.cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
         if kijs is None:
-            kijs = [[0.0]*N for i in cmps]
+            kijs = [[0.0]*N for i in range(N)]
         self.kijs = kijs
         self.T = T
         self.P = P
         self.V = V
 
         c1R2, c2R = self.c1*R2, self.c2*R
-        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in cmps]
-        b0s = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in range(N)]
+        b0s = [c2R*Tcs[i]/Pcs[i] for i in range(N)]
 
         if cs is None:
             cs = [R*Tcs[i]/Pcs[i]*(0.0198*min(max(omegas[i], -0.01), 1.48) - 0.0065)
-                for i in cmps]
+                for i in range(N)]
         if alpha_coeffs is None:
             alpha_coeffs = []
-            for i in cmps:
+            for i in range(N):
                 o = min(max(omegas[i], -0.01), 1.48)
                 L = o*(0.1290*o + 0.6039) + 0.0877
                 M = o*(0.1760*o - 0.2600) + 0.8884
@@ -8568,12 +8566,12 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
         self.cs = cs
 
         b0, c = 0.0, 0.0
-        for i in cmps:
+        for i in range(N):
             b0 += b0s[i]*zs[i]
             c += cs[i]*zs[i]
 
         self.b0s = b0s
-        self.bs = [b0s[i] - cs[i] for i in cmps]
+        self.bs = [b0s[i] - cs[i] for i in range(N)]
         self.c = c
         self.b = b = b0 - c
         self.delta = 2.0*(c + b0)
@@ -8589,7 +8587,7 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
         self.b0s = b0s = other.b0s
 
         b0, c = 0.0, 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             b0 += b0s[i]*zs[i]
             c += cs[i]*zs[i]
 
