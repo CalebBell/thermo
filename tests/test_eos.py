@@ -2297,3 +2297,17 @@ def test_properties_removed_from_default():
     assert_close(obj.d2P_dT2_l, -235.51286126983416, rtol=1e-10)
 
 
+def test_model_hash_eos():
+    # Iterate through all the basic EOSs, and check that the computed model_hash
+    # is the same
+    eos_iter = list(eos_list)
+
+    Tc = 507.6
+    Pc = 3025000
+    omega = 0.2975
+    for eos in eos_iter:
+        e = eos(Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
+        e2 = eos(Tc=Tc, Pc=Pc, omega=omega, V=1, P=1E5)
+        assert e.model_hash() == e2.model_hash()
+        e3 = e.to(V=10, T=30)
+        assert e.model_hash() == e3.model_hash()
