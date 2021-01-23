@@ -782,8 +782,8 @@ class GCEOSMIX(GCEOS):
         Lewis-Randall rule or when using an activity coefficient model which
         require pure component fugacities.
         '''
-        T, P, cmps = self.T, self.P, self.cmps
-        return [self.to_TPV_pure(T=T, P=P, V=None, i=i) for i in cmps]
+        T, P, N = self.T, self.P, self.N
+        return [self.to_TPV_pure(T=T, P=P, V=None, i=i) for i in range(N)]
 
 
     @property
@@ -800,7 +800,7 @@ class GCEOSMIX(GCEOS):
         zs = self.zs
         Tcs = self.Tcs
         Tc = 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             Tc += zs[i]*Tcs[i]
         return Tc
 
@@ -818,7 +818,7 @@ class GCEOSMIX(GCEOS):
         zs = self.zs
         Pcs = self.Pcs
         Pc = 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             Pc += zs[i]*Pcs[i]
         return Pc
 
@@ -836,7 +836,7 @@ class GCEOSMIX(GCEOS):
         zs = self.zs
         omegas = self.omegas
         omega = 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             omega += zs[i]*omegas[i]
         return omega
 
@@ -854,7 +854,7 @@ class GCEOSMIX(GCEOS):
         zs = self.zs
         ais = self.ais
         a = 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             a += zs[i]*ais[i]
         return a
 
@@ -865,7 +865,7 @@ class GCEOSMIX(GCEOS):
             zs = self.zs
             Tcs, Pcs, omegas, ais = self.Tcs, self.Pcs, self.omegas, self.ais
             Tc, Pc, a = 0.0, 0.0, 0.0
-            for i in self.cmps:
+            for i in range(self.N):
                 Tc += Tcs[i]*zs[i]
                 Pc += Pcs[i]*zs[i]
                 a += ais[i]*zs[i]
@@ -938,7 +938,7 @@ class GCEOSMIX(GCEOS):
 #            except NotImplementedError:
 #                a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
 #                method_obj = super(type(self).__mro__[self.a_alpha_mro], self)
-#                for i in self.cmps:
+#                for i in range(self.N):
 #                    self.setup_a_alpha_and_derivatives(i, T=T)
 #                    # Abuse method resolution order to call the a_alpha_and_derivatives
 #                    # method of the original pure EOS
@@ -972,7 +972,7 @@ class GCEOSMIX(GCEOS):
         # 4 ms pypy for 44*4, 1.3 ms for pythran, 10 ms python with numpy
         # 2 components 1.89 pypy, pythran 1.75 us, regular python 12.7 us.
         # 10 components - regular python 148 us, 9.81 us PyPy, 8.37 pythran in PyPy (flags have no effect; 14.3 us in regular python)
-        zs, kijs, cmps, N = self.zs, self.kijs, self.cmps, self.N
+        zs, kijs, N = self.zs, self.kijs, self.N
 
         same_T = T == self.T
         if quick:
@@ -1021,8 +1021,8 @@ class GCEOSMIX(GCEOS):
 
 
 
-
         # DO NOT REMOVE THIS CODE! IT MAKES TIHNGS SLOWER IN PYPY, even though it never runs
+        cmps = self.cmps
         da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
 
         a_alpha_ijs = [[None]*N for _ in cmps]
@@ -1051,7 +1051,6 @@ class GCEOSMIX(GCEOS):
                     a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*a_alpha_roots[i]*a_alpha_roots[j]
 
         # Faster than an optimized loop in pypy even
-#        print(self.N, self.cmps, zs)
         z_products = [[zs[i]*zs[j] for j in cmps] for i in cmps]
 
         a_alpha = 0.0
