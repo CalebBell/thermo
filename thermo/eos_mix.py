@@ -4697,14 +4697,14 @@ class GCEOSMIX(GCEOS):
         dlnphis_dns = self.dlnphis_dns(Z)
 
         P = self.P
-        cmps = self.cmps
+        N = self.N
         matrix = []
-        for i in cmps:
+        for i in range(N):
             phi_P = P*phis[i]
             ziPphi = phi_P*zs[i]
             r = dlnphis_dns[i]
-#            row = [ziPphi*(r[j] - 1.0) for j in cmps]
-            row = [ziPphi*(dlnphis_dns[j][i] - 1.0) for j in cmps]
+#            row = [ziPphi*(r[j] - 1.0) for j in range(N)]
+            row = [ziPphi*(dlnphis_dns[j][i] - 1.0) for j in range(N)]
             row[i] += phi_P
             matrix.append(row)
         return matrix
@@ -4774,13 +4774,13 @@ class GCEOSMIX(GCEOS):
         '''
         T, P = self.T, self.P
         b = self.b
-        cmps = self.cmps
+        N = self.N
         RT = T*R
         hess = []
 
-        for i in cmps:
+        for i in range(N):
             row = []
-            for j in cmps:
+            for j in range(N):
                 x0 = V
                 x3 = b
                 x4 = x0 - x3
@@ -4883,7 +4883,7 @@ class GCEOSMIX(GCEOS):
         else:
             Vt = self.V_l
 
-        T, N, cmps = self.T, self.N, self.cmps
+        T, N = self.T, self.N
         b = self.b
         a_alpha = self.a_alpha
         epsilon = self.epsilon
@@ -4916,7 +4916,7 @@ class GCEOSMIX(GCEOS):
         x19 = x14*catanh(x11*x8**-0.5).real
 
         jac = []
-        for i in cmps:
+        for i in range(N):
             x20 = ddelta_dns[i]
             x21 = x20*x4 - 2*depsilon_dns[i]
             x22 = x17*x18
@@ -4935,7 +4935,7 @@ class GCEOSMIX(GCEOS):
         else:
             Vt = self.V_l
 
-        T, N, cmps = self.T, self.N, self.cmps
+        T, N = self.T, self.N
         b = self.b
         a_alpha = self.a_alpha
         epsilon = self.epsilon
@@ -4953,9 +4953,9 @@ class GCEOSMIX(GCEOS):
         dP_dns_Vt = self.dP_dns_Vt(phase)
         d2P_dninjs_Vt = self.d2P_dninjs_Vt(phase)
 
-        hess = [[0.0]*N for i in cmps]
+        hess = [[0.0]*N for i in range(N)]
 
-        for i in cmps:
+        for i in range(N):
             for j in range(i+1):
                 x0 = self.P
                 x1 = x0**2
@@ -5060,15 +5060,15 @@ class GCEOSMIX(GCEOS):
         dP_dns_Vt = self.dP_dns_Vt(phase)
 
         mRT = -R*self.T
-        zs, cmps = self.zs, self.cmps
+        zs, N = self.zs, self.N
 
         logzs = [log(zi) for zi in zs]
         tot = 0.0
-        for i in cmps:
+        for i in range(N):
             tot += zs[i]*logzs[i]
 
         const = R*self.T/self.P
-        return [mRT*(tot - logzs[i]) + const*dP_dns_Vt[i] for i in cmps]
+        return [mRT*(tot - logzs[i]) + const*dP_dns_Vt[i] for i in range(N)]
 
     def d2Scomp_dninjs(self, phase):
         '''P_ref = symbols('P_ref')
@@ -5080,15 +5080,15 @@ class GCEOSMIX(GCEOS):
         P = self.P
         RT = R*self.T
         const = RT/P
-        zs, cmps = self.zs, self.cmps
+        zs, N = self.zs, self.N
 
         logzs = [log(zi) for zi in zs]
 
         hess = []
-        for i in cmps:
+        for i in range(N):
             row = []
-            for j in cmps:
-                t = sum(2.0*zs[i]*logzs[i] + 3.0*zs[i] for i in cmps)
+            for j in range(N):
+                t = sum(2.0*zs[i]*logzs[i] + 3.0*zs[i] for i in range(N))
                 if i != j:
                     v = RT*(t - logzs[i] - logzs[j] -4.0)
                 else:
@@ -5104,11 +5104,11 @@ class GCEOSMIX(GCEOS):
 
         # TODO fix the implementation below, make it work
         tot = 0.0
-        for i in cmps:
+        for i in range(N):
             tot += zs[i]*logzs[i]
 
         tot2m1 = tot + tot - 1.0
-        hess = [[RT*(tot2m1 - logzs[i] - logzs[j]) for i in cmps] for j in cmps]
+        hess = [[RT*(tot2m1 - logzs[i] - logzs[j]) for i in range(N)] for j in range(N)]
         return hess
 #        return d2xs_to_dxdn_partials(hess, zs)
 #        return d2ns_to_dn2_partials(hess, self.dScomp_dns)
@@ -5118,14 +5118,14 @@ class GCEOSMIX(GCEOS):
             Vt = self.V_g
         else:
             Vt = self.V_l
-        N, zs, cmps = self.N, self.zs, self.cmps
+        N, zs = self.N, self.zs
 
         d2A_dep_dninjs_Vt = self.d2A_dep_dninjs_Vt(phase)
         d2Scomp_dninjs = self.d2Scomp_dninjs
 
-        hess = [[0.0]*N for i in cmps]
-        for i in cmps:
-            for j in cmps:
+        hess = [[0.0]*N for i in range(N)]
+        for i in range(N):
+            for j in range(N):
                 hess[i][j] = d2Scomp_dninjs[i][j] + d2A_dep_dninjs_Vt[i][j]
         return hess
 
@@ -5172,7 +5172,7 @@ class GCEOSMIX(GCEOS):
         dnd2P_dV2_dns = []
         dnd2P_dTdV_dns = []
 
-        for i in self.cmps:
+        for i in range(self.N):
             x1 = da_alpha_dT_dns[i]
             x9 = dV_dns[i]
             x10 = R*(x9 - db_dns[i])
@@ -5279,7 +5279,7 @@ class GCEOSMIX(GCEOS):
         d3V_dT2dns = []
         d3T_dPdVdns = []
         d3V_dPdTdns = []
-        for i in self.cmps:
+        for i in range(self.N):
             d2P_dTdn, d2P_dVdn, d3P_dT2dn, d3P_dV2dn, d3P_dTdVdn = (
                     d2P_dTdns[i], d2P_dVdns[i], d3P_dT2dns[i], d3P_dV2dns[i], d3P_dTdVdns[i])
 
@@ -5422,7 +5422,7 @@ class GCEOSMIX(GCEOS):
         Notes
         -----
         '''
-        cmps = self.cmps
+        N = self.N
         zs = self.zs
         T, P = self.T, self.P
         if n and x:
@@ -5465,11 +5465,11 @@ class GCEOSMIX(GCEOS):
                 # H
                 dH_dep_dns = H_fun(Z)
                 # U
-                dU_dep_dns = [dH_dep_dns[i] - P*dV_dep_dns[i] for i in cmps]
+                dU_dep_dns = [dH_dep_dns[i] - P*dV_dep_dns[i] for i in range(N)]
                 # S
-                dS_dep_dns = [(dG_dep_dns[i] - dH_dep_dns[i])/-T for i in cmps]
+                dS_dep_dns = [(dG_dep_dns[i] - dH_dep_dns[i])/-T for i in range(N)]
                 # A
-                dA_dep_dns = [dU_dep_dns[i] - T*dS_dep_dns[i] for i in cmps]
+                dA_dep_dns = [dU_dep_dns[i] - T*dS_dep_dns[i] for i in range(N)]
 
                 if n and phase == 'l':
                     self.d2P_dTdns_l, self.d2P_dVdns_l, self.d2V_dTdns_l = d2P_dTdns, d2P_dVdns, d2V_dTdns
@@ -5600,7 +5600,7 @@ class GCEOSMIX(GCEOS):
         t50 = 1.0/(x0*x0)
 
         dlnphis_dPs = []
-        for i in self.cmps:
+        for i in range(self.N):
             # number dependent calculations
             x1 = dV_dns[i] # Derivative(x0, n)
             x7 = x1*t50
@@ -5663,7 +5663,7 @@ class GCEOSMIX(GCEOS):
         >>> lnphi = simplify(G_dep/(R*T)) # doctest:+SKIP
         >>> diff(diff(lnphi, T), n) # doctest:+SKIP
         '''
-        T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
+        T, P, zs, N = self.T, self.P, self.zs, self.N
         if phase == 'g':
             V = self.V_g
             Z = self.Z_g
@@ -5722,7 +5722,7 @@ class GCEOSMIX(GCEOS):
         x35 = 8*x13*x29*x5/x17**2
 
         dlnphis_dTs = []
-        for i in cmps:
+        for i in range(N):
             x2 = d2V_dTdns[i]
             x8 = x2*x7
 
