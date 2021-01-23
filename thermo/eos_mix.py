@@ -5831,7 +5831,8 @@ class EpsilonZeroMixingRules(object):
         -----
         This derivative is checked numerically.
         '''
-        return [[0.0]*self.N for i in self.cmps]
+        N = self.N
+        return [[0.0]*N for i in range(N)]
 
     @property
     def d2epsilon_dninjs(self):
@@ -5851,7 +5852,8 @@ class EpsilonZeroMixingRules(object):
         -----
         This derivative is checked numerically.
         '''
-        return [[0.0]*self.N for i in self.cmps]
+        N = self.N
+        return [[0.0]*N for i in range(N)]
 
     @property
     def d3epsilon_dninjnks(self):
@@ -5873,8 +5875,8 @@ class EpsilonZeroMixingRules(object):
         -----
         This derivative is checked numerically.
         '''
-        N, cmps = self.N, self.cmps
-        return [[[0.0]*N for _ in cmps] for _ in cmps]
+        N = self.N
+        return [[[0.0]*N for _ in range(N)] for _ in range(N)]
 
 #    # Python 2/3 compatibility
 #    try:
@@ -5991,11 +5993,12 @@ class PSRKMixingRules(object):
         RT2_inv = R_inv*T2_inv
 
         A_inv = self.A_inv
+        N = self.N
 
 
         tot0, tot1, d1tot, d2tot, other = 0.0, 0.0, 0.0, 0.0, 0.0
         if full:
-            for i in self.cmps:
+            for i in range(N):
                 bi_inv = 1.0/bs[i]
                 # Main component
                 tot0 += zs[i]*a_alphas[i]*bi_inv*RT_inv
@@ -6012,7 +6015,7 @@ class PSRKMixingRules(object):
                           - 2.0*zs[i]*da_alpha_dTs[i]*T_inv*bi_inv
                           + 2.0*zs[i]*a_alphas[i]*T2_inv*bi_inv)
         else:
-            for i in self.cmps:
+            for i in range(N):
                 bi_inv = 1.0/bs[i]
                 tot0 += zs[i]*a_alphas[i]*bi_inv*RT_inv
                 tot1 += zs[i]*log(b*bi_inv)
@@ -6157,9 +6160,9 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
         return self.zeros2d
 
     def _zeros3d(self):
-        N, cmps = self.N, self.cmps
+        N = self.N
         if self.scalar:
-            return [[[0.0]*N for _ in cmps] for _ in cmps]
+            return [[[0.0]*N for _ in range(N)] for _ in range(N)]
         else:
             return zeros((N, N, N))
 
@@ -6754,7 +6757,8 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
         -----
         This derivative is checked numerically.
         '''
-        return [[0.0]*self.N for i in self.cmps]
+        N = self.N
+        return [[0.0]*N for i in range(N)]
 
     @property
     def d2delta_dninjs(self):
@@ -6798,7 +6802,6 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
         '''
         m3b = -3.0*self.b
         bs = self.bs
-        cmps = self.cmps
         d3delta_dninjnks = []
         for bi in bs:
             d3b_dnjnks = []
@@ -7031,7 +7034,7 @@ class PRMIX(GCEOSMIX, PR):
         tot = 0.0
         zs = self.zs
         vs = self.d3a_alpha_dT3_vectorized(self.T)
-        for i in self.cmps:
+        for i in range(self.N):
             tot += zs[i]*vs[i]
         self._d3a_alpha_dT3 = tot
         return tot
@@ -7093,7 +7096,6 @@ class PRMIX(GCEOSMIX, PR):
             Log fugacity coefficient for each species, [-]
         '''
         a_alpha = self.a_alpha
-#        cmps = self.cmps
 #        a_alpha_ijs = self.a_alpha_ijs
         T_inv = 1.0/self.T
         bs, b = self.bs, self.b
@@ -7130,7 +7132,7 @@ class PRMIX(GCEOSMIX, PR):
 
         if self.scalar:
             return [bs[i]*t51 - x0 - t50*a_alpha_j_rows[i]
-                    for i in self.cmps]
+                    for i in range(self.N)]
         else:
             return bs*t51 - x0 - t50*a_alpha_j_rows
 
@@ -7220,7 +7222,7 @@ class PRMIX(GCEOSMIX, PR):
         da_alpha_dT_j_rows = self._da_alpha_dT_j_rows
 
         d_lnphis_dTs = [x52 + bs[i]*x58 + x50*(x59*a_alpha_j_rows[i] + da_alpha_dT_j_rows[i])
-                        for i in self.cmps]
+                        for i in range(self.N)]
         return d_lnphis_dTs
 
     def dlnphis_dP(self, phase):
@@ -7254,7 +7256,6 @@ class PRMIX(GCEOSMIX, PR):
         else:
             Z, dZ_dP = self.Z_g, self.dZ_dP_g
         a_alpha = self.a_alpha
-        cmps = self.cmps
         bs, b = self.bs, self.b
         T_inv = 1.0/self.T
 
@@ -7271,7 +7272,7 @@ class PRMIX(GCEOSMIX, PR):
 
         x50 = -2.0/a_alpha
         d_lnphi_dPs = []
-        for i in cmps:
+        for i in range(self.N):
             x3 = bs[i]*x2
             x10 = x50*a_alpha_j_rows[i]
 #            d_lnphi_dP = dZ_dP*x3 + x15*(x10 + x3) + x9
@@ -7285,7 +7286,8 @@ class PRMIX(GCEOSMIX, PR):
 
         # TODO try to follow "B.5.2.1 Derivatives of Fugacity Coefficient with Respect to Mole Fraction"
         # "Development of an Equation-of-State Thermal Flooding Simulator"
-        cmps_m1 = range(self.N-1)
+        N = self.N
+        cmps_m1 = range(N-1)
 
         a_alpha = self.a_alpha
         a_alpha_ijs = self.a_alpha_ijs
@@ -7309,9 +7311,9 @@ class PRMIX(GCEOSMIX, PR):
 
 
         Sis = []
-        for i in range(len(zs)):
+        for i in range(N):
             tot = 0.0
-            for j in range(len(zs)):
+            for j in range(N):
                 tot += zs[j]*a_alpha_ijs[i][j]
             Sis.append(tot)
 
@@ -7324,7 +7326,7 @@ class PRMIX(GCEOSMIX, PR):
 
         const_B = 2.0*self.P/(R*self.T)
         bnc = self.bs[-1]
-        dB_dzis = [const_B*(self.bs[i] - bnc) for i in self.cmps] # Probably wrong, missing
+        dB_dzis = [const_B*(self.bs[i] - bnc) for i in range(N)] # Probably wrong, missing
 
         dZ_dzs = [dZ_dA*dA_dz_i + dZ_dB*dB_dzi for dA_dz_i, dB_dzi in zip(dA_dzis, dB_dzis)]
 
@@ -7467,7 +7469,6 @@ class PRMIX(GCEOSMIX, PR):
         a_alphas = self.a_alphas
         a_alpha_j_rows = self.a_alpha_j_rows
         N = len(zs)
-        cmps = range(N)
 
         b2 = b*b
         b_inv = 1.0/b
@@ -7484,9 +7485,9 @@ class PRMIX(GCEOSMIX, PR):
 
         t4 = 2.0/a_alpha
         t5 = -A/(two_root_two*B)
-        Eis = [t5*(t4*a_alpha_j_rows[i] - bs[i]*b_inv) for i in cmps]
+        Eis = [t5*(t4*a_alpha_j_rows[i] - bs[i]*b_inv) for i in range(N)]
 #        ln_phis = []
-#        for i in cmps:
+#        for i in range(N):
 #            ln_phis.append(log(C) + Dis[i] + Eis[i]*log(G))
 #        return ln_phis
 
@@ -7505,31 +7506,31 @@ class PRMIX(GCEOSMIX, PR):
 
         t15 = (A - 2.0*B - 3.0*B*B + 2.0*(3.0*B + 1.0)*Z - Z*Z)
         BmZ = (B - Z)
-        dZ_dxs = [(BmZ*dA_dxks[i] + t15*dB_dxks[i])*dF_dZ_inv for i in cmps]
+        dZ_dxs = [(BmZ*dA_dxks[i] + t15*dB_dxks[i])*dF_dZ_inv for i in range(N)]
 
         # function only of k
         ZmB = Z - B
         t20 = -1.0/(ZmB*ZmB)
-        dC_dxs = [t20*(dZ_dxs[k] - dB_dxks[k]) for k in cmps]
+        dC_dxs = [t20*(dZ_dxs[k] - dB_dxks[k]) for k in range(N)]
 
         dD_dxs = []
 #        dD_dxs = [[0.0]*N for _ in cmps]
-        t55s = [b*dZ_dxs[k] - bs[k]*Zm1 for k in cmps]
-        for i in cmps:
+        t55s = [b*dZ_dxs[k] - bs[k]*Zm1 for k in range(N)]
+        for i in range(N):
 #            dD_dxs_i = dD_dxs[i]
             b_term_ratio = bs[i]*b2_inv
-            dD_dxs.append([b_term_ratio*t55s[k] for k in cmps])
-#            for k in cmps:
+            dD_dxs.append([b_term_ratio*t55s[k] for k in range(N)])
+#            for k in range(N):
 #                dD_dxs_i[k] = b_term_ratio*t55s[k]
 #        dD_dxs = []
-#        for i in cmps:
+#        for i in range(N):
 #            term = bs[i]/(b*b)*(b*dZ_dxs[i] - b*(Z - 1.0))
 #            dD_dxs.append(term)
 
         # ? Believe this is the only one with multi indexes?
         t1 = 1.0/(two_root_two*a_alpha*b*B)
         t2 = t1*A/(a_alpha*b)
-        t50s = [B*dA_dxks[k] - A*dB_dxks[k] for k in cmps]
+        t50s = [B*dA_dxks[k] - A*dB_dxks[k] for k in range(N)]
 
         # problem is in here, tested numerically
         b_two = b + b
@@ -7539,8 +7540,8 @@ class PRMIX(GCEOSMIX, PR):
         t35 = -t1*B_inv*b_two
 
         # Symmetric matrix!
-        dE_dxs = [[0.0]*N for _ in cmps] # TODO - makes little sense. Too many i indexes.
-        for i in cmps:
+        dE_dxs = [[0.0]*N for _ in range(N)] # TODO - makes little sense. Too many i indexes.
+        for i in range(N):
             zm_aim_tot = a_alpha_j_rows[i]
             t30 = t34*bs[i] + t35*zm_aim_tot
             t31 = t33*zm_aim_tot
@@ -7557,22 +7558,22 @@ class PRMIX(GCEOSMIX, PR):
 
         t59 = (Z + (1.0 - root_two)*B)
         t60 = two_root_two/(t59*t59)
-        dG_dxs = [t60*(Z*dB_dxks[k] - B*dZ_dxs[k]) for k in cmps]
+        dG_dxs = [t60*(Z*dB_dxks[k] - B*dZ_dxs[k]) for k in range(N)]
 
 
         G_inv = 1.0/G
         logG = log(G)
         C_inv = 1.0/C
         dlnphis_dxs = []
-#        dlnphis_dxs = [[0.0]*N for _ in cmps]
+#        dlnphis_dxs = [[0.0]*N for _ in range(N)]
         t61s = [C_inv*dC_dxi for dC_dxi in dC_dxs]
-        for i in cmps:
+        for i in range(N):
             dD_dxs_i = dD_dxs[i]
             dE_dxs_i = dE_dxs[i]
             E_G = Eis[i]*G_inv
 #            dlnphis_dxs_i = dlnphis_dxs[i]
             dlnphis_dxs_i = [t61s[k] + dD_dxs_i[k] + logG*dE_dxs_i[k] + E_G*dG_dxs[k]
-                             for k in cmps]
+                             for k in range(N)]
             dlnphis_dxs.append(dlnphis_dxs_i)
 
 #        return dlnphis_dxs
@@ -7637,7 +7638,8 @@ class PRMIX(GCEOSMIX, PR):
         -----
         This derivative is checked numerically.
         '''
-        return [[0.0]*self.N for i in self.cmps]
+        N = self.N
+        return [[0.0]*N for i in range(N)]
 
     @property
     def d2delta_dninjs(self):
@@ -7659,7 +7661,6 @@ class PRMIX(GCEOSMIX, PR):
         '''
         bb = 2.0*self.b
         bs = self.bs
-        cmps = self.cmps
         d2b_dninjs = []
         for bi in self.bs:
             d2b_dninjs.append([2.0*(bb - bi - bj) for bj in bs])
@@ -7687,7 +7688,6 @@ class PRMIX(GCEOSMIX, PR):
         '''
         m3b = -3.0*self.b
         bs = self.bs
-        cmps = self.cmps
         d3delta_dninjnks = []
         for bi in bs:
             d3b_dnjnks = []
