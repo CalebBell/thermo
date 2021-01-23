@@ -1021,102 +1021,102 @@ class GCEOSMIX(GCEOS):
 
 
 
-        # DO NOT REMOVE THIS CODE! IT MAKES TIHNGS SLOWER IN PYPY, even though it never runs
-        cmps = self.cmps
-        da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
-
-        a_alpha_ijs = [[None]*N for _ in cmps]
-        a_alpha_roots = [a_alpha_i**0.5 for a_alpha_i in a_alphas]
-
-        if full:
-            a_alpha_ij_roots = [[None]*N for _ in cmps]
-            for i in cmps:
-                kijs_i = kijs[i]
-                a_alpha_i = a_alphas[i]
-                a_alpha_ijs_is = a_alpha_ijs[i]
-                a_alpha_ij_roots_i = a_alpha_ij_roots[i]
-                for j in cmps:
-                    if j < i:
-                        continue
-                    a_alpha_ij_roots_i[j] = a_alpha_roots[i]*a_alpha_roots[j]#(a_alpha_i*a_alphas[j])**0.5
-                    a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*a_alpha_ij_roots_i[j]
-        else:
-            for i in cmps:
-                kijs_i = kijs[i]
-                a_alpha_i = a_alphas[i]
-                a_alpha_ijs_is = a_alpha_ijs[i]
-                for j in cmps:
-                    if j < i:
-                        continue
-                    a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*a_alpha_roots[i]*a_alpha_roots[j]
-
-        # Faster than an optimized loop in pypy even
-        z_products = [[zs[i]*zs[j] for j in cmps] for i in cmps]
-
-        a_alpha = 0.0
-        for i in cmps:
-            a_alpha_ijs_i = a_alpha_ijs[i]
-            z_products_i = z_products[i]
-            for j in cmps:
-                if j < i:
-                    continue
-                elif i != j:
-                    a_alpha += 2.0*a_alpha_ijs_i[j]*z_products_i[j]
-                else:
-                    a_alpha += a_alpha_ijs_i[j]*z_products_i[j]
-
-        # List comprehension tested to be faster in CPython not pypy
-#        a_alpha = sum([a_alpha_ijs[i][j]*z_products[i][j]
-#                      for j in self.cmps for i in self.cmps])
-        self.a_alpha_ijs = a_alpha_ijs
-
-        da_alpha_dT_ijs = self.da_alpha_dT_ijs = [[None]*N for _ in cmps]
-
-        if full:
-            for i in cmps:
-                kijs_i = kijs[i]
-                a_alphai = a_alphas[i]
-                z_products_i = z_products[i]
-                da_alpha_dT_i = da_alpha_dTs[i]
-                d2a_alpha_dT2_i = d2a_alpha_dT2s[i]
-                a_alpha_ij_roots_i = a_alpha_ij_roots[i]
-                for j in cmps:
-                    if j < i:
-                        # skip the duplicates
-                        continue
-                    a_alphaj = a_alphas[j]
-                    x0 = a_alphai*a_alphaj
-                    x0_05 = a_alpha_ij_roots_i[j]
-                    zi_zj = z_products_i[j]
-
-                    x1 = a_alphai*da_alpha_dTs[j]
-                    x2 = a_alphaj*da_alpha_dT_i
-                    x1_x2 = x1 + x2
-                    x3 = 2.0*x1_x2
-
-                    kij_m1 = kijs_i[j] - 1.0
-
-                    da_alpha_dT_ij = -0.5*kij_m1*x1_x2/x0_05
-
-                    # For temperature derivatives of fugacities
-                    da_alpha_dT_ijs[i][j] = da_alpha_dT_ijs[j][i] = da_alpha_dT_ij
-
-                    da_alpha_dT_ij *= zi_zj
-
-                    d2a_alpha_dT2_ij = zi_zj*kij_m1*(-0.25*x0_05*(x0*(
-                    2.0*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2_i)
-                    + 4.*da_alpha_dT_i*da_alpha_dTs[j]) - x1*x3 - x2*x3 + x1_x2*x1_x2)/(x0*x0))
-
-                    if i != j:
-                        da_alpha_dT += da_alpha_dT_ij + da_alpha_dT_ij
-                        d2a_alpha_dT2 += d2a_alpha_dT2_ij + d2a_alpha_dT2_ij
-                    else:
-                        da_alpha_dT += da_alpha_dT_ij
-                        d2a_alpha_dT2 += d2a_alpha_dT2_ij
-
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
-        else:
-            return a_alpha
+#        # DO NOT REMOVE THIS CODE! IT MAKES TIHNGS SLOWER IN PYPY, even though it never runs
+#        cmps = self.cmps
+#        da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
+#
+#        a_alpha_ijs = [[None]*N for _ in cmps]
+#        a_alpha_roots = [a_alpha_i**0.5 for a_alpha_i in a_alphas]
+#
+#        if full:
+#            a_alpha_ij_roots = [[None]*N for _ in cmps]
+#            for i in cmps:
+#                kijs_i = kijs[i]
+#                a_alpha_i = a_alphas[i]
+#                a_alpha_ijs_is = a_alpha_ijs[i]
+#                a_alpha_ij_roots_i = a_alpha_ij_roots[i]
+#                for j in cmps:
+#                    if j < i:
+#                        continue
+#                    a_alpha_ij_roots_i[j] = a_alpha_roots[i]*a_alpha_roots[j]#(a_alpha_i*a_alphas[j])**0.5
+#                    a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*a_alpha_ij_roots_i[j]
+#        else:
+#            for i in cmps:
+#                kijs_i = kijs[i]
+#                a_alpha_i = a_alphas[i]
+#                a_alpha_ijs_is = a_alpha_ijs[i]
+#                for j in cmps:
+#                    if j < i:
+#                        continue
+#                    a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*a_alpha_roots[i]*a_alpha_roots[j]
+#
+#        # Faster than an optimized loop in pypy even
+#        z_products = [[zs[i]*zs[j] for j in cmps] for i in cmps]
+#
+#        a_alpha = 0.0
+#        for i in cmps:
+#            a_alpha_ijs_i = a_alpha_ijs[i]
+#            z_products_i = z_products[i]
+#            for j in cmps:
+#                if j < i:
+#                    continue
+#                elif i != j:
+#                    a_alpha += 2.0*a_alpha_ijs_i[j]*z_products_i[j]
+#                else:
+#                    a_alpha += a_alpha_ijs_i[j]*z_products_i[j]
+#
+#        # List comprehension tested to be faster in CPython not pypy
+##        a_alpha = sum([a_alpha_ijs[i][j]*z_products[i][j]
+##                      for j in self.cmps for i in self.cmps])
+#        self.a_alpha_ijs = a_alpha_ijs
+#
+#        da_alpha_dT_ijs = self.da_alpha_dT_ijs = [[None]*N for _ in cmps]
+#
+#        if full:
+#            for i in cmps:
+#                kijs_i = kijs[i]
+#                a_alphai = a_alphas[i]
+#                z_products_i = z_products[i]
+#                da_alpha_dT_i = da_alpha_dTs[i]
+#                d2a_alpha_dT2_i = d2a_alpha_dT2s[i]
+#                a_alpha_ij_roots_i = a_alpha_ij_roots[i]
+#                for j in cmps:
+#                    if j < i:
+#                        # skip the duplicates
+#                        continue
+#                    a_alphaj = a_alphas[j]
+#                    x0 = a_alphai*a_alphaj
+#                    x0_05 = a_alpha_ij_roots_i[j]
+#                    zi_zj = z_products_i[j]
+#
+#                    x1 = a_alphai*da_alpha_dTs[j]
+#                    x2 = a_alphaj*da_alpha_dT_i
+#                    x1_x2 = x1 + x2
+#                    x3 = 2.0*x1_x2
+#
+#                    kij_m1 = kijs_i[j] - 1.0
+#
+#                    da_alpha_dT_ij = -0.5*kij_m1*x1_x2/x0_05
+#
+#                    # For temperature derivatives of fugacities
+#                    da_alpha_dT_ijs[i][j] = da_alpha_dT_ijs[j][i] = da_alpha_dT_ij
+#
+#                    da_alpha_dT_ij *= zi_zj
+#
+#                    d2a_alpha_dT2_ij = zi_zj*kij_m1*(-0.25*x0_05*(x0*(
+#                    2.0*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2_i)
+#                    + 4.*da_alpha_dT_i*da_alpha_dTs[j]) - x1*x3 - x2*x3 + x1_x2*x1_x2)/(x0*x0))
+#
+#                    if i != j:
+#                        da_alpha_dT += da_alpha_dT_ij + da_alpha_dT_ij
+#                        d2a_alpha_dT2 += d2a_alpha_dT2_ij + d2a_alpha_dT2_ij
+#                    else:
+#                        da_alpha_dT += da_alpha_dT_ij
+#                        d2a_alpha_dT2 += d2a_alpha_dT2_ij
+#
+#            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+#        else:
+#            return a_alpha
 
     def a_alpha_and_derivatives_py(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
         zs, kijs = self.zs, self.kijs
@@ -8817,7 +8817,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         two_over_a_alpha = 2./self.a_alpha
         a_alpha_j_rows = self._a_alpha_j_rows
         phis = []
-        for i in self.cmps:
+        for i in range(self.N):
             Bi = self.bs[i]*P_RT
             t1 = Bi*Z_minus_one_over_B - t0
             t2 = A_B*(Bi/B - two_over_a_alpha*a_alpha_j_rows[i])
@@ -8859,7 +8859,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
             dZ_dT = self.dZ_dT_l
 
         da_alpha_dT_j_rows = self._da_alpha_dT_j_rows
-        cmps = self.cmps
+        N = self.N
         P, bs, b = self.P, self.bs, self.b
 
         T_inv = 1.0/self.T
@@ -8890,7 +8890,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
 
         a_alpha_j_rows = self.a_alpha_j_rows
 
-        for i in cmps:
+        for i in range(N):
             x7 = a_alpha_j_rows[i]
             x15 = (x50*(x51*x7*x9 + 2.0*da_alpha_dT_j_rows[i]) + x52)
 
@@ -8932,7 +8932,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         else:
             Z, dZ_dP = self.Z_g, self.dZ_dP_g
         a_alpha = self.a_alpha
-        cmps = self.cmps
+        N = self.N
         bs, b = self.bs, self.b
         T_inv = 1.0/self.T
         a_alpha_j_rows = self._a_alpha_j_rows
@@ -8950,7 +8950,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
 
         x50 = 2.0/a_alpha
         d_lnphi_dPs = []
-        for i in cmps:
+        for i in range(N):
             x8 = x50*a_alpha_j_rows[i]
             x3 = bs[i]*x2
             d_lnphi_dP = dZ_dP*x3 + x10*(x8 - x3) + x6
@@ -9049,8 +9049,8 @@ class SRKMIXTranslated(SRKMIX):
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
-        self.N = len(Tcs)
-        self.cmps = cmps = range(self.N)
+        self.N = N = len(Tcs)
+        self.cmps = range(self.N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -9072,12 +9072,12 @@ class SRKMIXTranslated(SRKMIX):
         self.cs = cs
 
         b0, c = 0.0, 0.0
-        for i in cmps:
+        for i in range(N):
             b0 += b0s[i]*zs[i]
             c += cs[i]*zs[i]
 
         self.b0s = b0s
-        self.bs = [b0s[i] - cs[i] for i in cmps]
+        self.bs = [b0s[i] - cs[i] for i in range(N)]
         self.c = c
         self.b = b = b0 - c
         self.delta = c + c + b0
@@ -9093,7 +9093,7 @@ class SRKMIXTranslated(SRKMIX):
         self.b0s = b0s = other.b0s
 
         b0, c = 0.0, 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             b0 += b0s[i]*zs[i]
             c += cs[i]*zs[i]
 
@@ -9122,7 +9122,7 @@ class SRKMIXTranslated(SRKMIX):
         This derivative is checked numerically.
         '''
         b0s, cs = self.b0s, self.cs
-        return [(2.0*cs[i] + b0s[i]) for i in self.cmps]
+        return [(2.0*cs[i] + b0s[i]) for i in range(self.N)]
 
     # Zero in both cases
     d2delta_dzizjs = PRMIX.d2delta_dzizjs
@@ -9148,7 +9148,7 @@ class SRKMIXTranslated(SRKMIX):
         This derivative is checked numerically.
         '''
         b0s, cs, delta = self.b0s, self.cs, self.delta
-        return [(2.0*cs[i] + b0s[i]) - delta for i in self.cmps]
+        return [(2.0*cs[i] + b0s[i]) - delta for i in range(self.N)]
 
     @property
     def d2delta_dninjs(self):
@@ -9169,13 +9169,13 @@ class SRKMIXTranslated(SRKMIX):
         -----
         This derivative is checked numerically.
         '''
-        cmps, b0s, cs, delta = self.cmps, self.b0s, self.cs, self.delta
+        N, b0s, cs, delta = self.N, self.b0s, self.cs, self.delta
         c, b = self.c, self.b
         b0 = b + c
         d2delta_dninjs = []
-        for i in cmps:
+        for i in range(N):
             d2delta_dninjs.append([(2.0*(b0 - cs[i] - cs[j]) + 4.0*c - b0s[i] - b0s[j])
-                                    for j in cmps])
+                                    for j in range(N)])
         return d2delta_dninjs
 
     @property
@@ -9200,16 +9200,16 @@ class SRKMIXTranslated(SRKMIX):
         -----
         This derivative is checked numerically.
         '''
-        cmps, b0s, cs, delta = self.cmps, self.b0s, self.cs, self.delta
+        N, b0s, cs, delta = self.N, self.b0s, self.cs, self.delta
         c, b = self.c, self.b
         b0 = b + c
         d3delta_dninjnks = []
-        for i in cmps:
+        for i in range(N):
             d3delta_dnjnks = []
-            for j in cmps:
+            for j in range(N):
                 d3delta_dnjnks.append([(-6.0*b0 + 2.0*(b0s[i] + b0s[j] + b0s[k])
                 - 12.0*c + 4.0*(cs[i] + cs[j] + cs[k]))
-                for k in cmps])
+                for k in range(N)])
             d3delta_dninjnks.append(d3delta_dnjnks)
         return d3delta_dninjnks
 
@@ -9233,10 +9233,10 @@ class SRKMIXTranslated(SRKMIX):
         This derivative is checked numerically.
         '''
         epsilon, c, b = self.epsilon, self.c, self.b
-        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        N, b0s, cs = self.N, self.b0s, self.cs
         b0 = b + c
         return [b0s[i]*c + cs[i]*b0 + 2.0*cs[i]*c
-                for i in cmps]
+                for i in range(N)]
 
     @property
     def depsilon_dns(self):
@@ -9259,10 +9259,10 @@ class SRKMIXTranslated(SRKMIX):
         This derivative is checked numerically.
         '''
         epsilon, c, b = self.epsilon, self.c, self.b
-        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        N, b0s, cs = self.N, self.b0s, self.cs
         b0 = b + c
         return [(-b0*(c - cs[i]) - c*(b0 - b0s[i]) - 2.0*c*(c - cs[i]))
-                for i in cmps]
+                for i in range(N)]
 
     @property
     def d2epsilon_dzizjs(self):
@@ -9282,9 +9282,9 @@ class SRKMIXTranslated(SRKMIX):
         -----
         This derivative is checked numerically.
         '''
-        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        N, b0s, cs = self.N, self.b0s, self.cs
         return [[2.0*cs[i]*cs[j] + b0s[i]*cs[j] + b0s[j]*cs[i]
-                 for i in cmps] for j in cmps]
+                 for i in range(N)] for j in range(N)]
 
     d3epsilon_dzizjzks = GCEOSMIX.d3epsilon_dzizjzks # Zeros
 
@@ -9309,12 +9309,12 @@ class SRKMIXTranslated(SRKMIX):
         '''
         # Not trusted yet - numerical check does not have enough digits
         epsilon, c, b = self.epsilon, self.c, self.b
-        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        N, b0s, cs = self.N, self.b0s, self.cs
         b0 = b + c
         d2epsilon_dninjs = []
-        for i in cmps:
+        for i in range(N):
             l = []
-            for j in cmps:
+            for j in range(N):
                 v = (b0*(2.0*c - cs[i] - cs[j]) + c*(2.0*b0 - b0s[i] - b0s[j])
                 +2.0*c*(2.0*c - cs[i] - cs[j])
                 + (b0 - b0s[i])*(c - cs[j])
@@ -9357,14 +9357,14 @@ class SRKMIXTranslated(SRKMIX):
         This derivative is checked numerically.
         '''
         epsilon, c, b = self.epsilon, self.c, self.b
-        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        N, b0s, cs = self.N, self.b0s, self.cs
         b0 = b + c
         d3b_dninjnks = []
-        for i in cmps:
+        for i in range(N):
             d3b_dnjnks = []
-            for j in cmps:
+            for j in range(N):
                 row = []
-                for k in cmps:
+                for k in range(N):
                     term = (-2.0*b0*(3.0*c - cs[i] - cs[j] - cs[k])
                     - 2.0*c*(3.0*b0 - b0s[i] - b0s[j] - b0s[k])
                     - 4.0*c*(3.0*c - cs[i] - cs[j] - cs[k])
@@ -9500,22 +9500,22 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
         self.omegas = omegas
         self.zs = zs
         if kijs is None:
-            kijs = [[0.0]*N for i in cmps]
+            kijs = [[0.0]*N for i in range(N)]
         self.kijs = kijs
         self.T = T
         self.P = P
         self.V = V
 
         c1R2, c2R = self.c1*R2, self.c2*R
-        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in cmps]
-        b0s = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in range(N)]
+        b0s = [c2R*Tcs[i]/Pcs[i] for i in range(N)]
 
         if cs is None:
             cs = [R*Tcs[i]/Pcs[i]*(0.0172*min(max(omegas[i], -0.01), 1.46) + 0.0096)
-                for i in cmps]
+                for i in range(N)]
         if alpha_coeffs is None:
             alpha_coeffs = []
-            for i in cmps:
+            for i in range(N):
                 o = min(max(omegas[i], -0.01), 1.46)
                 L = o*(0.0947*o + 0.6871) + 0.1508
                 M = o*(0.1615*o - 0.2349) + 0.8876
@@ -9526,12 +9526,12 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
         self.cs = cs
 
         b0, c = 0.0, 0.0
-        for i in cmps:
+        for i in range(N):
             b0 += b0s[i]*zs[i]
             c += cs[i]*zs[i]
 
         self.b0s = b0s
-        self.bs = [b0s[i] - cs[i] for i in cmps]
+        self.bs = [b0s[i] - cs[i] for i in range(N)]
         self.c = c
         self.b = b = b0 - c
         self.delta = c + c + b0
@@ -9547,7 +9547,7 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
         self.b0s = b0s = other.b0s
 
         b0, c = 0.0, 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             b0 += b0s[i]*zs[i]
             c += cs[i]*zs[i]
 
@@ -9874,7 +9874,7 @@ class PSRK(Mathias_Copeman_a_alpha, PSRKMixingRules, SRKMIXTranslated):
         self.b0s = b0s = other.b0s
 
         b0, c = 0.0, 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             b0 += b0s[i]*zs[i]
             c += cs[i]*zs[i]
 
@@ -10238,7 +10238,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
             Z = self.Z_l
             dZ_dT = self.dZ_dT_l
 
-        cmps = self.cmps
+        N = self.N
         T, P, ais, bs, b = self.T, self.P, self.ais, self.bs, self.b
 
         T_inv = 1.0/T
@@ -10260,7 +10260,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
 
         # Composition stuff
         d_lnphis_dTs = []
-        for i in cmps:
+        for i in range(N):
             x1 = (ais[i]*x0)**0.5
             d_lhphi_dT = -bs[i]*x11 + x1*x5 + x1*x8 - x1*x9 + x15
             d_lnphis_dTs.append(d_lhphi_dT)
@@ -10297,7 +10297,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         else:
             Z, dZ_dP = self.Z_g, self.dZ_dP_g
         a_alpha = self.a_alpha
-        cmps = self.cmps
+        N = self.N
         T, P, bs, b, ais = self.T, self.P, self.bs, self.b, self.ais
 
         T_inv = 1.0/T
@@ -10316,7 +10316,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         x15 = -x5*(-x13*(x12*dZ_dP - 1.0) + x14*dZ_dP)/x14
 
         d_lnphi_dPs = []
-        for i in cmps:
+        for i in range(N):
             x1 = (ais[i]*a_alpha)**0.5
             d_lnphi_dP = -bs[i]*x11 - x1*x6 + x1*x8 + x15
             d_lnphi_dPs.append(d_lnphi_dP)
@@ -10381,7 +10381,8 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         -----
         This derivative is checked numerically.
         '''
-        return [[0.0]*self.N for i in self.cmps]
+        N = self.N
+        return [[0.0]*N for i in range(N)]
 
     @property
     def d2delta_dninjs(self):
@@ -10401,7 +10402,8 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         -----
         This derivative is checked numerically.
         '''
-        return [[0.0]*self.N for i in self.cmps]
+        N = self.N
+        return [[0.0]*N for i in range(N)]
 
     @property
     def d3delta_dninjnks(self):
@@ -10423,8 +10425,8 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         -----
         This derivative is checked numerically.
         '''
-        N, cmps = self.N, self.cmps
-        return [[[0.0]*N for _ in cmps] for _ in cmps]
+        N = self.N
+        return [[[0.0]*N for _ in range(N)] for _ in range(N)]
 
 
 
@@ -10547,7 +10549,7 @@ class PRSVMIX(PRMIX, PRSV):
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  kappa1s=None, fugacities=True, only_l=False, only_g=False):
-        self.N = len(Tcs)
+        self.N = N = len(Tcs)
         self.cmps = range(self.N)
         self.Tcs = Tcs
         self.Pcs = Pcs
@@ -10555,11 +10557,11 @@ class PRSVMIX(PRMIX, PRSV):
         self.zs = zs
 
         if kijs is None:
-            kijs = [[0]*self.N for i in range(self.N)]
+            kijs = [[0]*self.N for i in range(N)]
         self.kijs = kijs
 
         if kappa1s is None:
-            kappa1s = [0.0 for i in self.cmps]
+            kappa1s = [0.0 for i in range(N)]
         self.kwargs = {'kijs': kijs, 'kappa1s': kappa1s}
         self.T = T
         self.P = P
@@ -10758,7 +10760,7 @@ class PRSV2MIX(PRMIX, PRSV2):
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  kappa1s=None, kappa2s=None, kappa3s=None,
                  fugacities=True, only_l=False, only_g=False):
-        self.N = len(Tcs)
+        self.N = N = len(Tcs)
         self.cmps = range(self.N)
         self.Tcs = Tcs
         self.Pcs = Pcs
@@ -10766,15 +10768,15 @@ class PRSV2MIX(PRMIX, PRSV2):
         self.zs = zs
 
         if kijs is None:
-            kijs = [[0]*self.N for i in range(self.N)]
+            kijs = [[0.0]*self.N for i in range(self.N)]
         self.kijs = kijs
 
         if kappa1s is None:
-            kappa1s = [0 for i in self.cmps]
+            kappa1s = [0.0]*N
         if kappa2s is None:
-            kappa2s = [0 for i in self.cmps]
+            kappa2s = [0.0]*N
         if kappa3s is None:
-            kappa3s = [0 for i in self.cmps]
+            kappa3s = [0.0]*N
         self.kwargs = {'kijs': kijs, 'kappa1s': kappa1s, 'kappa2s': kappa2s, 'kappa3s': kappa3s}
         self.kappa1s = kappa1s
         self.kappa2s = kappa2s
@@ -11130,7 +11132,7 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
     def _fast_init_specific(self, other):
         b = 0.0
         bs, zs = self.bs, self.zs
-        for i in self.cmps:
+        for i in range(self.N):
             b += bs[i]*zs[i]
         self.delta = self.b = b
 
@@ -11228,7 +11230,7 @@ class APISRKMIX(SRKMIX, APISRK):
 
     def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
                  S1s=None, S2s=None, fugacities=True, only_l=False, only_g=False):
-        self.N = len(Tcs)
+        self.N = N = len(Tcs)
         self.cmps = range(self.N)
         self.Tcs = Tcs
         self.Pcs = Pcs
@@ -11252,7 +11254,7 @@ class APISRKMIX(SRKMIX, APISRK):
         else:
             self.S1s = S1s
         if S2s is None:
-            S2s = [0.0 for i in self.cmps]
+            S2s = [0.0]*N
         self.S2s = S2s
         self.kwargs = {'S1s': self.S1s, 'S2s': self.S2s}
 
