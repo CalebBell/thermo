@@ -2464,7 +2464,7 @@ class GCEOSMIX(GCEOS):
         zs = self.zs
         a_alpha_ijs = self.a_alpha_ijs
         a_alpha_j_rows = [0.0]*self.N
-        for i in self.cmps:
+        for i in range(self.N):
             l = a_alpha_ijs[i]
             for j in range(i):
                 a_alpha_j_rows[j] += zs[i]*l[j]
@@ -3405,7 +3405,6 @@ class GCEOSMIX(GCEOS):
     def _d2V_dij_wrapper(self, V, d_Vs, dbs, d2bs, d_epsilons, d2_epsilons,
                          d_deltas, d2_deltas, da_alphas, d2a_alphas):
         T = self.T
-        cmps = self.cmps
 
         x0 = V
         x3 = self.b
@@ -3432,11 +3431,12 @@ class GCEOSMIX(GCEOS):
         x39 = x10*x38
 
         hessian = []
-        for i in cmps:
+        N = self.N
+        for i in range(N):
 
 
             row = []
-            for j in cmps:
+            for j in range(N):
 
                 # TODO optimize this - symmetric, others
                 x15 = d_epsilons[i]
@@ -3735,7 +3735,7 @@ class GCEOSMIX(GCEOS):
         t2 = 2.0*x10*x13/(x13*x3*x3 - 1.0)
         x3_x13 = x3*x13
         dH_dzs = []
-        for i in self.cmps:
+        for i in range(self.N):
             x1 = dV_dzs[i]
             x11 = ddelta_dzs[i]
             x12 = x11*x2 - 2.0*depsilon_dzs[i]
@@ -3777,7 +3777,7 @@ class GCEOSMIX(GCEOS):
         dH_dep_dzs = self.dH_dep_dzs(Z)
         dG_dep_dzs = self.dG_dep_dzs(Z)
         T_inv = 1.0/self.T
-        return [T_inv*(dH_dep_dzs[i] - dG_dep_dzs[i]) for i in self.cmps]
+        return [T_inv*(dH_dep_dzs[i] - dG_dep_dzs[i]) for i in range(self.N)]
 
     def dS_dep_dns(self, Z):
         r'''Calculates the molar departure entropy mole number derivatives
@@ -3839,7 +3839,7 @@ class GCEOSMIX(GCEOS):
         t4 = t1*Vt -t3*(Vt*delta + Vt2 + Vt2)
 
         dP_dns_Vt = []
-        for i in self.cmps:
+        for i in range(self.N):
             v = (t4 + t1*db_dns[i] + t3*(Vt*ddelta_dns[i] + depsilon_dns[i]) - t2*da_alpha_dns[i])
             dP_dns_Vt.append(v)
         return dP_dns_Vt
@@ -3851,7 +3851,7 @@ class GCEOSMIX(GCEOS):
         else:
             Vt = self.V_l
 
-        T, N, cmps = self.T, self.N, self.cmps
+        T, N = self.T, self.N
         b = self.b
         a_alpha = self.a_alpha
         epsilon = self.epsilon
@@ -3892,8 +3892,8 @@ class GCEOSMIX(GCEOS):
         t4 = 2.0*x12*x9_inv3
         t5 = 2.0*x0*x7_inv*x7_inv*x7_inv
 
-        hess = [[0.0]*N for _ in cmps]
-        for i in cmps:
+        hess = [[0.0]*N for _ in range(N)]
+        for i in range(N):
             x15 = ddelta_dns[i]
             x17 = -x15*Vt + x16 - depsilon_dns[i]
 
@@ -3922,7 +3922,7 @@ class GCEOSMIX(GCEOS):
         else:
             Vt = self.V_l
 
-        T, N, cmps = self.T, self.N, self.cmps
+        T, N = self.T, self.N
         b = self.b
         a_alpha = self.a_alpha
         epsilon = self.epsilon
@@ -3942,11 +3942,11 @@ class GCEOSMIX(GCEOS):
         d3a_alpha_dninjnks = self.d3a_alpha_dninjnks
         d3b_dninjnks = self.d3b_dninjnks
 
-        mat = [[[0.0]*N for _ in cmps] for _ in cmps]
+        mat = [[[0.0]*N for _ in range(N)] for _ in range(N)]
 
-        for i in cmps:
-            for j in cmps:
-                for k in cmps:
+        for i in range(N):
+            for j in range(N):
+                for k in range(N):
                     x0 = self.b
                     x1 = 1.0
                     x2 = Vt/x1
@@ -4111,7 +4111,7 @@ class GCEOSMIX(GCEOS):
             t5 *= RT
 
         dfugacity_dns = []
-        for i in self.cmps:
+        for i in range(self.N):
             x13 = ddelta_dns[i]
             x14 = x13*x4 - 2.0*depsilon_dns[i]
             x16 = x14*x15
@@ -4353,94 +4353,17 @@ class GCEOSMIX(GCEOS):
             logF = -690.7755278982137
         return dns_to_dn_partials(self.dlnphi_dns(Z), logF)
 
-    # This method was good until it was broke and was unable to find the error
-    # Had to be recreated
-#    def _d2_G_dep_lnphi_d2_helper(self, V, d_Vs, d2Vs, dbs, d2bs, d_epsilons, d2_epsilons,
-#                          d_deltas, d2_deltas, da_alphas, d2a_alphas, G=True):
-#        # There may be some issues with the liquid phase...very confused
-#        # Doesnt appear in SRK??
-#        # Has a bug... somewhere
-#        T, P = self.T, self.P
-#        cmps = self.cmps
-#        x0 = V
-#        RT = T*R
-#        hess = []
-#
-#        x2 = 1/(R*T)
-#        x3 = self.b
-#        x4 = x0 - x3
-#        x7 = self.delta
-#        x8 = self.epsilon
-#        x11 = self.a_alpha
-#
-#        x9 = x7**2 - 4*x8
-#        if x9 == 0.0:
-#            # Pretty sure this should be large not small
-#            x9 = 1e100
-#        x10 = 1/sqrt(x9)
-#        x12 = 2*x0
-#        x13 = x12 + x7
-#        x14 = catanh(x10*x13).real
-#        x15 = 2*x2
-#        x16 = x14*x15
-#        x20 = x16/x9**(3/2.)
-#        x28 = 1/x9
-#        x29 = x28*x7
-#        x32 = x13**2*x28 - 1
-#        x33 = x15/x32
-#        for i in cmps:
-#            x5 = d_Vs[i]
-#            x27 = 2*x5
-#            x17 = d_deltas[i]
-#            x18 = x17*x7 - 2*d_epsilons[i]
-#            x23 = da_alphas[i]
-#            bi = dbs[i]
-#
-#            row = []
-#            for j in cmps:
-#                # Should be symmetric - only need half, cuts speed in 2
-#                x6 = d_Vs[j]
-#                x19 = da_alphas[j]
-#                x21 = d_deltas[j]
-#                x22 = x21*x7 - 2.0*d_epsilons[i]
-#                x24 = d2_deltas[i][j]
-#                x25 = x17*x21 + x24*x7 - 2*d2_epsilons[i][j]
-#                x26 = x11*x22
-#                x30 = x18*x28
-#                x31 = x12*x30 - x17 + x18*x29 - x27
-#                x34 = x28*x33
-#                x35 = 2.0*x6
-#                x36 = x22*x28
-#                x37 = x12*x36 - x21 + x22*x29 - x35
-#                x38 = x9**(-2.0)
-#                x39 = x18*x38
-#                x40 = x11*x37
-#                x41 = x31*x38
-#                x42 = x22*x39
-#
-#                x1 = d2Vs[i][j]
-#                v = (P*x1*x2 - x10*x16*d2a_alphas[i][j] + x11*x20*x25 - x11*x34*(-6.0*x0*x42
-#                     - 2.0*x1 + x12*x25*x28 + x17*x36 + x21*x30 - x24 + x25*x29 + x27*x36 + x30*x35
-#                     - 3.0*x42*x7) - 4.0*x13*x2*x40*x41/x32**2.0 - 6.0*x14*x18*x2*x26/x9**(5.0/2.0)
-#                    + x18*x19*x20 - x19*x31*x34 + x20*x22*x23 - x23*x34*x37 + x26*x33*x41 + x33*x39*x40
-#                    - (x1 - d2bs[i][j])/x4 + (x5 - bi)*(x6 - dbs[j])/x4**2.0)
-#                if G:
-#                    v *= RT
-#                row.append(v)
-#            hess.append(row)
-#        return hess
-
 
     def _d2_G_dep_lnphi_d2_helper(self, V, d_Vs, d2Vs, dbs, d2bs, d_epsilons, d2_epsilons,
                           d_deltas, d2_deltas, da_alphas, d2a_alphas, G=True):
         T, P = self.T, self.P
-        cmps = self.cmps
+        N = self.N
         RT = T*R
         RT_inv = 1.0/RT
         hess = []
-        for i in cmps:
+        for i in range(N):
             row = []
-            for j in cmps:
+            for j in range(N):
                 # x1: i
                 # x2: j
                 x0 = V# V(x1, x2)
@@ -4697,7 +4620,7 @@ class GCEOSMIX(GCEOS):
         Notes
         -----
         '''
-        zs, cmps = self.zs, self.cmps
+        zs, N = self.zs, self.N
         if phase == 'l':
             Z = self.Z_l
             try:
@@ -4714,9 +4637,9 @@ class GCEOSMIX(GCEOS):
                 fugacities = self.fugacities_g
         dlnfugacities_dns = [list(i) for i in self.dfugacities_dns(phase)]
         fugacities_inv = [1.0/fi for fi in fugacities]
-        for i in cmps:
+        for i in range(N):
             r = dlnfugacities_dns[i]
-            for j in cmps:
+            for j in range(N):
                 r[j]*= fugacities_inv[i]
         return dlnfugacities_dns
 
