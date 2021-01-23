@@ -2311,3 +2311,16 @@ def test_model_hash_eos():
         assert e.model_hash() == e2.model_hash()
         e3 = e.to(V=10, T=30)
         assert e.model_hash() == e3.model_hash()
+
+
+def test_model_encode_json_eos():
+    eos_iter = list(eos_list)
+
+    Tc = 507.6
+    Pc = 3025000
+    omega = 0.2975
+    for eos in eos_iter:
+        e = eos(Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
+        s = e.as_JSON()
+        e1 = GCEOS.from_JSON(s)
+        assert e.__dict__ == e1.__dict__
