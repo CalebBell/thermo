@@ -4322,6 +4322,61 @@ def test_PSRK_basic():
     assert_allclose(eos_fast.ge_model.xs, eos_fast.zs, rtol=1e-16)
     assert_allclose(eos_fast.V_l, eos_lower.V_l, rtol=1e-14)
 
+def test_model_encode_json_gceosmix():
+    kijs = [[0, 0.00076, 0.00171], [0.00076, 0, 0.00061], [0.00171, 0.00061, 0]]
+    Tcs=[469.7, 507.4, 540.3]
+    zs=[0.8168, 0.1501, 0.0331]
+    omegas=[0.249, 0.305, 0.349]
+    Pcs=[3.369E6, 3.012E6, 2.736E6]
+    T=322.29
+    P=101325
+
+    for eos in eos_mix_no_coeffs_list:
+        obj1 = eos(T=T, P=P, zs=zs, omegas=omegas, Tcs=Tcs, Pcs=Pcs, kijs=kijs)
+        s = obj1.as_JSON()
+        obj2 = GCEOSMIX.from_JSON(s)
+        assert obj1.__dict__ == obj2.__dict__
+
+
+def test_model_pickleable_gceosmix():
+    import pickle
+
+    kijs = [[0, 0.00076, 0.00171], [0.00076, 0, 0.00061], [0.00171, 0.00061, 0]]
+    Tcs=[469.7, 507.4, 540.3]
+    zs=[0.8168, 0.1501, 0.0331]
+    omegas=[0.249, 0.305, 0.349]
+    Pcs=[3.369E6, 3.012E6, 2.736E6]
+    T=322.29
+    P=101325
+
+    for eos in eos_mix_no_coeffs_list:
+        obj1 = eos(T=T, P=P, zs=zs, omegas=omegas, Tcs=Tcs, Pcs=Pcs, kijs=kijs)
+        p = pickle.dumps(obj1)
+        obj2 = pickle.loads(p)
+        assert obj1.__dict__ == obj2.__dict__
+
+
+def test_model_hash_gceosmix():
+    # Iterate through all the basic EOSs, and check that the computed model_hash
+    # is the same; also check there are no duplicate hashes
+    kijs = [[0, 0.00076, 0.00171], [0.00076, 0, 0.00061], [0.00171, 0.00061, 0]]
+    Tcs=[469.7, 507.4, 540.3]
+    zs=[0.8168, 0.1501, 0.0331]
+    omegas=[0.249, 0.305, 0.349]
+    Pcs=[3.369E6, 3.012E6, 2.736E6]
+    T=322.29
+    P=101325
+    existing_hashes = set([])
+    for eos in eos_mix_no_coeffs_list:
+        obj1 = eos(T=T, P=P, zs=zs, omegas=omegas, Tcs=Tcs, Pcs=Pcs, kijs=kijs)
+        obj2 = eos(T=T, V=1.0, zs=zs, omegas=omegas, Tcs=Tcs, Pcs=Pcs, kijs=kijs)
+        assert obj1.model_hash() == obj2.model_hash()
+        obj3 = obj1.to(V=10, T=30, zs=zs)
+        assert obj1.model_hash() == obj3.model_hash()
+
+        assert obj1.model_hash() not in existing_hashes
+        existing_hashes.add(obj1.model_hash())
+    assert len(existing_hashes) == len(eos_mix_no_coeffs_list)
 
 def test_subset():
     # All should be three components

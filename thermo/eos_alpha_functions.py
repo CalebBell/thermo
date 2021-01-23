@@ -1409,7 +1409,7 @@ class Mathias_Copeman_a_alpha(a_alpha_base):
     def a_alphas_vectorized(self, T):
         ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
         a_alphas = []
-        for i in self.cmps:
+        for i in range(self.N):
             tau = 1.0 - (T/Tcs[i])**0.5
             if T < Tcs[i]:
                 x0 = horner(alpha_coeffs[i], tau)
@@ -1423,7 +1423,7 @@ class Mathias_Copeman_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_vectorized(self, T):
         ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
         a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
-        for i in self.cmps:
+        for i in range(self.N):
             a = ais[i]
             Tc = Tcs[i]
             rt = (T/Tc)**0.5
@@ -1782,7 +1782,7 @@ class Twu91_a_alpha(a_alpha_base):
     def a_alphas_vectorized(self, T):
         ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
         a_alphas = []
-        for i in self.cmps:
+        for i in range(self.N):
             coeffs = alpha_coeffs[i]
             Tr = T/Tcs[i]
             a_alpha = ais[i]*(Tr**(coeffs[2]*(coeffs[1] - 1.0))*exp(coeffs[0]*(1.0 - (Tr)**(coeffs[1]*coeffs[2]))))
@@ -2134,12 +2134,12 @@ class TwuSRK95_a_alpha(a_alpha_base):
     def a_alphas_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
         return [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, quick=True, method='SRK')
-                for i in self.cmps]
+                for i in range(self.N)]
 
     def a_alpha_and_derivatives_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
         r0, r1, r2 = [], [], []
-        for i in self.cmps:
+        for i in range(self.N):
             v0, v1, v2 = TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=True, quick=True, method='SRK')
             r0.append(v0)
             r1.append(v1)
@@ -2252,12 +2252,12 @@ class TwuPR95_a_alpha(a_alpha_base):
     def a_alphas_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
         return [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, quick=True, method='PR')
-                for i in self.cmps]
+                for i in range(self.N)]
 
     def a_alpha_and_derivatives_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
         r0, r1, r2 = [], [], []
-        for i in self.cmps:
+        for i in range(self.N):
             v0, v1, v2 = TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=True, quick=True, method='PR')
             r0.append(v0)
             r1.append(v1)
@@ -2300,7 +2300,7 @@ class Soave_79_a_alpha(a_alpha_base):
     def a_alphas_vectorized(self, T):
         ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
         a_alphas = []
-        for i in self.cmps:
+        for i in range(self.N):
             Tr = T/Tcs[i]
             M, N = alpha_coeffs[i]
             a_alphas.append(ais[i]*(1.0 + (1.0 - Tr)*(M + N/Tr)))
@@ -2310,7 +2310,7 @@ class Soave_79_a_alpha(a_alpha_base):
         ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
         T_inv = 1.0/T
         a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
-        for i in self.cmps:
+        for i in range(self.N):
             a = ais[i]
             M, N = alpha_coeffs[i]
             x0 = 1.0/Tcs[i]

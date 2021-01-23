@@ -922,24 +922,25 @@ class GCEOS(object):
         str
         '''
         # vaguely jsonpickle compatible
-        self.__dict__["py/object"] = "thermo.eos.%s" %(self.__class__.__name__)
+        mod_name = 'eos_mix' if self.multicomponent else 'eos'
+        self.__dict__["py/object"] = "thermo.%s.%s" %(mod_name, self.__class__.__name__)
         ans = utils.json.dumps(self.__dict__)
         del self.__dict__["py/object"]
         return ans
 
     @classmethod
-    def from_JSON(cls, string):
+    def from_JSON(cls, json_repr):
         r'''Method to create a eos from a JSON
         serialization of another eos.
 
         Parameters
         ----------
         json_repr : str
-            Json representation, [-]
+            JSON representation, [-]
 
         Returns
         -------
-        eos : GCEOS
+        eos : :obj:`GCEOS`
             Newly created object from the json serialization, [-]
 
         Notes
@@ -954,7 +955,7 @@ class GCEOS(object):
         >>> new_eos = GCEOS.from_JSON(string)
         >>> assert eos.__dict__ == new_eos.__dict__
         '''
-        d = utils.json.loads(string)
+        d = utils.json.loads(json_repr)
         eos_name = d['py/object']
         del d['py/object']
 

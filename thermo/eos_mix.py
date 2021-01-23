@@ -208,6 +208,7 @@ from chemicals.utils import log, exp, sqrt
 from chemicals.rachford_rice import flash_inner_loop, Rachford_Rice_flash_error, Rachford_Rice_solution2
 from chemicals.flash_basic import K_value, Wilson_K_value
 
+from thermo import utils
 from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     a_alpha_aijs_composition_independent_support_zeros, a_alpha_and_derivatives, a_alpha_and_derivatives_full,
     a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms)
@@ -393,6 +394,60 @@ class GCEOSMIX(GCEOS):
         s += ')'
         return s
 
+    @classmethod
+    def from_JSON(cls, json_repr):
+        r'''Method to create a mixture cubic equation of state from a JSON
+        serialization of another mixture cubic equation of state.
+
+        Parameters
+        ----------
+        json_repr : str
+            Json representation, [-]
+
+        Returns
+        -------
+        eos_mix : :obj:`GCEOSMIX`
+            Newly created object from the json serialization, [-]
+
+        Notes
+        -----
+        It is important that the input string be in the same format as that
+        created by :obj:`GCEOSMIX.as_JSON`.
+
+        Examples
+        --------
+        >>> eos = PRSV2MIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6, kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
+        >>> string = eos.as_JSON()
+        >>> new_eos = GCEOSMIX.from_JSON(string)
+        >>> assert new_eos.__dict__ == eos.__dict__
+        '''
+        d = utils.json.loads(json_repr)
+        eos_name = d['py/object']
+        del d['py/object']
+
+        try:
+            d['raw_volumes'] = tuple(d['raw_volumes'])
+        except:
+            pass
+
+        try:
+            alpha_coeffs = [tuple(v) for v in d['alpha_coeffs']]
+            d['alpha_coeffs'] = alpha_coeffs
+            try:
+                d['kwargs']['alpha_coeffs'] = alpha_coeffs
+            except:
+                pass
+        except:
+            pass
+
+
+        eos_name = eos_name.split('.')[-1]
+        eos = eos_mix_dict[eos_name]
+
+        new = eos.__new__(eos)
+        new.__dict__ = d
+        return new
+
     def to_TP_zs_fast(self, T, P, zs, only_l=False, only_g=False, full_alphas=True):
         r'''Method to construct a new :obj:`GCEOSMIX` instance with the same
         parameters as the existing object. If both instances are at the same
@@ -436,7 +491,6 @@ class GCEOSMIX(GCEOS):
         copy_alphas = T == self.T
         new = self.__class__.__new__(self.__class__)
         new.N = self.N
-        new.cmps = self.cmps
         new.Tcs = self.Tcs
         new.Pcs = self.Pcs
         new.omegas = self.omegas
@@ -6336,14 +6390,13 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
                  Tcs=None, Pcs=None, omegas=None, kijs=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(zs)
-        self.cmps = range(self.N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
         self.scalar = scalar = type(Tcs) is list
         if scalar:
-            self.zeros2d = zeros2d = [[0.0]*N for _ in self.cmps]
+            self.zeros2d = zeros2d = [[0.0]*N for _ in range(N)]
         else:
             self.zeros2d = zeros2d = zeros((N, N))
         if kijs is None:
@@ -6586,7 +6639,7 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
     def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
-        self.cmps = cmps = range(N)
+        cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -6903,7 +6956,7 @@ class PRMIX(GCEOSMIX, PR):
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
-        self.cmps = cmps = range(N)
+        cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -7950,7 +8003,7 @@ class PRMIXTranslated(PRMIX):
                  fugacities=True, only_l=False, only_g=False):
 
         self.N = N = len(Tcs)
-        self.cmps = cmps = range(N)
+        cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -8387,7 +8440,7 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
                  fugacities=True, only_l=False, only_g=False):
 
         self.N = N = len(Tcs)
-        self.cmps = cmps = range(N)
+        cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -8534,7 +8587,6 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
                  alpha_coeffs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
-        self.cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -8695,7 +8747,6 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
-        self.cmps = range(self.N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -9050,7 +9101,6 @@ class SRKMIXTranslated(SRKMIX):
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
-        self.cmps = range(self.N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -9494,7 +9544,6 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
                  alpha_coeffs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
-        self.cmps = cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -9677,7 +9726,7 @@ class MSRKMIXTranslated(Soave_79_a_alpha, SRKMIXTranslatedConsistent):
                  alpha_coeffs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
-        self.cmps = cmps = range(N)
+        cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -9821,7 +9870,7 @@ class PSRK(Mathias_Copeman_a_alpha, PSRKMixingRules, SRKMIXTranslated):
                  T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
-        self.cmps = cmps = range(N)
+        cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -9979,7 +10028,6 @@ class PR78MIX(PRMIX):
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
-        self.cmps = range(self.N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -10092,7 +10140,6 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
     def __init__(self, Tcs, Pcs, zs, kijs=None, T=None, P=None, V=None,
                  omegas=None, fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
-        self.cmps = range(self.N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.zs = zs
@@ -10550,7 +10597,6 @@ class PRSVMIX(PRMIX, PRSV):
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  kappa1s=None, fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
-        self.cmps = range(self.N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -10761,7 +10807,6 @@ class PRSV2MIX(PRMIX, PRSV2):
                  kappa1s=None, kappa2s=None, kappa3s=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
-        self.cmps = range(self.N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -10969,7 +11014,7 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
-        self.cmps = cmps = range(N)
+        cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -11105,7 +11150,6 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
-        self.cmps = range(self.N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -11231,7 +11275,6 @@ class APISRKMIX(SRKMIX, APISRK):
     def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
                  S1s=None, S2s=None, fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
-        self.cmps = range(self.N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -11342,3 +11385,6 @@ eos_mix_no_coeffs_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, TWUPRMIX, TWUSRKMIX,
 or can fill in their special parameters from other specified parameters.
 '''
 
+eos_mix_dict = {c.__name__: c for c in eos_mix_list}
+'''dict : Dict of all cubic mixture equation of state classes, indexed by their class name.
+'''

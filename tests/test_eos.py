@@ -2324,3 +2324,14 @@ def test_model_encode_json_eos():
         s = e.as_JSON()
         e1 = GCEOS.from_JSON(s)
         assert e.__dict__ == e1.__dict__
+
+def test_model_pickleable_eos():
+    import pickle
+    Tc = 507.6
+    Pc = 3025000
+    omega = 0.2975
+    for eos in eos_list:
+        e = eos(Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
+        p = pickle.dumps(e)
+        e2 = pickle.loads(p)
+        assert e.__dict__ == e2.__dict__
