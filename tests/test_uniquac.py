@@ -128,6 +128,9 @@ def test_UNIQUAC_madeup_ternary():
     GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=ABCDEF)
     assert eval(str(GE)).GE() == GE.GE()
 
+    GE2 = UNIQUAC.from_JSON(GE.as_JSON())
+    assert GE2.__dict__ == GE.__dict__
+
     # GE
     GE_expect = 415.5805110962149
     GE_analytical = GE.GE()
@@ -219,3 +222,7 @@ def test_UNIQUAC_madeup_ternary():
     d2GE_dxixjs_analytical = GE.d2GE_dxixjs()
     assert_close2d(d2GE_dxixjs_numerical, d2GE_dxixjs_analytical, rtol=1e-4)
     assert_close2d(d2GE_dxixjs_analytical, d2GE_dxixjs_sympy, rtol=1e-12)
+
+    # Check json storage again, with some results
+    GE2 = UNIQUAC.from_JSON(GE.as_JSON())
+    assert GE2.__dict__ == GE.__dict__
