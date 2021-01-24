@@ -218,7 +218,6 @@ class RegularSolution(GibbsExcess):
         self.SPs = SPs
         self.N = N = len(Vs)
         self.scalar = scalar = type(Vs) is list
-        self.cmps = cmps = range(N)
 
         if lambda_coeffs is None:
             if scalar:
@@ -230,7 +229,7 @@ class RegularSolution(GibbsExcess):
         if scalar:
             xsVs = []
             xsVs_sum = 0.0
-            for i in cmps:
+            for i in range(N):
                 xV = xs[i]*Vs[i]
                 xsVs_sum += xV
                 xsVs.append(xV)
@@ -273,15 +272,14 @@ class RegularSolution(GibbsExcess):
         new.xs = xs
         new.SPs = self.SPs
         new.Vs = Vs = self.Vs
-        new.N = self.N
+        new.N = N = self.N
         new.lambda_coeffs = self.lambda_coeffs
-        new.cmps = self.cmps
         new.scalar = scalar = self.scalar
 
         if scalar:
             xsVs = []
             xsVs_sum = 0.0
-            for i in self.cmps:
+            for i in range(N):
                 xV = xs[i]*Vs[i]
                 xsVs_sum += xV
                 xsVs.append(xV)
