@@ -960,11 +960,16 @@ class TDependentProperty(object):
         all_methods_list = list(d['all_methods'])
         all_methods_set = d['all_methods']
         d['all_methods'] = all_methods_list
+        tabular_data_interpolators = d['tabular_data_interpolators']
+        d['tabular_data_interpolators'] = {}
 
         if hasattr(self, 'all_methods_P'):
             all_methods_P_list = list(d['all_methods_P'])
             all_methods_P_set = d['all_methods_P']
             d['all_methods_P'] = all_methods_P_list
+            tabular_data_interpolators_P = d['tabular_data_interpolators_P']
+            d['tabular_data_interpolators_P'] = {}
+
 
         CP_f = None
         if hasattr(self, 'CP_f'):
@@ -980,8 +985,10 @@ class TDependentProperty(object):
         d['all_methods'] = all_methods_set
         if hasattr(self, 'all_methods_P'):
             d['all_methods_P'] = all_methods_P_set
+            d['tabular_data_interpolators_P'] = tabular_data_interpolators_P
         if CP_f is not None:
             d['CP_f'] = CP_f
+        d['tabular_data_interpolators'] = tabular_data_interpolators
 
         return ans
 
