@@ -51,6 +51,9 @@ def test_4_components():
     GE = RegularSolution(T, xs, Vs, SPs, lambda_coeffs)
     assert eval(str(GE)).GE() == GE.GE()
 
+    GE2 = RegularSolution.from_JSON(GE.as_JSON())
+    assert GE2.__dict__ == GE.__dict__
+
     dT = 1e-7*T
     gammas_expect = [1.1928784349228994, 1.3043087978251762, 3.2795596493820955, 197.92137114651274]
     assert_close1d(GE.gammas(), gammas_expect, rtol=1e-12)
@@ -134,6 +137,10 @@ def test_4_components():
                             [3714.462825687298, 3607.836718555389, 7134.805582069884, 7459.310988306651],
                             [7499.862362680743, 7807.307245181044, 7459.310988306651, 6343.066547716518]]]
     assert_close3d(d3GE_dxixjxks_analytical, d3GE_dxixjxks_sympy, rtol=1e-12)
+
+    # Test with some stored results
+    GE2 = RegularSolution.from_JSON(GE.as_JSON())
+    assert GE2.__dict__ == GE.__dict__
 
 def test_create_many_components_regular_solution():
     # Just create it. This can be used for easy benchmarking.
