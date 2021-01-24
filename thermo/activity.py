@@ -169,6 +169,24 @@ class GibbsExcess(object):
         return s
 
     def as_JSON(self):
+        r'''Method to create a JSON serialization of the Gibbs Excess model
+        which can be stored, and reloaded later.
+
+        Returns
+        -------
+        json_repr : str
+            Json representation, [-]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> model = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
+        >>> string = model.as_JSON()
+        >>> type(string)
+        str
+        '''
         # vaguely jsonpickle compatible
         mod_name = self.__class__.__module__
         d = self.__dict__
@@ -184,7 +202,31 @@ class GibbsExcess(object):
 
     @classmethod
     def from_JSON(cls, json_repr):
-#        mod_name = cls.__module__
+        r'''Method to create a Gibbs Excess model from a JSON
+        serialization of another Gibbs Excess model.
+
+        Parameters
+        ----------
+        json_repr : str
+            JSON representation, [-]
+
+        Returns
+        -------
+        model : :obj:`GibbsExcess`
+            Newly created object from the json serialization, [-]
+
+        Notes
+        -----
+        It is important that the input string be in the same format as that
+        created by :obj:`GibbsExcess.as_JSON`.
+
+        Examples
+        --------
+        >>> model = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
+        >>> string = model.as_JSON()
+        >>> new_model = GibbsExcess.from_JSON(string)
+        >>> assert model.__dict__ == new_model.__dict__
+        '''
 
         d = utils.json.loads(json_repr)
 
