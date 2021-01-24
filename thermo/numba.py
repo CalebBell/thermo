@@ -118,6 +118,20 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
     __funcs['eos_mix'].GCEOSMIX.main_derivatives_and_departures = staticmethod(__funcs['main_derivatives_and_departures'])
 transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False)
 
+'''Before jitclasses could be used on Activity models, numba would have to add:
+Support type call.
+Support class methods.
+Support class constants.
+
+This is not likely to happen.
+
+IdealSolution_spec = [('T', float64), ('N', int64), ('xs', float64[:]), ('scalar', boolean)]
+
+IdealSolutionNumba = jitclass(IdealSolution_spec)(thermo.numba.activity.IdealSolution)
+
+# activity.IdealSolution
+IdealSolutionNumba(T=300.0, xs=np.array([.2, .5]))
+'''
 
 
 globals().update(__funcs)
