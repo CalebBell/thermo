@@ -29,7 +29,6 @@ try:
     from collections import OrderedDict
 except:
     pass
-#from numbers import Number
 
 from fluids.constants import R
 from chemicals.utils import property_molar_to_mass, property_mass_to_molar, solve_flow_composition_mix
@@ -2032,7 +2031,7 @@ class EnergyStream(object):
     def __init__(self, Q, medium=None):
         self.medium = medium
         # isinstance test is slow, especially with Number - faster to check float and int first
-        if not (Q is None or isinstance(Q, (float, int, Number))):
+        if not (Q is None or isinstance(Q, (float, int))):
             raise Exception('Energy stream flow rate is not a flow rate')
         self.Q = Q
 

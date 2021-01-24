@@ -2322,6 +2322,7 @@ def test_model_encode_json_eos():
     for eos in eos_iter:
         e = eos(Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
         s = e.as_JSON()
+        assert 'json_version' in s
         e1 = GCEOS.from_JSON(s)
         assert e.__dict__ == e1.__dict__
 
