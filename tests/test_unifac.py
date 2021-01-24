@@ -856,6 +856,11 @@ def test_UNIFAC_initialization():
     chemgroups = [{9: 6}, {2: 6}, {1: 1, 18: 1}, {1: 1, 2: 1, 14: 1}]
     xs = [0.2, 0.3, 0.1, 0.4]
     GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups)
+
+    # Check the __repr__ is working
+    assert eval(str(GE)).__dict__ == GE.__dict__
+
+
     gammas_expect = [1.4938332119259123, 1.960091090828185, 1.4125828059033487, 1.651847113952877]
     assert_close1d(GE.gammas(), gammas_expect)
 
