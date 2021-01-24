@@ -249,6 +249,12 @@ def test_ViscosityLiquidMixture():
     mu = obj.mixture_property(T, P, zs, ws)
     assert_close(mu, 0.0009948528627794172)
 
+    s = obj.as_JSON()
+
+    assert 'json_version' in s
+    obj2 = ViscosityLiquidMixture.from_JSON(s)
+    assert obj == obj2
+
     mu = obj.calculate(T, P, zs, ws, MIXING_LOG_MOLAR)
     assert_close(mu, 0.0009948528627794172)
 

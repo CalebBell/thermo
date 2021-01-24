@@ -3116,6 +3116,14 @@ class MixtureProperty(object):
                                [i.poly_fit_Tmax_value for i in pure_objs],
                                [i.poly_fit_coeffs for i in pure_objs]]
 
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
+    def __hash__(self):
+        d = self.__dict__
+        ans = hash_any_primitive((self.__class__, d))
+        return ans
+
     def as_JSON(self):
         r'''Method to create a JSON serialization of the mixture property
         which can be stored, and reloaded later.
