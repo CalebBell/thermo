@@ -201,7 +201,6 @@ class UNIQUAC(GibbsExcess):
                 self.tau_coeffs_F = None
 
             self.N = N = len(self.tau_coeffs_A)
-        self.cmps = range(N)
         self.zero_coeffs = [[0.0]*N for _ in range(N)]
 
     def to_T_xs(self, T, xs):
@@ -234,7 +233,6 @@ class UNIQUAC(GibbsExcess):
         new.rs = self.rs
         new.qs = self.qs
         new.N = self.N
-        new.cmps = self.cmps
         new.zero_coeffs = self.zero_coeffs
 
         (new.tau_coeffs_A, new.tau_coeffs_B, new.tau_coeffs_C,
@@ -1035,7 +1033,7 @@ class UNIQUAC(GibbsExcess):
         Notes
         -----
         '''
-        z, T, xs, cmps = self.z, self.T, self.xs, self.cmps
+        z, T, xs, N = self.z, self.T, self.xs, self.N
         qs = self.qs
         taus = self.taus()
         phis = self.phis()
@@ -1047,17 +1045,17 @@ class UNIQUAC(GibbsExcess):
         dGE_dxs = []
         RT = R*T
 
-        for i in cmps:
+        for i in range(N):
             # i is what is being differentiated
             tot = 0.0
-            for j in cmps:
+            for j in range(N):
                 # dthetas_dxs and dphis_dxs indexes could be an issue
                 tot += 0.5*qs[j]*xs[j]*phis[j]*z/thetas[j]*(
                         1.0/phis[j]*dthetas_dxs[j][i]
                         - thetas[j]/phis[j]**2*dphis_dxs[j][i]
                         )
 
-                tot -= qs[j]*xs[j]*sum(taus[k][j]*dthetas_dxs[k][i] for k in cmps)/thetaj_taus_jis[j]
+                tot -= qs[j]*xs[j]*sum(taus[k][j]*dthetas_dxs[k][i] for k in range(N))/thetaj_taus_jis[j]
                 if i != j:
                     # Double index issue
                     tot += xs[j]/phis[j]*dphis_dxs[j][i]
@@ -1107,7 +1105,7 @@ class UNIQUAC(GibbsExcess):
             return self._d2GE_dTdxs
         except AttributeError:
             pass
-        z, T, xs, cmps = self.z, self.T, self.xs, self.cmps
+        z, T, xs, N = self.z, self.T, self.xs, self.N
         qs = self.qs
         taus = self.taus()
         phis = self.phis()
@@ -1122,7 +1120,7 @@ class UNIQUAC(GibbsExcess):
         d2GE_dTdxs = []
 
         # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
-        for i in cmps:
+        for i in range(N):
             # i is what is being differentiated
             tot, Ttot = 0.0, 0.0
             Ttot += qs[i]*thetaj_dtaus_dT_jis[i]/thetaj_taus_jis[i]
@@ -1130,13 +1128,13 @@ class UNIQUAC(GibbsExcess):
             t50_sum = 0.0
             t51_sum = 0.0
             t52_sum = 0.0
-            for j in cmps:
+            for j in range(N):
                 ## Temperature multiplied terms
-                t49 = qs[j]*xs[j]*(sum([dtaus_dT[k][j]*dthetas_dxs[k][i] for k in cmps]))/thetaj_taus_jis[j]
+                t49 = qs[j]*xs[j]*(sum([dtaus_dT[k][j]*dthetas_dxs[k][i] for k in range(N)]))/thetaj_taus_jis[j]
                 Ttot += t49
                 t49_sum += t49
 
-                t50 = qs[j]*xs[j]*(sum([dtaus_dT[k][j]*thetas[k] for k in cmps])*sum([dthetas_dxs[k][i]*taus[k][j] for k in cmps])
+                t50 = qs[j]*xs[j]*(sum([dtaus_dT[k][j]*thetas[k] for k in range(N)])*sum([dthetas_dxs[k][i]*taus[k][j] for k in range(N)])
                                    )/thetaj_taus_jis[j]**2
                 Ttot -= t50
                 t50_sum -= t50
@@ -1147,7 +1145,7 @@ class UNIQUAC(GibbsExcess):
                 tot += t51
 
                 term = 0.0
-                for k in cmps:
+                for k in range(N):
                     term += taus[k][j]*dthetas_dxs[k][i]
 
                 t52 = qs[j]*xs[j]*term/thetaj_taus_jis[j]
@@ -1192,7 +1190,7 @@ class UNIQUAC(GibbsExcess):
             return self._d2GE_dxixjs
         except AttributeError:
             pass
-        z, T, xs, cmps = self.z, self.T, self.xs, self.cmps
+        z, T, xs, N = self.z, self.T, self.xs, self.N
         qs = self.qs
         taus = self.taus()
         phis = self.phis()
@@ -1210,13 +1208,13 @@ class UNIQUAC(GibbsExcess):
         # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
 
         # You want to index by [i][k]
-        tau_mk_dthetam_xi = [[sum([taus[m][j]*dthetas_dxs[m][i] for m in cmps]) for j in cmps] for i in cmps]
+        tau_mk_dthetam_xi = [[sum([taus[m][j]*dthetas_dxs[m][i] for m in range(N)]) for j in range(N)] for i in range(N)]
 
 
         self._d2GE_dxixjs = d2GE_dxixjs = []
-        for i in cmps:
+        for i in range(N):
             dG_row = []
-            for j in cmps:
+            for j in range(N):
                 ij_min = min(i, j)
                 ij_max = max(i, j)
                 tot = 0.0
@@ -1240,7 +1238,7 @@ class UNIQUAC(GibbsExcess):
 
                 # 2-4 - two calculations
                 # checked numerically Don't ask questions...
-                for m in cmps:
+                for m in range(N):
                     # This one looks like m != j should not be part
                     if i < j:
                         if m != i:
@@ -1265,7 +1263,7 @@ class UNIQUAC(GibbsExcess):
                 # Now good, checked numerically
                 # This one looks like m != j should not be part
                 # 8
-                for m in cmps:
+                for m in range(N):
 #                    if m != i and m != j:
                     if i < j:
                         if m != i:
@@ -1276,11 +1274,11 @@ class UNIQUAC(GibbsExcess):
                 # 9
 #                v -= xs[i]*dphis_dxs[i][i]*dphis_dxs[i][j]/phis[i]**2
 
-                for k in cmps:
+                for k in range(N):
                     # 12-15
                     # Good, checked with sympy/numerically
                     thing = 0.0
-                    for m in cmps:
+                    for m in range(N):
                         thing  += taus[m][k]*d2thetas_dxixjs[i][j][m]
                     tot -= qs[k]*xs[k]*thing/thetaj_taus_jis[k]
 
