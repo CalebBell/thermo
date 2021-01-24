@@ -115,7 +115,8 @@ from chemicals.viscosity import *
 from chemicals.viscosity import viscosity_gas_Gharagheizi, dPPDS9_dT
 
 from thermo.utils import NEGLIGIBLE, DIPPR_PERRY_8E, BESTFIT, VDI_TABULAR, VDI_PPDS, COOLPROP
-
+from thermo.volume import VolumeGas
+from thermo.vapor_pressure import VaporPressure
 
 DUTT_PRASAD = 'DUTT_PRASAD'
 VISWANATH_NATARAJAN_3 = 'VISWANATH_NATARAJAN_3'
@@ -887,6 +888,8 @@ class ViscosityGas(TPDependentProperty):
     ranked_methods_P = [COOLPROP]
     '''Default rankings of the high-pressure methods.'''
 
+    pure_references = ('Vmg',)
+    pure_reference_types = (VolumeGas,)
     def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, Zc=None,
                  dipole=None, Vmg=None, load_data=True,
                  extrapolation='linear', poly_fit=None, method=None):

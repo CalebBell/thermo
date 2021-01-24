@@ -824,10 +824,9 @@ class ChemicalConstantsPackage(object):
                                                                 omega=omegas[i], Hfus=Hfus_Tms[i], poly_fit=get_chemical_constants(CASs[i], 'ThermalConductivityLiquid'))
                                     for i in range(N)]
 
-        Cvgm_calcs = [lambda T : HeatCapacityGases[i].T_dependent_property(T) - R for i in range(N)]
         ThermalConductivityGases =[ThermalConductivityGas(CASRN=CASs[i], MW=MWs[i], Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i],
                                                           Zc=Zcs[i], omega=omegas[i], dipole=dipoles[i], Vmg=VolumeGases[i],
-                                                          Cvgm=Cvgm_calcs[i], mug=ViscosityGases[i].T_dependent_property,
+                                                          Cpgm=HeatCapacityGases[i].T_dependent_property, mug=ViscosityGases[i].T_dependent_property,
                                                           poly_fit=get_chemical_constants(CASs[i], 'ThermalConductivityGas'))
                                                           for i in range(N)]
         properties = PropertyCorrelationsPackage(constants, VaporPressures=VaporPressures, SublimationPressures=SublimationPressures,
@@ -1482,7 +1481,7 @@ class PropertyCorrelationsPackage(object):
                                                                Tc=constants.Tcs[i], Pc=constants.Pcs[i], Vc=constants.Vcs[i],
                                                                Zc=constants.Zcs[i], omega=constants.omegas[i], dipole=constants.dipoles[i],
                                                                Vmg=VolumeGases[i], mug=ViscosityLiquids[i].T_dependent_property,
-                                                               Cvgm=lambda T : HeatCapacityGases[i].T_dependent_property(T) - R)
+                                                               Cpgm=HeatCapacityGases[i].T_dependent_property)
                                                 for i in cmps]
 
         if SurfaceTensions is None and not skip_missing:

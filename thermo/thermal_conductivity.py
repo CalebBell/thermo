@@ -133,6 +133,8 @@ from thermo.coolprop import has_CoolProp, coolprop_dict, coolprop_fluids, CoolPr
 from thermo import electrochem
 from thermo.electrochem import thermal_conductivity_Magomedov
 from thermo.viscosity import ViscosityGas
+from thermo.heat_capacity import HeatCapacityGas
+from thermo.volume import VolumeGas
 
 
 from thermo.utils import NEGLIGIBLE, DIPPR_PERRY_8E, BESTFIT, VDI_TABULAR, VDI_PPDS, COOLPROP
@@ -943,9 +945,9 @@ class ThermalConductivityGas(TPDependentProperty):
     Vmg : float or callable, optional
         Molar volume of the fluid at a pressure and temperature or callable for
         the same, [m^3/mol]
-    Cvgm : float or callable, optional
-        Molar heat capacity of the fluid at a pressure and temperature or
-        or callable for the same, [J/mol/K]
+    Cpgm : float or callable, optional
+        Molar constant-pressure heat capacity of the fluid at a pressure and
+        temperature or callable for the same, [J/mol/K]
     mug : float or callable, optional
         Gas viscosity of the fluid at a pressure and temperature or callable
         for the same, [Pa*s]
@@ -1073,8 +1075,11 @@ class ThermalConductivityGas(TPDependentProperty):
                         STIEL_THODOS_DENSE]
     '''Default rankings of the high-pressure methods.'''
 
+    pure_references = ('mug', 'Vmg')
+    pure_reference_types = (ViscosityGas, VolumeGas)
+
     def __init__(self, CASRN='', MW=None, Tb=None, Tc=None, Pc=None, Vc=None,
-                 Zc=None, omega=None, dipole=None, Vmg=None, Cvgm=None, mug=None,
+                 Zc=None, omega=None, dipole=None, Vmg=None, Cpgm=None, mug=None,
                  load_data=True, extrapolation='linear', poly_fit=None,
                  method=None):
         self.CASRN = CASRN
@@ -1087,7 +1092,7 @@ class ThermalConductivityGas(TPDependentProperty):
         self.omega = omega
         self.dipole = dipole
         self.Vmg = Vmg
-        self.Cvgm = Cvgm
+        self.Cpgm = Cpgm
         self.mug = mug
 
         self.kwargs = kwargs = {}
@@ -1109,8 +1114,8 @@ class ThermalConductivityGas(TPDependentProperty):
             kwargs['dipole'] = dipole
         if Vmg is not None:
             kwargs['Vmg'] = Vmg
-        if Cvgm is not None:
-            kwargs['Cvgm'] = Cvgm
+        if Cpgm is not None:
+            kwargs['Cpgm'] = Cpgm
         if mug is not None:
             kwargs['mug'] = mug
 
@@ -1211,19 +1216,19 @@ class ThermalConductivityGas(TPDependentProperty):
             # Turns negative at low T; do not set Tmin
             Tmaxs.append(3000)
             T_limits[GHARAGHEIZI_G] = (1e-3, 3000.0)
-        if all((self.Cvgm, self.mug, self.MW, self.Tc)):
+        if all((self.Cpgm, self.mug, self.MW, self.Tc)):
             methods.append(DIPPR_9B)
             Tmins.append(0.01); Tmaxs.append(1E4)  # No limit here
             T_limits[DIPPR_9B] = (1e-2, 1e4)
-        if all((self.Cvgm, self.mug, self.MW, self.Tc, self.omega)):
+        if all((self.Cpgm, self.mug, self.MW, self.Tc, self.omega)):
             methods.append(CHUNG)
             Tmins.append(0.01); Tmaxs.append(1E4)  # No limit
             T_limits[CHUNG] = (1e-2, 1e4)
-        if all((self.Cvgm, self.MW, self.Tc, self.Vc, self.Zc, self.omega)):
+        if all((self.Cpgm, self.MW, self.Tc, self.Vc, self.Zc, self.omega)):
             methods.append(ELI_HANLEY)
             Tmaxs.append(1E4)  # Numeric error at low T
             T_limits[ELI_HANLEY] = (self.Tc*0.4, 1e4)
-        if all((self.Cvgm, self.mug, self.MW)):
+        if all((self.Cpgm, self.mug, self.MW)):
             methods.append(EUCKEN_MOD)
             methods.append(EUCKEN)
             Tmins.append(0.01); Tmaxs.append(1E4)  # No limits
@@ -1278,26 +1283,21 @@ class ThermalConductivityGas(TPDependentProperty):
         kg : float
             Thermal conductivity of the gas at T and a low pressure, [W/m/K]
         '''
+        if method in (DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD, EUCKEN):
+            Cvgm = self.Cpgm(T)-R if hasattr(self.Cpgm, '__call__') else self.Cpgm - R
+            if method != ELI_HANLEY:
+                mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
         if method == GHARAGHEIZI_G:
             kg = Gharagheizi_gas(T, self.MW, self.Tb, self.Pc, self.omega)
         elif method == DIPPR_9B:
-            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
-            mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
             kg = DIPPR9B(T, self.MW, Cvgm, mug, self.Tc)
         elif method == CHUNG:
-            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
-            mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
             kg = Chung(T, self.MW, self.Tc, self.omega, Cvgm, mug)
         elif method == ELI_HANLEY:
-            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
             kg = Eli_Hanley(T, self.MW, self.Tc, self.Vc, self.Zc, self.omega, Cvgm)
         elif method == EUCKEN_MOD:
-            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
-            mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
             kg = Eucken_modified(self.MW, Cvgm, mug)
         elif method == EUCKEN:
-            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
-            mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
             kg = Eucken(self.MW, Cvgm, mug)
         elif method == DIPPR_PERRY_8E:
             kg = EQ102(T, *self.Perrys2_314_coeffs)
@@ -1341,13 +1341,13 @@ class ThermalConductivityGas(TPDependentProperty):
         '''
         if method == ELI_HANLEY_DENSE:
             Vmg = self.Vmg(T, P) if hasattr(self.Vmg, '__call__') else self.Vmg
-            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
-            kg = Eli_Hanley_dense(T, self.MW, self.Tc, self.Vc, self.Zc, self.omega, Cvgm, Vmg)
+            Cpgm = self.Cpgm(T) if hasattr(self.Cpgm, '__call__') else self.Cpgm
+            kg = Eli_Hanley_dense(T, self.MW, self.Tc, self.Vc, self.Zc, self.omega, Cpgm-R, Vmg)
         elif method == CHUNG_DENSE:
             Vmg = self.Vmg(T, P) if hasattr(self.Vmg, '__call__') else self.Vmg
-            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
+            Cpgm = self.Cpgm(T) if hasattr(self.Cpgm, '__call__') else self.Cpgm
             mug = self.mug(T, P) if hasattr(self.mug, '__call__') else self.mug
-            kg = Chung_dense(T, self.MW, self.Tc, self.Vc, self.omega, Cvgm, Vmg, mug, self.dipole)
+            kg = Chung_dense(T, self.MW, self.Tc, self.Vc, self.omega, Cpgm-R, Vmg, mug, self.dipole)
         elif method == STIEL_THODOS_DENSE:
             kg = self.T_dependent_property(T)
             Vmg = self.Vmg(T, P) if hasattr(self.Vmg, '__call__') else self.Vmg

@@ -887,6 +887,9 @@ class TDependentProperty(object):
     '''Dictionary containing method: max_n, for use in methods which should
     only ever be fit to a `n` value equal to or less than `n`'''
 
+    pure_references = ()
+    pure_reference_types = ()
+
     def __copy__(self):
         return self
 

@@ -135,7 +135,7 @@ from thermo.electrochem import Laliberte_density
 from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property
 from thermo.utils import TDependentProperty, TPDependentProperty, MixtureProperty
 from thermo.eos import PR78
-
+from thermo.vapor_pressure import VaporPressure
 
 def Tait_parameters_COSTALD(Tc, Pc, omega, Tr_min=.27, Tr_max=.95):
     # Limits of any of their data for Tr
@@ -390,6 +390,9 @@ class VolumeLiquid(TPDependentProperty):
 
     ranked_methods_P = [COOLPROP, COSTALD_COMPRESSED, EOS]
     '''Default rankings of the high-pressure methods.'''
+
+    pure_references = ('Psat',)
+    pure_reference_types = (VaporPressure)
 
 
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
