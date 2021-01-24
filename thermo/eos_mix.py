@@ -424,6 +424,7 @@ class GCEOSMIX(GCEOS):
         d = utils.json.loads(json_repr)
         eos_name = d['py/object']
         del d['py/object']
+        del d['json_version']
 
         try:
             d['raw_volumes'] = tuple(d['raw_volumes'])

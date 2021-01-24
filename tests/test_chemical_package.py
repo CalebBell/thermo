@@ -46,3 +46,10 @@ def test_ChemicalConstantsPackage_from_JSON_as_JSON_large():
     obj2 = ChemicalConstantsPackage.from_JSON(obj.as_JSON())
 
     assert hash(obj) == hash(obj2)
+
+def test_ChemicalConstantsPackage_json_version_exported():
+    constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
+    string = constants.as_JSON()
+    c2 = ChemicalConstantsPackage.from_JSON(string)
+    assert 'json_version' in string
+    assert not hasattr(c2, 'json_version')

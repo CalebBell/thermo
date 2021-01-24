@@ -171,12 +171,15 @@ class GibbsExcess(object):
     def as_JSON(self):
         # vaguely jsonpickle compatible
         mod_name = self.__class__.__module__
-        self.__dict__["py/object"] = "%s.%s" %(mod_name, self.__class__.__name__)
+        d = self.__dict__
+        d["py/object"] = "%s.%s" %(mod_name, self.__class__.__name__)
+        d["json_version"] = 1
         if self.scalar:
             ans = utils.json.dumps(self.__dict__)
         else:
             ans = dump_json_np(self.__dict__)
-        del self.__dict__["py/object"]
+        del d["py/object"]
+        del d["json_version"]
         return ans
 
     @classmethod
@@ -189,7 +192,7 @@ class GibbsExcess(object):
 #            model_name = d['py/object']
 
         del d['py/object']
-
+        del d["json_version"]
 
         new = cls.__new__(cls)
         new.__dict__ = d

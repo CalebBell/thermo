@@ -923,9 +923,12 @@ class GCEOS(object):
         '''
         # vaguely jsonpickle compatible
         mod_name = 'eos_mix' if self.multicomponent else 'eos'
-        self.__dict__["py/object"] = "thermo.%s.%s" %(mod_name, self.__class__.__name__)
+        d = self.__dict__
+        d["py/object"] = "thermo.%s.%s" %(mod_name, self.__class__.__name__)
+        d['json_version'] = 1
         ans = utils.json.dumps(self.__dict__)
-        del self.__dict__["py/object"]
+        del d["py/object"]
+        del d['json_version']
         return ans
 
     @classmethod
@@ -958,6 +961,7 @@ class GCEOS(object):
         d = utils.json.loads(json_repr)
         eos_name = d['py/object']
         del d['py/object']
+        del d['json_version']
 
         try:
             d['raw_volumes'] = tuple(d['raw_volumes'])

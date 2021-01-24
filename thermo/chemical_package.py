@@ -151,7 +151,7 @@ class ChemicalConstantsPackage(object):
     properties = ('atom_fractions',) + non_vector_properties
     '''Tuple of all properties that can be held by this object.'''
 
-    __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms')
+    __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms') + ('json_version',)
     non_vectors = ('atom_fractions',)
     non_vectors_set = set(non_vectors)
 
@@ -195,7 +195,11 @@ class ChemicalConstantsPackage(object):
         '''
         if json is None:
             get_json()
-        return json.dumps(self.__dict__)
+
+        d = self.__dict__ # Not a the real object dictionary
+        d['json_version'] = 1
+        ans = json.dumps(d)
+        return ans
 
     @classmethod
     def from_JSON(cls, string):
@@ -237,6 +241,7 @@ class ChemicalConstantsPackage(object):
             # keys are stored as strings and not ints
             d[k] = [{int(k): v for k, v in r.items()} if r is not None else r for r in d[k]]
 
+        del d['json_version']
         return cls(**d)
 
     def __hash__(self):
