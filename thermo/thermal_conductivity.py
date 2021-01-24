@@ -312,6 +312,8 @@ class ThermalConductivityLiquid(TPDependentProperty):
     '''Default rankings of the high-pressure methods.'''
 
 
+    custom_args = ('MW', 'Tm', 'Tb', 'Tc', 'Pc', 'omega', 'Hfus')
+
     def __init__(self, CASRN='', MW=None, Tm=None, Tb=None, Tc=None, Pc=None,
                  omega=None, Hfus=None, load_data=True,
                  extrapolation='linear', poly_fit=None, method=None):
@@ -323,22 +325,6 @@ class ThermalConductivityLiquid(TPDependentProperty):
         self.Pc = Pc
         self.omega = omega
         self.Hfus = Hfus
-
-        self.kwargs = kwargs = {}
-        if MW is not None:
-            kwargs['MW'] = MW
-        if Tb is not None:
-            kwargs['Tb'] = Tb
-        if Tc is not None:
-            kwargs['Tc'] = Tc
-        if Pc is not None:
-            kwargs['Pc'] = Pc
-        if Tm is not None:
-            kwargs['Tm'] = Tm
-        if Hfus is not None:
-            kwargs['Hfus'] = Hfus
-        if omega is not None:
-            kwargs['omega'] = omega
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -1075,8 +1061,11 @@ class ThermalConductivityGas(TPDependentProperty):
                         STIEL_THODOS_DENSE]
     '''Default rankings of the high-pressure methods.'''
 
-    pure_references = ('mug', 'Vmg')
-    pure_reference_types = (ViscosityGas, VolumeGas)
+    pure_references = ('mug', 'Vmg', 'Cpgm')
+    pure_reference_types = (ViscosityGas, VolumeGas, HeatCapacityGas)
+
+    custom_args = ('MW', 'Tb', 'Tc', 'Pc', 'Vc', 'Zc', 'omega', 'dipole',
+                   'Vmg', 'Cpgm', 'mug')
 
     def __init__(self, CASRN='', MW=None, Tb=None, Tc=None, Pc=None, Vc=None,
                  Zc=None, omega=None, dipole=None, Vmg=None, Cpgm=None, mug=None,
@@ -1094,30 +1083,6 @@ class ThermalConductivityGas(TPDependentProperty):
         self.Vmg = Vmg
         self.Cpgm = Cpgm
         self.mug = mug
-
-        self.kwargs = kwargs = {}
-        if MW is not None:
-            kwargs['MW'] = MW
-        if Tb is not None:
-            kwargs['Tb'] = Tb
-        if Tc is not None:
-            kwargs['Tc'] = Tc
-        if Pc is not None:
-            kwargs['Pc'] = Pc
-        if Vc is not None:
-            kwargs['Vc'] = Vc
-        if Zc is not None:
-            kwargs['Zc'] = Zc
-        if omega is not None:
-            kwargs['omega'] = omega
-        if dipole is not None:
-            kwargs['dipole'] = dipole
-        if Vmg is not None:
-            kwargs['Vmg'] = Vmg
-        if Cpgm is not None:
-            kwargs['Cpgm'] = Cpgm
-        if mug is not None:
-            kwargs['mug'] = mug
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the

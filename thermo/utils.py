@@ -924,8 +924,10 @@ class TDependentProperty(object):
         base = '%s(' % (clsname)
         if self.CASRN:
             base += 'CASRN="%s", ' %(self.CASRN)
-        for k, v in self.kwargs.items():
-            base += '%s=%s, ' %(k, v)
+        for k in self.custom_args:
+            v = getattr(self, k)
+            if v is not None:
+                base += '%s=%s, ' %(k, v)
         base += 'extrapolation="%s", ' %(self.extrapolation)
         base += 'method="%s", ' %(self.method)
         if hasattr(self, 'poly_fit_Tmin') and self.poly_fit_Tmin is not None:
@@ -992,6 +994,12 @@ class TDependentProperty(object):
             tabular_data_interpolators_P = d['tabular_data_interpolators_P']
             d['tabular_data_interpolators_P'] = {}
 
+        prop_references = []
+        for name in self.pure_references:
+            prop_obj = getattr(self, name)
+            prop_references.append(prop_obj)
+            if prop_obj is not None and type(prop_obj) not in (float, int):
+                d[name] = prop_obj.as_JSON()
 
         CP_f = None
         if hasattr(self, 'CP_f'):
@@ -999,7 +1007,8 @@ class TDependentProperty(object):
             d['CP_f'] = CP_f.CAS
         if not json_loaded:
             _load_json()
-        ans = json.dumps(self.__dict__)
+        #print(self.__dict__)
+        ans = json.dumps(d)
 
         # Set the dictionary back
         del d["py/object"]
@@ -1010,6 +1019,9 @@ class TDependentProperty(object):
             d['tabular_data_interpolators_P'] = tabular_data_interpolators_P
         if CP_f is not None:
             d['CP_f'] = CP_f
+        for name, obj in zip(self.pure_references, prop_references):
+            d[name] = obj
+
         d['tabular_data_interpolators'] = tabular_data_interpolators
 
         return ans

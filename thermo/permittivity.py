@@ -130,7 +130,6 @@ class PermittivityLiquid(TDependentProperty):
 
     ranked_methods = [CRC, CRC_CONSTANT]
     '''Default rankings of the available methods.'''
-    kwargs = {}
 
     _fit_force_n = {}
     '''Dictionary containing method: fit_n, for use in methods which should
@@ -150,6 +149,8 @@ class PermittivityLiquid(TDependentProperty):
                 CRC: [CAS for i, CAS in enumerate(permittivity.permittivity_data_CRC.index)
                       if not isnan(A[i])],
                 }
+
+    custom_args = ()
 
     def __init__(self, CASRN='', load_data=True, extrapolation='linear',
                  poly_fit=None, method=None):

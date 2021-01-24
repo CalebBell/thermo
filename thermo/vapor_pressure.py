@@ -256,6 +256,8 @@ class VaporPressure(TDependentProperty):
                       LEE_KESLER_PSAT, EDALAT, BOILING_CRITICAL, EOS, SANJARI]
     '''Default rankings of the available methods.'''
 
+    custom_args = ('Tb', 'Tc', 'Pc', 'omega', 'eos')
+
     def __init__(self, Tb=None, Tc=None, Pc=None, omega=None, CASRN='',
                  eos=None, load_data=True,
                  extrapolation='AntoineAB|DIPPR101_ABC', poly_fit=None,
@@ -266,18 +268,6 @@ class VaporPressure(TDependentProperty):
         self.Pc = Pc
         self.omega = omega
         self.eos = eos
-
-        self.kwargs = kwargs = {}
-        if Tb is not None:
-            kwargs['Tb'] = Tb
-        if Tc is not None:
-            kwargs['Tc'] = Tc
-        if Pc is not None:
-            kwargs['Pc'] = Pc
-        if omega is not None:
-            kwargs['omega'] = omega
-        if eos is not None:
-            kwargs['eos'] = eos
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate vapor pressure
@@ -714,6 +704,8 @@ class SublimationPressure(TDependentProperty):
     ranked_methods = [PSUB_CLAPEYRON]
     '''Default rankings of the available methods.'''
 
+    custom_args = ('Tt', 'Pt', 'Hsub_t')
+
     def __init__(self, CASRN=None, Tt=None, Pt=None, Hsub_t=None,
                  load_data=True, extrapolation=None, poly_fit=None,
                  method=None):
@@ -721,13 +713,6 @@ class SublimationPressure(TDependentProperty):
         self.Tt = Tt
         self.Pt = Pt
         self.Hsub_t = Hsub_t
-        self.kwargs = kwargs = {}
-        if Tt is not None:
-            kwargs['Tt'] = Tt
-        if Pt is not None:
-            kwargs['Pt'] = Pt
-        if Hsub_t is not None:
-            kwargs['Hsub_t'] = Hsub_t
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate sublimation pressure

@@ -253,6 +253,9 @@ class SurfaceTension(TDependentProperty):
     only ever be fit to a specific `n` value'''
     _fit_force_n[JASPER] = 2
 
+    custom_args = ('MW', 'Tb', 'Tc', 'Pc', 'Vc', 'Zc', 'omega', 'StielPolar',
+                   'Hvap_Tb', 'Vml', 'Cpl')
+
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
                  omega=None, StielPolar=None, Hvap_Tb=None, CASRN='', Vml=None,
                  Cpl=None, load_data=True, extrapolation=None, poly_fit=None,
@@ -269,30 +272,6 @@ class SurfaceTension(TDependentProperty):
         self.CASRN = CASRN
         self.Vml = Vml
         self.Cpl = Cpl
-
-        self.kwargs = kwargs = {}
-        if MW is not None:
-            kwargs['MW'] = MW
-        if Tb is not None:
-            kwargs['Tb'] = Tb
-        if Tc is not None:
-            kwargs['Tc'] = Tc
-        if Pc is not None:
-            kwargs['Pc'] = Pc
-        if Vc is not None:
-            kwargs['Vc'] = Vc
-        if Zc is not None:
-            kwargs['Zc'] = Zc
-        if omega is not None:
-            kwargs['omega'] = omega
-        if StielPolar is not None:
-            kwargs['StielPolar'] = StielPolar
-        if Hvap_Tb is not None:
-            kwargs['Hvap_Tb'] = Hvap_Tb
-        if Vml is not None:
-            kwargs['Vml'] = Vml
-        if Cpl is not None:
-            kwargs['Cpl'] = Cpl
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the

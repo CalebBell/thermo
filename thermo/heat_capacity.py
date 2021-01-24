@@ -272,18 +272,14 @@ class HeatCapacityGas(TDependentProperty):
     _fit_force_n[CRCSTD] = 1
     _fit_force_n[POLING_CONST] = 1
 
+    custom_args = ('MW', 'similarity_variable')
+
     def __init__(self, CASRN='', MW=None, similarity_variable=None,
                  load_data=True, extrapolation='linear', poly_fit=None,
                  method=None):
         self.CASRN = CASRN
         self.MW = MW
         self.similarity_variable = similarity_variable
-
-        self.kwargs = kwargs = {}
-        if similarity_variable is not None:
-            kwargs['similarity_variable'] = similarity_variable
-        if MW is not None:
-            kwargs['MW'] = MW
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -801,6 +797,7 @@ class HeatCapacityLiquid(TDependentProperty):
     _fit_force_n[CRCSTD] = 1
     _fit_force_n[POLING_CONST] = 1
 
+    custom_args = ('MW', 'similarity_variable', 'Tc', 'omega', 'Cpgm')
     def __init__(self, CASRN='', MW=None, similarity_variable=None, Tc=None,
                  omega=None, Cpgm=None, load_data=True,
                  extrapolation='linear',  poly_fit=None, method=None):
@@ -811,17 +808,6 @@ class HeatCapacityLiquid(TDependentProperty):
         self.Cpgm = Cpgm
         self.similarity_variable = similarity_variable
 
-        self.kwargs = kwargs = {}
-        if MW is not None:
-            kwargs['MW'] = MW
-        if similarity_variable is not None:
-            kwargs['similarity_variable'] = similarity_variable
-        if Tc is not None:
-            kwargs['Tc'] = Tc
-        if omega is not None:
-            kwargs['omega'] = omega
-        if Cpgm is not None:
-            kwargs['Cpgm'] = Cpgm
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -1301,6 +1287,8 @@ class HeatCapacitySolid(TDependentProperty):
     _fit_force_n[CRCSTD] = 1
 
 
+    custom_args = ('MW', 'similarity_variable')
+
     def __init__(self, CASRN='', similarity_variable=None, MW=None,
                  load_data=True, extrapolation='linear', poly_fit=None,
                  method=None):
@@ -1345,12 +1333,6 @@ class HeatCapacitySolid(TDependentProperty):
             methods = self.valid_methods(T=None)
             if methods:
                 self.method = methods[0]
-
-        self.kwargs = kwargs = {}
-        if similarity_variable is not None:
-            kwargs['similarity_variable'] = similarity_variable
-        if MW is not None:
-            kwargs['MW'] = MW
 
     def _method_indexes():
         '''Returns a dictionary of method: index for all methods

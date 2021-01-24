@@ -288,6 +288,9 @@ class EnthalpyVaporization(TDependentProperty):
     Watson_exponent = 0.38
     '''Exponent used in the Watson equation'''
 
+    custom_args = ('Tb', 'Tc', 'Pc', 'omega', 'similarity_variable', 'Psat',
+                   'Zl', 'Zg',)
+
     def __init__(self, CASRN='', Tb=None, Tc=None, Pc=None, omega=None,
                  similarity_variable=None, Psat=None, Zl=None, Zg=None,
                  load_data=True, extrapolation='Watson', poly_fit=None,
@@ -301,24 +304,6 @@ class EnthalpyVaporization(TDependentProperty):
         self.Psat = Psat
         self.Zl = Zl
         self.Zg = Zg
-
-        self.kwargs = kwargs = {}
-        if Tb is not None:
-            kwargs['Tb'] = Tb
-        if Tc is not None:
-            kwargs['Tc'] = Tc
-        if Pc is not None:
-            kwargs['Pc'] = Pc
-        if omega is not None:
-            kwargs['omega'] = omega
-        if similarity_variable is not None:
-            kwargs['similarity_variable'] = similarity_variable
-        if Zl is not None:
-            kwargs['Zl'] = Zl
-        if Zg is not None:
-            kwargs['Zg'] = Zg
-        if Psat is not None:
-            kwargs['Psat'] = Psat
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -723,6 +708,7 @@ class EnthalpySublimation(TDependentProperty):
     ranked_methods = [GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM,
                       GHARAGHEIZI_HSUB_298]
 
+    custom_args = ('Tm', 'Tt', 'Cpg', 'Cps', 'Hvap')
     def __init__(self, CASRN='', Tm=None, Tt=None, Cpg=None, Cps=None,
                  Hvap=None, load_data=True, extrapolation=None, poly_fit=None,
                  method=None):
@@ -732,19 +718,6 @@ class EnthalpySublimation(TDependentProperty):
         self.Cpg = Cpg
         self.Cps = Cps
         self.Hvap = Hvap
-
-        self.kwargs = kwargs = {}
-        if Tt is not None:
-            kwargs['Tt'] = Tt
-        if Tm is not None:
-            kwargs['Tm'] = Tm
-        if Cpg is not None:
-            kwargs['Cpg'] = Cpg
-        if Hvap is not None:
-            kwargs['Hvap'] = Hvap
-        if Cps is not None:
-            kwargs['Cps'] = Cps
-
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the

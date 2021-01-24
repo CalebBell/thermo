@@ -310,6 +310,11 @@ class ViscosityLiquid(TPDependentProperty):
     ranked_methods_P = [COOLPROP, LUCAS]
     '''Default rankings of the high-pressure methods.'''
 
+    pure_references = ('Psat',)
+    pure_reference_types = (VaporPressure,)
+
+    custom_args = ('MW', 'Tm', 'Tc', 'Pc', 'Vc', 'omega', 'Psat', 'Vml')
+
     def __init__(self, CASRN='', MW=None, Tm=None, Tc=None, Pc=None, Vc=None,
                  omega=None, Psat=None, Vml=None, load_data=True,
                  extrapolation='linear', poly_fit=None, method=None, method_P=None):
@@ -322,24 +327,6 @@ class ViscosityLiquid(TPDependentProperty):
         self.omega = omega
         self.Psat = Psat
         self.Vml = Vml
-
-        self.kwargs = kwargs = {}
-        if MW is not None:
-            kwargs['MW'] = MW
-        if Tm is not None:
-            kwargs['Tm'] = Tm
-        if Tc is not None:
-            kwargs['Tc'] = Tc
-        if Pc is not None:
-            kwargs['Pc'] = Pc
-        if Vc is not None:
-            kwargs['Vc'] = Vc
-        if omega is not None:
-            kwargs['omega'] = omega
-        if Vml is not None:
-            kwargs['Vml'] = Vml
-        if Psat is not None:
-            kwargs['Psat'] = Psat
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -890,6 +877,8 @@ class ViscosityGas(TPDependentProperty):
 
     pure_references = ('Vmg',)
     pure_reference_types = (VolumeGas,)
+
+    custom_args = ('MW', 'Tc', 'Pc', 'Zc', 'dipole', 'Vmg')
     def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, Zc=None,
                  dipole=None, Vmg=None, load_data=True,
                  extrapolation='linear', poly_fit=None, method=None):
@@ -900,20 +889,6 @@ class ViscosityGas(TPDependentProperty):
         self.Zc = Zc
         self.dipole = dipole
         self.Vmg = Vmg
-
-        self.kwargs = kwargs = {}
-        if MW is not None:
-            kwargs['MW'] = MW
-        if Tc is not None:
-            kwargs['Tc'] = Tc
-        if Pc is not None:
-            kwargs['Pc'] = Pc
-        if Zc is not None:
-            kwargs['Zc'] = Zc
-        if dipole is not None:
-            kwargs['dipole'] = dipole
-        if Vmg is not None:
-            kwargs['Vmg'] = Vmg
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
