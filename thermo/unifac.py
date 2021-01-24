@@ -2512,14 +2512,14 @@ class UNIFAC(GibbsExcess):
             self.rs_34 = [ri**power for ri in rs]
 
         self.cmp_v_count = cmp_v_count = []
-        for i in cmps:
+        for i in range(N):
             tot = 0
             for group in groups:
                 tot += vs[group][i]
             cmp_v_count.append(tot)
 
         # Matrix of [component][list(indexes to groups in component)], list of list
-        self.cmp_group_idx = [[j for j in groups if vs[j][i]] for i in cmps]
+        self.cmp_group_idx = [[j for j in groups if vs[j][i]] for i in range(N)]
 
         # Calculate the composition and temperature independent parameters on initialization
         self.Thetas_pure()
