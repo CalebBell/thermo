@@ -179,6 +179,22 @@ class GibbsExcess(object):
         del self.__dict__["py/object"]
         return ans
 
+    @classmethod
+    def from_JSON(cls, json_repr):
+#        mod_name = cls.__module__
+
+        d = utils.json.loads(json_repr)
+
+#        if cls is GibbsExcess:
+#            model_name = d['py/object']
+
+        del d['py/object']
+
+
+        new = cls.__new__(cls)
+        new.__dict__ = d
+        return new
+
     def HE(self):
         r'''Calculate and return the excess entropy of a liquid phase using an
         activity coefficient model.
