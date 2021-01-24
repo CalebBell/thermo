@@ -3045,13 +3045,13 @@ class UNIFAC(GibbsExcess):
             return self._Vis
         except:
             pass
-        rs, xs, cmps = self.rs, self.xs, self.cmps
+        rs, xs, N = self.rs, self.xs, self.N
         tot = 0.0
-        for i in cmps:
+        for i in range(N):
             tot += rs[i]*xs[i]
         tot = 1.0/tot
         self.rx_sum_inv = tot
-        self._Vis = [rs[i]*tot for i in cmps]
+        self._Vis = [rs[i]*tot for i in range(N)]
         return self._Vis
 
     def dVis_dxs(self):
@@ -3184,9 +3184,9 @@ class UNIFAC(GibbsExcess):
             return self._Fis
         except AttributeError:
             pass
-        qs, xs, cmps = self.qs, self.xs, self.cmps
+        qs, xs, N = self.qs, self.xs, self.N
         tot = 0.0
-        for i in cmps:
+        for i in range(N):
             tot += qs[i]*xs[i]
         self.qx_sum_inv = tot = 1.0/tot
         self._Fis = Fis = [qi*tot for qi in qs]
@@ -3324,13 +3324,13 @@ class UNIFAC(GibbsExcess):
             return self._Vis_modified
         except:
             pass
-        rs_34, xs, cmps = self.rs_34, self.xs, self.cmps
+        rs_34, xs, N = self.rs_34, self.xs, self.N
         tot = 0.0
-        for i in cmps:
+        for i in range(N):
             tot += rs_34[i]*xs[i]
         tot = 1.0/tot
         self.r34x_sum_inv = tot
-        self._Vis_modified = [rs_34[i]*tot for i in cmps]
+        self._Vis_modified = [rs_34[i]*tot for i in range(N)]
         return self._Vis_modified
 
     def dVis_modified_dxs(self):
@@ -3463,11 +3463,11 @@ class UNIFAC(GibbsExcess):
         # [subgroup][component] = number of subgroup in component where subgroup
         # is an index, numbered sequentially by the number of subgroups in the mixture
         vs, xs = self.vs, self.xs
-        cmps, groups = self.cmps, self.groups
+        N, groups = self.N, self.groups
         subgroup_sums = []
         for i in groups:
             tot = 0.0
-            for j in cmps:
+            for j in range(N):
                 tot += vs[i][j]*xs[j]
             subgroup_sums.append(tot)
 
@@ -3564,13 +3564,13 @@ class UNIFAC(GibbsExcess):
             G = self.Thetas_sum_inv
         except AttributeError:
             G = self._Thetas_sum_inv()
-        Qs, cmps, groups, xs = self.Qs, self.cmps, self.groups, self.xs
+        Qs, N, groups, xs = self.Qs, self.N, self.groups, self.xs
         # Xs_sum_inv and Thetas_sum_inv have already calculated _Xs, _Thetas
         Xs = self._Xs
         Thetas = self._Thetas
         vs = self.vs
 
-        VS = self.cmp_v_count#[sum(vs[j][i] for j in groups) for i in cmps]
+        VS = self.cmp_v_count
         try:
             VSXS = self.VSXS
         except AttributeError:
@@ -3582,7 +3582,7 @@ class UNIFAC(GibbsExcess):
         tot0*= F
 
         tots = []
-        for j in cmps:
+        for j in range(N):
             tot1 = 0.0
             for k in groups:
                 tot1 -= Qs[k]*vs[k][j]
@@ -3594,7 +3594,7 @@ class UNIFAC(GibbsExcess):
         for i in groups:
             c = FG*Qs[i]
             row = []
-            for j in cmps:
+            for j in range(N):
                 row.append(c*(VSXS[i]*tots[j] + vs[i][j]))
             dThetas_dxs.append(row)
         return dThetas_dxs
@@ -3659,7 +3659,7 @@ class UNIFAC(GibbsExcess):
             G = self.Thetas_sum_inv
         except AttributeError:
             G = self._Thetas_sum_inv()
-        Qs, cmps, groups, xs = self.Qs, self.cmps, self.groups, self.xs
+        Qs, N, groups, xs = self.Qs, self.N, self.groups, self.xs
         vs = self.vs
 
         VS = self.cmp_v_count
@@ -3674,7 +3674,7 @@ class UNIFAC(GibbsExcess):
         QsVSXS_sum_inv = 1.0/QsVSXS
 
         tot1s = []
-        for j in cmps:
+        for j in range(N):
             nffVSj = -F*VS[j]
             v = 0.0
             for n in groups:
@@ -3686,9 +3686,9 @@ class UNIFAC(GibbsExcess):
 
         # Index [comp][comp][subgroup]
         self._d2Thetas_dxixjs = d2Thetas_dxixjs = []
-        for j in cmps:
+        for j in range(N):
             matrix = []
-            for k in cmps:
+            for k in range(N):
                 row = []
                 n2FVsK = n2F*VS[k]
                 tot0 = 0.0
@@ -3734,10 +3734,10 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         self.VSXS = VSXS = []
-        groups, cmps, vs, xs = self.groups, self.cmps, self.vs, self.xs
+        groups, N, vs, xs = self.groups, self.N, self.vs, self.xs
         for i in groups:
             v = 0.0
-            for j in cmps:
+            for j in range(N):
                 v += vs[i][j]*xs[j]
             VSXS.append(v)
         return VSXS
