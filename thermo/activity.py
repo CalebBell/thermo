@@ -71,6 +71,8 @@ from fluids.constants import R, R_inv
 from fluids.numerics import numpy as np
 from chemicals.utils import exp
 from chemicals.utils import normalize, dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, d2xs_to_dxdn_partials
+from thermo import utils
+from thermo.utils import dump_json_np
 
 try:
     npexp, ones, zeros, array = np.exp, np.ones, np.zeros, np.array
@@ -165,6 +167,17 @@ class GibbsExcess(object):
         # Other classes with different parameters should expose them here too
         s = '%s(T=%s, xs=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs))
         return s
+
+    def as_JSON(self):
+        # vaguely jsonpickle compatible
+        mod_name = self.__class__.__module__
+        self.__dict__["py/object"] = "%s.%s" %(mod_name, self.__class__.__name__)
+        if self.scalar:
+            ans = utils.json.dumps(self.__dict__)
+        else:
+            ans = dump_json_np(self.__dict__)
+        del self.__dict__["py/object"]
+        return ans
 
     def HE(self):
         r'''Calculate and return the excess entropy of a liquid phase using an

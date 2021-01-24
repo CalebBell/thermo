@@ -90,7 +90,56 @@ from chemicals.dippr import EQ101
 from chemicals.phase_change import Watson, Watson_n
 
 
-global json
+
+BasicNumpyEncoder = None
+def build_numpy_encoder():
+    '''Create a basic numpy encoder for json applications. All np ints become
+    Python ints; numpy floats become python floats; and all arrays become
+    lists-of-lists of floats, ints, bools, or complexes according to Python's
+    rules.
+    '''
+    global BasicNumpyEncoder, json
+
+    import json
+    int_types = frozenset([np.short, np.ushort, np.intc, np.uintc, np.int_,
+                           np.uint, np.longlong, np.ulonglong])
+    float_types = frozenset([np.float16, np.single, np.double, np.longdouble,
+                             np.csingle, np.cdouble, np.clongdouble])
+    ndarray = np.ndarray
+    JSONEncoder = json.JSONEncoder
+
+    class BasicNumpyEncoder(JSONEncoder):
+        def default(self, obj):
+            t = type(obj)
+            if t is ndarray:
+                return obj.tolist()
+            elif t in int_types:
+                return int(obj)
+            elif t in float_types:
+                return float(obj)
+            return JSONEncoder.default(self, obj)
+
+def _load_orjson():
+    global orjson
+    import orjson
+
+def dump_json_np(obj, library='json'):
+    '''Serialization tool that handles numpy arrays. By default this will
+    use the standard library json, but this can also use orjson.'''
+    if library == 'json':
+        if BasicNumpyEncoder is None:
+            build_numpy_encoder()
+        return json.dumps(obj, cls=BasicNumpyEncoder)
+    elif library == 'orjson':
+        if orjson is None:
+            _load_orjson()
+        opt = orjson.OPT_SERIALIZE_NUMPY
+        return orjson.dumps(obj, option=opt)
+
+
+
+global json, orjson
+orjson = None
 
 if PY37:
     def __getattr__(name):
