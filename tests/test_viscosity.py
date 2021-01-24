@@ -53,6 +53,11 @@ def test_ViscosityLiquid():
     EtOH.T_dependent_property(315)
     s = EtOH.as_JSON()
     EtOH2 = ViscosityLiquid.from_JSON(s)
+    # Do hash checks before interpolation object exists
+    assert hash(EtOH) == hash(EtOH2)
+    assert EtOH == EtOH2
+    assert id(EtOH) != id(EtOH2)
+
     assert EtOH.T_dependent_property(315) == EtOH2.T_dependent_property(315)
 
     EtOH.method = (COOLPROP)

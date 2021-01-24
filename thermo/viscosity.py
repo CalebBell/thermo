@@ -1281,6 +1281,9 @@ class ViscosityLiquidMixture(MixtureProperty):
 
     ranked_methods = [LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, SIMPLE]
 
+    pure_references = ('ViscosityLiquids',)
+    pure_reference_types = (ViscosityLiquid, )
+
     def __init__(self, CASs=[], ViscosityLiquids=[], MWs=[],
                  correct_pressure_pure=True):
         self.CASs = CASs
@@ -1535,6 +1538,8 @@ class ViscosityGasMixture(MixtureProperty):
 
     ranked_methods = [BROKAW, HERNING_ZIPPERER, SIMPLE, WILKE]
 
+    pure_references = ('ViscosityGases',)
+    pure_reference_types = (ViscosityGas, )
     def __init__(self, MWs=[], molecular_diameters=[], Stockmayers=[], CASs=[],
                  ViscosityGases=[], correct_pressure_pure=True):
         self.MWs = MWs

@@ -250,6 +250,9 @@ class ChemicalConstantsPackage(object):
             hashes.append(hash_any_primitive(getattr(self, k)))
         return hash_any_primitive(hashes)
 
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
     def with_new_constants(self, **kwargs):
         r'''Method to construct a new ChemicalConstantsPackage that replaces or
         adds one or more properties for all components.

@@ -894,8 +894,27 @@ class TDependentProperty(object):
         # By default, share state among subsequent objects
         return self
 
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
     def __hash__(self):
-        return hash_any_primitive([self.__class__, self.__dict__])
+        d = self.__dict__
+        # extrapolation values and interpolation objects should be ignored
+        tabular_data_interpolators = d['tabular_data_interpolators']
+        del d['tabular_data_interpolators']
+        try:
+            tabular_data_interpolators_P = d['tabular_data_interpolators_P']
+            del d['tabular_data_interpolators_P']
+        except:
+            pass
+        ans = hash_any_primitive((self.__class__, d))
+        d['tabular_data_interpolators'] = tabular_data_interpolators
+        try:
+            d['tabular_data_interpolators_P'] = tabular_data_interpolators_P
+        except:
+            pass
+
+        return ans
 
     def __repr__(self):
         clsname = self.__class__.__name__
@@ -3074,6 +3093,9 @@ class MixtureProperty(object):
     _correct_pressure_pure = True
     _method = None
 
+    pure_references = ()
+    pure_reference_types = ()
+
     skip_prop_validity_check = False
     '''Flag to disable checking the output of the value. Saves a little time.
     '''
@@ -3094,6 +3116,86 @@ class MixtureProperty(object):
                                [i.poly_fit_Tmax_value for i in pure_objs],
                                [i.poly_fit_coeffs for i in pure_objs]]
 
+    def as_JSON(self):
+        r'''Method to create a JSON serialization of the mixture property
+        which can be stored, and reloaded later.
+
+        Returns
+        -------
+        json_repr : str
+            Json representation, [-]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        '''
+        if not json_loaded:
+            _load_json()
+
+        d = self.__dict__ # Not a the real object dictionary
+        mod_name = self.__class__.__module__
+        pure_references = [d[k] for k in self.pure_references]
+        for i, k in enumerate(self.pure_references):
+            d[k] = [v.as_JSON() for v in pure_references[i]]
+        del d['pure_objs']
+
+        d["py/object"] = "%s.%s" %(mod_name, self.__class__.__name__)
+        all_methods = d['all_methods']
+        d['all_methods'] = list(all_methods)
+
+
+        d['json_version'] = 1
+        ans = json.dumps(d)
+        del d['json_version']
+        del d["py/object"]
+        for i, k in enumerate(self.pure_references):
+            d[k] = pure_references[i]
+        # First reference must be the common one
+        d['pure_objs'] = pure_references[0]
+        d['all_methods'] = all_methods
+        return ans
+
+    @classmethod
+    def from_JSON(cls, string):
+        r'''Method to create a MixtureProperty from a JSON
+        serialization of another MixtureProperty.
+
+        Parameters
+        ----------
+        json_repr : str
+            Json representation, [-]
+
+        Returns
+        -------
+        constants : :obj:`MixtureProperty`
+            Newly created object from the json serialization, [-]
+
+        Notes
+        -----
+        It is important that the input string be in the same format as that
+        created by :obj:`MixtureProperty.as_JSON`.
+
+        Examples
+        --------
+        '''
+        if json is None:
+            get_json()
+        d = json.loads(string)
+        d['all_methods'] = set(d['all_methods'])
+        for k, sub_cls in zip(cls.pure_references, cls.pure_reference_types):
+            sub_jsons = d[k]
+            d[k] = [sub_cls.from_JSON(j) for j in sub_jsons]
+
+        d['pure_objs'] = d[cls.pure_references[0]]
+
+        del d['py/object']
+        del d["json_version"]
+        new = cls.__new__(cls)
+        new.__dict__ = d
+        return new
+
     @property
     def method(self):
         r'''Method to set the T, P, and composition dependent property method
@@ -3105,7 +3207,7 @@ class MixtureProperty(object):
     @method.setter
     def method(self, method):
         self._method = method
-        self.TP_zs_ws_cached = (None, None, None, None)
+        self.TP_zs_ws_cached = [None, None, None, None]
 
     @property
     def correct_pressure_pure(self):
@@ -3119,7 +3221,7 @@ class MixtureProperty(object):
     def correct_pressure_pure(self, v):
         if v != self._correct_pressure_pure:
             self._correct_pressure_pure = v
-            self.TP_zs_ws_cached = (None, None, None, None)
+            self.TP_zs_ws_cached = [None, None, None, None]
 
     def _complete_zs_ws(self, zs, ws):
         if zs is None and ws is None:
@@ -3159,7 +3261,7 @@ class MixtureProperty(object):
             return self.prop_cached
         else:
             self.prop_cached = self.mixture_property(T, P, zs, ws)
-            self.TP_zs_ws_cached = (T, P, zs, ws)
+            self.TP_zs_ws_cached = [T, P, zs, ws]
             return self.prop_cached
 
     @classmethod

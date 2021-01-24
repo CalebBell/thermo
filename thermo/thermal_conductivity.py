@@ -132,6 +132,7 @@ from chemicals.miscdata import lookup_VDI_tabular_data
 from thermo.coolprop import has_CoolProp, coolprop_dict, coolprop_fluids, CoolProp_T_dependent_property, PropsSI, PhaseSI, CoolProp_failing_PT_flashes
 from thermo import electrochem
 from thermo.electrochem import thermal_conductivity_Magomedov
+from thermo.viscosity import ViscosityGas
 
 
 from thermo.utils import NEGLIGIBLE, DIPPR_PERRY_8E, BESTFIT, VDI_TABULAR, VDI_PPDS, COOLPROP
@@ -735,6 +736,9 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     '''Maximum valid value of liquid thermal conductivity. Generous limit.'''
 
     ranked_methods = [MAGOMEDOV, DIPPR_9H, SIMPLE, FILIPPOV]
+
+    pure_references = ('ThermalConductivityLiquids',)
+    pure_reference_types = (ThermalConductivityLiquid,)
 
     def __init__(self, CASs=[], ThermalConductivityLiquids=[], MWs=[],
                  correct_pressure_pure=True):
@@ -1509,6 +1513,9 @@ class ThermalConductivityGasMixture(MixtureProperty):
     '''Maximum valid value of gas thermal conductivity. Generous limit.'''
 
     ranked_methods = [LINDSAY_BROMLEY, SIMPLE]
+
+    pure_references = ('ViscosityGases', 'ThermalConductivityGases')
+    pure_reference_types = (ViscosityGas, ThermalConductivityGas)
 
     def __init__(self, MWs=[], Tbs=[], CASs=[], ThermalConductivityGases=[],
                  ViscosityGases=[], correct_pressure_pure=True):

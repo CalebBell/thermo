@@ -75,6 +75,7 @@ from fluids.constants import N_A, k
 from thermo.utils import TDependentProperty, MixtureProperty
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
+from thermo.volume import VolumeLiquid
 
 
 
@@ -619,6 +620,9 @@ class SurfaceTensionMixture(MixtureProperty):
     cobalt at its melting point.'''
 
     ranked_methods = [WINTERFELDSCRIVENDAVIS, DIGUILIOTEJA, SIMPLE]
+
+    pure_references = ('SurfaceTensions', 'VolumeLiquids')
+    pure_reference_types = (SurfaceTension, VolumeLiquid)
 
     def __init__(self, MWs=[], Tbs=[], Tcs=[], CASs=[], SurfaceTensions=[],
                  VolumeLiquids=[], correct_pressure_pure=True):

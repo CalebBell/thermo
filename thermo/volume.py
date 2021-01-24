@@ -1260,6 +1260,9 @@ class VolumeLiquidMixture(MixtureProperty):
     ranked_methods = [LALIBERTE, SIMPLE, COSTALD_MIXTURE_FIT,
                       RACKETT_PARAMETERS, COSTALD_MIXTURE, RACKETT]
 
+    pure_references = ('VolumeLiquids',)
+    pure_reference_types = (VolumeLiquid, )
+
     def __init__(self, MWs=[], Tcs=[], Pcs=[], Vcs=[], Zcs=[], omegas=[],
                  CASs=[], VolumeLiquids=[], correct_pressure_pure=True):
         self.MWs = MWs
@@ -1881,6 +1884,9 @@ class VolumeGasMixture(MixtureProperty):
     at 1 Pa and 2 billion K.'''
 
     ranked_methods = [EOS, SIMPLE, IDEAL]
+
+    pure_references = ('VolumeGases',)
+    pure_reference_types = (VolumeGas, )
 
     def __init__(self, eos=None, CASs=[], VolumeGases=[], MWs=[]):
         self.CASs = CASs

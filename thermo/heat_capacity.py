@@ -1627,6 +1627,8 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     the critical point, this value can be obscenely high.'''
 
     ranked_methods = [LALIBERTE, SIMPLE]
+    pure_references = ('HeatCapacityLiquids',)
+    pure_reference_types = (HeatCapacityLiquid,)
 
     def __init__(self, MWs=[], CASs=[], HeatCapacityLiquids=[]):
         self.MWs = MWs
@@ -1802,6 +1804,8 @@ class HeatCapacitySolidMixture(MixtureProperty):
     '''Maximum value of Heat capacity; arbitrarily set.'''
 
     ranked_methods = [SIMPLE]
+    pure_references = ('HeatCapacitySolids',)
+    pure_reference_types = (HeatCapacitySolid,)
 
     def __init__(self, CASs=[], HeatCapacitySolids=[], MWs=[]):
         self.CASs = CASs
@@ -1937,6 +1941,8 @@ class HeatCapacityGasMixture(MixtureProperty):
     the critical point, this value can be obscenely high.'''
 
     ranked_methods = [SIMPLE]
+    pure_references = ('HeatCapacityGases',)
+    pure_reference_types = (HeatCapacityGas,)
 
     def __init__(self, CASs=[], HeatCapacityGases=[], MWs=[]):
         self.CASs = CASs
