@@ -40,7 +40,7 @@ Temperature Dependent
              calculate_derivative, T_dependent_property_derivative,
              calculate_integral, T_dependent_property_integral,
              calculate_integral_over_T, T_dependent_property_integral_over_T,
-             extrapolate, test_method_validity, calculate,
+             extrapolate, test_method_validity, calculate, from_JSON, as_JSON,
              interpolation_T, interpolation_T_inv, interpolation_property,  interpolation_property_inv, T_limits, all_methods
    :undoc-members:
 
@@ -90,7 +90,6 @@ from chemicals.dippr import EQ101
 from chemicals.phase_change import Watson, Watson_n
 
 
-
 BasicNumpyEncoder = None
 def build_numpy_encoder():
     '''Create a basic numpy encoder for json applications. All np ints become
@@ -137,19 +136,26 @@ def dump_json_np(obj, library='json'):
         return orjson.dumps(obj, option=opt)
 
 
+json_loaded = False
+def _load_json():
+    global json
+    import json
+    json_loaded = True
 
 global json, orjson
 orjson = None
 
 if PY37:
     def __getattr__(name):
-        global json
+        global json, json_loaded
         if name == 'json':
             import json
+            json_loaded = True
             return json
         raise AttributeError("module %s has no attribute %s" %(__name__, name))
 else:
     import json
+    json_loaded = True
 
 NEGLIGIBLE = 'NEGLIGIBLE'
 DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
@@ -929,6 +935,95 @@ class TDependentProperty(object):
             self.prop_cached = self.T_dependent_property(T)
             self.T_cached = T
             return self.prop_cached
+
+    def as_JSON(self):
+        r'''Method to create a JSON serialization of the property model
+        which can be stored, and reloaded later.
+
+        Returns
+        -------
+        json_repr : str
+            Json representation, [-]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        '''
+        # vaguely jsonpickle compatible
+        mod_name = self.__class__.__module__
+        d = self.__dict__
+        d["py/object"] = "%s.%s" %(mod_name, self.__class__.__name__)
+        d["json_version"] = 1
+
+        all_methods_list = list(d['all_methods'])
+        all_methods_set = d['all_methods']
+        d['all_methods'] = all_methods_list
+
+        if hasattr(self, 'all_methods_P'):
+            all_methods_P_list = list(d['all_methods_P'])
+            all_methods_P_set = d['all_methods_P']
+            d['all_methods_P'] = all_methods_P_list
+
+        CP_f = None
+        if hasattr(self, 'CP_f'):
+            CP_f = self.CP_f
+            d['CP_f'] = CP_f.CAS
+        if not json_loaded:
+            _load_json()
+        ans = json.dumps(self.__dict__)
+
+        # Set the dictionary back
+        del d["py/object"]
+        del d["json_version"]
+        d['all_methods'] = all_methods_set
+        if hasattr(self, 'all_methods_P'):
+            d['all_methods_P'] = all_methods_P_set
+        if CP_f is not None:
+            d['CP_f'] = CP_f
+
+        return ans
+
+    @classmethod
+    def from_JSON(cls, json_repr):
+        r'''Method to create a property model from a JSON
+        serialization of another property model.
+
+        Parameters
+        ----------
+        json_repr : str
+            JSON representation, [-]
+
+        Returns
+        -------
+        model : :obj:`TDependentProperty` or :obj:`TPDependentProperty`
+            Newly created object from the json serialization, [-]
+
+        Notes
+        -----
+        It is important that the input string be in the same format as that
+        created by :obj:`TDependentProperty.as_JSON`.
+
+        Examples
+        --------
+        '''
+        if not json_loaded:
+            _load_json()
+        d = json.loads(json_repr)
+        if 'CP_f' in d:
+            from thermo.coolprop import coolprop_fluids
+            d['CP_f'] = coolprop_fluids[d['CP_f']]
+
+        d['all_methods'] = set(d['all_methods'])
+        if 'all_methods_P' in d:
+            d['all_methods_P'] = set(d['all_methods_P'])
+
+        del d['py/object']
+        del d["json_version"]
+        new = cls.__new__(cls)
+        new.__dict__ = d
+        return new
 
     def _set_common_attributes(self):
 
