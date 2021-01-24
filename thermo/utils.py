@@ -1019,6 +1019,14 @@ class TDependentProperty(object):
         if 'all_methods_P' in d:
             d['all_methods_P'] = set(d['all_methods_P'])
 
+        T_limits = d['T_limits']
+        for k, v in T_limits.items():
+            T_limits[k] = tuple(v)
+        tabular_data = d['tabular_data']
+        for k, v in tabular_data.items():
+            tabular_data[k] = tuple(v)
+
+
         del d['py/object']
         del d["json_version"]
         new = cls.__new__(cls)
@@ -1972,7 +1980,7 @@ class TDependentProperty(object):
                     d_high = self._calculate_derivative_transformed(T=Tmax, method=method, order=1)
                 except:
                     v_high, d_high = None, None
-                linear_extrapolation_coeffs[method] = (v_low, d_low, v_high, d_high)
+                linear_extrapolation_coeffs[method] = [v_low, d_low, v_high, d_high]
             elif extrapolation == 'AntoineAB':
                 try:
                     Antoine_AB_coeffs = self.Antoine_AB_coeffs
@@ -1993,7 +2001,7 @@ class TDependentProperty(object):
                     AB_high = Antoine_AB_coeffs_from_point(T=Tmax, Psat=v_high, dPsat_dT=d_high, base=e)
                 except:
                     AB_high = None
-                Antoine_AB_coeffs[method] = (AB_low, AB_high)
+                Antoine_AB_coeffs[method] = [AB_low, AB_high]
             elif extrapolation == 'DIPPR101_ABC':
                 try:
                     DIPPR101_ABC_coeffs = self.DIPPR101_ABC_coeffs
@@ -2016,7 +2024,7 @@ class TDependentProperty(object):
                     DIPPR101_ABC_high = DIPPR101_ABC_coeffs_from_point(Tmax, v_high, d0_high, d1_high)
                 except:
                     DIPPR101_ABC_high = None
-                DIPPR101_ABC_coeffs[method] = (DIPPR101_ABC_low, DIPPR101_ABC_high)
+                DIPPR101_ABC_coeffs[method] = [DIPPR101_ABC_low, DIPPR101_ABC_high]
             elif extrapolation == 'Watson':
                 try:
                     Watson_coeffs = self.Watson_coeffs
@@ -2038,7 +2046,7 @@ class TDependentProperty(object):
                     n_high = Watson_n(Tmax, Tmax-delta, v0_high, v1_high, self.Tc)
                 except:
                     v0_high, v1_high, n_high = None, None, None
-                Watson_coeffs[method] = (v0_low, n_low, v0_high, n_high)
+                Watson_coeffs[method] = [v0_low, n_low, v0_high, n_high]
             elif extrapolation == 'interp1d':
                 from scipy.interpolate import interp1d
                 try:
