@@ -55,6 +55,32 @@ from fluids.constants import R
 __all__ = ['NRTL', 'NRTL_gammas']
 
 
+def nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas=None, wvec0=None, wvec1=None):
+    if gammas is None:
+        gammas = [0.0]*N
+    if wvec0 is None:
+        wvec0 = [0.0]*N
+    if wvec1 is None:
+        wvec1 = [0.0]*N
+
+    for j in range(N):
+        wvec0[j] = xs[j]*xj_Gs_jis_inv[j]
+    for j in range(N):
+        wvec1[j] = xj_Gs_taus_jis[j]*xj_Gs_jis_inv[j]
+
+    wvec0 = [xs[j]*xj_Gs_jis_inv[j] for j in range(N)]
+    wvec1 = [xj_Gs_taus_jis[j]*xj_Gs_jis_inv[j] for j in range(N)]
+
+    for i in range(N):
+        tot = xj_Gs_taus_jis[i]*xj_Gs_jis_inv[i]
+        Gsi = Gs[i]
+        tausi = taus[i]
+        for j in range(N):
+            tot += wvec0[j]*Gsi[j]*(tausi[j] - wvec1[j])
+
+        gammas[i] = exp(tot)
+    return gammas
+
 class NRTL(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
     by the NRTL equation. This model is capable of representing VL and LL
@@ -289,20 +315,20 @@ class NRTL(GibbsExcess):
 
         xj_Gs_jis_inv, xj_Gs_taus_jis = self.xj_Gs_jis_inv(), self.xj_Gs_taus_jis()
 
-        self._gammas = gammas = []
+        self._gammas = gammas = nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis)
 
-        t0s = [xs[j]*xj_Gs_jis_inv[j] for j in range(N)]
-        t1s = [xj_Gs_taus_jis[j]*xj_Gs_jis_inv[j] for j in range(N)]
-
-        for i in range(N):
-            tot = xj_Gs_taus_jis[i]*xj_Gs_jis_inv[i]
-            Gsi = Gs[i]
-            tausi = taus[i]
-            for j in range(N):
-                # Possible to factor out some terms which depend on j only; or to index taus, Gs separately
-                tot += t0s[j]*Gsi[j]*(tausi[j] - t1s[j])
-
-            gammas.append(exp(tot))
+#        t0s = [xs[j]*xj_Gs_jis_inv[j] for j in range(N)]
+#        t1s = [xj_Gs_taus_jis[j]*xj_Gs_jis_inv[j] for j in range(N)]
+#
+#        for i in range(N):
+#            tot = xj_Gs_taus_jis[i]*xj_Gs_jis_inv[i]
+#            Gsi = Gs[i]
+#            tausi = taus[i]
+#            for j in range(N):
+#                # Possible to factor out some terms which depend on j only; or to index taus, Gs separately
+#                tot += t0s[j]*Gsi[j]*(tausi[j] - t1s[j])
+#
+#            gammas.append(exp(tot))
 
 #        self._gammas = gammas = NRTL_gammas(xs=self.xs, taus=taus, alphas=alphas)
         return gammas
