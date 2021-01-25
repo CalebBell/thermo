@@ -35,6 +35,14 @@ from scipy.integrate import quad
 @pytest.mark.meta_T_dept
 def test_HeatCapacityGas():
     EtOH = HeatCapacityGas(CASRN='64-17-5', similarity_variable=0.1953615, MW=46.06844)
+
+    assert eval(str(EtOH)) == EtOH
+    json_repr = EtOH.as_JSON()
+    assert 'kwargs' not in json_repr
+
+    new = HeatCapacityGas.from_JSON(json_repr)
+    assert new == EtOH
+
     methods = list(EtOH.all_methods)
     methods.remove(VDI_TABULAR)
     Cps_calc = []
@@ -71,6 +79,9 @@ def test_HeatCapacityGas():
 
     assert None == EtOH.T_dependent_property(5000)
 
+    new = HeatCapacityGas.from_JSON(EtOH.as_JSON())
+    assert new == EtOH
+
     # Case where the limits were nans
     obj = HeatCapacityGas(CASRN='7440-37-1', MW=39.948, similarity_variable=0.025032542304996495)
     assert not isnan(obj.Tmax)
@@ -78,13 +89,21 @@ def test_HeatCapacityGas():
     assert not isnan(obj.POLING_Tmin)
     assert not isnan(obj.POLING_Tmax)
 
+    new = HeatCapacityGas.from_JSON(obj.as_JSON())
+    assert new == obj
 
     # flash not converge due to melting P
     obj = HeatCapacityGas(CASRN='106-97-8')
+    assert eval(str(obj)) == obj
+    new = HeatCapacityGas.from_JSON(obj.as_JSON())
+    assert new == obj
     assert_close(obj.calculate(134.895, COOLPROP), 64.30715649610785)
 
     # flash not converge at high P
     obj = HeatCapacityGas(CASRN='306-83-2')
+    assert eval(str(obj)) == obj
+    new = HeatCapacityGas.from_JSON(obj.as_JSON())
+    assert new == obj
     assert_close(obj.calculate(obj.T_limits[COOLPROP][0], COOLPROP), 72.45489837498226, rtol=1e-7)
 
 
@@ -156,6 +175,10 @@ def test_HeatCapacityGas_integrals():
 def test_HeatCapacitySolid():
     NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
 
+    assert eval(str(NaCl)) == NaCl
+    new = HeatCapacitySolid.from_JSON(NaCl.as_JSON())
+    assert new == NaCl
+
     Cps_calc = []
     for i in NaCl.all_methods:
         NaCl.method = i
@@ -183,6 +206,10 @@ def test_HeatCapacitySolid():
 
     NaCl.extrapolation = None
     assert NaCl.T_dependent_property(601) is None
+
+#    assert eval(str(NaCl)) == NaCl # Need tabular data in init
+    new = HeatCapacitySolid.from_JSON(NaCl.as_JSON())
+    assert new == NaCl
 
 
 @pytest.mark.meta_T_dept
@@ -234,6 +261,7 @@ def test_HeatCapacityLiquid():
         tol.method = i
         Cpl_calc.append(tol.T_dependent_property(330))
 
+    assert eval(str(tol)) == tol
 
     Cpls = [165.4728226923247, 166.5239869108539, 166.52164399712314, 175.3439256239127, 166.71561127721478, 157.3, 165.4554033804999, 166.69807427725885, 157.29, 167.3380448453572]
     assert_close1d(sorted(Cpl_calc), sorted(Cpls), rtol=5e-6)

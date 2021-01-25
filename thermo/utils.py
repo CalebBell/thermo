@@ -900,22 +900,24 @@ class TDependentProperty(object):
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
 
+    hash_ignore_props = ('linear_extrapolation_coeffs', 'Antoine_AB_coeffs',
+                         'DIPPR101_ABC_coeffs', 'Watson_coeffs',
+                         'interp1d_extrapolators', 'prop_cached',
+                         'TP_cached', 'tabular_data_interpolators',
+                         'tabular_data_interpolators_P')
     def __hash__(self):
         d = self.__dict__
         # extrapolation values and interpolation objects should be ignored
-        tabular_data_interpolators = d['tabular_data_interpolators']
-        del d['tabular_data_interpolators']
-        try:
-            tabular_data_interpolators_P = d['tabular_data_interpolators_P']
-            del d['tabular_data_interpolators_P']
-        except:
-            pass
+        temp_store = {}
+        for k in self.hash_ignore_props:
+            try:
+                temp_store[k] = d[k]
+                del d[k]
+            except:
+                pass
+
         ans = hash_any_primitive((self.__class__, d))
-        d['tabular_data_interpolators'] = tabular_data_interpolators
-        try:
-            d['tabular_data_interpolators_P'] = tabular_data_interpolators_P
-        except:
-            pass
+        d.update(temp_store)
 
         return ans
 
