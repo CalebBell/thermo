@@ -217,7 +217,7 @@ def test_water_ethanol_methanol_madeup():
     taus_expected = [[0.06687993075720595, 1.9456413587531054, 1.2322559725492486],
      [-0.04186204696272491, 0.07047352903742096, 0.007348860249786843],
      [-0.21212866478360642, 0.13596095401379812, 0.0944497207779701]]
-    assert_close2d(taus_expected, GE.taus(), rtol=1e-12)
+    assert_close2d(taus_expected, GE.taus(), rtol=1e-14)
 
     # Tau temperature derivative
     dtaus_dT_numerical = (np.array(GE.to_T_xs(T+dT, xs).taus()) - GE.taus())/dT
@@ -226,7 +226,7 @@ def test_water_ethanol_methanol_madeup():
      [0.000406561723402744, 0.00034844970187634483, 0.0009043271077256468],
      [0.0011749522864265571, -0.00013143064874333648, 0.0005280368036263511]]
     assert_close2d(dtaus_dT_analytical, dtaus_dT_expected, rtol=1e-12)
-    assert_close2d(dtaus_dT_numerical, dtaus_dT_analytical, rtol=4e-8)
+    assert_close2d(dtaus_dT_numerical, dtaus_dT_analytical, rtol=4e-7)
 
     # tau second derivative
     d2taus_dT2_analytical = GE.d2taus_dT2()

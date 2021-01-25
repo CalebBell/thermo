@@ -81,6 +81,30 @@ def nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas=None, wve
         gammas[i] = exp(tot)
     return gammas
 
+def nrtl_taus(T, N, A, B, E, F, G, H, taus=None):
+
+    if taus is None:
+        taus = [[0.0]*N for _ in range(N)] # numba: delete
+#        taus = zeros((N, N)) # numba: uncomment
+
+    T2 = T*T
+    Tinv = 1.0/T
+    T2inv = Tinv*Tinv
+    logT = log(T)
+    for i in range(N):
+        Ai = A[i]
+        Bi = B[i]
+        Ei = E[i]
+        Fi = F[i]
+        Gi = G[i]
+        Hi = H[i]
+        tausi = taus[i]
+        for j in range(N):
+            tausi[j] = (Ai[j] + Bi[j]*Tinv + Ei[j]*logT
+                            + Fi[j]*T + Gi[j]*T2inv
+                            + Hi[j]*T2)
+    return taus
+
 class NRTL(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
     by the NRTL equation. This model is capable of representing VL and LL
@@ -355,32 +379,41 @@ class NRTL(GibbsExcess):
             return self._taus
         except AttributeError:
             pass
-        tau_coeffs_A = self.tau_coeffs_A
-        tau_coeffs_B = self.tau_coeffs_B
-        tau_coeffs_E = self.tau_coeffs_E
-        tau_coeffs_F = self.tau_coeffs_F
-        tau_coeffs_G = self.tau_coeffs_G
-        tau_coeffs_H = self.tau_coeffs_H
+        A = self.tau_coeffs_A
+        B = self.tau_coeffs_B
+        E = self.tau_coeffs_E
+        F = self.tau_coeffs_F
+        G = self.tau_coeffs_G
+        H = self.tau_coeffs_H
+
+#        tau_coeffs_A = self.tau_coeffs_A
+#        tau_coeffs_B = self.tau_coeffs_B
+#        tau_coeffs_E = self.tau_coeffs_E
+#        tau_coeffs_F = self.tau_coeffs_F
+#        tau_coeffs_G = self.tau_coeffs_G
+#        tau_coeffs_H = self.tau_coeffs_H
+
 
         T, N = self.T, self.N
-        T2 = T*T
-        Tinv = 1.0/T
-        T2inv = Tinv*Tinv
-        logT = log(T)
-
+#        T2 = T*T
+#        Tinv = 1.0/T
+#        T2inv = Tinv*Tinv
+#        logT = log(T)
+#
         # initialize the matrix to be A
-        self._taus = taus = [list(l) for l in tau_coeffs_A]
-        for i in range(N):
-            tau_coeffs_Bi = tau_coeffs_B[i]
-            tau_coeffs_Ei = tau_coeffs_E[i]
-            tau_coeffs_Fi = tau_coeffs_F[i]
-            tau_coeffs_Gi = tau_coeffs_G[i]
-            tau_coeffs_Hi = tau_coeffs_H[i]
-            tausi = taus[i]
-            for j in range(N):
-                tausi[j] += (tau_coeffs_Bi[j]*Tinv + tau_coeffs_Ei[j]*logT
-                             + tau_coeffs_Fi[j]*T + tau_coeffs_Gi[j]*T2inv
-                             + tau_coeffs_Hi[j]*T2)
+        self._taus = taus = nrtl_taus(T, N, A, B, E, F, G, H)
+#        self._taus = taus = [list(l) for l in tau_coeffs_A]
+#        for i in range(N):
+#            tau_coeffs_Bi = tau_coeffs_B[i]
+#            tau_coeffs_Ei = tau_coeffs_E[i]
+#            tau_coeffs_Fi = tau_coeffs_F[i]
+#            tau_coeffs_Gi = tau_coeffs_G[i]
+#            tau_coeffs_Hi = tau_coeffs_H[i]
+#            tausi = taus[i]
+#            for j in range(N):
+#                tausi[j] += (tau_coeffs_Bi[j]*Tinv + tau_coeffs_Ei[j]*logT
+#                             + tau_coeffs_Fi[j]*T + tau_coeffs_Gi[j]*T2inv
+#                             + tau_coeffs_Hi[j]*T2)
         return taus
 
     def dtaus_dT(self):
