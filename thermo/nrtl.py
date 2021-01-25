@@ -126,6 +126,28 @@ def nrtl_dtaus_dT(T, N, B, E, F, G, H, dtaus_dT=None):
             + n2T3inv*Gi[j] + T2*Hi[j])
     return dtaus_dT
 
+def nrtl_d2taus_dT2(T, N, B, E, G, H, d2taus_dT2=None):
+    if d2taus_dT2 is None:
+        d2taus_dT2 = [[0.0]*N for _ in range(N)] # numba: delete
+#        d2taus_dT2 = zeros((N, N)) # numba: uncomment
+
+    Tinv = 1.0/T
+    Tinv2 = Tinv*Tinv
+
+    T3inv2 = 2.0*(Tinv2*Tinv)
+    nT2inv = -Tinv*Tinv
+    T4inv6 = 6.0*(Tinv2*Tinv2)
+    for i in range(N):
+        Bi = B[i]
+        Ei = E[i]
+        Gi = G[i]
+        Hi = H[i]
+        d2taus_dT2i = d2taus_dT2[i]
+        for j in range(N):
+            d2taus_dT2i[j] += (2.0*Hi[j] + T3inv2*Bi[j]
+                                + nT2inv*Ei[j]
+                                + T4inv6*Gi[j])
+    return d2taus_dT2
 
 class NRTL(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
@@ -508,29 +530,30 @@ class NRTL(GibbsExcess):
             return self._d2taus_dT2
         except AttributeError:
             pass
-        tau_coeffs_B = self.tau_coeffs_B
-        tau_coeffs_E = self.tau_coeffs_E
-        tau_coeffs_G = self.tau_coeffs_G
-        tau_coeffs_H = self.tau_coeffs_H
+        B = self.tau_coeffs_B
+        E = self.tau_coeffs_E
+        G = self.tau_coeffs_G
+        H = self.tau_coeffs_H
         T, N = self.T, self.N
 
-        self._d2taus_dT2 = d2taus_dT2 = [[h + h for h in l] for l in tau_coeffs_H]
+#        self._d2taus_dT2 = d2taus_dT2 = [[h + h for h in l] for l in tau_coeffs_H]
+        self._d2taus_dT2 = d2taus_dT2 = nrtl_d2taus_dT2(T, N, B, E, G, H)
 
-        Tinv = 1.0/T
-        Tinv2 = Tinv*Tinv
-
-        T3inv2 = 2.0*(Tinv2*Tinv)
-        nT2inv = -Tinv*Tinv
-        T4inv6 = 6.0*(Tinv2*Tinv2)
-        for i in range(N):
-            tau_coeffs_Bi = tau_coeffs_B[i]
-            tau_coeffs_Ei = tau_coeffs_E[i]
-            tau_coeffs_Gi = tau_coeffs_G[i]
-            d2taus_dT2i = d2taus_dT2[i]
-            for j in range(N):
-                d2taus_dT2i[j] += (T3inv2*tau_coeffs_Bi[j]
-                                   + nT2inv*tau_coeffs_Ei[j]
-                                   + T4inv6*tau_coeffs_Gi[j])
+#        Tinv = 1.0/T
+#        Tinv2 = Tinv*Tinv
+#
+#        T3inv2 = 2.0*(Tinv2*Tinv)
+#        nT2inv = -Tinv*Tinv
+#        T4inv6 = 6.0*(Tinv2*Tinv2)
+#        for i in range(N):
+#            tau_coeffs_Bi = tau_coeffs_B[i]
+#            tau_coeffs_Ei = tau_coeffs_E[i]
+#            tau_coeffs_Gi = tau_coeffs_G[i]
+#            d2taus_dT2i = d2taus_dT2[i]
+#            for j in range(N):
+#                d2taus_dT2i[j] += (T3inv2*tau_coeffs_Bi[j]
+#                                   + nT2inv*tau_coeffs_Ei[j]
+#                                   + T4inv6*tau_coeffs_Gi[j])
         return d2taus_dT2
 
     def d3taus_dT3(self):
