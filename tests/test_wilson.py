@@ -630,4 +630,4 @@ def test_lambdas_performance_py():
     E = [[random()*1e-7 for _ in range(N)] for _ in range(N)]
     F = [[random()*1e-8 for _ in range(N)] for _ in range(N)]
     out = [[0.0]*N for _ in range(N)]
-    thermo.wilson.wilson_lambdas(400.0, N, A, B, C, D, E, F, out)
+    thermo.wilson.interaction_exp(400.0, N, A, B, C, D, E, F, out)

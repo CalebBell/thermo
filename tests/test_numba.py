@@ -23,6 +23,7 @@ SOFTWARE.
 
 from __future__ import division
 from thermo import *
+import thermo
 from math import *
 from random import random
 from fluids.constants import *
@@ -89,6 +90,41 @@ def test_PRMIX_outputs_inputs_np():
         assert type(getattr(eos, attr)) is list
         assert type(getattr(eos_np, attr)) is np.ndarray
 
+
+def check_numba_np_output_activity(model, modelnp, modelnp2):
+    # model is flat, scalar, list-based model
+    # modelnp is numba model
+    # modelnp2 is created from the numba model with to_T_xs at a different composition
+    vec_attrs = ['dGE_dxs', 'gammas', '_gammas_dGE_dxs',
+                 'd2GE_dTdxs', 'dHE_dxs', 'gammas_infinite_dilution', 'dHE_dns',
+                'dnHE_dns', 'dSE_dxs', 'dSE_dns', 'dnSE_dns', 'dGE_dns', 'dnGE_dns', 'd2GE_dTdns',
+                'd2nGE_dTdns', 'dgammas_dT']
+
+    for attr in vec_attrs:
+        assert_close1d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+        assert_close1d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+        assert type(getattr(model, attr)()) is list
+        assert type(getattr(modelnp, attr)()) is np.ndarray
+        assert type(getattr(modelnp2, attr)()) is np.ndarray
+
+    mat_attrs = ['d2GE_dxixjs', 'd2nGE_dninjs', 'dgammas_dns']
+    for attr in mat_attrs:
+        assert_close2d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+        assert_close2d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+        assert type(getattr(model, attr)()) is list
+        assert type(getattr(modelnp, attr)()) is np.ndarray
+        assert type(getattr(modelnp2, attr)()) is np.ndarray
+
+    attrs_3d = ['d3GE_dxixjxks']
+    for attr in attrs_3d:
+        if hasattr(model, attr):
+            # some models do not have this implemented
+            assert_close3d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+            assert_close3d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+            assert type(getattr(model, attr)()) is list
+            assert type(getattr(modelnp, attr)()) is np.ndarray
+            assert type(getattr(modelnp2, attr)()) is np.ndarray
+
 def test_IdealSolution_np_out():
     from thermo import IdealSolution
     from thermo.numba import IdealSolution as IdealSolutionnp
@@ -96,33 +132,7 @@ def test_IdealSolution_np_out():
     modelnp = IdealSolutionnp(T=300.0, xs=np.array([.1, .2, .3, .4]))
     modelnp2 = modelnp.to_T_xs(T=310.0, xs=np.array([.2, .2, .2, .4]))
 
-
-    vec_attrs = ['gammas', '_gammas_dGE_dxs', 'd2GE_dTdxs', 'dGE_dxs', 'dHE_dxs', 'gammas_infinite_dilution', 'dHE_dns',
-                'dnHE_dns', 'dSE_dxs', 'dSE_dns', 'dnSE_dns', 'dGE_dns', 'dnGE_dns', 'd2GE_dTdns',
-                'd2nGE_dTdns', 'dgammas_dT']
-
-    for attr in vec_attrs:
-        assert_close1d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-14)
-        assert_close1d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-14)
-        assert type(getattr(model, attr)()) is list
-        assert type(getattr(modelnp, attr)()) is np.ndarray
-        assert type(getattr(modelnp2, attr)()) is np.ndarray
-
-    mat_attrs = ['d2GE_dxixjs', 'd2nGE_dninjs', 'dgammas_dns']
-    for attr in mat_attrs:
-        assert_close2d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-14)
-        assert_close2d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-14)
-        assert type(getattr(model, attr)()) is list
-        assert type(getattr(modelnp, attr)()) is np.ndarray
-        assert type(getattr(modelnp2, attr)()) is np.ndarray
-
-    attrs_3d = ['d3GE_dxixjxks']
-    for attr in attrs_3d:
-        assert_close3d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-14)
-        assert_close3d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-14)
-        assert type(getattr(model, attr)()) is list
-        assert type(getattr(modelnp, attr)()) is np.ndarray
-        assert type(getattr(modelnp2, attr)()) is np.ndarray
+    check_numba_np_output_activity(model, modelnp, modelnp2)
 
 
 def test_Wilson_numpy_output():
@@ -148,35 +158,33 @@ def test_Wilson_numpy_output():
     modelnp = Wilsonnp(T=T, xs=np.array(xs), ABCDEF=(np.array(A), np.array(B), np.array(C), np.array(D), np.array(E), np.array(F)))
     modelnp2 = modelnp.to_T_xs(T=T, xs=np.array(xs))
 
-    vec_attrs = ['dGE_dxs', 'gammas', '_gammas_dGE_dxs',
-                 'd2GE_dTdxs', 'dHE_dxs', 'gammas_infinite_dilution', 'dHE_dns',
-                'dnHE_dns', 'dSE_dxs', 'dSE_dns', 'dnSE_dns', 'dGE_dns', 'dnGE_dns', 'd2GE_dTdns',
-                'd2nGE_dTdns', 'dgammas_dT']
+    check_numba_np_output_activity(model, modelnp, modelnp2)
 
-    for attr in vec_attrs:
-        assert_close1d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
-        assert_close1d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
-        assert type(getattr(model, attr)()) is list
-        assert type(getattr(modelnp, attr)()) is np.ndarray
-        assert type(getattr(modelnp2, attr)()) is np.ndarray
+def test_NRTL_numpy_output():
+    NRTLnp = thermo.numba.nrtl.NRTL
+    alphas = [[[0.0, 2e-05], [0.2937, 7e-05], [0.2999, 0.0001]],
+     [[0.2937, 1e-05], [0.0, 4e-05], [0.3009, 8e-05]],
+     [[0.2999, 1e-05], [0.3009, 3e-05], [0.0, 5e-05]]]
 
-    mat_attrs = ['d2GE_dxixjs', 'd2nGE_dninjs', 'dgammas_dns']
-    for attr in mat_attrs:
-        assert_close2d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
-        assert_close2d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
-        assert type(getattr(model, attr)()) is list
-        assert type(getattr(modelnp, attr)()) is np.ndarray
-        assert type(getattr(modelnp2, attr)()) is np.ndarray
+    taus = [[[6e-05, 0.0, 7e-05, 7e-05, 0.00788, 3.6e-07],
+      [3e-05, 624.868, 9e-05, 7e-05, 0.00472, 8.5e-07],
+      [3e-05, 398.953, 4e-05, 1e-05, 0.00279, 5.6e-07]],
+     [[1e-05, -29.167, 8e-05, 9e-05, 0.00256, 1e-07],
+      [2e-05, 0.0, 7e-05, 6e-05, 0.00587, 4.2e-07],
+      [0.0, -35.482, 8e-05, 4e-05, 0.00889, 8.2e-07]],
+     [[9e-05, -95.132, 6e-05, 1e-05, 0.00905, 5.2e-07],
+      [9e-05, 33.862, 2e-05, 6e-05, 0.00517, 1.4e-07],
+      [0.0001, 0.0, 6e-05, 2e-05, 0.00095, 7.4e-07]]]
 
-    attrs_3d = ['d3GE_dxixjxks']
-    for attr in attrs_3d:
-        assert_close3d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
-        assert_close3d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
-        assert type(getattr(model, attr)()) is list
-        assert type(getattr(modelnp, attr)()) is np.ndarray
-        assert type(getattr(modelnp2, attr)()) is np.ndarray
+    N = 3
+    T = 273.15+70
+    dT = T*1e-8
+    xs = [.2, .3, .5]
+    model = NRTL(T, xs, taus, alphas)
+    modelnp = NRTLnp(T=T, xs=np.array(xs), tau_coeffs=np.array(taus), alpha_coeffs=np.array(alphas))
+    modelnp2 = modelnp.to_T_xs(T=T, xs=np.array(xs))
 
-
+    check_numba_np_output_activity(model, modelnp, modelnp2)
 
 @mark_as_numba
 def test_a_alpha_aijs_composition_independent_in_all():

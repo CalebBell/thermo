@@ -49,7 +49,7 @@ from __future__ import division
 from math import log, exp
 from fluids.constants import R
 from fluids.numerics import numpy as np
-from thermo.activity import GibbsExcess
+from thermo.activity import GibbsExcess, interaction_exp, dinteraction_exp_dT, d2interaction_exp_dT2, d3interaction_exp_dT3
 
 try:
     zeros, npsum, nplog = np.zeros, np.sum, np.log
@@ -58,124 +58,6 @@ except AttributeError:
 
 __all__ = ['Wilson', 'Wilson_gammas']
 
-
-def wilson_lambdas(T, N, A, B, C, D, E, F, lambdas=None):
-    if lambdas is None:
-        lambdas = [[0.0]*N for i in range(N)] # numba: delete
-#        lambdas = zeros((N, N)) # numba: uncomment
-
-#        # 87% of the time of this routine is the exponential.
-    T2 = T*T
-    Tinv = 1.0/T
-    T2inv = Tinv*Tinv
-    logT = log(T)
-    for i in range(N):
-        Ai = A[i]
-        Bi = B[i]
-        Ci = C[i]
-        Di = D[i]
-        Ei = E[i]
-        Fi = F[i]
-        lambdais = lambdas[i]
-        # Might be more efficient to pass over this matrix later,
-        # and compute all the exps
-        # Spoiler: it was not.
-
-        # Also - it was tested the impact of using fewer terms
-        # there was very little, to no impact from that
-        # the exp is the huge time sink.
-        for j in range(N):
-            lambdais[j] = exp(Ai[j] + Bi[j]*Tinv
-                    + Ci[j]*logT + Di[j]*T
-                    + Ei[j]*T2inv + Fi[j]*T2)
-#            lambdas[i][j] = exp(A[i][j] + B[i][j]*Tinv
-#                    + C[i][j]*logT + D[i][j]*T
-#                    + E[i][j]*T2inv + F[i][j]*T2)
-#    135 µs ± 1.09 µs per loop (mean ± std. dev. of 7 runs, 10000 loops each) # without out specified numba
-#    129 µs ± 2.45 µs per loop (mean ± std. dev. of 7 runs, 10000 loops each) # with out specified numba
-#    118 µs ± 2.67 µs per loop (mean ± std. dev. of 7 runs, 10000 loops each) # without out specified numba 1 term
-#    115 µs ± 1.77 µs per loop (mean ± std. dev. of 7 runs, 10000 loops each) # with out specified numba 1 term
-
-    return lambdas
-
-
-def wilson_dlambdas_dT(T, N, B, C, D, E, F, lambdas, dlambdas_dT=None):
-    if dlambdas_dT is None:
-        dlambdas_dT = [[0.0]*N for i in range(N)] # numba: delete
-#        dlambdas_dT = zeros((N, N)) # numba: uncomment
-
-    T2 = T + T
-    Tinv = 1.0/T
-    nT2inv = -Tinv*Tinv
-    nT3inv2 = 2.0*nT2inv*Tinv
-    for i in range(N):
-        lambdasi = lambdas[i]
-        Bi = B[i]
-        Ci = C[i]
-        Di = D[i]
-        Ei = E[i]
-        Fi = F[i]
-        dlambdas_dTi = dlambdas_dT[i]
-        for j in range(N):
-            dlambdas_dTi[j] = (T2*Fi[j] + Di[j] + Ci[j]*Tinv + Bi[j]*nT2inv
-                             + Ei[j]*nT3inv2)*lambdasi[j]
-    return dlambdas_dT
-
-def wilson_d2lambdas_dT2(T, N, B, C, E, F, lambdas, dlambdas_dT, d2lambdas_dT2=None):
-    if d2lambdas_dT2 is None:
-        d2lambdas_dT2 = [[0.0]*N for i in range(N)] # numba: delete
-#        d2lambdas_dT2 = zeros((N, N)) # numba: uncomment
-
-    Tinv = 1.0/T
-    nT2inv = -Tinv*Tinv
-    T3inv2 = -2.0*nT2inv*Tinv
-    T4inv6 = 3.0*T3inv2*Tinv
-    for i in range(N):
-        lambdasi = lambdas[i]
-        dlambdas_dTi = dlambdas_dT[i]
-        Bi = B[i]
-        Ci = C[i]
-        Ei = E[i]
-        Fi = F[i]
-        d2lambdas_dT2i = d2lambdas_dT2[i]
-        for j in range(N):
-            d2lambdas_dT2i[j] = ((2.0*Fi[j] + nT2inv*Ci[j]
-                             + T3inv2*Bi[j] + T4inv6*Ei[j]
-                               )*lambdasi[j] + dlambdas_dTi[j]*dlambdas_dTi[j]/lambdasi[j])
-    return d2lambdas_dT2
-
-def wilson_d3lambdas_dT3(T, N, B, C, E, F, lambdas, dlambdas_dT, d3lambdas_dT3=None):
-    if d3lambdas_dT3 is None:
-        d3lambdas_dT3 = [[0.0]*N for i in range(N)] # numba: delete
-#        d3lambdas_dT3 = zeros((N, N)) # numba: uncomment
-
-    Tinv = 1.0/T
-    Tinv3 = 3.0*Tinv
-    nT2inv = -Tinv*Tinv
-    nT2inv05 = 0.5*nT2inv
-    T3inv = -nT2inv*Tinv
-    T3inv2 = T3inv+T3inv
-    T4inv3 = 1.5*T3inv2*Tinv
-    T2_12 = -12.0*nT2inv
-
-    for i in range(N):
-        lambdasi = lambdas[i]
-        dlambdas_dTi = dlambdas_dT[i]
-        Bi = B[i]
-        Ci = C[i]
-        Ei = E[i]
-        Fi = F[i]
-        d3lambdas_dT3i = d3lambdas_dT3[i]
-        for j in range(N):
-            term2 = (Fi[j] + nT2inv05*Ci[j] + T3inv*Bi[j] + T4inv3*Ei[j])
-
-            term3 = dlambdas_dTi[j]/lambdasi[j]
-
-            term4 = (T3inv2*(Ci[j] - Tinv3*Bi[j] - T2_12*Ei[j]))
-
-            d3lambdas_dT3i[j] = ((term3*(6.0*term2 + term3*term3) + term4)*lambdasi[j])
-
-    return d3lambdas_dT3
 
 def wilson_xj_Lambda_ijs(xs, lambdas, N, xj_Lambda_ijs=None):
     if xj_Lambda_ijs is None:
@@ -673,9 +555,9 @@ class Wilson(GibbsExcess):
         except AttributeError:
             pass
 
-        lambdas = wilson_lambdas(self.T, self.N, self.lambda_coeffs_A, self.lambda_coeffs_B,
-                     self.lambda_coeffs_C, self.lambda_coeffs_D,
-                     self.lambda_coeffs_E, self.lambda_coeffs_F)
+        lambdas = interaction_exp(self.T, self.N, self.lambda_coeffs_A, self.lambda_coeffs_B,
+                                  self.lambda_coeffs_C, self.lambda_coeffs_D,
+                                  self.lambda_coeffs_E, self.lambda_coeffs_F)
         self._lambdas = lambdas
         return lambdas
 
@@ -715,7 +597,7 @@ class Wilson(GibbsExcess):
             lambdas = self._lambdas
         except AttributeError:
             lambdas = self.lambdas()
-        self._dlambdas_dT = dlambdas_dT = wilson_dlambdas_dT(T, N, B, C, D, E, F, lambdas)
+        self._dlambdas_dT = dlambdas_dT = dinteraction_exp_dT(T, N, B, C, D, E, F, lambdas)
         return dlambdas_dT
 
     def d2lambdas_dT2(self):
@@ -755,11 +637,11 @@ class Wilson(GibbsExcess):
             dlambdas_dT = self._dlambdas_dT
         except AttributeError:
             dlambdas_dT = self.dlambdas_dT()
-        self._d2lambdas_dT2 = d2lambdas_dT2s = wilson_d2lambdas_dT2(T, N, self.lambda_coeffs_B,
-                                                                    self.lambda_coeffs_C,
-                                                                    self.lambda_coeffs_E,
-                                                                    self.lambda_coeffs_F,
-                                                                    lambdas, dlambdas_dT)
+        self._d2lambdas_dT2 = d2lambdas_dT2s = d2interaction_exp_dT2(T, N, self.lambda_coeffs_B,
+                                                                     self.lambda_coeffs_C,
+                                                                     self.lambda_coeffs_E,
+                                                                     self.lambda_coeffs_F,
+                                                                     lambdas, dlambdas_dT)
         return d2lambdas_dT2s
 
     def d3lambdas_dT3(self):
@@ -807,7 +689,7 @@ class Wilson(GibbsExcess):
         except AttributeError:
             dlambdas_dT = self.dlambdas_dT()
 
-        self._d3lambdas_dT3 = d3lambdas_dT3s = wilson_d3lambdas_dT3(T, N, lambda_coeffs_B, lambda_coeffs_C, lambda_coeffs_E, lambda_coeffs_F, lambdas, dlambdas_dT)
+        self._d3lambdas_dT3 = d3lambdas_dT3s = d3interaction_exp_dT3(T, N, lambda_coeffs_B, lambda_coeffs_C, lambda_coeffs_E, lambda_coeffs_F, lambdas, dlambdas_dT)
         return d3lambdas_dT3s
 
     def xj_Lambda_ijs(self):
