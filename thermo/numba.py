@@ -50,7 +50,57 @@ replaced = fluids.numba.numerics_dict.copy()
 def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
     cache_blacklist = set([])
     __funcs.update(normal_fluids.numba.numbafied_fluids_functions.copy())
+
+    blacklist = set(['identify_sort_phases', 'score_phases_S', 'score_phases_VL',
+                     'identity_phase_states', 'sort_phases',
+                    'sequential_substitution_2P',
+                    'sequential_substitution_NP',
+                    'sequential_substitution_Mehra_2P',
+                    'sequential_substitution_GDEM3_2P',
+                    'nonlin_equilibrium_NP',
+                    'nonlin_spec_NP',
+                    'nonlin_2P',
+                    'nonlin_2P_HSGUAbeta',
+                    'nonlin_n_2P',
+                    'nonlin_2P_newton',
+                    'minimize_gibbs_2P_transformed',
+                    'minimize_gibbs_NP_transformed',
+                    'TP_solve_VF_guesses',
+                    'dew_P_newton',
+                    'dew_bubble_newton_zs',
+                    'dew_bubble_Michelsen_Mollerup',
+                    'existence_3P_Michelsen_Mollerup',
+                    'bubble_T_Michelsen_Mollerup',
+                    'dew_T_Michelsen_Mollerup',
+                    'bubble_P_Michelsen_Mollerup',
+                    'dew_P_Michelsen_Mollerup',
+                    'TPV_solve_HSGUA_1P',
+                    'solve_PTV_HSGUA_1P',
+                    'TPV_solve_HSGUA_guesses_1P',
+                    'PH_secant_1P',
+                    'PH_newton_1P',
+                    'TVF_pure_newton',
+                    'TVF_pure_secant',
+                    'PVF_pure_newton',
+                    'PVF_pure_secant',
+                    'TSF_pure_newton',
+                    'PSF_pure_newton',
+                    'solve_T_VF_IG_K_composition_independent',
+                    'solve_P_VF_IG_K_composition_independent',
+                    'sequential_substitution_2P_sat',
+                    'SS_VF_simultaneous',
+                    'sequential_substitution_2P_HSGUAbeta',
+                    'sequential_substitution_2P_double',
+                    'stabiliy_iteration_Michelsen',
+                    'TPV_double_solve_1P',
+                    'TPV_solve_HSGUA_guesses_VL',
+                    'cm_flash_tol',
+                    ])
+
+    __funcs.update(normal_fluids.numba.numbafied_fluids_functions.copy())
+
     new_mods = normal_fluids.numba.transform_module(normal, __funcs, replaced, vec=vec,
+                                                    blacklist=blacklist,
                                                     cache_blacklist=cache_blacklist)
     if vec:
         conv_fun = numba.vectorize
@@ -117,7 +167,11 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                  'eos_alpha_functions.PRSV2_a_alphas_vectorized',
                  'eos_alpha_functions.PRSV2_a_alpha_and_derivatives_vectorized',
                  'eos_alpha_functions.APISRK_a_alphas_vectorized',
-                 'eos_alpha_functions.APISRK_a_alpha_and_derivatives_vectorized']
+                 'eos_alpha_functions.APISRK_a_alpha_and_derivatives_vectorized',
+
+                 'phases.IAPWS95', 'phases.IAPWS95Liquid', 'phases.IAPWS95Gas',
+
+                 ]
     normal_fluids.numba.transform_lists_to_arrays(normal, to_change, __funcs, cache_blacklist=cache_blacklist)
 
 

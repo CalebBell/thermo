@@ -227,6 +227,8 @@ class Phase(object):
     R = fluids.constants.R
     R_inv = 1.0/R
 
+    is_solid = False
+
     ideal_gas_basis = False # Parameter fot has the same ideal gas Cp
     T_REF_IG = 298.15
     T_REF_IG_INV = 1.0/T_REF_IG
@@ -4520,6 +4522,8 @@ class IdealGas(Phase):
     '''
     phase = 'g'
     force_phase = 'g'
+    is_gas = True
+    is_liquid = False
     composition_independent = True
     ideal_gas_basis = True
     def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None, T=None, P=None, zs=None):
@@ -6187,6 +6191,9 @@ CEOSLiquid.is_liquid = True
 class GibbsExcessLiquid(Phase):
     force_phase = 'l'
     phase = 'l'
+    is_gas = False
+    is_liquid = True
+
     P_DEPENDENT_H_LIQ = True
     _Psats_data = None
     Psats_locked = False
@@ -8759,6 +8766,9 @@ class GibbsExcessSolid(GibbsExcessLiquid):
     ideal_gas_basis = True
     force_phase = 's'
     phase = 's'
+    is_gas = False
+    is_liquid = False
+    is_solid = True
     def __init__(self, SublimationPressures, VolumeSolids=None,
                  GibbsExcessModel=IdealSolution(),
                  eos_pure_instances=None,
@@ -8781,6 +8791,8 @@ Grayson_Streed_special_CASs = set(['1333-74-0', '74-82-8'])
 
 class GraysonStreed(Phase):
     phase = force_phase = 'l'
+    is_gas = False
+    is_liquid = True
     # revised one
 
     hydrogen_coeffs = (1.50709, 2.74283, -0.0211, 0.00011, 0.0, 0.008585, 0.0, 0.0, 0.0, 0.0)
@@ -9024,6 +9036,8 @@ class VirialCorrelationsPitzerCurl(object):
 class VirialGas(Phase):
     phase = 'g'
     force_phase = 'g'
+    is_gas = True
+    is_liquid = False
     ideal_gas_basis = True
     def __init__(self, model, HeatCapacityGases=None, Hfs=None, Gfs=None, T=None, P=None, zs=None,
                  ):
@@ -9457,6 +9471,8 @@ class VirialGas(Phase):
         return d2C_dT2
 
 class HumidAirRP1485(VirialGas):
+    is_gas = True
+    is_liquid = False
     def __init__(self, Hfs=None, Gfs=None, T=None, P=None, zs=None,
                  ):
         # Although in put is zs, it is required to be in the order of
@@ -10113,6 +10129,9 @@ class HelmholtzEOS(Phase):
         return T_red*(2.0*f0 + tau*f1)/(T*T*T*self.rho_red*self.rho_red)
 
 class DryAirLemmon(HelmholtzEOS):
+    is_gas = True
+    is_liquid = False
+
     _MW = lemmon2000_air_MW
     _MW = 28.96546 # CoolProp
     rho_red = lemmon2000_air_rho_reducing
@@ -10235,7 +10254,7 @@ class IAPWS95(HelmholtzEOS):
 #    HeatCapacityGases = iapws_correlations.HeatCapacityGases
 
     T_MAX_FIXED = 5000.0
-    T_MIN_FIXED = 245.0
+    T_MIN_FIXED = 235.0
 
     _d4Ar_ddelta2dtau2_func = staticmethod(iapws95_d4Ar_ddelta2dtau2)
     _d3Ar_ddeltadtau2_func = staticmethod(iapws95_d3Ar_ddeltadtau2)
@@ -10346,10 +10365,14 @@ class IAPWS95(HelmholtzEOS):
 
 
 class IAPWS95Gas(IAPWS95):
+    is_gas = True
+    is_liquid = False
     force_phase = 'g'
 
 class IAPWS95Liquid(IAPWS95):
     force_phase = 'l'
+    is_gas = False
+    is_liquid = True
 
 class IAPWS97(Phase):
     _MW = 18.015268
@@ -11260,9 +11283,13 @@ class CoolPropPhase(Phase):
 
 class CoolPropLiquid(CoolPropPhase):
     prefer_phase = CPliquid
+    is_gas = False
+    is_liquid = True
 
 class CoolPropGas(CoolPropPhase):
     prefer_phase = CPgas
+    is_gas = True
+    is_liquid = False
 
 class CombinedPhase(Phase):
     def __init__(self, phases, equilibrium=None, thermal=None, volume=None,

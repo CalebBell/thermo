@@ -35,6 +35,7 @@ import pytest
 try:
     import numba
     import thermo.numba
+    import numba.core
 except:
     numba = None
 import numpy as np
@@ -230,6 +231,27 @@ def test_a_alpha_and_derivatives_full():
     assert_close1d(a_alpha_ijs, a_alpha_ijs0, rtol=1e-13)
     assert_close1d(da_alpha_dT_ijs, da_alpha_dT_ijs0, rtol=1e-13)
     assert_close1d(d2a_alpha_dT2_ijs0, d2a_alpha_dT2_ijs, rtol=1e-13)
+
+
+@mark_as_numba
+def test_IAPWS95_numba():
+    assert isinstance(thermo.numba.flash.Psat_IAPWS, numba.core.registry.CPUDispatcher)
+    assert isinstance(thermo.numba.phases.IAPWS95._d3Ar_ddeltadtau2_func, numba.core.registry.CPUDispatcher)
+
+    from thermo.numba import IAPWS95, IAPWS95Liquid, IAPWS95Gas, FlashPureVLS
+
+    liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
+    gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
+    flasher = FlashPureVLS(iapws_constants, iapws_correlations, gas, [liquid], [])
+
+    assert_close(flasher.flash(T=1000,P=1e4).H(), 71901.67235666412, rtol=1e-8) # TP
+    assert_close(flasher.flash(P=1e5, V=.1).T, 1202.8504507662728, rtol=1e-8) # PV
+    assert_close(flasher.flash(T=1000, V=.1).P, 83126.1092778793, rtol=1e-8) # TV
+
+    assert_close(flasher.flash(P=1e5,VF=1).T, 372.7559288971221, rtol=1e-8) # PVF
+    assert_close(flasher.flash(T=300, VF=.5).P, 3536.806752274638, rtol=1e-8) # TVF
+# assert_close(flasher.flash(P=1e4, H=71901.67235666412).T, 1000, rtol=1e-8) # PH - not working yet
+
 
 
 @mark_as_numba
