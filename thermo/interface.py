@@ -66,7 +66,7 @@ __all__ = ['surface_tension_methods', 'SurfaceTension',
 
 import os
 from chemicals.utils import log, exp, isnan
-from chemicals.utils import mixing_simple, none_and_length_check, Vm_to_rho
+from chemicals.utils import mixing_simple, none_and_length_check, Vm_to_rho, property_molar_to_mass
 from chemicals.dippr import EQ106
 from chemicals.interface import *
 from chemicals import interface
@@ -134,8 +134,8 @@ class SurfaceTension(TDependentProperty):
         Liquid molar volume at a given temperature and pressure or callable
         for the same, [m^3/mol]
     Cpl : float or callable, optional
-        Mass heat capacity of the fluid at a pressure and temperature or
-        or callable for the same, [J/kg/K]
+        Molar heat capacity of the fluid at a pressure and temperature or
+        or callable for the same, [J/mol/K]
     load_data : bool, optional
         If False, do not load property coefficients from data sources in files
         [-]
@@ -400,6 +400,7 @@ class SurfaceTension(TDependentProperty):
             # Cache Cpl at Tb for ease of calculation of Tmax
             self.Cpl_Tb = self.Cpl(self.Tb) if hasattr(self.Cpl, '__call__') else self.Cpl
             if self.Cpl_Tb:
+                self.Cpl_Tb = property_molar_to_mass(self.Cpl_Tb, self.MW)
                 methods.append(ALEEM)
                 # Tmin and Tmax for this method is known
                 Tmax_possible = self.Tb + self.Hvap_Tb/self.Cpl_Tb
@@ -459,6 +460,7 @@ class SurfaceTension(TDependentProperty):
             sigma = Miqueu(T, self.Tc, self.Vc, self.omega)
         elif method == ALEEM:
             Cpl = self.Cpl(T) if hasattr(self.Cpl, '__call__') else self.Cpl
+            Cpl = property_molar_to_mass(Cpl, self.MW)
             Vml = self.Vml(T) if hasattr(self.Vml, '__call__') else self.Vml
             rhol = Vm_to_rho(Vml, self.MW)
             sigma = Aleem(T=T, MW=self.MW, Tb=self.Tb, rhol=rhol, Hvap_Tb=self.Hvap_Tb, Cpl=Cpl)

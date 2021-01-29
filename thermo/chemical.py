@@ -1183,8 +1183,7 @@ class Chemical(object): # pragma: no cover
                                                              mug=self.ViscosityGas.T_dependent_property,
                                                              poly_fit=get_chemical_constants(self.CAS, 'ThermalConductivityGas'))
 
-        Cpl_calc = lambda T : property_molar_to_mass(self.HeatCapacityLiquid.T_dependent_property(T), self.MW)
-        self.SurfaceTension = SurfaceTension(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, StielPolar=self.StielPolar, Hvap_Tb=self.Hvap_Tb, Vml=self.VolumeLiquid.T_dependent_property, Cpl=Cpl_calc,
+        self.SurfaceTension = SurfaceTension(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, StielPolar=self.StielPolar, Hvap_Tb=self.Hvap_Tb, Vml=self.VolumeLiquid.T_dependent_property, Cpl=self.HeatCapacityLiquid,
                                              poly_fit=get_chemical_constants(self.CAS, 'SurfaceTension'))
 
         self.Permittivity = PermittivityLiquid(CASRN=self.CAS)

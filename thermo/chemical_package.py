@@ -738,13 +738,9 @@ class ChemicalConstantsPackage(object):
         Van_der_Waals_volumes = [Van_der_Waals_volume(UNIFAC_Rs[i]) if UNIFAC_Rs[i] is not None else None for i in range(N)]
         Van_der_Waals_areas = [Van_der_Waals_area(UNIFAC_Qs[i]) if UNIFAC_Qs[i] is not None else None for i in range(N)]
 
-        Cpl_lambdas = []
-        for i in range(N):
-             Cpl_lambdas.append(lambda T : property_molar_to_mass(HeatCapacityLiquids[i].T_dependent_property(T), MWs[i]))
-
         SurfaceTensions = [SurfaceTension(CASRN=CASs[i], MW=MWs[i], Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i], Zc=Zcs[i],
                           omega=omegas[i], StielPolar=StielPolars[i], Hvap_Tb=Hvap_Tbs[i], Vml=VolumeLiquids[i].T_dependent_property,
-                          Cpl= Cpl_lambdas[i], poly_fit=get_chemical_constants(CASs[i], 'SurfaceTension'))
+                          Cpl=HeatCapacityLiquids[i], poly_fit=get_chemical_constants(CASs[i], 'SurfaceTension'))
                                              for i in range(N)]
 
         sigma_STPs = [SurfaceTensions[i].T_dependent_property(298.15) for i in range(N)]
