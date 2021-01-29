@@ -1628,6 +1628,8 @@ class VolumeGas(TPDependentProperty):
         '''Set of all high-pressure methods available for a given CASRN and
         properties; filled by :obj:`load_all_methods`.'''
 
+        self.all_methods = set()
+
         self.load_all_methods(load_data)
         self.extrapolation = extrapolation
 

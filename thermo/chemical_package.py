@@ -739,7 +739,7 @@ class ChemicalConstantsPackage(object):
         Van_der_Waals_areas = [Van_der_Waals_area(UNIFAC_Qs[i]) if UNIFAC_Qs[i] is not None else None for i in range(N)]
 
         SurfaceTensions = [SurfaceTension(CASRN=CASs[i], MW=MWs[i], Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i], Zc=Zcs[i],
-                          omega=omegas[i], StielPolar=StielPolars[i], Hvap_Tb=Hvap_Tbs[i], Vml=VolumeLiquids[i].T_dependent_property,
+                          omega=omegas[i], StielPolar=StielPolars[i], Hvap_Tb=Hvap_Tbs[i], Vml=VolumeLiquids[i],
                           Cpl=HeatCapacityLiquids[i], poly_fit=get_chemical_constants(CASs[i], 'SurfaceTension'))
                                              for i in range(N)]
 
@@ -815,12 +815,11 @@ class ChemicalConstantsPackage(object):
 
         PermittivityLiquids = [PermittivityLiquid(CASRN=CASs[i], poly_fit=get_chemical_constants(CASs[i], 'PermittivityLiquid')) for i in range(N)]
 
-        ViscosityLiquids = [ViscosityLiquid(CASRN=CASs[i], MW=MWs[i], Tm=Tms[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i], omega=omegas[i], Psat=VaporPressures[i].T_dependent_property,
-                                            Vml=VolumeLiquids[i].T_dependent_property, poly_fit=get_chemical_constants(CASs[i], 'ViscosityLiquid')) for i in range(N)]
+        ViscosityLiquids = [ViscosityLiquid(CASRN=CASs[i], MW=MWs[i], Tm=Tms[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i], omega=omegas[i], Psat=VaporPressures[i],
+                                            Vml=VolumeLiquids[i], poly_fit=get_chemical_constants(CASs[i], 'ViscosityLiquid')) for i in range(N)]
 
-        Vmg_atm_T_dependents = [lambda T : VolumeGases[i].TP_dependent_property(T, 101325.0) for i in range(N)]
         ViscosityGases = [ViscosityGas(CASRN=CASs[i], MW=MWs[i], Tc=Tcs[i], Pc=Pcs[i], Zc=Zcs[i], dipole=dipoles[i],
-                                       Vmg=Vmg_atm_T_dependents[i], poly_fit=get_chemical_constants(CASs[i], 'ViscosityGas')) for i in range(N)]
+                                       Vmg=VolumeGases[i], poly_fit=get_chemical_constants(CASs[i], 'ViscosityGas')) for i in range(N)]
 
         ThermalConductivityLiquids = [ThermalConductivityLiquid(CASRN=CASs[i], MW=MWs[i], Tm=Tms[i], Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i],
                                                                 omega=omegas[i], Hfus=Hfus_Tms[i], poly_fit=get_chemical_constants(CASs[i], 'ThermalConductivityLiquid'))
@@ -828,7 +827,7 @@ class ChemicalConstantsPackage(object):
 
         ThermalConductivityGases =[ThermalConductivityGas(CASRN=CASs[i], MW=MWs[i], Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i],
                                                           Zc=Zcs[i], omega=omegas[i], dipole=dipoles[i], Vmg=VolumeGases[i],
-                                                          Cpgm=HeatCapacityGases[i].T_dependent_property, mug=ViscosityGases[i].T_dependent_property,
+                                                          Cpgm=HeatCapacityGases[i], mug=ViscosityGases[i],
                                                           poly_fit=get_chemical_constants(CASs[i], 'ThermalConductivityGas'))
                                                           for i in range(N)]
         properties = PropertyCorrelationsPackage(constants, VaporPressures=VaporPressures, SublimationPressures=SublimationPressures,
@@ -1461,7 +1460,7 @@ class PropertyCorrelationsPackage(object):
         if ViscosityLiquids is None and not skip_missing:
             ViscosityLiquids = [ViscosityLiquid(CASRN=constants.CASs[i], MW=constants.MWs[i], Tm=constants.Tms[i],
                                                 Tc=constants.Tcs[i], Pc=constants.Pcs[i], Vc=constants.Vcs[i],
-                                                omega=constants.omegas[i], Psat=VaporPressures[i].T_dependent_property,
+                                                omega=constants.omegas[i], Psat=VaporPressures[i],
                                                 Vml=VolumeLiquids[i])
                                 for i in cmps]
 
@@ -1483,7 +1482,7 @@ class PropertyCorrelationsPackage(object):
                                                                Tc=constants.Tcs[i], Pc=constants.Pcs[i], Vc=constants.Vcs[i],
                                                                Zc=constants.Zcs[i], omega=constants.omegas[i], dipole=constants.dipoles[i],
                                                                Vmg=VolumeGases[i], mug=ViscosityLiquids[i].T_dependent_property,
-                                                               Cpgm=HeatCapacityGases[i].T_dependent_property)
+                                                               Cpgm=HeatCapacityGases[i])
                                                 for i in cmps]
 
         if SurfaceTensions is None and not skip_missing:

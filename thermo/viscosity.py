@@ -115,7 +115,7 @@ from chemicals.viscosity import *
 from chemicals.viscosity import viscosity_gas_Gharagheizi, dPPDS9_dT
 
 from thermo.utils import NEGLIGIBLE, DIPPR_PERRY_8E, BESTFIT, VDI_TABULAR, VDI_PPDS, COOLPROP
-from thermo.volume import VolumeGas
+from thermo.volume import VolumeGas, VolumeLiquid
 from thermo.vapor_pressure import VaporPressure
 
 DUTT_PRASAD = 'DUTT_PRASAD'
@@ -310,8 +310,8 @@ class ViscosityLiquid(TPDependentProperty):
     ranked_methods_P = [COOLPROP, LUCAS]
     '''Default rankings of the high-pressure methods.'''
 
-    obj_references = pure_references = ('Psat',)
-    obj_references_types = pure_reference_types = (VaporPressure,)
+    obj_references = pure_references = ('Psat', 'Vml')
+    obj_references_types = pure_reference_types = (VaporPressure, VolumeLiquid)
 
     custom_args = ('MW', 'Tm', 'Tc', 'Pc', 'Vc', 'omega', 'Psat', 'Vml')
 

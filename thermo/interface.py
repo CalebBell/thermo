@@ -76,7 +76,7 @@ from thermo.utils import TDependentProperty, MixtureProperty
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
 from thermo.volume import VolumeLiquid
-
+from thermo.heat_capacity import HeatCapacityLiquid
 
 
 STREFPROP = 'REFPROP'
@@ -255,6 +255,14 @@ class SurfaceTension(TDependentProperty):
 
     custom_args = ('MW', 'Tb', 'Tc', 'Pc', 'Vc', 'Zc', 'omega', 'StielPolar',
                    'Hvap_Tb', 'Vml', 'Cpl')
+
+
+
+
+
+    obj_references = pure_references = ('Vml', 'Cpl')
+    obj_references_types = pure_reference_types = (VolumeLiquid, HeatCapacityLiquid)
+
 
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
                  omega=None, StielPolar=None, Hvap_Tb=None, CASRN='', Vml=None,

@@ -801,6 +801,10 @@ class HeatCapacityLiquid(TDependentProperty):
                         'Zabransky_quasipolynomial', 'Zabransky_quasipolynomial_iso',
                         'Zabransky_quasipolynomial_sat', 'CP_f')
 
+    obj_references = pure_references = ('Cpgm',)
+    obj_references_types = pure_reference_types = (HeatCapacityGas,)
+
+
     custom_args = ('MW', 'similarity_variable', 'Tc', 'omega', 'Cpgm')
     def __init__(self, CASRN='', MW=None, similarity_variable=None, Tc=None,
                  omega=None, Cpgm=None, load_data=True,

@@ -75,6 +75,7 @@ from chemicals import phase_change
 from chemicals.phase_change import *
 
 from thermo.vapor_pressure import VaporPressure
+from thermo.heat_capacity import HeatCapacityGas, HeatCapacitySolid
 from thermo.utils import TDependentProperty
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids, CoolProp_failing_PT_flashes
 
@@ -707,6 +708,10 @@ class EnthalpySublimation(TDependentProperty):
 
     ranked_methods = [GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM,
                       GHARAGHEIZI_HSUB_298]
+
+    obj_references = pure_references = ('Cpg', 'Cps', 'Hvap')
+    obj_references_types = pure_reference_types = (HeatCapacityGas, HeatCapacitySolid, EnthalpyVaporization)
+
 
     custom_args = ('Tm', 'Tt', 'Cpg', 'Cps', 'Hvap')
     def __init__(self, CASRN='', Tm=None, Tt=None, Cpg=None, Cps=None,
