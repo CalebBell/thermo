@@ -7013,7 +7013,6 @@ class FlashPureVLS(Flash):
 
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
         betas = [1.0]
-        zs = [1.0]
         liquids = []
         solids = []
 
