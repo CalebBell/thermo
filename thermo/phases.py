@@ -591,7 +591,7 @@ class Phase(object):
         zs, T = self.zs, self.T
         G_dep_RT = 0.0
         lnphis = self.lnphis()
-        G_dep_RT = sum(zs[i]*lnphis[i] for i in self.cmps)
+        G_dep_RT = sum(zs[i]*lnphis[i] for i in range(self.N))
         G_dep = G_dep_RT*R*T
         return abs(1.0 - G_dep/self.G_dep())
 
@@ -660,7 +660,7 @@ class Phase(object):
         '''
         zs, P = self.zs, self.P
         dlnphis_dP = self.dlnphis_dP()
-        lhs = sum(zs[i]*dlnphis_dP[i] for i in self.cmps)
+        lhs = sum(zs[i]*dlnphis_dP[i] for i in range(self.N))
         Z_calc = lhs*P + 1.0
         V_calc = Z_calc*self.R*self.T/P
         V = self.V()
@@ -684,7 +684,7 @@ class Phase(object):
         H0 = self.H_ideal_gas()
         dlnphis_dT = self.dlnphis_dT()
         T, zs = self.T, self.zs
-        for i in self.cmps:
+        for i in range(self.N):
             H0 -= R*T*T*zs[i]*dlnphis_dT[i]
         return H0
 
@@ -707,7 +707,7 @@ class Phase(object):
         lnphis = self.lnphis()
         dlnphis_dT = self.dlnphis_dT()
         T, zs = self.T, self.zs
-        for i in self.cmps:
+        for i in range(self.N):
             S0 -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
         return S0
 
@@ -727,7 +727,7 @@ class Phase(object):
         '''
         zs, P = self.zs, self.P
         dlnphis_dP = self.dlnphis_dP()
-        obj = sum(zs[i]*dlnphis_dP[i] for i in self.cmps)
+        obj = sum(zs[i]*dlnphis_dP[i] for i in range(self.N))
         Z = P*obj + 1.0
         return Z*self.R*self.T/P
 
@@ -750,7 +750,12 @@ class Phase(object):
         # be used when all models use an ideal gas basis
         zs = self.zs
         log_zs = self.log_zs()
-        return self.G_dep() + self.T*R*sum([zs[i]*log_zs[i] for i in self.cmps])
+        G_crit = 0.0
+        for i in range(self.N):
+            G_crit += zs[i]*log_zs[i]
+
+        G_crit = G_crit*R*self.T + self.G_dep()
+        return G_crit
 
     def lnphis_at_zs(self, zs):
         r'''Method to directly calculate the log fugacity coefficients at a
@@ -884,7 +889,7 @@ class Phase(object):
         lnphis = self.lnphis()
         logP = log(P)
         log_zs = self.log_zs()
-        return [logP + log_zs[i] + lnphis[i] for i in self.cmps]
+        return [logP + log_zs[i] + lnphis[i] for i in range(self.N)]
 
     fugacities_lowest_Gibbs = fugacities
 
@@ -967,7 +972,7 @@ class Phase(object):
         except AttributeError:
             phis = self.phis()
 
-        self._dphis_dT = [dlnphis_dT[i]*phis[i] for i in self.cmps]
+        self._dphis_dT = [dlnphis_dT[i]*phis[i] for i in range(self.N)]
         return self._dphis_dT
 
     def dphis_dP(self):
@@ -1001,7 +1006,7 @@ class Phase(object):
         except AttributeError:
             phis = self.phis()
 
-        self._dphis_dP = [dlnphis_dP[i]*phis[i] for i in self.cmps]
+        self._dphis_dP = [dlnphis_dP[i]*phis[i] for i in range(self.N)]
         return self._dphis_dP
 
     def dfugacities_dP(self):
@@ -1035,7 +1040,7 @@ class Phase(object):
             phis = self.phis()
 
         P, zs = self.P, self.zs
-        return [zs[i]*(P*dphis_dP[i] + phis[i]) for i in self.cmps]
+        return [zs[i]*(P*dphis_dP[i] + phis[i]) for i in range(self.N)]
 
     def dfugacities_dns(self):
         r'''Method to calculate and return the mole number derivative of the
@@ -1067,7 +1072,7 @@ class Phase(object):
         phis = self.phis()
         dlnphis_dns = self.dlnphis_dns()
 
-        P, zs, cmps = self.P, self.zs, self.cmps
+        P, zs, cmps = self.P, self.zs, range(self.N)
         matrix = []
         for i in cmps:
             phi_P = P*phis[i]
@@ -1095,7 +1100,7 @@ class Phase(object):
         Notes
         -----
         '''
-        zs, cmps = self.zs, self.cmps
+        zs, cmps = self.zs, range(self.N)
         fugacities = self.fugacities()
         dlnfugacities_dns = [list(i) for i in self.dfugacities_dns()]
         fugacities_inv = [1.0/fi for fi in fugacities]
@@ -1122,7 +1127,7 @@ class Phase(object):
         Notes
         -----
         '''
-        zs, cmps = self.zs, self.cmps
+        zs, cmps = self.zs, range(self.N)
         fugacities = self.fugacities()
         dlnfugacities_dzs = [list(i) for i in self.dfugacities_dzs()]
         fugacities_inv = [1.0/fi for fi in fugacities]
@@ -2049,7 +2054,7 @@ class Phase(object):
         dS_dzs = self.dS_dzs()
         dH_dzs = self.dH_dzs()
         T, Hfs, Sfs = self.T, self.Hfs, self.Sfs
-        dG_reactive_dzs = [Hfs[i] - T*(Sfs[i] + dS_dzs[i]) + dH_dzs[i] for i in self.cmps]
+        dG_reactive_dzs = [Hfs[i] - T*(Sfs[i] + dS_dzs[i]) + dH_dzs[i] for i in range(self.N)]
         dG_reactive_dns = dxs_to_dns(dG_reactive_dzs, self.zs)
         chemical_potentials = dns_to_dn_partials(dG_reactive_dns, self.G_reactive())
         self._chemical_potentials = chemical_potentials
@@ -2080,7 +2085,7 @@ class Phase(object):
         # CORRECT DO NOT CHANGE
         fugacities = self.fugacities()
         fugacities_std = self.fugacities_std() # TODO implement fugacities_std
-        return [fugacities[i]/fugacities_std[i] for i in self.cmps]
+        return [fugacities[i]/fugacities_std[i] for i in range(self.N)]
 
     def gammas(self):
         r'''Method to calculate and return the activity coefficients of the
@@ -2106,14 +2111,14 @@ class Phase(object):
         # the most generally used one for EOSs; and activity methods
         # override this
         phis = self.phis()
-        phis_pure = []
-        T, P, zs, cmps, N = self.T, self.P, self.zs, self.cmps, self.N
-        for i in cmps:
+        gammas = []
+        T, P, zs, N = self.T, self.P, self.zs, self.N
+        for i in range(N):
             zeros = [0.0]*N
             zeros[i] = 1.0
             phi = self.to_TP_zs(T=T, P=P, zs=zeros).phis()[i]
-            phis_pure.append(phi)
-        return [phis[i]/phis_pure[i] for i in cmps]
+            gammas.append(phis[i]/phi)
+        return gammas
 
     def Cp_Cv_ratio(self):
         r'''Method to calculate and return the Cp/Cv ratio of the phase.
@@ -2996,7 +3001,7 @@ class Phase(object):
 
     def _Cp_pure_fast(self, Cps_data):
         Cps = []
-        T, cmps = self.T, self.cmps
+        T, cmps = self.T, range(self.N)
         Tmins, Tmaxs, coeffs = Cps_data[0], Cps_data[3], Cps_data[12]
         Tmin_slopes = Cps_data[1]
         Tmin_values = Cps_data[2]
@@ -3017,7 +3022,7 @@ class Phase(object):
 
     def _dCp_dT_pure_fast(self, Cps_data):
         dCps = []
-        T, cmps = self.T, self.cmps
+        T, cmps = self.T, range(self.N)
         Tmins, Tmaxs, coeffs = Cps_data[0], Cps_data[3], Cps_data[12]
         Tmin_slopes = Cps_data[1]
         Tmin_values = Cps_data[2]
@@ -3039,7 +3044,7 @@ class Phase(object):
 
     def _Cp_integrals_pure_fast(self, Cps_data):
         Cp_integrals_pure = []
-        T, cmps = self.T, self.cmps
+        T, cmps = self.T, range(self.N)
         Tmins, Tmaxes, int_coeffs = Cps_data[0], Cps_data[3], Cps_data[13]
         for i in cmps:
             # If indeed everything is working here, need to optimize to decide what to store
@@ -3094,7 +3099,7 @@ class Phase(object):
 
     def _Cp_integrals_over_T_pure_fast(self, Cps_data):
         Cp_integrals_over_T_pure = []
-        T, cmps = self.T, self.cmps
+        T, cmps = self.T, range(self.N)
         Tmins, Tmaxes, T_int_T_coeffs = Cps_data[0], Cps_data[3], Cps_data[14]
         logT = log(T)
         for i in cmps:
@@ -3261,7 +3266,7 @@ class Phase(object):
 #            l2 = self.to_TP_zs(T, self.P, self.zs)
 #            return l2._Cpls_pure()[i] + (l2.Vms_sat()[i] - T*l2.dVms_sat_dT()[i])*l2.dPsats_dT()[i]
 #        from scipy.integrate import quad
-#        vals = [float(quad(to_quad, self.T_REF_IG, self.T, args=i)[0]) for i in self.cmps]
+#        vals = [float(quad(to_quad, self.T_REF_IG, self.T, args=i)[0]) for i in range(self.N)]
 ##        print(vals, self._Cp_integrals_pure_fast(self._Cpls_data))
 #        return vals
 
@@ -3283,7 +3288,7 @@ class Phase(object):
 #            l2 = self.to_TP_zs(T, self.P, self.zs)
 #            return (l2._Cpls_pure()[i] + (l2.Vms_sat()[i] - T*l2.dVms_sat_dT()[i])*l2.dPsats_dT()[i])/T
 #        from scipy.integrate import quad
-#        vals = [float(quad(to_quad, self.T_REF_IG, self.T, args=i)[0]) for i in self.cmps]
+#        vals = [float(quad(to_quad, self.T_REF_IG, self.T, args=i)[0]) for i in range(self.N)]
 ##        print(vals, self._Cp_integrals_over_T_pure_fast(self._Cpls_data))
 #        return vals
 
@@ -3350,7 +3355,7 @@ class Phase(object):
             pass
         Cpig_integrals_over_T_pure = self.Cpig_integrals_over_T_pure()
         log_zs = self.log_zs()
-        T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
+        T, P, zs, cmps = self.T, self.P, self.zs, range(self.N)
         P_REF_IG_INV = self.P_REF_IG_INV
         S = 0.0
         S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
@@ -3379,7 +3384,7 @@ class Phase(object):
             pass
         Cpigs_pure = self.Cpigs_pure()
         Cp, zs = 0.0, self.zs
-        for i in self.cmps:
+        for i in range(self.N):
             Cp += zs[i]*Cpigs_pure[i]
         self._Cp_ideal_gas = Cp
         return Cp
@@ -3488,13 +3493,13 @@ class Phase(object):
                 except:
                     Tcs, Pcs = self.constants.Tcs, self.constants.Pcs
             Pmc, Tmc = 0.0, 0.0
-            for i in self.cmps:
+            for i in range(self.N):
                 Pmc += Pcs[i]*zs[i]
 
             Tc_rts = [sqrt(Tc) for Tc in Tcs]
-            for i in self.cmps:
+            for i in range(self.N):
                 tot = 0.0
-                for j in self.cmps:
+                for j in range(self.N):
                     tot += zs[j]*Tc_rts[j]
                 Tmc += tot*Tc_rts[i]*zs[i]
         except:
@@ -3859,7 +3864,7 @@ class Phase(object):
             pass
         zs, MWs = self.zs, self.constants.MWs
         MW = 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             MW += zs[i]*MWs[i]
         self._MW = MW
         return MW
@@ -4315,7 +4320,7 @@ class Phase(object):
         except AttributeError:
             pass
         MWs = self.constants.MWs
-        zs, cmps = self.zs, self.cmps
+        zs, cmps = self.zs, range(self.N)
         ws = [zs[i]*MWs[i] for i in cmps]
         Mavg = 1.0/sum(ws)
         for i in cmps:
@@ -4897,7 +4902,7 @@ class IdealGas(Phase):
         except AttributeError:
             Cpig_integrals_pure = self.Cpig_integrals_pure()
         H = 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             H += zs[i]*Cpig_integrals_pure[i]
         self._H = H
         return H

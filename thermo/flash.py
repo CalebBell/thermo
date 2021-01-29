@@ -4355,8 +4355,7 @@ class Flash(object):
                                                     skip_solids=self.skip_solids)
 
             a_phase = id_phases[0]
-            T, P = a_phase.T, a_phase.P
-            return dest(T, P, zs, gas=g, liquids=ls, solids=ss,
+            return dest(a_phase.T, a_phase.P, zs, gas=g, liquids=ls, solids=ss,
                                     betas=betas, flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
