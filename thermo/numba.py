@@ -170,6 +170,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                  'eos_alpha_functions.APISRK_a_alpha_and_derivatives_vectorized',
 
                  'phases.IAPWS95', 'phases.IAPWS95Liquid', 'phases.IAPWS95Gas',
+                 'phases.DryAirLemmon',
 
                  ]
     normal_fluids.numba.transform_lists_to_arrays(normal, to_change, __funcs, cache_blacklist=cache_blacklist)

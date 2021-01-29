@@ -10131,6 +10131,7 @@ class HelmholtzEOS(Phase):
 class DryAirLemmon(HelmholtzEOS):
     is_gas = True
     is_liquid = False
+    force_phase = 'g'
 
     _MW = lemmon2000_air_MW
     _MW = 28.96546 # CoolProp

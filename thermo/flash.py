@@ -4352,7 +4352,7 @@ class Flash(object):
 
             g, ls, ss, betas = identify_sort_phases(id_phases, betas, constants,
                                                     correlations, settings=settings,
-                                                    skip_solids=not bool(self.solids))
+                                                    skip_solids=self.skip_solids)
 
             a_phase = id_phases[0]
             T, P = a_phase.T, a_phase.P
@@ -4465,7 +4465,7 @@ class Flash(object):
             if self.N > 1:
                 g, ls, ss, betas = identify_sort_phases(phases, betas, constants,
                                                         correlations, settings=settings,
-                                                        skip_solids=not bool(self.solids))
+                                                        skip_solids=self.skip_solids)
 
             return dest(T, P, zs, gas=g, liquids=ls, solids=ss,
                                     betas=betas, flash_specs=flash_specs,
@@ -5520,6 +5520,7 @@ class FlashVL(Flash):
     HSGUA_NEWTON_ANALYTICAL_JAC = True
 
     solids = None
+    skip_solids = True
     K_composition_independent = False
 
     max_liquids = 1
@@ -6263,6 +6264,8 @@ class FlashVLN(FlashVL):
         self.phases = [gas] + liquids if gas is not None else liquids
         if solids:
             raise ValueError("Solids are not supported in this model")
+            self.skip_solids = not bool(solids)
+
 
         liquids_to_unique_liquids = []
         unique_liquids, unique_liquid_hashes = [], []
@@ -6509,7 +6512,7 @@ class FlashVLN(FlashVL):
         if sln_2P is not None and self.DOUBLE_CHECK_2P:
             g_id, ls_id, _, _ = identify_sort_phases(found_phases, found_betas, self.constants,
                                                     self.correlations, settings=self.settings,
-                                                    skip_solids=not bool(self.solids))
+                                                    skip_solids=self.skip_solids)
             if g_id is None:
                 another_phase, base_phase = gas, liquids[0]
             else:
@@ -6936,6 +6939,8 @@ class FlashPureVLS(Flash):
         self.liquid = liquids[0] if len(liquids) else None
         self.solid_count = len(solids)
 
+        self.skip_solids = not bool(solids)
+
         self.phase_count = self.gas_count + self.liquid_count + self.solid_count
 
         if gas is not None:
@@ -7023,7 +7028,10 @@ class FlashPureVLS(Flash):
         else:
             raise ValueError("Did not recognize solution %s" %(solution))
 
-        if self.VL_only_CoolProp:
+        if self.phase_count == 1:
+            phase = self.phases[0].to(zs=zs, T=T, P=P, V=V)
+            return None, [phase], [], [1.0], None
+        elif self.VL_only_CoolProp:
             sln = self.gas.to(zs, T=T, P=P, V=V, prefer_phase=8)
 #            if sln.phase == 'l':
 #                return None, [sln], [], betas, None

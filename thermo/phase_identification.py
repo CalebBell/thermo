@@ -1038,9 +1038,12 @@ def identify_sort_phases(phases, betas, constants, correlations, settings,
                               VL_ID_settings=settings.VL_ID_settings,
                               S_ID_settings=settings.S_ID_settings,
                               skip_solids=skip_solids)
+    if len(betas) == 1:
+        return gas, liquids, solids, betas
     if liquids or solids:
         liquids, solids = sort_phases(liquids, solids, constants, settings)
     if betas is not None:
+        # Probably worth adding a fast path here which avoids index
         new_betas = []
         if gas is not None:
             new_betas.append(betas[phases.index(gas)])
