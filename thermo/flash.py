@@ -7013,8 +7013,6 @@ class FlashPureVLS(Flash):
 
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
         betas = [1.0]
-        liquids = []
-        solids = []
 
         if solution is None:
             fun = lambda obj: obj.G()
@@ -7029,7 +7027,7 @@ class FlashPureVLS(Flash):
 
         if self.phase_count == 1:
             phase = self.phases[0].to(zs=zs, T=T, P=P, V=V)
-            return None, [phase], [], [1.0], None
+            return None, [phase], [], betas, None
         elif self.VL_only_CoolProp:
             sln = self.gas.to(zs, T=T, P=P, V=V, prefer_phase=8)
 #            if sln.phase == 'l':
@@ -7107,6 +7105,8 @@ class FlashPureVLS(Flash):
         else:
             G_min, lowest_phase = 1e100, None
             gas = None
+
+        liquids = []
         for l in self.liquids:
             l = l.to(zs=zs, T=T, P=P, V=V)
             G = fun(l)
@@ -7114,6 +7114,8 @@ class FlashPureVLS(Flash):
                 G_min, lowest_phase = G, l
             liquids.append(l)
 
+
+        solids = []
         for s in self.solids:
             s = s.to(zs=zs, T=T, P=P, V=V)
             G = fun(s)
