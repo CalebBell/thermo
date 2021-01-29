@@ -262,6 +262,8 @@ def test_HeatCapacityLiquid():
         Cpl_calc.append(tol.T_dependent_property(330))
 
     assert eval(str(tol)) == tol
+    new = HeatCapacityLiquid.from_JSON(tol.as_JSON())
+    assert new == tol
 
     Cpls = [165.4728226923247, 166.5239869108539, 166.52164399712314, 175.3439256239127, 166.71561127721478, 157.3, 165.4554033804999, 166.69807427725885, 157.29, 167.3380448453572]
     assert_close1d(sorted(Cpl_calc), sorted(Cpls), rtol=5e-6)
@@ -292,6 +294,9 @@ def test_HeatCapacityLiquid():
     Cpls = [214.6499551694668, 214.69679325320664, 214.7, 214.71]
     assert_close1d(sorted(Cpl_calc), sorted(Cpls))
 
+    new = HeatCapacityLiquid.from_JSON(propylbenzene.as_JSON())
+    assert new == propylbenzene
+
     ctp = HeatCapacityLiquid(MW=118.58462, CASRN='96-43-5')
 
     Cpl_calc = []
@@ -301,6 +306,8 @@ def test_HeatCapacityLiquid():
 
     Cpls = [134.1186737739494, 134.1496585096233]
     assert_close1d(sorted(Cpl_calc), sorted(Cpls))
+    new = HeatCapacityLiquid.from_JSON(ctp.as_JSON())
+    assert new == ctp
 
 
 @pytest.mark.meta_T_dept

@@ -75,6 +75,8 @@ def test_EnthalpyVaporization():
         assert EtOH.T_dependent_property(5000) is None
 
 
+    assert EnthalpyVaporization.from_JSON(EtOH.as_JSON()) == EtOH
+
     EtOH = EnthalpyVaporization(CASRN='64-17-5', Tc=514.0)
     Hvap_calc = []
     for i in ['GHARAGHEIZI_HVAP_298', 'CRC_HVAP_298', 'VDI_TABULAR', 'COOLPROP']:
@@ -92,6 +94,7 @@ def test_EnthalpyVaporization():
     assert not EtOH.test_method_validity(351.39+10, 'CRC_HVAP_TB')
     assert not EtOH.test_method_validity(351.39, 'CRC_HVAP_298')
 
+
     Ts = [200, 250, 300, 400, 450]
     props = [46461.62768429649, 44543.08561867195, 42320.381894706225, 34627.726535926406, 27634.46144486471]
     EtOH.add_tabular_data(Ts=Ts, properties=props, name='CPdata')
@@ -103,6 +106,8 @@ def test_EnthalpyVaporization():
 
     with pytest.raises(Exception):
         EtOH.test_method_validity('BADMETHOD', 300)
+
+    assert EnthalpyVaporization.from_JSON(EtOH.as_JSON()) == EtOH
 
 
 @pytest.mark.meta_T_dept
@@ -118,3 +123,4 @@ def test_EnthalpyVaporization_Watson_extrapolation():
     assert_close(obj.solve_property(5e4), 146.3404577534453)
     assert_close(obj.solve_property(1), 647.1399999389462)
     assert_close(obj.solve_property(1e-20), 647.13999999983)
+    assert EnthalpyVaporization.from_JSON(obj.as_JSON()) == obj

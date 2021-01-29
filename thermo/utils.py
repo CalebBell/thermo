@@ -890,6 +890,11 @@ class TDependentProperty(object):
     pure_references = ()
     pure_reference_types = ()
 
+    obj_references = ()
+    obj_references_types = ()
+
+    _json_obj_by_CAS = ('CP_f',)
+
     def __copy__(self):
         return self
 
@@ -989,6 +994,13 @@ class TDependentProperty(object):
         tabular_data_interpolators = d['tabular_data_interpolators']
         d['tabular_data_interpolators'] = {}
 
+
+        try:
+            interp1d_extrapolators = d['interp1d_extrapolators']
+            del d['interp1d_extrapolators']
+        except:
+            pass
+
         if hasattr(self, 'all_methods_P'):
             all_methods_P_list = list(d['all_methods_P'])
             all_methods_P_set = d['all_methods_P']
@@ -1003,13 +1015,14 @@ class TDependentProperty(object):
             if prop_obj is not None and type(prop_obj) not in (float, int):
                 d[name] = prop_obj.as_JSON()
 
-        CP_f = None
-        if hasattr(self, 'CP_f'):
-            CP_f = self.CP_f
-            d['CP_f'] = CP_f.CAS
+        json_refs = {}
+        for name in self._json_obj_by_CAS:
+            if hasattr(self, name):
+                json_refs[name] = getattr(self, name)
+                setattr(self, name, self.CASRN)
+
         if not json_loaded:
             _load_json()
-        #print(self.__dict__)
         ans = json.dumps(d)
 
         # Set the dictionary back
@@ -1019,14 +1032,24 @@ class TDependentProperty(object):
         if hasattr(self, 'all_methods_P'):
             d['all_methods_P'] = all_methods_P_set
             d['tabular_data_interpolators_P'] = tabular_data_interpolators_P
-        if CP_f is not None:
-            d['CP_f'] = CP_f
         for name, obj in zip(self.pure_references, prop_references):
             d[name] = obj
+        if json_refs:
+            d.update(json_refs)
 
         d['tabular_data_interpolators'] = tabular_data_interpolators
+        try:
+            d['interp1d_extrapolators'] = interp1d_extrapolators
+        except:
+            pass
 
         return ans
+
+    @classmethod
+    def _load_json_CAS_references(cls, d):
+        if 'CP_f' in d:
+            from thermo.coolprop import coolprop_fluids
+            d['CP_f'] = coolprop_fluids[d['CP_f']]
 
     @classmethod
     def from_JSON(cls, json_repr):
@@ -1054,9 +1077,10 @@ class TDependentProperty(object):
         if not json_loaded:
             _load_json()
         d = json.loads(json_repr)
-        if 'CP_f' in d:
-            from thermo.coolprop import coolprop_fluids
-            d['CP_f'] = coolprop_fluids[d['CP_f']]
+        cls._load_json_CAS_references(d)
+#        if 'CP_f' in d:
+#            from thermo.coolprop import coolprop_fluids
+#            d['CP_f'] = coolprop_fluids[d['CP_f']]
 
         d['all_methods'] = set(d['all_methods'])
         if 'all_methods_P' in d:
@@ -2188,7 +2212,13 @@ class TDependentProperty(object):
             raise ValueError("Not outside normal range")
 
         if extrapolation == 'linear':
-            v_low, d_low, v_high, d_high = self.linear_extrapolation_coeffs[method]
+            try:
+                linear_extrapolation_coeffs = self.linear_extrapolation_coeffs
+            except:
+                self._load_extapolation_coeffs(method)
+                linear_extrapolation_coeffs = self.linear_extrapolation_coeffs
+            v_low, d_low, v_high, d_high = linear_extrapolation_coeffs[method]
+
             interpolation_T = self.interpolation_T
             interpolation_property_inv = self.interpolation_property_inv
             if interpolation_T is not None:
@@ -2249,7 +2279,12 @@ class TDependentProperty(object):
                 return Watson(T, Hvap_ref=v0_high, T_ref=T_high, Tc=self.Tc, exponent=n_high)
         elif extrapolation == 'interp1d':
             T_low, T_high = T_limits[method]
-            extrapolator = self.interp1d_extrapolators[method]
+            try:
+                extrapolator = self.interp1d_extrapolators[method]
+            except:
+                self._load_extapolation_coeffs(method)
+                extrapolator = self.interp1d_extrapolators[method]
+
             interpolation_T = self.interpolation_T
             if interpolation_T is not None:
                 T = interpolation_T(T)

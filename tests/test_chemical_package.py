@@ -55,3 +55,9 @@ def test_ChemicalConstantsPackage_json_version_exported():
     c2 = ChemicalConstantsPackage.from_JSON(string)
     assert 'json_version' in string
     assert not hasattr(c2, 'json_version')
+
+@pytest.mark.CoolProp
+def test_lemmon2000_package():
+    for T in (150.0, 200.0, 300.0, 1000.0, 2000.0):
+        assert_close(PropsSI('Cp0molar', 'T', T, 'P', 101325.0, 'Air'),
+                     lemmon2000_correlations.HeatCapacityGases[0](T), rtol=2e-7)

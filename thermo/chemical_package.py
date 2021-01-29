@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2019, 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -50,12 +50,16 @@ Sample Constants and Correlations
 =================================
 .. autodata:: iapws_constants
 .. autodata:: iapws_correlations
+.. autodata:: lemmon2000_constants
+.. autodata:: lemmon2000_correlations
+
 '''
 
 from __future__ import division
 
 __all__ = ['ChemicalConstantsPackage', 'PropertyCorrelationsPackage',
-           'iapws_constants', 'iapws_correlations']
+           'iapws_constants', 'iapws_correlations', 'lemmon2000_constants',
+           'lemmon2000_correlations']
 
 from fluids.constants import R
 
@@ -457,6 +461,8 @@ class ChemicalConstantsPackage(object):
         -------
         constants : PropertyCorrelationsPackage
             New `PropertyCorrelationsPackage` with loaded values, [-]
+        correlations : PropertyCorrelationsPackage
+            New `PropertyCorrelationsPackage` with loaded values, [-]
 
         Notes
         -----
@@ -571,7 +577,7 @@ class ChemicalConstantsPackage(object):
 
         VolumeLiquids = [VolumeLiquid(MW=MWs[i], Tb=Tbs[i], Tc=Tcs[i],
                           Pc=Pcs[i], Vc=Vcs[i], Zc=Zcs[i], omega=omegas[i], dipole=dipoles[i],
-                          Psat=VaporPressures[i].T_dependent_property, CASRN=CASs[i],
+                          Psat=VaporPressures[i], CASRN=CASs[i],
                           eos=enclosed_eoss[i], poly_fit=get_chemical_constants(CASs[i], 'VolumeLiquid'))
                          for i in range(N)]
 
@@ -655,7 +661,7 @@ class ChemicalConstantsPackage(object):
         HeatCapacitySolids = [HeatCapacitySolid(CASRN=CASs[i], MW=MWs[i], similarity_variable=similarity_variables[i],
                                                 poly_fit=get_chemical_constants(CASs[i], 'HeatCapacitySolid')) for i in range(N)]
         HeatCapacityLiquids = [HeatCapacityLiquid(CASRN=CASs[i], MW=MWs[i], similarity_variable=similarity_variables[i], Tc=Tcs[i], omega=omegas[i],
-                                                  Cpgm=HeatCapacityGases[i].T_dependent_property,
+                                                  Cpgm=HeatCapacityGases[i],
                                                   poly_fit=get_chemical_constants(CASs[i], 'HeatCapacityLiquid')) for i in range(N)]
 
 
@@ -666,7 +672,7 @@ class ChemicalConstantsPackage(object):
 
 
 
-        Hsub_Tts = [EnthalpySublimations[i].T_dependent_property(Tts[i]) if Tts[i] is not None else None
+        Hsub_Tts = [EnthalpySublimations[i](Tts[i]) if Tts[i] is not None else None
                            for i in range(N)]
         Hsub_Tts_mass = [Hsub*1000.0/MW if Hsub is not None else None for Hsub, MW in zip(Hsub_Tts, MWs)]
 
@@ -1593,4 +1599,15 @@ iapws_correlations = PropertyCorrelationsPackage(constants=iapws_constants, skip
                                                  HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18,
                                                                             4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))])
 ''':obj:`PropertyCorrelationsPackage`: IAPWS correlations and properties, [-]'''
+
+lemmon2000_constants = ChemicalConstantsPackage(CASs=['132259-10-0'], MWs=[28.9586], omegas=[0.0335],
+                                           Pcs=[3.78502E6], Tcs=[132.6312])
+''':obj:`ChemicalConstantsPackage` : Object intended to hold the Lemmon (2000) air constants
+for use with the :obj:`thermo.phases.DryAirLemmon` phase object.
+'''
+
+# 20 coefficients gets a very good fit 1e-8 rtol
+lemmon2000_correlations = PropertyCorrelationsPackage(constants=lemmon2000_constants, skip_missing=True,
+                                                 HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(132.6313, 2000.0, [-6.626125905505976e-57, 1.3834500819751098e-52, -1.33739947283832e-48, 7.939514061796618e-45, -3.2364291450043207e-41, 9.594346367764268e-38, -2.13653752371752e-34, 3.6389955418840433e-31, -4.779579487030328e-28, 4.842352128842408e-25, -3.7575972075674665e-22, 2.2015407920080106e-19, -9.545492841183412e-17, 3.0147537523176223e-14, -7.116946884523906e-12, 1.4112957512038422e-09, -2.416177742609162e-07, 3.041947869442721e-05, -0.0022420811935852042, 29.099089803167224]))])
+''':obj:`PropertyCorrelationsPackage`: Lemmon (2000) air correlations and properties, [-]'''
 

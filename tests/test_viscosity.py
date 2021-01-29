@@ -211,6 +211,13 @@ def test_ViscosityGas():
         EtOH.test_method_validity(300, 'BADMETHOD')
 
 
+    s = EtOH.as_JSON()
+    EtOH2 = ViscosityGas.from_JSON(s)
+    # Do hash checks before interpolation object exists
+    assert hash(EtOH) == hash(EtOH2)
+    assert EtOH == EtOH2
+    assert id(EtOH) != id(EtOH2)
+
     # Ethanol compressed
     EtOH = ViscosityGas(MW=46.06844, Tc=514.0, Pc=6137000.0, Zc=0.2412, dipole=1.44, Vmg=0.02357, CASRN='64-17-5')
 

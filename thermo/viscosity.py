@@ -310,8 +310,8 @@ class ViscosityLiquid(TPDependentProperty):
     ranked_methods_P = [COOLPROP, LUCAS]
     '''Default rankings of the high-pressure methods.'''
 
-    pure_references = ('Psat',)
-    pure_reference_types = (VaporPressure,)
+    obj_references = pure_references = ('Psat',)
+    obj_references_types = pure_reference_types = (VaporPressure,)
 
     custom_args = ('MW', 'Tm', 'Tc', 'Pc', 'Vc', 'omega', 'Psat', 'Vml')
 
@@ -875,8 +875,8 @@ class ViscosityGas(TPDependentProperty):
     ranked_methods_P = [COOLPROP]
     '''Default rankings of the high-pressure methods.'''
 
-    pure_references = ('Vmg',)
-    pure_reference_types = (VolumeGas,)
+    obj_references = pure_references = ('Vmg',)
+    obj_references_types = pure_reference_types = (VolumeGas,)
 
     custom_args = ('MW', 'Tc', 'Pc', 'Zc', 'dipole', 'Vmg')
     def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, Zc=None,

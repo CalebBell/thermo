@@ -440,10 +440,10 @@ class ThermalConductivityLiquid(TPDependentProperty):
             T_limits[NICOLA] = (0.01*self.Tc, self.Tc)
         if all([self.Tb, self.Tc]):
             methods.append(SATO_RIEDEL)
-            T_limits[SATO_RIEDEL] = (0.01*self.Tb, self.Tc)
+            T_limits[SATO_RIEDEL] = (0.01*self.Tb, self.Tc-0.1)
         if all([self.Hfus, self.Tc, self.omega]):
             methods.append(NICOLA_ORIGINAL)
-            T_limits[NICOLA_ORIGINAL] = (0.01*self.Tc, self.Tc)
+            T_limits[NICOLA_ORIGINAL] = (0.01*self.Tc, self.Tc-0.1)
         if all([self.Tc, self.Pc]):
             methods_P.extend([DIPPR_9G, MISSENARD])
         self.all_methods = set(methods)
@@ -1061,8 +1061,8 @@ class ThermalConductivityGas(TPDependentProperty):
                         STIEL_THODOS_DENSE]
     '''Default rankings of the high-pressure methods.'''
 
-    pure_references = ('mug', 'Vmg', 'Cpgm')
-    pure_reference_types = (ViscosityGas, VolumeGas, HeatCapacityGas)
+    obj_references = pure_references = ('mug', 'Vmg', 'Cpgm')
+    obj_references_types = pure_reference_types = (ViscosityGas, VolumeGas, HeatCapacityGas)
 
     custom_args = ('MW', 'Tb', 'Tc', 'Pc', 'Vc', 'Zc', 'omega', 'dipole',
                    'Vmg', 'Cpgm', 'mug')

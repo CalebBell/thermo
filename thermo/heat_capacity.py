@@ -797,6 +797,10 @@ class HeatCapacityLiquid(TDependentProperty):
     _fit_force_n[CRCSTD] = 1
     _fit_force_n[POLING_CONST] = 1
 
+    _json_obj_by_CAS = ('Zabransky_spline', 'Zabransky_spline_iso', 'Zabransky_spline_sat',
+                        'Zabransky_quasipolynomial', 'Zabransky_quasipolynomial_iso',
+                        'Zabransky_quasipolynomial_sat', 'CP_f')
+
     custom_args = ('MW', 'similarity_variable', 'Tc', 'omega', 'Cpgm')
     def __init__(self, CASRN='', MW=None, similarity_variable=None, Tc=None,
                  omega=None, Cpgm=None, load_data=True,
@@ -864,6 +868,24 @@ class HeatCapacityLiquid(TDependentProperty):
                 VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
                 }
 
+    @classmethod
+    def _load_json_CAS_references(cls, d):
+        CASRN = d['CASRN']
+        if CASRN in heat_capacity.zabransky_dict_const_s:
+            d['Zabransky_spline'] = heat_capacity.zabransky_dict_const_s[CASRN]
+        if CASRN in heat_capacity.zabransky_dict_const_p:
+            d['Zabransky_quasipolynomial'] = heat_capacity.zabransky_dict_const_p[CASRN]
+        if CASRN in heat_capacity.zabransky_dict_iso_s:
+            d['Zabransky_spline_iso'] = heat_capacity.zabransky_dict_iso_s[CASRN]
+        if CASRN in heat_capacity.zabransky_dict_iso_p:
+            d['Zabransky_quasipolynomial_iso'] = heat_capacity.zabransky_dict_iso_p[CASRN]
+        if CASRN in heat_capacity.zabransky_dict_sat_s:
+            d['Zabransky_spline_sat'] = heat_capacity.zabransky_dict_sat_s[CASRN]
+        if CASRN in heat_capacity.zabransky_dict_sat_p:
+            d['Zabransky_quasipolynomial_sat'] = heat_capacity.zabransky_dict_sat_p[CASRN]
+        if 'CP_f' in d:
+            d['CP_f'] = coolprop_fluids[CASRN]
+
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
@@ -895,6 +917,8 @@ class HeatCapacityLiquid(TDependentProperty):
                 methods.append(ZABRANSKY_QUASIPOLYNOMIAL_C)
                 self.Zabransky_quasipolynomial_iso = heat_capacity.zabransky_dict_iso_p[self.CASRN]
                 T_limits[ZABRANSKY_QUASIPOLYNOMIAL_C] = (self.Zabransky_quasipolynomial_iso.Tmin, self.Zabransky_quasipolynomial_iso.Tmax)
+
+
             if self.CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[self.CASRN, 'Cpl']):
                 methods.append(POLING_CONST)
                 self.POLING_T = 298.15
@@ -934,7 +958,7 @@ class HeatCapacityLiquid(TDependentProperty):
                 T_limits[COOLPROP] = (Tmin, Tmax)
         if self.Tc and self.omega:
             methods.extend([ROWLINSON_POLING, ROWLINSON_BONDI])
-            limits_Tc = (0.3*self.Tc, self.Tc-1e-5)
+            limits_Tc = (0.3*self.Tc, self.Tc-0.1)
             T_limits[ROWLINSON_POLING] = limits_Tc
             T_limits[ROWLINSON_BONDI] = limits_Tc
         if self.MW and self.similarity_variable:

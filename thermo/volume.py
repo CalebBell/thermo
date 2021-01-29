@@ -391,8 +391,8 @@ class VolumeLiquid(TPDependentProperty):
     ranked_methods_P = [COOLPROP, COSTALD_COMPRESSED, EOS]
     '''Default rankings of the high-pressure methods.'''
 
-    pure_references = ('Psat',)
-    pure_reference_types = (VaporPressure)
+    obj_references = pure_references = ('Psat',)
+    obj_references_types = pure_reference_types = (VaporPressure)
 
 
     custom_args = ('MW', 'Tb', 'Tc', 'Pc', 'Vc', 'Zc', 'omega', 'dipole',
