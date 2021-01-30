@@ -1147,7 +1147,7 @@ class UNIQUAC(GibbsExcess):
                 t50_sum -= t50
 
                 ## Non temperature multiplied terms
-                t51 = qsxs[j]*z/(2.0*thetas[j])*(dthetas_dxs[j][i] - thetas[j]*phis_inv[j]*dphis_dxs[j][i])
+                t51 = qsxs[j]/thetas[j]*(dthetas_dxs[j][i] - thetas[j]*phis_inv[j]*dphis_dxs[j][i])
                 t51_sum += t51
 
                 t52 = qsxs[j]*t102*thetaj_taus_jis_inv[j]
@@ -1158,7 +1158,7 @@ class UNIQUAC(GibbsExcess):
 #                if i != j:
                     # Double index issue
                 tot += xs[j]*phis_inv[j]*dphis_dxs[j][i]
-            tot += t51_sum
+            tot += t51_sum*z*0.5
             tot -= t52_sum
 
             tot -= xs[i]*phis_inv[i]*dphis_dxs[i][i] # Remove the branches by subreacting i after.
