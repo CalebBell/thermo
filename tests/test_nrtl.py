@@ -32,7 +32,7 @@ from thermo import *
 import numpy as np
 from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d
 
-def test_NRTL():
+def test_NRTL_gammas():
     # P05.01b VLE Behavior of Ethanol - Water Using NRTL
     gammas = NRTL_gammas([0.252, 0.748], [[0, -0.178], [1.963, 0]], [[0, 0.2974],[.2974, 0]])
     assert_close1d(gammas, [1.9363183763514304, 1.1537609663170014])
@@ -96,7 +96,7 @@ def test_NRTL():
     gammas_expect = [2.503204848288857, 2.910723989902569, 2.2547951278295497, 2.9933258413917154, 2.694165187439594]
     assert_close1d(gammas, gammas_expect)
 
-def test_NRTL_10():
+def test_NRTL_gammas_10():
     # ten component
 #    m = Mixture(['water', 'ethanol', 'methanol', '1-pentanol', '2-pentanol', '3-pentanol',
 #             '1-decanol', '2-decanol', '3-decanol', '4-decanol'],
@@ -129,7 +129,7 @@ def test_NRTL_10():
     gammas_expect = [1.1600804309840225, 1.0892286716705042, 1.0384940848807305, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531]
     assert_close1d(gammas, gammas_expect)
 
-def NRTL_44():
+def NRTL_gammas_44():
     N = 44
     taus = [[random() for i in range(N)] for j in range(N)]
     alphas = [[random() for i in range(N)] for j in range(N)]
@@ -137,7 +137,7 @@ def NRTL_44():
     gammas = NRTL_gammas(xs=xs, taus=taus, alphas=alphas)
 
 
-def NRTL_200():
+def NRTL_gammas_200():
     # ten component
     # Takes 40 ms - not a great idea
     N = 200
@@ -175,8 +175,8 @@ def make_taus(N):
     return data
 
 
-def test_madeup_20():
-    N = 10
+def test_madeup_NRTL():
+    N = 6
     alphas = make_alphas(N)
     taus = make_taus(N)
     xs = normalize([random() for i in range(N)])

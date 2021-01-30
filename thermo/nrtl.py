@@ -692,22 +692,12 @@ class NRTL(GibbsExcess):
 
         xj_Gs_jis_inv, xj_Gs_taus_jis = self.xj_Gs_jis_inv(), self.xj_Gs_taus_jis()
 
-        self._gammas = gammas = nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis)
+        if self.scalar:
+            gammas = [0.0]*self.N
+        else:
+            gammas = zeros(self.N)
 
-#        t0s = [xs[j]*xj_Gs_jis_inv[j] for j in range(N)]
-#        t1s = [xj_Gs_taus_jis[j]*xj_Gs_jis_inv[j] for j in range(N)]
-#
-#        for i in range(N):
-#            tot = xj_Gs_taus_jis[i]*xj_Gs_jis_inv[i]
-#            Gsi = Gs[i]
-#            tausi = taus[i]
-#            for j in range(N):
-#                # Possible to factor out some terms which depend on j only; or to index taus, Gs separately
-#                tot += t0s[j]*Gsi[j]*(tausi[j] - t1s[j])
-#
-#            gammas.append(exp(tot))
-
-#        self._gammas = gammas = NRTL_gammas(xs=self.xs, taus=taus, alphas=alphas)
+        self._gammas = nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas)
         return gammas
 
 
@@ -738,35 +728,13 @@ class NRTL(GibbsExcess):
         F = self.tau_coeffs_F
         G = self.tau_coeffs_G
         H = self.tau_coeffs_H
-
-#        tau_coeffs_A = self.tau_coeffs_A
-#        tau_coeffs_B = self.tau_coeffs_B
-#        tau_coeffs_E = self.tau_coeffs_E
-#        tau_coeffs_F = self.tau_coeffs_F
-#        tau_coeffs_G = self.tau_coeffs_G
-#        tau_coeffs_H = self.tau_coeffs_H
-
-
         T, N = self.T, self.N
-#        T2 = T*T
-#        Tinv = 1.0/T
-#        T2inv = Tinv*Tinv
-#        logT = log(T)
-#
-        # initialize the matrix to be A
-        self._taus = taus = nrtl_taus(T, N, A, B, E, F, G, H)
-#        self._taus = taus = [list(l) for l in tau_coeffs_A]
-#        for i in range(N):
-#            tau_coeffs_Bi = tau_coeffs_B[i]
-#            tau_coeffs_Ei = tau_coeffs_E[i]
-#            tau_coeffs_Fi = tau_coeffs_F[i]
-#            tau_coeffs_Gi = tau_coeffs_G[i]
-#            tau_coeffs_Hi = tau_coeffs_H[i]
-#            tausi = taus[i]
-#            for j in range(N):
-#                tausi[j] += (tau_coeffs_Bi[j]*Tinv + tau_coeffs_Ei[j]*logT
-#                             + tau_coeffs_Fi[j]*T + tau_coeffs_Gi[j]*T2inv
-#                             + tau_coeffs_Hi[j]*T2)
+        if self.scalar:
+            taus = [[0.0]*N for _ in range(N)]
+        else:
+            taus = zeros((N, N))
+
+        self._taus = nrtl_taus(T, N, A, B, E, F, G, H, taus)
         return taus
 
     def dtaus_dT(self):
@@ -797,24 +765,11 @@ class NRTL(GibbsExcess):
         G = self.tau_coeffs_G
         H = self.tau_coeffs_H
         T, N = self.T, self.N
-
-#        Tinv = 1.0/T
-#        nT2inv = -Tinv*Tinv
-#        n2T3inv = 2.0*nT2inv*Tinv
-#        T2 = T + T
-
-#        self._dtaus_dT = dtaus_dT = [list(l) for l in tau_coeffs_F]
-        self._dtaus_dT = dtaus_dT = nrtl_dtaus_dT(T, N, B, E, F, G, H)
-#        for i in range(N):
-#            tau_coeffs_Bi = tau_coeffs_B[i]
-#            tau_coeffs_Ei = tau_coeffs_E[i]
-#            tau_coeffs_Fi = tau_coeffs_F[i]
-#            tau_coeffs_Gi = tau_coeffs_G[i]
-#            tau_coeffs_Hi = tau_coeffs_H[i]
-#            dtaus_dTi = dtaus_dT[i]
-#            for j in range(N):
-#                dtaus_dTi[j] += (nT2inv*tau_coeffs_Bi[j] + Tinv*tau_coeffs_Ei[j]
-#                + n2T3inv*tau_coeffs_Gi[j] + T2*tau_coeffs_Hi[j])
+        if self.scalar:
+            dtaus_dT = [[0.0]*N for _ in range(N)]
+        else:
+            dtaus_dT = zeros((N, N))
+        self._dtaus_dT = nrtl_dtaus_dT(T, N, B, E, F, G, H, dtaus_dT)
 
         return dtaus_dT
 
@@ -845,24 +800,12 @@ class NRTL(GibbsExcess):
         H = self.tau_coeffs_H
         T, N = self.T, self.N
 
-#        self._d2taus_dT2 = d2taus_dT2 = [[h + h for h in l] for l in tau_coeffs_H]
-        self._d2taus_dT2 = d2taus_dT2 = nrtl_d2taus_dT2(T, N, B, E, G, H)
+        if self.scalar:
+            d2taus_dT2 = [[0.0]*N for _ in range(N)]
+        else:
+            d2taus_dT2 = zeros((N, N))
 
-#        Tinv = 1.0/T
-#        Tinv2 = Tinv*Tinv
-#
-#        T3inv2 = 2.0*(Tinv2*Tinv)
-#        nT2inv = -Tinv*Tinv
-#        T4inv6 = 6.0*(Tinv2*Tinv2)
-#        for i in range(N):
-#            tau_coeffs_Bi = tau_coeffs_B[i]
-#            tau_coeffs_Ei = tau_coeffs_E[i]
-#            tau_coeffs_Gi = tau_coeffs_G[i]
-#            d2taus_dT2i = d2taus_dT2[i]
-#            for j in range(N):
-#                d2taus_dT2i[j] += (T3inv2*tau_coeffs_Bi[j]
-#                                   + nT2inv*tau_coeffs_Ei[j]
-#                                   + T4inv6*tau_coeffs_Gi[j])
+        self._d2taus_dT2 = nrtl_d2taus_dT2(T, N, B, E, G, H, d2taus_dT2)
         return d2taus_dT2
 
     def d3taus_dT3(self):
@@ -890,25 +833,11 @@ class NRTL(GibbsExcess):
         E = self.tau_coeffs_E
         G = self.tau_coeffs_G
         T, N = self.T, self.N
-#        self._d3taus_dT3 = d3taus_dT3 = [[0.0]*N for i in range(N)]
-        self._d3taus_dT3 = d3taus_dT3 = nrtl_d3taus_dT3(T, N, B, E, G)
-
-#        Tinv = 1.0/T
-#        T2inv = Tinv*Tinv
-#
-#        nT4inv6 = -6.0*T2inv*T2inv
-#        T3inv2 = 2.0*T2inv*Tinv
-#        T5inv24 = -24.0*(T2inv*T2inv*Tinv)
-
-#        for i in range(N):
-#            tau_coeffs_Bi = tau_coeffs_B[i]
-#            tau_coeffs_Ei = tau_coeffs_E[i]
-#            tau_coeffs_Gi = tau_coeffs_G[i]
-#            d3taus_dT3i = d3taus_dT3[i]
-#            for j in range(N):
-#                d3taus_dT3i[j] = (nT4inv6*tau_coeffs_Bi[j]
-#                                  + T3inv2*tau_coeffs_Ei[j]
-#                                  + T5inv24*tau_coeffs_Gi[j])
+        if self.scalar:
+            d3taus_dT3 = [[0.0]*N for _ in range(N)]
+        else:
+            d3taus_dT3 = zeros((N, N))
+        self._d3taus_dT3 = nrtl_d3taus_dT3(T, N, B, E, G, d3taus_dT3)
         return d3taus_dT3
 
     def alphas(self):
@@ -944,15 +873,14 @@ class NRTL(GibbsExcess):
             return self._alphas
         except AttributeError:
             pass
-#        T, N = self.T, self.N
-#        alpha_coeffs_c, alpha_coeffs_d = self.alpha_coeffs_c, self.alpha_coeffs_d
+        N = self.N
 
-        self._alphas = alphas = nrtl_alphas(self.T, self.N, self.alpha_coeffs_c, self.alpha_coeffs_d)
-#        for i in range(N):
-#            alpha_coeffs_ci = alpha_coeffs_c[i]
-#            alpha_coeffs_di = alpha_coeffs_d[i]
-#            alphas.append([alpha_coeffs_ci[j] + alpha_coeffs_di[j]*T for j in range(N)])
+        if self.scalar:
+            alphas = [[0.0]*N for _ in range(N)]
+        else:
+            alphas = zeros((N, N))
 
+        self._alphas = nrtl_alphas(self.T, N, self.alpha_coeffs_c, self.alpha_coeffs_d, alphas)
         return alphas
 
     def dalphas_dT(self):
@@ -990,11 +918,12 @@ class NRTL(GibbsExcess):
         taus = self.taus()
         N = self.N
 
-        self._Gs = Gs = nrtl_Gs(N, alphas, taus)
-#        for i in range(N):
-#            alphasi = alphas[i]
-#            tausi = taus[i]
-#            Gs.append([exp(-alphasi[j]*tausi[j]) for j in range(N)])
+        if self.scalar:
+            Gs = [[0.0]*N for _ in range(N)]
+        else:
+            Gs = zeros((N, N))
+
+        self._Gs = nrtl_Gs(N, alphas, taus, Gs)
         return Gs
 
     def dGs_dT(self):
@@ -1031,16 +960,12 @@ class NRTL(GibbsExcess):
         Gs = self.Gs()
         N = self.N
 
-        self._dGs_dT = dGs_dT = nrtl_dGs_dT(N, alphas, dalphas_dT, taus, dtaus_dT, Gs)
-#        for i in range(N):
-#            alphasi = alphas[i]
-#            tausi = taus[i]
-#            dalphasi = dalphas_dT[i]
-#            dtausi = dtaus_dT[i]
-#            Gsi = Gs[i]
-#
-#            dGs_dT.append([(-alphasi[j]*dtausi[j] - tausi[j]*dalphasi[j])*Gsi[j]
-#                    for j in range(N)])
+        if self.scalar:
+            dGs_dT = [[0.0]*N for _ in range(N)]
+        else:
+            dGs_dT = zeros((N, N))
+
+        self._dGs_dT = nrtl_dGs_dT(N, alphas, dalphas_dT, taus, dtaus_dT, Gs, dGs_dT)
         return dGs_dT
 
     def d2Gs_dT2(self):
@@ -1083,23 +1008,12 @@ class NRTL(GibbsExcess):
         Gs = self.Gs()
         N = self.N
 
-        self._d2Gs_dT2 = d2Gs_dT2 = nrtl_d2Gs_dT2(N, alphas, dalphas_dT, taus, dtaus_dT, d2taus_dT2, Gs)
-#        nrtl_d2Gs_dT2(N, alphas, dalphas_dT, taus, dtaus_dT, d2taus_dT2, Gs
-#                                                  []
-#        for i in range(N):
-#            alphasi = alphas[i]
-#            tausi = taus[i]
-#            dalphasi = dalphas_dT[i]
-#            dtausi = dtaus_dT[i]
-#            d2taus_dT2i = d2taus_dT2[i]
-#            Gsi = Gs[i]
-#
-#            d2Gs_dT2_row = []
-#            for j in range(N):
-#                t1 = alphasi[j]*dtausi[j] + tausi[j]*dalphasi[j]
-#                d2Gs_dT2_row.append((t1*t1 - alphasi[j]*d2taus_dT2i[j]
-#                                     - 2.0*dalphasi[j]*dtausi[j])*Gsi[j])
-#            d2Gs_dT2.append(d2Gs_dT2_row)
+        if self.scalar:
+            d2Gs_dT2 = [[0.0]*N for _ in range(N)]
+        else:
+            d2Gs_dT2 = zeros((N, N))
+
+        self._d2Gs_dT2 = nrtl_d2Gs_dT2(N, alphas, dalphas_dT, taus, dtaus_dT, d2taus_dT2, Gs, d2Gs_dT2)
         return d2Gs_dT2
 
     def d3Gs_dT3(self):
@@ -1146,27 +1060,12 @@ class NRTL(GibbsExcess):
         d3taus_dT3 = self.d3taus_dT3()
         Gs = self.Gs()
 
-        self._d3Gs_dT3 = d3Gs_dT3 = nrtl_d3Gs_dT3(N, alphas, dalphas_dT, taus, dtaus_dT, d2taus_dT2, d3taus_dT3, Gs)
-#        for i in range(N):
-#            alphasi = alphas[i]
-#            tausi = taus[i]
-#            dalphasi = dalphas_dT[i]
-#            dtaus_dTi = dtaus_dT[i]
-#            d2taus_dT2i = d2taus_dT2[i]
-#            d3taus_dT3i = d3taus_dT3[i]
-#            Gsi = Gs[i]
-#            d3Gs_dT3_row = []
-#            for j in range(N):
-#                x0 = alphasi[j]
-#                x1 = tausi[j]
-#                x2 = dalphasi[j]
-#
-#                x3 = d2taus_dT2i[j]
-#                x4 = dtaus_dTi[j]
-#                x5 = x0*x4 + x1*x2
-#                v = Gsi[j]*(-x0*d3taus_dT3i[j] - 3.0*x2*x3 - x5*x5*x5 + 3.0*x5*(x0*x3 + 2.0*x2*x4))
-#                d3Gs_dT3_row.append(v)
-#            d3Gs_dT3.append(d3Gs_dT3_row)
+        if self.scalar:
+            d3Gs_dT3 = [[0.0]*N for _ in range(N)]
+        else:
+            d3Gs_dT3 = zeros((N, N))
+
+        self._d3Gs_dT3 = nrtl_d3Gs_dT3(N, alphas, dalphas_dT, taus, dtaus_dT, d2taus_dT2, d3taus_dT3, Gs, d3Gs_dT3)
         return d3Gs_dT3
 
 
@@ -1187,23 +1086,17 @@ class NRTL(GibbsExcess):
             taus = self.taus()
 
         xs, N = self.xs, self.N
-        _xj_Gs_jis, _xj_Gs_taus_jis = nrtl_xj_Gs_jis_and_Gs_taus_jis(N, xs, Gs, taus)
-        if not self.scalar and type(_xj_Gs_jis) is list:
-            _xj_Gs_jis, _xj_Gs_taus_jis = array(_xj_Gs_jis), array(_xj_Gs_taus_jis)
+        if self.scalar:
+            _xj_Gs_jis = [0.0]*N
+            _xj_Gs_taus_jis = [0.0]*N
+        else:
+            _xj_Gs_jis = zeros(N)
+            _xj_Gs_taus_jis = zeros(N)
+
+        nrtl_xj_Gs_jis_and_Gs_taus_jis(N, xs, Gs, taus, _xj_Gs_jis, _xj_Gs_taus_jis)
 
         self._xj_Gs_jis, self._xj_Gs_taus_jis = _xj_Gs_jis, _xj_Gs_taus_jis
-#        self._xj_Gs_jis = xj_Gs_jis = []
-#        self._xj_Gs_taus_jis = xj_Gs_taus_jis = []
-#        for i in range(N):
-#            tot1 = 0.0
-#            tot2 = 0.0
-#            for j in range(N):
-#                xjGji = xs[j]*Gs[j][i]
-#                tot1 += xjGji#xs[j]*Gs[j][i]
-#                tot2 += xjGji*taus[j][i]
-#            xj_Gs_jis.append(tot1)
-#            xj_Gs_taus_jis.append(tot2)
-        return self._xj_Gs_jis
+        return _xj_Gs_jis
 
     def xj_Gs_jis_inv(self):
         try:
