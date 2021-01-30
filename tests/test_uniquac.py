@@ -210,6 +210,15 @@ def test_UNIQUAC_madeup_ternary():
     dGE_dxs_numerical = jacobian(to_jac, xs, perturbation=1e-8)
     assert_close1d(dGE_dxs_numerical, dGE_dxs_analytical, rtol=1e-6)
 
+    # d2GE_dTdxs
+    def to_jac(xs):
+        return GE.to_T_xs(T, xs).dGE_dT()
+    d2GE_dTdxs_expect = [-9.940433543371945, -3.545963210296949, -7.427593534302016]
+    d2GE_dTdxs = GE.d2GE_dTdxs()
+    d2GE_dTdxs_numerical = jacobian(to_jac, xs, perturbation=1e-8)
+    assert_close1d(d2GE_dTdxs_numerical, d2GE_dTdxs, rtol=1e-6)
+    assert_close1d(d2GE_dTdxs, d2GE_dTdxs_expect, rtol=1e-12)
+
     # d2GE_dxixjs
 
     def to_hess(xs):

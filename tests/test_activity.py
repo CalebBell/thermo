@@ -32,7 +32,23 @@ from fluids.numerics import jacobian, hessian, derivative, normalize, assert_clo
 
 def test_IdealSolution():
     GE = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
+
+    assert 0.0 == GE.GE()
+    assert 0.0 == GE.dGE_dT()
+    assert 0.0 == GE.d2GE_dT2()
+    assert 0.0 == GE.d3GE_dT3()
+
+    assert GE.d2GE_dTdxs() == [0.0]*4
+    assert GE.dGE_dxs() == [0.0]*4
+    assert GE.d2GE_dxixjs() == [[0.0]*4 for _ in range(4)]
+    assert GE.d3GE_dxixjxks() == [[[0.0]*4 for _ in range(4)] for _ in range(4)]
+
+
     assert_close(GE.gammas(), [1]*4, atol=0)
+    assert_close(GE._gammas_dGE_dxs(), [1]*4, atol=0)
+    assert_close(GE.gammas_infinite_dilution(), [1]*4, atol=0)
+
+
 
     assert eval(str(GE)).GE() == GE.GE()
 

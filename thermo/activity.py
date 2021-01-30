@@ -302,8 +302,7 @@ class GibbsExcess(object):
         --------
         >>> model = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
         >>> string = model.as_json()
-        >>> type(string)
-        str
+        >>> assert type(string) is str
         '''
         # vaguely jsonpickle compatible
         mod_name = self.__class__.__module__
