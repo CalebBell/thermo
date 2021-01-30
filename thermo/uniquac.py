@@ -152,6 +152,38 @@ def uniquac_d3GE_dT3(T, N, xs, qs, thetaj_taus_jis,
 
 
 
+def uniquac_dGE_dxs(N, T, xs, qs, taus, phis, dphis_dxs, thetas, dthetas_dxs, thetaj_taus_jis, dGE_dxs=None):
+    z = 10.0
+    if dGE_dxs is None:
+        dGE_dxs = [0.0]*N
+    RT = R*T
+
+    for i in range(N):
+        # i is what is being differentiated
+        tot = 0.0
+        for j in range(N):
+            # dthetas_dxs and dphis_dxs indexes could be an issue
+            tot += 0.5*qs[j]*xs[j]*phis[j]*z/thetas[j]*(
+                    1.0/phis[j]*dthetas_dxs[j][i]
+                    - thetas[j]/phis[j]**2*dphis_dxs[j][i]
+                    )
+
+            tot3 = 0.0
+            for k in range(N):
+                tot3 += taus[k][j]*dthetas_dxs[k][i]
+
+            tot -= qs[j]*xs[j]*tot3/thetaj_taus_jis[j]
+            if i != j:
+                # Double index issue
+                tot += xs[j]/phis[j]*dphis_dxs[j][i]
+
+        tot += 0.5*z*qs[i]*log(thetas[i]/phis[i])
+        tot -= qs[i]*log(thetaj_taus_jis[i])
+        tot += xs[i]*xs[i]/phis[i]*(dphis_dxs[i][i]/xs[i] - phis[i]/(xs[i]*xs[i]))
+        tot += log(phis[i]/xs[i])
+        # Last terms
+        dGE_dxs[i] = RT*tot
+    return dGE_dxs
 
 class UNIQUAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
@@ -1155,6 +1187,10 @@ class UNIQUAC(GibbsExcess):
         Notes
         -----
         '''
+        try:
+            return self._dGE_dxs
+        except:
+            pass
         z, T, xs, N = self.z, self.T, self.xs, self.N
         qs = self.qs
         taus = self.taus()
@@ -1163,40 +1199,49 @@ class UNIQUAC(GibbsExcess):
         thetas = self.thetas()
         dthetas_dxs = self.dthetas_dxs()
         thetaj_taus_jis = self.thetaj_taus_jis()
+
+        if self.scalar:
+            dGE_dxs = [0.0]*N
+        else:
+            dGE_dxs = zeros(N)
+
+        uniquac_dGE_dxs(N, T, xs, qs, taus, phis, dphis_dxs, thetas, dthetas_dxs, thetaj_taus_jis, dGE_dxs)
+        self.dGE_dxs = dGE_dxs
+
         # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
-        dGE_dxs = []
-        RT = R*T
-
-        for i in range(N):
-            # i is what is being differentiated
-            tot = 0.0
-            for j in range(N):
-                # dthetas_dxs and dphis_dxs indexes could be an issue
-                tot += 0.5*qs[j]*xs[j]*phis[j]*z/thetas[j]*(
-                        1.0/phis[j]*dthetas_dxs[j][i]
-                        - thetas[j]/phis[j]**2*dphis_dxs[j][i]
-                        )
-
-                tot3 = 0.0
-                for k in range(N):
-                    tot3 += taus[k][j]*dthetas_dxs[k][i]
-
-                tot -= qs[j]*xs[j]*tot3/thetaj_taus_jis[j]
-                if i != j:
-                    # Double index issue
-                    tot += xs[j]/phis[j]*dphis_dxs[j][i]
-
-            tot += 0.5*z*qs[i]*log(thetas[i]/phis[i])
-            tot -= qs[i]*log(thetaj_taus_jis[i])
-            tot += xs[i]*xs[i]/phis[i]*(dphis_dxs[i][i]/xs[i] - phis[i]/(xs[i]*xs[i]))
-            tot += log(phis[i]/xs[i])
-
-
-            # Last terms
-
-
-
-            dGE_dxs.append(RT*tot)
+#        dGE_dxs = []
+#        RT = R*T
+#
+#        for i in range(N):
+#            # i is what is being differentiated
+#            tot = 0.0
+#            for j in range(N):
+#                # dthetas_dxs and dphis_dxs indexes could be an issue
+#                tot += 0.5*qs[j]*xs[j]*phis[j]*z/thetas[j]*(
+#                        1.0/phis[j]*dthetas_dxs[j][i]
+#                        - thetas[j]/phis[j]**2*dphis_dxs[j][i]
+#                        )
+#
+#                tot3 = 0.0
+#                for k in range(N):
+#                    tot3 += taus[k][j]*dthetas_dxs[k][i]
+#
+#                tot -= qs[j]*xs[j]*tot3/thetaj_taus_jis[j]
+#                if i != j:
+#                    # Double index issue
+#                    tot += xs[j]/phis[j]*dphis_dxs[j][i]
+#
+#            tot += 0.5*z*qs[i]*log(thetas[i]/phis[i])
+#            tot -= qs[i]*log(thetaj_taus_jis[i])
+#            tot += xs[i]*xs[i]/phis[i]*(dphis_dxs[i][i]/xs[i] - phis[i]/(xs[i]*xs[i]))
+#            tot += log(phis[i]/xs[i])
+#
+#
+#            # Last terms
+#
+#
+#
+#            dGE_dxs.append(RT*tot)
         return dGE_dxs
 
     def d2GE_dTdxs(self):
