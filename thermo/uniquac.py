@@ -46,10 +46,16 @@ UNIQUAC Functional Calculations
 
 from __future__ import division
 from math import log, exp
+from fluids.numerics import numpy as np
 from fluids.constants import R
 from thermo.activity import GibbsExcess, interaction_exp, dinteraction_exp_dT, d2interaction_exp_dT2, d3interaction_exp_dT3
 
 __all__ = ['UNIQUAC', 'UNIQUAC_gammas']
+
+try:
+    array, zeros, npsum, nplog = np.array, np.zeros, np.sum, np.log
+except AttributeError:
+    pass
 
 def uniquac_phis(N, xs, rs, phis=None):
     if phis is None:
@@ -225,6 +231,78 @@ def uniquac_dGE_dxs(N, T, xs, qs, taus, phis, phis_inv, dphis_dxs, thetas, dthet
         # Last terms
         dGE_dxs[i] = RT*tot
     return dGE_dxs
+
+def uniquac_d2GE_dTdxs(N, T, xs, qs, taus, phis, phis_inv, dphis_dxs, thetas, dthetas_dxs, dtaus_dT, thetaj_taus_jis, thetaj_taus_jis_inv, thetaj_dtaus_dT_jis, qsxs, qsxsthetaj_taus_jis_inv, d2GE_dTdxs=None, vec1=None, vec2=None, vec3=None, vec4=None):
+    if d2GE_dTdxs is None:
+        d2GE_dTdxs = [0.0]*N
+    if vec1 is None:
+        vec1 = [0.0]*N
+    if vec2 is None:
+        vec2 = [0.0]*N
+    if vec3 is None:
+        vec3 = [0.0]*N
+    if vec4 is None:
+        vec4 = [0.0]*N
+
+    z = 10.0
+
+    for i in range(N):
+        vec1[i] = qsxsthetaj_taus_jis_inv[i]*thetaj_dtaus_dT_jis[i]*thetaj_taus_jis_inv[i]
+    for i in range(N):
+        vec2[i] = qsxs[i]/thetas[i]
+    for i in range(N):
+        vec3[i] = -thetas[i]*phis_inv[i]*vec2[i]
+    for i in range(N):
+        vec4[i] = xs[i]*phis_inv[i]
+
+    # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
+    for i in range(N):
+        # i is what is being differentiated
+        tot, Ttot = 0.0, 0.0
+        Ttot += qs[i]*thetaj_dtaus_dT_jis[i]*thetaj_taus_jis_inv[i]
+        t49_sum = 0.0
+        t50_sum = 0.0
+        t51_sum = 0.0
+        t52_sum = 0.0
+        for j in range(N):
+            t100 = 0.0
+            for k in range(N):
+                t100 += dtaus_dT[k][j]*dthetas_dxs[k][i]
+            t102 = 0.0
+            for k in range(N):
+                t102 += taus[k][j]*dthetas_dxs[k][i]
+
+            ## Temperature multiplied terms
+            t49_sum += t100*qsxsthetaj_taus_jis_inv[j]
+
+            t50_sum += t102*vec1[j]
+            t52_sum += t102*qsxsthetaj_taus_jis_inv[j]
+
+            ## Non temperature multiplied terms
+            t51 = vec2[j]*dthetas_dxs[j][i] + vec3[j]*dphis_dxs[j][i]
+            t51_sum += t51
+
+#                # Terms reused from dGE_dxs
+#                if i != j:
+                # Double index issue
+            tot += vec4[j]*dphis_dxs[j][i]
+
+        Ttot -= t50_sum
+        Ttot += t49_sum
+
+        tot += t51_sum*z*0.5
+        tot -= t52_sum
+
+        tot -= xs[i]*phis_inv[i]*dphis_dxs[i][i] # Remove the branches by subreacting i after.
+
+        # First term which is almost like it
+        tot += xs[i]*phis_inv[i]*(dphis_dxs[i][i] - phis[i]/xs[i])
+        tot += log(phis[i]/xs[i])
+        tot -= qs[i]*log(thetaj_taus_jis[i])
+        tot += 0.5*z*qs[i]*log(thetas[i]*phis_inv[i])
+
+        d2GE_dTdxs[i] = R*(-T*Ttot + tot)
+    return d2GE_dTdxs
 
 class UNIQUAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
@@ -1117,66 +1195,69 @@ class UNIQUAC(GibbsExcess):
             d2GE_dTdxs = [0.0]*N
             qsxs = [qs[i]*xs[i] for i in range(N)]
             qsxsthetaj_taus_jis_inv = [thetaj_taus_jis_inv[i]*qsxs[i] for i in range(N)]
-            vec1 = [qsxsthetaj_taus_jis_inv[i]*thetaj_dtaus_dT_jis[i]*thetaj_taus_jis_inv[i] for i in range(N)]
-            vec2 = [qsxs[i]/thetas[i] for i in range(N)]
-            vec3 = [-thetas[i]*phis_inv[i]*vec2[i] for i in range(N)]
-            vec4 = [xs[i]*phis_inv[i] for i in range(N)]
+#            vec1 = [qsxsthetaj_taus_jis_inv[i]*thetaj_dtaus_dT_jis[i]*thetaj_taus_jis_inv[i] for i in range(N)]
+#            vec2 = [qsxs[i]/thetas[i] for i in range(N)]
+#            vec3 = [-thetas[i]*phis_inv[i]*vec2[i] for i in range(N)]
+#            vec4 = [xs[i]*phis_inv[i] for i in range(N)]
         else:
             d2GE_dTdxs = zeros(N)
             qsxs = qs*xs
             qsxsthetaj_taus_jis_inv = qsxs*thetaj_taus_jis_inv
-            vec1 = qsxsthetaj_taus_jis_inv*thetaj_dtaus_dT_jis*thetaj_taus_jis_inv
-            vec2 = qsxs/thetas
-            vec3 = -thetas*phis_inv*vec2
-            vec4 = xs*phis_inv
 
-        # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
-        for i in range(N):
-            # i is what is being differentiated
-            tot, Ttot = 0.0, 0.0
-            Ttot += qs[i]*thetaj_dtaus_dT_jis[i]*thetaj_taus_jis_inv[i]
-            t49_sum = 0.0
-            t50_sum = 0.0
-            t51_sum = 0.0
-            t52_sum = 0.0
-            for j in range(N):
-                t100 = 0.0
-                for k in range(N):
-                    t100 += dtaus_dT[k][j]*dthetas_dxs[k][i]
-                t102 = 0.0
-                for k in range(N):
-                    t102 += taus[k][j]*dthetas_dxs[k][i]
 
-                ## Temperature multiplied terms
-                t49_sum += t100*qsxsthetaj_taus_jis_inv[j]
+        uniquac_d2GE_dTdxs(N, T, xs, qs, taus, phis, phis_inv, dphis_dxs, thetas, dthetas_dxs, dtaus_dT, thetaj_taus_jis, thetaj_taus_jis_inv, thetaj_dtaus_dT_jis, qsxs, qsxsthetaj_taus_jis_inv, d2GE_dTdxs)
+#            vec1 = qsxsthetaj_taus_jis_inv*thetaj_dtaus_dT_jis*thetaj_taus_jis_inv
+#            vec2 = qsxs/thetas
+#            vec3 = -thetas*phis_inv*vec2
+#            vec4 = xs*phis_inv
 
-                t50_sum += t102*vec1[j]
-                t52_sum += t102*qsxsthetaj_taus_jis_inv[j]
-
-                ## Non temperature multiplied terms
-                t51 = vec2[j]*dthetas_dxs[j][i] + vec3[j]*dphis_dxs[j][i]
-                t51_sum += t51
-
-#                # Terms reused from dGE_dxs
-#                if i != j:
-                    # Double index issue
-                tot += vec4[j]*dphis_dxs[j][i]
-
-            Ttot -= t50_sum
-            Ttot += t49_sum
-
-            tot += t51_sum*z*0.5
-            tot -= t52_sum
-
-            tot -= xs[i]*phis_inv[i]*dphis_dxs[i][i] # Remove the branches by subreacting i after.
-
-            # First term which is almost like it
-            tot += xs[i]*phis_inv[i]*(dphis_dxs[i][i] - phis[i]/xs[i])
-            tot += log(phis[i]/xs[i])
-            tot -= qs[i]*log(thetaj_taus_jis[i])
-            tot += 0.5*z*qs[i]*log(thetas[i]*phis_inv[i])
-
-            d2GE_dTdxs[i] = R*(-T*Ttot + tot)
+#        # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
+#        for i in range(N):
+#            # i is what is being differentiated
+#            tot, Ttot = 0.0, 0.0
+#            Ttot += qs[i]*thetaj_dtaus_dT_jis[i]*thetaj_taus_jis_inv[i]
+#            t49_sum = 0.0
+#            t50_sum = 0.0
+#            t51_sum = 0.0
+#            t52_sum = 0.0
+#            for j in range(N):
+#                t100 = 0.0
+#                for k in range(N):
+#                    t100 += dtaus_dT[k][j]*dthetas_dxs[k][i]
+#                t102 = 0.0
+#                for k in range(N):
+#                    t102 += taus[k][j]*dthetas_dxs[k][i]
+#
+#                ## Temperature multiplied terms
+#                t49_sum += t100*qsxsthetaj_taus_jis_inv[j]
+#
+#                t50_sum += t102*vec1[j]
+#                t52_sum += t102*qsxsthetaj_taus_jis_inv[j]
+#
+#                ## Non temperature multiplied terms
+#                t51 = vec2[j]*dthetas_dxs[j][i] + vec3[j]*dphis_dxs[j][i]
+#                t51_sum += t51
+#
+##                # Terms reused from dGE_dxs
+##                if i != j:
+#                    # Double index issue
+#                tot += vec4[j]*dphis_dxs[j][i]
+#
+#            Ttot -= t50_sum
+#            Ttot += t49_sum
+#
+#            tot += t51_sum*z*0.5
+#            tot -= t52_sum
+#
+#            tot -= xs[i]*phis_inv[i]*dphis_dxs[i][i] # Remove the branches by subreacting i after.
+#
+#            # First term which is almost like it
+#            tot += xs[i]*phis_inv[i]*(dphis_dxs[i][i] - phis[i]/xs[i])
+#            tot += log(phis[i]/xs[i])
+#            tot -= qs[i]*log(thetaj_taus_jis[i])
+#            tot += 0.5*z*qs[i]*log(thetas[i]*phis_inv[i])
+#
+#            d2GE_dTdxs[i] = R*(-T*Ttot + tot)
         self._d2GE_dTdxs = d2GE_dTdxs
         return d2GE_dTdxs
 
@@ -1222,7 +1303,7 @@ class UNIQUAC(GibbsExcess):
         tau_mk_dthetam_xi = [[sum([taus[m][j]*dthetas_dxs[m][i] for m in range(N)]) for j in range(N)] for i in range(N)]
 
 
-        self._d2GE_dxixjs = d2GE_dxixjs = []
+        d2GE_dxixjs = []
         for i in range(N):
             dG_row = []
             for j in range(N):
@@ -1321,6 +1402,9 @@ class UNIQUAC(GibbsExcess):
                 dG_row.append(RT*tot)
             d2GE_dxixjs.append(dG_row)
 #            debug_mat.append(debug_row)
+        if not self.scalar:
+            d2GE_dxixjs = array(d2GE_dxixjs)
+        self._d2GE_dxixjs = d2GE_dxixjs
         return d2GE_dxixjs
 
 
