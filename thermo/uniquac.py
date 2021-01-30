@@ -653,16 +653,23 @@ class UNIQUAC(GibbsExcess):
         t1s = [rsxs_sum_inv2*(rs[i]*xs[i]*rsxs_sum_inv_2  - 1.0) for i in range(N)]
         t2s = [rs[i]*xs[i]*rsxs_sum_inv3_2 for i in range(N)]
 
-        self._d2phis_dxixjs = d2phis_dxixjs = [[None for _ in range(N)] for _ in range(N)]
+        self._d2phis_dxixjs = d2phis_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]
 
         for k in range(N):
             # There is symmetry here, but it is complex. 4200 of 8000 (N=20) values are unique.
             # Due to the very large matrices, no gains to be had by exploiting it in this function
             d2phis_dxixjsk = d2phis_dxixjs[k]
+
             for j in range(N):
-                # Fastest I can test
-                d2phis_dxixjsk[j] = [rs[k]*rs[j]*t1s[i] if (i == k or i == j) and j != k
-                                       else rs[k]*rs[j]*t2s[i] for i in range(N)]
+                rskrsj = rs[k]*rs[j]
+                d2phis_dxixjskj = d2phis_dxixjsk[j]
+                for i in range(N):
+#                    d2phis_dxixjskj[i] = rskrsj*t2s[i]
+                    d2phis_dxixjskj[i] = rskrsj*t1s[i] if (i == k or i == j) and j != k else rskrsj*t2s[i]
+#                if j != k:
+#                    d2phis_dxixjskj[k] = rskrsj*t1s[i]
+#                    d2phis_dxixjskj[j] = rskrsj*t1s[i]
+
             d2phis_dxixjs[k][k][k] -= rs[k]*rs[k]*rsxs_sum_inv2_2
 
         return d2phis_dxixjs
