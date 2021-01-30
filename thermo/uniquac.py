@@ -152,7 +152,8 @@ def uniquac_d3GE_dT3(T, N, xs, qs, thetaj_taus_jis,
 
 
 
-def uniquac_dGE_dxs(N, T, xs, qs, taus, phis, dphis_dxs, thetas, dthetas_dxs, thetaj_taus_jis, dGE_dxs=None):
+def uniquac_dGE_dxs(N, T, xs, qs, taus, phis, dphis_dxs, thetas, dthetas_dxs,
+                    thetaj_taus_jis, thetaj_taus_jis_inv, dGE_dxs=None):
     z = 10.0
     if dGE_dxs is None:
         dGE_dxs = [0.0]*N
@@ -172,7 +173,7 @@ def uniquac_dGE_dxs(N, T, xs, qs, taus, phis, dphis_dxs, thetas, dthetas_dxs, th
             for k in range(N):
                 tot3 += taus[k][j]*dthetas_dxs[k][i]
 
-            tot -= qs[j]*xs[j]*tot3/thetaj_taus_jis[j]
+            tot -= qs[j]*xs[j]*tot3*thetaj_taus_jis_inv[j]
             if i != j:
                 # Double index issue
                 tot += xs[j]/phis[j]*dphis_dxs[j][i]
@@ -891,12 +892,21 @@ class UNIQUAC(GibbsExcess):
 
         N = self.N
         self._thetaj_taus_jis = thetaj_taus_jis = uniquac_thetaj_taus_jis(N, taus, thetas)
-#        for i in range(N):
-#            tot = 0.0
-#            for j in range(N):
-#                tot += thetas[j]*taus[j][i]
-#            thetaj_taus_jis.append(tot)
         return thetaj_taus_jis
+
+    def thetaj_taus_jis_inv(self):
+        try:
+            return self._thetaj_taus_jis_inv
+        except:
+            pass
+
+        thetaj_taus_jis = self.thetaj_taus_jis()
+        if self.scalar:
+            thetaj_taus_jis_inv = [1.0/v for v in thetaj_taus_jis]
+        else:
+            thetaj_taus_jis_inv = 1.0/thetaj_taus_jis
+        self._thetaj_taus_jis_inv = thetaj_taus_jis_inv
+        return thetaj_taus_jis_inv
 
     def thetaj_taus_ijs(self):
         # no name yet
@@ -1199,13 +1209,15 @@ class UNIQUAC(GibbsExcess):
         thetas = self.thetas()
         dthetas_dxs = self.dthetas_dxs()
         thetaj_taus_jis = self.thetaj_taus_jis()
+        thetaj_taus_jis_inv = self.thetaj_taus_jis_inv()
 
         if self.scalar:
             dGE_dxs = [0.0]*N
         else:
             dGE_dxs = zeros(N)
 
-        uniquac_dGE_dxs(N, T, xs, qs, taus, phis, dphis_dxs, thetas, dthetas_dxs, thetaj_taus_jis, dGE_dxs)
+        uniquac_dGE_dxs(N, T, xs, qs, taus, phis, dphis_dxs, thetas, dthetas_dxs,
+                        thetaj_taus_jis, thetaj_taus_jis_inv, dGE_dxs)
         self.dGE_dxs = dGE_dxs
 
         # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
