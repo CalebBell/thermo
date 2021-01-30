@@ -1144,7 +1144,7 @@ class UNIQUAC(GibbsExcess):
                 Ttot += t49
                 t49_sum += t49
 
-                t50 = qsxs[j]*(t102*thetaj_dtaus_dT_jis[j])*thetaj_taus_jis_inv[j]*thetaj_taus_jis_inv[j]
+                t50 = qsxsthetaj_taus_jis_inv[j]*(t102*thetaj_dtaus_dT_jis[j])*thetaj_taus_jis_inv[j]
                 Ttot -= t50
                 t50_sum -= t50
 
