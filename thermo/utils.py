@@ -89,6 +89,10 @@ from chemicals.vapor_pressure import Antoine, Antoine_coeffs_from_point, Antoine
 from chemicals.dippr import EQ101
 from chemicals.phase_change import Watson, Watson_n
 
+try:
+    array = np.array
+except:
+    pass
 
 BasicNumpyEncoder = None
 def build_numpy_encoder():
@@ -118,6 +122,33 @@ def build_numpy_encoder():
                 return float(obj)
             return JSONEncoder.default(self, obj)
 
+
+def naive_lists_to_arrays(obj):
+    t = type(obj)
+    if t is dict:
+        for k, v in obj.items():
+            obj[k] = naive_lists_to_arrays(v)
+    if t is tuple:
+        return tuple(naive_lists_to_arrays(v) for v in obj)
+    if t is set:
+        return set(naive_lists_to_arrays(v) for v in obj)
+    if t is list:
+        return array(obj)
+    return obj
+
+BasicNumpyDecoder = None
+def build_numpy_decoder():
+    global BasicNumpyDecoder, json
+    import json
+
+    class BasicNumpyDecoder(json.JSONDecoder):
+        def __init__(self, *args, **kwargs):
+            json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
+
+        def object_hook(self, obj):
+            return naive_lists_to_arrays(obj)
+
+
 def _load_orjson():
     global orjson
     import orjson
@@ -135,6 +166,18 @@ def dump_json_np(obj, library='json'):
         opt = orjson.OPT_SERIALIZE_NUMPY
         return orjson.dumps(obj, option=opt)
 
+def load_json_np(obj, library='json'):
+    '''Serialization tool that handles numpy arrays. By default this will
+    use the standard library json, but this can also use orjson.'''
+    if library == 'json':
+        if BasicNumpyDecoder is None:
+            build_numpy_decoder()
+        return json.loads(obj, cls=BasicNumpyDecoder)
+    elif library == 'orjson':
+        if orjson is None:
+            _load_orjson()
+        opt = orjson.OPT_SERIALIZE_NUMPY
+        return orjson.loads(obj, option=opt)
 
 json_loaded = False
 def _load_json():

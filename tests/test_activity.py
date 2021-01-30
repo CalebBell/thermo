@@ -28,6 +28,7 @@ from thermo.activity import GibbsExcess, IdealSolution
 from random import random
 import numpy as np
 from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d
+from thermo.test_utils import check_np_output_activity
 
 
 def test_IdealSolution():
@@ -56,3 +57,16 @@ def test_IdealSolution():
     assert 'json_version' in string
 
     assert IdealSolution.from_json(string).__dict__ == GE.__dict__
+
+
+def test_IdealSolution_numpy_output():
+    model = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
+    modelnp = IdealSolution(T=300.0, xs=np.array([.1, .2, .3, .4]))
+    modelnp2 = modelnp.to_T_xs(T=model.T*(1.0-1e-16), xs=np.array([.1, .2, .3, .4]))
+    check_np_output_activity(model, modelnp, modelnp2)
+
+    json_string = modelnp.as_json()
+    new = IdealSolution.from_json(json_string)
+    assert new == modelnp
+
+

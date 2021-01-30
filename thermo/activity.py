@@ -70,7 +70,7 @@ __all__ = ['GibbsExcess', 'IdealSolution']
 from fluids.constants import R, R_inv
 from fluids.numerics import numpy as np
 from chemicals.utils import exp, log
-from chemicals.utils import normalize, dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, d2xs_to_dxdn_partials
+from chemicals.utils import normalize, dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, d2xs_to_dxdn_partials, hash_any_primitive
 from thermo import utils
 from thermo.utils import dump_json_np
 
@@ -286,6 +286,14 @@ class GibbsExcess(object):
         s = '%s(T=%s, xs=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs))
         return s
 
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
+    def __hash__(self):
+        d = self.__dict__
+        ans = hash_any_primitive((self.__class__, d))
+        return ans
+
     def as_json(self):
         r'''Method to create a JSON serialization of the Gibbs Excess model
         which can be stored, and reloaded later.
@@ -345,7 +353,14 @@ class GibbsExcess(object):
         >>> assert model.__dict__ == new_model.__dict__
         '''
 
-        d = utils.json.loads(json_repr)
+
+        if '"scalar": false' in json_repr or '"scalar":false' in json_repr:
+            # Load as np
+            d = utils.load_json_np(json_repr)
+        else:
+            d = utils.json.loads(json_repr)
+            if not d['scalar']:
+                d = utils.load_json_np(json_repr)
 
 #        if cls is GibbsExcess:
 #            model_name = d['py/object']
@@ -426,7 +441,10 @@ class GibbsExcess(object):
             dGE_dxs = self._dGE_dxs
         except:
             dGE_dxs = self.dGE_dxs()
-        self._dHE_dxs = dHE_dxs = gibbs_excess_dHE_dxs(dGE_dxs, d2GE_dTdxs, self.N, self.T)
+        dHE_dxs = gibbs_excess_dHE_dxs(dGE_dxs, d2GE_dTdxs, self.N, self.T)
+        if not self.scalar and type(dHE_dxs) is list:
+            dHE_dxs = array(dHE_dxs)
+        self._dHE_dxs = dHE_dxs
         return dHE_dxs
 
     def dHE_dns(self):
@@ -445,7 +463,10 @@ class GibbsExcess(object):
         Notes
         -----
         '''
-        return dxs_to_dns(self.dHE_dxs(), self.xs)
+        dHE_dns = dxs_to_dns(self.dHE_dxs(), self.xs)
+        if not self.scalar and type(dHE_dns) is list:
+            dHE_dns = array(dHE_dns)
+        return dHE_dns
 
     def dnHE_dns(self):
         r'''Calculate and return the partial mole number derivative of excess
@@ -463,7 +484,10 @@ class GibbsExcess(object):
         Notes
         -----
         '''
-        return dxs_to_dn_partials(self.dHE_dxs(), self.xs, self.HE())
+        dnHE_dns = dxs_to_dn_partials(self.dHE_dxs(), self.xs, self.HE())
+        if not self.scalar and type(dnHE_dns) is list:
+            dnHE_dns = array(dnHE_dns)
+        return dnHE_dns
 
     def SE(self):
         r'''Calculates the excess entropy of a liquid phase using an
@@ -583,7 +607,10 @@ class GibbsExcess(object):
         Notes
         -----
         '''
-        return dxs_to_dns(self.dSE_dxs(), self.xs)
+        dSE_dns = dxs_to_dns(self.dSE_dxs(), self.xs)
+        if not self.scalar and type(dSE_dns) is list:
+            dSE_dns = array(dSE_dns)
+        return dSE_dns
 
     def dnSE_dns(self):
         r'''Calculate and return the partial mole number derivative of excess
@@ -601,7 +628,10 @@ class GibbsExcess(object):
         Notes
         -----
         '''
-        return dxs_to_dn_partials(self.dSE_dxs(), self.xs, self.SE())
+        dnSE_dns = dxs_to_dn_partials(self.dSE_dxs(), self.xs, self.SE())
+        if not self.scalar and type(dnSE_dns) is list:
+            dnSE_dns = array(dnSE_dns)
+        return dnSE_dns
 
     def dGE_dns(self):
         r'''Calculate and return the mole number derivative of excess
@@ -619,7 +649,10 @@ class GibbsExcess(object):
         Notes
         -----
         '''
-        return dxs_to_dns(self.dGE_dxs(), self.xs)
+        dGE_dns = dxs_to_dns(self.dGE_dxs(), self.xs)
+        if not self.scalar and type(dGE_dns) is list:
+            dGE_dns = array(dGE_dns)
+        return dGE_dns
 
     def dnGE_dns(self):
         r'''Calculate and return the partial mole number derivative of excess
@@ -637,7 +670,10 @@ class GibbsExcess(object):
         Notes
         -----
         '''
-        return dxs_to_dn_partials(self.dGE_dxs(), self.xs, self.GE())
+        dnGE_dns = dxs_to_dn_partials(self.dGE_dxs(), self.xs, self.GE())
+        if not self.scalar and type(dnGE_dns) is list:
+            dnGE_dns = array(dnGE_dns)
+        return dnGE_dns
 
     def d2GE_dTdns(self):
         r'''Calculate and return the mole number derivative of the first
@@ -656,7 +692,10 @@ class GibbsExcess(object):
         Notes
         -----
         '''
-        return dxs_to_dns(self.d2GE_dTdxs(), self.xs)
+        d2GE_dTdns = dxs_to_dns(self.d2GE_dTdxs(), self.xs)
+        if not self.scalar and type(d2GE_dTdns) is list:
+            d2GE_dTdns = array(d2GE_dTdns)
+        return d2GE_dTdns
 
 
     def d2nGE_dTdns(self):
@@ -679,7 +718,10 @@ class GibbsExcess(object):
         # needed in gammas temperature derivatives
         dGE_dT = self.dGE_dT()
         d2GE_dTdns = self.d2GE_dTdns()
-        return dns_to_dn_partials(d2GE_dTdns, dGE_dT)
+        d2nGE_dTdns = dns_to_dn_partials(d2GE_dTdns, dGE_dT)
+        if not self.scalar and type(d2nGE_dTdns) is list:
+            d2nGE_dTdns = array(d2nGE_dTdns)
+        return d2nGE_dTdns
 
 
     def d2nGE_dninjs(self):
@@ -700,7 +742,10 @@ class GibbsExcess(object):
         -----
         '''
         # This one worked out
-        return d2xs_to_dxdn_partials(self.d2GE_dxixjs(), self.xs)
+        d2nGE_dninjs = d2xs_to_dxdn_partials(self.d2GE_dxixjs(), self.xs)
+        if not self.scalar and type(d2nGE_dninjs) is list:
+            d2nGE_dninjs = array(d2nGE_dninjs)
+        return d2nGE_dninjs
 
     def gammas_infinite_dilution(self):
         r'''Calculate and return the infinite dilution activity coefficients
@@ -761,6 +806,8 @@ class GibbsExcess(object):
             gammas = [exp(i*RT_inv) for i in dG_dns]
         else:
             gammas = gibbs_excess_gammas(self.xs, dG_dxs, GE, self.T)
+            if type(gammas) is list:
+                gammas = array(gammas)
         self._gammas = gammas
         return gammas
 
@@ -796,7 +843,12 @@ class GibbsExcess(object):
         xs = self.xs
         d2GE_dxixjs = self.d2GE_dxixjs()
 
-        self._dgammas_dns = dgammas_dns = gibbs_excess_dgammas_dns(xs, gammas, d2GE_dxixjs, N, self.T)
+        dgammas_dns = gibbs_excess_dgammas_dns(xs, gammas, d2GE_dxixjs, N, self.T)
+
+        if not self.scalar and type(dgammas_dns) is list:
+            dgammas_dns = array(dgammas_dns)
+
+        self._dgammas_dns = dgammas_dns
         return dgammas_dns
 
 #    def dgammas_dxs(self):
@@ -881,6 +933,8 @@ class GibbsExcess(object):
         dG_dxs = self.dGE_dxs()
         d2GE_dTdxs = self.d2GE_dTdxs()
         dgammas_dT = gibbs_excess_dgammas_dT(xs, GE, dGE_dT, dG_dxs, d2GE_dTdxs, N, T)
+        if not self.scalar and type(dgammas_dT) is list:
+            dgammas_dT = array(dgammas_dT)
         self._dgammas_dT = dgammas_dT
         return dgammas_dT
 
