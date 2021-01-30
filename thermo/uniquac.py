@@ -1142,24 +1142,26 @@ class UNIQUAC(GibbsExcess):
                 Ttot += t49
                 t49_sum += t49
 
-                t50 = qs[j]*xs[j]*(t102*thetaj_dtaus_dT_jis[j])*thetaj_taus_jis_inv[j]*thetaj_taus_jis_inv[j]
+                t50 = qsxs[j]*(t102*thetaj_dtaus_dT_jis[j])*thetaj_taus_jis_inv[j]*thetaj_taus_jis_inv[j]
                 Ttot -= t50
                 t50_sum -= t50
 
                 ## Non temperature multiplied terms
-                t51 = qs[j]*xs[j]*z/(2.0*thetas[j])*(dthetas_dxs[j][i] - thetas[j]*phis_inv[j]*dphis_dxs[j][i])
+                t51 = qsxs[j]*z/(2.0*thetas[j])*(dthetas_dxs[j][i] - thetas[j]*phis_inv[j]*dphis_dxs[j][i])
                 t51_sum += t51
-                tot += t51
 
-                t52 = qs[j]*xs[j]*t102*thetaj_taus_jis_inv[j]
-                t52_sum -= t52
-                tot -= t52
+                t52 = qsxs[j]*t102*thetaj_taus_jis_inv[j]
+                t52_sum += t52
 
 
-                # Terms reused from dGE_dxs
-                if i != j:
+#                # Terms reused from dGE_dxs
+#                if i != j:
                     # Double index issue
-                    tot += xs[j]*phis_inv[j]*dphis_dxs[j][i]
+                tot += xs[j]*phis_inv[j]*dphis_dxs[j][i]
+            tot += t51_sum
+            tot -= t52_sum
+
+            tot -= xs[i]*phis_inv[i]*dphis_dxs[i][i] # Remove the branches by subreacting i after.
 
             # First term which is almost like it
             tot += xs[i]*phis_inv[i]*(dphis_dxs[i][i] - phis[i]/xs[i])
