@@ -1118,11 +1118,13 @@ class UNIQUAC(GibbsExcess):
             qsxs = [qs[i]*xs[i] for i in range(N)]
             qsxsthetaj_taus_jis_inv = [thetaj_taus_jis_inv[i]*qsxs[i] for i in range(N)]
             vec1 = [qsxsthetaj_taus_jis_inv[i]*thetaj_dtaus_dT_jis[i]*thetaj_taus_jis_inv[i] for i in range(N)]
+            vec2 = [qsxs[i]/thetas[i] for i in range(N)]
         else:
             d2GE_dTdxs = zeros(N)
             qsxs = qs*xs
             qsxsthetaj_taus_jis_inv = qsxs*thetaj_taus_jis_inv
             vec1 = qsxsthetaj_taus_jis_inv*thetaj_dtaus_dT_jis*thetaj_taus_jis_inv
+            vec2 = qsxs/thetas
 
         # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
         for i in range(N):
@@ -1142,26 +1144,24 @@ class UNIQUAC(GibbsExcess):
                     t102 += dthetas_dxs[k][i]*taus[k][j]
 
                 ## Temperature multiplied terms
-                t49 = qsxsthetaj_taus_jis_inv[j]*t100
-                Ttot += t49
-                t49_sum += t49
+                t49_sum += t100*qsxsthetaj_taus_jis_inv[j]
 
-                t50 = vec1[j]*t102
-                Ttot -= t50
-                t50_sum -= t50
+                t50_sum += t102*vec1[j]
+                t52_sum += t102*qsxsthetaj_taus_jis_inv[j]
 
                 ## Non temperature multiplied terms
-                t51 = qsxs[j]/thetas[j]*(dthetas_dxs[j][i] - thetas[j]*phis_inv[j]*dphis_dxs[j][i])
+                t51 = vec2[j]*(dthetas_dxs[j][i] - thetas[j]*phis_inv[j]*dphis_dxs[j][i])
                 t51_sum += t51
-
-                t52 = t102*qsxsthetaj_taus_jis_inv[j]
-                t52_sum += t52
 
 
 #                # Terms reused from dGE_dxs
 #                if i != j:
                     # Double index issue
                 tot += xs[j]*phis_inv[j]*dphis_dxs[j][i]
+
+            Ttot -= t50_sum
+            Ttot += t49_sum
+
             tot += t51_sum*z*0.5
             tot -= t52_sum
 
