@@ -1313,13 +1313,19 @@ class UNIQUAC(GibbsExcess):
             t51_sum = 0.0
             t52_sum = 0.0
             for j in range(N):
+                t100 = 0.0
+                for k in range(N):
+                    t100 += dtaus_dT[k][j]*dthetas_dxs[k][i]
+                t102 = 0.0
+                for k in range(N):
+                    t102 += dthetas_dxs[k][i]*taus[k][j]
+
                 ## Temperature multiplied terms
-                t49 = qs[j]*xs[j]*(sum([dtaus_dT[k][j]*dthetas_dxs[k][i] for k in range(N)]))/thetaj_taus_jis[j]
+                t49 = qs[j]*xs[j]*t100/thetaj_taus_jis[j]
                 Ttot += t49
                 t49_sum += t49
 
-                t50 = qs[j]*xs[j]*(sum([dtaus_dT[k][j]*thetas[k] for k in range(N)])*sum([dthetas_dxs[k][i]*taus[k][j] for k in range(N)])
-                                   )/thetaj_taus_jis[j]**2
+                t50 = qs[j]*xs[j]*(t102*thetaj_dtaus_dT_jis[j])/thetaj_taus_jis[j]**2
                 Ttot -= t50
                 t50_sum -= t50
 
@@ -1328,11 +1334,7 @@ class UNIQUAC(GibbsExcess):
                 t51_sum += t51
                 tot += t51
 
-                term = 0.0
-                for k in range(N):
-                    term += taus[k][j]*dthetas_dxs[k][i]
-
-                t52 = qs[j]*xs[j]*term/thetaj_taus_jis[j]
+                t52 = qs[j]*xs[j]*t102/thetaj_taus_jis[j]
                 t52_sum -= t52
                 tot -= t52
 
