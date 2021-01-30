@@ -4333,9 +4333,9 @@ def test_model_encode_json_gceosmix():
 
     for eos in eos_mix_no_coeffs_list:
         obj1 = eos(T=T, P=P, zs=zs, omegas=omegas, Tcs=Tcs, Pcs=Pcs, kijs=kijs)
-        s = obj1.as_JSON()
+        s = obj1.as_json()
         assert 'json_version' in s
-        obj2 = GCEOSMIX.from_JSON(s)
+        obj2 = GCEOSMIX.from_json(s)
         assert obj1.__dict__ == obj2.__dict__
 
 

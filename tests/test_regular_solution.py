@@ -51,7 +51,7 @@ def test_4_components():
     GE = RegularSolution(T, xs, Vs, SPs, lambda_coeffs)
     assert eval(str(GE)).GE() == GE.GE()
 
-    GE2 = RegularSolution.from_JSON(GE.as_JSON())
+    GE2 = RegularSolution.from_json(GE.as_json())
     assert GE2.__dict__ == GE.__dict__
 
     dT = 1e-7*T
@@ -139,7 +139,7 @@ def test_4_components():
     assert_close3d(d3GE_dxixjxks_analytical, d3GE_dxixjxks_sympy, rtol=1e-12)
 
     # Test with some stored results
-    GE2 = RegularSolution.from_JSON(GE.as_JSON())
+    GE2 = RegularSolution.from_json(GE.as_json())
     assert GE2.__dict__ == GE.__dict__
 
 def test_create_many_components_regular_solution():

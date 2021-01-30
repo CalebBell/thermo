@@ -208,7 +208,7 @@ def test_water_ethanol_methanol_madeup():
     GE = NRTL(T, xs, taus, alphas)
     assert eval(str(GE)).GE() == GE.GE()
 
-    assert NRTL.from_JSON(GE.as_JSON()).__dict__ == GE.__dict__
+    assert NRTL.from_json(GE.as_json()).__dict__ == GE.__dict__
 
     # gammas
     assert_close1d(GE.gammas(), [1.7795902383749216, 1.1495597830749005, 1.0736702352016942])

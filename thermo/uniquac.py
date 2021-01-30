@@ -164,6 +164,12 @@ class UNIQUAC(GibbsExcess):
         Temperature, [K]
     xs : list[float]
         Mole fractions, [-]
+    rs : list[float]
+        `r` parameters :math:`r_i = \sum_{k=1}^{n} \nu_k R_k` if from UNIFAC,
+        otherwise regressed, [-]
+    qs : list[float]
+        `q` parameters :math:`q_i = \sum_{k=1}^{n}\nu_k Q_k` if from UNIFAC,
+        otherwise regressed, [-]
     tau_coeffs : list[list[list[float]]], optional
         UNIQUAC parameters, indexed by [i][j] and then each value is a 6
         element list with parameters [`a`, `b`, `c`, `d`, `e`, `f`];

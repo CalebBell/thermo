@@ -801,7 +801,7 @@ def test_NISTUF_2011():
 
 def call_all_methods_first_UNIFAC(kwargs):
     cls = UNIFAC
-    arg_methods = ('__init__', 'to_T_xs', '__delattr__', '__format__', '__getattribute__', '__setattr__', 'from_JSON')
+    arg_methods = ('__init__', 'to_T_xs', '__delattr__', '__format__', '__getattribute__', '__setattr__', 'from_json')
     special_methods = {1: ('Vis_modified', 'dVis_modified_dxs', 'd2Vis_modified_dxixjs', 'd3Vis_modified_dxixjxks')}
     special_methods[4] = special_methods[1]
 
@@ -861,7 +861,7 @@ def test_UNIFAC_initialization():
     assert eval(str(GE)).__dict__ == GE.__dict__
 
     # Check the json export/import is working
-    assert UNIFAC.from_JSON(GE.as_JSON()).__dict__ == GE.__dict__
+    assert UNIFAC.from_json(GE.as_json()).__dict__ == GE.__dict__
 
     gammas_expect = [1.4938332119259123, 1.960091090828185, 1.4125828059033487, 1.651847113952877]
     assert_close1d(GE.gammas(), gammas_expect)

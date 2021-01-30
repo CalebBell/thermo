@@ -64,7 +64,7 @@ def test_Permittivity_class():
     w.extrapolation = None
     assert w.T_dependent_property(200.) is None
 
-    assert PermittivityLiquid.from_JSON(w.as_JSON()) == w
+    assert PermittivityLiquid.from_json(w.as_json()) == w
 
 @pytest.mark.slow
 @pytest.mark.fuzz

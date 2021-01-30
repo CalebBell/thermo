@@ -34,7 +34,7 @@ Chemical Constants Class
 ========================
 .. autoclass:: ChemicalConstantsPackage
     :members: subset, properties, correlations_from_IDs, constants_from_IDs,
-              from_IDs, with_new_constants, as_JSON, from_JSON
+              from_IDs, with_new_constants, as_json, from_json
     :undoc-members:
     :exclude-members:
 
@@ -178,7 +178,7 @@ class ChemicalConstantsPackage(object):
                 new[p] = v
         return new
 
-    def as_JSON(self):
+    def as_json(self):
         r'''Method to create a JSON serialization of the chemical constants
         package which can be stored, and reloaded later.
 
@@ -193,7 +193,7 @@ class ChemicalConstantsPackage(object):
         Examples
         --------
         >>> constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
-        >>> string = constants.as_JSON()
+        >>> string = constants.as_json()
         >>> type(string)
         str
         '''
@@ -206,7 +206,7 @@ class ChemicalConstantsPackage(object):
         return ans
 
     @classmethod
-    def from_JSON(cls, string):
+    def from_json(cls, string):
         r'''Method to create a ChemicalConstantsPackage from a JSON
         serialization of another ChemicalConstantsPackage.
 
@@ -223,13 +223,13 @@ class ChemicalConstantsPackage(object):
         Notes
         -----
         It is important that the input string be in the same format as that
-        created by :obj:`ChemicalConstantsPackage.as_JSON`.
+        created by :obj:`ChemicalConstantsPackage.as_json`.
 
         Examples
         --------
         >>> constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
-        >>> string = constants.as_JSON()
-        >>> new_constants  = ChemicalConstantsPackage.from_JSON(string)
+        >>> string = constants.as_json()
+        >>> new_constants  = ChemicalConstantsPackage.from_json(string)
         >>> assert hash(new_constants) == hash(constants)
         '''
         if json is None:

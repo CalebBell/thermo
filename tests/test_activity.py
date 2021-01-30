@@ -36,7 +36,7 @@ def test_IdealSolution():
 
     assert eval(str(GE)).GE() == GE.GE()
 
-    string = GE.as_JSON()
+    string = GE.as_json()
     assert 'json_version' in string
 
-    assert IdealSolution.from_JSON(string).__dict__ == GE.__dict__
+    assert IdealSolution.from_json(string).__dict__ == GE.__dict__

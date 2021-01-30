@@ -47,9 +47,9 @@ def test_VaporPressure():
 
     assert_close(EtOH.calculate(305, VDI_TABULAR), 11690.81660829924, rtol=1E-4)
 
-    s = EtOH.as_JSON()
+    s = EtOH.as_json()
     assert 'json_version' in s
-    obj2 = VaporPressure.from_JSON(s)
+    obj2 = VaporPressure.from_json(s)
     assert EtOH == obj2
 
 
@@ -66,8 +66,8 @@ def test_VaporPressure():
     Psat_exp = [162944.82134710113, 162870.44794192078, 162865.5380455795]
     assert_close1d(sorted(Psat_calcs), sorted(Psat_exp))
 
-    s = a.as_JSON()
-    obj2 = VaporPressure.from_JSON(s)
+    s = a.as_json()
+    obj2 = VaporPressure.from_json(s)
     assert a == obj2
 
     # Test that methods return None
@@ -140,7 +140,7 @@ def test_VaporPressure_linear_extrapolation_non_negative():
     assert_close(rsquared(1/np.array(Ts), np.log(Ps)), 1, atol=1e-5)
 
     # TODO make work with different interpolation methods
-#    assert ethanol_psat == VaporPressure.from_JSON(ethanol_psat.as_JSON())
+#    assert ethanol_psat == VaporPressure.from_json(ethanol_psat.as_json())
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_extrapolation_solve_prop():

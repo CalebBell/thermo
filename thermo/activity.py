@@ -286,7 +286,7 @@ class GibbsExcess(object):
         s = '%s(T=%s, xs=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs))
         return s
 
-    def as_JSON(self):
+    def as_json(self):
         r'''Method to create a JSON serialization of the Gibbs Excess model
         which can be stored, and reloaded later.
 
@@ -301,7 +301,7 @@ class GibbsExcess(object):
         Examples
         --------
         >>> model = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
-        >>> string = model.as_JSON()
+        >>> string = model.as_json()
         >>> type(string)
         str
         '''
@@ -319,7 +319,7 @@ class GibbsExcess(object):
         return ans
 
     @classmethod
-    def from_JSON(cls, json_repr):
+    def from_json(cls, json_repr):
         r'''Method to create a Gibbs Excess model from a JSON
         serialization of another Gibbs Excess model.
 
@@ -336,13 +336,13 @@ class GibbsExcess(object):
         Notes
         -----
         It is important that the input string be in the same format as that
-        created by :obj:`GibbsExcess.as_JSON`.
+        created by :obj:`GibbsExcess.as_json`.
 
         Examples
         --------
         >>> model = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
-        >>> string = model.as_JSON()
-        >>> new_model = GibbsExcess.from_JSON(string)
+        >>> string = model.as_json()
+        >>> new_model = GibbsExcess.from_json(string)
         >>> assert model.__dict__ == new_model.__dict__
         '''
 

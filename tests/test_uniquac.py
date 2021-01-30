@@ -128,7 +128,7 @@ def test_UNIQUAC_madeup_ternary():
     GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=ABCDEF)
     assert eval(str(GE)).GE() == GE.GE()
 
-    GE2 = UNIQUAC.from_JSON(GE.as_JSON())
+    GE2 = UNIQUAC.from_json(GE.as_json())
     assert GE2.__dict__ == GE.__dict__
 
     # GE
@@ -224,5 +224,5 @@ def test_UNIQUAC_madeup_ternary():
     assert_close2d(d2GE_dxixjs_analytical, d2GE_dxixjs_sympy, rtol=1e-12)
 
     # Check json storage again, with some results
-    GE2 = UNIQUAC.from_JSON(GE.as_JSON())
+    GE2 = UNIQUAC.from_json(GE.as_json())
     assert GE2.__dict__ == GE.__dict__

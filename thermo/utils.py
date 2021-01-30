@@ -40,7 +40,7 @@ Temperature Dependent
              calculate_derivative, T_dependent_property_derivative,
              calculate_integral, T_dependent_property_integral,
              calculate_integral_over_T, T_dependent_property_integral_over_T,
-             extrapolate, test_method_validity, calculate, from_JSON, as_JSON,
+             extrapolate, test_method_validity, calculate, from_json, as_json,
              interpolation_T, interpolation_T_inv, interpolation_property,  interpolation_property_inv, T_limits, all_methods
    :undoc-members:
 
@@ -967,7 +967,7 @@ class TDependentProperty(object):
             self.T_cached = T
             return self.prop_cached
 
-    def as_JSON(self):
+    def as_json(self):
         r'''Method to create a JSON serialization of the property model
         which can be stored, and reloaded later.
 
@@ -1013,7 +1013,7 @@ class TDependentProperty(object):
             prop_obj = getattr(self, name)
             prop_references.append(prop_obj)
             if prop_obj is not None and type(prop_obj) not in (float, int):
-                d[name] = prop_obj.as_JSON()
+                d[name] = prop_obj.as_json()
 
         json_refs = {}
         for name in self._json_obj_by_CAS:
@@ -1052,7 +1052,7 @@ class TDependentProperty(object):
             d['CP_f'] = coolprop_fluids[d['CP_f']]
 
     @classmethod
-    def from_JSON(cls, json_repr):
+    def from_json(cls, json_repr):
         r'''Method to create a property model from a JSON
         serialization of another property model.
 
@@ -1069,7 +1069,7 @@ class TDependentProperty(object):
         Notes
         -----
         It is important that the input string be in the same format as that
-        created by :obj:`TDependentProperty.as_JSON`.
+        created by :obj:`TDependentProperty.as_json`.
 
         Examples
         --------
@@ -3176,7 +3176,7 @@ class MixtureProperty(object):
         ans = hash_any_primitive((self.__class__, d))
         return ans
 
-    def as_JSON(self):
+    def as_json(self):
         r'''Method to create a JSON serialization of the mixture property
         which can be stored, and reloaded later.
 
@@ -3198,7 +3198,7 @@ class MixtureProperty(object):
         mod_name = self.__class__.__module__
         pure_references = [d[k] for k in self.pure_references]
         for i, k in enumerate(self.pure_references):
-            d[k] = [v.as_JSON() for v in pure_references[i]]
+            d[k] = [v.as_json() for v in pure_references[i]]
         del d['pure_objs']
 
         d["py/object"] = "%s.%s" %(mod_name, self.__class__.__name__)
@@ -3218,7 +3218,7 @@ class MixtureProperty(object):
         return ans
 
     @classmethod
-    def from_JSON(cls, string):
+    def from_json(cls, string):
         r'''Method to create a MixtureProperty from a JSON
         serialization of another MixtureProperty.
 
@@ -3235,7 +3235,7 @@ class MixtureProperty(object):
         Notes
         -----
         It is important that the input string be in the same format as that
-        created by :obj:`MixtureProperty.as_JSON`.
+        created by :obj:`MixtureProperty.as_json`.
 
         Examples
         --------
@@ -3246,7 +3246,7 @@ class MixtureProperty(object):
         d['all_methods'] = set(d['all_methods'])
         for k, sub_cls in zip(cls.pure_references, cls.pure_reference_types):
             sub_jsons = d[k]
-            d[k] = [sub_cls.from_JSON(j) for j in sub_jsons]
+            d[k] = [sub_cls.from_json(j) for j in sub_jsons]
 
         d['pure_objs'] = d[cls.pure_references[0]]
 

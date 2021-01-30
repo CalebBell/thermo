@@ -33,7 +33,7 @@ import numpy as np
 
 @pytest.mark.fuzz
 @pytest.mark.slow
-def test_ChemicalConstantsPackage_from_JSON_as_JSON_large():
+def test_ChemicalConstantsPackage_from_json_as_json_large():
     create_compounds = []
     for k in dippr_compounds():
         try:
@@ -43,7 +43,7 @@ def test_ChemicalConstantsPackage_from_JSON_as_JSON_large():
             pass
 
     obj = ChemicalConstantsPackage.constants_from_IDs(create_compounds)
-    obj2 = ChemicalConstantsPackage.from_JSON(obj.as_JSON())
+    obj2 = ChemicalConstantsPackage.from_json(obj.as_json())
 
     assert hash(obj) == hash(obj2)
     assert new_constants == constants
@@ -51,8 +51,8 @@ def test_ChemicalConstantsPackage_from_JSON_as_JSON_large():
 
 def test_ChemicalConstantsPackage_json_version_exported():
     constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
-    string = constants.as_JSON()
-    c2 = ChemicalConstantsPackage.from_JSON(string)
+    string = constants.as_json()
+    c2 = ChemicalConstantsPackage.from_json(string)
     assert 'json_version' in string
     assert not hasattr(c2, 'json_version')
 

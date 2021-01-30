@@ -45,14 +45,14 @@ def test_ViscosityLiquid():
     EtOH = ViscosityLiquid(MW=46.06844, Tm=159.05, Tc=514.0, Pc=6137000.0, Vc=0.000168, omega=0.635, Psat=7872.16, Vml=5.8676e-5, CASRN='64-17-5')
 
     # Test json export
-    EtOH2 = ViscosityLiquid.from_JSON(EtOH.as_JSON())
+    EtOH2 = ViscosityLiquid.from_json(EtOH.as_json())
     assert EtOH.__dict__ == EtOH2.__dict__
 
     # Test json export with interpolator objects
     EtOH.method = VDI_TABULAR
     EtOH.T_dependent_property(315)
-    s = EtOH.as_JSON()
-    EtOH2 = ViscosityLiquid.from_JSON(s)
+    s = EtOH.as_json()
+    EtOH2 = ViscosityLiquid.from_json(s)
     # Do hash checks before interpolation object exists
     assert hash(EtOH) == hash(EtOH2)
     assert EtOH == EtOH2
@@ -122,7 +122,7 @@ def test_ViscosityLiquid():
     assert_close2d(TP_data, recalc_pts)
 
     # TEst thta we can export to json, create a new instance with P interpolation objects
-    EtOH2 = ViscosityLiquid.from_JSON( EtOH.as_JSON())
+    EtOH2 = ViscosityLiquid.from_json( EtOH.as_json())
     recalc_pts2 = [[EtOH2.TP_dependent_property(T, P) for T in Ts] for P in Ps]
     assert_close2d(recalc_pts, recalc_pts2, atol=0, rtol=0)
 
@@ -211,8 +211,8 @@ def test_ViscosityGas():
         EtOH.test_method_validity(300, 'BADMETHOD')
 
 
-    s = EtOH.as_JSON()
-    EtOH2 = ViscosityGas.from_JSON(s)
+    s = EtOH.as_json()
+    EtOH2 = ViscosityGas.from_json(s)
     # Do hash checks before interpolation object exists
     assert hash(EtOH) == hash(EtOH2)
     assert EtOH == EtOH2
@@ -256,10 +256,10 @@ def test_ViscosityLiquidMixture():
     mu = obj.mixture_property(T, P, zs, ws)
     assert_close(mu, 0.0009948528627794172)
 
-    s = obj.as_JSON()
+    s = obj.as_json()
 
     assert 'json_version' in s
-    obj2 = ViscosityLiquidMixture.from_JSON(s)
+    obj2 = ViscosityLiquidMixture.from_json(s)
     assert obj == obj2
 
     mu = obj.calculate(T, P, zs, ws, MIXING_LOG_MOLAR)

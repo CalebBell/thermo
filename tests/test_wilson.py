@@ -106,7 +106,7 @@ def test_DDBST_example():
     # Test __repr__ contains the needed information
     assert eval(str(GE)).GE() == GE.GE()
 
-    GE2 = Wilson.from_JSON(GE.as_JSON())
+    GE2 = Wilson.from_json(GE.as_json())
     assert GE2.__dict__ == GE.__dict__
 
     gammas_expect = [1.223393433488855, 1.1009459024701462, 1.2052899281172034]
@@ -407,7 +407,7 @@ def test_DDBST_example():
     assert_close2d(d2nGE_dninjs_numerical, d2nGE_dninjs_analytical, rtol=1e-4)
 
     # Test with some results stored
-    GE2 = Wilson.from_JSON(GE.as_JSON())
+    GE2 = Wilson.from_json(GE.as_json())
     assert GE2.__dict__ == GE.__dict__
 
 def test_multicomnent_madeup():

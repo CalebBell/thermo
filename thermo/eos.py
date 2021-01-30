@@ -902,7 +902,7 @@ class GCEOS(object):
         s += ')'
         return s
 
-    def as_JSON(self):
+    def as_json(self):
         r'''Method to create a JSON serialization of the eos
         which can be stored, and reloaded later.
 
@@ -917,7 +917,7 @@ class GCEOS(object):
         Examples
         --------
         >>> eos = MSRKTranslated(Tc=507.6, Pc=3025000, omega=0.2975, c=22.0561E-6, M=0.7446, N=0.2476, T=250., P=1E6)
-        >>> string = eos.as_JSON()
+        >>> string = eos.as_json()
         >>> type(string)
         str
         '''
@@ -932,7 +932,7 @@ class GCEOS(object):
         return ans
 
     @classmethod
-    def from_JSON(cls, json_repr):
+    def from_json(cls, json_repr):
         r'''Method to create a eos from a JSON
         serialization of another eos.
 
@@ -949,13 +949,13 @@ class GCEOS(object):
         Notes
         -----
         It is important that the input string be in the same format as that
-        created by :obj:`GCEOS.as_JSON`.
+        created by :obj:`GCEOS.as_json`.
 
         Examples
         --------
         >>> eos = MSRKTranslated(Tc=507.6, Pc=3025000, omega=0.2975, c=22.0561E-6, M=0.7446, N=0.2476, T=250., P=1E6)
-        >>> string = eos.as_JSON()
-        >>> new_eos = GCEOS.from_JSON(string)
+        >>> string = eos.as_json()
+        >>> new_eos = GCEOS.from_json(string)
         >>> assert eos.__dict__ == new_eos.__dict__
         '''
         d = utils.json.loads(json_repr)

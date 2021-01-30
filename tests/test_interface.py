@@ -52,7 +52,7 @@ def test_SurfaceTension():
         assert EtOH.T_dependent_property(5000) is None
 
 
-    assert SurfaceTension.from_JSON(EtOH.as_JSON()) == EtOH
+    assert SurfaceTension.from_json(EtOH.as_json()) == EtOH
 
 
     EtOH.method = 'VDI_TABULAR'
