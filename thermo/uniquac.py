@@ -33,7 +33,8 @@ UNIQUAC Class
 =============
 
 .. autoclass:: UNIQUAC
-    :members: to_T_xs, GE, dGE_dT, d2GE_dT2, d3GE_dT3, d2GE_dTdxs, dGE_dxs, d2GE_dxixjs, taus, dtaus_dT, d2taus_dT2, d3taus_dT3, phis, thetas
+    :members: to_T_xs, GE, dGE_dT, d2GE_dT2, d3GE_dT3, d2GE_dTdxs, dGE_dxs,
+              d2GE_dxixjs, taus, dtaus_dT, d2taus_dT2, d3taus_dT3, phis, thetas
     :undoc-members:
     :show-inheritance:
     :exclude-members:
@@ -152,7 +153,7 @@ def uniquac_d3GE_dT3(T, N, xs, qs, thetaj_taus_jis,
 
 
 
-def uniquac_dGE_dxs(N, T, xs, qs, taus, phis, dphis_dxs, thetas, dthetas_dxs,
+def uniquac_dGE_dxs(N, T, xs, qs, taus, phis, phis_inv, dphis_dxs, thetas, dthetas_dxs,
                     thetaj_taus_jis, thetaj_taus_jis_inv, dGE_dxs=None):
     z = 10.0
     if dGE_dxs is None:
@@ -165,8 +166,8 @@ def uniquac_dGE_dxs(N, T, xs, qs, taus, phis, dphis_dxs, thetas, dthetas_dxs,
         for j in range(N):
             # dthetas_dxs and dphis_dxs indexes could be an issue
             tot += 0.5*qs[j]*xs[j]*phis[j]*z/thetas[j]*(
-                    1.0/phis[j]*dthetas_dxs[j][i]
-                    - thetas[j]/phis[j]**2*dphis_dxs[j][i]
+                    phis_inv[j]*dthetas_dxs[j][i]
+                    - thetas[j]*phis_inv[j]*phis_inv[j]*dphis_dxs[j][i]
                     )
 
             tot3 = 0.0
@@ -176,11 +177,11 @@ def uniquac_dGE_dxs(N, T, xs, qs, taus, phis, dphis_dxs, thetas, dthetas_dxs,
             tot -= qs[j]*xs[j]*tot3*thetaj_taus_jis_inv[j]
             if i != j:
                 # Double index issue
-                tot += xs[j]/phis[j]*dphis_dxs[j][i]
+                tot += xs[j]*phis_inv[j]*dphis_dxs[j][i]
 
-        tot += 0.5*z*qs[i]*log(thetas[i]/phis[i])
+        tot += 0.5*z*qs[i]*log(thetas[i]*phis_inv[i])
         tot -= qs[i]*log(thetaj_taus_jis[i])
-        tot += xs[i]*xs[i]/phis[i]*(dphis_dxs[i][i]/xs[i] - phis[i]/(xs[i]*xs[i]))
+        tot += xs[i]*xs[i]*phis_inv[i]*(dphis_dxs[i][i]/xs[i] - phis[i]/(xs[i]*xs[i]))
         tot += log(phis[i]/xs[i])
         # Last terms
         dGE_dxs[i] = RT*tot
@@ -679,6 +680,20 @@ class UNIQUAC(GibbsExcess):
 #        self._phis = rsxs
         return self._phis
 
+    def phis_inv(self):
+        try:
+            return self._phis_inv
+        except:
+            pass
+
+        phis = self.phis()
+        if self.scalar:
+            phis_inv = [1.0/v for v in phis]
+        else:
+            phis_inv = 1.0/phis
+        self._phis_inv = phis_inv
+        return phis_inv
+
     def dphis_dxs(self):
         r'''
 
@@ -698,23 +713,7 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             pass
         N, rs = self.N, self.rs
-
-#        rsxs = list(self.phis())
-#        rsxs_sum_inv = self._rsxs_sum_inv
-#        rsxs_sum_inv_m = -rsxs_sum_inv
-
-#        for i in range(N):
-#            # reuse this array for memory savings
-#            rsxs[i] *= rsxs_sum_inv_m
-
         self._dphis_dxs = dphis_dxs = uniquac_dphis_dxs(N, rs, self.phis(), self._rsxs_sum_inv)
-#        [[0.0]*N for _ in range(N)]
-#        for j in range(N):
-#            for i in range(N):
-#                dphis_dxs[i][j] = rsxs[i]*rs[j]
-#            # There is no symmetry to exploit here
-#            dphis_dxs[j][j] += rs[j]*rsxs_sum_inv
-
         return dphis_dxs
 
     def d2phis_dxixjs(self):
@@ -1205,6 +1204,7 @@ class UNIQUAC(GibbsExcess):
         qs = self.qs
         taus = self.taus()
         phis = self.phis()
+        phis_inv = self.phis_inv()
         dphis_dxs = self.dphis_dxs()
         thetas = self.thetas()
         dthetas_dxs = self.dthetas_dxs()
@@ -1216,7 +1216,7 @@ class UNIQUAC(GibbsExcess):
         else:
             dGE_dxs = zeros(N)
 
-        uniquac_dGE_dxs(N, T, xs, qs, taus, phis, dphis_dxs, thetas, dthetas_dxs,
+        uniquac_dGE_dxs(N, T, xs, qs, taus, phis, phis_inv, dphis_dxs, thetas, dthetas_dxs,
                         thetaj_taus_jis, thetaj_taus_jis_inv, dGE_dxs)
         self.dGE_dxs = dGE_dxs
 
@@ -1299,6 +1299,7 @@ class UNIQUAC(GibbsExcess):
         dtaus_dT = self.dtaus_dT()
 
         thetaj_taus_jis = self.thetaj_taus_jis()
+        thetaj_taus_jis_inv = self.thetaj_taus_jis_inv()
         thetaj_dtaus_dT_jis = self.thetaj_dtaus_dT_jis()
 
         d2GE_dTdxs = []
@@ -1307,7 +1308,7 @@ class UNIQUAC(GibbsExcess):
         for i in range(N):
             # i is what is being differentiated
             tot, Ttot = 0.0, 0.0
-            Ttot += qs[i]*thetaj_dtaus_dT_jis[i]/thetaj_taus_jis[i]
+            Ttot += qs[i]*thetaj_dtaus_dT_jis[i]*thetaj_taus_jis_inv[i]
             t49_sum = 0.0
             t50_sum = 0.0
             t51_sum = 0.0
@@ -1321,11 +1322,11 @@ class UNIQUAC(GibbsExcess):
                     t102 += dthetas_dxs[k][i]*taus[k][j]
 
                 ## Temperature multiplied terms
-                t49 = qs[j]*xs[j]*t100/thetaj_taus_jis[j]
+                t49 = qs[j]*xs[j]*t100*thetaj_taus_jis_inv[j]
                 Ttot += t49
                 t49_sum += t49
 
-                t50 = qs[j]*xs[j]*(t102*thetaj_dtaus_dT_jis[j])/thetaj_taus_jis[j]**2
+                t50 = qs[j]*xs[j]*(t102*thetaj_dtaus_dT_jis[j])*thetaj_taus_jis_inv[j]*thetaj_taus_jis_inv[j]
                 Ttot -= t50
                 t50_sum -= t50
 
@@ -1334,7 +1335,7 @@ class UNIQUAC(GibbsExcess):
                 t51_sum += t51
                 tot += t51
 
-                t52 = qs[j]*xs[j]*t102/thetaj_taus_jis[j]
+                t52 = qs[j]*xs[j]*t102*thetaj_taus_jis_inv[j]
                 t52_sum -= t52
                 tot -= t52
 
