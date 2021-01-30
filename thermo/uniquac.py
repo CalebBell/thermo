@@ -801,8 +801,12 @@ class UNIQUAC(GibbsExcess):
             pass
         N, xs = self.N, self.xs
         qs = self.qs
-        self._thetas, self._qsxs_sum_inv = uniquac_phis(N, xs, qs)
-        return self._thetas
+        if self.scalar:
+            thetas = [0.0]*N
+        else:
+            thetas = zeros(N)
+        self._thetas, self._qsxs_sum_inv = uniquac_phis(N, xs, qs, thetas)
+        return thetas
 
     def dthetas_dxs(self):
         r'''
