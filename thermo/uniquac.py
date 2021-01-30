@@ -1119,7 +1119,7 @@ class UNIQUAC(GibbsExcess):
             qsxsthetaj_taus_jis_inv = [thetaj_taus_jis_inv[i]*qsxs[i] for i in range(N)]
             vec1 = [qsxsthetaj_taus_jis_inv[i]*thetaj_dtaus_dT_jis[i]*thetaj_taus_jis_inv[i] for i in range(N)]
             vec2 = [qsxs[i]/thetas[i] for i in range(N)]
-            vec3 = [-thetas[i]*phis_inv[i] for i in range(N)]
+            vec3 = [-thetas[i]*phis_inv[i]*vec2[i] for i in range(N)]
             vec4 = [xs[i]*phis_inv[i] for i in range(N)]
         else:
             d2GE_dTdxs = zeros(N)
@@ -1127,7 +1127,7 @@ class UNIQUAC(GibbsExcess):
             qsxsthetaj_taus_jis_inv = qsxs*thetaj_taus_jis_inv
             vec1 = qsxsthetaj_taus_jis_inv*thetaj_dtaus_dT_jis*thetaj_taus_jis_inv
             vec2 = qsxs/thetas
-            vec3 = -thetas*phis_inv
+            vec3 = -thetas*phis_inv*vec2
             vec4 = xs*phis_inv
 
         # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
@@ -1145,7 +1145,7 @@ class UNIQUAC(GibbsExcess):
                     t100 += dtaus_dT[k][j]*dthetas_dxs[k][i]
                 t102 = 0.0
                 for k in range(N):
-                    t102 += dthetas_dxs[k][i]*taus[k][j]
+                    t102 += taus[k][j]*dthetas_dxs[k][i]
 
                 ## Temperature multiplied terms
                 t49_sum += t100*qsxsthetaj_taus_jis_inv[j]
@@ -1154,9 +1154,8 @@ class UNIQUAC(GibbsExcess):
                 t52_sum += t102*qsxsthetaj_taus_jis_inv[j]
 
                 ## Non temperature multiplied terms
-                t51 = vec2[j]*(dthetas_dxs[j][i] + vec3[j]*dphis_dxs[j][i])
+                t51 = vec2[j]*dthetas_dxs[j][i] + vec3[j]*dphis_dxs[j][i]
                 t51_sum += t51
-
 
 #                # Terms reused from dGE_dxs
 #                if i != j:
@@ -1176,8 +1175,6 @@ class UNIQUAC(GibbsExcess):
             tot += log(phis[i]/xs[i])
             tot -= qs[i]*log(thetaj_taus_jis[i])
             tot += 0.5*z*qs[i]*log(thetas[i]*phis_inv[i])
-
-#            tot += -T*Ttot
 
             d2GE_dTdxs[i] = R*(-T*Ttot + tot)
         self._d2GE_dTdxs = d2GE_dTdxs
