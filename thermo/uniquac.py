@@ -105,6 +105,45 @@ def uniquac_thetaj_taus_ijs(N, taus, thetas, thetaj_taus_ijs=None):
         thetaj_taus_ijs[i] = tot
     return thetaj_taus_ijs
 
+def uniquac_d2phis_dxixjs(N, xs, rs, rsxs_sum_inv, d2phis_dxixjs=None, vec0=None, vec1=None):
+    if d2phis_dxixjs is None:
+        d2phis_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)] # numba: delete
+#        d2phis_dxixjs = zeros((N, N, N)) # numba: uncomment
+    if vec0 is None:
+        vec0 = [0.0]*N
+    if vec1 is None:
+        vec1 = [0.0]*N
+
+    rsxs_sum_inv2 = rsxs_sum_inv*rsxs_sum_inv
+    rsxs_sum_inv3 = rsxs_sum_inv2*rsxs_sum_inv
+
+    rsxs_sum_inv_2 = rsxs_sum_inv + rsxs_sum_inv
+    rsxs_sum_inv2_2 = rsxs_sum_inv2 + rsxs_sum_inv2
+    rsxs_sum_inv3_2 = rsxs_sum_inv3 + rsxs_sum_inv3
+
+    for i in range(N):
+        vec0[i] = rsxs_sum_inv2*(rs[i]*xs[i]*rsxs_sum_inv_2  - 1.0)
+    for i in range(N):
+        vec1[i] = rs[i]*xs[i]*rsxs_sum_inv3_2
+
+    for k in range(N):
+        # There is symmetry here, but it is complex. 4200 of 8000 (N=20) values are unique.
+        # Due to the very large matrices, no gains to be had by exploiting it in this function
+        # Removing the branches is the best that can be done (and it is quite good).
+        d2phis_dxixjsk = d2phis_dxixjs[k]
+
+        for j in range(N):
+            rskrsj = rs[k]*rs[j]
+            d2phis_dxixjskj = d2phis_dxixjsk[j]
+            for i in range(N):
+                d2phis_dxixjskj[i] = rskrsj*vec1[i]
+            if j != k:
+                d2phis_dxixjskj[k] = rskrsj*vec0[k]
+                d2phis_dxixjskj[j] = rskrsj*vec0[j]
+
+        d2phis_dxixjs[k][k][k] -= rs[k]*rs[k]*rsxs_sum_inv2_2
+    return d2phis_dxixjs
+
 def uniquac_GE(T, N, z, xs, qs, phis, thetas, thetaj_taus_jis):
 
     gE = 0.0
@@ -644,33 +683,41 @@ class UNIQUAC(GibbsExcess):
 
         self.phis() # Ensure the sum is there
         rsxs_sum_inv = self._rsxs_sum_inv
-        rsxs_sum_inv2 = rsxs_sum_inv*rsxs_sum_inv
-        rsxs_sum_inv3 = rsxs_sum_inv2*rsxs_sum_inv
+#        rsxs_sum_inv2 = rsxs_sum_inv*rsxs_sum_inv
+#        rsxs_sum_inv3 = rsxs_sum_inv2*rsxs_sum_inv
+#
+#        rsxs_sum_inv_2 = rsxs_sum_inv + rsxs_sum_inv
+#        rsxs_sum_inv2_2 = rsxs_sum_inv2 + rsxs_sum_inv2
+#        rsxs_sum_inv3_2 = rsxs_sum_inv3 + rsxs_sum_inv3
+#        t1s = [rsxs_sum_inv2*(rs[i]*xs[i]*rsxs_sum_inv_2  - 1.0) for i in range(N)]
+#        t2s = [rs[i]*xs[i]*rsxs_sum_inv3_2 for i in range(N)]
+#
+        if self.scalar:
+            d2phis_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]
+        else:
+            d2phis_dxixjs = zeros((N, N, N))
 
-        rsxs_sum_inv_2 = rsxs_sum_inv + rsxs_sum_inv
-        rsxs_sum_inv2_2 = rsxs_sum_inv2 + rsxs_sum_inv2
-        rsxs_sum_inv3_2 = rsxs_sum_inv3 + rsxs_sum_inv3
-        t1s = [rsxs_sum_inv2*(rs[i]*xs[i]*rsxs_sum_inv_2  - 1.0) for i in range(N)]
-        t2s = [rs[i]*xs[i]*rsxs_sum_inv3_2 for i in range(N)]
 
-        self._d2phis_dxixjs = d2phis_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]
+        uniquac_d2phis_dxixjs(N, xs, rs, rsxs_sum_inv, d2phis_dxixjs)
 
-        for k in range(N):
-            # There is symmetry here, but it is complex. 4200 of 8000 (N=20) values are unique.
-            # Due to the very large matrices, no gains to be had by exploiting it in this function
-            d2phis_dxixjsk = d2phis_dxixjs[k]
+        self._d2phis_dxixjs = d2phis_dxixjs
 
-            for j in range(N):
-                rskrsj = rs[k]*rs[j]
-                d2phis_dxixjskj = d2phis_dxixjsk[j]
-                for i in range(N):
+#        for k in range(N):
+#            # There is symmetry here, but it is complex. 4200 of 8000 (N=20) values are unique.
+#            # Due to the very large matrices, no gains to be had by exploiting it in this function
+#            # Removing the branches is the best that can be done (and it is quite good).
+#            d2phis_dxixjsk = d2phis_dxixjs[k]
+#
+#            for j in range(N):
+#                rskrsj = rs[k]*rs[j]
+#                d2phis_dxixjskj = d2phis_dxixjsk[j]
+#                for i in range(N):
 #                    d2phis_dxixjskj[i] = rskrsj*t2s[i]
-                    d2phis_dxixjskj[i] = rskrsj*t1s[i] if (i == k or i == j) and j != k else rskrsj*t2s[i]
 #                if j != k:
-#                    d2phis_dxixjskj[k] = rskrsj*t1s[i]
-#                    d2phis_dxixjskj[j] = rskrsj*t1s[i]
-
-            d2phis_dxixjs[k][k][k] -= rs[k]*rs[k]*rsxs_sum_inv2_2
+#                    d2phis_dxixjskj[k] = rskrsj*t1s[k]
+#                    d2phis_dxixjskj[j] = rskrsj*t1s[j]
+#
+#            d2phis_dxixjs[k][k][k] -= rs[k]*rs[k]*rsxs_sum_inv2_2
 
         return d2phis_dxixjs
 
