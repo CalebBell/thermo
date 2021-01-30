@@ -30,7 +30,7 @@ from thermo.activity import GibbsExcess
 from thermo import *
 import numpy as np
 from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d, assert_close3d
-
+from thermo.test_utils import check_np_output_activity
 
 def test_Wilson():
     # P05.01a VLE Behavior of Ethanol - Water Using Wilson
@@ -631,3 +631,31 @@ def test_lambdas_performance_py():
     F = [[random()*1e-8 for _ in range(N)] for _ in range(N)]
     out = [[0.0]*N for _ in range(N)]
     thermo.wilson.interaction_exp(400.0, N, A, B, C, D, E, F, out)
+
+def test_wilson_np_output_and_hash():
+    T = 331.42
+    N = 3
+
+    A = [[0.0, 3.870101271243586, 0.07939943395502425],
+                 [-6.491263271243587, 0.0, -3.276991837288562],
+                 [0.8542855660449756, 6.906801837288562, 0.0]]
+    B = [[0.0, -375.2835, -31.1208],
+                 [1722.58, 0.0, 1140.79],
+                 [-747.217, -3596.17, -0.0]]
+    D = [[-0.0, -0.00791073, -0.000868371],
+                 [0.00747788, -0.0, -3.1e-05],
+                 [0.00124796, -3e-05, -0.0]]
+
+    C = E = F = [[0.0]*N for _ in range(N)]
+
+    xs = [0.229, 0.175, 0.596]
+
+    model = Wilson(T=T, xs=xs, ABCDEF=(A, B, C, D, E, F))
+    modelnp = Wilson(T=T, xs=np.array(xs), ABCDEF=(np.array(A), np.array(B), np.array(C), np.array(D), np.array(E), np.array(F)))
+    modelnp2 = modelnp.to_T_xs(T=T, xs=np.array(xs))
+
+    check_np_output_activity(model, modelnp, modelnp2)
+
+    json_string = modelnp.as_json()
+    new = Wilson.from_json(json_string)
+    assert new == modelnp

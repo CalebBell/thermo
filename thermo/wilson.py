@@ -555,9 +555,15 @@ class Wilson(GibbsExcess):
         except AttributeError:
             pass
 
-        lambdas = interaction_exp(self.T, self.N, self.lambda_coeffs_A, self.lambda_coeffs_B,
+        N = self.N
+        if self.scalar:
+            lambdas = [[0.0]*N for _ in range(N)]
+        else:
+            lambdas = zeros((N, N))
+
+        lambdas = interaction_exp(self.T, N, self.lambda_coeffs_A, self.lambda_coeffs_B,
                                   self.lambda_coeffs_C, self.lambda_coeffs_D,
-                                  self.lambda_coeffs_E, self.lambda_coeffs_F)
+                                  self.lambda_coeffs_E, self.lambda_coeffs_F, lambdas)
         self._lambdas = lambdas
         return lambdas
 
@@ -597,7 +603,12 @@ class Wilson(GibbsExcess):
             lambdas = self._lambdas
         except AttributeError:
             lambdas = self.lambdas()
-        self._dlambdas_dT = dlambdas_dT = dinteraction_exp_dT(T, N, B, C, D, E, F, lambdas)
+        if self.scalar:
+            dlambdas_dT = [[0.0]*N for _ in range(N)]
+        else:
+            dlambdas_dT = zeros((N, N))
+
+        self._dlambdas_dT = dinteraction_exp_dT(T, N, B, C, D, E, F, lambdas, dlambdas_dT)
         return dlambdas_dT
 
     def d2lambdas_dT2(self):
@@ -637,12 +648,18 @@ class Wilson(GibbsExcess):
             dlambdas_dT = self._dlambdas_dT
         except AttributeError:
             dlambdas_dT = self.dlambdas_dT()
-        self._d2lambdas_dT2 = d2lambdas_dT2s = d2interaction_exp_dT2(T, N, self.lambda_coeffs_B,
+
+        if self.scalar:
+            d2lambdas_dT2 = [[0.0]*N for _ in range(N)]
+        else:
+            d2lambdas_dT2 = zeros((N, N))
+
+        self._d2lambdas_dT2 = d2interaction_exp_dT2(T, N, self.lambda_coeffs_B,
                                                                      self.lambda_coeffs_C,
                                                                      self.lambda_coeffs_E,
                                                                      self.lambda_coeffs_F,
-                                                                     lambdas, dlambdas_dT)
-        return d2lambdas_dT2s
+                                                                     lambdas, dlambdas_dT, d2lambdas_dT2)
+        return d2lambdas_dT2
 
     def d3lambdas_dT3(self):
         r'''Calculate and return the third temperature derivative of the
@@ -689,7 +706,13 @@ class Wilson(GibbsExcess):
         except AttributeError:
             dlambdas_dT = self.dlambdas_dT()
 
-        self._d3lambdas_dT3 = d3lambdas_dT3s = d3interaction_exp_dT3(T, N, lambda_coeffs_B, lambda_coeffs_C, lambda_coeffs_E, lambda_coeffs_F, lambdas, dlambdas_dT)
+        if self.scalar:
+            d3lambdas_dT3s = [[0.0]*N for _ in range(N)]
+        else:
+            d3lambdas_dT3s = zeros((N, N))
+
+        self._d3lambdas_dT3 = d3interaction_exp_dT3(T, N, lambda_coeffs_B, lambda_coeffs_C, lambda_coeffs_E,
+                                                    lambda_coeffs_F, lambdas, dlambdas_dT, d3lambdas_dT3s)
         return d3lambdas_dT3s
 
     def xj_Lambda_ijs(self):
@@ -704,7 +727,12 @@ class Wilson(GibbsExcess):
         except AttributeError:
             lambdas = self.lambdas()
 
-        self._xj_Lambda_ijs = xj_Lambda_ijs = wilson_xj_Lambda_ijs(self.xs, lambdas, self.N)
+        if self.scalar:
+            xj_Lambda_ijs = [0.0]*self.N
+        else:
+            xj_Lambda_ijs = zeros(self.N)
+
+        self._xj_Lambda_ijs = wilson_xj_Lambda_ijs(self.xs, lambdas, self.N, xj_Lambda_ijs)
         return xj_Lambda_ijs
 
     def xj_Lambda_ijs_inv(self):
@@ -755,8 +783,13 @@ class Wilson(GibbsExcess):
         except AttributeError:
             dlambdas_dT = self.dlambdas_dT()
 
-        self._xj_dLambda_dTijs = ans = wilson_xj_Lambda_ijs(self.xs, dlambdas_dT, self.N)
-        return ans
+        if self.scalar:
+            xj_dLambda_dTijs = [0.0]*self.N
+        else:
+            xj_dLambda_dTijs = zeros(self.N)
+
+        self._xj_dLambda_dTijs = wilson_xj_Lambda_ijs(self.xs, dlambdas_dT, self.N, xj_dLambda_dTijs)
+        return xj_dLambda_dTijs
 
 
     def xj_d2Lambda_dT2ijs(self):
@@ -771,7 +804,12 @@ class Wilson(GibbsExcess):
         except AttributeError:
             d2lambdas_dT2 = self.d2lambdas_dT2()
 
-        self._xj_d2Lambda_dT2ijs = xj_d2Lambda_dT2ijs = wilson_xj_Lambda_ijs(self.xs, d2lambdas_dT2, self.N)
+        if self.scalar:
+            xj_d2Lambda_dT2ijs = [0.0]*self.N
+        else:
+            xj_d2Lambda_dT2ijs = zeros(self.N)
+
+        self._xj_d2Lambda_dT2ijs = wilson_xj_Lambda_ijs(self.xs, d2lambdas_dT2, self.N, xj_d2Lambda_dT2ijs)
         return xj_d2Lambda_dT2ijs
 
     def xj_d3Lambda_dT3ijs(self):
@@ -786,7 +824,12 @@ class Wilson(GibbsExcess):
         except AttributeError:
             d3lambdas_dT3 = self.d3lambdas_dT3()
 
-        self._xj_d3Lambda_dT3ijs = xj_d3Lambda_dT3ijs = wilson_xj_Lambda_ijs(self.xs, d3lambdas_dT3, self.N)
+        if self.scalar:
+            xj_d3Lambda_dT3ijs = [0.0]*self.N
+        else:
+            xj_d3Lambda_dT3ijs = zeros(self.N)
+
+        self._xj_d3Lambda_dT3ijs = wilson_xj_Lambda_ijs(self.xs, d3lambdas_dT3, self.N, xj_d3Lambda_dT3ijs)
         return xj_d3Lambda_dT3ijs
 
 
@@ -1014,10 +1057,14 @@ class Wilson(GibbsExcess):
             xj_dLambda_dTijs = self._xj_dLambda_dTijs
         except AttributeError:
             xj_dLambda_dTijs = self.xj_dLambda_dTijs()
+        if self.scalar:
+            d2GE_dTdxs = [0.0]*self.N
+        else:
+            d2GE_dTdxs = zeros(self.N)
 
-        d2GE_dTdxs = wilson_d2GE_dTdxs(self.xs, self.T, self.N, log_xj_Lambda_ijs,
+        wilson_d2GE_dTdxs(self.xs, self.T, self.N, log_xj_Lambda_ijs,
                                        lambdas, dlambdas_dT,
-                                       xj_Lambda_ijs_inv, xj_dLambda_dTijs)
+                                       xj_Lambda_ijs_inv, xj_dLambda_dTijs, d2GE_dTdxs)
         self._d2GE_dTdxs = d2GE_dTdxs
         return d2GE_dTdxs
 
@@ -1081,7 +1128,12 @@ class Wilson(GibbsExcess):
         except AttributeError:
             xj_Lambda_ijs_inv = self.xj_Lambda_ijs_inv()
 
-        dGE_dxs = wilson_dGE_dxs(self.xs, self.T, self.N, log_xj_Lambda_ijs, lambdas, xj_Lambda_ijs_inv)
+        if self.scalar:
+            dGE_dxs = [0.0]*self.N
+        else:
+            dGE_dxs = zeros(self.N)
+
+        dGE_dxs = wilson_dGE_dxs(self.xs, self.T, self.N, log_xj_Lambda_ijs, lambdas, xj_Lambda_ijs_inv, dGE_dxs)
         self._dGE_dxs = dGE_dxs
         return dGE_dxs
 
@@ -1117,8 +1169,13 @@ class Wilson(GibbsExcess):
             xj_Lambda_ijs_inv = self._xj_Lambda_ijs_inv
         except AttributeError:
             xj_Lambda_ijs_inv = self.xj_Lambda_ijs_inv()
+        N = self.N
+        if self.scalar:
+            d2GE_dxixjs = [[0.0]*N for _ in range(N)]
+        else:
+            d2GE_dxixjs = zeros((N, N))
 
-        d2GE_dxixjs = wilson_d2GE_dxixjs(self.xs, self.T, self.N, lambdas, xj_Lambda_ijs_inv)
+        d2GE_dxixjs = wilson_d2GE_dxixjs(self.xs, self.T, N, lambdas, xj_Lambda_ijs_inv, d2GE_dxixjs)
         self._d2GE_dxixjs = d2GE_dxixjs
         return d2GE_dxixjs
 
@@ -1154,8 +1211,14 @@ class Wilson(GibbsExcess):
         except AttributeError:
             xj_Lambda_ijs_inv = self.xj_Lambda_ijs_inv()
 
+        N = self.N
+        if self.scalar:
+            d3GE_dxixjxks = [[[0.0]*N for _ in range(N)] for _ in range(N)]
+        else:
+            d3GE_dxixjxks = zeros((N, N, N))
+
         # all the same: analytical[i][j][k] = analytical[i][k][j] = analytical[j][i][k] = analytical[j][k][i] = analytical[k][i][j] = analytical[k][j][i] = float(v)
-        d3GE_dxixjxks = wilson_d3GE_dxixjxks(self.xs, self.T, self.N, lambdas, xj_Lambda_ijs_inv)
+        d3GE_dxixjxks = wilson_d3GE_dxixjxks(self.xs, self.T, self.N, lambdas, xj_Lambda_ijs_inv, d3GE_dxixjxks)
         self._d3GE_dxixjxks = d3GE_dxixjxks
         return d3GE_dxixjxks
 
@@ -1177,7 +1240,12 @@ class Wilson(GibbsExcess):
         except AttributeError:
             xj_Lambda_ijs_inv = self.xj_Lambda_ijs_inv()
 
-        gammas = wilson_gammas(self.xs, self.N, lambdas, xj_Lambda_ijs_inv)
+        if self.scalar:
+            gammas = [0.0]*self.N
+        else:
+            gammas = zeros(self.N)
+
+        wilson_gammas(self.xs, self.N, lambdas, xj_Lambda_ijs_inv, gammas)
         self._gammas = gammas
         return gammas
 
