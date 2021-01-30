@@ -22,13 +22,48 @@ SOFTWARE.'''
 
 from numpy.testing import assert_allclose
 import pytest
+import numpy as np
 
 from thermo import *
 from fluids.numerics import *
 from math import *
 import json
 import os
+from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d
 
+def check_np_output_activity(model, modelnp, modelnp2):
+    # model is flat, scalar, list-based model
+    # modelnp is numba model
+    # modelnp2 is created from the numba model with to_T_xs at a different composition
+    vec_attrs = ['dGE_dxs', 'gammas', '_gammas_dGE_dxs',
+                 'd2GE_dTdxs', 'dHE_dxs', 'gammas_infinite_dilution', 'dHE_dns',
+                'dnHE_dns', 'dSE_dxs', 'dSE_dns', 'dnSE_dns', 'dGE_dns', 'dnGE_dns', 'd2GE_dTdns',
+                'd2nGE_dTdns', 'dgammas_dT']
+
+    for attr in vec_attrs:
+        assert_close1d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+        assert_close1d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+        assert type(getattr(model, attr)()) is list
+        assert type(getattr(modelnp, attr)()) is np.ndarray
+        assert type(getattr(modelnp2, attr)()) is np.ndarray
+
+    mat_attrs = ['d2GE_dxixjs', 'd2nGE_dninjs', 'dgammas_dns']
+    for attr in mat_attrs:
+        assert_close2d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+        assert_close2d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+        assert type(getattr(model, attr)()) is list
+        assert type(getattr(modelnp, attr)()) is np.ndarray
+        assert type(getattr(modelnp2, attr)()) is np.ndarray
+
+    attrs_3d = ['d3GE_dxixjxks']
+    for attr in attrs_3d:
+        if hasattr(model, attr):
+            # some models do not have this implemented
+            assert_close3d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+            assert_close3d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+            assert type(getattr(model, attr)()) is list
+            assert type(getattr(modelnp, attr)()) is np.ndarray
+            assert type(getattr(modelnp2, attr)()) is np.ndarray
 
 default_attrs = ('phase', 'Hm', 'Sm', 'Gm', 'xs', 'ys', 'V_over_F', 'T', 'P')
 

@@ -55,7 +55,7 @@ from fluids.constants import R
 __all__ = ['NRTL', 'NRTL_gammas']
 
 try:
-    zeros, npsum, nplog = np.zeros, np.sum, np.log
+    array, zeros, npsum, nplog = np.array, np.zeros, np.sum, np.log
 except AttributeError:
     pass
 
@@ -1187,7 +1187,11 @@ class NRTL(GibbsExcess):
             taus = self.taus()
 
         xs, N = self.xs, self.N
-        self._xj_Gs_jis, self._xj_Gs_taus_jis = nrtl_xj_Gs_jis_and_Gs_taus_jis(N, xs, Gs, taus)
+        _xj_Gs_jis, _xj_Gs_taus_jis = nrtl_xj_Gs_jis_and_Gs_taus_jis(N, xs, Gs, taus)
+        if not self.scalar and type(_xj_Gs_jis) is list:
+            _xj_Gs_jis, _xj_Gs_taus_jis = array(_xj_Gs_jis), array(_xj_Gs_taus_jis)
+
+        self._xj_Gs_jis, self._xj_Gs_taus_jis = _xj_Gs_jis, _xj_Gs_taus_jis
 #        self._xj_Gs_jis = xj_Gs_jis = []
 #        self._xj_Gs_taus_jis = xj_Gs_taus_jis = []
 #        for i in range(N):

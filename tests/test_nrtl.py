@@ -129,8 +129,7 @@ def test_NRTL_10():
     gammas_expect = [1.1600804309840225, 1.0892286716705042, 1.0384940848807305, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531]
     assert_close1d(gammas, gammas_expect)
 
-@pytest.mark.slow
-def test_NRTL_44():
+def NRTL_44():
     N = 44
     taus = [[random() for i in range(N)] for j in range(N)]
     alphas = [[random() for i in range(N)] for j in range(N)]
@@ -138,8 +137,7 @@ def test_NRTL_44():
     gammas = NRTL_gammas(xs=xs, taus=taus, alphas=alphas)
 
 
-@pytest.mark.slow
-def test_NRTL_200():
+def NRTL_200():
     # ten component
     # Takes 40 ms - not a great idea
     N = 200
@@ -210,8 +208,12 @@ def test_water_ethanol_methanol_madeup():
 
     assert NRTL.from_json(GE.as_json()).__dict__ == GE.__dict__
 
+    GEnp = NRTL(T, np.array(xs), np.array(taus), np.array(alphas))
+    assert_close(GEnp.GE(), GE.GE(), rtol=1e-12)
+
     # gammas
     assert_close1d(GE.gammas(), [1.7795902383749216, 1.1495597830749005, 1.0736702352016942])
+    assert_close1d(GEnp.gammas(), GE.gammas(), rtol=1e-12)
 
     ### Tau and derivatives
     taus_expected = [[0.06687993075720595, 1.9456413587531054, 1.2322559725492486],
