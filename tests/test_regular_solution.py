@@ -30,6 +30,7 @@ import numpy as np
 from fluids.numerics import jacobian, hessian, assert_close, assert_close1d, assert_close2d, assert_close3d
 from random import random
 from chemicals import normalize
+from thermo.test_utils import check_np_output_activity
 
 def test_no_interactions():
     GE = RegularSolution(T=325.0, xs=[.25, .75], Vs=[7.421e-05, 8.068e-05], SPs=[19570.2, 18864.7])
@@ -154,3 +155,27 @@ def test_create_many_components_regular_solution():
     lambda_coeffs = [[random()*1e-4 for _ in range(N)] for _ in range(N)]
 
     GE = RegularSolution(T, xs, Vs, SPs, lambda_coeffs)
+
+
+def test_numpy_inputs():
+    xs = [.4, .3, .2, .1]
+    SPs = [19570.2, 18864.7, 29261.4, 47863.5]
+    Vs = [7.421e-05, 8.068e-05, 4.083e-05, 1.808e-05]
+    N = 4
+    T = 300.0
+    # Made up asymmetric parameters
+    lambda_coeffs = [[0.0, 0.01811, 0.01736, 0.02111],
+     [0.00662, 0.0, 0.00774, 0.01966],
+     [0.01601, 0.01022, 0.0, 0.00698],
+     [0.0152, 0.00544, 0.02579, 0.0]]
+
+    model = RegularSolution(T, xs, Vs, SPs, lambda_coeffs)
+    modelnp =  RegularSolution(T, np.array(xs), np.array(Vs), np.array(SPs), np.array(lambda_coeffs))
+    modelnp2 = modelnp.to_T_xs(T=model.T*(1.0-1e-16), xs=np.array(xs))
+    check_np_output_activity(model, modelnp, modelnp2)
+
+    json_string = modelnp.as_json()
+    new = RegularSolution.from_json(json_string)
+    assert new == modelnp
+
+

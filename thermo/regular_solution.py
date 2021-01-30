@@ -45,7 +45,7 @@ from fluids.constants import R
 from fluids.numerics import numpy as np
 
 try:
-    zeros, npsum = np.zeros, np.sum
+    array, zeros, npsum = np.array, np.zeros, np.sum
 except:
     pass
 
@@ -373,7 +373,13 @@ class RegularSolution(GibbsExcess):
         except:
             GE = self.GE()
 
-        self._dGE_dxs = dGE_dxs = regular_solution_dGE_dxs(self.Vs, self.Hi_sums(), self.N, self.xsVs_sum_inv, GE)
+        if self.scalar:
+            dGE_dxs = [0.0]*self.N
+        else:
+            dGE_dxs = zeros(self.N)
+
+        regular_solution_dGE_dxs(self.Vs, self.Hi_sums(), self.N, self.xsVs_sum_inv, GE, dGE_dxs)
+        self._dGE_dxs = dGE_dxs
         return dGE_dxs
 
     def Hi_sums(self):
@@ -381,7 +387,13 @@ class RegularSolution(GibbsExcess):
             return self._Hi_sums
         except:
             pass
-        self._Hi_sums = Hi_sums = regular_solution_Hi_sums(self.SPs, self.Vs, self.xsVs, self.lambda_coeffs, self.N)
+        if self.scalar:
+            Hi_sums = [0.0]*self.N
+        else:
+            Hi_sums = zeros(self.N)
+
+        regular_solution_Hi_sums(self.SPs, self.Vs, self.xsVs, self.lambda_coeffs, self.N, Hi_sums)
+        self._Hi_sums = Hi_sums
         return Hi_sums
 
     def d2GE_dxixjs(self):
