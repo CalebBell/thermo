@@ -1109,7 +1109,6 @@ class UNIQUAC(GibbsExcess):
             return self._d2GE_dTdxs
         except AttributeError:
             pass
-        # !!!!! Missing unit test for this!!!!! TODO TODO TODO
         z, T, xs, N = self.z, self.T, self.xs, self.N
         qs = self.qs
         taus = self.taus()
@@ -1124,7 +1123,10 @@ class UNIQUAC(GibbsExcess):
         thetaj_taus_jis_inv = self.thetaj_taus_jis_inv()
         thetaj_dtaus_dT_jis = self.thetaj_dtaus_dT_jis()
 
-        d2GE_dTdxs = []
+        if self.scalar:
+            d2GE_dTdxs = [0.0]*N
+        else:
+            d2GE_dTdxs = zeros(N)
 
         # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
         for i in range(N):
@@ -1175,7 +1177,8 @@ class UNIQUAC(GibbsExcess):
 
 #            tot += -T*Ttot
 
-            d2GE_dTdxs.append(R*(-T*Ttot + tot))
+            d2GE_dTdxs[i] = R*(-T*Ttot + tot)
+        self._d2GE_dTdxs = d2GE_dTdxs
         return d2GE_dTdxs
 
     def d2GE_dxixjs(self):
