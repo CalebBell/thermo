@@ -1117,10 +1117,12 @@ class UNIQUAC(GibbsExcess):
             d2GE_dTdxs = [0.0]*N
             qsxs = [qs[i]*xs[i] for i in range(N)]
             qsxsthetaj_taus_jis_inv = [thetaj_taus_jis_inv[i]*qsxs[i] for i in range(N)]
+            vec1 = [qsxsthetaj_taus_jis_inv[i]*thetaj_dtaus_dT_jis[i]*thetaj_taus_jis_inv[i] for i in range(N)]
         else:
             d2GE_dTdxs = zeros(N)
             qsxs = qs*xs
             qsxsthetaj_taus_jis_inv = qsxs*thetaj_taus_jis_inv
+            vec1 = qsxsthetaj_taus_jis_inv*thetaj_dtaus_dT_jis*thetaj_taus_jis_inv
 
         # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
         for i in range(N):
@@ -1144,7 +1146,7 @@ class UNIQUAC(GibbsExcess):
                 Ttot += t49
                 t49_sum += t49
 
-                t50 = qsxsthetaj_taus_jis_inv[j]*(t102*thetaj_dtaus_dT_jis[j])*thetaj_taus_jis_inv[j]
+                t50 = vec1[j]*t102
                 Ttot -= t50
                 t50_sum -= t50
 
