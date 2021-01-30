@@ -701,8 +701,12 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             pass
         N, xs, rs = self.N, self.xs, self.rs
+        if self.scalar:
+            phis = [0.0]*N
+        else:
+            phis = zeros(N)
 
-        self._phis, self._rsxs_sum_inv = uniquac_phis(N, xs, rs)
+        self._phis, self._rsxs_sum_inv = uniquac_phis(N, xs, rs, phis)
         return self._phis
 
     def phis_inv(self):
@@ -738,7 +742,11 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             pass
         N, rs = self.N, self.rs
-        self._dphis_dxs = dphis_dxs = uniquac_dphis_dxs(N, rs, self.phis(), self._rsxs_sum_inv)
+        if self.scalar:
+            dphis_dxs = [[0.0]*N for i in range(N)]
+        else:
+            dphis_dxs = zeros((N, N))
+        self._dphis_dxs = uniquac_dphis_dxs(N, rs, self.phis(), self._rsxs_sum_inv, dphis_dxs)
         return dphis_dxs
 
     def d2phis_dxixjs(self):
