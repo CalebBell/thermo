@@ -812,27 +812,35 @@ class UNIQUAC(GibbsExcess):
 
         self.thetas() # Ensure the sum is there
         qsxs_sum_inv = self._qsxs_sum_inv
-        qsxs_sum_inv2 = qsxs_sum_inv*qsxs_sum_inv
-        qsxs_sum_inv3 = qsxs_sum_inv2*qsxs_sum_inv
+#        qsxs_sum_inv2 = qsxs_sum_inv*qsxs_sum_inv
+#        qsxs_sum_inv3 = qsxs_sum_inv2*qsxs_sum_inv
+#
+#        qsxs_sum_inv_2 = qsxs_sum_inv + qsxs_sum_inv
+#        qsxs_sum_inv2_2 = qsxs_sum_inv2 + qsxs_sum_inv2
+#        qsxs_sum_inv3_2 = qsxs_sum_inv3 + qsxs_sum_inv3
+#        t1s = [qsxs_sum_inv2*(qs[i]*xs[i]*qsxs_sum_inv_2  - 1.0) for i in range(N)]
+#        t2s = [qs[i]*xs[i]*qsxs_sum_inv3_2 for i in range(N)]
 
-        qsxs_sum_inv_2 = qsxs_sum_inv + qsxs_sum_inv
-        qsxs_sum_inv2_2 = qsxs_sum_inv2 + qsxs_sum_inv2
-        qsxs_sum_inv3_2 = qsxs_sum_inv3 + qsxs_sum_inv3
-        t1s = [qsxs_sum_inv2*(qs[i]*xs[i]*qsxs_sum_inv_2  - 1.0) for i in range(N)]
-        t2s = [qs[i]*xs[i]*qsxs_sum_inv3_2 for i in range(N)]
+        if self.scalar:
+            d2thetas_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]
+        else:
+            d2thetas_dxixjs = zeros((N, N, N))
 
-        self._d2thetas_dxixjs = d2thetas_dxixjs = [[None for _ in range(N)] for _ in range(N)]
+        uniquac_d2phis_dxixjs(N, xs, qs, qsxs_sum_inv, d2thetas_dxixjs)
 
-        for k in range(N):
-            # There is symmetry here, but it is complex. 4200 of 8000 (N=20) values are unique.
-            # Due to the very large matrices, no gains to be had by exploiting it in this function
-            d2thetas_dxixjsk = d2thetas_dxixjs[k]
-            for j in range(N):
-                # Fastest I can test
-                d2thetas_dxixjsk[j] = [qs[k]*qs[j]*t1s[i] if (i == k or i == j) and j != k
-                                       else qs[k]*qs[j]*t2s[i] for i in range(N)]
-            d2thetas_dxixjs[k][k][k] -= qs[k]*qs[k]*qsxs_sum_inv2_2
+        self._d2thetas_dxixjs = d2thetas_dxixjs
+#        [[None for _ in range(N)] for _ in range(N)]
 
+#        for k in range(N):
+#            # There is symmetry here, but it is complex. 4200 of 8000 (N=20) values are unique.
+#            # Due to the very large matrices, no gains to be had by exploiting it in this function
+#            d2thetas_dxixjsk = d2thetas_dxixjs[k]
+#            for j in range(N):
+#                # Fastest I can test
+#                d2thetas_dxixjsk[j] = [qs[k]*qs[j]*t1s[i] if (i == k or i == j) and j != k
+#                                       else qs[k]*qs[j]*t2s[i] for i in range(N)]
+#            d2thetas_dxixjs[k][k][k] -= qs[k]*qs[k]*qsxs_sum_inv2_2
+#
         return d2thetas_dxixjs
 
     def thetaj_taus_jis(self):
