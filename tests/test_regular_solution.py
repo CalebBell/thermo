@@ -36,6 +36,10 @@ def test_no_interactions():
     GE = RegularSolution(T=325.0, xs=[.25, .75], Vs=[7.421e-05, 8.068e-05], SPs=[19570.2, 18864.7])
     assert_close2d(GE.lambda_coeffs, [[0, 0], [0, 0]], atol=0, rtol=0)
 
+    GE = RegularSolution(T=325.0, xs=np.array([.25, .75]), Vs=np.array([7.421e-05, 8.068e-05]), SPs=np.array([19570.2, 18864.7]))
+    assert_close2d(GE.lambda_coeffs, [[0, 0], [0, 0]], atol=0, rtol=0)
+    assert type(GE.lambda_coeffs) is np.ndarray
+
 def test_4_components():
 #    m = Mixture(['acetone', 'chloroform', 'methanol', 'water'], zs=xs, T=300)
     xs = [.4, .3, .2, .1]
