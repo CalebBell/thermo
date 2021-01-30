@@ -659,3 +659,41 @@ def test_wilson_np_output_and_hash():
     json_string = modelnp.as_json()
     new = Wilson.from_json(json_string)
     assert new == modelnp
+
+
+def test_wilson_np_hash_different_input_forms():
+    T = 331.42
+    N = 3
+
+    A = [[0.0, 3.870101271243586, 0.07939943395502425],
+                 [-6.491263271243587, 0.0, -3.276991837288562],
+                 [0.8542855660449756, 6.906801837288562, 0.0]]
+    B = [[0.0, -375.2835, -31.1208],
+                 [1722.58, 0.0, 1140.79],
+                 [-747.217, -3596.17, -0.0]]
+    D = [[-0.0, -0.00791073, -0.000868371],
+                 [0.00747788, -0.0, -3.1e-05],
+                 [0.00124796, -3e-05, -0.0]]
+
+    C = E = F = [[0.0]*N for _ in range(N)]
+
+    xs = [0.229, 0.175, 0.596]
+
+    lambda_coeffs = [[[A[i][j], B[i][j], C[i][j], D[i][j], E[i][j], F[i][j]] for j in range(N)] for i in range(N)]
+
+    model_ABCDEF = Wilson(T=T, xs=xs, ABCDEF=(A, B, C, D, E, F))
+    model_lambda_coeffs = Wilson(T=T, xs=xs, lambda_coeffs=lambda_coeffs)
+    model_lambda_coeffs2 = Wilson.from_json(model_lambda_coeffs.as_json())
+
+    assert model_ABCDEF.GE() == model_lambda_coeffs.GE()
+    assert hash(model_ABCDEF) == hash(model_lambda_coeffs)
+    assert model_ABCDEF.GE() == model_lambda_coeffs2.GE()
+    assert hash(model_ABCDEF) == hash(model_lambda_coeffs2)
+
+
+    modelnp = Wilson(T=T, xs=np.array(xs), ABCDEF=(np.array(A), np.array(B), np.array(C), np.array(D), np.array(E), np.array(F)))
+    model_lambda_coeffsnp = Wilson(T=T, xs=np.array(xs), lambda_coeffs=np.array(lambda_coeffs))
+    assert modelnp.GE() == model_lambda_coeffsnp.GE()
+    assert hash(modelnp) == hash(model_lambda_coeffsnp)
+    model_lambda_coeffsnp2 = Wilson.from_json(model_lambda_coeffsnp.as_json())
+    assert hash(modelnp) == hash(model_lambda_coeffsnp2)

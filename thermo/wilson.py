@@ -457,19 +457,23 @@ class Wilson(GibbsExcess):
             self.N = N = len(self.lambda_coeffs_A)
         else:
             if lambda_coeffs is not None:
-                self.lambda_coeffs_A = [[i[0] for i in l] for l in lambda_coeffs]
-                self.lambda_coeffs_B = [[i[1] for i in l] for l in lambda_coeffs]
-                self.lambda_coeffs_C = [[i[2] for i in l] for l in lambda_coeffs]
-                self.lambda_coeffs_D = [[i[3] for i in l] for l in lambda_coeffs]
-                self.lambda_coeffs_E = [[i[4] for i in l] for l in lambda_coeffs]
-                self.lambda_coeffs_F = [[i[5] for i in l] for l in lambda_coeffs]
+                if scalar:
+                    self.lambda_coeffs_A = [[i[0] for i in l] for l in lambda_coeffs]
+                    self.lambda_coeffs_B = [[i[1] for i in l] for l in lambda_coeffs]
+                    self.lambda_coeffs_C = [[i[2] for i in l] for l in lambda_coeffs]
+                    self.lambda_coeffs_D = [[i[3] for i in l] for l in lambda_coeffs]
+                    self.lambda_coeffs_E = [[i[4] for i in l] for l in lambda_coeffs]
+                    self.lambda_coeffs_F = [[i[5] for i in l] for l in lambda_coeffs]
+                else:
+                    self.lambda_coeffs_A = lambda_coeffs[:,:,0]
+                    self.lambda_coeffs_B = lambda_coeffs[:,:,1]
+                    self.lambda_coeffs_C = lambda_coeffs[:,:,2]
+                    self.lambda_coeffs_D = lambda_coeffs[:,:,3]
+                    self.lambda_coeffs_E = lambda_coeffs[:,:,4]
+                    self.lambda_coeffs_F = lambda_coeffs[:,:,5]
+
             else:
-                self.lambda_coeffs_A = None
-                self.lambda_coeffs_B = None
-                self.lambda_coeffs_C = None
-                self.lambda_coeffs_D = None
-                self.lambda_coeffs_E = None
-                self.lambda_coeffs_F = None
+                raise ValueError("`lambda_coeffs` or `ABCDEF` is required required")
             self.N = N = len(lambda_coeffs)
 
     def __repr__(self):
