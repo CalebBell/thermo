@@ -1116,9 +1116,11 @@ class UNIQUAC(GibbsExcess):
         if self.scalar:
             d2GE_dTdxs = [0.0]*N
             qsxs = [qs[i]*xs[i] for i in range(N)]
+            qsxsthetaj_taus_jis_inv = [thetaj_taus_jis_inv[i]*qsxs[i] for i in range(N)]
         else:
             d2GE_dTdxs = zeros(N)
             qsxs = qs*xs
+            qsxsthetaj_taus_jis_inv = qsxs*thetaj_taus_jis_inv
 
         # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
         for i in range(N):
@@ -1138,7 +1140,7 @@ class UNIQUAC(GibbsExcess):
                     t102 += dthetas_dxs[k][i]*taus[k][j]
 
                 ## Temperature multiplied terms
-                t49 = qsxs[j]*t100*thetaj_taus_jis_inv[j]
+                t49 = qsxsthetaj_taus_jis_inv[j]*t100
                 Ttot += t49
                 t49_sum += t49
 
@@ -1150,7 +1152,7 @@ class UNIQUAC(GibbsExcess):
                 t51 = qsxs[j]/thetas[j]*(dthetas_dxs[j][i] - thetas[j]*phis_inv[j]*dphis_dxs[j][i])
                 t51_sum += t51
 
-                t52 = qsxs[j]*t102*thetaj_taus_jis_inv[j]
+                t52 = t102*qsxsthetaj_taus_jis_inv[j]
                 t52_sum += t52
 
 
