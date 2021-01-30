@@ -683,15 +683,6 @@ class UNIQUAC(GibbsExcess):
 
         self.phis() # Ensure the sum is there
         rsxs_sum_inv = self._rsxs_sum_inv
-#        rsxs_sum_inv2 = rsxs_sum_inv*rsxs_sum_inv
-#        rsxs_sum_inv3 = rsxs_sum_inv2*rsxs_sum_inv
-#
-#        rsxs_sum_inv_2 = rsxs_sum_inv + rsxs_sum_inv
-#        rsxs_sum_inv2_2 = rsxs_sum_inv2 + rsxs_sum_inv2
-#        rsxs_sum_inv3_2 = rsxs_sum_inv3 + rsxs_sum_inv3
-#        t1s = [rsxs_sum_inv2*(rs[i]*xs[i]*rsxs_sum_inv_2  - 1.0) for i in range(N)]
-#        t2s = [rs[i]*xs[i]*rsxs_sum_inv3_2 for i in range(N)]
-#
         if self.scalar:
             d2phis_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]
         else:
@@ -701,24 +692,6 @@ class UNIQUAC(GibbsExcess):
         uniquac_d2phis_dxixjs(N, xs, rs, rsxs_sum_inv, d2phis_dxixjs)
 
         self._d2phis_dxixjs = d2phis_dxixjs
-
-#        for k in range(N):
-#            # There is symmetry here, but it is complex. 4200 of 8000 (N=20) values are unique.
-#            # Due to the very large matrices, no gains to be had by exploiting it in this function
-#            # Removing the branches is the best that can be done (and it is quite good).
-#            d2phis_dxixjsk = d2phis_dxixjs[k]
-#
-#            for j in range(N):
-#                rskrsj = rs[k]*rs[j]
-#                d2phis_dxixjskj = d2phis_dxixjsk[j]
-#                for i in range(N):
-#                    d2phis_dxixjskj[i] = rskrsj*t2s[i]
-#                if j != k:
-#                    d2phis_dxixjskj[k] = rskrsj*t1s[k]
-#                    d2phis_dxixjskj[j] = rskrsj*t1s[j]
-#
-#            d2phis_dxixjs[k][k][k] -= rs[k]*rs[k]*rsxs_sum_inv2_2
-
         return d2phis_dxixjs
 
     def thetas(self):
@@ -742,13 +715,6 @@ class UNIQUAC(GibbsExcess):
             pass
         N, xs = self.N, self.xs
         qs = self.qs
-#        qsxs = [qs[i]*xs[i] for i in range(N)]
-#        self._qsxs_sum_inv = qsxs_sum_inv = 1.0/sum(qsxs)
-#        # reuse the array qsxs to store thetas
-#        for i in range(N):
-#            qsxs[i] *= qsxs_sum_inv
-#        self._thetas = qsxs
-
         self._thetas, self._qsxs_sum_inv = uniquac_phis(N, xs, qs)
         return self._thetas
 
@@ -773,23 +739,6 @@ class UNIQUAC(GibbsExcess):
         N, qs = self.N, self.qs
 
         self._dthetas_dxs = dthetas_dxs = uniquac_dphis_dxs(N, qs, self.thetas(), self._qsxs_sum_inv)
-
-
-#        qsxs = list(self.thetas())
-#        qsxs_sum_inv = self._qsxs_sum_inv
-#        qsxs_sum_inv_m = -qsxs_sum_inv
-#
-#        for i in range(N):
-#            # reuse this array for memory savings
-#            qsxs[i] *= qsxs_sum_inv_m
-#
-#        self._dthetas_dxs = dthetas_dxs = [[0.0]*N for _ in range(N)]
-#        for j in range(N):
-#            for i in range(N):
-#                dthetas_dxs[i][j] = qsxs[i]*qs[j]
-#            # There is no symmetry to exploit here
-#            dthetas_dxs[j][j] += qs[j]*qsxs_sum_inv
-
         return dthetas_dxs
 
     def d2thetas_dxixjs(self):
@@ -812,15 +761,6 @@ class UNIQUAC(GibbsExcess):
 
         self.thetas() # Ensure the sum is there
         qsxs_sum_inv = self._qsxs_sum_inv
-#        qsxs_sum_inv2 = qsxs_sum_inv*qsxs_sum_inv
-#        qsxs_sum_inv3 = qsxs_sum_inv2*qsxs_sum_inv
-#
-#        qsxs_sum_inv_2 = qsxs_sum_inv + qsxs_sum_inv
-#        qsxs_sum_inv2_2 = qsxs_sum_inv2 + qsxs_sum_inv2
-#        qsxs_sum_inv3_2 = qsxs_sum_inv3 + qsxs_sum_inv3
-#        t1s = [qsxs_sum_inv2*(qs[i]*xs[i]*qsxs_sum_inv_2  - 1.0) for i in range(N)]
-#        t2s = [qs[i]*xs[i]*qsxs_sum_inv3_2 for i in range(N)]
-
         if self.scalar:
             d2thetas_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]
         else:
@@ -829,18 +769,6 @@ class UNIQUAC(GibbsExcess):
         uniquac_d2phis_dxixjs(N, xs, qs, qsxs_sum_inv, d2thetas_dxixjs)
 
         self._d2thetas_dxixjs = d2thetas_dxixjs
-#        [[None for _ in range(N)] for _ in range(N)]
-
-#        for k in range(N):
-#            # There is symmetry here, but it is complex. 4200 of 8000 (N=20) values are unique.
-#            # Due to the very large matrices, no gains to be had by exploiting it in this function
-#            d2thetas_dxixjsk = d2thetas_dxixjs[k]
-#            for j in range(N):
-#                # Fastest I can test
-#                d2thetas_dxixjsk[j] = [qs[k]*qs[j]*t1s[i] if (i == k or i == j) and j != k
-#                                       else qs[k]*qs[j]*t2s[i] for i in range(N)]
-#            d2thetas_dxixjs[k][k][k] -= qs[k]*qs[k]*qsxs_sum_inv2_2
-#
         return d2thetas_dxixjs
 
     def thetaj_taus_jis(self):
@@ -1187,8 +1115,10 @@ class UNIQUAC(GibbsExcess):
 
         if self.scalar:
             d2GE_dTdxs = [0.0]*N
+            qsxs = [qs[i]*xs[i] for i in range(N)]
         else:
             d2GE_dTdxs = zeros(N)
+            qsxs = qs*xs
 
         # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
         for i in range(N):
@@ -1208,7 +1138,7 @@ class UNIQUAC(GibbsExcess):
                     t102 += dthetas_dxs[k][i]*taus[k][j]
 
                 ## Temperature multiplied terms
-                t49 = qs[j]*xs[j]*t100*thetaj_taus_jis_inv[j]
+                t49 = qsxs[j]*t100*thetaj_taus_jis_inv[j]
                 Ttot += t49
                 t49_sum += t49
 
