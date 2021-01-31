@@ -98,16 +98,9 @@ from thermo.unifac import DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assign
 from thermo.electrochem import conductivity
 from thermo.law import legal_status, economic_status
 from thermo.eos import PR
+from thermo import serialize
 
 CAS_H2O = '7732-18-5'
-
-global json
-json = None
-def get_json():
-    global json
-    if json is None:
-        import json
-    return json
 
 
 
@@ -197,12 +190,10 @@ class ChemicalConstantsPackage(object):
         >>> type(string)
         str
         '''
-        if json is None:
-            get_json()
 
         d = self.__dict__ # Not a the real object dictionary
         d['json_version'] = 1
-        ans = json.dumps(d)
+        ans = serialize.json.dumps(d)
         return ans
 
     @classmethod
@@ -232,9 +223,7 @@ class ChemicalConstantsPackage(object):
         >>> new_constants  = ChemicalConstantsPackage.from_json(string)
         >>> assert hash(new_constants) == hash(constants)
         '''
-        if json is None:
-            get_json()
-        d = json.loads(string)
+        d = serialize.json.loads(string)
 
         for k in ('TWAs', 'STELs'):
             # tuple gets converted to a json list

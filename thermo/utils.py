@@ -88,117 +88,8 @@ from chemicals.utils import mix_multiple_component_flows, hash_any_primitive
 from chemicals.vapor_pressure import Antoine, Antoine_coeffs_from_point, Antoine_AB_coeffs_from_point, DIPPR101_ABC_coeffs_from_point
 from chemicals.dippr import EQ101
 from chemicals.phase_change import Watson, Watson_n
-
-try:
-    array = np.array
-except:
-    pass
-
-BasicNumpyEncoder = None
-def build_numpy_encoder():
-    '''Create a basic numpy encoder for json applications. All np ints become
-    Python ints; numpy floats become python floats; and all arrays become
-    lists-of-lists of floats, ints, bools, or complexes according to Python's
-    rules.
-    '''
-    global BasicNumpyEncoder, json
-
-    import json
-    int_types = frozenset([np.short, np.ushort, np.intc, np.uintc, np.int_,
-                           np.uint, np.longlong, np.ulonglong])
-    float_types = frozenset([np.float16, np.single, np.double, np.longdouble,
-                             np.csingle, np.cdouble, np.clongdouble])
-    ndarray = np.ndarray
-    JSONEncoder = json.JSONEncoder
-
-    class BasicNumpyEncoder(JSONEncoder):
-        def default(self, obj):
-            t = type(obj)
-            if t is ndarray:
-                return obj.tolist()
-            elif t in int_types:
-                return int(obj)
-            elif t in float_types:
-                return float(obj)
-            return JSONEncoder.default(self, obj)
-
-
-def naive_lists_to_arrays(obj):
-    t = type(obj)
-    if t is dict:
-        for k, v in obj.items():
-            obj[k] = naive_lists_to_arrays(v)
-    if t is tuple:
-        return tuple(naive_lists_to_arrays(v) for v in obj)
-    if t is set:
-        return set(naive_lists_to_arrays(v) for v in obj)
-    if t is list:
-        return array(obj)
-    return obj
-
-BasicNumpyDecoder = None
-def build_numpy_decoder():
-    global BasicNumpyDecoder, json
-    import json
-
-    class BasicNumpyDecoder(json.JSONDecoder):
-        def __init__(self, *args, **kwargs):
-            json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
-
-        def object_hook(self, obj):
-            return naive_lists_to_arrays(obj)
-
-
-def _load_orjson():
-    global orjson
-    import orjson
-
-def dump_json_np(obj, library='json'):
-    '''Serialization tool that handles numpy arrays. By default this will
-    use the standard library json, but this can also use orjson.'''
-    if library == 'json':
-        if BasicNumpyEncoder is None:
-            build_numpy_encoder()
-        return json.dumps(obj, cls=BasicNumpyEncoder)
-    elif library == 'orjson':
-        if orjson is None:
-            _load_orjson()
-        opt = orjson.OPT_SERIALIZE_NUMPY
-        return orjson.dumps(obj, option=opt)
-
-def load_json_np(obj, library='json'):
-    '''Serialization tool that handles numpy arrays. By default this will
-    use the standard library json, but this can also use orjson.'''
-    if library == 'json':
-        if BasicNumpyDecoder is None:
-            build_numpy_decoder()
-        return json.loads(obj, cls=BasicNumpyDecoder)
-    elif library == 'orjson':
-        if orjson is None:
-            _load_orjson()
-        opt = orjson.OPT_SERIALIZE_NUMPY
-        return orjson.loads(obj, option=opt)
-
-json_loaded = False
-def _load_json():
-    global json
-    import json
-    json_loaded = True
-
-global json, orjson
-orjson = None
-
-if PY37:
-    def __getattr__(name):
-        global json, json_loaded
-        if name == 'json':
-            import json
-            json_loaded = True
-            return json
-        raise AttributeError("module %s has no attribute %s" %(__name__, name))
-else:
-    import json
-    json_loaded = True
+from thermo import serialize
+from thermo.eos import GCEOS
 
 NEGLIGIBLE = 'NEGLIGIBLE'
 DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
@@ -1063,10 +954,15 @@ class TDependentProperty(object):
             if hasattr(self, name):
                 json_refs[name] = getattr(self, name)
                 setattr(self, name, self.CASRN)
+        try:
+            eos = getattr(self, 'eos')
+            if eos:
+                self.eos = eos[0].as_json()
+                json_refs['eos'] = eos
+        except:
+            pass
 
-        if not json_loaded:
-            _load_json()
-        ans = json.dumps(d)
+        ans = serialize.json.dumps(d)
 
         # Set the dictionary back
         del d["py/object"]
@@ -1117,10 +1013,11 @@ class TDependentProperty(object):
         Examples
         --------
         '''
-        if not json_loaded:
-            _load_json()
-        d = json.loads(json_repr)
+        d = serialize.json.loads(json_repr)
         cls._load_json_CAS_references(d)
+        if 'eos' in d:
+            if type(d['eos']) is str:
+                d['eos'] = [GCEOS.from_json(d['eos'])]
 #        if 'CP_f' in d:
 #            from thermo.coolprop import coolprop_fluids
 #            d['CP_f'] = coolprop_fluids[d['CP_f']]
@@ -3234,8 +3131,6 @@ class MixtureProperty(object):
         Examples
         --------
         '''
-        if not json_loaded:
-            _load_json()
 
         d = self.__dict__ # Not a the real object dictionary
         mod_name = self.__class__.__module__
@@ -3248,9 +3143,8 @@ class MixtureProperty(object):
         all_methods = d['all_methods']
         d['all_methods'] = list(all_methods)
 
-
         d['json_version'] = 1
-        ans = json.dumps(d)
+        ans = serialize.json.dumps(d)
         del d['json_version']
         del d["py/object"]
         for i, k in enumerate(self.pure_references):
@@ -3283,9 +3177,7 @@ class MixtureProperty(object):
         Examples
         --------
         '''
-        if json is None:
-            get_json()
-        d = json.loads(string)
+        d = serialize.json.loads(string)
         d['all_methods'] = set(d['all_methods'])
         for k, sub_cls in zip(cls.pure_references, cls.pure_reference_types):
             sub_jsons = d[k]

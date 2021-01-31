@@ -208,7 +208,7 @@ from chemicals.utils import log, exp, sqrt
 from chemicals.rachford_rice import flash_inner_loop, Rachford_Rice_flash_error, Rachford_Rice_solution2
 from chemicals.flash_basic import K_value, Wilson_K_value
 
-from thermo import utils
+from thermo import serialize
 from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     a_alpha_aijs_composition_independent_support_zeros, a_alpha_and_derivatives, a_alpha_and_derivatives_full,
     a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms)
@@ -421,7 +421,7 @@ class GCEOSMIX(GCEOS):
         >>> new_eos = GCEOSMIX.from_json(string)
         >>> assert new_eos.__dict__ == eos.__dict__
         '''
-        d = utils.json.loads(json_repr)
+        d = serialize.json.loads(json_repr)
         eos_name = d['py/object']
         del d['py/object']
         del d['json_version']

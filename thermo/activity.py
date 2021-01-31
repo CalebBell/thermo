@@ -71,8 +71,7 @@ from fluids.constants import R, R_inv
 from fluids.numerics import numpy as np
 from chemicals.utils import exp, log
 from chemicals.utils import normalize, dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, d2xs_to_dxdn_partials, hash_any_primitive
-from thermo import utils
-from thermo.utils import dump_json_np
+from thermo import serialize
 
 try:
     npexp, ones, zeros, array = np.exp, np.ones, np.zeros, np.array
@@ -319,9 +318,9 @@ class GibbsExcess(object):
         d["py/object"] = "%s.%s" %(mod_name, self.__class__.__name__)
         d["json_version"] = 1
         if self.scalar:
-            ans = utils.json.dumps(self.__dict__)
+            ans = serialize.json.dumps(self.__dict__)
         else:
-            ans = dump_json_np(self.__dict__)
+            ans = serialize.dump_json_np(self.__dict__)
         del d["py/object"]
         del d["json_version"]
         return ans
@@ -357,11 +356,11 @@ class GibbsExcess(object):
 
         if '"scalar": false' in json_repr or '"scalar":false' in json_repr:
             # Load as np
-            d = utils.load_json_np(json_repr)
+            d = serialize.load_json_np(json_repr)
         else:
-            d = utils.json.loads(json_repr)
+            d = serialize.json.loads(json_repr)
             if not d['scalar']:
-                d = utils.load_json_np(json_repr)
+                d = serialize.load_json_np(json_repr)
 
 #        if cls is GibbsExcess:
 #            model_name = d['py/object']

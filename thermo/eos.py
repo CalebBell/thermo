@@ -281,9 +281,9 @@ from chemicals.utils import (Cp_minus_Cv, isobaric_expansion,
                           isothermal_compressibility,
                           phase_identification_parameter, hash_any_primitive)
 from chemicals.utils import log, log10, exp, sqrt, copysign
-from thermo import utils
 from chemicals.flash_basic import Wilson_K_value
 
+from thermo import serialize
 from thermo.eos_volume import (volume_solutions_mpmath, volume_solutions_mpmath_float,
                                volume_solutions_NR, volume_solutions_NR_low_P,
                                volume_solutions_halley, volume_solutions_fast,
@@ -926,7 +926,7 @@ class GCEOS(object):
         d = self.__dict__
         d["py/object"] = "thermo.%s.%s" %(mod_name, self.__class__.__name__)
         d['json_version'] = 1
-        ans = utils.json.dumps(self.__dict__)
+        ans = serialize.json.dumps(self.__dict__)
         del d["py/object"]
         del d['json_version']
         return ans
@@ -958,7 +958,7 @@ class GCEOS(object):
         >>> new_eos = GCEOS.from_json(string)
         >>> assert eos.__dict__ == new_eos.__dict__
         '''
-        d = utils.json.loads(json_repr)
+        d = serialize.json.loads(json_repr)
         eos_name = d['py/object']
         del d['py/object']
         del d['json_version']
