@@ -31,6 +31,7 @@ from random import random
 from thermo import *
 import numpy as np
 from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d, assert_close3d
+from thermo.test_utils import check_np_output_activity
 
 def test_UNIQUAC_functional():
     # P05.01c VLE Behavior of Ethanol - Water Using UNIQUAC
@@ -235,3 +236,32 @@ def test_UNIQUAC_madeup_ternary():
     # Check json storage again, with some results
     GE2 = UNIQUAC.from_json(GE.as_json())
     assert GE2.__dict__ == GE.__dict__
+
+
+def test_UNIQUAC_numpy_inputs():
+
+
+    N = 3
+    T = 331.42
+    xs = [0.229, 0.175, 0.596]
+    rs = [2.5735, 2.87, 1.4311]
+    qs = [2.336, 2.41, 1.432]
+    # madeup numbers to match Wilson example roughly
+    tausA = [[0.0, -1.05e-4, -2.5e-4], [3.9e-4, 0.0, 1.6e-4], [-1.123e-4, 6.5e-4, 0]]
+    tausB = [[0.0, 235.0, -169.0], [-160, 0.0, -715.0], [11.2, 144.0, 0.0]]
+    tausC = [[0.0, -4.23e-4, 2.9e-4], [6.1e-4, 0.0, 8.2e-5], [-7.8e-4, 1.11e-4, 0]]
+    tausD = [[0.0, -3.94e-5, 2.22e-5], [8.5e-5, 0.0, 4.4e-5], [-7.9e-5, 3.22e-5, 0]]
+    tausE = [[0.0, -4.2e2, 8.32e2], [2.7e2, 0.0, 6.8e2], [3.7e2, 7.43e2, 0]]
+    tausF = [[0.0, 9.64e-8, 8.94e-8], [1.53e-7, 0.0, 1.11e-7], [7.9e-8, 2.276e-8, 0]]
+    ABCDEF = (tausA, tausB, tausC, tausD, tausE, tausF)
+    ABCDEFnp = tuple(np.array(v) for v in ABCDEF)
+
+    model = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=ABCDEF)
+    modelnp = UNIQUAC(T=T, xs=np.array(xs), rs=np.array(rs), qs=np.array(qs), ABCDEF=ABCDEFnp)
+    modelnp2 = modelnp.to_T_xs(T=T, xs=np.array(xs))
+
+    check_np_output_activity(model, modelnp, modelnp2)
+
+    json_string = modelnp.as_json()
+    new = UNIQUAC.from_json(json_string)
+    assert new == modelnp
