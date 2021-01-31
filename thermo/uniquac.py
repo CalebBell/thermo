@@ -445,21 +445,23 @@ class UNIQUAC(GibbsExcess):
             self.tau_coeffs_D, self.tau_coeffs_E, self.tau_coeffs_F) = ABCDEF
             self.N = N = len(self.tau_coeffs_A)
         else:
-            self.tau_coeffs = tau_coeffs
             if tau_coeffs is not None:
-                self.tau_coeffs_A = [[i[0] for i in l] for l in tau_coeffs]
-                self.tau_coeffs_B = [[i[1] for i in l] for l in tau_coeffs]
-                self.tau_coeffs_C = [[i[2] for i in l] for l in tau_coeffs]
-                self.tau_coeffs_D = [[i[3] for i in l] for l in tau_coeffs]
-                self.tau_coeffs_E = [[i[4] for i in l] for l in tau_coeffs]
-                self.tau_coeffs_F = [[i[5] for i in l] for l in tau_coeffs]
+                if scalar:
+                    self.tau_coeffs_A = [[i[0] for i in l] for l in tau_coeffs]
+                    self.tau_coeffs_B = [[i[1] for i in l] for l in tau_coeffs]
+                    self.tau_coeffs_C = [[i[2] for i in l] for l in tau_coeffs]
+                    self.tau_coeffs_D = [[i[3] for i in l] for l in tau_coeffs]
+                    self.tau_coeffs_E = [[i[4] for i in l] for l in tau_coeffs]
+                    self.tau_coeffs_F = [[i[5] for i in l] for l in tau_coeffs]
+                else:
+                    self.tau_coeffs_A = tau_coeffs[:,:,0]
+                    self.tau_coeffs_B = tau_coeffs[:,:,1]
+                    self.tau_coeffs_C = tau_coeffs[:,:,2]
+                    self.tau_coeffs_D = tau_coeffs[:,:,3]
+                    self.tau_coeffs_E = tau_coeffs[:,:,4]
+                    self.tau_coeffs_F = tau_coeffs[:,:,5]
             else:
-                self.tau_coeffs_A = None
-                self.tau_coeffs_B = None
-                self.tau_coeffs_C = None
-                self.tau_coeffs_D = None
-                self.tau_coeffs_E = None
-                self.tau_coeffs_F = None
+                raise ValueError("`tau_coeffs` or `ABCDEF` is required")
 
             self.N = N = len(self.tau_coeffs_A)
         if scalar:
