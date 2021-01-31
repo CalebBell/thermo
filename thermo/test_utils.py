@@ -41,6 +41,7 @@ def check_np_output_activity(model, modelnp, modelnp2):
                 'd2nGE_dTdns', 'dgammas_dT']
 
     for attr in vec_attrs:
+        print(attr)
         assert_close1d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
         assert_close1d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
         assert type(getattr(model, attr)()) is list
@@ -49,6 +50,7 @@ def check_np_output_activity(model, modelnp, modelnp2):
 
     mat_attrs = ['d2GE_dxixjs', 'd2nGE_dninjs', 'dgammas_dns']
     for attr in mat_attrs:
+        print(attr)
         assert_close2d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
         assert_close2d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
         assert type(getattr(model, attr)()) is list
@@ -58,6 +60,7 @@ def check_np_output_activity(model, modelnp, modelnp2):
     attrs_3d = ['d3GE_dxixjxks']
     for attr in attrs_3d:
         if hasattr(model, attr):
+            print(attr)
             # some models do not have this implemented
             assert_close3d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
             assert_close3d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)

@@ -281,6 +281,7 @@ class GibbsExcess(object):
     immutable.
 
     '''
+    x_infinite_dilution = 0.0
     def __repr__(self):
         # Other classes with different parameters should expose them here too
         s = '%s(T=%s, xs=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs))
@@ -765,6 +766,7 @@ class GibbsExcess(object):
         '''
         T, N = self.T, self.N
         xs_base = self.xs
+        x_infinite_dilution = self.x_infinite_dilution
         if self.scalar:
             gammas_inf = [0.0]*N
             copy_fun = list
@@ -773,7 +775,7 @@ class GibbsExcess(object):
             copy_fun = array
         for i in range(N):
             xs = copy_fun(xs_base)
-            xs[i] = 0.0
+            xs[i] = x_infinite_dilution
             xs = normalize(xs)
             gammas_inf[i] = self.to_T_xs(T, xs=xs).gammas()[i]
         return gammas_inf

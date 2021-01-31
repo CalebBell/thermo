@@ -425,6 +425,7 @@ class UNIQUAC(GibbsExcess):
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
     z = 10.0
+    x_infinite_dilution = 1e-12
     def __repr__(self):
         s = '%s(T=%s, xs=%s, rs=%s, qs=%s, ABCDEF=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs), repr(self.rs), repr(self.qs),
                 (self.tau_coeffs_A,  self.tau_coeffs_B, self.tau_coeffs_C,
@@ -461,7 +462,10 @@ class UNIQUAC(GibbsExcess):
                 self.tau_coeffs_F = None
 
             self.N = N = len(self.tau_coeffs_A)
-        self.zero_coeffs = [[0.0]*N for _ in range(N)]
+        if scalar:
+            self.zero_coeffs = [[0.0]*N for _ in range(N)]
+        else:
+            self.zero_coeffs = zeros((N, N))
 
     def to_T_xs(self, T, xs):
         r'''Method to construct a new :obj:`UNIQUAC` instance at
@@ -548,7 +552,11 @@ class UNIQUAC(GibbsExcess):
         F = self.tau_coeffs_F
         T = self.T
         N = self.N
-        self._taus = taus = interaction_exp(T, N, A, B, C, D, E, F)
+        if self.scalar:
+            taus = [[0.0]*N for _ in range(N)]
+        else:
+            taus = zeros((N, N))
+        self._taus = interaction_exp(T, N, A, B, C, D, E, F, taus)
         return taus
 
     def dtaus_dT(self):
@@ -587,7 +595,11 @@ class UNIQUAC(GibbsExcess):
             taus = self._taus
         except AttributeError:
             taus = self.taus()
-        self._dtaus_dT = dtaus_dT = dinteraction_exp_dT(T, N, B, C, D, E, F, taus)
+        if self.scalar:
+            dtaus_dT = [[0.0]*N for _ in range(N)]
+        else:
+            dtaus_dT = zeros((N, N))
+        self._dtaus_dT = dinteraction_exp_dT(T, N, B, C, D, E, F, taus, dtaus_dT)
         return dtaus_dT
 
     def d2taus_dT2(self):
@@ -631,7 +643,11 @@ class UNIQUAC(GibbsExcess):
             dtaus_dT = self._dtaus_dT
         except AttributeError:
             dtaus_dT = self.dtaus_dT()
-        self._d2taus_dT2 = d2taus_dT2s = d2interaction_exp_dT2(T, N, B, C, E, F, taus, dtaus_dT)
+        if self.scalar:
+            d2taus_dT2s = [[0.0]*N for _ in range(N)]
+        else:
+            d2taus_dT2s = zeros((N, N))
+        self._d2taus_dT2 = d2interaction_exp_dT2(T, N, B, C, E, F, taus, dtaus_dT, d2taus_dT2s)
         return d2taus_dT2s
 
     def d3taus_dT3(self):
@@ -678,7 +694,11 @@ class UNIQUAC(GibbsExcess):
             dtaus_dT = self._dtaus_dT
         except AttributeError:
             dtaus_dT = self.dtaus_dT()
-        self._d3taus_dT3 = d3taus_dT3s = d3interaction_exp_dT3(T, N, B, C, E, F, taus, dtaus_dT)
+        if self.scalar:
+            d3taus_dT3s = [[0.0]*N for _ in range(N)]
+        else:
+            d3taus_dT3s = zeros((N, N))
+        self._d3taus_dT3 = d3interaction_exp_dT3(T, N, B, C, E, F, taus, dtaus_dT, d3taus_dT3s)
         return d3taus_dT3s
 
     def phis(self):
@@ -827,8 +847,12 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             pass
         N, qs = self.N, self.qs
+        if self.scalar:
+            dthetas_dxs =  [[0.0]*N for i in range(N)]
+        else:
+            dthetas_dxs = zeros((N, N))
 
-        self._dthetas_dxs = dthetas_dxs = uniquac_dphis_dxs(N, qs, self.thetas(), self._qsxs_sum_inv)
+        self._dthetas_dxs = dthetas_dxs = uniquac_dphis_dxs(N, qs, self.thetas(), self._qsxs_sum_inv, dthetas_dxs)
         return dthetas_dxs
 
     def d2thetas_dxixjs(self):
@@ -878,7 +902,11 @@ class UNIQUAC(GibbsExcess):
             taus = self.taus()
 
         N = self.N
-        self._thetaj_taus_jis = thetaj_taus_jis = uniquac_thetaj_taus_jis(N, taus, thetas)
+        if self.scalar:
+            thetaj_taus_jis = [0.0]*N
+        else:
+            thetaj_taus_jis = zeros(N)
+        self._thetaj_taus_jis = thetaj_taus_jis = uniquac_thetaj_taus_jis(N, taus, thetas, thetaj_taus_jis)
         return thetaj_taus_jis
 
     def thetaj_taus_jis_inv(self):
@@ -1154,7 +1182,7 @@ class UNIQUAC(GibbsExcess):
 
         uniquac_dGE_dxs(N, T, xs, qs, taus, phis, phis_inv, dphis_dxs, thetas, dthetas_dxs,
                         thetaj_taus_jis, thetaj_taus_jis_inv, dGE_dxs)
-        self.dGE_dxs = dGE_dxs
+        self._dGE_dxs = dGE_dxs
         return dGE_dxs
 
     def d2GE_dTdxs(self):
