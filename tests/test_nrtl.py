@@ -395,3 +395,28 @@ def test_NRTL_numpy_output():
     new = NRTL.from_json(json_string)
     assert new == modelnp
 
+def test_NRTL_missing_inputs():
+    alphas = [[[0.0, 2e-05], [0.2937, 7e-05], [0.2999, 0.0001]],
+     [[0.2937, 1e-05], [0.0, 4e-05], [0.3009, 8e-05]],
+     [[0.2999, 1e-05], [0.3009, 3e-05], [0.0, 5e-05]]]
+
+    taus = [[[6e-05, 0.0, 7e-05, 7e-05, 0.00788, 3.6e-07],
+      [3e-05, 624.868, 9e-05, 7e-05, 0.00472, 8.5e-07],
+      [3e-05, 398.953, 4e-05, 1e-05, 0.00279, 5.6e-07]],
+     [[1e-05, -29.167, 8e-05, 9e-05, 0.00256, 1e-07],
+      [2e-05, 0.0, 7e-05, 6e-05, 0.00587, 4.2e-07],
+      [0.0, -35.482, 8e-05, 4e-05, 0.00889, 8.2e-07]],
+     [[9e-05, -95.132, 6e-05, 1e-05, 0.00905, 5.2e-07],
+      [9e-05, 33.862, 2e-05, 6e-05, 0.00517, 1.4e-07],
+      [0.0001, 0.0, 6e-05, 2e-05, 0.00095, 7.4e-07]]]
+
+    N = 3
+    T = 273.15+70
+    dT = T*1e-8
+    xs = [.2, .3, .5]
+    with pytest.raises(ValueError):
+        GE = NRTL(T, xs, tau_coeffs=taus)
+    with pytest.raises(ValueError):
+        GE = NRTL(T, xs, taus)
+    with pytest.raises(ValueError):
+        GE = NRTL(T, xs, alpha_coeffs=alphas)
