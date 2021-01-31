@@ -2247,6 +2247,9 @@ class VolumeSolidMixture(MixtureProperty):
 
     ranked_methods = [SIMPLE]
 
+    pure_references = ('VolumeSolids',)
+    pure_reference_types = (VolumeSolid, )
+
     def __init__(self, CASs=[], VolumeSolids=[], MWs=[]):
         self.CASs = CASs
         self.VolumeSolids = self.pure_objs = VolumeSolids
