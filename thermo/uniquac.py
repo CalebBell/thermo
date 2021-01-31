@@ -959,7 +959,11 @@ class UNIQUAC(GibbsExcess):
             dtaus_dT = self.dtaus_dT()
 
         N = self.N
-        self._thetaj_dtaus_dT_jis = thetaj_dtaus_dT_jis = uniquac_thetaj_taus_jis(N, dtaus_dT, thetas)
+        if self.scalar:
+            thetaj_dtaus_dT_jis = [0.0]*N
+        else:
+            thetaj_dtaus_dT_jis = zeros(N)
+        self._thetaj_dtaus_dT_jis = uniquac_thetaj_taus_jis(N, dtaus_dT, thetas, thetaj_dtaus_dT_jis)
         return thetaj_dtaus_dT_jis
 
 
@@ -980,7 +984,11 @@ class UNIQUAC(GibbsExcess):
             d2taus_dT2 = self.d2taus_dT2()
 
         N = self.N
-        self._thetaj_d2taus_dT2_jis = thetaj_d2taus_dT2_jis = uniquac_thetaj_taus_jis(N, d2taus_dT2, thetas)
+        if self.scalar:
+            thetaj_d2taus_dT2_jis = [0.0]*N
+        else:
+            thetaj_d2taus_dT2_jis = zeros(N)
+        self._thetaj_d2taus_dT2_jis = uniquac_thetaj_taus_jis(N, d2taus_dT2, thetas, thetaj_d2taus_dT2_jis)
         return thetaj_d2taus_dT2_jis
 
     def thetaj_d3taus_dT3_jis(self):
@@ -998,7 +1006,11 @@ class UNIQUAC(GibbsExcess):
             d3taus_dT3 = self.d3taus_dT3()
 
         N = self.N
-        self._thetaj_d3taus_dT3_jis = thetaj_d3taus_dT3_jis = uniquac_thetaj_taus_jis(N, d3taus_dT3, thetas)
+        if self.scalar:
+            thetaj_d3taus_dT3_jis = [0.0]*N
+        else:
+            thetaj_d3taus_dT3_jis = zeros(N)
+        self._thetaj_d3taus_dT3_jis = uniquac_thetaj_taus_jis(N, d3taus_dT3, thetas, thetaj_d3taus_dT3_jis)
         return thetaj_d3taus_dT3_jis
 
     def GE(self):
