@@ -38,12 +38,13 @@ def check_np_output_activity(model, modelnp, modelnp2):
 
     scalar_attrs = ['d3GE_dT3', 'd2GE_dT2', 'GE', 'dGE_dT']
     for attr in scalar_attrs:
-        print(attr)
-        assert_close(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
-        assert_close(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
-        assert type(getattr(model, attr)()) is float
-#        assert type(getattr(modelnp, attr)()) is float
-#        assert type(getattr(modelnp2, attr)()) is float
+        if hasattr(model, attr):
+            print(attr)
+            assert_close(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+            assert_close(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+            assert type(getattr(model, attr)()) is float
+    #        assert type(getattr(modelnp, attr)()) is float
+    #        assert type(getattr(modelnp2, attr)()) is float
 
     vec_attrs = ['dGE_dxs', 'gammas', '_gammas_dGE_dxs',
                  'd2GE_dTdxs', 'dHE_dxs', 'gammas_infinite_dilution', 'dHE_dns',

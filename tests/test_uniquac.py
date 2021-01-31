@@ -237,6 +237,12 @@ def test_UNIQUAC_madeup_ternary():
     GE2 = UNIQUAC.from_json(GE.as_json())
     assert GE2.__dict__ == GE.__dict__
 
+def test_UNIQUAC_require_parameters():
+    xs = [0.7273, 0.0909, 0.1818]
+    rs = [.92, 2.1055, 3.1878]
+    qs = [1.4, 1.972, 2.4]
+    with pytest.raises(ValueError):
+        GE = UNIQUAC(T=300.0, xs=xs, rs=rs, qs=qs)
 
 def test_UNIQUAC_numpy_inputs():
 
