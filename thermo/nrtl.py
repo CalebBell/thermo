@@ -1134,14 +1134,11 @@ class NRTL(GibbsExcess):
             taus = self.taus()
 
         xs, N = self.xs, self.N
-        self._xj_Gs_taus_jis = xj_Gs_taus_jis = nrtl_xj_Gs_taus_jis(N, xs, Gs, taus)
-
-#        for i in range(N):
-#            tot = 0.0
-#            for j in range(N):
-#                # Could use sum1
-#                tot += xs[j]*Gs[j][i]*taus[j][i]
-#            xj_Gs_taus_jis.append(tot)
+        if self.scalar:
+            xj_Gs_taus_jis = [0.0]*N
+        else:
+            xj_Gs_taus_jis = zeros(N)
+        self._xj_Gs_taus_jis = nrtl_xj_Gs_taus_jis(N, xs, Gs, taus, xj_Gs_taus_jis)
         return xj_Gs_taus_jis
 
 
@@ -1157,12 +1154,11 @@ class NRTL(GibbsExcess):
             dGs_dT = self.dGs_dT()
 
         xs, N = self.xs, self.N
-        self._xj_dGs_dT_jis = xj_dGs_dT_jis = nrtl_xj_Gs_jis(N, xs, dGs_dT)
-#        for i in range(N):
-#            tot = 0.0
-#            for j in range(N):
-#                tot += xs[j]*dGs_dT[j][i]
-#            xj_dGs_dT_jis.append(tot)
+        if self.scalar:
+            xj_dGs_dT_jis = [0.0]*N
+        else:
+            xj_dGs_dT_jis = zeros(N)
+        self._xj_dGs_dT_jis = nrtl_xj_Gs_jis(N, xs, dGs_dT, xj_dGs_dT_jis)
         return xj_dGs_dT_jis
 
     def xj_taus_dGs_dT_jis(self):
@@ -1181,13 +1177,12 @@ class NRTL(GibbsExcess):
         except AttributeError:
             taus = self.taus()
 
-        self._xj_taus_dGs_dT_jis = xj_taus_dGs_dT_jis = nrtl_xj_Gs_taus_jis(N, xs, dGs_dT, taus)
+        if self.scalar:
+            xj_taus_dGs_dT_jis = [0.0]*N
+        else:
+            xj_taus_dGs_dT_jis = zeros(N)
+        self._xj_taus_dGs_dT_jis = nrtl_xj_Gs_taus_jis(N, xs, dGs_dT, taus, xj_taus_dGs_dT_jis)
 
-#        for i in range(N):
-#            tot = 0.0
-#            for j in range(N):
-#                tot += xs[j]*taus[j][i]*dGs_dT[j][i]
-#            xj_taus_dGs_dT_jis.append(tot)
         return xj_taus_dGs_dT_jis
 
     def xj_Gs_dtaus_dT_jis(self):
@@ -1206,12 +1201,11 @@ class NRTL(GibbsExcess):
         except AttributeError:
             Gs = self.Gs()
 
-        self._xj_Gs_dtaus_dT_jis = xj_Gs_dtaus_dT_jis = nrtl_xj_Gs_taus_jis(N, xs, Gs, dtaus_dT)
-#        for i in range(N):
-#            tot = 0.0
-#            for j in range(N):
-#                tot += xs[j]*Gs[j][i]*dtaus_dT[j][i]
-#            xj_Gs_dtaus_dT_jis.append(tot)
+        if self.scalar:
+            xj_Gs_dtaus_dT_jis = [0.0]*N
+        else:
+            xj_Gs_dtaus_dT_jis = zeros(N)
+        self._xj_Gs_dtaus_dT_jis = nrtl_xj_Gs_taus_jis(N, xs, Gs, dtaus_dT, xj_Gs_dtaus_dT_jis)
         return xj_Gs_dtaus_dT_jis
 
     def GE(self):
@@ -1238,11 +1232,7 @@ class NRTL(GibbsExcess):
         xj_Gs_jis_inv, xj_Gs_taus_jis = self.xj_Gs_jis_inv(), self.xj_Gs_taus_jis()
         T, xs = self.T, self.xs
 
-#        tot = 0.0
-#        for i in range(N):
-#            tot += xs[i]*xj_Gs_taus_jis[i]*xj_Gs_jis_inv[i]
         self._GE = GE = nrtl_GE(N, T, xs, xj_Gs_taus_jis, xj_Gs_jis_inv)
-#                                T*R*tot
         return GE
 
     def dGE_dT(self):
@@ -1277,11 +1267,6 @@ class NRTL(GibbsExcess):
         xj_taus_dGs_dT_jis = self.xj_taus_dGs_dT_jis() # sum4
         xj_Gs_dtaus_dT_jis = self.xj_Gs_dtaus_dT_jis() # sum5
 
-#        tot = 0.0
-#        for i in range(N):
-#            tot += (xs[i]*(xj_Gs_taus_jis[i] + T*((xj_taus_dGs_dT_jis[i] + xj_Gs_dtaus_dT_jis[i])
-#                    - (xj_Gs_taus_jis[i]*xj_dGs_dT_jis[i])*xj_Gs_jis_inv[i]))*xj_Gs_jis_inv[i])
-#        self._dGE_dT = R*tot
         self._dGE_dT = nrtl_dGE_dT(N, T, xs, xj_Gs_taus_jis, xj_Gs_jis_inv, xj_dGs_dT_jis, xj_taus_dGs_dT_jis, xj_Gs_dtaus_dT_jis)
         return self._dGE_dT
 
@@ -1323,50 +1308,7 @@ class NRTL(GibbsExcess):
         dGs_dT = self.dGs_dT()
         d2Gs_dT2 = self.d2Gs_dT2()
 
-#        tot = 0
-#        for i in range(N):
-#            sum1 = 0.0
-#            sum2 = 0.0
-#            sum3 = 0.0
-#            sum4 = 0.0
-#            sum5 = 0.0
-#
-#            sum6 = 0.0
-#            sum7 = 0.0
-#            sum8 = 0.0
-#            sum9 = 0.0
-#            for j in range(N):
-#                tauji = taus[j][i]
-#                dtaus_dTji = dtaus_dT[j][i]
-#
-#                Gjixj = Gs[j][i]*xs[j]
-#                dGjidTxj = dGs_dT[j][i]*xs[j]
-#                d2GjidT2xj = xs[j]*d2Gs_dT2[j][i]
-#
-#                sum1 += Gjixj
-#                sum2 += tauji*Gjixj
-#                sum3 += dGjidTxj
-#
-#                sum4 += tauji*dGjidTxj
-#                sum5 += dtaus_dTji*Gjixj
-#
-#                sum6 += d2GjidT2xj
-#
-#                sum7 += tauji*d2GjidT2xj
-#
-#                sum8 += Gjixj*d2taus_dT2[j][i]
-#
-#                sum9 += dGjidTxj*dtaus_dTji
-#
-#            term1 = -T*sum2*(sum6 - 2.0*sum3*sum3/sum1)/sum1
-#            term2 = T*(sum7 + sum8 + 2.0*sum9)
-#            term3 = -2*T*(sum3*(sum4 + sum5))/sum1
-#            term4 = -2.0*(sum2*sum3)/sum1
-#            term5 = 2*(sum4 + sum5)
-#
-#            tot += xs[i]*(term1 + term2 + term3 + term4 + term5)/sum1
         self._d2GE_dT2 = d2GE_dT2 = nrtl_d2GE_dT2(N, T, xs, taus, dtaus_dT, d2taus_dT2, alphas, dalphas_dT, Gs, dGs_dT, d2Gs_dT2)
-#        R*tot
         return d2GE_dT2
 
     def dGE_dxs(self):
@@ -1419,20 +1361,16 @@ class NRTL(GibbsExcess):
         except AttributeError:
             pass
         T, xs, N = self.T, self.xs, self.N
-#        RT = R*T
         taus = self.taus()
         Gs = self.Gs()
         xj_Gs_jis_inv = self.xj_Gs_jis_inv()
         xj_Gs_taus_jis = self.xj_Gs_taus_jis()
+        if self.scalar:
+            dGE_dxs = [0.0]*N
+        else:
+            dGE_dxs = zeros(N)
 
-        self._dGE_dxs = dGE_dxs = nrtl_dGE_dxs(N, T, xs, taus, Gs, xj_Gs_taus_jis, xj_Gs_jis_inv)
-
-#        for k in range(N):
-#            # k is what is being differentiated
-#            tot = xj_Gs_taus_jis[k]*xj_Gs_jis_inv[k]
-#            for i in range(N):
-#                tot += xs[i]*xj_Gs_jis_inv[i]*Gs[k][i]*(taus[k][i] - xj_Gs_jis_inv[i]*xj_Gs_taus_jis[i])
-#            dGE_dxs.append(tot*RT)
+        self._dGE_dxs = nrtl_dGE_dxs(N, T, xs, taus, Gs, xj_Gs_taus_jis, xj_Gs_jis_inv, dGE_dxs)
         return dGE_dxs
 
     def d2GE_dxixjs(self):
@@ -1509,34 +1447,12 @@ class NRTL(GibbsExcess):
         Gs = self.Gs()
         xj_Gs_jis_inv = self.xj_Gs_jis_inv()
         xj_Gs_taus_jis = self.xj_Gs_taus_jis()
-#        RT = R*T
+        if self.scalar:
+            d2GE_dxixjs = [[0.0]*N for _ in range(N)]
+        else:
+            d2GE_dxixjs = zeros((N, N))
 
-        self._d2GE_dxixjs = d2GE_dxixjs = nrtl_d2GE_dxixjs(N, T, xs, taus, alphas, Gs, xj_Gs_taus_jis, xj_Gs_jis_inv)
-
-
-#        for i in range(N):
-#            row = []
-#            for j in range(N):
-#                tot = 0.0
-#                # two small terms
-#                tot += Gs[i][j]*taus[i][j]*xj_Gs_jis_inv[j]
-#                tot += Gs[j][i]*taus[j][i]*xj_Gs_jis_inv[i]
-#
-#                # Two large terms
-#                tot -= xj_Gs_taus_jis[j]*Gs[i][j]*(xj_Gs_jis_inv[j]*xj_Gs_jis_inv[j])
-#                tot -= xj_Gs_taus_jis[i]*Gs[j][i]*(xj_Gs_jis_inv[i]*xj_Gs_jis_inv[i])
-#
-#                # Three terms
-#                for k in range(N):
-#                    tot += 2.0*xs[k]*xj_Gs_taus_jis[k]*Gs[i][k]*Gs[j][k]*(xj_Gs_jis_inv[k]*xj_Gs_jis_inv[k]*xj_Gs_jis_inv[k])
-#
-#                # 6 terms
-#                for k in range(N):
-#                    tot -= xs[k]*Gs[i][k]*Gs[j][k]*(taus[j][k] + taus[i][k])*xj_Gs_jis_inv[k]*xj_Gs_jis_inv[k]
-#
-#                tot *= RT
-#                row.append(tot)
-#            d2GE_dxixjs.append(row)
+        self._d2GE_dxixjs = nrtl_d2GE_dxixjs(N, T, xs, taus, alphas, Gs, xj_Gs_taus_jis, xj_Gs_jis_inv, d2GE_dxixjs)
         return d2GE_dxixjs
 
 
@@ -1589,30 +1505,14 @@ class NRTL(GibbsExcess):
 
         Gs = self.Gs()
         dGs_dT = self.dGs_dT()
+        if self.scalar:
+            d2GE_dTdxs = [0.0]*N
+        else:
+            d2GE_dTdxs = zeros(N)
 
-#        xs_sum1s = [xs[i]*sum1[i] for i in range(N)]
-#        sum1_sum2s = [sum1[i]*sum2[i] for i in range(N)]
-
-        self._d2GE_dTdxs = d2GE_dTdxs = nrtl_d2GE_dTdxs(N, T, xs, taus, dtaus_dT, Gs, dGs_dT, xj_Gs_taus_jis,
+        self._d2GE_dTdxs = nrtl_d2GE_dTdxs(N, T, xs, taus, dtaus_dT, Gs, dGs_dT, xj_Gs_taus_jis,
                     xj_Gs_jis_inv, xj_dGs_dT_jis, xj_taus_dGs_dT_jis,
-                    xj_Gs_dtaus_dT_jis)
-#        for i in range(N):
-#            others = sum1_sum2s[i]
-#            tot1 = sum1[i]*(sum3[i]*sum1_sum2s[i] - (sum5[i] + sum4[i])) # Last singleton and second last singleton
-#
-#            Gsi = Gs[i]
-#            tausi = taus[i]
-#            for j in range(N):
-#                t0 = sum1_sum2s[j]*dGs_dT[i][j]
-#                t0 += sum1[j]*Gsi[j]*(sum3[j]*(tausi[j] - sum1_sum2s[j] - sum1_sum2s[j]) + sum5[j] + sum4[j]) # Could store and factor this stuff out but just makes it slower
-#                t0 -= (Gsi[j]*dtaus_dT[i][j] + tausi[j]*dGs_dT[i][j])
-#
-#                tot1 += t0*xs_sum1s[j]
-#
-#                others += xs_sum1s[j]*Gsi[j]*(tausi[j] - sum1_sum2s[j])
-#
-#            dG = -R*(T*tot1 - others)
-#            d2GE_dTdxs.append(dG)
+                    xj_Gs_dtaus_dT_jis, d2GE_dTdxs)
         return d2GE_dTdxs
 
 
