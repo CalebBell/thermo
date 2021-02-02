@@ -2257,6 +2257,69 @@ def chemgroups_to_matrix(chemgroups):
 #        matrix.append([float(l[k]) if k in l else 0.0 for l in chemgroups]) # Cannot notice performance improvement
     return matrix
 
+def unifac_Vis(rs, xs, N, Vis=None):
+    if Vis is None:
+        Vis = [0.0]*N
+    rx_sum_inv = 0.0
+    for i in range(N):
+        rx_sum_inv += rs[i]*xs[i]
+    rx_sum_inv = 1.0/rx_sum_inv # actually inverse it
+    for i in range(N):
+        Vis[i] = rs[i]*rx_sum_inv
+    return Vis, rx_sum_inv
+
+def unifac_dVis_dxs(rs, rx_sum_inv, N, dVis_dxs=None):
+    if dVis_dxs is None:
+        dVis_dxs = [[0.0]*N for _ in range(N)] # numba: delete
+#        dVis_dxs = zeros((N, N)) # numba: uncomment
+
+    mrx_sum_inv2 = -rx_sum_inv*rx_sum_inv
+
+    for i in range(N):
+        v = rs[i]*mrx_sum_inv2
+        dVijs = dVis_dxs[i]
+        for j in range(N):
+            dVijs[j] = v*rs[j]
+    return dVis_dxs
+
+def unifac_d2Vis_dxixjs(rs, rx_sum_inv, N, d2Vis_dxixjs=None):
+    if d2Vis_dxixjs is None:
+        d2Vis_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)] # numba: delete
+#        d2Vis_dxixjs = zeros((N, N, N)) # numba: uncomment
+
+    rx_sum_inv3_2 = 2.0*rx_sum_inv*rx_sum_inv*rx_sum_inv
+
+    for i in range(N):
+        mat = d2Vis_dxixjs[i]
+        x0 = rs[i]*rx_sum_inv3_2
+        for j in range(N):
+            row = mat[j]
+            x1 = x0*rs[j]
+            for k in range(N):
+                row[k] = x1*rs[k]
+    return d2Vis_dxixjs
+
+def unifac_d3Vis_dxixjxks(rs, rx_sum_inv, N, d3Vis_dxixjxks=None):
+    if d3Vis_dxixjxks is None:
+        d3Vis_dxixjxks = [[[[0.0]*N for _ in range(N)] for _ in range(N)] for _ in range(N)] # numba: delete
+#        d3Vis_dxixjxks = zeros((N, N, N, N)) # numba: uncomment
+
+    mrx_sum_inv4_6 = -6.0*rx_sum_inv*rx_sum_inv*rx_sum_inv*rx_sum_inv
+
+    for i in range(N):
+        cube = d3Vis_dxixjxks[i]
+        x0 = rs[i]*mrx_sum_inv4_6
+        for j in range(N):
+            mat = cube[j]
+            x1 = x0*rs[j]
+            for k in range(N):
+                row = mat[k]
+                x2 = x1*rs[k]
+                for l in range(N):
+                    row[l] = x2*rs[l]
+    return d3Vis_dxixjxks
+
+
 
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
@@ -3043,13 +3106,13 @@ class UNIFAC(GibbsExcess):
         except:
             pass
         rs, xs, N = self.rs, self.xs, self.N
-        tot = 0.0
-        for i in range(N):
-            tot += rs[i]*xs[i]
-        tot = 1.0/tot
-        self.rx_sum_inv = tot
-        self._Vis = [rs[i]*tot for i in range(N)]
-        return self._Vis
+        if self.scalar:
+            Vis = [0.0]*N
+        else:
+            Vis = zeros(N)
+
+        self._Vis, self.rx_sum_inv = unifac_Vis(rs, xs, N, Vis)
+        return Vis
 
     def dVis_dxs(self):
         r'''Calculate the mole fraction derivative of the :math:`V_i` terms
@@ -3080,12 +3143,13 @@ class UNIFAC(GibbsExcess):
             self.Vis()
             rx_sum_inv = self.rx_sum_inv
 
-        rs = self.rs
-        mrx_sum_inv2 = -rx_sum_inv*rx_sum_inv
-
-        dVis = [[ri*rj*mrx_sum_inv2 for rj in rs] for ri in rs]
-        self._dVis_dxs = dVis
-        return dVis
+        rs, N = self.rs, self.N
+        if self.scalar:
+            dVis_dxs = [[0.0]*N for _ in range(N)]
+        else:
+            dVis_dxs = zeros((N, N))
+        self._dVis_dxs = unifac_dVis_dxs(rs, rx_sum_inv, N, dVis_dxs)
+        return dVis_dxs
 
     def d2Vis_dxixjs(self):
         r'''Calculate the second mole fraction derivative of the :math:`V_i`
@@ -3117,11 +3181,14 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             self.Vis()
             rx_sum_inv = self.rx_sum_inv
-        rs = self.rs
-        rx_sum_inv3_2 = 2.0*rx_sum_inv*rx_sum_inv*rx_sum_inv
-        d2Vis = [[[ri*rj*rk*rx_sum_inv3_2 for rk in rs] for rj in rs] for ri in rs]
-        self._d2Vis_dxixjs = d2Vis
-        return d2Vis
+        rs, N = self.rs, self.N
+        if self.scalar:
+            d2Vis_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]
+        else:
+            d2Vis_dxixjs = zeros((N, N, N))
+
+        self._d2Vis_dxixjs = unifac_d2Vis_dxixjs(rs, rx_sum_inv, N, d2Vis_dxixjs)
+        return d2Vis_dxixjs
 
     def d3Vis_dxixjxks(self):
         r'''Calculate the third mole fraction derivative of the :math:`V_i`
@@ -3153,13 +3220,13 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             self.Vis()
             rx_sum_inv = self.rx_sum_inv
-        rs = self.rs
-        mrx_sum_inv4_6 = -6.0*rx_sum_inv*rx_sum_inv*rx_sum_inv*rx_sum_inv
-
-        d3Vis = [[[[ri*rj*rk*rl*mrx_sum_inv4_6 for rl in rs] for rk in rs]
-                                               for rj in rs] for ri in rs]
-        self._d3Vis_dxixjxks = d3Vis
-        return d3Vis
+        rs, N = self.rs, self.N
+        if self.scalar:
+            d3Vis_dxixjxks = [[[[0.0]*N for _ in range(N)] for _ in range(N)] for _ in range(N)]
+        else:
+            d3Vis_dxixjxks = zeros((N, N, N, N))
+        self._d3Vis_dxixjxks = unifac_d3Vis_dxixjxks(rs, rx_sum_inv, N, d3Vis_dxixjxks)
+        return d3Vis_dxixjxks
 
     def Fis(self):
         r'''Calculate the :math:`F_i` terms used in calculating the
@@ -3182,11 +3249,12 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         qs, xs, N = self.qs, self.xs, self.N
-        tot = 0.0
-        for i in range(N):
-            tot += qs[i]*xs[i]
-        self.qx_sum_inv = tot = 1.0/tot
-        self._Fis = Fis = [qi*tot for qi in qs]
+        if self.scalar:
+            Fis = [0.0]*N
+        else:
+            Fis = zeros(N)
+
+        self._Fis, self.qx_sum_inv = unifac_Vis(qs, xs, N, Fis)
         return Fis
 
     def dFis_dxs(self):
@@ -3218,12 +3286,15 @@ class UNIFAC(GibbsExcess):
             self.Fis()
             qx_sum_inv = self.qx_sum_inv
 
-        qs = self.qs
-        mqx_sum_inv2 = -qx_sum_inv*qx_sum_inv
+        qs, N = self.qs, self.N
 
-        dFis = [[qi*qj*mqx_sum_inv2 for qj in qs] for qi in qs]
-        self._dFis_dxs = dFis
-        return dFis
+
+        if self.scalar:
+            dFis_dxs  = [[0.0]*N for _ in range(N)]
+        else:
+            dFis_dxs  = zeros((N, N))
+        self._dFis_dxs = unifac_dVis_dxs(qs, qx_sum_inv, N, dFis_dxs)
+        return dFis_dxs
 
     def d2Fis_dxixjs(self):
         r'''Calculate the second mole fraction derivative of the :math:`F_i`
@@ -3256,12 +3327,15 @@ class UNIFAC(GibbsExcess):
             self.Fis()
             qx_sum_inv = self.qx_sum_inv
 
-        qs = self.qs
+        qs, N = self.qs, self.N
 
-        qx_sum_inv3_2 = 2.0*qx_sum_inv*qx_sum_inv*qx_sum_inv
-        d2Fis = [[[qi*qj*qk*qx_sum_inv3_2 for qk in qs] for qj in qs] for qi in qs]
-        self._d2Fis_dxixjs = d2Fis
-        return d2Fis
+        if self.scalar:
+            d2Fis_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]
+        else:
+            d2Fis_dxixjs = zeros((N, N, N))
+
+        self._d2Fis_dxixjs  = unifac_d2Vis_dxixjs(qs, qx_sum_inv, N, d2Fis_dxixjs )
+        return d2Fis_dxixjs
 
     def d3Fis_dxixjxks(self):
         r'''Calculate the third mole fraction derivative of the :math:`F_i`
@@ -3293,13 +3367,14 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             self.Fis()
             qx_sum_inv = self.qx_sum_inv
-        qs = self.qs
-        mqx_sum_inv4_6 = -6.0*qx_sum_inv*qx_sum_inv*qx_sum_inv*qx_sum_inv
+        qs, N = self.qs, self.N
 
-        d3Fis = [[[[qi*qj*qk*ql*mqx_sum_inv4_6 for ql in qs] for qk in qs]
-                                               for qj in qs] for qi in qs]
-        self._d3Fis_dxixjxks = d3Fis
-        return d3Fis
+        if self.scalar:
+            d3Fis_dxixjxks = [[[[0.0]*N for _ in range(N)] for _ in range(N)] for _ in range(N)]
+        else:
+            d3Fis_dxixjxks = zeros((N, N, N, N))
+        self._d3Fis_dxixjxks = unifac_d3Vis_dxixjxks(qs, qx_sum_inv, N, d3Fis_dxixjxks)
+        return d3Fis_dxixjxks
 
     def Vis_modified(self):
         r'''Calculate the :math:`V_i'` terms used in calculating the
@@ -3322,13 +3397,22 @@ class UNIFAC(GibbsExcess):
         except:
             pass
         rs_34, xs, N = self.rs_34, self.xs, self.N
-        tot = 0.0
-        for i in range(N):
-            tot += rs_34[i]*xs[i]
-        tot = 1.0/tot
-        self.r34x_sum_inv = tot
-        self._Vis_modified = [rs_34[i]*tot for i in range(N)]
-        return self._Vis_modified
+
+        if self.scalar:
+            Vis_modified = [0.0]*N
+        else:
+            Vis_modified = zeros(N)
+
+        self._Vis_modified, self.r34x_sum_inv = unifac_Vis(rs_34, xs, N, Vis_modified)
+
+
+#        tot = 0.0
+#        for i in range(N):
+#            tot += rs_34[i]*xs[i]
+#        tot = 1.0/tot
+#        self.r34x_sum_inv = tot
+#        self._Vis_modified = [rs_34[i]*tot for i in range(N)]
+        return Vis_modified
 
     def dVis_modified_dxs(self):
         r'''Calculate the mole fraction derivative of the :math:`V_i'` terms
