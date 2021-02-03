@@ -1,0 +1,8 @@
+{
+    "arch": "x86_64",
+    "cpu": "Intel(R) Core(TM) i5-3210M CPU @ 2.50GHz",
+    "machine": "debian",
+    "os": "Linux 3.16.0-4-amd64",
+    "ram": "16GB",
+    "version": 1
+}

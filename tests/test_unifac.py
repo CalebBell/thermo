@@ -700,7 +700,7 @@ def test_UNIFAC_class_Lyngby():
      [0.0, 0.0, 1.092520326434123e-05],
      [0.0001033194479619687, 0.0001033194479619687, 0.0]]
     assert_close2d(d2psis_dT2_expect, d2psis_dT2, rtol=1e-12)
-    assert_close2d(d2psis_dT2_numerical, d2psis_dT2_expect, rtol=1e-7)
+    assert_close2d(d2psis_dT2_numerical, d2psis_dT2_expect, rtol=4e-7)
 
 
     def to_diff_dT2(T):

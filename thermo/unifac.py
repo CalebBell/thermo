@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2017, 2018, 2019, 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -2257,6 +2257,141 @@ def chemgroups_to_matrix(chemgroups):
 #        matrix.append([float(l[k]) if k in l else 0.0 for l in chemgroups]) # Cannot notice performance improvement
     return matrix
 
+def unifac_psis(T, N_groups, version, psi_a, psi_b, psi_c, psis=None):
+    if psis is None:
+        psis = [[0.0]*N_groups for _ in range(N_groups)] # numba: delete
+#        psis = zeros((N_groups, N_groups)) # numba: uncomment
+
+    mT_inv = -1.0/T
+
+    if version == 4 or version == 5:
+        T0 = 298.15
+        TmT0 = T - T0
+        B = T*log(T0/T) + T - T0
+        for i in range(N_groups):
+            a_row, b_row, c_row = psi_a[i], psi_b[i], psi_c[i]
+            psisi = psis[i]
+            for j in range(N_groups):
+                psisi[j] = exp(mT_inv*(a_row[j] + b_row[j]*TmT0 + c_row[j]*B))
+    else:
+        for i in range(N_groups):
+            a_row, b_row, c_row = psi_a[i], psi_b[i], psi_c[i]
+            psisi = psis[i]
+            for j in range(N_groups):
+                psisi[j] = exp(a_row[j]*mT_inv - b_row[j] - c_row[j]*T)
+
+    return psis
+
+
+def unifac_dpsis_dT(T, N_groups, version, psi_a, psi_b, psi_c, psis, dpsis_dT=None):
+    if dpsis_dT is None:
+        dpsis_dT = [[0.0]*N_groups for _ in range(N_groups)] # numba: delete
+#        dpsis_dT = zeros((N_groups, N_groups)) # numba: uncomment
+
+    T2_inv = 1.0/(T*T)
+
+    if version == 4 or version == 5:
+        T0 = 298.15
+        mT_inv = -1.0/T
+        T2_inv = mT_inv*mT_inv
+        TmT0 = T - T0
+        x0 = log(T0/T)
+        B = T*x0 + T - T0
+
+        x1 = mT_inv + TmT0*T2_inv
+        x2 = x0*mT_inv + B*T2_inv
+
+        for i in range(N_groups):
+            a_row, b_row, c_row, psis_row = psi_a[i], psi_b[i], psi_c[i], psis[i]
+            dpsis_dTi = dpsis_dT[i]
+            for j in range(N_groups):
+                dpsis_dTi[j] = psis_row[j]*(x1*b_row[j] + c_row[j]*x2 + a_row[j]*T2_inv)
+    else:
+        for i in range(N_groups):
+            a_row, c_row, psis_row = psi_a[i], psi_c[i], psis[i]
+            dpsis_dTi = dpsis_dT[i]
+            for j in range(N_groups):
+                dpsis_dTi[j] = psis_row[j]*(a_row[j]*T2_inv - c_row[j])
+
+    return dpsis_dT
+
+def unifac_d2psis_dT2(T, N_groups, version, psi_a, psi_b, psi_c, psis, d2psis_dT2=None):
+    if d2psis_dT2 is None:
+        d2psis_dT2 = [[0.0]*N_groups for _ in range(N_groups)] # numba: delete
+#        d2psis_dT2 = zeros((N_groups, N_groups)) # numba: uncomment
+
+    mT2_inv = -1.0/(T*T)
+    T3_inv_m2 = -2.0/(T*T*T)
+
+    if version == 4 or version == 5:
+        T0 = 298.15
+        T_inv = 1.0/T
+        T2_inv = T_inv*T_inv
+        TmT0 = T - T0
+        x0 = log(T0/T)
+        B = T*x0 + T - T0
+        for i in range(N_groups):
+            psis_row, a_row, b_row, c_row = psis[i], psi_a[i], psi_b[i], psi_c[i]
+            row = d2psis_dT2[i]
+            for j in range(N_groups):
+                # TODO: optimize
+                a1, a2, a3 = a_row[j], b_row[j], c_row[j]
+                tf2 = a1 + a2*(T - T0) + a3*(T*log(T0/T) + T - T0)
+                tf3 = b_row[j] + c_row[j]*x0
+
+                x1 = (tf3 - tf2*T_inv)
+                v = T2_inv*psis_row[j]*(a3 + 2.0*tf3 + x1*x1 - 2.0*tf2*T_inv)
+                row[j] = v
+    else:
+        for i in range(N_groups):
+            a_row, c_row, psis_row = psi_a[i], psi_c[i], psis[i]
+            d2psis_dT2i = d2psis_dT2[i]
+            for j in range(N_groups):
+                x0 = c_row[j] + mT2_inv*a_row[j]
+
+                d2psis_dT2i[j] = (x0*x0 + T3_inv_m2*a_row[j])*psis_row[j]
+
+    return d2psis_dT2
+
+def unifac_d3psis_dT3(T, N_groups, version, psi_a, psi_b, psi_c, psis, d3psis_dT3=None):
+    if d3psis_dT3 is None:
+        d3psis_dT3 = [[0.0]*N_groups for _ in range(N_groups)] # numba: delete
+#        d3psis_dT3 = zeros((N_groups, N_groups)) # numba: uncomment
+
+    nT2_inv = -1.0/(T*T)
+    T3_inv_6 = 6.0/(T*T*T)
+    T4_inv_6 = 6.0/(T*T*T*T)
+
+    if version == 4 or version == 5:
+        T0 = 298.15
+        T_inv = 1.0/T
+        nT3_inv = -T_inv*T_inv*T_inv
+        TmT0 = T - T0
+        x0 = log(T0/T)
+        B = T*x0 + T - T0
+        for i in range(N_groups):
+            psis_row, a_row, b_row, c_row = psis[i], psi_a[i], psi_b[i], psi_c[i]
+            row = d3psis_dT3[i]
+            for j in range(N_groups):
+                a1, a2, a3 = a_row[j], b_row[j], c_row[j]
+                tf2 = a1 + a2*TmT0 + a3*B
+                tf3 = b_row[j] + c_row[j]*x0
+                x6 = tf2*T_inv
+                x5 = (tf3 - x6)
+                v = nT3_inv*psis_row[j]*(4.0*a3 + 6.0*tf3 + x5*x5*x5
+                                    + 3.0*(x5)*(a3 + tf3 + tf3 - 2.0*x6)
+                                    - 6.0*x6)
+                row[j] = v
+    else:
+        for i in range(N_groups):
+            psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
+            row = d3psis_dT3[i]
+            for j in range(N_groups):
+                x0 = c_row[j] + nT2_inv*a_row[j]
+                row[j] = (x0*(T3_inv_6*a_row[j] - x0*x0) + T4_inv_6*a_row[j])*psis_row[j]
+
+    return d3psis_dT3
+
 def unifac_Vis(rs, xs, N, Vis=None):
     if Vis is None:
         Vis = [0.0]*N
@@ -2319,6 +2454,205 @@ def unifac_d3Vis_dxixjxks(rs, rx_sum_inv, N, d3Vis_dxixjxks=None):
                     row[l] = x2*rs[l]
     return d3Vis_dxixjxks
 
+def unifac_Xs(N, N_groups, xs, vs, Xs=None):
+    if Xs is None:
+        Xs = [0.0]*N_groups
+
+    Xs_sum_inv = 0.0
+    for i in range(N_groups):
+        tot = 0.0
+        vsi = vs[i]
+        for j in range(N):
+            tot += vsi[j]*xs[j]
+        Xs[i] = tot
+        Xs_sum_inv += tot
+    Xs_sum_inv = 1.0/Xs_sum_inv
+
+    for i in range(N_groups):
+        Xs[i] *= Xs_sum_inv
+    return Xs, Xs_sum_inv
+
+def unifac_Thetas(N_groups, Xs, Qs, Thetas=None):
+    if Thetas is None:
+        Thetas = [0.0]*N_groups
+
+    Thetas_sum_inv = 0.0
+    for i in range(N_groups):
+        Thetas_sum_inv += Xs[i]*Qs[i]
+
+    Thetas_sum_inv = 1.0/Thetas_sum_inv
+    for i in range(N_groups):
+        Thetas[i] = Qs[i]*Xs[i]*Thetas_sum_inv
+    return Thetas, Thetas_sum_inv
+
+def unifac_dThetas_dxs(N_groups, N, Qs, vs, VS, VSXS, F, G, dThetas_dxs=None, vec0=None):
+    if dThetas_dxs is None:
+        dThetas_dxs = [[0.0]*N for _ in range(N_groups)] # numba: delete
+#        dThetas_dxs = zeros((N_groups, N)) # numba: uncomment
+    if vec0 is None:
+        vec0 = [0.0]*N
+
+    tot0 = 0.0
+    for k in range(N_groups):
+        tot0 += Qs[k]*VSXS[k]
+    tot0*= F
+
+    for j in range(N):
+        tot1 = 0.0
+        for k in range(N_groups):
+            tot1 -= Qs[k]*vs[k][j]
+        vec0[j] = F*(G*(tot0*VS[j] + tot1) - VS[j])
+
+    FG = F*G
+
+    for i in range(N_groups):
+        c = FG*Qs[i]
+        row = dThetas_dxs[i]
+        for j in range(N):
+            row[j] = c*(VSXS[i]*vec0[j] + vs[i][j])
+    return dThetas_dxs
+
+def unifac_d2Thetas_dxixjs(N_groups, N, Qs, vs, VS, VSXS, F, G, d2Thetas_dxixjs=None, vec0=None):
+    if d2Thetas_dxixjs is None:
+        d2Thetas_dxixjs = [[[0.0]*N_groups for _ in range(N)] for _ in range(N)] # numba: delete
+#        d2Thetas_dxixjs = zeros((N, N, N_groups)) # numba: uncomment
+    if vec0 is None:
+        vec0 = [0.0]*N
+
+    QsVSXS = 0.0
+    for i in range(N_groups):
+        QsVSXS += Qs[i]*VSXS[i]
+    QsVSXS_sum_inv = 1.0/QsVSXS
+
+    for j in range(N):
+        nffVSj = -F*VS[j]
+        v = 0.0
+        for n in range(N_groups):
+            v += Qs[n]*(nffVSj*VSXS[n] + vs[n][j])
+        vec0[j] = v
+
+    n2F = -2.0*F
+    F2_2 = 2.0*F*F
+    QsVSXS_sum_inv2 = 2.0*QsVSXS_sum_inv
+
+    for j in range(N):
+        matrix = d2Thetas_dxixjs[j]
+        for k in range(N):
+            row = matrix[k]
+            n2FVsK = n2F*VS[k]
+            tot0 = 0.0
+            for n in range(N_groups):
+                tot0 += Qs[n]*(VS[j]*(n2FVsK*VSXS[n] + vs[n][k]) + VS[k]*vs[n][j])
+            tot0 = tot0*F*QsVSXS_sum_inv
+
+            for i in range(N_groups):
+#                tot0, tot1, tot2 = 0.0, 0.0, 0.0
+#                for n in range(N_groups):
+#                    # dep on k, j only; some sep
+#                    tot0 += -2.0*F*Qs[n]*VS[j]*VS[k]*VSXS[n] + Qs[n]*VS[j]*vs[n][k] + Qs[n]*VS[k]*vs[n][j]
+#                 These are each used in three places
+#                    tot1 += -F*Qs[n]*VS[j]*VSXS[n] + Qs[n]*vs[n][j]
+#                    tot2 += -F*Qs[n]*VS[k]*VSXS[n] + Qs[n]*vs[n][k]
+                v = -F*(VS[j]*vs[i][k] + VS[k]*vs[i][j]) + VSXS[i]*tot0 + F2_2*VS[j]*VS[k]*VSXS[i]
+
+#                v = -F*VS[j]*vs[i][k] - F*VS[k]*vs[i][j]
+#                v += F2_2*VS[j]*VS[k]*VSXS[i]
+#                v += VSXS[i]*tot0
+#
+#                v += QsVSXS_sum_inv2*VSXS[i]*vec0[j]*vec0[k]*QsVSXS_sum_inv
+#
+#                # For both of these duplicate terms, j goes with k; k with j
+#                v -= vs[i][j]*vec0[k]*QsVSXS_sum_inv
+#                v -= vs[i][k]*vec0[j]*QsVSXS_sum_inv
+#
+#                v += F*VS[j]*VSXS[i]*vec0[k]*QsVSXS_sum_inv
+#                v += F*VS[k]*VSXS[i]*vec0[j]*QsVSXS_sum_inv
+
+                v += QsVSXS_sum_inv*(QsVSXS_sum_inv2*VSXS[i]*vec0[j]*vec0[k]
+                     - vs[i][j]*vec0[k] - vs[i][k]*vec0[j]
+                     + F*VSXS[i]*(VS[j]*vec0[k] + VS[k]*vec0[j]))
+
+                row[i] = v*Qs[i]*QsVSXS_sum_inv
+    return d2Thetas_dxixjs
+
+def unifac_VSXS(N, N_groups, vs, xs, VSXS=None):
+    if VSXS is None:
+        VSXS = [0.0]*N_groups
+    for i in range(N_groups):
+        v = 0.0
+        for j in range(N):
+            v += vs[i][j]*xs[j]
+        VSXS[i] = v
+    return VSXS
+
+def unifac_Theta_Psi_sums(N_groups, Thetas, psis, Theta_Psi_sums=None):
+    if Theta_Psi_sums is None:
+        Theta_Psi_sums = [0.0]*N_groups
+    for k in range(N_groups):
+        tot = 0.0
+        for m in range(N_groups):
+            tot += Thetas[m]*psis[m][k]
+        Theta_Psi_sums[k] = tot
+    return Theta_Psi_sums
+
+def unifac_ws(N, N_groups, psis, dThetas_dxs, Ws=None):
+    if Ws is None:
+        Ws = [[0.0]*N for _ in range(N_groups)] # numba: delete
+#        Ws = zeros((N_groups, N)) # numba: uncomment
+
+    for k in range(N_groups):
+        row0 = Ws[k]
+        for i in range(N):
+            tot0 = 0.0
+            for m in range(N_groups):
+                tot0 += psis[m][k]*dThetas_dxs[m][i]
+            row0[i] = tot0
+    return Ws
+
+def unifac_Theta_pure_Psi_sums(N, N_groups, psis, Thetas_pure, Theta_pure_Psi_sums=None):
+    if Theta_pure_Psi_sums is None:
+        Theta_pure_Psi_sums = [[0.0]*N_groups for _ in range(N)] # numba: delete
+#        Theta_pure_Psi_sums = zeros((N, N_groups)) # numba: uncomment
+
+    for i in range(N):
+        row = Theta_pure_Psi_sums[i]
+        Thetas_pure_i = Thetas_pure[i]
+        for k in range(N_groups):
+            tot = 0.0
+            for m in range(N_groups):
+                tot += Thetas_pure_i[m]*psis[m][k]
+            row[k] = (tot)
+    return Theta_pure_Psi_sums
+
+def unifac_lnGammas_subgroups(N, N_groups, Qs, psis, Thetas, Theta_Psi_sums, Theta_Psi_sum_invs, lnGammas_subgroups=None):
+    if lnGammas_subgroups is None:
+        lnGammas_subgroups = [0.0]*N_groups
+
+    for k in range(N_groups):
+        psisk = psis[k]
+        last = 1.0
+        for m in range(N_groups):
+            last -= Thetas[m]*Theta_Psi_sum_invs[m]*psisk[m]
+
+        lnGammas_subgroups[k] = Qs[k]*(last - log(Theta_Psi_sums[k]))
+    return lnGammas_subgroups
+
+def unifac_dlnGammas_subgroups_dxs(N, N_groups, Qs, Ws, psis, Thetas, Theta_Psi_sum_invs,
+                                   dThetas_dxs, dlnGammas_subgroups_dxs=None):
+    if dlnGammas_subgroups_dxs is None:
+        dlnGammas_subgroups_dxs = [[0.0]*N for _ in range(N_groups)] # numba : delete
+#        dlnGammas_subgroups_dxs = zeros((N_groups, N)) # numba : uncomment
+
+    for k in range(N_groups):
+        row = dlnGammas_subgroups_dxs[k]
+        for i in range(N):
+            tot = -Ws[k][i]*Theta_Psi_sum_invs[k]
+            for m in range(N_groups):
+                tot -= psis[k][m]*Theta_Psi_sum_invs[m]*(dThetas_dxs[m][i]
+                        - Ws[m][i]*Theta_Psi_sum_invs[m]*Thetas[m])
+            row[i] = tot*Qs[k]
+
+    return dlnGammas_subgroups_dxs
 
 
 class UNIFAC(GibbsExcess):
@@ -2401,6 +2735,11 @@ class UNIFAC(GibbsExcess):
        Professional, 2000.
     .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
+    '''
+    '''
+    List of functions not fully optimized (for Python anyway)
+    psis second derivative
+
     '''
 
     @staticmethod
@@ -2793,27 +3132,34 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         T, N_groups = self.T, self.N_groups
-        mT_inv = -1.0/T
+#        mT_inv = -1.0/T
         psi_a, psi_b, psi_c = self.psi_a, self.psi_b, self.psi_c
-        self._psis = psis = []
-        if self.version in (4, 5):
-            T0 = 298.15
-            TmT0 = T - T0
-            B = T*log(T0/T) + T - T0
-            for i in range(N_groups):
-                a_row, b_row, c_row = psi_a[i], psi_b[i], psi_c[i]
-#                r = []
-#                for j in range(N_groups):
-#                    a1, a2, a3 = a_row[j], b_row[j], c_row[j]
-#                    f = a1 + a2*(T - T0) + a3*(T*log(T0/T) + T - T0)
-#                    tau = exp(-f/T)
-#                    r.append(tau)
-#                psis.append(r)
-                psis.append([exp(mT_inv*(a_row[j] + b_row[j]*TmT0 + c_row[j]*B)) for j in range(N_groups)])
+        if self.scalar:
+            psis = [[0.0]*N_groups for _ in range(N_groups)]
         else:
-            for i in range(N_groups):
-                a_row, b_row, c_row = psi_a[i], psi_b[i], psi_c[i]
-                psis.append([exp(a_row[j]*mT_inv - b_row[j] - c_row[j]*T) for j in range(N_groups)])
+            psis = zeros((N_groups, N_groups))
+
+        self._psis = unifac_psis(T, N_groups, self.version, psi_a, psi_b, psi_c, psis)
+
+#        self._psis = psis = []
+#        if self.version in (4, 5):
+#            T0 = 298.15
+#            TmT0 = T - T0
+#            B = T*log(T0/T) + T - T0
+#            for i in range(N_groups):
+#                a_row, b_row, c_row = psi_a[i], psi_b[i], psi_c[i]
+##                r = []
+##                for j in range(N_groups):
+##                    a1, a2, a3 = a_row[j], b_row[j], c_row[j]
+##                    f = a1 + a2*(T - T0) + a3*(T*log(T0/T) + T - T0)
+##                    tau = exp(-f/T)
+##                    r.append(tau)
+##                psis.append(r)
+#                psis.append([exp(mT_inv*(a_row[j] + b_row[j]*TmT0 + c_row[j]*B)) for j in range(N_groups)])
+#        else:
+#            for i in range(N_groups):
+#                a_row, b_row, c_row = psi_a[i], psi_b[i], psi_c[i]
+#                psis.append([exp(a_row[j]*mT_inv - b_row[j] - c_row[j]*T) for j in range(N_groups)])
         return psis
 
     def dpsis_dT(self):
@@ -2865,26 +3211,33 @@ class UNIFAC(GibbsExcess):
             psis = self.psis()
 
         T, N_groups = self.T, self.N_groups
-        psi_a, psi_c = self.psi_a, self.psi_c
+        psi_a, psi_b, psi_c = self.psi_a, self.psi_b, self.psi_c
 
-        T2_inv = 1.0/(T*T)
-        self._dpsis_dT = dpsis_dT = []
-        if self.version == 4:
-            psi_b = self.psi_b
-            T0 = 298.15
-            mT_inv = -1.0/T
-            T2_inv = mT_inv*mT_inv
-            TmT0 = T - T0
-            x0 = log(T0/T)
-            B = T*x0 + T - T0
-            for i in range(N_groups):
-                psis_row, a_row, b_row, c_row = psis[i], psi_a[i], psi_b[i], psi_c[i]
-                dpsis_dT.append([psis_row[j]*(mT_inv*(b_row[j] + c_row[j]*x0) +  (a_row[j] + b_row[j]*TmT0 + c_row[j]*B)*T2_inv) for j in range(N_groups)])
-
+        if self.scalar:
+            dpsis_dT = [[0.0]*N_groups for _ in range(N_groups)]
         else:
-            for i in range(N_groups):
-                psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
-                dpsis_dT.append([psis_row[j]*(a_row[j]*T2_inv - c_row[j])  for j in range(N_groups)])
+            dpsis_dT = zeros((N_groups, N_groups))
+
+        self._dpsis_dT = unifac_dpsis_dT(T, N_groups, self.version, psi_a, psi_b, psi_c, psis, dpsis_dT)
+
+#        T2_inv = 1.0/(T*T)
+#        self._dpsis_dT = dpsis_dT = []
+#        if self.version == 4:
+#            psi_b = self.psi_b
+#            T0 = 298.15
+#            mT_inv = -1.0/T
+#            T2_inv = mT_inv*mT_inv
+#            TmT0 = T - T0
+#            x0 = log(T0/T)
+#            B = T*x0 + T - T0
+#            for i in range(N_groups):
+#                psis_row, a_row, b_row, c_row = psis[i], psi_a[i], psi_b[i], psi_c[i]
+#                dpsis_dT.append([psis_row[j]*(mT_inv*(b_row[j] + c_row[j]*x0) +  (a_row[j] + b_row[j]*TmT0 + c_row[j]*B)*T2_inv) for j in range(N_groups)])
+#
+#        else:
+#            for i in range(N_groups):
+#                psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
+#                dpsis_dT.append([psis_row[j]*(a_row[j]*T2_inv - c_row[j])  for j in range(N_groups)])
         return dpsis_dT
 
     def d2psis_dT2(self):
@@ -2943,40 +3296,46 @@ class UNIFAC(GibbsExcess):
             psis = self.psis()
 
         T, N_groups = self.T, self.N_groups
-        psi_a, psi_c = self.psi_a, self.psi_c
-        mT2_inv = -1.0/(T*T)
-        T3_inv_m2 = -2.0/(T*T*T)
+        psi_a, psi_b, psi_c = self.psi_a, self.psi_b, self.psi_c
+#        mT2_inv = -1.0/(T*T)
+#        T3_inv_m2 = -2.0/(T*T*T)
 
-        self._d2psis_dT2 = d2psis_dT2 = []
-        if self.version == 4:
-            psi_b = self.psi_b
-            T0 = 298.15
-            T_inv = 1.0/T
-            T2_inv = T_inv*T_inv
-            TmT0 = T - T0
-            x0 = log(T0/T)
-            B = T*x0 + T - T0
-            for i in range(N_groups):
-                psis_row, a_row, b_row, c_row = psis[i], psi_a[i], psi_b[i], psi_c[i]
-                row = []
-                for j in range(N_groups):
-                    a1, a2, a3 = a_row[j], b_row[j], c_row[j]
-                    tf2 = a1 + a2*(T - T0) + a3*(T*log(T0/T) + T - T0)
-                    tf3 = b_row[j] + c_row[j]*x0
-
-                    x1 = (tf3 - tf2*T_inv)
-                    v = T2_inv*psis_row[j]*(a3 + 2.0*tf3 + x1*x1 - 2.0*tf2*T_inv)
-                    row.append(v)
-                d2psis_dT2.append(row)
-
+        if self.scalar:
+            d2psis_dT2 = [[0.0]*N_groups for _ in range(N_groups)]
         else:
-            for i in range(N_groups):
-                psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
-                row = []
-                for j in range(N_groups):
-                    x0 = c_row[j] + mT2_inv*a_row[j]
-                    row.append((x0*x0 + T3_inv_m2*a_row[j])*psis_row[j])
-                d2psis_dT2.append(row)
+            d2psis_dT2 = zeros((N_groups, N_groups))
+
+        self._d2psis_dT2 = unifac_d2psis_dT2(T, N_groups, self.version, psi_a, psi_b, psi_c, psis, d2psis_dT2)
+#        d2psis_dT2 = []
+#        if self.version in (4, 5):
+#            psi_b = self.psi_b
+#            T0 = 298.15
+#            T_inv = 1.0/T
+#            T2_inv = T_inv*T_inv
+#            TmT0 = T - T0
+#            x0 = log(T0/T)
+#            B = T*x0 + T - T0
+#            for i in range(N_groups):
+#                psis_row, a_row, b_row, c_row = psis[i], psi_a[i], psi_b[i], psi_c[i]
+#                row = []
+#                for j in range(N_groups):
+#                    a1, a2, a3 = a_row[j], b_row[j], c_row[j]
+#                    tf2 = a1 + a2*(T - T0) + a3*(T*log(T0/T) + T - T0)
+#                    tf3 = b_row[j] + c_row[j]*x0
+#
+#                    x1 = (tf3 - tf2*T_inv)
+#                    v = T2_inv*psis_row[j]*(a3 + 2.0*tf3 + x1*x1 - 2.0*tf2*T_inv)
+#                    row.append(v)
+#                d2psis_dT2.append(row)
+#
+#        else:
+#            for i in range(N_groups):
+#                psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
+#                row = []
+#                for j in range(N_groups):
+#                    x0 = c_row[j] + mT2_inv*a_row[j]
+#                    row.append((x0*x0 + T3_inv_m2*a_row[j])*psis_row[j])
+#                d2psis_dT2.append(row)
         return d2psis_dT2
 
 
@@ -3045,44 +3404,49 @@ class UNIFAC(GibbsExcess):
             psis = self.psis()
 
         T, N_groups = self.T, self.N_groups
-        psi_a, psi_c = self.psi_a, self.psi_c
+        psi_a, psi_b, psi_c = self.psi_a, self.psi_b, self.psi_c
 
-        nT2_inv = -1.0/(T*T)
-        T3_inv_6 = 6.0/(T*T*T)
-        T4_inv_6 = 6.0/(T*T*T*T)
+#        nT2_inv = -1.0/(T*T)
+#        T3_inv_6 = 6.0/(T*T*T)
+#        T4_inv_6 = 6.0/(T*T*T*T)
 
-        self._d3psis_dT3 = d3psis_dT3 = []
-        if self.version == 4:
-            psi_b = self.psi_b
-            T0 = 298.15
-            T_inv = 1.0/T
-            nT3_inv = -T_inv*T_inv*T_inv
-            TmT0 = T - T0
-            x0 = log(T0/T)
-            B = T*x0 + T - T0
-            for i in range(N_groups):
-                psis_row, a_row, b_row, c_row = psis[i], psi_a[i], psi_b[i], psi_c[i]
-                row = []
-                for j in range(N_groups):
-                    a1, a2, a3 = a_row[j], b_row[j], c_row[j]
-                    tf2 = a1 + a2*TmT0 + a3*B
-                    tf3 = b_row[j] + c_row[j]*x0
-                    x6 = tf2*T_inv
-                    x5 = (tf3 - x6)
-                    v = nT3_inv*psis_row[j]*(4.0*a3 + 6.0*tf3 + x5*x5*x5
-                                        + 3.0*(x5)*(a3 + tf3 + tf3 - 2.0*x6)
-                                        - 6.0*x6)
-                    row.append(v)
-                d3psis_dT3.append(row)
-
+        if self.scalar:
+            d3psis_dT3 = [[0.0]*N_groups for _ in range(N_groups)]
         else:
-            for i in range(N_groups):
-                psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
-                row = []
-                for j in range(N_groups):
-                    x0 = c_row[j] + nT2_inv*a_row[j]
-                    row.append((x0*(T3_inv_6*a_row[j] - x0*x0) + T4_inv_6*a_row[j])*psis_row[j])
-                d3psis_dT3.append(row)
+            d3psis_dT3 = zeros((N_groups, N_groups))
+
+        self._d3psis_dT3 = unifac_d3psis_dT3(T, N_groups, self.version, psi_a, psi_b, psi_c, psis, d3psis_dT3)
+#        if self.version in (4, 5):
+#            psi_b = self.psi_b
+#            T0 = 298.15
+#            T_inv = 1.0/T
+#            nT3_inv = -T_inv*T_inv*T_inv
+#            TmT0 = T - T0
+#            x0 = log(T0/T)
+#            B = T*x0 + T - T0
+#            for i in range(N_groups):
+#                psis_row, a_row, b_row, c_row = psis[i], psi_a[i], psi_b[i], psi_c[i]
+#                row = []
+#                for j in range(N_groups):
+#                    a1, a2, a3 = a_row[j], b_row[j], c_row[j]
+#                    tf2 = a1 + a2*TmT0 + a3*B
+#                    tf3 = b_row[j] + c_row[j]*x0
+#                    x6 = tf2*T_inv
+#                    x5 = (tf3 - x6)
+#                    v = nT3_inv*psis_row[j]*(4.0*a3 + 6.0*tf3 + x5*x5*x5
+#                                        + 3.0*(x5)*(a3 + tf3 + tf3 - 2.0*x6)
+#                                        - 6.0*x6)
+#                    row.append(v)
+#                d3psis_dT3.append(row)
+#
+#        else:
+#            for i in range(N_groups):
+#                psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
+#                row = []
+#                for j in range(N_groups):
+#                    x0 = c_row[j] + nT2_inv*a_row[j]
+#                    row.append((x0*(T3_inv_6*a_row[j] - x0*x0) + T4_inv_6*a_row[j])*psis_row[j])
+#                d3psis_dT3.append(row)
         return d3psis_dT3
 
     def Vis(self):
@@ -3443,11 +3807,19 @@ class UNIFAC(GibbsExcess):
             self.Vis_modified()
             r34x_sum_inv = self.r34x_sum_inv
 
-        rs_34 = self.rs_34
-        mr34x_sum_inv2 = -r34x_sum_inv*r34x_sum_inv
+        rs_34, N = self.rs_34, self.N
+#        mr34x_sum_inv2 = -r34x_sum_inv*r34x_sum_inv
 
-        dVis_modified = [[ri*rj*mr34x_sum_inv2 for rj in rs_34] for ri in rs_34]
-        self._dVis_modified_dxs = dVis_modified
+#        dVis_modified = [[ri*rj*mr34x_sum_inv2 for rj in rs_34] for ri in rs_34]
+
+        if self.scalar:
+            dVis_modified = [[0.0]*N for _ in range(N)]
+        else:
+            dVis_modified = zeros((N, N))
+        self._dVis_modified_dxs = unifac_dVis_dxs(rs_34, r34x_sum_inv, N, dVis_modified)
+
+
+#        self._dVis_modified_dxs = dVis_modified
         return dVis_modified
 
     def d2Vis_modified_dxixjs(self):
@@ -3480,10 +3852,19 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             self.Vis_modified()
             r34x_sum_inv = self.r34x_sum_inv
-        rs_34 = self.rs_34
-        r34x_sum_inv3_2 = 2.0*r34x_sum_inv*r34x_sum_inv*r34x_sum_inv
-        d2Vis_modified = [[[ri*rj*rk*r34x_sum_inv3_2 for rk in rs_34] for rj in rs_34] for ri in rs_34]
-        self._d2Vis_modified_dxixjs = d2Vis_modified
+        rs_34, N = self.rs_34, self.N
+
+        if self.scalar:
+            d2Vis_modified = [[[0.0]*N for _ in range(N)] for _ in range(N)]
+        else:
+            d2Vis_modified = zeros((N, N, N))
+
+        self._d2Vis_modified_dxixjs = unifac_d2Vis_dxixjs(rs_34, r34x_sum_inv, N, d2Vis_modified)
+
+#
+#        r34x_sum_inv3_2 = 2.0*r34x_sum_inv*r34x_sum_inv*r34x_sum_inv
+#        d2Vis_modified = [[[ri*rj*rk*r34x_sum_inv3_2 for rk in rs_34] for rj in rs_34] for ri in rs_34]
+#        self._d2Vis_modified_dxixjs = d2Vis_modified
         return d2Vis_modified
 
     def d3Vis_modified_dxixjxks(self):
@@ -3516,12 +3897,20 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             self.Vis_modified()
             r34x_sum_inv = self.r34x_sum_inv
-        rs_34 = self.rs_34
-        mr34x_sum_inv4_6 = -6.0*r34x_sum_inv*r34x_sum_inv*r34x_sum_inv*r34x_sum_inv
+        rs_34, N = self.rs_34, self.N
 
-        d3Vis_modified = [[[[ri*rj*rk*rl*mr34x_sum_inv4_6 for rl in rs_34] for rk in rs_34]
-                                               for rj in rs_34] for ri in rs_34]
-        self._d3Vis_modified_dxixjxks = d3Vis_modified
+        if self.scalar:
+            d3Vis_modified = [[[[0.0]*N for _ in range(N)] for _ in range(N)] for _ in range(N)]
+        else:
+            d3Vis_modified = zeros((N, N, N, N))
+        self._d3Vis_modified_dxixjxks = unifac_d3Vis_dxixjxks(rs_34, r34x_sum_inv, N, d3Vis_modified)
+
+
+#        mr34x_sum_inv4_6 = -6.0*r34x_sum_inv*r34x_sum_inv*r34x_sum_inv*r34x_sum_inv
+#
+#        d3Vis_modified = [[[[ri*rj*rk*rl*mr34x_sum_inv4_6 for rl in rs_34] for rk in rs_34]
+#                                               for rj in rs_34] for ri in rs_34]
+#        self._d3Vis_modified_dxixjxks = d3Vis_modified
         return d3Vis_modified
 
     def Xs(self):
@@ -3545,16 +3934,23 @@ class UNIFAC(GibbsExcess):
         # is an index, numbered sequentially by the number of subgroups in the mixture
         vs, xs = self.vs, self.xs
         N, N_groups = self.N, self.N_groups
-        subgroup_sums = []
-        for i in range(N_groups):
-            tot = 0.0
-            for j in range(N):
-                tot += vs[i][j]*xs[j]
-            subgroup_sums.append(tot)
+        if self.scalar:
+            Xs = [0.0]*N_groups
+        else:
+            Xs = zeros(N_groups)
 
-        self.subgroup_sums = subgroup_sums # Used in several derivatives
-        self.Xs_sum_inv = sum_inv = 1.0/sum(subgroup_sums)
-        self._Xs = Xs = [subgroup_sums[i]*sum_inv for i in range(N_groups)]
+        self._Xs, self.Xs_sum_inv = unifac_Xs(N, N_groups, xs, vs, Xs)
+#
+#        subgroup_sums = []
+#        for i in range(N_groups):
+#            tot = 0.0
+#            for j in range(N):
+#                tot += vs[i][j]*xs[j]
+#            subgroup_sums.append(tot)
+
+#        self.subgroup_sums = subgroup_sums # Used in several derivatives
+#        self.Xs_sum_inv = sum_inv = 1.0/sum(subgroup_sums)
+#        self._Xs = Xs = [subgroup_sums[i]*sum_inv for i in range(N_groups)]
         return Xs
 
     def _Xs_sum_inv(self):
@@ -3587,11 +3983,17 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             Xs = self.Xs()
 
-        tot = 0.0
-        for i in range(N_groups):
-            tot += Xs[i]*Qs[i]
-        self.Thetas_sum_inv = tot_inv = 1.0/tot
-        self._Thetas = Thetas = [Qs[i]*Xs[i]*tot_inv for i in range(N_groups)]
+        if self.scalar:
+            Thetas = [0.0]*N_groups
+        else:
+            Thetas = [0.0]*N_groups
+        self._Thetas, self.Thetas_sum_inv = unifac_Thetas(N_groups, Xs, Qs, Thetas)
+
+#        tot = 0.0
+#        for i in range(N_groups):
+#            tot += Xs[i]*Qs[i]
+#        self.Thetas_sum_inv = tot_inv = 1.0/tot
+#        self._Thetas = Thetas = [Qs[i]*Xs[i]*tot_inv for i in range(N_groups)]
         return Thetas
 
     def _Thetas_sum_inv(self):
@@ -3645,39 +4047,43 @@ class UNIFAC(GibbsExcess):
             G = self.Thetas_sum_inv
         except AttributeError:
             G = self._Thetas_sum_inv()
-        Qs, N, N_groups, xs = self.Qs, self.N, self.N_groups, self.xs
+        Qs, N, N_groups = self.Qs, self.N, self.N_groups
         # Xs_sum_inv and Thetas_sum_inv have already calculated _Xs, _Thetas
-        Xs = self._Xs
-        Thetas = self._Thetas
         vs = self.vs
 
         VS = self.cmp_v_count
+
+        if self.scalar:
+            dThetas_dxs = [[0.0]*N for _ in range(N_groups)]
+        else:
+            dThetas_dxs = zeros((N_groups, N))
+
         try:
             VSXS = self.VSXS
         except AttributeError:
             VSXS = self._VSXS()
+#
+#        tot0 = 0.0
+#        for k in range(N_groups):
+#            tot0 += Qs[k]*VSXS[k]
+#        tot0*= F
+#
+#        tots = []
+#        for j in range(N):
+#            tot1 = 0.0
+#            for k in range(N_groups):
+#                tot1 -= Qs[k]*vs[k][j]
+#            tots.append(F*(G*(tot0*VS[j] + tot1) - VS[j]))
 
-        tot0 = 0.0
-        for k in range(N_groups):
-            tot0 += Qs[k]*VSXS[k]
-        tot0*= F
-
-        tots = []
-        for j in range(N):
-            tot1 = 0.0
-            for k in range(N_groups):
-                tot1 -= Qs[k]*vs[k][j]
-            tots.append(F*(G*(tot0*VS[j] + tot1) - VS[j]))
-
-        FG = F*G
-        # Index [subgroup][component]
-        self._dThetas_dxs = dThetas_dxs = []
-        for i in range(N_groups):
-            c = FG*Qs[i]
-            row = []
-            for j in range(N):
-                row.append(c*(VSXS[i]*tots[j] + vs[i][j]))
-            dThetas_dxs.append(row)
+#        FG = F*G
+#        # Index [subgroup][component]
+        self._dThetas_dxs = unifac_dThetas_dxs(N_groups, N, Qs, vs, VS, VSXS, F, G, dThetas_dxs)
+#        for i in range(N_groups):
+#            c = FG*Qs[i]
+#            row = []
+#            for j in range(N):
+#                row.append(c*(VSXS[i]*tots[j] + vs[i][j]))
+#            dThetas_dxs.append(row)
         return dThetas_dxs
 
     def d2Thetas_dxixjs(self):
@@ -3740,7 +4146,7 @@ class UNIFAC(GibbsExcess):
             G = self.Thetas_sum_inv
         except AttributeError:
             G = self._Thetas_sum_inv()
-        Qs, N, N_groups, xs = self.Qs, self.N, self.N_groups, self.xs
+        Qs, N, N_groups = self.Qs, self.N, self.N_groups
         vs = self.vs
 
         VS = self.cmp_v_count
@@ -3749,78 +4155,94 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             VSXS = self._VSXS()
 
-        QsVSXS = 0.0
-        for i in range(N_groups):
-            QsVSXS += Qs[i]*VSXS[i]
-        QsVSXS_sum_inv = 1.0/QsVSXS
-
-        tot1s = []
-        for j in range(N):
-            nffVSj = -F*VS[j]
-            v = 0.0
-            for n in range(N_groups):
-                v += Qs[n]*(nffVSj*VSXS[n] + vs[n][j])
-            tot1s.append(v)
-        n2F = -2.0*F
-        F2_2 = 2.0*F*F
-        QsVSXS_sum_inv2 = 2.0*QsVSXS_sum_inv
-
-        # Index [comp][comp][subgroup]
-        self._d2Thetas_dxixjs = d2Thetas_dxixjs = []
-        for j in range(N):
-            matrix = []
-            for k in range(N):
-                row = []
-                n2FVsK = n2F*VS[k]
-                tot0 = 0.0
-                for n in range(N_groups):
-                    tot0 += Qs[n]*(VS[j]*(n2FVsK*VSXS[n] + vs[n][k]) + VS[k]*vs[n][j])
-                tot0 = tot0*F*QsVSXS_sum_inv
-
-                for i in range(N_groups):
-#                    tot0, tot1, tot2 = 0.0, 0.0, 0.0
-#                    for n in range(N_groups):
-#                        # dep on k, j only; some sep
-#                        tot0 += -2.0*F*Qs[n]*VS[j]*VS[k]*VSXS[n] + Qs[n]*VS[j]*vs[n][k] + Qs[n]*VS[k]*vs[n][j]
-                        # These are each used in three places
-#                        tot1 += -F*Qs[n]*VS[j]*VSXS[n] + Qs[n]*vs[n][j]
-#                        tot2 += -F*Qs[n]*VS[k]*VSXS[n] + Qs[n]*vs[n][k]
-                    v = -F*(VS[j]*vs[i][k] + VS[k]*vs[i][j]) + VSXS[i]*tot0 + F2_2*VS[j]*VS[k]*VSXS[i]
-
-#                    v = -F*VS[j]*vs[i][k] - F*VS[k]*vs[i][j]
-#                    v += F2_2*VS[j]*VS[k]*VSXS[i]
-#                    v += VSXS[i]*tot0
-
-#                    v += QsVSXS_sum_inv2*VSXS[i]*tot1s[j]*tot1s[k]*QsVSXS_sum_inv
-#
-#                    # For both of these duplicate terms, j goes with k; k with j
-#                    v -= vs[i][j]*tot1s[k]*QsVSXS_sum_inv
-#                    v -= vs[i][k]*tot1s[j]*QsVSXS_sum_inv
-#
-#                    v += F*VS[j]*VSXS[i]*tot1s[k]*QsVSXS_sum_inv
-#                    v += F*VS[k]*VSXS[i]*tot1s[j]*QsVSXS_sum_inv
-
-                    v += QsVSXS_sum_inv*(QsVSXS_sum_inv2*VSXS[i]*tot1s[j]*tot1s[k]
-                         - vs[i][j]*tot1s[k] - vs[i][k]*tot1s[j]
-                         + F*VSXS[i]*(VS[j]*tot1s[k] + VS[k]*tot1s[j]))
-
-                    row.append(v*Qs[i]*QsVSXS_sum_inv)
-                matrix.append(row)
-            d2Thetas_dxixjs.append(matrix)
+        # Not working - why?
+        if self.scalar:
+            d2Thetas_dxixjs = [[[0.0]*N_groups for _ in range(N)] for _ in range(N)]
+        else:
+            d2Thetas_dxixjs = zeros((N, N, N_groups))
+        self._d2Thetas_dxixjs = unifac_d2Thetas_dxixjs(N_groups, N, Qs, vs, VS, VSXS, F, G, d2Thetas_dxixjs)
         return d2Thetas_dxixjs
+#        QsVSXS = 0.0
+#        for i in range(N_groups):
+#            QsVSXS += Qs[i]*VSXS[i]
+#        QsVSXS_sum_inv = 1.0/QsVSXS
+#
+#        tot1s = []
+#        for j in range(N):
+#            nffVSj = -F*VS[j]
+#            v = 0.0
+#            for n in range(N_groups):
+#                v += Qs[n]*(nffVSj*VSXS[n] + vs[n][j])
+#            tot1s.append(v)
+#        n2F = -2.0*F
+#        F2_2 = 2.0*F*F
+#        QsVSXS_sum_inv2 = 2.0*QsVSXS_sum_inv
+#
+#        # Index [comp][comp][subgroup]
+#        self._d2Thetas_dxixjs = d2Thetas_dxixjs = []
+#        for j in range(N):
+#            matrix = []
+#            for k in range(N):
+#                row = []
+#                n2FVsK = n2F*VS[k]
+#                tot0 = 0.0
+#                for n in range(N_groups):
+#                    tot0 += Qs[n]*(VS[j]*(n2FVsK*VSXS[n] + vs[n][k]) + VS[k]*vs[n][j])
+#                tot0 = tot0*F*QsVSXS_sum_inv
+#
+#                for i in range(N_groups):
+##                    tot0, tot1, tot2 = 0.0, 0.0, 0.0
+##                    for n in range(N_groups):
+##                        # dep on k, j only; some sep
+##                        tot0 += -2.0*F*Qs[n]*VS[j]*VS[k]*VSXS[n] + Qs[n]*VS[j]*vs[n][k] + Qs[n]*VS[k]*vs[n][j]
+#                        # These are each used in three places
+##                        tot1 += -F*Qs[n]*VS[j]*VSXS[n] + Qs[n]*vs[n][j]
+##                        tot2 += -F*Qs[n]*VS[k]*VSXS[n] + Qs[n]*vs[n][k]
+#                    v = -F*(VS[j]*vs[i][k] + VS[k]*vs[i][j]) + VSXS[i]*tot0 + F2_2*VS[j]*VS[k]*VSXS[i]
+#
+##                    v = -F*VS[j]*vs[i][k] - F*VS[k]*vs[i][j]
+##                    v += F2_2*VS[j]*VS[k]*VSXS[i]
+##                    v += VSXS[i]*tot0
+#
+##                    v += QsVSXS_sum_inv2*VSXS[i]*tot1s[j]*tot1s[k]*QsVSXS_sum_inv
+##
+##                    # For both of these duplicate terms, j goes with k; k with j
+##                    v -= vs[i][j]*tot1s[k]*QsVSXS_sum_inv
+##                    v -= vs[i][k]*tot1s[j]*QsVSXS_sum_inv
+##
+##                    v += F*VS[j]*VSXS[i]*tot1s[k]*QsVSXS_sum_inv
+##                    v += F*VS[k]*VSXS[i]*tot1s[j]*QsVSXS_sum_inv
+#
+#                    v += QsVSXS_sum_inv*(QsVSXS_sum_inv2*VSXS[i]*tot1s[j]*tot1s[k]
+#                         - vs[i][j]*tot1s[k] - vs[i][k]*tot1s[j]
+#                         + F*VSXS[i]*(VS[j]*tot1s[k] + VS[k]*tot1s[j]))
+#
+#                    row.append(v*Qs[i]*QsVSXS_sum_inv)
+#                matrix.append(row)
+#            d2Thetas_dxixjs.append(matrix)
+#        return d2Thetas_dxixjs
 
     def _VSXS(self):
         try:
             return self.VSXS
         except AttributeError:
             pass
-        self.VSXS = VSXS = []
-        N_groups, N, vs, xs = self.N_groups, self.N, self.vs, self.xs
-        for i in range(N_groups):
-            v = 0.0
-            for j in range(N):
-                v += vs[i][j]*xs[j]
-            VSXS.append(v)
+        N_groups = self.N_groups
+        if self.scalar:
+            VSXS = [0.0]*N_groups
+        else:
+            VSXS = zeros(N_groups)
+
+        self.VSXS = unifac_VSXS(self.N, N_groups, self.vs, self.xs, VSXS)
+
+
+#        self.VSXS = VSXS = []
+#        N_groups, N, vs, xs =
+#        for i in range(N_groups):
+#            v = 0.0
+#            for j in range(N):
+#                v += vs[i][j]*xs[j]
+#            VSXS.append(v)
         return VSXS
 
     def _Theta_Psi_sums(self):
@@ -3833,7 +4255,8 @@ class UNIFAC(GibbsExcess):
         try:
             return self.Theta_Psi_sums
         except AttributeError:
-            self.Theta_Psi_sums = Theta_Psi_sums = []
+            pass
+
         try:
             Thetas = self._Thetas
         except AttributeError:
@@ -3843,11 +4266,13 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             psis = self.psis()
         N_groups = self.N_groups
-        for k in range(N_groups):
-            tot = 0.0
-            for m in range(N_groups):
-                tot += Thetas[m]*psis[m][k]
-            Theta_Psi_sums.append(tot)
+
+        if self.scalar:
+            Theta_Psi_sums = [0.0]*N_groups
+        else:
+            Theta_Psi_sums = zeros(N_groups)
+
+        self.Theta_Psi_sums = unifac_Theta_Psi_sums(N_groups, Thetas, psis, Theta_Psi_sums)
         return Theta_Psi_sums
 
     def _Theta_Psi_sum_invs(self):
@@ -3864,7 +4289,10 @@ class UNIFAC(GibbsExcess):
                 Theta_Psi_sums = self.Theta_Psi_sums
             except AttributeError:
                 Theta_Psi_sums = self._Theta_Psi_sums()
-        self.Theta_Psi_sum_invs = [1.0/v for v in Theta_Psi_sums]
+        if self.scalar:
+            self.Theta_Psi_sum_invs = [1.0/v for v in Theta_Psi_sums]
+        else:
+            self.Theta_Psi_sum_invs = 1.0/Theta_Psi_sums
         return self.Theta_Psi_sum_invs
 
     def _Ws(self):
@@ -3890,17 +4318,24 @@ class UNIFAC(GibbsExcess):
             dThetas_dxs = self.dThetas_dxs()
         N, N_groups = self.N, self.N_groups
 
-        tot0s = []
-        for k in range(N_groups):
-            row0 = []
-            for i in range(N):
-                tot0 = 0.0
-                for m in range(N_groups):
-                    tot0 += psis[m][k]*dThetas_dxs[m][i]
-                row0.append(tot0)
-            tot0s.append(row0)
-        self.Ws = tot0s
-        return tot0s
+        if self.scalar:
+            Ws = [[0.0]*N for _ in range(N_groups)]
+        else:
+            Ws = zeros((N_groups, N))
+
+        self.Ws = unifac_ws(N, N_groups, psis, dThetas_dxs, Ws)
+
+#        tot0s = []
+#        for k in range(N_groups):
+#            row0 = []
+#            for i in range(N):
+#                tot0 = 0.0
+#                for m in range(N_groups):
+#                    tot0 += psis[m][k]*dThetas_dxs[m][i]
+#                row0.append(tot0)
+#            tot0s.append(row0)
+#        self.Ws = tot0s
+        return Ws
 
     def _Fs(self):
         r'''Computes the following:
@@ -3922,12 +4357,21 @@ class UNIFAC(GibbsExcess):
             dpsis_dT = self.dpsis_dT()
 
         N_groups = self.N_groups
-        self.Fs = Fs = []
-        for k in range(N_groups):
-            tot = 0.0
-            for m in range(N_groups):
-                tot += Thetas[m]*dpsis_dT[m][k]
-            Fs.append(tot)
+
+        if self.scalar:
+            Fs = [0.0]*N_groups
+        else:
+            Fs = zeros(N_groups)
+
+        self.Fs = unifac_Theta_Psi_sums(N_groups, Thetas, dpsis_dT, Fs)
+
+
+#        self.Fs = Fs = []
+#        for k in range(N_groups):
+#            tot = 0.0
+#            for m in range(N_groups):
+#                tot += Thetas[m]*dpsis_dT[m][k]
+#            Fs.append(tot)
         return Fs
 
     def _Gs(self):
@@ -3950,12 +4394,19 @@ class UNIFAC(GibbsExcess):
             d2psis_dT2 = self.d2psis_dT2()
 
         N_groups = self.N_groups
-        self.Gs = Gs = []
-        for k in range(N_groups):
-            tot = 0.0
-            for m in range(N_groups):
-                tot += Thetas[m]*d2psis_dT2[m][k]
-            Gs.append(tot)
+
+        if self.scalar:
+            Gs = [0.0]*N_groups
+        else:
+            Gs = zeros(N_groups)
+
+        self.Gs = unifac_Theta_Psi_sums(N_groups, Thetas, d2psis_dT2, Gs)
+#        self.Gs = Gs = []
+#        for k in range(N_groups):
+#            tot = 0.0
+#            for m in range(N_groups):
+#                tot += Thetas[m]*d2psis_dT2[m][k]
+#            Gs.append(tot)
         return Gs
 
     def _Hs(self):
@@ -3978,12 +4429,22 @@ class UNIFAC(GibbsExcess):
             d3psis_dT3 = self.d3psis_dT3()
 
         N_groups = self.N_groups
-        self.Hs = Hs = []
-        for k in range(N_groups):
-            tot = 0.0
-            for m in range(N_groups):
-                tot += Thetas[m]*d3psis_dT3[m][k]
-            Hs.append(tot)
+
+        if self.scalar:
+            Hs = [0.0]*N_groups
+        else:
+            Hs = zeros(N_groups)
+
+        self.Hs = unifac_Theta_Psi_sums(N_groups, Thetas, d3psis_dT3, Hs)
+
+
+
+#        self.Hs = Hs = []
+#        for k in range(N_groups):
+#            tot = 0.0
+#            for m in range(N_groups):
+#                tot += Thetas[m]*d3psis_dT3[m][k]
+#            Hs.append(tot)
         return Hs
 
     def _Theta_pure_Psi_sums(self):
@@ -3998,16 +4459,23 @@ class UNIFAC(GibbsExcess):
             psis = self.psis()
 
         N_groups, N = self.N_groups, self.N
-        self.Theta_pure_Psi_sums = Theta_pure_Psi_sums = []
-        for i in range(N):
-            row = []
-            Thetas_pure_i = Thetas_pure[i]
-            for k in range(N_groups):
-                tot = 0.0
-                for m in range(N_groups):
-                    tot += Thetas_pure_i[m]*psis[m][k]
-                row.append(tot)
-            Theta_pure_Psi_sums.append(row)
+
+        if self.scalar:
+            Theta_pure_Psi_sums = [[0.0]*N_groups for _ in range(N)]
+        else:
+            Theta_pure_Psi_sums = zeros((N, N_groups))
+
+        self.Theta_pure_Psi_sums = unifac_Theta_pure_Psi_sums(N, N_groups, psis, Thetas_pure, Theta_pure_Psi_sums)
+#        Theta_pure_Psi_sums = []
+#        for i in range(N):
+#            row = []
+#            Thetas_pure_i = Thetas_pure[i]
+#            for k in range(N_groups):
+#                tot = 0.0
+#                for m in range(N_groups):
+#                    tot += Thetas_pure_i[m]*psis[m][k]
+#                row.append(tot)
+#            Theta_pure_Psi_sums.append(row)
         return Theta_pure_Psi_sums
 
     def _Theta_pure_Psi_sum_invs(self):
@@ -4024,7 +4492,10 @@ class UNIFAC(GibbsExcess):
                 Theta_pure_Psi_sums = self.Theta_pure_Psi_sums
             except AttributeError:
                 Theta_pure_Psi_sums = self._Theta_pure_Psi_sums()
-        self.Theta_pure_Psi_sum_invs = [[1.0/v for v in row] for row in Theta_pure_Psi_sums]
+        if self.scalar:
+            self.Theta_pure_Psi_sum_invs = [[1.0/v for v in row] for row in Theta_pure_Psi_sums]
+        else:
+            self.Theta_pure_Psi_sum_invs = 1.0/Theta_pure_Psi_sums
         return self.Theta_pure_Psi_sum_invs
 
     def _Fs_pure(self):
@@ -4044,16 +4515,25 @@ class UNIFAC(GibbsExcess):
             dpsis_dT = self.dpsis_dT()
 
         N_groups, N = self.N_groups, self.N
-        self.Fs_pure = Fs_pure = []
-        for i in range(N):
-            row = []
-            Thetas_pure_i = Thetas_pure[i]
-            for k in range(N_groups):
-                tot = 0.0
-                for m in range(N_groups):
-                    tot += Thetas_pure_i[m]*dpsis_dT[m][k]
-                row.append(tot)
-            Fs_pure.append(row)
+
+        if self.scalar:
+            Fs_pure = [[0.0]*N_groups for _ in range(N)]
+        else:
+            Fs_pure = zeros((N, N_groups))
+
+        self.Fs_pure = unifac_Theta_pure_Psi_sums(N, N_groups, dpsis_dT, Thetas_pure, Fs_pure)
+#
+#
+#        self.Fs_pure = Fs_pure = []
+#        for i in range(N):
+#            row = []
+#            Thetas_pure_i = Thetas_pure[i]
+#            for k in range(N_groups):
+#                tot = 0.0
+#                for m in range(N_groups):
+#                    tot += Thetas_pure_i[m]*dpsis_dT[m][k]
+#                row.append(tot)
+#            Fs_pure.append(row)
         return Fs_pure
 
     def _Gs_pure(self):
@@ -4073,16 +4553,25 @@ class UNIFAC(GibbsExcess):
             d2psis_dT2 = self.d2psis_dT2()
 
         N_groups, N = self.N_groups, self.N
-        self.Gs_pure = Gs_pure = []
-        for i in range(N):
-            row = []
-            Thetas_pure_i = Thetas_pure[i]
-            for k in range(N_groups):
-                tot = 0.0
-                for m in range(N_groups):
-                    tot += Thetas_pure_i[m]*d2psis_dT2[m][k]
-                row.append(tot)
-            Gs_pure.append(row)
+
+        if self.scalar:
+            Gs_pure = [[0.0]*N_groups for _ in range(N)]
+        else:
+            Gs_pure = zeros((N, N_groups))
+
+        self.Gs_pure = unifac_Theta_pure_Psi_sums(N, N_groups, d2psis_dT2, Thetas_pure, Gs_pure)
+
+
+#        self.Gs_pure = Gs_pure = []
+#        for i in range(N):
+#            row = []
+#            Thetas_pure_i = Thetas_pure[i]
+#            for k in range(N_groups):
+#                tot = 0.0
+#                for m in range(N_groups):
+#                    tot += Thetas_pure_i[m]*d2psis_dT2[m][k]
+#                row.append(tot)
+#            Gs_pure.append(row)
         return Gs_pure
 
     def _Hs_pure(self):
@@ -4102,16 +4591,25 @@ class UNIFAC(GibbsExcess):
             d3psis_dT3 = self.d3psis_dT3()
 
         N_groups, N = self.N_groups, self.N
-        self.Hs_pure = Hs_pure = []
-        for i in range(N):
-            row = []
-            Thetas_pure_i = Thetas_pure[i]
-            for k in range(N_groups):
-                tot = 0.0
-                for m in range(N_groups):
-                    tot += Thetas_pure_i[m]*d3psis_dT3[m][k]
-                row.append(tot)
-            Hs_pure.append(row)
+
+        if self.scalar:
+            Hs_pure = [[0.0]*N_groups for _ in range(N)]
+        else:
+            Hs_pure = zeros((N, N_groups))
+
+        self.Hs_pure = unifac_Theta_pure_Psi_sums(N, N_groups, d3psis_dT3, Thetas_pure, Hs_pure)
+
+
+#        self.Hs_pure = Hs_pure = []
+#        for i in range(N):
+#            row = []
+#            Thetas_pure_i = Thetas_pure[i]
+#            for k in range(N_groups):
+#                tot = 0.0
+#                for m in range(N_groups):
+#                    tot += Thetas_pure_i[m]*d3psis_dT3[m][k]
+#                row.append(tot)
+#            Hs_pure.append(row)
         return Hs_pure
 
     def lnGammas_subgroups(self):
@@ -4150,13 +4648,20 @@ class UNIFAC(GibbsExcess):
 
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
 
-        self._lnGammas_subgroups = lnGammas_subgroups = []
-        for k in range(N_groups):
-            psisk = psis[k]
-            last = 1.0
-            for m in range(N_groups):
-                last -= Thetas[m]*Theta_Psi_sum_invs[m]*psisk[m]
-            lnGammas_subgroups.append(Qs[k]*(last - log(Theta_Psi_sums[k])))
+        if self.scalar:
+            lnGammas_subgroups = [0.0]*N_groups
+        else:
+            lnGammas_subgroups = zeros(N_groups)
+
+
+        self._lnGammas_subgroups = unifac_lnGammas_subgroups(N, N_groups, Qs, psis, Thetas, Theta_Psi_sums, Theta_Psi_sum_invs, lnGammas_subgroups)
+#        lnGammas_subgroups = []
+#        for k in range(N_groups):
+#            psisk = psis[k]
+#            last = 1.0
+#            for m in range(N_groups):
+#                last -= Thetas[m]*Theta_Psi_sum_invs[m]*psisk[m]
+#            lnGammas_subgroups.append(Qs[k]*(last - log(Theta_Psi_sums[k])))
         return lnGammas_subgroups
 
     def dlnGammas_subgroups_dxs(self):
@@ -4211,17 +4716,25 @@ class UNIFAC(GibbsExcess):
             Ws = self._Ws()
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
 
-        self._dlnGammas_subgroups_dxs = matrix = []
-        for k in range(N_groups):
-            row = []
-            for i in range(N):
-                tot = -Ws[k][i]*Theta_Psi_sum_invs[k]
-                for m in range(N_groups):
-                    tot -= psis[k][m]*Theta_Psi_sum_invs[m]*(dThetas_dxs[m][i]
-                           - Ws[m][i]*Theta_Psi_sum_invs[m]*Thetas[m])
-                row.append(tot*Qs[k])
-            matrix.append(row)
-        return matrix
+        if self.scalar:
+            dlnGammas_subgroups_dxs = [[0.0]*N for _ in range(N_groups)]
+        else:
+            dlnGammas_subgroups_dxs = zeros((N_groups, N))
+
+
+        self._dlnGammas_subgroups_dxs = unifac_dlnGammas_subgroups_dxs(N, N_groups, Qs, Ws, psis, Thetas, Theta_Psi_sum_invs,
+                                   dThetas_dxs, dlnGammas_subgroups_dxs)
+#        matrix = []
+#        for k in range(N_groups):
+#            row = []
+#            for i in range(N):
+#                tot = -Ws[k][i]*Theta_Psi_sum_invs[k]
+#                for m in range(N_groups):
+#                    tot -= psis[k][m]*Theta_Psi_sum_invs[m]*(dThetas_dxs[m][i]
+#                           - Ws[m][i]*Theta_Psi_sum_invs[m]*Thetas[m])
+#                row.append(tot*Qs[k])
+#            matrix.append(row)
+        return dlnGammas_subgroups_dxs
 
     def d2lnGammas_subgroups_dTdxs(self):
         r'''Calculate the temperature and mole fraction derivatives of the
@@ -4438,7 +4951,7 @@ class UNIFAC(GibbsExcess):
         return d2lnGammas_subgroups_dxixjs
 
     @staticmethod
-    def _dlnGammas_subgroups_dT_meth(N_groups, Qs, psis, dpsis_dT, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum):
+    def unifac_dlnGammas_subgroups_dT(N_groups, Qs, psis, dpsis_dT, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum):
         r'''
 
         .. math::
@@ -4516,7 +5029,7 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             Fs = self._Fs()
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
-        self._dlnGammas_subgroups_dT = row = UNIFAC._dlnGammas_subgroups_dT_meth(N_groups, Qs, psis, dpsis_dT, Thetas, Zs, Fs)
+        self._dlnGammas_subgroups_dT = row = UNIFAC.unifac_dlnGammas_subgroups_dT(N_groups, Qs, psis, dpsis_dT, Thetas, Zs, Fs)
         return row
 
     @staticmethod
@@ -4954,7 +5467,7 @@ class UNIFAC(GibbsExcess):
             Theta_Psi_sum_invs = Theta_pure_Psi_sum_invs[m]
             Theta_dPsidT_sum = Fs_pure[m]
 
-            row = UNIFAC._dlnGammas_subgroups_dT_meth(N_groups, Qs, psis, dpsis_dT,
+            row = UNIFAC.unifac_dlnGammas_subgroups_dT(N_groups, Qs, psis, dpsis_dT,
                                                       Thetas, Theta_Psi_sum_invs,
                                                       Theta_dPsidT_sum)
             for i in range(N_groups):
