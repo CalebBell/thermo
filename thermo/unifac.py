@@ -3154,7 +3154,31 @@ def unifac_gammas(N, xs, lngammas_r, lngammas_c, gammas=None):
         gammas[i] = exp(lngammas_r[i] + lngammas_c[i])
     return gammas
 
+def unifac_dgammas_dxs(N, xs, gammas, dlngammas_r_dxs, dlngammas_c_dxs, dgammas_dxs=None):
+    if dgammas_dxs is None:
+        dgammas_dxs = [[0.0]*N for _ in range(N)] # numba: delete
+#        dgammas_dxs = zeros((N, N)) # numba: uncomment
 
+    for i in range(N):
+        dlngammas_r_dxsi = dlngammas_r_dxs[i]
+        dlngammas_c_dxsi = dlngammas_c_dxs[i]
+        dgammas_dxsi = dgammas_dxs[i]
+        for j in range(N):
+            dgammas_dxsi[j] = (dlngammas_r_dxsi[j] + dlngammas_c_dxsi[j])*gammas[i]
+    return dgammas_dxs
+
+
+def unifac_dgammas_dxs_skip_comb(N, xs, gammas, dlngammas_r_dxs, dgammas_dxs=None):
+    if dgammas_dxs is None:
+        dgammas_dxs = [[0.0]*N for _ in range(N)] # numba: delete
+#        dgammas_dxs = zeros((N, N)) # numba: uncomment
+
+    for i in range(N):
+        dlngammas_r_dxsi = dlngammas_r_dxs[i]
+        dgammas_dxsi = dgammas_dxs[i]
+        for j in range(N):
+            dgammas_dxsi[j] = dlngammas_r_dxsi[j]*gammas[i]
+    return dgammas_dxs
 
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
@@ -6806,15 +6830,23 @@ class UNIFAC(GibbsExcess):
             dlngammas_r_dxs = self._dlngammas_r_dxs
         except AttributeError:
             dlngammas_r_dxs = self.dlngammas_r_dxs()
+
+        if self.scalar:
+            dgammas_dxs = [[0.0]*N for _ in range(N)]
+        else:
+            dgammas_dxs = zeros((N, N))
+
         if self.skip_comb:
-            dgammas_dxs = [[dlngammas_r_dxs[i][j]*gammas[i] for j in range(N)] for i in range(N)]
+            self._dgammas_dxs = unifac_dgammas_dxs_skip_comb(N, xs, gammas, dlngammas_r_dxs, dgammas_dxs)
+#                                                             [[dlngammas_r_dxs[i][j]*gammas[i] for j in range(N)] for i in range(N)]
         else:
             try:
                 dlngammas_c_dxs = self._dlngammas_c_dxs
             except AttributeError:
                 dlngammas_c_dxs = self.dlngammas_c_dxs()
-            dgammas_dxs = [[(dlngammas_r_dxs[i][j]+dlngammas_c_dxs[i][j])*gammas[i] for j in range(N)] for i in range(N)]
-        self._dgammas_dxs = dgammas_dxs
+            self._dgammas_dxs = unifac_dgammas_dxs(N, xs, gammas, dlngammas_r_dxs, dlngammas_c_dxs, dgammas_dxs)
+#            dgammas_dxs = [[(dlngammas_r_dxs[i][j]+dlngammas_c_dxs[i][j])*gammas[i] for j in range(N)] for i in range(N)]
+#        self._dgammas_dxs = dgammas_dxs
         return dgammas_dxs
 
     def lngammas_c(self):
