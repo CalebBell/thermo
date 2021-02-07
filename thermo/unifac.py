@@ -3118,6 +3118,27 @@ def unifac_d2GE_dxixjs_skip_comb(T, xs, N, dlngammas_r_dxs, d2lngammas_r_dxixjs,
 
     return d2GE_dxixjs
 
+def unifac_dGE_dT(N, T, xs, dlngammas_r_dT, GE):
+    tot = 0.0
+    for i in range(N):
+        tot += xs[i]*dlngammas_r_dT[i]
+    return R*T*tot + GE/T
+
+def unifac_d2GE_dT2(N, T, xs, dlngammas_r_dT, d2lngammas_r_dT2):
+    tot0, tot1 = 0.0, 0.0
+    for i in range(N):
+        tot0 += xs[i]*d2lngammas_r_dT2[i]
+        tot1 += xs[i]*dlngammas_r_dT[i] # This line same as the dGE_dT
+
+    return R*(T*tot0 + (tot1 + tot1))
+
+def unifac_d3GE_dT3(N, T, xs, d2lngammas_r_dT2, d3lngammas_r_dT3):
+    tot0, tot1 = 0.0, 0.0
+    for i in range(N):
+        tot0 += xs[i]*d3lngammas_r_dT3[i]
+        tot1 += xs[i]*d2lngammas_r_dT2[i] # This line same as the d2GE_dT2
+
+    return R*(T*tot0 + 3.0*tot1)
 
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
@@ -6578,13 +6599,7 @@ class UNIFAC(GibbsExcess):
             return self._dGE_dT
         except AttributeError:
             pass
-        T, xs, N = self.T, self.xs, self.N
-        dlngammas_r_dT = self.dlngammas_r_dT()
-
-        tot = 0.0
-        for i in range(N):
-            tot += xs[i]*dlngammas_r_dT[i]
-        self._dGE_dT = dGE_dT = R*T*tot + self.GE()/T
+        self._dGE_dT = dGE_dT = unifac_dGE_dT(self.N, self.T, self.xs, self.dlngammas_r_dT(), self.GE())
         return dGE_dT
 
     def d2GE_dT2(self):
@@ -6608,12 +6623,13 @@ class UNIFAC(GibbsExcess):
         T, xs, N = self.T, self.xs, self.N
         dlngammas_r_dT = self.dlngammas_r_dT()
         d2lngammas_r_dT2 = self.d2lngammas_r_dT2()
-        tot0, tot1 = 0.0, 0.0
-        for i in range(N):
-            tot0 += xs[i]*d2lngammas_r_dT2[i]
-            tot1 += xs[i]*dlngammas_r_dT[i] # This line same as the dGE_dT
+#        tot0, tot1 = 0.0, 0.0
+#        for i in range(N):
+#            tot0 += xs[i]*d2lngammas_r_dT2[i]
+#            tot1 += xs[i]*dlngammas_r_dT[i] # This line same as the dGE_dT
 
-        self._d2GE_dT2 = d2GE_dT2 = R*(T*tot0 + (tot1 + tot1))
+        self._d2GE_dT2 = d2GE_dT2 = unifac_d2GE_dT2(N, T, xs, dlngammas_r_dT, d2lngammas_r_dT2)
+#        R*(T*tot0 + (tot1 + tot1))
         return d2GE_dT2
 
     def d3GE_dT3(self):
@@ -6638,14 +6654,14 @@ class UNIFAC(GibbsExcess):
         d2lngammas_r_dT2 = self.d2lngammas_r_dT2()
         d3lngammas_r_dT3 = self.d3lngammas_r_dT3()
 
-        tot0, tot1 = 0.0, 0.0
-        for i in range(N):
-            tot0 += xs[i]*d3lngammas_r_dT3[i]
-            tot1 += xs[i]*d2lngammas_r_dT2[i] # This line same as the d2GE_dT2
+#        tot0, tot1 = 0.0, 0.0
+#        for i in range(N):
+#            tot0 += xs[i]*d3lngammas_r_dT3[i]
+#            tot1 += xs[i]*d2lngammas_r_dT2[i] # This line same as the d2GE_dT2
+#
+#        d3GE_dT3 = R*(T*tot0 + 3.0*tot1)
 
-        d3GE_dT3 = R*(T*tot0 + 3.0*tot1)
-
-        self._d3GE_dT3 = d3GE_dT3
+        self._d3GE_dT3 = d3GE_dT3 = unifac_d3GE_dT3(N, T, xs, d2lngammas_r_dT2, d3lngammas_r_dT3)
         return d3GE_dT3
 
     def gammas(self):
