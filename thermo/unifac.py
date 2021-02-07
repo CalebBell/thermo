@@ -151,7 +151,7 @@ from chemicals.utils import log, exp, dxs_to_dns, can_load_data, PY37
 from thermo.activity import GibbsExcess
 
 try:
-    zeros, npexp = np.zeros, np.exp
+    array, zeros, npexp = np.array, np.zeros, np.exp
 except AttributeError:
     pass
 
@@ -3530,6 +3530,8 @@ class UNIFAC(GibbsExcess):
         if interaction_data is None:
             if not _unifac_ip_loaded: load_unifac_ip()
             interaction_data = UFIP
+
+        scalar = type(xs) is list
         rs = []
         qs = []
         for groups in chemgroups:
@@ -3583,8 +3585,10 @@ class UNIFAC(GibbsExcess):
             psi_a.append(a_row), psi_b.append(b_row), psi_c.append(c_row)
 
 
-        debug = (rs, qs, Qs, vs, (psi_a, psi_b, psi_c))
-        return UNIFAC(T=T, xs=xs, rs=rs, qs=qs, Qs=Qs, vs=vs, psi_abc=(psi_a, psi_b, psi_c), version=version)
+#        debug = (rs, qs, Qs, vs, (psi_a, psi_b, psi_c))
+        if scalar:
+            return UNIFAC(T=T, xs=xs, rs=rs, qs=qs, Qs=Qs, vs=vs, psi_abc=(psi_a, psi_b, psi_c), version=version)
+        return UNIFAC(T=T, xs=xs, rs=array(rs), qs=array(qs), Qs=array(Qs), vs=array(vs), psi_abc=(array(psi_a), array(psi_b), array(psi_c)), version=version)
 
     def __repr__(self):  # pragma: no cover
 
