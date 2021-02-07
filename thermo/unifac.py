@@ -5770,7 +5770,14 @@ class UNIFAC(GibbsExcess):
 #        Theta_dPsidT_sum_pure = [[sum(Thetas_pure[i][k]*dpsis_dT[k][j] for k in groups) for j in groups] for i in range(N)]
 #        Theta_d2PsidT2_sum_pure = [[sum(Thetas_pure[i][k]*d2psis_dT2[k][j] for k in groups) for j in groups] for i in range(N)]
 
-        mat = []
+
+        if self.Thetas_pure:
+            d2lnGammas_subgroups_pure_dT2 = [[0.0]*N for _ in range(N_groups)]
+        else:
+            d2lnGammas_subgroups_pure_dT2 = zeros((N_groups, N))
+
+
+#        mat = []
         for m in range(N):
             groups2 = cmp_group_idx[m]
             Thetas = Thetas_pure[m]
@@ -5782,12 +5789,18 @@ class UNIFAC(GibbsExcess):
             for i in range(N_groups):
                 if i not in groups2:
                     row[i] = 0.0
-            mat.append(row)
 
-        mat = list(map(list, zip(*mat)))
+
+            for k in range(N_groups):
+                if k in groups2:
+                    d2lnGammas_subgroups_pure_dT2[k][m] = row[k]
+
+#            mat.append(row)
+
+#        mat = list(map(list, zip(*mat)))
         # Index by [subgroup][component]
-        self._d2lnGammas_subgroups_pure_dT2 = mat
-        return mat
+        self._d2lnGammas_subgroups_pure_dT2 = d2lnGammas_subgroups_pure_dT2
+        return d2lnGammas_subgroups_pure_dT2
 
     def d3lnGammas_subgroups_pure_dT3(self):
         r'''Calculate the third temperature derivative of :math:`\ln \Gamma_k`
