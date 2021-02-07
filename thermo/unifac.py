@@ -2654,7 +2654,7 @@ def unifac_dlnGammas_subgroups_dxs(N, N_groups, Qs, Ws, psis, Thetas, Theta_Psi_
 
     return dlnGammas_subgroups_dxs
 
-def UNIFAC_d2lnGammas_subgroups_dTdxs(N, N_groups, Qs, Fs, Zs, Ws, psis, dpsis_dT, Thetas, dThetas_dxs, d2lnGammas_subgroups_dTdxs=None, vec0=None, vec1=None, mat0=None):
+def unifac_d2lnGammas_subgroups_dTdxs(N, N_groups, Qs, Fs, Zs, Ws, psis, dpsis_dT, Thetas, dThetas_dxs, d2lnGammas_subgroups_dTdxs=None, vec0=None, vec1=None, mat0=None):
     if d2lnGammas_subgroups_dTdxs is None:
         d2lnGammas_subgroups_dTdxs = [[0.0]*N for _ in range(N_groups)] # numba : delete
 #        d2lnGammas_subgroups_dTdxs = zeros((N_groups, N)) # numba : uncomment
@@ -2693,6 +2693,46 @@ def UNIFAC_d2lnGammas_subgroups_dTdxs(N, N_groups, Qs, Fs, Zs, Ws, psis, dpsis_d
 
     return d2lnGammas_subgroups_dTdxs
 
+def unifac_d2lnGammas_subgroups_dxixjs(N, N_groups, Qs, Zs, Ws, psis, Thetas,
+                                       dThetas_dxs, d2Thetas_dxixjs,
+                                       d2lnGammas_subgroups_dxixjs=None, vec0=None):
+    if d2lnGammas_subgroups_dxixjs is None:
+        d2lnGammas_subgroups_dxixjs = [[[0.0]*N_groups for _ in range(N)] for _ in range(N)] # numba : delete
+#        d2lnGammas_subgroups_dxixjs = zeros((N, N, N_groups)) # numba : uncomment
+
+    if vec0 is None:
+        vec0 = [0.0]*N_groups
+
+    for i in range(N):
+        matrix = d2lnGammas_subgroups_dxixjs[i]
+        for j in range(N):
+            d2Thetas_dxixjs_ij = d2Thetas_dxixjs[i][j]
+
+            row = matrix[j]
+            for k in range(N_groups):
+                # d2Thetas_dxixjs_ij is why this loop can't be moved out
+                totK = 0.0
+                for m in range(N_groups):
+                    totK += psis[m][k]*d2Thetas_dxixjs_ij[m]
+                vec0[k] = totK   #K(k, i, j)
+#                Krow = [K(k, i, j) for k in range(N_groups)]
+
+            for k in range(N_groups):
+                v = 0.0
+                for m in range(N_groups):
+                    d = d2Thetas_dxixjs_ij[m]
+#                        d += (2.0*Ws[m][i]*Ws[m][j]*Zs[m] - vec0[m])*Zs[m]*Thetas[m]
+#                        d -= Zs[m]*(Ws[m][j]*dThetas_dxs[m][i] + Ws[m][i]*dThetas_dxs[m][j])
+                    d += Zs[m]*((2.0*Ws[m][i]*Ws[m][j]*Zs[m] - vec0[m])*Thetas[m]
+                                - (Ws[m][j]*dThetas_dxs[m][i] + Ws[m][i]*dThetas_dxs[m][j]))
+                    v += d*psis[k][m]*Zs[m]
+
+                # psis[k][m] can be factored here
+                v += Zs[k]*(vec0[k] - Ws[k][i]*Ws[k][j]*Zs[k])
+                row[k] = (-v*Qs[k])
+
+
+    return d2lnGammas_subgroups_dxixjs
 
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
@@ -4856,7 +4896,7 @@ class UNIFAC(GibbsExcess):
         else:
             d2lnGammas_subgroups_dTdxs = zeros((N_groups, N))
 
-        self._d2lnGammas_subgroups_dTdxs = UNIFAC_d2lnGammas_subgroups_dTdxs(N, N_groups, Qs, Fs, Zs,
+        self._d2lnGammas_subgroups_dTdxs = unifac_d2lnGammas_subgroups_dTdxs(N, N_groups, Qs, Fs, Zs,
                                                                              Ws, psis, dpsis_dT, Thetas, dThetas_dxs,
                                                                              d2lnGammas_subgroups_dTdxs=d2lnGammas_subgroups_dTdxs)
 
@@ -4956,6 +4996,12 @@ class UNIFAC(GibbsExcess):
 
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
 
+        if self.scalar:
+            d2lnGammas_subgroups_dxixjs = [[[0.0]*N_groups for _ in range(N)] for _ in range(N)]
+        else:
+            d2lnGammas_subgroups_dxixjs = zeros((N, N, N_groups))
+
+        self._d2lnGammas_subgroups_dxixjs = unifac_d2lnGammas_subgroups_dxixjs(N, N_groups, Qs, Zs, Ws, psis, Thetas, dThetas_dxs, d2Thetas_dxixjs, d2lnGammas_subgroups_dxixjs)
 #        def K(k, i, j):
 #            # k: group
 #            # i, j : mole fracions derivavtive indexes
@@ -4966,37 +5012,36 @@ class UNIFAC(GibbsExcess):
 #                totK += psis[m][k]*row[m]
 #            return totK
 
-        K_row = [0.0]*self.N_groups
-        # Index [comp][comp][subgroup]
-        self._d2lnGammas_subgroups_dxixjs = d2lnGammas_subgroups_dxixjs = []
-        for i in range(N):
-            matrix = []
-            for j in range(N):
-                d2Thetas_dxixjs_ij = d2Thetas_dxixjs[i][j]
-
-                row = []
-                for k in range(N_groups):
-                    totK = 0.0
-                    for m in range(N_groups):
-                        totK += psis[m][k]*d2Thetas_dxixjs_ij[m]
-                    K_row[k] = totK   #K(k, i, j)
-#                Krow = [K(k, i, j) for k in range(N_groups)]
-
-                for k in range(N_groups):
-                    v = 0.0
-                    for m in range(N_groups):
-                        d = d2Thetas_dxixjs_ij[m]
-#                        d += (2.0*Ws[m][i]*Ws[m][j]*Zs[m] - K_row[m])*Zs[m]*Thetas[m]
-#                        d -= Zs[m]*(Ws[m][j]*dThetas_dxs[m][i] + Ws[m][i]*dThetas_dxs[m][j])
-                        d += Zs[m]*((2.0*Ws[m][i]*Ws[m][j]*Zs[m] - K_row[m])*Thetas[m]
-                                    - (Ws[m][j]*dThetas_dxs[m][i] + Ws[m][i]*dThetas_dxs[m][j]))
-                        v += d*psis[k][m]*Zs[m]
-
-                    # psis[k][m] can be factored here
-                    v += Zs[k]*(K_row[k] - Ws[k][i]*Ws[k][j]*Zs[k])
-                    row.append(-v*Qs[k])
-                matrix.append(row)
-            d2lnGammas_subgroups_dxixjs.append(matrix)
+#        K_row = [0.0]*self.N_groups
+#        # Index [comp][comp][subgroup]
+#        for i in range(N):
+#            matrix = d2lnGammas_subgroups_dxixjs[i]
+#            for j in range(N):
+#                d2Thetas_dxixjs_ij = d2Thetas_dxixjs[i][j]
+#
+#                row = matrix[j]
+#                for k in range(N_groups):
+#                    totK = 0.0
+#                    for m in range(N_groups):
+#                        totK += psis[m][k]*d2Thetas_dxixjs_ij[m]
+#                    K_row[k] = totK   #K(k, i, j)
+##                Krow = [K(k, i, j) for k in range(N_groups)]
+#
+#                for k in range(N_groups):
+#                    v = 0.0
+#                    for m in range(N_groups):
+#                        d = d2Thetas_dxixjs_ij[m]
+##                        d += (2.0*Ws[m][i]*Ws[m][j]*Zs[m] - K_row[m])*Zs[m]*Thetas[m]
+##                        d -= Zs[m]*(Ws[m][j]*dThetas_dxs[m][i] + Ws[m][i]*dThetas_dxs[m][j])
+#                        d += Zs[m]*((2.0*Ws[m][i]*Ws[m][j]*Zs[m] - K_row[m])*Thetas[m]
+#                                    - (Ws[m][j]*dThetas_dxs[m][i] + Ws[m][i]*dThetas_dxs[m][j]))
+#                        v += d*psis[k][m]*Zs[m]
+#
+#                    # psis[k][m] can be factored here
+#                    v += Zs[k]*(K_row[k] - Ws[k][i]*Ws[k][j]*Zs[k])
+#                    row[k] = (-v*Qs[k])
+#
+#        self._d2lnGammas_subgroups_dxixjs = d2lnGammas_subgroups_dxixjs
         return d2lnGammas_subgroups_dxixjs
 
     @staticmethod
