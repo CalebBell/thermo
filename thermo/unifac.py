@@ -3235,6 +3235,65 @@ def unifac_dlngammas_c_dxs(N, version, qs, Fis, dFis_dxs, Vis, dVis_dxs, Vis_mod
                 row[j] = val
     return dlngammas_c_dxs
 
+
+def unifac_d2lngammas_c_dxixjs(N, version, qs, Fis, dFis_dxs, d2Fis_dxixjs, Vis, dVis_dxs, d2Vis_dxixjs, Vis_modified, dVis_modified_dxs, d2Vis_modified_dxixjs, d2lngammas_c_dxixjs=None):
+    if d2lngammas_c_dxixjs is None:
+        d2lngammas_c_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]# numba: delete
+#        d2lngammas_c_dxixjs = zeros((N, N, N)) # numba: uncomment
+
+    if version == 4:
+        for i in range(N):
+            Vi = Vis_modified[i]
+            matrix = d2lngammas_c_dxixjs[i]
+            for j in range(N):
+                row = matrix[j]
+                for k in range(N):
+                    val = -d2Vis_modified_dxixjs[i][j][k] + 1.0/Vi*d2Vis_modified_dxixjs[i][j][k]
+                    val -= 1.0/Vi**2*dVis_modified_dxs[i][j]*dVis_modified_dxs[i][k]
+                    row[k] = val
+
+    else:
+        for i in range(N):
+            Vi = Vis[i]
+            qi = qs[i]
+            ViD = Vis_modified[i]
+            ViD_inv2 = 1.0/(ViD*ViD)
+            Fi = Fis[i]
+            x1 = 1.0/Fi
+            x4 = x1*x1
+            Fi_inv3 = x1*x1*x1
+            x5 = Vis[i]*x4
+            x15 = 1.0/Vi
+            Vi_inv2 = x15*x15
+            matrix = d2lngammas_c_dxixjs[i]
+            for j in range(N):
+                x6 = dFis_dxs[i][j]
+                x10 = dVis_dxs[i][j]
+                dViD_dxj = dVis_modified_dxs[i][j]
+                row = matrix[j]
+                for k in range(N):
+                    x0 = d2Vis_modified_dxixjs[i][j][k]
+                    x2 = d2Vis_dxixjs[i][j][k]
+                    x3 = d2Fis_dxixjs[i][j][k]
+                    x7 = dVis_dxs[i][k]
+                    dViD_dxk = dVis_modified_dxs[i][k]
+                    x8 = x6*x7
+                    x9 = dFis_dxs[i][k]
+                    x11 = x10*x9
+                    x12 = 2.0*x6*x9
+
+                    x13 = Vi*x1
+                    x14 = x10 - x13*x6
+
+                    val = (5.0*qi*(-x1*x14*x15*x9 + x1*x2 - x11*x4
+                                    + x15*(x1*x11 + x1*x8 - x12*x5 + x13*x3 - x2)
+                                    - x3*x5 - x4*x8 + x14*x7*Vi_inv2 + Vi*x12*Fi_inv3)
+                            - x0 + x0/ViD - dViD_dxj*dViD_dxk*ViD_inv2
+                            )
+                    row[k] = val
+    return d2lngammas_c_dxixjs
+
+
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
     by the UNIFAC equation. This model is capable of representing VL and LL
@@ -6658,58 +6717,61 @@ class UNIFAC(GibbsExcess):
         else:
             d2lngammas_c_dxixjs = zeros((N, N, N))
 
-        if version == 4:
-            for i in range(N):
-                Vi = Vis_modified[i]
-                matrix = d2lngammas_c_dxixjs[i]
-                for j in range(N):
-                    row = matrix[j]
-                    for k in range(N):
-                        val = -d2Vis_modified_dxixjs[i][j][k] + 1.0/Vi*d2Vis_modified_dxixjs[i][j][k]
-                        val -= 1.0/Vi**2*dVis_modified_dxs[i][j]*dVis_modified_dxs[i][k]
-                        row[k] = val
 
-        else:
-            for i in range(N):
-                Vi = Vis[i]
-                qi = qs[i]
-                ViD = Vis_modified[i]
-                ViD_inv2 = 1.0/(ViD*ViD)
-                Fi = Fis[i]
-                x1 = 1.0/Fi
-                x4 = x1*x1
-                Fi_inv3 = x1*x1*x1
-                x5 = Vis[i]*x4
-                x15 = 1.0/Vi
-                Vi_inv2 = x15*x15
-                matrix = d2lngammas_c_dxixjs[i]
-                for j in range(N):
-                    x6 = dFis_dxs[i][j]
-                    x10 = dVis_dxs[i][j]
-                    dViD_dxj = dVis_modified_dxs[i][j]
-                    row = matrix[j]
-                    for k in range(N):
-                        x0 = d2Vis_modified_dxixjs[i][j][k]
-                        x2 = d2Vis_dxixjs[i][j][k]
-                        x3 = d2Fis_dxixjs[i][j][k]
-                        x7 = dVis_dxs[i][k]
-                        dViD_dxk = dVis_modified_dxs[i][k]
-                        x8 = x6*x7
-                        x9 = dFis_dxs[i][k]
-                        x11 = x10*x9
-                        x12 = 2.0*x6*x9
+        self._d2lngammas_c_dxixjs = unifac_d2lngammas_c_dxixjs(N, version, qs, Fis, dFis_dxs, d2Fis_dxixjs, Vis, dVis_dxs, d2Vis_dxixjs, Vis_modified, dVis_modified_dxs, d2Vis_modified_dxixjs, d2lngammas_c_dxixjs)
 
-                        x13 = Vi*x1
-                        x14 = x10 - x13*x6
-
-                        val = (5.0*qi*(-x1*x14*x15*x9 + x1*x2 - x11*x4
-                                       + x15*(x1*x11 + x1*x8 - x12*x5 + x13*x3 - x2)
-                                       - x3*x5 - x4*x8 + x14*x7*Vi_inv2 + Vi*x12*Fi_inv3)
-                                - x0 + x0/ViD - dViD_dxj*dViD_dxk*ViD_inv2
-                                )
-                        row[k] = val
-
-        self._d2lngammas_c_dxixjs = d2lngammas_c_dxixjs
+#        if version == 4:
+#            for i in range(N):
+#                Vi = Vis_modified[i]
+#                matrix = d2lngammas_c_dxixjs[i]
+#                for j in range(N):
+#                    row = matrix[j]
+#                    for k in range(N):
+#                        val = -d2Vis_modified_dxixjs[i][j][k] + 1.0/Vi*d2Vis_modified_dxixjs[i][j][k]
+#                        val -= 1.0/Vi**2*dVis_modified_dxs[i][j]*dVis_modified_dxs[i][k]
+#                        row[k] = val
+#
+#        else:
+#            for i in range(N):
+#                Vi = Vis[i]
+#                qi = qs[i]
+#                ViD = Vis_modified[i]
+#                ViD_inv2 = 1.0/(ViD*ViD)
+#                Fi = Fis[i]
+#                x1 = 1.0/Fi
+#                x4 = x1*x1
+#                Fi_inv3 = x1*x1*x1
+#                x5 = Vis[i]*x4
+#                x15 = 1.0/Vi
+#                Vi_inv2 = x15*x15
+#                matrix = d2lngammas_c_dxixjs[i]
+#                for j in range(N):
+#                    x6 = dFis_dxs[i][j]
+#                    x10 = dVis_dxs[i][j]
+#                    dViD_dxj = dVis_modified_dxs[i][j]
+#                    row = matrix[j]
+#                    for k in range(N):
+#                        x0 = d2Vis_modified_dxixjs[i][j][k]
+#                        x2 = d2Vis_dxixjs[i][j][k]
+#                        x3 = d2Fis_dxixjs[i][j][k]
+#                        x7 = dVis_dxs[i][k]
+#                        dViD_dxk = dVis_modified_dxs[i][k]
+#                        x8 = x6*x7
+#                        x9 = dFis_dxs[i][k]
+#                        x11 = x10*x9
+#                        x12 = 2.0*x6*x9
+#
+#                        x13 = Vi*x1
+#                        x14 = x10 - x13*x6
+#
+#                        val = (5.0*qi*(-x1*x14*x15*x9 + x1*x2 - x11*x4
+#                                       + x15*(x1*x11 + x1*x8 - x12*x5 + x13*x3 - x2)
+#                                       - x3*x5 - x4*x8 + x14*x7*Vi_inv2 + Vi*x12*Fi_inv3)
+#                                - x0 + x0/ViD - dViD_dxj*dViD_dxk*ViD_inv2
+#                                )
+#                        row[k] = val
+#
+#        self._d2lngammas_c_dxixjs = d2lngammas_c_dxixjs
         return d2lngammas_c_dxixjs
 
     def d3lngammas_c_dxixjxks(self):
