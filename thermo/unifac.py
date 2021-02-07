@@ -5875,7 +5875,13 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             Hs_pure = self._Hs_pure()
 
-        mat = []
+
+        if self.Thetas_pure:
+            d3lnGammas_subgroups_pure_dT3 = [[0.0]*N for _ in range(N_groups)]
+        else:
+            d3lnGammas_subgroups_pure_dT3 = zeros((N_groups, N))
+
+#        mat = []
         for m in range(N):
             groups2 = cmp_group_idx[m]
             Thetas = Thetas_pure[m]
@@ -5885,15 +5891,20 @@ class UNIFAC(GibbsExcess):
             Theta_d3PsidT3_sum = Hs_pure[m]
 
             row = unifac_d3lnGammas_subgroups_dT3(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum, Theta_d3PsidT3_sum)
-            for i in range(N_groups):
-                if i not in groups2:
-                    row[i] = 0.0
-            mat.append(row)
+#            for i in range(N_groups):
+#                if i not in groups2:
+#                    row[i] = 0.0
 
-        mat = list(map(list, zip(*mat)))
+            for k in range(N_groups):
+                if k in groups2:
+                    d3lnGammas_subgroups_pure_dT3[k][m] = row[k]
+
+#            mat.append(row)
+
+#        mat = list(map(list, zip(*mat)))
         # Index by [subgroup][component]
-        self._d3lnGammas_subgroups_pure_dT3 = mat
-        return mat
+        self._d3lnGammas_subgroups_pure_dT3 = d3lnGammas_subgroups_pure_dT3
+        return d3lnGammas_subgroups_pure_dT3
 
     def lngammas_r(self):
         r'''Calculates the residual part of the UNIFAC model.
