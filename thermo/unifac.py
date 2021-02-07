@@ -3064,6 +3064,27 @@ def unifac_dGE_dxs_skip_comb(T, xs, N, lngammas_r, dlngammas_r_dxs, dGE_dxs=None
     return dGE_dxs
 
 
+def unifac_d2GE_dTdxs(T, xs, N, lngammas_r, dlngammas_r_dxs, dlngammas_r_dT, d2lngammas_r_dTdxs, lngammas_c, dlngammas_c_dxs, d2GE_dTdxs=None):
+    if d2GE_dTdxs is None:
+        d2GE_dTdxs = [0.0]*N
+    for i in range(N):
+        dGE = lngammas_r[i] + lngammas_c[i] + T*dlngammas_r_dT[i]
+        for j in range(N):
+            dGE += xs[j]*(dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i])
+            dGE += T*xs[j]*d2lngammas_r_dTdxs[j][i] # ji should be consistent in all of them
+
+        d2GE_dTdxs[i] = dGE*R
+    return d2GE_dTdxs
+
+def unifac_d2GE_dTdxs_skip_comb(T, xs, N, lngammas_r, dlngammas_r_dxs,dlngammas_r_dT, d2lngammas_r_dTdxs, d2GE_dTdxs=None):
+    if d2GE_dTdxs is None:
+        d2GE_dTdxs = [0.0]*N
+    for i in range(N):
+        dGE = lngammas_r[i] + T*dlngammas_r_dT[i]
+        for j in range(N):
+            dGE += xs[j]*(dlngammas_r_dxs[j][i] + T*d2lngammas_r_dTdxs[j][i])
+        d2GE_dTdxs[i] = dGE*R
+    return d2GE_dTdxs
 
 
 class UNIFAC(GibbsExcess):
@@ -6431,27 +6452,17 @@ class UNIFAC(GibbsExcess):
         dlngammas_r_dT = self.dlngammas_r_dT()
         d2lngammas_r_dTdxs = self.d2lngammas_r_dTdxs()
 
-        if not skip_comb:
+        if self.scalar:
+            d2GE_dTdxs = [0.0]*N
+        else:
+            d2GE_dTdxs = zeros(N)
+
+        if skip_comb:
+            self._d2GE_dTdxs = unifac_d2GE_dTdxs_skip_comb(T, xs, N, lngammas_r, dlngammas_r_dxs,dlngammas_r_dT, d2lngammas_r_dTdxs, d2GE_dTdxs)
+        else:
             lngammas_c = self.lngammas_c()
             dlngammas_c_dxs = self.dlngammas_c_dxs()
-
-        d2GE_dTdxs = []
-        if skip_comb:
-            for i in range(N):
-                dGE = lngammas_r[i] + T*dlngammas_r_dT[i]
-                for j in range(N):
-                    dGE += xs[j]*(dlngammas_r_dxs[j][i] + T*d2lngammas_r_dTdxs[j][i])
-                d2GE_dTdxs.append(dGE*R)
-
-        else:
-            for i in range(N):
-                dGE = lngammas_r[i] + lngammas_c[i] + T*dlngammas_r_dT[i]
-                for j in range(N):
-                    dGE += xs[j]*(dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i])
-                    dGE += T*xs[j]*d2lngammas_r_dTdxs[j][i] # ji should be consistent in all of them
-
-                d2GE_dTdxs.append(dGE*R)
-        self._d2GE_dTdxs = d2GE_dTdxs
+            self._d2GE_dTdxs = unifac_d2GE_dTdxs(T, xs, N, lngammas_r, dlngammas_r_dxs, dlngammas_r_dT, d2lngammas_r_dTdxs, lngammas_c, dlngammas_c_dxs, d2GE_dTdxs)
         return d2GE_dTdxs
 
     def d2GE_dxixjs(self):
