@@ -2963,6 +2963,29 @@ def unifac_d2lnGammas_subgroups_pure_dT2(N, N_groups, Qs, psis, dpsis_dT, d2psis
                 d2lnGammas_subgroups_pure_dT2[k][m] = vec0[k]
     return d2lnGammas_subgroups_pure_dT2
 
+def unifac_d3lnGammas_subgroups_pure_dT3(N, N_groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3, Thetas_pure, Theta_pure_Psi_sum_invs, Fs_pure, Gs_pure, Hs_pure, cmp_group_idx, d3lnGammas_subgroups_pure_dT3=None, vec0=None):
+    if d3lnGammas_subgroups_pure_dT3 is None:
+        d3lnGammas_subgroups_pure_dT3 = [[0.0]*N for _ in range(N_groups)] # numba: delete
+#        d3lnGammas_subgroups_pure_dT3 = zeros((N_groups, N)) # numba: uncomment
+
+    if vec0 is None:
+        vec0 = [0.0]*N
+    for m in range(N):
+        groups2 = cmp_group_idx[m]
+        Thetas = Thetas_pure[m]
+        Theta_Psi_sum_invs = Theta_pure_Psi_sum_invs[m]
+        Theta_dPsidT_sum = Fs_pure[m]
+        Theta_d2PsidT2_sum = Gs_pure[m]
+        Theta_d3PsidT3_sum = Hs_pure[m]
+
+        row = unifac_d3lnGammas_subgroups_dT3(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum, Theta_d3PsidT3_sum)
+
+        for k in range(N_groups):
+            if k in groups2:
+                d3lnGammas_subgroups_pure_dT3[k][m] = row[k]
+    return d3lnGammas_subgroups_pure_dT3
+
+
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
     by the UNIFAC equation. This model is capable of representing VL and LL
@@ -5869,7 +5892,7 @@ class UNIFAC(GibbsExcess):
             return self._d3lnGammas_subgroups_pure_dT3
         except:
             pass
-        Xs_pure, Thetas_pure, Qs = self.Xs_pure(), self.Thetas_pure(), self.Qs
+        Thetas_pure, Qs = self.Thetas_pure(), self.Qs
         psis, dpsis_dT, d2psis_dT2, d3psis_dT3 = self.psis(), self.dpsis_dT(), self.d2psis_dT2(), self.d3psis_dT3()
         N, N_groups = self.N, self.N_groups
         cmp_group_idx = self.cmp_group_idx
@@ -5903,29 +5926,29 @@ class UNIFAC(GibbsExcess):
         else:
             d3lnGammas_subgroups_pure_dT3 = zeros((N_groups, N))
 
-#        mat = []
-        for m in range(N):
-            groups2 = cmp_group_idx[m]
-            Thetas = Thetas_pure[m]
-            Theta_Psi_sum_invs = Theta_pure_Psi_sum_invs[m]
-            Theta_dPsidT_sum = Fs_pure[m]
-            Theta_d2PsidT2_sum = Gs_pure[m]
-            Theta_d3PsidT3_sum = Hs_pure[m]
-
-            row = unifac_d3lnGammas_subgroups_dT3(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum, Theta_d3PsidT3_sum)
-#            for i in range(N_groups):
-#                if i not in groups2:
-#                    row[i] = 0.0
-
-            for k in range(N_groups):
-                if k in groups2:
-                    d3lnGammas_subgroups_pure_dT3[k][m] = row[k]
+##        mat = []
+#        for m in range(N):
+#            groups2 = cmp_group_idx[m]
+#            Thetas = Thetas_pure[m]
+#            Theta_Psi_sum_invs = Theta_pure_Psi_sum_invs[m]
+#            Theta_dPsidT_sum = Fs_pure[m]
+#            Theta_d2PsidT2_sum = Gs_pure[m]
+#            Theta_d3PsidT3_sum = Hs_pure[m]
+#
+#            row = unifac_d3lnGammas_subgroups_dT3(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum, Theta_d3PsidT3_sum)
+##            for i in range(N_groups):
+##                if i not in groups2:
+##                    row[i] = 0.0
+#
+#            for k in range(N_groups):
+#                if k in groups2:
+#                    d3lnGammas_subgroups_pure_dT3[k][m] = row[k]
 
 #            mat.append(row)
 
 #        mat = list(map(list, zip(*mat)))
         # Index by [subgroup][component]
-        self._d3lnGammas_subgroups_pure_dT3 = d3lnGammas_subgroups_pure_dT3
+        self._d3lnGammas_subgroups_pure_dT3 = unifac_d3lnGammas_subgroups_pure_dT3(N, N_groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3, Thetas_pure, Theta_pure_Psi_sum_invs, Fs_pure, Gs_pure, Hs_pure, cmp_group_idx, d3lnGammas_subgroups_pure_dT3)
         return d3lnGammas_subgroups_pure_dT3
 
     def lngammas_r(self):
