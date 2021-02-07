@@ -2996,6 +2996,22 @@ def unifac_lngammas_r(N, N_groups, lnGammas_subgroups_pure, lnGammas_subgroups, 
         lngammas_r[i] = tot
     return lngammas_r
 
+def unifac_dlngammas_r_dxs(N, N_groups, vs, dlnGammas_subgroups_dxs, dlngammas_r_dxs=None):
+    if dlngammas_r_dxs is None:
+        dlngammas_r_dxs = [[0.0]*N for _ in range(N)] # numba : delete
+#        dlngammas_r_dxs = zeros((N, N)) # numba : uncomment
+    for i in range(N):
+        row = dlngammas_r_dxs[i]
+        for j in range(N):
+            tot = 0.0
+            for m in range(N_groups):
+                tot += vs[m][i]*dlnGammas_subgroups_dxs[m][j]
+            row[j] = tot
+    return dlngammas_r_dxs
+
+
+
+
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
     by the UNIFAC equation. This model is capable of representing VL and LL
@@ -5931,7 +5947,7 @@ class UNIFAC(GibbsExcess):
             Hs_pure = self._Hs_pure()
 
 
-        if self.Thetas_pure:
+        if self.scalar:
             d3lnGammas_subgroups_pure_dT3 = [[0.0]*N for _ in range(N_groups)]
         else:
             d3lnGammas_subgroups_pure_dT3 = zeros((N_groups, N))
@@ -6157,15 +6173,19 @@ class UNIFAC(GibbsExcess):
         vs, N, N_groups = self.vs, self.N, self.N_groups
         dlnGammas_subgroups_dxs = self.dlnGammas_subgroups_dxs()
 
-        self._dlngammas_r_dxs = dlngammas_r_dxs = []
-        for i in range(N):
-            row = []
-            for j in range(N):
-                tot = 0.0
-                for m in range(N_groups):
-                    tot += vs[m][i]*dlnGammas_subgroups_dxs[m][j]
-                row.append(tot)
-            dlngammas_r_dxs.append(row)
+        if self.scalar:
+            dlngammas_r_dxs = [[0.0]*N for _ in range(N)]
+        else:
+            dlngammas_r_dxs = zeros((N, N))
+
+        self._dlngammas_r_dxs = unifac_dlngammas_r_dxs(N, N_groups, vs, dlnGammas_subgroups_dxs, dlngammas_r_dxs)
+#        for i in range(N):
+#            row = dlngammas_r_dxs[i]
+#            for j in range(N):
+#                tot = 0.0
+#                for m in range(N_groups):
+#                    tot += vs[m][i]*dlnGammas_subgroups_dxs[m][j]
+#                row[j] = tot
 
         return dlngammas_r_dxs
 
