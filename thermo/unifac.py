@@ -3086,6 +3086,38 @@ def unifac_d2GE_dTdxs_skip_comb(T, xs, N, lngammas_r, dlngammas_r_dxs,dlngammas_
         d2GE_dTdxs[i] = dGE*R
     return d2GE_dTdxs
 
+def unifac_d2GE_dxixjs(T, xs, N, dlngammas_r_dxs, d2lngammas_r_dxixjs, dlngammas_c_dxs, d2lngammas_c_dxixjs, d2GE_dxixjs=None):
+    if d2GE_dxixjs is None:
+        d2GE_dxixjs = [[0.0]*N for _ in range(N)] # numba: delete
+#        d2GE_dxixjs = zeros((N, N)) # numba: uncomment
+    RT = R*T
+    for i in range(N):
+        row = d2GE_dxixjs[i]
+        for j in range(N):
+            dGE = dlngammas_c_dxs[i][j] + dlngammas_r_dxs[i][j]
+            dGE += dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i]
+
+            for k in range(N):
+                dGE += xs[k]*(d2lngammas_c_dxixjs[k][i][j] + d2lngammas_r_dxixjs[k][i][j])
+            row[j] = dGE*RT
+
+    return d2GE_dxixjs
+
+def unifac_d2GE_dxixjs_skip_comb(T, xs, N, dlngammas_r_dxs, d2lngammas_r_dxixjs, d2GE_dxixjs=None):
+    if d2GE_dxixjs is None:
+        d2GE_dxixjs = [[0.0]*N for _ in range(N)] # numba: delete
+#        d2GE_dxixjs = zeros((N, N)) # numba: uncomment
+    RT = R*T
+    for i in range(N):
+        row = d2GE_dxixjs[i]
+        for j in range(N):
+            dGE =  dlngammas_r_dxs[i][j] + dlngammas_r_dxs[j][i]
+            for k in range(N):
+                dGE += xs[k]*d2lngammas_r_dxixjs[k][i][j]
+            row[j] = dGE*RT
+
+    return d2GE_dxixjs
+
 
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
@@ -6493,35 +6525,39 @@ class UNIFAC(GibbsExcess):
 
         dlngammas_r_dxs = self.dlngammas_r_dxs()
         d2lngammas_r_dxixjs = self.d2lngammas_r_dxixjs()
-
-        if not skip_comb:
-            dlngammas_c_dxs = self.dlngammas_c_dxs()
-            d2lngammas_c_dxixjs = self.d2lngammas_c_dxixjs()
-
         RT = R*T
-        d2GE_dxixjs = []
+
+        if self.scalar:
+            d2GE_dxixjs = [[0.0]*N for _ in range(N)]
+        else:
+            d2GE_dxixjs = zeros((N, N))
+
+
 
         if skip_comb:
-            for i in range(N):
-                row = []
-                for j in range(N):
-                    dGE =  dlngammas_r_dxs[i][j] + dlngammas_r_dxs[j][i]
-                    for k in range(N):
-                        dGE += xs[k]*d2lngammas_r_dxixjs[k][i][j]
-                    row.append(dGE*RT)
-                d2GE_dxixjs.append(row)
+            self._d2GE_dxixjs = unifac_d2GE_dxixjs_skip_comb(T, xs, N, dlngammas_r_dxs, d2lngammas_r_dxixjs, d2GE_dxixjs)
+#            for i in range(N):
+#                row = d2GE_dxixjs[i]
+#                for j in range(N):
+#                    dGE =  dlngammas_r_dxs[i][j] + dlngammas_r_dxs[j][i]
+#                    for k in range(N):
+#                        dGE += xs[k]*d2lngammas_r_dxixjs[k][i][j]
+#                    row[j] = dGE*RT
         else:
-            for i in range(N):
-                row = []
-                for j in range(N):
-                    dGE = dlngammas_c_dxs[i][j] + dlngammas_r_dxs[i][j]
-                    dGE += dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i]
+            dlngammas_c_dxs = self.dlngammas_c_dxs()
+            d2lngammas_c_dxixjs = self.d2lngammas_c_dxixjs()
+            self._d2GE_dxixjs = unifac_d2GE_dxixjs(T, xs, N, dlngammas_r_dxs, d2lngammas_r_dxixjs, dlngammas_c_dxs, d2lngammas_c_dxixjs, d2GE_dxixjs)
+#            for i in range(N):
+#                row = d2GE_dxixjs[i]
+#                for j in range(N):
+#                    dGE = dlngammas_c_dxs[i][j] + dlngammas_r_dxs[i][j]
+#                    dGE += dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i]
+#
+#                    for k in range(N):
+#                        dGE += xs[k]*(d2lngammas_c_dxixjs[k][i][j] + d2lngammas_r_dxixjs[k][i][j])
+#                    row[j] = dGE*RT
 
-                    for k in range(N):
-                        dGE += xs[k]*(d2lngammas_c_dxixjs[k][i][j] + d2lngammas_r_dxixjs[k][i][j])
-                    row.append(dGE*RT)
-                d2GE_dxixjs.append(row)
-        self._d2GE_dxixjs = d2GE_dxixjs
+#        self._d2GE_dxixjs = d2GE_dxixjs
         return d2GE_dxixjs
 
     def dGE_dT(self):
