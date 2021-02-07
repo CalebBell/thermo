@@ -2734,6 +2734,39 @@ def unifac_d2lnGammas_subgroups_dxixjs(N, N_groups, Qs, Zs, Ws, psis, Thetas,
 
     return d2lnGammas_subgroups_dxixjs
 
+def unifac_dlnGammas_subgroups_dT(N_groups, Qs, psis, dpsis_dT, Thetas,
+                                  Theta_Psi_sum_invs, Theta_dPsidT_sum,
+                                  dlnGammas_subgroups_dT=None):
+    r'''
+
+    .. math::
+        \frac{\partial \ln \Gamma_i}{\partial T} = Q_i\left(
+        \sum_j^{gr} Z(j) \left[{\theta_j \frac{\partial \psi_{i,j}}{\partial T}}
+        + {\theta_j \psi_{i,j} F(j)}Z(j) \right]- F(i) Z(i)
+        \right)
+
+    .. math::
+        F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+
+    .. math::
+        Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+
+    '''
+    # Theta_Psi_sum_invs = Z
+    # Theta_dPsidT_sum = F
+    if dlnGammas_subgroups_dT is None:
+        dlnGammas_subgroups_dT = [0.0]*N_groups
+    for i in range(N_groups):
+        psisi, dpsis_dTi = psis[i], dpsis_dT[i]
+        tot = 0.0
+        for j in range(N_groups):
+            tot += (psisi[j]*Theta_dPsidT_sum[j]*Theta_Psi_sum_invs[j]
+                   - dpsis_dTi[j])*Theta_Psi_sum_invs[j]*Thetas[j]
+
+        v = Qs[i]*(tot - Theta_dPsidT_sum[i]*Theta_Psi_sum_invs[i])
+        dlnGammas_subgroups_dT[i] = v
+    return dlnGammas_subgroups_dT
+
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
     by the UNIFAC equation. This model is capable of representing VL and LL
@@ -5044,37 +5077,6 @@ class UNIFAC(GibbsExcess):
 #        self._d2lnGammas_subgroups_dxixjs = d2lnGammas_subgroups_dxixjs
         return d2lnGammas_subgroups_dxixjs
 
-    @staticmethod
-    def unifac_dlnGammas_subgroups_dT(N_groups, Qs, psis, dpsis_dT, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum):
-        r'''
-
-        .. math::
-            \frac{\partial \ln \Gamma_i}{\partial T} = Q_i\left(
-            \sum_j^{gr} Z(j) \left[{\theta_j \frac{\partial \psi_{i,j}}{\partial T}}
-            + {\theta_j \psi_{i,j} F(j)}Z(j) \right]- F(i) Z(i)
-            \right)
-
-        .. math::
-            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
-
-        .. math::
-            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
-
-        '''
-        # Theta_Psi_sum_invs = Z
-        # Theta_dPsidT_sum = F
-        row = []
-        for i in range(N_groups):
-            psisi, dpsis_dTi = psis[i], dpsis_dT[i]
-            tot = 0.0
-            for j in range(N_groups):
-                tot += (psisi[j]*Theta_dPsidT_sum[j]*Theta_Psi_sum_invs[j]
-                       - dpsis_dTi[j])*Theta_Psi_sum_invs[j]*Thetas[j]
-
-            v = Qs[i]*(tot - Theta_dPsidT_sum[i]*Theta_Psi_sum_invs[i])
-            row.append(v)
-        return row
-
     def dlnGammas_subgroups_dT(self):
         r'''Calculate the first temperature derivative of the
         :math:`\ln \Gamma_k`  parameters for the phase; depends on the phases's
@@ -5123,8 +5125,13 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             Fs = self._Fs()
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
-        self._dlnGammas_subgroups_dT = row = UNIFAC.unifac_dlnGammas_subgroups_dT(N_groups, Qs, psis, dpsis_dT, Thetas, Zs, Fs)
-        return row
+        if self.scalar:
+            dlnGammas_subgroups_dT = [0.0]*N_groups
+        else:
+            dlnGammas_subgroups_dT = zeros(N_groups)
+
+        self._dlnGammas_subgroups_dT = unifac_dlnGammas_subgroups_dT(N_groups, Qs, psis, dpsis_dT, Thetas, Zs, Fs, dlnGammas_subgroups_dT)
+        return dlnGammas_subgroups_dT
 
     @staticmethod
     def _d2lnGammas_subgroups_dT2_meth(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum):
@@ -5561,7 +5568,7 @@ class UNIFAC(GibbsExcess):
             Theta_Psi_sum_invs = Theta_pure_Psi_sum_invs[m]
             Theta_dPsidT_sum = Fs_pure[m]
 
-            row = UNIFAC.unifac_dlnGammas_subgroups_dT(N_groups, Qs, psis, dpsis_dT,
+            row = unifac_dlnGammas_subgroups_dT(N_groups, Qs, psis, dpsis_dT,
                                                       Thetas, Theta_Psi_sum_invs,
                                                       Theta_dPsidT_sum)
             for i in range(N_groups):
