@@ -2985,6 +2985,16 @@ def unifac_d3lnGammas_subgroups_pure_dT3(N, N_groups, Qs, psis, dpsis_dT, d2psis
                 d3lnGammas_subgroups_pure_dT3[k][m] = row[k]
     return d3lnGammas_subgroups_pure_dT3
 
+def unifac_lngammas_r(N, N_groups, lnGammas_subgroups_pure, lnGammas_subgroups, vs, lngammas_r=None):
+    if lngammas_r is None:
+        lngammas_r = [0.0]*N
+
+    for i in range(N):
+        tot = 0.0
+        for k in range(N_groups):
+            tot += vs[k][i]*(lnGammas_subgroups[k] - lnGammas_subgroups_pure[k][i])
+        lngammas_r[i] = tot
+    return lngammas_r
 
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
@@ -5975,12 +5985,17 @@ class UNIFAC(GibbsExcess):
         vs = self.vs
         N, N_groups = self.N, self.N_groups
 
-        self._lngammas_r = lngammas_r = []
-        for i in range(N):
-            tot = 0.0
-            for k in range(N_groups):
-                tot += vs[k][i]*(lnGammas_subgroups[k] - lnGammas_subgroups_pure[k][i])
-            lngammas_r.append(tot)
+        if self.scalar:
+            lngammas_r = [0.0]*N
+        else:
+            lngammas_r = zeros(N)
+
+        self._lngammas_r = unifac_lngammas_r(N, N_groups, lnGammas_subgroups_pure, lnGammas_subgroups, vs, lngammas_r)
+#        for i in range(N):
+#            tot = 0.0
+#            for k in range(N_groups):
+#                tot += vs[k][i]*(lnGammas_subgroups[k] - lnGammas_subgroups_pure[k][i])
+#            lngammas_r.append(tot)
 
         return lngammas_r
 
