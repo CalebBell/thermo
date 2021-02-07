@@ -151,7 +151,7 @@ from chemicals.utils import log, exp, dxs_to_dns, can_load_data, PY37
 from thermo.activity import GibbsExcess
 
 try:
-    array, zeros, npexp = np.array, np.zeros, np.exp
+    array, zeros, npexp, array_equal = np.array, np.zeros, np.exp, np.array_equal
 except AttributeError:
     pass
 
@@ -3637,11 +3637,17 @@ class UNIFAC(GibbsExcess):
 
         if self.version == 1:
             power = 0.75
-            self.rs_34 = [ri**power for ri in rs]
+            if scalar:
+                self.rs_34 = [ri**power for ri in rs]
+            else:
+                self.rs_34 = rs**0.75
         elif self.version == 4:
             power = 2.0/3.0 # Lyngby
             # works in the various functions without change as never taking the der w.r.t. r
-            self.rs_34 = [ri**power for ri in rs]
+            if scalar:
+                self.rs_34 = [ri**power for ri in rs]
+            else:
+                self.rs_34 = rs**power
 
         self.cmp_v_count = cmp_v_count = []
         for i in range(N):
@@ -3652,11 +3658,17 @@ class UNIFAC(GibbsExcess):
         if scalar:
             cmp_v_count_inv = [1.0/ni for ni in cmp_v_count]
         else:
+            self.cmp_v_count = cmp_v_count = array(cmp_v_count)
             cmp_v_count_inv = 1.0/cmp_v_count
         self.cmp_v_count_inv = cmp_v_count_inv
 
         # Matrix of [component][list(indexes to groups in component)], list of list
-        self.cmp_group_idx = [[j for j in range(N_groups) if vs[j][i]] for i in range(N)]
+        cmp_group_idx = [[j for j in range(N_groups) if vs[j][i]] for i in range(N)]
+        # TODO figure out the best way to handle this with numba
+        # as each array was supposedly a different shape
+#        if not scalar:
+#            cmp_group_idx = array(cmp_group_idx)
+        self.cmp_group_idx = cmp_group_idx
 
         # Calculate the composition and temperature independent parameters on initialization
         self.Thetas_pure()
@@ -3751,7 +3763,7 @@ class UNIFAC(GibbsExcess):
                 new._d3lnGammas_subgroups_pure_dT3 = self._d3lnGammas_subgroups_pure_dT3
             except AttributeError:
                 pass
-        if xs == self.xs:
+        if (self.scalar and xs == self.xs) or (not self.scalar and array_equal(xs, self.xs)):
             try:
                 new._Fis = self._Fis
             except AttributeError:
