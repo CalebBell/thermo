@@ -3010,7 +3010,22 @@ def unifac_dlngammas_r_dxs(N, N_groups, vs, dlnGammas_subgroups_dxs, dlngammas_r
     return dlngammas_r_dxs
 
 
+def unifac_d2lngammas_r_dxixjs(N, N_groups, vs, d2lnGammas_subgroups_dxixjs, d2lngammas_r_dxixjs=None):
+    if d2lngammas_r_dxixjs is None:
+        d2lngammas_r_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)] # numba : delete
+#        d2lngammas_r_dxixjs = zeros((N, N, N)) # numba : uncomment
 
+    for i in range(N):
+        matrix = d2lngammas_r_dxixjs[i]
+        for j in range(N):
+            row = matrix[j]
+            for k in range(N):
+                tot = 0.0
+                r = d2lnGammas_subgroups_dxixjs[j][k]
+                for m in range(N_groups):
+                    tot += vs[m][i]*r[m]
+                row[k] = tot
+    return d2lngammas_r_dxixjs
 
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
@@ -6257,20 +6272,25 @@ class UNIFAC(GibbsExcess):
         N, N_groups = self.N, self.N_groups
         d2lnGammas_subgroups_dxixjs = self.d2lnGammas_subgroups_dxixjs()
 
-        self._d2lngammas_r_dxixjs = d2lngammas_r_dxixjs = []
-        for i in range(N):
-            matrix = []
-            for j in range(N):
-                row = []
-                for k in range(N):
-                    tot = 0.0
-                    r = d2lnGammas_subgroups_dxixjs[j][k]
-                    for m in range(N_groups):
-                        tot += vs[m][i]*r[m]
-                    row.append(tot)
-                matrix.append(row)
-            d2lngammas_r_dxixjs.append(matrix)
+        if self.scalar:
+            d2lngammas_r_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]
+        else:
+            d2lngammas_r_dxixjs = zeros((N, N, N))
 
+        self._d2lngammas_r_dxixjs = unifac_d2lngammas_r_dxixjs(N, N_groups, vs, d2lnGammas_subgroups_dxixjs, d2lngammas_r_dxixjs)
+#        for i in range(N):
+#            matrix = []
+#            for j in range(N):
+#                row = []
+#                for k in range(N):
+#                    tot = 0.0
+#                    r = d2lnGammas_subgroups_dxixjs[j][k]
+#                    for m in range(N_groups):
+#                        tot += vs[m][i]*r[m]
+#                    row.append(tot)
+#                matrix.append(row)
+#            d2lngammas_r_dxixjs.append(matrix)
+#
         return d2lngammas_r_dxixjs
 
     def GE(self):
