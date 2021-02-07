@@ -21,7 +21,7 @@ def pytest_ignore_collect(path):
 
 def pytest_configure(config):
     import os
-    os._called_from_test = True
+    #os._called_from_test = True
     
     if sys.version[0] == '3':
         import pytest

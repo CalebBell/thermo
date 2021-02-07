@@ -2859,6 +2859,34 @@ def unifac_d3lnGammas_subgroups_dT3(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, d3
         d3lnGammas_subgroups_dT3[i] = v
     return d3lnGammas_subgroups_dT3
 
+def unifac_Xs_pure(N, N_groups, vs, cmp_v_count_inv, Xs_pure=None):
+    if Xs_pure is None:
+        Xs_pure = [[0.0]*N for _ in range(N_groups)] # numba: delete
+#        Xs_pure = zeros((N_groups, N)) # numba: uncomment
+    for i in range(N_groups):
+        row = Xs_pure[i]
+        vsi = vs[i]
+        for j in range(N):
+            row[j] = vsi[j]*cmp_v_count_inv[j]
+    return Xs_pure
+
+def unifac_Thetas_pure(N, N_groups, Xs_pure, Qs, Thetas_pure=None):
+    if Thetas_pure is None:
+        Thetas_pure = [[0.0]*N_groups for _ in range(N)] # numba: delete
+#        Thetas_pure = zeros((N, N_groups)) # numba: uncomment
+
+    for i in range(N):
+        # groups = self.cmp_group_idx[i]
+        tot = 0.0
+        row = Thetas_pure[i]
+        for j in range(N_groups):
+            tot += Qs[j]*Xs_pure[j][i]
+
+        tot_inv = 1.0/tot
+        for j in range(N_groups):
+            row[j] = Qs[j]*Xs_pure[j][i]*tot_inv
+    return Thetas_pure
+
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
     by the UNIFAC equation. This model is capable of representing VL and LL
@@ -5413,13 +5441,17 @@ class UNIFAC(GibbsExcess):
         vs, cmp_v_count_inv = self.vs, self.cmp_v_count_inv
         N, N_groups = self.N, self.N_groups
 
-        Xs_pure = []
-        for i in range(N_groups):
-            row = []
-            for j in range(N):
-                row.append(vs[i][j]*cmp_v_count_inv[j])
-            Xs_pure.append(row)
-        self._Xs_pure = Xs_pure
+        if self.scalar:
+            Xs_pure = [[0.0]*N for _ in range(N_groups)]
+        else:
+            Xs_pure = zeros((N_groups, N))
+
+#        for i in range(N_groups):
+#            row = Xs_pure[i]
+#            vsi = vs[i]
+#            for j in range(N):
+#                row[j] = vsi[j]*cmp_v_count_inv[j]
+        self._Xs_pure = unifac_Xs_pure(N, N_groups, vs, cmp_v_count_inv, Xs_pure)
         return Xs_pure
 
     def Thetas_pure(self):
@@ -5444,19 +5476,25 @@ class UNIFAC(GibbsExcess):
 
         Xs_pure, Qs = self.Xs_pure(), self.Qs
         N, N_groups = self.N, self.N_groups
-        Thetas_pure = []
-        for i in range(N):
-            # groups = self.cmp_group_idx[i]
-            tot = 0.0
-            for j in range(N_groups):
-                tot += Qs[j]*Xs_pure[j][i]
-            tot_inv = 1.0/tot
-            row = [Qs[j]*Xs_pure[j][i]*tot_inv for j in range(N_groups)]
-            Thetas_pure.append(row)
+
+        if self.Thetas_pure:
+            Thetas_pure = [[0.0]*N_groups for _ in range(N)]
+        else:
+            Thetas_pure = zeros((N, N_groups))
+
+#        for i in range(N):
+#            # groups = self.cmp_group_idx[i]
+#            tot = 0.0
+#            row = Thetas_pure[i]
+#            for j in range(N_groups):
+#                tot += Qs[j]*Xs_pure[j][i]
+#
+#            tot_inv = 1.0/tot
+#            for j in range(N_groups):
+#                row[j] = Qs[j]*Xs_pure[j][i]*tot_inv
 
         # Revised! Keep in order [component][subgroup]
-#         Get indexing convention back to [subgroup][component]
-        self._Thetas_pure = Thetas_pure# = list(map(list, zip(*Thetas_pure)))
+        self._Thetas_pure = unifac_Thetas_pure(N, N_groups, Xs_pure, Qs, Thetas_pure)
         return Thetas_pure
 
 
