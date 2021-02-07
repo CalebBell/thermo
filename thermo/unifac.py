@@ -2887,6 +2887,37 @@ def unifac_Thetas_pure(N, N_groups, Xs_pure, Qs, Thetas_pure=None):
             row[j] = Qs[j]*Xs_pure[j][i]*tot_inv
     return Thetas_pure
 
+
+def unifac_lnGammas_subgroups_pure(N, N_groups, Qs, Thetas_pure, cmp_group_idx, psis, lnGammas_subgroups_pure=None):
+    if lnGammas_subgroups_pure is None:
+        lnGammas_subgroups_pure = [[0.0]*N for _ in range(N_groups)] # numba: delete
+#        lnGammas_subgroups_pure = zeros((N_groups, N)) # numba: uncomment
+
+    for k in range(N_groups):
+        row = lnGammas_subgroups_pure[k]
+        for i in range(N):
+            groups2 = cmp_group_idx[i]
+            Thetas_purei = Thetas_pure[i]
+            if k not in groups2:
+                row[i] = 0.0
+            else:
+                psisk = psis[k]
+                log_sum = 0.0
+                for m in groups2:
+                    log_sum += Thetas_purei[m]*psis[m][k]
+                log_sum = log(log_sum)
+
+                last = 0.0
+                for m in groups2:
+                    sub_subs = 0.0
+                    for n in range(N_groups):
+                        sub_subs += Thetas_purei[n]*psis[n][m]
+                    last += Thetas_purei[m]*psisk[m]/sub_subs
+
+                v = Qs[k]*(1.0 - log_sum - last)
+                row[i] = v
+    return lnGammas_subgroups_pure
+
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
     by the UNIFAC equation. This model is capable of representing VL and LL
@@ -5542,31 +5573,31 @@ class UNIFAC(GibbsExcess):
         else:
             lnGammas_subgroups_pure = zeros((N_groups, N))
 
-        for k in range(N_groups):
-            row = lnGammas_subgroups_pure[k]
-            for i in range(N):
-                groups2 = cmp_group_idx[i]
-                Thetas_purei = Thetas_pure[i]
-                if k not in groups2:
-                    row[i] = 0.0
-                else:
-                    psisk = psis[k]
-                    log_sum = 0.0
-                    for m in groups2:
-                        log_sum += Thetas_purei[m]*psis[m][k]
-                    log_sum = log(log_sum)
+#        for k in range(N_groups):
+#            row = lnGammas_subgroups_pure[k]
+#            for i in range(N):
+#                groups2 = cmp_group_idx[i]
+#                Thetas_purei = Thetas_pure[i]
+#                if k not in groups2:
+#                    row[i] = 0.0
+#                else:
+#                    psisk = psis[k]
+#                    log_sum = 0.0
+#                    for m in groups2:
+#                        log_sum += Thetas_purei[m]*psis[m][k]
+#                    log_sum = log(log_sum)
+#
+#                    last = 0.0
+#                    for m in groups2:
+#                        sub_subs = 0.0
+#                        for n in range(N_groups):
+#                            sub_subs += Thetas_purei[n]*psis[n][m]
+#                        last += Thetas_purei[m]*psisk[m]/sub_subs
+#
+#                    v = Qs[k]*(1.0 - log_sum - last)
+#                    row[i] = v
 
-                    last = 0.0
-                    for m in groups2:
-                        sub_subs = 0.0
-                        for n in range(N_groups):
-                            sub_subs += Thetas_purei[n]*psis[n][m]
-                        last += Thetas_purei[m]*psisk[m]/sub_subs
-
-                    v = Qs[k]*(1.0 - log_sum - last)
-                    row[i] = v
-
-        self._lnGammas_subgroups_pure = lnGammas_subgroups_pure
+        self._lnGammas_subgroups_pure = unifac_lnGammas_subgroups_pure(N, N_groups, Qs, Thetas_pure, cmp_group_idx, psis, lnGammas_subgroups_pure)
         return lnGammas_subgroups_pure
 
     def dlnGammas_subgroups_pure_dT(self):
