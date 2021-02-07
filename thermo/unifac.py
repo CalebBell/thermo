@@ -2767,6 +2767,98 @@ def unifac_dlnGammas_subgroups_dT(N_groups, Qs, psis, dpsis_dT, Thetas,
         dlnGammas_subgroups_dT[i] = v
     return dlnGammas_subgroups_dT
 
+def unifac_d2lnGammas_subgroups_dT2(N_groups, Qs, psis, dpsis_dT, d2psis_dT2,
+                                    Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum,
+                                    Theta_d2PsidT2_sum, d2lnGammas_subgroups_dT2=None, vec0=None):
+    r'''
+    .. math::
+        \frac{\partial^2 \ln \Gamma_i}{\partial T^2} = -Q_i\left[
+        Z(i)G(i) - F(i)^2 Z(i)^2 + \sum_j\left(
+        \theta_j Z(j)\frac{\partial^2 \psi_{i,j}}{\partial T}
+        - Z(j)^2 \left(G(j)\theta_j \psi_{i,j} + 2 F_j \theta_j \frac{\partial \psi_{i,j}}{\partial T}\right)
+        + 2Z(j)^3F(j)^2 \theta_j \psi_{i,j}
+        \right)\right]
+
+    .. math::
+        F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+
+    .. math::
+        G(k) = \sum_m^{gr} \theta_m \frac{\partial^2 \psi_{m,k}}{\partial T^2}
+
+    .. math::
+        Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+
+    '''
+    if d2lnGammas_subgroups_dT2 is None:
+        d2lnGammas_subgroups_dT2 = [0.0]*N_groups
+    if vec0 is None:
+        vec0 = [0.0]*N_groups
+    Zs, Fs, Gs = Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum
+    for j in range(N_groups):
+        vec0[j] = 2.0*Fs[j]*Fs[j]*Thetas[j]*Zs[j]*Zs[j]*Zs[j]
+
+    for i in range(N_groups):
+        tot0 = 0.0
+        for j in range(N_groups):
+            tot0 += Zs[j]*Thetas[j]*(d2psis_dT2[i][j] - (Gs[j]*psis[i][j] + 2.0*Fs[j]*dpsis_dT[i][j])*Zs[j])
+            tot0 += vec0[j]*psis[i][j]
+        v = Qs[i]*(Zs[i]*(Fs[i]*Fs[i]*Zs[i] - Gs[i]) - tot0)
+        d2lnGammas_subgroups_dT2[i] = v
+    return d2lnGammas_subgroups_dT2
+
+def unifac_d3lnGammas_subgroups_dT3(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3,
+                                  Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum,
+                                  Theta_d2PsidT2_sum, Theta_d3PsidT3_sum,
+                                  d3lnGammas_subgroups_dT3=None):
+    r'''
+
+    .. math::
+        \frac{\partial^3 \ln \Gamma_i}{\partial T^3} =Q_i\left[-H(i) Z(i)
+        - 2F(i)^3 Z(i)^3 + 3F(i) G(i) Z(i)^2+ \left(
+        -\theta_j Z(j) \frac{\partial^3 \psi}{\partial T^3}
+        + H(j) Z(j)^2 \theta(j)\psi_{i,j}
+        - 6F(j)^2 Z(j)^3 \theta_j \frac{\partial \psi_{i,j}}{\partial T}
+        + 3 F(j) Z(j)^2 \theta(j) \frac{\partial^2 \psi_{i,j}}{\partial T^2}
+        ++ 3G(j) \theta(j) Z(j)^2 \frac{\partial \psi_{i,j}}{\partial T}
+        + 6F(j)^3 \theta(j) Z(j)^4 \psi_{i,j}
+        - 6F(j) G(j) \theta(j) Z(j)^3 \psi_{i,j}
+        \right)
+        \right]
+
+    .. math::
+        F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+
+    .. math::
+        G(k) = \sum_m^{gr} \theta_m \frac{\partial^2 \psi_{m,k}}{\partial T^2}
+
+    .. math::
+        H(k) = \sum_m^{gr} \theta_m \frac{\partial^3 \psi_{m,k}}{\partial T^3}
+
+    .. math::
+        Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+
+    '''
+    if d3lnGammas_subgroups_dT3 is None:
+        d3lnGammas_subgroups_dT3 = [0.0]*N_groups
+    # TODO optimize
+    Us_inv, Fs, Gs, Hs = Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum, Theta_d3PsidT3_sum
+    for i in range(N_groups):
+        tot = 0.0
+        for j in range(N_groups):
+            tot -= Thetas[j]*d3psis_dT3[i][j]*Us_inv[j]
+            tot += Hs[j]*Thetas[j]*psis[i][j]*Us_inv[j]*Us_inv[j]
+            tot -= 6.0*Fs[j]*Fs[j]*Thetas[j]*dpsis_dT[i][j]*Us_inv[j]*Us_inv[j]*Us_inv[j]
+            tot += 3.0*Fs[j]*Thetas[j]*d2psis_dT2[i][j]*Us_inv[j]*Us_inv[j]
+
+            tot += 3.0*Gs[j]*Thetas[j]*dpsis_dT[i][j]*Us_inv[j]*Us_inv[j]
+            tot += 6.0*Fs[j]**3*Thetas[j]*psis[i][j]*Us_inv[j]**4
+            tot -= 6.0*Fs[j]*Gs[j]*Thetas[j]*psis[i][j]*Us_inv[j]**3
+
+
+        v = Qs[i]*(-Hs[i]*Us_inv[i] - 2.0*Fs[i]**3*Us_inv[i]**3 + 3.0*Fs[i]*Gs[i]*Us_inv[i]**2 + tot)
+        d3lnGammas_subgroups_dT3[i] = v
+    return d3lnGammas_subgroups_dT3
+
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
     by the UNIFAC equation. This model is capable of representing VL and LL
@@ -5133,39 +5225,6 @@ class UNIFAC(GibbsExcess):
         self._dlnGammas_subgroups_dT = unifac_dlnGammas_subgroups_dT(N_groups, Qs, psis, dpsis_dT, Thetas, Zs, Fs, dlnGammas_subgroups_dT)
         return dlnGammas_subgroups_dT
 
-    @staticmethod
-    def _d2lnGammas_subgroups_dT2_meth(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum):
-        r'''
-        .. math::
-            \frac{\partial^2 \ln \Gamma_i}{\partial T^2} = -Q_i\left[
-            Z(i)G(i) - F(i)^2 Z(i)^2 + \sum_j\left(
-            \theta_j Z(j)\frac{\partial^2 \psi_{i,j}}{\partial T}
-            - Z(j)^2 \left(G(j)\theta_j \psi_{i,j} + 2 F_j \theta_j \frac{\partial \psi_{i,j}}{\partial T}\right)
-            + 2Z(j)^3F(j)^2 \theta_j \psi_{i,j}
-            \right)\right]
-
-        .. math::
-            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
-
-        .. math::
-            G(k) = \sum_m^{gr} \theta_m \frac{\partial^2 \psi_{m,k}}{\partial T^2}
-
-        .. math::
-            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
-
-        '''
-        Zs, Fs, Gs = Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum
-        Fs2Zs3Theta2 = [2.0*Fs[j]*Fs[j]*Thetas[j]*Zs[j]*Zs[j]*Zs[j] for j in range(N_groups)]
-        row = []
-        for i in range(N_groups):
-            tot0 = 0.0
-            for j in range(N_groups):
-                tot0 += Zs[j]*Thetas[j]*(d2psis_dT2[i][j] - (Gs[j]*psis[i][j] + 2.0*Fs[j]*dpsis_dT[i][j])*Zs[j])
-                tot0 += Fs2Zs3Theta2[j]*psis[i][j]
-            v = Qs[i]*(Zs[i]*(Fs[i]*Fs[i]*Zs[i] - Gs[i]) - tot0)
-            row.append(v)
-        return row
-
     def d2lnGammas_subgroups_dT2(self):
         r'''Calculate the second temperature derivative of the
         :math:`\ln \Gamma_k`  parameters for the phase; depends on the phases's
@@ -5228,62 +5287,15 @@ class UNIFAC(GibbsExcess):
             Gs = self._Gs()
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
 
-        self._d2lnGammas_subgroups_dT2 = row = UNIFAC._d2lnGammas_subgroups_dT2_meth(
-                        N_groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas, Zs, Fs, Gs)
+        if self.scalar:
+            d2lnGammas_subgroups_dT2 = [0.0]*N_groups
+        else:
+            d2lnGammas_subgroups_dT2 = zeros(N_groups)
+
+        self._d2lnGammas_subgroups_dT2 = row = unifac_d2lnGammas_subgroups_dT2(
+                        N_groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas, Zs, Fs, Gs, d2lnGammas_subgroups_dT2)
         return row
 
-    @staticmethod
-    def _d3lnGammas_subgroups_dT3_meth(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3,
-                                      Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum,
-                                      Theta_d2PsidT2_sum, Theta_d3PsidT3_sum):
-        r'''
-
-        .. math::
-            \frac{\partial^3 \ln \Gamma_i}{\partial T^3} =Q_i\left[-H(i) Z(i)
-            - 2F(i)^3 Z(i)^3 + 3F(i) G(i) Z(i)^2+ \left(
-            -\theta_j Z(j) \frac{\partial^3 \psi}{\partial T^3}
-            + H(j) Z(j)^2 \theta(j)\psi_{i,j}
-            - 6F(j)^2 Z(j)^3 \theta_j \frac{\partial \psi_{i,j}}{\partial T}
-            + 3 F(j) Z(j)^2 \theta(j) \frac{\partial^2 \psi_{i,j}}{\partial T^2}
-            ++ 3G(j) \theta(j) Z(j)^2 \frac{\partial \psi_{i,j}}{\partial T}
-            + 6F(j)^3 \theta(j) Z(j)^4 \psi_{i,j}
-            - 6F(j) G(j) \theta(j) Z(j)^3 \psi_{i,j}
-            \right)
-            \right]
-
-        .. math::
-            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
-
-        .. math::
-            G(k) = \sum_m^{gr} \theta_m \frac{\partial^2 \psi_{m,k}}{\partial T^2}
-
-        .. math::
-            H(k) = \sum_m^{gr} \theta_m \frac{\partial^3 \psi_{m,k}}{\partial T^3}
-
-        .. math::
-            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
-
-        '''
-        # TODO optimize
-
-        Us_inv, Fs, Gs, Hs = Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum, Theta_d3PsidT3_sum
-        row = []
-        for i in range(N_groups):
-            tot = 0.0
-            for j in range(N_groups):
-                tot -= Thetas[j]*d3psis_dT3[i][j]*Us_inv[j]
-                tot += Hs[j]*Thetas[j]*psis[i][j]*Us_inv[j]*Us_inv[j]
-                tot -= 6.0*Fs[j]*Fs[j]*Thetas[j]*dpsis_dT[i][j]*Us_inv[j]*Us_inv[j]*Us_inv[j]
-                tot += 3.0*Fs[j]*Thetas[j]*d2psis_dT2[i][j]*Us_inv[j]*Us_inv[j]
-
-                tot += 3.0*Gs[j]*Thetas[j]*dpsis_dT[i][j]*Us_inv[j]*Us_inv[j]
-                tot += 6.0*Fs[j]**3*Thetas[j]*psis[i][j]*Us_inv[j]**4
-                tot -= 6.0*Fs[j]*Gs[j]*Thetas[j]*psis[i][j]*Us_inv[j]**3
-
-
-            v = Qs[i]*(-Hs[i]*Us_inv[i] - 2.0*Fs[i]**3*Us_inv[i]**3 + 3.0*Fs[i]*Gs[i]*Us_inv[i]**2 + tot)
-            row.append(v)
-        return row
 
     def d3lnGammas_subgroups_dT3(self):
         r'''Calculate the third temperature derivative of the
@@ -5363,11 +5375,15 @@ class UNIFAC(GibbsExcess):
             Hs = self._Hs()
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
 
-        row = UNIFAC._d3lnGammas_subgroups_dT3_meth(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3,
-                                                   Thetas, Zs, Fs, Gs, Hs)
+        if self.scalar:
+            d3lnGammas_subgroups_dT3 = [0.0]*N_groups
+        else:
+            d3lnGammas_subgroups_dT3 = zeros(N_groups)
 
-        self._d3lnGammas_subgroups_dT3 = row
-        return row
+        self._d3lnGammas_subgroups_dT3 = unifac_d3lnGammas_subgroups_dT3(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3,
+                                                   Thetas, Zs, Fs, Gs, Hs, d3lnGammas_subgroups_dT3)
+
+        return d3lnGammas_subgroups_dT3
 
     def Xs_pure(self):
         r'''Calculate the :math:`X_m` parameters for each chemical in the
@@ -5649,7 +5665,7 @@ class UNIFAC(GibbsExcess):
             Theta_dPsidT_sum = Fs_pure[m]
             Theta_d2PsidT2_sum = Gs_pure[m]
 
-            row = UNIFAC._d2lnGammas_subgroups_dT2_meth(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum)
+            row = unifac_d2lnGammas_subgroups_dT2(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum)
             for i in range(N_groups):
                 if i not in groups2:
                     row[i] = 0.0
@@ -5742,7 +5758,7 @@ class UNIFAC(GibbsExcess):
             Theta_d2PsidT2_sum = Gs_pure[m]
             Theta_d3PsidT3_sum = Hs_pure[m]
 
-            row = UNIFAC._d3lnGammas_subgroups_dT3_meth(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum, Theta_d3PsidT3_sum)
+            row = unifac_d3lnGammas_subgroups_dT3(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum, Theta_d3PsidT3_sum)
             for i in range(N_groups):
                 if i not in groups2:
                     row[i] = 0.0
