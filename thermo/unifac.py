@@ -146,8 +146,14 @@ __all__ = ['UNIFAC_gammas','UNIFAC', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', '
            'LUFMG', 'PSRKMG']
 import os
 from fluids.constants import R
+from fluids.numerics import numpy as np
 from chemicals.utils import log, exp, dxs_to_dns, can_load_data, PY37
 from thermo.activity import GibbsExcess
+
+try:
+    zeros, npexp = np.zeros, np.exp
+except AttributeError:
+    pass
 
 
 class UNIFAC_subgroup(object):
@@ -3139,6 +3145,16 @@ def unifac_d3GE_dT3(N, T, xs, d2lngammas_r_dT2, d3lngammas_r_dT3):
         tot1 += xs[i]*d2lngammas_r_dT2[i] # This line same as the d2GE_dT2
 
     return R*(T*tot0 + 3.0*tot1)
+
+def unifac_gammas(N, xs, lngammas_r, lngammas_c, gammas=None):
+    if gammas is None:
+        gammas = [0.0]*N
+
+    for i in range(N):
+        gammas[i] = exp(lngammas_r[i] + lngammas_c[i])
+    return gammas
+
+
 
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
@@ -6690,13 +6706,21 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             lngammas_r = self.lngammas_r()
         if self.skip_comb:
-            gammas = [exp(ri) for ri in lngammas_r]
+            if self.scalar:
+                self._gammas = gammas = [exp(ri) for ri in lngammas_r]
+            else:
+                self._gammas = gammas = npexp(lngammas_r)
         else:
             try:
                 lngammas_c = self._lngammas_c
             except AttributeError:
                 lngammas_c = self.lngammas_c()
-            gammas = [exp(lngammas_r[i] + lngammas_c[i]) for i in range(N)]
+            if self.scalar:
+                gammas = [0.0]*N
+            else:
+                gammas = zeros(N)
+            self._gammas = unifac_gammas(N, xs, lngammas_r, lngammas_c, gammas)
+
         self._gammas = gammas
         return gammas
 
@@ -6726,7 +6750,10 @@ class UNIFAC(GibbsExcess):
             dlngammas_r_dT = self._dlngammas_r_dT
         except AttributeError:
             dlngammas_r_dT = self.dlngammas_r_dT()
-        self._dgammas_dT = dgammas_dT = [dlngammas_r_dT[i]*gammas[i] for i in range(self.N)]
+        if self.scalar:
+            self._dgammas_dT = dgammas_dT = [dlngammas_r_dT[i]*gammas[i] for i in range(self.N)]
+        else:
+            self._dgammas_dT = dgammas_dT = dlngammas_r_dT*gammas
         return dgammas_dT
 
     def dgammas_dns(self):
