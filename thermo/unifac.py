@@ -2968,9 +2968,19 @@ class UNIFAC(GibbsExcess):
     .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
+
     '''
     List of functions not fully optimized (for Python anyway)
     psis second derivative
+
+    lnGammas_subgroups_pure - "in" array check is approx. 2x as slow in numba
+    as coding the flor loop to check it
+
+    unifac_d3lnGammas_subgroups_dT3 has no optimization
+    d2lnGammas_subgroups_dT2 can have one more vec to save time
+    unifac_dlnGammas_subgroups_dT can have one more vec to save time
+    unifac_dlnGammas_subgroups_dxs can have one more vec to save time
+
 
     '''
 
@@ -5527,21 +5537,18 @@ class UNIFAC(GibbsExcess):
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
         Thetas_pure, cmp_group_idx = self._Thetas_pure, self.cmp_group_idx
 
-        matrix = []
-#        for i in range(N):
-#            groups2 = cmp_group_idx[i]
-#            Thetas_purei = Thetas_pure[i]
-#            row = []
-#            for k in range(N_groups):
-
+        if self.Thetas_pure:
+            lnGammas_subgroups_pure = [[0.0]*N for _ in range(N_groups)]
+        else:
+            lnGammas_subgroups_pure = zeros((N_groups, N))
 
         for k in range(N_groups):
-            row = []
+            row = lnGammas_subgroups_pure[k]
             for i in range(N):
                 groups2 = cmp_group_idx[i]
                 Thetas_purei = Thetas_pure[i]
                 if k not in groups2:
-                    v = 0.0
+                    row[i] = 0.0
                 else:
                     psisk = psis[k]
                     log_sum = 0.0
@@ -5557,10 +5564,9 @@ class UNIFAC(GibbsExcess):
                         last += Thetas_purei[m]*psisk[m]/sub_subs
 
                     v = Qs[k]*(1.0 - log_sum - last)
-                row.append(v)
-            matrix.append(row)
+                    row[i] = v
 
-        self._lnGammas_subgroups_pure = lnGammas_subgroups_pure = matrix#list(map(list, zip(*matrix)))
+        self._lnGammas_subgroups_pure = lnGammas_subgroups_pure
         return lnGammas_subgroups_pure
 
     def dlnGammas_subgroups_pure_dT(self):
