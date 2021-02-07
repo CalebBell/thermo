@@ -2941,6 +2941,28 @@ def unifac_dlnGammas_subgroups_pure_dT(N, N_groups, Qs, psis, dpsis_dT,
                 dlnGammas_subgroups_pure_dT[k][m] = vec0[k]
     return dlnGammas_subgroups_pure_dT
 
+def unifac_d2lnGammas_subgroups_pure_dT2(N, N_groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas_pure, Theta_pure_Psi_sum_invs, Fs_pure, Gs_pure, cmp_group_idx, d2lnGammas_subgroups_pure_dT2=None, vec0=None):
+    if d2lnGammas_subgroups_pure_dT2 is None:
+        d2lnGammas_subgroups_pure_dT2 = [[0.0]*N for _ in range(N_groups)] # numba: delete
+#        d2lnGammas_subgroups_pure_dT2 = zeros((N_groups, N)) # numba: uncomment
+
+    if vec0 is None:
+        vec0 = [0.0]*N
+    for m in range(N):
+        groups2 = cmp_group_idx[m]
+        Thetas = Thetas_pure[m]
+        Theta_Psi_sum_invs = Theta_pure_Psi_sum_invs[m]
+        Theta_dPsidT_sum = Fs_pure[m]
+        Theta_d2PsidT2_sum = Gs_pure[m]
+
+        vec0 = unifac_d2lnGammas_subgroups_dT2(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum)
+
+
+        for k in range(N_groups):
+            if k in groups2:
+                d2lnGammas_subgroups_pure_dT2[k][m] = vec0[k]
+    return d2lnGammas_subgroups_pure_dT2
+
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
     by the UNIFAC equation. This model is capable of representing VL and LL
@@ -5541,7 +5563,7 @@ class UNIFAC(GibbsExcess):
         Xs_pure, Qs = self.Xs_pure(), self.Qs
         N, N_groups = self.N, self.N_groups
 
-        if self.Thetas_pure:
+        if self.scalar:
             Thetas_pure = [[0.0]*N_groups for _ in range(N)]
         else:
             Thetas_pure = zeros((N, N_groups))
@@ -5591,7 +5613,7 @@ class UNIFAC(GibbsExcess):
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
         Thetas_pure, cmp_group_idx = self._Thetas_pure, self.cmp_group_idx
 
-        if self.Thetas_pure:
+        if self.scalar:
             lnGammas_subgroups_pure = [[0.0]*N for _ in range(N_groups)]
         else:
             lnGammas_subgroups_pure = zeros((N_groups, N))
@@ -5679,7 +5701,7 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             Fs_pure = self._Fs_pure()
 
-        if self.Thetas_pure:
+        if self.scalar:
             dlnGammas_subgroups_pure_dT = [[0.0]*N for _ in range(N_groups)]
         else:
             dlnGammas_subgroups_pure_dT = zeros((N_groups, N))
@@ -5748,7 +5770,7 @@ class UNIFAC(GibbsExcess):
         except:
             pass
 
-        Xs_pure, Thetas_pure, Qs = self.Xs_pure(), self.Thetas_pure(), self.Qs
+        Thetas_pure, Qs = self.Thetas_pure(), self.Qs
         psis, dpsis_dT, d2psis_dT2 = self.psis(), self.dpsis_dT(), self.d2psis_dT2()
         N, N_groups = self.N, self.N_groups
         cmp_group_idx = self.cmp_group_idx
@@ -5771,35 +5793,35 @@ class UNIFAC(GibbsExcess):
 #        Theta_d2PsidT2_sum_pure = [[sum(Thetas_pure[i][k]*d2psis_dT2[k][j] for k in groups) for j in groups] for i in range(N)]
 
 
-        if self.Thetas_pure:
+        if self.scalar:
             d2lnGammas_subgroups_pure_dT2 = [[0.0]*N for _ in range(N_groups)]
         else:
             d2lnGammas_subgroups_pure_dT2 = zeros((N_groups, N))
 
 
 #        mat = []
-        for m in range(N):
-            groups2 = cmp_group_idx[m]
-            Thetas = Thetas_pure[m]
-            Theta_Psi_sum_invs = Theta_pure_Psi_sum_invs[m]
-            Theta_dPsidT_sum = Fs_pure[m]
-            Theta_d2PsidT2_sum = Gs_pure[m]
-
-            row = unifac_d2lnGammas_subgroups_dT2(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum)
-            for i in range(N_groups):
-                if i not in groups2:
-                    row[i] = 0.0
-
-
-            for k in range(N_groups):
-                if k in groups2:
-                    d2lnGammas_subgroups_pure_dT2[k][m] = row[k]
+#        for m in range(N):
+#            groups2 = cmp_group_idx[m]
+#            Thetas = Thetas_pure[m]
+#            Theta_Psi_sum_invs = Theta_pure_Psi_sum_invs[m]
+#            Theta_dPsidT_sum = Fs_pure[m]
+#            Theta_d2PsidT2_sum = Gs_pure[m]
+#
+#            row = unifac_d2lnGammas_subgroups_dT2(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum)
+#            for i in range(N_groups):
+#                if i not in groups2:
+#                    row[i] = 0.0
+#
+#
+#            for k in range(N_groups):
+#                if k in groups2:
+#                    d2lnGammas_subgroups_pure_dT2[k][m] = row[k]
 
 #            mat.append(row)
 
 #        mat = list(map(list, zip(*mat)))
         # Index by [subgroup][component]
-        self._d2lnGammas_subgroups_pure_dT2 = d2lnGammas_subgroups_pure_dT2
+        self._d2lnGammas_subgroups_pure_dT2 = unifac_d2lnGammas_subgroups_pure_dT2(N, N_groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas_pure, Theta_pure_Psi_sum_invs, Fs_pure, Gs_pure, cmp_group_idx, d2lnGammas_subgroups_pure_dT2)
         return d2lnGammas_subgroups_pure_dT2
 
     def d3lnGammas_subgroups_pure_dT3(self):
