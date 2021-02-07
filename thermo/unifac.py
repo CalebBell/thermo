@@ -3195,6 +3195,26 @@ def unifac_dgammas_dns(N, xs, dgammas_dxs, dgammas_dns=None):
             row[j] = dgammas_dxsi[j] - xdx_tot
     return dgammas_dns
 
+
+def unifac_lngammas_c(N, version, qs, Fis, Vis, Vis_modified, lngammas_c=None):
+    if lngammas_c is None:
+        lngammas_c = [0.0]*N
+
+    if version == 4:
+        for i in range(N):
+            r = Vis_modified[i] # In the definition of V' used here, there is no mole fraction division needed
+            val = log(r) + 1.0 - r
+            lngammas_c[i] = val
+    else:
+        for i in range(N):
+            Vi_Fi = Vis[i]/Fis[i]
+            val = (1.0 - Vis_modified[i] + log(Vis_modified[i])
+                    - 5.0*qs[i]*(1.0 - Vi_Fi + log(Vi_Fi)))
+            lngammas_c[i] = val
+    return lngammas_c
+
+
+
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
     by the UNIFAC equation. This model is capable of representing VL and LL
@@ -6290,21 +6310,27 @@ class UNIFAC(GibbsExcess):
         else:
             Vis_modified = Vis
 
-        lngammas_c = [0.0]*N
-        if version == 4:
-            xs = self.xs
-            for i in range(N):
-                r = Vis_modified[i] # In the definition of V' used here, there is no mole fraction division needed
-                val = log(r) + 1.0 - r
-                lngammas_c[i] = val
+        if self.scalar:
+            lngammas_c = [0.0]*N
         else:
-            for i in range(N):
-                Vi_Fi = Vis[i]/Fis[i]
-                val = (1.0 - Vis_modified[i] + log(Vis_modified[i])
-                        - 5.0*qs[i]*(1.0 - Vi_Fi + log(Vi_Fi)))
-                lngammas_c[i] = val
+            lngammas_c = zeros(N)
 
-        self._lngammas_c = lngammas_c
+        self._lngammas_c = unifac_lngammas_c(N, version, qs, Fis, Vis, Vis_modified, lngammas_c)
+
+
+#        if version == 4:
+#            for i in range(N):
+#                r = Vis_modified[i] # In the definition of V' used here, there is no mole fraction division needed
+#                val = log(r) + 1.0 - r
+#                lngammas_c[i] = val
+#        else:
+#            for i in range(N):
+#                Vi_Fi = Vis[i]/Fis[i]
+#                val = (1.0 - Vis_modified[i] + log(Vis_modified[i])
+#                        - 5.0*qs[i]*(1.0 - Vi_Fi + log(Vi_Fi)))
+#                lngammas_c[i] = val
+
+#        self._lngammas_c = lngammas_c
         return lngammas_c
 
     def dlngammas_c_dT(self):
