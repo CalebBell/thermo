@@ -3213,7 +3213,27 @@ def unifac_lngammas_c(N, version, qs, Fis, Vis, Vis_modified, lngammas_c=None):
             lngammas_c[i] = val
     return lngammas_c
 
+def unifac_dlngammas_c_dxs(N, version, qs, Fis, dFis_dxs, Vis, dVis_dxs, Vis_modified, dVis_modified_dxs, dlngammas_c_dxs=None):
+    if dlngammas_c_dxs is None:
+        dlngammas_c_dxs = [[0.0]*N for _ in range(N)] # numba: delete
+#        dlngammas_c_dxs = zeros((N, N)) # numba: uncomment
 
+    if version == 4:
+        for i in range(N):
+            row = dlngammas_c_dxs[i]
+            for j in range(N):
+                v = -dVis_modified_dxs[i][j] + dVis_modified_dxs[i][j]/Vis_modified[i]
+                row[j] = v
+    else:
+        for i in range(N):
+            row = dlngammas_c_dxs[i]
+            Fi_inv = 1.0/Fis[i]
+            for j in range(N):
+                val = -5.0*qs[i]*((dVis_dxs[i][j] - Vis[i]*dFis_dxs[i][j]*Fi_inv)/Vis[i]
+                - dVis_dxs[i][j]*Fi_inv + Vis[i]*dFis_dxs[i][j]*Fi_inv*Fi_inv
+                ) - dVis_modified_dxs[i][j] + dVis_modified_dxs[i][j]/Vis_modified[i]
+                row[j] = val
+    return dlngammas_c_dxs
 
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
@@ -6471,25 +6491,24 @@ class UNIFAC(GibbsExcess):
             dlngammas_c_dxs = zeros((N, N))
 
         # index style - [THE GAMMA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
+        self._dlngammas_c_dxs = unifac_dlngammas_c_dxs(N, version, qs, Fis, dFis_dxs, Vis, dVis_dxs, Vis_modified, dVis_modified_dxs, dlngammas_c_dxs)
+#        if version == 4:
+#            for i in range(N):
+#                row = dlngammas_c_dxs[i]
+#                for j in range(N):
+#                    v = -dVis_modified_dxs[i][j] + dVis_modified_dxs[i][j]/Vis_modified[i]
+#                    row[j] = v
+#        else:
+#            for i in range(N):
+#                row = dlngammas_c_dxs[i]
+#                Fi_inv = 1.0/Fis[i]
+#                for j in range(N):
+#                    val = -5.0*qs[i]*((dVis_dxs[i][j] - Vis[i]*dFis_dxs[i][j]*Fi_inv)/Vis[i]
+#                    - dVis_dxs[i][j]*Fi_inv + Vis[i]*dFis_dxs[i][j]*Fi_inv*Fi_inv
+#                    ) - dVis_modified_dxs[i][j] + dVis_modified_dxs[i][j]/Vis_modified[i]
+#                    row[j] = val
 
-        if version == 4:
-            xs = self.xs
-            for i in range(N):
-                row = dlngammas_c_dxs[i]
-                for j in range(N):
-                    v = -dVis_modified_dxs[i][j] + dVis_modified_dxs[i][j]/Vis_modified[i]
-                    row[j] = v
-        else:
-            for i in range(N):
-                row = dlngammas_c_dxs[i]
-                Fi_inv = 1.0/Fis[i]
-                for j in range(N):
-                    val = -5.0*qs[i]*((dVis_dxs[i][j] - Vis[i]*dFis_dxs[i][j]*Fi_inv)/Vis[i]
-                    - dVis_dxs[i][j]*Fi_inv + Vis[i]*dFis_dxs[i][j]*Fi_inv*Fi_inv
-                    ) - dVis_modified_dxs[i][j] + dVis_modified_dxs[i][j]/Vis_modified[i]
-                    row[j] = val
-
-        self._dlngammas_c_dxs = dlngammas_c_dxs
+#        self._dlngammas_c_dxs = dlngammas_c_dxs
         return dlngammas_c_dxs
 
     ''' Sympy code used to get these derivatives - not yet validated with numerical values from SymPy!
