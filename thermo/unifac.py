@@ -3077,7 +3077,7 @@ class UNIFAC(GibbsExcess):
                  version=0):
         self.T = T
         self.xs = xs
-        self.scalar = type(xs) is list
+        self.scalar = scalar = type(xs) is list
 
         # rs - 1d index by [component] parameter, calculated using the chemical's subgroups and their count
         self.rs = rs
@@ -3121,6 +3121,11 @@ class UNIFAC(GibbsExcess):
             for group in range(N_groups):
                 tot += vs[group][i]
             cmp_v_count.append(tot)
+        if scalar:
+            cmp_v_count_inv = [1.0/ni for ni in cmp_v_count]
+        else:
+            cmp_v_count_inv = 1.0/cmp_v_count
+        self.cmp_v_count_inv = cmp_v_count_inv
 
         # Matrix of [component][list(indexes to groups in component)], list of list
         self.cmp_group_idx = [[j for j in range(N_groups) if vs[j][i]] for i in range(N)]
@@ -3167,6 +3172,7 @@ class UNIFAC(GibbsExcess):
         new.Qs = self.Qs
         new.vs = self.vs
         new.cmp_v_count = self.cmp_v_count
+        new.cmp_v_count_inv = self.cmp_v_count_inv
         new.cmp_group_idx = self.cmp_group_idx
 
         new.version = self.version
@@ -5404,14 +5410,14 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         # Independent of mole fractions and temperature
-        vs, cmp_v_count = self.vs, self.cmp_v_count
+        vs, cmp_v_count_inv = self.vs, self.cmp_v_count_inv
         N, N_groups = self.N, self.N_groups
 
         Xs_pure = []
         for i in range(N_groups):
             row = []
             for j in range(N):
-                row.append(vs[i][j]/cmp_v_count[j])
+                row.append(vs[i][j]*cmp_v_count_inv[j])
             Xs_pure.append(row)
         self._Xs_pure = Xs_pure
         return Xs_pure
