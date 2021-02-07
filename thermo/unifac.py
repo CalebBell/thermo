@@ -2654,6 +2654,45 @@ def unifac_dlnGammas_subgroups_dxs(N, N_groups, Qs, Ws, psis, Thetas, Theta_Psi_
 
     return dlnGammas_subgroups_dxs
 
+def UNIFAC_d2lnGammas_subgroups_dTdxs(N, N_groups, Qs, Fs, Zs, Ws, psis, dpsis_dT, Thetas, dThetas_dxs, d2lnGammas_subgroups_dTdxs=None, vec0=None, vec1=None, mat0=None):
+    if d2lnGammas_subgroups_dTdxs is None:
+        d2lnGammas_subgroups_dTdxs = [[0.0]*N for _ in range(N_groups)] # numba : delete
+#        d2lnGammas_subgroups_dTdxs = zeros((N_groups, N)) # numba : uncomment
+
+    if mat0 is None:
+        mat0 = [[0.0]*N for _ in range(N_groups)] # numba : delete
+#        mat0 = zeros((N_groups, N)) # numba : uncomment
+    if vec0 is None:
+        vec0 = [0.0]*N_groups
+    if vec1 is None:
+        vec1 = [0.0]*N_groups
+
+    # Could save this matrix but it is not used anywhere else
+    for k in range(N_groups):
+        row = mat0[k]
+        for j in range(N):
+            tot = 0.0
+            for m in range(N_groups):
+                tot += dThetas_dxs[m][j]*dpsis_dT[m][k]
+            row[j] = tot
+
+    for i in range(N_groups):
+        vec0[i] = Zs[i]*Zs[i]
+    for m in range(N_groups):
+        vec1[m] = 2.0*Fs[m]*vec0[m]*Zs[m]*Thetas[m]
+
+    for k in range(N_groups):
+        row = d2lnGammas_subgroups_dTdxs[k]
+        for i in range(N):
+            v = Zs[k]*(mat0[k][i] - Fs[k]*Ws[k][i]*Zs[k])
+            for m in range(N_groups):
+                v += dThetas_dxs[m][i]*Zs[m]*(dpsis_dT[k][m] - Fs[m]*Zs[m]*psis[k][m])
+                v -= vec0[m]*Thetas[m]*(mat0[m][i]*psis[k][m] + Ws[m][i]*dpsis_dT[k][m])
+                v += vec1[m]*Ws[m][i]*psis[k][m]
+            row[i] = -v*Qs[k]
+
+    return d2lnGammas_subgroups_dTdxs
+
 
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
@@ -4812,32 +4851,42 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             Fs = self._Fs()
 
-        # Could be stored as a function - not needed elsewhere though
-        Ds = []
-        for k in range(N_groups):
-            row = []
-            for j in range(N):
-                tot = 0.0
-                for m in range(N_groups):
-                    tot += dThetas_dxs[m][j]*dpsis_dT[m][k]
-                row.append(tot)
-            Ds.append(row)
+        if self.scalar:
+            d2lnGammas_subgroups_dTdxs = [[0.0]*N for _ in range(N_groups)]
+        else:
+            d2lnGammas_subgroups_dTdxs = zeros((N_groups, N))
 
-        Zs2 = [Zi*Zi for Zi in Zs]
-        FsZs3Thetas2 = [2.0*Fs[m]*Zs2[m]*Zs[m]*Thetas[m] for m in range(N_groups)]
+        self._d2lnGammas_subgroups_dTdxs = UNIFAC_d2lnGammas_subgroups_dTdxs(N, N_groups, Qs, Fs, Zs,
+                                                                             Ws, psis, dpsis_dT, Thetas, dThetas_dxs,
+                                                                             d2lnGammas_subgroups_dTdxs=d2lnGammas_subgroups_dTdxs)
 
-        self._d2lnGammas_subgroups_dTdxs = d2lnGammas_subgroups_dTdxs = []
 
-        for k in range(N_groups):
-            row = []
-            for i in range(N):
-                v = Zs[k]*(Ds[k][i] - Fs[k]*Ws[k][i]*Zs[k])
-                for m in range(N_groups):
-                    v += dThetas_dxs[m][i]*Zs[m]*(dpsis_dT[k][m] - Fs[m]*Zs[m]*psis[k][m])
-                    v -= Zs2[m]*Thetas[m]*(Ds[m][i]*psis[k][m] + Ws[m][i]*dpsis_dT[k][m])
-                    v += FsZs3Thetas2[m]*Ws[m][i]*psis[k][m]
-                row.append(-v*Qs[k])
-            d2lnGammas_subgroups_dTdxs.append(row)
+#        # Could be stored as a function - not needed elsewhere though
+#        Ds = []
+#        for k in range(N_groups):
+#            row = []
+#            for j in range(N):
+#                tot = 0.0
+#                for m in range(N_groups):
+#                    tot += dThetas_dxs[m][j]*dpsis_dT[m][k]
+#                row.append(tot)
+#            Ds.append(row)
+#
+#        Zs2 = [Zi*Zi for Zi in Zs]
+#        FsZs3Thetas2 = [2.0*Fs[m]*Zs2[m]*Zs[m]*Thetas[m] for m in range(N_groups)]
+#
+#        self._d2lnGammas_subgroups_dTdxs = d2lnGammas_subgroups_dTdxs = []
+#
+#        for k in range(N_groups):
+#            row = []
+#            for i in range(N):
+#                v = Zs[k]*(Ds[k][i] - Fs[k]*Ws[k][i]*Zs[k])
+#                for m in range(N_groups):
+#                    v += dThetas_dxs[m][i]*Zs[m]*(dpsis_dT[k][m] - Fs[m]*Zs[m]*psis[k][m])
+#                    v -= Zs2[m]*Thetas[m]*(Ds[m][i]*psis[k][m] + Ws[m][i]*dpsis_dT[k][m])
+#                    v += FsZs3Thetas2[m]*Ws[m][i]*psis[k][m]
+#                row.append(-v*Qs[k])
+#            d2lnGammas_subgroups_dTdxs.append(row)
         return d2lnGammas_subgroups_dTdxs
 
 

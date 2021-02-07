@@ -70,7 +70,8 @@ Activity Based Liquids
 
 Fundamental Equations of State
 ==============================
-`HelmholtzEOS` is the base class.
+`HelmholtzEOS` is the base class for all Helmholtz energy fundamental equations
+of state.
 
 .. autoclass:: HelmholtzEOS
    :show-inheritance:
