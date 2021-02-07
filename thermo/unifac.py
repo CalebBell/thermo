@@ -5656,27 +5656,37 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             Fs_pure = self._Fs_pure()
 
+        if self.Thetas_pure:
+            dlnGammas_subgroups_pure_dT = [[0.0]*N for _ in range(N_groups)]
+        else:
+            dlnGammas_subgroups_pure_dT = zeros((N_groups, N))
+
+
         # Index by [component][subgroup]
 
-        mat = []
+#        mat = []
+        vec0 = [0.0]*N_groups
         for m in range(N):
             groups2 = cmp_group_idx[m]
             Thetas = Thetas_pure[m]
             Theta_Psi_sum_invs = Theta_pure_Psi_sum_invs[m]
             Theta_dPsidT_sum = Fs_pure[m]
 
-            row = unifac_dlnGammas_subgroups_dT(N_groups, Qs, psis, dpsis_dT,
+            vec0 = unifac_dlnGammas_subgroups_dT(N_groups, Qs, psis, dpsis_dT,
                                                       Thetas, Theta_Psi_sum_invs,
-                                                      Theta_dPsidT_sum)
-            for i in range(N_groups):
-                if i not in groups2:
-                    row[i] = 0.0
-            mat.append(row)
+                                                      Theta_dPsidT_sum, vec0)
+#            for i in range(N_groups):
+#                if i not in groups2:
+#                    vec0[i] = 0.0
 
-        mat = list(map(list, zip(*mat)))
+            for k in range(N_groups):
+                if k in groups2:
+                    dlnGammas_subgroups_pure_dT[k][m] = vec0[k]
+
+#        mat = list(map(list, zip(*mat)))
         # Index by [subgroup][component]
-        self._dlnGammas_subgroups_pure_dT = mat
-        return mat
+        self._dlnGammas_subgroups_pure_dT = dlnGammas_subgroups_pure_dT
+        return dlnGammas_subgroups_pure_dT
 
     def d2lnGammas_subgroups_pure_dT2(self):
         r'''Calculate the second temperature derivative of :math:`\ln \Gamma_k`
