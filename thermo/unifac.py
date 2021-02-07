@@ -6290,19 +6290,19 @@ class UNIFAC(GibbsExcess):
         else:
             Vis_modified = Vis
 
-        lngammas_c = []
+        lngammas_c = [0.0]*N
         if version == 4:
             xs = self.xs
             for i in range(N):
                 r = Vis_modified[i] # In the definition of V' used here, there is no mole fraction division needed
                 val = log(r) + 1.0 - r
-                lngammas_c.append(val)
+                lngammas_c[i] = val
         else:
             for i in range(N):
                 Vi_Fi = Vis[i]/Fis[i]
                 val = (1.0 - Vis_modified[i] + log(Vis_modified[i])
                         - 5.0*qs[i]*(1.0 - Vi_Fi + log(Vi_Fi)))
-                lngammas_c.append(val)
+                lngammas_c[i] = val
 
         self._lngammas_c = lngammas_c
         return lngammas_c
@@ -6439,28 +6439,29 @@ class UNIFAC(GibbsExcess):
             Vis_modified = Vis
             dVis_modified_dxs = dVis_dxs
 
-        # index style - [THE GAMMA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
+        if self.scalar:
+            dlngammas_c_dxs = [[0.0]*N for _ in range(N)]
+        else:
+            dlngammas_c_dxs = zeros((N, N))
 
-        dlngammas_c_dxs = []
+        # index style - [THE GAMMA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
 
         if version == 4:
             xs = self.xs
             for i in range(N):
-                row = []
+                row = dlngammas_c_dxs[i]
                 for j in range(N):
                     v = -dVis_modified_dxs[i][j] + dVis_modified_dxs[i][j]/Vis_modified[i]
-                    row.append(v)
-                dlngammas_c_dxs.append(row)
+                    row[j] = v
         else:
             for i in range(N):
-                row = []
+                row = dlngammas_c_dxs[i]
                 Fi_inv = 1.0/Fis[i]
                 for j in range(N):
                     val = -5.0*qs[i]*((dVis_dxs[i][j] - Vis[i]*dFis_dxs[i][j]*Fi_inv)/Vis[i]
                     - dVis_dxs[i][j]*Fi_inv + Vis[i]*dFis_dxs[i][j]*Fi_inv*Fi_inv
                     ) - dVis_modified_dxs[i][j] + dVis_modified_dxs[i][j]/Vis_modified[i]
-                    row.append(val)
-                dlngammas_c_dxs.append(row)
+                    row[j] = val
 
         self._dlngammas_c_dxs = dlngammas_c_dxs
         return dlngammas_c_dxs
@@ -6607,21 +6608,21 @@ class UNIFAC(GibbsExcess):
             dVis_modified_dxs = dVis_dxs
             d2Vis_modified_dxixjs = d2Vis_dxixjs
 
-        d2lngammas_c_dxixjs = []
+        if self.scalar:
+            d2lngammas_c_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]
+        else:
+            d2lngammas_c_dxixjs = zeros((N, N, N))
 
         if version == 4:
             for i in range(N):
                 Vi = Vis_modified[i]
-                matrix = []
+                matrix = d2lngammas_c_dxixjs[i]
                 for j in range(N):
-                    row = []
+                    row = matrix[j]
                     for k in range(N):
                         val = -d2Vis_modified_dxixjs[i][j][k] + 1.0/Vi*d2Vis_modified_dxixjs[i][j][k]
                         val -= 1.0/Vi**2*dVis_modified_dxs[i][j]*dVis_modified_dxs[i][k]
-                        row.append(val)
-                    matrix.append(row)
-
-                d2lngammas_c_dxixjs.append(matrix)
+                        row[k] = val
 
         else:
             for i in range(N):
@@ -6636,12 +6637,12 @@ class UNIFAC(GibbsExcess):
                 x5 = Vis[i]*x4
                 x15 = 1.0/Vi
                 Vi_inv2 = x15*x15
-                matrix = []
+                matrix = d2lngammas_c_dxixjs[i]
                 for j in range(N):
                     x6 = dFis_dxs[i][j]
                     x10 = dVis_dxs[i][j]
                     dViD_dxj = dVis_modified_dxs[i][j]
-                    row = []
+                    row = matrix[j]
                     for k in range(N):
                         x0 = d2Vis_modified_dxixjs[i][j][k]
                         x2 = d2Vis_dxixjs[i][j][k]
@@ -6661,9 +6662,7 @@ class UNIFAC(GibbsExcess):
                                        - x3*x5 - x4*x8 + x14*x7*Vi_inv2 + Vi*x12*Fi_inv3)
                                 - x0 + x0/ViD - dViD_dxj*dViD_dxk*ViD_inv2
                                 )
-                        row.append(val)
-                    matrix.append(row)
-                d2lngammas_c_dxixjs.append(matrix)
+                        row[k] = val
 
         self._d2lngammas_c_dxixjs = d2lngammas_c_dxixjs
         return d2lngammas_c_dxixjs
@@ -6757,16 +6756,19 @@ class UNIFAC(GibbsExcess):
             d2Vis_modified_dxixjs = d2Vis_dxixjs
             d3Vis_modified_dxixjxks = d3Vis_dxixjxks
 
-        d3lngammas_c_dxixjxks = []
+        if self.scalar:
+            d3lngammas_c_dxixjxks = [[[[0.0]*N for _ in range(N)] for _ in range(N)] for _ in range(N)]
+        else:
+            d3lngammas_c_dxixjxks = zeros((N, N, N, N))
 
         if version == 4:
             for i in range(N):
                 Vi = Vis_modified[i]
-                third = []
+                third = d3lngammas_c_dxixjxks[i]
                 for j in range(N):
-                    hess = []
+                    hess = third[j]
                     for k in range(N):
-                        row = []
+                        row = hess[k]
                         for m in range(N):
                             val = d3Vis_modified_dxixjxks[i][j][k][m]*(1.0/Vi - 1.0)
                             val-= 1.0/Vi**2*  (dVis_modified_dxs[i][j]*d2Vis_modified_dxixjs[i][k][m]
@@ -6775,21 +6777,21 @@ class UNIFAC(GibbsExcess):
 
                             val += 2.0/Vi**3*dVis_modified_dxs[i][j]*dVis_modified_dxs[i][k]*dVis_modified_dxs[i][m]
 
-                            row.append(val)
-                        hess.append(row)
-                    third.append(hess)
-                d3lngammas_c_dxixjxks.append(third)
+                            row[m] = val
+#                        hess.append(row)
+#                    third.append(hess)
+#                d3lngammas_c_dxixjxks.append(third)
         else:
             for i in range(N):
                 Vi = Vis[i]
                 ViD = Vis_modified[i]
                 Fi = Fis[i]
                 qi = qs[i]
-                third = []
+                third = d3lngammas_c_dxixjxks[i]
                 for j in range(N):
-                    hess = []
+                    hess = third[j]
                     for k in range(N):
-                        row = []
+                        row = hess[k]
                         for m in range(N):
                             x0 = d3Vis_modified_dxixjxks[i][j][k][m]#Derivative(ViD, xj, xk, xm)
                             x1 = 1/Fis[i]#1/Fi
@@ -6834,10 +6836,7 @@ class UNIFAC(GibbsExcess):
                                    - x5*x8*d2Vis_modified_dxixjs[i][j][k]
                                    + x0/ViD + 2*x6*x7*x8/ViD**3 - x4/Vi - x23*x24*x33/Vi**3 - 30*Vi*qi*x20*x31/Fi**4)
 
-                            row.append(val)
-                        hess.append(row)
-                    third.append(hess)
-                d3lngammas_c_dxixjxks.append(third)
+                            row[m] = val
 
         self._d3lngammas_c_dxixjxks = d3lngammas_c_dxixjxks
         return d3lngammas_c_dxixjxks
