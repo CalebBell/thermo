@@ -3180,6 +3180,21 @@ def unifac_dgammas_dxs_skip_comb(N, xs, gammas, dlngammas_r_dxs, dgammas_dxs=Non
             dgammas_dxsi[j] = dlngammas_r_dxsi[j]*gammas[i]
     return dgammas_dxs
 
+def unifac_dgammas_dns(N, xs, dgammas_dxs, dgammas_dns=None):
+    if dgammas_dns is None:
+        dgammas_dns = [[0.0]*N for _ in range(N)] # numba: delete
+#        dgammas_dns = zeros((N, N)) # numba: uncomment
+
+    for i in range(N):
+        row = dgammas_dns[i]
+        dgammas_dxsi = dgammas_dxs[i]
+        xdx_tot = 0.0
+        for j in range(N):
+            xdx_tot += xs[j]*dgammas_dxsi[j]
+        for j in range(N):
+            row[j] = dgammas_dxsi[j] - xdx_tot
+    return dgammas_dns
+
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
     by the UNIFAC equation. This model is capable of representing VL and LL
@@ -6786,10 +6801,12 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         dgammas_dxs = self.dgammas_dxs()
-        xs = self.xs
-        self._dgammas_dns = dgammas_dns = []
-        for row in range(self.N):
-            dgammas_dns.append(dxs_to_dns(dgammas_dxs[row], xs))
+        N = self.N
+        if self.scalar:
+            dgammas_dns = [[0.0]*N for _ in range(N)]
+        else:
+            dgammas_dns = zeros((N, N))
+        self._dgammas_dns = unifac_dgammas_dns(N, self.xs, dgammas_dxs, dgammas_dns)
         return dgammas_dns
 
     def dgammas_dxs(self):
