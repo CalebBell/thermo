@@ -6474,21 +6474,6 @@ class UNIFAC(GibbsExcess):
             lngammas_c = zeros(N)
 
         self._lngammas_c = unifac_lngammas_c(N, version, qs, Fis, Vis, Vis_modified, lngammas_c)
-
-
-#        if version == 4:
-#            for i in range(N):
-#                r = Vis_modified[i] # In the definition of V' used here, there is no mole fraction division needed
-#                val = log(r) + 1.0 - r
-#                lngammas_c[i] = val
-#        else:
-#            for i in range(N):
-#                Vi_Fi = Vis[i]/Fis[i]
-#                val = (1.0 - Vis_modified[i] + log(Vis_modified[i])
-#                        - 5.0*qs[i]*(1.0 - Vi_Fi + log(Vi_Fi)))
-#                lngammas_c[i] = val
-
-#        self._lngammas_c = lngammas_c
         return lngammas_c
 
     def dlngammas_c_dT(self):
@@ -6630,23 +6615,6 @@ class UNIFAC(GibbsExcess):
 
         # index style - [THE GAMMA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
         self._dlngammas_c_dxs = unifac_dlngammas_c_dxs(N, version, qs, Fis, dFis_dxs, Vis, dVis_dxs, Vis_modified, dVis_modified_dxs, dlngammas_c_dxs)
-#        if version == 4:
-#            for i in range(N):
-#                row = dlngammas_c_dxs[i]
-#                for j in range(N):
-#                    v = -dVis_modified_dxs[i][j] + dVis_modified_dxs[i][j]/Vis_modified[i]
-#                    row[j] = v
-#        else:
-#            for i in range(N):
-#                row = dlngammas_c_dxs[i]
-#                Fi_inv = 1.0/Fis[i]
-#                for j in range(N):
-#                    val = -5.0*qs[i]*((dVis_dxs[i][j] - Vis[i]*dFis_dxs[i][j]*Fi_inv)/Vis[i]
-#                    - dVis_dxs[i][j]*Fi_inv + Vis[i]*dFis_dxs[i][j]*Fi_inv*Fi_inv
-#                    ) - dVis_modified_dxs[i][j] + dVis_modified_dxs[i][j]/Vis_modified[i]
-#                    row[j] = val
-
-#        self._dlngammas_c_dxs = dlngammas_c_dxs
         return dlngammas_c_dxs
 
     ''' Sympy code used to get these derivatives - not yet validated with numerical values from SymPy!
@@ -6798,59 +6766,6 @@ class UNIFAC(GibbsExcess):
 
 
         self._d2lngammas_c_dxixjs = unifac_d2lngammas_c_dxixjs(N, version, qs, Fis, dFis_dxs, d2Fis_dxixjs, Vis, dVis_dxs, d2Vis_dxixjs, Vis_modified, dVis_modified_dxs, d2Vis_modified_dxixjs, d2lngammas_c_dxixjs)
-
-#        if version == 4:
-#            for i in range(N):
-#                Vi = Vis_modified[i]
-#                matrix = d2lngammas_c_dxixjs[i]
-#                for j in range(N):
-#                    row = matrix[j]
-#                    for k in range(N):
-#                        val = -d2Vis_modified_dxixjs[i][j][k] + 1.0/Vi*d2Vis_modified_dxixjs[i][j][k]
-#                        val -= 1.0/Vi**2*dVis_modified_dxs[i][j]*dVis_modified_dxs[i][k]
-#                        row[k] = val
-#
-#        else:
-#            for i in range(N):
-#                Vi = Vis[i]
-#                qi = qs[i]
-#                ViD = Vis_modified[i]
-#                ViD_inv2 = 1.0/(ViD*ViD)
-#                Fi = Fis[i]
-#                x1 = 1.0/Fi
-#                x4 = x1*x1
-#                Fi_inv3 = x1*x1*x1
-#                x5 = Vis[i]*x4
-#                x15 = 1.0/Vi
-#                Vi_inv2 = x15*x15
-#                matrix = d2lngammas_c_dxixjs[i]
-#                for j in range(N):
-#                    x6 = dFis_dxs[i][j]
-#                    x10 = dVis_dxs[i][j]
-#                    dViD_dxj = dVis_modified_dxs[i][j]
-#                    row = matrix[j]
-#                    for k in range(N):
-#                        x0 = d2Vis_modified_dxixjs[i][j][k]
-#                        x2 = d2Vis_dxixjs[i][j][k]
-#                        x3 = d2Fis_dxixjs[i][j][k]
-#                        x7 = dVis_dxs[i][k]
-#                        dViD_dxk = dVis_modified_dxs[i][k]
-#                        x8 = x6*x7
-#                        x9 = dFis_dxs[i][k]
-#                        x11 = x10*x9
-#                        x12 = 2.0*x6*x9
-#
-#                        x13 = Vi*x1
-#                        x14 = x10 - x13*x6
-#
-#                        val = (5.0*qi*(-x1*x14*x15*x9 + x1*x2 - x11*x4
-#                                       + x15*(x1*x11 + x1*x8 - x12*x5 + x13*x3 - x2)
-#                                       - x3*x5 - x4*x8 + x14*x7*Vi_inv2 + Vi*x12*Fi_inv3)
-#                                - x0 + x0/ViD - dViD_dxj*dViD_dxk*ViD_inv2
-#                                )
-#                        row[k] = val
-#
-#        self._d2lngammas_c_dxixjs = d2lngammas_c_dxixjs
         return d2lngammas_c_dxixjs
 
     def d3lngammas_c_dxixjxks(self):
@@ -6948,83 +6863,4 @@ class UNIFAC(GibbsExcess):
             d3lngammas_c_dxixjxks = zeros((N, N, N, N))
 
         self._d3lngammas_c_dxixjxks = unifac_d3lngammas_c_dxixjxks(N, version, qs, Fis, dFis_dxs, d2Fis_dxixjs, d3Fis_dxixjxks, Vis, dVis_dxs, d2Vis_dxixjs, d3Vis_dxixjxks, Vis_modified, dVis_modified_dxs, d2Vis_modified_dxixjs, d3Vis_modified_dxixjxks, d3lngammas_c_dxixjxks)
-
-#        if version == 4:
-#            for i in range(N):
-#                Vi = Vis_modified[i]
-#                third = d3lngammas_c_dxixjxks[i]
-#                for j in range(N):
-#                    hess = third[j]
-#                    for k in range(N):
-#                        row = hess[k]
-#                        for m in range(N):
-#                            val = d3Vis_modified_dxixjxks[i][j][k][m]*(1.0/Vi - 1.0)
-#                            val-= 1.0/Vi**2*  (dVis_modified_dxs[i][j]*d2Vis_modified_dxixjs[i][k][m]
-#                                             + dVis_modified_dxs[i][k]*d2Vis_modified_dxixjs[i][j][m]
-#                                             + dVis_modified_dxs[i][m]*d2Vis_modified_dxixjs[i][j][k])
-#
-#                            val += 2.0/Vi**3*dVis_modified_dxs[i][j]*dVis_modified_dxs[i][k]*dVis_modified_dxs[i][m]
-#
-#                            row[m] = val
-##                        hess.append(row)
-##                    third.append(hess)
-##                d3lngammas_c_dxixjxks.append(third)
-#        else:
-#            for i in range(N):
-#                Vi = Vis[i]
-#                ViD = Vis_modified[i]
-#                Fi = Fis[i]
-#                qi = qs[i]
-#                third = d3lngammas_c_dxixjxks[i]
-#                for j in range(N):
-#                    hess = third[j]
-#                    for k in range(N):
-#                        row = hess[k]
-#                        for m in range(N):
-#                            x0 = d3Vis_modified_dxixjxks[i][j][k][m]#Derivative(ViD, xj, xk, xm)
-#                            x1 = 1/Fis[i]#1/Fi
-#                            x2 = 5.0*qs[i]
-#                            x3 = x2*d3Fis_dxixjxks[i][j][k][m]#Derivative(Fi, xj, xk, xm)
-#                            x4 = x2*d3Vis_dxixjxks[i][j][k][m]#Derivative(Vi, xj, xk, xm)
-#                            x5 = Vis_modified[i]**-2#ViD**(-2)
-#                            x6 = dVis_modified_dxs[i][j]#Derivative(ViD, xj)
-#                            x7 = dVis_modified_dxs[i][k]#Derivative(ViD, xk)
-#                            x8 = dVis_modified_dxs[i][m]#Derivative(ViD, xm)
-#                            x9 = Fis[i]**-2#Fi**(-2)
-#                            x10 = x2*x9
-#                            x11 = dFis_dxs[i][j]#Derivative(Fi, xj)
-#                            x12 = d2Fis_dxixjs[i][k][m]#Derivative(Fi, xk, xm)
-#                            x13 = x11*x12
-#                            x14 = d2Vis_dxixjs[i][k][m]#Derivative(Vi, xk, xm)
-#                            x15 = d2Fis_dxixjs[i][j][m]#Derivative(Fi, xj, xm)
-#                            x16 = dFis_dxs[i][k]#Derivative(Fi, xk)
-#                            x17 = x10*x16
-#                            x18 = d2Vis_dxixjs[i][j][m]#Derivative(Vi, xj, xm)
-#                            x19 = d2Fis_dxixjs[i][j][k]#Derivative(Fi, xj, xk)
-#                            x20 = dFis_dxs[i][m]#Derivative(Fi, xm)
-#                            x21 = x10*x20
-#                            x22 = d2Vis_dxixjs[i][j][k]#Derivative(Vi, xj, xk)
-#                            x23 = dVis_dxs[i][j]#Derivative(Vi, xj)
-#                            x24 = dVis_dxs[i][k]#Derivative(Vi, xk)
-#                            x25 = dVis_dxs[i][m]#Derivative(Vi, xm)
-#                            x26 = x2/Vis[i]**2
-#                            x27 = Fis[i]**(-3)
-#                            x28 = 10*qs[i]
-#                            x29 = x27*x28
-#                            x30 = Vi*x29
-#                            x31 = x11*x16
-#                            x32 = x20*x29
-#                            x33 = x25*x28
-#                            val = (-Vi*x3*x9 - x0 + x1*x3 + x1*x4 - x10*x11*x14 - x10*x12*x23
-#                                   - x10*x13 - x10*x15*x24 - x10*x19*x25 + x11*x24*x32 + x13*x30
-#                                   + x14*x23*x26 + x15*x16*x30 - x15*x17 + x16*x23*x32 - x17*x18
-#                                   + x18*x24*x26 + x19*x20*x30 - x19*x21 - x21*x22 + x22*x25*x26
-#                                   + x27*x31*x33 + x31*x32 - x5*x6*d2Vis_modified_dxixjs[i][k][m]
-#                                   - x5*x7*d2Vis_modified_dxixjs[i][j][m]
-#                                   - x5*x8*d2Vis_modified_dxixjs[i][j][k]
-#                                   + x0/ViD + 2*x6*x7*x8/ViD**3 - x4/Vi - x23*x24*x33/Vi**3 - 30*Vi*qi*x20*x31/Fi**4)
-#
-#                            row[m] = val
-
-#        self._d3lngammas_c_dxixjxks = d3lngammas_c_dxixjxks
         return d3lngammas_c_dxixjxks
