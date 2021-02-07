@@ -3027,6 +3027,20 @@ def unifac_d2lngammas_r_dxixjs(N, N_groups, vs, d2lnGammas_subgroups_dxixjs, d2l
                 row[k] = tot
     return d2lngammas_r_dxixjs
 
+def unifac_GE(T, xs, N, lngammas_r, lngammas_c):
+    GE = 0.0
+    for i in range(N):
+        GE += xs[i]*(lngammas_c[i] + lngammas_r[i])
+    GE *= R*T
+    return GE
+
+def unifac_GE_skip_comb(T, xs, N, lngammas_r):
+    GE = 0.0
+    for i in range(N):
+        GE += xs[i]*lngammas_r[i]
+    GE *= R*T
+    return GE
+
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
     by the UNIFAC equation. This model is capable of representing VL and LL
@@ -6313,15 +6327,17 @@ class UNIFAC(GibbsExcess):
         T, xs, N = self.T, self.xs, self.N
         lngammas_r = self.lngammas_r()
 
-        GE = 0.0
+#        GE = 0.0
         if self.skip_comb:
-            for i in range(N):
-                GE += xs[i]*lngammas_r[i]
+            GE = unifac_GE_skip_comb(T, xs, N, lngammas_r)
+#            for i in range(N):
+#                GE += xs[i]*lngammas_r[i]
         else:
             lngammas_c = self.lngammas_c()
-            for i in range(N):
-                GE += xs[i]*(lngammas_c[i] + lngammas_r[i])
-        GE *= R*T
+            GE = unifac_GE(T, xs, N, lngammas_r, lngammas_c)
+#            for i in range(N):
+#                GE += xs[i]*(lngammas_c[i] + lngammas_r[i])
+#        GE *= R*T
         self._GE = GE
         return GE
 
