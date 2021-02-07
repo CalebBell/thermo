@@ -6026,12 +6026,21 @@ class UNIFAC(GibbsExcess):
         vs = self.vs
         N, N_groups = self.N, self.N_groups
 
-        self._dlngammas_r_dT = dlngammas_r_dT = []
-        for i in range(N):
-            tot = 0.0
-            for k in range(N_groups):
-                tot += vs[k][i]*(dlnGammas_subgroups_dT[k] - dlnGammas_subgroups_pure_dT[k][i])
-            dlngammas_r_dT.append(tot)
+        if self.scalar:
+            dlngammas_r_dT = [0.0]*N
+        else:
+            dlngammas_r_dT = zeros(N)
+
+        self._dlngammas_r_dT = unifac_lngammas_r(N, N_groups, dlnGammas_subgroups_pure_dT, dlnGammas_subgroups_dT, vs, dlngammas_r_dT)
+
+
+
+#        self._dlngammas_r_dT = dlngammas_r_dT = []
+#        for i in range(N):
+#            tot = 0.0
+#            for k in range(N_groups):
+#                tot += vs[k][i]*(dlnGammas_subgroups_dT[k] - dlnGammas_subgroups_pure_dT[k][i])
+#            dlngammas_r_dT.append(tot)
 
         return dlngammas_r_dT
     dlngammas_dT = dlngammas_r_dT
@@ -6063,13 +6072,22 @@ class UNIFAC(GibbsExcess):
         vs = self.vs
         N, N_groups = self.N, self.N_groups
 
-        self._d2lngammas_r_dT2 = d2lngammas_r_dT2 = []
-        for i in range(N):
-            tot = 0.0
-            for k in range(N_groups):
-                tot += vs[k][i]*(d2lnGammas_subgroups_dT2[k] - d2lnGammas_subgroups_pure_dT2[k][i])
-            d2lngammas_r_dT2.append(tot)
 
+        if self.scalar:
+            d2lngammas_r_dT2 = [0.0]*N
+        else:
+            d2lngammas_r_dT2 = zeros(N)
+
+        self._d2lngammas_r_dT2 = unifac_lngammas_r(N, N_groups, d2lnGammas_subgroups_pure_dT2, d2lnGammas_subgroups_dT2, vs, d2lngammas_r_dT2)
+
+
+#        self._d2lngammas_r_dT2 = d2lngammas_r_dT2
+#        for i in range(N):
+#            tot = 0.0
+#            for k in range(N_groups):
+#                tot += vs[k][i]*(d2lnGammas_subgroups_dT2[k] - d2lnGammas_subgroups_pure_dT2[k][i])
+#            d2lngammas_r_dT2.append(tot)
+#
         return d2lngammas_r_dT2
     d2lngammas_dT2 = d2lngammas_r_dT2
 
@@ -6100,13 +6118,21 @@ class UNIFAC(GibbsExcess):
         vs = self.vs
         N, N_groups = self.N, self.N_groups
 
-        self._d3lngammas_r_dT3 = d3lngammas_r_dT3 = []
-        for i in range(N):
-            tot = 0.0
-            for k in range(N_groups):
-                tot += vs[k][i]*(d3lnGammas_subgroups_dT3[k] - d3lnGammas_subgroups_pure_dT3[k][i])
-            d3lngammas_r_dT3.append(tot)
 
+        if self.scalar:
+            d3lngammas_r_dT3 = [0.0]*N
+        else:
+            d3lngammas_r_dT3 = zeros(N)
+
+        self._d3lngammas_r_dT3 = unifac_lngammas_r(N, N_groups, d3lnGammas_subgroups_pure_dT3, d3lnGammas_subgroups_dT3, vs, d3lngammas_r_dT3)
+
+#        self._d3lngammas_r_dT3 = d3lngammas_r_dT3 = []
+#        for i in range(N):
+#            tot = 0.0
+#            for k in range(N_groups):
+#                tot += vs[k][i]*(d3lnGammas_subgroups_dT3[k] - d3lnGammas_subgroups_pure_dT3[k][i])
+#            d3lngammas_r_dT3.append(tot)
+#
         return d3lngammas_r_dT3
     d3lngammas_dT3 = d3lngammas_r_dT3
 
