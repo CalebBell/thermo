@@ -3041,6 +3041,31 @@ def unifac_GE_skip_comb(T, xs, N, lngammas_r):
     GE *= R*T
     return GE
 
+def unifac_dGE_dxs(T, xs, N, lngammas_r, dlngammas_r_dxs, lngammas_c, dlngammas_c_dxs, dGE_dxs=None):
+    if dGE_dxs is None:
+        dGE_dxs = [0.0]*N
+    RT = R*T
+    for i in range(N):
+        dGE = lngammas_r[i] + lngammas_c[i]
+        for j in range(N):
+            dGE += xs[j]*(dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i])
+        dGE_dxs[i] = dGE*RT
+    return dGE_dxs
+
+def unifac_dGE_dxs_skip_comb(T, xs, N, lngammas_r, dlngammas_r_dxs, dGE_dxs=None):
+    if dGE_dxs is None:
+        dGE_dxs = [0.0]*N
+    RT = R*T
+    for i in range(N):
+        dGE = lngammas_r[i]
+        for j in range(N):
+            dGE += xs[j]*(dlngammas_r_dxs[j][i])
+        dGE_dxs[i] = dGE*RT
+    return dGE_dxs
+
+
+
+
 class UNIFAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
     by the UNIFAC equation. This model is capable of representing VL and LL
@@ -6363,26 +6388,18 @@ class UNIFAC(GibbsExcess):
         T, xs, N, skip_comb = self.T, self.xs, self.N, self.skip_comb
         lngammas_r = self.lngammas_r()
         dlngammas_r_dxs = self.dlngammas_r_dxs()
-        if not skip_comb:
-            lngammas_c = self.lngammas_c()
-            dlngammas_c_dxs = self.dlngammas_c_dxs()
-        RT = R*T
-        dGE_dxs = []
+        if self.scalar:
+            dGE_dxs = [0.0]*N
+        else:
+            dGE_dxs = zeros(N)
 
         if skip_comb:
-            for i in range(N):
-                dGE = lngammas_r[i]
-                for j in range(N):
-                    dGE += xs[j]*(dlngammas_r_dxs[j][i])
-                dGE_dxs.append(dGE*RT)
+            self._dGE_dxs = unifac_dGE_dxs_skip_comb(T, xs, N, lngammas_r, dlngammas_r_dxs, dGE_dxs)
         else:
-            for i in range(N):
-                dGE = lngammas_r[i] + lngammas_c[i]
-                for j in range(N):
-                    dGE += xs[j]*(dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i])
-                dGE_dxs.append(dGE*RT)
+            lngammas_c = self.lngammas_c()
+            dlngammas_c_dxs = self.dlngammas_c_dxs()
+            self._dGE_dxs = unifac_dGE_dxs(T, xs, N, lngammas_r, dlngammas_r_dxs, lngammas_c, dlngammas_c_dxs, dGE_dxs)
 
-        self._dGE_dxs = dGE_dxs
         return dGE_dxs
 
     def d2GE_dTdxs(self):
