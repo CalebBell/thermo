@@ -1304,22 +1304,6 @@ class PropertyCorrelationsPackage(object):
     >>> correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=False)
 
     '''
-    correlations = ('VaporPressures', 'SublimationPressures', 'VolumeGases',
-               'VolumeLiquids', 'VolumeSolids', 'HeatCapacityGases',
-               'HeatCapacityLiquids', 'HeatCapacitySolids', 'ViscosityGases',
-               'ViscosityLiquids', 'ThermalConductivityGases', 'ThermalConductivityLiquids',
-               'EnthalpyVaporizations', 'EnthalpySublimations', 'SurfaceTensions',
-               'PermittivityLiquids',
-
-               'VolumeGasMixture', 'VolumeLiquidMixture', 'VolumeSolidMixture',
-               'HeatCapacityGasMixture', 'HeatCapacityLiquidMixture',
-               'HeatCapacitySolidMixture', 'ViscosityGasMixture',
-               'ViscosityLiquidMixture', 'ThermalConductivityGasMixture',
-               'ThermalConductivityLiquidMixture', 'SurfaceTensionMixture',
-               )
-
-    __slots__ = correlations + ('constants', 'skip_missing')
-
     pure_correlations = ('VaporPressures', 'VolumeLiquids', 'VolumeGases',
                          'VolumeSolids', 'HeatCapacityGases', 'HeatCapacitySolids',
                          'HeatCapacityLiquids', 'EnthalpyVaporizations',
@@ -1327,6 +1311,107 @@ class PropertyCorrelationsPackage(object):
                          'PermittivityLiquids', 'ViscosityLiquids', 'ViscosityGases',
                          'ThermalConductivityLiquids', 'ThermalConductivityGases',
                          'SurfaceTensions')
+    mixture_correlations = ('VolumeGasMixture', 'VolumeLiquidMixture', 'VolumeSolidMixture',
+               'HeatCapacityGasMixture', 'HeatCapacityLiquidMixture',
+               'HeatCapacitySolidMixture', 'ViscosityGasMixture',
+               'ViscosityLiquidMixture', 'ThermalConductivityGasMixture',
+               'ThermalConductivityLiquidMixture', 'SurfaceTensionMixture')
+
+    correlations = pure_correlations + mixture_correlations
+    __slots__ = correlations + ('constants', 'skip_missing')
+
+
+    def as_json(self):
+        r'''Method to create a JSON serialization of the chemical properties
+        package which can be stored, and reloaded later.
+
+        Returns
+        -------
+        json_repr : str
+            Json representation, [-]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        '''
+        d = {}
+        mod_name = self.__class__.__module__
+        d["py/object"] = "%s.%s" %(mod_name, self.__class__.__name__)
+
+
+        props_to_store = []
+        for prop_name in self.pure_correlations:
+            l = getattr(self, prop_name)
+            if l is None:
+                props_to_store.append((prop_name, l))
+            else:
+                props = []
+                for o in l:
+                    # Remove references to other properties
+                    for ref in o.pure_references:
+                        setattr(o, ref, None)
+                    s = o.as_json()
+                    props.append(s)
+
+                props_to_store.append((prop_name, props))
+
+        mix_props_to_store = []
+        for prop_name in self.mixture_correlations:
+            l = getattr(self, prop_name)
+            if l is None:
+                mix_props_to_store.append((prop_name, l))
+            else:
+                s = l.as_json()
+                mix_props_to_store.append((prop_name, s))
+        d['constants'] = self.constants.as_json()
+        d['mixture_properties'] = mix_props_to_store
+        d['pure_properties'] = props_to_store
+        d['json_version'] = 1
+        d['skip_missing'] = self.skip_missing
+        ans = serialize.json.dumps(d)
+        return ans
+
+    @classmethod
+    def from_json(cls, json_repr):
+        r'''Method to create a :obj:`PropertyCorrelationsPackage` from a JSON
+        serialization of another :obj:`PropertyCorrelationsPackage`.
+
+        Parameters
+        ----------
+        json_repr : str
+            Json representation, [-]
+
+        Returns
+        -------
+        correlations : :obj:`PropertyCorrelationsPackage`
+            Newly created object from the json serialization, [-]
+
+        Notes
+        -----
+        It is important that the input string be in the same format as that
+        created by :obj:`PropertyCorrelationsPackage.as_json`.
+
+        Examples
+        --------
+        '''
+        d = serialize.json.loads(json_repr)
+        new = cls.__new__(cls)
+
+        for prop, value in d['pure_properties']:
+            if value is None:
+                setattr(self, prop, value)
+            else:
+                objects = []
+                for v in value:
+                    print(v)
+
+
+
+        new.constants = ChemicalConstantsPackage.from_json(d['constants'])
+        new.skip_missing = d['skip_missing']
+        return new
 
     def subset(self, idxs):
         r'''Method to construct a new PropertyCorrelationsPackage that removes
