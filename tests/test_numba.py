@@ -178,6 +178,30 @@ def test_UNIQUAC_numpy_output():
 
     check_np_output_activity(model, modelnp, modelnp2)
 
+@mark_as_numba
+def test_UNIFAC_numpy_output():
+    from thermo.unifac import DOUFIP2006, DOUFSG
+
+    UNIFACnp = thermo.numba.unifac.UNIFAC
+    N = 4
+    T = 373.15
+    xs = [0.2, 0.3, 0.1, 0.4]
+    chemgroups = [{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}]
+    model = thermo.unifac.UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=1,
+                               interaction_data=DOUFIP2006, subgroups=DOUFSG)
+
+
+    modelnp = UNIFACnp.from_subgroups(T=T, xs=np.array(xs), chemgroups=chemgroups, version=1,
+                           interaction_data=DOUFIP2006, subgroups=DOUFSG)
+    modelnp2 = modelnp.to_T_xs(T=T, xs=np.array(xs))
+
+    check_np_output_activity(model, modelnp, modelnp2)
+
+    json_string = modelnp.as_json()
+    new = UNIFACnp.from_json(json_string)
+    assert new == modelnp
+
+
 
 
 @mark_as_numba

@@ -426,6 +426,10 @@ class UNIQUAC(GibbsExcess):
     '''
     z = 10.0
     x_infinite_dilution = 1e-12
+
+    model_attriubtes = ('tau_coeffs_A', 'tau_coeffs_B', 'tau_coeffs_C',
+                        'tau_coeffs_D', 'tau_coeffs_E', 'tau_coeffs_F',
+                        'rs', 'qs')
     def __repr__(self):
         s = '%s(T=%s, xs=%s, rs=%s, qs=%s, ABCDEF=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs), repr(self.rs), repr(self.qs),
                 (self.tau_coeffs_A,  self.tau_coeffs_B, self.tau_coeffs_C,

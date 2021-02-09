@@ -32,6 +32,7 @@ from thermo import *
 import numpy as np
 from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d, assert_close3d
 from thermo.test_utils import check_np_output_activity
+import pickle
 
 def test_UNIQUAC_functional():
     # P05.01c VLE Behavior of Ethanol - Water Using UNIQUAC
@@ -271,6 +272,12 @@ def test_UNIQUAC_numpy_inputs():
     json_string = modelnp.as_json()
     new = UNIQUAC.from_json(json_string)
     assert new == modelnp
+
+    # Pickle checks
+    modelnp_pickle = pickle.loads(pickle.dumps(modelnp))
+    assert modelnp_pickle == modelnp
+    model_pickle = pickle.loads(pickle.dumps(model))
+    assert model_pickle == model
 
 def test_UNIQUAC_np_hash_different_input_forms():
     N = 3

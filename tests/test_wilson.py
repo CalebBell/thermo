@@ -31,6 +31,7 @@ from thermo import *
 import numpy as np
 from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d, assert_close3d
 from thermo.test_utils import check_np_output_activity
+import pickle
 
 def test_Wilson():
     # P05.01a VLE Behavior of Ethanol - Water Using Wilson
@@ -660,6 +661,15 @@ def test_wilson_np_output_and_hash():
     new = Wilson.from_json(json_string)
     assert new == modelnp
 
+    assert model.model_hash() == modelnp.model_hash()
+    assert new.model_hash() == modelnp.model_hash()
+    assert new.model_hash() == modelnp2.model_hash()
+
+    # Pickle checks
+    modelnp_pickle = pickle.loads(pickle.dumps(modelnp))
+    assert modelnp_pickle == modelnp
+    model_pickle = pickle.loads(pickle.dumps(model))
+    assert model_pickle == model
 
 def test_wilson_np_hash_different_input_forms():
     T = 331.42

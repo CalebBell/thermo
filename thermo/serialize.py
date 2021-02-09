@@ -74,6 +74,15 @@ def naive_lists_to_arrays(obj):
     if t is set:
         return set(naive_lists_to_arrays(v) for v in obj)
     if t is list:
+        if len(obj) >= 2 and type(obj[0]) is list:
+            # Handle tuples of different sized arrays
+            try:
+                length = len(obj[0])
+                for v in obj[1:]:
+                    if len(v) != length:
+                        return tuple(array(v) for v in obj)
+            except:
+                pass
         return array(obj)
     return obj
 

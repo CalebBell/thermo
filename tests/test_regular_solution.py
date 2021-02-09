@@ -31,6 +31,7 @@ from fluids.numerics import jacobian, hessian, assert_close, assert_close1d, ass
 from random import random
 from chemicals import normalize
 from thermo.test_utils import check_np_output_activity
+import pickle
 
 def test_no_interactions():
     GE = RegularSolution(T=325.0, xs=[.25, .75], Vs=[7.421e-05, 8.068e-05], SPs=[19570.2, 18864.7])
@@ -182,4 +183,13 @@ def test_numpy_inputs():
     new = RegularSolution.from_json(json_string)
     assert new == modelnp
 
+    assert model.model_hash() == modelnp.model_hash()
+    assert new.model_hash() == modelnp.model_hash()
+    assert new.model_hash() == modelnp2.model_hash()
 
+
+    # Pickle checks
+    modelnp_pickle = pickle.loads(pickle.dumps(modelnp))
+    assert modelnp_pickle == modelnp
+    model_pickle = pickle.loads(pickle.dumps(model))
+    assert model_pickle == model

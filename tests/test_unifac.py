@@ -29,8 +29,10 @@ from thermo.activity import GibbsExcess
 from thermo.unifac import *
 from fluids.numerics import *
 from fluids.constants import R
-from thermo.unifac import UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP, NISTKTUFIP, PSRKIP, VTPRIP
+from thermo.unifac import UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP, NISTKTUFIP, PSRKIP, VTPRIP, DOUFSG
 import types
+import pickle
+from thermo.test_utils import check_np_output_activity
 
 '''
 Test suite currently takes ~0.2 seconds :)
@@ -886,6 +888,38 @@ def test_UNIFAC_initialization():
     assert_close4d(GE.d3lngammas_c_dxixjxks(), d3lngammas_c_dxixjxks_expect)
 
 
+def test_unifac_np_output_and_hash():
+    N = 4
+    T = 373.15
+    xs = [0.2, 0.3, 0.1, 0.4]
+    chemgroups = [{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}]
+    model = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=1,
+                               interaction_data=DOUFIP2006, subgroups=DOUFSG)
+
+
+    modelnp = UNIFAC.from_subgroups(T=T, xs=np.array(xs), chemgroups=chemgroups, version=1,
+                           interaction_data=DOUFIP2006, subgroups=DOUFSG)
+    modelnp2 = modelnp.to_T_xs(T=T, xs=np.array(xs))
+
+    check_np_output_activity(model, modelnp, modelnp2)
+
+    json_string = modelnp.as_json()
+    new = UNIFAC.from_json(json_string)
+    assert new == modelnp
+
+    assert model.model_hash() == modelnp.model_hash()
+    assert new.model_hash() == modelnp.model_hash()
+    assert new.model_hash() == modelnp2.model_hash()
+
+    assert model.state_hash() == modelnp.state_hash()
+    assert new.state_hash() == modelnp.state_hash()
+    assert new.state_hash() == modelnp2.state_hash()
+
+    # Pickle checks
+    modelnp_pickle = pickle.loads(pickle.dumps(modelnp))
+    assert modelnp_pickle == modelnp
+    model_pickle = pickle.loads(pickle.dumps(model))
+    assert model_pickle == model
 
 def test_UNIFAC_large():
     constants, correlations = ChemicalConstantsPackage.from_IDs(IDs=list(dippr_compounds())[0:200])

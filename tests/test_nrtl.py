@@ -32,6 +32,8 @@ from thermo import *
 import numpy as np
 from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d
 from thermo.test_utils import check_np_output_activity
+import pickle
+
 
 def test_NRTL_gammas():
     # P05.01b VLE Behavior of Ethanol - Water Using NRTL
@@ -394,6 +396,17 @@ def test_NRTL_numpy_output():
     json_string = modelnp.as_json()
     new = NRTL.from_json(json_string)
     assert new == modelnp
+
+    assert model.model_hash() == modelnp.model_hash()
+    assert new.model_hash() == modelnp.model_hash()
+    assert new.model_hash() == modelnp2.model_hash()
+
+
+    # Pickle checks
+    modelnp_pickle = pickle.loads(pickle.dumps(modelnp))
+    assert modelnp_pickle == modelnp
+    model_pickle = pickle.loads(pickle.dumps(model))
+    assert model_pickle == model
 
 def test_NRTL_missing_inputs():
     alphas = [[[0.0, 2e-05], [0.2937, 7e-05], [0.2999, 0.0001]],

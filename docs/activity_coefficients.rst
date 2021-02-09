@@ -37,7 +37,8 @@ The models :obj:`NRTL <thermo.nrtl.NRTL>`, :obj:`Wilson <thermo.wilson.Wilson>`,
 
 The model :obj:`RegularSolution <thermo.regular_solution.RegularSolution>` is based on the concept of a :obj:`solubility parameter <chemicals.solubility.solubility_parameter>`; with liquid molar volumes and solubility parameters it is a predictive model. It does not show temperature dependence. Additional regression coefficients can be used with that model also.
 
-The :obj:`UNIFAC <thermo.unifac.UNIFAC>` model is a predictive group-contribution scheme. In it, each molecule is fragmented into different sections. These sections have interaction parameters with other sections. Usually the fragmentation is not done by hand. One online tool for doing this is the  `DDBST <http://www.ddbst.com/unifacga.html>`_.
+The :obj:`UNIFAC <thermo.unifac.UNIFAC>` model is a predictive group-contribution scheme. 
+In it, each molecule is fragmented into different sections. These sections have interaction parameters with other sections. Usually the fragmentation is not done by hand. One online tool for doing this is the `DDBST Online Group Assignment Tool <http://www.ddbst.com/unifacga.html>`_.
 
 Object Structure
 ----------------
@@ -95,12 +96,64 @@ For convenience, a number of molecule fragmentations are distributed with the UN
 
 Please note that the identifying integer in these {group: count} elements are not necessarily the same in different UNIFAC versions, making them a royal pain.
 
-Some select components of the model may only depend on temperature or composition, not both. Additionally initializing the object for the first time is a not a high performance operation as certain checks need to be done and data structures set up. Each model implements the method :obj:`to_T_xs <thermo.unifac.UNIFAC.to_T_xs>` which should be used to create a new object at the new temperature and/or composition. Note also that the :obj:`__repr__ <thermo.unifac.UNIFAC.__repr__>` string for each model is designed to allow lossless reconstruction of the model. This is very useful when building test cases.
+
+Notes on Performance
+--------------------
+Initializing the object for the first time is a not a high performance operation as certain checks need to be done and data structures set up. Some equations components of the Gibbs excess model may depend only on temperature or composition, instead of depending on both. Each model implements the method :obj:`to_T_xs <thermo.unifac.UNIFAC.to_T_xs>` which should be used to create a new object at the new temperature and/or composition. The design of the object is to lazy-calculate properties, and to be immutable: calculations at new temperatures and compositions are done in a new object. 
+
+Note also that the :obj:`__repr__ <thermo.activity.GibbsExcess.__repr__>` string for each model is designed to allow lossless reconstruction of the model. This is very useful when building test cases.
 
 >>> GE.to_T_xs(T=400.0, xs=[.1, .9])
 UNIFAC(T=400.0, xs=[0.1, 0.9], rs=[4.4998000000000005, 3.2479], qs=[3.856, 2.876], Qs=[0.848, 0.54, 1.488], vs=[[2, 1], [4, 1], [0, 1]], psi_abc=([[0.0, 0.0, 476.4], [0.0, 0.0, 476.4], [26.76, 26.76, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]), version=0)
 
-Activity Coefficient Identifies
+When working with small numbers of components (5 or under), PyPy offers the best performance and using the model with Python lists as inputs is the fastest way to perform the calculations even in CPython.
+
+If working with many components or if Numpy arrays are desired as inputs and outputs, numpy arrays can be provided as inputs. This will have a negative impact on performance unless the `numba` interface is used:
+
+>>> import numpy as np
+>>> import thermo.numba
+>>> N = 3
+>>> T = 25.0 + 273.15
+>>> xs = np.array([0.7273, 0.0909, 0.1818])
+>>> rs = np.array([.92, 2.1055, 3.1878])
+>>> qs = np.array([1.4, 1.972, 2.4])
+>>> tausA = tausC = tausD = tausE = tausF = np.array([[0.0]*N for i in range(N)])
+>>> tausB = np.array([[0, -526.02, -309.64], [318.06, 0, 91.532], [-1325.1, -302.57, 0]])
+>>> ABCDEF = (tausA, tausB, tausC, tausD, tausE, tausF)
+>>> GE2 = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=ABCDEF)
+>>> GE2.gammas()
+array([ 1.57039333,  0.29482416, 18.11432905])
+
+The `numba` interface will speed code up and allow calculations with dozens of components. The `numba` interface requires all inputs to be numpy arrays and all of its outputs are also numba arrays.
+
+>>> GE3 = thermo.numba.UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=ABCDEF)
+>>> GE3.gammas()
+array([ 1.57039333,  0.29482416, 18.11432905])
+
+As an example of the performance benefits, a 200-component UNIFAC gamma calculation takes 10.6 ms in CPython and 318 µs when accelerated by Numba. In this case PyPy takes at 664 µs.
+
+When the same benchmark is performed with 10 components, the calculation takes 387 µs in CPython, 88.6 µs with numba, and 36.2 µs with PyPy.
+
+It can be quite important to use the :obj:`to_T_xs <thermo.unifac.UNIFAC.to_T_xs>` method re-use parts of the calculation; for UNIFAC, several terms depends only on temperature. If the 200 component calculation is repeated with those already calculated, the timings are 3.26 ms in CPython, 127 µs with numba, and 125 µs with PyPy.
+
+Other features
+--------------
+The limiting infinite-dilution activity coefficients can be obtained with a call to :obj:`gammas_infinite_dilution <thermo.activity.GibbsExcess.gammas_infinite_dilution>`
+
+>>> GE.gammas_infinite_dilution()
+[3.5659995166, 4.32849696]
+
+All activity coefficient models offer a :obj:`as_json <thermo.activity.GibbsExcess.as_json>` method and a :obj:`from_json <thermo.activity.GibbsExcess.from_json>` to serialize the object state for transport over a network, storing to disk, and passing data between processes. 
+
+Storing and recreating objects with Python's :py:func:`pickle.dumps` library is also tested; this can be faster than using JSON at the cost of being binary data.
+
+All models have a :obj:`__hash__ <thermo.activity.GibbsExcess.__hash__>` method that can be used to compare different models to see if they are absolutely identical (including which values have been calculated already).
+
+They also have a :obj:`model_hash <thermo.activity.GibbsExcess.model_hash>` method that can be used to compare different models to see if they have identical model parameters.
+
+They also have a :obj:`state_hash <thermo.activity.GibbsExcess.state_hash>` method that can be used to compare different models to see if they have identical temperature, composition, and model parameters.
+
+Activity Coefficient Identities
 -------------------------------
 
 A set of useful equations are as follows. For more information, the reader is

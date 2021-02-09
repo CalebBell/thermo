@@ -2894,34 +2894,32 @@ def unifac_Thetas_pure(N, N_groups, Xs_pure, Qs, Thetas_pure=None):
     return Thetas_pure
 
 
-def unifac_lnGammas_subgroups_pure(N, N_groups, Qs, Thetas_pure, cmp_group_idx, psis, lnGammas_subgroups_pure=None):
+def unifac_lnGammas_subgroups_pure(N, N_groups, Qs, Thetas_pure, cmp_group_idx, group_cmp_idx, psis, lnGammas_subgroups_pure=None):
     if lnGammas_subgroups_pure is None:
         lnGammas_subgroups_pure = [[0.0]*N for _ in range(N_groups)] # numba: delete
 #        lnGammas_subgroups_pure = zeros((N_groups, N)) # numba: uncomment
 
     for k in range(N_groups):
         row = lnGammas_subgroups_pure[k]
-        for i in range(N):
+        for i in group_cmp_idx[k]:
             groups2 = cmp_group_idx[i]
             Thetas_purei = Thetas_pure[i]
-            if k not in groups2:
-                row[i] = 0.0
-            else:
-                psisk = psis[k]
-                log_sum = 0.0
-                for m in groups2:
-                    log_sum += Thetas_purei[m]*psis[m][k]
-                log_sum = log(log_sum)
 
-                last = 0.0
-                for m in groups2:
-                    sub_subs = 0.0
-                    for n in range(N_groups):
-                        sub_subs += Thetas_purei[n]*psis[n][m]
-                    last += Thetas_purei[m]*psisk[m]/sub_subs
+            psisk = psis[k]
+            log_sum = 0.0
+            for m in groups2:
+                log_sum += Thetas_purei[m]*psis[m][k]
+            log_sum = log(log_sum)
 
-                v = Qs[k]*(1.0 - log_sum - last)
-                row[i] = v
+            last = 0.0
+            for m in groups2:
+                sub_subs = 0.0
+                for n in range(N_groups):
+                    sub_subs += Thetas_purei[n]*psis[n][m]
+                last += Thetas_purei[m]*psisk[m]/sub_subs
+
+            v = Qs[k]*(1.0 - log_sum - last)
+            row[i] = v
     return lnGammas_subgroups_pure
 
 def unifac_dlnGammas_subgroups_pure_dT(N, N_groups, Qs, psis, dpsis_dT,
@@ -3590,6 +3588,8 @@ class UNIFAC(GibbsExcess):
             return UNIFAC(T=T, xs=xs, rs=rs, qs=qs, Qs=Qs, vs=vs, psi_abc=(psi_a, psi_b, psi_c), version=version)
         return UNIFAC(T=T, xs=xs, rs=array(rs), qs=array(qs), Qs=array(Qs), vs=array(vs), psi_abc=(array(psi_a), array(psi_b), array(psi_c)), version=version)
 
+    model_attriubtes = ('rs', 'qs', 'psi_a', 'psi_b', 'psi_c', 'version')
+
     def __repr__(self):  # pragma: no cover
 
         psi_abc = (self.psi_a, self.psi_b, self.psi_c)
@@ -3666,9 +3666,22 @@ class UNIFAC(GibbsExcess):
         cmp_group_idx = [[j for j in range(N_groups) if vs[j][i]] for i in range(N)]
         # TODO figure out the best way to handle this with numba
         # as each array was supposedly a different shape
-#        if not scalar:
-#            cmp_group_idx = array(cmp_group_idx)
+        if not scalar:
+            cmp_group_idx = tuple(array(v) for v in cmp_group_idx)
         self.cmp_group_idx = cmp_group_idx
+
+
+        group_cmp_idx = []
+        for k in range(N_groups):
+            temp = []
+            for i in range(N):
+                groups2 = cmp_group_idx[i]
+                if k in groups2:
+                    temp.append(i)
+            group_cmp_idx.append(temp)
+        if not scalar:
+            group_cmp_idx = tuple(array(v) for v in group_cmp_idx)
+        self.group_cmp_idx = group_cmp_idx
 
         # Calculate the composition and temperature independent parameters on initialization
         self.Thetas_pure()
@@ -3714,6 +3727,7 @@ class UNIFAC(GibbsExcess):
         new.cmp_v_count = self.cmp_v_count
         new.cmp_v_count_inv = self.cmp_v_count_inv
         new.cmp_group_idx = self.cmp_group_idx
+        new.group_cmp_idx = self.group_cmp_idx
 
         new.version = self.version
         new.skip_comb = self.skip_comb
@@ -4592,7 +4606,7 @@ class UNIFAC(GibbsExcess):
         if self.scalar:
             Thetas = [0.0]*N_groups
         else:
-            Thetas = [0.0]*N_groups
+            Thetas = zeros(N_groups)
         self._Thetas, self.Thetas_sum_inv = unifac_Thetas(N_groups, Xs, Qs, Thetas)
         return Thetas
 
@@ -5631,7 +5645,8 @@ class UNIFAC(GibbsExcess):
             lnGammas_subgroups_pure = [[0.0]*N for _ in range(N_groups)]
         else:
             lnGammas_subgroups_pure = zeros((N_groups, N))
-        self._lnGammas_subgroups_pure = unifac_lnGammas_subgroups_pure(N, N_groups, Qs, Thetas_pure, cmp_group_idx, psis, lnGammas_subgroups_pure)
+        # Future note: lnGammas_subgroups_pure will not zero all arrays
+        self._lnGammas_subgroups_pure = unifac_lnGammas_subgroups_pure(N, N_groups, Qs, Thetas_pure, cmp_group_idx, self.group_cmp_idx, psis, lnGammas_subgroups_pure)
         return lnGammas_subgroups_pure
 
     def dlnGammas_subgroups_pure_dT(self):

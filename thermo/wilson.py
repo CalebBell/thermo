@@ -476,6 +476,9 @@ class Wilson(GibbsExcess):
                 raise ValueError("`lambda_coeffs` or `ABCDEF` is required required")
             self.N = N = len(lambda_coeffs)
 
+    model_attriubtes = ('lambda_coeffs_A', 'lambda_coeffs_B', 'lambda_coeffs_C',
+                        'lambda_coeffs_D', 'lambda_coeffs_E', 'lambda_coeffs_F')
+
     def __repr__(self):
         s = '%s(T=%s, xs=%s, ABCDEF=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs),
                 (self.lambda_coeffs_A,  self.lambda_coeffs_B, self.lambda_coeffs_C,

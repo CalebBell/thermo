@@ -40,6 +40,7 @@ Base Class
     :undoc-members:
     :show-inheritance:
     :exclude-members:
+    :special-members: __hash__, __eq__, __repr__
 
 Idea Liquid Class
 =================
@@ -74,7 +75,7 @@ from chemicals.utils import normalize, dxs_to_dns, dxs_to_dn_partials, dns_to_dn
 from thermo import serialize
 
 try:
-    npexp, ones, zeros, array = np.exp, np.ones, np.zeros, np.array
+    npexp, ones, zeros, array, ndarray = np.exp, np.ones, np.zeros, np.array, np.ndarray
 except:
     pass
 
@@ -281,7 +282,26 @@ class GibbsExcess(object):
 
     '''
     x_infinite_dilution = 0.0
+    '''When set, this will be the limiting mole fraction used to approximate
+    the :obj:`gammas_infinite_dilution` calculation. This is important
+    as not all models can mathematically be evaluated at zero mole-fraction.'''
+
     def __repr__(self):
+        r'''Method to create a string representation of the state of the model.
+        Included is `T`, `xs`, and all constants necessary to create the model.
+        This can be passed into :py:func:`exec` to re-create the
+        model. Note that parsing strings like this can be slow.
+
+        Returns
+        -------
+        repr : str
+            String representation of the object, [-]
+
+        Examples
+        --------
+        >>> IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
+        IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
+        '''
         # Other classes with different parameters should expose them here too
         s = '%s(T=%s, xs=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs))
         return s
@@ -290,9 +310,60 @@ class GibbsExcess(object):
         return self.__hash__() == other.__hash__()
 
     def __hash__(self):
+        r'''Method to calculate and return a hash representing the exact state
+        of the object. This includes `T`, `xs`,
+        the model class, and which values have already been calculated.
+
+        Returns
+        -------
+        hash : int
+            Hash of the object, [-]
+        '''
         d = self.__dict__
-        ans = hash_any_primitive((self.__class__, d))
+        ans = hash_any_primitive((self.__class__.__name__, d))
         return ans
+
+    def model_hash(self):
+        r'''Basic method to calculate a hash of the non-state parts of the model
+        This is useful for comparing to models to
+        determine if they are the same, i.e. in a VLL flash it is important to
+        know if both liquids have the same model.
+
+        Note that the hashes should only be compared on the same system running
+        in the same process!
+
+        Returns
+        -------
+        model_hash : int
+            Hash of the object's model parameters, [-]
+        '''
+        try:
+            return self._model_hash
+        except AttributeError:
+            pass
+        to_hash = [self.__class__.__name__, self.N]
+        for k in self.model_attriubtes:
+            v = getattr(self, k)
+            if type(v) is ndarray:
+                v = v.tolist()
+            to_hash.append(v)
+        self._model_hash = hash_any_primitive(to_hash)
+        return self._model_hash
+
+    def state_hash(self):
+        r'''Basic method to calculate a hash of the state of the model and its
+        model parameters.
+
+        Note that the hashes should only be compared on the same system running
+        in the same process!
+
+        Returns
+        -------
+        state_hash : int
+            Hash of the object's model parameters and state, [-]
+        '''
+        xs = self.xs if self.scalar else self.xs.tolist()
+        return hash_any_primitive((self.model_hash(), float(self.T), xs))
 
     def as_json(self):
         r'''Method to create a JSON serialization of the Gibbs Excess model
@@ -361,6 +432,11 @@ class GibbsExcess(object):
             d = serialize.json.loads(json_repr)
             if not d['scalar']:
                 d = serialize.load_json_np(json_repr)
+        if not d['scalar'] and 'cmp_group_idx' in d:
+            d['cmp_group_idx'] = tuple(array(v) for v in d['cmp_group_idx'])
+        if not d['scalar'] and 'group_cmp_idx' in d:
+            d['group_cmp_idx'] = tuple(array(v) for v in d['group_cmp_idx'])
+
 
 #        if cls is GibbsExcess:
 #            model_name = d['py/object']
@@ -968,6 +1044,7 @@ class IdealSolution(GibbsExcess):
     >>> model.dgammas_dT()
     [0.0, 0.0, 0.0, 0.0]
     '''
+    model_attriubtes = ()
     def __init__(self, T=None, xs=None):
         if T is not None:
             self.T = T
