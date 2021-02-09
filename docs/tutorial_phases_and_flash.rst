@@ -1,5 +1,8 @@
 Introduction to Phase and Flash Calculations
 ============================================
+
+.. contents:: :local:
+
 The framework for performing phase and flash calculations is designed around the following principles:
 
 * Immutability
@@ -23,6 +26,8 @@ Flashes with Pure Compounds
 ---------------------------
 Pure components are really nice to work with because they have nice boundaries between each state, and the mole fraction is always 1; there is no composition dependence. There is a separate flash interfaces for pure components. These flashes are very mature and should be quite reliable.
 
+Vapor-Liquid Cubic Equation Of State Example
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The following example illustrates some of the types of flashes supported using the component methanol, the stated critical properties, a heat capacity correlation from Poling et. al., and the Peng-Robinson equation of state.
 
 Obtain a heat capacity object, and select a source:
@@ -94,9 +99,9 @@ Do a volume and internal energy flash:
 <EquilibriumState, T=655.5447, P=47575958.4564, zs=[1.0], betas=[1.0], phases=[<CEOSLiquid, T=655.545 K, P=4.7576e+07 Pa>]>
 
 
-As you can see, the interface is convenient and supports most types of flashes. In fact, the algorithms are generic; any of `H`, `S`, `G`, `U`, and `A` can be combined with any combination of `T`, `P`, and `V`. Although most of the flashes shown above except TS and TH are usually well behaved, depending on the EOS combination there may be multiple solutions. No real guarantees can be made about which solution will be returned in those cases.
+As you can see, the interface is convenient and supports most types of flashes. In fact, the algorithms are generic; any of `H`, `S`, `U`, and can be combined with any combination of `T`, `P`, and `V`. Although most of the flashes shown above except TS and TH are usually well behaved, depending on the EOS combination there may be multiple solutions. No real guarantees can be made about which solution will be returned in those cases.
 
-Flashes with two of  `H`, `S`, `G`, `U`, and `A` are not supported.
+Flashes with two of  `H`, `S`, and `U` are not implemented at present.
 
 It is not necessary to use the same phase model for liquid and gas phases; the below example shows a flash switching the gas phase model to SRK.
 
@@ -108,5 +113,25 @@ It is not necessary to use the same phase model for liquid and gas phases; the b
 Choosing to use an inconsistent model will slow down many calculations as more checks are required; and some flashes may have issues with discontinuities in some conditions, and simply a lack of solution in other conditions.
 
 
+Vapor-Liquid Steam Example
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+The IAPWS-95 standard is implemented and available for easy use:
+
+>>> from thermo import FlashPureVLS, IAPWS95Liquid, IAPWS95Gas, iapws_constants, iapws_correlations
+>>> liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
+>>> gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
+>>> flasher = FlashPureVLS(iapws_constants, iapws_correlations, gas, [liquid], [])
+>>> PT = flasher.flash(T=800.0, P=1e7)
+>>> PT.rho_mass()
+29.1071839176
+>>> print(flasher.flash(T=600, VF=.5))
+<EquilibriumState, T=600.0000, P=12344824.3572, zs=[1.0], betas=[0.5, 0.5], phases=[<IAPWS95Gas, T=600 K, P=1.23448e+07 Pa>, <IAPWS95Liquid, T=600 K, P=1.23448e+07 Pa>]>
+>>> print(flasher.flash(T=600.0, H=50802))
+<EquilibriumState, T=600.0000, P=10000469.1288, zs=[1.0], betas=[1.0], phases=[<IAPWS95Gas, T=600 K, P=1.00005e+07 Pa>]>
+>>> print(flasher.flash(P=1e7, S=104.))
+<EquilibriumState, T=599.6790, P=10000000.0000, zs=[1.0], betas=[1.0], phases=[<IAPWS95Gas, T=599.679 K, P=1e+07 Pa>]>
+>>> print(flasher.flash(V=.00061, U=55850))
+<EquilibriumState, T=800.5922, P=10144789.0899, zs=[1.0], betas=[1.0], phases=[<IAPWS95Gas, T=800.592 K, P=1.01448e+07 Pa>]>
 
 
+Not all flash calculations have been fully optimized, but the basis flashes are quite fast.

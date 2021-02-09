@@ -5305,7 +5305,8 @@ class FlashVL(Flash):
     two phase vapor and liquid multicomponent systems. Use :obj:`FlashVLN` for
     systems which can have multiple liquid phases.
 
-    The minimum information that is needed is:
+    The minimum information that is needed in addition to the :obj:`Phase`
+    objects is:
 
     * MWs
     * Vapor pressure curve
@@ -6139,7 +6140,8 @@ class FlashVLN(FlashVL):
     for up to the maximum amount of liquid phases specified by the user. Vapor
     and each liquid phase do not need to use a consistent thermodynamic model.
 
-    The minimum information that is needed is:
+    The minimum information that is needed in addition to the :obj:`Phase`
+    objects is:
 
     * MWs
     * Vapor pressure curve
@@ -6738,7 +6740,8 @@ class FlashPureVLS(Flash):
     This class is subtantially more robust than using multicomponent algorithms
     on pure species. It is also faster. All parameters are also attributes.
 
-    The minimum information that is needed is:
+    The minimum information that is needed in addition to the :obj:`Phase`
+    objects is:
 
     * MW
     * Vapor pressure curve if including liquids
@@ -6837,9 +6840,9 @@ class FlashPureVLS(Flash):
 
     Notes
     -----
-    The algorithms in this object are mostly from [1]_ and [2]_, and they all
-    boil down to newton methods with analytical derivatives and the phase with
-    the lowest Gibbs energy being the most stable if there are multiple
+    The algorithms in this object are mostly from [1]_ and [2]_. They all
+    boil down to newton methods with analytical derivatives. The phase with
+    the lowest Gibbs energy is the most stable if there are multiple
     solutions.
 
     Phase input combinations which have specific simplifying assumptions
