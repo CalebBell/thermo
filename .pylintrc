@@ -149,6 +149,9 @@ disable=print-statement,
         R1714, # for 2 or 3 cases, in (x,y) is slower
         R0912, # too many branches - it takes as many branches as it takes
         R0915, # too many statements - it takes as many statements as it takes, also performant code is usually longer
+        W0702, # Don't requir exception type - numba can't handle them
+        C0123, # type() instead of isinstance, but I like type because it is fast
+        C0116, # I can handle docstrings and don't need a reminder
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

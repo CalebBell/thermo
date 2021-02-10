@@ -39,10 +39,8 @@ Regular Solution Class
 '''
 
 from __future__ import division
-from thermo.activity import GibbsExcess
-from chemicals.utils import log, exp
-from fluids.constants import R
 from fluids.numerics import numpy as np
+from thermo.activity import GibbsExcess
 
 try:
     array, zeros, npsum = np.array, np.zeros, np.sum

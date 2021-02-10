@@ -47,10 +47,10 @@ NRTL Functional Calculations
 '''
 
 from __future__ import division
-from fluids.numerics import numpy as np
-from thermo.activity import GibbsExcess
 from math import log, exp
 from fluids.constants import R
+from fluids.numerics import numpy as np
+from thermo.activity import GibbsExcess
 
 __all__ = ['NRTL', 'NRTL_gammas']
 
