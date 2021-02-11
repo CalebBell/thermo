@@ -145,6 +145,15 @@ The limiting infinite-dilution activity coefficients can be obtained with a call
 
 All activity coefficient models offer a :obj:`as_json <thermo.activity.GibbsExcess.as_json>` method and a :obj:`from_json <thermo.activity.GibbsExcess.from_json>` to serialize the object state for transport over a network, storing to disk, and passing data between processes. 
 
+>>> import json
+>>> model = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
+>>> json_view = model.as_json()
+>>> json_str = json.dumps(json_view)
+>>> model_copy = IdealSolution.from_json(json.loads(json_str))
+>>> assert model_copy == model
+
+Other json libraries can be used besides the standard json library by design.
+
 Storing and recreating objects with Python's :py:func:`pickle.dumps` library is also tested; this can be faster than using JSON at the cost of being binary data.
 
 All models have a :obj:`__hash__ <thermo.activity.GibbsExcess.__hash__>` method that can be used to compare different models to see if they are absolutely identical (including which values have been calculated already).

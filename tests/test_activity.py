@@ -30,6 +30,7 @@ import numpy as np
 from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d
 from thermo.test_utils import check_np_output_activity
 import pickle
+import json
 
 def test_IdealSolution():
     GE = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
@@ -68,6 +69,10 @@ def test_IdealSolution_numpy_output():
     json_string = modelnp.as_json()
     new = IdealSolution.from_json(json_string)
     assert new == modelnp
+
+    new = IdealSolution.from_json(json.loads(json.dumps(modelnp.as_json())))
+    assert new == modelnp
+
 
     assert model.model_hash() == modelnp.model_hash()
     assert new.model_hash() == modelnp.model_hash()

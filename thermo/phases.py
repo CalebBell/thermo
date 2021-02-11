@@ -255,6 +255,7 @@ class Phase(object):
     Psats_locked = False
     Cpgs_locked = False
     composition_independent = False
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     def __str__(self):
         s =  '<%s, ' %(self.__class__.__name__)
@@ -4532,6 +4533,26 @@ class IdealGas(Phase):
     is_liquid = False
     composition_independent = True
     ideal_gas_basis = True
+
+    pure_references = ('HeatCapacityGases',)
+    pure_reference_types = (HeatCapacityGas,)
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
+
+
+
+    def as_json(self):
+        d = self.__dict__.copy()
+        for k in self.pure_references:
+            objs = getattr(self, k)
+            if objs:
+                d[k] = [obj.as_json() for obj in objs]
+
+        d["py/object"] = self.__full_path__
+        d["json_version"] = 1
+        del d['cmps']
+        return d
+
+
     def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None, T=None, P=None, zs=None):
         self.HeatCapacityGases = HeatCapacityGases
         self.Hfs = Hfs
@@ -5252,6 +5273,7 @@ class CEOSGas(Phase):
     is_gas = True
     is_liquid = False
     ideal_gas_basis = True
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     def model_hash(self, ignore_phase=False):
         if ignore_phase:
             try:
@@ -6199,6 +6221,7 @@ class GibbsExcessLiquid(Phase):
     phase = 'l'
     is_gas = False
     is_liquid = True
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     P_DEPENDENT_H_LIQ = True
     _Psats_data = None
@@ -8775,6 +8798,7 @@ class GibbsExcessSolid(GibbsExcessLiquid):
     is_gas = False
     is_liquid = False
     is_solid = True
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     def __init__(self, SublimationPressures, VolumeSolids=None,
                  GibbsExcessModel=IdealSolution(),
                  eos_pure_instances=None,
@@ -8800,6 +8824,7 @@ class GraysonStreed(Phase):
     is_gas = False
     is_liquid = True
     # revised one
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     hydrogen_coeffs = (1.50709, 2.74283, -0.0211, 0.00011, 0.0, 0.008585, 0.0, 0.0, 0.0, 0.0)
     methane_coeffs = (1.36822, -1.54831, 0.0, 0.02889, -0.01076, 0.10486, -0.02529, 0.0, 0.0, 0.0)
@@ -8926,6 +8951,7 @@ class GraysonStreed(Phase):
         return nus
 
 class ChaoSeader(GraysonStreed):
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     # original one
     hydrogen_coeffs = (1.96718, 1.02972, -0.054009, 0.0005288, 0.0, 0.008585, 0.0, 0.0, 0.0, 0.0)
     methane_coeffs = (2.4384, -2.2455, -0.34084, 0.00212, -0.00223, 0.10486, -0.03691, 0.0, 0.0, 0.0)
@@ -9045,6 +9071,7 @@ class VirialGas(Phase):
     is_gas = True
     is_liquid = False
     ideal_gas_basis = True
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     def __init__(self, model, HeatCapacityGases=None, Hfs=None, Gfs=None, T=None, P=None, zs=None,
                  ):
         self.model = model
@@ -9479,6 +9506,7 @@ class VirialGas(Phase):
 class HumidAirRP1485(VirialGas):
     is_gas = True
     is_liquid = False
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     def __init__(self, Hfs=None, Gfs=None, T=None, P=None, zs=None,
                  ):
         # Although in put is zs, it is required to be in the order of
@@ -9542,6 +9570,7 @@ class HumidAirRP1485(VirialGas):
 
 
 class HelmholtzEOS(Phase):
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     def __repr__(self):
         r'''Method to create a string representation of the phase object, with
@@ -10138,6 +10167,7 @@ class DryAirLemmon(HelmholtzEOS):
     is_gas = True
     is_liquid = False
     force_phase = 'g'
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     _MW = lemmon2000_air_MW
     _MW = 28.96546 # CoolProp
@@ -10242,6 +10272,7 @@ class IAPWS95(HelmholtzEOS):
     Pc = iapws95_Pc
     rhoc_mass = iapws95_rhoc
     rhoc_mass_inv = 1.0/iapws95_rhoc
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     rhoc_inv = rho_to_Vm(rhoc_mass, iapws95_MW)
     rhoc = 1.0/rhoc_inv
@@ -10372,16 +10403,19 @@ class IAPWS95(HelmholtzEOS):
 
 
 class IAPWS95Gas(IAPWS95):
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     is_gas = True
     is_liquid = False
     force_phase = 'g'
 
 class IAPWS95Liquid(IAPWS95):
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     force_phase = 'l'
     is_gas = False
     is_liquid = True
 
 class IAPWS97(Phase):
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     _MW = 18.015268
     R = 461.526
     Tc = 647.096
@@ -10952,6 +10986,7 @@ CPrhoT_INPUTS = 11
 caching_state_CoolProp = None
 
 class CoolPropPhase(Phase):
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     prefer_phase = 8
     ideal_gas_basis = False
 
@@ -11289,16 +11324,19 @@ class CoolPropPhase(Phase):
         return k
 
 class CoolPropLiquid(CoolPropPhase):
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     prefer_phase = CPliquid
     is_gas = False
     is_liquid = True
 
 class CoolPropGas(CoolPropPhase):
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     prefer_phase = CPgas
     is_gas = True
     is_liquid = False
 
 class CombinedPhase(Phase):
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     def __init__(self, phases, equilibrium=None, thermal=None, volume=None,
                  other_props=None,
                  T=None, P=None, zs=None,

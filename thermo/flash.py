@@ -4211,6 +4211,7 @@ class Flash(object):
         Absolute maximum pressure to search for a valid flash, [Pa]
     '''
 
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     T_MIN_FIXED = Phase.T_MIN_FIXED
     T_MAX_FIXED = Phase.T_MAX_FIXED
 
@@ -5474,6 +5475,7 @@ class FlashVL(Flash):
     .. [3] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     PT_SS_MAXITER = 5000
     PT_SS_TOL = 1e-13
 
@@ -6242,6 +6244,7 @@ class FlashVLN(FlashVL):
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
 
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     SS_NP_MAXITER = FlashVL.PT_SS_MAXITER
     SS_NP_TRIVIAL_TOL = 5e-5
     SS_NP_TOL = 1e-15
@@ -6904,6 +6907,7 @@ class FlashPureVLS(Flash):
     .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     VF_interpolators_built = False
     N = 1
     VL_EOS_hacks = True

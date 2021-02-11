@@ -797,6 +797,8 @@ class GCEOS(object):
 
     N = 1
     '''The number of components in the EOS'''
+    scalar = True
+
     multicomponent = False
     '''Whether or not the EOS is multicomponent or not'''
     _P_zero_l_cheb_coeffs = None
@@ -813,41 +815,66 @@ class GCEOS(object):
     '''Parameter used by some equations of state in the `b` calculation'''
 
     nonstate_constants = ('Tc', 'Pc', 'omega', 'kwargs', 'a', 'b', 'delta', 'epsilon')
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
+
+    def state_hash(self):
+        r'''Basic method to calculate a hash of the state of the model and its
+        model parameters.
+
+        Note that the hashes should only be compared on the same system running
+        in the same process!
+
+        Returns
+        -------
+        state_hash : int
+            Hash of the object's model parameters and state, [-]
+        '''
+        return hash((self.model_hash(), self.T, self.P, self.V))
 
     def model_hash(self):
         r'''Basic method to calculate a hash of the non-state parts of the model
-        critical constants, kijs, volume translation coefficient `cs`, other
-        variables stored as `kwargs`. This is useful for comparing to models to
+        This is useful for comparing to models to
         determine if they are the same, i.e. in a VLL flash it is important to
         know if both liquids have the same model.
 
         Note that the hashes should only be compared on the same system running
         in the same process!
 
-        This works for pure components and mixtures.
+        Returns
+        -------
+        model_hash : int
+            Hash of the object's model parameters, [-]
         '''
         try:
             return self._model_hash
         except AttributeError:
             pass
-#        print('start')
-        h = hash(self.__class__)
-#        print(h)
-
+        h = hash(self.__class__.__name__)
         for s in self.nonstate_constants:
-#            if hasattr(self, s):
-#                print(s, getattr(self, s))
-#                if s == 'kijs':
-#                    print([id(i) for r in self.kijs for i in r])
             try:
                 h = hash((h, s, hash_any_primitive(getattr(self, s))))
             except AttributeError:
                 pass
-#                print(h)
-#        print('end')
         self._model_hash = h
         return h
+
+    def __hash__(self):
+        r'''Method to calculate and return a hash representing the exact state
+        of the object.
+
+        Returns
+        -------
+        hash : int
+            Hash of the object, [-]
+        '''
+        d = self.__dict__
+        ans = hash_any_primitive((self.__class__.__name__, d))
+        return ans
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
 
     @property
     def state_specs(self):
@@ -903,33 +930,30 @@ class GCEOS(object):
         return s
 
     def as_json(self):
-        r'''Method to create a JSON serialization of the eos
+        r'''Method to create a JSON-friendly serialization of the eos
         which can be stored, and reloaded later.
 
         Returns
         -------
-        json_repr : str
-            Json representation, [-]
+        json_repr : dict
+            JSON-friendly representation, [-]
 
         Notes
         -----
 
         Examples
         --------
+        >>> import json
         >>> eos = MSRKTranslated(Tc=507.6, Pc=3025000, omega=0.2975, c=22.0561E-6, M=0.7446, N=0.2476, T=250., P=1E6)
-        >>> string = eos.as_json()
-        >>> type(string)
-        str
+        >>> assert eos == MSRKTranslated.from_json(json.loads(json.dumps(eos.as_json())))
         '''
         # vaguely jsonpickle compatible
-        mod_name = 'eos_mix' if self.multicomponent else 'eos'
-        d = self.__dict__
-        d["py/object"] = "thermo.%s.%s" %(mod_name, self.__class__.__name__)
+        d = self.__dict__.copy()
+        if not self.scalar:
+            d = serialize.arrays_to_lists(d)
+        d["py/object"] = self.__full_path__
         d['json_version'] = 1
-        ans = serialize.json.dumps(self.__dict__)
-        del d["py/object"]
-        del d['json_version']
-        return ans
+        return d
 
     @classmethod
     def from_json(cls, json_repr):
@@ -938,8 +962,8 @@ class GCEOS(object):
 
         Parameters
         ----------
-        json_repr : str
-            JSON representation, [-]
+        json_repr : dict
+            JSON-friendly representation, [-]
 
         Returns
         -------
@@ -958,7 +982,7 @@ class GCEOS(object):
         >>> new_eos = GCEOS.from_json(string)
         >>> assert eos.__dict__ == new_eos.__dict__
         '''
-        d = serialize.json.loads(json_repr)
+        d = json_repr
         eos_name = d['py/object']
         del d['py/object']
         del d['json_version']
@@ -978,10 +1002,11 @@ class GCEOS(object):
         except:
             pass
 
-        eos_name = eos_name.split('.')[-1]
-        eos = eos_dict[eos_name]
+#        eos_name = eos_name.split('.')[-1]
+#        eos = eos_dict[eos_name]
+#        new = eos.__new__(eos)
 
-        new = eos.__new__(eos)
+        new = cls.__new__(cls)
         new.__dict__ = d
         return new
 
@@ -7013,6 +7038,7 @@ class IG(GCEOS):
     epsilon = 0.0
     '''float: `epsilon` parameter for an ideal gas is 0'''
     volume_solutions = staticmethod(volume_solutions_ideal)
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     # Handle the properties where numerical error puts values - but they should
     # be zero. Not all of them are non-zero all the time - but some times
@@ -7264,6 +7290,7 @@ class PR(GCEOS):
     c2 = 0.0777960739038884559718447100373331839711
     '''Full value of the constant in the `b` parameter'''
     c2R = c2*R
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
 #    c1, c2 = 0.45724, 0.07780
 
@@ -7897,6 +7924,7 @@ class PR78(PR):
 
     high_omega_constants = (0.379642, 1.48503, - 0.164423, 0.016666)
     '''Constants for the `kappa` formula for the high-omega region.'''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
         self.Tc = Tc
@@ -7978,6 +8006,7 @@ class PRTranslated(PR):
     '''
     solve_T = GCEOS.solve_T
     P_max_at_V = GCEOS.P_max_at_V
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=0.0, T=None, P=None,
                  V=None):
         self.Tc = Tc
@@ -8073,6 +8102,7 @@ class PRTranslatedPPJP(PRTranslated):
        Fluid Phase Equilibria, December 7, 2018.
        https://doi.org/10.1016/j.fluid.2018.12.007.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     # Direct solver for T could be implemented but cannot use the PR one
     def __init__(self, Tc, Pc, omega, c=0.0, T=None, P=None, V=None):
         self.Tc = Tc
@@ -8159,11 +8189,14 @@ class PRTranslatedPoly(Poly_a_alpha, PRTranslated):
     -----
 
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
 class PRTranslatedMathiasCopeman(Mathias_Copeman_a_alpha, PRTranslated):
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     pass
 
 class PRTranslatedCoqueletChapoyRichon(PRTranslatedMathiasCopeman):
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     def __init__(self, Tc, Pc, omega, c=0.0, alpha_coeffs=None, T=None, P=None, V=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -8256,6 +8289,7 @@ class PRTranslatedTwu(Twu91_a_alpha, PRTranslated):
        New Mixing Rule." Fluid Phase Equilibria 69 (December 10, 1991):
        33-50. doi:10.1016/0378-3812(91)90024-2.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
 class PRTranslatedConsistent(PRTranslatedTwu):
     r'''Class for solving the volume translated Le Guennec, Privat, and Jaubert
@@ -8336,6 +8370,8 @@ class PRTranslatedConsistent(PRTranslatedTwu):
        Super-Critical Domains." Fluid Phase Equilibria 429 (December 15, 2016):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
+
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=None, T=None,
                  P=None, V=None):
         # estimates volume translation and alpha function parameters
@@ -8457,6 +8493,7 @@ class PRSV(PR):
        of Industrial Interest." The Canadian Journal of Chemical Engineering
        67, no. 1 (February 1, 1989): 170-73. doi:10.1002/cjce.5450670125.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     kappa1_Tr_limit = False
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=None):
         self.Tc = Tc
@@ -8716,6 +8753,7 @@ class PRSV2(PR):
        Chemical Engineering 64, no. 5 (October 1, 1986): 820-26.
        doi:10.1002/cjce.5450640516.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=0, kappa2=0, kappa3=0):
         self.Tc = Tc
         self.Pc = Pc
@@ -8959,6 +8997,8 @@ class VDW(GCEOS):
     .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
        Butterworth-Heinemann, 1985.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
+
     delta = 0.0
     '''`delta` is always zero for the :obj:`VDW` EOS'''
     epsilon = 0.0
@@ -9267,6 +9307,8 @@ class RK(GCEOS):
     .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
        Butterworth-Heinemann, 1985.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
+
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1))
     '''Full value of the constant in the `a` parameter'''
     c2 = 0.08664034996495772158907020242607611685675 # (2**(1/3.)-1)/3
@@ -9588,6 +9630,8 @@ class SRK(GCEOS):
     .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
        Butterworth-Heinemann, 1985.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
+
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1))
     '''Full value of the constant in the `a` parameter'''
     c2 = 0.08664034996495772158907020242607611685675 # (2**(1/3.)-1)/3
@@ -9919,6 +9963,8 @@ class SRKTranslated(SRK):
     .. [1] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
+
     solve_T = GCEOS.solve_T
     P_max_at_V = GCEOS.P_max_at_V
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=0.0, T=None, P=None,
@@ -10045,6 +10091,7 @@ class MSRKTranslated(Soave_79_a_alpha, SRKTranslated):
        Fluid Phase Equilibria 93 (February 11, 1994): 377-83.
        https://doi.org/10.1016/0378-3812(94)87021-7.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     def __init__(self, Tc, Pc, omega, M=None, N=None, alpha_coeffs=None, c=0.0,
                  T=None, P=None, V=None):
         # Ready for mixture class implemenentation
@@ -10194,6 +10241,7 @@ class SRKTranslatedPPJP(SRK):
        Fluid Phase Equilibria, December 7, 2018.
        https://doi.org/10.1016/j.fluid.2018.12.007.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     # No point in subclassing SRKTranslated - just disables direct solver for T
     def __init__(self, Tc, Pc, omega, c=0.0, T=None, P=None, V=None):
         self.Tc = Tc
@@ -10217,7 +10265,7 @@ class SRKTranslatedPPJP(SRK):
 
 
 class SRKTranslatedTwu(Twu91_a_alpha, SRKTranslated):
-    pass
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
 class SRKTranslatedConsistent(Twu91_a_alpha, SRKTranslated):
     r'''Class for solving the volume translated Le Guennec, Privat, and Jaubert
@@ -10300,6 +10348,7 @@ class SRKTranslatedConsistent(Twu91_a_alpha, SRKTranslated):
        Super-Critical Domains." Fluid Phase Equilibria 429 (December 15, 2016):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=None, T=None,
                  P=None, V=None):
         # estimates volume translation and alpha function parameters
@@ -10398,6 +10447,7 @@ class APISRK(SRK):
     .. [1] API Technical Data Book: General Properties & Characterization.
        American Petroleum Institute, 7E, 2005.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     def __init__(self, Tc, Pc, omega=None, T=None, P=None, V=None, S1=None,
                  S2=0):
@@ -10605,6 +10655,7 @@ class TWUPR(TwuPR95_a_alpha, PR):
        Peng-Robinson Equation." Fluid Phase Equilibria 105, no. 1 (March 15,
        1995): 49-59. doi:10.1016/0378-3812(94)02601-V.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T
 
@@ -10698,6 +10749,7 @@ class TWUSRK(TwuSRK95_a_alpha, SRK):
        Redlich-Kwong Equation." Fluid Phase Equilibria 105, no. 1 (March 15,
        1995): 61-69. doi:10.1016/0378-3812(94)02602-W.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T
 

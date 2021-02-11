@@ -196,6 +196,7 @@ class EquilibriumState(object):
     bulk : :obj:`Bulk<thermo.bulk.Bulk>`
         Overall phase bulk, [-]
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     max_liquid_phases = 1
     reacted = False
     flashed = True

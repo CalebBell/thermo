@@ -10,7 +10,7 @@ The generic three-parameter form is as follows:
     .. math::
         P=\frac{RT}{V-b}-\frac{a\alpha(T)}{V^2 + \delta V + \epsilon}
 
-This forms the basis the implementation in `thermo`.
+This forms the basis of the implementation in `thermo`.
 
 Two separate interfaces are provided, :obj:`thermo.eos` for pure component modeling and :obj:`thermo.eos_mix` for multicomponent modeling. Pure components are quite a bit faster than multicomponent mixtures, because the Van der Waals mixing rules conventionally used take N^2 operations to compute :math:`\alpha(T)`:
 
@@ -180,10 +180,42 @@ Temperature, pressure, mole number, and mole fraction derivatives of the log fug
 >>> PR3.dlnphis_dzs(PR3.Z_l)
 [[0.0099380692, 0.0151503498, 0.0182972357], [-0.038517738, -0.059589260, -0.068438990], [-0.070571069, -0.103639207, -0.141162830]]
 
-It is possible to compare the two objects with each other to see if they have the same kijs, model parameters, and components by using the  :obj:`model_hash <thermo.eos_mix.GCEOSMIX.model_hash>` method:
+Other features
+--------------
 
->>> PR3.model_hash() == eos.model_hash()
+Hashing
+^^^^^^^
+
+It is possible to compare the two objects with each other to see if they have the same kijs, model parameters, and components by using the  :obj:`model_hash <thermo.eos.GCEOS.model_hash>` method:
+
+>>> PR_case = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0.41],[0.41,0]])
+>>> SRK_case = SRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0.41],[0.41,0]])
+
+>>> PR_case.model_hash() == SRK_case.model_hash()
 False
+
+It is possible to see if both the exact state and the model match between two different objects by using the :obj:`state_hash <thermo.eos.GCEOS.state_hash>` method:
+
+>>> PR_case2 = PRMIX(T=116, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0.41],[0.41,0]])
+>>> PR_case.model_hash() == PR_case2.model_hash()
+True
+>>> PR_case.state_hash() == PR_case2.state_hash()
+False
+
+And finally it is possible to see if two objects are exactly identical, including cached calculation results, by using the  :obj:`__hash__ <thermo.eos.GCEOS.__hash__>` method:
+
+>>> PR_case3 = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0.41],[0.41,0]])
+>>> PR_case.state_hash() == PR_case3.state_hash()
+True
+>>> hash(PR_case) == hash(PR_case3)
+True
+>>> _ = PR_case.da_alpha_dT_ijs
+>>> hash(PR_case) == hash(PR_case3)
+False
+
+Serialization
+^^^^^^^^^^^^^
+
 
 Mixture Equilibrium
 -------------------

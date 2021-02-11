@@ -30,10 +30,19 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/chemicals/>`_
 # This module SHOULD NOT import anything from thermo
 from fluids.numerics import numpy as np
 from chemicals.utils import PY37
+
+__all__ = ['object_from_json', 'json_default']
 try:
     array = np.array
+    int_types = frozenset([np.short, np.ushort, np.intc, np.uintc, np.int_,
+                           np.uint, np.longlong, np.ulonglong])
+    float_types = frozenset([np.float16, np.single, np.double, np.longdouble,
+                             np.csingle, np.cdouble, np.clongdouble])
+    ndarray = np.ndarray
+
 except:
     pass
+
 
 BasicNumpyEncoder = None
 def build_numpy_encoder():
@@ -42,14 +51,9 @@ def build_numpy_encoder():
     lists-of-lists of floats, ints, bools, or complexes according to Python's
     rules.
     '''
-    global BasicNumpyEncoder, json
+    global BasicNumpyEncoder, json, int_types, float_types
 
     import json
-    int_types = frozenset([np.short, np.ushort, np.intc, np.uintc, np.int_,
-                           np.uint, np.longlong, np.ulonglong])
-    float_types = frozenset([np.float16, np.single, np.double, np.longdouble,
-                             np.csingle, np.cdouble, np.clongdouble])
-    ndarray = np.ndarray
     JSONEncoder = json.JSONEncoder
 
     class BasicNumpyEncoder(JSONEncoder):
@@ -63,17 +67,40 @@ def build_numpy_encoder():
                 return float(obj)
             return JSONEncoder.default(self, obj)
 
+def arrays_to_lists(obj):
+    t = type(obj)
+    if t is dict:
+        # Do not modify objects in place
+        obj = obj.copy()
+        for k, v in obj.items():
+            obj[k] = arrays_to_lists(v)
+    elif t is tuple:
+        return tuple(arrays_to_lists(v) for v in obj)
+    elif t is set:
+        # Can't put arrays in sets
+        return obj
+#        return set(arrays_to_lists(v) for v in obj)
+    elif t is ndarray:
+        return obj.tolist()
+    elif t in int_types:
+        return int(obj)
+    elif t in float_types:
+        return float(obj)
+    return obj
+
 
 def naive_lists_to_arrays(obj):
     t = type(obj)
     if t is dict:
+        # Do not modify objects in place
+        obj = obj.copy()
         for k, v in obj.items():
             obj[k] = naive_lists_to_arrays(v)
-    if t is tuple:
+    elif t is tuple:
         return tuple(naive_lists_to_arrays(v) for v in obj)
-    if t is set:
+    elif t is set:
         return set(naive_lists_to_arrays(v) for v in obj)
-    if t is list:
+    elif t is list:
         if len(obj) >= 2 and type(obj[0]) is list:
             # Handle tuples of different sized arrays
             try:
@@ -150,3 +177,24 @@ else:
     import json
     json_loaded = True
 
+
+
+
+
+def object_from_json(json_object):
+    if 'py/object' in json_object:
+        pth = json_object['py/object']
+        # TODO: Cache these lookups
+        bits = pth.split('.')
+        mod = '.'.join(bits[:-1])
+        cls_name = bits[-1]
+        obj = getattr(sys.modules[mod], cls_name)
+
+        return obj.from_json(json_object)
+    raise ValueError("Could not recognize object")
+
+
+def json_default(obj):
+    if hasattr(obj, 'as_json'):
+        return obj.as_json()
+    raise TypeError()

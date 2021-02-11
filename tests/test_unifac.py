@@ -31,7 +31,7 @@ from fluids.numerics import *
 from fluids.constants import R
 from thermo.unifac import UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP, NISTKTUFIP, PSRKIP, VTPRIP, DOUFSG
 import types
-import pickle
+import pickle, json
 from thermo.test_utils import check_np_output_activity
 
 '''
@@ -906,6 +906,11 @@ def test_unifac_np_output_and_hash():
     json_string = modelnp.as_json()
     new = UNIFAC.from_json(json_string)
     assert new == modelnp
+
+    new2 = UNIFAC.from_json(json.loads(json.dumps(modelnp.as_json())))
+    assert new2 == modelnp
+    new2 = UNIFAC.from_json(json.loads(json.dumps(modelnp2.as_json())))
+    assert new2 == modelnp2
 
     assert model.model_hash() == modelnp.model_hash()
     assert new.model_hash() == modelnp.model_hash()

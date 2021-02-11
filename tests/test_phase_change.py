@@ -124,3 +124,8 @@ def test_EnthalpyVaporization_Watson_extrapolation():
     assert_close(obj.solve_property(1), 647.1399999389462)
     assert_close(obj.solve_property(1e-20), 647.13999999983)
     assert EnthalpyVaporization.from_json(obj.as_json()) == obj
+
+
+@pytest.mark.meta_T_dept
+def test_EnthalpySublimation_no_numpy():
+    assert type(EnthalpySublimation(CASRN='1327-53-3').CRC_Hfus) is float

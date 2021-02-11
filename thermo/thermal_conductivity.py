@@ -287,6 +287,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
     .. [3] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'liquid thermal conductivity'
     units = 'W/m/K'
     interpolation_T = None
@@ -716,6 +717,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'liquid thermal conductivity'
     units = 'W/m/K'
     property_min = 0
@@ -1036,6 +1038,7 @@ class ThermalConductivityGas(TPDependentProperty):
     .. [3] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'gas thermal conductivity'
     units = 'W/m/K'
     interpolation_T = None
@@ -1470,6 +1473,7 @@ class ThermalConductivityGasMixture(MixtureProperty):
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'gas thermal conductivity'
     units = 'W/m/K'
     property_min = 0.

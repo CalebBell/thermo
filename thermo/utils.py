@@ -907,8 +907,8 @@ class TDependentProperty(object):
 
         Returns
         -------
-        json_repr : str
-            Json representation, [-]
+        json_repr : dict
+            JSON-friendly representation, [-]
 
         Notes
         -----
@@ -917,72 +917,39 @@ class TDependentProperty(object):
         --------
         '''
         # vaguely jsonpickle compatible
-        mod_name = self.__class__.__module__
-        d = self.__dict__
-        d["py/object"] = "%s.%s" %(mod_name, self.__class__.__name__)
+        d = self.__dict__.copy()
+        d["py/object"] = self.__full_path__
         d["json_version"] = 1
 
-        all_methods_list = list(d['all_methods'])
-        all_methods_set = d['all_methods']
-        d['all_methods'] = all_methods_list
-        tabular_data_interpolators = d['tabular_data_interpolators']
+        d['all_methods'] = list(d['all_methods'])
         d['tabular_data_interpolators'] = {}
 
 
         try:
-            interp1d_extrapolators = d['interp1d_extrapolators']
             del d['interp1d_extrapolators']
         except:
             pass
 
         if hasattr(self, 'all_methods_P'):
-            all_methods_P_list = list(d['all_methods_P'])
-            all_methods_P_set = d['all_methods_P']
-            d['all_methods_P'] = all_methods_P_list
-            tabular_data_interpolators_P = d['tabular_data_interpolators_P']
+            d['all_methods_P'] = list(d['all_methods_P'])
             d['tabular_data_interpolators_P'] = {}
 
-        prop_references = []
         for name in self.pure_references:
             prop_obj = getattr(self, name)
-            prop_references.append(prop_obj)
             if prop_obj is not None and type(prop_obj) not in (float, int):
                 d[name] = prop_obj.as_json()
 
-        json_refs = {}
         for name in self._json_obj_by_CAS:
+            CASRN = self.CASRN
             if hasattr(self, name):
-                json_refs[name] = getattr(self, name)
-                setattr(self, name, self.CASRN)
+                d[name] = CASRN
         try:
             eos = getattr(self, 'eos')
             if eos:
-                self.eos = eos[0].as_json()
-                json_refs['eos'] = eos
+                d['eos'] = eos[0].as_json()
         except:
             pass
-
-        ans = serialize.json.dumps(d)
-
-        # Set the dictionary back
-        del d["py/object"]
-        del d["json_version"]
-        d['all_methods'] = all_methods_set
-        if hasattr(self, 'all_methods_P'):
-            d['all_methods_P'] = all_methods_P_set
-            d['tabular_data_interpolators_P'] = tabular_data_interpolators_P
-        for name, obj in zip(self.pure_references, prop_references):
-            d[name] = obj
-        if json_refs:
-            d.update(json_refs)
-
-        d['tabular_data_interpolators'] = tabular_data_interpolators
-        try:
-            d['interp1d_extrapolators'] = interp1d_extrapolators
-        except:
-            pass
-
-        return ans
+        return d
 
     @classmethod
     def _load_json_CAS_references(cls, d):
@@ -997,8 +964,8 @@ class TDependentProperty(object):
 
         Parameters
         ----------
-        json_repr : str
-            JSON representation, [-]
+        json_repr : dict
+            JSON-friendly representation, [-]
 
         Returns
         -------
@@ -1013,14 +980,11 @@ class TDependentProperty(object):
         Examples
         --------
         '''
-        d = serialize.json.loads(json_repr)
+        d = json_repr#serialize.json.loads(json_repr)
         cls._load_json_CAS_references(d)
         if 'eos' in d:
             if type(d['eos']) is str:
                 d['eos'] = [GCEOS.from_json(d['eos'])]
-#        if 'CP_f' in d:
-#            from thermo.coolprop import coolprop_fluids
-#            d['CP_f'] = coolprop_fluids[d['CP_f']]
 
         d['all_methods'] = set(d['all_methods'])
         if 'all_methods_P' in d:
@@ -3122,8 +3086,8 @@ class MixtureProperty(object):
 
         Returns
         -------
-        json_repr : str
-            Json representation, [-]
+        json_repr : dict
+            JSON-friendly representation, [-]
 
         Notes
         -----
@@ -3132,27 +3096,25 @@ class MixtureProperty(object):
         --------
         '''
 
-        d = self.__dict__ # Not a the real object dictionary
-        mod_name = self.__class__.__module__
-        pure_references = [d[k] for k in self.pure_references]
-        for i, k in enumerate(self.pure_references):
-            d[k] = [v.as_json() for v in pure_references[i]]
+        d = self.__dict__.copy() # Not a the real object dictionary
+        for k in self.pure_references:
+            d[k] = [v.as_json() for v in d[k]]
+#        for i, k in enumerate(self.pure_references):
+#            d[k] = [v.as_json() for v in pure_references[i]]
         del d['pure_objs']
 
-        d["py/object"] = "%s.%s" %(mod_name, self.__class__.__name__)
-        all_methods = d['all_methods']
-        d['all_methods'] = list(all_methods)
-
         d['json_version'] = 1
-        ans = serialize.json.dumps(d)
-        del d['json_version']
-        del d["py/object"]
-        for i, k in enumerate(self.pure_references):
-            d[k] = pure_references[i]
-        # First reference must be the common one
-        d['pure_objs'] = pure_references[0]
-        d['all_methods'] = all_methods
-        return ans
+        d["py/object"] = self.__full_path__
+        d['all_methods'] = list(d['all_methods'])
+#        ans = d.copy()#serialize.json.dumps(d)
+#        del d['json_version']
+#        del d["py/object"]
+#        for i, k in enumerate(self.pure_references):
+#            d[k] = pure_references[i]
+#        # First reference must be the common one
+#        d['pure_objs'] = pure_references[0]
+#        d['all_methods'] = all_methods
+        return d
 
     @classmethod
     def from_json(cls, string):
@@ -3161,8 +3123,8 @@ class MixtureProperty(object):
 
         Parameters
         ----------
-        json_repr : str
-            Json representation, [-]
+        json_repr : dict
+            JSON-friendly representation, [-]
 
         Returns
         -------
@@ -3177,7 +3139,8 @@ class MixtureProperty(object):
         Examples
         --------
         '''
-        d = serialize.json.loads(string)
+        d = string
+#        d = serialize.json.loads(string)
         d['all_methods'] = set(d['all_methods'])
         for k, sub_cls in zip(cls.pure_references, cls.pure_reference_types):
             sub_jsons = d[k]

@@ -43,16 +43,17 @@ def test_ChemicalConstantsPackage_from_json_as_json_large():
             pass
 
     obj = ChemicalConstantsPackage.constants_from_IDs(create_compounds)
-    obj2 = ChemicalConstantsPackage.from_json(obj.as_json())
+    obj2 = ChemicalConstantsPackage.from_json(json.loads(json.dumps(obj.as_json())))
 
     assert hash(obj) == hash(obj2)
-    assert new_constants == constants
-    assert id(new_constants) != id(constants)
+    assert obj == obj2
+    assert id(obj) != id(obj2)
 
 def test_ChemicalConstantsPackage_json_version_exported():
     constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
-    string = constants.as_json()
-    c2 = ChemicalConstantsPackage.from_json(string)
+    string = json.dumps(constants.as_json())
+    c2 = ChemicalConstantsPackage.from_json(json.loads(string))
+    assert 'py/object' in string
     assert 'json_version' in string
     assert not hasattr(c2, 'json_version')
 

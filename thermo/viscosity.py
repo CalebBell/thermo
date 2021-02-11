@@ -268,6 +268,7 @@ class ViscosityLiquid(TPDependentProperty):
     .. [4] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'liquid viscosity'
     units = 'Pa*s'
 
@@ -851,6 +852,7 @@ class ViscosityGas(TPDependentProperty):
     .. [3] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'Gas viscosity'
     units = 'Pa*s'
     interpolation_T = None
@@ -1249,6 +1251,7 @@ class ViscosityLiquidMixture(MixtureProperty):
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'liquid viscosity'
     units = 'Pa*s'
     property_min = 0
@@ -1506,6 +1509,7 @@ class ViscosityGasMixture(MixtureProperty):
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'gas viscosity'
     units = 'Pa*s'
     property_min = 0

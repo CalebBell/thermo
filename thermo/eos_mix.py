@@ -295,6 +295,7 @@ class GCEOSMIX(GCEOS):
     .. math::
         P=\frac{RT}{V-b}-\frac{a\alpha(T)}{V^2 + \delta V + \epsilon}
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     nonstate_constants = ('N', 'cmps', 'Tcs', 'Pcs', 'omegas', 'kijs', 'kwargs', 'ais', 'bs')
     mix_kwargs_to_pure = {}
     kwargs_square = ('kijs',)
@@ -417,14 +418,17 @@ class GCEOSMIX(GCEOS):
         Examples
         --------
         >>> eos = PRSV2MIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6, kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
-        >>> string = eos.as_json()
-        >>> new_eos = GCEOSMIX.from_json(string)
-        >>> assert new_eos.__dict__ == eos.__dict__
+        >>> json_stuff = eos.as_json()
+        >>> new_eos = GCEOSMIX.from_json(json_stuff)
+        >>> assert new_eos == eos
         '''
-        d = serialize.json.loads(json_repr)
+        d = json_repr
+
         eos_name = d['py/object']
         del d['py/object']
         del d['json_version']
+        if not d['scalar']:
+            d = serialize.naive_lists_to_arrays(d)
 
         try:
             d['raw_volumes'] = tuple(d['raw_volumes'])
@@ -440,7 +444,6 @@ class GCEOSMIX(GCEOS):
                 pass
         except:
             pass
-
 
         eos_name = eos_name.split('.')[-1]
         eos = eos_mix_dict[eos_name]
@@ -6205,6 +6208,7 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
     a_alphas = None
     da_alpha_dTs = None
     d2a_alpha_dT2s = None
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     nonstate_constants_specific = ()
 
@@ -6395,7 +6399,7 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
-        self.scalar = scalar = type(Tcs) is list
+        self.scalar = scalar = type(zs) is list
         if scalar:
             self.zeros2d = zeros2d = [[0.0]*N for _ in range(N)]
         else:
@@ -6636,6 +6640,7 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
        edition. New York: McGraw-Hill Professional, 2000.
     '''
     eos_pure = RK
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
@@ -6645,6 +6650,7 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
+        self.scalar = scalar = type(zs) is list
         if kijs is None:
             kijs = [[0.0]*N for i in cmps]
         self.kijs = kijs
@@ -6951,6 +6957,7 @@ class PRMIX(GCEOSMIX, PR):
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
     '''
     eos_pure = PR
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     nonstate_constants_specific = ('kappas', )
 
@@ -6962,6 +6969,7 @@ class PRMIX(GCEOSMIX, PR):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
+        self.scalar = scalar = type(zs) is list
         if kijs is None:
             kijs = [[0.0]*N for i in cmps]
         self.kijs = kijs
@@ -7987,6 +7995,7 @@ class PRMIXTranslated(PRMIX):
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = PRTranslated
     mix_kwargs_to_pure = {'cs': 'c'}
     kwargs_linear = ('cs',)
@@ -8009,6 +8018,7 @@ class PRMIXTranslated(PRMIX):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
+        self.scalar = scalar = type(zs) is list
         if kijs is None:
             kijs = [[0.0]*N for i in range(N)]
         self.kijs = kijs
@@ -8433,6 +8443,7 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
        Fluid Phase Equilibria, December 7, 2018.
        https://doi.org/10.1016/j.fluid.2018.12.007.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = PRTranslatedPPJP
     mix_kwargs_to_pure = {'cs': 'c'}
     kwargs_linear = ('cs',)
@@ -8446,6 +8457,7 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
+        self.scalar = scalar = type(zs) is list
         if kijs is None:
             kijs = [[0.0]*N for i in range(N)]
         self.kijs = kijs
@@ -8579,6 +8591,7 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
        Super-Critical Domains." Fluid Phase Equilibria 429 (December 15, 2016):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = PRTranslatedConsistent
     kwargs_linear = ('cs', 'alpha_coeffs')
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
@@ -8592,6 +8605,7 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
+        self.scalar = scalar = type(zs) is list
         if kijs is None:
             kijs = [[0.0]*N for i in range(N)]
         self.kijs = kijs
@@ -8736,6 +8750,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
     .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
        Butterworth-Heinemann, 1985.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = SRK
     nonstate_constants_specific = ('ms',)
 
@@ -8752,6 +8767,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
+        self.scalar = scalar = type(zs) is list
         if kijs is None:
             kijs = [[0]*self.N for i in range(self.N)]
         self.kijs = kijs
@@ -9088,6 +9104,7 @@ class SRKMIXTranslated(SRKMIX):
     For P-V initializations, a numerical solver is used to find T.
 
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     fugacity_coefficients = GCEOSMIX.fugacity_coefficients
     dlnphis_dT = GCEOSMIX.dlnphis_dT
     dlnphis_dP = GCEOSMIX.dlnphis_dP
@@ -9106,6 +9123,7 @@ class SRKMIXTranslated(SRKMIX):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
+        self.scalar = scalar = type(zs) is list
         if kijs is None:
             kijs = [[0]*self.N for i in range(self.N)]
         self.kijs = kijs
@@ -9537,6 +9555,7 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
 
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = SRKTranslatedConsistent
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     kwargs_linear = ('cs', 'alpha_coeffs')
@@ -9549,6 +9568,7 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
+        self.scalar = scalar = type(zs) is list
         if kijs is None:
             kijs = [[0.0]*N for i in range(N)]
         self.kijs = kijs
@@ -9722,6 +9742,7 @@ class MSRKMIXTranslated(Soave_79_a_alpha, SRKMIXTranslatedConsistent):
        Fluid Phase Equilibria 93 (February 11, 1994): 377-83.
        https://doi.org/10.1016/0378-3812(94)87021-7.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = MSRKTranslated
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None,
                  alpha_coeffs=None, T=None, P=None, V=None,
@@ -9732,6 +9753,7 @@ class MSRKMIXTranslated(Soave_79_a_alpha, SRKMIXTranslatedConsistent):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
+        self.scalar = scalar = type(zs) is list
         if kijs is None:
             kijs = [[0.0]*N for i in cmps]
         self.kijs = kijs
@@ -9862,6 +9884,7 @@ class PSRK(Mathias_Copeman_a_alpha, PSRKMixingRules, SRKMIXTranslated):
        (December 30, 1991): 251-65.
        https://doi.org/10.1016/0378-3812(91)85038-V.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = SRKTranslated
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     kwargs_linear = ('cs', 'alpha_coeffs')
@@ -9876,6 +9899,7 @@ class PSRK(Mathias_Copeman_a_alpha, PSRKMixingRules, SRKMIXTranslated):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
+        self.scalar = scalar = type(zs) is list
         if kijs is None:
             kijs = [[0.0]*N for i in cmps]
         if cs is None:
@@ -10025,6 +10049,7 @@ class PR78MIX(PRMIX):
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = PR78
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
@@ -10033,6 +10058,7 @@ class PR78MIX(PRMIX):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
+        self.scalar = scalar = type(zs) is list
         if kijs is None:
             kijs = [[0]*self.N for i in range(self.N)]
         self.kijs = kijs
@@ -10135,6 +10161,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
     .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th
        edition. New York: McGraw-Hill Professional, 2000.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = VDW
     nonstate_constants_specific = tuple()
 
@@ -10144,6 +10171,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.zs = zs
+        self.scalar = scalar = type(zs) is list
         if kijs is None:
             kijs = [[0]*self.N for i in range(self.N)]
         self.kijs = kijs
@@ -10590,6 +10618,7 @@ class PRSVMIX(PRMIX, PRSV):
        of Industrial Interest." The Canadian Journal of Chemical Engineering
        67, no. 1 (February 1, 1989): 170-73. doi:10.1002/cjce.5450670125.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = PRSV
     nonstate_constants_specific = ('kappa0s', 'kappa1s', 'kappas')
     mix_kwargs_to_pure = {'kappa1s': 'kappa1'}
@@ -10602,6 +10631,7 @@ class PRSVMIX(PRMIX, PRSV):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
+        self.scalar = scalar = type(zs) is list
 
         if kijs is None:
             kijs = [[0]*self.N for i in range(N)]
@@ -10799,6 +10829,7 @@ class PRSV2MIX(PRMIX, PRSV2):
        Chemical Engineering 64, no. 5 (October 1, 1986): 820-26.
        doi:10.1002/cjce.5450640516.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = PRSV2
     nonstate_constants_specific = ('kappa1s', 'kappa2s', 'kappa3s', 'kappa0s', 'kappas')
     mix_kwargs_to_pure = {'kappa1s': 'kappa1', 'kappa2s': 'kappa2', 'kappa3s': 'kappa3'}
@@ -10812,6 +10843,7 @@ class PRSV2MIX(PRMIX, PRSV2):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
+        self.scalar = scalar = type(zs) is list
 
         if kijs is None:
             kijs = [[0.0]*self.N for i in range(self.N)]
@@ -11008,6 +11040,7 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
        Peng-Robinson Equation." Fluid Phase Equilibria 105, no. 1 (March 15,
        1995): 49-59. doi:10.1016/0378-3812(94)02601-V.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = TWUPR
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T
@@ -11020,6 +11053,7 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
+        self.scalar = scalar = type(zs) is list
         if kijs is None:
             kijs = [[0.0]*N for i in cmps]
         self.kijs = kijs
@@ -11145,6 +11179,7 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
        1995): 61-69. doi:10.1016/0378-3812(94)02602-W.
     '''
 #    a_alpha_mro = -5
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = TWUSRK
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T
@@ -11155,6 +11190,7 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
+        self.scalar = scalar = type(zs) is list
         if kijs is None:
             kijs = [[0]*self.N for i in range(self.N)]
         self.kijs = kijs
@@ -11268,6 +11304,7 @@ class APISRKMIX(SRKMIX, APISRK):
     .. [1] API Technical Data Book: General Properties & Characterization.
        American Petroleum Institute, 7E, 2005.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = APISRK
     nonstate_constants_specific = ('S1s', 'S2s')
     mix_kwargs_to_pure = {'S1s': 'S1', 'S2s': 'S2'}
@@ -11280,6 +11317,7 @@ class APISRKMIX(SRKMIX, APISRK):
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
+        self.scalar = scalar = type(zs) is list
         if kijs is None:
             kijs = [[0.0]*self.N for i in range(self.N)]
         self.kijs = kijs

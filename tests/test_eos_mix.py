@@ -34,6 +34,7 @@ from math import log, exp, sqrt
 from thermo import Mixture
 from thermo.property_package import eos_Z_test_phase_stability, eos_Z_trial_phase_stability
 import numpy as np
+import json, pickle
 from thermo.property_package_constants import (PropertyPackageConstants,
                                                NRTL_PKG, IDEAL_PKG, PR_PKG)
 from thermo.eos_mix_methods import a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms
@@ -4335,6 +4336,7 @@ def test_model_encode_json_gceosmix():
         obj1 = eos(T=T, P=P, zs=zs, omegas=omegas, Tcs=Tcs, Pcs=Pcs, kijs=kijs)
         s = obj1.as_json()
         assert 'json_version' in s
+        assert type(s) is dict
         obj2 = GCEOSMIX.from_json(s)
         assert obj1.__dict__ == obj2.__dict__
 
@@ -4498,6 +4500,15 @@ def test_missing_alphas_working():
     new.to_TP_zs_fast(320.5, 1e5, base.zs)
 
 
+def test_IGMIX_numpy_not_modified_by_serialization():
+    eos = IGMIX(T=115, P=1E6, Tcs=np.array([126.1, 190.6]), Pcs=np.array([33.94E5, 46.04E5]), omegas=np.array([0.04, .008]), zs=np.array([0.5, 0.5]))
+    hash1 = hash(eos)
+    eos.as_json()
+    hash2 = hash(eos)
+    assert hash1 == hash2
+
+
+
 def test_IGMIX_numpy():
     eos = IGMIX(T=115, P=1E6, Tcs=np.array([126.1, 190.6]), Pcs=np.array([33.94E5, 46.04E5]), omegas=np.array([0.04, .008]), zs=np.array([0.5, 0.5]))
     ddelta_dzs = eos.ddelta_dzs
@@ -4516,3 +4527,15 @@ def test_IGMIX_numpy():
 
     assert type(eos2.fugacities_g) is np.ndarray
     assert np.all(eos2.fugacities_g == eos2.P*eos2.zs)
+
+
+    p = pickle.dumps(eos)
+    obj2 = pickle.loads(p)
+    assert obj2 == eos
+    assert obj2.model_hash() == eos.model_hash()
+    assert obj2.state_hash() == eos.state_hash()
+
+    obj3 = IGMIX.from_json(json.loads(json.dumps(eos.as_json())))
+    assert obj3 == eos
+    assert obj3.model_hash() == eos.model_hash()
+    assert obj3.state_hash() == eos.state_hash()

@@ -3589,6 +3589,7 @@ class UNIFAC(GibbsExcess):
         return UNIFAC(T=T, xs=xs, rs=array(rs), qs=array(qs), Qs=array(Qs), vs=array(vs), psi_abc=(array(psi_a), array(psi_b), array(psi_c)), version=version)
 
     model_attriubtes = ('rs', 'qs', 'psi_a', 'psi_b', 'psi_c', 'version')
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     def __repr__(self):  # pragma: no cover
 

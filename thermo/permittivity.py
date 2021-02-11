@@ -112,6 +112,7 @@ class PermittivityLiquid(TDependentProperty):
     .. [1] Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of
        Chemistry and Physics. [Boca Raton, FL]: CRC press, 2014.
     '''
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'liquid relative permittivity'
     units = '-'
     interpolation_T = None

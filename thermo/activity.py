@@ -286,6 +286,8 @@ class GibbsExcess(object):
     the :obj:`gammas_infinite_dilution` calculation. This is important
     as not all models can mathematically be evaluated at zero mole-fraction.'''
 
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
+
     def __repr__(self):
         r'''Method to create a string representation of the state of the model.
         Included is `T`, `xs`, and all constants necessary to create the model.
@@ -366,45 +368,44 @@ class GibbsExcess(object):
         return hash_any_primitive((self.model_hash(), float(self.T), xs))
 
     def as_json(self):
-        r'''Method to create a JSON serialization of the Gibbs Excess model
-        which can be stored, and reloaded later.
+        r'''Method to create a JSON-friendly representation of the Gibbs Excess
+        model which can be stored, and reloaded later.
 
         Returns
         -------
-        json_repr : str
-            Json representation, [-]
+        json_repr : dict
+            JSON-friendly representation, [-]
 
         Notes
         -----
 
         Examples
         --------
+        >>> import json
         >>> model = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
-        >>> string = model.as_json()
-        >>> assert type(string) is str
+        >>> json_view = model.as_json()
+        >>> json_str = json.dumps(json_view)
+        >>> assert type(json_str) is str
+        >>> model_copy = IdealSolution.from_json(json.loads(json_str))
+        >>> assert model_copy == model
         '''
         # vaguely jsonpickle compatible
-        mod_name = self.__class__.__module__
-        d = self.__dict__
-        d["py/object"] = "%s.%s" %(mod_name, self.__class__.__name__)
+        d = self.__dict__.copy()
+        if not self.scalar:
+            d = serialize.arrays_to_lists(d)
+        d["py/object"] = self.__full_path__
         d["json_version"] = 1
-        if self.scalar:
-            ans = serialize.json.dumps(self.__dict__)
-        else:
-            ans = serialize.dump_json_np(self.__dict__)
-        del d["py/object"]
-        del d["json_version"]
-        return ans
+        return d
 
     @classmethod
     def from_json(cls, json_repr):
-        r'''Method to create a Gibbs Excess model from a JSON
+        r'''Method to create a Gibbs Excess model from a JSON-friendly
         serialization of another Gibbs Excess model.
 
         Parameters
         ----------
-        json_repr : str
-            JSON representation, [-]
+        json_repr : dict
+            JSON-friendly representation, [-]
 
         Returns
         -------
@@ -419,22 +420,25 @@ class GibbsExcess(object):
         Examples
         --------
         >>> model = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
-        >>> string = model.as_json()
-        >>> new_model = GibbsExcess.from_json(string)
-        >>> assert model.__dict__ == new_model.__dict__
+        >>> json_view = model.as_json()
+        >>> new_model = GibbsExcess.from_json(json_view)
+        >>> assert model == new_model
         '''
+        d = json_repr
+        scalar = d['scalar']
+        if not scalar:
+            d = serialize.naive_lists_to_arrays(d)
 
-
-        if '"scalar": false' in json_repr or '"scalar":false' in json_repr:
-            # Load as np
-            d = serialize.load_json_np(json_repr)
-        else:
-            d = serialize.json.loads(json_repr)
-            if not d['scalar']:
-                d = serialize.load_json_np(json_repr)
-        if not d['scalar'] and 'cmp_group_idx' in d:
+#        if '"scalar": false' in json_repr or '"scalar":false' in json_repr:
+#            # Load as np
+#            d = serialize.load_json_np(json_repr)
+#        else:
+#            d = serialize.json.loads(json_repr)
+#            if not d['scalar']:
+#                d = serialize.load_json_np(json_repr)
+        if not scalar and 'cmp_group_idx' in d:
             d['cmp_group_idx'] = tuple(array(v) for v in d['cmp_group_idx'])
-        if not d['scalar'] and 'group_cmp_idx' in d:
+        if not scalar and 'group_cmp_idx' in d:
             d['group_cmp_idx'] = tuple(array(v) for v in d['group_cmp_idx'])
 
 
@@ -1045,6 +1049,8 @@ class IdealSolution(GibbsExcess):
     [0.0, 0.0, 0.0, 0.0]
     '''
     model_attriubtes = ()
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
+
     def __init__(self, T=None, xs=None):
         if T is not None:
             self.T = T

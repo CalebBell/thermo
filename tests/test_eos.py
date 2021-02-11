@@ -2323,8 +2323,11 @@ def test_model_encode_json_eos():
         e = eos(Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
         s = e.as_json()
         assert 'json_version' in s
-        e1 = GCEOS.from_json(s)
+        assert type(s) is dict
+        e1 = eos.from_json(s)
         assert e.__dict__ == e1.__dict__
+        assert e == e1
+        assert hash(e) == hash(e1)
 
 def test_model_pickleable_eos():
     import pickle
@@ -2336,3 +2339,5 @@ def test_model_pickleable_eos():
         p = pickle.dumps(e)
         e2 = pickle.loads(p)
         assert e.__dict__ == e2.__dict__
+        assert e == e2
+        assert hash(e) == hash(e2)

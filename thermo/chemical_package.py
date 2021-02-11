@@ -151,6 +151,7 @@ class ChemicalConstantsPackage(object):
     __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms') + ('json_version',)
     non_vectors = ('atom_fractions',)
     non_vectors_set = set(non_vectors)
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
 
     def _missing_properties(self):
@@ -172,38 +173,40 @@ class ChemicalConstantsPackage(object):
         return new
 
     def as_json(self):
-        r'''Method to create a JSON serialization of the chemical constants
+        r'''Method to create a JSON friendly serialization of the chemical constants
         package which can be stored, and reloaded later.
 
         Returns
         -------
-        json_repr : str
-            Json representation, [-]
+        json_repr : dict
+            Json friendly representation, [-]
 
         Notes
         -----
 
         Examples
         --------
+        >>> import json
         >>> constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
-        >>> string = constants.as_json()
-        >>> type(string)
-        str
+        >>> string = json.dumps(constants.as_json())
         '''
+        d = self.__dict__.copy()
+        for k in ('PSRK_groups', 'UNIFAC_Dortmund_groups', 'UNIFAC_groups'):
+            # keys are stored as strings and not ints
+            d[k] = [{str(k): v for k, v in r.items()} if r is not None else r for r in d[k]]
 
-        d = self.__dict__ # Not a the real object dictionary
         d['json_version'] = 1
-        ans = serialize.json.dumps(d)
-        return ans
+        d['py/object'] = self.__full_path__
+        return d
 
     @classmethod
-    def from_json(cls, string):
+    def from_json(cls, json_repr):
         r'''Method to create a ChemicalConstantsPackage from a JSON
         serialization of another ChemicalConstantsPackage.
 
         Parameters
         ----------
-        json_repr : str
+        json_repr : dict
             Json representation, [-]
 
         Returns
@@ -213,17 +216,18 @@ class ChemicalConstantsPackage(object):
 
         Notes
         -----
-        It is important that the input string be in the same format as that
+        It is important that the input be in the same format as that
         created by :obj:`ChemicalConstantsPackage.as_json`.
 
         Examples
         --------
+        >>> import json
         >>> constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
-        >>> string = constants.as_json()
-        >>> new_constants  = ChemicalConstantsPackage.from_json(string)
+        >>> string = json.dumps(constants.as_json())
+        >>> new_constants  = ChemicalConstantsPackage.from_json(json.loads(string))
         >>> assert hash(new_constants) == hash(constants)
         '''
-        d = serialize.json.loads(string)
+        d = json_repr
 
         for k in ('TWAs', 'STELs'):
             # tuple gets converted to a json list
@@ -235,6 +239,7 @@ class ChemicalConstantsPackage(object):
             d[k] = [{int(k): v for k, v in r.items()} if r is not None else r for r in d[k]]
 
         del d['json_version']
+        del d['py/object']
         return cls(**d)
 
     def __hash__(self):
@@ -1318,17 +1323,18 @@ class PropertyCorrelationsPackage(object):
                'ThermalConductivityLiquidMixture', 'SurfaceTensionMixture')
 
     correlations = pure_correlations + mixture_correlations
-    __slots__ = correlations + ('constants', 'skip_missing')
+#    __slots__ = correlations + ('constants', 'skip_missing')
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
 
     def as_json(self):
-        r'''Method to create a JSON serialization of the chemical properties
-        package which can be stored, and reloaded later.
+        r'''Method to create a JSON friendly serialization of the chemical
+        properties package which can be stored, and reloaded later.
 
         Returns
         -------
-        json_repr : str
-            Json representation, [-]
+        json_repr : dict
+            JSON-friendly representation, [-]
 
         Notes
         -----
@@ -1336,10 +1342,8 @@ class PropertyCorrelationsPackage(object):
         Examples
         --------
         '''
-        d = {}
-        mod_name = self.__class__.__module__
-        d["py/object"] = "%s.%s" %(mod_name, self.__class__.__name__)
-
+        d = self.__dict__.copy()
+        d["py/object"] = self.__full_path__
 
         props_to_store = []
         for prop_name in self.pure_correlations:
@@ -1356,6 +1360,7 @@ class PropertyCorrelationsPackage(object):
                     props.append(s)
 
                 props_to_store.append((prop_name, props))
+            del d[prop_name]
 
         mix_props_to_store = []
         for prop_name in self.mixture_correlations:
@@ -1365,13 +1370,13 @@ class PropertyCorrelationsPackage(object):
             else:
                 s = l.as_json()
                 mix_props_to_store.append((prop_name, s))
+            del d[prop_name]
         d['constants'] = self.constants.as_json()
         d['mixture_properties'] = mix_props_to_store
         d['pure_properties'] = props_to_store
         d['json_version'] = 1
         d['skip_missing'] = self.skip_missing
-        ans = serialize.json.dumps(d)
-        return ans
+        return d
 
     @classmethod
     def from_json(cls, json_repr):
@@ -1380,8 +1385,8 @@ class PropertyCorrelationsPackage(object):
 
         Parameters
         ----------
-        json_repr : str
-            Json representation, [-]
+        json_repr : dict
+            JSON-friendly representation, [-]
 
         Returns
         -------
