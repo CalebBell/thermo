@@ -90,6 +90,7 @@ from chemicals.dippr import EQ101
 from chemicals.phase_change import Watson, Watson_n
 from thermo import serialize
 from thermo.eos import GCEOS
+from thermo.coolprop import coolprop_fluids
 
 NEGLIGIBLE = 'NEGLIGIBLE'
 DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
@@ -111,18 +112,6 @@ def has_matplotlib():
             _has_matplotlib = False
     return _has_matplotlib
 
-try:  # pragma: no cover
-    from appdirs import user_data_dir, user_config_dir
-    data_dir = user_config_dir('thermo')
-    if not os.path.exists(data_dir):
-        os.mkdir(data_dir)
-except ImportError:  # pragma: no cover
-    data_dir = ''
-
-try:
-    source_path = os.path.dirname(__file__) # micropython
-except:
-    source_path = ''
 
 def allclose_variable(a, b, limits, rtols=None, atols=None):
     """Returns True if two arrays are element-wise equal within several
@@ -964,7 +953,6 @@ class TDependentProperty(object):
     @classmethod
     def _load_json_CAS_references(cls, d):
         if 'CP_f' in d:
-            from thermo.coolprop import coolprop_fluids
             d['CP_f'] = coolprop_fluids[d['CP_f']]
 
     @classmethod
@@ -997,16 +985,12 @@ class TDependentProperty(object):
                 d['eos'] = [GCEOS.from_json(d['eos'])]
 
         d['all_methods'] = set(d['all_methods'])
-        if 'all_methods_P' in d:
+        try:
             d['all_methods_P'] = set(d['all_methods_P'])
-
-        T_limits = d['T_limits']
-        for k, v in T_limits.items():
-            T_limits[k] = tuple(v)
-        tabular_data = d['tabular_data']
-        for k, v in tabular_data.items():
-            tabular_data[k] = tuple(v)
-
+        except:
+            pass
+        d['T_limits'] = {k: tuple(v) for k, v in d['T_limits'].items()}
+        d['tabular_data'] = {k: tuple(v) for k, v in d['tabular_data'].items()}
 
         del d['py/object']
         del d["json_version"]

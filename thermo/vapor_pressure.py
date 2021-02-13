@@ -75,7 +75,7 @@ from chemicals.vapor_pressure import *
 from chemicals import vapor_pressure
 from thermo.utils import TDependentProperty
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
-from thermo.utils import source_path
+from thermo.base import source_path
 
 
 WAGNER_MCGARRY = 'WAGNER_MCGARRY'
