@@ -3144,7 +3144,8 @@ class MixtureProperty(object):
         d['all_methods'] = set(d['all_methods'])
         for k, sub_cls in zip(cls.pure_references, cls.pure_reference_types):
             sub_jsons = d[k]
-            d[k] = [sub_cls.from_json(j) for j in sub_jsons]
+            d[k] = [sub_cls.from_json(j) if j is not None else None
+                    for j in sub_jsons]
 
         d['pure_objs'] = d[cls.pure_references[0]]
 

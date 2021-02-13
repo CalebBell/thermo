@@ -1376,6 +1376,7 @@ class PropertyCorrelationsPackage(object):
         '''
         d = self.__dict__.copy()
         d["py/object"] = self.__full_path__
+        N = self.constants.N
 
         props_to_store = []
         for prop_name in self.pure_correlations:
@@ -1401,8 +1402,13 @@ class PropertyCorrelationsPackage(object):
                 mix_props_to_store.append((prop_name, l))
             else:
                 s = l.as_json()
+                for ref in l.pure_references:
+                    s[ref] = [None]*N
                 mix_props_to_store.append((prop_name, s))
             del d[prop_name]
+
+
+
         d['constants'] = self.constants.as_json()
         d['mixture_properties'] = mix_props_to_store
         d['pure_properties'] = props_to_store
@@ -1467,7 +1473,11 @@ class PropertyCorrelationsPackage(object):
             if value is None:
                 setattr(new, prop, value)
             else:
-                setattr(new, prop, mix_properties_to_classes[prop].from_json(value))
+                mix_prop = mix_properties_to_classes[prop].from_json(value)
+                for k, sub_cls in zip(mix_prop.pure_references, mix_prop.pure_reference_types):
+                    real_ref_list = getattr(new, classes_to_properties[sub_cls])
+                    setattr(mix_prop, k, real_ref_list)
+                setattr(new, prop, mix_prop)
 
 
         return new
