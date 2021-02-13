@@ -86,6 +86,10 @@ def test_ChemicalConstantsPackage_json_export_same_output():
     assert hash(obj) == hash(obj2)
     assert obj == obj2
 
+def test_ChemicalConstantsPackage_wrong_behaviors():
+    obj = ChemicalConstantsPackage.correlations_from_IDs(['7647-19-0'])
+    obj.VolumeLiquids[0].eos is None
+
 
 @pytest.mark.CoolProp
 def test_lemmon2000_package():

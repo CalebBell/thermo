@@ -559,7 +559,7 @@ class ChemicalConstantsPackage(object):
             try:
                 enclosed_eoss.append([PR(T=298.15, P=101325.0, Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i])])
             except:
-                enclosed_eoss.append([])
+                enclosed_eoss.append(None)
         VolumeGases = [VolumeGas(MW=MWs[i], Tc=Tcs[i], Pc=Pcs[i],
                                    omega=omegas[i], dipole=dipoles[i],
                                    eos=enclosed_eoss[i], CASRN=CASs[i]) for i in range(N)]
