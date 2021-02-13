@@ -3061,9 +3061,9 @@ class MixtureProperty(object):
     '''
 
     def set_poly_fit_coeffs(self):
-        if all(i.locked for i in self.pure_objs):
+        pure_objs = self.pure_objs()
+        if all(i.locked for i in pure_objs):
             self.locked = True
-            pure_objs = self.pure_objs
             self.poly_fit_data = [[i.poly_fit_Tmin for i in pure_objs],
                                [i.poly_fit_Tmin_slope for i in pure_objs],
                                [i.poly_fit_Tmin_value for i in pure_objs],
@@ -3079,6 +3079,10 @@ class MixtureProperty(object):
         d = self.__dict__
         ans = hash_any_primitive((self.__class__, d))
         return ans
+
+    def pure_objs(self):
+        return getattr(self, self.pure_references[0])
+
 
     def as_json(self):
         r'''Method to create a JSON serialization of the mixture property
@@ -3101,7 +3105,6 @@ class MixtureProperty(object):
             d[k] = [v.as_json() for v in d[k]]
 #        for i, k in enumerate(self.pure_references):
 #            d[k] = [v.as_json() for v in pure_references[i]]
-        del d['pure_objs']
 
         d['json_version'] = 1
         d["py/object"] = self.__full_path__
@@ -3112,7 +3115,6 @@ class MixtureProperty(object):
 #        for i, k in enumerate(self.pure_references):
 #            d[k] = pure_references[i]
 #        # First reference must be the common one
-#        d['pure_objs'] = pure_references[0]
 #        d['all_methods'] = all_methods
         return d
 
@@ -3146,8 +3148,6 @@ class MixtureProperty(object):
             sub_jsons = d[k]
             d[k] = [sub_cls.from_json(j) if j is not None else None
                     for j in sub_jsons]
-
-        d['pure_objs'] = d[cls.pure_references[0]]
 
         del d['py/object']
         del d["json_version"]

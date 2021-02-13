@@ -1259,7 +1259,7 @@ class VolumeLiquidMixture(MixtureProperty):
         self.Zcs = Zcs
         self.omegas = omegas
         self.CASs = CASs
-        self.VolumeLiquids = self.pure_objs = VolumeLiquids
+        self.VolumeLiquids = VolumeLiquids
 
         self._correct_pressure_pure = correct_pressure_pure
 
@@ -1867,7 +1867,7 @@ class VolumeGasMixture(MixtureProperty):
 
     def __init__(self, eos=None, CASs=[], VolumeGases=[], MWs=[]):
         self.CASs = CASs
-        self.VolumeGases = self.pure_objs = VolumeGases
+        self.VolumeGases = VolumeGases
         self.eos = eos
         self.MWs = MWs
 
@@ -2259,7 +2259,7 @@ class VolumeSolidMixture(MixtureProperty):
 
     def __init__(self, CASs=[], VolumeSolids=[], MWs=[]):
         self.CASs = CASs
-        self.VolumeSolids = self.pure_objs = VolumeSolids
+        self.VolumeSolids = VolumeSolids
         self.MWs = MWs
 
         self.Tmin = 0

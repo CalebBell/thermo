@@ -1647,7 +1647,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     def __init__(self, MWs=[], CASs=[], HeatCapacityLiquids=[]):
         self.MWs = MWs
         self.CASs = CASs
-        self.HeatCapacityLiquids = self.pure_objs = HeatCapacityLiquids
+        self.HeatCapacityLiquids = HeatCapacityLiquids
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -1824,7 +1824,7 @@ class HeatCapacitySolidMixture(MixtureProperty):
 
     def __init__(self, CASs=[], HeatCapacitySolids=[], MWs=[]):
         self.CASs = CASs
-        self.HeatCapacitySolids = self.pure_objs = HeatCapacitySolids
+        self.HeatCapacitySolids = HeatCapacitySolids
         self.MWs = MWs
 
         self.Tmin = None
@@ -1962,7 +1962,7 @@ class HeatCapacityGasMixture(MixtureProperty):
 
     def __init__(self, CASs=[], HeatCapacityGases=[], MWs=[]):
         self.CASs = CASs
-        self.HeatCapacityGases = self.pure_objs = HeatCapacityGases
+        self.HeatCapacityGases = HeatCapacityGases
         self.MWs = MWs
 
         self.Tmin = None

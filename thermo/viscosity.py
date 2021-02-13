@@ -1268,7 +1268,7 @@ class ViscosityLiquidMixture(MixtureProperty):
     def __init__(self, CASs=[], ViscosityLiquids=[], MWs=[],
                  correct_pressure_pure=True):
         self.CASs = CASs
-        self.ViscosityLiquids = self.pure_objs = ViscosityLiquids
+        self.ViscosityLiquids = ViscosityLiquids
         self.MWs = MWs
 
         self._correct_pressure_pure = correct_pressure_pure
@@ -1528,7 +1528,7 @@ class ViscosityGasMixture(MixtureProperty):
         self.molecular_diameters = molecular_diameters
         self.Stockmayers = Stockmayers
         self.CASs = CASs
-        self.ViscosityGases = self.pure_objs = ViscosityGases
+        self.ViscosityGases = ViscosityGases
         try:
             self.MW_roots = [i**0.5 for i in MWs]
             MWs_inv = [1.0/MWi for MWi in MWs]

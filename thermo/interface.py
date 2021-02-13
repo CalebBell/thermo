@@ -621,7 +621,7 @@ class SurfaceTensionMixture(MixtureProperty):
         self.Tbs = Tbs
         self.Tcs = Tcs
         self.CASs = CASs
-        self.SurfaceTensions = self.pure_objs = SurfaceTensions
+        self.SurfaceTensions = SurfaceTensions
         self.VolumeLiquids = VolumeLiquids
 
         self._correct_pressure_pure = correct_pressure_pure
