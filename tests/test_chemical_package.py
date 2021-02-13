@@ -76,6 +76,9 @@ def test_ChemicalConstantsPackage_json_export_does_not_change_hashes():
 
 
 def test_ChemicalConstantsPackage_json_export_sane_recursion():
+
+    # It might be nice to do something about the duplicate EOSs, but they could be different
+    # Really still feels like a different structure for that would be better.
     obj = ChemicalConstantsPackage.correlations_from_IDs(['methane', 'ethane'])
     assert 3 == json.dumps(obj.as_json()).count('VaporPressure')
 
