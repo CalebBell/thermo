@@ -952,8 +952,10 @@ class TDependentProperty(object):
 
     @classmethod
     def _load_json_CAS_references(cls, d):
-        if 'CP_f' in d:
+        try:
             d['CP_f'] = coolprop_fluids[d['CP_f']]
+        except:
+            pass
 
     @classmethod
     def from_json(cls, json_repr):
@@ -980,9 +982,12 @@ class TDependentProperty(object):
         '''
         d = json_repr#serialize.json.loads(json_repr)
         cls._load_json_CAS_references(d)
-        if 'eos' in d:
-            if d['eos'] is not None:
-                d['eos'] = [GCEOS.from_json(d['eos'])]
+        try:
+            eos = d['eos']
+            if eos is not None:
+                d['eos'] = [GCEOS.from_json(eos)]
+        except:
+            pass
 
         d['all_methods'] = set(d['all_methods'])
         try:

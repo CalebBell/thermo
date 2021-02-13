@@ -1472,8 +1472,6 @@ class PropertyCorrelationsPackage(object):
                     if real_ref_list:
                         for i in range(N):
                             setattr(l[i], ref_name, real_ref_list[i])
-                # for o in l:
-                #     setattr(o, ref, None)
 
 
         for prop, value in d['mixture_properties']:
