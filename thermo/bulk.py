@@ -154,6 +154,10 @@ prop_power_methods = set([POWER_PROP_MOLE_WEIGHTED, POWER_PROP_MASS_WEIGHTED, PO
 
 class BulkSettings(object):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
+
+    def as_json(self):
+        return self.__dict__.copy()
+
     def __init__(self, dP_dT=MOLE_WEIGHTED, dP_dV=MOLE_WEIGHTED,
                  d2P_dV2=MOLE_WEIGHTED, d2P_dT2=MOLE_WEIGHTED,
                  d2P_dTdV=MOLE_WEIGHTED, mu=MASS_WEIGHTED, k=MASS_WEIGHTED,
