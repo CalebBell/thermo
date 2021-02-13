@@ -266,6 +266,9 @@ class Phase(object):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
     scalar  = True
 
+    obj_references = tuple()
+    obj_list_references = tuple()
+
     def __str__(self):
         s =  '<%s, ' %(self.__class__.__name__)
         try:
@@ -5340,6 +5343,7 @@ class CEOSGas(Phase):
 
     pure_references = ('HeatCapacityGases',)
     pure_reference_types = (HeatCapacityGas,)
+    obj_references = ('eos_mix',)
 
     def model_hash(self, ignore_phase=False):
         if ignore_phase:
@@ -5430,11 +5434,9 @@ class CEOSGas(Phase):
             self.P = P
             self.zs = zs
             self.eos_mix = eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
-            self.eos_pures_STP = [eos_mix.to_TPV_pure(T=298.15, P=101325.0, V=None, i=i) for i in range(N)]
         else:
             zs = [1.0/N]*N
             self.eos_mix = eos_mix = self.eos_class(T=298.15, P=101325.0, zs=zs, **self.eos_kwargs)
-            self.eos_pures_STP = [eos_mix.to_TPV_pure(T=298.15, P=101325.0, V=None, i=i) for i in range(N)]
             self.T = 298.15
             self.P = 101325.0
             self.zs = zs
@@ -5514,7 +5516,6 @@ class CEOSGas(Phase):
 
         try:
             new.N = self.N
-            new.eos_pures_STP = self.eos_pures_STP
         except:
             pass
 
@@ -5563,7 +5564,6 @@ class CEOSGas(Phase):
 
         try:
             new.N = self.N
-            new.eos_pures_STP = self.eos_pures_STP
         except:
             pass
 

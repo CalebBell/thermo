@@ -6982,6 +6982,11 @@ class FlashPureVLS(Flash):
                                and (isinstance(gas, IdealGas) or gas.eos_class is IGMIX)
                                 and len(solids) == 0)
 
+        if self.VL_only_CEOSs_same:
+            # Two phase pure eoss are two phase up to the critical point only! Then one phase
+            self.eos_pure_STP = gas.eos_mix.to_TPV_pure(T=298.15, P=101325.0, V=None, i=0)
+
+
         liquids_to_unique_liquids = []
         unique_liquids, unique_liquid_hashes = [], []
         for i, l in enumerate(liquids):
@@ -7137,7 +7142,7 @@ class FlashPureVLS(Flash):
     def Psat_guess(self, T):
         if self.VL_only_CEOSs_same:
             # Two phase pure eoss are two phase up to the critical point only! Then one phase
-            Psat = self.gas.eos_pures_STP[0].Psat(T)
+            Psat = self.eos_pure_STP.Psat(T)
         #
         else:
             try:
@@ -7197,7 +7202,7 @@ class FlashPureVLS(Flash):
             if P > self.constants.Pcs[0]:
                 raise PhaseExistenceImpossible("Specified P is in the supercritical region", zs=zs, P=P)
             try:
-                Tsat = self.gas.eos_pures_STP[0].Tsat(P)
+                Tsat = self.eos_pure_STP.Tsat(P)
             except:
                 raise PhaseExistenceImpossible("Failed to calculate VL equilibrium T; likely supercritical", zs=zs, P=P)
             sat_gas = self.gas.to_TP_zs(Tsat, P, zs)
