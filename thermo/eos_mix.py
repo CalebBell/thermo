@@ -439,14 +439,17 @@ class GCEOSMIX(GCEOS):
         try:
             alpha_coeffs = [tuple(v) for v in d['alpha_coeffs']]
             d['alpha_coeffs'] = alpha_coeffs
-            try:
-                d['kwargs']['alpha_coeffs'] = alpha_coeffs
-            except:
-                pass
         except:
             pass
 
         eos = eos_mix_full_path_dict[eos_name]
+
+        if eos.kwargs_keys:
+            d['kwargs'] = {k: d[k] for k in eos.kwargs_keys}
+            try:
+                d['kwargs']['alpha_coeffs'] = alpha_coeffs
+            except:
+                pass
 
         new = eos.__new__(eos)
         new.__dict__ = d
@@ -6211,6 +6214,7 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     nonstate_constants_specific = ()
+    kwargs_keys = ('kijs',)
 
     def _zeros1d(self):
         return self.zeros1d
@@ -6642,6 +6646,8 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
     eos_pure = RK
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
+    kwargs_keys = ('kijs',)
+
     def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
@@ -6960,6 +6966,7 @@ class PRMIX(GCEOSMIX, PR):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     nonstate_constants_specific = ('kappas', )
+    kwargs_keys = ('kijs',)
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
@@ -8007,6 +8014,7 @@ class PRMIXTranslated(PRMIX):
 
     # All the b derivatives happen to work out to be the same, and are checked numerically
     solve_T = GCEOS.solve_T
+    kwargs_keys = ('kijs', 'cs')
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None,
                  T=None, P=None, V=None,
@@ -8447,6 +8455,7 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
     eos_pure = PRTranslatedPPJP
     mix_kwargs_to_pure = {'cs': 'c'}
     kwargs_linear = ('cs',)
+    kwargs_keys = ('kijs', 'cs')
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None,
                  T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
@@ -8595,6 +8604,8 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
     eos_pure = PRTranslatedConsistent
     kwargs_linear = ('cs', 'alpha_coeffs')
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
+    kwargs_keys = ('kijs', 'alpha_coeffs', 'cs')
+
     # There is an updated set of correlations - which means a revision flag is needed
     # Analysis of the Combinations of Property Data That Are Suitable for a Safe Estimation of Consistent Twu α-Function Parameters: Updated Parameter Values for the Translated-Consistent tc-PR and tc-RK Cubic Equations of State
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None,
@@ -8753,6 +8764,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = SRK
     nonstate_constants_specific = ('ms',)
+    kwargs_keys = ('kijs', )
 
     ddelta_dzs = RKMIX.ddelta_dzs
     ddelta_dns = RKMIX.ddelta_dns
@@ -9115,6 +9127,7 @@ class SRKMIXTranslated(SRKMIX):
     eos_pure = SRKTranslated
     mix_kwargs_to_pure = {'cs': 'c'}
     kwargs_linear = ('cs',)
+    kwargs_keys = ('kijs', 'cs')
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
@@ -9559,6 +9572,7 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
     eos_pure = SRKTranslatedConsistent
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     kwargs_linear = ('cs', 'alpha_coeffs')
+    kwargs_keys = ('kijs', 'alpha_coeffs', 'cs')
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None,
                  alpha_coeffs=None, T=None, P=None, V=None,
@@ -9743,6 +9757,7 @@ class MSRKMIXTranslated(Soave_79_a_alpha, SRKMIXTranslatedConsistent):
        https://doi.org/10.1016/0378-3812(94)87021-7.
     '''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
+    kwargs_keys = ('kijs', 'alpha_coeffs', 'cs')
     eos_pure = MSRKTranslated
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None,
                  alpha_coeffs=None, T=None, P=None, V=None,
@@ -9888,6 +9903,7 @@ class PSRK(Mathias_Copeman_a_alpha, PSRKMixingRules, SRKMIXTranslated):
     eos_pure = SRKTranslated
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     kwargs_linear = ('cs', 'alpha_coeffs')
+    kwargs_keys = ('kijs', 'alpha_coeffs', 'cs', 'ge_model')
 
     def __init__(self, Tcs, Pcs, omegas, zs, alpha_coeffs, ge_model,
                  kijs=None, cs=None,
@@ -10164,6 +10180,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = VDW
     nonstate_constants_specific = tuple()
+    kwargs_keys = ('kijs',)
 
     def __init__(self, Tcs, Pcs, zs, kijs=None, T=None, P=None, V=None,
                  omegas=None, fugacities=True, only_l=False, only_g=False):
@@ -10623,6 +10640,7 @@ class PRSVMIX(PRMIX, PRSV):
     nonstate_constants_specific = ('kappa0s', 'kappa1s', 'kappas')
     mix_kwargs_to_pure = {'kappa1s': 'kappa1'}
     kwargs_linear = ('kappa1s',)
+    kwargs_keys = ('kijs', 'kappa1s')
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  kappa1s=None, fugacities=True, only_l=False, only_g=False):
@@ -10834,6 +10852,7 @@ class PRSV2MIX(PRMIX, PRSV2):
     nonstate_constants_specific = ('kappa1s', 'kappa2s', 'kappa3s', 'kappa0s', 'kappas')
     mix_kwargs_to_pure = {'kappa1s': 'kappa1', 'kappa2s': 'kappa2', 'kappa3s': 'kappa3'}
     kwargs_linear = ('kappa1s', 'kappa2s', 'kappa3s')
+    kwargs_keys = ('kijs', 'kappa1s', 'kappa2s', 'kappa3s')
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  kappa1s=None, kappa2s=None, kappa3s=None,
@@ -11044,6 +11063,7 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
     eos_pure = TWUPR
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T
+    kwargs_keys = ('kijs', )
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
@@ -11180,6 +11200,7 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
     '''
 #    a_alpha_mro = -5
     __full_path__ = "%s.%s" %(__module__, __qualname__)
+    kwargs_keys = ('kijs', )
     eos_pure = TWUSRK
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T
@@ -11309,6 +11330,7 @@ class APISRKMIX(SRKMIX, APISRK):
     nonstate_constants_specific = ('S1s', 'S2s')
     mix_kwargs_to_pure = {'S1s': 'S1', 'S2s': 'S2'}
     kwargs_linear = ('S1s', 'S2s')
+    kwargs_keys = ('kijs', 'S1s', 'S2s')
 
     def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
                  S1s=None, S2s=None, fugacities=True, only_l=False, only_g=False):

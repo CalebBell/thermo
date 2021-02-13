@@ -815,6 +815,7 @@ class GCEOS(object):
     '''Parameter used by some equations of state in the `b` calculation'''
 
     nonstate_constants = ('Tc', 'Pc', 'omega', 'kwargs', 'a', 'b', 'delta', 'epsilon')
+    kwargs_keys = tuple()
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
 
@@ -951,6 +952,12 @@ class GCEOS(object):
         d = self.__dict__.copy()
         if not self.scalar:
             d = serialize.arrays_to_lists(d)
+        # TODO: delete kwargs and reconstruct it
+        # Need to add all kwargs attributes
+        try:
+            del d['kwargs']
+        except:
+            pass
         d["py/object"] = self.__full_path__
         d['json_version'] = 1
         return d
@@ -997,11 +1004,14 @@ class GCEOS(object):
         except:
             pass
 
-        try:
-            d['kwargs']['alpha_coeffs'] = tuple(d['kwargs']['alpha_coeffs'])
-        except:
-            pass
         eos = eos_full_path_dict[eos_name]
+
+        if eos.kwargs_keys:
+            d['kwargs'] = {k: d[k] for k in eos.kwargs_keys}
+            try:
+                d['kwargs']['alpha_coeffs'] = tuple(d['kwargs']['alpha_coeffs'])
+            except:
+                pass
 
         new = eos.__new__(eos)
         new.__dict__ = d
@@ -8004,6 +8014,7 @@ class PRTranslated(PR):
     solve_T = GCEOS.solve_T
     P_max_at_V = GCEOS.P_max_at_V
     __full_path__ = "%s.%s" %(__module__, __qualname__)
+    kwargs_keys = ('c', 'alpha_coeffs')
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=0.0, T=None, P=None,
                  V=None):
         self.Tc = Tc
@@ -8101,6 +8112,7 @@ class PRTranslatedPPJP(PRTranslated):
     '''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
     # Direct solver for T could be implemented but cannot use the PR one
+    kwargs_keys = ('c',)
     def __init__(self, Tc, Pc, omega, c=0.0, T=None, P=None, V=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -8194,6 +8206,7 @@ class PRTranslatedMathiasCopeman(Mathias_Copeman_a_alpha, PRTranslated):
 
 class PRTranslatedCoqueletChapoyRichon(PRTranslatedMathiasCopeman):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
+    kwargs_keys = ('c', 'alpha_coeffs')
     def __init__(self, Tc, Pc, omega, c=0.0, alpha_coeffs=None, T=None, P=None, V=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -8369,6 +8382,7 @@ class PRTranslatedConsistent(PRTranslatedTwu):
     '''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
+    kwargs_keys = ('c', 'alpha_coeffs')
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=None, T=None,
                  P=None, V=None):
         # estimates volume translation and alpha function parameters
@@ -8492,6 +8506,7 @@ class PRSV(PR):
     '''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
     kappa1_Tr_limit = False
+    kwargs_keys = ('kappa1',)
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -8751,6 +8766,7 @@ class PRSV2(PR):
        doi:10.1002/cjce.5450640516.
     '''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
+    kwargs_keys = ('kappa1', 'kappa2', 'kappa3')
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=0, kappa2=0, kappa3=0):
         self.Tc = Tc
         self.Pc = Pc
@@ -9964,6 +9980,7 @@ class SRKTranslated(SRK):
 
     solve_T = GCEOS.solve_T
     P_max_at_V = GCEOS.P_max_at_V
+    kwargs_keys = ('c', 'alpha_coeffs')
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=0.0, T=None, P=None,
                  V=None):
         self.Tc = Tc
@@ -10089,6 +10106,7 @@ class MSRKTranslated(Soave_79_a_alpha, SRKTranslated):
        https://doi.org/10.1016/0378-3812(94)87021-7.
     '''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
+    kwargs_keys = ('c', 'alpha_coeffs')
     def __init__(self, Tc, Pc, omega, M=None, N=None, alpha_coeffs=None, c=0.0,
                  T=None, P=None, V=None):
         # Ready for mixture class implemenentation
@@ -10239,6 +10257,7 @@ class SRKTranslatedPPJP(SRK):
        https://doi.org/10.1016/j.fluid.2018.12.007.
     '''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
+    kwargs_keys = ('c',)
     # No point in subclassing SRKTranslated - just disables direct solver for T
     def __init__(self, Tc, Pc, omega, c=0.0, T=None, P=None, V=None):
         self.Tc = Tc
@@ -10346,6 +10365,7 @@ class SRKTranslatedConsistent(Twu91_a_alpha, SRKTranslated):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
     '''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
+    kwargs_keys = ('c', 'alpha_coeffs')
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=None, T=None,
                  P=None, V=None):
         # estimates volume translation and alpha function parameters
@@ -10445,6 +10465,7 @@ class APISRK(SRK):
        American Petroleum Institute, 7E, 2005.
     '''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
+    kwargs_keys = ('S1', 'S2')
 
     def __init__(self, Tc, Pc, omega=None, T=None, P=None, V=None, S1=None,
                  S2=0):
@@ -10454,17 +10475,17 @@ class APISRK(SRK):
         self.T = T
         self.P = P
         self.V = V
-        self.kwargs = {'S1': S1, 'S2': S2}
         self.check_sufficient_inputs()
 
         if S1 is None and omega is None:
             raise Exception('Either acentric factor of S1 is required')
 
         if S1 is None:
-            self.S1 = 0.48508 + 1.55171*omega - 0.15613*omega*omega
+            self.S1 = S1 = 0.48508 + 1.55171*omega - 0.15613*omega*omega
         else:
             self.S1 = S1
         self.S2 = S2
+        self.kwargs = {'S1': S1, 'S2': S2}
         self.a = self.c1*R*R*Tc*Tc/Pc
         self.b = self.c2*R*Tc/Pc
         self.delta = self.b
