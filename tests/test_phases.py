@@ -1818,11 +1818,11 @@ def test_IAPWS95_basics():
     dC_virial_dT_num = derivative(lambda T: obj.to(T=T, P=obj.P, zs=[1]).C_virial(), obj.T, dx=obj.T*1e-7)
     assert_close(obj.dC_virial_dT(), dC_virial_dT_num)
 
-def test_IAPWS95_export():
+def test_Helmholtz_phase_export():
 
-    for ph in (IAPWS95Gas, IAPWS95Liquid):
+    for ph in (IAPWS95, IAPWS95Gas, IAPWS95Liquid, IAPWS97, DryAirLemmon):
         liquid = ph(T=300, P=1e5, zs=[1])
-        liquid._compute_main_properties()
+#        liquid._compute_main_properties()
         liquid2 = Phase.from_json(liquid.as_json())
         assert liquid.__dict__ == liquid2.__dict__
 

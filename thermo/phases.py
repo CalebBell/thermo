@@ -10545,13 +10545,13 @@ class IAPWS97(Phase):
             pass
         tau, pi, region = self.tau, self.pi, self.region
         if region == 1:
-            d2G_d2tau = iapws97_d2G_d2tau_region1(tau, pi)
+            d2G_d2tau = iapws97_d2G_dtau2_region1(tau, pi)
         elif region == 2:
-            d2G_d2tau = (iapws97_d2Gr_d2tau_region2(tau, pi)
-                         + iapws97_d2G0_d2tau_region2(tau, pi))
+            d2G_d2tau = (iapws97_d2Gr_dtau2_region2(tau, pi)
+                         + iapws97_d2G0_dtau2_region2(tau, pi))
         elif region == 5:
-            d2G_d2tau = (iapws97_d2Gr_d2tau_region5(tau, pi)
-                         + iapws97_d2G0_d2tau_region5(tau, pi))
+            d2G_d2tau = (iapws97_d2Gr_dtau2_region5(tau, pi)
+                         + iapws97_d2G0_dtau2_region5(tau, pi))
         self._d2G_d2tau = d2G_d2tau
         return d2G_d2tau
 
@@ -11476,9 +11476,9 @@ class CombinedPhase(Phase):
 
 
 
-gas_phases = (IdealGas, CEOSGas, CoolPropGas, IAPWS95Gas, VirialGas, HumidAirRP1485)
+gas_phases = (IdealGas, CEOSGas, CoolPropGas, IAPWS95Gas, VirialGas, HumidAirRP1485, DryAirLemmon)
 liquid_phases = (CEOSLiquid, GibbsExcessLiquid, CoolPropLiquid, IAPWS95Liquid)
 solid_phases = (GibbsExcessSolid,)
-all_phases = gas_phases + liquid_phases + solid_phases
+all_phases = gas_phases + liquid_phases + solid_phases + (IAPWS95, IAPWS97, CoolPropPhase)
 
 phase_full_path_dict =  {c.__full_path__: c for c in all_phases}
