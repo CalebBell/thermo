@@ -27,6 +27,7 @@ import chemicals
 from chemicals import *
 from fluids.numerics import *
 from math import *
+from chemicals.utils import hash_any_primitive
 import json
 import os
 import numpy as np
@@ -56,6 +57,35 @@ def test_ChemicalConstantsPackage_json_version_exported():
     assert 'py/object' in string
     assert 'json_version' in string
     assert not hasattr(c2, 'json_version')
+
+def test_ChemicalConstantsPackage_json_export_does_not_change_hashes():
+    # There was a nasty bug where the hashing function was changing its result
+    # every call
+    obj = ChemicalConstantsPackage.correlations_from_IDs(['hexane'])
+    hashes_orig = [hash_any_primitive(getattr(obj, k)) for k in obj.correlations]
+    copy = obj.as_json()
+    hashes_after = [hash_any_primitive(getattr(obj, k)) for k in obj.correlations]
+    assert hashes_orig == hashes_after
+
+
+def test_ChemicalConstantsPackage_json_export_same_output():
+    obj = ChemicalConstantsPackage.correlations_from_IDs(['hexane'])
+    obj2 = PropertyCorrelationsPackage.from_json(json.loads(json.dumps(obj.as_json())))
+
+    assert hash_any_primitive(obj.constants) == hash_any_primitive(obj2.constants)
+    for prop in obj.pure_correlations:
+        assert hash_any_primitive(getattr(obj, prop)) ==  hash_any_primitive(getattr(obj2, prop))
+    assert hash_any_primitive(obj.VaporPressures) == hash_any_primitive(obj2.VaporPressures)
+    assert hash_any_primitive(obj.ViscosityGases) == hash_any_primitive(obj2.ViscosityGases)
+    assert hash(obj.SurfaceTensionMixture) == hash(obj2.SurfaceTensionMixture)
+    assert hash(obj.VolumeGasMixture) == hash(obj2.VolumeGasMixture)
+    for prop in obj.mixture_correlations:
+        assert hash_any_primitive(getattr(obj, prop)) ==  hash_any_primitive(getattr(obj2, prop))
+
+
+    assert hash(obj) == hash(obj2)
+    assert obj == obj2
+
 
 @pytest.mark.CoolProp
 def test_lemmon2000_package():

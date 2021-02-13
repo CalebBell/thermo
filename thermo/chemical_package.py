@@ -1358,6 +1358,9 @@ class PropertyCorrelationsPackage(object):
 #    __slots__ = correlations + ('constants', 'skip_missing')
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
     def __hash__(self):
         hashes = []
         for k in self.correlations:

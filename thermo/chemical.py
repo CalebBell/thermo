@@ -1111,7 +1111,7 @@ class Chemical(object): # pragma: no cover
         self.VolumeLiquid = VolumeLiquid(MW=self.MW, Tb=self.Tb, Tc=self.Tc,
                           Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega,
                           dipole=self.dipole,
-                          Psat=self.VaporPressure.T_dependent_property,
+                          Psat=self.VaporPressure,
                           poly_fit=get_chemical_constants(self.CAS, 'VolumeLiquid'),
                           eos=self.eos_in_a_box, CASRN=self.CAS)
 
@@ -1169,7 +1169,7 @@ class Chemical(object): # pragma: no cover
                                                        poly_fit=get_chemical_constants(self.CAS, 'SublimationPressure'))
 
 
-        self.ViscosityLiquid = ViscosityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, omega=self.omega, Psat=self.VaporPressure.T_dependent_property, Vml=self.VolumeLiquid.T_dependent_property,
+        self.ViscosityLiquid = ViscosityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, omega=self.omega, Psat=self.VaporPressure, Vml=self.VolumeLiquid,
                                                poly_fit=get_chemical_constants(self.CAS, 'ViscosityLiquid'))
 
         Vmg_atm_T_dependent = lambda T : self.VolumeGas.TP_dependent_property(T, 101325)
@@ -1179,11 +1179,11 @@ class Chemical(object): # pragma: no cover
         self.ThermalConductivityLiquid = ThermalConductivityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, Hfus=self.Hfusm,
                                                                    poly_fit=get_chemical_constants(self.CAS, 'ThermalConductivityLiquid'))
 
-        self.ThermalConductivityGas = ThermalConductivityGas(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, dipole=self.dipole, Vmg=self.VolumeGas, Cpgm=self.HeatCapacityGas.T_dependent_property,
-                                                             mug=self.ViscosityGas.T_dependent_property,
+        self.ThermalConductivityGas = ThermalConductivityGas(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, dipole=self.dipole, Vmg=self.VolumeGas, Cpgm=self.HeatCapacityGas,
+                                                             mug=self.ViscosityGas,
                                                              poly_fit=get_chemical_constants(self.CAS, 'ThermalConductivityGas'))
 
-        self.SurfaceTension = SurfaceTension(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, StielPolar=self.StielPolar, Hvap_Tb=self.Hvap_Tb, Vml=self.VolumeLiquid.T_dependent_property, Cpl=self.HeatCapacityLiquid,
+        self.SurfaceTension = SurfaceTension(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, StielPolar=self.StielPolar, Hvap_Tb=self.Hvap_Tb, Vml=self.VolumeLiquid, Cpl=self.HeatCapacityLiquid,
                                              poly_fit=get_chemical_constants(self.CAS, 'SurfaceTension'))
 
         self.Permittivity = PermittivityLiquid(CASRN=self.CAS)
