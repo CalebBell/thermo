@@ -398,11 +398,11 @@ class GCEOSMIX(GCEOS):
     @classmethod
     def from_json(cls, json_repr):
         r'''Method to create a mixture cubic equation of state from a JSON
-        serialization of another mixture cubic equation of state.
+        friendly serialization of another mixture cubic equation of state.
 
         Parameters
         ----------
-        json_repr : str
+        json_repr : dict
             Json representation, [-]
 
         Returns
@@ -413,13 +413,14 @@ class GCEOSMIX(GCEOS):
         Notes
         -----
         It is important that the input string be in the same format as that
-        created by :obj:`GCEOSMIX.as_json`.
+        created by :obj:`GCEOS.as_json`.
 
         Examples
         --------
+        >>> import pickle
         >>> eos = PRSV2MIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6, kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
-        >>> json_stuff = eos.as_json()
-        >>> new_eos = GCEOSMIX.from_json(json_stuff)
+        >>> json_stuff = pickle.dumps(eos.as_json())
+        >>> new_eos = GCEOSMIX.from_json(pickle.loads(json_stuff))
         >>> assert new_eos == eos
         '''
         d = json_repr

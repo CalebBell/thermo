@@ -1401,7 +1401,7 @@ class PropertyCorrelationsPackage(object):
         Examples
         --------
         '''
-        d = serialize.json.loads(json_repr)
+        d = json_repr
         new = cls.__new__(cls)
 
         for prop, value in d['pure_properties']:

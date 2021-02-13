@@ -215,7 +215,17 @@ False
 
 Serialization
 ^^^^^^^^^^^^^
+All cubic EOS models offer a :obj:`as_json <thermo.eos.GCEOS.as_json>` method and a :obj:`from_json <thermo.eos.GCEOS.from_json>` to serialize the object state for transport over a network, storing to disk, and passing data between processes.
 
+>>> import pickle
+>>> eos = PRSV2MIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6, kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
+>>> json_stuff = pickle.dumps(eos.as_json())
+>>> new_eos = GCEOSMIX.from_json(pickle.loads(json_stuff))
+>>> assert new_eos == eos
+
+Other json libraries can be used besides the standard json library by design.
+
+Storing and recreating objects with Python's :py:func:`pickle.dumps` library is also tested; this can be faster than using JSON at the cost of being binary data.
 
 Mixture Equilibrium
 -------------------
