@@ -75,6 +75,10 @@ def test_ChemicalConstantsPackage_json_export_does_not_change_hashes():
     assert hashes_orig == hashes_after
 
 
+def test_ChemicalConstantsPackage_json_export_sane_recursion():
+    obj = ChemicalConstantsPackage.correlations_from_IDs(['methane', 'ethane'])
+    assert 3 == json.dumps(obj.as_json()).count('VaporPressure')
+
 def test_ChemicalConstantsPackage_json_export_same_output():
     obj = ChemicalConstantsPackage.correlations_from_IDs(['hexane'])
     obj2 = PropertyCorrelationsPackage.from_json(json.loads(json.dumps(obj.as_json())))

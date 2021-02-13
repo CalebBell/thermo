@@ -1395,7 +1395,7 @@ class PropertyCorrelationsPackage(object):
             else:
                 props = []
                 for o in l:
-                    s = o.as_json()
+                    s = o.as_json(references=0)
                     # Remove references to other properties
                     for ref in o.pure_references:
                         s[ref] = None
@@ -1410,7 +1410,7 @@ class PropertyCorrelationsPackage(object):
             if l is None:
                 mix_props_to_store.append((prop_name, l))
             else:
-                s = l.as_json()
+                s = l.as_json(references=0)
                 for ref in l.pure_references:
                     s[ref] = [None]*N
                 mix_props_to_store.append((prop_name, s))

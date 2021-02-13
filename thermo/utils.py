@@ -901,9 +901,14 @@ class TDependentProperty(object):
             self.T_cached = T
             return self.prop_cached
 
-    def as_json(self):
+    def as_json(self, references=1):
         r'''Method to create a JSON serialization of the property model
         which can be stored, and reloaded later.
+
+        Parameters
+        ----------
+        references : int
+            How to handle references to other objects; internal parameter, [-]
 
         Returns
         -------
@@ -919,6 +924,7 @@ class TDependentProperty(object):
         # vaguely jsonpickle compatible
         d = self.__dict__.copy()
         d["py/object"] = self.__full_path__
+#        print(self.__full_path__)
         d["json_version"] = 1
 
         d['all_methods'] = list(d['all_methods'])
@@ -934,10 +940,14 @@ class TDependentProperty(object):
             d['all_methods_P'] = list(d['all_methods_P'])
             d['tabular_data_interpolators_P'] = {}
 
+        del_objs = references == 0
         for name in self.pure_references:
             prop_obj = getattr(self, name)
             if prop_obj is not None and type(prop_obj) not in (float, int):
-                d[name] = prop_obj.as_json()
+                if del_objs:
+                    del d[name]
+                else:
+                    d[name] = prop_obj.as_json()
 
         for name in self._json_obj_by_CAS:
             CASRN = self.CASRN
@@ -3084,9 +3094,14 @@ class MixtureProperty(object):
         return getattr(self, self.pure_references[0])
 
 
-    def as_json(self):
+    def as_json(self, references=1):
         r'''Method to create a JSON serialization of the mixture property
         which can be stored, and reloaded later.
+
+        Parameters
+        ----------
+        references : int
+            How to handle references to other objects; internal parameter, [-]
 
         Returns
         -------
@@ -3101,21 +3116,13 @@ class MixtureProperty(object):
         '''
 
         d = self.__dict__.copy() # Not a the real object dictionary
-        for k in self.pure_references:
-            d[k] = [v.as_json() for v in d[k]]
-#        for i, k in enumerate(self.pure_references):
-#            d[k] = [v.as_json() for v in pure_references[i]]
+        if references == 1:
+            for k in self.pure_references:
+                d[k] = [v.as_json() for v in d[k]]
 
         d['json_version'] = 1
         d["py/object"] = self.__full_path__
         d['all_methods'] = list(d['all_methods'])
-#        ans = d.copy()#serialize.json.dumps(d)
-#        del d['json_version']
-#        del d["py/object"]
-#        for i, k in enumerate(self.pure_references):
-#            d[k] = pure_references[i]
-#        # First reference must be the common one
-#        d['all_methods'] = all_methods
         return d
 
     @classmethod
@@ -3142,7 +3149,6 @@ class MixtureProperty(object):
         --------
         '''
         d = string
-#        d = serialize.json.loads(string)
         d['all_methods'] = set(d['all_methods'])
         for k, sub_cls in zip(cls.pure_references, cls.pure_reference_types):
             sub_jsons = d[k]
