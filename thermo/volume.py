@@ -393,7 +393,7 @@ class VolumeLiquid(TPDependentProperty):
     '''Default rankings of the high-pressure methods.'''
 
     obj_references = pure_references = ('Psat',)
-    obj_references_types = pure_reference_types = (VaporPressure)
+    obj_references_types = pure_reference_types = (VaporPressure,)
 
 
     custom_args = ('MW', 'Tb', 'Tc', 'Pc', 'Vc', 'Zc', 'omega', 'dipole',
