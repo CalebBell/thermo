@@ -41,7 +41,8 @@ from thermo.heat_capacity import *
 from thermo.phase_change import *
 from thermo.unifac import UNIFAC, UFSG, UFIP
 from thermo.coolprop import PropsSI
-
+import pickle
+import json
 
 def test_GibbbsExcessLiquid_VaporPressure():
     # Binary ethanol-water
@@ -1817,13 +1818,19 @@ def test_IAPWS95_basics():
     dC_virial_dT_num = derivative(lambda T: obj.to(T=T, P=obj.P, zs=[1]).C_virial(), obj.T, dx=obj.T*1e-7)
     assert_close(obj.dC_virial_dT(), dC_virial_dT_num)
 
-def test_IAPWS95_json():
+def test_IAPWS95_export():
 
     for ph in (IAPWS95Gas, IAPWS95Liquid):
         liquid = ph(T=300, P=1e5, zs=[1])
         liquid._compute_main_properties()
         liquid2 = Phase.from_json(liquid.as_json())
         assert liquid.__dict__ == liquid2.__dict__
+
+        liquid3 = Phase.from_json(json.loads(json.dumps(liquid.as_json())))
+        assert liquid.__dict__ == liquid3.__dict__
+
+        liquid4 = pickle.loads(pickle.dumps(liquid))
+        assert liquid.__dict__ == liquid4.__dict__
 
 def test_DryAirLemmon():
     obj = DryAirLemmon(T=300.0, P=1e5)
