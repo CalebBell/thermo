@@ -159,6 +159,7 @@ from chemicals.utils import (log, log10, exp, Cp_minus_Cv, phase_identification_
                           isothermal_compressibility, isobaric_expansion, property_mass_to_molar,
                           Joule_Thomson, speed_of_sound, dxs_to_dns, dns_to_dn_partials,
                           normalize, hash_any_primitive, rho_to_Vm, Vm_to_rho)
+from thermo.serialize import arrays_to_lists
 from thermo.activity import IdealSolution
 from thermo.coolprop import has_CoolProp
 from thermo.eos_mix import IGMIX
@@ -256,6 +257,7 @@ class Phase(object):
     Cpgs_locked = False
     composition_independent = False
     __full_path__ = "%s.%s" %(__module__, __qualname__)
+    scalar  = True
 
     def __str__(self):
         s =  '<%s, ' %(self.__class__.__name__)
@@ -265,6 +267,64 @@ class Phase(object):
             pass
         s += '>'
         return s
+
+    def as_json(self):
+        r'''Method to create a JSON-friendly serialization of the phase
+        which can be stored, and reloaded later.
+
+        Returns
+        -------
+        json_repr : dict
+            JSON-friendly representation, [-]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> import json
+        >>> phase = IAPWS95Liquid(T=300, P=1e5, zs=[1])
+        >>> _ = phase.as_json()
+        '''
+        d = self.__dict__.copy()
+        if not self.scalar:
+            d = serialize.arrays_to_lists(d)
+        d["py/object"] = self.__full_path__
+        d['json_version'] = 1
+        return d
+
+    @classmethod
+    def from_json(cls, json_repr):
+        r'''Method to create a phase from a JSON
+        serialization of another phase.
+
+        Parameters
+        ----------
+        json_repr : dict
+            JSON-friendly representation, [-]
+
+        Returns
+        -------
+        eos : :obj:`Phase`
+            Newly created object from the json serialization, [-]
+
+        Notes
+        -----
+        It is important that the input string be in the same format as that
+        created by :obj:`Phase.as_json`.
+
+        Examples
+        --------
+        '''
+        d = json_repr
+        phase_name = d['py/object']
+        del d['py/object']
+        del d['json_version']
+
+        phase = phase_full_path_dict[phase_name]
+        new = phase.__new__(phase)
+        new.__dict__ = d
+        return new
 
     def model_hash(self, ignore_phase=False):
         r'''Dummy method to compute a hash of a phase.
@@ -11439,3 +11499,6 @@ class CombinedPhase(Phase):
 gas_phases = (IdealGas, CEOSGas, CoolPropGas, IAPWS95Gas, VirialGas, HumidAirRP1485)
 liquid_phases = (CEOSLiquid, GibbsExcessLiquid, CoolPropLiquid, IAPWS95Liquid)
 solid_phases = (GibbsExcessSolid,)
+all_phases = gas_phases + liquid_phases + solid_phases
+
+phase_full_path_dict =  {c.__full_path__: c for c in all_phases}
