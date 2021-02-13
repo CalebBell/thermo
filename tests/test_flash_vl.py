@@ -250,3 +250,23 @@ def test_combustion_products():
     res = flasher.flash(T=400.0, P=1e5, zs=zs)
     assert res.phase_count == 1
     assert res.gas is not None
+
+
+
+def test_furfuryl_alcohol_high_TP():
+    # Legacy bug, don't even remember what the original issue was
+    constants = ChemicalConstantsPackage(MWs=[98.09994, 18.01528], Tcs=[632.0, 647.14], Pcs=[5350000.0, 22048320.0], omegas=[0.734, 0.344], names=['furfuryl alcohol', 'water'], CASs=['98-00-0', '7732-18-5'])
+
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+    HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(250.35, 632.0, [-9.534610090167143e-20, 3.4583416772306854e-16, -5.304513883184021e-13, 4.410937690059558e-10, -2.0905505018557675e-07, 5.20661895325169e-05, -0.004134468659764938, -0.3746374641720497, 114.90130267531933])),
+    HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))])
+
+    eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+    zs = [0.4444445555555555, 1-0.4444445555555555]
+    T, P = 5774.577777777778, 220483199.99999997
+    gas = CEOSGas(eos_class=PRMIX, eos_kwargs=eos_kwargs, T=T, P=P, zs=zs, HeatCapacityGases=correlations.HeatCapacityGases)
+    liquid = CEOSLiquid(eos_class=PRMIX, eos_kwargs=eos_kwargs, T=T, P=P, zs=zs, HeatCapacityGases=correlations.HeatCapacityGases)
+    flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas)
+
+    assert_close(flasher.flash(T=T, P=P, zs=zs).rho_mass(), 227.52709151903954)
+
