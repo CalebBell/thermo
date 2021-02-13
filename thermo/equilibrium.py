@@ -233,7 +233,6 @@ class EquilibriumState(object):
         self.zs = zs
 
         self.N = N = len(zs)
-        self.cmps = range(N)
 
         self.gas_count = gas_count = 1 if gas is not None else 0
         self.liquid_count = liquid_count = len(liquids)
@@ -258,7 +257,7 @@ class EquilibriumState(object):
 #                tot_inv = 1.0/sum(values)
 #                return [i*tot_inv for i in values]
             self.liquid_zs = normalize([sum([betas_liquids[j]*liquids[j].zs[i] for j in range(liquid_count)])
-                               for i in self.cmps])
+                               for i in range(self.N)])
             self.liquid_bulk = liquid_bulk = Bulk(T, P, self.liquid_zs, self.liquids, self.liquids_betas, 'l')
             liquid_bulk.result = self
             liquid_bulk.constants = constants
@@ -272,7 +271,7 @@ class EquilibriumState(object):
             self.liquid0 = liquids[0]
         if solids:
             self.solid_zs = normalize([sum([betas_solids[j]*solids[j].zs[i] for j in range(self.solid_count)])
-                               for i in self.cmps])
+                               for i in range(self.N)])
             self.solid_bulk = solid_bulk = Bulk(T, P, self.solid_zs, solids, self.solids_betas, 's')
             solid_bulk.result = self
             solid_bulk.constants = constants
@@ -608,7 +607,7 @@ class EquilibriumState(object):
 
         Vls = self.V_liquids_ref()
         V = 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             V += zs[i]*Vls[i]
         return V
 
@@ -724,10 +723,10 @@ class EquilibriumState(object):
 
         Vls = self.V_liquids_ref()
         V = 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             V += zs[i]*Vls[i]
         V_inv = 1.0/V
-        return [V_inv*Vls[i]*zs[i] for i in self.cmps]
+        return [V_inv*Vls[i]*zs[i] for i in range(self.N)]
 
     def Vfgs(self, phase=None):
         r'''Method to calculate and return the ideal-gas volume fractions of
@@ -771,7 +770,7 @@ class EquilibriumState(object):
 
         MWs = self.constants.MWs
         MW = 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             MW += zs[i]*MWs[i]
         return MW
 
@@ -797,7 +796,7 @@ class EquilibriumState(object):
 
         Tcs = self.constants.Tcs
         Tc = 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             Tc += zs[i]*Tcs[i]
         return Tc
 
@@ -823,7 +822,7 @@ class EquilibriumState(object):
 
         Pcs = self.constants.Pcs
         Pc = 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             Pc += zs[i]*Pcs[i]
         return Pc
 
@@ -849,7 +848,7 @@ class EquilibriumState(object):
 
         Vcs = self.constants.Vcs
         Vc = 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             Vc += zs[i]*Vcs[i]
         return Vc
 
@@ -875,7 +874,7 @@ class EquilibriumState(object):
 
         Zcs = self.constants.Zcs
         Zc = 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             Zc += zs[i]*Zcs[i]
         return Zc
 
@@ -1099,7 +1098,7 @@ class EquilibriumState(object):
         Cpigs_pure = [i.T_dependent_property(T) for i in HeatCapacityGases]
 
         Cp, zs = 0.0, phase.zs
-        for i in self.cmps:
+        for i in range(self.N):
             Cp += zs[i]*Cpigs_pure[i]
         return Cp
 
@@ -1242,7 +1241,7 @@ class EquilibriumState(object):
                                       for obj in HeatCapacityGases]
 
         log_zs = self.log_zs()
-        T, P, zs, cmps = self.T, self.P, phase.zs, self.cmps
+        T, P, zs, cmps = self.T, self.P, phase.zs, range(self.N)
         P_REF_IG_INV = self.P_REF_IG_INV
         S = 0.0
         S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
@@ -1370,7 +1369,7 @@ class EquilibriumState(object):
         Hf = 0.0
         zs = phase.zs
         Hfgs = self.constants.Hfgs
-        for i in self.cmps:
+        for i in range(self.N):
             Hf += zs[i]*Hfgs[i]
         return Hf
 
@@ -1401,7 +1400,7 @@ class EquilibriumState(object):
         Sf = 0.0
         zs = phase.zs
         Sfgs = self.constants.Sfgs
-        for i in self.cmps:
+        for i in range(self.N):
             Sf += zs[i]*Sfgs[i]
         return Sf
 
@@ -1572,7 +1571,7 @@ class EquilibriumState(object):
         rhol_60Fs_mass = self.constants.rhol_60Fs_mass
         # Better results than using the phase's density model anyway
         rho_mass_60F = 0.0
-        for i in self.cmps:
+        for i in range(self.N):
             rho_mass_60F += ws[i]*rhol_60Fs_mass[i]
         return SG(rho_mass_60F, rho_ref=999.0170824078306)
 
@@ -1873,7 +1872,7 @@ class EquilibriumState(object):
         zs = list(phase.zs)
         z_water = zs[water_index]
         m = 1/(1.0 - z_water)
-        for i in self.cmps:
+        for i in range(self.N):
             zs[i] *= m
         return m
 
@@ -1899,7 +1898,7 @@ class EquilibriumState(object):
         ws = list(phase.ws())
         z_water = ws[water_index]
         m = 1/(1.0 - z_water)
-        for i in self.cmps:
+        for i in range(self.N):
             ws[i] *= m
         return m
 

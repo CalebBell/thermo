@@ -2680,7 +2680,7 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
         if isinstance(phase, (CEOSLiquid, CEOSGas)):
             c2R = phase.eos_class.c2*R
             Tcs, Pcs = constants.Tcs, constants.Pcs
-            b = sum([c2R*Tcs[i]*zs[i]/Pcs[i] for i in constants.cmps])
+            b = sum([c2R*Tcs[i]*zs[i]/Pcs[i] for i in range(constants.N)])
             min_bound = b*(1.0 + 1e-15)
 
     if phase.is_gas:
@@ -3240,7 +3240,7 @@ def solve_T_VF_IG_K_composition_independent(VF, T, zs, gas, liq, xtol=1e-10):
     cse([diff(err, P), err], optimizations='basic')'''
     # gas phis are all one in IG model
 #     gas.to(T=T, P=P, zs=zs)
-    cmps = liq.cmps
+    cmps = range(liq.N)
     global Ks, iterations, err
     iterations = 0
     def to_solve(lnP):
@@ -3267,7 +3267,7 @@ def solve_T_VF_IG_K_composition_independent(VF, T, zs, gas, liq, xtol=1e-10):
     liq = liq.to(T=T, P=P_base, zs=zs)
     phis = liq.phis()
     P_bub, P_dew = 0.0, 0.0
-    for i in liq.cmps:
+    for i in range(liq.N):
         P_bub += phis[i]*zs[i]
         P_dew += zs[i]/(phis[i]*P_base)
     P_bub = P_bub*liq.P
@@ -3293,7 +3293,7 @@ def solve_T_VF_IG_K_composition_independent(VF, T, zs, gas, liq, xtol=1e-10):
 def solve_P_VF_IG_K_composition_independent(VF, P, zs, gas, liq, xtol=1e-10):
     # gas phis are all one in IG model
 #     gas.to(T=T, P=P, zs=zs)
-    cmps = liq.cmps
+    cmps = range(liq.N)
     global Ks, iterations, err
     iterations = 0
     def to_solve(T):
@@ -3670,7 +3670,8 @@ def stabiliy_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
     if test_phase is None:
         test_phase = trial_phase
     T, P, zs = trial_phase.T, trial_phase.P, trial_phase.zs
-    N, cmps = trial_phase.N, trial_phase.cmps
+    N = trial_phase.N
+    cmps = range(N)
     fugacities_trial = trial_phase.fugacities_lowest_Gibbs()
 
     # Go through the feed composition - and the trial composition - if we have zeros, need to make them a trace;
@@ -3851,7 +3852,7 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
     global V_over_F_guess
     V_over_F_guess = 0.5
 
-    cmps = constants.cmps
+    cmps = range(constants.N)
     Tcs, Pcs, omegas = constants.Tcs, constants.Pcs, constants.omegas
 
     if fixed_var == iter_var:
@@ -4568,7 +4569,7 @@ class Flash(object):
             if isinstance(phase, (CEOSLiquid, CEOSGas)):
                 c2R = phase.eos_class.c2*R
                 Tcs, Pcs = constants.Tcs, constants.Pcs
-                b = sum([c2R*Tcs[i]*zs[i]/Pcs[i] for i in constants.cmps])
+                b = sum([c2R*Tcs[i]*zs[i]/Pcs[i] for i in range(constants.N)])
                 min_bound = b*(1.0 + 1e-15) if min_bound is None else min(min_bound, b*(1.0 + 1e-15))
 
 
@@ -5536,7 +5537,6 @@ class FlashVL(Flash):
         self.gas = gas
         self.settings = settings
         self.N = constants.N
-        self.cmps = constants.cmps
 
         self.stab = StabilityTester(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
 
@@ -5750,7 +5750,7 @@ class FlashVL(Flash):
                                                        maxiter=self.PT_STABILITY_MAXITER, xtol=self.PT_STABILITY_XTOL)
                     sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs, dG_RT = sln
                     lnK_2_tot = 0.0
-                    for k in self.cmps:
+                    for k in range(self.N):
                         lnK = log(Ks[k])
                         lnK_2_tot += lnK*lnK
                     sum_criteria = abs(sum_zs_test - 1.0)
@@ -5760,12 +5760,12 @@ class FlashVL(Flash):
                         existing_phase = False
                         min_diff = 1e100
                         for existing_comp in existing_comps:
-                            diff = sum([abs(existing_comp[i] - appearing_zs[i]) for i in self.cmps])/self.N
+                            diff = sum([abs(existing_comp[i] - appearing_zs[i]) for i in range(self.N)])/self.N
                             min_diff = min(min_diff, diff)
                             if diff < 1e-4:
                                 existing_phase = True
                                 break
-                            diffs2 = [abs(1.0-(existing_comp[i]/appearing_zs[i])) for i in self.cmps]
+                            diffs2 = [abs(1.0-(existing_comp[i]/appearing_zs[i])) for i in range(self.N)]
                             diff2 = sum(diffs2)/self.N
                             if diff2 < .02:
                                 existing_phase = True
@@ -5858,7 +5858,7 @@ class FlashVL(Flash):
 #                                 maxiter=self.PT_STABILITY_MAXITER, xtol=self.PT_STABILITY_XTOL)
 #                    sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs = sln
 #                    lnK_2_tot = 0.0
-#                    for k in self.cmps:
+#                    for k in range(self.N):
 #                        lnK = log(Ks[k])
 #                        lnK_2_tot += lnK*lnK
 #                    sum_criteria = abs(sum_zs_test - 1.0)
@@ -6303,7 +6303,6 @@ class FlashVLN(FlashVL):
         self.gas = gas
         self.settings = settings
         self.N = constants.N
-        self.cmps = constants.cmps
 
         self.K_composition_independent = all([i.composition_independent for i in self.phases])
         self.ideal_gas_basis = all([i.ideal_gas_basis for i in self.phases])
@@ -6405,7 +6404,6 @@ class FlashVLN(FlashVL):
 
 
         Ks = liquid_phis = self.liquid0.phis_at(T, P, zs)
-#        Ks = [liquid_phis[i]/gas_phis[i] for i in self.cmps]
         try:
             VF, xs, ys = flash_inner_loop(zs, Ks, check=True)
         except PhaseCountReducedError:
@@ -6449,7 +6447,7 @@ class FlashVLN(FlashVL):
 #            if self.max_phases == 2:
 #                gas_phis = gas.phis()
 #                liquid_phis = liquids[0].phis()
-#                Ks = [liquid_phis[i]/gas_phis[i] for i in self.cmps]
+#                Ks = [liquid_phis[i]/gas_phis[i] for i in range(self.N)]
 #                VF, xs, ys = flash_inner_loop(zs, Ks)
 #                if VF > 1.0:
 #                    return None, [gas], [], one_in_list, empty_flash_conv

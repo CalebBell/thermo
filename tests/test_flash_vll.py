@@ -1400,13 +1400,13 @@ def test_TVF_PVF_reversed_mole_balance():
     liquid = flasher.flash(zs=base.liquid0.zs, T=base.T, VF=0)
 
     # The issues comes when using the gas mole fractions
-    zs_balanced = [liquid.gas.zs[i]*base.gas_beta + liquid.liquid0.zs[i]*base.betas[1] for i in flasher.cmps]
+    zs_balanced = [liquid.gas.zs[i]*base.gas_beta + liquid.liquid0.zs[i]*base.betas[1] for i in range(flasher.N)]
     err = sum(abs(i-j) for i, j in zip(base.zs, zs_balanced))
     assert err < 1e-6
 
     liquid = flasher.flash(zs=base.liquid0.zs, P=base.P, VF=0)
 
-    zs_balanced = [liquid.gas.zs[i]*base.gas_beta + liquid.liquid0.zs[i]*base.betas[1] for i in flasher.cmps]
+    zs_balanced = [liquid.gas.zs[i]*base.gas_beta + liquid.liquid0.zs[i]*base.betas[1] for i in range(flasher.N)]
     err = sum(abs(i-j) for i, j in zip(base.zs, zs_balanced))
     assert err < 1e-6
 

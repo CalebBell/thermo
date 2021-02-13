@@ -243,7 +243,6 @@ class Bulk(Phase):
         self.phases = phases
         self.phase_fractions = phase_fractions
         self.N = N = len(zs)
-        self.cmps = range(N)
         self.state = state
 
 
@@ -1051,7 +1050,7 @@ class Bulk(Phase):
         Cpigs_pure = [i.T_dependent_property(T) for i in HeatCapacityGases]
 
         Cp, zs = 0.0, self.zs
-        for i in self.cmps:
+        for i in range(self.N):
             Cp += zs[i]*Cpigs_pure[i]
         return Cp
 
@@ -1063,7 +1062,7 @@ class Bulk(Phase):
                                       for obj in HeatCapacityGases]
 
         log_zs = self.log_zs()
-        T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
+        T, P, zs, cmps = self.T, self.P, self.zs, range(self.N)
         P_REF_IG_INV = self.P_REF_IG_INV
         S = 0.0
         S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
