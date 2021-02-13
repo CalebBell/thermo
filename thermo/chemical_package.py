@@ -1450,24 +1450,22 @@ class PropertyCorrelationsPackage(object):
         '''
         d = json_repr
         new = cls.__new__(cls)
+        d2 = new.__dict__
         new.constants = ChemicalConstantsPackage.from_json(d['constants'])
         N = new.constants.N
         new.skip_missing = d['skip_missing']
 
         for prop, value in d['pure_properties']:
             if value is None:
-                setattr(new, prop, value)
+                d2[prop] = value
             else:
-                objects = []
-                prop_class = properties_to_classes[prop]
-                for v in value:
-                    objects.append(prop_class.from_json(v))
-                setattr(new, prop, objects)
+                callable = properties_to_classes[prop].from_json
+                d2[prop] = [callable(v) for v in value]
 
 
         # Set the links back to other objects
         for prop_name, prop_cls in properties_to_classes.items():
-            l = getattr(new, prop_name)
+            l = d2[prop_name]
             if l:
                 for ref_name, ref_cls in zip(prop_cls.pure_references, prop_cls.pure_reference_types):
                     real_ref_list = getattr(new, classes_to_properties[ref_cls])
@@ -1480,13 +1478,13 @@ class PropertyCorrelationsPackage(object):
 
         for prop, value in d['mixture_properties']:
             if value is None:
-                setattr(new, prop, value)
+                d2[prop] = value
             else:
                 mix_prop = mix_properties_to_classes[prop].from_json(value)
                 for k, sub_cls in zip(mix_prop.pure_references, mix_prop.pure_reference_types):
                     real_ref_list = getattr(new, classes_to_properties[sub_cls])
                     setattr(mix_prop, k, real_ref_list)
-                setattr(new, prop, mix_prop)
+                d2[prop] = mix_prop
 
 
         return new
