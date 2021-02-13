@@ -339,7 +339,8 @@ class VaporPressure(TDependentProperty):
                 methods.append(WAGNER_POLING)
                 A, B, C, D, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, Tmin, self.WAGNER_POLING_Tmax = vapor_pressure.Psat_values_WagnerPoling[vapor_pressure.Psat_data_WagnerPoling.index.get_loc(self.CASRN)].tolist()
                 # Some Tmin values are missing; Arbitrary choice of 0.1 lower limit
-                self.WAGNER_POLING_Tmin = Tmin if not isnan(Tmin) else self.WAGNER_POLING_Tmax*0.1
+                Tmin = Tmin if not isnan(Tmin) else self.WAGNER_POLING_Tmax*0.1
+                self.WAGNER_POLING_Tmin = Tmin
                 self.WAGNER_POLING_coefs = [A, B, C, D]
                 Tmins.append(Tmin); Tmaxs.append(self.WAGNER_POLING_Tmax)
                 T_limits[WAGNER_POLING] = (self.WAGNER_POLING_Tmin, self.WAGNER_POLING_Tmax)

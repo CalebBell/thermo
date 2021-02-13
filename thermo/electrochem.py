@@ -123,7 +123,7 @@ from fluids.constants import e, N_A
 from fluids.numerics import newton, horner, chebval
 from chemicals.utils import source_path, os_path_join, can_load_data, PY37
 from chemicals.data_reader import data_source, register_df_source
-from chemicals.utils import exp, log10
+from chemicals.utils import exp, log10, isnan
 from chemicals.utils import to_num, ws_to_zs, mixing_simple
 from chemicals import identifiers
 
@@ -1005,8 +1005,9 @@ def conductivity(CASRN, method=None):
     -------
     kappa : float
         Electrical conductivity of the fluid, [S/m]
-    T : float
-        Temperature at which conductivity measurement was made
+    T : float or None
+        Temperature at which conductivity measurement was made or None if
+        not available, [K]
 
     Other Parameters
     ----------------
@@ -1036,6 +1037,8 @@ def conductivity(CASRN, method=None):
     if method == LANGE_COND or (method is None and CASRN in cond_data_Lange.index):
         kappa = float(cond_data_Lange.at[CASRN, 'Conductivity'])
         T = float(cond_data_Lange.at[CASRN, 'T'])
+        if isnan(T):
+            T = None
         return (kappa, T)
     elif method is None:
         return (None, None)

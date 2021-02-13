@@ -187,6 +187,9 @@ def test_conductivity():
     assert conductivity('7732-18-5')[0] == 4e-06
 
 
+    assert conductivity("142-82-5") == (1e-11, None)
+
+
 def test_Marcus_ion_conductivities():
     # Check the CAS numbers are the "canonical" ones
     assert all([CAS_from_any(i) == i for i in Marcus_ion_conductivities.index])

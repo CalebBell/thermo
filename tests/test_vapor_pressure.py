@@ -23,6 +23,7 @@ SOFTWARE.'''
 import pytest
 import numpy as np
 import pandas as pd
+from math import isnan
 from fluids.numerics import linspace, assert_close, derivative, assert_close1d
 from thermo.vapor_pressure import *
 from thermo.vapor_pressure import VDI_TABULAR, WAGNER_MCGARRY
@@ -96,6 +97,10 @@ def test_VaporPressure():
 
     with pytest.raises(Exception):
         cycloheptane.test_method_validity(300, 'BADMETHOD')
+
+
+def test_VaporPressure_no_isnan():
+    assert not isnan(VaporPressure(CASRN='4390-04-9').Tmin)
 
 def test_VaporPressure_linear_extrapolation_non_negative():
     ethanol_psat = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
