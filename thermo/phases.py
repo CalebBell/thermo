@@ -159,11 +159,6 @@ from chemicals.utils import (log, log10, exp, Cp_minus_Cv, phase_identification_
                           isothermal_compressibility, isobaric_expansion, property_mass_to_molar,
                           Joule_Thomson, speed_of_sound, dxs_to_dns, dns_to_dn_partials,
                           normalize, hash_any_primitive, rho_to_Vm, Vm_to_rho)
-from thermo.serialize import arrays_to_lists
-from thermo.activity import IdealSolution
-from thermo.coolprop import has_CoolProp
-from thermo.eos_mix import IGMIX
-from thermo.eos_mix_methods import PR_lnphis_fastest
 from random import randint
 from collections import OrderedDict
 from chemicals.iapws import *
@@ -171,9 +166,21 @@ from chemicals.air import *
 from chemicals.viscosity import mu_IAPWS, mu_air_lemmon
 from chemicals.thermal_conductivity import k_IAPWS
 import chemicals.iapws
-from thermo.chemical_package import iapws_correlations
 from chemicals.iapws import iapws95_d3Ar_ddelta2dtau, iapws95_d3Ar_ddeltadtau2
-from thermo.heat_capacity import HeatCapacityGas
+
+from thermo.serialize import arrays_to_lists
+from thermo.activity import IdealSolution
+from thermo.coolprop import has_CoolProp
+from thermo.eos_mix import IGMIX
+from thermo.eos_mix_methods import PR_lnphis_fastest
+
+from thermo.chemical_package import iapws_correlations
+
+from thermo.heat_capacity import HeatCapacityGas, HeatCapacityLiquid
+from thermo.volume import VolumeLiquid, VolumeSolid
+from thermo.vapor_pressure import VaporPressure, SublimationPressure
+from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
+
 R2 = R*R
 '''
 All phase objects are immutable.
@@ -5330,6 +5337,10 @@ class CEOSGas(Phase):
     is_liquid = False
     ideal_gas_basis = True
     __full_path__ = "%s.%s" %(__module__, __qualname__)
+
+    pure_references = ('HeatCapacityGases',)
+    pure_reference_types = (HeatCapacityGas,)
+
     def model_hash(self, ignore_phase=False):
         if ignore_phase:
             try:
@@ -6291,6 +6302,13 @@ class GibbsExcessLiquid(Phase):
 
     _Tait_B_data = None
     _Tait_C_data = None
+
+    pure_references = ('HeatCapacityGases', 'VolumeLiquids', 'VaporPressures', 'HeatCapacityLiquids',
+                       'EnthalpyVaporizations')
+    pure_reference_types = (HeatCapacityGas, VolumeLiquid, VaporPressure, HeatCapacityLiquid,
+                            EnthalpyVaporization)
+
+
     def __init__(self, VaporPressures, VolumeLiquids=None,
                  VolumeSupercriticalLiquids=None,
                  GibbsExcessModel=None,
@@ -8847,6 +8865,12 @@ class GibbsExcessSolid(GibbsExcessLiquid):
     is_liquid = False
     is_solid = True
     __full_path__ = "%s.%s" %(__module__, __qualname__)
+
+
+    pure_references = ('HeatCapacityGases','SublimationPressures', 'VolumeSolids', 'EnthalpySublimations')
+    pure_reference_types = (HeatCapacityGas, SublimationPressure, VolumeSolid, EnthalpySublimation)
+
+
     def __init__(self, SublimationPressures, VolumeSolids=None,
                  GibbsExcessModel=IdealSolution(),
                  eos_pure_instances=None,
@@ -9118,6 +9142,10 @@ class VirialGas(Phase):
     is_liquid = False
     ideal_gas_basis = True
     __full_path__ = "%s.%s" %(__module__, __qualname__)
+
+    pure_references = ('HeatCapacityGases',)
+    pure_reference_types = (HeatCapacityGas, )
+
     def __init__(self, model, HeatCapacityGases=None, Hfs=None, Gfs=None, T=None, P=None, zs=None,
                  ):
         self.model = model

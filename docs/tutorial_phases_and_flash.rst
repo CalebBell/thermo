@@ -20,7 +20,26 @@ Phases should always be initialized at a specific molar composition `zs`, `T` an
 
 Phases are designed to be able to calculate every thermodynamic property. `T` and `P` are always attributes of the phase, but all other properties are functions that need to be called. Some examples of these properties are :obj:`V <thermo.phases.Phase.V>`, :obj:`H <thermo.phases.Phase.H>`, :obj:`S <thermo.phases.Phase.S>`, :obj:`Cp <thermo.phases.Phase.Cp>`, :obj:`dP_dT <thermo.phases.Phase.dP_dT>`, :obj:`d2P_dV2 <thermo.phases.Phase.d2P_dV2>`, :obj:`fugacities <thermo.phases.Phase.fugacities>`, :obj:`lnphis <thermo.phases.Phase.lnphis>`, :obj:`dlnphis_dT <thermo.phases.Phase.dlnphis_dT>`, and :obj:`dlnphis_dP <thermo.phases.Phase.dlnphis_dP>`.
 
+If a system is already known to be single-phase, the phase framework can be used directly without performing flash calculations. This may offer a speed boost in some applications.
 
+
+Available Phases
+^^^^^^^^^^^^^^^^
+Although the underlying equations of state often don't distinguish between liquid or vapor phase, it was convenient to create separate phase objects designed to hold gas, liquid, and solid phases separately.
+
+The following phases can represent both a liquid and a vapor state. Their class is not a true indication that their properties are liquid or gas.
+
+* Cubic equations of state - :obj:`CEOSLiquid <thermo.phases.CEOSLiquid>` and :obj:`CEOSGas <thermo.phases.CEOSGas>`
+* IAPWS-95 Water and Steam - :obj:`IAPWS95Liquid <thermo.phases.IAPWS95Liquid>` and :obj:`IAPWS95Gas <thermo.phases.IAPWS95Gas>`
+* Wrapper objects for CoolProp's Helmholtz EOSs - :obj:`CoolPropLiquid <thermo.phases.CoolPropLiquid>` and :obj:`CoolPropGas <thermo.phases.CoolPropGas>`
+
+The following phase objects can only represent a gas phase:
+
+* Ideal-gas law - :obj:`IdealGas <thermo.phases.IdealGas>`
+
+The following phase objects can only represent a liquid phase:
+
+* Ideal-liquid and/or activity coefficient models - :obj:`GibbsExcessLiquid <thermo.phases.GibbsExcessLiquid>`
 
 Flashes with Pure Compounds
 ---------------------------
