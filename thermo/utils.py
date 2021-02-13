@@ -983,7 +983,7 @@ class TDependentProperty(object):
         d = json_repr#serialize.json.loads(json_repr)
         cls._load_json_CAS_references(d)
         if 'eos' in d:
-            if type(d['eos']) is str:
+            if d['eos'] is not None:
                 d['eos'] = [GCEOS.from_json(d['eos'])]
 
         d['all_methods'] = set(d['all_methods'])

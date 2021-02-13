@@ -24,6 +24,7 @@ from fluids.numerics import assert_close, assert_close1d
 from numpy.testing import assert_allclose
 import numpy as np
 import pytest
+import json
 import pandas as pd
 from thermo.volume import *
 from thermo.volume import VDI_TABULAR
@@ -186,6 +187,16 @@ def test_VolumeLiquidPolynomialTmin():
     v = VolumeLiquid(poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]))
     assert_allclose(v.poly_fit_Tmin_quadratic,  [8.382589086490995e-12, 0.0, 1.739254665187681e-05])
 
+@pytest.mark.meta_T_dept
+def test_VolumeLiquidDumpEOS():
+    eos = [PR(T=300, P=1E5, Tc=430.8, Pc=7884098.25, omega=0.251)]
+    obj = VolumeLiquid(CASRN='7446-09-5', MW=64.0638,  Tc=430.8, Pc=7884098.25, omega=0.251, dipole=1.63, eos=eos)
+    obj2 = VolumeLiquid.from_json(json.loads(json.dumps(obj.as_json())))
+    assert obj == obj2
+
+    obj = VolumeLiquid(CASRN='7446-09-5', MW=64.0638,  Tc=430.8, Pc=7884098.25, omega=0.251, dipole=1.63)
+    obj2 = VolumeLiquid.from_json(json.loads(json.dumps(obj.as_json())))
+    assert obj == obj2
 
 @pytest.mark.meta_T_dept
 def test_VolumeSolid():

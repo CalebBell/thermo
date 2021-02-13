@@ -446,8 +446,7 @@ class GCEOSMIX(GCEOS):
         except:
             pass
 
-        eos_name = eos_name.split('.')[-1]
-        eos = eos_mix_dict[eos_name]
+        eos = eos_mix_full_path_dict[eos_name]
 
         new = eos.__new__(eos)
         new.__dict__ = d
@@ -11427,4 +11426,8 @@ or can fill in their special parameters from other specified parameters.
 
 eos_mix_dict = {c.__name__: c for c in eos_mix_list}
 '''dict : Dict of all cubic mixture equation of state classes, indexed by their class name.
+'''
+
+eos_mix_full_path_dict = {c.__full_path__: c for c in eos_mix_list}
+'''dict : Dict of all cubic mixture equation of state classes, indexed by their module path and class name.
 '''

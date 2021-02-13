@@ -1001,12 +1001,9 @@ class GCEOS(object):
             d['kwargs']['alpha_coeffs'] = tuple(d['kwargs']['alpha_coeffs'])
         except:
             pass
+        eos = eos_full_path_dict[eos_name]
 
-#        eos_name = eos_name.split('.')[-1]
-#        eos = eos_dict[eos_name]
-#        new = eos.__new__(eos)
-
-        new = cls.__new__(cls)
+        new = eos.__new__(eos)
         new.__dict__ = d
         return new
 
@@ -10784,3 +10781,8 @@ eos_2P_list.remove(IG)
 eos_dict = {c.__name__: c for c in eos_list}
 '''dict : Dict of all cubic equation of state classes, indexed by their class name.
 '''
+
+eos_full_path_dict = {c.__full_path__: c for c in eos_list}
+'''dict : Dict of all cubic equation of state classes, indexed by their module path and class name.
+'''
+

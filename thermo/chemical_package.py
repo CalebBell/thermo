@@ -1219,6 +1219,36 @@ except:
     pass # py2
 #print(constants_doc)
 
+properties_to_classes = {'VaporPressures': VaporPressure,
+'VolumeLiquids': VolumeLiquid,
+'VolumeGases': VolumeGas,
+'VolumeSolids': VolumeSolid,
+'HeatCapacityGases': HeatCapacityGas,
+'HeatCapacitySolids': HeatCapacitySolid,
+'HeatCapacityLiquids': HeatCapacityLiquid,
+'EnthalpyVaporizations': EnthalpyVaporization,
+'EnthalpySublimations': EnthalpySublimation,
+'SublimationPressures': SublimationPressure,
+'PermittivityLiquids': PermittivityLiquid,
+'ViscosityLiquids': ViscosityLiquid,
+'ViscosityGases': ViscosityGas,
+'ThermalConductivityLiquids': ThermalConductivityLiquid,
+'ThermalConductivityGases': ThermalConductivityGas,
+'SurfaceTensions': SurfaceTension}
+
+mix_properties_to_classes = {'VolumeGasMixture': VolumeGasMixture,
+                            'VolumeLiquidMixture': VolumeLiquidMixture,
+                            'VolumeSolidMixture': VolumeSolidMixture,
+                            'HeatCapacityGasMixture': HeatCapacityGasMixture,
+                            'HeatCapacityLiquidMixture': HeatCapacityLiquidMixture,
+                            'HeatCapacitySolidMixture': HeatCapacitySolidMixture,
+                            'ViscosityGasMixture': ViscosityGasMixture,
+                            'ViscosityLiquidMixture': ViscosityLiquidMixture,
+                            'ThermalConductivityGasMixture': ThermalConductivityGasMixture,
+                            'ThermalConductivityLiquidMixture': ThermalConductivityLiquidMixture,
+                            'SurfaceTensionMixture': SurfaceTensionMixture}
+
+
 class PropertyCorrelationsPackage(object):
     r'''Class for creating and storing `T` and `P` and `zs` dependent chemical
     property objects. All parameters are also attributes.
@@ -1406,12 +1436,19 @@ class PropertyCorrelationsPackage(object):
 
         for prop, value in d['pure_properties']:
             if value is None:
-                setattr(self, prop, value)
+                setattr(new, prop, value)
             else:
                 objects = []
+                prop_class = properties_to_classes[prop]
                 for v in value:
-                    print(v)
+                    objects.append(prop_class.from_json(v))
+                setattr(new, prop, objects)
 
+        for prop, value in d['mixture_properties']:
+            if value is None:
+                setattr(new, prop, value)
+            else:
+                setattr(new, prop, mix_properties_to_classes[prop].from_json(value))
 
 
         new.constants = ChemicalConstantsPackage.from_json(d['constants'])
