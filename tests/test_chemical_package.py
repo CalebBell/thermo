@@ -50,6 +50,13 @@ def test_ChemicalConstantsPackage_from_json_as_json_large():
     assert obj == obj2
     assert id(obj) != id(obj2)
 
+    obj = ChemicalConstantsPackage.correlations_from_IDs(create_compounds)
+    obj2 = PropertyCorrelationsPackage.from_json(json.loads(json.dumps(obj.as_json())))
+    assert hash(obj) == hash(obj2)
+    assert obj == obj2
+    assert id(obj) != id(obj2)
+
+
 def test_ChemicalConstantsPackage_json_version_exported():
     constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
     string = json.dumps(constants.as_json())
