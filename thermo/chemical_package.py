@@ -1358,6 +1358,12 @@ class PropertyCorrelationsPackage(object):
 #    __slots__ = correlations + ('constants', 'skip_missing')
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
+    def __hash__(self):
+        hashes = []
+        for k in self.correlations:
+            hashes.append(hash_any_primitive(getattr(self, k)))
+        return hash_any_primitive(hashes)
+
 
     def as_json(self):
         r'''Method to create a JSON friendly serialization of the chemical

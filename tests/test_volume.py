@@ -191,12 +191,18 @@ def test_VolumeLiquidPolynomialTmin():
 def test_VolumeLiquidDumpEOS():
     eos = [PR(T=300, P=1E5, Tc=430.8, Pc=7884098.25, omega=0.251)]
     obj = VolumeLiquid(CASRN='7446-09-5', MW=64.0638,  Tc=430.8, Pc=7884098.25, omega=0.251, dipole=1.63, eos=eos)
+    hash0 = hash(obj)
     obj2 = VolumeLiquid.from_json(json.loads(json.dumps(obj.as_json())))
     assert obj == obj2
+    assert hash(obj) == hash0
+    assert hash(obj2) == hash0
 
     obj = VolumeLiquid(CASRN='7446-09-5', MW=64.0638,  Tc=430.8, Pc=7884098.25, omega=0.251, dipole=1.63)
+    hash0 = hash(obj)
     obj2 = VolumeLiquid.from_json(json.loads(json.dumps(obj.as_json())))
     assert obj == obj2
+    assert hash(obj) == hash0
+    assert hash(obj2) == hash0
 
 @pytest.mark.meta_T_dept
 def test_VolumeSolid():
