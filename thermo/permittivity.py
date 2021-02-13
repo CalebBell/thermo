@@ -212,10 +212,12 @@ class PermittivityLiquid(TDependentProperty):
             if self.CASRN in permittivity.permittivity_data_CRC.index:
                 methods.append(CRC_CONSTANT)
                 self.CRC_CONSTANT_T, self.CRC_permittivity, A, B, C, D, Tmin, Tmax = permittivity.permittivity_values_CRC[permittivity.permittivity_data_CRC.index.get_loc(self.CASRN)].tolist()
+                if isnan(Tmin) and isnan(Tmax):
+                    Tmin, Tmax = self.CRC_CONSTANT_T, self.CRC_CONSTANT_T
                 T_limits[CRC_CONSTANT] = (self.CRC_CONSTANT_T, self.CRC_CONSTANT_T)
+                self.CRC_coeffs = [0 if isnan(x) else x for x in [A, B, C, D] ]
                 self.CRC_Tmin = Tmin
                 self.CRC_Tmax = Tmax
-                self.CRC_coeffs = [0 if isnan(x) else x for x in [A, B, C, D] ]
                 if self.CRC_coeffs[0] and not isnan(Tmin):
                     Tmins.append(Tmin); Tmaxs.append(Tmax)
                     methods.append(CRC)

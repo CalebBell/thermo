@@ -23,6 +23,7 @@ SOFTWARE.'''
 from fluids.numerics import assert_close, assert_close1d, linspace
 import pytest
 import pandas as pd
+from math import isnan
 import numpy as np
 from thermo.permittivity import *
 from chemicals.permittivity import *
@@ -65,6 +66,11 @@ def test_Permittivity_class():
     assert w.T_dependent_property(200.) is None
 
     assert PermittivityLiquid.from_json(w.as_json()) == w
+
+    # Case where a nan was stored
+    obj = PermittivityLiquid(CASRN='57-10-3')
+    assert not isnan(obj.CRC_Tmin)
+    assert not isnan(obj.CRC_Tmax)
 
 @pytest.mark.slow
 @pytest.mark.fuzz
