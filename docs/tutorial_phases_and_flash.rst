@@ -178,4 +178,4 @@ The IAPWS-95 standard is implemented and available for easy use:
 <EquilibriumState, T=800.5922, P=10144789.0899, zs=[1.0], betas=[1.0], phases=[<IAPWS95Gas, T=800.592 K, P=1.01448e+07 Pa>]>
 
 
-Not all flash calculations have been fully optimized, but the basis flashes are quite fast.
+Not all flash calculations have been fully optimized, but the basic flashes are quite fast.
