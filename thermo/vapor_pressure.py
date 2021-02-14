@@ -571,8 +571,8 @@ class VaporPressure(TDependentProperty):
                 d2Psat_dT2 = Psat*(d1*d1 + d2)
 
                 A, B, C = Antoine_ABC = Antoine_coeffs_from_point(T_trans, Psat, dPsat_dT, d2Psat_dT2, base=e)
-                self.poly_fit_AB = Antoine_AB_coeffs_from_point(T_trans, Psat, dPsat_dT, base=e)
-                self.DIPPR101_ABC = DIPPR101_ABC_coeffs_from_point(T_trans, Psat, dPsat_dT, d2Psat_dT2)
+                self.poly_fit_AB = list(Antoine_AB_coeffs_from_point(T_trans, Psat, dPsat_dT, base=e))
+                self.DIPPR101_ABC = list(DIPPR101_ABC_coeffs_from_point(T_trans, Psat, dPsat_dT, d2Psat_dT2))
 
                 B_OK = B > 0.0 # B is negated in this implementation, so the requirement is reversed
                 C_OK = -T_trans < C < 0.0
@@ -589,9 +589,9 @@ class VaporPressure(TDependentProperty):
             dPsat_dT = Psat*d1
             d2Psat_dT2 = Psat*(d1*d1 + d2)
 #                A, B, C = Antoine_ABC = Antoine_coeffs_from_point(T_trans, Psat, dPsat_dT, d2Psat_dT2, base=e)
-            self.poly_fit_AB_high = Antoine_AB_coeffs_from_point(Tmax, Psat, dPsat_dT, base=e)
-            self.poly_fit_AB_high_ABC_compat = (self.poly_fit_AB_high[0], -self.poly_fit_AB_high[1])
-            self.DIPPR101_ABC_high = DIPPR101_ABC_coeffs_from_point(Tmax, Psat, dPsat_dT, d2Psat_dT2)
+            self.poly_fit_AB_high = list(Antoine_AB_coeffs_from_point(Tmax, Psat, dPsat_dT, base=e))
+            self.poly_fit_AB_high_ABC_compat = [self.poly_fit_AB_high[0], -self.poly_fit_AB_high[1]]
+            self.DIPPR101_ABC_high = list(DIPPR101_ABC_coeffs_from_point(Tmax, Psat, dPsat_dT, d2Psat_dT2))
 
 
         except:

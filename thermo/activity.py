@@ -429,13 +429,6 @@ class GibbsExcess(object):
         if not scalar:
             d = serialize.naive_lists_to_arrays(d)
 
-#        if '"scalar": false' in json_repr or '"scalar":false' in json_repr:
-#            # Load as np
-#            d = serialize.load_json_np(json_repr)
-#        else:
-#            d = serialize.json.loads(json_repr)
-#            if not d['scalar']:
-#                d = serialize.load_json_np(json_repr)
         if not scalar and 'cmp_group_idx' in d:
             d['cmp_group_idx'] = tuple(array(v) for v in d['cmp_group_idx'])
         if not scalar and 'group_cmp_idx' in d:

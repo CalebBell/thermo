@@ -169,10 +169,16 @@ import chemicals.iapws
 from chemicals.iapws import iapws95_d3Ar_ddelta2dtau, iapws95_d3Ar_ddeltadtau2
 
 from thermo.serialize import arrays_to_lists
-from thermo.activity import IdealSolution
 from thermo.coolprop import has_CoolProp
+from thermo.eos import GCEOS, eos_full_path_dict
 from thermo.eos_mix import IGMIX, GCEOSMIX, eos_mix_full_path_dict, eos_mix_full_path_reverse_dict
 from thermo.eos_mix_methods import PR_lnphis_fastest
+
+from thermo.activity import GibbsExcess, IdealSolution
+from thermo.wilson import Wilson
+from thermo.unifac import UNIFAC
+from thermo.regular_solution import RegularSolution
+from thermo.uniquac import UNIQUAC
 
 from thermo.chemical_package import iapws_correlations
 
@@ -180,6 +186,7 @@ from thermo.heat_capacity import HeatCapacityGas, HeatCapacityLiquid
 from thermo.volume import VolumeLiquid, VolumeSolid
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
 from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
+
 
 R2 = R*R
 '''
@@ -200,6 +207,19 @@ enthalpy calculation.
 
 SORTED_DICT = sys.version_info >= (3, 6)
 INCOMPRESSIBLE_CONST = 1e30
+
+activity_pointer_reference_dicts = {'thermo.activity.IdealSolution': IdealSolution,
+                                    'thermo.wilson.Wilson': Wilson,
+                                    'thermo.unifac.UNIFAC': UNIFAC,
+                                    'thermo.regular_solution.RegularSolution': RegularSolution,
+                                    'thermo.uniquac.UNIQUAC': UNIQUAC,
+                                    }
+activity_reference_pointer_dicts = {v: k for k, v in activity_pointer_reference_dicts.items()}
+
+object_lookups = activity_pointer_reference_dicts.copy()
+object_lookups.update(eos_mix_full_path_dict)
+object_lookups.update(eos_full_path_dict)
+
 
 
 class Phase(object):
@@ -278,10 +298,6 @@ class Phase(object):
     '''Tuple of object instances which should be stored as json using their own
     as_json method.
     '''
-    obj_reference_types = tuple()
-    '''Tuple of object instances types that are stored as json using their own
-    as_json method; for use in reconstructing objects.
-    '''
     pointer_references = tuple()
     '''Tuple of attributes which should be stored by converting them to
     a string, and then they will be looked up in their corresponding
@@ -327,10 +343,15 @@ class Phase(object):
         if not self.scalar:
             d = serialize.arrays_to_lists(d)
         for obj_name in self.obj_references:
-            d[obj_name] = d[obj_name].as_json()
+            o = d[obj_name]
+            if type(o) is list:
+                d[obj_name] = [v.as_json() for v in o]
+            else:
+                d[obj_name] = o.as_json()
         for prop_name in self.pure_references:
             l = d[prop_name]
-            d[prop_name] = [v.as_json() for v in l]
+            if l:
+                d[prop_name] = [v.as_json() for v in l]
         for ref_name, ref_lookup in zip(self.pointer_references, self.reference_pointer_dicts):
             d[ref_name] = ref_lookup[d[ref_name]]
         d["py/object"] = self.__full_path__
@@ -371,11 +392,17 @@ class Phase(object):
 
         for obj_name, obj_cls in zip(new.pure_references, new.pure_reference_types):
             l = d[obj_name]
-            for i, v in enumerate(l):
-                l[i] = obj_cls.from_json(v)
+            if l:
+                for i, v in enumerate(l):
+                    l[i] = obj_cls.from_json(v)
 
-        for obj_name, obj_cls in zip(new.obj_references, new.obj_reference_types):
-                d[obj_name] = obj_cls.from_json(d[obj_name])
+        for obj_name in new.obj_references:
+            o = d[obj_name]
+            if type(o) is list:
+                d[obj_name] = [object_lookups[v['py/object']].from_json(v) for v in o]
+            else:
+                obj_cls = object_lookups[o['py/object']]
+                d[obj_name] = obj_cls.from_json(o)
 
         for ref_name, ref_lookup in zip(new.pointer_references, new.pointer_reference_dicts):
             d[ref_name] = ref_lookup[d[ref_name]]
@@ -5438,7 +5465,7 @@ class CEOSGas(Phase):
     pure_references = ('HeatCapacityGases',)
     pure_reference_types = (HeatCapacityGas,)
     obj_references = ('eos_mix',)
-    obj_reference_types = (GCEOSMIX,)
+
 
     pointer_references = ('eos_class',)
     pointer_reference_dicts = (eos_mix_full_path_dict,)
@@ -6417,6 +6444,20 @@ class GibbsExcessLiquid(Phase):
                         'use_Tait', 'use_IG_Cp', 'use_eos_volume', 'henry_components',
                         'henry_data', 'Psat_extrpolation') + pure_references
 
+    obj_references = ('GibbsExcessModel', 'eos_pure_instances')
+
+#    pointer_references = ('GibbsExcessModel',)
+#    pointer_reference_dicts = (activity_pointer_reference_dicts,)
+#    reference_pointer_dicts = (activity_reference_pointer_dicts,)
+
+
+
+
+
+
+
+
+
 
     def __init__(self, VaporPressures, VolumeLiquids=None,
                  VolumeSupercriticalLiquids=None,
@@ -6471,7 +6512,7 @@ class GibbsExcessLiquid(Phase):
                                [i.poly_fit_d2_coeffs for i in VaporPressures],
                                [i.DIPPR101_ABC for i in VaporPressures]]
             if Psat_extrpolation == 'AB':
-                Psats_data.append([i.poly_fit_AB_high_ABC_compat + (0.0,) for i in VaporPressures])
+                Psats_data.append([i.poly_fit_AB_high_ABC_compat + [0.0] for i in VaporPressures])
             elif Psat_extrpolation == 'ABC':
                 Psats_data.append([i.DIPPR101_ABC_high for i in VaporPressures])
             # Other option: raise?
@@ -6494,7 +6535,7 @@ class GibbsExcessLiquid(Phase):
         self.VolumeLiquids = VolumeLiquids
         self.Vms_sat_locked = ((not use_eos_volume and all(i.locked for i in VolumeLiquids)) if VolumeLiquids is not None else False)
         if self.Vms_sat_locked:
-            self._Vms_sat_data = ([i.poly_fit_Tmin for i in VolumeLiquids],
+            self._Vms_sat_data = [[i.poly_fit_Tmin for i in VolumeLiquids],
                                  [i.poly_fit_Tmin_slope for i in VolumeLiquids],
                                  [i.poly_fit_Tmin_value for i in VolumeLiquids],
                                  [i.poly_fit_Tmax for i in VolumeLiquids],
@@ -6504,7 +6545,7 @@ class GibbsExcessLiquid(Phase):
                                  [i.poly_fit_d_coeffs for i in VolumeLiquids],
                                  [i.poly_fit_d2_coeffs for i in VolumeLiquids],
                                  [i.poly_fit_Tmin_quadratic for i in VolumeLiquids],
-                                 )
+                                 ]
 #            low_fits = self._Vms_sat_data[9]
 #            for i in range(self.N):
 #                low_fits[i][0] = max(0, low_fits[i][0])
@@ -6512,7 +6553,7 @@ class GibbsExcessLiquid(Phase):
         self.VolumeSupercriticalLiquids = VolumeSupercriticalLiquids
         self.Vms_supercritical_locked = all(i.locked for i in VolumeSupercriticalLiquids) if VolumeSupercriticalLiquids is not None else False
         if self.Vms_supercritical_locked:
-            self.Vms_supercritical_data = ([i.poly_fit_Tmin for i in VolumeSupercriticalLiquids],
+            self.Vms_supercritical_data = [[i.poly_fit_Tmin for i in VolumeSupercriticalLiquids],
                                  [i.poly_fit_Tmin_slope for i in VolumeSupercriticalLiquids],
                                  [i.poly_fit_Tmin_value for i in VolumeSupercriticalLiquids],
                                  [i.poly_fit_Tmax for i in VolumeSupercriticalLiquids],
@@ -6522,7 +6563,7 @@ class GibbsExcessLiquid(Phase):
                                  [i.poly_fit_d_coeffs for i in VolumeSupercriticalLiquids],
                                  [i.poly_fit_d2_coeffs for i in VolumeSupercriticalLiquids],
                                  [i.poly_fit_Tmin_quadratic for i in VolumeSupercriticalLiquids],
-                                 )
+                                 ]
 
 
         self.incompressible = not use_Tait
@@ -6540,11 +6581,11 @@ class GibbsExcessLiquid(Phase):
         self.EnthalpyVaporizations = EnthalpyVaporizations
         self.Hvap_locked = all(i.locked for i in EnthalpyVaporizations) if EnthalpyVaporizations is not None else False
         if self.Hvap_locked:
-            self._Hvap_data = ([i.poly_fit_Tmin for i in EnthalpyVaporizations],
+            self._Hvap_data = [[i.poly_fit_Tmin for i in EnthalpyVaporizations],
                               [i.poly_fit_Tmax for i in EnthalpyVaporizations],
                               [i.poly_fit_Tc for i in EnthalpyVaporizations],
                               [1.0/i.poly_fit_Tc for i in EnthalpyVaporizations],
-                              [i.poly_fit_coeffs for i in EnthalpyVaporizations])
+                              [i.poly_fit_coeffs for i in EnthalpyVaporizations]]
 
 
 
