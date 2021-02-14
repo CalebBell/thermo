@@ -1303,6 +1303,10 @@ def test_SRKTranslatedPPJP():
     a_alphas_calc_copy = (eos_copy.a_alpha, eos_copy.da_alpha_dT, eos_copy.d2a_alpha_dT2)
     assert_close1d(a_alphas_new, a_alphas_calc_copy, rtol=1e-9)
 
+def test_IG_hash():
+    base = IG(T=300.0, P=1e5)
+    assert base.state_hash() != IG(T=400.0, P=1e5).state_hash()
+    assert base.state_hash() != IG(T=base.T, V=base.V_g).state_hash()
 
 def test_IG():
     Ts = [1e-20, 1e-5, 1, 100, 1000, 1e4, 1e7, 1e30]

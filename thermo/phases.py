@@ -171,7 +171,7 @@ from chemicals.iapws import iapws95_d3Ar_ddelta2dtau, iapws95_d3Ar_ddeltadtau2
 from thermo.serialize import arrays_to_lists
 from thermo.activity import IdealSolution
 from thermo.coolprop import has_CoolProp
-from thermo.eos_mix import IGMIX
+from thermo.eos_mix import IGMIX, GCEOSMIX, eos_mix_full_path_dict, eos_mix_full_path_reverse_dict
 from thermo.eos_mix_methods import PR_lnphis_fastest
 
 from thermo.chemical_package import iapws_correlations
@@ -266,8 +266,35 @@ class Phase(object):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
     scalar  = True
 
+    pure_references = tuple()
+    '''Tuple of attribute names which hold lists of :obj:`thermo.utils.TDependentProperty`
+    or :obj:`thermo.utils.TPDependentProperty` instances.'''
+
+    pure_reference_types = tuple()
+    '''Tuple of types of :obj:`thermo.utils.TDependentProperty`
+    or :obj:`thermo.utils.TPDependentProperty` corresponding to `pure_references`.'''
+
     obj_references = tuple()
-    obj_list_references = tuple()
+    '''Tuple of object instances which should be stored as json using their own
+    as_json method.
+    '''
+    obj_reference_types = tuple()
+    '''Tuple of object instances types that are stored as json using their own
+    as_json method; for use in reconstructing objects.
+    '''
+    pointer_references = tuple()
+    '''Tuple of attributes which should be stored by converting them to
+    a string, and then they will be looked up in their corresponding
+    `pointer_reference_dicts` entry.
+    '''
+    pointer_reference_dicts = tuple()
+    '''Tuple of dictionaries for string -> object
+    '''
+    reference_pointer_dicts = tuple()
+    '''Tuple of dictionaries for object -> string
+    '''
+
+
 
     def __str__(self):
         s =  '<%s, ' %(self.__class__.__name__)
@@ -299,9 +326,18 @@ class Phase(object):
         d = self.__dict__.copy()
         if not self.scalar:
             d = serialize.arrays_to_lists(d)
+        for obj_name in self.obj_references:
+            d[obj_name] = d[obj_name].as_json()
+        for prop_name in self.pure_references:
+            l = d[prop_name]
+            d[prop_name] = [v.as_json() for v in l]
+        for ref_name, ref_lookup in zip(self.pointer_references, self.reference_pointer_dicts):
+            d[ref_name] = ref_lookup[d[ref_name]]
         d["py/object"] = self.__full_path__
         d['json_version'] = 1
         return d
+
+
 
     @classmethod
     def from_json(cls, json_repr):
@@ -330,11 +366,56 @@ class Phase(object):
         phase_name = d['py/object']
         del d['py/object']
         del d['json_version']
-
         phase = phase_full_path_dict[phase_name]
         new = phase.__new__(phase)
+
+        for obj_name, obj_cls in zip(new.pure_references, new.pure_reference_types):
+            l = d[obj_name]
+            for i, v in enumerate(l):
+                l[i] = obj_cls.from_json(v)
+
+        for obj_name, obj_cls in zip(new.obj_references, new.obj_reference_types):
+                d[obj_name] = obj_cls.from_json(d[obj_name])
+
+        for ref_name, ref_lookup in zip(new.pointer_references, new.pointer_reference_dicts):
+            d[ref_name] = ref_lookup[d[ref_name]]
+
         new.__dict__ = d
         return new
+
+    def __hash__(self):
+        r'''Method to calculate and return a hash representing the exact state
+        of the object.
+
+        Returns
+        -------
+        hash : int
+            Hash of the object, [-]
+        '''
+        # Ensure the hash is set so it is always part of the object hash
+        self.model_hash(False)
+        self.model_hash(True)
+        d = self.__dict__
+
+        ans = hash_any_primitive((self.__class__.__name__, d))
+        return ans
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
+    def state_hash(self):
+        r'''Basic method to calculate a hash of the state of the phase and its
+        model parameters.
+
+        Note that the hashes should only be compared on the same system running
+        in the same process!
+
+        Returns
+        -------
+        state_hash : int
+            Hash of the object's model parameters and state, [-]
+        '''
+        return hash_any_primitive((self.model_hash(), self.T, self.P, self.V(), self.zs))
 
     def model_hash(self, ignore_phase=False):
         r'''Dummy method to compute a hash of a phase.
@@ -5344,6 +5425,13 @@ class CEOSGas(Phase):
     pure_references = ('HeatCapacityGases',)
     pure_reference_types = (HeatCapacityGas,)
     obj_references = ('eos_mix',)
+    obj_reference_types = (GCEOSMIX,)
+
+    pointer_references = ('eos_class',)
+    pointer_reference_dicts = (eos_mix_full_path_dict,)
+    '''Tuple of dictionaries for string -> object
+    '''
+    reference_pointer_dicts = (eos_mix_full_path_reverse_dict,)
 
     def model_hash(self, ignore_phase=False):
         if ignore_phase:
@@ -5359,8 +5447,8 @@ class CEOSGas(Phase):
         to_hash = [self.eos_class, self.eos_kwargs,
                    self.Hfs, self.Gfs, self.Sfs, self.HeatCapacityGases]
         if not ignore_phase:
-            to_hash.append(self.__class__)
-        h =  hash_any_primitive(to_hash)
+            to_hash.append(self.__class__.__name__)
+        h = hash_any_primitive(to_hash)
         if ignore_phase:
             self._model_hash_ignore_phase = h
         else:
@@ -10375,6 +10463,7 @@ class IAPWS95(HelmholtzEOS):
     _d2Ar_ddelta2_func = staticmethod(iapws95_d2Ar_ddelta2)
     _dAr_ddelta_func = staticmethod(iapws95_dAr_ddelta)
     _Ar_func = staticmethod(iapws95_Ar)
+
 
     def __init__(self, T=None, P=None, zs=None):
         self.T = T

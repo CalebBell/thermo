@@ -1206,7 +1206,7 @@ class Stream(Mixture):
     Creating Stream objects:
 
 
-    A stream of vodka with volume fractions 60% liquid, 40% ethanol, 1 kg/s:
+    A stream of vodka with volume fractions 60% water, 40% ethanol, 1 kg/s:
 
     >>> from thermo import Stream
     >>> Stream(['water', 'ethanol'], Vfls=[.6, .4], T=300, P=1E5, m=1)
@@ -2026,7 +2026,11 @@ class EnergyStream(object):
         return EnergyStream(Q=self.Q, medium=self.medium)
 
     def __repr__(self):
-        return '<Energy stream, Q=%s W, medium=%s>' %(self.Q, self.medium.value)
+        try:
+            medium = self.medium.value
+        except:
+            medium = self.medium
+        return '<Energy stream, Q=%s W, medium=%s>' %(self.Q, medium)
 
     def __init__(self, Q, medium=None):
         self.medium = medium

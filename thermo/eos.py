@@ -831,7 +831,11 @@ class GCEOS(object):
         state_hash : int
             Hash of the object's model parameters and state, [-]
         '''
-        return hash((self.model_hash(), self.T, self.P, self.V))
+        if self.multicomponent:
+            comp = self.zs
+        else:
+            comp = 0
+        return hash_any_primitive((self.model_hash(), self.T, self.P, self.V, comp))
 
     def model_hash(self):
         r'''Basic method to calculate a hash of the non-state parts of the model

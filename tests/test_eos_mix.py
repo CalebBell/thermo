@@ -4507,6 +4507,10 @@ def test_IGMIX_numpy_not_modified_by_serialization():
     hash2 = hash(eos)
     assert hash1 == hash2
 
+def test_zs_in_state_hash_eos_mix():
+    eos = IGMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, .008], zs=[0.5, 0.5])
+    eos_zs = IGMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, .008], zs=[0.4, 0.6])
+    assert eos_zs.state_hash() != eos.state_hash()
 
 
 def test_IGMIX_numpy():

@@ -43,6 +43,7 @@ from thermo.unifac import UNIFAC, UFSG, UFIP
 from thermo.coolprop import PropsSI
 import pickle
 import json
+from fluids.constants import *
 
 def test_GibbbsExcessLiquid_VaporPressure():
     # Binary ethanol-water
@@ -1174,6 +1175,30 @@ def test_model_hash():
     assert gas.model_hash() != liq.model_hash()
     assert liq2.model_hash() == liq.model_hash()
     assert liq3.model_hash() != liq.model_hash()
+
+def test_CEOS_hash_json_storage():
+
+    eos_kwargs = dict(Tcs=[154.58, 126.2], Pcs=[5042945.25, 3394387.5], omegas=[0.021, 0.04], kijs=[[0.0, -0.0159], [-0.0159, 0.0]])
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
+                         HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
+    phase = CEOSGas(eos_class=PRMIX, eos_kwargs=eos_kwargs, T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=HeatCapacityGases)
+    h0 = hash(phase) # Check json dump doesn't change the object state
+    phase2 = Phase.from_json(json.loads(json.dumps(phase.as_json())))
+    assert phase.model_hash() ==  phase2.model_hash()
+    assert phase.state_hash() ==  phase2.state_hash()
+    assert hash(phase) == hash(phase2)
+    assert phase == phase2
+    assert hash(phase) == h0
+
+    phase = CEOSLiquid(eos_class=PRMIX, eos_kwargs=eos_kwargs, T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=HeatCapacityGases)
+    h0 = hash(phase) # Check json dump doesn't change the object state
+    phase2 = Phase.from_json(json.loads(json.dumps(phase.as_json())))
+    assert phase.model_hash() ==  phase2.model_hash()
+    assert phase.state_hash() ==  phase2.state_hash()
+    assert hash(phase) == hash(phase2)
+    assert phase == phase2
+    assert hash(phase) == h0
+
 
 
 def test_dlnfugacities_SRK():

@@ -11453,3 +11453,7 @@ eos_mix_dict = {c.__name__: c for c in eos_mix_list}
 eos_mix_full_path_dict = {c.__full_path__: c for c in eos_mix_list}
 '''dict : Dict of all cubic mixture equation of state classes, indexed by their module path and class name.
 '''
+
+eos_mix_full_path_reverse_dict = {c: c.__full_path__ for c in eos_mix_list}
+'''dict : Dict of all cubic mixture equation of state classes, indexed by their module path and class name.
+'''
