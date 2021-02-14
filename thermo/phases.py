@@ -442,8 +442,7 @@ class Phase(object):
                 return self._model_hash
             except AttributeError:
                 pass
-        d = self.__dict__
-        to_hash = [d[v] for v in self.model_attributes]
+        to_hash = [getattr(self, v) for v in self.model_attributes]
         if not ignore_phase:
             to_hash.append(self.__class__.__name__)
         h = hash_any_primitive(to_hash)
@@ -9764,7 +9763,7 @@ class HumidAirRP1485(VirialGas):
 class HelmholtzEOS(Phase):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
-    model_attributes = tuple()
+    model_attributes = ('model_name',)
 
     def __repr__(self):
         r'''Method to create a string representation of the phase object, with
@@ -10358,6 +10357,7 @@ class HelmholtzEOS(Phase):
         return T_red*(2.0*f0 + tau*f1)/(T*T*T*self.rho_red*self.rho_red)
 
 class DryAirLemmon(HelmholtzEOS):
+    model_name = 'lemmon2000'
     is_gas = True
     is_liquid = False
     force_phase = 'g'
@@ -10461,6 +10461,7 @@ class DryAirLemmon(HelmholtzEOS):
 
 
 class IAPWS95(HelmholtzEOS):
+    model_name = 'iapws95'
     _MW = iapws95_MW
     Tc = iapws95_Tc
     Pc = iapws95_Pc
@@ -10498,8 +10499,6 @@ class IAPWS95(HelmholtzEOS):
     _d2Ar_ddelta2_func = staticmethod(iapws95_d2Ar_ddelta2)
     _dAr_ddelta_func = staticmethod(iapws95_dAr_ddelta)
     _Ar_func = staticmethod(iapws95_Ar)
-
-    model_attributes = tuple()
 
 
     def __init__(self, T=None, P=None, zs=None):
@@ -10612,6 +10611,8 @@ class IAPWS95Liquid(IAPWS95):
     is_liquid = True
 
 class IAPWS97(Phase):
+    model_name = 'iapws97'
+    model_attributes = ('model_name',)
     __full_path__ = "%s.%s" %(__module__, __qualname__)
     _MW = 18.015268
     R = 461.526
@@ -10620,8 +10621,6 @@ class IAPWS97(Phase):
     rhoc = 322.
     zs = [1.0]
     cmps = [0]
-    model_attributes = tuple()
-
     def mu(self):
         return mu_IAPWS(T=self.T, rho=self._rho_mass)
 
@@ -11250,10 +11249,10 @@ class CoolPropPhase(Phase):
             self.T = T
             self.P = P
             try:
-                key = (backend, fluid, P, T, CPPT_INPUTS, self.prefer_phase, zs_key)
+                key = [backend, fluid, P, T, CPPT_INPUTS, self.prefer_phase, zs_key]
                 AS = caching_state_CoolProp(*key)
             except:
-                key = (backend, fluid, P, T, CPPT_INPUTS, CPunknown, zs_key)
+                key = [backend, fluid, P, T, CPPT_INPUTS, CPunknown, zs_key]
                 AS = caching_state_CoolProp(*key)
             self.key = key
             self._cache_easy_properties(AS)

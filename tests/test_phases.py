@@ -1076,6 +1076,30 @@ def test_CoolPropPhase_PR_pure():
     assert_close(CPP.d2P_dV2(), eos.d2P_dV2_l, rtol=4e-4)
     assert_close(CPP.d2P_dTdV(), eos.d2P_dTdV_l, rtol=5e-4)
 
+def test_CoolPropPhase_Water_hash_export():
+    T, P = 299.0, 1e5
+    CPP = CoolPropPhase('HEOS', 'water', T=T, P=P)
+    h0 = hash(CPP)
+    CPP2 = Phase.from_json(json.loads(json.dumps(CPP.as_json())))
+
+
+    assert CPP.model_hash() == CPP2.model_hash()
+    assert CPP.state_hash() == CPP2.state_hash()
+    assert hash(CPP) == hash(CPP2)
+    assert CPP == CPP2
+    assert CPP.__dict__ == CPP2.__dict__
+    assert h0 == hash(CPP)
+
+
+    CPP2 = pickle.loads(pickle.dumps(CPP))
+    assert CPP.model_hash() == CPP2.model_hash()
+    assert CPP.state_hash() == CPP2.state_hash()
+    assert hash(CPP) == hash(CPP2)
+    assert CPP == CPP2
+    assert CPP.__dict__ == CPP2.__dict__
+    assert h0 == hash(CPP)
+
+
 
 def test_CoolPropPhase_Water():
     T, P = 299.0, 1e5
@@ -1857,6 +1881,28 @@ def test_IAPWS95_basics():
     assert_close(obj.dC_virial_dT(), dC_virial_dT_num)
 
 def test_Helmholtz_phase_export():
+    # Check some nasty hash cases where the model was not actually included in the hash
+    for t in (True, False):
+        h0 = DryAirLemmon(T=300.0, P=1e5).model_hash(t)
+        h1 = IAPWS95Gas(T=300.0, P=1e5).model_hash(t)
+        assert h0 != h1
+
+    for t in (True, False):
+        h0 = DryAirLemmon(T=300.0, P=1e5).model_hash(t)
+        h1 = IAPWS95Liquid(T=300.0, P=1e5).model_hash(t)
+        assert h0 != h1
+
+    for t in (True, False):
+        h0 = DryAirLemmon(T=300.0, P=1e5).model_hash(t)
+        h1 = IAPWS97(T=300.0, P=1e5).model_hash(t)
+        assert h0 != h1
+
+    for t in (True, False):
+        h0 = IAPWS95(T=300.0, P=1e5).model_hash(t)
+        h1 = IAPWS97(T=300.0, P=1e5).model_hash(t)
+        assert h0 != h1
+
+
 
     for ph in (IAPWS95, IAPWS95Gas, IAPWS95Liquid, IAPWS97, DryAirLemmon):
         liquid = ph(T=300, P=1e5, zs=[1])
