@@ -418,15 +418,42 @@ class Phase(object):
         return hash_any_primitive((self.model_hash(), self.T, self.P, self.V(), self.zs))
 
     def model_hash(self, ignore_phase=False):
-        r'''Dummy method to compute a hash of a phase.
+        r'''Method to compute a hash of a phase.
+
+        Parameters
+        ----------
+        ignore_phase : bool
+            Whether or not to include the specifc class of the model in the
+            hash
 
         Returns
         -------
         hash : int
-            Hash representing the settings of the phase; phases at identical
-            `T`, `P`, `zs`, and all other parameters should have the same hash.
+            Hash representing the settings of the phase; phases with all
+            identical model parameters should have the same hash.
         '''
-        return randint(0, 100000000)
+        if ignore_phase:
+            try:
+                return self._model_hash_ignore_phase
+            except AttributeError:
+                pass
+        else:
+            try:
+                return self._model_hash
+            except AttributeError:
+                pass
+        d = self.__dict__
+        to_hash = [d[v] for v in self.model_attributes]
+        if not ignore_phase:
+            to_hash.append(self.__class__.__name__)
+        h = hash_any_primitive(to_hash)
+        if ignore_phase:
+            self._model_hash_ignore_phase = h
+        else:
+            self._model_hash = h
+        return h
+
+
 
     def value(self, name):
         r'''Method to retrieve a property from a string. This more or less
@@ -4689,20 +4716,7 @@ class IdealGas(Phase):
     pure_reference_types = (HeatCapacityGas,)
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
-
-
-    def as_json(self):
-        d = self.__dict__.copy()
-        for k in self.pure_references:
-            objs = getattr(self, k)
-            if objs:
-                d[k] = [obj.as_json() for obj in objs]
-
-        d["py/object"] = self.__full_path__
-        d["json_version"] = 1
-        del d['cmps']
-        return d
-
+    model_attributes = ('Hfs', 'Gfs', 'Sfs') + pure_references
 
     def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None, T=None, P=None, zs=None):
         self.HeatCapacityGases = HeatCapacityGases
@@ -5433,6 +5447,9 @@ class CEOSGas(Phase):
     '''
     reference_pointer_dicts = (eos_mix_full_path_reverse_dict,)
 
+    model_attributes = ('Hfs', 'Gfs', 'Sfs', 'eos_class',
+                        'eos_kwargs') + pure_references
+
     def model_hash(self, ignore_phase=False):
         if ignore_phase:
             try:
@@ -5444,8 +5461,8 @@ class CEOSGas(Phase):
                 return self._model_hash
             except AttributeError:
                 pass
-        to_hash = [self.eos_class, self.eos_kwargs,
-                   self.Hfs, self.Gfs, self.Sfs, self.HeatCapacityGases]
+        d = self.__dict__
+        to_hash = [d[v] for v in self.model_attributes]
         if not ignore_phase:
             to_hash.append(self.__class__.__name__)
         h = hash_any_primitive(to_hash)
@@ -6396,6 +6413,11 @@ class GibbsExcessLiquid(Phase):
     pure_reference_types = (HeatCapacityGas, VolumeLiquid, VaporPressure, HeatCapacityLiquid,
                             EnthalpyVaporization)
 
+    model_attributes = ('Hfs', 'Gfs', 'Sfs', 'GibbsExcessModel',
+                        'eos_pure_instances', 'use_Poynting', 'use_phis_sat',
+                        'use_Tait', 'use_IG_Cp', 'use_eos_volume', 'henry_components',
+                        'henry_data', 'Psat_extrpolation') + pure_references
+
 
     def __init__(self, VaporPressures, VolumeLiquids=None,
                  VolumeSupercriticalLiquids=None,
@@ -6437,6 +6459,7 @@ class GibbsExcessLiquid(Phase):
 
         self.VaporPressures = VaporPressures
         self.Psats_locked = all(i.locked for i in VaporPressures) if VaporPressures is not None else False
+        self.Psat_extrpolation = Psat_extrpolation
         if self.Psats_locked:
             Psats_data = [[i.poly_fit_Tmin for i in VaporPressures],
                                [i.poly_fit_Tmin_slope for i in VaporPressures],
@@ -6607,6 +6630,7 @@ class GibbsExcessLiquid(Phase):
 
         new.Psats_locked = self.Psats_locked
         new._Psats_data = self._Psats_data
+        new.Psat_extrpolation = self.Psat_extrpolation
 
         new.Cpgs_locked = self.Cpgs_locked
         new._Cpgs_data = self._Cpgs_data
@@ -8959,6 +8983,11 @@ class GibbsExcessSolid(GibbsExcessLiquid):
     pure_reference_types = (HeatCapacityGas, SublimationPressure, VolumeSolid, EnthalpySublimation)
 
 
+    model_attributes = ('Hfs', 'Gfs', 'Sfs','GibbsExcessModel',
+                        'eos_pure_instances', 'use_Poynting', 'use_phis_sat',
+                        'use_eos_volume', 'henry_components',
+                        'henry_data', 'Psat_extrpolation') + pure_references
+
     def __init__(self, SublimationPressures, VolumeSolids=None,
                  GibbsExcessModel=IdealSolution(),
                  eos_pure_instances=None,
@@ -8990,6 +9019,10 @@ class GraysonStreed(Phase):
     methane_coeffs = (1.36822, -1.54831, 0.0, 0.02889, -0.01076, 0.10486, -0.02529, 0.0, 0.0, 0.0)
     simple_coeffs = (2.05135, -2.10889, 0.0, -0.19396, 0.02282, 0.08852, 0.0, -0.00872, -0.00353, 0.00203)
     version = 1
+
+    pure_references = tuple()
+    model_attributes = ('Tcs', 'Pcs', 'omegas', '_CASs',
+                        'GibbsExcessModel') + pure_references
 
     def to_TP_zs(self, T, P, zs):
         new = self.__class__.__new__(self.__class__)
@@ -9730,6 +9763,8 @@ class HumidAirRP1485(VirialGas):
 
 class HelmholtzEOS(Phase):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
+
+    model_attributes = tuple()
 
     def __repr__(self):
         r'''Method to create a string representation of the phase object, with
@@ -11181,8 +11216,7 @@ class CoolPropPhase(Phase):
                 return 'l'
             return 'g'
 
-    def model_hash(self, ignore_phase=False):
-        return hash_any_primitive([self.backend, self.fluid, self.Hfs, self.Gfs, self.Sfs, self.__class__])
+    model_attributes = ('backend', 'fluid', 'Hfs', 'Gfs', 'Sfs')
 
     def __init__(self, backend, fluid,
                  T=None, P=None, zs=None,  Hfs=None,

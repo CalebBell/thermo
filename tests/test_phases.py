@@ -1199,6 +1199,19 @@ def test_CEOS_hash_json_storage():
     assert phase == phase2
     assert hash(phase) == h0
 
+def test_IdealGas_hash_json_storage():
+
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
+                         HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
+    phase = IdealGas(T=300.0, P=1e5, zs=[.2, .8], HeatCapacityGases=HeatCapacityGases)
+    h0 = hash(phase) # Check json dump doesn't change the object state
+    phase2 = Phase.from_json(json.loads(json.dumps(phase.as_json())))
+    assert phase.model_hash() ==  phase2.model_hash()
+    assert phase.state_hash() ==  phase2.state_hash()
+    assert hash(phase) == hash(phase2)
+    assert phase == phase2
+    assert hash(phase) == h0
+
 
 
 def test_dlnfugacities_SRK():
