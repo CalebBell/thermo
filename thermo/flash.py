@@ -5533,9 +5533,14 @@ class FlashVL(Flash):
         self.constants = constants
         self.correlations = correlations
         self.liquid = liquid
-        self.liquids = liquids = [liquid]
         self.gas = gas
         self.settings = settings
+        self._finish_initialization()
+
+    def _finish_initialization(self):
+        constants, correlations = self.constants, self.correlations
+        gas, liquid, settings = self.gas, self.liquid, self.settings
+        self.liquids = liquids = [liquid]
         self.N = constants.N
 
         self.stab = StabilityTester(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
@@ -6256,19 +6261,26 @@ class FlashVLN(FlashVL):
     SS_NP_STAB_COMP_DIFF_MIN = None
 
     K_COMPOSITION_INDEPENDENT_HACK = True
-
+    skip_solids = True
 
     def __init__(self, constants, correlations, liquids, gas, solids=None, settings=default_settings):
         self.constants = constants
         self.correlations = correlations
         self.liquids = liquids
+        self.gas = gas
+        self.settings = settings
+        if solids:
+            raise ValueError("Solids are not supported in this model")
+        self._finish_initialization()
+
+    def _finish_initialization(self):
+        constants, correlations, settings = self.constants, self.correlations, self.settings
+        liquids, gas = self.liquids, self.gas
+
         self.liquid0 = liquids[0] if liquids else None
         self.max_liquids = len(liquids)
         self.max_phases = 1 + self.max_liquids if gas is not None else self.max_liquids
         self.phases = [gas] + liquids if gas is not None else liquids
-        if solids:
-            raise ValueError("Solids are not supported in this model")
-            self.skip_solids = not bool(solids)
 
 
         liquids_to_unique_liquids = []
@@ -6300,8 +6312,6 @@ class FlashVLN(FlashVL):
         self.unique_phase_count = 1 + self.unique_liquid_count
         self.unique_liquid_hashes = unique_liquid_hashes
 
-        self.gas = gas
-        self.settings = settings
         self.N = constants.N
 
         self.K_composition_independent = all([i.composition_independent for i in self.phases])
@@ -6932,11 +6942,21 @@ class FlashPureVLS(Flash):
         return "FlashPureVLS(gas=%s, liquids=%s, solids=%s)" %(self.gas, self.liquids, self.solids)
     def __init__(self, constants, correlations, gas, liquids, solids,
                  settings=default_settings):
+        # These attributes are all that needs to be stored, then call _finish_initialization
         self.constants = constants
         self.correlations = correlations
         self.solids = solids
         self.liquids = liquids
         self.gas = gas
+        self.settings = settings
+
+        self._finish_initialization()
+
+    def _finish_initialization(self):
+        solids = self.solids
+        liquids = self.liquids
+        gas = self.gas
+
 
         self.gas_count = 1 if gas is not None else 0
         self.liquid_count = len(liquids)
@@ -6954,7 +6974,6 @@ class FlashPureVLS(Flash):
             phases = liquids + solids
         self.phases = phases
 
-        self.settings = settings
 
         for i, l in enumerate(self.liquids):
             setattr(self, 'liquid' + str(i), l)
