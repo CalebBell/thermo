@@ -41,6 +41,31 @@ The following phase objects can only represent a liquid phase:
 
 * Ideal-liquid and/or activity coefficient models - :obj:`GibbsExcessLiquid <thermo.phases.GibbsExcessLiquid>`
 
+Serialization
+^^^^^^^^^^^^^
+All phase models offer a :obj:`as_json <thermo.phases.Phase.as_json>` method and a :obj:`from_json <thermo.phases.Phase.from_json>` to serialize the object state for transport over a network, storing to disk, and passing data between processes.
+
+>>> import json
+>>> HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])), HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
+>>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=HeatCapacityGases)
+>>> json_stuff = json.dumps(phase.as_json())
+>>> new_phase = Phase.from_json(json.loads(json_stuff))
+>>> assert new_phase == phase
+
+Other json libraries can be used besides the standard json library by design.
+
+Storing and recreating objects with Python's :py:func:`pickle.dumps` library is also tested; this can be faster than using JSON at the cost of being binary data.
+
+Hashing
+^^^^^^^
+All models have a :obj:`__hash__ <thermo.phases.Phase.__hash__>` method that can be used to compare different phases to see if they are absolutely identical (including which values have been calculated already).
+
+They also have a :obj:`model_hash <thermo.phases.Phase.model_hash>` method that can be used to compare different phases to see if they have identical model parameters.
+
+They also have a :obj:`state_hash <thermo.phases.Phase.state_hash>` method that can be used to compare different phases to see if they have identical temperature, composition, and model parameters.
+
+
+
 Flashes with Pure Compounds
 ---------------------------
 Pure components are really nice to work with because they have nice boundaries between each state, and the mole fraction is always 1; there is no composition dependence. There is a separate flash interfaces for pure components. These flashes are very mature and should be quite reliable.

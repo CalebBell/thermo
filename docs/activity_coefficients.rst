@@ -99,7 +99,7 @@ Please note that the identifying integer in these {group: count} elements are no
 
 Notes on Performance
 --------------------
-Initializing the object for the first time is a not a high performance operation as certain checks need to be done and data structures set up. Some equations components of the Gibbs excess model may depend only on temperature or composition, instead of depending on both. Each model implements the method :obj:`to_T_xs <thermo.unifac.UNIFAC.to_T_xs>` which should be used to create a new object at the new temperature and/or composition. The design of the object is to lazy-calculate properties, and to be immutable: calculations at new temperatures and compositions are done in a new object. 
+Initializing the object for the first time is a not a high performance operation as certain checks need to be done and data structures set up. Some pieces of the equations of the Gibbs excess model may depend only on temperature or composition, instead of depending on both. Each model implements the method :obj:`to_T_xs <thermo.unifac.UNIFAC.to_T_xs>` which should be used to create a new object at the new temperature and/or composition. The design of the object is to lazy-calculate properties, and to be immutable: calculations at new temperatures and compositions are done in a new object. 
 
 Note also that the :obj:`__repr__ <thermo.activity.GibbsExcess.__repr__>` string for each model is designed to allow lossless reconstruction of the model. This is very useful when building test cases.
 

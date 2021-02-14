@@ -30,6 +30,7 @@ Base Class
     :undoc-members:
     :show-inheritance:
     :exclude-members:
+    :special-members: __hash__, __eq__, __repr__
 
 Ideal Gas Equation of State
 ===========================
@@ -337,7 +338,8 @@ class Phase(object):
         --------
         >>> import json
         >>> phase = IAPWS95Liquid(T=300, P=1e5, zs=[1])
-        >>> _ = phase.as_json()
+        >>> new_phase = Phase.from_json(json.loads(json.dumps(phase.as_json())))
+        >>> assert phase == new_phase
         '''
         d = self.__dict__.copy()
         if not self.scalar:
@@ -374,8 +376,8 @@ class Phase(object):
 
         Returns
         -------
-        eos : :obj:`Phase`
-            Newly created object from the json serialization, [-]
+        phase : :obj:`Phase`
+            Newly created phase object from the json serialization, [-]
 
         Notes
         -----
