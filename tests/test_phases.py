@@ -1863,12 +1863,24 @@ def test_Helmholtz_phase_export():
 #        liquid._compute_main_properties()
         liquid2 = Phase.from_json(liquid.as_json())
         assert liquid.__dict__ == liquid2.__dict__
+        assert liquid.model_hash() == liquid2.model_hash()
+        assert liquid.state_hash() == liquid2.state_hash()
+        assert hash(liquid) == hash(liquid2)
+        assert liquid == liquid2
 
         liquid3 = Phase.from_json(json.loads(json.dumps(liquid.as_json())))
         assert liquid.__dict__ == liquid3.__dict__
+        assert liquid.model_hash() == liquid3.model_hash()
+        assert liquid.state_hash() == liquid3.state_hash()
+        assert hash(liquid) == hash(liquid3)
+        assert liquid == liquid3
 
         liquid4 = pickle.loads(pickle.dumps(liquid))
         assert liquid.__dict__ == liquid4.__dict__
+        assert liquid.model_hash() == liquid4.model_hash()
+        assert liquid.state_hash() == liquid4.state_hash()
+        assert hash(liquid) == hash(liquid4)
+        assert liquid == liquid4
 
 def test_DryAirLemmon():
     obj = DryAirLemmon(T=300.0, P=1e5)

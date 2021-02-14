@@ -10499,6 +10499,8 @@ class IAPWS95(HelmholtzEOS):
     _dAr_ddelta_func = staticmethod(iapws95_dAr_ddelta)
     _Ar_func = staticmethod(iapws95_Ar)
 
+    model_attributes = tuple()
+
 
     def __init__(self, T=None, P=None, zs=None):
         self.T = T
@@ -10618,6 +10620,7 @@ class IAPWS97(Phase):
     rhoc = 322.
     zs = [1.0]
     cmps = [0]
+    model_attributes = tuple()
 
     def mu(self):
         return mu_IAPWS(T=self.T, rho=self._rho_mass)
