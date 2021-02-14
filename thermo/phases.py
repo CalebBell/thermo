@@ -349,6 +349,8 @@ class Phase(object):
             else:
                 d[obj_name] = o.as_json()
         for prop_name in self.pure_references:
+            # Known issue: references to other properties
+            # Needs special fixing - maybe a function
             l = d[prop_name]
             if l:
                 d[prop_name] = [v.as_json() for v in l]
@@ -422,6 +424,7 @@ class Phase(object):
         # Ensure the hash is set so it is always part of the object hash
         self.model_hash(False)
         self.model_hash(True)
+        self.state_hash()
         d = self.__dict__
 
         ans = hash_any_primitive((self.__class__.__name__, d))
@@ -3171,7 +3174,7 @@ class Phase(object):
         Cpgs_locked = all(i.locked for i in HeatCapacityGases) if HeatCapacityGases is not None else False
         if Cpgs_locked:
             T_REF_IG = self.T_REF_IG
-            Cpgs_data = ([i.poly_fit_Tmin for i in HeatCapacityGases],
+            Cpgs_data = [[i.poly_fit_Tmin for i in HeatCapacityGases],
                               [i.poly_fit_Tmin_slope for i in HeatCapacityGases],
                               [i.poly_fit_Tmin_value for i in HeatCapacityGases],
                               [i.poly_fit_Tmax for i in HeatCapacityGases],
@@ -3201,7 +3204,7 @@ class Phase(object):
                                                        i.poly_fit_Tmax_value, i.poly_fit_Tmin_slope,
                                                        i.poly_fit_Tmax_slope) for i in HeatCapacityGases],
 
-                              )
+                              ]
         return (Cpgs_locked, Cpgs_data)
 
 
