@@ -61,6 +61,17 @@ def test_Joback_acetone():
         assert_close1d(ex.mul_coeffs(ex.counts), [839.11, -14.99])
         assert_close(ex.mul(300.0), 0.0002940378347162687)
 
+    with pytest.raises(ValueError):
+        # Raise an error if there are no groups matched
+        obj = Joback('[Fe]')
+        obj.estimate()
+
+    # Test we can handle missing groups
+    nitrobenzene = 'C1=CC=C(C=C1)[N+](=O)[O-]'
+    obj = Joback(nitrobenzene)
+    res = obj.estimate()
+    assert res['mul_coeffs'] is None
+
 
 @pytest.mark.fuzz
 @pytest.mark.slow

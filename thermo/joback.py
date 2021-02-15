@@ -443,6 +443,12 @@ class Joback(object):
     Approximately 68% of chemcials in the thermo database seem to be able to
     be estimated with the Joback method.
 
+    If a group which was identified is missign a regressed contribution, the
+    estimated property will be None. However, if not all atoms of a molecule
+    are identified as particular groups, property estimation will go ahead
+    with heavily reduced accuracy. Check the `status` attribute to be sure
+    a molecule was properly fragmented.
+
     Examples
     --------
     Analysis of Acetone:
@@ -520,6 +526,8 @@ class Joback(object):
         Cpig and mul, both the coefficients and objects to perform calculations
         are returned.
         '''
+        if not self.counts:
+            raise ValueError("Zero matching groups identified")
         # Pre-generate the coefficients or they will not be returned
         self.mul(300)
         self.Cpig(300)
@@ -567,11 +575,14 @@ class Joback(object):
         >>> Joback.Tb({1: 2, 24: 1})
         322.11
         '''
-        tot = 0.0
-        for group, count in counts.items():
-            tot += joback_groups_id_dict[group].Tb*count
-        Tb = 198.2 + tot
-        return Tb
+        try:
+            tot = 0.0
+            for group, count in counts.items():
+                tot += joback_groups_id_dict[group].Tb*count
+            Tb = 198.2 + tot
+            return Tb
+        except:
+            return None
 
     @staticmethod
     def Tm(counts):
@@ -601,11 +612,14 @@ class Joback(object):
         >>> Joback.Tm({1: 2, 24: 1})
         173.5
         '''
-        tot = 0.0
-        for group, count in counts.items():
-            tot += joback_groups_id_dict[group].Tm*count
-        Tm = 122.5 + tot
-        return Tm
+        try:
+            tot = 0.0
+            for group, count in counts.items():
+                tot += joback_groups_id_dict[group].Tm*count
+            Tm = 122.5 + tot
+            return Tm
+        except:
+            return None
 
     @staticmethod
     def Tc(counts, Tb=None):
@@ -643,13 +657,16 @@ class Joback(object):
         >>> Joback.Tc({1: 2, 24: 1}, Tb=322.11)
         500.5590049525365
         '''
-        if Tb is None:
-            Tb = Joback.Tb(counts)
-        tot = 0.0
-        for group, count in counts.items():
-            tot += joback_groups_id_dict[group].Tc*count
-        Tc = Tb/(0.584 + 0.965*tot - tot*tot)
-        return Tc
+        try:
+            if Tb is None:
+                Tb = Joback.Tb(counts)
+            tot = 0.0
+            for group, count in counts.items():
+                tot += joback_groups_id_dict[group].Tc*count
+            Tc = Tb/(0.584 + 0.965*tot - tot*tot)
+            return Tc
+        except:
+            return None
 
     @staticmethod
     def Pc(counts, atom_count):
@@ -686,11 +703,14 @@ class Joback(object):
         >>> Joback.Pc({1: 2, 24: 1}, 10)
         4802499.604994407
         '''
-        tot = 0.0
-        for group, count in counts.items():
-            tot += joback_groups_id_dict[group].Pc*count
-        Pc = (0.113 + 0.0032*atom_count - tot)**-2
-        return Pc*1E5 # bar to Pa
+        try:
+            tot = 0.0
+            for group, count in counts.items():
+                tot += joback_groups_id_dict[group].Pc*count
+            Pc = (0.113 + 0.0032*atom_count - tot)**-2
+            return Pc*1E5 # bar to Pa
+        except:
+            return None
 
     @staticmethod
     def Vc(counts):
@@ -723,11 +743,14 @@ class Joback(object):
         >>> Joback.Vc({1: 2, 24: 1})
         0.0002095
         '''
-        tot = 0.0
-        for group, count in counts.items():
-            tot += joback_groups_id_dict[group].Vc*count
-        Vc = 17.5 + tot
-        return Vc*1E-6 # cm^3/mol to m^3/mol
+        try:
+            tot = 0.0
+            for group, count in counts.items():
+                tot += joback_groups_id_dict[group].Vc*count
+            Vc = 17.5 + tot
+            return Vc*1E-6 # cm^3/mol to m^3/mol
+        except:
+            return None
 
     @staticmethod
     def Hf(counts):
@@ -761,11 +784,14 @@ class Joback(object):
         >>> Joback.Hf({1: 2, 24: 1})
         -217829.99999999997
         '''
-        tot = 0.0
-        for group, count in counts.items():
-            tot += joback_groups_id_dict[group].Hform*count
-        Hf = 68.29 + tot
-        return Hf*1000 # kJ/mol to J/mol
+        try:
+            tot = 0.0
+            for group, count in counts.items():
+                tot += joback_groups_id_dict[group].Hform*count
+            Hf = 68.29 + tot
+            return Hf*1000 # kJ/mol to J/mol
+        except:
+            return None
 
     @staticmethod
     def Gf(counts):
@@ -799,11 +825,14 @@ class Joback(object):
         >>> Joback.Gf({1: 2, 24: 1})
         -154540.00000000003
         '''
-        tot = 0.0
-        for group, count in counts.items():
-            tot += joback_groups_id_dict[group].Gform*count
-        Gf = 53.88 + tot
-        return Gf*1000 # kJ/mol to J/mol
+        try:
+            tot = 0.0
+            for group, count in counts.items():
+                tot += joback_groups_id_dict[group].Gform*count
+            Gf = 53.88 + tot
+            return Gf*1000 # kJ/mol to J/mol
+        except:
+            return None
 
     @staticmethod
     def Hfus(counts):
@@ -838,11 +867,14 @@ class Joback(object):
         >>> Joback.Hfus({1: 2, 24: 1})
         5125.0
         '''
-        tot = 0.0
-        for group, count in counts.items():
-            tot += joback_groups_id_dict[group].Hfus*count
-        Hfus = -0.88 + tot
-        return Hfus*1000 # kJ/mol to J/mol
+        try:
+            tot = 0.0
+            for group, count in counts.items():
+                tot += joback_groups_id_dict[group].Hfus*count
+            Hfus = -0.88 + tot
+            return Hfus*1000 # kJ/mol to J/mol
+        except:
+            return None
 
     @staticmethod
     def Hvap(counts):
@@ -877,11 +909,14 @@ class Joback(object):
         >>> Joback.Hvap({1: 2, 24: 1})
         29018.0
         '''
-        tot = 0.0
-        for group, count in counts.items():
-            tot += joback_groups_id_dict[group].Hvap*count
-        Hvap = 15.3 + tot
-        return Hvap*1000 # kJ/mol to J/mol
+        try:
+            tot = 0.0
+            for group, count in counts.items():
+                tot += joback_groups_id_dict[group].Hvap*count
+            Hvap = 15.3 + tot
+            return Hvap*1000 # kJ/mol to J/mol
+        except:
+            return None
 
     @staticmethod
     def Cpig_coeffs(counts):
@@ -921,17 +956,20 @@ class Joback(object):
         >>> Cp(300)
         75.32642000000001
         '''
-        a, b, c, d = 0.0, 0.0, 0.0, 0.0
-        for group, count in counts.items():
-            a += joback_groups_id_dict[group].Cpa*count
-            b += joback_groups_id_dict[group].Cpb*count
-            c += joback_groups_id_dict[group].Cpc*count
-            d += joback_groups_id_dict[group].Cpd*count
-        a -= 37.93
-        b += 0.210
-        c -= 3.91E-4
-        d += 2.06E-7
-        return [a, b, c, d]
+        try:
+            a, b, c, d = 0.0, 0.0, 0.0, 0.0
+            for group, count in counts.items():
+                a += joback_groups_id_dict[group].Cpa*count
+                b += joback_groups_id_dict[group].Cpb*count
+                c += joback_groups_id_dict[group].Cpc*count
+                d += joback_groups_id_dict[group].Cpd*count
+            a -= 37.93
+            b += 0.210
+            c -= 3.91E-4
+            d += 2.06E-7
+            return [a, b, c, d]
+        except:
+            return None
 
     @staticmethod
     def mul_coeffs(counts):
@@ -972,13 +1010,16 @@ class Joback(object):
         >>> mul(300)
         0.0002940378347162687
         '''
-        a, b = 0.0, 0.0
-        for group, count in counts.items():
-            a += joback_groups_id_dict[group].mua*count
-            b += joback_groups_id_dict[group].mub*count
-        a -= 597.82
-        b -= 11.202
-        return [a, b]
+        try:
+            a, b = 0.0, 0.0
+            for group, count in counts.items():
+                a += joback_groups_id_dict[group].mua*count
+                b += joback_groups_id_dict[group].mub*count
+            a -= 597.82
+            b -= 11.202
+            return [a, b]
+        except:
+            return None
 
     def Cpig(self, T):
         r'''Computes ideal-gas heat capacity at a specified temperature
@@ -1006,9 +1047,12 @@ class Joback(object):
         >>> J.Cpig(300)
         75.32642000000001
         '''
-        if self.calculated_Cpig_coeffs is None:
-            self.calculated_Cpig_coeffs = Joback.Cpig_coeffs(self.counts)
-        return horner(reversed(self.calculated_Cpig_coeffs), T)
+        try:
+            if self.calculated_Cpig_coeffs is None:
+                self.calculated_Cpig_coeffs = Joback.Cpig_coeffs(self.counts)
+            return horner(reversed(self.calculated_Cpig_coeffs), T)
+        except:
+            return None
 
     def mul(self, T):
         r'''Computes liquid viscosity at a specified temperature
@@ -1035,7 +1079,10 @@ class Joback(object):
         >>> J.mul(300)
         0.0002940378347162687
         '''
-        if self.calculated_mul_coeffs is None:
-            self.calculated_mul_coeffs = Joback.mul_coeffs(self.counts)
-        a, b = self.calculated_mul_coeffs
-        return self.MW*exp(a/T + b)
+        try:
+            if self.calculated_mul_coeffs is None:
+                self.calculated_mul_coeffs = Joback.mul_coeffs(self.counts)
+            a, b = self.calculated_mul_coeffs
+            return self.MW*exp(a/T + b)
+        except:
+            return None
