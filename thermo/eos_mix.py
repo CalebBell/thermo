@@ -1477,7 +1477,7 @@ class GCEOSMIX(GCEOS):
         sets the fugacity coefficients `phis_l` and/or `phis_g`.
 
         .. math::
-            \hat \phi_i^g = \frac{\hat f_i^g}{x_i P}
+            \hat \phi_i^g = \frac{\hat f_i^g}{y_i P}
 
         .. math::
             \hat \phi_i^l = \frac{\hat f_i^l}{x_i P}
@@ -1500,7 +1500,7 @@ class GCEOSMIX(GCEOS):
         implemented correctly using the following expression, from [1]_.
 
         .. math::
-            \ln \hat \phi_i = \left[\frac{\partial (n\log \phi)}{\partial
+            \ln \hat \phi_i = \left[\frac{\partial (n\ln \phi)}{\partial
             n_i}\right]_{T,P,n_j,V_t}
 
         For reference, several expressions for fugacity of a component are as
@@ -4188,7 +4188,7 @@ class GCEOSMIX(GCEOS):
         mole fraction  derivative of Gibbs free energy.
 
         .. math::
-            \left(\frac{\partial \log \phi }{\partial x_i}\right)_{T, P,
+            \left(\frac{\partial \ln \phi }{\partial x_i}\right)_{T, P,
             x_{i\ne j}} = \frac{1}{RT}\left(  \left(\frac{\partial G_{dep}}
             {\partial x_i}\right)_{T, P, x_{i\ne j}}
             \right)
@@ -4214,7 +4214,7 @@ class GCEOSMIX(GCEOS):
         derivative of Gibbs free energy.
 
         .. math::
-            \left(\frac{\partial \log \phi }{\partial n_i}\right)_{T, P,
+            \left(\frac{\partial \ln \phi }{\partial n_i}\right)_{T, P,
             n_{i\ne j}} = f\left(  \left(\frac{\partial G_{dep}}{\partial x_i}\right)_{T, P,
             x_{i\ne j}}
             \right)
@@ -4378,13 +4378,13 @@ class GCEOSMIX(GCEOS):
         parameters.
 
         .. math::
-            \left(\frac{\partial n \log \phi}{\partial n_i}
-            \right)_{n_{k \ne i}} = \log \phi _i = \log \phi +
-            n \left(\frac{\partial \log \phi}{\partial n_i}
+            \left(\frac{\partial n \ln \phi}{\partial n_i}
+            \right)_{n_{k \ne i}} = \ln \phi _i = \ln \phi +
+            n \left(\frac{\partial \ln \phi}{\partial n_i}
             \right)_{n_{k\ne i}}
 
         .. math::
-            \left(\frac{\partial \log \phi }{\partial n_i}\right)_{T, P,
+            \left(\frac{\partial \ln \phi }{\partial n_i}\right)_{T, P,
             n_{i\ne j}} = \frac{1}{RT}\left(  \left(\frac{\partial G_{dep}}
             {\partial n_i}\right)_{T, P, n_{i\ne j}}
             \right)
@@ -4494,7 +4494,7 @@ class GCEOSMIX(GCEOS):
         from the second mole fraction derivative of Gibbs free energy.
 
         .. math::
-            \left(\frac{\partial^2 \log \phi }{\partial x_i\partial x_j}\right)_{T, P,
+            \left(\frac{\partial^2 \ln \phi }{\partial x_i\partial x_j}\right)_{T, P,
             x_{i,j\ne k}} = \frac{1}{RT}\left( \left(\frac{\partial^2 G_{dep}}
             {\partial x_j \partial x_i}\right)_{T, P, x_{i,j\ne k}}
             \right)
@@ -4537,7 +4537,7 @@ class GCEOSMIX(GCEOS):
         from the second mole fraction derivative of Gibbs free energy.
 
         .. math::
-            \left(\frac{\partial^2 \log \phi }{\partial n_i\partial n_j}\right)_{T, P,
+            \left(\frac{\partial^2 \ln \phi }{\partial n_i\partial n_j}\right)_{T, P,
             n_{i,j\ne k}}  f\left( \left(\frac{\partial^2 G_{dep}}
             {\partial x_j \partial x_i}\right)_{T, P, x_{i,j\ne k}}
             \right)
@@ -4636,7 +4636,7 @@ class GCEOSMIX(GCEOS):
         cast in the form used here.
 
         .. math::
-            \left(\frac{\partial \log \phi_i}{\partial n_i}\right)_{P,
+            \left(\frac{\partial \ln \phi_i}{\partial n_i}\right)_{P,
             n_{j \ne i}}
 
         Parameters
@@ -4664,7 +4664,7 @@ class GCEOSMIX(GCEOS):
         cast in the form used here.
 
         .. math::
-            \left(\frac{\partial \log f_i}{\partial n_i}\right)_{P,
+            \left(\frac{\partial \ln f_i}{\partial n_i}\right)_{P,
             n_{j \ne i}}
 
         Parameters
@@ -5580,9 +5580,9 @@ class GCEOSMIX(GCEOS):
         parameters.
 
         .. math::
-            \left(\frac{\partial \log \phi_i}{\partial P}\right)_{T,
+            \left(\frac{\partial \ln \phi_i}{\partial P}\right)_{T,
             nj \ne i} = \frac{G_{dep}}{\partial P}_{T, n}
-            +  \left(\frac{\partial^2 \log \phi}{\partial P \partial n_i}
+            +  \left(\frac{\partial^2 \ln \phi}{\partial P \partial n_i}
             \right)_{T, P, n_{j \ne i}}
 
         Parameters
@@ -5692,9 +5692,9 @@ class GCEOSMIX(GCEOS):
         parameters.
 
         .. math::
-            \left(\frac{\partial \log \phi_i}{\partial T}\right)_{P,
+            \left(\frac{\partial \ln \phi_i}{\partial T}\right)_{P,
             nj \ne i} = \frac{\frac{G_{dep}}{RT}}{\partial T}_{P, n}
-            +  \left(\frac{\partial^2 \log \phi}{\partial T \partial n_i}
+            +  \left(\frac{\partial^2 \ln \phi}{\partial T \partial n_i}
             \right)_{P, n_{j \ne i}}
 
         Parameters
@@ -5812,7 +5812,7 @@ class GCEOSMIX(GCEOS):
         cast in the form used here.
 
         .. math::
-            \left(\frac{\partial \log \phi_i}{\partial z_i}\right)_{P,
+            \left(\frac{\partial \ln \phi_i}{\partial z_i}\right)_{P,
             z_{j \ne i}}
 
         Parameters
@@ -7146,7 +7146,7 @@ class PRMIX(GCEOSMIX, PR):
         .. math::
             \ln \hat \phi_i = \frac{B_i}{B}(Z-1)-\ln(Z-B) + \frac{A}{2\sqrt{2}B}
             \left[\frac{B_i}{B} - \frac{2}{a\alpha}\sum_i y_i(a\alpha)_{ij}\right]
-            \log\left[\frac{Z + (1+\sqrt{2})B}{Z-(\sqrt{2}-1)B}\right]
+            \ln\left[\frac{Z + (1+\sqrt{2})B}{Z-(\sqrt{2}-1)B}\right]
 
         .. math::
             A = \frac{(a\alpha)P}{R^2 T^2}
@@ -7211,7 +7211,7 @@ class PRMIX(GCEOSMIX, PR):
         Peng-Robinson equation of state. Verified numerically.
 
         .. math::
-            \left(\frac{\partial \log \phi_i}{\partial T}\right)_{P,
+            \left(\frac{\partial \ln \phi_i}{\partial T}\right)_{P,
             nj \ne i}
 
         Parameters
@@ -7300,7 +7300,7 @@ class PRMIX(GCEOSMIX, PR):
         Peng-Robinson EOS. Verified numerically.
 
         .. math::
-            \left(\frac{\partial \log \phi_i}{\partial P}\right)_{T,
+            \left(\frac{\partial \ln \phi_i}{\partial P}\right)_{T,
             nj \ne i}
 
         Parameters
@@ -7495,7 +7495,7 @@ class PRMIX(GCEOSMIX, PR):
         is specific to the Peng-Robinson equation of state.
 
         .. math::
-            \left(\frac{\partial \log \phi_i}{\partial z_i}\right)_{P,
+            \left(\frac{\partial \ln \phi_i}{\partial z_i}\right)_{P,
             z_{j \ne i}}
 
         Parameters
@@ -8911,7 +8911,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         SRK equation of state. Verified numerically.
 
         .. math::
-            \left(\frac{\partial \log \phi_i}{\partial T}\right)_{P,
+            \left(\frac{\partial \ln \phi_i}{\partial T}\right)_{P,
             nj \ne i}
 
         Parameters
@@ -8987,7 +8987,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         SRK EOS. Verified numerically.
 
         .. math::
-            \left(\frac{\partial \log \phi_i}{\partial P}\right)_{T,
+            \left(\frac{\partial \ln \phi_i}{\partial P}\right)_{T,
             nj \ne i}
 
         Parameters
@@ -10304,7 +10304,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         VDW equation of state. Verified numerically.
 
         .. math::
-            \left(\frac{\partial \log \phi_i}{\partial T}\right)_{P,
+            \left(\frac{\partial \ln \phi_i}{\partial T}\right)_{P,
             nj \ne i}
 
         Parameters
@@ -10365,7 +10365,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         VDW EOS. Verified numerically.
 
         .. math::
-            \left(\frac{\partial \log \phi_i}{\partial P}\right)_{T,
+            \left(\frac{\partial \ln \phi_i}{\partial P}\right)_{T,
             nj \ne i}
 
         Parameters

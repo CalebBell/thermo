@@ -575,7 +575,7 @@ class UNIQUAC(GibbsExcess):
             \frac{\partial \tau_{ij}}{\partial T} =
             \left(2 T h_{ij} + d_{ij} + \frac{c_{ij}}{T} - \frac{b_{ij}}{T^{2}}
             - \frac{2 e_{ij}}{T^{3}}\right) e^{T^{2} h_{ij} + T d_{ij} + a_{ij}
-            + c_{ij} \log{\left(T \right)} + \frac{b_{ij}}{T}
+            + c_{ij} \ln{\left(T \right)} + \frac{b_{ij}}{T}
             + \frac{e_{ij}}{T^{2}}}
 
         Returns
@@ -620,7 +620,7 @@ class UNIQUAC(GibbsExcess):
             - \frac{b_{ij}}{T^{2}} - \frac{2 e_{ij}}{T^{3}}\right)^{2}
                 - \frac{c_{ij}}{T^{2}} + \frac{2 b_{ij}}{T^{3}}
                 + \frac{6 e_{ij}}{T^{4}}\right) e^{T^{2} f_{ij} + T d_{ij}
-                + a_{ij} + c_{ij} \log{\left(T \right)} + \frac{b_{ij}}{T}
+                + a_{ij} + c_{ij} \ln{\left(T \right)} + \frac{b_{ij}}{T}
                 + \frac{e_{ij}}{T^{2}}}
 
         Returns
@@ -670,7 +670,7 @@ class UNIQUAC(GibbsExcess):
             + \left(2 T f_{ij} + d_{ij} + \frac{c_{ij}}{T} - \frac{b_{ij}}{T^{2}}
             - \frac{2 e_{ij}}{T^{3}}\right)^{3} - \frac{2 \left(- c_{ij}
             + \frac{3 b_{ij}}{T} + \frac{12 e_{ij}}{T^{2}}\right)}{T^{3}}\right)
-            e^{T^{2} f_{ij} + T d_{ij} + a_{ij} + c_{ij} \log{\left(T \right)}
+            e^{T^{2} f_{ij} + T d_{ij} + a_{ij} + c_{ij} \ln{\left(T \right)}
             + \frac{b_{ij}}{T} + \frac{e_{ij}}{T^{2}}}
 
         Returns
@@ -1165,11 +1165,11 @@ class UNIQUAC(GibbsExcess):
             - \frac{\theta_j}{\phi_j^2}\cdot \frac{\partial \phi_j}{\partial x_i}
             \right)
             - \sum_j \left(\frac{q_j x_j(\sum_k \tau_{kj} \frac{\partial \theta_k}{\partial x_i} )}{\sum_k \tau_{kj} \theta_{k}}\right)
-            + 0.5 z q_i\log\left(\frac{\theta_i}{\phi_i}\right)
-            - q_i\log\left(\sum_j \tau_{ji}\theta_j \right)
+            + 0.5 z q_i\ln\left(\frac{\theta_i}{\phi_i}\right)
+            - q_i\ln\left(\sum_j \tau_{ji}\theta_j \right)
             + \frac{x_i^2}{\phi_i}\left(\frac{\partial \phi_i}{\partial x_i}/x_i - \phi_i/x_i^2\right)
             + \sum_{j!= i} \frac{x_j}{\phi_j}\frac{\partial \phi_j}{\partial x_i}
-            + \log\left(\frac{\phi_i}{x_i} \right)
+            + \ln\left(\frac{\phi_i}{x_i} \right)
             \right]
 
         Returns
@@ -1218,8 +1218,8 @@ class UNIQUAC(GibbsExcess):
             \right\}
             + \sum_j \frac{q_j x_j z\left(\frac{\partial \theta_j}{\partial x_i} - \frac{\theta_j}{\phi_j}\frac{\partial \phi_j}{\partial x_i}  \right)}{2 \theta_j}
             - \sum_j \frac{q_j x_j \sum_k \tau_{kj}\frac{\partial \theta_k}{\partial x_i}}{\sum_k \tau_{kj}\theta_k}
-            + 0.5zq_i \log\left(\frac{\theta_i}{\phi_i}  \right) - q_i \log\left(\sum_j \tau_{ji} \theta_j\right)
-            + \log\left(\frac{\phi_i}{x_i}    \right)
+            + 0.5zq_i \ln\left(\frac{\theta_i}{\phi_i}  \right) - q_i \ln\left(\sum_j \tau_{ji} \theta_j\right)
+            + \ln\left(\frac{\phi_i}{x_i}    \right)
             + \frac{x_i}{\phi_i}\left(\frac{\partial \phi_i}{\partial x_i} -\frac{\phi_i}{x_i}  \right)
             + \sum_{j\ne i} \frac{x_j}{\phi_j}\frac{\partial \phi_j}{\partial x_i}
             \right]

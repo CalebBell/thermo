@@ -1311,8 +1311,8 @@ class GCEOS(object):
 
         .. math::
             S_{dep} = \int_{\infty}^V\left[\frac{\partial P}{\partial T}
-            - \frac{R}{V}\right] dV + R\log\frac{PV}{RT} = - R \log{\left (V
-            \right )} + R \log{\left (\frac{P V}{R T} \right )} + R \log{\left
+            - \frac{R}{V}\right] dV + R\ln\frac{PV}{RT} = - R \ln{\left (V
+            \right )} + R \ln{\left (\frac{P V}{R T} \right )} + R \ln{\left
             (V - b \right )} + \frac{2 a \frac{d\alpha{\left (T \right )}}{d T}
             }{\sqrt{\delta^{2} - 4 \epsilon}} \operatorname{atanh}{\left (\frac
             {2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}} \right )}
@@ -1323,10 +1323,10 @@ class GCEOS(object):
         .. math::
             C_{v, dep} = T\int_\infty^V \left(\frac{\partial^2 P}{\partial
             T^2}\right) dV = - T a \left(\sqrt{\frac{1}{\delta^{2} - 4
-            \epsilon}} \log{\left (V - \frac{\delta^{2}}{2} \sqrt{\frac{1}{
+            \epsilon}} \ln{\left (V - \frac{\delta^{2}}{2} \sqrt{\frac{1}{
             \delta^{2} - 4 \epsilon}} + \frac{\delta}{2} + 2 \epsilon \sqrt{
             \frac{1}{\delta^{2} - 4 \epsilon}} \right )} - \sqrt{\frac{1}{
-            \delta^{2} - 4 \epsilon}} \log{\left (V + \frac{\delta^{2}}{2}
+            \delta^{2} - 4 \epsilon}} \ln{\left (V + \frac{\delta^{2}}{2}
             \sqrt{\frac{1}{\delta^{2} - 4 \epsilon}} + \frac{\delta}{2}
             - 2 \epsilon \sqrt{\frac{1}{\delta^{2} - 4 \epsilon}} \right )}
             \right) \frac{d^{2} \alpha{\left (T \right )} }{d T^{2}}

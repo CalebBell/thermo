@@ -1947,7 +1947,7 @@ class Haghtalab_a_alpha(a_alpha_base):
         documentation. Three coefficients needed.
 
         .. math::
-            \alpha = e^{\left(- c_{3}^{\log{\left (\frac{T}{T_{c,i}} \right )}}
+            \alpha = e^{\left(- c_{3}^{\ln{\left (\frac{T}{T_{c,i}} \right )}}
             + 1\right) \left(- \frac{T c_{2}}{T_{c,i}} + c_{1}\right)}
 
         References
@@ -1978,7 +1978,7 @@ class Saffari_a_alpha(a_alpha_base):
         documentation. Three coefficients needed.
 
         .. math::
-            \alpha = e^{\frac{T c_{1}}{T_{c,i}} + c_{2} \log{\left (\frac{T}{T_{c,i}}
+            \alpha = e^{\frac{T c_{1}}{T_{c,i}} + c_{2} \ln{\left (\frac{T}{T_{c,i}}
             \right )} + c_{3} \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right)}
 
         References
@@ -2008,7 +2008,7 @@ class Chen_Yang_a_alpha(a_alpha_base):
         for more documentation. Seven coefficients needed.
 
         .. math::
-            \alpha = e^{\left(- c_{3}^{\log{\left (\frac{T}{T_{c,i}} \right )}}
+            \alpha = e^{\left(- c_{3}^{\ln{\left (\frac{T}{T_{c,i}} \right )}}
             + 1\right) \left(- \frac{T c_{2}}{T_{c,i}} + c_{1}\right)}
 
         References

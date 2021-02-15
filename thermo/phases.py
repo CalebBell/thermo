@@ -1088,7 +1088,7 @@ class Phase(object):
 
         .. math::
             \ln f_i = \ln\left( P z_i \exp(\ln \phi_i)\right)
-            = \log(P) + \log(z_i) + \ln \phi_i
+            = \ln(P) + \ln(z_i) + \ln \phi_i
 
         Returns
         -------
@@ -1110,7 +1110,7 @@ class Phase(object):
 
         .. math::
             \frac{\partial f_i}{\partial T} = P z_i \frac{\partial
-            \log \phi_i}{\partial T}
+            \ln \phi_i}{\partial T}
 
         Returns
         -------
@@ -1158,7 +1158,7 @@ class Phase(object):
 
         .. math::
             \frac{\partial \phi_i}{\partial T} = \phi_i \frac{\partial
-            \log \phi_i}{\partial T}
+            \ln \phi_i}{\partial T}
 
         Returns
         -------
@@ -1192,7 +1192,7 @@ class Phase(object):
 
         .. math::
             \frac{\partial \phi_i}{\partial P} = \phi_i \frac{\partial
-            \log \phi_i}{\partial P}
+            \ln \phi_i}{\partial P}
 
         Returns
         -------
@@ -3552,8 +3552,8 @@ class Phase(object):
         r'''Method to calculate and return the ideal-gas entropy of the phase.
 
         .. math::
-            S^{ig} = \sum_i z_i S_{i}^{ig} - R\log\left(\frac{P}{P_{ref}}\right)
-            - R\sum_i z_i \log(z_i)
+            S^{ig} = \sum_i z_i S_{i}^{ig} - R\ln\left(\frac{P}{P_{ref}}\right)
+            - R\sum_i z_i \ln(z_i)
 
         Returns
         -------
@@ -5125,8 +5125,8 @@ class IdealGas(Phase):
         r'''Method to calculate and return the entropy of the phase.
 
         .. math::
-            S = \sum_i z_i S_{i}^{ig} - R\log\left(\frac{P}{P_{ref}}\right)
-            - R\sum_i z_i \log(z_i)
+            S = \sum_i z_i S_{i}^{ig} - R\ln\left(\frac{P}{P_{ref}}\right)
+            - R\sum_i z_i \ln(z_i)
 
         Returns
         -------
@@ -7841,7 +7841,7 @@ class GibbsExcessLiquid(Phase):
         `phis_sat` as well as the pure component vapor pressures.
 
         .. math::
-            \frac{\partial \log \phi_i}{\partial P} =
+            \frac{\partial \ln \phi_i}{\partial P} =
             \frac{\frac{\partial \text{Poynting}_i}{\partial P}}
             {\text{Poynting}_i} - \frac{1}{P}
 
@@ -7854,7 +7854,7 @@ class GibbsExcessLiquid(Phase):
         Notes
         -----
         Poyntings, gammas, and pure component saturation phis default to 1. For
-        that case, :math:`\frac{\partial \log \phi_i}{\partial P}=\frac{1}{P}`.
+        that case, :math:`\frac{\partial \ln \phi_i}{\partial P}=\frac{1}{P}`.
         '''
         try:
             return self._dlnphis_dP
@@ -9492,7 +9492,7 @@ class VirialGas(Phase):
 
         .. math::
            S_{dep} = \frac{R \left(- T \frac{d}{d T} C{\left(T \right)} + 2 V^{2}
-           \log{\left(\frac{V^{2} + V B{\left(T \right)} + C{\left(T \right)}}
+           \ln{\left(\frac{V^{2} + V B{\left(T \right)} + C{\left(T \right)}}
            {V^{2}} \right)} - 2 V \left(T \frac{d}{d T} B{\left(T \right)}
             + B{\left(T \right)}\right) - C{\left(T \right)}\right)}{2 V^{2}}
 

@@ -3881,7 +3881,7 @@ class UNIFAC(GibbsExcess):
 
         .. math::
             \Psi_{mk} = e^{\frac{- a_{1} - a_{2} \left(T - T_{0}\right) - a_{3}
-            \left(T \log{\left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)}{T}}
+            \left(T \ln{\left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)}{T}}
 
         with :math:`T_0 = 298.15` K and the `a` coefficients are specific to
         each pair of main groups, and they are asymmetric, so
@@ -3930,10 +3930,10 @@ class UNIFAC(GibbsExcess):
 
         .. math::
             \frac{\partial \Psi_{mk}}{\partial T} = \left(\frac{- a_{2} - a_{3}
-            \log{\left(\frac{T_{0}}{T} \right)}}{T} - \frac{- a_{1} - a_{2}
-            \left(T - T_{0}\right) - a_{3} \left(T \log{\left(\frac{T_{0}}{T}
+            \ln{\left(\frac{T_{0}}{T} \right)}}{T} - \frac{- a_{1} - a_{2}
+            \left(T - T_{0}\right) - a_{3} \left(T \ln{\left(\frac{T_{0}}{T}
             \right)} + T - T_{0}\right)}{T^{2}}\right) e^{\frac{- a_{1} - a_{2}
-            \left(T - T_{0}\right) - a_{3} \left(T \log{\left(\frac{T_{0}}{T}
+            \left(T - T_{0}\right) - a_{3} \left(T \ln{\left(\frac{T_{0}}{T}
             \right)} + T - T_{0}\right)}{T}}
 
         with :math:`T_0 = 298.15` K and the `a` coefficients are specific to
@@ -3992,14 +3992,14 @@ class UNIFAC(GibbsExcess):
 
         .. math::
             \frac{\partial^2 \Psi_{mk}}{\partial T^2} = \frac{\left(2 a_{2}
-            + 2 a_{3} \log{\left(\frac{T_{0}}{T} \right)} + a_{3} + \left(a_{2}
-            + a_{3} \log{\left(\frac{T_{0}}{T} \right)} - \frac{a_{1} + a_{2}
-            \left(T - T_{0}\right) + a_{3} \left(T \log{\left(\frac{T_{0}}{T}
+            + 2 a_{3} \ln{\left(\frac{T_{0}}{T} \right)} + a_{3} + \left(a_{2}
+            + a_{3} \ln{\left(\frac{T_{0}}{T} \right)} - \frac{a_{1} + a_{2}
+            \left(T - T_{0}\right) + a_{3} \left(T \ln{\left(\frac{T_{0}}{T}
             \right)} + T - T_{0}\right)}{T}\right)^{2} - \frac{2 \left(a_{1}
-            + a_{2} \left(T - T_{0}\right) + a_{3} \left(T \log{\left(
+            + a_{2} \left(T - T_{0}\right) + a_{3} \left(T \ln{\left(
             \frac{T_{0}}{T} \right)} + T - T_{0}\right)\right)}{T}\right)
             e^{- \frac{a_{1} + a_{2} \left(T - T_{0}\right) + a_{3} \left(
-            T \log{\left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)}{T}}}
+            T \ln{\left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)}{T}}}
             {T^{2}}
 
         with :math:`T_0 = 298.15` K and the `a` coefficients are specific to
@@ -4062,20 +4062,20 @@ class UNIFAC(GibbsExcess):
 
         .. math::
             \frac{\partial^3 \Psi_{mk}}{\partial T^3} =
-            - \frac{\left(6 a_{2} + 6 a_{3} \log{\left(\frac{T_{0}}{T} \right)}
-            + 4 a_{3} + \left(a_{2} + a_{3} \log{\left(\frac{T_{0}}{T} \right)}
-            - \frac{a_{1} + a_{2} \left(T - T_{0}\right) + a_{3} \left(T \log{
+            - \frac{\left(6 a_{2} + 6 a_{3} \ln{\left(\frac{T_{0}}{T} \right)}
+            + 4 a_{3} + \left(a_{2} + a_{3} \ln{\left(\frac{T_{0}}{T} \right)}
+            - \frac{a_{1} + a_{2} \left(T - T_{0}\right) + a_{3} \left(T \ln{
             \left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)}{T}\right)^{3}
-            + 3 \left(a_{2} + a_{3} \log{\left(\frac{T_{0}}{T} \right)}
-            - \frac{a_{1} + a_{2} \left(T - T_{0}\right) + a_{3} \left(T \log{
+            + 3 \left(a_{2} + a_{3} \ln{\left(\frac{T_{0}}{T} \right)}
+            - \frac{a_{1} + a_{2} \left(T - T_{0}\right) + a_{3} \left(T \ln{
             \left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)}{T}\right) \left(
-            2 a_{2} + 2 a_{3} \log{\left(\frac{T_{0}}{T} \right)} + a_{3}
+            2 a_{2} + 2 a_{3} \ln{\left(\frac{T_{0}}{T} \right)} + a_{3}
             - \frac{2 \left(a_{1} + a_{2} \left(T - T_{0}\right) + a_{3} \left(
-            T \log{\left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)\right)}{T}
+            T \ln{\left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)\right)}{T}
             \right) - \frac{6 \left(a_{1} + a_{2} \left(T - T_{0}\right)
-            + a_{3} \left(T \log{\left(\frac{T_{0}}{T} \right)} + T - T_{0}
+            + a_{3} \left(T \ln{\left(\frac{T_{0}}{T} \right)} + T - T_{0}
             \right)\right)}{T}\right) e^{- \frac{a_{1} + a_{2} \left(T - T_{0}
-            \right) + a_{3} \left(T \log{\left(\frac{T_{0}}{T} \right)}
+            \right) + a_{3} \left(T \ln{\left(\frac{T_{0}}{T} \right)}
             + T - T_{0}\right)}{T}}}{T^{3}}
 
         with :math:`T_0 = 298.15` K and the `a` coefficients are specific to

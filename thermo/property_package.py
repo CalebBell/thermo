@@ -1696,12 +1696,12 @@ class IdealCaloric(Ideal):
         There is a contribution due to mixing:
 
         .. math::
-            \Delta S_{mixing} = -R\sum_i z_i \log(z_i)
+            \Delta S_{mixing} = -R\sum_i z_i \ln(z_i)
 
         The ideal gas pressure contribution is:
 
         .. math::
-            \Delta S_{P} = -R\log\left(\frac{P}{P_{ref}}\right)
+            \Delta S_{P} = -R\ln\left(\frac{P}{P_{ref}}\right)
 
         For a liquid mixture or a partially liquid mixture, the entropy
         contribution is not so strong - all such pressure effects find that
@@ -1709,8 +1709,8 @@ class IdealCaloric(Ideal):
 
         .. math::
             \Delta S_{P} = - \sum_i x_i\left(1 - \frac{V}{F}\right)
-            R\log\left(\frac{P_{sat, i}}{P_{ref}}\right) - \sum_i y_i\left(
-            \frac{V}{F}\right) R\log\left(\frac{P}{P_{ref}}\right)
+            R\ln\left(\frac{P_{sat, i}}{P_{ref}}\right) - \sum_i y_i\left(
+            \frac{V}{F}\right) R\ln\left(\frac{P}{P_{ref}}\right)
 
         These expressions are combined with the standard heat capacity and
         enthalpy of vaporization expressions to calculate the total entropy:
@@ -3351,7 +3351,7 @@ class WilsonPP(GammaPhiCaloric):
             \frac{\partial \Lambda_{ij}}{\partial T} =
             \left(2 T h_{ij} + d_{ij} + \frac{c_{ij}}{T} - \frac{b_{ij}}{T^{2}}
             - \frac{2 e_{ij}}{T^{3}}\right) e^{T^{2} h_{ij} + T d_{ij} + a_{ij}
-            + c_{ij} \log{\left(T \right)} + \frac{b_{ij}}{T}
+            + c_{ij} \ln{\left(T \right)} + \frac{b_{ij}}{T}
             + \frac{e_{ij}}{T^{2}}}
 
 
@@ -3399,7 +3399,7 @@ class WilsonPP(GammaPhiCaloric):
             - \frac{b_{ij}}{T^{2}} - \frac{2 e_{ij}}{T^{3}}\right)^{2}
                 - \frac{c_{ij}}{T^{2}} + \frac{2 b_{ij}}{T^{3}}
                 + \frac{6 e_{ij}}{T^{4}}\right) e^{T^{2} f_{ij} + T d_{ij}
-                + a_{ij} + c_{ij} \log{\left(T \right)} + \frac{b_{ij}}{T}
+                + a_{ij} + c_{ij} \ln{\left(T \right)} + \frac{b_{ij}}{T}
                 + \frac{e_{ij}}{T^{2}}}
 
 
@@ -3448,7 +3448,7 @@ class WilsonPP(GammaPhiCaloric):
             + \left(2 T f_{ij} + d_{ij} + \frac{c_{ij}}{T} - \frac{b_{ij}}{T^{2}}
             - \frac{2 e_{ij}}{T^{3}}\right)^{3} - \frac{2 \left(- c_{ij}
             + \frac{3 b_{ij}}{T} + \frac{12 e_{ij}}{T^{2}}\right)}{T^{3}}\right)
-            e^{T^{2} f_{ij} + T d_{ij} + a_{ij} + c_{ij} \log{\left(T \right)}
+            e^{T^{2} f_{ij} + T d_{ij} + a_{ij} + c_{ij} \ln{\left(T \right)}
             + \frac{b_{ij}}{T} + \frac{e_{ij}}{T^{2}}}
 
         These `Lambda ij` values (and the coefficients) are NOT symmetric.
@@ -3510,7 +3510,7 @@ class WilsonPP(GammaPhiCaloric):
         r'''
 
         .. math::
-            \frac{\partial G^E}{\partial T} = -R\sum_i x_i \log\left(\sum_j x_i \Lambda_{ij}\right)
+            \frac{\partial G^E}{\partial T} = -R\sum_i x_i \ln\left(\sum_j x_i \Lambda_{ij}\right)
             -RT\sum_i \frac{x_i \sum_j x_j \frac{\Lambda _{ij}}{\partial T}}{\sum_j x_j \Lambda_{ij}}
         '''
 
@@ -3696,7 +3696,7 @@ class WilsonPP(GammaPhiCaloric):
             - \frac{x_i \Lambda_{ik} (\sum_j x_j \frac{\partial \Lambda_{ij}}{\partial T} )}{(\partial_j x_j \Lambda_{ij})^2}
             \right) + \frac{\sum_i x_i \frac{\partial \Lambda_{ki}}{\partial T}}{\sum_j x_j \Lambda_{kj}}
             \right)
-            + \log\left(\sum_i x_i \Lambda_{ki}\right)
+            + \ln\left(\sum_i x_i \Lambda_{ki}\right)
             + \sum_i \frac{x_i \Lambda_{ik}}{\sum_j x_j \Lambda_{ij}}
             \right]
         '''
@@ -3747,7 +3747,7 @@ class WilsonPP(GammaPhiCaloric):
         .. math::
             \frac{\partial G^E}{\partial x_k} = -RT\left[
             \sum_i \frac{x_i \Lambda_{ik}}{\sum_j \Lambda_{ij}x_j }
-            + \log\left(\sum_j x_j \Lambda_{kj}\right)
+            + \ln\left(\sum_j x_j \Lambda_{kj}\right)
             \right]
         '''
         '''

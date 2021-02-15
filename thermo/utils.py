@@ -348,7 +348,7 @@ def TPD(T, zs, lnphis, ys, lnphis_test):
 
     .. math::
         \text{TPD}(y) =  \sum_{j=1}^n y_j(\mu_j (y) - \mu_j(z))
-        = RT \sum_i y_i\left(\log(y_i) + \log(\phi_i(y)) - d_i(z)\right)
+        = RT \sum_i y_i\left(\ln(y_i) + \ln(\phi_i(y)) - d_i(z)\right)
 
         d_i(z) = \ln z_i + \ln \phi_i(z)
 

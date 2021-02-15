@@ -1219,8 +1219,8 @@ class EquilibriumState(object):
         r'''Method to calculate and return the ideal-gas entropy of the phase.
 
         .. math::
-            S^{ig} = \sum_i z_i S_{i}^{ig} - R\log\left(\frac{P}{P_{ref}}\right)
-            - R\sum_i z_i \log(z_i)
+            S^{ig} = \sum_i z_i S_{i}^{ig} - R\ln\left(\frac{P}{P_{ref}}\right)
+            - R\sum_i z_i \ln(z_i)
 
         Returns
         -------
