@@ -791,7 +791,8 @@ class Chemical(object): # pragma: no cover
         except:
             return 'Rdkit is required for this feature.'
 
-    def draw_3d(self, width=300, height=500, style='stick', Hs=True): # pragma: no cover
+    def draw_3d(self, width=300, height=500, style='stick', Hs=True,
+                atom_labels=True): # pragma: no cover
         r'''Interface for drawing an interactive 3D view of the molecule.
         Requires an HTML5 browser, and the libraries RDKit, pymol3D, and
         IPython. An exception is raised if all three of these libraries are
@@ -800,13 +801,16 @@ class Chemical(object): # pragma: no cover
         Parameters
         ----------
         width : int
-            Number of pixels wide for the view
+            Number of pixels wide for the view, [pixels]
         height : int
-            Number of pixels tall for the view
+            Number of pixels tall for the view, [pixels]
         style : str
-            One of 'stick', 'line', 'cross', or 'sphere'
+            One of 'stick', 'line', 'cross', or 'sphere', [-]
         Hs : bool
-            Whether or not to show hydrogen
+            Whether or not to show hydrogen, [-]
+        atom_labels : bool
+            Whether or not to label the atoms, [-]
+
 
         Examples
         --------
@@ -824,9 +828,11 @@ class Chemical(object): # pragma: no cover
                 mol = self.rdkitmol
             AllChem.EmbedMultipleConfs(mol)
             mb = Chem.MolToMolBlock(mol)
-            p = py3Dmol.view(width=width,height=height)
+            p = py3Dmol.view(width=width, height=height)
             p.addModel(mb,'sdf')
             p.setStyle({style:{}})
+            if atom_labels:
+                p.addPropertyLabels("atom","",{'alignment': 'center'})
             p.zoomTo()
             display(p.show())
         except:
