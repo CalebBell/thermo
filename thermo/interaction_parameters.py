@@ -351,7 +351,7 @@ _loaded_interactions = False
 def load_all_interaction_parameters():
     global IPDB, _loaded_interactions
 
-    folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
+    folder = os.path.join(os.path.dirname(__file__), 'Interaction Parameters')
     chemsep_db_path = os.path.join(folder, 'ChemSep')
     ip_files = {'ChemSep PR': os.path.join(chemsep_db_path, 'pr.json'),
                 'ChemSep NRTL': os.path.join(chemsep_db_path, 'nrtl.json')}
