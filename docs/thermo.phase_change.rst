@@ -1,4 +1,4 @@
-thermo.phase_change module
-==========================
+Phase Change Properties (thermo.phase_change)
+=============================================
 
 .. automodule:: thermo.phase_change

@@ -1,4 +1,4 @@
-thermo.nrtl module
-==================
+NRTL Gibbs Excess Model (thermo.nrtl)
+=====================================
 
 .. automodule:: thermo.nrtl

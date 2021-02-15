@@ -1,4 +1,4 @@
-thermo.volume module
-====================
+Density/Volume (thermo.volume)
+==============================
 
 .. automodule:: thermo.volume

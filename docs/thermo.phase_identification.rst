@@ -1,4 +1,4 @@
-thermo.phase_identification module
-==================================
+Phase Identification (thermo.phase_identification)
+==================================================
 
 .. automodule:: thermo.phase_identification

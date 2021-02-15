@@ -1,4 +1,4 @@
-thermo.viscosity module
-=======================
+Viscosity (thermo.viscosity)
+============================
 
 .. automodule:: thermo.viscosity

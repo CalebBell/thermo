@@ -1,4 +1,4 @@
-thermo.equilibrium module
-=========================
+Equilibrium State (thermo.equilibrium)
+======================================
 
 .. automodule:: thermo.equilibrium

@@ -1,4 +1,4 @@
-thermo.flash module
-===================
+Flash Calculations (thermo.flash)
+=================================
 
 .. automodule:: thermo.flash

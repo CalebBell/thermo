@@ -1,4 +1,4 @@
-thermo.phases module
-====================
+Phase Models (thermo.phases)
+============================
 
 .. automodule:: thermo.phases

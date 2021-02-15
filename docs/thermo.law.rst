@@ -1,5 +1,5 @@
-thermo.law module
-=================
+Legal and Economic Chemical Data (thermo.law)
+=============================================
 
 .. automodule:: thermo.law
     :members:
