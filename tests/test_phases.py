@@ -566,7 +566,7 @@ def test_GibbsExcessLiquid_H_S_settings():
         assert liquid.S_phi_consistency() < 1e-12
 
 
-def test_GibbsExcessLiquid_H_from_Hvap():
+def test_GibbsExcessLiquid_HS_from_Hvap():
     # Binary water-ethanol
     T = 230.0
     P = 1e5
@@ -621,16 +621,56 @@ def test_GibbsExcessLiquid_H_from_Hvap():
     assert all(Hvaps_low[i] < 1e5 for i in range(2))
 
     # Entropy at low T
-    assert_close(liquid.S(), -138.854442314264, rtol=1e-10)
-    S_from_gas = gas.S()
-    for i in range(2):
-        S_from_gas += zs[i]*(-liquid.Hvaps()[i]/T - R*log(liquid.Psats()[i]*liquid.P_REF_IG_INV))
-    assert_close(liquid.S(), S_from_gas, rtol=1e-10)
+    assert_close(liquid.S(), -138.96388547368, rtol=1e-10)
+    # Not correct
+#    S_from_gas = gas.S()
+#    for i in range(2):
+#        S_from_gas += zs[i]*(-liquid.Hvaps()[i]/T - R*log(liquid.Psats()[i]*liquid.P_REF_IG_INV))
+#    assert_close(liquid.S(), S_from_gas, rtol=1e-10)
 
     dS = (liquid.to_TP_zs(400, P, zs).S() - liquid.to_TP_zs(499, P, zs).S())
     assert_close(dS, -41.73637308436628, rtol=1e-10)
 
+def test_GibbsExcessLiquid_HS_from_Hvap_pure():
+    # Water
+    T = 325.0
+    P = 1e5
+    zs = [1]
 
+    VaporPressures = [VaporPressure(poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))]
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))]
+
+    VolumeLiquids = [VolumeLiquid(poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]))]
+
+    EnthalpyVaporizations = [EnthalpyVaporization(poly_fit=(273.17, 647.095, 647.14, [0.010220675607316746, 0.5442323619614213, 11.013674729940819, 110.72478547661254, 591.3170172192005, 1716.4863395285283, 4063.5975524922624, 17960.502354189244, 53916.28280689388]))]
+
+    liquid = GibbsExcessLiquid(VaporPressures=VaporPressures,
+                               HeatCapacityGases=HeatCapacityGases,
+                               VolumeLiquids=VolumeLiquids,
+                               EnthalpyVaporizations=EnthalpyVaporizations,
+                               use_Hvap_caloric_basis=True, use_phis_sat=False, use_Poynting=False).to_TP_zs(T, P, zs)
+
+    gas = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases)
+    P = liquid.Psats()[0]
+
+    liquid = liquid.to_TP_zs(T, P, zs)
+    gas = gas.to_TP_zs(T, P, zs)
+    assert_close(gas.S() - liquid.Hvaps()[0]/T, liquid.S(), rtol=1e-14)
+
+    # Check the gas is more stable at high P
+    liquid_low_P = P*.9
+    liquid2 = liquid.to_TP_zs(T, liquid_low_P, zs)
+    gas2 = gas.to_TP_zs(T, liquid_low_P, zs)
+
+    assert gas2.G() < liquid2.G()
+
+
+    # Check the liquid is more stable at high P
+    liquid_high_P = P*1.1
+    liquid3 = liquid.to_TP_zs(T, liquid_high_P, zs)
+    gas3 = gas.to_TP_zs(T, liquid_high_P, zs)
+
+    assert gas3.G() > liquid3.G()
 
 def test_GibbsExcessLiquid_lnPsats():
     T, P, zs = 100.0, 1e5, [1.0]

@@ -8282,10 +8282,10 @@ class GibbsExcessLiquid(Phase):
         zs, cmps = self.zs, range(self.N)
 
         log_zs = self.log_zs()
-        S = 0.0
+        S_comp = 0.0
         for i in cmps:
-            S -= zs[i]*log_zs[i]
-        S -= log(P*self.P_REF_IG_INV)
+            S_comp -= zs[i]*log_zs[i]
+        S = S_comp - log(P*self.P_REF_IG_INV)
         S *= R
         try:
             Cpig_integrals_over_T_pure = self._Cpig_integrals_over_T_pure
@@ -8300,6 +8300,7 @@ class GibbsExcessLiquid(Phase):
         use_Poynting, use_phis_sat, use_Hvap_caloric_basis = self.use_Poynting, self.use_phis_sat, self.use_Hvap_caloric_basis
 
         if use_Hvap_caloric_basis:
+            S = S_comp*R
             Hvaps = self.Hvaps()
             T_inv = 1.0/T
             LOG_P_REF_IG = self.LOG_P_REF_IG
