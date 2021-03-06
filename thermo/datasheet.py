@@ -155,7 +155,7 @@ def tabulate_gas(chemical, Tmin=None, Tmax=None, pts=10):
     data['Constant-pressure heat capacity, J/kg/K'] = Cps
     data['Constant-volume heat capacity, J/kg/K'] = Cvs
     data['Viscosity, Pa*s'] = mugs
-    data['Thermal consuctivity, W/m/K'] = kgs
+    data['Thermal conductivity, W/m/K'] = kgs
     data['Prandtl number'] = Prs
     data['Thermal diffusivity, m^2/s'] = alphas
     data['Isobaric expansion, 1/K'] = isobarics
