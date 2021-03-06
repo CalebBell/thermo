@@ -631,6 +631,13 @@ def test_GibbsExcessLiquid_HS_from_Hvap():
     dS = (liquid.to_TP_zs(400, P, zs).S() - liquid.to_TP_zs(499, P, zs).S())
     assert_close(dS, -41.73637308436628, rtol=1e-10)
 
+    # Check pressure no effect
+    assert_close((liquid.to_TP_zs(300, P, zs).S() - liquid.to_TP_zs(300, P*100, zs).S()), 0, atol=1e-10)
+    assert_close((liquid.to_TP_zs(900, P, zs).S() - liquid.to_TP_zs(900, P*100, zs).S()), 0, atol=1e-10)
+    assert_close((liquid.to_TP_zs(1e-20, P, zs).S() - liquid.to_TP_zs(1e-20, P*100, zs).S()), 0, atol=1e-10)
+    assert_close((liquid.to_TP_zs(1e10, P, zs).S() - liquid.to_TP_zs(1e10, P*100, zs).S()), 0, atol=1e-10)
+
+
 def test_GibbsExcessLiquid_HS_from_Hvap_pure():
     # Water
     T = 325.0
@@ -671,6 +678,14 @@ def test_GibbsExcessLiquid_HS_from_Hvap_pure():
     gas3 = gas.to_TP_zs(T, liquid_high_P, zs)
 
     assert gas3.G() > liquid3.G()
+
+    # Check pressure no effect
+    assert_close((liquid.to_TP_zs(300, P, zs).S() - liquid.to_TP_zs(300, P*100, zs).S()), 0, atol=1e-10)
+    assert_close((liquid.to_TP_zs(900, P, zs).S() - liquid.to_TP_zs(900, P*100, zs).S()), 0, atol=1e-10)
+    assert_close((liquid.to_TP_zs(1e-20, P, zs).S() - liquid.to_TP_zs(1e-20, P*100, zs).S()), 0, atol=1e-10)
+    assert_close((liquid.to_TP_zs(1e10, P, zs).S() - liquid.to_TP_zs(1e10, P*100, zs).S()), 0, atol=1e-10)
+
+
 
 def test_GibbsExcessLiquid_lnPsats():
     T, P, zs = 100.0, 1e5, [1.0]

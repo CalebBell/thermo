@@ -8300,12 +8300,12 @@ class GibbsExcessLiquid(Phase):
         use_Poynting, use_phis_sat, use_Hvap_caloric_basis = self.use_Poynting, self.use_phis_sat, self.use_Hvap_caloric_basis
 
         if use_Hvap_caloric_basis:
-            S = S_comp*R
             Hvaps = self.Hvaps()
             T_inv = 1.0/T
-            LOG_P_REF_IG = self.LOG_P_REF_IG
+            logP_inv = log(P_inv)
+            # Almost the same as no Poynting
             for i in cmps:
-                S -= zs[i]*(R*(lnPsats[i] - LOG_P_REF_IG)
+                S -= zs[i]*(R*(lnPsats[i] + logP_inv)
                             - Cpig_integrals_over_T_pure[i] + Hvaps[i]*T_inv)
         else:
             dPsats_dT_over_Psats = self.dPsats_dT_over_Psats()
