@@ -8297,45 +8297,53 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             lnPsats = self.lnPsats()
 
-        dPsats_dT_over_Psats = self.dPsats_dT_over_Psats()
-        use_Poynting, use_phis_sat = self.use_Poynting, self.use_phis_sat
+        use_Poynting, use_phis_sat, use_Hvap_caloric_basis = self.use_Poynting, self.use_phis_sat, self.use_Hvap_caloric_basis
 
-        if use_Poynting:
-            try:
-                Poyntings = self._Poyntings
-            except AttributeError:
-                Poyntings = self.Poyntings()
-            try:
-                dPoyntings_dT = self._dPoyntings_dT
-            except AttributeError:
-                dPoyntings_dT = self.dPoyntings_dT()
-        if use_phis_sat:
-            try:
-                dphis_sat_dT = self._dphis_sat_dT
-            except AttributeError:
-                dphis_sat_dT = self.dphis_sat_dT()
-            try:
-                phis_sat = self._phis_sat
-            except AttributeError:
-                phis_sat = self.phis_sat()
-
-        if use_Poynting and use_phis_sat:
+        if use_Hvap_caloric_basis:
+            Hvaps = self.Hvaps()
+            T_inv = 1.0/T
+            LOG_P_REF_IG = self.LOG_P_REF_IG
             for i in cmps:
-                S -= zs[i]*(R*(T*(dphis_sat_dT[i]/phis_sat[i] + dPsats_dT_over_Psats[i] + dPoyntings_dT[i]/Poyntings[i])
-                            + lnPsats[i] + log(Poyntings[i]*phis_sat[i]*P_inv)) - Cpig_integrals_over_T_pure[i])
-        elif use_Poynting:
-            for i in cmps:
-                S -= zs[i]*(R*(T*(dPsats_dT_over_Psats[i] + dPoyntings_dT[i]/Poyntings[i])
-                            + lnPsats[i] + log(Poyntings[i]*P_inv)) - Cpig_integrals_over_T_pure[i])
-        elif use_phis_sat:
-            for i in cmps:
-                S -= zs[i]*(R*(T*(dphis_sat_dT[i]/phis_sat[i] + dPsats_dT_over_Psats[i])
-                            + lnPsats[i] + log(phis_sat[i]*P_inv)) - Cpig_integrals_over_T_pure[i])
+                S -= zs[i]*(R*(lnPsats[i] - LOG_P_REF_IG)
+                            - Cpig_integrals_over_T_pure[i] + Hvaps[i]*T_inv)
         else:
-            logP_inv = log(P_inv)
-            for i in cmps:
-                S -= zs[i]*(R*(T*dPsats_dT_over_Psats[i] + lnPsats[i] + logP_inv)
-                            - Cpig_integrals_over_T_pure[i])
+            dPsats_dT_over_Psats = self.dPsats_dT_over_Psats()
+            if use_Poynting:
+                try:
+                    Poyntings = self._Poyntings
+                except AttributeError:
+                    Poyntings = self.Poyntings()
+                try:
+                    dPoyntings_dT = self._dPoyntings_dT
+                except AttributeError:
+                    dPoyntings_dT = self.dPoyntings_dT()
+            if use_phis_sat:
+                try:
+                    dphis_sat_dT = self._dphis_sat_dT
+                except AttributeError:
+                    dphis_sat_dT = self.dphis_sat_dT()
+                try:
+                    phis_sat = self._phis_sat
+                except AttributeError:
+                    phis_sat = self.phis_sat()
+
+            if use_Poynting and use_phis_sat:
+                for i in cmps:
+                    S -= zs[i]*(R*(T*(dphis_sat_dT[i]/phis_sat[i] + dPsats_dT_over_Psats[i] + dPoyntings_dT[i]/Poyntings[i])
+                                + lnPsats[i] + log(Poyntings[i]*phis_sat[i]*P_inv)) - Cpig_integrals_over_T_pure[i])
+            elif use_Poynting:
+                for i in cmps:
+                    S -= zs[i]*(R*(T*(dPsats_dT_over_Psats[i] + dPoyntings_dT[i]/Poyntings[i])
+                                + lnPsats[i] + log(Poyntings[i]*P_inv)) - Cpig_integrals_over_T_pure[i])
+            elif use_phis_sat:
+                for i in cmps:
+                    S -= zs[i]*(R*(T*(dphis_sat_dT[i]/phis_sat[i] + dPsats_dT_over_Psats[i])
+                                + lnPsats[i] + log(phis_sat[i]*P_inv)) - Cpig_integrals_over_T_pure[i])
+            else:
+                logP_inv = log(P_inv)
+                for i in cmps:
+                    S -= zs[i]*(R*(T*dPsats_dT_over_Psats[i] + lnPsats[i] + logP_inv)
+                                - Cpig_integrals_over_T_pure[i])
 
         if not self.composition_independent:
             S += self.GibbsExcessModel.SE()

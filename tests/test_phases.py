@@ -596,6 +596,8 @@ def test_GibbsExcessLiquid_H_from_Hvap():
                                EnthalpyVaporizations=EnthalpyVaporizations,
                                use_Hvap_caloric_basis=True, use_phis_sat=False, use_Poynting=False).to_TP_zs(T, P, zs)
 
+    gas = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases)
+
     # Check pressure is not impacting enthalpy
     assert 0 == (liquid.to_TP_zs(300, P, zs).H() - liquid.to_TP_zs(300, P*100, zs).H())
     assert 0 == (liquid.to_TP_zs(900, P, zs).H() - liquid.to_TP_zs(900, P*100, zs).H())
@@ -617,6 +619,17 @@ def test_GibbsExcessLiquid_H_from_Hvap():
     Hvaps_low = liquid.to_TP_zs(1e-10, P, zs).Hvaps()
     assert all(Hvaps_low[i] > 0 for i in range(2))
     assert all(Hvaps_low[i] < 1e5 for i in range(2))
+
+    # Entropy at low T
+    assert_close(liquid.S(), -138.854442314264, rtol=1e-10)
+    S_from_gas = gas.S()
+    for i in range(2):
+        S_from_gas += zs[i]*(-liquid.Hvaps()[i]/T - R*log(liquid.Psats()[i]*liquid.P_REF_IG_INV))
+    assert_close(liquid.S(), S_from_gas, rtol=1e-10)
+
+    dS = (liquid.to_TP_zs(400, P, zs).S() - liquid.to_TP_zs(499, P, zs).S())
+    assert_close(dS, -41.73637308436628, rtol=1e-10)
+
 
 
 def test_GibbsExcessLiquid_lnPsats():
