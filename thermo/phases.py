@@ -6416,6 +6416,34 @@ CEOSLiquid.is_gas = False
 CEOSLiquid.is_liquid = True
 
 class GibbsExcessLiquid(Phase):
+    '''
+
+    Parameters
+    ----------
+    HeatCapacityGases : list[HeatCapacityGas]
+        Objects proiding pure-component heat capacity correlations, [-]
+    Hfs : list[float]
+        Molar ideal-gas standard heats of formation at 298.15 K and 1 atm,
+        [J/mol]
+    Gfs : list[float]
+        Molar ideal-gas standard Gibbs energies of formation at 298.15 K and
+        1 atm, [J/mol]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    zs : list[float], optional
+        Mole fractions of each component, [-]
+    use_Hvap_caloric_basis : bool, optional
+        If True, enthalpy and entropy will be calculated using ideal-gas
+        heat capacity and the heat of vaporization of the fluid only. This
+        forces enthalpy to be pressure-independent. This supersedes other
+        options which would otherwise impact these properties. The molar volume
+        of the fluid has no impact on enthalpy or entropy if this option is
+        True. This option is not thermodynamically consistent, but is still
+        often an assumption that is made.
+
+    '''
     force_phase = 'l'
     phase = 'l'
     is_gas = False
@@ -6471,6 +6499,7 @@ class GibbsExcessLiquid(Phase):
                  HeatCapacityGases=None,
                  EnthalpyVaporizations=None,
                  HeatCapacityLiquids=None,
+                 use_Hvap_caloric_basis=False,
                  use_Poynting=False,
                  use_phis_sat=False,
                  use_Tait=False,
@@ -6604,6 +6633,7 @@ class GibbsExcessLiquid(Phase):
         self.use_IG_Cp = use_IG_Cp
         self.use_Poynting = use_Poynting
         self.use_phis_sat = use_phis_sat
+        self.use_Hvap_caloric_basis = use_Hvap_caloric_basis
 
         if henry_components is None:
             henry_components = [False]*self.N
@@ -6696,6 +6726,7 @@ class GibbsExcessLiquid(Phase):
         new.P_DEPENDENT_H_LIQ = self.P_DEPENDENT_H_LIQ
         new.use_IG_Cp = self.use_IG_Cp
         new.use_eos_volume = self.use_eos_volume
+        new.use_Hvap_caloric_basis = self.use_Hvap_caloric_basis
 
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
@@ -8018,12 +8049,14 @@ class GibbsExcessLiquid(Phase):
         H += self.GibbsExcessModel.HE()
 #        self._H = H
         return H
+    del H_old
 
     def H(self):
         try:
             return self._H
         except AttributeError:
             pass
+        H = 0.0
         T = self.T
         nRT2 = -R*T*T
         zs, cmps = self.zs, range(self.N)
@@ -8032,50 +8065,54 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             Cpig_integrals_pure = self.Cpig_integrals_pure()
 
-#        try:
-#            Psats = self._Psats
-#        except AttributeError:
-#            Psats = self.Psats()
-#        try:
-#            dPsats_dT = self._dPsats_dT
-#        except AttributeError:
-#            dPsats_dT = self.dPsats_dT()
-        dPsats_dT_over_Psats = self.dPsats_dT_over_Psats()
-        use_Poynting, use_phis_sat = self.use_Poynting, self.use_phis_sat
-
-        if use_Poynting:
-            try:
-                Poyntings = self._Poyntings
-            except AttributeError:
-                Poyntings = self.Poyntings()
-            try:
-                dPoyntings_dT = self._dPoyntings_dT
-            except AttributeError:
-                dPoyntings_dT = self.dPoyntings_dT()
-        if use_phis_sat:
-            try:
-                dphis_sat_dT = self._dphis_sat_dT
-            except AttributeError:
-                dphis_sat_dT = self.dphis_sat_dT()
-            try:
-                phis_sat = self._phis_sat
-            except AttributeError:
-                phis_sat = self.phis_sat()
-
-        H = 0.0
-        if use_Poynting and use_phis_sat:
-            for i in cmps:
-                H += zs[i]*(nRT2*(dphis_sat_dT[i]/phis_sat[i] + dPsats_dT_over_Psats[i] + dPoyntings_dT[i]/Poyntings[i])
-                            + Cpig_integrals_pure[i])
-        elif use_Poynting:
-            for i in cmps:
-                H += zs[i]*(nRT2*(dPsats_dT_over_Psats[i] + dPoyntings_dT[i]/Poyntings[i]) + Cpig_integrals_pure[i])
-        elif use_phis_sat:
-            for i in cmps:
-                H += zs[i]*(nRT2*(dPsats_dT_over_Psats[i] + dphis_sat_dT[i]/phis_sat[i]) + Cpig_integrals_pure[i])
+        if self.use_Hvap_caloric_basis:
+            Hvaps = self.Hvaps()
+            for i in range(self.N):
+                H += zs[i]*(Cpig_integrals_pure[i] - Hvaps[i])
         else:
-            for i in cmps:
-                H += zs[i]*(nRT2*dPsats_dT_over_Psats[i] + Cpig_integrals_pure[i])
+    #        try:
+    #            Psats = self._Psats
+    #        except AttributeError:
+    #            Psats = self.Psats()
+    #        try:
+    #            dPsats_dT = self._dPsats_dT
+    #        except AttributeError:
+    #            dPsats_dT = self.dPsats_dT()
+            dPsats_dT_over_Psats = self.dPsats_dT_over_Psats()
+            use_Poynting, use_phis_sat = self.use_Poynting, self.use_phis_sat
+
+            if use_Poynting:
+                try:
+                    Poyntings = self._Poyntings
+                except AttributeError:
+                    Poyntings = self.Poyntings()
+                try:
+                    dPoyntings_dT = self._dPoyntings_dT
+                except AttributeError:
+                    dPoyntings_dT = self.dPoyntings_dT()
+            if use_phis_sat:
+                try:
+                    dphis_sat_dT = self._dphis_sat_dT
+                except AttributeError:
+                    dphis_sat_dT = self.dphis_sat_dT()
+                try:
+                    phis_sat = self._phis_sat
+                except AttributeError:
+                    phis_sat = self.phis_sat()
+
+            if use_Poynting and use_phis_sat:
+                for i in cmps:
+                    H += zs[i]*(nRT2*(dphis_sat_dT[i]/phis_sat[i] + dPsats_dT_over_Psats[i] + dPoyntings_dT[i]/Poyntings[i])
+                                + Cpig_integrals_pure[i])
+            elif use_Poynting:
+                for i in cmps:
+                    H += zs[i]*(nRT2*(dPsats_dT_over_Psats[i] + dPoyntings_dT[i]/Poyntings[i]) + Cpig_integrals_pure[i])
+            elif use_phis_sat:
+                for i in cmps:
+                    H += zs[i]*(nRT2*(dPsats_dT_over_Psats[i] + dphis_sat_dT[i]/phis_sat[i]) + Cpig_integrals_pure[i])
+            else:
+                for i in cmps:
+                    H += zs[i]*(nRT2*dPsats_dT_over_Psats[i] + Cpig_integrals_pure[i])
 
         if not self.composition_independent:
             H += self.GibbsExcessModel.HE()
