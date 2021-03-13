@@ -5387,6 +5387,11 @@ class IdealGas(Phase):
     def d2P_dT2_PV(self):
         return 0.0
 
+    def H_dep(self):
+        return 0.0
+
+    G_dep = S_dep = U_dep = A_dep = H_dep
+
     def dS_dzs(self):
         try:
             return self._dS_dzs
@@ -6502,18 +6507,32 @@ class GibbsExcessLiquid(Phase):
     ----------
     VaporPressures : list[:obj:`thermo.vapor_pressure.VaporPressure`]
         Objects holding vapor pressure data and methods, [-]
-    VolumeLiquids : list[:obj:`thermo.volume.VolumeLiquid`]
-        Objects holding liquid volume data and methods, [-]
-    HeatCapacityGases : list[HeatCapacityGas]
-        Objects proiding pure-component heat capacity correlations, [-]
+    VolumeLiquids : list[:obj:`thermo.volume.VolumeLiquid`], optional
+        Objects holding liquid volume data and methods; required for Poynting
+        factors and volumetric properties, [-]
+    HeatCapacityGases : list[:obj:`thermo.heat_capacity.HeatCapacityGas`], optional
+        Objects proiding pure-component heat capacity correlations; required
+        for caloric properties, [-]
+    GibbsExcessModel : :obj:`GibbsExcess <thermo.activity.GibbsExcess>`, optional
+        Configured instance for calculating activity coefficients and excess properties;
+        set to :obj:`IdealSolution <thermo.activity.IdealSolution>` if not provided, [-]
+    eos_pure_instances : list[:obj:`thermo.eos.GCEOS`], optional
+        Cubic equation of state object instances for each pure component, [-]
     EnthalpyVaporizations : list[:obj:`thermo.phase_change.EnthalpyVaporization`], optional
-        Objects holding enthalpy of vaporization data and methods, [-]
+        Objects holding enthalpy of vaporization data and methods; used only
+        with the 'Hvap' optional, [-]
     HeatCapacityLiquids : list[:obj:`thermo.heat_capacity.HeatCapacityLiquid`], optional
-        Objects holding liquid heat capacity data and methods; not used, [-]
-    Hfs : list[float]
+        Objects holding liquid heat capacity data and methods; not used at
+        present, [-]
+    VolumeSupercriticalLiquids : list[:obj:`thermo.volume.VolumeLiquid`], optional
+        Objects holding liquid volume data and methods but that are used for
+        supercritical temperatures on a per-component basis only; required for
+        Poynting factors and volumetric properties at supercritical conditions;
+        `VolumeLiquids` is used if not provided, [-]
+    Hfs : list[float], optional
         Molar ideal-gas standard heats of formation at 298.15 K and 1 atm,
         [J/mol]
-    Gfs : list[float]
+    Gfs : list[float], optional
         Molar ideal-gas standard Gibbs energies of formation at 298.15 K and
         1 atm, [J/mol]
     T : float, optional
@@ -6526,6 +6545,14 @@ class GibbsExcessLiquid(Phase):
         Which set of equilibrium equations to use when calculating fugacities
         and related properties; valid options are 'Psat', 'Poynting&PhiSat',
         'Poynting', 'PhiSat', [-]
+    caloric_basis : str, optional
+        Which set of caloric equations to use when calculating fugacities
+        and related properties; valid options are 'Psat', 'Poynting&PhiSat',
+        'Poynting', 'PhiSat', 'Hvap' [-]
+    Psat_extrpolation : str, optional
+        One of 'AB' or 'ABC'; configures extrapolation for vapor pressure, [-]
+
+
     use_Hvap_caloric : bool, optional
         If True, enthalpy and entropy will be calculated using ideal-gas
         heat capacity and the heat of vaporization of the fluid only. This
@@ -6549,7 +6576,9 @@ class GibbsExcessLiquid(Phase):
     _Vms_sat_data = None
     Hvap_locked = False
     _Hvap_data = None
-    use_IG_Cp = True
+
+    use_IG_Cp = True # Deprecated! Remove with S_old and H_old
+
     ideal_gas_basis = True
     supercritical_volumes = False
 
@@ -6566,7 +6595,7 @@ class GibbsExcessLiquid(Phase):
 
     model_attributes = ('Hfs', 'Gfs', 'Sfs', 'GibbsExcessModel',
                         'eos_pure_instances', 'use_Poynting', 'use_phis_sat',
-                        'use_Tait', 'use_IG_Cp', 'use_eos_volume', 'henry_components',
+                        'use_Tait', 'use_eos_volume', 'henry_components',
                         'henry_data', 'Psat_extrpolation') + pure_references
 
     obj_references = ('GibbsExcessModel', 'eos_pure_instances')
@@ -6591,16 +6620,21 @@ class GibbsExcessLiquid(Phase):
                  EnthalpyVaporizations=None,
                  HeatCapacityLiquids=None,
                  VolumeSupercriticalLiquids=None,
+
                  use_Hvap_caloric=False,
                  use_Poynting=False,
                  use_phis_sat=False,
                  use_Tait=False,
-                 use_IG_Cp=True,
                  use_eos_volume=False,
+
                  Hfs=None, Gfs=None, Sfs=None,
+
                  henry_components=None, henry_data=None,
+
                  T=None, P=None, zs=None,
                  Psat_extrpolation='AB',
+                 equilibrium_basis=None,
+                 caloric_basis=None,
                  ):
         '''It is quite possible to introduce a PVT relation ship for liquid
         density and remain thermodynamically consistent. However, must be
@@ -6720,16 +6754,54 @@ class GibbsExcessLiquid(Phase):
 
         self.GibbsExcessModel = GibbsExcessModel
         self.eos_pure_instances = eos_pure_instances
-#        self.VolumeLiquidMixture = VolumeLiquidMixture
 
-        self.use_IG_Cp = use_IG_Cp
-        self.use_Poynting = use_Poynting
-        self.use_phis_sat = use_phis_sat
+        self.equilibrium_basis = equilibrium_basis
+        self.caloric_basis = caloric_basis
 
-        self.use_IG_Cp_caloric = use_IG_Cp
-        self.use_Poynting_caloric = use_Poynting
-        self.use_phis_sat_caloric = use_phis_sat
-        self.use_Hvap_caloric = use_Hvap_caloric
+        if equilibrium_basis is not None:
+            if equilibrium_basis == 'Poynting':
+                self.use_Poynting = True
+                self.use_phis_sat = False
+            elif equilibrium_basis == 'Poynting&PhiSat':
+                self.use_Poynting = True
+                self.use_phis_sat = True
+            elif equilibrium_basis == 'PhiSat':
+                self.use_phis_sat = True
+                self.use_Poynting = False
+            elif equilibrium_basis == 'Psat':
+                self.use_phis_sat = False
+                self.use_Poynting = False
+        else:
+            self.use_Poynting = use_Poynting
+            self.use_phis_sat = use_phis_sat
+
+        if caloric_basis is not None:
+            if caloric_basis == 'Poynting':
+                self.use_Poynting_caloric = True
+                self.use_phis_sat_caloric = False
+                self.use_Hvap_caloric = False
+            elif caloric_basis == 'Poynting&PhiSat':
+                self.use_Poynting_caloric = True
+                self.use_phis_sat_caloric = True
+                self.use_Hvap_caloric = False
+            elif caloric_basis == 'PhiSat':
+                self.use_phis_sat_caloric = True
+                self.use_Poynting_caloric = False
+                self.use_Hvap_caloric = False
+            elif caloric_basis == 'Psat':
+                self.use_phis_sat_caloric = False
+                self.use_Poynting_caloric = False
+                self.use_Hvap_caloric = False
+            elif caloric_basis == 'Hvap':
+                self.use_phis_sat_caloric = False
+                self.use_Poynting_caloric = False
+                self.use_Hvap_caloric = True
+        else:
+            self.use_Poynting_caloric = use_Poynting
+            self.use_phis_sat_caloric = use_phis_sat
+            self.use_Hvap_caloric = use_Hvap_caloric
+
+
 
         if henry_components is None:
             henry_components = [False]*self.N
@@ -6817,10 +6889,12 @@ class GibbsExcessLiquid(Phase):
 
         new.incompressible = self.incompressible
 
+        new.equilibrium_basis = self.equilibrium_basis
+        new.caloric_basis = self.caloric_basis
+
         new.use_phis_sat = self.use_phis_sat
         new.use_Poynting = self.use_Poynting
         new.P_DEPENDENT_H_LIQ = self.P_DEPENDENT_H_LIQ
-        new.use_IG_Cp = self.use_IG_Cp
         new.use_eos_volume = self.use_eos_volume
         new.use_Hvap_caloric = self.use_Hvap_caloric
 

@@ -1859,6 +1859,12 @@ def test_IdealGas_vs_IGMIX():
     assert_close(phase.dU_dV_P(), phase_EOS.dU_dV_P(), rtol=1e-11, atol=1e-16)
     assert_close(phase.dA_dV_P(), phase_EOS.dA_dV_P(), rtol=1e-11)
 
+    assert phase.H_dep() == 0
+    assert phase.S_dep() == 0
+    assert phase.G_dep() == 0
+    assert phase.U_dep() == 0
+    assert phase.A_dep() == 0
+
 
 def test_IAPWS97_basics():
     region1_PT = IAPWS97(330, 8e5, [1])

@@ -11,6 +11,7 @@ Contents:
    property_objects
    chemical_package_tutorial
    tutorial_phases_and_flash
+   GibbsExcessLiquid_details
    modules
 
 Installation
