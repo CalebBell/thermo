@@ -22,6 +22,7 @@ SOFTWARE.'''
 
 from numpy.testing import assert_allclose
 import pytest
+from math import isinf, isnan
 from fluids.numerics import *
 from thermo.flash import *
 from thermo.phases import *
@@ -61,3 +62,9 @@ def test_C2_C5_liq_Wilson():
     # Check maxiter > 36 allowed for stab convergence; check gas converges
     assert_stab_success_2P(liq, gas, stab, 383, 6e6, zs, 'Wilson gas', xs=[0.6068839791378426, 0.3931160208621572],
                            ys=[0.7735308634810933, 0.22646913651890652], VF=0.5937688162366092, rtol=5e-6)
+
+
+def test_guesses_bad_ranges():
+    stab = StabilityTester(Tcs=[647.086, 514.7], Pcs=[22048320.0, 6137000.0], omegas=[0.344, 0.635], aqueous_check=True, CASs=['7732-18-5', '64-17-5'])
+    guesses = list(stab.incipient_guesses(T=6.2, P=5e4, zs=[.4, .6]))
+    assert all(not isinf(x) and not isnan(x) for r in guesses for x in r)

@@ -322,3 +322,8 @@ def test_flash_GibbsExcessLiquid_ideal_Psat():
     res = flasher.flash(T=5, P=1e5, zs=zs)
     assert res.phase_count == 1
     assert res.liquid_count == 1
+
+    # Wilson guesses inf, nan, and all zero
+    res = flasher.flash(T=6.2, P=5e4, zs=zs)
+    assert res.phase_count == 1
+    assert res.liquid_count == 1
