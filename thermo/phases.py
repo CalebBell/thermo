@@ -65,7 +65,7 @@ Activity Based Liquids
 ======================
 .. autoclass:: GibbsExcessLiquid
    :show-inheritance:
-   :members: __init__
+   :members: __init__, H, S, Cp, gammas, Poyntings, phis_sat
    :exclude-members: __init__
 
 
@@ -2300,7 +2300,9 @@ class Phase(object):
 
     def gammas(self):
         r'''Method to calculate and return the activity coefficients of the
-        phase, [-]. Activity coefficients are defined as the ratio of
+        phase, [-].
+
+        Activity coefficients are defined as the ratio of
         the actual fugacity coefficients times the pressure to the reference
         pure fugacity coefficients times the reference pressure.
         The reference pressure can be set to the actual pressure (the Lewis
@@ -6416,7 +6418,66 @@ CEOSLiquid.is_gas = False
 CEOSLiquid.is_liquid = True
 
 class GibbsExcessLiquid(Phase):
-    '''
+    r'''
+
+    The equilibrium equation options (controlled by `equilibrium_basis`)
+    are as follows:
+
+    * 'Psat': :math:`\phi_i = \frac{\gamma_i P_{i}^{sat}}{P}`
+    * 'Poynting&PhiSat': :math:`\phi_i = \frac{\gamma_i P_{i}^{sat} \phi_i^{sat} \text{Poynting}_i}{P}`
+    * 'Poynting': :math:`\phi_i = \frac{\gamma_i P_{i}^{sat}\text{Poynting}_i}{P}`
+    * 'PhiSat': :math:`\phi_i = \frac{\gamma_i P_{i}^{sat} \phi_i^{sat}}{P}`
+
+    In all cases, the activity coefficient is derived from the
+    :obj:`GibbsExcess <thermo.activity.GibbsExcess>` model specified as
+    input; use the :obj:`IdealSolution <thermo.activity.IdealSolution>`
+    class as an input to set the activity coefficients to one.
+
+    The enthalpy `H` and entropy `S` (and other caloric properties `U`, `G`, `A`)
+    equation options are similar to the equilibrium ones. If the same option
+    is selected for `equilibrium_basis` and `caloric_basis`, the phase will be
+    `thermodynamically consistent`. This is recommended for many reasons.
+    The full 'Poynting&PhiSat' equations for `H` and `S` are as follows; see
+    :obj:`GibbsExcessLiquid.H` and :obj:`GibbsExcessLiquid.S` for all of the
+    other equations:
+
+    .. math::
+        H = H_{\text{excess}} + \sum_i z_i \left[-RT^2\left(
+        \frac{\frac{\partial \phi_{\text{sat},i}}{\partial T}}{\phi_{\text{sat},i}}
+        + \frac{\frac{\partial P_{\text{sat},i}}{\partial T}}{P_{\text{sat},i}}
+        + \frac{\frac{\text{Poynting}}{\partial T}}{\text{Poynting}} \right)
+        + \int_{T,ref}^T C_{p,ig} dT \right]
+
+    An additional caloric mode is `Hvap`, which uses enthalpy of vaporization;
+    this mode can never be thermodynamically consistent, but is still widely
+    used.
+
+    .. math::
+        H = H_{\text{excess}} + \sum_i z_i\left[-H_{vap,i}
+        + \int_{T,ref}^T C_{p,ig} dT \right]
+
+
+    .. warning::
+        Note that above the critical point, there is no definition for what vapor
+        pressure is. The vapor pressure also tends to reach zero at temperatures
+        in the 4-20 K range. These aspects mean extrapolation in the supercritical and
+        very low temperature region is critical to ensure the equations will still
+        converge. Extrapolation can be performed using either the equation
+        :math:`P^{\text{sat}} = \exp\left(A - \frac{B}{T}\right)` or
+        :math:`P^{\text{sat}} = \exp\left(A + \frac{B}{T} + C\cdot \ln T\right)` by
+        setting `Psat_extrpolation` to either 'AB' or 'ABC' respectively.
+        The extremely low temperature region's issue is solved by calculating the
+        logarithm of vapor pressures instead of the actual value. While floating
+        point values in Python (doubles) can reach a minimum value of around
+        1e-308, if only the logarithm of that number is computed no issues arise.
+        Both of these features only work when the vapor pressure correlations are
+        polynomials.
+
+    .. warning::
+        When using 'PhiSat' as an option, note that the factor cannot be
+        calculated when a compound is supercritical,
+        as there is no longer any vapor-liquid pure-component equilibrium
+        (by definition).
 
     Parameters
     ----------
@@ -6434,6 +6495,10 @@ class GibbsExcessLiquid(Phase):
         Pressure, [Pa]
     zs : list[float], optional
         Mole fractions of each component, [-]
+    equilibrium_basis : str, optional
+        Which set of equilibrium equations to use when calculating fugacities
+        and related properties; valid options are 'Psat', 'Poynting&PhiSat',
+        'Poynting', 'PhiSat', [-]
     use_Hvap_caloric : bool, optional
         If True, enthalpy and entropy will be calculated using ideal-gas
         heat capacity and the heat of vaporization of the fluid only. This
@@ -7417,6 +7482,29 @@ class GibbsExcessLiquid(Phase):
         return [exp(Vms[i]*(P-Psats[i])*RT_inv) for i in cmps]
 
     def Poyntings(self):
+        r'''Method to calculate and return the Poynting pressure correction
+        factors of the phase, [-].
+
+        .. math::
+            \text{Poynting}_i = \exp\left(\frac{V_{m,i}(P-P_{sat})}{RT}\right)
+
+        Returns
+        -------
+        Poyntings : list[float]
+            Poynting pressure correction factors, [-]
+
+        Notes
+        -----
+        The above formula is correct for pressure-independent molar volumes.
+        When the volume does depend on pressure, the full expression is:
+
+        .. math::
+            \text{Poynting} = \exp\left[\frac{\int_{P_i^{sat}}^P V_i^l dP}{RT}\right]
+
+        When a specified model e.g. the Tait equation is used, an analytical
+        integral of this term is normally available.
+
+        '''
         try:
             return self._Poyntings
         except AttributeError:
@@ -7634,12 +7722,31 @@ class GibbsExcessLiquid(Phase):
         return [i.phi_sat(T, polish=True) for i in self.eos_pure_instances]
 
     def phis_sat(self):
+        r'''Method to calculate and return the saturation fugacity coefficient
+        correction factors of the phase, [-].
+
+        These are calculated from the
+        provided pure-component equations of state. This term should only be
+        used with a consistent vapor-phase cubic equation of state.
+
+        Returns
+        -------
+        phis_sat : list[float]
+            Saturation fugacity coefficient correction factors, [-]
+
+        Notes
+        -----
+
+        .. warning::
+            This factor cannot be calculated when a compound is supercritical,
+            as there is no longer any vapor-liquid pure-component equilibrium
+            (by definition).
+
+        '''
         try:
             return self._phis_sat
         except AttributeError:
             pass
-        # Goal: Have the polynomial here. Fitting specific to the compound is required.
-
         if not self.use_phis_sat:
             self._phis_sat = [1.0]*self.N
             return self._phis_sat
@@ -7921,12 +8028,32 @@ class GibbsExcessLiquid(Phase):
         return self.GibbsExcessModel.to_T_xs(T, zs).dgammas_dT()
 
     def gammas(self):
+        r'''Method to calculate and return the activity coefficients of the
+        phase, [-]. This is a direct call to
+        :obj:`GibbsExcess.gammas <thermo.activity.GibbsExcess.gammas>`.
+
+        Returns
+        -------
+        gammas : list[float]
+            Activity coefficients, [-]
+        '''
         try:
             return self.GibbsExcessModel._gammas
         except AttributeError:
             return self.GibbsExcessModel.gammas()
 
     def dgammas_dT(self):
+        r'''Method to calculate and return the temperature derivative of
+        activity coefficients of the phase, [-].
+
+        This is a direct call to
+        :obj:`GibbsExcess.dgammas_dT <thermo.activity.GibbsExcess.dgammas_dT>`.
+
+        Returns
+        -------
+        dgammas_dT : list[float]
+            First temperature derivative of the activity coefficients, [1/K]
+        '''
         return self.GibbsExcessModel.dgammas_dT()
 
     def H_old(self):
@@ -8056,6 +8183,62 @@ class GibbsExcessLiquid(Phase):
     del H_old
 
     def H(self):
+        r'''Method to calculate the enthalpy of the
+        :obj:`GibbsExcessLiquid` phase. Depending on the settings of the phase, this can
+        include the effects of activity coefficients
+        :obj:`gammas <GibbsExcessLiquid.gammas>`, pressure correction terms
+        :obj:`Poyntings <GibbsExcessLiquid.Poyntings>`, and pure component
+        saturation fugacities :obj:`phis_sat <GibbsExcessLiquid.phis_sat>`
+        as well as the pure component vapor pressures.
+
+        When `caloric_basis` is 'Poynting&PhiSat':
+
+        .. math::
+            H = H_{\text{excess}} + \sum_i z_i \left[-RT^2\left(
+            \frac{\frac{\partial \phi_{\text{sat},i}}{\partial T}}{\phi_{\text{sat},i}}
+            + \frac{\frac{\partial P_{\text{sat},i}}{\partial T}}{P_{\text{sat},i}}
+            + \frac{\frac{\text{Poynting}}{\partial T}}{\text{Poynting}} \right)
+            + \int_{T,ref}^T C_{p,ig} dT \right]
+
+        When `caloric_basis` is 'PhiSat':
+
+        .. math::
+            H = H_{\text{excess}} + \sum_i z_i \left[-RT^2\left(
+            \frac{\frac{\partial \phi_{\text{sat},i}}{\partial T}}{\phi_{\text{sat},i}}
+            + \frac{\frac{\partial P_{\text{sat},i}}{\partial T}}{P_{\text{sat},i}}
+            \right)
+            + \int_{T,ref}^T C_{p,ig} dT \right]
+
+        When `caloric_basis` is 'Poynting':
+
+        .. math::
+            H = H_{\text{excess}} + \sum_i z_i \left[-RT^2\left(
+            + \frac{\frac{\partial P_{\text{sat},i}}{\partial T}}{P_{\text{sat},i}}
+            + \frac{\frac{\text{Poynting}}{\partial T}}{\text{Poynting}} \right)
+            + \int_{T,ref}^T C_{p,ig} dT \right]
+
+        When `caloric_basis` is 'Psat':
+
+        .. math::
+            H = H_{\text{excess}} + \sum_i z_i \left[-RT^2\left(
+            + \frac{\frac{\partial P_{\text{sat},i}}{\partial T}}{P_{\text{sat},i}}
+             \right)
+            + \int_{T,ref}^T C_{p,ig} dT \right]
+
+        When `caloric_basis` is 'Hvap':
+
+        .. math::
+            H = H_{\text{excess}} + \sum_i z_i\left[-H_{vap,i}
+            + \int_{T,ref}^T C_{p,ig} dT \right]
+
+        Returns
+        -------
+        H : float
+            Enthalpy of the phase, [J/(mol)]
+
+        Notes
+        -----
+        '''
         try:
             return self._H
         except AttributeError:
@@ -8074,14 +8257,6 @@ class GibbsExcessLiquid(Phase):
             for i in range(self.N):
                 H += zs[i]*(Cpig_integrals_pure[i] - Hvaps[i])
         else:
-    #        try:
-    #            Psats = self._Psats
-    #        except AttributeError:
-    #            Psats = self.Psats()
-    #        try:
-    #            dPsats_dT = self._dPsats_dT
-    #        except AttributeError:
-    #            dPsats_dT = self.dPsats_dT()
             dPsats_dT_over_Psats = self.dPsats_dT_over_Psats()
             use_Poynting, use_phis_sat = self.use_Poynting, self.use_phis_sat
 
