@@ -105,6 +105,16 @@ def test_GibbbsExcessLiquid_VaporPressure():
     dfugacities_dP_expect = [0, 0]
     assert_close1d(liquid.dfugacities_dP(), dfugacities_dP_expect, atol=1e-15)
 
+    # Do a check on the low-temperature values
+    for T in (3, 6, 9, 15):
+        liquid = GibbsExcessLiquid(VaporPressures=VaporPressures).to_TP_zs(T, P, zs)
+        phis = liquid.phis()
+        lnphis = liquid.lnphis()
+        assert_close1d(phis, [exp(v) for v in lnphis])
+    liquid = GibbsExcessLiquid(VaporPressures=VaporPressures).to_TP_zs(3, P, zs)
+    assert liquid.phis() == [0, 0]
+    assert_close1d(liquid.lnphis(), [-2080.700147602915, -2200.508662132332], rtol=1e-3)
+
 
 def test_GibbbsExcessLiquid_VolumeLiquids():
     # Binary ethanol-water

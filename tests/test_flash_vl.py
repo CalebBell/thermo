@@ -308,5 +308,13 @@ def test_flash_GibbsExcessLiquid_ideal_Psat():
 
     gas = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases)
     flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas)
+
+    # All points were missing because G_dep was missing
     res = flasher.flash(T=300, P=1e5, zs=zs)
     assert res.liquid_count == 1
+
+    # Failing when two K values were under 1e-10
+    res = flasher.flash(T=100, P=1e5, zs=zs)
+    assert res.phase_count == 1
+    assert res.liquid_count == 1
+

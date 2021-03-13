@@ -7962,7 +7962,31 @@ class GibbsExcessLiquid(Phase):
             return self._lnphis
         except AttributeError:
             pass
-        self._lnphis = [log(i) for i in self.phis()]
+        try:
+            self._lnphis = [log(i) for i in self.phis()]
+        except:
+            # Zero Psats - must compute them inline
+            P = self.P
+            try:
+                gammas = self._gammas
+            except AttributeError:
+                gammas = self.gammas()
+            try:
+                lnPsats = self._lnPsats
+            except AttributeError:
+                lnPsats = self.lnPsats()
+            try:
+                phis_sat = self._phis_sat
+            except AttributeError:
+                phis_sat = self.phis_sat()
+            try:
+                Poyntings = self._Poyntings
+            except AttributeError:
+                Poyntings = self.Poyntings()
+            P_inv = 1.0/P
+            self._lnphis = [log(gammas[i]*Poyntings[i]*phis_sat[i]*P_inv) + lnPsats[i]
+                    for i in range(self.N)]
+
         return self._lnphis
 
     lnphis_G_min = lnphis
