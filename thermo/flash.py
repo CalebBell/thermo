@@ -3667,6 +3667,12 @@ def stabiliy_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
     # If it does, drop out early! This implementation does not do that.
 
     # Should be possible to tell if converging to trivial solution during the process - and bail out then
+    # It is possible to switch this function to operated on lnphis e.g.
+    #             corrections[i] = ci = zs[i]/zs_test[i]*trunc_exp(lnphis_trial[i] - lnphis_test[i])*sum_zs_test_inv
+    # however numerical differences seem to be huge and operate better on fugacities with the trunc_exp function
+    # then anything else.
+
+
     if test_phase is None:
         test_phase = trial_phase
     T, P, zs = trial_phase.T, trial_phase.P, trial_phase.zs
@@ -3711,10 +3717,16 @@ def stabiliy_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
         fugacities_test = test_phase.fugacities_at_zs(zs_test)
 
         err = 0.0
-        for i in cmps:
-            corrections[i] = ci = fugacities_trial[i]/fugacities_test[i]*sum_zs_test_inv
-            Ks[i] *= ci
-            err += (ci - 1.0)*(ci - 1.0)
+        try:
+            for i in cmps:
+                corrections[i] = ci = fugacities_trial[i]/fugacities_test[i]*sum_zs_test_inv
+                Ks[i] *= ci
+                err += (ci - 1.0)*(ci - 1.0)
+        except ZeroDivisionError:
+            # A test fugacity became zero
+            # May need special handling for this outside.
+            converged = True
+            break
 
         if err < xtol:
             converged = True

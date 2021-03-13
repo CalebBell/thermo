@@ -327,3 +327,8 @@ def test_flash_GibbsExcessLiquid_ideal_Psat():
     res = flasher.flash(T=6.2, P=5e4, zs=zs)
     assert res.phase_count == 1
     assert res.liquid_count == 1
+
+    # One (but not both) fugacity became zero
+    res = flasher.flash(T=8.4, P=1e-5, zs=zs)
+    assert res.phase_count == 1
+    assert res.liquid_count == 1
