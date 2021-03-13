@@ -6434,7 +6434,7 @@ class GibbsExcessLiquid(Phase):
         Pressure, [Pa]
     zs : list[float], optional
         Mole fractions of each component, [-]
-    use_Hvap_caloric_basis : bool, optional
+    use_Hvap_caloric : bool, optional
         If True, enthalpy and entropy will be calculated using ideal-gas
         heat capacity and the heat of vaporization of the fluid only. This
         forces enthalpy to be pressure-independent. This supersedes other
@@ -6499,7 +6499,7 @@ class GibbsExcessLiquid(Phase):
                  HeatCapacityGases=None,
                  EnthalpyVaporizations=None,
                  HeatCapacityLiquids=None,
-                 use_Hvap_caloric_basis=False,
+                 use_Hvap_caloric=False,
                  use_Poynting=False,
                  use_phis_sat=False,
                  use_Tait=False,
@@ -6633,7 +6633,11 @@ class GibbsExcessLiquid(Phase):
         self.use_IG_Cp = use_IG_Cp
         self.use_Poynting = use_Poynting
         self.use_phis_sat = use_phis_sat
-        self.use_Hvap_caloric_basis = use_Hvap_caloric_basis
+
+        self.use_IG_Cp_caloric = use_IG_Cp
+        self.use_Poynting_caloric = use_Poynting
+        self.use_phis_sat_caloric = use_phis_sat
+        self.use_Hvap_caloric = use_Hvap_caloric
 
         if henry_components is None:
             henry_components = [False]*self.N
@@ -6726,7 +6730,7 @@ class GibbsExcessLiquid(Phase):
         new.P_DEPENDENT_H_LIQ = self.P_DEPENDENT_H_LIQ
         new.use_IG_Cp = self.use_IG_Cp
         new.use_eos_volume = self.use_eos_volume
-        new.use_Hvap_caloric_basis = self.use_Hvap_caloric_basis
+        new.use_Hvap_caloric = self.use_Hvap_caloric
 
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
@@ -8065,7 +8069,7 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             Cpig_integrals_pure = self.Cpig_integrals_pure()
 
-        if self.use_Hvap_caloric_basis:
+        if self.use_Hvap_caloric:
             Hvaps = self.Hvaps()
             for i in range(self.N):
                 H += zs[i]*(Cpig_integrals_pure[i] - Hvaps[i])
@@ -8297,9 +8301,9 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             lnPsats = self.lnPsats()
 
-        use_Poynting, use_phis_sat, use_Hvap_caloric_basis = self.use_Poynting, self.use_phis_sat, self.use_Hvap_caloric_basis
+        use_Poynting, use_phis_sat, use_Hvap_caloric = self.use_Poynting, self.use_phis_sat, self.use_Hvap_caloric
 
-        if use_Hvap_caloric_basis:
+        if use_Hvap_caloric:
             Hvaps = self.Hvaps()
             T_inv = 1.0/T
             logP_inv = log(P_inv)

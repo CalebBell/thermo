@@ -594,7 +594,7 @@ def test_GibbsExcessLiquid_HS_from_Hvap():
                                HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
                                EnthalpyVaporizations=EnthalpyVaporizations,
-                               use_Hvap_caloric_basis=True, use_phis_sat=False, use_Poynting=False).to_TP_zs(T, P, zs)
+                               use_Hvap_caloric=True, use_phis_sat=False, use_Poynting=False).to_TP_zs(T, P, zs)
 
     gas = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases)
 
@@ -655,7 +655,7 @@ def test_GibbsExcessLiquid_HS_from_Hvap_pure():
                                HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
                                EnthalpyVaporizations=EnthalpyVaporizations,
-                               use_Hvap_caloric_basis=True, use_phis_sat=False, use_Poynting=False).to_TP_zs(T, P, zs)
+                               use_Hvap_caloric=True, use_phis_sat=False, use_Poynting=False).to_TP_zs(T, P, zs)
 
     gas = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases)
     P = liquid.Psats()[0]
