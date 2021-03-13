@@ -1519,6 +1519,11 @@ def test_Psat_issues():
     Tsat = eos.Tsat(2453124.6502311486, polish=False)
     assert_close(Tsat, 532.1131652558847, rtol=1e-7)
 
+    # Case where y was evaluated just above Pc and so couldn't converge
+    eos = PR(Tc=647.086, Pc=22048320.0, omega=0.344, T=230.0, P=100000.0)
+    assert_close(eos.Psat(eos.Tc*(1-1e-14), polish=True), 22048319.999976363, rtol=1e-13)
+
+
     # TWU fails completely for hydrogen at low conditions
 #    e = TWUPR(Tc=33.2, Pc=1296960.0, omega=-0.22, T=298.15, P=101325.0)
 #    e.Psat(T=1.24005018079967879)

@@ -6570,6 +6570,7 @@ class GibbsExcessLiquid(Phase):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     P_DEPENDENT_H_LIQ = True
+    PHI_SAT_IDEAL_TR = 0.1
     _Psats_data = None
     Psats_locked = False
     Vms_sat_locked = False
@@ -7624,7 +7625,7 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             Vms_sat = self.Vms_sat()
         RT_inv = 1.0/(R*T)
-        self._Poyntings = [exp(Vml*(P-Psat)*RT_inv) for Psat, Vml in zip(Psats, Vms_sat)]
+        self._Poyntings = [trunc_exp(Vml*(P-Psat)*RT_inv) for Psat, Vml in zip(Psats, Vms_sat)]
         return self._Poyntings
 
 
@@ -7655,7 +7656,7 @@ class GibbsExcessLiquid(Phase):
 
             x4 = P - x3
             x5 = x1*x2*x4
-            dPoyntings_dTi = -RT_inv*(x2*dPsats_dT[i] - x4*dVms_sat_dT[i] + x5)*exp(x0*x5)
+            dPoyntings_dTi = -RT_inv*(x2*dPsats_dT[i] - x4*dVms_sat_dT[i] + x5)*trunc_exp(x0*x5)
             dPoyntings_dT.append(dPoyntings_dTi)
         return dPoyntings_dT
 
@@ -7820,7 +7821,16 @@ class GibbsExcessLiquid(Phase):
     def phis_sat_at(self, T):
         if not self.use_phis_sat:
             return [1.0]*self.N
-        return [i.phi_sat(T, polish=True) for i in self.eos_pure_instances]
+        phis_sat = []
+        for i in self.eos_pure_instances:
+            try:
+                phis_sat.append(i.phi_sat(min(T, i.Tc), polish=True))
+            except Exception as e:
+                if T < self.PHI_SAT_IDEAL_TR*i.Tc:
+                    phis_sat.append(1.0)
+                else:
+                    raise e
+        return phis_sat
 
     def phis_sat(self):
         r'''Method to calculate and return the saturation fugacity coefficient
@@ -7853,8 +7863,16 @@ class GibbsExcessLiquid(Phase):
             return self._phis_sat
 
         T = self.T
-        self._phis_sat = [i.phi_sat(T, polish=True) for i in self.eos_pure_instances]
-        return self._phis_sat
+        self._phis_sat = phis_sat = []
+        for i in self.eos_pure_instances:
+            try:
+                phis_sat.append(i.phi_sat(min(T, i.Tc), polish=True))
+            except Exception as e:
+                if T < self.PHI_SAT_IDEAL_TR*i.Tc:
+                    phis_sat.append(1.0)
+                else:
+                    raise e
+        return phis_sat
 
 
 
@@ -7862,7 +7880,16 @@ class GibbsExcessLiquid(Phase):
     def dphis_sat_dT_at(self, T):
         if not self.use_phis_sat:
             return [0.0]*self.N
-        return [i.dphi_sat_dT(T) for i in self.eos_pure_instances]
+        dphis_sat_dT = []
+        for i in self.eos_pure_instances:
+            try:
+                dphis_sat_dT.append(i.dphi_sat_dT(min(T, i.Tc)))
+            except Exception as e:
+                if T < self.PHI_SAT_IDEAL_TR*i.Tc:
+                    dphis_sat_dT.append(0.0)
+                else:
+                    raise e
+        return dphis_sat_dT
 
     def dphis_sat_dT(self):
         try:
@@ -7875,8 +7902,16 @@ class GibbsExcessLiquid(Phase):
             return self._dphis_sat_dT
 
         T = self.T
-        self._dphis_sat_dT = [i.dphi_sat_dT(T) for i in self.eos_pure_instances]
-        return self._dphis_sat_dT
+        self._dphis_sat_dT = dphis_sat_dT = []
+        for i in self.eos_pure_instances:
+            try:
+                dphis_sat_dT.append(i.dphi_sat_dT(min(T, i.Tc)))
+            except Exception as e:
+                if T < self.PHI_SAT_IDEAL_TR*i.Tc:
+                    dphis_sat_dT.append(0.0)
+                else:
+                    raise e
+        return dphis_sat_dT
 
     def d2phis_sat_dT2(self):
         # Numerically implemented
@@ -7889,8 +7924,16 @@ class GibbsExcessLiquid(Phase):
             return self._d2phis_sat_dT2
 
         T = self.T
-        self._d2phis_sat_dT2 = [i.d2phi_sat_dT2(T) for i in self.eos_pure_instances]
-        return self._d2phis_sat_dT2
+        self._d2phis_sat_dT2 = d2phis_sat_dT2 = []
+        for i in self.eos_pure_instances:
+            try:
+                d2phis_sat_dT2.append(i.d2phi_sat_dT2(min(T, i.Tc)))
+            except Exception as e:
+                if T < self.PHI_SAT_IDEAL_TR*i.Tc:
+                    d2phis_sat_dT2.append(0.0)
+                else:
+                    raise e
+        return d2phis_sat_dT2
 
 
     def phis_at(self, T, P, zs, Psats=None, gammas=None, phis_sat=None, Poyntings=None):

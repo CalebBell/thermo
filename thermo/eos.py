@@ -2831,6 +2831,8 @@ class GCEOS(object):
         if Tr > 0.999 and not isinstance(self, RK):
             y = horner(self.Psat_coeffs_critical, x)
             Psat = y*Tr*Pc
+            if Psat > Pc and T < Tc:
+                Psat = Pc*(1.0 - 1e-14)
         else:
             # TWUPR/SRK TODO need to be prepared for x being way outside the range (in the weird direction - at the start)
             Psat_ranges_low = self.Psat_ranges_low
@@ -3158,6 +3160,8 @@ class GCEOS(object):
         Notes
         -----
         '''
+        if T == self.Tc:
+            T = (self.Tc*(1.0 - 1e-15))
         Psat = self.Psat(T, polish=polish)
         sat_eos = self.to(T=T, P=Psat)
         dfg_T, dfl_T = sat_eos.dfugacity_dT_g, sat_eos.dfugacity_dT_l
@@ -3194,7 +3198,8 @@ class GCEOS(object):
         -----
         This is presently a numerical calculation.
         '''
-        return derivative(lambda T: self.dphi_sat_dT(T, polish=polish), T, dx=T*1e-7)
+        return derivative(lambda T: self.dphi_sat_dT(T, polish=polish), T,
+                          dx=T*1e-7, upper_limit=self.Tc)
 
     def V_l_sat(self, T):
         r'''Method to calculate molar volume of the liquid phase along the
