@@ -6418,7 +6418,11 @@ CEOSLiquid.is_gas = False
 CEOSLiquid.is_liquid = True
 
 class GibbsExcessLiquid(Phase):
-    r'''
+    r'''Phase based on combining Raoult's law with a
+    :obj:`GibbsExcess <thermo.activity.GibbsExcess>` model, optionally
+    including saturation fugacity coefficient corrections (if the vapor phase
+    is a cubic equation of state) and Poynting correction factors (if more
+    accuracy is desired).
 
     The equilibrium equation options (controlled by `equilibrium_basis`)
     are as follows:
@@ -6448,6 +6452,15 @@ class GibbsExcessLiquid(Phase):
         + \frac{\frac{\text{Poynting}}{\partial T}}{\text{Poynting}} \right)
         + \int_{T,ref}^T C_{p,ig} dT \right]
 
+    .. math::
+        S = S_{\text{excess}} - R\sum_i z_i\ln z_i - R\ln\left(\frac{P}{P_{ref}}\right)
+        - \sum_i z_i\left[R\left(
+        T \frac{\frac{\partial \phi_{\text{sat},i}}{\partial T}}{\phi_{\text{sat},i}}
+        + T\frac{\frac{\partial P_{\text{sat},i}}{\partial T}}{P_{\text{sat},i}}
+        + T\frac{\frac{\text{Poynting}}{\partial T}}{\text{Poynting}}
+        + \ln(P_{\text{sat},i}) + \ln\left(\frac{\text{Poynting}\cdot\phi_{\text{sat},i}}{P}\right)
+        \right) - \int_{T,ref}^T \frac{C_{p,ig,i}}{T} dT \right]
+
     An additional caloric mode is `Hvap`, which uses enthalpy of vaporization;
     this mode can never be thermodynamically consistent, but is still widely
     used.
@@ -6455,6 +6468,12 @@ class GibbsExcessLiquid(Phase):
     .. math::
         H = H_{\text{excess}} + \sum_i z_i\left[-H_{vap,i}
         + \int_{T,ref}^T C_{p,ig} dT \right]
+
+    .. math::
+        S = S_{\text{excess}} - R\sum_i z_i\ln z_i - R\ln\left(\frac{P}{P_{ref}}\right)
+        - \sum_i z_i\left[R\left(\ln P_{\text{sat},i} + \ln\left(\frac{1}{P}\right)\right)
+        + \frac{H_{vap,i}}{T}
+        - \int_{T,ref}^T \frac{C_{p,ig,i}}{T} dT \right]
 
 
     .. warning::
@@ -6481,8 +6500,16 @@ class GibbsExcessLiquid(Phase):
 
     Parameters
     ----------
+    VaporPressures : list[:obj:`thermo.vapor_pressure.VaporPressure`]
+        Objects holding vapor pressure data and methods, [-]
+    VolumeLiquids : list[:obj:`thermo.volume.VolumeLiquid`]
+        Objects holding liquid volume data and methods, [-]
     HeatCapacityGases : list[HeatCapacityGas]
         Objects proiding pure-component heat capacity correlations, [-]
+    EnthalpyVaporizations : list[:obj:`thermo.phase_change.EnthalpyVaporization`], optional
+        Objects holding enthalpy of vaporization data and methods, [-]
+    HeatCapacityLiquids : list[:obj:`thermo.heat_capacity.HeatCapacityLiquid`], optional
+        Objects holding liquid heat capacity data and methods; not used, [-]
     Hfs : list[float]
         Molar ideal-gas standard heats of formation at 298.15 K and 1 atm,
         [J/mol]
@@ -6558,12 +6585,12 @@ class GibbsExcessLiquid(Phase):
 
 
     def __init__(self, VaporPressures, VolumeLiquids=None,
-                 VolumeSupercriticalLiquids=None,
+                 HeatCapacityGases=None,
                  GibbsExcessModel=None,
                  eos_pure_instances=None,
-                 HeatCapacityGases=None,
                  EnthalpyVaporizations=None,
                  HeatCapacityLiquids=None,
+                 VolumeSupercriticalLiquids=None,
                  use_Hvap_caloric=False,
                  use_Poynting=False,
                  use_phis_sat=False,
@@ -6578,7 +6605,7 @@ class GibbsExcessLiquid(Phase):
         '''It is quite possible to introduce a PVT relation ship for liquid
         density and remain thermodynamically consistent. However, must be
         applied on a per-component basis! This class cannot have an
-        equation-of-state for a liquid MIXTURE!
+        equation-of-state or VolumeLiquidMixture for a liquid MIXTURE!
 
         (it might still be nice to generalize the handling; maybe even allow)
         pure EOSs to be used too, and as a form/template for which functions to
@@ -8452,6 +8479,70 @@ class GibbsExcessLiquid(Phase):
         return S
 
     def S(self):
+        r'''Method to calculate the entropy of the
+        :obj:`GibbsExcessLiquid` phase. Depending on the settings of the phase, this can
+        include the effects of activity coefficients
+        :obj:`gammas <GibbsExcessLiquid.gammas>`, pressure correction terms
+        :obj:`Poyntings <GibbsExcessLiquid.Poyntings>`, and pure component
+        saturation fugacities :obj:`phis_sat <GibbsExcessLiquid.phis_sat>`
+        as well as the pure component vapor pressures.
+
+        When `caloric_basis` is 'Poynting&PhiSat':
+
+        .. math::
+            S = S_{\text{excess}} - R\sum_i z_i\ln z_i - R\ln\left(\frac{P}{P_{ref}}\right)
+            - \sum_i z_i\left[R\left(
+            T \frac{\frac{\partial \phi_{\text{sat},i}}{\partial T}}{\phi_{\text{sat},i}}
+            + T\frac{\frac{\partial P_{\text{sat},i}}{\partial T}}{P_{\text{sat},i}}
+            + T\frac{\frac{\text{Poynting}}{\partial T}}{\text{Poynting}}
+            + \ln(P_{\text{sat},i}) + \ln\left(\frac{\text{Poynting}\cdot\phi_{\text{sat},i}}{P}\right)
+            \right) - \int_{T,ref}^T \frac{C_{p,ig,i}}{T} dT \right]
+
+        When `caloric_basis` is 'PhiSat':
+
+        .. math::
+            S = S_{\text{excess}} - R\sum_i z_i\ln z_i - R\ln\left(\frac{P}{P_{ref}}\right)
+            - \sum_i z_i\left[R\left(
+            T \frac{\frac{\partial \phi_{\text{sat},i}}{\partial T}}{\phi_{\text{sat},i}}
+            + T\frac{\frac{\partial P_{\text{sat},i}}{\partial T}}{P_{\text{sat},i}}
+            + \ln(P_{\text{sat},i}) + \ln\left(\frac{\phi_{\text{sat},i}}{P}\right)
+            \right) - \int_{T,ref}^T \frac{C_{p,ig,i}}{T} dT \right]
+
+        When `caloric_basis` is 'Poynting':
+
+        .. math::
+            S = S_{\text{excess}} - R\sum_i z_i\ln z_i - R\ln\left(\frac{P}{P_{ref}}\right)
+            - \sum_i z_i\left[R\left(
+            T\frac{\frac{\partial P_{\text{sat},i}}{\partial T}}{P_{\text{sat},i}}
+            + T\frac{\frac{\text{Poynting}}{\partial T}}{\text{Poynting}}
+            + \ln(P_{\text{sat},i}) + \ln\left(\frac{\text{Poynting}}{P}\right)
+            \right) - \int_{T,ref}^T \frac{C_{p,ig,i}}{T} dT \right]
+
+        When `caloric_basis` is 'Psat':
+
+        .. math::
+            S = S_{\text{excess}} - R\sum_i z_i\ln z_i - R\ln\left(\frac{P}{P_{ref}}\right)
+            - \sum_i z_i\left[R\left(
+            T\frac{\frac{\partial P_{\text{sat},i}}{\partial T}}{P_{\text{sat},i}}
+            + \ln(P_{\text{sat},i}) + \ln\left(\frac{1}{P}\right)
+            \right) - \int_{T,ref}^T \frac{C_{p,ig,i}}{T} dT \right]
+
+        When `caloric_basis` is 'Hvap':
+
+        .. math::
+            S = S_{\text{excess}} - R\sum_i z_i\ln z_i - R\ln\left(\frac{P}{P_{ref}}\right)
+            - \sum_i z_i\left[R\left(\ln P_{\text{sat},i} + \ln\left(\frac{1}{P}\right)\right)
+            + \frac{H_{vap,i}}{T}
+            - \int_{T,ref}^T \frac{C_{p,ig,i}}{T} dT \right]
+
+        Returns
+        -------
+        S : float
+            Entropy of the phase, [J/(mol*K)]
+
+        Notes
+        -----
+        '''
         try:
             return self._S
         except AttributeError:
