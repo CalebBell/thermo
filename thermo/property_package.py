@@ -458,32 +458,37 @@ class StabilityTester(object):
         if Wilson:
             Ks_Wilson = [0.0]*N
             P_inv, T_inv = 1.0/P, 1.0/T
+            all_wilson_zero = True
             for i in cmps:
                 Ks_Wilson[i] = Pcs[i]*P_inv*exp(5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv))
+            for i in cmps:
+                if Ks_Wilson[i] != 0.0:
+                    all_wilson_zero = False
+                    break
+            if not all_wilson_zero:
+                if expect_liquid:
+                    if expect_aqueous:
+                        main_frac = 1.0 - zero_fraction
+                        remaining = zero_fraction/(N-1.0)
+                        guess = [remaining]*N
+                        guess[self.water_index] = main_frac
+                        yield guess
+                    # if existing_phases:
+                    #     yield zs
 
-            if expect_liquid:
-                if expect_aqueous:
-                    main_frac = 1.0 - zero_fraction
-                    remaining = zero_fraction/(N-1.0)
-                    guess = [remaining]*N
-                    guess[self.water_index] = main_frac
-                    yield guess
-                # if existing_phases:
-                #     yield zs
+                    yield normalize([zs[i]/Ks_Wilson[i] for i in cmps]) # liquid composition estimate
+                    yield normalize([Ks_Wilson[i]**(-1.0/3.0)*zs[i] for i in cmps])
 
-                yield normalize([zs[i]/Ks_Wilson[i] for i in cmps]) # liquid composition estimate
-                yield normalize([Ks_Wilson[i]**(-1.0/3.0)*zs[i] for i in cmps])
-
-                yield normalize([Ks_Wilson[i]**(1.0/3.0)*zs[i] for i in cmps])
-                yield normalize([Ks_Wilson[i]*zs[i] for i in cmps]) # gas composition estimate
-            else:
-                yield normalize([Ks_Wilson[i]*zs[i] for i in cmps]) # gas composition estimate
-                # if existing_phases:
-                    # yield zs
-                yield normalize([zs[i]/Ks_Wilson[i] for i in cmps]) # liquid composition estimate
-                # TODO optimization - can cache Ks_Wilson power, and cache it.
-                yield normalize([Ks_Wilson[i]**(1.0/3.0)*zs[i] for i in cmps])
-                yield normalize([Ks_Wilson[i]**(-1.0/3.0)*zs[i] for i in cmps])
+                    yield normalize([Ks_Wilson[i]**(1.0/3.0)*zs[i] for i in cmps])
+                    yield normalize([Ks_Wilson[i]*zs[i] for i in cmps]) # gas composition estimate
+                else:
+                    yield normalize([Ks_Wilson[i]*zs[i] for i in cmps]) # gas composition estimate
+                    # if existing_phases:
+                        # yield zs
+                    yield normalize([zs[i]/Ks_Wilson[i] for i in cmps]) # liquid composition estimate
+                    # TODO optimization - can cache Ks_Wilson power, and cache it.
+                    yield normalize([Ks_Wilson[i]**(1.0/3.0)*zs[i] for i in cmps])
+                    yield normalize([Ks_Wilson[i]**(-1.0/3.0)*zs[i] for i in cmps])
 
         if pure: # these could be pre-allocated based on zero_fraction
             # A pure phase is more likely to be a liquid than a gas - gases have no polar effects

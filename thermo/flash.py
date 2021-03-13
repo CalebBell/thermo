@@ -3727,7 +3727,12 @@ def stabiliy_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
         # Cannot move the normalization above the error check - returning
         # unnormalized sum_zs_test is used also to detect a trivial solution
         sum_zs_test = sum(zs_test)
-        sum_zs_test_inv = 1.0/sum_zs_test
+        try:
+            sum_zs_test_inv = 1.0/sum_zs_test
+        except:
+            # Fugacities are all zero
+            converged = True
+            break
         zs_test = [zi*sum_zs_test_inv for zi in zs_test]
 
 
@@ -3740,10 +3745,11 @@ def stabiliy_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
 
         # Calculate the dG of the feed
         dG_RT = 0.0
-        lnphis_test = test_phase.lnphis_at_zs(zs_test) #test_phase.lnphis()
-        for i in cmps:
-            dG_RT += zs_test[i]*(log(zs_test[i]) + lnphis_test[i])
-        dG_RT *= V_over_F
+        if V_over_F != 0.0:
+            lnphis_test = test_phase.lnphis_at_zs(zs_test) #test_phase.lnphis()
+            for i in cmps:
+                dG_RT += zs_test[i]*(log(zs_test[i]) + lnphis_test[i])
+            dG_RT *= V_over_F
 #        print(dG_RT)
 
 
@@ -5754,12 +5760,14 @@ class FlashVL(Flash):
                     sln = stabiliy_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase,
                                                        maxiter=self.PT_STABILITY_MAXITER, xtol=self.PT_STABILITY_XTOL)
                     sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs, dG_RT = sln
+                    if zs == trial_zs:
+                        continue
                     lnK_2_tot = 0.0
                     for k in range(self.N):
                         lnK = log(Ks[k])
                         lnK_2_tot += lnK*lnK
                     sum_criteria = abs(sum_zs_test - 1.0)
-                    if sum_criteria < 1e-9 or lnK_2_tot < 1e-7 or zs == trial_zs:
+                    if sum_criteria < 1e-9 or lnK_2_tot < 1e-7:
                         continue
                     if existing_comps:
                         existing_phase = False

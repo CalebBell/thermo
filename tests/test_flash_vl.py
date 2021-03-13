@@ -318,3 +318,7 @@ def test_flash_GibbsExcessLiquid_ideal_Psat():
     assert res.phase_count == 1
     assert res.liquid_count == 1
 
+    # Wilson guessess are hard zeros
+    res = flasher.flash(T=5, P=1e5, zs=zs)
+    assert res.phase_count == 1
+    assert res.liquid_count == 1
