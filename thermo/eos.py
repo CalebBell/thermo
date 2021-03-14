@@ -5328,10 +5328,10 @@ class GCEOS(object):
                 \right)^{2}}{\delta^{2} - 4 \epsilon} + 1\right)}
         '''
         x0 = self.V_g
-        if x0 > 1e50:
-            if self.H_dep_g == 0.0:
-                return 0.0
         x1 = self.dV_dT_g
+        if x0 > 1e50:
+            if isinf(self.dV_dT_g) or self.H_dep_g == 0.0:
+                return 0.0
         x2 = self.a_alpha
         x3 = self.delta*self.delta - 4.0*self.epsilon
         if x3 == 0.0:

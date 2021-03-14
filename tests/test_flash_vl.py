@@ -375,6 +375,7 @@ def test_flash_GibbsExcessLiquid_ideal_PsatPoynting():
     gas = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases)
     flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas)
 
+    # This was failing in pypy for a while instead of CPython
     res = flasher.flash(T=15, P=1e5, zs=zs)
     assert res.phase_count == 1
     assert res.liquid_count == 1

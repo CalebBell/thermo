@@ -2248,6 +2248,10 @@ def test_dfugacity_dP_g_zero_low_P():
     eos = PR(Tc=647.086, Pc=22048320.0, omega=0.344, T=15, P=3.663117310917741e-199)
     assert eos.dfugacity_dP_g == 1.0
 
+def test_dH_dep_dT_g_zero_low_P():
+    eos = PR(Tc=647.086, Pc=22048320.0, omega=0.344, T=14.3, P=4.021583789475729e-210)
+    assert_close(eos.dH_dep_dT_g, 0, atol=1e-20)
+
 def test_misc_volume_issues():
     # Case where a_alpha becomes so small, reverts to ideal gas
     obj = PRTranslatedConsistent(Tc=126.2, Pc=3394387.5, omega=0.04, T=1e4, P=1e9)
