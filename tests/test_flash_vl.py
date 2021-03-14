@@ -333,6 +333,19 @@ def test_flash_GibbsExcessLiquid_ideal_Psat():
     assert res.phase_count == 1
     assert res.liquid_count == 1
 
+    # Vapor fraction flashes
+    for VF_value in (0.0, 1e-5, .3, .5, .7, 1-1e-5, 1.0):
+        VF = flasher.flash(T=T, VF=VF_value, zs=zs)
+        check = flasher.flash(T=T, P=VF.P, zs=zs)
+        assert_close(VF.VF, check.VF, rtol=1e-9)
+
+    # Not exactly sure where the numerical challenge is occuring, but this is to be expected.
+    # The tolerance decays at very small numbers
+    for VF_value in (1e-7, 1e-8, 1-1e-7, 1-1e-8):
+        VF = flasher.flash(T=T, VF=VF_value, zs=zs)
+        check = flasher.flash(T=T, P=VF.P, zs=zs)
+        assert_close(VF.VF, check.VF, rtol=1e-5)
+
 def test_flash_GibbsExcessLiquid_ideal_PsatPoynting():
     # Binary water-ethanol
     T = 230.0

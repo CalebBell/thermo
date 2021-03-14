@@ -5392,6 +5392,10 @@ class FlashVL(Flash):
         [-]
     PT_STABILITY_XTOL : float
         Convergence tolerance in the stability test [-]
+    DEW_BUBBLE_VF_K_COMPOSITION_INDEPENDENT_XTOL : float
+        Convergence tolerance in Newton solver for bubble, dew, and vapor
+        fraction spec flashes when both the liquid and gas model's K values do
+        not dependent on composition, [-]
     DEW_BUBBLE_QUASI_NEWTON_XTOL : float
         Convergence tolerance in quasi-Newton bubble and dew point flashes, [-]
     DEW_BUBBLE_QUASI_NEWTON_MAXITER : int
@@ -5537,6 +5541,8 @@ class FlashVL(Flash):
 
     VF_flash_algos = [SS_VF_simultaneous]
 
+    DEW_BUBBLE_VF_K_COMPOSITION_INDEPENDENT_XTOL = 1e-14
+
     DEW_BUBBLE_QUASI_NEWTON_XTOL = 1e-8
     DEW_BUBBLE_NEWTON_XTOL = 1e-5
     DEW_BUBBLE_QUASI_NEWTON_MAXITER = 200
@@ -5624,7 +5630,7 @@ class FlashVL(Flash):
     def flash_TVF_2P(self, T, VF, zs, liquid, gas, solution=None, hot_start=None):
         if self.K_composition_independent:
             # Assume pressure independent for guess
-            P, xs, ys, iterations, err = solve_T_VF_IG_K_composition_independent(VF, T, zs, gas, liquid, xtol=1e-10)
+            P, xs, ys, iterations, err = solve_T_VF_IG_K_composition_independent(VF, T, zs, gas, liquid, xtol=self.DEW_BUBBLE_VF_K_COMPOSITION_INDEPENDENT_XTOL)
             l, g = liquid.to(T=T, P=P, zs=xs), gas.to(T=T, P=P, zs=ys)
             return P, l, g, iterations, err
 
