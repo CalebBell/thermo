@@ -5428,6 +5428,9 @@ class GCEOS(object):
         x0 = self.V_g
         x2 = delta*delta - 4.0*self.epsilon
         x4 = (delta + x0 + x0)
+#        if isinf(self.dV_dP_g):
+            # This does not appear to be correct
+#            return 0.0
         return (x0 + self.dV_dP_g*(self.P - 4.0*(self.T*self.da_alpha_dT
                 - self.a_alpha)/(x4*x4 - x2)))
 
@@ -5719,8 +5722,9 @@ class GCEOS(object):
             x4 = 1.0/(self.delta*self.delta - 4.0*self.epsilon)
         except ZeroDivisionError:
             x4 = 1e200
-        return (-x1*x3 - 4.0*x2*x4*self.da_alpha_dT/(x4*(self.delta + 2*x0)**2
+        ans = (-x1*x3 - 4.0*x2*x4*self.da_alpha_dT/(x4*(self.delta + 2*x0)**2
                 - 1) - x3/(self.b - x0) + R*x1*(self.P*x2 + x0)/self.P)
+        return ans
 
     @property
     def dS_dep_dP_g_V(self):
@@ -6533,8 +6537,11 @@ class GCEOS(object):
         T, P = self.T, self.P
         x0 = 1.0/(R*T)
         try:
-            return (1.0 - P*x0*(T*self.dS_dep_dP_g - self.dH_dep_dP_g))*exp(
+            ans =  (1.0 - P*x0*(T*self.dS_dep_dP_g - self.dH_dep_dP_g))*exp(
                     -x0*(T*self.S_dep_g - self.H_dep_g))
+            if isinf(ans) or isnan(ans):
+                return 1.0
+            return ans
         except Exception as e:
             if P < 1e-50:
                 # Applies to gas phase only!

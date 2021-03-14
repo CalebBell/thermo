@@ -2244,6 +2244,10 @@ def test_Psats_low_P():
             assert_close(base.Psat(T_calc, polish=True), P, rtol=1e-9)
 
 
+def test_dfugacity_dP_g_zero_low_P():
+    eos = PR(Tc=647.086, Pc=22048320.0, omega=0.344, T=15, P=3.663117310917741e-199)
+    assert eos.dfugacity_dP_g == 1.0
+
 def test_misc_volume_issues():
     # Case where a_alpha becomes so small, reverts to ideal gas
     obj = PRTranslatedConsistent(Tc=126.2, Pc=3394387.5, omega=0.04, T=1e4, P=1e9)
