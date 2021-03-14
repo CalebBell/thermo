@@ -55,7 +55,7 @@ Base Flash Class
 ----------------
 .. autoclass:: Flash
    :show-inheritance:
-   :members: flash
+   :members: flash, plot_TP
    :exclude-members:
 
 
@@ -5114,8 +5114,39 @@ class Flash(object):
             return fig
 
 
-    def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=[],
-                ignore_errors=True, values=False, hot=True): # pragma: no cover
+    def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=None,
+                ignore_errors=True, values=False, show=True, hot=True): # pragma: no cover
+        r'''Method to create a plot of the phase envelope as can be calculated
+        from a series of temperature & vapor fraction spec flashes. By default
+        vapor fractions of 0 and 1 are plotted; additional vapor fraction
+        specifications can be specified in the `branches` argument as a list.
+
+
+        Parameters
+        ----------
+        zs : list[float]
+            Mole fractions of the feed, [-]
+        Tmin : float, optional
+            Minimum temperature to begin the plot, [K]
+        Tmax : float, optional
+            Maximum temperature to end the plot, [K]
+        pts : int, optional
+           The number of points to calculated for each vapor fraction value,
+           [-]
+        branches : list[float], optional
+            Extra vapor fraction values to plot, [-]
+        ignore_errors : bool, optional
+            Whether to fail on a calculation failure or to ignore the bad
+            point, [-]
+        values : bool, optional
+            If True, the calculated values will be returned instead of
+            plotted, [-]
+        show : bool, optional
+            If False, the plot will be returned instead of shown, [-]
+        hot : bool, optional
+            Whether to restart the next flash from the previous flash or not
+            (intended to speed the call when True), [-]
+        '''
         if not has_matplotlib() and not values:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if not Tmin:
@@ -5125,7 +5156,7 @@ class Flash(object):
         Ts = linspace(Tmin, Tmax, pts)
         P_dews = []
         P_bubbles = []
-        branch = bool(len(branches))
+        branch = branches is not None
         if branch:
             branch_Ps = [[] for i in range(len(branches))]
         else:
@@ -5164,9 +5195,11 @@ class Flash(object):
                             Ps.append(None)
                         else:
                             raise e
-        if values:
+        if values and not show:
             return Ts, P_dews, P_bubbles, branch_Ps
+
         import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
         plt.semilogy(Ts, P_dews, label='TP dew point curve')
         plt.semilogy(Ts, P_bubbles, label='TP bubble point curve')
         plt.xlabel('System temperature, K')
@@ -5176,7 +5209,12 @@ class Flash(object):
             for VF, Ps in zip(branches, branch_Ps):
                 plt.semilogy(Ts, Ps, label='TP curve for VF=%s'%VF)
         plt.legend(loc='best')
-        plt.show()
+        if show:
+            plt.show()
+        if values:
+            return Ts, P_dews, P_bubbles, branch_Ps
+        else:
+            return fig
 
 
     def plot_PT(self, zs, Pmin=None, Pmax=None, pts=50, branches=[],
