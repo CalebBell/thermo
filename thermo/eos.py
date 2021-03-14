@@ -266,7 +266,7 @@ __all__.extend(['main_derivatives_and_departures',
 
 
 from cmath import atanh as catanh, log as clog
-from math import isnan
+from math import isnan, isinf
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, newton,
                              bisect, inf, polyder, chebder,
@@ -5328,6 +5328,9 @@ class GCEOS(object):
                 \right)^{2}}{\delta^{2} - 4 \epsilon} + 1\right)}
         '''
         x0 = self.V_g
+        if x0 > 1e50:
+            if self.H_dep_g == 0.0:
+                return 0.0
         x1 = self.dV_dT_g
         x2 = self.a_alpha
         x3 = self.delta*self.delta - 4.0*self.epsilon
@@ -5597,8 +5600,13 @@ class GCEOS(object):
             V{\left (T \right )}\right)
         '''
         x0 = self.V_g
+        if x0 > 1e50:
+            if self.S_dep_g == 0.0:
+                return 0.0
         x1 = 1./x0
         x2 = self.dV_dT_g
+        if isinf(x2):
+            return 0.0
         x3 = R*x2
         x4 = self.a_alpha
 
