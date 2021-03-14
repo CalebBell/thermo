@@ -310,6 +310,7 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
             raise TrivialSolutionError("Converged to trivial condition, compositions of both phases equal",
                                        comp_difference, iteration, err)
         if err < tol and not limited_Z:
+            # Temporary!
             # err_mole_balance = 0.0
             # for i in cmps:
             #     err_mole_balance += abs(xs_old[i] * (1.0 - V_over_F_old) + ys_old[i] * V_over_F_old - zs[i])
@@ -317,10 +318,15 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
 
                 # return V_over_F, xs, ys, l, g, iteration, err
 
-            # Temporary!
-            g = gas_phase.to(ys_old, T=T, P=P, V=V)
-            l = liquid_phase.to(xs_old, T=T, P=P, V=V)
-            return V_over_F_old, xs_old, ys_old, l, g, iteration, err
+            if iteration == 0:
+                # We are composition independent!
+                g = gas_phase.to(ys_new, T=T, P=P, V=V)
+                l = liquid_phase.to(xs_new, T=T, P=P, V=V)
+                return V_over_F, xs_new, ys_new, l, g, iteration, err
+            else:
+                g = gas_phase.to(ys_old, T=T, P=P, V=V)
+                l = liquid_phase.to(xs_old, T=T, P=P, V=V)
+                return V_over_F_old, xs_old, ys_old, l, g, iteration, err
         # elif err < tol and limited_Z:
         #     print(l.fugacities()/np.array(g.fugacities()))
         err1, err2, err3 = err, err1, err2
@@ -3243,6 +3249,7 @@ def solve_T_VF_IG_K_composition_independent(VF, T, zs, gas, liq, xtol=1e-10):
     cmps = range(liq.N)
     global Ks, iterations, err
     iterations = 0
+    err = 0.0
     def to_solve(lnP):
         global Ks, iterations, err
         iterations += 1
@@ -3281,9 +3288,13 @@ def solve_T_VF_IG_K_composition_independent(VF, T, zs, gas, liq, xtol=1e-10):
         P = exp(lnP)
     else:
         if VF == 0.0:
+            Ks = liq.to(T=T, P=P_bub, zs=zs).phis()
             P = P_bub
-        else:
+        elif VF == 1.0:
+            Ks = liq.to(T=T, P=P_dew, zs=zs).phis()
             P = P_dew
+        else:
+            raise ValueError("Vapor fraction outside range 0 to 1")
     xs = [zs[i]/(1.+VF*(Ks[i]-1.)) for i in cmps]
     for i in cmps:
         Ks[i] *= xs[i]
