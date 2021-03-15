@@ -1327,6 +1327,31 @@ class TDependentProperty(object):
         # Function returns None if it does not work.
         return None
 
+    def _T_dependent_property(self, T, method):
+        # Same as T_dependent_property but accepts method as an argument
+        if method is None:
+            return None
+        try:
+            T_low, T_high = self.T_limits[method]
+            in_range = T_low <= T <= T_high
+        except (KeyError, AttributeError):
+            in_range = self.test_method_validity(T, method)
+
+        if in_range:
+            try:
+                prop = self.calculate(T, method)
+            except:
+                return None
+            if self.test_property_validity(prop):
+                return prop
+        elif self._extrapolation is not None:
+            try:
+                return self.extrapolate(T, method)
+            except:
+                return None
+        # Function returns None if it does not work.
+        return None
+
     def T_dependent_property(self, T):
         r'''Method to calculate the property with sanity checking and using
         the selected :obj:`method <thermo.utils.TDependentProperty.method>`.
@@ -1761,12 +1786,21 @@ class TDependentProperty(object):
         derivative : float
             Calculated derivative property, [`units/K^order`]
         '''
+        pts = 1+order*2
+        dx = T*1e-6
+        args = [method]
         try:
-            return derivative(self.calculate, T, dx=T*1e-6, args=[method], n=order, order=1+order*2)
+            return derivative(self.calculate, T, dx=dx, args=args, n=order, order=pts)
         except:
             Tmin, Tmax = self.T_limits[method]
-            return derivative(self.calculate, T, dx=T*1e-6, args=[method], n=order, order=1+order*2,
-                              lower_limit=Tmin, upper_limit=Tmax)
+            if Tmin <= T <= Tmax:
+                # Adjust to be just inside bounds
+                return derivative(self.calculate, T, dx=dx, args=args, n=order, order=pts,
+                                  lower_limit=Tmin, upper_limit=Tmax)
+            else:
+                # Allow extrapolation
+                return derivative(self._T_dependent_property, T, dx=dx, args=args, n=order, order=pts)
+#
 
     def T_dependent_property_derivative(self, T, order=1):
         r'''Method to obtain a derivative of a property with respect to

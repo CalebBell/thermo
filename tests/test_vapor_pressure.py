@@ -98,6 +98,9 @@ def test_VaporPressure():
     with pytest.raises(Exception):
         cycloheptane.test_method_validity(300, 'BADMETHOD')
 
+    obj = VaporPressure(CASRN="71-43-2", Tb=353.23, Tc=562.05, Pc=4895000.0, omega=0.212, extrapolation="AntoineAB|DIPPR101_ABC", method="WAGNER_MCGARRY")
+    assert_close(obj.T_dependent_property_derivative(600.0), 2379682.4349338813, rtol=1e-5)
+
 
 def test_VaporPressure_no_isnan():
     assert not isnan(VaporPressure(CASRN='4390-04-9').Tmin)
