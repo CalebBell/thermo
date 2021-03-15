@@ -5146,6 +5146,13 @@ class Flash(object):
         hot : bool, optional
             Whether to restart the next flash from the previous flash or not
             (intended to speed the call when True), [-]
+
+        Returns
+        -------
+        Ts : list[float]
+            Temperatures, [K]
+        P_dews, P_bubbles, branch_Ps
+
         '''
         if not has_matplotlib() and not values:
             raise Exception('Optional dependency matplotlib is required for plotting')
@@ -5293,13 +5300,11 @@ class Flash(object):
         P_values = []
 
         def P_dew_at_T_zs(zs):
-            print(zs, 'dew')
             res = self.flash(T=T, zs=zs, VF=0)
             P_values.append(res.P)
             return res.P
 
         def P_bubble_at_T_zs(zs):
-            print(zs, 'bubble')
             res = self.flash(T=T, zs=zs, VF=1)
             return res.P
 

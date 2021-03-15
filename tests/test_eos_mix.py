@@ -1682,9 +1682,9 @@ def test_PR_dlnphis_dT_sympy():
                 Z_f(T): eos.Z_g,
                 a_alpha: eos.a_alpha,
                 Derivative(a_alpha_f(T), T) : eos.da_alpha_dT,
-                Derivative(sum_f(T), T): sum([zs[j]*eos.da_alpha_dT_ijs[i][j] for j in eos.cmps]),
+                Derivative(sum_f(T), T): sum([zs[j]*eos.da_alpha_dT_ijs[i][j] for j in range(eos.N)]),
                 }
-        subs1 = {sum_f(T): sum([zs[j]*eos.a_alpha_ijs[i][j] for j in eos.cmps])}
+        subs1 = {sum_f(T): sum([zs[j]*eos.a_alpha_ijs[i][j] for j in range(eos.N)])}
 
         subs2 = {P: eos.P,
                  T: eos.T,
@@ -1767,9 +1767,9 @@ def test_SRK_dlnphis_dT_sympy():
                 Z_f(T): eos.Z_g,
                 a_alpha: eos.a_alpha,
                 Derivative(a_alpha_f(T), T) : eos.da_alpha_dT,
-                Derivative(sum_f(T), T): sum([zs[j]*eos.da_alpha_dT_ijs[i][j] for j in eos.cmps]),
+                Derivative(sum_f(T), T): sum([zs[j]*eos.da_alpha_dT_ijs[i][j] for j in range(eos.N)]),
                 }
-        subs1 = {sum_f(T): sum([zs[j]*eos.a_alpha_ijs[i][j] for j in eos.cmps])}
+        subs1 = {sum_f(T): sum([zs[j]*eos.a_alpha_ijs[i][j] for j in range(eos.N)])}
 
         subs2 = {P: eos.P,
                  T: eos.T,
@@ -1853,9 +1853,9 @@ def test_VDW_dlnphis_dT_sympy():
                 Z_f(T): eos.Z_g,
                 a_alpha: eos.a_alpha,
                 Derivative(a_alpha_f(T), T) : eos.da_alpha_dT,
-                Derivative(sum_f(T), T): sum([zs[j]*eos.da_alpha_dT_ijs[i][j] for j in eos.cmps]),
+                Derivative(sum_f(T), T): sum([zs[j]*eos.da_alpha_dT_ijs[i][j] for j in range(eos.N)]),
                 }
-        subs1 = {sum_f(T): sum([zs[j]*eos.a_alpha_ijs[i][j] for j in eos.cmps])}
+        subs1 = {sum_f(T): sum([zs[j]*eos.a_alpha_ijs[i][j] for j in range(eos.N)])}
 
         subs2 = {P: eos.P,
                  T: eos.T,
@@ -1937,7 +1937,7 @@ def test_PR_dlnphis_dP_sympy():
                 R: R_num, 'b': eos.b,
                 Z_f(P): eos.Z_g,
                 a_alpha: eos.a_alpha,
-                sum_fun: sum([zs[j]*eos.a_alpha_ijs[i][j] for j in eos.cmps])
+                sum_fun: sum([zs[j]*eos.a_alpha_ijs[i][j] for j in range(eos.N)])
                 }
 
         subs2 = {P: eos.P,
@@ -2015,7 +2015,7 @@ def test_SRK_dlnphis_dP_sympy():
                 R: R_num, 'b': eos.b,
                 Z_f(P): eos.Z_g,
                 a_alpha: eos.a_alpha,
-                sum_fun: sum([zs[j]*eos.a_alpha_ijs[i][j] for j in eos.cmps])
+                sum_fun: sum([zs[j]*eos.a_alpha_ijs[i][j] for j in range(eos.N)])
                 }
 
         subs2 = {P: eos.P,
@@ -2093,7 +2093,7 @@ def test_VDW_dlnphis_dP_sympy():
                 R: R_num, 'b': eos.b,
                 Z_f(P): eos.Z_g,
                 a_alpha: eos.a_alpha,
-                sum_f(T): sum([zs[j]*eos.a_alpha_ijs[i][j] for j in eos.cmps])
+                sum_f(T): sum([zs[j]*eos.a_alpha_ijs[i][j] for j in range(eos.N)])
                 }
 
         subs2 = {P: eos.P,
@@ -3016,7 +3016,7 @@ def test_d3a_alpha_dninjnks():
 
     diffs = {}
     a_alpha_subs = {ni: eos.zs[i] for i, ni in enumerate(ns)}
-    a_alpha_subs.update({a_alpha_ijs[i][j]: eos.a_alpha_ijs[i][j] for i in eos.cmps for j in eos.cmps})
+    a_alpha_subs.update({a_alpha_ijs[i][j]: eos.a_alpha_ijs[i][j] for i in range(eos.N) for j in range(eos.N)})
 
     N = eos.N
     analytical = [[[None]*N for i in range(N)] for i in range(N)]

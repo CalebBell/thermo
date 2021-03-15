@@ -1419,6 +1419,7 @@ def test_fuzz_dV_dT_and_d2V_dT2_derivatives():
 #
 
 @pytest.mark.slow
+@pytest.mark.fuzz
 def test_fuzz_dV_dP_and_d2V_dP2_derivatives():
 #    from thermo import eos
 #    eos_list = list(eos.__all__); eos_list.remove('GCEOS')
