@@ -1319,6 +1319,12 @@ def test_IG():
               'dfugacity_dT_g', 'dphi_dT_g', 'dphi_dP_g']
     tol = 1e-15
 
+
+    eos = IG(T=400., P=1E6)
+    assert eos.phi_sat(300) == 1.0
+    assert eos.dphi_sat_dT(300) == 0.0
+    assert eos.d2phi_sat_dT2(300) == 0.0
+
     for T in Ts:
         for P in Ps:
 

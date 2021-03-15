@@ -176,7 +176,7 @@ Ideal Gas Equation of State
 ===========================
 .. autoclass:: IG
    :show-inheritance:
-   :members: volume_solutions, Zc, a, b, delta, epsilon
+   :members: volume_solutions, Zc, a, b, delta, epsilon, a_alpha_pure, a_alpha_and_derivatives_pure, solve_T
 
 
 Lists of Equations of State
@@ -7175,7 +7175,7 @@ class IG(GCEOS):
         ideal gas equation of state.
 
         .. math::
-            T = \fraac{PV}{R}
+            T = \frac{PV}{R}
 
         Parameters
         ----------
@@ -7196,6 +7196,13 @@ class IG(GCEOS):
         '''
         self.no_T_spec = True
         return P*V*R_inv
+
+    def phi_sat(self, T, polish=True):
+        return 1.0
+    def dphi_sat_dT(self, T, polish=True):
+        return 0.0
+    def d2phi_sat_dT2(self, T, polish=True):
+        return 0.0
 
 
 class PR(GCEOS):
