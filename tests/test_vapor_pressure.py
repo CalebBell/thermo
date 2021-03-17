@@ -26,7 +26,7 @@ import pandas as pd
 from math import isnan
 from fluids.numerics import linspace, assert_close, derivative, assert_close1d
 from thermo.vapor_pressure import *
-from thermo.vapor_pressure import VDI_TABULAR, WAGNER_MCGARRY
+from thermo.vapor_pressure import VDI_PPDS, VDI_TABULAR, WAGNER_MCGARRY, ANTOINE_EXTENDED_POLING, ANTOINE_POLING, WAGNER_POLING, DIPPR_PERRY_8E
 from chemicals.identifiers import check_CAS
 from math import *
 
@@ -99,7 +99,34 @@ def test_VaporPressure():
         cycloheptane.test_method_validity(300, 'BADMETHOD')
 
     obj = VaporPressure(CASRN="71-43-2", Tb=353.23, Tc=562.05, Pc=4895000.0, omega=0.212, extrapolation="AntoineAB|DIPPR101_ABC", method="WAGNER_MCGARRY")
-    assert_close(obj.T_dependent_property_derivative(600.0), 2379682.4349338813, rtol=1e-5)
+    assert_close(obj.T_dependent_property_derivative(600.0), 2379682.4349338813, rtol=1e-4)
+
+
+@pytest.mark.meta_T_dept
+def test_VaporPressure_analytical_derivatives():
+    Psat = VaporPressure(CASRN="108-38-3", Tb=412.25, Tc=617.0, Pc=3541000.0, omega=0.331,
+                         extrapolation="AntoineAB|DIPPR101_ABC", method=WAGNER_MCGARRY)
+    assert_close(Psat.calculate_derivative(T=400.0, method=WAGNER_MCGARRY), 2075.9195652247963, rtol=1e-13)
+    assert_close(Psat.calculate_derivative(T=400.0, method=WAGNER_MCGARRY, order=2), 47.61112509616565, rtol=1e-13)
+
+    assert_close(Psat.calculate_derivative(T=400.0, method=WAGNER_POLING), 2073.565462948561, rtol=1e-13)
+    assert_close(Psat.calculate_derivative(T=400.0, method=WAGNER_POLING, order=2), 47.60007499952595, rtol=1e-13)
+
+    assert_close(Psat.calculate_derivative(T=400.0, method=DIPPR_PERRY_8E), 2075.1783812355125, rtol=1e-13)
+    assert_close(Psat.calculate_derivative(T=400.0, method=DIPPR_PERRY_8E, order=2), 47.566696599306596, rtol=1e-13)
+
+    assert_close(Psat.calculate_derivative(T=400.0, method=VDI_PPDS), 2073.5972901257196, rtol=1e-13)
+    assert_close(Psat.calculate_derivative(T=400.0, method=VDI_PPDS, order=2), 47.489535848986364, rtol=1e-13)
+
+    cycloheptane = VaporPressure(Tb=391.95, Tc=604.2, Pc=3820000.0, omega=0.2384, CASRN='291-64-5')
+    cycloheptane.method = ANTOINE_EXTENDED_POLING
+    assert_close(cycloheptane.calculate_derivative(T=500.0, method=ANTOINE_EXTENDED_POLING, order=2), 176.89903538855853, rtol=1e-13)
+    assert_close(cycloheptane.calculate_derivative(T=500.0, method=ANTOINE_EXTENDED_POLING, order=1), 15046.47337900798, rtol=1e-13)
+
+    cycloheptane.method = ANTOINE_POLING
+    assert_close(cycloheptane.calculate_derivative(T=400.0, method=ANTOINE_POLING, order=1), 3265.237029987264, rtol=1e-13)
+    assert_close(cycloheptane.calculate_derivative(T=400.0, method=ANTOINE_POLING, order=2), 65.83298769903531, rtol=1e-13)
+
 
 
 def test_VaporPressure_no_isnan():
@@ -163,8 +190,8 @@ def test_VaporPressure_extrapolation_solve_prop():
 
     assert_close(cycloheptane.solve_property(1e5), 391.3576035137979)
     assert_close(cycloheptane.solve_property(1e6), 503.31772463155266)
-    assert_close(cycloheptane.solve_property(1e7), 711.8060977006566)
-    assert_close(cycloheptane.solve_property(3e7), 979.2319342086599)
+    assert_close(cycloheptane.solve_property(1e7), 711.8047771523733)
+    assert_close(cycloheptane.solve_property(3e7), 979.2026813626704)
 
 def test_VaporPressure_bestfit_derivatives():
     obj = VaporPressure(poly_fit=(175.7, 512.49, [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10,

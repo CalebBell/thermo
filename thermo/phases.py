@@ -5560,6 +5560,9 @@ class CEOSGas(Phase):
         self.eos_class = eos_class
         self.eos_kwargs = eos_kwargs
 
+
+
+
         self.HeatCapacityGases = HeatCapacityGases
         if HeatCapacityGases is not None:
             self.N = N = len(HeatCapacityGases)
@@ -5570,7 +5573,10 @@ class CEOSGas(Phase):
         self.Gfs = Gfs
         self.Sfs = Sfs
         self.Cpgs_locked, self._Cpgs_data = self._setup_Cpigs(HeatCapacityGases)
-        self.composition_independent = eos_class is IGMIX
+        self.composition_independent = ideal_gas = eos_class is IGMIX
+        if ideal_gas:
+            self.force_phase = 'g'
+
 
         if T is not None and P is not None and zs is not None:
             self.T = T
@@ -5652,6 +5658,8 @@ class CEOSGas(Phase):
         new._Cpgs_data = self._Cpgs_data
         new.Cpgs_locked = self.Cpgs_locked
         new.composition_independent = self.composition_independent
+        if new.composition_independent:
+            new.force_phase = 'g'
 
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
@@ -5700,6 +5708,8 @@ class CEOSGas(Phase):
         new.Cpgs_locked = self.Cpgs_locked
 
         new.composition_independent = self.composition_independent
+        if new.composition_independent:
+            new.force_phase = 'g'
 
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs

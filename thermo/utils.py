@@ -1786,20 +1786,17 @@ class TDependentProperty(object):
         derivative : float
             Calculated derivative property, [`units/K^order`]
         '''
-        pts = 1+order*2
+        pts = 1 + order*2
         dx = T*1e-6
         args = [method]
-        try:
-            return derivative(self.calculate, T, dx=dx, args=args, n=order, order=pts)
-        except:
-            Tmin, Tmax = self.T_limits[method]
-            if Tmin <= T <= Tmax:
-                # Adjust to be just inside bounds
-                return derivative(self.calculate, T, dx=dx, args=args, n=order, order=pts,
-                                  lower_limit=Tmin, upper_limit=Tmax)
-            else:
-                # Allow extrapolation
-                return derivative(self._T_dependent_property, T, dx=dx, args=args, n=order, order=pts)
+        Tmin, Tmax = self.T_limits[method]
+        if Tmin <= T <= Tmax:
+            # Adjust to be just inside bounds
+            return derivative(self.calculate, T, dx=dx, args=args, n=order, order=pts,
+                              lower_limit=Tmin, upper_limit=Tmax)
+        else:
+            # Allow extrapolation
+            return derivative(self._T_dependent_property, T, dx=dx, args=args, n=order, order=pts)
 #
 
     def T_dependent_property_derivative(self, T, order=1):
@@ -1985,6 +1982,24 @@ class TDependentProperty(object):
                 except:
                     v_high, d_high = None, None
                 linear_extrapolation_coeffs[method] = [v_low, d_low, v_high, d_high]
+            elif extrapolation == 'constant':
+                try:
+                    constant_extrapolation_coeffs = self.constant_extrapolation_coeffs
+                except:
+                    self.constant_extrapolation_coeffs = constant_extrapolation_coeffs = {}
+
+                if method in constant_extrapolation_coeffs:
+                    continue
+                Tmin, Tmax = T_limits[method]
+                try:
+                    v_low = self.calculate(T=Tmin, method=method)
+                except:
+                    v_low = None
+                try:
+                    v_high = self.calculate(T=Tmax, method=method)
+                except:
+                    v_high = None
+                constant_extrapolation_coeffs[method] = [v_low, v_high]
             elif extrapolation == 'AntoineAB':
                 try:
                     Antoine_AB_coeffs = self.Antoine_AB_coeffs
@@ -2176,6 +2191,21 @@ class TDependentProperty(object):
                 if interpolation_property_inv is not None:
                     val = interpolation_property_inv(val)
                 return val
+        elif extrapolation == 'constant':
+            try:
+                constant_extrapolation_coeffs = self.constant_extrapolation_coeffs
+            except:
+                self._load_extapolation_coeffs(method)
+                constant_extrapolation_coeffs = self.constant_extrapolation_coeffs
+            v_low, v_high = constant_extrapolation_coeffs[method]
+            if low:
+                if v_low is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
+                return v_low
+            else:
+                if v_high is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
+                return v_high
 
         elif extrapolation == 'AntoineAB':
             T_low, T_high = T_limits[method]

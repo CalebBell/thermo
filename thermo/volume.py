@@ -400,7 +400,7 @@ class VolumeLiquid(TPDependentProperty):
                    'Psat', 'eos')
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
                  omega=None, dipole=None, Psat=None, CASRN='', eos=None,
-                 load_data=True, extrapolation=None, poly_fit=None,
+                 load_data=True, extrapolation='constant', poly_fit=None,
                  method=None):
         self.CASRN = CASRN
         self.MW = MW
@@ -564,6 +564,7 @@ class VolumeLiquid(TPDependentProperty):
             if self.CASRN in volume.rho_data_CRC_inorg_l_const.index:
                 methods.append(CRC_INORG_L_CONST)
                 self.CRC_INORG_L_CONST_Vm = float(volume.rho_data_CRC_inorg_l_const.at[self.CASRN, 'Vm'])
+                T_limits[CRC_INORG_L_CONST] = (298.15, 298.15)
                 # Roughly data at STP; not guaranteed however; not used for Trange
         if all((self.Tc, self.Vc, self.Zc)):
             methods.append(YEN_WOODS_SAT)

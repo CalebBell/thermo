@@ -99,6 +99,7 @@ def test_VolumeLiquid():
     EtOH = VolumeLiquid(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.24125, omega=0.635, dipole=1.44, CASRN='64-17-5')
     EtOH.T_dependent_property(305.) # Initialize the sorted_valid_methods
     EtOH.tabular_extrapolation_permitted = False
+    EtOH.extrapolation = None
 
     Vml_calcs = []
     for i in list(EtOH.all_methods):
@@ -186,6 +187,25 @@ def test_VolumeLiquidPolynomialTmin():
     # Water - may change, second should always be zero
     v = VolumeLiquid(poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]))
     assert_allclose(v.poly_fit_Tmin_quadratic,  [8.382589086490995e-12, 0.0, 1.739254665187681e-05])
+
+@pytest.mark.meta_T_dept
+def test_VolumeLiquidConstantExtrapolation():
+    obj = VolumeLiquid(CASRN="108-38-3", MW=106.165, Tb=412.25, Tc=617.0, Pc=3541000.0,
+                       Vc=0.000375, Zc=0.25884384676233363, omega=0.331, dipole=0.299792543559857,
+                       Psat=None, extrapolation="constant", method="PERRYDIPPR")
+
+    assert_close(obj.T_dependent_property(obj.DIPPR_Tmax), 0.0003785956866273838, rtol=1e-9)
+    assert_close(obj.T_dependent_property(obj.DIPPR_Tmin), 0.00011563344813684695, rtol=1e-9)
+
+
+    assert obj.T_dependent_property(618) == obj.T_dependent_property(obj.DIPPR_Tmax)
+    assert obj.T_dependent_property(1223532.0) == obj.T_dependent_property(obj.DIPPR_Tmax)
+
+    assert obj.T_dependent_property(1.0) == obj.T_dependent_property(obj.DIPPR_Tmin)
+    assert obj.T_dependent_property(.0) == obj.T_dependent_property(obj.DIPPR_Tmin)
+    assert obj.T_dependent_property(100) == obj.T_dependent_property(obj.DIPPR_Tmin)
+
+
 
 @pytest.mark.meta_T_dept
 def test_VolumeLiquidDumpEOS():

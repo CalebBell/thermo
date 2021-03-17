@@ -72,6 +72,7 @@ from chemicals.dippr import EQ101
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
 from chemicals.vapor_pressure import *
+from chemicals.vapor_pressure import dAntoine_dT, d2Antoine_dT2, dWagner_original_dT, d2Wagner_original_dT2, dWagner_dT, d2Wagner_dT2, dTRC_Antoine_extended_dT, d2TRC_Antoine_extended_dT2
 from chemicals import vapor_pressure
 from thermo.utils import TDependentProperty
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
@@ -541,6 +542,7 @@ class VaporPressure(TDependentProperty):
         derivative : float
             Calculated derivative property, [`units/K^order`]
         '''
+        Tmin, Tmax = self.T_limits[method]
         if order == 1 and method == BESTFIT:
             # if T < self.poly_fit_Tmin:
             #     return self.poly_fit_Tmin_slope*exp(
@@ -553,10 +555,51 @@ class VaporPressure(TDependentProperty):
             # else:
             v, der = horner_and_der(self.poly_fit_coeffs, T)
             return der*exp(v)
+        elif method == WAGNER_MCGARRY:
+            if Tmin <= T <= Tmax:
+                if order == 1:
+                    return dWagner_original_dT(T, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Pc, *self.WAGNER_MCGARRY_coefs)
+                if order == 2 and T < Tmax:
+                    # infinity at Tmax
+                    return d2Wagner_original_dT2(T, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Pc, *self.WAGNER_MCGARRY_coefs)
+        elif method == WAGNER_POLING:
+            if Tmin <= T <= Tmax:
+                if order == 1:
+                    return dWagner_dT(T, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, *self.WAGNER_POLING_coefs)
+                if order == 2 and T < Tmax:
+                    # infinity at Tmax
+                    return d2Wagner_dT2(T, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, *self.WAGNER_POLING_coefs)
+        elif method == VDI_PPDS:
+            if Tmin <= T <= Tmax:
+                if order == 1:
+                    return dWagner_dT(T, self.VDI_PPDS_Tc, self.VDI_PPDS_Pc, *self.VDI_PPDS_coeffs)
+                if order == 2 and T < Tmax:
+                    # infinity at Tmax
+                    return d2Wagner_dT2(T, self.VDI_PPDS_Tc, self.VDI_PPDS_Pc, *self.VDI_PPDS_coeffs)
+        elif method == ANTOINE_EXTENDED_POLING:
+            if Tmin <= T <= Tmax:
+                if order == 1:
+                    return dTRC_Antoine_extended_dT(T, *self.ANTOINE_EXTENDED_POLING_coefs)
+                if order == 2:
+                    return d2TRC_Antoine_extended_dT2(T, *self.ANTOINE_EXTENDED_POLING_coefs)
+        elif method == ANTOINE_POLING:
+            A, B, C = self.ANTOINE_POLING_coefs
+            if Tmin <= T <= Tmax:
+                if order == 1:
+                    return dAntoine_dT(T, A, B, C, base=10.0)
+                if order == 2:
+                    return d2Antoine_dT2(T, A, B, C, base=10.0)
+        elif method == DIPPR_PERRY_8E:
+            if Tmin <= T <= Tmax:
+                if order == 1:
+                    return EQ101(T, *self.Perrys2_8_coeffs, order=1)
+                if order == 2:
+                    return EQ101(T, *self.Perrys2_8_coeffs, order=2)
         elif order == 2 and method == BESTFIT:
             v, der, der2 = horner_and_der2(self.poly_fit_coeffs, T)
             return (der*der + der2)*exp(v)
 
+#        print('numerical', method, order, T, 'Tmax', Tmax)
         return super(VaporPressure, self).calculate_derivative(T, method, order)
 
     def _custom_set_poly_fit(self):
