@@ -52,7 +52,7 @@ from fluids.numerics import numpy as np
 from thermo.activity import GibbsExcess, interaction_exp, dinteraction_exp_dT, d2interaction_exp_dT2, d3interaction_exp_dT3
 
 try:
-    zeros, npsum, nplog = np.zeros, np.sum, np.log
+    array, zeros, npsum, nplog = np.array, np.zeros, np.sum, np.log
 except AttributeError:
     pass
 
@@ -465,12 +465,12 @@ class Wilson(GibbsExcess):
                     self.lambda_coeffs_E = [[i[4] for i in l] for l in lambda_coeffs]
                     self.lambda_coeffs_F = [[i[5] for i in l] for l in lambda_coeffs]
                 else:
-                    self.lambda_coeffs_A = lambda_coeffs[:,:,0]
-                    self.lambda_coeffs_B = lambda_coeffs[:,:,1]
-                    self.lambda_coeffs_C = lambda_coeffs[:,:,2]
-                    self.lambda_coeffs_D = lambda_coeffs[:,:,3]
-                    self.lambda_coeffs_E = lambda_coeffs[:,:,4]
-                    self.lambda_coeffs_F = lambda_coeffs[:,:,5]
+                    self.lambda_coeffs_A = array(lambda_coeffs[:,:,0], order='C', copy=True)
+                    self.lambda_coeffs_B = array(lambda_coeffs[:,:,1], order='C', copy=True)
+                    self.lambda_coeffs_C = array(lambda_coeffs[:,:,2], order='C', copy=True)
+                    self.lambda_coeffs_D = array(lambda_coeffs[:,:,3], order='C', copy=True)
+                    self.lambda_coeffs_E = array(lambda_coeffs[:,:,4], order='C', copy=True)
+                    self.lambda_coeffs_F = array(lambda_coeffs[:,:,5], order='C', copy=True)
 
             else:
                 raise ValueError("`lambda_coeffs` or `ABCDEF` is required required")
