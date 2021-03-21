@@ -24,10 +24,13 @@ import pytest
 import numpy as np
 import pandas as pd
 from thermo.interface import *
-from chemicals.utils import property_mass_to_molar
+from chemicals.utils import property_mass_to_molar, zs_to_ws
 from thermo.interface import VDI_TABULAR
 from chemicals.identifiers import check_CAS
 from fluids.numerics import assert_close, assert_close1d
+from thermo.volume import VolumeLiquid, VDI_PPDS
+from thermo.utils import POLY_FIT
+from thermo.interface import SurfaceTensionMixture, DIGUILIOTEJA, SIMPLE, WINTERFELDSCRIVENDAVIS
 
 @pytest.mark.meta_T_dept
 def test_SurfaceTension():
@@ -85,25 +88,39 @@ def test_SurfaceTensionVDITabularMissingZeroLimits():
 
 
 def test_SurfaceTensionMixture():
-    from thermo.mixture import Mixture
-    from thermo.interface import SurfaceTensionMixture, DIGUILIOTEJA, SIMPLE, WINTERFELDSCRIVENDAVIS
-    m = Mixture(['pentane', 'dichloromethane'], zs=[.1606, .8394], T=298.15)
-    SurfaceTensions = [i.SurfaceTension for i in m.Chemicals]
-    VolumeLiquids = [i.VolumeLiquid for i in m.Chemicals]
+    # ['pentane', 'dichloromethane']
+    T = 298.15
+    P = 101325.0
+    zs = [.1606, .8394]
 
-    a = SurfaceTensionMixture(MWs=m.MWs, Tbs=m.Tbs, Tcs=m.Tcs, CASs=m.CASs, SurfaceTensions=SurfaceTensions, VolumeLiquids=VolumeLiquids)
+    MWs = [72.14878, 84.93258]
+    ws = zs_to_ws(zs, MWs=MWs)
 
-    sigma = a.mixture_property(m.T, m.P, m.zs, m.ws)
-    assert_close(sigma, 0.023887948426185343)
+    VolumeLiquids = [VolumeLiquid(CASRN="109-66-0", MW=72.14878, Tb=309.21, Tc=469.7, Pc=3370000.0, Vc=0.000311, Zc=0.26837097540904814, omega=0.251, dipole=0.0, extrapolation="constant", method=POLY_FIT, poly_fit=(144, 459.7000000000001, [1.0839519373491257e-22, -2.420837244222272e-19, 2.318236501104612e-16, -1.241609625841306e-13, 4.0636406847721776e-11, -8.315431504053525e-09, 1.038485128954003e-06, -7.224842789857136e-05, 0.0022328080060137396])),
+     VolumeLiquid(CASRN="75-09-2", MW=84.93258, Tb=312.95, Tc=508.0, Pc=6350000.0, Vc=0.000177, Zc=0.26610258553203137, omega=0.2027, dipole=1.6, extrapolation="constant", method=POLY_FIT, poly_fit=(178.01, 484.5, [1.5991056738532454e-23, -3.92303910541969e-20, 4.1522438881104836e-17, -2.473595776587317e-14, 9.064684097377694e-12, -2.0911320815626796e-09, 2.9653069375266426e-07, -2.3580713574913447e-05, 0.0008567355308938564]))]
 
-    sigma = a.calculate(m.T, m.P, m.zs, m.ws, SIMPLE)
-    assert_close(sigma, 0.025331490604571537)
+    SurfaceTensions = [SurfaceTension(CASRN="109-66-0", MW=72.14878, Tb=309.21, Tc=469.7, Pc=3370000.0, Vc=0.000311, Zc=0.26837097540904814, omega=0.251, StielPolar=0.005164116344598568, Hvap_Tb=357736.5860890071, extrapolation=None, method=VDI_PPDS),
+                       SurfaceTension(CASRN="75-09-2", MW=84.93258, Tb=312.95, Tc=508.0, Pc=6350000.0, Vc=0.000177, Zc=0.26610258553203137, omega=0.2027, StielPolar=-0.027514125341022044, Hvap_Tb=333985.7240672881, extrapolation=None, method=VDI_PPDS)]
 
-    sigmas = [a.calculate(m.T, m.P, m.zs, m.ws, i) for i in [DIGUILIOTEJA, SIMPLE, WINTERFELDSCRIVENDAVIS]]
-    assert_close1d(sigmas, [0.025257338967448677, 0.025331490604571537, 0.023887948426185343])
+    a = SurfaceTensionMixture(MWs=MWs, Tbs=[309.21, 312.95], Tcs=[469.7, 508.0], correct_pressure_pure=False, CASs=['109-66-0', '75-09-2'], SurfaceTensions=SurfaceTensions, VolumeLiquids=VolumeLiquids)
+
+    sigma_wsd = a.calculate(T, P, zs, method=WINTERFELDSCRIVENDAVIS, ws=ws)
+    assert_close(sigma_wsd, 0.02388914831076298)
+
+    # Check the default calculation method is still WINTERFELDSCRIVENDAVIS
+    sigma = a.mixture_property(T, P, zs)
+    assert_close(sigma, sigma_wsd)
+
+    # Check the other implemented methods
+    sigma = a.calculate(T, P, zs, ws, SIMPLE)
+    assert_close(sigma, 0.025332871945242523)
+
+    sigma = a.calculate(T, P, zs, ws, DIGUILIOTEJA)
+    assert_close(sigma, 0.025262398831653664)
 
     with pytest.raises(Exception):
-        a.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+        a.test_method_validity(T, P, zs, ws, 'BADMETHOD')
     with pytest.raises(Exception):
-        a.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+        a.calculate(T, P, zs, ws, 'BADMETHOD')
+
 

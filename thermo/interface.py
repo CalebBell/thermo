@@ -709,11 +709,11 @@ class SurfaceTensionMixture(MixtureProperty):
                 rhoms = []
                 for obj in self.VolumeLiquids:
                     rho = obj.TP_dependent_property(T, P)
-                    if rho is None:
-                        rho = obj.T_dependent_property(T)
+#                    if rho is None:
+#                        rho = obj.T_dependent_property(T)
                     rhoms.append(1.0/rho)
             else:
-                rhoms = [1./i(T, P) for i in self.VolumeLiquids]
+                rhoms = [1./i.T_dependent_property(T) for i in self.VolumeLiquids]
             return Winterfeld_Scriven_Davis(zs, sigmas, rhoms)
         else:
             raise Exception('Method not valid')
