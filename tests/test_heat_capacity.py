@@ -145,7 +145,7 @@ def test_HeatCapacityGas_integrals():
     dH5 = EtOH.calculate_integral(200, 300,'COOLPROP')
     assert_close(dH5, 5838.118293585357, rtol=5e-5)
 
-    dH = EtOH.calculate_integral(200, 300, 'VDI Heat Atlas')
+    dH = EtOH.calculate_integral(200, 300, 'VDI_TABULAR')
     assert_close(dH, 6610.821140000002)
 
     # Entropy integrals
@@ -167,7 +167,7 @@ def test_HeatCapacityGas_integrals():
     dS = EtOH.calculate_integral_over_T(200, 300, 'Lastovka and Shaw (2013)')
     assert_close(dS, 24.86700348570956, rtol=1e-5)
 
-    dS = EtOH.calculate_integral_over_T(200, 300, 'VDI Heat Atlas')
+    dS = EtOH.calculate_integral_over_T(200, 300, VDI_TABULAR)
     assert_close(dS, 26.590569427910076)
 
 

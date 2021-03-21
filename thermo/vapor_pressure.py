@@ -75,6 +75,7 @@ from chemicals.vapor_pressure import *
 from chemicals.vapor_pressure import dAntoine_dT, d2Antoine_dT2, dWagner_original_dT, d2Wagner_original_dT2, dWagner_dT, d2Wagner_dT2, dTRC_Antoine_extended_dT, d2TRC_Antoine_extended_dT2
 from chemicals import vapor_pressure
 from thermo.utils import TDependentProperty
+from thermo.utils import VDI_TABULAR, DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, EOS, BESTFIT
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
 from thermo.base import source_path
 
@@ -83,18 +84,12 @@ WAGNER_MCGARRY = 'WAGNER_MCGARRY'
 WAGNER_POLING = 'WAGNER_POLING'
 ANTOINE_POLING = 'ANTOINE_POLING'
 ANTOINE_EXTENDED_POLING = 'ANTOINE_EXTENDED_POLING'
-VDI_TABULAR = 'VDI_TABULAR'
-COOLPROP = 'COOLPROP'
-DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
-VDI_PPDS = 'VDI_PPDS'
 
 BOILING_CRITICAL = 'BOILING_CRITICAL'
 LEE_KESLER_PSAT = 'LEE_KESLER_PSAT'
 AMBROSE_WALTON = 'AMBROSE_WALTON'
 SANJARI = 'SANJARI'
 EDALAT = 'Edalat'
-EOS = 'EOS'
-BESTFIT = 'Best fit'
 BEST_FIT_AB = 'Best fit AB extrapolation'
 BEST_FIT_ABC = 'Best fit ABC extrapolation'
 

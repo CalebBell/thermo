@@ -77,11 +77,10 @@ from chemicals.phase_change import *
 from thermo.vapor_pressure import VaporPressure
 from thermo.heat_capacity import HeatCapacityGas, HeatCapacitySolid
 from thermo.utils import TDependentProperty
+from thermo.utils import COOLPROP, VDI_TABULAR, DIPPR_PERRY_8E, VDI_PPDS, BESTFIT
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids, CoolProp_failing_PT_flashes
 
 
-COOLPROP = 'COOLPROP'
-VDI_TABULAR = 'VDI_TABULAR'
 CRC_HVAP_TB = 'CRC_HVAP_TB'
 CRC_HVAP_298 = 'CRC_HVAP_298'
 GHARAGHEIZI_HVAP_298 = 'GHARAGHEIZI_HVAP_298'
@@ -90,15 +89,12 @@ SIVARAMAN_MAGEE_KOBAYASHI = 'SIVARAMAN_MAGEE_KOBAYASHI'
 VELASCO = 'VELASCO'
 PITZER = 'PITZER'
 CLAPEYRON = 'CLAPEYRON'
-DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
-VDI_PPDS = 'VDI_PPDS'
 ALIBAKHSHI = 'ALIBAKHSHI'
 
 RIEDEL = 'RIEDEL'
 CHEN = 'CHEN'
 LIU = 'LIU'
 VETERE = 'VETERE'
-BESTFIT = 'Best fit'
 
 enthalpy_vaporization_methods = [DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, VDI_TABULAR,
                                  MORGAN_KOBAYASHI,

@@ -135,16 +135,13 @@ from thermo.electrochem import Laliberte_heat_capacity
 from thermo.utils import TDependentProperty, MixtureProperty
 from thermo.coolprop import *
 from cmath import log as clog, exp as cexp
-
+from thermo.utils import VDI_TABULAR, COOLPROP, BESTFIT
 
 TRCIG = 'TRC Thermodynamics of Organic Compounds in the Gas State (1994)'
 POLING = 'Poling et al. (2001)'
 POLING_CONST = 'Poling et al. (2001) constant'
 CRCSTD = 'CRC Standard Thermodynamic Properties of Chemical Substances'
-VDI_TABULAR = 'VDI Heat Atlas'
 LASTOVKA_SHAW = 'Lastovka and Shaw (2013)'
-COOLPROP = 'COOLPROP'
-BESTFIT = 'Best fit'
 heat_capacity_gas_methods = [COOLPROP, TRCIG, POLING, LASTOVKA_SHAW, CRCSTD,
                              POLING_CONST, VDI_TABULAR]
 '''Holds all methods available for the :obj:`HeatCapacityGas` class, for use in

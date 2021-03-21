@@ -99,6 +99,7 @@ VDI_TABULAR = 'VDI_TABULAR'
 VDI_PPDS = 'VDI_PPDS'
 COOLPROP = 'COOLPROP'
 '''CoolProp method'''
+EOS = 'EOS'
 
 global _has_matplotlib
 _has_matplotlib = None

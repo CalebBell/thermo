@@ -134,6 +134,7 @@ from thermo import electrochem
 from thermo.electrochem import Laliberte_density
 from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property
 from thermo.utils import TDependentProperty, TPDependentProperty, MixtureProperty
+from thermo.utils import BESTFIT, VDI_TABULAR, VDI_PPDS, COOLPROP, EOS, DIPPR_PERRY_8E
 from thermo.eos import PR78
 from thermo.vapor_pressure import VaporPressure
 
@@ -161,12 +162,8 @@ def Tait_parameters_COSTALD(Tc, Pc, omega, Tr_min=.27, Tr_max=.95):
     B_params = cheb_to_poly(fun)
     return B_params, [C]
 
-COOLPROP = 'COOLPROP'
-PERRYDIPPR = 'PERRYDIPPR'
-VDI_PPDS = 'VDI_PPDS'
 MMSNM0 = 'MMSNM0'
 MMSNM0FIT = 'MMSNM0FIT'
-VDI_TABULAR = 'VDI_TABULAR'
 HTCOSTALD = 'HTCOSTALD'
 HTCOSTALDFIT = 'HTCOSTALDFIT'
 COSTALD_COMPRESSED = 'COSTALD_COMPRESSED'
@@ -177,14 +174,12 @@ YAMADA_GUNN = 'YAMADA_GUNN'
 BHIRUD_NORMAL = 'BHIRUD_NORMAL'
 TOWNSEND_HALES = 'TOWNSEND_HALES'
 CAMPBELL_THODOS = 'CAMPBELL_THODOS'
-EOS = 'EOS'
-BESTFIT = 'Best fit'
 
 
 CRC_INORG_L = 'CRC_INORG_L'
 CRC_INORG_L_CONST = 'CRC_INORG_L_CONST'
 
-volume_liquid_methods = [PERRYDIPPR, VDI_PPDS, COOLPROP, MMSNM0FIT, VDI_TABULAR,
+volume_liquid_methods = [DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, MMSNM0FIT, VDI_TABULAR,
                          HTCOSTALDFIT, RACKETTFIT, CRC_INORG_L,
                          CRC_INORG_L_CONST, MMSNM0, HTCOSTALD,
                          YEN_WOODS_SAT, RACKETT, YAMADA_GUNN,
@@ -262,7 +257,7 @@ class VolumeLiquid(TPDependentProperty):
 
     Low pressure methods:
 
-    **PERRYDIPPR**:
+    **DIPPR_PERRY_8E**:
         A simple polynomial as expressed in [1]_, with data available for
         344 fluids. Temperature limits are available for all fluids. Believed
         very accurate.
@@ -382,7 +377,7 @@ class VolumeLiquid(TPDependentProperty):
     property_max = 2e-3
     '''Maximum valid value of liquid molar volume. Generous limit.'''
 
-    ranked_methods = [PERRYDIPPR, VDI_PPDS, COOLPROP, MMSNM0FIT, VDI_TABULAR,
+    ranked_methods = [DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, MMSNM0FIT, VDI_TABULAR,
                       HTCOSTALDFIT, RACKETTFIT, CRC_INORG_L,
                       CRC_INORG_L_CONST, MMSNM0, HTCOSTALD,
                       YEN_WOODS_SAT, RACKETT, YAMADA_GUNN,
@@ -528,11 +523,11 @@ class VolumeLiquid(TPDependentProperty):
                 Tmins.append(self.CRC_INORG_L_Tm); Tmaxs.append(self.CRC_INORG_L_Tmax)
                 T_limits[CRC_INORG_L] = (self.CRC_INORG_L_Tm, self.CRC_INORG_L_Tmax)
             if self.CASRN in volume.rho_data_Perry_8E_105_l.index:
-                methods.append(PERRYDIPPR)
+                methods.append(DIPPR_PERRY_8E)
                 C1, C2, C3, C4, self.DIPPR_Tmin, self.DIPPR_Tmax = volume.rho_values_Perry_8E_105_l[volume.rho_data_Perry_8E_105_l.index.get_loc(self.CASRN)].tolist()
                 self.DIPPR_coeffs = [C1, C2, C3, C4]
                 Tmins.append(self.DIPPR_Tmin); Tmaxs.append(self.DIPPR_Tmax)
-                T_limits[PERRYDIPPR] = (self.DIPPR_Tmin, self.DIPPR_Tmax)
+                T_limits[DIPPR_PERRY_8E] = (self.DIPPR_Tmin, self.DIPPR_Tmax)
             if self.CASRN in volume.rho_data_VDI_PPDS_2.index:
                 methods.append(VDI_PPDS)
                 MW, Tc, rhoc, A, B, C, D = volume.rho_values_VDI_PPDS_2[volume.rho_data_VDI_PPDS_2.index.get_loc(self.CASRN)].tolist()
@@ -660,7 +655,7 @@ class VolumeLiquid(TPDependentProperty):
             Vm = COSTALD(T, self.Tc, self.COSTALD_Vchar, self.COSTALD_omega_SRK)
         elif method == RACKETTFIT:
             Vm = Rackett(T, self.Tc, self.Pc, self.RACKETT_Z_RA)
-        elif method == PERRYDIPPR:
+        elif method == DIPPR_PERRY_8E:
             A, B, C, D = self.DIPPR_coeffs
             Vm = 1./EQ105(T, A, B, C, D)
         elif method == CRC_INORG_L:
@@ -745,7 +740,7 @@ class VolumeLiquid(TPDependentProperty):
             Whether or not a method is valid
         '''
         validity = True
-        if method == PERRYDIPPR:
+        if method == DIPPR_PERRY_8E:
             if T < self.DIPPR_Tmin or T > self.DIPPR_Tmax:
                 validity = False
         elif method == VDI_PPDS:

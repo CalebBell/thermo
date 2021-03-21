@@ -192,7 +192,7 @@ def test_VolumeLiquidPolynomialTmin():
 def test_VolumeLiquidConstantExtrapolation():
     obj = VolumeLiquid(CASRN="108-38-3", MW=106.165, Tb=412.25, Tc=617.0, Pc=3541000.0,
                        Vc=0.000375, Zc=0.25884384676233363, omega=0.331, dipole=0.299792543559857,
-                       Psat=None, extrapolation="constant", method="PERRYDIPPR")
+                       Psat=None, extrapolation="constant", method="DIPPR_PERRY_8E")
 
     assert_close(obj.T_dependent_property(obj.DIPPR_Tmax), 0.0003785956866273838, rtol=1e-9)
     assert_close(obj.T_dependent_property(obj.DIPPR_Tmin), 0.00011563344813684695, rtol=1e-9)
