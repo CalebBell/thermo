@@ -1914,7 +1914,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('palladium').HeatCapacitySolid.T_dependent_property(320)
         25.098979200000002
         >>> Chemical('palladium').HeatCapacitySolid.all_methods
-        set(["Perry's Table 2-151", 'CRC Standard Thermodynamic Properties of Chemical Substances', 'Lastovka, Fulem, Becerra and Shaw (2008)'])
+        set(["Perry's Table 2-151", 'CRCSTD', 'Lastovka, Fulem, Becerra and Shaw (2008)'])
         '''
         return self.HeatCapacitySolid(self.T)
 

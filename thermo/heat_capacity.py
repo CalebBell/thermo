@@ -137,12 +137,12 @@ from thermo.coolprop import *
 from cmath import log as clog, exp as cexp
 from thermo.utils import VDI_TABULAR, COOLPROP, POLY_FIT
 
-TRCIG = 'TRC Thermodynamics of Organic Compounds in the Gas State (1994)'
-POLING = 'Poling et al. (2001)'
-POLING_CONST = 'Poling et al. (2001) constant'
-CRCSTD = 'CRC Standard Thermodynamic Properties of Chemical Substances'
-LASTOVKA_SHAW = 'Lastovka and Shaw (2013)'
-heat_capacity_gas_methods = [COOLPROP, TRCIG, POLING, LASTOVKA_SHAW, CRCSTD,
+TRCIG = 'TRCIG'
+POLING_POLY = 'POLING_POLY'
+POLING_CONST = 'POLING_CONST'
+CRCSTD = 'CRCSTD'
+LASTOVKA_SHAW = 'LASTOVKA_SHAW'
+heat_capacity_gas_methods = [COOLPROP, TRCIG, POLING_POLY, LASTOVKA_SHAW, CRCSTD,
                              POLING_CONST, VDI_TABULAR]
 '''Holds all methods available for the :obj:`HeatCapacityGas` class, for use in
 iterating over them.'''
@@ -190,7 +190,7 @@ class HeatCapacityGas(TDependentProperty):
     **TRCIG**:
         A rigorous expression derived in [1]_ for modeling gas heat capacity.
         Coefficients for 1961 chemicals are available.
-    **POLING**:
+    **POLING_POLY**:
         Simple polynomials in [2]_ not suitable for extrapolation. Data is
         available for 308 chemicals.
     **COOLPROP**:
@@ -260,7 +260,7 @@ class HeatCapacityGas(TDependentProperty):
     '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
     the critical point, this value can be obscenely high.'''
 
-    ranked_methods = [TRCIG, POLING, COOLPROP, LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
+    ranked_methods = [TRCIG, POLING_POLY, COOLPROP, LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
     '''Default rankings of the available methods.'''
 
 
@@ -340,7 +340,7 @@ class HeatCapacityGas(TDependentProperty):
                 T_limits[TRCIG] = (self.TRCIG_Tmin, self.TRCIG_Tmax)
             if self.CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[self.CASRN, 'a0']):
                 POLING_Tmin, POLING_Tmax, a0, a1, a2, a3, a4, Cpg, Cpl = heat_capacity.Cp_values_Poling[heat_capacity.Cp_data_Poling.index.get_loc(self.CASRN)].tolist()
-                methods.append(POLING)
+                methods.append(POLING_POLY)
                 if isnan(POLING_Tmin):
                     POLING_Tmin = 50.0
                 if isnan(POLING_Tmax):
@@ -350,7 +350,7 @@ class HeatCapacityGas(TDependentProperty):
                 self.POLING_Tmax = POLING_Tmax
                 Tmaxs.append(POLING_Tmax)
                 self.POLING_coefs = [a0, a1, a2, a3, a4]
-                T_limits[POLING] = (POLING_Tmin, POLING_Tmax)
+                T_limits[POLING_POLY] = (POLING_Tmin, POLING_Tmax)
             if self.CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[self.CASRN, 'Cpg']):
                 methods.append(POLING_CONST)
                 self.POLING_T = 298.15
@@ -393,7 +393,7 @@ class HeatCapacityGas(TDependentProperty):
         ensures the data files are not loaded until they are needed.
         '''
         return {TRCIG: heat_capacity.TRC_gas_data.index,
-                POLING: [i for i in heat_capacity.Cp_data_Poling.index if not isnan(heat_capacity.Cp_data_Poling.at[i, 'a0'])],
+                POLING_POLY: [i for i in heat_capacity.Cp_data_Poling.index if not isnan(heat_capacity.Cp_data_Poling.at[i, 'a0'])],
                 POLING_CONST: [i for i in heat_capacity.Cp_data_Poling.index if not isnan(heat_capacity.Cp_data_Poling.at[i, 'Cpg'])],
                 CRCSTD: [i for i in heat_capacity.CRC_standard_data.index if not isnan(heat_capacity.CRC_standard_data.at[i, 'Cpg'])],
                 COOLPROP: coolprop_dict,
@@ -435,7 +435,7 @@ class HeatCapacityGas(TDependentProperty):
             except:
                 # And some cases don't converge at high P
                 Cp = PropsSI('Cp0molar', 'T', T,'P', 101325.0, self.CASRN)
-        elif method == POLING:
+        elif method == POLING_POLY:
             Cp = R*(self.POLING_coefs[0] + self.POLING_coefs[1]*T
             + self.POLING_coefs[2]*T**2 + self.POLING_coefs[3]*T**3
             + self.POLING_coefs[4]*T**4)
@@ -479,7 +479,7 @@ class HeatCapacityGas(TDependentProperty):
         if method == TRCIG:
             if T < self.TRCIG_Tmin or T > self.TRCIG_Tmax:
                 return False
-        elif method == POLING:
+        elif method == POLING_POLY:
             if T < self.POLING_Tmin or T > self.POLING_Tmax:
                 return False
         elif method == POLING_CONST:
@@ -535,7 +535,7 @@ class HeatCapacityGas(TDependentProperty):
             H2 = TRCCp_integral(T2, *self.TRCIG_coefs)
             H1 = TRCCp_integral(T1, *self.TRCIG_coefs)
             return H2 - H1
-        elif method == POLING:
+        elif method == POLING_POLY:
             A, B, C, D, E = self.POLING_coefs
             H2 = (((((0.2*E)*T2 + 0.25*D)*T2 + C/3.)*T2 + 0.5*B)*T2 + A)*T2
             H1 = (((((0.2*E)*T1 + 0.25*D)*T1 + C/3.)*T1 + 0.5*B)*T1 + A)*T1
@@ -589,7 +589,7 @@ class HeatCapacityGas(TDependentProperty):
             return self.CRCSTD_constant*log(T2/T1)
         elif method == POLING_CONST:
             return self.POLING_constant*log(T2/T1)
-        elif method == POLING:
+        elif method == POLING_POLY:
             A, B, C, D, E = self.POLING_coefs
             S2 = ((((0.25*E)*T2 + D/3.)*T2 + 0.5*C)*T2 + B)*T2
             S1 = ((((0.25*E)*T1 + D/3.)*T1 + 0.5*C)*T1 + B)*T1

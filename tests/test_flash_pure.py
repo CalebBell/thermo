@@ -1873,10 +1873,10 @@ def test_VF_S_cases():
 
 
 def test_methanol_inconsistent_full_example():
-    from thermo.heat_capacity import POLING
+    from thermo.heat_capacity import POLING_POLY
 
     CpObj = HeatCapacityGas(CASRN='67-56-1')
-    CpObj.method = POLING
+    CpObj.method = POLING_POLY
     constants = ChemicalConstantsPackage(Tcs=[512.5], Pcs=[8084000.0], omegas=[0.559], MWs=[32.04186], CASs=['67-56-1'])
     HeatCapacityGases = [CpObj]
 

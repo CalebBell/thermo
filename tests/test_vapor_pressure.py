@@ -67,6 +67,7 @@ def test_VaporPressure():
 
     for k, v in Psats_expected.items():
         assert_close(v, Psat_calcs[k], rtol=1e-11)
+    assert len(Psats_expected) == len(Psats_expected)
 
     assert_close(EtOH.calculate(305, VDI_TABULAR), 11690.81660829924, rtol=1E-4)
 

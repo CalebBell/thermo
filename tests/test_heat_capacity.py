@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 from chemicals.utils import ws_to_zs
 from thermo.heat_capacity import *
-from thermo.heat_capacity import TRCIG, POLING, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR
+from thermo.heat_capacity import TRCIG, POLING_POLY, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR, LASTOVKA_SHAW
 from random import uniform
 from math import *
 from fluids.numerics import linspace, logspace, NotBoundedError, assert_close, assert_close1d
@@ -45,15 +45,27 @@ def test_HeatCapacityGas():
 
     methods = list(EtOH.all_methods)
     methods.remove(VDI_TABULAR)
-    Cps_calc = []
+    if COOLPROP in methods:
+        methods.remove(COOLPROP)
+
+
+    Cps_expected = {TRCIG: 66.35087249951643,
+                     POLING_POLY: 66.40066070415111,
+                     POLING_CONST: 65.21,
+                     CRCSTD: 65.6,
+                     LASTOVKA_SHAW: 71.07236200126606}
+
+    T = 305.0
+    Cps_calc = {}
     for i in methods:
         EtOH.method = i
-        Cps_calc.append(EtOH.T_dependent_property(305))
+        Cps_calc[i] = EtOH.T_dependent_property(305)
+        Tmin, Tmax = EtOH.T_limits[i]
+        assert Tmin < T < Tmax
 
-
-    assert_close1d(sorted(Cps_calc),
-                    sorted([66.35085001015844, 66.40063819791762, 66.25918325111196, 71.07236200126606, 65.6, 65.21]),
-                    rtol=1e-5)
+    for k, v in Cps_calc.items():
+        assert_close(v, Cps_calc[k], rtol=1e-11)
+    assert len(Cps_expected) == len(Cps_calc)
 
     # VDI interpolation, treat separately due to change in behavior of scipy in 0.19
     assert_close(EtOH.calculate(305, VDI_TABULAR), 74.6763493522965, rtol=1E-4)
@@ -61,7 +73,7 @@ def test_HeatCapacityGas():
 
 
     EtOH.extrapolation = None
-    for i in [TRCIG, POLING, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR]:
+    for i in [TRCIG, POLING_POLY, CRCSTD, POLING_CONST, VDI_TABULAR]:
         EtOH.method = i
         assert EtOH.T_dependent_property(5000) is None
 
@@ -91,6 +103,21 @@ def test_HeatCapacityGas():
 
     new = HeatCapacityGas.from_json(obj.as_json())
     assert new == obj
+
+@pytest.mark.CoolProp
+@pytest.mark.meta_T_dept
+def test_HeatCapacityGas_CoolProp():
+    EtOH = HeatCapacityGas(CASRN='64-17-5', similarity_variable=0.1953615, MW=46.06844, extrapolation=None, method=COOLPROP)
+    assert EtOH.T_dependent_property(5000.0) is None
+    assert EtOH.T_dependent_property(1.0) is None
+    assert_close(EtOH.T_dependent_property(305.0), 66.25918325111196, rtol=1e-7)
+
+    dH5 = EtOH.calculate_integral(200, 300,'COOLPROP')
+    assert_close(dH5, 5838.118293585357, rtol=5e-5)
+
+    dS =  EtOH.calculate_integral_over_T(200, 300, 'COOLPROP')
+    assert_close(dS, 23.487556909586853, rtol=1e-5)
+
 
     # flash not converge due to melting P
     obj = HeatCapacityGas(CASRN='106-97-8')
@@ -127,44 +154,39 @@ def test_HeatCapacityGas_linear_extrapolation():
 def test_HeatCapacityGas_integrals():
     # Enthalpy integrals
     EtOH = HeatCapacityGas(CASRN='64-17-5', similarity_variable=0.1953615, MW=46.06844)
-    dH1 = EtOH.calculate_integral(200, 300, 'TRC Thermodynamics of Organic Compounds in the Gas State (1994)')
+    dH1 = EtOH.calculate_integral(200, 300, 'TRCIG')
     assert_close(dH1, 5828.905647337944)
 
-    dH2 = EtOH.calculate_integral(200, 300, 'Poling et al. (2001)')
+    dH2 = EtOH.calculate_integral(200, 300, 'POLING_POLY')
     assert_close(dH2, 5851.1980281476)
 
-    dH3 = EtOH.calculate_integral(200, 300, 'Poling et al. (2001) constant')
+    dH3 = EtOH.calculate_integral(200, 300, 'POLING_CONST')
     assert_close(dH3, 6520.999999999999)
 
-    dH4 = EtOH.calculate_integral(200, 300, 'CRC Standard Thermodynamic Properties of Chemical Substances')
+    dH4 = EtOH.calculate_integral(200, 300, 'CRCSTD')
     assert_close(dH4, 6559.999999999999)
 
-    dH4 = EtOH.calculate_integral(200, 300,'Lastovka and Shaw (2013)')
+    dH4 = EtOH.calculate_integral(200, 300,'LASTOVKA_SHAW')
     assert_close(dH4, 6183.016942750752, rtol=1e-5)
 
-    dH5 = EtOH.calculate_integral(200, 300,'COOLPROP')
-    assert_close(dH5, 5838.118293585357, rtol=5e-5)
 
     dH = EtOH.calculate_integral(200, 300, 'VDI_TABULAR')
     assert_close(dH, 6610.821140000002)
 
     # Entropy integrals
-    dS = EtOH.calculate_integral_over_T(200, 300, 'Poling et al. (2001)')
+    dS = EtOH.calculate_integral_over_T(200, 300, 'POLING_POLY')
     assert_close(dS, 23.5341074921551)
 
-    dS = EtOH.calculate_integral_over_T(200, 300, 'Poling et al. (2001) constant')
+    dS = EtOH.calculate_integral_over_T(200, 300, 'POLING_CONST')
     assert_close(dS, 26.4403796997334)
 
-    dS = EtOH.calculate_integral_over_T(200, 300, 'TRC Thermodynamics of Organic Compounds in the Gas State (1994)')
+    dS = EtOH.calculate_integral_over_T(200, 300, 'TRCIG')
     assert_close(dS, 23.4427894111345)
 
-    dS = EtOH.calculate_integral_over_T(200, 300, 'CRC Standard Thermodynamic Properties of Chemical Substances')
+    dS = EtOH.calculate_integral_over_T(200, 300, 'CRCSTD')
     assert_close(dS, 26.59851109189558)
 
-    dS =  EtOH.calculate_integral_over_T(200, 300, 'COOLPROP')
-    assert_close(dS, 23.487556909586853, rtol=1e-5)
-
-    dS = EtOH.calculate_integral_over_T(200, 300, 'Lastovka and Shaw (2013)')
+    dS = EtOH.calculate_integral_over_T(200, 300, 'LASTOVKA_SHAW')
     assert_close(dS, 24.86700348570956, rtol=1e-5)
 
     dS = EtOH.calculate_integral_over_T(200, 300, VDI_TABULAR)
