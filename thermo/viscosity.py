@@ -1380,7 +1380,7 @@ class ViscosityLiquidMixture(MixtureProperty):
                     mu = obj.T_dependent_property(T)
                 mus.append(mu)
         else:
-            if self.locked:
+            if self.all_poly_fit:
                 poly_fit_data = self.poly_fit_data
                 Tmins, Tmaxs, coeffs = poly_fit_data[0], poly_fit_data[3], poly_fit_data[6]
                 mus = []
@@ -1612,7 +1612,7 @@ class ViscosityGasMixture(MixtureProperty):
                     mu = obj.T_dependent_property(T)
                 mus.append(mu)
         else:
-            if self.locked:
+            if self.all_poly_fit:
                 poly_fit_data = self.poly_fit_data
                 Tmins, Tmaxs, coeffs = poly_fit_data[0], poly_fit_data[3], poly_fit_data[6]
                 mus = []

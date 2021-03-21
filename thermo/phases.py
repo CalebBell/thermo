@@ -282,8 +282,8 @@ class Phase(object):
 
     _Psats_data = None
     _Cpgs_data = None
-    Psats_locked = False
-    Cpgs_locked = False
+    Psats_poly_fit = False
+    Cpgs_poly_fit = False
     composition_independent = False
     __full_path__ = "%s.%s" %(__module__, __qualname__)
     scalar  = True
@@ -3176,8 +3176,8 @@ class Phase(object):
 
     def _setup_Cpigs(self, HeatCapacityGases):
         Cpgs_data = None
-        Cpgs_locked = all(i.method == POLY_FIT for i in HeatCapacityGases) if HeatCapacityGases is not None else False
-        if Cpgs_locked:
+        Cpgs_poly_fit = all(i.method == POLY_FIT for i in HeatCapacityGases) if HeatCapacityGases is not None else False
+        if Cpgs_poly_fit:
             T_REF_IG = self.T_REF_IG
             Cpgs_data = [[i.poly_fit_Tmin for i in HeatCapacityGases],
                               [i.poly_fit_Tmin_slope for i in HeatCapacityGases],
@@ -3210,7 +3210,7 @@ class Phase(object):
                                                        i.poly_fit_Tmax_slope) for i in HeatCapacityGases],
 
                               ]
-        return (Cpgs_locked, Cpgs_data)
+        return (Cpgs_poly_fit, Cpgs_data)
 
 
     def _Cp_pure_fast(self, Cps_data):
@@ -3358,7 +3358,7 @@ class Phase(object):
             return self._Cpigs
         except AttributeError:
             pass
-        if self.Cpgs_locked:
+        if self.Cpgs_poly_fit:
             self._Cpigs = self._Cp_pure_fast(self._Cpgs_data)
             return self._Cpigs
 
@@ -3387,7 +3387,7 @@ class Phase(object):
             return self._Cpig_integrals_pure
         except AttributeError:
             pass
-        if self.Cpgs_locked:
+        if self.Cpgs_poly_fit:
             self._Cpig_integrals_pure = self._Cp_integrals_pure_fast(self._Cpgs_data)
             return self._Cpig_integrals_pure
 
@@ -3419,7 +3419,7 @@ class Phase(object):
         except AttributeError:
             pass
 
-        if self.Cpgs_locked:
+        if self.Cpgs_poly_fit:
             self._Cpig_integrals_over_T_pure = self._Cp_integrals_over_T_pure_fast(self._Cpgs_data)
             return self._Cpig_integrals_over_T_pure
 
@@ -3449,7 +3449,7 @@ class Phase(object):
             return self._dCpigs_dT
         except AttributeError:
             pass
-        if self.Cpgs_locked:
+        if self.Cpgs_poly_fit:
             self._dCpigs_dT = self._dCp_dT_pure_fast(self._Cpgs_data)
             return self._dCpigs_dT
 
@@ -3463,7 +3463,7 @@ class Phase(object):
             return self._Cpls
         except AttributeError:
             pass
-        if self.Cpls_locked:
+        if self.Cpls_poly_fit:
             self._Cpls = self._Cp_pure_fast(self._Cpls_data)
             return self._Cpls
 
@@ -3484,7 +3484,7 @@ class Phase(object):
 ##        print(vals, self._Cp_integrals_pure_fast(self._Cpls_data))
 #        return vals
 
-        if self.Cpls_locked:
+        if self.Cpls_poly_fit:
             self._Cpl_integrals_pure = self._Cp_integrals_pure_fast(self._Cpls_data)
             return self._Cpl_integrals_pure
 
@@ -3506,7 +3506,7 @@ class Phase(object):
 ##        print(vals, self._Cp_integrals_over_T_pure_fast(self._Cpls_data))
 #        return vals
 
-        if self.Cpls_locked:
+        if self.Cpls_poly_fit:
             self._Cpl_integrals_over_T_pure = self._Cp_integrals_over_T_pure_fast(self._Cpls_data)
             return self._Cpl_integrals_over_T_pure
 
@@ -5573,7 +5573,7 @@ class CEOSGas(Phase):
         self.Hfs = Hfs
         self.Gfs = Gfs
         self.Sfs = Sfs
-        self.Cpgs_locked, self._Cpgs_data = self._setup_Cpigs(HeatCapacityGases)
+        self.Cpgs_poly_fit, self._Cpgs_data = self._setup_Cpigs(HeatCapacityGases)
         self.composition_independent = ideal_gas = eos_class is IGMIX
         if ideal_gas:
             self.force_phase = 'g'
@@ -5657,7 +5657,7 @@ class CEOSGas(Phase):
 
         new.HeatCapacityGases = self.HeatCapacityGases
         new._Cpgs_data = self._Cpgs_data
-        new.Cpgs_locked = self.Cpgs_locked
+        new.Cpgs_poly_fit = self.Cpgs_poly_fit
         new.composition_independent = self.composition_independent
         if new.composition_independent:
             new.force_phase = 'g'
@@ -5706,7 +5706,7 @@ class CEOSGas(Phase):
 
         new.HeatCapacityGases = self.HeatCapacityGases
         new._Cpgs_data = self._Cpgs_data
-        new.Cpgs_locked = self.Cpgs_locked
+        new.Cpgs_poly_fit = self.Cpgs_poly_fit
 
         new.composition_independent = self.composition_independent
         if new.composition_independent:
@@ -6583,10 +6583,10 @@ class GibbsExcessLiquid(Phase):
     P_DEPENDENT_H_LIQ = True
     PHI_SAT_IDEAL_TR = 0.1
     _Psats_data = None
-    Psats_locked = False
-    Vms_sat_locked = False
+    Psats_poly_fit = False
+    Vms_sat_poly_fit = False
     _Vms_sat_data = None
-    Hvap_locked = False
+    Hvap_poly_fit = False
     _Hvap_data = None
 
     use_IG_Cp = True # Deprecated! Remove with S_old and H_old
@@ -6594,7 +6594,7 @@ class GibbsExcessLiquid(Phase):
     ideal_gas_basis = True
     supercritical_volumes = False
 
-    Cpls_locked = False
+    Cpls_poly_fit = False
     _Cpls_data = None
 
     _Tait_B_data = None
@@ -6670,9 +6670,9 @@ class GibbsExcessLiquid(Phase):
 
 
         self.VaporPressures = VaporPressures
-        self.Psats_locked = all(i.method == POLY_FIT for i in VaporPressures) if VaporPressures is not None else False
+        self.Psats_poly_fit = all(i.method == POLY_FIT for i in VaporPressures) if VaporPressures is not None else False
         self.Psat_extrpolation = Psat_extrpolation
-        if self.Psats_locked:
+        if self.Psats_poly_fit:
             Psats_data = [[i.poly_fit_Tmin for i in VaporPressures],
                                [i.poly_fit_Tmin_slope for i in VaporPressures],
                                [i.poly_fit_Tmin_value for i in VaporPressures],
@@ -6693,11 +6693,11 @@ class GibbsExcessLiquid(Phase):
         self.N = len(VaporPressures)
 
         self.HeatCapacityGases = HeatCapacityGases
-        self.Cpgs_locked, self._Cpgs_data = self._setup_Cpigs(HeatCapacityGases)
+        self.Cpgs_poly_fit, self._Cpgs_data = self._setup_Cpigs(HeatCapacityGases)
 
         self.HeatCapacityLiquids = HeatCapacityLiquids
         if HeatCapacityLiquids is not None:
-            self.Cpls_locked, self._Cpls_data = self._setup_Cpigs(HeatCapacityLiquids)
+            self.Cpls_poly_fit, self._Cpls_data = self._setup_Cpigs(HeatCapacityLiquids)
             T_REF_IG = self.T_REF_IG
             T_REF_IG_INV = 1.0/T_REF_IG
             self.Hvaps_T_ref = [obj(T_REF_IG) for obj in EnthalpyVaporizations]
@@ -6705,8 +6705,8 @@ class GibbsExcessLiquid(Phase):
 
         self.use_eos_volume = use_eos_volume
         self.VolumeLiquids = VolumeLiquids
-        self.Vms_sat_locked = ((not use_eos_volume and all(i.method == POLY_FIT for i in VolumeLiquids)) if VolumeLiquids is not None else False)
-        if self.Vms_sat_locked:
+        self.Vms_sat_poly_fit = ((not use_eos_volume and all(i.method == POLY_FIT for i in VolumeLiquids)) if VolumeLiquids is not None else False)
+        if self.Vms_sat_poly_fit:
             self._Vms_sat_data = [[i.poly_fit_Tmin for i in VolumeLiquids],
                                  [i.poly_fit_Tmin_slope for i in VolumeLiquids],
                                  [i.poly_fit_Tmin_value for i in VolumeLiquids],
@@ -6723,8 +6723,8 @@ class GibbsExcessLiquid(Phase):
 #                low_fits[i][0] = max(0, low_fits[i][0])
 
         self.VolumeSupercriticalLiquids = VolumeSupercriticalLiquids
-        self.Vms_supercritical_locked = all(i.method == POLY_FIT for i in VolumeSupercriticalLiquids) if VolumeSupercriticalLiquids is not None else False
-        if self.Vms_supercritical_locked:
+        self.Vms_supercritical_poly_fit = all(i.method == POLY_FIT for i in VolumeSupercriticalLiquids) if VolumeSupercriticalLiquids is not None else False
+        if self.Vms_supercritical_poly_fit:
             self.Vms_supercritical_data = [[i.poly_fit_Tmin for i in VolumeSupercriticalLiquids],
                                  [i.poly_fit_Tmin_slope for i in VolumeSupercriticalLiquids],
                                  [i.poly_fit_Tmin_value for i in VolumeSupercriticalLiquids],
@@ -6751,8 +6751,8 @@ class GibbsExcessLiquid(Phase):
 
 
         self.EnthalpyVaporizations = EnthalpyVaporizations
-        self.Hvap_locked = all(i.method == POLY_FIT for i in EnthalpyVaporizations) if EnthalpyVaporizations is not None else False
-        if self.Hvap_locked:
+        self.Hvap_poly_fit = all(i.method == POLY_FIT for i in EnthalpyVaporizations) if EnthalpyVaporizations is not None else False
+        if self.Hvap_poly_fit:
             self._Hvap_data = [[i.poly_fit_Tmin for i in EnthalpyVaporizations],
                               [i.poly_fit_Tmax for i in EnthalpyVaporizations],
                               [i.poly_fit_Tc for i in EnthalpyVaporizations],
@@ -6883,21 +6883,21 @@ class GibbsExcessLiquid(Phase):
         new.HeatCapacityLiquids = self.HeatCapacityLiquids
 
 
-        new.Psats_locked = self.Psats_locked
+        new.Psats_poly_fit = self.Psats_poly_fit
         new._Psats_data = self._Psats_data
         new.Psat_extrpolation = self.Psat_extrpolation
 
-        new.Cpgs_locked = self.Cpgs_locked
+        new.Cpgs_poly_fit = self.Cpgs_poly_fit
         new._Cpgs_data = self._Cpgs_data
 
-        new.Cpls_locked = self.Cpls_locked
+        new.Cpls_poly_fit = self.Cpls_poly_fit
         new._Cpls_data = self._Cpls_data
 
-        new.Vms_sat_locked = self.Vms_sat_locked
+        new.Vms_sat_poly_fit = self.Vms_sat_poly_fit
         new._Vms_sat_data = self._Vms_sat_data
 
         new._Hvap_data = self._Hvap_data
-        new.Hvap_locked = self.Hvap_locked
+        new.Hvap_poly_fit = self.Hvap_poly_fit
 
         new.incompressible = self.incompressible
 
@@ -6986,13 +6986,13 @@ class GibbsExcessLiquid(Phase):
         return self._Psats_T_ref
 
     def Psats_at(self, T):
-        if self.Psats_locked:
-            return self._Psats_at_locked(T, self._Psats_data, range(self.N))
+        if self.Psats_poly_fit:
+            return self._Psats_at_poly_fit(T, self._Psats_data, range(self.N))
         VaporPressures = self.VaporPressures
         return [VaporPressures[i](T) for i in range(self.N)]
 
     @staticmethod
-    def _Psats_at_locked(T, Psats_data, cmps):
+    def _Psats_at_poly_fit(T, Psats_data, cmps):
         Psats = []
         T_inv = 1.0/T
         logT = log(T)
@@ -7027,8 +7027,8 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         T, cmps = self.T, range(self.N)
-        if self.Psats_locked:
-            self._Psats = Psats = self._Psats_at_locked(T, self._Psats_data, cmps)
+        if self.Psats_poly_fit:
+            self._Psats = Psats = self._Psats_at_poly_fit(T, self._Psats_data, cmps)
 #            _Psats_data = self._Psats_data
 #            Tmins, Tmaxes, coeffs = _Psats_data[0], _Psats_data[3], _Psats_data[6]
 #            for i in cmps:
@@ -7092,7 +7092,7 @@ class GibbsExcessLiquid(Phase):
 #        return 2.0
 
     @staticmethod
-    def _dPsats_dT_at_locked(T, Psats_data, cmps, Psats):
+    def _dPsats_dT_at_poly_fit(T, Psats_data, cmps, Psats):
         T_inv = 1.0/T
         Tinv2 = T_inv*T_inv
         dPsats_dT = []
@@ -7122,8 +7122,8 @@ class GibbsExcessLiquid(Phase):
     def dPsats_dT_at(self, T, Psats=None):
         if Psats is None:
             Psats = self.Psats_at(T)
-        if self.Psats_locked:
-            return self._dPsats_dT_at_locked(T, self._Psats_data, range(self.N), Psats)
+        if self.Psats_poly_fit:
+            return self._dPsats_dT_at_poly_fit(T, self._Psats_data, range(self.N), Psats)
         return [VaporPressure.T_dependent_property_derivative(T=T)
                      for VaporPressure in self.VaporPressures]
 
@@ -7136,12 +7136,12 @@ class GibbsExcessLiquid(Phase):
         # Need to reset the method because for the T bounded solver,
         # will normally get a different than prefered method as it starts
         # at the boundaries
-        if self.Psats_locked:
+        if self.Psats_poly_fit:
             try:
                 Psats = self._Psats
             except AttributeError:
                 Psats = self.Psats()
-            self._dPsats_dT = dPsats_dT = self._dPsats_dT_at_locked(T, self._Psats_data, cmps, Psats)
+            self._dPsats_dT = dPsats_dT = self._dPsats_dT_at_poly_fit(T, self._Psats_data, cmps, Psats)
             return dPsats_dT
 
         self._dPsats_dT = dPsats_dT = [VaporPressure.T_dependent_property_derivative(T=T)
@@ -7167,7 +7167,7 @@ class GibbsExcessLiquid(Phase):
         Tinv3 = T_inv*T_inv*T_inv
 
         self._d2Psats_dT2 = d2Psats_dT2 = []
-        if self.Psats_locked:
+        if self.Psats_poly_fit:
             Psats_data = self._Psats_data
             Tmins, Tmaxes, d2coeffs = Psats_data[0], Psats_data[3], Psats_data[8]
             for i in cmps:
@@ -7204,7 +7204,7 @@ class GibbsExcessLiquid(Phase):
         T_inv = 1.0/T
         logT = log(T)
         lnPsats = []
-        if self.Psats_locked:
+        if self.Psats_poly_fit:
             Psats_data = self._Psats_data
             Tmins, Tmaxes, coeffs = Psats_data[0], Psats_data[3], Psats_data[6]
             for i in cmps:
@@ -7229,7 +7229,7 @@ class GibbsExcessLiquid(Phase):
         T, cmps = self.T, range(self.N)
         T_inv = 1.0/T
         Tinv2 = T_inv*T_inv
-        if self.Psats_locked:
+        if self.Psats_poly_fit:
             Psats_data = self._Psats_data
             Tmins, Tmaxes, dcoeffs = Psats_data[0], Psats_data[3], Psats_data[7]
             dlnPsats_dT = []
@@ -7253,7 +7253,7 @@ class GibbsExcessLiquid(Phase):
         T_inv = 1.0/T
         T_inv2 = T_inv*T_inv
         Tinv3 = T_inv*T_inv*T_inv
-        if self.Psats_locked:
+        if self.Psats_poly_fit:
             Psats_data = self._Psats_data
             Tmins, Tmaxes, d2coeffs = Psats_data[0], Psats_data[3], Psats_data[8]
             d2lnPsats_dT2 = []
@@ -7280,7 +7280,7 @@ class GibbsExcessLiquid(Phase):
         T, cmps = self.T, range(self.N)
         T_inv = 1.0/T
         Tinv2 = T_inv*T_inv
-        if self.Psats_locked:
+        if self.Psats_poly_fit:
             dPsat_dT_over_Psats = []
             Psats_data = self._Psats_data
             Tmins, Tmaxes, dcoeffs, low_coeffs, high_coeffs = Psats_data[0], Psats_data[3], Psats_data[7], Psats_data[9], Psats_data[10]
@@ -7312,7 +7312,7 @@ class GibbsExcessLiquid(Phase):
         Tinv2 = T_inv*T_inv
         Tinv4 = Tinv2*Tinv2
         c0 = (T + T)*Tinv4
-        if self.Psats_locked:
+        if self.Psats_poly_fit:
             d2Psat_dT2_over_Psats = []
             Psats_data = self._Psats_data
             Tmins, Tmaxes, dcoeffs, low_coeffs, high_coeffs = Psats_data[0], Psats_data[3], Psats_data[7], Psats_data[9], Psats_data[10]
@@ -7362,7 +7362,7 @@ class GibbsExcessLiquid(Phase):
         return Vms_sat
 
     def Vms_sat_at(self, T):
-        if self.Vms_sat_locked:
+        if self.Vms_sat_poly_fit:
             return self._Vms_sat_at(T, self._Vms_sat_data, range(self.N))
         VolumeLiquids = self.VolumeLiquids
         return [VolumeLiquids[i].T_dependent_property(T) for i in range(self.N)]
@@ -7373,7 +7373,7 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         T = self.T
-        if self.Vms_sat_locked:
+        if self.Vms_sat_poly_fit:
 #            self._Vms_sat = evaluate_linear_fits(self._Vms_sat_data, T)
 #            return self._Vms_sat
             self._Vms_sat = Vms_sat = self._Vms_sat_at(T, self._Vms_sat_data, range(self.N))
@@ -7419,7 +7419,7 @@ class GibbsExcessLiquid(Phase):
         return Vms_sat_dT
 
     def dVms_sat_dT_at(self, T):
-        if self.Vms_sat_locked:
+        if self.Vms_sat_poly_fit:
             return self._dVms_sat_dT_at(T, self._Vms_sat_data, range(self.N))
         return [obj.T_dependent_property_derivative(T=T) for obj in VolumeLiquids]
 
@@ -7430,7 +7430,7 @@ class GibbsExcessLiquid(Phase):
             pass
         T = self.T
 
-        if self.Vms_sat_locked:
+        if self.Vms_sat_poly_fit:
 #            self._Vms_sat_dT = evaluate_linear_fits_d(self._Vms_sat_data, T)
             self._Vms_sat_dT = self._dVms_sat_dT_at(T, self._Vms_sat_data, range(self.N))
             return self._Vms_sat_dT
@@ -7447,7 +7447,7 @@ class GibbsExcessLiquid(Phase):
 
         T = self.T
 
-        if self.Vms_sat_locked:
+        if self.Vms_sat_poly_fit:
 #            self._d2Vms_sat_dT2 = evaluate_linear_fits_d2(self._Vms_sat_data, T)
 #            return self._d2Vms_sat_dT2
             d2Vms_sat_dT2 = self._d2Vms_sat_dT2 = []
@@ -7474,7 +7474,7 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         T_REF_IG = self.T_REF_IG
-        if self.Vms_sat_locked:
+        if self.Vms_sat_poly_fit:
             self._Vms_sat_T_ref = evaluate_linear_fits(self._Vms_sat_data, T_REF_IG)
         else:
             VolumeLiquids, cmps = self.VolumeLiquids, range(self.N)
@@ -7487,7 +7487,7 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         T_REF_IG = self.T_REF_IG
-        if self.Vms_sat_locked:
+        if self.Vms_sat_poly_fit:
             self._dVms_sat_dT_T_ref = evaluate_linear_fits_d(self._Vms_sat_data, T)
         else:
             VolumeLiquids, cmps = self.VolumeLiquids, range(self.N)
@@ -7521,7 +7521,7 @@ class GibbsExcessLiquid(Phase):
         T, EnthalpyVaporizations, cmps = self.T, self.EnthalpyVaporizations, range(self.N)
 
         self._Hvaps = Hvaps = []
-        if self.Hvap_locked:
+        if self.Hvap_poly_fit:
             Hvap_data = self._Hvap_data
             Tmins, Tmaxes, Tcs, Tcs_inv, coeffs = Hvap_data[0], Hvap_data[1], Hvap_data[2], Hvap_data[3], Hvap_data[4]
             for i in cmps:
@@ -7548,7 +7548,7 @@ class GibbsExcessLiquid(Phase):
         T, EnthalpyVaporizations, cmps = self.T, self.EnthalpyVaporizations, range(self.N)
 
         self._dHvaps_dT = dHvaps_dT = []
-        if self.Hvap_locked:
+        if self.Hvap_poly_fit:
             Hvap_data = self._Hvap_data
             Tmins, Tmaxes, Tcs, Tcs_inv, coeffs = Hvap_data[0], Hvap_data[1], Hvap_data[2], Hvap_data[3], Hvap_data[4]
             for i in cmps:

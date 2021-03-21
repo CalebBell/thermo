@@ -1168,7 +1168,7 @@ def test_EOSGas_phis():
     dCps_dT_calc = []
     for i, T in enumerate(Ts):
         gas2 = gas.to_TP_zs(T=T, P=P, zs=zs)
-        assert gas2.Cpgs_locked
+        assert gas2.Cpgs_poly_fit
         Cps_calc.append(gas2.Cpigs_pure())
         integrals_calc.append(gas2.Cpig_integrals_pure())
         integrals_over_T_calc.append(gas2.Cpig_integrals_over_T_pure())

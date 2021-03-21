@@ -782,7 +782,7 @@ class TDependentProperty(object):
     property_min = 0
     property_max = 1E4  # Arbitrary max
     T_cached = None
-    locked = False
+    all_poly_fit = False
 
     T_limits = {}
     '''Dictionary containing method: (Tmin, Tmax) pairs for all methods applicable
@@ -1228,7 +1228,7 @@ class TDependentProperty(object):
         if (poly_fit is not None and len(poly_fit) and (poly_fit[0] is not None
            and poly_fit[1] is not None and  poly_fit[2] is not None)
             and not isnan(poly_fit[0]) and not isnan(poly_fit[1])):
-            self.locked = True
+            self.all_poly_fit = True
             self.poly_fit_Tmin = Tmin = poly_fit[0]
             self.poly_fit_Tmax = Tmax = poly_fit[1]
             self.poly_fit_coeffs = poly_fit_coeffs = poly_fit[2]
@@ -1301,7 +1301,7 @@ class TDependentProperty(object):
             raise ValueError("Unknown method")
 
     def _calculate_extrapolate(self, T, method):
-        if self.locked:
+        if self.all_poly_fit:
             try:
                 return self.calculate(T, POLY_FIT)
             except Exception as e:
@@ -1376,7 +1376,7 @@ class TDependentProperty(object):
         prop : float
             Calculated property, [`units`]
         '''
-        if self.locked:
+        if self.all_poly_fit:
             try:
                 return self.calculate(T, POLY_FIT)
             except Exception as e:
@@ -3171,8 +3171,8 @@ class MixtureProperty(object):
 
     def set_poly_fit_coeffs(self):
         pure_objs = self.pure_objs()
-        if all(i.locked for i in pure_objs):
-            self.locked = True
+        if all(i.method == POLY_FIT for i in pure_objs):
+            self.all_poly_fit = True
             self.poly_fit_data = [[i.poly_fit_Tmin for i in pure_objs],
                                [i.poly_fit_Tmin_slope for i in pure_objs],
                                [i.poly_fit_Tmin_value for i in pure_objs],
