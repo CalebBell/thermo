@@ -1153,13 +1153,12 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
             raise Exception('Method not valid')
         return validity
 
-NONE = 'None'
-LALIBERTE = 'Laliberte'
-COSTALD_MIXTURE = 'COSTALD mixture'
-COSTALD_MIXTURE_FIT = 'COSTALD mixture parameters'
+LALIBERTE = 'LALIBERTE'
+COSTALD_MIXTURE = 'COSTALD_MIXTURE'
+COSTALD_MIXTURE_FIT = 'COSTALD_MIXTURE_FIT'
 SIMPLE = 'SIMPLE'
 RACKETT = 'RACKETT'
-RACKETT_PARAMETERS = 'RACKETT Parameters'
+RACKETT_PARAMETERS = 'RACKETT_PARAMETERS'
 volume_liquid_mixture_methods = [LALIBERTE, SIMPLE, COSTALD_MIXTURE_FIT, RACKETT_PARAMETERS, COSTALD, RACKETT]
 '''Holds all low-pressure methods available for the :obj:`VolumeLiquidMixture` class, for use
 in iterating over them.'''
@@ -1175,7 +1174,7 @@ class VolumeLiquidMixture(MixtureProperty):
     methods which do not use pure-component volumes, and one mole-weighted
     averaging method.
 
-    Prefered method is **SIMPLE**, or **Laliberte** if the mixture is aqueous
+    Prefered method is **SIMPLE**, or **LALIBERTE** if the mixture is aqueous
     and has electrolytes.
 
     Parameters
@@ -1205,17 +1204,17 @@ class VolumeLiquidMixture(MixtureProperty):
     To iterate over all methods, use the list stored in
     :obj:`volume_liquid_mixture_methods`.
 
-    **Laliberte**:
+    **LALIBERTE**:
         Aqueous electrolyte model equation with coefficients; see
         :obj:`thermo.electrochem.Laliberte_density` for more details.
-    **COSTALD mixture**:
+    **COSTALD_MIXTURE**:
         CSP method described in :obj:`COSTALD_mixture <chemicals.volume.COSTALD_mixture>`.
-    **COSTALD mixture parameters**:
+    **COSTALD_MIXTURE_FIT**:
         CSP method described in :obj:`COSTALD_mixture <chemicals.volume.COSTALD_mixture>`, with two mixture
         composition independent fit coefficients, `Vc` and `omega`.
     **RACKETT**:
         CSP method described in :obj:`Rackett_mixture <chemicals.volume.Rackett_mixture>`.
-    **RACKETT Parameters**:
+    **RACKETT_PARAMETERS**:
         CSP method described in :obj:`Rackett_mixture <chemicals.volume.Rackett_mixture>`, but with a mixture
         independent fit coefficient for compressibility factor for each species.
     **SIMPLE**:
@@ -1246,8 +1245,10 @@ class VolumeLiquidMixture(MixtureProperty):
     pure_references = ('VolumeLiquids',)
     pure_reference_types = (VolumeLiquid, )
 
+    custom_args = ('MWs', 'Tcs', 'Pcs', 'Vcs', 'Zcs', 'omegas')
+
     def __init__(self, MWs=[], Tcs=[], Pcs=[], Vcs=[], Zcs=[], omegas=[],
-                 CASs=[], VolumeLiquids=[], correct_pressure_pure=True):
+                 CASs=[], VolumeLiquids=[], **kwargs):
         self.MWs = MWs
         self.Tcs = Tcs
         self.Pcs = Pcs
@@ -1256,28 +1257,8 @@ class VolumeLiquidMixture(MixtureProperty):
         self.omegas = omegas
         self.CASs = CASs
         self.VolumeLiquids = VolumeLiquids
+        super(VolumeLiquidMixture, self).__init__(**kwargs)
 
-        self._correct_pressure_pure = correct_pressure_pure
-
-        self.Tmin = None
-        '''Minimum temperature at which no method can calculate the
-        liquid molar volume under.'''
-        self.Tmax = None
-        '''Maximum temperature at which no method can calculate the
-        liquid molar volume above.'''
-
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
-        self.all_methods = set()
-        '''Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`.'''
-        self.load_all_methods()
-
-        self.set_poly_fit_coeffs()
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -1442,7 +1423,6 @@ TSONOPOULOS = 'TSONOPOULOS'
 ABBOTT = 'ABBOTT'
 PITZER_CURL = 'PITZER_CURL'
 IDEAL = 'IDEAL'
-NONE = 'NONE'
 volume_gas_methods = [COOLPROP, EOS, CRC_VIRIAL, TSONOPOULOS_EXTENDED, TSONOPOULOS,
                       ABBOTT, PITZER_CURL, IDEAL]
 '''Holds all methods available for the :obj:`VolumeGas` class, for use in
@@ -1861,6 +1841,8 @@ class VolumeGasMixture(MixtureProperty):
     pure_references = ('VolumeGases',)
     pure_reference_types = (VolumeGas, )
 
+    custom_args = ('MWs', 'eos')
+
     def __init__(self, eos=None, CASs=[], VolumeGases=[], MWs=[]):
         self.CASs = CASs
         self.VolumeGases = VolumeGases
@@ -2216,6 +2198,8 @@ class VolumeSolidMixture(MixtureProperty):
 
     pure_references = ('VolumeSolids',)
     pure_reference_types = (VolumeSolid, )
+
+    custom_args = ('MWs', )
 
     def __init__(self, CASs=[], VolumeSolids=[], MWs=[]):
         self.CASs = CASs

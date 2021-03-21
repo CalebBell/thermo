@@ -1265,6 +1265,8 @@ class ViscosityLiquidMixture(MixtureProperty):
     pure_references = ('ViscosityLiquids',)
     pure_reference_types = (ViscosityLiquid, )
 
+    custom_args = ('MWs', )
+
     def __init__(self, CASs=[], ViscosityLiquids=[], MWs=[],
                  correct_pressure_pure=True):
         self.CASs = CASs
@@ -1522,6 +1524,9 @@ class ViscosityGasMixture(MixtureProperty):
 
     pure_references = ('ViscosityGases',)
     pure_reference_types = (ViscosityGas, )
+
+    custom_args = ('MWs', 'molecular_diameters', 'Stockmayers')
+
     def __init__(self, MWs=[], molecular_diameters=[], Stockmayers=[], CASs=[],
                  ViscosityGases=[], correct_pressure_pure=True):
         self.MWs = MWs

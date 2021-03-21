@@ -3174,6 +3174,25 @@ class MixtureProperty(object):
                                [i.poly_fit_Tmax_value for i in pure_objs],
                                [i.poly_fit_coeffs for i in pure_objs]]
 
+
+    def __repr__(self):
+        clsname = self.__class__.__name__
+        base = '%s(' % (clsname)
+        for k in self.custom_args:
+            v = getattr(self, k)
+            if v is not None:
+                base += '%s=%s, ' %(k, v)
+        base += 'CASs=%s, ' %(self.CASs)
+        base += 'correct_pressure_pure=%s, ' %(self._correct_pressure_pure)
+        base += 'method="%s", ' %(self.method)
+        for attr in self.pure_references:
+            base += '%s=%s, ' %(attr, getattr(self, attr))
+
+        if base[-2:] == ', ':
+            base = base[:-2]
+        return base + ')'
+
+
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
 
@@ -3185,6 +3204,31 @@ class MixtureProperty(object):
     def pure_objs(self):
         return getattr(self, self.pure_references[0])
 
+    def __init__(self, **kwargs):
+        self._correct_pressure_pure = kwargs.get('correct_pressure_pure', self._correct_pressure_pure)
+
+        self.Tmin = None
+        '''Minimum temperature at which no method can calculate the
+        property under.'''
+        self.Tmax = None
+        '''Maximum temperature at which no method can calculate the
+        property above.'''
+
+        self.sorted_valid_methods = []
+        '''sorted_valid_methods, list: Stored methods which were found valid
+        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
+        self.user_methods = []
+        '''user_methods, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
+        self.all_methods = set()
+        '''Set of all methods available for a given set of information;
+        filled by :obj:`load_all_methods`.'''
+        self.load_all_methods()
+
+        self.set_poly_fit_coeffs()
+
+        if 'method' in kwargs:
+            self.method = kwargs['method']
 
     def as_json(self, references=1):
         r'''Method to create a JSON serialization of the mixture property

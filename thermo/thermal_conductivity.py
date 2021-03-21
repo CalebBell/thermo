@@ -730,6 +730,8 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     pure_references = ('ThermalConductivityLiquids',)
     pure_reference_types = (ThermalConductivityLiquid,)
 
+    custom_args = ('MWs', )
+
     def __init__(self, CASs=[], ThermalConductivityLiquids=[], MWs=[],
                  correct_pressure_pure=True):
         self.CASs = CASs
@@ -1485,6 +1487,8 @@ class ThermalConductivityGasMixture(MixtureProperty):
 
     pure_references = ('ViscosityGases', 'ThermalConductivityGases')
     pure_reference_types = (ViscosityGas, ThermalConductivityGas)
+
+    custom_args = ('MWs', 'Tbs', )
 
     def __init__(self, MWs=[], Tbs=[], CASs=[], ThermalConductivityGases=[],
                  ViscosityGases=[], correct_pressure_pure=True):

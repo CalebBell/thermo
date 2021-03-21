@@ -93,7 +93,6 @@ ZUO_STENBY = 'ZUO_STENBY'
 HAKIM_STEINBERG_STIEL = 'HAKIM_STEINBERG_STIEL'
 ALEEM = 'Aleem'
 VDI_PPDS = 'VDI_PPDS'
-NONE = 'NONE'
 
 
 surface_tension_methods = [STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
@@ -538,7 +537,6 @@ class SurfaceTension(TDependentProperty):
 WINTERFELDSCRIVENDAVIS = 'Winterfeld, Scriven, and Davis (1978)'
 DIGUILIOTEJA = 'Diguilio and Teja (1988)'
 SIMPLE = 'Simple'
-NONE = 'None'
 
 surface_tension_mixture_methods = [WINTERFELDSCRIVENDAVIS, DIGUILIOTEJA, SIMPLE]
 '''Holds all methods available for the :obj:`SurfaceTensionMixture` class, for use in
@@ -614,6 +612,8 @@ class SurfaceTensionMixture(MixtureProperty):
 
     pure_references = ('SurfaceTensions', 'VolumeLiquids')
     pure_reference_types = (SurfaceTension, VolumeLiquid)
+
+    custom_args = ('MWs', 'Tbs', 'Tcs')
 
     def __init__(self, MWs=[], Tbs=[], Tcs=[], CASs=[], SurfaceTensions=[],
                  VolumeLiquids=[], correct_pressure_pure=True):

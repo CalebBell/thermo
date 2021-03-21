@@ -29,7 +29,10 @@ import pandas as pd
 from thermo.volume import *
 from thermo.volume import VDI_TABULAR
 from thermo.eos import *
-from chemicals.utils import Vm_to_rho
+from chemicals.utils import Vm_to_rho, zs_to_ws
+from thermo.vapor_pressure import VaporPressure
+from thermo.utils import POLY_FIT
+from thermo.volume import LALIBERTE, COSTALD_MIXTURE_FIT, RACKETT_PARAMETERS, COSTALD_MIXTURE,  SIMPLE, RACKETT
 
 
 @pytest.mark.meta_T_dept
@@ -254,29 +257,73 @@ def test_VolumeSolid_works_with_no_data():
 
 @pytest.mark.meta_T_dept
 def test_VolumeLiquidMixture():
-    from thermo.mixture import Mixture
-    from thermo.volume import LALIBERTE, COSTALD_MIXTURE_FIT, RACKETT_PARAMETERS, COSTALD_MIXTURE,  SIMPLE, RACKETT
-    m = Mixture(['benzene', 'toluene'], zs=[.5, .5], T=298.15, P=101325.)
+#    from thermo.mixture import Mixture
+#    m = Mixture(['benzene', 'toluene'], zs=[.5, .5], T=298.15, P=101325.)
+# ['benzene', 'toluene']
+    T, P, zs = 298.15, 101325.0, [0.5, 0.5]
+    MWs = [78.11184, 92.13842]
+    ws = zs_to_ws(zs, MWs=MWs)
 
-    VolumeLiquids = [i.VolumeLiquid for i in m.Chemicals]
+    VaporPressures = [
+        VaporPressure(CASRN="71-43-2", Tb=353.23, Tc=562.05, Pc=4895000.0, omega=0.212, extrapolation="AntoineAB|DIPPR101_ABC", method=POLY_FIT, poly_fit=(278.68399999999997, 562.01, [4.547344107145341e-20, -1.3312501882259186e-16, 1.6282983902136683e-13, -1.0498233680158312e-10, 3.535838362096064e-08, -3.6181923213017173e-06, -0.001593607608896686, 0.6373679536454406, -64.4285974110459])),
+        VaporPressure(CASRN="108-88-3", Tb=383.75, Tc=591.75, Pc=4108000.0, omega=0.257, extrapolation="AntoineAB|DIPPR101_ABC", method=POLY_FIT, poly_fit=(178.01, 591.74, [-8.638045111752356e-20, 2.995512203611858e-16, -4.5148088801006036e-13, 3.8761537879200513e-10, -2.0856828984716705e-07, 7.279010846673517e-05, -0.01641020023565049, 2.2758331029405516, -146.04484159879843]))
+    ]
 
-    obj = VolumeLiquidMixture(MWs=m.MWs, Tcs=m.Tcs, Pcs=m.Pcs, Vcs=m.Vcs, Zcs=m.Zcs, omegas=m.omegas,
-                              CASs=m.CASs, VolumeLiquids=VolumeLiquids)
+    VolumeLiquids = [
+        VolumeLiquid(CASRN="71-43-2", MW=78.11184, Tb=353.23, Tc=562.05, Pc=4895000.0, Vc=0.000256, Zc=0.2681535335844513, omega=0.212, dipole=0.0, Psat=VaporPressures[0], extrapolation="constant", method=POLY_FIT, poly_fit=(278.68399999999997, 552.02, [2.5040222732960933e-22, -7.922607445206804e-19, 1.088548130214618e-15, -8.481605391952225e-13, 4.098451788397536e-10, -1.257577461969114e-07, 2.3927976459304723e-05, -0.0025810882828932375, 0.12092854717588034])),
+        VolumeLiquid(CASRN="108-88-3", MW=92.13842, Tb=383.75, Tc=591.75, Pc=4108000.0, Vc=0.000316, Zc=0.2638426898300023, omega=0.257, dipole=0.33, Psat=VaporPressures[1], extrapolation="constant", method=POLY_FIT, poly_fit=(178.01, 581.75, [2.2801490297347937e-23, -6.411956871696508e-20, 7.723152902379232e-17, -5.197203733189603e-14, 2.1348482785660093e-11, -5.476649499770259e-09, 8.564670053875876e-07, -7.455178589434267e-05, 0.0028545812080104068]))
+    ]
 
-    # DO NOT LET THESE FAIL!
+    obj = VolumeLiquidMixture(MWs=MWs, Tcs=[562.05, 591.75], Pcs=[4895000.0, 4108000.0], Vcs=[0.000256, 0.000316], Zcs=[0.2681535335844513, 0.2638426898300023], omegas=[0.212, 0.257],
+                              CASs=['71-43-2', '108-88-3'], VolumeLiquids=VolumeLiquids, correct_pressure_pure=False)
+
     hash0 = hash(obj)
     obj2 = VolumeLiquidMixture.from_json(json.loads(json.dumps(obj.as_json())))
     assert obj == obj2
     assert hash(obj) == hash0
     assert hash(obj2) == hash0
 
-    Vm = obj.mixture_property(m.T, m.P, m.zs, m.ws)
-    assert_allclose(Vm, 9.814092676573469e-05)
+    obj2 = eval(str(obj))
+    assert obj == obj2
+    assert hash(obj) == hash0
+    assert hash(obj2) == hash0
 
-    Vms = [obj.calculate(m.T, m.P, m.zs, m.ws, method) for method in obj.all_methods]
-    Vms_expect = [9.814092676573469e-05, 9.737758899339708e-05, 9.8109833265793461e-05, 9.8154006097783393e-05, 9.858773618507426e-05]
-    assert_allclose(sorted(Vms), sorted(Vms_expect), rtol=1e-5)
 
+    Vml = 9.858773618507427e-05
+    assert_close(obj.calculate(T, P, zs, ws, COSTALD_MIXTURE), Vml, rtol=1e-11)
+    obj.method = COSTALD_MIXTURE
+    assert_close(obj(T, P, zs, ws),  Vml, rtol=1e-11)
+
+    Vml = 9.815400609778346e-05
+    assert_close(obj.calculate(T, P, zs, ws, COSTALD_MIXTURE_FIT), Vml, rtol=1e-11)
+    obj.method = COSTALD_MIXTURE_FIT
+    assert_close(obj(T, P, zs, ws),  Vml, rtol=1e-11)
+
+    Vml = 9.814047221052766e-05
+    assert_close(obj.calculate(T, P, zs, ws, SIMPLE), Vml, rtol=1e-11)
+    obj.method = SIMPLE
+    assert_close(obj(T, P, zs, ws),  Vml, rtol=1e-11)
+
+    Vml = 9.7377562180953e-05
+    assert_close(obj.calculate(T, P, zs, ws, RACKETT), Vml, rtol=1e-11)
+    obj.method = RACKETT
+    assert_close(obj(T, P, zs, ws), Vml, rtol=1e-11)
+
+    Vml = 9.810986651973312e-05
+    assert_close(obj.calculate(T, P, zs, ws, RACKETT_PARAMETERS), Vml, rtol=1e-11)
+    obj.method = RACKETT_PARAMETERS
+    assert_close(obj(T, P, zs, ws), Vml, rtol=1e-11)
+
+    # Unhappy paths
+    with pytest.raises(Exception):
+        obj.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+
+    with pytest.raises(Exception):
+        obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+
+@pytest.mark.meta_T_dept
+def test_VolumeLiquidMixture_Laliberte():
+    from thermo.mixture import Mixture
     # Test Laliberte
     m = Mixture(['water', 'sulfuric acid'], zs=[0.01, 0.99], T=298.15)
     VolumeLiquids = [i.VolumeLiquid for i in m.Chemicals]
@@ -286,13 +333,9 @@ def test_VolumeLiquidMixture():
     Vm = obj.mixture_property(m.T, m.P, m.zs, m.ws)
     assert_allclose(Vm, 4.824170609370422e-05)
 
-    # Unhappy paths
-    with pytest.raises(Exception):
-        obj.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
-
-    with pytest.raises(Exception):
-        obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
-
+@pytest.mark.meta_T_dept
+def test_VolumeLiquidMixture_ExcessVolume():
+    from thermo.mixture import Mixture
     # Excess volume
     # Vs -7.5E-7 in ddbst http://www.ddbst.com/en/EED/VE/VE0%20Ethanol%3BWater.php
     drink = Mixture(['water', 'ethanol'], zs=[1- 0.15600,  0.15600], T=298.15, P=101325)

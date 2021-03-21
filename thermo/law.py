@@ -39,7 +39,6 @@ TSCA = 'TSCA'
 EINECS = 'EINECS'
 NLP = 'NLP'
 SPIN = 'SPIN'
-NONE = 'NONE'
 COMBINED = 'COMBINED'
 UNLISTED = 'UNLISTED'
 LISTED = 'LISTED'
@@ -323,7 +322,6 @@ def economic_status(CASRN, method=None, get_methods=False):  # pragma: no cover
             methods.append(ECHA)
         if CASi in HPV_data.index:
             methods.append(OECD)
-        methods.append(NONE)
         return methods
     if get_methods:
         return list_methods()
@@ -344,8 +342,6 @@ def economic_status(CASRN, method=None, get_methods=False):  # pragma: no cover
             status += _ECHATonnageDict[CASRN]
         if CASi in HPV_data.index:
             status += ['OECD HPV Chemicals']
-    elif method == NONE:
-        status = None
     else:
         raise Exception('Failure in in function')
     return status

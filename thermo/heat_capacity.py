@@ -1475,7 +1475,7 @@ class HeatCapacitySolid(TDependentProperty):
 
 ### Mixture heat capacities
 SIMPLE = 'SIMPLE'
-LALIBERTE = 'Laliberte'
+LALIBERTE = 'LALIBERTE'
 heat_capacity_gas_mixture_methods = [SIMPLE]
 '''Holds all methods available for the :obj:`HeatCapacityGasMixture` class, for use in
 iterating over them.'''
@@ -1528,6 +1528,8 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     ranked_methods = [LALIBERTE, SIMPLE]
     pure_references = ('HeatCapacityLiquids',)
     pure_reference_types = (HeatCapacityLiquid,)
+
+    custom_args = ('MWs', )
 
     def __init__(self, MWs=[], CASs=[], HeatCapacityLiquids=[]):
         self.MWs = MWs
@@ -1707,6 +1709,8 @@ class HeatCapacitySolidMixture(MixtureProperty):
     pure_references = ('HeatCapacitySolids',)
     pure_reference_types = (HeatCapacitySolid,)
 
+    custom_args = ('MWs', )
+
     def __init__(self, CASs=[], HeatCapacitySolids=[], MWs=[]):
         self.CASs = CASs
         self.HeatCapacitySolids = HeatCapacitySolids
@@ -1844,6 +1848,8 @@ class HeatCapacityGasMixture(MixtureProperty):
     ranked_methods = [SIMPLE]
     pure_references = ('HeatCapacityGases',)
     pure_reference_types = (HeatCapacityGas,)
+
+    custom_args = ('MWs', )
 
     def __init__(self, CASs=[], HeatCapacityGases=[], MWs=[]):
         self.CASs = CASs
