@@ -1001,6 +1001,12 @@ class TDependentProperty(object):
         d['T_limits'] = {k: tuple(v) for k, v in d['T_limits'].items()}
         d['tabular_data'] = {k: tuple(v) for k, v in d['tabular_data'].items()}
 
+        for k, sub_cls in zip(cls.pure_references, cls.pure_reference_types):
+            if k in d:
+                if type(d[k]) is dict:
+                    sub_json = d[k]
+                    d[k] = sub_cls.from_json(sub_json)
+
         del d['py/object']
         del d["json_version"]
         new = cls.__new__(cls)

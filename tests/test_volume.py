@@ -262,11 +262,13 @@ def test_VolumeLiquidMixture():
 
     obj = VolumeLiquidMixture(MWs=m.MWs, Tcs=m.Tcs, Pcs=m.Pcs, Vcs=m.Vcs, Zcs=m.Zcs, omegas=m.omegas,
                               CASs=m.CASs, VolumeLiquids=VolumeLiquids)
-#    hash0 = hash(obj)
-#    obj2 = VolumeLiquidMixture.from_json(json.loads(json.dumps(obj.as_json())))
-#    assert obj == obj2
-#    assert hash(obj) == hash0
-#    assert hash(obj2) == hash0
+
+    # DO NOT LET THESE FAIL!
+    hash0 = hash(obj)
+    obj2 = VolumeLiquidMixture.from_json(json.loads(json.dumps(obj.as_json())))
+    assert obj == obj2
+    assert hash(obj) == hash0
+    assert hash(obj2) == hash0
 
     Vm = obj.mixture_property(m.T, m.P, m.zs, m.ws)
     assert_allclose(Vm, 9.814092676573469e-05)
