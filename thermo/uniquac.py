@@ -460,12 +460,12 @@ class UNIQUAC(GibbsExcess):
                     self.tau_coeffs_E = [[i[4] for i in l] for l in tau_coeffs]
                     self.tau_coeffs_F = [[i[5] for i in l] for l in tau_coeffs]
                 else:
-                    self.tau_coeffs_A = tau_coeffs[:,:,0]
-                    self.tau_coeffs_B = tau_coeffs[:,:,1]
-                    self.tau_coeffs_C = tau_coeffs[:,:,2]
-                    self.tau_coeffs_D = tau_coeffs[:,:,3]
-                    self.tau_coeffs_E = tau_coeffs[:,:,4]
-                    self.tau_coeffs_F = tau_coeffs[:,:,5]
+                    self.tau_coeffs_A = array(tau_coeffs[:,:,0], order='C', copy=True)
+                    self.tau_coeffs_B = array(tau_coeffs[:,:,1], order='C', copy=True)
+                    self.tau_coeffs_C = array(tau_coeffs[:,:,2], order='C', copy=True)
+                    self.tau_coeffs_D = array(tau_coeffs[:,:,3], order='C', copy=True)
+                    self.tau_coeffs_E = array(tau_coeffs[:,:,4], order='C', copy=True)
+                    self.tau_coeffs_F = array(tau_coeffs[:,:,5], order='C', copy=True)
             else:
                 raise ValueError("`tau_coeffs` or `ABCDEF` is required")
 
