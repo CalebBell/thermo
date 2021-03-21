@@ -861,7 +861,8 @@ class TDependentProperty(object):
         base += 'extrapolation="%s", ' %(self.extrapolation)
         base += 'method="%s", ' %(self.method)
         if self.tabular_data:
-            base += 'tabular_data=%s, ' %(self.tabular_data)
+            if not (len(self.tabular_data) == 1 and VDI_TABULAR in self.tabular_data):
+                base += 'tabular_data=%s, ' %(self.tabular_data)
 
         if hasattr(self, 'poly_fit_Tmin') and self.poly_fit_Tmin is not None:
             base += 'poly_fit=(%s, %s, %s), ' %(self.poly_fit_Tmin, self.poly_fit_Tmax, self.poly_fit_coeffs)

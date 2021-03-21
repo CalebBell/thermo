@@ -167,6 +167,11 @@ def test_VolumeLiquid():
     with pytest.raises(Exception):
         EtOH.test_method_validity_P(300, 1E5, 'BADMETHOD')
 
+
+@pytest.mark.meta_T_dept
+def test_VolumeLiquid_eval_not_duplicate_VDI_tabular():
+    assert 'tabular_data' not in str(VolumeLiquid(CASRN="109-66-0"))
+
 @pytest.mark.meta_T_dept
 def test_VolumeLiquidPolynomialTmin():
     # toluene
