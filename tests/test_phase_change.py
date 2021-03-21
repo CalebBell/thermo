@@ -33,8 +33,6 @@ from thermo.phase_change import COOLPROP, VDI_PPDS, CLAPEYRON, LIU, ALIBAKHSHI, 
 def test_EnthalpyVaporization():
     EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, Psat=7872.2, Zg=0.9633, Zl=0.0024, CASRN='64-17-5')
 
-    EtOH.method = COOLPROP
-    assert_close(EtOH.T_dependent_property(305), 42062.9371631488)
     EtOH.method = VDI_PPDS
     assert_close(EtOH.T_dependent_property(305), 42099.23631527565)
     EtOH.method = CLAPEYRON
@@ -79,10 +77,10 @@ def test_EnthalpyVaporization():
 
     EtOH = EnthalpyVaporization(CASRN='64-17-5', Tc=514.0)
     Hvap_calc = []
-    for i in ['GHARAGHEIZI_HVAP_298', 'CRC_HVAP_298', 'VDI_TABULAR', 'COOLPROP']:
+    for i in ['GHARAGHEIZI_HVAP_298', 'CRC_HVAP_298', 'VDI_TABULAR']:
         EtOH.method = i
         Hvap_calc.append(EtOH.T_dependent_property(310.0))
-    Hvap_exp = [41304.19234346344, 41421.6450231131, 41857.962450207546, 41796.56243049473]
+    Hvap_exp = [41304.19234346344, 41421.6450231131, 41857.962450207546]
     assert_close1d(Hvap_calc, Hvap_exp)
 
     # Test Clapeyron, without Zl
@@ -109,10 +107,20 @@ def test_EnthalpyVaporization():
 
     assert EnthalpyVaporization.from_json(EtOH.as_json()) == EtOH
 
-
+@pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
-def test_EnthalpyVaporization_Watson_extrapolation():
-    from thermo.phase_change import COOLPROP
+def test_EnthalpyVaporization_CoolProp():
+    EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, Psat=7872.2, Zg=0.9633, Zl=0.0024, CASRN='64-17-5')
+
+    EtOH.method = COOLPROP
+    assert_close(EtOH.T_dependent_property(305), 42062.9371631488)
+
+    # Reduced property inputs
+    EtOH = EnthalpyVaporization(CASRN='64-17-5', Tc=514.0)
+    EtOH.method = COOLPROP
+    assert_close(EtOH.T_dependent_property(305), 41796.56243049473)
+
+    # Watson extrapolation
     obj = EnthalpyVaporization(CASRN='7732-18-5', Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344,
                          similarity_variable=0.16652530518537598, Psat=3167, Zl=1.0, Zg=0.96,
                          extrapolation='Watson')
@@ -125,6 +133,23 @@ def test_EnthalpyVaporization_Watson_extrapolation():
     assert_close(obj.solve_property(1e-20), 647.13999999983)
     assert EnthalpyVaporization.from_json(obj.as_json()) == obj
 
+@pytest.mark.meta_T_dept
+def test_EnthalpyVaporization_Watson_extrapolation():
+    obj = EnthalpyVaporization(CASRN='7732-18-5', Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344,
+                         similarity_variable=0.16652530518537598, Psat=3167, Zl=1.0, Zg=0.96,
+                         extrapolation='Watson')
+
+    # Data from CoolProp
+    Ts = [300, 400, 500, 600]
+    Hvaps = [43908.418874478055, 39322.84456586401, 32914.75657594899, 21122.090961998296]
+    obj.add_tabular_data(Ts=Ts, properties=Hvaps, name='test0')
+    obj.method = 'test0'
+    assert 0 == obj(obj.Tc)
+    assert_close(obj.solve_property(1), 647.1399999998296)
+
+    obj.solve_property(5e4)
+    obj.solve_property(1e-20)
+    assert EnthalpyVaporization.from_json(obj.as_json()) == obj
 
 @pytest.mark.meta_T_dept
 def test_EnthalpySublimation_no_numpy():

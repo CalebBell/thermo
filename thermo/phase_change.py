@@ -467,7 +467,7 @@ class EnthalpyVaporization(TDependentProperty):
         '''
         if method == POLY_FIT:
             if T > self.poly_fit_Tc:
-                Hvap = 0
+                Hvap = 0.0
             else:
                 Hvap = horner(self.poly_fit_coeffs, log(1.0 - T/self.poly_fit_Tc))
 

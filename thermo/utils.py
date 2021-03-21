@@ -1677,7 +1677,6 @@ class TDependentProperty(object):
 
         self.all_methods.add(name)
         self.method = name
-        self.extrapolation = self.extrapolation
 
     def solve_property(self, goal):
         r'''Method to solve for the temperature at which a property is at a
