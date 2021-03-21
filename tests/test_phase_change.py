@@ -118,7 +118,7 @@ def test_EnthalpyVaporization_CoolProp():
     # Reduced property inputs
     EtOH = EnthalpyVaporization(CASRN='64-17-5', Tc=514.0)
     EtOH.method = COOLPROP
-    assert_close(EtOH.T_dependent_property(305), 41796.56243049473)
+    assert_close(EtOH.T_dependent_property(310.0), 41796.56243049473)
 
     # Watson extrapolation
     obj = EnthalpyVaporization(CASRN='7732-18-5', Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344,
@@ -150,6 +150,8 @@ def test_EnthalpyVaporization_Watson_extrapolation():
     obj.solve_property(5e4)
     obj.solve_property(1e-20)
     assert EnthalpyVaporization.from_json(obj.as_json()) == obj
+    assert eval(str(obj)) == obj
+
 
 @pytest.mark.meta_T_dept
 def test_EnthalpySublimation_no_numpy():
