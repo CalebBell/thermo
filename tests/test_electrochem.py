@@ -187,7 +187,9 @@ def test_conductivity():
     assert conductivity('7732-18-5')[0] == 4e-06
 
 
-    assert conductivity("142-82-5") == (1e-11, None)
+    val, T= conductivity("142-82-5")
+    assert T is None
+    assert_close(val, 1e-11, rtol=1e-13)
 
 
 def test_Marcus_ion_conductivities():

@@ -556,12 +556,12 @@ class NRTL(GibbsExcess):
                     self.tau_coeffs_G = [[i[4] for i in l] for l in tau_coeffs]
                     self.tau_coeffs_H = [[i[5] for i in l] for l in tau_coeffs]
                 else:
-                    self.tau_coeffs_A = tau_coeffs[:,:,0]
-                    self.tau_coeffs_B = tau_coeffs[:,:,1]
-                    self.tau_coeffs_E = tau_coeffs[:,:,2]
-                    self.tau_coeffs_F = tau_coeffs[:,:,3]
-                    self.tau_coeffs_G = tau_coeffs[:,:,4]
-                    self.tau_coeffs_H = tau_coeffs[:,:,5]
+                    self.tau_coeffs_A = array(tau_coeffs[:,:,0], order='C', copy=True)
+                    self.tau_coeffs_B = array(tau_coeffs[:,:,1], order='C', copy=True)
+                    self.tau_coeffs_E = array(tau_coeffs[:,:,2], order='C', copy=True)
+                    self.tau_coeffs_F = array(tau_coeffs[:,:,3], order='C', copy=True)
+                    self.tau_coeffs_G = array(tau_coeffs[:,:,4], order='C', copy=True)
+                    self.tau_coeffs_H = array(tau_coeffs[:,:,5], order='C', copy=True)
             else:
                 raise ValueError("`tau_coeffs` is required")
 
@@ -570,8 +570,8 @@ class NRTL(GibbsExcess):
                     self.alpha_coeffs_c = [[i[0] for i in l] for l in alpha_coeffs]
                     self.alpha_coeffs_d = [[i[1] for i in l] for l in alpha_coeffs]
                 else:
-                    self.alpha_coeffs_c = alpha_coeffs[:,:,0]
-                    self.alpha_coeffs_d = alpha_coeffs[:,:,1]
+                    self.alpha_coeffs_c = array(alpha_coeffs[:,:,0], order='C', copy=True)
+                    self.alpha_coeffs_d = array(alpha_coeffs[:,:,1], order='C', copy=True)
             else:
                 raise ValueError("`alpha_coeffs` is required")
 
