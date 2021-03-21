@@ -183,6 +183,7 @@ from thermo.uniquac import UNIQUAC
 
 from thermo.chemical_package import iapws_correlations
 
+from thermo.utils import POLY_FIT
 from thermo.heat_capacity import HeatCapacityGas, HeatCapacityLiquid
 from thermo.volume import VolumeLiquid, VolumeSolid
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
@@ -3175,7 +3176,7 @@ class Phase(object):
 
     def _setup_Cpigs(self, HeatCapacityGases):
         Cpgs_data = None
-        Cpgs_locked = all(i.locked for i in HeatCapacityGases) if HeatCapacityGases is not None else False
+        Cpgs_locked = all(i.method == POLY_FIT for i in HeatCapacityGases) if HeatCapacityGases is not None else False
         if Cpgs_locked:
             T_REF_IG = self.T_REF_IG
             Cpgs_data = [[i.poly_fit_Tmin for i in HeatCapacityGases],
@@ -6669,7 +6670,7 @@ class GibbsExcessLiquid(Phase):
 
 
         self.VaporPressures = VaporPressures
-        self.Psats_locked = all(i.locked for i in VaporPressures) if VaporPressures is not None else False
+        self.Psats_locked = all(i.method == POLY_FIT for i in VaporPressures) if VaporPressures is not None else False
         self.Psat_extrpolation = Psat_extrpolation
         if self.Psats_locked:
             Psats_data = [[i.poly_fit_Tmin for i in VaporPressures],
@@ -6704,7 +6705,7 @@ class GibbsExcessLiquid(Phase):
 
         self.use_eos_volume = use_eos_volume
         self.VolumeLiquids = VolumeLiquids
-        self.Vms_sat_locked = ((not use_eos_volume and all(i.locked for i in VolumeLiquids)) if VolumeLiquids is not None else False)
+        self.Vms_sat_locked = ((not use_eos_volume and all(i.method == POLY_FIT for i in VolumeLiquids)) if VolumeLiquids is not None else False)
         if self.Vms_sat_locked:
             self._Vms_sat_data = [[i.poly_fit_Tmin for i in VolumeLiquids],
                                  [i.poly_fit_Tmin_slope for i in VolumeLiquids],
@@ -6722,7 +6723,7 @@ class GibbsExcessLiquid(Phase):
 #                low_fits[i][0] = max(0, low_fits[i][0])
 
         self.VolumeSupercriticalLiquids = VolumeSupercriticalLiquids
-        self.Vms_supercritical_locked = all(i.locked for i in VolumeSupercriticalLiquids) if VolumeSupercriticalLiquids is not None else False
+        self.Vms_supercritical_locked = all(i.method == POLY_FIT for i in VolumeSupercriticalLiquids) if VolumeSupercriticalLiquids is not None else False
         if self.Vms_supercritical_locked:
             self.Vms_supercritical_data = [[i.poly_fit_Tmin for i in VolumeSupercriticalLiquids],
                                  [i.poly_fit_Tmin_slope for i in VolumeSupercriticalLiquids],
@@ -6750,7 +6751,7 @@ class GibbsExcessLiquid(Phase):
 
 
         self.EnthalpyVaporizations = EnthalpyVaporizations
-        self.Hvap_locked = all(i.locked for i in EnthalpyVaporizations) if EnthalpyVaporizations is not None else False
+        self.Hvap_locked = all(i.method == POLY_FIT for i in EnthalpyVaporizations) if EnthalpyVaporizations is not None else False
         if self.Hvap_locked:
             self._Hvap_data = [[i.poly_fit_Tmin for i in EnthalpyVaporizations],
                               [i.poly_fit_Tmax for i in EnthalpyVaporizations],
