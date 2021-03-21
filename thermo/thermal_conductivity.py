@@ -137,7 +137,7 @@ from thermo.heat_capacity import HeatCapacityGas
 from thermo.volume import VolumeGas
 
 
-from thermo.utils import NEGLIGIBLE, DIPPR_PERRY_8E, BESTFIT, VDI_TABULAR, VDI_PPDS, COOLPROP
+from thermo.utils import NEGLIGIBLE, DIPPR_PERRY_8E, POLY_FIT, VDI_TABULAR, VDI_PPDS, COOLPROP
 
 
 GHARAGHEIZI_L = 'GHARAGHEIZI_L'
@@ -509,7 +509,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
             kl = CoolProp_T_dependent_property(T, self.CASRN, 'L', 'l')
         elif method in self.tabular_data:
             kl = self.interpolate(T, method)
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             if T < self.poly_fit_Tmin:
                 kl = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
             elif T > self.poly_fit_Tmax:
@@ -1275,7 +1275,7 @@ class ThermalConductivityGas(TPDependentProperty):
             kg = Bahadori_gas(T, self.MW)
         elif method == COOLPROP:
             kg = CoolProp_T_dependent_property(T, self.CASRN, 'L', 'g')
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             if T < self.poly_fit_Tmin:
                 kg = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
             elif T > self.poly_fit_Tmax:

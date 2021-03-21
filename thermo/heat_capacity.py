@@ -135,7 +135,7 @@ from thermo.electrochem import Laliberte_heat_capacity
 from thermo.utils import TDependentProperty, MixtureProperty
 from thermo.coolprop import *
 from cmath import log as clog, exp as cexp
-from thermo.utils import VDI_TABULAR, COOLPROP, BESTFIT
+from thermo.utils import VDI_TABULAR, COOLPROP, POLY_FIT
 
 TRCIG = 'TRC Thermodynamics of Organic Compounds in the Gas State (1994)'
 POLING = 'Poling et al. (2001)'
@@ -419,7 +419,7 @@ class HeatCapacityGas(TDependentProperty):
         Cp : float
             Calculated heat capacity, [J/mol/K]
         '''
-        if method == BESTFIT:
+        if method == POLY_FIT:
             if T < self.poly_fit_Tmin:
                 Cp = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
             elif T > self.poly_fit_Tmax:
@@ -493,7 +493,7 @@ class HeatCapacityGas(TDependentProperty):
         elif method == COOLPROP:
             if T <= self.CP_f.Tmin or T >= self.CP_f.Tmax:
                 return False
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             validity = True
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
@@ -525,7 +525,7 @@ class HeatCapacityGas(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units*K`]
         '''
-        if method == BESTFIT:
+        if method == POLY_FIT:
             return fit_integral_linear_extrapolation(T1, T2,
                 self.poly_fit_int_coeffs, self.poly_fit_Tmin,
                 self.poly_fit_Tmax, self.poly_fit_Tmin_value,
@@ -574,7 +574,7 @@ class HeatCapacityGas(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units`]
         '''
-        if method == BESTFIT:
+        if method == POLY_FIT:
             return fit_integral_over_T_linear_extrapolation(T1, T2,
                 self.poly_fit_T_int_T_coeffs, self.poly_fit_log_coeff,
                 self.poly_fit_Tmin, self.poly_fit_Tmax,
@@ -992,7 +992,7 @@ class HeatCapacityLiquid(TDependentProperty):
         Cp : float
             Heat capacity of the liquid at T, [J/mol/K]
         '''
-        if method == BESTFIT:
+        if method == POLY_FIT:
             if T < self.poly_fit_Tmin:
                 return (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
             elif T > self.poly_fit_Tmax:
@@ -1089,7 +1089,7 @@ class HeatCapacityLiquid(TDependentProperty):
         elif method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
             if self.Tc and T > self.Tc:
                 return False
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             validity = True
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
@@ -1124,7 +1124,7 @@ class HeatCapacityLiquid(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units*K`]
         '''
-        if method == BESTFIT:
+        if method == POLY_FIT:
             return fit_integral_linear_extrapolation(T1, T2,
                 self.poly_fit_int_coeffs, self.poly_fit_Tmin,
                 self.poly_fit_Tmax, self.poly_fit_Tmin_value,
@@ -1178,7 +1178,7 @@ class HeatCapacityLiquid(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units`]
         '''
-        if method == BESTFIT:
+        if method == POLY_FIT:
             return fit_integral_over_T_linear_extrapolation(T1, T2,
                 self.poly_fit_T_int_T_coeffs, self.poly_fit_log_coeff,
                 self.poly_fit_Tmin, self.poly_fit_Tmax,
@@ -1428,7 +1428,7 @@ class HeatCapacitySolid(TDependentProperty):
         Cp : float
             Heat capacity of the solid at T, [J/mol/K]
         '''
-        if method == BESTFIT:
+        if method == POLY_FIT:
             if T < self.poly_fit_Tmin:
                 Cp = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
             elif T > self.poly_fit_Tmax:
@@ -1488,7 +1488,7 @@ class HeatCapacitySolid(TDependentProperty):
                 Ts, properties = self.tabular_data[method]
                 if T < Ts[0] or T > Ts[-1]:
                     validity = False
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             validity = True
         else:
             raise Exception('Method not valid')
@@ -1514,7 +1514,7 @@ class HeatCapacitySolid(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units*K`]
         '''
-        if method == BESTFIT:
+        if method == POLY_FIT:
             return fit_integral_linear_extrapolation(T1, T2,
                 self.poly_fit_int_coeffs, self.poly_fit_Tmin,
                 self.poly_fit_Tmax, self.poly_fit_Tmin_value,
@@ -1557,7 +1557,7 @@ class HeatCapacitySolid(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units`]
         '''
-        if method == BESTFIT:
+        if method == POLY_FIT:
             return fit_integral_over_T_linear_extrapolation(T1, T2,
                 self.poly_fit_T_int_T_coeffs, self.poly_fit_log_coeff,
                 self.poly_fit_Tmin, self.poly_fit_Tmax,

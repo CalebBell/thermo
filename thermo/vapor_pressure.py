@@ -75,7 +75,7 @@ from chemicals.vapor_pressure import *
 from chemicals.vapor_pressure import dAntoine_dT, d2Antoine_dT2, dWagner_original_dT, d2Wagner_original_dT2, dWagner_dT, d2Wagner_dT2, dTRC_Antoine_extended_dT, d2TRC_Antoine_extended_dT2
 from chemicals import vapor_pressure
 from thermo.utils import TDependentProperty
-from thermo.utils import VDI_TABULAR, DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, EOS, BESTFIT
+from thermo.utils import VDI_TABULAR, DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, EOS, POLY_FIT
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
 from thermo.base import source_path
 
@@ -423,7 +423,7 @@ class VaporPressure(TDependentProperty):
         Psat : float
             Vapor pressure at T, [pa]
         '''
-        if method == BESTFIT:
+        if method == POLY_FIT:
             if T < self.poly_fit_Tmin:
                 Psat = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
             elif T > self.poly_fit_Tmax:
@@ -433,12 +433,12 @@ class VaporPressure(TDependentProperty):
             Psat = exp(Psat)
         elif method == BEST_FIT_AB:
             if T < self.poly_fit_Tmax:
-                return self.calculate(T, BESTFIT)
+                return self.calculate(T, POLY_FIT)
             A, B = self.poly_fit_AB_high_ABC_compat
             return exp(A + B/T)
         elif method == BEST_FIT_ABC:
             if T < self.poly_fit_Tmax:
-                return self.calculate(T, BESTFIT)
+                return self.calculate(T, POLY_FIT)
             A, B, C = self.DIPPR101_ABC_high
             return exp(A + B/T + C*log(T))
         elif method == WAGNER_MCGARRY:
@@ -468,7 +468,7 @@ class VaporPressure(TDependentProperty):
             Psat = Edalat(T, self.Tc, self.Pc, self.omega)
         elif method == EOS:
             Psat = self.eos[0].Psat(T)
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             Psat = exp(horner(self.poly_fit_coeffs, T))
         else:
             return self._base_calculate(T, method)
@@ -501,7 +501,7 @@ class VaporPressure(TDependentProperty):
         if method in T_limits:
             Tmin, Tmax = T_limits[method]
             return Tmin <= T <= Tmax
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             validity = True
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
@@ -516,7 +516,7 @@ class VaporPressure(TDependentProperty):
     def calculate_derivative(self, T, method, order=1):
         r'''Method to calculate a derivative of a vapor pressure with respect to
         temperature, of a given order  using a specified method. If the method
-        is BESTFIT, an anlytical derivative is used; otherwise SciPy's
+        is POLY_FIT, an anlytical derivative is used; otherwise SciPy's
         derivative function, with a delta of 1E-6 K and a number of points
         equal to 2*order + 1.
 
@@ -538,7 +538,7 @@ class VaporPressure(TDependentProperty):
             Calculated derivative property, [`units/K^order`]
         '''
         Tmin, Tmax = self.T_limits[method]
-        if order == 1 and method == BESTFIT:
+        if order == 1 and method == POLY_FIT:
             # if T < self.poly_fit_Tmin:
             #     return self.poly_fit_Tmin_slope*exp(
             #             (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope
@@ -590,7 +590,7 @@ class VaporPressure(TDependentProperty):
                     return EQ101(T, *self.Perrys2_8_coeffs, order=1)
                 if order == 2:
                     return EQ101(T, *self.Perrys2_8_coeffs, order=2)
-        elif order == 2 and method == BESTFIT:
+        elif order == 2 and method == POLY_FIT:
             v, der, der2 = horner_and_der2(self.poly_fit_coeffs, T)
             return (der*der + der2)*exp(v)
 
@@ -831,7 +831,7 @@ class SublimationPressure(TDependentProperty):
         Psub : float
             Sublimation pressure at T, [pa]
         '''
-        if method == BESTFIT:
+        if method == POLY_FIT:
             if T < self.poly_fit_Tmin:
                 Psub = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
             elif T > self.poly_fit_Tmax:
@@ -871,7 +871,7 @@ class SublimationPressure(TDependentProperty):
         if method in [PSUB_CLAPEYRON]:
             return True
             # No lower limit
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             validity = True
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking

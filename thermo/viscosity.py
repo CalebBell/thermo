@@ -114,7 +114,7 @@ from chemicals import viscosity
 from chemicals.viscosity import *
 from chemicals.viscosity import viscosity_gas_Gharagheizi, dPPDS9_dT
 
-from thermo.utils import NEGLIGIBLE, DIPPR_PERRY_8E, BESTFIT, VDI_TABULAR, VDI_PPDS, COOLPROP
+from thermo.utils import NEGLIGIBLE, DIPPR_PERRY_8E, POLY_FIT, VDI_TABULAR, VDI_PPDS, COOLPROP
 from thermo.volume import VolumeGas, VolumeLiquid
 from thermo.vapor_pressure import VaporPressure
 
@@ -565,7 +565,7 @@ class ViscosityLiquid(TPDependentProperty):
             mu = Przedziecki_Sridhar(T, self.Tm, self.Tc, self.Pc, self.Vc, Vml, self.omega, self.MW)
         elif method == VDI_PPDS:
             return PPDS9(T, *self.VDI_PPDS_coeffs)
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             if T < self.poly_fit_Tmin:
                 mu = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
             elif T > self.poly_fit_Tmax:
@@ -646,7 +646,7 @@ class ViscosityLiquid(TPDependentProperty):
                 return der < 0
             except:
                 return False
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             validity = True
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
@@ -1061,7 +1061,7 @@ class ViscosityGas(TPDependentProperty):
             mu = Lucas_gas(T, self.Tc, self.Pc, self.Zc, self.MW, self.dipole, CASRN=self.CASRN)
         elif method in self.tabular_data:
             mu = self.interpolate(T, method)
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             if T < self.poly_fit_Tmin:
                 mu = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
             elif T > self.poly_fit_Tmax:
@@ -1115,7 +1115,7 @@ class ViscosityGas(TPDependentProperty):
                 return False
         elif method == VDI_PPDS:
             pass # Polynomial always works
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             validity = True
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking

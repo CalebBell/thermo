@@ -26,7 +26,7 @@ import pandas as pd
 from math import isnan
 from fluids.numerics import linspace, assert_close, derivative, assert_close1d
 from thermo.vapor_pressure import *
-from thermo.vapor_pressure import VDI_PPDS, VDI_TABULAR, WAGNER_MCGARRY, ANTOINE_EXTENDED_POLING, ANTOINE_POLING, WAGNER_POLING, DIPPR_PERRY_8E
+from thermo.vapor_pressure import COOLPROP, VDI_PPDS, VDI_TABULAR, WAGNER_MCGARRY, ANTOINE_EXTENDED_POLING, ANTOINE_POLING, WAGNER_POLING, DIPPR_PERRY_8E
 from chemicals.identifiers import check_CAS
 from math import *
 
@@ -37,6 +37,8 @@ def test_VaporPressure():
     EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
     methods = list(EtOH.all_methods)
     methods.remove(VDI_TABULAR)
+    if COOLPROP in methods:
+        methods.remove(COOLPROP)
 
     Psat_calcs = []
     for i in methods:
@@ -247,12 +249,12 @@ def test_VaporPressure_fast_Psat_poly_fit():
     assert_close(corr.solve_property(1e8), corr.solve_prop_poly_fit(1e8), rtol=1e-10)
 
     # Extrapolation
-    from thermo.vapor_pressure import BESTFIT, BEST_FIT_AB, BEST_FIT_ABC
+    from thermo.vapor_pressure import POLY_FIT, BEST_FIT_AB, BEST_FIT_ABC
     obj = VaporPressure(poly_fit=(178.01, 591.74, [-8.638045111752356e-20, 2.995512203611858e-16, -4.5148088801006036e-13, 3.8761537879200513e-10, -2.0856828984716705e-07, 7.279010846673517e-05, -0.01641020023565049, 2.2758331029405516, -146.04484159879843]))
     assert_close(obj.calculate(1000, BEST_FIT_AB), 78666155.90418352, rtol=1e-10)
     assert_close(obj.calculate(1000, BEST_FIT_ABC), 156467764.5930495, rtol=1e-10)
 
-    assert_close(obj.calculate(400, BESTFIT), 157199.6909849476, rtol=1e-10)
+    assert_close(obj.calculate(400, POLY_FIT), 157199.6909849476, rtol=1e-10)
     assert_close(obj.calculate(400, BEST_FIT_AB), 157199.6909849476, rtol=1e-10)
     assert_close(obj.calculate(400, BEST_FIT_ABC), 157199.6909849476, rtol=1e-10)
 

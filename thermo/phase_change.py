@@ -77,7 +77,7 @@ from chemicals.phase_change import *
 from thermo.vapor_pressure import VaporPressure
 from thermo.heat_capacity import HeatCapacityGas, HeatCapacitySolid
 from thermo.utils import TDependentProperty
-from thermo.utils import COOLPROP, VDI_TABULAR, DIPPR_PERRY_8E, VDI_PPDS, BESTFIT
+from thermo.utils import COOLPROP, VDI_TABULAR, DIPPR_PERRY_8E, VDI_PPDS, POLY_FIT
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids, CoolProp_failing_PT_flashes
 
 
@@ -465,7 +465,7 @@ class EnthalpyVaporization(TDependentProperty):
         Hvap : float
             Heat of vaporization of the liquid at T, [J/mol]
         '''
-        if method == BESTFIT:
+        if method == POLY_FIT:
             if T > self.poly_fit_Tc:
                 Hvap = 0
             else:
@@ -593,7 +593,7 @@ class EnthalpyVaporization(TDependentProperty):
                 Ts, properties = self.tabular_data[method]
                 if T < Ts[0] or T > Ts[-1]:
                     validity = False
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             validity = True
         elif method == CLAPEYRON:
             if not (self.Psat and T < self.Tc):
@@ -825,7 +825,7 @@ class EnthalpySublimation(TDependentProperty):
         Hsub : float
             Heat of sublimation of the solid at T, [J/mol]
         '''
-        if method == BESTFIT:
+        if method == POLY_FIT:
             if T < self.poly_fit_Tmin:
                 Hsub = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
             elif T > self.poly_fit_Tmax:
@@ -877,11 +877,11 @@ class EnthalpySublimation(TDependentProperty):
             Whether or not a method is valid
         '''
         validity = True
-        if method == BESTFIT:
+        if method == POLY_FIT:
             validity = True
         elif method in (GHARAGHEIZI_HSUB_298, GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM):
             validity = True
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             validity = True
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking

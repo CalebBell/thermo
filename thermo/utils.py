@@ -76,7 +76,7 @@ from __future__ import division
 __all__ = ['has_matplotlib', 'Stateva_Tsvetkov_TPDF', 'TPD',
 'assert_component_balance', 'assert_energy_balance', 'allclose_variable',
 'TDependentProperty','TPDependentProperty', 'MixtureProperty', 'identify_phase',
-'phase_select_property', 'NEGLIGIBLE', 'DIPPR_PERRY_8E', 'BESTFIT', 'VDI_TABULAR',
+'phase_select_property', 'NEGLIGIBLE', 'DIPPR_PERRY_8E', 'POLY_FIT', 'VDI_TABULAR',
 'VDI_PPDS', 'COOLPROP']
 
 import os
@@ -94,7 +94,7 @@ from thermo.coolprop import coolprop_fluids
 
 NEGLIGIBLE = 'NEGLIGIBLE'
 DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
-BESTFIT = 'Best fit'
+POLY_FIT = 'POLY_FIT'
 VDI_TABULAR = 'VDI_TABULAR'
 VDI_PPDS = 'VDI_PPDS'
 COOLPROP = 'COOLPROP'
@@ -641,7 +641,7 @@ def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets,
 
 TEST_METHOD_1 = 'Test method 1'
 TEST_METHOD_2 = 'Test method 2'
-BESTFIT = 'Best fit'
+POLY_FIT = 'Best fit'
 
 
 class TDependentProperty(object):
@@ -1144,7 +1144,7 @@ class TDependentProperty(object):
 
     @method.setter
     def method(self, method):
-        if method not in self.all_methods and method != BESTFIT:
+        if method not in self.all_methods and method != POLY_FIT:
             raise ValueError("The given methods is not available for this chemical")
         self.T_cached = None
         self._method = method
@@ -1230,8 +1230,8 @@ class TDependentProperty(object):
             self.poly_fit_Tmin = Tmin = poly_fit[0]
             self.poly_fit_Tmax = Tmax = poly_fit[1]
             self.poly_fit_coeffs = poly_fit_coeffs = poly_fit[2]
-            self.T_limits[BESTFIT] = (Tmin, Tmax)
-            self.method = BESTFIT
+            self.T_limits[POLY_FIT] = (Tmin, Tmax)
+            self.method = POLY_FIT
 
             self.poly_fit_int_coeffs = polyint(poly_fit_coeffs)
             self.poly_fit_T_int_T_coeffs, self.poly_fit_log_coeff = polyint_over_x(poly_fit_coeffs)
@@ -1245,13 +1245,13 @@ class TDependentProperty(object):
             # Extrapolation slope on high and low
             slope_delta_T = (self.poly_fit_Tmax - self.poly_fit_Tmin)*.05
 
-            self.poly_fit_Tmax_value = self.calculate(self.poly_fit_Tmax, BESTFIT)
+            self.poly_fit_Tmax_value = self.calculate(self.poly_fit_Tmax, POLY_FIT)
             if self.interpolation_property is not None:
                 self.poly_fit_Tmax_value = self.interpolation_property(self.poly_fit_Tmax_value)
 
 
             # Calculate the average derivative for the last 5% of the curve
-#            fit_value_high = self.calculate(self.poly_fit_Tmax - slope_delta_T, BESTFIT)
+#            fit_value_high = self.calculate(self.poly_fit_Tmax - slope_delta_T, POLY_FIT)
 #            if self.interpolation_property is not None:
 #                fit_value_high = self.interpolation_property(fit_value_high)
 
@@ -1262,11 +1262,11 @@ class TDependentProperty(object):
 
 
             # Extrapolation to lower T
-            self.poly_fit_Tmin_value = self.calculate(self.poly_fit_Tmin, BESTFIT)
+            self.poly_fit_Tmin_value = self.calculate(self.poly_fit_Tmin, POLY_FIT)
             if self.interpolation_property is not None:
                 self.poly_fit_Tmin_value = self.interpolation_property(self.poly_fit_Tmin_value)
 
-#            fit_value_low = self.calculate(self.poly_fit_Tmin + slope_delta_T, BESTFIT)
+#            fit_value_low = self.calculate(self.poly_fit_Tmin + slope_delta_T, POLY_FIT)
 #            if self.interpolation_property is not None:
 #                fit_value_low = self.interpolation_property(fit_value_low)
 #            self.poly_fit_Tmin_slope = (fit_value_low
@@ -1301,7 +1301,7 @@ class TDependentProperty(object):
     def _calculate_extrapolate(self, T, method):
         if self.locked:
             try:
-                return self.calculate(T, BESTFIT)
+                return self.calculate(T, POLY_FIT)
             except Exception as e:
                 pass
 
@@ -1376,7 +1376,7 @@ class TDependentProperty(object):
         '''
         if self.locked:
             try:
-                return self.calculate(T, BESTFIT)
+                return self.calculate(T, POLY_FIT)
             except Exception as e:
                 pass
 

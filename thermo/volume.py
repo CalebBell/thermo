@@ -134,7 +134,7 @@ from thermo import electrochem
 from thermo.electrochem import Laliberte_density
 from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property
 from thermo.utils import TDependentProperty, TPDependentProperty, MixtureProperty
-from thermo.utils import BESTFIT, VDI_TABULAR, VDI_PPDS, COOLPROP, EOS, DIPPR_PERRY_8E
+from thermo.utils import POLY_FIT, VDI_TABULAR, VDI_PPDS, COOLPROP, EOS, DIPPR_PERRY_8E
 from thermo.eos import PR78
 from thermo.vapor_pressure import VaporPressure
 
@@ -626,7 +626,7 @@ class VolumeLiquid(TPDependentProperty):
         Vm : float
             Molar volume of the liquid at T and a low pressure, [m^3/mol]
         '''
-        if method == BESTFIT:
+        if method == POLY_FIT:
             if T < self.poly_fit_Tmin:
                 Vm = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
             elif T > self.poly_fit_Tmax:
@@ -768,7 +768,7 @@ class VolumeLiquid(TPDependentProperty):
                 Ts, properties = self.tabular_data[method]
                 if T < Ts[0] or T > Ts[-1]:
                     validity = False
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             validity = True
         elif method == EOS:
             if T >= self.eos[0].Tc:
@@ -1035,7 +1035,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         Vm : float
             Molar volume of the liquid at T and a supercritical pressure, [m^3/mol]
         '''
-        if method == BESTFIT:
+        if method == POLY_FIT:
             if T < self.poly_fit_Tmin:
                 Vm = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
             elif T > self.poly_fit_Tmax:
@@ -1107,7 +1107,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
                 Ts, properties = self.tabular_data[method]
                 if T < Ts[0] or T > Ts[-1]:
                     validity = False
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             validity = True
         else:
             raise Exception('Method not valid')
@@ -1782,7 +1782,7 @@ class VolumeGas(TPDependentProperty):
                 validity = False
         elif method == COOLPROP:
             validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['gas', 'supercritical_gas', 'supercritical', 'supercritical_liquid']
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             validity = True
         elif method in self.tabular_data:
             if not self.tabular_extrapolation_permitted:
@@ -2152,7 +2152,7 @@ class VolumeSolid(TDependentProperty):
             Vms = self.CRC_INORG_S_Vm
         elif method == GOODMAN:
             Vms = Goodman(T, self.Tt, self.Vml_Tt)
-        if method == BESTFIT:
+        if method == POLY_FIT:
             if T < self.poly_fit_Tmin:
                 Vms = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
             elif T > self.poly_fit_Tmax:
@@ -2194,7 +2194,7 @@ class VolumeSolid(TDependentProperty):
         elif method == GOODMAN:
             if T < self.Tt*0.3:
                 validity = False
-        elif method == BESTFIT:
+        elif method == POLY_FIT:
             validity = True
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
