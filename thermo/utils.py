@@ -641,7 +641,6 @@ def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets,
 
 TEST_METHOD_1 = 'Test method 1'
 TEST_METHOD_2 = 'Test method 2'
-POLY_FIT = 'Best fit'
 
 
 class TDependentProperty(object):

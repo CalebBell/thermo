@@ -425,6 +425,7 @@ def test_HeatCapacityLiquid_integrals():
 
 
 
+@pytest.mark.meta_T_dept
 def test_HeatCapacitySolidMixture():
     MWs = [107.8682, 195.078]
     ws = [0.95, 0.05]
@@ -432,8 +433,8 @@ def test_HeatCapacitySolidMixture():
     T = 298.15
     P = 101325.0
 #    m = Mixture(['silver', 'platinum'], ws)
-    HeatCapacitySolids = [HeatCapacitySolid(CASRN="7440-22-4", similarity_variable=0.009270572791610502, MW=107.8682, extrapolation="linear", method="Best fit", poly_fit=(273.0, 1234.0, [-1.3937807081430088e-31, 7.536244381034841e-28, -1.690680423482461e-24, 2.0318654521005364e-21, -1.406580331667692e-18, 5.582457975071205e-16, 0.0062759999998829325, 23.430400000009975])),
-                          HeatCapacitySolid(CASRN="7440-06-4", similarity_variable=0.005126154666338593, MW=195.078, extrapolation="linear", method="Best fit", poly_fit=(273.0, 1873.0, [3.388131789017202e-37, -6.974130474513008e-33, 4.1785562369164175e-29, -1.19324731353925e-25, 1.8802914323231756e-22, -1.7047279440501588e-19, 8.714473096125867e-17, 0.004853439999977098, 24.76928000000236]))]
+    HeatCapacitySolids = [HeatCapacitySolid(CASRN="7440-22-4", similarity_variable=0.009270572791610502, MW=107.8682, extrapolation="linear", method="POLY_FIT", poly_fit=(273.0, 1234.0, [-1.3937807081430088e-31, 7.536244381034841e-28, -1.690680423482461e-24, 2.0318654521005364e-21, -1.406580331667692e-18, 5.582457975071205e-16, 0.0062759999998829325, 23.430400000009975])),
+                          HeatCapacitySolid(CASRN="7440-06-4", similarity_variable=0.005126154666338593, MW=195.078, extrapolation="linear", method="POLY_FIT", poly_fit=(273.0, 1873.0, [3.388131789017202e-37, -6.974130474513008e-33, 4.1785562369164175e-29, -1.19324731353925e-25, 1.8802914323231756e-22, -1.7047279440501588e-19, 8.714473096125867e-17, 0.004853439999977098, 24.76928000000236]))]
 
     obj = HeatCapacitySolidMixture(CASs=['7440-22-4', '7440-06-4'], HeatCapacitySolids=HeatCapacitySolids, MWs=MWs)
 
@@ -448,12 +449,13 @@ def test_HeatCapacitySolidMixture():
         obj.test_method_validity(T, P, zs, ws, 'BADMETHOD')
 
 
+@pytest.mark.meta_T_dept
 def test_HeatCapacityGasMixture():
     # oxygen and nitrogen
 
 #    m = Mixture(['oxygen', 'nitrogen'], ws=[.4, .6], T=350, P=1E6)
-    HeatCapacityGases = [HeatCapacityGas(CASRN="7782-44-7", similarity_variable=0.06250234383789392, MW=31.9988, extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [7.682842888382947e-22, -3.3797331490434755e-18, 6.036320672021355e-15, -5.560319277907492e-12, 2.7591871443240986e-09, -7.058034933954475e-07, 9.350023770249747e-05, -0.005794412013028436, 29.229215579932934])),
-                         HeatCapacityGas(CASRN="7727-37-9", similarity_variable=0.07139440410660612, MW=28.0134, extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264]))]
+    HeatCapacityGases = [HeatCapacityGas(CASRN="7782-44-7", similarity_variable=0.06250234383789392, MW=31.9988, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [7.682842888382947e-22, -3.3797331490434755e-18, 6.036320672021355e-15, -5.560319277907492e-12, 2.7591871443240986e-09, -7.058034933954475e-07, 9.350023770249747e-05, -0.005794412013028436, 29.229215579932934])),
+                         HeatCapacityGas(CASRN="7727-37-9", similarity_variable=0.07139440410660612, MW=28.0134, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264]))]
     obj = HeatCapacityGasMixture(CASs=['7782-44-7', '7727-37-9'], HeatCapacityGases=HeatCapacityGases, MWs=[31.9988, 28.0134])
 
     Cp = obj(350.0, P=1e5, ws=[.4, .6])
@@ -467,11 +469,13 @@ def test_HeatCapacityGasMixture():
         obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
 
 
+@pytest.mark.CoolProp
+@pytest.mark.meta_T_dept
 def test_HeatCapacityLiquidMixture_aqueous():
     from thermo.heat_capacity import HeatCapacityLiquidMixture, SIMPLE
 
     HeatCapacityLiquids = [HeatCapacityLiquid(method='COOLPROP', CASRN="7732-18-5", MW=18.01528, similarity_variable=0.16652530518537598, Tc=647.14, omega=0.344, extrapolation="linear"),
-                           HeatCapacityLiquid(CASRN="7647-14-5", MW=58.44277, similarity_variable=0.034221512772238546, Tc=3400.0, omega=0.1894, extrapolation="linear", method="Best fit", poly_fit=(1077.15, 3400.0, [-1.7104845836996866e-36, 3.0186209409101436e-32, -2.2964525212600158e-28, 9.82884046707168e-25, -2.585879179539946e-21, 4.276734025134063e-18, -0.00016783912672163547, 0.1862851719065294, -12.936804011905963]))]
+                           HeatCapacityLiquid(CASRN="7647-14-5", MW=58.44277, similarity_variable=0.034221512772238546, Tc=3400.0, omega=0.1894, extrapolation="linear", method="POLY_FIT", poly_fit=(1077.15, 3400.0, [-1.7104845836996866e-36, 3.0186209409101436e-32, -2.2964525212600158e-28, 9.82884046707168e-25, -2.585879179539946e-21, 4.276734025134063e-18, -0.00016783912672163547, 0.1862851719065294, -12.936804011905963]))]
 
     obj = HeatCapacityLiquidMixture(MWs=[18.01528, 58.44277], CASs=['7732-18-5', '7647-14-5'], HeatCapacityLiquids=HeatCapacityLiquids)
 
@@ -483,14 +487,15 @@ def test_HeatCapacityLiquidMixture_aqueous():
     Cp = obj.calculate(T=301.5, P=101325.0, zs=zs, ws=[.9, .1], method=SIMPLE)
     assert_close(Cp, 77.08377446120679, rtol=1e-7)
 
+@pytest.mark.meta_T_dept
 def test_HeatCapacityLiquidMixture():
     ws = [.9, .1]
     MWs = [92.13842, 142.28168]
     zs = ws_to_zs(ws=ws, MWs=MWs)
 #    m = Mixture(['toluene', 'decane'], ws=ws, T=300)
 
-    HeatCapacityLiquids = [HeatCapacityLiquid(CASRN="108-88-3", MW=92.13842, similarity_variable=0.16279853724428964, Tc=591.75, omega=0.257, extrapolation="linear", method="Best fit", poly_fit=(162.0, 570.0, [7.171090290089724e-18, -1.8175720506858e-14, 1.9741936612209287e-11, -1.1980168324612502e-08, 4.438245228007343e-06, -0.0010295403891115538, 0.1475922271028815, -12.06203901868023, 565.3058820511594])),
-                           HeatCapacityLiquid(CASRN="124-18-5", MW=142.28168, similarity_variable=0.22490597524572384, Tc=611.7, omega=0.49, extrapolation="linear", method="Best fit", poly_fit=(247.0, 462.4, [-1.0868671859366803e-16, 3.1665821629357415e-13, -4.003344986303024e-10, 2.8664283740244695e-07, -0.00012702231712595518, 0.03563345983140416, -6.170059527783799, 601.9757437895033, -25015.243163919513]))]
+    HeatCapacityLiquids = [HeatCapacityLiquid(CASRN="108-88-3", MW=92.13842, similarity_variable=0.16279853724428964, Tc=591.75, omega=0.257, extrapolation="linear", method="POLY_FIT", poly_fit=(162.0, 570.0, [7.171090290089724e-18, -1.8175720506858e-14, 1.9741936612209287e-11, -1.1980168324612502e-08, 4.438245228007343e-06, -0.0010295403891115538, 0.1475922271028815, -12.06203901868023, 565.3058820511594])),
+                           HeatCapacityLiquid(CASRN="124-18-5", MW=142.28168, similarity_variable=0.22490597524572384, Tc=611.7, omega=0.49, extrapolation="linear", method="POLY_FIT", poly_fit=(247.0, 462.4, [-1.0868671859366803e-16, 3.1665821629357415e-13, -4.003344986303024e-10, 2.8664283740244695e-07, -0.00012702231712595518, 0.03563345983140416, -6.170059527783799, 601.9757437895033, -25015.243163919513]))]
 
     obj = HeatCapacityLiquidMixture(CASs=['108-88-3', '124-18-5'], HeatCapacityLiquids=HeatCapacityLiquids, MWs=MWs)
     assert_close(obj(300.0, P=101325.0, zs=zs, ws=ws), 168.29157865567112, rtol=1E-4)
@@ -506,28 +511,28 @@ def test_HeatCapacityLiquidMixture():
 @pytest.mark.slow
 @pytest.mark.fuzz
 def test_locked_integral():
-    obj = HeatCapacityGas(load_data=False, CASRN="7732-18-5", similarity_variable=0.16652530518537598, MW=18.01528, extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))
+    obj = HeatCapacityGas(load_data=False, CASRN="7732-18-5", similarity_variable=0.16652530518537598, MW=18.01528, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))
 
     def to_int(T):
-        return obj.calculate(T, 'Best fit')
+        return obj.calculate(T, 'POLY_FIT')
     for i in range(10):
         T1 = uniform(0, 4000)
         T2 = uniform(0, 4000)
         quad_ans = quad(to_int, T1, T2)[0]
-        analytical_ans = obj.calculate_integral(T1, T2, "Best fit")
+        analytical_ans = obj.calculate_integral(T1, T2, "POLY_FIT")
         assert_close(quad_ans, analytical_ans, rtol=1e-6)
 
 
 @pytest.mark.slow
 @pytest.mark.fuzz
 def test_locked_integral_over_T():
-    obj = HeatCapacityGas(load_data=False, CASRN="7732-18-5", similarity_variable=0.16652530518537598, MW=18.01528, extrapolation="linear", method="Best fit", poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))
+    obj = HeatCapacityGas(load_data=False, CASRN="7732-18-5", similarity_variable=0.16652530518537598, MW=18.01528, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))
 
     def to_int(T):
-        return obj.calculate(T, 'Best fit')/T
+        return obj.calculate(T, 'POLY_FIT')/T
     for i in range(10):
         T1 = uniform(0, 4000)
         T2 = uniform(0, 4000)
         quad_ans = quad(to_int, T1, T2)[0]
-        analytical_ans = obj.calculate_integral_over_T(T1, T2, "Best fit")
+        analytical_ans = obj.calculate_integral_over_T(T1, T2, "POLY_FIT")
         assert_close(quad_ans, analytical_ans, rtol=1e-5)

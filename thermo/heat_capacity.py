@@ -549,7 +549,7 @@ class HeatCapacityGas(TDependentProperty):
                     - Lastovka_Shaw_integral(T1, self.similarity_variable))
             return property_mass_to_molar(dH, self.MW)
         elif method in self.tabular_data or method == COOLPROP:
-            return float(quad(self.calculate, T1, T2, args=(method))[0])
+            return float(quad(self.calculate, T1, T2, args=(method,))[0])
         else:
             raise Exception('Method not valid')
 
