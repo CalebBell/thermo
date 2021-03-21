@@ -26,6 +26,7 @@ from thermo.coolprop import *
 from chemicals.identifiers import check_CAS
 
 
+@pytest.mark.CoolProp
 def test_fluid_props():
     has_CoolProp()
 #    tots = [sum([getattr(f, prop) for f in coolprop_fluids.values()]) for prop in ['Tmin', 'Tmax', 'Pmax', 'Tc', 'Pc', 'Tt', 'omega']]

@@ -1315,6 +1315,7 @@ def test_EOSGas_volume_HSGUA_derivatives():
     assert_close(gas.dA_dV_P(), dA_dV_P_num)
 
 
+@pytest.mark.CoolProp
 def test_CoolPropPhase_PR_pure():
     T, P = 299.0, 1e5
     CPP = CoolPropPhase('PR', 'nHexane', T=T, P=P)
@@ -1331,6 +1332,7 @@ def test_CoolPropPhase_PR_pure():
     assert_close(CPP.d2P_dV2(), eos.d2P_dV2_l, rtol=4e-4)
     assert_close(CPP.d2P_dTdV(), eos.d2P_dTdV_l, rtol=5e-4)
 
+@pytest.mark.CoolProp
 def test_CoolPropPhase_Water_hash_export():
     T, P = 299.0, 1e5
     CPP = CoolPropPhase('HEOS', 'water', T=T, P=P)
@@ -1356,6 +1358,7 @@ def test_CoolPropPhase_Water_hash_export():
 
 
 
+@pytest.mark.CoolProp
 def test_CoolPropPhase_Water():
     T, P = 299.0, 1e5
     CPP = CoolPropPhase('HEOS', 'water', T=T, P=P)
@@ -1427,6 +1430,7 @@ def test_CoolPropPhase_Water():
     dS_dV_P_num = derivative(lambda V: CPP.to(P=P, V=V, zs=[1]).S(), CPP.V(), dx=CPP.V()*1e-6)
     assert_close(CPP.dS_dV_P(), dS_dV_P_num)
 
+@pytest.mark.CoolProp
 def test_CoolPropPhase_Transport():
     liq = CoolPropLiquid('HEOS', 'water', T=300, P=1e5, zs=[1.0])
     assert_close(liq.mu(), PropsSI("VISCOSITY", "T", 300, "P", 1e5, "Water"), rtol=1e-12)

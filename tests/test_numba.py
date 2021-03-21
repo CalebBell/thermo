@@ -93,6 +93,7 @@ def test_PRMIX_outputs_inputs_np():
         assert type(getattr(eos_np, attr)) is np.ndarray
 
 
+@mark_as_numba
 def test_IdealSolution_np_out():
     from thermo import IdealSolution
     from thermo.numba import IdealSolution as IdealSolutionnp
@@ -103,6 +104,7 @@ def test_IdealSolution_np_out():
     check_np_output_activity(model, modelnp, modelnp2)
 
 
+@mark_as_numba
 def test_Wilson_numpy_output():
     T = 331.42
     N = 3
@@ -128,6 +130,7 @@ def test_Wilson_numpy_output():
 
     check_np_output_activity(model, modelnp, modelnp2)
 
+@mark_as_numba
 def test_NRTL_numpy_output():
     NRTLnp = thermo.numba.nrtl.NRTL
     alphas = [[[0.0, 2e-05], [0.2937, 7e-05], [0.2999, 0.0001]],
@@ -154,6 +157,7 @@ def test_NRTL_numpy_output():
 
     check_np_output_activity(model, modelnp, modelnp2)
 
+@mark_as_numba
 def test_UNIQUAC_numpy_output():
     UNIQUACnp = thermo.numba.uniquac.UNIQUAC
 
