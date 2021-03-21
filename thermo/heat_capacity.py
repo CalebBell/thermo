@@ -1151,7 +1151,7 @@ class HeatCapacityLiquid(TDependentProperty):
                     - Dadgostar_Shaw_integral(T1, self.similarity_variable))
             return property_mass_to_molar(dH, self.MW)
         elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
-            return float(quad(self.calculate, T1, T2, args=(method))[0])
+            return float(quad(self.calculate, T1, T2, args=(method,))[0])
         else:
             raise Exception('Method not valid')
 
@@ -1533,7 +1533,7 @@ class HeatCapacitySolid(TDependentProperty):
                     - Lastovka_solid_integral(T1, self.similarity_variable))
             return property_mass_to_molar(dH, self.MW)
         elif method in self.tabular_data:
-            return float(quad(self.calculate, T1, T2, args=(method))[0])
+            return float(quad(self.calculate, T1, T2, args=(method,))[0])
         else:
             raise Exception('Method not valid')
 

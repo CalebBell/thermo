@@ -26,11 +26,17 @@ import pandas as pd
 from math import isnan
 from fluids.numerics import linspace, assert_close, derivative, assert_close1d
 from thermo.vapor_pressure import *
-from thermo.vapor_pressure import COOLPROP, VDI_PPDS, VDI_TABULAR, WAGNER_MCGARRY, ANTOINE_EXTENDED_POLING, ANTOINE_POLING, WAGNER_POLING, DIPPR_PERRY_8E
+from thermo.vapor_pressure import SANJARI, EDALAT, AMBROSE_WALTON, LEE_KESLER_PSAT, BOILING_CRITICAL, COOLPROP, VDI_PPDS, VDI_TABULAR, WAGNER_MCGARRY, ANTOINE_EXTENDED_POLING, ANTOINE_POLING, WAGNER_POLING, DIPPR_PERRY_8E
 from chemicals.identifiers import check_CAS
 from math import *
 
-### Main predictor
+
+@pytest.mark.CoolProp
+@pytest.mark.meta_T_dept
+def test_VaporPressure_CoolProp():
+    EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
+    assert_close(EtOH.calculate(305.0, COOLPROP), 11592.205263402893, rtol=1e-7)
+
 @pytest.mark.meta_T_dept
 def test_VaporPressure():
     # Ethanol, test as many methods asa possible at once
@@ -40,13 +46,27 @@ def test_VaporPressure():
     if COOLPROP in methods:
         methods.remove(COOLPROP)
 
-    Psat_calcs = []
+    Psats_expected = {WAGNER_MCGARRY: 11579.634014300127,
+                     WAGNER_POLING: 11590.408779316374,
+                     ANTOINE_POLING: 11593.661615921257,
+                     DIPPR_PERRY_8E: 11659.154222044575,
+                     VDI_PPDS: 11698.02742876088,
+                     BOILING_CRITICAL: 14088.453409816764,
+                     LEE_KESLER_PSAT: 11350.156640503357,
+                     AMBROSE_WALTON: 11612.378633936816,
+                     SANJARI: 9210.262000640221,
+                     EDALAT: 12081.738947110121}
+
+    T = 305.0
+    Psat_calcs = {}
     for i in methods:
         EtOH.method = i
-        Psat_calcs.append(EtOH.T_dependent_property(305.))
+        Psat_calcs[i] = EtOH.T_dependent_property(T)
+        Tmin, Tmax = EtOH.T_limits[i]
+        assert Tmin < T < Tmax
 
-    Psat_exp = [11579.634014300127, 11698.02742876088, 11590.408779316374, 11659.154222044575, 11592.205263402893, 11593.661615921257, 11612.378633936816, 11350.156640503357, 12081.738947110121, 14088.453409816764, 9210.26200064024]
-    assert_close1d(sorted(Psat_calcs), sorted(Psat_exp))
+    for k, v in Psats_expected.items():
+        assert_close(v, Psat_calcs[k], rtol=1e-11)
 
     assert_close(EtOH.calculate(305, VDI_TABULAR), 11690.81660829924, rtol=1E-4)
 
