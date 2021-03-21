@@ -36,7 +36,7 @@ Vapor Pressure
     :members: calculate, test_method_validity,
               interpolation_T, interpolation_property,
               interpolation_property_inv, name, property_max, property_min,
-              units, Tmin, Tmax, ranked_methods
+              units, ranked_methods
     :undoc-members:
     :show-inheritance:
     :exclude-members:
@@ -49,7 +49,7 @@ Sublimation Pressure
     :members: calculate, test_method_validity,
               interpolation_T, interpolation_property,
               interpolation_property_inv, name, property_max, property_min,
-              units, Tmin, Tmax, ranked_methods
+              units, ranked_methods
     :undoc-members:
     :show-inheritance:
     :exclude-members:
@@ -256,9 +256,7 @@ class VaporPressure(TDependentProperty):
     custom_args = ('Tb', 'Tc', 'Pc', 'omega', 'eos')
 
     def __init__(self, Tb=None, Tc=None, Pc=None, omega=None, CASRN='',
-                 eos=None, load_data=True,
-                 extrapolation='AntoineAB|DIPPR101_ABC', poly_fit=None,
-                 method=None):
+                 eos=None, extrapolation='AntoineAB|DIPPR101_ABC', **kwargs):
         self.CASRN = CASRN
         self.Tb = Tb
         self.Tc = Tc
@@ -266,32 +264,7 @@ class VaporPressure(TDependentProperty):
         self.omega = omega
         self.eos = eos
 
-        self.Tmin = None
-        '''Minimum temperature at which no method can calculate vapor pressure
-        under.'''
-
-        self.Tmax = None
-        '''Maximum temperature at which no method can calculate vapor pressure
-        above; by definition the critical point.'''
-
-        super(VaporPressure, self)._set_common_attributes()
-
-
-        self.load_all_methods(load_data)
-        self.extrapolation = extrapolation
-
-        if poly_fit is not None:
-            self._set_poly_fit(poly_fit)
-            if self.Tmin is None and hasattr(self, 'poly_fit_Tmin'):
-                self.Tmin = self.poly_fit_Tmin*.01
-            if self.Tmax is None and hasattr(self, 'poly_fit_Tmax'):
-                self.Tmax = self.poly_fit_Tmax*10
-        elif method is not None:
-            self.method = method
-        else:
-            methods = self.valid_methods(T=None)
-            if methods:
-                self.method = methods[0]
+        super(VaporPressure, self).__init__(extrapolation, **kwargs)
 
     @staticmethod
     def _method_indexes():
@@ -748,38 +721,13 @@ class SublimationPressure(TDependentProperty):
     custom_args = ('Tt', 'Pt', 'Hsub_t')
 
     def __init__(self, CASRN=None, Tt=None, Pt=None, Hsub_t=None,
-                 load_data=True, extrapolation=None, poly_fit=None,
-                 method=None):
+                 extrapolation=None, **kwargs):
         self.CASRN = CASRN
         self.Tt = Tt
         self.Pt = Pt
         self.Hsub_t = Hsub_t
 
-        self.Tmin = None
-        '''Minimum temperature at which no method can calculate sublimation pressure
-        under.'''
-
-        self.Tmax = None
-        '''Maximum temperature at which no method can calculate sublimation pressure
-        above; by definition the critical point.'''
-
-        super(SublimationPressure, self)._set_common_attributes()
-
-        self.load_all_methods(load_data)
-        self.extrapolation = extrapolation
-
-        if poly_fit is not None:
-            self._set_poly_fit(poly_fit)
-            if self.Tmin is None and hasattr(self, 'poly_fit_Tmin'):
-                self.Tmin = self.poly_fit_Tmin/100
-            if self.Tmax is None and hasattr(self, 'poly_fit_Tmax'):
-                self.Tmax = self.poly_fit_Tmax*10
-        elif method is not None:
-            self.method = method
-        else:
-            methods = self.valid_methods(T=None)
-            if methods:
-                self.method = methods[0]
+        super(SublimationPressure, self).__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical

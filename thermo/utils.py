@@ -2302,6 +2302,18 @@ class TDependentProperty(object):
             if self.__class__.__name__ == 'EnthalpyVaporization':
                 self.poly_fit_Tc = poly_fit[2]
                 self._set_poly_fit((poly_fit[0], poly_fit[1], poly_fit[3]))
+            elif self.__class__.__name__ == 'VaporPressure':
+                self._set_poly_fit(poly_fit)
+                if self.Tmin is None and hasattr(self, 'poly_fit_Tmin'):
+                    self.Tmin = self.poly_fit_Tmin*.01
+                if self.Tmax is None and hasattr(self, 'poly_fit_Tmax'):
+                    self.Tmax = self.poly_fit_Tmax*10.0
+            elif self.__class__.__name__ == 'SublimationPressure':
+                self._set_poly_fit(poly_fit)
+                if self.Tmin is None and hasattr(self, 'poly_fit_Tmin'):
+                    self.Tmin = self.poly_fit_Tmin*.001
+                if self.Tmax is None and hasattr(self, 'poly_fit_Tmax'):
+                    self.Tmax = self.poly_fit_Tmax*10.0
             else:
                 self._set_poly_fit(poly_fit)
         elif method is not None:
