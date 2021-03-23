@@ -768,6 +768,7 @@ class TDependentProperty(object):
     interpolation_property_inv = None
 
     extrapolation = 'linear'
+    extrapolations = []
 
     tabular_extrapolation_pts = 20
     '''The number of points to calculate at and use when doing a tabular
@@ -785,7 +786,8 @@ class TDependentProperty(object):
     property_min = 0
     property_max = 1E4  # Arbitrary max
     T_cached = None
-    all_poly_fit = False
+    use_poly_fit = False
+
 
     T_limits = {}
     '''Dictionary containing method: (Tmin, Tmax) pairs for all methods applicable
@@ -1234,7 +1236,7 @@ class TDependentProperty(object):
         if (poly_fit is not None and len(poly_fit) and (poly_fit[0] is not None
            and poly_fit[1] is not None and  poly_fit[2] is not None)
             and not isnan(poly_fit[0]) and not isnan(poly_fit[1])):
-            self.all_poly_fit = True
+            self.use_poly_fit = True
             self.poly_fit_Tmin = Tmin = poly_fit[0]
             self.poly_fit_Tmax = Tmax = poly_fit[1]
             self.poly_fit_coeffs = poly_fit_coeffs = poly_fit[2]
@@ -1315,7 +1317,7 @@ class TDependentProperty(object):
             raise ValueError("Unknown method")
 
     def _calculate_extrapolate(self, T, method):
-        if self.all_poly_fit:
+        if self.use_poly_fit:
             try:
                 return self.calculate(T, POLY_FIT)
             except Exception as e:
@@ -1390,7 +1392,7 @@ class TDependentProperty(object):
         prop : float
             Calculated property, [`units`]
         '''
-        if self.all_poly_fit:
+        if self.use_poly_fit:
             try:
                 return self.calculate(T, POLY_FIT)
             except Exception as e:
@@ -1957,14 +1959,6 @@ class TDependentProperty(object):
             pass
         return None
 
-    @property
-    def extrapolation(self):
-        '''The string setting of the current extrapolation settings.
-        This can be set to a new value to change which extrapolation setting
-        is used.
-        '''
-        return self._extrapolation
-
     def _load_extapolation_coeffs(self, method):
         T_limits = self.T_limits
 
@@ -2119,11 +2113,20 @@ class TDependentProperty(object):
                 raise ValueError("Could not recognize extrapolation setting")
 
 
+    @property
+    def extrapolation(self):
+        '''The string setting of the current extrapolation settings.
+        This can be set to a new value to change which extrapolation setting
+        is used.
+        '''
+        return self._extrapolation
+
     @extrapolation.setter
     def extrapolation(self, extrapolation):
         self._extrapolation = extrapolation
         if extrapolation is None:
             self.extrapolation_split = False
+            self._extrapolation_low = self._extrapolation_high = extrapolations = None
             return
         self.extrapolation_split = '|' in extrapolation
 
@@ -2716,7 +2719,7 @@ class TPDependentProperty(TDependentProperty):
 
         if name is None:
             name = 'Tabular data series #' + str(len(self.tabular_data))  # Will overwrite a poorly named series
-        self.tabular_data_P[name] = (Ts, Ps, properties)
+        self.tabular_data_P[name] = [Ts, Ps, properties]
         self.all_methods_P.add(name)
 
         self.method_P = name

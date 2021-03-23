@@ -26,6 +26,7 @@ from fluids.numerics import assert_close, assert_close1d
 from fluids.constants import R
 from thermo.thermal_conductivity import *
 from thermo.mixture import Mixture
+import json
 from thermo.thermal_conductivity import MAGOMEDOV, DIPPR_9H, FILIPPOV, LINEAR, ThermalConductivityLiquidMixture
 from thermo.thermal_conductivity import (GHARAGHEIZI_G, CHUNG, ELI_HANLEY, VDI_PPDS,
                                         ELI_HANLEY_DENSE, CHUNG_DENSE,
@@ -38,33 +39,50 @@ from thermo.thermal_conductivity import (GHARAGHEIZI_G, CHUNG, ELI_HANLEY, VDI_P
 
 
 
+@pytest.mark.CoolProp
+@pytest.mark.meta_T_dept
+def test_ThermalConductivityLiquid_CoolProp():
+    EtOH = ThermalConductivityLiquid(CASRN='64-17-5', MW=46.06844, Tm=159.05, Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, Hfus=4931.0)
+
+    EtOH.method = COOLPROP
+    assert_close(EtOH.T_dependent_property(305.), 0.162183005823234)
+
+    assert_close(EtOH.calculate_P(298.15, 1E6, COOLPROP), 0.1639626989794703)
+    assert [False, True] == [EtOH.test_method_validity_P(300, P, COOLPROP) for P in (1E3, 1E5)]
+
 @pytest.mark.meta_T_dept
 def test_ThermalConductivityLiquid():
     EtOH = ThermalConductivityLiquid(CASRN='64-17-5', MW=46.06844, Tm=159.05, Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, Hfus=4931.0)
 
-    EtOH.T_dependent_property(305.)
-    all_methods = EtOH.all_methods
-    methods = list(all_methods)
-    methods.remove(VDI_TABULAR)
-    kl_calcs = []
-    for i in methods:
-        EtOH.method = i
-        kl_calcs.append(EtOH.T_dependent_property(305.))
-
-    kl_exp = [0.162183005823234, 0.16627999999999998, 0.166302, 0.20068212675966418, 0.18526367184633258, 0.18846433785041306, 0.16837295487233528, 0.16883011582627103, 0.09330268101157643, 0.028604363267557775]
-    assert_close1d(sorted(kl_calcs), sorted(kl_exp))
+    EtOH.method = NICOLA
+    assert_close(EtOH.T_dependent_property(305.), 0.18846433785041308)
+    EtOH.method = LAKSHMI_PRASAD
+    assert_close(EtOH.T_dependent_property(305.), 0.028604363267557775)
+    EtOH.method = SHEFFY_JOHNSON
+    assert_close(EtOH.T_dependent_property(305.), 0.16883011582627103)
+    EtOH.method = SATO_RIEDEL
+    assert_close(EtOH.T_dependent_property(305.), 0.18526367184633263)
+    EtOH.method = VDI_PPDS
+    assert_close(EtOH.T_dependent_property(305.), 0.166302)
+    EtOH.method = DIPPR_PERRY_8E
+    assert_close(EtOH.T_dependent_property(305.), 0.16627999999999998)
+    EtOH.method = VDI_TABULAR
+    assert_close(EtOH.T_dependent_property(305.), 0.17418277049234407)
+    EtOH.method = GHARAGHEIZI_L
+    assert_close(EtOH.T_dependent_property(305.), 0.2006821267600352)
+    EtOH.method = BAHADORI_L
+    assert_close(EtOH.T_dependent_property(305.), 0.09330268101157693)
+    EtOH.method = NICOLA_ORIGINAL
+    assert_close(EtOH.T_dependent_property(305.), 0.16837295487233528)
 
     assert_close(EtOH.calculate(305., VDI_TABULAR), 0.17417420086033197, rtol=1E-4)
 
 
     # Test that methods return None
     EtOH.extrapolation = None
-    kl_calcs = []
-    for i in all_methods:
+    for i in EtOH.all_methods:
         EtOH.method = i
-        kl_calcs.append(EtOH.T_dependent_property(5000))
-
-    assert [None]*11 == kl_calcs
+        assert EtOH.T_dependent_property(5000) is None
 
     EtOH.method = VDI_TABULAR
     EtOH.extrapolation = 'interp1d'
@@ -78,14 +96,12 @@ def test_ThermalConductivityLiquid():
     assert ThermalConductivityLiquid.from_json(EtOH.as_json()) == EtOH
 
     # Ethanol compressed
-    assert [False, True] == [EtOH.test_method_validity_P(300, P, COOLPROP) for P in (1E3, 1E5)]
     assert [True, True] == [EtOH.test_method_validity_P(300, P, DIPPR_9G) for P in (1E3, 1E5)]
     assert [True, True, False] == [EtOH.test_method_validity_P(300, P, MISSENARD) for P in (1E3, 1E5, 1E10)]
 
-    EtOH = ThermalConductivityLiquid(CASRN='64-17-5', MW=46.06844, Tm=159.05, Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, Hfus=4931.0)
-    assert_close(EtOH.calculate_P(298.15, 1E6, COOLPROP), 0.1639626989794703)
-    assert_close(EtOH.calculate_P(298.15, 1E6, DIPPR_9G), 0.1606146938795702)
-    assert_close(EtOH.calculate_P(298.15, 1E6, MISSENARD), 0.1641582259181843)
+    EtOH.method = DIPPR_PERRY_8E
+    assert_close(EtOH.calculate_P(298.15, 1E6, DIPPR_9G), 0.16512516068013278)
+    assert_close(EtOH.calculate_P(298.15, 1E6, MISSENARD), 0.1687682040600248)
 
 
     # Ethanol data, calculated from CoolProp
@@ -106,6 +122,19 @@ def test_ThermalConductivityLiquid():
     assert False == EtOH.test_method_validity_P(-10, 1E5, DIPPR_9G)
 
     assert ThermalConductivityLiquid.from_json(EtOH.as_json()) == EtOH
+
+    # Hash checks
+    hash0 = hash(EtOH)
+    EtOH2 = ThermalConductivityLiquid.from_json(json.loads(json.dumps(EtOH.as_json())))
+
+    assert EtOH == EtOH2
+    assert hash(EtOH) == hash0
+    assert hash(EtOH2) == hash0
+
+#    EtOH2 = eval(str(EtOH))
+#    assert EtOH == EtOH2
+#    assert hash(EtOH) == hash0
+#    assert hash(EtOH2) == hash0
 
 @pytest.mark.meta_T_dept
 def test_ThermalConductivityGas():
