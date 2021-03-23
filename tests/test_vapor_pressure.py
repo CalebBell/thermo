@@ -287,10 +287,13 @@ def test_VaporPressure_extrapolation_no_validation():
     assert N2(1000.15) is not None
 
 
+@pytest.mark.meta_T_dept
 def test_VaporPressure_fast_Psat_poly_fit_extrapolation():
     obj = VaporPressure(poly_fit=(175.7, 512.49, [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10,
                                                 -2.443464113936029e-07, 7.893819658700523e-05, -0.016615779444332356, 2.1842496316772264, -134.19766175812708]))
     obj.extrapolation = 'AntoineAB|DIPPR101_ABC'
+    # If the extrapolation is made generic, the extrapolated results will change
+    # right now it is not going off the direct property calc
     assert_close(obj.solve_property(.0000000000001), 3.2040851644645945)
     assert_close(obj.solve_property(300), 237.7793675652309)
     assert_close(obj.solve_property(1e8), 661.6135315674736)

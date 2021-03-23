@@ -131,10 +131,10 @@ def test_ThermalConductivityLiquid():
     assert hash(EtOH) == hash0
     assert hash(EtOH2) == hash0
 
-#    EtOH2 = eval(str(EtOH))
-#    assert EtOH == EtOH2
-#    assert hash(EtOH) == hash0
-#    assert hash(EtOH2) == hash0
+    EtOH2 = eval(str(EtOH))
+    assert EtOH == EtOH2
+    assert hash(EtOH) == hash0
+    assert hash(EtOH2) == hash0
 
 @pytest.mark.meta_T_dept
 def test_ThermalConductivityGas():

@@ -760,7 +760,6 @@ class TDependentProperty(object):
     # Dummy properties
     name = 'Property name'
     units = 'Property units'
-    tabular_extrapolation_permitted = True
 
     interpolation_T = None
     interpolation_T_inv = None
@@ -878,6 +877,8 @@ class TDependentProperty(object):
             base += 'method_P=%s, ' %(method_P_str)
             if self.tabular_data_P:
                 base += 'tabular_data_P=%s, ' %(self.tabular_data_P)
+            base += 'tabular_extrapolation_permitted=%s, ' %(self.tabular_extrapolation_permitted)
+
 
         if hasattr(self, 'poly_fit_Tmin') and self.poly_fit_Tmin is not None:
             base += 'poly_fit=(%s, %s, %s), ' %(self.poly_fit_Tmin, self.poly_fit_Tmax, self.poly_fit_coeffs)
@@ -2126,7 +2127,7 @@ class TDependentProperty(object):
         self._extrapolation = extrapolation
         if extrapolation is None:
             self.extrapolation_split = False
-            self._extrapolation_low = self._extrapolation_high = extrapolations = None
+            self._extrapolation_low = self._extrapolation_high = self.extrapolations = None
             return
         self.extrapolation_split = '|' in extrapolation
 
@@ -2340,31 +2341,8 @@ class TDependentProperty(object):
             if methods:
                 self.method = methods[0]
 
-    # Dummy functions, always to be overwritten, only for testing
     def load_all_methods(self):
-        r'''Method to load all data, and set all_methods based on the available
-        data and properties. Demo function for testing only; must be
-        implemented according to the methods available for each individual
-        method.
-        '''
-        methods = []
-        Tmins, Tmaxs = [], []
-        if self.CASRN in ['7732-18-5', '67-56-1', '64-17-5']:
-            methods.append(TEST_METHOD_1)
-            self.TEST_METHOD_1_Tmin = 200.
-            self.TEST_METHOD_1_Tmax = 350
-            self.TEST_METHOD_1_coeffs = [1, .002]
-            Tmins.append(self.TEST_METHOD_1_Tmin); Tmaxs.append(self.TEST_METHOD_1_Tmax)
-        if self.CASRN in ['67-56-1']:
-            methods.append(TEST_METHOD_2)
-            self.TEST_METHOD_2_Tmin = 300.
-            self.TEST_METHOD_2_Tmax = 400
-            self.TEST_METHOD_2_coeffs = [1, .003]
-            Tmins.append(self.TEST_METHOD_2_Tmin); Tmaxs.append(self.TEST_METHOD_2_Tmax)
-        self.all_methods = set(methods)
-        if Tmins and Tmaxs:
-            self.Tmin = min(Tmins)
-            self.Tmax = max(Tmaxs)
+        pass
 
     def calculate(self, T, method):
         r'''Method to calculate a property with a specified method, with no
@@ -2384,11 +2362,7 @@ class TDependentProperty(object):
         prop : float
             Calculated property, [`units`]
         '''
-        if method == TEST_METHOD_1:
-            prop = self.TEST_METHOD_1_coeffs[0] + self.TEST_METHOD_1_coeffs[1]*T
-        elif method == TEST_METHOD_2:
-            prop = self.TEST_METHOD_2_coeffs[0] + self.TEST_METHOD_2_coeffs[1]*T
-        elif method in self.tabular_data:
+        if method in self.tabular_data:
             prop = self.interpolate(T, method)
         return prop
 
@@ -2411,20 +2385,13 @@ class TDependentProperty(object):
             Whether or not a specifid method is valid
         '''
         validity = True
-        if method == TEST_METHOD_1:
-            if T < self.TEST_METHOD_1_Tmin or T > self.TEST_METHOD_1_Tmax:
-                validity = False
-        elif method == TEST_METHOD_2:
-            if T < self.TEST_METHOD_2_Tmin or T > self.TEST_METHOD_2_Tmax:
-                validity = False
-        elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
+        if method in self.tabular_data:
             if not self.tabular_extrapolation_permitted:
                 Ts, properties = self.tabular_data[method]
                 if T < Ts[0] or T > Ts[-1]:
                     validity = False
         else:
-            raise Exception('Method not valid')
+            raise ValueError('Method not valid')
         return validity
 
 
@@ -2506,6 +2473,9 @@ class TPDependentProperty(TDependentProperty):
         properties; filled by :obj:`load_all_methods`.'''
 
         super(TPDependentProperty, self).__init__(extrapolation, **kwargs)
+
+
+        self.tabular_extrapolation_permitted = kwargs.get('tabular_extrapolation_permitted', True)
 
         if kwargs.get('tabular_data_P', None):
             for name, (Ts, Ps, properties) in kwargs['tabular_data_P'].items():
