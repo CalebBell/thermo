@@ -6428,7 +6428,7 @@ if not is_micropython:
         # exec(build_CEOSLiquid())
 else:
     class CEOSLiquid(object):
-        pass
+        __full_path__ = 'thermo.phases.CEOSLiquid'
 
 CEOSLiquid.is_gas = False
 CEOSLiquid.is_liquid = True

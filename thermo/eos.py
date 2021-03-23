@@ -265,7 +265,7 @@ __all__.extend(['main_derivatives_and_departures',
                 'main_derivatives_and_departures_VDW'])
 
 
-from cmath import atanh as catanh, log as clog
+from cmath import log as clog
 from math import isnan, isinf
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, newton,
@@ -273,7 +273,8 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              trunc_exp, secant, linspace, logspace,
                              horner, horner_and_der, horner_and_der2, derivative,
                              roots_cubic_a2, isclose, NoSolutionError,
-                             roots_quartic, deflate_cubic_real_roots)
+                             roots_quartic, deflate_cubic_real_roots,
+                             catanh)
 
 from fluids.constants import mmHg, R
 

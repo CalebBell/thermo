@@ -56,7 +56,7 @@ __all__ = ['NRTL', 'NRTL_gammas']
 
 try:
     array, zeros, npsum, nplog = np.array, np.zeros, np.sum, np.log
-except AttributeError:
+except (ImportError, AttributeError):
     pass
 
 def nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas=None, vec0=None, vec1=None):

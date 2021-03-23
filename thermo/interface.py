@@ -72,7 +72,7 @@ from chemicals.interface import *
 from chemicals import interface
 from fluids.numerics import numpy as np
 from fluids.constants import N_A, k
-from thermo.utils import TDependentProperty, MixtureProperty
+from thermo.utils import TDependentProperty, MixtureProperty, LINEAR, VDI_TABULAR
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
 from thermo.volume import VolumeLiquid
@@ -80,10 +80,8 @@ from thermo.heat_capacity import HeatCapacityLiquid
 
 
 STREFPROP = 'REFPROP'
-SUPERCRITICAL = 'SUPERCRITICAL'
 SOMAYAJULU2 = 'SOMAYAJULU2'
 SOMAYAJULU = 'SOMAYAJULU'
-VDI_TABULAR = 'VDI_TABULAR'
 JASPER = 'JASPER'
 MIQUEU = 'MIQUEU'
 BROCK_BIRD = 'BROCK_BIRD'
@@ -536,9 +534,8 @@ class SurfaceTension(TDependentProperty):
 
 WINTERFELDSCRIVENDAVIS = 'Winterfeld, Scriven, and Davis (1978)'
 DIGUILIOTEJA = 'Diguilio and Teja (1988)'
-SIMPLE = 'Simple'
 
-surface_tension_mixture_methods = [WINTERFELDSCRIVENDAVIS, DIGUILIOTEJA, SIMPLE]
+surface_tension_mixture_methods = [WINTERFELDSCRIVENDAVIS, DIGUILIOTEJA, LINEAR]
 '''Holds all methods available for the :obj:`SurfaceTensionMixture` class, for use in
 iterating over them.'''
 
@@ -554,7 +551,7 @@ class SurfaceTensionMixture(MixtureProperty):
     pure component. :obj:`Diguilio_Teja <chemicals.interface.Diguilio_Teja>` is of similar accuracy, but requires
     the surface tensions of pure components at their boiling points, as well
     as boiling points and critical points and mole fractions. An ideal mixing
-    rule based on mole fractions, **SIMPLE**, is also available and is still
+    rule based on mole fractions, **LINEAR**, is also available and is still
     relatively accurate.
 
     Parameters
@@ -584,7 +581,7 @@ class SurfaceTensionMixture(MixtureProperty):
         Mixing rule described in :obj:`Winterfeld_Scriven_Davis <chemicals.interface.Winterfeld_Scriven_Davis>`.
     **DIGUILIOTEJA**:
         Mixing rule described in :obj:`Diguilio_Teja <chemicals.interface.Diguilio_Teja>`.
-    **SIMPLE**:
+    **LINEAR**:
         Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
 
     See Also
@@ -608,7 +605,7 @@ class SurfaceTensionMixture(MixtureProperty):
     '''Maximum valid value of surface tension. Set to roughly twice that of
     cobalt at its melting point.'''
 
-    ranked_methods = [WINTERFELDSCRIVENDAVIS, DIGUILIOTEJA, SIMPLE]
+    ranked_methods = [WINTERFELDSCRIVENDAVIS, DIGUILIOTEJA, LINEAR]
 
     pure_references = ('SurfaceTensions', 'VolumeLiquids')
     pure_reference_types = (SurfaceTension, VolumeLiquid)
@@ -659,7 +656,7 @@ class SurfaceTensionMixture(MixtureProperty):
         to reset the parameters.
         '''
         methods = []
-        methods.append(SIMPLE) # Needs sigma
+        methods.append(LINEAR) # Needs sigma
         methods.append(WINTERFELDSCRIVENDAVIS) # Nothing to load, needs rhoms, sigma
         if none_and_length_check((self.Tbs, self.Tcs)):
             self.sigmas_Tb = [i(Tb) for i, Tb in zip(self.SurfaceTensions, self.Tbs)]
@@ -697,7 +694,7 @@ class SurfaceTensionMixture(MixtureProperty):
         sigma : float
             Surface tension of the liquid at given conditions, [N/m]
         '''
-        if method == SIMPLE:
+        if method == LINEAR:
             sigmas = [i(T) for i in self.SurfaceTensions]
             return mixing_simple(zs, sigmas)
         elif method == DIGUILIOTEJA:
@@ -741,10 +738,10 @@ class SurfaceTensionMixture(MixtureProperty):
         validity : bool
             Whether or not a specifid method is valid
         '''
-        # SIMPLE and WINTERFELDSCRIVENDAVIS need to calculate sigma for pure
+        # LINEAR and WINTERFELDSCRIVENDAVIS need to calculate sigma for pure
         # species - doesn't work above Tc for any compound.
         # DIGUILIOTEJA needs Tcs, not sure.
-        if method in [SIMPLE, DIGUILIOTEJA, WINTERFELDSCRIVENDAVIS]:
+        if method in [LINEAR, DIGUILIOTEJA, WINTERFELDSCRIVENDAVIS]:
             return True
         else:
             raise Exception('Method not valid')

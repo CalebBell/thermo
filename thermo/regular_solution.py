@@ -44,7 +44,7 @@ from thermo.activity import GibbsExcess
 
 try:
     array, zeros, npsum = np.array, np.zeros, np.sum
-except:
+except (ImportError, AttributeError):
     pass
 
 __all__ = ['RegularSolution']

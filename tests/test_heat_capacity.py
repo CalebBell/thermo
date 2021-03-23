@@ -472,7 +472,7 @@ def test_HeatCapacityGasMixture():
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
 def test_HeatCapacityLiquidMixture_aqueous():
-    from thermo.heat_capacity import HeatCapacityLiquidMixture, SIMPLE
+    from thermo.heat_capacity import HeatCapacityLiquidMixture, LINEAR
 
     HeatCapacityLiquids = [HeatCapacityLiquid(method='COOLPROP', CASRN="7732-18-5", MW=18.01528, similarity_variable=0.16652530518537598, Tc=647.14, omega=0.344, extrapolation="linear"),
                            HeatCapacityLiquid(CASRN="7647-14-5", MW=58.44277, similarity_variable=0.034221512772238546, Tc=3400.0, omega=0.1894, extrapolation="linear", method="POLY_FIT", poly_fit=(1077.15, 3400.0, [-1.7104845836996866e-36, 3.0186209409101436e-32, -2.2964525212600158e-28, 9.82884046707168e-25, -2.585879179539946e-21, 4.276734025134063e-18, -0.00016783912672163547, 0.1862851719065294, -12.936804011905963]))]
@@ -484,7 +484,7 @@ def test_HeatCapacityLiquidMixture_aqueous():
     ws = [.9, .1]
     zs = ws_to_zs(ws=ws, MWs=[18.01528, 58.44277])
 
-    Cp = obj.calculate(T=301.5, P=101325.0, zs=zs, ws=[.9, .1], method=SIMPLE)
+    Cp = obj.calculate(T=301.5, P=101325.0, zs=zs, ws=[.9, .1], method=LINEAR)
     assert_close(Cp, 77.08377446120679, rtol=1e-7)
 
 @pytest.mark.meta_T_dept

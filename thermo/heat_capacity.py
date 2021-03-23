@@ -135,7 +135,7 @@ from thermo.electrochem import Laliberte_heat_capacity
 from thermo.utils import TDependentProperty, MixtureProperty
 from thermo.coolprop import *
 from cmath import log as clog, exp as cexp
-from thermo.utils import VDI_TABULAR, COOLPROP, POLY_FIT
+from thermo.utils import VDI_TABULAR, COOLPROP, POLY_FIT, LINEAR
 
 TRCIG = 'TRCIG'
 POLING_POLY = 'POLING_POLY'
@@ -1474,17 +1474,16 @@ class HeatCapacitySolid(TDependentProperty):
 
 
 ### Mixture heat capacities
-SIMPLE = 'SIMPLE'
 LALIBERTE = 'LALIBERTE'
-heat_capacity_gas_mixture_methods = [SIMPLE]
+heat_capacity_gas_mixture_methods = [LINEAR]
 '''Holds all methods available for the :obj:`HeatCapacityGasMixture` class, for use in
 iterating over them.'''
 
-heat_capacity_liquid_mixture_methods = [LALIBERTE, SIMPLE]
+heat_capacity_liquid_mixture_methods = [LALIBERTE, LINEAR]
 '''Holds all methods available for the :obj:`HeatCapacityLiquidMixture` class, for use in
 iterating over them.'''
 
-heat_capacity_solid_mixture_methods = [SIMPLE]
+heat_capacity_solid_mixture_methods = [LINEAR]
 '''Holds all methods available for the :obj:`HeatCapacitySolidMixture` class, for use in
 iterating over them.'''
 
@@ -1512,7 +1511,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     **LALIBERTE**:
         Electrolyte model equation with coefficients; see
         :obj:`thermo.electrochem.Laliberte_heat_capacity` for more details.
-    **SIMPLE**:
+    **LINEAR**:
         Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
     '''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
@@ -1525,7 +1524,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
     the critical point, this value can be obscenely high.'''
 
-    ranked_methods = [LALIBERTE, SIMPLE]
+    ranked_methods = [LALIBERTE, LINEAR]
     pure_references = ('HeatCapacityLiquids',)
     pure_reference_types = (HeatCapacityLiquid,)
 
@@ -1566,7 +1565,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods = [SIMPLE]
+        methods = [LINEAR]
         if len(self.CASs) > 1 and '7732-18-5' in self.CASs:
             Laliberte_data = electrochem.Laliberte_data
             a1s, a2s, a3s, a4s, a5s, a6s = [], [], [], [], [], []
@@ -1634,7 +1633,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
             Molar heat capacity of the liquid mixture at the given conditions,
             [J/mol]
         '''
-        if method == SIMPLE:
+        if method == LINEAR:
             Cplms = [i(T) for i in self.HeatCapacityLiquids]
             return mixing_simple(zs, Cplms)
         elif method == LALIBERTE:
@@ -1694,7 +1693,7 @@ class HeatCapacitySolidMixture(MixtureProperty):
     To iterate over all methods, use the list stored in
     :obj:`heat_capacity_solid_mixture_methods`.
 
-    **SIMPLE**:
+    **LINEAR**:
         Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
     '''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
@@ -1705,7 +1704,7 @@ class HeatCapacitySolidMixture(MixtureProperty):
     property_max = 1E4
     '''Maximum value of Heat capacity; arbitrarily set.'''
 
-    ranked_methods = [SIMPLE]
+    ranked_methods = [LINEAR]
     pure_references = ('HeatCapacitySolids',)
     pure_reference_types = (HeatCapacitySolid,)
 
@@ -1746,7 +1745,7 @@ class HeatCapacitySolidMixture(MixtureProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods = [SIMPLE]
+        methods = [LINEAR]
         self.all_methods = all_methods = set(methods)
         for m in self.ranked_methods:
             if m in all_methods:
@@ -1779,7 +1778,7 @@ class HeatCapacitySolidMixture(MixtureProperty):
         Cpsm : float
             Molar heat capacity of the solid mixture at the given conditions, [J/mol]
         '''
-        if method == SIMPLE:
+        if method == LINEAR:
             Cpsms = [i(T) for i in self.HeatCapacitySolids]
             return mixing_simple(zs, Cpsms)
         else:
@@ -1833,7 +1832,7 @@ class HeatCapacityGasMixture(MixtureProperty):
     To iterate over all methods, use the list stored in
     :obj:`heat_capacity_gas_mixture_methods`.
 
-    **SIMPLE**:
+    **LINEAR**:
         Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
     '''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
@@ -1845,7 +1844,7 @@ class HeatCapacityGasMixture(MixtureProperty):
     '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
     the critical point, this value can be obscenely high.'''
 
-    ranked_methods = [SIMPLE]
+    ranked_methods = [LINEAR]
     pure_references = ('HeatCapacityGases',)
     pure_reference_types = (HeatCapacityGas,)
 
@@ -1886,7 +1885,7 @@ class HeatCapacityGasMixture(MixtureProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods = [SIMPLE]
+        methods = [LINEAR]
         self.all_methods = all_methods = set(methods)
         for m in self.ranked_methods:
             if m in all_methods:
@@ -1920,7 +1919,7 @@ class HeatCapacityGasMixture(MixtureProperty):
             Molar heat capacity of the gas mixture at the given conditions,
             [J/mol]
         '''
-        if method == SIMPLE:
+        if method == LINEAR:
             Cpgms = [i(T) for i in self.HeatCapacityGases]
             return mixing_simple(zs, Cpgms)
         else:

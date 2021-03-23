@@ -152,7 +152,7 @@ from thermo.activity import GibbsExcess
 
 try:
     array, zeros, npexp, array_equal = np.array, np.zeros, np.exp, np.array_equal
-except AttributeError:
+except (ImportError, AttributeError):
     pass
 
 

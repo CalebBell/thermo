@@ -26,7 +26,7 @@ from fluids.numerics import assert_close, assert_close1d
 from fluids.constants import R
 from thermo.thermal_conductivity import *
 from thermo.mixture import Mixture
-from thermo.thermal_conductivity import MAGOMEDOV, DIPPR_9H, FILIPPOV, SIMPLE, ThermalConductivityLiquidMixture
+from thermo.thermal_conductivity import MAGOMEDOV, DIPPR_9H, FILIPPOV, LINEAR, ThermalConductivityLiquidMixture
 from thermo.thermal_conductivity import (GHARAGHEIZI_G, CHUNG, ELI_HANLEY, VDI_PPDS,
                                         ELI_HANLEY_DENSE, CHUNG_DENSE,
                                         EUCKEN_MOD, EUCKEN, BAHADORI_G,
@@ -96,7 +96,6 @@ def test_ThermalConductivityLiquid():
     recalc_pts = [[EtOH.TP_dependent_property(T, P) for T in Ts] for P in Ps]
     assert_close1d(TP_data, recalc_pts)
 
-    EtOH.forced_P = True
     assert_allclose(EtOH.TP_dependent_property(274, 9E4), 0.16848555706973622)
     EtOH.tabular_extrapolation_permitted = False
     assert None == EtOH.TP_dependent_property(300, 9E4)
@@ -181,7 +180,6 @@ def test_ThermalConductivityGas():
     recalc_pts = [[EtOH.TP_dependent_property(T, P) for T in Ts] for P in Ps]
     assert_allclose(TP_data, recalc_pts)
 
-    EtOH.forced_P = True
     EtOH.tabular_extrapolation_permitted = True
     assert_close(EtOH.TP_dependent_property(399, 9E3), 0.025825794817543015)
     EtOH.tabular_extrapolation_permitted = False
@@ -195,7 +193,7 @@ def test_ThermalConductivityGas():
 
 
 def test_ThermalConductivityGasMixture():
-    from thermo.thermal_conductivity import ThermalConductivityGasMixture, LINDSAY_BROMLEY, SIMPLE
+    from thermo.thermal_conductivity import ThermalConductivityGasMixture, LINDSAY_BROMLEY, LINEAR
 
     m2 = Mixture(['nitrogen', 'argon', 'oxygen'], ws=[0.7557, 0.0127, 0.2316])
     ThermalConductivityGases = [i.ThermalConductivityGas for i in m2.Chemicals]
@@ -211,7 +209,7 @@ def test_ThermalConductivityGasMixture():
     k = kg_mix.mixture_property(m2.T, m2.P, m2.zs, m2.ws)
     assert_close(k, 0.025864474514829254) # test LINDSAY_BROMLEY and mixture property
 
-    k =  kg_mix.calculate(m2.T, m2.P, m2.zs, m2.ws, SIMPLE) # Test calculate, and simple
+    k =  kg_mix.calculate(m2.T, m2.P, m2.zs, m2.ws, LINEAR) # Test calculate, and simple
     assert_close(k, 0.02586655464213776)
 
     dT1 = kg_mix.calculate_derivative_T(m2.T, m2.P, m2.zs, m2.ws, LINDSAY_BROMLEY)
@@ -225,11 +223,11 @@ def test_ThermalConductivityGasMixture():
 
     # Test other methods
 
-    assert kg_mix.all_methods == {LINDSAY_BROMLEY, SIMPLE}
-    assert kg_mix.ranked_methods == [LINDSAY_BROMLEY, SIMPLE]
+    assert kg_mix.all_methods == {LINDSAY_BROMLEY, LINEAR}
+    assert kg_mix.ranked_methods == [LINDSAY_BROMLEY, LINEAR]
 
     # set a method
-    kg_mix.method = SIMPLE
+    kg_mix.method = LINEAR
     k = kg_mix.mixture_property(m2.T, m2.P, m2.zs, m2.ws)
     assert_close(k, 0.02586655464213776)
 
@@ -243,7 +241,7 @@ def test_ThermalConductivityGasMixture():
 
 
 def test_ThermalConductivityLiquidMixture():
-    from thermo.thermal_conductivity import MAGOMEDOV, DIPPR_9H, FILIPPOV, SIMPLE, ThermalConductivityLiquidMixture
+    from thermo.thermal_conductivity import MAGOMEDOV, DIPPR_9H, FILIPPOV, LINEAR, ThermalConductivityLiquidMixture
 
     m = Mixture(['ethanol', 'pentanol'], ws=[0.258, 0.742], T=298.15)
     ThermalConductivityLiquids = [i.ThermalConductivityLiquid for i in m.Chemicals]
@@ -255,7 +253,7 @@ def test_ThermalConductivityLiquidMixture():
     k = kl_mix.calculate(m.T, m.P, m.zs, m.ws, FILIPPOV)
     assert_close(k, 0.15522139770330717)
 
-    k = kl_mix.calculate(m.T, m.P, m.zs, m.ws, SIMPLE)
+    k = kl_mix.calculate(m.T, m.P, m.zs, m.ws, LINEAR)
     assert_close(k, 0.1552717795028546)
 
     # Test electrolytes

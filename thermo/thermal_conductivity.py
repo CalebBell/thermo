@@ -137,7 +137,7 @@ from thermo.heat_capacity import HeatCapacityGas
 from thermo.volume import VolumeGas
 
 
-from thermo.utils import NEGLIGIBLE, DIPPR_PERRY_8E, POLY_FIT, VDI_TABULAR, VDI_PPDS, COOLPROP
+from thermo.utils import NEGLIGIBLE, DIPPR_PERRY_8E, POLY_FIT, VDI_TABULAR, VDI_PPDS, COOLPROP, LINEAR
 
 
 GHARAGHEIZI_L = 'GHARAGHEIZI_L'
@@ -507,8 +507,6 @@ class ThermalConductivityLiquid(TPDependentProperty):
             kl = horner(self.VDI_PPDS_coeffs, T)
         elif method == COOLPROP:
             kl = CoolProp_T_dependent_property(T, self.CASRN, 'L', 'l')
-        elif method in self.tabular_data:
-            kl = self.interpolate(T, method)
         elif method == POLY_FIT:
             if T < self.poly_fit_Tmin:
                 kl = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
@@ -516,6 +514,8 @@ class ThermalConductivityLiquid(TPDependentProperty):
                 kl = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
                 kl = horner(self.poly_fit_coeffs, T)
+        else:
+            return self._base_calculate(T, method)
         return kl
 
     def calculate_P(self, T, P, method):
@@ -547,8 +547,8 @@ class ThermalConductivityLiquid(TPDependentProperty):
             kl = Missenard(T, P, self.Tc, self.Pc, kl)
         elif method == COOLPROP:
             kl = PropsSI('L', 'T', T, 'P', P, self.CASRN)
-        elif method in self.tabular_data:
-            kl = self.interpolate_P(T, P, method)
+        else:
+            return self._base_calculate_P(T, P, method)
         return kl
 
     def test_method_validity(self, T, method):
@@ -658,9 +658,8 @@ class ThermalConductivityLiquid(TPDependentProperty):
 MAGOMEDOV = 'Magomedov'
 DIPPR_9H = 'DIPPR9H'
 FILIPPOV = 'Filippov'
-SIMPLE = 'Simple'
 
-thermal_conductivity_liquid_mixture_methods = [MAGOMEDOV, DIPPR_9H, FILIPPOV, SIMPLE]
+thermal_conductivity_liquid_mixture_methods = [MAGOMEDOV, DIPPR_9H, FILIPPOV, LINEAR]
 '''Holds all mixing rules available for the :obj:`ThermalConductivityLiquidMixture`
 class, for use in iterating over them.'''
 
@@ -675,7 +674,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     Prefered method is :obj:`DIPPR9H <chemicals.thermal_conductivity.DIPPR9H>` which requires mass
     fractions, and pure component liquid thermal conductivities. This is
     substantially better than the ideal mixing rule based on mole fractions,
-    **SIMPLE**. :obj:`Filippov <chemicals.thermal_conductivity.Filippov>`
+    **LINEAR**. :obj:`Filippov <chemicals.thermal_conductivity.Filippov>`
     is of similar accuracy but applicable to binary systems only.
 
     Parameters
@@ -703,7 +702,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     **Magomedov**:
         Coefficient-based method for aqueous electrolytes only, described in
         :obj:`thermo.electrochem.thermal_conductivity_Magomedov`.
-    **SIMPLE**:
+    **LINEAR**:
         Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
 
     See Also
@@ -725,7 +724,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     property_max = 10
     '''Maximum valid value of liquid thermal conductivity. Generous limit.'''
 
-    ranked_methods = [MAGOMEDOV, DIPPR_9H, SIMPLE, FILIPPOV]
+    ranked_methods = [MAGOMEDOV, DIPPR_9H, LINEAR, FILIPPOV]
 
     pure_references = ('ThermalConductivityLiquids',)
     pure_reference_types = (ThermalConductivityLiquid,)
@@ -772,7 +771,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods = [DIPPR_9H, SIMPLE]
+        methods = [DIPPR_9H, LINEAR]
         if len(self.CASs) == 2:
             methods.append(FILIPPOV)
         if '7732-18-5' in self.CASs and len(self.CASs)>1:
@@ -835,7 +834,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
         else:
             ks = [i.T_dependent_property(T) for i in self.ThermalConductivityLiquids]
 
-        if method == SIMPLE:
+        if method == LINEAR:
             return mixing_simple(zs, ks)
         elif method == DIPPR_9H:
             return DIPPR9H(ws, ks)
@@ -871,7 +870,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
         if MAGOMEDOV in self.all_methods:
             if method in self.all_methods:
                 return method == MAGOMEDOV
-        if method in [SIMPLE, DIPPR_9H, FILIPPOV]:
+        if method in [LINEAR, DIPPR_9H, FILIPPOV]:
             return True
         else:
             raise Exception('Method not valid')
@@ -1284,8 +1283,8 @@ class ThermalConductivityGas(TPDependentProperty):
                 kg = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
                 kg = horner(self.poly_fit_coeffs, T)
-        elif method in self.tabular_data:
-            kg = self.interpolate(T, method)
+        else:
+            return self._base_calculate(T, method)
         return kg
 
     def calculate_P(self, T, P, method):
@@ -1324,8 +1323,8 @@ class ThermalConductivityGas(TPDependentProperty):
             kg = Stiel_Thodos_dense(T, self.MW, self.Tc, self.Pc, self.Vc, self.Zc, Vmg, kg)
         elif method == COOLPROP:
             kg = PropsSI('L', 'T', T, 'P', P, self.CASRN)
-        elif method in self.tabular_data:
-            kg = self.interpolate_P(T, P, method)
+        else:
+            return self._base_calculate_P(T, P, method)
         return kg
 
     def test_method_validity(self, T, method):
@@ -1422,7 +1421,7 @@ class ThermalConductivityGas(TPDependentProperty):
 
 
 LINDSAY_BROMLEY = 'LINDSAY_BROMLEY'
-thermal_conductivity_gas_mixture_methods = [LINDSAY_BROMLEY, SIMPLE]
+thermal_conductivity_gas_mixture_methods = [LINDSAY_BROMLEY, LINEAR]
 '''Holds all mixing rules available for the :obj:`ThermalConductivityGasMixture`
 class, for use in iterating over them.'''
 
@@ -1436,7 +1435,7 @@ class ThermalConductivityGasMixture(MixtureProperty):
     fractions, pure component viscosities and thermal conductivities, and the
     boiling point and molecular weight of each pure component. This is
     substantially better than the ideal mixing rule based on mole fractions,
-    **SIMPLE** which is also available. More information on this topic can
+    **LINEAR** which is also available. More information on this topic can
     be found in [1]_.
 
     Parameters
@@ -1463,7 +1462,7 @@ class ThermalConductivityGasMixture(MixtureProperty):
 
     **LINDSAY_BROMLEY**:
         Mixing rule described in :obj:`Lindsay_Bromley <chemicals.thermal_conductivity.Lindsay_Bromley>`.
-    **SIMPLE**:
+    **LINEAR**:
         Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
 
     See Also
@@ -1483,7 +1482,7 @@ class ThermalConductivityGasMixture(MixtureProperty):
     property_max = 10.
     '''Maximum valid value of gas thermal conductivity. Generous limit.'''
 
-    ranked_methods = [LINDSAY_BROMLEY, SIMPLE]
+    ranked_methods = [LINDSAY_BROMLEY, LINEAR]
 
     pure_references = ('ViscosityGases', 'ThermalConductivityGases')
     pure_reference_types = (ViscosityGas, ThermalConductivityGas)
@@ -1534,7 +1533,7 @@ class ThermalConductivityGasMixture(MixtureProperty):
         to reset the parameters.
         '''
         methods = []
-        methods.append(SIMPLE)
+        methods.append(LINEAR)
         if none_and_length_check((self.Tbs, self.MWs)):
             methods.append(LINDSAY_BROMLEY)
         self.all_methods = all_methods = set(methods)
@@ -1585,7 +1584,7 @@ class ThermalConductivityGasMixture(MixtureProperty):
         else:
             ks = [i.T_dependent_property(T) for i in self.ThermalConductivityGases]
 
-        if method == SIMPLE:
+        if method == LINEAR:
             return mixing_simple(zs, ks)
         elif method == LINDSAY_BROMLEY:
             if self._correct_pressure_pure:
@@ -1624,7 +1623,7 @@ class ThermalConductivityGasMixture(MixtureProperty):
         validity : bool
             Whether or not a specifid method is valid
         '''
-        if method in [SIMPLE, LINDSAY_BROMLEY]:
+        if method in [LINEAR, LINDSAY_BROMLEY]:
             return True
         else:
             raise Exception('Method not valid')

@@ -53,7 +53,7 @@ from thermo.activity import GibbsExcess, interaction_exp, dinteraction_exp_dT, d
 
 try:
     array, zeros, npsum, nplog = np.array, np.zeros, np.sum, np.log
-except AttributeError:
+except (ImportError, AttributeError):
     pass
 
 __all__ = ['Wilson', 'Wilson_gammas']

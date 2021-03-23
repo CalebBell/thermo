@@ -28,17 +28,30 @@ import pandas as pd
 from fluids.numerics import assert_close, assert_close1d, assert_close2d
 from fluids.constants import psi, atm, foot, lb
 from fluids.core import R2K, F2K
-from chemicals.utils import normalize, mixing_simple
+from chemicals.utils import normalize, mixing_simple, zs_to_ws
 from chemicals.viscosity import *
 from thermo.viscosity import *
 from chemicals.identifiers import check_CAS
 from thermo.viscosity import COOLPROP, LUCAS
 from thermo.mixture import Mixture
-from thermo.viscosity import LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, BROKAW, HERNING_ZIPPERER, WILKE, SIMPLE
-
+from thermo.eos import PR
+from thermo.volume import VolumeGas
+from thermo.viscosity import LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, BROKAW, HERNING_ZIPPERER, WILKE, LINEAR
 from thermo.viscosity import (COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                          VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
                          VDI_TABULAR, LETSOU_STIEL, PRZEDZIECKI_SRIDHAR)
+
+@pytest.mark.CoolProp
+@pytest.mark.meta_T_dept
+def test_ViscosityLiquid_CoolProp():
+    EtOH = ViscosityLiquid(MW=46.06844, Tm=159.05, Tc=514.0, Pc=6137000.0, Vc=0.000168, omega=0.635, Psat=7872.16, Vml=5.8676e-5, CASRN='64-17-5')
+    EtOH.method = (COOLPROP)
+    assert_close(EtOH.T_dependent_property(298.15), 0.0010823506202025659, rtol=1e-9)
+
+    # Ethanol compressed
+    assert [False, True] == [EtOH.test_method_validity_P(300, P, COOLPROP) for P in (1E3, 1E5)]
+
+
 
 @pytest.mark.meta_T_dept
 def test_ViscosityLiquid():
@@ -60,8 +73,6 @@ def test_ViscosityLiquid():
 
     assert EtOH.T_dependent_property(315) == EtOH2.T_dependent_property(315)
 
-    EtOH.method = (COOLPROP)
-    assert_close(EtOH.T_dependent_property(298.15), 0.0010823506202025659, rtol=1e-9)
     EtOH.method = (DIPPR_PERRY_8E)
     assert_close(EtOH.T_dependent_property(298.15), 0.0010774308462863267, rtol=1e-9)
     EtOH.method = (VDI_PPDS)
@@ -105,12 +116,10 @@ def test_ViscosityLiquid():
 
     # Ethanol compressed
     EtOH = ViscosityLiquid(MW=46.06844, Tm=159.05, Tc=514.0, Pc=6137000.0, Vc=0.000168, omega=0.635, Psat=7872.16, Vml=5.8676e-5, CASRN='64-17-5')
-
-    assert [False, True] == [EtOH.test_method_validity_P(300, P, COOLPROP) for P in (1E3, 1E5)]
     assert [True, True] == [EtOH.test_method_validity_P(300, P, LUCAS) for P in (1E3, 1E5)]
+    EtOH.method = DIPPR_PERRY_8E
 
-    assert_close(EtOH.calculate_P(298.15, 1E6, LUCAS), 0.0010880229239312313)
-    assert_close(EtOH.calculate_P(298.15, 1E6, COOLPROP), 0.0010885493279015608)
+    assert_close(EtOH.calculate_P(298.15, 1E6, LUCAS), 0.0010830773668247635)
 
     EtOH = ViscosityLiquid(MW=46.06844, Tm=159.05, Tc=514.0, Pc=6137000.0, Vc=0.000168, omega=0.635, Psat=7872.16, Vml=5.8676e-5, CASRN='64-17-5')
     # Ethanol data, calculated from CoolProp
@@ -128,7 +137,6 @@ def test_ViscosityLiquid():
 
 
     EtOH.tabular_extrapolation_permitted = False
-    EtOH.forced_P = True
     assert None == EtOH.TP_dependent_property(300, 9E4)
     EtOH.tabular_extrapolation_permitted = True
     assert_close(EtOH.TP_dependent_property(300, 9E4), 0.0010445175985089377)
@@ -178,6 +186,16 @@ def test_ViscosityLiquid_PPDS9_limits():
 
 
 
+@pytest.mark.CoolProp
+@pytest.mark.meta_T_dept
+def test_ViscosityGas_CoolProp():
+    EtOH = ViscosityGas(MW=46.06844, Tc=514.0, Pc=6137000.0, Zc=0.2412, dipole=1.44, Vmg=0.02357, CASRN='64-17-5')
+    EtOH.method = COOLPROP
+    assert_close(EtOH.T_dependent_property(305), 8.982631881778473e-06)
+
+    # Ethanol compressed
+    assert [True, False] == [EtOH.test_method_validity_P(300, P, COOLPROP) for P in (1E3, 1E5)]
+    assert_close(EtOH.calculate_P(298.15, 1E3, COOLPROP), 8.77706377246337e-06)
 
 @pytest.mark.meta_T_dept
 def test_ViscosityGas():
@@ -197,8 +215,6 @@ def test_ViscosityGas():
     assert_close(EtOH.T_dependent_property(305), 8.761390047621239e-06)
     EtOH.method = DIPPR_PERRY_8E
     assert_close(EtOH.T_dependent_property(305), 9.129674918795814e-06)
-    EtOH.method = COOLPROP
-    assert_close(EtOH.T_dependent_property(305), 8.982631881778473e-06)
 
 
     # Test that methods return None
@@ -218,13 +234,6 @@ def test_ViscosityGas():
     assert EtOH == EtOH2
     assert id(EtOH) != id(EtOH2)
 
-    # Ethanol compressed
-    EtOH = ViscosityGas(MW=46.06844, Tc=514.0, Pc=6137000.0, Zc=0.2412, dipole=1.44, Vmg=0.02357, CASRN='64-17-5')
-
-    assert [True, False] == [EtOH.test_method_validity_P(300, P, COOLPROP) for P in (1E3, 1E5)]
-
-    assert_close(EtOH.calculate_P(298.15, 1E3, COOLPROP), 8.77706377246337e-06)
-
 
     # Ethanol data, calculated from CoolProp
     Ts = [400, 500, 550]
@@ -235,7 +244,6 @@ def test_ViscosityGas():
     assert_close2d(TP_data, recalc_pts)
 
     EtOH.tabular_extrapolation_permitted = False
-    EtOH.forced_P = True
     assert None == EtOH.TP_dependent_property(300, 9E4)
     EtOH.tabular_extrapolation_permitted = True
     assert_close(EtOH.TP_dependent_property(300, 9E4), 1.1854259955707653e-05)
@@ -265,7 +273,7 @@ def test_ViscosityLiquidMixture():
     mu = obj.calculate(T, P, zs, ws, MIXING_LOG_MOLAR)
     assert_close(mu, 0.0009948528627794172)
 
-    mu = obj.calculate(T, P, zs, ws, SIMPLE)
+    mu = obj.calculate(T, P, zs, ws, LINEAR)
     assert_close(mu, 0.001039155803329608)
 
     # Test Laliberte
@@ -285,17 +293,29 @@ def test_ViscosityLiquidMixture():
 
 
 def test_ViscosityGasMixture():
-    # DIPPR  1983 manual example
-    m = Mixture(['dimethyl ether', 'sulfur dioxide'], zs=[.95, .05], T=308.2)
-    ViscosityGases = [i.ViscosityGas for i in m.Chemicals]
-    obj = ViscosityGasMixture(MWs=m.MWs, molecular_diameters=m.molecular_diameters, Stockmayers=m.Stockmayers, CASs=m.CASs, ViscosityGases=ViscosityGases)
+    # DIPPR  1983 manual example, ['dimethyl ether', 'sulfur dioxide']
+    T = 308.2
+    P = 101325.0
+    zs = [.95, .05]
+    MWs = [46.06844, 64.0638]
+    ws = zs_to_ws(zs, MWs)
+    molecular_diameters = [4.594142622412462, 3.98053]
+    Stockmayers = [330.53265973799995, 333.4]
+    CASs = ['115-10-6', '7446-09-5']
 
-    mu =  obj.mixture_property(m.T, m.P, m.zs, m.ws)
-    assert_close(mu, 9.637173494726528e-06)
+    VolumeGases = [VolumeGas(CASRN="115-10-6", MW=46.06844, Tc=400.2, Pc=5340000.0, omega=0.2033, dipole=1.3, eos=[PR(Tc=400.2, Pc=5340000.0, omega=0.2033, T=308.2, P=101325.0)], extrapolation=None, method=None, method_P="EOS"),
+                   VolumeGas(CASRN="7446-09-5", MW=64.0638, Tc=430.8, Pc=7884098.25, omega=0.251, dipole=1.63, eos=[PR(Tc=430.8, Pc=7884098.25, omega=0.251, T=308.2, P=101325.0)], extrapolation=None, method=None, method_P="EOS")]
 
-    viscosity_gas_mixture_methods = [BROKAW, HERNING_ZIPPERER, WILKE, SIMPLE]
-    mus = [obj.calculate(m.T, m.P, m.zs, m.ws, method) for method in viscosity_gas_mixture_methods]
-    assert_close1d(mus, [9.637173494726528e-06, 9.672122280295219e-06, 9.642294904686337e-06, 9.638962759382555e-06])
+    ViscosityGases = [ViscosityGas(CASRN="115-10-6", MW=46.06844, Tc=400.2, Pc=5340000.0, Zc=0.26961203187388905, dipole=1.3, Vmg=VolumeGases[0], extrapolation="linear", method=DIPPR_PERRY_8E, method_P=None),
+                      ViscosityGas(CASRN="7446-09-5", MW=64.0638, Tc=430.8, Pc=7884098.25, Zc=0.2685356680541311, dipole=1.63, Vmg=VolumeGases[1], extrapolation="linear", method=DIPPR_PERRY_8E, method_P=None)]
+
+    obj = ViscosityGasMixture(MWs=MWs, molecular_diameters=molecular_diameters, Stockmayers=Stockmayers, CASs=CASs,
+                              ViscosityGases=ViscosityGases, correct_pressure_pure=False)
+
+    assert_close(obj.calculate(T, P, zs, ws, BROKAW), 9.758786340336624e-06, rtol=1e-10)
+    assert_close(obj.calculate(T, P, zs, ws, HERNING_ZIPPERER), 9.79117166372455e-06, rtol=1e-10)
+    assert_close(obj.calculate(T, P, zs, ws, WILKE), 9.764037930004713e-06, rtol=1e-10)
+    assert_close(obj.calculate(T, P, zs, ws, LINEAR), 9.759079102058173e-06, rtol=1e-10)
 
     # Unhappy paths
     with pytest.raises(Exception):

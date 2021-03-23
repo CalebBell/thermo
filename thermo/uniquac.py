@@ -54,7 +54,7 @@ __all__ = ['UNIQUAC', 'UNIQUAC_gammas']
 
 try:
     array, zeros, npsum, nplog = np.array, np.zeros, np.sum, np.log
-except AttributeError:
+except (ImportError, AttributeError):
     pass
 
 def uniquac_phis(N, xs, rs, phis=None):

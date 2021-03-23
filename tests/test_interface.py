@@ -30,7 +30,7 @@ from chemicals.identifiers import check_CAS
 from fluids.numerics import assert_close, assert_close1d
 from thermo.volume import VolumeLiquid, VDI_PPDS
 from thermo.utils import POLY_FIT
-from thermo.interface import SurfaceTensionMixture, DIGUILIOTEJA, SIMPLE, WINTERFELDSCRIVENDAVIS
+from thermo.interface import SurfaceTensionMixture, DIGUILIOTEJA, LINEAR, WINTERFELDSCRIVENDAVIS
 
 @pytest.mark.meta_T_dept
 def test_SurfaceTension():
@@ -112,7 +112,7 @@ def test_SurfaceTensionMixture():
     assert_close(sigma, sigma_wsd)
 
     # Check the other implemented methods
-    sigma = a.calculate(T, P, zs, ws, SIMPLE)
+    sigma = a.calculate(T, P, zs, ws, LINEAR)
     assert_close(sigma, 0.025332871945242523)
 
     sigma = a.calculate(T, P, zs, ws, DIGUILIOTEJA)
