@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 from chemicals.utils import ws_to_zs
 from thermo.heat_capacity import *
-from thermo.heat_capacity import TRCIG, POLING_POLY, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR, LASTOVKA_SHAW
+from thermo.heat_capacity import TRCIG, POLING_POLY, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR, LASTOVKA_SHAW, ROWLINSON_BONDI, ZABRANSKY_QUASIPOLYNOMIAL_C, CRCSTD, ROWLINSON_POLING, POLING_CONST, ZABRANSKY_SPLINE_SAT, DADGOSTAR_SHAW, COOLPROP, ZABRANSKY_SPLINE_C, VDI_TABULAR
 from random import uniform
 from math import *
 from fluids.numerics import linspace, logspace, NotBoundedError, assert_close, assert_close1d
@@ -280,18 +280,33 @@ def test_HeatCapacitySolid_integrals():
 @pytest.mark.meta_T_dept
 def test_HeatCapacityLiquid():
     tol = HeatCapacityLiquid(CASRN='108-88-3', MW=92.13842, Tc=591.75, omega=0.257, Cpgm=115.30398669098454, similarity_variable=0.16279853724428964)
-    Cpl_calc = []
-    for i in tol.all_methods:
-        tol.method = i
-        Cpl_calc.append(tol.T_dependent_property(330))
+#    Cpl_calc = []
+#    for i in tol.all_methods:
+#        tol.method = i
+#        Cpl_calc.append(tol.T_dependent_property(330))
+
+    tol.method = ROWLINSON_BONDI
+    assert_close(tol.T_dependent_property(330.0), 165.45542037912406, rtol=1e-10)
+    tol.method = ZABRANSKY_QUASIPOLYNOMIAL_C
+    assert_close(tol.T_dependent_property(330.0), 165.472878778683, rtol=1e-10)
+    tol.method = CRCSTD
+    assert_close(tol.T_dependent_property(330.0), 157.3, rtol=1e-10)
+    tol.method = ROWLINSON_POLING
+    assert_close(tol.T_dependent_property(330.0), 167.33806248209527, rtol=1e-10)
+    tol.method = POLING_CONST
+    assert_close(tol.T_dependent_property(330.0), 157.29, rtol=1e-10)
+    tol.method = ZABRANSKY_SPLINE_SAT
+    assert_close(tol.T_dependent_property(330.0), 166.69813077891135, rtol=1e-10)
+    tol.method = DADGOSTAR_SHAW
+    assert_close(tol.T_dependent_property(330.0), 175.34392562391267, rtol=1e-10)
+    tol.method = ZABRANSKY_SPLINE_C
+    assert_close(tol.T_dependent_property(330.0), 166.7156677848114, rtol=1e-10)
+    tol.method = VDI_TABULAR
+    assert_close(tol.T_dependent_property(330.0), 166.52477714085708, rtol=1e-10)
 
     assert eval(str(tol)) == tol
     new = HeatCapacityLiquid.from_json(tol.as_json())
     assert new == tol
-
-    Cpls = [165.4728226923247, 166.5239869108539, 166.52164399712314, 175.3439256239127, 166.71561127721478, 157.3, 165.4554033804999, 166.69807427725885, 157.29, 167.3380448453572]
-    assert_close1d(sorted(Cpl_calc), sorted(Cpls), rtol=5e-6)
-
     tol.extrapolation = None
     for i in tol.all_methods:
         tol.method = i
@@ -313,7 +328,6 @@ def test_HeatCapacityLiquid():
     for i in propylbenzene.all_methods:
         propylbenzene.method = i
         Cpl_calc.append(propylbenzene.T_dependent_property(298.15))
-
 
     Cpls = [214.6499551694668, 214.69679325320664, 214.7, 214.71]
     assert_close1d(sorted(Cpl_calc), sorted(Cpls))
@@ -340,11 +354,15 @@ def test_HeatCapacityLiquid_CoolProp():
     tol = HeatCapacityLiquid(CASRN='108-88-3', MW=92.13842, Tc=591.75,
           omega=0.257, Cpgm=115.30398669098454, similarity_variable=0.16279853724428964)
 
+    tol.method = COOLPROP
+    assert_close(tol.T_dependent_property(330.0), 166.52164399712314, rtol=1e-10)
+
     dH = tol.calculate_integral(200, 300, COOLPROP)
     assert_close(dH, 14501.714588188637)
 
     dS = tol.calculate_integral_over_T(200, 300, COOLPROP)
     assert_close(dS, 58.50970500781979)
+
 
 
 @pytest.mark.meta_T_dept

@@ -569,15 +569,15 @@ class HeatCapacityGas(TDependentProperty):
 
 
 
-ZABRANSKY_SPLINE = 'Zabransky spline, averaged heat capacity'
-ZABRANSKY_QUASIPOLYNOMIAL = 'Zabransky quasipolynomial, averaged heat capacity'
-ZABRANSKY_SPLINE_C = 'Zabransky spline, constant-pressure'
-ZABRANSKY_QUASIPOLYNOMIAL_C = 'Zabransky quasipolynomial, constant-pressure'
-ZABRANSKY_SPLINE_SAT = 'Zabransky spline, saturation'
-ZABRANSKY_QUASIPOLYNOMIAL_SAT = 'Zabransky quasipolynomial, saturation'
-ROWLINSON_POLING = 'Rowlinson and Poling (2001)'
-ROWLINSON_BONDI = 'Rowlinson and Bondi (1969)'
-DADGOSTAR_SHAW = 'Dadgostar and Shaw (2011)'
+ZABRANSKY_SPLINE = 'ZABRANSKY_SPLINE'
+ZABRANSKY_QUASIPOLYNOMIAL = 'ZABRANSKY_QUASIPOLYNOMIAL'
+ZABRANSKY_SPLINE_C = 'ZABRANSKY_SPLINE_C'
+ZABRANSKY_QUASIPOLYNOMIAL_C = 'ZABRANSKY_QUASIPOLYNOMIAL_C'
+ZABRANSKY_SPLINE_SAT = 'ZABRANSKY_SPLINE_SAT'
+ZABRANSKY_QUASIPOLYNOMIAL_SAT = 'ZABRANSKY_QUASIPOLYNOMIAL_SAT'
+ROWLINSON_POLING = 'ROWLINSON_POLING'
+ROWLINSON_BONDI = 'ROWLINSON_BONDI'
+DADGOSTAR_SHAW = 'DADGOSTAR_SHAW'
 
 heat_capacity_liquid_methods = [ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
@@ -1134,8 +1134,8 @@ class HeatCapacityLiquid(TDependentProperty):
             return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
         else:
             raise Exception('Method not valid')
-LASTOVKA_S = 'Lastovka, Fulem, Becerra and Shaw (2008)'
-PERRY151 = '''Perry's Table 2-151'''
+LASTOVKA_S = 'LASTOVKA_S'
+PERRY151 = '''PERRY151'''
 heat_capacity_solid_methods = [PERRY151, CRCSTD, LASTOVKA_S]
 '''Holds all methods available for the :obj:`HeatCapacitySolid` class, for use in
 iterating over them.'''
