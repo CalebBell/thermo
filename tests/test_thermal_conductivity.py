@@ -21,12 +21,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from numpy.testing import assert_allclose
+import json
 import pytest
 from fluids.numerics import assert_close, assert_close1d
 from fluids.constants import R
 from thermo.thermal_conductivity import *
 from thermo.mixture import Mixture
-import json
+from thermo.coolprop import has_CoolProp
 from thermo.thermal_conductivity import MAGOMEDOV, DIPPR_9H, FILIPPOV, LINEAR, ThermalConductivityLiquidMixture
 from thermo.thermal_conductivity import (GHARAGHEIZI_G, CHUNG, ELI_HANLEY, VDI_PPDS,
                                         ELI_HANLEY_DENSE, CHUNG_DENSE,
@@ -41,6 +42,7 @@ from thermo.thermal_conductivity import (GHARAGHEIZI_G, CHUNG, ELI_HANLEY, VDI_P
 
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_ThermalConductivityLiquid_CoolProp():
     EtOH = ThermalConductivityLiquid(CASRN='64-17-5', MW=46.06844, Tm=159.05, Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, Hfus=4931.0)
 
@@ -136,6 +138,20 @@ def test_ThermalConductivityLiquid():
     assert hash(EtOH) == hash0
     assert hash(EtOH2) == hash0
 
+
+@pytest.mark.CoolProp
+@pytest.mark.meta_T_dept
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
+def test_ThermalConductivityGas_CoolProp():
+    EtOH = ThermalConductivityGas(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.2412, omega=0.635, dipole=1.44, Vmg=0.02357, Cpgm=56.98+R, mug=7.903e-6, CASRN='64-17-5')
+    EtOH.method = COOLPROP
+    assert_close(EtOH.T_dependent_property(305), 0.015870725750339945)
+
+    assert [True, False] == [EtOH.test_method_validity_P(300, P, COOLPROP) for P in (1E3, 1E5)]
+    assert_close(EtOH.calculate_P(298.15, 1E2, COOLPROP), 0.015207849649231962)
+
+    assert False == EtOH.test_method_validity_P(100, 1E5, COOLPROP)
+
 @pytest.mark.meta_T_dept
 def test_ThermalConductivityGas():
     EtOH = ThermalConductivityGas(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.2412, omega=0.635, dipole=1.44, Vmg=0.02357, Cpgm=56.98+R, mug=7.903e-6, CASRN='64-17-5')
@@ -151,8 +167,6 @@ def test_ThermalConductivityGas():
     assert_close(EtOH.T_dependent_property(305), 0.018297587287579457)
     EtOH.method = GHARAGHEIZI_G
     assert_close(EtOH.T_dependent_property(305), 0.016862968023145547)
-    EtOH.method = COOLPROP
-    assert_close(EtOH.T_dependent_property(305), 0.015870725750339945)
     EtOH.method = DIPPR_9B
     assert_close(EtOH.T_dependent_property(305), 0.014372770946906635)
     EtOH.method = ELI_HANLEY
@@ -167,11 +181,9 @@ def test_ThermalConductivityGas():
 
     EtOH.extrapolation = None
 
-    kg_calcs = []
-    for i in [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G, ELI_HANLEY, BAHADORI_G, VDI_PPDS]:
+    for i in (DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G, ELI_HANLEY, BAHADORI_G, VDI_PPDS):
         EtOH.method = i
-        kg_calcs.append(EtOH.T_dependent_property(5E20))
-    assert [None]*7 == kg_calcs
+        assert EtOH.T_dependent_property(5E20) is None
 
     # Test tabular limits/extrapolation
     EtOH.method = VDI_TABULAR
@@ -187,7 +199,6 @@ def test_ThermalConductivityGas():
 
     # Ethanol compressed
 
-    assert [True, False] == [EtOH.test_method_validity_P(300, P, COOLPROP) for P in (1E3, 1E5)]
     assert [True, False] == [EtOH.test_method_validity_P(300, P, ELI_HANLEY_DENSE) for P in (1E5, -1E5)]
     assert [True, False] == [EtOH.test_method_validity_P(300, P, CHUNG_DENSE) for P in (1E5, -1E5)]
     assert [True, False] == [EtOH.test_method_validity_P(300, P, STIEL_THODOS_DENSE) for P in (1E5, -1E5)]
@@ -195,10 +206,10 @@ def test_ThermalConductivityGas():
     assert ThermalConductivityGas.from_json(EtOH.as_json()) == EtOH
 
     EtOH = ThermalConductivityGas(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.2412, omega=0.635, dipole=1.44, Vmg=0.02357, Cpgm=56.98+R, mug=7.903e-6, CASRN='64-17-5')
-    assert_close(EtOH.calculate_P(298.15, 1E2, COOLPROP), 0.015207849649231962)
     assert_close(EtOH.calculate_P(298.15, 1E6, ELI_HANLEY_DENSE), 0.011210125242396791)
     assert_close(EtOH.calculate_P(298.15, 1E6, CHUNG_DENSE), 0.011770368783141446)
-    assert_close(EtOH.calculate_P(298.15, 1E6, STIEL_THODOS_DENSE), 0.015447836685420897)
+    EtOH.method = DIPPR_PERRY_8E
+    assert_close(EtOH.calculate_P(298.15, 1E6, STIEL_THODOS_DENSE), 0.015422777479549062)
 
 
       # Ethanol data, calculated from CoolProp
@@ -217,7 +228,6 @@ def test_ThermalConductivityGas():
     with pytest.raises(Exception):
         EtOH.test_method_validity_P(300, 1E5, 'BADMETHOD')
 
-    assert False == EtOH.test_method_validity_P(100, 1E5, COOLPROP)
     assert ThermalConductivityGas.from_json(EtOH.as_json()) == EtOH
 
 

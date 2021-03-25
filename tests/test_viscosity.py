@@ -36,6 +36,7 @@ from thermo.viscosity import COOLPROP, LUCAS
 from thermo.mixture import Mixture
 from thermo.eos import PR
 from thermo.volume import VolumeGas
+from thermo.coolprop import has_CoolProp
 from thermo.viscosity import LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, BROKAW, HERNING_ZIPPERER, WILKE, LINEAR
 from thermo.viscosity import (COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                          VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
@@ -43,6 +44,7 @@ from thermo.viscosity import (COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, V
 
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_ViscosityLiquid_CoolProp():
     EtOH = ViscosityLiquid(MW=46.06844, Tm=159.05, Tc=514.0, Pc=6137000.0, Vc=0.000168, omega=0.635, Psat=7872.16, Vml=5.8676e-5, CASRN='64-17-5')
     EtOH.method = (COOLPROP)
@@ -189,6 +191,7 @@ def test_ViscosityLiquid_PPDS9_limits():
 
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_ViscosityGas_CoolProp():
     EtOH = ViscosityGas(MW=46.06844, Tc=514.0, Pc=6137000.0, Zc=0.2412, dipole=1.44, Vmg=0.02357, CASRN='64-17-5')
     EtOH.method = COOLPROP

@@ -35,6 +35,7 @@ from thermo import Mixture
 from thermo.property_package import eos_Z_test_phase_stability, eos_Z_trial_phase_stability
 import numpy as np
 import json, pickle
+from thermo.coolprop import has_CoolProp
 from thermo.property_package_constants import (PropertyPackageConstants,
                                                NRTL_PKG, IDEAL_PKG, PR_PKG)
 from thermo.eos_mix_methods import a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms
@@ -1505,6 +1506,7 @@ def test_PRMIXTranslated():
 
 @pytest.mark.slow
 @pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_fugacities_PR_vs_coolprop():
     import CoolProp.CoolProp as CP
 
@@ -1541,6 +1543,7 @@ def test_fugacities_PR_vs_coolprop():
 
 @pytest.mark.slow
 @pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_fugacities_SRK_vs_coolprop():
     import CoolProp.CoolProp as CP
     zs = [0.4, 0.6]

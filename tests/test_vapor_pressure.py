@@ -28,11 +28,13 @@ from fluids.numerics import linspace, assert_close, derivative, assert_close1d
 from thermo.vapor_pressure import *
 from thermo.vapor_pressure import SANJARI, EDALAT, AMBROSE_WALTON, LEE_KESLER_PSAT, BOILING_CRITICAL, COOLPROP, VDI_PPDS, VDI_TABULAR, WAGNER_MCGARRY, ANTOINE_EXTENDED_POLING, ANTOINE_POLING, WAGNER_POLING, DIPPR_PERRY_8E
 from chemicals.identifiers import check_CAS
+from thermo.coolprop import has_CoolProp
 from math import *
 
 
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_VaporPressure_CoolProp():
     EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
     assert_close(EtOH.calculate(305.0, COOLPROP), 11592.205263402893, rtol=1e-7)

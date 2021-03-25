@@ -37,9 +37,11 @@ from thermo.volume import HTCOSTALD, COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, RACK
 from thermo.volume import PITZER_CURL, EOS, TSONOPOULOS_EXTENDED, ABBOTT, COOLPROP, IDEAL, TSONOPOULOS, CRC_VIRIAL
 from thermo.volume import EOS, LINEAR, IDEAL
 from thermo.eos_mix import PRMIX
+from thermo.coolprop import has_CoolProp
 
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_VolumeGas_CoolProp():
     SO2 = VolumeGas(CASRN='7446-09-5', MW=64.0638,  Tc=430.8, Pc=7884098.25, omega=0.251, dipole=1.63)
     SO2.method_P = COOLPROP
@@ -117,6 +119,7 @@ def test_VolumeGas_Tabular_json_eval():
 
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_VolumeLiquid_CoolProp():
     # Ethanol, test all methods at once
     EtOH = VolumeLiquid(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.24125, omega=0.635, dipole=1.44, CASRN='64-17-5', Psat=7882.16)
@@ -464,6 +467,7 @@ def test_VolumeSupercriticalLiquidMixture():
 
 @pytest.mark.meta_T_dept
 @pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_VolumeSupercriticalLiquidMixtureCoolProp():
     from CoolProp.CoolProp import PropsSI
     obj = VolumeSupercriticalLiquid(CASRN='7732-18-5')

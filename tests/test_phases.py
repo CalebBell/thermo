@@ -44,6 +44,7 @@ from thermo.coolprop import PropsSI
 import pickle
 import json
 from fluids.constants import *
+from thermo.coolprop import has_CoolProp
 
 def test_GibbbsExcessLiquid_VaporPressure():
     # Binary ethanol-water
@@ -1316,6 +1317,7 @@ def test_EOSGas_volume_HSGUA_derivatives():
 
 
 @pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_CoolPropPhase_PR_pure():
     T, P = 299.0, 1e5
     CPP = CoolPropPhase('PR', 'nHexane', T=T, P=P)
@@ -1333,6 +1335,7 @@ def test_CoolPropPhase_PR_pure():
     assert_close(CPP.d2P_dTdV(), eos.d2P_dTdV_l, rtol=5e-4)
 
 @pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_CoolPropPhase_Water_hash_export():
     T, P = 299.0, 1e5
     CPP = CoolPropPhase('HEOS', 'water', T=T, P=P)
@@ -1359,6 +1362,7 @@ def test_CoolPropPhase_Water_hash_export():
 
 
 @pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_CoolPropPhase_Water():
     T, P = 299.0, 1e5
     CPP = CoolPropPhase('HEOS', 'water', T=T, P=P)
@@ -1431,6 +1435,7 @@ def test_CoolPropPhase_Water():
     assert_close(CPP.dS_dV_P(), dS_dV_P_num)
 
 @pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_CoolPropPhase_Transport():
     liq = CoolPropLiquid('HEOS', 'water', T=300, P=1e5, zs=[1.0])
     assert_close(liq.mu(), PropsSI("VISCOSITY", "T", 300, "P", 1e5, "Water"), rtol=1e-12)

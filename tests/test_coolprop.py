@@ -24,9 +24,10 @@ from numpy.testing import assert_allclose
 import pytest
 from thermo.coolprop import *
 from chemicals.identifiers import check_CAS
-
+from thermo.coolprop import has_CoolProp
 
 @pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_fluid_props():
     has_CoolProp()
 #    tots = [sum([getattr(f, prop) for f in coolprop_fluids.values()]) for prop in ['Tmin', 'Tmax', 'Pmax', 'Tc', 'Pc', 'Tt', 'omega']]
@@ -41,7 +42,7 @@ def test_fluid_props():
 
 
 
-@pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_CoolProp_T_dependent_property():
     # Below the boiling point
     rhow = CoolProp_T_dependent_property(298.15, '7732-18-5', 'D', 'l')

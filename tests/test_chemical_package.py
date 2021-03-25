@@ -105,8 +105,8 @@ def test_ChemicalConstantsPackage_wrong_behaviors():
     obj.VolumeLiquids[0].eos is None
 
 
-@pytest.mark.CoolProp
 def test_lemmon2000_package():
-    for T in (150.0, 200.0, 300.0, 1000.0, 2000.0):
-        assert_close(PropsSI('Cp0molar', 'T', T, 'P', 101325.0, 'Air'),
-                     lemmon2000_correlations.HeatCapacityGases[0](T), rtol=2e-7)
+    Ts = (150.0, 200.0, 300.0, 1000.0, 2000.0)
+    CoolProp_Cps = [29.030484473246823, 29.03511836728048, 29.103801681330573, 33.046833525551676, 36.210748112152906]
+    for T, Cp in zip(Ts, CoolProp_Cps):
+        assert_close(Cp, lemmon2000_correlations.HeatCapacityGases[0](T), rtol=2e-7)

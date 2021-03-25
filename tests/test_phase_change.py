@@ -26,6 +26,7 @@ from fluids.numerics import assert_close, assert_close1d
 from thermo.phase_change import *
 from chemicals.miscdata import CRC_inorganic_data, CRC_organic_data
 from chemicals.identifiers import check_CAS
+from thermo.coolprop import has_CoolProp
 
 from thermo.phase_change import COOLPROP, VDI_PPDS, CLAPEYRON, LIU, ALIBAKHSHI, MORGAN_KOBAYASHI, VELASCO, PITZER, RIEDEL, SIVARAMAN_MAGEE_KOBAYASHI, CHEN, CRC_HVAP_TB, DIPPR_PERRY_8E, VETERE, CRC_HVAP_298, VDI_TABULAR, GHARAGHEIZI_HVAP_298
 
@@ -109,6 +110,7 @@ def test_EnthalpyVaporization():
 
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_EnthalpyVaporization_CoolProp():
     EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, Psat=7872.2, Zg=0.9633, Zl=0.0024, CASRN='64-17-5')
 
