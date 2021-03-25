@@ -333,6 +333,19 @@ def test_HeatCapacityLiquid():
     new = HeatCapacityLiquid.from_json(ctp.as_json())
     assert new == ctp
 
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
+@pytest.mark.CoolProp
+@pytest.mark.meta_T_dept
+def test_HeatCapacityLiquid_CoolProp():
+    tol = HeatCapacityLiquid(CASRN='108-88-3', MW=92.13842, Tc=591.75,
+          omega=0.257, Cpgm=115.30398669098454, similarity_variable=0.16279853724428964)
+
+    dH = tol.calculate_integral(200, 300, COOLPROP)
+    assert_close(dH, 14501.714588188637)
+
+    dS = tol.calculate_integral_over_T(200, 300, COOLPROP)
+    assert_close(dS, 58.50970500781979)
+
 
 @pytest.mark.meta_T_dept
 def test_HeatCapacityLiquid_integrals():
@@ -353,9 +366,6 @@ def test_HeatCapacityLiquid_integrals():
 
     dH = tol.calculate_integral(200, 300, CRCSTD)
     assert_close(dH, 15730)
-
-    dH = tol.calculate_integral(200, 300, COOLPROP)
-    assert_close(dH, 14501.714588188637)
 
     dH = tol.calculate_integral(200, 300, DADGOSTAR_SHAW)
     assert_close(dH, 14395.231307169146)
@@ -391,9 +401,6 @@ def test_HeatCapacityLiquid_integrals():
     # Entropy integrals
     dS = tol.calculate_integral_over_T(200, 300, CRCSTD)
     assert_close(dS, 63.779661505414275)
-
-    dS = tol.calculate_integral_over_T(200, 300, COOLPROP)
-    assert_close(dS, 58.50970500781979)
 
     dS = tol.calculate_integral_over_T(200, 300, DADGOSTAR_SHAW)
     assert_close(dS, 57.78686119989654)

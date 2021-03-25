@@ -317,7 +317,7 @@ def test_ThermalConductivityLiquidMixture():
         kl_mix.test_method_validity(T, P, zs, ws, 'BADMETHOD')
 
     # Test electrolytes
-# m = Mixture(['water', 'sulfuric acid'], ws=[.5, .5], T=298.15)
+    # m = Mixture(['water', 'sulfuric acid'], ws=[.5, .5], T=298.15)
     T, P = 298.15, 101325.0
     ws = [0.5, 0.5]
     zs = ws_to_zs(ws, MWs)
