@@ -30,6 +30,7 @@ from math import *
 from fluids.numerics import linspace, logspace, NotBoundedError, assert_close, assert_close1d
 from thermo.chemical import lock_properties, Chemical
 from scipy.integrate import quad
+from thermo.coolprop import has_CoolProp
 
 
 @pytest.mark.meta_T_dept
@@ -106,6 +107,7 @@ def test_HeatCapacityGas():
 
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_HeatCapacityGas_CoolProp():
     EtOH = HeatCapacityGas(CASRN='64-17-5', similarity_variable=0.1953615, MW=46.06844, extrapolation=None, method=COOLPROP)
     assert EtOH.T_dependent_property(5000.0) is None
@@ -469,6 +471,7 @@ def test_HeatCapacityGasMixture():
         obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
 
 
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
 def test_HeatCapacityLiquidMixture_aqueous():

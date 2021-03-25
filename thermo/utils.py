@@ -877,7 +877,8 @@ class TDependentProperty(object):
             base += 'method_P=%s, ' %(method_P_str)
             if self.tabular_data_P:
                 base += 'tabular_data_P=%s, ' %(self.tabular_data_P)
-            base += 'tabular_extrapolation_permitted=%s, ' %(self.tabular_extrapolation_permitted)
+            if 'tabular_extrapolation_permitted' in self.__dict__:
+                base += 'tabular_extrapolation_permitted=%s, ' %(self.tabular_extrapolation_permitted)
 
 
         if hasattr(self, 'poly_fit_Tmin') and self.poly_fit_Tmin is not None:

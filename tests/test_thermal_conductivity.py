@@ -25,7 +25,9 @@ import json
 import pytest
 from fluids.numerics import assert_close, assert_close1d
 from fluids.constants import R
+from chemicals.utils import ws_to_zs
 from thermo.thermal_conductivity import *
+from thermo.viscosity import ViscosityGas
 from thermo.mixture import Mixture
 from thermo.coolprop import has_CoolProp
 from thermo.thermal_conductivity import MAGOMEDOV, DIPPR_9H, FILIPPOV, LINEAR, ThermalConductivityLiquidMixture
@@ -37,6 +39,7 @@ from thermo.thermal_conductivity import (GHARAGHEIZI_G, CHUNG, ELI_HANLEY, VDI_P
                                        SATO_RIEDEL, NICOLA, NICOLA_ORIGINAL,
                                        SHEFFY_JOHNSON, BAHADORI_L,
                                        LAKSHMI_PRASAD, DIPPR_9G, MISSENARD)
+from thermo.thermal_conductivity import ThermalConductivityGasMixture, LINDSAY_BROMLEY, LINEAR
 
 
 
@@ -232,43 +235,48 @@ def test_ThermalConductivityGas():
 
 
 def test_ThermalConductivityGasMixture():
-    from thermo.thermal_conductivity import ThermalConductivityGasMixture, LINDSAY_BROMLEY, LINEAR
+    T, P = 298.15, 101325.0
+    MWs = [28.0134, 39.948, 31.9988]
+    Tbs = [77.355, 87.302, 90.188]
+    CASs = ['7727-37-9', '7440-37-1', '7782-44-7']
+    ws=[0.7557, 0.0127, 0.2316]
+    zs = ws_to_zs(ws, MWs=MWs)
+    # ['nitrogen', 'argon', 'oxygen']
 
-    m2 = Mixture(['nitrogen', 'argon', 'oxygen'], ws=[0.7557, 0.0127, 0.2316])
-    ThermalConductivityGases = [i.ThermalConductivityGas for i in m2.Chemicals]
-    ViscosityGases = [i.ViscosityGas for i in m2.Chemicals]
+    ViscosityGases = [
+        ViscosityGas(CASRN="7727-37-9", MW=28.0134, Tc=126.2, Pc=3394387.5, Zc=0.2895282296391198, dipole=0.0, extrapolation="linear", method=DIPPR_PERRY_8E, method_P=None),
+        ViscosityGas(CASRN="7440-37-1", MW=39.948, Tc=150.8, Pc=4873732.5, Zc=0.29114409080360165, dipole=0.0, extrapolation="linear", method=DIPPR_PERRY_8E, method_P=None),
+        ViscosityGas(CASRN="7782-44-7", MW=31.9988, Tc=154.58, Pc=5042945.25, Zc=0.2880002236716698, dipole=0.0, extrapolation="linear", method=DIPPR_PERRY_8E, method_P=None),
+    ]
+    ThermalConductivityGases = [
+        ThermalConductivityGas(CASRN="7727-37-9", MW=28.0134, Tb=77.355, Tc=126.2, Pc=3394387.5, Vc=8.95e-05, Zc=0.2895282296391198, omega=0.04, dipole=0.0, extrapolation="linear", method=VDI_PPDS, method_P=ELI_HANLEY_DENSE),
+        ThermalConductivityGas(CASRN="7440-37-1", MW=39.948, Tb=87.302, Tc=150.8, Pc=4873732.5, Vc=7.49e-05, Zc=0.29114409080360165, omega=-0.004, dipole=0.0, extrapolation="linear", method=VDI_PPDS, method_P=ELI_HANLEY_DENSE),
+        ThermalConductivityGas(CASRN="7782-44-7", MW=31.9988, Tb=90.188, Tc=154.58, Pc=5042945.25, Vc=7.34e-05, Zc=0.2880002236716698, omega=0.021, dipole=0.0, extrapolation="linear", method=VDI_PPDS, method_P=ELI_HANLEY_DENSE),
+        ]
 
-    kg_mix = ThermalConductivityGasMixture(MWs=m2.MWs, Tbs=m2.Tbs, CASs=m2.CASs,
+    kg_mix = ThermalConductivityGasMixture(MWs=MWs, Tbs=Tbs, CASs=CASs, correct_pressure_pure=False,
                                       ThermalConductivityGases=ThermalConductivityGases,
                                       ViscosityGases=ViscosityGases)
 
-    k = kg_mix.mixture_property(m2.T, m2.P, m2.zs, m2.ws)
-    assert_close(k, 0.025864474514829254) # test LINDSAY_BROMLEY and mixture property
-    # Do it twice to test the stored method
-    k = kg_mix.mixture_property(m2.T, m2.P, m2.zs, m2.ws)
-    assert_close(k, 0.025864474514829254) # test LINDSAY_BROMLEY and mixture property
-
-    k =  kg_mix.calculate(m2.T, m2.P, m2.zs, m2.ws, LINEAR) # Test calculate, and simple
-    assert_close(k, 0.02586655464213776)
-
-    dT1 = kg_mix.calculate_derivative_T(m2.T, m2.P, m2.zs, m2.ws, LINDSAY_BROMLEY)
-    dT2 = kg_mix.property_derivative_T(m2.T, m2.P, m2.zs, m2.ws)
-    assert_close1d([dT1, dT2], [7.3391064059347144e-05]*2)
-
-    dP1 = kg_mix.calculate_derivative_P(m2.P, m2.T, m2.zs, m2.ws, LINDSAY_BROMLEY)
-    dP2 = kg_mix.property_derivative_P(m2.T, m2.P, m2.zs, m2.ws)
-
-    assert_close1d([dP1, dP2], [3.5325319058809868e-10]*2, rtol=1E-4)
-
-    # Test other methods
-
-    assert kg_mix.all_methods == {LINDSAY_BROMLEY, LINEAR}
-    assert kg_mix.ranked_methods == [LINDSAY_BROMLEY, LINEAR]
-
-    # set a method
     kg_mix.method = LINEAR
-    k = kg_mix.mixture_property(m2.T, m2.P, m2.zs, m2.ws)
-    assert_close(k, 0.02586655464213776)
+    kg_expect = 0.025593922564292677
+    kg = kg_mix.mixture_property(T, P, zs, ws)
+    assert_close(kg, kg_expect, rtol=1e-13)
+    kg = kg_mix.mixture_property(T, P, zs, ws)
+    assert_close(kg, kg_expect, rtol=1e-13)
+
+    kg_mix.method = LINDSAY_BROMLEY
+    kg_expect = 0.025588076672276125
+    kg = kg_mix.mixture_property(T, P, zs, ws)
+    assert_close(kg, kg_expect, rtol=1e-13)
+
+    dT1 = kg_mix.calculate_derivative_T(T, P, zs, ws, LINDSAY_BROMLEY)
+    dT2 = kg_mix.property_derivative_T(T, P, zs, ws)
+    assert_close1d([dT1, dT2], [7.456379610970565e-05]*2)
+
+    dP1 = kg_mix.calculate_derivative_P(T, P, zs, ws, LINDSAY_BROMLEY)
+    dP2 = kg_mix.property_derivative_P(T, P, zs, ws)
+    assert_close1d([dP1, dP2], [0]*2, rtol=1E-4)
 
     # Unhappy paths
     with pytest.raises(Exception):
