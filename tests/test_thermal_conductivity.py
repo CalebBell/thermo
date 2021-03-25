@@ -317,11 +317,18 @@ def test_ThermalConductivityLiquidMixture():
         kl_mix.test_method_validity(T, P, zs, ws, 'BADMETHOD')
 
     # Test electrolytes
-    m = Mixture(['water', 'sulfuric acid'], ws=[.5, .5], T=298.15)
-    ThermalConductivityLiquids = [i.ThermalConductivityLiquid for i in m.Chemicals]
-    kl_mix = ThermalConductivityLiquidMixture(CASs=m.CASs, ThermalConductivityLiquids=ThermalConductivityLiquids, MWs=m.MWs)
-    assert kl_mix.method == MAGOMEDOV
-    k = kl_mix.mixture_property(m.T, m.P, m.zs, m.ws)
-    assert_close(k, 0.4677453168207703)
-
+# m = Mixture(['water', 'sulfuric acid'], ws=[.5, .5], T=298.15)
+    T, P = 298.15, 101325.0
+    ws = [0.5, 0.5]
+    zs = ws_to_zs(ws, MWs)
+    CASs = ['7732-18-5', '7664-93-9']
+    MWs = [18.01528, 98.07848]
+    ThermalConductivityLiquids = [
+        ThermalConductivityLiquid(CASRN="7732-18-5", MW=18.01528, Tm=273.15, Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344, Hfus=6010.0, extrapolation="linear", method=DIPPR_PERRY_8E, method_P=DIPPR_9G),
+        ThermalConductivityLiquid(CASRN="7664-93-9", MW=98.07848, Tm=277.305, Tb=610.15, Tc=924.0, Pc=6400000.0, omega=0.494, Hfus=10710.0, extrapolation="linear", method=GHARAGHEIZI_L, method_P=DIPPR_9G)
+    ]
+    kl_mix = ThermalConductivityLiquidMixture(CASs=CASs, ThermalConductivityLiquids=ThermalConductivityLiquids, MWs=MWs)
+    kl_mix.method == MAGOMEDOV
+    k = kl_mix.mixture_property(T, P, zs, ws)
+    assert_close(k, 0.45824995874859015, rtol=1e-13)
 
