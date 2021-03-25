@@ -704,8 +704,6 @@ class HeatCapacityLiquid(TDependentProperty):
     Examples
     --------
     >>> CpLiquid = HeatCapacityLiquid(CASRN='142-82-5', MW=100.2, similarity_variable=0.2295, Tc=540.2, omega=0.3457, Cpgm=165.2)
-    >>> CpLiquid(300)
-    221.9267
 
     References
     ----------

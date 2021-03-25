@@ -142,6 +142,7 @@ class EquilibriumState(object):
     The following sample shows a flash for the CO2-n-hexane system with all
     constants provided, using no data from thermo.
 
+    >>> from thermo import *
     >>> constants = ChemicalConstantsPackage(names=['carbon dioxide', 'hexane'], CASs=['124-38-9', '110-54-3'], MWs=[44.0095, 86.17536], omegas=[0.2252, 0.2975], Pcs=[7376460.0, 3025000.0], Tbs=[194.67, 341.87], Tcs=[304.2, 507.6], Tms=[216.65, 178.075])
     >>> correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
     ...                                            HeatCapacityGases=[HeatCapacityGas(poly_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644])),
@@ -151,8 +152,8 @@ class EquilibriumState(object):
     >>> liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases)
     >>> flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
     >>> state = flasher.flash(P=1e5, T=196.0, zs=[0.5, 0.5])
-    >>> type(state)
-    thermo.equilibrium.EquilibriumState
+    >>> type(state) is EquilibriumState
+    True
     >>> state.phase_count
     2
     >>> state.bulk.Cp()

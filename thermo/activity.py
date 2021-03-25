@@ -421,7 +421,7 @@ class GibbsExcess(object):
         --------
         >>> model = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
         >>> json_view = model.as_json()
-        >>> new_model = GibbsExcess.from_json(json_view)
+        >>> new_model = IdealSolution.from_json(json_view)
         >>> assert model == new_model
         '''
         d = json_repr

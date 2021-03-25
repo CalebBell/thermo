@@ -125,7 +125,7 @@ def a_alpha_aijs_composition_independent(a_alphas, kijs):
     >>> a_alpha_roots
     [0.49910914213, 0.80538784840]
     >>> a_alpha_ij_roots_inv
-    [[4.0142919105, 2.487707997796], [0.0, 1.54166443799]]
+    [[4.0142919105, 2.487707997796], [2.487707997796, 1.54166443799]]
     '''
     N = len(a_alphas)
     _sqrt = sqrt
