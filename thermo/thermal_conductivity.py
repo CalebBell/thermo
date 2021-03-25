@@ -609,9 +609,9 @@ class ThermalConductivityLiquid(TPDependentProperty):
             raise Exception('Method not valid')
         return validity
 
-MAGOMEDOV = 'Magomedov'
-DIPPR_9H = 'DIPPR9H'
-FILIPPOV = 'Filippov'
+MAGOMEDOV = 'MAGOMEDOV'
+DIPPR_9H = 'DIPPR_9H'
+FILIPPOV = 'FILIPPOV'
 
 thermal_conductivity_liquid_mixture_methods = [MAGOMEDOV, DIPPR_9H, FILIPPOV, LINEAR]
 '''Holds all mixing rules available for the :obj:`ThermalConductivityLiquidMixture`
@@ -625,7 +625,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     coefficient-based method for aqueous electrolytes, and mole weighted
     averaging. Most but not all methods are shown in [1]_.
 
-    Prefered method is :obj:`DIPPR9H <chemicals.thermal_conductivity.DIPPR9H>` which requires mass
+    Prefered method is :obj:`DIPPR_9H <chemicals.thermal_conductivity.DIPPR9H>` which requires mass
     fractions, and pure component liquid thermal conductivities. This is
     substantially better than the ideal mixing rule based on mole fractions,
     **LINEAR**. :obj:`Filippov <chemicals.thermal_conductivity.Filippov>`
@@ -649,11 +649,11 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     To iterate over all methods, use the list stored in
     :obj:`thermal_conductivity_liquid_mixture_methods`.
 
-    **DIPPR9H**:
+    **DIPPR_9H**:
         Mixing rule described in :obj:`DIPPR9H <chemicals.thermal_conductivity.DIPPR9H>`.
-    **Filippov**:
+    **FILIPPOV**:
         Mixing rule described in :obj:`Filippov <chemicals.thermal_conductivity.Filippov>`; for two binary systems only.
-    **Magomedov**:
+    **MAGOMEDOV**:
         Coefficient-based method for aqueous electrolytes only, described in
         :obj:`thermo.electrochem.thermal_conductivity_Magomedov`.
     **LINEAR**:
@@ -799,7 +799,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
 
     def test_method_validity(self, T, P, zs, ws, method):
         r'''Method to test the validity of a specified method for the given
-        conditions. If **Magomedov** is applicable (electrolyte system), no
+        conditions. If **MAGOMEDOV** is applicable (electrolyte system), no
         other methods are considered viable. Otherwise, there are no easy
         checks that can be performed here.
 

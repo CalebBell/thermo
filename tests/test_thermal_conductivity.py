@@ -288,20 +288,33 @@ def test_ThermalConductivityGasMixture():
 
 
 def test_ThermalConductivityLiquidMixture():
-    from thermo.thermal_conductivity import MAGOMEDOV, DIPPR_9H, FILIPPOV, LINEAR, ThermalConductivityLiquidMixture
+    T, P = 298.15, 101325.0
+    ws = [0.258, 0.742]
+    MWs = [46.06844, 88.14818]
+    CASs = ['64-17-5', '71-41-0']
+    # ['ethanol', 'pentanol']
+    zs = ws_to_zs(ws=ws, MWs=MWs)
+    ThermalConductivityLiquids = [
+        ThermalConductivityLiquid(CASRN="64-17-5", MW=46.06844, Tm=159.05, Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, Hfus=4931.0, extrapolation="linear", method="DIPPR_PERRY_8E", method_P="DIPPR_9G"),
+        ThermalConductivityLiquid(CASRN="71-41-0", MW=88.14818, Tm=194.7, Tb=410.75, Tc=588.1, Pc=3897000.0, omega=0.58, Hfus=10500.0, extrapolation="linear", method="DIPPR_PERRY_8E", method_P="DIPPR_9G")
+    ]
+    kl_mix = ThermalConductivityLiquidMixture(CASs=CASs, ThermalConductivityLiquids=ThermalConductivityLiquids, MWs=MWs)
+    kl_mix.method = DIPPR_9H
+    k = kl_mix.mixture_property(T, P, zs, ws)
+    assert_close(k, 0.15326768195303517, rtol=1e-13)
 
-    m = Mixture(['ethanol', 'pentanol'], ws=[0.258, 0.742], T=298.15)
-    ThermalConductivityLiquids = [i.ThermalConductivityLiquid for i in m.Chemicals]
+    k = kl_mix.calculate(T, P, zs, ws, FILIPPOV)
+    assert_close(k, 0.15572417368293207)
 
-    kl_mix = ThermalConductivityLiquidMixture(CASs=m.CASs, ThermalConductivityLiquids=ThermalConductivityLiquids, MWs=m.MWs)
-    k = kl_mix.mixture_property(m.T, m.P, m.zs, m.ws)
-    assert_close(k, 0.15300152782218343)
+    k = kl_mix.calculate(T, P, zs, ws, LINEAR)
+    assert_close(k, 0.1557792273701113)
 
-    k = kl_mix.calculate(m.T, m.P, m.zs, m.ws, FILIPPOV)
-    assert_close(k, 0.15522139770330717)
+    # Unhappy paths
+    with pytest.raises(Exception):
+        kl_mix.calculate(T, P, zs, ws, 'BADMETHOD')
 
-    k = kl_mix.calculate(m.T, m.P, m.zs, m.ws, LINEAR)
-    assert_close(k, 0.1552717795028546)
+    with pytest.raises(Exception):
+        kl_mix.test_method_validity(T, P, zs, ws, 'BADMETHOD')
 
     # Test electrolytes
     m = Mixture(['water', 'sulfuric acid'], ws=[.5, .5], T=298.15)
@@ -312,9 +325,3 @@ def test_ThermalConductivityLiquidMixture():
     assert_close(k, 0.4677453168207703)
 
 
-    # Unhappy paths
-    with pytest.raises(Exception):
-        kl_mix.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
-
-    with pytest.raises(Exception):
-        kl_mix.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
