@@ -1861,16 +1861,6 @@ class EquilibriumState(object):
             ws[i] *= m
         return m
 
-    def sigma(self, phase=None):
-        if phase is None:
-            phase = self.bulk
-
-        if isinstance(phase, liquid_phases):
-            return self.correlations.SurfaceTensionMixture.mixture_property(
-                    phase.T, phase.P, phase.zs, phase.ws())
-        if isinstance(phase, gas_phases):
-            return 0
-
     def Ks(self, phase, phase_ref=None):
         r'''Method to calculate and return the K-values of each phase.
         These are NOT just liquid-vapor K values; these are thermodynamic K
@@ -2414,7 +2404,7 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
               'PIP', 'kappa', 'isobaric_expansion', 'Joule_Thomson', 'speed_of_sound',
               'speed_of_sound_mass',
               'U_dep', 'G_dep', 'A_dep', 'V_dep',
-              'mu', 'k',
+              'mu', 'k', 'sigma',
               ]
 bulk_props += derivatives_thermodynamic
 bulk_props += derivatives_thermodynamic_mass

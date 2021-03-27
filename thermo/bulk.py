@@ -208,11 +208,11 @@ class BulkSettings(object):
         Vapor-liquid thermal conductivity power-law mixing parameter,
         used only when a power law mixing rule is selected, [-]
     sigma_LL : str, optional
-        Mixing rule for multiple liquid phase surface tension calculations;
-        see :obj:`SIGMA_LL_METHODS` for available options,
+        Mixing rule for multiple liquid phase, air-liquid surface tension
+        calculations; see :obj:`SIGMA_LL_METHODS` for available options,
         [-]
     sigma_LL_power_exponent : float, optional
-        Liquid-liquid surface tension power-law mixing parameter,
+        Air-liquid Liquid-liquid surface tension power-law mixing parameter,
         used only when a power law mixing rule is selected, [-]
 
     Notes
@@ -617,7 +617,9 @@ class Bulk(Phase):
 
         Notes
         -----
-        A value is only returned if all phases in the bulk are liquids.
+        A value is only returned if all phases in the bulk are liquids; this
+        property is for a liquid-ideal gas calculation, not the interfacial
+        tension between two liquid phases.
         '''
         try:
             return self._sigma
