@@ -419,7 +419,45 @@ class Bulk(Phase):
                 raise ValueError("Unknown method")
         return prop
 
+    def _mu_k_VL(self, method, props, exponent):
+        if method in mole_methods:
+            VF = self.result.VF
+            betas = [VF, 1.0 - VF]
+        elif method in mass_methods:
+            betas = self.result.betas_mass_states[:2]
+        elif method in volume_methods:
+            betas = self.result.betas_volume_states[:2]
+
+        if method in linear_methods:
+            prop = betas[0]*props[0] + betas[1]*props[1]
+        elif method in prop_power_methods:
+            prop = (betas[0]*props[0]**exponent + betas[1]*props[1]**exponent)**(1.0/exponent)
+        elif method in log_prop_methods:
+            prop = exp(betas[0]*log(props[0]) + betas[1]*log(props[1]))
+        elif method == MINIMUM_PHASE_PROP:
+            prop = min(props)
+        elif method == MAXIMUM_PHASE_PROP:
+            prop = max(props)
+        else:
+            raise ValueError("Unrecognized method")
+
+        return prop
+
+
     def mu(self):
+        r'''Calculate and return the viscosity of the bulk according to the
+        selected viscosity settings in :obj:`BulkSettings`, the settings in
+        :obj:`ViscosityGasMixture <thermo.viscosity.ViscosityGasMixture>` and
+        :obj:`ViscosityLiquidMixture <thermo.viscosity.ViscosityLiquidMixture>`,
+        and the configured pure-component settings in
+        :obj:`ViscosityGas <thermo.viscosity.ViscosityGas>` and
+        :obj:`ViscosityLiquid <thermo.viscosity.ViscosityLiquid>`.
+
+        Returns
+        -------
+        mu : float
+            Viscosity of bulk phase calculated with mixing rules, [Pa*s]
+        '''
         try:
             return self._mu
         except AttributeError:
@@ -460,26 +498,8 @@ class Bulk(Phase):
                 rhol = result.liquid_bulk.rho_mass()
             mu = gas_liquid_viscosity(x, mul, mug, rhol, rhog, Method=method)
         else:
-            mus = [mug, mul]
-            if method in mole_methods:
-                VF = self.result.VF
-                betas = [VF, 1.0 - VF]
-            elif method in mass_methods:
-                betas = self.result.betas_mass_states[:2]
-            elif method in volume_methods:
-                betas = self.result.betas_volume_states[:2]
-
-            if method in linear_methods:
-                mu = betas[0]*mus[0] + betas[1]*mus[1]
-            elif method in prop_power_methods:
-                exponent = self.settings.mu_VL_power_exponent
-                mu = (betas[0]*mus[0]**exponent + betas[1]*mus[1]**exponent)**(1.0/exponent)
-            elif method in log_prop_methods:
-                mu = exp(betas[0]*log(mus[0]) + betas[1]*log(mus[1]))
-            elif method == MINIMUM_PHASE_PROP:
-                mu = min(mus)
-            elif method == MAXIMUM_PHASE_PROP:
-                mu = max(mus)
+            mu = self._mu_k_VL(method, props=[mug, mul],
+                               exponent=self.settings.mu_VL_power_exponent)
         self._mu = mu
         return mu
 
