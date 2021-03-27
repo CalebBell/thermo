@@ -323,6 +323,32 @@ class Bulk(Phase):
         '''
         return sum(self.phase_fractions)
 
+    def _mu_k_single_state(self, method, exponent, mix_obj, attr):
+        if method == AS_ONE_LIQUID:
+            prop = mix_obj.mixture_property(self.T, self.P, self.zs, self.ws())
+        else:
+            props = [getattr(i, attr)() for i in self.phases]
+            if method in mole_methods:
+                betas = self.phase_fractions
+            elif method in mass_methods:
+                betas = self.betas_mass
+            elif method in volume_methods:
+                betas = self.betas_volume
+
+            prop = 0.0
+            if method in linear_methods:
+                for i in range(len(self.phase_fractions)):
+                    prop += betas[i]*props[i]
+            elif method in prop_power_methods:
+                for i in range(len(self.phase_fractions)):
+                    prop += betas[i]*props[i]**exponent
+                prop = prop**(1.0/exponent)
+            elif method in log_prop_methods:
+                for i in range(len(self.phase_fractions)):
+                    prop += betas[i]*log(props[i])
+                prop = exp(prop)
+        return prop
+
     def mu(self):
         try:
             return self._mu
@@ -338,30 +364,8 @@ class Bulk(Phase):
         elif self.state == 'l' or self.result.gas is None:
             # Multiple liquids - either a bulk liquid, or a result with no gases
             method = self.settings.mu_LL
-            if method == AS_ONE_LIQUID:
-                mu = self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
-            else:
-                mus = [i.mu() for i in self.phases]
-                if method in mole_methods:
-                    betas = self.phase_fractions
-                elif method in mass_methods:
-                    betas = self.betas_mass
-                elif method in volume_methods:
-                    betas = self.betas_volume
-
-                mu = 0.0
-                if method in linear_methods:
-                    for i in range(len(self.phase_fractions)):
-                        mu += betas[i]*mus[i]
-                elif method in prop_power_methods:
-                    exponent = self.settings.mu_LL_power_exponent
-                    for i in range(len(self.phase_fractions)):
-                        mu += betas[i]*mus[i]**exponent
-                    mu = mu**(1.0/exponent)
-                elif method in log_prop_methods:
-                    for i in range(len(self.phase_fractions)):
-                        mu += betas[i]*log(mus[i])
-                    mu = exp(mu)
+            mu = self._mu_k_single_state(method, self.settings.mu_LL_power_exponent,
+                                         self.correlations.ViscosityLiquidMixture, 'mu')
             self._mu = mu
             return mu
 
