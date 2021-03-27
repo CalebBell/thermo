@@ -577,7 +577,7 @@ class SurfaceTensionMixture(MixtureProperty):
     custom_args = ('MWs', 'Tbs', 'Tcs')
 
     def __init__(self, MWs=[], Tbs=[], Tcs=[], CASs=[], SurfaceTensions=[],
-                 VolumeLiquids=[],  **kwargs):
+                 VolumeLiquids=[], **kwargs):
         self.MWs = MWs
         self.Tbs = Tbs
         self.Tcs = Tcs

@@ -2048,6 +2048,8 @@ def test_thermal_conductivity_bulk():
     assert_close(obj.k(), k_expect, rtol=1e-10)
     assert_close(obj.bulk.k(), k_expect, rtol=1e-10)
 
+def test_sigma_bulk():
+    pass
 
 
 def test_phase_with_constants():

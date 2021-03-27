@@ -4542,6 +4542,37 @@ class Phase(object):
         self._ws = ws
         return ws
 
+    def sigma(self):
+        r'''Calculate and return the surface tension of the phase.
+        For details of the implementation, see
+        :obj:`SurfaceTensionMixture <thermo.interface.SurfaceTensionMixture>`.
+
+        This property is strictly the ideal-gas to liquid surface tension,
+        not a true inter-phase property.
+
+        Returns
+        -------
+        sigma : float
+            Surface tension, [N/m]
+        '''
+        try:
+            return self._sigma
+        except AttributeError:
+            pass
+        try:
+            phase == self.assigned_phase
+        except:
+            if self.is_liquid:
+                phase = 'l'
+            else:
+                phase = 'g'
+        if phase == 'g':
+            return None
+        elif phase == 'l':
+            sigma = self.correlations.SurfaceTensionMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+        self._sigma = sigma
+        return sigma
+
     @property
     def beta(self):
         r'''Method to return the phase fraction of this phase.
@@ -6400,7 +6431,6 @@ def build_CEOSLiquid():
         source = source.replace(s+'_g', 'gORIG')
         source = source.replace(s+'_l', s+'_g')
         source = source.replace('gORIG', s+'_l')
-#    print(source)
     return source
 
 from fluids.numerics import is_micropython

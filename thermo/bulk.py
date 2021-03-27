@@ -32,7 +32,7 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 Bulk Class
 ==========
 .. autoclass:: Bulk
-    :members: beta, mu, betas_mass, betas_volume, MW, V, V_iter, Cp, H, S,
+    :members: beta, betas_mass, betas_volume, k, mu, sigma, MW, V, V_iter, Cp, H, S,
               dH_dP, dS_dP, dS_dT, dG_dT, dG_dP, dU_dT, dU_dP, dA_dT, dA_dP,
               H_reactive, S_reactive, dP_dT_frozen, dP_dV_frozen,
               d2P_dT2_frozen, d2P_dV2_frozen, d2P_dTdV_frozen,
@@ -56,6 +56,7 @@ Bulk Settings Class
 .. autodata:: MU_VL_METHODS
 .. autodata:: K_LL_METHODS
 .. autodata:: K_VL_METHODS
+.. autodata:: SIGMA_LL_METHODS
 
 '''
 
@@ -127,6 +128,11 @@ MU_LL_METHODS_set = frozenset(MU_LL_METHODS)
 K_LL_METHODS = MU_LL_METHODS
 '''List of all valid and implemented mixing rules for the `K_LL` setting'''
 K_LL_METHODS_set = frozenset(K_LL_METHODS)
+
+SIGMA_LL_METHODS = MU_LL_METHODS
+'''List of all valid and implemented mixing rules for the `SIGMA_LL` setting'''
+SIGMA_LL_METHODS_set = frozenset(SIGMA_LL_METHODS)
+
 
 BEATTIE_WHALLEY_MU_VL = 'Beattie Whalley'
 MCADAMS_MU_VL = 'McAdams'
@@ -201,6 +207,13 @@ class BulkSettings(object):
     k_VL_power_exponent : float, optional
         Vapor-liquid thermal conductivity power-law mixing parameter,
         used only when a power law mixing rule is selected, [-]
+    sigma_LL : str, optional
+        Mixing rule for multiple liquid phase surface tension calculations;
+        see :obj:`SIGMA_LL_METHODS` for available options,
+        [-]
+    sigma_LL_power_exponent : float, optional
+        Liquid-liquid surface tension power-law mixing parameter,
+        used only when a power law mixing rule is selected, [-]
 
     Notes
     -----
@@ -256,6 +269,7 @@ class BulkSettings(object):
                  k_LL=MASS_WEIGHTED, k_LL_power_exponent=0.4,
                  k_VL=MASS_WEIGHTED, k_VL_power_exponent=0.4,
 
+                 sigma_LL=MASS_WEIGHTED, sigma_LL_power_exponent=0.4,
 
                  c=MOLE_WEIGHTED,
                  isobaric_expansion=MOLE_WEIGHTED, kappa=MOLE_WEIGHTED, JT=MOLE_WEIGHTED,
@@ -301,6 +315,11 @@ class BulkSettings(object):
             raise ValueError("Unrecognized option for k_VL")
         self.k_VL = k_VL
         self.k_VL_power_exponent = k_VL_power_exponent
+
+        if sigma_LL not in SIGMA_LL_METHODS_set:
+            raise ValueError("Unrecognized option for sigma_LL")
+        self.sigma_LL = sigma_LL
+        self.sigma_LL_power_exponent = sigma_LL_power_exponent
 
         self.c = c
         self.T_normal = T_normal
@@ -583,6 +602,42 @@ class Bulk(Phase):
                             exponent=self.settings.k_VL_power_exponent)
         self._k = k
         return k
+
+    def sigma(self):
+        r'''Calculate and return the surface tension of the bulk according to the
+        selected surface tension settings in :obj:`BulkSettings`, the settings in
+        :obj:`SurfaceTensionMixture <thermo.interface.SurfaceTensionMixture>`
+        and the configured pure-component settings in
+        :obj:`SurfaceTension <thermo.interface.SurfaceTension>`.
+
+        Returns
+        -------
+        sigma : float
+            Surface tension of bulk phase calculated with mixing rules, [N/m]
+
+        Notes
+        -----
+        A value is only returned if all phases in the bulk are liquids.
+        '''
+        try:
+            return self._sigma
+        except AttributeError:
+            pass
+        phase_fractions = self.phase_fractions
+        phase_count = len(phase_fractions)
+        result = self.result
+        state = self.state
+        if phase_count == 1 and self.result.gas is None:
+            self._sigma = sigma = self.phases[0].sigma()
+            return sigma
+        elif self.state == 'l' or self.result.gas is None:
+            # Multiple liquids - either a bulk liquid, or a result with no gases
+            sigma = self._mu_k_single_state(self.settings.sigma_LL, self.settings.sigma_LL_power_exponent,
+                                         self.correlations.SurfaceTensionMixture, 'sigma')
+            self._sigma = sigma
+            return sigma
+        else:
+            return None
 
 
 
