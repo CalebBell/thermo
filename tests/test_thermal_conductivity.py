@@ -285,6 +285,17 @@ def test_ThermalConductivityGasMixture():
     with pytest.raises(Exception):
         kg_mix.test_method_validity(m2.T, m2.P, m2.zs, m2.ws, 'BADMETHOD')
 
+    # json
+    hash0 = hash(kg_mix)
+    kg_mix2 = ThermalConductivityGasMixture.from_json(json.loads(json.dumps(kg_mix.as_json())))
+    assert kg_mix == kg_mix2
+    assert hash(kg_mix) == hash0
+    assert hash(kg_mix2) == hash0
+
+    kg_mix2 = eval(str(kg_mix))
+    assert kg_mix == kg_mix2
+    assert hash(kg_mix) == hash0
+    assert hash(kg_mix2) == hash0
 
 
 def test_ThermalConductivityLiquidMixture():
@@ -316,13 +327,26 @@ def test_ThermalConductivityLiquidMixture():
     with pytest.raises(Exception):
         kl_mix.test_method_validity(T, P, zs, ws, 'BADMETHOD')
 
+    # json export
+    hash0 = hash(kl_mix)
+    kl_mix2 = ThermalConductivityLiquidMixture.from_json(json.loads(json.dumps(kl_mix.as_json())))
+    assert kl_mix == kl_mix2
+    assert hash(kl_mix) == hash0
+    assert hash(kl_mix2) == hash0
+
+    kl_mix2 = eval(str(kl_mix))
+    assert kl_mix == kl_mix2
+    assert hash(kl_mix) == hash0
+    assert hash(kl_mix2) == hash0
+
+def test_ThermalConductivityLiquidMixture_electrolytes():
     # Test electrolytes
     # m = Mixture(['water', 'sulfuric acid'], ws=[.5, .5], T=298.15)
     T, P = 298.15, 101325.0
     ws = [0.5, 0.5]
+    MWs = [18.01528, 98.07848]
     zs = ws_to_zs(ws, MWs)
     CASs = ['7732-18-5', '7664-93-9']
-    MWs = [18.01528, 98.07848]
     ThermalConductivityLiquids = [
         ThermalConductivityLiquid(CASRN="7732-18-5", MW=18.01528, Tm=273.15, Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344, Hfus=6010.0, extrapolation="linear", method=DIPPR_PERRY_8E, method_P=DIPPR_9G),
         ThermalConductivityLiquid(CASRN="7664-93-9", MW=98.07848, Tm=277.305, Tb=610.15, Tc=924.0, Pc=6400000.0, omega=0.494, Hfus=10710.0, extrapolation="linear", method=GHARAGHEIZI_L, method_P=DIPPR_9G)
@@ -332,3 +356,14 @@ def test_ThermalConductivityLiquidMixture():
     k = kl_mix.mixture_property(T, P, zs, ws)
     assert_close(k, 0.45824995874859015, rtol=1e-13)
 
+    # json export
+    hash0 = hash(kl_mix)
+    kl_mix2 = ThermalConductivityLiquidMixture.from_json(json.loads(json.dumps(kl_mix.as_json())))
+    assert kl_mix == kl_mix2
+    assert hash(kl_mix) == hash0
+    assert hash(kl_mix2) == hash0
+
+    kl_mix2 = eval(str(kl_mix))
+    assert kl_mix == kl_mix2
+    assert hash(kl_mix) == hash0
+    assert hash(kl_mix2) == hash0

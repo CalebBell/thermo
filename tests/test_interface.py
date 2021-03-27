@@ -22,6 +22,7 @@ SOFTWARE.'''
 
 import pytest
 import numpy as np
+import json
 import pandas as pd
 from thermo.interface import *
 from chemicals.utils import property_mass_to_molar, zs_to_ws
@@ -102,25 +103,35 @@ def test_SurfaceTensionMixture():
     SurfaceTensions = [SurfaceTension(CASRN="109-66-0", MW=72.14878, Tb=309.21, Tc=469.7, Pc=3370000.0, Vc=0.000311, Zc=0.26837097540904814, omega=0.251, StielPolar=0.005164116344598568, Hvap_Tb=357736.5860890071, extrapolation=None, method=VDI_PPDS),
                        SurfaceTension(CASRN="75-09-2", MW=84.93258, Tb=312.95, Tc=508.0, Pc=6350000.0, Vc=0.000177, Zc=0.26610258553203137, omega=0.2027, StielPolar=-0.027514125341022044, Hvap_Tb=333985.7240672881, extrapolation=None, method=VDI_PPDS)]
 
-    a = SurfaceTensionMixture(MWs=MWs, Tbs=[309.21, 312.95], Tcs=[469.7, 508.0], correct_pressure_pure=False, CASs=['109-66-0', '75-09-2'], SurfaceTensions=SurfaceTensions, VolumeLiquids=VolumeLiquids)
+    obj = SurfaceTensionMixture(MWs=MWs, Tbs=[309.21, 312.95], Tcs=[469.7, 508.0], correct_pressure_pure=False, CASs=['109-66-0', '75-09-2'], SurfaceTensions=SurfaceTensions, VolumeLiquids=VolumeLiquids)
 
-    sigma_wsd = a.calculate(T, P, zs, method=WINTERFELDSCRIVENDAVIS, ws=ws)
+    sigma_wsd = obj.calculate(T, P, zs, method=WINTERFELDSCRIVENDAVIS, ws=ws)
     assert_close(sigma_wsd, 0.02388914831076298)
 
     # Check the default calculation method is still WINTERFELDSCRIVENDAVIS
-    sigma = a.mixture_property(T, P, zs)
+    sigma = obj.mixture_property(T, P, zs)
     assert_close(sigma, sigma_wsd)
 
     # Check the other implemented methods
-    sigma = a.calculate(T, P, zs, ws, LINEAR)
+    sigma = obj.calculate(T, P, zs, ws, LINEAR)
     assert_close(sigma, 0.025332871945242523)
 
-    sigma = a.calculate(T, P, zs, ws, DIGUILIOTEJA)
+    sigma = obj.calculate(T, P, zs, ws, DIGUILIOTEJA)
     assert_close(sigma, 0.025262398831653664)
 
     with pytest.raises(Exception):
-        a.test_method_validity(T, P, zs, ws, 'BADMETHOD')
+        obj.test_method_validity(T, P, zs, ws, 'BADMETHOD')
     with pytest.raises(Exception):
-        a.calculate(T, P, zs, ws, 'BADMETHOD')
+        obj.calculate(T, P, zs, ws, 'BADMETHOD')
 
+    hash0 = hash(obj)
+    obj2 = SurfaceTensionMixture.from_json(json.loads(json.dumps(obj.as_json())))
+    assert obj == obj2
+    assert hash(obj) == hash0
+    assert hash(obj2) == hash0
+
+    obj2 = eval(str(obj))
+    assert obj == obj2
+    assert hash(obj) == hash0
+    assert hash(obj2) == hash0
 

@@ -1161,23 +1161,11 @@ class ViscosityLiquidMixture(MixtureProperty):
 
     custom_args = ('MWs', )
 
-    def __init__(self, CASs=[], ViscosityLiquids=[], MWs=[],
-                 correct_pressure_pure=True):
+    def __init__(self, CASs=[], ViscosityLiquids=[], MWs=[], **kwargs):
         self.CASs = CASs
         self.ViscosityLiquids = ViscosityLiquids
         self.MWs = MWs
-
-        self._correct_pressure_pure = correct_pressure_pure
-
-        self.Tmin = None
-        '''Minimum temperature at which no method can calculate the
-        liquid viscosity under.'''
-        self.Tmax = None
-        '''Maximum temperature at which no method can calculate the
-        liquid viscosity above.'''
-
-        self.load_all_methods()
-        self.set_poly_fit_coeffs()
+        super(ViscosityLiquidMixture, self).__init__(**kwargs)
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -1422,7 +1410,7 @@ class ViscosityGasMixture(MixtureProperty):
     custom_args = ('MWs', 'molecular_diameters', 'Stockmayers')
 
     def __init__(self, MWs=[], molecular_diameters=[], Stockmayers=[], CASs=[],
-                 ViscosityGases=[], correct_pressure_pure=True):
+                 ViscosityGases=[], **kwargs):
         self.MWs = MWs
         self.molecular_diameters = molecular_diameters
         self.Stockmayers = Stockmayers
@@ -1434,18 +1422,7 @@ class ViscosityGasMixture(MixtureProperty):
             self.Wilke_t0s, self.Wilke_t1s, self.Wilke_t2s = Wilke_prefactors(MWs)
         except:
             pass
-        self._correct_pressure_pure = correct_pressure_pure
-
-        self.Tmin = None
-        '''Minimum temperature at which no method can calculate the
-        gas viscosity under.'''
-        self.Tmax = None
-        '''Maximum temperature at which no method can calculate the
-        gas viscosity above.'''
-
-        self.load_all_methods()
-
-        self.set_poly_fit_coeffs()
+        super(ViscosityGasMixture, self).__init__(**kwargs)
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which

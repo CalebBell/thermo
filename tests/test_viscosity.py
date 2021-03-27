@@ -24,6 +24,7 @@ from random import uniform
 import pytest
 from math import log, log10
 import numpy as np
+import json
 import pandas as pd
 from fluids.numerics import assert_close, assert_close1d, assert_close2d
 from fluids.constants import psi, atm, foot, lb
@@ -268,18 +269,27 @@ def test_ViscosityLiquidMixture():
     mu = obj.mixture_property(T, P, zs, ws)
     assert_close(mu, 0.0009948528627794172)
 
-    s = obj.as_json()
-
-    assert 'json_version' in s
-    obj2 = ViscosityLiquidMixture.from_json(s)
-    assert obj == obj2
-
     mu = obj.calculate(T, P, zs, ws, MIXING_LOG_MOLAR)
     assert_close(mu, 0.0009948528627794172)
 
     mu = obj.calculate(T, P, zs, ws, LINEAR)
     assert_close(mu, 0.001039155803329608)
 
+    hash0 = hash(obj)
+    s = json.dumps(obj.as_json())
+    assert 'json_version' in s
+    obj2 = ViscosityLiquidMixture.from_json(json.loads(s))
+    assert obj == obj2
+    assert hash(obj) == hash0
+    assert hash(obj2) == hash0
+
+    obj2 = eval(str(obj))
+    assert obj == obj2
+    assert hash(obj) == hash0
+    assert hash(obj2) == hash0
+
+
+def test_ViscosityLiquidMixture_electrolyte():
     # Test Laliberte
     m = Mixture(['water', 'sulfuric acid'], zs=[0.5, 0.5], T=298.15)
     ViscosityLiquids = [i.ViscosityLiquid for i in m.Chemicals]
@@ -327,3 +337,15 @@ def test_ViscosityGasMixture():
 
     with pytest.raises(Exception):
         obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+
+    # json
+    hash0 = hash(obj)
+    obj2 = ViscosityGasMixture.from_json(json.loads(json.dumps(obj.as_json())))
+    assert obj == obj2
+    assert hash(obj) == hash0
+    assert hash(obj2) == hash0
+
+    obj2 = eval(str(obj))
+    assert obj == obj2
+    assert hash(obj) == hash0
+    assert hash(obj2) == hash0

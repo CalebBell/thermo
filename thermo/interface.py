@@ -577,35 +577,14 @@ class SurfaceTensionMixture(MixtureProperty):
     custom_args = ('MWs', 'Tbs', 'Tcs')
 
     def __init__(self, MWs=[], Tbs=[], Tcs=[], CASs=[], SurfaceTensions=[],
-                 VolumeLiquids=[], correct_pressure_pure=True):
+                 VolumeLiquids=[],  **kwargs):
         self.MWs = MWs
         self.Tbs = Tbs
         self.Tcs = Tcs
         self.CASs = CASs
         self.SurfaceTensions = SurfaceTensions
         self.VolumeLiquids = VolumeLiquids
-
-        self._correct_pressure_pure = correct_pressure_pure
-
-        self.Tmin = None
-        '''Minimum temperature at which no method can calculate the
-        surface tension under.'''
-        self.Tmax = None
-        '''Maximum temperature at which no method can calculate the
-        surface tension above.'''
-
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
-        self.all_methods = set()
-        '''Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`.'''
-        self.load_all_methods()
-
-        self.set_poly_fit_coeffs()
+        super(SurfaceTensionMixture, self).__init__(**kwargs)
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which

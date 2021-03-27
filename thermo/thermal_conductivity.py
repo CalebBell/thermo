@@ -686,32 +686,11 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     custom_args = ('MWs', )
 
     def __init__(self, CASs=[], ThermalConductivityLiquids=[], MWs=[],
-                 correct_pressure_pure=True):
+                 **kwargs):
         self.CASs = CASs
         self.ThermalConductivityLiquids = ThermalConductivityLiquids
         self.MWs = MWs
-
-        self._correct_pressure_pure = correct_pressure_pure
-
-        self.Tmin = None
-        '''Minimum temperature at which no method can calculate the
-        liquid thermal conductivity under.'''
-        self.Tmax = None
-        '''Maximum temperature at which no method can calculate the
-        liquid thermal conductivity above.'''
-
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
-        self.all_methods = set()
-        '''Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`.'''
-        self.load_all_methods()
-
-        self.set_poly_fit_coeffs()
+        super(ThermalConductivityLiquidMixture, self).__init__(**kwargs)
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -1397,34 +1376,14 @@ class ThermalConductivityGasMixture(MixtureProperty):
     custom_args = ('MWs', 'Tbs', )
 
     def __init__(self, MWs=[], Tbs=[], CASs=[], ThermalConductivityGases=[],
-                 ViscosityGases=[], correct_pressure_pure=True):
+                 ViscosityGases=[],  **kwargs):
         self.MWs = MWs
         self.Tbs = Tbs
         self.CASs = CASs
         self.ThermalConductivityGases = ThermalConductivityGases
         self.ViscosityGases = ViscosityGases
 
-        self._correct_pressure_pure = correct_pressure_pure
-
-        self.Tmin = None
-        '''Minimum temperature at which no method can calculate the
-        gas thermal conductivity under.'''
-        self.Tmax = None
-        '''Maximum temperature at which no method can calculate the
-        gas thermal conductivity above.'''
-
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
-        self.all_methods = set()
-        '''Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`.'''
-        self.load_all_methods()
-
-        self.set_poly_fit_coeffs()
+        super(ThermalConductivityGasMixture, self).__init__(**kwargs)
 
 
     def load_all_methods(self):
