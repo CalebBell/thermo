@@ -122,13 +122,12 @@ MU_LL_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
 
 MU_LL_METHODS_set = frozenset(MU_LL_METHODS)
 
-BEATTIE_WHALLEY_MU_VL = 'BEATTIE_WHALLEY_MU_VL'
-MCADAMS_MU_VL = 'MCADAMS_MU_VL'
-CICCHITTI_MU_VL = 'CICCHITTI_MU_VL'
-LUN_KWOK_MU_VL = 'LUN_KWOK_MU_VL'
-FOURAR_BORIES_MU_VL = 'FOURAR_BORIES_MU_VL'
-DUCKLER_MU_VL = 'DUCKLER_MU_VL'
-
+BEATTIE_WHALLEY_MU_VL = 'Beattie Whalley'
+MCADAMS_MU_VL = 'McAdams'
+CICCHITTI_MU_VL = 'Cicchitti'
+LUN_KWOK_MU_VL = 'Lin Kwok'
+FOURAR_BORIES_MU_VL = 'Fourar Bories'
+DUCKLER_MU_VL = 'Duckler'
 MU_VL_CORRELATIONS = [BEATTIE_WHALLEY_MU_VL, MCADAMS_MU_VL, CICCHITTI_MU_VL,
                       LUN_KWOK_MU_VL, FOURAR_BORIES_MU_VL, DUCKLER_MU_VL]
 MU_VL_CORRELATIONS_SET = set(MU_VL_CORRELATIONS)
@@ -136,8 +135,6 @@ MU_VL_CORRELATIONS_SET = set(MU_VL_CORRELATIONS)
 
 MU_VL_METHODS = MU_LL_METHODS + [AS_ONE_GAS] + MU_VL_CORRELATIONS
 '''List of all valid and implemented mixing rules for the `MU_VL` setting'''
-
-
 MU_VL_METHODS_SET = set(MU_VL_METHODS)
 
 K_LL_METHODS = MU_LL_METHODS
@@ -172,11 +169,19 @@ class BulkSettings(object):
 
     Parameters
     ----------
-    mu_LL : str
-        Mixing rule for multiple liquid phase, liquid viscosity calculations,
+    mu_LL : str, optional
+        Mixing rule for multiple liquid phase liquid viscosity calculations;
+        see :obj:`MU_LL_METHODS` for available options,
         [-]
-    mu_LL_power_exponent : float
+    mu_LL_power_exponent : float, optional
         Liquid-liquid power-law mixing parameter, used only when a power
+        law mixing rule is selected, [-]
+    mu_VL : str, optional
+        Mixing rule for vapor-liquid viscosity calculations;
+        see :obj:`MU_VL_METHODS` for available options,
+        [-]
+    mu_VL_power_exponent : float, optional
+        Vapor-liquid power-law mixing parameter, used only when a power
         law mixing rule is selected, [-]
 
     Notes
@@ -323,7 +328,7 @@ class Bulk(Phase):
 
     @property
     def beta(self):
-        r'''Phase fraction of the bulk phase. Should always be one when
+        r'''Phase fraction of the bulk phase. Should always be 1 when
         representing all phases of a flash; but can be less than one if
         representing multiple solids or liquids as a single phase in a larger
         mixture.
@@ -334,6 +339,53 @@ class Bulk(Phase):
             Phase fraction of bulk, [-]
         '''
         return sum(self.phase_fractions)
+
+    @property
+    def betas_mass(self):
+        r'''Method to calculate and return the mass fraction of all of the
+        phases in the bulk.
+
+        Returns
+        -------
+        betas_mass : list[float]
+            Mass phase fractions of all the phases in the bulk object, ordered
+            vapor, liquid, then solid, [-]
+
+        Notes
+        -----
+        '''
+        betas = self.phase_fractions
+        phase_iter = range(len(betas))
+        MWs_phases = [i.MW() for i in self.phases]
+        tot = 0.0
+        for i in phase_iter:
+            tot += MWs_phases[i]*betas[i]
+        tot_inv = 1.0/tot
+        return [betas[i]*MWs_phases[i]*tot_inv for i in phase_iter]
+
+    @property
+    def betas_volume(self):
+        r'''Method to calculate and return the volume fraction of all of the
+        phases in the bulk.
+
+        Returns
+        -------
+        betas_volume : list[float]
+            Volume phase fractions of all the phases in the bulk, ordered
+            vapor, liquid, then solid , [-]
+
+        Notes
+        -----
+        '''
+        betas = self.phase_fractions
+        phase_iter = range(len(betas))
+        Vs_phases = [i.V() for i in self.phases]
+
+        tot = 0.0
+        for i in phase_iter:
+            tot += Vs_phases[i]*betas[i]
+        tot_inv = 1.0/tot
+        return [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
 
     def _mu_k_single_state(self, method, exponent, mix_obj, attr):
         if method == AS_ONE_LIQUID:
@@ -375,18 +427,17 @@ class Bulk(Phase):
         phase_fractions = self.phase_fractions
         phase_count = len(phase_fractions)
         result = self.result
-        method = self.settings.mu_LL
         if phase_count == 1:
             self._mu = mu = self.phases[0].mu()
             return mu
         elif self.state == 'l' or self.result.gas is None:
             # Multiple liquids - either a bulk liquid, or a result with no gases
-            mu = self._mu_k_single_state(method, self.settings.mu_LL_power_exponent,
+            mu = self._mu_k_single_state(self.settings.mu_LL, self.settings.mu_LL_power_exponent,
                                          self.correlations.ViscosityLiquidMixture, 'mu')
             self._mu = mu
             return mu
 
-
+        method = self.settings.mu_VL
         if method == AS_ONE_LIQUID:
             self._mu = mu = self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
             return mu
@@ -407,52 +458,33 @@ class Bulk(Phase):
                 rhol = result.liquids[0].rho_mass()
             else:
                 rhol = result.liquid_bulk.rho_mass()
-
             mu = gas_liquid_viscosity(x, mul, mug, rhol, rhog, Method=method)
         else:
             mus = [mug, mul]
             if method in mole_methods:
-                VF = self.result.beta_gas
+                VF = self.result.VF
                 betas = [VF, 1.0 - VF]
             elif method in mass_methods:
-                betas = self.betas_mass_states[:2]
+                betas = self.result.betas_mass_states[:2]
             elif method in volume_methods:
-                betas = self.betas_volume_states[:2]
+                betas = self.result.betas_volume_states[:2]
 
             if method in linear_methods:
                 mu = betas[0]*mus[0] + betas[1]*mus[1]
             elif method in prop_power_methods:
-                exponent = self.settings.mu_LL_power_exponent
+                exponent = self.settings.mu_VL_power_exponent
                 mu = (betas[0]*mus[0]**exponent + betas[1]*mus[1]**exponent)**(1.0/exponent)
             elif method in log_prop_methods:
                 mu = exp(betas[0]*log(mus[0]) + betas[1]*log(mus[1]))
+            elif method == MINIMUM_PHASE_PROP:
+                mu = min(mus)
+            elif method == MAXIMUM_PHASE_PROP:
+                mu = max(mus)
         self._mu = mu
         return mu
 
 
 
-    @property
-    def betas_mass(self):
-        betas = self.phase_fractions
-        phase_iter = range(len(betas))
-        MWs_phases = [i.MW() for i in self.phases]
-        tot = 0.0
-        for i in phase_iter:
-            tot += MWs_phases[i]*betas[i]
-        tot_inv = 1.0/tot
-        return [betas[i]*MWs_phases[i]*tot_inv for i in phase_iter]
-
-    @property
-    def betas_volume(self):
-        betas = self.phase_fractions
-        phase_iter = range(len(betas))
-        Vs_phases = [i.V() for i in self.phases]
-
-        tot = 0.0
-        for i in phase_iter:
-            tot += Vs_phases[i]*betas[i]
-        tot_inv = 1.0/tot
-        return [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
 
 
     def MW(self):

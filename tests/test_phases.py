@@ -1694,6 +1694,7 @@ def test_viscosity_bulk():
                      flash_specs=None, flash_convergence=None,
                      constants=constants, correlations=correlations, flasher=None)
 
+    # Liquid-Liquid
     settings = BulkSettings(mu_LL=MOLE_WEIGHTED)
     mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
     assert_close(mu, 0.00039882913468437684, rtol=1e-7)
@@ -1742,6 +1743,122 @@ def test_viscosity_bulk():
     mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
     assert_close(mu, 0.0005588894241890335, rtol=1e-7)
 
+    # Vapor-Liquid-Liquid
+
+    settings = BulkSettings(mu_VL='Beattie Whalley', mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect =  9.411770734983076e-05
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+
+    settings = BulkSettings(mu_VL='McAdams', mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 0.0002036661410653679
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+
+    settings = BulkSettings(mu_VL='Cicchitti', mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 0.0004498838091208372
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+
+    settings = BulkSettings(mu_VL='Lin Kwok', mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 0.00035231645076735013
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+
+    settings = BulkSettings(mu_VL='Fourar Bories', mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 6.711304514284185e-05
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+
+    settings = BulkSettings(mu_VL='Duckler', mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 3.516224626001169e-05
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+
+    settings = BulkSettings(mu_VL=AS_ONE_GAS, mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 1.0935521242505785e-05
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+
+    settings = BulkSettings(mu_VL=AS_ONE_LIQUID, mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 0.00041045888339074244
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+    obj.mu()
+
+    settings = BulkSettings(mu_VL=MOLE_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 0.00045104828084961045
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+
+    settings = BulkSettings(mu_VL=MASS_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 0.0004498838091208372
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+
+    settings = BulkSettings(mu_VL=VOLUME_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 3.582321366162159e-05
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+
+    settings = BulkSettings(mu_VL=LOG_PROP_MOLE_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 0.0004174877255632339
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+
+    settings = BulkSettings(mu_VL=LOG_PROP_MASS_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 0.0004134734397320772
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+
+    settings = BulkSettings(mu_VL=LOG_PROP_VOLUME_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 1.3317065001179692e-05
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+
+    settings = BulkSettings(mu_VL=POWER_PROP_MOLE_WEIGHTED, mu_VL_power_exponent=0.6, mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 0.0004445359080052111
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+
+    settings = BulkSettings(mu_VL=POWER_PROP_MASS_WEIGHTED, mu_VL_power_exponent=0.6, mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 0.0004427883876785026
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+
+    settings = BulkSettings(mu_VL=POWER_PROP_VOLUME_WEIGHTED, mu_VL_power_exponent=0.6, mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 2.0589999375854145e-05
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+
+    settings = BulkSettings(mu_VL=MAXIMUM_PHASE_PROP, mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 0.0004637014166293212
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
+
+    settings = BulkSettings(mu_VL=MINIMUM_PHASE_PROP, mu_LL=LOG_PROP_MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    mu_expect = 1.0822296297706245e-05
+    assert_close(obj.mu(), mu_expect, rtol=1e-10)
+    assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
 
 def test_phase_with_constants():
