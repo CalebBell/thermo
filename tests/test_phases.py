@@ -1904,6 +1904,7 @@ def test_thermal_conductivity_bulk():
 
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
 
+    # Liquid-Liquid
     gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     T_VLL = 361.0
@@ -1967,6 +1968,86 @@ def test_thermal_conductivity_bulk():
     settings = BulkSettings(k_LL=MAXIMUM_PHASE_PROP)
     k = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.k()
     assert_close(k, 0.6708488390590723, rtol=1e-13)
+
+    # Vapor-Liquid-Liquid
+    settings = BulkSettings(k_VL=AS_ONE_GAS, k_LL=MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    k_expect = 0.022494374735821235
+    assert_close(obj.k(), k_expect, rtol=1e-10)
+    assert_close(obj.bulk.k(), k_expect, rtol=1e-10)
+
+    settings = BulkSettings(k_VL=AS_ONE_LIQUID, k_LL=MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    k_expect = 0.512605721696896
+    assert_close(obj.k(), k_expect, rtol=1e-10)
+    assert_close(obj.bulk.k(), k_expect, rtol=1e-10)
+
+    settings = BulkSettings(k_VL=MOLE_WEIGHTED, k_LL=MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    k_expect = 0.3810276482982897
+    assert_close(obj.k(), k_expect, rtol=1e-10)
+    assert_close(obj.bulk.k(), k_expect, rtol=1e-10)
+
+    settings = BulkSettings(k_VL=MASS_WEIGHTED, k_LL=MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    k_expect = 0.38007875458800383
+    assert_close(obj.k(), k_expect, rtol=1e-10)
+    assert_close(obj.bulk.k(), k_expect, rtol=1e-10)
+
+    settings = BulkSettings(k_VL=VOLUME_WEIGHTED, k_LL=MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    k_expect = 0.042672972205998944
+    assert_close(obj.k(), k_expect, rtol=1e-10)
+    assert_close(obj.bulk.k(), k_expect, rtol=1e-10)
+
+    settings = BulkSettings(k_VL=LOG_PROP_MOLE_WEIGHTED, k_LL=MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    k_expect = 0.36123447420342764
+    assert_close(obj.k(), k_expect, rtol=1e-10)
+    assert_close(obj.bulk.k(), k_expect, rtol=1e-10)
+
+    settings = BulkSettings(k_VL=LOG_PROP_MASS_WEIGHTED, k_LL=MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    k_expect = 0.358583188533299
+    assert_close(obj.k(), k_expect, rtol=1e-10)
+    assert_close(obj.bulk.k(), k_expect, rtol=1e-10)
+
+    settings = BulkSettings(k_VL=LOG_PROP_VOLUME_WEIGHTED, k_LL=MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    k_expect = 0.026121690330528868
+    assert_close(obj.k(), k_expect, rtol=1e-10)
+    assert_close(obj.bulk.k(), k_expect, rtol=1e-10)
+
+    settings = BulkSettings(k_VL=POWER_PROP_MOLE_WEIGHTED, k_VL_power_exponent=0.6, k_LL=MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    k_expect = 0.37649648756371845
+    assert_close(obj.k(), k_expect, rtol=1e-10)
+    assert_close(obj.bulk.k(), k_expect, rtol=1e-10)
+
+    settings = BulkSettings(k_VL=POWER_PROP_MASS_WEIGHTED, k_VL_power_exponent=0.6, k_LL=MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    k_expect = 0.37514214128122697
+    assert_close(obj.k(), k_expect, rtol=1e-10)
+    assert_close(obj.bulk.k(), k_expect, rtol=1e-10)
+
+    settings = BulkSettings(k_VL=POWER_PROP_VOLUME_WEIGHTED, k_VL_power_exponent=0.6, k_LL=MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    k_expect = 0.03246636250690685
+    assert_close(obj.k(), k_expect, rtol=1e-10)
+    assert_close(obj.bulk.k(), k_expect, rtol=1e-10)
+
+    settings = BulkSettings(k_VL=MAXIMUM_PHASE_PROP, k_LL=MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    k_expect = 0.3913383159255829
+    assert_close(obj.k(), k_expect, rtol=1e-10)
+    assert_close(obj.bulk.k(), k_expect, rtol=1e-10)
+
+    settings = BulkSettings(k_VL=MINIMUM_PHASE_PROP, k_LL=MASS_WEIGHTED)
+    obj = EquilibriumState(settings=settings, **VLL_kwargs)
+    k_expect = 0.0223004610906045
+    assert_close(obj.k(), k_expect, rtol=1e-10)
+    assert_close(obj.bulk.k(), k_expect, rtol=1e-10)
+
 
 
 def test_phase_with_constants():
