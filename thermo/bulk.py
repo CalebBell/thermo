@@ -114,7 +114,8 @@ AS_ONE_GAS = 'AS_ONE_GAS' # Calculate a transport property as if there was one g
 MU_LL_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
                  AS_ONE_LIQUID,
                  LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED, LOG_PROP_VOLUME_WEIGHTED,
-                 POWER_PROP_MOLE_WEIGHTED, POWER_PROP_MASS_WEIGHTED, POWER_PROP_VOLUME_WEIGHTED
+                 POWER_PROP_MOLE_WEIGHTED, POWER_PROP_MASS_WEIGHTED, POWER_PROP_VOLUME_WEIGHTED,
+                 MINIMUM_PHASE_PROP, MAXIMUM_PHASE_PROP
                  ]
 '''List of all valid and implemented mixing rules for the `MU_LL` setting'''
 
@@ -144,6 +145,7 @@ __all__.extend(['MOLE_WEIGHTED', 'MASS_WEIGHTED', 'VOLUME_WEIGHTED',
                 'AS_ONE_GAS', 'AS_ONE_LIQUID',
                 'BEATTIE_WHALLEY_MU_VL', 'MCADAMS_MU_VL','CICCHITTI_MU_VL',
                 'LUN_KWOK_MU_VL', 'FOURAR_BORIES_MU_VL', 'DUCKLER_MU_VL',
+                'MINIMUM_PHASE_PROP', 'MAXIMUM_PHASE_PROP',
                 ])
 
 mole_methods = set([MOLE_WEIGHTED, LOG_PROP_MOLE_WEIGHTED, POWER_PROP_MOLE_WEIGHTED])
@@ -347,6 +349,12 @@ class Bulk(Phase):
                 for i in range(len(self.phase_fractions)):
                     prop += betas[i]*log(props[i])
                 prop = exp(prop)
+            elif method == MINIMUM_PHASE_PROP:
+                prop = min(props)
+            elif method == MAXIMUM_PHASE_PROP:
+                prop = max(props)
+            else:
+                raise ValueError("Unknown method")
         return prop
 
     def mu(self):
@@ -357,20 +365,18 @@ class Bulk(Phase):
         phase_fractions = self.phase_fractions
         phase_count = len(phase_fractions)
         result = self.result
-
+        method = self.settings.mu_LL
         if phase_count == 1:
             self._mu = mu = self.phases[0].mu()
             return mu
         elif self.state == 'l' or self.result.gas is None:
             # Multiple liquids - either a bulk liquid, or a result with no gases
-            method = self.settings.mu_LL
             mu = self._mu_k_single_state(method, self.settings.mu_LL_power_exponent,
                                          self.correlations.ViscosityLiquidMixture, 'mu')
             self._mu = mu
             return mu
 
 
-        method = self.settings.mu_VL
         if method == AS_ONE_LIQUID:
             self._mu = mu = self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
             return mu

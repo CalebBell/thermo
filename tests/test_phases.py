@@ -1734,6 +1734,13 @@ def test_viscosity_bulk():
     mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
     assert_close(mu, 0.0004751690553218403, rtol=1e-7)
 
+    settings = BulkSettings(mu_LL=MINIMUM_PHASE_PROP)
+    mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.0003236040378057747, rtol=1e-7)
+
+    settings = BulkSettings(mu_LL=MAXIMUM_PHASE_PROP)
+    mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.0005588894241890335, rtol=1e-7)
 
 
 
