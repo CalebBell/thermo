@@ -29,6 +29,7 @@ from thermo import Chemical, Mixture
 from math import *
 from thermo.equilibrium import *
 from thermo.bulk import *
+from thermo.utils import LINEAR
 from chemicals.utils import rho_to_Vm, Vm_to_rho
 from thermo.phases import *
 from thermo.eos_mix import *
@@ -1555,16 +1556,11 @@ def test_viscosity_thermal_conductivity():
                       VaporPressure(poly_fit=(207.15, 536.4, [-8.714046553871422e-20, 2.910491615051279e-16, -4.2588796020294357e-13, 3.580003116042944e-10, -1.902612144361103e-07, 6.614096470077095e-05, -0.01494801055978542, 2.079082613726621, -130.24643185169472])),
                       VaporPressure(poly_fit=(175.7, 512.49, [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10, -2.443464113936029e-07, 7.893819658700523e-05, -0.016615779444332356, 2.1842496316772264, -134.19766175812708]))]
 
-    ViscosityGasMixtureObj = ViscosityGasMixture(ViscosityGases=ViscosityGases)
-    ViscosityGasMixtureObj.method = 'LINEAR'
-    ViscosityLiquidMixtureObj = ViscosityLiquidMixture(ViscosityLiquids=ViscosityLiquids, correct_pressure_pure=False)
-    ViscosityLiquidMixtureObj.method = 'LINEAR'
+    ViscosityGasMixtureObj = ViscosityGasMixture(ViscosityGases=ViscosityGases, correct_pressure_pure=False, method=LINEAR)
+    ViscosityLiquidMixtureObj = ViscosityLiquidMixture(ViscosityLiquids=ViscosityLiquids, correct_pressure_pure=False, method=LINEAR)
 
-    ThermalConductivityLiquidMixtureObj = ThermalConductivityLiquidMixture(ThermalConductivityLiquids=ThermalConductivityLiquids)
-    ThermalConductivityLiquidMixtureObj.method = 'LINEAR'
-
-    ThermalConductivityGasMixtureObj = ThermalConductivityGasMixture(ThermalConductivityGases=ThermalConductivityGases)
-    ThermalConductivityGasMixtureObj.method = 'LINEAR'
+    ThermalConductivityLiquidMixtureObj = ThermalConductivityLiquidMixture(ThermalConductivityLiquids=ThermalConductivityLiquids, correct_pressure_pure=False, method=LINEAR)
+    ThermalConductivityGasMixtureObj = ThermalConductivityGasMixture(ThermalConductivityGases=ThermalConductivityGases, correct_pressure_pure=False, method=LINEAR)
 
     correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True, HeatCapacityGases=HeatCapacityGases,
                                                ViscosityLiquids=ViscosityLiquids, ViscosityGases=ViscosityGases,
