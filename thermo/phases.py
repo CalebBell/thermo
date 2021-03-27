@@ -6343,13 +6343,19 @@ class CEOSGas(Phase):
 #            return self._mu
 #        except AttributeError:
 #            pass
-        phase = self.eos_mix.phase
+        try:
+            phase == self.assigned_phase
+        except:
+            phase = self.eos_mix.phase
+            if phase == 'l/g': phase = 'g'
+        try:
+            ws = self._ws
+        except:
+            ws = self.ws()
         if phase == 'g':
-            mu = self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
-        elif phase == 'l':
-            mu = self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+            mu = self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, ws)
         else:
-            mu = self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+            mu = self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, ws)
         self._mu = mu
         return mu
 
@@ -6358,13 +6364,15 @@ class CEOSGas(Phase):
             return self._k
         except AttributeError:
             pass
-        phase = self.eos_mix.phase
+        try:
+            phase == self.assigned_phase
+        except:
+            phase = self.eos_mix.phase
+            if phase == 'l/g': phase = 'g'
         if phase == 'g':
             k = self.correlations.ThermalConductivityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
         elif phase == 'l':
             k = self.correlations.ThermalConductivityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
-        else:
-            k = self.correlations.ThermalConductivityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
         self._k = k
         return k
 

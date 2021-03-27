@@ -246,6 +246,7 @@ class EquilibriumState(object):
         self.solids = solids
         if gas is not None:
             self.phases = [gas] + liquids + solids
+            gas.assigned_phase = 'g'
         else:
             self.phases = liquids + solids
 
@@ -266,10 +267,14 @@ class EquilibriumState(object):
             liquid_bulk.settings = settings
             for i, l in enumerate(liquids):
                 setattr(self, 'liquid%d'%(i), l)
+                l.assigned_phase = 'l'
         elif liquid_count:
-            self.liquid_zs = liquids[0].zs
-            self.liquid_bulk = liquids[0]
-            self.liquid0 = liquids[0]
+            l = liquids[0]
+            self.liquid_zs = l.zs
+            self.liquid_bulk = l
+            self.liquid0 = l
+            l.assigned_phase = 'l'
+
         if solids:
             self.solid_zs = normalize([sum([betas_solids[j]*solids[j].zs[i] for j in range(self.solid_count)])
                                for i in range(self.N)])
