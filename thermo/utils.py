@@ -90,6 +90,7 @@ from chemicals.dippr import EQ101
 from chemicals.phase_change import Watson, Watson_n
 from thermo import serialize
 from thermo.eos import GCEOS
+from thermo.eos_mix import GCEOSMIX
 from thermo.coolprop import coolprop_fluids
 
 NEGLIGIBLE = 'NEGLIGIBLE'
@@ -3295,6 +3296,13 @@ class MixtureProperty(object):
             for k in self.pure_references:
                 d[k] = [v.as_json() for v in d[k]]
 
+        try:
+            eos = getattr(self, 'eos')
+            if eos:
+                d['eos'] = eos[0].as_json()
+        except:
+            pass
+
         d['json_version'] = 1
         d["py/object"] = self.__full_path__
         d['all_methods'] = list(d['all_methods'])
@@ -3330,6 +3338,12 @@ class MixtureProperty(object):
             d[k] = [sub_cls.from_json(j) if j is not None else None
                     for j in sub_jsons]
 
+        try:
+            eos = d['eos']
+            if eos is not None:
+                d['eos'] = [GCEOSMIX.from_json(eos)]
+        except:
+            pass
         del d['py/object']
         del d["json_version"]
         new = cls.__new__(cls)

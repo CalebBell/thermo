@@ -1742,31 +1742,12 @@ class VolumeGasMixture(MixtureProperty):
 
     custom_args = ('MWs', 'eos')
 
-    def __init__(self, eos=None, CASs=[], VolumeGases=[], MWs=[]):
+    def __init__(self, eos=None, CASs=[], VolumeGases=[], MWs=[], **kwargs):
         self.CASs = CASs
         self.VolumeGases = VolumeGases
         self.eos = eos
         self.MWs = MWs
-
-        self.Tmin = None
-        '''Minimum temperature at which no method can calculate the
-        gas molar volume under.'''
-        self.Tmax = None
-        '''Maximum temperature at which no method can calculate the
-        gas molar volume above.'''
-
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
-        self.all_methods = set()
-        '''Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`.'''
-        self.load_all_methods()
-
-        self.set_poly_fit_coeffs()
+        super(VolumeGasMixture, self).__init__(**kwargs)
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -2100,31 +2081,14 @@ class VolumeSolidMixture(MixtureProperty):
 
     custom_args = ('MWs', )
 
-    def __init__(self, CASs=[], VolumeSolids=[], MWs=[]):
+    def __init__(self, CASs=[], VolumeSolids=[], MWs=[], **kwargs):
         self.CASs = CASs
         self.VolumeSolids = VolumeSolids
         self.MWs = MWs
 
         self.Tmin = 0
-        '''Minimum temperature at which no method can calculate the
-        solid molar volume under.'''
         self.Tmax = 1E4
-        '''Maximum temperature at which no method can calculate the
-        solid molar volume above; assumed 10 000 K even under ultra-high
-        pressure.'''
-
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
-        self.all_methods = set()
-        '''Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`.'''
-        self.load_all_methods()
-
-        self.set_poly_fit_coeffs()
+        super(VolumeSolidMixture, self).__init__(**kwargs)
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which

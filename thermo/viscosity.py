@@ -1537,7 +1537,7 @@ class ViscosityGasMixture(MixtureProperty):
         elif method == BROKAW:
             return Brokaw(T, zs, mus, self.MWs, self.molecular_diameters, self.Stockmayers)
         else:
-            raise Exception('Method not valid')
+            raise ValueError('Method not valid')
 
     def test_method_validity(self, T, P, zs, ws, method):
         r'''Method to test the validity of a specified method for the given
@@ -1565,5 +1565,5 @@ class ViscosityGasMixture(MixtureProperty):
         if method in self.all_methods:
             return True
         else:
-            raise Exception('Method not valid')
+            raise ValueError('Method not valid')
 

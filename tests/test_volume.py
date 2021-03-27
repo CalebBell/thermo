@@ -445,6 +445,17 @@ def test_VolumeGasMixture():
     assert_close(obj.calculate(T, P, zs, ws, IDEAL), 0.002478957029602388, rtol=1e-7)
     assert_close(obj.calculate(T, P, zs, ws, LINEAR), 0.002462690948679184, rtol=1e-7)
 
+    hash0 = hash(obj)
+    obj2 = VolumeGasMixture.from_json(json.loads(json.dumps(obj.as_json())))
+    assert obj == obj2
+    assert hash(obj) == hash0
+    assert hash(obj2) == hash0
+
+    obj2 = eval(str(obj))
+    assert obj == obj2
+    assert hash(obj) == hash0
+    assert hash(obj2) == hash0
+
     # Unhappy paths
     with pytest.raises(Exception):
         obj.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
