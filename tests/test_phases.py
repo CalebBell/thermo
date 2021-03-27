@@ -1524,7 +1524,7 @@ def test_dlnfugacities_SRK():
     assert_close2d(liq.dlnfugacities_dns(), dlnfugacities_dns_l_expect, rtol=1e-9)
 
 
-def test_viscosity_thermal_conductivity():
+def test_single_phase_viscosity_thermal_conductivity():
     constants = ChemicalConstantsPackage(Tcs=[508.1, 536.2, 512.5], Pcs=[4700000.0, 5330000.0, 8084000.0], omegas=[0.309, 0.21600000000000003, 0.5589999999999999],
                                          MWs=[58.07914, 119.37764000000001, 32.04186], CASs=['67-64-1', '67-66-3', '67-56-1'], names=['acetone', 'chloroform', 'methanol'])
 

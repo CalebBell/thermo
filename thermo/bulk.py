@@ -53,6 +53,7 @@ Bulk Settings Class
     :exclude-members:
 
 .. autodata:: MU_LL_METHODS
+.. autodata:: MU_VL_METHODS
 
 '''
 
@@ -121,17 +122,23 @@ MU_LL_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
 
 MU_LL_METHODS_set = frozenset(MU_LL_METHODS)
 
-BEATTIE_WHALLEY_MU_VL = 'Beattie Whalley'
-MCADAMS_MU_VL = 'McAdams'
-CICCHITTI_MU_VL = 'Cicchitti'
-LUN_KWOK_MU_VL = 'Lin Kwok'
-FOURAR_BORIES_MU_VL = 'Fourar Bories'
-DUCKLER_MU_VL = 'Duckler'
+BEATTIE_WHALLEY_MU_VL = 'BEATTIE_WHALLEY_MU_VL'
+MCADAMS_MU_VL = 'MCADAMS_MU_VL'
+CICCHITTI_MU_VL = 'CICCHITTI_MU_VL'
+LUN_KWOK_MU_VL = 'LUN_KWOK_MU_VL'
+FOURAR_BORIES_MU_VL = 'FOURAR_BORIES_MU_VL'
+DUCKLER_MU_VL = 'DUCKLER_MU_VL'
 
 MU_VL_CORRELATIONS = [BEATTIE_WHALLEY_MU_VL, MCADAMS_MU_VL, CICCHITTI_MU_VL,
                       LUN_KWOK_MU_VL, FOURAR_BORIES_MU_VL, DUCKLER_MU_VL]
 MU_VL_CORRELATIONS_SET = set(MU_VL_CORRELATIONS)
+
+
 MU_VL_METHODS = MU_LL_METHODS + [AS_ONE_GAS] + MU_VL_CORRELATIONS
+'''List of all valid and implemented mixing rules for the `MU_VL` setting'''
+
+
+MU_VL_METHODS_SET = set(MU_VL_METHODS)
 
 K_LL_METHODS = MU_LL_METHODS
 
@@ -252,6 +259,9 @@ class BulkSettings(object):
             raise ValueError("Unrecognized option for mu_LL")
         self.mu_LL = mu_LL
         self.mu_LL_power_exponent = mu_LL_power_exponent
+
+        if mu_VL not in MU_VL_METHODS_SET:
+            raise ValueError("Unrecognized option for mu_VL")
         self.mu_VL = mu_VL
         self.mu_VL_power_exponent = mu_VL_power_exponent
 
