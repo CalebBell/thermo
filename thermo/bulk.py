@@ -51,6 +51,9 @@ Bulk Settings Class
     :undoc-members:
     :show-inheritance:
     :exclude-members:
+
+.. autodata:: MU_LL_METHODS
+
 '''
 
 from __future__ import division
@@ -74,22 +77,21 @@ I guess it's going to need MW as well.
 Does not have any flow property.
 '''
 
-MOLE_WEIGHTED = 'mole weighted'
-MASS_WEIGHTED = 'mass weighted'
-VOLUME_WEIGHTED = 'volume weighted'
 EQUILIBRIUM_DERIVATIVE = 'Equilibrium derivative'
 EQUILIBRIUM_DERIVATIVE_SAME_PHASES = 'Equilibrium at same phases'
-MINIMUM_PHASE_PROP = 'minimum phase'
-MAXIMUM_PHASE_PROP = 'maximum phase'
-LIQUID_MOLE_WEIGHTED_PROP = 'liquid phase average, ignore other phases'
+FROM_DERIVATIVE_SETTINGS = 'from derivative settings'
+
+MOLE_WEIGHTED = 'MOLE_WEIGHTED'
+MASS_WEIGHTED = 'MASS_WEIGHTED'
+VOLUME_WEIGHTED = 'VOLUME_WEIGHTED'
+
+MINIMUM_PHASE_PROP = 'MINIMUM_PHASE_PROP'
+MAXIMUM_PHASE_PROP = 'MAXIMUM_PHASE_PROP'
 
 DP_DT_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, EQUILIBRIUM_DERIVATIVE,
                  MINIMUM_PHASE_PROP, MAXIMUM_PHASE_PROP]
 
 DP_DV_METHODS = D2P_DV2_METHODS = D2P_DT2_METHODS = D2P_DTDV_METHODS = DP_DT_METHODS
-
-
-FROM_DERIVATIVE_SETTINGS = 'from derivative settings'
 
 SPEED_OF_SOUND_METHODS = [MOLE_WEIGHTED, EQUILIBRIUM_DERIVATIVE]
 
@@ -98,22 +100,25 @@ BETA_METHODS = [MOLE_WEIGHTED, EQUILIBRIUM_DERIVATIVE, FROM_DERIVATIVE_SETTINGS,
 KAPPA_METHODS = JT_METHODS = BETA_METHODS
 
 
-LOG_PROP_MOLE_WEIGHTED = 'log prop mole weighted'
-LOG_PROP_MASS_WEIGHTED = 'log prop mass weighted'
-LOG_PROP_VOLUME_WEIGHTED = 'log prop volume weighted'
+LOG_PROP_MOLE_WEIGHTED = 'LOG_PROP_MOLE_WEIGHTED'
+LOG_PROP_MASS_WEIGHTED = 'LOG_PROP_MASS_WEIGHTED'
+LOG_PROP_VOLUME_WEIGHTED = 'LOG_PROP_VOLUME_WEIGHTED'
 
-POWER_PROP_MOLE_WEIGHTED = 'power prop mole weighted'
-POWER_PROP_MASS_WEIGHTED = 'power prop mass weighted'
-POWER_PROP_VOLUME_WEIGHTED = 'power prop volume weighted'
+POWER_PROP_MOLE_WEIGHTED = 'POWER_PROP_MOLE_WEIGHTED'
+POWER_PROP_MASS_WEIGHTED = 'POWER_PROP_MASS_WEIGHTED'
+POWER_PROP_VOLUME_WEIGHTED = 'POWER_PROP_VOLUME_WEIGHTED'
 
-AS_ONE_LIQUID = 'as one liquid' # Calculate a transport property as if there was one liquid phase
-AS_ONE_GAS = 'as one gas' # Calculate a transport property as if there was one gas phase and liquids or solids
+AS_ONE_LIQUID = 'AS_ONE_LIQUID' # Calculate a transport property as if there was one liquid phase
+AS_ONE_GAS = 'AS_ONE_GAS' # Calculate a transport property as if there was one gas phase and liquids or solids
 
 MU_LL_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
                  AS_ONE_LIQUID,
                  LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED, LOG_PROP_VOLUME_WEIGHTED,
                  POWER_PROP_MOLE_WEIGHTED, POWER_PROP_MASS_WEIGHTED, POWER_PROP_VOLUME_WEIGHTED
                  ]
+'''List of all valid and implemented mixing rules for the `MU_LL` setting'''
+
+MU_LL_METHODS_set = frozenset(MU_LL_METHODS)
 
 BEATTIE_WHALLEY_MU_VL = 'Beattie Whalley'
 MCADAMS_MU_VL = 'McAdams'
@@ -153,6 +158,57 @@ prop_power_methods = set([POWER_PROP_MOLE_WEIGHTED, POWER_PROP_MASS_WEIGHTED, PO
 
 
 class BulkSettings(object):
+    r'''Class containing configuration methods for determining how properties of
+    a `Bulk` phase made of different phases are handled.
+
+    Parameters
+    ----------
+    mu_LL : str
+        Mixing rule for multiple liquid phase, liquid viscosity calculations,
+        [-]
+    mu_LL_power_exponent : float
+        Liquid-liquid power-law mixing parameter, used only when a power
+        law mixing rule is selected, [-]
+
+    Notes
+    -----
+
+    The linear mixing rules "MOLE_WEIGHTED", "MASS_WEIGHTED", and
+    "VOLUME_WEIGHTED" have the following formula, with :math:`\beta`
+    representing molar, mass, or volume phase fraction:
+
+    .. math::
+        \text{bulk property} = \left(\sum_i^{phases} \beta_i \text{property}
+        \right)
+
+    The power mixing rules "POWER_PROP_MOLE_WEIGHTED",
+    "POWER_PROP_MASS_WEIGHTED", and "POWER_PROP_VOLUME_WEIGHTED" have the
+    following formula, with :math:`\beta` representing molar, mass, or volume
+    phase fraction:
+
+    .. math::
+        \text{bulk property} = \left(\sum_i^{phases} \beta_i \text{property
+        }^{\text{exponent}} \right)^{1/\text{exponent}}
+
+    The logarithmic mixing rules "LOG_PROP_MOLE_WEIGHTED",
+    "LOG_PROP_MASS_WEIGHTED", and "LOG_PROP_VOLUME_WEIGHTED" have the
+    following formula, with :math:`\beta` representing molar, mass, or volume
+    phase fraction:
+
+    .. math::
+        \text{bulk property} = \exp\left(\sum_i^{phases} \beta_i \ln(\text{property
+        })\right)
+
+    The mixing rule "MINIMUM_PHASE_PROP" selects the lowest phase value of the
+    property, always. The mixing rule "MAXIMUM_PHASE_PROP" selects the highest
+    phase value of the property, always.
+
+    The mixing rule "AS_ONE_LIQUID" calculates a property using the bulk
+    composition but applied to the liquid model only.
+    The mixing rule "AS_ONE_GAS" calculates a property using the bulk
+    composition but applied to the gas model only.
+
+    '''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     def as_json(self):
@@ -190,6 +246,8 @@ class BulkSettings(object):
         self.d2P_dT2 = d2P_dT2
         self.d2P_dTdV = d2P_dTdV
         self.mu = mu
+        if mu_LL not in MU_LL_METHODS_set:
+            raise ValueError("Unrecognized option for mu_LL")
         self.mu_LL = mu_LL
         self.mu_LL_power_exponent = mu_LL_power_exponent
         self.mu_VL = mu_VL

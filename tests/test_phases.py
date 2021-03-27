@@ -1641,32 +1641,45 @@ def test_viscosity_bulk():
     constants = ChemicalConstantsPackage(Tcs=[563.0, 647.14, 514.0], Pcs=[4414000.0, 22048320.0, 6137000.0],
                                          omegas=[0.59, 0.344, 0.635], MWs=[74.1216, 18.01528, 46.06844],
                                          CASs=['71-36-3', '7732-18-5', '64-17-5'])
-    correlations = PropertyCorrelationsPackage(constants=constants,
-                                               HeatCapacityGases=[HeatCapacityGas(poly_fit=(50.0, 1000.0, [-3.787200194613107e-20, 1.7692887427654656e-16, -3.445247207129205e-13, 3.612771874320634e-10, -2.1953250181084466e-07, 7.707135849197655e-05, -0.014658388538054169, 1.5642629364740657, -7.614560475001724])),
-                                            HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
-                                            HeatCapacityGas(poly_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965])),],
-                                               ViscosityGases=[ViscosityGas(poly_fit=(390.65, 558.9, [4.166385860107714e-29, -1.859399624586853e-25, 3.723945144634823e-22, -4.410000193606962e-19, 3.412270901850386e-16, -1.7666632565075753e-13, 5.266250837132718e-11, 1.8202807683935545e-08, -3.7907568022643496e-07])),
-        ViscosityGas(poly_fit=(273.16, 1073.15, [-1.1818252575481647e-27, 6.659356591849417e-24, -1.5958127917299133e-20, 2.1139343137119052e-17, -1.6813187290802144e-14, 8.127448028541097e-12, -2.283481528583874e-09, 3.674008403495927e-07, -1.9313694390100466e-05])),
-        ViscosityGas(poly_fit=(300.0, 513.9, [2.7916394465461813e-24, -9.092375280175391e-21, 1.2862968526545343e-17, -1.032039387901207e-14, 5.13487008660069e-12, -1.6219017947521426e-09, 3.1752760767848214e-07, -3.51903254465602e-05, 0.0016941391616918362])),],
-                                               ViscosityLiquids=[ViscosityLiquid(poly_fit=(190.0, 391.9, [1.8379049563136273e-17, -4.5666126233131545e-14, 4.9414486397781785e-11, -3.042378423089263e-08, 1.166244931040138e-05, -0.0028523723735774113, 0.4352378275340892, -37.99358630363772, 1456.8338572042996])),
-        ViscosityLiquid(poly_fit=(273.17, 647.086, [-3.2967840446295976e-19, 1.083422738340624e-15, -1.5170905583877102e-12, 1.1751285808764222e-09, -5.453683174592268e-07, 0.00015251508129341616, -0.024118558027652552, 1.7440690494170135, -24.96090630337129])),
-        ViscosityLiquid(poly_fit=(159.11, 514.7, [-2.0978513357499417e-18, 4.812669873819701e-15, -4.572016638774548e-12, 2.299873746519043e-09, -6.408737804647756e-07, 8.908272738941156e-05, -0.002254199305798619, -0.8783232122373867, 74.74147552003194])),],
-                                               ThermalConductivityGases=[ThermalConductivityGas(poly_fit=(390.65, 558.9, [1.303338742188738e-26, -5.948868042722525e-23, 1.2393384322893673e-19, -1.5901481819379786e-16, 1.4993659486913432e-13, -1.367840742416352e-10, 1.7997602278525846e-07, 3.5456258123020795e-06, -9.803647813554084e-05])),
-        ThermalConductivityGas(poly_fit=(273.16, 1073.15, [5.970987011074381e-24, -3.418727248605031e-20, 8.361744776811236e-17, -1.1380580431686535e-13, 9.399464593896363e-11, -4.811324545387991e-08, 1.4926199157586262e-05, -0.0024894865249832244, 0.18241710799965744])),
-        ThermalConductivityGas(poly_fit=(300.0, 513.9, [-3.819572650075608e-20, 1.2584433383834293e-16, -1.8028677611780213e-13, 1.4665239736298113e-10, -7.406796299708538e-08, 2.3779007046303544e-05, -0.0047378686896172376, 0.5356260682733641, -26.29932866898386])),],
-                                               ThermalConductivityLiquids=[ThermalConductivityLiquid(poly_fit=(390.65, 558.9, [-1.7703926719478098e-31, 5.532831178371296e-28, -7.157706109850407e-25, 4.824017093238245e-22, -1.678132299010268e-19, 1.8560214447222824e-17, 6.274769714658382e-15, -0.00020340000228224661, 0.21360000021862866])),
-        ThermalConductivityLiquid(poly_fit=(273.16, 633.15, [6.552132522239823e-22, 3.0910916499614477e-18, -1.3957213337852534e-14, 2.092315700432526e-11, -1.6430543524434563e-08, 7.537748900819338e-06, -0.0020488791608887155, 0.30941988236478873, -19.636420494232954])),
-        ThermalConductivityLiquid(poly_fit=(300.0, 513.9, [3.163888320633998e-17, -9.958408690033226e-14, 1.3643427085172672e-10, -1.062661463758585e-07, 5.1465666844943694e-05, -0.01587057865495585, 3.0431818575297354, -331.75594088517596, 15743.665383950109])),])
+
+    HeatCapacityGases=[HeatCapacityGas(poly_fit=(50.0, 1000.0, [-3.787200194613107e-20, 1.7692887427654656e-16, -3.445247207129205e-13, 3.612771874320634e-10, -2.1953250181084466e-07, 7.707135849197655e-05, -0.014658388538054169, 1.5642629364740657, -7.614560475001724])),
+                    HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                    HeatCapacityGas(poly_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965])),]
+
+    ViscosityGases=[ViscosityGas(poly_fit=(390.65, 558.9, [4.166385860107714e-29, -1.859399624586853e-25, 3.723945144634823e-22, -4.410000193606962e-19, 3.412270901850386e-16, -1.7666632565075753e-13, 5.266250837132718e-11, 1.8202807683935545e-08, -3.7907568022643496e-07])),
+    ViscosityGas(poly_fit=(273.16, 1073.15, [-1.1818252575481647e-27, 6.659356591849417e-24, -1.5958127917299133e-20, 2.1139343137119052e-17, -1.6813187290802144e-14, 8.127448028541097e-12, -2.283481528583874e-09, 3.674008403495927e-07, -1.9313694390100466e-05])),
+    ViscosityGas(poly_fit=(300.0, 513.9, [2.7916394465461813e-24, -9.092375280175391e-21, 1.2862968526545343e-17, -1.032039387901207e-14, 5.13487008660069e-12, -1.6219017947521426e-09, 3.1752760767848214e-07, -3.51903254465602e-05, 0.0016941391616918362])),]
+
+    ViscosityLiquids=[ViscosityLiquid(poly_fit=(190.0, 391.9, [1.8379049563136273e-17, -4.5666126233131545e-14, 4.9414486397781785e-11, -3.042378423089263e-08, 1.166244931040138e-05, -0.0028523723735774113, 0.4352378275340892, -37.99358630363772, 1456.8338572042996])),
+    ViscosityLiquid(poly_fit=(273.17, 647.086, [-3.2967840446295976e-19, 1.083422738340624e-15, -1.5170905583877102e-12, 1.1751285808764222e-09, -5.453683174592268e-07, 0.00015251508129341616, -0.024118558027652552, 1.7440690494170135, -24.96090630337129])),
+    ViscosityLiquid(poly_fit=(159.11, 514.7, [-2.0978513357499417e-18, 4.812669873819701e-15, -4.572016638774548e-12, 2.299873746519043e-09, -6.408737804647756e-07, 8.908272738941156e-05, -0.002254199305798619, -0.8783232122373867, 74.74147552003194])),]
+
+    ThermalConductivityGases=[ThermalConductivityGas(poly_fit=(390.65, 558.9, [1.303338742188738e-26, -5.948868042722525e-23, 1.2393384322893673e-19, -1.5901481819379786e-16, 1.4993659486913432e-13, -1.367840742416352e-10, 1.7997602278525846e-07, 3.5456258123020795e-06, -9.803647813554084e-05])),
+    ThermalConductivityGas(poly_fit=(273.16, 1073.15, [5.970987011074381e-24, -3.418727248605031e-20, 8.361744776811236e-17, -1.1380580431686535e-13, 9.399464593896363e-11, -4.811324545387991e-08, 1.4926199157586262e-05, -0.0024894865249832244, 0.18241710799965744])),
+    ThermalConductivityGas(poly_fit=(300.0, 513.9, [-3.819572650075608e-20, 1.2584433383834293e-16, -1.8028677611780213e-13, 1.4665239736298113e-10, -7.406796299708538e-08, 2.3779007046303544e-05, -0.0047378686896172376, 0.5356260682733641, -26.29932866898386])),]
+
+    ThermalConductivityLiquids=[ThermalConductivityLiquid(poly_fit=(390.65, 558.9, [-1.7703926719478098e-31, 5.532831178371296e-28, -7.157706109850407e-25, 4.824017093238245e-22, -1.678132299010268e-19, 1.8560214447222824e-17, 6.274769714658382e-15, -0.00020340000228224661, 0.21360000021862866])),
+    ThermalConductivityLiquid(poly_fit=(273.16, 633.15, [6.552132522239823e-22, 3.0910916499614477e-18, -1.3957213337852534e-14, 2.092315700432526e-11, -1.6430543524434563e-08, 7.537748900819338e-06, -0.0020488791608887155, 0.30941988236478873, -19.636420494232954])),
+    ThermalConductivityLiquid(poly_fit=(300.0, 513.9, [3.163888320633998e-17, -9.958408690033226e-14, 1.3643427085172672e-10, -1.062661463758585e-07, 5.1465666844943694e-05, -0.01587057865495585, 3.0431818575297354, -331.75594088517596, 15743.665383950109]))]
+
+    ViscosityGasMixtureObj = ViscosityGasMixture(ViscosityGases=ViscosityGases, correct_pressure_pure=False, method=LINEAR)
+    ViscosityLiquidMixtureObj = ViscosityLiquidMixture(ViscosityLiquids=ViscosityLiquids, correct_pressure_pure=False, method=LINEAR)
+
+    ThermalConductivityLiquidMixtureObj = ThermalConductivityLiquidMixture(ThermalConductivityLiquids=ThermalConductivityLiquids, correct_pressure_pure=False, method=LINEAR)
+    ThermalConductivityGasMixtureObj = ThermalConductivityGasMixture(ThermalConductivityGases=ThermalConductivityGases, correct_pressure_pure=False, method=LINEAR)
+
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True, HeatCapacityGases=HeatCapacityGases,
+                                               ViscosityLiquids=ViscosityLiquids, ViscosityGases=ViscosityGases,
+                                               ThermalConductivityGases=ThermalConductivityGases, ThermalConductivityLiquids=ThermalConductivityLiquids,
+                                               ViscosityGasMixtureObj=ViscosityGasMixtureObj,
+                                               ViscosityLiquidMixtureObj=ViscosityLiquidMixtureObj,
+                                               ThermalConductivityGasMixtureObj=ThermalConductivityGasMixtureObj,
+                                               ThermalConductivityLiquidMixtureObj=ThermalConductivityLiquidMixtureObj)
+
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
 
     gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
-
-    from thermo.bulk import default_settings
-    settings = deepcopy(default_settings)
-    settings.mu_LL_power_exponent = 0.4 # keep test value away from the default
-    settings.mu_LL = MOLE_WEIGHTED
-
     T_VLL = 361.0
     VLL_betas = [0.027939322463013245, 0.6139152961492603, 0.35814538138772645]
     VLL_zs_gas = [0.23840099709086618, 0.5786839935180893, 0.18291500939104433]
@@ -1679,47 +1692,48 @@ def test_viscosity_bulk():
     VLL_kwargs = dict(T=T_VLL, P=P, zs=zs,
                      gas=gas_VLL, liquids=[l0_VLL, l1_VLL], solids=[], betas=VLL_betas,
                      flash_specs=None, flash_convergence=None,
-                     constants=constants, correlations=correlations, flasher=None,
-                     settings=settings)
-    settings.mu_LL = MOLE_WEIGHTED
-    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
-    assert_close(mu, 0.0003908502185898114, rtol=1e-7)
+                     constants=constants, correlations=correlations, flasher=None)
 
-    settings.mu_LL = MASS_WEIGHTED
-    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
-    assert_close(mu, 0.00046383995637156665, rtol=1e-7)
+    settings = BulkSettings(mu_LL=MOLE_WEIGHTED)
+    mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.00039882913468437684, rtol=1e-7)
 
-    settings.mu_LL = VOLUME_WEIGHTED
-    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
-    assert_close(mu, 0.00046843592978167614, rtol=1e-7)
+    settings = BulkSettings(mu_LL=MASS_WEIGHTED)
+    mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.0004784944180644406, rtol=1e-7)
 
-    settings.mu_LL = AS_ONE_LIQUID
-    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
-    assert_close(mu, 0.00038988367711175094, rtol=1e-7)
+    settings = BulkSettings(mu_LL=VOLUME_WEIGHTED)
+    mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.00048357012993648345, rtol=1e-7)
 
-    settings.mu_LL = LOG_PROP_MOLE_WEIGHTED
-    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
-    assert_close(mu, 0.0004854919332334303, rtol=1e-7)
+    settings = BulkSettings(mu_LL=AS_ONE_LIQUID)
+    mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.0004102924271095221, rtol=1e-7)
 
-    settings.mu_LL = LOG_PROP_MASS_WEIGHTED
-    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
-    assert_close(mu, 0.0004514558084667009, rtol=1e-7)
+    settings = BulkSettings(mu_LL=LOG_PROP_MOLE_WEIGHTED)
+    mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.0004926221784117713, rtol=1e-7)
 
-    settings.mu_LL = LOG_PROP_VOLUME_WEIGHTED
-    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
-    assert_close(mu, 0.00045640924901149454, rtol=1e-7)
+    settings = BulkSettings(mu_LL=LOG_PROP_MASS_WEIGHTED)
+    mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.0004637014166293212, rtol=1e-7)
 
-    settings.mu_LL = POWER_PROP_MOLE_WEIGHTED
-    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
-    assert_close(mu, 0.00036764158762373324, rtol=1e-7)
+    settings = BulkSettings(mu_LL=LOG_PROP_VOLUME_WEIGHTED)
+    mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.00046919983742753634, rtol=1e-7)
 
-    settings.mu_LL = POWER_PROP_MASS_WEIGHTED
-    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
-    assert_close(mu, 0.0004565646191601886, rtol=1e-7)
+    settings = BulkSettings(mu_LL=POWER_PROP_MOLE_WEIGHTED, mu_LL_power_exponent=0.4)
+    mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.000373958122197057, rtol=1e-7)
 
-    settings.mu_LL = POWER_PROP_VOLUME_WEIGHTED
-    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
-    assert_close(mu, 0.0004613915227881627, rtol=1e-7)
+    settings = BulkSettings(mu_LL=POWER_PROP_MASS_WEIGHTED, mu_LL_power_exponent=0.4)
+    mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.0004698184262168186, rtol=1e-7)
+
+    settings = BulkSettings(mu_LL=POWER_PROP_VOLUME_WEIGHTED, mu_LL_power_exponent=0.4)
+    mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.0004751690553218403, rtol=1e-7)
+
 
 
 
