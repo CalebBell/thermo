@@ -1491,26 +1491,6 @@ class EquilibriumState(object):
         return thermal_diffusivity(k=k, rho=rho, Cp=Cp)
 
 
-#    def mu(self, phase=None):
-#        if phase is None:
-#            if self.phase_count == 1:
-#                phase = self.phases[0]
-#            else:
-#                phase = None
-#                for beta, p in zip(self.betas, self.phases):
-#                    if beta == 1.0:
-#                        phase = p
-#                        break
-#                if phase is None:
-#                    phase = self.bulk
-#        if phase is not self.bulk:
-#            return phase.mu()
-#        if isinstance(phase, gas_phases):
-#            return self.correlations.ViscosityGasMixture.mixture_property(phase.T, phase.P, phase.zs, phase.ws())
-#        elif isinstance(phase, liquid_phases):
-#            return self.correlations.ViscosityLiquidMixture.mixture_property(phase.T, phase.P, phase.zs, phase.ws())
-#        else:
-#            raise NotImplementedError("no bulk methods")
 
     def nu(self, phase=None):
         r'''Method to calculate and return the kinematic viscosity of the
@@ -1528,33 +1508,6 @@ class EquilibriumState(object):
         -----
         '''
         return self.mu(phase)/self.rho_mass(phase)
-
-    def k(self, phase=None):
-        if phase is None:
-            if self.phase_count == 1:
-                phase = self.phases[0]
-            else:
-                phase = self.bulk
-#        try:
-#            k = phase.k()
-#            if k is not None:
-#                return k
-#        except:
-#            pass
-        if isinstance(phase, gas_phases):
-            return self.correlations.ThermalConductivityGasMixture.mixture_property(
-                    phase.T, phase.P, phase.zs, phase.ws())
-
-        elif isinstance(phase, liquid_phases):
-            return self.correlations.ThermalConductivityLiquidMixture.mixture_property(
-                    phase.T, phase.P, phase.zs, phase.ws())
-
-        elif isinstance(phase, solid_phases):
-            solid_index = phase.zs.index(1)
-            return self.correlations.ThermalConductivitySolids[solid_index].mixture_property(
-                    phase.T, phase.P, phase.zs, phase.ws())
-        else:
-            raise NotImplementedError("no bulk methods")
 
     def SG(self, phase=None):
         r'''Method to calculate and return the standard liquid specific gravity
@@ -2461,7 +2414,7 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
               'PIP', 'kappa', 'isobaric_expansion', 'Joule_Thomson', 'speed_of_sound',
               'speed_of_sound_mass',
               'U_dep', 'G_dep', 'A_dep', 'V_dep',
-              'mu',
+              'mu', 'k',
               ]
 bulk_props += derivatives_thermodynamic
 bulk_props += derivatives_thermodynamic_mass
