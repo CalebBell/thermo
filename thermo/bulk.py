@@ -54,6 +54,8 @@ Bulk Settings Class
 
 .. autodata:: MU_LL_METHODS
 .. autodata:: MU_VL_METHODS
+.. autodata:: K_LL_METHODS
+.. autodata:: K_VL_METHODS
 
 '''
 
@@ -122,6 +124,10 @@ MU_LL_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
 
 MU_LL_METHODS_set = frozenset(MU_LL_METHODS)
 
+K_LL_METHODS = MU_LL_METHODS
+'''List of all valid and implemented mixing rules for the `K_LL` setting'''
+K_LL_METHODS_set = frozenset(K_LL_METHODS)
+
 BEATTIE_WHALLEY_MU_VL = 'Beattie Whalley'
 MCADAMS_MU_VL = 'McAdams'
 CICCHITTI_MU_VL = 'Cicchitti'
@@ -137,11 +143,9 @@ MU_VL_METHODS = MU_LL_METHODS + [AS_ONE_GAS] + MU_VL_CORRELATIONS
 '''List of all valid and implemented mixing rules for the `MU_VL` setting'''
 MU_VL_METHODS_SET = set(MU_VL_METHODS)
 
-K_LL_METHODS = MU_LL_METHODS
-
-ViSCOSITY_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED]
-THERMAL_CONDUCTIVIVTY_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED]
-
+K_VL_METHODS = K_LL_METHODS + [AS_ONE_GAS]
+'''List of all valid and implemented mixing rules for the `K_VL` setting'''
+K_VL_METHODS_SET = set(K_VL_METHODS)
 
 __all__.extend(['MOLE_WEIGHTED', 'MASS_WEIGHTED', 'VOLUME_WEIGHTED',
                 'LOG_PROP_MOLE_WEIGHTED', 'LOG_PROP_MASS_WEIGHTED', 'LOG_PROP_VOLUME_WEIGHTED',
@@ -174,15 +178,29 @@ class BulkSettings(object):
         see :obj:`MU_LL_METHODS` for available options,
         [-]
     mu_LL_power_exponent : float, optional
-        Liquid-liquid power-law mixing parameter, used only when a power
-        law mixing rule is selected, [-]
+        Liquid-liquid viscosity power-law mixing parameter, used only when a
+        power law mixing rule is selected, [-]
     mu_VL : str, optional
         Mixing rule for vapor-liquid viscosity calculations;
         see :obj:`MU_VL_METHODS` for available options,
         [-]
     mu_VL_power_exponent : float, optional
-        Vapor-liquid power-law mixing parameter, used only when a power
-        law mixing rule is selected, [-]
+        Vapor-liquid viscosity power-law mixing parameter, used only when a
+        power law mixing rule is selected, [-]
+    k_LL : str, optional
+        Mixing rule for multiple liquid phase liquid thermal conductivity calculations;
+        see :obj:`K_LL_METHODS` for available options,
+        [-]
+    k_LL_power_exponent : float, optional
+        Liquid-liquid thermal conductivity power-law mixing parameter,
+        used only when a power law mixing rule is selected, [-]
+    k_VL : str, optional
+        Mixing rule for vapor-liquid thermal conductivity calculations;
+        see :obj:`K_VL_METHODS` for available options,
+        [-]
+    k_VL_power_exponent : float, optional
+        Vapor-liquid thermal conductivity power-law mixing parameter,
+        used only when a power law mixing rule is selected, [-]
 
     Notes
     -----
@@ -230,10 +248,15 @@ class BulkSettings(object):
 
     def __init__(self, dP_dT=MOLE_WEIGHTED, dP_dV=MOLE_WEIGHTED,
                  d2P_dV2=MOLE_WEIGHTED, d2P_dT2=MOLE_WEIGHTED,
-                 d2P_dTdV=MOLE_WEIGHTED, mu=MASS_WEIGHTED, k=MASS_WEIGHTED,
+                 d2P_dTdV=MOLE_WEIGHTED,
 
                  mu_LL=LOG_PROP_MASS_WEIGHTED, mu_LL_power_exponent=0.4,
                  mu_VL=MCADAMS_MU_VL, mu_VL_power_exponent=0.4,
+
+                 k_LL=MASS_WEIGHTED, k_LL_power_exponent=0.4,
+                 k_VL=MASS_WEIGHTED, k_VL_power_exponent=0.4,
+
+
                  c=MOLE_WEIGHTED,
                  isobaric_expansion=MOLE_WEIGHTED, kappa=MOLE_WEIGHTED, JT=MOLE_WEIGHTED,
                  T_normal=288.15, P_normal=atm,
@@ -259,7 +282,6 @@ class BulkSettings(object):
         self.d2P_dV2 = d2P_dV2
         self.d2P_dT2 = d2P_dT2
         self.d2P_dTdV = d2P_dTdV
-        self.mu = mu
         if mu_LL not in MU_LL_METHODS_set:
             raise ValueError("Unrecognized option for mu_LL")
         self.mu_LL = mu_LL
@@ -270,7 +292,16 @@ class BulkSettings(object):
         self.mu_VL = mu_VL
         self.mu_VL_power_exponent = mu_VL_power_exponent
 
-        self.k = k
+        if k_LL not in K_LL_METHODS_set:
+            raise ValueError("Unrecognized option for k_LL")
+        self.k_LL = k_LL
+        self.k_LL_power_exponent = k_LL_power_exponent
+
+        if k_VL not in K_VL_METHODS_SET:
+            raise ValueError("Unrecognized option for k_VL")
+        self.k_VL = k_VL
+        self.k_VL_power_exponent = k_VL_power_exponent
+
         self.c = c
         self.T_normal = T_normal
         self.P_normal = P_normal
@@ -503,6 +534,55 @@ class Bulk(Phase):
         self._mu = mu
         return mu
 
+    def k(self):
+        r'''Calculate and return the thermal conductivity of the bulk according to the
+        selected thermal conductivity settings in :obj:`BulkSettings`, the settings in
+        :obj:`ThermalConductivityGasMixture <thermo.thermal_conductivity.ThermalConductivityGasMixture>` and
+        :obj:`ThermalConductivityLiquidMixture <thermo.thermal_conductivity.ThermalConductivityLiquidMixture>`,
+        and the configured pure-component settings in
+        :obj:`ThermalConductivityGas <thermo.thermal_conductivity.ThermalConductivityGas>` and
+        :obj:`ThermalConductivityLiquid <thermo.thermal_conductivity.ThermalConductivityLiquid>`.
+
+        Returns
+        -------
+        k : float
+            Thermal Conductivity of bulk phase calculated with mixing rules, [Pa*s]
+        '''
+        try:
+            return self._k
+        except AttributeError:
+            pass
+        phase_fractions = self.phase_fractions
+        phase_count = len(phase_fractions)
+        result = self.result
+        if phase_count == 1:
+            self._k = k = self.phases[0].k()
+            return k
+        elif self.state == 'l' or self.result.gas is None:
+            # Multiple liquids - either a bulk liquid, or a result with no gases
+            k = self._mu_k_single_state(self.settings.k_LL, self.settings.k_LL_power_exponent,
+                                         self.correlations.ThermalConductivityLiquidMixture, 'k')
+            self._k = k
+            return k
+
+        method = self.settings.k_VL
+        if method == AS_ONE_LIQUID:
+            self._k = k = self.correlations.ThermalConductivityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+            return k
+        elif method == AS_ONE_GAS:
+            self._k = k = self.correlations.ThermalConductivityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+            return k
+
+        kg = result.gas.k()
+        if phase_count == 2:
+            kl = result.liquids[0].k()
+        else:
+            kl = result.liquid_bulk.k()
+
+        k = self._mu_k_VL(method, props=[kg, kl],
+                            exponent=self.settings.k_VL_power_exponent)
+        self._k = k
+        return k
 
 
 
