@@ -226,14 +226,13 @@ class VaporPressure(TDependentProperty):
     Wagner_original_calls = {'f': Wagner_original, 'f_der': dWagner_original_dT, 'f_der2': d2Wagner_original_dT2}
     Wagner_calls = {'f': Wagner, 'f_der': dWagner_dT, 'f_der2': d2Wagner_dT2}
 
-    correlation_models = {
+    correlation_models = TDependentProperty.correlation_models.copy()
+    correlation_models.update({
             'Antoine': (['A', 'B', 'C'], ['base'], Antoine_calls),
             'TRC_Antoine_extended': (['Tc', 'to', 'A', 'B', 'C', 'n', 'E', 'F'], [], TRC_extended_calls),
             'Wagner_original': (['Tc', 'Pc', 'a', 'b', 'c', 'd'], [], Wagner_original_calls),
             'Wagner': (['Tc', 'Pc', 'a', 'b', 'c', 'd'], [], Wagner_calls),
-                          }
-
-
+                          })
 
 
     available_correlations = frozenset(correlation_models.keys())
