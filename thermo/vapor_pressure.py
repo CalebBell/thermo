@@ -221,13 +221,23 @@ class VaporPressure(TDependentProperty):
     name = 'Vapor pressure'
     units = 'Pa'
 
-    antoine_inputs = ['A', 'B', 'C']
-    antoine_optional_inputs = ['base']
-    antoine_calls = {'f': Antoine, 'd1': dAntoine_dT, 'd2': d2Antoine_dT2, }
+    Antoine_calls = {'f': Antoine, 'f_der': dAntoine_dT, 'f_der2': d2Antoine_dT2}
+    TRC_extended_calls = {'f': TRC_Antoine_extended, 'f_der': dTRC_Antoine_extended_dT, 'f_der2': d2TRC_Antoine_extended_dT2}
+    Wagner_original_calls = {'f': Wagner_original, 'f_der': dWagner_original_dT, 'f_der2': d2Wagner_original_dT2}
+    Wagner_calls = {'f': Wagner, 'f_der': dWagner_dT, 'f_der2': d2Wagner_dT2}
 
-    correlation_models = {'Antoine': (antoine_inputs, antoine_optional_inputs, antoine_calls)
+    correlation_models = {
+            'Antoine': (['A', 'B', 'C'], ['base'], Antoine_calls),
+            'TRC_Antoine_extended': (['Tc', 'to', 'A', 'B', 'C', 'n', 'E', 'F'], [], TRC_extended_calls),
+            'Wagner_original': (['Tc', 'Pc', 'a', 'b', 'c', 'd'], [], Wagner_original_calls),
+            'Wagner': (['Tc', 'Pc', 'a', 'b', 'c', 'd'], [], Wagner_calls),
                           }
+
+
+
+
     available_correlations = frozenset(correlation_models.keys())
+    correlation_parameters = {k: k + '_parameters' for k in correlation_models.keys()}
 
     @staticmethod
     def interpolation_T(T):

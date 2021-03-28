@@ -826,6 +826,7 @@ class TDependentProperty(object):
 
     correlation_models = {}
     available_correlations = frozenset(correlation_models.keys())
+    correlation_parameters = {}
 
     def __copy__(self):
         return self
@@ -887,6 +888,12 @@ class TDependentProperty(object):
 
         if hasattr(self, 'poly_fit_Tmin') and self.poly_fit_Tmin is not None:
             base += 'poly_fit=(%s, %s, %s), ' %(self.poly_fit_Tmin, self.poly_fit_Tmax, self.poly_fit_coeffs)
+        for k in self.correlation_parameters.values():
+            extra_model = getattr(self, k+ '_full', None)
+            if extra_model:
+                base += '%s=%s, ' %(k, extra_model)
+
+
         if base[-2:] == ', ':
             base = base[:-2]
         return base + ')'
@@ -1635,8 +1642,21 @@ class TDependentProperty(object):
             if param in kwargs:
                 model_kwargs[param] = kwargs[param]
 
+        d = getattr(self, model + '_parameters', None)
+        if d is None:
+            d = {}
+            setattr(self, model + '_parameters', d)
 
-        getattr(self, model + '_parameters')[name] = model_kwargs
+        d[name] = model_kwargs
+        full_kwargs = model_kwargs.copy()
+        full_kwargs['Tmax'] = Tmax
+        full_kwargs['Tmin'] = Tmin
+
+        full_d = getattr(self, model + '_parameters_full', None)
+        if full_d is None:
+            full_d = {}
+            setattr(self, model + '_parameters_full', full_d)
+        full_d[name] = full_kwargs
 
         self.T_limits[name] = (Tmin, Tmax)
         self.all_methods.add(name)
@@ -2348,8 +2368,9 @@ class TDependentProperty(object):
         self.correlations = {}
         for correlation_name in self.correlation_models.keys():
             # Should be lazy created?
-            correlation_key = correlation_name + '_parameters'
+            correlation_key = self.correlation_parameters[correlation_name]
             setattr(self, correlation_key, {})
+
             if correlation_key in kwargs:
                 for corr_i, corr_kwargs in kwargs[correlation_key].items():
                     self.add_correlation(name=corr_i, model=correlation_name,

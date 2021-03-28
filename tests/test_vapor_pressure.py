@@ -23,6 +23,7 @@ SOFTWARE.'''
 import pytest
 import numpy as np
 import pandas as pd
+import json
 from math import isnan
 from fluids.numerics import linspace, assert_close, derivative, assert_close1d
 from thermo.vapor_pressure import *
@@ -305,6 +306,20 @@ def test_VaporPressure_Antoine_inputs():
     obj = VaporPressure()
     obj.add_correlation(name='WebBook', model='Antoine', Tmin=177.70, Tmax=264.93,  A=3.45604+5, B=1044.038, C=-53.893)
     assert_close(obj(200), 20.432980367117192, rtol=1e-12)
+
+    # json
+    hash0 = hash(obj)
+    # TODO important
+#    obj2 = VaporPressure.from_json(json.loads(json.dumps(obj.as_json())))
+#    assert obj == obj2
+#    assert hash(obj) == hash0
+#    assert hash(obj2) == hash0
+
+    obj2 = eval(str(obj))
+    assert obj == obj2
+    assert hash(obj) == hash0
+    assert hash(obj2) == hash0
+
 
     obj2 = VaporPressure(Antoine_parameters={'WebBook': {'A': 8.45604, 'B': 1044.038, 'C': -53.893, 'Tmin': 177.7, 'Tmax': 264.93}})
     assert_close(obj2(200), 20.432980367117192, rtol=1e-12)
