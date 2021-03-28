@@ -893,6 +893,13 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ106(T, order=1, **kwargs),
        'f_der2': lambda T, **kwargs: EQ106(T, order=2, **kwargs),
        'f_der3': lambda T, **kwargs: EQ106(T, order=3, **kwargs)}),
+     'YawsSigma': (['Tc', 'A', 'B'],
+      [],
+      {'f': EQ106,
+       'f_der': lambda T, **kwargs: EQ106(T, order=1, **kwargs),
+       'f_der2': lambda T, **kwargs: EQ106(T, order=2, **kwargs),
+       'f_der3': lambda T, **kwargs: EQ106(T, order=3, **kwargs)}),
+
      'DIPPR107': ([],
       ['A', 'B', 'C', 'D', 'E'],
       {'f': EQ107,
@@ -1823,8 +1830,12 @@ class TDependentProperty(object):
         f = _correlation_parameters[2]['f']
         correlation_func_name = f.__name__
         correlation_func_mod = f.__module__
-        _text += '        * "%s": :obj:`%s <%s.%s>`\n' %(correlation_name, correlation_func_name, correlation_func_mod, correlation_func_name)
-
+        s = '        * "%s": :obj:`%s <%s.%s>`, required parameters %s' %(correlation_name, correlation_func_name, correlation_func_mod, correlation_func_name, tuple(_correlation_parameters[0]))
+        if _correlation_parameters[1]:
+            s += ', optional parameters %s.\n' %(tuple(_correlation_parameters[1]),)
+        else:
+            s += '.\n'
+        _text += s
     try:
         add_correlation.__doc__ += _text
     except:
