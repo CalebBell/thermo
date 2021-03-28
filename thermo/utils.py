@@ -88,8 +88,17 @@ from fluids.constants import R
 from chemicals.utils import PY37, isnan, isinf, log, exp, ws_to_zs, zs_to_ws, e
 from chemicals.utils import mix_multiple_component_flows, hash_any_primitive
 from chemicals.vapor_pressure import Antoine, Antoine_coeffs_from_point, Antoine_AB_coeffs_from_point, DIPPR101_ABC_coeffs_from_point
+from chemicals.vapor_pressure import Wagner, Wagner_original, TRC_Antoine_extended, dAntoine_dT, d2Antoine_dT2, dWagner_original_dT, d2Wagner_original_dT2, dWagner_dT, d2Wagner_dT2, dTRC_Antoine_extended_dT, d2TRC_Antoine_extended_dT2
 from chemicals.dippr import EQ100, EQ101, EQ102, EQ104, EQ105, EQ106, EQ107, EQ114, EQ115, EQ116, EQ127
-from chemicals.phase_change import Watson, Watson_n
+from chemicals.phase_change import Watson, Watson_n, Alibakhshi, PPDS12
+from chemicals.viscosity import (Viswanath_Natarajan_2, Viswanath_Natarajan_2_exponential,
+                                 Viswanath_Natarajan_3, PPDS9, dPPDS9_dT)
+from chemicals.heat_capacity import (Poling, Poling_integral, Poling_integral_over_T,
+                                     TRCCp, TRCCp_integral, TRCCp_integral_over_T,
+                                     Zabransky_quasi_polynomial, Zabransky_quasi_polynomial_integral, Zabransky_quasi_polynomial_integral_over_T,
+                                     Zabransky_cubic, Zabransky_cubic_integral, Zabransky_cubic_integral_over_T)
+from chemicals.interface import REFPROP_sigma, Somayajulu, Jasper
+from chemicals.volume import volume_VDI_PPDS
 from thermo import serialize
 from thermo.eos import GCEOS
 from thermo.eos_mix import GCEOSMIX
@@ -643,10 +652,6 @@ def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets,
     assert_close(energy_in, energy_out, rtol=rtol, atol=atol)
 
 
-TEST_METHOD_1 = 'Test method 1'
-TEST_METHOD_2 = 'Test method 2'
-
-
 class TDependentProperty(object):
     '''Class for calculating temperature-dependent chemical properties.
 
@@ -826,7 +831,33 @@ class TDependentProperty(object):
 
     _json_obj_by_CAS = ('CP_f',)
 
-    correlation_models = {'DIPPR100': ([],
+    correlation_models = {
+        'Antoine': (['A', 'B', 'C'], ['base'], {'f': Antoine, 'f_der': dAntoine_dT, 'f_der2': d2Antoine_dT2}),
+        'TRC_Antoine_extended': (['Tc', 'to', 'A', 'B', 'C', 'n', 'E', 'F'], [], {'f': TRC_Antoine_extended, 'f_der': dTRC_Antoine_extended_dT, 'f_der2': d2TRC_Antoine_extended_dT2}),
+        'Wagner_original': (['Tc', 'Pc', 'a', 'b', 'c', 'd'], [], {'f': Wagner_original, 'f_der': dWagner_original_dT, 'f_der2': d2Wagner_original_dT2}),
+        'Wagner': (['Tc', 'Pc', 'a', 'b', 'c', 'd'], [], {'f': Wagner, 'f_der': dWagner_dT, 'f_der2': d2Wagner_dT2}),
+
+    'Alibakhshi': (['Tc', 'C'], [], {'f': Alibakhshi}),
+    'PPDS12': (['Tc', 'A', 'B', 'C', 'D', 'E'], [], {'f': PPDS12}),
+    'Watson': (['Hvap_ref', 'T_ref', 'Tc'], ['exponent'], {'f': Watson}),
+
+    'Viswanath_Natarajan_2': (['A', 'B',], [], {'f': Viswanath_Natarajan_2}),
+    'Viswanath_Natarajan_2_exponential': (['C', 'D',], [], {'f': Viswanath_Natarajan_2_exponential}),
+    'Viswanath_Natarajan_3': (['A', 'B', 'C'], [], {'f': Viswanath_Natarajan_3}),
+    'PPDS9': (['A', 'B', 'C', 'D', 'E'], [], {'f': PPDS9, 'f_der': dPPDS9_dT}),
+
+    'Poling': (['a', 'b', 'c', 'd', 'e'], [], {'f': Poling, 'f_int': Poling_integral, 'f_int_over_T': Poling_integral_over_T}),
+    'TRCCp': (['a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7'], [], {'f': TRCCp, 'f_int': TRCCp_integral, 'f_int_over_T': TRCCp_integral_over_T}),
+    'Zabransky_quasi_polynomial': (['Tc', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6'], [], {'f': Zabransky_quasi_polynomial, 'f_int': Zabransky_quasi_polynomial_integral, 'f_int_over_T': Zabransky_quasi_polynomial_integral_over_T}),
+    'Zabransky_cubic': (['a1', 'a2', 'a3', 'a4'], [], {'f': Zabransky_cubic, 'f_int': Zabransky_cubic_integral, 'f_int_over_T': Zabransky_cubic_integral_over_T}),
+
+    'REFPROP_sigma': (['Tc', 'sigma0', 'n0'], ['sigma1', 'n1', 'sigma2', 'n2'], {'f': REFPROP_sigma}),
+    'Somayajulu': (['Tc', 'A', 'B', 'C'], [], {'f': Somayajulu}),
+    'Jasper': (['a', 'b',], [], {'f': Jasper}),
+
+    'volume_VDI_PPDS': (['Tc', 'rhoc', 'a', 'b', 'c', 'd', 'MW',], [], {'f': volume_VDI_PPDS}),
+
+    'DIPPR100': ([],
       ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
       {'f': EQ100,
        'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
@@ -873,7 +904,11 @@ class TDependentProperty(object):
       {'f': EQ127,
        'f_der': lambda T, **kwargs: EQ127(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ127(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ127(T, order=-1j, **kwargs)})}
+       'f_int_over_T': lambda T, **kwargs: EQ127(T, order=-1j, **kwargs)}),
+
+
+
+    }
 
     available_correlations = frozenset(correlation_models.keys())
 

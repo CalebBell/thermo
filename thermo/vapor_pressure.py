@@ -73,6 +73,7 @@ from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
 from chemicals.vapor_pressure import *
 from chemicals.vapor_pressure import dAntoine_dT, d2Antoine_dT2, dWagner_original_dT, d2Wagner_original_dT2, dWagner_dT, d2Wagner_dT2, dTRC_Antoine_extended_dT, d2TRC_Antoine_extended_dT2
+
 from chemicals import vapor_pressure
 from thermo.utils import TDependentProperty
 from thermo.utils import VDI_TABULAR, DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, EOS, POLY_FIT
@@ -220,23 +221,6 @@ class VaporPressure(TDependentProperty):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'Vapor pressure'
     units = 'Pa'
-
-    Antoine_calls = {'f': Antoine, 'f_der': dAntoine_dT, 'f_der2': d2Antoine_dT2}
-    TRC_extended_calls = {'f': TRC_Antoine_extended, 'f_der': dTRC_Antoine_extended_dT, 'f_der2': d2TRC_Antoine_extended_dT2}
-    Wagner_original_calls = {'f': Wagner_original, 'f_der': dWagner_original_dT, 'f_der2': d2Wagner_original_dT2}
-    Wagner_calls = {'f': Wagner, 'f_der': dWagner_dT, 'f_der2': d2Wagner_dT2}
-
-    correlation_models = TDependentProperty.correlation_models.copy()
-    correlation_models.update({
-            'Antoine': (['A', 'B', 'C'], ['base'], Antoine_calls),
-            'TRC_Antoine_extended': (['Tc', 'to', 'A', 'B', 'C', 'n', 'E', 'F'], [], TRC_extended_calls),
-            'Wagner_original': (['Tc', 'Pc', 'a', 'b', 'c', 'd'], [], Wagner_original_calls),
-            'Wagner': (['Tc', 'Pc', 'a', 'b', 'c', 'd'], [], Wagner_calls),
-                          })
-
-
-    available_correlations = frozenset(correlation_models.keys())
-    correlation_parameters = {k: k + '_parameters' for k in correlation_models.keys()}
 
     @staticmethod
     def interpolation_T(T):
