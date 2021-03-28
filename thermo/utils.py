@@ -1730,6 +1730,12 @@ class TDependentProperty(object):
             Maximum temperature to use the method at, [K]
         kwargs : dict
             Various keyword arguments accepted by the model, [-]
+
+        Notes
+        -----
+        The correlation models and links to their functions, describing
+        their parameters, are as follows:
+
         '''
         if model not in self.available_correlations:
             raise ValueError("Model is not available; available models are %s" %(self.available_correlations,))
@@ -1759,6 +1765,17 @@ class TDependentProperty(object):
         self.correlations[name] = (call, model_kwargs, model)
         self.method = name
 
+    _text = '\n'
+    for correlation_name, _correlation_parameters in correlation_models.items():
+        f = _correlation_parameters[2]['f']
+        correlation_func_name = f.__name__
+        correlation_func_mod = f.__module__
+        _text += '        * "%s": :obj:`%s <%s.%s>`\n' %(correlation_name, correlation_func_name, correlation_func_mod, correlation_func_name)
+
+    try:
+        add_correlation.__doc__ += _text
+    except:
+        pass
 
     def add_method(self, f, name, Tmin, Tmax, f_der_general=None,
                    f_der=None, f_der2=None, f_der3=None, f_int=None,

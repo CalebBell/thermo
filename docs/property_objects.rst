@@ -294,6 +294,8 @@ It is also possible to specify the parameters in the constructor of the object a
 
 More than one set of parameters and more than one model may be specified this way; the model name is the same, with '_parameters' appended to it.
 
+For a full list of supported correlations (and their names), see :obj:`add_correlation <thermo.utils.TDependentProperty.add_correlation>`.
+
 Temperature and Pressure Dependent Properties
 ---------------------------------------------
 The pressure dependent objects work much like the temperature dependent ones; in fact, they subclass :obj:`TDependentProperty <thermo.utils.TDependentProperty>`.
