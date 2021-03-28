@@ -2033,6 +2033,12 @@ class TDependentProperty(object):
             Calculated integral of the property over the given range,
             [`units*K`]
         '''
+        if method in self.correlations:
+            _, model_kwargs, model = self.correlations[method]
+            calls = self.correlation_models[model][2]
+            if 'f_int' in calls:
+                return calls['f_int'](T2, **model_kwargs) - calls['f_int'](T1, **model_kwargs)
+
         return float(quad(self.calculate, T1, T2, args=(method))[0])
 
     def T_dependent_property_integral(self, T1, T2):
@@ -2090,6 +2096,13 @@ class TDependentProperty(object):
             Calculated integral of the property over the given range,
             [`units`]
         '''
+        if method in self.correlations:
+            _, model_kwargs, model = self.correlations[method]
+            calls = self.correlation_models[model][2]
+            if 'f_int_over_T' in calls:
+                return calls['f_int_over_T'](T2, **model_kwargs) - calls['f_int_over_T'](T1, **model_kwargs)
+
+
         return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
 
     def T_dependent_property_integral_over_T(self, T1, T2):

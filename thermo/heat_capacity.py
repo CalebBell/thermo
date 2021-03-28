@@ -409,8 +409,8 @@ class HeatCapacityGas(TDependentProperty):
         elif method == LASTOVKA_SHAW:
             Cp = Lastovka_Shaw(T, self.similarity_variable)
             Cp = property_mass_to_molar(Cp, self.MW)
-        elif method in self.tabular_data:
-            Cp = self.interpolate(T, method)
+        else:
+            return self._base_calculate(T, method)
         return Cp
 
     def test_method_validity(self, T, method):
@@ -511,10 +511,8 @@ class HeatCapacityGas(TDependentProperty):
             dH = (Lastovka_Shaw_integral(T2, self.similarity_variable)
                     - Lastovka_Shaw_integral(T1, self.similarity_variable))
             return property_mass_to_molar(dH, self.MW)
-        elif method in self.tabular_data or method == COOLPROP:
-            return float(quad(self.calculate, T1, T2, args=(method,))[0])
         else:
-            raise Exception('Method not valid')
+            return super(HeatCapacityGas, self).calculate_integral(T1, T2, method)
 
 
     def calculate_integral_over_T(self, T1, T2, method):
@@ -561,10 +559,7 @@ class HeatCapacityGas(TDependentProperty):
             dS = (Lastovka_Shaw_integral_over_T(T2, self.similarity_variable)
                  - Lastovka_Shaw_integral_over_T(T1, self.similarity_variable))
             return property_mass_to_molar(dS, self.MW)
-        elif method in self.tabular_data or method == COOLPROP:
-            return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
-        else:
-            raise Exception('Method not valid')
+        return super(HeatCapacityGas, self).calculate_integral_over_T(T1, T2, method)
 
 
 
@@ -949,10 +944,8 @@ class HeatCapacityLiquid(TDependentProperty):
         elif method == DADGOSTAR_SHAW:
             Cp = Dadgostar_Shaw(T, self.similarity_variable)
             return property_mass_to_molar(Cp, self.MW)
-        elif method in self.tabular_data:
-            return self.interpolate(T, method)
         else:
-            raise Exception('Method not valid')
+            return self._base_calculate(T, method)
 
     def test_method_validity(self, T, method):
         r'''Method to check the validity of a method. Follows the given
@@ -1075,8 +1068,7 @@ class HeatCapacityLiquid(TDependentProperty):
             return property_mass_to_molar(dH, self.MW)
         elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
             return float(quad(self.calculate, T1, T2, args=(method,))[0])
-        else:
-            raise Exception('Method not valid')
+        return super(HeatCapacityLiquid, self).calculate_integral(T1, T2, method)
 
     def calculate_integral_over_T(self, T1, T2, method):
         r'''Method to calculate the integral of a property over temperature
@@ -1130,8 +1122,8 @@ class HeatCapacityLiquid(TDependentProperty):
             return property_mass_to_molar(dS, self.MW)
         elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
             return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
-        else:
-            raise Exception('Method not valid')
+        return super(HeatCapacityLiquid, self).calculate_integral_over_T(T1, T2, method)
+
 LASTOVKA_S = 'LASTOVKA_S'
 PERRY151 = '''PERRY151'''
 heat_capacity_solid_methods = [PERRY151, CRCSTD, LASTOVKA_S]
@@ -1329,8 +1321,8 @@ class HeatCapacitySolid(TDependentProperty):
         elif method == LASTOVKA_S:
             Cp = Lastovka_solid(T, self.similarity_variable)
             Cp = property_mass_to_molar(Cp, self.MW)
-        elif method in self.tabular_data:
-            Cp = self.interpolate(T, method)
+        else:
+            return self._base_calculate(T, method)
         return Cp
 
 
@@ -1418,10 +1410,8 @@ class HeatCapacitySolid(TDependentProperty):
             dH = (Lastovka_solid_integral(T2, self.similarity_variable)
                     - Lastovka_solid_integral(T1, self.similarity_variable))
             return property_mass_to_molar(dH, self.MW)
-        elif method in self.tabular_data:
-            return float(quad(self.calculate, T1, T2, args=(method,))[0])
         else:
-            raise Exception('Method not valid')
+            return super(HeatCapacitySolid, self).calculate_integral(T1, T2, method)
 
     def calculate_integral_over_T(self, T1, T2, method):
         r'''Method to calculate the integral of a property over temperature
@@ -1464,10 +1454,8 @@ class HeatCapacitySolid(TDependentProperty):
             dS = (Lastovka_solid_integral_over_T(T2, self.similarity_variable)
                     - Lastovka_solid_integral_over_T(T1, self.similarity_variable))
             return property_mass_to_molar(dS, self.MW)
-        elif method in self.tabular_data:
-            return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
         else:
-            raise Exception('Method not valid')
+            return super(HeatCapacitySolid, self).calculate_integral_over_T(T1, T2, method)
 
 
 

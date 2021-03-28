@@ -806,8 +806,8 @@ class SublimationPressure(TDependentProperty):
             Psub = exp(Psub)
         elif method == PSUB_CLAPEYRON:
             Psub = max(Psub_Clapeyron(T, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_t), 1e-200)
-        elif method in self.tabular_data:
-            Psub = self.interpolate(T, method)
+        else:
+            return self._base_calculate(T, method)
         return Psub
 
     def test_method_validity(self, T, method):

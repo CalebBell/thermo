@@ -363,6 +363,14 @@ def test_HeatCapacityLiquid_CoolProp():
     dS = tol.calculate_integral_over_T(200, 300, COOLPROP)
     assert_close(dS, 58.50970500781979)
 
+@pytest.mark.meta_T_dept
+def test_HeatCapacityLiquid_Custom_parameters():
+    obj = HeatCapacityLiquid()
+    # Coefficients from Perry's 8th edition, all multiplied by 1e-3 to switch from J/kmol/K to J/mol/K
+    obj.add_correlation('Eq100test', 'DIPPR100', A=105.8, B=-.36223, C=0.9379e-3, Tmin=175.47, Tmax=400.0)
+    assert_close(obj(400), 110.972, rtol=1e-13)
+    assert_close(obj.calculate_integral_over_T(200, 300, 'Eq100test'), 30.122708437843926, rtol=1e-12)
+    assert_close(obj.calculate_integral(200, 300, 'Eq100test'), 7464.283333333329, rtol=1e-12)
 
 
 @pytest.mark.meta_T_dept
