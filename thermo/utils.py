@@ -901,7 +901,7 @@ class TDependentProperty(object):
         if hasattr(self, 'poly_fit_Tmin') and self.poly_fit_Tmin is not None:
             base += 'poly_fit=(%s, %s, %s), ' %(self.poly_fit_Tmin, self.poly_fit_Tmax, self.poly_fit_coeffs)
         for k in self.correlation_parameters.values():
-            extra_model = getattr(self, k+ '_full', None)
+            extra_model = getattr(self, k, None)
             if extra_model:
                 base += '%s=%s, ' %(k, extra_model)
 
@@ -966,6 +966,11 @@ class TDependentProperty(object):
 
         try:
             del d['interp1d_extrapolators']
+        except:
+            pass
+
+        try:
+            del d['correlations']
         except:
             pass
 
@@ -1046,6 +1051,18 @@ class TDependentProperty(object):
                 if type(d[k]) is dict:
                     sub_json = d[k]
                     d[k] = sub_cls.from_json(sub_json)
+
+        d['correlations'] = correlations = {}
+        for correlation_name in cls.correlation_models.keys():
+            # Should be lazy created?
+            correlation_key = cls.correlation_parameters[correlation_name]
+            if correlation_key in d:
+                call = cls.correlation_models[correlation_name][2]['f']
+                for model_name, kwargs in d[correlation_key].items():
+                    model_kwargs = kwargs.copy()
+                    model_kwargs.pop('Tmin')
+                    model_kwargs.pop('Tmax')
+                    correlations[model_name] = (call, model_kwargs)
 
         del d['py/object']
         del d["json_version"]
@@ -1668,6 +1685,7 @@ class TDependentProperty(object):
         model_data = self.correlation_models[model]
         if not all(k in kwargs and kwargs[k] is not None for k in model_data[0]):
             raise ValueError("Required arguments for this model are %s" %(model_data[0],))
+
         model_kwargs = {k: kwargs[k] for k in model_data[0]}
         for param in model_data[1]:
             if param in kwargs:
@@ -1678,16 +1696,10 @@ class TDependentProperty(object):
             d = {}
             setattr(self, model + '_parameters', d)
 
-        d[name] = model_kwargs
         full_kwargs = model_kwargs.copy()
         full_kwargs['Tmax'] = Tmax
         full_kwargs['Tmin'] = Tmin
-
-        full_d = getattr(self, model + '_parameters_full', None)
-        if full_d is None:
-            full_d = {}
-            setattr(self, model + '_parameters_full', full_d)
-        full_d[name] = full_kwargs
+        d[name] = full_kwargs
 
         self.T_limits[name] = (Tmin, Tmax)
         self.all_methods.add(name)
@@ -2407,7 +2419,7 @@ class TDependentProperty(object):
         for correlation_name in self.correlation_models.keys():
             # Should be lazy created?
             correlation_key = self.correlation_parameters[correlation_name]
-            setattr(self, correlation_key, {})
+#            setattr(self, correlation_key, {})
 
             if correlation_key in kwargs:
                 for corr_i, corr_kwargs in kwargs[correlation_key].items():

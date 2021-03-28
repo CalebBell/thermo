@@ -309,11 +309,11 @@ def test_VaporPressure_Antoine_inputs():
 
     # json
     hash0 = hash(obj)
-    # TODO important
-#    obj2 = VaporPressure.from_json(json.loads(json.dumps(obj.as_json())))
-#    assert obj == obj2
-#    assert hash(obj) == hash0
-#    assert hash(obj2) == hash0
+
+    obj2 = VaporPressure.from_json(json.loads(json.dumps(obj.as_json())))
+    assert obj == obj2
+    assert hash(obj) == hash0
+    assert hash(obj2) == hash0
 
     obj2 = eval(str(obj))
     assert obj == obj2
