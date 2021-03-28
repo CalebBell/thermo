@@ -824,6 +824,9 @@ class TDependentProperty(object):
 
     _json_obj_by_CAS = ('CP_f',)
 
+    correlation_models = {}
+    available_correlations = frozenset(correlation_models.keys())
+
     def __copy__(self):
         return self
 
@@ -1308,6 +1311,9 @@ class TDependentProperty(object):
             return self.interpolate(T, method)
         elif method in self.local_methods:
             return self.local_methods[method][0](T)
+        elif method in self.correlations:
+            call, kwargs = self.correlations[method]
+            return call(T, **kwargs)
         else:
             raise ValueError("Unknown method")
 
@@ -1617,6 +1623,28 @@ class TDependentProperty(object):
             prop = self.interpolation_property_inv(prop)
 
         return float(prop)
+
+    def add_correlation(self, name, model, Tmin, Tmax, **kwargs):
+        if model not in self.available_correlations:
+            raise ValueError("Model is not available; available models are %s" %(self.available_correlations,))
+        model_data = self.correlation_models[model]
+        if not all(k in kwargs and kwargs[k] is not None for k in model_data[0]):
+            raise ValueError("Required arguments for this model are %s" %(model_data[0],))
+        model_kwargs = {k: kwargs[k] for k in model_data[0]}
+        for param in model_data[1]:
+            if param in kwargs:
+                model_kwargs[param] = kwargs[param]
+
+
+        getattr(self, model + '_parameters')[name] = model_kwargs
+
+        self.T_limits[name] = (Tmin, Tmax)
+        self.all_methods.add(name)
+
+        call = self.correlation_models[model][2]['f']
+        self.correlations[name] = (call, model_kwargs)
+        self.method = name
+
 
     def add_method(self, f, name, Tmin, Tmax, f_der_general=None,
                    f_der=None, f_der2=None, f_der3=None, f_int=None,
@@ -2315,6 +2343,18 @@ class TDependentProperty(object):
         if kwargs.get('tabular_data', None):
             for name, (Ts, properties) in kwargs['tabular_data'].items():
                 self.add_tabular_data(Ts, properties, name=name, check_properties=False)
+
+
+        self.correlations = {}
+        for correlation_name in self.correlation_models.keys():
+            # Should be lazy created?
+            correlation_key = correlation_name + '_parameters'
+            setattr(self, correlation_key, {})
+            if correlation_key in kwargs:
+                for corr_i, corr_kwargs in kwargs[correlation_key].items():
+                    self.add_correlation(name=corr_i, model=correlation_name,
+                                         **corr_kwargs)
+
 
         poly_fit = kwargs.get('poly_fit', None)
         method =  kwargs.get('method', None)

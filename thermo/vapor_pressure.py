@@ -221,6 +221,14 @@ class VaporPressure(TDependentProperty):
     name = 'Vapor pressure'
     units = 'Pa'
 
+    antoine_inputs = ['A', 'B', 'C']
+    antoine_optional_inputs = ['base']
+    antoine_calls = {'f': Antoine, 'd1': dAntoine_dT, 'd2': d2Antoine_dT2, }
+
+    correlation_models = {'Antoine': (antoine_inputs, antoine_optional_inputs, antoine_calls)
+                          }
+    available_correlations = frozenset(correlation_models.keys())
+
     @staticmethod
     def interpolation_T(T):
         '''Function to make the data-based interpolation as linear as possible.

@@ -299,3 +299,12 @@ def test_VaporPressure_fast_Psat_poly_fit_extrapolation():
     assert_close(obj.solve_property(.0000000000001), 3.2040851644645945)
     assert_close(obj.solve_property(300), 237.7793675652309)
     assert_close(obj.solve_property(1e8), 661.6135315674736)
+
+@pytest.mark.meta_T_dept
+def test_VaporPressure_Antoine_inputs():
+    obj = VaporPressure()
+    obj.add_correlation(name='WebBook', model='Antoine', Tmin=177.70, Tmax=264.93,  A=3.45604+5, B=1044.038, C=-53.893)
+    assert_close(obj(200), 20.432980367117192, rtol=1e-12)
+
+    obj2 = VaporPressure(Antoine_parameters={'WebBook': {'A': 8.45604, 'B': 1044.038, 'C': -53.893, 'Tmin': 177.7, 'Tmax': 264.93}})
+    assert_close(obj2(200), 20.432980367117192, rtol=1e-12)
