@@ -41,7 +41,9 @@ Temperature Dependent
              calculate_integral, T_dependent_property_integral,
              calculate_integral_over_T, T_dependent_property_integral_over_T,
              extrapolate, test_method_validity, calculate, from_json, as_json,
-             interpolation_T, interpolation_T_inv, interpolation_property,  interpolation_property_inv, T_limits, all_methods
+             interpolation_T, interpolation_T_inv, interpolation_property,
+             interpolation_property_inv, T_limits, all_methods, __repr__,
+             add_correlation
    :undoc-members:
 
 Temperature and Pressure Dependent
@@ -859,6 +861,16 @@ class TDependentProperty(object):
         return ans
 
     def __repr__(self):
+        r'''Create and return a string representation of the object. The design
+        of the return string is such that it can be :obj:`eval`'d into itself.
+        This is very convinient for creating tests. Note that several methods
+        are not compatible with the :obj:`eval`'ing principle.
+
+        Returns
+        -------
+        repr : str
+            String representation, [-]
+        '''
         clsname = self.__class__.__name__
         base = '%s(' % (clsname)
         if self.CASRN:
@@ -1632,6 +1644,25 @@ class TDependentProperty(object):
         return float(prop)
 
     def add_correlation(self, name, model, Tmin, Tmax, **kwargs):
+        r'''Method to add a new set of emperical fit equation coefficients to
+        the object and select it for future property calculations.
+
+        A number of hardcoded `model` names are implemented; other models
+        are not supported.
+
+        Parameters
+        ----------
+        name : str
+            The name of the coefficient set; user specified, [-]
+        model : str
+            A string representing the supported models, [-]
+        Tmin : float
+            Minimum temperature to use the method at, [K]
+        Tmax : float
+            Maximum temperature to use the method at, [K]
+        kwargs : dict
+            Various keyword arguments accepted by the model, [-]
+        '''
         if model not in self.available_correlations:
             raise ValueError("Model is not available; available models are %s" %(self.available_correlations,))
         model_data = self.correlation_models[model]
@@ -1702,6 +1733,13 @@ class TDependentProperty(object):
         f_int_over_T : callable or None
             If specified, should take `T1` and `T2` and return the integral of
             the property over T from `T1` to `T2`, [-]
+
+        Notes
+        -----
+        Once a custom method has been added to an object, that object can no
+        longer be serialized to json and the :obj:`TDependentProperty.__repr__`
+        method can no longer be used to reconstruct the object completely.
+
         '''
         if not self.local_methods:
             self.local_methods = local_methods = {}

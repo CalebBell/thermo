@@ -58,7 +58,7 @@ As many methods may be available, a single method is always selected automatical
 All available methods can be found by inspecting the :obj:`all_methods <thermo.utils.TDependentProperty.all_methods>`  attribute:
 
 >>> ethanol_psat.all_methods
-{'ANTOINE_POLING', 'Edalat', 'WAGNER_POLING', 'SANJARI', 'COOLPROP', 'LEE_KESLER_PSAT', 'DIPPR_PERRY_8E', 'VDI_PPDS', 'WAGNER_MCGARRY', 'VDI_TABULAR', 'AMBROSE_WALTON', 'BOILING_CRITICAL'}
+{'ANTOINE_POLING', 'EDALAT', 'WAGNER_POLING', 'SANJARI', 'COOLPROP', 'LEE_KESLER_PSAT', 'DIPPR_PERRY_8E', 'VDI_PPDS', 'WAGNER_MCGARRY', 'VDI_TABULAR', 'AMBROSE_WALTON', 'BOILING_CRITICAL'}
 
 Changing the method is as easy as setting a new value to the attribute:
 
@@ -95,7 +95,7 @@ Limits and Extrapolation
 Each correlation is associated with temperature limits. These can be inspected as part of the :obj:`T_limits <thermo.utils.TDependentProperty.T_limits>` attribute which is loaded on creation of the property object.
 
 >>> ethanol_psat.T_limits
-{'WAGNER_MCGARRY': (293.0, 513.92), 'WAGNER_POLING': (159.05, 513.92), 'ANTOINE_POLING': (276.5, 369.54), 'DIPPR_PERRY_8E': (159.05, 514.0), 'COOLPROP': (159.1, 514.71), 'VDI_TABULAR': (300.0, 513.9), 'VDI_PPDS': (159.05, 513.9), 'BOILING_CRITICAL': (0.01, 514.0), 'LEE_KESLER_PSAT': (0.01, 514.0), 'AMBROSE_WALTON': (0.01, 514.0), 'SANJARI': (0.01, 514.0), 'Edalat': (0.01, 514.0)}
+{'WAGNER_MCGARRY': (293.0, 513.92), 'WAGNER_POLING': (159.05, 513.92), 'ANTOINE_POLING': (276.5, 369.54), 'DIPPR_PERRY_8E': (159.05, 514.0), 'COOLPROP': (159.1, 514.71), 'VDI_TABULAR': (300.0, 513.9), 'VDI_PPDS': (159.05, 513.9), 'BOILING_CRITICAL': (0.01, 514.0), 'LEE_KESLER_PSAT': (0.01, 514.0), 'AMBROSE_WALTON': (0.01, 514.0), 'SANJARI': (0.01, 514.0), 'EDALAT': (0.01, 514.0)}
 
 Because there is often a need to obtain a property outside the range of the correlation, there are some extrapolation methods available; depending on the method these may be enabled by default.
 The full list of extrapolation methods can be see :obj:`here <thermo.utils.TDependentProperty>`.
@@ -120,12 +120,12 @@ The low-temperature linearly extrapolated value is actually the same as before, 
 To better understand what methods are available, the :obj:`valid_methods <thermo.utils.TDependentProperty.valid_methods>` method checks all available correlations against their temperature limits.
 
 >>> ethanol_psat.valid_methods(100)
-['AMBROSE_WALTON', 'LEE_KESLER_PSAT', 'Edalat', 'BOILING_CRITICAL', 'SANJARI']
+['AMBROSE_WALTON', 'LEE_KESLER_PSAT', 'EDALAT', 'BOILING_CRITICAL', 'SANJARI']
 
 If the temperature is not provided, all available methods are returned; the returned value favors the methods by the ranking defined in thermo, with the currently selected method as the first item.
 
 >>> ethanol_psat.valid_methods()
-['WAGNER_MCGARRY', 'WAGNER_POLING', 'DIPPR_PERRY_8E', 'VDI_PPDS', 'COOLPROP', 'ANTOINE_POLING', 'VDI_TABULAR', 'AMBROSE_WALTON', 'LEE_KESLER_PSAT', 'Edalat', 'BOILING_CRITICAL', 'SANJARI']
+['WAGNER_MCGARRY', 'WAGNER_POLING', 'DIPPR_PERRY_8E', 'VDI_PPDS', 'COOLPROP', 'ANTOINE_POLING', 'VDI_TABULAR', 'AMBROSE_WALTON', 'LEE_KESLER_PSAT', 'EDALAT', 'BOILING_CRITICAL', 'SANJARI']
 
 Plotting
 ^^^^^^^^
@@ -260,7 +260,7 @@ We can, again, extrapolate quite easily and estimate the triple temperature and 
 >>> obj.solve_property(1.378), obj.solve_property(3025000.0)
 (179.42, 508.033)
 
-Optionally, some derivatives and integrals can be provided for new methods as well. This avoids having to compute derivatives or integrals numerically. SymPy can be used to find these analytical derivatives or integrals in many cases, as in the following example:
+Optionally, some derivatives and integrals can be provided for new methods as well. This avoids having to compute derivatives or integrals numerically. SymPy may be helpful to find these analytical derivatives or integrals in many cases, as in the following example:
 
 >>> from sympy import symbols, lambdify, diff
 >>> T = symbols('T')
@@ -274,6 +274,25 @@ Optionally, some derivatives and integrals can be provided for new methods as we
 >>> obj.method, obj(200), obj.T_dependent_property_derivative(200.0, order=2)
 ('WebBookSymPy', 20.43298036711, 0.2276289268)
 
+Note that adding methods like this breaks the ability to export as json and the repr of the object is no longer complete.
+
+Adding New Correlation Coefficient Methods
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+While adding entirely new methods is useful, it is more common to want to use different coefficients in an existing equation.
+A number of different equations are recognized, and accept/require the parameters as per their function name in e.g. :obj:`chemicals.vapor_pressure.Antoine`. More than one set of coefficients can be added for each model. After adding a new correlation the method is set to that method.
+
+>>> obj = VaporPressure()
+>>> obj.add_correlation(name='WebBook', model='Antoine', Tmin=177.70, Tmax=264.93,  A=3.45604+5, B=1044.038, C=-53.893)
+>>> obj(200)
+20.43298036711
+
+It is also possible to specify the parameters in the constructor of the object as well:
+
+>>> obj = VaporPressure(Antoine_parameters={'WebBook': {'A': 8.45604, 'B': 1044.038, 'C': -53.893, 'Tmin': 177.7, 'Tmax': 264.93}})
+>>> obj(200)
+20.43298036711
+
+More than one set of parameters and more than one model may be specified this way; the model name is the same, with '_parameters' appended to it.
 
 Temperature and Pressure Dependent Properties
 ---------------------------------------------
