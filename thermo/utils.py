@@ -905,7 +905,7 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ114(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ114(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ114(T, order=-1j, **kwargs)}),
-     'EQ115': (['A', 'B'],
+     'DIPPR115': (['A', 'B'],
       ['C', 'D', 'E'],
       {'f': EQ115,
        'f_der': lambda T, **kwargs: EQ115(T, order=1, **kwargs),
