@@ -324,3 +324,25 @@ def test_VaporPressure_Antoine_inputs():
     obj2 = VaporPressure(Antoine_parameters={'WebBook': {'A': 8.45604, 'B': 1044.038, 'C': -53.893, 'Tmin': 177.7, 'Tmax': 264.93}})
     assert_close(obj2(200), 20.432980367117192, rtol=1e-12)
     assert obj == obj2
+
+@pytest.mark.meta_T_dept
+def test_VaporPressure_DIPPR101_inputs():
+    obj = VaporPressure()
+    # From Perry's 8th edition
+    obj.add_correlation(name='Eq101test', model='DIPPR101', Tmin=175.47, Tmax=512.5,  A=82.718, B=-6904.5, C=-8.8622, D=7.4664E-6, E=2.0)
+    assert_close(obj(298.15), 16825.750567754883, rtol=1e-13)
+    assert_close(obj.T_dependent_property_derivative(298.15, order=1), 881.6678722199089, rtol=1e-12)
+    assert_close(obj.T_dependent_property_derivative(298.15, order=2), 39.36139219676838, rtol=1e-12)
+    assert_close(obj.T_dependent_property_derivative(298.15, order=3), 1.4228777458080808, rtol=1e-12)
+
+    # json
+    hash0 = hash(obj)
+    obj2 = VaporPressure.from_json(json.loads(json.dumps(obj.as_json())))
+    assert obj == obj2
+    assert hash(obj) == hash0
+    assert hash(obj2) == hash0
+
+    obj2 = eval(str(obj))
+    assert obj == obj2
+    assert hash(obj) == hash0
+    assert hash(obj2) == hash0

@@ -88,7 +88,7 @@ from fluids.constants import R
 from chemicals.utils import PY37, isnan, isinf, log, exp, ws_to_zs, zs_to_ws, e
 from chemicals.utils import mix_multiple_component_flows, hash_any_primitive
 from chemicals.vapor_pressure import Antoine, Antoine_coeffs_from_point, Antoine_AB_coeffs_from_point, DIPPR101_ABC_coeffs_from_point
-from chemicals.dippr import EQ101
+from chemicals.dippr import EQ100, EQ101, EQ102, EQ104, EQ105, EQ106, EQ107, EQ114, EQ115, EQ116, EQ127
 from chemicals.phase_change import Watson, Watson_n
 from thermo import serialize
 from thermo.eos import GCEOS
@@ -826,9 +826,60 @@ class TDependentProperty(object):
 
     _json_obj_by_CAS = ('CP_f',)
 
-    correlation_models = {}
+    correlation_models = {'DIPPR100': ([],
+      ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
+      {'f': EQ100,
+       'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
+       'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)}),
+     'DIPPR101': (['A', 'B'],
+      ['C', 'D', 'E'],
+      {'f': EQ101,
+       'f_der': lambda T, **kwargs: EQ101(T, order=1, **kwargs),
+       'f_der2': lambda T, **kwargs: EQ101(T, order=2, **kwargs),
+       'f_der3': lambda T, **kwargs: EQ101(T, order=3, **kwargs)}),
+     'DIPPR102': (['A', 'B', 'C', 'D'],
+      [],
+      {'f': EQ102,
+       'f_der': lambda T, **kwargs: EQ102(T, order=1, **kwargs),
+       'f_int': lambda T, **kwargs: EQ102(T, order=-1, **kwargs),
+       'f_int_over_T': lambda T, **kwargs: EQ102(T, order=-1j, **kwargs)}),
+     'DIPPR104': (['A', 'B'],
+      ['C', 'D', 'E'],
+      {'f': EQ104,
+       'f_der': lambda T, **kwargs: EQ104(T, order=1, **kwargs),
+       'f_int': lambda T, **kwargs: EQ104(T, order=-1, **kwargs),
+       'f_int_over_T': lambda T, **kwargs: EQ104(T, order=-1j, **kwargs)}),
+     'DIPPR107': ([],
+      ['A', 'B', 'C', 'D', 'E'],
+      {'f': EQ107,
+       'f_der': lambda T, **kwargs: EQ107(T, order=1, **kwargs),
+       'f_int': lambda T, **kwargs: EQ107(T, order=-1, **kwargs),
+       'f_int_over_T': lambda T, **kwargs: EQ107(T, order=-1j, **kwargs)}),
+     'DIPPR114': (['Tc', 'A', 'B', 'C', 'D'],
+      [],
+      {'f': EQ114,
+       'f_der': lambda T, **kwargs: EQ114(T, order=1, **kwargs),
+       'f_int': lambda T, **kwargs: EQ114(T, order=-1, **kwargs),
+       'f_int_over_T': lambda T, **kwargs: EQ114(T, order=-1j, **kwargs)}),
+     'DIPPR115': (['A', 'B'],
+      ['C', 'D', 'E'],
+      {'f': EQ115,
+       'f_der': lambda T, **kwargs: EQ115(T, order=1, **kwargs),
+       'f_int': lambda T, **kwargs: EQ115(T, order=-1, **kwargs),
+       'f_int_over_T': lambda T, **kwargs: EQ115(T, order=-1j, **kwargs)}),
+     'DIPPR127': (['A', 'B', 'C', 'D', 'E', 'F', 'G'],
+      [],
+      {'f': EQ127,
+       'f_der': lambda T, **kwargs: EQ127(T, order=1, **kwargs),
+       'f_int': lambda T, **kwargs: EQ127(T, order=-1, **kwargs),
+       'f_int_over_T': lambda T, **kwargs: EQ127(T, order=-1j, **kwargs)})}
+
     available_correlations = frozenset(correlation_models.keys())
-    correlation_parameters = {}
+
+    correlation_parameters = {k: k + '_parameters' for k in correlation_models.keys()}
+
+
 
     def __copy__(self):
         return self
@@ -1062,7 +1113,7 @@ class TDependentProperty(object):
                     model_kwargs = kwargs.copy()
                     model_kwargs.pop('Tmin')
                     model_kwargs.pop('Tmax')
-                    correlations[model_name] = (call, model_kwargs)
+                    correlations[model_name] = (call, model_kwargs, correlation_name)
 
         del d['py/object']
         del d["json_version"]
@@ -1348,7 +1399,7 @@ class TDependentProperty(object):
         elif method in self.local_methods:
             return self.local_methods[method][0](T)
         elif method in self.correlations:
-            call, kwargs = self.correlations[method]
+            call, kwargs, _ = self.correlations[method]
             return call(T, **kwargs)
         else:
             raise ValueError("Unknown method")
@@ -1705,7 +1756,7 @@ class TDependentProperty(object):
         self.all_methods.add(name)
 
         call = self.correlation_models[model][2]['f']
-        self.correlations[name] = (call, model_kwargs)
+        self.correlations[name] = (call, model_kwargs, model)
         self.method = name
 
 
@@ -1905,6 +1956,16 @@ class TDependentProperty(object):
         derivative : float
             Calculated derivative property, [`units/K^order`]
         '''
+        if method in self.correlations:
+            _, model_kwargs, model = self.correlations[method]
+            calls = self.correlation_models[model][2]
+            if order == 1 and 'f_der' in calls:
+                return calls['f_der'](T, **model_kwargs)
+            elif order == 2 and 'f_der2' in calls:
+                return calls['f_der2'](T, **model_kwargs)
+            elif order == 3 and 'f_der3' in calls:
+                return calls['f_der3'](T, **model_kwargs)
+
         pts = 1 + order*2
         dx = T*1e-6
         args = [method]
