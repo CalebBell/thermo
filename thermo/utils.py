@@ -2120,7 +2120,7 @@ class TDependentProperty(object):
             if 'f_int' in calls:
                 return calls['f_int'](T2, **model_kwargs) - calls['f_int'](T1, **model_kwargs)
 
-        return float(quad(self.calculate, T1, T2, args=(method))[0])
+        return float(quad(self.calculate, T1, T2, args=(method,))[0])
 
     def T_dependent_property_integral(self, T1, T2):
         r'''Method to calculate the integral of a property with respect to
