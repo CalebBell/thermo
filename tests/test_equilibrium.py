@@ -320,12 +320,12 @@ def test_two_eos_pure_flash_all_properties():
     assert_close1d([i.pseudo_Zc() for i in eq.phases], [constants.Zcs[0]]*2, rtol=1e-12)
 
     # Standard volumes
-    V_std_expect = 0.023690417461829063
+    V_std_expect = 0.02364483003622853
     assert_close(eq.V_gas_standard(), V_std_expect, rtol=1e-12)
     assert_close(eq.bulk.V_gas_standard(), V_std_expect, rtol=1e-12)
     assert_close1d([i.V_gas_standard() for i in eq.phases], [V_std_expect]*2, rtol=1e-12)
 
-    V_std_expect = 0.02364483003622853
+    V_std_expect = 0.022413969545014137
     assert_close(eq.V_gas_normal(), V_std_expect, rtol=1e-12)
     assert_close(eq.bulk.V_gas_normal(), V_std_expect, rtol=1e-12)
     assert_close1d([i.V_gas_normal() for i in eq.phases], [V_std_expect]*2, rtol=1e-12)
@@ -352,22 +352,22 @@ def test_two_eos_pure_flash_all_properties():
     assert_close1d([i.Hc_lower_mass() for i in eq.phases], [Hc_lower_mass_expect]*2, rtol=1e-12)
 
     # Volume combustion properties
-    Hc_normal_expect = -32331126.881804217
+    Hc_normal_expect = -34106586.897279456
     assert_close(eq.Hc_normal(), Hc_normal_expect, rtol=1e-12)
     assert_close(eq.bulk.Hc_normal(), Hc_normal_expect, rtol=1e-12)
     assert_close1d([i.Hc_normal() for i in eq.phases], [Hc_normal_expect]*2, rtol=1e-12)
 
-    Hc_standard_expect = -32268912.155378208
+    Hc_standard_expect = -32331126.881804217
     assert_close(eq.Hc_standard(), Hc_standard_expect, rtol=1e-12)
     assert_close(eq.bulk.Hc_standard(), Hc_standard_expect, rtol=1e-12)
     assert_close1d([i.Hc_standard() for i in eq.phases], [Hc_standard_expect]*2, rtol=1e-12)
 
-    Hc_lower_normal_expect = -28610444.607277177
+    Hc_lower_normal_expect = -30181583.79493655
     assert_close(eq.Hc_lower_normal(), Hc_lower_normal_expect, rtol=1e-12)
     assert_close(eq.bulk.Hc_lower_normal(), Hc_lower_normal_expect, rtol=1e-12)
     assert_close1d([i.Hc_lower_normal() for i in eq.phases], [Hc_lower_normal_expect]*2, rtol=1e-12)
 
-    Hc_lower_standard_expect = -28555389.582728375
+    Hc_lower_standard_expect = -28610444.607277177
     assert_close(eq.Hc_lower_standard(), Hc_lower_standard_expect, rtol=1e-12)
     assert_close(eq.bulk.Hc_lower_standard(), Hc_lower_standard_expect, rtol=1e-12)
     assert_close1d([i.Hc_lower_standard() for i in eq.phases], [Hc_lower_standard_expect]*2, rtol=1e-12)
@@ -394,22 +394,22 @@ def test_two_eos_pure_flash_all_properties():
     assert_close1d([i.Wobbe_index_lower_mass() for i in eq.phases], [Wobbe_index_lower_mass_expect]*2, rtol=1e-12)
 
     # Wobbe index volume properties
-    Wobbe_index_standard_expect = 30677096.082622595
+    Wobbe_index_standard_expect = 30736241.774647623
     assert_close(eq.Wobbe_index_standard(), Wobbe_index_standard_expect, rtol=1e-12)
     assert_close(eq.bulk.Wobbe_index_standard(), Wobbe_index_standard_expect, rtol=1e-12)
     assert_close1d([i.Wobbe_index_standard() for i in eq.phases], [Wobbe_index_standard_expect]*2, rtol=1e-12)
 
-    Wobbe_index_normal_expect = 30736241.774647623
+    Wobbe_index_normal_expect = 32424118.862766653
     assert_close(eq.Wobbe_index_normal(), Wobbe_index_normal_expect, rtol=1e-12)
     assert_close(eq.bulk.Wobbe_index_normal(), Wobbe_index_normal_expect, rtol=1e-12)
     assert_close1d([i.Wobbe_index_normal() for i in eq.phases], [Wobbe_index_normal_expect]*2, rtol=1e-12)
 
-    Wobbe_index_lower_standard_expect = 27146760.50088282
+    Wobbe_index_lower_standard_expect = 27199099.677046627
     assert_close(eq.Wobbe_index_lower_standard(), Wobbe_index_lower_standard_expect, rtol=1e-12)
     assert_close(eq.bulk.Wobbe_index_lower_standard(), Wobbe_index_lower_standard_expect, rtol=1e-12)
     assert_close1d([i.Wobbe_index_lower_standard() for i in eq.phases], [Wobbe_index_lower_standard_expect]*2, rtol=1e-12)
 
-    Wobbe_index_lower_normal_expect = 27199099.677046627
+    Wobbe_index_lower_normal_expect = 28692735.024495646
     assert_close(eq.Wobbe_index_lower_normal(), Wobbe_index_lower_normal_expect, rtol=1e-12)
     assert_close(eq.bulk.Wobbe_index_lower_normal(), Wobbe_index_lower_normal_expect, rtol=1e-12)
     assert_close1d([i.Wobbe_index_lower_normal() for i in eq.phases], [Wobbe_index_lower_normal_expect]*2, rtol=1e-12)
