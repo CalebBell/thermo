@@ -30,6 +30,7 @@ from scipy.integrate import quad
 from math import *
 from fluids.constants import R
 
+@pytest.mark.deprecated
 def test_Chemical_properties():
     w = Chemical('water')
     assert_allclose(w.Tm, 273.15)
@@ -103,7 +104,7 @@ def test_Chemical_properties():
 
 
 
-
+@pytest.mark.deprecated
 def test_Chemical_properties_T_dependent_constants():
     w = Chemical('water')
     assert_allclose(w.Psat_298, 3167.418523735963, rtol=1e-4)
@@ -122,6 +123,7 @@ def test_Chemical_properties_T_dependent_constants():
 
     assert_allclose(w.molecular_diameter, 3.24681, rtol=1e-4)
 
+@pytest.mark.deprecated
 def test_Chemical_properties_T_dependent():
     # T-only dependent properties (always or at the moment)
     # Keep the order of the tests matching the order of the code
@@ -197,6 +199,7 @@ def test_Chemical_properties_T_dependent():
     assert_allclose(Poy, 1.5821826990975127, atol=.02)
 
 
+@pytest.mark.deprecated
 def test_Chemical_properties_T_phase():
     # T-only dependent properties (always or at the moment)
     # Keep the order of the tests matching the order of the code
@@ -221,7 +224,7 @@ def test_Chemical_properties_T_phase():
 
     assert_allclose(w.Pr, 5.854395582989558, rtol=1e-4)
 
-
+@pytest.mark.deprecated
 def test_H_Chemical():
     from thermo import chemical
     chemical.caching = False
@@ -281,6 +284,7 @@ def test_H_Chemical():
 @pytest.mark.fuzz
 @pytest.mark.slow
 @pytest.mark.meta_Chemical
+@pytest.mark.deprecated
 def test_all_chemicals():
     for i in pubchem_db.CAS_index.values():
         c = Chemical(i.CASs)
@@ -359,13 +363,14 @@ def test_all_chemicals():
         c.PSRK_groups
         c.R_specific
 
-
+@pytest.mark.deprecated
 def test_specific_chemical_failures():
     # D2O - failed on Hf, Gf
     Chemical('7789-20-0')
 
 @pytest.mark.fuzz
 @pytest.mark.slow
+@pytest.mark.deprecated
 def test_all_element_Chemicals():
     things = [periodic_table.CAS_to_elements, periodic_table.name_to_elements, periodic_table.symbol_to_elements]
     failed_CASs = []

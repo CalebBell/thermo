@@ -32,6 +32,7 @@ from scipy.integrate import quad
 from math import *
 from fluids.constants import R
 
+@pytest.mark.deprecated
 def test_Mixture():
     Mixture(['water', 'ethanol'], ws=[.5, .5], T=320, P=1E5)
     Mixture(['water', 'phosphoric acid'], ws=[.5, .5], T=320, P=1E5)
@@ -53,6 +54,7 @@ def test_Mixture():
     m = Mixture(['Na+', 'Cl-', 'water'], ws=[.01, .02, .97]).charge_balance
     assert_allclose(m, -0.0023549543057603192)
 
+@pytest.mark.deprecated
 def test_Mixture_input_basics():
     # Run a test initializing a mixture from mole fractions, mass fractions,
     # liquid fractions, gas fractions (liq/gas are with volumes of pure components at T and P)
@@ -66,6 +68,7 @@ def test_Mixture_input_basics():
         assert_allclose(m.Vfls(), kwargs['Vfls'], rtol=1E-5)
         assert_allclose(m.Vfgs(), kwargs['Vfgs'])
 
+@pytest.mark.deprecated
 def test_Mixture_input_ordered_dict():
     # Ordered dict inputs
     IDs = ['pentane', 'hexane', 'heptane']
@@ -84,6 +87,7 @@ def test_Mixture_input_ordered_dict():
         assert_allclose(m.Vfls(), kwargs['Vfls'], rtol=1E-5)
         assert_allclose(m.Vfgs(), kwargs['Vfgs'], rtol=2E-5)
 
+@pytest.mark.deprecated
 def test_Mixture_input_np_array():
     # numpy array inputs
     IDs = ['pentane', 'hexane', 'heptane']
@@ -100,6 +104,7 @@ def test_Mixture_input_np_array():
         assert_allclose(m.Vfls(), kwargs['Vfls'], rtol=1E-5)
         assert_allclose(m.Vfgs(), kwargs['Vfgs'], rtol=2E-5)
 
+@pytest.mark.deprecated
 def test_Mixture_input_odds_and_ends():
 
     with pytest.raises(Exception):
@@ -117,7 +122,7 @@ def test_Mixture_input_odds_and_ends():
 
 
 
-
+@pytest.mark.deprecated
 def test_Mixture_input_vfs_TP():
     # test against the default arguments of T and P
     m0 = Mixture(['hexane', 'decane'], Vfls=[.5, .5])
@@ -139,7 +144,7 @@ def test_Mixture_input_vfs_TP():
     assert_allclose(m0.zs, m2.zs, rtol=1E-3)
     assert_allclose(m0.zs, m3.zs, rtol=1E-3)
 
-
+@pytest.mark.deprecated
 def test_Mixture_calculated_Vfs():
     # Liquid standard fractions
     S = Mixture(['hexane', 'decane'], zs=[0.25, 0.75])
@@ -156,6 +161,7 @@ def test_Mixture_calculated_Vfs():
     assert_allclose(S.Vfgs(P=101326), [0.25, 0.75], rtol=1e-3)
     assert_allclose(S.Vfgs(T=699), [0.25, 0.75], rtol=1e-3)
 
+@pytest.mark.deprecated
 def test_Mixture_predefined():
     for name in ['Air', 'air', u'Air', ['air']]:
         air = Mixture(name)
@@ -173,15 +179,17 @@ def test_Mixture_predefined():
     assert_allclose(natural_gas.zs, [0.9652228316853225, 0.002594967217109564, 0.005955831022086067, 0.018185509193506685, 0.004595963476244077, 0.0009769695915451998, 0.001006970610302194, 0.0004729847624453981, 0.0003239924667435125, 0.0006639799746946288], rtol=1E-3)
     assert_allclose(natural_gas.ws, [0.921761382642074, 0.004327306490959737, 0.015603023404535107, 0.03255104882657324, 0.012064018096027144, 0.0033802050703076055, 0.0034840052260078393, 0.002031403047104571, 0.001391502087253131, 0.003406105109157664], rtol=1E-4)
 
-
+@pytest.mark.deprecated
 def test_constant_properties():
     R_specific = Mixture(['N2', 'O2'], zs=[0.79, .21]).R_specific
     assert_allclose(R_specific, 288.1928437986195, rtol=1E-5)
 
+@pytest.mark.deprecated
 def test_Mixture_VF_input():
     test_mix = Mixture(['ethylene oxide', 'tetrahydrofuran',  'beta-propiolactone'], ws=[6021, 111569.76, 30711.21], T=400,  VF=0.5)
     assert_allclose(test_mix.P, 370054, rtol=1E-2)
 
+@pytest.mark.deprecated
 def test_mixtures_from_property_calcs():
     m = Mixture(['carbon tetrachloride', 'isopropanol'], zs=[0.5, 0.5], T=313.2)
 
@@ -192,7 +200,7 @@ def test_mixtures_from_property_calcs():
     m = Mixture(['toluene', 'decane'], ws=[.9, .1], T=300)
 
 
-
+@pytest.mark.deprecated
 def test_bubble_at_P_with_ideal_mixing():
     '''Check to see if the bubble pressure calculated from the temperature
     matches the temperature calculated by the test function'''

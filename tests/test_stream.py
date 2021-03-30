@@ -34,6 +34,7 @@ from fluids.constants import R
 from fluids.numerics import assert_close, assert_close1d
 
 
+@pytest.mark.deprecated
 def test_Stream():
     Stream(['H2', 'NH3', 'CO', 'Ar', 'CH4', 'N2'],
            zs=[.7371, 0, .024, .027, .013, .2475],
@@ -45,6 +46,7 @@ def test_Stream():
     obj = Stream(['methanol'], P=1E5, zs=[1], n=1)
     assert obj.T == obj.T_default
 
+@pytest.mark.deprecated
 def test_Stream_inputs():
     compositions = {'zs': [0.5953064630759212, 0.4046935369240788], 'ws': [0.365177574313603, 0.634822425686397],
                    'Vfgs': [0.6, 0.4], 'Vfls': [0.3114290329842817, 0.6885709670157184]}
@@ -129,6 +131,7 @@ def test_Stream_inputs():
         Stream(['water', 'ethanol'], zs=[.5, .5], T=300, P=1E5)
 
 
+@pytest.mark.deprecated
 def test_stream_TP_Q():
     n_known = 47.43612113350473
     n = Stream(T=433.0, P=680E3, Q=3800.0/3600, IDs=['CO2'], zs=[1], Q_TP=(273.15, 101325, 'g')).n
@@ -138,6 +141,7 @@ def test_stream_TP_Q():
     n = Stream(T=433.0, P=680E3, Q=3800.0/3600, IDs=['CO2'], zs=[1], Q_TP=(273.15, 101325, None)).n
     assert_allclose(n, n_known, rtol=1e-3)
 
+@pytest.mark.deprecated
 def test_add_streams():
     # simple example, same components
     ans = {'zs': [0.4, 0.6], 'ws': [0.20679185022051716, 0.7932081497794828], 'm': 0.34847176, 'n': 10}
@@ -170,6 +174,7 @@ def test_add_streams():
     assert_allclose(prod.n, ans['n'], rtol=2E-5)
 
 
+@pytest.mark.deprecated
 def test_sub_streams():
     with pytest.raises(Exception):
         # remove a component not present

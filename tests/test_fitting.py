@@ -33,6 +33,11 @@ from math import log, exp
 from thermo.eos import PR
 from chemicals import SMK
 
+try:
+    import ChebTools
+    has_ChebTools = True
+except:
+    has_ChebTools = False
 def test_poly_fit_statistics():
     eos = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400., P=1E6)
     coeffs_linear_short = [4.237517714500429e-17, -1.6220845282077796e-13, 2.767061931081117e-10, -2.7334899251582114e-07, 0.00017109676992782628, -0.06958709998929116, 18.296622011252442, -3000.9526306002426, 279584.4945619958, -11321565.153797101]
@@ -59,6 +64,7 @@ def test_poly_fit_statistics():
                               interpolation_x=lambda T: log(1. - T/Tc))
     assert_close1d(vals, (1.4520389207346671e-09, 9.938397794626389e-10, 0.999999997336866, 1.0000000039180956))
 
+@pytest.mark.skipif(not has_ChebTools, reason='Missing ChebTools')
 def test_fit_cheb_poly():
     eos = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400., P=1E6)
 
