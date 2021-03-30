@@ -733,7 +733,7 @@ def test_V_G_min_plot(fluid, eos):
     plt.close()
 
     # Not sure how to add error to this one
-#test_V_G_min_plot('hydrogen', TWUPR)
+#test_V_G_min_plot('ammonia', MSRKTranslated)
 #test_V_G_min_plot('hydrogen', TWUSRK)
 
 

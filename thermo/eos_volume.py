@@ -665,7 +665,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
         elif i == 1:
             V = Vi = b*1.000001
         elif i == 2:
-            V = Vi = b*20
+            V = Vi = b*20.0
         fval_oldold = 1.0
         fval_old = 0.0
         for j in range(50):

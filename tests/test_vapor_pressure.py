@@ -193,12 +193,14 @@ def test_VaporPressure_linear_extrapolation_non_negative():
     # Confirms it's linear
     # plt.plot(1/np.array(Ts), np.log(Ps))
     # plt.show()
-    def rsquared(x, y):
-        import scipy.stats
-        _, _, r_value, _, _ = scipy.stats.linregress(x, y)
-        return r_value*r_value
+#    def rsquared(x, y):
+#        import scipy.stats
+#        _, _, r_value, _, _ = scipy.stats.linregress(x, y)
+#        return r_value*r_value
 
-    assert_close(rsquared(1/np.array(Ts), np.log(Ps)), 1, atol=1e-5)
+#    assert_close(rsquared(1/np.array(Ts), np.log(Ps)), 1, atol=1e-5)
+    assert abs(np.polyfit(1/np.array(Ts), np.log(Ps), 1, full=True)[1][0]) < 1e-13
+
 
     # TODO make work with different interpolation methods
 #    assert ethanol_psat == VaporPressure.from_json(ethanol_psat.as_json())
