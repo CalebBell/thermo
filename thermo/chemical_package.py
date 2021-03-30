@@ -148,7 +148,7 @@ class ChemicalConstantsPackage(object):
     properties = ('atom_fractions',) + non_vector_properties
     '''Tuple of all properties that can be held by this object.'''
 
-    __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms') + ('json_version',)
+    __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms') + ('json_version', '_hash')
     non_vectors = ('atom_fractions',)
     non_vectors_set = set(non_vectors)
     __full_path__ = "%s.%s" %(__module__, __qualname__)
@@ -243,10 +243,15 @@ class ChemicalConstantsPackage(object):
         return cls(**d)
 
     def __hash__(self):
+        try:
+            return self._hash
+        except:
+            pass
         hashes = []
         for k in self.properties:
             hashes.append(hash_any_primitive(getattr(self, k)))
-        return hash_any_primitive(hashes)
+        self._hash = hash_any_primitive(hashes)
+        return self._hash
 
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()

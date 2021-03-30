@@ -477,16 +477,12 @@ class Phase(object):
                 pass
         # Note: not all attributes are in __dict__, must use getattr
         to_hash = [getattr(self, v) for v in self.model_attributes]
-        if not ignore_phase:
-            to_hash.append(self.__class__.__name__)
-        h = hash_any_primitive(to_hash)
+        self._model_hash_ignore_phase = h = hash_any_primitive(to_hash)
+        self._model_hash = hash((self.__class__.__name__, h))
         if ignore_phase:
-            self._model_hash_ignore_phase = h
+            return self._model_hash_ignore_phase
         else:
-            self._model_hash = h
-        return h
-
-
+            return self._model_hash
 
     def value(self, name):
         r'''Method to retrieve a property from a string. This more or less
