@@ -1046,11 +1046,21 @@ def identify_sort_phases(phases, betas, constants, correlations, settings,
         # Probably worth adding a fast path here which avoids index
         new_betas = []
         if gas is not None:
-            new_betas.append(betas[phases.index(gas)])
+            # Cannot use .index on the betas lsit as the objects define __hash__.
+            for i, p in enumerate(phases):
+                if p is gas:
+                    new_betas.append(betas[i])
+                    break
         for liquid in liquids:
-            new_betas.append(betas[phases.index(liquid)])
+            for i, p in enumerate(phases):
+                if p is liquid:
+                    new_betas.append(betas[i])
+                    break
         for solid in solids:
-            new_betas.append(betas[phases.index(solid)])
+            for i, p in enumerate(phases):
+                if p is solid:
+                    new_betas.append(betas[i])
+                    break
         betas = new_betas
     return gas, liquids, solids, betas
 
