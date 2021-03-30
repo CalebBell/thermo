@@ -2147,6 +2147,12 @@ class GCEOS(object):
         l_prop = base_property + '_l'
         g_prop = base_property + '_g'
         base_positive = True
+
+        # Are we an ideal-gas?
+        if self.Zc == 1.0:
+            phase_ID_transition = False
+            Psat = False
+
         Vs = []
         for T in Ts:
             V_row = []
