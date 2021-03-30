@@ -97,6 +97,7 @@ def test_IGMIX_units():
     assert_pint_allclose(eos.d2P_dT2_g, 0, u.Pa/u.K**2)
 
 
+@pytest.mark.deprecated
 def test_custom_wraps():
     C = Stream(['ethane'], T=200*u.K, zs=[1], n=1*u.mol/u.s)
     D = Stream(['water', 'ethanol'], ns=[1, 2,]*u.mol/u.s, T=300*u.K, P=1E5*u.Pa)

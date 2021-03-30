@@ -225,6 +225,9 @@ def test_sub_streams():
 
 
 
+
+
+@pytest.mark.deprecated
 def test_StreamArgs():
     s = StreamArgs(T=540)
     s.P = 1E6
