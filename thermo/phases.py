@@ -475,6 +475,7 @@ class Phase(object):
                 return self._model_hash
             except AttributeError:
                 pass
+        # Note: not all attributes are in __dict__, must use getattr
         to_hash = [getattr(self, v) for v in self.model_attributes]
         if not ignore_phase:
             to_hash.append(self.__class__.__name__)
@@ -5519,28 +5520,6 @@ class CEOSGas(Phase):
 
     model_attributes = ('Hfs', 'Gfs', 'Sfs', 'eos_class',
                         'eos_kwargs') + pure_references
-
-    def model_hash(self, ignore_phase=False):
-        if ignore_phase:
-            try:
-                return self._model_hash_ignore_phase
-            except AttributeError:
-                pass
-        else:
-            try:
-                return self._model_hash
-            except AttributeError:
-                pass
-        d = self.__dict__
-        to_hash = [d[v] for v in self.model_attributes]
-        if not ignore_phase:
-            to_hash.append(self.__class__.__name__)
-        h = hash_any_primitive(to_hash)
-        if ignore_phase:
-            self._model_hash_ignore_phase = h
-        else:
-            self._model_hash = h
-        return h
 
     @property
     def phase(self):
