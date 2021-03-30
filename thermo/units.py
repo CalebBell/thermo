@@ -47,6 +47,8 @@ failed_wrapping = False
 
 
 for name in dir(thermo):
+    if name == '__getattr__' or name == '__test__':
+        continue
     obj = getattr(thermo, name)
     if isinstance(obj, types.FunctionType):
         pass

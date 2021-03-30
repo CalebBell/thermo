@@ -177,8 +177,25 @@ class BulkSettings(object):
     r'''Class containing configuration methods for determining how properties of
     a `Bulk` phase made of different phases are handled.
 
+
     Parameters
     ----------
+    T_normal : float
+        "Normal" gas reference temperature for the calculation of ideal-gas
+        molar volume in the "normal" reference state; default 273.15 K (0 C)
+        according to [1]_, [K]
+    P_normal : float
+        "Normal" gas reference pressure for the calculation of ideal-gas
+        molar volume in the "normal" reference state; default 101325 Pa
+        (1 atm) according to [1]_, [Pa]
+    T_standard : float
+        "Standard" gas reference temperature for the calculation of ideal-gas
+        molar volume in the "standard" reference state; default 288.15 K (15° C)
+        according to [2]_; 288.7055555555555 is also often used (60° F), [K]
+    P_standard : float
+        "Standard" gas reference pressure for the calculation of ideal-gas
+        molar volume in the "standard" reference state; default 101325 Pa
+        (1 atm) according to [2]_, [Pa]
     mu_LL : str, optional
         Mixing rule for multiple liquid phase liquid viscosity calculations;
         see :obj:`MU_LL_METHODS` for available options,
@@ -253,6 +270,12 @@ class BulkSettings(object):
     The mixing rule "AS_ONE_GAS" calculates a property using the bulk
     composition but applied to the gas model only.
 
+    References
+    ----------
+    .. [1] 14:00-17:00. "ISO 10780:1994." ISO. Accessed March 29, 2021.
+       https://www.iso.org/cms/render/live/en/sites/isoorg/contents/data/standard/01/88/18855.html.
+    .. [2] 14:00-17:00. "ISO 13443:1996." ISO. Accessed March 29, 2021.
+       https://www.iso.org/cms/render/live/en/sites/isoorg/contents/data/standard/02/04/20461.html.
     '''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
@@ -273,9 +296,12 @@ class BulkSettings(object):
 
                  c=MOLE_WEIGHTED,
                  isobaric_expansion=MOLE_WEIGHTED, kappa=MOLE_WEIGHTED, JT=MOLE_WEIGHTED,
-                 T_normal=288.15, P_normal=atm,
-                 T_standard=288.7055555555555, P_standard=atm,
+
+                 T_normal=273.15, P_normal=atm,
+                 T_standard=288.15, P_standard=atm,
+
                  T_liquid_volume_ref=298.15,
+
                  T_gas_ref=288.15, P_gas_ref=atm,
 
                  VL_ID=VL_ID_PIP, VL_ID_settings=None,
