@@ -4588,7 +4588,9 @@ class Phase(object):
             result = self.result
         except:
             return None
-        return result.betas[result.phases.index(self)]
+        for i, p in enumerate(result.phases):
+            if p is self:
+                return result.betas[i]
 
     @property
     def beta_mass(self):
@@ -4608,7 +4610,9 @@ class Phase(object):
             result = self.result
         except:
             return None
-        return result.betas_mass[result.phases.index(self)]
+        for i, p in enumerate(result.phases):
+            if p is self:
+                return result.betas_mass[i]
 
     @property
     def beta_volume(self):
@@ -4628,7 +4632,9 @@ class Phase(object):
             result = self.result
         except:
             return None
-        return result.betas_volume[result.phases.index(self)]
+        for i, p in enumerate(result.phases):
+            if p is self:
+                return result.betas_volume[i]
 
     @property
     def VF(self):
