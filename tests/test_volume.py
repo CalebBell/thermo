@@ -420,12 +420,24 @@ def test_VolumeLiquidMixture_Laliberte():
 
 @pytest.mark.meta_T_dept
 def test_VolumeLiquidMixture_ExcessVolume():
-    from thermo.mixture import Mixture
     # Excess volume
     # Vs -7.5E-7 in ddbst http://www.ddbst.com/en/EED/VE/VE0%20Ethanol%3BWater.php
-    drink = Mixture(['water', 'ethanol'], zs=[1- 0.15600,  0.15600], T=298.15, P=101325)
-    V_Ex = drink.VolumeLiquidMixture.excess_property(drink.T, drink.P, drink.zs, drink.ws)
-    assert_allclose(V_Ex, -7.242450496000289e-07, rtol=.05)
+    T = 298.15
+    P = 101325.0
+    MWs = [18.01528, 46.06844]
+    zs = [1- 0.15600,  0.15600]
+    ws = zs_to_ws(zs, MWs)
+
+    VaporPressures = [VaporPressure(CASRN="7732-18-5", Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344, extrapolation="AntoineAB|DIPPR101_ABC", method="WAGNER_MCGARRY"),
+    VaporPressure(CASRN="64-17-5", Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, extrapolation="AntoineAB|DIPPR101_ABC", method="WAGNER_MCGARRY")]
+
+    drink = VolumeLiquidMixture(MWs=[18.01528, 46.06844], Tcs=[647.14, 514.0], Pcs=[22048320.0, 6137000.0], Vcs=[5.6000000000000006e-05, 0.000168], Zcs=[0.22947273972184645, 0.24125043269792065], omegas=[0.344, 0.635], CASs=['7732-18-5', '64-17-5'], correct_pressure_pure=True, method="LALIBERTE",
+        VolumeLiquids=[VolumeLiquid(CASRN="7732-18-5", MW=18.01528, Tb=373.124, Tc=647.14, Pc=22048320.0, Vc=5.6000000000000006e-05, Zc=0.22947273972184645, omega=0.344, dipole=1.85, Psat=VaporPressures[0], extrapolation="constant", method="VDI_PPDS", method_P="COSTALD_COMPRESSED"),
+                       VolumeLiquid(CASRN="64-17-5", MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.24125043269792065, omega=0.635, dipole=1.44, Psat=VaporPressures[1], extrapolation="constant", method="DIPPR_PERRY_8E", method_P="COSTALD_COMPRESSED")]
+    )
+    V_Ex = drink.excess_property(T, P, zs, ws)
+    assert_close(V_Ex, -7.242450496000289e-07, rtol=1e-12)
+
 
 @pytest.mark.meta_T_dept
 def test_VolumeGasMixture():
