@@ -4390,7 +4390,7 @@ class Flash(object):
                                     betas=betas, flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
-                                    flasher=self)
+                                    settings=settings, flasher=self)
 
         elif T_spec and VF_spec:
             # All dew/bubble are the same with 1 component
@@ -4403,7 +4403,7 @@ class Flash(object):
                                     betas=[VF, 1.0 - VF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
-                                    flasher=self)
+                                    settings=settings, flasher=self)
 
         elif P_spec and VF_spec:
             # All dew/bubble are the same with 1 component
@@ -4416,7 +4416,7 @@ class Flash(object):
                                     betas=[VF, 1.0 - VF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
-                                    flasher=self)
+                                    settings=settings, flasher=self)
         elif T_spec and SF_spec:
             Psub, other_phase, s, iterations, err = self.flash_TSF(T, SF=SF, zs=zs, hot_start=hot_start)
             if other_phase.is_gas:
@@ -4429,7 +4429,7 @@ class Flash(object):
                                     betas=[1-SF, SF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
-                                    flasher=self)
+                                    settings=settings, flasher=self)
         elif P_spec and SF_spec:
             Tsub, other_phase, s, iterations, err = self.flash_PSF(P, SF=SF, zs=zs, hot_start=hot_start)
             if other_phase.is_gas:
@@ -4442,7 +4442,7 @@ class Flash(object):
                                     betas=[1-SF, SF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
-                                    flasher=self)
+                                    settings=settings, flasher=self)
         elif VF_spec and any([H_spec, S_spec, U_spec, G_spec, A_spec]):
             spec_var, spec_val = [(k, v) for k, v in flash_specs.items() if k not in ('VF', 'zs')][0]
             T, Psat, liquid, gas, iters_inner, err_inner, err, iterations = self.flash_VF_HSGUA(VF, spec_val, fixed_var='VF', spec_var=spec_var, zs=zs, solution=solution, hot_start=hot_start)
@@ -4451,7 +4451,7 @@ class Flash(object):
                                     betas=[VF, 1.0 - VF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
-                                    flasher=self)
+                                    settings=settings, flasher=self)
         elif HSGUA_spec_count == 2:
             pass
 
@@ -4501,7 +4501,7 @@ class Flash(object):
                                     betas=betas, flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
-                                    flasher=self)
+                                    settings=settings, flasher=self)
 
         else:
             raise Exception('Flash inputs unsupported')

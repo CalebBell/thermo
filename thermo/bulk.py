@@ -171,7 +171,7 @@ K_VL_METHODS = K_LL_METHODS + [AS_ONE_GAS]
 '''List of all valid and implemented mixing rules for the `K_VL` setting'''
 K_VL_METHODS_SET = set(K_VL_METHODS)
 
-__all__.extend(['MOLE_WEIGHTED', 'MASS_WEIGHTED', 'VOLUME_WEIGHTED',
+__all__.extend(['MOLE_WEIGHTED', 'MASS_WEIGHTED', 'VOLUME_WEIGHTED', 'EQUILIBRIUM_DERIVATIVE',
                 'LOG_PROP_MOLE_WEIGHTED', 'LOG_PROP_MASS_WEIGHTED', 'LOG_PROP_VOLUME_WEIGHTED',
                 'POWER_PROP_MOLE_WEIGHTED', 'POWER_PROP_MASS_WEIGHTED', 'POWER_PROP_VOLUME_WEIGHTED',
                 'AS_ONE_GAS', 'AS_ONE_LIQUID',
@@ -278,6 +278,11 @@ class BulkSettings(object):
     sigma_LL_power_exponent : float, optional
         Air-liquid Liquid-liquid surface tension power-law mixing parameter,
         used only when a power law mixing rule is selected, [-]
+    equilibrium_perturbation : float, optional
+        The relative perturbation to use when calculating equilibrium
+        derivatives numerically; for example if this is 1e-3 and `T` is the
+        perturbation variable and the statis is 500 K, the perturbation
+        calculation temperature will be 500.5 K, [various]
 
     Notes
     -----
@@ -365,6 +370,8 @@ class BulkSettings(object):
                  phase_sort_higher_first=True,
                  water_sort=WATER_NOT_SPECIAL,
 
+                 equilibrium_perturbation=1e-7,
+
                  ):
         self.dP_dT = dP_dT
         self.dP_dV = dP_dV
@@ -406,6 +413,8 @@ class BulkSettings(object):
 
         self.T_gas_ref = T_gas_ref
         self.P_gas_ref = P_gas_ref
+
+        self.equilibrium_perturbation = equilibrium_perturbation
 
         self.isobaric_expansion = isobaric_expansion
         self.kappa = kappa
@@ -1175,6 +1184,26 @@ class Bulk(Phase):
         self._d2P_dTdV_frozen = d2P_dTdV_frozen
         return d2P_dTdV_frozen
 
+    def _equilibrium_derivative(self, of='P', wrt='T', const='V'):
+        '''Calculate the equilibrium derivative of a property by performing
+        flash calculations.
+        '''
+        const_value = self.value(const)
+        wrt_value = self.value(wrt)
+        of_value = self.value(of)
+
+        pert = self.settings.equilibrium_perturbation
+        wrt_value2 = wrt_value*(1.0 + pert)
+        delta = wrt_value2 - wrt_value
+        kwargs = {wrt: wrt_value2, const: const_value}
+        results = self.flasher.flash(zs=self.zs, **kwargs)
+
+        of_value2 = results.value(of)
+        value = (of_value2 - of_value)/delta
+        return value
+
+
+
     def __dP_dT_equilibrium(self):
         # At constant volume
         try:
@@ -1182,7 +1211,6 @@ class Bulk(Phase):
         except AttributeError:
             pass
 
-        dP_dT_1 = self.dP_dT_frozen()
         dT = self.T*1e-6
         T2 = self.T + dT
 
@@ -1198,7 +1226,7 @@ class Bulk(Phase):
         if dP_dT_method == MOLE_WEIGHTED:
             return self.dP_dT_frozen()
         elif dP_dT_method == EQUILIBRIUM_DERIVATIVE:
-            return self.__dP_dT_equilibrium()
+            return self._equilibrium_derivative(of='P', wrt='T', const='V')
         return self._mu_k_single_state(dP_dT_method, None, None, 'dP_dT')
 
     def dP_dV(self):
