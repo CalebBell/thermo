@@ -33,7 +33,7 @@ Bulk Class
 ==========
 .. autoclass:: Bulk
     :members: beta, betas_mass, betas_volume, k, mu, sigma, MW, V, V_iter, Cp, H, S,
-              dH_dP, dS_dP, dS_dT, dG_dT, dG_dP, dU_dT, dU_dP, dA_dT, dA_dP,
+              dG_dT, dG_dP, dU_dT, dU_dP, dA_dT, dA_dP,
               H_reactive, S_reactive, dP_dT_frozen, dP_dV_frozen,
               d2P_dT2_frozen, d2P_dV2_frozen, d2P_dTdV_frozen,
               dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV,
@@ -115,11 +115,13 @@ DP_DT_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
 '''List of all valid and implemented calculation methods for the `DP_DT` bulk setting'''
 DP_DV_METHODS = DP_DT_METHODS
 '''List of all valid and implemented calculation methods for the `DP_DV` bulk setting'''
-D2P_DV2_METHODS = DP_DT_METHODS
+D2P_DV2_METHODS =  [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
+                 LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED, LOG_PROP_VOLUME_WEIGHTED,
+                 MINIMUM_PHASE_PROP, MAXIMUM_PHASE_PROP]
 '''List of all valid and implemented calculation methods for the `D2P_DV2` bulk setting'''
-D2P_DT2_METHODS = DP_DT_METHODS
+D2P_DT2_METHODS = D2P_DV2_METHODS
 '''List of all valid and implemented calculation methods for the `D2P_DT2` bulk setting'''
-D2P_DTDV_METHODS = DP_DT_METHODS
+D2P_DTDV_METHODS = D2P_DV2_METHODS
 '''List of all valid and implemented calculation methods for the `D2P_DTDV` bulk setting'''
 
 
@@ -1186,7 +1188,7 @@ class Bulk(Phase):
 
     def _equilibrium_derivative(self, of='P', wrt='T', const='V'):
         '''Calculate the equilibrium derivative of a property by performing
-        flash calculations.
+        a numerical derivative on flash calculations.
         '''
         const_value = self.value(const)
         wrt_value = self.value(wrt)
@@ -1204,24 +1206,15 @@ class Bulk(Phase):
 
 
 
-    def __dP_dT_equilibrium(self):
-        # At constant volume
-        try:
-            return self._dP_dT_equilibrium
-        except AttributeError:
-            pass
-
-        dT = self.T*1e-6
-        T2 = self.T + dT
-
-        dT_results = self.flasher.flash(T=T2, V=self.V(), zs=self.zs)
-#        dP_dT_2 = dT_results.bulk.dP_dT_frozen()
-        dP_dT_equilibrium = (dT_results.P - self.P)/dT
-
-        self._dP_dT_equilibrium = dP_dT_equilibrium
-        return dP_dT_equilibrium
-
     def dP_dT(self):
+        r'''Method to calculate and return the first temperature derivative of
+        pressure of the bulk according to the selected calculation methodology.
+
+        Returns
+        -------
+        dP_dT : float
+            First temperature derivative of pressure, [Pa/K]
+        '''
         dP_dT_method = self.settings.dP_dT
         if dP_dT_method == MOLE_WEIGHTED:
             return self.dP_dT_frozen()
@@ -1230,35 +1223,62 @@ class Bulk(Phase):
         return self._mu_k_single_state(dP_dT_method, None, None, 'dP_dT')
 
     def dP_dV(self):
+        r'''Method to calculate and return the first volume derivative of
+        pressure of the bulk according to the selected calculation methodology.
+
+        Returns
+        -------
+        dP_dV : float
+            First volume derivative of pressure, [Pa*mol/m^3]
+        '''
         dP_dV_method = self.settings.dP_dV
         if dP_dV_method == MOLE_WEIGHTED:
             return self.dP_dV_frozen()
         elif dP_dV_method == EQUILIBRIUM_DERIVATIVE:
-            return self.dP_dV_equilibrium()
+            return self._equilibrium_derivative(of='P', wrt='V', const='T')
         return self._mu_k_single_state(dP_dV_method, None, None, 'dP_dV')
 
     def d2P_dT2(self):
+        r'''Method to calculate and return the second temperature derivative of
+        pressure of the bulk according to the selected calculation methodology.
+
+        Returns
+        -------
+        d2P_dT2 : float
+            Second temperature derivative of pressure, [Pa/K^2]
+        '''
         d2P_dT2_method = self.settings.d2P_dT2
         if d2P_dT2_method == MOLE_WEIGHTED:
             return self.d2P_dT2_frozen()
-        elif d2P_dT2_method == EQUILIBRIUM_DERIVATIVE:
-            return self.d2P_dT2_equilibrium()
         return self._mu_k_single_state(d2P_dT2_method, None, None, 'd2P_dT2')
 
     def d2P_dV2(self):
+        r'''Method to calculate and return the second volume derivative of
+        pressure of the bulk according to the selected calculation methodology.
+
+        Returns
+        -------
+        d2P_dV2 : float
+            Second volume derivative of pressure, [Pa*mol^2/m^6]
+        '''
         d2P_dV2_method = self.settings.d2P_dV2
         if d2P_dV2_method == MOLE_WEIGHTED:
             return self.d2P_dV2_frozen()
-        elif d2P_dV2_method == EQUILIBRIUM_DERIVATIVE:
-            return self.d2P_dV2_equilibrium()
         return self._mu_k_single_state(d2P_dV2_method, None, None, 'd2P_dV2')
 
     def d2P_dTdV(self):
+        r'''Method to calculate and return the second derivative of
+        pressure with respect to temperature and volume of the bulk according
+        to the selected calculation methodology.
+
+        Returns
+        -------
+        d2P_dTdV : float
+            Second volume derivative of pressure, [mol*Pa^2/(J*K)]
+        '''
         d2P_dTdV_method = self.settings.d2P_dTdV
         if d2P_dTdV_method == MOLE_WEIGHTED:
             return self.d2P_dTdV_frozen()
-        elif d2P_dTdV_method == EQUILIBRIUM_DERIVATIVE:
-            return self.d2P_dTdV_equilibrium()
         return self._mu_k_single_state(d2P_dTdV_method, None, None, 'd2P_dTdV')
 
 

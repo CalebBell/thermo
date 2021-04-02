@@ -6448,25 +6448,37 @@ class FlashVLN(FlashVL):
         return sln_2P
 
 
-    def phases_at(self, T, P, zs):
+    def phases_at(self, T, P, zs, V=None):
         # Avoid doing excess work here
         # Goal: bring each phase to T, P, zs; using whatever duplicate information
         # possible
         # returns gas, [liquids], phases
-        gas = None
-        gas_to_unique_liquid = self.gas_to_unique_liquid
-        liquids = [None]*self.max_liquids
-        for i, liq in enumerate(self.unique_liquids):
-            l = liq.to(T=T, P=P, zs=zs)
-            for j, idx in enumerate(self.liquids_to_unique_liquids):
-                if idx == i:
-                    liquids[j] = l
-            if i == gas_to_unique_liquid:
-                gas = self.gas.to_TP_zs(T, P, zs, other_eos=l.eos_mix)
+        if V is None:
+            gas = None
+            gas_to_unique_liquid = self.gas_to_unique_liquid
+            liquids = [None]*self.max_liquids
+            for i, liq in enumerate(self.unique_liquids):
+                l = liq.to(T=T, P=P, zs=zs)
+                for j, idx in enumerate(self.liquids_to_unique_liquids):
+                    if idx == i:
+                        liquids[j] = l
+                if i == gas_to_unique_liquid:
+                    gas = self.gas.to_TP_zs(T, P, zs, other_eos=l.eos_mix)
 
-        if gas is None:
-            gas = self.gas.to(T=T, P=P, zs=zs)
-        return gas, liquids, [gas] + liquids
+            if gas is None:
+                gas = self.gas.to(T=T, P=P, zs=zs)
+            return gas, liquids, [gas] + liquids
+        else:
+            # TODO: handle unique liquids in this function
+            if T is not None:
+                gas = self.gas.to(T=T, V=V, zs=zs)
+                liquids = [l.to(T=T, V=V, zs=zs) for l in self.liquids]
+            elif P is not None:
+                gas = self.gas.to(P=P, V=V, zs=zs)
+                liquids = [l.to(P=P, V=V, zs=zs) for l in self.liquids]
+            else:
+                raise ValueError("Two of three specs are required")
+            return gas, liquids, [gas] + liquids
 
     def flash_TPV_hot(self, T, P, V, zs, hot_start, solution=None):
         if hot_start.phase_count == 2:
@@ -6531,7 +6543,7 @@ class FlashVLN(FlashVL):
         if self.K_composition_independent and self.K_COMPOSITION_INDEPENDENT_HACK and solution is None:
             return self.flash_TP_K_composition_idependent(T, P, zs)
 
-        gas, liquids, phases = self.phases_at(T, P, zs)
+        gas, liquids, phases = self.phases_at(T, P, zs, V=V)
 #        if self.K_composition_independent and self.K_COMPOSITION_INDEPENDENT_HACK:
 #            # TODO move into new function?
 #            if self.max_phases == 2:
@@ -6565,6 +6577,9 @@ class FlashVLN(FlashVL):
         sln_2P, one_phase_min = None, None
         VL_solved, LL_solved = False, False
         phase_evolved = [False]*self.max_phases
+
+        if T is None or P is None:
+            raise NotImplementedError("Multiphase isochoric flashes are not yet implemented")
 
         try:
             sln_2P = self.flash_TP_stability_test(T, P, zs, liquids[0], gas, solution=solution, phases_ready=True)

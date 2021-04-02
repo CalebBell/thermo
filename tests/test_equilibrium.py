@@ -551,6 +551,13 @@ def test_thermodynamic_derivatives_settings_with_flash():
     assert res.bulk.settings is settings
     assert res.liquid_bulk.settings is settings
 
+    # This will be taken care of in the future
+    with pytest.raises(NotImplementedError):
+        res.dP_dT()
+    with pytest.raises(NotImplementedError):
+        lashN.flash(T=361.0, V=res.V(), zs=zs)
+
+
 def test_thermodynamic_derivatives_settings():
     T, P = 298.15, 1e5
     zs = [.25, 0.7, .05]
