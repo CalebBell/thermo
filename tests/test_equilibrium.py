@@ -629,5 +629,37 @@ def test_thermodynamic_derivatives_settings():
     assert_close(res.bulk.d2P_dTdV(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.d2P_dTdV(), v2, rtol=1e-8)
 
+    # minimum phase prop
+    settings = BulkSettings(dP_dT=MINIMUM_PHASE_PROP, dP_dV=MINIMUM_PHASE_PROP,
+                            d2P_dV2=MINIMUM_PHASE_PROP, d2P_dT2=MINIMUM_PHASE_PROP,
+                            d2P_dTdV=MINIMUM_PHASE_PROP)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+
+    v, v2 = (285.5534273695696, 870098.7910584641)
+    assert_close(res.dP_dT(), v, rtol=1e-8)
+    assert_close(res.bulk.dP_dT(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.dP_dT(), v2)
+
+    v, v2 = (-144706516013762.3, -144706516013762.3)
+    assert_close(res.dP_dV(), v, rtol=1e-8)
+    assert_close(res.bulk.dP_dV(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.dP_dV(), v2)
+
+    v, v2 = (-2769.716146414676, -2769.716146414676)
+    assert_close(res.d2P_dT2(), v, rtol=1e-8)
+    assert_close(res.bulk.d2P_dT2(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.d2P_dT2(), v2)
+
+    v, v2 = (221845713.3633925, 1.0417348512232099e+18)
+    assert_close(res.d2P_dV2(), v, rtol=1e-8)
+    assert_close(res.bulk.d2P_dV2(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.d2P_dV2(), v2, rtol=1e-8)
+
+    v, v2 = (-606373312784.1843, -606373312784.1843)
+    assert_close(res.d2P_dTdV(), v, rtol=1e-8)
+    assert_close(res.bulk.d2P_dTdV(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.d2P_dTdV(), v2, rtol=1e-8)
+
+
 
 
