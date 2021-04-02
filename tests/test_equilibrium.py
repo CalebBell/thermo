@@ -553,6 +553,7 @@ def test_thermodynamic_derivatives_settings():
                      flash_specs=None, flash_convergence=None,
                      constants=constants, correlations=correlations, flasher=None)
 
+    # MOLE weighted derivatives
     settings = BulkSettings(dP_dT=MOLE_WEIGHTED, dP_dV=MOLE_WEIGHTED,
                             d2P_dV2=MOLE_WEIGHTED, d2P_dT2=MOLE_WEIGHTED,
                             d2P_dTdV=MOLE_WEIGHTED)
@@ -597,3 +598,36 @@ def test_thermodynamic_derivatives_settings():
     assert_close(res.d2P_dTdV(), v, rtol=1e-8)
     assert_close(res.bulk.d2P_dTdV(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.d2P_dTdV(), v2, rtol=1e-8)
+
+    # Mass weighted derivatives
+    settings = BulkSettings(dP_dT=MASS_WEIGHTED, dP_dV=MASS_WEIGHTED,
+                        d2P_dV2=MASS_WEIGHTED, d2P_dT2=MASS_WEIGHTED,
+                        d2P_dTdV=MASS_WEIGHTED)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = 1665265.7297690287, 1717663.9516905276
+    assert_close(res.dP_dT(), v, rtol=1e-8)
+    assert_close(res.bulk.dP_dT(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.dP_dT(), v2)
+
+    v, v2 = (-52328362725814.84, -53975176920556.54)
+    assert_close(res.dP_dV(), v, rtol=1e-8)
+    assert_close(res.bulk.dP_dV(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.dP_dV(), v2)
+
+    v, v2 = (-1558.12160618414, -1607.156622080879)
+    assert_close(res.d2P_dT2(), v, rtol=1e-8)
+    assert_close(res.bulk.d2P_dT2(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.d2P_dT2(), v2)
+
+    v, v2 =  (3.1171134384979878e+19, 3.2152114243026096e+19)
+    assert_close(res.d2P_dV2(), v, rtol=1e-8)
+    assert_close(res.bulk.d2P_dV2(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.d2P_dV2(), v2, rtol=1e-8)
+
+    v, v2 = (-222452748573.21567, -229453509386.25995)
+    assert_close(res.d2P_dTdV(), v, rtol=1e-8)
+    assert_close(res.bulk.d2P_dTdV(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.d2P_dTdV(), v2, rtol=1e-8)
+
+
+
