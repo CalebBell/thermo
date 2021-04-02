@@ -33,7 +33,7 @@ from thermo.heat_capacity import *
 from thermo.phase_change import *
 from thermo import ChemicalConstantsPackage, PropertyCorrelationsPackage
 from thermo.flash import FlashPureVLS
-from thermo.bulk import BulkSettings
+from thermo.bulk import *
 from thermo.equilibrium import EquilibriumState
 
 
@@ -553,29 +553,47 @@ def test_thermodynamic_derivatives_settings():
                      flash_specs=None, flash_convergence=None,
                      constants=constants, correlations=correlations, flasher=None)
 
-    settings = BulkSettings()
+    settings = BulkSettings(dP_dT=MOLE_WEIGHTED, dP_dV=MOLE_WEIGHTED,
+                            d2P_dV2=MOLE_WEIGHTED, d2P_dT2=MOLE_WEIGHTED,
+                            d2P_dTdV=MOLE_WEIGHTED)
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v = 2368612.801863535
+    v, v2 = 2368612.801863535, 2368604.823694247
     assert_close(res.dP_dT_frozen(), v, rtol=1e-8)
     assert_close(res.bulk.dP_dT_frozen(), v, rtol=1e-8)
-    assert_close(res.liquid_bulk.dP_dT_frozen(), 2368604.823694247)
+    assert_close(res.liquid_bulk.dP_dT_frozen(), v2)
 
-    v = -91302146519714.0
+    assert_close(res.dP_dT(), v, rtol=1e-8)
+    assert_close(res.bulk.dP_dT(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.dP_dT(), v2)
+
+    v, v2 = -91302146519714.0, -91302146426651.06
     assert_close(res.dP_dV_frozen(), v, rtol=1e-8)
     assert_close(res.bulk.dP_dV_frozen(), v, rtol=1e-8)
-    assert_close(res.liquid_bulk.dP_dV_frozen(), -91302146426651.06)
+    assert_close(res.liquid_bulk.dP_dV_frozen(), v2)
+    assert_close(res.dP_dV(), v, rtol=1e-8)
+    assert_close(res.bulk.dP_dV(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.dP_dV(), v2)
 
-    v = -2059.854933409936
+    v, v2 = -2059.854933409936, -2059.854681581265
     assert_close(res.d2P_dT2_frozen(), v, rtol=1e-8)
     assert_close(res.bulk.d2P_dT2_frozen(), v, rtol=1e-8)
-    assert_close(res.liquid_bulk.d2P_dT2_frozen(), -2059.854681581265)
+    assert_close(res.liquid_bulk.d2P_dT2_frozen(), v2)
+    assert_close(res.d2P_dT2(), v, rtol=1e-8)
+    assert_close(res.bulk.d2P_dT2(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.d2P_dT2(), v2)
 
-    v =  5.690848954200077e+19
+    v, v2 =  5.690848954200077e+19, 5.690848954199457e+19
     assert_close(res.d2P_dV2_frozen(), v, rtol=1e-8)
     assert_close(res.bulk.d2P_dV2_frozen(), v, rtol=1e-8)
-    assert_close(res.liquid_bulk.d2P_dV2_frozen(), 5.690848954199457e+19, rtol=1e-8)
+    assert_close(res.liquid_bulk.d2P_dV2_frozen(), v2, rtol=1e-8)
+    assert_close(res.d2P_dV2(), v, rtol=1e-8)
+    assert_close(res.bulk.d2P_dV2(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.d2P_dV2(), v2, rtol=1e-8)
 
-    v = -384372661273.9939
+    v, v2 = -384372661273.9939, -384372661000.05206
     assert_close(res.d2P_dTdV_frozen(), v, rtol=1e-8)
     assert_close(res.bulk.d2P_dTdV_frozen(), v, rtol=1e-8)
-    assert_close(res.liquid_bulk.d2P_dTdV_frozen(), -384372661000.05206, rtol=1e-8)
+    assert_close(res.liquid_bulk.d2P_dTdV_frozen(), v2, rtol=1e-8)
+    assert_close(res.d2P_dTdV(), v, rtol=1e-8)
+    assert_close(res.bulk.d2P_dTdV(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.d2P_dTdV(), v2, rtol=1e-8)

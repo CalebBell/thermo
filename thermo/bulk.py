@@ -52,6 +52,10 @@ Bulk Settings Class
     :show-inheritance:
     :exclude-members:
 
+.. autodata:: DP_DT_METHODS
+
+
+
 .. autodata:: MU_LL_METHODS
 .. autodata:: MU_VL_METHODS
 .. autodata:: K_LL_METHODS
@@ -81,28 +85,14 @@ I guess it's going to need MW as well.
 Does not have any flow property.
 '''
 
-EQUILIBRIUM_DERIVATIVE = 'Equilibrium derivative'
+EQUILIBRIUM_DERIVATIVE = 'EQUILIBRIUM_DERIVATIVE'
+
 EQUILIBRIUM_DERIVATIVE_SAME_PHASES = 'Equilibrium at same phases'
 FROM_DERIVATIVE_SETTINGS = 'from derivative settings'
 
 MOLE_WEIGHTED = 'MOLE_WEIGHTED'
 MASS_WEIGHTED = 'MASS_WEIGHTED'
 VOLUME_WEIGHTED = 'VOLUME_WEIGHTED'
-
-MINIMUM_PHASE_PROP = 'MINIMUM_PHASE_PROP'
-MAXIMUM_PHASE_PROP = 'MAXIMUM_PHASE_PROP'
-
-DP_DT_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, EQUILIBRIUM_DERIVATIVE,
-                 MINIMUM_PHASE_PROP, MAXIMUM_PHASE_PROP]
-
-DP_DV_METHODS = D2P_DV2_METHODS = D2P_DT2_METHODS = D2P_DTDV_METHODS = DP_DT_METHODS
-
-SPEED_OF_SOUND_METHODS = [MOLE_WEIGHTED, EQUILIBRIUM_DERIVATIVE]
-
-BETA_METHODS = [MOLE_WEIGHTED, EQUILIBRIUM_DERIVATIVE, FROM_DERIVATIVE_SETTINGS,
-                MASS_WEIGHTED, MINIMUM_PHASE_PROP, MAXIMUM_PHASE_PROP]
-KAPPA_METHODS = JT_METHODS = BETA_METHODS
-
 
 LOG_PROP_MOLE_WEIGHTED = 'LOG_PROP_MOLE_WEIGHTED'
 LOG_PROP_MASS_WEIGHTED = 'LOG_PROP_MASS_WEIGHTED'
@@ -111,6 +101,31 @@ LOG_PROP_VOLUME_WEIGHTED = 'LOG_PROP_VOLUME_WEIGHTED'
 POWER_PROP_MOLE_WEIGHTED = 'POWER_PROP_MOLE_WEIGHTED'
 POWER_PROP_MASS_WEIGHTED = 'POWER_PROP_MASS_WEIGHTED'
 POWER_PROP_VOLUME_WEIGHTED = 'POWER_PROP_VOLUME_WEIGHTED'
+
+MINIMUM_PHASE_PROP = 'MINIMUM_PHASE_PROP'
+MAXIMUM_PHASE_PROP = 'MAXIMUM_PHASE_PROP'
+
+DP_DT_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
+                 LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED, LOG_PROP_VOLUME_WEIGHTED,
+                 EQUILIBRIUM_DERIVATIVE,
+                 MINIMUM_PHASE_PROP, MAXIMUM_PHASE_PROP]
+'''List of all valid and implemented calculation methods for the `DP_DT` bulk setting'''
+DP_DV_METHODS = DP_DT_METHODS
+'''List of all valid and implemented calculation methods for the `DP_DV` bulk setting'''
+D2P_DV2_METHODS = DP_DT_METHODS
+'''List of all valid and implemented calculation methods for the `D2P_DV2` bulk setting'''
+D2P_DT2_METHODS = DP_DT_METHODS
+'''List of all valid and implemented calculation methods for the `D2P_DT2` bulk setting'''
+D2P_DTDV_METHODS = DP_DT_METHODS
+'''List of all valid and implemented calculation methods for the `D2P_DTDV` bulk setting'''
+
+
+SPEED_OF_SOUND_METHODS = [MOLE_WEIGHTED, EQUILIBRIUM_DERIVATIVE]
+
+BETA_METHODS = [MOLE_WEIGHTED, EQUILIBRIUM_DERIVATIVE, FROM_DERIVATIVE_SETTINGS,
+                MASS_WEIGHTED, MINIMUM_PHASE_PROP, MAXIMUM_PHASE_PROP]
+KAPPA_METHODS = JT_METHODS = BETA_METHODS
+
 
 AS_ONE_LIQUID = 'AS_ONE_LIQUID' # Calculate a transport property as if there was one liquid phase
 AS_ONE_GAS = 'AS_ONE_GAS' # Calculate a transport property as if there was one gas phase and liquids or solids
@@ -1167,23 +1182,7 @@ class Bulk(Phase):
             return self.dP_dT_frozen()
         elif dP_dT_method == EQUILIBRIUM_DERIVATIVE:
             return self.__dP_dT_equilibrium()
-        elif dP_dT_method in (MASS_WEIGHTED, MINIMUM_PHASE_PROP,
-                              MAXIMUM_PHASE_PROP):
-            phases = self.phases
-            dP_dTs = [p.dP_dT() for p in phases]
-
-            if dP_dT_method == MASS_WEIGHTED:
-                ws = self.result.betas_mass
-                dP_dT = 0.0
-                for i in range(len(ws)):
-                    dP_dT += ws[i]*dP_dTs[i]
-                return dP_dT
-            elif dP_dT_method == MINIMUM_PHASE_PROP:
-                return min(dP_dTs)
-            elif dP_dT_method == MAXIMUM_PHASE_PROP:
-                return max(dP_dTs)
-        else:
-            raise ValueError("Unspecified error")
+        return self._mu_k_single_state(dP_dT_method, None, None, 'dP_dT')
 
     def dP_dV(self):
         dP_dV_method = self.settings.dP_dV
@@ -1197,7 +1196,7 @@ class Bulk(Phase):
             dP_dVs = [p.dP_dV() for p in phases]
 
             if dP_dV_method == MASS_WEIGHTED:
-                ws = self.result.betas_mass
+                ws = self.betas_mass
                 dP_dV = 0.0
                 for i in range(len(ws)):
                     dP_dV += ws[i]*dP_dVs[i]
@@ -1221,7 +1220,7 @@ class Bulk(Phase):
             d2P_dT2s = [p.d2P_dT2() for p in phases]
 
             if d2P_dT2_method == MASS_WEIGHTED:
-                ws = self.result.betas_mass
+                ws = self.betas_mass
                 d2P_dT2 = 0.0
                 for i in range(len(ws)):
                     d2P_dT2 += ws[i]*d2P_dT2s[i]
@@ -1245,7 +1244,7 @@ class Bulk(Phase):
             d2P_dV2s = [p.d2P_dV2() for p in phases]
 
             if d2P_dV2_method == MASS_WEIGHTED:
-                ws = self.result.betas_mass
+                ws = self.betas_mass
                 d2P_dV2 = 0.0
                 for i in range(len(ws)):
                     d2P_dV2 += ws[i]*d2P_dV2s[i]
@@ -1269,7 +1268,7 @@ class Bulk(Phase):
             d2P_dTdVs = [p.d2P_dTdV() for p in phases]
 
             if d2P_dTdV_method == MASS_WEIGHTED:
-                ws = self.result.betas_mass
+                ws = self.betas_mass
                 d2P_dTdV = 0.0
                 for i in range(len(ws)):
                     d2P_dTdV += ws[i]*d2P_dTdVs[i]
@@ -1300,7 +1299,7 @@ class Bulk(Phase):
                     beta += phase_fracs[i]*betas[i]
                 return beta
             elif beta_method == MASS_WEIGHTED:
-                ws = self.result.betas_mass
+                ws = self.betas_mass
                 beta = 0.0
                 for i in range(len(ws)):
                     beta += ws[i]*betas[i]
