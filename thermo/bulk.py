@@ -36,7 +36,7 @@ Bulk Class
               dH_dP, dS_dP, dS_dT, dG_dT, dG_dP, dU_dT, dU_dP, dA_dT, dA_dP,
               H_reactive, S_reactive, dP_dT_frozen, dP_dV_frozen,
               d2P_dT2_frozen, d2P_dV2_frozen, d2P_dTdV_frozen,
-              dP_dT_equilibrium, dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV,
+              dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV,
               isobaric_expansion, kappa, Joule_Thomson, speed_of_sound, Tmc,
               Pmc, Vmc, Zmc, H_ideal_gas, Cp_ideal_gas, S_ideal_gas
     :undoc-members:
@@ -949,6 +949,18 @@ class Bulk(Phase):
         return dA_dP
 
     def H_reactive(self):
+        r'''Method to calculate and return the constant-temperature and
+        constant phase-fraction reactive enthalpy of the bulk phase.
+        This is a phase-fraction weighted calculation.
+
+        .. math::
+            H_{\text{reactive}} = \sum_i^p H_{\text{reactive}, i} \beta_i
+
+        Returns
+        -------
+        H_reactive : float
+            Reactive molar enthalpy, [J/(mol)]
+        '''
         try:
             return self._H_reactive
         except AttributeError:
@@ -962,6 +974,18 @@ class Bulk(Phase):
         return H_reactive
 
     def S_reactive(self):
+        r'''Method to calculate and return the constant-temperature and
+        constant phase-fraction reactive entropy of the bulk phase.
+        This is a phase-fraction weighted calculation.
+
+        .. math::
+            S_{\text{reactive}} = \sum_i^p S_{\text{reactive}, i} \beta_i
+
+        Returns
+        -------
+        S_reactive : float
+            Reactive molar entropy, [J/(mol*K)]
+        '''
         try:
             return self._S_reactive
         except AttributeError:
@@ -1004,6 +1028,22 @@ class Bulk(Phase):
         return dP_dT_frozen
 
     def dP_dV_frozen(self):
+        r'''Method to calculate and return the constant-temperature derivative of
+        pressure with respect to volume of the bulk phase, at constant
+        phase fractions and phase compositions.
+        This is a molar phase-fraction weighted calculation.
+
+        .. math::
+            \left(\frac{\partial P}{\partial V}\right)_{T, \beta, {zs}} =
+            \sum_{i}^{\text{phases}} \beta_i \left(\frac{\partial P}
+            {\partial V}\right)_{i, T, \beta_i, {zs}_i}
+
+        Returns
+        -------
+        dP_dV_frozen : float
+            Frozen constant-temperature derivative of pressure with respect to
+            volume of the bulk phase, [Pa*mol/m^3]
+        '''
         try:
             return self._dP_dV_frozen
         except AttributeError:
@@ -1017,6 +1057,22 @@ class Bulk(Phase):
         return dP_dV_frozen
 
     def d2P_dT2_frozen(self):
+        r'''Method to calculate and return the second constant-volume derivative
+        of pressure with respect to temperature of the bulk phase, at constant
+        phase fractions and phase compositions.
+        This is a molar phase-fraction weighted calculation.
+
+        .. math::
+            \left(\frac{\partial^2 P}{\partial T^2}\right)_{V, \beta, {zs}} =
+            \sum_{i}^{\text{phases}} \beta_i \left(\frac{\partial^2 P}
+            {\partial T^2}\right)_{i, V_i, \beta_i, {zs}_i}
+
+        Returns
+        -------
+        d2P_dT2_frozen : float
+            Frozen constant-volume second derivative of pressure with respect to
+            temperature of the bulk phase, [Pa/K^2]
+        '''
         try:
             return self._d2P_dT2_frozen
         except AttributeError:
@@ -1030,6 +1086,22 @@ class Bulk(Phase):
         return d2P_dT2_frozen
 
     def d2P_dV2_frozen(self):
+        r'''Method to calculate and return the constant-temperature second
+        derivative of pressure with respect to volume of the bulk phase, at
+        constant phase fractions and phase compositions.
+        This is a molar phase-fraction weighted calculation.
+
+        .. math::
+            \left(\frac{\partial^2 P}{\partial V^2}\right)_{T, \beta, {zs}} =
+            \sum_{i}^{\text{phases}} \beta_i \left(\frac{\partial^2 P}
+            {\partial V^2}\right)_{i, T, \beta_i, {zs}_i}
+
+        Returns
+        -------
+        d2P_dV2_frozen : float
+            Frozen constant-temperature second derivative of pressure with
+            respect to volume of the bulk phase, [Pa*mol^2/m^6]
+        '''
         try:
             return self._d2P_dV2_frozen
         except AttributeError:
@@ -1043,6 +1115,22 @@ class Bulk(Phase):
         return d2P_dV2_frozen
 
     def d2P_dTdV_frozen(self):
+        r'''Method to calculate and return the second
+        derivative of pressure with respect to volume and temperature of the
+        bulk phase, at constant phase fractions and phase compositions.
+        This is a molar phase-fraction weighted calculation.
+
+        .. math::
+            \left(\frac{\partial^2 P}{\partial V \partial T}\right)_{\beta, {zs}} =
+            \sum_{i}^{\text{phases}} \beta_i \left(\frac{\partial^2 P}
+            {\partial V \partial T}\right)_{i, \beta_i, {zs}_i}
+
+        Returns
+        -------
+        d2P_dTdV_frozen : float
+            Frozen second derivative of pressure with
+            respect to volume and temperature of the bulk phase, [Pa*mol^2/m^6]
+        '''
         try:
             return self._d2P_dTdV_frozen
         except AttributeError:
@@ -1055,7 +1143,7 @@ class Bulk(Phase):
         self._d2P_dTdV_frozen = d2P_dTdV_frozen
         return d2P_dTdV_frozen
 
-    def dP_dT_equilibrium(self):
+    def __dP_dT_equilibrium(self):
         # At constant volume
         try:
             return self._dP_dT_equilibrium
@@ -1078,7 +1166,7 @@ class Bulk(Phase):
         if dP_dT_method == MOLE_WEIGHTED:
             return self.dP_dT_frozen()
         elif dP_dT_method == EQUILIBRIUM_DERIVATIVE:
-            return self.dP_dT_equilibrium()
+            return self.__dP_dT_equilibrium()
         elif dP_dT_method in (MASS_WEIGHTED, MINIMUM_PHASE_PROP,
                               MAXIMUM_PHASE_PROP):
             phases = self.phases
