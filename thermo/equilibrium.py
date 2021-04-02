@@ -1599,6 +1599,23 @@ class EquilibriumState(object):
         '''
         return R*self.settings.T_normal/self.settings.P_normal
 
+    def V_gas(self, phase=None):
+        r'''Method to calculate and return the ideal-gas molar volume of the
+        phase at the chosen reference temperature and pressure,  according to the
+        temperature variable `T_gas_ref` and pressure variable `P_gas_ref`
+        of the :obj:`thermo.bulk.BulkSettings`.
+
+
+        .. math::
+            V^{ig} = \frac{RT_{ref}}{P_{ref}}
+
+        Returns
+        -------
+        V_gas : float
+            Ideal gas molar volume at the reference temperature and pressure,
+            [m^3/mol]
+        '''
+        return R*self.settings.T_gas_ref/self.settings.P_gas_ref
 
     def Bvirial(self, phase=None):
         r'''Method to calculate and return the `B` virial coefficient of the
@@ -2364,7 +2381,8 @@ for name in PropertyCorrelationsPackage.correlations:
 phases_properties_to_EquilibriumState = ['atom_fractions', 'atom_mass_fractions','API',
                                          'Hc', 'Hc_mass', 'Hc_lower', 'Hc_lower_mass', 'SG', 'SG_gas',
                                          'pseudo_Tc', 'pseudo_Pc', 'pseudo_Vc', 'pseudo_Zc',
-                                         'V_gas_standard', 'V_gas_normal', 'Hc_normal', 'Hc_standard',
+                                         'V_gas_standard', 'V_gas_normal', 'V_gas',
+                                         'Hc_normal', 'Hc_standard',
                                          'Hc_lower_normal', 'Hc_lower_standard',
                                          'Wobbe_index_lower_normal', 'Wobbe_index_lower_standard',
                                          'Wobbe_index_normal', 'Wobbe_index_standard',
@@ -2406,6 +2424,7 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
               'U_dep', 'G_dep', 'A_dep', 'V_dep',
               'mu', 'k', 'sigma',
               ]
+
 bulk_props += derivatives_thermodynamic
 bulk_props += derivatives_thermodynamic_mass
 bulk_props += derivatives_jacobian

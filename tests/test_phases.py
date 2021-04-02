@@ -1632,6 +1632,60 @@ def test_single_phase_viscosity_thermal_conductivity():
     assert_close(phase.mu(), 0.00028727346628185633, rtol=1e-7)
     assert_close(phase.k(), 0.15487898658770405, rtol=1e-7)
 
+def test_BulkSettings_normal_standard():
+    T, P = 298.15, 1e5
+    zs = [.25, 0.7, .05]
+    # m = Mixture(['butanol', 'water', 'ethanol'], zs=zs)
+    constants = ChemicalConstantsPackage(Tcs=[563.0, 647.14, 514.0], Pcs=[4414000.0, 22048320.0, 6137000.0],
+                                         omegas=[0.59, 0.344, 0.635], MWs=[74.1216, 18.01528, 46.06844],
+                                         CASs=['71-36-3', '7732-18-5', '64-17-5'])
+    HeatCapacityGases=[HeatCapacityGas(poly_fit=(50.0, 1000.0, [-3.787200194613107e-20, 1.7692887427654656e-16, -3.445247207129205e-13, 3.612771874320634e-10, -2.1953250181084466e-07, 7.707135849197655e-05, -0.014658388538054169, 1.5642629364740657, -7.614560475001724])),
+                    HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                    HeatCapacityGas(poly_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965])),]
+
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True, HeatCapacityGases=HeatCapacityGases)
+    eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
+    T_VLL = 361.0
+    VLL_betas = [0.027939322463013245, 0.6139152961492603, 0.35814538138772645]
+    VLL_zs_gas = [0.23840099709086618, 0.5786839935180893, 0.18291500939104433]
+    VLL_zs_l0 = [7.619975052238078e-05, 0.9989622883894993, 0.0009615118599781685]
+    VLL_zs_l1 = [0.6793120076703765, 0.19699746328631032, 0.12369052904331329]
+    gas_VLL = gas.to(T=T_VLL, P=P, zs=VLL_zs_gas)
+    l0_VLL = liq.to(T=T_VLL, P=P, zs=VLL_zs_l0)
+    l1_VLL = liq.to(T=T_VLL, P=P, zs=VLL_zs_l1)
+
+    VLL_kwargs = dict(T=T_VLL, P=P, zs=zs,
+                     gas=gas_VLL, liquids=[l0_VLL, l1_VLL], solids=[], betas=VLL_betas,
+                     flash_specs=None, flash_convergence=None,
+                     constants=constants, correlations=correlations, flasher=None)
+
+    # Check normal T and P can be specified and calculated
+    vol_args = (dict(T_normal=300.0, P_normal=1e5), dict(T_standard=300.0, P_standard=1e5),
+                dict(T_gas_ref=300.0, P_gas_ref=1e5))
+    for kwargs, attr in zip(vol_args, ('V_gas_normal', 'V_gas_standard', 'V_gas')):
+        settings = BulkSettings(**kwargs)
+        res = EquilibriumState(settings=settings, **VLL_kwargs)
+        V_expect = 0.02494338785445972
+
+        assert_close(getattr(res, attr)(), V_expect, rtol=1e-12)
+        assert_close(getattr(res.liquid_bulk, attr)(), V_expect, rtol=1e-12)
+        assert_close(getattr(res.bulk, attr)(), V_expect, rtol=1e-12)
+        assert_close(getattr(res.gas, attr)(), V_expect, rtol=1e-12)
+        assert_close(getattr(res.liquid0, attr)(), V_expect, rtol=1e-12)
+        assert_close(getattr(res.liquid1, attr)(), V_expect, rtol=1e-12)
+
+    settings = BulkSettings()
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    V_expect = 0.022413969545014137
+    assert_close(res.V_gas_normal(), V_expect, rtol=1e-12)
+    assert_close(res.liquid_bulk.V_gas_normal(), V_expect, rtol=1e-12)
+    assert_close(res.bulk.V_gas_normal(), V_expect, rtol=1e-12)
+    assert_close(res.gas.V_gas_normal(), V_expect, rtol=1e-12)
+    assert_close(res.liquid0.V_gas_normal(), V_expect, rtol=1e-12)
+    assert_close(res.liquid1.V_gas_normal(), V_expect, rtol=1e-12)
+
 def test_viscosity_bulk():
     T, P = 298.15, 1e5
     zs = [.25, 0.7, .05]

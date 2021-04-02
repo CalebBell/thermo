@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2019, 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -72,7 +72,7 @@ from chemicals.utils import (log, exp, phase_identification_parameter,
 from thermo.phases import Phase
 from thermo.phase_identification import VL_ID_PIP, S_ID_D2P_DVDT
 from thermo.phase_identification import DENSITY_MASS, PROP_SORT, WATER_NOT_SPECIAL
-
+from thermo.chemical_package import ChemicalConstantsPackage
 '''Class designed to have multiple phases.
 
 Calculates dew, bubble points as properties (going to call back to property package)
@@ -180,6 +180,20 @@ class BulkSettings(object):
 
     Parameters
     ----------
+    T_liquid_volume_ref : float
+        Liquid molar volume reference temperature; if this is 298.15 K exactly,
+        the molar volumes in
+        :obj:`Vml_STPs <ChemicalConstantsPackage.Vml_STPs>` will be used, and
+        if it is 288.7055555555555 K exactly,
+        :obj:`Vml_60Fs <ChemicalConstantsPackage.Vml_60Fs>` will be used, and
+        otherwise the molar liquid volumes will be obtained from the
+        temperature-dependent correlations specified, [K]
+    T_gas_ref : float
+        Reference temperature to use for the calculation of ideal-gas
+        molar volume and flow rate, [K]
+    P_gas_ref : float
+        Reference pressure to use for the calculation of ideal-gas
+        molar volume and flow rate, [Pa]
     T_normal : float
         "Normal" gas reference temperature for the calculation of ideal-gas
         molar volume in the "normal" reference state; default 273.15 K (0 C)
@@ -286,6 +300,7 @@ class BulkSettings(object):
                  d2P_dV2=MOLE_WEIGHTED, d2P_dT2=MOLE_WEIGHTED,
                  d2P_dTdV=MOLE_WEIGHTED,
 
+                 # Documented
                  mu_LL=LOG_PROP_MASS_WEIGHTED, mu_LL_power_exponent=0.4,
                  mu_VL=MCADAMS_MU_VL, mu_VL_power_exponent=0.4,
 
@@ -294,16 +309,17 @@ class BulkSettings(object):
 
                  sigma_LL=MASS_WEIGHTED, sigma_LL_power_exponent=0.4,
 
+                 # Documented
+                 T_liquid_volume_ref=298.15,
+                 T_normal=273.15, P_normal=atm,
+                 T_standard=288.15, P_standard=atm,
+                 T_gas_ref=288.15, P_gas_ref=atm,
+
                  c=MOLE_WEIGHTED,
                  isobaric_expansion=MOLE_WEIGHTED, kappa=MOLE_WEIGHTED, JT=MOLE_WEIGHTED,
 
-                 T_normal=273.15, P_normal=atm,
-                 T_standard=288.15, P_standard=atm,
 
-                 T_liquid_volume_ref=298.15,
-
-                 T_gas_ref=288.15, P_gas_ref=atm,
-
+                # To document
                  VL_ID=VL_ID_PIP, VL_ID_settings=None,
                  S_ID=S_ID_D2P_DVDT, S_ID_settings=None,
 
@@ -959,6 +975,22 @@ class Bulk(Phase):
         return S_reactive
 
     def dP_dT_frozen(self):
+        r'''Method to calculate and return the constant-volume derivative of
+        pressure with respect to temperature of the bulk phase, at constant
+        phase fractions and phase compositions.
+        This is a molar phase-fraction weighted calculation.
+
+        .. math::
+            \left(\frac{\partial P}{\partial T}\right)_{V, \beta, {zs}} =
+            \sum_{i}^{\text{phases}} \beta_i \left(\frac{\partial P}
+            {\partial T}\right)_{i, V_i, \beta_i, {zs}_i}
+
+        Returns
+        -------
+        dP_dT_frozen : float
+            Frozen constant-volume derivative of pressure with respect to
+            temperature of the bulk phase, [Pa/K]
+        '''
         try:
             return self._dP_dT_frozen
         except AttributeError:
