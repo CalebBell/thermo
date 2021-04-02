@@ -1190,23 +1190,7 @@ class Bulk(Phase):
             return self.dP_dV_frozen()
         elif dP_dV_method == EQUILIBRIUM_DERIVATIVE:
             return self.dP_dV_equilibrium()
-        elif dP_dV_method in (MASS_WEIGHTED, MINIMUM_PHASE_PROP,
-                              MAXIMUM_PHASE_PROP):
-            phases = self.phases
-            dP_dVs = [p.dP_dV() for p in phases]
-
-            if dP_dV_method == MASS_WEIGHTED:
-                ws = self.betas_mass
-                dP_dV = 0.0
-                for i in range(len(ws)):
-                    dP_dV += ws[i]*dP_dVs[i]
-                return dP_dV
-            elif dP_dV_method == MINIMUM_PHASE_PROP:
-                return min(dP_dVs)
-            elif dP_dV_method == MAXIMUM_PHASE_PROP:
-                return max(dP_dVs)
-        else:
-            raise ValueError("Unspecified error")
+        return self._mu_k_single_state(dP_dV_method, None, None, 'dP_dV')
 
     def d2P_dT2(self):
         d2P_dT2_method = self.settings.d2P_dT2
@@ -1214,23 +1198,7 @@ class Bulk(Phase):
             return self.d2P_dT2_frozen()
         elif d2P_dT2_method == EQUILIBRIUM_DERIVATIVE:
             return self.d2P_dT2_equilibrium()
-        elif d2P_dT2_method in (MASS_WEIGHTED, MINIMUM_PHASE_PROP,
-                              MAXIMUM_PHASE_PROP):
-            phases = self.phases
-            d2P_dT2s = [p.d2P_dT2() for p in phases]
-
-            if d2P_dT2_method == MASS_WEIGHTED:
-                ws = self.betas_mass
-                d2P_dT2 = 0.0
-                for i in range(len(ws)):
-                    d2P_dT2 += ws[i]*d2P_dT2s[i]
-                return d2P_dT2
-            elif d2P_dT2_method == MINIMUM_PHASE_PROP:
-                return min(d2P_dT2s)
-            elif d2P_dT2_method == MAXIMUM_PHASE_PROP:
-                return max(d2P_dT2s)
-        else:
-            raise ValueError("Unspecified error")
+        return self._mu_k_single_state(d2P_dT2_method, None, None, 'd2P_dT2')
 
     def d2P_dV2(self):
         d2P_dV2_method = self.settings.d2P_dV2
@@ -1238,23 +1206,7 @@ class Bulk(Phase):
             return self.d2P_dV2_frozen()
         elif d2P_dV2_method == EQUILIBRIUM_DERIVATIVE:
             return self.d2P_dV2_equilibrium()
-        elif d2P_dV2_method in (MASS_WEIGHTED, MINIMUM_PHASE_PROP,
-                              MAXIMUM_PHASE_PROP):
-            phases = self.phases
-            d2P_dV2s = [p.d2P_dV2() for p in phases]
-
-            if d2P_dV2_method == MASS_WEIGHTED:
-                ws = self.betas_mass
-                d2P_dV2 = 0.0
-                for i in range(len(ws)):
-                    d2P_dV2 += ws[i]*d2P_dV2s[i]
-                return d2P_dV2
-            elif d2P_dV2_method == MINIMUM_PHASE_PROP:
-                return min(d2P_dV2s)
-            elif d2P_dV2_method == MAXIMUM_PHASE_PROP:
-                return max(d2P_dV2s)
-        else:
-            raise ValueError("Unspecified error")
+        return self._mu_k_single_state(d2P_dV2_method, None, None, 'd2P_dV2')
 
     def d2P_dTdV(self):
         d2P_dTdV_method = self.settings.d2P_dTdV
@@ -1262,23 +1214,7 @@ class Bulk(Phase):
             return self.d2P_dTdV_frozen()
         elif d2P_dTdV_method == EQUILIBRIUM_DERIVATIVE:
             return self.d2P_dTdV_equilibrium()
-        elif d2P_dTdV_method in (MASS_WEIGHTED, MINIMUM_PHASE_PROP,
-                              MAXIMUM_PHASE_PROP):
-            phases = self.phases
-            d2P_dTdVs = [p.d2P_dTdV() for p in phases]
-
-            if d2P_dTdV_method == MASS_WEIGHTED:
-                ws = self.betas_mass
-                d2P_dTdV = 0.0
-                for i in range(len(ws)):
-                    d2P_dTdV += ws[i]*d2P_dTdVs[i]
-                return d2P_dTdV
-            elif d2P_dTdV_method == MINIMUM_PHASE_PROP:
-                return min(d2P_dTdVs)
-            elif d2P_dTdV_method == MAXIMUM_PHASE_PROP:
-                return max(d2P_dTdVs)
-        else:
-            raise ValueError("Unspecified error")
+        return self._mu_k_single_state(d2P_dTdV_method, None, None, 'd2P_dTdV')
 
 
     def isobaric_expansion(self):
