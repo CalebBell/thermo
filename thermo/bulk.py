@@ -53,7 +53,10 @@ Bulk Settings Class
     :exclude-members:
 
 .. autodata:: DP_DT_METHODS
-
+.. autodata:: DP_DV_METHODS
+.. autodata:: D2P_DV2_METHODS
+.. autodata:: D2P_DT2_METHODS
+.. autodata:: D2P_DTDV_METHODS
 
 
 .. autodata:: MU_LL_METHODS
@@ -195,6 +198,21 @@ class BulkSettings(object):
 
     Parameters
     ----------
+    dP_dT : str
+        The method used to calculate the constant-volume temperature derivative
+        of pressure of the bulk. One of :obj:`DP_DT_METHODS`, [-]
+    dP_dV : str
+        The method used to calculate the constant-temperature volume derivative
+        of pressure of the bulk. One of :obj:`DP_DV_METHODS`, [-]
+    d2P_dV2 : str
+        The method used to calculate the second constant-temperature volume derivative
+        of pressure of the bulk. One of :obj:`D2P_DV2_METHODS`, [-]
+    d2P_dT2 : str
+        The method used to calculate the second constant-volume temperature derivative
+        of pressure of the bulk. One of :obj:`D2P_DT2_METHODS`, [-]
+    d2P_dTdV : str
+        The method used to calculate the temperature and volume derivative
+        of pressure of the bulk. One of :obj:`D2P_DTDV_METHODS`, [-]
     T_liquid_volume_ref : float
         Liquid molar volume reference temperature; if this is 298.15 K exactly,
         the molar volumes in
@@ -385,7 +403,6 @@ class BulkSettings(object):
         self.P_standard = P_standard
 
         self.T_liquid_volume_ref = T_liquid_volume_ref
-        '''float : Temperature of the liquid volume reference, [K]'''
 
         self.T_gas_ref = T_gas_ref
         self.P_gas_ref = P_gas_ref
