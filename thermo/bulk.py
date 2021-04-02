@@ -336,7 +336,9 @@ class BulkSettings(object):
     def as_json(self):
         return self.__dict__.copy()
 
-    def __init__(self, dP_dT=MOLE_WEIGHTED, dP_dV=MOLE_WEIGHTED,
+    def __init__(self,
+                 # Documented
+                 dP_dT=MOLE_WEIGHTED, dP_dV=MOLE_WEIGHTED,
                  d2P_dV2=MOLE_WEIGHTED, d2P_dT2=MOLE_WEIGHTED,
                  d2P_dTdV=MOLE_WEIGHTED,
 
@@ -355,9 +357,8 @@ class BulkSettings(object):
                  T_standard=288.15, P_standard=atm,
                  T_gas_ref=288.15, P_gas_ref=atm,
 
-                 c=MOLE_WEIGHTED,
+                 speed_of_sound=MOLE_WEIGHTED,
                  isobaric_expansion=MOLE_WEIGHTED, kappa=MOLE_WEIGHTED, JT=MOLE_WEIGHTED,
-
 
                 # To document
                  VL_ID=VL_ID_PIP, VL_ID_settings=None,
@@ -405,22 +406,22 @@ class BulkSettings(object):
         self.sigma_LL = sigma_LL
         self.sigma_LL_power_exponent = sigma_LL_power_exponent
 
-        self.c = c
         self.T_normal = T_normal
         self.P_normal = P_normal
         self.T_standard = T_standard
         self.P_standard = P_standard
-
         self.T_liquid_volume_ref = T_liquid_volume_ref
-
         self.T_gas_ref = T_gas_ref
         self.P_gas_ref = P_gas_ref
 
         self.equilibrium_perturbation = equilibrium_perturbation
 
+        self.speed_of_sound = speed_of_sound
         self.isobaric_expansion = isobaric_expansion
         self.kappa = kappa
         self.JT = JT
+
+        # Phase identification settings
         self.VL_ID = VL_ID
         self.VL_ID_settings = VL_ID_settings
 
@@ -1373,7 +1374,7 @@ class Bulk(Phase):
             raise ValueError("Unspecified error")
 
     def speed_of_sound(self):
-        speed_of_sound_method = self.settings.c
+        speed_of_sound_method = self.settings.speed_of_sound
         if speed_of_sound_method == EQUILIBRIUM_DERIVATIVE:
             return self.speed_of_sound_equilibrium()
         elif speed_of_sound_method == FROM_DERIVATIVE_SETTINGS:

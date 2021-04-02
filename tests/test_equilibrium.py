@@ -555,7 +555,7 @@ def test_thermodynamic_derivatives_settings_with_flash():
     with pytest.raises(NotImplementedError):
         res.dP_dT()
     with pytest.raises(NotImplementedError):
-        lashN.flash(T=361.0, V=res.V(), zs=zs)
+        flashN.flash(T=361.0, V=res.V(), zs=zs)
 
 
 def test_thermodynamic_derivatives_settings():
