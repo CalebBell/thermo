@@ -261,6 +261,7 @@ class EquilibriumState(object):
             self.liquid_zs = normalize([sum([betas_liquids[j]*liquids[j].zs[i] for j in range(liquid_count)])
                                for i in range(self.N)])
             self.liquid_bulk = liquid_bulk = Bulk(T, P, self.liquid_zs, self.liquids, self.liquids_betas, 'l')
+            liquid_bulk.flasher = flasher
             liquid_bulk.result = self
             liquid_bulk.constants = constants
             liquid_bulk.correlations = correlations
@@ -282,6 +283,7 @@ class EquilibriumState(object):
             solid_bulk.result = self
             solid_bulk.constants = constants
             solid_bulk.correlations = correlations
+            solid_bulk.flasher = flasher
             for i, s in enumerate(solids):
                 setattr(self, 'solid%d' %(i), s)
 

@@ -65,6 +65,11 @@ Bulk Settings Class
 .. autodata:: K_VL_METHODS
 .. autodata:: SIGMA_LL_METHODS
 
+.. autodata:: BETA_METHODS
+.. autodata:: SPEED_OF_SOUND_METHODS
+.. autodata:: KAPPA_METHODS
+.. autodata:: JT_METHODS
+
 '''
 
 from __future__ import division
@@ -91,7 +96,7 @@ Does not have any flow property.
 EQUILIBRIUM_DERIVATIVE = 'EQUILIBRIUM_DERIVATIVE'
 
 EQUILIBRIUM_DERIVATIVE_SAME_PHASES = 'Equilibrium at same phases'
-FROM_DERIVATIVE_SETTINGS = 'from derivative settings'
+FROM_DERIVATIVE_SETTINGS = 'FROM_DERIVATIVE_SETTINGS'
 
 MOLE_WEIGHTED = 'MOLE_WEIGHTED'
 MASS_WEIGHTED = 'MASS_WEIGHTED'
@@ -126,10 +131,22 @@ D2P_DTDV_METHODS = D2P_DV2_METHODS
 
 
 SPEED_OF_SOUND_METHODS = [MOLE_WEIGHTED, EQUILIBRIUM_DERIVATIVE]
+'''List of all valid and implemented calculation methods for the `speed_of_sound` bulk setting'''
 
-BETA_METHODS = [MOLE_WEIGHTED, EQUILIBRIUM_DERIVATIVE, FROM_DERIVATIVE_SETTINGS,
-                MASS_WEIGHTED, MINIMUM_PHASE_PROP, MAXIMUM_PHASE_PROP]
-KAPPA_METHODS = JT_METHODS = BETA_METHODS
+BETA_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
+                LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED,
+                LOG_PROP_VOLUME_WEIGHTED, MINIMUM_PHASE_PROP,
+                MAXIMUM_PHASE_PROP, EQUILIBRIUM_DERIVATIVE,
+                FROM_DERIVATIVE_SETTINGS]
+'''List of all valid and implemented calculation methods for the `isothermal_compressibility` bulk setting'''
+
+
+KAPPA_METHODS = BETA_METHODS
+'''List of all valid and implemented calculation methods for the `kappa` bulk setting'''
+JT_METHODS = BETA_METHODS
+'''List of all valid and implemented calculation methods for the `JT` bulk setting'''
+
+
 
 
 AS_ONE_LIQUID = 'AS_ONE_LIQUID' # Calculate a transport property as if there was one liquid phase
@@ -179,7 +196,7 @@ __all__.extend(['MOLE_WEIGHTED', 'MASS_WEIGHTED', 'VOLUME_WEIGHTED', 'EQUILIBRIU
                 'AS_ONE_GAS', 'AS_ONE_LIQUID',
                 'BEATTIE_WHALLEY_MU_VL', 'MCADAMS_MU_VL','CICCHITTI_MU_VL',
                 'LUN_KWOK_MU_VL', 'FOURAR_BORIES_MU_VL', 'DUCKLER_MU_VL',
-                'MINIMUM_PHASE_PROP', 'MAXIMUM_PHASE_PROP',
+                'MINIMUM_PHASE_PROP', 'MAXIMUM_PHASE_PROP', 'FROM_DERIVATIVE_SETTINGS',
                 ])
 
 mole_methods = set([MOLE_WEIGHTED, LOG_PROP_MOLE_WEIGHTED, POWER_PROP_MOLE_WEIGHTED])
@@ -200,22 +217,22 @@ class BulkSettings(object):
 
     Parameters
     ----------
-    dP_dT : str
+    dP_dT : str, optional
         The method used to calculate the constant-volume temperature derivative
         of pressure of the bulk. One of :obj:`DP_DT_METHODS`, [-]
-    dP_dV : str
+    dP_dV : str, optional
         The method used to calculate the constant-temperature volume derivative
         of pressure of the bulk. One of :obj:`DP_DV_METHODS`, [-]
-    d2P_dV2 : str
+    d2P_dV2 : str, optional
         The method used to calculate the second constant-temperature volume derivative
         of pressure of the bulk. One of :obj:`D2P_DV2_METHODS`, [-]
-    d2P_dT2 : str
+    d2P_dT2 : str, optional
         The method used to calculate the second constant-volume temperature derivative
         of pressure of the bulk. One of :obj:`D2P_DT2_METHODS`, [-]
-    d2P_dTdV : str
+    d2P_dTdV : str, optional
         The method used to calculate the temperature and volume derivative
         of pressure of the bulk. One of :obj:`D2P_DTDV_METHODS`, [-]
-    T_liquid_volume_ref : float
+    T_liquid_volume_ref : float, optional
         Liquid molar volume reference temperature; if this is 298.15 K exactly,
         the molar volumes in
         :obj:`Vml_STPs <ChemicalConstantsPackage.Vml_STPs>` will be used, and
@@ -223,25 +240,25 @@ class BulkSettings(object):
         :obj:`Vml_60Fs <ChemicalConstantsPackage.Vml_60Fs>` will be used, and
         otherwise the molar liquid volumes will be obtained from the
         temperature-dependent correlations specified, [K]
-    T_gas_ref : float
+    T_gas_ref : float, optional
         Reference temperature to use for the calculation of ideal-gas
         molar volume and flow rate, [K]
-    P_gas_ref : float
+    P_gas_ref : float, optional
         Reference pressure to use for the calculation of ideal-gas
         molar volume and flow rate, [Pa]
-    T_normal : float
+    T_normal : float, optional
         "Normal" gas reference temperature for the calculation of ideal-gas
         molar volume in the "normal" reference state; default 273.15 K (0 C)
         according to [1]_, [K]
-    P_normal : float
+    P_normal : float, optional
         "Normal" gas reference pressure for the calculation of ideal-gas
         molar volume in the "normal" reference state; default 101325 Pa
         (1 atm) according to [1]_, [Pa]
-    T_standard : float
+    T_standard : float, optional
         "Standard" gas reference temperature for the calculation of ideal-gas
         molar volume in the "standard" reference state; default 288.15 K (15° C)
         according to [2]_; 288.7055555555555 is also often used (60° F), [K]
-    P_standard : float
+    P_standard : float, optional
         "Standard" gas reference pressure for the calculation of ideal-gas
         molar volume in the "standard" reference state; default 101325 Pa
         (1 atm) according to [2]_, [Pa]
@@ -285,6 +302,19 @@ class BulkSettings(object):
         derivatives numerically; for example if this is 1e-3 and `T` is the
         perturbation variable and the statis is 500 K, the perturbation
         calculation temperature will be 500.5 K, [various]
+    isobaric_expansion : str, optional
+        Mixing rule for multiphase isobaric expansion calculations;
+        see :obj:`BETA_METHODS` for available options, [-]
+    speed_of_sound : str, optional
+        Mixing rule for multiphase speed of sound calculations;
+        see :obj:`SPEED_OF_SOUND_METHODS` for available options, [-]
+    kappa : str, optional
+        Mixing rule for multiphase `kappa` calculations;
+        see :obj:`KAPPA_METHODS` for available options, [-]
+    JT : str, optional
+        Mixing rule for multiphase `Joule-Thomson` calculations;
+        see :obj:`JT_METHODS` for available options, [-]
+
 
     Notes
     -----
@@ -357,8 +387,8 @@ class BulkSettings(object):
                  T_standard=288.15, P_standard=atm,
                  T_gas_ref=288.15, P_gas_ref=atm,
 
-                 speed_of_sound=MOLE_WEIGHTED,
-                 isobaric_expansion=MOLE_WEIGHTED, kappa=MOLE_WEIGHTED, JT=MOLE_WEIGHTED,
+                 speed_of_sound=MOLE_WEIGHTED, kappa=MOLE_WEIGHTED,
+                 isobaric_expansion=MOLE_WEIGHTED, JT=MOLE_WEIGHTED,
 
                 # To document
                  VL_ID=VL_ID_PIP, VL_ID_settings=None,
@@ -416,8 +446,8 @@ class BulkSettings(object):
 
         self.equilibrium_perturbation = equilibrium_perturbation
 
-        self.speed_of_sound = speed_of_sound
         self.isobaric_expansion = isobaric_expansion
+        self.speed_of_sound = speed_of_sound
         self.kappa = kappa
         self.JT = JT
 
@@ -451,14 +481,14 @@ default_settings = BulkSettings()
 
 class Bulk(Phase):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
-    def __init__(self, T, P, zs, phases, phase_fractions, state=None):
+    def __init__(self, T, P, zs, phases, phase_fractions, phase_bulk=None):
         self.T = T
         self.P = P
         self.zs = zs
         self.phases = phases
         self.phase_fractions = phase_fractions
         self.N = N = len(zs)
-        self.state = state
+        self.phase_bulk = phase_bulk
 
 
 
@@ -604,7 +634,7 @@ class Bulk(Phase):
         if phase_count == 1:
             self._mu = mu = self.phases[0].mu()
             return mu
-        elif self.state == 'l' or self.result.gas is None:
+        elif self.phase_bulk == 'l' or self.result.gas is None:
             # Multiple liquids - either a bulk liquid, or a result with no gases
             mu = self._mu_k_single_state(self.settings.mu_LL, self.settings.mu_LL_power_exponent,
                                          self.correlations.ViscosityLiquidMixture, 'mu')
@@ -663,7 +693,7 @@ class Bulk(Phase):
         if phase_count == 1:
             self._k = k = self.phases[0].k()
             return k
-        elif self.state == 'l' or self.result.gas is None:
+        elif self.phase_bulk == 'l' or self.result.gas is None:
             # Multiple liquids - either a bulk liquid, or a result with no gases
             k = self._mu_k_single_state(self.settings.k_LL, self.settings.k_LL_power_exponent,
                                          self.correlations.ThermalConductivityLiquidMixture, 'k')
@@ -714,11 +744,11 @@ class Bulk(Phase):
         phase_fractions = self.phase_fractions
         phase_count = len(phase_fractions)
         result = self.result
-        state = self.state
+        state = self.phase_bulk
         if phase_count == 1 and self.result.gas is None:
             self._sigma = sigma = self.phases[0].sigma()
             return sigma
-        elif self.state == 'l' or self.result.gas is None:
+        elif self.phase_bulk == 'l' or self.result.gas is None:
             # Multiple liquids - either a bulk liquid, or a result with no gases
             sigma = self._mu_k_single_state(self.settings.sigma_LL, self.settings.sigma_LL_power_exponent,
                                          self.correlations.SurfaceTensionMixture, 'sigma')
@@ -1284,34 +1314,27 @@ class Bulk(Phase):
 
 
     def isobaric_expansion(self):
+        r'''Method to calculate and return the isobatic expansion coefficient
+        of the bulk according to the selected calculation methodology.
+
+        .. math::
+            \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
+
+        Returns
+        -------
+        beta : float
+            Isobaric coefficient of a thermal expansion, [1/K]
+        '''
         beta_method = self.settings.isobaric_expansion
         if beta_method == EQUILIBRIUM_DERIVATIVE:
-            return self.beta_equilibrium()
+            if self.phase_bulk is not None:
+                # Cannot perform an equilibrium derivative for a sub-bulk
+                # equilibrium conditions are not satisfied
+                return None
+            return self._equilibrium_derivative(of='V', wrt='T', const='P')/self.V()
         elif beta_method == FROM_DERIVATIVE_SETTINGS:
             return isobaric_expansion(self.V(), self.dV_dT())
-        elif beta_method in (MOLE_WEIGHTED, MASS_WEIGHTED, MINIMUM_PHASE_PROP,
-                             MAXIMUM_PHASE_PROP):
-            phases = self.phases
-            betas = [p.isobaric_expansion() for p in phases]
-
-            if beta_method == MOLE_WEIGHTED:
-                phase_fracs = self.phase_fractions
-                beta = 0.0
-                for i in range(len(phase_fracs)):
-                    beta += phase_fracs[i]*betas[i]
-                return beta
-            elif beta_method == MASS_WEIGHTED:
-                ws = self.betas_mass
-                beta = 0.0
-                for i in range(len(ws)):
-                    beta += ws[i]*betas[i]
-                return beta
-            elif beta_method == MINIMUM_PHASE_PROP:
-                return min(betas)
-            elif beta_method == MAXIMUM_PHASE_PROP:
-                return max(betas)
-        else:
-            raise ValueError("Unspecified error")
+        return self._mu_k_single_state(beta_method, None, None, 'isobaric_expansion')
 
     def kappa(self):
         kappa_method = self.settings.kappa
