@@ -50,9 +50,10 @@ Gas Phases
 .. autoclass:: CEOSGas
    :show-inheritance:
    :members: to_TP_zs, V_iter, H, S, Cp, Cv, dP_dT, dP_dV,
-             d2P_dT2, d2P_dV2, d2P_dTdV, dH_dP, dS_dT, dS_dP, d2H_dT2, d2H_dP2,
-             d2S_dP2, dH_dT_V, dH_dP_V, dH_dV_T, dH_dV_P, dS_dT_V, dS_dP_V,
+             d2P_dT2, d2P_dV2, d2P_dTdV,
+             dS_dT_V,
              lnphis, dlnphis_dT, dlnphis_dP, __repr__
+   :exclude-members: d2H_dP2, d2H_dT2, d2S_dP2, dH_dP, dH_dP_V, dH_dT_V, dH_dV_P, dH_dV_T, dS_dP, dS_dP_V, dS_dT
 
 Liquid Phases
 -------------
@@ -77,9 +78,9 @@ of state.
 .. autoclass:: HelmholtzEOS
    :show-inheritance:
    :members: to_TP_zs, V_iter, H, S, Cp, Cv, dP_dT, dP_dV,
-             d2P_dT2, d2P_dV2, d2P_dTdV, dH_dP, dS_dT, dS_dP,
-             dH_dT_V, dH_dP_V, dH_dV_T, dH_dV_P, dS_dT_V, dS_dP_V,
-             lnphis, dlnphis_dT, dlnphis_dP, __repr__
+             d2P_dT2, d2P_dV2, d2P_dTdV, dH_dP, dS_dP,
+             lnphis, __repr__
+   :exclude-members: dH_dP_V, dH_dT_V, dH_dV_P, dH_dV_T, dS_dP_V, dS_dT, dS_dT_V, dlnphis_dP, dlnphis_dT
 
 .. autoclass:: IAPWS95
    :show-inheritance:
