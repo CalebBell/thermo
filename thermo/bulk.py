@@ -377,12 +377,10 @@ class BulkSettings(object):
         return self.__dict__.copy()
 
     def __init__(self,
-                 # Documented
                  dP_dT=MOLE_WEIGHTED, dP_dV=MOLE_WEIGHTED,
                  d2P_dV2=MOLE_WEIGHTED, d2P_dT2=MOLE_WEIGHTED,
                  d2P_dTdV=MOLE_WEIGHTED,
 
-                 # Documented
                  mu_LL=LOG_PROP_MASS_WEIGHTED, mu_LL_power_exponent=0.4,
                  mu_VL=MCADAMS_MU_VL, mu_VL_power_exponent=0.4,
 
@@ -391,7 +389,6 @@ class BulkSettings(object):
 
                  sigma_LL=MASS_WEIGHTED, sigma_LL_power_exponent=0.4,
 
-                 # Documented
                  T_liquid_volume_ref=298.15,
                  T_normal=273.15, P_normal=atm,
                  T_standard=288.15, P_standard=atm,
@@ -400,7 +397,7 @@ class BulkSettings(object):
                  speed_of_sound=MOLE_WEIGHTED, kappa=MOLE_WEIGHTED,
                  isobaric_expansion=MOLE_WEIGHTED, Joule_Thomson=MOLE_WEIGHTED,
 
-                # To document
+                # Undocumented
                  VL_ID=VL_ID_PIP, VL_ID_settings=None,
                  S_ID=S_ID_D2P_DVDT, S_ID_settings=None,
 
@@ -563,7 +560,7 @@ class Bulk(Phase):
         tot_inv = 1.0/tot
         return [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
 
-    def _mu_k_single_state(self, method, exponent, mix_obj, attr):
+    def _property_mixing_rule(self, method, exponent, mix_obj, attr):
         if method == AS_ONE_LIQUID:
             prop = mix_obj.mixture_property(self.T, self.P, self.zs, self.ws())
         else:
@@ -646,8 +643,8 @@ class Bulk(Phase):
             return mu
         elif self.phase_bulk == 'l' or self.result.gas is None:
             # Multiple liquids - either a bulk liquid, or a result with no gases
-            mu = self._mu_k_single_state(self.settings.mu_LL, self.settings.mu_LL_power_exponent,
-                                         self.correlations.ViscosityLiquidMixture, 'mu')
+            mu = self._property_mixing_rule(self.settings.mu_LL, self.settings.mu_LL_power_exponent,
+                                            self.correlations.ViscosityLiquidMixture, 'mu')
             self._mu = mu
             return mu
 
@@ -705,8 +702,8 @@ class Bulk(Phase):
             return k
         elif self.phase_bulk == 'l' or self.result.gas is None:
             # Multiple liquids - either a bulk liquid, or a result with no gases
-            k = self._mu_k_single_state(self.settings.k_LL, self.settings.k_LL_power_exponent,
-                                         self.correlations.ThermalConductivityLiquidMixture, 'k')
+            k = self._property_mixing_rule(self.settings.k_LL, self.settings.k_LL_power_exponent,
+                                           self.correlations.ThermalConductivityLiquidMixture, 'k')
             self._k = k
             return k
 
@@ -760,8 +757,8 @@ class Bulk(Phase):
             return sigma
         elif self.phase_bulk == 'l' or self.result.gas is None:
             # Multiple liquids - either a bulk liquid, or a result with no gases
-            sigma = self._mu_k_single_state(self.settings.sigma_LL, self.settings.sigma_LL_power_exponent,
-                                         self.correlations.SurfaceTensionMixture, 'sigma')
+            sigma = self._property_mixing_rule(self.settings.sigma_LL, self.settings.sigma_LL_power_exponent,
+                                               self.correlations.SurfaceTensionMixture, 'sigma')
             self._sigma = sigma
             return sigma
         else:
@@ -1261,7 +1258,7 @@ class Bulk(Phase):
             return self.dP_dT_frozen()
         elif dP_dT_method == EQUILIBRIUM_DERIVATIVE:
             return self._equilibrium_derivative(of='P', wrt='T', const='V')
-        return self._mu_k_single_state(dP_dT_method, None, None, 'dP_dT')
+        return self._property_mixing_rule(dP_dT_method, None, None, 'dP_dT')
 
     def dP_dV(self):
         r'''Method to calculate and return the first volume derivative of
@@ -1277,7 +1274,7 @@ class Bulk(Phase):
             return self.dP_dV_frozen()
         elif dP_dV_method == EQUILIBRIUM_DERIVATIVE:
             return self._equilibrium_derivative(of='P', wrt='V', const='T')
-        return self._mu_k_single_state(dP_dV_method, None, None, 'dP_dV')
+        return self._property_mixing_rule(dP_dV_method, None, None, 'dP_dV')
 
     def d2P_dT2(self):
         r'''Method to calculate and return the second temperature derivative of
@@ -1291,7 +1288,7 @@ class Bulk(Phase):
         d2P_dT2_method = self.settings.d2P_dT2
         if d2P_dT2_method == MOLE_WEIGHTED:
             return self.d2P_dT2_frozen()
-        return self._mu_k_single_state(d2P_dT2_method, None, None, 'd2P_dT2')
+        return self._property_mixing_rule(d2P_dT2_method, None, None, 'd2P_dT2')
 
     def d2P_dV2(self):
         r'''Method to calculate and return the second volume derivative of
@@ -1305,7 +1302,7 @@ class Bulk(Phase):
         d2P_dV2_method = self.settings.d2P_dV2
         if d2P_dV2_method == MOLE_WEIGHTED:
             return self.d2P_dV2_frozen()
-        return self._mu_k_single_state(d2P_dV2_method, None, None, 'd2P_dV2')
+        return self._property_mixing_rule(d2P_dV2_method, None, None, 'd2P_dV2')
 
     def d2P_dTdV(self):
         r'''Method to calculate and return the second derivative of
@@ -1320,7 +1317,7 @@ class Bulk(Phase):
         d2P_dTdV_method = self.settings.d2P_dTdV
         if d2P_dTdV_method == MOLE_WEIGHTED:
             return self.d2P_dTdV_frozen()
-        return self._mu_k_single_state(d2P_dTdV_method, None, None, 'd2P_dTdV')
+        return self._property_mixing_rule(d2P_dTdV_method, None, None, 'd2P_dTdV')
 
 
     def isobaric_expansion(self):
@@ -1344,7 +1341,7 @@ class Bulk(Phase):
             return self._equilibrium_derivative(of='V', wrt='T', const='P')/self.V()
         elif beta_method == FROM_DERIVATIVE_SETTINGS:
             return isobaric_expansion(self.V(), self.dV_dT())
-        return self._mu_k_single_state(beta_method, None, None, 'isobaric_expansion')
+        return self._property_mixing_rule(beta_method, None, None, 'isobaric_expansion')
 
     def kappa(self):
         r'''Method to calculate and return the isothermal compressibility
@@ -1367,7 +1364,7 @@ class Bulk(Phase):
             return -self._equilibrium_derivative(of='V', wrt='P', const='T')/self.V()
         elif kappa_method == FROM_DERIVATIVE_SETTINGS:
             return isothermal_compressibility(self.V(), self.dV_dP())
-        return self._mu_k_single_state(kappa_method, None, None, 'kappa')
+        return self._property_mixing_rule(kappa_method, None, None, 'kappa')
 
     def Joule_Thomson(self):
         r'''Method to calculate and return the Joule-Thomson coefficient
@@ -1390,7 +1387,7 @@ class Bulk(Phase):
             return self._equilibrium_derivative(of='T', wrt='P', const='H')
         elif Joule_Thomson_method == FROM_DERIVATIVE_SETTINGS:
             return Joule_Thomson(self.T, self.V(), self.Cp(), self.dV_dT())
-        return self._mu_k_single_state(Joule_Thomson_method, None, None, 'Joule_Thomson')
+        return self._property_mixing_rule(Joule_Thomson_method, None, None, 'Joule_Thomson')
 
     def speed_of_sound(self):
         r'''Method to calculate and return the molar speed of sound
@@ -1414,7 +1411,7 @@ class Bulk(Phase):
         speed_of_sound_method = self.settings.speed_of_sound
         if speed_of_sound_method == FROM_DERIVATIVE_SETTINGS:
             return speed_of_sound(self.V(), self.dP_dV(), self.Cp(), self.Cv())
-        return self._mu_k_single_state(speed_of_sound_method, None, None, 'speed_of_sound')
+        return self._property_mixing_rule(speed_of_sound_method, None, None, 'speed_of_sound')
 
     def Tmc(self):
         try:
