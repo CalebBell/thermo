@@ -94,8 +94,6 @@ Does not have any flow property.
 '''
 
 EQUILIBRIUM_DERIVATIVE = 'EQUILIBRIUM_DERIVATIVE'
-
-EQUILIBRIUM_DERIVATIVE_SAME_PHASES = 'Equilibrium at same phases'
 FROM_DERIVATIVE_SETTINGS = 'FROM_DERIVATIVE_SETTINGS'
 
 MOLE_WEIGHTED = 'MOLE_WEIGHTED'
@@ -212,7 +210,8 @@ prop_power_methods = set([POWER_PROP_MOLE_WEIGHTED, POWER_PROP_MASS_WEIGHTED, PO
 
 class BulkSettings(object):
     r'''Class containing configuration methods for determining how properties of
-    a `Bulk` phase made of different phases are handled.
+    a `Bulk` phase made of different phases are handled. All parameters are also
+    attributes.
 
 
     Parameters
@@ -353,6 +352,14 @@ class BulkSettings(object):
     composition but applied to the liquid model only.
     The mixing rule "AS_ONE_GAS" calculates a property using the bulk
     composition but applied to the gas model only.
+
+    The mixing rule "FROM_DERIVATIVE_SETTINGS" is used to indicate that the
+    property depends on other configurable properties; and when this is the
+    specified option, those configurations will be used in the calculation
+    of this property.
+
+    The mixing rule "EQUILIBRIUM_DERIVATIVE" performs derivative calculations
+    on flashes themselves. This is quite slow in comparison to other methods.
 
     References
     ----------
@@ -1337,34 +1344,27 @@ class Bulk(Phase):
         return self._mu_k_single_state(beta_method, None, None, 'isobaric_expansion')
 
     def kappa(self):
+        r'''Method to calculate and return the isothermal compressibility
+        of the bulk according to the selected calculation methodology.
+
+        .. math::
+            \kappa = -\frac{1}{V}\left(\frac{\partial V}{\partial P} \right)_T
+
+        Returns
+        -------
+        kappa : float
+            Isothermal coefficient of compressibility, [1/Pa]
+        '''
         kappa_method = self.settings.kappa
         if kappa_method == EQUILIBRIUM_DERIVATIVE:
-            return self.kappa_equilibrium()
+            if self.phase_bulk is not None:
+                # Cannot perform an equilibrium derivative for a sub-bulk
+                # equilibrium conditions are not satisfied
+                return None
+            return -self._equilibrium_derivative(of='V', wrt='P', const='T')/self.V()
         elif kappa_method == FROM_DERIVATIVE_SETTINGS:
             return isobaric_expansion(self.V(), self.dV_dT())
-        elif kappa_method in (MOLE_WEIGHTED, MASS_WEIGHTED, MINIMUM_PHASE_PROP,
-                             MAXIMUM_PHASE_PROP):
-            phases = self.phases
-            kappas = [p.kappa() for p in phases]
-
-            if kappa_method == MOLE_WEIGHTED:
-                phase_fracs = self.phase_fractions
-                kappa = 0.0
-                for i in range(len(phase_fracs)):
-                    kappa += phase_fracs[i]*kappas[i]
-                return kappa
-            elif kappa_method == MASS_WEIGHTED:
-                ws = self.result.kappas_mass
-                kappa = 0.0
-                for i in range(len(ws)):
-                    kappa += ws[i]*kappas[i]
-                return kappa
-            elif kappa_method == MINIMUM_PHASE_PROP:
-                return min(kappas)
-            elif kappa_method == MAXIMUM_PHASE_PROP:
-                return max(kappas)
-        else:
-            raise ValueError("Unspecified error")
+        return self._mu_k_single_state(kappa_method, None, None, 'kappa')
 
     def Joule_Thomson(self):
         Joule_Thomson_method = self.settings.JT
@@ -1372,29 +1372,7 @@ class Bulk(Phase):
             return self.Joule_Thomson_equilibrium()
         elif Joule_Thomson_method == FROM_DERIVATIVE_SETTINGS:
             return isobaric_expansion(self.V(), self.dV_dT())
-        elif Joule_Thomson_method in (MOLE_WEIGHTED, MASS_WEIGHTED, MINIMUM_PHASE_PROP,
-                             MAXIMUM_PHASE_PROP):
-            phases = self.phases
-            Joule_Thomsons = [p.Joule_Thomson() for p in phases]
-
-            if Joule_Thomson_method == MOLE_WEIGHTED:
-                phase_fracs = self.phase_fractions
-                Joule_Thomson = 0.0
-                for i in range(len(phase_fracs)):
-                    Joule_Thomson += phase_fracs[i]*Joule_Thomsons[i]
-                return Joule_Thomson
-            elif Joule_Thomson_method == MASS_WEIGHTED:
-                ws = self.result.Joule_Thomsons_mass
-                Joule_Thomson = 0.0
-                for i in range(len(ws)):
-                    Joule_Thomson += ws[i]*Joule_Thomsons[i]
-                return Joule_Thomson
-            elif Joule_Thomson_method == MINIMUM_PHASE_PROP:
-                return min(Joule_Thomsons)
-            elif Joule_Thomson_method == MAXIMUM_PHASE_PROP:
-                return max(Joule_Thomsons)
-        else:
-            raise ValueError("Unspecified error")
+        return self._mu_k_single_state(Joule_Thomson_method, None, None, 'Joule_Thomson')
 
     def speed_of_sound(self):
         speed_of_sound_method = self.settings.speed_of_sound
@@ -1402,29 +1380,7 @@ class Bulk(Phase):
             return self.speed_of_sound_equilibrium()
         elif speed_of_sound_method == FROM_DERIVATIVE_SETTINGS:
             return isobaric_expansion(self.V(), self.dV_dT())
-        elif speed_of_sound_method in (MOLE_WEIGHTED, MASS_WEIGHTED, MINIMUM_PHASE_PROP,
-                             MAXIMUM_PHASE_PROP):
-            phases = self.phases
-            speed_of_sounds = [p.speed_of_sound() for p in phases]
-
-            if speed_of_sound_method == MOLE_WEIGHTED:
-                phase_fracs = self.phase_fractions
-                speed_of_sound = 0.0
-                for i in range(len(phase_fracs)):
-                    speed_of_sound += phase_fracs[i]*speed_of_sounds[i]
-                return speed_of_sound
-            elif speed_of_sound_method == MASS_WEIGHTED:
-                ws = self.result.speed_of_sounds_mass
-                speed_of_sound = 0.0
-                for i in range(len(ws)):
-                    speed_of_sound += ws[i]*speed_of_sounds[i]
-                return speed_of_sound
-            elif speed_of_sound_method == MINIMUM_PHASE_PROP:
-                return min(speed_of_sounds)
-            elif speed_of_sound_method == MAXIMUM_PHASE_PROP:
-                return max(speed_of_sounds)
-        else:
-            raise ValueError("Unspecified error")
+        return self._mu_k_single_state(speed_of_sound_method, None, None, 'speed_of_sound')
 
     def Tmc(self):
         try:

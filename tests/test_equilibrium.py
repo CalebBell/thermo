@@ -573,14 +573,20 @@ def test_thermodynamic_derivatives_named_settings_with_flash():
     gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
 
-    settings = BulkSettings(isobaric_expansion=EQUILIBRIUM_DERIVATIVE, equilibrium_perturbation=1e-7)
+    settings = BulkSettings(isobaric_expansion=EQUILIBRIUM_DERIVATIVE, equilibrium_perturbation=1e-7,
+                            kappa=EQUILIBRIUM_DERIVATIVE)
 
     flashN = FlashVLN(constants, correlations, liquids=[liq, liq], gas=gas, settings=settings)
 
     res = flashN.flash(T=361.0, P=P, zs=zs)
     # Numeric derivative
+    assert_close(res.bulk.isobaric_expansion(), 3.9202893172854045, rtol=1e-5)
     assert_close(res.isobaric_expansion(), 3.9202893172854045, rtol=1e-5)
     assert res.liquid_bulk.isobaric_expansion() is None
+
+    assert res.liquid_bulk.kappa() is None
+    assert_close(res.kappa(), 0.0010137530158341767, rtol=1e-5)
+    assert_close(res.bulk.kappa(), 0.0010137530158341767, rtol=1e-5)
 
 
 
