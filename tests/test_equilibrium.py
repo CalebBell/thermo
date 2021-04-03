@@ -868,3 +868,50 @@ def test_thermodynamic_derivatives_named_settings():
     assert_close(res.isobaric_expansion(), v, rtol=1e-8)
     assert_close(res.bulk.isobaric_expansion(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.isobaric_expansion(), v2)
+
+    # Kappa setting
+
+    settings = BulkSettings(kappa=FROM_DERIVATIVE_SETTINGS,
+                            dP_dT=VOLUME_WEIGHTED, dP_dV=VOLUME_WEIGHTED,
+                            d2P_dV2=VOLUME_WEIGHTED, d2P_dT2=VOLUME_WEIGHTED,
+                            d2P_dTdV=VOLUME_WEIGHTED)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = (4.065318446361809e-10, 4.0653229903060884e-10)
+    assert_close(res.kappa(), v, rtol=1e-8)
+    assert_close(res.bulk.kappa(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.kappa(), v2)
+
+    settings = BulkSettings(kappa=MOLE_WEIGHTED)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = (2.8465214826316303e-07, 7.371276386739713e-10)
+    assert_close(res.kappa(), v, rtol=1e-8)
+    assert_close(res.bulk.kappa(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.kappa(), v2)
+
+    settings = BulkSettings(kappa=MASS_WEIGHTED)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = (3.11147790096034e-07, 1.1387317549953479e-09)
+    assert_close(res.kappa(), v, rtol=1e-8)
+    assert_close(res.bulk.kappa(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.kappa(), v2)
+
+    settings = BulkSettings(kappa=VOLUME_WEIGHTED)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = (9.60092945535878e-06, 1.1670430800087437e-09)
+    assert_close(res.kappa(), v, rtol=1e-8)
+    assert_close(res.bulk.kappa(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.kappa(), v2)
+
+    settings = BulkSettings(kappa=MAXIMUM_PHASE_PROP)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = (1.0161843437697627e-05, 1.5871593263837287e-09)
+    assert_close(res.kappa(), v, rtol=1e-8)
+    assert_close(res.bulk.kappa(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.kappa(), v2)
+
+    settings = BulkSettings(kappa=MINIMUM_PHASE_PROP)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = (2.747836020071562e-10, 2.747836020071562e-10)
+    assert_close(res.kappa(), v, rtol=1e-8)
+    assert_close(res.bulk.kappa(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.kappa(), v2)

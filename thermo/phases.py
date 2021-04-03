@@ -263,6 +263,8 @@ class Phase(object):
     ideal_gas_basis = False # Parameter fot has the same ideal gas Cp
     T_REF_IG = 298.15
     T_REF_IG_INV = 1.0/T_REF_IG
+    '''The numerical inverse of :obj:`T_REF_IG`, stored to save a division.
+    '''
     P_REF_IG = 101325.
     P_REF_IG_INV = 1.0/P_REF_IG
     LOG_P_REF_IG = log(P_REF_IG)

@@ -1363,7 +1363,7 @@ class Bulk(Phase):
                 return None
             return -self._equilibrium_derivative(of='V', wrt='P', const='T')/self.V()
         elif kappa_method == FROM_DERIVATIVE_SETTINGS:
-            return isobaric_expansion(self.V(), self.dV_dT())
+            return isothermal_compressibility(self.V(), self.dV_dP())
         return self._mu_k_single_state(kappa_method, None, None, 'kappa')
 
     def Joule_Thomson(self):
