@@ -6212,7 +6212,7 @@ class FlashVL(Flash):
             err = getattr(res, spec)() - spec_val
             sln[:] = (res, iter_val)
             return err
-
+        
         ytol = abs(spec_val)*self.TPV_HSGUA_BISECT_YTOL
         sln_val = secant(to_solve, guess, xtol=self.TPV_HSGUA_BISECT_XTOL, ytol=ytol,
                          require_xtol=self.TPV_HSGUA_BISECT_YTOL_ONLY, require_eval=True, bisection=True,

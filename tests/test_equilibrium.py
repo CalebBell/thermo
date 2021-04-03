@@ -26,13 +26,14 @@ from fluids.numerics import derivative, assert_close, assert_close1d, assert_clo
 from thermo import Chemical, Mixture
 from thermo.phases import *
 from thermo.eos_mix import *
+from chemicals.utils import *
 from thermo.eos import *
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
 from thermo.volume import *
 from thermo.heat_capacity import *
 from thermo.phase_change import *
 from thermo import ChemicalConstantsPackage, PropertyCorrelationsPackage
-from thermo.flash import FlashPureVLS, FlashVLN
+from thermo.flash import FlashPureVLS, FlashVLN, FlashVL
 from thermo.bulk import *
 from thermo.equilibrium import EquilibriumState
 
@@ -557,6 +558,32 @@ def test_thermodynamic_derivatives_settings_with_flash():
     with pytest.raises(NotImplementedError):
         flashN.flash(T=361.0, V=res.V(), zs=zs)
 
+def test_thermodynamic_derivatives_settings_with_flash_binary():
+    # Tests that only need two phases
+    T, P = 200.0, 1e5
+    constants = ChemicalConstantsPackage(Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0],
+                                         omegas=[0.098, 0.251], Tms=[90.3, 143.15],
+                                         Tbs=[184.55, 309.21], CASs=['74-84-0', '109-66-0'],
+                                         names=['ethane', 'pentane'], MWs=[30.06904, 72.14878])
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228])),
+                         HeatCapacityGas(poly_fit=(200.0, 1000.0, [7.537198394065234e-22, -4.946850205122326e-18, 1.4223747507170372e-14, -2.3451318313798008e-11, 2.4271676873997662e-08, -1.6055220805830093e-05, 0.006379734000450042, -1.0360272314628292, 141.84695243411866]))]
+    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    zs = ws_to_zs(MWs=constants.MWs, ws=[.5, .5])
+
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+
+    settings = BulkSettings(equilibrium_perturbation=1e-7,Joule_Thomson=EQUILIBRIUM_DERIVATIVE)
+
+    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas, settings=settings)
+    res = flasher.flash(P=P, T=T, zs=zs)
+    assert res.settings is settings
+
+    # Numerical derivative
+    assert_close(res.Joule_Thomson(), 0.00018067735521980137, rtol=1e-7)
+
+
 def test_thermodynamic_derivatives_named_settings_with_flash():
     T, P = 298.15, 1e5
     zs = [.25, 0.7, .05]
@@ -915,3 +942,96 @@ def test_thermodynamic_derivatives_named_settings():
     assert_close(res.kappa(), v, rtol=1e-8)
     assert_close(res.bulk.kappa(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.kappa(), v2)
+
+    # Joule Thomson Coefficient
+    settings = BulkSettings(Joule_Thomson=FROM_DERIVATIVE_SETTINGS,
+                            dP_dT=VOLUME_WEIGHTED, dP_dV=VOLUME_WEIGHTED,
+                            d2P_dV2=VOLUME_WEIGHTED, d2P_dT2=VOLUME_WEIGHTED,
+                            d2P_dTdV=VOLUME_WEIGHTED)
+
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = (-7.240388523395516e-06, -3.1091771780270116e-07)
+    assert_close(res.Joule_Thomson(), v, rtol=1e-8)
+    assert_close(res.bulk.Joule_Thomson(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.Joule_Thomson(), v2)
+
+    settings = BulkSettings(Joule_Thomson=MOLE_WEIGHTED)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = (3.993637901448662e-07, -2.1061721898004138e-07)
+    assert_close(res.Joule_Thomson(), v, rtol=1e-8)
+    assert_close(res.bulk.Joule_Thomson(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.Joule_Thomson(), v2)
+
+    settings = BulkSettings(Joule_Thomson=MASS_WEIGHTED)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = (4.3752173371294737e-07, -2.3579009743036363e-07)
+    assert_close(res.Joule_Thomson(), v, rtol=1e-8)
+    assert_close(res.bulk.Joule_Thomson(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.Joule_Thomson(), v2)
+
+    settings = BulkSettings(Joule_Thomson=VOLUME_WEIGHTED)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = (2.061401120148966e-05, -2.37212984942978e-07)
+    assert_close(res.Joule_Thomson(), v, rtol=1e-8)
+    assert_close(res.bulk.Joule_Thomson(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.Joule_Thomson(), v2)
+
+    settings = BulkSettings(Joule_Thomson=MAXIMUM_PHASE_PROP)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 =(2.1832347936583476e-05, -1.9236927421380777e-07)
+    assert_close(res.Joule_Thomson(), v, rtol=1e-8)
+    assert_close(res.bulk.Joule_Thomson(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.Joule_Thomson(), v2)
+
+    settings = BulkSettings(Joule_Thomson=MINIMUM_PHASE_PROP)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = (-2.583274386299929e-07, -2.583274386299929e-07)
+    assert_close(res.Joule_Thomson(), v, rtol=1e-8)
+    assert_close(res.bulk.Joule_Thomson(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.Joule_Thomson(), v2)
+
+    # Speed of Sound
+    settings = BulkSettings(speed_of_sound=FROM_DERIVATIVE_SETTINGS,
+                            dP_dT=VOLUME_WEIGHTED, dP_dV=VOLUME_WEIGHTED,
+                            d2P_dV2=VOLUME_WEIGHTED, d2P_dT2=VOLUME_WEIGHTED,
+                            d2P_dTdV=VOLUME_WEIGHTED)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = (1472.7188644943863, 377.43483503795505)
+    assert_close(res.speed_of_sound(), v, rtol=1e-8)
+    assert_close(res.bulk.speed_of_sound(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.speed_of_sound(), v2)
+
+    settings = BulkSettings(speed_of_sound=MOLE_WEIGHTED)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = (324.60817499927214, 322.9861514323374)
+    assert_close(res.speed_of_sound(), v, rtol=1e-8)
+    assert_close(res.bulk.speed_of_sound(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.speed_of_sound(), v2)
+
+    settings = BulkSettings(speed_of_sound=MASS_WEIGHTED)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = (297.3316752171302, 304.86189141828106)
+    assert_close(res.speed_of_sound(), v, rtol=1e-8)
+    assert_close(res.bulk.speed_of_sound(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.speed_of_sound(), v2)
+
+    settings = BulkSettings(speed_of_sound=VOLUME_WEIGHTED)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = (71.56743277633015, 302.82216631626983)
+    assert_close(res.speed_of_sound(), v, rtol=1e-8)
+    assert_close(res.bulk.speed_of_sound(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.speed_of_sound(), v2)
+
+    settings = BulkSettings(speed_of_sound=MAXIMUM_PHASE_PROP)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = (367.1061252594205, 367.1061252594205)
+    assert_close(res.speed_of_sound(), v, rtol=1e-8)
+    assert_close(res.bulk.speed_of_sound(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.speed_of_sound(), v2)
+
+    settings = BulkSettings(speed_of_sound=MINIMUM_PHASE_PROP)
+    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    v, v2 = (58.05522195758289, 272.55436171551884)
+    assert_close(res.speed_of_sound(), v, rtol=1e-8)
+    assert_close(res.bulk.speed_of_sound(), v, rtol=1e-8)
+    assert_close(res.liquid_bulk.speed_of_sound(), v2)

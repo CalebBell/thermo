@@ -128,7 +128,10 @@ D2P_DTDV_METHODS = D2P_DV2_METHODS
 '''List of all valid and implemented calculation methods for the `D2P_DTDV` bulk setting'''
 
 
-SPEED_OF_SOUND_METHODS = [MOLE_WEIGHTED, EQUILIBRIUM_DERIVATIVE]
+SPEED_OF_SOUND_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
+                LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED,
+                LOG_PROP_VOLUME_WEIGHTED, MINIMUM_PHASE_PROP,
+                MAXIMUM_PHASE_PROP, FROM_DERIVATIVE_SETTINGS]
 '''List of all valid and implemented calculation methods for the `speed_of_sound` bulk setting'''
 
 BETA_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
@@ -310,7 +313,7 @@ class BulkSettings(object):
     kappa : str, optional
         Mixing rule for multiphase `kappa` calculations;
         see :obj:`KAPPA_METHODS` for available options, [-]
-    JT : str, optional
+    Joule_Thomson : str, optional
         Mixing rule for multiphase `Joule-Thomson` calculations;
         see :obj:`JT_METHODS` for available options, [-]
 
@@ -395,7 +398,7 @@ class BulkSettings(object):
                  T_gas_ref=288.15, P_gas_ref=atm,
 
                  speed_of_sound=MOLE_WEIGHTED, kappa=MOLE_WEIGHTED,
-                 isobaric_expansion=MOLE_WEIGHTED, JT=MOLE_WEIGHTED,
+                 isobaric_expansion=MOLE_WEIGHTED, Joule_Thomson=MOLE_WEIGHTED,
 
                 # To document
                  VL_ID=VL_ID_PIP, VL_ID_settings=None,
@@ -456,7 +459,7 @@ class BulkSettings(object):
         self.isobaric_expansion = isobaric_expansion
         self.speed_of_sound = speed_of_sound
         self.kappa = kappa
-        self.JT = JT
+        self.Joule_Thomson = Joule_Thomson
 
         # Phase identification settings
         self.VL_ID = VL_ID
@@ -1367,19 +1370,50 @@ class Bulk(Phase):
         return self._mu_k_single_state(kappa_method, None, None, 'kappa')
 
     def Joule_Thomson(self):
-        Joule_Thomson_method = self.settings.JT
+        r'''Method to calculate and return the Joule-Thomson coefficient
+        of the bulk according to the selected calculation methodology.
+
+        .. math::
+            \mu_{JT} = \left(\frac{\partial T}{\partial P}\right)_H
+
+        Returns
+        -------
+        mu_JT : float
+            Joule-Thomson coefficient [K/Pa]
+        '''
+        Joule_Thomson_method = self.settings.Joule_Thomson
         if Joule_Thomson_method == EQUILIBRIUM_DERIVATIVE:
-            return self.Joule_Thomson_equilibrium()
+            if self.phase_bulk is not None:
+                # Cannot perform an equilibrium derivative for a sub-bulk
+                # equilibrium conditions are not satisfied
+                return None
+            return self._equilibrium_derivative(of='T', wrt='P', const='H')
         elif Joule_Thomson_method == FROM_DERIVATIVE_SETTINGS:
-            return isobaric_expansion(self.V(), self.dV_dT())
+            return Joule_Thomson(self.T, self.V(), self.Cp(), self.dV_dT())
         return self._mu_k_single_state(Joule_Thomson_method, None, None, 'Joule_Thomson')
 
     def speed_of_sound(self):
+        r'''Method to calculate and return the molar speed of sound
+        of the bulk according to the selected calculation methodology.
+
+        .. math::
+            w = \left[-V^2 \left(\frac{\partial P}{\partial V}\right)_T \frac{C_p}
+            {C_v}\right]^{1/2}
+
+        A similar expression based on molar density is:
+
+        .. math::
+           w = \left[\left(\frac{\partial P}{\partial \rho}\right)_T \frac{C_p}
+           {C_v}\right]^{1/2}
+
+        Returns
+        -------
+        w : float
+            Speed of sound for a real gas, [m*kg^0.5/(s*mol^0.5)]
+        '''
         speed_of_sound_method = self.settings.speed_of_sound
-        if speed_of_sound_method == EQUILIBRIUM_DERIVATIVE:
-            return self.speed_of_sound_equilibrium()
-        elif speed_of_sound_method == FROM_DERIVATIVE_SETTINGS:
-            return isobaric_expansion(self.V(), self.dV_dT())
+        if speed_of_sound_method == FROM_DERIVATIVE_SETTINGS:
+            return speed_of_sound(self.V(), self.dP_dV(), self.Cp(), self.Cv())
         return self._mu_k_single_state(speed_of_sound_method, None, None, 'speed_of_sound')
 
     def Tmc(self):
