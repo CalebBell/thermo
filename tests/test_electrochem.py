@@ -20,11 +20,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from numpy.testing import assert_allclose
-from fluids.numerics import linspace
 import pytest
 import numpy as np
-from fluids.numerics import assert_close, assert_close1d
+from fluids.numerics import linspace, assert_close, assert_close1d
 import pandas as pd
 from chemicals.elements import charge_from_formula, nested_formula_parser
 from thermo.electrochem import *

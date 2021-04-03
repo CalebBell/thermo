@@ -66,9 +66,9 @@ def test_minimize_gibbs_NP_transformed():
 
     betas, compositions, phases, _, G = minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases=[liq0, gas, liq1],
                                 betas=betas, tol=1E-13, method='BFGS')
-    assert_allclose(G, -6288.484102530695, rtol=1e-3)
-    assert_allclose(betas, [0.33353301800763124, 0.348168600825151, 0.31829838116721776], rtol=1e-3)
-    assert_allclose(compositions,  [[0.01710942117103125, 0.004664963388767063, 0.9782256154402017],
+    assert_close(G, -6288.484102530695, rtol=1e-3)
+    assert_close1d(betas, [0.33353301800763124, 0.348168600825151, 0.31829838116721776], rtol=1e-3)
+    assert_close2d(compositions,  [[0.01710942117103125, 0.004664963388767063, 0.9782256154402017],
       [0.026792761914958576, 0.9529216972153103, 0.0202855408697312],
       [0.9999999901300325, 0.0, 9.869967458145574e-09]], rtol=1e-3, atol=1e-7)
 
@@ -105,8 +105,8 @@ def test_sequential_substitution_NP_first():
           [0.9999990988582429, 9.011417571269636e-07, 9.573789620423122e-17]]
 
     betas_expect = [0.34816869015277496, 0.33353245486699196, 0.318298854980233]
-    assert_allclose(sln[0], betas_expect, rtol=1e-7)
-    assert_allclose(sln[1], comp_expect, rtol=1e-7)
+    assert_close1d(sln[0], betas_expect, rtol=1e-7)
+    assert_close1d(sln[1], comp_expect, rtol=1e-7)
     err = sln[-1]
     assert err < 1e-15
 

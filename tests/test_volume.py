@@ -21,7 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from fluids.numerics import assert_close, assert_close1d, assert_close2d
-from numpy.testing import assert_allclose
 import numpy as np
 import pytest
 import json
@@ -223,7 +222,7 @@ def test_VolumeLiquid():
 
     # Get CRC Inorganic invalid
     U = VolumeLiquid(CASRN='7440-61-1')
-    assert_allclose(U.T_dependent_property(1420), 1.3758901734104049e-05)
+    assert_close(U.T_dependent_property(1420), 1.3758901734104049e-05)
     assert False == U.test_method_validity(1430, U.method)
 
     # Test lower limit for BHIRUD_NORMAL
@@ -241,7 +240,7 @@ def test_VolumeLiquid():
     assert_close2d(TP_data, recalc_pts)
 
     EtOH.tabular_extrapolation_permitted = True
-    assert_allclose(EtOH.TP_dependent_property(274, 9E4), 5.723868454722602e-05)
+    assert_close(EtOH.TP_dependent_property(274, 9E4), 5.723868454722602e-05)
     EtOH.tabular_extrapolation_permitted = False
     assert None == EtOH.TP_dependent_property(300, 9E4)
 
@@ -259,21 +258,21 @@ def test_VolumeLiquidPolynomialTmin():
     # toluene
     v = VolumeLiquid(poly_fit=(178.01, 581.75, [2.2801490297347937e-23, -6.411956871696508e-20, 7.723152902379232e-17, -5.197203733189603e-14, 2.1348482785660093e-11, -5.476649499770259e-09, 8.564670053875876e-07, -7.455178589434267e-05, 0.0028545812080104068]))
     assert v._Tmin_T_trans == v.poly_fit_Tmin
-    assert_allclose(v.poly_fit_Tmin_quadratic, [2.159638355215081e-10, 0.0, 8.76710398245817e-05])
+    assert_close1d(v.poly_fit_Tmin_quadratic, [2.159638355215081e-10, 0.0, 8.76710398245817e-05])
 
     # methanol
     v = VolumeLiquid(poly_fit=(175.7, 502.5, [3.5725079384600736e-23, -9.031033742820083e-20, 9.819637959370411e-17, -5.993173551565636e-14, 2.2442465416964825e-11, -5.27776114586072e-09, 7.610461006178106e-07, -6.148574498547711e-05, 0.00216398089328537]))
     assert v._Tmin_T_trans == v.poly_fit_Tmin
-    assert_allclose(v.poly_fit_Tmin_quadratic, [9.044411973585966e-11, 0.0, 3.2636013401752355e-05])
+    assert_close1d(v.poly_fit_Tmin_quadratic, [9.044411973585966e-11, 0.0, 3.2636013401752355e-05])
 
     # furufryl alcohol
     v = VolumeLiquid(poly_fit=(189.6, 568.8000000000001, [6.647049391841594e-25, -1.8278965754470383e-21, 2.170226311490262e-18, -1.4488205117650477e-15, 5.940737543663388e-13, -1.529528764741801e-10, 2.4189938181664235e-08, -2.0920414326130236e-06, 0.00014008105452139704]))
     assert v._Tmin_T_trans == v.poly_fit_Tmin
-    assert_allclose(v.poly_fit_Tmin_quadratic, [1.0450567029924047e-10, 2.3832444455827036e-08, 6.0795970965526267e-05])
+    assert_close1d(v.poly_fit_Tmin_quadratic, [1.0450567029924047e-10, 2.3832444455827036e-08, 6.0795970965526267e-05])
 
     # Water - may change, second should always be zero
     v = VolumeLiquid(poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]))
-    assert_allclose(v.poly_fit_Tmin_quadratic,  [8.382589086490995e-12, 0.0, 1.739254665187681e-05])
+    assert_close1d(v.poly_fit_Tmin_quadratic,  [8.382589086490995e-12, 0.0, 1.739254665187681e-05])
 
 @pytest.mark.meta_T_dept
 def test_VolumeLiquidConstantExtrapolation():
@@ -314,7 +313,7 @@ def test_VolumeLiquidDumpEOS():
 @pytest.mark.meta_T_dept
 def test_VolumeSolid():
     Vm = VolumeSolid(CASRN='10022-31-8').T_dependent_property(300)
-    assert_allclose(Vm, 8.06592592592592e-05)
+    assert_close(Vm, 8.06592592592592e-05)
 
     assert None == VolumeSolid(CASRN='10022-31-8').T_dependent_property(-100)
 
@@ -323,7 +322,7 @@ def test_VolumeSolid():
 
     BaN2O6 = VolumeSolid(CASRN='10022-31-8')
     BaN2O6.add_tabular_data([200, 300], [8.06e-5, 8.05e-5], 'fake')
-    assert_allclose(8.055e-05, BaN2O6.T_dependent_property(250))
+    assert_close(8.055e-05, BaN2O6.T_dependent_property(250))
     BaN2O6.tabular_extrapolation_permitted = False
     BaN2O6.test_method_validity(150, 'fake')
 

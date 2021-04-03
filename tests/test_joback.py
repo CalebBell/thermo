@@ -21,7 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 import os
-from numpy.testing import assert_allclose
 import pytest
 from fluids.numerics import assert_close, assert_close1d
 from thermo.joback import *

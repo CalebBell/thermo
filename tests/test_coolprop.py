@@ -20,8 +20,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from numpy.testing import assert_allclose
 import pytest
+from fluids.numerics import assert_close, assert_close1d
 from thermo.coolprop import *
 from chemicals.identifiers import check_CAS
 from thermo.coolprop import has_CoolProp
@@ -34,7 +34,7 @@ def test_fluid_props():
 #    tots_exp = [18589.301, 71575.0, 31017000000.0, 45189.59849999997, 440791794.7987591, 18589.301, 30.90243968446593]
 
 
-#    assert_allclose(tots_exp, tots)
+#    assert_close1d(tots_exp, tots)
 
     assert len(coolprop_fluids) == len(coolprop_dict)
     assert len(coolprop_dict) == 105
@@ -46,17 +46,17 @@ def test_fluid_props():
 def test_CoolProp_T_dependent_property():
     # Below the boiling point
     rhow = CoolProp_T_dependent_property(298.15, '7732-18-5', 'D', 'l')
-    assert_allclose(rhow, 997.0476367603451)
+    assert_close(rhow, 997.0476367603451)
 
     rhow = CoolProp_T_dependent_property(298.15, '7732-18-5', 'D', 'g')
-    assert_allclose(rhow, 0.0230748041827597)
+    assert_close(rhow, 0.0230748041827597)
 
     # Above the boiling point
     rhow = CoolProp_T_dependent_property(450, '7732-18-5', 'D', 'l')
-    assert_allclose(rhow, 890.3412497616716)
+    assert_close(rhow, 890.3412497616716)
 
     rhow = CoolProp_T_dependent_property(450, '7732-18-5', 'D', 'g')
-    assert_allclose(rhow, 0.49104706182775576)
+    assert_close(rhow, 0.49104706182775576)
 
     with pytest.raises(Exception):
         CoolProp_T_dependent_property(298.15, 'BADCAS', 'D', 'l')
@@ -72,7 +72,7 @@ def test_CoolProp_T_dependent_property():
         CoolProp_T_dependent_property(700, '7732-18-5', 'D', 'l')
 
     rhow = CoolProp_T_dependent_property(700, '7732-18-5', 'D', 'g')
-    assert_allclose(rhow, 0.3139926976198761)
+    assert_close(rhow, 0.3139926976198761)
 
 
 # This test was part of an earlier attempt which is no longer relevant

@@ -21,7 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from math import log, exp
-from numpy.testing import assert_allclose
 import pytest
 from fluids.constants import R
 
@@ -150,7 +149,7 @@ def test_DDBST_example():
     assert_close2d(d3lambdas_dT3, d3lambdas_dT3_numerical, rtol=1e-7)
 
     # Gammas
-    assert_allclose(GE.GE(), 480.2639266306882, rtol=1e-12)
+    assert_close(GE.GE(), 480.2639266306882, rtol=1e-12)
     gammas = GE.gammas()
     GE_from_gammas = R*T*sum(xi*log(gamma) for xi, gamma in zip(xs, gammas))
     assert_close(GE_from_gammas, GE.GE(), rtol=1e-12)
@@ -225,7 +224,7 @@ def test_DDBST_example():
     ### TEST WHICH ARE COMMON TO ALL GibbsExcess classes
     HE_expected = -963.3892533542517
     HE_analytical = GE.HE()
-    assert_allclose(HE_expected, HE_analytical, rtol=1e-12)
+    assert_close(HE_expected, HE_analytical, rtol=1e-12)
     def diff_for_HE(T):
         return GE.to_T_xs(T, xs).GE()/T
 
@@ -235,7 +234,7 @@ def test_DDBST_example():
 
     SE_expected = -4.355962766232997
     SE_analytical = GE.SE()
-    assert_allclose(SE_expected, SE_analytical, rtol=1e-12)
+    assert_close(SE_expected, SE_analytical, rtol=1e-12)
     SE_check = (GE.HE() - GE.GE())/T
     assert_close(SE_analytical, SE_check, rtol=1e-12)
 
@@ -596,10 +595,10 @@ def test_multicomponent_madeup_sympy():
                   for j in range(N)] for i in range(N)]
 
     GE = Wilson(T=T_num, xs=[1.0/N]*N, ABCDEF=(lambdasA, lambdasB, lambdasC, lambdasD, lambdasE, lambdasF))
-    assert_allclose(GE.lambdas(), lambdas_sym, rtol=1e-15)
-    assert_allclose(GE.dlambdas_dT(), dlambdas_dT_sym, rtol=2e-15)
-    assert_allclose(GE.d2lambdas_dT2(), d2lambdas_dT2_sym, rtol=4e-15)
-    assert_allclose(GE.d3lambdas_dT3(), d3lambdas_dT3_sym, rtol=1e-14)
+    assert_close2d(GE.lambdas(), lambdas_sym, rtol=1e-15)
+    assert_close2d(GE.dlambdas_dT(), dlambdas_dT_sym, rtol=2e-15)
+    assert_close2d(GE.d2lambdas_dT2(), d2lambdas_dT2_sym, rtol=4e-15)
+    assert_close2d(GE.d3lambdas_dT3(), d3lambdas_dT3_sym, rtol=1e-14)
 
 
 def test_lambdas_performance_np():

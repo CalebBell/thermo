@@ -21,7 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from math import log
-from numpy.testing import assert_allclose
 from fluids.constants import R
 
 from thermo.activity import GibbsExcess

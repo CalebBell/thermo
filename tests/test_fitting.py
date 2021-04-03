@@ -21,7 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from fluids.numerics import assert_close, assert_close1d, linspace, horner
-from numpy.testing import assert_allclose
 import pytest
 from thermo import fitting
 from thermo.fitting import *

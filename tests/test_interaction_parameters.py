@@ -21,12 +21,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from math import exp, log
-from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 import pandas as pd
 from fluids.constants import calorie, R
 from thermo.interaction_parameters import IPDB
+from fluids.numerics import assert_close, assert_close1d, assert_close2d
 
 
 def run_validate_db():
@@ -37,10 +37,10 @@ def run_validate_db():
 
 def test_basic_chemsep_PR():
     kij = IPDB.get_ip_specific('ChemSep PR', ['124-38-9', '67-56-1'], 'kij')
-    assert_allclose(kij, 0.0583)
+    assert_close(kij, 0.0583)
 
     kij_auto = IPDB.get_ip_automatic(['124-38-9', '67-56-1'], 'PR kij', 'kij')
-    assert_allclose(kij, kij_auto)
+    assert_close(kij, kij_auto)
 
     kij_missing = IPDB.get_ip_specific('ChemSep PR', ['1249-38-9', '67-56-1'], 'kij')
     assert kij_missing == 0
@@ -55,10 +55,10 @@ def test_basic_chemsep_PR():
                      [-0.0059, 0.0, 0.0011, 0.0089],
                      [0.0119, 0.0011, 0.0, 0.0033],
                      [0.0185, 0.0089, 0.0033, 0.0]]
-    assert_allclose(kij_C1C4, kij_C1C4_known)
+    assert_close2d(kij_C1C4, kij_C1C4_known)
     # Test for asymetric works the same since the model is asymmetric
     kij_C1C4 = IPDB.get_ip_symmetric_matrix('ChemSep PR', ['74-82-8', '74-84-0', '74-98-6', '106-97-8'], 'kij')
-    assert_allclose(kij_C1C4, kij_C1C4_known)
+    assert_close2d(kij_C1C4, kij_C1C4_known)
 
 
 def test_basic_chemsep_NRTL():
@@ -68,6 +68,6 @@ def test_basic_chemsep_NRTL():
     alphas_known = [[0.0, 0.2937, 0.3009], [0.2937, 0.0, 0.2999], [0.3009, 0.2999, 0.0]]
     # Test is works both symmetric and asymmetric
     alphas = IPDB.get_ip_asymmetric_matrix('ChemSep NRTL', ['64-17-5', '7732-18-5', '67-56-1'], 'alphaij')
-    assert_allclose(alphas, alphas_known)
+    assert_close2d(alphas, alphas_known)
     alphas = IPDB.get_ip_symmetric_matrix('ChemSep NRTL', ['64-17-5', '7732-18-5', '67-56-1'], 'alphaij')
-    assert_allclose(alphas, alphas_known)
+    assert_close2d(alphas, alphas_known)
