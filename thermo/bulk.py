@@ -487,6 +487,45 @@ class BulkSettings(object):
 default_settings = BulkSettings()
 
 class Bulk(Phase):
+    r'''Class to encapsulate multiple :obj:`Phase <thermo.phases.Phase>` objects and provide a
+    unified interface for obtaining properties from a group of phases.
+
+    This class exists for three purposes:
+
+    * Providing a common interface for obtaining properties like `Cp` - whether
+      there is one phase or 100, calling `Cp` on the bulk will retrieve that
+      value.
+    * Retrieving "bulk" properties that do make sense to be calculated for a
+      combination of phases together.
+    * Allowing configurable estimations of non-bulk properties like isothermal
+      compressibility or speed of sound for the group of phases together.
+
+    Parameters
+    ----------
+    T : float
+        Temperature of the bulk, [K]
+    P : float
+        Pressure of the bulk, [Pa]
+    zs : list[float]
+        Mole fractions of the bulk, [-]
+    phases : list[:obj:`Phase <thermo.phases.Phase>`]
+        Phase objects, [-]
+    phase_fractions : list[float]
+        Molar fractions of each phase, [-]
+    phase_bulk : str, optional
+        None to represent a bulk of all present phases; 'l' to represent a bulk
+        of only liquid phases; `s` to represent a bulk of only solid phases, [-]
+
+    Notes
+    -----
+    Please think carefully when retrieving a property of the bulk. If there are
+    two liquid phases in a bulk, and a single viscosity value is retrieved,
+    can that be used directly for a single phase pressure drop calculation?
+    Not with any theoretical consistency, that's for sure.
+
+
+
+    '''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
     def __init__(self, T, P, zs, phases, phase_fractions, phase_bulk=None):
         self.T = T
@@ -925,6 +964,11 @@ class Bulk(Phase):
         self._dH_dP = dH_dP
         return dH_dP
 
+    try:
+        dH_dP.__doc__ = Phase.dH_dP_T.__doc__
+    except:
+        pass
+
     def dS_dP(self):
         try:
             return self._dS_dP
@@ -938,6 +982,11 @@ class Bulk(Phase):
         self._dS_dP = dS_dP
         return dS_dP
 
+    try:
+        dS_dP.__doc__ = Phase.dS_dP_T.__doc__
+    except:
+        pass
+
     def dS_dT(self):
         try:
             return self._dS_dT
@@ -950,6 +999,11 @@ class Bulk(Phase):
             dS_dT += betas[i]*phases[i].dS_dT()
         self._dS_dT = dS_dT
         return dS_dT
+
+    try:
+        dS_dT.__doc__ = Phase.dS_dT.__doc__
+    except:
+        pass
 
     def dG_dT(self):
         try:

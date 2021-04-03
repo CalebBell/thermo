@@ -35,7 +35,7 @@ EquilibriumState
 .. autoclass:: EquilibriumState
     :members:
     :undoc-members:
-    :exclude-members:
+    :exclude-members: dH_dP_V, dH_dT_V, dH_dV_P, dH_dV_T, dS_dP_V, dS_dT, dS_dT_P, dS_dT_V
 '''
 
 from __future__ import division
@@ -2426,6 +2426,8 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
               'U_dep', 'G_dep', 'A_dep', 'V_dep',
               'mu', 'k', 'sigma',
               ]
+
+
 
 bulk_props += derivatives_thermodynamic
 bulk_props += derivatives_thermodynamic_mass
