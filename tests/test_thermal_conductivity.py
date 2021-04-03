@@ -20,10 +20,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from numpy.testing import assert_allclose
 import json
 import pytest
-from fluids.numerics import assert_close, assert_close1d
+from fluids.numerics import assert_close, assert_close1d, assert_close2d
 from fluids.constants import R
 from chemicals.utils import ws_to_zs
 from thermo.thermal_conductivity import *
@@ -117,7 +116,7 @@ def test_ThermalConductivityLiquid():
     recalc_pts = [[EtOH.TP_dependent_property(T, P) for T in Ts] for P in Ps]
     assert_close1d(TP_data, recalc_pts)
 
-    assert_allclose(EtOH.TP_dependent_property(274, 9E4), 0.16848555706973622)
+    assert_close(EtOH.TP_dependent_property(274, 9E4), 0.16848555706973622)
     EtOH.tabular_extrapolation_permitted = False
     assert None == EtOH.TP_dependent_property(300, 9E4)
 
@@ -221,7 +220,7 @@ def test_ThermalConductivityGas():
     TP_data = [[0.025825794817543015, 0.037905383602635095, 0.05080124980338535], [0.02601702567554805, 0.03806794452306919, 0.050946301396380594], [0.026243171168075605, 0.03825284803978187, 0.05110925652065333]]
     EtOH.add_tabular_data_P(Ts, Ps, TP_data, name='CPdata')
     recalc_pts = [[EtOH.TP_dependent_property(T, P) for T in Ts] for P in Ps]
-    assert_allclose(TP_data, recalc_pts)
+    assert_close2d(TP_data, recalc_pts)
 
     EtOH.tabular_extrapolation_permitted = True
     assert_close(EtOH.TP_dependent_property(399, 9E3), 0.025825794817543015)
