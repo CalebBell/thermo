@@ -213,7 +213,7 @@ from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     a_alpha_aijs_composition_independent_support_zeros, a_alpha_and_derivatives, a_alpha_and_derivatives_full,
     a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms,
     G_dep_lnphi_d_helper, eos_mix_dV_dzs,
-    PR_translated_ddelta_dzs)
+    PR_translated_ddelta_dzs, PR_translated_depsilon_dzs)
 from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     Soave_79_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
                                     RK_a_alpha_and_derivatives_vectorized, RK_a_alphas_vectorized,
@@ -8078,11 +8078,7 @@ class PRMIXTranslated(PRMIX):
         -----
         This derivative is checked numerically.
         '''
-        epsilon, c, b = self.epsilon, self.c, self.b
-        N, b0s, cs = self.N, self.b0s, self.cs
-        b0 = b + c
-        return [cs[i]*(2.0*b0 + c) + c*(2.0*b0s[i] + cs[i]) - 2.0*b0*b0s[i]
-                for i in range(N)]
+        return PR_translated_depsilon_dzs(self.epsilon, self.c, self.b, self.b0s, self.cs, self.N)
 
     @property
     def depsilon_dns(self):

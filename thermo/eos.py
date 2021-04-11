@@ -262,7 +262,8 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 ]
 
 __all__.extend(['main_derivatives_and_departures',
-                'main_derivatives_and_departures_VDW'])
+                'main_derivatives_and_departures_VDW',
+                'eos_lnphi'])
 
 
 from cmath import log as clog
@@ -320,6 +321,11 @@ def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
         # Needed for ideal gas model
         x11 = 0.0
     x11_half = 0.5*x11
+
+#    arg = x11*x5
+#    arg2 = (arg + 1.0)/(arg - 1.0)
+#    fancy = 0.25*log(arg2*arg2)
+#    x12 = 2.*x11*fancy # Possible to use a catan, but then a complex division and sq root is needed too
     x12 = 2.*x11*catanh(x11*x5).real # Possible to use a catan, but then a complex division and sq root is needed too
     x14 = 0.5*x5
     x15 = epsilon2*x11
@@ -379,6 +385,53 @@ def main_derivatives_and_departures_VDW(T, P, V, b, delta, epsilon, a_alpha,
     S_dep = R*(-log(V) + log(V - b)) + R*log(P*V/(R*T))
     Cv_dep = 0
     return [dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep]
+
+
+def eos_lnphi(T, P, V, b, delta, epsilon, a_alpha):
+    r'''Calculate the log fugacity coefficient of the general cubic equation
+    of state form.
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    P : float
+        Pressure, [Pa]
+    V : float
+        Molar volume, [m^3/mol]
+    b : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    delta : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    epsilon : float
+        Coefficient calculated by EOS-specific method, [m^6/mol^2]
+    a_alpha : float
+        Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+
+    Returns
+    -------
+    lnphi : float
+        Log fugacity coefficient, [-]
+
+    Examples
+    --------
+    >>> eos_lnphi(299.0, 100000.0, 0.00013128, 0.000109389, 0.00021537, -1.1964711e-08, 3.8056296)
+    -1.560560970726
+
+    '''
+    RT = R*T
+    RT_inv = 1.0/RT
+    x0 = 1.0/sqrt(delta*delta - 4.0*epsilon)
+
+    arg = 2.0*V*x0 + delta*x0
+    fancy = catanh(arg).real
+
+# Possible optimization, numerical analysis required.
+#     arg2 = (arg + 1.0)/(arg - 1.0)
+#     fancy = 0.25*log(arg2*arg2)
+
+    return (P*V*RT_inv + log(RT/(P*(V-b))) - 1.0
+            - 2.0*a_alpha*fancy*RT_inv*x0)
 
 
 class GCEOS(object):
@@ -7001,7 +7054,7 @@ class GCEOS(object):
         r'''The natural logarithm of the fugacity coefficient for
         the liquid phase, [-].
         '''
-        return log(self.phi_l)
+        return self.G_dep_l*R_inv/self.T
 
     @property
     def lnphi_g(self):

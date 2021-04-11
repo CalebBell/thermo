@@ -76,6 +76,7 @@ __all__ = ['a_alpha_aijs_composition_independent',
            'a_alpha_quadratic_terms', 'a_alpha_and_derivatives_quadratic_terms',
            'PR_lnphis', 'PR_lnphis_fastest', 'lnphis_direct',
            'G_dep_lnphi_d_helper', 'PR_translated_ddelta_dzs',
+           'PR_translated_depsilon_dzs',
            'eos_mix_dV_dzs']
 
 
@@ -800,6 +801,13 @@ def PR_translated_ddelta_dzs(b0s, cs, N, out=None):
         out[i] = 2.0*(cs[i] + b0s[i])
     return out
 
+def PR_translated_depsilon_dzs(epsilon, c, b, b0s, cs, N, out=None):
+    if out is None:
+        out = [0.0]*N
+        b0 = b + c
+    for i in range(N):
+        out[i] = cs[i]*(2.0*b0 + c) + c*(2.0*b0s[i] + cs[i]) - 2.0*b0*b0s[i]
+    return out
 
 
 def PR_lnphis(T, P, Z, b, a_alpha, zs, bs, a_alpha_j_rows):

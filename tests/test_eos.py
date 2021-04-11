@@ -326,6 +326,10 @@ def test_PR_quick():
     T_analytical = PR_solve_T_analytical_orig(eos.P, eos.V_g, eos.Tc, eos.a, eos.b, eos.kappa)
     assert_close(T_analytical, eos.solve_T(P=eos.P, V=eos.V_g), rtol=1e-13)
 
+def test_lnphi_l_low_TP():
+    # Was failing because of an underflow
+    eos = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=1.0, P=0.00013848863713938732)
+    assert_close(eos.lnphi_l, -5820.389433322589, rtol=1e-10)
 
 @pytest.mark.slow
 @pytest.mark.fuzz
@@ -2365,3 +2369,21 @@ def test_model_pickleable_eos():
         assert e.__dict__ == e2.__dict__
         assert e == e2
         assert hash(e) == hash(e2)
+
+
+def test_eos_lnphi():
+    from thermo.eos import eos_list
+    for e in eos_list:
+        if e is IG or e is VDW:
+            continue
+#         for T in linspace(1, 10000, 2):
+#         for P in logspace(log10(1e-4), log10(1e10), 10):
+
+        T, P = 400.0, 1e5
+        eos = e(Tc=507.6, Pc=3025000.0, omega=0.2975, T=T, P=P)
+        if hasattr(eos, 'V_l'):
+            lnphi_calc = eos_lnphi(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+            assert_close(lnphi_calc, eos.lnphi_l, rtol=1e-14)
+        if hasattr(eos, 'V_g'):
+            lnphi_calc = eos_lnphi(eos.T, eos.P, eos.V_g, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+            assert_close(lnphi_calc, eos.lnphi_g, rtol=1e-14)
