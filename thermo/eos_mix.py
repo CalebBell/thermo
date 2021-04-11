@@ -212,7 +212,7 @@ from thermo import serialize
 from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     a_alpha_aijs_composition_independent_support_zeros, a_alpha_and_derivatives, a_alpha_and_derivatives_full,
     a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms,
-    G_dep_lnphi_d_helper, eos_mix_dV_dzs,
+    G_dep_lnphi_d_helper, eos_mix_dV_dzs, VDW_lnphis,
     PR_translated_ddelta_dzs, PR_translated_depsilon_dzs)
 from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     Soave_79_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
@@ -10167,17 +10167,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
            Butterworth-Heinemann, 1985.
         '''
-        phis = []
-        V = Z*R*self.T/self.P
-
-        t1 = log(Z*(1. - self.b/V))
-        t2 = 2.0/(R*self.T*V)
-        t3 = 1.0/(V - self.b)
-        a_alpha = self.a_alpha
-        for ai, bi in zip(self.ais, self.bs):
-            phi = (bi*t3 - t1 - t2*(a_alpha*ai)**0.5)
-            phis.append(phi)
-        return phis
+        return VDW_lnphis(self.T, self.P, Z, self.b, self.a_alpha, self.bs, self.a_alpha_roots)
 
     def dlnphis_dT(self, phase):
         r'''Formula for calculating the temperature derivaitve of

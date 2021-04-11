@@ -74,7 +74,8 @@ from thermo.eos_volume import volume_solutions_halley
 __all__ = ['a_alpha_aijs_composition_independent',
            'a_alpha_and_derivatives', 'a_alpha_and_derivatives_full',
            'a_alpha_quadratic_terms', 'a_alpha_and_derivatives_quadratic_terms',
-           'PR_lnphis', 'PR_lnphis_fastest', 'lnphis_direct',
+           'PR_lnphis', 'VDW_lnphis',
+           'PR_lnphis_fastest', 'lnphis_direct',
            'G_dep_lnphi_d_helper', 'PR_translated_ddelta_dzs',
            'PR_translated_depsilon_dzs',
            'eos_mix_dV_dzs']
@@ -810,8 +811,10 @@ def PR_translated_depsilon_dzs(epsilon, c, b, b0s, cs, N, out=None):
     return out
 
 
-def PR_lnphis(T, P, Z, b, a_alpha, zs, bs, a_alpha_j_rows):
+def PR_lnphis(T, P, Z, b, a_alpha, zs, bs, a_alpha_j_rows, out=None):
     N = len(zs)
+    if out is None:
+        out = [0.0]*N
     T_inv = 1.0/T
     P_T = P*T_inv
 
@@ -824,11 +827,23 @@ def PR_lnphis(T, P, Z, b, a_alpha, zs, bs, a_alpha_j_rows):
     x4 = A*log((ZB + root_two_B)/(ZB - root_two_B))
     t50 = (x4 + x4)/(a_alpha*two_root_two_B)
     t51 = (x4 + (Z - 1.0)*two_root_two_B)/(b*two_root_two_B)
-    lnphis = [0.0]*N
     for i in range(N):
-        lnphis[i] = bs[i]*t51 - x0 - t50*a_alpha_j_rows[i]
-    return lnphis
+        out[i] = bs[i]*t51 - x0 - t50*a_alpha_j_rows[i]
+    return out
 
+def VDW_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_roots, out=None):
+    N = len(bs)
+    if out is None:
+        out = [0.0]*N
+    V = Z*R*T/P
+
+    sqrt_a_alpha = sqrt(a_alpha)
+    t1 = log(Z*(1. - b/V))
+    t2 = 2.0*sqrt_a_alpha/(R*T*V)
+    t3 = 1.0/(V - b)
+    for i in range(N):
+        out[i] = (bs[i]*t3 - t1 - t2*a_alpha_roots[i])
+    return out
 
 def lnphis_direct(zs, model, T, P, *args):
     if model == 10200:
