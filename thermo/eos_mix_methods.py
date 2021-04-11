@@ -811,8 +811,7 @@ def PR_translated_depsilon_dzs(epsilon, c, b, b0s, cs, N, out=None):
     return out
 
 
-def PR_lnphis(T, P, Z, b, a_alpha, zs, bs, a_alpha_j_rows, out=None):
-    N = len(zs)
+def PR_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, out=None):
     if out is None:
         out = [0.0]*N
     T_inv = 1.0/T
@@ -850,7 +849,7 @@ def lnphis_direct(zs, model, T, P, *args):
         return PR_lnphis_fastest(zs, T, P, *args)
     return PR_lnphis_fastest(zs, T, P, *args)
 
-def PR_lnphis_fastest(zs, T, P, kijs, l, g, ais, bs, a_alphas, a_alpha_roots):
+def PR_lnphis_fastest(zs, T, P, kijs, l, g, bs, a_alphas, a_alpha_roots):
     # Uses precomputed values
     # Only creates its own arrays for a_alpha_j_rows and PR_lnphis
     N = len(bs)
@@ -878,4 +877,4 @@ def PR_lnphis_fastest(zs, T, P, kijs, l, g, ais, bs, a_alphas, a_alpha_roots):
     else:
         raise ValueError("Root must be specified")
     Z = Z = P*V0/(R*T)
-    return PR_lnphis(T, P, Z, b, a_alpha, zs, bs, a_alpha_j_rows)
+    return PR_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N)
