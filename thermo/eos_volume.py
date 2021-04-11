@@ -77,7 +77,8 @@ from __future__ import division, print_function
 __all__ = ['volume_solutions_mpmath', 'volume_solutions_mpmath_float',
            'volume_solutions_NR', 'volume_solutions_NR_low_P', 'volume_solutions_halley',
            'volume_solutions_fast', 'volume_solutions_Cardano', 'volume_solutions_a1',
-           'volume_solutions_a2', 'volume_solutions_numpy', 'volume_solutions_ideal']
+           'volume_solutions_a2', 'volume_solutions_numpy', 'volume_solutions_ideal',
+           'volume_solutions_doubledouble_float']
 
 
 from cmath import sqrt as csqrt
@@ -86,6 +87,9 @@ from fluids.numerics import (brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np,
                              roots_cubic_a2,
                              deflate_cubic_real_roots)
+from fluids.numerics.doubledouble import (add_dd, add_imag_dd, cbrt_imag_dd, div_dd,
+                                          div_imag_dd, mul_dd, mul_imag_dd,
+                                          mul_noerrors_dd, sqrt_imag_dd, square_dd)
 
 from fluids.constants import R, R_inv
 
@@ -1108,3 +1112,124 @@ def volume_solutions_ideal(T, P, b=0.0, delta=0.0, epsilon=0.0, a_alpha=0.0):
     (0.0002494338785445972, 0.0, 0.0)
     '''
     return (R*T/P, 0.0, 0.0)
+
+
+
+def volume_solutions_doubledouble_float(T, P, b, delta, epsilon, a_alpha):
+#     P, b, delta, epsilon, a_alpha = 1.0, 0.00025873301932518694, 0.0005174660386503739, -6.694277528912756e-08, 5.665358984369413
+#     P *= T*2e-4
+#     b *= T*1e-2
+#     delta *= T*1e-3
+#     epsilon *= T*1e-4
+#     a_alpha *= T*1e-5
+    x0r, x0e = div_dd(1.0, 0.0, P, 0.0)
+#     print([x0r, x0e], 'x0r, x0e') # good
+    x1r, x1e = mul_noerrors_dd(P, b)
+    x2r, x2e = mul_noerrors_dd(R, T)
+    x3r, x3e = mul_noerrors_dd(P, delta)
+
+    w0r, w0e = add_dd(x1r, x1e, x2r, x2e)
+    x4r, x4e = add_dd(w0r, w0e, -x3r, x3e)
+
+    x5r, x5e = mul_dd(x0r, x0e, x4r, x4e)
+    x22r, x22e = x5r + x5r, x5e + x5e # double
+    x6r, x6e = mul_noerrors_dd(a_alpha, b)
+    x7r, x7e = mul_dd(epsilon, 0.0, x1r, x1e)
+    x8r, x8e = mul_dd(epsilon, 0.0, x2r, x2e)
+    x9r, x9e = square_dd(x0r, x0e)
+#     print([x9r, x9e], 'x9r, x9e') # good
+    x10r, x10e = mul_noerrors_dd(P, epsilon)
+    x11r, x11e = mul_dd(delta, 0.0, x1r, x1e)
+    x12r, x12e = mul_dd(delta, 0.0, x2r, x2e)
+    x17r, x17e = -x4r, -x4e
+#     print([x17r, x17e], 'x17r, x17e') # good
+    x17_2r, x17_2e = square_dd(x17r, x17e)
+#     print([x17_2r, x17_2e], 'x17_2r, x17_2e') # good
+    x18r, x18e = mul_dd(x0r, x0e, x17_2r, x17_2e)
+    w0r, w0e = add_dd(x12r, x12e, -a_alpha, 0.0)
+    w1r, w1e = add_dd(x11r, x11e, -x10r, -x10e)
+    tm1r, tm1e = add_dd(w0r, w0e, w1r, w1e)
+    w0r, w0e = add_dd(x6r, x6e, x7r, x7e)
+    t0r, t0c = add_dd(w0r, w0e, x8r, x8e)
+#     print([t0r, t0c], 't0r, t0c') # good
+    t1r, t1c = add_dd(3.0*tm1r, 3.0*tm1e, x18r, x18e)
+#     print([t1r, t1c], 't1r, t1c') # good
+#     print(x17r, x17e, 'x17r, x17e') # good
+    w0r, w0e = mul_dd(9.0*x0r, 9.0*x0e, x17r, x17e)
+    w0r, w0e = mul_dd(w0r, w0e, tm1r, tm1e)
+    w1r, w1e = mul_dd(2.0*x17_2r, 2.0*x17_2e, x17r, x17e)
+    w1r, w1e = mul_dd(w1r, w1e, x9r, x9e)
+    w0r, w0e = add_dd(w0r, w0e, w1r, w1e)
+    w1r, w1e = mul_dd(t0r, t0c, -27.0, 0.0)
+    t2r, t2c = add_dd(w0r, w0e, w1r, w1e) # has different rounding when not done
+#     print([t2r, t2c], 't2r, t2c') # error term has a different value # fixed
+
+    x4x9r, x4x9e = mul_dd(x4r, x4e, x9r, x9e)
+#     print([x4x9r, x4x9e], 'x4x9r, x4x9e')  # good
+
+    w0r, w0e = square_dd(t1r, t1c)
+    w0r, w0e = mul_dd(-4.0*t1r, -4.0*t1c, w0r, w0e)
+    w0r, w0e = mul_dd(w0r, w0e, x0r, x0e)
+    w1r, w1e = square_dd(t2r, t2c)
+    w0r, w0e = add_dd(w0r, w0e, w1r, w1e)
+    to_sqrtr, to_sqrtrc = mul_dd(x9r, x9e, w0r, w0e)
+#     print([to_sqrtr, to_sqrtrc], 'to_sqrtr, to_sqrtrc')
+
+    w0r, w0e = mul_dd(t0r, t0c, -13.5, 0.0)
+    w0r, w0e = mul_dd(x0r, x0e, w0r, w0e)
+    w1r, w1e = mul_dd(x4x9r, x4x9e, -4.5*tm1r, -4.5*tm1e)
+    w0r, w0e = add_dd(w0r, w0e, w1r, w1e)
+    w1r, w1e = mul_dd(x4r, x4e, x4x9r, x4x9e)
+    w1r, w1e = mul_dd(w1r, w1e, x5r, x5e)
+    easy_addsr, easy_addse = add_dd(w0r, w0e, -w1r, -w1e)
+
+    sqrtrr, sqrtre, sqrtcr, sqrtce = sqrt_imag_dd(to_sqrtr, to_sqrtrc, 0.0, 0.0)
+
+    v0rr, v0re, v0cr, v0ce = add_imag_dd(easy_addsr, easy_addse, 0.0, 0.0,
+                                         0.5*sqrtrr, 0.5*sqrtre, 0.5*sqrtcr, 0.5*sqrtce)
+#     print([sqrtrr, sqrtre, sqrtcr, sqrtce], 'sqrtrr, sqrtre, sqrtcr, sqrtce') # good
+#     print([v0rr, v0re, v0cr, v0ce], 'v0rr, v0re, v0cr, v0ce')
+
+    x19rr, x19re, x19cr, x19ce = cbrt_imag_dd(v0rr, v0re, v0cr, v0ce)
+#     print([x19rr, x19re, x19cr, x19ce], 'x19rr, x19re, x19cr, x19ce') # good
+    x20rr, x20re, x20cr, x20ce = div_imag_dd(-t1r, -t1c, 0.0, 0.0, x19rr, x19re, x19cr, x19ce)
+#     print([x20rr, x20re, x20cr, x20ce], 'x20rr, x20re, x20cr, x20ce')
+#     print(x19rr, x19cr)
+
+    f0rr, f0re, f0cr, f0ce = mul_imag_dd(x20rr, x20re, x20cr, x20ce, x0r, x0e, 0.0, 0.0)
+    x25rr, x25re, x25cr, x25ce = 4.0*f0rr, 4.0*f0re, 4.0*f0cr, 4.0*f0ce
+#     print([x25rr, x25re, x25cr, x25ce], 'x25rr, x25re, x25cr, x25ce') # perfect
+
+    w0r, w0e = add_dd(f0rr, f0re, -x19rr, -x19re)
+    g0, _ = add_dd(w0r, w0e, x5r, x5e)
+#     print([f0cr, f0ce, -x19cr, -x19ce], 'f0cr, f0ce, -x19cr, -x19ce')
+    g1, temp = add_dd(f0cr, f0ce, -x19cr, -x19ce)
+#     print([g0, g1])
+
+    f1rr, f1re, f1cr, f1ce = mul_imag_dd(x19rr, x19re, x19cr, x19ce,
+                                          1.0, 0.0, 1.7320508075688772, 1.0035084221806902e-16)
+#     print([f1rr, f1re, f1cr, f1ce], 'f1rr, f1re, f1cr, f1ce') # same
+    f2rr, f2re, f2cr, f2ce = mul_imag_dd(x25rr, x25re, x25cr, x25ce,
+                                          0.25, 0.0, -0.4330127018922193, -2.5087710554517254e-17)
+#     print([f2rr, f2re, f2cr, f2ce], 'f2rr, f2re, f2cr, f2ce')
+    w0r, w0e = add_dd(f1rr, f1re, x22r, x22e)
+
+    g2, _ = add_dd(w0r, w0e, -f2rr, -f2re)
+    g3, _ = add_dd(f1cr, f1ce, -f2cr, -f2ce)
+
+    f3rr, f3re, f3cr, f3ce = mul_imag_dd(x19rr, x19re, x19cr, x19ce,
+                                         1.0, 0.0, -1.7320508075688772, -1.0035084221806902e-16)
+
+    f4rr, f4re, f4cr, f4ce = mul_imag_dd(x25rr, x25re, x25cr, x25ce,
+                                          0.25, 0.0, 0.4330127018922193, 2.5087710554517254e-17)
+
+    w0r, w0e = add_dd(f3rr, f3re, x22r, x22e)
+    g4, _ = add_dd(w0r, w0e, -f4rr, -f4re)
+    g5, _ = add_dd(f3cr, f3ce, -f4cr, -f4ce)
+#     ans[0] = (g0 + g1*1j)*0.3333333333333333
+#     ans[1] = (g2 + g3*1j)*0.16666666666666666
+#     ans[2] = (g4 + g5*1j)*0.16666666666666666
+#     return ans
+    return ((g0 + g1*1j)*0.3333333333333333,
+            (g2 + g3*1j)*0.16666666666666666,
+            (g4 + g5*1j)*0.16666666666666666)
