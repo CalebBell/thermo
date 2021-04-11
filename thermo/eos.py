@@ -290,7 +290,8 @@ from thermo.eos_volume import (volume_solutions_mpmath, volume_solutions_mpmath_
                                volume_solutions_NR, volume_solutions_NR_low_P,
                                volume_solutions_halley, volume_solutions_fast,
                                volume_solutions_Cardano, volume_solutions_numpy,
-                               volume_solutions_ideal, volume_solutions_a1, volume_solutions_a2)
+                               volume_solutions_ideal, volume_solutions_a1, volume_solutions_a2,
+                               volume_solutions_doubledouble_float)
 from thermo.eos_alpha_functions import (Poly_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_79_a_alpha,
                                     TWU_a_alpha_common)
@@ -1763,6 +1764,7 @@ class GCEOS(object):
 #    volume_solutions = volume_solutions_fast
 #    volume_solutions = staticmethod(volume_solutions_Cardano)
     volume_solutions = staticmethod(volume_solutions_halley)
+#    volume_solutions = staticmethod(volume_solutions_doubledouble_float)
 
     # Solver which actually has the roots
     volume_solutions_full = staticmethod(volume_solutions_NR)
