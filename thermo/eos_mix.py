@@ -212,7 +212,8 @@ from thermo import serialize
 from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     a_alpha_aijs_composition_independent_support_zeros, a_alpha_and_derivatives, a_alpha_and_derivatives_full,
     a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms,
-    G_dep_lnphi_d_helper)
+    G_dep_lnphi_d_helper, eos_mix_dV_dzs,
+    PR_translated_ddelta_dzs)
 from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     Soave_79_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
                                     RK_a_alpha_and_derivatives_vectorized, RK_a_alphas_vectorized,
@@ -3327,45 +3328,9 @@ class GCEOSMIX(GCEOS):
         >>> solve(diff(CUBIC, x), Derivative(V(x), x)) # doctest:+SKIP
         [(-R*T*(V(x)**2 + V(x)*delta(x) + epsilon(x))**3*Derivative(b(x), x) + (V(x) - b(x))**2*(V(x)**2 + V(x)*delta(x) + epsilon(x))**2*Derivative(a \alpha(x), x) - (V(x) - b(x))**2*V(x)**3*a \alpha(x)*Derivative(delta(x), x) - (V(x) - b(x))**2*V(x)**2*a \alpha(x)*delta(x)*Derivative(delta(x), x) - (V(x) - b(x))**2*V(x)**2*a \alpha(x)*Derivative(epsilon(x), x) - (V(x) - b(x))**2*V(x)*a \alpha(x)*delta(x)*Derivative(epsilon(x), x) - (V(x) - b(x))**2*V(x)*a \alpha(x)*epsilon(x)*Derivative(delta(x), x) - (V(x) - b(x))**2*a \alpha(x)*epsilon(x)*Derivative(epsilon(x), x))/(-R*T*(V(x)**2 + V(x)*delta(x) + epsilon(x))**3 + 2*(V(x) - b(x))**2*V(x)**3*a \alpha(x) + 3*(V(x) - b(x))**2*V(x)**2*a \alpha(x)*delta(x) + (V(x) - b(x))**2*V(x)*a \alpha(x)*delta(x)**2 + 2*(V(x) - b(x))**2*V(x)*a \alpha(x)*epsilon(x) + (V(x) - b(x))**2*a \alpha(x)*delta(x)*epsilon(x))]
         '''
-        T = self.T
-        RT = R*T
-        V = Z*RT/self.P
-        ddelta_dzs = self.ddelta_dzs
-        depsilon_dzs = self.depsilon_dzs
-        db_dzs = self.db_dzs
-        da_alpha_dzs = self.da_alpha_dzs
-
-        x0 = self.delta
-        x1 = a_alpha = self.a_alpha
-        x2 = epsilon = self.epsilon
-        b = self.b
-
-        x0V = x0*V
-        Vmb = V - b
-        x5 = Vmb*Vmb
-        x1x5 = x1*x5
-        x0x1x5 = x0*x1x5
-        t0 = V*x1x5
-        x6 = x2*x1x5
-        x9 = V*V
-        x7 = x9*t0
-        x8 = x2*t0
-        x10 = x0V + x2 + x9
-        x10x10 = x10*x10
-        x11 = R*T*x10*x10x10
-        x13 = x0x1x5*x9
-        x7x8 = x7 + x8
-
-        t2 = -1.0/(x0V*x0x1x5 + x0*x6 - x11 + 3.0*x13 + x7x8 + x7x8)
-        t1 = t2*x10x10*x5
-        t3 = x0V*x1x5
-        t4 = x1x5*x9
-        t5 = t2*(t3 + t4 + x6)
-        t6 = t2*(x13 + x7x8)
-        x11t2 = x11*t2
-
-        return [t5*depsilon_dzs[i] - t1*da_alpha_dzs[i] + x11t2*db_dzs[i] + t6*ddelta_dzs[i]
-                for i in range(self.N)]
+        return eos_mix_dV_dzs(self.T, self.P, Z, self.b, self.delta, self.epsilon,
+                              self.a_alpha, self.db_dzs, self.ddelta_dzs,
+                              self.depsilon_dzs, self.da_alpha_dzs, self.N)
 
     def dV_dns(self, Z):
         r'''Calculates the molar volume mole number derivatives
@@ -8004,8 +7969,7 @@ class PRMIXTranslated(PRMIX):
         -----
         This derivative is checked numerically.
         '''
-        b0s, cs, N = self.b0s, self.cs, self.N
-        return [2.0*(cs[i] + b0s[i]) for i in range(N)]
+        return PR_translated_ddelta_dzs(self.b0s, self.cs, self.N)
 
     # Zero in both cases
     d2delta_dzizjs = PRMIX.d2delta_dzizjs

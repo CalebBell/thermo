@@ -74,7 +74,10 @@ from thermo.eos_volume import volume_solutions_halley
 __all__ = ['a_alpha_aijs_composition_independent',
            'a_alpha_and_derivatives', 'a_alpha_and_derivatives_full',
            'a_alpha_quadratic_terms', 'a_alpha_and_derivatives_quadratic_terms',
-           'PR_lnphis', 'PR_lnphis_fastest', 'lnphis_direct', 'G_dep_lnphi_d_helper']
+           'PR_lnphis', 'PR_lnphis_fastest', 'lnphis_direct',
+           'G_dep_lnphi_d_helper', 'PR_translated_ddelta_dzs',
+           'eos_mix_dV_dzs']
+
 
 R2 = R*R
 R_inv = 1.0/R
@@ -694,6 +697,48 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
     return a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_j_rows, da_alpha_dT_j_rows
 
 
+
+
+def eos_mix_dV_dzs(T, P, Z, b, delta, epsilon, a_alpha, db_dzs, ddelta_dzs,
+                   depsilon_dzs, da_alpha_dzs, N, out=None):
+    if out is None:
+        out = [0.0]*N
+    T = T
+    RT = R*T
+    V = Z*RT/P
+
+    x0 = delta
+    x1 = a_alpha = a_alpha
+    x2 = epsilon = epsilon
+
+    x0V = x0*V
+    Vmb = V - b
+    x5 = Vmb*Vmb
+    x1x5 = x1*x5
+    x0x1x5 = x0*x1x5
+    t0 = V*x1x5
+    x6 = x2*x1x5
+    x9 = V*V
+    x7 = x9*t0
+    x8 = x2*t0
+    x10 = x0V + x2 + x9
+    x10x10 = x10*x10
+    x11 = R*T*x10*x10x10
+    x13 = x0x1x5*x9
+    x7x8 = x7 + x8
+
+    t2 = -1.0/(x0V*x0x1x5 + x0*x6 - x11 + 3.0*x13 + x7x8 + x7x8)
+    t1 = t2*x10x10*x5
+    t3 = x0V*x1x5
+    t4 = x1x5*x9
+    t5 = t2*(t3 + t4 + x6)
+    t6 = t2*(x13 + x7x8)
+    x11t2 = x11*t2
+    for i in range(N):
+        out[i] = t5*depsilon_dzs[i] - t1*da_alpha_dzs[i] + x11t2*db_dzs[i] + t6*ddelta_dzs[i]
+    return out
+
+
 def G_dep_lnphi_d_helper(T, P, b, delta, epsilon, a_alpha, N,
     Z, dbs, depsilons, ddelta, dVs, da_alphas, G, out=None):
     if out is None:
@@ -745,6 +790,14 @@ def G_dep_lnphi_d_helper(T, P, b, delta, epsilon, a_alpha, N,
         x1 = dV_dns[i]
         diff = (x1*t1 + t2*(x1 + x1 + x13 - x16*t6) + x14*t3 - t4*da_alpha_dns[i] - t5*(x1 - db_dns[i]))
         out[i] = diff
+    return out
+
+
+def PR_translated_ddelta_dzs(b0s, cs, N, out=None):
+    if out is None:
+        out = [0.0]*N
+    for i in range(N):
+        out[i] = 2.0*(cs[i] + b0s[i])
     return out
 
 
