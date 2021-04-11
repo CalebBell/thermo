@@ -66,14 +66,14 @@ implemented
 '''
 # TODO: put methods like "_fast_init_specific" in here so numba can accelerate them.
 from fluids.constants import R
-from fluids.numerics import numpy as np
+from fluids.numerics import numpy as np, catanh
 from math import sqrt, log
 from thermo.eos_volume import volume_solutions_halley
 
 __all__ = ['a_alpha_aijs_composition_independent',
            'a_alpha_and_derivatives', 'a_alpha_and_derivatives_full',
            'a_alpha_quadratic_terms', 'a_alpha_and_derivatives_quadratic_terms',
-           'PR_lnphis', 'PR_lnphis_fastest']
+           'PR_lnphis', 'PR_lnphis_fastest', 'lnphis_direct', 'G_dep_lnphi_d_helper']
 
 R2 = R*R
 R_inv = 1.0/R
@@ -693,6 +693,61 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
     return a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_j_rows, da_alpha_dT_j_rows
 
 
+def G_dep_lnphi_d_helper(T, P, b, delta, epsilon, a_alpha, N,
+    Z, dbs, depsilons, ddelta, dVs, da_alphas, G, out=None):
+    if out is None:
+        out = [0.0]*N
+
+    x3 = b
+    x4 = delta
+    x5 = epsilon
+    RT = R*T
+    x0 = V = Z*RT/P
+
+    x2 = 1.0/(RT)
+    x6 = x4*x4 - 4.0*x5
+    if x6 == 0.0:
+        # VDW has x5 as zero as delta, epsilon = 0
+        x6 = 1e-100
+    x7 = x6**-0.5
+    x8 = a_alpha
+    x9 = x0 + x0
+    x10 = x4 + x9
+    x11 = x2 + x2
+    x12 = x11*catanh(x10*x7).real
+    x15 = 1.0/x6
+
+    db_dns = dbs
+    depsilon_dns = depsilons
+    ddelta_dns = ddelta
+    dV_dns = dVs
+    da_alpha_dns = da_alphas
+
+    t1 = P*x2
+    t2 = x11*x15*x8/(x10*x10*x15 - 1.0)
+    t3 = x12*x8*x6**(-1.5)
+    t4 = x12*x7
+    t5 = 1.0/(x0 - x3)
+    t6 = x4 + x9
+
+    if G:
+        t1 *= RT
+        t2 *= RT
+        t3 *= RT
+        t4 *= RT
+        t5 *= RT
+
+    for i in range(N):
+        x13 = ddelta_dns[i]
+        x14 = x13*x4 - 2.0*depsilon_dns[i]
+        x16 = x14*x15
+        x1 = dV_dns[i]
+        diff = (x1*t1 + t2*(x1 + x1 + x13 - x16*t6) + x14*t3 - t4*da_alpha_dns[i] - t5*(x1 - db_dns[i]))
+        out[i] = diff
+    return out
+
+
+
 def PR_lnphis(T, P, Z, b, a_alpha, zs, bs, a_alpha_j_rows):
     N = len(zs)
     T_inv = 1.0/T
@@ -713,7 +768,12 @@ def PR_lnphis(T, P, Z, b, a_alpha, zs, bs, a_alpha_j_rows):
     return lnphis
 
 
-def PR_lnphis_fastest(zs, T, P, kijs, l, g, ais, bs, a_alphas, a_alpha_roots, kappas):
+def lnphis_direct(zs, model, T, P, *args):
+    if model == 10200:
+        return PR_lnphis_fastest(zs, T, P, *args)
+    return PR_lnphis_fastest(zs, T, P, *args)
+
+def PR_lnphis_fastest(zs, T, P, kijs, l, g, ais, bs, a_alphas, a_alpha_roots):
     # Uses precomputed values
     # Only creates its own arrays for a_alpha_j_rows and PR_lnphis
     N = len(bs)

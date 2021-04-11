@@ -256,7 +256,7 @@ def test_a_alpha_and_derivatives_full():
 
 @mark_as_numba
 def test_IAPWS95_numba():
-    assert isinstance(thermo.numba.flash.Psat_IAPWS, numba.core.registry.CPUDispatcher)
+    assert isinstance(thermo.numba.flash.iapws95_Psat, numba.core.registry.CPUDispatcher)
     assert isinstance(thermo.numba.phases.IAPWS95._d3Ar_ddeltadtau2_func, numba.core.registry.CPUDispatcher)
 
     from thermo.numba import IAPWS95, IAPWS95Liquid, IAPWS95Gas, FlashPureVLS

@@ -5770,12 +5770,17 @@ class CEOSGas(Phase):
         except AttributeError:
             return eos_mix.fugacity_coefficients(eos_mix.Z_l)
 
+
+    def lnphis_args(self):
+        eos_mix = self.eos_mix
+        return (self.eos_class.model_id, self.T, self.P, eos_mix.kijs, self.is_liquid, self.is_gas,
+                eos_mix.ais, eos_mix.bs, eos_mix.a_alphas, eos_mix.a_alpha_roots)
+
     def lnphis_at_zs(self, zs):
         eos_mix = self.eos_mix
         if eos_mix.__class__.__name__ == 'PRMIX':
             return PR_lnphis_fastest(zs, self.T, self.P, eos_mix.kijs, self.is_liquid, self.is_gas,
-                                     eos_mix.ais, eos_mix.bs, eos_mix.a_alphas, eos_mix.a_alpha_roots,
-                                     eos_mix.kappas)
+                                     eos_mix.ais, eos_mix.bs, eos_mix.a_alphas, eos_mix.a_alpha_roots)
         return self.to_TP_zs(self.T, self.P, zs).lnphis()
 
 

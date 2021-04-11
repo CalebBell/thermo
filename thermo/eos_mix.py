@@ -211,7 +211,8 @@ from chemicals.flash_basic import K_value, Wilson_K_value
 from thermo import serialize
 from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     a_alpha_aijs_composition_independent_support_zeros, a_alpha_and_derivatives, a_alpha_and_derivatives_full,
-    a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms)
+    a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms,
+    G_dep_lnphi_d_helper)
 from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     Soave_79_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
                                     RK_a_alpha_and_derivatives_vectorized, RK_a_alphas_vectorized,
@@ -237,54 +238,6 @@ root_two_p1 = root_two + 1.0
 
 c1R2_PR = PR.c1R2
 c2R_PR = PR.c2R
-
-#def PR_lnphis_direct(zs, T, P, Tcs, Pcs, omegas, kijs, l=False, g=False):
-#    # zs should be first so args can be used for the other arguments
-#    N = len(Tcs)
-#    b = 0.0
-##    ais = np.zeros(N)
-##    bs = np.zeros(N)
-##    kappas = np.zeros(N)
-#
-#    ais = [0.0]*N
-#    bs = [0.0]*N
-#    kappas = [0.0]*N
-#
-#    for i in range(N):
-#        f = Tcs[i]/Pcs[i]
-#        ais[i] = c1R2_PR*Tcs[i]*f
-#        bs[i] = c2R_PR*f
-#        b += f*zs[i]
-#        kappas[i] = omegas[i]*(-0.26992*omegas[i] + 1.54226) + 0.37464
-#    b *= c2R_PR
-#    delta = 2.0*b
-#    epsilon = -b*b
-#
-#    a_alphas = PR_a_alphas_vectorized(T, Tcs, ais, kappas)
-#    a_alpha_roots = [0.0]*N
-##    a_alpha_roots = np.zeros(N)
-#    for i in range(N):
-#        a_alpha_roots[i] = a_alphas[i]**0.5
-#
-#    a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs)
-#    V0, V1, V2 = volume_solutions_halley(T, P, b, delta, epsilon, a_alpha)
-#    if l:
-#        # Prefer liquid, ensure V0 is the smalest root
-#        if V1 != 0.0:
-#            if V0 > V1:
-#                V0 = V1
-#            if V0 > V2:
-#                V0 = V2
-#    elif g:
-#        if V1 != 0.0:
-#            if V0 < V1:
-#                V0 = V1
-#            if V0 < V2:
-#                V0 = V2
-#    else:
-#        raise ValueError("Root must be specified")
-#    Z = Z = P*V0/(R*T)
-#    return PR_lnphis(T, P, Z, b, a_alpha, zs, bs, a_alpha_j_rows)
 
 
 class GCEOSMIX(GCEOS):
@@ -4129,57 +4082,10 @@ class GCEOSMIX(GCEOS):
 
     def _G_dep_lnphi_d_helper(self, Z, dbs, depsilons, ddelta, dVs, da_alphas,
                               G=True):
-        # Quite a bit of optimization remains here - only do once tested
-        T = self.T
-        P = self.P
-        x3 = self.b
-        x4 = self.delta
-        x5 = self.epsilon
-        RT = R*T
-        x0 = V = Z*RT/P
-
-        x2 = 1.0/(RT)
-        x6 = x4*x4 - 4.0*x5
-        if x6 == 0.0:
-            # VDW has x5 as zero as delta, epsilon = 0
-            x6 = 1e-100
-        x7 = x6**-0.5
-        x8 = self.a_alpha
-        x9 = x0 + x0
-        x10 = x4 + x9
-        x11 = x2 + x2
-        x12 = x11*catanh(x10*x7).real
-        x15 = 1.0/x6
-
-        db_dns = dbs
-        depsilon_dns = depsilons
-        ddelta_dns = ddelta
-        dV_dns = dVs
-        da_alpha_dns = da_alphas
-
-        t1 = P*x2
-        t2 = x11*x15*x8/(x10*x10*x15 - 1.0)
-        t3 = x12*x8*x6**(-1.5)
-        t4 = x12*x7
-        t5 = 1.0/(x0 - x3)
-        t6 = x4 + x9
-
-        if G:
-            t1 *= RT
-            t2 *= RT
-            t3 *= RT
-            t4 *= RT
-            t5 *= RT
-
-        dfugacity_dns = []
-        for i in range(self.N):
-            x13 = ddelta_dns[i]
-            x14 = x13*x4 - 2.0*depsilon_dns[i]
-            x16 = x14*x15
-            x1 = dV_dns[i]
-            diff = (x1*t1 + t2*(x1 + x1 + x13 - x16*t6) + x14*t3 - t4*da_alpha_dns[i] - t5*(x1 - db_dns[i]))
-            dfugacity_dns.append(diff)
-        return dfugacity_dns
+        return G_dep_lnphi_d_helper(self.T, self.P, self.b, self.delta,
+                                    self.epsilon, self.a_alpha, self.N,
+                                    Z, dbs, depsilons, ddelta, dVs, da_alphas,
+                                    G)
 
     def dlnphi_dzs(self, Z):
         r'''Calculates the mixture log *fugacity coefficient* mole fraction
@@ -6216,6 +6122,8 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
     nonstate_constants_specific = ()
     kwargs_keys = ('kijs',)
 
+    model_id = 0
+
     def _zeros1d(self):
         return self.zeros1d
 
@@ -6647,6 +6555,7 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     kwargs_keys = ('kijs',)
+    model_id = 10002
 
     def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
@@ -6967,6 +6876,7 @@ class PRMIX(GCEOSMIX, PR):
 
     nonstate_constants_specific = ('kappas', )
     kwargs_keys = ('kijs',)
+    model_id = 10200
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
@@ -8011,6 +7921,7 @@ class PRMIXTranslated(PRMIX):
     dlnphis_dP = GCEOSMIX.dlnphis_dP
     d_lnphi_dzs = GCEOSMIX.dlnphis_dzs
     P_max_at_V = GCEOSMIX.P_max_at_V
+    model_id = 10202
 
     # All the b derivatives happen to work out to be the same, and are checked numerically
     solve_T = GCEOS.solve_T
@@ -8456,6 +8367,7 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
     mix_kwargs_to_pure = {'cs': 'c'}
     kwargs_linear = ('cs',)
     kwargs_keys = ('kijs', 'cs')
+    model_id = 10203
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None,
                  T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
@@ -8605,6 +8517,7 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
     kwargs_linear = ('cs', 'alpha_coeffs')
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     kwargs_keys = ('kijs', 'alpha_coeffs', 'cs')
+    model_id = 10203
 
     # There is an updated set of correlations - which means a revision flag is needed
     # Analysis of the Combinations of Property Data That Are Suitable for a Safe Estimation of Consistent Twu α-Function Parameters: Updated Parameter Values for the Translated-Consistent tc-PR and tc-RK Cubic Equations of State
@@ -8765,6 +8678,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
     eos_pure = SRK
     nonstate_constants_specific = ('ms',)
     kwargs_keys = ('kijs', )
+    model_id = 10100
 
     ddelta_dzs = RKMIX.ddelta_dzs
     ddelta_dns = RKMIX.ddelta_dns
@@ -9123,6 +9037,7 @@ class SRKMIXTranslated(SRKMIX):
     d_lnphi_dzs = GCEOSMIX.dlnphis_dzs
     P_max_at_V = GCEOSMIX.P_max_at_V
     solve_T = GCEOS.solve_T
+    model_id = 10101
 
     eos_pure = SRKTranslated
     mix_kwargs_to_pure = {'cs': 'c'}
@@ -9573,6 +9488,7 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     kwargs_linear = ('cs', 'alpha_coeffs')
     kwargs_keys = ('kijs', 'alpha_coeffs', 'cs')
+    model_id = 10102
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None,
                  alpha_coeffs=None, T=None, P=None, V=None,
@@ -9759,6 +9675,8 @@ class MSRKMIXTranslated(Soave_79_a_alpha, SRKMIXTranslatedConsistent):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
     kwargs_keys = ('kijs', 'alpha_coeffs', 'cs')
     eos_pure = MSRKTranslated
+    model_id = 10103
+
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None,
                  alpha_coeffs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
@@ -9904,6 +9822,7 @@ class PSRK(Mathias_Copeman_a_alpha, PSRKMixingRules, SRKMIXTranslated):
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     kwargs_linear = ('cs', 'alpha_coeffs')
     kwargs_keys = ('kijs', 'alpha_coeffs', 'cs', 'ge_model')
+    model_id = 10300
 
     def __init__(self, Tcs, Pcs, omegas, zs, alpha_coeffs, ge_model,
                  kijs=None, cs=None,
@@ -10067,6 +9986,7 @@ class PR78MIX(PRMIX):
     '''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = PR78
+    model_id = 10201
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
@@ -10181,6 +10101,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
     eos_pure = VDW
     nonstate_constants_specific = tuple()
     kwargs_keys = ('kijs',)
+    model_id = 10001
 
     def __init__(self, Tcs, Pcs, zs, kijs=None, T=None, P=None, V=None,
                  omegas=None, fugacities=True, only_l=False, only_g=False):
@@ -10641,6 +10562,7 @@ class PRSVMIX(PRMIX, PRSV):
     mix_kwargs_to_pure = {'kappa1s': 'kappa1'}
     kwargs_linear = ('kappa1s',)
     kwargs_keys = ('kijs', 'kappa1s')
+    model_id = 10205
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  kappa1s=None, fugacities=True, only_l=False, only_g=False):
@@ -10853,6 +10775,7 @@ class PRSV2MIX(PRMIX, PRSV2):
     mix_kwargs_to_pure = {'kappa1s': 'kappa1', 'kappa2s': 'kappa2', 'kappa3s': 'kappa3'}
     kwargs_linear = ('kappa1s', 'kappa2s', 'kappa3s')
     kwargs_keys = ('kijs', 'kappa1s', 'kappa2s', 'kappa3s')
+    model_id = 10206
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  kappa1s=None, kappa2s=None, kappa3s=None,
@@ -11064,6 +10987,7 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T
     kwargs_keys = ('kijs', )
+    model_id = 10204
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
@@ -11204,6 +11128,7 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
     eos_pure = TWUSRK
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T
+    model_id = 10104
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
@@ -11331,6 +11256,7 @@ class APISRKMIX(SRKMIX, APISRK):
     mix_kwargs_to_pure = {'S1s': 'S1', 'S2s': 'S2'}
     kwargs_linear = ('S1s', 'S2s')
     kwargs_keys = ('kijs', 'S1s', 'S2s')
+    model_id = 10105
 
     def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
                  S1s=None, S2s=None, fugacities=True, only_l=False, only_g=False):
