@@ -89,7 +89,8 @@ from fluids.numerics import (brenth, third, sixth, roots_cubic,
                              deflate_cubic_real_roots)
 from fluids.numerics.doubledouble import (add_dd, add_imag_dd, cbrt_imag_dd, div_dd,
                                           div_imag_dd, mul_dd, mul_imag_dd,
-                                          mul_noerrors_dd, sqrt_imag_dd, square_dd)
+                                          mul_noerrors_dd, sqrt_imag_dd, square_dd,
+                                          sqrt_dd, cbrt_dd)
 
 from fluids.constants import R, R_inv
 
@@ -1115,7 +1116,7 @@ def volume_solutions_ideal(T, P, b=0.0, delta=0.0, epsilon=0.0, a_alpha=0.0):
 
 
 
-def volume_solutions_doubledouble_float(T, P, b, delta, epsilon, a_alpha):
+def volume_solutions_doubledouble_inline(T, P, b, delta, epsilon, a_alpha):
 #     P, b, delta, epsilon, a_alpha = 1.0, 0.00025873301932518694, 0.0005174660386503739, -6.694277528912756e-08, 5.665358984369413
 #     P *= T*2e-4
 #     b *= T*1e-2
@@ -1233,3 +1234,84 @@ def volume_solutions_doubledouble_float(T, P, b, delta, epsilon, a_alpha):
     return ((g0 + g1*1j)*0.3333333333333333,
             (g2 + g3*1j)*0.16666666666666666,
             (g4 + g5*1j)*0.16666666666666666)
+
+
+def volume_solutions_doubledouble_float(T, P, b, delta, epsilon, a_alpha):
+#     P, b, delta, epsilon, a_alpha = 1.0, 0.00025873301932518694, 0.0005174660386503739, -6.694277528912756e-08, 5.665358984369413
+    third = 0.3333333333333333
+    RT_invr, RT_inve = div_dd(0.12027235504272604, 6.2277131030532505e-18, T, 0.0)
+    P_RT_invr, P_RT_inve = mul_dd(P, 0.0, RT_invr, RT_inve)
+    Br, Be = mul_dd(b, 0.0, P_RT_invr, P_RT_inve)
+    Bp1r, Bp1e = add_dd(Br, Be, 1.0, 0.0)
+    deltasr, deltase = mul_dd(delta, 0.0, P_RT_invr, P_RT_inve)
+    w0r, w0e = mul_dd(a_alpha, 0.0, P_RT_invr, P_RT_inve)
+    thetasr, thetase = mul_dd(w0r, w0e, RT_invr, RT_inve)
+    w0r, w0e = mul_dd(epsilon, 0.0, P_RT_invr, P_RT_inve) # Could just multiply epsilon by P here
+    epsilonsr, epsilonse = mul_dd(w0r, w0e, P_RT_invr, P_RT_inve)
+
+    w0r, w0e = add_dd(deltasr, deltase, -Br, -Be)
+    br, be = add_dd(w0r, w0e, -1.0, 0.0)
+
+    w0r, w0e = add_dd(thetasr, thetase, epsilonsr, epsilonse)
+    w1r, w1e = mul_dd(deltasr, deltase, Bp1r, Bp1e)
+    cr, ce = add_dd(w0r, w0e, -w1r, -w1e)
+
+    w0r, w0e = mul_dd(epsilonsr, epsilonse, Bp1r, Bp1e)
+    w1r, w1e = mul_dd(thetasr, thetase, Br, Be)
+    dr, de = add_dd(w0r, w0e, w1r, w1e)
+    dr = -dr
+    de = -de
+
+    a_invr, a_inve = div_dd(1.0, 0.0, 1.0, 0)
+    a_inv2r, a_inv2c = square_dd(a_invr, a_inve)
+#     print([a_inv2r, a_inv2c])
+    bbr, bbe = square_dd(br, be)
+    b_ar, b_ae = br, be#mul_dd(br, be, a_invr, a_inve)
+    b_a2r, b_a2e = square_dd(b_ar, b_ae)
+
+#     w0r, w0e = mul_dd(cr, ce, a_invr, a_inve)
+    fr, fe = add_dd(cr, ce, -third*b_a2r, -third*b_a2e)
+
+    w0r, w0e = mul_dd(bbr+bbr, bbe+bbe, br, be)
+#     w0r, w0e = mul_dd(w0r, w0e, a_inv2r, a_inv2c)
+#     w0r, w0e = mul_dd(w0r, w0e, a_invr, a_invc)
+    w1r, w1e = mul_dd(-3.0*br, -3.0*be, -3.0*cr, -3.0*ce)
+#     w1r, w1e = mul_dd(w1r, w1e, a_inv2r, a_inv2c)
+    w2r, w2e = mul_dd(27.0, 0.0, dr, de)
+#     w2r, w2e = mul_dd(w2r, w2e, a_invr, a_inve)
+    w0r, w0e = add_dd(w0r, w0e, w1r, w1e)
+    w0r, w0e = add_dd(w0r, w0e, w2r, w2e)
+    gr, ge = div_dd(w0r, w0e, 27.0, 0.0)
+
+    w0r, w0e = square_dd(gr, ge)
+    w1r, w1e = square_dd(fr, fe)
+    w1r, w1e = mul_dd(fr, fe, w1r, w1e)
+    w1r, w1e = div_dd(w1r, w1e, 27.0, 0.0)
+
+    hr, he = add_dd(0.25*w0r, 0.25*w0e, w1r, w1e)
+
+    if hr > 0.0:
+        root_hr, root_he = sqrt_dd(hr, he)
+        Rr, Re = add_dd(-0.5*gr, -0.5*ge, root_hr, root_he)
+
+        if Rr >= 0.0:
+            Sr, Se = cbrt_dd(Rr, Re)
+        else:
+            Sr, Se = cbrt_dd(-Rr, -Re)
+            Sr, Se = -Sr, -Se
+        Tr, Te = add_dd(-0.5*gr, -0.5*ge, -root_hr, -root_he)
+        if T >= 0.0:
+            Ur, Ue = cbrt_dd(Tr, Te)
+        else:
+            Ur, Ue = cbrt_dd(-Tr, -Te)
+            Ur, Ue = -Ur, -Ue
+
+        SUr, SUe = add_dd(Sr, Se, Ur, Ue)
+        x1r, x1e = add_dd(SUr, SUe, -third*br, -third*be)
+
+        # Broken somewhere.
+        argr, arge = div_dd(1.0, 0.0, P_RT_invr, P_RT_inve)
+        V1, _ = mul_dd(x1r, x1e, argr, arge)
+        return (V1, 0.0, 0.0)
+    else:
+         return volume_solutions_doubledouble_inline(T, P, b, delta, epsilon, a_alpha)
