@@ -391,6 +391,13 @@ def eos_lnphi(T, P, V, b, delta, epsilon, a_alpha):
     r'''Calculate the log fugacity coefficient of the general cubic equation
     of state form.
 
+    .. math::
+        \ln \phi = \frac{P V}{R T} + \log{\left(V \right)} - \log{\left(\frac{P
+        V}{R T} \right)} - \log{\left(V - b \right)} - 1 - \frac{2 a {\alpha}
+        \operatorname{atanh}{\left(\frac{2 V}{\sqrt{\delta^{2} - 4 \epsilon}}
+        + \frac{\delta}{\sqrt{\delta^{2} - 4 \epsilon}} \right)}}
+        {R T \sqrt{\delta^{2} - 4 \epsilon}}
+
     Parameters
     ----------
     T : float
