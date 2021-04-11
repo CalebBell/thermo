@@ -2372,6 +2372,29 @@ def test_model_pickleable_eos():
 
 
 def test_eos_lnphi():
+    '''
+    # Cv departure
+    from sympy import *
+    P, T, V, R, b, a, delta, epsilon = symbols('P, T, V, R, b, a, delta, epsilon')
+    Tc, Pc, omega = symbols('Tc, Pc, omega')
+    a_alpha = symbols('a_alpha')
+    da_alpha_dT, d2a_alpha_dT2 = symbols('da_alpha_dT, d2a_alpha_dT2')
+
+    CUBIC = R*T/(V-b) - a_alpha/(V*V + delta*V + epsilon) - P
+
+
+    S_dep = R*log(V-b)+2*da_alpha_dT*atanh((2*V+delta)/sqrt(delta**2-4*epsilon))/sqrt(delta**2-4*epsilon)-R*log(V)
+    S_dep += R*log(P*V/(R*T))
+
+    H_dep = 2*atanh((2*V+delta)/sqrt(delta**2-4*epsilon))*(da_alpha_dT*T-a_alpha)/sqrt(delta**2-4*epsilon)
+    H_dep += P*V - R*T
+
+
+    G_dep = H_dep - T*S_dep
+    lnphi = G_dep/(R*T)
+    print(latex(simplify(lnphi)))
+
+    '''
     from thermo.eos import eos_list
     for e in eos_list:
         if e is IG or e is VDW:
