@@ -50,7 +50,8 @@ Faster implementations which do not store N^2 matrices:
 
 .. autofunction:: a_alpha_quadratic_terms
 .. autofunction:: a_alpha_and_derivatives_quadratic_terms
-
+'''
+'''
 Direct fugacity calls
 ---------------------
 The object-oriented interface is quite convenient. However, sometimes it is
