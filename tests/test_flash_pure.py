@@ -877,7 +877,9 @@ def test_V_error_plot(fluid, eos, P_range):
     # Cannot use json - key is a tuple which json does not support.
     import pickle
     try:
-        mem_cache = pickle.load(open(os.path.join(path, key + '.dat'), 'r'))
+        open_file = open(os.path.join(path, key + '.dat'), 'rb')
+        mem_cache = pickle.load(open_file)
+        open_file.close()
     except:
         pass
 
@@ -890,7 +892,7 @@ def test_V_error_plot(fluid, eos, P_range):
 
     class VolumeWrapper(eos):
         @staticmethod
-        def volume_solutions_mpmath(*args):
+        def volume_solutions_mp(*args):
             if args in mem_cache:
                 return mem_cache[args]
             Vs = eos_volume.volume_solutions_mpmath(*args)
@@ -900,21 +902,9 @@ def test_V_error_plot(fluid, eos, P_range):
 
 
     obj = VolumeWrapper(T=T, P=P, **kwargs)
-#    try:
     errs, plot_fig = obj.volume_errors(plot=True, show=False, pts=100,
                                        Tmin=1e-4, Tmax=1e4, Pmin=Pmin, Pmax=Pmax,
                                        trunc_err_low=1e-15, color_map=cm_flash_tol())
-#    except Exception as e:
-#        if not PY2:
-#            GCEOS.volume_solutions_mpmath = orig_func
-#        else:
-#            setattr(GCEOS, 'volume_solutions_mpmath', orig_func)
-#        raise e
-#
-#    if not PY2:
-#        GCEOS.volume_solutions_mpmath = orig_func
-#    else:
-#        setattr(GCEOS, 'volume_solutions_mpmath', orig_func)
 
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
@@ -924,7 +914,9 @@ def test_V_error_plot(fluid, eos, P_range):
     assert max_err < 1e-10
 
     if did_new_dat[0]:
-        pickle.dump(mem_cache, open(os.path.join(path, key + '.dat'), 'wb'), protocol=2)
+        open_file = open(os.path.join(path, key + '.dat'), 'wb')
+        pickle.dump(mem_cache, open_file, protocol=2)
+        open_file.close()
 
 
 #test_V_error_plot('ethane', SRK, 'low')

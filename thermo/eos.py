@@ -1766,6 +1766,8 @@ class GCEOS(object):
     volume_solutions = staticmethod(volume_solutions_halley)
 #    volume_solutions = staticmethod(volume_solutions_doubledouble_float)
 
+    volume_solutions_mp = staticmethod(volume_solutions_mpmath)
+
     # Solver which actually has the roots
     volume_solutions_full = staticmethod(volume_solutions_NR)
 
@@ -1885,7 +1887,7 @@ class GCEOS(object):
         '''
 #        Vs_good, Vs = self.mpmath_volumes, self.sorted_volumes
         # Compare the reals only if mpmath has the imaginary roots
-        Vs_good = volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
+        Vs_good = self.volume_solutions_mp(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
         Vs_filtered = [i.real for i in Vs_good if (i.real ==0 or abs(i.imag/i.real) < 1E-20) and i.real > self.b]
         if len(Vs_filtered) in (2, 3):
             two_roots_mpmath = True
