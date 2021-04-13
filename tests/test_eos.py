@@ -1466,7 +1466,7 @@ def test_fuzz_dV_dP_and_d2V_dP2_derivatives():
                             continue
                         x.append(numer)
                         y.append(ana)
-            assert_close1d(x, y, rtol=1e-5)
+            assert_close1d(x, y, rtol=3e-5)
 
 
 @pytest.mark.slow
@@ -2370,6 +2370,17 @@ def test_model_pickleable_eos():
         assert e == e2
         assert hash(e) == hash(e2)
 
+def test_eos_does_not_set_double_root_when_same():
+    eos = PRTranslatedConsistent(Tc=126.2, Pc=3394387.5, omega=0.04, c=-1.764477338312623e-06, alpha_coeffs=(0.1120624, 0.8782816, 2.0), T=3274.5491628777654, P=278255940.2207035)
+    assert eos.phase != 'l/g'
+
+    # Another case - alpha 1e-16
+    eos = PRTranslatedConsistent(Tc=126.2, Pc=3394387.5, omega=0.04, c=-1.764477338312623e-06, alpha_coeffs=(0.1120624, 0.8782816, 2.0), T=3944.2060594377003, P=2.1544346900318865)
+    assert eos.phase != 'l/g/'
+
+    # Duplicate root case
+    obj = PRTranslatedConsistent(Tc=126.2, Pc=3394387.5, omega=0.04, T=3204.081632653062, P=1e9)
+    obj.phase != 'l/g'
 
 def test_eos_lnphi():
     '''
@@ -2405,3 +2416,5 @@ def test_eos_lnphi():
         if hasattr(eos, 'V_g'):
             lnphi_calc = eos_lnphi(eos.T, eos.P, eos.V_g, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
             assert_close(lnphi_calc, eos.lnphi_g, rtol=1e-14)
+
+

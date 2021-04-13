@@ -935,6 +935,10 @@ def test_V_error_plot(fluid, eos, P_range):
 #test_V_error_plot('hydrogen', SRK, 'high')
 #test_V_error_plot('hydrogen', TWUSRKMIX, 'high')
 #test_V_error_plot('hydrogen', IGMIX, 'low')
+#test_V_error_plot('methane', SRKTranslatedConsistent, 'high')
+test_V_error_plot('nitrogen', PRTranslatedConsistent, 'high')
+
+
 
 
 #### Ideal property package - dead out of the gate, second T derivative of V is zero - breaks requirements

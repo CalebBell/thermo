@@ -299,3 +299,18 @@ def test_RegularSolution_numba():
     GE.to_T_xs(T=T+1.0, xs=xs2np).gammas()
 
     assert_close1d(GE.d2GE_dTdxs(), [0.0]*N, atol=0)
+
+@mark_as_numba
+def test_volume_numba_solvers():
+
+    args = (0.0001, 0.01, 2.590839755349289e-05, 2.590839755349289e-05, 0.0, 348530.6151663297)
+    slns = thermo.numba.eos_volume.volume_solutions_halley(*args)
+    assert slns[1] == 0
+    assert slns[2] == 0
+    assert_close(slns[0], 2.5908397553496088e-05, rtol=1e-15)
+
+    args = (0.0001, 154141458.17537114, 2.590839755349289e-05, 2.590839755349289e-05, 0.0, 348530.6151663297)
+    slns = thermo.numba.eos_volume.volume_solutions_halley(*args)
+    assert slns[1] == 0
+    assert slns[2] == 0
+    assert_close(slns[0], 2.5908397553496098e-05, rtol=1e-15)

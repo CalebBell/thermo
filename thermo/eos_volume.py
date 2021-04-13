@@ -83,9 +83,9 @@ __all__ = ['volume_solutions_mpmath', 'volume_solutions_mpmath_float',
 
 from cmath import sqrt as csqrt
 
-from fluids.numerics import (brenth, third, sixth, roots_cubic,
-                             roots_cubic_a1, numpy as np,
-                             roots_cubic_a2,
+from fluids.numerics import (brenth, third, sixth, roots_cubic, newton,
+                             roots_cubic_a1, numpy as np, sqrt,
+                             roots_cubic_a2, horner_and_der,
                              deflate_cubic_real_roots)
 from fluids.numerics.doubledouble import (add_dd, add_imag_dd, cbrt_imag_dd, div_dd,
                                           div_imag_dd, mul_dd, mul_imag_dd,
@@ -100,6 +100,7 @@ def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, dps=30):
     r'''Solution of this form of the cubic EOS in terms of volumes, using the
     `mpmath` arbitrary precision library. The number of decimal places returned
     is controlled by the `dps` parameter.
+
 
     This function is the reference implementation which provides exactly
     correct solutions; other algorithms are compared against this one.
@@ -619,8 +620,6 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
     '''
     '''
     Cases known to be failing:
-        (nitrogen); goes to the other solver and it reports a wrong duplicate root
-        obj = PRTranslatedConsistent(Tc=126.2, Pc=3394387.5, omega=0.04, T=3204.081632653062, P=1e9)
     '''
     # Test the case where a_alpha is so low, even with the lowest possible volume `b`,
     # the value of the second term plus P is equal to P.
@@ -628,7 +627,8 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
 #            return (b + R*T/P, 0.0, 0.0)
     if a_alpha/(b*(b + delta) + epsilon) + P == P:
         return (b + R*T/P, 0.0, 0.0)
-    if P < 1e-2 or a_alpha < 1e-9:  # numba: delete
+    if P < 1e-2:  # numba: delete
+#    if P < 1e-2 or a_alpha < 1e-9:  # numba: delete
     # if 0 or (0 and ((T < 1e-2 and P > 1e6) or (P < 1e-3 and T < 1e-2) or (P < 1e-1 and T < 1e-4) or P < 1)):
         # Not perfect but so much wasted dev time need to move on, try other fluids and move this tolerance up if needed
         # if P < min(GCEOS.P_discriminant_zeros_analytical(T=T, b=b, delta=delta, epsilon=epsilon, a_alpha=a_alpha, valid=True)):
@@ -643,6 +643,11 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
 #            return volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
 #        except:
 #            pass
+    if a_alpha > 1e4:
+        V_possible = high_alpha_one_root(T, P, b, delta, epsilon, a_alpha)
+        if V_possible != 0.0:
+            return (V_possible, 0.0, 0.0)
+
 
     RT = R*T
     RT_2 = RT + RT
@@ -712,6 +717,16 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
             x1, x2 = deflate_cubic_real_roots(b2, c2, d2, V*P_RT_inv)
             if x1 == 0.0:
                 return (V0, 0.0, 0.0)
+
+            # If the molar volume converged on is such that the second term can be added to the
+            # first term and it is still the first term, we are *extremely* ideal
+            # and we should just quit
+            main0 = R*T/(V - b)
+            main1 = a_alpha/(V*V + delta*V + epsilon)
+            if main0 + main1 == main0:
+                return (V0, 0.0, 0.0)
+
+
             # 8 divisions only for polishing
             V1 = x1*RT_P
             V2 = x2*RT_P
@@ -1315,3 +1330,91 @@ def volume_solutions_doubledouble_float(T, P, b, delta, epsilon, a_alpha):
         return (V1, 0.0, 0.0)
     else:
          return volume_solutions_doubledouble_inline(T, P, b, delta, epsilon, a_alpha)
+
+
+
+third = 1/3.
+one_27 = 1.0/27.0
+complex_factor = 0.8660254037844386j # (sqrt(3)*0.5j)
+
+def horner_and_der_as_error(x, coeffs):
+    # Coefficients in same order as for horner
+    f = 0.0
+    der = 0.0
+    for a in coeffs:
+        der = x*der + f
+        f = x*f + a
+    return (f, der)
+
+def high_alpha_one_root(T, P, b, delta, epsilon, a_alpha):
+    '''It is not really possible to provide solutions that resolve the equation
+    for P correctly for extremely high alpha values. P can change from 1e-2
+    to 1e8 and change by 1 or 2 bits only.
+
+    This solver handles those cases, always finding only one volume root.
+
+    The best strategy for a continuous solution that matches mpmath really well
+    is to use Cardano's method to obtain the correct single volume
+    (use the cubic criteria h > 0 but set it to
+    h > 200 to ensure we are well into that region),
+    and then use Newton's method to polish it (normally converges in 1
+    iteration).
+
+    If the criteria is not met, 0 is returned and another solver must be used.
+    '''
+    RT_inv = R_inv/T
+    RT_P = R*T/P
+
+    P_RT_inv = P*RT_inv
+    B = etas = b*P_RT_inv
+    deltas = delta*P_RT_inv
+    thetas = a_alpha*P_RT_inv*RT_inv
+    epsilons = epsilon*P_RT_inv*P_RT_inv
+
+    b = (deltas - B - 1.0)
+    c = (thetas + epsilons - deltas*(B + 1.0))
+    d = -(epsilons*(B + 1.0) + thetas*etas)
+
+    a, b, c, d = 1.0, b, c, d
+    coeffs = (1.0, b, c, d)
+
+    a_inv = 1.0/a
+    a_inv2 = a_inv*a_inv
+    bb = b*b
+    '''Herbie modifications for f:
+    c*a_inv - b_a*b_a*third
+    '''
+    b_a = b*a_inv
+    b_a2 = b_a*b_a
+    f = c*a_inv - b_a2*third
+    g = ((2.0*(bb*b) * a_inv2*a_inv) - (9.0*b*c)*(a_inv2) + (27.0*d*a_inv))*one_27
+    h = (0.25*(g*g) + (f*f*f)*one_27)
+
+    if h < 200.0:
+        return 0.0
+
+    root_h = sqrt(h)
+    R_poly = -0.5*g + root_h
+
+    # It is possible to save one of the power of thirds!
+    if R_poly >= 0.0:
+        S = R_poly**third
+    else:
+        S = -((-R_poly)**third)
+    T = -(0.5*g) - root_h
+    if T >= 0.0:
+        U = (T**(third))
+    else:
+        U = -(((-T)**(third)))
+
+    SU = S + U
+    b_3a = b*(third*a_inv)
+    t1 = -0.5*SU - b_3a
+    t2 = (S - U)*complex_factor
+    x1 = SU - b_3a
+
+    # Must be polished
+    x1 = newton(horner_and_der_as_error, x1, bisection=True, fprime=True, xtol=1e-16, args=(coeffs,))
+
+    V = x1*RT_P
+    return V

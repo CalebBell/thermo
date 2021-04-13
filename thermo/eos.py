@@ -1207,7 +1207,7 @@ class GCEOS(object):
 #        good_roots = [i.real for i in Vs if (i.real > 0.0 and (i.real == 0.0 or abs(i.imag) < 1E-9))]
         good_root_count = len(good_roots)
 
-        if good_root_count == 1:
+        if good_root_count == 1 or (good_roots[0] == good_roots[1]):
             self.phase = self.set_properties_from_solution(self.T, self.P,
                                                            good_roots[0], b,
                                                            self.delta, self.epsilon,
@@ -2075,7 +2075,7 @@ class GCEOS(object):
                 else:
                     val = float(obj.volume_error())
                     if val > 1e-7:
-                        print([obj.T, obj.P, obj.b, obj.delta, obj.epsilon, obj.a_alpha, 'coordinates of failure'])
+                        print([obj.T, obj.P, obj.b, obj.delta, obj.epsilon, obj.a_alpha, 'coordinates of failure', obj])
                 err_row.append(val)
             errs.append(err_row)
 
