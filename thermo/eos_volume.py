@@ -627,6 +627,11 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
 #            return (b + R*T/P, 0.0, 0.0)
     if a_alpha/(b*(b + delta) + epsilon) + P == P:
         return (b + R*T/P, 0.0, 0.0)
+    # Run this first, before the low P criteria
+    if a_alpha > 1e4:
+        V_possible = high_alpha_one_root(T, P, b, delta, epsilon, a_alpha)
+        if V_possible != 0.0:
+            return (V_possible, 0.0, 0.0)
     if P < 1e-2:  # numba: delete
 #    if P < 1e-2 or a_alpha < 1e-9:  # numba: delete
     # if 0 or (0 and ((T < 1e-2 and P > 1e6) or (P < 1e-3 and T < 1e-2) or (P < 1e-1 and T < 1e-4) or P < 1)):
@@ -643,10 +648,6 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
 #            return volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
 #        except:
 #            pass
-    if a_alpha > 1e4:
-        V_possible = high_alpha_one_root(T, P, b, delta, epsilon, a_alpha)
-        if V_possible != 0.0:
-            return (V_possible, 0.0, 0.0)
 
 
     RT = R*T
