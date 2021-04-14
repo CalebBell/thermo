@@ -632,7 +632,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
         V_possible = high_alpha_one_root(T, P, b, delta, epsilon, a_alpha)
         if V_possible != 0.0:
             return (V_possible, 0.0, 0.0)
-    if P < 1e-2:  # numba: delete
+    if P < 1e-2 and 0:  # numba: delete
 #    if P < 1e-2 or a_alpha < 1e-9:  # numba: delete
     # if 0 or (0 and ((T < 1e-2 and P > 1e6) or (P < 1e-3 and T < 1e-2) or (P < 1e-1 and T < 1e-4) or P < 1)):
         # Not perfect but so much wasted dev time need to move on, try other fluids and move this tolerance up if needed
@@ -748,9 +748,10 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
                 fder = x2*x3 - RT*x0_inv2
                 fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
 
-                fder_inv = 1.0/fder
-                step = fval*fder_inv
-                V1 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
+                if fder != 0.0:
+                    fder_inv = 1.0/fder
+                    step = fval*fder_inv
+                    V1 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
 
             # Take a step with V2
             V = V2
@@ -766,9 +767,10 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
                 fder = x2*x3 - RT*x0_inv2
                 fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
 
-                fder_inv = 1.0/fder
-                step = fval*fder_inv
-                V2 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
+                if fder != 0.0:
+                    fder_inv = 1.0/fder
+                    step = fval*fder_inv
+                    V2 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
             return (V0, V1, V2)
     return (0.0, 0.0, 0.0)
 
