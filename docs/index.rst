@@ -39,7 +39,7 @@ Installation
    :target: https://zenodo.org/badge/latestdoi/62404647
 
 
-Get the latest version of thermo from
+Get the latest version of Thermo from
 https://pypi.python.org/pypi/thermo/
 
 If you have an installation of Python with pip, simple install it with:
@@ -58,14 +58,14 @@ To get the git version, run:
 Latest source code
 ------------------
 
-The latest development version of thermo's sources can be obtained at
+The latest development version of Thermo's sources can be obtained at
 
     https://github.com/CalebBell/thermo
 
 Bug reports
 -----------
 
-To report bugs, please use the thermo's Bug Tracker at:
+To report bugs, please use the Thermo's Bug Tracker at:
 
     https://github.com/CalebBell/thermo/issues
     
@@ -78,15 +78,15 @@ License information
 See ``LICENSE.txt`` for information on the terms & conditions for usage
 of this software, and a DISCLAIMER OF ALL WARRANTIES.
 
-Although not required by the thermo license, if it is convenient for you,
-please cite thermo if used in your work. Please also consider contributing
+Although not required by the Thermo license, if it is convenient for you,
+please cite Thermo if used in your work. Please also consider contributing
 any changes you make back, and benefit the community.
 
 
 Citation
 --------
 
-To cite thermo in publications use::
+To cite Thermo in publications use::
 
     Caleb Bell and Contributors (2016-2021). Thermo: Chemical properties component of Chemical Engineering Design Library (ChEDL)
     https://github.com/CalebBell/thermo.

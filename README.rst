@@ -39,12 +39,12 @@ phase equilibria) using various models.
 
 Thermo runs on all operating systems which support Python, is quick to install, and is
 free of charge. Thermo is designed to be easy to use while still providing powerful
-functionality. If you need to know something about a chemical or mixture, give thermo a try.
+functionality. If you need to know something about a chemical or mixture, give Thermo a try.
 
 Installation
 ------------
 
-Get the latest version of thermo from
+Get the latest version of Thermo from
 https://pypi.python.org/pypi/thermo/
 
 If you have an installation of Python with pip, simple install it with:
@@ -52,7 +52,7 @@ If you have an installation of Python with pip, simple install it with:
     $ pip install thermo
     
 Alternatively, if you are using `conda <https://conda.io/en/latest/>`_ as your package management, you can simply
-install thermo in your environment from `conda-forge <https://conda-forge.org/>`_ channel with:
+install Thermo in your environment from `conda-forge <https://conda-forge.org/>`_ channel with:
 
     $ conda install -c conda-forge thermo
 
@@ -63,12 +63,81 @@ To get the git version, run:
 Documentation
 -------------
 
-thermo's documentation is available on the web:
+Thermo's documentation is available on the web:
 
     http://thermo.readthedocs.io/
 
-Getting Started
----------------
+Getting Started - Rigorous Interface
+------------------------------------
+
+Create a pure-component flash object for the compound "decane", using the Peng-Robinson equation of state. Perform a flash calculation at 300 K and 1 bar, and obtain a variety of properties from the resulting object:
+
+
+.. code-block:: python
+
+    >>> from thermo import ChemicalConstantsPackage, PRMIX, CEOSLiquid, CEOSGas, FlashPureVLS
+    >>> # Load the constant properties and correlation properties
+    >>> constants, correlations = ChemicalConstantsPackage.from_IDs(['decane'])
+    >>> # Configure the liquid and gas phase objects
+    >>> eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+    >>> liquid = CEOSLiquid(PRMIX, HeatCapacityGases=correlations.HeatCapacityGases, eos_kwargs=eos_kwargs)
+    >>> gas = CEOSGas(PRMIX, HeatCapacityGases=correlations.HeatCapacityGases, eos_kwargs=eos_kwargs)
+    >>> # Create a flash object with possible phases of 1 gas and 1 liquid
+    >>> flasher = FlashPureVLS(constants, correlations, gas=gas, liquids=[liquid], solids=[])
+    >>> # Flash at 300 K and 1 bar
+    >>> res = flasher.flash(T=300, P=1e5)
+    >>> # molar enthalpy and entropy [J/mol and J/(mol*K) respectively] and the mass enthalpy and entropy [J/kg and J/(kg*K)]
+    >>> res.H(), res.S(), res.H_mass(), res.S_mass()
+    (-48458.137745529726, -112.67831317511894, -340578.897757812, -791.9383098029132)
+    >>> # molar Cp and Cv [J/(mol*K)] and the mass Cp and Cv [J/(kg*K)]
+    >>> res.Cp(), res.Cv(), res.Cp_mass(), res.Cv_mass()
+    (295.17313861592686, 269.62465319082014, 2074.568831461133, 1895.0061117553582)
+    >>> # Molar volume [m^3/mol], molar density [mol/m^3] and mass density [kg/m^3]
+    >>> res.V(), res.rho(), res.rho_mass()
+    (0.00020989856076374984, 4764.206082982839, 677.8592453530177)
+    >>> # isobatic expansion coefficient [1/K], isothermal compressibility [1/Pa], Joule Thomson coefficient [K/Pa]
+    >>> res.isobaric_expansion(), res.kappa(), res.Joule_Thomson()
+    (0.0006977350520992281, 1.1999043797490713e-09, -5.622547043844744e-07)
+    >>> # Speed of sound in molar [m*kg^0.5/(s*mol^0.5)] and mass [m/s] units
+    >>> res.speed_of_sound(), res.speed_of_sound_mass()
+    (437.61281158744987, 1160.1537167375043)
+
+The following example shows the retrieval of chemical properties for a two-phase system with methane, ethane, and nitrogen, using a few sample kijs:
+
+.. code-block:: python
+
+    >>> from thermo import ChemicalConstantsPackage, CEOSGas, CEOSLiquid, PRMIX, FlashVL
+    >>> from thermo.interaction_parameters import IPDB
+    >>> constants, properties = ChemicalConstantsPackage.from_IDs(['methane', 'ethane', 'nitrogen'])
+    >>> kijs = IPDB.get_ip_asymmetric_matrix('ChemSep PR', constants.CASs, 'kij')
+    >>> kijs
+    [[0.0, -0.0059, 0.0289], [-0.0059, 0.0, 0.0533], [0.0289, 0.0533, 0.0]]
+    >>> eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas, 'kijs': kijs}
+    >>> gas = CEOSGas(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    >>> liquid = CEOSLiquid(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    >>> flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
+    >>> zs = [0.965, 0.018, 0.017]
+    >>> PT = flasher.flash(T=110.0, P=1e5, zs=zs)
+    >>> PT.VF, PT.gas.zs, PT.liquid0.zs
+    (0.10365, [0.881788, 2.6758e-05, 0.11818], [0.97462, 0.02007, 0.005298])
+    >>> flasher.flash(P=1e5, VF=1, zs=zs).T
+    133.6
+    >>> flasher.flash(T=133, VF=0, zs=zs).P
+    518367.4
+    >>> flasher.flash(P=PT.P, H=PT.H(), zs=zs).T
+    110.0
+    >>> flasher.flash(P=PT.P, S=PT.S(), zs=zs).T
+    110.0
+    >>> flasher.flash(T=PT.T, H=PT.H(), zs=zs).T
+    110.0
+    >>> flasher.flash(T=PT.T, S=PT.S(), zs=zs).T
+    110.0
+
+There is also a N-phase flash algorithm available, FlashVLN. There are no solid models implemented in this interface at this time.
+
+
+Getting Started - Simple Interface
+----------------------------------
 
 The library is designed around base SI units only for development
 convenience. All chemicals default to 298.15 K and 101325 Pa on 
@@ -140,16 +209,14 @@ mixtures.
     >>> air.Cp
     1013.7956176577836
 
-Roadmap
--------
-
-The author's main development item is phase equilibrium, a particularly
-tricky area.
+Warning: The phase equilibria of Chemical and Mixture are not presently
+as rigorous as the other interface. The property model is not particularly
+consistent and uses a variety of ideal and Peng-Robinson methods together.
 
 Latest source code
 ------------------
 
-The latest development version of thermo's sources can be obtained at
+The latest development version of Thermo's sources can be obtained at
 
     https://github.com/CalebBell/thermo
 
@@ -157,7 +224,7 @@ The latest development version of thermo's sources can be obtained at
 Bug reports
 -----------
 
-To report bugs, please use the thermo's Bug Tracker at:
+To report bugs, please use the Thermo's Bug Tracker at:
 
     https://github.com/CalebBell/thermo/issues
 
@@ -168,15 +235,15 @@ License information
 See ``LICENSE.txt`` for information on the terms & conditions for usage
 of this software, and a DISCLAIMER OF ALL WARRANTIES.
 
-Although not required by the thermo license, if it is convenient for you,
-please cite thermo if used in your work. Please also consider contributing
+Although not required by the Thermo license, if it is convenient for you,
+please cite Thermo if used in your work. Please also consider contributing
 any changes you make back, and benefit the community.
 
 
 Citation
 --------
 
-To cite thermo in publications use::
+To cite Thermo in publications use::
 
     Caleb Bell and Contributors (2016-2021). Thermo: Chemical properties component of Chemical Engineering Design Library (ChEDL)
     https://github.com/CalebBell/thermo.

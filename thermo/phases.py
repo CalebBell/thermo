@@ -226,6 +226,8 @@ object_lookups.update(eos_full_path_dict)
 
 
 class Phase(object):
+    '''
+    '''
 
     '''
     For basic functionality, a subclass should implement:

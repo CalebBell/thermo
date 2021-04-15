@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, 2017 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019, 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 import os
-
+from fluids import numerics
 from . import eos_alpha_functions
 from . import eos_volume
 from chemicals import acentric
@@ -235,7 +235,7 @@ try:
 except:
     thermo_dir = ''
 
-__version__ = '0.1.39'
+__version__ = '0.2.1'
 
 
 def complete_lazy_loading():
@@ -254,3 +254,23 @@ def complete_lazy_loading():
 if hasattr(os, '_called_from_test'):
     # pytest timings are hard to measure with lazy loading
     complete_lazy_loading()
+
+global vectorized, numba, units, numba_vectorized
+if numerics.PY37:
+    def __getattr__(name):
+        global vectorized, numba, units, numba_vectorized
+        if name == 'vectorized':
+            import thermo.vectorized as vectorized
+            return vectorized
+        if name == 'numba':
+            import thermo.numba as numba
+            return numba
+        if name == 'units':
+            import thermo.units as units
+            return units
+        if name == 'numba_vectorized':
+            import thermo.numba_vectorized as numba_vectorized
+            return numba_vectorized
+        raise AttributeError("module %s has no attribute %s" %(__name__, name))
+else:
+    from . import vectorized
