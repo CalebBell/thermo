@@ -3,6 +3,7 @@ scipy
 pandas
 sympy
 fluids>=1.0.2
+chemicals>=1.0.4
 pytest
 pytest-cov
 coveralls
