@@ -16,6 +16,6 @@ global-exclude ipynb_checkpoints
 global-exclude *-checkpoint.ipynb
 global-exclude *checkpoint*
 global-exclude .*ipynb_checkpoints*
-prune chemicals/__pycache__
+prune thermo/__pycache__
 prune docs/Data/.ipynb_checkpoints/
 recursive-exclude docs *ipynb_checkpoints

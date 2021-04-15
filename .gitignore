@@ -16,7 +16,7 @@ prof
 *.o
 *.so
 *.idea
- 
+thermo.egg-info/
 *.7z
 *.dmg
 *.iso
