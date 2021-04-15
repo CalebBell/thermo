@@ -4,3 +4,18 @@ recursive-include tests *
 recursive-include docs *
 global-exclude __pycache__
 global-exclude *.py[co]
+global-exclude .spyproject
+global-exclude tests/.spyproject/*
+global-exclude tests/.spyproject
+global-exclude *__pycache__*
+global-exclude *.py[co]
+global-exclude *.coverage
+global-exclude *.so
+global-exclude *.ipynb_checkpoints
+global-exclude ipynb_checkpoints
+global-exclude *-checkpoint.ipynb
+global-exclude *checkpoint*
+global-exclude .*ipynb_checkpoints*
+prune chemicals/__pycache__
+prune docs/Data/.ipynb_checkpoints/
+recursive-exclude docs *ipynb_checkpoints
