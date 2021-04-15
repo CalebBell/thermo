@@ -2382,6 +2382,9 @@ def test_eos_does_not_set_double_root_when_same():
     obj = PRTranslatedConsistent(Tc=126.2, Pc=3394387.5, omega=0.04, T=3204.081632653062, P=1e9)
     obj.phase != 'l/g'
 
+    obj = PR(Tc=611.7, Pc=2110000.0, omega=0.49, T=613.5907273413233, P=9.326033468834164e-10)
+    assert obj.phase != 'l/g'
+
 def test_eos_lnphi():
     '''
     from sympy import *

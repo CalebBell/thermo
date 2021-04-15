@@ -909,18 +909,20 @@ def test_V_error_plot(fluid, eos, P_range):
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
 
-
-    max_err = np.max(errs)
-    assert max_err < 1e-10
-
     if did_new_dat[0]:
         open_file = open(os.path.join(path, key + '.dat'), 'wb')
         pickle.dump(mem_cache, open_file, protocol=2)
         open_file.close()
 
 
+    max_err = np.max(errs)
+    assert max_err < 1e-10
+
+
+
 #test_V_error_plot('ethane', SRK, 'low')
 #test_V_error_plot('hydrogen', PR, 'low')
+#test_V_error_plot('decane', PR, 'low')
 #test_V_error_plot('ethane', SRK, 'high')
 #test_V_error_plot('methanol', PR, 'high')
 #test_V_error_plot('methanol', PR, 'low')
@@ -928,6 +930,9 @@ def test_V_error_plot(fluid, eos, P_range):
 #test_V_error_plot('hydrogen', TWUSRKMIX, 'high')
 #test_V_error_plot('hydrogen', IGMIX, 'low')
 #test_V_error_plot('methane', SRKTranslatedConsistent, 'high')
+#test_V_error_plot('methane', APISRK, 'low')
+#test_V_error_plot('ethane', VDW, 'low')
+
 #test_V_error_plot('nitrogen', PRTranslatedConsistent, 'high')
 
 
