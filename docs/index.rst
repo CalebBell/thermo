@@ -1,5 +1,8 @@
-Welcome to thermo's documentation!
-==================================
+Thermo:  Thermodynamics and Phase Equilibrium component of Chemical Engineering Design Library (ChEDL)
+======================================================================================================
+
+  .. meta::
+      :google-site-verification: wcmDZ88ikLzq1to6urRDGA6R7oIhzya2sN5hOeV1zZw
 
 Contents:
 
@@ -13,6 +16,7 @@ Contents:
    tutorial_phases_and_flash
    GibbsExcessLiquid_details
    modules
+
 
 Installation
 ------------
