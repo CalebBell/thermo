@@ -2,9 +2,15 @@ numpy
 scipy
 pandas
 sympy
-fluids>=0.1.68
-coolprop
+fluids>=1.0.2
 pytest
 pytest-cov
 coveralls
 matplotlib
+pint
+IPython
+sphinx
+mpmath
+fuzzywuzzy
+pytz
+wheel
