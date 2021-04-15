@@ -1,7 +1,4 @@
-thermo.unifac module
-====================
+UNIFAC Gibbs Excess Model (thermo.unifac)
+=========================================
 
 .. automodule:: thermo.unifac
-    :members:
-    :undoc-members:
-    :show-inheritance:

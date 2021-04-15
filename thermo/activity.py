@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,1082 +18,1235 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains a base class :obj:`GibbsExcess` for handling activity
+coefficient based
+models. The design is for a sub-class to provide the minimum possible number of
+derivatives of Gibbs energy, and for this base class to provide the rest of the
+methods.  An ideal-liquid class with no excess Gibbs energy
+:obj:`IdealSolution` is also available.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. contents:: :local:
+
+Base Class
+==========
+
+.. autoclass:: GibbsExcess
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+    :special-members: __hash__, __eq__, __repr__
+
+Idea Liquid Class
+=================
+
+.. autoclass:: IdealSolution
+    :members: to_T_xs, GE, dGE_dT, d2GE_dT2, d3GE_dT3, d2GE_dTdxs, dGE_dxs, d2GE_dxixjs, d3GE_dxixjxks
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members: gammas
+
+Notes
+=====
+Excellent references for working with activity coefficient models are [1]_ and
+[2]_.
+
+References
+----------
+.. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
+   Butterworth-Heinemann, 1985.
+.. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process
+   Simulation. Weinheim, Germany: Wiley-VCH, 2012.
+
+'''
 
 from __future__ import division
 
-__all__ = ['K_value', 'Rachford_Rice_flash_error', 'Rachford_Rice_solution',
-           'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL', 'Wilson',
-           'UNIQUAC', 'flash', 'dew_at_T',
-           'bubble_at_T', 'identify_phase', 'mixture_phase_methods',
-           'identify_phase_mixture', 'Pbubble_mixture', 'bubble_at_P',
-           'Pdew_mixture']
+__all__ = ['GibbsExcess', 'IdealSolution']
+from fluids.constants import R, R_inv
+from fluids.numerics import numpy as np
+from chemicals.utils import exp, log
+from chemicals.utils import normalize, dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, d2xs_to_dxdn_partials, hash_any_primitive
+from thermo import serialize
 
-from scipy.optimize import fsolve, newton, brenth
-from thermo.utils import exp, log
-from thermo.utils import none_and_length_check
-from thermo.utils import R
+try:
+    npexp, ones, zeros, array, ndarray = np.exp, np.ones, np.zeros, np.array, np.ndarray
+except:
+    pass
+
+def gibbs_excess_gammas(xs, dG_dxs, GE, T, gammas=None):
+    xdx_totF = GE
+    N = len(xs)
+    for i in range(N):
+        xdx_totF -= xs[i]*dG_dxs[i]
+    RT_inv = R_inv/T
+    if gammas is None:
+        gammas = [0.0]*N
+    for i in range(N):
+        gammas[i] = exp((dG_dxs[i] + xdx_totF)*RT_inv)
+    return gammas
+
+def gibbs_excess_dHE_dxs(dGE_dxs, d2GE_dTdxs, N, T, dHE_dxs=None):
+    if dHE_dxs is None:
+        dHE_dxs = [0.0]*N
+    for i in range(N):
+        dHE_dxs[i] = -T*d2GE_dTdxs[i] + dGE_dxs[i]
+    return dHE_dxs
 
 
+def gibbs_excess_dgammas_dns(xs, gammas, d2GE_dxixjs, N, T, dgammas_dns=None, vec0=None):
+    if vec0 is None:
+        vec0 = [0.0]*N
+    if dgammas_dns is None:
+        dgammas_dns = [[0.0]*N for _ in range(N)] # numba : delete
+#        dgammas_dns = zeros((N, N)) # numba : uncomment
 
-def K_value(P=None, Psat=None, phi_l=None, phi_g=None, gamma=None, Poynting=1):
-    r'''Calculates the equilibrium K-value assuming Raoult's law,
-    or an equation of state model, or an activity coefficient model,
-    or a combined equation of state-activity model.
+    for j in range(N):
+        tot = 0.0
+        row = d2GE_dxixjs[j]
+        for k in range(N):
+            tot += xs[k]*row[k]
+        vec0[j] = tot
 
-    The calculation procedure will use the most advanced approach with the
-    provided inputs:
+    RT_inv = R_inv/(T)
 
-        * If `P`, `Psat`, `phi_l`, `phi_g`, and `gamma` are provided, use the
-          combined approach.
-        * If `P`, `Psat`, and `gamma` are provided, use the modified Raoult's
-          law.
-        * If `phi_l` and `phi_g` are provided, use the EOS only method.
-        * If `P` and `Psat` are provided, use Raoult's law.
+    for i in range(N):
+        gammai_RT = gammas[i]*RT_inv
+        for j in range(N):
+            dgammas_dns[i][j] = gammai_RT*(d2GE_dxixjs[i][j] - vec0[j])
 
-    Definitions:
+    return dgammas_dns
 
-    .. math::
-        K_i=\frac{y_i}{x_i}
+def gibbs_excess_dgammas_dT(xs, GE, dGE_dT, dG_dxs, d2GE_dTdxs, N, T, dgammas_dT=None):
+    if dgammas_dT is None:
+        dgammas_dT = [0.0]*N
 
-    Raoult's law:
+    xdx_totF0 = dGE_dT
+    for j in range(N):
+        xdx_totF0 -= xs[j]*d2GE_dTdxs[j]
+    xdx_totF1 = GE
+    for j in range(N):
+        xdx_totF1 -= xs[j]*dG_dxs[j]
 
-    .. math::
-        K_i = \frac{P_{i}^{sat}}{P}
+    T_inv = 1.0/T
+    RT_inv = R_inv*T_inv
+    for i in range(N):
+        dG_dni = xdx_totF1 + dG_dxs[i]
+        dgammas_dT[i] = RT_inv*(d2GE_dTdxs[i] - dG_dni*T_inv + xdx_totF0)*exp(dG_dni*RT_inv)
+    return dgammas_dT
 
-    Activity coefficient, no EOS (modified Raoult's law):
+def interaction_exp(T, N, A, B, C, D, E, F, lambdas=None):
+    if lambdas is None:
+        lambdas = [[0.0]*N for i in range(N)] # numba: delete
+#        lambdas = zeros((N, N)) # numba: uncomment
 
-    .. math::
-        K_i = \frac{\gamma_i P_{i}^{sat}}{P}
+#        # 87% of the time of this routine is the exponential.
+    T2 = T*T
+    Tinv = 1.0/T
+    T2inv = Tinv*Tinv
+    logT = log(T)
+    for i in range(N):
+        Ai = A[i]
+        Bi = B[i]
+        Ci = C[i]
+        Di = D[i]
+        Ei = E[i]
+        Fi = F[i]
+        lambdais = lambdas[i]
+        # Might be more efficient to pass over this matrix later,
+        # and compute all the exps
+        # Spoiler: it was not.
 
-    Equation of state only:
+        # Also - it was tested the impact of using fewer terms
+        # there was very little, to no impact from that
+        # the exp is the huge time sink.
+        for j in range(N):
+            lambdais[j] = exp(Ai[j] + Bi[j]*Tinv
+                    + Ci[j]*logT + Di[j]*T
+                    + Ei[j]*T2inv + Fi[j]*T2)
+#            lambdas[i][j] = exp(A[i][j] + B[i][j]*Tinv
+#                    + C[i][j]*logT + D[i][j]*T
+#                    + E[i][j]*T2inv + F[i][j]*T2)
+#    135 µs ± 1.09 µs per loop (mean ± std. dev. of 7 runs, 10000 loops each) # without out specified numba
+#    129 µs ± 2.45 µs per loop (mean ± std. dev. of 7 runs, 10000 loops each) # with out specified numba
+#    118 µs ± 2.67 µs per loop (mean ± std. dev. of 7 runs, 10000 loops each) # without out specified numba 1 term
+#    115 µs ± 1.77 µs per loop (mean ± std. dev. of 7 runs, 10000 loops each) # with out specified numba 1 term
 
-    .. math::
-        K_i = \frac{\phi_i^l}{\phi_i^v} = \frac{f_i^l}{f_i^v}
+    return lambdas
 
-    Combined approach (liquid reference fugacity coefficient is normally
-    calculated the saturation pressure for it as a pure species; vapor fugacity
-    coefficient calculated normally):
 
-    .. math::
-        K_i = \frac{\gamma_i P_i^{sat} \phi_i^{l,ref}}{\phi_i^v P}
+def dinteraction_exp_dT(T, N, B, C, D, E, F, lambdas, dlambdas_dT=None):
+    if dlambdas_dT is None:
+        dlambdas_dT = [[0.0]*N for i in range(N)] # numba: delete
+#        dlambdas_dT = zeros((N, N)) # numba: uncomment
 
-    Combined approach, with Poynting Correction Factor (liquid molar volume in
-    the integral is for i as a pure species only):
+    T2 = T + T
+    Tinv = 1.0/T
+    nT2inv = -Tinv*Tinv
+    nT3inv2 = 2.0*nT2inv*Tinv
+    for i in range(N):
+        lambdasi = lambdas[i]
+        Bi = B[i]
+        Ci = C[i]
+        Di = D[i]
+        Ei = E[i]
+        Fi = F[i]
+        dlambdas_dTi = dlambdas_dT[i]
+        for j in range(N):
+            dlambdas_dTi[j] = (T2*Fi[j] + Di[j] + Ci[j]*Tinv + Bi[j]*nT2inv
+                             + Ei[j]*nT3inv2)*lambdasi[j]
+    return dlambdas_dT
 
-    .. math::
-        K_i = \frac{\gamma_i P_i^{sat} \phi_i^{l, ref} \exp\left[\frac{
-        \int_{P_i^{sat}}^P V_i^l dP}{RT}\right]}{\phi_i^v P}
+def d2interaction_exp_dT2(T, N, B, C, E, F, lambdas, dlambdas_dT, d2lambdas_dT2=None):
+    if d2lambdas_dT2 is None:
+        d2lambdas_dT2 = [[0.0]*N for i in range(N)] # numba: delete
+#        d2lambdas_dT2 = zeros((N, N)) # numba: uncomment
 
-    Parameters
-    ----------
-    P : float
-        System pressure, optional
-    Psat : float
-        Vapor pressure of species i, [Pa]
-    phi_l : float
-        Fugacity coefficient of species i in the liquid phase, either
-        at the system conditions (EOS-only case) or at the saturation pressure
-        of species i as a pure species (reference condition for the combined
-        approach), optional [-]
-    phi_g : float
-        Fugacity coefficient of species i in the vapor phase at the system
-        conditions, optional [-]
-    gamma : float
-        Activity coefficient of species i in the liquid phase, optional [-]
-    Poynting : float
-        Poynting correction factor, optional [-]
+    Tinv = 1.0/T
+    nT2inv = -Tinv*Tinv
+    T3inv2 = -2.0*nT2inv*Tinv
+    T4inv6 = 3.0*T3inv2*Tinv
+    for i in range(N):
+        lambdasi = lambdas[i]
+        dlambdas_dTi = dlambdas_dT[i]
+        Bi = B[i]
+        Ci = C[i]
+        Ei = E[i]
+        Fi = F[i]
+        d2lambdas_dT2i = d2lambdas_dT2[i]
+        for j in range(N):
+            d2lambdas_dT2i[j] = ((2.0*Fi[j] + nT2inv*Ci[j]
+                             + T3inv2*Bi[j] + T4inv6*Ei[j]
+                               )*lambdasi[j] + dlambdas_dTi[j]*dlambdas_dTi[j]/lambdasi[j])
+    return d2lambdas_dT2
 
-    Returns
-    -------
-    K : float
-        Equilibrium K value of component i, calculated with an approach
-        depending on the provided inputs [-]
+def d3interaction_exp_dT3(T, N, B, C, E, F, lambdas, dlambdas_dT, d3lambdas_dT3=None):
+    if d3lambdas_dT3 is None:
+        d3lambdas_dT3 = [[0.0]*N for i in range(N)] # numba: delete
+#        d3lambdas_dT3 = zeros((N, N)) # numba: uncomment
 
-    Notes
-    -----
-    The Poynting correction factor is normally simplified as follows, due to
-    a liquid's low pressure dependency:
+    Tinv = 1.0/T
+    Tinv3 = 3.0*Tinv
+    nT2inv = -Tinv*Tinv
+    nT2inv05 = 0.5*nT2inv
+    T3inv = -nT2inv*Tinv
+    T3inv2 = T3inv+T3inv
+    T4inv3 = 1.5*T3inv2*Tinv
+    T2_12 = -12.0*nT2inv
 
-    .. math::
-        K_i = \frac{\gamma_i P_i^{sat} \phi_i^{l, ref} \exp\left[\frac{V_l
-        (P-P_i^{sat})}{RT}\right]}{\phi_i^v P}
+    for i in range(N):
+        lambdasi = lambdas[i]
+        dlambdas_dTi = dlambdas_dT[i]
+        Bi = B[i]
+        Ci = C[i]
+        Ei = E[i]
+        Fi = F[i]
+        d3lambdas_dT3i = d3lambdas_dT3[i]
+        for j in range(N):
+            term2 = (Fi[j] + nT2inv05*Ci[j] + T3inv*Bi[j] + T4inv3*Ei[j])
 
-    Examples
-    --------
-    Raoult's law:
+            term3 = dlambdas_dTi[j]/lambdasi[j]
 
-    >>> K_value(101325, 3000.)
-    0.029607698001480384
+            term4 = (T3inv2*(Ci[j] - Tinv3*Bi[j] - T2_12*Ei[j]))
 
-    Modified Raoult's law:
+            d3lambdas_dT3i[j] = ((term3*(6.0*term2 + term3*term3) + term4)*lambdasi[j])
 
-    >>> K_value(P=101325, Psat=3000, gamma=0.9)
-    0.026646928201332347
+    return d3lambdas_dT3
 
-    EOS-only approach:
+class GibbsExcess(object):
+    r'''Class for representing an activity coefficient model.
+    While these are typically presented as tools to compute activity
+    coefficients, in truth they are excess Gibbs energy models and activity
+    coefficients are just one derived aspect of them.
 
-    >>> K_value(phi_l=1.6356, phi_g=0.88427)
-    1.8496613025433408
+    This class does not implement any activity coefficient models itself; it
+    must be subclassed by another model. All properties are
+    derived with the CAS SymPy, not relying on any derivations previously
+    published, and checked numerically for consistency.
 
-    Gamma-phi combined approach:
+    Different subclasses have different parameter requirements for
+    initialization; :obj:`IdealSolution` is
+    available as a simplest model with activity coefficients of 1 to show
+    what needs to be implemented in subclasses. It is also intended subclasses
+    implement the method `to_T_xs`, which creates a new object at the
+    specified temperature and composition but with the same parameters.
 
-    >>> K_value(P=1E6, Psat=1938800, phi_l=1.4356, phi_g=0.88427, gamma=0.92)
-    2.8958055544121137
+    These objects are intended to lazy-calculate properties as much as
+    possible, and for the temperature and composition of an object to be
+    immutable.
 
-    Gamma-phi combined approach with a Poynting factor:
-
-    >>> K_value(P=1E6, Psat=1938800, phi_l=1.4356, phi_g=0.88427, gamma=0.92,
-    ... Poynting=0.999)
-    2.8929097488577016
-
-    References
-    ----------
-    .. [1] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey.
-       Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim:
-       Wiley-VCH, 2012.
-    .. [2] Skogestad, Sigurd. Chemical and Energy Process Engineering. 1st
-       edition. Boca Raton, FL: CRC Press, 2008.
     '''
-    try:
-        if gamma:
-            if phi_l:
-                return gamma*Psat*phi_l*Poynting/(phi_g*P)
-            return gamma*Psat*Poynting/P
-        elif phi_l:
-            return phi_l/phi_g
-        return Psat/P
-    except TypeError:
-        raise Exception('Input must consist of one set from (P, Psat, phi_l, \
-phi_g, gamma), (P, Psat, gamma), (phi_l, phi_g), (P, Psat)')
+    x_infinite_dilution = 0.0
+    '''When set, this will be the limiting mole fraction used to approximate
+    the :obj:`gammas_infinite_dilution` calculation. This is important
+    as not all models can mathematically be evaluated at zero mole-fraction.'''
+
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
+
+    def __repr__(self):
+        r'''Method to create a string representation of the state of the model.
+        Included is `T`, `xs`, and all constants necessary to create the model.
+        This can be passed into :py:func:`exec` to re-create the
+        model. Note that parsing strings like this can be slow.
+
+        Returns
+        -------
+        repr : str
+            String representation of the object, [-]
+
+        Examples
+        --------
+        >>> IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
+        IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
+        '''
+        # Other classes with different parameters should expose them here too
+        s = '%s(T=%s, xs=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs))
+        return s
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
+    def __hash__(self):
+        r'''Method to calculate and return a hash representing the exact state
+        of the object. This includes `T`, `xs`,
+        the model class, and which values have already been calculated.
+
+        Returns
+        -------
+        hash : int
+            Hash of the object, [-]
+        '''
+        d = self.__dict__
+        ans = hash_any_primitive((self.__class__.__name__, d))
+        return ans
+
+    def model_hash(self):
+        r'''Basic method to calculate a hash of the non-state parts of the model
+        This is useful for comparing to models to
+        determine if they are the same, i.e. in a VLL flash it is important to
+        know if both liquids have the same model.
+
+        Note that the hashes should only be compared on the same system running
+        in the same process!
+
+        Returns
+        -------
+        model_hash : int
+            Hash of the object's model parameters, [-]
+        '''
+        try:
+            return self._model_hash
+        except AttributeError:
+            pass
+        to_hash = [self.__class__.__name__, self.N]
+        for k in self.model_attriubtes:
+            v = getattr(self, k)
+            if type(v) is ndarray:
+                v = v.tolist()
+            to_hash.append(v)
+        self._model_hash = hash_any_primitive(to_hash)
+        return self._model_hash
+
+    def state_hash(self):
+        r'''Basic method to calculate a hash of the state of the model and its
+        model parameters.
+
+        Note that the hashes should only be compared on the same system running
+        in the same process!
+
+        Returns
+        -------
+        state_hash : int
+            Hash of the object's model parameters and state, [-]
+        '''
+        xs = self.xs if self.scalar else self.xs.tolist()
+        return hash_any_primitive((self.model_hash(), float(self.T), xs))
+
+    def as_json(self):
+        r'''Method to create a JSON-friendly representation of the Gibbs Excess
+        model which can be stored, and reloaded later.
+
+        Returns
+        -------
+        json_repr : dict
+            JSON-friendly representation, [-]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> import json
+        >>> model = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
+        >>> json_view = model.as_json()
+        >>> json_str = json.dumps(json_view)
+        >>> assert type(json_str) is str
+        >>> model_copy = IdealSolution.from_json(json.loads(json_str))
+        >>> assert model_copy == model
+        '''
+        # vaguely jsonpickle compatible
+        d = self.__dict__.copy()
+        if not self.scalar:
+            d = serialize.arrays_to_lists(d)
+        d["py/object"] = self.__full_path__
+        d["json_version"] = 1
+        return d
+
+    @classmethod
+    def from_json(cls, json_repr):
+        r'''Method to create a Gibbs Excess model from a JSON-friendly
+        serialization of another Gibbs Excess model.
+
+        Parameters
+        ----------
+        json_repr : dict
+            JSON-friendly representation, [-]
+
+        Returns
+        -------
+        model : :obj:`GibbsExcess`
+            Newly created object from the json serialization, [-]
+
+        Notes
+        -----
+        It is important that the input string be in the same format as that
+        created by :obj:`GibbsExcess.as_json`.
+
+        Examples
+        --------
+        >>> model = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
+        >>> json_view = model.as_json()
+        >>> new_model = IdealSolution.from_json(json_view)
+        >>> assert model == new_model
+        '''
+        d = json_repr
+        scalar = d['scalar']
+        if not scalar:
+            d = serialize.naive_lists_to_arrays(d)
+
+        if not scalar and 'cmp_group_idx' in d:
+            d['cmp_group_idx'] = tuple(array(v) for v in d['cmp_group_idx'])
+        if not scalar and 'group_cmp_idx' in d:
+            d['group_cmp_idx'] = tuple(array(v) for v in d['group_cmp_idx'])
 
 
+#        if cls is GibbsExcess:
+#            model_name = d['py/object']
+
+        del d['py/object']
+        del d["json_version"]
+
+        new = cls.__new__(cls)
+        new.__dict__ = d
+        return new
+
+    def HE(self):
+        r'''Calculate and return the excess entropy of a liquid phase using an
+        activity coefficient model.
+
+        .. math::
+            h^E = -T \frac{\partial g^E}{\partial T} + g^E
+
+        Returns
+        -------
+        HE : float
+            Excess enthalpy of the liquid phase, [J/mol]
+
+        Notes
+        -----
+        '''
+        '''f = symbols('f', cls=Function)
+        T = symbols('T')
+        simplify(-T**2*diff(f(T)/T, T))
+        '''
+        return -self.T*self.dGE_dT() + self.GE()
+
+    def dHE_dT(self):
+        r'''Calculate and return the first temperature derivative of excess
+        enthalpy of a liquid phase using an activity coefficient model.
+
+        .. math::
+            \frac{\partial h^E}{\partial T} = -T \frac{\partial^2 g^E}
+            {\partial T^2}
+
+        Returns
+        -------
+        dHE_dT : float
+            First temperature derivative of excess enthalpy of the liquid
+            phase, [J/mol/K]
+
+        Notes
+        -----
+        '''
+        return -self.T*self.d2GE_dT2()
+
+    CpE = dHE_dT
+
+    def dHE_dxs(self):
+        r'''Calculate and return the mole fraction derivative of excess
+        enthalpy of a liquid phase using an activity coefficient model.
+
+        .. math::
+            \frac{\partial h^E}{\partial x_i} = -T \frac{\partial^2 g^E}
+            {\partial T \partial x_i} + \frac{\partial g^E}{\partial x_i}
+
+        Returns
+        -------
+        dHE_dxs : list[float]
+            First mole fraction derivative of excess enthalpy of the liquid
+            phase, [J/mol]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._dHE_dxs
+        except:
+            pass
+        # Derived by hand taking into account the expression for excess enthalpy
+        d2GE_dTdxs = self.d2GE_dTdxs()
+        try:
+            dGE_dxs = self._dGE_dxs
+        except:
+            dGE_dxs = self.dGE_dxs()
+        dHE_dxs = gibbs_excess_dHE_dxs(dGE_dxs, d2GE_dTdxs, self.N, self.T)
+        if not self.scalar and type(dHE_dxs) is list:
+            dHE_dxs = array(dHE_dxs)
+        self._dHE_dxs = dHE_dxs
+        return dHE_dxs
+
+    def dHE_dns(self):
+        r'''Calculate and return the mole number derivative of excess
+        enthalpy of a liquid phase using an activity coefficient model.
+
+        .. math::
+            \frac{\partial h^E}{\partial n_i}
+
+        Returns
+        -------
+        dHE_dns : list[float]
+            First mole number derivative of excess enthalpy of the liquid
+            phase, [J/mol^2]
+
+        Notes
+        -----
+        '''
+        dHE_dns = dxs_to_dns(self.dHE_dxs(), self.xs)
+        if not self.scalar and type(dHE_dns) is list:
+            dHE_dns = array(dHE_dns)
+        return dHE_dns
+
+    def dnHE_dns(self):
+        r'''Calculate and return the partial mole number derivative of excess
+        enthalpy of a liquid phase using an activity coefficient model.
+
+        .. math::
+            \frac{\partial n h^E}{\partial n_i}
+
+        Returns
+        -------
+        dnHE_dns : list[float]
+            First partial mole number derivative of excess enthalpy of the
+            liquid phase, [J/mol]
+
+        Notes
+        -----
+        '''
+        dnHE_dns = dxs_to_dn_partials(self.dHE_dxs(), self.xs, self.HE())
+        if not self.scalar and type(dnHE_dns) is list:
+            dnHE_dns = array(dnHE_dns)
+        return dnHE_dns
+
+    def SE(self):
+        r'''Calculates the excess entropy of a liquid phase using an
+        activity coefficient model.
+
+        .. math::
+            s^E = \frac{h^E - g^E}{T}
+
+        Returns
+        -------
+        SE : float
+            Excess entropy of the liquid phase, [J/mol/K]
+
+        Notes
+        -----
+
+        Note also the relationship of the expressions for partial excess
+        entropy:
+
+        .. math::
+            S_i^E = -R\left(T \frac{\partial \ln \gamma_i}{\partial T}
+            + \ln \gamma_i\right)
 
 
+        '''
+        return (self.HE() - self.GE())/self.T
 
-### Solutions using a existing algorithms
-def Rachford_Rice_flash_error(V_over_F, zs, Ks):
-    r'''Calculates the objective function of the Rachford-Rice flash equation.
-    This function should be called by a solver seeking a solution to a flash
-    calculation. The unknown variable is `V_over_F`, for which a solution
-    must be between 0 and 1.
+    def dSE_dT(self):
+        r'''Calculate and return the first temperature derivative of excess
+        entropy of a liquid phase using an activity coefficient model.
 
-    .. math::
-        \sum_i \frac{z_i(K_i-1)}{1 + \frac{V}{F}(K_i-1)} = 0
+        .. math::
+            \frac{\partial s^E}{\partial T} = \frac{1}{T}
+            \left(\frac{-\partial g^E}{\partial T} + \frac{\partial h^E}{\partial T}
+            - \frac{(G + H)}{T}\right)
 
-    Parameters
-    ----------
-    V_over_F : float
-        Vapor fraction guess [-]
-    zs : list[float]
-        Overall mole fractions of all species, [-]
-    Ks : list[float]
-        Equilibrium K-values, [-]
+        Returns
+        -------
+        dSE_dT : float
+            First temperature derivative of excess entropy of the liquid
+            phase, [J/mol/K]
 
-    Returns
-    -------
-    error : float
-        Deviation between the objective function at the correct V_over_F
-        and the attempted V_over_F, [-]
+        Notes
+        -----
 
-    Notes
-    -----
-    The derivation is as follows:
+        '''
+        '''from sympy import *
+        T = symbols('T')
+        G, H = symbols('G, H', cls=Function)
+        S = (H(T) - G(T))/T
+        print(diff(S, T))
+        # (-Derivative(G(T), T) + Derivative(H(T), T))/T - (-G(T) + H(T))/T**2
+        '''
+        # excess entropy temperature derivative
+        dHE_dT = self.dHE_dT()
+        try:
+            HE = self._HE
+        except:
+            HE = self.HE()
+        try:
+            dGE_dT = self._dGE_dT
+        except:
+            dGE_dT = self.dGE_dT()
+        try:
+            GE = self._GE
+        except:
+            GE = self.GE()
+        T_inv = 1.0/self.T
+        return T_inv*(-dGE_dT + dHE_dT - (HE - GE)*T_inv)
 
-    .. math::
-        F z_i = L x_i + V y_i
+    def dSE_dxs(self):
+        r'''Calculate and return the mole fraction derivative of excess
+        entropy of a liquid phase using an activity coefficient model.
 
-        x_i = \frac{z_i}{1 + \frac{V}{F}(K_i-1)}
+        .. math::
+            \frac{\partial S^E}{\partial x_i} = \frac{1}{T}\left( \frac{\partial h^E}
+            {\partial x_i} - \frac{\partial g^E}{\partial x_i}\right)
+            = -\frac{\partial^2 g^E}{\partial x_i \partial T}
 
-        \sum_i y_i = \sum_i K_i x_i = 1
+        Returns
+        -------
+        dSE_dxs : list[float]
+            First mole fraction derivative of excess entropy of the liquid
+            phase, [J/(mol*K)]
 
-        \sum_i(y_i - x_i)=0
-
-        \sum_i \frac{z_i(K_i-1)}{1 + \frac{V}{F}(K_i-1)} = 0
-
-    Examples
-    --------
-    >>> Rachford_Rice_flash_error(0.5, zs=[0.5, 0.3, 0.2],
-    ... Ks=[1.685, 0.742, 0.532])
-    0.04406445591174976
-
-    References
-    ----------
-    .. [1] Rachford, H. H. Jr, and J. D. Rice. "Procedure for Use of Electronic
-       Digital Computers in Calculating Flash Vaporization Hydrocarbon
-       Equilibrium." Journal of Petroleum Technology 4, no. 10 (October 1,
-       1952): 19-3. doi:10.2118/952327-G.
-    '''
-    return sum([zi*(Ki-1.)/(1.+V_over_F*(Ki-1.)) for Ki, zi in zip(Ks, zs)])
-
-
-def Rachford_Rice_solution(zs, Ks):
-    r'''Solves the objective function of the Rachford-Rice flash equation.
-    Uses the method proposed in [2]_ to obtain an initial guess.
-
-    .. math::
-        \sum_i \frac{z_i(K_i-1)}{1 + \frac{V}{F}(K_i-1)} = 0
-
-    Parameters
-    ----------
-    zs : list[float]
-        Overall mole fractions of all species, [-]
-    Ks : list[float]
-        Equilibrium K-values, [-]
-
-    Returns
-    -------
-    V_over_F : float
-        Vapor fraction solution [-]
-    xs : list[float]
-        Mole fractions of each species in the liquid phase, [-]
-    ys : list[float]
-        Mole fractions of each species in the vapor phase, [-]
-
-    Notes
-    -----
-    The initial guess is the average of the following, as described in [2]_.
-
-    .. math::
-        \left(\frac{V}{F}\right)_{min} = \frac{(K_{max}-K_{min})z_{of\;K_{max}}
-        - (1-K_{min})}{(1-K_{min})(K_{max}-1)}
-
-        \left(\frac{V}{F}\right)_{max} = \frac{1}{1-K_{min}}
-
-    Another algorithm for determining the range of the correct solution is
-    given in [3]_; [2]_ provides a narrower range however. For both cases,
-    each guess should be limited to be between 0 and 1 as they are often
-    negative or larger than 1.
-
-    .. math::
-        \left(\frac{V}{F}\right)_{min} = \frac{1}{1-K_{max}}
-
-        \left(\frac{V}{F}\right)_{max} = \frac{1}{1-K_{min}}
-
-    If the `newton` method does not converge, a bisection method (brenth) is
-    used instead. However, it is somewhat slower, especially as newton will
-    attempt 50 iterations before giving up.
-
-    Examples
-    --------
-    >>> Rachford_Rice_solution(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
-    (0.6907302627738542, [0.3394086969663436, 0.3650560590371706, 0.2955352439964858], [0.571903654388289, 0.27087159580558057, 0.15722474980613044])
-
-    References
-    ----------
-    .. [1] Rachford, H. H. Jr, and J. D. Rice. "Procedure for Use of Electronic
-       Digital Computers in Calculating Flash Vaporization Hydrocarbon
-       Equilibrium." Journal of Petroleum Technology 4, no. 10 (October 1,
-       1952): 19-3. doi:10.2118/952327-G.
-    .. [2] Li, Yinghui, Russell T. Johns, and Kaveh Ahmadi. "A Rapid and Robust
-       Alternative to Rachford-Rice in Flash Calculations." Fluid Phase
-       Equilibria 316 (February 25, 2012): 85-97.
-       doi:10.1016/j.fluid.2011.12.005.
-    .. [3] Whitson, Curtis H., and Michael L. Michelsen. "The Negative Flash."
-       Fluid Phase Equilibria, Proceedings of the Fifth International
-       Conference, 53 (December 1, 1989): 51-71.
-       doi:10.1016/0378-3812(89)80072-X.
-    '''
-    Kmin = min(Ks)
-    Kmax = max(Ks)
-    z_of_Kmax = zs[Ks.index(Kmax)]
-
-    V_over_F_min = ((Kmax-Kmin)*z_of_Kmax - (1.-Kmin))/((1.-Kmin)*(Kmax-1.))
-    V_over_F_max = 1./(1.-Kmin)
-
-    V_over_F_min2 = max(0., V_over_F_min)
-    V_over_F_max2 = min(1., V_over_F_max)
-
-    x0 = (V_over_F_min2 + V_over_F_max2)*0.5
-    try:
-        # Newton's method is marginally faster than brenth
-        V_over_F = newton(Rachford_Rice_flash_error, x0=x0, args=(zs, Ks))
-        # newton skips out of its specified range in some cases, finding another solution
-        # Check for that with asserts, and use brenth if it did
-        assert V_over_F >= V_over_F_min2
-        assert V_over_F <= V_over_F_max2
-    except:
-        V_over_F = brenth(Rachford_Rice_flash_error, V_over_F_max-1E-7, V_over_F_min+1E-7, args=(zs, Ks))
-    # Cases not covered by the above solvers: When all components have K > 1, or all have K < 1
-    # Should get a solution for all other cases.
-    xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
-    ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
-    return V_over_F, xs, ys
-
-
-def Li_Johns_Ahmadi_solution(zs, Ks):
-    r'''Solves the objective function of the Li-Johns-Ahmadi flash equation.
-    Uses the method proposed in [1]_ to obtain an initial guess.
-
-    .. math::
-        0 = 1 + \left(\frac{K_{max}-K_{min}}{K_{min}-1}\right)x_1
-        + \sum_{i=2}^{n-1}\frac{K_i-K_{min}}{K_{min}-1}\left[\frac{z_i(K_{max}
-        -1)x_{max}}{(K_i-1)z_{max} + (K_{max}-K_i)x_{max}}\right]
-
-    Parameters
-    ----------
-    zs : list[float]
-        Overall mole fractions of all species, [-]
-    Ks : list[float]
-        Equilibrium K-values, [-]
-
-    Returns
-    -------
-    V_over_F : float
-        Vapor fraction solution [-]
-    xs : list[float]
-        Mole fractions of each species in the liquid phase, [-]
-    ys : list[float]
-        Mole fractions of each species in the vapor phase, [-]
-
-    Notes
-    -----
-    The initial guess is the average of the following, as described in [1]_.
-    Each guess should be limited to be between 0 and 1 as they are often
-    negative or larger than 1. `max` refers to the corresponding mole fractions
-    for the species with the largest K value.
-
-    .. math::
-        \left(\frac{1-K_{min}}{K_{max}-K_{min}}\right)z_{max}\le x_{max} \le
-        \left(\frac{1-K_{min}}{K_{max}-K_{min}}\right)
-
-    If the `newton` method does not converge, a bisection method (brenth) is
-    used instead. However, it is somewhat slower, especially as newton will
-    attempt 50 iterations before giving up.
-
-    This method does not work for problems of only two components.
-    K values are sorted internally. Has not been found to be quicker than the
-    Rachford-Rice equation.
-
-    Examples
-    --------
-    >>> Li_Johns_Ahmadi_solution(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
-    (0.6907302627738544, [0.33940869696634357, 0.3650560590371706, 0.2955352439964858], [0.5719036543882889, 0.27087159580558057, 0.15722474980613044])
-
-    References
-    ----------
-    .. [1] Li, Yinghui, Russell T. Johns, and Kaveh Ahmadi. "A Rapid and Robust
-       Alternative to Rachford-Rice in Flash Calculations." Fluid Phase
-       Equilibria 316 (February 25, 2012): 85-97.
-       doi:10.1016/j.fluid.2011.12.005.
-    '''
-    # Re-order both Ks and Zs by K value, higher coming first
-    p = sorted(zip(Ks,zs), reverse=True)
-    Ks_sorted, zs_sorted = [K for (K,z) in p], [z for (K,z) in p]
-
-
-    # Largest K value and corresponding overall mole fraction
-    k1 = Ks_sorted[0]
-    z1 = zs_sorted[0]
-    # Smallest K value
-    kn = Ks_sorted[-1]
-
-    x_min = (1. - kn)/(k1 - kn)*z1
-    x_max = (1. - kn)/(k1 - kn)
-
-    x_min2 = max(0., x_min)
-    x_max2 = min(1., x_max)
-
-    x_guess = (x_min2 + x_max2)*0.5
-
-    length = len(zs)-1
-    kn_m_1 = kn-1.
-    k1_m_1 = (k1-1.)
-    t1 = (k1-kn)/(kn-1.)
-
-    objective = lambda x1: 1. + t1*x1 + sum([(ki-kn)/(kn_m_1) * zi*k1_m_1*x1 /( (ki-1.)*z1 + (k1-ki)*x1) for ki, zi in zip(Ks_sorted[1:length], zs_sorted[1:length])])
-    try:
-        x1 = newton(objective, x_guess)
-        # newton skips out of its specified range in some cases, finding another solution
-        # Check for that with asserts, and use brenth if it did
-        # Must also check that V_over_F is right.
-        assert x1 >= x_min2
-        assert x1 <= x_max2
-        V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
-        assert 0 <= V_over_F <= 1
-    except:
-        x1 = brenth(objective, x_min, x_max)
-        V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
-    xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
-    ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
-    return V_over_F, xs, ys
-
-
-flash_inner_loop_methods = ['Analytical', 'Rachford-Rice', 'Li-Johns-Ahmadi']
-def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
-    r'''This function handles the solution of the inner loop of a flash
-    calculation, solving for liquid and gas mole fractions and vapor fraction
-    based on specified overall mole fractions and K values. As K values are
-    weak functions of composition, this should be called repeatedly by an outer
-    loop. Will automatically select an algorithm to use if no Method is
-    provided. Should always provide a solution.
-
-    The automatic algorithm selection will try an analytical solution, and use
-    the Rachford-Rice method if there are 4 or more components in the mixture.
-
-    Parameters
-    ----------
-    zs : list[float]
-        Overall mole fractions of all species, [-]
-    Ks : list[float]
-        Equilibrium K-values, [-]
-
-    Returns
-    -------
-    V_over_F : float
-        Vapor fraction solution [-]
-    xs : list[float]
-        Mole fractions of each species in the liquid phase, [-]
-    ys : list[float]
-        Mole fractions of each species in the vapor phase, [-]
-    methods : list, only returned if AvailableMethods == True
-        List of methods which can be used to obtain a solution with the given
-        inputs
-
-    Other Parameters
-    ----------------
-    Method : string, optional
-        The method name to use. Accepted methods are 'Analytical',
-        'Rachford-Rice', and 'Li-Johns-Ahmadi'. All valid values are also held
-        in the list `flash_inner_loop_methods`.
-    AvailableMethods : bool, optional
-        If True, function will determine which methods can be used to obtain
-        a solution for the desired chemical, and will return methods instead of
-        `V_over_F`, `xs`, and `ys`.
-
-    Notes
-    -----
-    A total of three methods are available for this function. They are:
-
-        * 'Analytical', an exact solution derived with SymPy, applicable only
-          only to mixtures of two or three components
-        * 'Rachford-Rice', which numerically solves an objective function
-          described in :obj:`Rachford_Rice_solution`.
-        * 'Li-Johns-Ahmadi', which numerically solves an objective function
-          described in :obj:`Li_Johns_Ahmadi_solution`.
-
-    Examples
-    --------
-    >>> flash_inner_loop(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
-    (0.6907302627738537, [0.3394086969663437, 0.36505605903717053, 0.29553524399648573], [0.5719036543882892, 0.2708715958055805, 0.1572247498061304])
-    '''
-    l = len(zs)
-    def list_methods():
-        methods = []
-        if l in [2,3]:
-            methods.append('Analytical')
-        if l >= 2:
-            methods.append('Rachford-Rice')
-        if l >= 3:
-            methods.append('Li-Johns-Ahmadi')
-        return methods
-    if AvailableMethods:
-        return list_methods()
-    if not Method:
-        Method = 'Analytical' if l < 4 else 'Rachford-Rice'
-    if Method == 'Analytical':
-        if l == 2:
-            z1, z2 = zs
-            K1, K2 = Ks
-            V_over_F = (-K1*z1 - K2*z2 + z1 + z2)/(K1*K2*z1 + K1*K2*z2 - K1*z1 - K1*z2 - K2*z1 - K2*z2 + z1 + z2)
-        elif l == 3:
-            z1, z2, z3 = zs
-            K1, K2, K3 = Ks
-            V_over_F = (-K1*K2*z1/2 - K1*K2*z2/2 - K1*K3*z1/2 - K1*K3*z3/2 + K1*z1 + K1*z2/2 + K1*z3/2 - K2*K3*z2/2 - K2*K3*z3/2 + K2*z1/2 + K2*z2 + K2*z3/2 + K3*z1/2 + K3*z2/2 + K3*z3 - z1 - z2 - z3 - (K1**2*K2**2*z1**2 + 2*K1**2*K2**2*z1*z2 + K1**2*K2**2*z2**2 - 2*K1**2*K2*K3*z1**2 - 2*K1**2*K2*K3*z1*z2 - 2*K1**2*K2*K3*z1*z3 + 2*K1**2*K2*K3*z2*z3 - 2*K1**2*K2*z1*z2 + 2*K1**2*K2*z1*z3 - 2*K1**2*K2*z2**2 - 2*K1**2*K2*z2*z3 + K1**2*K3**2*z1**2 + 2*K1**2*K3**2*z1*z3 + K1**2*K3**2*z3**2 + 2*K1**2*K3*z1*z2 - 2*K1**2*K3*z1*z3 - 2*K1**2*K3*z2*z3 - 2*K1**2*K3*z3**2 + K1**2*z2**2 + 2*K1**2*z2*z3 + K1**2*z3**2 - 2*K1*K2**2*K3*z1*z2 + 2*K1*K2**2*K3*z1*z3 - 2*K1*K2**2*K3*z2**2 - 2*K1*K2**2*K3*z2*z3 - 2*K1*K2**2*z1**2 - 2*K1*K2**2*z1*z2 - 2*K1*K2**2*z1*z3 + 2*K1*K2**2*z2*z3 + 2*K1*K2*K3**2*z1*z2 - 2*K1*K2*K3**2*z1*z3 - 2*K1*K2*K3**2*z2*z3 - 2*K1*K2*K3**2*z3**2 + 4*K1*K2*K3*z1**2 + 4*K1*K2*K3*z1*z2 + 4*K1*K2*K3*z1*z3 + 4*K1*K2*K3*z2**2 + 4*K1*K2*K3*z2*z3 + 4*K1*K2*K3*z3**2 + 2*K1*K2*z1*z2 - 2*K1*K2*z1*z3 - 2*K1*K2*z2*z3 - 2*K1*K2*z3**2 - 2*K1*K3**2*z1**2 - 2*K1*K3**2*z1*z2 - 2*K1*K3**2*z1*z3 + 2*K1*K3**2*z2*z3 - 2*K1*K3*z1*z2 + 2*K1*K3*z1*z3 - 2*K1*K3*z2**2 - 2*K1*K3*z2*z3 + K2**2*K3**2*z2**2 + 2*K2**2*K3**2*z2*z3 + K2**2*K3**2*z3**2 + 2*K2**2*K3*z1*z2 - 2*K2**2*K3*z1*z3 - 2*K2**2*K3*z2*z3 - 2*K2**2*K3*z3**2 + K2**2*z1**2 + 2*K2**2*z1*z3 + K2**2*z3**2 - 2*K2*K3**2*z1*z2 + 2*K2*K3**2*z1*z3 - 2*K2*K3**2*z2**2 - 2*K2*K3**2*z2*z3 - 2*K2*K3*z1**2 - 2*K2*K3*z1*z2 - 2*K2*K3*z1*z3 + 2*K2*K3*z2*z3 + K3**2*z1**2 + 2*K3**2*z1*z2 + K3**2*z2**2)**0.5/2)/(K1*K2*K3*z1 + K1*K2*K3*z2 + K1*K2*K3*z3 - K1*K2*z1 - K1*K2*z2 - K1*K2*z3 - K1*K3*z1 - K1*K3*z2 - K1*K3*z3 + K1*z1 + K1*z2 + K1*z3 - K2*K3*z1 - K2*K3*z2 - K2*K3*z3 + K2*z1 + K2*z2 + K2*z3 + K3*z1 + K3*z2 + K3*z3 - z1 - z2 - z3)
+        Notes
+        -----
+        '''
+        try:
+            return self._dSE_dxs
+        except:
+            pass
+        try:
+            d2GE_dTdxs = self._d2GE_dTdxs
+        except:
+            d2GE_dTdxs = self.d2GE_dTdxs()
+        if self.scalar:
+            dSE_dxs = [-v for v in d2GE_dTdxs]
         else:
-            raise Exception('Only solutions of one or two variables are available analytically')
-        xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
-        ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
-        return V_over_F, xs, ys
-    elif Method == 'Rachford-Rice':
-        return Rachford_Rice_solution(zs=zs, Ks=Ks)
-    elif Method == 'Li-Johns-Ahmadi':
-        return Li_Johns_Ahmadi_solution(zs=zs, Ks=Ks)
-    else:
-        raise Exception('Incorrect Method input')
-
-
-def NRTL(xs, taus, alphas):
-    r'''Calculates the activity coefficients of each species in a mixture
-    using the Non-Random Two-Liquid (NRTL) method, given their mole fractions,
-    dimensionless interaction parameters, and nonrandomness constants. Those
-    are normally correlated with temperature in some form, and need to be
-    calculated separately.
-
-    .. math::
-        \ln(\gamma_i)=\frac{\displaystyle\sum_{j=1}^{n}{x_{j}\tau_{ji}G_{ji}}}
-        {\displaystyle\sum_{k=1}^{n}{x_{k}G_{ki}}}+\sum_{j=1}^{n}
-        {\frac{x_{j}G_{ij}}{\displaystyle\sum_{k=1}^{n}{x_{k}G_{kj}}}}
-        {\left ({\tau_{ij}-\frac{\displaystyle\sum_{m=1}^{n}{x_{m}\tau_{mj}
-        G_{mj}}}{\displaystyle\sum_{k=1}^{n}{x_{k}G_{kj}}}}\right )}
-
-        G_{ij}=\text{exp}\left ({-\alpha_{ij}\tau_{ij}}\right )
-
-    Parameters
-    ----------
-    xs : list[float]
-        Liquid mole fractions of each species, [-]
-    taus : list[list[float]]
-        Dimensionless interaction parameters of each compound with each other,
-        [-]
-    alphas : list[list[float]]
-        Nonrandomness constants of each compound interacting with each other, [-]
-
-    Returns
-    -------
-    gammas : list[float]
-        Activity coefficient for each species in the liquid mixture, [-]
-
-    Notes
-    -----
-    This model needs N^2 parameters.
-
-    One common temperature dependence of the nonrandomness constants is:
-
-    .. math::
-        \alpha_{ij}=c_{ij}+d_{ij}T
-
-    Most correlations for the interaction parameters include some of the terms
-    shown in the following form:
-
-    .. math::
-        \tau_{ij}=A_{ij}+\frac{B_{ij}}{T}+\frac{C_{ij}}{T^{2}}+D_{ij}
-        \ln{\left ({T}\right )}+E_{ij}T^{F_{ij}}
-
-    Examples
-    --------
-    Ethanol-water example, at 343.15 K and 1 MPa:
-
-    >>> NRTL(xs=[0.252, 0.748], taus=[[0, -0.178], [1.963, 0]],
-    ... alphas=[[0, 0.2974],[.2974, 0]])
-    [1.9363183763514304, 1.1537609663170014]
-
-    References
-    ----------
-    .. [1] Renon, Henri, and J. M. Prausnitz. "Local Compositions in
-       Thermodynamic Excess Functions for Liquid Mixtures." AIChE Journal 14,
-       no. 1 (1968): 135-144. doi:10.1002/aic.690140124.
-    .. [2] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey.
-       Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim:
-       Wiley-VCH, 2012.
-    '''
-    gammas = []
-    cmps = range(len(xs))
-    Gs = [[exp(-alphas[i][j]*taus[i][j]) for j in cmps] for i in cmps]
-    for i in cmps:
-        tn1, td1, total2 = 0., 0., 0.
-        for j in cmps:
-            # Term 1, numerator and denominator
-            tn1 += xs[j]*taus[j][i]*Gs[j][i]
-            td1 +=  xs[j]*Gs[j][i]
-            # Term 2
-            tn2 = xs[j]*Gs[i][j]
-            td2 = td3 = sum([xs[k]*Gs[k][j] for k in cmps])
-            tn3 = sum([xs[m]*taus[m][j]*Gs[m][j] for m in cmps])
-            total2 += tn2/td2*(taus[i][j] - tn3/td3)
-        gamma = exp(tn1/td1 + total2)
-        gammas.append(gamma)
-    return gammas
-
-
-def Wilson(xs, params):
-    r'''Calculates the activity coefficients of each species in a mixture
-    using the Wilson method, given their mole fractions, and
-    dimensionless interaction parameters. Those are normally correlated with
-    temperature, and need to be calculated separately.
-
-    .. math::
-        \ln \gamma_i = 1 - \ln \left(\sum_j^N \Lambda_{ij} x_j\right)
-        -\sum_j^N \frac{\Lambda_{ji}x_j}{\displaystyle\sum_k^N \Lambda_{jk}x_k}
-
-    Parameters
-    ----------
-    xs : list[float]
-        Liquid mole fractions of each species, [-]
-    params : list[list[float]]
-        Dimensionless interaction parameters of each compound with each other,
-        [-]
-
-    Returns
-    -------
-    gammas : list[float]
-        Activity coefficient for each species in the liquid mixture, [-]
-
-    Notes
-    -----
-    This model needs N^2 parameters.
-
-    The original model correlated the interaction parameters using the standard
-    pure-component molar volumes of each species at 25°C, in the following form:
-
-    .. math::
-        \Lambda_{ij} = \frac{V_j}{V_i} \exp\left(\frac{-\lambda_{i,j}}{RT}\right)
-
-    However, that form has less flexibility and offered no advantage over
-    using only regressed parameters.
-
-    Most correlations for the interaction parameters include some of the terms
-    shown in the following form:
-
-    .. math::
-        \ln \Lambda_{ij} =a_{ij}+\frac{b_{ij}}{T}+c_{ij}\ln T + d_{ij}T
-        + \frac{e_{ij}}{T^2} + h_{ij}{T^2}
-
-    The Wilson model is not applicable to liquid-liquid systems.
-
-    Examples
-    --------
-    Ethanol-water example, at 343.15 K and 1 MPa:
-
-    >>> Wilson([0.252, 0.748], [[1, 0.154], [0.888, 1]])
-    [1.8814926087178843, 1.1655774931125487]
-
-    References
-    ----------
-    .. [1] Wilson, Grant M. "Vapor-Liquid Equilibrium. XI. A New Expression for
-       the Excess Free Energy of Mixing." Journal of the American Chemical
-       Society 86, no. 2 (January 1, 1964): 127-130. doi:10.1021/ja01056a002.
-    .. [2] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey.
-       Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim:
-       Wiley-VCH, 2012.
-    '''
-    gammas = []
-    cmps = range(len(xs))
-    for i in cmps:
-        tot1 = log(sum([params[i][j]*xs[j] for j in cmps]))
-        tot2 = 0.
-        for j in cmps:
-            tot2 += params[j][i]*xs[j]/sum([params[j][k]*xs[k] for k in cmps])
-
-        gamma = exp(1. - tot1 - tot2)
-        gammas.append(gamma)
-    return gammas
-
-
-def UNIQUAC(xs, rs, qs, taus):
-    r'''Calculates the activity coefficients of each species in a mixture
-    using the Universal quasi-chemical (UNIQUAC) equation, given their mole
-    fractions, `rs`, `qs`, and dimensionless interaction parameters. The
-    interaction parameters are normally correlated with temperature, and need
-    to be calculated separately.
-
-    .. math::
-        \ln \gamma_i = \ln \frac{\Phi_i}{x_i} + \frac{z}{2} q_i \ln
-        \frac{\theta_i}{\Phi_i}+ l_i - \frac{\Phi_i}{x_i}\sum_j^N x_j l_j
-        - q_i \ln\left( \sum_j^N \theta_j \tau_{ji}\right)+ q_i - q_i\sum_j^N
-        \frac{\theta_j \tau_{ij}}{\sum_k^N \theta_k \tau_{kj}}
-
-        \theta_i = \frac{x_i q_i}{\displaystyle\sum_{j=1}^{n} x_j q_j}
-
-         \Phi_i = \frac{x_i r_i}{\displaystyle\sum_{j=1}^{n} x_j r_j}
-
-         l_i = \frac{z}{2}(r_i - q_i) - (r_i - 1)
-
-    Parameters
-    ----------
-    xs : list[float]
-        Liquid mole fractions of each species, [-]
-    rs : list[float]
-        Van der Waals volume parameters for each species, [-]
-    qs : list[float]
-        Surface area parameters for each species, [-]
-    taus : list[list[float]]
-        Dimensionless interaction parameters of each compound with each other,
-        [-]
-
-    Returns
-    -------
-    gammas : list[float]
-        Activity coefficient for each species in the liquid mixture, [-]
-
-    Notes
-    -----
-    This model needs N^2 parameters.
-
-    The original expression for the interaction parameters is as follows:
-
-    .. math::
-        \tau_{ji} = \exp\left(\frac{-\Delta u_{ij}}{RT}\right)
-
-    However, it is seldom used. Most correlations for the interaction
-    parameters include some of the terms shown in the following form:
-
-    .. math::
-        \ln \tau{ij} =a_{ij}+\frac{b_{ij}}{T}+c_{ij}\ln T + d_{ij}T
-        + \frac{e_{ij}}{T^2}
-
-    This model is recast in a slightly more computationally efficient way in
-    [2]_, as shown below:
-
-    .. math::
-        \ln \gamma_i = \ln \gamma_i^{res} + \ln \gamma_i^{comb}
-
-        \ln \gamma_i^{res} = q_i \left(1 - \ln\frac{\sum_j^N q_j x_j \tau_{ji}}
-        {\sum_j^N q_j x_j}- \sum_j \frac{q_k x_j \tau_{ij}}{\sum_k q_k x_k
-        \tau_{kj}}\right)
-
-        \ln \gamma_i^{comb} = (1 - V_i + \ln V_i) - \frac{z}{2}q_i\left(1 -
-        \frac{V_i}{F_i} + \ln \frac{V_i}{F_i}\right)
-
-        V_i = \frac{r_i}{\sum_j^N r_j x_j}
-
-        F_i = \frac{q_i}{\sum_j q_j x_j}
-
-    Examples
-    --------
-    Ethanol-water example, at 343.15 K and 1 MPa:
-
-    >>> UNIQUAC(xs=[0.252, 0.748], rs=[2.1055, 0.9200], qs=[1.972, 1.400],
-    ... taus=[[1.0, 1.0919744384510301], [0.37452902779205477, 1.0]])
-    [2.35875137797083, 1.2442093415968987]
-
-    References
-    ----------
-    .. [1] Abrams, Denis S., and John M. Prausnitz. "Statistical Thermodynamics
-       of Liquid Mixtures: A New Expression for the Excess Gibbs Energy of
-       Partly or Completely Miscible Systems." AIChE Journal 21, no. 1 (January
-       1, 1975): 116-28. doi:10.1002/aic.690210115.
-    .. [2] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey.
-       Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim:
-       Wiley-VCH, 2012.
-    .. [3] Maurer, G., and J. M. Prausnitz. "On the Derivation and Extension of
-       the Uniquac Equation." Fluid Phase Equilibria 2, no. 2 (January 1,
-       1978): 91-99. doi:10.1016/0378-3812(78)85002-X.
-    '''
-    cmps = range(len(xs))
-    rsxs = sum([rs[i]*xs[i] for i in cmps])
-    phis = [rs[i]*xs[i]/rsxs for i in cmps]
-    qsxs = sum([qs[i]*xs[i] for i in cmps])
-    vs = [qs[i]*xs[i]/qsxs for i in cmps]
-
-    Ss = [sum([vs[j]*taus[j][i] for j in cmps]) for i in cmps]
-
-    loggammacs = [log(phis[i]/xs[i]) + 1 - phis[i]/xs[i]
-    - 5*qs[i]*(log(phis[i]/vs[i]) + 1 - phis[i]/vs[i]) for i in cmps]
-
-    loggammars = [qs[i]*(1 - log(Ss[i]) - sum([taus[i][j]*vs[j]/Ss[j]
-                  for j in cmps])) for i in cmps]
-
-    return [exp(loggammacs[i] + loggammars[i]) for i in cmps]
-
-
-def flash(P, zs, Psats):
-#    if not fugacities:
-#        fugacities = [1 for i in range(len(zs))]
-#    if not gammas:
-#        gammas = [1 for i in range(len(zs))]
-    if not none_and_length_check((zs, Psats)):
-        raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
-    Ks = [K_value(P=P, Psat=Psats[i]) for i in range(len(zs))]
-    def valid_range(zs, Ks):
-        valid = True
-        if sum([zs[i]*Ks[i] for i in range(len(Ks))]) < 1:
-            valid = False
-        if sum([zs[i]/Ks[i] for i in range(len(Ks))]) < 1:
-            valid = False
-        return valid
-    if not valid_range(zs, Ks):
-        raise Exception('Solution does not exist')
-
-    V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
-    if V_over_F < 0:
-        raise Exception('V_over_F is negative!')
-    return xs, ys, V_over_F
-
-
-
-
-def dew_at_T(zs, Psats, fugacities=None, gammas=None):
-    '''
-    >>> dew_at_T([0.5, 0.5], [1400, 7000])
-    2333.3333333333335
-    >>> dew_at_T([0.5, 0.5], [1400, 7000], gammas=[1.1, .75])
-    2381.443298969072
-    >>> dew_at_T([0.5, 0.5], [1400, 7000], gammas=[1.1, .75], fugacities=[.995, 0.98])
-    2401.621874512658
-    '''
-    if not fugacities:
-        fugacities = [1 for i in range(len(Psats))]
-    if not gammas:
-        gammas = [1 for i in range(len(Psats))]
-    if not none_and_length_check((zs, Psats, fugacities, gammas)):
-        raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
-    P = 1/sum(zs[i]*fugacities[i]/Psats[i]/gammas[i] for i in range(len(zs)))
-    return P
-
-
-def bubble_at_T(zs, Psats, fugacities=None, gammas=None):
-    '''
-    >>> bubble_at_T([0.5, 0.5], [1400, 7000])
-    4200.0
-    >>> bubble_at_T([0.5, 0.5], [1400, 7000], gammas=[1.1, .75])
-    3395.0
-    >>> bubble_at_T([0.5, 0.5], [1400, 7000], gammas=[1.1, .75], fugacities=[.995, 0.98])
-    3452.440775305097
-    '''
-    if not fugacities:
-        fugacities = [1 for i in range(len(Psats))]
-    if not gammas:
-        gammas = [1 for i in range(len(Psats))]
-    if not none_and_length_check((zs, Psats, fugacities, gammas)):
-        raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
-    P = sum(zs[i]*Psats[i]*gammas[i]/fugacities[i] for i in range(len(zs)))
-    return P
-
-
-def identify_phase(T, P, Tm=None, Tb=None, Tc=None, Psat=None):
-    r'''Determines the phase of a one-species chemical system according to
-    basic rules, using whatever information is available. Considers only the
-    phases liquid, solid, and gas; does not consider two-phase
-    scenarios, as should occurs between phase boundaries.
-
-    * If the melting temperature is known and the temperature is under or equal
-      to it, consider it a solid.
-    * If the critical temperature is known and the temperature is greater or
-      equal to it, consider it a gas.
-    * If the vapor pressure at `T` is known and the pressure is under or equal
-      to it, consider it a gas. If the pressure is greater than the vapor
-      pressure, consider it a liquid.
-    * If the melting temperature, critical temperature, and vapor pressure are
-      not known, attempt to use the boiling point to provide phase information.
-      If the pressure is between 90 kPa and 110 kPa (approximately normal),
-      consider it a liquid if it is under the boiling temperature and a gas if
-      above the boiling temperature.
-    * If the pressure is above 110 kPa and the boiling temperature is known,
-      consider it a liquid if the temperature is under the boiling temperature.
-    * Return None otherwise.
+            dSE_dxs = -d2GE_dTdxs
+        self._dSE_dxs = dSE_dxs
+        return dSE_dxs
+
+    def dSE_dns(self):
+        r'''Calculate and return the mole number derivative of excess
+        entropy of a liquid phase using an activity coefficient model.
+
+        .. math::
+            \frac{\partial S^E}{\partial n_i}
+
+        Returns
+        -------
+        dSE_dns : list[float]
+            First mole number derivative of excess entropy of the liquid
+            phase, [J/(mol^2*K)]
+
+        Notes
+        -----
+        '''
+        dSE_dns = dxs_to_dns(self.dSE_dxs(), self.xs)
+        if not self.scalar and type(dSE_dns) is list:
+            dSE_dns = array(dSE_dns)
+        return dSE_dns
+
+    def dnSE_dns(self):
+        r'''Calculate and return the partial mole number derivative of excess
+        entropy of a liquid phase using an activity coefficient model.
+
+        .. math::
+            \frac{\partial n S^E}{\partial n_i}
+
+        Returns
+        -------
+        dnSE_dns : list[float]
+            First partial mole number derivative of excess entropy of the liquid
+            phase, [J/(mol*K)]
+
+        Notes
+        -----
+        '''
+        dnSE_dns = dxs_to_dn_partials(self.dSE_dxs(), self.xs, self.SE())
+        if not self.scalar and type(dnSE_dns) is list:
+            dnSE_dns = array(dnSE_dns)
+        return dnSE_dns
+
+    def dGE_dns(self):
+        r'''Calculate and return the mole number derivative of excess
+        Gibbs energy of a liquid phase using an activity coefficient model.
+
+        .. math::
+            \frac{\partial G^E}{\partial n_i}
+
+        Returns
+        -------
+        dGE_dns : list[float]
+            First mole number derivative of excess Gibbs entropy of the liquid
+            phase, [J/(mol^2*K)]
+
+        Notes
+        -----
+        '''
+        dGE_dns = dxs_to_dns(self.dGE_dxs(), self.xs)
+        if not self.scalar and type(dGE_dns) is list:
+            dGE_dns = array(dGE_dns)
+        return dGE_dns
+
+    def dnGE_dns(self):
+        r'''Calculate and return the partial mole number derivative of excess
+        Gibbs energy of a liquid phase using an activity coefficient model.
+
+        .. math::
+            \frac{\partial n G^E}{\partial n_i}
+
+        Returns
+        -------
+        dnGE_dns : list[float]
+            First partial mole number derivative of excess Gibbs entropy of the
+            liquid phase, [J/(mol)]
+
+        Notes
+        -----
+        '''
+        dnGE_dns = dxs_to_dn_partials(self.dGE_dxs(), self.xs, self.GE())
+        if not self.scalar and type(dnGE_dns) is list:
+            dnGE_dns = array(dnGE_dns)
+        return dnGE_dns
+
+    def d2GE_dTdns(self):
+        r'''Calculate and return the mole number derivative of the first
+        temperature derivative of excess Gibbs energy of a liquid phase using
+        an activity coefficient model.
+
+        .. math::
+            \frac{\partial^2 G^E}{\partial n_i \partial T}
+
+        Returns
+        -------
+        d2GE_dTdns : list[float]
+            First mole number derivative of the temperature derivative of
+            excess Gibbs entropy of the liquid phase, [J/(mol^2*K)]
+
+        Notes
+        -----
+        '''
+        d2GE_dTdns = dxs_to_dns(self.d2GE_dTdxs(), self.xs)
+        if not self.scalar and type(d2GE_dTdns) is list:
+            d2GE_dTdns = array(d2GE_dTdns)
+        return d2GE_dTdns
+
+
+    def d2nGE_dTdns(self):
+        r'''Calculate and return the partial mole number derivative of the first
+        temperature derivative of excess Gibbs energy of a liquid phase using
+        an activity coefficient model.
+
+        .. math::
+            \frac{\partial^2 n G^E}{\partial n_i \partial T}
+
+        Returns
+        -------
+        d2nGE_dTdns : list[float]
+            First partial mole number derivative of the temperature derivative
+            of excess Gibbs entropy of the liquid phase, [J/(mol*K)]
+
+        Notes
+        -----
+        '''
+        # needed in gammas temperature derivatives
+        dGE_dT = self.dGE_dT()
+        d2GE_dTdns = self.d2GE_dTdns()
+        d2nGE_dTdns = dns_to_dn_partials(d2GE_dTdns, dGE_dT)
+        if not self.scalar and type(d2nGE_dTdns) is list:
+            d2nGE_dTdns = array(d2nGE_dTdns)
+        return d2nGE_dTdns
+
+
+    def d2nGE_dninjs(self):
+        r'''Calculate and return the second partial mole number derivative of
+        excess Gibbs energy of a liquid phase using
+        an activity coefficient model.
+
+        .. math::
+            \frac{\partial^2 n G^E}{\partial n_i \partial n_i}
+
+        Returns
+        -------
+        d2nGE_dninjs : list[list[float]]
+            Second partial mole number derivative of excess Gibbs energy of a
+            liquid phase, [J/(mol^2)]
+
+        Notes
+        -----
+        '''
+        # This one worked out
+        d2nGE_dninjs = d2xs_to_dxdn_partials(self.d2GE_dxixjs(), self.xs)
+        if not self.scalar and type(d2nGE_dninjs) is list:
+            d2nGE_dninjs = array(d2nGE_dninjs)
+        return d2nGE_dninjs
+
+    def gammas_infinite_dilution(self):
+        r'''Calculate and return the infinite dilution activity coefficients
+        of each component.
+
+        Returns
+        -------
+        gammas_infinite : list[float]
+            Infinite dilution activity coefficients, [-]
+
+        Notes
+        -----
+        The algorithm is as follows. For each component, set its composition to
+        zero. Normalize the remaining compositions to 1. Create a new object
+        with that composition, and calculate the activity coefficient of the
+        component whose concentration was set to zero.
+        '''
+        T, N = self.T, self.N
+        xs_base = self.xs
+        x_infinite_dilution = self.x_infinite_dilution
+        if self.scalar:
+            gammas_inf = [0.0]*N
+            copy_fun = list
+        else:
+            gammas_inf = zeros(N)
+            copy_fun = array
+        for i in range(N):
+            xs = copy_fun(xs_base)
+            xs[i] = x_infinite_dilution
+            xs = normalize(xs)
+            gammas_inf[i] = self.to_T_xs(T, xs=xs).gammas()[i]
+        return gammas_inf
+
+    def gammas(self):
+        r'''Calculate and return the activity coefficients of a liquid phase
+        using an activity coefficient model.
+
+        .. math::
+            \gamma_i = \exp\left(\frac{\frac{\partial n_i G^E}{\partial n_i }}{RT}\right)
+
+        Returns
+        -------
+        gammas : list[float]
+            Activity coefficients, [-]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._gammas
+        except:
+            pass
+        # Matches the gamma formulation perfectly
+        GE = self.GE()
+        dG_dxs = self.dGE_dxs()
+        if self.scalar:
+            dG_dns = dxs_to_dn_partials(dG_dxs, self.xs, GE)
+            RT_inv = 1.0/(R*self.T)
+            gammas = [exp(i*RT_inv) for i in dG_dns]
+        else:
+            gammas = gibbs_excess_gammas(self.xs, dG_dxs, GE, self.T)
+            if type(gammas) is list:
+                gammas = array(gammas)
+        self._gammas = gammas
+        return gammas
+
+    def _gammas_dGE_dxs(self):
+        try:
+            del self._gammas
+        except:
+            pass
+        return GibbsExcess.gammas(self)
+
+    def dgammas_dns(self):
+        r'''Calculate and return the mole number derivative of activity
+        coefficients of a liquid phase using an activity coefficient model.
+
+        .. math::
+            \frac{\partial \gamma_i}{\partial n_i} = \gamma_i
+            \left(\frac{\frac{\partial^2 G^E}{\partial x_i \partial x_j}}{RT}\right)
+
+        Returns
+        -------
+        dgammas_dns : list[list[float]]
+            Mole number derivatives of activity coefficients, [-]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._dgammas_dns
+        except AttributeError:
+            pass
+        gammas = self.gammas()
+        N = self.N
+        xs = self.xs
+        d2GE_dxixjs = self.d2GE_dxixjs()
+
+        dgammas_dns = gibbs_excess_dgammas_dns(xs, gammas, d2GE_dxixjs, N, self.T)
+
+        if not self.scalar and type(dgammas_dns) is list:
+            dgammas_dns = array(dgammas_dns)
+
+        self._dgammas_dns = dgammas_dns
+        return dgammas_dns
+
+#    def dgammas_dxs(self):
+        # TODO - compare with UNIFAC, which has a dx derivative working
+#        # NOT WORKING
+#        gammas = self.gammas()
+#        cmps = self.cmps
+#        RT_inv = 1.0/(R*self.T)
+#        d2GE_dxixjs = self.d2GE_dxixjs() # Thi smatrix is symmetric
+#
+#        def thing(d2xs, xs):
+#            cmps = range(len(xs))
+#
+#            double_sums = []
+#            for j in cmps:
+#                tot = 0.0
+#                for k in cmps:
+#                    tot += xs[k]*d2xs[j][k]
+#                double_sums.append(tot)
+#
+#            mat = []
+#            for i in cmps:
+#                row = []
+#                for j in cmps:
+#                    row.append(d2xs[i][j] - double_sums[i])
+#                mat.append(row)
+#            return mat
+#
+#            return [[d2xj - tot for (d2xj, tot) in zip(d2xsi, double_sums)]
+#                     for d2xsi in d2xs]
+#
+#        d2nGE_dxjnis = thing(d2GE_dxixjs, self.xs)
+#
+#        matrix = []
+#        for i in cmps:
+#            row = []
+#            gammai = gammas[i]
+#            for j in cmps:
+#                v = gammai*d2nGE_dxjnis[i][j]*RT_inv
+#                row.append(v)
+#            matrix.append(row)
+#        return matrix
+
+#    def dgammas_dxs(self):
+#   # Not done
+#        return dxs_to_dns(self.dgammas_dx(), self.xs)
+
+#    def dngammas_dxs(self):
+#        pass
+
+    def dgammas_dT(self):
+        r'''Calculate and return the temperature derivatives of activity
+        coefficients of a liquid phase using an activity coefficient model.
+
+        .. math::
+            \frac{\partial \gamma_i}{\partial T} =
+            \left(\frac{\frac{\partial^2 n G^E}{\partial T \partial n_i}}{RT} -
+            \frac{{\frac{\partial n_i G^E}{\partial n_i }}}{RT^2}\right)
+             \exp\left(\frac{\frac{\partial n_i G^E}{\partial n_i }}{RT}\right)
+
+        Returns
+        -------
+        dgammas_dT : list[float]
+            Temperature derivatives of activity coefficients, [1/K]
+
+        Notes
+        -----
+        '''
+        r'''
+        from sympy import *
+        R, T = symbols('R, T')
+        f = symbols('f', cls=Function)
+        diff(exp(f(T)/(R*T)), T)
+        '''
+        try:
+            return self._dgammas_dT
+        except AttributeError:
+            pass
+        N, T, xs = self.N, self.T, self.xs
+        dGE_dT = self.dGE_dT()
+        GE = self.GE()
+        dG_dxs = self.dGE_dxs()
+        d2GE_dTdxs = self.d2GE_dTdxs()
+        dgammas_dT = gibbs_excess_dgammas_dT(xs, GE, dGE_dT, dG_dxs, d2GE_dTdxs, N, T)
+        if not self.scalar and type(dgammas_dT) is list:
+            dgammas_dT = array(dgammas_dT)
+        self._dgammas_dT = dgammas_dT
+        return dgammas_dT
+
+
+class IdealSolution(GibbsExcess):
+    r'''Class for  representing an ideal liquid, with no excess gibbs energy
+    and thus activity coefficients of 1.
 
     Parameters
     ----------
     T : float
         Temperature, [K]
-    P : float
-        Pressure, [Pa]
-    Tm : float, optional
-        Normal melting temperature, [K]
-    Tb : float, optional
-        Normal boiling point, [K]
-    Tc : float, optional
-        Critical temperature, [K]
-    Psat : float, optional
-        Vapor pressure of the fluid at `T`, [Pa]
+    xs : list[float]
+        Mole fractions, [-]
 
-    Returns
-    -------
-    phase : str
-        Either 's', 'l', 'g', or None if the phase cannot be determined
-
-    Notes
-    -----
-    No special attential is paid to any phase transition. For the case where
-    the melting point is not provided, the possibility of the fluid being solid
-    is simply ignored.
+    Attributes
+    ----------
+    T : float
+        Temperature, [K]
+    xs : list[float]
+        Mole fractions, [-]
 
     Examples
     --------
-    >>> identify_phase(T=280, P=101325, Tm=273.15, Psat=991)
-    'l'
+    >>> model = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
+    >>> model.GE()
+    0.0
+    >>> model.gammas()
+    [1.0, 1.0, 1.0, 1.0]
+    >>> model.dgammas_dT()
+    [0.0, 0.0, 0.0, 0.0]
     '''
-    if Tm and T <= Tm:
-        return 's'
-    elif Tc and T >= Tc:
-        # No special return value for the critical point
-        return 'g'
-    elif Psat:
-        # Do not allow co-existence of phases; transition to 'l' directly under
-        if P <= Psat:
-            return 'g'
-        elif P > Psat:
-            return 'l'
-    elif Tb:
-        # Crude attempt to model phases without Psat
-        # Treat Tb as holding from 90 kPa to 110 kPa
-        if 9E4 < P < 1.1E5:
-            if T < Tb:
-                return  'l'
-            else:
-                return 'g'
-        elif P > 1.1E5 and T <= Tb:
-            # For the higher-pressure case, it is definitely liquid if under Tb
-            # Above the normal boiling point, impossible to say - return None
-            return 'l'
+    model_attriubtes = ()
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
+
+    def __init__(self, T=None, xs=None):
+        if T is not None:
+            self.T = T
+        if xs is not None:
+            self.xs = xs
+            self.N = len(xs)
+            self.scalar = type(xs) is list
         else:
-            return None
-    else:
-        return None
+            self.scalar = True
 
+    def to_T_xs(self, T, xs):
+        r'''Method to construct a new :obj:`IdealSolution` instance at
+        temperature `T`, and mole fractions `xs`
+        with the same parameters as the existing object.
 
-mixture_phase_methods = ['IDEAL_VLE', 'SUPERCRITICAL_T', 'SUPERCRITICAL_P', 'IDEAL_VLE_SUPERCRITICAL']
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        xs : list[float]
+            Mole fractions of each component, [-]
 
-def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
-                           Psats=None, CASRNs=None,
-                           AvailableMethods=False, Method=None):  # pragma: no cover
-    '''
-    >>> identify_phase_mixture(T=280, P=5000., zs=[0.5, 0.5], Psats=[1400, 7000])
-    ('l', [0.5, 0.5], None, 0)
-    >>> identify_phase_mixture(T=280, P=3000., zs=[0.5, 0.5], Psats=[1400, 7000])
-    ('two-phase', [0.7142857142857143, 0.2857142857142857], [0.33333333333333337, 0.6666666666666666], 0.5625000000000001)
-    >>> identify_phase_mixture(T=280, P=800., zs=[0.5, 0.5], Psats=[1400, 7000])
-    ('g', None, [0.5, 0.5], 1)
-    >>> identify_phase_mixture(T=280, P=800., zs=[0.5, 0.5])
-    (None, None, None, None)
-    '''
-    def list_methods():
-        methods = []
-        if Psats and none_and_length_check((Psats, zs)):
-            methods.append('IDEAL_VLE')
-        if Tcs and none_and_length_check([Tcs]) and all([T >= i for i in Tcs]):
-            methods.append('SUPERCRITICAL_T')
-        if Pcs and none_and_length_check([Pcs]) and all([P >= i for i in Pcs]):
-            methods.append('SUPERCRITICAL_P')
-        if Tcs and none_and_length_check([zs, Tcs]) and any([T > Tc for Tc in Tcs]):
-            methods.append('IDEAL_VLE_SUPERCRITICAL')
-        methods.append('NONE')
-        return methods
-    if AvailableMethods:
-        return list_methods()
-    if not Method:
-        Method = list_methods()[0]
-    # This is the calculate, given the method section
-    xs, ys, phase, V_over_F = None, None, None, None
-    if Method == 'IDEAL_VLE':
-        Pdew = dew_at_T(zs, Psats)
-        Pbubble = bubble_at_T(zs, Psats)
-        if P >= Pbubble:
-            phase = 'l'
-            ys = None
-            xs = zs
-            V_over_F = 0
-        elif P <= Pdew:
-            phase = 'g'
-            ys = zs
-            xs = None
-            V_over_F = 1
-        elif Pdew < P < Pbubble:
-            xs, ys, V_over_F = flash(P, zs, Psats)
-            phase = 'two-phase'
-    elif Method == 'SUPERCRITICAL_T':
-        if all([T >= i for i in Tcs]):
-            phase = 'g'
-        else: # The following is nonsensical
-            phase = 'two-phase'
-    elif Method == 'SUPERCRITICAL_P':
-        if all([P >= i for i in Pcs]):
-            phase = 'g'
-        else: # The following is nonsensical
-            phase = 'two-phase'
-    elif Method == 'IDEAL_VLE_SUPERCRITICAL':
-        Psats = list(Psats)
-        for i in range(len(Psats)):
-            if not Psats[i] and Tcs[i] and Tcs[i] <= T:
-                Psats[i] = 1E8
-        Pdew = dew_at_T(zs, Psats)
-        Pbubble = 1E99
-        if P >= Pbubble:
-            phase = 'l'
-            ys = None
-            xs = zs
-            V_over_F = 0
-        elif P <= Pdew:
-            phase = 'g'
-            ys = zs
-            xs = None
-            V_over_F = 1
-        elif Pdew < P < Pbubble:
-            xs, ys, V_over_F = flash(P, zs, Psats)
-            phase = 'two-phase'
+        Returns
+        -------
+        obj : IdealSolution
+            New :obj:`IdealSolution` object at the specified conditions [-]
 
-    elif Method == 'NONE':
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> p = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
+        >>> p.to_T_xs(T=500.0, xs=[.25, .25, .25, .25])
+        IdealSolution(T=500.0, xs=[0.25, 0.25, 0.25, 0.25])
+        '''
+        new = self.__class__.__new__(self.__class__)
+        new.T = T
+        new.xs = xs
+        new.scalar = self.scalar
+        new.N = len(xs)
+        return new
+
+    def GE(self):
+        r'''Calculate and return the excess Gibbs energy of a liquid phase
+        using an activity coefficient model.
+
+        .. math::
+            g^E = 0
+
+        Returns
+        -------
+        GE : float
+            Excess Gibbs energy of an ideal liquid, [J/mol]
+
+        Notes
+        -----
+        '''
+        return 0.0
+
+    def dGE_dT(self):
+        r'''Calculate and return the temperature derivative of excess Gibbs
+        energy of a liquid phase using an activity coefficient model.
+
+        .. math::
+            \frac{\partial g^E}{\partial T} = 0
+
+        Returns
+        -------
+        dGE_dT : float
+            First temperature derivative of excess Gibbs energy of an
+            ideal liquid, [J/(mol*K)]
+
+        Notes
+        -----
+        '''
+        return 0.0
+
+    def d2GE_dT2(self):
+        r'''Calculate and return the second temperature derivative of excess
+        Gibbs energy of a liquid phase using an activity coefficient model.
+
+        .. math::
+            \frac{\partial^2 g^E}{\partial T^2} = 0
+
+        Returns
+        -------
+        d2GE_dT2 : float
+            Second temperature derivative of excess Gibbs energy of an
+            ideal liquid, [J/(mol*K^2)]
+
+        Notes
+        -----
+        '''
+        return 0.0
+
+    def d3GE_dT3(self):
+        r'''Calculate and return the third temperature derivative of excess
+        Gibbs energy of a liquid phase using an activity coefficient model.
+
+        .. math::
+            \frac{\partial^3 g^E}{\partial T^3} = 0
+
+        Returns
+        -------
+        d3GE_dT3 : float
+            Third temperature derivative of excess Gibbs energy of an ideal
+            liquid, [J/(mol*K^3)]
+
+        Notes
+        -----
+        '''
+        return 0.0
+
+    def d2GE_dTdxs(self):
+        r'''Calculate and return the temperature derivative of mole fraction
+        derivatives of excess Gibbs energy of an ideal liquid.
+
+        .. math::
+            \frac{\partial^2 g^E}{\partial x_i \partial T} = 0
+
+        Returns
+        -------
+        d2GE_dTdxs : list[float]
+            Temperature derivative of mole fraction derivatives of excess Gibbs
+            energy of an ideal liquid, [J/(mol*K)]
+
+        Notes
+        -----
+        '''
+        if self.scalar:
+            return [0.0]*self.N
+        return zeros(self.N)
+
+    def dGE_dxs(self):
+        r'''Calculate and return the mole fraction derivatives of excess Gibbs
+        energy of an ideal liquid.
+
+        .. math::
+            \frac{\partial g^E}{\partial x_i} = 0
+
+        Returns
+        -------
+        dGE_dxs : list[float]
+            Mole fraction derivatives of excess Gibbs energy of an ideal
+            liquid, [J/mol]
+
+        Notes
+        -----
+        '''
+        if self.scalar:
+            return [0.0]*self.N
+        return zeros(self.N)
+
+    def d2GE_dxixjs(self):
+        r'''Calculate and return the second mole fraction derivatives of excess
+        Gibbs energy of an ideal liquid.
+
+        .. math::
+            \frac{\partial^2 g^E}{\partial x_i \partial x_j} = 0
+
+        Returns
+        -------
+        d2GE_dxixjs : list[list[float]]
+            Second mole fraction derivatives of excess Gibbs energy of an ideal
+            liquid, [J/mol]
+
+        Notes
+        -----
+        '''
+        N = self.N
+        if self.scalar:
+            return [[0.0]*N for i in range(self.N)]
+        return zeros((N, N))
+
+    def d3GE_dxixjxks(self):
+        r'''Calculate and return the third mole fraction derivatives of excess
+        Gibbs energy of an ideal liquid.
+
+        .. math::
+            \frac{\partial^3 g^E}{\partial x_i \partial x_j \partial x_k} = 0
+
+        Returns
+        -------
+        d3GE_dxixjxks : list[list[list[float]]]
+            Third mole fraction derivatives of excess Gibbs energy of an ideal
+            liquid, [J/mol]
+
+        Notes
+        -----
+        '''
+        N = self.N
+        if self.scalar:
+            return [[[0.0]*N for i in range(N)] for j in range(N)]
+        return zeros((N, N, N))
+
+    def gammas(self):
+        if self.scalar:
+            return [1.0]*self.N
+        else:
+            return ones(self.N)
+
+    try:
+        gammas.__doc__ = GibbsExcess.__doc__
+    except:
         pass
-    else:
-        raise Exception('Failure in in function')
-    return phase, xs, ys, V_over_F
-
-
-def Pbubble_mixture(T=None, zs=None, Psats=None, CASRNs=None,
-                   AvailableMethods=False, Method=None):  # pragma: no cover
-    '''
-    >>> Pbubble_mixture(zs=[0.5, 0.5], Psats=[1400, 7000])
-    4200.0
-    '''
-    def list_methods():
-        methods = []
-        if none_and_length_check((Psats, zs)):
-            methods.append('IDEAL_VLE')
-        methods.append('NONE')
-        return methods
-    if AvailableMethods:
-        return list_methods()
-    if not Method:
-        Method = list_methods()[0]
-    # This is the calculate, given the method section
-    if Method == 'IDEAL_VLE':
-        Pbubble = bubble_at_T(zs, Psats)
-    elif Method == 'NONE':
-        Pbubble = None
-    else:
-        raise Exception('Failure in in function')
-    return Pbubble
-
-
-def bubble_at_P(P, zs, vapor_pressure_eqns, fugacities=None, gammas=None):
-    '''Calculates bubble point for a given pressure
-
-    Parameters
-    ----------
-    P : float
-        Pressure, [Pa]
-    zs : list[float]
-        Overall mole fractions of all species, [-]
-    vapor_pressure_eqns : list[functions]
-        Temperature dependent function for each specie, Returns Psat, [Pa]
-    fugacities : list[float], optional
-        fugacities of each species, defaults to list of ones, [-]
-    gammas : list[float], optional
-        gammas of each species, defaults to list of ones, [-]
-
-    Returns
-    -------
-    Tbubble : float, optional
-        Temperature of bubble point at pressure `P`, [K]
-
-    '''
-
-    def bubble_P_error(T):
-        Psats = [VP(T) for VP in vapor_pressure_eqns]
-        Pcalc = bubble_at_T(zs, Psats, fugacities, gammas)
-
-        return P - Pcalc
-
-    T_bubble = newton(bubble_P_error, 300)
-
-    return T_bubble
-
-
-def Pdew_mixture(T=None, zs=None, Psats=None, CASRNs=None,
-                 AvailableMethods=False, Method=None):  # pragma: no cover
-    '''
-    >>> Pdew_mixture(zs=[0.5, 0.5], Psats=[1400, 7000])
-    2333.3333333333335
-    '''
-    def list_methods():
-        methods = []
-        if none_and_length_check((Psats, zs)):
-            methods.append('IDEAL_VLE')
-        methods.append('NONE')
-        return methods
-    if AvailableMethods:
-        return list_methods()
-    if not Method:
-        Method = list_methods()[0]
-    # This is the calculate, given the method section
-    if Method == 'IDEAL_VLE':
-        Pdew = dew_at_T(zs, Psats)
-    elif Method == 'NONE':
-        Pdew = None
-    else:
-        raise Exception('Failure in in function')
-    return Pdew
-
-
-

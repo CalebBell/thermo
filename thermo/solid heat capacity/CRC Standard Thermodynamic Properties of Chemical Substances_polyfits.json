@@ -1,0 +1,5821 @@
+{
+    "100-00-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            250.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "100-01-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            167.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "100-25-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            200.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1002-84-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            443.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10022-31-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            151.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10024-93-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            113.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10025-73-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            91.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10025-91-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            107.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10025-93-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            102.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10026-07-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            138.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10026-08-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            120.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10026-10-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            122.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10026-11-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            119.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10026-12-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            148.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10026-17-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            68.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10028-18-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            64.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10031-22-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            80.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10042-76-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            149.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10043-11-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            19.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10043-35-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            86.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10043-52-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            72.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10049-05-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            71.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10049-06-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            69.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10049-14-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            116.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10099-58-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            108.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10099-76-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            90.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "101-77-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            270.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "101-84-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            216.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10101-52-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            98.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10101-63-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            77.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10102-03-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            143.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10102-24-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            99.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10102-45-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            99.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10108-64-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            74.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10124-36-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            99.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10124-37-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            149.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10138-41-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            100.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10138-52-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            88.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10138-62-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            88.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10179-73-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            132.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10190-55-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            119.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "102-71-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            389.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10294-26-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            131.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10294-54-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            134.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "103-84-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            179.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10361-37-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            75.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10361-79-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            100.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10377-48-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            117.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10377-51-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            51.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10377-60-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            141.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10476-81-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            75.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10476-85-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            75.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "10476-86-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            81.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "105-60-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            156.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "106-44-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            150.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "106-46-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            147.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "106-47-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            147.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "106-51-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            129.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "108-45-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            159.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "108-95-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            127.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "110-15-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            153.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "110-16-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            137.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "110-17-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            142.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "110-61-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            145.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "110-88-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            111.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "111-42-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            233.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1113-38-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            226.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "112-72-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            388.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "115-86-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            356.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "115383-22-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            650.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "118-74-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            201.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "118-90-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            174.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "118-96-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            243.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "119-61-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            224.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "120-12-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            210.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "120-61-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            261.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12007-33-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            111.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12011-67-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            105.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12014-82-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            50.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12024-21-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            92.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12026-09-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            90.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12030-24-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            118.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12030-49-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            57.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12030-88-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            77.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12031-30-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            59.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12032-20-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            101.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12032-36-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            45.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12033-37-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            93.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12034-12-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            72.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12034-57-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            41.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12034-59-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            57.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12035-98-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            45.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12036-22-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            56.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12036-32-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            117.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12036-35-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            103.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12036-41-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            115.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12036-44-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            116.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12036-70-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            114.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12037-04-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            215.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12037-15-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            293.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12038-20-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            43.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12038-21-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            65.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12055-23-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            60.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12055-62-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            115.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12057-24-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            54.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12060-08-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            94.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12060-58-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            114.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12061-16-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            108.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12064-03-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            48.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12064-62-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            106.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12065-65-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            154.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12068-77-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            133.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12069-00-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            50.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12124-97-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            96.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12125-01-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            65.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12125-02-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            84.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12137-20-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            40.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12211-52-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            134.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12280-52-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            87.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "12280-64-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            79.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "123-07-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            206.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "123-31-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            136.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "127-09-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            79.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "129-00-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            229.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1302-81-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            105.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1303-00-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            46.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1303-11-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            47.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1303-28-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            116.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1303-33-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            116.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1303-86-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            62.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1304-28-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            47.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1304-56-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1304-76-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            113.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1305-62-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            87.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1305-78-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            42.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1306-19-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            43.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1306-38-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            61.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1307-96-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            55.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1308-06-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            123.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1308-38-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            118.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1308-87-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            116.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1308-96-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            122.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1309-37-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            103.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1309-42-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            77.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1309-48-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            37.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1309-60-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            64.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1310-53-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            52.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1310-58-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            68.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1310-65-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            49.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1310-73-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            59.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1310-82-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            69.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13106-47-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            65.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1312-41-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            49.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1312-43-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            92.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1312-81-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            108.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13126-12-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            102.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1313-13-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            54.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1313-22-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            51.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1313-27-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            75.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1313-59-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            69.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1313-60-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            89.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1313-96-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            132.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1313-97-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            111.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13135-31-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            101.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-08-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            31.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-11-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            45.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-13-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            40.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-20-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            61.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-23-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            56.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-34-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            103.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-35-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            73.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-36-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            102.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-37-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            115.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-41-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            146.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-61-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            135.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-62-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            127.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-68-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            166.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-87-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            49.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-91-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            50.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-95-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            49.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-96-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            48.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1314-98-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            46.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1317-33-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            63.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1317-34-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            107.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1317-35-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            139.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1317-36-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            45.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1317-37-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            50.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1317-38-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            42.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1317-39-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            63.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1317-40-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            47.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1317-61-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            143.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1317-66-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            62.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1317-80-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            55.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1330-43-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            186.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13327-32-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            62.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1333-83-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            75.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13400-13-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            51.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1344-28-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            79.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1344-43-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            45.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1344-48-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            48.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1344-54-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            97.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1344-57-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            63.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1344-58-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            81.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1344-59-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            238.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1345-07-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            122.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1345-13-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            114.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13450-91-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            100.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13451-00-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            88.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13453-69-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            59.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13454-84-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            108.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13477-09-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            46.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13494-80-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13499-05-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            120.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "135-19-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            172.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13510-49-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            85.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13536-84-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            103.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13566-17-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            137.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13568-32-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            129.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13569-63-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            92.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13597-55-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            134.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13597-65-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            123.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13598-22-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            34.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13598-56-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            49.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "137-26-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            301.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13709-59-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            110.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13709-66-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            74.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13709-94-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            66.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13718-70-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            118.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13755-29-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            120.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13762-51-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            96.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13763-23-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            175.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13775-06-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            95.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13830-68-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            129.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13870-24-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            114.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "13939-06-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            242.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "141-53-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            82.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "143-07-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            404.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "143-33-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            70.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "144-55-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            87.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "144-62-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            91.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "14644-61-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            172.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "14808-60-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            44.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "150-13-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            177.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "151-50-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            66.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "1633-05-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            81.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "16689-88-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            36.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "16812-54-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            47.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "16853-85-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            83.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "16893-85-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            187.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "16919-19-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            228.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "16940-66-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            86.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "16949-15-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            82.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "18282-10-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            52.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "18820-29-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            50.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "18868-43-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            56.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "198-55-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            274.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "20281-00-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            76.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "20548-54-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            47.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "206-44-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            230.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "20667-12-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            65.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "208-96-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            166.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "21109-95-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            49.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "21351-79-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            69.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "21368-68-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            271.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "21548-73-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            76.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "21651-19-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            44.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "21908-53-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            44.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "22205-45-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            76.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "22207-96-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            120.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "22398-80-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            45.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "24304-00-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            30.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "25455-73-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            88.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "26628-22-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            76.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "26686-77-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            118.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "279-23-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            151.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "288-13-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            81.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "333-20-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            88.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "3486-35-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            79.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "36653-82-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            422.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "3811-04-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            100.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "409-21-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            26.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "471-34-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            83.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "497-19-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            112.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "501-65-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            225.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "506-12-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            475.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "506-30-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            545.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "506-64-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            66.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "51-79-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            156.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "513-77-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            86.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "528-29-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            200.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "534-16-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            112.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "534-17-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            123.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "544-63-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            432.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "546-93-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            75.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "554-13-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            99.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "558-13-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            144.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "563-71-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            82.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "57-10-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            460.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "57-11-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            501.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "584-08-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            114.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "584-09-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            117.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "593-45-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            485.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "594-82-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            239.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "598-62-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            81.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "598-63-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            87.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "60-18-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            216.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "60-35-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            91.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "603-35-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            312.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "61-90-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            200.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "63-91-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            203.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "6484-52-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            139.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "65-71-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            150.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "65-85-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            146.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "66-22-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            120.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "67-72-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            198.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "68-94-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            134.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "69-89-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            151.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "69-93-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            166.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "71-30-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            132.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7200-25-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            232.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "73-22-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            238.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "73-24-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            147.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "74-11-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            163.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7429-90-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            24.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7429-91-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            27.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7439-88-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7439-89-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7439-91-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            27.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7439-92-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            26.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7439-93-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            24.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7439-94-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            26.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7439-95-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            24.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7439-96-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            26.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7439-98-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            24.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-00-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            27.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-02-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            26.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-03-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            24.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-04-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            24.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-05-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            26.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-06-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-09-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            29.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-10-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            27.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-15-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-16-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-17-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            31.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-18-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            24.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-19-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            29.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-20-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-21-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            20.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-22-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-23-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            28.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-24-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            26.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-25-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-27-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            28.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-28-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            26.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-29-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            27.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-30-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            27.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-31-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-32-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-33-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            24.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-34-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            27.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-36-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-38-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            24.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-39-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            28.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-41-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            16.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-42-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            11.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-43-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            26.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-45-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            26.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-46-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            32.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-47-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            23.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-48-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            24.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-50-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            24.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-52-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            28.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-53-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            27.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-54-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            37.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-55-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            26.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-56-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            23.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-57-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-58-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-60-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            27.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-61-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            27.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-62-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            24.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-64-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            26.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-65-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            26.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-66-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-67-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-69-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-70-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7440-74-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            26.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7446-14-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            103.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7446-70-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            91.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7447-39-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            71.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7447-40-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            51.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7447-41-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            48.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7487-88-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            96.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7488-54-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            134.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "75-01-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            59.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "75-20-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            62.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7553-56-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            54.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7558-79-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            135.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7580-67-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            27.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7631-95-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            141.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7631-99-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            92.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7646-69-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            36.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7646-79-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            78.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7646-85-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            71.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7647-14-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            50.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7647-15-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            51.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7647-17-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            52.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7664-38-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            106.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7681-11-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            52.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7681-49-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            46.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7681-55-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            92.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7681-65-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            54.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7681-82-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            52.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7693-27-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            35.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7704-34-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            22.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7704-99-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            31.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7705-07-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            97.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7705-08-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            96.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7718-54-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            71.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7718-98-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            93.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7720-78-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            100.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7720-83-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            125.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7722-64-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            117.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7723-14-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            23.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7727-15-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            100.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7727-43-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            101.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7733-02-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            99.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7757-79-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            96.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7757-82-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            128.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7757-83-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            120.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7758-01-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            105.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7758-02-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            52.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7758-05-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            106.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7758-09-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            107.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7758-87-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            227.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7758-89-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            48.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7758-94-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            76.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7759-00-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            86.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7761-88-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            93.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7773-01-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            72.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7775-19-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            65.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7778-18-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            99.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7778-74-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            112.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7778-77-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            116.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7778-80-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            131.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7782-40-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            6.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7782-42-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            8.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7782-49-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            25.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7782-92-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            66.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7783-20-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            187.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7783-28-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            188.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7783-36-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            132.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7783-40-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            61.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7783-48-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            70.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7783-49-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            65.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7783-64-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            103.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7783-68-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            134.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7783-81-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            166.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7783-90-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            50.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7783-96-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            56.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7783-97-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            102.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7784-01-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            142.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7784-18-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            75.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7784-21-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            40.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7784-23-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            98.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7784-30-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            93.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7784-45-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            105.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7785-23-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            52.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7786-30-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            71.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7786-81-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            138.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7787-32-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            71.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7787-46-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            69.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7787-47-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            62.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7787-49-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            51.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7787-53-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            71.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7787-60-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            105.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7787-69-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            52.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7787-70-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            54.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7788-97-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            78.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7789-17-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            52.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7789-23-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            49.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7789-24-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            41.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7789-28-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            68.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7789-29-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            76.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7789-39-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            52.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7789-42-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            76.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7789-43-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            79.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7789-68-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            131.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7789-75-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            67.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7789-78-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            41.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7790-29-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            53.2
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7790-47-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            84.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7790-80-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            80.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7790-86-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            87.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7791-11-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            52.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7791-12-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            50.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "7791-26-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            107.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "78-30-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            578.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "78-67-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            237.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "79-06-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            110.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "814-93-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            105.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "83-32-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            190.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "84-15-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            274.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "85-01-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            220.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "85-44-9": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            160.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "86-73-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            203.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "87-85-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            245.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "87-86-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            202.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "88-74-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            166.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "88-89-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            239.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "88-99-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            188.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "90-15-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            166.9
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "91-20-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            165.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "91-57-6": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            196.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "917-61-3": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            86.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "92-52-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            198.4
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "92-94-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            278.7
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "92141-86-1": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            80.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "95-48-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            154.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "95-93-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            215.1
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "99-04-7": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            163.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "99-09-2": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            158.8
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "99-35-4": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            214.6
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "99-65-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            197.5
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "99-94-5": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            169.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "99-99-0": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            172.3
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }, 
+    "99685-96-8": {
+        "Tmax": 298.15, 
+        "Tmin": 298.15, 
+        "coefficients": [
+            520.0
+        ], 
+        "error_average": 0.0, 
+        "error_std": 0.0, 
+        "max_error": 0.0, 
+        "method": "CRC Standard Thermodynamic Properties of Chemical Substances"
+    }
+}

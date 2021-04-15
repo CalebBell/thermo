@@ -1,7 +1,4 @@
-thermo.utils module
-===================
+Utilities and Base Classes (thermo.utils)
+=========================================
 
 .. automodule:: thermo.utils
-    :members:
-    :undoc-members:
-    :show-inheritance:

@@ -1,0 +1,42 @@
+*.pyc
+.pypirc
+dist
+MANIFEST
+.coverage
+htmlcov
+_build
+.cache
+__pycache__
+prof
+*Pyreverse*
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+*.idea
+ 
+*.7z
+*.dmg
+*.iso
+*.jar
+*.rar
+ 
+*.log
+*.sql
+*.sqlite
+ 
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+surfaces
+constants dump.json
+binary dump.marshal
+thermo/Misc/constants dump 2018.json
+thermo/Misc/constants dump*
+.pytest_cache

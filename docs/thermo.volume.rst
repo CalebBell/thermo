@@ -1,7 +1,4 @@
-thermo.volume module
-====================
+Density/Volume (thermo.volume)
+==============================
 
 .. automodule:: thermo.volume
-    :members:
-    :undoc-members:
-    :show-inheritance:

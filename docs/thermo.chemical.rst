@@ -1,5 +1,5 @@
-thermo.chemical module
-======================
+Legacy Chemicals (thermo.chemical)
+==================================
 
 .. automodule:: thermo.chemical
     :members:

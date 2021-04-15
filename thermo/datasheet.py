@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,22 +22,28 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['tabulate_solid', 'tabulate_liq', 'tabulate_gas', 
-           'tabulate_constants']
-           
+__all__ = ['tabulate_solid', 'tabulate_liq', 'tabulate_gas',
+           'tabulate_constants', 'tabulate_streams']
+
 from collections import OrderedDict
-import numpy as np
-import pandas as pd
+from fluids.numerics import numpy as np
 from thermo.chemical import Chemical
 
-
+global _pd
+_pd = None
+def pandas():
+    global _pd
+    if _pd is None:
+        import pandas as _pd
+    return _pd
 def tabulate_solid(chemical, Tmin=None, Tmax=None, pts=10):
+    pd = pandas()
     chem = Chemical(chemical)
 
     (rhos, Cps) = [[] for i in range(2)]
     if not Tmin:  # pragma: no cover
         if chem.Tm:
-            Tmin = max(chem.Tm-100, 1e-4)
+            Tmin = min(chem.Tm-100, 1e-2)
         else:
             Tmin = 150.
     if not Tmax:  # pragma: no cover
@@ -62,6 +68,7 @@ def tabulate_solid(chemical, Tmin=None, Tmax=None, pts=10):
 
 
 def tabulate_liq(chemical, Tmin=None, Tmax=None, pts=10):
+    pd = pandas()
     chem = Chemical(chemical)
 
     (rhos, Cps, mugs, kgs, Prs, alphas, isobarics, JTs, Psats, sigmas, Hvaps,
@@ -99,14 +106,14 @@ def tabulate_liq(chemical, Tmin=None, Tmax=None, pts=10):
     data['Density, kg/m^3'] = rhos
     data['Constant-pressure heat capacity, J/kg/K'] = Cps
     data['Heat of vaporization, J/kg'] = Hvaps
-    data['Viscosity, Pa*S'] = mugs
+    data['Viscosity, Pa*s'] = mugs
     data['Thermal conductivity, W/m/K'] = kgs
     data['Surface tension, N/m'] = sigmas
     data['Prandtl number'] = Prs
     data['Thermal diffusivity, m^2/s'] = alphas
     data['Isobaric expansion, 1/K'] = isobarics
     data['Joule-Thompson expansion coefficient, K/Pa'] = JTs
-    data['Permittivity'] = permittivities
+    data['PermittivityLiquid'] = permittivities
 
     df = pd.DataFrame(data, index=Ts)
     df.index.name = 'T, K'
@@ -115,6 +122,7 @@ def tabulate_liq(chemical, Tmin=None, Tmax=None, pts=10):
 
 def tabulate_gas(chemical, Tmin=None, Tmax=None, pts=10):
     chem = Chemical(chemical)
+    pd = pandas()
 
     (rhos, Cps, Cvs, mugs, kgs, Prs, alphas, isobarics, isentropics, JTs) = [[] for i in range(10)]
     if not Tmin:  # pragma: no cover
@@ -146,8 +154,8 @@ def tabulate_gas(chemical, Tmin=None, Tmax=None, pts=10):
     data['Density, kg/m^3'] = rhos
     data['Constant-pressure heat capacity, J/kg/K'] = Cps
     data['Constant-volume heat capacity, J/kg/K'] = Cvs
-    data['Viscosity, Pa*S'] = mugs
-    data['Thermal consuctivity, W/m/K'] = kgs
+    data['Viscosity, Pa*s'] = mugs
+    data['Thermal conductivity, W/m/K'] = kgs
     data['Prandtl number'] = Prs
     data['Thermal diffusivity, m^2/s'] = alphas
     data['Isobaric expansion, 1/K'] = isobarics
@@ -160,6 +168,7 @@ def tabulate_gas(chemical, Tmin=None, Tmax=None, pts=10):
 
 
 def tabulate_constants(chemical, full=False, vertical=False):
+    pd = pandas()
     pd.set_option('display.max_rows', 100000)
     pd.set_option('display.max_columns', 100000)
 
@@ -220,6 +229,92 @@ def tabulate_constants(chemical, full=False, vertical=False):
     else:
         df = pd.DataFrame.from_dict(all_chemicals, orient='index')
     return df
+
+
+def tabulate_streams(names=None, *args, **kwargs):
+    # Names are the names of the streams to be displayed; input
+    # strings for each of them or bad things happen!
+    pd = pandas()
+    Ts = [i.T for i in args]
+    Ps = [i.P for i in args]
+    VFs = [i.V_over_F for i in args]
+    phases = [i.phase for i in args]
+    Hs = [i.H for i in args]
+    ms = [i.m for i in args]
+    ns = [i.n for i in args]
+    CASs = set()
+    IDs = {}
+    for stream in args:
+        CASs.update(stream.CASs)
+        for CAS, i in zip(stream.CASs, stream.names):
+            IDs[CAS] = i
+    CASs = list(CASs) # So it can be indexed
+
+    mole_fractions = []
+    mole_flows = []
+    mass_fractions = []
+    mass_flows = []
+    for stream in args:
+        mole_fractions_i = []
+        mass_fractions_i = []
+        mole_flows_i = []
+        mass_flows_i = []
+        for CAS in CASs:
+            if CAS in stream.CASs:
+                ind = stream.CASs.index(CAS)
+                zi = stream.zs[ind]
+                wi = stream.ws[ind]
+                n = stream.ns[ind]
+                m = stream.ms[ind]
+            else:
+                zi, wi, n, m = 0, 0, 0, 0
+            mole_fractions_i.append(zi)
+            mass_fractions_i.append(wi)
+            mole_flows_i.append(n)
+            mass_flows_i.append(m)
+        mole_fractions.append(mole_fractions_i)
+        mass_fractions.append(mass_fractions_i)
+        mass_flows.append(mass_flows_i)
+        mole_flows.append(mole_flows_i)
+
+    dat = OrderedDict([['Temperature, K', Ts],
+                      ['Pressure, Pa', Ps],
+                       ['Phase', phases],
+                      ['Vapor fraction', VFs],
+                      ['Enthalpy, J', Hs],
+                      ['Mass flows, kg/s', ms],
+                      ['Mole flows, mol/s', ns]])
+
+    if kwargs.get('Mole flows', True):
+        for i, CAS in enumerate(CASs):
+            s = 'Mole flow, mol/s %s' %IDs[CAS]
+            vals = [j[i] for j in mole_flows]
+            dat[s] = vals
+
+    if kwargs.get('Mass flows', True):
+        for i, CAS in enumerate(CASs):
+            s = 'Mass flow, kg/s %s' %IDs[CAS]
+            vals = [j[i] for j in mass_flows]
+            dat[s] = vals
+
+    if kwargs.get('Mass fractions', True):
+        for i, CAS in enumerate(CASs):
+            s = 'Mass fraction %s' %IDs[CAS]
+            vals = [j[i] for j in mass_fractions]
+            dat[s] = vals
+
+    if kwargs.get('Mole fractions', True):
+        for i, CAS in enumerate(CASs):
+            s = 'Mole fraction %s' %IDs[CAS]
+            vals = [j[i] for j in mole_fractions]
+            dat[s] = vals
+
+#    print(dat, names)
+    if names is None:
+        df = pd.DataFrame(dat)
+    else:
+        df = pd.DataFrame(dat, index=names)
+    return df.transpose()
 
 
 

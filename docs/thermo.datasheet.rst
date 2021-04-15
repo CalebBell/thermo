@@ -1,5 +1,5 @@
-thermo.datasheet module
-=======================
+Creating Property Datasheets (thermo.datasheet)
+===============================================
 
 .. automodule:: thermo.datasheet
     :members:

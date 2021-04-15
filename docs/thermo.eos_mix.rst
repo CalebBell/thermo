@@ -1,7 +1,6 @@
-thermo.eos_mix module
-=====================
+Cubic Equations of State for Mixtures (thermo.eos_mix)
+======================================================
 
 .. automodule:: thermo.eos_mix
-    :members:
     :undoc-members:
     :show-inheritance:

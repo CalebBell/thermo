@@ -1,5 +1,5 @@
-thermo.stream module
-====================
+Streams (thermo.stream)
+=======================
 
 .. automodule:: thermo.stream
     :members:

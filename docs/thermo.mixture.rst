@@ -1,5 +1,5 @@
-thermo.mixture module
-=====================
+Legacy Mixtures (thermo.mixture)
+================================
 
 .. automodule:: thermo.mixture
     :members:

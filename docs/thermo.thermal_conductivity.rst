@@ -1,7 +1,4 @@
-thermo.thermal_conductivity module
-==================================
+Thermal Conductivity (thermo.thermal_conductivity)
+==================================================
 
 .. automodule:: thermo.thermal_conductivity
-    :members:
-    :undoc-members:
-    :show-inheritance:

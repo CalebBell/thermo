@@ -1,7 +1,7 @@
-thermo
-======
+API Reference
+=============
 
 .. toctree::
-   :maxdepth: 10
+   :maxdepth: 4
 
    thermo

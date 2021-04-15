@@ -1,7 +1,4 @@
-thermo.interface module
-=======================
+Interfacial/Surface Tension (thermo.interface)
+==============================================
 
 .. automodule:: thermo.interface
-    :members:
-    :undoc-members:
-    :show-inheritance:

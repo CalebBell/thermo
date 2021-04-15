@@ -1,7 +1,4 @@
-thermo.heat_capacity module
-===========================
+Heat Capacity (thermo.heat_capacity)
+====================================
 
 .. automodule:: thermo.heat_capacity
-    :members:
-    :undoc-members:
-    :show-inheritance:

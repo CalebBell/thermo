@@ -1,7 +1,4 @@
-thermo.permittivity module
-==========================
+Permittivity/Dielectric Constant (thermo.permittivity)
+======================================================
 
 .. automodule:: thermo.permittivity
-    :members:
-    :undoc-members:
-    :show-inheritance:

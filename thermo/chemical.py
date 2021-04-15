@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, 2017 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,61 +24,48 @@ from __future__ import division
 
 __all__ = ['Chemical', 'reference_states']
 
+from fluids.constants import epsilon_0
 
-from thermo.identifiers import *
-from thermo.identifiers import _MixtureDict
-from thermo.vapor_pressure import VaporPressure
-from thermo.phase_change import Tb, Tm, Hfus, Hsub, Tliquidus, EnthalpyVaporization
-from thermo.activity import identify_phase, identify_phase_mixture, Pbubble_mixture, Pdew_mixture
+from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
+from fluids.core import *
+from fluids.numerics import newton, numpy as np
 
-from thermo.critical import Tc, Pc, Vc, Tc_mixture, Pc_mixture, Vc_mixture
-from thermo.acentric import omega, omega_mixture, StielPolar
-from thermo.triple import Tt, Pt
+from chemicals.identifiers import *
+from chemicals.phase_change import Tb, Tm, Hfus, Tb_methods, Tm_methods, Hfus_methods
+from chemicals.critical import Tc, Pc, Vc, Tc_methods, Pc_methods, Vc_methods
+from chemicals.acentric import omega, Stiel_polar_factor, omega_methods
+from chemicals.triple import Tt, Pt, Tt_methods, Pt_methods
+from chemicals.virial import B_from_Z
+from chemicals.volume import ideal_gas
+from chemicals.reaction import Hfg_methods, S0g_methods, Hfl_methods, Hfs_methods, Hfs, Hfl, Hfg, S0g, S0l, S0s, Gibbs_formation, Hf_basis_converter, entropy_formation
+from chemicals.combustion import combustion_stoichiometry, HHV_stoichiometry, LHV_from_HHV
+from chemicals.safety import T_flash, T_autoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, T_flash_methods, T_autoignition_methods, LFL_methods, UFL_methods, TWA_methods, STEL_methods, Ceiling_methods, Skin_methods, Carcinogen_methods
+from chemicals.solubility import solubility_parameter
+from chemicals.dipole import dipole_moment as dipole, dipole_moment_methods
+from chemicals.utils import *
+from chemicals.lennard_jones import Stockmayer_methods, molecular_diameter_methods, Stockmayer, molecular_diameter
+from chemicals.environment import GWP, ODP, logP, GWP_methods, ODP_methods, logP_methods
+from chemicals.refractivity import RI, RI_methods
+from chemicals.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser, molecular_weight, charge_from_formula, periodic_table, homonuclear_elements
+
+from thermo.vapor_pressure import VaporPressure, SublimationPressure
+from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
+from thermo.utils import identify_phase
 from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid, VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture
 from thermo.permittivity import *
 from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
-from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture, viscosity_index
-from thermo.reaction import Hf
-from thermo.combustion import Hcombustion
-from thermo.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, LFL_mixture, UFL_mixture
-from thermo.solubility import solubility_parameter
-from thermo.dipole import dipole_moment as dipole
+from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture
 from thermo.utils import *
-from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
-from thermo.lennard_jones import Stockmayer, molecular_diameter
-from thermo.environment import GWP, ODP, logP
 from thermo.law import legal_status, economic_status
-from thermo.refractivity import refractive_index
-from thermo.electrochem import conductivity
-from thermo.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser, molecular_weight, charge_from_formula
-from thermo.coolprop import has_CoolProp
+from thermo.electrochem import conductivity, conductivity_methods
 from thermo.eos import *
 from thermo.eos_mix import *
 from thermo.unifac import DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments, load_group_assignments_DDBST, UNIFAC_RQ, Van_der_Waals_volume, Van_der_Waals_area
 
 
-from fluids.core import *
-from scipy.optimize import newton
-from scipy.constants import physical_constants
-import numpy as np
 
-# RDKIT
-try:
-    from rdkit import Chem
-    from rdkit.Chem import Descriptors
-    from rdkit.Chem import AllChem
-except:
-    # pragma: no cover
-    pass
-
-
-from collections import Counter
-from pprint import pprint
-
-#import warnings
-#warnings.filterwarnings("ignore")
 
 caching = True
 
@@ -96,14 +83,106 @@ SUPERPRO = (298.15, 101325, 'calc', 0, 0, True) # No support for entropy found, 
 
 reference_states = [IAPWS, ASHRAE, IIR, REFPROP, CHEMSEP, PRO_II, HYSYS,
                     UNISIM, SUPERPRO]
+
+
+
+
+
+
+class ChemicalConstants(object):
+    __slots__ = ('CAS', 'Tc', 'Pc', 'Vc', 'omega', 'Tb', 'Tm', 'Tt', 'Pt',
+                 'Hfus', 'Hsub', 'Hf', 'dipole',
+                 'HeatCapacityGas', 'HeatCapacityLiquid', 'HeatCapacitySolid',
+                 'ThermalConductivityLiquid', 'ThermalConductivityGas',
+                 'ViscosityLiquid', 'ViscosityGas',
+                 'EnthalpyVaporization', 'VaporPressure', 'VolumeLiquid',
+                 'EnthalpySublimation', 'SublimationPressure', 'SurfaceTension',
+                 'VolumeSolid',
+                 'VolumeSupercriticalLiquid', 'PermittivityLiquid',
+                 )
+
+    # Or can I store the actual objects without doing the searches?
+    def __init__(self, CAS, Tc=None, Pc=None, Vc=None, omega=None, Tb=None,
+                 Tm=None, Tt=None, Pt=None, Hfus=None, Hsub=None, Hf=None,
+                 dipole=None,
+                 HeatCapacityGas=(), HeatCapacityLiquid=(),
+                 HeatCapacitySolid=(),
+                 ThermalConductivityLiquid=(), ThermalConductivityGas=(),
+                 ViscosityLiquid=(), ViscosityGas=(),
+                 EnthalpyVaporization=(), VaporPressure=(), VolumeLiquid=(),
+                 SublimationPressure=(), EnthalpySublimation=(),
+                 SurfaceTension=(), VolumeSolid=(), VolumeSupercriticalLiquid=(),
+                 PermittivityLiquid=(),
+                 ):
+        self.CAS = CAS
+        self.Tc = Tc
+        self.Pc = Pc
+        self.Vc = Vc
+        self.omega = omega
+        self.Tb = Tb
+        self.Tm = Tm
+        self.Tt = Tt
+        self.Pt = Pt
+        self.Hfus = Hfus
+        self.Hsub = Hsub
+        self.Hf = Hf
+        self.dipole = dipole
+        self.HeatCapacityGas = HeatCapacityGas
+        self.HeatCapacityLiquid = HeatCapacityLiquid
+        self.HeatCapacitySolid = HeatCapacitySolid
+        self.ThermalConductivityLiquid = ThermalConductivityLiquid
+        self.ThermalConductivityGas = ThermalConductivityGas
+        self.ViscosityLiquid = ViscosityLiquid
+        self.ViscosityGas = ViscosityGas
+        self.EnthalpyVaporization = EnthalpyVaporization
+        self.EnthalpySublimation = EnthalpySublimation
+        self.VaporPressure = VaporPressure
+        self.SublimationPressure = SublimationPressure
+        self.VolumeLiquid = VolumeLiquid
+        self.SurfaceTension = SurfaceTension
+        self.VolumeSolid = VolumeSolid
+        self.VolumeSupercriticalLiquid = VolumeSupercriticalLiquid
+        self.PermittivityLiquid = PermittivityLiquid
+
+empty_chemical_constants = ChemicalConstants(None)
+
+
 _chemical_cache = {}
+
+property_lock = False
+
+def lock_properties(status):
+    global property_lock
+    global _chemical_cache
+    if property_lock == status:
+        return True
+    else:
+        _chemical_cache.clear()
+        property_lock = status
+        return True
+
+def get_chemical_constants(CAS, key):
+    global property_lock
+    if not property_lock:
+        return None
+    from thermo.database import loaded_chemicals
+    try:
+        vs = getattr(loaded_chemicals[CAS], key)
+        if all(i is not None for i in vs):
+            return vs
+#        Tmin, Tmax, coeffs = getattr(loaded_chemicals[CAS], key)
+#        if Tmin is not None and Tmax is not None and coeffs is not None:
+#            return (Tmin, Tmax, coeffs)
+        return None
+    except KeyError:
+        return None
 
 
 class Chemical(object): # pragma: no cover
-    '''Creates a Chemical object which contains basic information such as 
+    '''Creates a Chemical object which contains basic information such as
     molecular weight and the structure of the species, as well as thermodynamic
     and transport properties as a function of temperature and pressure.
-    
+
     Parameters
     ----------
     ID : str
@@ -118,22 +197,22 @@ class Chemical(object): # pragma: no cover
         Temperature of the chemical (default 298.15 K), [K]
     P : float, optional
         Pressure of the chemical (default 101325 Pa) [Pa]
-        
+
     Examples
     --------
     Creating chemical objects:
-    
+
     >>> Chemical('hexane')
     <Chemical [hexane], T=298.15 K, P=101325 Pa>
 
     >>> Chemical('CCCCCCCC', T=500, P=1E7)
     <Chemical [octane], T=500.00 K, P=10000000 Pa>
-    
+
     >>> Chemical('7440-36-0', P=1000)
     <Chemical [antimony], T=298.15 K, P=1000 Pa>
-    
+
     Getting basic properties:
-        
+
     >>> N2 = Chemical('Nitrogen')
     >>> N2.Tm, N2.Tb, N2.Tc # melting, boiling, and critical points [K]
     (63.15, 77.355, 126.2)
@@ -141,10 +220,10 @@ class Chemical(object): # pragma: no cover
     (12526.9697368421, 3394387.5)
     >>> N2.CAS, N2.formula, N2.InChI, N2.smiles, N2.atoms # CAS number, formula, InChI string, smiles string, dictionary of atomic elements and their count
     ('7727-37-9', 'N2', 'N2/c1-2', 'N#N', {'N': 2})
-    
+
     Changing the T/P of the chemical, and gettign temperature-dependent
     properties:
-        
+
     >>> N2.Cp, N2.rho, N2.mu # Heat capacity [J/kg/K], density [kg/m^3], viscosity [Pa*s]
     (1039.4978324480921, 1.1452416223829405, 1.7804740647270688e-05)
     >>> N2.calculate(T=65, P=1E6) # set it to a liquid at 65 K and 1 MPa
@@ -152,100 +231,119 @@ class Chemical(object): # pragma: no cover
     'l'
     >>> N2.Cp, N2.rho, N2.mu # properties are now of the liquid phase
     (2002.8819854804037, 861.3539919443364, 0.0002857739143670701)
-    
+
     Molar units are also available for properties:
-        
+
     >>> N2.Cpm, N2.Vm, N2.Hvapm # heat capacity [J/mol/K], molar volume [m^3/mol], enthalpy of vaporization [J/mol]
     (56.10753421205674, 3.252251717875631e-05, 5982.710998291719)
-    
+
     A great deal of properties are available; for a complete list look at the
-    attributes list. 
-    
+    attributes list.
+
     >>> N2.alpha, N2.JT # thermal diffusivity [m^2/s], Joule-Thompson coefficient [K/Pa]
     (9.874883993253272e-08, -4.0009932695519242e-07)
-    
+
     >>> N2.isentropic_exponent, N2.isobaric_expansion
     (1.4000000000000001, 0.0047654228408661571)
-    
-    For pure species, the phase is easily identified, allowing for properties 
-    to be obtained without needing to specify the phase. However, the 
+
+    For pure species, the phase is easily identified, allowing for properties
+    to be obtained without needing to specify the phase. However, the
     properties are also available in the hypothetical gas phase (when under the
     boiling point) and in the hypothetical liquid phase (when above the boiling
-    point) as these properties are needed to evaluate mixture properties. 
-    Specify the phase of a property to be retrieved by appending 'l' or 'g' or 
+    point) as these properties are needed to evaluate mixture properties.
+    Specify the phase of a property to be retrieved by appending 'l' or 'g' or
     's' to the property.
-    
+
     >>> tol = Chemical('toluene')
 
     >>> tol.rhog, tol.Cpg, tol.kg, tol.mug
     (4.241646701894199, 1126.5533755283168, 0.00941385692301755, 6.973325939594919e-06)
 
-    Temperature dependent properties are calculated by objects which provide 
-    many useful features related to the properties. To determine the 
+    Temperature dependent properties are calculated by objects which provide
+    many useful features related to the properties. To determine the
     temperature at which nitrogen has a saturation pressure of 1 MPa:
-    
-    >>> N2.VaporPressure.solve_prop(1E6)
+
+    >>> N2.VaporPressure.solve_property(1E6)
     103.73528598652341
-    
+
     To compute an integral of the ideal-gas heat capacity of nitrogen
     to determine the enthalpy required for a given change in temperature.
     Note the thermodynamic objects calculate values in molar units always.
-        
+
     >>> N2.HeatCapacityGas.T_dependent_property_integral(100, 120) # J/mol/K
     582.0121860897898
-    
+
     Derivatives of properties can be calculated as well, as may be needed by
     for example heat transfer calculations:
-        
+
     >>> N2.SurfaceTension.T_dependent_property_derivative(77)
     -0.00022695346296730534
-    
+
     If a property is needed at multiple temperatures or pressures, it is faster
     to use the object directly to perform the calculation rather than setting
     the conditions for the chemical.
-    
+
     >>> [N2.VaporPressure(T) for T in range(80, 120, 10)]
     [136979.4840843189, 360712.5746603142, 778846.276691705, 1466996.7208525643]
-    
-    These objects are also how the methods by which the properties are 
+
+    These objects are also how the methods by which the properties are
     calculated can be changed. To see the available methods for a property:
-        
+
     >>> N2.VaporPressure.all_methods
     set(['VDI_PPDS', 'BOILING_CRITICAL', 'WAGNER_MCGARRY', 'AMBROSE_WALTON', 'COOLPROP', 'LEE_KESLER_PSAT', 'EOS', 'ANTOINE_POLING', 'SANJARI', 'DIPPR_PERRY_8E', 'Edalat', 'WAGNER_POLING'])
-            
+
     To specify the method which should be used for calculations of a property.
     In the example below, the Lee-kesler correlation for vapor pressure is
     specified.
-        
+
     >>> N2.calculate(80)
     >>> N2.Psat
     136979.4840843189
-    >>> N2.VaporPressure.set_user_methods('LEE_KESLER_PSAT')
+    >>> N2.VaporPressure.method = 'LEE_KESLER_PSAT'
     >>> N2.Psat
     134987.76815364443
-    
+
     For memory reduction, these objects are shared by all chemicals which are
-    the same; new instances will use the same specified methods. 
-    
+    the same; new instances will use the same specified methods.
+
     >>> N2_2 = Chemical('nitrogen')
     >>> N2_2.VaporPressure.user_methods
     ['LEE_KESLER_PSAT']
-    
+
     To disable this behavior, set thermo.chemical.caching to False.
-    
+
     >>> import thermo
     >>> thermo.chemical.caching = False
     >>> N2_3 = Chemical('nitrogen')
     >>> N2_3.VaporPressure.user_methods
     []
-    
+
     Properties may also be plotted via these objects:
-        
+
     >>> N2.VaporPressure.plot_T_dependent_property() # doctest: +SKIP
     >>> N2.VolumeLiquid.plot_isotherm(T=77, Pmin=1E5, Pmax=1E7) # doctest: +SKIP
     >>> N2.VolumeLiquid.plot_isobar(P=1E6,  Tmin=66, Tmax=120) # doctest: +SKIP
     >>> N2.VolumeLiquid.plot_TP_dependent_property(Tmin=60, Tmax=100,  Pmin=1E5, Pmax=1E7) # doctest: +SKIP
-    
+
+
+    Notes
+    -----
+
+    .. warning::
+        The Chemical class is not designed for high-performance or the ability
+        to use different thermodynamic models. It is especially limited in its
+        multiphase support and the ability to solve with specifications other
+        than temperature and pressure. It is impossible to change constant
+        properties such as a compound's critical temperature in this interface.
+
+        It is recommended to switch over to the :obj:`thermo.flash` interface
+        which solves those problems and is better positioned to grow. That
+        interface also requires users to be responsible for their chemical
+        constants and pure component correlations; while default values can
+        easily be loaded for most compounds, the user is ultimately responsible
+        for them.
+
+
     Attributes
     ----------
     T : float
@@ -270,7 +368,7 @@ class Chemical(object): # pragma: no cover
         dictionary of counts of individual atoms, indexed by symbol with
         proper capitalization, [-]
     similarity_variable : float
-        Similarity variable, see :obj:`thermo.elements.similarity_variable`
+        Similarity variable, see :obj:`chemicals.elements.similarity_variable`
         for the definition, [mol/g]
     smiles : str
         Simplified molecular-input line-entry system representation of the
@@ -302,7 +400,7 @@ class Chemical(object): # pragma: no cover
     omega : float
         Acentric factor [-]
     StielPolar : float
-        Stiel Polar factor, see :obj:`thermo.acentric.StielPolar` for
+        Stiel Polar factor, see :obj:`chemicals.acentric.Stiel_polar_factor` for
         the definition [-]
     Tt : float
         Triple temperature, [K]
@@ -316,19 +414,67 @@ class Chemical(object): # pragma: no cover
         Enthalpy of sublimation [J/kg]
     Hsubm : float
         Molar enthalpy of sublimation [J/mol]
+    Hfm : float
+        Standard state molar enthalpy of formation, [J/mol]
     Hf : float
-        Enthalpy of formation [J/mol]
+        Standard enthalpy of formation in a mass basis, [J/kg]
+    Hfgm : float
+        Ideal-gas molar enthalpy of formation, [J/mol]
+    Hfg : float
+        Ideal-gas enthalpy of formation in a mass basis, [J/kg]
+    Hcm : float
+        Molar higher heat of combustion [J/mol]
     Hc : float
-        Molar enthalpy of combustion [J/mol]
+        Higher Heat of combustion [J/kg]
+    Hcm_lower : float
+        Molar lower heat of combustion [J/mol]
+    Hc_lower : float
+        Lower Heat of combustion [J/kg]
+    S0m : float
+        Standard state absolute molar entropy of the chemical, [J/mol/K]
+    S0 : float
+        Standard state absolute entropy of the chemical, [J/kg/K]
+    S0gm : float
+        Absolute molar entropy in an ideal gas state of the chemical, [J/mol/K]
+    S0g : float
+        Absolute mass entropy in an ideal gas state of the chemical, [J/kg/K]
+    Gfm : float
+        Standard state molar change of Gibbs energy of formation [J/mol]
+    Gf : float
+        Standard state change of Gibbs energy of formation [J/kg]
+    Gfgm : float
+        Ideal-gas molar change of Gibbs energy of formation [J/mol]
+    Gfg : float
+        Ideal-gas change of Gibbs energy of formation [J/kg]
+    Sfm : float
+        Standard state molar change of entropy of formation, [J/mol/K]
+    Sf : float
+        Standard state change of entropy of formation, [J/kg/K]
+    Sfgm : float
+        Ideal-gas molar change of entropy of formation, [J/mol/K]
+    Sfg : float
+        Ideal-gas change of entropy of formation, [J/kg/K]
+    Hcgm : float
+        Higher molar heat of combustion of the chemical in the ideal gas state,
+        [J/mol]
+    Hcg : float
+        Higher heat of combustion of the chemical in the ideal gas state,
+        [J/kg]
+    Hcgm_lower : float
+        Lower molar heat of combustion of the chemical in the ideal gas state,
+        [J/mol]
+    Hcg_lower : float
+        Lower heat of combustion of the chemical in the ideal gas state,
+        [J/kg]
     Tflash : float
         Flash point of the chemical, [K]
     Tautoignition : float
         Autoignition point of the chemical, [K]
     LFL : float
-        Lower flammability limit of the gas in an atmosphere at STP, mole 
+        Lower flammability limit of the gas in an atmosphere at STP, mole
         fraction [-]
     UFL : float
-        Upper flammability limit of the gas in an atmosphere at STP, mole 
+        Upper flammability limit of the gas in an atmosphere at STP, mole
         fraction [-]
     TWA : tuple[quantity, unit]
         Time-Weighted Average limit on worker exposure to dangerous chemicals.
@@ -347,7 +493,7 @@ class Chemical(object): # pragma: no cover
     molecular_diameter : float
         Lennard-Jones molecular diameter, [angstrom]
     GWP : float
-        Global warming potential (default 100-year outlook) (impact/mass 
+        Global warming potential (default 100-year outlook) (impact/mass
         chemical)/(impact/mass CO2), [-]
     ODP : float
         Ozone Depletion potential (impact/mass chemical)/(impact/mass CFC-11),
@@ -420,7 +566,7 @@ class Chemical(object): # pragma: no cover
         methods loaded for the chemical; performs the actual calculations of
         surface tension of the chemical.
     Permittivity : object
-        Instance of :obj:`thermo.permittivity.Permittivity`, with data and
+        Instance of :obj:`thermo.permittivity.PermittivityLiquid`, with data and
         methods loaded for the chemical; performs the actual calculations of
         permittivity of the chemical.
     Psat_298 : float
@@ -434,12 +580,23 @@ class Chemical(object): # pragma: no cover
         Molar volume of liquid phase at the melting point [m^3/mol]
     Vml_STP : float
         Molar volume of liquid phase at 298.15 K and 101325 Pa [m^3/mol]
+    rhoml_STP : float
+        Molar density of liquid phase at 298.15 K and 101325 Pa [mol/m^3]
     Vmg_STP : float
-        Molar volume of gas phase at 298.15 K and 101325 Pa [m^3/mol]
+        Molar volume of gas phase at 298.15 K and 101325 Pa according to
+        the ideal gas law, [m^3/mol]
+    Vms_Tm : float
+        Molar volume of solid phase at the melting point [m^3/mol]
+    rhos_Tm : float
+        Mass density of solid phase at the melting point [kg/m^3]
     Hvap_Tbm : float
         Molar enthalpy of vaporization at the normal boiling point [J/mol]
     Hvap_Tb : float
         Mass enthalpy of vaporization at the normal boiling point [J/kg]
+    Hvapm_298 : float
+        Molar enthalpy of vaporization at 298.15 K [J/mol]
+    Hvap_298 : float
+        Mass enthalpy of vaporization at 298.15 K [J/kg]
     alpha
     alphag
     alphal
@@ -533,11 +690,12 @@ class Chemical(object): # pragma: no cover
     def __repr__(self):
         return '<Chemical [%s], T=%.2f K, P=%.0f Pa>' %(self.name, self.T, self.P)
 
-    def __init__(self, ID, T=298.15, P=101325):
+    def __init__(self, ID, T=298.15, P=101325, autocalc=True):
         if isinstance(ID, dict):
             self.CAS = ID['CASRN']
             self.ID = self.name = ID['name']
             self.formula = ID['formula']
+            # DO NOT REMOVE molecular_weight until the database gets updated with consistent MWs
             self.MW = ID['MW'] if 'MW' in ID else molecular_weight(simple_formula_parser(self.formula))
             self.PubChem = ID['PubChem'] if 'PubChem' in ID else None
             self.smiles = ID['smiles'] if 'smiles' in ID else None
@@ -547,24 +705,25 @@ class Chemical(object): # pragma: no cover
         else:
             self.ID = ID
             # Identification
-            self.CAS = CAS_from_any(ID)
-            self.ChemicalMetadata = pubchem_db.search_CAS(self.CAS)
-
+            self.ChemicalMetadata = search_chemical(ID)
+            self.CAS = self.ChemicalMetadata.CASs
 
         if self.CAS in _chemical_cache and caching:
             self.__dict__.update(_chemical_cache[self.CAS].__dict__)
+            self.autocalc = autocalc
             self.calculate(T, P)
         else:
+            self.autocalc = autocalc
             if not isinstance(ID, dict):
                 self.PubChem = self.ChemicalMetadata.pubchemid
-                self.MW = self.ChemicalMetadata.MW
                 self.formula = self.ChemicalMetadata.formula
+                self.MW = molecular_weight(simple_formula_parser(self.formula)) # self.ChemicalMetadata.MW
                 self.smiles = self.ChemicalMetadata.smiles
                 self.InChI = self.ChemicalMetadata.InChI
                 self.InChI_Key = self.ChemicalMetadata.InChI_key
                 self.IUPAC_name = self.ChemicalMetadata.iupac_name.lower()
                 self.name = self.ChemicalMetadata.common_name.lower()
-                self.synonyms = self.ChemicalMetadata.all_names
+                self.synonyms = self.ChemicalMetadata.synonyms
 
             self.atoms = simple_formula_parser(self.formula)
             self.similarity_variable = similarity_variable(self.atoms, self.MW)
@@ -574,7 +733,8 @@ class Chemical(object): # pragma: no cover
             self.set_constants()
             self.set_eos(T=T, P=P)
             self.set_TP_sources()
-            self.set_ref()
+            if self.autocalc:
+                self.set_ref()
             self.calculate(T, P)
             if len(_chemical_cache) < 1000:
                 _chemical_cache[self.CAS] = self
@@ -586,18 +746,18 @@ class Chemical(object): # pragma: no cover
             return None
         if T:
             if T < 0:
-                raise Exception('Negative value specified for Chemical temperature - aborting!')
+                raise ValueError('Negative value specified for Chemical temperature - aborting!')
             self.T = T
         if P:
             if P < 0:
-                raise Exception('Negative value specified for Chemical pressure - aborting!')
+                raise ValueError('Negative value specified for Chemical pressure - aborting!')
             self.P = P
 
-
-        self.phase = identify_phase(T=self.T, P=self.P, Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat)
-        self.eos = self.eos.to_TP(T=self.T, P=self.P)
-        self.eos_in_a_box[0] = self.eos
-        self.set_thermo()
+        if self.autocalc:
+            self.phase = identify_phase(T=self.T, P=self.P, Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat)
+            self.eos = self.eos.to_TP(T=self.T, P=self.P)
+            self.eos_in_a_box[0] = self.eos
+            self.set_thermo()
 
 
     def draw_2d(self, width=300, height=300, Hs=False): # pragma: no cover
@@ -631,7 +791,8 @@ class Chemical(object): # pragma: no cover
         except:
             return 'Rdkit is required for this feature.'
 
-    def draw_3d(self, width=300, height=500, style='stick', Hs=True): # pragma: no cover
+    def draw_3d(self, width=300, height=500, style='stick', Hs=True,
+                atom_labels=True): # pragma: no cover
         r'''Interface for drawing an interactive 3D view of the molecule.
         Requires an HTML5 browser, and the libraries RDKit, pymol3D, and
         IPython. An exception is raised if all three of these libraries are
@@ -640,13 +801,16 @@ class Chemical(object): # pragma: no cover
         Parameters
         ----------
         width : int
-            Number of pixels wide for the view
+            Number of pixels wide for the view, [pixels]
         height : int
-            Number of pixels tall for the view
+            Number of pixels tall for the view, [pixels]
         style : str
-            One of 'stick', 'line', 'cross', or 'sphere'
+            One of 'stick', 'line', 'cross', or 'sphere', [-]
         Hs : bool
-            Whether or not to show hydrogen
+            Whether or not to show hydrogen, [-]
+        atom_labels : bool
+            Whether or not to label the atoms, [-]
+
 
         Examples
         --------
@@ -654,6 +818,8 @@ class Chemical(object): # pragma: no cover
         <IPython.core.display.HTML object>
         '''
         try:
+            from rdkit import Chem
+            from rdkit.Chem import AllChem
             import py3Dmol
             from IPython.display import display
             if Hs:
@@ -662,156 +828,146 @@ class Chemical(object): # pragma: no cover
                 mol = self.rdkitmol
             AllChem.EmbedMultipleConfs(mol)
             mb = Chem.MolToMolBlock(mol)
-            p = py3Dmol.view(width=width,height=height)
+            p = py3Dmol.view(width=width, height=height)
             p.addModel(mb,'sdf')
             p.setStyle({style:{}})
+            if atom_labels:
+                p.addPropertyLabels("atom","",{'alignment': 'center'})
             p.zoomTo()
             display(p.show())
         except:
             return 'py3Dmol, RDKit, and IPython are required for this feature.'
 
     def set_constant_sources(self):
-        self.Tm_sources = Tm(CASRN=self.CAS, AvailableMethods=True)
-        self.Tm_source = self.Tm_sources[0]
-        self.Tb_sources = Tb(CASRN=self.CAS, AvailableMethods=True)
-        self.Tb_source = self.Tb_sources[0]
+        self.Tm_sources = Tm_methods(CASRN=self.CAS)
+        self.Tm_source = self.Tm_sources[0] if self.Tm_sources else None
+        self.Tb_sources = Tb_methods(CASRN=self.CAS)
+        self.Tb_source = self.Tb_sources[0] if self.Tb_sources else None
 
         # Critical Point
-        self.Tc_methods = Tc(self.CAS, AvailableMethods=True)
-        self.Tc_method = self.Tc_methods[0]
-        self.Pc_methods = Pc(self.CAS, AvailableMethods=True)
-        self.Pc_method = self.Pc_methods[0]
-        self.Vc_methods = Vc(self.CAS, AvailableMethods=True)
-        self.Vc_method = self.Vc_methods[0]
-        self.omega_methods = omega(CASRN=self.CAS, AvailableMethods=True)
-        self.omega_method = self.omega_methods[0]
+        self.Tc_methods = Tc_methods(self.CAS)
+        self.Tc_method = self.Tc_methods[0] if self.Tc_methods else None
+        self.Pc_methods = Pc_methods(self.CAS)
+        self.Pc_method = self.Pc_methods[0] if self.Pc_methods else None
+        self.Vc_methods = Vc_methods(self.CAS)
+        self.Vc_method = self.Vc_methods[0] if self.Vc_methods else None
+        self.omega_methods = omega_methods(self.CAS)
+        self.omega_method = self.omega_methods[0] if self.omega_methods else None
 
         # Triple point
-        self.Tt_sources = Tt(self.CAS, AvailableMethods=True)
-        self.Tt_source = self.Tt_sources[0]
-        self.Pt_sources = Pt(self.CAS, AvailableMethods=True)
-        self.Pt_source = self.Pt_sources[0]
+        self.Tt_sources = Tt_methods(self.CAS)
+        self.Tt_source = self.Tt_sources[0] if self.Tt_sources else None
+        self.Pt_sources = Pt_methods(self.CAS)
+        self.Pt_source = self.Pt_sources[0] if self.Pt_sources else None
 
         # Enthalpy
-        self.Hfus_methods = Hfus(MW=self.MW, AvailableMethods=True, CASRN=self.CAS)
-        self.Hfus_method = self.Hfus_methods[0]
-
-        self.Hsub_methods = Hsub(MW=self.MW, AvailableMethods=True, CASRN=self.CAS)
-        self.Hsub_method = self.Hsub_methods[0]
+        self.Hfus_methods = Hfus_methods(CASRN=self.CAS)
+        self.Hfus_method = self.Hfus_methods[0] if self.Hfus_methods else None
 
         # Fire Safety Limits
-        self.Tflash_sources = Tflash(self.CAS, AvailableMethods=True)
-        self.Tflash_source = self.Tflash_sources[0]
-        self.Tautoignition_sources = Tautoignition(self.CAS, AvailableMethods=True)
-        self.Tautoignition_source = self.Tautoignition_sources[0]
+        self.Tflash_sources = T_flash_methods(self.CAS)
+        self.Tflash_source = self.Tflash_sources[0] if self.Tflash_sources else None
+        self.Tautoignition_sources = T_autoignition_methods(self.CAS)
+        self.Tautoignition_source = self.Tautoignition_sources[0] if self.Tautoignition_sources else None
 
         # Chemical Exposure Limits
-        self.TWA_sources = TWA(self.CAS, AvailableMethods=True)
-        self.TWA_source = self.TWA_sources[0]
-        self.STEL_sources = STEL(self.CAS, AvailableMethods=True)
-        self.STEL_source = self.STEL_sources[0]
-        self.Ceiling_sources = Ceiling(self.CAS, AvailableMethods=True)
-        self.Ceiling_source = self.Ceiling_sources[0]
-        self.Skin_sources = Skin(self.CAS, AvailableMethods=True)
-        self.Skin_source = self.Skin_sources[0]
-        self.Carcinogen_sources = Carcinogen(self.CAS, AvailableMethods=True)
-        self.Carcinogen_source = self.Carcinogen_sources[0]
+        self.TWA_sources = TWA_methods(self.CAS)
+        self.TWA_source = self.TWA_sources[0] if self.TWA_sources else None
+        self.STEL_sources = STEL_methods(self.CAS)
+        self.STEL_source = self.STEL_sources[0] if self.STEL_sources else None
+        self.Ceiling_sources = Ceiling_methods(self.CAS)
+        self.Ceiling_source = self.Ceiling_sources[0] if self.Ceiling_sources else None
+        self.Skin_sources = Skin_methods(self.CAS)
+        self.Skin_source = self.Skin_sources[0] if self.Skin_sources else None
+#        self.Carcinogen_sources = Carcinogen_methods(self.CAS)
+#        self.Carcinogen_source = self.Carcinogen_sources[0] if self.Carcinogen_sources else None
 
-        # Chemistry - currently molar
-        self.Hf_sources = Hf(CASRN=self.CAS, AvailableMethods=True)
-        self.Hf_source = self.Hf_sources[0]
+        self.Hfg_sources = Hfg_methods(CASRN=self.CAS)
+        self.Hfg_source = self.Hfg_sources[0] if self.Hfg_sources else None
+
+        self.S0g_sources = S0g_methods(CASRN=self.CAS)
+        self.S0g_source = self.S0g_sources[0] if self.S0g_sources else None
+
 
         # Misc
-        self.dipole_sources = dipole(CASRN=self.CAS, AvailableMethods=True)
-        self.dipole_source = self.dipole_sources[0]
+        self.dipole_sources = dipole_moment_methods(CASRN=self.CAS)
+        self.dipole_source = self.dipole_sources[0] if self.dipole_sources else None
 
         # Environmental
-        self.GWP_sources = GWP(CASRN=self.CAS, AvailableMethods=True)
-        self.GWP_source = self.GWP_sources[0]
-        self.ODP_sources = ODP(CASRN=self.CAS, AvailableMethods=True)
-        self.ODP_source = self.ODP_sources[0]
-        self.logP_sources = logP(CASRN=self.CAS, AvailableMethods=True)
-        self.logP_source = self.logP_sources[0]
+        self.GWP_sources = GWP_methods(CASRN=self.CAS)
+        self.GWP_source = self.GWP_sources[0] if self.GWP_sources else None
+        self.ODP_sources = ODP_methods(CASRN=self.CAS)
+        self.ODP_source = self.ODP_sources[0] if self.ODP_sources else None
+        self.logP_sources = logP_methods(CASRN=self.CAS)
+        self.logP_source = self.logP_sources[0] if self.logP_sources else None
 
         # Analytical
-        self.RI_sources = refractive_index(CASRN=self.CAS, AvailableMethods=True)
-        self.RI_source = self.RI_sources[0]
+        self.RI_sources = RI_methods(CASRN=self.CAS)
+        self.RI_source = self.RI_sources[0] if self.RI_sources else None
 
-        self.conductivity_sources = conductivity(CASRN=self.CAS, AvailableMethods=True)
-        self.conductivity_source = self.conductivity_sources[0]
+        self.conductivity_sources = conductivity_methods(CASRN=self.CAS)
+        self.conductivity_source = self.conductivity_sources[0] if self.conductivity_sources else None
+
 
 
     def set_constants(self):
-        self.Tm = Tm(self.CAS, Method=self.Tm_source)
-        self.Tb = Tb(self.CAS, Method=self.Tb_source)
+        self.Tm = Tm(self.CAS, method=self.Tm_source)
+        self.Tb = Tb(self.CAS, method=self.Tb_source)
 
         # Critical Point
-        self.Tc = Tc(self.CAS, Method=self.Tc_method)
-        self.Pc = Pc(self.CAS, Method=self.Pc_method)
-        self.Vc = Vc(self.CAS, Method=self.Vc_method)
-        self.omega = omega(self.CAS, Method=self.omega_method)
+        self.Tc = Tc(self.CAS, method=self.Tc_method)
+        self.Pc = Pc(self.CAS, method=self.Pc_method)
+        self.Vc = Vc(self.CAS, method=self.Vc_method)
+        self.omega = omega(self.CAS, method=self.omega_method)
 
-        self.StielPolar_methods = StielPolar(Tc=self.Tc, Pc=self.Pc, omega=self.omega, CASRN=self.CAS, AvailableMethods=True)
-        self.StielPolar_method = self.StielPolar_methods[0]
-        self.StielPolar = StielPolar(Tc=self.Tc, Pc=self.Pc, omega=self.omega, CASRN=self.CAS, Method=self.StielPolar_method)
 
         self.Zc = Z(self.Tc, self.Pc, self.Vc) if all((self.Tc, self.Pc, self.Vc)) else None
         self.rhoc = Vm_to_rho(self.Vc, self.MW) if self.Vc else None
         self.rhocm = 1./self.Vc if self.Vc else None
 
         # Triple point
-        self.Pt = Pt(self.CAS, Method=self.Pt_source)
-        self.Tt = Tt(self.CAS, Method=self.Tt_source)
+        self.Pt = Pt(self.CAS, method=self.Pt_source)
+        self.Tt = Tt(self.CAS, method=self.Tt_source)
 
         # Enthalpy
-        self.Hfus = Hfus(MW=self.MW, Method=self.Hfus_method, CASRN=self.CAS)
-        self.Hfusm = property_mass_to_molar(self.Hfus, self.MW) if self.Hfus else None
+        self.Hfusm = Hfus(method=self.Hfus_method, CASRN=self.CAS)
+        self.Hfus = property_molar_to_mass(self.Hfusm, self.MW) if self.Hfusm is not None else None
 
-        self.Hsub = Hsub(MW=self.MW, Method=self.Hsub_method, CASRN=self.CAS)
-        self.Hsubm = property_mass_to_molar(self.Hsub, self.MW)
 
-        # Chemistry
-        self.Hf = Hf(CASRN=self.CAS, Method=self.Hf_source)
-        self.Hc = Hcombustion(atoms=self.atoms, Hf=self.Hf)
-
-        # Fire Safety Limits
-        self.Tflash = Tflash(self.CAS, Method=self.Tflash_source)
-        self.Tautoignition = Tautoignition(self.CAS, Method=self.Tautoignition_source)
-        self.LFL_sources = LFL(atoms=self.atoms, Hc=self.Hc, CASRN=self.CAS, AvailableMethods=True)
-        self.LFL_source = self.LFL_sources[0]
-        self.UFL_sources = UFL(atoms=self.atoms, Hc=self.Hc, CASRN=self.CAS, AvailableMethods=True)
-        self.UFL_source = self.UFL_sources[0]
-        self.LFL = LFL(atoms=self.atoms, Hc=self.Hc, CASRN=self.CAS, Method=self.LFL_source)
-        self.UFL = UFL(atoms=self.atoms, Hc=self.Hc, CASRN=self.CAS, Method=self.UFL_source)
 
         # Chemical Exposure Limits
-        self.TWA = TWA(self.CAS, Method=self.TWA_source)
-        self.STEL = STEL(self.CAS, Method=self.STEL_source)
-        self.Ceiling = Ceiling(self.CAS, Method=self.Ceiling_source)
-        self.Skin = Skin(self.CAS, Method=self.Skin_source)
-        self.Carcinogen = Carcinogen(self.CAS, Method=self.Carcinogen_source)
+        self.TWA = TWA(self.CAS, method=self.TWA_source)
+        self.STEL = STEL(self.CAS, method=self.STEL_source)
+        self.Ceiling = Ceiling(self.CAS, method=self.Ceiling_source)
+        self.Skin = Skin(self.CAS, method=self.Skin_source)
+        self.Carcinogen = Carcinogen(self.CAS)
 
         # Misc
-        self.dipole = dipole(self.CAS, Method=self.dipole_source) # Units of Debye
-        self.Stockmayer_sources = Stockmayer(Tc=self.Tc, Zc=self.Zc, omega=self.omega, AvailableMethods=True, CASRN=self.CAS)
-        self.Stockmayer_source = self.Stockmayer_sources[0]
-        self.Stockmayer = Stockmayer(Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Zc=self.Zc, omega=self.omega, Method=self.Stockmayer_source, CASRN=self.CAS)
+        self.dipole = dipole(self.CAS, method=self.dipole_source) # Units of Debye
+        self.Stockmayer_sources = Stockmayer_methods(Tc=self.Tc, Zc=self.Zc, omega=self.omega, CASRN=self.CAS)
+        self.Stockmayer_source = self.Stockmayer_sources[0] if self.Stockmayer_sources else None
+        self.Stockmayer = Stockmayer(Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Zc=self.Zc, omega=self.omega, method=self.Stockmayer_source, CASRN=self.CAS)
 
         # Environmental
-        self.GWP = GWP(CASRN=self.CAS, Method=self.GWP_source)
-        self.ODP = ODP(CASRN=self.CAS, Method=self.ODP_source)
-        self.logP = logP(CASRN=self.CAS, Method=self.logP_source)
+        self.GWP = GWP(CASRN=self.CAS, method=self.GWP_source)
+        self.ODP = ODP(CASRN=self.CAS, method=self.ODP_source)
+        self.logP = logP(CASRN=self.CAS, method=self.logP_source)
 
         # Analytical
-        self.RI, self.RIT = refractive_index(CASRN=self.CAS, Method=self.RI_source)
-        self.conductivity, self.conductivityT = conductivity(CASRN=self.CAS, Method=self.conductivity_source)
+        self.RI, self.RIT = RI(CASRN=self.CAS, method=self.RI_source)
+        self.conductivity, self.conductivityT = conductivity(CASRN=self.CAS, method=self.conductivity_source)
+
+
+
+
+
 
     def set_eos(self, T, P, eos=PR):
         try:
             self.eos = eos(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega)
         except:
             # Handle overflow errors and so on
-            self.eos = GCEOS_DUMMY(T=T, P=P)
+            self.eos = IG(T=T, P=P)
 
     @property
     def eos(self):
@@ -839,62 +995,271 @@ class Chemical(object): # pragma: no cover
     def set_TP_sources(self):
         # Tempearture and Pressure Denepdence
         # Get and choose initial methods
+#        print(get_chemical_constants(self.CAS, 'VaporPressure'))
         self.VaporPressure = VaporPressure(Tb=self.Tb, Tc=self.Tc, Pc=self.Pc,
                                            omega=self.omega, CASRN=self.CAS,
-                                           eos=self.eos_in_a_box)
+                                           eos=self.eos_in_a_box,
+                                           poly_fit=get_chemical_constants(self.CAS, 'VaporPressure'))
         self.Psat_298 = self.VaporPressure.T_dependent_property(298.15)
         self.phase_STP = identify_phase(T=298.15, P=101325., Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat_298)
+        if self.Pt is None and self.Tt is not None:
+            self.Pt = self.VaporPressure(self.Tt)
+            self.Pt_source = 'VaporPressure'
+
+
+
+        # Chemistry
+        if self.phase_STP == 'g':
+            H_fun = Hfg
+            H_methods_fun = Hfg_methods
+        elif self.phase_STP == 'l':
+            H_fun = Hfl
+            H_methods_fun = Hfl_methods
+        elif self.phase_STP == 's':
+            H_fun = Hfs
+            H_methods_fun = Hfs_methods
+        else:
+            H_methods_fun = H_fun = None
+
+        if H_fun is not None:
+            self.Hf_sources = H_methods_fun(CASRN=self.CAS)
+            self.Hf_source = self.Hf_sources[0] if self.Hf_sources else None
+            self.Hfm = H_fun(CASRN=self.CAS, method=self.Hf_source)
+        else:
+            self.Hf_sources = []
+            self.Hf_source = self.Hfm = None
+
+        self.Hf = property_molar_to_mass(self.Hfm, self.MW) if (self.Hfm is not None) else None
+
+        self.combustion_stoichiometry = combustion_stoichiometry(self.atoms)
+        try:
+            self.Hcm = HHV_stoichiometry(self.combustion_stoichiometry, Hf=self.Hfm) if self.Hfm is not None else None
+        except:
+            self.Hcm = None
+        self.Hc = property_molar_to_mass(self.Hcm, self.MW) if (self.Hcm is not None) else None
+
+        self.Hcm_lower = LHV_from_HHV(self.Hcm, self.combustion_stoichiometry.get('H2O', 0.0)) if self.Hcm is not None else None
+        self.Hc_lower = property_molar_to_mass(self.Hcm_lower, self.MW) if (self.Hcm_lower is not None) else None
+
+        # Fire Safety Limits
+        self.Tflash = T_flash(self.CAS, method=self.Tflash_source)
+        self.Tautoignition = T_autoignition(self.CAS, method=self.Tautoignition_source)
+        self.LFL_sources = LFL_methods(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS)
+        self.LFL_source = self.LFL_sources[0]
+        self.UFL_sources = UFL_methods(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS)
+        self.UFL_source = self.UFL_sources[0]
+        try:
+            self.LFL = LFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, method=self.LFL_source)
+        except:
+            self.LFL = None
+        try:
+            self.UFL = UFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, method=self.UFL_source)
+        except:
+            self.UFL = None
+
+
+        self.Hfgm = Hfg(CASRN=self.CAS, method=self.Hfg_source)
+        self.Hfg = property_molar_to_mass(self.Hfgm, self.MW) if (self.Hfgm is not None) else None
+
+        self.S0gm = S0g(CASRN=self.CAS, method=self.S0g_source)
+        self.S0g = property_molar_to_mass(self.S0gm, self.MW) if (self.S0gm is not None) else None
+
+        # Calculated later
+        self.S0m = None
+        self.S0 = None
+
+        # Compute Gf and Gf(ig)
+        dHfs_std = []
+        S0_abs_elements = []
+        coeffs_elements = []
+
+        for atom, count in self.atoms.items():
+            try:
+                ele = periodic_table[atom]
+                H0, S0 = ele.Hf, ele.S0
+                if ele.number in homonuclear_elements:
+                    H0, S0 = 0.5 * H0, 0.5 * S0
+            except KeyError:
+                H0, S0 = None, None # D, T
+            dHfs_std.append(H0)
+            S0_abs_elements.append(S0)
+            coeffs_elements.append(count)
+
+        self.elemental_reaction_data = (dHfs_std, S0_abs_elements, coeffs_elements)
+
+
+        try:
+            self.Gfgm = Gibbs_formation(self.Hfgm, self.S0gm, dHfs_std, S0_abs_elements, coeffs_elements)
+        except:
+            self.Gfgm = None
+        self.Gfg = property_molar_to_mass(self.Gfgm, self.MW) if (self.Gfgm is not None) else None
+
+        # Compute Entropy of formation
+        self.Sfgm = (self.Hfgm - self.Gfgm)/298.15 if (self.Hfgm is not None and self.Gfgm is not None) else None # hardcoded
+        self.Sfg = property_molar_to_mass(self.Sfgm, self.MW) if (self.Sfgm is not None) else None
+
+        try:
+            self.Hcgm = HHV_stoichiometry(self.combustion_stoichiometry, Hf=self.Hfgm) if self.Hfgm is not None else None
+        except:
+            self.Hcgm = None
+        self.Hcg = property_molar_to_mass(self.Hcgm, self.MW) if (self.Hcgm is not None) else None
+
+        self.Hcgm_lower = LHV_from_HHV(self.Hcgm, self.combustion_stoichiometry.get('H2O', 0.0)) if self.Hcgm is not None else None
+        self.Hcg_lower = property_molar_to_mass(self.Hcgm_lower, self.MW) if (self.Hcgm_lower is not None) else None
+
+
+        try:
+            self.StielPolar = Stiel_polar_factor(Psat=self.VaporPressure(T=self.Tc*0.6), Pc=self.Pc, omega=self.omega)
+        except:
+            self.StielPolar = None
+
 
         self.VolumeLiquid = VolumeLiquid(MW=self.MW, Tb=self.Tb, Tc=self.Tc,
                           Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega,
                           dipole=self.dipole,
-                          Psat=self.VaporPressure.T_dependent_property,
+                          Psat=self.VaporPressure,
+                          poly_fit=get_chemical_constants(self.CAS, 'VolumeLiquid'),
                           eos=self.eos_in_a_box, CASRN=self.CAS)
 
         self.Vml_Tb = self.VolumeLiquid.T_dependent_property(self.Tb) if self.Tb else None
         self.Vml_Tm = self.VolumeLiquid.T_dependent_property(self.Tm) if self.Tm else None
+
+
         self.Vml_STP = self.VolumeLiquid.T_dependent_property(298.15)
+        self.rhoml_STP = 1.0/self.Vml_STP if self.Vml_STP else None
+        self.rhol_STP = Vm_to_rho(self.Vml_STP, self.MW) if self.Vml_STP else None
+
+        self.Vml_60F = self.VolumeLiquid.T_dependent_property(288.7055555555555)
+        self.rhoml_60F = 1.0/self.Vml_60F if self.Vml_60F else None
+        self.rhol_60F = Vm_to_rho(self.Vml_60F, self.MW) if self.Vml_60F else None
 
         self.VolumeGas = VolumeGas(MW=self.MW, Tc=self.Tc, Pc=self.Pc,
                                    omega=self.omega, dipole=self.dipole,
                                    eos=self.eos_in_a_box, CASRN=self.CAS)
 
-        self.Vmg_STP = self.VolumeGas.TP_dependent_property(298.15, 101325)
+        self.Vmg_STP = ideal_gas(T=298.15, P=101325)
 
-        self.VolumeSolid = VolumeSolid(CASRN=self.CAS, MW=self.MW, Tt=self.Tt)
+        self.VolumeSolid = VolumeSolid(CASRN=self.CAS, MW=self.MW, Tt=self.Tt, Vml_Tt=self.Vml_Tm,
+                                       poly_fit=get_chemical_constants(self.CAS, 'VolumeSolid'))
 
-        self.HeatCapacityGas = HeatCapacityGas(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable)
+        self.Vms_Tm = self.VolumeSolid.T_dependent_property(self.Tm) if self.Tm else None
+        self.rhoms_Tm = 1.0/self.Vms_Tm if self.Vms_Tm is not None else None
+        self.rhos_Tm = Vm_to_rho(self.Vms_Tm, self.MW) if self.Vms_Tm else None
 
-        self.HeatCapacitySolid = HeatCapacitySolid(MW=self.MW, similarity_variable=self.similarity_variable, CASRN=self.CAS)
+        self.HeatCapacityGas = HeatCapacityGas(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable, poly_fit=get_chemical_constants(self.CAS, 'HeatCapacityGas'))
 
-        self.HeatCapacityLiquid = HeatCapacityLiquid(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable, Tc=self.Tc, omega=self.omega, Cpgm=self.HeatCapacityGas.T_dependent_property)
+        self.HeatCapacitySolid = HeatCapacitySolid(MW=self.MW, similarity_variable=self.similarity_variable, CASRN=self.CAS, poly_fit=get_chemical_constants(self.CAS, 'HeatCapacitySolid'))
 
-        self.EnthalpyVaporization = EnthalpyVaporization(CASRN=self.CAS, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, similarity_variable=self.similarity_variable)
+        self.HeatCapacityLiquid = HeatCapacityLiquid(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable, Tc=self.Tc, omega=self.omega, Cpgm=self.HeatCapacityGas.T_dependent_property, poly_fit=get_chemical_constants(self.CAS, 'HeatCapacityLiquid'))
+
+        self.EnthalpyVaporization = EnthalpyVaporization(CASRN=self.CAS, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, similarity_variable=self.similarity_variable, poly_fit=get_chemical_constants(self.CAS, 'EnthalpyVaporization'))
         self.Hvap_Tbm = self.EnthalpyVaporization.T_dependent_property(self.Tb) if self.Tb else None
         self.Hvap_Tb = property_molar_to_mass(self.Hvap_Tbm, self.MW)
+        self.Svap_Tbm = self.Hvap_Tb/self.Tb if (self.Tb is not None and self.Hvap_Tb is not None) else None
 
-        self.ViscosityLiquid = ViscosityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, omega=self.omega, Psat=self.VaporPressure.T_dependent_property, Vml=self.VolumeLiquid.T_dependent_property)
+        self.Hvapm_298 = self.EnthalpyVaporization.T_dependent_property(298.15)
+        self.Hvap_298 = property_molar_to_mass(self.Hvapm_298, self.MW) if self.Hvapm_298 else None
+
+        self.EnthalpySublimation = EnthalpySublimation(CASRN=self.CAS, Tm=self.Tm, Tt=self.Tt,
+                                                       Cpg=self.HeatCapacityGas, Cps=self.HeatCapacitySolid,
+                                                       Hvap=self.EnthalpyVaporization,
+                                                       poly_fit=get_chemical_constants(self.CAS, 'EnthalpySublimation'))
+        self.Hsubm = self.Hsub_Ttm = self.EnthalpySublimation(self.Tt) if self.Tt is not None else None
+        self.Hsub = self.Hsub_Tt = property_molar_to_mass(self.Hsub_Ttm, self.MW) if self.Hsub_Ttm is not None else None
+        self.Ssub_Ttm = self.Hsub_Ttm/self.Tt if (self.Tt is not None and self.Hsub_Ttm is not None) else None
+
+        self.Sfusm = self.Hfusm/self.Tm if (self.Tm is not None and self.Hfusm is not None) else None
+
+
+        self.SublimationPressure = SublimationPressure(CASRN=self.CAS, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_Ttm,
+                                                       poly_fit=get_chemical_constants(self.CAS, 'SublimationPressure'))
+
+
+        self.ViscosityLiquid = ViscosityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, omega=self.omega, Psat=self.VaporPressure, Vml=self.VolumeLiquid,
+                                               poly_fit=get_chemical_constants(self.CAS, 'ViscosityLiquid'))
 
         Vmg_atm_T_dependent = lambda T : self.VolumeGas.TP_dependent_property(T, 101325)
-        self.ViscosityGas = ViscosityGas(CASRN=self.CAS, MW=self.MW, Tc=self.Tc, Pc=self.Pc, Zc=self.Zc, dipole=self.dipole, Vmg=Vmg_atm_T_dependent)
+        self.ViscosityGas = ViscosityGas(CASRN=self.CAS, MW=self.MW, Tc=self.Tc, Pc=self.Pc, Zc=self.Zc, dipole=self.dipole, Vmg=Vmg_atm_T_dependent,
+                                         poly_fit=get_chemical_constants(self.CAS, 'ViscosityGas'))
 
-        self.ThermalConductivityLiquid = ThermalConductivityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, Hfus=self.Hfusm)
+        self.ThermalConductivityLiquid = ThermalConductivityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, Hfus=self.Hfusm,
+                                                                   poly_fit=get_chemical_constants(self.CAS, 'ThermalConductivityLiquid'))
 
-        Cvgm_calc = lambda T : self.HeatCapacityGas.T_dependent_property(T) - R
-        self.ThermalConductivityGas = ThermalConductivityGas(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, dipole=self.dipole, Vmg=self.VolumeGas, Cvgm=Cvgm_calc, mug=self.ViscosityGas.T_dependent_property)
+        self.ThermalConductivityGas = ThermalConductivityGas(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, dipole=self.dipole, Vmg=self.VolumeGas, Cpgm=self.HeatCapacityGas,
+                                                             mug=self.ViscosityGas,
+                                                             poly_fit=get_chemical_constants(self.CAS, 'ThermalConductivityGas'))
 
-        Cpl_calc = lambda T : property_molar_to_mass(self.HeatCapacityLiquid.T_dependent_property(T), self.MW)
-        self.SurfaceTension = SurfaceTension(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, StielPolar=self.StielPolar, Hvap_Tb=self.Hvap_Tb, Vml=self.VolumeLiquid.T_dependent_property, Cpl=Cpl_calc)
+        self.SurfaceTension = SurfaceTension(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, StielPolar=self.StielPolar, Hvap_Tb=self.Hvap_Tb, Vml=self.VolumeLiquid, Cpl=self.HeatCapacityLiquid,
+                                             poly_fit=get_chemical_constants(self.CAS, 'SurfaceTension'))
 
-        self.Permittivity = Permittivity(CASRN=self.CAS)
+        self.Permittivity = PermittivityLiquid(CASRN=self.CAS)
 
-        self.solubility_parameter_methods = solubility_parameter(Hvapm=self.Hvap_Tbm, Vml=self.Vml_STP, AvailableMethods=True, CASRN=self.CAS)
-        self.solubility_parameter_method = self.solubility_parameter_methods[0]
 
         # set molecular_diameter; depends on Vml_Tb, Vml_Tm
-        self.molecular_diameter_sources = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, AvailableMethods=True, CASRN=self.CAS)
-        self.molecular_diameter_source = self.molecular_diameter_sources[0]
-        self.molecular_diameter = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, Method=self.molecular_diameter_source, CASRN=self.CAS)
+        self.molecular_diameter_sources = molecular_diameter_methods(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, CASRN=self.CAS)
+        self.molecular_diameter_source = self.molecular_diameter_sources[0] if self.molecular_diameter_sources else None
+        self.molecular_diameter = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, method=self.molecular_diameter_source, CASRN=self.CAS)
+
+        # Adjust Gf, Hf if needed
+        try:
+            if self.Hfgm is not None and self.Hfm is None:
+                Hfm = None
+                if self.phase_STP == 'l' and self.Hvapm_298 is not None:
+                    Hfm = Hf_basis_converter(Hvapm=self.Hvapm_298, Hf_gas=self.Hfgm)
+                elif self.phase_STP == 'g':
+                    Hfm = self.Hfgm
+                if Hfm is not None:
+                    self.Hfm = Hfm
+                    self.Hf = property_molar_to_mass(self.Hfm, self.MW) if (self.Hfm is not None) else None
+            elif self.Hfm is not None and self.Hfgm is None:
+                Hfmg = None
+                if self.phase_STP == 'l' and self.Hvapm_298 is not None:
+                    Hfmg = Hf_basis_converter(Hvapm=self.Hvapm_298, Hf_liq=self.Hfm)
+                elif self.phase_STP == 'g':
+                    Hfmg = self.Hfm
+                if Hfmg is not None:
+                    self.Hfmg = Hfmg
+                    self.Hfg = property_molar_to_mass(self.Hfmg, self.MW) if (self.Hfmg is not None) else None
+        except:
+            pass
+
+        try:
+            from thermo.chemical_utils import S0_basis_converter
+            if self.S0gm is not None and self.S0m is None:
+                S0m = None
+                if self.phase_STP == 'l':
+                    S0m = S0_basis_converter(self, S0_gas=self.S0gm)
+                elif self.phase_STP == 'g':
+                    S0m = self.S0gm
+                if S0m is not None:
+                    self.S0m = S0m
+                    self.S0 = property_molar_to_mass(self.S0m, self.MW) if (self.S0m is not None) else None
+            elif self.S0m is not None and self.S0gm is None:
+                S0gm = None
+                if self.phase_STP == 'l':
+                    S0gm = S0_basis_converter(self, S0_liq=self.S0m)
+                elif self.phase_STP == 'g':
+                    S0gm = self.S0m
+                if S0gm is not None:
+                    self.S0gm = S0gm
+                    self.S0g = property_molar_to_mass(self.S0gm, self.MW) if (self.S0gm is not None) else None
+
+        except:
+            pass
+
+
+        try:
+            self.Gfm = Gibbs_formation(self.Hfm, self.S0m, *self.elemental_reaction_data)
+        except:
+            self.Gfm = None
+        self.Gf = property_molar_to_mass(self.Gfm, self.MW) if (self.Gfm is not None) else None
+
+        self.Sfm = (self.Hfm - self.Gfm)/298.15 if (self.Hfm is not None and self.Gfm is not None) else None
+        self.Sf = property_molar_to_mass(self.Sfm, self.MW) if (self.Sfm is not None) else None
+
+        self.solubility_parameter_STP = solubility_parameter(T=298.15, Hvapm=self.Hvapm_298, Vml=self.Vml_STP) if (self.Hvapm_298 is not None and self.Vml_STP is not None) else None
+
+
 
 
     def set_ref(self, T_ref=298.15, P_ref=101325, phase_ref='calc', H_ref=0, S_ref=0):
@@ -1192,6 +1557,7 @@ class Chemical(object): # pragma: no cover
             if not self.rdkitmol:
                 return charge_from_formula(self.formula)
             else:
+                from rdkit import Chem
                 return Chem.GetFormalCharge(self.rdkitmol)
         except:
             return charge_from_formula(self.formula)
@@ -1207,7 +1573,8 @@ class Chemical(object): # pragma: no cover
         7
         '''
         try:
-            return Chem.Descriptors.RingCount(self.rdkitmol)
+            from rdkit.Chem import Descriptors
+            return Descriptors.RingCount(self.rdkitmol)
         except:
             return None
 
@@ -1222,7 +1589,8 @@ class Chemical(object): # pragma: no cover
         3
         '''
         try:
-            return Chem.Descriptors.NumAromaticRings(self.rdkitmol)
+            from rdkit.Chem import Descriptors
+            return Descriptors.NumAromaticRings(self.rdkitmol)
         except:
             return None
 
@@ -1238,6 +1606,7 @@ class Chemical(object): # pragma: no cover
             return self.__rdkitmol
         else:
             try:
+                from rdkit import Chem
                 self.__rdkitmol = Chem.MolFromSmiles(self.smiles)
                 return self.__rdkitmol
             except:
@@ -1255,6 +1624,7 @@ class Chemical(object): # pragma: no cover
             return self.__rdkitmol_Hs
         else:
             try:
+                from rdkit import Chem
                 self.__rdkitmol_Hs = Chem.AddHs(self.rdkitmol)
                 return self.__rdkitmol_Hs
             except:
@@ -1263,7 +1633,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Hill(self):
         r'''Hill formula of a compound. For a description of the Hill system,
-        see :obj:`thermo.elements.atoms_to_Hill`.
+        see :obj:`chemicals.elements.atoms_to_Hill`.
 
         Examples
         --------
@@ -1316,17 +1686,13 @@ class Chemical(object): # pragma: no cover
 
         Examples
         --------
-        >>> pprint(Chemical('benzene').legal_status)
-        {'DSL': 'LISTED',
-         'EINECS': 'LISTED',
-         'NLP': 'UNLISTED',
-         'SPIN': 'LISTED',
-         'TSCA': 'LISTED'}
+        >>> Chemical('benzene').legal_status
+        {'DSL': 'LISTED', 'EINECS': 'LISTED', 'NLP': 'UNLISTED', 'SPIN': 'LISTED', 'TSCA': 'LISTED'}
         '''
         if self.__legal_status:
             return self.__legal_status
         else:
-            self.__legal_status = legal_status(self.CAS, Method='COMBINED')
+            self.__legal_status = legal_status(self.CAS, method='COMBINED')
             return self.__legal_status
 
     @property
@@ -1335,7 +1701,7 @@ class Chemical(object): # pragma: no cover
 
         Examples
         --------
-        >>> pprint(Chemical('benzene').economic_status)
+        >>> Chemical('benzene').economic_status
         ["US public: {'Manufactured': 6165232.1, 'Imported': 463146.474, 'Exported': 271908.252}",
          u'1,000,000 - 10,000,000 tonnes per annum',
          u'Intermediate Use Only',
@@ -1344,7 +1710,7 @@ class Chemical(object): # pragma: no cover
         if self.__economic_status:
             return self.__economic_status
         else:
-            self.__economic_status = economic_status(self.CAS, Method='Combined')
+            self.__economic_status = economic_status(self.CAS, method='Combined')
             return self.__economic_status
 
 
@@ -1355,7 +1721,7 @@ class Chemical(object): # pragma: no cover
 
         Examples
         --------
-        >>> pprint(Chemical('Cumene').UNIFAC_groups)
+        >>> Chemical('Cumene').UNIFAC_groups
         {1: 2, 9: 5, 13: 1}
         '''
         if self.__UNIFAC_groups:
@@ -1375,7 +1741,7 @@ class Chemical(object): # pragma: no cover
 
         Examples
         --------
-        >>> pprint(Chemical('Cumene').UNIFAC_Dortmund_groups)
+        >>> Chemical('Cumene').UNIFAC_Dortmund_groups
         {1: 2, 9: 5, 13: 1}
         '''
         if self.__UNIFAC_Dortmund_groups:
@@ -1395,7 +1761,7 @@ class Chemical(object): # pragma: no cover
 
         Examples
         --------
-        >>> pprint(Chemical('Cumene').PSRK_groups)
+        >>> Chemical('Cumene').PSRK_groups
         {1: 2, 9: 5, 13: 1}
         '''
         if self.__PSRK_groups:
@@ -1548,7 +1914,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('palladium').HeatCapacitySolid.T_dependent_property(320)
         25.098979200000002
         >>> Chemical('palladium').HeatCapacitySolid.all_methods
-        set(["Perry's Table 2-151", 'CRC Standard Thermodynamic Properties of Chemical Substances', 'Lastovka, Fulem, Becerra and Shaw (2008)'])
+        set(["PERRY151", 'CRCSTD', 'LASTOVKA_S'])
         '''
         return self.HeatCapacitySolid(self.T)
 
@@ -1727,7 +2093,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Vms(self):
         r'''Solid-phase molar volume of the chemical at its current
-        temperature, in units of [m^3/mol]. For calculation of this property at
+        temperature, in units of  [m^3/mol]. For calculation of this property at
         other temperatures, or specifying manually the method used to calculate
         it, and more - see the object oriented interface
         :obj:`thermo.volume.VolumeSolid`; each Chemical instance
@@ -1774,6 +2140,20 @@ class Chemical(object): # pragma: no cover
         4.805464238181197e-07
         '''
         return self.VolumeGas(self.T, self.P)
+
+    @property
+    def Vmg_ideal(self):
+        r'''Gas-phase molar volume of the chemical at its current
+        temperature and pressure calculated with the ideal-gas law,
+        in units of [m^3/mol].
+
+        Examples
+        --------
+
+        >>> Chemical('helium', T=300.0, P=1e5).Vmg_ideal
+        0.0249433878544
+        '''
+        return ideal_gas(T=self.T, P=self.P)
 
     @property
     def rhos(self):
@@ -1838,8 +2218,9 @@ class Chemical(object): # pragma: no cover
         kg/m^3, the fundamental equation of state performs poorly.
 
         >>> He = Chemical('helium', T=15E6, P=26.5E15)
-        >>> He.VolumeGas.set_user_methods_P(['IDEAL']); He.rhog
-        850477.8065477367
+        >>> He.VolumeGas.method_P = 'IDEAL'
+        >>> He.rhog
+        850477.8
 
         The ideal-gas law performs somewhat better, but vastly overshoots
         the density prediction.
@@ -1965,12 +2346,12 @@ class Chemical(object): # pragma: no cover
 
     @property
     def SGs(self):
-        r'''Specific gravity of the solid phase of the chemical at the 
+        r'''Specific gravity of the solid phase of the chemical at the
         specified temperature and pressure, [dimensionless].
-        The reference condition is water at 4 °C and 1 atm 
+        The reference condition is water at 4 °C and 1 atm
         (rho=999.017 kg/m^3). The SG varries with temperature and pressure
         but only very slightly.
-        
+
         Examples
         --------
         >>> Chemical('iron').SGs
@@ -1983,13 +2364,13 @@ class Chemical(object): # pragma: no cover
 
     @property
     def SGl(self):
-        r'''Specific gravity of the liquid phase of the chemical at the 
+        r'''Specific gravity of the liquid phase of the chemical at the
         specified temperature and pressure, [dimensionless].
-        The reference condition is water at 4 °C and 1 atm 
+        The reference condition is water at 4 °C and 1 atm
         (rho=999.017 kg/m^3). For liquids, SG is defined that the reference
         chemical's T and P are fixed, but the chemical itself varies with
         the specified T and P.
-        
+
         Examples
         --------
         >>> Chemical('water', T=365).SGl
@@ -1999,15 +2380,15 @@ class Chemical(object): # pragma: no cover
         if rhol is not None:
             return SG(rhol)
         return None
-    
+
     @property
     def SGg(self):
         r'''Specific gravity of the gas phase of the chemical, [dimensionless].
-        The reference condition is air at 15.6 °C (60 °F) and 1 atm 
+        The reference condition is air at 15.6 °C (60 °F) and 1 atm
         (rho=1.223 kg/m^3). The definition for gases uses the compressibility
         factor of the reference gas and the chemical both at the reference
         conditions, not the conditions of the chemical.
-            
+
         Examples
         --------
         >>> Chemical('argon').SGg
@@ -2018,13 +2399,13 @@ class Chemical(object): # pragma: no cover
             rho = Vm_to_rho(Vmg, self.MW)
             return SG(rho, rho_ref=1.2231876628642968) # calculated with Mixture
         return None
-    
+
     @property
     def API(self):
         r'''API gravity of the liquid phase of the chemical, [degrees].
-        The reference condition is water at 15.6 °C (60 °F) and 1 atm 
+        The reference condition is water at 15.6 °C (60 °F) and 1 atm
         (rho=999.016 kg/m^3, standardized).
-            
+
         Examples
         --------
         >>> Chemical('water').API
@@ -2035,7 +2416,7 @@ class Chemical(object): # pragma: no cover
             rho = Vm_to_rho(Vml, self.MW)
         sg = SG(rho, rho_ref=999.016)
         return SG_to_API(sg)
-        
+
     @property
     def Bvirial(self):
         r'''Second virial coefficient of the gas phase of the chemical at its
@@ -2184,19 +2565,19 @@ class Chemical(object): # pragma: no cover
         --------
         >>> Chemical('water', T=320).sigma
         0.06855002575793023
-        >>> Chemical('water', T=320).SurfaceTension.solve_prop(0.05)
+        >>> Chemical('water', T=320).SurfaceTension.solve_property(0.05)
         416.8307110842183
         '''
         return self.SurfaceTension(self.T)
 
     @property
     def permittivity(self):
-        r'''Relative permittivity (dielectric constant) of the chemical at its 
+        r'''Relative permittivity (dielectric constant) of the chemical at its
         current temperature, [dimensionless].
 
         For calculation of this property at other temperatures,
         or specifying manually the method used to calculate it, and more - see
-        the object oriented interface :obj:`thermo.permittivity.Permittivity`;
+        the object oriented interface :obj:`thermo.permittivity.PermittivityLiquid`;
         each Chemical instance creates one to actually perform the calculations.
 
         Examples
@@ -2205,11 +2586,11 @@ class Chemical(object): # pragma: no cover
         2.49775625
         '''
         return self.Permittivity(self.T)
-    
+
     @property
     def absolute_permittivity(self):
         r'''Absolute permittivity of the chemical at its current temperature,
-        in units of [farad/meter]. Those units are equivalent to 
+        in units of [farad/meter]. Those units are equivalent to
         ampere^2*second^4/kg/m^3.
 
         Examples
@@ -2219,7 +2600,7 @@ class Chemical(object): # pragma: no cover
         '''
         permittivity = self.permittivity
         if permittivity is not None:
-            return permittivity*physical_constants['electric constant'][0]
+            return permittivity*epsilon_0
         return None
 
     @property
@@ -2431,9 +2812,10 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('NH3').solubility_parameter
         24766.329043856073
         '''
-        return solubility_parameter(T=self.T, Hvapm=self.Hvapm, Vml=self.Vml,
-                                    Method=self.solubility_parameter_method,
-                                    CASRN=self.CAS)
+        try:
+            return solubility_parameter(T=self.T, Hvapm=self.Hvapm, Vml=self.Vml)
+        except:
+            return None
 
     @property
     def Parachor(self):
@@ -2443,16 +2825,20 @@ class Chemical(object): # pragma: no cover
         .. math::
             P = \frac{\sigma^{0.25} MW}{\rho_L - \rho_V}
 
-        Calculated based on surface tension, density of the liquid and gas
+        Calculated based on surface tension, density of the liquid
         phase, and molecular weight. For uses of this property, see
         :obj:`thermo.utils.Parachor`.
+
+        The gas density is calculated using the ideal-gas law.
 
         Examples
         --------
         >>> Chemical('octane').Parachor
-        6.291693072841486e-05
+        6.2e-05
         '''
-        sigma, rhol, rhog = self.sigma, self.rhol, self.rhog
+        sigma, rhol = self.sigma, self.rhol
+
+        rhog = Vm_to_rho(ideal_gas(T=self.T, P=self.P), MW=self.MW)
         if all((sigma, rhol, rhog, self.MW)):
             return Parachor(sigma=sigma, MW=self.MW, rhol=rhol, rhog=rhog)
         return None
@@ -2479,7 +2865,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('palladium').Cp
         234.26767209171211
         '''
-        return phase_select_property(phase=self.phase, s=self.Cps, l=self.Cpl, g=self.Cpg)
+        return phase_select_property(phase=self.phase, s=Chemical.Cps, l=Chemical.Cpl, g=Chemical.Cpg, self=self)
 
     @property
     def Cpm(self):
@@ -2499,7 +2885,9 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('ethylbenzene', T=550, P=3E6).Cpm
         294.18449553310046
         '''
-        return phase_select_property(phase=self.phase, s=self.Cpsm, l=self.Cplm, g=self.Cpgm)
+        return phase_select_property(phase=self.phase, s=Chemical.Cpsm,
+                                     l=Chemical.Cplm, g=Chemical.Cpgm,
+                                     self=self)
 
     @property
     def Vm(self):
@@ -2517,7 +2905,8 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('ethylbenzene', T=550, P=3E6).Vm
         0.00017758024401627633
         '''
-        return phase_select_property(phase=self.phase, s=self.Vms, l=self.Vml, g=self.Vmg)
+        return phase_select_property(phase=self.phase, s=Chemical.Vms,
+                                     l=Chemical.Vml, g=Chemical.Vmg, self=self)
 
     @property
     def rho(self):
@@ -2536,7 +2925,9 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('decane', T=550, P=2E6).rho
         498.67008448640604
         '''
-        return phase_select_property(phase=self.phase, s=self.rhos, l=self.rhol, g=self.rhog)
+        return phase_select_property(phase=self.phase, s=Chemical.rhos,
+                                     l=Chemical.rhol, g=Chemical.rhog,
+                                     self=self)
 
     @property
     def rhom(self):
@@ -2555,7 +2946,9 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('1-hexanol').rhom
         7983.414573003429
         '''
-        return phase_select_property(phase=self.phase, s=self.rhosm, l=self.rholm, g=self.rhogm)
+        return phase_select_property(phase=self.phase, s=Chemical.rhosm,
+                                     l=Chemical.rholm, g=Chemical.rhogm,
+                                     self=self)
 
     @property
     def Z(self):
@@ -2574,12 +2967,12 @@ class Chemical(object): # pragma: no cover
 
     @property
     def SG(self):
-        r'''Specific gravity of the chemical, [dimensionless]. 
-        
-        For gas-phase conditions, this is calculated at 15.6 °C (60 °F) and 1 
-        atm for the chemical and the reference fluid, air. 
-        For liquid and solid phase conditions, this is calculated based on a 
-        reference fluid of water at 4°C at 1 atm, but the with the liquid or 
+        r'''Specific gravity of the chemical, [dimensionless].
+
+        For gas-phase conditions, this is calculated at 15.6 °C (60 °F) and 1
+        atm for the chemical and the reference fluid, air.
+        For liquid and solid phase conditions, this is calculated based on a
+        reference fluid of water at 4°C at 1 atm, but the with the liquid or
         solid chemical's density at the currently specified conditions.
 
         Examples
@@ -2598,7 +2991,7 @@ class Chemical(object): # pragma: no cover
         if rho is not None:
             return SG(rho)
         return None
-    
+
     @property
     def isobaric_expansion(self):
         r'''Isobaric (constant-pressure) expansion of the chemical at its
@@ -2618,7 +3011,10 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('water', T=647.2, P=22048320.0).isobaric_expansion
         0.18143324022215077
         '''
-        return phase_select_property(phase=self.phase, l=self.isobaric_expansion_l, g=self.isobaric_expansion_g)
+        return phase_select_property(phase=self.phase,
+                                     l=Chemical.isobaric_expansion_l,
+                                     g=Chemical.isobaric_expansion_g,
+                                     self=self)
 
     @property
     def JT(self):
@@ -2635,7 +3031,8 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('water').JT
         -2.2150394958666407e-07
         '''
-        return phase_select_property(phase=self.phase, l=self.JTl, g=self.JTg)
+        return phase_select_property(phase=self.phase, l=Chemical.JTl,
+                                     g=Chemical.JTg, self=self)
 
     @property
     def mu(self):
@@ -2654,7 +3051,8 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('ethanol', T=400).mu
         1.1853097849748217e-05
         '''
-        return phase_select_property(phase=self.phase, l=self.mul, g=self.mug)
+        return phase_select_property(phase=self.phase, l=Chemical.mul,
+                                     g=Chemical.mug, self=self)
 
     @property
     def k(self):
@@ -2673,7 +3071,8 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('ethanol', T=400).kg
         0.026019924109310026
         '''
-        return phase_select_property(phase=self.phase, s=None, l=self.kl, g=self.kg)
+        return phase_select_property(phase=self.phase, s=None, l=Chemical.kl,
+                                     g=Chemical.kg, self=self)
 
     @property
     def nu(self):
@@ -2688,7 +3087,8 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('argon').nu
         1.3846930410865003e-05
         '''
-        return phase_select_property(phase=self.phase, l=self.nul, g=self.nug)
+        return phase_select_property(phase=self.phase, l=Chemical.nul,
+                                     g=Chemical.nug, self=self)
 
     @property
     def alpha(self):
@@ -2703,7 +3103,8 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('furfural').alpha
         8.696537158635412e-08
         '''
-        return phase_select_property(phase=self.phase, l=self.alphal, g=self.alphag)
+        return phase_select_property(phase=self.phase, l=Chemical.alphal,
+                                     g=Chemical.alphag, self=self)
 
     @property
     def Pr(self):
@@ -2718,13 +3119,14 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('acetone').Pr
         4.183039103542709
         '''
-        return phase_select_property(phase=self.phase, l=self.Prl, g=self.Prg)
+        return phase_select_property(phase=self.phase, l=Chemical.Prl,
+                                     g=Chemical.Prg, self=self)
 
     @property
     def Poynting(self):
-        r'''Poynting correction factor [dimensionless] for use in phase 
-        equilibria methods based on activity coefficients or other reference 
-        states. Performs the shortcut calculation assuming molar volume is 
+        r'''Poynting correction factor [dimensionless] for use in phase
+        equilibria methods based on activity coefficients or other reference
+        states. Performs the shortcut calculation assuming molar volume is
         independent of pressure.
 
         .. math::
@@ -2757,7 +3159,7 @@ class Chemical(object): # pragma: no cover
         return None
 
     def Tsat(self, P):
-        return self.VaporPressure.solve_prop(P)
+        return self.VaporPressure.solve_property(P)
 
     ### Convenience Dimensionless numbers
     def Reynolds(self, V=None, D=None):

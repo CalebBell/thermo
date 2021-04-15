@@ -2,18 +2,23 @@
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.'''
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.'''
 
 from setuptools import setup
 
@@ -32,16 +37,12 @@ classifiers=[
     'Operating System :: POSIX :: Linux',
     'Operating System :: Unix',
     'Programming Language :: Python',
-    'Programming Language :: Python :: 2',
-    'Programming Language :: Python :: 2.7',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.3',
-    'Programming Language :: Python :: 3.4',
-    'Programming Language :: Python :: 3.5',
-    'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: Implementation :: CPython',
+    'Programming Language :: Python :: Implementation :: PyPy',
     'Topic :: Education',
     'Topic :: Scientific/Engineering :: Atmospheric Science',
     'Topic :: Scientific/Engineering :: Chemistry',
@@ -53,10 +54,10 @@ setup(
   name = 'thermo',
   packages = ['thermo'],
   license='MIT',
-  version = '0.1.40',
+  version = '0.2.1',
   description = 'Chemical properties component of Chemical Engineering Design Library (ChEDL)',
   author = 'Caleb Bell',
-  install_requires=['fluids>=0.1.77', 'scipy', 'pandas'],
+  install_requires=['fluids>=1.0.2', 'scipy', 'pandas', 'chemicals>=1.0.4'],
   extras_require = {
       'Coverage documentation':  ['wsgiref>=0.1.2', 'coverage>=4.0.3']
   },
@@ -64,17 +65,17 @@ setup(
   platforms=["Windows", "Linux", "Mac OS", "Unix"],
   author_email = 'Caleb.Andrew.Bell@gmail.com',
   url = 'https://github.com/CalebBell/thermo',
-  download_url = 'https://github.com/CalebBell/thermo/tarball/0.1.40',
-  keywords = ['chemical engineering', 'chemistry', 'mechanical engineering', 
+  download_url = 'https://github.com/CalebBell/thermo/tarball/0.2.1',
+  keywords = ['chemical engineering', 'chemistry', 'mechanical engineering',
   'thermodynamics', 'databases', 'cheminformatics', 'engineering','viscosity',
-  'density', 'heat capacity', 'thermal conductivity', 'surface tension', 
-  'combustion', 'environmental engineering', 'solubility', 'vapor pressure', 
+  'density', 'heat capacity', 'thermal conductivity', 'surface tension',
+  'combustion', 'environmental engineering', 'solubility', 'vapor pressure',
   'equation of state', 'molecule'],
   classifiers = classifiers,
-  package_data={'thermo': ['Critical Properties/*', 'Density/*', 
+  package_data={'thermo': ['Critical Properties/*', 'Density/*',
   'Electrolytes/*', 'Environment/*', 'Heat Capacity/*', 'Identifiers/*',
-  'Law/*', 'Misc/*', 'Phase Change/*', 'Reactions/*', 'Safety/*', 
-  'Solubility/*', 'Interface/*', 'Triple Properties/*', 
-  'Thermal Conductivity/*', 
+  'Law/*', 'Misc/*', 'Phase Change/*', 'Reactions/*', 'Safety/*',
+  'Solubility/*', 'Interface/*', 'Triple Properties/*',
+  'Thermal Conductivity/*',
   'Vapor Pressure/*', 'Viscosity/*']}
 )

@@ -1,7 +1,4 @@
-thermo.vapor_pressure module
-============================
+Vapor Pressure and Sublimation Pressure (thermo.vapor_pressure)
+===============================================================
 
 .. automodule:: thermo.vapor_pressure
-    :members:
-    :undoc-members:
-    :show-inheritance:
