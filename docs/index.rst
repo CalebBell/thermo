@@ -1,6 +1,9 @@
 Welcome to thermo's documentation!
 ==================================
 
+  .. meta::
+      :google-site-verification: wcmDZ88ikLzq1to6urRDGA6R7oIhzya2sN5hOeV1zZw
+
 Contents:
 
 .. toctree::

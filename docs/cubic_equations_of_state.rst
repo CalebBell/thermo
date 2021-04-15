@@ -51,7 +51,7 @@ The basic properties calculated at initialization are directly attributes, and c
 >>> eos.dP_dT_l
 288501.633
 
-All calculations in :obj:`thermo.eos` and :obj:`thermo.eos_mix` are on a molar basis; molecular weight is never provided or needed. All outputs are in base SI units (K, Pa, m^3, mole, etc). This simplified development substantially. For working with mass-based units, use the The :obj:`Phase <thermo.phases.Phase>` interface. The :obj:`thermo.eos` and :obj:`thermo.eos_mix` interfaces were developed prior to the :obj:`Phase <thermo.phases.Phase>` interface and does have some features not exposed in the :obj:`Phase <thermo.phases.Phase>` interface however.
+All calculations in :obj:`thermo.eos` and :obj:`thermo.eos_mix` are on a molar basis; molecular weight is never provided or needed. All outputs are in base SI units (K, Pa, m^3, mole, etc). This simplified development substantially. For working with mass-based units, use the :obj:`Phase <thermo.phases.Phase>` interface. The :obj:`thermo.eos` and :obj:`thermo.eos_mix` interfaces were developed prior to the :obj:`Phase <thermo.phases.Phase>` interface and does have some features not exposed in the :obj:`Phase <thermo.phases.Phase>` interface however.
 
 Other properties are either implemented as methods that require arguments, or Python properties which act just like attributes but calculate the results on the fly. For example, the liquid-phase fugacity :obj:`fugacity_l <thermo.eos.GCEOS.fugacity_l>` or the gas isobaric (constant-pressure) expansion coefficient are properties.
 
