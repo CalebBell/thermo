@@ -75,7 +75,7 @@ nbsphinx_requirejs_path = '' # fixes katex not working
 
 html_baseurl = 'https://thermo.readthedocs.io/'
 sitemap_url_scheme = "{link}"
-sitemap_filename = 'sitemap2.xml' # readthedocs generates its own
+sitemap_filename = 'sitemap3.xml' # readthedocs generates its own
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
