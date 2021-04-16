@@ -31,7 +31,7 @@ try:  # pragma: no cover
         try:
             os.mkdir(data_dir)
         except FileNotFoundError:
-            os.makedirs(data_dir) # Recurrsive
+            os.makedirs(data_dir) # Recursive
 except ImportError:  # pragma: no cover
     data_dir = ''
 
