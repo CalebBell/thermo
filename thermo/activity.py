@@ -42,8 +42,8 @@ Base Class
     :exclude-members:
     :special-members: __hash__, __eq__, __repr__
 
-Idea Liquid Class
-=================
+Ideal Liquid Class
+==================
 
 .. autoclass:: IdealSolution
     :members: to_T_xs, GE, dGE_dT, d2GE_dT2, d3GE_dT3, d2GE_dTdxs, dGE_dxs, d2GE_dxixjs, d3GE_dxixjxks
