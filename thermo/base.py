@@ -28,7 +28,10 @@ try:  # pragma: no cover
     from appdirs import user_data_dir, user_config_dir
     data_dir = user_config_dir('thermo')
     if not os.path.exists(data_dir):
-        os.mkdir(data_dir)
+        try:
+            os.mkdir(data_dir)
+        except FileNotFoundError:
+            os.makedirs(data_dir) # Recurrsive
 except ImportError:  # pragma: no cover
     data_dir = ''
 
