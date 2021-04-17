@@ -98,31 +98,29 @@ class Phase(object):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
     scalar  = True
 
-    pure_references = tuple()
+    pure_references = ()
     '''Tuple of attribute names which hold lists of :obj:`thermo.utils.TDependentProperty`
     or :obj:`thermo.utils.TPDependentProperty` instances.'''
 
-    pure_reference_types = tuple()
+    pure_reference_types = ()
     '''Tuple of types of :obj:`thermo.utils.TDependentProperty`
     or :obj:`thermo.utils.TPDependentProperty` corresponding to `pure_references`.'''
 
-    obj_references = tuple()
+    obj_references = ()
     '''Tuple of object instances which should be stored as json using their own
     as_json method.
     '''
-    pointer_references = tuple()
+    pointer_references = ()
     '''Tuple of attributes which should be stored by converting them to
     a string, and then they will be looked up in their corresponding
     `pointer_reference_dicts` entry.
     '''
-    pointer_reference_dicts = tuple()
+    pointer_reference_dicts = ()
     '''Tuple of dictionaries for string -> object
     '''
-    reference_pointer_dicts = tuple()
+    reference_pointer_dicts = ()
     '''Tuple of dictionaries for object -> string
     '''
-
-
 
     def __str__(self):
         s =  '<%s, ' %(self.__class__.__name__)
@@ -571,7 +569,7 @@ class Phase(object):
         lnphis = self.lnphis()
         dlnphis_dT = self.dlnphis_dT()
         T, zs = self.T, self.zs
-        for i in range(len(zs)):
+        for i in range(self.N):
             S0 -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
         return abs(1.0 - S0/self.S())
 
@@ -632,7 +630,7 @@ class Phase(object):
         H_dep_RT2 = 0.0
         dlnphis_dTs = self.dlnphis_dT()
         zs, T = self.zs, self.T
-        H_dep_RT2 = sum(zs[i]*dlnphis_dTs[i] for i in range(len(zs)))
+        H_dep_RT2 = sum([zs[i]*dlnphis_dTs[i] for i in range(self.N)])
         H_dep_recalc = -H_dep_RT2*R*T*T
         H_dep = self.H_dep()
         return abs(1.0 - H_dep/H_dep_recalc)
@@ -657,7 +655,7 @@ class Phase(object):
         dlnphis_dT = self.dlnphis_dT()
         T, zs = self.T, self.zs
         S_dep = 0.0
-        for i in range(len(zs)):
+        for i in range(self.N):
             S_dep -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
         return abs(1.0 - S_dep/self.S_dep())
 
@@ -807,7 +805,7 @@ class Phase(object):
         '''
         P = self.P
         lnphis = self.lnphis_at_zs(zs)
-        return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
+        return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(self.N)]
 
     def lnphi(self):
         r'''Method to calculate and return the log of fugacity coefficient of
@@ -889,7 +887,7 @@ class Phase(object):
         P = self.P
         zs = self.zs
         lnphis = self.lnphis()
-        return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
+        return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(self.N)]
 
     def lnfugacities(self):
         r'''Method to calculate and return the log of fugacities of the phase.
@@ -930,7 +928,7 @@ class Phase(object):
         '''
         dphis_dT = self.dphis_dT()
         P, zs = self.P, self.zs
-        return [P*zs[i]*dphis_dT[i] for i in range(len(zs))]
+        return [P*zs[i]*dphis_dT[i] for i in range(self.N)]
 
     def lnphis_G_min(self):
         r'''Method to calculate and return the log fugacity coefficients of the
@@ -1091,7 +1089,7 @@ class Phase(object):
         dlnphis_dns = self.dlnphis_dns()
         P, zs = self.P, self.zs, 
         matrix = []
-        cmps = tuple(range(self.N))
+        cmps = range(self.N)
         for i in cmps:
             phi_P = P*phis[i]
             ziPphi = phi_P*zs[i]
@@ -1121,7 +1119,7 @@ class Phase(object):
         fugacities = self.fugacities()
         dlnfugacities_dns = [list(i) for i in self.dfugacities_dns()]
         fugacities_inv = [1.0/fi for fi in fugacities]
-        cmps = tuple(range(self.N))
+        cmps = range(self.N)
         for i in cmps:
             r = dlnfugacities_dns[i]
             for j in cmps:
@@ -1148,7 +1146,7 @@ class Phase(object):
         fugacities = self.fugacities()
         dlnfugacities_dzs = [list(i) for i in self.dfugacities_dzs()]
         fugacities_inv = [1.0/fi for fi in fugacities]
-        cmps = tuple(range(self.N))
+        cmps = range(self.N)
         for i in cmps:
             r = dlnfugacities_dzs[i]
             for j in cmps:
