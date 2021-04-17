@@ -24,8 +24,6 @@ SOFTWARE.
 
 __all__ = ['IdealGas']
 
-import sys, os
-from math import isinf, isnan, sqrt
 from chemicals.utils import log
 from thermo.heat_capacity import HeatCapacityGas
 from .utils import R2
