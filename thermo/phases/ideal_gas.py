@@ -26,7 +26,6 @@ __all__ = ['IdealGas']
 
 from chemicals.utils import log
 from thermo.heat_capacity import HeatCapacityGas
-from .utils import R2
 from .phase import Phase
 
 class IdealGas(Phase):

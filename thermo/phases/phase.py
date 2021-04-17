@@ -62,8 +62,9 @@ class Phase(object):
 
 
     '''
-
+    INCOMPRESSIBLE_CONST = 1e30
     R = R
+    R2 = R*R
     R_inv = R_inv
 
     is_solid = False
