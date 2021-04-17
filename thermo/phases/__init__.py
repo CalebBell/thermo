@@ -151,6 +151,7 @@ from . import ideal_gas
 from . import ceos
 from . import gibbs_excess
 from . import helmholtz_eos
+from . import air
 from . import iapws
 from . import coolprop
 from . import virial
@@ -162,6 +163,7 @@ from .ceos import *
 from .gibbs_excess import *
 from .helmholtz_eos import *
 from .iapws import *
+from .air import *
 from .coolprop import *
 from .virial import *
 from .petroleum import *
@@ -171,6 +173,7 @@ __all__ = [
     *ideal_gas.__all__,
     *ceos.__all__,
     *gibbs_excess.__all__,
+    *air.__all__,
     *helmholtz_eos.__all__,
     *iapws.__all__,
     *coolprop.__all__,
