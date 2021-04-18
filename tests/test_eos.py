@@ -2404,6 +2404,10 @@ def test_eos_lnphi():
     G_dep = H_dep - T*S_dep
     lnphi = G_dep/(R*T)
     '''
+    # The numerical issues remaining should be resolved by using 
+    # doubledoubles to calculate Z - 1 and V - b very accurately
+    # This might be worth doing throughout the code base for the extra 
+    # accuracy anyway.
     from thermo.eos import eos_list
     for e in eos_list:
         if e is IG or e is VDW:

@@ -69,17 +69,23 @@ implemented
 from fluids.constants import R
 from fluids.numerics import numpy as np, catanh
 from math import sqrt, log
+from thermo.eos import eos_lnphi
 from thermo.eos_volume import volume_solutions_halley, volume_solutions_fast
 
 __all__ = ['a_alpha_aijs_composition_independent',
            'a_alpha_and_derivatives', 'a_alpha_and_derivatives_full',
            'a_alpha_quadratic_terms', 'a_alpha_and_derivatives_quadratic_terms',
-           'PR_lnphis', 'VDW_lnphis', 'SRK_lnphis',
+           'PR_lnphis', 'VDW_lnphis', 'SRK_lnphis', 'eos_mix_lnphis_general',
            
-           'VDW_lnphis_fastest',
-           'PR_lnphis_fastest', 'lnphis_direct',
+           'VDW_lnphis_fastest', 'PR_lnphis_fastest',
+           'SRK_lnphis_fastest', 'RK_lnphis_fastest',
+           'lnphis_direct',
            'G_dep_lnphi_d_helper', 'PR_translated_ddelta_dzs',
            'PR_translated_depsilon_dzs',
+           
+           
+           'eos_mix_db_dns', 'eos_mix_da_alpha_dns',
+           
            'eos_mix_dV_dzs', 'eos_mix_a_alpha_volume']
 
 
@@ -830,6 +836,22 @@ def eos_mix_a_alpha_volume(gas, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_a
     Z = Z = P*V0/(R*T)
     return Z, a_alpha, a_alpha_j_rows
 
+def eos_mix_db_dns(b, bs, N, out=None):
+    if out is None:
+        out = [0.0]*N
+    for i in range(N):
+        out[i] = bs[i] - b
+    return out
+
+def eos_mix_da_alpha_dns(a_alpha, a_alpha_j_rows, N, out=None):
+    if out is None:
+        out = [0.0]*N
+    a_alpha_n_2 = -2.0*a_alpha
+    for i in range(N):
+        out[i] = 2.0*a_alpha_j_rows[i] + a_alpha_n_2
+    return out
+
+    
 def PR_translated_ddelta_dzs(b0s, cs, N, out=None):
     if out is None:
         out = [0.0]*N
@@ -897,6 +919,26 @@ def VDW_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_roots, N, lnphis=None):
         lnphis[i] = (bs[i]*t3 - t1 - t2*a_alpha_roots[i])
     return lnphis
 
+def eos_mix_lnphis_general(T, P, Z, b, delta, epsilon, a_alpha, bs,
+                           a_alpha_roots, N, db_dns, da_alpha_dns, ddelta_dns, 
+                           depsilon_dns, lnphis=None):
+    if lnphis is None:
+        lnphis = [0.0]*N
+    V = Z*R*T/P
+    dV_dns = eos_mix_dV_dzs(T, P, Z, b, delta, epsilon, 
+                            a_alpha, db_dns, ddelta_dns,
+                            depsilon_dns, da_alpha_dns, N)
+
+    dlnphi_dns = G_dep_lnphi_d_helper(T, P, b, delta, epsilon, a_alpha, N,
+                                      Z, db_dns, depsilon_dns, ddelta_dns, dV_dns,
+                                      da_alpha_dns, G=False)
+
+    lnphi = eos_lnphi(T, P, V, b, delta, epsilon, a_alpha)
+    for i in range(N):
+        lnphis[i] = lnphi + dlnphi_dns[i]
+    return lnphis    
+
+
 def lnphis_direct(zs, model, T, P, N, *args):
     if model == 10200:
         return PR_lnphis_fastest(zs, T, P, N, *args)
@@ -904,14 +946,14 @@ def lnphis_direct(zs, model, T, P, N, *args):
         return VDW_lnphis_fastest(zs, T, P, N, *args)
     elif model == 10100:
         return SRK_lnphis_fastest(zs, T, P, N, *args)
+    elif model == 10002:
+        return RK_lnphis_fastest(zs, T, P, N, *args)
     return PR_lnphis_fastest(zs, T, P, N, *args)
 
 
 
 def PR_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
                       lnphis=None):
-    # Uses precomputed values
-    # Only creates its own arrays for a_alpha_j_rows and PR_lnphis
     b = 0.0
     for i in range(N):
         b += bs[i]*zs[i]
@@ -924,8 +966,6 @@ def PR_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_al
 
 def SRK_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
                       lnphis=None):
-    # Uses precomputed values
-    # Only creates its own arrays for a_alpha_j_rows and PR_lnphis
     b = 0.0
     for i in range(N):
         b += bs[i]*zs[i]
@@ -935,6 +975,26 @@ def SRK_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_a
     Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     return SRK_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=lnphis)
+
+def RK_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
+                      lnphis=None):
+    b = 0.0
+    for i in range(N):
+        b += bs[i]*zs[i]
+    delta = b
+    epsilon = 0.0
+    
+    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
+                                                        a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
+    
+    ddelta_dns = db_dns = eos_mix_db_dns(b, bs, N, out=None)
+    da_alpha_dns = eos_mix_da_alpha_dns(a_alpha, a_alpha_j_rows, N, out=None)
+    depsilon_dns = [0.0]*N
+
+    
+    return eos_mix_lnphis_general(T, P, Z, b, delta, epsilon, a_alpha, bs,
+                           a_alpha_roots, N, db_dns, da_alpha_dns, ddelta_dns, 
+                           depsilon_dns, lnphis=None)
 
 def VDW_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
                       lnphis=None):
@@ -947,3 +1007,4 @@ def VDW_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_a
     Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     return VDW_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_roots, N, lnphis=lnphis)
+
