@@ -121,7 +121,7 @@ from chemicals.iapws import iapws95_Psat, iapws95_Tsat, iapws95_rhog_sat, iapws9
 from thermo.utils import has_matplotlib
 from thermo.equilibrium import EquilibriumState
 from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, CEOSLiquid, CEOSGas, CoolPropGas, CoolPropLiquid, CoolPropPhase, GibbsExcessLiquid, IdealGas, IAPWS95Liquid, IAPWS95Gas, IAPWS95
-from thermo.phases import CPPQ_INPUTS, CPQT_INPUTS, CPrhoT_INPUTS, CPunknown, CPiDmolar
+from thermo.phases.coolprop import CPPQ_INPUTS, CPQT_INPUTS, CPrhoT_INPUTS, CPunknown, CPiDmolar
 from thermo import phases
 from thermo.phase_identification import identify_sort_phases
 from thermo.bulk import default_settings

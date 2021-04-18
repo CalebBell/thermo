@@ -20,6 +20,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
+
+__all__ = [
+    'Phase', 
+    'derivatives_thermodynamic', 
+    'derivatives_thermodynamic_mass', 
+    'derivatives_jacobian',
+]
+
 from fluids.constants import R, R_inv
 from math import sqrt
 from thermo.serialize import arrays_to_lists
@@ -96,7 +104,6 @@ class Phase(object):
     Psats_poly_fit = False
     Cpgs_poly_fit = False
     composition_independent = False
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     scalar  = True
 
     pure_references = ()
@@ -122,6 +129,9 @@ class Phase(object):
     reference_pointer_dicts = ()
     '''Tuple of dictionaries for object -> string
     '''
+
+    def __init_subclass__(cls):
+        cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
 
     def __str__(self):
         s =  '<%s, ' %(self.__class__.__name__)

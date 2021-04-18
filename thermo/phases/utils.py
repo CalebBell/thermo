@@ -22,13 +22,11 @@ SOFTWARE.
 '''
 
 __all__ = [
-    'SORTED_DICT',
     'activity_pointer_reference_dicts',
     'activity_reference_pointer_dicts',
     'object_lookups',
 ]
 
-import sys
 from thermo.eos import eos_full_path_dict
 from thermo.eos_mix import eos_mix_full_path_dict
 from thermo.activity import IdealSolution
@@ -37,7 +35,7 @@ from thermo.unifac import UNIFAC
 from thermo.regular_solution import RegularSolution
 from thermo.uniquac import UNIQUAC
 
-SORTED_DICT = sys.version_info >= (3, 6)
+
 activity_pointer_reference_dicts = {
     'thermo.activity.IdealSolution': IdealSolution,
     'thermo.wilson.Wilson': Wilson,

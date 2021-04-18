@@ -184,8 +184,6 @@ class GibbsExcessLiquid(Phase):
     phase = 'l'
     is_gas = False
     is_liquid = True
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
-
     P_DEPENDENT_H_LIQ = True
     PHI_SAT_IDEAL_TR = 0.1
     _Psats_data = None
@@ -3080,9 +3078,6 @@ class GibbsExcessSolid(GibbsExcessLiquid):
     is_gas = False
     is_liquid = False
     is_solid = True
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
-
-
     pure_references = ('HeatCapacityGases','SublimationPressures', 'VolumeSolids', 'EnthalpySublimations')
     pure_reference_types = (HeatCapacityGas, SublimationPressure, VolumeSolid, EnthalpySublimation)
 

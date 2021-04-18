@@ -35,8 +35,6 @@ class GraysonStreed(Phase):
     is_gas = False
     is_liquid = True
     # revised one
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
-
     hydrogen_coeffs = (1.50709, 2.74283, -0.0211, 0.00011, 0.0, 0.008585, 0.0, 0.0, 0.0, 0.0)
     methane_coeffs = (1.36822, -1.54831, 0.0, 0.02889, -0.01076, 0.10486, -0.02529, 0.0, 0.0, 0.0)
     simple_coeffs = (2.05135, -2.10889, 0.0, -0.19396, 0.02282, 0.08852, 0.0, -0.00872, -0.00353, 0.00203)
@@ -164,7 +162,6 @@ class GraysonStreed(Phase):
         return nus
 
 class ChaoSeader(GraysonStreed):
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     # original one
     hydrogen_coeffs = (1.96718, 1.02972, -0.054009, 0.0005288, 0.0, 0.008585, 0.0, 0.0, 0.0, 0.0)
     methane_coeffs = (2.4384, -2.2455, -0.34084, 0.00212, -0.00223, 0.10486, -0.03691, 0.0, 0.0, 0.0)

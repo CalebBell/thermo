@@ -34,7 +34,6 @@ class DryAirLemmon(HelmholtzEOS):
     is_gas = True
     is_liquid = False
     force_phase = 'g'
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     _MW = air.lemmon2000_air_MW
     _MW = 28.96546 # CoolProp
@@ -136,7 +135,6 @@ class DryAirLemmon(HelmholtzEOS):
 class HumidAirRP1485(VirialGas):
     is_gas = True
     is_liquid = False
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     def __init__(self, Hfs=None, Gfs=None, T=None, P=None, zs=None,
                  ):
         # Although in put is zs, it is required to be in the order of

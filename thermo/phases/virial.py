@@ -140,8 +140,6 @@ class VirialGas(Phase):
     is_gas = True
     is_liquid = False
     ideal_gas_basis = True
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
-
     pure_references = ('HeatCapacityGases',)
     pure_reference_types = (HeatCapacityGas, )
 

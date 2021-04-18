@@ -27,7 +27,6 @@ from chemicals.utils import log
 from .phase import Phase
 
 class HelmholtzEOS(Phase):
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     model_attributes = ('model_name',)
 

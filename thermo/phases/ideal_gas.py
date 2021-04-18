@@ -77,7 +77,6 @@ class IdealGas(Phase):
 
     pure_references = ('HeatCapacityGases',)
     pure_reference_types = (HeatCapacityGas,)
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     model_attributes = ('Hfs', 'Gfs', 'Sfs') + pure_references
 
@@ -361,7 +360,7 @@ class IdealGas(Phase):
             Second volume derivative of pressure, [Pa*mol^2/m^6]
         '''
         P, T = self.P, self.T
-        return 2.0*P*P*P/(R2*T*T)
+        return 2.0*P*P*P/(self.R2*T*T)
 
     d2P_dV2_T = d2P_dV2
 

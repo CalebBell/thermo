@@ -78,7 +78,6 @@ class CEOSGas(Phase):
     is_gas = True
     is_liquid = False
     ideal_gas_basis = True
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     pure_references = ('HeatCapacityGases',)
     pure_reference_types = (HeatCapacityGas,)
@@ -993,7 +992,9 @@ def build_CEOSLiquid():
     return source
 
 from fluids.numerics import is_micropython
-if not is_micropython:
+if is_micropython:
+    class CEOSLiquid(object): pass
+else:
     try:
         CEOSLiquid
     except:
@@ -1023,9 +1024,6 @@ if not is_micropython:
             compiled_CEOSLiquid = compile(build_CEOSLiquid(), '<string>', 'exec')
         exec(compiled_CEOSLiquid)
         # exec(build_CEOSLiquid())
-else:
-    class CEOSLiquid(object):
-        __full_path__ = 'thermo.phases.CEOSLiquid'
 
 CEOSLiquid.is_gas = False
 CEOSLiquid.is_liquid = True
