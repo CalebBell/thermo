@@ -24,6 +24,7 @@ from __future__ import division
 import sys
 import importlib.util
 import types
+from types import ModuleType
 import numpy as np
 import inspect
 import numba
@@ -113,7 +114,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
     chemicals.numba.iapws # Force the transform to occur
     for name in dir(chemicals.numba):
         obj = getattr(chemicals.numba, name)
-        if isinstance(obj, CPUDispatcher):
+        if isinstance(obj, CPUDispatcher) or isinstance(obj, ModuleType):
             __funcs[name] = obj
 
     for mod in new_mods:
