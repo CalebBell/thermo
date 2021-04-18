@@ -82,10 +82,10 @@ __all__ = ['a_alpha_aijs_composition_independent',
            
            'lnphis_direct',
            
-           'G_dep_lnphi_d_helper', 'PR_translated_ddelta_dzs',
+           'G_dep_lnphi_d_helper', 
            
-           
-           'PR_translated_depsilon_dzs', 'PR_translated_ddelta_dns',
+           'PR_translated_ddelta_dzs', 'PR_translated_ddelta_dns',           
+           'PR_translated_depsilon_dzs', 'PR_translated_depsilon_dns',
            
            
            'eos_mix_db_dns', 'eos_mix_da_alpha_dns',
@@ -876,10 +876,20 @@ def PR_translated_ddelta_dns(b0s, cs, delta, N, out=None):
 def PR_translated_depsilon_dzs(epsilon, c, b, b0s, cs, N, out=None):
     if out is None:
         out = [0.0]*N
-        b0 = b + c
+    b0 = b + c
     for i in range(N):
         out[i] = cs[i]*(2.0*b0 + c) + c*(2.0*b0s[i] + cs[i]) - 2.0*b0*b0s[i]
     return out
+
+def PR_translated_depsilon_dns(epsilon, c, b, b0s, cs, N, out=None):
+    if out is None:
+        out = [0.0]*N
+    b0 = b + c
+    for i in range(N):
+        out[i] = (2.0*b0*(b0 - b0s[i]) - c*(2.0*b0 - 2.0*b0s[i] + c - cs[i])
+                 - (c-cs[i])*(2.0*b0 + c))
+    return out
+
 
 
 def PR_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=None):

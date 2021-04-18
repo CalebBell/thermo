@@ -213,6 +213,7 @@ from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     a_alpha_aijs_composition_independent_support_zeros, a_alpha_and_derivatives, a_alpha_and_derivatives_full,
     a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms,
     G_dep_lnphi_d_helper, eos_mix_dV_dzs, VDW_lnphis, SRK_lnphis, eos_mix_db_dns, PR_translated_ddelta_dns,
+    PR_translated_depsilon_dns,
     PR_translated_ddelta_dzs, PR_translated_depsilon_dzs)
 from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     Soave_79_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
@@ -8105,11 +8106,7 @@ class PRMIXTranslated(PRMIX):
         '''
         epsilon, c, b = self.epsilon, self.c, self.b
         N, b0s, cs = self.N, self.b0s, self.cs
-        b0 = b + c
-        return [(2.0*b0*(b0 - b0s[i]) - c*(2.0*b0 - 2.0*b0s[i] + c - cs[i])
-                 - (c-cs[i])*(2.0*b0 + c)
-                 )
-                for i in range(N)]
+        return PR_translated_depsilon_dns(epsilon, c, b, b0s, cs, N, out=([0.0]*N if self.scalar else zeros(N)))
 
     @property
     def d2epsilon_dzizjs(self):
