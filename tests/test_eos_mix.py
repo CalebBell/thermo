@@ -4562,3 +4562,11 @@ def test_eos_mix_translated_attribute_correct():
             assert e.translated
         else:
             assert not e.translated
+            
+def test_eos_mix_model_ids_no_duplicated():
+    assert len(eos_mix_list) == len(set(eos_mix_list))
+    model_ids = {}
+    for k in eos_mix_list:
+        if k.model_id in model_ids:
+            raise ValueError("Duplicate Model ID = %s, existing model is %s" %(k, model_ids[k.model_id]))
+        model_ids[k.model_id] = k

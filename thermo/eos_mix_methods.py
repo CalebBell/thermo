@@ -88,6 +88,8 @@ __all__ = ['a_alpha_aijs_composition_independent',
            'PR_translated_ddelta_dzs', 'PR_translated_ddelta_dns',           
            'PR_translated_depsilon_dzs', 'PR_translated_depsilon_dns',
            
+           'SRK_translated_ddelta_dns', 'SRK_translated_depsilon_dns',
+           
            
            'eos_mix_db_dns', 'eos_mix_da_alpha_dns',
            
@@ -871,6 +873,22 @@ def PR_translated_ddelta_dns(b0s, cs, delta, N, out=None):
         out[i] = 2.0*(cs[i] + b0s[i]) - delta
     return out
 
+def SRK_translated_ddelta_dns(b0s, cs, delta, N, out=None):
+    if out is None:
+        out = [0.0]*N
+    for i in range(N):
+        out[i] = 2.0*cs[i] + b0s[i] - delta
+    return out
+
+
+def SRK_translated_depsilon_dns(b0s, cs, b, c, N, out=None):
+    if out is None:
+        out = [0.0]*N
+    b0 = b + c
+    for i in range(N):
+        out[i] = (-b0*(c - cs[i]) - c*(b0 - b0s[i]) - 2.0*c*(c - cs[i]))
+    return out
+
 
 
 
@@ -967,7 +985,7 @@ def eos_mix_lnphis_general(T, P, Z, b, delta, epsilon, a_alpha, bs,
 def lnphis_direct(zs, model, T, P, N, *args):
     if model == 10200 or model == 10201 or model == 10204 or model == 10205 or model == 10206:
         return PR_lnphis_fastest(zs, T, P, N, *args)
-    elif model == 10202:
+    elif model == 10202 or model == 10203 or model == 10207:
         return PR_translated_lnphis_fastest(zs, T, P, N, *args)
     elif model == 10100 or model == 10104 or model == 10105:
         return SRK_lnphis_fastest(zs, T, P, N, *args)

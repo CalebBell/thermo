@@ -214,7 +214,8 @@ from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms,
     G_dep_lnphi_d_helper, eos_mix_dV_dzs, VDW_lnphis, SRK_lnphis, eos_mix_db_dns, PR_translated_ddelta_dns,
     PR_translated_depsilon_dns,
-    PR_translated_ddelta_dzs, PR_translated_depsilon_dzs)
+    PR_translated_ddelta_dzs, PR_translated_depsilon_dzs,
+    SRK_translated_ddelta_dns, SRK_translated_depsilon_dns)
 from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     Soave_79_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
                                     RK_a_alpha_and_derivatives_vectorized, RK_a_alphas_vectorized,
@@ -8336,7 +8337,7 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
     mix_kwargs_to_pure = {'cs': 'c'}
     kwargs_linear = ('cs',)
     kwargs_keys = ('kijs', 'cs')
-    model_id = 10203
+    model_id = 10207
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None,
                  T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
@@ -9098,8 +9099,8 @@ class SRKMIXTranslated(SRKMIX):
         -----
         This derivative is checked numerically.
         '''
-        b0s, cs, delta = self.b0s, self.cs, self.delta
-        return [(2.0*cs[i] + b0s[i]) - delta for i in range(self.N)]
+        N = self.N
+        return SRK_translated_ddelta_dns(self.b0s, self.cs, self.delta, N, out=[0.0]*N if self.scalar else zeros(N))
 
     @property
     def d2delta_dninjs(self):
@@ -9209,11 +9210,8 @@ class SRKMIXTranslated(SRKMIX):
         -----
         This derivative is checked numerically.
         '''
-        epsilon, c, b = self.epsilon, self.c, self.b
-        N, b0s, cs = self.N, self.b0s, self.cs
-        b0 = b + c
-        return [(-b0*(c - cs[i]) - c*(b0 - b0s[i]) - 2.0*c*(c - cs[i]))
-                for i in range(N)]
+        N = self.N
+        return SRK_translated_depsilon_dns(self.b0s, self.cs, self.b, self.c, N, out=[0.0]*N if self.scalar else zeros(N))
 
     @property
     def d2epsilon_dzizjs(self):
