@@ -10167,7 +10167,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
            Butterworth-Heinemann, 1985.
         '''
-        return VDW_lnphis(self.T, self.P, Z, self.b, self.a_alpha, self.bs, self.a_alpha_roots)
+        return VDW_lnphis(self.T, self.P, Z, self.b, self.a_alpha, self.bs, self.a_alpha_roots, self.N)
 
     def dlnphis_dT(self, phase):
         r'''Formula for calculating the temperature derivaitve of

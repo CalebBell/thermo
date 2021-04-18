@@ -69,7 +69,7 @@ implemented
 from fluids.constants import R
 from fluids.numerics import numpy as np, catanh
 from math import sqrt, log
-from thermo.eos_volume import volume_solutions_halley
+from thermo.eos_volume import volume_solutions_halley, volume_solutions_fast
 
 __all__ = ['a_alpha_aijs_composition_independent',
            'a_alpha_and_derivatives', 'a_alpha_and_derivatives_full',
@@ -78,7 +78,7 @@ __all__ = ['a_alpha_aijs_composition_independent',
            'PR_lnphis_fastest', 'lnphis_direct',
            'G_dep_lnphi_d_helper', 'PR_translated_ddelta_dzs',
            'PR_translated_depsilon_dzs',
-           'eos_mix_dV_dzs']
+           'eos_mix_dV_dzs', 'eos_mix_a_alpha_volume']
 
 
 R2 = R*R
@@ -408,7 +408,8 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
     return a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs
 
 
-def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs):
+def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs, 
+                            a_alpha_j_rows=None, vec0=None):
     r'''Calculates the `a_alpha` term for an equation of state along with the
     vector quantities needed to compute the fugacities of the mixture. This
     routine is efficient in both numba and PyPy.
@@ -436,6 +437,13 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs):
         Mole fractions of each species
     kijs : list[list[float]]
         Constant kijs, [-]
+    a_alpha_j_rows : list[float], optional
+        EOS attractive term row destimation vector (does not need
+        to be zeroed, should be provided to prevent allocations),
+        [J^2/mol^2/Pa]
+    vec0 : list[float], optional
+        Empty vector, used in internal calculations, provide to avoid
+        the allocations; does not need to be zeroed, [-]
 
     Returns
     -------
@@ -481,10 +489,16 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs):
 #    return a_alpha, a_alpha_j_rows
 
     N = len(a_alphas)
-    a_alpha_j_rows = [0.0]*N
-    things0 = [0.0]*N
+    if a_alpha_j_rows is None:
+        a_alpha_j_rows = [0.0]*N
+
     for i in range(N):
-        things0[i] = a_alpha_roots[i]*zs[i]
+        a_alpha_j_rows[i] = 0.0
+    
+    if vec0 is None:
+        vec0 = [0.0]*N
+    for i in range(N):
+        vec0[i] = a_alpha_roots[i]*zs[i]
 
     a_alpha = 0.0
     i = 0
@@ -494,8 +508,8 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs):
         while j < i:
             # Numba appears to be better with this split into two loops.
             # PyPy has 1.5x speed reduction when so.
-            a_alpha_j_rows[j] += (1. - kijs_i[j])*things0[i]
-            a_alpha_j_rows[i] += (1. - kijs_i[j])*things0[j]
+            a_alpha_j_rows[j] += (1. - kijs_i[j])*vec0[i]
+            a_alpha_j_rows[i] += (1. - kijs_i[j])*vec0[j]
             j += 1
         i += 1
 
@@ -794,6 +808,25 @@ def G_dep_lnphi_d_helper(T, P, b, delta, epsilon, a_alpha, N,
         out[i] = diff
     return out
 
+def eos_mix_a_alpha_volume(gas, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None):
+    a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs, a_alpha_j_rows, vec0)
+
+    V0, V1, V2 = volume_solutions_halley(T, P, b, delta, epsilon, a_alpha)
+    if not gas:
+        # Prefer liquid, ensure V0 is the smalest root
+        if V1 != 0.0:
+            if V0 > V1 and V1 > b:
+                V0 = V1
+            if V0 > V2 and V2 > b:
+                V0 = V2
+    else:
+        if V1 != 0.0:
+            if V0 < V1 and V1 > b:
+                V0 = V1
+            if V0 < V2 and V2 > b:
+                V0 = V2
+    Z = Z = P*V0/(R*T)
+    return Z, a_alpha, a_alpha_j_rows
 
 def PR_translated_ddelta_dzs(b0s, cs, N, out=None):
     if out is None:
@@ -811,9 +844,9 @@ def PR_translated_depsilon_dzs(epsilon, c, b, b0s, cs, N, out=None):
     return out
 
 
-def PR_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, out=None):
-    if out is None:
-        out = [0.0]*N
+def PR_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=None):
+    if lnphis is None:
+        lnphis = [0.0]*N
     T_inv = 1.0/T
     P_T = P*T_inv
 
@@ -827,13 +860,12 @@ def PR_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, out=None):
     t50 = (x4 + x4)/(a_alpha*two_root_two_B)
     t51 = (x4 + (Z - 1.0)*two_root_two_B)/(b*two_root_two_B)
     for i in range(N):
-        out[i] = bs[i]*t51 - x0 - t50*a_alpha_j_rows[i]
-    return out
+        lnphis[i] = bs[i]*t51 - x0 - t50*a_alpha_j_rows[i]
+    return lnphis
 
-def VDW_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_roots, out=None):
-    N = len(bs)
-    if out is None:
-        out = [0.0]*N
+def VDW_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_roots, N, lnphis=None):
+    if lnphis is None:
+        lnphis = [0.0]*N
     V = Z*R*T/P
 
     sqrt_a_alpha = sqrt(a_alpha)
@@ -841,40 +873,26 @@ def VDW_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_roots, out=None):
     t2 = 2.0*sqrt_a_alpha/(R*T*V)
     t3 = 1.0/(V - b)
     for i in range(N):
-        out[i] = (bs[i]*t3 - t1 - t2*a_alpha_roots[i])
-    return out
+        lnphis[i] = (bs[i]*t3 - t1 - t2*a_alpha_roots[i])
+    return lnphis
 
-def lnphis_direct(zs, model, T, P, *args):
+def lnphis_direct(zs, model, T, P, N, *args):
     if model == 10200:
-        return PR_lnphis_fastest(zs, T, P, *args)
-    return PR_lnphis_fastest(zs, T, P, *args)
+        return PR_lnphis_fastest(zs, T, P, N, *args)
+    return PR_lnphis_fastest(zs, T, P, N, *args)
 
-def PR_lnphis_fastest(zs, T, P, kijs, l, g, bs, a_alphas, a_alpha_roots):
+
+
+def PR_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
+                      lnphis=None):
     # Uses precomputed values
     # Only creates its own arrays for a_alpha_j_rows and PR_lnphis
-    N = len(bs)
     b = 0.0
     for i in range(N):
         b += bs[i]*zs[i]
     delta = 2.0*b
     epsilon = -b*b
-
-    a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs)
-    V0, V1, V2 = volume_solutions_halley(T, P, b, delta, epsilon, a_alpha)
-    if l:
-        # Prefer liquid, ensure V0 is the smalest root
-        if V1 != 0.0:
-            if V0 > V1 and V1 > b:
-                V0 = V1
-            if V0 > V2 and V2 > b:
-                V0 = V2
-    elif g:
-        if V1 != 0.0:
-            if V0 < V1 and V1 > b:
-                V0 = V1
-            if V0 < V2 and V2 > b:
-                V0 = V2
-    else:
-        raise ValueError("Root must be specified")
-    Z = Z = P*V0/(R*T)
-    return PR_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N)
+    
+    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
+                                                        a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
+    return PR_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=lnphis)
