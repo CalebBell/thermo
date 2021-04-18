@@ -33,6 +33,7 @@ from thermo.utils import LINEAR
 from chemicals.utils import rho_to_Vm, Vm_to_rho
 from thermo.phases import *
 from thermo.eos_mix import *
+from thermo.eos_mix_methods import lnphis_direct
 from thermo.eos import *
 from thermo.vapor_pressure import VaporPressure
 from thermo.volume import *
@@ -2734,3 +2735,29 @@ def test_DryAirLemmon():
     air = DryAirLemmon(T=400.0, P=1e6)
     assert_close(derivative(lambda T: air.to(T=T, P=air.P, zs=[1]).kappa(), air.T, dx=3e-7*air.T), air.dkappa_dT())
     assert_close(air.dkappa_dT(), -2.2997479495042184e-11, rtol=1e-13)
+
+
+
+def test_lnphis_at_zs_eos_mix():
+    # Acetone, chloroform, methanol
+    T, P, zs = 331.42, 90923,  [0.229, 0.175, 0.596]
+    
+    eos_kwargs = {'Pcs': [4700000.0, 5330000.0, 8084000.0],
+     'Tcs': [508.1, 536.2, 512.5],
+     'omegas': [0.309, 0.21600000000000003, 0.5589999999999999],
+     'kijs': [[0, 0.038, 0.08], [0.038, 0, 0.021], [0.08, 0.021, 0]],
+    #  'cs': [-3.4317958608704207e-07, -1.8595690933459835e-06, 2.407946643713126e-06]
+    }
+    
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(200.0, 1000.0, [-1.3320002425347943e-21, 6.4063345232664645e-18, -1.251025808150141e-14, 1.2265314167534311e-11, -5.535306305509636e-09, -4.32538332013644e-08, 0.0010438724775716248, -0.19650919978971002, 63.84239495676709])),
+     HeatCapacityGas(poly_fit=(200.0, 1000.0, [1.5389278550737367e-21, -8.289631533963465e-18, 1.9149760160518977e-14, -2.470836671137373e-11, 1.9355882067011222e-08, -9.265600540761629e-06, 0.0024825718663005762, -0.21617464276832307, 48.149539665907696])),
+     HeatCapacityGas(poly_fit=(50.0, 1000.0, [2.3511458696647882e-21, -9.223721411371584e-18, 1.3574178156001128e-14, -8.311274917169928e-12, 4.601738891380102e-10, 1.78316202142183e-06, -0.0007052056417063217, 0.13263597297874355, 28.44324970462924]))]
+    
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liquid = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    
+    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
+    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
+    
+    assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
+    assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)

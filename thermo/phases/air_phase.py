@@ -25,8 +25,8 @@ __all__ = ['DryAirLemmon', 'HumidAirRP1485']
 
 from chemicals.viscosity import mu_air_lemmon
 from .helmholtz_eos import HelmholtzEOS
-from .virial import VirialGas
-from .iapws import IAPWS95
+from .virial_phase import VirialGas
+from .iapws_phase import IAPWS95
 from chemicals import air, Z_from_virial_density_form
 
 class DryAirLemmon(HelmholtzEOS):

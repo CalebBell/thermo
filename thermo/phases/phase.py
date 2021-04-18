@@ -39,7 +39,7 @@ from chemicals.utils import (log, Cp_minus_Cv, phase_identification_parameter,
                              hash_any_primitive)
 from thermo.utils import POLY_FIT
 from thermo import phases
-from .utils import object_lookups
+from .phase_utils import object_lookups
 
 class Phase(object):
     '''

@@ -151,10 +151,10 @@ from . import ideal_gas
 from . import ceos
 from . import gibbs_excess
 from . import helmholtz_eos
-from . import air
-from . import iapws
-from . import coolprop
-from . import virial
+from . import air_phase
+from . import iapws_phase
+from . import coolprop_phase
+from . import virial_phase
 from . import petroleum
 
 from .phase import *
@@ -162,10 +162,10 @@ from .ideal_gas import *
 from .ceos import *
 from .gibbs_excess import *
 from .helmholtz_eos import *
-from .iapws import *
-from .air import *
-from .coolprop import *
-from .virial import *
+from .iapws_phase import *
+from .air_phase import *
+from .coolprop_phase import *
+from .virial_phase import *
 from .petroleum import *
 
 __all__ = [
@@ -173,11 +173,11 @@ __all__ = [
     *ideal_gas.__all__,
     *ceos.__all__,
     *gibbs_excess.__all__,
-    *air.__all__,
+    *air_phase.__all__,
     *helmholtz_eos.__all__,
-    *iapws.__all__,
-    *coolprop.__all__,
-    *virial.__all__,
+    *iapws_phase.__all__,
+    *coolprop_phase.__all__,
+    *virial_phase.__all__,
     *petroleum.__all__,
 ]
 
