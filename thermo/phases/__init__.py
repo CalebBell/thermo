@@ -156,6 +156,7 @@ from . import iapws_phase
 from . import coolprop_phase
 from . import virial_phase
 from . import petroleum
+from . import combined
 
 from .phase import *
 from .ideal_gas import *
@@ -167,6 +168,7 @@ from .air_phase import *
 from .coolprop_phase import *
 from .virial_phase import *
 from .petroleum import *
+from .combined import *
 
 __all__ = [
     *phase.__all__,
@@ -179,6 +181,7 @@ __all__ = [
     *coolprop_phase.__all__,
     *virial_phase.__all__,
     *petroleum.__all__,
+    *combined.__all__,
 ]
 
 gas_phases = (

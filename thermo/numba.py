@@ -228,8 +228,8 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                  'eos_alpha_functions.APISRK_a_alphas_vectorized',
                  'eos_alpha_functions.APISRK_a_alpha_and_derivatives_vectorized',
 
-                 'phases.IAPWS95', 'phases.IAPWS95Liquid', 'phases.IAPWS95Gas',
-                 'phases.DryAirLemmon',
+                 'phases.iapws_phase.IAPWS95', 'phases.iapws_phase.IAPWS95Liquid', 'phases.iapws_phase.IAPWS95Gas',
+                 'phases.air_phase.DryAirLemmon',
 
                  ]
     normal_fluids.numba.transform_lists_to_arrays(normal, to_change, __funcs, cache_blacklist=cache_blacklist)

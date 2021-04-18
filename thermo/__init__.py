@@ -228,7 +228,10 @@ submodules = [activity, chemical, chemical_package, chemical_utils, coolprop, da
               phases, property_package, property_package_constants,
               regular_solution, stream, thermal_conductivity, unifac, uniquac, safety,
               utils, vapor_pressure, viscosity, volume, wilson, eos_alpha_functions,
-              eos_volume, eos_mix_methods]
+              eos_volume, eos_mix_methods, phases.air_phase, phases.ceos, phases.combined, 
+              phases.coolprop_phase, phases.gibbs_excess, phases.helmholtz_eos,
+              phases.iapws_phase, phases.ideal_gas, phases.petroleum, 
+              phases.phase, phases.phase_utils, phases.virial_phase]
 
 try:
     thermo_dir = os.path.dirname(__file__)
