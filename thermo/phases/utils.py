@@ -35,7 +35,6 @@ from thermo.unifac import UNIFAC
 from thermo.regular_solution import RegularSolution
 from thermo.uniquac import UNIQUAC
 
-
 activity_pointer_reference_dicts = {
     'thermo.activity.IdealSolution': IdealSolution,
     'thermo.wilson.Wilson': Wilson,
@@ -46,7 +45,9 @@ activity_pointer_reference_dicts = {
 activity_reference_pointer_dicts = {
     v: k for k, v in activity_pointer_reference_dicts.items()
 }
-object_lookups = activity_pointer_reference_dicts.copy()
-object_lookups.update(eos_mix_full_path_dict)
-object_lookups.update(eos_full_path_dict)
+object_lookups = {
+    **activity_pointer_reference_dicts,
+    **eos_mix_full_path_dict,
+    **eos_full_path_dict
+}
 
