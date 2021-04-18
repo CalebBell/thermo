@@ -2829,9 +2829,6 @@ def test_lnphis_at_zs_eos_mix():
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
 
-
-
-
     # RK
     gas = CEOSGas(RKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(RKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
@@ -2879,6 +2876,7 @@ def test_lnphis_at_zs_eos_mix():
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
     
+    # PRSVMIX2
     eos_kwargs = {'Pcs': [4700000.0, 5330000.0, 8084000.0],
      'Tcs': [508.1, 536.2, 512.5],
      'omegas': [0.309, 0.21600000000000003, 0.5589999999999999],
@@ -2889,6 +2887,26 @@ def test_lnphis_at_zs_eos_mix():
     }
     gas = CEOSGas(PRSV2MIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(PRSV2MIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    
+    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
+    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
+    
+    assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
+    assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
+    
+    assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
+    assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
+
+    # API SRK
+    eos_kwargs = {'Pcs': [4700000.0, 5330000.0, 8084000.0],
+     'Tcs': [508.1, 536.2, 512.5],
+     'omegas': [0.309, 0.21600000000000003, 0.5589999999999999],
+     'kijs': [[0, 0.038, 0.08], [0.038, 0, 0.021], [0.08, 0.021, 0]],
+     'S1s': [1.678665, 1.2, 1.5],
+                  'S2s':[-0.216396, -.2, -.1],
+    }
+    gas = CEOSGas(APISRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liquid = CEOSLiquid(APISRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
