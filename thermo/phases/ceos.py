@@ -351,7 +351,7 @@ class CEOSGas(Phase):
 
     def lnphis_at_zs(self, zs):
         eos_mix = self.eos_mix
-        if eos_mix.__class__.__name__ == 'PRMIX':
+        if eos_mix.__class__.__name__ in ('PRMIX', 'VDWMIX'):
             return lnphis_direct(zs, *self.lnphis_args())
         return self.to_TP_zs(self.T, self.P, zs).lnphis()
 
