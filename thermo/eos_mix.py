@@ -261,6 +261,7 @@ class GCEOSMIX(GCEOS):
     '''
     multicomponent = True
     scalar = True
+    translated = False
 
     def subset(self, idxs, **state_specs):
         r'''Method to construct a new :obj:`GCEOSMIX` that removes all components
@@ -7882,6 +7883,7 @@ class PRMIXTranslated(PRMIX):
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
     '''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
+    translated = True
     eos_pure = PRTranslated
     mix_kwargs_to_pure = {'cs': 'c'}
     kwargs_linear = ('cs',)
@@ -8984,6 +8986,7 @@ class SRKMIXTranslated(SRKMIX):
     model_id = 10101
 
     eos_pure = SRKTranslated
+    translated = True
     mix_kwargs_to_pure = {'cs': 'c'}
     kwargs_linear = ('cs',)
     kwargs_keys = ('kijs', 'cs')

@@ -2843,7 +2843,6 @@ def test_lnphis_at_zs_eos_mix():
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
     
     # Ideal
-
     gas = CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     
@@ -2916,3 +2915,27 @@ def test_lnphis_at_zs_eos_mix():
     
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
+    
+    # PRMIXTranslated
+    eos_kwargs = {'Pcs': [4700000.0, 5330000.0, 8084000.0],
+     'Tcs': [508.1, 536.2, 512.5],
+     'omegas': [0.309, 0.21600000000000003, 0.5589999999999999],
+     'kijs': [[0, 0.038, 0.08], [0.038, 0, 0.021], [0.08, 0.021, 0]],
+     'cs': [-3.4317958608704207e-07, -1.8595690933459835e-06, 2.407946643713126e-06]
+    }
+    
+    gas = CEOSGas(PRMIXTranslated, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liquid = CEOSLiquid(PRMIXTranslated, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    
+    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
+    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
+    
+    assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
+    assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
+    
+    assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
+    assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
+    
+
+
+

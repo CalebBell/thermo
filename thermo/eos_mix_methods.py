@@ -969,12 +969,12 @@ def lnphis_direct(zs, model, T, P, N, *args):
         return PR_lnphis_fastest(zs, T, P, N, *args)
     elif model == 10202:
         return PR_translated_lnphis_fastest(zs, T, P, N, *args)
-    elif model == 10001:
-        return VDW_lnphis_fastest(zs, T, P, N, *args)
     elif model == 10100 or model == 10104 or model == 10105:
         return SRK_lnphis_fastest(zs, T, P, N, *args)
     elif model == 10002:
         return RK_lnphis_fastest(zs, T, P, N, *args)
+    elif model == 10001:
+        return VDW_lnphis_fastest(zs, T, P, N, *args)
     elif model == 0:
         lnphis = args[-1]
         for i in range(N):
