@@ -79,9 +79,13 @@ __all__ = ['a_alpha_aijs_composition_independent',
            
            'VDW_lnphis_fastest', 'PR_lnphis_fastest',
            'SRK_lnphis_fastest', 'RK_lnphis_fastest',
+           
            'lnphis_direct',
+           
            'G_dep_lnphi_d_helper', 'PR_translated_ddelta_dzs',
-           'PR_translated_depsilon_dzs',
+           
+           
+           'PR_translated_depsilon_dzs', 'PR_translated_ddelta_dns',
            
            
            'eos_mix_db_dns', 'eos_mix_da_alpha_dns',
@@ -859,6 +863,16 @@ def PR_translated_ddelta_dzs(b0s, cs, N, out=None):
         out[i] = 2.0*(cs[i] + b0s[i])
     return out
 
+def PR_translated_ddelta_dns(b0s, cs, delta, N, out=None):
+    if out is None:
+        out = [0.0]*N
+    for i in range(N):
+        out[i] = 2.0*(cs[i] + b0s[i]) - delta
+    return out
+
+
+
+
 def PR_translated_depsilon_dzs(epsilon, c, b, b0s, cs, N, out=None):
     if out is None:
         out = [0.0]*N
@@ -948,6 +962,11 @@ def lnphis_direct(zs, model, T, P, N, *args):
         return SRK_lnphis_fastest(zs, T, P, N, *args)
     elif model == 10002:
         return RK_lnphis_fastest(zs, T, P, N, *args)
+    elif model == 0:
+        lnphis = args[-1]
+        for i in range(N):
+            lnphis[i] = 0.0
+        return lnphis
     return PR_lnphis_fastest(zs, T, P, N, *args)
 
 

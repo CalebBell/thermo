@@ -3571,6 +3571,8 @@ def test_IGMIX():
     assert_close(eos.H_dep_g, 0)
     assert_close(eos.S_dep_g, 0)
 
+    assert_close1d(eos.a_alpha_roots, [0, 0, 0], atol=0, rtol=0)
+
 def test_PRMIX_composition_derivatives_ternary():
 
     T = 270.0
