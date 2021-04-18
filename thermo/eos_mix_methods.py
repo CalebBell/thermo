@@ -79,6 +79,7 @@ __all__ = ['a_alpha_aijs_composition_independent',
            
            'VDW_lnphis_fastest', 'PR_lnphis_fastest',
            'SRK_lnphis_fastest', 'RK_lnphis_fastest',
+           'PR_translated_lnphis_fastest',
            
            'lnphis_direct',
            
@@ -964,8 +965,10 @@ def eos_mix_lnphis_general(T, P, Z, b, delta, epsilon, a_alpha, bs,
 
 
 def lnphis_direct(zs, model, T, P, N, *args):
-    if model == 10200:
+    if model == 10200 or model == 10201 or model == 10205:
         return PR_lnphis_fastest(zs, T, P, N, *args)
+    elif model == 10202:
+        return PR_translated_lnphis_fastest(zs, T, P, N, *args)
     elif model == 10001:
         return VDW_lnphis_fastest(zs, T, P, N, *args)
     elif model == 10100:
@@ -977,7 +980,7 @@ def lnphis_direct(zs, model, T, P, N, *args):
         for i in range(N):
             lnphis[i] = 0.0
         return lnphis
-    return PR_lnphis_fastest(zs, T, P, N, *args)
+    raise ValueError("Model not implemented")
 
 
 
@@ -993,6 +996,7 @@ def PR_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_al
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     return PR_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=lnphis)
 
+
 def SRK_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
                       lnphis=None):
     b = 0.0
@@ -1004,6 +1008,20 @@ def SRK_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_a
     Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     return SRK_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=lnphis)
+
+
+def VDW_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
+                      lnphis=None):
+    b = 0.0
+    for i in range(N):
+        b += bs[i]*zs[i]
+    delta = 0.0
+    epsilon = 0.0
+    
+    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
+                                                        a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
+    return VDW_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_roots, N, lnphis=lnphis)
+
 
 def RK_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
                       lnphis=None):
@@ -1023,17 +1041,29 @@ def RK_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_al
     
     return eos_mix_lnphis_general(T, P, Z, b, delta, epsilon, a_alpha, bs,
                            a_alpha_roots, N, db_dns, da_alpha_dns, ddelta_dns, 
-                           depsilon_dns, lnphis=None)
+                           depsilon_dns, lnphis=lnphis)
 
-def VDW_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
+
+def PR_translated_lnphis_fastest(zs, T, P, N, kijs, l, g, b0s, bs, cs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
                       lnphis=None):
-    b = 0.0
+    b0, c = 0.0, 0.0
     for i in range(N):
-        b += bs[i]*zs[i]
-    delta = 0.0
-    epsilon = 0.0
-    
+        b0 += b0s[i]*zs[i]
+        c += cs[i]*zs[i]
+        
+    b = b0 - c
+    delta = 2.0*(c + b0)
+    epsilon = -b0*b0 + c*(c + b0 + b0)
     Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
-    return VDW_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_roots, N, lnphis=lnphis)
+    
+    db_dns = eos_mix_db_dns(b, bs, N, out=None)
+    da_alpha_dns = eos_mix_da_alpha_dns(a_alpha, a_alpha_j_rows, N, out=None)
+    depsilon_dns = PR_translated_depsilon_dns(epsilon, c, b, b0s, cs, N, out=None)
+    ddelta_dns = PR_translated_ddelta_dns(b0s, cs, delta, N, out=None)
+
+    
+    return eos_mix_lnphis_general(T, P, Z, b, delta, epsilon, a_alpha, bs,
+                           a_alpha_roots, N, db_dns, da_alpha_dns, ddelta_dns, 
+                           depsilon_dns, lnphis=lnphis)
 
