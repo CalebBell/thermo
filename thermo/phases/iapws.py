@@ -47,6 +47,7 @@ class IAPWS95(HelmholtzEOS):
     _MW_kg = _MW*1e-3
     R = _MW_kg*iapws.iapws95_R # This is just the gas constant 8.314... but matching iapws to their decimals
     R_inv = 1.0/R
+    R2 = R*R
 
     #R = property_mass_to_molar(iapws95_R, iapws95_MW)
     zs = [1.0]
