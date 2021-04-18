@@ -26,7 +26,7 @@ import os
 from fluids.numerics import trunc_exp
 from chemicals.utils import log
 from thermo.eos_mix import IGMIX, eos_mix_full_path_dict, eos_mix_full_path_reverse_dict
-from thermo.eos_mix_methods import PR_lnphis_fastest
+from thermo.eos_mix_methods import PR_lnphis_fastest, lnphis_direct
 from thermo.heat_capacity import HeatCapacityGas
 from .phase import Phase
 
@@ -340,15 +340,19 @@ class CEOSGas(Phase):
 
 
     def lnphis_args(self):
+        N = self.N
         eos_mix = self.eos_mix
-        return (self.eos_class.model_id, self.T, self.P, eos_mix.kijs, self.is_liquid, self.is_gas,
-                eos_mix.bs, eos_mix.a_alphas, eos_mix.a_alpha_roots)
+        if self.scalar:
+            a_alpha_j_rows, vec0 = [0.0]*N, [0.0]*N
+        else:
+            a_alpha_j_rows, vec0 = zeros(N), zeros(N)
+        return (self.eos_class.model_id, self.T, self.P, self.N, eos_mix.kijs, self.is_liquid, self.is_gas,
+               eos_mix.bs, eos_mix.a_alphas, eos_mix.a_alpha_roots, a_alpha_j_rows, vec0)
 
     def lnphis_at_zs(self, zs):
         eos_mix = self.eos_mix
         if eos_mix.__class__.__name__ == 'PRMIX':
-            return PR_lnphis_fastest(zs, self.T, self.P, eos_mix.kijs, self.is_liquid, self.is_gas,
-                                     eos_mix.bs, eos_mix.a_alphas, eos_mix.a_alpha_roots)
+            return lnphis_direct(zs, *self.lnphis_args())
         return self.to_TP_zs(self.T, self.P, zs).lnphis()
 
 
