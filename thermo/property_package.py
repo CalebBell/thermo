@@ -2583,7 +2583,7 @@ class GammaPhi(PropertyPackage):
         return dxs_to_dn_partials(self.dGE_dxs(T, xs), xs, self.GE_l2(T, xs))
 
     def gammas2(self, T, xs):
-        '''
+        r'''
         .. math::
             \gamma_i = \exp\left(\frac{\frac{\partial n_i G^E}{\partial n_i }}{RT}\right)
         '''

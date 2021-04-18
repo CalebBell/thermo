@@ -120,11 +120,36 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
     for mod in new_mods:
         mod.__dict__.update(__funcs)
 
-    to_change = ['eos.volume_solutions_halley', 'eos_mix.a_alpha_quadratic_terms',
+    to_change = ['eos.volume_solutions_halley',
+                 
+                 'eos_mix_methods.a_alpha_quadratic_terms',
+                 
                  'eos_mix_methods.a_alpha_and_derivatives_quadratic_terms',
-                 'eos_mix_methods.PR_lnphis', 'eos_mix_methods.PR_lnphis_fastest',
                  'eos_mix_methods.a_alpha_aijs_composition_independent',
                  'eos_mix_methods.a_alpha_and_derivatives_full',
+
+                'eos_mix_methods.PR_lnphis',
+             'eos_mix_methods.VDW_lnphis',
+             'eos_mix_methods.SRK_lnphis',
+             'eos_mix_methods.eos_mix_lnphis_general',
+             'eos_mix_methods.VDW_lnphis_fastest',
+             'eos_mix_methods.PR_lnphis_fastest',
+             'eos_mix_methods.SRK_lnphis_fastest',
+             'eos_mix_methods.RK_lnphis_fastest',
+             'eos_mix_methods.PR_translated_lnphis_fastest',
+             'eos_mix_methods.lnphis_direct',
+             'eos_mix_methods.G_dep_lnphi_d_helper',
+             'eos_mix_methods.PR_translated_ddelta_dzs',
+             'eos_mix_methods.PR_translated_ddelta_dns',
+             'eos_mix_methods.PR_translated_depsilon_dzs',
+             'eos_mix_methods.PR_translated_depsilon_dns',
+             'eos_mix_methods.SRK_translated_ddelta_dns',
+             'eos_mix_methods.SRK_translated_depsilon_dns',
+             'eos_mix_methods.eos_mix_db_dns',
+             'eos_mix_methods.eos_mix_da_alpha_dns',
+             'eos_mix_methods.eos_mix_dV_dzs',
+             'eos_mix_methods.eos_mix_a_alpha_volume',
+
 
                  'regular_solution.regular_solution_Hi_sums',
                  'regular_solution.regular_solution_dGE_dxs',
