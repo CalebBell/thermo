@@ -112,9 +112,9 @@ def test_PR_lnphis_fastest():
                   kijs=[[0.0, -0.0059, 0.0119, 0.0289], [-0.0059, 0.0, 0.0011, 0.0533], [0.0119, 0.0011, 0.0, 0.0878], [0.0289, 0.0533, 0.0878, 0.0]])
     eos = PRMIX(T=200, P=1e5, **kwargs)
     expect = eos.lnphis_l
-    calc = PR_lnphis_fastest(eos.zs, eos.T, eos.P, eos.kijs, True, False, eos.bs, eos.a_alphas, eos.a_alpha_roots)
+    calc = PR_lnphis_fastest(eos.zs, eos.T, eos.P, 4, eos.kijs, True, False, eos.bs, eos.a_alphas, eos.a_alpha_roots)
     assert_close1d(expect, calc, rtol=1e-14)
 
     expect = eos.lnphis_g
-    calc = PR_lnphis_fastest(eos.zs, eos.T, eos.P, eos.kijs, False, True, eos.bs, eos.a_alphas, eos.a_alpha_roots)
+    calc = PR_lnphis_fastest(eos.zs, eos.T, eos.P, 4, eos.kijs, False, True, eos.bs, eos.a_alphas, eos.a_alpha_roots)
     assert_close1d(expect, calc, rtol=1e-14)
