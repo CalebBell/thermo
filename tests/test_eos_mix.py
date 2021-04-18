@@ -4553,3 +4553,12 @@ def test_IGMIX_numpy():
 def test_not_storing_kwargs_eos_mix():
     eos = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     assert json.dumps(eos.as_json()).count('3394000') == 1
+
+
+def test_eos_mix_translated_attribute_correct():
+    # The 'translated' attribute is used sometimes to know if a eos_mix has the 'cs' attribute and more
+    for e in eos_mix_list:
+        if 'Translated' in e.__name__:
+            assert e.translated
+        else:
+            assert not e.translated
