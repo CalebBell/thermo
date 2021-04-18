@@ -902,6 +902,8 @@ def lnphis_direct(zs, model, T, P, N, *args):
         return PR_lnphis_fastest(zs, T, P, N, *args)
     elif model == 10001:
         return VDW_lnphis_fastest(zs, T, P, N, *args)
+    elif model == 10100:
+        return SRK_lnphis_fastest(zs, T, P, N, *args)
     return PR_lnphis_fastest(zs, T, P, N, *args)
 
 
@@ -919,6 +921,20 @@ def PR_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_al
     Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     return PR_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=lnphis)
+
+def SRK_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
+                      lnphis=None):
+    # Uses precomputed values
+    # Only creates its own arrays for a_alpha_j_rows and PR_lnphis
+    b = 0.0
+    for i in range(N):
+        b += bs[i]*zs[i]
+    delta = b
+    epsilon = 0.0
+    
+    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
+                                                        a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
+    return SRK_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=lnphis)
 
 def VDW_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
                       lnphis=None):
