@@ -178,6 +178,7 @@ class CEOSGas(Phase):
         r'''Method to create a new Phase object with the same constants as the
         existing Phase but at a different `T` and `P`. This method has a
         special parameter `other_eos`.
+        
         This is added to allow a gas-type phase to be created from
         a liquid-type phase at the same conditions (and vice-versa),
         as :obj:`GCEOSMIX <thermo.eos_mix.GCEOSMIX>` objects were designed to
@@ -192,7 +193,7 @@ class CEOSGas(Phase):
             Temperature of the new phase, [K]
         P : float
             Pressure of the new phase, [Pa]
-        other_eos : obj:`GCEOSMIX <thermo.eos_mix.GCEOSMIX> object
+        other_eos : obj:`GCEOSMIX <thermo.eos_mix.GCEOSMIX>` object
             Other equation of state object at the same conditions, [-]
 
         Returns

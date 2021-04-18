@@ -260,8 +260,15 @@ class GCEOSMIX(GCEOS):
     '''Tuple of 1D arguments used by the specific EOS in addition to the conventional ones.
     '''
     multicomponent = True
+    '''All inherited classes of GCEOSMIX are multicomponent.
+    '''
     scalar = True
+    '''Whether the model is implemented using pure-Python lists of floats,
+    or numpy arrays of float64.
+    '''
     translated = False
+    '''Whether or not the model implements volume translation.
+    '''
 
     def subset(self, idxs, **state_specs):
         r'''Method to construct a new :obj:`GCEOSMIX` that removes all components
