@@ -110,6 +110,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
         conv_fun = numba.jit
 
     import chemicals.numba
+    chemicals.numba.iapws # Force the transform to occur
     for name in dir(chemicals.numba):
         obj = getattr(chemicals.numba, name)
         if isinstance(obj, CPUDispatcher):

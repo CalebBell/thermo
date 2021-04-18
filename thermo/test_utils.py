@@ -62,8 +62,8 @@ def check_np_output_activity(model, modelnp, modelnp2):
     mat_attrs = ['d2GE_dxixjs', 'd2nGE_dninjs', 'dgammas_dns']
     for attr in mat_attrs:
 #        print(attr)
-        assert_close2d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
-        assert_close2d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+        assert_close2d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-12)
+        assert_close2d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-12)
         assert type(getattr(model, attr)()) is list
         assert type(getattr(modelnp, attr)()) is np.ndarray
         assert type(getattr(modelnp2, attr)()) is np.ndarray
