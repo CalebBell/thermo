@@ -74,7 +74,9 @@ from thermo.eos_volume import volume_solutions_halley, volume_solutions_fast
 __all__ = ['a_alpha_aijs_composition_independent',
            'a_alpha_and_derivatives', 'a_alpha_and_derivatives_full',
            'a_alpha_quadratic_terms', 'a_alpha_and_derivatives_quadratic_terms',
-           'PR_lnphis', 'VDW_lnphis', 'VDW_lnphis_fastest',
+           'PR_lnphis', 'VDW_lnphis', 'SRK_lnphis',
+           
+           'VDW_lnphis_fastest',
            'PR_lnphis_fastest', 'lnphis_direct',
            'G_dep_lnphi_d_helper', 'PR_translated_ddelta_dzs',
            'PR_translated_depsilon_dzs',
@@ -861,6 +863,25 @@ def PR_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=None):
     t51 = (x4 + (Z - 1.0)*two_root_two_B)/(b*two_root_two_B)
     for i in range(N):
         lnphis[i] = bs[i]*t51 - x0 - t50*a_alpha_j_rows[i]
+    return lnphis
+
+def SRK_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=None):
+    if lnphis is None:
+        lnphis = [0.0]*N
+    RT = T*R
+    P_RT = P/RT
+    A = a_alpha*P/(RT*RT)
+    B = b*P/RT
+    A_B = A/B
+    t0 = log(Z - B)
+    t3 = log(1. + B/Z)
+    Z_minus_one_over_B = (Z - 1.0)/B
+    two_over_a_alpha = 2./a_alpha
+    for i in range(N):
+        Bi = bs[i]*P_RT
+        t1 = Bi*Z_minus_one_over_B - t0
+        t2 = A_B*(Bi/B - two_over_a_alpha*a_alpha_j_rows[i])
+        lnphis[i] = t1 + t2*t3
     return lnphis
 
 def VDW_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_roots, N, lnphis=None):

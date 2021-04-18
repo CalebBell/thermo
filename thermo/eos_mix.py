@@ -212,7 +212,7 @@ from thermo import serialize
 from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     a_alpha_aijs_composition_independent_support_zeros, a_alpha_and_derivatives, a_alpha_and_derivatives_full,
     a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms,
-    G_dep_lnphi_d_helper, eos_mix_dV_dzs, VDW_lnphis,
+    G_dep_lnphi_d_helper, eos_mix_dV_dzs, VDW_lnphis, SRK_lnphis,
     PR_translated_ddelta_dzs, PR_translated_depsilon_dzs)
 from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     Soave_79_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
@@ -8760,23 +8760,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         log_phis : float
             Log fugacity coefficient for each species, [-]
         '''
-        RT = self.T*R
-        P_RT = self.P/RT
-        A = self.a_alpha*self.P/(RT*RT)
-        B = self.b*self.P/RT
-        A_B = A/B
-        t0 = log(Z - B)
-        t3 = log(1. + B/Z)
-        Z_minus_one_over_B = (Z - 1.0)/B
-        two_over_a_alpha = 2./self.a_alpha
-        a_alpha_j_rows = self._a_alpha_j_rows
-        phis = []
-        for i in range(self.N):
-            Bi = self.bs[i]*P_RT
-            t1 = Bi*Z_minus_one_over_B - t0
-            t2 = A_B*(Bi/B - two_over_a_alpha*a_alpha_j_rows[i])
-            phis.append(t1 + t2*t3)
-        return phis
+        return SRK_lnphis(self.T, self.P, Z, self.b, self.a_alpha, self.bs, self.a_alpha_j_rows, self.N)
 
 
     def dlnphis_dT(self, phase):
