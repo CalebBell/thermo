@@ -211,8 +211,8 @@ def test_GibbbsExcessLiquid_MiscIdeal():
     assert_close(dV_dT, dV_dT_num)
     assert_close(dV_dT, 3.240297562173293e-08)
 
-    assert liquid.dV_dP() == INCOMPRESSIBLE_CONST
-    assert liquid.d2P_dV2() == INCOMPRESSIBLE_CONST
+    assert liquid.dV_dP() == liquid.INCOMPRESSIBLE_CONST
+    assert liquid.d2P_dV2() == liquid.INCOMPRESSIBLE_CONST
     assert 0 == liquid.d2V_dP2() #  # derivative of a constant is zero
     assert_close(liquid.dP_dT(), -3.240297562173293e-38)
     d2P_dTdV = liquid.d2P_dTdV()
