@@ -2976,8 +2976,32 @@ def test_lnphis_at_zs_eos_mix():
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
     
+    # SRKMIXTranslatedConsistent
+    gas = CEOSGas(SRKMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liquid = CEOSLiquid(SRKMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     
+    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
+    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
+    
+    assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
+    assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
+    
+    assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
+    assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
 
-
-
-
+    # MSRKMIXTranslated
+    gas = CEOSGas(MSRKMIXTranslated, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liquid = CEOSLiquid(MSRKMIXTranslated, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    
+    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
+    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
+    
+    assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
+    assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
+    
+    assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
+    assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
+    
+    
+    
+    
