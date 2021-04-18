@@ -989,6 +989,8 @@ def lnphis_direct(zs, model, T, P, N, *args):
         return PR_translated_lnphis_fastest(zs, T, P, N, *args)
     elif model == 10100 or model == 10104 or model == 10105:
         return SRK_lnphis_fastest(zs, T, P, N, *args)
+    elif model == 10101:
+        return SRK_translated_lnphis_fastest(zs, T, P, N, *args)
     elif model == 10002:
         return RK_lnphis_fastest(zs, T, P, N, *args)
     elif model == 10001:
@@ -1079,6 +1081,30 @@ def PR_translated_lnphis_fastest(zs, T, P, N, kijs, l, g, b0s, bs, cs, a_alphas,
     da_alpha_dns = eos_mix_da_alpha_dns(a_alpha, a_alpha_j_rows, N, out=None)
     depsilon_dns = PR_translated_depsilon_dns(epsilon, c, b, b0s, cs, N, out=None)
     ddelta_dns = PR_translated_ddelta_dns(b0s, cs, delta, N, out=None)
+
+    
+    return eos_mix_lnphis_general(T, P, Z, b, delta, epsilon, a_alpha, bs,
+                           a_alpha_roots, N, db_dns, da_alpha_dns, ddelta_dns, 
+                           depsilon_dns, lnphis=lnphis)
+
+
+def SRK_translated_lnphis_fastest(zs, T, P, N, kijs, l, g, b0s, bs, cs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
+                      lnphis=None):
+    b0, c = 0.0, 0.0
+    for i in range(N):
+        b0 += b0s[i]*zs[i]
+        c += cs[i]*zs[i]
+        
+    b = b0 - c
+    delta =  c + c + b0
+    epsilon = c*(b0 + c)
+    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
+                                                        a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
+    
+    db_dns = eos_mix_db_dns(b, bs, N, out=None)
+    da_alpha_dns = eos_mix_da_alpha_dns(a_alpha, a_alpha_j_rows, N, out=None)
+    depsilon_dns = SRK_translated_depsilon_dns(b0s, cs, b, c, N, out=None)
+    ddelta_dns = SRK_translated_ddelta_dns(b0s, cs, delta, N, out=None)
 
     
     return eos_mix_lnphis_general(T, P, Z, b, delta, epsilon, a_alpha, bs,
