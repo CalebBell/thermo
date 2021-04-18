@@ -2851,8 +2851,12 @@ def unifac_d3lnGammas_subgroups_dT3(N_groups, Qs, psis, dpsis_dT, d2psis_dT2, d3
     for i in range(N_groups):
         tot = 0.0
         for j in range(N_groups):
-            tot -= Thetas[j]*d3psis_dT3[i][j]*Us_inv[j]
-            tot += Hs[j]*Thetas[j]*psis[i][j]*Us_inv[j]*Us_inv[j]
+            # There is a bug in numba related to the three lines below.
+            # If Theta_U is not separated out, an error is raised
+            Theta_U = Thetas[j]*Us_inv[j]
+            tot -= Theta_U*d3psis_dT3[i][j]
+            tot += Hs[j]*Theta_U*psis[i][j]*Us_inv[j]
+            
             tot -= 6.0*Fs[j]*Fs[j]*Thetas[j]*dpsis_dT[i][j]*Us_inv[j]*Us_inv[j]*Us_inv[j]
             tot += 3.0*Fs[j]*Thetas[j]*d2psis_dT2[i][j]*Us_inv[j]*Us_inv[j]
 

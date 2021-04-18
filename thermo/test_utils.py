@@ -40,8 +40,8 @@ def check_np_output_activity(model, modelnp, modelnp2):
     for attr in scalar_attrs:
         if hasattr(model, attr):
 #            print(attr)
-            assert_close(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
-            assert_close(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+            assert_close(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=2e-13)
+            assert_close(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=2e-13)
             assert type(getattr(model, attr)()) is float
     #        assert type(getattr(modelnp, attr)()) is float
     #        assert type(getattr(modelnp2, attr)()) is float
@@ -53,8 +53,8 @@ def check_np_output_activity(model, modelnp, modelnp2):
 
     for attr in vec_attrs:
 #        print(attr)
-        assert_close1d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
-        assert_close1d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-13)
+        assert_close1d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=2e-13)
+        assert_close1d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=2e-13)
         assert type(getattr(model, attr)()) is list
         assert type(getattr(modelnp, attr)()) is np.ndarray
         assert type(getattr(modelnp2, attr)()) is np.ndarray

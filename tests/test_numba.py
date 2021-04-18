@@ -207,7 +207,6 @@ def test_UNIFAC_numpy_output():
 
 
 
-
 @mark_as_numba
 def test_a_alpha_aijs_composition_independent_in_all():
     assert 'a_alpha_aijs_composition_independent' in thermo.numba.__all__
