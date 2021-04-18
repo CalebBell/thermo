@@ -965,7 +965,7 @@ def eos_mix_lnphis_general(T, P, Z, b, delta, epsilon, a_alpha, bs,
 
 
 def lnphis_direct(zs, model, T, P, N, *args):
-    if model == 10200 or model == 10201 or model == 10205:
+    if model == 10200 or model == 10201 or model == 10205 or model == 10206:
         return PR_lnphis_fastest(zs, T, P, N, *args)
     elif model == 10202:
         return PR_translated_lnphis_fastest(zs, T, P, N, *args)
