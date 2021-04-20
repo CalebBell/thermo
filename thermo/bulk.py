@@ -368,8 +368,9 @@ class BulkSettings(object):
     .. [2] 14:00-17:00. "ISO 13443:1996." ISO. Accessed March 29, 2021.
        https://www.iso.org/cms/render/live/en/sites/isoorg/contents/data/standard/02/04/20461.html.
     '''
+    
     __full_path__ = "%s.%s" %(__module__, __qualname__)
-
+    
     def as_json(self):
         return self.__dict__.copy()
 
