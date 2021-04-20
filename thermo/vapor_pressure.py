@@ -475,16 +475,16 @@ class VaporPressure(TDependentProperty):
             Tmin, Tmax = T_limits[method]
             return Tmin <= T <= Tmax
         elif method == POLY_FIT:
-            validity = True
+            return True
         elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
+            if self.tabular_extrapolation_permitted:
+                # good to go without checking
+                return True
+            else:
                 Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    return False
+                return Ts[0] < T < Ts[-1]
         else:
-            raise Exception('Method not valid')
-        return True
+            raise ValueError("invalid method '%s'" %method)
 
     def calculate_derivative(self, T, method, order=1):
         r'''Method to calculate a derivative of a vapor pressure with respect to
@@ -512,15 +512,6 @@ class VaporPressure(TDependentProperty):
         '''
         Tmin, Tmax = self.T_limits[method]
         if order == 1 and method == POLY_FIT:
-            # if T < self.poly_fit_Tmin:
-            #     return self.poly_fit_Tmin_slope*exp(
-            #             (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope
-            #             + self.poly_fit_Tmin_value)
-            # elif T > self.poly_fit_Tmax:
-            #     return self.poly_fit_Tmax_slope*exp((T - self.poly_fit_Tmax)
-            #                                         *self.poly_fit_Tmax_slope
-            #                                         + self.poly_fit_Tmax_value)
-            # else:
             v, der = horner_and_der(self.poly_fit_coeffs, T)
             return der*exp(v)
         elif method == WAGNER_MCGARRY:
@@ -566,8 +557,6 @@ class VaporPressure(TDependentProperty):
         elif order == 2 and method == POLY_FIT:
             v, der, der2 = horner_and_der2(self.poly_fit_coeffs, T)
             return (der*der + der2)*exp(v)
-
-#        print('numerical', method, order, T, 'Tmax', Tmax)
         return super(VaporPressure, self).calculate_derivative(T, method, order)
 
     def _custom_set_poly_fit(self):
