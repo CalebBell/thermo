@@ -651,7 +651,6 @@ def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets,
 
     assert_close(energy_in, energy_out, rtol=rtol, atol=atol)
 
-
 class TDependentProperty(object):
     '''Class for calculating temperature-dependent chemical properties.
 
@@ -765,6 +764,9 @@ class TDependentProperty(object):
         Set of all methods available for a given CASRN and set of properties,
         [-]
     '''
+    def __init_subclass__(cls):
+        cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
+    
     # Dummy properties
     name = 'Property name'
     units = 'Property units'
@@ -3443,9 +3445,7 @@ class TPDependentProperty(TDependentProperty):
             pass
         return None
 
-
 class MixtureProperty(object):
-
     name = 'Test'
     units = 'test units'
     property_min = 0.0
@@ -3467,6 +3467,9 @@ class MixtureProperty(object):
     '''Flag to disable checking the validity of the method at the
     specified conditions. Saves a little time.
     '''
+
+    def __init_subclass__(cls):
+        cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
 
     def set_poly_fit_coeffs(self):
         pure_objs = self.pure_objs()

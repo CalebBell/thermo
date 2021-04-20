@@ -295,7 +295,6 @@ from thermo.eos_volume import (volume_solutions_mpmath, volume_solutions_mpmath_
 from thermo.eos_alpha_functions import (Poly_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_79_a_alpha,
                                     TWU_a_alpha_common)
-
 R2 = R*R
 R_2 = 0.5*R
 R_inv = 1.0/R
@@ -440,7 +439,6 @@ def eos_lnphi(T, P, V, b, delta, epsilon, a_alpha):
 
     return (P*V*RT_inv + log(RT/(P*(V-b))) - 1.0
             - 2.0*a_alpha*fancy*RT_inv*x0)
-
 
 class GCEOS(object):
     r'''Class for solving a generic Pressure-explicit three-parameter cubic
@@ -878,8 +876,9 @@ class GCEOS(object):
 
     nonstate_constants = ('Tc', 'Pc', 'omega', 'kwargs', 'a', 'b', 'delta', 'epsilon')
     kwargs_keys = tuple()
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
+    def __init_subclass__(cls):
+        cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
 
     def state_hash(self):
         r'''Basic method to calculate a hash of the state of the model and its
@@ -7140,7 +7139,6 @@ class IG(GCEOS):
     epsilon = 0.0
     '''float: `epsilon` parameter for an ideal gas is 0'''
     volume_solutions = staticmethod(volume_solutions_ideal)
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     # Handle the properties where numerical error puts values - but they should
     # be zero. Not all of them are non-zero all the time - but some times
@@ -7399,7 +7397,6 @@ class PR(GCEOS):
     c2 = 0.0777960739038884559718447100373331839711
     '''Full value of the constant in the `b` parameter'''
     c2R = c2*R
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
 #    c1, c2 = 0.45724, 0.07780
 
@@ -8033,7 +8030,6 @@ class PR78(PR):
 
     high_omega_constants = (0.379642, 1.48503, - 0.164423, 0.016666)
     '''Constants for the `kappa` formula for the high-omega region.'''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
         self.Tc = Tc
@@ -8115,7 +8111,6 @@ class PRTranslated(PR):
     '''
     solve_T = GCEOS.solve_T
     P_max_at_V = GCEOS.P_max_at_V
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     kwargs_keys = ('c', 'alpha_coeffs')
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=0.0, T=None, P=None,
                  V=None):
@@ -8212,7 +8207,6 @@ class PRTranslatedPPJP(PRTranslated):
        Fluid Phase Equilibria, December 7, 2018.
        https://doi.org/10.1016/j.fluid.2018.12.007.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     # Direct solver for T could be implemented but cannot use the PR one
     kwargs_keys = ('c',)
     def __init__(self, Tc, Pc, omega, c=0.0, T=None, P=None, V=None):
@@ -8300,14 +8294,11 @@ class PRTranslatedPoly(Poly_a_alpha, PRTranslated):
     -----
 
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
 class PRTranslatedMathiasCopeman(Mathias_Copeman_a_alpha, PRTranslated):
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     pass
 
 class PRTranslatedCoqueletChapoyRichon(PRTranslatedMathiasCopeman):
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     kwargs_keys = ('c', 'alpha_coeffs')
     def __init__(self, Tc, Pc, omega, c=0.0, alpha_coeffs=None, T=None, P=None, V=None):
         self.Tc = Tc
@@ -8401,7 +8392,6 @@ class PRTranslatedTwu(Twu91_a_alpha, PRTranslated):
        New Mixing Rule." Fluid Phase Equilibria 69 (December 10, 1991):
        33-50. doi:10.1016/0378-3812(91)90024-2.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
 class PRTranslatedConsistent(PRTranslatedTwu):
     r'''Class for solving the volume translated Le Guennec, Privat, and Jaubert
@@ -8482,7 +8472,6 @@ class PRTranslatedConsistent(PRTranslatedTwu):
        Super-Critical Domains." Fluid Phase Equilibria 429 (December 15, 2016):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     kwargs_keys = ('c', 'alpha_coeffs')
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=None, T=None,
@@ -8606,7 +8595,6 @@ class PRSV(PR):
        of Industrial Interest." The Canadian Journal of Chemical Engineering
        67, no. 1 (February 1, 1989): 170-73. doi:10.1002/cjce.5450670125.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     kappa1_Tr_limit = False
     kwargs_keys = ('kappa1',)
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=None):
@@ -8867,7 +8855,6 @@ class PRSV2(PR):
        Chemical Engineering 64, no. 5 (October 1, 1986): 820-26.
        doi:10.1002/cjce.5450640516.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     kwargs_keys = ('kappa1', 'kappa2', 'kappa3')
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=0, kappa2=0, kappa3=0):
         self.Tc = Tc
@@ -9112,7 +9099,6 @@ class VDW(GCEOS):
     .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
        Butterworth-Heinemann, 1985.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     delta = 0.0
     '''`delta` is always zero for the :obj:`VDW` EOS'''
@@ -9422,7 +9408,6 @@ class RK(GCEOS):
     .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
        Butterworth-Heinemann, 1985.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1))
     '''Full value of the constant in the `a` parameter'''
@@ -9745,7 +9730,6 @@ class SRK(GCEOS):
     .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
        Butterworth-Heinemann, 1985.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1))
     '''Full value of the constant in the `a` parameter'''
@@ -10078,7 +10062,6 @@ class SRKTranslated(SRK):
     .. [1] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     solve_T = GCEOS.solve_T
     P_max_at_V = GCEOS.P_max_at_V
@@ -10207,7 +10190,6 @@ class MSRKTranslated(Soave_79_a_alpha, SRKTranslated):
        Fluid Phase Equilibria 93 (February 11, 1994): 377-83.
        https://doi.org/10.1016/0378-3812(94)87021-7.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     kwargs_keys = ('c', 'alpha_coeffs')
     def __init__(self, Tc, Pc, omega, M=None, N=None, alpha_coeffs=None, c=0.0,
                  T=None, P=None, V=None):
@@ -10358,7 +10340,6 @@ class SRKTranslatedPPJP(SRK):
        Fluid Phase Equilibria, December 7, 2018.
        https://doi.org/10.1016/j.fluid.2018.12.007.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     kwargs_keys = ('c',)
     # No point in subclassing SRKTranslated - just disables direct solver for T
     def __init__(self, Tc, Pc, omega, c=0.0, T=None, P=None, V=None):
@@ -10382,8 +10363,7 @@ class SRKTranslatedPPJP(SRK):
         self.solve()
 
 
-class SRKTranslatedTwu(Twu91_a_alpha, SRKTranslated):
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
+class SRKTranslatedTwu(Twu91_a_alpha, SRKTranslated): pass
 
 class SRKTranslatedConsistent(Twu91_a_alpha, SRKTranslated):
     r'''Class for solving the volume translated Le Guennec, Privat, and Jaubert
@@ -10466,7 +10446,6 @@ class SRKTranslatedConsistent(Twu91_a_alpha, SRKTranslated):
        Super-Critical Domains." Fluid Phase Equilibria 429 (December 15, 2016):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     kwargs_keys = ('c', 'alpha_coeffs')
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=None, T=None,
                  P=None, V=None):
@@ -10566,7 +10545,6 @@ class APISRK(SRK):
     .. [1] API Technical Data Book: General Properties & Characterization.
        American Petroleum Institute, 7E, 2005.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     kwargs_keys = ('S1', 'S2')
 
     def __init__(self, Tc, Pc, omega=None, T=None, P=None, V=None, S1=None,
@@ -10775,7 +10753,6 @@ class TWUPR(TwuPR95_a_alpha, PR):
        Peng-Robinson Equation." Fluid Phase Equilibria 105, no. 1 (March 15,
        1995): 49-59. doi:10.1016/0378-3812(94)02601-V.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T
 
@@ -10869,7 +10846,6 @@ class TWUSRK(TwuSRK95_a_alpha, SRK):
        Redlich-Kwong Equation." Fluid Phase Equilibria 105, no. 1 (March 15,
        1995): 61-69. doi:10.1016/0378-3812(94)02602-W.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T
 

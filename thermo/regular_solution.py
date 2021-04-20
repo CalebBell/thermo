@@ -208,7 +208,6 @@ class RegularSolution(GibbsExcess):
     .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     def __init__(self, T, xs, Vs, SPs, lambda_coeffs=None):
         # lambda_coeffs is N*N of zeros for no interaction parameters

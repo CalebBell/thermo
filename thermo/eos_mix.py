@@ -251,7 +251,6 @@ class GCEOSMIX(GCEOS):
     .. math::
         P=\frac{RT}{V-b}-\frac{a\alpha(T)}{V^2 + \delta V + \epsilon}
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     nonstate_constants = ('N', 'cmps', 'Tcs', 'Pcs', 'omegas', 'kijs', 'kwargs', 'ais', 'bs')
     mix_kwargs_to_pure = {}
     kwargs_square = ('kijs',)
@@ -6092,7 +6091,6 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
     a_alphas = None
     da_alpha_dTs = None
     d2a_alpha_dT2s = None
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     nonstate_constants_specific = ()
     kwargs_keys = ('kijs',)
@@ -6530,7 +6528,6 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
        edition. New York: McGraw-Hill Professional, 2000.
     '''
     eos_pure = RK
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     kwargs_keys = ('kijs',)
     model_id = 10002
@@ -6850,7 +6847,6 @@ class PRMIX(GCEOSMIX, PR):
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
     '''
     eos_pure = PR
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     nonstate_constants_specific = ('kappas', )
     kwargs_keys = ('kijs',)
@@ -7890,7 +7886,6 @@ class PRMIXTranslated(PRMIX):
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     translated = True
     eos_pure = PRTranslated
     mix_kwargs_to_pure = {'cs': 'c'}
@@ -8332,7 +8327,6 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
        Fluid Phase Equilibria, December 7, 2018.
        https://doi.org/10.1016/j.fluid.2018.12.007.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = PRTranslatedPPJP
     mix_kwargs_to_pure = {'cs': 'c'}
     kwargs_linear = ('cs',)
@@ -8482,7 +8476,6 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
        Super-Critical Domains." Fluid Phase Equilibria 429 (December 15, 2016):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = PRTranslatedConsistent
     kwargs_linear = ('cs', 'alpha_coeffs')
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
@@ -8644,7 +8637,6 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
     .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
        Butterworth-Heinemann, 1985.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = SRK
     nonstate_constants_specific = ('ms',)
     kwargs_keys = ('kijs', )
@@ -8984,7 +8976,6 @@ class SRKMIXTranslated(SRKMIX):
     For P-V initializations, a numerical solver is used to find T.
 
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     fugacity_coefficients = GCEOSMIX.fugacity_coefficients
     dlnphis_dT = GCEOSMIX.dlnphis_dT
     dlnphis_dP = GCEOSMIX.dlnphis_dP
@@ -9435,7 +9426,6 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
 
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = SRKTranslatedConsistent
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     kwargs_linear = ('cs', 'alpha_coeffs')
@@ -9624,7 +9614,6 @@ class MSRKMIXTranslated(Soave_79_a_alpha, SRKMIXTranslatedConsistent):
        Fluid Phase Equilibria 93 (February 11, 1994): 377-83.
        https://doi.org/10.1016/0378-3812(94)87021-7.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     kwargs_keys = ('kijs', 'alpha_coeffs', 'cs')
     eos_pure = MSRKTranslated
     model_id = 10103
@@ -9769,7 +9758,6 @@ class PSRK(Mathias_Copeman_a_alpha, PSRKMixingRules, SRKMIXTranslated):
        (December 30, 1991): 251-65.
        https://doi.org/10.1016/0378-3812(91)85038-V.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = SRKTranslated
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     kwargs_linear = ('cs', 'alpha_coeffs')
@@ -9936,7 +9924,6 @@ class PR78MIX(PRMIX):
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = PR78
     model_id = 10201
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
@@ -10049,7 +10036,6 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
     .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th
        edition. New York: McGraw-Hill Professional, 2000.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = VDW
     nonstate_constants_specific = tuple()
     kwargs_keys = ('kijs',)
@@ -10498,7 +10484,6 @@ class PRSVMIX(PRMIX, PRSV):
        of Industrial Interest." The Canadian Journal of Chemical Engineering
        67, no. 1 (February 1, 1989): 170-73. doi:10.1002/cjce.5450670125.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = PRSV
     nonstate_constants_specific = ('kappa0s', 'kappa1s', 'kappas')
     mix_kwargs_to_pure = {'kappa1s': 'kappa1'}
@@ -10711,7 +10696,6 @@ class PRSV2MIX(PRMIX, PRSV2):
        Chemical Engineering 64, no. 5 (October 1, 1986): 820-26.
        doi:10.1002/cjce.5450640516.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = PRSV2
     nonstate_constants_specific = ('kappa1s', 'kappa2s', 'kappa3s', 'kappa0s', 'kappas')
     mix_kwargs_to_pure = {'kappa1s': 'kappa1', 'kappa2s': 'kappa2', 'kappa3s': 'kappa3'}
@@ -10924,7 +10908,6 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
        Peng-Robinson Equation." Fluid Phase Equilibria 105, no. 1 (March 15,
        1995): 49-59. doi:10.1016/0378-3812(94)02601-V.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = TWUPR
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T
@@ -11065,7 +11048,6 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
        1995): 61-69. doi:10.1016/0378-3812(94)02602-W.
     '''
 #    a_alpha_mro = -5
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     kwargs_keys = ('kijs', )
     eos_pure = TWUSRK
     P_max_at_V = GCEOS.P_max_at_V
@@ -11192,7 +11174,6 @@ class APISRKMIX(SRKMIX, APISRK):
     .. [1] API Technical Data Book: General Properties & Characterization.
        American Petroleum Institute, 7E, 2005.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     eos_pure = APISRK
     nonstate_constants_specific = ('S1s', 'S2s')
     mix_kwargs_to_pure = {'S1s': 'S1', 'S2s': 'S2'}

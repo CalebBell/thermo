@@ -218,7 +218,6 @@ class VaporPressure(TDependentProperty):
     .. [5] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'Vapor pressure'
     units = 'Pa'
 
@@ -701,7 +700,6 @@ class SublimationPressure(TDependentProperty):
        International Journal of Thermophysics 25, no. 2 (March 1, 2004):
        337-50. https://doi.org/10.1023/B:IJOT.0000028471.77933.80.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'Sublimation pressure'
     units = 'Pa'
 

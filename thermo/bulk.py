@@ -208,9 +208,6 @@ linear_methods = set([MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED])
 log_prop_methods = set([LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED, LOG_PROP_VOLUME_WEIGHTED])
 prop_power_methods = set([POWER_PROP_MOLE_WEIGHTED, POWER_PROP_MASS_WEIGHTED, POWER_PROP_VOLUME_WEIGHTED])
 
-
-
-
 class BulkSettings(object):
     r'''Class containing configuration methods for determining how properties of
     a `Bulk` phase made of different phases are handled. All parameters are also
@@ -526,7 +523,6 @@ class Bulk(Phase):
 
 
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     def __init__(self, T, P, zs, phases, phase_fractions, phase_bulk=None):
         self.T = T
         self.P = P

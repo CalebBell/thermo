@@ -144,15 +144,13 @@ class ChemicalConstantsPackage(object):
                  'Vmg_STPs', 'rhog_STPs', 'rhog_STPs_mass', 'sigma_STPs',
                  'sigma_Tms', 'sigma_Tbs', 'Hf_STPs', 'Hf_STPs_mass',
                  )
-
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
     properties = ('atom_fractions',) + non_vector_properties
     '''Tuple of all properties that can be held by this object.'''
 
     __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms') + ('json_version', '_hash')
     non_vectors = ('atom_fractions',)
     non_vectors_set = set(non_vectors)
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
-
 
     def _missing_properties(self):
         missing = []
@@ -1255,7 +1253,6 @@ mix_properties_to_classes = {'VolumeGasMixture': VolumeGasMixture,
                             'ThermalConductivityLiquidMixture': ThermalConductivityLiquidMixture,
                             'SurfaceTensionMixture': SurfaceTensionMixture}
 
-
 class PropertyCorrelationsPackage(object):
     r'''Class for creating and storing `T` and `P` and `zs` dependent chemical
     property objects. All parameters are also attributes.
@@ -1361,6 +1358,7 @@ class PropertyCorrelationsPackage(object):
 
     correlations = pure_correlations + mixture_correlations
 #    __slots__ = correlations + ('constants', 'skip_missing')
+
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     def __eq__(self, other):

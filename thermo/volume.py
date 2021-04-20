@@ -358,7 +358,6 @@ class VolumeLiquid(TPDependentProperty):
     .. [6] Gesellschaft, V. D. I., ed. VDI Heat Atlas. 2nd edition.
        Berlin; New York:: Springer, 2010.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'Liquid molar volume'
     units = 'm^3/mol'
     interpolation_T = None
@@ -865,7 +864,6 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
        Engineering Chemistry Research 53, no. 6 (February 12, 2014):
        2498-2508. doi:10.1021/ie4033999. http://www.coolprop.org/
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     def __init__(self, MW=None, Tc=None, Pc=None,
                  omega=None,  Psat=None, CASRN='', eos=None,
                  poly_fit=None, extrapolation=None):
@@ -1174,7 +1172,6 @@ class VolumeLiquidMixture(MixtureProperty):
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'Liquid volume'
     units = 'm^3/mol'
     property_min = 0
@@ -1466,7 +1463,6 @@ class VolumeGas(TPDependentProperty):
        Engineering Chemistry Research 53, no. 6 (February 12, 2014):
        2498-2508. doi:10.1021/ie4033999. http://www.coolprop.org/
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'Gas molar volume'
     units = 'm^3/mol'
     interpolation_T = None
@@ -1725,7 +1721,6 @@ class VolumeGasMixture(MixtureProperty):
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'Gas volume'
     units = 'm^3/mol'
     property_min = 0
@@ -1899,7 +1894,6 @@ class VolumeSolid(TDependentProperty):
     .. [1] Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of
        Chemistry and Physics. [Boca Raton, FL]: CRC press, 2014.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'Solid molar volume'
     units = 'm^3/mol'
     interpolation_T = None
@@ -2065,7 +2059,6 @@ class VolumeSolidMixture(MixtureProperty):
         Linear mole fraction mixing rule described in
         :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'Solid molar volume'
     units = 'm^3/mol'
     property_min = 0

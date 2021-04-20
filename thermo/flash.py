@@ -130,7 +130,6 @@ from thermo.property_package import StabilityTester
 from thermo.coolprop import CPiP_min
 
 
-
 CAS_H2O = '7732-18-5'
 
 def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
@@ -4223,7 +4222,6 @@ empty_flash_conv = {'iterations': 0, 'err': 0.0, 'stab_guess_name': None}
 one_in_list = [1.0]
 empty_list = []
 
-
 class Flash(object):
     r'''Base class for performing flash calculations. All Flash objects need
     to inherit from this, and common methods can be added to it.
@@ -4240,13 +4238,14 @@ class Flash(object):
     P_MAX_FIXED : float
         Absolute maximum pressure to search for a valid flash, [Pa]
     '''
-
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     T_MIN_FIXED = Phase.T_MIN_FIXED
     T_MAX_FIXED = Phase.T_MAX_FIXED
 
     P_MIN_FIXED = Phase.P_MIN_FIXED
     P_MAX_FIXED = Phase.P_MAX_FIXED
+
+    def __init_subclass__(cls):
+        cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
 
     def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
               S=None, G=None, U=None, A=None, solution=None, hot_start=None,
@@ -5552,7 +5551,6 @@ class FlashVL(Flash):
     .. [3] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     PT_SS_MAXITER = 5000
     PT_SS_TOL = 1e-13
 
@@ -6328,8 +6326,6 @@ class FlashVLN(FlashVL):
     .. [3] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
-
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     SS_NP_MAXITER = FlashVL.PT_SS_MAXITER
     SS_NP_TRIVIAL_TOL = 5e-5
     SS_NP_TOL = 1e-15
@@ -7010,7 +7006,6 @@ class FlashPureVLS(Flash):
     .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     VF_interpolators_built = False
     N = 1
     VL_EOS_hacks = True
