@@ -69,7 +69,7 @@ def mark_as_numba(func):
     return func
 
 @mark_as_numba
-def test_PRMIX_outputs_inputs_np():
+def test_EOSMIX_outputs_inputs_np():
     kwargs = dict(Tcs=[190.56400000000002, 305.32, 369.83, 126.2],
                   Pcs=[4599000.0, 4872000.0, 4248000.0, 3394387.5],
                   omegas=[0.008, 0.098, 0.152, 0.04],
@@ -77,20 +77,24 @@ def test_PRMIX_outputs_inputs_np():
                   kijs=[[0.0, -0.0059, 0.0119, 0.0289], [-0.0059, 0.0, 0.0011, 0.0533], [0.0119, 0.0011, 0.0, 0.0878], [0.0289, 0.0533, 0.0878, 0.0]])
     kwargs_np = {k:np.array(v) for k, v in kwargs.items()}
 
-    from thermo.numba import PRMIX as PRMIXNP
+    from thermo.numba import PRMIX as PRMIXNP, SRKMIX as SRKMIXNP
+    plain = [PRMIX, SRKMIX]
+    transformed = [PRMIXNP, SRKMIXNP]
+    
+    for p, t in zip(plain, transformed):
 
-    eos = PRMIX(T=200, P=1e5, **kwargs)
-    eos_np = PRMIXNP(T=200, P=1e5, **kwargs_np)
-
-    base_vec_attrs = ['a_alphas', 'da_alpha_dTs', 'd2a_alpha_dT2s', 'a_alpha_roots', 'a_alpha_j_rows', 'da_alpha_dT_j_rows', 'lnphis_l', 'phis_l', 'fugacities_l', 'lnphis_g', 'phis_g', 'fugacities_g']
-    extra_vec_attrs = ['db_dzs', 'db_dns', 'dnb_dns', 'd2b_dzizjs', 'd2b_dninjs', 'd3b_dzizjzks', 'd3b_dninjnks', 'd3epsilon_dzizjzks', 'da_alpha_dzs', 'da_alpha_dns', 'dna_alpha_dns', 'd2a_alpha_dzizjs']
-    alpha_vec_attrs = ['_a_alpha_j_rows', '_da_alpha_dT_j_rows', 'a_alpha_ijs', 'da_alpha_dT_ijs', 'd2a_alpha_dT2_ijs']
-    # TODO: _d2a_alpha_dT2_j_rows, and _a_alpha_j_rows', '_da_alpha_dT_j_rows with .to methods
-
-    for attr in base_vec_attrs + extra_vec_attrs + alpha_vec_attrs:
-        assert_close1d(getattr(eos, attr), getattr(eos_np, attr), rtol=1e-14)
-        assert type(getattr(eos, attr)) is list
-        assert type(getattr(eos_np, attr)) is np.ndarray
+        eos = p(T=200, P=1e5, **kwargs)
+        eos_np = t(T=200, P=1e5, **kwargs_np)
+    
+        base_vec_attrs = ['a_alphas', 'da_alpha_dTs', 'd2a_alpha_dT2s', 'a_alpha_roots', 'a_alpha_j_rows', 'da_alpha_dT_j_rows', 'lnphis_l', 'phis_l', 'fugacities_l', 'lnphis_g', 'phis_g', 'fugacities_g']
+        extra_vec_attrs = ['db_dzs', 'db_dns', 'dnb_dns', 'd2b_dzizjs', 'd2b_dninjs', 'd3b_dzizjzks', 'd3b_dninjnks', 'd3epsilon_dzizjzks', 'da_alpha_dzs', 'da_alpha_dns', 'dna_alpha_dns', 'd2a_alpha_dzizjs']
+        alpha_vec_attrs = ['_a_alpha_j_rows', '_da_alpha_dT_j_rows', 'a_alpha_ijs', 'da_alpha_dT_ijs', 'd2a_alpha_dT2_ijs']
+        # TODO: _d2a_alpha_dT2_j_rows, and _a_alpha_j_rows', '_da_alpha_dT_j_rows with .to methods
+    
+        for attr in base_vec_attrs + extra_vec_attrs + alpha_vec_attrs:
+            assert_close1d(getattr(eos, attr), getattr(eos_np, attr), rtol=1e-14)
+            assert type(getattr(eos, attr)) is list
+            assert type(getattr(eos_np, attr)) is np.ndarray
 
 
 @mark_as_numba
