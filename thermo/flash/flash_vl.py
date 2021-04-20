@@ -21,7 +21,30 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from .flash_abstract import Flash
-from . import flash_utils as utils
+from .flash_utils import (
+    PT_SS, PT_SS_MEHRA, PT_SS_GDEM3, PT_NEWTON_lNKVF,
+    sequential_substitution_2P, 
+    sequential_substitution_Mehra_2P,
+    sequential_substitution_GDEM3_2P, 
+    nonlin_2P_newton,
+    WILSON_GUESS, 
+    IDEAL_PSAT, 
+    TB_TC_GUESS,
+    dew_bubble_Michelsen_Mollerup, 
+    dew_bubble_newton_zs,                
+    SS_VF_simultaneous,
+    solve_T_VF_IG_K_composition_independent,
+    TP_solve_VF_guesses,
+    dew_bubble_newton_zs,
+    solve_P_VF_IG_K_composition_independent,
+    dew_bubble_newton_zs,
+    TP_solve_VF_guesses,
+    stabiliy_iteration_Michelsen,
+    solve_PTV_HSGUA_1P,
+    TPV_solve_HSGUA_guesses_VL,
+    SHAW_ELEMENTAL, IDEAL_WILSON,
+    nonlin_spec_NP,
+)
 from .flash_pure_vls  import FlashPureVLS
 from chemicals.utils import log
 from chemicals.exceptions import TrivialSolutionError
@@ -224,16 +247,16 @@ class FlashVL(Flash):
     SS_2P_STAB_COMP_DIFF_MIN = None
 
     PT_methods = [
-        utils.PT_SS, 
-        utils.PT_SS_MEHRA, 
-        utils.PT_SS_GDEM3, 
-        utils.PT_NEWTON_lNKVF
+        PT_SS, 
+        PT_SS_MEHRA, 
+        PT_SS_GDEM3, 
+        PT_NEWTON_lNKVF,
     ]
     PT_algorithms = [
-        utils.sequential_substitution_2P, 
-        utils.sequential_substitution_Mehra_2P,
-        utils.sequential_substitution_GDEM3_2P, 
-        utils.nonlin_2P_newton
+        sequential_substitution_2P, 
+        sequential_substitution_Mehra_2P,
+        sequential_substitution_GDEM3_2P, 
+        nonlin_2P_newton
     ]
 
     PT_STABILITY_MAXITER = 500 # 30 good professional default; 500 used in source DTU
@@ -243,20 +266,20 @@ class FlashVL(Flash):
     SS_acceleration_method = None
 
     VF_guess_methods = [
-        utils.WILSON_GUESS, 
-        utils.IDEAL_PSAT, 
-        utils.TB_TC_GUESS
+        WILSON_GUESS, 
+        IDEAL_PSAT, 
+        TB_TC_GUESS
     ]
 
     dew_bubble_flash_algos = [
-        utils.dew_bubble_Michelsen_Mollerup, 
-        utils.dew_bubble_newton_zs,                
-        utils.SS_VF_simultaneous
+        dew_bubble_Michelsen_Mollerup, 
+        dew_bubble_newton_zs,                
+        SS_VF_simultaneous
     ]
     dew_T_flash_algos = bubble_T_flash_algos = dew_bubble_flash_algos
     dew_P_flash_algos = bubble_P_flash_algos = dew_bubble_flash_algos
 
-    VF_flash_algos = [utils.SS_VF_simultaneous]
+    VF_flash_algos = [SS_VF_simultaneous]
 
     DEW_BUBBLE_VF_K_COMPOSITION_INDEPENDENT_XTOL = 1e-14
 
@@ -347,7 +370,7 @@ class FlashVL(Flash):
     def flash_TVF_2P(self, T, VF, zs, liquid, gas, solution=None, hot_start=None):
         if self.K_composition_independent:
             # Assume pressure independent for guess
-            P, xs, ys, iterations, err = utils.solve_T_VF_IG_K_composition_independent(VF, T, zs, gas, liquid, xtol=self.DEW_BUBBLE_VF_K_COMPOSITION_INDEPENDENT_XTOL)
+            P, xs, ys, iterations, err = solve_T_VF_IG_K_composition_independent(VF, T, zs, gas, liquid, xtol=self.DEW_BUBBLE_VF_K_COMPOSITION_INDEPENDENT_XTOL)
             l, g = liquid.to(T=T, P=P, zs=xs), gas.to(T=T, P=P, zs=ys)
             return P, l, g, iterations, err
 
@@ -362,11 +385,11 @@ class FlashVL(Flash):
         else:
             for method in self.VF_guess_methods:
                 try:
-                    if method is utils.dew_bubble_newton_zs:
+                    if method is dew_bubble_newton_zs:
                         xtol = dew_bubble_newton_xtol
                     else:
                         xtol = dew_bubble_xtol
-                    _, P, _, xs, ys = utils.TP_solve_VF_guesses(zs=zs, method=method, constants=constants,
+                    _, P, _, xs, ys = TP_solve_VF_guesses(zs=zs, method=method, constants=constants,
                                                            correlations=correlations, T=T, VF=VF,
                                                            xtol=xtol, maxiter=dew_bubble_maxiter)
                     break
@@ -416,7 +439,7 @@ class FlashVL(Flash):
     def flash_PVF_2P(self, P, VF, zs, liquid, gas, solution=None, hot_start=None):
         if self.K_composition_independent:
             # Assume pressure independent for guess
-            T, xs, ys, iterations, err = utils.solve_P_VF_IG_K_composition_independent(VF, P, zs, gas, liquid, xtol=1e-10)
+            T, xs, ys, iterations, err = solve_P_VF_IG_K_composition_independent(VF, P, zs, gas, liquid, xtol=1e-10)
             l, g = liquid.to(T=T, P=P, zs=xs), gas.to(T=T, P=P, zs=ys)
             return T, l, g, iterations, err
         constants, correlations = self.constants, self.correlations
@@ -429,11 +452,11 @@ class FlashVL(Flash):
         else:
             for method in self.VF_guess_methods:
                 try:
-                    if method is utils.dew_bubble_newton_zs:
+                    if method is dew_bubble_newton_zs:
                         xtol = dew_bubble_newton_xtol
                     else:
                         xtol = dew_bubble_xtol
-                    T, _, _, xs, ys = utils.TP_solve_VF_guesses(zs=zs, method=method, constants=constants,
+                    T, _, _, xs, ys = TP_solve_VF_guesses(zs=zs, method=method, constants=constants,
                                                            correlations=correlations, P=P, VF=VF,
                                                            xtol=xtol, maxiter=dew_bubble_maxiter)
                     break
@@ -503,7 +526,7 @@ class FlashVL(Flash):
 
         for i, trial_comp in enumerate(gen):
                 try:
-                    sln = utils.stabiliy_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase,
+                    sln = stabiliy_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase,
                                                        maxiter=self.PT_STABILITY_MAXITER, xtol=self.PT_STABILITY_XTOL)
                     sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs, dG_RT = sln
                     if zs == trial_zs:
@@ -640,7 +663,7 @@ class FlashVL(Flash):
             self.PT_converge(T=T, P=P, zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs, liquid_phase=min_phase,
                         gas_phase=other_phase, V_over_F_guess=V_over_F_guess)
         try:
-            V_over_F, xs, ys, l, g, iteration, err = utils.sequential_substitution_2P(T=T, P=P, V=None,
+            V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
                                                                                 zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs,
                                                                                 liquid_phase=min_phase,
                                                                                 gas_phase=other_phase, maxiter=self.PT_SS_MAXITER,
@@ -653,7 +676,7 @@ class FlashVL(Flash):
         if V_over_F < self.PT_SS_POLISH_VF or V_over_F > 1.0-self.PT_SS_POLISH_VF:
             # Continue the SS, with the previous values, to a much tighter tolerance - if specified/allowed
             if (V_over_F > -self.PT_SS_POLISH_VF or V_over_F > 1.0 + self.PT_SS_POLISH_VF) and self.PT_SS_POLISH:
-                V_over_F, xs, ys, l, g, iteration, err = utils.sequential_substitution_2P(
+                V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(
                     T=T, P=P, V=None,
                     zs=zs, xs_guess=xs,
                     ys_guess=ys,
@@ -694,7 +717,7 @@ class FlashVL(Flash):
                 VF_guess, xs, ys = hot_start.beta_gas, hot_start.liquid0.zs, hot_start.gas.zs
                 liquid, gas = self.liquid, self.gas
 
-                V_over_F, xs, ys, l, g, iteration, err = utils.sequential_substitution_2P(
+                V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(
                     T=T, P=P, V=None,
                     zs=zs, xs_guess=xs, ys_guess=ys, liquid_phase=liquid,
                     gas_phase=gas, maxiter=self.PT_SS_MAXITER, tol=self.PT_SS_TOL,
@@ -749,7 +772,7 @@ class FlashVL(Flash):
             results_G_min_1P = None
             for phase in self.unique_phases:
                 try:
-                    T, P, phase, iterations, err = utils.solve_PTV_HSGUA_1P(
+                    T, P, phase, iterations, err = solve_PTV_HSGUA_1P(
                         phase, zs, fixed_val, spec_val, fixed_var=fixed_var,
                         spec=spec, iter_var=iter_var, constants=constants, 
                         correlations=correlations
@@ -812,11 +835,11 @@ class FlashVL(Flash):
         constants = self.constants
         correlations = self.correlations
         min_bound, max_bound = self.bounds_PT_HSGUA()
-        init_methods = [utils.SHAW_ELEMENTAL, utils.IDEAL_WILSON]
+        init_methods = [SHAW_ELEMENTAL, IDEAL_WILSON]
 
         for method in init_methods:
             try:
-                guess, VF, xs, ys = utils.TPV_solve_HSGUA_guesses_VL(
+                guess, VF, xs, ys = TPV_solve_HSGUA_guesses_VL(
                     zs, method, constants, correlations,
                     fixed_val, spec_val,
                     iter_var=iter_var, fixed_var=fixed_var, spec=spec,
@@ -830,7 +853,7 @@ class FlashVL(Flash):
                 print(e)
                 pass
 
-        sln = utils.nonlin_spec_NP(guess, fixed_val, spec_val, zs, [xs, ys], [1.0-VF, VF],
+        sln = nonlin_spec_NP(guess, fixed_val, spec_val, zs, [xs, ys], [1.0-VF, VF],
                              [self.liquids[0], self.gas], iter_var=iter_var, fixed_var=fixed_var, spec=spec,
                              maxiter=self.TPV_HSGUA_NEWTON_MAXITER, tol=self.TPV_HSGUA_NEWTON_XTOL,
                              trivial_solution_tol=1e-5, ref_phase=-1,
@@ -850,12 +873,12 @@ class FlashVL(Flash):
         correlations = self.correlations
         min_bound, max_bound = self.bounds_PT_HSGUA()
 
-        init_methods = [utils.SHAW_ELEMENTAL, utils.IDEAL_WILSON]
+        init_methods = [SHAW_ELEMENTAL, IDEAL_WILSON]
         guess = None
 
         for method in init_methods:
             try:
-                guess, VF, xs, ys = utils.TPV_solve_HSGUA_guesses_VL(
+                guess, VF, xs, ys = TPV_solve_HSGUA_guesses_VL(
                     zs, method, constants, correlations,
                     fixed_val, spec_val,
                     iter_var=iter_var, fixed_var=fixed_var, spec=spec,
