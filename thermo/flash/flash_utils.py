@@ -87,8 +87,6 @@ from chemicals.exceptions import TrivialSolutionError
 from thermo.phases import Phase, CoolPropPhase, CEOSLiquid, CEOSGas
 from thermo.coolprop import CPiP_min
 
-
-CAS_H2O = '7732-18-5'
 LASTOVKA_SHAW = 'Lastovka Shaw'
 DADGOSTAR_SHAW_1 = 'Dadgostar Shaw 1'
 STP_T_GUESS = '298.15 K'

@@ -66,7 +66,13 @@ from ..phases import (
     IAPWS95Liquid,
     GibbsExcessLiquid
 )
-from . import flash_utils as utils
+from .flash_utils import (
+    TVF_pure_secant,
+    PVF_pure_newton,
+    TSF_pure_newton,
+    PSF_pure_newton,
+    solve_PTV_HSGUA_1P
+)
 
 
 class FlashPureVLS(Flash):
@@ -537,7 +543,7 @@ class FlashPureVLS(Flash):
 
         liquids = [l.to_TP_zs(T, Psat, zs) for l in self.liquids]
 #        return TVF_pure_newton(Psat, T, liquids, gas, maxiter=self.TVF_maxiter, xtol=self.TVF_xtol)
-        Psat, l, g, iterations, err = utils.TVF_pure_secant(Psat, T, liquids, gas, maxiter=self.TVF_maxiter, xtol=self.TVF_xtol)
+        Psat, l, g, iterations, err = TVF_pure_secant(Psat, T, liquids, gas, maxiter=self.TVF_maxiter, xtol=self.TVF_xtol)
         if l.Z() == g.Z():
             raise PhaseExistenceImpossible("Converged to trivial solution", zs=zs, T=T)
 
@@ -578,7 +584,7 @@ class FlashPureVLS(Flash):
             Tsat = self.correlations.VaporPressures[0].solve_property(P)
         gas = self.gas.to_TP_zs(Tsat, P, zs)
         liquids = [l.to_TP_zs(Tsat, P, zs) for l in self.liquids]
-        Tsat, l, g, iterations, err = utils.PVF_pure_newton(Tsat, P, liquids, gas, maxiter=self.PVF_maxiter, xtol=self.PVF_xtol)
+        Tsat, l, g, iterations, err = PVF_pure_newton(Tsat, P, liquids, gas, maxiter=self.PVF_maxiter, xtol=self.PVF_xtol)
         if l.Z() == g.Z():
             raise PhaseExistenceImpossible("Converged to trivial solution", zs=zs, P=P)
         return Tsat, l, g, iterations, err
@@ -598,7 +604,7 @@ class FlashPureVLS(Flash):
             try_phases = self.liquids
             Psub = 1e6
 
-        return utils.TSF_pure_newton(Psub, T, try_phases, self.solids,
+        return TSF_pure_newton(Psub, T, try_phases, self.solids,
                                maxiter=self.TSF_maxiter, xtol=self.TSF_xtol)
 
     def flash_PSF(self, P, SF=None, zs=None, hot_start=None):
@@ -609,7 +615,7 @@ class FlashPureVLS(Flash):
             try_phases = self.liquids
             Tsub = 1e6
 
-        return utils.PSF_pure_newton(Tsub, P, try_phases, self.solids,
+        return PSF_pure_newton(Tsub, P, try_phases, self.solids,
                                maxiter=self.PSF_maxiter, xtol=self.PSF_xtol)
 
 
@@ -658,7 +664,7 @@ class FlashPureVLS(Flash):
         for phase in phases:
             try:
                 # TODO: use has_VL to bound the solver
-                T, P, phase, iterations, err = utils.solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var,
+                T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var,
                                                                   spec=spec, iter_var=iter_var, constants=constants, correlations=correlations, last_conv=last_conv,
                                                                   oscillation_detection=cubic,
                                                                   guess_maxiter=self.TPV_HSGUA_guess_maxiter, guess_xtol=self.TPV_HSGUA_guess_xtol,
@@ -693,7 +699,7 @@ class FlashPureVLS(Flash):
                     return g, ls, [], [1.0], flash_convergence
 
             except Exception as e:
-#                    print(e)
+                print(e)
                 solutions_1P.append(None)
 
 
@@ -764,7 +770,7 @@ class FlashPureVLS(Flash):
             for phase in self.phases:
                 # TODO: for eoss wit boundaries, and well behaved fluids, only solve ocne instead of twice (i.e. per phase, doubling the computation.)
                 try:
-                    T, P, phase, iterations, err = utils.solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var,
+                    T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var,
                                                                       spec=spec, iter_var=iter_var, constants=constants, correlations=correlations,
                                                                       guess_maxiter=self.TPV_HSGUA_guess_maxiter, guess_xtol=self.TPV_HSGUA_guess_xtol,
                                                                       maxiter=self.TPV_HSGUA_maxiter, xtol=self.TPV_HSGUA_xtol)
