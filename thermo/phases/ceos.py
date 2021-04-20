@@ -23,12 +23,16 @@ SOFTWARE.
 '''
 __all__ = ['CEOSLiquid', 'CEOSGas']
 import os
-from fluids.numerics import trunc_exp
+from fluids.numerics import trunc_exp, numpy as np
 from chemicals.utils import log
 from thermo.eos_mix import IGMIX, eos_mix_full_path_dict, eos_mix_full_path_reverse_dict
 from thermo.eos_mix_methods import PR_lnphis_fastest, lnphis_direct
 from thermo.heat_capacity import HeatCapacityGas
 from .phase import Phase
+try:
+    zeros = np.zeros
+except:
+    pass
 
 class CEOSGas(Phase):
     r'''Class for representing a cubic equation of state gas phase
@@ -343,7 +347,7 @@ class CEOSGas(Phase):
     def lnphis_args(self):
         N = self.N
         eos_mix = self.eos_mix
-        if self.scalar:
+        if self.eos_mix.scalar:
             a_alpha_j_rows, vec0 = [0.0]*N, [0.0]*N
         else:
             a_alpha_j_rows, vec0 = zeros(N), zeros(N)

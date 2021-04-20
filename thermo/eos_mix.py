@@ -6870,20 +6870,19 @@ class PRMIX(GCEOSMIX, PR):
         self.V = V
 
         # optimization, unfortunately
-        c1R2, c2R = self.c1*R2, self.c2*R
+        c1R2_c2R, c2R = self.c1R2_c2R, self.c2R
         # Also tried to store the inverse of Pcs, without success - slows it down
         self.scalar = scalar = type(Tcs) is list
         if scalar:
-            self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in cmps]
             self.bs = bs = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+            self.ais = [c1R2_c2R*Tcs[i]*bs[i] for i in cmps]
             self.kappas = [omega*(-0.26992*omega + 1.54226) + 0.37464 for omega in omegas]
             b = 0.0
             for i in cmps:
                 b += bs[i]*zs[i]
         else:
-            Tc_Pc_ratio = Tcs/Pcs
-            self.ais = c1R2*Tcs*Tc_Pc_ratio
-            self.bs = bs = c2R*Tc_Pc_ratio
+            self.bs = bs = c2R*Tcs/Pcs
+            self.ais = c1R2_c2R*Tcs*bs
             self.kappas = omegas*(-0.26992*omegas + 1.54226) + 0.37464
             b = float((bs*zs).sum())
         self.b = b
@@ -8663,11 +8662,20 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         self.T = T
         self.P = P
         self.V = V
-        # TODO if scalar
-        self.ais = [self.c1*R2*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
-        self.ms = [0.480 + 1.574*omega - 0.176*omega*omega for omega in omegas]
+        if self.scalar:
+            self.ais = [self.c1*R2*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+            self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+            ms = [omega*(1.574 - 0.176*omega) + 0.480 for omega in omegas]
+            b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
+        else:
+            Tc_Pc_ratio = Tcs/Pcs
+            self.ais = self.c1R2*Tcs*Tc_Pc_ratio
+            self.bs = bs = self.c2R*Tc_Pc_ratio
+            ms = omegas*(1.574 - 0.176*omegas) + 0.480
+            b =  float((bs*zs).sum())
+        
+        self.b = b
+        self.ms = ms
         self.delta = self.b
 
         self.solve(only_l=only_l, only_g=only_g)
@@ -8676,8 +8684,11 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
 
     def _fast_init_specific(self, other):
         self.ms = other.ms
-        self.b = b = sum([bi*zi for bi, zi in zip(self.bs, self.zs)])
-        self.delta = self.b
+        if self.scalar:
+            self.b = b = sum([bi*zi for bi, zi in zip(self.bs, self.zs)])
+        else:
+            self.b = b = float((self.bs*self.zs).sum())
+        self.delta = b
 
     def a_alphas_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` for the SRK EOS.
@@ -10043,30 +10054,43 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
 
     def __init__(self, Tcs, Pcs, zs, kijs=None, T=None, P=None, V=None,
                  omegas=None, fugacities=True, only_l=False, only_g=False):
-        self.N = len(Tcs)
+        self.N = N = len(Tcs)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.zs = zs
         self.scalar = scalar = type(zs) is list
         if kijs is None:
-            kijs = [[0]*self.N for i in range(self.N)]
+            if scalar:
+                kijs = [[0.0]*self.N for i in range(N)]
+            else:
+                kijs = zeros((N, N))
         self.kijs = kijs
         self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
         self.V = V
-
-        self.ais = [27.0/64.0*(R*Tc)**2/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.bs = [R*Tc/(8.*Pc) for Tc, Pc in zip(Tcs, Pcs)]
-        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
-
+        
+        c1R2, c2R = self.c1R2, self.c2R
+        if self.scalar:
+            self.ais = [c1R2*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+            self.bs = [c2R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+            self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
+        else:
+            Tc_Pc_ratio = Tcs/Pcs
+            self.ais = c1R2*Tcs*Tc_Pc_ratio
+            self.bs = bs = c2R*Tc_Pc_ratio
+            self.b = float((bs*zs).sum())
+    
         self.omegas = omegas
         self.solve(only_l=only_l, only_g=only_g)
         if fugacities:
             self.fugacities()
 
     def _fast_init_specific(self, other):
-        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
+        if self.scalar:
+            self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
+        else:
+            self.b = float((self.bs*self.zs).sum())
 
     def a_alphas_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` for the VDW EOS.
@@ -10117,8 +10141,11 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
-        zeros = [0.0]*self.N
-        return self.ais, zeros, zeros
+        if self.scalar:
+            zero_array = [0.0]*self.N
+        else:
+            zero_array = zeros(self.N)
+        return self.ais, zero_array, zero_array
 
     def fugacity_coefficients(self, Z):
         r'''Literature formula for calculating fugacity coefficients for each
@@ -10282,7 +10309,11 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         -----
         This derivative is checked numerically.
         '''
-        return [0.0]*self.N
+        if self.scalar:
+            zero_array = [0.0]*self.N
+        else:
+            zero_array = zeros(self.N)
+        return zero_array
 
     @property
     def ddelta_dns(self):
@@ -10302,7 +10333,11 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         -----
         This derivative is checked numerically.
         '''
-        return [0.0]*self.N
+        if self.scalar:
+            zero_array = [0.0]*self.N
+        else:
+            zero_array = zeros(self.N)
+        return zero_array
 
 
     @property
@@ -10324,7 +10359,11 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         This derivative is checked numerically.
         '''
         N = self.N
-        return [[0.0]*N for i in range(N)]
+        if self.scalar:
+            zero_array = [[0.0]*N for i in range(N)]
+        else:
+            zero_array = zeros((N, N))
+        return zero_array
 
     @property
     def d2delta_dninjs(self):
@@ -10345,7 +10384,11 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         This derivative is checked numerically.
         '''
         N = self.N
-        return [[0.0]*N for i in range(N)]
+        if self.scalar:
+            zero_array = [[0.0]*N for i in range(N)]
+        else:
+            zero_array = zeros((N, N))
+        return zero_array
 
     @property
     def d3delta_dninjnks(self):
@@ -10368,10 +10411,11 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         This derivative is checked numerically.
         '''
         N = self.N
-        return [[[0.0]*N for _ in range(N)] for _ in range(N)]
-
-
-
+        if self.scalar:
+            zero_array = [[[0.0]*N for _ in range(N)] for _ in range(N)]
+        else:
+            zero_array = zeros((N, N, N))
+        return zero_array
 
 
 class PRSVMIX(PRMIX, PRSV):
@@ -10494,6 +10538,7 @@ class PRSVMIX(PRMIX, PRSV):
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  kappa1s=None, fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
+        cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -10501,24 +10546,42 @@ class PRSVMIX(PRMIX, PRSV):
         self.scalar = scalar = type(zs) is list
 
         if kijs is None:
-            kijs = [[0]*self.N for i in range(N)]
+            if scalar:
+                kijs = [[0]*self.N for i in range(N)]
+            else:
+                kijs = zeros((N, N))
         self.kijs = kijs
 
         if kappa1s is None:
-            kappa1s = [0.0 for i in range(N)]
+            if scalar:
+                kappa1s = [0.0 for i in range(N)]
+            else:
+                kappa1s = zeros(N)
         self.kwargs = {'kijs': kijs, 'kappa1s': kappa1s}
         self.T = T
         self.P = P
         self.V = V
+        
+        c1R2_c2R, c2R = self.c1R2_c2R, self.c2R
 
-        self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
+        
+        if scalar:
+            self.kappa0s = [omega*(omega*(0.0196554*omega - 0.17131848) + 1.4897153) + 0.378893 for omega in omegas]
+            self.bs = bs = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+            self.ais = [c1R2_c2R*Tcs[i]*bs[i] for i in cmps]
+            b = 0.0
+            for i in cmps:
+                b += bs[i]*zs[i]
+        else:
+            self.kappa0s = omegas*(omegas*(0.0196554*omegas - 0.17131848) + 1.4897153) + 0.378893
+            self.bs = bs = c2R*Tcs/Pcs
+            self.ais = c1R2_c2R*Tcs*bs
+            b = float((bs*zs).sum())
+            
+        self.b = b
 
-        self.kappa0s = [0.378893 + 1.4897153*omega - 0.17131848*omega**2 + 0.0196554*omega**3 for omega in omegas]
-
-        self.delta = 2*self.b
-        self.epsilon = -self.b*self.b
+        self.delta = 2.0*b
+        self.epsilon = -b*b
 
         self.check_sufficient_inputs()
         if self.V and self.P:

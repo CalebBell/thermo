@@ -137,6 +137,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
              'eos_mix_methods.SRK_lnphis_fastest',
              'eos_mix_methods.RK_lnphis_fastest',
              'eos_mix_methods.PR_translated_lnphis_fastest',
+             'eos_mix_methods.SRK_translated_lnphis_fastest',
              'eos_mix_methods.lnphis_direct',
              'eos_mix_methods.G_dep_lnphi_d_helper',
              'eos_mix_methods.PR_translated_ddelta_dzs',

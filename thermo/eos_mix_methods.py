@@ -90,6 +90,8 @@ __all__ = ['a_alpha_aijs_composition_independent',
            
            'SRK_translated_ddelta_dns', 'SRK_translated_depsilon_dns',
            
+           'SRK_translated_lnphis_fastest',
+           
            
            'eos_mix_db_dns', 'eos_mix_da_alpha_dns',
            
@@ -482,27 +484,6 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs,
     >>> a_alpha, a_alpha_j_rows
     (0.58562139582, [0.35469988173, 0.61604757237])
     '''
-    # This is faster in PyPy and can be made even faster optimizing a_alpha!
-#    N = len(a_alphas)
-#    a_alpha_j_rows = [0.0]*N
-#    a_alpha = 0.0
-#    for i in range(N):
-#        kijs_i = kijs[i]
-#        a_alpha_i_root_i = a_alpha_roots[i]
-#        for j in range(i):
-#            a_alpha_ijs_ij = (1. - kijs_i[j])*a_alpha_i_root_i*a_alpha_roots[j]
-#            t200 = a_alpha_ijs_ij*zs[i]
-#            a_alpha_j_rows[j] += t200
-#            a_alpha_j_rows[i] += zs[j]*a_alpha_ijs_ij
-#            t200 *= zs[j]
-#            a_alpha += t200 + t200
-#
-#        t200 = (1. - kijs_i[i])*a_alphas[i]*zs[i]
-#        a_alpha += t200*zs[i]
-#        a_alpha_j_rows[i] += t200
-#
-#    return a_alpha, a_alpha_j_rows
-
     N = len(a_alphas)
     if a_alpha_j_rows is None:
         a_alpha_j_rows = [0.0]*N
@@ -534,6 +515,28 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs,
         a_alpha += a_alpha_j_rows[i]*zs[i]
 
     return a_alpha, a_alpha_j_rows
+    # This is faster in PyPy and can be made even faster optimizing a_alpha!
+    '''
+    N = len(a_alphas)
+    a_alpha_j_rows = [0.0]*N
+    a_alpha = 0.0
+    for i in range(N):
+        kijs_i = kijs[i]
+        a_alpha_i_root_i = a_alpha_roots[i]
+        for j in range(i):
+            a_alpha_ijs_ij = (1. - kijs_i[j])*a_alpha_i_root_i*a_alpha_roots[j]
+            t200 = a_alpha_ijs_ij*zs[i]
+            a_alpha_j_rows[j] += t200
+            a_alpha_j_rows[i] += zs[j]*a_alpha_ijs_ij
+            t200 *= zs[j]
+            a_alpha += t200 + t200
+
+        t200 = (1. - kijs_i[i])*a_alphas[i]*zs[i]
+        a_alpha += t200*zs[i]
+        a_alpha_j_rows[i] += t200
+
+    return a_alpha, a_alpha_j_rows
+    '''
 
 
 def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
