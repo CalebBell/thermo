@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2019, 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,54 +18,7 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-This module contains classes and functions for performing flash calculations.
-
-For reporting bugs, adding feature requests, or submitting pull requests,
-please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
-
-.. contents:: :local:
-
-Main Interfaces
-===============
-
-Pure Components
----------------
-.. autoclass:: FlashPureVLS
-   :show-inheritance:
-   :members: __init__
-   :exclude-members: __init__
-
-Vapor-Liquid Systems
---------------------
-.. autoclass:: FlashVL
-   :show-inheritance:
-   :members: __init__
-   :exclude-members: __init__
-
-Vapor and Multiple Liquid Systems
----------------------------------
-.. autoclass:: FlashVLN
-   :show-inheritance:
-   :members: __init__
-   :exclude-members: __init__
-
-Base Flash Class
-----------------
-.. autoclass:: Flash
-   :show-inheritance:
-   :members: flash, plot_TP
-   :exclude-members:
-
-
-Specific Flash Algorithms
-=========================
-It is recommended to use the Flash classes, which are designed to have generic
-interfaces. The implemented specific flash algorithms may be changed in the
-future, but reading their source code may be helpful for instructive purposes.
-
-'''
+SOFTWARE.'''
 
 __all__ = ['Flash']
 
