@@ -240,8 +240,11 @@ class FlashConstructor:
         raise NotImplementedError("this method is not implemented yet")
         
     def _liquid_from_cc(self, cc):
-        GE = self.GE.from_cc(cc, **self.GEkw) if self.GE else None
-        return self.L.from_cc(cc, GibbsExcessModel=GE, **self.Lkw)
+        if self.GE:
+            GE = self.GE.from_cc(cc, **self.GEkw)
+            return self.L.from_cc(cc, GibbsExcessModel=GE, **self.Lkw)
+        else:
+            return self.L.from_cc(cc, **self.Lkw)
 
     def _gas_from_cc(self, cc):
         return self.G.from_cc(cc, **self.Gkw)
