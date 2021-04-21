@@ -158,6 +158,9 @@ class FlashPackage:
         Key word arguments to initialize `S`.
     GEkw : GibbsExcessModel subclass
         Key word arguments to initialize `GE`.
+    settings : :obj:`BulkSettings <thermo.bulk.BulkSettings>`, optional
+        Object containing settings for calculating bulk and transport
+        properties, [-]
     
     Examples
     --------
