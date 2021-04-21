@@ -3011,7 +3011,7 @@ class GCEOS(object):
                     err = fugacity_l - fugacity_g
 #                    print(err, 'err', 'P', P)
                     return err
-                for low, high in zip([.98*Psat, 1, 1e-40, Pc*.9], [1.02*Psat, Pc, 1, Pc*1.000000001]):
+                for low, high in zip([.98*Psat, 1, 1e-40, Pc*.9, Psat*.9999], [1.02*Psat, Pc, 1, Pc*1.000000001, Pc]):
                     try:
                         Psat = bisect(to_solve_bisect, low, high, ytol=1e-6*Psat, maxiter=128)
 #                        print(to_solve_bisect(Psat), 'bisect error')
@@ -7461,9 +7461,8 @@ class PR(GCEOS):
         self.P = P
         self.V = V
 
-        Tc_Pc = Tc/Pc
-        self.a = self.c1R2*Tc*Tc_Pc
-        self.b = b = self.c2R*Tc_Pc
+        self.b = b = self.c2R*Tc/Pc
+        self.a = b*Tc*self.c1R2_c2R
         self.kappa = omega*(-0.26992*omega + 1.54226) + 0.37464
         self.delta = 2.0*b
         self.epsilon = -b*b
@@ -7500,7 +7499,7 @@ class PR(GCEOS):
         >>> eos.a_alpha_pure(250.0)
         15.66839156301
         '''
-        x0 = (1.0 + self.kappa*(1.0 - (T/self.Tc)**0.5))
+        x0 = (1.0 + self.kappa*(1.0 - sqrt(T/self.Tc)))
         return self.a*x0*x0
 
     def a_alpha_and_derivatives_pure(self, T):
@@ -7556,15 +7555,15 @@ class PR(GCEOS):
         # Applies up to Tr .85.
         # Suggested in Equations of State And PVT Analysis.
         Tc, kappa, a = self.Tc, self.kappa, self.a
-        x0 = T**0.5
-        x1 = Tc**-0.5
+        x0 = sqrt(T)
+        x1 = 1.0/sqrt(Tc)
         x2 = kappa*(x0*x1 - 1.) - 1.
         x3 = a*kappa
-        x4 = x1*x2
+        x4 = x1*x2/x0
 
         a_alpha = a*x2*x2
-        da_alpha_dT = x4*x3/x0
-        d2a_alpha_dT2 = 0.5*x3*(kappa/(T*Tc) - x4/(x0*T))
+        da_alpha_dT = x4*x3
+        d2a_alpha_dT2 = 0.5*x3*(kappa*x1*x1 - x4)/T
 
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
@@ -7605,7 +7604,7 @@ class PR(GCEOS):
         kappa = self.kappa
         x0 = 1.0/self.Tc
         T_inv = 1.0/T
-        x1 = (T*x0)**0.5
+        x1 = sqrt(T*x0)
         return -self.a*0.75*kappa*(kappa*x0 - x1*(kappa*(x1 - 1.0) - 1.0)*T_inv)*T_inv*T_inv
 
     def P_max_at_V(self, V):
@@ -9109,11 +9108,12 @@ class VDW(GCEOS):
     Zc = 3.0/8.
     '''Mechanical compressibility of :obj:`VDW` EOS'''
     
-    c1 = 27.0/64.0
+    c1 = 27.0/64.0    
+    c2 = 1.0/8.0
+
     c1R2 = c1*R2
-    
-    c2 = 1/8.0
     c2R = c2*R
+    c1R2_c2R = c1R2/c2R
 
     Psat_coeffs_limiting = [-3.0232164484175756, 0.20980668241160666]
 
@@ -9427,7 +9427,9 @@ class RK(GCEOS):
     Zc = 1.0/3.
     '''Mechanical compressibility of :obj:`RK` EOS'''
 
-    c1R2, c2R = c1*R2, c2*R
+    c1R2 = c1*R2
+    c2R = c2*R
+    c1R2_c2R = c1R2/c2R
 
     Psat_coeffs_limiting = [-72.700288369511583, -68.76714163049]
     Psat_coeffs_critical = [1129250.3276866912, 4246321.053155941,
@@ -9740,12 +9742,14 @@ class SRK(GCEOS):
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1))
     '''Full value of the constant in the `a` parameter'''
     
-    c1R2 = c1*R2
     
     c2 = 0.08664034996495772158907020242607611685675 # (2**(1/3.)-1)/3
     '''Full value of the constant in the `b` parameter'''
     
+    c1R2 = c1*R2
     c2R = c2*R
+    c1R2_c2R = c1R2/c2R
+
     epsilon = 0.0
     '''`epsilon` is always zero for the :obj:`SRK` EOS'''
     Zc = 1/3.
