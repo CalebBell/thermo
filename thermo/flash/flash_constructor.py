@@ -45,6 +45,7 @@ class ConstantsAndCorrelations(tuple):
     
     Examples
     --------
+    >>> import thermo as tmo
     >>> cc = constants, correlations = tmo.ConstantsAndCorrelations.from_IDs(['Water', 'Ethanol'])
     >>> constants.CASs
     ['7732-18-5', '64-17-5']
@@ -71,7 +72,7 @@ class ConstantsAndCorrelations(tuple):
     >>> cc.get_index('CH3CH2OH')
     1
     >>> cc.get_aliases('Ethanol') # Get all aliases used
-    ['Ethanol', 'etoh', 'ethanol', '64-17-5']
+    ['Ethanol', 'etoh', 'ethanol', '64-17-5', 'CH3CH2OH']
     
     """
     @classmethod
@@ -128,7 +129,7 @@ class ConstantsAndCorrelations(tuple):
         if aliases:
             for i, ID in enumerate(IDs):
                 index[ID] = i
-                for j in self.get_aliases(self.get_index(ID)): index[j] = i
+                for j in self.get_aliases(ID): index[j] = i
         cls = self.__class__
         indices = self.get_indices(IDs)
         return cls.__new__(cls, [i.subset(indices) for i in self], index)

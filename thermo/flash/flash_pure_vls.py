@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 __all__ = ['FlashPureVLS']
 
-from .flash_vl import Flash
+from .flash_abstract import Flash
 from fluids.numerics import (
     numpy as np,
     secant,
