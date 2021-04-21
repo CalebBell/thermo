@@ -304,12 +304,12 @@ class FlashVL(Flash):
     max_liquids = 1
     max_phases = 2
 
-    def __init__(self, constants, correlations, gas, liquid, settings=default_settings):
+    def __init__(self, constants, correlations, gas, liquid, settings=None):
         self.constants = constants
         self.correlations = correlations
         self.liquid = liquid
         self.gas = gas
-        self.settings = settings
+        self.settings = settings or default_settings
         self._finish_initialization()
 
     def _finish_initialization(self):

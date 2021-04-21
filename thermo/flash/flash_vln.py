@@ -167,12 +167,12 @@ class FlashVLN(FlashVL):
     K_COMPOSITION_INDEPENDENT_HACK = True
     skip_solids = True
 
-    def __init__(self, constants, correlations, liquids, gas, solids=None, settings=default_settings):
+    def __init__(self, constants, correlations, liquids, gas, solids=None, settings=None):
         self.constants = constants
         self.correlations = correlations
         self.liquids = liquids
         self.gas = gas
-        self.settings = settings
+        self.settings = settings or default_settings
         if solids:
             raise ValueError("Solids are not supported in this model")
         self._finish_initialization()
