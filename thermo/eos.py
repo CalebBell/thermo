@@ -9125,11 +9125,12 @@ class VDW(GCEOS):
     Zc = 3.0/8.
     '''Mechanical compressibility of :obj:`VDW` EOS'''
     
-    c1 = 27.0/64.0
+    c1 = 27.0/64.0    
+    c2 = 1.0/8.0
+
     c1R2 = c1*R2
-    
-    c2 = 1/8.0
     c2R = c2*R
+    c1R2_c2R = c1R2/c2R
 
     Psat_coeffs_limiting = [-3.0232164484175756, 0.20980668241160666]
 
@@ -9444,7 +9445,9 @@ class RK(GCEOS):
     Zc = 1.0/3.
     '''Mechanical compressibility of :obj:`RK` EOS'''
 
-    c1R2, c2R = c1*R2, c2*R
+    c1R2 = c1*R2
+    c2R = c2*R
+    c1R2_c2R = c1R2/c2R
 
     Psat_coeffs_limiting = [-72.700288369511583, -68.76714163049]
     Psat_coeffs_critical = [1129250.3276866912, 4246321.053155941,
@@ -9758,12 +9761,14 @@ class SRK(GCEOS):
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1))
     '''Full value of the constant in the `a` parameter'''
     
-    c1R2 = c1*R2
     
     c2 = 0.08664034996495772158907020242607611685675 # (2**(1/3.)-1)/3
     '''Full value of the constant in the `b` parameter'''
     
+    c1R2 = c1*R2
     c2R = c2*R
+    c1R2_c2R = c1R2/c2R
+
     epsilon = 0.0
     '''`epsilon` is always zero for the :obj:`SRK` EOS'''
     Zc = 1/3.

@@ -226,7 +226,7 @@ from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91
 from thermo.eos import *
 
 try:
-    zeros, array, npexp, npsqrt, empty, full = np.zeros, np.array, np.exp, np.sqrt, np.empty, np.full
+    zeros, array, npexp, npsqrt, empty, full, npwhere = np.zeros, np.array, np.exp, np.sqrt, np.empty, np.full, np.where
 except:
     pass
 
@@ -1144,8 +1144,8 @@ class GCEOSMIX(GCEOS):
 #            return a_alpha
 
     def a_alpha_and_derivatives_py(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
-        zs, kijs = self.zs, self.kijs
-        if type(a_alphas) is list:
+        zs, kijs, scalar, N = self.zs, self.kijs, self.scalar, self.N
+        if scalar:
             self.a_alpha_roots = a_alpha_roots = [sqrt(i) for i in a_alphas]
         else:
             self.a_alpha_roots = a_alpha_roots = npsqrt(a_alphas)
@@ -1155,14 +1155,20 @@ class GCEOSMIX(GCEOS):
 #            a_alpha, da_alpha_dT, d2a_alpha_dT2, self.a_alpha_j_rows, self.da_alpha_dT_j_rows = (
 #                    a_alpha_and_derivatives_quadratic_terms(np.array(a_alphas), np.array(a_alpha_roots), np.array(da_alpha_dTs),
 #                                                            np.array(d2a_alpha_dT2s), T, np.array(zs), np.array(kijs)))
+            if scalar:
+                a_alpha_j_rows, da_alpha_dT_j_rows = [0.0]*N, [0.0]*N
+            else:
+                a_alpha_j_rows, da_alpha_dT_j_rows = zeros(N), zeros(N)
             a_alpha, da_alpha_dT, d2a_alpha_dT2, self.a_alpha_j_rows, self.da_alpha_dT_j_rows = (
                     a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots, da_alpha_dTs,
-                                                            d2a_alpha_dT2s, T, zs, kijs))
+                                                            d2a_alpha_dT2s, T, zs, kijs,
+                                                            a_alpha_j_rows=a_alpha_j_rows, da_alpha_dT_j_rows=da_alpha_dT_j_rows))
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
         else:
 #            a_alpha, self.a_alpha_j_rows = a_alpha_quadratic_terms(np.array(a_alphas), np.array(a_alpha_roots), T, np.array(zs), np.array(kijs))
-            a_alpha, self.a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs)
+            a_alpha_j_rows = [0.0]*N if scalar else zeros(N)
+            a_alpha, self.a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs, a_alpha_j_rows=a_alpha_j_rows)
             return a_alpha
 
 
@@ -6866,7 +6872,10 @@ class PRMIX(GCEOSMIX, PR):
         self.zs = zs
         self.scalar = scalar = type(zs) is list
         if kijs is None:
-            kijs = [[0.0]*N for i in cmps]
+            if scalar:
+                kijs = [[0.0]*N for i in cmps]
+            else:
+                kijs = zeros((N, N))
         self.kijs = kijs
         self.kwargs = {'kijs': kijs}
         self.T = T
@@ -6929,7 +6938,8 @@ class PRMIX(GCEOSMIX, PR):
         a_alphas : list[float]
             Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
         '''
-        return PR_a_alphas_vectorized(T, self.Tcs, self.ais, self.kappas)
+        return PR_a_alphas_vectorized(T, self.Tcs, self.ais, self.kappas,
+                                      a_alphas=[0.0]*self.N if self.scalar else zeros(self.N))
 
     def a_alpha_and_derivatives_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` and their first
@@ -6965,7 +6975,13 @@ class PRMIX(GCEOSMIX, PR):
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
-        return PR_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais, self.kappas)
+        N = self.N
+        if self.scalar:
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [0.0]*N, [0.0]*N, [0.0]*N
+        else:
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = zeros(N), zeros(N), zeros(N)
+        return PR_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais, self.kappas, a_alphas=a_alphas,
+                                                     da_alpha_dTs=da_alpha_dTs, d2a_alpha_dT2s=d2a_alpha_dT2s)
 
     @property
     def d3a_alpha_dT3(self):
@@ -9018,6 +9034,8 @@ class SRKMIXTranslated(SRKMIX):
         self.omegas = omegas
         self.zs = zs
         self.scalar = scalar = type(zs) is list
+        if cs is None:
+            cs = [0.0]*N
         if kijs is None:
             kijs = [[0]*self.N for i in range(self.N)]
         self.kijs = kijs
@@ -9030,8 +9048,6 @@ class SRKMIXTranslated(SRKMIX):
         b0s = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
         self.ms = [0.480 + 1.574*omega - 0.176*omega*omega for omega in omegas]
 
-        if cs is None:
-            cs = [0.0]*N
         self.cs = cs
 
         b0, c = 0.0, 0.0
@@ -9952,32 +9968,49 @@ class PR78MIX(PRMIX):
     model_id = 10201
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
-        self.N = len(Tcs)
+        self.N = N = len(Tcs)
+        cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
         self.scalar = scalar = type(zs) is list
         if kijs is None:
-            kijs = [[0]*self.N for i in range(self.N)]
+            if scalar:
+                kijs = [[0.0]*N for i in range(N)]
+            else:
+                kijs = zeros((N, N))
         self.kijs = kijs
         self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
         self.V = V
+        
+        c1R2_c2R, c2R = self.c1R2_c2R, self.c2R
 
-        self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
-        self.kappas = []
-        for omega in omegas:
-            if omega <= 0.491:
-                self.kappas.append(0.37464 + 1.54226*omega - 0.26992*omega*omega)
-            else:
-                self.kappas.append(0.379642 + 1.48503*omega - 0.164423*omega**2 + 0.016666*omega**3)
+        if scalar:
+            self.bs = bs = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+            self.ais = [c1R2_c2R*Tcs[i]*bs[i] for i in cmps]
+            self.kappas = kappas = [omega*(-0.26992*omega + 1.54226) + 0.37464 for omega in omegas]
+            for i, omega in enumerate(omegas):
+                if omega > 0.491:
+                    kappas[i] = omega*(omega*(0.016666*omega - 0.164423) + 1.48503) + 0.379642
+            b = 0.0
+            for i in cmps:
+                b += bs[i]*zs[i]
+            
+        else:
+            self.bs = bs = c2R*Tcs/Pcs
+            self.ais = c1R2_c2R*Tcs*bs
+            self.kappas = kappas = omegas*(-0.26992*omegas + 1.54226) + 0.37464
+            b = float((bs*zs).sum())
+            high_omega_idxs = npwhere(omegas > 0.491)
+            high_omegas = omegas[high_omega_idxs]
+            kappas[high_omega_idxs] = high_omegas*(high_omegas*(0.016666*high_omegas - 0.164423) + 1.48503) + 0.379642
+        self.b = b
 
-        self.delta = 2.*self.b
-        self.epsilon = -self.b*self.b
+        self.delta = 2.*b
+        self.epsilon = -b*b
 
         self.solve(only_l=only_l, only_g=only_g)
         if fugacities:
@@ -10489,7 +10522,7 @@ class PRSVMIX(PRMIX, PRSV):
     V : float, optional
         Molar volume, [m^3/mol]
     kappa1s : list[float], optional
-        Fit parameter; available in [1]_ for over 90 compounds, [-]
+        Fit parameter; available in [1]_ for over 90 compounds, SRKMIXTranslated[-]
     fugacities : bool, optional
         Whether or not to calculate fugacity related values (phis, log phis,
         and fugacities); default True, [-]
@@ -10786,6 +10819,7 @@ class PRSV2MIX(PRMIX, PRSV2):
                  kappa1s=None, kappa2s=None, kappa3s=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
+        cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
@@ -10793,15 +10827,27 @@ class PRSV2MIX(PRMIX, PRSV2):
         self.scalar = scalar = type(zs) is list
 
         if kijs is None:
-            kijs = [[0.0]*self.N for i in range(self.N)]
+            if scalar:
+                kijs = [[0.0]*N for i in cmps]
+            else:
+                kijs = zeros((N, N))
         self.kijs = kijs
-
-        if kappa1s is None:
-            kappa1s = [0.0]*N
-        if kappa2s is None:
-            kappa2s = [0.0]*N
-        if kappa3s is None:
-            kappa3s = [0.0]*N
+        
+        if scalar:
+            if kappa1s is None:
+                kappa1s = [0.0]*N
+            if kappa2s is None:
+                kappa2s = [0.0]*N
+            if kappa3s is None:
+                kappa3s = [0.0]*N
+        else:
+            if kappa1s is None:
+                kappa1s = zeros(N)
+            if kappa2s is None:
+                kappa2s = zeros(N)
+            if kappa3s is None:
+                kappa3s = zeros(N)
+        
         self.kwargs = {'kijs': kijs, 'kappa1s': kappa1s, 'kappa2s': kappa2s, 'kappa3s': kappa3s}
         self.kappa1s = kappa1s
         self.kappa2s = kappa2s
@@ -10810,26 +10856,45 @@ class PRSV2MIX(PRMIX, PRSV2):
         self.T = T
         self.P = P
         self.V = V
+        
+        c2R, c1R2_c2R = self.c2R, self.c1R2_c2R
 
-        self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
+        if scalar:
+            self.bs = bs = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+            self.ais = [c1R2_c2R*Tcs[i]*bs[i] for i in cmps]
+            self.kappa0s = kappa0s = [omega*(omega*(0.0196554*omega - 0.17131848) + 1.4897153) + 0.378893 for omega in omegas]
+            b = 0.0
+            for i in cmps:
+                b += bs[i]*zs[i]
+        else:
+            self.bs = bs = c2R*Tcs/Pcs
+            self.ais = c1R2_c2R*Tcs*bs
+            self.kappa0s = kappa0s = omegas*(omegas*(0.0196554*omegas - 0.17131848) + 1.4897153) + 0.378893
+            b = float((bs*zs).sum())
+        self.b = b
 
-        self.kappa0s = [0.378893 + 1.4897153*omega - 0.17131848*omega**2 + 0.0196554*omega**3 for omega in omegas]
-
-        self.delta = 2*self.b
-        self.epsilon = -self.b*self.b
+        self.delta = 2.0*b
+        self.epsilon = -b*b
 
 
         if self.V and self.P:
             solution = 'g' if (only_g and not only_l) else ('l' if only_l else None)
-            self.T = self.solve_T(self.P, self.V, solution=solution)
+            self.T = T = self.solve_T(self.P, self.V, solution=solution)
 
-        self.kappas = []
-        for Tc, kappa0, kappa1, kappa2, kappa3 in zip(Tcs, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s):
-            Tr = self.T/Tc
-            kappa = kappa0 + ((kappa1 + kappa2*(kappa3 - Tr)*(1. - Tr**0.5))*(1. + Tr**0.5)*(0.7 - Tr))
-            self.kappas.append(kappa)
+        
+        if scalar:
+            kappas = [0.0]*N
+            for i in cmps:
+                Tr = T/Tcs[i]
+                sqrtTr = sqrt(Tr)
+                kappas[i] = kappa0s[i] + ((kappa1s[i] + kappa2s[i]*(kappa3s[i] - Tr)*(1. - sqrtTr))*(1. + sqrtTr)*(0.7 - Tr))
+        else:
+            Trs = T/Tcs
+            sqrtTrs = npsqrt(Trs)
+            kappas = kappa0s + ((kappa1s + kappa2s*(kappa3s - Trs)*(1. - sqrtTrs))*(1. + sqrtTrs)*(0.7 - Trs))
+        
+        self.kappas = kappas
+        
         self.solve(only_l=only_l, only_g=only_g)
         if fugacities:
             self.fugacities()
@@ -10840,9 +10905,12 @@ class PRSV2MIX(PRMIX, PRSV2):
         self.kappa2s = other.kappa2s
         self.kappa3s = other.kappa3s
         self.kappas = other.kappas
-        b = 0.0
-        for bi, zi in zip(self.bs, self.zs):
-            b += bi*zi
+        if self.scalar:
+            b = 0.0
+            for bi, zi in zip(self.bs, self.zs):
+                b += bi*zi
+        else:
+            b = float((self.bs*self.zs).sum())
         self.b = b
         self.delta = b + b
         self.epsilon = -b*b
@@ -10867,7 +10935,8 @@ class PRSV2MIX(PRMIX, PRSV2):
         >>> eos.a_alphas_vectorized(300)
         [0.0860568595, 0.20174345803]
         '''
-        return PRSV2_a_alphas_vectorized(T, self.Tcs, self.ais, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s)
+        return PRSV2_a_alphas_vectorized(T, self.Tcs, self.ais, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s,
+                                         a_alphas=([0.0]*self.N if self.scalar else zeros(self.N)))
 
     def a_alpha_and_derivatives_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` and their first
@@ -10890,7 +10959,13 @@ class PRSV2MIX(PRMIX, PRSV2):
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
-        return PRSV2_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s)
+        N = self.N
+        if self.scalar:
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [0.0]*N, [0.0]*N, [0.0]*N
+        else:
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = zeros(N), zeros(N), zeros(N)
+        return PRSV2_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s,
+                                                        a_alphas=a_alphas, da_alpha_dTs=da_alpha_dTs, d2a_alpha_dT2s=d2a_alpha_dT2s)
 
 
 class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
@@ -11004,19 +11079,31 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
         self.zs = zs
         self.scalar = scalar = type(zs) is list
         if kijs is None:
-            kijs = [[0.0]*N for i in cmps]
+            if scalar:
+                kijs = [[0.0]*N for i in cmps]
+            else:
+                kijs = zeros((N, N))
         self.kijs = kijs
         self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
         self.V = V
+        
+        c2R, c1R2_c2R = self.c2R, self.c1R2_c2R
+        if scalar:
+            self.bs = bs = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+            self.ais = [c1R2_c2R*Tcs[i]*bs[i] for i in cmps]
+            b = 0.0
+            for i in cmps:
+                b += bs[i]*zs[i]
+        else:
+            self.bs = bs = c2R*Tcs/Pcs
+            self.ais = c1R2_c2R*Tcs*bs
+            b = float((bs*zs).sum())
+        self.b = b
 
-        self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
-
-        self.delta = 2.*self.b
-        self.epsilon = -self.b*self.b
+        self.delta = 2.*b
+        self.epsilon = -b*b
         self.check_sufficient_inputs()
 
         self.solve(only_l=only_l, only_g=only_g)
@@ -11024,9 +11111,12 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
             self.fugacities()
 
     def _fast_init_specific(self, other):
-        b = 0.0
-        for bi, zi in zip(self.bs, self.zs):
-            b += bi*zi
+        if self.scalar:
+            b = 0.0
+            for bi, zi in zip(self.bs, self.zs):
+                b += bi*zi
+        else:
+            b = float((self.bs*self.zs).sum())
         self.b = b
         self.delta = 2.0*b
         self.epsilon = -b*b
@@ -11136,25 +11226,37 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
     model_id = 10104
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
-        self.N = len(Tcs)
+        self.N = N = len(Tcs)
+        cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
         self.scalar = scalar = type(zs) is list
         if kijs is None:
-            kijs = [[0]*self.N for i in range(self.N)]
+            if scalar:
+                kijs = [[0.0]*N for i in range(N)]
+            else:
+                kijs = zeros((N, N))
         self.kijs = kijs
         self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
         self.V = V
 
-        self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
+        c2R, c1R2_c2R = self.c2R, self.c1R2_c2R
+        if scalar:
+            self.bs = bs = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+            self.ais = [c1R2_c2R*Tcs[i]*bs[i] for i in cmps]
+            b = 0.0
+            for i in cmps:
+                b += bs[i]*zs[i]
+        else:
+            self.bs = bs = c2R*Tcs/Pcs
+            self.ais = c1R2_c2R*Tcs*bs
+            b = float((bs*zs).sum())
 
-        self.delta = self.b
+        self.delta = self.b = b
         self.check_sufficient_inputs()
 
         self.solve(only_l=only_l, only_g=only_g)
@@ -11164,8 +11266,11 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
     def _fast_init_specific(self, other):
         b = 0.0
         bs, zs = self.bs, self.zs
-        for i in range(self.N):
-            b += bs[i]*zs[i]
+        if self.scalar:
+            for i in range(self.N):
+                b += bs[i]*zs[i]
+        else:
+            b = float((bs*zs).sum())
         self.delta = self.b = b
 
 class APISRKMIX(SRKMIX, APISRK):
@@ -11266,13 +11371,17 @@ class APISRKMIX(SRKMIX, APISRK):
     def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
                  S1s=None, S2s=None, fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
+        cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
         self.scalar = scalar = type(zs) is list
         if kijs is None:
-            kijs = [[0.0]*self.N for i in range(self.N)]
+            if scalar:
+                kijs = [[0.0]*N for i in cmps]
+            else:
+                kijs = zeros((N, N))
         self.kijs = kijs
         self.kwargs = {'kijs': kijs}
         self.T = T
@@ -11283,21 +11392,33 @@ class APISRKMIX(SRKMIX, APISRK):
 
         # Setup S1s and S2s
         if S1s is None and omegas is None:
-            raise Exception('Either acentric factor of S1 is required')
+            raise ValueError('Either acentric factor of S1 is required')
         if S1s is None:
-            self.S1s = [0.48508 + 1.55171*omega - 0.15613*omega*omega for omega in omegas]
+            if scalar:
+                self.S1s = [omega*(1.55171 - 0.15613*omega) + 0.48508 for omega in omegas]
+            else:
+                self.S1s = omegas*(1.55171 - 0.15613*omegas) + 0.48508
         else:
             self.S1s = S1s
         if S2s is None:
-            S2s = [0.0]*N
+            if scalar:
+                S2s = [0.0]*N
+            else:
+                S2s = zeros(N)
         self.S2s = S2s
         self.kwargs = {'S1s': self.S1s, 'S2s': self.S2s}
-
-        self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
-        self.delta = self.b
-
+        c2R, c1R2_c2R = self.c2R, self.c1R2_c2R
+        if scalar:
+            self.bs = bs = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+            self.ais = [c1R2_c2R*Tcs[i]*bs[i] for i in cmps]
+            b = 0.0
+            for i in cmps:
+                b += bs[i]*zs[i]
+        else:
+            self.bs = bs = c2R*Tcs/Pcs
+            self.ais = c1R2_c2R*Tcs*bs
+            b = float((bs*zs).sum())
+        self.b = self.delta = b
         self.solve(only_l=only_l, only_g=only_g)
         if fugacities:
             self.fugacities()
@@ -11305,12 +11426,14 @@ class APISRKMIX(SRKMIX, APISRK):
     def _fast_init_specific(self, other):
         self.S1s = other.S1s
         self.S2s = other.S2s
-
-        self.b = b = sum([bi*zi for bi, zi in zip(self.bs, self.zs)])
-        self.delta = self.b
+        if self.scalar:
+            self.delta = self.b = sum([bi*zi for bi, zi in zip(self.bs, self.zs)])
+        else:
+            self.delta = self.b = float((self.bs*self.zs).sum())
 
     def a_alphas_vectorized(self, T):
-        return APISRK_a_alphas_vectorized(T, self.Tcs, self.ais, self.S1s, self.S2s)
+        a_alphas = [0.0]*self.N if self.scalar else zeros(self.N)
+        return APISRK_a_alphas_vectorized(T, self.Tcs, self.ais, self.S1s, self.S2s, a_alphas=a_alphas)
 
     def a_alpha_and_derivatives_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` and their first
@@ -11351,7 +11474,14 @@ class APISRKMIX(SRKMIX, APISRK):
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
-        return APISRK_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais, self.S1s, self.S2s)
+        N = self.N
+        if self.scalar:
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [0.0]*N, [0.0]*N, [0.0]*N
+        else:
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = zeros(N), zeros(N), zeros(N)
+        return APISRK_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais, self.S1s, self.S2s,
+                                                         a_alphas=a_alphas, da_alpha_dTs=da_alpha_dTs,
+                                                         d2a_alpha_dT2s=d2a_alpha_dT2s)
 
 
     def P_max_at_V(self, V):
@@ -11367,11 +11497,13 @@ class APISRKMIX(SRKMIX, APISRK):
 
 eos_mix_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, PRSVMIX, PRSV2MIX, TWUPRMIX,
                 TWUSRKMIX, APISRKMIX, IGMIX, RKMIX, PRMIXTranslatedConsistent,
-                PRMIXTranslatedPPJP, SRKMIXTranslatedConsistent]
+                PRMIXTranslatedPPJP, SRKMIXTranslatedConsistent,
+                PRMIXTranslated, SRKMIXTranslated]
 '''List of all exported EOS classes.
 '''
 eos_mix_no_coeffs_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, TWUPRMIX, TWUSRKMIX,
-                          IGMIX, RKMIX, PRMIXTranslatedConsistent,
+                          IGMIX, RKMIX, PRMIXTranslatedConsistent, PRMIXTranslated,
+                          SRKMIXTranslated,
                           PRMIXTranslatedPPJP, SRKMIXTranslatedConsistent]
 '''List of all exported EOS classes that do not require special parameters
 or can fill in their special parameters from other specified parameters.

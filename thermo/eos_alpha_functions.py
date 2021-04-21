@@ -186,7 +186,7 @@ __all__ = [
 from fluids.numerics import (horner, horner_and_der2)
 from chemicals.utils import log, exp, sqrt, copysign
 
-def PR_a_alphas_vectorized(T, Tcs, ais, kappas):
+def PR_a_alphas_vectorized(T, Tcs, ais, kappas, a_alphas=None):
     r'''Calculates the `a_alpha` terms for the Peng-Robinson equation of state
     given the critical temperatures `Tcs`, constants `ais`, and
     `kappas`.
@@ -207,6 +207,9 @@ def PR_a_alphas_vectorized(T, Tcs, ais, kappas):
         `kappa` parameters of Peng-Robinson EOS; formulas vary, but
         the original form uses
         :math:`\kappa_i=0.37464+1.54226\omega_i-0.26992\omega^2_i`, [-]
+    a_alphas : list[float], optional
+        Vector for pure component `a_alpha` terms in the cubic EOS to be
+        calculated and stored in, [Pa*m^6/mol^2]
 
     Returns
     -------
@@ -227,14 +230,16 @@ def PR_a_alphas_vectorized(T, Tcs, ais, kappas):
     N = len(Tcs)
     x0_inv = 1.0/sqrt(T)
     x0 = T*x0_inv
-    a_alphas = [0.0]*N
+    if a_alphas is None:
+        a_alphas = [0.0]*N
     for i in range(N):
         x1 = 1.0/sqrt(Tcs[i])
         x2 = kappas[i]*(x0*x1 - 1.) - 1.
         a_alphas[i] = ais[i]*x2*x2
     return a_alphas
 
-def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas):
+def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas, a_alphas=None,
+                                          da_alpha_dTs=None, d2a_alpha_dT2s=None):
     r'''Calculates the `a_alpha` terms and their first two temperature
     derivatives for the Peng-Robinson equation of state
     given the critical temperatures `Tcs`, constants `ais`, and
@@ -294,10 +299,13 @@ def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas):
     T_inv = x0_inv*x0_inv
     x0T_inv = x0_inv*T_inv
     x5, x6 = 0.5*T_inv, 0.5*x0T_inv
-
-    a_alphas = [0.0]*N
-    da_alpha_dTs = [0.0]*N
-    d2a_alpha_dT2s = [0.0]*N
+    
+    if a_alphas is None:
+        a_alphas = [0.0]*N
+    if da_alpha_dTs is None:
+        da_alpha_dTs = [0.0]*N
+    if d2a_alpha_dT2s is None:
+        d2a_alpha_dT2s = [0.0]*N
     for i in range(N):
         x1 = 1.0/sqrt(Tcs[i])
         x2 = kappas[i]*(x0*x1 - 1.) - 1.
@@ -308,7 +316,7 @@ def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas):
         d2a_alpha_dT2s[i] = x3*(x5*x1*x1*kappas[i] - x4*x6)
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
-def SRK_a_alphas_vectorized(T, Tcs, ais, ms):
+def SRK_a_alphas_vectorized(T, Tcs, ais, ms, a_alphas=None):
     r'''Calculates the `a_alpha` terms for the SRK equation of state
     given the critical temperatures `Tcs`, constants `ais`, and
     `kappas`.
@@ -349,13 +357,16 @@ def SRK_a_alphas_vectorized(T, Tcs, ais, ms):
     '''
     sqrtT = sqrt(T)
     N = len(Tcs)
-    a_alphas = [0.0]*N
+    if a_alphas is None:
+        a_alphas = [0.0]*N
     for i in range(N):
         x0 = ms[i]*(1. - sqrtT/sqrt(Tcs[i])) + 1.0
         a_alphas[i] = ais[i]*x0*x0
     return a_alphas
 
-def SRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, ms):
+def SRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, ms, a_alphas=None,
+                                           da_alpha_dTs=None, 
+                                           d2a_alpha_dT2s=None):
     r'''Calculates the `a_alpha` terms and their first and second temperature
     derivatives for the SRK equation of state
     given the critical temperatures `Tcs`, constants `ais`, and
@@ -415,9 +426,12 @@ def SRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, ms):
     T_inv = sqrtnT*sqrtnT
     x10 = 0.5*T_inv*T_inv
     nT_inv = -T_inv
-    a_alphas = [0.0]*N
-    da_alpha_dTs = [0.0]*N
-    d2a_alpha_dT2s = [0.0]*N
+    if a_alphas is None:
+        a_alphas = [0.0]*N
+    if da_alpha_dTs is None:
+        da_alpha_dTs = [0.0]*N
+    if d2a_alpha_dT2s is None:
+        d2a_alpha_dT2s = [0.0]*N
 
     for i in range(N):
         x1 = sqrtT/sqrt(Tcs[i])
@@ -429,7 +443,7 @@ def SRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, ms):
         d2a_alpha_dT2s[i] = x2*x10*(ms[i] + 1.)
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
-def RK_a_alphas_vectorized(T, Tcs, ais):
+def RK_a_alphas_vectorized(T, Tcs, ais, a_alphas=None):
     r'''Calculates the `a_alpha` terms for the RK equation of state
     given the critical temperatures `Tcs`, and `a` parameters `ais`.
 
@@ -462,13 +476,15 @@ def RK_a_alphas_vectorized(T, Tcs, ais):
     [2.3362073307, 3.16943743055, 4.0825575798]
     '''
     N = len(ais)
-    a_alphas = [0.0]*N
+    if a_alphas is None:
+        a_alphas = [0.0]*N
     T_root_inv = 1.0/sqrt(T)
     for i in range(N):
         a_alphas[i] = ais[i]*sqrt(Tcs[i])*T_root_inv
     return a_alphas
 
-def RK_a_alpha_and_derivatives_vectorized(T, Tcs, ais):
+def RK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, a_alphas=None,
+                                          da_alpha_dTs=None, d2a_alpha_dT2s=None):
     r'''Calculates the `a_alpha` terms and their first and second temperature
     derivatives for the RK equation of state
     given the critical temperatures `Tcs`, and `a` parameters `ais`.
@@ -514,9 +530,12 @@ def RK_a_alpha_and_derivatives_vectorized(T, Tcs, ais):
     ([2.3362073307, 3.16943743055, 4.08255757984], [-0.00362438693525, -0.0049170582868, -0.00633367088622], [1.6868597855e-05, 2.28849403652e-05, 2.94781294155e-05])
     '''
     N = len(ais)
-    a_alphas = [0.0]*N
-    da_alpha_dTs = [0.0]*N
-    d2a_alpha_dT2s = [0.0]*N
+    if a_alphas is None:
+        a_alphas = [0.0]*N
+    if da_alpha_dTs is None:
+        da_alpha_dTs = [0.0]*N
+    if d2a_alpha_dT2s is None:
+        d2a_alpha_dT2s = [0.0]*N
     T_root_inv = 1.0/sqrt(T)
     T_inv = T_root_inv*T_root_inv
     T_15_inv = T_inv*T_root_inv
@@ -532,7 +551,7 @@ def RK_a_alpha_and_derivatives_vectorized(T, Tcs, ais):
         d2a_alpha_dT2s[i] = aiTc_05*x1
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
-def PRSV_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s):
+def PRSV_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s, a_alphas=None):
     r'''Calculates the `a_alpha` terms for the Peng-Robinson-Stryjek-Vera
     equation of state given the critical temperatures `Tcs`, constants `ais`, PRSV
     parameters `kappa0s` and `kappa1s`.
@@ -577,7 +596,8 @@ def PRSV_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s):
     '''
     sqrtT = sqrt(T)
     N = len(Tcs)
-    a_alphas = [0.0]*N
+    if a_alphas is None:
+        a_alphas = [0.0]*N
     for i in range(N):
         Tc_inv_root = 1.0/sqrt(Tcs[i])
         Tc_inv = Tc_inv_root*Tc_inv_root
@@ -586,7 +606,9 @@ def PRSV_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s):
         a_alphas[i] = ais[i]*x2*x2
     return a_alphas
 
-def PRSV_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s):
+def PRSV_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s,
+                                            a_alphas=None, da_alpha_dTs=None,
+                                            d2a_alpha_dT2s=None):
     r'''Calculates the `a_alpha` terms and their first and second derivative
     for the Peng-Robinson-Stryjek-Vera
     equation of state given the critical temperatures `Tcs`, constants `ais`, PRSV
@@ -677,9 +699,12 @@ def PRSV_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s):
     sqrtT = sqrt(T)
     T_inv = 1.0/T
     N = len(Tcs)
-    a_alphas = [0.0]*N
-    da_alpha_dTs = [0.0]*N
-    d2a_alpha_dT2s = [0.0]*N
+    if a_alphas is None:
+        a_alphas = [0.0]*N
+    if da_alpha_dTs is None:
+        da_alpha_dTs = [0.0]*N
+    if d2a_alpha_dT2s is None:
+        d2a_alpha_dT2s = [0.0]*N
     for i in range(N):
         Tc_inv_root = 1.0/sqrt(Tcs[i])
         Tc_inv = Tc_inv_root*Tc_inv_root
@@ -707,7 +732,8 @@ def PRSV_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s):
         d2a_alpha_dT2s[i] = d2a_alpha_dT2
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
-def PRSV2_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s):
+def PRSV2_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s,
+                              a_alphas=None):
     r'''Calculates the `a_alpha` terms for the Peng-Robinson-Stryjek-Vera 2
     equation of state given the critical temperatures `Tcs`, constants `ais`,
     PRSV2 parameters `kappa0s, `kappa1s`, `kappa2s`, and `kappa3s`.
@@ -753,7 +779,8 @@ def PRSV2_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s):
     '''
     sqrtT = sqrt(T)
     N = len(Tcs)
-    a_alphas = [0.0]*N
+    if a_alphas is None:
+        a_alphas = [0.0]*N
     for i in range(N):
         Tc_inv_root = 1.0/sqrt(Tcs[i])
         Tr_sqrt = sqrtT*Tc_inv_root
@@ -764,7 +791,8 @@ def PRSV2_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s):
         a_alphas[i] = ais[i]*x0*x0
     return a_alphas
 
-def PRSV2_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s):
+def PRSV2_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s,
+                                             a_alphas=None, da_alpha_dTs=None, d2a_alpha_dT2s=None):
     r'''Calculates the `a_alpha` terms and their first and second derivatives
     for the Peng-Robinson-Stryjek-Vera 2
     equation of state given the critical temperatures `Tcs`, constants `ais`,
@@ -895,9 +923,12 @@ def PRSV2_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s, kapp
     sqrtT = sqrt(T)
     T_inv = 1.0/T
     N = len(Tcs)
-    a_alphas = [0.0]*N
-    da_alpha_dTs = [0.0]*N
-    d2a_alpha_dT2s = [0.0]*N
+    if a_alphas is None:
+        a_alphas = [0.0]*N
+    if da_alpha_dTs is None:
+        da_alpha_dTs = [0.0]*N
+    if d2a_alpha_dT2s is None:
+        d2a_alpha_dT2s = [0.0]*N
     for i in range(N):
         Tc_inv_root = 1.0/sqrt(Tcs[i])
         Tc_inv = Tc_inv_root*Tc_inv_root
@@ -935,7 +966,7 @@ def PRSV2_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s, kapp
         d2a_alpha_dT2s[i] = d2a_alpha_dT2
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
-def APISRK_a_alphas_vectorized(T, Tcs, ais, S1s, S2s):
+def APISRK_a_alphas_vectorized(T, Tcs, ais, S1s, S2s, a_alphas=None):
     r'''Calculates the `a_alpha` terms for the API SRK equation of state
     given the critical temperatures `Tcs`, constants `ais`, and
     API parameters `S1s` and `S2s`.
@@ -974,7 +1005,8 @@ def APISRK_a_alphas_vectorized(T, Tcs, ais, S1s, S2s):
     '''
     N = len(Tcs)
     sqrtT = sqrt(T)
-    a_alphas = [0.0]*N
+    if a_alphas is None:
+        a_alphas = [0.0]*N
     for i in range(N):
         rtTr = 1.0/sqrt(Tcs[i])
         x0 = (-rtTr*sqrtT + 1.)
@@ -983,7 +1015,8 @@ def APISRK_a_alphas_vectorized(T, Tcs, ais, S1s, S2s):
         a_alphas[i] = ais[i]*x2*x2
     return a_alphas
 
-def APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s):
+def APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s, a_alphas=None, 
+                                              da_alpha_dTs=None, d2a_alpha_dT2s=None):
     r'''Calculates the `a_alpha` terms and their first two temperature
     derivatives for the API SRK equation of state
     given the critical temperatures `Tcs`, constants `ais`, and
@@ -1045,9 +1078,12 @@ def APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s):
     N = len(Tcs)
     T_inv = 1.0/T
     c0 = T_inv*T_inv*0.5
-    a_alphas = [0.0]*N
-    da_alpha_dTs = [0.0]*N
-    d2a_alpha_dT2s = [0.0]*N
+    if a_alphas is None:
+        a_alphas = [0.0]*N
+    if da_alpha_dTs is None:
+        da_alpha_dTs = [0.0]*N
+    if d2a_alpha_dT2s is None:
+        d2a_alpha_dT2s = [0.0]*N
     for i in range(N):
         x0 = sqrt(T/Tcs[i])
         x1 = x0 - 1.
