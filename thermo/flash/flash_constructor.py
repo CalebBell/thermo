@@ -29,7 +29,7 @@ from ..bulk import default_settings
 
 __all__ = (
     'ConstantsAndCorrelations',
-    'FlashPackage',
+    'FlashConstructor',
 )
 
 class ConstantsAndCorrelations(tuple):
@@ -134,9 +134,9 @@ class ConstantsAndCorrelations(tuple):
         return cls.__new__(cls, [i.subset(indices) for i in self], index)
 
 
-class FlashPackage:
+class FlashConstructor:
     """
-    Create a FlashPackage object that predefines flash algorithms
+    Create a FlashConstructor object that predefines flash algorithms
     for easier creation of Flash and Phase objects.
     
     Parameters
@@ -165,7 +165,7 @@ class FlashPackage:
     Examples
     --------
     >>> import thermo as tmo
-    >>> flashpkg = tmo.FlashPackage.from_IDs(
+    >>> flashpkg = tmo.FlashConstructor.from_IDs(
     ...     IDs=['Water', 'Ethanol', 'Hexanol'], 
     ...     G=tmo.CEOSGas, L=tmo.GibbsExcessLiquid, S=tmo.GibbsExcessSolid,
     ...     GE=tmo.UNIFAC, GEkw=dict(version=1), Gkw=dict(eos_class=tmo.PRMIX),
