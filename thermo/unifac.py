@@ -3555,7 +3555,6 @@ class UNIFAC(GibbsExcess):
                 subgroups = NISTKTUFSG
         if interaction_data is None:
             if not _unifac_ip_loaded: load_unifac_ip()
-            interaction_data = UFIP
             if version == 0:
                 interaction_data = UFIP
             elif version == 1:
