@@ -97,6 +97,17 @@ class CEOSGas(Phase):
     model_attributes = ('Hfs', 'Gfs', 'Sfs', 'eos_class',
                         'eos_kwargs') + pure_references
 
+    @classmethod
+    def from_cc(cls, cc, eos_class):
+        from thermo.interaction_parameters import IPDB
+        constants, correlations = cc
+        kijs = IPDB.get_ip_asymmetric_matrix('ChemSep PR', constants.CASs, 'kij')
+        eos_kwargs = dict(Tcs=constants.Tcs,
+                          Pcs=constants.Pcs,
+                          omegas=constants.omegas,
+                          kijs=kijs)
+        return cls(eos_class, eos_kwargs, correlations.HeatCapacityGases)
+
     @property
     def phase(self):
         phase = self.eos_mix.phase

@@ -3472,6 +3472,19 @@ class UNIFAC(GibbsExcess):
 
     '''
 
+    @classmethod
+    def from_cc(cls, cc, version=0):
+        if version == 0:
+            chemgroups = cc.constants.UNIFAC_groups
+        elif version == 1:
+            chemgroups = cc.constants.UNIFAC_Dortmund_groups
+        elif version == 2:
+            chemgroups = cc.constants.PSRK_groups
+        else:
+            raise RuntimeError('chemgroups for version %d not yet implemented' %version)
+        N = len(chemgroups)
+        return cls.from_subgroups(298.15, N*[1./N], chemgroups, version=version)
+
     @staticmethod
     def from_subgroups(T, xs, chemgroups, subgroups=None,
                        interaction_data=None, version=0):
@@ -3528,10 +3541,33 @@ class UNIFAC(GibbsExcess):
         UNIFAC(T=373.15, xs=[0.2, 0.3, 0.1, 0.4], rs=[2.2578, 4.2816, 2.3373, 2.4951999999999996], qs=[2.5926, 5.181, 2.7308, 2.6616], Qs=[1.0608, 0.7081, 0.4321, 0.8927, 1.67, 0.8635], vs=[[0, 0, 1, 1], [0, 0, 0, 1], [6, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 6, 0, 0]], psi_abc=([[0.0, 0.0, 114.2, 2777.0, 433.6, -117.1], [0.0, 0.0, 114.2, 2777.0, 433.6, -117.1], [16.07, 16.07, 0.0, 3972.0, 146.2, 134.6], [1606.0, 1606.0, 3049.0, 0.0, -250.0, 3121.0], [199.0, 199.0, -57.53, 653.3, 0.0, 168.2], [170.9, 170.9, -2.619, 2601.0, 464.5, 0.0]], [[0.0, 0.0, 0.0933, -4.674, 0.1473, 0.5481], [0.0, 0.0, 0.0933, -4.674, 0.1473, 0.5481], [-0.2998, -0.2998, 0.0, -13.16, -1.237, -1.231], [-4.746, -4.746, -12.77, 0.0, 2.857, -13.69], [-0.8709, -0.8709, 1.212, -1.412, 0.0, -0.8197], [-0.8062, -0.8062, 1.094, -1.25, 0.1542, 0.0]], [[0.0, 0.0, 0.0, 0.001551, 0.0, -0.00098], [0.0, 0.0, 0.0, 0.001551, 0.0, -0.00098], [0.0, 0.0, 0.0, 0.01208, 0.004237, 0.001488], [0.0009181, 0.0009181, 0.01435, 0.0, -0.006022, 0.01446], [0.0, 0.0, -0.003715, 0.000954, 0.0, 0.0], [0.001291, 0.001291, -0.001557, -0.006309, 0.0, 0.0]]), version=1)
         '''
         if subgroups is None:
-            subgroups = UFSG
+            if version == 0:
+                subgroups = UFSG
+            elif version == 1:
+                subgroups = DOUFSG
+            elif version == 2:
+                subgroups = PSRKSG
+            elif version == 3:
+                subgroups = VTPRSG
+            elif version == 4:
+                subgroups = LUFSG
+            elif version == 5:
+                subgroups = NISTKTUFSG
         if interaction_data is None:
             if not _unifac_ip_loaded: load_unifac_ip()
             interaction_data = UFIP
+            if version == 0:
+                interaction_data = UFIP
+            elif version == 1:
+                interaction_data = DOUFIP2016
+            elif version == 2:
+                interaction_data = PSRKIP
+            elif version == 3:
+                interaction_data = VTPRIP
+            elif version == 4:
+                interaction_data = LUFIP
+            elif version == 5:
+                interaction_data = NISTKTUFIP
 
         scalar = type(xs) is list
         rs = []

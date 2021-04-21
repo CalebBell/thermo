@@ -533,8 +533,6 @@ class Bulk(Phase):
         self.N = N = len(zs)
         self.phase_bulk = phase_bulk
 
-
-
     @property
     def beta(self):
         r'''Phase fraction of the bulk phase. Should always be 1 when

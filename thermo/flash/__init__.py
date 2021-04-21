@@ -30,6 +30,11 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 Main Interfaces
 ===============
 
+Flash Constructors
+------------------
+.. autoclass:: FlashPackage
+   :members:
+
 Pure Components
 ---------------
 .. autoclass:: FlashPureVLS
@@ -77,6 +82,7 @@ from .flash_abstract import *
 from .flash_vl import *
 from .flash_vln import *
 from .flash_pure_vls import *
+from .flash_package import *
 
 __all__ = [
     *flash_utils.__all__,
@@ -84,4 +90,5 @@ __all__ = [
     *flash_vl.__all__,
     *flash_vln.__all__,
     *flash_pure_vls.__all__,
+    *flash_package.__all__,
 ]

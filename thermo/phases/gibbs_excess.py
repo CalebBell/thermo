@@ -106,7 +106,7 @@ class GibbsExcessLiquid(Phase):
         converge. Extrapolation can be performed using either the equation
         :math:`P^{\text{sat}} = \exp\left(A - \frac{B}{T}\right)` or
         :math:`P^{\text{sat}} = \exp\left(A + \frac{B}{T} + C\cdot \ln T\right)` by
-        setting `Psat_extrpolation` to either 'AB' or 'ABC' respectively.
+        setting `Psat_extrapolation` to either 'AB' or 'ABC' respectively.
         The extremely low temperature region's issue is solved by calculating the
         logarithm of vapor pressures instead of the actual value. While floating
         point values in Python (doubles) can reach a minimum value of around
@@ -166,7 +166,7 @@ class GibbsExcessLiquid(Phase):
         Which set of caloric equations to use when calculating fugacities
         and related properties; valid options are 'Psat', 'Poynting&PhiSat',
         'Poynting', 'PhiSat', 'Hvap' [-]
-    Psat_extrpolation : str, optional
+    Psat_extrapolation : str, optional
         One of 'AB' or 'ABC'; configures extrapolation for vapor pressure, [-]
 
 
@@ -212,9 +212,39 @@ class GibbsExcessLiquid(Phase):
     model_attributes = ('Hfs', 'Gfs', 'Sfs', 'GibbsExcessModel',
                         'eos_pure_instances', 'use_Poynting', 'use_phis_sat',
                         'use_Tait', 'use_eos_volume', 'henry_components',
-                        'henry_data', 'Psat_extrpolation') + pure_references
+                        'henry_data', 'Psat_extrapolation') + pure_references
 
     obj_references = ('GibbsExcessModel', 'eos_pure_instances')
+
+    @classmethod
+    def from_cc(cls, cc,
+                GibbsExcessModel=None,
+                use_Hvap_caloric=False,
+                use_Poynting=False,
+                use_phis_sat=False,
+                use_Tait=False,
+                use_eos_volume=False,
+                Psat_extrapolation='AB',
+                equilibrium_basis=None,
+                caloric_basis=None):
+        constants, correlations = cc
+        return cls(
+            correlations.VaporPressures, 
+            VolumeLiquids=correlations.VolumeLiquids,
+            HeatCapacityGases=correlations.HeatCapacityGases,
+            GibbsExcessModel=GibbsExcessModel,
+            eos_pure_instances=[i.eos for i in correlations.VolumeGases],
+            EnthalpyVaporizations=correlations.EnthalpyVaporizations,
+            HeatCapacityLiquids=correlations.HeatCapacityLiquids,
+            use_Hvap_caloric=use_Hvap_caloric,
+            use_Poynting=use_Poynting,
+            use_phis_sat=use_phis_sat,
+            use_Tait=use_Tait,
+            use_eos_volume=use_eos_volume,
+            Psat_extrapolation=Psat_extrapolation,
+            equilibrium_basis=equilibrium_basis,
+            caloric_basis=caloric_basis
+        )
 
     def __init__(self, VaporPressures, VolumeLiquids=None,
                  HeatCapacityGases=None,
@@ -235,7 +265,7 @@ class GibbsExcessLiquid(Phase):
                  henry_components=None, henry_data=None,
 
                  T=None, P=None, zs=None,
-                 Psat_extrpolation='AB',
+                 Psat_extrapolation='AB',
                  equilibrium_basis=None,
                  caloric_basis=None,
                  ):
@@ -262,7 +292,7 @@ class GibbsExcessLiquid(Phase):
 
         self.VaporPressures = VaporPressures
         self.Psats_poly_fit = all(i.method == POLY_FIT for i in VaporPressures) if VaporPressures is not None else False
-        self.Psat_extrpolation = Psat_extrpolation
+        self.Psat_extrapolation = Psat_extrapolation
         if self.Psats_poly_fit:
             Psats_data = [[i.poly_fit_Tmin for i in VaporPressures],
                                [i.poly_fit_Tmin_slope for i in VaporPressures],
@@ -274,9 +304,9 @@ class GibbsExcessLiquid(Phase):
                                [i.poly_fit_d_coeffs for i in VaporPressures],
                                [i.poly_fit_d2_coeffs for i in VaporPressures],
                                [i.DIPPR101_ABC for i in VaporPressures]]
-            if Psat_extrpolation == 'AB':
+            if Psat_extrapolation == 'AB':
                 Psats_data.append([i.poly_fit_AB_high_ABC_compat + [0.0] for i in VaporPressures])
-            elif Psat_extrpolation == 'ABC':
+            elif Psat_extrapolation == 'ABC':
                 Psats_data.append([i.DIPPR101_ABC_high for i in VaporPressures])
             # Other option: raise?
             self._Psats_data = Psats_data
@@ -476,7 +506,7 @@ class GibbsExcessLiquid(Phase):
 
         new.Psats_poly_fit = self.Psats_poly_fit
         new._Psats_data = self._Psats_data
-        new.Psat_extrpolation = self.Psat_extrpolation
+        new.Psat_extrapolation = self.Psat_extrapolation
 
         new.Cpgs_poly_fit = self.Cpgs_poly_fit
         new._Cpgs_data = self._Cpgs_data
@@ -3085,7 +3115,7 @@ class GibbsExcessSolid(GibbsExcessLiquid):
     model_attributes = ('Hfs', 'Gfs', 'Sfs','GibbsExcessModel',
                         'eos_pure_instances', 'use_Poynting', 'use_phis_sat',
                         'use_eos_volume', 'henry_components',
-                        'henry_data', 'Psat_extrpolation') + pure_references
+                        'henry_data', 'Psat_extrapolation') + pure_references
 
     def __init__(self, SublimationPressures, VolumeSolids=None,
                  GibbsExcessModel=IdealSolution(),
