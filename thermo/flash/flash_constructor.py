@@ -73,6 +73,9 @@ class ConstantsAndCorrelations(tuple):
     1
     >>> cc.get_aliases('Ethanol') # Get all aliases used
     ['Ethanol', 'etoh', 'ethanol', '64-17-5', 'CH3CH2OH']
+    >>> cc.set_alias('Ethanol', 'Water') # Aliases are unique
+    Traceback (most recent call last):
+    ValueError: component with alias 'Water' already defined
     
     """
     @classmethod
@@ -120,7 +123,12 @@ class ConstantsAndCorrelations(tuple):
         return [i for i, j in self._index.items() if j==k] 
         
     def set_alias(self, ID, alias):
-        self._index[alias] = self._index[ID]
+        index = self._index
+        if alias in index:
+            if index[ID] != index[alias]:
+                raise ValueError("component with alias '%s' already defined" %alias)
+        else:
+            index[alias] = index[ID]
 
     def subset(self, IDs, aliases=True):
         if isinstance(IDs, slice):
