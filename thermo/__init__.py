@@ -222,13 +222,16 @@ except:
 # However, they cannot go in thermo.chemical's __all__ or they will appear in the
 # documentation and Sphinx currently has no wat to exclude them
 submodules = [activity, chemical, chemical_package, chemical_utils, coolprop, datasheet,
-              electrochem, eos, eos_mix, equilibrium, flash, heat_capacity,
+              electrochem, eos, eos_mix, equilibrium, heat_capacity,
               identifiers, interaction_parameters, interface, joback, law,
               mixture, nrtl, permittivity, phase_change, phase_identification,
-              phases, property_package, property_package_constants,
-              regular_solution, stream, thermal_conductivity, unifac, uniquac, safety,
+              property_package, property_package_constants, regular_solution, 
+              stream, thermal_conductivity, unifac, uniquac, safety,
               utils, vapor_pressure, viscosity, volume, wilson, eos_alpha_functions,
-              eos_volume, eos_mix_methods, phases.air_phase, phases.ceos, phases.combined, 
+              eos_volume, eos_mix_methods,              
+              flash, flash.flash_base, flash.flash_pure_vls,
+              flash.flash_utils, flash.flash_vl, flash.flash_vln,              
+              phases, phases.air_phase, phases.ceos, phases.combined, 
               phases.coolprop_phase, phases.gibbs_excess, phases.helmholtz_eos,
               phases.iapws_phase, phases.ideal_gas, phases.petroleum, 
               phases.phase, phases.phase_utils, phases.virial_phase]

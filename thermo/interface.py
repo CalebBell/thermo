@@ -219,7 +219,6 @@ class SurfaceTension(TDependentProperty):
     .. [6] Gesellschaft, V. D. I., ed. VDI Heat Atlas. 2nd edition.
        Berlin; New York:: Springer, 2010.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'Surface tension'
     units = 'N/m'
     interpolation_T = None
@@ -558,8 +557,6 @@ class SurfaceTensionMixture(MixtureProperty):
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
-
     name = 'Surface tension'
     units = 'N/m'
     property_min = 0

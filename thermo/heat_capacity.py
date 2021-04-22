@@ -241,7 +241,6 @@ class HeatCapacityGas(TDependentProperty):
     .. [5] Gesellschaft, V. D. I., ed. VDI Heat Atlas. 2nd edition.
        Berlin; New York:: Springer, 2010.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'gas heat capacity'
     units = 'J/mol/K'
     interpolation_T = None
@@ -717,7 +716,6 @@ class HeatCapacityLiquid(TDependentProperty):
     .. [5] Gesellschaft, V. D. I., ed. VDI Heat Atlas. 2nd edition.
        Berlin; New York:: Springer, 2010.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'Liquid heat capacity'
     units = 'J/mol/K'
     interpolation_T = None
@@ -1203,7 +1201,6 @@ class HeatCapacitySolid(TDependentProperty):
     .. [2] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'solid heat capacity'
     units = 'J/mol/K'
     interpolation_T = None
@@ -1500,7 +1497,6 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     **LINEAR**:
         Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'Liquid heat capacity'
     units = 'J/mol'
     property_min = 1
@@ -1682,7 +1678,6 @@ class HeatCapacitySolidMixture(MixtureProperty):
     **LINEAR**:
         Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'Solid heat capacity'
     units = 'J/mol'
     property_min = 0
@@ -1821,7 +1816,6 @@ class HeatCapacityGasMixture(MixtureProperty):
     **LINEAR**:
         Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'Gas heat capacity'
     units = 'J/mol'
     property_min = 0

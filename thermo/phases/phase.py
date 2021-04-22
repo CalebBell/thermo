@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2019, 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -46,9 +46,7 @@ class Phase(object):
     For basic functionality, a subclass should implement:
 
     H, S, Cp
-
-
-
+    
     dP_dT
     dP_dV
     d2P_dT2
