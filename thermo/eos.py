@@ -8598,31 +8598,26 @@ class PRSV(PR):
     kappa1_Tr_limit = False
     kwargs_keys = ('kappa1',)
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=None):
-        self.Tc = Tc
-        self.Pc = Pc
-        self.omega = omega
-        self.T = T
-        self.P = P
-        self.V = V
+        self.T, self.P, self.V, self.omega, self.Tc, self.Pc = T, P, V, omega, Tc, Pc
 
         if kappa1 is None:
             kappa1 = 0.0
         self.kwargs = {'kappa1': kappa1}
 
-        self.a = self.c1*R*R*Tc*Tc/Pc
-        self.b = b = self.c2*R*Tc/Pc
+        self.b = b = self.c2R*Tc/Pc
+        self.a = self.c1R2_c2R*Tc*b
         self.delta = 2.0*b
         self.epsilon = -b*b
         self.kappa0 = omega*(omega*(0.0196554*omega - 0.17131848) + 1.4897153) + 0.378893
 
         self.check_sufficient_inputs()
-        if self.V and self.P:
+        if V and P:
             # Deal with T-solution here; does NOT support kappa1_Tr_limit.
             self.kappa1 = kappa1
-            self.T = self.solve_T(self.P, self.V)
-            Tr = self.T/Tc
+            self.T = T = self.solve_T(P, V)
+            Tr = T/Tc
         else:
-            Tr = self.T/Tc
+            Tr = T/Tc
             if self.kappa1_Tr_limit and Tr > 0.7:
                 self.kappa1 = 0.0
             else:
@@ -8735,21 +8730,22 @@ class PRSV(PR):
         '''
         Tc, a, kappa0, kappa1 = self.Tc, self.a, self.kappa0, self.kappa1
         x1 = T/Tc
-        x2 = x1**0.5
+        T_inv = 1.0/T
+        x2 = sqrt(x1)
         x3 = x2 - 1.
         x4 = 10.*x1 - 7.
         x5 = x2 + 1.
         x6 = 10.*kappa0 - kappa1*x4*x5
         x7 = x3*x6
         x8 = x7*0.1 - 1.
-        x10 = x6/T
+        x10 = x6*T_inv
         x11 = kappa1*x3
-        x12 = x4/T
+        x12 = x4*T_inv
         x13 = 20./Tc*x5 + x12*x2
         x14 = -x10*x2 + x11*x13
         a_alpha = a*x8*x8
         da_alpha_dT = -a*x14*x8*0.1
-        d2a_alpha_dT2 = a*(x14*x14 - x2/T*(x7 - 10.)*(2.*kappa1*x13 + x10 + x11*(40./Tc - x12)))/200.
+        d2a_alpha_dT2 = a*(x14*x14 - x2*T_inv*(x7 - 10.)*(2.*kappa1*x13 + x10 + x11*(40.*x1*T_inv - x12)))*(1.0/200.)
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def a_alpha_pure(self, T):
@@ -8783,7 +8779,10 @@ class PRSV(PR):
         4.7686547259
         '''
         Tc, a, kappa0, kappa1 = self.Tc, self.a, self.kappa0, self.kappa1
-        return a*((kappa0 + kappa1*(sqrt(T/Tc) + 1.0)*(-T/Tc + 0.7))*(-sqrt(T/Tc) + 1.0) + 1.0)**2
+        Tr = T/Tc
+        sqrtTr = sqrt(Tr)
+        v = ((kappa0 + kappa1*(sqrtTr + 1.0)*(-Tr + 0.7))*(-sqrtTr + 1.0) + 1.0)
+        return a*v*v
 
 
 class PRSV2(PR):
