@@ -8875,10 +8875,6 @@ class PRSV2(PR):
         if self.V and self.P:
             # Deal with T-solution here
             self.T = self.solve_T(self.P, self.V)
-        Tr = self.T/Tc
-        sqrtTr = sqrt(Tr)
-        self.kappa = self.kappa0 + ((kappa1 + kappa2*(kappa3
-                                     - Tr)*(1.0 - sqrtTr))*(1.0 + sqrtTr)*(0.7 - Tr))
         self.solve()
 
     def solve_T(self, P, V, solution=None):
@@ -8990,7 +8986,9 @@ class PRSV2(PR):
         (3.7245418495, -0.0066115440470, 2.05871011677e-05)
         '''
         Tc, a, kappa0, kappa1, kappa2, kappa3 = self.Tc, self.a, self.kappa0, self.kappa1, self.kappa2, self.kappa3
-        x1 = T/Tc
+        Tc_inv = 1.0/Tc
+        T_inv = 1.0/T
+        x1 = T*Tc_inv
         x2 = sqrt(x1)
         x3 = x2 - 1.
         x4 = x2 + 1.
@@ -9001,18 +8999,20 @@ class PRSV2(PR):
         x9 = 10.*kappa0 - x4*x8
         x10 = x3*x9
         x11 = x10*0.1 - 1.
-        x13 = x2/T
-        x14 = x7/Tc
+        x13 = x2*T_inv
+        x14 = x7*Tc_inv
         x15 = kappa2*x4*x5
-        x16 = 2.*(-x2 + 1.)/Tc + x13*(kappa3 - x1)
+        x16 = 2.*(-x2 + 1.)*Tc_inv + x13*(kappa3 - x1)
         x17 = -x13*x8 - x14*(20.*x2 + 20.) + x15*x16
         x18 = x13*x9 + x17*x3
-        x19 = x2/(T*T)
-        x20 = 2.*x2/T
+        x19 = x2*T_inv*T_inv
+        x20 = 2.*x2*T_inv
 
         a_alpha = a*x11*x11
         da_alpha_dT = a*x11*x18*0.1
-        d2a_alpha_dT2 = a*(x18*x18 + (x10 - 10.)*(x17*x20 - x19*x9 + x3*(40.*kappa2/Tc*x16*x4 + kappa2*x16*x20*x5 - 40./T*x14*x2 - x15/T*x2*(4./Tc - x6/T) + x19*x8)))/200.
+        d2a_alpha_dT2 = a*(x18*x18 + (x10 - 10.)*(x17*x20 - x19*x9
+                        + x3*(40.*kappa2*Tc_inv*x16*x4 + kappa2*x16*x20*x5
+                        - 40.*T_inv*x14*x2 - x15*T_inv*x2*(4.*Tc_inv - x6*T_inv) + x19*x8)))*(1.0/200.)
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def a_alpha_pure(self, T):
@@ -9044,9 +9044,10 @@ class PRSV2(PR):
         '''
         Tc, a, kappa0, kappa1, kappa2, kappa3 = self.Tc, self.a, self.kappa0, self.kappa1, self.kappa2, self.kappa3
         Tr = T/Tc
-        # TODO use self.kappa
-        kappa = kappa0 + ((kappa1 + kappa2*(kappa3 - Tr)*(1 - Tr**0.5))*(1 + Tr**0.5)*(0.7 - Tr))
-        return a*(1 + kappa*(1-sqrt(T/Tc)))**2
+        sqrtTr = sqrt(Tr)
+        kappa = kappa0 + ((kappa1 + kappa2*(kappa3 - Tr)*(1.0 -sqrtTr))*(1.0 + sqrtTr)*(0.7 - Tr))
+        x0 = (1.0 + kappa*(1.0 - sqrtTr))
+        return a*x0*x0
 
 class VDW(GCEOS):
     r'''Class for solving the Van der Waals [1]_ [2]_ cubic
