@@ -317,7 +317,7 @@ def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
     x9 = delta*delta
     x10 = x9 - epsilon2 - epsilon2
     try:
-        x11 = x10**-0.5
+        x11 = 1.0/sqrt(x10)
     except:
         # Needed for ideal gas model
         x11 = 0.0
@@ -343,12 +343,11 @@ def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
     H_dep = x12*(T*da_alpha_dT - a_alpha) - x3 + x8
 
     t1 = (x3*x0/P)
-    S_dep = -R*clog(t1).real + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
+    S_dep = -R*log(t1) + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
 #        S_dep = -R_2*log(t1*t1) + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
-
     x18 = x16 - x15
     x19 = (x14 + x18)/(x14 - x18)
-    Cv_dep = T*d2a_alpha_dT2*x11_half*(log(x19*x19)) # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
+    Cv_dep = T*d2a_alpha_dT2*x11*(log(x19)) # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
     return dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
 
 
@@ -377,15 +376,19 @@ def main_derivatives_and_departures_VDW(T, P, V, b, delta, epsilon, a_alpha,
     >>> dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
     (R/(V - b), -R*T/(V - b)**2 + 2*a/V**3, 0, 2*(R*T/(V - b)**3 - 3*a/V**4), -R/(V - b)**2, P*V - R*T - a/V, R*(-log(V) + log(V - b)) + R*log(P*V/(R*T)), 0)
     '''
-    dP_dT = R/(V - b)
-    dP_dV = -R*T*(V - b)**-2 + 2*a_alpha*V**-3
-    d2P_dT2 = 0
-    d2P_dV2 = 2*(R*T*(V - b)**-3 - 3*a_alpha*V**-4) # Causes issues at low T when V fourth power fails
-    d2P_dTdV = -R*(V - b)**-2
-    H_dep = P*V - R*T - a_alpha/V
-    S_dep = R*(-log(V) + log(V - b)) + R*log(P*V/(R*T))
-    Cv_dep = 0
-    return [dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep]
+    V_inv = 1.0/V
+    V_inv2 = V_inv*V_inv
+    Vmb = V - b
+    Vmb_inv = 1.0/Vmb
+    dP_dT = R*Vmb_inv
+    dP_dV = -R*T*Vmb_inv*Vmb_inv + 2.0*a_alpha*V_inv*V_inv2
+    d2P_dT2 = 0.0
+    d2P_dV2 = 2.0*(R*T*Vmb_inv*Vmb_inv*Vmb_inv - 3.0*a_alpha*V_inv2*V_inv2) # Causes issues at low T when V fourth power fails
+    d2P_dTdV = -R*Vmb_inv*Vmb_inv
+    H_dep = P*V - R*T - a_alpha*V_inv
+    S_dep = R*(-log(V) + log(Vmb)) + R*log(P*V/(R*T))
+    Cv_dep = 0.0
+    return (dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep)
 
 
 def eos_lnphi(T, P, V, b, delta, epsilon, a_alpha):
@@ -7191,7 +7194,7 @@ class IG(GCEOS):
         pass
 
 
-    def __init__(self, Tc=190.564, Pc=4599000.0, omega=0.008, T=None, P=None,
+    def __init__(self, Tc=None, Pc=None, omega=None, T=None, P=None,
                  V=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -7469,8 +7472,7 @@ class PR(GCEOS):
         self.b = b = self.c2R*Tc/Pc
         self.a = b*Tc*self.c1R2_c2R
         self.kappa = omega*(-0.26992*omega + 1.54226) + 0.37464
-        self.delta = 2.0*b
-        self.epsilon = -b*b
+        self.delta, self.epsilon = 2.0*b, -b*b
         self.solve()
 
     def a_alpha_pure(self, T):
@@ -8032,7 +8034,7 @@ class PR78(PR):
     low_omega_constants = (0.37464, 1.54226, -0.26992)
     '''Constants for the `kappa` formula for the low-omega region.'''
 
-    high_omega_constants = (0.379642, 1.48503, - 0.164423, 0.016666)
+    high_omega_constants = (0.379642, 1.48503, -0.164423, 0.016666)
     '''Constants for the `kappa` formula for the high-omega region.'''
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
@@ -8044,13 +8046,12 @@ class PR78(PR):
         self.P = P
         self.V = V
 
-        self.a = self.c1*R2*Tc*Tc/Pc
-        self.b = b = self.c2*R*Tc/Pc
-        self.delta = 2.0*b
-        self.epsilon = -b*b
+        self.a = self.c1R2*Tc*Tc/Pc
+        self.b = b = self.c2R*Tc/Pc
+        self.delta, self.epsilon = 2.0*b, -b*b
 
         if omega <= 0.491:
-            self.kappa = 0.37464 + 1.54226*omega - 0.26992*omega*omega
+            self.kappa = 0.37464 + omega*(1.54226 - 0.26992*omega)
         else:
             self.kappa = omega*(omega*(0.016666*omega - 0.164423) + 1.48503) + 0.379642
 
@@ -8129,7 +8130,7 @@ class PRTranslated(PR):
 
         Pc_inv = 1.0/Pc
 
-        self.a = self.c1*R2*Tc*Tc*Pc_inv
+        self.a = self.c1R2*Tc*Tc*Pc_inv
 
         self.c = c
         if alpha_coeffs is None:
@@ -8623,10 +8624,10 @@ class PRSV(PR):
         self.kwargs = {'kappa1': kappa1}
 
         self.a = self.c1*R*R*Tc*Tc/Pc
-        self.b = self.c2*R*Tc/Pc
-        self.delta = 2*self.b
-        self.epsilon = -self.b*self.b
-        self.kappa0 = 0.378893 + 1.4897153*omega - 0.17131848*omega**2 + 0.0196554*omega**3
+        self.b = b = self.c2*R*Tc/Pc
+        self.delta = 2.0*b
+        self.epsilon = -b*b
+        self.kappa0 = omega*(omega*(0.0196554*omega - 0.17131848) + 1.4897153) + 0.378893
 
         self.check_sufficient_inputs()
         if self.V and self.P:
@@ -8637,11 +8638,11 @@ class PRSV(PR):
         else:
             Tr = self.T/Tc
             if self.kappa1_Tr_limit and Tr > 0.7:
-                self.kappa1 = 0
+                self.kappa1 = 0.0
             else:
                 self.kappa1 = kappa1
 
-        self.kappa = self.kappa0 + self.kappa1*(1 + Tr**0.5)*(0.7 - Tr)
+        self.kappa = self.kappa0 + self.kappa1*(1.0 + sqrt(Tr))*(0.7 - Tr)
         self.solve()
 
     def solve_T(self, P, V, solution=None):

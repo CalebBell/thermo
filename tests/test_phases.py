@@ -536,8 +536,8 @@ def test_GibbsExcessLiquid_H_S_settings():
         assert_close(liquid.S(), Ss_sympy_25[i], rtol=1e-7)
         assert_close(liquid.dS_dP(), dS_dPs_sympy[i], rtol=1e-10, atol=1e-12)
         assert_close(liquid.dH_dP(), dH_dPs_sympy[i], rtol=1e-10, atol=1e-12)
-        assert_close(liquid.dH_dT(), dH_dTs_sympy[i], rtol=1e-6, atol=1e-12)
-        assert_close(liquid.dS_dT(), dS_dTs_sympy[i], rtol=1e-6)
+        assert_close(liquid.dH_dT(), dH_dTs_sympy[i], rtol=5e-6, atol=1e-12)
+        assert_close(liquid.dS_dT(), dS_dTs_sympy[i], rtol=5e-6)
         assert liquid.H_phi_consistency() < 1e-12
         assert liquid.G_dep_phi_consistency() < 1e-12
         assert liquid.S_phi_consistency() < 1e-12
@@ -554,8 +554,8 @@ def test_GibbsExcessLiquid_H_S_settings():
         assert_close(liquid.S(), Ss_sympy_100[i], rtol=1e-7)
         assert_close(liquid.dS_dP(), dS_dPs_sympy[i], rtol=1e-7, atol=1e-12)
         assert_close(liquid.dH_dP(), dH_dPs_sympy[i], rtol=1e-7, atol=1e-12)
-        assert_close(liquid.dH_dT(), dH_dTs_sympy[i], rtol=1e-6, atol=1e-12)
-        assert_close(liquid.dS_dT(), dS_dTs_sympy[i], rtol=1e-6)
+        assert_close(liquid.dH_dT(), dH_dTs_sympy[i], rtol=5e-6, atol=1e-12)
+        assert_close(liquid.dS_dT(), dS_dTs_sympy[i], rtol=5e-6)
         assert liquid.H_phi_consistency() < 1e-12
         assert liquid.G_dep_phi_consistency() < 1e-12
         assert liquid.S_phi_consistency() < 1e-12
