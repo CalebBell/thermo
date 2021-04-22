@@ -286,7 +286,8 @@ class GibbsExcess(object):
     the :obj:`gammas_infinite_dilution` calculation. This is important
     as not all models can mathematically be evaluated at zero mole-fraction.'''
 
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
+    def __init_subclass__(cls):
+        cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
 
     def __repr__(self):
         r'''Method to create a string representation of the state of the model.
@@ -1042,7 +1043,6 @@ class IdealSolution(GibbsExcess):
     [0.0, 0.0, 0.0, 0.0]
     '''
     model_attriubtes = ()
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     def __init__(self, T=None, xs=None):
         if T is not None:

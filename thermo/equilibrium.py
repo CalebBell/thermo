@@ -49,7 +49,6 @@ from chemicals.elements import atom_fractions, mass_fractions, simple_formula_pa
 from thermo.phases import gas_phases, liquid_phases, solid_phases, Phase, derivatives_thermodynamic, derivatives_thermodynamic_mass, derivatives_jacobian
 from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationsPackage, constants_docstrings
 from thermo.bulk import Bulk, BulkSettings, default_settings
-
 all_phases = gas_phases + liquid_phases + solid_phases
 
 CAS_H2O = '7732-18-5'
@@ -193,11 +192,10 @@ class EquilibriumState(object):
         Overall mole fractions of each component in the overall solid phase,
         [-]
     solid_bulk : :obj:`Bulk<thermo.bulk.Bulk>`
-        Liquid phase bulk, [-]
+        Solid phase bulk, [-]
     bulk : :obj:`Bulk<thermo.bulk.Bulk>`
         Overall phase bulk, [-]
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     max_liquid_phases = 1
     reacted = False
     flashed = True
@@ -209,6 +207,8 @@ class EquilibriumState(object):
     T_REF_IG_INV = Phase.T_REF_IG_INV
     P_REF_IG = Phase.P_REF_IG
     P_REF_IG_INV = Phase.P_REF_IG_INV
+
+    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     def __str__(self):
         s = '<EquilibriumState, T=%.4f, P=%.4f, zs=%s, betas=%s, phases=%s>'

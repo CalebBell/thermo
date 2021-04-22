@@ -252,7 +252,6 @@ class EnthalpyVaporization(TDependentProperty):
        Approach." Fluid Phase Equilibria 432 (January 25, 2017): 62-69.
        doi:10.1016/j.fluid.2016.10.013.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'Enthalpy of vaporization'
     units = 'J/mol'
     interpolation_T = None
@@ -651,7 +650,6 @@ class EnthalpySublimation(TDependentProperty):
     .. [2] Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of
        Chemistry and Physics, 95E. Boca Raton, FL: CRC press, 2014.
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     name = 'Enthalpy of sublimation'
     units = 'J/mol'
     interpolation_T = None

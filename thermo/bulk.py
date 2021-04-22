@@ -208,9 +208,6 @@ linear_methods = set([MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED])
 log_prop_methods = set([LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED, LOG_PROP_VOLUME_WEIGHTED])
 prop_power_methods = set([POWER_PROP_MOLE_WEIGHTED, POWER_PROP_MASS_WEIGHTED, POWER_PROP_VOLUME_WEIGHTED])
 
-
-
-
 class BulkSettings(object):
     r'''Class containing configuration methods for determining how properties of
     a `Bulk` phase made of different phases are handled. All parameters are also
@@ -371,8 +368,9 @@ class BulkSettings(object):
     .. [2] 14:00-17:00. "ISO 13443:1996." ISO. Accessed March 29, 2021.
        https://www.iso.org/cms/render/live/en/sites/isoorg/contents/data/standard/02/04/20461.html.
     '''
+    
     __full_path__ = "%s.%s" %(__module__, __qualname__)
-
+    
     def as_json(self):
         return self.__dict__.copy()
 
@@ -526,7 +524,6 @@ class Bulk(Phase):
 
 
     '''
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
     def __init__(self, T, P, zs, phases, phase_fractions, phase_bulk=None):
         self.T = T
         self.P = P

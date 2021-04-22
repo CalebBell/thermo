@@ -530,10 +530,9 @@ class NRTL(GibbsExcess):
     .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
-
+    
     model_attriubtes = ('tau_coeffs_A', 'tau_coeffs_B', 'tau_coeffs_E', 'tau_coeffs_F',
                          'tau_coeffs_G', 'tau_coeffs_H', 'alpha_coeffs_c', 'alpha_coeffs_d')
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     def __init__(self, T, xs, tau_coeffs=None, alpha_coeffs=None,
                  ABEFGHCD=None):
