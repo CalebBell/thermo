@@ -4570,3 +4570,70 @@ def test_eos_mix_model_ids_no_duplicated():
         if k.model_id in model_ids:
             raise ValueError("Duplicate Model ID = %s, existing model is %s" %(k, model_ids[k.model_id]))
         model_ids[k.model_id] = k
+
+
+def test_numpy_properties_all_eos_mix():
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
+    Tcs = [126.2, 304.2, 373.2]
+    Pcs = [3394387.5, 7376460.0, 8936865.0]
+    omegas = [0.04, 0.2252, 0.1]
+    zs = [.7, .2, .1]
+    kijs = [[0.0, -0.0122, 0.1652], [-0.0122, 0.0, 0.0967], [0.1652, 0.0967, 0.0]]
+    
+    kwargs = dict(T=300.0, P=1e5,  Tcs=Tcs, Pcs=Pcs, omegas=omegas, kijs=kijs, zs=zs)
+    def args(eos, numpy=False):
+        ans = kwargs.copy()
+        if 'Translated' in eos.__name__:
+            ans['cs'] = [3.1802632895165143e-06, 4.619807672093997e-06, 3.930402699800546e-06]
+        if eos is APISRKMIX:
+            ans['S1s'] = [1.678665, 1.2, 1.5]
+            ans['S2s'] = [-0.216396, -.2, -.1]
+        if eos in (PRSVMIX, PRSV2MIX):
+            ans['kappa1s'] = [0.05104, .025, .035]
+        if eos is PRSV2MIX:
+            ans['kappa2s'] = [.8, .9, 1.1]
+            ans['kappa3s'] = [.46, .47, .48]
+        if numpy:
+            for k, v in ans.items():
+                if type(v) is list:
+                    ans[k] = np.array(v)
+        return ans
+    
+    for obj in eos_mix_list:
+        kwargs_np = args(obj, True)
+        eos_np = obj(**kwargs_np)
+        kwargs_plain = args(obj, False)
+        eos = obj(**kwargs_plain)
+        
+        assert_close(eos_np.b, eos.b, rtol=1e-14)
+        assert type(eos_np.b) is float
+        
+        assert_close(eos_np.delta, eos.delta, rtol=1e-14)
+        assert type(eos_np.delta) is float
+        
+        assert_close(eos_np.epsilon, eos.epsilon, rtol=1e-14)
+        assert type(eos_np.epsilon) is float
+    
+        assert_close1d(eos_np.bs, eos.bs, rtol=1e-14)
+        assert isinstance(eos_np.bs, np.ndarray)
+        assert isinstance(eos.bs, list)
+    
+        assert_close1d(eos_np.ais, eos.ais, rtol=1e-14)
+        assert isinstance(eos_np.ais, np.ndarray)
+        assert isinstance(eos.ais, list)
+    
+        assert_close1d(eos_np.a_alphas, eos.a_alphas, rtol=1e-14)
+        assert isinstance(eos_np.a_alphas, np.ndarray)
+        assert isinstance(eos.a_alphas, list)
+    
+        assert_close1d(eos_np.da_alpha_dTs, eos.da_alpha_dTs, rtol=1e-14)
+        assert isinstance(eos_np.da_alpha_dTs, np.ndarray)
+        assert isinstance(eos.da_alpha_dTs, list)
+    
+        assert_close1d(eos_np.d2a_alpha_dT2s, eos.d2a_alpha_dT2s, rtol=1e-14)
+        assert isinstance(eos_np.d2a_alpha_dT2s, np.ndarray)
+        assert isinstance(eos.d2a_alpha_dT2s, list)
+        
+        assert_close1d(eos_np.lnphis_g, eos.lnphis_g, rtol=1e-14)
+        assert isinstance(eos_np.lnphis_g, np.ndarray)
+        assert isinstance(eos.lnphis_g, list)

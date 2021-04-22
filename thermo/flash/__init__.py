@@ -67,20 +67,20 @@ future, but reading their source code may be helpful for instructive purposes.
 
 '''
 from . import flash_utils
-from . import flash_abstract
+from . import flash_base
 from . import flash_vl
 from . import flash_vln
 from . import flash_pure_vls
 
 from .flash_utils import *
-from .flash_abstract import *
+from .flash_base import *
 from .flash_vl import *
 from .flash_vln import *
 from .flash_pure_vls import *
 
 __all__ = [
     *flash_utils.__all__,
-    *flash_abstract.__all__,
+    *flash_base.__all__,
     *flash_vl.__all__,
     *flash_vln.__all__,
     *flash_pure_vls.__all__,

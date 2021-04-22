@@ -1531,8 +1531,9 @@ def test_Psat_issues():
     assert_close(Tsat, 532.1131652558847, rtol=1e-7)
 
     # Case where y was evaluated just above Pc and so couldn't converge
+    # The exact precision of the answer can only be obtained with mpmath
     eos = PR(Tc=647.086, Pc=22048320.0, omega=0.344, T=230.0, P=100000.0)
-    assert_close(eos.Psat(eos.Tc*(1-1e-14), polish=True), 22048319.999976363, rtol=1e-13)
+    assert_close(eos.Psat(eos.Tc*(1-1e-14), polish=True), 22048319.999976363, rtol=1e-10)
 
 
     # TWU fails completely for hydrogen at low conditions
@@ -1838,7 +1839,7 @@ def test_d2S_dep_dT2_P():
 def test_d2S_dep_dT2_V():
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E5)
     d2S_dep_dT2_g_V_num = derivative(lambda T: eos.to(V=eos.V_g, T=T).dS_dep_dT_g_V, eos.T, dx=eos.T*5e-7, order=5)
-    assert_close(eos.d2S_dep_dT2_g_V, d2S_dep_dT2_g_V_num, rtol=1e-9)
+    assert_close(eos.d2S_dep_dT2_g_V, d2S_dep_dT2_g_V_num, rtol=1e-8)
     assert_close(eos.d2S_dep_dT2_g_V, -2.6744188913248543e-05, rtol=1e-11)
 
     d2S_dep_dT2_l_V_num = derivative(lambda T: eos.to(V=eos.V_l, T=T).dS_dep_dT_l_V, eos.T, dx=eos.T*5e-7, order=5)
@@ -1853,7 +1854,7 @@ def test_d2H_dep_dTdP():
 
     d2H_dep_dTdP_l_num = derivative(lambda P: eos.to(P=P, T=eos.T).dH_dep_dT_l, eos.P, dx=eos.P*3e-7)
     assert_close(eos.d2H_dep_dTdP_l, -3.662334969933377e-07, rtol=1e-11)
-    assert_close(eos.d2H_dep_dTdP_l, d2H_dep_dTdP_l_num, rtol=4e-7)
+    assert_close(eos.d2H_dep_dTdP_l, d2H_dep_dTdP_l_num, rtol=4e-6)
 
 def test_d2S_dep_dTdP():
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E5)
@@ -1872,7 +1873,7 @@ def test_d2P_dVdP():
     assert_close(eos.d2P_dVdP_g, -79.86820966180667, rtol=1e-11)
 
     num = derivative(lambda P: eos.to(P=P, T=eos.T).dP_dV_l, eos.P, dx=eos.P*2e-7, order=5)
-    assert_close(num, eos.d2P_dVdP_l, rtol=1e-6)
+    assert_close(num, eos.d2P_dVdP_l, rtol=1e-5)
     assert_close(eos.d2P_dVdP_l, -121536.72600389269, rtol=1e-11)
 
 def test_d2P_dTdP():

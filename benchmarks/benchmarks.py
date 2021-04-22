@@ -114,3 +114,11 @@ class UNIQUACTimeSuite(BaseTimeSuite):
 
     def time_dgammas_dns20(self):
         return self.GE20.to_T_xs(T=340.0, xs=self.xs20).dgammas_dns()
+    
+    
+class EOSTimeSuite(BaseTimeSuite):
+    def setup(self):
+        pass
+    
+    
+

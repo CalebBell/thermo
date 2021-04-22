@@ -541,7 +541,8 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs,
 
 def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
                                             da_alpha_dTs, d2a_alpha_dT2s, T,
-                                            zs, kijs):
+                                            zs, kijs, a_alpha_j_rows=None, 
+                                            da_alpha_dT_j_rows=None):
     r'''Calculates the `a_alpha` term, and its first two temperature
     derivatives, for an equation of state along with the
     vector quantities needed to compute the fugacitie and temperature
@@ -656,11 +657,10 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
     N = len(a_alphas)
     a_alpha = da_alpha_dT = d2a_alpha_dT2 = 0.0
 
-#     da_alpha_dT_off = d2a_alpha_dT2_off = 0.0
-#     a_alpha_j_rows = np.zeros(N)
-    a_alpha_j_rows = [0.0]*N
-#     da_alpha_dT_j_rows = np.zeros(N)
-    da_alpha_dT_j_rows = [0.0]*N
+    if a_alpha_j_rows is None:
+        a_alpha_j_rows = [0.0]*N
+    if da_alpha_dT_j_rows is None:
+        da_alpha_dT_j_rows = [0.0]*N
 
     # If d2a_alpha_dT2s were all halved, could save one more multiply
     for i in range(N):
