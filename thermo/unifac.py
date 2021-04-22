@@ -3489,16 +3489,17 @@ class UNIFAC(GibbsExcess):
         chemgroups : list[dict]
             List of dictionaries of subgroup IDs and their counts for all species
             in the mixture, [-]
-        subgroups : dict[int: UNIFAC_subgroup]
-            UNIFAC subgroup data; available dictionaries in this module are UFSG
-            (original), DOUFSG (Dortmund), or NISTUFSG.
-        interaction_data : dict[int: dict[int: tuple(a_mn, b_mn, c_mn)]]
+        subgroups : dict[int: UNIFAC_subgroup], optional
+            UNIFAC subgroup data; available dictionaries in this module include
+            UFSG (original), DOUFSG (Dortmund), or NISTUFSG. The default depends
+            on the given `version`, [-]
+        interaction_data : dict[int: dict[int: tuple(a_mn, b_mn, c_mn)]], optional
             UNIFAC interaction parameter data; available dictionaries in this
-            module are UFIP (original), DOUFIP2006 (Dortmund parameters as
-            published by 2006), DOUFIP2016 (Dortmund parameters as published by
-            2016), and NISTUFIP ().
+            module include UFIP (original), DOUFIP2006 (Dortmund parameters
+            published in 2006), DOUFIP2016 (Dortmund parameters published in
+            2016), and NISTUFIP. The default depends on the given `version`, [-]
         version : int, optional
-            Which version of the model to use [-]
+            Which version of the model to use. Defaults to 0, [-]
 
             * 0 - original UNIFAC, OR UNIFAC LLE
             * 1 - Dortmund UNIFAC (adds T dept, 3/4 power)
@@ -3514,6 +3515,14 @@ class UNIFAC(GibbsExcess):
             Object for performing calculations with the UNIFAC activity
             coefficient model, [-]
 
+        Warning
+        -------
+        For version 0, the interaction data and subgroups default to the 
+        original UNIFAC model (not LLE). 
+        
+        For version 1, the interaction data defaults to the Dortmund parameters
+        publshed in 2016 (not 2006).
+
         Examples
         --------
         Mixture of ['benzene', 'cyclohexane', 'acetone', 'ethanol']
@@ -3528,10 +3537,36 @@ class UNIFAC(GibbsExcess):
         UNIFAC(T=373.15, xs=[0.2, 0.3, 0.1, 0.4], rs=[2.2578, 4.2816, 2.3373, 2.4951999999999996], qs=[2.5926, 5.181, 2.7308, 2.6616], Qs=[1.0608, 0.7081, 0.4321, 0.8927, 1.67, 0.8635], vs=[[0, 0, 1, 1], [0, 0, 0, 1], [6, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 6, 0, 0]], psi_abc=([[0.0, 0.0, 114.2, 2777.0, 433.6, -117.1], [0.0, 0.0, 114.2, 2777.0, 433.6, -117.1], [16.07, 16.07, 0.0, 3972.0, 146.2, 134.6], [1606.0, 1606.0, 3049.0, 0.0, -250.0, 3121.0], [199.0, 199.0, -57.53, 653.3, 0.0, 168.2], [170.9, 170.9, -2.619, 2601.0, 464.5, 0.0]], [[0.0, 0.0, 0.0933, -4.674, 0.1473, 0.5481], [0.0, 0.0, 0.0933, -4.674, 0.1473, 0.5481], [-0.2998, -0.2998, 0.0, -13.16, -1.237, -1.231], [-4.746, -4.746, -12.77, 0.0, 2.857, -13.69], [-0.8709, -0.8709, 1.212, -1.412, 0.0, -0.8197], [-0.8062, -0.8062, 1.094, -1.25, 0.1542, 0.0]], [[0.0, 0.0, 0.0, 0.001551, 0.0, -0.00098], [0.0, 0.0, 0.0, 0.001551, 0.0, -0.00098], [0.0, 0.0, 0.0, 0.01208, 0.004237, 0.001488], [0.0009181, 0.0009181, 0.01435, 0.0, -0.006022, 0.01446], [0.0, 0.0, -0.003715, 0.000954, 0.0, 0.0], [0.001291, 0.001291, -0.001557, -0.006309, 0.0, 0.0]]), version=1)
         '''
         if subgroups is None:
-            subgroups = UFSG
+            if version == 0:
+                subgroups = UFSG
+            elif version == 1:
+                subgroups = DOUFSG
+            elif version == 2:
+                subgroups = PSRKSG
+            elif version == 3:
+                subgroups = VTPRSG
+            elif version == 4:
+                subgroups = LUFSG
+            elif version == 5:
+                subgroups = NISTKTUFSG
+            else:
+                raise ValueError("'version' must be a number from 0 to 5")
         if interaction_data is None:
             if not _unifac_ip_loaded: load_unifac_ip()
-            interaction_data = UFIP
+            if version == 0:
+                interaction_data = UFIP
+            elif version == 1:
+                interaction_data = DOUFIP2016
+            elif version == 2:
+                interaction_data = PSRKIP
+            elif version == 3:
+                interaction_data = VTPRIP
+            elif version == 4:
+                interaction_data = LUFIP
+            elif version == 5:
+                interaction_data = NISTKTUFIP
+            else:
+                raise ValueError("'version' must be a number from 0 to 5")
 
         scalar = type(xs) is list
         rs = []

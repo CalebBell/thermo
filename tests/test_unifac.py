@@ -253,8 +253,6 @@ def test_UNIFAC_flash_1():
     assert_close1d(ans[1], [0.6594292844045343, 0.34057071559546576])
     assert_close1d(ans[2], [0.3468928503651561, 0.653107149634844])
 
-
-
 def test_UNIFAC_class():
     T = 373.15
     xs = [0.2, 0.3, 0.1, 0.4]
@@ -678,7 +676,6 @@ def test_UNIFAC_class_Lyngby():
     GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=4,
                                interaction_data=LUFIP, subgroups=LUFSG)
 
-
     def to_diff(T):
         T = float(T[0])
         return np.array(GE.to_T_xs(T, xs).psis())
@@ -758,9 +755,10 @@ def test_VTPR_GE():
     GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=3,
                                interaction_data=VTPRIP, subgroups=VTPRSG)
 
-    assert_close1d(GE.gammas(), [1.084965825553096, 1.2579548067749646])
+    gammas_expect = [1.084965825553096, 1.2579548067749646]
+    assert_close1d(GE.gammas(), gammas_expect)
     assert_close(GE.GE(), 373.85917799452574)
-
+    
     # Derivatives - skip_comb
     dgammas_dT_expect = [-0.000908456121317832, -0.002432810818717207]
     dgammas_dT_super = GibbsExcess.dgammas_dT(GE)
@@ -799,6 +797,56 @@ def test_NISTUF_2011():
 
     gammas_expect = [0.9999968672576434, 0.9737803219928437]
     assert_close1d(GE.gammas(), gammas_expect)
+    
+def test_UNIFAC_default_data():
+    # TODO: PSRK
+    
+    # VTPR ['acetone', 'ethanol']
+    T = 328.15
+    P = 37316.9
+    xs = [0.625, 1-.625]
+    chemgroups = [{1: 1, 18: 1}, {1: 1, 2: 1, 14: 1}]
+    GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=3,
+                               interaction_data=VTPRIP, subgroups=VTPRSG)
+    GEd = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=3)
+    assert_close1d([GEd.rs, GEd.qs, GEd.Qs, GEd.vs], [GE.rs, GE.qs, GE.Qs, GE.vs])
+
+    # NISTUF 2011 ['ethylbenzene', 'p-xylene']
+    T = 330.0
+    P = 1e5
+    xs = [1-.01, .01]
+    chemgroups = {1:1, 15:5, 19:1}, {15:4, 18:2} # from https://trc.nist.gov/TDE/Help/TDE103b/NIST-KT-UNIFAC-AC-Model.htm
+    GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=5,
+                               interaction_data=NISTKTUFIP, subgroups=NISTKTUFSG)
+    GEd = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=5)
+    assert_close1d([GEd.rs, GEd.qs, GEd.Qs, GEd.vs], [GE.rs, GE.qs, GE.Qs, GE.vs])
+
+    # Lyngby ['ethanol', 'pentane', 'octane', 'nonane']
+    T = 373.15
+    xs = [0.2, 0.3, 0.1, 0.4]
+    chemgroups = [{1: 1, 2: 1, 12: 1}, {1: 2, 2: 3}, {1: 2, 2: 6}, {1: 2, 2: 7}]
+    GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=4,
+                               interaction_data=LUFIP, subgroups=LUFSG)
+    GEd = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=4)
+    assert_close1d([GEd.rs, GEd.qs, GEd.Qs, GEd.vs], [GE.rs, GE.qs, GE.Qs, GE.vs])
+
+    # Dortmund ['benzene', 'cyclohexane', 'acetone', 'ethanol']
+    T = 373.15
+    xs = [0.2, 0.3, 0.1, 0.4]
+    chemgroups = [{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}]
+    GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=1,
+                               interaction_data=DOUFIP2016, subgroups=DOUFSG)
+    GEd = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=1)
+    assert_close1d([GEd.rs, GEd.qs, GEd.Qs, GEd.vs], [GE.rs, GE.qs, GE.Qs, GE.vs])
+
+    # UNIFAC
+    T = 373.15
+    xs = [0.2, 0.3, 0.1, 0.4]
+    chemgroups = [{9:6}, {2:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}]
+    GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=0,
+                               interaction_data=UFIP, subgroups=UFSG)
+    GEd = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=0)
+    assert_close1d([GEd.rs, GEd.qs, GEd.Qs, GEd.vs], [GE.rs, GE.qs, GE.Qs, GE.vs])
 
 
 def call_all_methods_first_UNIFAC(kwargs):
