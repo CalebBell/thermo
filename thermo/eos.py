@@ -1422,7 +1422,7 @@ class GCEOS(object):
         dT_dV = 1./dV_dT
 
         Z = P*V*R_inv/T
-        Cp_dep = -T*dP_dT*dP_dT*dV_dP + Cv_dep - R
+        Cp_dep = T*dP_dT*dV_dT + Cv_dep - R
         G_dep = H_dep - T*S_dep
         PIP = V*(d2P_dTdV*dT_dP - d2P_dV2*dV_dP) # phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dTdV)
          # 1 + 1e-14 - allow a few dozen unums of toleranve to keep ideal gas model a gas
