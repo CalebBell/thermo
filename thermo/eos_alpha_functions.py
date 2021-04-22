@@ -183,8 +183,13 @@ __all__ = [
  'Chen_Yang_a_alpha', 'TwuSRK95_a_alpha', 'TwuPR95_a_alpha', 'Soave_79_a_alpha']
 
 
-from fluids.numerics import (horner, horner_and_der2)
+from fluids.numerics import (horner, horner_and_der2, numpy as np)
 from chemicals.utils import log, exp, sqrt, copysign
+
+try:
+    array = np.array
+except:
+    pass
 
 def PR_a_alphas_vectorized(T, Tcs, ais, kappas, a_alphas=None):
     r'''Calculates the `a_alpha` terms for the Peng-Robinson equation of state
@@ -1823,7 +1828,9 @@ class Twu91_a_alpha(a_alpha_base):
             Tr = T/Tcs[i]
             a_alpha = ais[i]*(Tr**(coeffs[2]*(coeffs[1] - 1.0))*exp(coeffs[0]*(1.0 - (Tr)**(coeffs[1]*coeffs[2]))))
             a_alphas.append(a_alpha)
-        return a_alphas
+        if self.scalar:
+            return a_alphas
+        return array(a_alphas)
 
     def a_alpha_and_derivatives_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` and their first
@@ -1878,7 +1885,9 @@ class Twu91_a_alpha(a_alpha_base):
             da_alpha_dTs[i] = x8*(x1 - x7)*T_inv
             d2a_alpha_dT2s[i] = d2a_alpha_dT2
 
-        return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+        if self.scalar:
+            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+        return array(a_alphas), array(da_alpha_dTs), array(d2a_alpha_dT2s)
 
 
 class Soave_93_a_alpha(a_alpha_base):
@@ -2169,8 +2178,11 @@ class TwuSRK95_a_alpha(a_alpha_base):
 
     def a_alphas_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
-        return [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, quick=True, method='SRK')
+        a_alphas = [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, quick=True, method='SRK')
                 for i in range(self.N)]
+        if self.scalar:
+            return a_alphas
+        return array(a_alphas)
 
     def a_alpha_and_derivatives_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
@@ -2180,7 +2192,9 @@ class TwuSRK95_a_alpha(a_alpha_base):
             r0.append(v0)
             r1.append(v1)
             r2.append(v2)
-        return r0, r1, r2
+        if self.scalar:
+            return r0, r1, r2
+        return array(r0), array(r1), array(r2)
 
 
 
@@ -2287,8 +2301,11 @@ class TwuPR95_a_alpha(a_alpha_base):
 
     def a_alphas_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
-        return [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, quick=True, method='PR')
+        a_alphas = [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, quick=True, method='PR')
                 for i in range(self.N)]
+        if self.scalar:
+            return a_alphas
+        return array(a_alphas)
 
     def a_alpha_and_derivatives_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
@@ -2298,7 +2315,9 @@ class TwuPR95_a_alpha(a_alpha_base):
             r0.append(v0)
             r1.append(v1)
             r2.append(v2)
-        return r0, r1, r2
+        if self.scalar:
+            return r0, r1, r2
+        return array(r0), array(r1), array(r2)
 
 
 class Soave_79_a_alpha(a_alpha_base):
