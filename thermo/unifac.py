@@ -3492,14 +3492,14 @@ class UNIFAC(GibbsExcess):
         subgroups : dict[int: UNIFAC_subgroup], optional
             UNIFAC subgroup data; available dictionaries in this module include
             UFSG (original), DOUFSG (Dortmund), or NISTUFSG. The default depends
-            on the given `version`.
+            on the given `version`, [-]
         interaction_data : dict[int: dict[int: tuple(a_mn, b_mn, c_mn)]], optional
             UNIFAC interaction parameter data; available dictionaries in this
-            module include UFIP (original), DOUFIP2006 (Dortmund parameters as
-            published by 2006), DOUFIP2016 (Dortmund parameters as published in
-            2016), and NISTUFIP. The default depends on the given `version`.
+            module include UFIP (original), DOUFIP2006 (Dortmund parameters
+            published in 2006), DOUFIP2016 (Dortmund parameters published in
+            2016), and NISTUFIP. The default depends on the given `version`, [-]
         version : int, optional
-            Which version of the model to use [-]
+            Which version of the model to use. Defaults to 0, [-]
 
             * 0 - original UNIFAC, OR UNIFAC LLE
             * 1 - Dortmund UNIFAC (adds T dept, 3/4 power)
