@@ -843,7 +843,7 @@ def test_UNIFAC_default_data():
     T = 373.15
     xs = [0.2, 0.3, 0.1, 0.4]
     chemgroups = [{9:6}, {2:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}]
-    GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=1,
+    GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=0,
                                interaction_data=UFIP, subgroups=UFSG)
     GEd = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=0)
     assert_close1d([GEd.rs, GEd.qs, GEd.Qs, GEd.vs], [GE.rs, GE.qs, GE.Qs, GE.vs])
