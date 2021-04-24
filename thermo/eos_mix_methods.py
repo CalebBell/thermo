@@ -89,6 +89,9 @@ __all__ = ['a_alpha_aijs_composition_independent',
            'PR_depsilon_dns', 'PR_d2epsilon_dninjs', 'PR_d3epsilon_dninjnks',
            'PR_d2epsilon_dzizjs', 'PR_depsilon_dzs',
            
+           'PR_translated_d2delta_dninjs', 'PR_translated_d3delta_dninjnks', 
+           'PR_translated_d3epsilon_dninjnks',
+           
            'PR_translated_ddelta_dzs', 'PR_translated_ddelta_dns',           
            'PR_translated_depsilon_dzs', 'PR_translated_depsilon_dns',
            'PR_translated_d2epsilon_dzizjs', 'PR_translated_d2epsilon_dninjs',
@@ -1052,6 +1055,70 @@ def PR_translated_depsilon_dns(epsilon, c, b, b0s, cs, N, out=None):
         out[i] = (2.0*b0*(b0 - b0s[i]) - c*(2.0*b0 - 2.0*b0s[i] + c - cs[i])
                  - (c-cs[i])*(2.0*b0 + c))
     return out
+
+def PR_translated_d2delta_dninjs(b0s, cs, b, c, delta, N, out=None):
+    if out is None:
+        out = [[0.0]*N for _ in range(N)] # numba: delete
+        # out = np.zeros((N, N)) # numba: uncomment
+
+    b0 = b + c
+    for i in range(N):
+        t = delta - b0s[i] - cs[i]
+        r = out[i]
+        for j in range(N):
+            r[j] = 2.0*(t - b0s[j] - cs[j])
+    return out
+
+def PR_translated_d3delta_dninjnks(b0s, cs, delta, N, out=None):
+    if out is None:
+        out = [[[0.0]*N for _ in range(N)] for _ in range(N)]# numba: delete
+        # out = np.zeros((N, N, N)) # numba: uncomment
+
+    delta_six = 6.0*delta
+    for i in range(N):
+        b0ici = b0s[i] + cs[i]
+        d3b_dnjnks = out[i]
+        for j in range(N):
+            b0jcj = b0s[j] + cs[j]
+            r = d3b_dnjnks[j]
+            for k in range(N):
+                r[k] = 4.0*(b0ici + b0jcj + b0s[k] + cs[k]) - delta_six
+    return out
+
+
+def PR_translated_d3epsilon_dninjnks(b0s, cs, b, c, epsilon, N, out=None):
+    if out is None:
+        out = [[[0.0]*N for _ in range(N)] for _ in range(N)]# numba: delete
+        # out = np.zeros((N, N, N)) # numba: uncomment
+
+    b0 = b + c
+    for i in range(N):
+        d3b_dnjnks = out[i]
+        for j in range(N):
+            row = d3b_dnjnks[j]
+            for k in range(N):
+                term = (4.0*b0*(3.0*b0 - b0s[i] - b0s[j] - b0s[k])
+                -2.0*c*(6.0*b0 + 3.0*c - 2.0*(b0s[i] + b0s[j] + b0s[k]) -(cs[i] + cs[j] + cs[k]))
+
+                + 2.0*(b0 - b0s[i])*(2.0*b0 - b0s[j] - b0s[k])
+                + 2.0*(b0 - b0s[j])*(2.0*b0 - b0s[i] - b0s[k])
+                + 2.0*(b0 - b0s[k])*(2.0*b0 - b0s[i] - b0s[j])
+
+                - (c - cs[i])*(4.0*b0 - 2.0*b0s[j] - 2.0*b0s[k] + 2.0*c - cs[j] - cs[k])
+                - (c - cs[j])*(4.0*b0 - 2.0*b0s[i] - 2.0*b0s[k] + 2.0*c - cs[i] - cs[k])
+                - (c - cs[k])*(4.0*b0 - 2.0*b0s[i] - 2.0*b0s[j] + 2.0*c - cs[i] - cs[j])
+
+                - 2.0*(c + 2.0*b0)*(3.0*c - cs[i] - cs[j] - cs[k])
+
+                - (2.0*c - cs[i] - cs[j])*(2.0*b0 + c - 2.0*b0s[k] - cs[k])
+                - (2.0*c - cs[i] - cs[k])*(2.0*b0 + c - 2.0*b0s[j] - cs[j])
+                - (2.0*c - cs[j] - cs[k])*(2.0*b0 + c - 2.0*b0s[i] - cs[i])
+
+                )
+                row[k] = term
+    return out
+
+
 
 
 

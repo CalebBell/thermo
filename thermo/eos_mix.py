@@ -217,7 +217,7 @@ from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     PR_d2epsilon_dninjs, PR_d3epsilon_dninjnks, PR_d2delta_dninjs, PR_d3delta_dninjnks,
     PR_ddelta_dzs, PR_ddelta_dns, PR_d2epsilon_dzizjs, PR_depsilon_dzs,
     PR_translated_ddelta_dzs, PR_translated_depsilon_dzs, PR_translated_d2epsilon_dninjs,
-    
+    PR_translated_d2delta_dninjs, PR_translated_d3delta_dninjnks, PR_translated_d3epsilon_dninjnks,
     SRK_translated_ddelta_dns, SRK_translated_depsilon_dns)
 from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     Soave_79_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
@@ -8082,12 +8082,9 @@ class PRMIXTranslated(PRMIX):
         -----
         This derivative is checked numerically.
         '''
-        N, b0s, cs, delta = self.N, self.b0s, self.cs, self.delta
-        d2b_dninjs = []
-        for i in range(N):
-            t = delta - b0s[i] - cs[i]
-            d2b_dninjs.append([2.0*(t - b0s[j] - cs[j]) for j in range(N)])
-        return d2b_dninjs
+        N = self.N
+        out = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
+        return PR_translated_d2delta_dninjs(self.b0s, self.cs, self.b, self.c, self.delta, N, out)
 
     @property
     def d3delta_dninjnks(self):
@@ -8111,18 +8108,9 @@ class PRMIXTranslated(PRMIX):
         -----
         This derivative is checked numerically.
         '''
-        N, b0s, cs, delta = self.N, self.b0s, self.cs, self.delta
-        delta_six = 6.0*delta
-        bs = self.bs
-        d3delta_dninjnks = []
-        for i in range(N):
-            b0ici = b0s[i] + cs[i]
-            d3b_dnjnks = []
-            for j in range(N):
-                b0jcj = b0s[j] + cs[j]
-                d3b_dnjnks.append([4.0*(b0ici + b0jcj + b0s[k] + cs[k]) - delta_six for k in range(N)])
-            d3delta_dninjnks.append(d3b_dnjnks)
-        return d3delta_dninjnks
+        N = self.N
+        out = [[[0.0]*N for _ in range(N)] for _ in range(N)] if self.scalar else zeros((N, N, N))
+        return PR_translated_d3delta_dninjnks(self.b0s, self.cs, self.delta, N, out)
 
     @property
     def depsilon_dzs(self):
@@ -8253,37 +8241,9 @@ class PRMIXTranslated(PRMIX):
         -----
         This derivative is checked numerically.
         '''
-        epsilon, c, b = self.epsilon, self.c, self.b
-        N, b0s, cs = self.N, self.b0s, self.cs
-        b0 = b + c
-        d3b_dninjnks = []
-        for i in range(N):
-            d3b_dnjnks = []
-            for j in range(N):
-                row = []
-                for k in range(N):
-                    term = (4.0*b0*(3.0*b0 - b0s[i] - b0s[j] - b0s[k])
-                    -2.0*c*(6.0*b0 + 3.0*c - 2.0*(b0s[i] + b0s[j] + b0s[k]) -(cs[i] + cs[j] + cs[k]))
-
-                    + 2.0*(b0 - b0s[i])*(2.0*b0 - b0s[j] - b0s[k])
-                    + 2.0*(b0 - b0s[j])*(2.0*b0 - b0s[i] - b0s[k])
-                    + 2.0*(b0 - b0s[k])*(2.0*b0 - b0s[i] - b0s[j])
-
-                    - (c - cs[i])*(4.0*b0 - 2.0*b0s[j] - 2.0*b0s[k] + 2.0*c - cs[j] - cs[k])
-                    - (c - cs[j])*(4.0*b0 - 2.0*b0s[i] - 2.0*b0s[k] + 2.0*c - cs[i] - cs[k])
-                    - (c - cs[k])*(4.0*b0 - 2.0*b0s[i] - 2.0*b0s[j] + 2.0*c - cs[i] - cs[j])
-
-                    - 2.0*(c + 2.0*b0)*(3.0*c - cs[i] - cs[j] - cs[k])
-
-                    - (2.0*c - cs[i] - cs[j])*(2.0*b0 + c - 2.0*b0s[k] - cs[k])
-                    - (2.0*c - cs[i] - cs[k])*(2.0*b0 + c - 2.0*b0s[j] - cs[j])
-                    - (2.0*c - cs[j] - cs[k])*(2.0*b0 + c - 2.0*b0s[i] - cs[i])
-
-                    )
-                    row.append(term)
-                d3b_dnjnks.append(row)
-            d3b_dninjnks.append(d3b_dnjnks)
-        return d3b_dninjnks
+        N = self.N
+        out = [[[0.0]*N for _ in range(N)] for _ in range(N)] if self.scalar else zeros((N, N, N))
+        return PR_translated_d3epsilon_dninjnks(self.b0s, self.cs, self.b, self.c, self.epsilon, N, out)
 
 
 
