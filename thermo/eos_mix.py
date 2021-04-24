@@ -215,6 +215,7 @@ from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     G_dep_lnphi_d_helper, eos_mix_dV_dzs, VDW_lnphis, SRK_lnphis, eos_mix_db_dns, PR_translated_ddelta_dns,
     PR_translated_depsilon_dns, PR_depsilon_dns, PR_translated_d2epsilon_dzizjs,
     PR_d2epsilon_dninjs, PR_d3epsilon_dninjnks,
+    PR_ddelta_dzs, PR_ddelta_dns,
     PR_translated_ddelta_dzs, PR_translated_depsilon_dzs, PR_translated_d2epsilon_dninjs,
     
     SRK_translated_ddelta_dns, SRK_translated_depsilon_dns)
@@ -7069,14 +7070,16 @@ class PRMIX(GCEOSMIX, PR):
         '''
         ais, kappas, Tcs = self.ais, self.kappas, self.Tcs
         T_inv = 1.0/T
+        N = self.N
 
-        d3a_alpha_dT3s = []
-        for a, kappa, Tc in zip(ais, kappas, Tcs):
+        d3a_alpha_dT3s = [0.0]*N if self.scalar else zeros(N)
+        for i in range(N):
+            kappa = kappas[i]
 
-            x0 = 1.0/Tc
-            x1 = (T*x0)**0.5
-            v = (-a*0.75*kappa*(kappa*x0 - x1*(kappa*(x1 - 1.0) - 1.0)*T_inv)*T_inv*T_inv)
-            d3a_alpha_dT3s.append(v)
+            x0 = 1.0/Tcs[i]
+            x1 = sqrt(T*x0)
+            v = (-ais[i]*0.75*kappa*(kappa*x0 - x1*(kappa*(x1 - 1.0) - 1.0)*T_inv)*T_inv*T_inv)
+            d3a_alpha_dT3s[i] = v
         return d3a_alpha_dT3s
 
     def fugacity_coefficients(self, Z):
@@ -7609,9 +7612,8 @@ class PRMIX(GCEOSMIX, PR):
         -----
         This derivative is checked numerically.
         '''
-        if self.scalar:
-            return [i + i for i in self.bs]
-        return 2.0*self.bs
+        N = self.N
+        return PR_ddelta_dzs(self.bs, N, out=[0.0]*N if self.scalar else zeros(N))
 
     @property
     def ddelta_dns(self):
@@ -7631,10 +7633,8 @@ class PRMIX(GCEOSMIX, PR):
         -----
         This derivative is checked numerically.
         '''
-        b = self.b
-        if self.scalar:
-            return [2.0*(bi - b) for bi in self.bs]
-        return 2.0*(self.bs - b)
+        N = self.N
+        return PR_ddelta_dns(self.bs, self.b, N, out=[0.0]*N if self.scalar else zeros(N))
 
     @property
     def d2delta_dzizjs(self):

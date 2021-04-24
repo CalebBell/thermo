@@ -83,6 +83,8 @@ __all__ = ['a_alpha_aijs_composition_independent',
            
            'G_dep_lnphi_d_helper', 
            
+           'PR_ddelta_dzs', 'PR_ddelta_dns',
+           
            'PR_depsilon_dns', 'PR_d2epsilon_dninjs', 'PR_d3epsilon_dninjnks',
            
            'PR_translated_ddelta_dzs', 'PR_translated_ddelta_dns',           
@@ -862,7 +864,21 @@ def eos_mix_da_alpha_dns(a_alpha, a_alpha_j_rows, N, out=None):
         out[i] = 2.0*a_alpha_j_rows[i] + a_alpha_n_2
     return out
 
-    
+
+def PR_ddelta_dzs(bs, N, out=None):
+    if out is None:
+        out = [0.0]*N
+    for i in range(N):
+        out[i] = 2.0*bs[i]
+    return out
+
+def PR_ddelta_dns(bs, b, N, out=None):
+    if out is None:
+        out = [0.0]*N
+    for i in range(N):
+        out[i] = 2.0*(bs[i] - b)
+    return out
+
 def PR_depsilon_dns(b, bs, N, out=None):
     if out is None:
         out = [0.0]*N
