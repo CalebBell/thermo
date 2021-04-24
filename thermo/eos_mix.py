@@ -219,7 +219,8 @@ from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     RK_d3delta_dninjnks, SRK_translated_d2epsilon_dzizjs, SRK_translated_depsilon_dzs,
     PR_translated_ddelta_dzs, PR_translated_depsilon_dzs, PR_translated_d2epsilon_dninjs,
     PR_translated_d2delta_dninjs, PR_translated_d3delta_dninjnks, PR_translated_d3epsilon_dninjnks,
-    SRK_translated_ddelta_dns, SRK_translated_depsilon_dns)
+    SRK_translated_ddelta_dns, SRK_translated_depsilon_dns, SRK_translated_d2delta_dninjs,
+    SRK_translated_d3delta_dninjnks)
 from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     Soave_79_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
                                     RK_a_alpha_and_derivatives_vectorized, RK_a_alphas_vectorized,
@@ -9199,16 +9200,9 @@ class SRKMIXTranslated(SRKMIX):
         -----
         This derivative is checked numerically.
         '''
-        N, b0s, cs, delta = self.N, self.b0s, self.cs, self.delta
-        c, b = self.c, self.b
-        b0 = b + c
-        d2delta_dninjs = []
-        for i in range(N):
-            d2delta_dninjs.append([(2.0*(b0 - cs[i] - cs[j]) + 4.0*c - b0s[i] - b0s[j])
-                                    for j in range(N)])
-        if self.scalar:
-            return d2delta_dninjs
-        return array(d2delta_dninjs)
+        N = self.N
+        out = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
+        return SRK_translated_d2delta_dninjs(self.b0s, self.cs, self.b, self.c, self.delta, N, out)
 
     @property
     def d3delta_dninjnks(self):
@@ -9232,20 +9226,9 @@ class SRKMIXTranslated(SRKMIX):
         -----
         This derivative is checked numerically.
         '''
-        N, b0s, cs, delta = self.N, self.b0s, self.cs, self.delta
-        c, b = self.c, self.b
-        b0 = b + c
-        d3delta_dninjnks = []
-        for i in range(N):
-            d3delta_dnjnks = []
-            for j in range(N):
-                d3delta_dnjnks.append([(-6.0*b0 + 2.0*(b0s[i] + b0s[j] + b0s[k])
-                - 12.0*c + 4.0*(cs[i] + cs[j] + cs[k]))
-                for k in range(N)])
-            d3delta_dninjnks.append(d3delta_dnjnks)
-        if self.scalar:
-            return d3delta_dninjnks
-        return array(d3delta_dninjnks)
+        N = self.N
+        out = [[[0.0]*N for _ in range(N)] for _ in range(N)] if self.scalar else zeros((N, N, N))
+        return SRK_translated_d3delta_dninjnks(self.b0s, self.cs, self.b, self.c, self.delta, N, out)
 
     @property
     def depsilon_dzs(self):

@@ -99,6 +99,8 @@ __all__ = ['a_alpha_aijs_composition_independent',
            
            'SRK_translated_ddelta_dns', 'SRK_translated_depsilon_dns',
            'SRK_translated_d2epsilon_dzizjs', 'SRK_translated_depsilon_dzs',
+           'SRK_translated_d2delta_dninjs', 
+           'SRK_translated_d3delta_dninjnks',
 
            
            'SRK_translated_lnphis_fastest',
@@ -1073,6 +1075,33 @@ def SRK_translated_d2epsilon_dzizjs(b0s, cs, b, c, N, out=None):
     return out
 
 
+def SRK_translated_d2delta_dninjs(b0s, cs, b, c, delta, N, out=None):
+    if out is None:
+        out = [[0.0]*N for _ in range(N)] # numba: delete
+        # out = np.zeros((N, N)) # numba: uncomment
+
+    b0 = b + c
+    for i in range(N):
+        t = delta - b0s[i] - cs[i]
+        r = out[i]
+        for j in range(N):
+            r[j] = (2.0*(b0 - cs[i] - cs[j]) + 4.0*c - b0s[i] - b0s[j])
+    return out
+
+def SRK_translated_d3delta_dninjnks(b0s, cs, b, c, delta, N, out=None):
+    if out is None:
+        out = [[[0.0]*N for _ in range(N)] for _ in range(N)] # numba: delete
+        # out = np.zeros((N, N, N)) # numba: uncomment
+
+    b0 = b + c
+    for i in range(N):
+        mat = out[i]
+        for j in range(N):
+            r = mat[j]
+            for k in range(N):
+                r[k] = (-6.0*b0 + 2.0*(b0s[i] + b0s[j] + b0s[k])
+                - 12.0*c + 4.0*(cs[i] + cs[j] + cs[k]))
+    return out
 
 def PR_translated_depsilon_dzs(epsilon, c, b, b0s, cs, N, out=None):
     if out is None:
