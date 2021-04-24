@@ -83,6 +83,7 @@ __all__ = ['a_alpha_aijs_composition_independent',
            
            'G_dep_lnphi_d_helper', 
            
+           'RK_d3delta_dninjnks',
            'PR_ddelta_dzs', 'PR_ddelta_dns',
            'PR_d2delta_dninjs', 'PR_d3delta_dninjnks',
            
@@ -869,6 +870,20 @@ def eos_mix_da_alpha_dns(a_alpha, a_alpha_j_rows, N, out=None):
         out[i] = 2.0*a_alpha_j_rows[i] + a_alpha_n_2
     return out
 
+def RK_d3delta_dninjnks(b, bs, N, out=None):
+    if out is None:
+        out = [[[0.0]*N for _ in range(N)] for _ in range(N)]# numba: delete
+        # out = np.zeros((N, N, N)) # numba: uncomment
+    m3b = -3.0*b
+    for i in range(N):
+        bi = bs[i]
+        d3b_dnjnks = out[i]
+        for j in range(N):
+            bj = bs[j]
+            r = d3b_dnjnks[j]
+            for k in range(N):
+                r[k] = 2.0*(m3b + bi + bj + bs[k]) 
+    return out
 
 def PR_ddelta_dzs(bs, N, out=None):
     if out is None:

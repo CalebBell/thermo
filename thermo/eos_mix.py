@@ -216,6 +216,7 @@ from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     PR_translated_depsilon_dns, PR_depsilon_dns, PR_translated_d2epsilon_dzizjs,
     PR_d2epsilon_dninjs, PR_d3epsilon_dninjnks, PR_d2delta_dninjs, PR_d3delta_dninjnks,
     PR_ddelta_dzs, PR_ddelta_dns, PR_d2epsilon_dzizjs, PR_depsilon_dzs,
+    RK_d3delta_dninjnks,
     PR_translated_ddelta_dzs, PR_translated_depsilon_dzs, PR_translated_d2epsilon_dninjs,
     PR_translated_d2delta_dninjs, PR_translated_d3delta_dninjnks, PR_translated_d3epsilon_dninjnks,
     SRK_translated_ddelta_dns, SRK_translated_depsilon_dns)
@@ -6799,17 +6800,9 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
         -----
         This derivative is checked numerically.
         '''
-        m3b = -3.0*self.b
-        bs = self.bs
-        d3delta_dninjnks = []
-        for bi in bs:
-            d3b_dnjnks = []
-            for bj in bs:
-                d3b_dnjnks.append([2.0*(m3b + bi + bj + bk) for bk in bs])
-            d3delta_dninjnks.append(d3b_dnjnks)
-        if self.scalar:
-            return d3delta_dninjnks
-        return array(d3delta_dninjnks)
+        N = self.N
+        out = [[[0.0]*N for _ in range(N) ] for _ in range(N)] if self.scalar else zeros((N, N, N))
+        return RK_d3delta_dninjnks(self.b, self.bs, N, out)
 
 
 class PRMIX(GCEOSMIX, PR):
