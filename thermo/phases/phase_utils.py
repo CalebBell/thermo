@@ -25,10 +25,14 @@ __all__ = [
     'activity_pointer_reference_dicts',
     'activity_reference_pointer_dicts',
     'object_lookups',
+    'lnphis_direct',
 ]
 
 from thermo.eos import eos_full_path_dict
 from thermo.eos_mix import eos_mix_full_path_dict
+from thermo.eos_mix_methods import (PR_lnphis_fastest, PR_translated_lnphis_fastest,
+                                    SRK_lnphis_fastest, SRK_translated_lnphis_fastest, 
+                                    RK_lnphis_fastest,  VDW_lnphis_fastest)
 from thermo.activity import IdealSolution
 from thermo.wilson import Wilson
 from thermo.unifac import UNIFAC
@@ -51,3 +55,23 @@ object_lookups = {
     **eos_full_path_dict
 }
 
+
+def lnphis_direct(zs, model, T, P, N, *args):
+    if model == 10200 or model == 10201 or model == 10204 or model == 10205 or model == 10206:
+        return PR_lnphis_fastest(zs, T, P, N, *args)
+    elif model == 10202 or model == 10203 or model == 10207:
+        return PR_translated_lnphis_fastest(zs, T, P, N, *args)
+    elif model == 10100 or model == 10104 or model == 10105:
+        return SRK_lnphis_fastest(zs, T, P, N, *args)
+    elif model == 10101 or model == 10102 or model == 10103:
+        return SRK_translated_lnphis_fastest(zs, T, P, N, *args)
+    elif model == 10002:
+        return RK_lnphis_fastest(zs, T, P, N, *args)
+    elif model == 10001:
+        return VDW_lnphis_fastest(zs, T, P, N, *args)
+    elif model == 0:
+        lnphis = args[-1]
+        for i in range(N):
+            lnphis[i] = 0.0
+        return lnphis
+    raise ValueError("Model not implemented")

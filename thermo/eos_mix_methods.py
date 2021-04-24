@@ -81,8 +81,6 @@ __all__ = ['a_alpha_aijs_composition_independent',
            'SRK_lnphis_fastest', 'RK_lnphis_fastest',
            'PR_translated_lnphis_fastest',
            
-           'lnphis_direct',
-           
            'G_dep_lnphi_d_helper', 
            
            'PR_translated_ddelta_dzs', 'PR_translated_ddelta_dns',           
@@ -985,25 +983,6 @@ def eos_mix_lnphis_general(T, P, Z, b, delta, epsilon, a_alpha, bs,
     return lnphis    
 
 
-def lnphis_direct(zs, model, T, P, N, *args):
-    if model == 10200 or model == 10201 or model == 10204 or model == 10205 or model == 10206:
-        return PR_lnphis_fastest(zs, T, P, N, *args)
-    elif model == 10202 or model == 10203 or model == 10207:
-        return PR_translated_lnphis_fastest(zs, T, P, N, *args)
-    elif model == 10100 or model == 10104 or model == 10105:
-        return SRK_lnphis_fastest(zs, T, P, N, *args)
-    elif model == 10101 or model == 10102 or model == 10103:
-        return SRK_translated_lnphis_fastest(zs, T, P, N, *args)
-    elif model == 10002:
-        return RK_lnphis_fastest(zs, T, P, N, *args)
-    elif model == 10001:
-        return VDW_lnphis_fastest(zs, T, P, N, *args)
-    elif model == 0:
-        lnphis = args[-1]
-        for i in range(N):
-            lnphis[i] = 0.0
-        return lnphis
-    raise ValueError("Model not implemented")
 
 
 

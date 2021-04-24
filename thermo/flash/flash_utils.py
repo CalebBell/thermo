@@ -24,6 +24,7 @@ SOFTWARE.
 from __future__ import division
 __all__ = [
     'sequential_substitution_2P', 
+    'sequential_substitution_2P_functional',
     'sequential_substitution_GDEM3_2P',
     'dew_bubble_Michelsen_Mollerup', 
     'bubble_T_Michelsen_Mollerup',
@@ -85,6 +86,7 @@ from chemicals.volume import COSTALD
 from chemicals.flash_basic import flash_wilson, flash_Tb_Tc_Pc, flash_ideal
 from chemicals.exceptions import TrivialSolutionError
 from thermo.phases import Phase, CoolPropPhase, CEOSLiquid, CEOSGas
+from thermo.phases.phase_utils import lnphis_direct
 from thermo.coolprop import CPiP_min
 
 LASTOVKA_SHAW = 'Lastovka Shaw'
@@ -307,6 +309,72 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
         #     print(l.fugacities()/np.array(g.fugacities()))
         err1, err2, err3 = err, err1, err2
     raise UnconvergedError('End of SS without convergence')
+
+def sequential_substitution_2P_functional(zs, xs_guess, ys_guess,
+                               liquid_args, gas_args, maxiter=1000, tol=1E-13,
+                               trivial_solution_tol=1e-5, V_over_F_guess=0.5):
+
+    xs, ys = xs_guess, ys_guess
+    V_over_F = V_over_F_guess
+    N = len(zs)
+
+    err = 0.0
+    V_over_F_old = V_over_F
+    
+    Ks = [0.0]*N
+    for iteration in range(maxiter):
+        lnphis_g = lnphis_direct(ys, *gas_args)
+        lnphis_l = lnphis_direct(xs, *liquid_args)
+
+        for i in range(N):
+            Ks[i] = exp(lnphis_l[i] - lnphis_g[i])
+
+        V_over_F_old = V_over_F
+        try:
+            V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
+        except:
+            V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F, check=True)
+
+        for xi in xs_new:
+            if xi < 0.0:
+                # Remove negative mole fractions - may help or may still fail
+                xs_new_sum_inv = 0.0
+                for xj in xs_new:
+                    xs_new_sum_inv += abs(xj)
+                xs_new_sum_inv = 1.0/xs_new_sum_inv
+                for i in range(N):
+                    xs_new[i] = abs(xs_new[i])*xs_new_sum_inv
+                break
+        for yi in ys_new:
+            if yi < 0.0:
+                ys_new_sum_inv = 0.0
+                for yj in ys_new:
+                    ys_new_sum_inv += abs(yj)
+                ys_new_sum_inv = 1.0/ys_new_sum_inv
+                for i in range(N):
+                    ys_new[i] = abs(ys_new[i])*ys_new_sum_inv
+                break
+
+        err = 0.0
+        for Ki, xi, yi in zip(Ks, xs, ys):
+            # equivalent of fugacity ratio
+            # Could divide by the old Ks as well.
+            err_i = Ki*xi/yi - 1.0
+            err += err_i*err_i
+
+        xs_old, ys_old = xs, ys
+        xs, ys = xs_new, ys_new
+
+        comp_difference = 0.0
+        for xi, yi in zip(xs, ys):
+            comp_difference += abs(xi - yi)
+
+        if comp_difference < trivial_solution_tol:
+            raise ValueError("Converged to trivial condition, compositions of both phases equal")
+
+        if err < tol:
+            return V_over_F_old, xs_old, ys_old, iteration, err
+    raise ValueError('End of SS without convergence')
 
 
 def sequential_substitution_NP(T, P, zs, compositions_guesses, betas_guesses,

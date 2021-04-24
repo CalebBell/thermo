@@ -33,7 +33,7 @@ from thermo.utils import LINEAR
 from chemicals.utils import rho_to_Vm, Vm_to_rho
 from thermo.phases import *
 from thermo.eos_mix import *
-from thermo.eos_mix_methods import lnphis_direct
+from thermo.phases.phase_utils import lnphis_direct
 from thermo.eos import *
 from thermo.vapor_pressure import VaporPressure
 from thermo.volume import *

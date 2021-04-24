@@ -35,11 +35,15 @@ from thermo.test_utils import check_np_output_activity
 import pytest
 try:
     import numba
-    import thermo.numba
     import numba.core
 except:
     numba = None
 import numpy as np
+
+if numba is not None:
+    import thermo.numba
+    import chemicals.numba
+
 
 
 def swap_funcs_and_test(names, substitutions, test):
@@ -340,3 +344,43 @@ def test_volume_numba_solvers():
     assert slns[1] == 0
     assert slns[2] == 0
     assert_close(slns[0], 2.5908397553496098e-05, rtol=1e-15)
+    
+    
+@mark_as_numba
+def test_lnphis_direct_works_at_all():
+    zs = np.array([.5, .5])
+    eos_kwargs = {'Pcs': np.array([4872000.0, 3370000.0]), 'Tcs': np.array([305.32, 469.7]), 
+                  'omegas': np.array([0.098, 0.251])}
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=None, T=300.0, P=1e5, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=None, T=300.0, P=1e5, zs=zs)
+    assert_close1d(thermo.numba.lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis())
+    assert_close1d(thermo.numba.lnphis_direct(zs, *liq.lnphis_args()), liq.lnphis())
+    
+@mark_as_numba
+def test_lnphis_direct_and_sequential_substitution_2P_functional():
+    T, P = 300.0, 1.6e6
+    constants = ChemicalConstantsPackage(Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0],
+                                         omegas=[0.098, 0.251], Tms=[90.3, 143.15],
+                                         Tbs=[184.55, 309.21], CASs=['74-84-0', '109-66-0'],
+                                         names=['ethane', 'pentane'], MWs=[30.06904, 72.14878])
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228])),
+                         HeatCapacityGas(poly_fit=(200.0, 1000.0, [7.537198394065234e-22, -4.946850205122326e-18, 1.4223747507170372e-14, -2.3451318313798008e-11, 2.4271676873997662e-08, -1.6055220805830093e-05, 0.006379734000450042, -1.0360272314628292, 141.84695243411866]))]
+    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases)
+    zs = np.array([.5, .5])
+    
+    eos_kwargs = {'Pcs': np.array(constants.Pcs), 'Tcs': np.array(constants.Tcs), 'omegas': np.array(constants.omegas)}
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    
+    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
+    res_expect = flasher.flash(T=T, P=P, zs=zs.tolist())
+    VF_expect, xs_expect, ys_expect = res_expect.VF, res_expect.liquid0.zs, res_expect.gas.zs
+    
+    _, _, VF, xs, ys = chemicals.numba.flash_wilson(zs=zs, Tcs=eos_kwargs['Tcs'], Pcs=eos_kwargs['Pcs'], omegas=eos_kwargs['omegas'], T=T, P=P)
+    VF_calc, xs_calc, ys_calc, niter, err = thermo.numba.sequential_substitution_2P_functional(zs=zs, xs_guess=xs, ys_guess=ys,
+                                   liquid_args=liq.lnphis_args(), gas_args=gas.lnphis_args(),
+                                          maxiter=1000, tol=1E-20,
+                                       trivial_solution_tol=1e-5, V_over_F_guess=0.5)
+    assert_close(VF_calc, VF_expect, rtol=1e-6)
+    assert_close1d(xs_calc, xs_expect)
+    assert_close1d(ys_calc, ys_expect)

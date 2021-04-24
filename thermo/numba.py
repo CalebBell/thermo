@@ -49,7 +49,7 @@ replaced = fluids.numba.numerics_dict.copy()
 
 
 def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
-    cache_blacklist = set([])
+    cache_blacklist = set(['sequential_substitution_2P_functional',])
     __funcs.update(normal_fluids.numba.numbafied_fluids_functions.copy())
 
     blacklist = set(['identify_sort_phases', 'score_phases_S', 'score_phases_VL',
@@ -138,7 +138,6 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
              'eos_mix_methods.RK_lnphis_fastest',
              'eos_mix_methods.PR_translated_lnphis_fastest',
              'eos_mix_methods.SRK_translated_lnphis_fastest',
-             'eos_mix_methods.lnphis_direct',
              'eos_mix_methods.G_dep_lnphi_d_helper',
              'eos_mix_methods.PR_translated_ddelta_dzs',
              'eos_mix_methods.PR_translated_ddelta_dns',
@@ -258,6 +257,9 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
 
                  'phases.iapws_phase.IAPWS95', 'phases.iapws_phase.IAPWS95Liquid', 'phases.iapws_phase.IAPWS95Gas',
                  'phases.air_phase.DryAirLemmon',
+
+             'phases.phase_utils.lnphis_direct',
+             'flash.flash_utils.sequential_substitution_2P_functional',
 
                  ]
     normal_fluids.numba.transform_lists_to_arrays(normal, to_change, __funcs, cache_blacklist=cache_blacklist)

@@ -26,9 +26,9 @@ import os
 from fluids.numerics import trunc_exp, numpy as np
 from chemicals.utils import log
 from thermo.eos_mix import IGMIX, eos_mix_full_path_dict, eos_mix_full_path_reverse_dict
-from thermo.eos_mix_methods import PR_lnphis_fastest, lnphis_direct
+from thermo.phases.phase_utils import PR_lnphis_fastest, lnphis_direct
 from thermo.heat_capacity import HeatCapacityGas
-from .phase import Phase
+from thermo.phases.phase import Phase
 try:
     zeros = np.zeros
 except:
