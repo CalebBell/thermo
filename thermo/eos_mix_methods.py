@@ -87,7 +87,7 @@ __all__ = ['a_alpha_aijs_composition_independent',
            
            'PR_translated_ddelta_dzs', 'PR_translated_ddelta_dns',           
            'PR_translated_depsilon_dzs', 'PR_translated_depsilon_dns',
-           'PR_translated_d2epsilon_dzizjs',
+           'PR_translated_d2epsilon_dzizjs', 'PR_translated_d2epsilon_dninjs',
            
            'SRK_translated_ddelta_dns', 'SRK_translated_depsilon_dns',
            
@@ -883,11 +883,28 @@ def PR_translated_d2epsilon_dzizjs(b0s, cs, N, out=None):
         out = [[0.0]*N for _ in range(N)] # numba: delete
         # out = np.zeros((N, N)) # numba: uncomment
     for j in range(N):
+        r = out[j]
         for i in range(N):
-            out[j][i] = 2.0*(-b0s[i]*b0s[j] + b0s[i]*cs[j] + b0s[j]*cs[i] + cs[i]*cs[j])
+            r[i] = 2.0*(-b0s[i]*b0s[j] + b0s[i]*cs[j] + b0s[j]*cs[i] + cs[i]*cs[j])
     return out
 
-
+def PR_translated_d2epsilon_dninjs(b0s, cs, b, c, N, out=None):
+    if out is None:
+        out = [[0.0]*N for _ in range(N)] # numba: delete
+        # out = np.zeros((N, N)) # numba: uncomment
+    b0 = b + c
+    for i in range(N):
+        l = out[i]
+        for j in range(N):
+            v = (-2.0*b0*(2.0*b0 - b0s[i] - b0s[j])
+            + c*(4.0*b0 - 2.0*b0s[i] -2.0*b0s[j] + 2.0*c - cs[i] - cs[j])
+            - 2.0*(b0 - b0s[i])*(b0 - b0s[j])
+            + (c - cs[i])*(2.0*b0 - 2.0*b0s[j] - cs[j] + c)
+            + (c - cs[j])*(2.0*b0 - 2.0*b0s[i] - cs[i] + c)
+            + (2.0*b0 + c)*(2.0*c - cs[i] - cs[j])
+            )
+            l[j] = v
+    return out
 
 def PR_translated_ddelta_dns(b0s, cs, delta, N, out=None):
     if out is None:
