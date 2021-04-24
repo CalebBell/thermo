@@ -565,9 +565,9 @@ def test_PR78MIX():
         return nt*log(eos.phi_g)
 
     lnphis_l_num = jacobian(lnphi_dnxpartial, zs, perturbation=2e-7, args=('l',))
-    assert_close1d(lnphis_l_num, base.lnphis_l)
+    assert_close1d(lnphis_l_num, base.lnphis_l, rtol=3e-7)
     lnphis_g_num = jacobian(lnphi_dnxpartial, zs, perturbation=2e-7, args=('g',))
-    assert_close1d(lnphis_g_num, base.lnphis_g)
+    assert_close1d(lnphis_g_num, base.lnphis_g, rtol=3e-7)
 
 def test_SRKMIX_quick():
     # Two-phase nitrogen-methane
@@ -3797,7 +3797,7 @@ def test_dlnphi_dns_PR_sample():
     dlnphi_dns = eos_l.dlnphi_dns(eos_l.Z_l)
     dlnphi_dns_num = jacobian(to_jac, zs, perturbation=2.5e-8)
     assert_allclose(dlnphi_dns, dlnphi_dns_expect, rtol=1e-10)
-    assert_allclose(dlnphi_dns, dlnphi_dns_num, rtol=1e-6)
+    assert_allclose(dlnphi_dns, dlnphi_dns_num, rtol=5e-6)
 
 
 def test_dV_dns_d2V_dninjs_num_sample():
@@ -4623,6 +4623,10 @@ def test_numpy_properties_all_eos_mix():
         assert_close(eos_np.epsilon, eos.epsilon, rtol=1e-14)
         assert type(eos_np.epsilon) is float
     
+        assert_close2d(eos_np.kijs, eos.kijs, rtol=1e-14)
+        assert isinstance(eos_np.kijs, np.ndarray)
+        assert isinstance(eos.kijs, list)
+
         assert_close1d(eos_np.bs, eos.bs, rtol=1e-14)
         assert isinstance(eos_np.bs, np.ndarray)
         assert isinstance(eos.bs, list)
@@ -4646,3 +4650,8 @@ def test_numpy_properties_all_eos_mix():
         assert_close1d(eos_np.lnphis_g, eos.lnphis_g, rtol=1e-14)
         assert isinstance(eos_np.lnphis_g, np.ndarray)
         assert isinstance(eos.lnphis_g, list)
+
+        # Component derivatives
+        assert_close1d(eos_np.depsilon_dzs, eos.depsilon_dzs, rtol=1e-14)
+        assert isinstance(eos_np.depsilon_dzs, np.ndarray)
+        assert isinstance(eos.depsilon_dzs, list)
