@@ -2304,7 +2304,7 @@ def test_d2b_d2nx(kwargs):
 @pytest.mark.slow
 @pytest.mark.sympy
 @pytest.mark.parametrize("kwargs", [quaternary_basic])
-def test_d3b_dnz(kwargs):
+def test_d3b_dnz_sympy(kwargs):
     # Rough - neeed sympy, numerical differentiation does not give any accuracy
     from sympy import symbols, diff
     zs = kwargs['zs']
@@ -2377,7 +2377,7 @@ def test_d3b_dnz(kwargs):
 @pytest.mark.slow
 @pytest.mark.sympy
 @pytest.mark.parametrize("kwargs", [quaternary_basic])
-def test_d3delta_dnz(kwargs):
+def test_d3delta_dnz_sympy(kwargs):
     from thermo.eos_mix import PRMIXTranslated, SRKMIXTranslated
     # Rough - neeed sympy, numerical differentiation does not give any accuracy
     # Covers everything but to validate new EOSs, have to add the delta function to the list
@@ -2579,7 +2579,7 @@ def test_d2delta_dnz_sympy(kwargs):
 @pytest.mark.sympy
 @pytest.mark.slow
 @pytest.mark.parametrize("kwargs", [quaternary_basic])
-def test_d3epsilon_dnz(kwargs):
+def test_d3epsilon_dnz_sympy(kwargs):
     from thermo.eos_mix import PRMIXTranslated
     # Rough - neeed sympy, numerical differentiation does not give any accuracy
     # Covers everything but to validate new EOSs, have to add the epsilon function to the list
