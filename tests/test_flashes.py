@@ -614,21 +614,27 @@ def test_sequential_substitution_2P_functional_vs_FlashVL():
                          HeatCapacityGas(poly_fit=(200.0, 1000.0, [7.537198394065234e-22, -4.946850205122326e-18, 1.4223747507170372e-14, -2.3451318313798008e-11, 2.4271676873997662e-08, -1.6055220805830093e-05, 0.006379734000450042, -1.0360272314628292, 141.84695243411866]))]
     correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases)
     zs = [.5, .5]
-    
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
-    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
-    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
-    res_expect = flasher.flash(T=T, P=P, zs=zs)
-    VF_expect, xs_expect, ys_expect = res_expect.VF, res_expect.liquid0.zs, res_expect.gas.zs
-    
     _, _, VF, xs, ys = flash_wilson(zs=zs, Tcs=eos_kwargs['Tcs'], Pcs=eos_kwargs['Pcs'], omegas=eos_kwargs['omegas'], T=T, P=P)
-
-    VF_calc, xs_calc, ys_calc, niter, err = sequential_substitution_2P_functional(zs=zs, xs_guess=xs, ys_guess=ys,
-                                   liquid_args=liq.lnphis_args(), gas_args=gas.lnphis_args(),
-                                          maxiter=1000, tol=1E-20,
-                                       trivial_solution_tol=1e-5, V_over_F_guess=0.5)
-    assert_close(VF_calc, VF_expect, rtol=1e-6)
-    assert_close1d(xs_calc, xs_expect)
-    assert_close1d(ys_calc, ys_expect)
+    
+    # There are a lot of specially-coded numbers
+    # so yes, it is necessary to loop through all the EOSs and check they are the same.
+    for obj in eos_mix_list:
+        if obj is IGMIX:
+            continue
+    
+        gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+        liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+        
+        flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
+        res_expect = flasher.flash(T=T, P=P, zs=zs)
+        VF_expect, xs_expect, ys_expect = res_expect.VF, res_expect.liquid0.zs, res_expect.gas.zs
+        
+    
+        VF_calc, xs_calc, ys_calc, niter, err = sequential_substitution_2P_functional(zs=zs, xs_guess=xs, ys_guess=ys,
+                                       liquid_args=liq.lnphis_args(), gas_args=gas.lnphis_args(),
+                                              maxiter=1000, tol=1E-20,
+                                           trivial_solution_tol=1e-5, V_over_F_guess=0.5)
+        assert_close(VF_calc, VF_expect, rtol=1e-6)
+        assert_close1d(xs_calc, xs_expect)
+        assert_close1d(ys_calc, ys_expect)
