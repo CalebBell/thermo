@@ -6804,7 +6804,7 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
             for bj in bs:
                 d3b_dnjnks.append([2.0*(m3b + bi + bj + bk) for bk in bs])
             d3delta_dninjnks.append(d3b_dnjnks)
-        if scalar:
+        if self.scalar:
             return d3delta_dninjnks
         return array(d3delta_dninjnks)
 
@@ -8185,7 +8185,9 @@ class PRMIXTranslated(PRMIX):
         -----
         This derivative is checked numerically.
         '''
-        return PR_translated_depsilon_dzs(self.epsilon, self.c, self.b, self.b0s, self.cs, self.N)
+        N = self.N
+        return PR_translated_depsilon_dzs(self.epsilon, self.c, self.b, self.b0s, self.cs, N,
+                                          [0.0]*N if self.scalar else zeros(N))
 
     @property
     def depsilon_dns(self):
@@ -9337,7 +9339,7 @@ class SRKMIXTranslated(SRKMIX):
                 - 12.0*c + 4.0*(cs[i] + cs[j] + cs[k]))
                 for k in range(N)])
             d3delta_dninjnks.append(d3delta_dnjnks)
-        if scalar:
+        if self.scalar:
             return d3delta_dninjnks
         return array(d3delta_dninjnks)
 

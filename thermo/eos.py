@@ -2533,14 +2533,14 @@ class GCEOS(object):
                 # Trust the fit - do not continue if no good
                 continue
             except Exception as e:
-                raise ValueError("Failed to converge at %.16f K with unexpected error" %(T), e)
+                raise ValueError("Failed to converge at %.16f K with unexpected error" %(T), e, self)
 
             try:
                 Psat_polished = self.Psat(T, polish=True)
                 Psats_num.append(Psat_polished)
             except Exception as e:
                 failed = True
-                raise ValueError("Failed to converge at %.16f K with unexpected error" %(T), e)
+                raise ValueError("Failed to converge at %.16f K with unexpected error" %(T), e, self)
 
             Ts_worked.append(T)
         Ts = Ts_worked
@@ -8869,12 +8869,17 @@ class PRSV2(PR):
         self.b = self.c2*R*Tc/Pc
         self.delta = 2*self.b
         self.epsilon = -self.b*self.b
-        self.kappa0 = omega*(omega*(0.0196554*omega - 0.17131848) + 1.4897153) + 0.378893
+        self.kappa0 = kappa0 = omega*(omega*(0.0196554*omega - 0.17131848) + 1.4897153) + 0.378893
         self.kappa1, self.kappa2, self.kappa3 = kappa1, kappa2, kappa3
 
         if self.V and self.P:
             # Deal with T-solution here
-            self.T = self.solve_T(self.P, self.V)
+            self.T = T = self.solve_T(self.P, self.V)
+
+        Tr = T/Tc
+        sqrtTr = sqrt(Tr)
+        self.kappa = kappa0 + ((kappa1 + kappa2*(kappa3 - Tr)*(1.0 -sqrtTr))*(1.0 + sqrtTr)*(0.7 - Tr))
+
         self.solve()
 
     def solve_T(self, P, V, solution=None):

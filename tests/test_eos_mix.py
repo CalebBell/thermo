@@ -1517,9 +1517,14 @@ def test_fugacities_PR_vs_coolprop():
     omegas = [0.099, 0.349]
     kij = .0067
     kijs = [[0,kij],[kij,0]]
-    c1, c2 = PRMIX.c1, PRMIX.c2
+    c1, c2, c1R2_c2R, c2R = PRMIX.c1, PRMIX.c2, PRMIX.c1R2_c2R, PRMIX.c2R
+    
+    
+
     # match coolprop
     PRMIX.c1, PRMIX.c2 = 0.45724, 0.07780
+    PRMIX.c2R = PRMIX.c2*R
+    PRMIX.c1R2_c2R = PRMIX.c1*R*R/PRMIX.c2R
 
     T, P = 300, 1e5
     eos = PRMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
@@ -1539,7 +1544,7 @@ def test_fugacities_PR_vs_coolprop():
     assert_close1d(fugacities_CP, eos.fugacities_l, rtol=1e-13)
 
     # Set the coefficients back
-    PRMIX.c1, PRMIX.c2 = c1, c2
+    PRMIX.c1, PRMIX.c2, PRMIX.c1R2_c2R, PRMIX.c2R = c1, c2, c1R2_c2R, c2R
 
 
 @pytest.mark.slow
@@ -2424,11 +2429,12 @@ def test_d3delta_dnz(kwargs):
                   PRMIXTranslatedPPJP: 2*(c_working + b_working),
 
                   SRKMIXTranslatedConsistent: 2*c_working + b_working,
+                  SRKMIXTranslated: 2*c_working + b_working,
                  }
 
         for e in eos_mix_list:
             if e not in deltas:
-                raise ValueError("Update deltas")
+                raise ValueError("Update deltas for %s" %(e,))
             diffs = {}
             delta = deltas[e]
 
@@ -2523,11 +2529,12 @@ def test_d2delta_dnz_sympy(kwargs):
                   PRMIXTranslatedPPJP: 2*(c_working + b_working),
 
                   SRKMIXTranslatedConsistent: 2*c_working + b_working,
+                  SRKMIXTranslated: 2*c_working + b_working,
                  }
 
         for e in eos_mix_list:
             if e not in deltas:
-                raise ValueError("Update deltas")
+                raise ValueError("Update deltas for %s" %(e,))
             diffs = {}
             delta = deltas[e]
 
@@ -2624,11 +2631,12 @@ def test_d3epsilon_dnz(kwargs):
                   PRMIXTranslatedPPJP: -b_working*b_working + c_working*(c_working + b_working + b_working),
 
                   SRKMIXTranslatedConsistent: c_working*(b_working + c_working),
+                  SRKMIXTranslated: c_working*(b_working + c_working),
                  }
 
         for e in eos_mix_list:
             if e not in epsilons:
-                raise ValueError("Add new data")
+                raise ValueError("Add new data for %s" %(e,))
 
             diffs = {}
             epsilon = epsilons[e]
@@ -2724,11 +2732,12 @@ def test_d2epsilon_dnz_sympy(kwargs):
                   PRMIXTranslatedPPJP: -b_working*b_working + c_working*(c_working + b_working + b_working),
 
                   SRKMIXTranslatedConsistent: c_working*(b_working + c_working),
+                  SRKMIXTranslated: c_working*(b_working + c_working),
                  }
 
         for e in eos_mix_list:
             if e not in epsilons:
-                raise ValueError("missing function")
+                raise ValueError("missing function for %s" %(e))
 
             diffs = {}
             epsilon = epsilons[e]

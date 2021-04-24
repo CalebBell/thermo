@@ -127,10 +127,6 @@ def plot_unsupported(reason, color='r'):
 
 
 
-
-
-#eos_mix_list = [PRMIX, PR78MIX, SRKMIX, VDWMIX, PRSVMIX, PRSV2MIX, APISRKMIX, TWUPRMIX, TWUSRKMIX, IGMIX]
-#eos_mix_list = [TWUPRMIX, TWUSRKMIX] # issues
 @pytest.mark.plot
 @pytest.mark.slow
 @pytest.mark.parametric
@@ -649,7 +645,7 @@ def test_TS_plot(fluid, eos, auto_range):
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
 def test_TH_plot(fluid, eos, auto_range):
-    '''
+    '''Solutions are NOT UNIQUE
     '''
     #if eos in (TWUPRMIX, TWUSRKMIX) and auto_range == 'physical':
         # Garbage alpha function for very low T

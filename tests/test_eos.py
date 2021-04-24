@@ -1434,15 +1434,9 @@ def test_fuzz_dV_dT_and_d2V_dT2_derivatives():
 @pytest.mark.slow
 @pytest.mark.fuzz
 def test_fuzz_dV_dP_and_d2V_dP2_derivatives():
-#    from thermo import eos
-#    eos_list = list(eos.__all__); eos_list.remove('GCEOS')
-#    eos_list.remove('VDW')
-#    print(eos_list)
-
-    from thermo.eos import eos_list
-    eos_list = list(eos_list)
-    eos_list.remove(VDW)
-    eos_list.remove(IG)
+    eos_list2 = list(eos_list)
+    eos_list2.remove(VDW)
+    eos_list2.remove(IG)
 
     phase_extensions = {True: '_l', False: '_g'}
     derivative_bases_dV_dP = {0:'V', 1:'dV_dP', 2:'d2V_dP2'}
@@ -1454,7 +1448,7 @@ def test_fuzz_dV_dP_and_d2V_dP2_derivatives():
         return getattr(eos, attr)
 
 
-    for eos in eos_list:
+    for eos in eos_list2:
         for T in linspace(20, 1000, 5):
             x, y = [], []
             for P in logspace(log10(3E4), log10(1E6), 5):

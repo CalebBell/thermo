@@ -117,13 +117,15 @@ def test_TV_plot_iapws95():
     plt.close()
 
     max_err = np.max(np.abs(errs))
-    # CoolProp has same error characteritic
+    # CoolProp has same error characteritic in terms of solving for P
+    # from (T, V)
     assert max_err < 1e-5
 
 @pytest.mark.plot
 @pytest.mark.slow
 @pytest.mark.parametric
 def test_PV_plot_iapws95():
+    # There are multiple solution points for water aroud 4 C
     eos = IAPWS95
     T, P = 298.15, 101325.0
     zs = [1.0]
@@ -150,7 +152,8 @@ def test_PV_plot_iapws95():
     plt.close()
     max_err = np.max(np.abs(errs))
     limit = 5e-11
-#    assert max_err < limit
+    # assert max_err < limit
+
 @pytest.mark.plot
 @pytest.mark.slow
 @pytest.mark.parametric
@@ -183,7 +186,7 @@ def test_PS_plot():
     max_err = np.max(errs)
     assert max_err < 1e-8
 #
-#test_PS_plot()
+# test_PS_plot()
 
 @pytest.mark.plot
 @pytest.mark.slow

@@ -26,7 +26,7 @@ import pandas as pd
 from math import isnan
 import numpy as np
 from thermo.permittivity import *
-from chemicals.permittivity import *
+from chemicals.permittivity import permittivity_data_CRC
 
 
 @pytest.mark.meta_T_dept
@@ -76,13 +76,13 @@ def test_Permittivity_class():
 @pytest.mark.fuzz
 @pytest.mark.meta_T_dept
 def test_Permittivity_class_fuzz():
-    tot_constant = sum([PermittivityLiquid(CASRN=i).calculate(T=298.15, method='CRC_CONSTANT') for i in CRC_Permittivity_data.index])
+    tot_constant = sum([PermittivityLiquid(CASRN=i).calculate(T=298.15, method='CRC_CONSTANT') for i in permittivity_data_CRC.index])
     assert_close(tot_constant, 13526.653700000023)
 
 
 
     sums_min, sums_avg, sums_max = 0, 0, 0
-    for i in CRC_Permittivity_data.index:
+    for i in permittivity_data_CRC.index:
         a = PermittivityLiquid(CASRN=i)
         if 'CRC' in a.all_methods:
             sums_min += a.calculate(a.CRC_Tmin, 'CRC')
