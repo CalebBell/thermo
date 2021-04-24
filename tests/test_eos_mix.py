@@ -4650,8 +4650,28 @@ def test_numpy_properties_all_eos_mix():
         assert_close1d(eos_np.lnphis_g, eos.lnphis_g, rtol=1e-14)
         assert isinstance(eos_np.lnphis_g, np.ndarray)
         assert isinstance(eos.lnphis_g, list)
-
-        # Component derivatives
+        
+        # Component derivatives - epsilon
         assert_close1d(eos_np.depsilon_dzs, eos.depsilon_dzs, rtol=1e-14)
         assert isinstance(eos_np.depsilon_dzs, np.ndarray)
         assert isinstance(eos.depsilon_dzs, list)
+            
+        assert_close1d(eos_np.depsilon_dns, eos.depsilon_dns, rtol=1e-14)
+        assert isinstance(eos_np.depsilon_dns, np.ndarray)
+        assert isinstance(eos.depsilon_dns, list)
+    
+        assert_close1d(eos_np.d2epsilon_dzizjs, eos.d2epsilon_dzizjs, rtol=1e-14)
+        assert isinstance(eos_np.d2epsilon_dzizjs, np.ndarray)
+        assert isinstance(eos.d2epsilon_dzizjs, list)
+    
+        assert_close1d(eos_np.d2epsilon_dninjs, eos.d2epsilon_dninjs, rtol=1e-14)
+        assert isinstance(eos_np.d2epsilon_dninjs, np.ndarray)
+        assert isinstance(eos.d2epsilon_dninjs, list)
+    
+        assert_close1d(eos_np.d3epsilon_dzizjzks, eos.d3epsilon_dzizjzks, rtol=1e-14)
+        assert isinstance(eos_np.d3epsilon_dzizjzks, np.ndarray)
+        assert isinstance(eos.d3epsilon_dzizjzks, list)
+    
+        assert_close1d(eos_np.d3epsilon_dninjnks, eos.d3epsilon_dninjnks, rtol=1e-14)
+        assert isinstance(eos_np.d3epsilon_dninjnks, np.ndarray)
+        assert isinstance(eos.d3epsilon_dninjnks, list)
