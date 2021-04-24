@@ -216,7 +216,7 @@ from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     PR_translated_depsilon_dns, PR_depsilon_dns, PR_translated_d2epsilon_dzizjs,
     PR_d2epsilon_dninjs, PR_d3epsilon_dninjnks, PR_d2delta_dninjs, PR_d3delta_dninjnks,
     PR_ddelta_dzs, PR_ddelta_dns, PR_d2epsilon_dzizjs, PR_depsilon_dzs,
-    RK_d3delta_dninjnks,
+    RK_d3delta_dninjnks, SRK_translated_d2epsilon_dzizjs, SRK_translated_depsilon_dzs,
     PR_translated_ddelta_dzs, PR_translated_depsilon_dzs, PR_translated_d2epsilon_dninjs,
     PR_translated_d2delta_dninjs, PR_translated_d3delta_dninjnks, PR_translated_d3epsilon_dninjnks,
     SRK_translated_ddelta_dns, SRK_translated_depsilon_dns)
@@ -9266,13 +9266,9 @@ class SRKMIXTranslated(SRKMIX):
         -----
         This derivative is checked numerically.
         '''
-        epsilon, c, b = self.epsilon, self.c, self.b
-        N, b0s, cs = self.N, self.b0s, self.cs
-        b0 = b + c
-        if self.scalar:
-            return [b0s[i]*c + cs[i]*b0 + 2.0*cs[i]*c
-                for i in range(N)]
-        return b0s*c + cs*b0 + 2.0*cs*c
+        N = self.N
+        out = [0.0]*N if self.scalar else zeros(N)
+        return SRK_translated_depsilon_dzs(self.b0s, self.cs, self.b, self.c, N, out)
 
     @property
     def depsilon_dns(self):
@@ -9315,12 +9311,9 @@ class SRKMIXTranslated(SRKMIX):
         -----
         This derivative is checked numerically.
         '''
-        N, b0s, cs = self.N, self.b0s, self.cs
-        d2epsilon_dzizjs = [[2.0*cs[i]*cs[j] + b0s[i]*cs[j] + b0s[j]*cs[i]
-                 for i in range(N)] for j in range(N)]
-        if self.scalar:
-            return d2epsilon_dzizjs
-        return array(d2epsilon_dzizjs)
+        N = self.N
+        out = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
+        return SRK_translated_d2epsilon_dzizjs(self.b0s, self.cs, self.b, self.c, N, out=out)
 
     d3epsilon_dzizjzks = GCEOSMIX.d3epsilon_dzizjzks # Zeros
 

@@ -98,6 +98,8 @@ __all__ = ['a_alpha_aijs_composition_independent',
            'PR_translated_d2epsilon_dzizjs', 'PR_translated_d2epsilon_dninjs',
            
            'SRK_translated_ddelta_dns', 'SRK_translated_depsilon_dns',
+           'SRK_translated_d2epsilon_dzizjs', 'SRK_translated_depsilon_dzs',
+
            
            'SRK_translated_lnphis_fastest',
            
@@ -1051,6 +1053,24 @@ def SRK_translated_depsilon_dns(b0s, cs, b, c, N, out=None):
         out[i] = (-b0*(c - cs[i]) - c*(b0 - b0s[i]) - 2.0*c*(c - cs[i]))
     return out
 
+def SRK_translated_depsilon_dzs(b0s, cs, b, c, N, out=None):
+    if out is None:
+        out = [0.0]*N
+    b0 = b + c
+    for i in range(N):
+        out[i] = b0s[i]*c + cs[i]*b0 + 2.0*cs[i]*c
+    return out
+
+def SRK_translated_d2epsilon_dzizjs(b0s, cs, b, c, N, out=None):
+    if out is None:
+        out = [[0.0]*N for _ in range(N)] # numba: delete
+        # out = np.zeros((N, N)) # numba: uncomment
+    b0 = b + c
+    for i in range(N):
+        r = out[i]
+        for j in range(N):
+            r[j] = 2.0*cs[i]*cs[j] + b0s[i]*cs[j] + b0s[j]*cs[i]
+    return out
 
 
 

@@ -145,6 +145,8 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
              'eos_mix_methods.PR_translated_depsilon_dns',
              'eos_mix_methods.SRK_translated_ddelta_dns',
              'eos_mix_methods.SRK_translated_depsilon_dns',
+             'eos_mix_methods.SRK_translated_d2epsilon_dzizjs',
+             'eos_mix_methods.SRK_translated_depsilon_dzs',
              'eos_mix_methods.eos_mix_db_dns',
              'eos_mix_methods.eos_mix_da_alpha_dns',
              'eos_mix_methods.eos_mix_dV_dzs',
