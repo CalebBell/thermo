@@ -154,12 +154,12 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
              'eos_mix_methods.PR_d2delta_dninjs',
              'eos_mix_methods.PR_d3delta_dninjnks',
              'eos_mix_methods.PR_depsilon_dns',
+             'eos_mix_methods.PR_d2epsilon_dzizjs',
+             'eos_mix_methods.PR_depsilon_dzs',
              'eos_mix_methods.PR_d2epsilon_dninjs',
              'eos_mix_methods.PR_d3epsilon_dninjnks',
              'eos_mix_methods.PR_translated_d2epsilon_dzizjs',
              'eos_mix_methods.PR_translated_d2epsilon_dninjs',
-             
-
 
                  'regular_solution.regular_solution_Hi_sums',
                  'regular_solution.regular_solution_dGE_dxs',
