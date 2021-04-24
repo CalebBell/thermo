@@ -4675,3 +4675,28 @@ def test_numpy_properties_all_eos_mix():
         assert_close1d(eos_np.d3epsilon_dninjnks, eos.d3epsilon_dninjnks, rtol=1e-14)
         assert isinstance(eos_np.d3epsilon_dninjnks, np.ndarray)
         assert isinstance(eos.d3epsilon_dninjnks, list)
+
+        # Component derivatives - delta
+        assert_close1d(eos_np.ddelta_dzs, eos.ddelta_dzs, rtol=1e-14)
+        assert isinstance(eos_np.ddelta_dzs, np.ndarray)
+        assert isinstance(eos.ddelta_dzs, list)
+            
+        assert_close1d(eos_np.ddelta_dns, eos.ddelta_dns, rtol=1e-14)
+        assert isinstance(eos_np.ddelta_dns, np.ndarray)
+        assert isinstance(eos.ddelta_dns, list)
+    
+        assert_close1d(eos_np.d2delta_dzizjs, eos.d2delta_dzizjs, rtol=1e-14)
+        assert isinstance(eos_np.d2delta_dzizjs, np.ndarray)
+        assert isinstance(eos.d2delta_dzizjs, list)
+    
+        assert_close1d(eos_np.d2delta_dninjs, eos.d2delta_dninjs, rtol=1e-14)
+        assert isinstance(eos_np.d2delta_dninjs, np.ndarray)
+        assert isinstance(eos.d2delta_dninjs, list)
+    
+        assert_close1d(eos_np.d3delta_dzizjzks, eos.d3delta_dzizjzks, rtol=1e-13)
+        assert isinstance(eos_np.d3delta_dzizjzks, np.ndarray)
+        assert isinstance(eos.d3delta_dzizjzks, list)
+    
+        assert_close1d(eos_np.d3delta_dninjnks, eos.d3delta_dninjnks, rtol=1e-13)
+        assert isinstance(eos_np.d3delta_dninjnks, np.ndarray)
+        assert isinstance(eos.d3delta_dninjnks, list)

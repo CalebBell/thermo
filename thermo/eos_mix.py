@@ -7701,8 +7701,9 @@ class PRMIX(GCEOSMIX, PR):
         -----
         This derivative is checked numerically.
         '''
+        N = self.N
         out = [[[0.0]*N for _ in range(N) ] for _ in range(N)] if self.scalar else zeros((N, N, N))
-        return PR_d3delta_dninjnks(self.b, self.bs, self.B, out)
+        return PR_d3delta_dninjnks(self.b, self.bs, N, out)
 
     @property
     def depsilon_dzs(self):
@@ -8034,7 +8035,9 @@ class PRMIXTranslated(PRMIX):
         -----
         This derivative is checked numerically.
         '''
-        return PR_translated_ddelta_dzs(self.b0s, self.cs, self.N)
+        N = self.N
+        return PR_translated_ddelta_dzs(self.b0s, self.cs, N, 
+                                        [0.0]*N if self.scalar else zeros(N))
 
     # Zero in both cases
     d2delta_dzizjs = PRMIX.d2delta_dzizjs
