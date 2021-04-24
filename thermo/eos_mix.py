@@ -8786,14 +8786,18 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
-        self.N = len(Tcs)
+        self.N = N = len(Tcs)
+        cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
         self.scalar = scalar = type(zs) is list
         if kijs is None:
-            kijs = [[0]*self.N for i in range(self.N)]
+            if scalar:
+                kijs = [[0.0]*N for i in cmps]
+            else:
+                kijs = zeros((N, N))
         self.kijs = kijs
         self.kwargs = {'kijs': kijs}
         self.T = T
