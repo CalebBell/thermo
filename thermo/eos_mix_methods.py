@@ -83,7 +83,7 @@ __all__ = ['a_alpha_aijs_composition_independent',
            
            'G_dep_lnphi_d_helper', 
            
-           'PR_depsilon_dns',
+           'PR_depsilon_dns', 'PR_d3epsilon_dninjnks',
            
            'PR_translated_ddelta_dzs', 'PR_translated_ddelta_dns',           
            'PR_translated_depsilon_dzs', 'PR_translated_depsilon_dns',
@@ -870,6 +870,25 @@ def PR_depsilon_dns(b, bs, N, out=None):
     for i in range(N):
         out[i] = b2*(b - bs[i])
     return out
+
+def PR_d3epsilon_dninjnks(b, bs, N, out=None):
+    if out is None:
+        out = [[[0.0]*N for _ in range(N)] for _ in range(N)]# numba: delete
+        # out = np.zeros((N, N, N)) # numba: uncomment
+
+    for i in range(N):
+        bi = bs[i]
+        d3b_dnjnks = out[i]
+        for j in range(N):
+            bj = bs[j]
+            row = d3b_dnjnks[j]
+            for k in range(N):
+                bk = bs[k]
+                term = 24.0*b*b - 12.0*b*(bi + bj + bk) + 4.0*(bi*bj + bi*bk + bj*bk)
+                row[k] = term
+    return out
+
+    
 
 def PR_translated_ddelta_dzs(b0s, cs, N, out=None):
     if out is None:
