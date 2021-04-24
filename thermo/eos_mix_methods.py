@@ -101,6 +101,7 @@ __all__ = ['a_alpha_aijs_composition_independent',
            'SRK_translated_d2epsilon_dzizjs', 'SRK_translated_depsilon_dzs',
            'SRK_translated_d2delta_dninjs', 
            'SRK_translated_d3delta_dninjnks',
+           'SRK_translated_d2epsilon_dninjs', 'SRK_translated_d3epsilon_dninjnks',
 
            
            'SRK_translated_lnphis_fastest',
@@ -1101,6 +1102,50 @@ def SRK_translated_d3delta_dninjnks(b0s, cs, b, c, delta, N, out=None):
             for k in range(N):
                 r[k] = (-6.0*b0 + 2.0*(b0s[i] + b0s[j] + b0s[k])
                 - 12.0*c + 4.0*(cs[i] + cs[j] + cs[k]))
+    return out
+
+def SRK_translated_d2epsilon_dninjs(b0s, cs, b, c, N, out=None):
+    if out is None:
+        out = [[0.0]*N for _ in range(N)] # numba: delete
+        # out = np.zeros((N, N)) # numba: uncomment
+    b0 = b + c
+    for i in range(N):
+        l = out[i]
+        for j in range(N):
+            v = (b0*(2.0*c - cs[i] - cs[j]) + c*(2.0*b0 - b0s[i] - b0s[j])
+            +2.0*c*(2.0*c - cs[i] - cs[j])
+            + (b0 - b0s[i])*(c - cs[j])
+            + (b0 - b0s[j])*(c - cs[i])
+            + 2.0*(c - cs[i])*(c - cs[j])
+            )
+            l[j] = v
+    return out
+
+def SRK_translated_d3epsilon_dninjnks(b0s, cs, b, c, epsilon, N, out=None):
+    if out is None:
+        out = [[[0.0]*N for _ in range(N)] for _ in range(N)]# numba: delete
+        # out = np.zeros((N, N, N)) # numba: uncomment
+
+    b0 = b + c
+    for i in range(N):
+        d3b_dnjnks = out[i]
+        for j in range(N):
+            row = d3b_dnjnks[j]
+            for k in range(N):
+                term = (-2.0*b0*(3.0*c - cs[i] - cs[j] - cs[k])
+                    - 2.0*c*(3.0*b0 - b0s[i] - b0s[j] - b0s[k])
+                    - 4.0*c*(3.0*c - cs[i] - cs[j] - cs[k])
+                    - (b0 - b0s[i])*(2.0*c - cs[j] - cs[k])
+                    - (b0 - b0s[j])*(2.0*c - cs[i] - cs[k])
+                    - (b0 - b0s[k])*(2.0*c - cs[i] - cs[j])
+                    - (c - cs[i])*(2.0*b0 - b0s[j] - b0s[k])
+                    - (c - cs[j])*(2.0*b0 - b0s[i] - b0s[k])
+                    - (c - cs[k])*(2.0*b0 - b0s[i] - b0s[j])
+                    - 2.0*(c - cs[i])*(2.0*c - cs[j] - cs[k])
+                    - 2.0*(c - cs[j])*(2.0*c - cs[i] - cs[k])
+                    - 2.0*(c - cs[k])*(2.0*c - cs[i] - cs[j])
+                    )
+                row[k] = term
     return out
 
 def PR_translated_depsilon_dzs(epsilon, c, b, b0s, cs, N, out=None):

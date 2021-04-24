@@ -220,6 +220,7 @@ from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     PR_translated_ddelta_dzs, PR_translated_depsilon_dzs, PR_translated_d2epsilon_dninjs,
     PR_translated_d2delta_dninjs, PR_translated_d3delta_dninjnks, PR_translated_d3epsilon_dninjnks,
     SRK_translated_ddelta_dns, SRK_translated_depsilon_dns, SRK_translated_d2delta_dninjs,
+    SRK_translated_d2epsilon_dninjs, SRK_translated_d3epsilon_dninjnks,
     SRK_translated_d3delta_dninjnks)
 from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     Soave_79_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
@@ -965,21 +966,6 @@ class GCEOSMIX(GCEOS):
             else:
                 self.a_alphas = a_alphas = self.a_alphas_vectorized(T)
                 da_alpha_dTs = d2a_alpha_dT2s = None
-#            except NotImplementedError:
-#                a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
-#                method_obj = super(type(self).__mro__[self.a_alpha_mro], self)
-#                for i in range(self.N):
-#                    self.setup_a_alpha_and_derivatives(i, T=T)
-#                    # Abuse method resolution order to call the a_alpha_and_derivatives
-#                    # method of the original pure EOS
-#                    # -4 goes back from object, GCEOS, SINGLEPHASEEOS, up to :obj:`GCEOSMIX`
-#                    #
-#                    ds = method_obj.a_alpha_and_derivatives_pure(T)
-#                    a_alphas.append(ds[0])
-#                    da_alpha_dTs.append(ds[1])
-#                    d2a_alpha_dT2s.append(ds[2])
-#                self.cleanup_a_alpha_and_derivatives()
-
         else:
             try:
                 a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s
@@ -1185,12 +1171,15 @@ class GCEOSMIX(GCEOS):
         one_minus_kijs = 1.0 - kijs
 
         x0 = np.einsum('i,j', a_alphas, a_alphas)
-        x0_05 = x0**0.5
+        x0_05 = npsqrt(x0)
         a_alpha_ijs = (one_minus_kijs)*x0_05
         z_products = np.einsum('i,j', zs, zs)
         a_alpha = np.einsum('ij,ji', a_alpha_ijs, z_products)
-
-        self.a_alpha_ijs = a_alpha_ijs.tolist()
+        
+        if self.scalar:
+            self.a_alpha_ijs = a_alpha_ijs.tolist()
+        else:
+            self.a_alpha_ijs = a_alpha_ijs
 
         if full:
             term0 = np.einsum('j,i', a_alphas, da_alpha_dTs)
@@ -2497,10 +2486,14 @@ class GCEOSMIX(GCEOS):
             return self.a_alpha_j_rows
         except:
             pass
-        zs = self.zs
+        zs, N = self.zs, self.N
         a_alpha_ijs = self.a_alpha_ijs
-        a_alpha_j_rows = [0.0]*self.N
-        for i in range(self.N):
+        if self.scalar:
+            a_alpha_j_rows = [0.0]*N
+        else:
+            a_alpha_j_rows = zeros(N)
+            
+        for i in range(N):
             l = a_alpha_ijs[i]
             for j in range(i):
                 a_alpha_j_rows[j] += zs[i]*l[j]
@@ -2633,7 +2626,7 @@ class GCEOSMIX(GCEOS):
             return self.da_alpha_dT_j_rows
         except:
             pass
-        zs = self.zs
+        zs, N, scalar = self.zs, self.N, self.N
         da_alpha_dT_ijs = self.da_alpha_dT_ijs
 
         # Handle the case of attempting to avoid a full alpha derivative matrix evaluation
@@ -2641,9 +2634,12 @@ class GCEOSMIX(GCEOS):
             self.resolve_full_alphas()
             da_alpha_dT_ijs = self.da_alpha_dT_ijs
 
-        da_alpha_dT_j_rows = [0.0]*self.N
+        if scalar:
+            da_alpha_dT_j_rows = [0.0]*N
+        else:
+            da_alpha_dT_j_rows = zeros(N)
 
-        for i in range(self.N):
+        for i in range(N):
             l = da_alpha_dT_ijs[i]
             for j in range(i):
                 da_alpha_dT_j_rows[j] += zs[i]*l[j]
@@ -2659,7 +2655,7 @@ class GCEOSMIX(GCEOS):
             return self.d2a_alpha_dT2_j_rows
         except AttributeError:
             pass
-        d2a_alpha_dT2_ijs = self.d2a_alpha_dT2_ijs
+        d2a_alpha_dT2_ijs, N, scalar = self.d2a_alpha_dT2_ijs, self.N, self.scalar
 
         # Handle the case of attempting to avoid a full alpha derivative matrix evaluation
         if d2a_alpha_dT2_ijs is None:
@@ -2667,8 +2663,11 @@ class GCEOSMIX(GCEOS):
             d2a_alpha_dT2_ijs = self.d2a_alpha_dT2_ijs
 
         zs = self.zs
-        d2a_alpha_dT2_j_rows = [0.0]*self.N
-        for i in range(self.N):
+        if scalar:
+            d2a_alpha_dT2_j_rows = [0.0]*N
+        else:
+            d2a_alpha_dT2_j_rows = zeros(N)
+        for i in range(N):
             l = d2a_alpha_dT2_ijs[i]
             for j in range(i):
                 d2a_alpha_dT2_j_rows[j] += zs[i]*l[j]
@@ -3065,8 +3064,11 @@ class GCEOSMIX(GCEOS):
         N = self.N
         zs = self.zs
         a_alpha3 = 3.0*a_alpha
-
-        hessian = [[0.0]*N for _ in range(N)]
+        
+        if self.scalar:
+            hessian = [[0.0]*N for _ in range(N)]
+        else:
+            hessian = zeros((N, N))
         for i in range(N):
             for j in range(i+1):
                 if i == j:
@@ -9319,26 +9321,10 @@ class SRKMIXTranslated(SRKMIX):
         -----
         This derivative is checked numerically.
         '''
-        # Not trusted yet - numerical check does not have enough digits
-        epsilon, c, b = self.epsilon, self.c, self.b
-        N, b0s, cs = self.N, self.b0s, self.cs
-        b0 = b + c
-        d2epsilon_dninjs = []
-        for i in range(N):
-            l = []
-            for j in range(N):
-                v = (b0*(2.0*c - cs[i] - cs[j]) + c*(2.0*b0 - b0s[i] - b0s[j])
-                +2.0*c*(2.0*c - cs[i] - cs[j])
-                + (b0 - b0s[i])*(c - cs[j])
-                + (b0 - b0s[j])*(c - cs[i])
-                + 2.0*(c - cs[i])*(c - cs[j])
-                )
-                l.append(v)
-            d2epsilon_dninjs.append(l)
-        if self.scalar:
-            return d2epsilon_dninjs
-        return array(d2epsilon_dninjs)
-
+        N = self.N
+        out = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
+        return SRK_translated_d2epsilon_dninjs(self.b0s, self.cs, self.b, self.c, N, out)
+        
     @property
     def d3epsilon_dninjnks(self):
         r'''Helper method for calculating the third partial mole number
@@ -9370,34 +9356,9 @@ class SRKMIXTranslated(SRKMIX):
         -----
         This derivative is checked numerically.
         '''
-        epsilon, c, b = self.epsilon, self.c, self.b
-        N, b0s, cs = self.N, self.b0s, self.cs
-        b0 = b + c
-        d3b_dninjnks = []
-        for i in range(N):
-            d3b_dnjnks = []
-            for j in range(N):
-                row = []
-                for k in range(N):
-                    term = (-2.0*b0*(3.0*c - cs[i] - cs[j] - cs[k])
-                    - 2.0*c*(3.0*b0 - b0s[i] - b0s[j] - b0s[k])
-                    - 4.0*c*(3.0*c - cs[i] - cs[j] - cs[k])
-                    - (b0 - b0s[i])*(2.0*c - cs[j] - cs[k])
-                    - (b0 - b0s[j])*(2.0*c - cs[i] - cs[k])
-                    - (b0 - b0s[k])*(2.0*c - cs[i] - cs[j])
-                    - (c - cs[i])*(2.0*b0 - b0s[j] - b0s[k])
-                    - (c - cs[j])*(2.0*b0 - b0s[i] - b0s[k])
-                    - (c - cs[k])*(2.0*b0 - b0s[i] - b0s[j])
-                    - 2.0*(c - cs[i])*(2.0*c - cs[j] - cs[k])
-                    - 2.0*(c - cs[j])*(2.0*c - cs[i] - cs[k])
-                    - 2.0*(c - cs[k])*(2.0*c - cs[i] - cs[j])
-                    )
-                    row.append(term)
-                d3b_dnjnks.append(row)
-            d3b_dninjnks.append(d3b_dnjnks)
-        if self.scalar:
-            return d3b_dninjnks
-        return array(d3b_dninjnks)
+        N = self.N
+        out = [[[0.0]*N for _ in range(N)] for _ in range(N)] if self.scalar else zeros((N, N, N))
+        return SRK_translated_d3epsilon_dninjnks(self.b0s, self.cs, self.b, self.c, self.epsilon, N, out)
 
 
 class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
