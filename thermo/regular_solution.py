@@ -41,13 +41,15 @@ Regular Solution Class
 from __future__ import division
 from fluids.numerics import numpy as np
 from thermo.activity import GibbsExcess
+from chemicals.utils import exp
+from fluids.constants import R
 
 try:
     array, zeros, npsum = np.array, np.zeros, np.sum
 except (ImportError, AttributeError):
     pass
 
-__all__ = ['RegularSolution']
+__all__ = ['RegularSolution', 'regular_solution_gammas']
 
 
 def regular_solution_Hi_sums(SPs, Vs, xsVs, coeffs, N, Hi_sums=None):
@@ -87,9 +89,51 @@ def regular_solution_dGE_dxs(Vs, Hi_sums, N, xsVs_sum_inv, GE, dGE_dxs=None):
     if dGE_dxs is None:
         dGE_dxs = [0.0]*N
     for i in range(N):
-        # i is what is being differentiated
+        # i is what is being differentiatedregular_solution_Hi_sums(self.SPs, self.Vs, self.xsVs, self.lambda_coeffs, self.N, Hi_sums)
         dGE_dxs[i] = (Hi_sums[i] - GE*Vs[i])*xsVs_sum_inv
     return dGE_dxs
+
+def regular_solution_gammas(T, xs, Vs, SPs, lambda_coeffs, N, 
+                            xsVs=None, Hi_sums=None, dGE_dxs=None,
+                            gammas=None):
+    if xsVs is None:
+        xsVs = [0.0]*N
+    
+    for i in range(N):
+        xsVs[i] = xs[i]*Vs[i]
+    
+    xsVs_sum = 0.0
+    for i in range(N):
+        xsVs_sum += xsVs[i]
+    xsVs_sum_inv = 1.0/xsVs_sum
+    
+    if Hi_sums is None:
+        Hi_sums = [0.0]*N
+    
+    Hi_sums = regular_solution_Hi_sums(SPs=SPs, Vs=Vs, xsVs=xsVs, coeffs=lambda_coeffs,
+                                       N=N, Hi_sums=Hi_sums)
+    GE = regular_solution_GE(SPs=SPs, xsVs=xsVs, coeffs=lambda_coeffs, N=N, xsVs_sum_inv=xsVs_sum_inv)
+    
+    if dGE_dxs is None:
+        dGE_dxs = [0.0]*N
+    dG_dxs = regular_solution_dGE_dxs(Vs=Vs, Hi_sums=Hi_sums, N=N, xsVs_sum_inv=xsVs_sum_inv,
+                                      GE=GE, dGE_dxs=dGE_dxs)
+    xdx_totF = GE
+    for i in range(N):
+        xdx_totF -= xs[i]*dG_dxs[i]
+    
+    if gammas is None:
+        gammas = [0.0]*N
+    
+    for i in range(N):
+        gammas[i] = dG_dxs[i] + xdx_totF
+    RT_inv = 1.0/(R*T)
+    for i in range(N):
+        gammas[i] *= RT_inv
+    for i in range(N):
+        gammas[i] = exp(gammas[i])
+    return gammas
+
 
 def regular_solution_d2GE_dxixjs(Vs, SPs, Hi_sums, dGE_dxs, N, GE, coeffs, xsVs_sum_inv, d2GE_dxixjs=None):
     if d2GE_dxixjs is None:

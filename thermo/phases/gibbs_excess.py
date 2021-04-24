@@ -37,7 +37,7 @@ from thermo.volume import VolumeLiquid, VolumeSolid
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
 from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
 
-from .phase import Phase
+from thermo.phases.phase import Phase
 
 class GibbsExcessLiquid(Phase):
     r'''Phase based on combining Raoult's law with a

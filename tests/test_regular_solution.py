@@ -70,6 +70,11 @@ def test_4_components():
     GE_from_gammas = R*T*sum(xi*log(gamma) for xi, gamma in zip(xs, gammas))
     assert_close(GE_from_gammas, GE.GE(), rtol=1e-12)
 
+    # Gamma direct call
+    assert_close1d(GE.gammas(), 
+                   regular_solution_gammas(T=T, xs=xs, Vs=Vs, SPs=SPs, lambda_coeffs=lambda_coeffs, N=N), rtol=1e-12)
+
+
     # dGE dT
     dGE_dT_numerical = ((np.array(GE.to_T_xs(T+dT, xs).GE()) - np.array(GE.GE()))/dT)
     dGE_dT_analytical = GE.dGE_dT()

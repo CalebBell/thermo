@@ -331,6 +331,28 @@ def test_RegularSolution_numba():
     assert_close1d(GE.d2GE_dTdxs(), [0.0]*N, atol=0)
 
 @mark_as_numba
+def test_RegularSolution_gammas_numba():
+
+    xs = [.4, .3, .2, .1]
+    SPs = [19570.2, 18864.7, 29261.4, 47863.5]
+    Vs = [7.421e-05, 8.068e-05, 4.083e-05, 1.808e-05]
+    N = 4
+    T = 300.0
+    P = 1e5
+    # Made up asymmetric parameters
+    lambda_coeffs = [[0.0, 0.01811, 0.01736, 0.02111],
+     [0.00662, 0.0, 0.00774, 0.01966],
+     [0.01601, 0.01022, 0.0, 0.00698],
+     [0.0152, 0.00544, 0.02579, 0.0]]
+    
+    GE = thermo.regular_solution.RegularSolution(T, xs, Vs, SPs, lambda_coeffs)
+    assert_close1d(GE.gammas(), 
+               thermo.numba.regular_solution.regular_solution_gammas(T=T, xs=np.array(xs), Vs=np.array(Vs), SPs=np.array(SPs), lambda_coeffs=np.array(lambda_coeffs), N=N), rtol=1e-12)
+
+
+
+
+@mark_as_numba
 def test_volume_numba_solvers():
 
     args = (0.0001, 0.01, 2.590839755349289e-05, 2.590839755349289e-05, 0.0, 348530.6151663297)
