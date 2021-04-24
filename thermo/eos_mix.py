@@ -214,7 +214,7 @@ from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms,
     G_dep_lnphi_d_helper, eos_mix_dV_dzs, VDW_lnphis, SRK_lnphis, eos_mix_db_dns, PR_translated_ddelta_dns,
     PR_translated_depsilon_dns, PR_depsilon_dns, PR_translated_d2epsilon_dzizjs,
-    PR_d2epsilon_dninjs, PR_d3epsilon_dninjnks,
+    PR_d2epsilon_dninjs, PR_d3epsilon_dninjnks, PR_d2delta_dninjs, PR_d3delta_dninjnks,
     PR_ddelta_dzs, PR_ddelta_dns,
     PR_translated_ddelta_dzs, PR_translated_depsilon_dzs, PR_translated_d2epsilon_dninjs,
     
@@ -7677,14 +7677,9 @@ class PRMIX(GCEOSMIX, PR):
         -----
         This derivative is checked numerically.
         '''
-        bb = 2.0*self.b
-        bs = self.bs
-        d2b_dninjs = []
-        for bi in self.bs:
-            d2b_dninjs.append([2.0*(bb - bi - bj) for bj in bs])
-        if self.scalar:
-            return d2b_dninjs
-        return array(d2b_dninjs)
+        N = self.N
+        out = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
+        return PR_d2delta_dninjs(self.b, self.bs, N, out)
 
     @property
     def d3delta_dninjnks(self):
@@ -7706,17 +7701,8 @@ class PRMIX(GCEOSMIX, PR):
         -----
         This derivative is checked numerically.
         '''
-        m3b = -3.0*self.b
-        bs = self.bs
-        d3delta_dninjnks = []
-        for bi in bs:
-            d3b_dnjnks = []
-            for bj in bs:
-                d3b_dnjnks.append([4.0*(m3b + bi + bj + bk) for bk in bs])
-            d3delta_dninjnks.append(d3b_dnjnks)
-        if self.scalar:
-            return d3delta_dninjnks
-        return array(d3delta_dninjnks)
+        out = [[[0.0]*N for _ in range(N) ] for _ in range(N)] if self.scalar else zeros((N, N, N))
+        return PR_d3delta_dninjnks(self.b, self.bs, self.B, out)
 
     @property
     def depsilon_dzs(self):
