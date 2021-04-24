@@ -83,8 +83,11 @@ __all__ = ['a_alpha_aijs_composition_independent',
            
            'G_dep_lnphi_d_helper', 
            
+           'PR_depsilon_dns',
+           
            'PR_translated_ddelta_dzs', 'PR_translated_ddelta_dns',           
            'PR_translated_depsilon_dzs', 'PR_translated_depsilon_dns',
+           'PR_translated_d2epsilon_dzizjs',
            
            'SRK_translated_ddelta_dns', 'SRK_translated_depsilon_dns',
            
@@ -860,12 +863,31 @@ def eos_mix_da_alpha_dns(a_alpha, a_alpha_j_rows, N, out=None):
     return out
 
     
+def PR_depsilon_dns(b, bs, N, out=None):
+    if out is None:
+        out = [0.0]*N
+    b2 = b + b
+    for i in range(N):
+        out[i] = b2*(b - bs[i])
+    return out
+
 def PR_translated_ddelta_dzs(b0s, cs, N, out=None):
     if out is None:
         out = [0.0]*N
     for i in range(N):
         out[i] = 2.0*(cs[i] + b0s[i])
     return out
+
+def PR_translated_d2epsilon_dzizjs(b0s, cs, N, out=None):
+    if out is None:
+        out = [[0.0]*N for _ in range(N)] # numba: delete
+        # out = np.zeros((N, N)) # numba: uncomment
+    for j in range(N):
+        for i in range(N):
+            out[j][i] = 2.0*(-b0s[i]*b0s[j] + b0s[i]*cs[j] + b0s[j]*cs[i] + cs[i]*cs[j])
+    return out
+
+
 
 def PR_translated_ddelta_dns(b0s, cs, delta, N, out=None):
     if out is None:

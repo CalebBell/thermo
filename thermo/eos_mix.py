@@ -213,7 +213,7 @@ from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     a_alpha_aijs_composition_independent_support_zeros, a_alpha_and_derivatives, a_alpha_and_derivatives_full,
     a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms,
     G_dep_lnphi_d_helper, eos_mix_dV_dzs, VDW_lnphis, SRK_lnphis, eos_mix_db_dns, PR_translated_ddelta_dns,
-    PR_translated_depsilon_dns,
+    PR_translated_depsilon_dns, PR_depsilon_dns, PR_translated_d2epsilon_dzizjs,
     PR_translated_ddelta_dzs, PR_translated_depsilon_dzs,
     SRK_translated_ddelta_dns, SRK_translated_depsilon_dns)
 from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
@@ -7757,11 +7757,8 @@ class PRMIX(GCEOSMIX, PR):
         -----
         This derivative is checked numerically.
         '''
-        b = self.b
-        b2 = b + b
-        if self.scalar:
-            return [b2*(b - bi) for bi in self.bs]
-        return b2*(b - bs)
+        N = self.N
+        return PR_depsilon_dns(self.b, self.bs, N, out=[0.0]*N if self.scalar else zeros(N))
 
     @property
     def d2epsilon_dzizjs(self):
@@ -8231,9 +8228,9 @@ class PRMIXTranslated(PRMIX):
         -----
         This derivative is checked numerically.
         '''
-        N, b0s, cs = self.N, self.b0s, self.cs
-        return [[2.0*(-b0s[i]*b0s[j] + b0s[i]*cs[j] + b0s[j]*cs[i] + cs[i]*cs[j])
-                 for i in range(N)] for j in range(N)]
+        N = self.N
+        out = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
+        return PR_translated_d2epsilon_dzizjs(self.b0s, self.cs, N=N, out=out)
 
     d3epsilon_dzizjzks = GCEOSMIX.d3epsilon_dzizjzks # Zeros
 
