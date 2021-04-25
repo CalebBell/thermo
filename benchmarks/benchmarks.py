@@ -114,135 +114,51 @@ class UNIQUACTimeSuite(BaseTimeSuite):
 
     def time_dgammas_dns20(self):
         return self.GE20.to_T_xs(T=340.0, xs=self.xs20).dgammas_dns()
-    
+del UNIQUACTimeSuite
     
 class EOSTimeSuite(BaseTimeSuite):
     def setup(self):
         pass
+
+def eos_ternary_args(eos, numpy=False):
+    Tcs = [126.2, 304.2, 373.2]
+    Pcs = [3394387.5, 7376460.0, 8936865.0]
+    omegas = [0.04, 0.2252, 0.1]
+    zs = [.7, .2, .1]
+    kijs = [[0.0, -0.0122, 0.1652], [-0.0122, 0.0, 0.0967], [0.1652, 0.0967, 0.0]]
+
+    kwargs = dict(T=300.0, P=1e5,  Tcs=Tcs, Pcs=Pcs, omegas=omegas, kijs=kijs, zs=zs)
     
-    
+    ans = kwargs.copy()
+    if 'Translated' in eos.__name__:
+        ans['cs'] = [3.1802632895165143e-06, 4.619807672093997e-06, 3.930402699800546e-06]
+    if eos is APISRKMIX:
+        ans['S1s'] = [1.678665, 1.2, 1.5]
+        ans['S2s'] = [-0.216396, -.2, -.1]
+    if eos in (PRSVMIX, PRSV2MIX):
+        ans['kappa1s'] = [0.05104, .025, .035]
+    if eos is PRSV2MIX:
+        ans['kappa2s'] = [.8, .9, 1.1]
+        ans['kappa3s'] = [.46, .47, .48]
+    if numpy:
+        for k, v in ans.items():
+            if type(v) is list:
+                ans[k] = np.array(v)
+    return ans
+
+
 class EOSMIXTernaryTimeSuite(BaseTimeSuite):
-    def setup(self):
-        Tcs = [126.2, 304.2, 373.2]
-        Pcs = [3394387.5, 7376460.0, 8936865.0]
-        omegas = [0.04, 0.2252, 0.1]
-        zs = [.7, .2, .1]
-        kijs = [[0.0, -0.0122, 0.1652], [-0.0122, 0.0, 0.0967], [0.1652, 0.0967, 0.0]]
+    eos_args_np = {obj: eos_ternary_args(obj, True) for obj in eos_mix_list}
+    eos_args = {obj: eos_ternary_args(obj, False) for obj in eos_mix_list}
+    params = eos_mix_list
+    
+    def setup(self, *args):
+        pass
 
-        kwargs = dict(T=300.0, P=1e5,  Tcs=Tcs, Pcs=Pcs, omegas=omegas, kijs=kijs, zs=zs)
-        def args(eos, numpy=False):
-            ans = kwargs.copy()
-            if 'Translated' in eos.__name__:
-                ans['cs'] = [3.1802632895165143e-06, 4.619807672093997e-06, 3.930402699800546e-06]
-            if eos is APISRKMIX:
-                ans['S1s'] = [1.678665, 1.2, 1.5]
-                ans['S2s'] = [-0.216396, -.2, -.1]
-            if eos in (PRSVMIX, PRSV2MIX):
-                ans['kappa1s'] = [0.05104, .025, .035]
-            if eos is PRSV2MIX:
-                ans['kappa2s'] = [.8, .9, 1.1]
-                ans['kappa3s'] = [.46, .47, .48]
-            if numpy:
-                for k, v in ans.items():
-                    if type(v) is list:
-                        ans[k] = np.array(v)
-            return ans
-        self.eos_args_np = {obj: args(obj, True) for obj in eos_mix_list}
-        self.eos_args = {obj: args(obj, False) for obj in eos_mix_list}
         
-    def time_PRMIX(self):
-        return PRMIX(**self.eos_args[PRMIX])
+    def time_eos_PT(self, eos):
+        return eos(**self.eos_args[eos])
 
-    def time_PRMIXNP(self):
-        return PRMIX(**self.eos_args_np[PRMIX])
-
-    def time_SRKMIX(self):
-        return SRKMIX(**self.eos_args[SRKMIX])
-
-    def time_SRKMIXNP(self):
-        return SRKMIX(**self.eos_args_np[SRKMIX])
-
-    def time_PR78MIX(self):
-        return PR78MIX(**self.eos_args[PR78MIX])
-
-    def time_PR78MIXNP(self):
-        return PR78MIX(**self.eos_args_np[PR78MIX])
-
-    def time_VDWMIX(self):
-        return VDWMIX(**self.eos_args[VDWMIX])
-
-    def time_VDWMIXNP(self):
-        return VDWMIX(**self.eos_args_np[VDWMIX])
-
-    def time_PRSVMIX(self):
-        return PRSVMIX(**self.eos_args[PRSVMIX])
-
-    def time_PRSVMIXNP(self):
-        return PRSVMIX(**self.eos_args_np[PRSVMIX])
-
-    def time_PRSV2MIX(self):
-        return PRSV2MIX(**self.eos_args[PRSV2MIX])
-
-    def time_PRSV2MIXNP(self):
-        return PRSV2MIX(**self.eos_args_np[PRSV2MIX])
-
-    def time_TWUPRMIX(self):
-        return TWUPRMIX(**self.eos_args[TWUPRMIX])
-
-    def time_TWUPRMIXNP(self):
-        return TWUPRMIX(**self.eos_args_np[TWUPRMIX])
-
-    def time_TWUSRKMIX(self):
-        return TWUSRKMIX(**self.eos_args[TWUSRKMIX])
-
-    def time_TWUSRKMIXNP(self):
-        return TWUSRKMIX(**self.eos_args_np[TWUSRKMIX])
-
-    def time_APISRKMIX(self):
-        return APISRKMIX(**self.eos_args[APISRKMIX])
-
-    def time_APISRKMIXNP(self):
-        return APISRKMIX(**self.eos_args_np[APISRKMIX])
-
-    def time_IGMIX(self):
-        return IGMIX(**self.eos_args[IGMIX])
-
-    def time_IGMIXNP(self):
-        return IGMIX(**self.eos_args_np[IGMIX])
-
-    def time_RKMIX(self):
-        return RKMIX(**self.eos_args[RKMIX])
-
-    def time_RKMIXNP(self):
-        return RKMIX(**self.eos_args_np[RKMIX])
-
-    def time_PRMIXTranslatedConsistent(self):
-        return PRMIXTranslatedConsistent(**self.eos_args[PRMIXTranslatedConsistent])
-
-    def time_PRMIXTranslatedConsistentNP(self):
-        return PRMIXTranslatedConsistent(**self.eos_args_np[PRMIXTranslatedConsistent])
-
-    def time_PRMIXTranslatedPPJP(self):
-        return PRMIXTranslatedPPJP(**self.eos_args[PRMIXTranslatedPPJP])
-
-    def time_PRMIXTranslatedPPJPNP(self):
-        return PRMIXTranslatedPPJP(**self.eos_args_np[PRMIXTranslatedPPJP])
-
-    def time_SRKMIXTranslatedConsistent(self):
-        return SRKMIXTranslatedConsistent(**self.eos_args[SRKMIXTranslatedConsistent])
-
-    def time_SRKMIXTranslatedConsistentNP(self):
-        return SRKMIXTranslatedConsistent(**self.eos_args_np[SRKMIXTranslatedConsistent])
-
-    def time_PRMIXTranslated(self):
-        return PRMIXTranslated(**self.eos_args[PRMIXTranslated])
-
-    def time_PRMIXTranslatedNP(self):
-        return PRMIXTranslated(**self.eos_args_np[PRMIXTranslated])
-
-    def time_SRKMIXTranslated(self):
-        return SRKMIXTranslated(**self.eos_args[SRKMIXTranslated])
-
-    def time_SRKMIXTranslatedNP(self):
-        return SRKMIXTranslated(**self.eos_args_np[SRKMIXTranslated])
+    def time_eos_PT_numpy(self, eos):
+        return eos(**self.eos_args_np[eos])
 
