@@ -26,8 +26,10 @@ __all__ = [
     'activity_reference_pointer_dicts',
     'object_lookups',
     'lnphis_direct',
+    'fugacities_direct',
 ]
 
+from fluids.numerics import trunc_exp
 from thermo.eos import eos_full_path_dict
 from thermo.eos_mix import eos_mix_full_path_dict
 from thermo.eos_mix_methods import (PR_lnphis_fastest, PR_translated_lnphis_fastest,
@@ -75,3 +77,11 @@ def lnphis_direct(zs, model, T, P, N, *args):
             lnphis[i] = 0.0
         return lnphis
     raise ValueError("Model not implemented")
+
+def fugacities_direct(zs, model, T, P, N, *args):
+    # Obtain fugacities directly.
+    lnphis = lnphis_direct(zs, model, T, P, N, *args)
+    for i in range(N):
+        lnphis[i] = P*zs[i]*trunc_exp(lnphis[i]) 
+    return lnphis
+    

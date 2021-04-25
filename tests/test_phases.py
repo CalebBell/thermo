@@ -33,7 +33,7 @@ from thermo.utils import LINEAR
 from chemicals.utils import rho_to_Vm, Vm_to_rho
 from thermo.phases import *
 from thermo.eos_mix import *
-from thermo.phases.phase_utils import lnphis_direct
+from thermo.phases.phase_utils import lnphis_direct, fugacities_direct
 from thermo.eos import *
 from thermo.vapor_pressure import VaporPressure
 from thermo.volume import *
@@ -2759,7 +2759,9 @@ def test_lnphis_at_zs_eos_mix():
     
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    
+    assert_close1d(fugacities_direct(zs, *gas.lnphis_args()), gas.fugacities(), rtol=1e-13)
+    assert_close1d(fugacities_direct(zs, *liquid.lnphis_args()), liquid.fugacities(), rtol=1e-13)
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
     # PR78
