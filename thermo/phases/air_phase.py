@@ -107,7 +107,9 @@ class DryAirLemmon(HelmholtzEOS):
             new._V = V
             P = air.lemmon2000_P(T, new._rho)
         elif P is not None and V is not None:
-            raise NotImplementedError("TODO")
+            T = air.lemmon2000_T(P=P, rho=1.0/V)
+            new._rho = 1.0/V
+            new._V = V
         else:
             raise ValueError("Two of T, P, or V are needed")
 

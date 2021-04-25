@@ -43,13 +43,13 @@ pure_surfaces_dir = os.path.join(thermo.thermo_dir, '..', 'surfaces', 'lemmon200
 @pytest.mark.slow
 @pytest.mark.parametric
 @pytest.mark.parametrize("variables", [
-                                       #'VPT', Solve for T not yet implemented
+                                       'VPT',
                                        'VTP', 
                                        'PHT', 'PST', 'PUT',
-                                        # 'VUT', # Try after solve T
+                                        # 'VUT', # Unknown error
                                           'TSV', # Had to increase the tolerance
                                          # 'THP', # Needs investigation, interesting error pattern
-                                        # 'VST', 'VHT',# Try after solve T
+                                        # 'VST', 'VHT',# Unknown error
                                        ])
 def test_plot_lemmon2000(variables):
     spec0, spec1, check_prop = variables
