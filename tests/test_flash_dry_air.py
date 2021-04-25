@@ -47,7 +47,7 @@ pure_surfaces_dir = os.path.join(thermo.thermo_dir, '..', 'surfaces', 'lemmon200
                                        'PHT', 'PST', 'PUT',
                                        'VUT', 'VST', 'VHT',
                                           'TSV', # Had to increase the tolerance
-                                            'THP', # Not consistent, warning message st
+                                            'THP', 'TUP', # Not consistent, warning message added
                                        ])
 def test_plot_lemmon2000(variables):
     spec0, spec1, check_prop = variables
@@ -60,12 +60,13 @@ def test_plot_lemmon2000(variables):
                        gas=gas, liquids=[], solids=[])
     flasher.TPV_HSGUA_xtol = 1e-14
     
-    verbose = frozenset([spec0, spec1]) not in (frozenset(['T', 'H']),)
+    inconsistent = frozenset([spec0, spec1]) in (frozenset(['T', 'H']), frozenset(['T', 'U']))
 
-    res = flasher.TPV_inputs(zs=[1.0], pts=200, spec0='T', spec1='P', check0=spec0, check1=spec1, prop0=check_prop,
-                           trunc_err_low=1e-16,
+    res = flasher.TPV_inputs(zs=[1.0], pts=200, spec0='T', spec1='P', 
+                             check0=spec0, check1=spec1, prop0=check_prop,
+                           trunc_err_low=1e-13,
                            trunc_err_high=1, color_map=cm_flash_tol(),
-                           show=False, verbose=verbose)
+                           show=False, verbose=not inconsistent)
 
     matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
 
@@ -77,8 +78,9 @@ def test_plot_lemmon2000(variables):
 
     key = '%s - %s - %s' %(plot_name, eos.__name__, fluid)
 
-    if (spec0, spec1) == ('T', 'H'):
-        mark_plot_unsupported(plot_fig, reason='EOS is inconsistent')
+    if inconsistent:
+        spec_name = spec0 + spec1
+        mark_plot_unsupported(plot_fig, reason='EOS is inconsistent for %s inputs' %(spec_name))
         tol = 1e300
 
     plot_fig.savefig(os.path.join(path, key + '.png'))
@@ -89,7 +91,7 @@ def test_plot_lemmon2000(variables):
 # test_plot_lemmon2000('VUT')
 # test_plot_lemmon2000('THP')
 
-def test_lemmon2000_case_issues(variables):
+def test_lemmon2000_case_issues():
     gas = DryAirLemmon(T=300.0, P=1e5)
     flasher = FlashPureVLS(constants=lemmon2000_constants, correlations=lemmon2000_correlations,
                            gas=gas, liquids=[], solids=[])
@@ -129,4 +131,11 @@ def test_lemmon2000_case_issues(variables):
     PT2 = flasher.flash(T=484.38550361282495, P=0.02768286630392061)
     assert_close(PT1.H(), PT2.H())
 
-        
+    # Inconsistent TU point in fundamental formulation
+    PT1 = flasher.flash(T=1652.4510785539342, P=519770184.42714685,)
+    PT2 = flasher.flash(T=1652.4510785539342, P=6985879.746785077)
+    assert_close(PT1.U(), PT2.U(), rtol=1e-10)
+    '''
+    Ps = logspace(log10(6985879.746785077/2), log10(519770184.42714685*2), 2000)
+    Us = [flasher.flash(T=1652.4510785539342, P=P).U() for P in Ps ]
+    '''
