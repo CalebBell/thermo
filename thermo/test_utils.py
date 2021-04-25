@@ -79,6 +79,39 @@ def check_np_output_activity(model, modelnp, modelnp2):
             assert type(getattr(modelnp, attr)()) is np.ndarray
             assert type(getattr(modelnp2, attr)()) is np.ndarray
 
+
+def plot_unsupported(reason, color='r'):
+    '''Helper function - draw a plot with an `x` over it displaying a message
+    why that plot is not supported.
+    '''
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots()
+
+    xlims = ax.get_xlim()
+    ylims = ax.get_ylim()
+    ax.plot([0, 1], [0, 1], lw=5, c=color)
+    ax.plot([0, 1], [1, 0], lw=5, c=color)
+
+    ax.text(.5, .5, reason, ha='center', va='center', bbox=dict(fc='white'))
+    return fig
+
+
+
+def mark_plot_unsupported(plot_fig, reason, color='r'):
+    ax = plot_fig.axes[0]
+    xlims = ax.get_xlim()
+    ylims = ax.get_ylim()
+    xmid = 10**(0.5*(log10(xlims[0]) + log10(xlims[1])))
+    ymid = 10**(0.5*(log10(ylims[0]) + log10(ylims[1])))
+    ax.text(xmid, ymid, reason, ha='center', va='center', bbox=dict(fc='white'))
+    color = 'r'
+    ax.plot(xlims, ylims, lw=5, c=color)
+    ax.plot(xlims, ylims[::-1], lw=5, c=color)
+
+
+
+
+
 default_attrs = ('phase', 'Hm', 'Sm', 'Gm', 'xs', 'ys', 'V_over_F', 'T', 'P')
 
 def flash_rounding(x):
@@ -344,3 +377,5 @@ tabular_data_functions = {'TP': pkg_tabular_data_TP,
                           'PVF': pkg_tabular_data_PVF,
                           'PH': pkg_tabular_data_PH,
                           'PS': pkg_tabular_data_PS}
+
+

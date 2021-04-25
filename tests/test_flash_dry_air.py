@@ -30,6 +30,7 @@ from fluids.numerics import *
 from math import *
 import json
 import os
+from thermo.test_utils import mark_plot_unsupported
 import numpy as np
 try:
     import matplotlib.pyplot as plt
@@ -46,8 +47,7 @@ pure_surfaces_dir = os.path.join(thermo.thermo_dir, '..', 'surfaces', 'lemmon200
                                        'PHT', 'PST', 'PUT',
                                        'VUT', 'VST', 'VHT',
                                           'TSV', # Had to increase the tolerance
-                                         # 'THP', # Needs investigation, interesting error pattern
-                                        
+                                            'THP', # Not consistent, warning message st
                                        ])
 def test_plot_lemmon2000(variables):
     spec0, spec1, check_prop = variables
@@ -59,26 +59,35 @@ def test_plot_lemmon2000(variables):
     flasher = FlashPureVLS(constants=lemmon2000_constants, correlations=lemmon2000_correlations,
                        gas=gas, liquids=[], solids=[])
     flasher.TPV_HSGUA_xtol = 1e-14
+    
+    verbose = frozenset([spec0, spec1]) not in (frozenset(['T', 'H']),)
 
     res = flasher.TPV_inputs(zs=[1.0], pts=200, spec0='T', spec1='P', check0=spec0, check1=spec1, prop0=check_prop,
                            trunc_err_low=1e-16,
                            trunc_err_high=1, color_map=cm_flash_tol(),
-                           show=False)
+                           show=False, verbose=verbose)
 
     matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
 
     path = os.path.join(pure_surfaces_dir, fluid, plot_name)
     if not os.path.exists(path):
         os.makedirs(path)
+        
+    tol = 1e-13
 
     key = '%s - %s - %s' %(plot_name, eos.__name__, fluid)
+
+    if (spec0, spec1) == ('T', 'H'):
+        mark_plot_unsupported(plot_fig, reason='EOS is inconsistent')
+        tol = 1e300
+
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
 
     max_err = np.max(np.abs(errs))
-    assert max_err < 1e-13
+    assert max_err < tol
 # test_plot_lemmon2000('VUT')
-
+# test_plot_lemmon2000('THP')
 
 def test_lemmon2000_case_issues(variables):
     gas = DryAirLemmon(T=300.0, P=1e5)
@@ -110,3 +119,14 @@ def test_lemmon2000_case_issues(variables):
     assert_close(PT.P, res.P, rtol=1e-10)
     
     
+    # Inconsistent TH point in fundamental formulation
+    PT1 = flasher.flash(T=610.7410404288737, P=6150985.788580353)
+    PT2 = flasher.flash(T=610.7410404288737, P=3967475.2794698337)
+    assert_close(PT1.H(), PT2.H())
+    
+    # There are a ton of low-pressure points too
+    PT1 = flasher.flash(T=484.38550361282495, P=0.027682980294306617)
+    PT2 = flasher.flash(T=484.38550361282495, P=0.02768286630392061)
+    assert_close(PT1.H(), PT2.H())
+
+        

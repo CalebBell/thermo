@@ -577,7 +577,7 @@ class Flash(object):
 
     def debug_grid_flash(self, zs, check0, check1, Ts=None, Ps=None, Vs=None,
                          VFs=None, SFs=None, Hs=None, Ss=None, Us=None,
-                         retry=False):
+                         retry=False, verbose=True):
 
         matrix_spec_flashes = []
         matrix_flashes = []
@@ -670,10 +670,12 @@ class Flash(object):
                              new = self.flash(**kwargs)
                         except Exception as e2:
                             new = None
-                            print('Failed trying to flash %s, from original point %s, with exception %s.'%(kwargs, flash_specs, e))
+                            if verbose:
+                                print('Failed trying to flash %s, from original point %s, with exception %s.'%(kwargs, flash_specs, e))
                     else:
                         new = None
-                        print('Failed trying to flash %s, from original point %s, with exception %s.' % (kwargs, flash_specs, e))
+                        if verbose:
+                            print('Failed trying to flash %s, from original point %s, with exception %s.' % (kwargs, flash_specs, e))
                 row_spec_flashes.append(state)
                 row_flashes.append(new)
 
@@ -682,7 +684,7 @@ class Flash(object):
         return matrix_spec_flashes, matrix_flashes
 
     def debug_err_flash_grid(self, matrix_spec_flashes, matrix_flashes,
-                             check, method='rtol'):
+                             check, method='rtol', verbose=True):
         matrix = []
         N0 = len(matrix_spec_flashes)
         N1 = len(matrix_spec_flashes[0])
@@ -708,7 +710,8 @@ class Flash(object):
                         pass
                     if method == 'rtol':
                         err = abs((act - calc)/act)
-                if err > 1e-6:
+                        
+                if err > 1e-6 and verbose:
                     try:
                         print([matrix_flashes[i][j].T, matrix_spec_flashes[i][j].T])
                         print([matrix_flashes[i][j].P, matrix_spec_flashes[i][j].P])
@@ -727,7 +730,7 @@ class Flash(object):
                    VFs=None, SFs=None,
                    auto_range=None, zs=None, pts=50,
                    trunc_err_low=1e-15, trunc_err_high=None, plot=True,
-                   show=True, color_map=None, retry=False):
+                   show=True, color_map=None, retry=False, verbose=True):
 
         specs = []
         for a_spec in (spec0, spec1):
@@ -755,10 +758,10 @@ class Flash(object):
         specs0, specs1 = specs
         matrix_spec_flashes, matrix_flashes = self.debug_grid_flash(zs,
             check0=check0, check1=check1, Ts=Ts, Ps=Ps, Vs=Vs, VFs=VFs,
-            retry=retry)
+            retry=retry, verbose=verbose)
 
         errs = self.debug_err_flash_grid(matrix_spec_flashes,
-            matrix_flashes, check=prop0)
+            matrix_flashes, check=prop0, verbose=verbose)
 
         if plot:
             import matplotlib.pyplot as plt

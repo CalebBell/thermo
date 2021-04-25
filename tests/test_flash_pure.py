@@ -32,6 +32,7 @@ import numpy as np
 from thermo.test_utils import *
 from chemicals.exceptions import PhaseExistenceImpossible
 import sys
+from thermo.test_utils import plot_unsupported
 from thermo import eos_volume
 try:
     import matplotlib.pyplot as plt
@@ -109,20 +110,6 @@ correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=Tru
 from thermo.eos_mix import eos_mix_list
 
 
-
-def plot_unsupported(reason, color='r'):
-    '''Helper function - draw a plot with an `x` over it displaying a message
-    why that plot is not supported.
-    '''
-    fig, ax = plt.subplots()
-
-    xlims = ax.get_xlim()
-    ylims = ax.get_ylim()
-    ax.plot([0, 1], [0, 1], lw=5, c=color)
-    ax.plot([0, 1], [1, 0], lw=5, c=color)
-
-    ax.text(.5, .5, reason, ha='center', va='center', bbox=dict(fc='white'))
-    return fig
 
 
 
