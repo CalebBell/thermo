@@ -240,6 +240,17 @@ class EOSMIXTernaryTimeSuite(BaseTimeSuite):
         return self.eos_to_eos_numba[eos](V=.025, P=1e5, zs=self.zs_np, **self.eos_args_np[eos])
 
 
+    def time_eos_PV_to(self, eos):
+        return self.eos_instances_PT[eos].to(V=.025, P=1e5, zs=self.zs2)
+
+    def time_eos_PV_numpy_to(self, eos):
+        return self.eos_instances_np_PT[eos].to(V=.025, P=1e5, zs=self.zs2_np)
+
+    def time_eos_PV_numba_to(self, eos):
+        return self.eos_instances_numba_PT[eos].to(V=.025, P=1e5, zs=self.zs2_np)
+
+
+
     def time_eos_TV(self, eos):
         return eos(T=300.0, V=.025, zs=self.zs, **self.eos_args[eos])
 
@@ -248,3 +259,14 @@ class EOSMIXTernaryTimeSuite(BaseTimeSuite):
 
     def time_eos_TV_numba(self, eos):
         return self.eos_to_eos_numba[eos](T=300.0, V=.025, zs=self.zs_np, **self.eos_args_np[eos])
+    
+    
+    def time_eos_TV_to(self, eos):
+        return self.eos_instances_PT[eos].to(V=.025, T=301.0, zs=self.zs2)
+
+    def time_eos_TV_numpy_to(self, eos):
+        return self.eos_instances_np_PT[eos].to(V=.025, T=301.0, zs=self.zs2_np)
+
+    def time_eos_TV_numba_to(self, eos):
+        return self.eos_instances_numba_PT[eos].to(V=.025, T=301.0, zs=self.zs2_np)
+
