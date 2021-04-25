@@ -6341,7 +6341,7 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
         self.bs = other.bs
         self.ais = other.ais
         self.b = other.b
-        self.zeros1d = other.zeros1d
+        self.zeros1d = self.a_alphas = self.da_alpha_dTs = self.d2a_alpha_dT2s = other.zeros1d
         self.zeros2d = other.zeros2d
 
     def a_alphas_vectorized(self, T):
@@ -8578,11 +8578,15 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
         self.alpha_coeffs = other.alpha_coeffs
         zs = self.zs
         self.b0s = b0s = other.b0s
-
-        b0, c = 0.0, 0.0
-        for i in range(self.N):
-            b0 += b0s[i]*zs[i]
-            c += cs[i]*zs[i]
+        
+        if self.scalar:
+            b0, c = 0.0, 0.0
+            for i in range(self.N):
+                b0 += b0s[i]*zs[i]
+                c += cs[i]*zs[i]
+        else:
+            b0 = float((zs*b0s).sum())
+            c = float((zs*cs).sum())
 
         self.c = c
         self.b = b0 - c
@@ -9543,10 +9547,14 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
         zs = self.zs
         self.b0s = b0s = other.b0s
 
-        b0, c = 0.0, 0.0
-        for i in range(self.N):
-            b0 += b0s[i]*zs[i]
-            c += cs[i]*zs[i]
+        if self.scalar:
+            b0, c = 0.0, 0.0
+            for i in range(self.N):
+                b0 += b0s[i]*zs[i]
+                c += cs[i]*zs[i]
+        else:
+            b0 = float((b0s*zs).sum())
+            c = float((cs*zs).sum())
 
         self.c = c
         self.b = b0 - c

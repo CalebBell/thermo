@@ -152,7 +152,7 @@ class EOSMIXTernaryTimeSuite(BaseTimeSuite):
     zs_np = np.array(zs)
     
     zs2 = [.6, .1, .3]
-    zs_np2 = np.array(zs)
+    zs2_np = np.array(zs)
     
     eos_args_np = {obj: eos_ternary_args(obj, True) for obj in eos_mix_list}
     eos_args = {obj: eos_ternary_args(obj, False) for obj in eos_mix_list}
@@ -187,6 +187,47 @@ class EOSMIXTernaryTimeSuite(BaseTimeSuite):
 
     def time_eos_PT_numba(self, eos):
         return self.eos_to_eos_numba[eos](T=300.0, P=1e5, zs=self.zs_np, **self.eos_args_np[eos])
+
+
+    def time_eos_PT_fast_same_T(self, eos):
+        return self.eos_instances_PT[eos].to_TP_zs_fast(T=300.0, P=1e5, zs=self.zs2, only_g=True, full_alphas=True)
+
+    def time_eos_PT_numpy_fast_same_T(self, eos):
+        return self.eos_instances_np_PT[eos].to_TP_zs_fast(T=300.0, P=1e5, zs=self.zs2_np, only_g=True, full_alphas=True)
+
+    def time_eos_PT_numba_fast_same_T(self, eos):
+        return self.eos_instances_numba_PT[eos].to_TP_zs_fast(T=300.0, P=1e5, zs=self.zs2_np, only_g=True, full_alphas=True)
+
+
+    def time_eos_PT_faster_same_T(self, eos):
+        return self.eos_instances_PT[eos].to_TP_zs_fast(T=300.0, P=1e5, zs=self.zs2, only_g=True, full_alphas=False)
+
+    def time_eos_PT_numpy_faster_same_T(self, eos):
+        return self.eos_instances_np_PT[eos].to_TP_zs_fast(T=300.0, P=1e5, zs=self.zs2_np, only_g=True, full_alphas=False)
+
+    def time_eos_PT_numba_faster_same_T(self, eos):
+        return self.eos_instances_numba_PT[eos].to_TP_zs_fast(T=300.0, P=1e5, zs=self.zs2_np, only_g=True, full_alphas=False)
+
+
+    def time_eos_PT_fast_diff_T(self, eos):
+        return self.eos_instances_PT[eos].to_TP_zs_fast(T=301.0, P=1e5, zs=self.zs2, only_g=True, full_alphas=True)
+
+    def time_eos_PT_numpy_fast_diff_T(self, eos):
+        return self.eos_instances_np_PT[eos].to_TP_zs_fast(T=301.0, P=1e5, zs=self.zs2_np, only_g=True, full_alphas=True)
+
+    def time_eos_PT_numba_fast_diff_T(self, eos):
+        return self.eos_instances_numba_PT[eos].to_TP_zs_fast(T=301.0, P=1e5, zs=self.zs2_np, only_g=True, full_alphas=True)
+
+
+    def time_eos_PT_faster_diff_T(self, eos):
+        return self.eos_instances_PT[eos].to_TP_zs_fast(T=301.0, P=1e5, zs=self.zs2, only_g=True, full_alphas=False)
+
+    def time_eos_PT_numpy_faster_diff_T(self, eos):
+        return self.eos_instances_np_PT[eos].to_TP_zs_fast(T=301.0, P=1e5, zs=self.zs2_np, only_g=True, full_alphas=False)
+
+    def time_eos_PT_numba_faster_diff_T(self, eos):
+        return self.eos_instances_numba_PT[eos].to_TP_zs_fast(T=301.0, P=1e5, zs=self.zs2_np, only_g=True, full_alphas=False)
+
 
 
     def time_eos_PV(self, eos):
