@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 __all__ = ['FlashPureVLS']
 
-from .flash_base import Flash
+from thermo.flash.flash_base import Flash
 from fluids.numerics import (
     numpy as np,
     secant,
@@ -55,7 +55,7 @@ from chemicals.iapws import (
     iapws95_MW, 
     iapws95_T
 )
-from ..phases import (
+from thermo.phases import (
     Phase,
     CEOSGas, 
     CEOSLiquid, 
@@ -64,9 +64,10 @@ from ..phases import (
     CoolPropLiquid,
     IAPWS95Gas,
     IAPWS95Liquid,
-    GibbsExcessLiquid
+    GibbsExcessLiquid,
+    DryAirLemmon
 )
-from .flash_utils import (
+from thermo.flash.flash_utils import (
     TVF_pure_secant,
     PVF_pure_newton,
     TSF_pure_newton,
@@ -320,6 +321,11 @@ class FlashPureVLS(Flash):
                                      or liquids[0].__class__.__name__ == 'IAPWS95Liquid')
                                  and (isinstance(gas, IAPWS95Gas)
                                       or  gas.__class__.__name__ == 'IAPWS95Gas')
+                                and (not solids))
+
+        self.V_only_lemmon2000 = (len(liquids) == 0
+                                 and (isinstance(gas, DryAirLemmon)
+                                      or  gas.__class__.__name__ == 'DryAirLemmon')
                                 and (not solids))
 
         # TODO implement as function of phases/or EOS
@@ -706,7 +712,8 @@ class FlashPureVLS(Flash):
 
     def flash_TPV_HSGUA(self, fixed_var_val, spec_val, fixed_var='P', spec='H',
                         iter_var='T', zs=None, solution=None,
-                        selection_fun_1P=None, hot_start=None):
+                        selection_fun_1P=None, hot_start=None,
+                        iter_var_backup=None):
         # Be prepared to have a flag here to handle zero flow
         zs = [1.0]
         constants, correlations = self.constants, self.correlations
@@ -761,6 +768,9 @@ class FlashPureVLS(Flash):
                                      spec=spec, iter_var=iter_var, hot_start=hot_start, selection_fun_1P=selection_fun_1P, cubic=self.VL_only_CEOSs_same)
             except PhaseExistenceImpossible:
                 pass
+        elif self.V_only_lemmon2000 and not selection_fun_1P_specified and fixed_var == 'V' and iter_var == 'P':
+            # Specifically allow the solution to be specified, equation goes wonky around 50000
+            iter_var = 'T'
 #            if sln is not None:
 #                return sln
         try:

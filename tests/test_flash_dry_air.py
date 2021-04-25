@@ -42,14 +42,12 @@ pure_surfaces_dir = os.path.join(thermo.thermo_dir, '..', 'surfaces', 'lemmon200
 @pytest.mark.plot
 @pytest.mark.slow
 @pytest.mark.parametric
-@pytest.mark.parametrize("variables", [
-                                       'VPT',
-                                       'VTP', 
+@pytest.mark.parametrize("variables", ['VPT', 'VTP',
                                        'PHT', 'PST', 'PUT',
-                                        # 'VUT', # Unknown error
+                                       'VUT', 'VST', 'VHT',
                                           'TSV', # Had to increase the tolerance
                                          # 'THP', # Needs investigation, interesting error pattern
-                                        # 'VST', 'VHT',# Unknown error
+                                        
                                        ])
 def test_plot_lemmon2000(variables):
     spec0, spec1, check_prop = variables
@@ -60,7 +58,7 @@ def test_plot_lemmon2000(variables):
 
     flasher = FlashPureVLS(constants=lemmon2000_constants, correlations=lemmon2000_correlations,
                        gas=gas, liquids=[], solids=[])
-    flasher.TPV_HSGUA_xtol = 1e-13
+    flasher.TPV_HSGUA_xtol = 1e-14
 
     res = flasher.TPV_inputs(zs=[1.0], pts=200, spec0='T', spec1='P', check0=spec0, check1=spec1, prop0=check_prop,
                            trunc_err_low=1e-16,
@@ -78,4 +76,37 @@ def test_plot_lemmon2000(variables):
     plt.close()
 
     max_err = np.max(np.abs(errs))
-    assert max_err < 1e-11
+    assert max_err < 1e-13
+# test_plot_lemmon2000('VUT')
+
+
+def test_lemmon2000_case_issues(variables):
+    gas = DryAirLemmon(T=300.0, P=1e5)
+    flasher = FlashPureVLS(constants=lemmon2000_constants, correlations=lemmon2000_correlations,
+                           gas=gas, liquids=[], solids=[])
+    
+    # Cases which were failing because of the iteration variable of P when V specified
+    # It is actually less efficient for this type of EOS
+    PT = flasher.flash(T=1000.0, P=1e3)
+    V = PT.V()
+    U = PT.U()
+    res = flasher.flash(V=V, U=U)
+    assert_close(PT.T, res.T, rtol=1e-10)
+    assert_close(PT.P, res.P, rtol=1e-10)
+    S = PT.S()
+    res = flasher.flash(V=V, S=S)
+    assert_close(PT.T, res.T, rtol=1e-10)
+    assert_close(PT.P, res.P, rtol=1e-10)
+    H = PT.H()
+    res = flasher.flash(V=V, H=H)
+    assert_close(PT.T, res.T, rtol=1e-10)
+    
+    
+    PT = flasher.flash(T=2000.0000000000002, P=3827.4944785162643)
+    V = PT.V()
+    U = PT.U()
+    res = flasher.flash(V=V, U=U)
+    assert_close(PT.T, res.T, rtol=1e-10)
+    assert_close(PT.P, res.P, rtol=1e-10)
+    
+    
