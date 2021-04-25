@@ -735,19 +735,19 @@ class Flash(object):
                 Ts = self.generate_Ts(Ts=Ts, Tmin=Tmin, Tmax=Tmax, pts=pts, zs=zs,
                                       method=auto_range)
                 specs.append(Ts)
-            if 'P' == a_spec:
+            elif 'P' == a_spec:
                 Ps = self.generate_Ps(Ps=Ps, Pmin=Pmin, Pmax=Pmax, pts=pts, zs=zs,
                                   method=auto_range)
                 specs.append(Ps)
-            if 'V' == a_spec:
+            elif 'V' == a_spec:
                 Vs = self.generate_Vs(Vs=Vs, Vmin=Vmin, Vmax=Vmax, pts=pts, zs=zs,
                                   method=auto_range)
                 specs.append(Vs)
-            if 'VF' == a_spec:
+            elif 'VF' == a_spec:
                 if VFs is None:
                     VFs = linspace(0, 1, pts)
                 specs.append(VFs)
-            if 'SF' == a_spec:
+            elif 'SF' == a_spec:
                 if SFs is None:
                     SFs = linspace(0, 1, pts)
                 specs.append(SFs)
