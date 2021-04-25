@@ -3705,29 +3705,36 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
     #             corrections[i] = ci = zs[i]/zs_test[i]*trunc_exp(lnphis_trial[i] - lnphis_test[i])*sum_zs_test_inv
     # however numerical differences seem to be huge and operate better on fugacities with the trunc_exp function
     # then anything else.
+    
+    # Can this whole function be switched to the functional approach?
+    # Should be possible
 
 
     if test_phase is None:
         test_phase = trial_phase
     T, P, zs = trial_phase.T, trial_phase.P, trial_phase.zs
     N = trial_phase.N
-    cmps = range(N)
     fugacities_trial = trial_phase.fugacities_lowest_Gibbs()
 
     # Go through the feed composition - and the trial composition - if we have zeros, need to make them a trace;
-    zs_test = list(zs_test)
-    for i in cmps:
+    zs_test2 = [0.0]*N
+    for i in range(N):
+        zs_test2[i] = zs_test[i]
+    zs_test = zs_test2
+    
+    for i in range(N):
         if zs_test[i] == 0.0:
-            # for i in cmps:
-                # if zs_test[i] == 0.0:
             zs_test[i] = 1e-50
             # break
-    for i in cmps:
+    for i in range(N):
         if zs[i] == 0.0:
-            zs = list(zs)
-            for i in cmps:
+            zs2 = [0.0]*N
+            for i in range(N):
                 if zs[i] == 0.0:
-                    zs[i] = 1e-50
+                    zs2[i] = 1e-50
+                else:
+                    zs2[i] = zs[i]
+            zs = zs2
             # Requires another evaluation of the trial phase
             trial_phase = trial_phase.to(T=T, P=P, zs=zs)
             fugacities_trial = trial_phase.fugacities_lowest_Gibbs()
@@ -3740,7 +3747,7 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
 
     # Model converges towards fictional K values which, when evaluated, yield the
     # stationary point composition
-    for i in cmps:
+    for i in range(N):
         Ks[i] = zs_test[i]/zs[i]
 
     sum_zs_test = sum_zs_test_inv = 1.0
@@ -3752,11 +3759,11 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
 
         err = 0.0
         try:
-            for i in cmps:
+            for i in range(N):
                 corrections[i] = ci = fugacities_trial[i]/fugacities_test[i]*sum_zs_test_inv
                 Ks[i] *= ci
                 err += (ci - 1.0)*(ci - 1.0)
-        except ZeroDivisionError:
+        except:
             # A test fugacity became zero
             # May need special handling for this outside.
             converged = True
@@ -3767,19 +3774,22 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
             break
 
         # Update compositions for the next iteration - might as well move this above the break check
-        for i in cmps:
+        for i in range(N):
             zs_test[i] = Ks[i]*zs[i] # new test phase comp
 
         # Cannot move the normalization above the error check - returning
         # unnormalized sum_zs_test is used also to detect a trivial solution
-        sum_zs_test = sum(zs_test)
+        sum_zs_test = 0.0
+        for i in range(N):
+            sum_zs_test += zs_test[i]
         try:
             sum_zs_test_inv = 1.0/sum_zs_test
         except:
             # Fugacities are all zero
             converged = True
             break
-        zs_test = [zi*sum_zs_test_inv for zi in zs_test]
+        for i in range(N):
+            zs_test[i] *= sum_zs_test_inv
 
 
     if converged:
@@ -3793,7 +3803,7 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
         dG_RT = 0.0
         if V_over_F != 0.0:
             lnphis_test = test_phase.lnphis_at_zs(zs_test) #test_phase.lnphis()
-            for i in cmps:
+            for i in range(N):
                 dG_RT += zs_test[i]*(log(zs_test[i]) + lnphis_test[i])
             dG_RT *= V_over_F
 #        print(dG_RT)
@@ -3801,7 +3811,7 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
 
         return sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs, dG_RT
     else:
-        raise UnconvergedError('End of stability_iteration_Michelsen without convergence', zs_test)
+        raise UnconvergedError('End of stability_iteration_Michelsen without convergence')
 
 
 
