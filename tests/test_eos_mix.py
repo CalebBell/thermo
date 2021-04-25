@@ -4617,7 +4617,13 @@ def test_numpy_properties_all_eos_mix():
         eos_2 = eos_base.to_TP_zs_fast(T=300.0000000001, P=1e5, zs=[.7, .20000001, .09999999])
         eos_np_2 = eos_np_base.to_TP_zs_fast(T=300.0000000001, P=1e5, zs=np.array([.7, .20000001, .09999999]))
         
-        for eos, eos_np in zip([eos_base, eos_2], [eos_np_base, eos_np_2]):
+        eos_3 = eos_base.to_TP_zs_fast(T=300.0000000001, P=1e5, zs=[.7, .20000001, .09999999], full_alphas=False)
+        eos_np_3 = eos_np_base.to_TP_zs_fast(T=300.0000000001, P=1e5, zs=np.array([.7, .20000001, .09999999]),  full_alphas=False)
+        
+        eos_4 = eos_base.to_TP_zs_fast(T=300.0000000001, P=1e5, zs=[.7, .20000001, .09999999], only_g=True)
+        eos_np_4 = eos_np_base.to_TP_zs_fast(T=300.0000000001, P=1e5, zs=np.array([.7, .20000001, .09999999]), only_g=True)
+
+        for eos, eos_np in zip([eos_base, eos_2, eos_3, eos_4], [eos_np_base, eos_np_2, eos_np_3, eos_np_4]):
         
             assert_close(eos_np.b, eos.b, rtol=1e-14)
             assert type(eos_np.b) is float
@@ -4639,18 +4645,19 @@ def test_numpy_properties_all_eos_mix():
             assert_close1d(eos_np.ais, eos.ais, rtol=1e-14)
             assert isinstance(eos_np.ais, np.ndarray)
             assert isinstance(eos.ais, list)
-        
+            
             assert_close1d(eos_np.a_alphas, eos.a_alphas, rtol=1e-14)
             assert isinstance(eos_np.a_alphas, np.ndarray)
             assert isinstance(eos.a_alphas, list)
         
-            assert_close1d(eos_np.da_alpha_dTs, eos.da_alpha_dTs, rtol=1e-14)
-            assert isinstance(eos_np.da_alpha_dTs, np.ndarray)
-            assert isinstance(eos.da_alpha_dTs, list)
-        
-            assert_close1d(eos_np.d2a_alpha_dT2s, eos.d2a_alpha_dT2s, rtol=1e-14)
-            assert isinstance(eos_np.d2a_alpha_dT2s, np.ndarray)
-            assert isinstance(eos.d2a_alpha_dT2s, list)
+            if hasattr(eos, 'da_alpha_dTs'):
+                assert_close1d(eos_np.da_alpha_dTs, eos.da_alpha_dTs, rtol=1e-14)
+                assert isinstance(eos_np.da_alpha_dTs, np.ndarray)
+                assert isinstance(eos.da_alpha_dTs, list)
+            
+                assert_close1d(eos_np.d2a_alpha_dT2s, eos.d2a_alpha_dT2s, rtol=1e-14)
+                assert isinstance(eos_np.d2a_alpha_dT2s, np.ndarray)
+                assert isinstance(eos.d2a_alpha_dT2s, list)
             
             # Component derivatives - epsilon
             assert_close1d(eos_np.depsilon_dzs, eos.depsilon_dzs, rtol=1e-14)
