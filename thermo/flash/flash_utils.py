@@ -49,8 +49,8 @@ __all__ = [
     'nonlin_2P_newton',
     'dew_bubble_newton_zs',
     'existence_3P_Michelsen_Mollerup',
-    'SS_VF_simultaneous', 
-    'stabiliy_iteration_Michelsen',
+    'SS_VF_simultaneous',
+    'stability_iteration_Michelsen',
     'assert_stab_success_2P', 
     'nonlin_equilibrium_NP',
     'nonlin_spec_NP',
@@ -3693,8 +3693,8 @@ def sequential_substitution_2P_double(zs, xs_guess, ys_guess, liquid_phase,
     raise UnconvergedError('End of SS without convergence')
 
 
-def stabiliy_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
-                                 maxiter=20, xtol=1E-12):
+def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
+                                  maxiter=20, xtol=1E-12):
     # So long as for both trial_phase, and test_phase use the lowest Gibbs energy fugacities, no need to test two phases.
     # Very much no need to converge using acceleration - just keep a low tolerance
     # At any point, can use the Ks working, assume a drop of the new phase, and evaluate two new phases and see if G drops.
@@ -3801,7 +3801,7 @@ def stabiliy_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
 
         return sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs, dG_RT
     else:
-        raise UnconvergedError('End of stabiliy_iteration_Michelsen without convergence', zs_test)
+        raise UnconvergedError('End of stability_iteration_Michelsen without convergence', zs_test)
 
 
 
@@ -3875,7 +3875,7 @@ def assert_stab_success_2P(liq, gas, stab, T, P, zs, guess_name, xs=None,
     else:
         min_phase, other_phase = gas, liq
 
-    _, _, _, V_over_F, trial_zs, appearing_zs, dG_RT = stabiliy_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase, maxiter=100)
+    _, _, _, V_over_F, trial_zs, appearing_zs, dG_RT = stability_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase, maxiter=100)
 
     V_over_F, xs_calc, ys_calc, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
                                                                         zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs,

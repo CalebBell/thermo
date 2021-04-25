@@ -23,15 +23,15 @@ SOFTWARE.'''
 from .flash_base import Flash
 from .flash_utils import (
     PT_SS, PT_SS_MEHRA, PT_SS_GDEM3, PT_NEWTON_lNKVF,
-    sequential_substitution_2P, 
+    sequential_substitution_2P,
     sequential_substitution_Mehra_2P,
-    sequential_substitution_GDEM3_2P, 
+    sequential_substitution_GDEM3_2P,
     nonlin_2P_newton,
-    WILSON_GUESS, 
-    IDEAL_PSAT, 
+    WILSON_GUESS,
+    IDEAL_PSAT,
     TB_TC_GUESS,
-    dew_bubble_Michelsen_Mollerup, 
-    dew_bubble_newton_zs,                
+    dew_bubble_Michelsen_Mollerup,
+    dew_bubble_newton_zs,
     SS_VF_simultaneous,
     solve_T_VF_IG_K_composition_independent,
     TP_solve_VF_guesses,
@@ -39,7 +39,7 @@ from .flash_utils import (
     solve_P_VF_IG_K_composition_independent,
     dew_bubble_newton_zs,
     TP_solve_VF_guesses,
-    stabiliy_iteration_Michelsen,
+    stability_iteration_Michelsen,
     solve_PTV_HSGUA_1P,
     TPV_solve_HSGUA_guesses_VL,
     SHAW_ELEMENTAL, IDEAL_WILSON,
@@ -526,8 +526,8 @@ class FlashVL(Flash):
 
         for i, trial_comp in enumerate(gen):
                 try:
-                    sln = stabiliy_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase,
-                                                       maxiter=self.PT_STABILITY_MAXITER, xtol=self.PT_STABILITY_XTOL)
+                    sln = stability_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase,
+                                                        maxiter=self.PT_STABILITY_MAXITER, xtol=self.PT_STABILITY_XTOL)
                     sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs, dG_RT = sln
                     if zs == trial_zs:
                         continue
@@ -636,7 +636,7 @@ class FlashVL(Flash):
 #        stable = True
 #        for i, trial_comp in enumerate(gen):
 #                try:
-#                    sln = stabiliy_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase,
+#                    sln = stability_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase,
 #                                 maxiter=self.PT_STABILITY_MAXITER, xtol=self.PT_STABILITY_XTOL)
 #                    sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs = sln
 #                    lnK_2_tot = 0.0

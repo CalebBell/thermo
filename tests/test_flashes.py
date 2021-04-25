@@ -279,10 +279,10 @@ def test_stabiliy_iteration_Michelsen_zero_fraction():
     zs_test = [0.0, 0.966916481252204, 0.033083518747796005]
     kwargs = {'trial_phase': liq, 'zs_test': zs_test,
            'test_phase': gas, 'maxiter': 500, 'xtol': 5e-09}
-    sln_with_zero = stabiliy_iteration_Michelsen(**kwargs)[0:-1]
+    sln_with_zero = stability_iteration_Michelsen(**kwargs)[0:-1]
 
     kwargs['zs_test'] = [1e-13, 0.966916481252204-5e-14, 0.033083518747796005-5e-14]
-    sln_without_zero = stabiliy_iteration_Michelsen(**kwargs)[0:-1]
+    sln_without_zero = stability_iteration_Michelsen(**kwargs)[0:-1]
     assert_allclose(sln_with_zero[-2][1:], sln_without_zero[-2][1:], rtol=1e-5)
     assert_allclose(sln_with_zero[-1][1:], sln_without_zero[-1][1:], rtol=1e-5)
     assert_allclose(sln_with_zero[-3], sln_without_zero[-3], rtol=1e-5)

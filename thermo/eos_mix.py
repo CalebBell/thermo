@@ -37,7 +37,7 @@ Base Class
     :undoc-members:
     :show-inheritance:
     :exclude-members: a_alpha_and_derivatives_numpy, a_alpha_and_derivatives_py, main_derivatives_and_departures, derivatives_and_departures,
-                      sequential_substitution_3P, sequential_substitution_VL, stability_Michelsen, stabiliy_iteration_Michelsen, newton_VL, broyden2_VL,
+                      sequential_substitution_3P, sequential_substitution_VL, stability_Michelsen, stability_iteration_Michelsen, newton_VL, broyden2_VL,
                       d2A_dep_dninjs, d2A_dep_dninjs_Vt, d2A_dninjs_Vt, d2A_dninjs_Vt_another, d2P_dninjs_Vt, d2nA_dninjs_Vt, d3P_dninjnks_Vt,
                       dScomp_dns, d2Scomp_dninjs, dA_dep_dns_Vt, dP_dns_Vt
 
@@ -2260,7 +2260,7 @@ class GCEOSMIX(GCEOS):
 #                break
             # It is possible to break if the trivial solution is being approached here also
             if _ == maxiter-1 and fugacities_ref_phase != fugacities_phase:
-                raise UnconvergedError('End of stabiliy_iteration_Michelsen without convergence')
+                raise UnconvergedError('End of stability_iteration_Michelsen without convergence')
 
         # Fails directly if fugacities_ref_phase == fugacities_phase
         # Fugacity error:
