@@ -100,6 +100,12 @@ def test_EOSMIX_outputs_inputs_np():
             assert type(getattr(eos, attr)) is list
             assert type(getattr(eos_np, attr)) is np.ndarray
 
+@mark_as_numba
+def test_EOSMIX_numpy_input_cases():
+    # Needs its own volume solution
+    res = thermo.numba.eos_mix.IGMIX(T=300.0, P=1e5, zs=np.array([.7, .2, .1]), Tcs=np.array([126.2, 304.2, 373.2]), Pcs=np.array([3394387.5, 7376460. , 8936865. ]), omegas=np.array([0.04  , 0.2252, 0.1   ]))
+    assert_close(res.V_g, 0.02494338785445972)
+
 
 @mark_as_numba
 def test_IdealSolution_np_out():

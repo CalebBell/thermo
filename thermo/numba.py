@@ -300,6 +300,8 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
     __funcs['eos'].GCEOS.main_derivatives_and_departures = staticmethod(__funcs['main_derivatives_and_departures'])
     __funcs['eos_mix'].GCEOSMIX.volume_solutions = staticmethod(__funcs['volume_solutions_halley'])
     __funcs['eos_mix'].GCEOSMIX.main_derivatives_and_departures = staticmethod(__funcs['main_derivatives_and_departures'])
+    
+    __funcs['eos_mix'].IGMIX.volume_solutions = staticmethod(__funcs['volume_solutions_ideal'])
 transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False)
 
 '''Before jitclasses could be used on Activity models, numba would have to add:

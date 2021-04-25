@@ -127,7 +127,7 @@ def eos_ternary_args(eos, numpy=False):
     zs = [.7, .2, .1]
     kijs = [[0.0, -0.0122, 0.1652], [-0.0122, 0.0, 0.0967], [0.1652, 0.0967, 0.0]]
 
-    kwargs = dict(T=300.0, P=1e5,  Tcs=Tcs, Pcs=Pcs, omegas=omegas, kijs=kijs, zs=zs)
+    kwargs = dict(Tcs=Tcs, Pcs=Pcs, omegas=omegas, kijs=kijs, zs=zs)
     
     ans = kwargs.copy()
     if 'Translated' in eos.__name__:
@@ -150,15 +150,39 @@ def eos_ternary_args(eos, numpy=False):
 class EOSMIXTernaryTimeSuite(BaseTimeSuite):
     eos_args_np = {obj: eos_ternary_args(obj, True) for obj in eos_mix_list}
     eos_args = {obj: eos_ternary_args(obj, False) for obj in eos_mix_list}
+    if not IS_PYPY:
+        eos_to_eos_numba = {eos_mix_list[i]: thermo.numba.eos_mix.eos_mix_list[i] for i in range(len(eos_mix_list))}
     params = eos_mix_list
     
-    def setup(self, *args):
-        pass
+    def setup(self, eos):
+        self.time_eos_PT_numba(eos)
+        self.time_eos_PV_numba(eos)
+        self.time_eos_TV_numba(eos)
 
         
     def time_eos_PT(self, eos):
-        return eos(**self.eos_args[eos])
+        return eos(T=300.0, P=1e5, **self.eos_args[eos])
 
     def time_eos_PT_numpy(self, eos):
-        return eos(**self.eos_args_np[eos])
+        return eos(T=300.0, P=1e5, **self.eos_args_np[eos])
 
+    def time_eos_PT_numba(self, eos):
+        return self.eos_to_eos_numba[eos](T=300.0, P=1e5, **self.eos_args_np[eos])
+
+    def time_eos_PV(self, eos):
+        return eos(V=.025, P=1e5, **self.eos_args[eos])
+
+    def time_eos_PV_numpy(self, eos):
+        return eos(V=.025, P=1e5, **self.eos_args_np[eos])
+
+    def time_eos_PV_numba(self, eos):
+        return self.eos_to_eos_numba[eos](V=.025, P=1e5, **self.eos_args_np[eos])
+
+    def time_eos_TV(self, eos):
+        return eos(T=300.0, V=.025, **self.eos_args[eos])
+
+    def time_eos_TV_numpy(self, eos):
+        return eos(T=300.0, V=.025, **self.eos_args_np[eos])
+
+    def time_eos_TV_numba(self, eos):
+        return self.eos_to_eos_numba[eos](T=300.0, V=.025, **self.eos_args_np[eos])
