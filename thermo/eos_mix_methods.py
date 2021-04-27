@@ -1257,16 +1257,18 @@ def SRK_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=None):
     P_RT = P/RT
     A = a_alpha*P/(RT*RT)
     B = b*P/RT
-    A_B = A/B
+    B_inv = 1.0/B
+    A_B = A*B_inv
     t0 = log(Z - B)
     t3 = log(1. + B/Z)
-    Z_minus_one_over_B = (Z - 1.0)/B
+    Z_minus_one_over_B = (Z - 1.0)*B_inv
     two_over_a_alpha = 2./a_alpha
+    x0 = A_B*B_inv
+    x1 = A_B*two_over_a_alpha
     for i in range(N):
         Bi = bs[i]*P_RT
-        t1 = Bi*Z_minus_one_over_B - t0
-        t2 = A_B*(Bi/B - two_over_a_alpha*a_alpha_j_rows[i])
-        lnphis[i] = t1 + t2*t3
+        t2 = Bi*x0 - x1*a_alpha_j_rows[i]
+        lnphis[i] = Bi*Z_minus_one_over_B - t0 + t2*t3
     return lnphis
 
 def VDW_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_roots, N, lnphis=None):
