@@ -879,15 +879,16 @@ def RK_d3delta_dninjnks(b, bs, N, out=None):
     if out is None:
         out = [[[0.0]*N for _ in range(N)] for _ in range(N)]# numba: delete
         # out = np.zeros((N, N, N)) # numba: uncomment
-    m3b = -3.0*b
+    m6b = -6.0*b
     for i in range(N):
         bi = bs[i]
         d3b_dnjnks = out[i]
         for j in range(N):
             bj = bs[j]
             r = d3b_dnjnks[j]
+            x0 = m6b + 2.0*(bi + bj)
             for k in range(N):
-                r[k] = 2.0*(m3b + bi + bj + bs[k]) 
+                r[k] = x0 + 2.0*bs[k]
     return out
 
 def PR_ddelta_dzs(bs, N, out=None):
@@ -900,16 +901,18 @@ def PR_ddelta_dzs(bs, N, out=None):
 def PR_ddelta_dns(bs, b, N, out=None):
     if out is None:
         out = [0.0]*N
+    nb2 = -2.0*b
     for i in range(N):
-        out[i] = 2.0*(bs[i] - b)
+        out[i] = 2.0*bs[i] + nb2
     return out
 
 def PR_depsilon_dns(b, bs, N, out=None):
     if out is None:
         out = [0.0]*N
     b2 = b + b
+    b2b = b2*b
     for i in range(N):
-        out[i] = b2*(b - bs[i])
+        out[i] = b2b - b2*bs[i]
     return out
 
 def PR_d2delta_dninjs(b, bs, N, out=None):
