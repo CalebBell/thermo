@@ -85,7 +85,7 @@ from chemicals.phase_change import SMK
 from chemicals.volume import COSTALD
 from chemicals.flash_basic import flash_wilson, flash_Tb_Tc_Pc, flash_ideal
 from chemicals.exceptions import TrivialSolutionError
-from thermo.phases import Phase, CoolPropPhase, CEOSLiquid, CEOSGas
+from thermo.phases import Phase, CoolPropPhase, CEOSLiquid, CEOSGas, IAPWS95
 from thermo.phases.phase_utils import lnphis_direct
 from thermo.coolprop import CPiP_min
 
@@ -2642,7 +2642,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
     # plt.loglog(tests, values)
     # plt.show()
 
-    if oscillation_detection:
+    if oscillation_detection and ytol is not None:
         to_solve2, checker = oscillation_checking_wrapper(to_solve, full=True,
                                                           minimum_progress=minimum_progress,
                                                           good_err=ytol*1e6)
@@ -2754,6 +2754,9 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
 
     if iter_var == 'T' and spec in ('S', 'H'):
         ytol = ytol/100
+    if isinstance(phase, IAPWS95):
+        # Objective function isn't quite as nice and smooth as desired
+        ytol = None
 
     _, phase, iterations, err = TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val=fixed_var_val, spec_val=spec_val, ytol=ytol,
                                                    iter_var=iter_var, fixed_var=fixed_var, spec=spec, oscillation_detection=oscillation_detection,

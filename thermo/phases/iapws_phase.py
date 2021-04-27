@@ -55,7 +55,7 @@ class IAPWS95(HelmholtzEOS):
 #    HeatCapacityGases = iapws_correlations.HeatCapacityGases
 
     T_MAX_FIXED = 5000.0
-    T_MIN_FIXED = 235.0
+    T_MIN_FIXED = 243.0 # PU has flash failures at < 242 ish K
 
     _d4Ar_ddelta2dtau2_func = staticmethod(iapws.iapws95_d4Ar_ddelta2dtau2)
     _d3Ar_ddeltadtau2_func = staticmethod(iapws.iapws95_d3Ar_ddeltadtau2)

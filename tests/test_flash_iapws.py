@@ -27,6 +27,7 @@ from thermo.coolprop import *
 from thermo.phases import IAPWS95Gas, IAPWS95Liquid
 from thermo.chemical_package import iapws_correlations
 from fluids.numerics import *
+from thermo.test_utils import mark_plot_unsupported
 from math import *
 import json
 import os
@@ -88,136 +89,73 @@ def test_iapws95_basic_flashes_no_hacks():
     assert_close(PS.T, 300)
 
     assert_close(flasher.flash(P=1e5, H=flasher.flash(T=273.15, P=1e5).H()).T, 273.15, rtol=1e-10)
+    
+    # Case where the density solution was failing
+    T = 250.49894958453197
+    P = 10595.601792776019
+    base = flasher.flash(T=T, P=P)
+    new = flasher.flash(P=P, S=base.S())
+    assert_close(new.T, base.T)
+
 
 @pytest.mark.plot
 @pytest.mark.slow
 @pytest.mark.parametric
-def test_TV_plot_iapws95():
+@pytest.mark.parametrize("variables", ['VPT', 'VTP',
+                                       'PHT', 'PST', 'PUT',
+                                       'VUT', 'VST', 'VHT',
+                                          'TSV',
+                                            'THP', 'TUP',
+                                       ])
+def test_plot_IAPWS95(variables):
+    spec0, spec1, check_prop = variables
+    plot_name = variables[0:2]
     eos = IAPWS95
     T, P = 298.15, 101325.0
     zs = [1.0]
     liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
     gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
-    flasher = FlashPureVLS(iapws_constants, iapws_correlations, gas, [liquid], [])
 
+    flasher = FlashPureVLS(constants=iapws_constants, correlations=iapws_correlations,
+                       gas=gas, liquids=[], solids=[])
+    flasher.TPV_HSGUA_xtol = 1e-13
+    
+    flash_spec = frozenset([spec0, spec1])
+    inconsistent = flash_spec in (frozenset(['T', 'H']), frozenset(['T', 'U']),
+                                  frozenset(['T', 'S']), # blip issues
+                                  frozenset(['V', 'P']), # 4 degree water blip
+                                  frozenset(['V', 'S']), frozenset(['V', 'H']),
+                                  frozenset(['V', 'U']), # Fun
+                                  )
 
-    res = flasher.TPV_inputs(zs=zs, pts=200, spec0='T', spec1='P', check0='T', check1='V', prop0='P',
-                           trunc_err_low=1e-10,
+    res = flasher.TPV_inputs(zs=[1.0], pts=200, spec0='T', spec1='P', 
+                             check0=spec0, check1=spec1, prop0=check_prop,
+                           trunc_err_low=1e-13,
                            trunc_err_high=1, color_map=cm_flash_tol(),
-                           show=False)
+                           show=False, verbose=not inconsistent)
 
     matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
 
-    path = os.path.join(pure_surfaces_dir, fluid, "TV")
+    path = os.path.join(pure_surfaces_dir, fluid, plot_name)
     if not os.path.exists(path):
         os.makedirs(path)
+        
+    tol = 5e-12
 
-    key = '%s - %s - %s' %('TV', eos.__name__, fluid)
+    key = '%s - %s - %s' %(plot_name, eos.__name__, fluid)
+
+    if inconsistent:
+        spec_name = spec0 + spec1
+        mark_plot_unsupported(plot_fig, reason='EOS is inconsistent for %s inputs' %(spec_name))
+        tol = 1e300
+    if flash_spec == frozenset(['T', 'V']):
+        tol = 1e-5
+
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
 
     max_err = np.max(np.abs(errs))
-    # CoolProp has same error characteritic in terms of solving for P
-    # from (T, V)
-    assert max_err < 1e-5
+    assert max_err < tol
 
-@pytest.mark.plot
-@pytest.mark.slow
-@pytest.mark.parametric
-def test_PV_plot_iapws95():
-    # There are multiple solution points for water aroud 4 C
-    eos = IAPWS95
-    T, P = 298.15, 101325.0
-    zs = [1.0]
-    liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
-    gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
-    flasher = FlashPureVLS(iapws_constants, iapws_correlations, gas, [liquid], [])
-
-
-    res = flasher.TPV_inputs(zs=zs, pts=100, spec0='T', spec1='P', check0='P', check1='V', prop0='T',
-                           trunc_err_low=1e-10,
-                           trunc_err_high=1, color_map=cm_flash_tol(),
-#                           auto_range=auto_range,
-                           show=False)
-
-    matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
-
-    path = os.path.join(pure_surfaces_dir, fluid, "PV")
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-    key = '%s - %s - %s' %('PV', eos.__name__, fluid)
-
-    plot_fig.savefig(os.path.join(path, key + '.png'))
-    plt.close()
-    max_err = np.max(np.abs(errs))
-    limit = 5e-11
-    # assert max_err < limit
-
-@pytest.mark.plot
-@pytest.mark.slow
-@pytest.mark.parametric
-def test_PS_plot():
-    '''
-    '''
-    eos = IAPWS95
-    path = os.path.join(pure_surfaces_dir, fluid, "PS")
-    if not os.path.exists(path):
-        os.makedirs(path)
-    key = '%s - %s - %s' %('PS', eos.__name__, fluid)
-
-
-    T, P = 298.15, 101325.0
-    zs = [1.0]
-    liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
-    gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
-    flasher = FlashPureVLS(iapws_constants, iapws_correlations, gas, [liquid], [])
-
-    res = flasher.TPV_inputs(zs=zs, pts=200, spec0='T', spec1='P', check0='P', check1='S', prop0='T',
-                           trunc_err_low=1e-15,
-                           trunc_err_high=1, color_map=cm_flash_tol(),
-                           show=False)
-
-    matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
-
-    plot_fig.savefig(os.path.join(path, key + '.png'))
-    plt.close()
-
-    max_err = np.max(errs)
-    assert max_err < 1e-8
-#
-# test_PS_plot()
-
-@pytest.mark.plot
-@pytest.mark.slow
-@pytest.mark.parametric
-def test_PH_plot():
-    '''
-    '''
-    eos = IAPWS95
-    path = os.path.join(pure_surfaces_dir, fluid, "PH")
-    if not os.path.exists(path):
-        os.makedirs(path)
-    key = '%s - %s - %s' %('PH', eos.__name__, fluid)
-
-
-    T, P = 298.15, 101325.0
-    zs = [1.0]
-    liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
-    gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
-    flasher = FlashPureVLS(iapws_constants, iapws_correlations, gas, [liquid], [])
-
-    res = flasher.TPV_inputs(zs=zs, pts=250, spec0='T', spec1='P', check0='P', check1='H', prop0='T',
-                           trunc_err_low=1e-15,
-                           trunc_err_high=1, color_map=cm_flash_tol(),
-                           show=False)
-
-    matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
-
-    plot_fig.savefig(os.path.join(path, key + '.png'))
-    plt.close()
-
-    max_err = np.max(errs)
-    assert max_err < 1e-8
-
-#test_PH_plot()
+# test_plot_IAPWS95('VUT')
+test_plot_IAPWS95('PUT')
