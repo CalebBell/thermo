@@ -3388,7 +3388,7 @@ class Mixture(object):
                  ViscosityGases=self.ViscosityGases, ViscosityLiquids=self.ViscosityLiquids,
                  ThermalConductivityGases=self.ThermalConductivityGases, ThermalConductivityLiquids=self.ThermalConductivityLiquids,
                  EnthalpyVaporizations=self.EnthalpyVaporizations, EnthalpySublimations=self.EnthalpySublimations,
-                 SurfaceTensions=self.SurfaceTensions, Permittivities=self.Permittivities)
+                 SurfaceTensions=self.SurfaceTensions, PermittivityLiquids=self.Permittivities)
         if copy_mixtures:
             kwargs.update(VolumeGasMixtureObj=self.VolumeGasMixture, VolumeLiquidMixtureObj=self.VolumeLiquidMixture,
                           VolumeSolidMixtureObj=self.VolumeSolidMixture,
