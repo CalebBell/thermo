@@ -308,6 +308,7 @@ class Wilson(GibbsExcess):
        Thermodynamics 4th Edition, Joseph M. Smith, H. C. Van
        Ness, 1987.
     '''
+    model_id = 200
     @staticmethod
     def from_DDBST(Vi, Vj, a, b, c, d=0.0, e=0.0, f=0.0, unit_conversion=True):
         r'''Converts parameters for the wilson equation in the DDBST to the

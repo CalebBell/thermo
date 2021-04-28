@@ -851,7 +851,7 @@ def test_UNIFAC_default_data():
 
 def call_all_methods_first_UNIFAC(kwargs):
     cls = UNIFAC
-    arg_methods = ('__init__', 'to_T_xs', '__delattr__', '__format__', '__getattribute__', '__setattr__', 'from_json')
+    skip_methods = ('__init__', 'to_T_xs', '__delattr__', '__format__', '__getattribute__', '__setattr__', 'from_json', 'model_id')
     special_methods = {1: ('Vis_modified', 'dVis_modified_dxs', 'd2Vis_modified_dxixjs', 'd3Vis_modified_dxixjxks')}
     special_methods[4] = special_methods[1]
 
@@ -865,8 +865,8 @@ def call_all_methods_first_UNIFAC(kwargs):
 
     for s in dir(cls):
         attr = getattr(cls, s)
-        if isinstance(attr, types.MethodType) or type(attr) == property:
-            if (s in restricted_methods and not kwargs['version'] in restricted_methods[s]) or s in arg_methods:
+        if isinstance(attr, types.MethodType) or type(attr) is property:
+            if (s in restricted_methods and not kwargs['version'] in restricted_methods[s]) or s in skip_methods:
                 continue
             base = cls(**kwargs)
             v = getattr(base, s)()

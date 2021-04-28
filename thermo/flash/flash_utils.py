@@ -1848,6 +1848,8 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
                 if 1.0 - V_diff < V_ratio < 1.0 + V_diff or skip > 0 or V_iter_last and (abs(min(V_iter, V_iter_last)/max(V_iter, V_iter_last)) < .8):
                     # Relax the constraint for the iterating on variable so two different phases exist
                     #if iter_phase.eos_mix.phase in ('l', 'g') and iter_phase.eos_mix.phase == const_phase.eos_mix.phase:
+                    # Alternatively, try a stability test here
+
                     if iter_phase.eos_mix.phase == unwanted_phase:
                         if skip < 0:
                             skip = 4

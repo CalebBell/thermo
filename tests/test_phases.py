@@ -3007,3 +3007,61 @@ def test_lnphis_at_zs_eos_mix():
     
     
     
+def test_UNIFAC_lnphis_direct():
+    from thermo.unifac import UFIP, UFSG, VTPRIP, VTPRSG, NISTKTUFIP, NISTKTUFSG, LUFIP, LUFSG, DOUFIP2016, DOUFSG, PSRKIP, PSRKSG
+    from thermo.phases.phase_utils import lnphis_direct
+    T = 400.0
+    P = 1e6
+    zs = [.4, .6]
+    xs2 = [.3, .7]
+    
+    MWs = [18.01528, 46.06844]
+    Tcs = [647.14, 514.0]
+    Pcs = [22048320.0, 6137000.0]
+    omegas = [0.344, 0.635]
+    
+    eoss = [PR(Tc=Tcs[0], Pc=Pcs[0], omega=omegas[0], T=T, P=P),
+            PR(Tc=Tcs[1], Pc=Pcs[1], omega=omegas[1], T=T, P=P)]
+    
+    # Cover all the varianrs of UNIFAC that are implemented
+    # Note: chemgroups do not always match the components,
+    # as that doesn't impact the tests
+    GE0 = UNIFAC.from_subgroups(T, zs, chemgroups=[{16: 1}, {1: 1, 2: 1, 14: 1}], subgroups=UFSG,
+                           interaction_data=UFIP, version=0)
+    
+    GE1 = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1:1, 18:1}, {1:1, 2:1, 14:1}], version=1,
+                               interaction_data=DOUFIP2016, subgroups=DOUFSG)
+    
+    GE2 = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{117: 1}, {1:2, 2:4}], version=2,
+                               interaction_data=PSRKIP, subgroups=PSRKSG)
+    
+    GE3 = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1: 1, 18: 1}, {1: 1, 2: 1, 14: 1}], version=3,
+                               interaction_data=VTPRIP, subgroups=VTPRSG)
+    
+    GE4 = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1: 1, 2: 1, 12: 1}, {1: 2, 2: 3}], version=4,
+                               interaction_data=LUFIP, subgroups=LUFSG)
+    
+    GE5 = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1:1, 15:5, 19:1}, {15:4, 18:2}] , version=5,
+                               interaction_data=NISTKTUFIP, subgroups=NISTKTUFSG)
+    
+    GEs = [GE0, GE1, GE2, GE3, GE4, GE5]
+    
+    VaporPressures = [VaporPressure(poly_fit=(159.11, 514.7, [-2.3617526481119e-19, 7.318686894378096e-16, -9.835941684445551e-13, 7.518263303343784e-10, -3.598426432676194e-07, 0.00011171481063640762, -0.022458952185007635, 2.802615041941912, -166.43524219017118])),
+                      VaporPressure(poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))]
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                       HeatCapacityGas(poly_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965]))]
+    VolumeLiquids = [VolumeLiquid(poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]),
+                                  Psat=VaporPressures[0], Tc=Tcs[0], Pc=Pcs[0], omega=omegas[0]),
+                     VolumeLiquid(poly_fit=(159.11, 504.71000000000004, [5.388587987308587e-23, -1.331077476340645e-19, 1.4083880805283782e-16, -8.327187308842775e-14, 3.006387047487587e-11, -6.781931902982022e-09, 9.331209920256822e-07, -7.153268618320437e-05, 0.0023871634205665524]),
+                                  Psat=VaporPressures[1], Tc=Tcs[1], Pc=Pcs[1], omega=omegas[1])]
+    
+    for GE in GEs:
+        for basis in ('Psat', 'Poynting', 'PhiSat', 'Poynting&PhiSat'):
+            liquid_base = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
+                                       VolumeLiquids=VolumeLiquids,
+                                           GibbsExcessModel=GE,
+                                       equilibrium_basis=basis, caloric_basis=basis,
+                                       eos_pure_instances=eoss, T=T, P=P, zs=zs)
+            args = liquid_base.lnphis_args()
+            
+            assert_close1d(lnphis_direct(xs2, *args), liquid_base.to(T=T, P=P, zs=xs2).lnphis(), rtol=1e-12)

@@ -158,4 +158,4 @@ def test_plot_IAPWS95(variables):
     assert max_err < tol
 
 # test_plot_IAPWS95('VUT')
-test_plot_IAPWS95('PUT')
+# test_plot_IAPWS95('PUT')

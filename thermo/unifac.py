@@ -143,7 +143,8 @@ __all__ = ['UNIFAC_gammas','UNIFAC', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', '
            'PSRKSG', 'LLEUFSG', 'LLEMG',
             'LUFSG', 'NISTUFSG', 'NISTUFMG',
            'VTPRSG', 'VTPRMG', 'NISTKTUFSG', 'NISTKTUFMG',
-           'LUFMG', 'PSRKMG']
+           'LUFMG', 'PSRKMG',
+           'unifac_gammas_at_T']
 import os
 from fluids.constants import R
 from fluids.numerics import numpy as np
@@ -3156,6 +3157,44 @@ def unifac_gammas(N, xs, lngammas_r, lngammas_c, gammas=None):
         gammas[i] = exp(lngammas_r[i] + lngammas_c[i])
     return gammas
 
+def unifac_gammas_at_T(xs, N, N_groups, vs, rs, qs, Qs, 
+                         psis, lnGammas_subgroups_pure,# Depends on T only
+                         version, rs_34,
+                         gammas=None):
+    skip_comb = version == 3
+
+    Xs, Xs_sum_inv = unifac_Xs(N=N, N_groups=N_groups, xs=xs, vs=vs)
+    Thetas, Thetas_sum_inv = unifac_Thetas(N_groups=N_groups, Xs=Xs, Qs=Qs)
+    Theta_Psi_sums = unifac_Theta_Psi_sums(N_groups=N_groups, Thetas=Thetas, psis=psis)
+    
+    Theta_Psi_sum_invs = [0.0]*N_groups
+    for i in range(N_groups):
+        Theta_Psi_sum_invs[i] = 1.0/Theta_Psi_sums[i]
+    lnGammas_subgroups = unifac_lnGammas_subgroups(N=N, N_groups=N_groups, Qs=Qs, psis=psis, Thetas=Thetas, 
+                                                   Theta_Psi_sums=Theta_Psi_sums, Theta_Psi_sum_invs=Theta_Psi_sum_invs)
+    lngammas_r = unifac_lngammas_r(N=N, N_groups=N_groups, lnGammas_subgroups_pure=lnGammas_subgroups_pure,
+                                   lnGammas_subgroups=lnGammas_subgroups, vs=vs)
+    
+    if gammas is None:
+        gammas = [0.0]*N
+    if skip_comb:
+        for i in range(N):
+            gammas[i] = exp(lngammas_r[i])
+    else:
+        Vis, rx_sum_inv = unifac_Vis(rs=rs, xs=xs, N=N)
+        Fis, qx_sum_inv = unifac_Vis(rs=qs, xs=xs, N=N)
+        
+        if version == 1 or version == 3 or version == 4:
+            Vis_modified, r34x_sum_inv = unifac_Vis(rs=rs_34, xs=xs, N=N)
+        else:
+            Vis_modified = Vis
+        
+        lngammas_c = unifac_lngammas_c(N=N, version=version, qs=qs, Fis=Fis, Vis=Vis, Vis_modified=Vis_modified)
+     
+        for i in range(N):
+            gammas[i] = exp(lngammas_r[i] + lngammas_c[i])
+    return gammas
+
 def unifac_dgammas_dxs(N, xs, gammas, dlngammas_r_dxs, dlngammas_c_dxs, dgammas_dxs=None):
     if dgammas_dxs is None:
         dgammas_dxs = [[0.0]*N for _ in range(N)] # numba: delete
@@ -3471,6 +3510,21 @@ class UNIFAC(GibbsExcess):
 
 
     '''
+    @property
+    def model_id(self):
+        '''A unique numerical identifier refering to the thermodynamic model
+        being implemented. For internal use.
+        '''
+        return self.version + 500
+    
+    def lnphis_args(self):
+        try:
+            rs_34 = self.rs_34
+        except:
+            rs_34 = self.rs
+        return (self.N_groups, self.vs, self.rs, self.qs, self.Qs, 
+             self.psis(), self.lnGammas_subgroups_pure(),# Depends on T only
+             self.version, rs_34)
 
     @staticmethod
     def from_subgroups(T, xs, chemgroups, subgroups=None,

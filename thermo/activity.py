@@ -285,7 +285,7 @@ class GibbsExcess(object):
     '''When set, this will be the limiting mole fraction used to approximate
     the :obj:`gammas_infinite_dilution` calculation. This is important
     as not all models can mathematically be evaluated at zero mole-fraction.'''
-
+    
     def __init_subclass__(cls):
         cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
 
@@ -1043,6 +1043,8 @@ class IdealSolution(GibbsExcess):
     [0.0, 0.0, 0.0, 0.0]
     '''
     model_attriubtes = ()
+    
+    model_id = 0
 
     def __init__(self, T=None, xs=None):
         if T is not None:

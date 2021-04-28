@@ -803,13 +803,13 @@ def G_dep_lnphi_d_helper(T, P, b, delta, epsilon, a_alpha, N,
     if x6 == 0.0:
         # VDW has x5 as zero as delta, epsilon = 0
         x6 = 1e-100
-    x7 = x6**-0.5
+    x7 = 1.0/sqrt(x6)
     x8 = a_alpha
     x9 = x0 + x0
     x10 = x4 + x9
     x11 = x2 + x2
     x12 = x11*catanh(x10*x7).real
-    x15 = 1.0/x6
+    x15 = x7*x7
 
     db_dns = dbs
     depsilon_dns = depsilons
@@ -819,7 +819,7 @@ def G_dep_lnphi_d_helper(T, P, b, delta, epsilon, a_alpha, N,
 
     t1 = P*x2
     t2 = x11*x15*x8/(x10*x10*x15 - 1.0)
-    t3 = x12*x8*x6**(-1.5)
+    t3 = x12*x8*x15*x7
     t4 = x12*x7
     t5 = 1.0/(x0 - x3)
     t6 = x4 + x9
@@ -830,13 +830,15 @@ def G_dep_lnphi_d_helper(T, P, b, delta, epsilon, a_alpha, N,
         t3 *= RT
         t4 *= RT
         t5 *= RT
-
+        
+    c0 = t1 + t2*2.0 - t5
     for i in range(N):
         x13 = ddelta_dns[i]
         x14 = x13*x4 - 2.0*depsilon_dns[i]
         x16 = x14*x15
-        x1 = dV_dns[i]
-        diff = (x1*t1 + t2*(x1 + x1 + x13 - x16*t6) + x14*t3 - t4*da_alpha_dns[i] - t5*(x1 - db_dns[i]))
+        diff = (dV_dns[i]*c0 - t4*da_alpha_dns[i] + t5*db_dns[i] 
+                + t2*(x13 - x16*t6) + x14*t3 )
+        # diff = (x1*t1 + t2*(x1 + x1 + x13 - x16*t6) + x14*t3 - t4*da_alpha_dns[i] - t5*(x1 - db_dns[i]))
         out[i] = diff
     return out
 
@@ -923,8 +925,9 @@ def PR_d2delta_dninjs(b, bs, N, out=None):
     for i in range(N):
         bi = bs[i]
         r = out[i]
+        x0 = 2.0*(bb - bi)
         for j in range(N):
-            r[j] = 2.0*(bb - bi - bs[j]) 
+            r[j] = x0 - 2.0*bs[j]
     return out
 
 def PR_d3delta_dninjnks(b, bs, N, out=None):
@@ -938,8 +941,9 @@ def PR_d3delta_dninjnks(b, bs, N, out=None):
         for j in range(N):
             bj = bs[j]
             r = d3b_dnjnks[j]
+            x0 = 4.0*(m3b + bi + bj)
             for k in range(N):
-                r[k] = 4.0*(m3b + bi + bj + bs[k]) 
+                r[k] = x0 + 4.0*bs[k]
     return out
     
 
@@ -972,13 +976,17 @@ def PR_d2epsilon_dninjs(b, bs, N, out=None):
         # out = np.zeros((N, N)) # numba: uncomment
 
     bb = b + b
+    b2 = b*b
+    c0 = -bb*bb - 2.0*b2
+    c1 = 2.0*(b + 0.5*bb)
+    c2 = 2.0*b + bb
     for i in range(N):
         l = out[i]
         bi = bs[i]
+        x0 = c0 + c1*bi
+        x1 = c2 - 2.0*bi
         for j in range(N):
-            bj = bs[j]
-            v = -bb*(bb - (bi + bj))  -2.0*(b - bi)*(b - bj)
-            l[j] = v
+            l[j] = x0 + bs[j]*x1
     return out
 
 
@@ -986,16 +994,23 @@ def PR_d3epsilon_dninjnks(b, bs, N, out=None):
     if out is None:
         out = [[[0.0]*N for _ in range(N)] for _ in range(N)]# numba: delete
         # out = np.zeros((N, N, N)) # numba: uncomment
-
+    
+    c0 = 24.0*b*b
     for i in range(N):
         bi = bs[i]
         d3b_dnjnks = out[i]
+        c10 = -12.0*b + 4.0*bi
+        c11 = c0 -12.0*b*bi 
+        c12 = (-12.0*b + 4.0*bi)
+        
         for j in range(N):
             bj = bs[j]
+            x0 = c11 + bj*c12
+            x1 = c10 + 4.0*bj
             row = d3b_dnjnks[j]
             for k in range(N):
                 bk = bs[k]
-                term = 24.0*b*b - 12.0*b*(bi + bj + bk) + 4.0*(bi*bj + bi*bk + bj*bk)
+                term = x0 + bk*x1
                 row[k] = term
     return out
 
@@ -1014,8 +1029,11 @@ def PR_translated_d2epsilon_dzizjs(b0s, cs, N, out=None):
         # out = np.zeros((N, N)) # numba: uncomment
     for j in range(N):
         r = out[j]
+        x1 = 2.0*b0s[j]
+        x2 = 2.0*cs[j]
         for i in range(N):
-            r[i] = 2.0*(-b0s[i]*b0s[j] + b0s[i]*cs[j] + b0s[j]*cs[i] + cs[i]*cs[j])
+            # Optimized
+            r[i] = x1*(cs[i] - b0s[i]) + x2*(b0s[i] + cs[i])
     return out
 
 def PR_translated_d2epsilon_dninjs(b0s, cs, b, c, N, out=None):
@@ -1023,17 +1041,21 @@ def PR_translated_d2epsilon_dninjs(b0s, cs, b, c, N, out=None):
         out = [[0.0]*N for _ in range(N)] # numba: delete
         # out = np.zeros((N, N)) # numba: uncomment
     b0 = b + c
+    
+    v0 = -6.0*b0*b0 + 12.0*b0*c + 6.0*c*c
+    v1 = 4.0*b0 - 4.0*c
+    v2 = (-4.0*b0 - 4.0*c)
+    
+    
     for i in range(N):
         l = out[i]
+        b0i = b0s[i]
+        ci = cs[i]
+        x0 = v0 + b0i*v1 + ci*v2
+        x1 = v1 - 2.0*b0i + 2.0*ci
+        x2 = v2 + 2.0*b0i + 2.0*ci
         for j in range(N):
-            v = (-2.0*b0*(2.0*b0 - b0s[i] - b0s[j])
-            + c*(4.0*b0 - 2.0*b0s[i] -2.0*b0s[j] + 2.0*c - cs[i] - cs[j])
-            - 2.0*(b0 - b0s[i])*(b0 - b0s[j])
-            + (c - cs[i])*(2.0*b0 - 2.0*b0s[j] - cs[j] + c)
-            + (c - cs[j])*(2.0*b0 - 2.0*b0s[i] - cs[i] + c)
-            + (2.0*b0 + c)*(2.0*c - cs[i] - cs[j])
-            )
-            l[j] = v
+            l[j] = x0 + b0s[j]*x1 +  cs[j]*x2
     return out
 
 def PR_translated_ddelta_dns(b0s, cs, delta, N, out=None):
@@ -1055,16 +1077,19 @@ def SRK_translated_depsilon_dns(b0s, cs, b, c, N, out=None):
     if out is None:
         out = [0.0]*N
     b0 = b + c
+    x0 = -2.0*b0*c - 2.0*c*c
+    x1 = (b0 + 2.0*c)
     for i in range(N):
-        out[i] = (-b0*(c - cs[i]) - c*(b0 - b0s[i]) - 2.0*c*(c - cs[i]))
+        out[i] = x0 + b0s[i]*c + cs[i]*x1
     return out
 
 def SRK_translated_depsilon_dzs(b0s, cs, b, c, N, out=None):
     if out is None:
         out = [0.0]*N
     b0 = b + c
+    x0 = b0 + 2.0*c
     for i in range(N):
-        out[i] = b0s[i]*c + cs[i]*b0 + 2.0*cs[i]*c
+        out[i] = b0s[i]*c + cs[i]*x0
     return out
 
 def SRK_translated_d2epsilon_dzizjs(b0s, cs, b, c, N, out=None):
@@ -1074,8 +1099,11 @@ def SRK_translated_d2epsilon_dzizjs(b0s, cs, b, c, N, out=None):
     b0 = b + c
     for i in range(N):
         r = out[i]
+        x0 = 2.0*cs[i]
+        b0i = b0s[i]
+        c0i = cs[i]
         for j in range(N):
-            r[j] = 2.0*cs[i]*cs[j] + b0s[i]*cs[j] + b0s[j]*cs[i]
+            r[j] = cs[j]*(x0 + b0i) + b0s[j]*c0i
     return out
 
 
@@ -1085,11 +1113,13 @@ def SRK_translated_d2delta_dninjs(b0s, cs, b, c, delta, N, out=None):
         # out = np.zeros((N, N)) # numba: uncomment
 
     b0 = b + c
+    c_4 = 4.0*c
     for i in range(N):
         t = delta - b0s[i] - cs[i]
         r = out[i]
+        x0 = 2.0*(b0 - cs[i]) + c_4 - b0s[i]
         for j in range(N):
-            r[j] = (2.0*(b0 - cs[i] - cs[j]) + 4.0*c - b0s[i] - b0s[j])
+            r[j] =  x0 - b0s[j] - 2.0*cs[j]
     return out
 
 def SRK_translated_d3delta_dninjnks(b0s, cs, b, c, delta, N, out=None):
@@ -1155,17 +1185,22 @@ def PR_translated_depsilon_dzs(epsilon, c, b, b0s, cs, N, out=None):
     if out is None:
         out = [0.0]*N
     b0 = b + c
+    b0_2 = b0*2.0
+    x0 = (b0_2 + 2.0*c)
+    x1 = c*2.0 - b0_2
     for i in range(N):
-        out[i] = cs[i]*(2.0*b0 + c) + c*(2.0*b0s[i] + cs[i]) - 2.0*b0*b0s[i]
+        out[i] = cs[i]*x0 + x1*b0s[i]
     return out
 
 def PR_translated_depsilon_dns(epsilon, c, b, b0s, cs, N, out=None):
     if out is None:
         out = [0.0]*N
     b0 = b + c
+    x0 = 2.0*b0*b0 - 4.0*b0*c - 2.0*c*c 
+    x1 = -2.0*b0 + 2.0*c
+    x2 = (2.0*b0 + 2.0*c)
     for i in range(N):
-        out[i] = (2.0*b0*(b0 - b0s[i]) - c*(2.0*b0 - 2.0*b0s[i] + c - cs[i])
-                 - (c-cs[i])*(2.0*b0 + c))
+        out[i] = x0 + b0s[i]*x1 + cs[i]*x2
     return out
 
 def PR_translated_d2delta_dninjs(b0s, cs, b, c, delta, N, out=None):
@@ -1193,8 +1228,9 @@ def PR_translated_d3delta_dninjnks(b0s, cs, delta, N, out=None):
         for j in range(N):
             b0jcj = b0s[j] + cs[j]
             r = d3b_dnjnks[j]
+            v0 = 4.0*(b0ici + b0jcj) - delta_six
             for k in range(N):
-                r[k] = 4.0*(b0ici + b0jcj + b0s[k] + cs[k]) - delta_six
+                r[k] = v0 + 4.0*(b0s[k] + cs[k])
     return out
 
 

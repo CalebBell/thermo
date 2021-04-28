@@ -30,6 +30,7 @@ __all__ = [
 ]
 
 from fluids.numerics import trunc_exp
+from chemicals.utils import log
 from thermo.eos import eos_full_path_dict
 from thermo.eos_mix import eos_mix_full_path_dict
 from thermo.eos_mix_methods import (PR_lnphis_fastest, PR_translated_lnphis_fastest,
@@ -37,7 +38,7 @@ from thermo.eos_mix_methods import (PR_lnphis_fastest, PR_translated_lnphis_fast
                                     RK_lnphis_fastest,  VDW_lnphis_fastest)
 from thermo.activity import IdealSolution
 from thermo.wilson import Wilson
-from thermo.unifac import UNIFAC
+from thermo.unifac import UNIFAC, unifac_gammas_at_T
 from thermo.regular_solution import RegularSolution
 from thermo.uniquac import UNIQUAC
 
@@ -56,6 +57,17 @@ object_lookups = {
     **eos_mix_full_path_dict,
     **eos_full_path_dict
 }
+
+def activity_lnphis(zs, model, T, P, N, lnPsats, Poyntings, phis_sat, *activity_args):
+    if 20500 <= model <= 20599:
+        gammas = unifac_gammas_at_T(zs, N, *activity_args)
+    else:
+        raise ValueError("Model not implemented")
+    lnphis = [0.0]*N
+    P_inv = 1.0/P
+    for i in range(N):
+        lnphis[i] = log(gammas[i]*Poyntings[i]*phis_sat[i]*P_inv) + lnPsats[i]
+    return lnphis
 
 
 def lnphis_direct(zs, model, T, P, N, *args):
@@ -76,6 +88,8 @@ def lnphis_direct(zs, model, T, P, N, *args):
         for i in range(N):
             lnphis[i] = 0.0
         return lnphis
+    elif 20000 <= model <= 29999:
+        return activity_lnphis(zs, model, T, P, N, *args)
     raise ValueError("Model not implemented")
 
 def fugacities_direct(zs, model, T, P, N, *args):

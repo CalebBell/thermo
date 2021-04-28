@@ -215,7 +215,7 @@ class GibbsExcessLiquid(Phase):
                         'henry_data', 'Psat_extrpolation') + pure_references
 
     obj_references = ('GibbsExcessModel', 'eos_pure_instances')
-
+    
     def __init__(self, VaporPressures, VolumeLiquids=None,
                  HeatCapacityGases=None,
                  GibbsExcessModel=None,
@@ -417,6 +417,8 @@ class GibbsExcessLiquid(Phase):
         self.Hfs = Hfs
         self.Gfs = Gfs
         self.Sfs = Sfs
+        
+        self.model_id = 20000 + GibbsExcessModel.model_id
 
         if T is not None and P is not None and zs is not None:
             self.T = T
@@ -510,6 +512,7 @@ class GibbsExcessLiquid(Phase):
         new.has_henry_components = self.has_henry_components
 
         new.composition_independent = self.composition_independent
+        new.model_id = self.model_id
 
         new.use_Tait = self.use_Tait
         new._Tait_B_data = self._Tait_B_data
@@ -553,6 +556,13 @@ class GibbsExcessLiquid(Phase):
         except:
             pass
         return new
+    
+    def lnphis_args(self):
+        lnPsats = self.lnPsats()
+        Poyntings = self.Poyntings()
+        phis_sat = self.phis_sat()
+        activity_args = self.GibbsExcessModel.lnphis_args()
+        return (self.model_id, self.T, self.P, self.N, lnPsats, Poyntings, phis_sat) + activity_args
 
 
     def Henry_matrix(self):
