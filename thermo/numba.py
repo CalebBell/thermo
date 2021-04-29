@@ -98,6 +98,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                     'cm_flash_tol',
                     'chemgroups_to_matrix',
                     'load_unifac_ip',
+                    'FlashPureVLS',
                     ])
 
     __funcs.update(normal_fluids.numba.numbafied_fluids_functions.copy())
@@ -287,7 +288,9 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                  ]
     normal_fluids.numba.transform_lists_to_arrays(normal, to_change, __funcs, cache_blacklist=cache_blacklist)
 
-
+    __funcs['FlashPureVLS'] = thermo.FlashPureVLS
+    __funcs['FlashVL'] = thermo.FlashVL
+    __funcs['FlashVLN'] = thermo.FlashVLN
 
     for mod in new_mods:
         mod.__dict__.update(__funcs)

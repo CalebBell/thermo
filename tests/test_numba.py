@@ -373,6 +373,13 @@ def test_volume_numba_solvers():
     assert slns[2] == 0
     assert_close(slns[0], 2.5908397553496098e-05, rtol=1e-15)
     
+@mark_as_numba
+def test_numba_dri_air():
+    gas = thermo.numba.DryAirLemmon(T=300.0, P=1e5)
+    flasher = thermo.numba.flash.FlashPureVLS(constants=thermo.lemmon2000_constants, correlations=thermo.lemmon2000_correlations,
+                           gas=gas, liquids=[], solids=[])
+    res = flasher.flash(H=4000, P=1e6)
+    assert_close(res.T, 146.94641220863562)
     
 @mark_as_numba
 def test_lnphis_direct_works_at_all():

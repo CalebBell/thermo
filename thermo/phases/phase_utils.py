@@ -59,6 +59,8 @@ object_lookups = {
 }
 
 def activity_lnphis(zs, model, T, P, N, lnPsats, Poyntings, phis_sat, *activity_args):
+    # It appears that to make numba happy *activity_args will not work
+    # and all functions on this level will need to have a fixed number of arguments
     if 20500 <= model <= 20599:
         gammas = unifac_gammas_at_T(zs, N, *activity_args)
     else:
