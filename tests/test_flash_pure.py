@@ -1877,3 +1877,36 @@ def test_methanol_inconsistent_full_example():
     assert_close(res.P, 797342.226264512)
     assert_close(res.gas.rho_mass(), 8.416881310028323)
     assert_close(res.liquid0.rho_mass(), 568.7838890605196)
+
+
+def test_VF_SF_spec_bound_0_1():
+    from thermo.heat_capacity import POLING_POLY
+    
+    CpObj = HeatCapacityGas(CASRN='67-56-1')
+    CpObj.method = POLING_POLY
+    constants = ChemicalConstantsPackage(Tcs=[512.5], Pcs=[8084000.0], omegas=[0.559], MWs=[32.04186], CASs=['67-56-1'])
+    HeatCapacityGases = [CpObj]
+    
+    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+    liquid = CEOSLiquid(PRMIX, HeatCapacityGases=HeatCapacityGases, eos_kwargs=eos_kwargs)
+    gas = CEOSGas(PRMIX, HeatCapacityGases=HeatCapacityGases, eos_kwargs=eos_kwargs)
+    
+    flasher = FlashPureVLS(constants, correlations, gas=gas, liquids=[liquid], solids=[])
+    for VF in (-1, 2, 1.1, 1.0000000000001, -1e-200, 100, -1e-100, 1e200):
+        with pytest.raises(ValueError):
+            res = flasher.flash(T=400.0, VF=VF)
+        with pytest.raises(ValueError):
+            res = flasher.flash(P=1e5, VF=VF)
+        with pytest.raises(ValueError):
+            res = flasher.flash(T=400.0, SF=VF)
+        with pytest.raises(ValueError):
+            res = flasher.flash(P=1e5, SF=VF)
+        for s in ('H', 'S', 'G', 'U', 'A'):
+            with pytest.raises(ValueError):
+                kwargs = {s: 10.0, 'VF': VF}
+                res = flasher.flash(**kwargs)
+    
+            with pytest.raises(ValueError):
+                kwargs = {s: 10.0, 'SF': VF}
+                res = flasher.flash(**kwargs)
