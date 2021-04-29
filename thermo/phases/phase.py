@@ -42,31 +42,29 @@ from thermo import phases
 from .phase_utils import object_lookups
 
 class Phase(object):
-    '''
-    For basic functionality, a subclass should implement:
-
-    H, S, Cp
+    '''`Phase` is the base class for all phase objects in `thermo`. Each
+    sub-class implements a number of core properties; many other properties
+    can be calculated from them.
     
-    dP_dT
-    dP_dV
-    d2P_dT2
-    d2P_dV2
-    d2P_dTdV
-
-    Additional functionality is enabled by the methods:
-
-    dH_dP dS_dT dS_dP
-    d2H_dT2 d2H_dP2 d2S_dP2
-
-    dH_dT_V dH_dP_V dH_dV_T dH_dV_P
-    dS_dT_V dS_dP_V
-
-    d2H_dTdP d2H_dT2_V
-    d2P_dTdP d2P_dVdP d2P_dVdT_TP d2P_dT2_PV
-
-    Optional ones for speed:: Cv
-
-
+    Among those properties are `H`, `S`, `Cp`, `dP_dT`, `dP_dV`,
+    `d2P_dT2`, `d2P_dV2`, and `d2P_dTdV`.
+    
+    An additional set of properties that can be implemented and that enable 
+    more functionality are `dH_dP`, `dS_dT`, `dS_dP`, `d2H_dT2`, `d2H_dP2`,
+    `d2S_dP2`, `dH_dT_V`, `dH_dP_V`, `dH_dV_T`, `dH_dV_P`, `dS_dT_V`, 
+    `dS_dP_V`, `d2H_dTdP`, `d2H_dT2_V`, `d2P_dTdP`, `d2P_dVdP`, `d2P_dVdT_TP`, 
+    `d2P_dT2_PV`.
+    
+    Some models may re-implement properties which would normally be
+    calculated by this `Phase` base class because they have more explicit,
+    faster ways of calculating the property.
+    
+    When a phase object is the result of a Flash calculation, the resulting
+    phase objects have a reference to a 
+    :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>`
+    object and all of its properties can be accessed from from the resulting
+    phase objects as well.
+    
     '''
     INCOMPRESSIBLE_CONST = 1e30
     R = R
