@@ -65,6 +65,11 @@ class Phase(object):
     object and all of its properties can be accessed from from the resulting
     phase objects as well.
     
+    A :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>`
+    object can also be manually set to the attribute `constants` to enable 
+    access to those properties. This includes mass-based properties, which are
+    not accessible from Phase objects without a reference to the constants.
+    
     '''
     INCOMPRESSIBLE_CONST = 1e30
     R = R
