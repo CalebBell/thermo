@@ -90,6 +90,10 @@ of state.
              lnphis, __repr__
    :exclude-members: dH_dP_V, dH_dT_V, dH_dV_P, dH_dV_T, dS_dP_V, dS_dT, dS_dT_V, dlnphis_dP, dlnphis_dT
 
+`IAPWS95` is the base class for the IAPWS-95 formulation for water;
+`IAPWS95Gas` and `IAPWS95Liquid` are the gas and liquid sub-phases
+respectively.
+
 .. autoclass:: IAPWS95
    :show-inheritance:
    :members: T_MAX_FIXED, T_MIN_FIXED, mu, k
@@ -101,6 +105,14 @@ of state.
 .. autoclass:: IAPWS95Liquid
    :show-inheritance:
    :members: force_phase
+
+
+`DryAirLemmon` is an implementation of thermophysical properties of air by
+Lemmon (2000).
+
+.. autoclass:: DryAirLemmon
+   :show-inheritance:
+   :members: T_MAX_FIXED, T_MIN_FIXED, mu, k
 
 
 CoolProp Wrapper
