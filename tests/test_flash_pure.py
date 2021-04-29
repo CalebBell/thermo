@@ -1879,7 +1879,7 @@ def test_methanol_inconsistent_full_example():
     assert_close(res.liquid0.rho_mass(), 568.7838890605196)
 
 
-def test_VF_SF_spec_bound_0_1():
+def test_VF_SF_spec_bound_0_1_and_negative_TPV():
     from thermo.heat_capacity import POLING_POLY
     
     CpObj = HeatCapacityGas(CASRN='67-56-1')
@@ -1910,3 +1910,21 @@ def test_VF_SF_spec_bound_0_1():
             with pytest.raises(ValueError):
                 kwargs = {s: 10.0, 'SF': VF}
                 res = flasher.flash(**kwargs)
+                
+    with pytest.raises(ValueError):              
+        flasher.flash(T=300.0, V=-2)
+        
+    with pytest.raises(ValueError):              
+        flasher.flash(T=300.0, P=-2)
+        
+    with pytest.raises(ValueError):              
+        flasher.flash(T=300.0, V=-2)
+
+    with pytest.raises(ValueError):              
+        flasher.flash(T=300.0, V=0)
+        
+    with pytest.raises(ValueError):              
+        flasher.flash(T=300.0, P=0)
+        
+    with pytest.raises(ValueError):              
+        flasher.flash(T=300.0, V=0)

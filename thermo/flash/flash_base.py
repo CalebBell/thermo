@@ -223,10 +223,16 @@ class Flash(object):
         flash_specs = {'zs': zs}
         if T_spec:
             flash_specs['T'] = T
+            if T <= 0.0:
+                raise ValueError("Specified temperature (%s K) is unphysical" %(T,))
         if P_spec:
             flash_specs['P'] = P
+            if P <= 0.0:
+                raise ValueError("Specified pressure (%s Pa) is unphysical"%(P,))
         if V_spec:
             flash_specs['V'] = V
+            if V <= 0.0:
+                raise ValueError("Specified molar volume (%s m^3/mol) is unphysical"%(V,))
         if H_spec:
             flash_specs['H'] = H
         if S_spec:
