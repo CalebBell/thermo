@@ -166,6 +166,9 @@ class FlashVLN(FlashVL):
 
     K_COMPOSITION_INDEPENDENT_HACK = True
     skip_solids = True
+    
+    supports_VF_flash = True
+    supports_SF_flash = False
 
     def __init__(self, constants, correlations, liquids, gas, solids=None, settings=default_settings):
         self.constants = constants
@@ -180,9 +183,11 @@ class FlashVLN(FlashVL):
     def _finish_initialization(self):
         constants, correlations, settings = self.constants, self.correlations, self.settings
         liquids, gas = self.liquids, self.gas
-
+        
+        if gas is None:
+            raise ValueError("Gas phase is required in this model")
         self.liquid0 = liquids[0] if liquids else None
-        self.max_liquids = len(liquids)
+        self.liquid_count = self.max_liquids = len(liquids)
         self.max_phases = 1 + self.max_liquids if gas is not None else self.max_liquids
         self.phases = [gas] + liquids if gas is not None else liquids
 
@@ -225,6 +230,7 @@ class FlashVLN(FlashVL):
         self.aqueous_check = (self.SS_STAB_AQUEOUS_CHECK and '7732-18-5' in constants.CASs)
         self.stab = StabilityTester(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas,
                                     aqueous_check=self.aqueous_check, CASs=constants.CASs)
+
 
         try:
             self.water_index = constants.CASs.index(CAS_H2O)

@@ -291,6 +291,9 @@ class FlashPureVLS(Flash):
         self.liquid_count = len(liquids)
         self.liquid = liquids[0] if len(liquids) else None
         self.solid_count = len(solids)
+        
+        self.supports_VF_flash = self.gas_count != 0 and self.liquid_count != 0
+        self.supports_SF_flash = (self.gas_count != 0 or self.liquid_count != 0) and self.solid_count != 0
 
         self.skip_solids = not bool(solids)
 

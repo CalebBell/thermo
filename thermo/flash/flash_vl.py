@@ -304,6 +304,9 @@ class FlashVL(Flash):
     max_liquids = 1
     max_phases = 2
 
+    supports_VF_flash = True
+    supports_SF_flash = False
+
     def __init__(self, constants, correlations, gas, liquid, settings=default_settings):
         self.constants = constants
         self.correlations = correlations
@@ -326,6 +329,7 @@ class FlashVL(Flash):
 
         self.K_composition_independent = gas.composition_independent and liquid.composition_independent
         self.ideal_gas_basis = gas.ideal_gas_basis and liquid.ideal_gas_basis
+
 
         if gas is None:
             raise ValueError("Gas model is required")
@@ -363,6 +367,7 @@ class FlashVL(Flash):
         self.unique_phases = [gas] + unique_liquids
         self.unique_phase_count = 1 + self.unique_liquid_count
         self.unique_liquid_hashes = unique_liquid_hashes
+
 
     def flash_TVF(self, T, VF, zs, solution=None, hot_start=None):
         return self.flash_TVF_2P(T, VF, zs, self.liquid, self.gas, solution=solution, hot_start=hot_start)

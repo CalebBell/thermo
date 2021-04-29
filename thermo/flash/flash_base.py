@@ -248,10 +248,14 @@ class Flash(object):
             flash_specs['VF'] = VF
             if VF < 0.0 or VF > 1.0:
                 raise ValueError("Specified vapor fraction (%s) is not between 0 and 1"%(VF,))
+            elif not self.supports_VF_flash:
+                raise ValueError("Cannot flash with a vapor fraction spec without at least one gas and liquid phase defined")
         if SF_spec:
             flash_specs['SF'] = SF
             if SF < 0.0 or SF > 1.0:
                 raise ValueError("Specified solid fraction (%s) is not between 0 and 1"%(VF,))
+            elif not self.supports_SF_flash:
+                raise ValueError("Cannot flash with a solid fraction spec without at least one gas and liquid phase defined, as well as a solid phase")
 
         if ((T_spec and (P_spec or V_spec)) or (P_spec and V_spec)):
             g, ls, ss, betas, flash_convergence = self.flash_TPV(T=T, P=P, V=V, zs=zs, solution=solution, hot_start=hot_start)

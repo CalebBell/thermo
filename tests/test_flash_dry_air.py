@@ -112,6 +112,12 @@ def test_lemmon2000_case_issues():
     res = flasher.flash(V=V, H=H)
     assert_close(PT.T, res.T, rtol=1e-10)
     
+    # Check we can't do a vapor fraction flash
+    with pytest.raises(ValueError):
+        flasher.flash(T=400, SF=.5)
+    with pytest.raises(ValueError):
+        flasher.flash(T=400, VF=.5)
+    
     
     PT = flasher.flash(T=2000.0000000000002, P=3827.4944785162643)
     V = PT.V()
