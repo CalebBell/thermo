@@ -36,6 +36,7 @@ The following phases can represent both a liquid and a vapor state. Their class 
 The following phase objects can only represent a gas phase:
 
 * Ideal-gas law - :obj:`IdealGas <thermo.phases.IdealGas>`
+* High-accuracy properties of dry air - :obj:`DryAirLemmon <thermo.phases.DryAirLemmon>`
 
 The following phase objects can only represent a liquid phase:
 
