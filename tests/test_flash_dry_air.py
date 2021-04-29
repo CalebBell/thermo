@@ -117,6 +117,11 @@ def test_lemmon2000_case_issues():
         flasher.flash(T=400, SF=.5)
     with pytest.raises(ValueError):
         flasher.flash(T=400, VF=.5)
+        
+    # Check that the minimum temperature of the phases is respected
+    with pytest.raises(ValueError):
+        flasher.flash(T=132.6312, P=1e3)
+
     
     
     PT = flasher.flash(T=2000.0000000000002, P=3827.4944785162643)

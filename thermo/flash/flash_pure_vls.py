@@ -385,6 +385,7 @@ class FlashPureVLS(Flash):
             self.unique_phases += solids
         self.unique_phase_count = (1 if gas is not None else 0) + self.unique_liquid_count + len(solids)
         self.unique_liquid_hashes = unique_liquid_hashes
+        self.T_MIN_FLASH = max(p.T_MIN_FLASH for p in self.phases)
 
 
 

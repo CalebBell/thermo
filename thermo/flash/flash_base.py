@@ -75,7 +75,7 @@ from thermo.phase_identification import identify_sort_phases
 from thermo.utils import has_matplotlib
 from fluids.numerics import logspace, linspace, numpy as np
 from chemicals.utils import log10, floor
-from .. import phases
+from thermo import phases
 
 spec_to_iter_vars = {
      (True, False, False, True, False, False) : ('T', 'H', 'P'), # Iterating on P is slow, derivatives look OK
@@ -223,8 +223,11 @@ class Flash(object):
         flash_specs = {'zs': zs}
         if T_spec:
             flash_specs['T'] = T
-            if T <= 0.0:
-                raise ValueError("Specified temperature (%s K) is unphysical" %(T,))
+            if T < self.T_MIN_FLASH:
+                raise ValueError("Specified temperature (%s K) is below the minimum temeprature (%s K) "
+                                 "supported by the provided phases" %(T, self.T_MIN_FLASH))
+            # if T <= 0.0:
+            #     raise ValueError("Specified temperature (%s K) is unphysical" %(T,))
         if P_spec:
             flash_specs['P'] = P
             if P <= 0.0:

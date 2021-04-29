@@ -92,6 +92,8 @@ class Phase(object):
 
     V_MIN_FIXED = 1e-9 # m^3/mol
     V_MAX_FIXED = 1e9 # m^#/mol
+    
+    T_MIN_FLASH = 1e-300
 
     force_phase = None
     '''Attribute which can be set to a global Phase object to force the phases

@@ -46,7 +46,7 @@ class DryAirLemmon(HelmholtzEOS):
     cmps = [0]
     N = 1
     T_MAX_FIXED = 2000.0
-    T_MIN_FIXED = 132.6313 # For now gas only.
+    T_MIN_FLASH = T_MIN_FIXED = 132.6313 # For now gas only.
 
     _Ar_func = staticmethod(air.lemmon2000_air_Ar)
 

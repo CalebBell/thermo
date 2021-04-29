@@ -232,6 +232,7 @@ class FlashVLN(FlashVL):
                                     aqueous_check=self.aqueous_check, CASs=constants.CASs)
 
 
+        self.T_MIN_FLASH = max(p.T_MIN_FLASH for p in self.phases)
         try:
             self.water_index = constants.CASs.index(CAS_H2O)
         except ValueError:
