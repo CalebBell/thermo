@@ -43,6 +43,7 @@ class IAPWS95(HelmholtzEOS):
     rho_red_inv = rhoc_inv
 
     T_red = Tc
+    T_fixed_transport = 1.5*T_red
 
     _MW_kg = _MW*1e-3
     R = _MW_kg*iapws.iapws95_R # This is just the gas constant 8.314... but matching iapws to their decimals
@@ -157,7 +158,7 @@ class IAPWS95(HelmholtzEOS):
         drho_mass_dP = self.drho_mass_dP()
 
         # TODO: curve fit drho_dP_Tr better than IAPWS did (mpmath)
-        drho_dP_Tr = self.to(T=self.Tc*1.5, V=self._V, zs=[1]).drho_mass_dP()
+        drho_dP_Tr = self.to(T=self.T_fixed_transport, V=self._V, zs=self.zs).drho_mass_dP()
         self._mu = mu_IAPWS(T=self.T, rho=self._rho_mass, drho_dP=drho_mass_dP,
                         drho_dP_Tr=drho_dP_Tr)
 

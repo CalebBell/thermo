@@ -2737,6 +2737,22 @@ def test_DryAirLemmon():
     assert_close(air.dkappa_dT(), -2.2997479495042184e-11, rtol=1e-13)
 
 
+    # Thermal conductivity calls
+    gas = DryAirLemmon(T=100.0, P=1e5)
+    
+    g0 = gas.to(T=100, V=1/(28000), zs=[1.0])
+    assert_close(g0.k()*1e3, 119.221, atol=.0005)
+    
+    g0 = gas.to(T=200, V=1/(10000), zs=[1.0])
+    assert_close(g0.k()*1e3, 35.3185, atol=.00005)
+    
+    g0 = gas.to(T=300, V=1/(5000.0), zs=[1.0])
+    assert_close(g0.k()*1e3, 32.6062, atol=.00005)
+    
+    g0 = gas.to(T=132.64, V=1/(10400.0), zs=[1.0])
+    assert_close(g0.k()*1e3, 75.6231, atol=.00005)
+
+
 
 def test_lnphis_at_zs_eos_mix():
     # Acetone, chloroform, methanol

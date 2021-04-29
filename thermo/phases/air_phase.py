@@ -24,6 +24,7 @@ SOFTWARE.
 __all__ = ['DryAirLemmon', 'HumidAirRP1485']
 
 from chemicals.viscosity import mu_air_lemmon
+from chemicals.thermal_conductivity import k_air_lemmon
 from .helmholtz_eos import HelmholtzEOS
 from .virial_phase import VirialGas
 from .iapws_phase import IAPWS95
@@ -47,6 +48,7 @@ class DryAirLemmon(HelmholtzEOS):
     N = 1
     T_MAX_FIXED = 2000.0
     T_MIN_FLASH = T_MIN_FIXED = 132.6313 # For now gas only.
+    T_fixed_transport = 265.262
 
     _Ar_func = staticmethod(air.lemmon2000_air_Ar)
 
@@ -125,14 +127,47 @@ class DryAirLemmon(HelmholtzEOS):
         new.d3A0_dtau3 = air.lemmon2000_air_d3A0_dtau3(tau, delta)
         return new
 
-
     def mu(self):
+        r'''Calculate and return the viscosity of air according to the Lemmon
+        and Jacobsen (2003) .
+        For details, see :obj:`chemicals.viscosity.mu_air_lemmon`.
+
+        Returns
+        -------
+        mu : float
+            Viscosity of air, [Pa*s]
+        '''
         try:
             return self._mu
         except:
             pass
         self._mu = mu = mu_air_lemmon(self.T, self._rho)
         return mu
+
+    def k(self):
+        r'''Calculate and return the thermal conductivity of air according to 
+        Lemmon and Jacobsen (2004)
+        For details, see :obj:`chemicals.thermal_conductivity.k_air_lemmon`.
+
+        Returns
+        -------
+        k : float
+            Thermal conductivity of air, [W/m/K]
+        '''
+        try:
+            return self._k
+        except:
+            pass
+        # We require viscosity to calculate thermal conductivity
+        self.mu()
+        
+        # This call is very expensive; this could be curve-fit as it is a 1D function
+        drho_dP_Tr = self.to(T=self.T_fixed_transport, V=self._V, zs=self.zs).drho_dP()
+
+        self._k = k = k_air_lemmon(T=self.T, rho=self._rho, Cp=self.Cp(), Cv=self.Cv(),
+                       mu=self._mu, drho_dP=self.drho_dP(), drho_dP_Tr=drho_dP_Tr)
+        return k
+
 
 
 class HumidAirRP1485(VirialGas):
