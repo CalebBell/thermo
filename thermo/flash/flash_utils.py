@@ -62,7 +62,7 @@ __all__ = [
 
 from fluids.constants import R
 from fluids.numerics import (UnconvergedError, trunc_exp, newton,
-                             brenth, secant, 
+                             brenth, secant, translate_bound_f_jac,
                              numpy as np, assert_close, assert_close1d,
                              damping_maintain_sign, oscillation_checking_wrapper,
                              OscillationError, NotBoundedError, jacobian,
@@ -1683,7 +1683,8 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
                         iter_var='T', fixed_var='P', V_over_F=1, # 1 = dew, 0 = bubble
                         maxiter=200, xtol=1E-10, comp_guess=None,
                         max_step_damping=1e5, damping=1.0,
-                        trivial_solution_tol=1e-4, debug=False):
+                        trivial_solution_tol=1e-4, debug=False,
+                        method='newton', opt_kwargs=None):
     V = None
     N = len(zs)
     cmps = range(N)
@@ -1751,9 +1752,28 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
     damping = 1.0
     guesses = list(comp_guess)
     guesses.append(guess)
-    comp_val, iterations = newton_system(to_solve_comp, guesses, jac=True,
-                                         xtol=xtol, damping=damping,
-                                         damping_func=damping_maintain_sign)
+    if method == 'newton':
+        comp_val, iterations = newton_system(to_solve_comp, guesses, jac=True,
+                                             xtol=xtol, damping=damping,
+                                             damping_func=damping_maintain_sign)
+    else:
+        if opt_kwargs is None:
+            opt_kwargs = {}
+        # def fun_and_jac(x):
+        #     x, j = to_solve_comp(x.tolist())
+        #     return np.array(x), np.array(j)
+        
+        low = [.0]*N
+        low.append(1.0) # guess at minimum pressure
+        high = [1.0]*N
+        high.append(1e10) # guess at maximum pressure
+        
+        f_j, into, outof = translate_bound_f_jac(to_solve_comp, jac=True, low=low, high=high, as_np=True)
+
+        ans = root(f_j, np.array(into(guesses)), jac=True, method=method, tol=xtol, **opt_kwargs)
+        comp_val = outof(ans['x']).tolist()
+        iterations = ans['nfev']
+
     iter_val = comp_val[-1]
     comp = comp_val[:-1]
 

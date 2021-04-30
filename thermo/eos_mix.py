@@ -890,15 +890,42 @@ class GCEOSMIX(GCEOS):
         return a
 
     def Psat(self, T, polish=False):
+        r'''Generic method to calculate vapor pressure of a pure-component
+        equation of state for a specified `T`. An explicit solution is used
+        unless `polish` is True. 
+        
+        The result of this function has no physical meaning for multicomponent
+        mixtures, and does not represent either a dew point or a bubble point!
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        polish : bool, optional
+            Whether to attempt to use a numerical solver to make the solution
+            more precise or not
+
+        Returns
+        -------
+        Psat : float
+            Vapor pressure using the pure-component approach, [Pa]
+
+        Notes
+        -----
+        For multicomponent mixtures this may serve as a useful guess
+        for the dew and the bubble pressure.
+
+        '''
         if self.N == 1:
             Tc, Pc, omega, a = self.Tcs[0], self.Pcs[0], self.omegas[0], self.ais[0]
         else:
             zs = self.zs
             Tcs, Pcs, omegas, ais = self.Tcs, self.Pcs, self.omegas, self.ais
-            Tc, Pc, a = 0.0, 0.0, 0.0
+            Tc, Pc, omega, a = 0.0, 0.0, 0.0, 0.0
             for i in range(self.N):
                 Tc += Tcs[i]*zs[i]
                 Pc += Pcs[i]*zs[i]
+                omega += omegas[i]*zs[i]
                 a += ais[i]*zs[i]
         self.Tc, self.Pc, self.omega = Tc, Pc, omega
         self.a = a

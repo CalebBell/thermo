@@ -4514,7 +4514,15 @@ def test_missing_alphas_working():
     new = base.to_TP_zs_fast(320.5, 1e5, base.zs, full_alphas=False)
     new.to_TP_zs_fast(320.5, 1e5, base.zs)
 
-
+def test_eos_mix_Psat():
+    # By design neither the fugacities, mixture or otherwise are equal
+    # The number is simply a number.
+    zs = [.3, .7]
+    eos = PRMIX(T=166.575, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=zs, kijs=[[0,0],[0,0]])
+    Psat = eos.Psat(eos.T)
+    # eos_new = eos.to(T=eos.T, P=Psat, zs=zs)
+    # eos_new.fugacity_l/eos_new.fugacity_g
+    
 def test_IGMIX_numpy_not_modified_by_serialization():
     eos = IGMIX(T=115, P=1E6, Tcs=np.array([126.1, 190.6]), Pcs=np.array([33.94E5, 46.04E5]), omegas=np.array([0.04, .008]), zs=np.array([0.5, 0.5]))
     hash1 = hash(eos)

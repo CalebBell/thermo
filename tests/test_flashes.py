@@ -230,6 +230,41 @@ def test_dew_bubble_newton_zs():
     assert_allclose(comp, [0.5781248395738718, 0.3717955398333062, 0.05007962059282194])
     assert_allclose(iter_val, 390.91409227801205)
 
+def test_dew_bubble_newton_zs_other_solvers():
+    T, P = 506.5, 4118858.867178611
+    zs = [.3, .5, .2]
+    comp_guess = [0.3867045231954888, 0.47096784177875883, 0.14232763502575238]
+    eos_kwargs = {'Pcs': [22048320.0, 3025000.0, 4108000.0], 'Tcs': [647.14, 507.6, 591.75], 'omegas': [0.344, 0.2975, 0.257]}
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                         HeatCapacityGas(poly_fit=(200.0, 1000.0, [1.3740654453881647e-21, -8.344496203280677e-18, 2.2354782954548568e-14, -3.4659555330048226e-11, 3.410703030634579e-08, -2.1693611029230923e-05, 0.008373280796376588, -1.356180511425385, 175.67091124888998])),
+                         HeatCapacityGas(poly_fit=(50.0, 1000.0, [-9.48396765770823e-21, 4.444060985512694e-17, -8.628480671647472e-14, 8.883982004570444e-11, -5.0893293251198045e-08, 1.4947108372371731e-05, -0.0015271248410402886, 0.19186172941013854, 30.797883940134057]))]
+    
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    
+    # TVF-0
+    TVF0_lm = dew_bubble_newton_zs(P, T, zs, liq, gas, 
+                                comp_guess=comp_guess,
+                               iter_var='P', fixed_var='T', V_over_F=0, method='lm',
+                               maxiter=200, xtol=1E-9, debug=False)
+    TVF0_newton = dew_bubble_newton_zs(P, T, zs, liq, gas, 
+                                comp_guess=comp_guess,
+                               iter_var='P', fixed_var='T', V_over_F=0, method='newton',
+                               maxiter=200, xtol=1E-9, debug=False)
+    
+    TVF0_hybr = dew_bubble_newton_zs(P, T, zs, liq, gas, 
+                                comp_guess=comp_guess,
+                               iter_var='P', fixed_var='T', V_over_F=0, method='hybr',
+                               maxiter=200, xtol=1E-9, debug=False)
+    y_expect = [0.4007600877654008, 0.4650053034175482, 0.13423460881705107]
+    assert_close(TVF0_lm[0], TVF0_newton[0])
+    assert_close(TVF0_hybr[0], TVF0_newton[0])
+    assert_close(TVF0_newton[0], 3915539.2405)
+    assert_close1d(y_expect, TVF0_newton[1])
+    assert_close1d(y_expect, TVF0_hybr[1])
+    assert_close1d(y_expect, TVF0_newton[1])
+
+
 
 def test_dew_bubble_Michelsen_Mollerup_pure():
     # Only goal here is to check the trivial composition test does not

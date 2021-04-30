@@ -814,8 +814,9 @@ def test_Psat_plot(fluid, eos):
 @pytest.mark.parametric
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_list)
-#@pytest.mark.parametrize("P_range", ['high', 'low'])
-@pytest.mark.parametrize("P_range", ['high'])
+# @pytest.mark.parametrize("P_range", ['high', 'low'])
+# @pytest.mark.parametrize("P_range", ['high'])
+@pytest.mark.parametrize("P_range", ['low'])
 def test_V_error_plot(fluid, eos, P_range):
     path = os.path.join(pure_surfaces_dir, fluid, "V_error")
     if not os.path.exists(path):
