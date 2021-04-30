@@ -751,6 +751,8 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
                 or (j > 10 and rel_err < 1e-12)):
                 # Conditional check probably not worth it
                 V = V_new
+                if V < 0.0:
+                    j = 49
                 break
             fval_oldold, fval_old = fval_old, fval
             V = V_new
