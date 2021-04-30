@@ -775,7 +775,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
             main1 = a_alpha/(V*V + delta*V + epsilon)
             # In these checks, atetmpt to evaluate if we are highly ideal
             # and there is only one solution
-            if (main0 + main1 == main0) or ((main0 - main1) != 0.0 and abs(1.0-(main0 + main1)/(main0 - main1)) < 1e-14):
+            if (main0 + main1 == main0) or ((main0 - main1) != 0.0 and abs(1.0-(main0 + main1)/(main0 - main1)) < 1e-12):
                 return (V0, 0.0, 0.0)
 
 
