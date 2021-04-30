@@ -787,45 +787,46 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
             # Fixed a lot of really bad points in the plots with these.
             # Article suggests they are not needed, but 1 is better than 11 iterations!
             # These loops do need to be converted into a tight conditional functional test
-            
-            V1 = volume_solution_polish(V1, T, P, b, delta, epsilon, a_alpha)
-            # V = V1
-            # x0_inv = 1.0/(V - b)
-            # t90 = V*(V + delta) + epsilon
-            # if t90 != 0.0:
-            #     x1_inv = 1.0/(V*(V + delta) + epsilon)
-            #     x2 = V + V + delta
-            #     fval = -P + RT*x0_inv - a_alpha*x1_inv
-            #     x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
-            #     x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
-            #     x3 = a_alpha*x1_inv2
-            #     fder = x2*x3 - RT*x0_inv2
-            #     fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
-
-            #     if fder != 0.0:
-            #         fder_inv = 1.0/fder
-            #         step = fval*fder_inv
-            #         V1 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
-
-            # Take a step with V2
-            V2 = volume_solution_polish(V2, T, P, b, delta, epsilon, a_alpha)
-            # V = V2
-            # x0_inv = 1.0/(V - b)
-            # t90 = V*(V + delta) + epsilon
-            # if t90 != 0.0:
-            #     x1_inv = 1.0/(t90)
-            #     x2 = V + V + delta
-            #     fval = -P + RT*x0_inv - a_alpha*x1_inv
-            #     x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
-            #     x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
-            #     x3 = a_alpha*x1_inv2
-            #     fder = x2*x3 - RT*x0_inv2
-            #     fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
-
-            #     if fder != 0.0:
-            #         fder_inv = 1.0/fder
-            #         step = fval*fder_inv
-            #         V2 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
+            if P < 1e-2:
+                V1 = volume_solution_polish(V1, T, P, b, delta, epsilon, a_alpha)
+                V2 = volume_solution_polish(V2, T, P, b, delta, epsilon, a_alpha)
+            else:
+                V = V1
+                x0_inv = 1.0/(V - b)
+                t90 = V*(V + delta) + epsilon
+                if t90 != 0.0:
+                    x1_inv = 1.0/(V*(V + delta) + epsilon)
+                    x2 = V + V + delta
+                    fval = -P + RT*x0_inv - a_alpha*x1_inv
+                    x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
+                    x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
+                    x3 = a_alpha*x1_inv2
+                    fder = x2*x3 - RT*x0_inv2
+                    fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
+    
+                    if fder != 0.0:
+                        fder_inv = 1.0/fder
+                        step = fval*fder_inv
+                        V1 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
+    
+                # Take a step with V2
+                V = V2
+                x0_inv = 1.0/(V - b)
+                t90 = V*(V + delta) + epsilon
+                if t90 != 0.0:
+                    x1_inv = 1.0/(t90)
+                    x2 = V + V + delta
+                    fval = -P + RT*x0_inv - a_alpha*x1_inv
+                    x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
+                    x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
+                    x3 = a_alpha*x1_inv2
+                    fder = x2*x3 - RT*x0_inv2
+                    fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
+    
+                    if fder != 0.0:
+                        fder_inv = 1.0/fder
+                        step = fval*fder_inv
+                        V2 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
             return (V0, V1, V2)
     return (0.0, 0.0, 0.0)
 
