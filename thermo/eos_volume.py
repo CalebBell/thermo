@@ -78,7 +78,8 @@ __all__ = ['volume_solutions_mpmath', 'volume_solutions_mpmath_float',
            'volume_solutions_NR', 'volume_solutions_NR_low_P', 'volume_solutions_halley',
            'volume_solutions_fast', 'volume_solutions_Cardano', 'volume_solutions_a1',
            'volume_solutions_a2', 'volume_solutions_numpy', 'volume_solutions_ideal',
-           'volume_solutions_doubledouble_float']
+           'volume_solutions_doubledouble_float',
+           'volume_solution_polish']
 
 
 from cmath import sqrt as csqrt
@@ -576,6 +577,49 @@ def volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha):
 #        if failed:
     return Vs
 
+def volume_solution_polish(V, T, P, b, delta, epsilon, a_alpha):
+    RT = R*T
+    RT_2 = RT + RT
+    a_alpha_2 = a_alpha + a_alpha
+    P_inv = 1.0/P
+
+    fval_oldold = 1.0
+    fval_old = 0.0
+    for j in range(50):
+#             print(j, V)
+        x0_inv = 1.0/(V - b)
+        x1_inv_den = (V*(V + delta) + epsilon)
+        if x1_inv_den == 0.0:
+            break
+        x1_inv = 1.0/x1_inv_den
+        x2 = V + V + delta
+        fval = RT*x0_inv - P - a_alpha*x1_inv
+        x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
+        x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
+        x3 = a_alpha*x1_inv2
+        fder = x2*x3 - RT*x0_inv2
+        fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
+        if fder == 0.0:
+            break
+        fder_inv = 1.0/fder
+        step = fval*fder_inv
+        rel_err = abs(fval*P_inv)
+#                print(fval, rel_err, step, j, i, V)
+        step_den = 1.0 - 0.5*step*fder2*fder_inv
+        if step_den == 0.0:
+#                    if fval == 0.0:
+#                        break # got a perfect answer
+            continue
+        V = V - step/step_den
+
+        if (rel_err < 3e-15 or fval_old == fval or fval == fval_oldold
+            or (j > 10 and rel_err < 1e-12)):
+            # Conditional check probably not worth it
+            break
+        fval_oldold, fval_old = fval_old, fval
+    return V
+
+
 def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
     r'''Halley's method based solver for cubic EOS volumes based on the idea
     of initializing from a single liquid-like guess which is solved precisely,
@@ -700,15 +744,18 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
 #                    if fval == 0.0:
 #                        break # got a perfect answer
                 continue
-            V = V - step/step_den
+            step = step/step_den
+            V_old, V_new = V, V - step
 
-            if (rel_err < 3e-15 or V == Vi or fval_old == fval or fval == fval_oldold
+            if (abs(1.0 - V_new/V_old) < 3e-15 or V_new == Vi or fval_old == fval or fval == fval_oldold
                 or (j > 10 and rel_err < 1e-12)):
                 # Conditional check probably not worth it
+                V = V_new
                 break
             fval_oldold, fval_old = fval_old, fval
+            V = V_new
 
-#         if i == 0:
+        #         if i == 0:
 #             V0 = V
 #         elif i == 1:
 #             V1 = V
@@ -737,42 +784,46 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
 
             # Fixed a lot of really bad points in the plots with these.
             # Article suggests they are not needed, but 1 is better than 11 iterations!
-            V = V1
-            x0_inv = 1.0/(V - b)
-            t90 = V*(V + delta) + epsilon
-            if t90 != 0.0:
-                x1_inv = 1.0/(V*(V + delta) + epsilon)
-                x2 = V + V + delta
-                fval = -P + RT*x0_inv - a_alpha*x1_inv
-                x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
-                x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
-                x3 = a_alpha*x1_inv2
-                fder = x2*x3 - RT*x0_inv2
-                fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
+            # These loops do need to be converted into a tight conditional functional test
+            
+            V1 = volume_solution_polish(V1, T, P, b, delta, epsilon, a_alpha)
+            # V = V1
+            # x0_inv = 1.0/(V - b)
+            # t90 = V*(V + delta) + epsilon
+            # if t90 != 0.0:
+            #     x1_inv = 1.0/(V*(V + delta) + epsilon)
+            #     x2 = V + V + delta
+            #     fval = -P + RT*x0_inv - a_alpha*x1_inv
+            #     x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
+            #     x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
+            #     x3 = a_alpha*x1_inv2
+            #     fder = x2*x3 - RT*x0_inv2
+            #     fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
 
-                if fder != 0.0:
-                    fder_inv = 1.0/fder
-                    step = fval*fder_inv
-                    V1 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
+            #     if fder != 0.0:
+            #         fder_inv = 1.0/fder
+            #         step = fval*fder_inv
+            #         V1 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
 
             # Take a step with V2
-            V = V2
-            x0_inv = 1.0/(V - b)
-            t90 = V*(V + delta) + epsilon
-            if t90 != 0.0:
-                x1_inv = 1.0/(t90)
-                x2 = V + V + delta
-                fval = -P + RT*x0_inv - a_alpha*x1_inv
-                x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
-                x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
-                x3 = a_alpha*x1_inv2
-                fder = x2*x3 - RT*x0_inv2
-                fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
+            V2 = volume_solution_polish(V2, T, P, b, delta, epsilon, a_alpha)
+            # V = V2
+            # x0_inv = 1.0/(V - b)
+            # t90 = V*(V + delta) + epsilon
+            # if t90 != 0.0:
+            #     x1_inv = 1.0/(t90)
+            #     x2 = V + V + delta
+            #     fval = -P + RT*x0_inv - a_alpha*x1_inv
+            #     x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
+            #     x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
+            #     x3 = a_alpha*x1_inv2
+            #     fder = x2*x3 - RT*x0_inv2
+            #     fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
 
-                if fder != 0.0:
-                    fder_inv = 1.0/fder
-                    step = fval*fder_inv
-                    V2 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
+            #     if fder != 0.0:
+            #         fder_inv = 1.0/fder
+            #         step = fval*fder_inv
+            #         V2 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
             return (V0, V1, V2)
     return (0.0, 0.0, 0.0)
 
