@@ -2950,6 +2950,7 @@ class GCEOS(object):
                 # not existing
                 assert P > 0.0
                 e = self.to_TP(T, P)
+                # print(e.volume_error(), e)
                 try:
                     fugacity_l = e.fugacity_l
                 except AttributeError as err:
@@ -3002,6 +3003,7 @@ class GCEOS(object):
             if not converged:
                 def to_solve_bisect(P):
                     e = self.to_TP(T, P)
+                    # print(e.volume_error(), e)
                     try:
                         fugacity_l = e.fugacity_l
                     except AttributeError as err:

@@ -788,14 +788,17 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
             # Article suggests they are not needed, but 1 is better than 11 iterations!
             # These loops do need to be converted into a tight conditional functional test
             if P < 1e-2:
-                V1 = volume_solution_polish(V1, T, P, b, delta, epsilon, a_alpha)
+                if x1 != 1.0:
+                    # we are so ideal, and we already have the liquid root - and the newton iteration overflows!
+                    # so we don't need to polish it if x1 is exatly 1.
+                    V1 = volume_solution_polish(V1, T, P, b, delta, epsilon, a_alpha)
                 V2 = volume_solution_polish(V2, T, P, b, delta, epsilon, a_alpha)
             else:
                 V = V1
-                x0_inv = 1.0/(V - b)
                 t90 = V*(V + delta) + epsilon
                 if t90 != 0.0:
-                    x1_inv = 1.0/(V*(V + delta) + epsilon)
+                    x0_inv = 1.0/(V - b)
+                    x1_inv = 1.0/t90
                     x2 = V + V + delta
                     fval = -P + RT*x0_inv - a_alpha*x1_inv
                     x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
@@ -811,9 +814,9 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
     
                 # Take a step with V2
                 V = V2
-                x0_inv = 1.0/(V - b)
                 t90 = V*(V + delta) + epsilon
                 if t90 != 0.0:
+                    x0_inv = 1.0/(V - b)
                     x1_inv = 1.0/(t90)
                     x2 = V + V + delta
                     fval = -P + RT*x0_inv - a_alpha*x1_inv
@@ -1449,7 +1452,7 @@ def high_alpha_one_root(T, P, b, delta, epsilon, a_alpha):
     g = ((2.0*(bb*b) * a_inv2*a_inv) - (9.0*b*c)*(a_inv2) + (27.0*d*a_inv))*one_27
     h = (0.25*(g*g) + (f*f*f)*one_27)
 
-    if h < 200.0:
+    if h < 200.0 or abs(g) > 1e152:
         return 0.0
 
     root_h = sqrt(h)
