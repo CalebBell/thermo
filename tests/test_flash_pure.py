@@ -925,7 +925,7 @@ def test_V_error_plot(fluid, eos, P_range):
 @pytest.mark.slow
 @pytest.mark.parametric
 @pytest.mark.parametrize("fluid", pure_fluids)
-def test_PH_plot_ideal_Poy(fluid):
+def test_P_H_plot_ideal_Poy(fluid):
     '''
     '''
     if fluid == 'water':

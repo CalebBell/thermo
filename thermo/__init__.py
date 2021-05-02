@@ -241,7 +241,7 @@ try:
 except:
     thermo_dir = ''
 
-__version__ = '0.2.4'
+__version__ = '0.2.5'
 
 
 def complete_lazy_loading():

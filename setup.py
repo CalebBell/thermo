@@ -55,7 +55,7 @@ setup(
   name = 'thermo',
   packages = ['thermo'],
   license='MIT',
-  version = '0.2.4',
+  version = '0.2.5',
   description = 'Chemical properties component of Chemical Engineering Design Library (ChEDL)',
   author = 'Caleb Bell',
   install_requires=['fluids>=1.0.5', 'scipy', 'pandas', 'chemicals>=1.0.7'],
@@ -66,7 +66,7 @@ setup(
   platforms=["Windows", "Linux", "Mac OS", "Unix"],
   author_email = 'Caleb.Andrew.Bell@gmail.com',
   url = 'https://github.com/CalebBell/thermo',
-  download_url = 'https://github.com/CalebBell/thermo/tarball/0.2.4',
+  download_url = 'https://github.com/CalebBell/thermo/tarball/0.2.5',
   keywords = ['chemical engineering', 'chemistry', 'mechanical engineering',
   'thermodynamics', 'databases', 'cheminformatics', 'engineering','viscosity',
   'density', 'heat capacity', 'thermal conductivity', 'surface tension',
@@ -78,6 +78,7 @@ setup(
   'Law/*', 'Misc/*', 'Phase Change/*', 'Reactions/*', 'Safety/*',
   'Solubility/*', 'Interface/*', 'Triple Properties/*',
   'Thermal Conductivity/*', 'Interaction Parameters/*',
+  'flash/*', 'phases/*'
   'Interaction Parameters/ChemSep/*',
   'Vapor Pressure/*', 'Viscosity/*']}
 )
