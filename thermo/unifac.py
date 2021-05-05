@@ -6615,7 +6615,7 @@ class UNIFAC(GibbsExcess):
         '''
         if self.scalar:
             return [0.0]*self.N
-        return zeros(N)
+        return zeros(self.N)
 
     def d2lngammas_c_dT2(self):
         r'''Second temperature derivatives of the combinatorial part of the
@@ -6632,7 +6632,7 @@ class UNIFAC(GibbsExcess):
         '''
         if self.scalar:
             return [0.0]*self.N
-        return zeros(N)
+        return zeros(self.N)
 
     def d3lngammas_c_dT3(self):
         r'''Third temperature derivatives of the combinatorial part of the
@@ -6649,7 +6649,7 @@ class UNIFAC(GibbsExcess):
         '''
         if self.scalar:
             return [0.0]*self.N
-        return zeros(N)
+        return zeros(self.N)
 
     def d2lngammas_c_dTdx(self):
         r'''Second temperature derivative and first mole fraction derivative of
@@ -6666,7 +6666,7 @@ class UNIFAC(GibbsExcess):
         '''
         if self.scalar:
             return [0.0]*self.N
-        return zeros(N)
+        return zeros(self.N)
 
     def dlngammas_c_dxs(self):
         r'''First composition derivative of

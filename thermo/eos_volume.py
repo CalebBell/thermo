@@ -1471,8 +1471,6 @@ def high_alpha_one_root(T, P, b, delta, epsilon, a_alpha):
 
     SU = S + U
     b_3a = b*(third*a_inv)
-    t1 = -0.5*SU - b_3a
-    t2 = (S - U)*complex_factor
     x1 = SU - b_3a
 
     # Must be polished
