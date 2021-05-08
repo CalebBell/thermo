@@ -719,6 +719,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
         if i == 0:
             V = Vi = high_V#R*T*P_inv
         elif i == 1:
+            1/0
             V = Vi = b*1.000001
         elif i == 2:
             V = Vi = b*20.0
