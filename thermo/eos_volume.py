@@ -733,8 +733,9 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
         step = step/step_den
         V_old = V
         V_new = V - step
-        if (abs(1.0 - V_new/V_old) < 3e-15 or V_new == Vi or fval_old == fval or fval == fval_oldold
-            or (j > 10 and rel_err < 1e-12)):
+        if (abs(1.0 - V_new/V_old) < 6e-16 or V_new == Vi or fval_old == fval or fval == fval_oldold
+            or (j > 10 and rel_err < 1e-12)
+           ):
 
         # if (abs(1.0 - V_new/V_old) < 3e-15 or V_new == Vi or fval_old == fval or fval == fval_oldold
         #     or (j > 10 and rel_err < 1e-12)):
