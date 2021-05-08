@@ -710,12 +710,14 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
     c2 = (thetas + epsilons - deltas*(B + 1.0))
     d2 = -(epsilons*(B + 1.0) + thetas*etas)
     RT_P = RT*P_inv
+    
+    low_V, high_V = b*(1.0+8e-16), -RT_P*d2/c2
+    if high_V <= low_V:
+        high_V =  b*1.000001
 
     for i in range(3):
         if i == 0:
-            V = Vi = -RT_P*d2/c2#R*T*P_inv
-            if V <= b:
-                V = b*1.000001 # avoid a division by zero
+            V = Vi = high_V#R*T*P_inv
         elif i == 1:
             V = Vi = b*1.000001
         elif i == 2:
