@@ -730,11 +730,12 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
         V_old = V
         V_new = V - step
         if (abs(1.0 - V_new/V_old) < 6e-16
-            or (j > 10 and rel_err < 1e-12)
+            or (j > 25 and rel_err < 1e-12)
            ):
+            # One case not taken care of is oscillating behavior within the boundaries of high_V, low_V
             V = V_new
             break
-        if V_new < low_V or V_new >= high_V:
+        if V_new <= low_V or V_new >= high_V:
             V_new = 0.5*(low_V + high_V)
         V = V_new
     if j != 49:
