@@ -372,7 +372,13 @@ def test_volume_numba_solvers():
     assert slns[1] == 0
     assert slns[2] == 0
     assert_close(slns[0], 2.5908397553496098e-05, rtol=1e-15)
-    
+
+from .test_eos_volume import hard_parameters, validate_volume
+@pytest.mark.parametrize("params", hard_parameters)
+def test_hard_default_solver_volumes_numba(solver, params):
+    # Particularly tough cases
+    validate_volume(params, thermo.numba.eos_volume.volume_solutions_halley, rtol=1e-14)    
+
 @mark_as_numba
 def test_numba_dri_air():
     gas = thermo.numba.DryAirLemmon(T=300.0, P=1e5)
@@ -419,3 +425,6 @@ def test_lnphis_direct_and_sequential_substitution_2P_functional():
     assert_close(VF_calc, VF_expect, rtol=1e-6)
     assert_close1d(xs_calc, xs_expect)
     assert_close1d(ys_calc, ys_expect)
+    
+    
+    

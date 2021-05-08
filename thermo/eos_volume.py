@@ -728,6 +728,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
         step = step/step_den
         V_old = V
         V_new = V - step
+        # print(V, abs(1.0 - V_new/V_old), rel_err)
         if (abs(1.0 - V_new/V_old) < 6e-16
             or (j > 25 and rel_err < 1e-12)
            ):
@@ -736,6 +737,10 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
             break
         if V_new <= low_V or V_new >= high_V:
             V_new = 0.5*(low_V + high_V)
+            if V_new == low_V or V_new == high_V:
+                # If the bisection has finished (interval cannot be further divided)
+                # the solver is finished
+                break
         V = V_new
     if j != 49:
         V0 = V
