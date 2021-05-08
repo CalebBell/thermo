@@ -628,10 +628,9 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
     to obtain the final solutions. This method does not calculate imaginary
     roots - they are set to zero on detection. This method has been rigorously
     tested over a wide range of conditions.
-
-    One limitation is that if `P < 1e-2` or `a_alpha < 1e-9` the NR solution
-    is called as this method has not been found to be completely suitable
-    for those conditions.
+    
+    The method uses the standard combination of bisection to provide high
+    and low boundaries as well, to keep the iteration always moving forward.
 
     Parameters
     ----------
@@ -650,7 +649,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
 
     Returns
     -------
-    Vs : tuple[complex]
+    Vs : tuple[float]
         Three possible molar volumes, [m^3/mol]
 
     Notes
@@ -693,9 +692,9 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
     
     low_V, high_V = b*(1.0+8e-16), -RT_P*d2/c2
     if high_V <= low_V:
-        high_V =  b*1.000001
+        high_V = b*1.000001
 
-    V = Vi = high_V
+    V = high_V
     for j in range(50):
         x0_inv = 1.0/(V - b)
         x1_inv = 1.0/(V*(V + delta) + epsilon)
