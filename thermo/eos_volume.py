@@ -711,7 +711,6 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
     d2 = -(epsilons*(B + 1.0) + thetas*etas)
     RT_P = RT*P_inv
 
-    V0, V1 = 0.0, 0.0
     for i in range(3):
         if i == 0:
             V = Vi = -RT_P*d2/c2#R*T*P_inv
@@ -756,11 +755,6 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
                 break
             fval_oldold, fval_old = fval_old, fval
             V = V_new
-
-        #         if i == 0:
-#             V0 = V
-#         elif i == 1:
-#             V1 = V
         if j != 49:
             V0 = V
 

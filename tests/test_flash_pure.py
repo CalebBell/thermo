@@ -10,7 +10,7 @@ copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+copies or substantial portions of the Software.f
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -898,7 +898,7 @@ def test_V_error_plot(fluid, eos, P_range):
 
 
     max_err = np.max(errs)
-    assert max_err < 1e-10
+    assert max_err < 1e-11
 
 
 
