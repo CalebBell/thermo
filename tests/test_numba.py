@@ -375,6 +375,7 @@ def test_volume_numba_solvers():
 
 from .test_eos_volume import hard_parameters, validate_volume
 @pytest.mark.parametrize("params", hard_parameters)
+@mark_as_numba
 def test_hard_default_solver_volumes_numba(params):
     # Particularly tough cases
     validate_volume(params, thermo.numba.eos_volume.volume_solutions_halley, rtol=1e-14)    
