@@ -734,6 +734,11 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
                 high_V = V
             else:
                 low_V = V
+                if j == 0:
+                    # If we are in the first iteration we have not decided on a upper bound yet
+                    high_V = RT_P*10.0
+                    if high_V < 10.0*b:
+                        high_V = 10.0*b
             x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
             x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
             x3 = a_alpha*x1_inv2
@@ -750,7 +755,11 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
 #                        break # got a perfect answer
                 continue
             step = step/step_den
-            V_old, V_new = V, V - step
+            V_old = V
+            V_new = V - step
+            if V_new < low_V or V_new > high_V:
+                V_new = 0.5*(low_V + high_V)
+
 
             if (abs(1.0 - V_new/V_old) < 3e-15 or V_new == Vi or fval_old == fval or fval == fval_oldold
                 or (j > 10 and rel_err < 1e-12)):

@@ -3509,7 +3509,7 @@ def test_dP_dns_Vt():
     assert_close1d(dP_dns_Vt_expect, dP_dns_Vt_analytical, rtol=1e-12)
 
     dP_dns_Vt_numerical = jacobian(diff_for_dP_dn, zs, perturbation=1e-7)
-    assert_close1d(dP_dns_Vt_analytical, dP_dns_Vt_numerical, rtol=1e-8)
+    assert_close1d(dP_dns_Vt_analytical, dP_dns_Vt_numerical, rtol=1e-7)
 
 
     # d2P_dninjs_Vt
