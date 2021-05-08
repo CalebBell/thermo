@@ -110,3 +110,18 @@ def test_lemmon2000_package():
     CoolProp_Cps = [29.030484473246823, 29.03511836728048, 29.103801681330573, 33.046833525551676, 36.210748112152906]
     for T, Cp in zip(Ts, CoolProp_Cps):
         assert_close(Cp, lemmon2000_correlations.HeatCapacityGases[0](T), rtol=2e-7)
+
+
+def test_compound_index():
+    obj = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'],
+                             CASs=['7732-18-5', '108-38-3'],
+                             InChI_Keys=['XLYOFNOQVPJJNP-UHFFFAOYSA-N', 'IVSZLXZYQVIEFR-UHFFFAOYSA-N'], 
+                             InChIs=['H2O/h1H2', 'C8H10/c1-7-4-3-5-8(2)6-7/h3-6H,1-2H3'],
+                             smiless=['O', 'CC1=CC(=CC=C1)C'], PubChems=[962, 7929],)
+    assert 0 == obj.compound_index(name='water')
+    assert 1 == obj.compound_index(name='m-xylene')
+    assert 1 == obj.compound_index(PubChem=7929)
+    assert 0 == obj.compound_index(smiles='O')
+    assert 0 == obj.compound_index(CAS='7732-18-5')
+    assert 0 == obj.compound_index(InChI='H2O/h1H2')
+    assert 1 == obj.compound_index(InChI_Key='IVSZLXZYQVIEFR-UHFFFAOYSA-N')

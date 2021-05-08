@@ -368,6 +368,54 @@ class ChemicalConstantsPackage(object):
         s = s[:-2] + ')'
         return s
 
+    def compound_index(self, CAS=None, name=None, smiles=None, InChI=None, 
+                       InChI_Key=None, PubChem=None):
+        r'''Method to retrieve the index of a compound given one of the
+        optional identifiers for the compound.
+        
+        Parameters
+        ----------
+        CAS : str, optional
+            The CAS number of the compound, [-]
+        name : str, optional
+            The (provided) name of the compound, [-]
+        smiles : str, optional
+            Smiles identifier, [-]
+        InChI : str, optional
+            InChI identifier, [-]
+        InChI_Key : str, optional
+            InChI key identifier, [-]
+        PubChem : int, optional
+            PubChem identifier, [-]
+            
+        Returns
+        -------
+        index : int
+            The index of the component (if found), [-]
+
+        Raises
+        ------
+        ValueError
+            If no identifier is provided for any argument, this is raised
+        IndexError
+            If no match is found for the provided identifier, this is raised
+        '''
+        if CAS is not None:
+            return self.CASs.index(CAS)
+        elif name is not None:
+            return self.names.index(name)
+        elif smiles is not None:
+            return self.smiless.index(smiles)
+        elif InChI is not None:
+            return self.InChIs.index(InChI)
+        elif InChI_Key is not None:
+            return self.InChI_Keys.index(InChI_Key)
+        elif PubChem is not None:
+            return self.PubChems.index(PubChem)
+        else:
+            raise ValueError("No identifier provided")
+
+
     @staticmethod
     def constants_from_IDs(IDs):
         r'''Method to construct a new `ChemicalConstantsPackage` with loaded
