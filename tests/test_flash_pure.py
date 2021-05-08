@@ -815,7 +815,8 @@ def test_Psat_plot(fluid, eos):
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_list)
 @pytest.mark.parametrize("P_range", ['high', 'low'])
-def test_V_error_plot(fluid, eos, P_range):
+@pytest.mark.parametrize("solver", [GCEOS.volume_solutions])
+def test_V_error_plot(fluid, eos, P_range, solver):
     path = os.path.join(pure_surfaces_dir, fluid, "V_error")
     if not os.path.exists(path):
         os.makedirs(path)
@@ -884,6 +885,7 @@ def test_V_error_plot(fluid, eos, P_range):
 
 
     obj = VolumeWrapper(T=T, P=P, **kwargs)
+    VolumeWrapper.volume_solutions = solver
     errs, plot_fig = obj.volume_errors(plot=True, show=False, pts=100,
                                        Tmin=1e-4, Tmax=1e4, Pmin=Pmin, Pmax=Pmax,
                                        trunc_err_low=1e-15, color_map=cm_flash_tol())

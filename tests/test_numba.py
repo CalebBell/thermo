@@ -379,6 +379,20 @@ def test_hard_default_solver_volumes_numba(params):
     # Particularly tough cases
     validate_volume(params, thermo.numba.eos_volume.volume_solutions_halley, rtol=1e-14)    
 
+
+from .test_flash_pure import test_V_error_plot, pure_fluids, eos_list
+@pytest.mark.slow
+@pytest.mark.plot
+@pytest.mark.parametric
+@pytest.mark.parametrize("fluid", pure_fluids)
+@pytest.mark.parametrize("eos", eos_list)
+@pytest.mark.parametrize("P_range", ['high', 'low'])
+@mark_as_numba
+def test_V_error_plot_numba(fluid, eos, P_range):
+    return test_V_error_plot(fluid=fluid, eos=eos, P_range=P_range, solver=staticmethod(thermo.numba.eos_volume.volume_solutions_halley))
+
+    
+
 @mark_as_numba
 def test_numba_dri_air():
     gas = thermo.numba.DryAirLemmon(T=300.0, P=1e5)
