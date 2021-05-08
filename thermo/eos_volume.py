@@ -730,6 +730,10 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
             x1_inv = 1.0/(V*(V + delta) + epsilon)
             x2 = V + V + delta
             fval = RT*x0_inv - P - a_alpha*x1_inv
+            if fval < 0.0:
+                high_V = V
+            else:
+                low_V = V
             x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
             x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
             x3 = a_alpha*x1_inv2
