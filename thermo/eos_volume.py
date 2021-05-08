@@ -695,11 +695,8 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
     if high_V <= low_V:
         high_V =  b*1.000001
 
-    V = Vi = high_V#R*T*P_inv
-    fval_oldold = 1.0
-    fval_old = 0.0
+    V = Vi = high_V
     for j in range(50):
-#             print(j, V)
         x0_inv = 1.0/(V - b)
         x1_inv = 1.0/(V*(V + delta) + epsilon)
         x2 = V + V + delta
@@ -724,7 +721,6 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
         fder_inv = 1.0/fder
         step = fval*fder_inv
         rel_err = abs(fval*P_inv)
-#                print(fval, rel_err, step, j, i, V)
         step_den = 1.0 - 0.5*step*fder2*fder_inv
         if step_den == 0.0:
 #                    if fval == 0.0:
@@ -733,20 +729,13 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
         step = step/step_den
         V_old = V
         V_new = V - step
-        if (abs(1.0 - V_new/V_old) < 6e-16 or V_new == Vi or fval_old == fval or fval == fval_oldold
+        if (abs(1.0 - V_new/V_old) < 6e-16
             or (j > 10 and rel_err < 1e-12)
            ):
-
-        # if (abs(1.0 - V_new/V_old) < 3e-15 or V_new == Vi or fval_old == fval or fval == fval_oldold
-        #     or (j > 10 and rel_err < 1e-12)):
-            # Conditional check probably not worth it
             V = V_new
-            # if V < 0.0:
-                # j = 49
             break
         if V_new < low_V or V_new >= high_V:
             V_new = 0.5*(low_V + high_V)
-        fval_oldold, fval_old = fval_old, fval
         V = V_new
     if j != 49:
         V0 = V
