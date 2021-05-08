@@ -1530,7 +1530,7 @@ def test_Psat_issues():
     # Case where y was evaluated just above Pc and so couldn't converge
     # The exact precision of the answer can only be obtained with mpmath
     eos = PR(Tc=647.086, Pc=22048320.0, omega=0.344, T=230.0, P=100000.0)
-    assert_close(eos.Psat(eos.Tc*(1-1e-14), polish=True), 22048319.999976363, rtol=1e-10)
+    assert_close(eos.Psat(eos.Tc*(1-1e-13), polish=True), 22048319.99998073, rtol=1e-10)
     
     e = PRTranslatedConsistent(Tc=512.5, Pc=8084000.0, omega=0.559, c=2.4079466437131265e-06, alpha_coeffs=(0.46559014900000006, 0.798056656, 2.0), T=298.15, P=101325.0)
     assert_close(e.Psat(26.5928527253961065, polish=True), 3.4793909343216283e-152)

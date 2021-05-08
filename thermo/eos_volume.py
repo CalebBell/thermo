@@ -667,8 +667,6 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
     '''
     # Test the case where a_alpha is so low, even with the lowest possible volume `b`,
     # the value of the second term plus P is equal to P.
-#        if a_alpha == 0.0:
-#            return (b + R*T/P, 0.0, 0.0)
     if a_alpha/(b*(b + delta) + epsilon) + P == P:
         return (b + R*T/P, 0.0, 0.0)
     # Run this first, before the low P criteria
@@ -676,24 +674,6 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
         V_possible = high_alpha_one_root(T, P, b, delta, epsilon, a_alpha)
         if V_possible != 0.0:
             return (V_possible, 0.0, 0.0)
-    if P < 1e-2 and 0:  # numba: delete
-#    if P < 1e-2 or a_alpha < 1e-9:  # numba: delete
-    # if 0 or (0 and ((T < 1e-2 and P > 1e6) or (P < 1e-3 and T < 1e-2) or (P < 1e-1 and T < 1e-4) or P < 1)):
-        # Not perfect but so much wasted dev time need to move on, try other fluids and move this tolerance up if needed
-        # if P < min(GCEOS.P_discriminant_zeros_analytical(T=T, b=b, delta=delta, epsilon=epsilon, a_alpha=a_alpha, valid=True)):
-            # TODO - need function that returns range two solutions are available!
-            # Very important because the below strategy only works for that regime.
-        try: # numba: delete
-            return volume_solutions_NR(T, P, b, delta, epsilon, a_alpha)  # numba: delete
-        except:  # numba: delete
-            return (0.0, 0.0, 0.0)  # numba: delete
-
-#        try:
-#            return volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
-#        except:
-#            pass
-
-
     RT = R*T
     RT_2 = RT + RT
     a_alpha_2 = a_alpha + a_alpha
@@ -715,132 +695,127 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
     if high_V <= low_V:
         high_V =  b*1.000001
 
-    for i in range(3):
-        if i == 0:
-            V = Vi = high_V#R*T*P_inv
-        elif i == 1:
-            1/0
-            V = Vi = b*1.000001
-        elif i == 2:
-            V = Vi = b*20.0
-        fval_oldold = 1.0
-        fval_old = 0.0
-        for j in range(50):
+    V = Vi = high_V#R*T*P_inv
+    fval_oldold = 1.0
+    fval_old = 0.0
+    for j in range(50):
 #             print(j, V)
-            x0_inv = 1.0/(V - b)
-            x1_inv = 1.0/(V*(V + delta) + epsilon)
-            x2 = V + V + delta
-            fval = RT*x0_inv - P - a_alpha*x1_inv
-            if fval < 0.0:
-                high_V = V
-            else:
-                low_V = V
-                if j == 0:
-                    # If we are in the first iteration we have not decided on a upper bound yet
-                    high_V = RT_P*10.0
-                    if high_V < 10.0*b:
-                        high_V = 10.0*b
-            x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
-            x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
-            x3 = a_alpha*x1_inv2
-            fder = x2*x3 - RT*x0_inv2
-            fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
+        x0_inv = 1.0/(V - b)
+        x1_inv = 1.0/(V*(V + delta) + epsilon)
+        x2 = V + V + delta
+        fval = RT*x0_inv - P - a_alpha*x1_inv
+        if fval < 0.0:
+            high_V = V
+        else:
+            low_V = V
+            if j == 0:
+                # If we are in the first iteration we have not decided on a upper bound yet
+                high_V = RT_P*10.0
+                # If the ideal gas volume is in danger of being underneath the liquid volume
+                # we increase it to 10b. 10 is a guess only.
+                if high_V < 10.0*b:
+                    high_V = 10.0*b
+        x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
+        x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
+        x3 = a_alpha*x1_inv2
+        fder = x2*x3 - RT*x0_inv2
+        fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
 
-            fder_inv = 1.0/fder
-            step = fval*fder_inv
-            rel_err = abs(fval*P_inv)
+        fder_inv = 1.0/fder
+        step = fval*fder_inv
+        rel_err = abs(fval*P_inv)
 #                print(fval, rel_err, step, j, i, V)
-            step_den = 1.0 - 0.5*step*fder2*fder_inv
-            if step_den == 0.0:
+        step_den = 1.0 - 0.5*step*fder2*fder_inv
+        if step_den == 0.0:
 #                    if fval == 0.0:
 #                        break # got a perfect answer
-                continue
-            step = step/step_den
-            V_old = V
-            V_new = V - step
-            if V_new < low_V or V_new > high_V:
-                V_new = 0.5*(low_V + high_V)
+            continue
+        step = step/step_den
+        V_old = V
+        V_new = V - step
+        if V_new < low_V or V_new > high_V:
+            V_new = 0.5*(low_V + high_V)
 
 
-            if (abs(1.0 - V_new/V_old) < 3e-15 or V_new == Vi or fval_old == fval or fval == fval_oldold
-                or (j > 10 and rel_err < 1e-12)):
-                # Conditional check probably not worth it
-                V = V_new
-                if V < 0.0:
-                    j = 49
-                break
-            fval_oldold, fval_old = fval_old, fval
+        if (abs(1.0 - V_new/V_old) < 3e-15 or V_new == Vi or fval_old == fval or fval == fval_oldold
+            or (j > 10 and rel_err < 1e-12)):
+            # Conditional check probably not worth it
             V = V_new
-        if j != 49:
-            V0 = V
+            if V < 0.0:
+                j = 49
+            break
+        fval_oldold, fval_old = fval_old, fval
+        V = V_new
+    if j != 49:
+        V0 = V
 
-            x1, x2 = deflate_cubic_real_roots(b2, c2, d2, V*P_RT_inv)
-            if x1 == 0.0:
-                return (V0, 0.0, 0.0)
+        x1, x2 = deflate_cubic_real_roots(b2, c2, d2, V*P_RT_inv)
+        if x1 == 0.0:
+            return (V0, 0.0, 0.0)
 
-            # If the molar volume converged on is such that the second term can be added to the
-            # first term and it is still the first term, we are *extremely* ideal
-            # and we should just quit
-            main0 = R*T/(V - b)
-            main1 = a_alpha/(V*V + delta*V + epsilon)
-            # In these checks, atetmpt to evaluate if we are highly ideal
-            # and there is only one solution
-            if (main0 + main1 == main0) or ((main0 - main1) != 0.0 and abs(1.0-(main0 + main1)/(main0 - main1)) < 1e-12):
-                return (V0, 0.0, 0.0)
+        # If the molar volume converged on is such that the second term can be added to the
+        # first term and it is still the first term, we are *extremely* ideal
+        # and we should just quit
+        main0 = R*T/(V - b)
+        main1 = a_alpha/(V*V + delta*V + epsilon)
+        # In these checks, atetmpt to evaluate if we are highly ideal
+        # and there is only one solution
+        if (main0 + main1 == main0) or ((main0 - main1) != 0.0 and abs(1.0-(main0 + main1)/(main0 - main1)) < 1e-12):
+            return (V0, 0.0, 0.0)
 
 
-            # 8 divisions only for polishing
-            V1 = x1*RT_P
-            V2 = x2*RT_P
+        # 8 divisions only for polishing
+        V1 = x1*RT_P
+        V2 = x2*RT_P
 #             print(V1, V2, 'deflated Vs')
 
-            # Fixed a lot of really bad points in the plots with these.
-            # Article suggests they are not needed, but 1 is better than 11 iterations!
-            # These loops do need to be converted into a tight conditional functional test
-            if P < 1e-2:
-                if x1 != 1.0:
-                    # we are so ideal, and we already have the liquid root - and the newton iteration overflows!
-                    # so we don't need to polish it if x1 is exatly 1.
-                    V1 = volume_solution_polish(V1, T, P, b, delta, epsilon, a_alpha)
-                V2 = volume_solution_polish(V2, T, P, b, delta, epsilon, a_alpha)
-            else:
-                V = V1
-                t90 = V*(V + delta) + epsilon
-                if t90 != 0.0:
-                    x0_inv = 1.0/(V - b)
-                    x1_inv = 1.0/t90
-                    x2 = V + V + delta
-                    fval = -P + RT*x0_inv - a_alpha*x1_inv
-                    x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
-                    x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
-                    x3 = a_alpha*x1_inv2
-                    fder = x2*x3 - RT*x0_inv2
-                    fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
-    
-                    if fder != 0.0:
-                        fder_inv = 1.0/fder
-                        step = fval*fder_inv
-                        V1 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
-    
-                # Take a step with V2
-                V = V2
-                t90 = V*(V + delta) + epsilon
-                if t90 != 0.0:
-                    x0_inv = 1.0/(V - b)
-                    x1_inv = 1.0/(t90)
-                    x2 = V + V + delta
-                    fval = -P + RT*x0_inv - a_alpha*x1_inv
-                    x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
-                    x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
-                    x3 = a_alpha*x1_inv2
-                    fder = x2*x3 - RT*x0_inv2
-                    fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
-    
-                    if fder != 0.0:
-                        fder_inv = 1.0/fder
-                        step = fval*fder_inv
-                        V2 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
-            return (V0, V1, V2)
+        # Fixed a lot of really bad points in the plots with these.
+        # Article suggests they are not needed, but 1 is better than 11 iterations!
+        # These loops do need to be converted into a tight conditional functional test
+        if P < 1e-2:
+            if x1 != 1.0:
+                # we are so ideal, and we already have the liquid root - and the newton iteration overflows!
+                # so we don't need to polish it if x1 is exatly 1.
+                V1 = volume_solution_polish(V1, T, P, b, delta, epsilon, a_alpha)
+            V2 = volume_solution_polish(V2, T, P, b, delta, epsilon, a_alpha)
+        else:
+            V = V1
+            t90 = V*(V + delta) + epsilon
+            if t90 != 0.0:
+                x0_inv = 1.0/(V - b)
+                x1_inv = 1.0/t90
+                x2 = V + V + delta
+                fval = -P + RT*x0_inv - a_alpha*x1_inv
+                x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
+                x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
+                x3 = a_alpha*x1_inv2
+                fder = x2*x3 - RT*x0_inv2
+                fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
+
+                if fder != 0.0:
+                    fder_inv = 1.0/fder
+                    step = fval*fder_inv
+                    V1 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
+
+            # Take a step with V2
+            V = V2
+            t90 = V*(V + delta) + epsilon
+            if t90 != 0.0:
+                x0_inv = 1.0/(V - b)
+                x1_inv = 1.0/(t90)
+                x2 = V + V + delta
+                fval = -P + RT*x0_inv - a_alpha*x1_inv
+                x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
+                x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
+                x3 = a_alpha*x1_inv2
+                fder = x2*x3 - RT*x0_inv2
+                fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
+
+                if fder != 0.0:
+                    fder_inv = 1.0/fder
+                    step = fval*fder_inv
+                    V2 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
+        return (V0, V1, V2)
     return (0.0, 0.0, 0.0)
 
 def volume_solutions_fast(T, P, b, delta, epsilon, a_alpha):
