@@ -898,7 +898,7 @@ def test_V_error_plot(fluid, eos, P_range):
 
 
     max_err = np.max(errs)
-    assert max_err < 1e-11
+    assert max_err < 1e-13
 
 
 
