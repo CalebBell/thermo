@@ -736,13 +736,15 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
         if V_new < low_V or V_new > high_V:
             V_new = 0.5*(low_V + high_V)
 
-
         if (abs(1.0 - V_new/V_old) < 3e-15 or V_new == Vi or fval_old == fval or fval == fval_oldold
             or (j > 10 and rel_err < 1e-12)):
+
+        # if (abs(1.0 - V_new/V_old) < 3e-15 or V_new == Vi or fval_old == fval or fval == fval_oldold
+        #     or (j > 10 and rel_err < 1e-12)):
             # Conditional check probably not worth it
             V = V_new
-            if V < 0.0:
-                j = 49
+            # if V < 0.0:
+                # j = 49
             break
         fval_oldold, fval_old = fval_old, fval
         V = V_new

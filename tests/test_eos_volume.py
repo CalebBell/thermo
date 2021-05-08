@@ -92,13 +92,14 @@ hard_parameters = [(0.01, 1e-05, 2.5405184201558786e-05, 5.081036840311757e-05, 
 (26.592852725396106, 3.4793909343154458e-152, 3.859918856291673e-05, 8.683016370068596e-05, -1.478300943637663e-09, 5.381957466908362),
 (242.01282647944032, 599484250.31892, 4.51442411333263e-05, 4.51442411333263e-05, 0.0, 0.6466302896368097),
 (69.6, 9.730954086862206e-158, 0.0005170491461435971, 0.0005170491461435971, 0.0, 164.4978116018701),
+(138.48863713938846, 3.0538555088340556e-06, 2.2081238710001263e-05, 2.2081238710001263e-05, 0.0, 0.14823101466889332),
 ]
 
 
 
 # TODO important make mpmath cache answers here
 
+@pytest.mark.parametrize("params", hard_parameters)
 @pytest.mark.parametrize("solver", [volume_solutions_halley, GCEOS.volume_solutions])
-def test_hard_default_solver_volumes(solver):
-    for args in hard_parameters:
-        validate_volume(args, solver, rtol=1e-14)
+def test_hard_default_solver_volumes(solver, params):
+    validate_volume(params, solver, rtol=1e-14)
