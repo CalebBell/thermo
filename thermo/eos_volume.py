@@ -1405,6 +1405,7 @@ def high_alpha_one_root(T, P, b, delta, epsilon, a_alpha):
 
     If the criteria is not met, 0 is returned and another solver must be used.
     '''
+    b_eos = b
     RT_inv = R_inv/T
     RT_P = R*T/P
 
@@ -1455,7 +1456,9 @@ def high_alpha_one_root(T, P, b, delta, epsilon, a_alpha):
     x1 = SU - b_3a
 
     # Must be polished
-    x1 = newton(horner_and_der_as_error, x1, bisection=True, fprime=True, xtol=1e-16, args=(coeffs,))
+    x1 = newton(horner_and_der_as_error, x1, bisection=True, fprime=True, low=b_eos/RT_P, xtol=1e-16, args=(coeffs,))
 
     V = x1*RT_P
+    if V == b_eos:
+        V = b_eos*(1.0 + 3e-16)
     return V
