@@ -1754,8 +1754,24 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
     guesses.append(guess)
     if method == 'newton':
         comp_val, iterations = newton_system(to_solve_comp, guesses, jac=True,
-                                             xtol=xtol, damping=damping,
+                                             xtol=xtol, damping=damping, solve_func=lambda x, y:np.linalg.solve(x, y).tolist(),
                                              damping_func=damping_maintain_sign)
+    elif method == 'odeint':
+        # Not even close to working
+        # equations are hard
+        from scipy.integrate import odeint
+        def fun_and_jac(x, t):
+            x, j = to_solve_comp(x.tolist() + [t])
+            return np.array(x), np.array(j)
+        def fun(x, t):
+            x, j = to_solve_comp(x.tolist() +[t])
+            return np.array(x)
+        def jac(x, t):
+            x, j = to_solve_comp(x.tolist() + [t])
+            return np.array(j)
+
+        ans = odeint(func=fun, y0=np.array(guesses), t=np.linspace(guess, guess*2, 5), Dfun=jac)
+        return ans
     else:
         if opt_kwargs is None:
             opt_kwargs = {}
