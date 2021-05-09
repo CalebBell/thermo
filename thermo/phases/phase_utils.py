@@ -90,8 +90,8 @@ def lnphis_direct(zs, model, T, P, N, *args):
         for i in range(N):
             lnphis[i] = 0.0
         return lnphis
-    elif 20000 <= model <= 29999:
-        return activity_lnphis(zs, model, T, P, N, *args)
+    elif 20000 <= model <= 29999: # numba: delete
+        return activity_lnphis(zs, model, T, P, N, *args) # numba: delete
     raise ValueError("Model not implemented")
 
 def fugacities_direct(zs, model, T, P, N, *args):
