@@ -681,6 +681,54 @@ def test_TH_plot(fluid, eos, auto_range):
 #    except:
 #        pass
 
+
+@pytest.mark.fuzz
+@pytest.mark.slow
+@pytest.mark.parametric
+@pytest.mark.parametrize("fluid", pure_fluids)
+@pytest.mark.parametrize("eos", eos_mix_list)
+def test_TP_VF_points_with_HSU_VF0(fluid, eos):
+    '''
+    '''
+    if eos in (IGMIX,):
+        return
+    # print(eos)
+    T, P = 298.15, 101325.0
+    zs = [1.0]
+    fluid_idx = pure_fluids.index(fluid)
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+
+    pts = 50
+    # Might be good to make the solvers go to lower pressure
+    Ts = linspace(pure_const.Tcs[0]*0.5, pure_const.Tcs[0], pts)
+    Ps = logspace(log10(10), log10(pure_const.Pcs[0]*(1.0-1e-14)), pts)
+    VF = 0
+    rtol = 1e-8
+    for s in ('H', 'S', 'U'): # G, A not unique
+        for T in Ts:
+            p = flasher.flash(T=T, VF=VF)
+            val = getattr(p, s)()
+            resolve = flasher.flash(VF=VF, **{s: val})
+            assert_close(p.T, resolve.T, rtol=rtol)
+            assert_close(p.P, resolve.P, rtol=rtol)
+        
+        for P in Ps:
+            p = flasher.flash(P=P, VF=VF)
+            val = getattr(p, s)()
+            resolve = flasher.flash(VF=VF, **{s: val})
+            assert_close(p.T, resolve.T, rtol=rtol)
+            assert_close(p.P, resolve.P, rtol=rtol)
+
+# test_TP_VF_points_with_HSU_VF0('methane', PRMIX)
+
+
 ### Pure EOS only tests
 @pytest.mark.slow
 @pytest.mark.plot
@@ -1856,6 +1904,8 @@ def test_VF_S_cases():
         assert_close(high.S(), base.S(), rtol=1e-7)
 
 
+def test_methanol_VF_HSGUA_issues():
+    pass
 
 def test_methanol_inconsistent_full_example():
     from thermo.heat_capacity import POLING_POLY

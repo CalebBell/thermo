@@ -1049,6 +1049,7 @@ class FlashPureVLS(Flash):
         Ts = linspace(Tmin, T_mid, pts//2)
         Ts += linspace(T_next, Tmax, pts//2)
         Ts.insert(-1, Tmax*(1-1e-8))
+        Ts.sort()
         for T in Ts:
             Psat, liquid, gas, iters, flash_err = self.flash_TVF(T, VF=.5, zs=[1.0])
             for i, prop in enumerate(props):
@@ -1101,11 +1102,17 @@ class FlashPureVLS(Flash):
             for i, k in enumerate(props):
                 if i == base_idx:
                     continue
-                spline = CubicSpline(xs, liq_props[i], **VF_data_spline_kwargs)
-                liq_VF_interpolators[(base_prop, k)] = spline
+                try:
+                    spline = CubicSpline(xs, liq_props[i], **VF_data_spline_kwargs)
+                    liq_VF_interpolators[(base_prop, k)] = spline
+                except:
+                    pass
 
-                spline = CubicSpline(xs, gas_props[i], **VF_data_spline_kwargs)
-                gas_VF_interpolators[(base_prop, k)] = spline
+                try:
+                    spline = CubicSpline(xs, gas_props[i], **VF_data_spline_kwargs)
+                    gas_VF_interpolators[(base_prop, k)] = spline
+                except:
+                    pass
 
 
 
