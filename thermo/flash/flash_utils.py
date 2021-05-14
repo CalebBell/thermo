@@ -1754,7 +1754,9 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
     guesses.append(guess)
     if method == 'newton':
         comp_val, iterations = newton_system(to_solve_comp, guesses, jac=True,
-                                             xtol=xtol, damping=damping, solve_func=lambda x, y:np.linalg.solve(x, y).tolist(),
+                                             xtol=xtol, damping=damping,
+                                             solve_func=py_solve,
+                                             # solve_func=lambda x, y:np.linalg.solve(x, y).tolist(),
                                              damping_func=damping_maintain_sign)
     elif method == 'odeint':
         # Not even close to working

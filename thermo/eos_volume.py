@@ -97,7 +97,7 @@ from fluids.constants import R, R_inv
 
 
 
-def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, dps=30):
+def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, dps=50):
     r'''Solution of this form of the cubic EOS in terms of volumes, using the
     `mpmath` arbitrary precision library. The number of decimal places returned
     is controlled by the `dps` parameter.
@@ -721,11 +721,9 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
         step = fval*fder_inv
         rel_err = abs(fval*P_inv)
         step_den = 1.0 - 0.5*step*fder2*fder_inv
-        if step_den == 0.0:
-#                    if fval == 0.0:
-#                        break # got a perfect answer
-            continue
-        step = step/step_den
+        if step_den != 0.0:
+            # Halley's step; if step_den == 0 we do the newton step
+            step = step/step_den
         V_old = V
         V_new = V - step
         # print(V, abs(1.0 - V_new/V_old), rel_err)

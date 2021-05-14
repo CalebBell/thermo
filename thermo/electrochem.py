@@ -74,6 +74,7 @@ Pure Liquid Electrical Conductivity
 
 Water Dissociation Equilibrium
 ------------------------------
+.. autofunction:: Kweq_Arcis_Tremaine_Bandura_Lvov
 .. autofunction:: Kweq_IAPWS
 .. autofunction:: Kweq_IAPWS_gas
 .. autofunction:: Kweq_1981
@@ -114,7 +115,7 @@ __all__ = ['Laliberte_density', 'Laliberte_heat_capacity',
            'dilute_ionic_conductivity', 'conductivity_McCleskey',
            'conductivity', 'conductivity_methods', 'conductivity_all_methods',
            'thermal_conductivity_Magomedov', 'Magomedov_mix', 'ionic_strength', 'Kweq_1981',
-           'Kweq_IAPWS_gas', 'Kweq_IAPWS',
+           'Kweq_IAPWS_gas', 'Kweq_IAPWS', 'Kweq_Arcis_Tremaine_Bandura_Lvov',
            'balance_ions',
            ]
 
@@ -1304,6 +1305,7 @@ def Kweq_IAPWS(T, rho_w):
     .. math::
         Q = \rho \exp(\alpha_0 + \alpha_1 T^{-1} + \alpha_2 T^{-2} \rho^{2/3})
 
+    .. math::
         - \log_{10} K_w = -2n \left[ \log_{10}(1+Q) - \frac{Q}{Q+1} \rho
         (\beta_0 + \beta_1 T^{-1} + \beta_2 \rho) \right]
         -\log_{10} K_w^G + 2 \log_{10} \frac{18.015268}{1000}
@@ -1364,6 +1366,72 @@ def Kweq_IAPWS(T, rho_w):
     # 2*log10(18.015268/1000) = -3.48871854562233
     return K_w
 
+def Kweq_Arcis_Tremaine_Bandura_Lvov(T, rho_w):
+    r'''Calculates equilibrium constant for OH- and H+ in water, according to
+    [1]_.
+
+    .. math::
+        Q = \rho \exp(\alpha_0 + \alpha_1 T^{-1} + \alpha_2 T^{-2} \rho^{2/3})
+
+    .. math::
+        - \log_{10} K_w = -2n \left[ \log_{10}(1+Q) - \frac{Q}{Q+1} \rho
+        (\beta_0 + \beta_1 T^{-1} + \beta_2 \rho) \right]
+        -\log_{10} K_w^G + 2 \log_{10} \frac{18.015268}{1000}
+
+    Parameters
+    ----------
+    T : float
+        Temperature of water [K]
+    rho_w : float
+        Density of water at temperature and pressure [kg/m^3]
+
+    Returns
+    -------
+    Kweq : float
+        Ionization constant of water, [-]
+
+    Notes
+    -----
+    Formulation is in terms of density in g/cm^3; density
+    is converted internally.
+
+    n = 6;
+    alpha0 = -0.864671;
+    alpha1 = 8659.19;
+    alpha2 = -22786.2;
+    beta0 = 0.642044;
+    beta1 = -56.8534;
+    beta2 = -0.375754
+
+    Examples
+    --------
+    >>> -1*log10(Kweq_Arcis_Tremaine_Bandura_Lvov(600, 700))
+    11.203153057603775
+
+    References
+    ----------
+    .. [1] Arcis, Hugues, Jane P. Ferguson, Jenny S. Cox, and Peter R. Tremaine. 
+       "The Ionization Constant of Water at Elevated Temperatures and Pressures:
+       New Data from Direct Conductivity Measurements and Revised Formulations 
+       from T = 273 K to 674 K and p = 0.1 MPa to 31 MPa." Journal of Physical
+       and Chemical Reference Data 49, no. 3 (July 23, 2020): 033103. 
+       https://doi.org/10.1063/1.5127662.
+    '''
+    K_w_G = Kweq_IAPWS_gas(T)
+    rho_w = rho_w*1e-3
+    n = 6
+    alpha0 = 1.14387
+    alpha1 = 7923.28
+    alpha2 = 96276.7
+    beta0 = 2.00935
+    beta1 = -3.87984
+    beta2 = -1.542
+    T2 = T*T
+    Q = rho_w*exp(alpha0 + alpha1/T + alpha2/T2*rho_w**(2/3.))
+    K_w = 10.0**(-(-2.0*n*(log10(1.0 + Q)-Q/(Q + 1.0) * rho_w *(beta0 + beta1/T + beta2*rho_w)) -
+    log10(K_w_G) + -3.48871854562233))
+    # 2*log10(18.015268/1000) = -3.48871854562233
+    return K_w
 
 
 charge_balance_methods = ['dominant', 'decrease dominant', 'increase dominant',

@@ -28,6 +28,7 @@ from chemicals.elements import charge_from_formula, nested_formula_parser
 from thermo.electrochem import *
 from chemicals.identifiers import check_CAS, CAS_from_any, pubchem_db, serialize_formula
 from math import log10
+from chemicals.iapws import iapws95_Psat, iapws95_rhol_sat, iapws95_rho
 from thermo.electrochem import cond_data_Lange, Marcus_ion_conductivities, CRC_ion_conductivities, Magomedovk_thermal_cond, CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions, cond_data_McCleskey, cond_data_Lange, Laliberte_data
 
 from thermo.electrochem import electrolyte_dissociation_reactions as df
@@ -292,6 +293,49 @@ def test_Kweq_1981():
     # Point from IAPWS formulation, very close despite being different
     pKw = -1*log10(Kweq_1981(600, 700))
     assert_close(pKw, 11.274522047458206)
+
+def test_Kweq_Arcis_Tremaine_Bandura_Lvov():
+    test_Ts = [273.15, 298.15, 323.15, 348.15, 373.15, 398.15, 423.15, 448.15, 473.15, 498.15, 523.15, 548.15, 573.15, 598.15, 623.15, 648.15, 673.15]
+    test_Psats = [iapws95_Psat(T) for T in test_Ts[:-2]]
+    test_Ps = [5e6, 10e6, 15e6, 20e6, 25e6, 30e6]
+    expect_saturation_Kweqs = [14.945, 13.996, 13.263, 12.687, 12.234, 11.884, 11.621, 11.436, 11.318, 11.262, 11.263, 11.320, 11.434, 11.613, 11.895]
+    
+    expect_Kweqs = [[14.889, 14.832, 14.775, 14.719, 14.663, 14.608],
+    [13.948, 13.899, 13.851, 13.802, 13.754, 13.707],
+    [13.219, 13.173, 13.128, 13.083, 13.039, 12.995],
+    [12.643, 12.598, 12.554, 12.511, 12.468, 12.425],
+    [12.190, 12.145, 12.101, 12.057, 12.013, 11.970],
+    [11.839, 11.793, 11.747, 11.702, 11.657, 11.613],
+    [11.577, 11.528, 11.480, 11.432, 11.386, 11.340],
+    [11.392, 11.339, 11.288, 11.237, 11.187, 11.138],
+    [11.277, 11.219, 11.163, 11.108, 11.054, 11.001],
+    [11.229, 11.164, 11.101, 11.040, 10.980, 10.922],
+    [11.247, 11.171, 11.099, 11.029, 10.961, 10.896],
+    [23.534, 11.245, 11.158, 11.075, 10.997, 10.922],
+    [23.432, 11.399, 11.287, 11.183, 11.088, 10.999],
+    [23.296, 19.208, 11.515, 11.370, 11.244, 11.131],
+    [23.150, 19.283, 16.618, 11.698, 11.495, 11.335],
+    [23.006, 19.266, 16.920, 14.909, 11.998, 11.659],
+    [22.867, 19.210, 17.009, 15.350, 13.883, 12.419]]
+    
+    
+    for i in range(len(test_Psats)):
+        # Saturation density is likely not quite as accurate in original paper
+        T = test_Ts[i]
+        rho_w = iapws95_rhol_sat(T)
+        calc = -log10(Kweq_Arcis_Tremaine_Bandura_Lvov(T, rho_w))
+        assert_close(calc, expect_saturation_Kweqs[i], atol=.0015)
+    
+    # These results match exactly
+    for i in range(len(test_Ts)):
+        T = test_Ts[i]
+        for j in range(len(test_Ps)):
+            P = test_Ps[j]
+            rho_w = iapws95_rho(T, P)
+            calc = -log10(Kweq_Arcis_Tremaine_Bandura_Lvov(T, rho_w))
+            assert_close(calc, expect_Kweqs[i][j], atol=.0005)
+
+
 
 
 def test_balance_ions():
