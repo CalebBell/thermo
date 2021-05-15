@@ -1361,7 +1361,8 @@ class TDependentProperty(object):
         return coeffs, (low, high), stats
     
     @classmethod
-    def fit_data_to_model(cls, Ts, data, model, model_kwargs, fit_method='lm', use_numba=True):
+    def fit_data_to_model(cls, Ts, data, model, model_kwargs=None, fit_method='lm', use_numba=True,
+                          do_statistics=False):
         r'''Method to fit T-dependent property data to one of the available
         model correlations. 
 
@@ -1373,20 +1374,26 @@ class TDependentProperty(object):
             Data points, [`units`]
         model : str
             A string representing the supported models, [-]
-        kwargs : dict
-            Various keyword arguments accepted by the model, [-]
+        model_kwargs : dict, optional
+            Various keyword arguments accepted by the model; not necessary for most models, [-]
         fit_method : str, optional
             The fit method to use; one of {‘lm’, ‘trf’, ‘dogbox’}, [-]
         use_numba : bool, optional
             Whether or not to try to use numba to speed up the computation, [-]
+        do_statistics : bool, optional
+            Whether or not to compute statistical measures on the outputs, [-]
 
         Returns
         -------
         coefficients : dict[str: float]
             Calculated coefficients, [`various`]
+        statistics : dict[str: float]
+            Statistics, calculated and returned only if `do_statistics` is True, [-]
         '''
         if model not in cls.available_correlations:
             raise ValueError("Model is not available; available models are %s" %(cls.available_correlations,))
+        if model_kwargs is None:
+            model_kwargs = {}
         
         required_args, optional_args, functions, fit_parameters = cls.correlation_models[model]
         param_order = required_args + optional_args
@@ -1402,7 +1409,21 @@ class TDependentProperty(object):
         out_kwargs = model_kwargs.copy()
         for param_name, param_value in zip(fit_parameters, popt):
             out_kwargs[param_name] = float(param_value)
-        
+
+        if do_statistics:
+            from thermo.fitting import data_fit_statistics
+            calc = fitting_func(Ts, *popt)
+            stats = data_fit_statistics(Ts, data, calc)
+            statistics = {}
+            statistics['calc'] = calc
+            statistics['MAE'] = stats[0]
+            statistics['STDEV'] = stats[1]
+            statistics['min_ratio'] = stats[2]
+            statistics['max_ratio'] = stats[3]
+            statistics['pcov'] = pcov
+            return out_kwargs, statistics
+
+
         return out_kwargs
 
     @property

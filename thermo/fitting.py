@@ -25,7 +25,8 @@ from __future__ import division
 __all__ = ['alpha_Twu91_objf', 'alpha_Twu91_objfc', 'fit_function',
            'Twu91_check_params', 'postproc_lmfit',
            'alpha_poly_objf', 'alpha_poly_objfc', 'poly_check_params',
-           'fit_cheb_poly', 'poly_fit_statistics', 'fit_cheb_poly_auto']
+           'fit_cheb_poly', 'poly_fit_statistics', 'fit_cheb_poly_auto',
+           'data_fit_statistics']
 
 from cmath import atanh as catanh
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
@@ -148,7 +149,20 @@ def fit_cheb_poly(func, low, high, n,
         coeffs = horner(coeffs, my_poly).coef[::-1].tolist()
     return coeffs
 
+def data_fit_statistics(xs, actual_pts, calc_pts):
+    pts = len(xs)
+    ARDs = [(abs((i-j)/j) if j != 0 else 0.0) for i, j in zip(calc_pts, actual_pts)]
 
+    mae = sum(ARDs)/pts
+    err_std = np.std(ARDs)
+
+    actual_pts = np.array(actual_pts)
+    calc_pts = np.array(calc_pts)
+
+    max_ratio, min_ratio = max(calc_pts/actual_pts), min(calc_pts/actual_pts)
+    return mae, err_std, min_ratio, max_ratio
+
+    
 def poly_fit_statistics(func, coeffs, low, high, pts=200,
                         interpolation_property_inv=None,
                         interpolation_x=lambda x: x,
