@@ -1444,6 +1444,7 @@ class TDependentProperty(object):
         pcov = None
         if fit_method == 'differential_evolution':
             popt = differential_evolution(fitting_func)
+            
         else:
             popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, method=fit_method, **solver_kwargs)
         out_kwargs = model_kwargs.copy()
