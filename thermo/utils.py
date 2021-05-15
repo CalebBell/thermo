@@ -1370,7 +1370,8 @@ class TDependentProperty(object):
         return coeffs, (low, high), stats
     
     @classmethod
-    def fit_data_to_model(cls, Ts, data, model, model_kwargs=None, fit_method='lm', use_numba=True,
+    def fit_data_to_model(cls, Ts, data, model, model_kwargs=None, 
+                          fit_method='lm', use_numba=True,
                           do_statistics=False):
         r'''Method to fit T-dependent property data to one of the available
         model correlations. 
@@ -1384,7 +1385,10 @@ class TDependentProperty(object):
         model : str
             A string representing the supported models, [-]
         model_kwargs : dict, optional
-            Various keyword arguments accepted by the model; not necessary for most models, [-]
+            Various keyword arguments accepted by the model; not necessary for 
+            most models. Parameters which are normally fit, can be specified
+            here as well with a constant value and then that fixed value will
+            be used instead of fitting the parameter. [-]
         fit_method : str, optional
             The fit method to use; one of {‘lm’, ‘trf’, ‘dogbox’}, [-]
         use_numba : bool, optional
@@ -1405,6 +1409,12 @@ class TDependentProperty(object):
             model_kwargs = {}
         
         required_args, optional_args, functions, fit_parameters = cls.correlation_models[model]
+        use_fit_parameters = []
+        for k in fit_parameters:
+            if k not in model_kwargs:
+                use_fit_parameters.append(k)
+        fit_parameters = use_fit_parameters
+            
         param_order = required_args + optional_args
         const_kwargs = {}
         model_function_name = functions['f'].__name__

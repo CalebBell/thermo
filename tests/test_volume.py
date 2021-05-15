@@ -332,6 +332,36 @@ def test_VolumeSolid_works_with_no_data():
     VolumeSolid(CASRN='109-66-0').T_dependent_property(300)
 
 
+@pytest.mark.meta_T_dept
+def test_VolumeSolid_fitting0():
+    Ts_alpha = [4.2, 18.5, 20, 22, 23.880]
+    Vms_alpha = [20.75e-6, 20.75e-6, 20.75e-6, 20.78e-6, 20.82e-6]
+    
+    Ts_beta = [23.880, 24, 26, 28,
+               30, 32, 34, 36,
+               38, 40, 42, 43.801]
+    Vms_beta = [20.95e-6, 20.95e-6, 21.02e-6, 21.08e-6,
+                21.16e-6, 21.24e-6, 21.33e-6, 21.42e-6, 
+                21.52e-6, 21.63e-6, 21.75e-6, 21.87e-6]
+                
+    Ts_gamma = [42.801, 44.0, 46.0, 48.0,
+               50.0, 52.0, 54.0, 54.361]
+    
+    Vms_gamma = [23.05e-6, 23.06e-6, 23.18e-6, 23.30e-6,
+                23.43e-6, 23.55e-6, 23.67e-6, 23.69e-6]
+    
+    obj = VolumeSolid(CASRN='7782-44-7', load_data=False)
+    # obj.add_tabular_data(Ts=Ts_alpha, properties=Vms_alpha, name='O2_alpha')
+    # obj.add_tabular_data(Ts=Ts_beta, properties=Vms_beta, name='O2_beta')
+    # obj.add_tabular_data(Ts=Ts_gamma, properties=Vms_gamma, name='O2_gamma')
+    
+    fit_zeros_specified = obj.fit_data_to_model(Ts=Ts_gamma, data=Vms_gamma, model='DIPPR100', do_statistics=False, use_numba=False,
+                     model_kwargs={'C': 0.0, 'D': 0.0, 'E': 0.0, 'F': 0.0, 'G': 0.0, 'B': 0.0})
+    for l in ('B', 'C', 'D', 'E', 'F'):
+        assert fit_zeros_specified[l] == 0.0
+        
+    fit_constant = obj.fit_data_to_model(Ts=Ts_gamma, data=Vms_gamma, model='constant', do_statistics=False, use_numba=False)
+    assert_close(fit_zeros_specified['A'], fit_constant['A'], rtol=1e-13)
 
 @pytest.mark.meta_T_dept
 def test_VolumeLiquidMixture():
