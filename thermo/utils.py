@@ -655,19 +655,28 @@ def generate_fitting_function(model,
                               param_order,
                               fit_parameters,
                               optional_kwargs,
-                              const_kwargs):
+                              const_kwargs,
+                              try_numba=True):
     '''Private function to create a fitting objective function for
     consumption by curve_fit. Other minimizers will require a different
     objective function.
     '''
-    try:
-        import chemicals.numba
-        import chemicals.numba_vectorized
-        f = getattr(chemicals.numba_vectorized, model)
-    except Exception as e:
+    if try_numba:
+        # Reasons to write a custom accelerating wrapper:
+        # 1) ufuncs with numba are 1.5-2x slower than expected
+        # 2) optional arguments are not supported, which is an issue for many
+        # models which default to zero coefficients
+        try:
+            import chemicals.numba
+            import chemicals.numba_vectorized
+            f = getattr(chemicals.numba_vectorized, model)
+        except Exception as e:
+            import chemicals.vectorized
+            f = getattr(chemicals.vectorized, model)
+    else:
         import chemicals.vectorized
         f = getattr(chemicals.vectorized, model)
-    
+
     # arg_dest_idxs is a list of indexes for each parameter
     # to be transformed into the output array
     arg_dest_idxs = []
@@ -1352,7 +1361,7 @@ class TDependentProperty(object):
         return coeffs, (low, high), stats
     
     @classmethod
-    def fit_data_to_model(cls, Ts, data, model, model_kwargs, fit_method='lm'):
+    def fit_data_to_model(cls, Ts, data, model, model_kwargs, fit_method='lm', use_numba=True):
         r'''Method to fit T-dependent property data to one of the available
         model correlations. 
 
@@ -1366,8 +1375,15 @@ class TDependentProperty(object):
             A string representing the supported models, [-]
         kwargs : dict
             Various keyword arguments accepted by the model, [-]
-        fit_method : str
+        fit_method : str, optional
             The fit method to use; one of {‘lm’, ‘trf’, ‘dogbox’}, [-]
+        use_numba : bool, optional
+            Whether or not to try to use numba to speed up the computation, [-]
+
+        Returns
+        -------
+        coefficients : dict[str: float]
+            Calculated coefficients, [`various`]
         '''
         if model not in cls.available_correlations:
             raise ValueError("Model is not available; available models are %s" %(cls.available_correlations,))
@@ -1378,7 +1394,7 @@ class TDependentProperty(object):
         model_function_name = functions['f'].__name__
         
         fitting_func = generate_fitting_function(model_function_name, param_order,
-                              fit_parameters, model_kwargs, const_kwargs)
+                              fit_parameters, model_kwargs, const_kwargs, try_numba=use_numba)
         
         p0 = [1.0]*len(fit_parameters)
         
