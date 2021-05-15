@@ -134,7 +134,7 @@ def test_VaporPressure_fitting0():
     Ts = linspace(Tmin, Tmax, 10)
     Ps = [obj(T) for T in Ts]
     Tc, Pc = obj.WAGNER_POLING_Tc, obj.WAGNER_POLING_Pc
-    fitted = obj.fit_data_to_model(Ts=Ts, data=Ps, model='Wagner',
+    fitted = obj.fit_data_to_model(Ts=Ts, data=Ps, model='Wagner', use_numba=False,
                           model_kwargs={'Tc': obj.WAGNER_POLING_Tc, 'Pc': obj.WAGNER_POLING_Pc})
     res = fitted
     assert 'Tc' in res
