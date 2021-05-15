@@ -1350,8 +1350,9 @@ class TDependentProperty(object):
                           interpolation_property_inv=interpolation_property_inv)
 
         return coeffs, (low, high), stats
-
-    def fit_data_to_model(self, Ts, data, model, model_kwargs, fit_method='lm'):
+    
+    @classmethod
+    def fit_data_to_model(cls, Ts, data, model, model_kwargs, fit_method='lm'):
         r'''Method to fit T-dependent property data to one of the available
         model correlations. 
 
@@ -1368,10 +1369,10 @@ class TDependentProperty(object):
         fit_method : str
             The fit method to use; one of {‘lm’, ‘trf’, ‘dogbox’}, [-]
         '''
-        if model not in self.available_correlations:
-            raise ValueError("Model is not available; available models are %s" %(self.available_correlations,))
+        if model not in cls.available_correlations:
+            raise ValueError("Model is not available; available models are %s" %(cls.available_correlations,))
         
-        required_args, optional_args, functions, fit_parameters = self.correlation_models[model]
+        required_args, optional_args, functions, fit_parameters = cls.correlation_models[model]
         param_order = required_args + optional_args
         const_kwargs = {}
         model_function_name = functions['f'].__name__
