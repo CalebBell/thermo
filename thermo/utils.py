@@ -914,6 +914,7 @@ class TDependentProperty(object):
 
     'volume_VDI_PPDS': (['Tc', 'rhoc', 'a', 'b', 'c', 'd', 'MW',], [], {'f': volume_VDI_PPDS}, ['a', 'b', 'c', 'd',]),
 
+    # Plain polynomial
     'DIPPR100': ([],
       ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
       {'f': EQ100,
@@ -1372,7 +1373,7 @@ class TDependentProperty(object):
     @classmethod
     def fit_data_to_model(cls, Ts, data, model, model_kwargs=None, 
                           fit_method='lm', use_numba=True,
-                          do_statistics=False):
+                          do_statistics=False, guesses=None):
         r'''Method to fit T-dependent property data to one of the available
         model correlations. 
 
@@ -1395,6 +1396,9 @@ class TDependentProperty(object):
             Whether or not to try to use numba to speed up the computation, [-]
         do_statistics : bool, optional
             Whether or not to compute statistical measures on the outputs, [-]
+        guesses : dict[str: float], optional
+            Parameter guesses, by name; any number of parameters can be
+            specified, [-]
 
         Returns
         -------
@@ -1407,6 +1411,8 @@ class TDependentProperty(object):
             raise ValueError("Model is not available; available models are %s" %(cls.available_correlations,))
         if model_kwargs is None:
             model_kwargs = {}
+        if guesses is None:
+            guesses = {}
         
         required_args, optional_args, functions, fit_parameters = cls.correlation_models[model]
         use_fit_parameters = []
@@ -1423,6 +1429,10 @@ class TDependentProperty(object):
                               fit_parameters, model_kwargs, const_kwargs, try_numba=use_numba)
         
         p0 = [1.0]*len(fit_parameters)
+        if guesses:
+            for i, k in enumerate(use_fit_parameters):
+                if k in guesses:
+                    p0[i] = guesses[k]
         
         popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, method=fit_method)
         out_kwargs = model_kwargs.copy()

@@ -364,6 +364,22 @@ def test_VolumeSolid_fitting0():
     assert_close(fit_zeros_specified['A'], fit_constant['A'], rtol=1e-13)
 
 @pytest.mark.meta_T_dept
+@pytest.mark.fitting
+def test_VolumeLiquid_fitting0():
+
+    ammonia_Ts_V_l = [195, 206.061, 217.121, 228.182, 239.242, 239.82, 250.303, 261.363, 272.424, 283.484, 294.545, 305.605, 316.666, 327.726, 338.787, 349.847, 360.908, 371.968, 383.029, 394.089, 405.15]
+    ammonia_V_ls = [1/43200.2, 1/42436.8, 1/41658, 1/40862.4, 1/40048.1, 1/40005, 1/39213, 1/38354.7, 1/37470.3, 1/36556, 1/35607.3, 1/34618.5, 1/33582.2, 1/32488.1, 1/31322.5, 1/30064.9, 1/28683.4, 1/27123.2, 1/25274.3, 1/22840.2, 1/16984.9]
+    ammonia_rhom_ls = [1/v for v in ammonia_V_ls]
+    obj = VolumeLiquid(CASRN='7664-41-7', load_data=False)
+
+    coeffs, stats = obj.fit_data_to_model(Ts=ammonia_Ts_V_l, data=ammonia_rhom_ls, model='DIPPR105',
+                          do_statistics=True, use_numba=False,
+                          guesses= {'A': 4.0518E3, 'B': 0.27129, 'C': 405.4,'D': 0.31349})
+    assert stats['MAE'] < 1e-5
+    
+
+
+@pytest.mark.meta_T_dept
 def test_VolumeLiquidMixture():
 #    from thermo.mixture import Mixture
 #    m = Mixture(['benzene', 'toluene'], zs=[.5, .5], T=298.15, P=101325.)
