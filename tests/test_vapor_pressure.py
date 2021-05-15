@@ -127,6 +127,22 @@ def test_VaporPressure():
     obj = VaporPressure(CASRN="71-43-2", Tb=353.23, Tc=562.05, Pc=4895000.0, omega=0.212, extrapolation="AntoineAB|DIPPR101_ABC", method="WAGNER_MCGARRY")
     assert_close(obj.T_dependent_property_derivative(600.0), 2379682.4349338813, rtol=1e-4)
 
+@pytest.mark.meta_T_dept
+def test_VaporPressure_fitting0():
+    obj = VaporPressure(CASRN='13838-16-9')
+    Tmin, Tmax = obj.WAGNER_POLING_Tmin, obj.WAGNER_POLING_Tmax
+    Ts = linspace(Tmin, Tmax, 10)
+    Ps = [obj(T) for T in Ts]
+    Tc, Pc = obj.WAGNER_POLING_Tc, obj.WAGNER_POLING_Pc
+    fitted = obj.fit_data_to_model(Ts=Ts, data=Ps, model='Wagner',
+                          model_kwargs={'Tc': obj.WAGNER_POLING_Tc, 'Pc': obj.WAGNER_POLING_Pc})
+    res = fitted
+    assert 'Tc' in res
+    assert 'Pc' in res
+    assert_close(res['a'], obj.WAGNER_POLING_coefs[0])
+    assert_close(res['b'], obj.WAGNER_POLING_coefs[1])
+    assert_close(res['c'], obj.WAGNER_POLING_coefs[2])
+    assert_close(res['d'], obj.WAGNER_POLING_coefs[3])
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_analytical_derivatives():

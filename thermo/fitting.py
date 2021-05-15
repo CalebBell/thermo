@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['alpha_Twu91_objf', 'alpha_Twu91_objfc', 'fit',
+__all__ = ['alpha_Twu91_objf', 'alpha_Twu91_objfc', 'fit_function',
            'Twu91_check_params', 'postproc_lmfit',
            'alpha_poly_objf', 'alpha_poly_objfc', 'poly_check_params',
            'fit_cheb_poly', 'poly_fit_statistics', 'fit_cheb_poly_auto']
@@ -461,7 +461,7 @@ def postproc_lmfit(result):
     return result
 
 
-def fit(fun, x0=None, args=None, check_fun=None, debug=False,
+def fit_function(fun, x0=None, args=None, check_fun=None, debug=False,
         cons_meth=methods_cons_good, uncons_meth=methods_uncons_good):
     from lmfit import Parameter, Parameters, minimize
     best_result = None
