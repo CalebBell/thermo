@@ -1373,7 +1373,8 @@ class TDependentProperty(object):
     @classmethod
     def fit_data_to_model(cls, Ts, data, model, model_kwargs=None, 
                           fit_method='lm', use_numba=True,
-                          do_statistics=False, guesses=None):
+                          do_statistics=False, guesses=None,
+                          solver_kwargs=None):
         r'''Method to fit T-dependent property data to one of the available
         model correlations. 
 
@@ -1399,6 +1400,8 @@ class TDependentProperty(object):
         guesses : dict[str: float], optional
             Parameter guesses, by name; any number of parameters can be
             specified, [-]
+        solver_kwargs : dict
+            Extra parameters to be passed to the solver chosen, [-]
 
         Returns
         -------
@@ -1413,6 +1416,8 @@ class TDependentProperty(object):
             model_kwargs = {}
         if guesses is None:
             guesses = {}
+        if solver_kwargs is None:
+            solver_kwargs = {}
         
         required_args, optional_args, functions, fit_parameters = cls.correlation_models[model]
         use_fit_parameters = []
@@ -1424,7 +1429,10 @@ class TDependentProperty(object):
         param_order = required_args + optional_args
         const_kwargs = {}
         model_function_name = functions['f'].__name__
-        
+
+        for k in required_args:
+            if k not in model_kwargs and k not in use_fit_parameters:
+                raise ValueError("The selected model requires an input parameter {}".format(k))
         fitting_func = generate_fitting_function(model_function_name, param_order,
                               fit_parameters, model_kwargs, const_kwargs, try_numba=use_numba)
         
@@ -1433,8 +1441,11 @@ class TDependentProperty(object):
             for i, k in enumerate(use_fit_parameters):
                 if k in guesses:
                     p0[i] = guesses[k]
-        
-        popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, method=fit_method)
+        pcov = None
+        if fit_method == 'differential_evolution':
+            popt = differential_evolution(fitting_func)
+        else:
+            popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, method=fit_method, **solver_kwargs)
         out_kwargs = model_kwargs.copy()
         for param_name, param_value in zip(fit_parameters, popt):
             out_kwargs[param_name] = float(param_value)

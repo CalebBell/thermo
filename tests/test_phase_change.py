@@ -158,3 +158,21 @@ def test_EnthalpyVaporization_Watson_extrapolation():
 @pytest.mark.meta_T_dept
 def test_EnthalpySublimation_no_numpy():
     assert type(EnthalpySublimation(CASRN='1327-53-3').CRC_Hfus) is float
+
+@pytest.mark.meta_T_dept
+@pytest.mark.fitting
+def test_EnthalpyVaporization_fitting0():
+    ammonia_Ts_Hvaps = [195.41, 206.344, 217.277, 228.211, 239.145, 239.82, 250.078, 261.012, 271.946, 282.879, 293.813, 304.747, 315.681, 326.614, 337.548, 348.482, 359.415, 370.349, 381.283, 392.216, 403.15]
+    ammonia_Hvaps = [25286.1, 24832.3, 24359.1, 23866.9, 23354.6, 23322.3, 22820.1, 22259.6, 21667.7, 21037.4, 20359.5, 19622.7, 18812.8, 17912.4, 16899.8, 15747, 14416.3, 12852.3, 10958.8, 8510.62, 4311.94]
+    obj = EnthalpyVaporization(CASRN='7664-41-7', load_data=False)
+    
+    with pytest.raises(ValueError):
+        # Tc needs to be specified
+        obj.fit_data_to_model(Ts=ammonia_Ts_Hvaps, data=ammonia_Hvaps, model='DIPPR106',
+                              do_statistics=True, use_numba=False, fit_method='lm')
+        
+    fit, res = obj.fit_data_to_model(Ts=ammonia_Ts_Hvaps, data=ammonia_Hvaps, model='DIPPR106',
+                      do_statistics=True, use_numba=False, model_kwargs={'Tc': 405.400},
+                      fit_method='lm'
+                     )
+    assert res['MAE'] < 1e-5
