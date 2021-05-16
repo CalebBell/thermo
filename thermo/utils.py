@@ -692,6 +692,9 @@ def generate_fitting_function(model,
         elif n in fit_parameters:
             reusable_args.append(1.0)
             arg_dest_idxs.append(i)
+    if len(model) > 2 and model.startswith('EQ'):
+        # Handle the DIPPR equations that have the DIPPR equation in them
+        reusable_args.append(0)
 
     def fitting_function(Ts, *args):
         for i, v in enumerate(args):
@@ -958,6 +961,7 @@ class TDependentProperty(object):
            {'A': -395.0, 'B': 20000.0, 'C': 60.0, 'D':-5e-2, 'E': 1.0}, # near dippr viscosity 1,2-Butanediol
            {'A': -9, 'B': 1600.0, 'C': -2.15, 'D':3.3e22, 'E': -9.92}, # near dippr viscosity 1-Butanol
            {'A': 180., 'B': -17000.0, 'C': -22.5, 'D':1e-17, 'E': -6.02}, # near dippr Psat 1-Undecanol
+           {'A': 62.9, 'B': -4137.0, 'C': -6.32, 'D': 9.2E-06, 'E': 2.0}, # near chemsep Psat ammonia
             ]
            }
       ),
@@ -981,8 +985,14 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ105(T, order=1, **kwargs),
        'f_der2': lambda T, **kwargs: EQ105(T, order=2, **kwargs),
        'f_der3': lambda T, **kwargs: EQ105(T, order=3, **kwargs)},
-      {'fit_params': ['A', 'B', 'C', 'D']}),
-     
+      {'fit_params': ['A', 'B', 'C', 'D'], 'initial_guesses': [
+          {'A': 500.0, 'B': 0.25, 'C': 630.0, 'D': 0.22,}, # near 2-Octanol dippr volume
+          {'A': 1370.0, 'B': 0.238, 'C': 588.0, 'D': 0.296,}, # near Nitromethane dippr volume
+          {'A': 976.0, 'B': 0.282, 'C': 483.0, 'D': 0.22529,}, # near Methyldichlorosilane dippr volume
+          {'A': 7247.0, 'B': 0.418, 'C': 5.2, 'D': 0.24,}, # near helium dippr volume
+          {'A': 4289.0, 'B': 0.285, 'C': 144.0, 'D': 0.29}, # near Fluorine dippr volume
+          {'A': 4.05E3, 'B': 0.27, 'C': 400.,'D': 0.313},  # near ammonia dippr volume
+          ]}),
      'DIPPR106': (['Tc', 'A', 'B'],
       ['C', 'D', 'E'],
       {'f': EQ106,
@@ -1483,6 +1493,12 @@ class TDependentProperty(object):
                 print(params, err)
                 return err
             
+        p0 = [1.0]*len(fit_parameters)
+        if guesses:
+            for i, k in enumerate(use_fit_parameters):
+                if k in guesses:
+                    p0[i] = guesses[k]
+                    
         if 'initial_guesses' in fit_data:
             # iterate over all the initial guess parameters we have and find the one
             # with the lowest error (according to the error criteria)
@@ -1490,7 +1506,8 @@ class TDependentProperty(object):
             best_hardcoded_err = 1e300
             hardcoded_errors = []
             hardcoded_guesses = fit_data['initial_guesses']
-            for hardcoded in hardcoded_guesses:
+            extra_user_guess = [{k: v for k, v in zip(use_fit_parameters, p0)}]
+            for hardcoded in hardcoded_guesses + extra_user_guess:
                 ph = [1.0]*len(fit_parameters)
                 for i, k in enumerate(use_fit_parameters):
                     ph[i] = hardcoded[k]
@@ -1502,14 +1519,6 @@ class TDependentProperty(object):
                     best_hardcoded_err = err
                     best_hardcoded_guess = ph
             p0 = best_hardcoded_guess
-        else:
-            # Initialize with ones
-            p0 = [1.0]*len(fit_parameters)
-            if guesses:
-                for i, k in enumerate(use_fit_parameters):
-                    if k in guesses:
-                        p0[i] = guesses[k]
-                    
                 
         pcov = None
         if fit_method == 'differential_evolution':
@@ -1525,6 +1534,8 @@ class TDependentProperty(object):
             res = differential_evolution(minimize_func, bounds=working_bounds, **solver_kwargs)
             popt = res['x']
         else:
+            if 'maxfev' not in solver_kwargs and fit_method == 'lm':
+                solver_kwargs['maxfev'] = 10000
             popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, method=fit_method, **solver_kwargs)
         out_kwargs = model_kwargs.copy()
         for param_name, param_value in zip(fit_parameters, popt):
