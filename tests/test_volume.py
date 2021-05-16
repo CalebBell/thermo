@@ -331,6 +331,19 @@ def test_VolumeSolid_works_with_no_data():
     # Test pentane has no property but that it succeeds
     VolumeSolid(CASRN='109-66-0').T_dependent_property(300)
 
+@pytest.mark.meta_T_dept
+@pytest.mark.fitting
+def test_VolumeSolid_fitting1():
+    # Initial Result: went poorly + Don't have that exact model
+    # 1) A special polynomial fitting may be useful
+    # 2) If the model does not "converge", it may be worth trying other solvers
+    ammonia_Ts = [194.150, 194.650, 195.150, 195.650, 196.150, 196.650, 197.150, 197.650, 198.150, 198.650, 199.150, 199.650, 200.150, 200.650, 201.150, 201.650, 202.150, 202.650, 203.150, 203.650, 204.150]
+    ammonia_Vms = [1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3]
+    obj = VolumeSolid(CASRN='7664-41-7', load_data=False)
+    
+    res, stats = VolumeSolid.fit_data_to_model(Ts=ammonia_Ts, data=ammonia_Vms, model='DIPPR100',
+                          do_statistics=True, use_numba=False)
+    assert stats['MAE'] < 1e-8
 
 @pytest.mark.meta_T_dept
 def test_VolumeSolid_fitting0():
