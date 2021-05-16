@@ -26,7 +26,7 @@ __all__ = ['alpha_Twu91_objf', 'alpha_Twu91_objfc', 'fit_function',
            'Twu91_check_params', 'postproc_lmfit',
            'alpha_poly_objf', 'alpha_poly_objfc', 'poly_check_params',
            'fit_cheb_poly', 'poly_fit_statistics', 'fit_cheb_poly_auto',
-           'data_fit_statistics']
+           'data_fit_statistics', 'fit_minimization_targets']
 
 from cmath import atanh as catanh
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
@@ -34,11 +34,26 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              bisect, inf, polyder, chebder,
                              trunc_exp, secant, linspace, logspace,
                              horner, horner_and_der2, horner_and_der3,
-                             is_poly_positive, is_poly_negative)
+                             is_poly_positive, is_poly_negative,
+                             max_abs_error, max_abs_rel_error, max_squared_error, 
+                             max_squared_rel_error, mean_abs_error, mean_abs_rel_error, 
+                             mean_squared_error, mean_squared_rel_error)
 from fluids.constants import R
 from numpy.polynomial.chebyshev import poly2cheb
 from numpy.polynomial.chebyshev import cheb2poly
 from numpy.polynomial.polynomial import Polynomial
+
+
+fit_minimization_targets = {'MeanAbsErr': mean_abs_error,
+                            'MeanRelErr': mean_abs_rel_error,
+                            'MeanSquareErr': mean_squared_error,
+                            'MeanSquareRelErr': mean_squared_rel_error,
+                            'MaxAbsErr': max_abs_error,
+                            'MaxRelErr': max_abs_rel_error,
+                            'MaxSquareErr': max_squared_error,
+                            'MaxSquareRelErr': max_squared_rel_error,
+                            }
+
 
 ChebTools = None
 def fit_cheb_poly(func, low, high, n,

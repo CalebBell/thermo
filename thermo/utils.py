@@ -83,7 +83,7 @@ __all__ = ['has_matplotlib', 'Stateva_Tsvetkov_TPDF', 'TPD',
 
 import os
 from cmath import sqrt as csqrt
-from fluids.numerics import quad, brenth, newton, secant, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders, assert_close, numpy as np, curve_fit
+from fluids.numerics import quad, brenth, newton, secant, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders, assert_close, numpy as np, curve_fit, differential_evolution
 from fluids.constants import R
 from chemicals.utils import PY37, isnan, isinf, log, exp, ws_to_zs, zs_to_ws, e
 from chemicals.utils import mix_multiple_component_flows, hash_any_primitive
@@ -699,7 +699,6 @@ def generate_fitting_function(model,
         return f(Ts, *reusable_args)
     return fitting_function
 
-
 class TDependentProperty(object):
     '''Class for calculating temperature-dependent chemical properties.
 
@@ -883,36 +882,39 @@ class TDependentProperty(object):
     _json_obj_by_CAS = ('CP_f',)
 
     correlation_models = {
-        'Antoine': (['A', 'B', 'C'], ['base'], {'f': Antoine, 'f_der': dAntoine_dT, 'f_der2': d2Antoine_dT2}, ['A', 'B', 'C']),
+        'Antoine': (['A', 'B', 'C'], ['base'], {'f': Antoine, 'f_der': dAntoine_dT, 'f_der2': d2Antoine_dT2}, {'fit_params': ['A', 'B', 'C']}),
         'TRC_Antoine_extended': (['Tc', 'to', 'A', 'B', 'C', 'n', 'E', 'F'], [],
                                  {'f': TRC_Antoine_extended, 'f_der': dTRC_Antoine_extended_dT, 'f_der2': d2TRC_Antoine_extended_dT2},
-                                 ['to', 'A', 'B', 'C', 'n', 'E', 'F']),
+                                 {'fit_params': ['to', 'A', 'B', 'C', 'n', 'E', 'F']}),
         'Wagner_original': (['Tc', 'Pc', 'a', 'b', 'c', 'd'], [], {'f': Wagner_original, 'f_der': dWagner_original_dT, 'f_der2': d2Wagner_original_dT2},
-                            ['a', 'b', 'c', 'e']),
+                            {'fit_params': ['a', 'b', 'c', 'e']}),
         'Wagner': (['Tc', 'Pc', 'a', 'b', 'c', 'd'], [], {'f': Wagner, 'f_der': dWagner_dT, 'f_der2': d2Wagner_dT2},
-                   ['a', 'b', 'c', 'd']),
+                   {'fit_params': ['a', 'b', 'c', 'd']}),
 
-    'Alibakhshi': (['Tc', 'C'], [], {'f': Alibakhshi}, ['C']),
-    'PPDS12': (['Tc', 'A', 'B', 'C', 'D', 'E'], [], {'f': PPDS12}, ['A', 'B', 'C', 'D', 'E']),
-    'Watson': (['Hvap_ref', 'T_ref', 'Tc'], ['exponent'], {'f': Watson}, ['Hvap_ref', 'T_ref']),
+    'Alibakhshi': (['Tc', 'C'], [], {'f': Alibakhshi}, {'fit_params': ['C']}),
+    'PPDS12': (['Tc', 'A', 'B', 'C', 'D', 'E'], [], {'f': PPDS12}, {'fit_params': ['A', 'B', 'C', 'D', 'E']}),
+    'Watson': (['Hvap_ref', 'T_ref', 'Tc'], ['exponent'], {'f': Watson}, {'fit_params': ['Hvap_ref', 'T_ref']}),
 
-    'Viswanath_Natarajan_2': (['A', 'B',], [], {'f': Viswanath_Natarajan_2}, ['A', 'B']),
-    'Viswanath_Natarajan_2_exponential': (['C', 'D',], [], {'f': Viswanath_Natarajan_2_exponential}, ['C', 'D',]),
-    'Viswanath_Natarajan_3': (['A', 'B', 'C'], [], {'f': Viswanath_Natarajan_3}, ['A', 'B', 'C']),
-    'PPDS9': (['A', 'B', 'C', 'D', 'E'], [], {'f': PPDS9, 'f_der': dPPDS9_dT}, ['A', 'B', 'C', 'D', 'E'],),
+    'Viswanath_Natarajan_2': (['A', 'B',], [], {'f': Viswanath_Natarajan_2}, {'fit_params': ['A', 'B']}),
+    'Viswanath_Natarajan_2_exponential': (['C', 'D',], [], {'f': Viswanath_Natarajan_2_exponential}, {'fit_params': ['C', 'D',]}),
+    'Viswanath_Natarajan_3': (['A', 'B', 'C'], [], {'f': Viswanath_Natarajan_3}, {'fit_params': ['A', 'B', 'C']}),
+    'PPDS9': (['A', 'B', 'C', 'D', 'E'], [], {'f': PPDS9, 'f_der': dPPDS9_dT}, {'fit_params': ['A', 'B', 'C', 'D', 'E']},),
 
-    'Poling': (['a', 'b', 'c', 'd', 'e'], [], {'f': Poling, 'f_int': Poling_integral, 'f_int_over_T': Poling_integral_over_T}, ['a', 'b', 'c', 'd', 'e'],),
+    'Poling': (['a', 'b', 'c', 'd', 'e'], [], {'f': Poling, 'f_int': Poling_integral, 'f_int_over_T': Poling_integral_over_T}, {'fit_params': ['a', 'b', 'c', 'd', 'e']},),
     'TRCCp': (['a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7'], [], {'f': TRCCp, 'f_int': TRCCp_integral, 'f_int_over_T': TRCCp_integral_over_T},
-              ['a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7']),
+              {'fit_params': ['a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7']}),
     'Zabransky_quasi_polynomial': (['Tc', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6'], [], {'f': Zabransky_quasi_polynomial, 'f_int': Zabransky_quasi_polynomial_integral,
-                                                                                    'f_int_over_T': Zabransky_quasi_polynomial_integral_over_T}, ['a1', 'a2', 'a3', 'a4', 'a5', 'a6']),
-    'Zabransky_cubic': (['a1', 'a2', 'a3', 'a4'], [], {'f': Zabransky_cubic, 'f_int': Zabransky_cubic_integral, 'f_int_over_T': Zabransky_cubic_integral_over_T}, ['a1', 'a2', 'a3', 'a4']),
+                                                                                    'f_int_over_T': Zabransky_quasi_polynomial_integral_over_T}, 
+                                   {'fit_params': ['a1', 'a2', 'a3', 'a4', 'a5', 'a6']}),
+    'Zabransky_cubic': (['a1', 'a2', 'a3', 'a4'], [], 
+                        {'f': Zabransky_cubic, 'f_int': Zabransky_cubic_integral, 'f_int_over_T': Zabransky_cubic_integral_over_T}, 
+                        {'fit_params': ['a1', 'a2', 'a3', 'a4']}),
 
-    'REFPROP_sigma': (['Tc', 'sigma0', 'n0'], ['sigma1', 'n1', 'sigma2', 'n2'], {'f': REFPROP_sigma},  ['sigma0', 'n0', 'sigma1', 'n1', 'sigma2', 'n2']),
-    'Somayajulu': (['Tc', 'A', 'B', 'C'], [], {'f': Somayajulu},  ['A', 'B', 'C']),
-    'Jasper': (['a', 'b',], [], {'f': Jasper}, ['a', 'b',]),
+    'REFPROP_sigma': (['Tc', 'sigma0', 'n0'], ['sigma1', 'n1', 'sigma2', 'n2'], {'f': REFPROP_sigma},  {'fit_params': ['sigma0', 'n0', 'sigma1', 'n1', 'sigma2', 'n2']}),
+    'Somayajulu': (['Tc', 'A', 'B', 'C'], [], {'f': Somayajulu}, {'fit_params': ['A', 'B', 'C']}),
+    'Jasper': (['a', 'b',], [], {'f': Jasper}, {'fit_params': ['a', 'b',]}),
 
-    'volume_VDI_PPDS': (['Tc', 'rhoc', 'a', 'b', 'c', 'd', 'MW',], [], {'f': volume_VDI_PPDS}, ['a', 'b', 'c', 'd',]),
+    'volume_VDI_PPDS': (['Tc', 'rhoc', 'a', 'b', 'c', 'd', 'MW',], [], {'f': volume_VDI_PPDS}, {'fit_params': ['a', 'b', 'c', 'd',]}),
 
     # Plain polynomial
     'DIPPR100': ([],
@@ -921,7 +923,7 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
-      ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
+      {'fit_params': ['A', 'B', 'C', 'D', 'E', 'F', 'G']},
       ),
     'constant': ([],
       ['A'],
@@ -929,7 +931,7 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
-      ['A'],
+      {'fit_params': ['A']},
       ),
 
      'DIPPR101': (['A', 'B'],
@@ -938,7 +940,9 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ101(T, order=1, **kwargs),
        'f_der2': lambda T, **kwargs: EQ101(T, order=2, **kwargs),
        'f_der3': lambda T, **kwargs: EQ101(T, order=3, **kwargs)},
-      ['A', 'B', 'C', 'D', 'E']
+      {'fit_params': ['A', 'B', 'C', 'D', 'E'],
+       'initial_guesses': [{'A': -40.0, 'B': 1500.0, 'C': 4.8, 'D':-.000016, 'E': 2.0}]
+           }
       ),
      'DIPPR102': (['A', 'B', 'C', 'D'],
       [],
@@ -946,21 +950,21 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ102(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ102(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ102(T, order=-1j, **kwargs)},
-     ['A', 'B', 'C', 'D']),
+     {'fit_params': ['A', 'B', 'C', 'D']}),
      'DIPPR104': (['A', 'B'],
       ['C', 'D', 'E'],
       {'f': EQ104,
        'f_der': lambda T, **kwargs: EQ104(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ104(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ104(T, order=-1j, **kwargs)},
-     ['A', 'B', 'C', 'D', 'E']),
+     {'fit_params': ['A', 'B', 'C', 'D', 'E']}),
      'DIPPR105': (['A', 'B', 'C', 'D'],
       [],
       {'f': EQ105,
        'f_der': lambda T, **kwargs: EQ105(T, order=1, **kwargs),
        'f_der2': lambda T, **kwargs: EQ105(T, order=2, **kwargs),
        'f_der3': lambda T, **kwargs: EQ105(T, order=3, **kwargs)},
-      ['A', 'B', 'C', 'D']),
+      {'fit_params': ['A', 'B', 'C', 'D']}),
      
      'DIPPR106': (['Tc', 'A', 'B'],
       ['C', 'D', 'E'],
@@ -968,14 +972,14 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ106(T, order=1, **kwargs),
        'f_der2': lambda T, **kwargs: EQ106(T, order=2, **kwargs),
        'f_der3': lambda T, **kwargs: EQ106(T, order=3, **kwargs)},
-     ['A', 'B', 'C', 'D', 'E']),
+     {'fit_params': ['A', 'B', 'C', 'D', 'E']}),
      'YawsSigma': (['Tc', 'A', 'B'],
       [],
       {'f': EQ106,
        'f_der': lambda T, **kwargs: EQ106(T, order=1, **kwargs),
        'f_der2': lambda T, **kwargs: EQ106(T, order=2, **kwargs),
        'f_der3': lambda T, **kwargs: EQ106(T, order=3, **kwargs)},
-      ['A', 'B']),
+      {'fit_params': ['A', 'B']}),
 
      'DIPPR107': ([],
       ['A', 'B', 'C', 'D', 'E'],
@@ -983,35 +987,35 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ107(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ107(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ107(T, order=-1j, **kwargs)},
-      ['A', 'B', 'C', 'D', 'E']),
+      {'fit_params': ['A', 'B', 'C', 'D', 'E']}),
      'DIPPR114': (['Tc', 'A', 'B', 'C', 'D'],
       [],
       {'f': EQ114,
        'f_der': lambda T, **kwargs: EQ114(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ114(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ114(T, order=-1j, **kwargs)},
-     ['A', 'B', 'C', 'D']),
+     {'fit_params': ['A', 'B', 'C', 'D']}),
      'DIPPR115': (['A', 'B'],
       ['C', 'D', 'E'],
       {'f': EQ115,
        'f_der': lambda T, **kwargs: EQ115(T, order=1, **kwargs),
        'f_der2': lambda T, **kwargs: EQ115(T, order=2, **kwargs),
        'f_der3': lambda T, **kwargs: EQ115(T, order=3, **kwargs)},
-      ['A', 'B', 'C', 'D', 'E']),
+      {'fit_params': ['A', 'B', 'C', 'D', 'E']}),
      'DIPPR116': (['A', 'B'],
       ['C', 'D', 'E'],
       {'f': EQ116,
        'f_der': lambda T, **kwargs: EQ116(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ116(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ116(T, order=-1j, **kwargs)},
-      ['A', 'B', 'C', 'D', 'E']),
+      {'fit_params': ['A', 'B', 'C', 'D', 'E']}),
      'DIPPR127': (['A', 'B', 'C', 'D', 'E', 'F', 'G'],
       [],
       {'f': EQ127,
        'f_der': lambda T, **kwargs: EQ127(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ127(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ127(T, order=-1j, **kwargs)},
-      ['A', 'B', 'C', 'D', 'E', 'F', 'G']),
+      {'fit_params': ['A', 'B', 'C', 'D', 'E', 'F', 'G']}),
 
 
 
@@ -1374,7 +1378,7 @@ class TDependentProperty(object):
     def fit_data_to_model(cls, Ts, data, model, model_kwargs=None, 
                           fit_method='lm', use_numba=True,
                           do_statistics=False, guesses=None,
-                          solver_kwargs=None):
+                          solver_kwargs=None, objective='MeanSquareRelErr'):
         r'''Method to fit T-dependent property data to one of the available
         model correlations. 
 
@@ -1392,7 +1396,8 @@ class TDependentProperty(object):
             here as well with a constant value and then that fixed value will
             be used instead of fitting the parameter. [-]
         fit_method : str, optional
-            The fit method to use; one of {‘lm’, ‘trf’, ‘dogbox’}, [-]
+            The fit method to use; one of {`lm`, `trf`, `dogbox`, 
+                                           `differential_evolution`}, [-]
         use_numba : bool, optional
             Whether or not to try to use numba to speed up the computation, [-]
         do_statistics : bool, optional
@@ -1402,14 +1407,26 @@ class TDependentProperty(object):
             specified, [-]
         solver_kwargs : dict
             Extra parameters to be passed to the solver chosen, [-]
+        objective : str
+            The minimimization criteria; supported by `differential_evolution`.
+            One of:
+                * 'MeanAbsErr': Mean absolute error
+                * 'MeanRelErr': Mean relative error
+                * 'MeanSquareErr': Mean squared absolute error
+                * 'MeanSquareRelErr': Mean squared relative error
+                * 'MaxAbsErr': Maximum absolute error
+                * 'MaxRelErr': Maximum relative error
+                * 'MaxSquareErr': Maximum squared absolute error
+                * 'MaxSquareRelErr': Maximum squared relative error
 
         Returns
         -------
-        coefficients : dict[str: float]
+        coefficients : dict[str: float]and
             Calculated coefficients, [`various`]
         statistics : dict[str: float]
             Statistics, calculated and returned only if `do_statistics` is True, [-]
         '''
+        from thermo.fitting import data_fit_statistics, fit_minimization_targets
         if model not in cls.available_correlations:
             raise ValueError("Model is not available; available models are %s" %(cls.available_correlations,))
         if model_kwargs is None:
@@ -1418,8 +1435,12 @@ class TDependentProperty(object):
             guesses = {}
         if solver_kwargs is None:
             solver_kwargs = {}
+        if objective != 'MeanSquareRelErr' and fit_method != 'differential_evolution':
+            raise ValueError("Specified objective is not supported with the specified solver")
         
-        required_args, optional_args, functions, fit_parameters = cls.correlation_models[model]
+        required_args, optional_args, functions, fit_data = cls.correlation_models[model]
+        fit_parameters = fit_data['fit_params']
+        
         use_fit_parameters = []
         for k in fit_parameters:
             if k not in model_kwargs:
@@ -1433,9 +1454,18 @@ class TDependentProperty(object):
         for k in required_args:
             if k not in model_kwargs and k not in use_fit_parameters:
                 raise ValueError("The selected model requires an input parameter {}".format(k))
+        do_minimization = fit_method == 'differential_evolution'
         fitting_func = generate_fitting_function(model_function_name, param_order,
                               fit_parameters, model_kwargs, const_kwargs, try_numba=use_numba)
-        
+        if do_minimization:
+            err_func = fit_minimization_targets[objective]
+            def minimize_func(params):
+                calc = fitting_func(Ts, *params)
+                err = err_func(data, calc)
+                print(params, err)
+                return err
+            
+
         p0 = [1.0]*len(fit_parameters)
         if guesses:
             for i, k in enumerate(use_fit_parameters):
@@ -1443,8 +1473,17 @@ class TDependentProperty(object):
                     p0[i] = guesses[k]
         pcov = None
         if fit_method == 'differential_evolution':
-            popt = differential_evolution(fitting_func)
-            
+            if 'bounds' in solver_kwargs:
+                working_bounds = solver_kwargs['bounds']
+            else:
+                try:
+                    bounds = fit_data['bounds']
+                    working_bounds = [bounds[k] for k in use_fit_parameters]
+                except KeyError:
+                    working_bounds = [(-1e7, 1e7) for k in use_fit_parameters]
+                
+            res = differential_evolution(minimize_func, bounds=working_bounds, **solver_kwargs)
+            popt = res['x']
         else:
             popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, method=fit_method, **solver_kwargs)
         out_kwargs = model_kwargs.copy()
@@ -1452,7 +1491,6 @@ class TDependentProperty(object):
             out_kwargs[param_name] = float(param_value)
 
         if do_statistics:
-            from thermo.fitting import data_fit_statistics
             calc = fitting_func(Ts, *popt)
             stats = data_fit_statistics(Ts, data, calc)
             statistics = {}
