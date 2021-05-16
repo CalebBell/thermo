@@ -1464,6 +1464,8 @@ class TDependentProperty(object):
             solver_kwargs = {}
         if objective != 'MeanSquareRelErr' and fit_method != 'differential_evolution':
             raise ValueError("Specified objective is not supported with the specified solver")
+        if use_numba:
+            Ts = np.array(Ts)
         
         required_args, optional_args, functions, fit_data = cls.correlation_models[model]
         fit_parameters = fit_data['fit_params']

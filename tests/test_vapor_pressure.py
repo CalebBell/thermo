@@ -127,6 +127,7 @@ def test_VaporPressure():
     obj = VaporPressure(CASRN="71-43-2", Tb=353.23, Tc=562.05, Pc=4895000.0, omega=0.212, extrapolation="AntoineAB|DIPPR101_ABC", method="WAGNER_MCGARRY")
     assert_close(obj.T_dependent_property_derivative(600.0), 2379682.4349338813, rtol=1e-4)
 
+@pytest.mark.fitting
 @pytest.mark.meta_T_dept
 def test_VaporPressure_fitting0():
     obj = VaporPressure(CASRN='13838-16-9')
@@ -143,6 +144,17 @@ def test_VaporPressure_fitting0():
     assert_close(res['b'], obj.WAGNER_POLING_coefs[1])
     assert_close(res['c'], obj.WAGNER_POLING_coefs[2])
     assert_close(res['d'], obj.WAGNER_POLING_coefs[3])
+
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_VaporPressure_fitting1():
+    # Ammonia data fitting from chemsep
+    ammonia_Ts_Psats = [191.24, 202.546, 213.852, 225.157, 236.463, 239.82, 247.769, 259.075, 270.381, 281.686, 292.992, 304.298, 315.604, 326.909, 338.215, 349.521, 360.827, 372.133, 383.438, 394.744, 406.05]
+    ammonia_Psats = [4376.24, 10607.70, 23135.70, 46190.70, 85593.30, 101505.00, 148872.00, 245284.00, 385761.00, 582794.00, 850310.00, 1203550.00, 1658980.00, 2234280.00, 2948340.00, 3821410.00, 4875270.00, 6133440.00, 7621610.00, 9367940.00, 11403600.00]
+    res, stats = VaporPressure.fit_data_to_model(Ts=ammonia_Ts_Psats, data=ammonia_Psats, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-4
+
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_analytical_derivatives():
