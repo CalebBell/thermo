@@ -266,6 +266,20 @@ def test_ViscosityGas():
         EtOH.test_method_validity_P(300, 1E5, 'BADMETHOD')
 
 
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_ViscosityGas_fitting0():
+    # ammonia chemsep
+    ammonia_Ts_mug = [194.6, 236.989, 239.82, 279.379, 321.768, 364.158, 406.547, 448.937, 491.326, 533.716, 576.105, 618.495, 660.884, 703.274, 745.663, 788.053, 830.442, 872.831, 915.221, 957.61, 1000]
+    ammonia_mugs = [6.45166E-06, 7.95475E-06, 8.05584E-06, 9.47483E-06, 1.10043E-05, 1.25388E-05, 1.40761E-05, 1.56145E-05, 1.7153E-05, 1.86911E-05, 2.02283E-05, 2.17643E-05, 2.3299E-05, 2.48323E-05, 2.6364E-05, 2.78941E-05, 2.94227E-05, 3.09497E-05, 3.24751E-05, 3.39989E-05, 3.55212E-05]
+    
+    fit, res = ViscosityGas.fit_data_to_model(Ts=ammonia_Ts_mug, data=ammonia_mugs, model='DIPPR102',
+                          do_statistics=True, use_numba=False,
+                          fit_method='lm')
+    fit, res
+    assert res['MAE'] < 1e-5
+
+
 
 def test_ViscosityLiquidMixture():
     # DIPPR  1983 manual example

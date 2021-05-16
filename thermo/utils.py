@@ -971,7 +971,21 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ102(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ102(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ102(T, order=-1j, **kwargs)},
-     {'fit_params': ['A', 'B', 'C', 'D']}),
+     {'fit_params': ['A', 'B', 'C', 'D'],
+      'initial_guesses': [
+           {'A': 1.2e-7, 'B': 0.8, 'C': 77.0, 'D': 0.0}, # near dippr mug Acetaldehyde
+           {'A': 1.4e-7, 'B': 0.75, 'C': 277.0, 'D': 0.0}, # near dippr mug Acetamide
+           {'A': 2.7e-8, 'B': 1.0, 'C': 7.5, 'D': 0.0}, # near dippr mug Acetic acid
+           {'A': 3.1e-8, 'B': 0.96, 'C': 0.0, 'D': 0.0}, # near dippr mug sec-Butyl mercaptan
+           {'A': 2e-6, 'B': 0.42, 'C': 900.0, 'D': -4e4}, # near dippr mug Butyric acid
+           {'A': 3.5e-6, 'B': 0.37, 'C': 1200.0, 'D': 0.0}, # near dippr mug N,N-Dimethyl formamide
+           {'A': 3.5e-7, 'B': 1.8, 'C': 0.0, 'D': 0.0}, # near dippr kg Acetaldehyde
+           {'A': 4e-4, 'B': 0.8, 'C': 440.0, 'D': 1.4e5}, # near dippr kg Acetic anhydride
+           {'A': 3e-4, 'B': 0.78, 'C': -.7, 'D': 2.1e3}, # near dippr kg air
+           {'A': 2.85e-4, 'B': 1.0, 'C': -200.0, 'D': 2.2e4}, # near dippr kg Deuterium
+           {'A': -6.5e5, 'B': 0.286, 'C': -1.7e10, 'D': -1.74e13}, # near dippr kg Furan
+           
+        ]}),
      'DIPPR104': (['A', 'B'],
       ['C', 'D', 'E'],
       {'f': EQ104,
