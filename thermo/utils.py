@@ -941,7 +941,15 @@ class TDependentProperty(object):
        'f_der2': lambda T, **kwargs: EQ101(T, order=2, **kwargs),
        'f_der3': lambda T, **kwargs: EQ101(T, order=3, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D', 'E'],
-       'initial_guesses': [{'A': -40.0, 'B': 1500.0, 'C': 4.8, 'D':-.000016, 'E': 2.0}]
+       'initial_guesses': [
+           {'A': -40.0, 'B': 1500.0, 'C': 4.8, 'D':-.000016, 'E': 2.0}, # near ammonia viscosity chemsep
+           {'A': 0.263, 'B': 280.0, 'C': -1.7, 'D':0.0, 'E': 0.0}, # near dippr viscosity vinyl chloride
+           {'A': -53.0, 'B': 3700.0, 'C': -5.8, 'D':-6e-29, 'E': 10.0}, # near dippr viscosity water
+           {'A': -11.0, 'B': 1000.0, 'C': -1.7, 'D':0.0, 'E': 0.0}, # near dippr viscosity Methylisopropyl sulfide
+           {'A': -395.0, 'B': 20000.0, 'C': 60.0, 'D':-5e-2, 'E': 1.0}, # near dippr viscosity 1,2-Butanediol
+           {'A': -9, 'B': 1600.0, 'C': -2.15, 'D':3.3e22, 'E': -9.92}, # near dippr viscosity 1-Butanol
+           {'A': 180., 'B': -17000.0, 'C': -22.5, 'D':1e-17, 'E': -6.02}, # near dippr Psat 1-Undecanol
+            ]
            }
       ),
      'DIPPR102': (['A', 'B', 'C', 'D'],
@@ -1457,20 +1465,43 @@ class TDependentProperty(object):
         do_minimization = fit_method == 'differential_evolution'
         fitting_func = generate_fitting_function(model_function_name, param_order,
                               fit_parameters, model_kwargs, const_kwargs, try_numba=use_numba)
+
+        err_func = fit_minimization_targets[objective]
         if do_minimization:
-            err_func = fit_minimization_targets[objective]
             def minimize_func(params):
                 calc = fitting_func(Ts, *params)
                 err = err_func(data, calc)
                 print(params, err)
                 return err
             
-
-        p0 = [1.0]*len(fit_parameters)
-        if guesses:
-            for i, k in enumerate(use_fit_parameters):
-                if k in guesses:
-                    p0[i] = guesses[k]
+        if 'initial_guesses' in fit_data:
+            # iterate over all the initial guess parameters we have and find the one
+            # with the lowest error (according to the error criteria)
+            best_hardcoded_guess = None
+            best_hardcoded_err = 1e300
+            hardcoded_errors = []
+            hardcoded_guesses = fit_data['initial_guesses']
+            for hardcoded in hardcoded_guesses:
+                ph = [1.0]*len(fit_parameters)
+                for i, k in enumerate(use_fit_parameters):
+                    ph[i] = hardcoded[k]
+                
+                calc = fitting_func(Ts, *ph)
+                err = err_func(data, calc)
+                hardcoded_errors.append(err)
+                if err < best_hardcoded_err:
+                    best_hardcoded_err = err
+                    best_hardcoded_guess = ph
+            p0 = best_hardcoded_guess
+        else:
+            # Initialize with ones
+            p0 = [1.0]*len(fit_parameters)
+            if guesses:
+                for i, k in enumerate(use_fit_parameters):
+                    if k in guesses:
+                        p0[i] = guesses[k]
+                    
+                
         pcov = None
         if fit_method == 'differential_evolution':
             if 'bounds' in solver_kwargs:

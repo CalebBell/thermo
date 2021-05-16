@@ -147,7 +147,16 @@ def test_ViscosityLiquid():
     with pytest.raises(Exception):
         EtOH.test_method_validity_P(300, 1E5, 'BADMETHOD')
 
-
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_ViscosityLiquid_fitting0():
+    ammonia_Ts_mul = [195.41, 206.081, 216.751, 227.422, 238.092, 239.82, 248.763, 259.433, 270.104, 280.774, 291.445, 302.115, 312.786, 323.456, 334.127, 344.797, 355.468, 366.139, 376.809, 387.48, 398.15]
+    ammonia_muls = [0.000526102, 0.000427438, 0.000355131, 0.000300457, 0.00025797, 0.000251978, 0.00022415, 0.00019665, 0.000173865, 0.000154667, 0.000138254, 0.000124039, 0.000111591, 0.000100584, 9.07738E-05, 8.19706E-05, 7.4028E-05, 6.68311E-05, 6.02885E-05, 5.43268E-05, 4.88864E-05]
+    
+    fit, res = ViscosityLiquid.fit_data_to_model(Ts=ammonia_Ts_mul, data=ammonia_muls, model='DIPPR101',
+                          do_statistics=True, use_numba=False,
+                          fit_method='lm')
+    assert res['MAE'] < 1e-5
 
 @pytest.mark.meta_T_dept
 def test_ViscosityLiquid_PPDS9_limits():
