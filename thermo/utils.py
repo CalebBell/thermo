@@ -883,7 +883,7 @@ class TDependentProperty(object):
     obj_references_types = ()
 
     _json_obj_by_CAS = ('CP_f',)
-
+    
     correlation_models = {
         'Antoine': (['A', 'B', 'C'], ['base'], {'f': Antoine, 'f_der': dAntoine_dT, 'f_der2': d2Antoine_dT2}, {'fit_params': ['A', 'B', 'C']}),
         'TRC_Antoine_extended': (['Tc', 'to', 'A', 'B', 'C', 'n', 'E', 'F'], [],
@@ -1061,6 +1061,11 @@ class TDependentProperty(object):
 
 
     }
+
+    # Aliases from the DDBST
+    correlation_models['Wagner2,5'] = correlation_models['Wagner']
+    correlation_models['Wagner3,6'] = correlation_models['Wagner_original']
+
 
     available_correlations = frozenset(correlation_models.keys())
 
