@@ -177,8 +177,6 @@ def test_EnthalpyVaporization_fitting0():
                      )
     assert res['MAE'] < 1e-5
     
-@pytest.mark.slow
-@pytest.mark.fuzz
 @pytest.mark.fitting
 @pytest.mark.meta_T_dept
 def test_EnthalpyVaporization_fitting1_dippr_106():
@@ -189,6 +187,35 @@ def test_EnthalpyVaporization_fitting1_dippr_106():
         Ts = linspace(obj.Perrys2_150_Tmin, obj.Perrys2_150_Tmax, 8)
         props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR106',
-                              do_statistics=True, use_numba=True, fit_method='lm', 
+                              do_statistics=True, use_numba=False, fit_method='lm', 
+                                           model_kwargs={'Tc': obj.Perrys2_150_coeffs[0]})
+        assert stats['MAE'] < 1e-8
+
+@pytest.mark.slow
+@pytest.mark.fuzz
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_EnthalpyVaporization_fitting2_dippr_106():
+
+    for i, CAS in enumerate(chemicals.phase_change.phase_change_data_VDI_PPDS_4.index):
+        obj = EnthalpyVaporization(CASRN=CAS)
+        Ts = linspace(obj.T_limits[VDI_PPDS][0], obj.T_limits[VDI_PPDS][1], 8)
+        props_calc = [obj.calculate(T, VDI_PPDS) for T in Ts]
+        res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='PPDS12',
+                              do_statistics=True, use_numba=False, fit_method='lm', 
+                                           model_kwargs={'Tc': obj.VDI_PPDS_Tc})
+        assert stats['MAE'] < 1e-8
+
+@pytest.mark.slow
+@pytest.mark.fuzz
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_EnthalpyVaporization_fitting3_dippr_106_full():
+    for CAS in chemicals.phase_change.phase_change_data_Perrys2_150.index:
+        obj = EnthalpyVaporization(CASRN=CAS)
+        Ts = linspace(obj.Perrys2_150_Tmin, obj.Perrys2_150_Tmax, 8)
+        props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+        res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR106',
+                              do_statistics=True, use_numba=False, fit_method='lm', 
                                            model_kwargs={'Tc': obj.Perrys2_150_coeffs[0]})
         assert stats['MAE'] < 1e-8
