@@ -28,6 +28,7 @@ import pandas as pd
 from thermo.volume import *
 from thermo.volume import VDI_TABULAR
 from thermo.eos import *
+import chemicals
 from chemicals.utils import Vm_to_rho, zs_to_ws
 from thermo.vapor_pressure import VaporPressure
 from thermo.utils import POLY_FIT
@@ -405,6 +406,21 @@ def test_VolumeLiquid_fitting1_dippr():
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR105',
                               do_statistics=True, use_numba=False, fit_method='lm')
         assert stats['MAE'] < 1e-5
+
+@pytest.mark.slow
+@pytest.mark.fuzz
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_VolumeLiquid_fitting2_dippr_116_ppds():
+    for i, CAS in enumerate(chemicals.volume.rho_data_VDI_PPDS_2.index):
+        obj = VolumeLiquid(CASRN=CAS)
+        Ts = linspace(obj.T_limits[VDI_PPDS][0], obj.T_limits[VDI_PPDS][1], 8)
+        props_calc = [Vm_to_rho(obj.calculate(T, VDI_PPDS), obj.VDI_PPDS_MW) for T in Ts]
+        
+        res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR116',
+                              do_statistics=True, use_numba=True, fit_method='lm', 
+                              model_kwargs={'Tc': obj.VDI_PPDS_Tc, 'A': obj.VDI_PPDS_rhoc})
+        assert stats['MAE'] < 1e-7
 
 
 @pytest.mark.meta_T_dept
