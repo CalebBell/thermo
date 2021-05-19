@@ -1688,7 +1688,11 @@ class TDependentProperty(object):
         
         if 'fit_jac' in fit_data:
             analytical_jac_coded = fit_data['fit_jac']
-            analytical_jac = lambda Ts, *args: analytical_jac_coded(Ts, args)
+            if fit_data['fit_params'] != use_fit_parameters:
+                jac_skip_row_idxs = np.array([i for i, v in enumerate(fit_data['fit_params']) if v not in use_fit_parameters])
+                analytical_jac = lambda Ts, *args: np.delete(analytical_jac_coded(Ts, args), jac_skip_row_idxs)
+            else:
+                analytical_jac = lambda Ts, *args: analytical_jac_coded(Ts, args)
         else:
             analytical_jac = None
         
