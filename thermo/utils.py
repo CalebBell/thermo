@@ -1132,7 +1132,15 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ106(T, order=1, **kwargs),
        'f_der2': lambda T, **kwargs: EQ106(T, order=2, **kwargs),
        'f_der3': lambda T, **kwargs: EQ106(T, order=3, **kwargs)},
-     {'fit_params': ['A', 'B', 'C', 'D', 'E']}),
+     {'fit_params': ['A', 'B', 'C', 'D', 'E'], 'initial_guesses': [
+          {'A': 47700.0, 'B': 0.37, 'C': 0.,'D': 0.0, 'E': 0.0},  # near vinyl acetate dippr Hvap
+          {'A': 23200.0, 'B': 0.36, 'C': 0.,'D': 0.0, 'E': 0.0},  # near ethyne dippr Hvap
+          {'A': 8730.0, 'B': 0.35, 'C': 0.,'D': 0.0, 'E': 0.0},  # near argon dippr Hvap
+          {'A': 125.0, 'B': 1.3, 'C': -2.7,'D': 1.7, 'E': 0.0},  # near helium dippr Hvap
+          {'A': 1010.0, 'B': 0.7, 'C': -1.8,'D': 1.45, 'E': 0.0},  # near hydrogen dippr Hvap
+          {'A': 135000.0, 'B': 13.5, 'C': -23.5,'D': 10.8, 'E': 0.0},  # near hydrofluoric acid dippr Hvap
+ ]
+      }),
      'YawsSigma': (['Tc', 'A', 'B'],
       [],
       {'f': EQ106,

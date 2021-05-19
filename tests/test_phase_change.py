@@ -22,12 +22,12 @@ SOFTWARE.'''
 
 import pytest
 
-from fluids.numerics import assert_close, assert_close1d
+from fluids.numerics import assert_close, assert_close1d, linspace
 from thermo.phase_change import *
 from chemicals.miscdata import CRC_inorganic_data, CRC_organic_data
 from chemicals.identifiers import check_CAS
 from thermo.coolprop import has_CoolProp
-
+import chemicals
 from thermo.phase_change import COOLPROP, VDI_PPDS, CLAPEYRON, LIU, ALIBAKHSHI, MORGAN_KOBAYASHI, VELASCO, PITZER, RIEDEL, SIVARAMAN_MAGEE_KOBAYASHI, CHEN, CRC_HVAP_TB, DIPPR_PERRY_8E, VETERE, CRC_HVAP_298, VDI_TABULAR, GHARAGHEIZI_HVAP_298
 
 @pytest.mark.meta_T_dept
@@ -176,3 +176,19 @@ def test_EnthalpyVaporization_fitting0():
                       fit_method='lm'
                      )
     assert res['MAE'] < 1e-5
+    
+@pytest.mark.slow
+@pytest.mark.fuzz
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_EnthalpyVaporization_fitting1_dippr_106():
+    check_CAS_fits = ['74-86-2', '108-05-4', '7440-37-1', '7440-59-7',
+                      '1333-74-0', '7664-39-3']
+    for CAS in check_CAS_fits:
+        obj = EnthalpyVaporization(CASRN=CAS)
+        Ts = linspace(obj.Perrys2_150_Tmin, obj.Perrys2_150_Tmax, 8)
+        props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+        res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR106',
+                              do_statistics=True, use_numba=True, fit_method='lm', 
+                                           model_kwargs={'Tc': obj.Perrys2_150_coeffs[0]})
+        assert stats['MAE'] < 1e-8
