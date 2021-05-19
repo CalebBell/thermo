@@ -189,7 +189,7 @@ def test_EnthalpyVaporization_fitting1_dippr_106():
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR106',
                               do_statistics=True, use_numba=False, fit_method='lm', 
                                            model_kwargs={'Tc': obj.Perrys2_150_coeffs[0]})
-        assert stats['MAE'] < 1e-8
+        assert stats['MAE'] < 1e-7
 
 @pytest.mark.slow
 @pytest.mark.fuzz
@@ -204,7 +204,7 @@ def test_EnthalpyVaporization_fitting2_dippr_106():
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='PPDS12',
                               do_statistics=True, use_numba=False, fit_method='lm', 
                                            model_kwargs={'Tc': obj.VDI_PPDS_Tc})
-        assert stats['MAE'] < 1e-8
+        assert stats['MAE'] < 1e-7
 
 @pytest.mark.slow
 @pytest.mark.fuzz
@@ -218,4 +218,4 @@ def test_EnthalpyVaporization_fitting3_dippr_106_full():
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR106',
                               do_statistics=True, use_numba=False, fit_method='lm', 
                                            model_kwargs={'Tc': obj.Perrys2_150_coeffs[0]})
-        assert stats['MAE'] < 1e-8
+        assert stats['MAE'] < 1e-7
