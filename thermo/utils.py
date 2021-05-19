@@ -1084,6 +1084,14 @@ class TDependentProperty(object):
            {'A': 0.0009, 'B': 0.774, 'C': 460.0, 'D': 230600.0}, # near dippr kg ethyltrichlorosilane
            {'A': -4940000.0, 'B': -0.165, 'C': 1.56e9, 'D': -1.58e13}, # near dippr kg  1-hexanol
            {'A': 4.65e-6, 'B': 1.37, 'C': -211.0, 'D': 58300.0}, # near dippr kg  hydrogen cyanide
+           {'A': -0.01, 'B': 0.65, 'C': -7330.0, 'D': -2.68e5}, # near dippr kg ethanol
+           {'A': 44.8, 'B': -0.71, 'C': -3500.0, 'D': 5.35e6}, # near dippr kg formaldehyde
+           {'A': -1.1, 'B': 0.11, 'C': -9830.0, 'D': -7.54e6}, # near dippr kg propane
+           {'A': 3.46e-5, 'B': 1.12, 'C': 18.7, 'D': 0.0}, # near dippr kg hydrofluoric acid
+           {'A': -8150000.0, 'B': -0.305, 'C': 1.89e9, 'D': -11.8e12}, # near dippr kg ethylene glycol
+           {'A': 2.1e-5, 'B': 1.29, 'C': 488.0, 'D': 0.0}, # near dippr kg 1-heptene
+           {'A': 4.5e-5, 'B': 1.2, 'C': 420.0, 'D': 0.0}, # near dippr kg propene
+           {'A': 1.7e-6, 'B': 1.67, 'C': 660.0, 'D': -95400.0}, # near dippr kg acetic acid
 
         ]}),
      'DIPPR104': (['A', 'B'],
@@ -1106,7 +1114,18 @@ class TDependentProperty(object):
           {'A': 7247.0, 'B': 0.418, 'C': 5.2, 'D': 0.24,}, # near helium dippr volume
           {'A': 4289.0, 'B': 0.285, 'C': 144.0, 'D': 0.29}, # near Fluorine dippr volume
           {'A': 4.05E3, 'B': 0.27, 'C': 400.,'D': 0.313},  # near ammonia dippr volume
+          {'A': 2770.0, 'B': 0.26, 'C': 305.,'D': 0.291},  # near carbon dioxide dippr volume
+          {'A': 1375.0, 'B': 0.275, 'C': 270.,'D': 0.293},  # near propane dippr volume
+          {'A': 5410.0, 'B': 0.35, 'C': 33.,'D': 0.27},  # near hydrogen dippr volume
+          {'A': 2900.0, 'B': 0.275, 'C': 133.,'D': 0.28},  # near carbon monoxide dippr volume
+          {'A': 427.0, 'B': 0.18, 'C': 1110.,'D': 0.285},  # near terephthalic acid dippr volume
+          {'A': 1100.0, 'B': 0.28, 'C': 620.,'D': 0.31},  # near dimethyl disulfide dippr volume
+          {'A': 1170.0, 'B': 0.23, 'C': 450.,'D': 0.285},  # near 1,2-difluoroethane dippr volume
+          {'A': 2450.0, 'B': 0.275, 'C': 310.,'D': 0.29},  # near ethyne dippr volume
+          {'A': 1450.0, 'B': 0.268, 'C': 365.,'D': 0.29},  # near propene dippr volume
+          {'A': 1940.0, 'B': 0.24, 'C': 590.,'D': 0.244},  # near formic acid dippr volume
           ]}),
+
      'DIPPR106': (['Tc', 'A', 'B'],
       ['C', 'D', 'E'],
       {'f': EQ106,
@@ -1525,7 +1544,8 @@ class TDependentProperty(object):
                           fit_method='lm', use_numba=True,
                           do_statistics=False, guesses=None,
                           solver_kwargs=None, objective='MeanSquareErr',
-                          multiple_tries=False):
+                          multiple_tries=False, multiple_tries_max_err=1e-6,
+                          multiple_tries_max_objective='MeanRelErr'):
         r'''Method to fit T-dependent property data to one of the available
         model correlations. 
 
@@ -1565,7 +1585,17 @@ class TDependentProperty(object):
                 * 'MaxRelErr': Maximum relative error
                 * 'MaxSquareErr': Maximum squared absolute error
                 * 'MaxSquareRelErr': Maximum squared relative error
-
+        multiple_tries : bool
+            For most solvers, multiple initial guesses are available and the best
+            guess is normally tried. When this is set to True, all guesses are
+            tried until one is found with an error lower than
+            `multiple_tries_max_err`, [-]
+        multiple_tries_max_err : float
+            Only used when `multiple_tries` is true; if a solution is found
+            with lower error than this, no further guesses are tried, [-]
+        multiple_tries_max_objective : str
+            The error criteria to use for minimization, [-]
+            
         Returns
         -------
         coefficients : dict[str: float]and
@@ -1608,6 +1638,8 @@ class TDependentProperty(object):
                               fit_parameters, model_kwargs, const_kwargs, try_numba=use_numba)
 
         err_func = fit_minimization_targets[objective]
+        err_fun_multiple_guesses = fit_minimization_targets[multiple_tries_max_objective]
+        
         if do_minimization:
             def minimize_func(params):
                 calc = fitting_func(Ts, *params)
@@ -1632,7 +1664,7 @@ class TDependentProperty(object):
             array_init_guesses = []
             err_func_init = fit_minimization_targets['MeanRelErr']
             for hardcoded in all_iter_guesses:
-                ph = [1.0]*len(fit_parameters)
+                ph = [None]*len(fit_parameters)
                 for i, k in enumerate(use_fit_parameters):
                     ph[i] = hardcoded[k]
                 array_init_guesses.append(ph)
@@ -1644,6 +1676,7 @@ class TDependentProperty(object):
                     best_hardcoded_err = err
                     best_hardcoded_guess = ph
             p0 = best_hardcoded_guess
+            array_init_guesses = [p0 for _, p0 in sorted(zip(hardcoded_errors, array_init_guesses))]
         
         if 'fit_jac' in fit_data:
             analytical_jac_coded = fit_data['fit_jac']
@@ -1680,8 +1713,31 @@ class TDependentProperty(object):
         else:
             if 'maxfev' not in solver_kwargs and fit_method == 'lm':
                 solver_kwargs['maxfev'] = 40000
-            popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, jac=analytical_jac, 
-                                   method=fit_method, **solver_kwargs)
+            if multiple_tries:
+                multiple_tries_best_error = 1e300
+                best_popt, best_pcov = None, None
+                popt = None
+                for p0 in array_init_guesses:
+                    try:
+                        popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, jac=analytical_jac, 
+                                               method=fit_method, **solver_kwargs)
+                    except:
+                        continue
+                    calc = fitting_func(Ts, *popt)
+                    curr_err = err_fun_multiple_guesses(data, calc)
+                    if curr_err < multiple_tries_best_error:
+                        best_popt, best_pcov = popt, pcov
+                        multiple_tries_best_error = curr_err
+                        if curr_err < multiple_tries_max_err:
+                            break
+                    
+                if best_popt is None:
+                    raise ValueError("No guesses converged")
+                else:
+                    popt, pcov = popt, pcov
+            else:
+                popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, jac=analytical_jac, 
+                                       method=fit_method, **solver_kwargs)
         out_kwargs = model_kwargs.copy()
         for param_name, param_value in zip(fit_parameters, popt):
             out_kwargs[param_name] = float(param_value)

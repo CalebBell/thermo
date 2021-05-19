@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from fluids.numerics import assert_close, assert_close1d, assert_close2d
+from fluids.numerics import assert_close, assert_close1d, assert_close2d, linspace
 import numpy as np
 import pytest
 import json
@@ -391,6 +391,20 @@ def test_VolumeLiquid_fitting0():
                           guesses= {'A': 4.0518E3, 'B': 0.27129, 'C': 405.4,'D': 0.31349})
     assert stats['MAE'] < 1e-5
     
+@pytest.mark.meta_T_dept
+@pytest.mark.fitting
+def test_VolumeLiquid_fitting1_dippr():
+    fit_check_CASs = ['124-38-9', '74-98-6', '1333-74-0', '630-08-0', 
+                      '100-21-0', '624-92-0', '624-72-6', '74-86-2',
+                      '115-07-1', '64-18-6']
+    for CAS in fit_check_CASs:
+        obj = VolumeLiquid(CASRN=CAS)
+        Ts = linspace(obj.DIPPR_Tmin, obj.DIPPR_Tmax, 8)
+        props_calc = [1.0/obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    
+        res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR105',
+                              do_statistics=True, use_numba=False, fit_method='lm')
+        assert stats['MAE'] < 1e-5
 
 
 @pytest.mark.meta_T_dept

@@ -22,9 +22,10 @@ SOFTWARE.'''
 
 import json
 import pytest
-from fluids.numerics import assert_close, assert_close1d, assert_close2d
+from fluids.numerics import assert_close, assert_close1d, assert_close2d, linspace
 from fluids.constants import R
 from chemicals.utils import ws_to_zs
+import chemicals
 from thermo.thermal_conductivity import *
 from thermo.viscosity import ViscosityGas
 from thermo.mixture import Mixture
@@ -151,6 +152,18 @@ def test_ThermalConductivityLiquid_fitting0():
                           do_statistics=True, use_numba=False, fit_method='lm')
     assert res['MAE'] < 1e-5
 
+@pytest.mark.slow
+@pytest.mark.fuzz
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_ThermalConductivityLiquid_fitting1_dippr100():
+    for i, CAS in enumerate(chemicals.thermal_conductivity.k_data_Perrys_8E_2_315.index):
+        obj = ThermalConductivityLiquid(CASRN=CAS)
+        Ts = linspace(obj.Perrys2_315_Tmin, obj.Perrys2_315_Tmax, 10)
+        props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+        res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR100',
+                                           do_statistics=True, use_numba=False, fit_method='lm')
+        assert stats['MAE'] < 1e-8
 
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
@@ -243,7 +256,20 @@ def test_ThermalConductivityGas():
 
     assert ThermalConductivityGas.from_json(EtOH.as_json()) == EtOH
 
-
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_ThermalConductivityGas_fitting0():
+    try_CASs_dippr = ['106-97-8', '142-29-0', '565-59-3', '74-83-9', '115-21-9', 
+                      '78-78-4', '111-27-3', '74-90-8', '64-17-5', '50-00-0', '74-98-6',
+                      '7664-39-3', '107-21-1', '592-76-7', '115-07-1', '64-19-7']
+    for CAS in try_CASs_dippr:
+        obj = ThermalConductivityGas(CASRN=CAS)
+        Ts = linspace(obj.Perrys2_314_Tmin, obj.Perrys2_314_Tmax, 10)
+        props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+        res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR102',
+                              do_statistics=True, use_numba=False, fit_method='lm')
+        assert stats['MAE'] < 1e-5
+    
 def test_ThermalConductivityGasMixture():
     T, P = 298.15, 101325.0
     MWs = [28.0134, 39.948, 31.9988]
