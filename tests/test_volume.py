@@ -345,6 +345,7 @@ def test_VolumeSolid_fitting1():
                           do_statistics=True, use_numba=False)
     assert stats['MAE'] < 1e-8
 
+@pytest.mark.fitting
 @pytest.mark.meta_T_dept
 def test_VolumeSolid_fitting0():
     Ts_alpha = [4.2, 18.5, 20, 22, 23.880]

@@ -368,6 +368,9 @@ def test_specific_chemical_failures():
     # D2O - failed on Hf, Gf
     Chemical('7789-20-0')
 
+    # Tc failure
+    Chemical('132259-10-0')
+
 @pytest.mark.fuzz
 @pytest.mark.slow
 @pytest.mark.deprecated

@@ -29,6 +29,7 @@ from fluids.numerics import linspace, assert_close, derivative, assert_close1d
 from thermo.vapor_pressure import *
 from thermo.vapor_pressure import SANJARI, EDALAT, AMBROSE_WALTON, LEE_KESLER_PSAT, BOILING_CRITICAL, COOLPROP, VDI_PPDS, VDI_TABULAR, WAGNER_MCGARRY, ANTOINE_EXTENDED_POLING, ANTOINE_POLING, WAGNER_POLING, DIPPR_PERRY_8E
 from chemicals.identifiers import check_CAS
+import chemicals
 from thermo.coolprop import has_CoolProp
 from math import *
 
@@ -155,6 +156,92 @@ def test_VaporPressure_fitting1():
                           do_statistics=True, use_numba=False, fit_method='lm')
     assert stats['MAE'] < 1e-4
 
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_VaporPressure_fitting2_dippr():
+    pts = 10
+    fit_issue_CASs = ['75-07-0', '107-02-8', '108-38-3', '7732-18-5', '85-44-9',
+                      '67-64-1', '78-87-5', '624-72-6', '118-96-7', '124-18-5',
+                      # '526-73-8'
+                      ]
+    for CAS in fit_issue_CASs:
+        obj = VaporPressure(CASRN=CAS)
+        Ts = linspace(obj.Perrys2_8_Tmin, obj.Perrys2_8_Tmax, pts)
+        props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+        res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                              do_statistics=True, use_numba=False, fit_method='lm')
+        assert stats['MAE'] < 1e-5
+
+@pytest.mark.slow
+@pytest.mark.fuzz
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_VaporPressure_fitting3_WagnerMcGarry():
+    for i, CAS in enumerate(chemicals.vapor_pressure.Psat_data_WagnerMcGarry.index):
+        obj = VaporPressure(CASRN=CAS)
+        Ts = linspace(obj.WAGNER_MCGARRY_Tmin, obj.WAGNER_MCGARRY_Tc, 10)
+        props_calc = [obj.calculate(T, WAGNER_MCGARRY) for T in Ts]
+        res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='Wagner_original',
+                              do_statistics=True, use_numba=False,
+                              fit_method='lm', model_kwargs={'Tc': obj.WAGNER_MCGARRY_Tc, 'Pc': obj.WAGNER_MCGARRY_Pc})
+        assert stats['MAE'] < 1e-7
+
+@pytest.mark.slow
+@pytest.mark.fuzz
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_VaporPressure_fitting4_WagnerPoling():
+    for i, CAS in enumerate(chemicals.vapor_pressure.Psat_data_WagnerPoling.index):
+        obj = VaporPressure(CASRN=CAS)
+        Ts = linspace(obj.WAGNER_POLING_Tmin, obj.WAGNER_POLING_Tc, 10)
+        props_calc = [obj.calculate(T, WAGNER_POLING) for T in Ts]
+        res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='Wagner',
+                              do_statistics=True, use_numba=False,
+                              fit_method='lm', model_kwargs={'Tc': obj.WAGNER_POLING_Tc, 'Pc': obj.WAGNER_POLING_Pc})
+        assert stats['MAE'] < 1e-7
+    
+@pytest.mark.slow
+@pytest.mark.fuzz
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_VaporPressure_fitting5_AntoinePoling():
+    for i, CAS in enumerate(chemicals.vapor_pressure.Psat_data_AntoinePoling.index):
+        obj = VaporPressure(CASRN=CAS)
+        Ts = linspace(obj.ANTOINE_POLING_Tmin, obj.ANTOINE_POLING_Tmax, 10)
+        props_calc = [obj.calculate(T, ANTOINE_POLING) for T in Ts]
+        res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='Antoine',
+                              do_statistics=True, use_numba=False,
+                              model_kwargs={'base': 10.0},  fit_method='lm')
+        assert stats['MAE'] < 1e-7
+
+@pytest.mark.slow
+@pytest.mark.fuzz
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_VaporPressure_fitting6_VDI_PPDS():
+    for i, CAS in enumerate(chemicals.vapor_pressure.Psat_data_VDI_PPDS_3.index):
+        obj = VaporPressure(CASRN=CAS)
+        Ts = linspace(obj.VDI_PPDS_Tm, obj.VDI_PPDS_Tc, 10)
+        props_calc = [obj.calculate(T, VDI_PPDS) for T in Ts]
+        res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='Wagner',
+                              do_statistics=True, use_numba=False,
+                              fit_method='lm', model_kwargs={'Tc': obj.VDI_PPDS_Tc, 'Pc': obj.VDI_PPDS_Pc})
+        assert stats['MAE'] < 1e-7
+    
+@pytest.mark.slow
+@pytest.mark.fuzz
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_VaporPressure_fitting6_TRC_AntoineExtended():
+    for i, CAS in enumerate(chemicals.vapor_pressure.Psat_data_AntoineExtended.index):
+        obj = VaporPressure(CASRN=CAS)
+        Ts = linspace(obj.ANTOINE_EXTENDED_POLING_Tmin, obj.ANTOINE_EXTENDED_POLING_Tmax, 10)
+        props_calc = [obj.calculate(T, ANTOINE_EXTENDED_POLING) for T in Ts]
+        res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='TRC_Antoine_extended',
+                              do_statistics=True, use_numba=False, 
+                              fit_method='lm', model_kwargs={'Tc': obj.ANTOINE_EXTENDED_POLING_coefs[0], 
+                                                             'to': obj.ANTOINE_EXTENDED_POLING_coefs[1]})
+        assert stats['MAE'] < 1e-4
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_analytical_derivatives():

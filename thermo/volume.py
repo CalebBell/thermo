@@ -531,9 +531,11 @@ class VolumeLiquid(TPDependentProperty):
             T_limits[CAMPBELL_THODOS] = (0.0, self.Tc)
             Tmins.append(0); Tmaxs.append(self.Tc)
         if self.eos:
-            methods.append(EOS)
-            if self.eos:
+            try:
                 T_limits[EOS] = (0.2*self.eos[0].Tc, self.eos[0].Tc)
+                methods.append(EOS)
+            except:
+                pass
         if all((self.Tc, self.Pc, self.omega)):
             methods_P.append(COSTALD_COMPRESSED)
             if self.eos:

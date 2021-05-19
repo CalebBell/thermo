@@ -85,11 +85,12 @@ import os
 from cmath import sqrt as csqrt
 from fluids.numerics import quad, brenth, newton, secant, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders, assert_close, numpy as np, curve_fit, differential_evolution
 from fluids.constants import R
+from random import uniform
 from chemicals.utils import PY37, isnan, isinf, log, exp, ws_to_zs, zs_to_ws, e
 from chemicals.utils import mix_multiple_component_flows, hash_any_primitive
 from chemicals.vapor_pressure import Antoine, Antoine_coeffs_from_point, Antoine_AB_coeffs_from_point, DIPPR101_ABC_coeffs_from_point
 from chemicals.vapor_pressure import Wagner, Wagner_original, TRC_Antoine_extended, dAntoine_dT, d2Antoine_dT2, dWagner_original_dT, d2Wagner_original_dT2, dWagner_dT, d2Wagner_dT2, dTRC_Antoine_extended_dT, d2TRC_Antoine_extended_dT2
-from chemicals.dippr import EQ100, EQ101, EQ102, EQ104, EQ105, EQ106, EQ107, EQ114, EQ115, EQ116, EQ127
+from chemicals.dippr import EQ100, EQ101, EQ102, EQ104, EQ105, EQ106, EQ107, EQ114, EQ115, EQ116, EQ127, EQ102_fitting_jacobian
 from chemicals.phase_change import Watson, Watson_n, Alibakhshi, PPDS12
 from chemicals.viscosity import (Viswanath_Natarajan_2, Viswanath_Natarajan_2_exponential,
                                  Viswanath_Natarajan_3, PPDS9, dPPDS9_dT)
@@ -885,14 +886,46 @@ class TDependentProperty(object):
     _json_obj_by_CAS = ('CP_f',)
     
     correlation_models = {
-        'Antoine': (['A', 'B', 'C'], ['base'], {'f': Antoine, 'f_der': dAntoine_dT, 'f_der2': d2Antoine_dT2}, {'fit_params': ['A', 'B', 'C']}),
+        'Antoine': (['A', 'B', 'C'], ['base'], {'f': Antoine, 'f_der': dAntoine_dT, 'f_der2': d2Antoine_dT2}, 
+                    {'fit_params': ['A', 'B', 'C'],
+                    'initial_guesses': [{'A': 9.0, 'B': 1000.0, 'C': -70.0},
+                                        {'A': 9.1, 'B': 1450.0, 'C': -60.0},
+                                        {'A': 8.1, 'B': 77.0, 'C': 2.5},
+                        ]}),
         'TRC_Antoine_extended': (['Tc', 'to', 'A', 'B', 'C', 'n', 'E', 'F'], [],
                                  {'f': TRC_Antoine_extended, 'f_der': dTRC_Antoine_extended_dT, 'f_der2': d2TRC_Antoine_extended_dT2},
-                                 {'fit_params': ['to', 'A', 'B', 'C', 'n', 'E', 'F']}),
+                                 {'fit_params': ['to', 'A', 'B', 'C', 'n', 'E', 'F'],
+                                  'initial_guesses': [
+                                      {'to': 3.0, 'A': 8.9, 'B': 933., 'C': -33., 'n': 2.25, 'E': -55., 'F': 3300.0},
+                                      {'to': -76.0, 'A': 8.9, 'B': 650., 'C': -23., 'n': 2.5, 'E': 63.0, 'F': -2130.},
+                                       {'to': 170.0, 'A': 9., 'B': 1500.0, 'C': -66.0, 'n': 2.2, 'E': 0.0, 'F': 0.0},
+                                       {'to': 120.0, 'A': 9., 'B': 1310., 'C': -58.0, 'n': 2.0, 'E': -350, 'F': 53000.0},
+                                       {'to': 38.0, 'A': 8.97, 'B': 1044., 'C': -40.0, 'n': 2.6, 'E': 123., 'F': -4870.},
+                                       {'to': -53.0, 'A': 9.0, 'B': 731.0, 'C': -27.5, 'n': 2.4, 'E': 4.1, 'F': 942.0},
+                                       {'to': 197.0, 'A': 9.41, 'B': 1693.0, 'C': -72.7, 'n': 4.9, 'E': 453.0, 'F': -239100.0},
+                                       {'to': 72.0, 'A': 9.0, 'B': 1162, 'C': -45, 'n': 5.75, 'E': 691.0, 'F': -40240.0},
+                                       {'to': 87.0, 'A': 9.14, 'B': 1232., 'C': -54.5, 'n': 2.3, 'E': -5, 'F': 3280.0},
+                                       {'to': 67.0, 'A': 8.94, 'B': 1130, 'C': -44., 'n': 2.5, 'E': 333.0, 'F': -24950.0},
+                                       {'to': -120.0, 'A': 8.96, 'B': 510.6, 'C': -15.95, 'n': 2.41, 'E': -94.0, 'F': 7426.0},
+                                       {'to': -20.0, 'A': 9.12, 'B': 850.9, 'C': -40.2, 'n': 2.4, 'E': 31.1, 'F': 2785.0},
+                                       {'to': -9.0, 'A': 8.4, 'B': 640.3, 'C': -69., 'n': 1.0, 'E': 190.0, 'F': -6600.0},
+                                      ]}),
+        
         'Wagner_original': (['Tc', 'Pc', 'a', 'b', 'c', 'd'], [], {'f': Wagner_original, 'f_der': dWagner_original_dT, 'f_der2': d2Wagner_original_dT2},
-                            {'fit_params': ['a', 'b', 'c', 'e']}),
+                            {'fit_params': ['a', 'b', 'c', 'd'],
+                                    'initial_guesses': [
+                                        {'a': -7.0, 'b': 1.79, 'c': -5.4, 'd': 1.68},
+                                        {'a': -7.2, 'b': -0.02, 'c': 0.36, 'd': -11.0},
+                                        ]
+                            }),
+        
         'Wagner': (['Tc', 'Pc', 'a', 'b', 'c', 'd'], [], {'f': Wagner, 'f_der': dWagner_dT, 'f_der2': d2Wagner_dT2},
-                   {'fit_params': ['a', 'b', 'c', 'd']}),
+                   {'fit_params': ['a', 'b', 'c', 'd'],
+                    'initial_guesses': [
+                        {'a': -8.5, 'b': 2.0, 'c': -7.7, 'd': 3.0},
+                        {'a': -7.8, 'b': 1.9, 'c': -2.85, 'd': -3.8},
+                        ]
+                    }),
 
     'Alibakhshi': (['Tc', 'C'], [], {'f': Alibakhshi}, {'fit_params': ['C']}),
     'PPDS12': (['Tc', 'A', 'B', 'C', 'D', 'E'], [], {'f': PPDS12}, {'fit_params': ['A', 'B', 'C', 'D', 'E']}),
@@ -954,14 +987,71 @@ class TDependentProperty(object):
        'f_der3': lambda T, **kwargs: EQ101(T, order=3, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D', 'E'],
        'initial_guesses': [
-           {'A': -40.0, 'B': 1500.0, 'C': 4.8, 'D':-.000016, 'E': 2.0}, # near ammonia viscosity chemsep
+           {'A': -12.6, 'B': 2670.0, 'C': 0.0, 'D': 0.0, 'E': 0.0}, # perry dippr point benzamide
+           {'A': -16.0, 'B': 3100.0, 'C': 0.0, 'D': 0.0, 'E': 0.0}, # perry dippr point 2-butanol
+           {'A': -13.0, 'B': 2350.0, 'C': 0.0, 'D': 0.0, 'E': 0.0}, # perry dippr point 2-ethylhexanoic acid
+
            {'A': 0.263, 'B': 280.0, 'C': -1.7, 'D':0.0, 'E': 0.0}, # near dippr viscosity vinyl chloride
-           {'A': -53.0, 'B': 3700.0, 'C': -5.8, 'D':-6e-29, 'E': 10.0}, # near dippr viscosity water
            {'A': -11.0, 'B': 1000.0, 'C': -1.7, 'D':0.0, 'E': 0.0}, # near dippr viscosity Methylisopropyl sulfide
-           {'A': -395.0, 'B': 20000.0, 'C': 60.0, 'D':-5e-2, 'E': 1.0}, # near dippr viscosity 1,2-Butanediol
-           {'A': -9, 'B': 1600.0, 'C': -2.15, 'D':3.3e22, 'E': -9.92}, # near dippr viscosity 1-Butanol
+           {'A': -12.0, 'B': 900.0, 'C': 0.2, 'D':0.0, 'E': 0.0}, # perry dippr point 107-02-8
+           {'A': 1.55, 'B': 1400.0, 'C': -2.0, 'D': 0.0, 'E': 0.0}, # near dippr viscosity acetamide
+           {'A': 7.5, 'B': 300.0, 'C': -2.8, 'D': 0.0, 'E': 0.0}, # near dippr viscosity benzene
+           {'A': -9, 'B': 1210.0, 'C': -0.32, 'D': 0.0, 'E': 0.0}, # perry dippr point acetic acid
+           
+           {'A': 281.0, 'B': -32000.0, 'C': -38.8, 'D': 4e6, 'E': -2.002}, # near dippr viscosity cyclohexanol
+
+           {'A': 59.7, 'B': -3520.0, 'C': -9.84, 'D': 9.03e12, 'E': -5.0}, # near dippr viscosity m-cresol
+           {'A': -0.034, 'B': 390.0, 'C': -1.45, 'D': 5.0e12, 'E': -5.0}, # near dippr viscosity o-cresol
+           {'A': -20.5, 'B': 2500.0, 'C': 1.2, 'D': 2.5e12, 'E': -5.0}, # near dippr viscosity ethylene glycol
+
            {'A': 180., 'B': -17000.0, 'C': -22.5, 'D':1e-17, 'E': -6.02}, # near dippr Psat 1-Undecanol
+           {'A': -1.9, 'B': 388.0, 'C': -1.13, 'D': 1.5e14, 'E': -6.}, # near dippr mul 1,3-dichlorobenzene
+           {'A': 7.88, 'B': -106.0, 'C': -2.7, 'D': 4.27e13, 'E': -6.}, # near dippr mul ethyltrichlorosilane
+           
+           {'A': 13.4, 'B': -233.0, 'C': -3.3, 'D': 1.75e20, 'E': -8.0}, # near dippr viscosity benzophenone
+           {'A': -9.0, 'B': 1600.0, 'C': -2.15, 'D':3.3e22, 'E': -9.92}, # near dippr viscosity 1-Butanol
+           {'A': 0.9, 'B': 1600.0, 'C': -2.15, 'D':3.4e22, 'E': -9.92}, # near dippr viscosity 1-Butanol point 2
+           {'A': -9.65, 'B': 1200.0, 'C': -0.244, 'D': 9.05e34, 'E': -15.0}, # perry dippr point decane
+           {'A': -7.8, 'B': 1200.0, 'C': -0.5, 'D': 4e23, 'E': -10.0}, # perry dippr point dodecane
+           {'A': 40.0, 'B': -912.0, 'C': -7.56, 'D': 1.68e24, 'E': -10.0}, # perry dippr point formamide
+           {'A': -6.3, 'B': 640.0, 'C': -0.7, 'D': 5.7e21, 'E': -10.0}, # perry dippr point hexane
+                      
+           {'A': -375.2, 'B': 17180.0, 'C': 66.7, 'D': -3.637, 'E': 0.5}, # near dippr viscosity diethanolamine
+
+           {'A': -395.0, 'B': 20000.0, 'C': 60.0, 'D':-5e-2, 'E': 1.0}, # near dippr viscosity 1,2-Butanediol
+           {'A': -394.0, 'B': 19000.0, 'C': 60.0, 'D': -.05, 'E': 1.0}, # near dippr viscosity 1,2-butanediol
+           {'A': -390.0, 'B': 18600.0, 'C': 60.0, 'D': -.055, 'E': 1.0}, # near dippr viscosity 1,3-butanediol
+           {'A': 193.0, 'B': -8040, 'C': -29.5, 'D': 0.044, 'E': 1.0}, # near dippr Psat acetaldehyde
+           {'A': 138.5, 'B': -7123.0, 'C': -19.64, 'D': 0.02645, 'E': 1.0}, # near dippr Psat acrolein
+
+           {'A': -40.0, 'B': 1500.0, 'C': 4.8, 'D':-.000016, 'E': 2.0}, # near ammonia viscosity chemsep
            {'A': 62.9, 'B': -4137.0, 'C': -6.32, 'D': 9.2E-06, 'E': 2.0}, # near chemsep Psat ammonia
+           {'A': 85.0, 'B': -7615.0, 'C': -9.31, 'D': 5.56E-06, 'E': 2.0}, # near dippr Psat m-xylene
+           {'A': 73.7, 'B': -7260.0, 'C': -7.3, 'D': 4.16E-06, 'E': 2.0}, # near dippr Psat water
+           {'A': 127.0, 'B': -12550.0, 'C': -15, 'D': 7.75E-06, 'E': 2.0}, # near dippr Psat phthalic anhydride
+           {'A': 69.0, 'B': -5600.0, 'C': -7.1, 'D': 6.22E-06, 'E': 2.0}, # near dippr Psat acetone
+           {'A': 66.0, 'B': -6015.0, 'C': -6.55, 'D': 4.32E-06, 'E': 2.0}, # near dippr Psat 1,2-dichloropropane
+           {'A': 84.6, 'B': -5220.0, 'C': -9.9, 'D': 1.3E-05, 'E': 2.0}, # near dippr Psat 1,2-difluoroethane
+           {'A': 302.0, 'B': -24320.0, 'C': -40.1, 'D': 1.75E-05, 'E': 2.0}, # near dippr Psat trinitrotoluene
+           {'A': 113.0, 'B': -9750.0, 'C': -13.25, 'D': 7.13E-06, 'E': 2.0}, # near dippr Psat trinitrotoluene
+           # {'A': 78.34, 'B': -8020.0, 'C': -8.15, 'D': 3.89E-06, 'E': 2.0}, # near dippr Psat 1,2,3-trimethylbenzene - uncomment to break things
+           
+           {'A': -75.8, 'B': 4175.0, 'C': 9.65, 'D': -7.3e-9, 'E': 3.0}, # near dippr mul hydrazine
+           
+           {'A': -116.3, 'B': 3834.0, 'C': 16.85, 'D': -2.59e-10, 'E': 4.0}, # near dippr mul hydrochloric acid
+                      
+           {'A': -14.0, 'B': 950.0, 'C': 0.5, 'D': -6.15e-17, 'E': 6.0}, # near dippr viscosity 1-chloropropane
+           
+           {'A': -17.7, 'B': 850.0, 'C': 1.05, 'D': -1.2e-18, 'E': 7.0}, # near dippr viscosity 1-difluoromethane
+
+           {'A': -7.2, 'B': 535.0, 'C': -0.575, 'D':-4.66e-27, 'E': 10.0}, # near dippr viscosity butane
+           {'A': -53.0, 'B': 3700.0, 'C': -5.8, 'D':-6e-29, 'E': 10.0}, # near dippr viscosity water
+           {'A': -8.9, 'B': 205.0, 'C': -0.38, 'D': -1.3e-22, 'E': 10}, # perry dippr point argon
+           {'A': -9.63, 'B': -3.84, 'C': -1.46, 'D': -1.07e-8, 'E': 10}, # perry dippr point helium
+           {'A': -11.7, 'B': 25.0, 'C': -0.26, 'D': -4e-16, 'E': 10}, # perry dippr mul point hydrogen
+           {'A': -20.0, 'B': 285.0, 'C': -1.8, 'D': -6.2e-22, 'E': 10}, # perry dippr point 132259-10-0
+           {'A': -25.1, 'B': 1380.0, 'C': 2.1, 'D': 4.5e-27, 'E': 10.0}, # perry dippr point chloromethane
+           # {'A': -25.132, 'B': 1381.9, 'C': 2.0811, 'D': -4.4999e-27, 'E': 10.0}, # perry dippr point chloromethane exact for testing
             ]
            }
       ),
@@ -972,6 +1062,7 @@ class TDependentProperty(object):
        'f_int': lambda T, **kwargs: EQ102(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ102(T, order=-1j, **kwargs)},
      {'fit_params': ['A', 'B', 'C', 'D'],
+      'fit_jac': EQ102_fitting_jacobian,
       'initial_guesses': [
            {'A': 1.2e-7, 'B': 0.8, 'C': 77.0, 'D': 0.0}, # near dippr mug Acetaldehyde
            {'A': 1.4e-7, 'B': 0.75, 'C': 277.0, 'D': 0.0}, # near dippr mug Acetamide
@@ -984,7 +1075,16 @@ class TDependentProperty(object):
            {'A': 3e-4, 'B': 0.78, 'C': -.7, 'D': 2.1e3}, # near dippr kg air
            {'A': 2.85e-4, 'B': 1.0, 'C': -200.0, 'D': 2.2e4}, # near dippr kg Deuterium
            {'A': -6.5e5, 'B': 0.286, 'C': -1.7e10, 'D': -1.74e13}, # near dippr kg Furan
-           
+           {'A': 1.6e-5, 'B': 1.3, 'C': 75.0, 'D': -8000.0}, # near chemsep kg ammonia
+           {'A': 0.051, 'B': 0.45, 'C': 5450.0, 'D': 2e6}, # near dippr kg butane
+           {'A': 0.011, 'B': 0.716, 'C': 175.0, 'D': 346000.0}, # near dippr kg cyclopentene
+           {'A': 2.24e-5, 'B': 1.2, 'C': -147.0, 'D': 132000.0}, # near dippr kg 2,3-dimethylpentane
+           {'A': 3.8e-5, 'B': 1.05, 'C': 287.0, 'D': 0.0}, # near dippr kg bromomethane
+           {'A': 3e-6, 'B': 1.41, 'C': 0.0, 'D': 0.0}, # near dippr kg ethyltrichlorosilane
+           {'A': 0.0009, 'B': 0.774, 'C': 460.0, 'D': 230600.0}, # near dippr kg ethyltrichlorosilane
+           {'A': -4940000.0, 'B': -0.165, 'C': 1.56e9, 'D': -1.58e13}, # near dippr kg  1-hexanol
+           {'A': 4.65e-6, 'B': 1.37, 'C': -211.0, 'D': 58300.0}, # near dippr kg  hydrogen cyanide
+
         ]}),
      'DIPPR104': (['A', 'B'],
       ['C', 'D', 'E'],
@@ -1424,7 +1524,8 @@ class TDependentProperty(object):
     def fit_data_to_model(cls, Ts, data, model, model_kwargs=None, 
                           fit_method='lm', use_numba=True,
                           do_statistics=False, guesses=None,
-                          solver_kwargs=None, objective='MeanSquareRelErr'):
+                          solver_kwargs=None, objective='MeanSquareErr',
+                          multiple_tries=False):
         r'''Method to fit T-dependent property data to one of the available
         model correlations. 
 
@@ -1481,7 +1582,7 @@ class TDependentProperty(object):
             guesses = {}
         if solver_kwargs is None:
             solver_kwargs = {}
-        if objective != 'MeanSquareRelErr' and fit_method != 'differential_evolution':
+        if objective != 'MeanSquareErr' and fit_method != 'differential_evolution':
             raise ValueError("Specified objective is not supported with the specified solver")
         if use_numba:
             Ts = np.array(Ts)
@@ -1511,7 +1612,6 @@ class TDependentProperty(object):
             def minimize_func(params):
                 calc = fitting_func(Ts, *params)
                 err = err_func(data, calc)
-                print(params, err)
                 return err
             
         p0 = [1.0]*len(fit_parameters)
@@ -1528,36 +1628,60 @@ class TDependentProperty(object):
             hardcoded_errors = []
             hardcoded_guesses = fit_data['initial_guesses']
             extra_user_guess = [{k: v for k, v in zip(use_fit_parameters, p0)}]
-            for hardcoded in hardcoded_guesses + extra_user_guess:
+            all_iter_guesses = hardcoded_guesses + extra_user_guess
+            array_init_guesses = []
+            err_func_init = fit_minimization_targets['MeanRelErr']
+            for hardcoded in all_iter_guesses:
                 ph = [1.0]*len(fit_parameters)
                 for i, k in enumerate(use_fit_parameters):
                     ph[i] = hardcoded[k]
+                array_init_guesses.append(ph)
                 
                 calc = fitting_func(Ts, *ph)
-                err = err_func(data, calc)
+                err = err_func_init(data, calc)
                 hardcoded_errors.append(err)
                 if err < best_hardcoded_err:
                     best_hardcoded_err = err
                     best_hardcoded_guess = ph
             p0 = best_hardcoded_guess
-                
+        
+        if 'fit_jac' in fit_data:
+            analytical_jac_coded = fit_data['fit_jac']
+            analytical_jac = lambda Ts, *args: analytical_jac_coded(Ts, args)
+        else:
+            analytical_jac = None
+        
         pcov = None
         if fit_method == 'differential_evolution':
             if 'bounds' in solver_kwargs:
-                working_bounds = solver_kwargs['bounds']
+                working_bounds = solver_kwargs.pop('bounds')
             else:
                 try:
                     bounds = fit_data['bounds']
                     working_bounds = [bounds[k] for k in use_fit_parameters]
                 except KeyError:
-                    working_bounds = [(-1e7, 1e7) for k in use_fit_parameters]
+                    factor = 4.0
+                    if len(array_init_guesses) > 3:
+                        lowers_guess, uppers_guess = np.array(array_init_guesses).min(axis=0), np.array(array_init_guesses).max(axis=0)
+                        working_bounds = [(lowers_guess[i]*factor if lowers_guess[i] < 0. else lowers_guess[i]*(1.0/factor),
+                                           uppers_guess[i]*(1.0/factor) if uppers_guess[i] < 0. else uppers_guess[i]*(factor),
+                                           ) for i in range(len(use_fit_parameters))]
+                    else:
+                        working_bounds = [(-1e30, 1e30) for k in use_fit_parameters]
+            popsize = solver_kwargs.get('popsize', 15)*len(fit_parameters)
+            init = array_init_guesses
+            for i in range(len(init), popsize):
+                to_add = [uniform(ll, lh) for ll, lh in working_bounds]
+                init.append(to_add)
                 
-            res = differential_evolution(minimize_func, bounds=working_bounds, **solver_kwargs)
+            res = differential_evolution(minimize_func, init=np.array(init),
+                                         bounds=working_bounds, **solver_kwargs)
             popt = res['x']
         else:
             if 'maxfev' not in solver_kwargs and fit_method == 'lm':
-                solver_kwargs['maxfev'] = 10000
-            popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, method=fit_method, **solver_kwargs)
+                solver_kwargs['maxfev'] = 40000
+            popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, jac=analytical_jac, 
+                                   method=fit_method, **solver_kwargs)
         out_kwargs = model_kwargs.copy()
         for param_name, param_value in zip(fit_parameters, popt):
             out_kwargs[param_name] = float(param_value)

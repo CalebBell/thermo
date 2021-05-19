@@ -146,6 +146,7 @@ def test_ThermalConductivityLiquid_fitting0():
     ammonia_Ts_kg = [200, 236.842, 239.82, 273.684, 310.526, 347.368, 384.211, 421.053, 457.895, 494.737, 531.579, 568.421, 605.263, 642.105, 678.947, 715.789, 752.632, 789.474, 826.316, 863.158, 900, ]
     ammonia_kgs = [0.0146228, 0.0182568, 0.0185644, 0.0221923, 0.0263847, 0.0308034, 0.0354254, 0.040233, 0.0452116, 0.0503493, 0.0556358, 0.0610625, 0.0666218, 0.072307, 0.0781123, 0.0840323, 0.0900624, 0.0961983, 0.102436, 0.108772, 0.115203]
     
+    # note: equation does not yet support numba
     fit, res = ThermalConductivityLiquid.fit_data_to_model(Ts=ammonia_Ts_kg, data=ammonia_kgs, model='DIPPR102',
                           do_statistics=True, use_numba=False, fit_method='lm')
     assert res['MAE'] < 1e-5

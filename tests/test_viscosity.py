@@ -26,7 +26,7 @@ from math import log, log10
 import numpy as np
 import json
 import pandas as pd
-from fluids.numerics import assert_close, assert_close1d, assert_close2d
+from fluids.numerics import assert_close, assert_close1d, assert_close2d, linspace
 from fluids.constants import psi, atm, foot, lb
 from fluids.core import R2K, F2K
 from chemicals.utils import normalize, mixing_simple, zs_to_ws
@@ -157,6 +157,201 @@ def test_ViscosityLiquid_fitting0():
                           do_statistics=True, use_numba=False,
                           fit_method='lm')
     assert res['MAE'] < 1e-5
+
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_ViscosityLiquid_fitting1():
+    # Argon - was not fitting properly
+    obj = ViscosityLiquid(CASRN='7440-37-1')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+    
+    # benzamide
+    obj = ViscosityLiquid(CASRN='55-21-0')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+    
+    # acetamide
+    obj = ViscosityLiquid(CASRN='60-35-5')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # 2-butanol
+    obj = ViscosityLiquid(CASRN='78-92-2')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # benzene
+    obj = ViscosityLiquid(CASRN='71-43-2')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+    
+    # butane
+    obj = ViscosityLiquid(CASRN='106-97-8')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+    
+    #  1-chloropropane
+    obj = ViscosityLiquid(CASRN='540-54-5')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # m-cresol
+    obj = ViscosityLiquid(CASRN='108-39-4')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # o-cresol
+    obj = ViscosityLiquid(CASRN='95-48-7')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # cyclohexanol
+    obj = ViscosityLiquid(CASRN='108-93-0')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # decane
+    obj = ViscosityLiquid(CASRN='124-18-5')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # 1,3-dichlorobenzene
+    obj = ViscosityLiquid(CASRN='541-73-1')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # diethanolamine
+    obj = ViscosityLiquid(CASRN='111-42-2')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # difluoromethane
+    obj = ViscosityLiquid(CASRN='75-10-5')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # dodecane
+    obj = ViscosityLiquid(CASRN='112-40-3')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # ethylene glycol
+    obj = ViscosityLiquid(CASRN='107-21-1')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # 2-ethylhexanoic acid
+    obj = ViscosityLiquid(CASRN='149-57-5')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # ethyltrichlorosilane
+    obj = ViscosityLiquid(CASRN='115-21-9')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # formamide
+    obj = ViscosityLiquid(CASRN='75-12-7')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # helium
+    obj = ViscosityLiquid(CASRN='7440-59-7')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # hexane
+    obj = ViscosityLiquid(CASRN='110-54-3')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # hydrazine
+    obj = ViscosityLiquid(CASRN='302-01-2')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # hydrogen
+    obj = ViscosityLiquid(CASRN='1333-74-0')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # hydrochloric acid
+    obj = ViscosityLiquid(CASRN='7647-01-0')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
 
 @pytest.mark.meta_T_dept
 def test_ViscosityLiquid_PPDS9_limits():
