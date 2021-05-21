@@ -99,7 +99,7 @@ from chemicals.heat_capacity import (Poling, Poling_integral, Poling_integral_ov
                                      Zabransky_quasi_polynomial, Zabransky_quasi_polynomial_integral, Zabransky_quasi_polynomial_integral_over_T,
                                      Zabransky_cubic, Zabransky_cubic_integral, Zabransky_cubic_integral_over_T)
 from chemicals.interface import REFPROP_sigma, Somayajulu, Jasper
-from chemicals.volume import volume_VDI_PPDS
+from chemicals.volume import volume_VDI_PPDS, Rackett_fit
 from thermo import serialize
 from thermo.eos import GCEOS
 from thermo.eos_mix import GCEOSMIX
@@ -951,6 +951,11 @@ class TDependentProperty(object):
     'Jasper': (['a', 'b',], [], {'f': Jasper}, {'fit_params': ['a', 'b',]}),
 
     'volume_VDI_PPDS': (['Tc', 'rhoc', 'a', 'b', 'c', 'd', 'MW',], [], {'f': volume_VDI_PPDS}, {'fit_params': ['a', 'b', 'c', 'd',]}),
+    'Rackett_fit': (['Tc', 'rhoc', 'b', 'n', 'MW',], [], {'f': Rackett_fit}, {'fit_params': ['rhoc', 'b', 'n'], 'initial_guesses': [
+        {'n': 0.286, 'b': 0.011, 'rhoc': 28.93},
+        {'n': 0.286, 'b': 0.3, 'rhoc': 755.0},
+        ]}),
+    
 
     # Plain polynomial
     'DIPPR100': ([],
