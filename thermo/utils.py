@@ -892,7 +892,9 @@ class TDependentProperty(object):
                                         {'A': 9.1, 'B': 1450.0, 'C': -60.0},
                                         {'A': 8.1, 'B': 77.0, 'C': 2.5},
                                         {'A': 138., 'B': 520200.0, 'C': 3670.0}, # important point for heavy compounds
+                                        {'A': 12.852, 'B': 2943.0, 'C': 0.0}, # Zero C and low range point
                         ]}),
+        
         'TRC_Antoine_extended': (['Tc', 'to', 'A', 'B', 'C', 'n', 'E', 'F'], [],
                                  {'f': TRC_Antoine_extended, 'f_der': dTRC_Antoine_extended_dT, 'f_der2': d2TRC_Antoine_extended_dT2},
                                  {'fit_params': ['to', 'A', 'B', 'C', 'n', 'E', 'F'],

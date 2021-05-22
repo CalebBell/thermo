@@ -155,6 +155,14 @@ def test_VaporPressure_fitting0():
                           do_statistics=True, use_numba=False, model_kwargs={'base':10.0},
                           fit_method='lm')
     assert stats['MAE'] < 1e-5
+    
+    # Fit with very low range and no C
+    Ts = linspace(374, 377.0, 5)
+    props_calc = [Antoine(T, A=12.852103, B=2942.98, C=0.0) for T in Ts]
+    res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=props_calc, model='Antoine',
+                          do_statistics=True, use_numba=False, model_kwargs={'base':10.0},
+                          fit_method='lm')
+    assert stats['MAE'] < 1e-5
 
 
 @pytest.mark.fitting
