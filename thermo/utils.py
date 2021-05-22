@@ -657,26 +657,38 @@ def generate_fitting_function(model,
                               fit_parameters,
                               optional_kwargs,
                               const_kwargs,
-                              try_numba=True):
+                              try_numba=True,
+                              jac=False):
     '''Private function to create a fitting objective function for
     consumption by curve_fit. Other minimizers will require a different
     objective function.
     '''
+    if jac:
+        model_jac_name = model + '_fitting_jacobian'
     if try_numba:
         # Reasons to write a custom accelerating wrapper:
         # 1) ufuncs with numba are 1.5-2x slower than expected
         # 2) optional arguments are not supported, which is an issue for many
         # models which default to zero coefficients
         try:
-            import chemicals.numba
-            import chemicals.numba_vectorized
-            f = getattr(chemicals.numba_vectorized, model)
+            if jac:
+                import chemicals.numba
+                f = getattr(chemicals.numba, model_jac_name)
+            else:
+                import chemicals.numba_vectorized
+                f = getattr(chemicals.numba_vectorized, model)
         except Exception as e:
+            if jac:
+                f = getattr(chemicals, model_jac_name)
+            else:
+                import chemicals.vectorized
+                f = getattr(chemicals.vectorized, model)
+    else:
+        if jac:
+            f = getattr(chemicals, model_jac_name)
+        else:
             import chemicals.vectorized
             f = getattr(chemicals.vectorized, model)
-    else:
-        import chemicals.vectorized
-        f = getattr(chemicals.vectorized, model)
 
     # arg_dest_idxs is a list of indexes for each parameter
     # to be transformed into the output array
@@ -693,7 +705,7 @@ def generate_fitting_function(model,
         elif n in fit_parameters:
             reusable_args.append(1.0)
             arg_dest_idxs.append(i)
-    if len(model) > 2 and model.startswith('EQ'):
+    if not jac and (len(model) > 2 and model.startswith('EQ')):
         # Handle the DIPPR equations that have the DIPPR equation in them
         reusable_args.append(0)
 
@@ -1030,14 +1042,28 @@ class TDependentProperty(object):
            {'A': -6.3, 'B': 640.0, 'C': -0.7, 'D': 5.7e21, 'E': -10.0}, # perry dippr point hexane
                       
            {'A': -375.2, 'B': 17180.0, 'C': 66.67, 'D': -3.6368, 'E': 0.5}, # near dippr viscosity diethanolamine
+           {'A': -158.9768, 'B': 13684.82, 'C': 19.79212, 'D': 1.78855e-05, 'E': 1.442815}, # near Diisopropanolamine chemsep liquid viscosity
 
            {'A': -395.0, 'B': 20000.0, 'C': 60.0, 'D':-5e-2, 'E': 1.0}, # near dippr viscosity 1,2-Butanediol
            {'A': -394.0, 'B': 19000.0, 'C': 60.0, 'D': -.05, 'E': 1.0}, # near dippr viscosity 1,2-butanediol
            {'A': -390.0, 'B': 18600.0, 'C': 60.0, 'D': -.055, 'E': 1.0}, # near dippr viscosity 1,3-butanediol
            {'A': 193.0, 'B': -8040, 'C': -29.5, 'D': 0.044, 'E': 1.0}, # near dippr Psat acetaldehyde
            {'A': 138.5, 'B': -7123.0, 'C': -19.64, 'D': 0.02645, 'E': 1.0}, # near dippr Psat acrolein
-           
-
+           {'A': -354.9911, 'B': 16471.68, 'C': 54.55389, 'D': -0.0481353, 'E': 1.0}, # near Triethylene glycol chemsep liquid viscosity
+             
+           {'A': -20.449, 'B': -959.41, 'C': 4.2445, 'D': -9.5025e-05, 'E': 2.0}, # near Hydrogen iodide chemsep liquid viscosity
+           {'A': -27.66295, 'B': 5326.5, 'C': 1.362383, 'D': -1.706454e-06, 'E': 2.0}, # near N-aminoethyl ethanolamine chemsep liquid viscosity
+           {'A': -497.9054, 'B': 22666.52, 'C': 74.36022, 'D': -7.02789e-05, 'E': 2.0}, # near N-aminoethyl piperazine chemsep liquid viscosity
+           {'A': 33.605, 'B': 4399.7, 'C': -8.9203, 'D': 2.1038e-05, 'E': 2.0}, # near Triethanolamine chemsep liquid viscosity
+           {'A': -135.2818, 'B': 9167.078, 'C': 18.06409, 'D': -1.15446e-05, 'E': 2.0}, # near 1,4-butanediol chemsep liquid viscosity
+           {'A': 20.959, 'B': -457.46, 'C': -4.9486, 'D': 6.5105e-06, 'E': 2.0}, # near Sulfur hexafluoride chemsep liquid viscosity
+           {'A': -36.861, 'B': 2459.5, 'C': 3.4416, 'D': 7.0474e-06, 'E': 2.0}, # near Neopentane chemsep liquid viscosity
+           {'A': -79.28, 'B': 4198.4, 'C': 10.393, 'D': -8.5568e-06, 'E': 2.0}, # near 1,4-dioxane chemsep liquid viscosity
+           {'A': -98.08798, 'B': 4904.749, 'C': 13.57131, 'D': -2.19968e-05, 'E': 2.0}, # near 1-propanol chemsep liquid viscosity
+           {'A': -9.949, 'B': 1214.4, 'C': -0.53562, 'D': 1.0346e-05, 'E': 2.0}, # near Methyl formate chemsep liquid viscosity
+           {'A': -1098.989, 'B': 45628.63, 'C': 168.1502, 'D': -0.000185183, 'E': 2.0}, # near M-cresol chemsep liquid viscosity
+           {'A': -10.876, 'B': 472.99, 'C': 0.14659, 'D': -1.3815e-05, 'E': 2.0}, # near Nitrous oxide chemsep liquid viscosity
+           {'A': -107.9662, 'B': 6199.736, 'C': 14.5721, 'D': -1.7552e-05, 'E': 2.0}, # near 2-methyl-1-propanol chemsep liquid viscosity
            {'A': -0.287, 'B': 6081.0, 'C': -3.871, 'D': 1.52e-05, 'E': 2.0}, # near Diethanolamine chemsep liquid viscosity
            {'A': -702.8, 'B': 30403.5, 'C': 106.7, 'D': -0.0001164, 'E': 2.0}, # near Tetraethylene glycol chemsep liquid viscosity
            {'A': 19.33, 'B': 3027, 'C': -6.653, 'D': 3e-05, 'E': 2.0}, # near 2-butanol chemsep liquid viscosity
@@ -1652,11 +1678,12 @@ class TDependentProperty(object):
                 * 'MaxRelErr': Maximum relative error
                 * 'MaxSquareErr': Maximum squared absolute error
                 * 'MaxSquareRelErr': Maximum squared relative error
-        multiple_tries : bool
+        multiple_tries : bool or int
             For most solvers, multiple initial guesses are available and the best
             guess is normally tried. When this is set to True, all guesses are
             tried until one is found with an error lower than
-            `multiple_tries_max_err`, [-]
+            `multiple_tries_max_err`. If an int is supplied, the best `n`
+            multiple guesses are tried only. [-]
         multiple_tries_max_err : float
             Only used when `multiple_tries` is true; if a solution is found
             with lower error than this, no further guesses are tried, [-]
@@ -1791,6 +1818,8 @@ class TDependentProperty(object):
                 multiple_tries_best_error = 1e300
                 best_popt, best_pcov = None, None
                 popt = None
+                if type(multiple_tries) is int and len(array_init_guesses) > multiple_tries:
+                    array_init_guesses = array_init_guesses[0:multiple_tries]
                 for p0 in array_init_guesses:
                     try:
                         popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, jac=analytical_jac, 

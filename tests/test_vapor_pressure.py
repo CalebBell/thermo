@@ -230,6 +230,7 @@ def test_VaporPressure_fitting5_AntoinePoling():
         props_calc = [obj.calculate(T, ANTOINE_POLING) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='Antoine',
                               do_statistics=True, use_numba=False,
+                              multiple_tries=2,
                               model_kwargs={'base': 10.0},  fit_method='lm')
         assert stats['MAE'] < 1e-7
 
