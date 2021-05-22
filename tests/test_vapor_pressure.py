@@ -26,8 +26,10 @@ import pandas as pd
 import json
 from math import isnan
 from fluids.numerics import linspace, assert_close, derivative, assert_close1d
+from chemicals.vapor_pressure import *
 from thermo.vapor_pressure import *
 from thermo.vapor_pressure import SANJARI, EDALAT, AMBROSE_WALTON, LEE_KESLER_PSAT, BOILING_CRITICAL, COOLPROP, VDI_PPDS, VDI_TABULAR, WAGNER_MCGARRY, ANTOINE_EXTENDED_POLING, ANTOINE_POLING, WAGNER_POLING, DIPPR_PERRY_8E
+from thermo.utils import TDependentProperty
 from chemicals.identifiers import check_CAS
 import chemicals
 from thermo.coolprop import has_CoolProp
@@ -145,6 +147,15 @@ def test_VaporPressure_fitting0():
     assert_close(res['b'], obj.WAGNER_POLING_coefs[1])
     assert_close(res['c'], obj.WAGNER_POLING_coefs[2])
     assert_close(res['d'], obj.WAGNER_POLING_coefs[3])
+
+    # Heavy compound fit
+    Ts = linspace(179.15, 237.15, 5)
+    props_calc = [Antoine(T, A=138., B=520200.0, C=3670.0) for T in Ts]
+    res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=props_calc, model='Antoine',
+                          do_statistics=True, use_numba=False, model_kwargs={'base':10.0},
+                          fit_method='lm')
+    assert stats['MAE'] < 1e-5
+
 
 @pytest.mark.fitting
 @pytest.mark.meta_T_dept

@@ -90,7 +90,7 @@ from chemicals.utils import PY37, isnan, isinf, log, exp, ws_to_zs, zs_to_ws, e
 from chemicals.utils import mix_multiple_component_flows, hash_any_primitive
 from chemicals.vapor_pressure import Antoine, Antoine_coeffs_from_point, Antoine_AB_coeffs_from_point, DIPPR101_ABC_coeffs_from_point
 from chemicals.vapor_pressure import Wagner, Wagner_original, TRC_Antoine_extended, dAntoine_dT, d2Antoine_dT2, dWagner_original_dT, d2Wagner_original_dT2, dWagner_dT, d2Wagner_dT2, dTRC_Antoine_extended_dT, d2TRC_Antoine_extended_dT2
-from chemicals.dippr import EQ100, EQ101, EQ102, EQ104, EQ105, EQ106, EQ107, EQ114, EQ115, EQ116, EQ127, EQ102_fitting_jacobian
+from chemicals.dippr import EQ100, EQ101, EQ102, EQ104, EQ105, EQ106, EQ107, EQ114, EQ115, EQ116, EQ127, EQ102_fitting_jacobian, EQ101_fitting_jacobian
 from chemicals.phase_change import Watson, Watson_n, Alibakhshi, PPDS12
 from chemicals.viscosity import (Viswanath_Natarajan_2, Viswanath_Natarajan_2_exponential,
                                  Viswanath_Natarajan_3, PPDS9, dPPDS9_dT)
@@ -891,6 +891,7 @@ class TDependentProperty(object):
                     'initial_guesses': [{'A': 9.0, 'B': 1000.0, 'C': -70.0},
                                         {'A': 9.1, 'B': 1450.0, 'C': -60.0},
                                         {'A': 8.1, 'B': 77.0, 'C': 2.5},
+                                        {'A': 138., 'B': 520200.0, 'C': 3670.0}, # important point for heavy compounds
                         ]}),
         'TRC_Antoine_extended': (['Tc', 'to', 'A', 'B', 'C', 'n', 'E', 'F'], [],
                                  {'f': TRC_Antoine_extended, 'f_der': dTRC_Antoine_extended_dT, 'f_der2': d2TRC_Antoine_extended_dT2},
@@ -991,9 +992,10 @@ class TDependentProperty(object):
        'f_der2': lambda T, **kwargs: EQ101(T, order=2, **kwargs),
        'f_der3': lambda T, **kwargs: EQ101(T, order=3, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D', 'E'],
+      'fit_jac': EQ101_fitting_jacobian,
        'initial_guesses': [
            {'A': -12.6, 'B': 2670.0, 'C': 0.0, 'D': 0.0, 'E': 0.0}, # perry dippr point benzamide
-           {'A': -16.0, 'B': 3100.0, 'C': 0.0, 'D': 0.0, 'E': 0.0}, # perry dippr point 2-butanol
+           {'A': -16.32, 'B': 3141.0, 'C': 0.0, 'D': 0.0, 'E': 0.0}, # perry dippr point 2-butanol
            {'A': -13.0, 'B': 2350.0, 'C': 0.0, 'D': 0.0, 'E': 0.0}, # perry dippr point 2-ethylhexanoic acid
 
            {'A': 0.263, 'B': 280.0, 'C': -1.7, 'D':0.0, 'E': 0.0}, # near dippr viscosity vinyl chloride
@@ -1021,14 +1023,27 @@ class TDependentProperty(object):
            {'A': 40.0, 'B': -912.0, 'C': -7.56, 'D': 1.68e24, 'E': -10.0}, # perry dippr point formamide
            {'A': -6.3, 'B': 640.0, 'C': -0.7, 'D': 5.7e21, 'E': -10.0}, # perry dippr point hexane
                       
-           {'A': -375.2, 'B': 17180.0, 'C': 66.7, 'D': -3.637, 'E': 0.5}, # near dippr viscosity diethanolamine
+           {'A': -375.2, 'B': 17180.0, 'C': 66.67, 'D': -3.6368, 'E': 0.5}, # near dippr viscosity diethanolamine
 
            {'A': -395.0, 'B': 20000.0, 'C': 60.0, 'D':-5e-2, 'E': 1.0}, # near dippr viscosity 1,2-Butanediol
            {'A': -394.0, 'B': 19000.0, 'C': 60.0, 'D': -.05, 'E': 1.0}, # near dippr viscosity 1,2-butanediol
            {'A': -390.0, 'B': 18600.0, 'C': 60.0, 'D': -.055, 'E': 1.0}, # near dippr viscosity 1,3-butanediol
            {'A': 193.0, 'B': -8040, 'C': -29.5, 'D': 0.044, 'E': 1.0}, # near dippr Psat acetaldehyde
            {'A': 138.5, 'B': -7123.0, 'C': -19.64, 'D': 0.02645, 'E': 1.0}, # near dippr Psat acrolein
+           
 
+           {'A': -0.287, 'B': 6081.0, 'C': -3.871, 'D': 1.52e-05, 'E': 2.0}, # near Diethanolamine chemsep liquid viscosity
+           {'A': -702.8, 'B': 30403.5, 'C': 106.7, 'D': -0.0001164, 'E': 2.0}, # near Tetraethylene glycol chemsep liquid viscosity
+           {'A': 19.33, 'B': 3027, 'C': -6.653, 'D': 3e-05, 'E': 2.0}, # near 2-butanol chemsep liquid viscosity
+           {'A': 264.3, 'B': -7985.0, 'C': -44.1, 'D': 7.495e-05, 'E': 2.0}, # near Nitric acid chemsep liquid viscosity
+           {'A': -260.7, 'B': 11505.0, 'C': 38.84, 'D': -6.16e-05, 'E': 2.0}, # near Sulfur trioxide chemsep liquid viscosity
+           {'A': -161.558, 'B': 9388.5, 'C': 22.023, 'D': -1.219e-05, 'E': 2.0}, # near 2-pentanol chemsep liquid viscosity
+           {'A': -58.53, 'B': 2991.0, 'C': 7.491, 'D': -1.103e-05, 'E': 2.0}, # near Acetic acid chemsep liquid viscosity
+           {'A': -13.68, 'B': 5526.7, 'C': 15.76, 'D': -1.598e-05, 'E': 2.0}, # near Acrylic acid chemsep liquid viscosity
+           {'A': 9.2895, 'B': -86.90, 'C': -3.7445, 'D':  5.848e-06, 'E': 2.0}, # near Fluorine chemsep liquid viscosity
+           {'A': -7.0105, 'B': 766.6, 'C': -0.571, 'D': -1.617e-06, 'E': 2.0}, # near Diisopropylamine chemsep liquid viscosity
+           {'A': -374.3, 'B': 18190.0, 'C': 55.1, 'D': -4.9166e-05, 'E': 2.0}, # near Diethylene glycol chemsep liquid viscosity
+           {'A': -789.5, 'B': 22474.0, 'C': 129., 'D': -0.00032789, 'E': 2.0}, # near phosgene chemsep liquid viscosity
            {'A': -40.0, 'B': 1500.0, 'C': 4.8, 'D':-.000016, 'E': 2.0}, # near ammonia viscosity chemsep
            {'A': 62.9, 'B': -4137.0, 'C': -6.32, 'D': 9.2E-06, 'E': 2.0}, # near chemsep Psat ammonia
            {'A': 85.0, 'B': -7615.0, 'C': -9.31, 'D': 5.56E-06, 'E': 2.0}, # near dippr Psat m-xylene
@@ -1129,6 +1144,30 @@ class TDependentProperty(object):
           {'A': 2450.0, 'B': 0.275, 'C': 310.,'D': 0.29},  # near ethyne dippr volume
           {'A': 1450.0, 'B': 0.268, 'C': 365.,'D': 0.29},  # near propene dippr volume
           {'A': 1940.0, 'B': 0.24, 'C': 590.,'D': 0.244},  # near formic acid dippr volume
+          
+          {'A': 1.05, 'B': 0.258, 'C': 540.,'D': 0.268},  # near some chemsep liquid densities
+          {'A': 2.15, 'B': 0.27, 'C': 415.,'D': 0.286},  # near some chemsep liquid densities
+          {'A': 0.048, 'B': 0.09, 'C': 587.,'D': 0.133},  # near some chemsep liquid densities
+          {'A': 0.68, 'B': 0.26, 'C': 500.,'D': 0.259},  # near some chemsep liquid densities
+          {'A': 1.105, 'B': 0.245, 'C': 508.,'D': 0.274},  # near some chemsep liquid densities
+          {'A': 0.9966, 'B': 0.343, 'C': 803.,'D': 0.5065},  # near some chemsep liquid densities
+          {'A': 1.32, 'B': 0.27, 'C': 370.,'D': 0.2785},  # near some chemsep liquid densities
+          {'A': 0.9963, 'B': 0.3426, 'C': 803.,'D': 0.5065},  # near some chemsep liquid densities
+          {'A': 1.002, 'B': 0.2646, 'C': 425.2,'D': 0.2714},  # near some chemsep liquid densities
+          {'A': 0.6793, 'B': 0.2165, 'C': 433.3,'D': 0.20925},  # near some chemsep liquid densities
+          {'A': 0.01382, 'B': 0.07088, 'C': 810.0,'D': 0.13886},  # near some chemsep liquid densities
+          {'A': 0.99663, 'B': 0.34261, 'C': 803.06,'D': 0.50647},  # near some chemsep liquid densities
+          {'A': 0.4708, 'B': 0.22934, 'C': 664.5,'D': 0.22913},  # near some chemsep liquid densities
+          {'A': 0.27031, 'B': 0.13967, 'C': 595.0,'D': 0.17588},  # near some chemsep liquid densities
+          {'A': 0.99773, 'B': 0.19368, 'C': 469.15,'D': 0.19965},  # near some chemsep liquid densities
+          {'A': 0.4436, 'B': 0.23818, 'C': 568.77,'D': 0.25171},  # near some chemsep liquid densities
+          {'A': 0.8193, 'B': 0.25958, 'C': 561.1,'D': 0.28941},  # near some chemsep liquid densities
+          {'A': 1.3663, 'B': 0.25297, 'C': 456.4,'D': 0.27948},  # near some chemsep liquid densities
+          {'A': 0.42296, 'B': 0.21673, 'C': 611.55,'D': 0.2517},  # near some chemsep liquid densities
+          {'A': 0.50221, 'B': 0.23722, 'C': 631.11,'D': 0.26133},  # near some chemsep liquid densities
+          {'A': 0.67524, 'B': 0.24431, 'C': 645.61,'D': 0.26239},  # near some chemsep liquid densities
+          {'A': 0.5251, 'B': 0.20924, 'C': 736.61,'D': 0.18363},  # near some chemsep liquid densities
+          
           ]}),
 
      'DIPPR106': (['Tc', 'A', 'B'],
@@ -1144,7 +1183,12 @@ class TDependentProperty(object):
           {'A': 125.0, 'B': 1.3, 'C': -2.7,'D': 1.7, 'E': 0.0},  # near helium dippr Hvap
           {'A': 1010.0, 'B': 0.7, 'C': -1.8,'D': 1.45, 'E': 0.0},  # near hydrogen dippr Hvap
           {'A': 135000.0, 'B': 13.5, 'C': -23.5,'D': 10.8, 'E': 0.0},  # near hydrofluoric acid dippr Hvap
- ]
+          
+          {'A': 7385650.0, 'B': 0.27668, 'C': 0.21125, 'D': -0.8368, 'E': 0.723}, # near chemsep Hvap air
+          {'A': 62115220.0, 'B': 1.00042, 'C': -0.589, 'D': -0.2779, 'E': 0.31358,}, # near chemsep Hvap 2,2-dimethylhexane
+          {'A': 4761730.0, 'B': -11.56, 'C': 30.7, 'D': -31.89, 'E': 12.678}, # near chemsep Hvap Dimethylacetylene
+          
+           ]
       }),
      'YawsSigma': (['Tc', 'A', 'B'],
       [],
@@ -1160,7 +1204,11 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ107(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ107(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ107(T, order=-1j, **kwargs)},
-      {'fit_params': ['A', 'B', 'C', 'D', 'E']}),
+      {'fit_params': ['A', 'B', 'C', 'D', 'E'], 'initial_guesses':
+       [{'A': 325000.0, 'B': 110000.0, 'C': 1640.0, 'D': 745000.0, 'E': 726.},
+        ]}),
+      
+      # 
      'DIPPR114': (['Tc', 'A', 'B', 'C', 'D'],
       [],
       {'f': EQ114,
@@ -1690,6 +1738,8 @@ class TDependentProperty(object):
                     best_hardcoded_guess = ph
             p0 = best_hardcoded_guess
             array_init_guesses = [p0 for _, p0 in sorted(zip(hardcoded_errors, array_init_guesses))]
+        else:
+            array_init_guesses = [p0]
         
         if 'fit_jac' in fit_data:
             analytical_jac_coded = fit_data['fit_jac']
@@ -1697,7 +1747,7 @@ class TDependentProperty(object):
                 jac_skip_row_idxs = np.array([i for i, v in enumerate(fit_data['fit_params']) if v not in use_fit_parameters])
                 analytical_jac = lambda Ts, *args: np.delete(analytical_jac_coded(Ts, args), jac_skip_row_idxs)
             else:
-                analytical_jac = lambda Ts, *args: analytical_jac_coded(Ts, args)
+                analytical_jac = analytical_jac_coded#lambda Ts, *args: analytical_jac_coded(Ts, args)
         else:
             analytical_jac = None
         
@@ -1729,7 +1779,8 @@ class TDependentProperty(object):
             popt = res['x']
         else:
             if 'maxfev' not in solver_kwargs and fit_method == 'lm':
-                solver_kwargs['maxfev'] = 40000
+                # DO NOT INCREASE THIS! Make an analytical jacobian instead please.
+                solver_kwargs['maxfev'] = 5000 
             if multiple_tries:
                 multiple_tries_best_error = 1e300
                 best_popt, best_pcov = None, None
@@ -1751,7 +1802,7 @@ class TDependentProperty(object):
                 if best_popt is None:
                     raise ValueError("No guesses converged")
                 else:
-                    popt, pcov = popt, pcov
+                    popt, pcov = best_popt, best_pcov
             else:
                 popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, jac=analytical_jac, 
                                        method=fit_method, **solver_kwargs)
