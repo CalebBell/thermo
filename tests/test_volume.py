@@ -32,6 +32,7 @@ import chemicals
 from chemicals.utils import Vm_to_rho, zs_to_ws
 from thermo.vapor_pressure import VaporPressure
 from thermo.utils import POLY_FIT
+from chemicals.volume import *
 from thermo.volume import LALIBERTE, COSTALD_MIXTURE_FIT, RACKETT_PARAMETERS, COSTALD_MIXTURE, LINEAR, RACKETT
 from thermo.volume import HTCOSTALD, COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, RACKETTFIT, YEN_WOODS_SAT, BHIRUD_NORMAL, VDI_PPDS, TOWNSEND_HALES, HTCOSTALDFIT, CAMPBELL_THODOS, MMSNM0, RACKETT, YAMADA_GUNN
 from thermo.volume import PITZER_CURL, EOS, TSONOPOULOS_EXTENDED, ABBOTT, COOLPROP, IDEAL, TSONOPOULOS, CRC_VIRIAL
@@ -421,6 +422,27 @@ def test_VolumeLiquid_fitting2_dippr_116_ppds():
                               do_statistics=True, use_numba=True, fit_method='lm', 
                               model_kwargs={'Tc': obj.VDI_PPDS_Tc, 'A': obj.VDI_PPDS_rhoc})
         assert stats['MAE'] < 1e-7
+
+@pytest.mark.meta_T_dept
+@pytest.mark.fitting
+def test_VolumeLiquid_fitting3():
+    # From yaws
+    Tc, rhoc, b, n, MW = 627.65, 433.128, 0.233, 0.2587, 66.0
+    Ts = linspace(293.15, 298.15, 10)
+    props_calc = [Rackett_fit(T, Tc, rhoc, b, n, MW) for T in Ts]
+    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_fit',
+                          do_statistics=True, use_numba=False, model_kwargs={'MW':MW, 'Tc': Tc,},
+                          fit_method='lm')
+    assert stats['MAE'] < 1e-5
+    
+    # From yaws
+    Tc, rhoc, b, n, MW = 1030.0, 1795.0521319999998, 0.96491407, 0.15872, 97.995
+    Ts = linspace(315.51, 393.15, 10)
+    props_calc = [Rackett_fit(T, Tc, rhoc, b, n, MW) for T in Ts]
+    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_fit',
+                          do_statistics=True, use_numba=False, model_kwargs={'MW':MW, 'Tc': Tc,},
+                          fit_method='lm')
+    assert stats['MAE'] < 1e-5
 
 
 @pytest.mark.meta_T_dept

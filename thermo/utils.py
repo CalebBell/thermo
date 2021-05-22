@@ -955,8 +955,10 @@ class TDependentProperty(object):
 
     'volume_VDI_PPDS': (['Tc', 'rhoc', 'a', 'b', 'c', 'd', 'MW',], [], {'f': volume_VDI_PPDS}, {'fit_params': ['a', 'b', 'c', 'd',]}),
     'Rackett_fit': (['Tc', 'rhoc', 'b', 'n', 'MW',], [], {'f': Rackett_fit}, {'fit_params': ['rhoc', 'b', 'n'], 'initial_guesses': [
-        {'n': 0.286, 'b': 0.011, 'rhoc': 28.93},
-        {'n': 0.286, 'b': 0.3, 'rhoc': 755.0},
+        {'n': 0.286, 'b': 0.011, 'rhoc': 28.93}, # near a point from yaws
+        {'n': 0.286, 'b': 0.3, 'rhoc': 755.0}, # near a point from yaws
+        {'n': 0.259, 'b': 0.233, 'rhoc': 433.1}, # near a point from yaws
+        {'n': 0.159, 'b': 0.965, 'rhoc': 1795.0},
         ]}),
     
 
