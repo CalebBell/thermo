@@ -1658,6 +1658,33 @@ class TDependentProperty(object):
 
         return coeffs, (low, high), stats
     
+    def fit_add_model(self, name, model, Ts, data, **kwargs):
+        r'''Method to add a new emperical fit equation to the object
+        by fitting its coefficients to specified data.
+        Once added, the new method is set as the default.
+
+        A number of hardcoded `model` names are implemented; other models
+        are not supported.
+        
+        This is a wrapper around :obj:`TDependentProperty.fit_data_to_model`
+        and :obj:`TDependentProperty.add_correlation`.
+
+        Parameters
+        ----------
+        name : str
+            The name of the coefficient set; user specified, [-]
+        model : str
+            A string representing the supported models, [-]
+        Ts : list[float]
+            Temperatures of the data points, [K]
+        data : list[float]
+            Data points, [`units`]
+        kwargs : dict
+            Various keyword arguments accepted by `fit_data_to_model`, [-]
+        '''
+        fit = self.fit_data_to_model(Ts=Ts, data=data, model=model, **kwargs)
+        self.add_correlation(name=name, model=model, Tmin=min(Ts), Tmax=max(Ts), **fit)
+    
     @classmethod
     def fit_data_to_model(cls, Ts, data, model, model_kwargs=None, 
                           fit_method='lm', use_numba=True,

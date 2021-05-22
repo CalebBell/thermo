@@ -333,6 +333,18 @@ def test_VolumeSolid_works_with_no_data():
     # Test pentane has no property but that it succeeds
     VolumeSolid(CASRN='109-66-0').T_dependent_property(300)
 
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_VolumeSolid_fitting2():
+    obj = VolumeSolid(CASRN='7782-44-7', load_data=False)
+    Ts_gamma = [42.801, 44.0, 46.0, 48.0,
+               50.0, 52.0, 54.0, 54.361]
+    
+    Vms_gamma = [23.05e-6, 23.06e-6, 23.18e-6, 23.30e-6,
+                23.43e-6, 23.55e-6, 23.67e-6, 23.69e-6]
+    obj.fit_add_model(Ts=Ts_gamma, data=Vms_gamma, model='DIPPR100', name='gamma')
+    assert obj.method == 'gamma'
+
 @pytest.mark.meta_T_dept
 @pytest.mark.fitting
 def test_VolumeSolid_fitting1():
@@ -346,6 +358,9 @@ def test_VolumeSolid_fitting1():
     res, stats = VolumeSolid.fit_data_to_model(Ts=ammonia_Ts, data=ammonia_Vms, model='DIPPR100',
                           do_statistics=True, use_numba=False)
     assert stats['MAE'] < 1e-8
+
+
+
 
 @pytest.mark.fitting
 @pytest.mark.meta_T_dept
