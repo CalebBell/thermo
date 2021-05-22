@@ -263,6 +263,27 @@ def test_VaporPressure_fitting6_TRC_AntoineExtended():
                                                              'to': obj.ANTOINE_EXTENDED_POLING_coefs[1]})
         assert stats['MAE'] < 1e-4
 
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_VaporPressure_fitting7_reduced_fit_params_with_jac():
+    obj = VaporPressure(CASRN='13838-16-9')
+    Tmin, Tmax = obj.WAGNER_POLING_Tmin, obj.WAGNER_POLING_Tmax
+    Ts = linspace(Tmin, Tmax, 10)
+    Ps = [obj(T) for T in Ts]
+    fit = obj.fit_data_to_model(Ts=Ts, data=Ps, model='Wagner', use_numba=False,
+                                model_kwargs={'Tc': obj.WAGNER_POLING_Tc, 'Pc': obj.WAGNER_POLING_Pc, 'd': -4.60})
+    assert fit['d'] == -4.6
+
+    fit = obj.fit_data_to_model(Ts=Ts, data=Ps, model='Wagner', use_numba=False,
+                                model_kwargs={'Tc': obj.WAGNER_POLING_Tc, 'Pc': obj.WAGNER_POLING_Pc, 'b': 2.4})
+    assert fit['b'] == 2.4
+
+    fit = obj.fit_data_to_model(Ts=Ts, data=Ps, model='Wagner', use_numba=False,
+                                model_kwargs={'Tc': obj.WAGNER_POLING_Tc, 'Pc': obj.WAGNER_POLING_Pc, 'd': -4.60, 'a': -8.329, 'b': 2.4})
+    assert fit['a'] == -8.329
+    assert fit['b'] == 2.4
+    assert fit['d'] == -4.6
+
 @pytest.mark.meta_T_dept
 def test_VaporPressure_analytical_derivatives():
     Psat = VaporPressure(CASRN="108-38-3", Tb=412.25, Tc=617.0, Pc=3541000.0, omega=0.331,

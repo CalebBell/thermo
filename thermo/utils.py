@@ -656,6 +656,7 @@ def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets,
 def generate_fitting_function(model,
                               param_order,
                               fit_parameters,
+                              all_fit_parameters,
                               optional_kwargs,
                               const_kwargs,
                               try_numba=True,
@@ -711,10 +712,31 @@ def generate_fitting_function(model,
         # Handle the DIPPR equations that have the DIPPR equation in them
         reusable_args.append(0)
 
-    def fitting_function(Ts, *args):
-        for i, v in enumerate(args):
-            reusable_args[arg_dest_idxs[i]] = v
-        return f(Ts, *reusable_args)
+    #                 jac_skip_row_idxs = np.array([i for i, v in enumerate(fit_data['fit_params']) if v not in use_fit_parameters])
+    #                 analytical_jac = lambda Ts, *args: np.delete(analytical_jac_coded(Ts, args), jac_skip_row_idxs)
+    if jac:
+        jac_skip_row_idxs = []
+        for i, k in enumerate(all_fit_parameters):
+            if k not in fit_parameters:
+                jac_skip_row_idxs.append(i)
+        if jac_skip_row_idxs:
+            jac_skip_row_idxs = np.array(jac_skip_row_idxs)
+            #for k in fit_parameters:
+            def fitting_function(Ts, *args):
+                for i, v in enumerate(args):
+                    reusable_args[arg_dest_idxs[i]] = v
+                out = f(Ts, *reusable_args)
+                return np.delete(out, jac_skip_row_idxs, axis=1)
+        else:
+            def fitting_function(Ts, *args):
+                for i, v in enumerate(args):
+                    reusable_args[arg_dest_idxs[i]] = v
+                return f(Ts, *reusable_args)
+    else:
+        def fitting_function(Ts, *args):
+            for i, v in enumerate(args):
+                reusable_args[arg_dest_idxs[i]] = v
+            return f(Ts, *reusable_args)
     return fitting_function
 
 class TDependentProperty(object):
@@ -1724,6 +1746,7 @@ class TDependentProperty(object):
         
         required_args, optional_args, functions, fit_data = cls.correlation_models[model]
         fit_parameters = fit_data['fit_params']
+        all_fit_parameters = fit_parameters
         
         use_fit_parameters = []
         for k in fit_parameters:
@@ -1740,7 +1763,7 @@ class TDependentProperty(object):
                 raise ValueError("The selected model requires an input parameter {}".format(k))
         do_minimization = fit_method == 'differential_evolution'
         fitting_func = generate_fitting_function(model_function_name, param_order,
-                              fit_parameters, model_kwargs, const_kwargs, try_numba=use_numba)
+                              fit_parameters, all_fit_parameters, model_kwargs, const_kwargs, try_numba=use_numba)
 
         err_func = fit_func_dict[objective]
         err_fun_multiple_guesses = fit_func_dict[multiple_tries_max_objective]
@@ -1787,13 +1810,11 @@ class TDependentProperty(object):
         
         if 'fit_jac' in fit_data:
             analytical_jac_coded = fit_data['fit_jac']
-            if fit_data['fit_params'] != use_fit_parameters:
-                jac_skip_row_idxs = np.array([i for i, v in enumerate(fit_data['fit_params']) if v not in use_fit_parameters])
-                analytical_jac = lambda Ts, *args: np.delete(analytical_jac_coded(Ts, args), jac_skip_row_idxs)
-            else:
-                analytical_jac = generate_fitting_function(model_function_name, param_order,
-                                                         fit_parameters, model_kwargs, const_kwargs,
-                                                         try_numba=use_numba, jac=True)
+            # if fit_data['fit_params'] != use_fit_parameters:
+            # else:
+            analytical_jac = generate_fitting_function(model_function_name, param_order,
+                                                     fit_parameters, all_fit_parameters, model_kwargs, const_kwargs,
+                                                     try_numba=use_numba, jac=True)
         else:
             analytical_jac = None
         
