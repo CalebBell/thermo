@@ -958,7 +958,9 @@ class TDependentProperty(object):
         {'n': 0.286, 'b': 0.011, 'rhoc': 28.93}, # near a point from yaws
         {'n': 0.286, 'b': 0.3, 'rhoc': 755.0}, # near a point from yaws
         {'n': 0.259, 'b': 0.233, 'rhoc': 433.1}, # near a point from yaws
-        {'n': 0.159, 'b': 0.965, 'rhoc': 1795.0},
+        {'n': 0.159, 'b': 0.965, 'rhoc': 1795.0},# near a point from yaws 
+        {'n': 0.28571, 'b': 0.3, 'rhoc': 740.0}, # near a point from yaws
+        {'n': 0.8, 'b': 0.647, 'rhoc': 2794.6}, # near a point from yaws
         ]}),
     
 
