@@ -83,13 +83,14 @@ __all__ = ['has_matplotlib', 'Stateva_Tsvetkov_TPDF', 'TPD',
 
 import os
 from cmath import sqrt as csqrt
-from fluids.numerics import quad, brenth, newton, secant, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders, assert_close, numpy as np, curve_fit, differential_evolution
+from fluids.numerics import quad, brenth, newton, secant, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders, assert_close, numpy as np, curve_fit, differential_evolution, fit_minimization_targets
 from fluids.constants import R
 from random import uniform
+import chemicals
 from chemicals.utils import PY37, isnan, isinf, log, exp, ws_to_zs, zs_to_ws, e
 from chemicals.utils import mix_multiple_component_flows, hash_any_primitive
 from chemicals.vapor_pressure import Antoine, Antoine_coeffs_from_point, Antoine_AB_coeffs_from_point, DIPPR101_ABC_coeffs_from_point
-from chemicals.vapor_pressure import Wagner, Wagner_original, TRC_Antoine_extended, dAntoine_dT, d2Antoine_dT2, dWagner_original_dT, d2Wagner_original_dT2, dWagner_dT, d2Wagner_dT2, dTRC_Antoine_extended_dT, d2TRC_Antoine_extended_dT2
+from chemicals.vapor_pressure import Wagner, Wagner_original, TRC_Antoine_extended, dAntoine_dT, d2Antoine_dT2, dWagner_original_dT, d2Wagner_original_dT2, dWagner_dT, d2Wagner_dT2, dTRC_Antoine_extended_dT, d2TRC_Antoine_extended_dT2, Wagner_fitting_jacobian, Wagner_original_fitting_jacobian
 from chemicals.dippr import EQ100, EQ101, EQ102, EQ104, EQ105, EQ106, EQ107, EQ114, EQ115, EQ116, EQ127, EQ102_fitting_jacobian, EQ101_fitting_jacobian
 from chemicals.phase_change import Watson, Watson_n, Alibakhshi, PPDS12
 from chemicals.viscosity import (Viswanath_Natarajan_2, Viswanath_Natarajan_2_exponential,
@@ -685,6 +686,7 @@ def generate_fitting_function(model,
                 f = getattr(chemicals.vectorized, model)
     else:
         if jac:
+            import chemicals
             f = getattr(chemicals, model_jac_name)
         else:
             import chemicals.vectorized
@@ -928,6 +930,7 @@ class TDependentProperty(object):
         
         'Wagner_original': (['Tc', 'Pc', 'a', 'b', 'c', 'd'], [], {'f': Wagner_original, 'f_der': dWagner_original_dT, 'f_der2': d2Wagner_original_dT2},
                             {'fit_params': ['a', 'b', 'c', 'd'],
+                             'fit_jac': Wagner_original_fitting_jacobian,
                                     'initial_guesses': [
                                         {'a': -7.0, 'b': 1.79, 'c': -5.4, 'd': 1.68},
                                         {'a': -7.2, 'b': -0.02, 'c': 0.36, 'd': -11.0},
@@ -936,6 +939,7 @@ class TDependentProperty(object):
         
         'Wagner': (['Tc', 'Pc', 'a', 'b', 'c', 'd'], [], {'f': Wagner, 'f_der': dWagner_dT, 'f_der2': d2Wagner_dT2},
                    {'fit_params': ['a', 'b', 'c', 'd'],
+                    'fit_jac': Wagner_fitting_jacobian,
                     'initial_guesses': [
                         {'a': -8.5, 'b': 2.0, 'c': -7.7, 'd': 3.0},
                         {'a': -7.8, 'b': 1.9, 'c': -2.85, 'd': -3.8},
@@ -1697,7 +1701,13 @@ class TDependentProperty(object):
         statistics : dict[str: float]
             Statistics, calculated and returned only if `do_statistics` is True, [-]
         '''
-        from thermo.fitting import data_fit_statistics, fit_minimization_targets
+        if use_numba:
+            import fluids.numba
+            fit_func_dict = fluids.numba.numerics.fit_minimization_targets
+        else:
+            fit_func_dict = fit_minimization_targets
+        
+        from thermo.fitting import data_fit_statistics
         if model not in cls.available_correlations:
             raise ValueError("Model is not available; available models are %s" %(cls.available_correlations,))
         if model_kwargs is None:
@@ -1710,6 +1720,7 @@ class TDependentProperty(object):
             raise ValueError("Specified objective is not supported with the specified solver")
         if use_numba:
             Ts = np.array(Ts)
+            data = np.array(data)
         
         required_args, optional_args, functions, fit_data = cls.correlation_models[model]
         fit_parameters = fit_data['fit_params']
@@ -1731,8 +1742,8 @@ class TDependentProperty(object):
         fitting_func = generate_fitting_function(model_function_name, param_order,
                               fit_parameters, model_kwargs, const_kwargs, try_numba=use_numba)
 
-        err_func = fit_minimization_targets[objective]
-        err_fun_multiple_guesses = fit_minimization_targets[multiple_tries_max_objective]
+        err_func = fit_func_dict[objective]
+        err_fun_multiple_guesses = fit_func_dict[multiple_tries_max_objective]
         
         if do_minimization:
             def minimize_func(params):
@@ -1756,7 +1767,7 @@ class TDependentProperty(object):
             extra_user_guess = [{k: v for k, v in zip(use_fit_parameters, p0)}]
             all_iter_guesses = hardcoded_guesses + extra_user_guess
             array_init_guesses = []
-            err_func_init = fit_minimization_targets['MeanRelErr']
+            err_func_init = fit_func_dict['MeanRelErr']
             for hardcoded in all_iter_guesses:
                 ph = [None]*len(fit_parameters)
                 for i, k in enumerate(use_fit_parameters):
@@ -1780,7 +1791,9 @@ class TDependentProperty(object):
                 jac_skip_row_idxs = np.array([i for i, v in enumerate(fit_data['fit_params']) if v not in use_fit_parameters])
                 analytical_jac = lambda Ts, *args: np.delete(analytical_jac_coded(Ts, args), jac_skip_row_idxs)
             else:
-                analytical_jac = analytical_jac_coded#lambda Ts, *args: analytical_jac_coded(Ts, args)
+                analytical_jac = generate_fitting_function(model_function_name, param_order,
+                                                         fit_parameters, model_kwargs, const_kwargs,
+                                                         try_numba=use_numba, jac=True)
         else:
             analytical_jac = None
         
