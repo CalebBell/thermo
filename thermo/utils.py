@@ -1069,7 +1069,10 @@ class TDependentProperty(object):
                       
            {'A': -375.2, 'B': 17180.0, 'C': 66.67, 'D': -3.6368, 'E': 0.5}, # near dippr viscosity diethanolamine
            {'A': -158.9768, 'B': 13684.82, 'C': 19.79212, 'D': 1.78855e-05, 'E': 1.442815}, # near Diisopropanolamine chemsep liquid viscosity
-
+           
+           {'A': -804.55, 'B': 30490.0, 'C': 130.8, 'D':-0.155, 'E': 1.0}, # near dippr viscosity 1,2-propanediol
+           {'A': -226.1, 'B': 6806.0, 'C': 37.55, 'D':-0.06085, 'E': 1.0}, # near dippr viscosity toluene
+           {'A': -246.5, 'B': 3150.0, 'C': 50.0, 'D':-0.2255, 'E': 1.0}, # near dippr viscosity nitric oxide
            {'A': -395.0, 'B': 20000.0, 'C': 60.0, 'D':-5e-2, 'E': 1.0}, # near dippr viscosity 1,2-Butanediol
            {'A': -394.0, 'B': 19000.0, 'C': 60.0, 'D': -.05, 'E': 1.0}, # near dippr viscosity 1,2-butanediol
            {'A': -390.0, 'B': 18600.0, 'C': 60.0, 'D': -.055, 'E': 1.0}, # near dippr viscosity 1,3-butanediol

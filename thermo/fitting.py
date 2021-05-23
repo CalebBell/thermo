@@ -31,7 +31,7 @@ __all__ = ['alpha_Twu91_objf', 'alpha_Twu91_objfc', 'fit_function',
 from cmath import atanh as catanh
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, newton,
-                             bisect, inf, polyder, chebder,
+                             bisect, inf, polyder, chebder, std, min_max_ratios,
                              trunc_exp, secant, linspace, logspace,
                              horner, horner_and_der2, horner_and_der3,
                              is_poly_positive, is_poly_negative,
@@ -156,14 +156,9 @@ def fit_cheb_poly(func, low, high, n,
 def data_fit_statistics(xs, actual_pts, calc_pts):
     pts = len(xs)
     ARDs = [(abs((i-j)/j) if j != 0 else 0.0) for i, j in zip(calc_pts, actual_pts)]
-
     mae = sum(ARDs)/pts
-    err_std = np.std(ARDs)
-
-    actual_pts = np.array(actual_pts)
-    calc_pts = np.array(calc_pts)
-
-    max_ratio, min_ratio = max(calc_pts/actual_pts), min(calc_pts/actual_pts)
+    err_std = std(ARDs)
+    min_ratio, max_ratio = min_max_ratios(actual_pts, calc_pts)
     return mae, err_std, min_ratio, max_ratio
 
     

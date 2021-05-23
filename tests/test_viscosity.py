@@ -353,6 +353,31 @@ def test_ViscosityLiquid_fitting1():
                           do_statistics=True, use_numba=False, fit_method='lm')
     assert stats['MAE'] < 1e-6
 
+    # nitric oxide
+    obj = ViscosityLiquid(CASRN='10102-43-9')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+    # toluene
+    obj = ViscosityLiquid(CASRN='108-88-3')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+    
+    # 1,2-propanediol
+    obj = ViscosityLiquid(CASRN='57-55-6')
+    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+                          do_statistics=True, use_numba=False, fit_method='lm')
+    assert stats['MAE'] < 1e-6
+
+
 @pytest.mark.meta_T_dept
 def test_ViscosityLiquid_PPDS9_limits():
     assert ViscosityLiquid(CASRN='7553-56-2').T_limits[VDI_PPDS][1] < 793.019
