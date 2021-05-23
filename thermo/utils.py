@@ -94,7 +94,8 @@ from chemicals.vapor_pressure import Wagner, Wagner_original, TRC_Antoine_extend
 from chemicals.dippr import EQ100, EQ101, EQ102, EQ104, EQ105, EQ106, EQ107, EQ114, EQ115, EQ116, EQ127, EQ102_fitting_jacobian, EQ101_fitting_jacobian
 from chemicals.phase_change import Watson, Watson_n, Alibakhshi, PPDS12
 from chemicals.viscosity import (Viswanath_Natarajan_2, Viswanath_Natarajan_2_exponential,
-                                 Viswanath_Natarajan_3, PPDS9, dPPDS9_dT)
+                                 Viswanath_Natarajan_3, PPDS9, dPPDS9_dT,
+                                 mu_Yaws, mu_Yaws_fitting_jacobian, dmu_Yaws_dT)
 from chemicals.heat_capacity import (Poling, Poling_integral, Poling_integral_over_T,
                                      TRCCp, TRCCp_integral, TRCCp_integral_over_T,
                                      Zabransky_quasi_polynomial, Zabransky_quasi_polynomial_integral, Zabransky_quasi_polynomial_integral_over_T,
@@ -970,6 +971,11 @@ class TDependentProperty(object):
     'Viswanath_Natarajan_2_exponential': (['C', 'D',], [], {'f': Viswanath_Natarajan_2_exponential}, {'fit_params': ['C', 'D',]}),
     'Viswanath_Natarajan_3': (['A', 'B', 'C'], [], {'f': Viswanath_Natarajan_3}, {'fit_params': ['A', 'B', 'C']}),
     'PPDS9': (['A', 'B', 'C', 'D', 'E'], [], {'f': PPDS9, 'f_der': dPPDS9_dT}, {'fit_params': ['A', 'B', 'C', 'D', 'E']},),
+    'mu_Yaws': (['A', 'B',], ['C', 'D'], {'f': mu_Yaws, 'f_der': dmu_Yaws_dT}, {'fit_params': ['A', 'B', 'C', 'D'], 'initial_guesses': [
+        {'A': -9.45, 'B': 1120.0, 'C': 0.014, 'D': -1.545e-5}, # near yaws ethanol
+        {'A': -25.5319, 'B': 3747.19, 'C': 0.04659, 'D': -0.0}, # near yaws 1-phenyltetradecane
+                                                                                ]},),
+    
 
     'Poling': (['a', 'b', 'c', 'd', 'e'], [], {'f': Poling, 'f_int': Poling_integral, 'f_int_over_T': Poling_integral_over_T}, {'fit_params': ['a', 'b', 'c', 'd', 'e']},),
     'TRCCp': (['a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7'], [], {'f': TRCCp, 'f_int': TRCCp_integral, 'f_int_over_T': TRCCp_integral_over_T},

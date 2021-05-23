@@ -377,6 +377,17 @@ def test_ViscosityLiquid_fitting1():
                           do_statistics=True, use_numba=False, fit_method='lm')
     assert stats['MAE'] < 1e-6
 
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_ViscosityLiquid_fitting2():
+    # yaws points
+    A, B, C, D = -25.532, 3747.2, 0.0466, 0.0
+    Ts = linspace(489.2, 619.65)
+    props = [mu_Yaws(T, A, B, C, D) for T in Ts]
+    res, stats = ViscosityLiquid.fit_data_to_model(Ts=Ts, data=props, model='mu_Yaws',
+                          do_statistics=True, use_numba=False,
+                          fit_method='lm')
+    assert stats['MAE'] < 1e-5
 
 @pytest.mark.meta_T_dept
 def test_ViscosityLiquid_PPDS9_limits():
