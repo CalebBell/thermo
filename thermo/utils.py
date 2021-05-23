@@ -675,23 +675,18 @@ def generate_fitting_function(model,
         # models which default to zero coefficients
         try:
             if jac:
-                import chemicals.numba
                 f = getattr(chemicals.numba, model_jac_name)
             else:
-                import chemicals.numba_vectorized
                 f = getattr(chemicals.numba_vectorized, model)
-        except Exception as e:
+        except:
             if jac:
                 f = getattr(chemicals, model_jac_name)
             else:
-                import chemicals.vectorized
                 f = getattr(chemicals.vectorized, model)
     else:
         if jac:
-            import chemicals
             f = getattr(chemicals, model_jac_name)
         else:
-            import chemicals.vectorized
             f = getattr(chemicals.vectorized, model)
 
     # arg_dest_idxs is a list of indexes for each parameter
