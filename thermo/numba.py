@@ -284,6 +284,8 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
 
              'phases.phase_utils.lnphis_direct',
              'flash.flash_utils.sequential_substitution_2P_functional',
+             
+             'fitting.data_fit_statistics',
 
                  ]
     normal_fluids.numba.transform_lists_to_arrays(normal, to_change, __funcs, cache_blacklist=cache_blacklist)

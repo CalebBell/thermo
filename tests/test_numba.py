@@ -29,7 +29,7 @@ from random import random
 from fluids.constants import *
 from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d
 from numpy.testing import assert_allclose
-from chemicals import normalize
+from chemicals import normalize, Rackett_fit
 from thermo.test_utils import check_np_output_activity
 
 import pytest
@@ -442,4 +442,12 @@ def test_lnphis_direct_and_sequential_substitution_2P_functional():
     assert_close1d(ys_calc, ys_expect)
     
     
-    
+@mark_as_numba
+def test_fit_T_dep_numba():
+    Tc, rhoc, b, n, MW = 545.03, 739.99, 0.3, 0.28571, 105.921
+    Ts = np.linspace(331.15, 332.9, 10)
+    props_calc = [Rackett_fit(T, Tc, rhoc, b, n, MW) for T in Ts]
+    res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_fit',
+                          do_statistics=True, use_numba=True, model_kwargs={'MW':MW, 'Tc': Tc,},
+                          fit_method='lm')
+    assert stats['MAE'] < 1e-5

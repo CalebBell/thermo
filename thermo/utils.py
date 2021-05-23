@@ -1756,6 +1756,7 @@ class TDependentProperty(object):
         '''
         if use_numba:
             import fluids.numba
+            import thermo.numba
             fit_func_dict = fluids.numba.numerics.fit_minimization_targets
         else:
             fit_func_dict = fit_minimization_targets
@@ -1910,8 +1911,12 @@ class TDependentProperty(object):
             out_kwargs[param_name] = float(param_value)
 
         if do_statistics:
+            if not use_numba:
+                stats_func = data_fit_statistics 
+            else:
+                stats_func = thermo.numba.fitting.data_fit_statistics
             calc = fitting_func(Ts, *popt)
-            stats = data_fit_statistics(Ts, data, calc)
+            stats = stats_func(Ts, data, calc)
             statistics = {}
             statistics['calc'] = calc
             statistics['MAE'] = stats[0]
