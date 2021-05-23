@@ -26,9 +26,10 @@ import json
 import pandas as pd
 from thermo.interface import *
 from chemicals.utils import property_mass_to_molar, zs_to_ws
+from chemicals.dippr import EQ106
 from thermo.interface import VDI_TABULAR
 from chemicals.identifiers import check_CAS
-from fluids.numerics import assert_close, assert_close1d
+from fluids.numerics import assert_close, assert_close1d, linspace
 from thermo.volume import VolumeLiquid, VDI_PPDS
 from thermo.utils import POLY_FIT
 from thermo.interface import SurfaceTensionMixture, DIGUILIOTEJA, LINEAR, WINTERFELDSCRIVENDAVIS
@@ -86,6 +87,18 @@ def test_SurfaceTensionJasperMissingLimits():
 def test_SurfaceTensionVDITabularMissingZeroLimits():
     obj = SurfaceTension(CASRN='7782-41-4')
     assert_close(obj.calculate(144.41, 'VDI_TABULAR'), 0, atol=1e-10)
+
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_SurfaceTension_fitting0_yaws():
+    A, Tc, n = 117.684, 7326.47, 1.2222
+    Ts = linspace(378.4, 7326.47, 10)
+    props_calc = [EQ106(T, Tc, A, n, 0.0, 0.0, 0.0, 0) for T in Ts]
+    res, stats = SurfaceTension.fit_data_to_model(Ts=Ts, data=props_calc, model='YawsSigma',
+                          do_statistics=True, use_numba=False, model_kwargs={'Tc': Tc},
+                          fit_method='lm')        
+    assert stats['MAE'] < 1e-5
+
 
 
 def test_SurfaceTensionMixture():

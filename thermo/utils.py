@@ -705,6 +705,8 @@ def generate_fitting_function(model,
         elif n in fit_parameters:
             reusable_args.append(1.0)
             arg_dest_idxs.append(i)
+        else:
+            reusable_args.append(0.0)
     if not jac and model.startswith('EQ'):
         # Handle the DIPPR equations that have the DIPPR equation in them
         reusable_args.append(0)
@@ -1252,7 +1254,7 @@ class TDependentProperty(object):
            ]
       }),
      'YawsSigma': (['Tc', 'A', 'B'],
-      [],
+      ['C', 'D', 'E'],
       {'f': EQ106,
        'f_der': lambda T, **kwargs: EQ106(T, order=1, **kwargs),
        'f_der2': lambda T, **kwargs: EQ106(T, order=2, **kwargs),
