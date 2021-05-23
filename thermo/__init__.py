@@ -279,6 +279,7 @@ if numerics.PY37:
             import thermo.units as units
             return units
         if name == 'numba_vectorized':
+            import thermo.numba as numba
             import thermo.numba_vectorized as numba_vectorized
             return numba_vectorized
         raise AttributeError("module %s has no attribute %s" %(__name__, name))
