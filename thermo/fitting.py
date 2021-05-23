@@ -159,7 +159,8 @@ def data_fit_statistics(xs, actual_pts, calc_pts):
     pts = len(xs)
     ARDs = [0.0]*pts
     for i in range(pts):
-        ARDs[i] = abs((calc_pts[i]-actual_pts[i])/actual_pts[i]) if actual_pts[i] != 0 else 0.0
+        if actual_pts[i] != 0.0:
+            ARDs[i] = abs((calc_pts[i]-actual_pts[i])/actual_pts[i])
 
     mae = sum(ARDs)/pts
     err_std = std(ARDs)

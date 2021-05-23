@@ -29,7 +29,7 @@ from random import random
 from fluids.constants import *
 from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d
 from numpy.testing import assert_allclose
-from chemicals import normalize, Rackett_fit
+from chemicals import normalize, Rackett_fit, Antoine
 from thermo.test_utils import check_np_output_activity
 
 import pytest
@@ -449,5 +449,13 @@ def test_fit_T_dep_numba():
     props_calc = [Rackett_fit(T, Tc, rhoc, b, n, MW) for T in Ts]
     res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_fit',
                           do_statistics=True, use_numba=True, model_kwargs={'MW':MW, 'Tc': Tc,},
+                          fit_method='lm')
+    assert stats['MAE'] < 1e-5
+
+    # Numba was evaluating a 0 division when it shouldn't have, try excepted it
+    Ts = np.linspace(845.15, 1043.1999999999998, 20)
+    props_calc = [Antoine(T, A=1.9823770201329391, B=651.916, C=-1248.487) for T in Ts]
+    res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=props_calc, model='Antoine',
+                          do_statistics=True, use_numba=True, model_kwargs={'base':10.0},
                           fit_method='lm')
     assert stats['MAE'] < 1e-5

@@ -434,7 +434,7 @@ def test_VolumeLiquid_fitting2_dippr_116_ppds():
         props_calc = [Vm_to_rho(obj.calculate(T, VDI_PPDS), obj.VDI_PPDS_MW) for T in Ts]
         
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR116',
-                              do_statistics=True, use_numba=True, fit_method='lm', 
+                              do_statistics=True, use_numba=False, fit_method='lm', 
                               model_kwargs={'Tc': obj.VDI_PPDS_Tc, 'A': obj.VDI_PPDS_rhoc})
         assert stats['MAE'] < 1e-7
 
