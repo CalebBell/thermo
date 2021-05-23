@@ -83,7 +83,7 @@ __all__ = ['has_matplotlib', 'Stateva_Tsvetkov_TPDF', 'TPD',
 
 import os
 from cmath import sqrt as csqrt
-from fluids.numerics import quad, brenth, newton, secant, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders, assert_close, numpy as np, curve_fit, differential_evolution, fit_minimization_targets
+from fluids.numerics import quad, brenth, newton, secant, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders, assert_close, numpy as np, curve_fit, differential_evolution, fit_minimization_targets, leastsq
 from fluids.constants import R
 from random import uniform
 import chemicals
@@ -1764,9 +1764,10 @@ class TDependentProperty(object):
             solver_kwargs = {}
         if objective != 'MeanSquareErr' and fit_method != 'differential_evolution':
             raise ValueError("Specified objective is not supported with the specified solver")
-        if use_numba:
-            Ts = np.array(Ts)
-            data = np.array(data)
+        # if use_numba:
+        # So long as the fitting things happen with scipy, arrays are needed
+        Ts = np.array(Ts)
+        data = np.array(data)
         
         required_args, optional_args, functions, fit_data = cls.correlation_models[model]
         fit_parameters = fit_data['fit_params']
@@ -1841,7 +1842,14 @@ class TDependentProperty(object):
                                                      try_numba=use_numba, jac=True)
         else:
             analytical_jac = None
-        
+
+        def func_wrapped_for_leastsq(params):
+            # jacobian is the same
+            return fitting_func(Ts, *params) - data
+
+        def jac_wrapped_for_leastsq(params):
+            return analytical_jac(Ts, *params)
+
         pcov = None
         if fit_method == 'differential_evolution':
             if 'bounds' in solver_kwargs:
@@ -1869,6 +1877,8 @@ class TDependentProperty(object):
                                          bounds=working_bounds, **solver_kwargs)
             popt = res['x']
         else:
+            lm_direct = fit_method == 'lm'
+            Dfun = jac_wrapped_for_leastsq if analytical_jac is not None else None
             if 'maxfev' not in solver_kwargs and fit_method == 'lm':
                 # DO NOT INCREASE THIS! Make an analytical jacobian instead please.
                 solver_kwargs['maxfev'] = 5000 
@@ -1880,8 +1890,12 @@ class TDependentProperty(object):
                     array_init_guesses = array_init_guesses[0:multiple_tries]
                 for p0 in array_init_guesses:
                     try:
-                        popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, jac=analytical_jac, 
-                                               method=fit_method, **solver_kwargs)
+                        if lm_direct:
+                            popt, _ = leastsq(func_wrapped_for_leastsq, p0, Dfun=Dfun, **solver_kwargs)
+                            pcov = None
+                        else:
+                            popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, jac=analytical_jac, 
+                                                   method=fit_method, **solver_kwargs)
                     except:
                         continue
                     calc = fitting_func(Ts, *popt)
@@ -1897,8 +1911,12 @@ class TDependentProperty(object):
                 else:
                     popt, pcov = best_popt, best_pcov
             else:
-                popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, jac=analytical_jac, 
-                                       method=fit_method, **solver_kwargs)
+                if lm_direct:
+                    popt, _ = leastsq(func_wrapped_for_leastsq, p0, Dfun=Dfun, **solver_kwargs)
+                    pcov = None
+                else:
+                    popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, jac=analytical_jac,
+                                           method=fit_method, **solver_kwargs)
         out_kwargs = model_kwargs.copy()
         for param_name, param_value in zip(fit_parameters, popt):
             out_kwargs[param_name] = float(param_value)
