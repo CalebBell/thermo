@@ -704,12 +704,9 @@ def generate_fitting_function(model,
         elif n in fit_parameters:
             reusable_args.append(1.0)
             arg_dest_idxs.append(i)
-    if not jac and (len(model) > 2 and model.startswith('EQ')):
+    if not jac and model.startswith('EQ'):
         # Handle the DIPPR equations that have the DIPPR equation in them
         reusable_args.append(0)
-
-    #                 jac_skip_row_idxs = np.array([i for i, v in enumerate(fit_data['fit_params']) if v not in use_fit_parameters])
-    #                 analytical_jac = lambda Ts, *args: np.delete(analytical_jac_coded(Ts, args), jac_skip_row_idxs)
     if jac:
         jac_skip_row_idxs = []
         for i, k in enumerate(all_fit_parameters):
@@ -730,8 +727,9 @@ def generate_fitting_function(model,
                 return f(Ts, *reusable_args)
     else:
         def fitting_function(Ts, *args):
+            ld = arg_dest_idxs
             for i, v in enumerate(args):
-                reusable_args[arg_dest_idxs[i]] = v
+                reusable_args[ld[i]] = v
             return f(Ts, *reusable_args)
     return fitting_function
 
