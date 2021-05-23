@@ -71,6 +71,7 @@ from . import vapor_pressure
 from chemicals import virial
 from . import viscosity
 from . import volume
+from . import fitting
 from . import chemical_utils
 from . import wilson
 from . import nrtl
@@ -137,6 +138,7 @@ from .uniquac import *
 from .equilibrium import *
 from chemicals.temperature import *
 from .activity import *
+from .fitting import *
 
 #from chemicals import *
 
@@ -151,7 +153,7 @@ __all__ = ['rachford_rice', 'flash_basic', 'chemical', 'chemical_package', 'comb
  'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop',
  'datasheet', 'dippr', 'unifac', 'stream', 'mixture', 'property_package_constants',
  'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution',
- 'equilibrium', 'phase_identification', 'temperature',
+ 'equilibrium', 'phase_identification', 'temperature', 'fitting',
  'eos_alpha_functions', 'eos_volume', 'bulk', 'eos_mix_methods', 'activity']
 
 __all__.extend(eos_volume.__all__)
@@ -211,6 +213,7 @@ __all__.extend(temperature.__all__)
 __all__.extend(bulk.__all__)
 __all__.extend(eos_mix_methods.__all__)
 __all__.extend(activity.__all__)
+__all__.extend(fitting.__all__)
 
 
 # backwards compatibility hack to allow thermo.chemical.Mixture to still be importable
@@ -227,6 +230,7 @@ submodules = [activity, chemical, chemical_package, chemical_utils, coolprop, da
               mixture, nrtl, permittivity, phase_change, phase_identification,
               property_package, property_package_constants, regular_solution, 
               stream, thermal_conductivity, unifac, uniquac, safety,
+              fitting,
               utils, vapor_pressure, viscosity, volume, wilson, eos_alpha_functions,
               eos_volume, eos_mix_methods,              
               flash, flash.flash_base, flash.flash_pure_vls,

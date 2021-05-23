@@ -105,6 +105,7 @@ from thermo import serialize
 from thermo.eos import GCEOS
 from thermo.eos_mix import GCEOSMIX
 from thermo.coolprop import coolprop_fluids
+from thermo.fitting import data_fit_statistics
 
 NEGLIGIBLE = 'NEGLIGIBLE'
 DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
@@ -1759,7 +1760,6 @@ class TDependentProperty(object):
         else:
             fit_func_dict = fit_minimization_targets
         
-        from thermo.fitting import data_fit_statistics
         if model not in cls.available_correlations:
             raise ValueError("Model is not available; available models are %s" %(cls.available_correlations,))
         if model_kwargs is None:

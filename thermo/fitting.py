@@ -39,10 +39,12 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              max_squared_rel_error, mean_abs_error, mean_abs_rel_error, 
                              mean_squared_error, mean_squared_rel_error)
 from fluids.constants import R
-from numpy.polynomial.chebyshev import poly2cheb
-from numpy.polynomial.chebyshev import cheb2poly
-from numpy.polynomial.polynomial import Polynomial
-
+try:
+    from numpy.polynomial.chebyshev import poly2cheb
+    from numpy.polynomial.chebyshev import cheb2poly
+    from numpy.polynomial.polynomial import Polynomial
+except:
+    pass
 
 ChebTools = None
 def fit_cheb_poly(func, low, high, n,
@@ -155,7 +157,10 @@ def fit_cheb_poly(func, low, high, n,
 
 def data_fit_statistics(xs, actual_pts, calc_pts):
     pts = len(xs)
-    ARDs = [(abs((i-j)/j) if j != 0 else 0.0) for i, j in zip(calc_pts, actual_pts)]
+    ARDs = [0.0]*pts
+    for i in range(pts):
+        ARDs[i] = abs((calc_pts[i]-actual_pts[i])/actual_pts[i]) if actual_pts[i] != 0 else 0.0
+
     mae = sum(ARDs)/pts
     err_std = std(ARDs)
     min_ratio, max_ratio = min_max_ratios(actual_pts, calc_pts)
