@@ -1185,7 +1185,8 @@ class TDependentProperty(object):
            {'A': 2.1e-5, 'B': 1.29, 'C': 488.0, 'D': 0.0}, # near dippr kg 1-heptene
            {'A': 4.5e-5, 'B': 1.2, 'C': 420.0, 'D': 0.0}, # near dippr kg propene
            {'A': 1.7e-6, 'B': 1.67, 'C': 660.0, 'D': -95400.0}, # near dippr kg acetic acid
-
+           {'A': 0.0, 'B': 4000.0, 'C': 0.75, 'D': 0.0}, #
+           {'A': 1e9, 'B': -5.0, 'C': -1500, 'D': 1e6}, #
         ]}),
      'DIPPR104': (['A', 'B'],
       ['C', 'D', 'E'],
@@ -1340,10 +1341,14 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ127(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ127(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ127(T, order=-1j, **kwargs)},
-      {'fit_params': ['A', 'B', 'C', 'D', 'E', 'F', 'G']}),
-
-
-
+      {'fit_params': ['A', 'B', 'C', 'D', 'E', 'F', 'G'], 'initial_guesses': [
+          {'A': 35000.0, 'B': 1e8, 'C': -3e3, 'D': 5e5, 'E': -500.0, 'F': 7.5e7, 'G': -2500.0},
+          {'A': 35000.0, 'B': 1e5, 'C': -7.5e3, 'D': 2e5, 'E': -800.0, 'F': 2e5, 'G': -2500.0},
+          {'A': 0.0, 'B': 33000.0, 'C': 1.9e5, 'D': 2e3, 'E': 1e5, 'F': 4900.0, 'G': 1.6e5},
+          {'A': 33000.0, 'B': 1e4, 'C': -2.5e3, 'D': 16000, 'E': -600.0, 'F': 7000, 'G': -12500.0},
+          {'A': 33000.0, 'B': 3.5e7, 'C': -6500.0, 'D': -3.5e7, 'E': 6500.0, 'F': 50000.0, 'G': -1500.0},
+          {'A': 33000.0, 'B': 2.5e4, 'C': -250.0, 'D': 150000.0, 'E': 1300.0, 'F': 1e5, 'G': 3200.0},
+          ]}),
     }
 
     # Aliases from the DDBST
