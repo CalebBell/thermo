@@ -1193,7 +1193,15 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ104(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ104(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ104(T, order=-1j, **kwargs)},
-     {'fit_params': ['A', 'B', 'C', 'D', 'E']}),
+      
+      
+     {'fit_params': ['A', 'B', 'C', 'D', 'E'], 'initial_guesses': [
+         {'A': 0.4, 'B': -700.0, 'C': -2e8, 'D': -3e21, 'E': 4e23},
+         {'A': 0.02, 'B': -3.0, 'C': -400.0, 'D': 5e8, 'E': -5e9},
+         ]}),
+     
+     
+     
      'DIPPR105': (['A', 'B', 'C', 'D'],
       [],
       {'f': EQ105,
@@ -1218,6 +1226,8 @@ class TDependentProperty(object):
           {'A': 1450.0, 'B': 0.268, 'C': 365.,'D': 0.29},  # near propene dippr volume
           {'A': 1940.0, 'B': 0.24, 'C': 590.,'D': 0.244},  # near formic acid dippr volume
           
+          {'A': 0.13, 'B': 0.23, 'C': 910.,'D': 0.29},  # 
+
           {'A': 1.05, 'B': 0.258, 'C': 540.,'D': 0.268},  # near some chemsep liquid densities
           {'A': 2.15, 'B': 0.27, 'C': 415.,'D': 0.286},  # near some chemsep liquid densities
           {'A': 0.048, 'B': 0.09, 'C': 587.,'D': 0.133},  # near some chemsep liquid densities
@@ -1295,7 +1305,10 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ115(T, order=1, **kwargs),
        'f_der2': lambda T, **kwargs: EQ115(T, order=2, **kwargs),
        'f_der3': lambda T, **kwargs: EQ115(T, order=3, **kwargs)},
-      {'fit_params': ['A', 'B', 'C', 'D', 'E']}),
+      {'fit_params': ['A', 'B', 'C', 'D', 'E'],
+       'initial_guesses': [
+           {'A': 38.0, 'B': -9100, 'C': 0.16, 'D': -8.3e-7, 'E': 0.0},
+           ]}),
      'DIPPR116': (['Tc', 'A', 'B', 'C', 'D', 'E'],
       [],
       {'f': EQ116,
