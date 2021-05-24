@@ -1105,6 +1105,7 @@ class TDependentProperty(object):
            {'A': 21.65, 'B': -690.0, 'C': -0.39, 'D': 0.00475, 'E': 1.0}, # near dippr Psat something long
            {'A': 124, 'B': -7630.0, 'C': -16.45, 'D': 0.0165, 'E': 1.0}, # near dippr Psat 2-hexyne
            {'A': 136.6, 'B': -7200.0, 'C': -19.0, 'D': 0.0223, 'E': 1.0}, # near dippr Psat isopropylamine
+           {'A': 337.6, 'B': -18500.0, 'C': -50.0, 'D': 0.0474, 'E': 1.0}, # near dippr Psat nonanal
            
            
            {'A': -20.449, 'B': -959.41, 'C': 4.2445, 'D': -9.5025e-05, 'E': 2.0}, # near Hydrogen iodide chemsep liquid viscosity
@@ -1153,7 +1154,10 @@ class TDependentProperty(object):
            {'A': 173, 'B': -11600.0, 'C': -22.1, 'D': 1.37e-5, 'E': 2.0}, # near dippr Psat tert-butanol
            {'A': 506, 'B': -37500.0, 'C': -69.3, 'D': 2.74e-5, 'E': 2.0}, # near dippr Psat 1,3,5-trinitrobenzene
            {'A': 126.5, 'B': -12500.0, 'C': -15, 'D': 7.75e-6, 'E': 2.0}, # near dippr Psat
-           
+           {'A': 182.5, 'B': -17900.0, 'C': -22.5, 'D': 7.4e-6, 'E': 2.0}, # near dippr Psat nonadecane
+           {'A': 212.5, 'B': -15400.0, 'C': -28.1, 'D': 2.16e-5, 'E': 2.0}, # near dippr Psat 1,2-propanediol
+           {'A': 248.5, 'B': -32240.0, 'C': -30.0, 'D': 4.8e-06, 'E': 2.0}, # near dippr Psat terephthalic acid
+
            {'A': -75.8, 'B': 4175.0, 'C': 9.65, 'D': -7.3e-9, 'E': 3.0}, # near dippr mul hydrazine
            
            {'A': -116.3, 'B': 3834.0, 'C': 16.85, 'D': -2.59e-10, 'E': 4.0}, # near dippr mul hydrochloric acid
@@ -1974,7 +1978,10 @@ class TDependentProperty(object):
             Dfun = jac_wrapped_for_leastsq if analytical_jac is not None else None
             if 'maxfev' not in solver_kwargs and fit_method == 'lm':
                 # DO NOT INCREASE THIS! Make an analytical jacobian instead please.
-                solver_kwargs['maxfev'] = 5000 
+                if analytical_jac is not None:
+                    solver_kwargs['maxfev'] = 5000 
+                else:
+                    solver_kwargs['maxfev'] = 5000 
             if multiple_tries:
                 multiple_tries_best_error = 1e300
                 best_popt, best_pcov = None, None
