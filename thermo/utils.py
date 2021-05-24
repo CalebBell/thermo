@@ -89,7 +89,7 @@ from random import uniform
 import chemicals
 from chemicals.utils import PY37, isnan, isinf, log, exp, ws_to_zs, zs_to_ws, e
 from chemicals.utils import mix_multiple_component_flows, hash_any_primitive
-from chemicals.vapor_pressure import Antoine, Antoine_coeffs_from_point, Antoine_AB_coeffs_from_point, DIPPR101_ABC_coeffs_from_point
+from chemicals.vapor_pressure import Antoine, Antoine_coeffs_from_point, Antoine_AB_coeffs_from_point, DIPPR101_ABC_coeffs_from_point, Yaws_Psat_fitting_jacobian, d2Yaws_Psat_dT2, dYaws_Psat_dT, Yaws_Psat
 from chemicals.vapor_pressure import Wagner, Wagner_original, TRC_Antoine_extended, dAntoine_dT, d2Antoine_dT2, dWagner_original_dT, d2Wagner_original_dT2, dWagner_dT, d2Wagner_dT2, dTRC_Antoine_extended_dT, d2TRC_Antoine_extended_dT2, Wagner_fitting_jacobian, Wagner_original_fitting_jacobian
 from chemicals.dippr import EQ100, EQ101, EQ102, EQ104, EQ105, EQ106, EQ107, EQ114, EQ115, EQ116, EQ127, EQ102_fitting_jacobian, EQ101_fitting_jacobian
 from chemicals.phase_change import Watson, Watson_n, Alibakhshi, PPDS12
@@ -964,6 +964,16 @@ class TDependentProperty(object):
                         {'a': -7.8, 'b': 1.9, 'c': -2.85, 'd': -3.8},
                         ]
                     }),
+        
+        'Yaws_Psat': (['A', 'B', 'C', 'D', 'E'], [], {'f': Yaws_Psat, 'f_der': dYaws_Psat_dT, 'f_der2': d2Yaws_Psat_dT2},
+                   {'fit_params': ['A', 'B', 'C', 'D', 'E'],
+                    'fit_jac': Yaws_Psat_fitting_jacobian,
+                    'initial_guesses': [
+                        {'A': 30.94, 'B': -4162., 'C': -6.78, 'D': -1.09e-9, 'E': 6.4e-07},
+                        {'A': 48.3, 'B': -4605., 'C': -12.8, 'D': 1.66e-10, 'E': 2.546e-06},
+                        {'A': 16.8, 'B': -571., 'C': -3.338, 'D': 2.2e-9, 'E': 1.31e-05},
+                        ]
+                    }),
 
     'Alibakhshi': (['Tc', 'C'], [], {'f': Alibakhshi}, {'fit_params': ['C']}),
     'PPDS12': (['Tc', 'A', 'B', 'C', 'D', 'E'], [], {'f': PPDS12}, {'fit_params': ['A', 'B', 'C', 'D', 'E']}),
@@ -1308,6 +1318,10 @@ class TDependentProperty(object):
     # Aliases from the DDBST
     correlation_models['Wagner2,5'] = correlation_models['Wagner']
     correlation_models['Wagner3,6'] = correlation_models['Wagner_original']
+    
+    # Don't know why TDE has  Hvap = exp(A)*{1 - ( T / Tc )}^n
+    # In other places they have it right: https://trc.nist.gov/TDE/TDE_Help/Eqns-Pure-Hvap/Yaws.VaporizationH.htm
+    correlation_models['YawsHvap'] = correlation_models['YawsSigma']
 
 
     available_correlations = frozenset(correlation_models.keys())

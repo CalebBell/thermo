@@ -248,21 +248,6 @@ def test_VaporPressure_fitting6_VDI_PPDS():
                               fit_method='lm', model_kwargs={'Tc': obj.VDI_PPDS_Tc, 'Pc': obj.VDI_PPDS_Pc})
         assert stats['MAE'] < 1e-7
     
-@pytest.mark.slow
-@pytest.mark.fuzz
-@pytest.mark.fitting
-@pytest.mark.meta_T_dept
-def test_VaporPressure_fitting6_TRC_AntoineExtended():
-    for i, CAS in enumerate(chemicals.vapor_pressure.Psat_data_AntoineExtended.index):
-        obj = VaporPressure(CASRN=CAS)
-        Ts = linspace(obj.ANTOINE_EXTENDED_POLING_Tmin, obj.ANTOINE_EXTENDED_POLING_Tmax, 10)
-        props_calc = [obj.calculate(T, ANTOINE_EXTENDED_POLING) for T in Ts]
-        res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='TRC_Antoine_extended',
-                              do_statistics=True, use_numba=False, 
-                              fit_method='lm', model_kwargs={'Tc': obj.ANTOINE_EXTENDED_POLING_coefs[0], 
-                                                             'to': obj.ANTOINE_EXTENDED_POLING_coefs[1]})
-        assert stats['MAE'] < 1e-4
-
 @pytest.mark.fitting
 @pytest.mark.meta_T_dept
 def test_VaporPressure_fitting7_reduced_fit_params_with_jac():
@@ -283,6 +268,32 @@ def test_VaporPressure_fitting7_reduced_fit_params_with_jac():
     assert fit['a'] == -8.329
     assert fit['b'] == 2.4
     assert fit['d'] == -4.6
+
+@pytest.mark.slow
+@pytest.mark.fuzz
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_VaporPressure_fitting8_TRC_AntoineExtended():
+    for i, CAS in enumerate(chemicals.vapor_pressure.Psat_data_AntoineExtended.index):
+        obj = VaporPressure(CASRN=CAS)
+        Ts = linspace(obj.ANTOINE_EXTENDED_POLING_Tmin, obj.ANTOINE_EXTENDED_POLING_Tmax, 10)
+        props_calc = [obj.calculate(T, ANTOINE_EXTENDED_POLING) for T in Ts]
+        res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='TRC_Antoine_extended',
+                              do_statistics=True, use_numba=False, 
+                              fit_method='lm', model_kwargs={'Tc': obj.ANTOINE_EXTENDED_POLING_coefs[0], 
+                                                             'to': obj.ANTOINE_EXTENDED_POLING_coefs[1]})
+        assert stats['MAE'] < 1e-4
+
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_VaporPressure_fitting9_Yaws_Psat():
+    A, B, C, D, E, Tmin, Tmax = 53.93890302013294, -788.24, -22.734, 0.051225, 6.1896e-11, 68.15, 132.92
+    Ts = linspace(Tmin, Tmax, 10)
+    props_calc = [Yaws_Psat(T, A, B, C, D, E) for T in Ts]
+    res, stats = VaporPressure.fit_data_to_model(Ts=Ts, data=props_calc, model='Yaws_Psat',
+                          do_statistics=True, use_numba=False, 
+                          fit_method='lm')        
+    assert stats['MAE'] < 1e-5
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_analytical_derivatives():
