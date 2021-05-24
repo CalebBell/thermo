@@ -1226,8 +1226,6 @@ class TDependentProperty(object):
           {'A': 1450.0, 'B': 0.268, 'C': 365.,'D': 0.29},  # near propene dippr volume
           {'A': 1940.0, 'B': 0.24, 'C': 590.,'D': 0.244},  # near formic acid dippr volume
           
-          {'A': 0.13, 'B': 0.23, 'C': 910.,'D': 0.29},  # 
-
           {'A': 1.05, 'B': 0.258, 'C': 540.,'D': 0.268},  # near some chemsep liquid densities
           {'A': 2.15, 'B': 0.27, 'C': 415.,'D': 0.286},  # near some chemsep liquid densities
           {'A': 0.048, 'B': 0.09, 'C': 587.,'D': 0.133},  # near some chemsep liquid densities
@@ -1251,6 +1249,13 @@ class TDependentProperty(object):
           {'A': 0.67524, 'B': 0.24431, 'C': 645.61,'D': 0.26239},  # near some chemsep liquid densities
           {'A': 0.5251, 'B': 0.20924, 'C': 736.61,'D': 0.18363},  # near some chemsep liquid densities
           
+          {'A': 0.13, 'B': 0.23, 'C': 910.,'D': 0.29},  # 
+          {'A': 9.0, 'B': 0.5, 'C': 2400.,'D': 0.58},  # 
+          {'A': 1.0, 'B': 0.14, 'C': 1000.0,'D': 0.1},  # 
+          {'A': 0.24, 'B': 0.05, 'C': 6000.0,'D': 0.2},  # 
+          {'A': 6.5, 'B': 0.5, 'C': 3.5, 'D': 0.2},  # 
+          {'A': 15.0, 'B': 0.3, 'C': 7000.0, 'D': 0.3},  # 
+          {'A': 0.1, 'B': 0.05, 'C': 3300.0, 'D': 0.1},  # 
           ]}),
 
      'DIPPR106': (['Tc', 'A', 'B'],
