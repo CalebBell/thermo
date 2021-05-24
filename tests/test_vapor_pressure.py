@@ -188,7 +188,7 @@ def test_VaporPressure_fitting2_dippr():
         Ts = linspace(obj.Perrys2_8_Tmin, obj.Perrys2_8_Tmax, pts)
         props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
-                              do_statistics=True, use_numba=False, fit_method='lm')
+                              do_statistics=True, use_numba=False, multiple_tries=True, fit_method='lm')
         assert stats['MAE'] < 1e-5
 
 @pytest.mark.slow

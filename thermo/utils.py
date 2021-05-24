@@ -1088,10 +1088,25 @@ class TDependentProperty(object):
            {'A': -395.0, 'B': 20000.0, 'C': 60.0, 'D':-5e-2, 'E': 1.0}, # near dippr viscosity 1,2-Butanediol
            {'A': -394.0, 'B': 19000.0, 'C': 60.0, 'D': -.05, 'E': 1.0}, # near dippr viscosity 1,2-butanediol
            {'A': -390.0, 'B': 18600.0, 'C': 60.0, 'D': -.055, 'E': 1.0}, # near dippr viscosity 1,3-butanediol
-           {'A': 193.0, 'B': -8040, 'C': -29.5, 'D': 0.044, 'E': 1.0}, # near dippr Psat acetaldehyde
+           {'A': 193.7, 'B': -8036, 'C': -29.5, 'D': 0.044, 'E': 1.0}, # near dippr Psat acetaldehyde
            {'A': 138.5, 'B': -7123.0, 'C': -19.64, 'D': 0.02645, 'E': 1.0}, # near dippr Psat acrolein
            {'A': -354.9911, 'B': 16471.68, 'C': 54.55389, 'D': -0.0481353, 'E': 1.0}, # near Triethylene glycol chemsep liquid viscosity
-             
+           {'A': 51.5, 'B': -1200.0, 'C': -6.4, 'D': 0.0285, 'E': 1.0}, # near dippr Psat oxygen
+           {'A': 90.5, 'B': -4670.0, 'C': -11.6, 'D': 0.0172, 'E': 1.0}, # near dippr Psat ammonia
+           {'A': 133.5, 'B': -7500.0, 'C': -18.4, 'D': 0.022, 'E': 1.0}, # near dippr Psat 1-hexyne
+           {'A': 76.9, 'B': -7250.0, 'C': -8.25, 'D': 0.00616, 'E': 1.0}, # near dippr Psat hydrazine
+           {'A': 150.0, 'B': -8900.0, 'C': -20.7, 'D': 0.022, 'E': 1.0}, # near dippr Psat pentanal
+           {'A': 108.0, 'B': -6600.0, 'C': -14.2, 'D': 0.016, 'E': 1.0}, # near dippr Psat bromine
+           {'A': 86.0, 'B': -4880.0, 'C': -10.9, 'D': 0.015, 'E': 1.0}, # near dippr Psat cyclobutane
+           {'A': 93.1, 'B': -5500.0, 'C': -11.85, 'D': 0.014, 'E': 1.0}, # near dippr Psat 2-methyl-1-butene
+           {'A': 211, 'B': -14000.0, 'C': -29.5, 'D': 0.0252, 'E': 1.0}, # near dippr Psat o-cresol
+           {'A': 47, 'B': -5100.0, 'C': -3.67, 'D': 0.000516, 'E': 1.0}, # near dippr Psat 3-hexyne
+           {'A': 463, 'B': -18300.0, 'C': -73.7, 'D': 0.093, 'E': 1.0}, # near dippr Psat diisopropylamine
+           {'A': 21.65, 'B': -690.0, 'C': -0.39, 'D': 0.00475, 'E': 1.0}, # near dippr Psat something long
+           {'A': 124, 'B': -7630.0, 'C': -16.45, 'D': 0.0165, 'E': 1.0}, # near dippr Psat 2-hexyne
+           {'A': 136.6, 'B': -7200.0, 'C': -19.0, 'D': 0.0223, 'E': 1.0}, # near dippr Psat isopropylamine
+           
+           
            {'A': -20.449, 'B': -959.41, 'C': 4.2445, 'D': -9.5025e-05, 'E': 2.0}, # near Hydrogen iodide chemsep liquid viscosity
            {'A': -27.66295, 'B': 5326.5, 'C': 1.362383, 'D': -1.706454e-06, 'E': 2.0}, # near N-aminoethyl ethanolamine chemsep liquid viscosity
            {'A': -497.9054, 'B': 22666.52, 'C': 74.36022, 'D': -7.02789e-05, 'E': 2.0}, # near N-aminoethyl piperazine chemsep liquid viscosity
@@ -1128,12 +1143,32 @@ class TDependentProperty(object):
            {'A': 302.0, 'B': -24320.0, 'C': -40.1, 'D': 1.75E-05, 'E': 2.0}, # near dippr Psat trinitrotoluene
            {'A': 113.0, 'B': -9750.0, 'C': -13.25, 'D': 7.13E-06, 'E': 2.0}, # near dippr Psat trinitrotoluene
            # {'A': 78.34, 'B': -8020.0, 'C': -8.15, 'D': 3.89E-06, 'E': 2.0}, # near dippr Psat 1,2,3-trimethylbenzene - uncomment to break things
+           {'A': 137.0, 'B': -12000.0, 'C': -17, 'D': 8.1E-06, 'E': 2.0}, # near dippr Psat dodecane
+           {'A': 136.0, 'B': -13500.0, 'C': -16., 'D': 5.61E-06, 'E': 2.0}, # near dippr Psat pentadecane
+           {'A': 78.3, 'B': -6350.0, 'C': -8.5, 'D': 6.43E-06, 'E': 2.0}, # near dippr Psat 2,3-dimethylpentane
+           {'A': 204.0, 'B': -19500.0, 'C': -25.5, 'D': 8.84E-06, 'E': 2.0}, # near dippr Psat eicosane
+           {'A': 157.0, 'B': -15600.0, 'C': -19.0, 'D': 6.45E-06, 'E': 2.0}, # near dippr Psat heptadecane
+           {'A': 30.0, 'B': -270.0, 'C': -2.6, 'D': 0.00053, 'E': 2.0}, # near dippr Psat neon
+           {'A': 140.0, 'B': -13200.0, 'C': -16.9, 'D': 6.6e-06, 'E': 2.0}, # near dippr Psat tetradecane
+           {'A': 173, 'B': -11600.0, 'C': -22.1, 'D': 1.37e-5, 'E': 2.0}, # near dippr Psat tert-butanol
+           {'A': 506, 'B': -37500.0, 'C': -69.3, 'D': 2.74e-5, 'E': 2.0}, # near dippr Psat 1,3,5-trinitrobenzene
+           {'A': 126.5, 'B': -12500.0, 'C': -15, 'D': 7.75e-6, 'E': 2.0}, # near dippr Psat
            
            {'A': -75.8, 'B': 4175.0, 'C': 9.65, 'D': -7.3e-9, 'E': 3.0}, # near dippr mul hydrazine
            
            {'A': -116.3, 'B': 3834.0, 'C': 16.85, 'D': -2.59e-10, 'E': 4.0}, # near dippr mul hydrochloric acid
                       
            {'A': -14.0, 'B': 950.0, 'C': 0.5, 'D': -6.15e-17, 'E': 6.0}, # near dippr viscosity 1-chloropropane
+           {'A': 84, 'B': -10500.0, 'C': -8.25, 'D': 1.65e-18, 'E': 6.0}, # near dippr Psat ethylene glycol
+           {'A': 85.5, 'B': -11900.0, 'C': -8.33, 'D': 1.29e-18, 'E': 6.0}, # near dippr Psat benzamide
+           {'A': 100.7, 'B': -11000.0, 'C': -10.7, 'D': 3.06e-18, 'E': 6.0}, # near dippr Psat benzyl alcohol
+           {'A': 106.3, 'B': -9850.0, 'C': -11.7, 'D': 1.08e-18, 'E': 6.0}, # near dippr Psat 1-butanol
+           {'A': 106.3, 'B': -13700.0, 'C': -11., 'D': 3.26e-18, 'E': 6.0}, # near dippr Psat diethanolamine
+           {'A': 120.5, 'B': -13100.0, 'C': -13.5, 'D': 5.84e-18, 'E': 6.0}, # near dippr Psat heptanoic acid
+           {'A': 140., 'B': -14800.0, 'C': -16, 'D': 6.42e-18, 'E': 6.0}, # near dippr Psat octanoic acid
+           {'A': 163., 'B': -15200.0, 'C': -19.5, 'D': 1.07e-17, 'E': 6.0}, # near dippr Psat octanoic acid
+           {'A': 73., 'B': -2750.0, 'C': -8.3, 'D': 9.7e-15, 'E': 6.0}, # near dippr Psat nitric oxide
+           {'A': 129., 'B': -17000.0, 'C': -14.0, 'D': 2.156e-18, 'E': 6.0}, # near dippr Psat succinic acid
            
            {'A': -17.7, 'B': 850.0, 'C': 1.05, 'D': -1.2e-18, 'E': 7.0}, # near dippr viscosity 1-difluoromethane
 
