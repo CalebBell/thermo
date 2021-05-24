@@ -1292,8 +1292,9 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ107(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ107(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ107(T, order=-1j, **kwargs)},
-      {'fit_params': ['A', 'B', 'C', 'D', 'E'], 'initial_guesses':
-       [{'A': 325000.0, 'B': 110000.0, 'C': 1640.0, 'D': 745000.0, 'E': 726.},
+      {'fit_params': ['A', 'B', 'C', 'D', 'E'], 'initial_guesses':[
+          {'A': 325000.0, 'B': 110000.0, 'C': 1640.0, 'D': 745000.0, 'E': 726.},
+          {'A': 50000.0, 'B': 5e4, 'C': 300.0, 'D': 40000.0, 'E': 200.},
         ]}),
       
       # 
