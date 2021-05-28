@@ -182,19 +182,10 @@ from .virial_phase import *
 from .petroleum import *
 from .combined import *
 
-__all__ = [
-    *phase.__all__,
-    *ideal_gas.__all__,
-    *ceos.__all__,
-    *gibbs_excess.__all__,
-    *air_phase.__all__,
-    *helmholtz_eos.__all__,
-    *iapws_phase.__all__,
-    *coolprop_phase.__all__,
-    *virial_phase.__all__,
-    *petroleum.__all__,
-    *combined.__all__,
-]
+__all__ = (phase.__all__ + ideal_gas.__all__ + ceos.__all__
+           + gibbs_excess.__all__ + air_phase.__all__ + helmholtz_eos.__all__ 
+           + iapws_phase.__all__ + coolprop_phase.__all__
+           + virial_phase.__all__ + petroleum.__all__ + combined.__all__)
 
 gas_phases = (
     IdealGas, 

@@ -52,11 +52,10 @@ activity_pointer_reference_dicts = {
 activity_reference_pointer_dicts = {
     v: k for k, v in activity_pointer_reference_dicts.items()
 }
-object_lookups = {
-    **activity_pointer_reference_dicts,
-    **eos_mix_full_path_dict,
-    **eos_full_path_dict
-}
+object_lookups = {}
+object_lookups.update(activity_pointer_reference_dicts)
+object_lookups.update(eos_mix_full_path_dict)
+object_lookups.update(eos_full_path_dict)
 
 def activity_lnphis(zs, model, T, P, N, lnPsats, Poyntings, phis_sat, *activity_args):
     # It appears that to make numba happy *activity_args will not work

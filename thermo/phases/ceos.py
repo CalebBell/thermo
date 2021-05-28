@@ -1006,7 +1006,8 @@ def build_CEOSLiquid():
 
 from fluids.numerics import is_micropython
 if is_micropython:
-    class CEOSLiquid(object): pass
+    class CEOSLiquid(object): 
+        __full_path__ = None
 else:
     try:
         CEOSLiquid

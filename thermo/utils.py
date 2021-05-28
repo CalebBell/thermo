@@ -82,10 +82,13 @@ __all__ = ['has_matplotlib', 'Stateva_Tsvetkov_TPDF', 'TPD',
 'VDI_PPDS', 'COOLPROP', 'LINEAR']
 
 import os
+try:
+    from random import uniform
+except:
+    pass
 from cmath import sqrt as csqrt
 from fluids.numerics import quad, brenth, newton, secant, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders, assert_close, numpy as np, curve_fit, differential_evolution, fit_minimization_targets, leastsq
 from fluids.constants import R
-from random import uniform
 import chemicals
 from chemicals.utils import PY37, isnan, isinf, log, exp, ws_to_zs, zs_to_ws, e
 from chemicals.utils import mix_multiple_component_flows, hash_any_primitive
@@ -1393,6 +1396,8 @@ class TDependentProperty(object):
     # Aliases from the DDBST
     correlation_models['Wagner2,5'] = correlation_models['Wagner']
     correlation_models['Wagner3,6'] = correlation_models['Wagner_original']
+    correlation_models['Andrade'] = correlation_models['Viswanath_Natarajan_2']
+    
     
     # Don't know why TDE has  Hvap = exp(A)*{1 - ( T / Tc )}^n
     # In other places they have it right: https://trc.nist.gov/TDE/TDE_Help/Eqns-Pure-Hvap/Yaws.VaporizationH.htm
@@ -2578,18 +2583,18 @@ class TDependentProperty(object):
         self.correlations[name] = (call, model_kwargs, model)
         self.method = name
 
-    _text = '\n'
-    for correlation_name, _correlation_parameters in correlation_models.items():
-        f = _correlation_parameters[2]['f']
-        correlation_func_name = f.__name__
-        correlation_func_mod = f.__module__
-        s = '        * "%s": :obj:`%s <%s.%s>`, required parameters %s' %(correlation_name, correlation_func_name, correlation_func_mod, correlation_func_name, tuple(_correlation_parameters[0]))
-        if _correlation_parameters[1]:
-            s += ', optional parameters %s.\n' %(tuple(_correlation_parameters[1]),)
-        else:
-            s += '.\n'
-        _text += s
     try:
+        _text = '\n'
+        for correlation_name, _correlation_parameters in correlation_models.items():
+            f = _correlation_parameters[2]['f']
+            correlation_func_name = f.__name__
+            correlation_func_mod = f.__module__
+            s = '        * "%s": :obj:`%s <%s.%s>`, required parameters %s' %(correlation_name, correlation_func_name, correlation_func_mod, correlation_func_name, tuple(_correlation_parameters[0]))
+            if _correlation_parameters[1]:
+                s += ', optional parameters %s.\n' %(tuple(_correlation_parameters[1]),)
+            else:
+                s += '.\n'
+            _text += s
         add_correlation.__doc__ += _text
     except:
         pass

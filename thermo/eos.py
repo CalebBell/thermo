@@ -270,7 +270,7 @@ from cmath import log as clog
 from math import isnan, isinf
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, newton,
-                             bisect, inf, polyder, chebder,
+                             bisect, inf, polyder, chebder, is_micropython,
                              trunc_exp, secant, linspace, logspace,
                              horner, horner_and_der, horner_and_der2, derivative,
                              roots_cubic_a2, isclose, NoSolutionError,
@@ -879,9 +879,12 @@ class GCEOS(object):
 
     nonstate_constants = ('Tc', 'Pc', 'omega', 'kwargs', 'a', 'b', 'delta', 'epsilon')
     kwargs_keys = tuple()
-
-    def __init_subclass__(cls):
-        cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
+    
+    if not is_micropython:
+        def __init_subclass__(cls):
+            cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
+    else:
+        __full_path__ = None
 
     def state_hash(self):
         r'''Basic method to calculate a hash of the state of the model and its

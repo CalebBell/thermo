@@ -28,7 +28,6 @@ __all__ = ['alpha_Twu91_objf', 'alpha_Twu91_objfc', 'fit_function',
            'fit_cheb_poly', 'poly_fit_statistics', 'fit_cheb_poly_auto',
            'data_fit_statistics']
 
-from cmath import atanh as catanh
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, newton,
                              bisect, inf, polyder, chebder, std, min_max_ratios,

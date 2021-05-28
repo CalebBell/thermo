@@ -33,7 +33,7 @@ from math import sqrt
 from thermo.serialize import arrays_to_lists
 from fluids.numerics import (horner, horner_log, jacobian, 
                              poly_fit_integral_value, poly_fit_integral_over_T_value,
-                             newton_system, trunc_exp)
+                             newton_system, trunc_exp, is_micropython)
 from chemicals.utils import (log, Cp_minus_Cv, phase_identification_parameter,
                              Joule_Thomson, speed_of_sound, dxs_to_dns, dns_to_dn_partials,
                              hash_any_primitive)
@@ -132,9 +132,12 @@ class Phase(object):
     reference_pointer_dicts = ()
     '''Tuple of dictionaries for object -> string
     '''
-
-    def __init_subclass__(cls):
-        cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
+    
+    if not is_micropython:
+        def __init_subclass__(cls):
+            cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
+    else:
+        __full_path__ = None
 
     def __str__(self):
         s =  '<%s, ' %(self.__class__.__name__)
