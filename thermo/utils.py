@@ -103,6 +103,7 @@ from chemicals.heat_capacity import (Poling, Poling_integral, Poling_integral_ov
                                      TRCCp, TRCCp_integral, TRCCp_integral_over_T,
                                      Zabransky_quasi_polynomial, Zabransky_quasi_polynomial_integral, Zabransky_quasi_polynomial_integral_over_T,
                                      Zabransky_cubic, Zabransky_cubic_integral, Zabransky_cubic_integral_over_T)
+from chemicals.thermal_conductivity import Chemsep_16
 from chemicals.interface import REFPROP_sigma, Somayajulu, Jasper
 from chemicals.volume import volume_VDI_PPDS, Rackett_fit
 from thermo import serialize
@@ -1005,6 +1006,10 @@ class TDependentProperty(object):
     'REFPROP_sigma': (['Tc', 'sigma0', 'n0'], ['sigma1', 'n1', 'sigma2', 'n2'], {'f': REFPROP_sigma},  {'fit_params': ['sigma0', 'n0', 'sigma1', 'n1', 'sigma2', 'n2']}),
     'Somayajulu': (['Tc', 'A', 'B', 'C'], [], {'f': Somayajulu}, {'fit_params': ['A', 'B', 'C']}),
     'Jasper': (['a', 'b',], [], {'f': Jasper}, {'fit_params': ['a', 'b',]}),
+    
+    'Chemsep_16': (['A', 'B', 'C', 'D', 'E'], [], {'f': Chemsep_16, }, {'fit_params': ['A', 'B', 'C', 'D', 'E'],        'initial_guesses': [
+           {'A': 53000, 'B': 4500.0, 'C': -145.0, 'D': 1.6, 'E':-0.005}, # 
+]},),
 
     'volume_VDI_PPDS': (['Tc', 'rhoc', 'a', 'b', 'c', 'd', 'MW',], [], {'f': volume_VDI_PPDS}, {'fit_params': ['a', 'b', 'c', 'd',]}),
     'Rackett_fit': (['Tc', 'rhoc', 'b', 'n', 'MW',], [], {'f': Rackett_fit}, {'fit_params': ['rhoc', 'b', 'n'], 'initial_guesses': [
