@@ -36,7 +36,7 @@ Temperature Dependent
              critical_zero, ranked_methods, __call__, fit_polynomial,
              method, valid_methods, test_property_validity,
              T_dependent_property, plot_T_dependent_property, interpolate,
-             add_method, add_tabular_data, solve_property,
+             add_method, add_tabular_data, fit_add_model, fit_data_to_model, solve_property,
              calculate_derivative, T_dependent_property_derivative,
              calculate_integral, T_dependent_property_integral,
              calculate_integral_over_T, T_dependent_property_integral_over_T,
@@ -1023,7 +1023,7 @@ class TDependentProperty(object):
     'Watson_sigma': (['Tc', 'a1', 'a2', 'a3', 'a4', 'a5'], [], {'f': Watson_sigma}, {'fit_params': [ 'a1', 'a2', 'a3', 'a4', 'a5']}),
     'ISTExpansion': (['Tc', 'a1', 'a2', 'a3', 'a4', 'a5'], [], {'f': ISTExpansion}, {'fit_params': [ 'a1', 'a2', 'a3', 'a4', 'a5']}),
 
-    'Chemsep_16': (['A', 'B', 'C', 'D', 'E'], [], {'f': Chemsep_16, }, {'fit_params': ['A', 'B', 'C', 'D', 'E'], 'initial_guesses': [
+    'Chemsep_16': (['A', 'B', 'C', 'D', 'E'], [], {'f': Chemsep_16}, {'fit_params': ['A', 'B', 'C', 'D', 'E'], 'initial_guesses': [
            {'A': 53000, 'B': 4500.0, 'C': -145.0, 'D': 1.6, 'E':-0.005}, 
            {'A': -0.21, 'B': -16.3, 'C': -0.23, 'D': -0.0076, 'E': 2.5e-6}, 
            {'A': 2.562e-06, 'B': -300.363, 'C': -11.49, 'D': 0.001550, 'E': -4.0805e-07}, 
@@ -1840,10 +1840,10 @@ class TDependentProperty(object):
     
     @classmethod
     def fit_data_to_model(cls, Ts, data, model, model_kwargs=None, 
-                          fit_method='lm', use_numba=True,
+                          fit_method='lm', use_numba=False,
                           do_statistics=False, guesses=None,
                           solver_kwargs=None, objective='MeanSquareErr',
-                          multiple_tries=False, multiple_tries_max_err=1e-6,
+                          multiple_tries=False, multiple_tries_max_err=1e-5,
                           multiple_tries_max_objective='MeanRelErr'):
         r'''Method to fit T-dependent property data to one of the available
         model correlations. 
@@ -1863,7 +1863,7 @@ class TDependentProperty(object):
             be used instead of fitting the parameter. [-]
         fit_method : str, optional
             The fit method to use; one of {`lm`, `trf`, `dogbox`, 
-                                           `differential_evolution`}, [-]
+            `differential_evolution`}, [-]
         use_numba : bool, optional
             Whether or not to try to use numba to speed up the computation, [-]
         do_statistics : bool, optional
@@ -1876,20 +1876,21 @@ class TDependentProperty(object):
         objective : str
             The minimimization criteria; supported by `differential_evolution`.
             One of:
-                * 'MeanAbsErr': Mean absolute error
-                * 'MeanRelErr': Mean relative error
-                * 'MeanSquareErr': Mean squared absolute error
-                * 'MeanSquareRelErr': Mean squared relative error
-                * 'MaxAbsErr': Maximum absolute error
-                * 'MaxRelErr': Maximum relative error
-                * 'MaxSquareErr': Maximum squared absolute error
-                * 'MaxSquareRelErr': Maximum squared relative error
+            
+            * 'MeanAbsErr': Mean absolute error
+            * 'MeanRelErr': Mean relative error
+            * 'MeanSquareErr': Mean squared absolute error
+            * 'MeanSquareRelErr': Mean squared relative error
+            * 'MaxAbsErr': Maximum absolute error
+            * 'MaxRelErr': Maximum relative error
+            * 'MaxSquareErr': Maximum squared absolute error
+            * 'MaxSquareRelErr': Maximum squared relative error
         multiple_tries : bool or int
             For most solvers, multiple initial guesses are available and the best
             guess is normally tried. When this is set to True, all guesses are
             tried until one is found with an error lower than
-            `multiple_tries_max_err`. If an int is supplied, the best `n`
-            multiple guesses are tried only. [-]
+            `multiple_tries_max_err`. If an int is supplied, the best `multiple_tries`
+            guesses are tried only. [-]
         multiple_tries_max_err : float
             Only used when `multiple_tries` is true; if a solution is found
             with lower error than this, no further guesses are tried, [-]
@@ -1898,13 +1899,12 @@ class TDependentProperty(object):
             
         Returns
         -------
-        coefficients : dict[str: float]and
+        coefficients : dict[str: float]
             Calculated coefficients, [`various`]
         statistics : dict[str: float]
             Statistics, calculated and returned only if `do_statistics` is True, [-]
         '''
         if use_numba:
-            import fluids.numba
             import thermo.numba
             fit_func_dict = fluids.numba.numerics.fit_minimization_targets
         else:
