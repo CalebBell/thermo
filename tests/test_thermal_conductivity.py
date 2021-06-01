@@ -266,7 +266,7 @@ def test_ThermalConductivityGas_fitting0():
         obj = ThermalConductivityGas(CASRN=CAS)
         Ts = linspace(obj.Perrys2_314_Tmin, obj.Perrys2_314_Tmax, 10)
         props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
-        res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR102',
+        res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR102', multiple_tries=True,
                               do_statistics=True, use_numba=False, fit_method='lm')
         assert stats['MAE'] < 1e-5
     

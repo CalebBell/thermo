@@ -93,8 +93,8 @@ import chemicals
 from chemicals.utils import PY37, isnan, isinf, log, exp, ws_to_zs, zs_to_ws, e
 from chemicals.utils import mix_multiple_component_flows, hash_any_primitive
 from chemicals.vapor_pressure import Antoine, Antoine_coeffs_from_point, Antoine_AB_coeffs_from_point, DIPPR101_ABC_coeffs_from_point, Yaws_Psat_fitting_jacobian, d2Yaws_Psat_dT2, dYaws_Psat_dT, Yaws_Psat
-from chemicals.vapor_pressure import Wagner, Wagner_original, TRC_Antoine_extended, dAntoine_dT, d2Antoine_dT2, dWagner_original_dT, d2Wagner_original_dT2, dWagner_dT, d2Wagner_dT2, dTRC_Antoine_extended_dT, d2TRC_Antoine_extended_dT2, Wagner_fitting_jacobian, Wagner_original_fitting_jacobian
-from chemicals.dippr import EQ100, EQ101, EQ102, EQ104, EQ105, EQ106, EQ107, EQ114, EQ115, EQ116, EQ127, EQ102_fitting_jacobian, EQ101_fitting_jacobian
+from chemicals.vapor_pressure import Wagner, Wagner_original, TRC_Antoine_extended, dAntoine_dT, d2Antoine_dT2, dWagner_original_dT, d2Wagner_original_dT2, dWagner_dT, d2Wagner_dT2, dTRC_Antoine_extended_dT, d2TRC_Antoine_extended_dT2, Wagner_fitting_jacobian, Wagner_original_fitting_jacobian, Antoine_fitting_jacobian
+from chemicals.dippr import EQ100, EQ101, EQ102, EQ104, EQ105, EQ106, EQ107, EQ114, EQ115, EQ116, EQ127, EQ102_fitting_jacobian, EQ101_fitting_jacobian, EQ106_fitting_jacobian, EQ105_fitting_jacobian, EQ107_fitting_jacobian
 from chemicals.phase_change import Watson, Watson_n, Alibakhshi, PPDS12
 from chemicals.viscosity import (Viswanath_Natarajan_2, Viswanath_Natarajan_2_exponential,
                                  Viswanath_Natarajan_3, PPDS9, dPPDS9_dT,
@@ -925,13 +925,19 @@ class TDependentProperty(object):
     correlation_models = {
         'Antoine': (['A', 'B', 'C'], ['base'], {'f': Antoine, 'f_der': dAntoine_dT, 'f_der2': d2Antoine_dT2}, 
                     {'fit_params': ['A', 'B', 'C'],
+                     'fit_jac' : Antoine_fitting_jacobian,
                     'initial_guesses': [{'A': 9.0, 'B': 1000.0, 'C': -70.0},
                                         {'A': 9.1, 'B': 1450.0, 'C': -60.0},
                                         {'A': 8.1, 'B': 77.0, 'C': 2.5},
                                         {'A': 138., 'B': 520200.0, 'C': 3670.0}, # important point for heavy compounds
                                         {'A': 12.852, 'B': 2943.0, 'C': 0.0}, # Zero C and low range point
+                                        {'A': 21.7, 'B': 10700.0, 'C': 0.0}, # Zero C and low range point
+                                        {'A': 14.3, 'B': 14500.0, 'C': -28.3},
+                                        {'A': -5.3, 'B': 3750.0, 'C': -920.0},
+                                        {'A': 9.0, 'B': 870.0, 'C': -37.8},
+                                        {'A': 7.1, 'B': 217.0, 'C': -139.0},
                         ]}),
-        
+                
         'TRC_Antoine_extended': (['Tc', 'to', 'A', 'B', 'C', 'n', 'E', 'F'], [],
                                  {'f': TRC_Antoine_extended, 'f_der': dTRC_Antoine_extended_dT, 'f_der2': d2TRC_Antoine_extended_dT2},
                                  {'fit_params': ['to', 'A', 'B', 'C', 'n', 'E', 'F'],
@@ -1214,6 +1220,8 @@ class TDependentProperty(object):
      {'fit_params': ['A', 'B', 'C', 'D'],
       'fit_jac': EQ102_fitting_jacobian,
       'initial_guesses': [
+           {'A': 0.00123, 'B': 1.25, 'C': 60900.0, 'D': -1968000.0},# chemsep
+           {'A': -238., 'B': 1.05, 'C': -4970000000.0, 'D': -89500000000.0}, # chemsep
            {'A': 1.2e-7, 'B': 0.8, 'C': 77.0, 'D': 0.0}, # near dippr mug Acetaldehyde
            {'A': 1.4e-7, 'B': 0.75, 'C': 277.0, 'D': 0.0}, # near dippr mug Acetamide
            {'A': 2.7e-8, 'B': 1.0, 'C': 7.5, 'D': 0.0}, # near dippr mug Acetic acid
@@ -1244,6 +1252,8 @@ class TDependentProperty(object):
            {'A': 1.7e-6, 'B': 1.67, 'C': 660.0, 'D': -95400.0}, # near dippr kg acetic acid
            {'A': 0.0, 'B': 4000.0, 'C': 0.75, 'D': 0.0}, #
            {'A': 1e9, 'B': -5.0, 'C': -1500, 'D': 1e6}, #
+           {'A': 0.0, 'B': 3600.0, 'C': 0.73, 'D': 0.0}, #
+           {'A': 0.0076, 'B': 0.51, 'C': 2175, 'D': 185000.0}, #
         ]}),
      'DIPPR104': (['A', 'B'],
       ['C', 'D', 'E'],
@@ -1266,7 +1276,8 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ105(T, order=1, **kwargs),
        'f_der2': lambda T, **kwargs: EQ105(T, order=2, **kwargs),
        'f_der3': lambda T, **kwargs: EQ105(T, order=3, **kwargs)},
-      {'fit_params': ['A', 'B', 'C', 'D'], 'initial_guesses': [
+      {'fit_params': ['A', 'B', 'C', 'D'],'fit_jac': EQ105_fitting_jacobian,
+       'initial_guesses': [
           {'A': 500.0, 'B': 0.25, 'C': 630.0, 'D': 0.22,}, # near 2-Octanol dippr volume
           {'A': 1370.0, 'B': 0.238, 'C': 588.0, 'D': 0.296,}, # near Nitromethane dippr volume
           {'A': 976.0, 'B': 0.282, 'C': 483.0, 'D': 0.22529,}, # near Methyldichlorosilane dippr volume
@@ -1322,7 +1333,8 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ106(T, order=1, **kwargs),
        'f_der2': lambda T, **kwargs: EQ106(T, order=2, **kwargs),
        'f_der3': lambda T, **kwargs: EQ106(T, order=3, **kwargs)},
-     {'fit_params': ['A', 'B', 'C', 'D', 'E'], 'initial_guesses': [
+     {'fit_params': ['A', 'B', 'C', 'D', 'E'], 'fit_jac': EQ106_fitting_jacobian,
+      'initial_guesses': [
           {'A': 47700.0, 'B': 0.37, 'C': 0.,'D': 0.0, 'E': 0.0},  # near vinyl acetate dippr Hvap
           {'A': 23200.0, 'B': 0.36, 'C': 0.,'D': 0.0, 'E': 0.0},  # near ethyne dippr Hvap
           {'A': 8730.0, 'B': 0.35, 'C': 0.,'D': 0.0, 'E': 0.0},  # near argon dippr Hvap
@@ -1333,8 +1345,10 @@ class TDependentProperty(object):
           {'A': 7385650.0, 'B': 0.27668, 'C': 0.21125, 'D': -0.8368, 'E': 0.723}, # near chemsep Hvap air
           {'A': 62115220.0, 'B': 1.00042, 'C': -0.589, 'D': -0.2779, 'E': 0.31358,}, # near chemsep Hvap 2,2-dimethylhexane
           {'A': 4761730.0, 'B': -11.56, 'C': 30.7, 'D': -31.89, 'E': 12.678}, # near chemsep Hvap Dimethylacetylene
-          
+          # {'A': 0.119, 'B': 1.59, 'C': -0.25, 'D': 0.0, 'E': 0.0},
+          # {'A': 35e6, 'B': 0.1, 'C': 0.0325, 'D': 0.25, 'E': 0.0},
            ]
+                  
       }),
      'YawsSigma': (['Tc', 'A', 'B'],
       ['C', 'D', 'E'],
@@ -1350,7 +1364,9 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ107(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ107(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ107(T, order=-1j, **kwargs)},
-      {'fit_params': ['A', 'B', 'C', 'D', 'E'], 'initial_guesses':[
+      {'fit_params': ['A', 'B', 'C', 'D', 'E'],
+       'fit_jac': EQ107_fitting_jacobian,
+       'initial_guesses':[
           {'A': 325000.0, 'B': 110000.0, 'C': 1640.0, 'D': 745000.0, 'E': 726.},
           {'A': 50000.0, 'B': 5e4, 'C': 300.0, 'D': 40000.0, 'E': 200.},
           {'A': 60000.0, 'B': 90000.0, 'C': 800.0, 'D': 63000.0, 'E': -2000.},
@@ -1366,6 +1382,7 @@ class TDependentProperty(object):
           {'A': 750000.0, 'B': 1.5e6, 'C': 750.0, 'D': 600000, 'E': 2500.},
           {'A': 50000.0, 'B': 200000, 'C': 1200.0, 'D': 100000, 'E': 500.},
           {'A': 820000.0, 'B': 375000, 'C': 1750.0, 'D': -1e6, 'E': 275.},
+          {'A': 150000.0, 'B': 145000, 'C': 1225.0, 'D': -5.75e7, 'E': 7.75},
         ]}),
       # 
      'DIPPR114': (['Tc', 'A', 'B', 'C', 'D'],
@@ -1374,7 +1391,12 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ114(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ114(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ114(T, order=-1j, **kwargs)},
-     {'fit_params': ['A', 'B', 'C', 'D']}),
+     {'fit_params': ['A', 'B', 'C', 'D'], 'initial_guesses': [
+          {'A': 65.0, 'B': 30000, 'C': -850, 'D': 2000.0},
+          {'A': 150.0, 'B': -45000, 'C': -2500, 'D': 6000.0},
+         ]}),
+     
+     
      'DIPPR115': (['A', 'B'],
       ['C', 'D', 'E'],
       {'f': EQ115,
@@ -1998,8 +2020,10 @@ class TDependentProperty(object):
             Dfun = jac_wrapped_for_leastsq if analytical_jac is not None else None
             if 'maxfev' not in solver_kwargs and fit_method == 'lm':
                 # DO NOT INCREASE THIS! Make an analytical jacobian instead please.
+                # Fought very hard to bring the analytical jacobian maxiters down to 500!
+                # 250 seems too small.
                 if analytical_jac is not None:
-                    solver_kwargs['maxfev'] = 5000 
+                    solver_kwargs['maxfev'] = 500
                 else:
                     solver_kwargs['maxfev'] = 5000 
             if multiple_tries:

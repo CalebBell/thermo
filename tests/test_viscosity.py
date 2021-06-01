@@ -181,7 +181,7 @@ def test_ViscosityLiquid_fitting1():
     obj = ViscosityLiquid(CASRN='60-35-5')
     Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
-    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
+    res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101', multiple_tries=True,
                           do_statistics=True, use_numba=False, fit_method='lm')
     assert stats['MAE'] < 1e-6
 
