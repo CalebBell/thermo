@@ -1905,7 +1905,7 @@ class TDependentProperty(object):
             Statistics, calculated and returned only if `do_statistics` is True, [-]
         '''
         if use_numba:
-            import thermo.numba
+            import thermo.numba, fluids.numba
             fit_func_dict = fluids.numba.numerics.fit_minimization_targets
         else:
             fit_func_dict = fit_minimization_targets
