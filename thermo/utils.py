@@ -92,20 +92,21 @@ from fluids.constants import R
 import chemicals
 from chemicals.utils import PY37, isnan, isinf, log, exp, ws_to_zs, zs_to_ws, e
 from chemicals.utils import mix_multiple_component_flows, hash_any_primitive
-from chemicals.vapor_pressure import Antoine, Antoine_coeffs_from_point, Antoine_AB_coeffs_from_point, DIPPR101_ABC_coeffs_from_point, Yaws_Psat_fitting_jacobian, d2Yaws_Psat_dT2, dYaws_Psat_dT, Yaws_Psat
+from chemicals.vapor_pressure import Antoine, Antoine_coeffs_from_point, Antoine_AB_coeffs_from_point, DIPPR101_ABC_coeffs_from_point, Yaws_Psat_fitting_jacobian, d2Yaws_Psat_dT2, dYaws_Psat_dT, Yaws_Psat, TDE_PVExpansion
 from chemicals.vapor_pressure import Wagner, Wagner_original, TRC_Antoine_extended, dAntoine_dT, d2Antoine_dT2, dWagner_original_dT, d2Wagner_original_dT2, dWagner_dT, d2Wagner_dT2, dTRC_Antoine_extended_dT, d2TRC_Antoine_extended_dT2, Wagner_fitting_jacobian, Wagner_original_fitting_jacobian, Antoine_fitting_jacobian
 from chemicals.dippr import EQ100, EQ101, EQ102, EQ104, EQ105, EQ106, EQ107, EQ114, EQ115, EQ116, EQ127, EQ102_fitting_jacobian, EQ101_fitting_jacobian, EQ106_fitting_jacobian, EQ105_fitting_jacobian, EQ107_fitting_jacobian
 from chemicals.phase_change import Watson, Watson_n, Alibakhshi, PPDS12
 from chemicals.viscosity import (Viswanath_Natarajan_2, Viswanath_Natarajan_2_exponential,
                                  Viswanath_Natarajan_3, PPDS9, dPPDS9_dT,
-                                 mu_Yaws, mu_Yaws_fitting_jacobian, dmu_Yaws_dT)
+                                 mu_Yaws, mu_Yaws_fitting_jacobian, dmu_Yaws_dT,
+                                 PPDS5, mu_TDE)
 from chemicals.heat_capacity import (Poling, Poling_integral, Poling_integral_over_T,
                                      TRCCp, TRCCp_integral, TRCCp_integral_over_T,
                                      Zabransky_quasi_polynomial, Zabransky_quasi_polynomial_integral, Zabransky_quasi_polynomial_integral_over_T,
                                      Zabransky_cubic, Zabransky_cubic_integral, Zabransky_cubic_integral_over_T)
-from chemicals.thermal_conductivity import Chemsep_16
-from chemicals.interface import REFPROP_sigma, Somayajulu, Jasper
-from chemicals.volume import volume_VDI_PPDS, Rackett_fit
+from chemicals.thermal_conductivity import Chemsep_16, PPDS8, PPDS3
+from chemicals.interface import REFPROP_sigma, Somayajulu, Jasper, PPDS14, Watson_sigma, ISTExpansion
+from chemicals.volume import volume_VDI_PPDS, Rackett_fit, PPDS17, TDE_VDNS_rho
 from thermo import serialize
 from thermo.eos import GCEOS
 from thermo.eos_mix import GCEOSMIX
@@ -984,6 +985,9 @@ class TDependentProperty(object):
                         {'A': 16.8, 'B': -571., 'C': -3.338, 'D': 2.2e-9, 'E': 1.31e-05},
                         ]
                     }),
+    'TDE_PVExpansion': (['a1', 'a2', 'a3'], ['a4', 'a5', 'a6', 'a7', 'a8'], {'f': TDE_PVExpansion},
+                        {'fit_params': ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8']}),
+
 
     'Alibakhshi': (['Tc', 'C'], [], {'f': Alibakhshi}, {'fit_params': ['C']}),
     'PPDS12': (['Tc', 'A', 'B', 'C', 'D', 'E'], [], {'f': PPDS12}, {'fit_params': ['A', 'B', 'C', 'D', 'E']}),
@@ -992,6 +996,9 @@ class TDependentProperty(object):
     'Viswanath_Natarajan_2': (['A', 'B',], [], {'f': Viswanath_Natarajan_2}, {'fit_params': ['A', 'B']}),
     'Viswanath_Natarajan_2_exponential': (['C', 'D',], [], {'f': Viswanath_Natarajan_2_exponential}, {'fit_params': ['C', 'D',]}),
     'Viswanath_Natarajan_3': (['A', 'B', 'C'], [], {'f': Viswanath_Natarajan_3}, {'fit_params': ['A', 'B', 'C']}),
+    'PPDS5': (['Tc', 'a0', 'a1', 'a2'], [], {'f': PPDS5}, {'fit_params': ['a0', 'a1', 'a2']},),
+    'mu_TDE': (['A', 'B', 'C', 'D'], [], {'f': mu_TDE}, {'fit_params': ['A', 'B', 'C', 'D']},),
+
     'PPDS9': (['A', 'B', 'C', 'D', 'E'], [], {'f': PPDS9, 'f_der': dPPDS9_dT}, {'fit_params': ['A', 'B', 'C', 'D', 'E']},),
     'mu_Yaws': (['A', 'B',], ['C', 'D'], {'f': mu_Yaws, 'f_der': dmu_Yaws_dT}, {'fit_params': ['A', 'B', 'C', 'D'], 'initial_guesses': [
         {'A': -9.45, 'B': 1120.0, 'C': 0.014, 'D': -1.545e-5}, # near yaws ethanol
@@ -1012,8 +1019,11 @@ class TDependentProperty(object):
     'REFPROP_sigma': (['Tc', 'sigma0', 'n0'], ['sigma1', 'n1', 'sigma2', 'n2'], {'f': REFPROP_sigma},  {'fit_params': ['sigma0', 'n0', 'sigma1', 'n1', 'sigma2', 'n2']}),
     'Somayajulu': (['Tc', 'A', 'B', 'C'], [], {'f': Somayajulu}, {'fit_params': ['A', 'B', 'C']}),
     'Jasper': (['a', 'b',], [], {'f': Jasper}, {'fit_params': ['a', 'b',]}),
-    
-    'Chemsep_16': (['A', 'B', 'C', 'D', 'E'], [], {'f': Chemsep_16, }, {'fit_params': ['A', 'B', 'C', 'D', 'E'],        'initial_guesses': [
+    'PPDS14': (['Tc', 'a0', 'a1', 'a2'], [], {'f': PPDS14}, {'fit_params': ['a0', 'a1', 'a2']}),
+    'Watson_sigma': (['Tc', 'a1', 'a2', 'a3', 'a4', 'a5'], [], {'f': Watson_sigma}, {'fit_params': [ 'a1', 'a2', 'a3', 'a4', 'a5']}),
+    'ISTExpansion': (['Tc', 'a1', 'a2', 'a3', 'a4', 'a5'], [], {'f': ISTExpansion}, {'fit_params': [ 'a1', 'a2', 'a3', 'a4', 'a5']}),
+
+    'Chemsep_16': (['A', 'B', 'C', 'D', 'E'], [], {'f': Chemsep_16, }, {'fit_params': ['A', 'B', 'C', 'D', 'E'], 'initial_guesses': [
            {'A': 53000, 'B': 4500.0, 'C': -145.0, 'D': 1.6, 'E':-0.005}, 
            {'A': -0.21, 'B': -16.3, 'C': -0.23, 'D': -0.0076, 'E': 2.5e-6}, 
            {'A': 2.562e-06, 'B': -300.363, 'C': -11.49, 'D': 0.001550, 'E': -4.0805e-07}, 
@@ -1026,6 +1036,13 @@ class TDependentProperty(object):
            {'A': -181030.0, 'B': 9.3832, 'C': 12.233, 'D': 0.00079415, 'E': -2.4738e-07},
            {'A': -0.869, 'B': 15.0, 'C': 0.0, 'D': 0.0, 'E': 0.0},
            ]},),
+    'PPDS8': (['Tc', 'a0', 'a1', 'a2', 'a3'], [], {'f': PPDS8, }, {'fit_params': ['a0', 'a1', 'a2', 'a3'], 'initial_guesses': [
+           ]},),
+    'PPDS3': (['Tc', 'a1', 'a2', 'a3'], [], {'f': PPDS3, }, {'fit_params': ['a1', 'a2', 'a3'], 'initial_guesses': [
+           ]},),
+    
+    'TDE_VDNS_rho': (['Tc', 'rhoc', 'a1', 'a2', 'a3', 'a4', 'MW',], [], {'f': TDE_VDNS_rho}, {'fit_params': ['a1', 'a2', 'a3', 'a4',]}),
+    'PPDS17': (['Tc', 'a0', 'a1', 'a2', 'MW',], [], {'f': PPDS17}, {'fit_params': ['a0', 'a1', 'a2', ]}),
 
     'volume_VDI_PPDS': (['Tc', 'rhoc', 'a', 'b', 'c', 'd', 'MW',], [], {'f': volume_VDI_PPDS}, {'fit_params': ['a', 'b', 'c', 'd',]}),
     'Rackett_fit': (['Tc', 'rhoc', 'b', 'n', 'MW',], [], {'f': Rackett_fit}, {'fit_params': ['rhoc', 'b', 'n'], 'initial_guesses': [
