@@ -697,9 +697,9 @@ class VolumeLiquid(TPDependentProperty):
         elif method == COOLPROP:
             if T < self.CP_f.Tmin or T < self.CP_f.Tt or T > self.CP_f.Tc:
                 return False
-        elif method in [RACKETT, YAMADA_GUNN, TOWNSEND_HALES,
+        elif method in (RACKETT, YAMADA_GUNN, TOWNSEND_HALES,
                         HTCOSTALD, YEN_WOODS_SAT, MMSNM0, MMSNM0FIT,
-                        CAMPBELL_THODOS, HTCOSTALDFIT, RACKETTFIT]:
+                        CAMPBELL_THODOS, HTCOSTALDFIT, RACKETTFIT):
             if T >= self.Tc:
                 validity = False
         elif method == BHIRUD_NORMAL:
@@ -708,19 +708,11 @@ class VolumeLiquid(TPDependentProperty):
             # Has bad interpolation behavior lower than roughly this
         elif method == CRC_INORG_L_CONST:
             pass  # Weird range, consider valid for all conditions
-        elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
-                Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    validity = False
-        elif method == POLY_FIT:
-            validity = True
         elif method == EOS:
             if T >= self.eos[0].Tc:
                 validity = False
         else:
-            raise Exception('Method not valid')
+            return super(VolumeLiquid, self).test_method_validity(T, method)
         return validity
 
     def test_method_validity_P(self, T, P, method):
@@ -988,7 +980,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
             else:
                 Vm = horner(self.poly_fit_coeffs, T)
         else:
-            raise ValueError("Unrecognized method")
+            return self._base_calculate(T, method)
         return Vm
 
     def calculate_P(self, T, P, method):
@@ -1045,18 +1037,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         validity : bool
             Whether or not a method is valid
         '''
-        validity = True
-        if method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
-                Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    validity = False
-        elif method == POLY_FIT:
-            validity = True
-        else:
-            raise Exception('Method not valid')
-        return validity
+        return super(VolumeSupercriticalLiquid, self).test_method_validity(T, method)
 
     def test_method_validity_P(self, T, P, method):
         r'''Method to check the validity of a high-pressure method. For
@@ -1974,15 +1955,15 @@ class VolumeSolid(TDependentProperty):
             Vms = self.CRC_INORG_S_Vm
         elif method == GOODMAN:
             Vms = Goodman(T, self.Tt, self.Vml_Tt)
-        if method == POLY_FIT:
+        elif method == POLY_FIT:
             if T < self.poly_fit_Tmin:
                 Vms = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
             elif T > self.poly_fit_Tmax:
                 Vms = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
             else:
                 Vms = horner(self.poly_fit_coeffs, T)
-        elif method in self.tabular_data:
-            Vms = self.interpolate(T, method)
+        else:
+            return self._base_calculate(T, method)
         return Vms
 
     def test_method_validity(self, T, method):
@@ -2016,16 +1997,8 @@ class VolumeSolid(TDependentProperty):
         elif method == GOODMAN:
             if T < self.Tt*0.3:
                 validity = False
-        elif method == POLY_FIT:
-            validity = True
-        elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
-                Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    validity = False
         else:
-            raise Exception('Method not valid')
+            return super(VolumeSolid, self).test_method_validity(T, method)
         return validity
 
 try:

@@ -477,8 +477,8 @@ class EnthalpyVaporization(TDependentProperty):
             Hvap = self.CRC_HVAP_298
         elif method == GHARAGHEIZI_HVAP_298:
             Hvap = self.GHARAGHEIZI_HVAP_298_Hvap
-        elif method in self.tabular_data:
-            Hvap = self.interpolate(T, method)
+        else:
+            return self._base_calculate(T, method)
         # Adjust with the watson equation if estimated at Tb or Tc only
         if method in self.boiling_methods or (self.Tc and method in (CRC_HVAP_TB, CRC_HVAP_298, GHARAGHEIZI_HVAP_298)):
             if method in self.boiling_methods:
@@ -770,6 +770,8 @@ class EnthalpySublimation(TDependentProperty):
                 Hsub += self.Hvap(T_base)
             except:
                 Hsub += self.Hvap
+        else:
+            return self._base_calculate(T, method)
         if method in (GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM):
             try:
 #                Cpg, Cps = self.Cpg(T_base), self.Cps(T_base)

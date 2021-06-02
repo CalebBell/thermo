@@ -433,8 +433,8 @@ class SurfaceTension(TDependentProperty):
             Vml = self.Vml(T) if hasattr(self.Vml, '__call__') else self.Vml
             rhol = Vm_to_rho(Vml, self.MW)
             sigma = Aleem(T=T, MW=self.MW, Tb=self.Tb, rhol=rhol, Hvap_Tb=self.Hvap_Tb, Cpl=Cpl)
-        elif method in self.tabular_data:
-            sigma = self.interpolate(T, method)
+        else:
+            return self._base_calculate(T, method)
         return sigma
 
     def test_method_validity(self, T, method):

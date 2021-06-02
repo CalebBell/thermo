@@ -924,7 +924,7 @@ class TDependentProperty(object):
     _json_obj_by_CAS = ('CP_f',)
     
     correlation_models = {
-        'Antoine': (['A', 'B', 'C'], ['base'], {'f': Antoine, 'f_der': dAntoine_dT, 'f_der2': d2Antoine_dT2}, 
+        'Antoine': (['A', 'B', 'C'], [], {'f': Antoine, 'f_der': dAntoine_dT, 'f_der2': d2Antoine_dT2}, 
                     {'fit_params': ['A', 'B', 'C'],
                      'fit_jac' : Antoine_fitting_jacobian,
                     'initial_guesses': [{'A': 9.0, 'B': 1000.0, 'C': -70.0},
@@ -964,6 +964,7 @@ class TDependentProperty(object):
                                     'initial_guesses': [
                                         {'a': -7.0, 'b': 1.79, 'c': -5.4, 'd': 1.68},
                                         {'a': -7.2, 'b': -0.02, 'c': 0.36, 'd': -11.0},
+                                        
                                         ]
                             }),
         
@@ -973,6 +974,7 @@ class TDependentProperty(object):
                     'initial_guesses': [
                         {'a': -8.5, 'b': 2.0, 'c': -7.7, 'd': 3.0},
                         {'a': -7.8, 'b': 1.9, 'c': -2.85, 'd': -3.8},
+                        {'a': -7.55, 'b': 1.6, 'c': -2.0, 'd': -3.2},
                         ]
                     }),
         
@@ -986,7 +988,10 @@ class TDependentProperty(object):
                         ]
                     }),
     'TDE_PVExpansion': (['a1', 'a2', 'a3'], ['a4', 'a5', 'a6', 'a7', 'a8'], {'f': TDE_PVExpansion},
-                        {'fit_params': ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8']}),
+                        {'fit_params': ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8'],
+                        'initial_guesses': [
+                        {'a1': 48.3, 'a2': -4914.12, 'a3': -3.788947, 'a4': 0, 'a5': 0, 'a6': 0, 'a7': 0, 'a8': 0},
+                        ]}),
 
 
     'Alibakhshi': (['Tc', 'C'], [], {'f': Alibakhshi}, {'fit_params': ['C']}),
@@ -1081,6 +1086,39 @@ class TDependentProperty(object):
        'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
       {'fit_params': ['A']},
       ),
+    'linear': ([],
+      ['A', 'B'],
+      {'f': EQ100,
+       'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
+       'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
+      {'fit_params': ['A', 'B']},
+      ),
+    'quadratic': ([],
+      ['A', 'B', 'C'],
+      {'f': EQ100,
+       'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
+       'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
+      {'fit_params': ['A', 'B', 'C']},
+      ),
+    'cubic': ([],
+      ['A', 'B', 'C', 'D'],
+      {'f': EQ100,
+       'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
+       'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
+      {'fit_params': ['A', 'B', 'C', 'D']},
+      ),
+    'quintic': ([],
+      ['A', 'B', 'C', 'D', 'E'],
+      {'f': EQ100,
+       'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
+       'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
+      {'fit_params': ['A', 'B', 'C', 'D', 'E']},
+      ),
+
 
      'DIPPR101': (['A', 'B'],
       ['C', 'D', 'E'],
@@ -3466,8 +3504,13 @@ class TDependentProperty(object):
         validity : bool
             Whether or not a specifid method is valid
         '''
-        validity = True
-        if method in self.tabular_data:
+        T_limits = self.T_limits
+        if method in T_limits:
+            Tmin, Tmax = T_limits[method]
+            return Tmin <= T <= Tmax
+        elif method == POLY_FIT:
+            return True
+        elif method in self.tabular_data:
             if not self.tabular_extrapolation_permitted:
                 Ts, properties = self.tabular_data[method]
                 if T < Ts[0] or T > Ts[-1]:

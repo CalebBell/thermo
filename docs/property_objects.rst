@@ -296,6 +296,76 @@ More than one set of parameters and more than one model may be specified this wa
 
 For a full list of supported correlations (and their names), see :obj:`add_correlation <thermo.utils.TDependentProperty.add_correlation>`.
 
+Fitting Correlation Coefficients
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Thermo contains functionality for performing regression to obtain equation coefficients from experimental data.
+
+Data is obtained from the DDBST for the vapor pressure of acetone (http://www.ddbst.com/en/EED/PCP/VAP_C4.php), and coefficients are regressed for several methods. There is data from five sources on that page, but no uncertainties are available; the fit will treat each data point equally.
+
+>>> Ts = [203.65, 209.55, 212.45, 234.05, 237.04, 243.25, 249.35, 253.34, 257.25, 262.12, 264.5, 267.05, 268.95, 269.74, 272.95, 273.46, 275.97, 276.61, 277.23, 282.03, 283.06, 288.94, 291.49, 293.15, 293.15, 293.85, 294.25, 294.45, 294.6, 294.63, 294.85, 297.05, 297.45, 298.15, 298.15, 298.15, 298.15, 298.15, 299.86, 300.75, 301.35, 303.15, 303.15, 304.35, 304.85, 305.45, 306.25, 308.15, 308.15, 308.15, 308.22, 308.35, 308.45, 308.85, 309.05, 311.65, 311.85, 311.85, 311.95, 312.25, 314.68, 314.85, 317.75, 317.85, 318.05, 318.15, 318.66, 320.35, 320.35, 320.45, 320.65, 322.55, 322.65, 322.85, 322.95, 322.95, 323.35, 323.55, 324.65, 324.75, 324.85, 324.85, 325.15, 327.05, 327.15, 327.2, 327.25, 327.35, 328.22, 328.75, 328.85, 333.73, 338.95]
+>>> Psats = [58.93, 94.4, 118.52, 797.1, 996.5, 1581.2, 2365, 3480, 3893, 5182, 6041, 6853, 7442, 7935, 9290, 9639, 10983, 11283, 13014, 14775, 15559, 20364, 22883, 24478, 24598, 25131, 25665, 25931, 25998, 26079, 26264, 29064, 29598, 30397, 30544, 30611, 30784, 30851, 32636, 33931, 34864, 37637, 37824, 39330, 40130, 41063, 42396, 45996, 46090, 46356, 45462, 46263, 46396, 47129, 47396, 52996, 52929, 53262, 53062, 53796, 58169, 59328, 66395, 66461, 67461, 67661, 67424, 72927, 73127, 73061, 73927, 79127, 79527, 80393, 79927, 80127, 81993, 80175, 85393, 85660, 85993, 86260, 86660, 92726, 92992, 92992, 93126, 93326, 94366, 98325, 98592, 113737, 136626]
+>>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='Antoine', do_statistics=True, multiple_tries=True)
+>> res, stats['MAE']
+({'A': 9.2515513342, 'B': 1230.099383065, 'C': -40.08076540233}, 0.01059288655304)
+
+The fitting function returns the regressed coefficients, and optionally some statistics. The mean absolute relative error or "MAE" is often a good parameter for determining the goodness of fit; Antoine yielded an error of about 1%.
+
+There are lots of methods available; Antoine was just used (the returned coefficients are in units of K and Pa with a base of 10), but for comparison several more are as well. Note that some require the critical temperature and/or pressure.
+
+>>> Tc, Pc = 508.1, 4700000.0
+>>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='Yaws_Psat', do_statistics=True, multiple_tries=True)
+>>> res, stats['MAE']
+({'A': 1650.700898478, 'B': -32673.1471098, 'C': -728.72662916, 'D': 1.07572169632, 'E': -0.00060938839938}, 0.017819321)
+>>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='DIPPR101', do_statistics=True, multiple_tries=True
+>>> res, stats['MAE']
+({'A': 128.469735047, 'B': -6984.9044135, 'C': -18.113160612, 'D': 0.059859477112, 'E': 0.86952533750}, 0.010632227)
+>>> TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='Wagner', do_statistics=True, multiple_tries=True, model_kwargs={'Tc': Tc, 'Pc': Pc})
+({'Tc': 508.1, 'Pc': 4700000.0, 'a': -15.71102746, 'b': 23.63274373, 'c': -27.7428877, 'd': 25.15260915}, 0.0485657)
+>>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='TRC_Antoine_extended', do_statistics=True, multiple_tries=True, model_kwargs={'Tc': Tc})
+>>> res, stats['MAE']
+({'Tc': 508.1, 'to': 67.0, 'A': 9.2515481, 'B': 1230.0976, 'C': -40.080954, 'n': 2.5, 'E': 333.0, 'F': -24950.0}, 0.010592876)
+
+A very common scenario is that some coefficients are desired to be fixed in the regression. This is supported with the `model_kwargs` attribute. For example, in the above DIPPR101 case we can fix the `E` coefficient to 1 as follows:
+
+>>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='DIPPR101', do_statistics=True, multiple_tries=True, model_kwargs={'E': -1})
+>>> res, stats['MAE']
+({'E': -1, 'A': 48.396271, 'B': 83006.6003, 'C': -3.78890705, 'D': -87920.7136}, 0.0131004)
+
+Similarly, the feature is often used to set unneeded coefficients to zero In this case the TDE_PVExpansion function has up to 8 parameters but only three are justified.
+
+>>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='TDE_PVExpansion', do_statistics=True, multiple_tries=True, model_kwargs={'a4': 0.0, 'a5': 0.0, 'a6': 0.0, 'a7': 0.0, 'a8': 0})
+({'a4': 0.0, 'a5': 0.0, 'a6': 0.0, 'a7': 0.0, 'a8': 0, 'a1': 48.396547, 'a2': -4914.1260, 'a3': -3.78894783}, 0.0131003)
+
+Fitting coefficients is a complicated numerical problem. MINPACK's lmfit implements Levenberg-Marquardt with a number of tricks, and is used through SciPy in the fitting by default. Other minimization algorithms are supported, but generally don't do nearly as well. All minimization algorithms can only converge to a minima near points that they evaluate, and the choice of initial guesses is quite important. For many methods, there are several hardcoded guesses. By default, each of those guesses are evaluated and the minimization is initialized with the best guess. However, for maximum accuracy, `multiple_tries` should be set to True, and `all` initial guesses are converged, and the best fit is returned.
+
+Initial guesses for parameters can also be provided. In the below example, the initial parameters from http://ddbonline.ddbst.com/AntoineCalculation/AntoineCalculationCGI.exe for acetone are provided as initial guesses (converting them to a Pa and K basis, from mmHg and deg C).
+
+>>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='Antoine', do_statistics=True, multiple_tries=True, guesses={'A':  7.6313 +log10(101325/760), 'B':  1566.69 , 'C': 273.419 -273.15})
+
+In this case the initial guesses are good, but different parameters are still obtained by the fitting algorithm.
+
+To speed up these calculations, an interface to numba is available. Simply set `use_numba` to True. Note that the first regression per session may be slower as it has to compile the function.
+
+Adding New Correlation Coefficient Methods From Data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+In the following example, data for the molar volume of three phases of liquid oxygen are added, from Roder, H. M. “The Molar Volume (Density) of Solid Oxygen in Equilibrium with Vapor.” Journal of Physical and Chemical Reference Data 7, no. 3 (1978): 949–58.
+
+Each of the phases is treated as a different method. After fitting the data to linear and quadratic fits, the results are plotted.
+
+>>> Ts_alpha = [4.2, 10.0, 18.5, 20, 21, 22, 23.880]
+>>> Vms_alpha = [20.75e-6, 20.75e-6, 20.75e-6, 20.75e-6, 20.75e-6, 20.78e-6, 20.82e-6]
+>>> Ts_beta = [23.880, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 43.801]
+>>> Vms_beta = [20.95e-6, 20.95e-6, 21.02e-6, 21.08e-6, 21.16e-6, 21.24e-6, 21.33e-6, 21.42e-6, 21.52e-6, 21.63e-6, 21.75e-6, 21.87e-6]
+>>> Ts_gamma = [42.801, 44.0, 46.0, 48.0, 50.0, 52.0, 54.0, 54.361]
+>>> Vms_gamma = [23.05e-6, 23.06e-6, 23.18e-6, 23.30e-6, 23.43e-6, 23.55e-6, 23.67e-6, 23.69e-6]
+
+>>> obj = VolumeSolid(CASRN='7782-44-7')
+>>> obj.fit_add_model(Ts=Ts_alpha, data=Vms_alpha, model='linear', name='alpha')
+>>> obj.fit_add_model(Ts=Ts_beta, data=Vms_beta, model='quadratic', name='beta')
+>>> obj.fit_add_model(Ts=Ts_gamma, data=Vms_gamma, model='quadratic', name='gamma')
+>>> obj.plot_T_dependent_property(Tmin=4.2, Tmax=50)
+
+
 Temperature and Pressure Dependent Properties
 ---------------------------------------------
 The pressure dependent objects work much like the temperature dependent ones; in fact, they subclass :obj:`TDependentProperty <thermo.utils.TDependentProperty>`.
