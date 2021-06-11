@@ -252,7 +252,7 @@ class ChemicalConstantsPackage(object):
         return self._hash
 
     def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
+        return self.__hash__() == hash(other)
 
     def with_new_constants(self, **kwargs):
         r'''Method to construct a new ChemicalConstantsPackage that replaces or
@@ -1410,7 +1410,7 @@ class PropertyCorrelationsPackage(object):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
+        return self.__hash__() == hash(other)
 
     def __hash__(self):
         hashes = []

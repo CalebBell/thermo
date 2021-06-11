@@ -310,7 +310,7 @@ class GibbsExcess(object):
         return s
 
     def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
+        return self.__hash__() == hash(other)
 
     def __hash__(self):
         r'''Method to calculate and return a hash representing the exact state

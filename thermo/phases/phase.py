@@ -259,7 +259,7 @@ class Phase(object):
         return ans
 
     def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
+        return self.__hash__() == hash(other)
 
     def state_hash(self):
         r'''Basic method to calculate a hash of the state of the phase and its
