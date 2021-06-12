@@ -945,7 +945,7 @@ class GCEOS(object):
         return ans
 
     def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
+        return self.__hash__() == hash(other)
 
 
     @property

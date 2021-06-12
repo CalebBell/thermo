@@ -1510,7 +1510,7 @@ class TDependentProperty(object):
         return self
 
     def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
+        return self.__hash__() == hash(other)
 
     hash_ignore_props = ('linear_extrapolation_coeffs', 'Antoine_AB_coeffs',
                          'DIPPR101_ABC_coeffs', 'Watson_coeffs',
@@ -4360,7 +4360,7 @@ class MixtureProperty(object):
 
 
     def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
+        return self.__hash__() == hash(other)
 
     def __hash__(self):
         d = self.__dict__
