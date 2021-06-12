@@ -55,7 +55,9 @@ def test_ChemicalConstantsPackage_from_json_as_json_large():
     assert hash(obj) == hash(obj2)
     assert obj == obj2
     assert id(obj) != id(obj2)
-
+    
+    assert obj != int
+    assert obj != float
 
 def test_ChemicalConstantsPackage_json_version_exported():
     constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
@@ -103,6 +105,8 @@ def test_ChemicalConstantsPackage_json_export_same_output():
 def test_ChemicalConstantsPackage_wrong_behaviors():
     obj = ChemicalConstantsPackage.correlations_from_IDs(['7647-19-0'])
     obj.VolumeLiquids[0].eos is None
+    assert obj != int
+    assert obj != float
 
 
 def test_lemmon2000_package():
