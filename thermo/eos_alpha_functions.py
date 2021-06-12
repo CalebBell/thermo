@@ -51,6 +51,7 @@ Vectorized Alpha Functions With Derivatives
 .. autofunction:: thermo.eos_alpha_functions.APISRK_a_alpha_and_derivatives_vectorized
 .. autofunction:: thermo.eos_alpha_functions.RK_a_alpha_and_derivatives_vectorized
 
+
 Class With Alpha Functions
 --------------------------
 The class-based ones van save a little code when implementing a new EOS.
@@ -162,6 +163,9 @@ not yet been accelerated in a nice vectorized way.
     :undoc-members:
     :show-inheritance:
 
+Pure Alpha Functions
+--------------------
+.. autofunction:: thermo.eos_alpha_functions.Twu91_alpha_pure
 '''
 
 from __future__ import division, print_function
@@ -180,7 +184,9 @@ __all__ = [
  'Yu_Lu_a_alpha', 'Trebble_Bishnoi_a_alpha', 'Melhem_a_alpha', 'Androulakis_a_alpha',
  'Schwartzentruber_a_alpha', 'Almeida_a_alpha', 'Twu91_a_alpha', 'Soave_93_a_alpha',
  'Gasem_a_alpha', 'Coquelet_a_alpha', 'Haghtalab_a_alpha', 'Saffari_a_alpha',
- 'Chen_Yang_a_alpha', 'TwuSRK95_a_alpha', 'TwuPR95_a_alpha', 'Soave_79_a_alpha']
+ 'Chen_Yang_a_alpha', 'TwuSRK95_a_alpha', 'TwuPR95_a_alpha', 'Soave_79_a_alpha',
+ 
+ 'Twu91_alpha_pure',]
 
 
 from fluids.numerics import (horner, horner_and_der2, numpy as np)
@@ -1229,6 +1235,11 @@ def TWU_a_alpha_common(T, Tc, omega, a, full=True, quick=True, method='PR'):
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
 
+def Twu91_alpha_pure(T, Tc, c0, c1, c2):
+    Tr = T/Tc
+    return (Tr**(c2*(c1 - 1.0))*exp(c0*(1.0 - (Tr)**(c1*c2))))
+
+
 class a_alpha_base(object):
     def _init_test(self, Tc, a, alpha_coeffs, **kwargs):
         self.Tc = Tc
@@ -1812,13 +1823,12 @@ class Twu91_a_alpha(a_alpha_base):
         d2a_alpha_dT2 = (x8*(c0*c0*x4*x4*x9 - c1 + c2*x1*x1
                              - 2.0*x2*x7 - x6*x9 + x7 + 1.0)*T_inv*T_inv)
         return x5, x8*(x1 - x7)*T_inv, d2a_alpha_dT2
+    
 
     def a_alpha_pure(self, T):
         c0, c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
-        Tr = T/Tc
-        a_alpha = a*(Tr**(c2*(c1 - 1.0))*exp(c0*(1.0 - (Tr)**(c1*c2))))
-        return a_alpha
+        return a*Twu91_alpha_pure(T, Tc, c0, c1, c2)
 
     def a_alphas_vectorized(self, T):
         ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
