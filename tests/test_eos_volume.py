@@ -27,6 +27,15 @@ from fluids.constants import R
 from math import log, exp, sqrt, log10
 from fluids.numerics import linspace, derivative, logspace, assert_close, assert_close1d, assert_close2d, assert_close3d
 
+
+def test_volume_solutions_sympy():
+    Vs = volume_solutions_sympy(0.01, 1e-05, 2.5405184201558786e-05, 5.081036840311757e-05, -6.454233843151321e-10, 0.3872747173781095)
+    Vs = [complex(v) for v in Vs]
+    assert_close(Vs[0].real, 2.540546e-05, rtol=1e-5)
+    assert_close(Vs[1].real, 4.660380256021831, rtol=1e-5)
+    assert_close(Vs[2].real, 8309.802187086572, rtol=1e-5)
+    
+    
 def validate_volume(args, solver, rtol=1e-15):
     b = args[2]
     if args in hard_solutions:

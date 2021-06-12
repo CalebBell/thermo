@@ -1317,8 +1317,6 @@ class PropertyCorrelationsPackage(object):
     SublimationPressures : list[:obj:`thermo.vapor_pressure.SublimationPressure`], optional
         Objects holding sublimation pressure data and methods, [-]
     VolumeGases : list[:obj:`thermo.volume.VolumeGas`], optional
-        Objects holding volume data and methods, [-]
-    VolumeGases : list[:obj:`thermo.volume.VolumeGas`], optional
         Objects holding gas volume data and methods, [-]
     VolumeLiquids : list[:obj:`thermo.volume.VolumeLiquid`], optional
         Objects holding liquid volume data and methods, [-]

@@ -533,7 +533,7 @@ class EnthalpyVaporization(TDependentProperty):
                     validity = False
             else:
                 validity = T <= self.Tc
-        elif method in [CRC_HVAP_298, GHARAGHEIZI_HVAP_298]:
+        elif method in (CRC_HVAP_298, GHARAGHEIZI_HVAP_298):
             if not self.Tc:
                 if T < 298.15 - 5 or T > 298.15 + 5:
                     validity = False
@@ -550,19 +550,12 @@ class EnthalpyVaporization(TDependentProperty):
                 validity = False
 #            elif (self.Tb and T < self.Tb - 50):
 #                validity = False
-        elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
-                Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    validity = False
-        elif method == POLY_FIT:
-            validity = True
+
         elif method == CLAPEYRON:
             if not (self.Psat and T < self.Tc):
                 validity = False
         else:
-            raise Exception('Method not valid')
+            return super(EnthalpyVaporization, self).test_method_validity(T, method)
         return validity
 
 ### Heat of Sublimation
@@ -804,19 +797,9 @@ class EnthalpySublimation(TDependentProperty):
             Whether or not a method is valid
         '''
         validity = True
-        if method == POLY_FIT:
+        if method in (GHARAGHEIZI_HSUB_298, GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM):
             validity = True
-        elif method in (GHARAGHEIZI_HSUB_298, GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM):
-            validity = True
-        elif method == POLY_FIT:
-            validity = True
-        elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
-                Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    validity = False
         else:
-            raise Exception('Method not valid')
+            return super(EnthalpySublimation, self).test_method_validity(T, method)
         return validity
 

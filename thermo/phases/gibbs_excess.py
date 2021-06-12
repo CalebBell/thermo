@@ -730,7 +730,7 @@ class GibbsExcessLiquid(Phase):
 
     def dPsats_dT(self):
         try:
-            return self._dPsats_dT
+            return self._dPsats_dTT_dependent_property_derivative
         except:
             pass
         T, cmps = self.T, range(self.N)
@@ -792,7 +792,7 @@ class GibbsExcessLiquid(Phase):
                 d2Psats_dT2.append(d2Psat_dT2)
             return d2Psats_dT2
 
-        self._d2Psats_dT2 = d2Psats_dT2 = [VaporPressure.T_dependent_property_derivative(T=T, n=2)
+        self._d2Psats_dT2 = d2Psats_dT2 = [VaporPressure.T_dependent_property_derivative(T=T, order=2)
                      for VaporPressure in self.VaporPressures]
         return d2Psats_dT2
 

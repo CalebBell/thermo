@@ -1859,6 +1859,10 @@ class TDependentProperty(object):
         
         This is a wrapper around :obj:`TDependentProperty.fit_data_to_model`
         and :obj:`TDependentProperty.add_correlation`.
+        
+        The data is also stored in the object as a tabular method with the name
+        `name`+'_data', through
+        :obj:`TDependentProperty.add_tabular_data`.
 
         Parameters
         ----------
@@ -1873,6 +1877,7 @@ class TDependentProperty(object):
         kwargs : dict
             Various keyword arguments accepted by `fit_data_to_model`, [-]
         '''
+        self.add_tabular_data(Ts=Ts, properties=data, name=name+'_data')
         fit = self.fit_data_to_model(Ts=Ts, data=data, model=model, **kwargs)
         self.add_correlation(name=name, model=model, Tmin=min(Ts), Tmax=max(Ts), **fit)
     
@@ -1947,7 +1952,8 @@ class TDependentProperty(object):
             fit_func_dict = fluids.numba.numerics.fit_minimization_targets
         else:
             fit_func_dict = fit_minimization_targets
-        
+        if len(Ts) != len(data):
+            raise ValueError("Length of data and temperatures is not the same")
         if model not in cls.available_correlations:
             raise ValueError("Model is not available; available models are %s" %(cls.available_correlations,))
         if model_kwargs is None:
@@ -2464,26 +2470,18 @@ class TDependentProperty(object):
         # This function cannot be tested
         if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
-        if Tmin is None:
-#            if methods:
-#                try:
-#                    T_limits = self.T_limits
-#                    Tmin = min(T_limits[m][0] for m in methods)
-#                except:
-#                    Tmin = self.Tmin
-            if self.Tmin is not None:
-                Tmin = self.Tmin
-            else:
-                raise Exception('Minimum temperature could not be auto-detected; please provide it')
-        if Tmax is None:
-            if self.Tmax is not None:
-                Tmax = self.Tmax
-            else:
-                raise Exception('Maximum temperature could not be auto-detected; please provide it')
-        import matplotlib.pyplot as plt
-
         if not methods:
             methods = self.all_methods
+        if Tmin is None:
+            T_limits = self.T_limits
+            Tmin = min(T_limits[m][0] for m in methods)
+        if Tmax is None:
+            T_limits = self.T_limits
+            Tmax = min(T_limits[m][1] for m in methods)
+        import matplotlib.pyplot as plt
+
+            
+        tabular_data = self.tabular_data
 
 #        cm = plt.get_cmap('gist_rainbow')
         fig = plt.figure()
@@ -2495,6 +2493,10 @@ class TDependentProperty(object):
         Ts = linspace(Tmin, Tmax, pts)
         if order == 0:
             for method in methods:
+                fmt = '-'
+                if method in tabular_data:
+                    fmt = 'x'
+                
                 if only_valid:
                     properties, Ts2 = [], []
                     for T in Ts:
@@ -2506,10 +2508,10 @@ class TDependentProperty(object):
                                     Ts2.append(T)
                             except:
                                 pass
-                    plot_fun(Ts2, properties, label=method)
+                    plot_fun(Ts2, properties, fmt, label=method)
                 else:
                     properties = [self._calculate_extrapolate(T=T, method=method) for T in Ts]
-                    plot_fun(Ts, properties, label=method)
+                    plot_fun(Ts, properties, fmt, label=method)
             plt.ylabel(self.name + ', ' + self.units)
             title = self.name
             if self.CASRN:

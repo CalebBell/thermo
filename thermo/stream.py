@@ -155,7 +155,7 @@ class StreamArgs(object):
 
     def __add__(self, b):
         if not isinstance(b, StreamArgs):
-            raise Exception('Adding to a StreamArgs requires that the other object '
+            raise TypeError('Adding to a StreamArgs requires that the other object '
                             'also be a StreamArgs.')
 
         a_flow_spec, b_flow_spec = self.flow_spec, b.flow_spec

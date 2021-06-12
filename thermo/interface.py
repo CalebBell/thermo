@@ -364,6 +364,8 @@ class SurfaceTension(TDependentProperty):
         if all((self.Tc, self.Pc, self.omega)):
             methods.append(PITZER)
             methods.append(ZUO_STENBY)
+            T_limits[PITZER] = (1e-10, self.Tc)
+            T_limits[ZUO_STENBY] = (1e-10, self.Tc)
             Tmins.append(0.0); Tmaxs.append(self.Tc)
         if all((self.Tb, self.Hvap_Tb, self.MW)):
             # Cache Cpl at Tb for ease of calculation of Tmax
@@ -483,14 +485,8 @@ class SurfaceTension(TDependentProperty):
         elif method == ALEEM:
             if T > self.Tb + self.Hvap_Tb/self.Cpl_Tb:
                 validity = False
-        elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
-                Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    validity = False
         else:
-            raise Exception('Method not valid')
+            return super(SurfaceTension, self).test_method_validity(T, method)
         return validity
 
 

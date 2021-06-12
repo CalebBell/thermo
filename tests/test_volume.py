@@ -345,6 +345,18 @@ def test_VolumeSolid_fitting2():
     obj.fit_add_model(Ts=Ts_gamma, data=Vms_gamma, model='DIPPR100', name='gamma')
     assert obj.method == 'gamma'
 
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_VolumeSolid_fitting_wrong_length():
+    obj = VolumeSolid(CASRN='7782-44-7', load_data=False)
+    Ts_gamma = [42.801, 44.0, 46.0, 48.0,
+               50.0, 52.0, 54.0]
+    
+    Vms_gamma = [23.05e-6, 23.06e-6, 23.18e-6, 23.30e-6,
+                23.43e-6, 23.55e-6, 23.67e-6, 23.69e-6]
+    with pytest.raises(ValueError):
+        obj.fit_add_model(Ts=Ts_gamma, data=Vms_gamma, model='DIPPR100', name='gamma')
+
 @pytest.mark.meta_T_dept
 @pytest.mark.fitting
 def test_VolumeSolid_fitting1():

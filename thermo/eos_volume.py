@@ -70,6 +70,7 @@ Higher-Precision Solvers
 ------------------------
 .. autofunction:: volume_solutions_mpmath
 .. autofunction:: volume_solutions_mpmath_float
+.. autofunction:: volume_solutions_sympy
 
 '''
 
@@ -79,7 +80,7 @@ __all__ = ['volume_solutions_mpmath', 'volume_solutions_mpmath_float',
            'volume_solutions_fast', 'volume_solutions_Cardano', 'volume_solutions_a1',
            'volume_solutions_a2', 'volume_solutions_numpy', 'volume_solutions_ideal',
            'volume_solutions_doubledouble_float',
-           'volume_solution_polish']
+           'volume_solution_polish', 'volume_solutions_sympy']
 
 
 from cmath import sqrt as csqrt
@@ -95,7 +96,186 @@ from fluids.numerics.doubledouble import (add_dd, add_imag_dd, cbrt_imag_dd, div
 
 from fluids.constants import R, R_inv
 
+def volume_solutions_sympy(T, P, b, delta, epsilon, a_alpha):
+    r'''Solution of this form of the cubic EOS in terms of volumes, using the
+    `sympy` mathematical library with real numbers. 
 
+    This function is generally slow, and somehow still has more than desired 
+    error in the real and complex result.
+    
+    .. math::
+        V_0 = - \frac{- \frac{3 \left(- P b \delta + P \epsilon - R T \delta 
+        + a \alpha\right)}{P} + \frac{\left(- P b + P \delta - R T\right)^{2}}
+        {P^{2}}}{3 \sqrt[3]{\frac{\sqrt{- 4 \left(- \frac{3 \left(- P b \delta
+        + P \epsilon - R T \delta + a \alpha\right)}{P} + \frac{\left(- P b 
+        + P \delta - R T\right)^{2}}{P^{2}}\right)^{3} + \left(\frac{27 \left(
+        - P b \epsilon - R T \epsilon - a \alpha b\right)}{P} - \frac{9 
+        \left(- P b + P \delta - R T\right) \left(- P b \delta + P \epsilon 
+        - R T \delta + a \alpha\right)}{P^{2}} + \frac{2 \left(- P b + P \delta
+        - R T\right)^{3}}{P^{3}}\right)^{2}}}{2} + \frac{27 \left(- P b \epsilon
+        - R T \epsilon - a \alpha b\right)}{2 P} - \frac{9 \left(- P b + P \delta 
+        - R T\right) \left(- P b \delta + P \epsilon - R T \delta 
+        + a \alpha\right)}{2 P^{2}} + \frac{\left(- P b + P \delta - R T\right)^{3}}
+        {P^{3}}}} - \frac{\sqrt[3]{\frac{\sqrt{- 4 \left(- \frac{3 \left(- P b \delta 
+        + P \epsilon - R T \delta + a \alpha\right)}{P} + \frac{\left(- P b 
+        + P \delta - R T\right)^{2}}{P^{2}}\right)^{3} + \left(\frac{27 \left(
+        - P b \epsilon - R T \epsilon - a \alpha b\right)}{P} - \frac{9 \left(
+        - P b + P \delta - R T\right) \left(- P b \delta + P \epsilon - R T
+        \delta + a \alpha\right)}{P^{2}} + \frac{2 \left(- P b + P \delta - R 
+        T\right)^{3}}{P^{3}}\right)^{2}}}{2} + \frac{27 \left(- P b \epsilon 
+        - R T \epsilon - a \alpha b\right)}{2 P} - \frac{9 \left(- P b + P 
+        \delta - R T\right) \left(- P b \delta + P \epsilon - R T \delta 
+        + a \alpha\right)}{2 P^{2}} + \frac{\left(- P b + P \delta - R T
+        \right)^{3}}{P^{3}}}}{3} - \frac{- P b + P \delta - R T}{3 P}
+                                                  
+    .. math::
+        V_1 = - \frac{- \frac{3 \left(- P b \delta + P \epsilon - R T \delta
+        + a \alpha\right)}{P} + \frac{\left(- P b + P \delta - R T\right)^{2}}
+       {P^{2}}}{3 \left(- \frac{1}{2} - \frac{\sqrt{3} i}{2}\right) \sqrt[3]
+       {\frac{\sqrt{- 4 \left(- \frac{3 \left(- P b \delta + P \epsilon - R T 
+        \delta + a \alpha\right)}{P} + \frac{\left(- P b + P \delta - R T
+       \right)^{2}}{P^{2}}\right)^{3} + \left(\frac{27 \left(- P b \epsilon
+        - R T \epsilon - a \alpha b\right)}{P} - \frac{9 \left(- P b + P \delta 
+        - R T\right) \left(- P b \delta + P \epsilon - R T \delta 
+        + a \alpha\right)}{P^{2}} + \frac{2 \left(- P b + P \delta - R T
+        \right)^{3}}{P^{3}}\right)^{2}}}{2} + \frac{27 \left(- P b \epsilon 
+        - R T \epsilon - a \alpha b\right)}{2 P} - \frac{9 \left(- P b + P
+        \delta - R T\right) \left(- P b \delta + P \epsilon - R T \delta 
+        + a \alpha\right)}{2 P^{2}} + \frac{\left(- P b + P \delta - R T
+        \right)^{3}}{P^{3}}}} - \frac{\left(- \frac{1}{2} - \frac{\sqrt{3} i}
+        {2}\right) \sqrt[3]{\frac{\sqrt{- 4 \left(- \frac{3 \left(- P b \delta
+        + P \epsilon - R T \delta + a \alpha\right)}{P} + \frac{\left(- P b 
+        + P \delta - R T\right)^{2}}{P^{2}}\right)^{3} + \left(\frac{27 \left(
+        - P b \epsilon - R T \epsilon - a \alpha b\right)}{P} - \frac{9 \left(
+        - P b + P \delta - R T\right) \left(- P b \delta + P \epsilon - R T
+        \delta + a \alpha\right)}{P^{2}} + \frac{2 \left(- P b + P \delta 
+        - R T\right)^{3}}{P^{3}}\right)^{2}}}{2} + \frac{27 \left(- P b \epsilon
+        - R T \epsilon - a \alpha b\right)}{2 P} - \frac{9 \left(- P b
+        + P \delta - R T\right) \left(- P b \delta + P \epsilon - R T \delta 
+         + a \alpha\right)}{2 P^{2}} + \frac{\left(- P b + P \delta - R T
+        \right)^{3}}{P^{3}}}}{3} - \frac{- P b + P \delta - R T}{3 P}
+                                                   
+    .. math::
+        V_2 = - \frac{- \frac{3 \left(- P b \delta + P \epsilon - R T \delta 
+        + a \alpha\right)}{P} + \frac{\left(- P b + P \delta - R T\right)^{2}}
+        {P^{2}}}{3 \left(- \frac{1}{2} + \frac{\sqrt{3} i}{2}\right) \sqrt[3]
+        {\frac{\sqrt{- 4 \left(- \frac{3 \left(- P b \delta + P \epsilon - R T 
+        \delta + a \alpha\right)}{P} + \frac{\left(- P b + P \delta - R T
+        \right)^{2}}{P^{2}}\right)^{3} + \left(\frac{27 \left(- P b \epsilon
+        - R T \epsilon - a \alpha b\right)}{P} - \frac{9 \left(- P b + P \delta
+        - R T\right) \left(- P b \delta + P \epsilon - R T \delta + a \alpha
+        \right)}{P^{2}} + \frac{2 \left(- P b + P \delta - R T\right)^{3}}
+        {P^{3}}\right)^{2}}}{2} + \frac{27 \left(- P b \epsilon - R T \epsilon 
+        - a \alpha b\right)}{2 P} - \frac{9 \left(- P b + P \delta - R T\right)
+        \left(- P b \delta + P \epsilon - R T \delta + a \alpha\right)}{2 P^{2}}
+        + \frac{\left(- P b + P \delta - R T\right)^{3}}{P^{3}}}} - \frac{\left(
+        - \frac{1}{2} + \frac{\sqrt{3} i}{2}\right) \sqrt[3]{\frac{\sqrt{- 4
+        \left(- \frac{3 \left(- P b \delta + P \epsilon - R T \delta + a \alpha
+        \right)}{P} + \frac{\left(- P b + P \delta - R T\right)^{2}}{P^{2}}
+        \right)^{3} + \left(\frac{27 \left(- P b \epsilon - R T \epsilon
+        - a \alpha b\right)}{P} - \frac{9 \left(- P b + P \delta - R T\right)
+        \left(- P b \delta + P \epsilon - R T \delta + a \alpha\right)}{P^{2}}
+        + \frac{2 \left(- P b + P \delta - R T\right)^{3}}{P^{3}}\right)^{2}}}
+        {2} + \frac{27 \left(- P b \epsilon - R T \epsilon - a \alpha b\right)}
+        {2 P} - \frac{9 \left(- P b + P \delta - R T\right) \left(- P b \delta 
+        + P \epsilon - R T \delta + a \alpha\right)}{2 P^{2}} + \frac{\left(
+        - P b + P \delta - R T\right)^{3}}{P^{3}}}}{3} - \frac{- P b + P 
+        \delta - R T}{3 P}
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    P : float
+        Pressure, [Pa]
+    b : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    delta : float
+        Coefficient calculated by EOS-specific method, [m^3/mol]
+    epsilon : float
+        Coefficient calculated by EOS-specific method, [m^6/mol^2]
+    a_alpha : float
+        Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+
+    Returns
+    -------
+    Vs : tuple[sympy.Rational]
+        Three possible molar volumes, [m^3/mol]
+
+    Notes
+    -----
+    The solution can be derived as follows:
+        
+    >>> from sympy import * # doctest: +SKIP
+    >>> P, T, V, R, b, delta, epsilon = symbols('P, T, V, R, b, delta, epsilon') # doctest: +SKIP
+    >>> a_alpha = Symbol(r'a \alpha') # doctest: +SKIP
+    >>> CUBIC = R*T/(V-b) - a_alpha/(V*V + delta*V + epsilon) - P # doctest: +SKIP
+    >>> V_slns = solve(CUBIC, V) # doctest: +SKIP
+
+
+    Examples
+    --------
+    >>> Vs = volume_solutions_sympy(0.01, 1e-05, 2.5405184201558786e-05, 5.081036840311757e-05, -6.454233843151321e-10, 0.3872747173781095) # doctest: +SKIP
+    >>> [complex(v) for v in Vs] # doctest: +SKIP
+    [(2.540546e-05+2.402202278e-12j), (4.660380256-2.40354958e-12j), (8309.80218+1.348096981e-15j)]
+    
+    References
+    ----------
+    .. [1] Meurer, Aaron, Christopher P. Smith, Mateusz Paprocki, Ondřej 
+       Čertík, Sergey B. Kirpichev, Matthew Rocklin, AMiT Kumar, Sergiu Ivanov,
+       Jason K. Moore, and Sartaj Singh. "SymPy: Symbolic Computing in Python."
+       PeerJ Computer Science 3 (2017): e103.
+    '''
+    if P == 0.0 or T == 0.0:
+        raise ValueError("Bad P or T; issue is not the algorithm")
+    from sympy import sqrt, Rational, I
+    if isinstance(T, float):
+        T = Rational(T)
+    if isinstance(P, float):
+        P = Rational(P)
+    if isinstance(b, float):
+        b = Rational(b)
+    if isinstance(delta, float):
+        delta = Rational(delta)
+    if isinstance(epsilon, float):
+        epsilon = Rational(epsilon)
+    if isinstance(a_alpha, float):
+        a_alpha = Rational(a_alpha)
+
+    R_sym = Rational(R)
+    x0 = 1/P
+    x1 = P*b
+    x2 = R_sym*T
+    x3 = P*delta
+    x4 = x1 + x2 - x3
+    x5 = x0*x4
+    x6 = a_alpha*b
+    x7 = epsilon*x1
+    x8 = epsilon*x2
+    x9 = P**(-2)
+    x10 = P*epsilon
+    x11 = b*x3
+    x12 = delta*x2
+    x13 = 3*a_alpha
+    x14 = 3*x10
+    x15 = 3*x11
+    x16 = 3*x12
+    x17 = -x1 - x2 + x3
+    x18 = x0*x17**2
+    x19 = 4*x0
+    x20 = (-27*x0*(x6 + x7 + x8)/2 - 9*x4*x9*(-a_alpha - x10 + x11 + x12)/2
+           + sqrt(x9*(-x19*(-x13 - x14 + x15 + x16 + x18)**3
+           + (-9*x0*x17*(a_alpha + x10 - x11 - x12) + 2*x17**3*x9 - 27*x6
+           - 27*x7 - 27*x8)**2))/2 - x4**3/P**3)**(1/3)
+    x21 = (x13 + x14 - x15 - x16 - x18)/x20
+    x22 = 2*x5
+    x23 = sqrt(3)*I
+    x24 = x23 + 1
+    x25 = x19*x21
+    x26 = 1 - x23
+    return (x0*x21/3 - x20/3 + x5/3, 
+            x20*x24/6 + x22/6 - x25/(6*x24), 
+            x20*x26/6 + x22/6 - x25/(6*x26))
 
 def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, dps=50):
     r'''Solution of this form of the cubic EOS in terms of volumes, using the
