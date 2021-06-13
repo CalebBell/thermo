@@ -108,11 +108,12 @@ from chemicals.thermal_conductivity import Chemsep_16, PPDS8, PPDS3
 from chemicals.interface import REFPROP_sigma, Somayajulu, Jasper, PPDS14, Watson_sigma, ISTExpansion
 from chemicals.volume import volume_VDI_PPDS, Rackett_fit, PPDS17, TDE_VDNS_rho
 from thermo import serialize
+from thermo.eos_alpha_functions import Twu91_alpha_pure, Soave_79_alpha_pure
 from thermo.eos import GCEOS
 from thermo.eos_mix import GCEOSMIX
 from thermo.coolprop import coolprop_fluids
 from thermo.fitting import data_fit_statistics
-
+import thermo
 NEGLIGIBLE = 'NEGLIGIBLE'
 DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
 POLY_FIT = 'POLY_FIT'
@@ -674,26 +675,32 @@ def generate_fitting_function(model,
     '''
     if jac:
         model_jac_name = model + '_fitting_jacobian'
-    if try_numba:
-        # Reasons to write a custom accelerating wrapper:
-        # 1) ufuncs with numba are 1.5-2x slower than expected
-        # 2) optional arguments are not supported, which is an issue for many
-        # models which default to zero coefficients
+    for mod in (chemicals, thermo):
+        # Try to find the fitting function in thermo and chemicals
+        # most are in chemicals so we try it first
         try:
-            if jac:
-                f = getattr(chemicals.numba, model_jac_name)
+            if try_numba:
+                # Reasons to write a custom accelerating wrapper:
+                # 1) ufuncs with numba are 1.5-2x slower than expected
+                # 2) optional arguments are not supported, which is an issue for many
+                # models which default to zero coefficients
+                try:
+                    if jac:
+                        f = getattr(mod.numba, model_jac_name)
+                    else:
+                        f = getattr(mod.numba_vectorized, model)
+                except:
+                    if jac:
+                        f = getattr(mod, model_jac_name)
+                    else:
+                        f = getattr(mod.vectorized, model)
             else:
-                f = getattr(chemicals.numba_vectorized, model)
+                if jac:
+                    f = getattr(mod, model_jac_name)
+                else:
+                    f = getattr(mod.vectorized, model)
         except:
-            if jac:
-                f = getattr(chemicals, model_jac_name)
-            else:
-                f = getattr(chemicals.vectorized, model)
-    else:
-        if jac:
-            f = getattr(chemicals, model_jac_name)
-        else:
-            f = getattr(chemicals.vectorized, model)
+            pass
 
     # arg_dest_idxs is a list of indexes for each parameter
     # to be transformed into the output array
@@ -1057,9 +1064,8 @@ class TDependentProperty(object):
         {'n': 0.159, 'b': 0.965, 'rhoc': 1795.0},# near a point from yaws 
         {'n': 0.28571, 'b': 0.3, 'rhoc': 740.0}, # near a point from yaws
         {'n': 0.8, 'b': 0.647, 'rhoc': 2794.6}, # near a point from yaws
-        ]}),
+        ]}),    
     
-
     # Plain polynomial
     'DIPPR100': ([],
       ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
@@ -1483,6 +1489,13 @@ class TDependentProperty(object):
           {'A': 33000.0, 'B': 3.5e7, 'C': -6500.0, 'D': -3.5e7, 'E': 6500.0, 'F': 50000.0, 'G': -1500.0},
           {'A': 33000.0, 'B': 2.5e4, 'C': -250.0, 'D': 150000.0, 'E': 1300.0, 'F': 1e5, 'G': 3200.0},
           ]}),
+
+        # Alpha functions
+        'Twu91_alpha_pure': (['Tc', 'c0', 'c1', 'c2'], [], {'f': Twu91_alpha_pure}, {'fit_params': ['c0', 'c1', 'c2'], 
+                             'initial_guesses': []}),
+        'Soave_79_alpha_pure': (['Tc', 'M', 'N'], [], {'f': Soave_79_alpha_pure}, {'fit_params': ['M', 'N'], 
+                             'initial_guesses': []}),
+        
     }
 
     # Aliases from the DDBST

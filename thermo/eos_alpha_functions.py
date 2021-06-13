@@ -166,6 +166,8 @@ not yet been accelerated in a nice vectorized way.
 Pure Alpha Functions
 --------------------
 .. autofunction:: thermo.eos_alpha_functions.Twu91_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Soave_79_alpha_pure
+
 '''
 
 from __future__ import division, print_function
@@ -186,7 +188,7 @@ __all__ = [
  'Gasem_a_alpha', 'Coquelet_a_alpha', 'Haghtalab_a_alpha', 'Saffari_a_alpha',
  'Chen_Yang_a_alpha', 'TwuSRK95_a_alpha', 'TwuPR95_a_alpha', 'Soave_79_a_alpha',
  
- 'Twu91_alpha_pure',]
+ 'Twu91_alpha_pure', 'Soave_79_alpha_pure']
 
 
 from fluids.numerics import (horner, horner_and_der2, numpy as np)
@@ -1239,6 +1241,9 @@ def Twu91_alpha_pure(T, Tc, c0, c1, c2):
     Tr = T/Tc
     return (Tr**(c2*(c1 - 1.0))*exp(c0*(1.0 - (Tr)**(c1*c2))))
 
+def Soave_79_alpha_pure(T, Tc, M, N):
+    Tr = T/Tc
+    return (1.0 + (1.0 - Tr)*(M + N/Tr))
 
 class a_alpha_base(object):
     def _init_test(self, Tc, a, alpha_coeffs, **kwargs):
@@ -1273,7 +1278,9 @@ class Poly_a_alpha(object):
             EOS-specific method, [J^2/mol^2/Pa/K**2]
 
         '''
-        return horner_and_der2(self.alpha_coeffs, T)
+        res = horner_and_der2(self.alpha_coeffs, T)
+        a = self.a
+        return (a*res[0], a*res[1], a*res[2])
 
     def a_alpha_pure(self, T):
         r'''Method to calculate `a_alpha` given that there is a polynomial
@@ -1292,7 +1299,7 @@ class Poly_a_alpha(object):
         a_alpha : float
             Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
         '''
-        return horner(self.alpha_coeffs, T)
+        return self.a*horner(self.alpha_coeffs, T)
 
 class Soave_1972_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
@@ -2355,12 +2362,11 @@ class Soave_79_a_alpha(a_alpha_base):
         x3 = M + N*x2
         x4 = N*T_inv*T_inv
         return (a*(1.0 - x1*x3), a*(Tc*x1*x4 - x0*x3), a*(2.0*x4*(1.0 - x1*x2)))
-
+        
     def a_alpha_pure(self, T):
-        M, N = self.alpha_coeffs#self.M, self.N
+        M, N = self.alpha_coeffs
         Tc, a = self.Tc, self.a
-        Tr = T/Tc
-        return a*(1.0 + (1.0 - Tr)*(M + N/Tr))
+        return a*Soave_79_alpha_pure(T, self.Tc, M, N)
 
     def a_alphas_vectorized(self, T):
         ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs

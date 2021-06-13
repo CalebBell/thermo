@@ -29,7 +29,7 @@ from thermo.utils import allclose_variable
 from fluids.constants import R
 from math import log, exp, sqrt, log10
 from fluids.numerics import linspace, derivative, logspace, assert_close, assert_close1d, assert_close2d, assert_close3d
-
+from thermo.eos_alpha_functions import *
 
 def main_derivatives_and_departures_slow(T, P, V, b, delta, epsilon, a_alpha,
                                     da_alpha_dT, d2a_alpha_dT2):
@@ -2428,3 +2428,23 @@ def test_eos_lnphi():
             assert_close(lnphi_calc, eos.lnphi_g, rtol=1e-14)
 
 
+
+def test_eos_alpha_fit_points_Soave_79():
+    class PR_Soave_79_a_alpha(Soave_79_a_alpha, PRTranslatedConsistent):
+        pass
+    
+    thing = PR_Soave_79_a_alpha(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=0, alpha_coeffs=(0.5849794002807407, 0.25051549485231517))
+    T = 350
+    alphas = thing.a_alpha_and_derivatives(T)
+    assert_close1d(alphas, (3.485011425444313, -0.00589750979615976, 1.597012282695055e-05), rtol=1e-13)
+    
+    
+def test_eos_alpha_fit_points_poly():
+    class Poly_a_alpha_a_alpha(Poly_a_alpha, PRTranslatedConsistent):
+        pass
+    
+    alpha_coeffs = [-3.906465871220931e-16, 8.495103891984518e-13, -7.689734475356654e-10, 3.656679901684145e-07, -9.189406258038927e-05, 0.008182202041062563, 1.80505316719085]
+    thing = Poly_a_alpha_a_alpha(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=0, alpha_coeffs=alpha_coeffs)
+    T = 400
+    alphas = thing.a_alpha_and_derivatives(T)
+    assert_close1d(alphas, (3.2060461708551617, -0.0052058958657474575, 1.2768989607947624e-05), rtol=1e-13)
