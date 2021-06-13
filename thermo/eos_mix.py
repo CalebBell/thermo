@@ -223,7 +223,7 @@ from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     SRK_translated_d2epsilon_dninjs, SRK_translated_d3epsilon_dninjnks,
     SRK_translated_d3delta_dninjnks)
 from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
-                                    Soave_79_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
+                                    Soave_1979_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
                                     RK_a_alpha_and_derivatives_vectorized, RK_a_alphas_vectorized,
                                     SRK_a_alpha_and_derivatives_vectorized, SRK_a_alphas_vectorized,
                                     PRSV_a_alphas_vectorized, PRSV_a_alpha_and_derivatives_vectorized,
@@ -9589,7 +9589,7 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
         self.epsilon = c*(b0 + c)
 
 
-class MSRKMIXTranslated(Soave_79_a_alpha, SRKMIXTranslatedConsistent):
+class MSRKMIXTranslated(Soave_1979_a_alpha, SRKMIXTranslatedConsistent):
     r'''Class for solving the volume translated Soave (1980) alpha function,
     revision of the Soave-Redlich-Kwong equation of state
     for a pure compound according to [1]_. Uses two fitting parameters `N` and
@@ -9659,7 +9659,7 @@ class MSRKMIXTranslated(Soave_79_a_alpha, SRKMIXTranslatedConsistent):
         Volume translation parameters, [m^3/mol]
     alpha_coeffs : list[list[float]]
         Coefficients for
-        :obj:`thermo.eos_alpha_functions.Soave_79_a_alpha`, [-]
+        :obj:`thermo.eos_alpha_functions.Soave_1979_a_alpha`, [-]
     T : float, optional
         Temperature, [K]
     P : float, optional

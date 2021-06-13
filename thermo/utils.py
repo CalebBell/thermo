@@ -108,7 +108,7 @@ from chemicals.thermal_conductivity import Chemsep_16, PPDS8, PPDS3
 from chemicals.interface import REFPROP_sigma, Somayajulu, Jasper, PPDS14, Watson_sigma, ISTExpansion
 from chemicals.volume import volume_VDI_PPDS, Rackett_fit, PPDS17, TDE_VDNS_rho
 from thermo import serialize
-from thermo.eos_alpha_functions import Twu91_alpha_pure, Soave_79_alpha_pure
+from thermo.eos_alpha_functions import Twu91_alpha_pure, Soave_1979_alpha_pure
 from thermo.eos import GCEOS
 from thermo.eos_mix import GCEOSMIX
 from thermo.coolprop import coolprop_fluids
@@ -1493,7 +1493,7 @@ class TDependentProperty(object):
         # Alpha functions
         'Twu91_alpha_pure': (['Tc', 'c0', 'c1', 'c2'], [], {'f': Twu91_alpha_pure}, {'fit_params': ['c0', 'c1', 'c2'], 
                              'initial_guesses': []}),
-        'Soave_79_alpha_pure': (['Tc', 'M', 'N'], [], {'f': Soave_79_alpha_pure}, {'fit_params': ['M', 'N'], 
+        'Soave_1979_alpha_pure': (['Tc', 'M', 'N'], [], {'f': Soave_1979_alpha_pure}, {'fit_params': ['M', 'N'], 
                              'initial_guesses': []}),
         
     }

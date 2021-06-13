@@ -134,7 +134,7 @@ not yet been accelerated in a nice vectorized way.
     :members:
     :undoc-members:
     :show-inheritance:
-.. autoclass:: thermo.eos_alpha_functions.Soave_79_a_alpha
+.. autoclass:: thermo.eos_alpha_functions.Soave_1979_a_alpha
     :members:
     :undoc-members:
     :show-inheritance:
@@ -166,7 +166,7 @@ not yet been accelerated in a nice vectorized way.
 Pure Alpha Functions
 --------------------
 .. autofunction:: thermo.eos_alpha_functions.Twu91_alpha_pure
-.. autofunction:: thermo.eos_alpha_functions.Soave_79_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Soave_1979_alpha_pure
 
 '''
 
@@ -186,9 +186,9 @@ __all__ = [
  'Yu_Lu_a_alpha', 'Trebble_Bishnoi_a_alpha', 'Melhem_a_alpha', 'Androulakis_a_alpha',
  'Schwartzentruber_a_alpha', 'Almeida_a_alpha', 'Twu91_a_alpha', 'Soave_93_a_alpha',
  'Gasem_a_alpha', 'Coquelet_a_alpha', 'Haghtalab_a_alpha', 'Saffari_a_alpha',
- 'Chen_Yang_a_alpha', 'TwuSRK95_a_alpha', 'TwuPR95_a_alpha', 'Soave_79_a_alpha',
+ 'Chen_Yang_a_alpha', 'TwuSRK95_a_alpha', 'TwuPR95_a_alpha', 'Soave_1979_a_alpha',
  
- 'Twu91_alpha_pure', 'Soave_79_alpha_pure']
+ 'Twu91_alpha_pure', 'Soave_1979_alpha_pure']
 
 
 from fluids.numerics import (horner, horner_and_der2, numpy as np)
@@ -1241,9 +1241,13 @@ def Twu91_alpha_pure(T, Tc, c0, c1, c2):
     Tr = T/Tc
     return (Tr**(c2*(c1 - 1.0))*exp(c0*(1.0 - (Tr)**(c1*c2))))
 
-def Soave_79_alpha_pure(T, Tc, M, N):
+def Soave_1979_alpha_pure(T, Tc, M, N):
     Tr = T/Tc
     return (1.0 + (1.0 - Tr)*(M + N/Tr))
+
+def Soave_1972_alpha_pure(T, Tc, c0):
+    Tr = T/Tc
+    return (c0*(-sqrt(T/Tc) + 1) + 1)**2
 
 class a_alpha_base(object):
     def _init_test(self, Tc, a, alpha_coeffs, **kwargs):
@@ -1310,7 +1314,7 @@ class Soave_1972_a_alpha(a_alpha_base):
         requiring `alpha_coeffs` to be set. One coefficient needed.
 
         .. math::
-            \alpha = \left(c_{1} \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right)
+            \alpha = \left(c_{0} \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right)
             + 1\right)^{2}
 
         References
@@ -1324,17 +1328,17 @@ class Soave_1972_a_alpha(a_alpha_base):
            Engineering Chemistry Research 55, no. 22 (June 8, 2016): 6506-16.
            doi:10.1021/acs.iecr.6b00721.
         '''
-        c1 = self.alpha_coeffs[0]
+        c0 = self.alpha_coeffs[0]
         Tc, a = self.Tc, self.a
-        a_alpha = a*(c1*(-sqrt(T/Tc) + 1) + 1)**2
-        da_alpha_dT = -a*c1*sqrt(T/Tc)*(c1*(-sqrt(T/Tc) + 1) + 1)/T
-        d2a_alpha_dT2 = a*c1*(c1/Tc - sqrt(T/Tc)*(c1*(sqrt(T/Tc) - 1) - 1)/T)/(2*T)
+        a_alpha = a*(c0*(-sqrt(T/Tc) + 1) + 1)**2
+        da_alpha_dT = -a*c0*sqrt(T/Tc)*(c0*(-sqrt(T/Tc) + 1) + 1)/T
+        d2a_alpha_dT2 = a*c0*(c0/Tc - sqrt(T/Tc)*(c0*(sqrt(T/Tc) - 1) - 1)/T)/(2*T)
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
+    
     def a_alpha_pure(self, T):
-        c1 = self.alpha_coeffs[0]
+        c0 = self.alpha_coeffs[0]
         Tc, a = self.Tc, self.a
-        a_alpha = a*(c1*(-sqrt(T/Tc) + 1) + 1)**2
-        return a_alpha
+        return a*Soave_1972_alpha_pure(T, Tc, c0)
 
 class Heyen_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
@@ -2337,7 +2341,7 @@ class TwuPR95_a_alpha(a_alpha_base):
         return array(r0), array(r1), array(r2)
 
 
-class Soave_79_a_alpha(a_alpha_base):
+class Soave_1979_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Soave (1979) [1]_. Returns `a_alpha`,
@@ -2366,7 +2370,7 @@ class Soave_79_a_alpha(a_alpha_base):
     def a_alpha_pure(self, T):
         M, N = self.alpha_coeffs
         Tc, a = self.Tc, self.a
-        return a*Soave_79_alpha_pure(T, self.Tc, M, N)
+        return a*Soave_1979_alpha_pure(T, self.Tc, M, N)
 
     def a_alphas_vectorized(self, T):
         ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
@@ -2402,5 +2406,5 @@ a_alpha_bases = [Soave_1972_a_alpha, Heyen_a_alpha, Harmens_Knapp_a_alpha, Mathi
                  Almeida_a_alpha, Twu91_a_alpha, Soave_93_a_alpha, Gasem_a_alpha,
                  Coquelet_a_alpha, Haghtalab_a_alpha, Saffari_a_alpha, Chen_Yang_a_alpha,
                  Mathias_Copeman_a_alpha,
-                 TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_79_a_alpha]
+                 TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_1979_a_alpha]
 

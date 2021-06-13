@@ -2430,10 +2430,10 @@ def test_eos_lnphi():
 
 
 def test_eos_alpha_fit_points_Soave_79():
-    class PR_Soave_79_a_alpha(Soave_79_a_alpha, PRTranslatedConsistent):
+    class PR_Soave_1979_a_alpha(Soave_1979_a_alpha, PRTranslatedConsistent):
         pass
     
-    thing = PR_Soave_79_a_alpha(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=0, alpha_coeffs=(0.5849794002807407, 0.25051549485231517))
+    thing = PR_Soave_1979_a_alpha(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=0, alpha_coeffs=(0.5849794002807407, 0.25051549485231517))
     T = 350
     alphas = thing.a_alpha_and_derivatives(T)
     assert_close1d(alphas, (3.485011425444313, -0.00589750979615976, 1.597012282695055e-05), rtol=1e-13)
