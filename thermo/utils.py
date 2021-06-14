@@ -866,9 +866,6 @@ class TDependentProperty(object):
     interpolation_property = None
     interpolation_property_inv = None
 
-    extrapolation = 'linear'
-    extrapolations = []
-
     tabular_extrapolation_pts = 20
     '''The number of points to calculate at and use when doing a tabular
     extrapolation calculation.'''
@@ -2145,6 +2142,8 @@ class TDependentProperty(object):
             raise ValueError("The given methods is not available for this chemical")
         self.T_cached = None
         self._method = method
+        extrapolation = getattr(self, '_extrapolation', None)
+        if extrapolation is not None: self.extrapolation = extrapolation
 
     def valid_methods(self, T=None):
         r'''Method to obtain a sorted list of methods that have data
@@ -3209,6 +3208,8 @@ class TDependentProperty(object):
             if extrapolations[0] == extrapolations[1]:
                 extrapolations.pop()
         self.extrapolations = extrapolations
+        method = getattr(self, '_method', None)
+        if method is not None: self._load_extrapolation_coeffs(method)
 
     def extrapolate(self, T, method, in_range='error'):
         r'''Method to perform extrapolation on a given method according to the
@@ -3233,11 +3234,11 @@ class TDependentProperty(object):
         '''
         try:
             return self._extrapolate(T, method, in_range)
-        except:
-            self._load_extrapolation_coeffs(self._method)
+        except AttributeError:
+            self._load_extrapolation_coeffs(method)
             return self._extrapolate(T, method, in_range)
         
-    def _extrapolate(self, T, method, in_range='error'):
+    def _extrapolate(self, T, method, in_range):
         T_limits = self.T_limits
         if T < 0.0:
             raise ValueError("Negative temperature")
@@ -3328,8 +3329,6 @@ class TDependentProperty(object):
             if self.interpolation_property is not None:
                 prop = self.interpolation_property_inv(prop)
         return float(prop)
-
-
 
     def __init__(self, extrapolation, **kwargs):
         self.Tmin = None
