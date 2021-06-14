@@ -3231,7 +3231,7 @@ class TDependentProperty(object):
         '''
         try:
             return self._extrapolate(T, method, in_range)
-        except AttributeError:
+        except (AttributeError, KeyError):
             self._load_extrapolation_coeffs(method)
             return self._extrapolate(T, method, in_range)
         
