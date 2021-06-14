@@ -878,30 +878,19 @@ class TDependentProperty(object):
     when it is used for extrapolation.'''
 
     P_dependent = False
-
-    _method = None
     forced = False
 
     property_min = 0
     property_max = 1E4  # Arbitrary max
-    T_cached = None
-    use_poly_fit = False
-
 
     T_limits = {}
     '''Dictionary containing method: (Tmin, Tmax) pairs for all methods applicable
     to the chemical'''
 
-    all_methods = set()
-    '''Set of all methods loaded and ready to use for the chemical
-    property.'''
-
     critical_zero = False
     '''Whether or not the property is declining and reaching zero at the
     critical point. This is used by numerical solvers.'''
 
-#    Tmin = None
-#    Tmax = None
     ranked_methods = []
 
     # For methods specified by a user
@@ -1635,16 +1624,10 @@ class TDependentProperty(object):
         d['all_methods'] = list(d['all_methods'])
         d['tabular_data_interpolators'] = {}
 
-
-        try:
-            del d['interp1d_extrapolators']
-        except:
-            pass
-
-        try:
-            del d['correlations']
-        except:
-            pass
+        ignored = ('interp1d_extrapolators', 'correlations')
+        for i in ignored:
+            try: del d[i]
+            except: pass
 
         if hasattr(self, 'all_methods_P'):
             d['all_methods_P'] = list(d['all_methods_P'])
@@ -2162,7 +2145,6 @@ class TDependentProperty(object):
             raise ValueError("The given methods is not available for this chemical")
         self.T_cached = None
         self._method = method
-        self.extrapolation = self.extrapolation
 
     def valid_methods(self, T=None):
         r'''Method to obtain a sorted list of methods that have data
@@ -2185,28 +2167,17 @@ class TDependentProperty(object):
             Sorted lists of methods valid at T according to
             :obj:`test_method_validity`, [-]
         '''
-        considered_methods = list(self.all_methods)
-
-        if self.method is not None:
-            considered_methods.remove(self.method)
-
-        # Index the rest of the methods by ranked_methods, and add them to a list, sorted_methods
-        preferences = sorted([self.ranked_methods.index(i) for i in considered_methods])
-        sorted_methods = [self.ranked_methods[i] for i in preferences]
-
-        # Add back the user's methods to the top, in order.
-        if self.method is not None:
-            sorted_methods.insert(0, self.method)
-
+        all_methods = self.all_methods
+        sorted_methods = [i for i in self.ranked_methods if i in all_methods]
+        current_method = self.method
+        if current_method in sorted_methods:
+            # Add back the user's methods to the top, in order.
+            sorted_methods.remove(current_method)
+            sorted_methods.insert(0, current_method)
         if T is not None:
-            sorted_valid_methods = []
-            for method in sorted_methods:
-                if self.test_method_validity(T, method):
-                    sorted_valid_methods.append(method)
-
-            return sorted_valid_methods
-        else:
-            return sorted_methods
+            sorted_methods = [i for i in sorted_methods
+                              if self.test_method_validity(T, i)]
+        return sorted_methods
 
     @classmethod
     def test_property_validity(self, prop):
@@ -2240,12 +2211,10 @@ class TDependentProperty(object):
         if (poly_fit is not None and len(poly_fit) and (poly_fit[0] is not None
            and poly_fit[1] is not None and  poly_fit[2] is not None)
             and not isnan(poly_fit[0]) and not isnan(poly_fit[1])):
-            self.use_poly_fit = True
             self.poly_fit_Tmin = Tmin = poly_fit[0]
             self.poly_fit_Tmax = Tmax = poly_fit[1]
             self.poly_fit_coeffs = poly_fit_coeffs = poly_fit[2]
             self.T_limits[POLY_FIT] = (Tmin, Tmax)
-            self.method = POLY_FIT
 
             self.poly_fit_int_coeffs = polyint(poly_fit_coeffs)
             self.poly_fit_T_int_T_coeffs, self.poly_fit_log_coeff = polyint_over_x(poly_fit_coeffs)
@@ -2297,12 +2266,10 @@ class TDependentProperty(object):
                 if self.Tmax is None:
                     self.Tmax = self.poly_fit_Tmax
 
-
     def as_poly_fit(self):
         return '%s(load_data=False, poly_fit=(%s, %s, %s))' %(self.__class__.__name__,
                   repr(self.poly_fit_Tmin), repr(self.poly_fit_Tmax),
                   repr(self.poly_fit_coeffs))
-
 
     def _base_calculate(self, T, method):
         if method in self.tabular_data:
@@ -2324,11 +2291,9 @@ class TDependentProperty(object):
             raise ValueError("Unknown method")
 
     def _calculate_extrapolate(self, T, method):
-        if self.use_poly_fit:
-            try:
-                return self.calculate(T, POLY_FIT)
-            except Exception as e:
-                pass
+        if method == POLY_FIT:
+            try: return self.calculate(T, POLY_FIT)
+            except: return None
 
         if method is None:
             return None
@@ -2399,13 +2364,10 @@ class TDependentProperty(object):
         prop : float
             Calculated property, [`units`]
         '''
-        if self.use_poly_fit:
-            try:
-                return self.calculate(T, POLY_FIT)
-            except Exception as e:
-                pass
-
         method = self.method
+        if method == POLY_FIT:
+            try: return self.calculate(T, POLY_FIT)
+            except: return None
         if method is None:
             return None
         try:
@@ -3067,9 +3029,8 @@ class TDependentProperty(object):
             pass
         return None
 
-    def _load_extapolation_coeffs(self, method):
+    def _load_extrapolation_coeffs(self, method):
         T_limits = self.T_limits
-
         for extrapolation in self.extrapolations:
             if extrapolation == 'linear':
                 try:
@@ -3220,7 +3181,6 @@ class TDependentProperty(object):
             else:
                 raise ValueError("Could not recognize extrapolation setting")
 
-
     @property
     def extrapolation(self):
         '''The string setting of the current extrapolation settings.
@@ -3250,12 +3210,6 @@ class TDependentProperty(object):
                 extrapolations.pop()
         self.extrapolations = extrapolations
 
-        if self._method is None:
-            return # not set yet
-        self._load_extapolation_coeffs(self._method)
-
-
-
     def extrapolate(self, T, method, in_range='error'):
         r'''Method to perform extrapolation on a given method according to the
         :obj:`extrapolation` setting.
@@ -3277,6 +3231,13 @@ class TDependentProperty(object):
         prop : float
             Calculated property, [`units`]
         '''
+        try:
+            return self._extrapolate(T, method, in_range)
+        except:
+            self._load_extrapolation_coeffs(self._method)
+            return self._extrapolate(T, method, in_range)
+        
+    def _extrapolate(self, T, method, in_range='error'):
         T_limits = self.T_limits
         if T < 0.0:
             raise ValueError("Negative temperature")
@@ -3289,21 +3250,15 @@ class TDependentProperty(object):
             extrapolation = self._extrapolation_high
         else:
             raise ValueError("Not outside normal range")
-
+        
         if extrapolation == 'linear':
-            try:
-                linear_extrapolation_coeffs = self.linear_extrapolation_coeffs
-            except:
-                self._load_extapolation_coeffs(method)
-                linear_extrapolation_coeffs = self.linear_extrapolation_coeffs
+            linear_extrapolation_coeffs = self.linear_extrapolation_coeffs
             v_low, d_low, v_high, d_high = linear_extrapolation_coeffs[method]
-
             interpolation_T = self.interpolation_T
             interpolation_property_inv = self.interpolation_property_inv
             if interpolation_T is not None:
                 T_low, T_high = interpolation_T(T_low), interpolation_T(T_high)
                 T = interpolation_T(T)
-
             if low:
                 if v_low is None:
                     raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
@@ -3319,11 +3274,7 @@ class TDependentProperty(object):
                     val = interpolation_property_inv(val)
                 return val
         elif extrapolation == 'constant':
-            try:
-                constant_extrapolation_coeffs = self.constant_extrapolation_coeffs
-            except:
-                self._load_extapolation_coeffs(method)
-                constant_extrapolation_coeffs = self.constant_extrapolation_coeffs
+            constant_extrapolation_coeffs = self.constant_extrapolation_coeffs
             v_low, v_high = constant_extrapolation_coeffs[method]
             if low:
                 if v_low is None:
@@ -3336,11 +3287,7 @@ class TDependentProperty(object):
 
         elif extrapolation == 'AntoineAB':
             T_low, T_high = T_limits[method]
-            try:
-                AB_low, AB_high = self.Antoine_AB_coeffs[method]
-            except:
-                self._load_extapolation_coeffs(method)
-                AB_low, AB_high = self.Antoine_AB_coeffs[method]
+            AB_low, AB_high = self.Antoine_AB_coeffs[method]
             if low:
                 if AB_low is None:
                     raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
@@ -3373,12 +3320,7 @@ class TDependentProperty(object):
                 return Watson(T, Hvap_ref=v0_high, T_ref=T_high, Tc=self.Tc, exponent=n_high)
         elif extrapolation == 'interp1d':
             T_low, T_high = T_limits[method]
-            try:
-                extrapolator = self.interp1d_extrapolators[method]
-            except:
-                self._load_extapolation_coeffs(method)
-                extrapolator = self.interp1d_extrapolators[method]
-
+            extrapolator = self.interp1d_extrapolators[method]
             interpolation_T = self.interpolation_T
             if interpolation_T is not None:
                 T = interpolation_T(T)
@@ -3408,19 +3350,16 @@ class TDependentProperty(object):
         if an interpolation transform is altered, the old interpolator which
         had been created is no longer used.'''
 
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`.'''
         self.all_methods = set()
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods(kwargs.get('load_data', True))
+
         self.extrapolation = extrapolation
 
         if kwargs.get('tabular_data', None):
             for name, (Ts, properties) in kwargs['tabular_data'].items():
                 self.add_tabular_data(Ts, properties, name=name, check_properties=False)
-
 
         self.correlations = {}
         for correlation_name in self.correlation_models.keys():
@@ -3433,9 +3372,8 @@ class TDependentProperty(object):
                     self.add_correlation(name=corr_i, model=correlation_name,
                                          **corr_kwargs)
 
-
         poly_fit = kwargs.get('poly_fit', None)
-        method =  kwargs.get('method', None)
+        method =  kwargs.get('method', getattr(self, '_method', None))
         if poly_fit is not None:
             if self.__class__.__name__ == 'EnthalpyVaporization':
                 self.poly_fit_Tc = poly_fit[2]
@@ -3454,12 +3392,14 @@ class TDependentProperty(object):
                     self.Tmax = self.poly_fit_Tmax*10.0
             else:
                 self._set_poly_fit(poly_fit)
-        elif method is not None:
-            self.method = method
-        else:
-            methods = self.valid_methods(T=None)
-            if methods:
-                self.method = methods[0]
+            method = POLY_FIT
+        elif method is None:
+            all_methods = self.all_methods
+            for i in self.ranked_methods: 
+                if i in all_methods:
+                    method = i
+                    break
+        self.method = method
 
     def load_all_methods(self):
         pass
@@ -3562,29 +3502,24 @@ class TPDependentProperty(TDependentProperty):
         set only after the first property calculation.
     method : str
         The method to be used for property calculations, [-]
+    all_methods : set
+        All low-pressure methods available, [-]
+    all_methods_P : set
+        All pressure-dependent methods available, [-]
+    
     '''
     P_dependent = True
     interpolation_P = None
-    TP_cached = (None, None)
-    _method_P = None
-    '''Previously specified `T` and `P` in the calculation.'''
-
-    all_methods_P = set()
-    '''Set of all pressure-dependent methods loaded and ready to use for the
-    chemical property.'''
 
     def __init__(self, extrapolation, **kwargs):
-        self.sorted_valid_methods_P = []
-        '''sorted_valid_methods_P, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`.'''
         self.user_methods_P = []
         '''user_methods_P, list: Stored methods which were specified by the user
         in a ranked order of preference; set by :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`.'''
-
-
+        
         self.tabular_data_P = {}
         '''tabular_data_P, dict: Stored (Ts, Ps, properties) for any
         tabular data; indexed by provided or autogenerated name.'''
+        
         self.tabular_data_interpolators_P = {}
         '''tabular_data_interpolators_P, dict: Stored (extrapolator,
         spline) tuples which are interp2d instances for each set of tabular
@@ -3592,10 +3527,6 @@ class TPDependentProperty(TDependentProperty):
         interpolation_property, interpolation_property_inv) to ensure that
         if an interpolation transform is altered, the old interpolator which
         had been created is no longer used.'''
-
-        self.all_methods_P = set()
-        '''Set of all high-pressure methods available for a given CASRN and
-        properties; filled by :obj:`load_all_methods`.'''
 
         super(TPDependentProperty, self).__init__(extrapolation, **kwargs)
 
@@ -3607,16 +3538,13 @@ class TPDependentProperty(TDependentProperty):
                 self.add_tabular_data_P(Ts, Ps, properties, name=name, check_properties=False)
 
         method_P = kwargs.get('method_P', None)
-        if method_P is not None:
-            self.method_P = method_P
-        else:
-            methods = self.valid_methods_P(T=None, P=None)
-            if methods:
-                self.method_P = methods[0]
-            else:
-                self.method_P = None
-
-
+        all_methods_P = self.all_methods_P
+        for i in self.ranked_methods_P: 
+            if i in all_methods_P:
+                method_P = i
+                break
+        self.method_P = method_P
+        
     @property
     def method_P(self):
         r'''Method used to set or get a specific property method.
@@ -3692,26 +3620,17 @@ class TPDependentProperty(TDependentProperty):
             Sorted lists of methods valid at T and P according to
             :obj:`test_method_validity_P`
         '''
-        considered_methods = list(self.all_methods_P)
-
-        if self._method_P is not None:
-            considered_methods.remove(self._method_P)
-
-        preferences = sorted([self.ranked_methods_P.index(i) for i in considered_methods])
-        sorted_methods = [self.ranked_methods_P[i] for i in preferences]
-
-        if self._method_P is not None:
-            sorted_methods.insert(0, self._method_P)
-
-        if T is not None and P is not None:
-            sorted_valid_methods_P = []
-            for method in sorted_methods:
-                if self.test_method_validity_P(T, P, method):
-                    sorted_valid_methods_P.append(method)
-            return sorted_valid_methods_P
-        else:
-            return sorted_methods
-
+        all_methods = self.all_methods_P
+        sorted_methods = [i for i in self.ranked_methods_P if i in all_methods]
+        current_method = self._method_P
+        if current_method in sorted_methods:
+            # Add back the user's methods to the top, in order.
+            sorted_methods.remove(current_method)
+            sorted_methods.insert(0, current_method)
+        if T is not None:
+            sorted_methods = [i for i in sorted_methods
+                              if self.test_method_validity_P(T, P, i)]
+        return sorted_methods
 
     def TP_dependent_property(self, T, P):
         r'''Method to calculate the property given a temperature and pressure
@@ -4384,15 +4303,15 @@ class MixtureProperty(object):
         self.user_methods = []
         '''user_methods, list: Stored methods which were specified by the user
         in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
+        
+        self.method = kwargs.get('method', None)
+        
         self.all_methods = set()
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
 
         self.set_poly_fit_coeffs()
-
-        if 'method' in kwargs:
-            self.method = kwargs['method']
 
     def as_json(self, references=1):
         r'''Method to create a JSON serialization of the mixture property
