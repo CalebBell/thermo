@@ -4303,14 +4303,14 @@ class MixtureProperty(object):
         '''user_methods, list: Stored methods which were specified by the user
         in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
         
-        self.method = kwargs.get('method', None)
-        
         self.all_methods = set()
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
 
         self.set_poly_fit_coeffs()
+        
+        if 'method' in kwargs: self.method = kwargs['method']
 
     def as_json(self, references=1):
         r'''Method to create a JSON serialization of the mixture property
