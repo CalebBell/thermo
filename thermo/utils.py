@@ -2139,11 +2139,12 @@ class TDependentProperty(object):
     @method.setter
     def method(self, method):
         if method not in self.all_methods and method != POLY_FIT and method is not None:
-            raise ValueError("The given methods is not available for this chemical")
+            raise ValueError("The given method is not available for this chemical")
         self.T_cached = None
         self._method = method
         extrapolation = getattr(self, '_extrapolation', None)
-        if extrapolation is not None: self.extrapolation = extrapolation
+        if extrapolation is not None and method is not None:
+            self._load_extrapolation_coeffs(method)
 
     def valid_methods(self, T=None):
         r'''Method to obtain a sorted list of methods that have data
@@ -3536,12 +3537,13 @@ class TPDependentProperty(TDependentProperty):
             for name, (Ts, Ps, properties) in kwargs['tabular_data_P'].items():
                 self.add_tabular_data_P(Ts, Ps, properties, name=name, check_properties=False)
 
-        method_P = kwargs.get('method_P', None)
-        all_methods_P = self.all_methods_P
-        for i in self.ranked_methods_P: 
-            if i in all_methods_P:
-                method_P = i
-                break
+        method_P = kwargs.get('method_P', getattr(self, '_method_P', None))
+        if method_P is None:
+            all_methods_P = self.all_methods_P
+            for i in self.ranked_methods_P: 
+                if i in all_methods_P:
+                    method_P = i
+                    break
         self.method_P = method_P
         
     @property
