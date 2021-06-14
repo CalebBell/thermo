@@ -59,7 +59,7 @@ def test_Permittivity_class():
     w.extrapolation = 'interp1d'
     assert_close(w.T_dependent_property(200.), 115.79462395999997)
 
-    del w.interp1d_extrapolators
+    del w.extrapolation_coeffs[w.extrapolation, w.method]
     assert w.T_dependent_property(800.0) is not None
 
     w.extrapolation = None
