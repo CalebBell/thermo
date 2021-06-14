@@ -455,16 +455,8 @@ class HeatCapacityGas(TDependentProperty):
         elif method == COOLPROP:
             if T <= self.CP_f.Tmin or T >= self.CP_f.Tmax:
                 return False
-        elif method == POLY_FIT:
-            validity = True
-        elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
-                Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    validity = False
         else:
-            raise Exception('Method not valid')
+            return super(HeatCapacityGas, self).test_method_validity(T, method)
         return validity
 
     def calculate_integral(self, T1, T2, method):
@@ -1003,16 +995,8 @@ class HeatCapacityLiquid(TDependentProperty):
         elif method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
             if self.Tc and T > self.Tc:
                 return False
-        elif method == POLY_FIT:
-            validity = True
-        elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
-                Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    validity = False
         else:
-            raise Exception('Method not valid')
+            return super(HeatCapacityLiquid, self).test_method_validity(T, method)
         return validity
 
     def calculate_integral(self, T1, T2, method):
@@ -1357,16 +1341,8 @@ class HeatCapacitySolid(TDependentProperty):
         elif method == LASTOVKA_S:
             if T > 10000 or T < 0:
                 validity = False
-        elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
-                Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    validity = False
-        elif method == POLY_FIT:
-            validity = True
         else:
-            raise Exception('Method not valid')
+            return super(HeatCapacitySolid, self).test_method_validity(T, method)
         return validity
 
     def calculate_integral(self, T1, T2, method):

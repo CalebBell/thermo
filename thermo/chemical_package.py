@@ -34,7 +34,7 @@ Chemical Constants Class
 ========================
 .. autoclass:: ChemicalConstantsPackage
     :members: subset, properties, correlations_from_IDs, constants_from_IDs,
-              from_IDs, with_new_constants, as_json, from_json
+              from_IDs, with_new_constants, as_json, from_json, __add__
     :undoc-members:
     :exclude-members:
 
@@ -42,7 +42,7 @@ Chemical Correlations Class
 ===========================
 
 .. autoclass:: PropertyCorrelationsPackage
-    :members: subset
+    :members: subset, __add__
     :undoc-members:
     :exclude-members:
 
@@ -253,6 +253,36 @@ class ChemicalConstantsPackage(object):
 
     def __eq__(self, other):
         return self.__hash__() == hash(other)
+
+    def __add__(self, b):
+        r'''Method to create a new :obj:`ChemicalConstantsPackage` object
+        from two other :obj:`ChemicalConstantsPackage` objects.
+        
+
+        Returns
+        -------
+        new : :obj:`ChemicalConstantsPackage` 
+            New object, [-]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> a = ChemicalConstantsPackage.constants_from_IDs(IDs=['water', 'hexane'])
+        >>> b = ChemicalConstantsPackage.constants_from_IDs(IDs=['toluene'])
+        >>> c = a + b
+        '''
+        if not isinstance(b, ChemicalConstantsPackage):
+            raise TypeError('Adding to a ChemicalConstantsPackage requires that the other object '
+                            'also be a ChemicalConstantsPackage.')
+        a = self
+        a_dict = a.__dict__
+        b_dict = b.__dict__
+        kwargs = {}
+        for k in a_dict.keys():
+            kwargs[k] = a_dict[k] + b_dict[k]
+        return ChemicalConstantsPackage(**kwargs)
 
     def with_new_constants(self, **kwargs):
         r'''Method to construct a new ChemicalConstantsPackage that replaces or
@@ -1317,8 +1347,6 @@ class PropertyCorrelationsPackage(object):
     SublimationPressures : list[:obj:`thermo.vapor_pressure.SublimationPressure`], optional
         Objects holding sublimation pressure data and methods, [-]
     VolumeGases : list[:obj:`thermo.volume.VolumeGas`], optional
-        Objects holding volume data and methods, [-]
-    VolumeGases : list[:obj:`thermo.volume.VolumeGas`], optional
         Objects holding gas volume data and methods, [-]
     VolumeLiquids : list[:obj:`thermo.volume.VolumeLiquid`], optional
         Objects holding liquid volume data and methods, [-]
@@ -1537,6 +1565,38 @@ class PropertyCorrelationsPackage(object):
 
 
         return new
+    
+    def __add__(self, b):
+        r'''Method to create a new :obj:`PropertyCorrelationsPackage` object
+        from two other :obj:`PropertyCorrelationsPackage` objects.
+        
+
+        Returns
+        -------
+        new : :obj:`PropertyCorrelationsPackage` 
+            New object, [-]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> a = ChemicalConstantsPackage.correlations_from_IDs(IDs=['water', 'hexane'])
+        >>> b = ChemicalConstantsPackage.correlations_from_IDs(IDs=['toluene'])
+        >>> c = a + b
+        '''
+        if not isinstance(b, PropertyCorrelationsPackage):
+            raise TypeError('Adding to a PropertyCorrelationsPackage requires that the other object '
+                            'also be a PropertyCorrelationsPackage.')
+        a = self
+        mixture_correlations = self.mixture_correlations
+        a_dict = a.__dict__
+        b_dict = b.__dict__
+        kwargs = {}
+        for k in a_dict.keys():
+            if k not in mixture_correlations:
+                kwargs[k] = a_dict[k] + b_dict[k]
+        return PropertyCorrelationsPackage(**kwargs)
 
     def subset(self, idxs):
         r'''Method to construct a new PropertyCorrelationsPackage that removes
@@ -1753,6 +1813,7 @@ class PropertyCorrelationsPackage(object):
         self.ThermalConductivityGasMixture = ThermalConductivityGasMixtureObj
 
         self.SurfaceTensionMixture = SurfaceTensionMixtureObj
+
 
     def as_poly_fit(self, props=None):
         multiple_props = isinstance(props, (tuple, list)) and isinstance(props[0], str)

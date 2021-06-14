@@ -55,7 +55,9 @@ def test_ChemicalConstantsPackage_from_json_as_json_large():
     assert hash(obj) == hash(obj2)
     assert obj == obj2
     assert id(obj) != id(obj2)
-
+    
+    assert obj != int
+    assert obj != float
 
 def test_ChemicalConstantsPackage_json_version_exported():
     constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
@@ -103,6 +105,8 @@ def test_ChemicalConstantsPackage_json_export_same_output():
 def test_ChemicalConstantsPackage_wrong_behaviors():
     obj = ChemicalConstantsPackage.correlations_from_IDs(['7647-19-0'])
     obj.VolumeLiquids[0].eos is None
+    assert obj != int
+    assert obj != float
 
 
 def test_lemmon2000_package():
@@ -125,3 +129,20 @@ def test_compound_index():
     assert 0 == obj.compound_index(CAS='7732-18-5')
     assert 0 == obj.compound_index(InChI='H2O/h1H2')
     assert 1 == obj.compound_index(InChI_Key='IVSZLXZYQVIEFR-UHFFFAOYSA-N')
+    
+    
+def test_add_ChemicalConstantsPackage():
+    a = ChemicalConstantsPackage.constants_from_IDs(IDs=['water', 'hexane'])
+    b = ChemicalConstantsPackage.constants_from_IDs(IDs=['toluene'])
+    c = a + b
+    
+    c_good = ChemicalConstantsPackage.constants_from_IDs(IDs=['water', 'hexane', 'toluene'])
+    assert c == c_good
+    
+def test_add_PropertyCorrelationsPackage():
+    a = ChemicalConstantsPackage.correlations_from_IDs(IDs=['water', 'hexane'])
+    b = ChemicalConstantsPackage.correlations_from_IDs(IDs=['toluene'])
+    c = a + b
+    
+    c_good = ChemicalConstantsPackage.correlations_from_IDs(IDs=['water', 'hexane', 'toluene'])
+    assert c == c_good

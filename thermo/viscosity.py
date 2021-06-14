@@ -574,7 +574,7 @@ class ViscosityLiquid(TPDependentProperty):
         elif method == COOLPROP:
             if T < self.CP_f.Tmin or T < self.CP_f.Tt or T > self.CP_f.Tc:
                 return False
-        elif method in [LETSOU_STIEL, PRZEDZIECKI_SRIDHAR]:
+        elif method in (LETSOU_STIEL, PRZEDZIECKI_SRIDHAR):
             if T > self.Tc:
                 return False
             # No lower limit
@@ -595,16 +595,8 @@ class ViscosityLiquid(TPDependentProperty):
                 return der < 0
             except:
                 return False
-        elif method == POLY_FIT:
-            validity = True
-        elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
-                Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    return False
         else:
-            raise Exception('Method not valid')
+            return super(ViscosityLiquid, self).test_method_validity(T, method)
         return True
 
     def calculate_P(self, T, P, method):
@@ -992,7 +984,7 @@ class ViscosityGas(TPDependentProperty):
             Whether or not a method is valid
         '''
         validity = True
-        if method in [YOON_THODOS, STIEL_THODOS, LUCAS_GAS]:
+        if method in (YOON_THODOS, STIEL_THODOS, LUCAS_GAS):
             if T < 0 or T > 5000:
                 # Arbitrary limit
                 return False
@@ -1008,16 +1000,8 @@ class ViscosityGas(TPDependentProperty):
                 return False
         elif method == VDI_PPDS:
             pass # Polynomial always works
-        elif method == POLY_FIT:
-            validity = True
-        elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
-                Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    return False
         else:
-            raise Exception('Method not valid')
+            return super(ViscosityGas, self).test_method_validity(T, method)
         return validity
 
     def calculate_P(self, T, P, method):

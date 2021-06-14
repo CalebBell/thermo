@@ -536,14 +536,14 @@ class ThermalConductivityLiquid(TPDependentProperty):
             if T > self.Tc:
                 return False
                 # Doesn't run, no lower limit though
-        elif method in [GHARAGHEIZI_L, NICOLA, NICOLA_ORIGINAL]:
+        elif method in (GHARAGHEIZI_L, NICOLA, NICOLA_ORIGINAL):
             if T > self.Tc*1.5:
                 return False
             # No lower limit, give a wide margin of acceptability here
         elif method == DIPPR_PERRY_8E:
             if T < self.Perrys2_315_Tmin or T > self.Perrys2_315_Tmax:
                 return False
-        elif method in [BAHADORI_L, LAKSHMI_PRASAD, SHEFFY_JOHNSON]:
+        elif method in (BAHADORI_L, LAKSHMI_PRASAD, SHEFFY_JOHNSON):
             pass
             # no limits at all
         elif method == VDI_PPDS:
@@ -552,14 +552,8 @@ class ThermalConductivityLiquid(TPDependentProperty):
         elif method == COOLPROP:
             if T < self.CP_f.Tt or T > self.CP_f.Tc:
                 return False
-        elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
-                Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    return False
         else:
-            raise Exception('Method not valid')
+            return super(ThermalConductivityLiquid, self).test_method_validity(T, method)
         return True
 
     def test_method_validity_P(self, T, P, method):
@@ -1236,8 +1230,8 @@ class ThermalConductivityGas(TPDependentProperty):
         validity : bool
             Whether or not a method is valid
         '''
-        if method in [GHARAGHEIZI_G, DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD,
-                      EUCKEN, BAHADORI_G, VDI_PPDS]:
+        if method in (GHARAGHEIZI_G, DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD,
+                      EUCKEN, BAHADORI_G, VDI_PPDS):
             pass
         elif method == DIPPR_PERRY_8E:
             if T < self.Perrys2_314_Tmin or T > self.Perrys2_314_Tmax:
@@ -1245,14 +1239,8 @@ class ThermalConductivityGas(TPDependentProperty):
         elif method == COOLPROP:
             if T < self.CP_f.Tmin or T > self.CP_f.Tmax:
                 return False
-        elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
-                Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    return False
         else:
-            raise Exception('Method not valid')
+            return super(ThermalConductivityGas, self).test_method_validity(T, method)
         return True
 
     def test_method_validity_P(self, T, P, method):
@@ -1284,7 +1272,7 @@ class ThermalConductivityGas(TPDependentProperty):
             Whether or not a method is valid
         '''
         validity = True
-        if method in [ELI_HANLEY_DENSE, CHUNG_DENSE, STIEL_THODOS_DENSE]:
+        if method in (ELI_HANLEY_DENSE, CHUNG_DENSE, STIEL_THODOS_DENSE):
             if T < 0 or P < 0:
                 validity = False
             # no better checks known
