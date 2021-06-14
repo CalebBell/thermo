@@ -42,7 +42,7 @@ Temperature Dependent
              calculate_integral_over_T, T_dependent_property_integral_over_T,
              extrapolate, test_method_validity, calculate, from_json, as_json,
              interpolation_T, interpolation_T_inv, interpolation_property,
-             interpolation_property_inv, T_limits, all_methods, __repr__,
+             interpolation_property_inv, T_limits, __repr__,
              add_correlation
    :undoc-members:
 
@@ -55,7 +55,7 @@ Temperature and Pressure Dependent
              add_method, add_tabular_data, solve_property,
              extrapolate, test_method_validity, calculate,
              interpolation_T, interpolation_T_inv, interpolation_property,
-             interpolation_property_inv, T_limits, all_methods, all_methods_P,
+             interpolation_property_inv, T_limits,
              method_P, valid_methods_P, TP_dependent_property,
              TP_or_T_dependent_property, add_tabular_data_P, plot_isotherm,
              plot_isobar, plot_TP_dependent_property, calculate_derivative_T,
