@@ -2142,9 +2142,6 @@ class TDependentProperty(object):
             raise ValueError("The given method is not available for this chemical")
         self.T_cached = None
         self._method = method
-        extrapolation = getattr(self, '_extrapolation', None)
-        if extrapolation is not None and method is not None:
-            self._load_extrapolation_coeffs(method)
 
     def valid_methods(self, T=None):
         r'''Method to obtain a sorted list of methods that have data
@@ -3197,7 +3194,6 @@ class TDependentProperty(object):
             self._extrapolation_low = self._extrapolation_high = self.extrapolations = None
             return
         self.extrapolation_split = '|' in extrapolation
-
         if not self.extrapolation_split:
             extrapolations = [extrapolation]
             self._extrapolation_low = self._extrapolation_high = extrapolation
@@ -3209,8 +3205,6 @@ class TDependentProperty(object):
             if extrapolations[0] == extrapolations[1]:
                 extrapolations.pop()
         self.extrapolations = extrapolations
-        method = getattr(self, '_method', None)
-        if method is not None: self._load_extrapolation_coeffs(method)
 
     def extrapolate(self, T, method, in_range='error'):
         r'''Method to perform extrapolation on a given method according to the
