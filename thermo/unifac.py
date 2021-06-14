@@ -3569,13 +3569,15 @@ class UNIFAC(GibbsExcess):
             Object for performing calculations with the UNIFAC activity
             coefficient model, [-]
 
-        Warning
-        -------
-        For version 0, the interaction data and subgroups default to the 
-        original UNIFAC model (not LLE). 
+        Notes
+        -----
         
-        For version 1, the interaction data defaults to the Dortmund parameters
-        publshed in 2016 (not 2006).
+        .. warning::
+            For version 0, the interaction data and subgroups default to the 
+            original UNIFAC model (not LLE). 
+            
+            For version 1, the interaction data defaults to the Dortmund parameters
+            publshed in 2016 (not 2006).
 
         Examples
         --------
