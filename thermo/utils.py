@@ -2367,7 +2367,7 @@ class TDependentProperty(object):
         prop : float
             Calculated property, [`units`]
         '''
-        method = self.method
+        method = self._method
         if method == POLY_FIT:
             try: return self.calculate(T, POLY_FIT)
             except: return None
