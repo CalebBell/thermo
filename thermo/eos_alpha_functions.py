@@ -166,6 +166,7 @@ not yet been accelerated in a nice vectorized way.
 Pure Alpha Functions
 --------------------
 .. autofunction:: thermo.eos_alpha_functions.Twu91_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Soave_1972_alpha_pure
 .. autofunction:: thermo.eos_alpha_functions.Soave_1979_alpha_pure
 
 '''
@@ -188,7 +189,7 @@ __all__ = [
  'Gasem_a_alpha', 'Coquelet_a_alpha', 'Haghtalab_a_alpha', 'Saffari_a_alpha',
  'Chen_Yang_a_alpha', 'TwuSRK95_a_alpha', 'TwuPR95_a_alpha', 'Soave_1979_a_alpha',
  
- 'Twu91_alpha_pure', 'Soave_1979_alpha_pure']
+ 'Twu91_alpha_pure', 'Soave_1972_alpha_pure', 'Soave_1979_alpha_pure']
 
 
 from fluids.numerics import (horner, horner_and_der2, numpy as np)
