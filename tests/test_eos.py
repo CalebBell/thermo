@@ -2439,6 +2439,11 @@ def test_eos_alpha_fit_points_Soave_79():
     assert_close1d(alphas, (3.485011425444313, -0.00589750979615976, 1.597012282695055e-05), rtol=1e-13)
     
     
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[0], T, dx=T*3e-8)
+    assert_close(der, alphas[1], rtol=1e-8)
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-8)
+    assert_close(der, alphas[2], rtol=1e-8)
+    
 def test_eos_alpha_fit_points_poly():
     class Poly_a_alpha_a_alpha(Poly_a_alpha, PRTranslatedConsistent):
         pass
@@ -2448,3 +2453,147 @@ def test_eos_alpha_fit_points_poly():
     T = 400
     alphas = thing.a_alpha_and_derivatives(T)
     assert_close1d(alphas, (3.2060461708551617, -0.0052058958657474575, 1.2768989607947624e-05), rtol=1e-13)
+    assert_close(alphas[0], thing.a_alpha_pure(T), rtol=1e-13)
+
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[0], T, dx=T*3e-7)
+    assert_close(der, alphas[1], rtol=1e-8)
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*8e-7)
+    assert_close(der, alphas[2], rtol=1e-7)
+
+def test_eos_alpha_fit_points_Soave_1972():
+    class Soave_1972_alpha(Soave_1972_a_alpha, PRTranslatedConsistent):
+        pass
+
+    thing = Soave_1972_alpha(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=0, alpha_coeffs=(0.8137485671902098,))
+    T = 350
+    alphas = thing.a_alpha_and_derivatives(T)
+    assert_close1d(alphas, (3.4868756454179124, -0.00591529940162258, 1.3467923401719051e-05), rtol=1e-13)
+    assert_close(alphas[0], thing.a_alpha_pure(T), rtol=1e-13)
+
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[0], T, dx=T*3e-8)
+    assert_close(der, alphas[1], rtol=1e-8)
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-8)
+    assert_close(der, alphas[2], rtol=1e-8)
+
+def test_eos_alpha_fit_points_Heyen():
+    class Heyen_alpha(Heyen_a_alpha, PRTranslatedConsistent):
+        pass
+
+    thing = Heyen_alpha(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=0, alpha_coeffs=(0.947279452841967,0.8582844795654342))
+    T = 350
+    alphas = thing.a_alpha_and_derivatives(T)
+    assert_close1d(alphas, ((3.487481657016788, -0.005888167714553387, 1.2325547616474709e-05)), rtol=1e-13)
+    assert_close(alphas[0], thing.a_alpha_pure(T), rtol=1e-13)
+
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[0], T, dx=T*3e-8)
+    assert_close(der, alphas[1], rtol=1e-8)
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-8)
+    assert_close(der, alphas[2], rtol=1e-8)
+
+def test_eos_alpha_fit_points_Harmens_Knapp():
+    class Harmens_Knapp_alpha(Harmens_Knapp_a_alpha, PRTranslatedConsistent):
+        pass
+
+    thing = Harmens_Knapp_alpha(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=0, alpha_coeffs=(0.8230522176306072, -0.003443583815292376))
+    T = 350
+    alphas = thing.a_alpha_and_derivatives(T)
+    assert_close1d(alphas, (3.48704449416966, -0.005895632751287005, 1.303152923170436e-05), rtol=1e-13)
+    assert_close(alphas[0], thing.a_alpha_pure(T), rtol=1e-13)
+
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[0], T, dx=T*3e-8)
+    assert_close(der, alphas[1], rtol=1e-8)
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-8)
+    assert_close(der, alphas[2], rtol=1e-8)
+
+def test_eos_alpha_fit_points_Mathias_1983():
+    class Mathias_1983_alpha(Mathias_1983_a_alpha, PRTranslatedConsistent):
+        pass
+
+    thing = Mathias_1983_alpha(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=0, alpha_coeffs=(0.8140344831817338, 0.009260953503347734))
+    T = 350
+    alphas = thing.a_alpha_and_derivatives(T)
+    assert_close1d(alphas, (3.4869881755637078, -0.005881588905031806, 1.2973328625783306e-05), rtol=1e-13)
+    assert_close(alphas[0], thing.a_alpha_pure(T), rtol=1e-13)
+
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[0], T, dx=T*3e-8)
+    assert_close(der, alphas[1], rtol=1e-8)
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-8)
+    assert_close(der, alphas[2], rtol=1e-8)
+
+
+def test_eos_alpha_fit_points_Mathias_Copeman_untruncated_():
+    class Mathias_Copeman_alpha(Mathias_Copeman_untruncated_a_alpha, PRTranslatedConsistent):
+        pass
+
+    thing = Mathias_Copeman_alpha(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=0, alpha_coeffs=(0.8555660376958971, -0.5581779462024908, 1.7100262913526425))
+    T = 350
+    alphas = thing.a_alpha_and_derivatives(T)
+    assert_close1d(alphas, (3.4830707684366056, -0.005912527179713419, 1.8842972211520857e-05), rtol=1e-13)
+    assert_close(alphas[0], thing.a_alpha_pure(T), rtol=1e-13)
+
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[0], T, dx=T*3e-8)
+    assert_close(der, alphas[1], rtol=1e-8)
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-8)
+    assert_close(der, alphas[2], rtol=1e-8)
+
+def test_eos_alpha_fit_points_Gibbons_Laughton():
+    class Gibbons_Laughton_alpha(Gibbons_Laughton_a_alpha, PRTranslatedConsistent):
+        pass
+
+    thing = Gibbons_Laughton_alpha(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=0, alpha_coeffs=(0.6019071337078739, -2.8418243617689827))
+    T = 350
+    alphas = thing.a_alpha_and_derivatives(T)
+    assert_close1d(alphas, (3.4870071320062617, -0.005883562643196265, 1.2965836945102038e-05), rtol=1e-13)
+    assert_close(alphas[0], thing.a_alpha_pure(T), rtol=1e-13)
+
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[0], T, dx=T*3e-8)
+    assert_close(der, alphas[1], rtol=1e-8)
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-8)
+    assert_close(der, alphas[2], rtol=1e-8)
+
+def test_eos_alpha_fit_points_Soave_1984():
+    class Soave_1984_alpha(Soave_1984_a_alpha, PRTranslatedConsistent):
+        pass
+
+    thing = Soave_1984_alpha(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=0, alpha_coeffs=(0.5849793959071207, 0.25051549783686017))
+    T = 350
+    alphas = thing.a_alpha_and_derivatives(T)
+    assert_close1d(alphas, (3.485011425406549, -0.005897509806257853, 1.5970123017212436e-05), rtol=1e-13)
+    assert_close(alphas[0], thing.a_alpha_pure(T), rtol=1e-13)
+
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[0], T, dx=T*3e-8)
+    assert_close(der, alphas[1], rtol=1e-8)
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-8)
+    assert_close(der, alphas[2], rtol=1e-8)
+
+
+def test_eos_alpha_fit_points_Yu_Lu():
+    class Yu_Lu_alpha(Yu_Lu_a_alpha, PRTranslatedConsistent):
+        pass
+
+    thing = Yu_Lu_alpha(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=0, alpha_coeffs=(1.1868811652571887, -1.0075171311502533, 0.6540438002854878, 0.44854762243698487))
+    T = 350
+    alphas = thing.a_alpha_and_derivatives(T)
+    assert_close1d(alphas, (3.4831735390369762, -0.005924311811504451, 1.869474016331568e-05), rtol=1e-13)
+    assert_close(alphas[0], thing.a_alpha_pure(T), rtol=1e-13)
+
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[0], T, dx=T*3e-8)
+    assert_close(der, alphas[1], rtol=1e-8)
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-8)
+    assert_close(der, alphas[2], rtol=1e-8)
+
+
+def test_eos_alpha_fit_points_Trebble_Bishnoi():
+    class Trebble_Bishnoi_alpha(Trebble_Bishnoi_a_alpha, PRTranslatedConsistent):
+        pass
+
+    thing = Trebble_Bishnoi_alpha(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=0, alpha_coeffs=(0.8344033705661086,))
+    T = 350
+    alphas = thing.a_alpha_and_derivatives(T)
+    assert_close1d(alphas, (3.4884875802013564, -0.005734447980886564, 9.426404104782832e-06), rtol=1e-13)
+    assert_close(alphas[0], thing.a_alpha_pure(T), rtol=1e-13)
+
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[0], T, dx=T*3e-8)
+    assert_close(der, alphas[1], rtol=1e-8)
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-8)
+    assert_close(der, alphas[2], rtol=1e-8)

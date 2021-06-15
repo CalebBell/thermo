@@ -168,6 +168,15 @@ Pure Alpha Functions
 .. autofunction:: thermo.eos_alpha_functions.Twu91_alpha_pure
 .. autofunction:: thermo.eos_alpha_functions.Soave_1972_alpha_pure
 .. autofunction:: thermo.eos_alpha_functions.Soave_1979_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Heyen_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Harmens_Knapp_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Mathias_1983_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Mathias_Copeman_untruncated_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Gibbons_Laughton_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Soave_1984_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Yu_Lu_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Trebble_Bishnoi_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Melhem_alpha_pure
 
 '''
 
@@ -189,7 +198,11 @@ __all__ = [
  'Gasem_a_alpha', 'Coquelet_a_alpha', 'Haghtalab_a_alpha', 'Saffari_a_alpha',
  'Chen_Yang_a_alpha', 'TwuSRK95_a_alpha', 'TwuPR95_a_alpha', 'Soave_1979_a_alpha',
  
- 'Twu91_alpha_pure', 'Soave_1972_alpha_pure', 'Soave_1979_alpha_pure']
+ 'Twu91_alpha_pure', 'Soave_1972_alpha_pure', 'Soave_1979_alpha_pure',
+ 'Heyen_alpha_pure', 'Harmens_Knapp_alpha_pure', 'Mathias_1983_alpha_pure',
+    'Mathias_Copeman_untruncated_alpha_pure', 'Gibbons_Laughton_alpha_pure',
+    'Soave_1984_alpha_pure', 'Yu_Lu_alpha_pure', 'Trebble_Bishnoi_alpha_pure',
+    'Melhem_alpha_pure']
 
 
 from fluids.numerics import (horner, horner_and_der2, numpy as np)
@@ -1250,6 +1263,52 @@ def Soave_1972_alpha_pure(T, Tc, c0):
     Tr = T/Tc
     return (c0*(-sqrt(T/Tc) + 1) + 1)**2
 
+def Heyen_alpha_pure(T, Tc, c1, c2):
+    return exp(c1*(1.0 -(T/Tc)**c2))
+
+def Harmens_Knapp_alpha_pure(T, Tc, c1, c2):
+    return (c1*(-sqrt(T/Tc) + 1) - c2*(1 - Tc/T) + 1)**2
+
+def Mathias_1983_alpha_pure(T, Tc, c1, c2):
+    Tr = T/Tc
+    return (1 + c1*(1-sqrt(Tr)) -c2*(1-Tr)*(0.7-Tr))**2
+
+def Mathias_Copeman_untruncated_alpha_pure(T, Tc, c1, c2, c3):
+    return (c1*(-sqrt(T/Tc) + 1) + c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2                                       
+                             
+def Mathias_Copeman_original_alpha_pure(T, Tc, c1, c2, c3):
+    if T < Tc:
+        return (c1*(-sqrt(T/Tc) + 1) + c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2                                       
+    rt = sqrt(T/Tc)
+    tau = 1.0 - rt
+    x = (1.0 + c1*tau)
+    return x*x
+
+def Mathias_Copeman_alpha_pure(T, Tc, *alpha_coeffs):
+    rt = sqrt(T/Tc)
+    tau = 1.0 - rt
+    if T < Tc:
+        x0 = horner(alpha_coeffs, tau)
+        return x0*x0
+    else:
+        x = (1.0 + alpha_coeffs[-2]*tau)
+        return x*x
+
+def Gibbons_Laughton_alpha_pure(T, Tc, c1, c2):
+    return (c1*(T/Tc - 1) + c2*(sqrt(T/Tc) - 1) + 1)
+
+def Soave_1984_alpha_pure(T, Tc, c1, c2):
+    return (c1*(-T/Tc + 1) + c2*(-1 + Tc/T) + 1)
+
+def Yu_Lu_alpha_pure(T, Tc, c1, c2, c3, c4):
+    return 10**(c4*(-T/Tc + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1))
+
+def Trebble_Bishnoi_alpha_pure(T, Tc, c1):
+    return exp(c1*(-T/Tc + 1))
+
+def Melhem_alpha_pure(T, Tc, c1, c2):
+    return exp(c1*(-T/Tc + 1) + c2*(-sqrt(T/Tc) + 1)**2)
+
 class a_alpha_base(object):
     def _init_test(self, Tc, a, alpha_coeffs, **kwargs):
         self.Tc = Tc
@@ -1369,8 +1428,7 @@ class Heyen_a_alpha(a_alpha_base):
     def a_alpha_pure(self, T):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
-        a_alpha = a*exp(c1*(1 -(T/Tc)**c2))
-        return a_alpha
+        return a*Heyen_alpha_pure(T, Tc, c1, c2)
 
 class Harmens_Knapp_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
@@ -1396,11 +1454,11 @@ class Harmens_Knapp_a_alpha(a_alpha_base):
         da_alpha_dT = a*(-c1*sqrt(T/Tc)/T - 2*Tc*c2/T**2)*(c1*(-sqrt(T/Tc) + 1) - c2*(1 - Tc/T) + 1)
         d2a_alpha_dT2 = a*((c1*sqrt(T/Tc) + 2*Tc*c2/T)**2 - (c1*sqrt(T/Tc) + 8*Tc*c2/T)*(c1*(sqrt(T/Tc) - 1) + c2*(1 - Tc/T) - 1))/(2*T**2)
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
+    
     def a_alpha_pure(self, T):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
-        a_alpha = a*(c1*(-sqrt(T/Tc) + 1) - c2*(1 - Tc/T) + 1)**2
-        return a_alpha
+        return a*Harmens_Knapp_alpha_pure(T, Tc, c1, c2)
 
 class Mathias_1983_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
@@ -1433,7 +1491,7 @@ class Mathias_1983_a_alpha(a_alpha_base):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         Tr = T/Tc
-        return a*(1 + c1*(1-sqrt(Tr)) -c2*(1-Tr)*(0.7-Tr))**2
+        return a*Mathias_1983_alpha_pure(T, Tc, c1, c2)
 
 class Mathias_Copeman_untruncated_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
@@ -1465,7 +1523,7 @@ class Mathias_Copeman_untruncated_a_alpha(a_alpha_base):
     def a_alpha_pure(self, T):
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
-        return a*(c1*(-sqrt(T/Tc) + 1) + c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2
+        return a*Mathias_Copeman_untruncated_alpha_pure(T, Tc, c1, c2, c3)
 
 
 class Mathias_Copeman_a_alpha(a_alpha_base):
@@ -1498,6 +1556,7 @@ class Mathias_Copeman_a_alpha(a_alpha_base):
                 da_alpha_dT = -a*(rt*x0*x1/T)
                 d2a_alpha_dT2 = a*((x0*x2/Tc + x1*x1/Tc + rt*x0*x1/T)/(2.0*T))
             else:
+                # [-2] is the index to get the second-last coefficient (c1)! Wasted time on this before.
                 c1 = alpha_coeffs[i][-2]
                 x0 = 1.0/T
                 x1 = 1.0/Tc
@@ -1513,12 +1572,14 @@ class Mathias_Copeman_a_alpha(a_alpha_base):
         return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
     def a_alpha_pure(self, T):
+        # alpha_coeffs [c3, c2, c1, 1] always
+        # [-2] is the index to get the second-last coefficient (c1)! Wasted time on this before.
+        # return self.a*Mathias_Copeman_alpha_pure(T, self.Tc, self.alpha_coeffs)
         Tc = self.Tc
         a = self.a
-        rt = (T/Tc)**0.5
+        rt = sqrt(T/Tc)
         tau = 1.0 - rt
         alpha_coeffs = self.alpha_coeffs
-#        alpha_coeffs [c3, c2, c1, 1] always
         if T < Tc:
             x0 = horner(alpha_coeffs, tau)
             a_alpha = x0*x0*a
@@ -1549,6 +1610,7 @@ class Mathias_Copeman_a_alpha(a_alpha_base):
             alpha = (1 + c1*tau)**2
             cse([alpha, diff(alpha, T), diff(alpha, T, T)], optimizations='basic')
             '''
+            # [-2] is the index to get the second-last coefficient (c1)! Wasted time on this before.
             c1 = alpha_coeffs[-2]
             x0 = 1.0/T
             x1 = 1.0/Tc
@@ -1588,7 +1650,7 @@ class Gibbons_Laughton_a_alpha(a_alpha_base):
     def a_alpha_pure(self, T):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
-        return a*(c1*(T/Tc - 1) + c2*(sqrt(T/Tc) - 1) + 1)
+        return a*Gibbons_Laughton_alpha_pure(T, Tc, c1, c2)
 
 
 class Soave_1984_a_alpha(a_alpha_base):
@@ -1614,11 +1676,11 @@ class Soave_1984_a_alpha(a_alpha_base):
         da_alpha_dT = a*(-c1/Tc - Tc*c2/T**2)
         d2a_alpha_dT2 = a*(2*Tc*c2/T**3)
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
-    # "Stryjek-Vera" skipped, doesn't match PRSV or PRSV2
+
     def a_alpha_pure(self, T):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
-        return a*(c1*(-T/Tc + 1) + c2*(-1 + Tc/T) + 1)
+        return a*Soave_1984_alpha_pure(T, Tc, c1, c2)
 
 
 class Yu_Lu_a_alpha(a_alpha_base):
@@ -1645,10 +1707,9 @@ class Yu_Lu_a_alpha(a_alpha_base):
         da_alpha_dT = a*(10**(c4*(-T/Tc + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1))*(c4*(-T/Tc + 1)*(2*T*c3/Tc**2 + c2/Tc) - c4*(T**2*c3/Tc**2 + T*c2/Tc + c1)/Tc)*log(10))
         d2a_alpha_dT2 = a*(10**(-c4*(T/Tc - 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1))*c4*(-4*T*c3/Tc - 2*c2 - 2*c3*(T/Tc - 1) + c4*(T**2*c3/Tc**2 + T*c2/Tc + c1 + (T/Tc - 1)*(2*T*c3/Tc + c2))**2*log(10))*log(10)/Tc**2)
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
+    
     def a_alpha_pure(self, T):
-        c1, c2, c3, c4 = self.alpha_coeffs
-        Tc, a = self.Tc, self.a
-        return a*10**(c4*(-T/Tc + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1))
+        return self.a*Yu_Lu_alpha_pure(T, self.Tc, *self.alpha_coeffs)
 
 
 class Trebble_Bishnoi_a_alpha(a_alpha_base):
@@ -1667,16 +1728,16 @@ class Trebble_Bishnoi_a_alpha(a_alpha_base):
            Parameter Cubic Equation of State." Fluid Phase Equilibria 35, no. 1
            (September 1, 1987): 1-18. doi:10.1016/0378-3812(87)80001-8.
         '''
-        c1 = self.alpha_coeffs
+        c1 = self.alpha_coeffs[0]
         Tc, a = self.Tc, self.a
         a_alpha = a*exp(c1*(-T/Tc + 1))
         da_alpha_dT = a*-c1*exp(c1*(-T/Tc + 1))/Tc
         d2a_alpha_dT2 = a*c1**2*exp(-c1*(T/Tc - 1))/Tc**2
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
+    
     def a_alpha_pure(self, T):
-        c1 = self.alpha_coeffs
-        Tc, a = self.Tc, self.a
-        return a*exp(c1*(-T/Tc + 1))
+        return self.a*Trebble_Bishnoi_alpha_pure(T, self.Tc, *self.alpha_coeffs)
+
 class Melhem_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
@@ -1701,10 +1762,9 @@ class Melhem_a_alpha(a_alpha_base):
         da_alpha_dT = a*((-c1/Tc - c2*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)/T)*exp(c1*(-T/Tc + 1) + c2*(-sqrt(T/Tc) + 1)**2))
         d2a_alpha_dT2 = a*(((c1/Tc - c2*sqrt(T/Tc)*(sqrt(T/Tc) - 1)/T)**2 + c2*(1/Tc - sqrt(T/Tc)*(sqrt(T/Tc) - 1)/T)/(2*T))*exp(-c1*(T/Tc - 1) + c2*(sqrt(T/Tc) - 1)**2))
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
     def a_alpha_pure(self, T):
-        c1, c2 = self.alpha_coeffs
-        Tc, a = self.Tc, self.a
-        return a*exp(c1*(-T/Tc + 1) + c2*(-sqrt(T/Tc) + 1)**2)
+        return self.a*Melhem_alpha_pure(T, self.Tc, *self.alpha_coeffs)
 
 class Androulakis_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):

@@ -108,7 +108,13 @@ from chemicals.thermal_conductivity import Chemsep_16, PPDS8, PPDS3
 from chemicals.interface import REFPROP_sigma, Somayajulu, Jasper, PPDS14, Watson_sigma, ISTExpansion
 from chemicals.volume import volume_VDI_PPDS, Rackett_fit, PPDS17, TDE_VDNS_rho
 from thermo import serialize
-from thermo.eos_alpha_functions import Twu91_alpha_pure, Soave_1979_alpha_pure, Soave_1972_alpha_pure
+from thermo.eos_alpha_functions import (Twu91_alpha_pure, Soave_1979_alpha_pure,
+                                        Soave_1972_alpha_pure, Heyen_alpha_pure,
+                                        Harmens_Knapp_alpha_pure, Mathias_1983_alpha_pure,
+                                        Mathias_Copeman_untruncated_alpha_pure,
+                                        Gibbons_Laughton_alpha_pure, Soave_1984_alpha_pure,
+                                        Yu_Lu_alpha_pure, Trebble_Bishnoi_alpha_pure,
+                                        Melhem_alpha_pure)
 from thermo.eos import GCEOS
 from thermo.eos_mix import GCEOSMIX
 from thermo.coolprop import coolprop_fluids
@@ -1479,12 +1485,43 @@ class TDependentProperty(object):
         # Alpha functions
         'Twu91_alpha_pure': (['Tc', 'c0', 'c1', 'c2'], [], {'f': Twu91_alpha_pure}, {'fit_params': ['c0', 'c1', 'c2'], 
                              'initial_guesses': []}),
+        
+        'Heyen_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Heyen_alpha_pure}, {'fit_params': ['c1', 'c2'], 
+                             'initial_guesses': []}),
+        
+        'Harmens_Knapp_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Harmens_Knapp_alpha_pure}, {'fit_params': ['c1', 'c2'], 
+                             'initial_guesses': []}),
+        
+        'Mathias_Copeman_untruncated_alpha_pure': (['Tc', 'c1', 'c2', 'c3'], [], {'f': Mathias_Copeman_untruncated_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3'],
+                             'initial_guesses': []}),
+
+        'Mathias_1983_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Mathias_1983_alpha_pure}, {'fit_params': ['c1', 'c2'], 
+                             'initial_guesses': []}),
+        
         'Soave_1972_alpha_pure': (['Tc', 'c0',], [], {'f': Soave_1972_alpha_pure}, {'fit_params': ['c0',], 
                              'initial_guesses': []}),
         
         'Soave_1979_alpha_pure': (['Tc', 'M', 'N'], [], {'f': Soave_1979_alpha_pure}, {'fit_params': ['M', 'N'], 
                              'initial_guesses': []}),
         
+        'Gibbons_Laughton_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Gibbons_Laughton_alpha_pure}, {'fit_params': ['c1', 'c2'], 
+                             'initial_guesses': []}),
+        
+        'Soave_1984_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Soave_1984_alpha_pure}, {'fit_params': ['c1', 'c2'], 
+                             'initial_guesses': []}),
+        
+        'Yu_Lu_alpha_pure': (['Tc', 'c1', 'c2', 'c3', 'c4'], [], {'f': Yu_Lu_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3', 'c4'], 
+                             'initial_guesses': [{'c1': .4, 'c2': 0.536843, 'c3': -0.39244, 'c4': 0.26507},
+                                                 {'c1': 1.1, 'c2': 0.536843, 'c3': -0.39244, 'c4': 0.26507},
+                                                 {'c1': .6, 'c2': 0.536843, 'c3': -0.39244, 'c4': 0.26507},
+                                                 ]}),
+        
+        'Trebble_Bishnoi_alpha_pure': (['Tc', 'c1',], [], {'f': Trebble_Bishnoi_alpha_pure}, {'fit_params': ['c1',], 
+                             'initial_guesses': []}),
+        
+        'Melhem_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Melhem_alpha_pure}, {'fit_params': ['c1', 'c2'], 
+                             'initial_guesses': []}),
+        # 
     }
 
     # Aliases from the DDBST
