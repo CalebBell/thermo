@@ -2597,3 +2597,33 @@ def test_eos_alpha_fit_points_Trebble_Bishnoi():
     assert_close(der, alphas[1], rtol=1e-8)
     der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-8)
     assert_close(der, alphas[2], rtol=1e-8)
+
+def test_eos_alpha_fit_points_Melhem():
+    class Melhem_alpha(Melhem_a_alpha, PRTranslatedConsistent):
+        pass
+
+    thing = Melhem_alpha(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=0, alpha_coeffs=(0.8136012835806382, 0.21353377400060156))
+    T = 350
+    alphas = thing.a_alpha_and_derivatives(T)
+    assert_close1d(alphas, (3.4873903777829316, -0.005889413320848851, 1.2469798978828123e-05), rtol=1e-13)
+    assert_close(alphas[0], thing.a_alpha_pure(T), rtol=1e-13)
+
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[0], T, dx=T*3e-8)
+    assert_close(der, alphas[1], rtol=1e-8)
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-8)
+    assert_close(der, alphas[2], rtol=1e-8)
+
+def test_eos_alpha_fit_points_Androulakis():
+    class Androulakis_alpha(Androulakis_a_alpha, PRTranslatedConsistent):
+        pass
+
+    thing = Androulakis_alpha(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=0, alpha_coeffs=(1.2935913490853943, -0.24195490220855576, 2.0275135822779924))
+    T = 350
+    alphas = thing.a_alpha_and_derivatives(T)
+    assert_close1d(alphas, (3.4831874642733305, -0.005925560260567424, 1.8653724115746103e-05), rtol=1e-13)
+    assert_close(alphas[0], thing.a_alpha_pure(T), rtol=1e-13)
+
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[0], T, dx=T*3e-8)
+    assert_close(der, alphas[1], rtol=1e-8)
+    der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-8)
+    assert_close(der, alphas[2], rtol=1e-8)

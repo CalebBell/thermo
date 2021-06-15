@@ -114,7 +114,7 @@ from thermo.eos_alpha_functions import (Twu91_alpha_pure, Soave_1979_alpha_pure,
                                         Mathias_Copeman_untruncated_alpha_pure,
                                         Gibbons_Laughton_alpha_pure, Soave_1984_alpha_pure,
                                         Yu_Lu_alpha_pure, Trebble_Bishnoi_alpha_pure,
-                                        Melhem_alpha_pure)
+                                        Melhem_alpha_pure, Androulakis_alpha_pure)
 from thermo.eos import GCEOS
 from thermo.eos_mix import GCEOSMIX
 from thermo.coolprop import coolprop_fluids
@@ -1522,6 +1522,8 @@ class TDependentProperty(object):
         'Melhem_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Melhem_alpha_pure}, {'fit_params': ['c1', 'c2'], 
                              'initial_guesses': []}),
         # 
+        'Androulakis_alpha_pure': (['Tc', 'c1', 'c2', 'c3'], [], {'f': Androulakis_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3'],
+                             'initial_guesses': []}),
     }
 
     # Aliases from the DDBST

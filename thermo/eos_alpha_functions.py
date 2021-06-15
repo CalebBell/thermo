@@ -177,7 +177,7 @@ Pure Alpha Functions
 .. autofunction:: thermo.eos_alpha_functions.Yu_Lu_alpha_pure
 .. autofunction:: thermo.eos_alpha_functions.Trebble_Bishnoi_alpha_pure
 .. autofunction:: thermo.eos_alpha_functions.Melhem_alpha_pure
-
+.. autofunction:: thermo.eos_alpha_functions.Androulakis_alpha_pure
 '''
 
 from __future__ import division, print_function
@@ -202,7 +202,7 @@ __all__ = [
  'Heyen_alpha_pure', 'Harmens_Knapp_alpha_pure', 'Mathias_1983_alpha_pure',
     'Mathias_Copeman_untruncated_alpha_pure', 'Gibbons_Laughton_alpha_pure',
     'Soave_1984_alpha_pure', 'Yu_Lu_alpha_pure', 'Trebble_Bishnoi_alpha_pure',
-    'Melhem_alpha_pure']
+    'Melhem_alpha_pure', 'Androulakis_alpha_pure']
 
 
 from fluids.numerics import (horner, horner_and_der2, numpy as np)
@@ -1309,6 +1309,9 @@ def Trebble_Bishnoi_alpha_pure(T, Tc, c1):
 def Melhem_alpha_pure(T, Tc, c1, c2):
     return exp(c1*(-T/Tc + 1) + c2*(-sqrt(T/Tc) + 1)**2)
 
+def Androulakis_alpha_pure(T, Tc, c1, c2, c3):
+    return (c1*(-(T/Tc)**(2/3) + 1) + c2*(-(T/Tc)**(2/3) + 1)**2 + c3*(-(T/Tc)**(2/3) + 1)**3 + 1)
+
 class a_alpha_base(object):
     def _init_test(self, Tc, a, alpha_coeffs, **kwargs):
         self.Tc = Tc
@@ -1794,9 +1797,8 @@ class Androulakis_a_alpha(a_alpha_base):
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def a_alpha_pure(self, T):
-        c1, c2, c3 = self.alpha_coeffs
-        Tc, a = self.Tc, self.a
-        return a*(c1*(-(T/Tc)**(2/3) + 1) + c2*(-(T/Tc)**(2/3) + 1)**2 + c3*(-(T/Tc)**(2/3) + 1)**3 + 1)
+        return self.a*Androulakis_alpha_pure(T, self.Tc, *self.alpha_coeffs)
+    
 
 class Schwartzentruber_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
