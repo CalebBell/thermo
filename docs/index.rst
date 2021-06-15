@@ -16,6 +16,7 @@ Contents:
    tutorial_phases_and_flash
    GibbsExcessLiquid_details
    modules
+   examples
 
 
 Installation
