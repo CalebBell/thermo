@@ -292,9 +292,9 @@ from thermo.eos_volume import (volume_solutions_mpmath, volume_solutions_mpmath_
                                volume_solutions_Cardano, volume_solutions_numpy,
                                volume_solutions_ideal, volume_solutions_a1, volume_solutions_a2,
                                volume_solutions_doubledouble_float)
-from thermo.eos_alpha_functions import (Poly_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
-                                    TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_1979_a_alpha,
-                                    TWU_a_alpha_common)
+from thermo.eos_alpha_functions import (Poly_a_alpha, Twu91_a_alpha, Mathias_Copeman_poly_a_alpha,
+                                        TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_1979_a_alpha,
+                                        TWU_a_alpha_common)
 R2 = R*R
 R_2 = 0.5*R
 R_inv = 1.0/R
@@ -8300,7 +8300,7 @@ class PRTranslatedPoly(Poly_a_alpha, PRTranslated):
 
     '''
 
-class PRTranslatedMathiasCopeman(Mathias_Copeman_a_alpha, PRTranslated):
+class PRTranslatedMathiasCopeman(Mathias_Copeman_poly_a_alpha, PRTranslated):
     pass
 
 class PRTranslatedCoqueletChapoyRichon(PRTranslatedMathiasCopeman):

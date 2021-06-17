@@ -222,13 +222,13 @@ from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     SRK_translated_ddelta_dns, SRK_translated_depsilon_dns, SRK_translated_d2delta_dninjs,
     SRK_translated_d2epsilon_dninjs, SRK_translated_d3epsilon_dninjnks,
     SRK_translated_d3delta_dninjnks)
-from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
-                                    Soave_1979_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
-                                    RK_a_alpha_and_derivatives_vectorized, RK_a_alphas_vectorized,
-                                    SRK_a_alpha_and_derivatives_vectorized, SRK_a_alphas_vectorized,
-                                    PRSV_a_alphas_vectorized, PRSV_a_alpha_and_derivatives_vectorized,
-                                    PRSV2_a_alphas_vectorized, PRSV2_a_alpha_and_derivatives_vectorized,
-                                    APISRK_a_alphas_vectorized, APISRK_a_alpha_and_derivatives_vectorized)
+from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_poly_a_alpha,
+                                        Soave_1979_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
+                                        RK_a_alpha_and_derivatives_vectorized, RK_a_alphas_vectorized,
+                                        SRK_a_alpha_and_derivatives_vectorized, SRK_a_alphas_vectorized,
+                                        PRSV_a_alphas_vectorized, PRSV_a_alpha_and_derivatives_vectorized,
+                                        PRSV2_a_alphas_vectorized, PRSV2_a_alpha_and_derivatives_vectorized,
+                                        APISRK_a_alphas_vectorized, APISRK_a_alpha_and_derivatives_vectorized)
 from thermo.eos import *
 
 try:
@@ -9755,7 +9755,7 @@ class MSRKMIXTranslated(Soave_1979_a_alpha, SRKMIXTranslatedConsistent):
         if fugacities:
             self.fugacities()
 
-class PSRK(Mathias_Copeman_a_alpha, PSRKMixingRules, SRKMIXTranslated):
+class PSRK(Mathias_Copeman_poly_a_alpha, PSRKMixingRules, SRKMIXTranslated):
     r'''Class for solving the Predictive Soave-Redlich-Kwong [1]_ equation of
     state for a mixture of any number of compounds.
     Solves the EOS on initialization.
@@ -9792,7 +9792,7 @@ class PSRK(Mathias_Copeman_a_alpha, PSRKMixingRules, SRKMIXTranslated):
         Overall mole fractions of all species, [-]
     alpha_coeffs : list[list[float]]
         Coefficients for
-        :obj:`thermo.eos_alpha_functions.Mathias_Copeman_a_alpha`, [-]
+        :obj:`thermo.eos_alpha_functions.Mathias_Copeman_poly_a_alpha`, [-]
     ge_model : :obj:`thermo.activity.GibbsExcess` object
         Excess Gibbs free energy model; to match the `PSRK` model, this is
         a :obj:`thermo.unifac.UNIFAC` object, [-]
