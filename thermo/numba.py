@@ -49,6 +49,8 @@ replaced = fluids.numba.numerics_dict.copy()
 
 
 def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
+    import chemicals.numba
+
     cache_blacklist = set(['sequential_substitution_2P_functional',])
     __funcs.update(normal_fluids.numba.numbafied_fluids_functions.copy())
 
@@ -99,7 +101,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                     'chemgroups_to_matrix',
                     'load_unifac_ip',
                     'FlashPureVLS',
-                    ])
+                    ] + chemicals.numba.numba_blacklisted)
 
     __funcs.update(normal_fluids.numba.numbafied_fluids_functions.copy())
 
@@ -111,7 +113,6 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
     else:
         conv_fun = numba.jit
 
-    import chemicals.numba
     chemicals.numba.iapws # Force the transform to occur
     for name in dir(chemicals.numba):
         obj = getattr(chemicals.numba, name)
