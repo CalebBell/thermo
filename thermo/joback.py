@@ -298,17 +298,17 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
     --------
     Acetone:
 
-    >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='CC(=O)C')
+    >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='CC(=O)C') # doctest:+SKIP
     ({1: 2, 24: 1}, True, 'OK')
 
     Sodium sulfate, (Na2O4S):
 
-    >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='[O-]S(=O)(=O)[O-].[Na+].[Na+]')
+    >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='[O-]S(=O)(=O)[O-].[Na+].[Na+]') # doctest:+SKIP
     ({29: 4}, False, 'Did not match all atoms present')
 
     Propionic anhydride (C6H10O3):
 
-    >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='CCC(=O)OC(=O)CC')
+    >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='CCC(=O)OC(=O)CC') # doctest:+SKIP
     ({1: 2, 2: 2, 28: 2}, False, 'Matched some atoms repeatedly: [4]')
     '''
     if not loaded_rdkit:
@@ -453,27 +453,27 @@ class Joback(object):
     --------
     Analysis of Acetone:
 
-    >>> J = Joback('CC(=O)C')
-    >>> J.Hfus(J.counts)
+    >>> J = Joback('CC(=O)C') # doctest:+SKIP
+    >>> J.Hfus(J.counts) # doctest:+SKIP
     5125.0
-    >>> J.Cpig(350)
+    >>> J.Cpig(350) # doctest:+SKIP
     84.69109750000001
-    >>> J.status
+    >>> J.status # doctest:+SKIP
     'OK'
 
     All properties can be obtained in one go with the `estimate` method:
 
-    >>> J.estimate(callables=False)
+    >>> J.estimate(callables=False) # doctest:+SKIP
     {'Tb': 322.11, 'Tm': 173.5, 'Tc': 500.5590049525365, 'Pc': 4802499.604994407, 'Vc': 0.0002095, 'Hf': -217829.99999999997, 'Gf': -154540.00000000003, 'Hfus': 5125.0, 'Hvap': 29018.0, 'mul_coeffs': [839.1099999999998, -14.99], 'Cpig_coeffs': [7.520000000000003, 0.26084, -0.0001207, 1.545999999999998e-08]}
 
 
     The results for propionic anhydride (if the status is not OK) should not be
     used.
 
-    >>> J = Joback('CCC(=O)OC(=O)CC')
-    >>> J.status
+    >>> J = Joback('CCC(=O)OC(=O)CC') # doctest:+SKIP
+    >>> J.status # doctest:+SKIP
     'Matched some atoms repeatedly: [4]'
-    >>> J.Cpig(300)
+    >>> J.Cpig(300) # doctest:+SKIP
     175.85999999999999
 
     None of the routines need to use the automatic routine; they can be used
@@ -1043,8 +1043,8 @@ class Joback(object):
 
         Examples
         --------
-        >>> J = Joback('CC(=O)C')
-        >>> J.Cpig(300)
+        >>> J = Joback('CC(=O)C') # doctest:+SKIP
+        >>> J.Cpig(300) # doctest:+SKIP
         75.32642000000001
         '''
         try:
@@ -1075,8 +1075,8 @@ class Joback(object):
 
         Examples
         --------
-        >>> J = Joback('CC(=O)C')
-        >>> J.mul(300)
+        >>> J = Joback('CC(=O)C') # doctest:+SKIP
+        >>> J.mul(300) # doctest:+SKIP
         0.0002940378347162687
         '''
         try:

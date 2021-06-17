@@ -1,13 +1,23 @@
 import sys
 import platform
+is_pypy = 'PyPy' in sys.version
+ver_tup = platform.python_version_tuple()[0:2]
+ver_tup = tuple(int(i) for i in ver_tup)
 
 def pytest_ignore_collect(path):
     path = str(path)
-    if 'manual_runner' in path or 'make_test_stubs' in path or 'plot' in path or 'prerelease' in path:
+    if path.endswith('chemical.py') or path.endswith('mixture.py')  or path.endswith('stream.py'):
         return True
-    if platform.python_version_tuple()[0:2] < ('3', '6'):
+    if 'benchmarks' in path:
+        return True
+    if ver_tup < (3, 7) or ver_tup >= (3, 10) or is_pypy:
+        # numba does not yet run under pypy
         if 'numba' in path:
             return True
+        if '.rst' in path: # skip .rst tests as different rendering from pint and no support for NUMBER flag
+            return True
+    if 'manual_runner' in path or 'make_test_stubs' in path or 'plot' in path or 'prerelease' in path:
+        return True
     if sys.version[0] == '2':
         if 'numba' in path or 'typing_utils' in path:
             return True

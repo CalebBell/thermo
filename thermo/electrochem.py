@@ -1406,7 +1406,7 @@ def Kweq_Arcis_Tremaine_Bandura_Lvov(T, rho_w):
     Examples
     --------
     >>> -1*log10(Kweq_Arcis_Tremaine_Bandura_Lvov(600, 700))
-    11.203153057603775
+    11.138236348
 
     References
     ----------

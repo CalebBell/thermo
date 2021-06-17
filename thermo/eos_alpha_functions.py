@@ -106,6 +106,10 @@ not yet been accelerated in a nice vectorized way.
     :members:
     :undoc-members:
     :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Mathias_Copeman_poly_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
 .. autoclass:: thermo.eos_alpha_functions.Mathias_Copeman_untruncated_a_alpha
     :members:
     :undoc-members:
@@ -138,7 +142,7 @@ not yet been accelerated in a nice vectorized way.
     :members:
     :undoc-members:
     :show-inheritance:
-.. autoclass:: thermo.eos_alpha_functions.Soave_93_a_alpha
+.. autoclass:: thermo.eos_alpha_functions.Soave_1993_a_alpha
     :members:
     :undoc-members:
     :show-inheritance:
@@ -177,6 +181,15 @@ Pure Alpha Functions
 .. autofunction:: thermo.eos_alpha_functions.Yu_Lu_alpha_pure
 .. autofunction:: thermo.eos_alpha_functions.Trebble_Bishnoi_alpha_pure
 .. autofunction:: thermo.eos_alpha_functions.Melhem_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Androulakis_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Schwartzentruber_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Almeida_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Soave_1993_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Gasem_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Coquelet_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Haghtalab_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Saffari_alpha_pure
+.. autofunction:: thermo.eos_alpha_functions.Chen_Yang_alpha_pure
 
 '''
 
@@ -192,9 +205,9 @@ __all__ = [
 
 'a_alpha_base', 'Poly_a_alpha', 'Soave_1972_a_alpha', 'Heyen_a_alpha',
 'Harmens_Knapp_a_alpha', 'Mathias_1983_a_alpha', 'Mathias_Copeman_untruncated_a_alpha',
- 'Mathias_Copeman_a_alpha', 'Gibbons_Laughton_a_alpha', 'Soave_1984_a_alpha',
+    'Mathias_Copeman_poly_a_alpha', 'Gibbons_Laughton_a_alpha', 'Soave_1984_a_alpha',
  'Yu_Lu_a_alpha', 'Trebble_Bishnoi_a_alpha', 'Melhem_a_alpha', 'Androulakis_a_alpha',
- 'Schwartzentruber_a_alpha', 'Almeida_a_alpha', 'Twu91_a_alpha', 'Soave_93_a_alpha',
+ 'Schwartzentruber_a_alpha', 'Almeida_a_alpha', 'Twu91_a_alpha', 'Soave_1993_a_alpha',
  'Gasem_a_alpha', 'Coquelet_a_alpha', 'Haghtalab_a_alpha', 'Saffari_a_alpha',
  'Chen_Yang_a_alpha', 'TwuSRK95_a_alpha', 'TwuPR95_a_alpha', 'Soave_1979_a_alpha',
  
@@ -202,7 +215,10 @@ __all__ = [
  'Heyen_alpha_pure', 'Harmens_Knapp_alpha_pure', 'Mathias_1983_alpha_pure',
     'Mathias_Copeman_untruncated_alpha_pure', 'Gibbons_Laughton_alpha_pure',
     'Soave_1984_alpha_pure', 'Yu_Lu_alpha_pure', 'Trebble_Bishnoi_alpha_pure',
-    'Melhem_alpha_pure']
+    'Melhem_alpha_pure', 'Androulakis_alpha_pure', 'Schwartzentruber_alpha_pure',
+    'Almeida_alpha_pure', 'Soave_1993_alpha_pure', 'Gasem_alpha_pure',
+    'Coquelet_alpha_pure', 'Haghtalab_alpha_pure', 'Saffari_alpha_pure',
+    'Chen_Yang_alpha_pure', 'Mathias_Copeman_a_alpha']
 
 
 from fluids.numerics import (horner, horner_and_der2, numpy as np)
@@ -1125,7 +1141,7 @@ def APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s, a_alphas=No
         d2a_alpha_dT2s[i] = ais[i]*(-x4*(-x2*x7 + x5 + x7) + x6*x6)*c0
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
-def TWU_a_alpha_common(T, Tc, omega, a, full=True, quick=True, method='PR'):
+def TWU_a_alpha_common(T, Tc, omega, a, full=True, method='PR'):
     r'''Function to calculate `a_alpha` and optionally its first and second
     derivatives for the TWUPR or TWUSRK EOS. Returns 'a_alpha', and
     optionally 'da_alpha_dT' and 'd2a_alpha_dT2'.
@@ -1144,9 +1160,6 @@ def TWU_a_alpha_common(T, Tc, omega, a, full=True, quick=True, method='PR'):
         Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
     full : float
         Whether or not to return its first and second derivatives
-    quick : bool, optional
-        Whether to use a SymPy cse-derived expression (3x faster) or
-        individual formulas
     method : str
         Either 'PR' or 'SRK'
 
@@ -1201,48 +1214,39 @@ def TWU_a_alpha_common(T, Tc, omega, a, full=True, quick=True, method='PR'):
             a_alpha = min_a_alpha
         return a_alpha
     else:
-        if quick:
-            x0 = Tr
-            x1 = M0 - 1
-            x2 = N0*x1
-            x3 = x0**x2
-            x4 = M0*N0
-            x5 = x0**x4
-            x6 = exp(-L0*(x5 - 1.))
-            x7 = x3*x6
-            x8 = M1 - 1.
-            x9 = N1*x8
-            x10 = x0**x9
-            x11 = M1*N1
-            x12 = x0**x11
-            x13 = x2*x7
-            x14 = L0*M0*N0*x3*x5*x6
-            x15 = x13 - x14
-            x16 = exp(-L1*(x12 - 1))
-            x17 = -L1*M1*N1*x10*x12*x16 + x10*x16*x9 - x13 + x14
-            x18 = N0*N0
-            x19 = x18*x3*x6
-            x20 = x1**2*x19
-            x21 = M0**2
-            x22 = L0*x18*x3*x5*x6
-            x23 = x21*x22
-            x24 = 2*M0*x1*x22
-            x25 = L0**2*x0**(2*x4)*x19*x21
-            x26 = N1**2
-            x27 = x10*x16*x26
-            x28 = M1**2
-            x29 = L1*x10*x12*x16*x26
-            a_alpha = a*(-omega*(-x10*exp(L1*(-x12 + 1)) + x3*exp(L0*(-x5 + 1))) + x7)
-            da_alpha_dT = a*(omega*x17 + x15)/T
-            d2a_alpha_dT2 = a*(-(omega*(-L1**2*x0**(2.*x11)*x27*x28 + 2.*M1*x29*x8 + x17 + x20 - x23 - x24 + x25 - x27*x8**2 + x28*x29) + x15 - x20 + x23 + x24 - x25)/T**2)
-        else:
-            alpha0 = Tr**(N0*(M0-1.))*exp(L0*(1.-Tr**(N0*M0)))
-            alpha1 = Tr**(N1*(M1-1.))*exp(L1*(1.-Tr**(N1*M1)))
-            alpha = alpha0 + omega*(alpha1 - alpha0)
-            a_alpha = a*alpha
-#            a_alpha = TWU_a_alpha_common(T=T, Tc=Tc, omega=omega, a=a, full=False, quick=quick, method=method)
-            da_alpha_dT = a*(-L0*M0*N0*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(L0*(-(T/Tc)**(M0*N0) + 1))/T + N0*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(L0*(-(T/Tc)**(M0*N0) + 1))/T + omega*(L0*M0*N0*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(L0*(-(T/Tc)**(M0*N0) + 1))/T - L1*M1*N1*(T/Tc)**(M1*N1)*(T/Tc)**(N1*(M1 - 1))*exp(L1*(-(T/Tc)**(M1*N1) + 1))/T - N0*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(L0*(-(T/Tc)**(M0*N0) + 1))/T + N1*(T/Tc)**(N1*(M1 - 1))*(M1 - 1)*exp(L1*(-(T/Tc)**(M1*N1) + 1))/T))
-            d2a_alpha_dT2 = a*((L0**2*M0**2*N0**2*(T/Tc)**(2*M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - L0*M0**2*N0**2*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - 2*L0*M0*N0**2*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(-L0*((T/Tc)**(M0*N0) - 1)) + L0*M0*N0*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) + N0**2*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)**2*exp(-L0*((T/Tc)**(M0*N0) - 1)) - N0*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(-L0*((T/Tc)**(M0*N0) - 1)) - omega*(L0**2*M0**2*N0**2*(T/Tc)**(2*M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - L0*M0**2*N0**2*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - 2*L0*M0*N0**2*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(-L0*((T/Tc)**(M0*N0) - 1)) + L0*M0*N0*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - L1**2*M1**2*N1**2*(T/Tc)**(2*M1*N1)*(T/Tc)**(N1*(M1 - 1))*exp(-L1*((T/Tc)**(M1*N1) - 1)) + L1*M1**2*N1**2*(T/Tc)**(M1*N1)*(T/Tc)**(N1*(M1 - 1))*exp(-L1*((T/Tc)**(M1*N1) - 1)) + 2*L1*M1*N1**2*(T/Tc)**(M1*N1)*(T/Tc)**(N1*(M1 - 1))*(M1 - 1)*exp(-L1*((T/Tc)**(M1*N1) - 1)) - L1*M1*N1*(T/Tc)**(M1*N1)*(T/Tc)**(N1*(M1 - 1))*exp(-L1*((T/Tc)**(M1*N1) - 1)) + N0**2*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)**2*exp(-L0*((T/Tc)**(M0*N0) - 1)) - N0*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(-L0*((T/Tc)**(M0*N0) - 1)) - N1**2*(T/Tc)**(N1*(M1 - 1))*(M1 - 1)**2*exp(-L1*((T/Tc)**(M1*N1) - 1)) + N1*(T/Tc)**(N1*(M1 - 1))*(M1 - 1)*exp(-L1*((T/Tc)**(M1*N1) - 1))))/T**2)
+        x0 = Tr
+        x1 = M0 - 1
+        x2 = N0*x1
+        x3 = x0**x2
+        x4 = M0*N0
+        x5 = x0**x4
+        x6 = exp(-L0*(x5 - 1.))
+        x7 = x3*x6
+        x8 = M1 - 1.
+        x9 = N1*x8
+        x10 = x0**x9
+        x11 = M1*N1
+        x12 = x0**x11
+        x13 = x2*x7
+        x14 = L0*M0*N0*x3*x5*x6
+        x15 = x13 - x14
+        x16 = exp(-L1*(x12 - 1))
+        x17 = -L1*M1*N1*x10*x12*x16 + x10*x16*x9 - x13 + x14
+        x18 = N0*N0
+        x19 = x18*x3*x6
+        x20 = x1**2*x19
+        x21 = M0**2
+        x22 = L0*x18*x3*x5*x6
+        x23 = x21*x22
+        x24 = 2*M0*x1*x22
+        x25 = L0**2*x0**(2*x4)*x19*x21
+        x26 = N1**2
+        x27 = x10*x16*x26
+        x28 = M1**2
+        x29 = L1*x10*x12*x16*x26
+        a_alpha = a*(-omega*(-x10*exp(L1*(-x12 + 1)) + x3*exp(L0*(-x5 + 1))) + x7)
+        da_alpha_dT = a*(omega*x17 + x15)/T
+        d2a_alpha_dT2 = a*(-(omega*(-L1**2*x0**(2.*x11)*x27*x28 + 2.*M1*x29*x8 + x17 + x20 - x23 - x24 + x25 - x27*x8**2 + x28*x29) + x15 - x20 + x23 + x24 - x25)/T**2)
         if a_alpha < min_a_alpha:
             a_alpha = min_a_alpha
             da_alpha_dT = d2a_alpha_dT2 = 0.0
@@ -1308,6 +1312,34 @@ def Trebble_Bishnoi_alpha_pure(T, Tc, c1):
 
 def Melhem_alpha_pure(T, Tc, c1, c2):
     return exp(c1*(-T/Tc + 1) + c2*(-sqrt(T/Tc) + 1)**2)
+
+def Androulakis_alpha_pure(T, Tc, c1, c2, c3):
+    return (c1*(-(T/Tc)**(2/3) + 1) + c2*(-(T/Tc)**(2/3) + 1)**2 + c3*(-(T/Tc)**(2/3) + 1)**3 + 1)
+
+def Schwartzentruber_alpha_pure(T, Tc, c1, c2, c3, c4):
+    return ((c4*(-sqrt(T/Tc) + 1) - (-sqrt(T/Tc) + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1) + 1)**2)
+
+def Almeida_alpha_pure(T, Tc, c1, c2, c3):
+    return exp(c1*(-T/Tc + 1)*abs(T/Tc - 1)**(c2 - 1) + c3*(-1 + Tc/T))
+
+def Soave_1993_alpha_pure(T, Tc, c1, c2):
+    return (c1*(-T/Tc + 1) + c2*(-sqrt(T/Tc) + 1)**2 + 1)
+
+def Gasem_alpha_pure(T, Tc, c1, c2, c3):
+    return (exp((-(T/Tc)**c3 + 1)*(T*c2/Tc + c1)))
+
+def Coquelet_alpha_pure(T, Tc, c1, c2, c3):
+    return (exp(c1*(-T/Tc + 1)*(c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2))
+
+def Haghtalab_alpha_pure(T, Tc, c1, c2, c3):
+    return exp((-c3**log(T/Tc) + 1)*(-T*c2/Tc + c1))
+
+def Saffari_alpha_pure(T, Tc, c1, c2, c3):
+    return (exp(T*c1/Tc + c2*log(T/Tc) + c3*(-sqrt(T/Tc) + 1)))
+
+def Chen_Yang_alpha_pure(T, Tc, omega, c1, c2, c3, c4, c5, c6, c7):
+    return exp(c4*log((-sqrt(T/Tc) + 1)*(c5 + c6*omega + c7*omega**2) + 1)**2 + (-T/Tc + 1)*(c1 + c2*omega + c3*omega**2))
+
 
 class a_alpha_base(object):
     def _init_test(self, Tc, a, alpha_coeffs, **kwargs):
@@ -1525,8 +1557,51 @@ class Mathias_Copeman_untruncated_a_alpha(a_alpha_base):
         Tc, a = self.Tc, self.a
         return a*Mathias_Copeman_untruncated_alpha_pure(T, Tc, c1, c2, c3)
 
-
 class Mathias_Copeman_a_alpha(a_alpha_base):
+    def a_alpha_and_derivatives_pure(self, T):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives according to Mathias and Copeman (1983) [1]_. Returns `a_alpha`,
+        `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
+        for more documentation. Three coefficients needed.
+
+        .. math::
+            \alpha = \left(c_{1} \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right)
+            + c_{2} \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right)^{2} + c_{3} \left(
+            - \sqrt{\frac{T}{T_{c,i}}} + 1\right)^{3} + 1\right)^{2}
+
+        References
+        ----------
+        .. [1] Mathias, Paul M., and Thomas W. Copeman. "Extension of the
+           Peng-Robinson Equation of State to Complex Mixtures: Evaluation of
+           the Various Forms of the Local Composition Concept." Fluid Phase
+           Equilibria 13 (January 1, 1983): 91-108.
+           doi:10.1016/0378-3812(83)80084-3.
+        '''
+        c1, c2, c3 = self.alpha_coeffs
+        Tc, a = self.Tc, self.a
+        Tr = T/Tc
+        if Tr > 1:
+            x0 = 1.0/T
+            x1 = 1.0/Tc
+            x2 = sqrt(T*x1)
+            x3 = c1*(x2 - 1.0) - 1.0
+            x4 = x0*x2*x3
+            a_alpha = a*x3*x3
+            da_alpha_dT = a*c1*x4
+            d2a_alpha_dT2 = 0.5*a*c1*x0*(c1*x1 - x4)
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        else:
+            a_alpha = a*(c1*(-sqrt(T/Tc) + 1) + c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2
+            da_alpha_dT = a*(-c1*sqrt(T/Tc)/T - 2*c2*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)/T - 3*c3*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)**2/T)*(c1*(-sqrt(T/Tc) + 1) + c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)
+            d2a_alpha_dT2 = a*(T*(c1 - 2*c2*(sqrt(T/Tc) - 1) + 3*c3*(sqrt(T/Tc) - 1)**2)**2 - (2*T*(c2 - 3*c3*(sqrt(T/Tc) - 1)) + Tc*sqrt(T/Tc)*(c1 - 2*c2*(sqrt(T/Tc) - 1) + 3*c3*(sqrt(T/Tc) - 1)**2))*(c1*(sqrt(T/Tc) - 1) - c2*(sqrt(T/Tc) - 1)**2 + c3*(sqrt(T/Tc) - 1)**3 - 1))/(2*T**2*Tc)
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
+    def a_alpha_pure(self, T):
+        return self.a*Mathias_Copeman_original_alpha_pure(T, self.Tc, *self.alpha_coeffs)
+
+
+
+class Mathias_Copeman_poly_a_alpha(a_alpha_base):
 
     def a_alphas_vectorized(self, T):
         ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
@@ -1794,9 +1869,8 @@ class Androulakis_a_alpha(a_alpha_base):
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def a_alpha_pure(self, T):
-        c1, c2, c3 = self.alpha_coeffs
-        Tc, a = self.Tc, self.a
-        return a*(c1*(-(T/Tc)**(2/3) + 1) + c2*(-(T/Tc)**(2/3) + 1)**2 + c3*(-(T/Tc)**(2/3) + 1)**3 + 1)
+        return self.a*Androulakis_alpha_pure(T, self.Tc, *self.alpha_coeffs)
+    
 
 class Schwartzentruber_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
@@ -1823,9 +1897,7 @@ class Schwartzentruber_a_alpha(a_alpha_base):
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def a_alpha_pure(self, T):
-        c1, c2, c3, c4 = self.alpha_coeffs
-        Tc, a = self.Tc, self.a
-        return a*((c4*(-sqrt(T/Tc) + 1) - (-sqrt(T/Tc) + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1) + 1)**2)
+        return self.a*Schwartzentruber_alpha_pure(T, self.Tc, *self.alpha_coeffs)
 
 
 class Almeida_a_alpha(a_alpha_base):
@@ -1846,18 +1918,45 @@ class Almeida_a_alpha(a_alpha_base):
            Dependência Com a Temperatura Do Termo Atrativo de Equações de
            Estado Cúbicas." RBE, Rev. Bras. Eng., Cad. Eng. Quim 8 (1991): 95.
         '''
-        # Note: For the second derivative, requires the use a CAS which can
+        # Note: Sympy didn't handle the derivative of the absolute value for 
+        # the second derivative, requires the use a CAS which can
         # handle the assumption that Tr-1 != 0.
+        # A second pass on this function resulted in writting two functions:
+        # one which works on Tr < 1, one which works on Tr > 1.
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
-        a_alpha = a*exp(c1*(-T/Tc + 1)*abs(T/Tc - 1)**(c2 - 1) + c3*(-1 + Tc/T))
-        da_alpha_dT = a*((c1*(c2 - 1)*(-T/Tc + 1)*abs(T/Tc - 1)**(c2 - 1)*copysign(1, T/Tc - 1)/(Tc*abs(T/Tc - 1)) - c1*abs(T/Tc - 1)**(c2 - 1)/Tc - Tc*c3/T**2)*exp(c1*(-T/Tc + 1)*abs(T/Tc - 1)**(c2 - 1) + c3*(-1 + Tc/T)))
-        d2a_alpha_dT2 = a*exp(c3*(Tc/T - 1) - c1*abs(T/Tc - 1)**(c2 - 1)*(T/Tc - 1))*((c1*abs(T/Tc - 1)**(c2 - 1))/Tc + (Tc*c3)/T**2 + (c1*abs(T/Tc - 1)**(c2 - 2)*copysign(1, T/Tc - 1)*(c2 - 1)*(T/Tc - 1))/Tc)**2 - exp(c3*(Tc/T - 1) - c1*abs(T/Tc - 1)**(c2 - 1)*(T/Tc - 1))*((2*c1*abs(T/Tc - 1)**(c2 - 2)*copysign(1, T/Tc - 1)*(c2 - 1))/Tc**2 - (2*Tc*c3)/T**3 + (c1*abs(T/Tc - 1)**(c2 - 3)*copysign(1, T/Tc - 1)**2*(c2 - 1)*(c2 - 2)*(T/Tc - 1))/Tc**2)
-        return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        Tr = T/Tc
+        if Tr > 1:
+            x0 = c3*(1 - Tc/T)
+            x1 = 1/Tc
+            x2 = T*x1 - 1
+            x3 = c2 - 1
+            x4 = c1*x2**x3
+            x5 = x2*x4
+            x6 = exp(-x0 - x5)
+            x7 = Tc*c3
+            x8 = x1*x4
+            x9 = x3*x8 + x8 + x7/T**2
+            x10 = x4/(Tc**2*x2)
+            alpha, d_alpha_dT, d2_alpha_dT2 = exp(-x0 - x5), -x6*x9, x6*(-x10*x3**2 - x10*x3 + x9**2 + 2*x7/T**3)
+        else:
+            x0 = c3*(1 - Tc/T)
+            x1 = 1/Tc
+            x2 = T*x1
+            x3 = x2 - 1
+            x4 = c2 - 1
+            x5 = c1*(1 - x2)**x4
+            x6 = x3*x5
+            x7 = exp(-x0 - x6)
+            x8 = Tc*c3
+            x9 = x1*x5
+            x10 = x4*x9 + x9 + x8/T**2
+            x11 = x5/(Tc**2*x3)
+            alpha, d_alpha_dT, d2_alpha_dT2 = exp(-x0 - x6), -x10*x7, x7*(x10**2 - x11*x4**2 - x11*x4 + 2*x8/T**3)
+        return a*alpha, a*d_alpha_dT, a*d2_alpha_dT2
+
     def a_alpha_pure(self, T):
-        c1, c2, c3 = self.alpha_coeffs
-        Tc, a = self.Tc, self.a
-        return a*exp(c1*(-T/Tc + 1)*abs(T/Tc - 1)**(c2 - 1) + c3*(-1 + Tc/T))
+        return self.a*Almeida_alpha_pure(T, self.Tc, *self.alpha_coeffs)
 
 
 class Twu91_a_alpha(a_alpha_base):
@@ -1972,7 +2071,7 @@ class Twu91_a_alpha(a_alpha_base):
         return array(a_alphas), array(da_alpha_dTs), array(d2a_alpha_dT2s)
 
 
-class Soave_93_a_alpha(a_alpha_base):
+class Soave_1993_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Soave (1983) [1]_. Returns `a_alpha`, `da_alpha_dT`, and
@@ -1995,10 +2094,9 @@ class Soave_93_a_alpha(a_alpha_base):
         da_alpha_dT = a*(-c1/Tc - c2*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)/T)
         d2a_alpha_dT2 = a*(c2*(1/Tc - sqrt(T/Tc)*(sqrt(T/Tc) - 1)/T)/(2*T))
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
     def a_alpha_pure(self, T):
-        c1, c2 = self.alpha_coeffs
-        Tc, a = self.Tc, self.a
-        return a*(c1*(-T/Tc + 1) + c2*(-sqrt(T/Tc) + 1)**2 + 1)
+        return self.a*Soave_1993_alpha_pure(T, self.Tc, *self.alpha_coeffs)
 
 
 class Gasem_a_alpha(a_alpha_base):
@@ -2027,9 +2125,7 @@ class Gasem_a_alpha(a_alpha_base):
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def a_alpha_pure(self, T):
-        c1, c2, c3 = self.alpha_coeffs
-        Tc, a = self.Tc, self.a
-        return a*(exp((-(T/Tc)**c3 + 1)*(T*c2/Tc + c1)))
+        return self.a*Gasem_alpha_pure(T, self.Tc, *self.alpha_coeffs)
 
 
 class Coquelet_a_alpha(a_alpha_base):
@@ -2061,9 +2157,7 @@ class Coquelet_a_alpha(a_alpha_base):
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def a_alpha_pure(self, T):
-        c1, c2, c3 = self.alpha_coeffs
-        Tc, a = self.Tc, self.a
-        return a*(exp(c1*(-T/Tc + 1)*(c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2))
+        return self.a*Coquelet_alpha_pure(T, self.Tc, *self.alpha_coeffs)
 
 
 class Haghtalab_a_alpha(a_alpha_base):
@@ -2091,10 +2185,9 @@ class Haghtalab_a_alpha(a_alpha_base):
         da_alpha_dT = a*((-c2*(-c3**log(T/Tc) + 1)/Tc - c3**log(T/Tc)*(-T*c2/Tc + c1)*log(c3)/T)*exp((-c3**log(T/Tc) + 1)*(-T*c2/Tc + c1)))
         d2a_alpha_dT2 = a*(((c2*(c3**log(T/Tc) - 1)/Tc + c3**log(T/Tc)*(T*c2/Tc - c1)*log(c3)/T)**2 + c3**log(T/Tc)*(2*c2/Tc + (T*c2/Tc - c1)*log(c3)/T - (T*c2/Tc - c1)/T)*log(c3)/T)*exp((c3**log(T/Tc) - 1)*(T*c2/Tc - c1)))
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
     def a_alpha_pure(self, T):
-        c1, c2, c3 = self.alpha_coeffs
-        Tc, a = self.Tc, self.a
-        return a*exp((-c3**log(T/Tc) + 1)*(-T*c2/Tc + c1))
+        return self.a*Haghtalab_alpha_pure(T, self.Tc, *self.alpha_coeffs)
 
 
 class Saffari_a_alpha(a_alpha_base):
@@ -2121,10 +2214,9 @@ class Saffari_a_alpha(a_alpha_base):
         da_alpha_dT = a*((c1/Tc + c2/T - c3*sqrt(T/Tc)/(2*T))*exp(T*c1/Tc + c2*log(T/Tc) + c3*(-sqrt(T/Tc) + 1)))
         d2a_alpha_dT2 = a*(((2*c1/Tc + 2*c2/T - c3*sqrt(T/Tc)/T)**2 - (4*c2 - c3*sqrt(T/Tc))/T**2)*exp(T*c1/Tc + c2*log(T/Tc) - c3*(sqrt(T/Tc) - 1))/4)
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
     def a_alpha_pure(self, T):
-        c1, c2, c3 = self.alpha_coeffs
-        Tc, a = self.Tc, self.a
-        return a*(exp(T*c1/Tc + c2*log(T/Tc) + c3*(-sqrt(T/Tc) + 1)))
+        return self.a*Saffari_alpha_pure(T, self.Tc, *self.alpha_coeffs)
 
 
 class Chen_Yang_a_alpha(a_alpha_base):
@@ -2154,9 +2246,7 @@ class Chen_Yang_a_alpha(a_alpha_base):
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def a_alpha_pure(self, T):
-        c1, c2, c3, c4, c5, c6, c7 = self.alpha_coeffs
-        Tc, a, omega = self.Tc, self.a, self.omega
-        return a*exp(c4*log((-sqrt(T/Tc) + 1)*(c5 + c6*omega + c7*omega**2) + 1)**2 + (-T/Tc + 1)*(c1 + c2*omega + c3*omega**2))
+        return self.a*Chen_Yang_alpha_pure(T, self.Tc, self.omega, *self.alpha_coeffs)
 
 class TwuSRK95_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
@@ -2216,7 +2306,7 @@ class TwuSRK95_a_alpha(a_alpha_base):
         >>> diff(alpha, T)  # doctest:+SKIP
         >>> diff(alpha, T, T)  # doctest:+SKIP
         '''
-        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=True, quick=True, method='SRK')
+        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=True, method='SRK')
 
     def a_alpha_pure(self, T):
         r'''Method to calculate :math:`a \alpha` for the Twu alpha function.
@@ -2256,11 +2346,11 @@ class TwuSRK95_a_alpha(a_alpha_base):
         This method does not alter the object's state and the temperature
         provided can be a different than that of the object.
         '''
-        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, quick=True, method='SRK')
+        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, method='SRK')
 
     def a_alphas_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
-        a_alphas = [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, quick=True, method='SRK')
+        a_alphas = [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, method='SRK')
                 for i in range(self.N)]
         if self.scalar:
             return a_alphas
@@ -2270,7 +2360,7 @@ class TwuSRK95_a_alpha(a_alpha_base):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
         r0, r1, r2 = [], [], []
         for i in range(self.N):
-            v0, v1, v2 = TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=True, quick=True, method='SRK')
+            v0, v1, v2 = TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=True, method='SRK')
             r0.append(v0)
             r1.append(v1)
             r2.append(v2)
@@ -2339,7 +2429,7 @@ class TwuPR95_a_alpha(a_alpha_base):
         >>> diff(alpha, T)  # doctest:+SKIP
         >>> diff(alpha, T, T)  # doctest:+SKIP
         '''
-        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=True, quick=True, method='PR')
+        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=True, method='PR')
 
     def a_alpha_pure(self, T):
         r'''Method to calculate :math:`a \alpha` for the Twu alpha function.
@@ -2379,11 +2469,11 @@ class TwuPR95_a_alpha(a_alpha_base):
         This method does not alter the object's state and the temperature
         provided can be a different than that of the object.
         '''
-        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, quick=True, method='PR')
+        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, method='PR')
 
     def a_alphas_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
-        a_alphas = [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, quick=True, method='PR')
+        a_alphas = [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, method='PR')
                 for i in range(self.N)]
         if self.scalar:
             return a_alphas
@@ -2393,7 +2483,7 @@ class TwuPR95_a_alpha(a_alpha_base):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
         r0, r1, r2 = [], [], []
         for i in range(self.N):
-            v0, v1, v2 = TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=True, quick=True, method='PR')
+            v0, v1, v2 = TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=True, method='PR')
             r0.append(v0)
             r1.append(v1)
             r2.append(v2)
@@ -2464,8 +2554,8 @@ class Soave_1979_a_alpha(a_alpha_base):
 a_alpha_bases = [Soave_1972_a_alpha, Heyen_a_alpha, Harmens_Knapp_a_alpha, Mathias_1983_a_alpha,
                  Mathias_Copeman_untruncated_a_alpha, Gibbons_Laughton_a_alpha, Soave_1984_a_alpha, Yu_Lu_a_alpha,
                  Trebble_Bishnoi_a_alpha, Melhem_a_alpha, Androulakis_a_alpha, Schwartzentruber_a_alpha,
-                 Almeida_a_alpha, Twu91_a_alpha, Soave_93_a_alpha, Gasem_a_alpha,
+                 Almeida_a_alpha, Twu91_a_alpha, Soave_1993_a_alpha, Gasem_a_alpha,
                  Coquelet_a_alpha, Haghtalab_a_alpha, Saffari_a_alpha, Chen_Yang_a_alpha,
-                 Mathias_Copeman_a_alpha,
+                 Mathias_Copeman_poly_a_alpha,
                  TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_1979_a_alpha]
 

@@ -114,7 +114,11 @@ from thermo.eos_alpha_functions import (Twu91_alpha_pure, Soave_1979_alpha_pure,
                                         Mathias_Copeman_untruncated_alpha_pure,
                                         Gibbons_Laughton_alpha_pure, Soave_1984_alpha_pure,
                                         Yu_Lu_alpha_pure, Trebble_Bishnoi_alpha_pure,
-                                        Melhem_alpha_pure)
+                                        Melhem_alpha_pure, Androulakis_alpha_pure,
+                                        Schwartzentruber_alpha_pure, Almeida_alpha_pure,
+                                        Soave_1993_alpha_pure, Gasem_alpha_pure,
+                                        Coquelet_alpha_pure, Haghtalab_alpha_pure,
+                                        Saffari_alpha_pure, Chen_Yang_alpha_pure)
 from thermo.eos import GCEOS
 from thermo.eos_mix import GCEOSMIX
 from thermo.coolprop import coolprop_fluids
@@ -424,7 +428,7 @@ def TPD(T, zs, lnphis, ys, lnphis_test):
     >>> gas = PRMIX(Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0], omegas=[0.098, 0.251], kijs=[[0, 0.0078], [0.0078, 0]], zs=[0.9946656798618667, 0.005334320138133337], T=254.43857191839297, P=1000000.0)
     >>> liq = PRMIX(Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0], omegas=[0.098, 0.251], kijs=[[0, 0.0078], [0.0078, 0]], zs=[0.7058334393128614, 0.2941665606871387], T=254.43857191839297, P=1000000.0)
     >>> TPD(liq.T, liq.zs, liq.lnphis_l, gas.zs, gas.lnphis_g)
-    -4.0339949303e-09
+    -4.03960173907e-09
 
     References
     ----------
@@ -1565,7 +1569,36 @@ class TDependentProperty(object):
         
         'Melhem_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Melhem_alpha_pure}, {'fit_params': ['c1', 'c2'], 
                              'initial_guesses': []}),
-        # 
+
+        'Androulakis_alpha_pure': (['Tc', 'c1', 'c2', 'c3'], [], {'f': Androulakis_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3'],
+                             'initial_guesses': []}),
+        'Schwartzentruber_alpha_pure': (['Tc', 'c1', 'c2', 'c3', 'c4'], [], {'f': Schwartzentruber_alpha_pure},
+                                        {'fit_params': ['c1', 'c2', 'c3', 'c4'],
+                             'initial_guesses': []}),
+
+        'Almeida_alpha_pure': (['Tc', 'c1', 'c2', 'c3'], [], {'f': Almeida_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3'],
+                             'initial_guesses': []}),
+
+        'Soave_1993_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Soave_1993_alpha_pure}, {'fit_params': ['c1', 'c2'], 
+                             'initial_guesses': []}),
+        
+        'Gasem_alpha_pure': (['Tc', 'c1', 'c2', 'c3'], [], {'f': Gasem_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3'],
+                             'initial_guesses': []}),
+        
+        'Coquelet_alpha_pure': (['Tc', 'c1', 'c2', 'c3'], [], {'f': Coquelet_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3'],
+                             'initial_guesses': []}),
+        
+        'Haghtalab_alpha_pure': (['Tc', 'c1', 'c2', 'c3'], [], {'f': Haghtalab_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3'],
+                             'initial_guesses': []}),
+        
+        'Saffari_alpha_pure': (['Tc', 'c1', 'c2', 'c3'], [], {'f': Saffari_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3'],
+                             'initial_guesses': []}),
+        
+        'Chen_Yang_alpha_pure': (['Tc', 'omega', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7'], [], {'f': Chen_Yang_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7'], 
+                             'initial_guesses': [
+                                 
+                                                 ]}),
+
     }
 
     # Aliases from the DDBST
