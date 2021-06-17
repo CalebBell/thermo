@@ -127,9 +127,9 @@ def S0_basis_converter(c, S0_liq=None, S0_gas=None, T_ref=298.15):
     Examples
     --------
     >>> from thermo.chemical import Chemical
-    >>> S0_basis_converter(Chemical('decane'), S0_liq=425.89)
+    >>> S0_basis_converter(Chemical('decane'), S0_liq=425.89) # doctest:+SKIP
     544.6792
-    >>> S0_basis_converter(Chemical('decane'), S0_gas=545.7)
+    >>> S0_basis_converter(Chemical('decane'), S0_gas=545.7) # doctest:+SKIP
     426.9107
     '''
     if S0_liq is None and S0_gas is None:

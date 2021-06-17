@@ -1189,7 +1189,12 @@ def volume_solutions_a1(T, P, b, delta, epsilon, a_alpha):
 
     Examples
     --------
-    >>> volume_solutions_a1(8837.07874361444, 216556124.0631852, 0.0003990176625589891, 0.0010590390565805598, -1.5069972655436541e-07, 7.20417995032918e-15)
+    Numerical precision is always challenging and has edge cases. The following
+    results all havev imaginary components, but depending on the math 
+    library used by the compiler even the first complex digit may not match!
+    
+    
+    >>> volume_solutions_a1(8837.07874361444, 216556124.0631852, 0.0003990176625589891, 0.0010590390565805598, -1.5069972655436541e-07, 7.20417995032918e-15) # doctest:+SKIP
     ((0.000738308-7.5337e-20j), (-0.001186094-6.52444e-20j), (0.000127055+6.52444e-20j))
     '''
     RT_inv = R_inv/T
