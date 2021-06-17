@@ -3776,7 +3776,7 @@ class GCEOS(object):
         --------
         >>> e = PR(P=1e5, V=0.0001437, Tc=512.5, Pc=8084000.0, omega=0.559)
         >>> e.T_max_at_V(e.V)
-        431155.513
+        431155.5
         '''
         if Pmax is None:
             Pmax = self.P_max_at_V(V)
@@ -8197,7 +8197,7 @@ class PRTranslatedPPJP(PRTranslated):
 
     >>> eos = PRTranslatedPPJP(Tc=507.6, Pc=3025000, omega=0.2975, c=0.6390E-6, T=250., P=1E6)
     >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
-    ('l', 0.00012292312380926779, -33466.24282966813, -80.75610242427152)
+    ('l', 0.0001229231238092, -33466.2428296, -80.75610242427)
 
     Notes
     -----
@@ -10174,7 +10174,7 @@ class MSRKTranslated(Soave_1979_a_alpha, SRKTranslated):
 
     >>> eos = MSRKTranslated(Tc=507.6, Pc=3025000, omega=0.2975, c=22.0561E-6, M=0.7446, N=0.2476, T=250., P=1E6)
     >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
-    ('l', 0.00011692764613229268, -34571.686267335615, -84.7579003483068)
+    ('l', 0.0001169276461322, -34571.6862673, -84.757900348)
 
     Notes
     -----

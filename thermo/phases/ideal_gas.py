@@ -24,6 +24,7 @@ SOFTWARE.
 
 __all__ = ['IdealGas']
 
+from fluids.constants import R
 from chemicals.utils import log
 from thermo.heat_capacity import HeatCapacityGas
 from .phase import Phase
