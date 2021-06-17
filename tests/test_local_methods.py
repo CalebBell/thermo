@@ -24,7 +24,7 @@ import pytest
 from math import log
 from thermo.utils import TDependentProperty
 
-def test_user_constant_method():
+def test_local_constant_method():
     # Test user defined method
     
     # Within valid T range
@@ -33,7 +33,7 @@ def test_user_constant_method():
     T1 = T = 300.
     T2 = 310.
     dT = T2 - T1
-    obj.set_user_method(constant)
+    obj.add_method(constant)
     assert_close(obj.T_dependent_property(T), constant)
     for order in (1, 2, 3):
         assert_close(obj.T_dependent_property_derivative(T, order), 0.)
@@ -43,7 +43,7 @@ def test_user_constant_method():
     # Extrapolate
     Tmin = 350.
     Tmax = 400.
-    obj.set_user_method(constant, Tmin, Tmax)
+    obj.add_method(constant, Tmin, Tmax)
     obj.extrapolation = 'constant'
     assert_close(obj.T_dependent_property(T), constant)
     for order in (1, 2, 3):
@@ -53,14 +53,14 @@ def test_user_constant_method():
     
     # Do not allow extrapolation
     obj.extrapolation = None
-    obj.set_user_method(constant, Tmin, Tmax)
+    obj.add_method(constant, Tmin, Tmax)
     assert obj.T_dependent_property(T) is None
     for order in (1, 2, 3):
         assert obj.T_dependent_property_derivative(T, order) is None
     # assert obj.T_dependent_property_integral(T, T+10.) is None
     # assert obj.T_dependent_property_integral_over_T(T, T+10) is None
     
-def test_user_method():
+def test_local_method():
     # Test user defined method
     
     # Within valid T range
@@ -68,7 +68,7 @@ def test_user_method():
     T = 300.
     Tmin = 200.
     Tmax = 400.
-    T1 = T = 300.
+    T1 = 300.
     T2 = 310.
     dT = T2 - T1
     f = lambda T: T*T / 1e6
@@ -77,7 +77,7 @@ def test_user_method():
     f_der3 = lambda T: 0. / 1e6
     f_int = lambda T1, T2: (T2*T2*T2 - T1*T1*T1) / 3. / 1e6
     f_int_over_T = lambda T1, T2: (T2*T2 - T1*T1) / 2. / 1e6
-    obj.set_user_method(f, Tmin, Tmax, f_der, f_der2, f_der3, f_int, f_int_over_T)
+    obj.add_method(f, Tmin, Tmax, f_der, f_der2, f_der3, f_int, f_int_over_T)
     assert_close(obj.T_dependent_property(T), f(T))
     assert_close(obj.T_dependent_property_derivative(T, 1), f_der(T))
     assert_close(obj.T_dependent_property_derivative(T, 2), f_der2(T))
@@ -87,7 +87,7 @@ def test_user_method():
     
     # Extrapolate
     Tmin = 300. + 1e-3
-    obj.set_user_method(f, Tmin, Tmax)
+    obj.add_method(f, Tmin, Tmax)
     assert_close(obj.T_dependent_property(T), f(T))
     for order in (1, 2, 3):
         assert obj.T_dependent_property_derivative(T, order) is not None
@@ -96,9 +96,20 @@ def test_user_method():
     
     # Do not allow extrapolation
     obj.extrapolation = None
-    obj.set_user_method(f, Tmin, Tmax)
+    obj.add_method(f, Tmin, Tmax)
     assert obj.T_dependent_property(T) is None
     for order in (1, 2, 3):
         assert obj.T_dependent_property_derivative(T, order) is None
     # assert obj.T_dependent_property_integral(T, T+10.) is None
     # assert obj.T_dependent_property_integral_over_T(T, T+10) is None
+    
+def test_many_local_methods():
+    obj = TDependentProperty(extrapolation='linear')
+    M1_value = 2.0
+    M2_value = 3.0
+    obj.add_method(M1_value, name='M1')
+    obj.add_method(M2_value, name='M2')
+    obj.method = 'M1'
+    assert_close(M1_value, obj.T_dependent_property(300.))
+    obj.method = 'M2'
+    assert_close(M2_value, obj.T_dependent_property(300.))

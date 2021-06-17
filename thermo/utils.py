@@ -119,9 +119,9 @@ from thermo.eos import GCEOS
 from thermo.eos_mix import GCEOSMIX
 from thermo.coolprop import coolprop_fluids
 from thermo.fitting import data_fit_statistics
+from math import inf
 import thermo
 
-USER_METHOD = 'USER_METHOD'
 NEGLIGIBLE = 'NEGLIGIBLE'
 DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
 POLY_FIT = 'POLY_FIT'
@@ -514,11 +514,6 @@ def Stateva_Tsvetkov_TPDF(lnphis, zs, lnphis_trial, ys):
         tot += t*t
     return tot
 
-
-
-
-
-
 def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False):
     r'''Checks a mole balance for a group of inlet streams against outlet
     streams. Inlets and outlets must be Stream objects. The check is performed
@@ -756,9 +751,9 @@ def generate_fitting_function(model,
             return f(Ts, *reusable_args)
     return fitting_function
 
-def user_method(f, f_der, f_der2, f_der3, f_int, f_int_over_T):
+def create_local_method(f, f_der, f_der2, f_der3, f_int, f_int_over_T):
     if callable(f):
-        return UserMethod(f, f_der, f_der2, f_der3, f_int, f_int_over_T)
+        return LocalMethod(f, f_der, f_der2, f_der3, f_int, f_int_over_T)
     else:
         try: 
             value = float(f)
@@ -767,9 +762,9 @@ def user_method(f, f_der, f_der2, f_der3, f_int, f_int_over_T):
         if not all([i is None for i in (f_der, f_der2, f_der3, f_int, f_int_over_T)]):
             raise ValueError("cannot define derivatives and integrals "
                              "when `f` is a number")
-        return ConstantUserMethod(value)
+        return ConstantLocalMethod(value)
 
-class UserMethod:
+class LocalMethod:
     __slots__ = ('f', 'f_der', 'f_der2', 'f_der3', 'f_int', 'f_int_over_T')
     
     def __init__(self, f, f_der, f_der2, f_der3, f_int, f_int_over_T):
@@ -781,7 +776,7 @@ class UserMethod:
         self.f_int_over_T = f_int_over_T
 
 
-class ConstantUserMethod:
+class ConstantLocalMethod:
     __slots__ = ('value',)
     
     def __init__(self, value):
@@ -1721,7 +1716,7 @@ class TDependentProperty(object):
         d['all_methods'] = list(d['all_methods'])
         d['tabular_data_interpolators'] = {}
 
-        ignored = ('interp1d_extrapolators', 'correlations', 'extrapolation_coeffs')
+        ignored = ('correlations', 'extrapolation_coeffs')
         for i in ignored:
             try: del d[i]
             except: pass
@@ -2378,8 +2373,8 @@ class TDependentProperty(object):
     def _base_calculate(self, T, method):
         if method in self.tabular_data:
             return self.interpolate(T, method)
-        elif method == USER_METHOD:
-            return self.user_method.f(T)
+        elif method in self.local_methods:
+            return self.local_methods[method].f(T)
         elif method in self.correlations:
             call, kwargs, _ = self.correlations[method]
             return call(T, **kwargs)
@@ -2753,9 +2748,9 @@ class TDependentProperty(object):
     except:
         pass
 
-    def set_user_method(self, f, Tmin=None, Tmax=None, 
-                        f_der=None, f_der2=None, f_der3=None,
-                        f_int=None, f_int_over_T=None):
+    def add_method(self, f, Tmin=None, Tmax=None,
+                   f_der=None, f_der2=None, f_der3=None,
+                   f_int=None, f_int_over_T=None, name=None):
         r'''Define a new method and select it for future property
         calculations.
 
@@ -2764,25 +2759,27 @@ class TDependentProperty(object):
         f : callable
             Object which calculates the property given the temperature in K,
             [-]
-        Tmin : float
+        Tmin : float, optional
             Minimum temperature to use the method at, [K]
-        Tmax : float
+        Tmax : float, optional
             Maximum temperature to use the method at, [K]
-        f_der : callable or None
+        f_der : callable, optional
             If specified, should take as an argument the temperature and
             return the first derivative of the property, [-]
-        f_der2 : callable or None
+        f_der2 : callable, optional
             If specified, should take as an argument the temperature and
             return the second derivative of the property, [-]
-        f_der3 : callable or None
+        f_der3 : callable, optional
             If specified, should take as an argument the temperature and
             return the third derivative of the property, [-]
-        f_int : callable or None
+        f_int : callable, optional
             If specified, should take `T1` and `T2` and return the integral of
             the property from `T1` to `T2`, [-]
-        f_int_over_T : callable or None
+        f_int_over_T : callable, optional
             If specified, should take `T1` and `T2` and return the integral of
             the property over T from `T1` to `T2`, [-]
+        name : str, optional
+            Name of method.
 
         Notes
         -----
@@ -2791,12 +2788,15 @@ class TDependentProperty(object):
         method can no longer be used to reconstruct the object completely.
 
         '''
-        self.user_method = user_method(f, f_der, f_der2, f_der3, f_int, f_int_over_T)
-        self._method = name = USER_METHOD
+        local_methods = self.local_methods
+        if name is None: name = 'USER_METHOD'
+        local_methods[name] = create_local_method(f, f_der, f_der2, f_der3,
+                                                  f_int, f_int_over_T)
+        self._method = name
         self.T_cached = None
         self.all_methods.add(name)
         self.T_limits[name] = (0. if Tmin is None else Tmin,
-                               1e9 if Tmax is None else Tmax)
+                               inf if Tmax is None else Tmax)
 
     def add_tabular_data(self, Ts, properties, name=None, check_properties=True):
         r'''Method to set tabular data to be used for interpolation.
@@ -2952,14 +2952,14 @@ class TDependentProperty(object):
         
         Tmin, Tmax = self.T_limits[method]
         in_range = Tmin <= T <= Tmax
-        if method == USER_METHOD and in_range:
-            user_method = self.user_method
+        if method in self.local_methods and in_range:
+            local_method = self.local_methods[method]
             if order == 1:
-                if user_method.f_der is not None: return user_method.f_der(T)
+                if local_method.f_der is not None: return local_method.f_der(T)
             elif order == 2:
-                if user_method.f_der2 is not None: return user_method.f_der2(T)
+                if local_method.f_der2 is not None: return local_method.f_der2(T)
             elif order == 3:
-                if user_method.f_der3 is not None: return user_method.f_der3(T)
+                if local_method.f_der3 is not None: return local_method.f_der3(T)
         pts = 1 + order*2
         dx = T*1e-6
         args = (method,)
@@ -3033,10 +3033,11 @@ class TDependentProperty(object):
             calls = self.correlation_models[model][2]
             if 'f_int' in calls:
                 return calls['f_int'](T2, **model_kwargs) - calls['f_int'](T1, **model_kwargs)
-        if method == USER_METHOD and self.user_method.f_int is not None:
-            return self.user_method.f_int(T1, T2)
-        else:
-            return float(quad(self.calculate, T1, T2, args=(method,))[0])
+        if method in self.local_methods:
+            local_method = self.local_methods[method]
+            if local_method.f_int is not None:
+                return local_method.f_int(T1, T2)
+        return float(quad(self.calculate, T1, T2, args=(method,))[0])
 
     def T_dependent_property_integral(self, T1, T2):
         r'''Method to calculate the integral of a property with respect to
@@ -3098,10 +3099,11 @@ class TDependentProperty(object):
             calls = self.correlation_models[model][2]
             if 'f_int_over_T' in calls:
                 return calls['f_int_over_T'](T2, **model_kwargs) - calls['f_int_over_T'](T1, **model_kwargs)
-        elif method == USER_METHOD and self.user_method.f_int_over_T is not None:
-            return self.user_method.f_int_over_T(T1, T2)
-        else:
-            return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
+        if method in self.local_methods:
+            local_method = self.local_methods[method]
+            if local_method.f_int_over_T is not None:
+                return local_method.f_int_over_T(T1, T2)
+        return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
 
     def T_dependent_property_integral_over_T(self, T1, T2):
         r'''Method to calculate the integral of a property over temperature
@@ -3389,6 +3391,8 @@ class TDependentProperty(object):
         return float(prop)
 
     def __init__(self, extrapolation, **kwargs):
+        self.local_methods = {}
+        """local_methods, dict[str, LocalMethod]: Local methods added by the user."""
         self.extrapolation_coeffs = {}
         """extrapolation_coeffs, dict[tuple[str, str], object]: Cached 
         coefficients and methods used for extrapolation."""
