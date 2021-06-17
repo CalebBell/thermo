@@ -8,6 +8,8 @@ def pytest_ignore_collect(path):
     path = str(path)
     if path.endswith('chemical.py') or path.endswith('mixture.py')  or path.endswith('stream.py'):
         return True
+    if 'benchmarks' in path:
+        return True
     if ver_tup < (3, 7) or ver_tup >= (3, 10) or is_pypy:
         # numba does not yet run under pypy
         if 'numba' in path:

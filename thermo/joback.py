@@ -1043,8 +1043,8 @@ class Joback(object):
 
         Examples
         --------
-        >>> J = Joback('CC(=O)C')
-        >>> J.Cpig(300)
+        >>> J = Joback('CC(=O)C') # doctest:+SKIP
+        >>> J.Cpig(300) # doctest:+SKIP
         75.32642000000001
         '''
         try:
@@ -1075,8 +1075,8 @@ class Joback(object):
 
         Examples
         --------
-        >>> J = Joback('CC(=O)C')
-        >>> J.mul(300)
+        >>> J = Joback('CC(=O)C') # doctest:+SKIP
+        >>> J.mul(300) # doctest:+SKIP
         0.0002940378347162687
         '''
         try:
