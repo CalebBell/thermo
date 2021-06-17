@@ -3,7 +3,7 @@ import platform
 
 def pytest_ignore_collect(path):
     path = str(path)
-    if path.endswith('chemical.py') or path.endswith('mixture.py'):
+    if path.endswith('chemical.py') or path.endswith('mixture.py')  or path.endswith('stream.py'):
         return True
     if 'manual_runner' in path or 'make_test_stubs' in path or 'plot' in path or 'prerelease' in path:
         return True
