@@ -278,7 +278,6 @@ class HeatCapacityGas(TDependentProperty):
         self.similarity_variable = similarity_variable
         super(HeatCapacityGas, self).__init__(extrapolation, **kwargs)
 
-
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
@@ -1266,7 +1265,6 @@ class HeatCapacitySolid(TDependentProperty):
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
-
 
     def calculate(self, T, method):
         r'''Method to calculate heat capacity of a solid at temperature `T`

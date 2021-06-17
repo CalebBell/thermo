@@ -123,7 +123,9 @@ from thermo.eos import GCEOS
 from thermo.eos_mix import GCEOSMIX
 from thermo.coolprop import coolprop_fluids
 from thermo.fitting import data_fit_statistics
+from math import inf
 import thermo
+
 NEGLIGIBLE = 'NEGLIGIBLE'
 DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
 POLY_FIT = 'POLY_FIT'
@@ -516,11 +518,6 @@ def Stateva_Tsvetkov_TPDF(lnphis, zs, lnphis_trial, ys):
         tot += t*t
     return tot
 
-
-
-
-
-
 def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False):
     r'''Checks a mole balance for a group of inlet streams against outlet
     streams. Inlets and outlets must be Stream objects. The check is performed
@@ -758,6 +755,56 @@ def generate_fitting_function(model,
             return f(Ts, *reusable_args)
     return fitting_function
 
+def create_local_method(f, f_der, f_der2, f_der3, f_int, f_int_over_T):
+    if callable(f):
+        return LocalMethod(f, f_der, f_der2, f_der3, f_int, f_int_over_T)
+    else:
+        try: 
+            value = float(f)
+        except:
+            raise ValueError("`f` must be either a callable or a number")
+        if not all([i is None for i in (f_der, f_der2, f_der3, f_int, f_int_over_T)]):
+            raise ValueError("cannot define derivatives and integrals "
+                             "when `f` is a number")
+        return ConstantLocalMethod(value)
+
+class LocalMethod:
+    __slots__ = ('f', 'f_der', 'f_der2', 'f_der3', 'f_int', 'f_int_over_T')
+    
+    def __init__(self, f, f_der, f_der2, f_der3, f_int, f_int_over_T):
+        self.f = f
+        self.f_der = f_der
+        self.f_der2 = f_der2
+        self.f_der3 = f_der3
+        self.f_int = f_int
+        self.f_int_over_T = f_int_over_T
+
+
+class ConstantLocalMethod:
+    __slots__ = ('value',)
+    
+    def __init__(self, value):
+        self.value = value
+        
+    def f(self, T):
+        return self.value
+      
+    def f_der(self, T):
+        return 0.
+    
+    def f_der2(self, T):
+        return 0.
+    
+    def f_der3(self, T):
+        return 0.
+        
+    def f_int(self, Ta, Tb):
+        return self.value * (Tb - Ta)
+
+    def f_int_over_T(self, Ta, Tb):
+        return self.value * log(Tb/Ta)
+
+
 class TDependentProperty(object):
     '''Class for calculating temperature-dependent chemical properties.
 
@@ -906,9 +953,6 @@ class TDependentProperty(object):
     critical point. This is used by numerical solvers.'''
 
     ranked_methods = []
-
-    # For methods specified by a user
-    local_methods = {}
 
     _fit_force_n = {}
     '''Dictionary containing method: fit_n, for use in methods which should
@@ -1705,7 +1749,7 @@ class TDependentProperty(object):
         d['all_methods'] = list(d['all_methods'])
         d['tabular_data_interpolators'] = {}
 
-        ignored = ('interp1d_extrapolators', 'correlations', 'extrapolation_coeffs')
+        ignored = ('correlations', 'extrapolation_coeffs')
         for i in ignored:
             try: del d[i]
             except: pass
@@ -2363,7 +2407,7 @@ class TDependentProperty(object):
         if method in self.tabular_data:
             return self.interpolate(T, method)
         elif method in self.local_methods:
-            return self.local_methods[method][0](T)
+            return self.local_methods[method].f(T)
         elif method in self.correlations:
             call, kwargs, _ = self.correlations[method]
             return call(T, **kwargs)
@@ -2373,8 +2417,6 @@ class TDependentProperty(object):
     def _base_calculate_P(self, T, P, method):
         if method in self.tabular_data_P:
             return self.interpolate_P(T, P, method)
-#        elif method in self.local_methods_P:
-#            return self.local_methods_P[method][0](T, P)
         else:
             raise ValueError("Unknown method")
 
@@ -2388,7 +2430,7 @@ class TDependentProperty(object):
         try:
             T_low, T_high = self.T_limits[method]
             in_range = T_low <= T <= T_high
-        except (KeyError, AttributeError):
+        except KeyError:
             in_range = self.test_method_validity(T, method)
 
         if in_range:
@@ -2413,7 +2455,7 @@ class TDependentProperty(object):
         try:
             T_low, T_high = self.T_limits[method]
             in_range = T_low <= T <= T_high
-        except (KeyError, AttributeError):
+        except KeyError:
             in_range = self.test_method_validity(T, method)
 
         if in_range:
@@ -2461,7 +2503,7 @@ class TDependentProperty(object):
         try:
             T_low, T_high = self.T_limits[method]
             in_range = T_low <= T <= T_high
-        except (KeyError, AttributeError):
+        except KeyError:
             in_range = self.test_method_validity(T, method)
 
         if in_range:
@@ -2739,10 +2781,10 @@ class TDependentProperty(object):
     except:
         pass
 
-    def add_method(self, f, name, Tmin, Tmax, f_der_general=None,
-                   f_der=None, f_der2=None, f_der3=None, f_int=None,
-                   f_int_over_T=None):
-        r'''Method to add a new method and select it for future property
+    def add_method(self, f, Tmin=None, Tmax=None,
+                   f_der=None, f_der2=None, f_der3=None,
+                   f_int=None, f_int_over_T=None, name=None):
+        r'''Define a new method and select it for future property
         calculations.
 
         Parameters
@@ -2750,31 +2792,27 @@ class TDependentProperty(object):
         f : callable
             Object which calculates the property given the temperature in K,
             [-]
-        name : str, optional
-            Name assigned to the data
-        Tmin : float
+        Tmin : float, optional
             Minimum temperature to use the method at, [K]
-        Tmax : float
+        Tmax : float, optional
             Maximum temperature to use the method at, [K]
-        f_der_general : callable or None
-            If specified, should take as arguments (T, order) and return the
-            derivative of the property at the specified temperature and
-            order, [-]
-        f_der : callable or None
+        f_der : callable, optional
             If specified, should take as an argument the temperature and
             return the first derivative of the property, [-]
-        f_der2 : callable or None
+        f_der2 : callable, optional
             If specified, should take as an argument the temperature and
             return the second derivative of the property, [-]
-        f_der3 : callable or None
+        f_der3 : callable, optional
             If specified, should take as an argument the temperature and
             return the third derivative of the property, [-]
-        f_int : callable or None
+        f_int : callable, optional
             If specified, should take `T1` and `T2` and return the integral of
             the property from `T1` to `T2`, [-]
-        f_int_over_T : callable or None
+        f_int_over_T : callable, optional
             If specified, should take `T1` and `T2` and return the integral of
             the property over T from `T1` to `T2`, [-]
+        name : str, optional
+            Name of method.
 
         Notes
         -----
@@ -2783,13 +2821,15 @@ class TDependentProperty(object):
         method can no longer be used to reconstruct the object completely.
 
         '''
-        if not self.local_methods:
-            self.local_methods = local_methods = {}
-        local_methods[name] = (f, Tmin, Tmax, f_der_general, f_der, f_der2,
-                      f_der3, f_int, f_int_over_T)
-        self.T_limits[name] = (Tmin, Tmax)
+        local_methods = self.local_methods
+        if name is None: name = 'USER_METHOD'
+        local_methods[name] = create_local_method(f, f_der, f_der2, f_der3,
+                                                  f_int, f_int_over_T)
+        self._method = name
+        self.T_cached = None
         self.all_methods.add(name)
-        self.method = name
+        self.T_limits[name] = (0. if Tmin is None else Tmin,
+                               inf if Tmax is None else Tmax)
 
     def add_tabular_data(self, Ts, properties, name=None, check_properties=True):
         r'''Method to set tabular data to be used for interpolation.
@@ -2846,8 +2886,6 @@ class TDependentProperty(object):
         T : float
             Temperature at which the property is the specified value [K]
         '''
-#        if self.Tmin is None or self.Tmax is None:
-#            raise Exception('Both a minimum and a maximum value are not present indicating there is not enough data for temperature dependency.')
         if not self.test_property_validity(goal):
             raise ValueError('Input property is not considered plausible; no method would calculate it.')
 
@@ -2944,18 +2982,29 @@ class TDependentProperty(object):
                 return calls['f_der2'](T, **model_kwargs)
             elif order == 3 and 'f_der3' in calls:
                 return calls['f_der3'](T, **model_kwargs)
-
+        
+        Tmin, Tmax = self.T_limits[method]
+        in_range = Tmin <= T <= Tmax
+        if method in self.local_methods and in_range:
+            local_method = self.local_methods[method]
+            if order == 1:
+                if local_method.f_der is not None: return local_method.f_der(T)
+            elif order == 2:
+                if local_method.f_der2 is not None: return local_method.f_der2(T)
+            elif order == 3:
+                if local_method.f_der3 is not None: return local_method.f_der3(T)
         pts = 1 + order*2
         dx = T*1e-6
-        args = [method]
-        Tmin, Tmax = self.T_limits[method]
-        if Tmin <= T <= Tmax:
+        args = (method,)
+        if in_range:
             # Adjust to be just inside bounds
             return derivative(self.calculate, T, dx=dx, args=args, n=order, order=pts,
                               lower_limit=Tmin, upper_limit=Tmax)
-        else:
+        elif self._extrapolation is not None:
             # Allow extrapolation
-            return derivative(self._T_dependent_property, T, dx=dx, args=args, n=order, order=pts)
+            return derivative(self.extrapolate, T, dx=dx, args=args, n=order, order=pts)
+        else:
+            raise ValueError("temperature is outside the valid range")
 #
 
     def T_dependent_property_derivative(self, T, order=1):
@@ -3017,7 +3066,10 @@ class TDependentProperty(object):
             calls = self.correlation_models[model][2]
             if 'f_int' in calls:
                 return calls['f_int'](T2, **model_kwargs) - calls['f_int'](T1, **model_kwargs)
-
+        if method in self.local_methods:
+            local_method = self.local_methods[method]
+            if local_method.f_int is not None:
+                return local_method.f_int(T1, T2)
         return float(quad(self.calculate, T1, T2, args=(method,))[0])
 
     def T_dependent_property_integral(self, T1, T2):
@@ -3080,8 +3132,10 @@ class TDependentProperty(object):
             calls = self.correlation_models[model][2]
             if 'f_int_over_T' in calls:
                 return calls['f_int_over_T'](T2, **model_kwargs) - calls['f_int_over_T'](T1, **model_kwargs)
-
-
+        if method in self.local_methods:
+            local_method = self.local_methods[method]
+            if local_method.f_int_over_T is not None:
+                return local_method.f_int_over_T(T1, T2)
         return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
 
     def T_dependent_property_integral_over_T(self, T1, T2):
@@ -3370,6 +3424,8 @@ class TDependentProperty(object):
         return float(prop)
 
     def __init__(self, extrapolation, **kwargs):
+        self.local_methods = {}
+        """local_methods, dict[str, LocalMethod]: Local methods added by the user."""
         self.extrapolation_coeffs = {}
         """extrapolation_coeffs, dict[tuple[str, str], object]: Cached 
         coefficients and methods used for extrapolation."""
@@ -3440,7 +3496,7 @@ class TDependentProperty(object):
                     break
         self.method = method
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data):
         pass
 
     def calculate(self, T, method):
@@ -3461,9 +3517,7 @@ class TDependentProperty(object):
         prop : float
             Calculated property, [`units`]
         '''
-        if method in self.tabular_data:
-            prop = self.interpolate(T, method)
-        return prop
+        return self._base_calculate(T, method)
 
     def test_method_validity(self, T, method):
         r'''Method to test the validity of a specified method for a given
@@ -3490,10 +3544,11 @@ class TDependentProperty(object):
         elif method == POLY_FIT:
             return True
         elif method in self.tabular_data:
-            if not self.tabular_extrapolation_permitted:
+            if self.tabular_extrapolation_permitted:
+                validity = True
+            else:
                 Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    validity = False
+                validity = Ts[0] < T < Ts[-1]
         else:
             raise ValueError('Method not valid')
         return validity
@@ -3551,10 +3606,6 @@ class TPDependentProperty(TDependentProperty):
     interpolation_P = None
 
     def __init__(self, extrapolation, **kwargs):
-        self.user_methods_P = []
-        '''user_methods_P, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`.'''
-        
         self.tabular_data_P = {}
         '''tabular_data_P, dict: Stored (Ts, Ps, properties) for any
         tabular data; indexed by provided or autogenerated name.'''
@@ -3734,7 +3785,6 @@ class TPDependentProperty(TDependentProperty):
             prop = self.T_dependent_property(T)
         return prop
 
-
     def add_tabular_data_P(self, Ts, Ps, properties, name=None, check_properties=True):
         r'''Method to set tabular data to be used for interpolation.
         Ts and Psmust be in increasing order. If no name is given, data will be
@@ -3775,8 +3825,40 @@ class TPDependentProperty(TDependentProperty):
             name = 'Tabular data series #' + str(len(self.tabular_data))  # Will overwrite a poorly named series
         self.tabular_data_P[name] = [Ts, Ps, properties]
         self.all_methods_P.add(name)
-
         self.method_P = name
+
+    def test_method_validity_P(self, T, P, method):
+        r'''Method to test the validity of a specified method for a given
+        temperature. Demo function for testing only;
+        must be implemented according to the methods available for each
+        individual method. Include the interpolation check here.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to determine the validity of the method, [K]
+        P : float
+            Pressure at which to determine the validity of the method, [Pa]
+        method : str
+            Method name to use
+
+        Returns
+        -------
+        validity : bool
+            Whether or not a specifid method is valid
+        '''
+        if method in self.tabular_data:
+            if self.tabular_extrapolation_permitted:
+                validity = True
+            else:
+                Ts, Ps, properties = self.tabular_data[method]
+                validity = Ts[0] < T < Ts[-1] and Ps[0] < P < Ps[-1]
+        elif method in self.all_methods_P:
+            Tmin, Tmax = self.T_limits[method]
+            validity = Tmin < T < Tmax
+        else:
+            raise ValueError('Method not valid')
+        return validity
 
     def interpolate_P(self, T, P, name):
         r'''Method to perform interpolation on a given tabular data set
@@ -4087,7 +4169,7 @@ class TPDependentProperty(TDependentProperty):
                 raise Exception('Maximum pressure could not be auto-detected; please provide it')
 
         if not methods_P:
-            methods_P = self.user_methods_P if self.user_methods_P else self.all_methods_P
+            methods_P = self.all_methods_P
         Ps = np.linspace(Pmin, Pmax, pts)
         Ts = np.linspace(Tmin, Tmax, pts)
         Ts_mesh, Ps_mesh = np.meshgrid(Ts, Ps)
@@ -4337,10 +4419,6 @@ class MixtureProperty(object):
         '''Maximum temperature at which no method can calculate the
         property above.'''
 
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
-        
         self.all_methods = set()
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''

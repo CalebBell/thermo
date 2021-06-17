@@ -216,8 +216,8 @@ class PermittivityLiquid(TDependentProperty):
             epsilon = A + T*(B + T*(C + D*T))
         elif method == CRC_CONSTANT:
             epsilon = self.CRC_permittivity
-        elif method in self.tabular_data:
-            epsilon = self.interpolate(T, method)
+        else:
+            epsilon = self._base_calculate(T, self._method)
         return epsilon
 
     def test_method_validity(self, T, method):
