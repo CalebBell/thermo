@@ -50,7 +50,7 @@ from fluids.numerics import numpy as np
 from fluids.constants import R
 from thermo.activity import GibbsExcess, interaction_exp, dinteraction_exp_dT, d2interaction_exp_dT2, d3interaction_exp_dT3
 
-__all__ = ['UNIQUAC', 'UNIQUAC_gammas']
+__all__ = ['UNIQUAC', 'UNIQUAC_gammas', 'UNIQUAC_gamma', 'UNIQUAC_gammas_binary']
 
 try:
     array, zeros, npsum, nplog = np.array, np.zeros, np.sum, np.log
@@ -572,6 +572,7 @@ class UNIQUAC(GibbsExcess):
             except AttributeError:
                 pass
         return new
+    
 
     def taus(self):
         r'''Calculate and return the `tau` terms for the UNIQUAC model for the
@@ -1510,7 +1511,140 @@ class UNIQUAC(GibbsExcess):
         self._d2GE_dxixjs = d2GE_dxixjs
         return d2GE_dxixjs
 
+    @classmethod
+    def regress_binary_taus(cls, gammas, xs, rs, qs):
+        import numpy as np
+        pts = len(xs)
+        def to_solve_vec(xs, tau12, tau21):
+            if tau12 < 0:
+                tau12 = 1e-10
+            if tau21< 0:
+                tau21 = 1e-10
+            # print(tau12, tau21)
+            r1, r2 = rs
+            q1, q2 = qs
+            working_gammas = gammas
+            calc = []
+            for i in range(pts):
+                g0, g1 = UNIQUAC_gammas_binary(xs[i], r1, r2, q1, q2, tau12, tau21)
+                calc.append(g0)
+                calc.append(g1)
+            return calc
+        from thermo.fitting import fit_customized
+         
+        xs_working = []
+        for i in range(pts):
+            xs_working.append(xs[i][0])
+            xs_working.append(xs[i][1])
+        gammas_working = []
+        for i in range(pts):
+            gammas_working.append(gammas[i][0])
+            gammas_working.append(gammas[i][1])
+            
+        xs_working = np.array(xs_working)
+        gammas_working = np.array(gammas_working)
+         
+             
+        res = fit_customized(xs_working, gammas_working, to_solve_vec, ['tau12', 'tau21'], ['tau12', 'tau21'], 
+                   fit_method='lm', objective='MeanSquareErr', multiple_tries_max_objective='MeanRelErr', 
+                   guesses={'tau12': .2, 'tau21': .3}, initial_guesses=None, analytical_jac=None,
+                   solver_kwargs=None, use_numba=False, multiple_tries=False,
+                   do_statistics=True, multiple_tries_max_err=1e-5)
+        return res
+         
+         
 
+
+def UNIQUAC_gammas_binary(x1, r1, r2, q1, q2, tau12, tau21):
+    x0 = q1*x1
+    x2 = x1 - 1
+    x3 = q2*x2
+    x4 = -tau21*x3 + x0
+    x5 = -x3
+    x6 = x0 + x5
+    x7 = 1/x6
+    x8 = log(x4*x7)
+    x9 = r1*x1
+    x10 = r2*x2
+    x11 = -x10 + x9
+    x12 = x11*x7
+    x13 = 5*log(q1*x12/r1)
+    x14 = 1/x11
+    x15 = r1*x14
+    x16 = 1 - x1
+    x17 = r2*x16
+    x18 = x17 + x9
+    x19 = x11/x18**2
+    x20 = 1/x4
+    x21 = q2*x16
+    x22 = 1/(x0 + x21)
+    x23 = x0*x22
+    x24 = x21*x22
+    x25 = x22*x6
+    x26 = 1/x18
+    x27 = x18*x22
+    x28 = q1*x27
+    x29 = 5*x14
+    x30 = x29*x6
+    x31 = tau12*x0
+    x32 = x31 + x5
+    x33 = x25/x32
+    x34 = q1**2*x1*x20*x25*(tau21*x24 + x23 - 1) + q1*x13 - q1*x3*x33*(-tau12*(1 - x23) + x24) - q1*x8 + x15*x2 - x19*x9 + x25*x29*x3*(-r1 + x28) - x28*x30*(x23 - x26*x9)
+    x35 = log(x15)
+    x36 = r2*x14
+    x37 = log(x36)
+    x38 = log(x32*x7)
+    x39 = 5*log(q2*x12/r2)
+    x40 = x23*x6
+    x41 = -q2**2*x2*x33*(x22*x31 + x24 - 1) + q2*x20*x40*(-tau21*(1 - x24) + x23) - q2*x38 + q2*x39 - x1*x36 + x10*x19 - x29*x40*(q2*x27 - r2) + x27*x3*x30*(-x17*x26 + x24)/x16
+    x42 = x0*x13 - x0*x8 + x1*x35 - x1*(x34 + x35) - x2*x37 + x2*(x37 + x41) + x3*x38 - x3*x39    
+    return (x15*exp(x34 + x42), x36*exp(x41 + x42))
+    
+
+def UNIQUAC_gamma(x1, r1, r2, q1, q2, tau12, tau21):
+    x0 = r1*x1
+    x2 = x1 - 1
+    x3 = r2*x2
+    x4 = x0 - x3
+    x5 = 1/x4
+    x6 = r1*x5
+    x7 = log(x6)
+    x8 = r2*x5
+    x9 = log(x8)
+    x10 = q1*x1
+    x11 = tau12*x10
+    x12 = q2*x2
+    x13 = -x12
+    x14 = x11 + x13
+    x15 = x10 + x13
+    x16 = 1/x15
+    x17 = log(x14*x16)
+    x18 = 1 - x1
+    x19 = r2*x18
+    x20 = x0 + x19
+    x21 = x4/x20**2
+    x22 = x16*x4
+    x23 = 5*log(q2*x22/r2)
+    x24 = q2*x18
+    x25 = 1/(x10 + x24)
+    x26 = x20*x25
+    x27 = x10*x25
+    x28 = x15*x27
+    x29 = 5*x5
+    x30 = x24*x25
+    x31 = x15*x25
+    x32 = x31/x14
+    x33 = -tau21*x12 + x10
+    x34 = 1/x33
+    x35 = 1/x20
+    x36 = x15*x29
+    x37 = log(x16*x33)
+    x38 = 5*log(q1*x22/r1)
+    x39 = q1*x26
+    x40 = (q1**2*x1*x31*x34*(tau21*x30 + x27 - 1) - q1*x12*x32*(-tau12*(1 - x27) + x30) - q1*x37 + q1*x38 - x0*x21 + x12*x29*x31*(-r1 + x39) + x2*x6 - x36*x39*(-x0*x35 + x27))
+    return ((x6*exp(x1*x7 - x1*(x40 + x7) - x10*x37 + x10*x38 + x12*x17 - x12*x23 - x2*x9 + x2*(-q2**2*x2*x32*(x11*x25 + x30 - 1) - q2*x17 + q2*x23 + q2*x28*x34*(-tau21*(1 - x30) + x27) - x1*x8 + x12*x26*x36*(-x19*x35 + x30)/x18 + x21*x3 - x28*x29*(q2*x26 - r2) + x9) + x40)))
+
+    
 def UNIQUAC_gammas(xs, rs, qs, taus):
     r'''Calculates the activity coefficients of each species in a mixture
     using the Universal quasi-chemical (UNIQUAC) equation, given their mole
