@@ -329,8 +329,6 @@ class ViscosityLiquid(TPDependentProperty):
         self.Vml = Vml
         super(ViscosityLiquid, self).__init__(extrapolation, **kwargs)
 
-
-
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
@@ -832,7 +830,6 @@ class ViscosityGas(TPDependentProperty):
         self.Vmg = Vmg
         super(ViscosityGas, self).__init__(extrapolation, **kwargs)
 
-
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
@@ -892,10 +889,6 @@ class ViscosityGas(TPDependentProperty):
         self.all_methods_P = set(methods_P)
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
-        for m in self.ranked_methods_P:
-            if m in self.all_methods_P:
-                self.method_P = m
-                break
 
     @staticmethod
     def _method_indexes():

@@ -263,7 +263,6 @@ class VaporPressure(TDependentProperty):
         self.Pc = Pc
         self.omega = omega
         self.eos = eos
-
         super(VaporPressure, self).__init__(extrapolation, **kwargs)
 
     @staticmethod
@@ -714,7 +713,6 @@ class SublimationPressure(TDependentProperty):
         self.Tt = Tt
         self.Pt = Pt
         self.Hsub_t = Hsub_t
-
         super(SublimationPressure, self).__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data=True):

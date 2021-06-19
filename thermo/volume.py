@@ -898,22 +898,6 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         if an interpolation transform is altered, the old interpolator which
         had been created is no longer used.'''
 
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`.'''
-        self.sorted_valid_methods_P = []
-        '''sorted_valid_methods_P, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`.'''
-        self.user_methods_P = []
-        '''user_methods_P, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`.'''
-
-        self.all_methods = set()
-        '''Set of all low-pressure methods available for a given CASRN and
-        properties; filled by :obj:`load_all_methods`.'''
-        self.all_methods_P = set()
-        '''Set of all high-pressure methods available for a given CASRN and
-        properties; filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
         self.extrapolation = extrapolation
 
