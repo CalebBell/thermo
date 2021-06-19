@@ -45,6 +45,10 @@ try:
     from numpy.polynomial.polynomial import Polynomial
 except:
     pass
+try:
+    from random import uniform
+except:
+    pass
 
 ChebTools = None
 def fit_cheb_poly(func, low, high, n,
@@ -605,7 +609,26 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
 
     pcov = None
     if fit_method == 'differential_evolution':
-        pass
+        if 'bounds' in solver_kwargs:
+            working_bounds = solver_kwargs.pop('bounds')
+        else:
+            factor = 4.0
+            if len(array_init_guesses) > 3:
+                lowers_guess, uppers_guess = np.array(array_init_guesses).min(axis=0), np.array(array_init_guesses).max(axis=0)
+                working_bounds = [(lowers_guess[i]*factor if lowers_guess[i] < 0. else lowers_guess[i]*(1.0/factor),
+                                    uppers_guess[i]*(1.0/factor) if uppers_guess[i] < 0. else uppers_guess[i]*(factor),
+                                    ) for i in range(len(use_fit_parameters))]
+            else:
+                working_bounds = [(0, 1000) for k in use_fit_parameters]
+        popsize = solver_kwargs.get('popsize', 15)*len(fit_parameters)
+        init = array_init_guesses
+        for i in range(len(init), popsize):
+            to_add = [uniform(ll, lh) for ll, lh in working_bounds]
+            init.append(to_add)
+            
+        res = differential_evolution(minimize_func, init=np.array(init),
+                                      bounds=working_bounds, **solver_kwargs)
+        popt = res['x']
     else:
         lm_direct = fit_method == 'lm'
         Dfun = jac_wrapped_for_leastsq if analytical_jac is not None else None

@@ -1546,7 +1546,9 @@ class UNIQUAC(GibbsExcess):
          
              
         res = fit_customized(xs_working, gammas_working, to_solve_vec, ['tau12', 'tau21'], ['tau12', 'tau21'], 
-                   fit_method='lm', objective='MeanSquareErr', multiple_tries_max_objective='MeanRelErr', 
+                   # fit_method='lm', 
+                    fit_method='differential_evolution', 
+                   objective='MeanSquareErr', multiple_tries_max_objective='MeanRelErr', 
                    guesses={'tau12': .2, 'tau21': .3}, initial_guesses=None, analytical_jac=None,
                    solver_kwargs=None, use_numba=False, multiple_tries=False,
                    do_statistics=True, multiple_tries_max_err=1e-5)
