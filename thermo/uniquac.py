@@ -1513,7 +1513,8 @@ class UNIQUAC(GibbsExcess):
         return d2GE_dxixjs
 
     @classmethod
-    def regress_binary_taus(cls, gammas, xs, rs, qs, **kwargs):
+    def regress_binary_taus(cls, gammas, xs, rs, qs, use_numba=False,
+                            do_statistics=True, **kwargs):
         '''Perform a basic regression to determine the values of the `tau`
         terms in the UNIQUAC model, given a series of known or predicted
         activity coefficients and mole fractions. 
@@ -1528,6 +1529,10 @@ class UNIQUAC(GibbsExcess):
             Van der Waals volume parameters for each species, [-]
         qs : list[float]
             Surface area parameters for each species, [-]
+        use_numba : bool, optional
+            Whether or not to try to use numba to speed up the computation, [-]
+        do_statistics : bool, optional
+            Whether or not to compute statistical measures on the outputs, [-]
         kwargs : dict
             Extra parameters to be passed to the fitting function (not yet
             documented), [-]
@@ -1537,6 +1542,8 @@ class UNIQUAC(GibbsExcess):
         parameters : dict[str, float]
             Dimentionless interaction parameters of each compound with each 
             other; these are the actual `tau` values. [-]
+        statistics : dict[str: float]
+            Statistics, calculated and returned only if `do_statistics` is True, [-]
             
         Notes
         -----
@@ -1551,8 +1558,29 @@ class UNIQUAC(GibbsExcess):
         Examples
         --------
         
+        In the following example, the `tau` values required to zero-out the
+        coefficients for the n-pentane and n-hexane system are calculated. The
+        parameters are converted back into `aij` parameters as used by this
+        activity coefficient object, and then the calculated values are
+        verified to be fairly nearly one.
         
-        
+        >>> from thermo import UNIQUAC
+        >>> import numpy as np
+        >>> pts = 30
+        >>> rs = [3.8254, 4.4998]
+        >>> qs = [3.316, 3.856]
+        >>> xs = [[xi, 1.0 - xi] for xi in np.linspace(1e-7, 1-1e-7, pts)]
+        >>> gammas = [[1, 1] for i in range(pts)]
+        >>> coeffs, stats = UNIQUAC.regress_binary_taus(gammas, xs, rs, qs)
+        >>> coeffs
+        {'tau12': 1.04220685, 'tau21': 0.95538082}
+        >>> assert stats['MAE'] < 1e-6
+        >>> tausB = tausC = tausD = tausE = tausF = [[0.0]*2 for i in range(2)]
+        >>> tausA = [[0, np.log(coeffs['tau12'])], [np.log(coeffs['tau21']), 0]]
+        >>> ABCDEF = (tausA, tausB, tausC, tausD, tausE, tausF)
+        >>> GE = UNIQUAC(T=300, xs=[.5, .5], rs=rs, qs=qs, ABCDEF=ABCDEF)
+        >>> GE.gammas()
+        [1.000000466, 1.000000180]
         '''
         if kwargs.get('use_numba', False):
             from thermo.numba import UNIQUAC_gammas_binaries as work_func
