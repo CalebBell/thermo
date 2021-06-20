@@ -1639,8 +1639,16 @@ class UNIQUAC(GibbsExcess):
     zero_gamma_tau_guess = [{'tau12': 1, 'tau21': 1},
                             {'tau12': 1.0529981904211922, 'tau21': 1.1976772649513237},
                             {'tau12': 1.8748910210873349, 'tau21': 998.612171671497}, # Found seeking gamma = 1 for rs, qs = [[1.4, 7.219], [39.95, 47.2727]]
-                            {'tau12': 0.6080855151163854, 'tau21': 1.5266917396579502}  # Found seeking gamma = 1 for rs, qs = [[30.49447368421054, 38.253], [30.195389473684212, 42.39346842105263]]
+                            {'tau12': 0.6080855151163854, 'tau21': 1.5266917396579502},  # Found seeking gamma = 1 for rs, qs = [[30.49447368421054, 38.253], [30.195389473684212, 42.39346842105263]]
+                            {'tau12': 0.75, 'tau21': 0.053}, # triethylamine and water from ChemSep main
+                            {'tau12': 0.51, 'tau21': 0.00115}, # triethylamine and water from ChemSep main low T
+                            {'tau12': 0.0003578, 'tau21': 32.6}, # acetic acid and 1-propanol from ChemSep main
+                            {'tau12': 0.00056, 'tau21': 41.9}, # acetone and chloroform from ChemSep main
+                            {'tau12': 1.45, 'tau21': 2.2e-7}, # methanol and ethene, chloro- from ChemSep main
                             ]
+    
+    #  [[1.0, 1.4558395693419368], [2.2006112041973096e-07, 1.0]] <Chemical [methanol], T=298.15 K, P=101325 Pa> <Chemical [ethene, chloro-], T=298.15 K, P=101325 Pa>
+    
     for i in range(len(zero_gamma_tau_guess)):
         r = zero_gamma_tau_guess[i]
         zero_gamma_tau_guess.append({'tau12': r['tau21'], 'tau21': r['tau12']})
