@@ -626,7 +626,7 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
             to_add = [uniform(ll, lh) for ll, lh in working_bounds]
             init.append(to_add)
             
-        res = differential_evolution(minimize_func, init=np.array(init),
+        res = differential_evolution(minimize_func,# init=np.array(init),
                                       bounds=working_bounds, **solver_kwargs)
         popt = res['x']
     else:

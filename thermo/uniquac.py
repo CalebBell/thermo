@@ -1512,10 +1512,11 @@ class UNIQUAC(GibbsExcess):
         return d2GE_dxixjs
 
     @classmethod
-    def regress_binary_taus(cls, gammas, xs, rs, qs):
-        import numpy as np
+    def regress_binary_taus(cls, gammas, xs, rs, qs, **kwargs):
         pts = len(xs)
+        
         def to_solve_vec(xs, tau12, tau21):
+            # Can I get rs and qs passed in?
             if tau12 < 0:
                 tau12 = 1e-10
             if tau21< 0:
@@ -1523,13 +1524,13 @@ class UNIQUAC(GibbsExcess):
             # print(tau12, tau21)
             r1, r2 = rs
             q1, q2 = qs
-            working_gammas = gammas
-            calc = []
+            calc = [0.0]*(2*len(xs))
             for i in range(pts):
                 g0, g1 = UNIQUAC_gammas_binary(xs[i], r1, r2, q1, q2, tau12, tau21)
-                calc.append(g0)
-                calc.append(g1)
+                calc[i*2] = g0
+                calc[i*2+1] = g1
             return calc
+        
         from thermo.fitting import fit_customized
          
         xs_working = []
@@ -1543,16 +1544,24 @@ class UNIQUAC(GibbsExcess):
             
         xs_working = np.array(xs_working)
         gammas_working = np.array(gammas_working)
+        
+        fit_kwargs = dict(fit_method='lm', 
+                    # fit_method='differential_evolution', 
+                   objective='MeanSquareErr', multiple_tries_max_objective='MeanRelErr', 
+                   initial_guesses=cls.zero_gamma_tau_guess, analytical_jac=None,
+                   solver_kwargs=None, use_numba=False, multiple_tries=False,
+                   do_statistics=True, multiple_tries_max_err=1e-5)
+        fit_kwargs.update(kwargs)
          
              
         res = fit_customized(xs_working, gammas_working, to_solve_vec, ['tau12', 'tau21'], ['tau12', 'tau21'], 
-                   # fit_method='lm', 
-                    fit_method='differential_evolution', 
-                   objective='MeanSquareErr', multiple_tries_max_objective='MeanRelErr', 
-                   guesses={'tau12': .2, 'tau21': .3}, initial_guesses=None, analytical_jac=None,
-                   solver_kwargs=None, use_numba=False, multiple_tries=False,
-                   do_statistics=True, multiple_tries_max_err=1e-5)
+                    **fit_kwargs)
         return res
+    
+    zero_gamma_tau_guess = [{'tau12': 1, 'tau21': 1},
+                            {'tau12': 1.0529981904211922, 'tau21': 1.1976772649513237},
+                            ]
+                            # 0.24755479584296683, 'tau21': 2.6241725296267973]
          
          
 
