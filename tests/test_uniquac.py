@@ -30,7 +30,7 @@ from thermo.uniquac import UNIQUAC
 from random import random
 from thermo import *
 import numpy as np
-from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d, assert_close3d
+from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d, assert_close3d, linspace
 from thermo.test_utils import check_np_output_activity
 import pickle
 
@@ -353,3 +353,13 @@ def test_Uniquac_numpy_output_correct_array_internal_ownership():
         obj = getattr(modelnp, name)
         assert obj.flags.c_contiguous
         assert obj.flags.owndata
+        
+@pytest.mark.fitting
+def test_UNIQUAC_fitting_gamma_1_success_cases():
+    pts = 10
+    rs = [3.8254, 4.4998]
+    qs = [3.316, 3.856]
+    xs = [[xi, 1.0 - xi] for xi in linspace(1e-7, 1-1e-7, pts)]
+    gammas = [[1, 1] for i in range(pts)]
+    coeffs, stats = UNIQUAC.regress_binary_taus(gammas, xs, rs, qs)
+    assert stats['MAE'] < 1e-5

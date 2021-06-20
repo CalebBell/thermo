@@ -1515,7 +1515,7 @@ class UNIQUAC(GibbsExcess):
     @classmethod
     def regress_binary_taus(cls, gammas, xs, rs, qs, use_numba=False,
                             do_statistics=True, **kwargs):
-        '''Perform a basic regression to determine the values of the `tau`
+        r'''Perform a basic regression to determine the values of the `tau`
         terms in the UNIQUAC model, given a series of known or predicted
         activity coefficients and mole fractions. 
 
@@ -1581,6 +1581,15 @@ class UNIQUAC(GibbsExcess):
         >>> GE = UNIQUAC(T=300, xs=[.5, .5], rs=rs, qs=qs, ABCDEF=ABCDEF)
         >>> GE.gammas()
         [1.000000466, 1.000000180]
+        
+        Note how the `tau` coefficients need to be converted into the `a`
+        parameters of the `tau` equation. They could also have been converted
+        into any of the other parameters, but then the activity coefficients
+        predicted would no longer be close to 1 at other temperatures.
+
+        .. math::
+            \tau_{ij} = \exp\left[a_{ij}+\frac{b_{ij}}{T}+c_{ij}\ln T
+                    + d_{ij}T + \frac{e_{ij}}{T^2} + f_{ij}{T^2}\right]
         '''
         if kwargs.get('use_numba', False):
             from thermo.numba import UNIQUAC_gammas_binaries as work_func
