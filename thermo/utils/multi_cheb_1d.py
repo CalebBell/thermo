@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,21 +19,33 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
-import os
 
+__all__ = ['MultiCheb1D']
 
-try:  # pragma: no cover
-    from appdirs import user_data_dir, user_config_dir
-    data_dir = user_config_dir('thermo')
-    if not os.path.exists(data_dir):
-        try:
-            os.mkdir(data_dir)
-        except FileNotFoundError:
-            os.makedirs(data_dir) # Recursive
-except ImportError:  # pragma: no cover
-    data_dir = ''
+from bisect import bisect_left
 
-try:
-    source_path = os.path.dirname(__file__) # micropython
-except:
-    source_path = ''
+class MultiCheb1D(object):
+    '''Simple class to store set of coefficients for multiple chebyshev
+    approximations and perform calculations from them.
+    '''
+    def __init__(self, points, coeffs):
+        self.points = points
+        self.coeffs = coeffs
+        self.N = len(points)-1
+
+    def __call__(self, x):
+        coeffs = self.coeffs[bisect_left(self.points, x)]
+        return coeffs(x)
+
+    @staticmethod
+    def chebval(x, c):
+        # copied from numpy's source, slightly optimized
+        # https://github.com/numpy/numpy/blob/v1.13.0/numpy/polynomial/chebyshev.py#L1093-L1177
+        x2 = 2.*x
+        c0 = c[-2]
+        c1 = c[-1]
+        for i in range(3, len(c) + 1):
+            tmp = c0
+            c0 = c[-i] - c1
+            c1 = tmp + c1*x2
+        return c0 + c1*x
