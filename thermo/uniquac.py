@@ -50,7 +50,7 @@ from fluids.numerics import numpy as np
 from fluids.constants import R
 from thermo.activity import GibbsExcess, interaction_exp, dinteraction_exp_dT, d2interaction_exp_dT2, d3interaction_exp_dT3
 
-__all__ = ['UNIQUAC', 'UNIQUAC_gammas', 'UNIQUAC_gamma', 'UNIQUAC_gammas_binary']
+__all__ = ['UNIQUAC', 'UNIQUAC_gammas', 'UNIQUAC_gamma', 'UNIQUAC_gammas_binary', 'UNIQUAC_gammas_binaries']
 
 try:
     array, zeros, npsum, nplog = np.array, np.zeros, np.sum, np.log
@@ -1513,58 +1513,51 @@ class UNIQUAC(GibbsExcess):
 
     @classmethod
     def regress_binary_taus(cls, gammas, xs, rs, qs, **kwargs):
-        pts = len(xs)
+        if kwargs.get('use_numba', False):
+            from thermo.numba import UNIQUAC_gammas_binaries as work_func
+            rs = array(rs)
+            qs = array(qs)
+        else:
+            work_func = UNIQUAC_gammas_binaries
         
-        def to_solve_vec(xs, tau12, tau21):
-            # Can I get rs and qs passed in?
-            if tau12 < 0:
-                tau12 = 1e-10
-            if tau21< 0:
-                tau21 = 1e-10
-            # print(tau12, tau21)
-            r1, r2 = rs
-            q1, q2 = qs
-            calc = [0.0]*(2*len(xs))
-            for i in range(pts):
-                g0, g1 = UNIQUAC_gammas_binary(xs[i], r1, r2, q1, q2, tau12, tau21)
-                calc[i*2] = g0
-                calc[i*2+1] = g1
-            return calc
+        def fitting_func(xs, tau12, tau21):
+            # Capture rs, qs unfortunately is necessary. Works nicely with numba though.
+            return work_func(xs, rs, qs, tau12, tau21)
         
-        from thermo.fitting import fit_customized
+        
+        
+        return GibbsExcess._regress_binary_taus(gammas, xs, fitting_func=fitting_func,
+                                                fit_parameters=['tau12', 'tau21'], 
+                                                use_fit_parameters=['tau12', 'tau21'],
+                                                initial_guesses=cls.zero_gamma_tau_guess,
+                                                analytical_jac=None,
+                                                **kwargs)
          
-        xs_working = []
-        for i in range(pts):
-            xs_working.append(xs[i][0])
-            xs_working.append(xs[i][1])
-        gammas_working = []
-        for i in range(pts):
-            gammas_working.append(gammas[i][0])
-            gammas_working.append(gammas[i][1])
-            
-        xs_working = np.array(xs_working)
-        gammas_working = np.array(gammas_working)
-        
-        fit_kwargs = dict(fit_method='lm', 
-                    # fit_method='differential_evolution', 
-                   objective='MeanSquareErr', multiple_tries_max_objective='MeanRelErr', 
-                   initial_guesses=cls.zero_gamma_tau_guess, analytical_jac=None,
-                   solver_kwargs=None, use_numba=False, multiple_tries=False,
-                   do_statistics=True, multiple_tries_max_err=1e-5)
-        fit_kwargs.update(kwargs)
-         
-             
-        res = fit_customized(xs_working, gammas_working, to_solve_vec, ['tau12', 'tau21'], ['tau12', 'tau21'], 
-                    **fit_kwargs)
-        return res
     
     zero_gamma_tau_guess = [{'tau12': 1, 'tau21': 1},
                             {'tau12': 1.0529981904211922, 'tau21': 1.1976772649513237},
                             ]
                             # 0.24755479584296683, 'tau21': 2.6241725296267973]
          
-         
 
+MIN_TAU_UNIQUAC = 1e-20
+
+def UNIQUAC_gammas_binaries(xs, rs, qs, tau12, tau21, calc=None):
+    # xs: array [x0_0, x1_0, x0_1, x1_1]
+    if tau12 < MIN_TAU_UNIQUAC:
+        tau12 = MIN_TAU_UNIQUAC
+    if tau21 < MIN_TAU_UNIQUAC:
+        tau21 = MIN_TAU_UNIQUAC
+    pts = int(len(xs)/2) # Always even
+    r1, r2 = rs
+    q1, q2 = qs
+    if calc is None:
+        calc = [0.0]*(pts*2)
+    for i in range(pts):
+        g0, g1 = UNIQUAC_gammas_binary(xs[i*2], r1, r2, q1, q2, tau12, tau21)
+        calc[i*2] = g0
+        calc[i*2+1] = g1
+    return calc
 
 def UNIQUAC_gammas_binary(x1, r1, r2, q1, q2, tau12, tau21):
     x0 = q1*x1

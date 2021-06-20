@@ -73,6 +73,7 @@ from fluids.numerics import numpy as np
 from chemicals.utils import exp, log
 from chemicals.utils import normalize, dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, d2xs_to_dxdn_partials, hash_any_primitive
 from thermo import serialize
+from thermo.fitting import fit_customized
 
 try:
     npexp, ones, zeros, array, ndarray = np.exp, np.ones, np.zeros, np.array, np.ndarray
@@ -1012,6 +1013,36 @@ class GibbsExcess(object):
             dgammas_dT = array(dgammas_dT)
         self._dgammas_dT = dgammas_dT
         return dgammas_dT
+    
+    @classmethod
+    def _regress_binary_taus(cls, gammas, xs, fitting_func, fit_parameters,
+                             use_fit_parameters, initial_guesses=None, analytical_jac=None,
+                             **kwargs):
+        pts = len(xs)
+        xs_working = []
+        for i in range(pts):
+            xs_working.append(xs[i][0])
+            xs_working.append(xs[i][1])
+        gammas_working = []
+        for i in range(pts):
+            gammas_working.append(gammas[i][0])
+            gammas_working.append(gammas[i][1])
+            
+        xs_working = np.array(xs_working)
+        gammas_working = np.array(gammas_working)
+        
+        fit_kwargs = dict(fit_method='lm', 
+                    # fit_method='differential_evolution', 
+                   objective='MeanSquareErr', multiple_tries_max_objective='MeanRelErr', 
+                   initial_guesses=initial_guesses, analytical_jac=analytical_jac,
+                   solver_kwargs=None, use_numba=False, multiple_tries=False,
+                   do_statistics=True, multiple_tries_max_err=1e-5)
+        fit_kwargs.update(kwargs)
+         
+             
+        res = fit_customized(xs_working, data=gammas_working, fitting_func=fitting_func, fit_parameters=fit_parameters, use_fit_parameters=use_fit_parameters, 
+                    **fit_kwargs)
+        return res
 
 
 class IdealSolution(GibbsExcess):
