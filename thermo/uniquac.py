@@ -1631,6 +1631,8 @@ class UNIQUAC(GibbsExcess):
                                                 use_fit_parameters=['tau12', 'tau21'],
                                                 initial_guesses=cls.zero_gamma_tau_guess,
                                                 analytical_jac=None,
+                                                use_numba=use_numba,
+                                                do_statistics=do_statistics,
                                                 **kwargs)
          
     
