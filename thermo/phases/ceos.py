@@ -23,6 +23,7 @@ SOFTWARE.
 '''
 __all__ = ['CEOSLiquid', 'CEOSGas']
 import os
+from fluids.constants import R
 from fluids.numerics import trunc_exp, numpy as np
 from chemicals.utils import log
 from thermo.eos_mix import IGMIX, eos_mix_full_path_dict, eos_mix_full_path_reverse_dict
@@ -70,7 +71,6 @@ class CEOSGas(Phase):
     polynomial heat capacities:
 
     >>> from thermo import HeatCapacityGas, PRMIX, CEOSGas
-    >>> R = CEOSGas.R
     >>> eos_kwargs = dict(Tcs=[154.58, 126.2], Pcs=[5042945.25, 3394387.5], omegas=[0.021, 0.04], kijs=[[0.0, -0.0159], [-0.0159, 0.0]])
     >>> HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
     ...                      HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
@@ -119,7 +119,6 @@ class CEOSGas(Phase):
         Examples
         --------
         >>> from thermo import HeatCapacityGas, PRMIX, CEOSGas
-        >>> R = CEOSGas
         >>> eos_kwargs = dict(Tcs=[154.58, 126.2], Pcs=[5042945.25, 3394387.5], omegas=[0.021, 0.04], kijs=[[0.0, -0.0159], [-0.0159, 0.0]])
         >>> HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
         ...                      HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]

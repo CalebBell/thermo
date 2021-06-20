@@ -163,6 +163,7 @@ class Phase(object):
         Examples
         --------
         >>> import json
+        >>> from thermo import IAPWS95Liquid
         >>> phase = IAPWS95Liquid(T=300, P=1e5, zs=[1])
         >>> new_phase = Phase.from_json(json.loads(json.dumps(phase.as_json())))
         >>> assert phase == new_phase
@@ -366,7 +367,7 @@ class Phase(object):
 
         Examples
         --------
-
+        >>> from thermo import IdealGas
         >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[])
         >>> phase.to_TP_zs(T=1e5, P=1e3, zs=[.5, .5])
         IdealGas(HeatCapacityGases=[], T=100000.0, P=1000.0, zs=[0.5, 0.5])
@@ -404,6 +405,7 @@ class Phase(object):
         Note that some thermodynamic models may have multiple solutions for
         some inputs!
 
+        >>> from thermo import IdealGas
         >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[])
         >>> phase.to(T=1e5, P=1e3, zs=[.5, .5])
         IdealGas(HeatCapacityGases=[], T=100000.0, P=1000.0, zs=[0.5, 0.5])

@@ -4303,40 +4303,43 @@ def test_PSRK_basic():
     alphas_expect = ([0.3619928043680038, 3.633428981933551],
      [-0.0009796813317750766, -0.006767771602552934],
      [2.8906692884712426e-06, 2.5446078792139856e-05])
-    assert_allclose(alphas_calcs, alphas_expect, rtol=1e-12)
+    assert_close2d(alphas_calcs, alphas_expect, rtol=1e-12)
+    
+    a_alphas_call = eos.a_alphas_vectorized(T)
+    assert_close1d(eos.a_alphas, a_alphas_call, rtol=1e-12)
 
     alphas_expect = (1.4982839752515456, -0.002999402788526605, 1.0500167086432077e-05)
     alphas_calc = eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2
-    assert_allclose(alphas_expect, alphas_calc, rtol=1e-10)
+    assert_close1d(alphas_expect, alphas_calc, rtol=1e-10)
 
-    assert_allclose(eos.ge_model.T, eos.T, rtol=1e-16)
-    assert_allclose(eos.ge_model.xs, eos.zs, rtol=1e-16)
+    assert_close(eos.ge_model.T, eos.T, rtol=1e-16)
+    assert_close1d(eos.ge_model.xs, eos.zs, rtol=1e-16)
 
     # Basic alpha derivatives - checking vs numerical
     da_alpha_dT_numerical = derivative(lambda T: eos.to(T=T, P=P, zs=[.5, .5]).a_alpha, eos.T, dx=eos.T*3e-4, order=17)
-    assert_allclose(eos.da_alpha_dT, da_alpha_dT_numerical, rtol=1e-10)
+    assert_close(eos.da_alpha_dT, da_alpha_dT_numerical, rtol=1e-10)
     d2a_alpha_dT2_numerical = derivative(lambda T: eos.to(T=T, P=P, zs=[.5, .5]).da_alpha_dT, eos.T, dx=eos.T*3e-4, order=13)
-    assert_allclose(eos.d2a_alpha_dT2, d2a_alpha_dT2_numerical, rtol=1e-10)
+    assert_close(eos.d2a_alpha_dT2, d2a_alpha_dT2_numerical, rtol=1e-10)
 
     # Copy to new states
     eos_lower = eos.to(T=300.0, P=1e5, zs=[.4, .6])
-    assert_allclose(eos_lower.ge_model.T, eos_lower.T, rtol=1e-16)
-    assert_allclose(eos_lower.ge_model.xs, eos_lower.zs, rtol=1e-16)
+    assert_close(eos_lower.ge_model.T, eos_lower.T, rtol=1e-16)
+    assert_close1d(eos_lower.ge_model.xs, eos_lower.zs, rtol=1e-16)
 
     eos_TV = eos.to(T=300.0, V=eos_lower.V_l, zs=[.4, .6])
-    assert_allclose(eos_TV.ge_model.T, eos_TV.T, rtol=1e-16)
-    assert_allclose(eos_TV.ge_model.xs, eos_TV.zs, rtol=1e-16)
+    assert_close(eos_TV.ge_model.T, eos_TV.T, rtol=1e-16)
+    assert_close1d(eos_TV.ge_model.xs, eos_TV.zs, rtol=1e-16)
 
     eos_PV = eos.to(P=eos_lower.P, V=eos_lower.V_l, zs=[.4, .6])
-    assert_allclose(eos_PV.ge_model.T, eos_PV.T, rtol=1e-16)
-    assert_allclose(eos_PV.ge_model.xs, eos_PV.zs, rtol=1e-16)
+    assert_close(eos_PV.ge_model.T, eos_PV.T, rtol=1e-16)
+    assert_close1d(eos_PV.ge_model.xs, eos_PV.zs, rtol=1e-16)
 
     eos_fast = eos.to_TP_zs_fast(T=eos_lower.T, P=eos_lower.P, zs=eos_lower.zs)
-    assert_allclose(eos_fast.T, eos_lower.T, rtol=1e-16)
-    assert_allclose(eos_fast.ge_model.T, eos_lower.T, rtol=1e-16)
-    assert_allclose(eos_fast.ge_model.xs, eos_lower.zs, rtol=1e-16)
-    assert_allclose(eos_fast.ge_model.xs, eos_fast.zs, rtol=1e-16)
-    assert_allclose(eos_fast.V_l, eos_lower.V_l, rtol=1e-14)
+    assert_close(eos_fast.T, eos_lower.T, rtol=1e-16)
+    assert_close(eos_fast.ge_model.T, eos_lower.T, rtol=1e-16)
+    assert_close1d(eos_fast.ge_model.xs, eos_lower.zs, rtol=1e-16)
+    assert_close1d(eos_fast.ge_model.xs, eos_fast.zs, rtol=1e-16)
+    assert_close(eos_fast.V_l, eos_lower.V_l, rtol=1e-14)
 
 def test_model_encode_json_gceosmix():
     kijs = [[0, 0.00076, 0.00171], [0.00076, 0, 0.00061], [0.00171, 0.00061, 0]]
@@ -4493,12 +4496,50 @@ def test_APISRKMIX_alpha_functions():
     ais = [0.1384531188470736, 0.23318192635290255]
     Tcs = [126.1, 190.6]
     T = 115.0
+    
 
     assert_close1d(APISRK_a_alphas_vectorized(T, Tcs, ais, S1s, S2s), a_alphas_expect, rtol=1e-14)
-    assert_close1d(APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s)[0], a_alphas_expect, rtol=1e-14)
-    assert_close1d(APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s)[1], da_alpha_dTs_expect, rtol=1e-14)
-    assert_close1d(APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s)[2], d2a_alpha_dT2s_expect, rtol=1e-14)
+    res = APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s)
+    assert_close1d(res[0], a_alphas_expect, rtol=1e-14)
+    assert_close1d(res[1], da_alpha_dTs_expect, rtol=1e-14)
+    assert_close1d(res[2], d2a_alpha_dT2s_expect, rtol=1e-14)
 
+def test_APISRK_a_alphas_vectorized():
+    res = APISRK_a_alphas_vectorized(T=430.0, Tcs=[514.0], ais=[1.2721974560809934],  S1s=[1.678665], S2s=[-0.216396])
+    assert_close1d(res, [1.60465652994097], rtol=1e-13)
+    
+    out = [0.0]
+    res = APISRK_a_alphas_vectorized(T=430.0, Tcs=[514.0], ais=[1.2721974560809934],  S1s=[1.678665], S2s=[-0.216396], a_alphas=out)
+    assert out is res
+
+def test_SRK_a_alphas_vectorized():
+    Tcs = [469.7, 507.4, 540.3]
+    ais = [1.9351940385541342, 2.525982668162287, 3.1531036708059315]
+    ms = [0.8610138239999999, 0.9436976, 1.007889024]
+    res = SRK_a_alphas_vectorized(322.29, Tcs=Tcs, ais=ais, ms=ms)
+    expect =  [2.5494858145127974, 3.5865982452606153, 4.766148066487169]
+    assert_close1d(expect, res, rtol=1e-13)
+    out = [0.0, 0.0, 0.]
+    res = SRK_a_alphas_vectorized(322.29, Tcs=Tcs, ais=ais, ms=ms, a_alphas=out)
+    assert res is out
+    
+    
+    res =  SRK_a_alpha_and_derivatives_vectorized(322.29, Tcs=Tcs, ais=ais, ms=ms)
+    expect0 = [2.5494858145127983, 3.5865982452606167, 4.76614806648717]
+    expect1 = [-0.004915469296196757, -0.007024101084234858, -0.00936320876945663]
+    expect2 = [1.2364419163243534e-05, 1.777527967198963e-05, 2.3723182313719527e-05]
+    assert_close1d(res[0], expect0, rtol=1e-13)
+    assert_close1d(res[1], expect1, rtol=1e-13)
+    assert_close1d(res[2], expect2, rtol=1e-13)
+    
+    out0, out1, out2 = [0.0]*3, [0.0]*3, [0.0]*3
+    res = SRK_a_alpha_and_derivatives_vectorized(322.29, Tcs=Tcs, ais=ais, ms=ms, a_alphas=out0, da_alpha_dTs=out1, d2a_alpha_dT2s=out2)
+    assert res[0] is out0
+    assert res[1] is out1
+    assert res[2] is out2
+    
+    
+    
 def test_a_alpha_vectorized():
     from thermo.eos_mix import eos_mix_list
     for e in eos_mix_list:
@@ -4507,6 +4548,10 @@ def test_a_alpha_vectorized():
 
         a_alpha1 = obj.a_alpha_and_derivatives_vectorized(obj.T)[0]
         assert_close1d(a_alpha0, a_alpha1, rtol=1e-13)
+
+def test_MSRKMIXTranslated():
+    eos = MSRKMIXTranslated(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.2, 0.8], kijs=[[0,0.03],[0.03,0]])
+    assert_close1d(eos.a_alphas_vectorized(eos.T), eos.a_alphas, rtol=1e-13)
 
 def test_missing_alphas_working():
     # Failed at one point

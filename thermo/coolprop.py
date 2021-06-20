@@ -28,6 +28,7 @@ __all__ = ['has_CoolProp', 'coolprop_dict', 'CP_fluid', 'coolprop_fluids',
 import os
 from fluids.numerics import assert_close1d, numpy as np
 from thermo.base import data_dir, source_path
+from chemicals.utils import mark_numba_incompatible
 
 #try:
 #    import CoolProp
@@ -43,6 +44,7 @@ global _PropsSI
 
 global _has_CoolProp
 _has_CoolProp = None
+@mark_numba_incompatible
 def has_CoolProp():
     global _has_CoolProp
     if _has_CoolProp is None:
@@ -55,6 +57,7 @@ def has_CoolProp():
     return _has_CoolProp
 
 _PropsSI = None
+@mark_numba_incompatible
 def PropsSI(*args, **kwargs):
     global _PropsSI
     if _PropsSI is None:
@@ -63,6 +66,7 @@ def PropsSI(*args, **kwargs):
 
 global _HAPropsSI
 _HAPropsSI = None
+@mark_numba_incompatible
 def HAPropsSI(*args, **kwargs):
     global _HAPropsSI
     if _HAPropsSI is None:
@@ -71,6 +75,7 @@ def HAPropsSI(*args, **kwargs):
 
 global _PhaseSI
 _PhaseSI = None
+@mark_numba_incompatible
 def PhaseSI(*args, **kwargs):
     global _PhaseSI
     if _PhaseSI is None:
@@ -79,6 +84,7 @@ def PhaseSI(*args, **kwargs):
 
 global _AbstractState
 _AbstractState = None
+@mark_numba_incompatible
 def AbstractState(*args, **kwargs):
     global _AbstractState
     if _AbstractState is None:
@@ -170,6 +176,7 @@ coolprop_fluids = {}
 #                        has_melting_line=HEOS.has_melting_line(), Tc=HEOS.T_critical(), Pc=HEOS.p_critical(),
 #                        Tt=HEOS.Ttriple(), omega=HEOS.acentric_factor(), HEOS=None)
 
+@mark_numba_incompatible
 def store_coolprop_fluids():
     import CoolProp
     import json
@@ -185,6 +192,7 @@ def store_coolprop_fluids():
     json.dump(data, file)
     file.close()
 
+@mark_numba_incompatible
 def load_coolprop_fluids():
     import json
     import CoolProp
@@ -314,6 +322,7 @@ class CP_fluid_approximator(object):
 
 
 
+@mark_numba_incompatible
 def CoolProp_T_dependent_property(T, CASRN, prop, phase):
     r'''Calculates a property of a chemical in either the liquid or gas phase
     as a function of temperature only. This means that the property is
@@ -357,7 +366,7 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
     --------
     Water at STP according to IAPWS-95
 
-    >>> CoolProp_T_dependent_property(298.15, '7732-18-5', 'D', 'l')
+    >>> CoolProp_T_dependent_property(298.15, '7732-18-5', 'D', 'l') # doctest:+SKIP
     997.047636760347
 
     References

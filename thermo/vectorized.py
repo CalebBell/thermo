@@ -62,8 +62,9 @@ import thermo
 
 __all__ = []
 
+bad_names = set(('__file__', '__name__', '__package__', '__cached__'))
 
-__funcs = {}
+_new_globals = {}
 
 if isinstance(np, FakePackage):
     pass
@@ -74,10 +75,11 @@ else:
         if isinstance(obj, types.FunctionType):
             obj = np.vectorize(obj)
         elif isinstance(obj, str):
-            continue
+            if name in bad_names:
+                continue
         __all__.append(name)
-        __funcs.update({name: obj})
-globals().update(__funcs)
+        _new_globals.update({name: obj})
+globals().update(_new_globals)
 
 
 
