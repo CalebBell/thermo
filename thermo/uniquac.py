@@ -34,7 +34,8 @@ UNIQUAC Class
 
 .. autoclass:: UNIQUAC
     :members: to_T_xs, GE, dGE_dT, d2GE_dT2, d3GE_dT3, d2GE_dTdxs, dGE_dxs,
-              d2GE_dxixjs, taus, dtaus_dT, d2taus_dT2, d3taus_dT3, phis, thetas
+              d2GE_dxixjs, taus, dtaus_dT, d2taus_dT2, d3taus_dT3, phis, 
+              thetas, regress_binary_taus
     :undoc-members:
     :show-inheritance:
     :exclude-members:
@@ -1513,14 +1514,45 @@ class UNIQUAC(GibbsExcess):
 
     @classmethod
     def regress_binary_taus(cls, gammas, xs, rs, qs, **kwargs):
-        #
-        '''Notes on getting fitting coefficients to be 1:
+        '''Perform a basic regression to determine the values of the `tau`
+        terms in the UNIQUAC model, given a series of known or predicted
+        activity coefficients and mole fractions. 
+
+        Parameters
+        ----------
+        gammas : list[list[float, 2]]
+            List of activity coefficient pairs, [-]
+        xs : list[list[float, 2]]
+            List of binary mole fraction pairs, [-]
+        rs : list[float]
+            Van der Waals volume parameters for each species, [-]
+        qs : list[float]
+            Surface area parameters for each species, [-]
+        kwargs : dict
+            Extra parameters to be passed to the fitting function (not yet
+            documented), [-]
+
+        Returns
+        -------
+        parameters : dict[str, float]
+            Dimentionless interaction parameters of each compound with each 
+            other; these are the actual `tau` values. [-]
+            
+        Notes
+        -----
+        Notes on getting fitting coefficients that yield gammas of 1:
         
-            * Possible some of the time to a pretty high accuracy
-            * Not possible whatsoever in some cases
-            * The values of rs, and qs determine how close the fitting can be
-            * If rs and qs are close to each other, it may well fit nicely
-            * If they are distant (1.5x it will not fit)
+            * This is possible some of the time to a pretty high accuracy
+            * This is not possible whatsoever in some cases
+            * The values of `rs`, and `qs` determine how close the fitting can be
+            * If `rs` and `qs` are close to each other, it may well fit nicely
+            * If they are distant (1.2-1.5x) they usually will not fit
+        
+        Examples
+        --------
+        
+        
+        
         '''
         if kwargs.get('use_numba', False):
             from thermo.numba import UNIQUAC_gammas_binaries as work_func
