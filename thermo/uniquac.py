@@ -1590,6 +1590,25 @@ class UNIQUAC(GibbsExcess):
         .. math::
             \tau_{ij} = \exp\left[a_{ij}+\frac{b_{ij}}{T}+c_{ij}\ln T
                     + d_{ij}T + \frac{e_{ij}}{T^2} + f_{ij}{T^2}\right]
+            
+            
+        The UNIQUAC model's `r` and `q` parameters create their own biases in
+        the model, based on the structure of each of the pure species. Water
+        and n-pentane are not miscible liquids; they will form two liquid
+        phases except when one component is present in trace amounts. No
+        matter the values of `tau`, it is not possible to make the UNIQUAC
+        equation predict activity coefficients very close to one for this
+        system, as shown in the following sample.
+        
+        >>> rs = [3.8254, 0.92]
+        >>> qs = [3.316, 1.4]
+        >>> pts = 6
+        >>> xs = [[xi, 1.0 - xi] for xi in np.linspace(1e-7, 1-1e-7, pts)]
+        >>> gammas = [[1, 1] for i in range(pts)]
+        >>> coeffs, stats = UNIQUAC.regress_binary_taus(gammas, xs, rs, qs)
+        >>> stats['MAE']
+        0.0254
+        
         '''
         if kwargs.get('use_numba', False):
             from thermo.numba import UNIQUAC_gammas_binaries as work_func
