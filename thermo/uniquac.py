@@ -46,7 +46,7 @@ UNIQUAC Functional Calculations
 
 from __future__ import division
 from math import log, exp
-from fluids.numerics import numpy as np
+from fluids.numerics import numpy as np, trunc_exp
 from fluids.constants import R
 from thermo.activity import GibbsExcess, interaction_exp, dinteraction_exp_dT, d2interaction_exp_dT2, d3interaction_exp_dT3
 
@@ -1513,6 +1513,15 @@ class UNIQUAC(GibbsExcess):
 
     @classmethod
     def regress_binary_taus(cls, gammas, xs, rs, qs, **kwargs):
+        #
+        '''Notes on getting fitting coefficients to be 1:
+        
+            * Possible some of the time to a pretty high accuracy
+            * Not possible whatsoever in some cases
+            * The values of rs, and qs determine how close the fitting can be
+            * If rs and qs are close to each other, it may well fit nicely
+            * If they are distant (1.5x it will not fit)
+        '''
         if kwargs.get('use_numba', False):
             from thermo.numba import UNIQUAC_gammas_binaries as work_func
             rs = array(rs)
@@ -1522,7 +1531,10 @@ class UNIQUAC(GibbsExcess):
         
         def fitting_func(xs, tau12, tau21):
             # Capture rs, qs unfortunately is necessary. Works nicely with numba though.
+            # try:
             return work_func(xs, rs, qs, tau12, tau21)
+            # except:
+            #     print(xs.tolist(), tau12, tau21)
         
         
         
@@ -1536,8 +1548,13 @@ class UNIQUAC(GibbsExcess):
     
     zero_gamma_tau_guess = [{'tau12': 1, 'tau21': 1},
                             {'tau12': 1.0529981904211922, 'tau21': 1.1976772649513237},
+                            {'tau12': 1.8748910210873349, 'tau21': 998.612171671497}, # Found seeking gamma = 1 for rs, qs = [[1.4, 7.219], [39.95, 47.2727]]
+                            {'tau12': 0.6080855151163854, 'tau21': 1.5266917396579502}  # Found seeking gamma = 1 for rs, qs = [[30.49447368421054, 38.253], [30.195389473684212, 42.39346842105263]]
                             ]
-                            # 0.24755479584296683, 'tau21': 2.6241725296267973]
+    for i in range(len(zero_gamma_tau_guess)):
+        r = zero_gamma_tau_guess[i]
+        zero_gamma_tau_guess.append({'tau12': r['tau21'], 'tau21': r['tau12']})
+        
          
 
 MIN_TAU_UNIQUAC = 1e-20
@@ -1551,8 +1568,9 @@ def UNIQUAC_gammas_binaries(xs, rs, qs, tau12, tau21, calc=None):
     pts = int(len(xs)/2) # Always even
     r1, r2 = rs
     q1, q2 = qs
+    allocate_size = (pts*2)
     if calc is None:
-        calc = [0.0]*(pts*2)
+        calc = [0.0]*allocate_size
     for i in range(pts):
         g0, g1 = UNIQUAC_gammas_binary(xs[i*2], r1, r2, q1, q2, tau12, tau21)
         calc[i*2] = g0
@@ -1602,7 +1620,7 @@ def UNIQUAC_gammas_binary(x1, r1, r2, q1, q2, tau12, tau21):
     x40 = x23*x6
     x41 = -q2**2*x2*x33*(x22*x31 + x24 - 1) + q2*x20*x40*(-tau21*(1 - x24) + x23) - q2*x38 + q2*x39 - x1*x36 + x10*x19 - x29*x40*(q2*x27 - r2) + x27*x3*x30*(-x17*x26 + x24)/x16
     x42 = x0*x13 - x0*x8 + x1*x35 - x1*(x34 + x35) - x2*x37 + x2*(x37 + x41) + x3*x38 - x3*x39    
-    return (x15*exp(x34 + x42), x36*exp(x41 + x42))
+    return (x15*trunc_exp(x34 + x42), x36*trunc_exp(x41 + x42))
     
 
 def UNIQUAC_gamma(x1, r1, r2, q1, q2, tau12, tau21):

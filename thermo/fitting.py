@@ -575,7 +575,7 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
         # iterate over all the initial guess parameters we have and find the one
         # with the lowest error (according to the error criteria)
         best_hardcoded_guess = None
-        best_hardcoded_err = 1e300
+        best_hardcoded_err = 1e308
         hardcoded_errors = []
         hardcoded_guesses = initial_guesses
         extra_user_guess = [{k: v for k, v in zip(use_fit_parameters, p0)}]
@@ -595,6 +595,8 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
                 best_hardcoded_err = err
                 best_hardcoded_guess = ph
         p0 = best_hardcoded_guess
+        if best_hardcoded_err == 1e308 and fit_method != 'differential_evolution':
+            raise ValueError("No attemped fitting parameters yielded remotely reasonable errors. Check input data or provide guesses")
         array_init_guesses = [p0 for _, p0 in sorted(zip(hardcoded_errors, array_init_guesses))]
     else:
         array_init_guesses = [p0]
