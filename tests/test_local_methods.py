@@ -55,8 +55,6 @@ def test_local_constant_method():
     obj.extrapolation = None
     obj.add_method(constant, Tmin, Tmax)
     assert obj.T_dependent_property(T) is None
-    for order in (1, 2, 3):
-        assert obj.T_dependent_property_derivative(T, order) is None
     # assert obj.T_dependent_property_integral(T, T+10.) is None
     # assert obj.T_dependent_property_integral_over_T(T, T+10) is None
     
@@ -98,10 +96,6 @@ def test_local_method():
     obj.extrapolation = None
     obj.add_method(f, Tmin, Tmax)
     assert obj.T_dependent_property(T) is None
-    for order in (1, 2, 3):
-        assert obj.T_dependent_property_derivative(T, order) is None
-    # assert obj.T_dependent_property_integral(T, T+10.) is None
-    # assert obj.T_dependent_property_integral_over_T(T, T+10) is None
     
 def test_many_local_methods():
     obj = TDependentProperty(extrapolation='linear')

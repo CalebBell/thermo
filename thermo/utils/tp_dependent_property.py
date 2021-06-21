@@ -215,14 +215,25 @@ class TPDependentProperty(TDependentProperty):
         prop : float
             Calculated property, [`units`]
         '''
-        try:
-            prop = self.calculate_P(T, P, self._method_P)
-            if self.test_property_validity(prop):
-                return prop
-        except:  # pragma: no cover
-            pass
-        # Function returns None if it does not work.
-        return None
+        method_P = self._method_P
+        if method_P is None:
+            if self.RAISE_PROPERTY_CALCULATION_ERROR: 
+                raise RuntimeError("no pressure dependent method selected for component with CASRN '%s'" %self.CASRN)
+            else:
+                return None
+        if self.test_method_validity_P(T, P, method_P):
+            try:
+                prop = self.calculate_P(T, P, method_P)
+            except:  # pragma: no cover
+                if self.RAISE_PROPERTY_CALCULATION_ERROR:
+                    raise RuntimeError("failed to evaluate %s method '%s' at T=%s K for component with CASRN '%s'" %(self.name, method_P, T, self.CASRN))
+            else:
+                if self.test_property_validity(prop):
+                    return prop
+                elif self.RAISE_PROPERTY_CALCULATION_ERROR:
+                    raise RuntimeError("%s method '%s' computed an invalid value of %s %s for component with CASRN '%s'" %(self.name, method_P, prop, self.units, self.CASRN))
+        elif self.RAISE_PROPERTY_CALCULATION_ERROR:
+            raise RuntimeError("%s method '%s' is not valid at T=%s K for component with CASRN '%s'" %(self.name, method_P, T, self.CASRN))
 
     def TP_or_T_dependent_property(self, T, P):
         r'''Method to calculate the property given a temperature and pressure
@@ -319,17 +330,17 @@ class TPDependentProperty(TDependentProperty):
         validity : bool
             Whether or not a specifid method is valid
         '''
-        if method in self.tabular_data:
+        if method in self.tabular_data_P:
             if self.tabular_extrapolation_permitted:
                 validity = True
             else:
-                Ts, Ps, properties = self.tabular_data[method]
+                Ts, Ps, properties = self.tabular_data_P[method]
                 validity = Ts[0] < T < Ts[-1] and Ps[0] < P < Ps[-1]
         elif method in self.all_methods_P:
             Tmin, Tmax = self.T_limits[method]
             validity = Tmin < T < Tmax
         else:
-            raise ValueError('Method not valid')
+            raise ValueError("method '%s' not valid" %method)
         return validity
 
     def interpolate_P(self, T, P, name):

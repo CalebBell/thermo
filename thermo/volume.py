@@ -644,7 +644,7 @@ class VolumeLiquid(TPDependentProperty):
         '''
         if method == COSTALD_COMPRESSED:
             Vm = self.T_dependent_property(T)
-            Psat = self.Psat(T) if hasattr(self.Psat, '__call__') else self.Psat
+            Psat = self.Psat(T) if callable(self.Psat) else self.Psat
             if P > Psat:
                 Vm = COSTALD_compressed(T, P, Psat, self.Tc, self.Pc, self.omega, Vm)
         elif method == COOLPROP:
@@ -751,13 +751,8 @@ class VolumeLiquid(TPDependentProperty):
         elif method == EOS:
             self.eos[0] = self.eos[0].to_TP(T=T, P=P)
             validity = hasattr(self.eos[0], 'V_l')
-        elif method in self.tabular_data:
-            if not self.tabular_extrapolation_permitted:
-                Ts, Ps, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1] or P < Ps[0] or P > Ps[-1]:
-                    validity = False
         else:
-            raise Exception('Method not valid')
+            return super(VolumeLiquid, self).test_method_validity_P(T, P, method)
         return validity
 
 
@@ -1054,13 +1049,8 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         elif method == EOS:
             self.eos[0] = self.eos[0].to_TP(T=T, P=P)
             validity = hasattr(self.eos[0], 'V_l')
-        elif method in self.tabular_data:
-            if not self.tabular_extrapolation_permitted:
-                Ts, Ps, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1] or P < Ps[0] or P > Ps[-1]:
-                    validity = False
         else:
-            raise Exception('Method not valid')
+            return super(VolumeSupercriticalLiquid, self).test_method_validity_P(T, P, method)
         return validity
 
 LALIBERTE = 'LALIBERTE'
@@ -1626,13 +1616,8 @@ class VolumeGas(TPDependentProperty):
             validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['gas', 'supercritical_gas', 'supercritical', 'supercritical_liquid']
         elif method == POLY_FIT:
             validity = True
-        elif method in self.tabular_data:
-            if not self.tabular_extrapolation_permitted:
-                Ts, Ps, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1] or P < Ps[0] or P > Ps[-1]:
-                    validity = False
         else:
-            raise Exception('Method not valid')
+            return super(VolumeGas, self).test_method_validity_P(T, P, method)
         return validity
 
 

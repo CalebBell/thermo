@@ -593,13 +593,8 @@ class ThermalConductivityLiquid(TPDependentProperty):
                 validity = False
         elif method == COOLPROP:
             validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['liquid', 'supercritical_liquid']
-        elif method in self.tabular_data:
-            if not self.tabular_extrapolation_permitted:
-                Ts, Ps, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1] or P < Ps[0] or P > Ps[-1]:
-                    validity = False
         else:
-            raise Exception('Method not valid')
+            return super(ThermalConductivityLiquid, self).test_method_validity_P(T, P, method)
         return validity
 
 MAGOMEDOV = 'MAGOMEDOV'
@@ -1281,13 +1276,8 @@ class ThermalConductivityGas(TPDependentProperty):
                 return False
             else:
                 return PhaseSI('T', T, 'P', P, self.CASRN) in ['gas', 'supercritical_gas', 'supercritical', 'supercritical_liquid']
-        elif method in self.tabular_data:
-            if not self.tabular_extrapolation_permitted:
-                Ts, Ps, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1] or P < Ps[0] or P > Ps[-1]:
-                    validity = False
         else:
-            raise Exception('Method not valid')
+            return super(ThermalConductivityGas, self).test_method_validity_P(T, P, method)
         return validity
 
 

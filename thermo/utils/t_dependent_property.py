@@ -75,6 +75,7 @@ from thermo.eos_alpha_functions import (Twu91_alpha_pure, Soave_1979_alpha_pure,
                                         Soave_1993_alpha_pure, Gasem_alpha_pure,
                                         Coquelet_alpha_pure, Haghtalab_alpha_pure,
                                         Saffari_alpha_pure, Chen_Yang_alpha_pure)
+from warnings import warn
 from thermo.eos import GCEOS
 from thermo.coolprop import coolprop_fluids
 from thermo.fitting import data_fit_statistics
@@ -333,6 +334,8 @@ class TDependentProperty(object):
         Set of all methods available for a given CASRN and set of properties,
         [-]
     '''
+    RAISE_PROPERTY_CALCULATION_ERROR = False
+    
     def __init_subclass__(cls):
         cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
     
@@ -1834,59 +1837,6 @@ class TDependentProperty(object):
         else:
             raise ValueError("Unknown method")
 
-    def _calculate_extrapolate(self, T, method):
-        if method == POLY_FIT:
-            try: return self.calculate(T, POLY_FIT)
-            except: return None
-
-        if method is None:
-            return None
-        try:
-            T_low, T_high = self.T_limits[method]
-            in_range = T_low <= T <= T_high
-        except KeyError:
-            in_range = self.test_method_validity(T, method)
-
-        if in_range:
-            try:
-                prop = self.calculate(T, method)
-            except:
-                return None
-            if self.test_property_validity(prop):
-                return prop
-        elif self._extrapolation is not None:
-            try:
-                return self.extrapolate(T, method)
-            except:
-                return None
-        # Function returns None if it does not work.
-        return None
-
-    def _T_dependent_property(self, T, method):
-        # Same as T_dependent_property but accepts method as an argument
-        if method is None:
-            return None
-        try:
-            T_low, T_high = self.T_limits[method]
-            in_range = T_low <= T <= T_high
-        except KeyError:
-            in_range = self.test_method_validity(T, method)
-
-        if in_range:
-            try:
-                prop = self.calculate(T, method)
-            except:
-                return None
-            if self.test_property_validity(prop):
-                return prop
-        elif self._extrapolation is not None:
-            try:
-                return self.extrapolate(T, method)
-            except:
-                return None
-        # Function returns None if it does not work.
-        return None
-
     def T_dependent_property(self, T):
         r'''Method to calculate the property with sanity checking and using
         the selected :obj:`method <thermo.utils.TDependentProperty.method>`.
@@ -1911,29 +1861,36 @@ class TDependentProperty(object):
         method = self._method
         if method == POLY_FIT:
             try: return self.calculate(T, POLY_FIT)
-            except: return None
-        if method is None:
-            return None
-        try:
-            T_low, T_high = self.T_limits[method]
-            in_range = T_low <= T <= T_high
-        except KeyError:
-            in_range = self.test_method_validity(T, method)
-
-        if in_range:
+            except: 
+                if self.RAISE_PROPERTY_CALCULATION_ERROR: 
+                    raise RuntimeError("failed to evaluate %s method '%s' at T=%s K for component with CASRN '%s'" %(self.name, method, T, self.CASRN))
+        elif method is None:
+            if self.RAISE_PROPERTY_CALCULATION_ERROR: 
+                raise RuntimeError("no method selected for component with CASRN '%s'" %self.CASRN)
+        else:
             try:
-                prop = self.calculate(T, method)
-            except:
-                return None
-            if self.test_property_validity(prop):
-                return prop
-        elif self._extrapolation is not None:
-            try:
-                return self.extrapolate(T, method)
-            except:
-                return None
-        # Function returns None if it does not work.
-        return None
+                T_low, T_high = self.T_limits[method]
+                in_range = T_low <= T <= T_high
+            except KeyError:
+                in_range = self.test_method_validity(T, method)
+            if in_range:
+                try: prop = self.calculate(T, method)
+                except: 
+                    if self.RAISE_PROPERTY_CALCULATION_ERROR:
+                        raise RuntimeError("failed to evaluate %s method '%s' at T=%s K for component with CASRN '%s'" %(self.name, method, T, self.CASRN))
+                else:
+                    if self.test_property_validity(prop):
+                        return prop
+                    elif self.RAISE_PROPERTY_CALCULATION_ERROR:
+                        raise RuntimeError("%s method '%s' computed an invalid value of %s %s for component with CASRN '%s'" %(self.name, method, prop, self.units, self.CASRN))
+            elif self._extrapolation is not None:
+                try:
+                    return self.extrapolate(T, method)
+                except:
+                    if self.RAISE_PROPERTY_CALCULATION_ERROR:
+                        raise RuntimeError("failed to extrapolate %s method '%s' at T=%s K for component with CASRN '%s'" %(self.name, method, T, self.CASRN))
+            elif self.RAISE_PROPERTY_CALCULATION_ERROR: 
+                raise RuntimeError("%s method '%s' is not valid at T=%s K for component with CASRN '%s'" %(self.name, method, T, self.CASRN))
 
     def plot_T_dependent_property(self, Tmin=None, Tmax=None, methods=[],
                                   pts=250, only_valid=True, order=0, show=True,
@@ -2443,11 +2400,7 @@ class TDependentProperty(object):
         derivative : float
             Calculated derivative property, [`units/K^order`]
         '''
-        try:
-            return self.calculate_derivative(T, self._method, order)
-        except:
-            pass
-        return None
+        return self.calculate_derivative(T, self._method, order)
 
     def calculate_integral(self, T1, T2, method):
         r'''Method to calculate the integral of a property with respect to
@@ -2954,9 +2907,9 @@ class TDependentProperty(object):
         T_limits = self.T_limits
         if method in T_limits:
             Tmin, Tmax = T_limits[method]
-            return Tmin <= T <= Tmax
+            validity = Tmin <= T <= Tmax
         elif method == POLY_FIT:
-            return True
+            validity = True
         elif method in self.tabular_data:
             if self.tabular_extrapolation_permitted:
                 validity = True
@@ -2964,5 +2917,5 @@ class TDependentProperty(object):
                 Ts, properties = self.tabular_data[method]
                 validity = Ts[0] < T < Ts[-1]
         else:
-            raise ValueError('Method not valid')
+            raise ValueError("method '%s' not valid" %method)
         return validity
