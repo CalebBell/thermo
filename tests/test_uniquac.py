@@ -112,6 +112,13 @@ def test_madeup_20():
     T = 350.0
     GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, tau_coeffs=taus)
 
+def test_UNIQUAC_no_coefficients():
+    T = 331.42
+    xs = [0.252, 0.748]
+    rs = [2.1055, 0.9200]
+    qs = [1.972, 1.400]
+    GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=tuple())
+
 def test_UNIQUAC_madeup_ternary():
     N = 3
     T = 331.42
@@ -129,6 +136,15 @@ def test_UNIQUAC_madeup_ternary():
     ABCDEF = (tausA, tausB, tausC, tausD, tausE, tausF)
     GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=ABCDEF)
     assert eval(str(GE)).GE() == GE.GE()
+    
+    with pytest.raises(ValueError):
+         UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=(tausA, None, None, []))
+    with pytest.raises(ValueError):
+         UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=(tausA, None, None, [1, 1]))
+    with pytest.raises(ValueError):
+         UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=(tausA, None, None, [[0.0, 9.64e-8], [1.53e-7, 0.0, 1.11e-7], [7.9e-8, 2.276e-8, 0]]))
+    with pytest.raises(ValueError):
+         UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=(tausA, None, None,  [[0.0, 9.64e-8, 8.94e-8], [1.53e-7, 0.0, 1.11e-7]]))
 
     GE2 = UNIQUAC.from_json(GE.as_json())
     assert GE2.__dict__ == GE.__dict__

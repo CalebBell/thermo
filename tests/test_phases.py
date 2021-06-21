@@ -1070,6 +1070,10 @@ def test_EOSGas_phis():
     dfugacities_dP_expect = [0.21832971850726046, 0.16657322866975469, 0.5761925710704517]
     assert_close1d(gas.dfugacities_dP(), dfugacities_dP_expect, rtol=1e-12)
 
+    analytical_dphis_dzs = gas.dphis_dzs()
+    numerical_dphis_dzs = jacobian(lambda zs: gas.to(T=T, P=P, zs=zs).phis(), zs, scalar=False, perturbation=5e-7)
+    assert_close2d(analytical_dphis_dzs, numerical_dphis_dzs, rtol=2e-6)
+
     assert_close(gas.H(), 1725.7273210879043, rtol=1e-12)
     assert_close(gas.S(), 14.480694885134456, rtol=1e-12)
     assert_close(gas.Cp(), 58.748474752042945, rtol=1e-12)

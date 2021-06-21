@@ -1043,6 +1043,43 @@ class Phase(object):
 
         self._dphis_dP = [dlnphis_dP[i]*phis[i] for i in range(self.N)]
         return self._dphis_dP
+    
+    def dphis_dzs(self):
+        r'''Method to calculate and return the molar composition derivative of 
+        fugacity coefficients of the phase.
+
+        .. math::
+            \frac{\partial \phi_i}{\partial z_j} = \phi_i \frac{\partial
+            \ln \phi_i}{\partial z_j}
+
+        Returns
+        -------
+        dphis_dzs : list[list[float]]
+            Molar derivative of fugacity coefficients of all components
+            in the phase, [-]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._dphis_dzs
+        except AttributeError:
+            pass
+        try:
+            dlnphis_dzs = self._dlnphis_dzs
+        except AttributeError:
+            dlnphis_dzs = self.dlnphis_dzs()
+
+        try:
+            phis = self._phis
+        except AttributeError:
+            phis = self.phis()
+            
+        N = self.N
+        self._dphis_dzs = [[dlnphis_dzs[i][j]*phis[i] for j in range(N)] 
+                           for i in range(N)]
+        return self._dphis_dzs
+    
 
     def dfugacities_dP(self):
         r'''Method to calculate and return the pressure derivative of the

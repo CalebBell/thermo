@@ -329,17 +329,17 @@ class UNIQUAC(GibbsExcess):
         Contains the following. One of `tau_coeffs` or `ABCDEF` are
         required, [-]
 
-        a : list[list[float]]
+        a : list[list[float]] or None
             `a` parameters used in calculating :obj:`UNIQUAC.taus`, [-]
-        b : list[list[float]]
+        b : list[list[float]] or None
             `b` parameters used in calculating :obj:`UNIQUAC.taus`, [K]
-        c : list[list[float]]
+        c : list[list[float]] or None
             `c` parameters used in calculating :obj:`UNIQUAC.taus`, [-]
-        d : list[list[float]]
+        d : list[list[float]] or None
             `d` paraemeters used in calculating :obj:`UNIQUAC.taus`, [1/K]
-        e : list[list[float]]
+        e : list[list[float]] or None
             `e` parameters used in calculating :obj:`UNIQUAC.taus`, [K^2]
-        f : list[list[float]]
+        f : list[list[float]] or None
             `f` parameters used in calculating :obj:`UNIQUAC.taus`, [1/K^2]
 
     Attributes
@@ -353,6 +353,16 @@ class UNIQUAC(GibbsExcess):
     -----
     In addition to the methods presented here, the methods of its base class
     :obj:`thermo.activity.GibbsExcess` are available as well.
+    
+    .. warning::
+        There is no such thing as a missing parameter in the UNIQUAC model.
+        It is possible to find :math:`\tau_{ij}` and :math:`\tau_{ji}` which
+        make :math:`\gamma_i = 1` and :math:`\gamma_j = 1`, but those tau values
+        depend on `rs`, `qs`, and `xs` - the composition, which obviously will
+        change. It is therefore
+        impossible to make an interaction parameter "missing"; whatever value 
+        it has will always impact the phase equilibria problem. At best, the
+        tau values can produce close to ideal behavior.
 
     Examples
     --------
@@ -442,14 +452,55 @@ class UNIQUAC(GibbsExcess):
                  ABCDEF=None):
         self.T = T
         self.xs = xs
-        self.scalar = scalar = type(xs) is list
+        self.scalar = scalar = type(rs) is list
         self.rs = rs
         self.qs = qs
 
+        self.N = N = len(rs)
+
         if ABCDEF is not None:
-            (self.tau_coeffs_A, self.tau_coeffs_B, self.tau_coeffs_C,
-            self.tau_coeffs_D, self.tau_coeffs_E, self.tau_coeffs_F) = ABCDEF
-            self.N = N = len(self.tau_coeffs_A)
+            all_lengths = tuple(len(coeffs) for coeffs in ABCDEF if coeffs is not None)
+            if len(set(all_lengths)) > 1:
+                raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths,))
+            all_lengths_inner = tuple(len(coeffs[0]) for coeffs in ABCDEF if coeffs is not None)
+            if len(set(all_lengths_inner)) > 1:
+                raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths_inner,))
+        elif tau_coeffs is not None:
+            pass
+        else:
+            raise ValueError("`tau_coeffs` or `ABCDEF` is required")
+        
+        if scalar:
+            self.zero_coeffs = zero_coeffs = [[0.0]*N for _ in range(N)]
+        else:
+            self.zero_coeffs = zero_coeffs = zeros((N, N))
+
+        if ABCDEF is not None:
+            len_ABCDEF = len(ABCDEF)
+            if len_ABCDEF == 0 or ABCDEF[0] is None:
+                self.tau_coeffs_A = zero_coeffs
+            else:
+                self.tau_coeffs_A = ABCDEF[0]
+            if len_ABCDEF < 2 or ABCDEF[1] is None:
+                self.tau_coeffs_B = zero_coeffs
+            else:
+                self.tau_coeffs_B = ABCDEF[1]
+            if len_ABCDEF < 3 or ABCDEF[2] is None:
+                self.tau_coeffs_C = zero_coeffs
+            else:
+                self.tau_coeffs_C = ABCDEF[2]
+            if len_ABCDEF < 4 or ABCDEF[3] is None:
+                self.tau_coeffs_D = zero_coeffs
+            else:
+                self.tau_coeffs_D = ABCDEF[3]
+            if len_ABCDEF < 5 or ABCDEF[4] is None:
+                self.tau_coeffs_E = zero_coeffs
+            else:
+                self.tau_coeffs_E = ABCDEF[4]
+            if len_ABCDEF < 6 or ABCDEF[5] is None:
+                self.tau_coeffs_F = zero_coeffs
+            else:
+                self.tau_coeffs_F = ABCDEF[5]
         else:
             if tau_coeffs is not None:
                 if scalar:
@@ -466,14 +517,6 @@ class UNIQUAC(GibbsExcess):
                     self.tau_coeffs_D = array(tau_coeffs[:,:,3], order='C', copy=True)
                     self.tau_coeffs_E = array(tau_coeffs[:,:,4], order='C', copy=True)
                     self.tau_coeffs_F = array(tau_coeffs[:,:,5], order='C', copy=True)
-            else:
-                raise ValueError("`tau_coeffs` or `ABCDEF` is required")
-
-            self.N = N = len(self.tau_coeffs_A)
-        if scalar:
-            self.zero_coeffs = [[0.0]*N for _ in range(N)]
-        else:
-            self.zero_coeffs = zeros((N, N))
 
     def to_T_xs(self, T, xs):
         r'''Method to construct a new :obj:`UNIQUAC` instance at
