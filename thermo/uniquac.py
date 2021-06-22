@@ -1647,8 +1647,6 @@ class UNIQUAC(GibbsExcess):
                             {'tau12': 1.45, 'tau21': 2.2e-7}, # methanol and ethene, chloro- from ChemSep main
                             ]
     
-    #  [[1.0, 1.4558395693419368], [2.2006112041973096e-07, 1.0]] <Chemical [methanol], T=298.15 K, P=101325 Pa> <Chemical [ethene, chloro-], T=298.15 K, P=101325 Pa>
-    
     for i in range(len(zero_gamma_tau_guess)):
         r = zero_gamma_tau_guess[i]
         zero_gamma_tau_guess.append({'tau12': r['tau21'], 'tau21': r['tau12']})

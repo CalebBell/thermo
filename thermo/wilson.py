@@ -52,11 +52,11 @@ from fluids.numerics import numpy as np
 from thermo.activity import GibbsExcess, interaction_exp, dinteraction_exp_dT, d2interaction_exp_dT2, d3interaction_exp_dT3
 
 try:
-    array, zeros, npsum, nplog = np.array, np.zeros, np.sum, np.log
+    array, zeros, npsum, nplog, ones = np.array, np.zeros, np.sum, np.log, np.ones
 except (ImportError, AttributeError):
     pass
 
-__all__ = ['Wilson', 'Wilson_gammas']
+__all__ = ['Wilson', 'Wilson_gammas', 'wilson_gammas_binaries']
 
 
 def wilson_xj_Lambda_ijs(xs, lambdas, N, xj_Lambda_ijs=None):
@@ -206,6 +206,44 @@ def wilson_gammas(xs, N, lambdas, xj_Lambda_ijs_inv, gammas=None, vec0=None):
 
     return gammas
 
+MIN_LAMBDA_WILSON = 1e-20
+
+def wilson_gammas_binaries(xs, lambda12, lambda21, calc=None):
+    # xs: array [x0_0, x1_0, x0_1, x1_1]
+    if lambda12 < MIN_LAMBDA_WILSON:
+        lambda12 = MIN_LAMBDA_WILSON
+    if lambda21 < MIN_LAMBDA_WILSON:
+        lambda21 = MIN_LAMBDA_WILSON
+    pts = int(len(xs)/2) # Always even
+    allocate_size = (pts*2)
+    
+#    lambdas = ones((2,2)) # numba: uncomment
+    lambdas = [[1.0, 1.0], [1.0, 1.0]] # numba: delete
+    lambdas[0][1] = lambda12
+    lambdas[1][0] = lambda21
+    
+    if calc is None:
+        calc = [0.0]*allocate_size
+
+    xj_Lambda_ijs_vec = [0.0]*2
+    vec0 = [0.0]*2
+    gammas = [0.0]*2
+    xs_pt = [0.0, 0.0]
+
+    for i in range(pts):
+        xs_pt[0] = xs[i*2]
+        xs_pt[1] = 1.0 - xs_pt[0]
+        
+        xj_Lambda_ijs = wilson_xj_Lambda_ijs(xs_pt, lambdas, N=2, xj_Lambda_ijs=xj_Lambda_ijs_vec)
+        xj_Lambda_ijs[0] = 1.0/xj_Lambda_ijs[0]
+        xj_Lambda_ijs[1] = 1.0/xj_Lambda_ijs[1]
+        gammas = wilson_gammas(xs_pt, N=2, lambdas=lambdas, xj_Lambda_ijs_inv=xj_Lambda_ijs, gammas=gammas, vec0=vec0)
+        calc[i*2] = gammas[0]
+        calc[i*2+1] = gammas[1]
+    return calc
+
+    
+    
 class Wilson(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
     by the Wilson equation. This model is capable of representing most
@@ -1257,6 +1295,38 @@ class Wilson(GibbsExcess):
         self._gammas = gammas
         return gammas
 
+    @classmethod
+    def regress_binary_lambdas(cls, gammas, xs, use_numba=False,
+                            do_statistics=True, **kwargs):
+        if kwargs.get('use_numba', False):
+            from thermo.numba import wilson_gammas_binaries as work_func
+        else:
+            work_func = wilson_gammas_binaries
+        
+        def fitting_func(xs, lambda12, lambda21):
+            # Capture rs, qs unfortunately is necessary. Works nicely with numba though.
+            # try:
+            return work_func(xs, lambda12, lambda21)
+            # except:
+            #     print(xs.tolist(), lambda12, lambda21)
+        
+        
+        
+        return GibbsExcess._regress_binary_taus(gammas, xs, fitting_func=fitting_func,
+                                                fit_parameters=['lambda12', 'lambda21'], 
+                                                use_fit_parameters=['lambda12', 'lambda21'],
+                                                initial_guesses=cls.zero_gamma_lambda_guess,
+                                                analytical_jac=None,
+                                                use_numba=use_numba,
+                                                do_statistics=do_statistics,
+                                                **kwargs)
+
+
+    zero_gamma_lambda_guess = [{'lambda12': 1, 'lambda21': 1},
+                               ]
+    for i in range(len(zero_gamma_lambda_guess)):
+        r = zero_gamma_lambda_guess[i]
+        zero_gamma_lambda_guess.append({'lambda12': r['lambda21'], 'lambda21': r['lambda12']})
 
 def Wilson_gammas(xs, params):
     r'''Calculates the activity coefficients of each species in a mixture
