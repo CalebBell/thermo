@@ -118,6 +118,9 @@ def test_UNIQUAC_no_coefficients():
     rs = [2.1055, 0.9200]
     qs = [1.972, 1.400]
     GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=tuple())
+    
+    # Gammas ARE NOT equal to 1!
+    # assert_close1d(GE.gammas(), [1, 1], rtol=1e-13)
 
 def test_UNIQUAC_madeup_ternary():
     N = 3
@@ -141,6 +144,8 @@ def test_UNIQUAC_madeup_ternary():
          UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=(tausA, None, None, []))
     with pytest.raises(ValueError):
          UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=(tausA, None, None, [1, 1]))
+    with pytest.raises(ValueError):
+         UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=(tausA, None, None, [1, 1, 1]))
     with pytest.raises(ValueError):
          UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=(tausA, None, None, [[0.0, 9.64e-8], [1.53e-7, 0.0, 1.11e-7], [7.9e-8, 2.276e-8, 0]]))
     with pytest.raises(ValueError):

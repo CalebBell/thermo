@@ -460,12 +460,15 @@ class UNIQUAC(GibbsExcess):
         self.N = N = len(rs)
 
         if ABCDEF is not None:
-            all_lengths = tuple(len(coeffs) for coeffs in ABCDEF if coeffs is not None)
-            if len(set(all_lengths)) > 1:
-                raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths,))
-            all_lengths_inner = tuple(len(coeffs[0]) for coeffs in ABCDEF if coeffs is not None)
-            if len(set(all_lengths_inner)) > 1:
-                raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths_inner,))
+            try:
+                all_lengths = tuple(len(coeffs) for coeffs in ABCDEF if coeffs is not None)
+                if len(set(all_lengths)) > 1:
+                    raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths,))
+                all_lengths_inner = tuple(len(coeffs[0]) for coeffs in ABCDEF if coeffs is not None)
+                if len(set(all_lengths_inner)) > 1:
+                    raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths_inner,))
+            except:
+                raise ValueError("Coefficients not input correctly")
         elif tau_coeffs is not None:
             pass
         else:

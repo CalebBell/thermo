@@ -490,30 +490,72 @@ class Wilson(GibbsExcess):
         self.T = T
         self.xs = xs
         self.scalar = scalar = type(xs) is list
-        if ABCDEF is not None:
-            (self.lambda_coeffs_A, self.lambda_coeffs_B, self.lambda_coeffs_C,
-            self.lambda_coeffs_D, self.lambda_coeffs_E, self.lambda_coeffs_F) = ABCDEF
-            self.N = N = len(self.lambda_coeffs_A)
-        else:
-            if lambda_coeffs is not None:
-                if scalar:
-                    self.lambda_coeffs_A = [[i[0] for i in l] for l in lambda_coeffs]
-                    self.lambda_coeffs_B = [[i[1] for i in l] for l in lambda_coeffs]
-                    self.lambda_coeffs_C = [[i[2] for i in l] for l in lambda_coeffs]
-                    self.lambda_coeffs_D = [[i[3] for i in l] for l in lambda_coeffs]
-                    self.lambda_coeffs_E = [[i[4] for i in l] for l in lambda_coeffs]
-                    self.lambda_coeffs_F = [[i[5] for i in l] for l in lambda_coeffs]
-                else:
-                    self.lambda_coeffs_A = array(lambda_coeffs[:,:,0], order='C', copy=True)
-                    self.lambda_coeffs_B = array(lambda_coeffs[:,:,1], order='C', copy=True)
-                    self.lambda_coeffs_C = array(lambda_coeffs[:,:,2], order='C', copy=True)
-                    self.lambda_coeffs_D = array(lambda_coeffs[:,:,3], order='C', copy=True)
-                    self.lambda_coeffs_E = array(lambda_coeffs[:,:,4], order='C', copy=True)
-                    self.lambda_coeffs_F = array(lambda_coeffs[:,:,5], order='C', copy=True)
 
+        self.N = N = len(xs)
+
+
+        if ABCDEF is not None:
+            try:
+                all_lengths = tuple(len(coeffs) for coeffs in ABCDEF if coeffs is not None)
+                if len(set(all_lengths)) > 1:
+                    raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths,))
+                all_lengths_inner = tuple(len(coeffs[0]) for coeffs in ABCDEF if coeffs is not None)
+                if len(set(all_lengths_inner)) > 1:
+                    raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths_inner,))
+            except:
+                raise ValueError("Coefficients not input correctly")
+        elif lambda_coeffs is not None:
+            pass
+        else:
+            raise ValueError("`lambda_coeffs` or `ABCDEF` is required")
+
+        if scalar:
+            zero_coeffs = [[0.0]*N for _ in range(N)]
+        else:
+            zero_coeffs = zeros((N, N))
+
+        if ABCDEF is not None:
+            len_ABCDEF = len(ABCDEF)
+            if len_ABCDEF == 0 or ABCDEF[0] is None:
+                self.lambda_coeffs_A = zero_coeffs
             else:
-                raise ValueError("`lambda_coeffs` or `ABCDEF` is required required")
-            self.N = N = len(lambda_coeffs)
+                self.lambda_coeffs_A = ABCDEF[0]
+            if len_ABCDEF < 2 or ABCDEF[1] is None:
+                self.lambda_coeffs_B = zero_coeffs
+            else:
+                self.lambda_coeffs_B = ABCDEF[1]
+            if len_ABCDEF < 3 or ABCDEF[2] is None:
+                self.lambda_coeffs_C = zero_coeffs
+            else:
+                self.lambda_coeffs_C = ABCDEF[2]
+            if len_ABCDEF < 4 or ABCDEF[3] is None:
+                self.lambda_coeffs_D = zero_coeffs
+            else:
+                self.lambda_coeffs_D = ABCDEF[3]
+            if len_ABCDEF < 5 or ABCDEF[4] is None:
+                self.lambda_coeffs_E = zero_coeffs
+            else:
+                self.lambda_coeffs_E = ABCDEF[4]
+            if len_ABCDEF < 6 or ABCDEF[5] is None:
+                self.lambda_coeffs_F = zero_coeffs
+            else:
+                self.lambda_coeffs_F = ABCDEF[5]
+        elif lambda_coeffs is not None:
+            if scalar:
+                self.lambda_coeffs_A = [[i[0] for i in l] for l in lambda_coeffs]
+                self.lambda_coeffs_B = [[i[1] for i in l] for l in lambda_coeffs]
+                self.lambda_coeffs_C = [[i[2] for i in l] for l in lambda_coeffs]
+                self.lambda_coeffs_D = [[i[3] for i in l] for l in lambda_coeffs]
+                self.lambda_coeffs_E = [[i[4] for i in l] for l in lambda_coeffs]
+                self.lambda_coeffs_F = [[i[5] for i in l] for l in lambda_coeffs]
+            else:
+                self.lambda_coeffs_A = array(lambda_coeffs[:,:,0], order='C', copy=True)
+                self.lambda_coeffs_B = array(lambda_coeffs[:,:,1], order='C', copy=True)
+                self.lambda_coeffs_C = array(lambda_coeffs[:,:,2], order='C', copy=True)
+                self.lambda_coeffs_D = array(lambda_coeffs[:,:,3], order='C', copy=True)
+                self.lambda_coeffs_E = array(lambda_coeffs[:,:,4], order='C', copy=True)
+                self.lambda_coeffs_F = array(lambda_coeffs[:,:,5], order='C', copy=True)
+
 
     model_attriubtes = ('lambda_coeffs_A', 'lambda_coeffs_B', 'lambda_coeffs_C',
                         'lambda_coeffs_D', 'lambda_coeffs_E', 'lambda_coeffs_F')

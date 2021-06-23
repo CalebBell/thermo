@@ -410,6 +410,62 @@ def test_DDBST_example():
     GE2 = Wilson.from_json(GE.as_json())
     assert GE2.__dict__ == GE.__dict__
 
+def test_wilson_parameter_different_inputs_errors():
+    T = 353.15
+    N = 2
+    xs = [0.25, 0.75]
+    
+    lamdasA = [[0.0, -1.4485128161164418], [1.448512816116442, 0.0]]
+    lambdasB = lambdasC = lambdasD = lambdasE = lambdasF =  [[0.0, 0],[0, 0.0]]
+
+    gammas_expect = [0.6104842750833774, 0.8634230875164046]
+    ABCDEF = (lamdasA, lambdasB, lambdasC, lambdasD, lambdasE, lambdasF)
+    obj = Wilson(T=T, xs=xs, ABCDEF=ABCDEF)
+    assert_close1d(obj.gammas(), gammas_expect, rtol=1e-13)
+    
+    ABCDEF = (lamdasA, lambdasB, lambdasC, lambdasD, lambdasE)
+    obj = Wilson(T=T, xs=xs, ABCDEF=ABCDEF)
+    assert_close1d(obj.gammas(), gammas_expect, rtol=1e-13)
+    
+    ABCDEF = (lamdasA, lambdasB, lambdasC, lambdasD)
+    obj = Wilson(T=T, xs=xs, ABCDEF=ABCDEF)
+    assert_close1d(obj.gammas(), gammas_expect, rtol=1e-13)
+    
+    ABCDEF = (lamdasA, lambdasB, lambdasC)
+    obj = Wilson(T=T, xs=xs, ABCDEF=ABCDEF)
+    assert_close1d(obj.gammas(), gammas_expect, rtol=1e-13)
+    
+    ABCDEF = (lamdasA, lambdasB)
+    obj = Wilson(T=T, xs=xs, ABCDEF=ABCDEF)
+    assert_close1d(obj.gammas(), gammas_expect, rtol=1e-13)
+    
+    ABCDEF = (lamdasA,)
+    obj = Wilson(T=T, xs=xs, ABCDEF=ABCDEF)
+    assert_close1d(obj.gammas(), gammas_expect, rtol=1e-13)
+    
+    ABCDEF = (lamdasA, None, None, None, None, None)
+    obj = Wilson(T=T, xs=xs, ABCDEF=ABCDEF)
+    assert_close1d(obj.gammas(), gammas_expect, rtol=1e-13)
+    
+    with pytest.raises(ValueError):
+         Wilson(T=T, xs=xs, ABCDEF=(lamdasA, None, None, []))
+    with pytest.raises(ValueError):
+         Wilson(T=T, xs=xs, ABCDEF=(lamdasA, None, None, [1,]))
+    with pytest.raises(ValueError):
+         Wilson(T=T, xs=xs, ABCDEF=(lamdasA, None, None, [1, 1]))
+    with pytest.raises(ValueError):
+         Wilson(T=T, xs=xs, ABCDEF=(lamdasA, None, None, [[0.0, 9.64e-8], [1.53e-7, 0.0, 1.11e-7], [7.9e-8, 2.276e-8, 0]]))
+    with pytest.raises(ValueError):
+         Wilson(T=T, xs=xs, ABCDEF=(lamdasA, None, None,  [[0.0, 9.64e-8, 8.94e-8], [1.53e-7, 0.0, 1.11e-7]]))
+    with pytest.raises(ValueError):
+         Wilson(T=T, xs=xs)
+
+    # No coefficients
+    ABCDEF = (None, None, None, None, None, None)
+    obj = Wilson(T=T, xs=xs, ABCDEF=ABCDEF)
+    assert_close1d(obj.gammas(), [1, 1], rtol=1e-13)
+
+
 def test_multicomnent_madeup():
     T=273.15+70
     xs = [1/7.0]*7
