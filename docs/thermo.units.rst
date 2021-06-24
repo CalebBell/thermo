@@ -1,7 +1,7 @@
 Support for pint Quantities (thermo.units)
 =============================================
 
-Basic module which wraps all thermo functions and classes to be compatible with the
+Basic module which wraps some of thermo functions and classes to be compatible with the
 `pint <https://github.com/hgrecco/pint>`_ unit handling library.
 All other object - dicts, lists, etc - are not wrapped. 
 
@@ -13,5 +13,13 @@ fluids.units.PRMIX
 >>> thermo.units.PRMIX(**kwargs)
 
 Note that values which can normally be numpy arrays or python lists, are required to always be numpy arrays in this interface.
+
+This is interface is powerful but not complex enough to handle many of the objects in Thermo. A list of the types of classes which are not supported is as follows:
+
+* TDependentProperty, TPDependentProperty, MixtureProperty
+* Phase objects
+* Flash object
+* ChemicalConstantsPackage
+* PropertyCorrelationsPackage
 
 For further information on this interface, please see the documentation of `fluids.units <https://fluids.readthedocs.io/fluids.units.html>`_ which is built in the same way.

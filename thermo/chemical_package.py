@@ -1175,7 +1175,7 @@ constants_docstrings = {'N': (int, "Number of components in the package", "[-]",
 'atomss': ("list[dict]", "Breakdown of each component into its elements and their counts, as a dict", "[-]", None),
 'Carcinogens': ("list[dict]", "Status of each component in cancer causing registries", "[-]", None),
 'CASs': ("list[str]", "CAS registration numbers for each component", "[-]", None),
-'Ceilings': ("list[tuple[(float, str)]]", "Ceiling exposure limits to chemicals (and their units)", "[ppm or mg/m^3]", None),
+'Ceilings': ("list[tuple[(float, str)]]", "Ceiling exposure limits to chemicals (and their units; ppm or mg/m^3)", "[various]", None),
 'charges': ("list[float]", "Charge number (valence) for each component", "[-]", None),
 'conductivities': ("list[float]", "Electrical conductivities for each component", "[S/m]", None),
 'conductivity_Ts': ("list[float]", "Temperatures at which the electrical conductivities for each component were measured", "[K]", None),
@@ -1184,7 +1184,7 @@ constants_docstrings = {'N': (int, "Number of components in the package", "[-]",
 'formulas': ("list[str]", "Formulas of each component", "[-]", None),
 'Gfgs': ("list[float]", "Ideal gas standard molar Gibbs free energy of formation for each component", "[J/mol]", None),
 'Gfgs_mass': ("list[float]", "Ideal gas standard Gibbs free energy of formation for each component", "[J/kg]", None),
-'GWPs': ("list[float]", "Global Warming Potentials for each component", " [(impact/mass chemical)/(impact/mass CO2)]", None),
+'GWPs': ("list[float]", "Global Warming Potentials for each component (impact/mass chemical)/(impact/mass CO2)", " [-]", None),
 'Hcs': ("list[float]", "Higher standard molar heats of combustion for each component", "[J/mol]", None),
 'Hcs_mass': ("list[float]", "Higher standard heats of combustion for each component", "[J/kg]", None),
 'Hcs_lower': ("list[float]", "Lower standard molar heats of combustion for each component", "[J/mol]", None),
@@ -1204,10 +1204,10 @@ constants_docstrings = {'N': (int, "Number of components in the package", "[-]",
 'legal_statuses': ("list[dict]", "Status of each component in in relation to import and export rules from various regions", "[-]", None),
 'LFLs': ("list[float]", "Lower flammability limits for each component", "[-]", None),
 'logPs': ("list[float]", "Octanol-water partition coefficients for each component", "[-]", None),
-'molecular_diameters': ("list[float]", "Lennard-Jones molecular diameters for each component", "[Angstrom]", None),
+'molecular_diameters': ("list[float]", "Lennard-Jones molecular diameters for each component", "[angstrom]", None),
 'MWs': ("list[float]", "Molecular weights for each component", "[g/mol]", None),
 'names': ("list[str]", "Names for each component", "[-]", None),
-'ODPs': ("list[float]", "Ozone Depletion Potentials for each component", "[(impact/mass chemical)/(impact/mass CFC-11)]", None),
+'ODPs': ("list[float]", "Ozone Depletion Potentials for each component (impact/mass chemical)/(impact/mass CFC-11)", "[-]", None),
 'omegas': ("list[float]", "Acentric factors for each component", "[-]", None),
 'Parachors': ("list[float]", "Parachors for each component", "[N^0.25*m^2.75/mol]", None),
 'Pcs': ("list[float]", "Critical pressures for each component", "[Pa]", None),
@@ -1226,12 +1226,12 @@ constants_docstrings = {'N': (int, "Number of components in the package", "[-]",
 'S0gs_mass': ("list[float]", "Ideal gas absolute entropies at 298.15 K at 1 atm for each component", "[J/(kg*K)]", None),
 'Sfgs': ("list[float]", "Ideal gas standard molar entropies of formation for each component", "[J/(mol*K)]", None),
 'Sfgs_mass': ("list[float]", "Ideal gas standard entropies of formation for each component", "[J/(kg*K)]", None),
-'MWs': ("list[float]", "Similatiry variables for each component", "[mol/g]", None),
+'MWs': ("list[float]", "Similatiry variables for each component", "[g/mol]", None),
 'solubility_parameters': ("list[float]", "Solubility parameters for each component at 298.15 K", "[Pa^0.5]", None),
 'similarity_variables': ("list[float]", "Similarity variables for each component", "[mol/g]", None),
 'Skins': ("list[bool]", "Whether each compound can be absorbed through the skin or not", "[-]", None),
 'smiless': ("list[str]", "SMILES identifiers for each component", "[-]", None),
-'STELs': ("list[tuple[(float, str)]]", "Short term exposure limits to chemicals (and their units)", "[ppm or mg/m^3]", None),
+'STELs': ("list[tuple[(float, str)]]", "Short term exposure limits to chemicals (and their units; ppm or mg/m^3)", "[various]", None),
 'StielPolars': ("list[float]", "Stiel polar factors for each component", "[-]", None),
 'Stockmayers': ("list[float]", "Lennard-Jones Stockmayer parameters (depth of potential-energy minimum over k) for each component", "[K]", None),
 'Tautoignitions': ("list[float]", "Autoignition temperatures for each component", "[K]", None),
@@ -1240,7 +1240,7 @@ constants_docstrings = {'N': (int, "Number of components in the package", "[-]",
 'Tms': ("list[float]", "Melting temperatures for each component", "[K]", None),
 'Tflashs': ("list[float]", "Flash point temperatures for each component", "[K]", None),
 'Tts': ("list[float]", "Triple point temperatures for each component", "[K]", None),
-'TWAs': ("list[tuple[(float, str)]]", "Time-weighted average exposure limits to chemicals (and their units)", "[ppm or mg/m^3]", None),
+'TWAs': ("list[tuple[(float, str)]]", "Time-weighted average exposure limits to chemicals (and their units; ppm or mg/m^3)", "[various]", None),
 'UFLs': ("list[float]", "Upper flammability limits for each component", "[-]", None),
 'UNIFAC_Dortmund_groups': ("list[dict]", "UNIFAC_Dortmund_group: count groups for each component", "[-]", None),
 'UNIFAC_groups': ("list[dict]", "UNIFAC_group: count groups for each component", "[-]", None),
@@ -1271,7 +1271,7 @@ constants_docstrings = {'N': (int, "Number of components in the package", "[-]",
 }
 
 constants_doc = r'''Class for storing efficiently chemical constants for a
-group of components. All arguments are attributes. This is intended as a base
+group of components. This is intended as a base
 object from which a set of thermodynamic methods can access miscellaneous for
 purposes such as phase identification or initialization.
 
@@ -1283,8 +1283,11 @@ state:
 >>> ChemicalConstantsPackage(MWs=[18.01528, 106.165, 106.165, 106.165], names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.344, 0.3118, 0.324, 0.331], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tcs=[647.14, 630.3, 616.2, 617.0])
 ChemicalConstantsPackage(MWs=[18.01528, 106.165, 106.165, 106.165], names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.344, 0.3118, 0.324, 0.331], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tcs=[647.14, 630.3, 616.2, 617.0])
 
+Notes
+-----
+All parameters are also attributes.
 
-Attributes
+Parameters
 ----------
 '''
 for name, (var_type, desc, units, return_desc) in constants_docstrings.items():

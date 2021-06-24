@@ -121,8 +121,33 @@ def test_wrap_UNIFAC_classmethod():
     chemgroups = [{9: 6}, {78: 6}, {1: 1, 18: 1}, {1: 1, 2: 1, 14: 1}]
     GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=1, interaction_data=DOUFIP2006, subgroups=DOUFSG)
     assert_pint_allclose(GE.GE(), 1292.0910446403327, u.J/u.mol)
+    
+
+def test_ChemicalConstantsPackage_units():
+    obj = ChemicalConstantsPackage(MWs=[18.01528, 106.165]*u.g/u.mol, names=['water', 'm-xylene'],
+                             CASs=['7732-18-5', '108-38-3'],
+                             smiless=['O', 'CC1=CC(=CC=C1)C'], PubChems=[962, 7929],)
+    assert_pint_allclose(obj.MWs[1], .106165, u.kg/u.mol)
+
 
 def test_VaporPressure_calculate_units():
     EtOH = VaporPressure(Tb=351.39*u.K, Tc=514.0*u.K, Pc=6137000.0*u.Pa, omega=0.635, CASRN='64-17-5')
     ans = EtOH.calculate(300*u.K, 'LEE_KESLER_PSAT')
     assert_pint_allclose(ans, 8491.523803275244, u.Pa)
+    # EtOH.method = 'LEE_KESLER_PSAT' # No setter support
+    # ans = EtOH.T_dependent_property(300*u.K)
+    # assert_pint_allclose(ans, 8491.523803275244, u.Pa)
+
+# Willl not work because ABCDEF can't handle units
+# def test_Wilson_units():
+#     import numpy as np
+#     T = (331.42 -273.15)*u.degC
+#     N = 3
+#     Vs_ddbst = np.array([74.04, 80.67, 40.73])*u.cm**3/u.mol
+#     as_ddbst = np.array([[0, 375.2835, 31.1208], [-1722.58, 0, -1140.79], [747.217, 3596.17, 0.0]])*u.K
+#     bs_ddbst = np.array([[0, -3.78434, -0.67704], [6.405502, 0, 2.59359], [-0.256645, -6.2234, 0]])*u.dimensionless
+#     cs_ddbst = np.array([[0.0, 7.91073e-3, 8.68371e-4], [-7.47788e-3, 0.0, 3.1e-5], [-1.24796e-3, 3e-5, 0.0]])/u.K
+#     params = Wilson.from_DDBST_as_matrix(Vs=Vs_ddbst, ais=as_ddbst, bis=bs_ddbst, cis=cs_ddbst, unit_conversion=False)
+#     xs = np.array([0.229, 0.175, 0.596])*u.dimensionless
+#     GE = Wilson(T=T, xs=xs, ABCDEF=params)
+#     GE.GE()

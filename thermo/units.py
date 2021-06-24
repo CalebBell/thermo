@@ -53,7 +53,8 @@ for name in dir(thermo):
     if isinstance(obj, types.FunctionType):
         pass
 #        obj = wraps_numpydoc(u)(obj)
-    elif type(obj) == type and (obj in (thermo.Chemical, thermo.Mixture, thermo.Stream)
+    elif type(obj) == type and (obj in (thermo.Chemical, thermo.Mixture, thermo.Stream,
+                                        thermo.ChemicalConstantsPackage, thermo.PropertyCorrelationsPackage)
                                  or thermo.eos.GCEOS in obj.__mro__
                                  or thermo.activity.GibbsExcess in obj.__mro__
                                  or thermo.TDependentProperty in obj.__mro__
