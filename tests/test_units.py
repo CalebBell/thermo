@@ -122,3 +122,7 @@ def test_wrap_UNIFAC_classmethod():
     GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=1, interaction_data=DOUFIP2006, subgroups=DOUFSG)
     assert_pint_allclose(GE.GE(), 1292.0910446403327, u.J/u.mol)
 
+def test_VaporPressure_calculate_units():
+    EtOH = VaporPressure(Tb=351.39*u.K, Tc=514.0*u.K, Pc=6137000.0*u.Pa, omega=0.635, CASRN='64-17-5')
+    ans = EtOH.calculate(300*u.K, 'LEE_KESLER_PSAT')
+    assert_pint_allclose(ans, 8491.523803275244, u.Pa)

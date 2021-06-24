@@ -393,7 +393,7 @@ class VaporPressure(TDependentProperty):
         Returns
         -------
         Psat : float
-            Vapor pressure at T, [pa]
+            Vapor pressure at T, [Pa]
         '''
         if method == POLY_FIT:
             if T < self.poly_fit_Tmin:
@@ -763,7 +763,7 @@ class SublimationPressure(TDependentProperty):
         Returns
         -------
         Psub : float
-            Sublimation pressure at T, [pa]
+            Sublimation pressure at T, [Pa]
         '''
         if method == POLY_FIT:
             if T < self.poly_fit_Tmin:
