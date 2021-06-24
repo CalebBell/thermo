@@ -263,7 +263,6 @@ class Wilson(GibbsExcess):
     ABCDEF : tuple[list[list[float]], 6], optional
         Contains the following. One of `lambda_coeffs` or `ABCDEF` are
         required, [-]
-
         a : list[list[float]]
             `a` parameters used in calculating :obj:`Wilson.lambdas`, [-]
         b : list[list[float]]
@@ -420,7 +419,8 @@ class Wilson(GibbsExcess):
         return (a, b, c, d, e, f)
 
     @staticmethod
-    def from_DDBST_as_matrix(Vs, ais, bis, cis, dis, eis, fis,
+    def from_DDBST_as_matrix(Vs, ais=None, bis=None, cis=None, dis=None, 
+                             eis=None, fis=None,
                              unit_conversion=True):
         r'''Converts parameters for the wilson equation in the DDBST to the
         basis used in this implementation. Matrix wrapper around
@@ -431,17 +431,17 @@ class Wilson(GibbsExcess):
         Vs : list[float]
             Molar volume of component; needs only to be in consistent units,
             [cm^3/mol]
-        a : list[list[float]]
+        ais : list[list[float]]
             `a` parameters in DDBST form, [K]
-        b : list[list[float]]
+        bis : list[list[float]]
             `b` parameters in DDBST form, [-]
-        c : list[list[float]]
+        cis : list[list[float]]
             `c` parameters in DDBST form, [1/K]
-        d : list[list[float]], optional
+        dis : list[list[float]], optional
             `d` parameters in DDBST form, [-]
-        e : list[list[float]], optional
+        eis : list[list[float]], optional
             `e` parameters in DDBST form, [1/K^2]
-        f : list[list[float]], optional
+        fis : list[list[float]], optional
             `f` parameters in DDBST form, [K^2]
         unit_conversion : bool
             If True, the input coefficients are in units of cal/K/mol, and a
@@ -463,7 +463,20 @@ class Wilson(GibbsExcess):
         f : list[list[float]]
             `f` parameters in :obj:`Wilson` form, [1/K^2]
         '''
-        cmps = range(len(Vs))
+        N = len(Vs)
+        cmps = range(N)
+        if ais is None:
+            ais = [[0.0]*N for _ in range(N)]
+        if bis is None:
+            bis = [[0.0]*N for _ in range(N)]
+        if cis is None:
+            cis = [[0.0]*N for _ in range(N)]
+        if dis is None:
+            dis = [[0.0]*N for _ in range(N)]
+        if eis is None:
+            eis = [[0.0]*N for _ in range(N)]
+        if fis is None:
+            fis = [[0.0]*N for _ in range(N)]
         a_mat, b_mat, c_mat, d_mat, e_mat, f_mat = [], [], [], [], [], []
         for i in cmps:
             a_row, b_row, c_row, d_row, e_row, f_row = [], [], [], [], [], []

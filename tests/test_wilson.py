@@ -76,7 +76,14 @@ def test_DDBST_example():
     cs_ddbst = [[0.0, 7.91073e-3, 8.68371e-4], [-7.47788e-3, 0.0, 3.1e-5], [-1.24796e-3, 3e-5, 0.0]]
 
     dis = eis = fis = [[0.0]*N for _ in range(N)]
+    
+    # Do a base test with no parameters just to check it works
+    params = Wilson.from_DDBST_as_matrix(Vs=Vs_ddbst, unit_conversion=False)
+    # Do a base test with optional parameters missing
+    params = Wilson.from_DDBST_as_matrix(Vs=Vs_ddbst, ais=as_ddbst, bis=bs_ddbst,
+                                cis=cs_ddbst, unit_conversion=False)
 
+    # Do the test
     params = Wilson.from_DDBST_as_matrix(Vs=Vs_ddbst, ais=as_ddbst, bis=bs_ddbst,
                                 cis=cs_ddbst, dis=dis, eis=eis, fis=fis, unit_conversion=False)
 

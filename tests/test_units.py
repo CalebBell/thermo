@@ -85,7 +85,10 @@ def test_IG_units():
     assert_pint_allclose(base.P, 1e6, u.Pa)
 
 def test_IGMIX_units():
-    eos = IGMIX(T=115*u.K, P=1*u.MPa, Tcs=[126.1, 190.6]*u.K, Pcs=[33.94E5, 46.04E5]*u.Pa, omegas=[0.04, .008], zs=[0.5, 0.5]*u.dimensionless)
+    eos = PRMIX(T=115*u.K, P=1*u.MPa, Tcs=[126.1, 190.6]*u.K, Pcs=[33.94E5, 46.04E5]*u.Pa, omegas=[0.04, .008]*u.dimensionless, zs=[0.5, 0.5]*u.dimensionless)
+
+def test_IGMIX_units():
+    eos = IGMIX(T=115*u.K, P=1*u.MPa, Tcs=[126.1, 190.6]*u.K, Pcs=[33.94E5, 46.04E5]*u.Pa, omegas=[0.04, .008]*u.dimensionless, zs=[0.5, 0.5]*u.dimensionless)
     assert_pint_allclose(eos.V_g, 0.0009561632010876225, u.m**3/u.mol)
     assert_pint_allclose1d(eos.Tcs, [126.1, 190.6], u.K)
     assert_pint_allclose1d(eos.Pcs, [33.94E5, 46.04E5], u.Pa)

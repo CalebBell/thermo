@@ -33,6 +33,7 @@ API Reference
    thermo.stream
    thermo.thermal_conductivity
    thermo.unifac
+   thermo.units
    thermo.utils
    thermo.vapor_pressure
    thermo.viscosity
