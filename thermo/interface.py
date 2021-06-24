@@ -522,7 +522,7 @@ class SurfaceTensionMixture(MixtureProperty):
     Tcs : list[float], optional
         Critical temperatures of all species in the mixture, [K]
     CASs : list[str], optional
-        The CAS numbers of all species in the mixture
+        The CAS numbers of all species in the mixture, [-]
     SurfaceTensions : list[SurfaceTension], optional
         SurfaceTension objects created for all species in the mixture [-]
     VolumeLiquids : list[VolumeLiquid], optional

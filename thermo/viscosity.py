@@ -1084,7 +1084,7 @@ class ViscosityLiquidMixture(MixtureProperty):
     Parameters
     ----------
     CASs : list[str], optional
-        The CAS numbers of all species in the mixture
+        The CAS numbers of all species in the mixture, [-]
     ViscosityLiquids : list[ViscosityLiquid], optional
         ViscosityLiquid objects created for all species in the mixture, [-]
     MWs : list[float], optional
@@ -1330,12 +1330,12 @@ class ViscosityGasMixture(MixtureProperty):
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
     molecular_diameters : list[float], optional
-        Lennard-Jones molecular diameters, [Angstrom]
+        Lennard-Jones molecular diameters, [angstrom]
     Stockmayers : list[float], optional
         Lennard-Jones depth of potential-energy minimum over k
         or epsilon_k, [K]
     CASs : list[str], optional
-        The CAS numbers of all species in the mixture
+        The CAS numbers of all species in the mixture, [-]
     ViscosityGases : list[ViscosityGas], optional
         ViscosityGas objects created for all species in the mixture, [-]
     correct_pressure_pure : bool, optional

@@ -1638,7 +1638,7 @@ class HeatCapacitySolidMixture(MixtureProperty):
     Parameters
     ----------
     CASs : list[str], optional
-        The CAS numbers of all species in the mixture
+        The CAS numbers of all species in the mixture, [-]
     HeatCapacitySolids : list[HeatCapacitySolid], optional
         HeatCapacitySolid objects created for all species in the mixture [-]
     MWs : list[float], optional
@@ -1776,7 +1776,7 @@ class HeatCapacityGasMixture(MixtureProperty):
     Parameters
     ----------
     CASs : list[str], optional
-        The CAS numbers of all species in the mixture
+        The CAS numbers of all species in the mixture, [-]
     HeatCapacityGases : list[HeatCapacityGas], optional
         HeatCapacityGas objects created for all species in the mixture [-]
     MWs : list[float], optional

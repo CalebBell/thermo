@@ -1101,7 +1101,7 @@ class VolumeLiquidMixture(MixtureProperty):
     omegas : list[float], optional
         Accentric factors of all species in the mixture, [-]
     CASs : list[str], optional
-        The CAS numbers of all species in the mixture
+        The CAS numbers of all species in the mixture, [-]
     VolumeLiquids : list[VolumeLiquid], optional
         VolumeLiquid objects created for all species in the mixture, [-]
     correct_pressure_pure : bool, optional
@@ -1655,7 +1655,7 @@ class VolumeGasMixture(MixtureProperty):
     Parameters
     ----------
     CASs : list[str], optional
-        The CAS numbers of all species in the mixture
+        The CAS numbers of all species in the mixture, [-]
     VolumeGases : list[VolumeGas], optional
         VolumeGas objects created for all species in the mixture, [-]
     eos : container[EOS Object], optional
@@ -2003,7 +2003,7 @@ class VolumeSolidMixture(MixtureProperty):
     Parameters
     ----------
     CASs : list[str], optional
-        The CAS numbers of all species in the mixture
+        The CAS numbers of all species in the mixture, [-]
     VolumeSolids : list[VolumeSolid], optional
         VolumeSolid objects created for all species in the mixture, [-]
     MWs : list[float], optional
