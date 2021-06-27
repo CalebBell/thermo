@@ -154,6 +154,18 @@ Plots show how the extrapolation methods work. By default plots do not show extr
 
 .. plot:: plots/vapor_pressure_ethanol_4.py
 
+It may also be helpful to see the derivative with respect to temperature of methods. This can be done with the `order` keyword:
+
+>>> ethanol_psat.plot_T_dependent_property(Tmin=1, Tmax=300, methods=['VDI_TABULAR', 'DIPPR_PERRY_8E', 'COOLPROP'], pts=50, only_valid=False, order=1)
+
+.. plot:: plots/vapor_pressure_ethanol_5.py
+
+Higher order derivatives are also supported; most derivatives are numerically calculated, so there may be some noise. The derivative plot is particularly good at illustrating what happens at the critical point, when extrapolation takes over from the actual formulas.
+
+>>> ethanol_psat.plot_T_dependent_property(Tmin=500, Tmax=525, methods=['VDI_TABULAR', 'DIPPR_PERRY_8E', 'AMBROSE_WALTON', 'VDI_PPDS', 'WAGNER_MCGARRY'], pts=50, only_valid=False, order=2)
+
+.. plot:: plots/vapor_pressure_ethanol_6.py
+
 
 Calculating Temperature From Properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
