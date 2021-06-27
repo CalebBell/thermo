@@ -134,7 +134,14 @@ def test_VaporPressure():
     assert_close(w.T_dependent_property(305.), 4715.122890601165)
     w.extrapolation = 'interp1d'
     assert_close(w.T_dependent_property(200.), 0.5364148240126076)
-
+    
+    Ts_bad = [300, 325, 350]
+    Ps_bad = [1, -1, 1j]
+    with pytest.raises(ValueError):
+        w.add_tabular_data(Ts=Ts_bad, properties=Ps_bad)
+    Ts_rev = list(reversed(Ts))
+    with pytest.raises(ValueError):
+        w.add_tabular_data(Ts=Ts_rev, properties=Ps)
 
     # Get a check for Antoine Extended
     cycloheptane = VaporPressure(Tb=391.95, Tc=604.2, Pc=3820000.0, omega=0.2384, CASRN='291-64-5')
