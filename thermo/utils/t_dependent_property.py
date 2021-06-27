@@ -1887,10 +1887,9 @@ class TDependentProperty(object):
         '''
         method = self._method
         if method == POLY_FIT:
-            try: return self.calculate(T, POLY_FIT)
-            except: 
-                if self.RAISE_PROPERTY_CALCULATION_ERROR: 
-                    raise RuntimeError("failed to evaluate %s method '%s' at T=%s K for component with CASRN '%s'" %(self.name, method, T, self.CASRN))
+            # There is no use case where this will fail; it is designed to 
+            # always calculate a value
+            return self.calculate(T, POLY_FIT)
         elif method is None:
             if self.RAISE_PROPERTY_CALCULATION_ERROR: 
                 raise RuntimeError("no method selected for component with CASRN '%s'" %self.CASRN)
