@@ -75,7 +75,6 @@ from thermo.eos_alpha_functions import (Twu91_alpha_pure, Soave_1979_alpha_pure,
                                         Soave_1993_alpha_pure, Gasem_alpha_pure,
                                         Coquelet_alpha_pure, Haghtalab_alpha_pure,
                                         Saffari_alpha_pure, Chen_Yang_alpha_pure)
-from warnings import warn
 from thermo.eos import GCEOS
 from thermo.coolprop import coolprop_fluids
 from thermo.fitting import data_fit_statistics
