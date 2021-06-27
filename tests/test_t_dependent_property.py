@@ -60,9 +60,6 @@ def test_t_dependent_property_exceptions():
     MVP.method = CRAZY_METHOD
     with pytest.raises(RuntimeError):
         MVP.T_dependent_property(350.)
-    MVP.method = POLY_FIT
-    with pytest.raises(RuntimeError):
-        MVP.T_dependent_property(350.)
     MVP.method = None
     with pytest.raises(RuntimeError):
         MVP.T_dependent_property(340.)
