@@ -1837,6 +1837,34 @@ class TDependentProperty(object):
         else:
             raise ValueError("Unknown method")
 
+    def _calculate_extrapolate(self, T, method):
+        if method == POLY_FIT:
+            try: return self.calculate(T, POLY_FIT)
+            except: return None
+
+        if method is None:
+            return None
+        try:
+            T_low, T_high = self.T_limits[method]
+            in_range = T_low <= T <= T_high
+        except KeyError:
+            in_range = self.test_method_validity(T, method)
+
+        if in_range:
+            try:
+                prop = self.calculate(T, method)
+            except:
+                return None
+            if self.test_property_validity(prop):
+                return prop
+        elif self._extrapolation is not None:
+            try:
+                return self.extrapolate(T, method)
+            except:
+                return None
+        # Function returns None if it does not work.
+        return None
+
     def T_dependent_property(self, T):
         r'''Method to calculate the property with sanity checking and using
         the selected :obj:`method <thermo.utils.TDependentProperty.method>`.
