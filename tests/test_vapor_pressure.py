@@ -528,6 +528,13 @@ def test_VaporPressure_Antoine_inputs():
     obj2 = VaporPressure(Antoine_parameters={'WebBook': {'A': 8.45604, 'B': 1044.038, 'C': -53.893, 'Tmin': 177.7, 'Tmax': 264.93}})
     assert_close(obj2(200), 20.432980367117192, rtol=1e-12)
     assert obj == obj2
+    
+    with pytest.raises(ValueError):
+        obj.add_correlation(name='WebBook2', model='Antoine', Tmin=177.70, Tmax=264.93,  A=3.45604+5, B=1044.038)
+    with pytest.raises(ValueError):
+        obj.add_correlation(name='WebBook', model='Antoine', Tmin=177.70, Tmax=264.93,  A=3.45604+5, B=1044.038, C=-53.893)
+    with pytest.raises(ValueError):
+        obj.add_correlation(name='WebBook4', model='NOTAMODEL', Tmin=177.70, Tmax=264.93,  A=3.45604+5, B=1044.038, C=-53.893)
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_DIPPR101_inputs():

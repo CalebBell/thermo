@@ -2139,6 +2139,8 @@ class TDependentProperty(object):
         model_data = self.correlation_models[model]
         if not all(k in kwargs and kwargs[k] is not None for k in model_data[0]):
             raise ValueError("Required arguments for this model are %s" %(model_data[0],))
+        if name in self.all_methods:
+            raise ValueError("Provided method is already a method")
 
         model_kwargs = {k: kwargs[k] for k in model_data[0]}
         for param in model_data[1]:
