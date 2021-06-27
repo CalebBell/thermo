@@ -27,7 +27,7 @@ __all__ = ['TDependentProperty',]
 import os
 try:
     from random import uniform
-except:
+except: # pragma: no cover
     pass
 from fluids.numerics import (quad, brenth, secant, linspace, 
                              polyint, polyint_over_x, derivative, 
@@ -2177,7 +2177,7 @@ class TDependentProperty(object):
                 s += '.\n'
             _text += s
         add_correlation.__doc__ += _text
-    except:
+    except: 
         pass
 
     def add_method(self, f, Tmin=None, Tmax=None,
