@@ -1920,7 +1920,7 @@ class TDependentProperty(object):
 
     def plot_T_dependent_property(self, Tmin=None, Tmax=None, methods=[],
                                   pts=250, only_valid=True, order=0, show=True,
-                                  axes='semilogy'):  # pragma: no cover
+                                  axes='semilogy'):
         r'''Method to create a plot of the property vs temperature according to
         either a specified list of methods, or user methods (if set), or all
         methods. User-selectable number of points, and temperature range. If

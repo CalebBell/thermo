@@ -59,6 +59,13 @@ def test_VaporPressure():
     # For Ethanol, all methods are valid around 300 K
     assert EtOH.valid_methods(300) == EtOH.valid_methods()
     
+    # Check test_property_validity
+    assert not EtOH.test_property_validity(1j)
+    
+    # Check can't calculate with a bad method
+    with pytest.raises(ValueError):
+        EtOH.calculate(300, 'NOTAMETHOD')
+    
     methods = list(EtOH.all_methods)
     methods.remove(VDI_TABULAR)
     if COOLPROP in methods:
