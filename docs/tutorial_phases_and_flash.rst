@@ -47,6 +47,8 @@ Serialization
 All phase models offer a :obj:`as_json <thermo.phases.Phase.as_json>` method and a :obj:`from_json <thermo.phases.Phase.from_json>` to serialize the object state for transport over a network, storing to disk, and passing data between processes.
 
 >>> import json
+>>> from scipy.constants import R
+>>> from thermo import HeatCapacityGas, IdealGas, Phase
 >>> HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])), HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
 >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=HeatCapacityGases)
 >>> json_stuff = json.dumps(phase.as_json())
@@ -77,15 +79,16 @@ The following example illustrates some of the types of flashes supported using t
 
 Obtain a heat capacity object, and select a source:
 
->>> from thermo.heat_capacity import POLING
+>>> from thermo.heat_capacity import POLING_POLY
 >>> CpObj = HeatCapacityGas(CASRN='67-56-1')
->>> CpObj.method = POLING
+>>> CpObj.method = POLING_POLY
 >>> CpObj.POLING_coefs # Show the coefficients
 [4.714, -0.006986, 4.211e-05, -4.443e-08, 1.535e-11]
 >>> HeatCapacityGases = [CpObj]
 
 Create a :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>` object which holds constant properties of the object, using a minimum of values:
 
+>>> from thermo import ChemicalConstantsPackage, PropertyCorrelationsPackage, PRMIX, SRKMIX, CEOSLiquid, CEOSGas, FlashPureVLS
 >>> constants = ChemicalConstantsPackage(Tcs=[512.5], Pcs=[8084000.0], omegas=[0.559], MWs=[32.04186], CASs=['67-56-1'])
 
 Create a :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>` object which holds temperature-dependent property objects, also setting `skip_missing` to True so no database lookups are performed:
@@ -106,7 +109,7 @@ Do a T-P flash:
 
 >>> res = flasher.flash(T=300, P=1e5)
 >>> res.phase, res.liquid0
-('L', <CEOSLiquid, T=300 K, P=100000 Pa>)
+('L', CEOSLiquid(eos_class=PRMIX, eos_kwargs={"Tcs": [512.5], "Pcs": [8084000.0], "omegas": [0.559]}, HeatCapacityGases=[HeatCapacityGas(CASRN="67-56-1", extrapolation="linear", method="POLING_POLY")], T=300, P=100000.0, zs=[1.0]))
 
 Do a temperature and vapor-fraction flash:
 
