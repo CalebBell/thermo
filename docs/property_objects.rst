@@ -326,28 +326,28 @@ There are lots of methods available; Antoine was just used (the returned coeffic
 
 >>> Tc, Pc = 508.1, 4700000.0
 >>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='Yaws_Psat', do_statistics=True, multiple_tries=True)
->>> res, stats['MAE']
+>>> res, stats['MAE']  # doctest: +SKIP
 ({'A': 1650.7, 'B': -32673., 'C': -728.7, 'D': 1.1, 'E': -0.000609}, 0.0178)
 >>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='DIPPR101', do_statistics=True, multiple_tries=3)
->>> stats['MAE']
+>>> stats['MAE']  # doctest: +SKIP
 0.0106
 >>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='Wagner', do_statistics=True, multiple_tries=True, model_kwargs={'Tc': Tc, 'Pc': Pc})
->>> res, stats['MAE']
+>>> res, stats['MAE']  # doctest: +SKIP
 ({'Tc': 508.1, 'Pc': 4700000.0, 'a': -15.7110, 'b': 23.63, 'c': -27.74, 'd': 25.152}, 0.0485)
 >>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='TRC_Antoine_extended', do_statistics=True, multiple_tries=True, model_kwargs={'Tc': Tc})
->>> res, stats['MAE']
+>>> res, stats['MAE'] # doctest: +SKIP
 ({'Tc': 508.1, 'to': 67.0, 'A': 9.2515481, 'B': 1230.0976, 'C': -40.080954, 'n': 2.5, 'E': 333.0, 'F': -24950.0}, 0.01059)
 
 A very common scenario is that some coefficients are desired to be fixed in the regression. This is supported with the `model_kwargs` attribute. For example, in the above DIPPR101 case we can fix the `E` coefficient to 1 as follows:
 
 >>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='DIPPR101', do_statistics=True, multiple_tries=3, model_kwargs={'E': -1})
->>> res['E'], stats['MAE']
+>>> res['E'], stats['MAE']  # doctest: +SKIP
 (-1, 0.01310)
 
 Similarly, the feature is often used to set unneeded coefficients to zero In this case the TDE_PVExpansion function has up to 8 parameters but only three are justified.
 
 >>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='TDE_PVExpansion', do_statistics=True, multiple_tries=True, model_kwargs={'a4': 0.0, 'a5': 0.0, 'a6': 0.0, 'a7': 0.0, 'a8': 0})
->>> res, stats['MAE']
+>>> res, stats['MAE']  # doctest: +SKIP
 ({'a4': 0.0, 'a5': 0.0, 'a6': 0.0, 'a7': 0.0, 'a8': 0, 'a1': 48.396547, 'a2': -4914.1260, 'a3': -3.78894783}, 0.0131003)
 
 Fitting coefficients is a complicated numerical problem. MINPACK's lmfit implements Levenberg-Marquardt with a number of tricks, and is used through SciPy in the fitting by default. Other minimization algorithms are supported, but generally don't do nearly as well. All minimization algorithms can only converge to a minima near points that they evaluate, and the choice of initial guesses is quite important. For many methods, there are several hardcoded guesses. By default, each of those guesses are evaluated and the minimization is initialized with the best guess. However, for maximum accuracy, `multiple_tries` should be set to True, and `all` initial guesses are converged, and the best fit is returned.
