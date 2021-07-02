@@ -327,7 +327,7 @@ There are lots of methods available; Antoine was just used (the returned coeffic
 >>> Tc, Pc = 508.1, 4700000.0
 >>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='Yaws_Psat', do_statistics=True, multiple_tries=True)
 >>> res, stats['MAE']
-({'A': 1650.700898478, 'B': -32673.1471098, 'C': -728.72662916, 'D': 1.07572169632, 'E': -0.00060938839938}, 0.017819321)
+({'A': 1650.7, 'B': -32673.1, 'C': -728.7, 'D': 1.075, 'E': -0.000609}, 0.0178)
 >>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='DIPPR101', do_statistics=True, multiple_tries=3)
 >>> stats['MAE']
 0.010632227
