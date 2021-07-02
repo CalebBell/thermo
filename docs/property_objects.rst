@@ -330,13 +330,13 @@ There are lots of methods available; Antoine was just used (the returned coeffic
 ({'A': 1650.7, 'B': -32673., 'C': -728.7, 'D': 1.1, 'E': -0.000609}, 0.0178)
 >>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='DIPPR101', do_statistics=True, multiple_tries=3)
 >>> stats['MAE']
-0.010632227
+0.0106
 >>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='Wagner', do_statistics=True, multiple_tries=True, model_kwargs={'Tc': Tc, 'Pc': Pc})
 >>> res, stats['MAE']
 ({'Tc': 508.1, 'Pc': 4700000.0, 'a': -15.7110, 'b': 23.63, 'c': -27.74, 'd': 25.152}, 0.0485)
 >>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='TRC_Antoine_extended', do_statistics=True, multiple_tries=True, model_kwargs={'Tc': Tc})
 >>> res, stats['MAE']
-({'Tc': 508.1, 'to': 67.0, 'A': 9.2515481, 'B': 1230.0976, 'C': -40.080954, 'n': 2.5, 'E': 333.0, 'F': -24950.0}, 0.010592876)
+({'Tc': 508.1, 'to': 67.0, 'A': 9.2515481, 'B': 1230.0976, 'C': -40.080954, 'n': 2.5, 'E': 333.0, 'F': -24950.0}, 0.01059)
 
 A very common scenario is that some coefficients are desired to be fixed in the regression. This is supported with the `model_kwargs` attribute. For example, in the above DIPPR101 case we can fix the `E` coefficient to 1 as follows:
 
