@@ -40,7 +40,7 @@ Creating Objects
 
 All arguments and information the property object requires must be provided in the constructor of the object. If a piece of information is not provided, whichever methods require it will not be available for that object.
 
->>> from thermo import VaporPressure
+>>> from thermo import VaporPressure, HeatCapacityGas
 >>> ethanol_psat = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
 
 Various data files will be searched to see if information such as Antoine coefficients is available for the compound during the initialization. This behavior can be avoided by setting the optional `load_data` argument to False. Loading data requires `pandas`, uses more RAM, and is a once-per-process procedure that takes 20-1000 ms per property. For some applications it may be advantageous to provide your own data instead of using the provided data files.
@@ -132,37 +132,37 @@ Plotting
 
 It is also possible to compare the correlations graphically with the method :obj:`plot_T_dependent_property <thermo.utils.TDependentProperty.plot_T_dependent_property>`.
 
->>> ethanol_psat.plot_T_dependent_property(Tmin=300)
+>>> ethanol_psat.plot_T_dependent_property(Tmin=300) # doctest: +SKIP
 
 .. plot:: plots/vapor_pressure_ethanol_1.py
 
 By default all methods are shown in the plot, but a smaller selection of methods can be specified. The following example compares 30 points in the temperature range 400 K to 500 K, with three of the best methods.
 
->>> ethanol_psat.plot_T_dependent_property(Tmin=400, Tmax=500, methods=['COOLPROP', 'WAGNER_MCGARRY', 'DIPPR_PERRY_8E'], pts=30)
+>>> ethanol_psat.plot_T_dependent_property(Tmin=400, Tmax=500, methods=['COOLPROP', 'WAGNER_MCGARRY', 'DIPPR_PERRY_8E'], pts=30) # doctest: +SKIP
 
 .. plot:: plots/vapor_pressure_ethanol_2.py
 
 It is also possible to plot the nth derivative of the methods with the `order` parameter. The following plot shows the first derivative of vapor pressure of three estimation methods, a tabular source being interpolated, and 'DIPPR_PERRY_8E' as a reference method.
 
->>> ethanol_psat.plot_T_dependent_property(Tmin=400, Tmax=500, methods=['BOILING_CRITICAL', 'SANJARI', 'LEE_KESLER_PSAT', 'VDI_TABULAR', 'DIPPR_PERRY_8E'], pts=50, order=1)
+>>> ethanol_psat.plot_T_dependent_property(Tmin=400, Tmax=500, methods=['BOILING_CRITICAL', 'SANJARI', 'LEE_KESLER_PSAT', 'VDI_TABULAR', 'DIPPR_PERRY_8E'], pts=50, order=1) # doctest: +SKIP
 
 .. plot:: plots/vapor_pressure_ethanol_3.py
 
 Plots show how the extrapolation methods work. By default plots do not show extrapolated values from methods, but this can be forced by setting `only_valid` to False. It is easy to see that extrapolation is designed to show the correct trend, but that individual methods will have very different extrapolations.
 
->>> ethanol_psat.plot_T_dependent_property(Tmin=1, Tmax=300, methods=['VDI_TABULAR', 'DIPPR_PERRY_8E', 'COOLPROP'], pts=50, only_valid=False)
+>>> ethanol_psat.plot_T_dependent_property(Tmin=1, Tmax=300, methods=['VDI_TABULAR', 'DIPPR_PERRY_8E', 'COOLPROP'], pts=50, only_valid=False) # doctest: +SKIP
 
 .. plot:: plots/vapor_pressure_ethanol_4.py
 
 It may also be helpful to see the derivative with respect to temperature of methods. This can be done with the `order` keyword:
 
->>> ethanol_psat.plot_T_dependent_property(Tmin=1, Tmax=300, methods=['VDI_TABULAR', 'DIPPR_PERRY_8E', 'COOLPROP'], pts=50, only_valid=False, order=1)
+>>> ethanol_psat.plot_T_dependent_property(Tmin=1, Tmax=300, methods=['VDI_TABULAR', 'DIPPR_PERRY_8E', 'COOLPROP'], pts=50, only_valid=False, order=1) # doctest: +SKIP
 
 .. plot:: plots/vapor_pressure_ethanol_5.py
 
 Higher order derivatives are also supported; most derivatives are numerically calculated, so there may be some noise. The derivative plot is particularly good at illustrating what happens at the critical point, when extrapolation takes over from the actual formulas.
 
->>> ethanol_psat.plot_T_dependent_property(Tmin=500, Tmax=525, methods=['VDI_TABULAR', 'DIPPR_PERRY_8E', 'AMBROSE_WALTON', 'VDI_PPDS', 'WAGNER_MCGARRY'], pts=50, only_valid=False, order=2)
+>>> ethanol_psat.plot_T_dependent_property(Tmin=500, Tmax=525, methods=['VDI_TABULAR', 'DIPPR_PERRY_8E', 'AMBROSE_WALTON', 'VDI_PPDS', 'WAGNER_MCGARRY'], pts=50, only_valid=False, order=2) # doctest: +SKIP
 
 .. plot:: plots/vapor_pressure_ethanol_6.py
 
@@ -208,7 +208,7 @@ When the property is heat capacity, this calculation represents a change in enth
     \Delta H = \int_{T_1}^{T_2} C_p \; d T
 
 >>> CH4_Cp = HeatCapacityGas(CASRN='74-82-8')
->>> CH4_Cp.method = 'Poling et al. (2001)'
+>>> CH4_Cp.method = 'POLING_POLY'
 >>> CH4_Cp.T_dependent_property_integral(300, 500)
 8158.64
 
@@ -243,7 +243,7 @@ In the example below, we take 5 data points on the vapor pressure of water from 
 >>> Ps = [3533.9, 7125., 13514., 24287., 41619.]
 >>> w.add_tabular_data(Ts=Ts, properties=Ps)
 >>> w.solve_property(610.707), w.solve_property(22048320)
-(272.76, 616.67)
+(272.83, 617.9)
 
 The experimental values are 273.15 K and 647.14 K.
 
@@ -259,7 +259,7 @@ As an example, we can compare the default vapor pressure formulation for n-hexan
 >>> obj = VaporPressure(CASRN= '110-54-3')
 >>> obj(200)
 20.742
->>> f = lambda T: Antoine(T=T, A=3.45604+5, B=1044.x038, C=-53.893)
+>>> f = lambda T: Antoine(T=T, A=3.45604+5, B=1044.038, C=-53.893)
 >>> obj.add_method(f=f, name='WebBook', Tmin=177.70, Tmax=264.93)
 >>> obj.method
 'WebBook'
@@ -270,7 +270,7 @@ As an example, we can compare the default vapor pressure formulation for n-hexan
 We can, again, extrapolate quite easily and estimate the triple temperature and critical temperature from these correlations (if we know the triple pressure and critical pressure).
 
 >>> obj.solve_property(1.378), obj.solve_property(3025000.0)
-(179.42, 508.033)
+(179.43, 508.04)
 
 Optionally, some derivatives and integrals can be provided for new methods as well. This avoids having to compute derivatives or integrals numerically. SymPy may be helpful to find these analytical derivatives or integrals in many cases, as in the following example:
 
@@ -284,7 +284,7 @@ Optionally, some derivatives and integrals can be provided for new methods as we
 >>> f_der3 = lambdify(T, diff(expr, T, 3))
 >>> obj.add_method(f=f, f_der=f_der, f_der2=f_der2, f_der3=f_der3, name='WebBookSymPy', Tmin=177.70, Tmax=264.93)
 >>> obj.method, obj(200), obj.T_dependent_property_derivative(200.0, order=2)
-('WebBookSymPy', 20.43298036711, 0.2276289268)
+('WebBookSymPy', 20.43298036, 0.2276285)
 
 Note that adding methods like this breaks the ability to export as json and the repr of the object is no longer complete.
 
@@ -317,7 +317,7 @@ Data is obtained from the DDBST for the vapor pressure of acetone (http://www.dd
 >>> Ts = [203.65, 209.55, 212.45, 234.05, 237.04, 243.25, 249.35, 253.34, 257.25, 262.12, 264.5, 267.05, 268.95, 269.74, 272.95, 273.46, 275.97, 276.61, 277.23, 282.03, 283.06, 288.94, 291.49, 293.15, 293.15, 293.85, 294.25, 294.45, 294.6, 294.63, 294.85, 297.05, 297.45, 298.15, 298.15, 298.15, 298.15, 298.15, 299.86, 300.75, 301.35, 303.15, 303.15, 304.35, 304.85, 305.45, 306.25, 308.15, 308.15, 308.15, 308.22, 308.35, 308.45, 308.85, 309.05, 311.65, 311.85, 311.85, 311.95, 312.25, 314.68, 314.85, 317.75, 317.85, 318.05, 318.15, 318.66, 320.35, 320.35, 320.45, 320.65, 322.55, 322.65, 322.85, 322.95, 322.95, 323.35, 323.55, 324.65, 324.75, 324.85, 324.85, 325.15, 327.05, 327.15, 327.2, 327.25, 327.35, 328.22, 328.75, 328.85, 333.73, 338.95]
 >>> Psats = [58.93, 94.4, 118.52, 797.1, 996.5, 1581.2, 2365, 3480, 3893, 5182, 6041, 6853, 7442, 7935, 9290, 9639, 10983, 11283, 13014, 14775, 15559, 20364, 22883, 24478, 24598, 25131, 25665, 25931, 25998, 26079, 26264, 29064, 29598, 30397, 30544, 30611, 30784, 30851, 32636, 33931, 34864, 37637, 37824, 39330, 40130, 41063, 42396, 45996, 46090, 46356, 45462, 46263, 46396, 47129, 47396, 52996, 52929, 53262, 53062, 53796, 58169, 59328, 66395, 66461, 67461, 67661, 67424, 72927, 73127, 73061, 73927, 79127, 79527, 80393, 79927, 80127, 81993, 80175, 85393, 85660, 85993, 86260, 86660, 92726, 92992, 92992, 93126, 93326, 94366, 98325, 98592, 113737, 136626]
 >>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='Antoine', do_statistics=True, multiple_tries=True)
->> res, stats['MAE']
+>>> res, stats['MAE']
 ({'A': 9.2515513342, 'B': 1230.099383065, 'C': -40.08076540233}, 0.01059288655304)
 
 The fitting function returns the regressed coefficients, and optionally some statistics. The mean absolute relative error or "MAE" is often a good parameter for determining the goodness of fit; Antoine yielded an error of about 1%.
@@ -328,24 +328,26 @@ There are lots of methods available; Antoine was just used (the returned coeffic
 >>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='Yaws_Psat', do_statistics=True, multiple_tries=True)
 >>> res, stats['MAE']
 ({'A': 1650.700898478, 'B': -32673.1471098, 'C': -728.72662916, 'D': 1.07572169632, 'E': -0.00060938839938}, 0.017819321)
->>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='DIPPR101', do_statistics=True, multiple_tries=True
+>>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='DIPPR101', do_statistics=True, multiple_tries=3)
+>>> stats['MAE']
+0.010632227
+>>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='Wagner', do_statistics=True, multiple_tries=True, model_kwargs={'Tc': Tc, 'Pc': Pc})
 >>> res, stats['MAE']
-({'A': 128.469735047, 'B': -6984.9044135, 'C': -18.113160612, 'D': 0.059859477112, 'E': 0.86952533750}, 0.010632227)
->>> TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='Wagner', do_statistics=True, multiple_tries=True, model_kwargs={'Tc': Tc, 'Pc': Pc})
-({'Tc': 508.1, 'Pc': 4700000.0, 'a': -15.71102746, 'b': 23.63274373, 'c': -27.7428877, 'd': 25.15260915}, 0.0485657)
+({'Tc': 508.1, 'Pc': 4700000.0, 'a': -15.7110, 'b': 23.63, 'c': -27.74, 'd': 25.152}, 0.0485)
 >>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='TRC_Antoine_extended', do_statistics=True, multiple_tries=True, model_kwargs={'Tc': Tc})
 >>> res, stats['MAE']
 ({'Tc': 508.1, 'to': 67.0, 'A': 9.2515481, 'B': 1230.0976, 'C': -40.080954, 'n': 2.5, 'E': 333.0, 'F': -24950.0}, 0.010592876)
 
 A very common scenario is that some coefficients are desired to be fixed in the regression. This is supported with the `model_kwargs` attribute. For example, in the above DIPPR101 case we can fix the `E` coefficient to 1 as follows:
 
->>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='DIPPR101', do_statistics=True, multiple_tries=True, model_kwargs={'E': -1})
->>> res, stats['MAE']
-({'E': -1, 'A': 48.396271, 'B': 83006.6003, 'C': -3.78890705, 'D': -87920.7136}, 0.0131004)
+>>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='DIPPR101', do_statistics=True, multiple_tries=3, model_kwargs={'E': -1})
+>>> res['E'], stats['MAE']
+(-1, 0.01310)
 
 Similarly, the feature is often used to set unneeded coefficients to zero In this case the TDE_PVExpansion function has up to 8 parameters but only three are justified.
 
 >>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='TDE_PVExpansion', do_statistics=True, multiple_tries=True, model_kwargs={'a4': 0.0, 'a5': 0.0, 'a6': 0.0, 'a7': 0.0, 'a8': 0})
+>>> res, stats['MAE']
 ({'a4': 0.0, 'a5': 0.0, 'a6': 0.0, 'a7': 0.0, 'a8': 0, 'a1': 48.396547, 'a2': -4914.1260, 'a3': -3.78894783}, 0.0131003)
 
 Fitting coefficients is a complicated numerical problem. MINPACK's lmfit implements Levenberg-Marquardt with a number of tricks, and is used through SciPy in the fitting by default. Other minimization algorithms are supported, but generally don't do nearly as well. All minimization algorithms can only converge to a minima near points that they evaluate, and the choice of initial guesses is quite important. For many methods, there are several hardcoded guesses. By default, each of those guesses are evaluated and the minimization is initialized with the best guess. However, for maximum accuracy, `multiple_tries` should be set to True, and `all` initial guesses are converged, and the best fit is returned.
@@ -375,7 +377,7 @@ Each of the phases is treated as a different method. After fitting the data to l
 >>> obj.fit_add_model(Ts=Ts_alpha, data=Vms_alpha, model='linear', name='alpha')
 >>> obj.fit_add_model(Ts=Ts_beta, data=Vms_beta, model='quadratic', name='beta')
 >>> obj.fit_add_model(Ts=Ts_gamma, data=Vms_gamma, model='quadratic', name='gamma')
->>> obj.plot_T_dependent_property(Tmin=4.2, Tmax=50)
+>>> obj.plot_T_dependent_property(Tmin=4.2, Tmax=50) # doctest: +SKIP
 
 
 Temperature and Pressure Dependent Properties
@@ -414,12 +416,12 @@ If no low-pressure methods are available, `method` will be None. If no high-pres
 
 All available low-pressure methods can be found by inspecting the :obj:`all_methods <thermo.utils.TPDependentProperty.all_methods>` attribute:
 
->>> water_mu.all_methods
+>>> water_mu.all_methods # doctest: +SKIP
 {'COOLPROP', 'DIPPR_PERRY_8E', 'VISWANATH_NATARAJAN_3', 'VDI_PPDS', 'LETSOU_STIEL'}
 
 All available high-pressure methods can be found by inspecting the :obj:`all_methods_P <thermo.utils.TPDependentProperty.all_methods_P>` attribute:
 
->>> water_mu.all_methods_P
+>>> water_mu.all_methods_P # doctest: +SKIP
 {'COOLPROP', 'LUCAS'}
 
 Changing the low-pressure method or the high-pressure method is as easy as setting a new value to the attribute:
@@ -427,8 +429,8 @@ Changing the low-pressure method or the high-pressure method is as easy as setti
 >>> water_mu.method = 'VDI_PPDS'
 >>> water_mu.method
 'VDI_PPDS'
->>> water_mu.method_P = 'COOLPROP'
->>> water_mu.method_P
+>>> water_mu.method_P = 'COOLPROP' # doctest: +SKIP
+>>> water_mu.method_P # doctest: +SKIP
 'COOLPROP'
 
 Calculating Properties
@@ -437,20 +439,20 @@ Calculating Properties
 Calculation of the property at a specific temperature and pressure is as easy as calling the object which triggers the :obj:`__call__ <thermo.utils.TPDependentProperty.__call__>` method:
 
 >>> water_mu.method = 'VDI_PPDS'
->>> water_mu.method_P = 'COOLPROP'
->>> water_mu(T=300.0, P=1e5)
+>>> water_mu.method_P = 'COOLPROP' # doctest: +SKIP
+>>> water_mu(T=300.0, P=1e5) # doctest: +SKIP
 0.000853742
 
 This is actually a cached wrapper around the specific call, :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`:
 
->>> water_mu.TP_dependent_property(300.0, P=1e5)
+>>> water_mu.TP_dependent_property(300.0, P=1e5) # doctest: +SKIP
 0.000853742
 
 The caching of :obj:`__call__ <thermo.utils.TPDependentProperty.__call__>` is quite basic - the previously specified temperature and pressure are stored, and if the new `T` and `P` are the same as the previous `T` and `P` the previously calculated result is returned.
 
 There is a lower-level interface for calculating properties with a specified method by name, :obj:`calculate_P <thermo.utils.TDependentProperty.calculate_P>`. :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>` is a wrapper around  :obj:`calculate_P <thermo.utils.TDependentProperty.calculate_P>` that includes validation of the result.
 
->>> water_mu.calculate_P(T=300.0, P=1e5, method='COOLPROP')
+>>> water_mu.calculate_P(T=300.0, P=1e5, method='COOLPROP') # doctest: +SKIP
 0.000853742
 >>> water_mu.calculate_P(T=300.0, P=1e5, method='LUCAS')
 0.000865292
@@ -467,14 +469,14 @@ Limits and Extrapolation
 
 The same temperature limits and low-pressure extrapolation methods are available as for :obj:`TDependentProperty <thermo.utils.TDependentProperty>`.
 
->>> water_mu.valid_methods(T=480)
+>>> water_mu.valid_methods(T=480) # doctest: +SKIP
 ['DIPPR_PERRY_8E', 'COOLPROP', 'VDI_PPDS', 'LETSOU_STIEL']
 >>> water_mu.extrapolation
 'linear'
 
 To better understand what methods are available, the :obj:`valid_methods_P <thermo.utils.TDependentProperty.valid_methods_P>` method checks all available high-pressure correlations against their temperature and pressure limits.
 
->>> water_mu.valid_methods_P(T=300, P=1e9)
+>>> water_mu.valid_methods_P(T=300, P=1e9) # doctest: +SKIP
 ['LUCAS', 'COOLPROP']
 >>> water_mu.valid_methods_P(T=300, P=1e10)
 ['LUCAS']
@@ -483,7 +485,7 @@ To better understand what methods are available, the :obj:`valid_methods_P <ther
 
 If the temperature and pressure are not provided, all available methods are returned; the returned value favors the methods by the ranking defined in thermo, with the currently selected method as the first item.
 
->>> water_mu.valid_methods_P()
+>>> water_mu.valid_methods_P() # doctest: +SKIP
 ['LUCAS', 'COOLPROP']
 
 Plotting
@@ -491,17 +493,17 @@ Plotting
 
 It is possible to compare the correlations graphically with the method :obj:`plot_TP_dependent_property <thermo.utils.TPDependentProperty.plot_TP_dependent_property>`.
 
->>> water_mu.plot_TP_dependent_property(Tmin=400, Pmin=1e5, Pmax=1e8, methods_P=['COOLPROP','LUCAS'], pts=15, only_valid=False)
+>>> water_mu.plot_TP_dependent_property(Tmin=400, Pmin=1e5, Pmax=1e8, methods_P=['COOLPROP','LUCAS'], pts=15, only_valid=False) # doctest: +SKIP
 
 .. plot:: plots/viscosity_water_0.py
 
 This can be a little confusing; but isotherms and isobars can be plotted as well, which are more straight forward. The respective methods are :obj:`plot_isotherm <thermo.utils.TPDependentProperty.plot_isotherm>` and :obj:`plot_isobar <thermo.utils.TPDependentProperty.plot_isobar>`:
 
->>> water_mu.plot_isotherm(T=350, Pmin=1e5, Pmax=1e7, pts=50)
+>>> water_mu.plot_isotherm(T=350, Pmin=1e5, Pmax=1e7, pts=50) # doctest: +SKIP
 
 .. plot:: plots/viscosity_water_1.py
 
->>> water_mu.plot_isobar(P=1e7, Tmin=300, Tmax=600, pts=50)
+>>> water_mu.plot_isobar(P=1e7, Tmin=300, Tmax=600, pts=50) # doctest: +SKIP
 
 .. plot:: plots/viscosity_water_2.py
 
@@ -509,7 +511,7 @@ Calculating Conditions From Properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The method is :obj:`solve_property <thermo.utils.TDependentProperty.solve_property>` works only on the low-pressure correlations.
 
->>> water_mu.solve_property(1e-3)
+>>> water_mu.solve_property(1e-3)  # doctest: +SKIP
 294.0711641
 
 Property Derivatives
@@ -517,37 +519,37 @@ Property Derivatives
 
 Functionality for calculating the temperature derivative of the property is implemented twice; as :obj:`T_dependent_property_derivative <thermo.utils.TDependentProperty.T_dependent_property_derivative>` using the low-pressure correlations, and as :obj:`TP_dependent_property_derivative_T <thermo.utils.TPDependentProperty.TP_dependent_property_derivative_T>` using the high-pressure correlations that require pressure as an input.
 
->>> water_mu.T_dependent_property_derivative(300)
+>>> water_mu.T_dependent_property_derivative(300)  # doctest: +SKIP
 -1.893961e-05
->>> water_mu.TP_dependent_property_derivative_T(300, P=1e7)
+>>> water_mu.TP_dependent_property_derivative_T(300, P=1e7) # doctest: +SKIP
 -1.927268e-05
 
 The derivatives are numerical unless a special implementation has been added to the property's :obj:`calculate_derivative_T <thermo.utils.TPDependentProperty.calculate_derivative_T>`  and/or :obj:`calculate_derivative <thermo.utils.TDependentProperty.calculate_derivative>` method.
 
 Higher order derivatives are available as well with the `order` argument.
 
->>> water_mu.T_dependent_property_derivative(300.0, order=2)
+>>> water_mu.T_dependent_property_derivative(300.0, order=2) # doctest: +SKIP
 5.923372e-07
->>> water_mu.TP_dependent_property_derivative_T(300.0, P=1e6, order=2)
+>>> water_mu.TP_dependent_property_derivative_T(300.0, P=1e6, order=2) # doctest: +SKIP
 -1.40946e-06
 
 Functionality for calculating the pressure derivative of the property is also implemented as :obj:`TP_dependent_property_derivative_P <thermo.utils.TPDependentProperty.TP_dependent_property_derivative_P>`:
 
->>> water_mu.TP_dependent_property_derivative_P(P=5e7, T=400)
+>>> water_mu.TP_dependent_property_derivative_P(P=5e7, T=400) # doctest: +SKIP
 4.27782809e-13
 
 The derivatives are numerical unless a special implementation has been added to the property's  :obj:`calculate_derivative_P <thermo.utils.TPDependentProperty.calculate_derivative_P>` method.
 
 Higher order derivatives are available as well with the `order` argument.
 
->>> water_mu.TP_dependent_property_derivative_P(P=5e7, T=400, order=2)
+>>> water_mu.TP_dependent_property_derivative_P(P=5e7, T=400, order=2)  # doctest: +SKIP
 -1.1858461e-15
 
 Property Integrals
 ^^^^^^^^^^^^^^^^^^
 The same functionality for integrating over a property as in temperature-dependent objects is available, but only for integrating over temperature using low pressure correlations. No other use cases have been identified requiring integration over high-pressure conditions, or integration over the pressure domain.
 
->>> water_mu.T_dependent_property_integral(300, 400) # Integrating over viscosity has no physical meaning
+>>> water_mu.T_dependent_property_integral(300, 400) # Integrating over viscosity has no physical meaning  # doctest: +SKIP
 0.04243
 
 Using Tabular Data
@@ -559,15 +561,15 @@ If there are experimentally available data for a property at high and low pressu
 >>> import numpy as np
 >>> Ts = [300, 400, 500]
 >>> Ps = [1e5, 1e6, 1e7]
->>> table = [[water_mu.calculate_P(T, P, "COOLPROP") for T in Ts] for P in Ps]
+>>> table = [[water_mu.calculate_P(T, P, "COOLPROP") for T in Ts] for P in Ps]  # doctest: +SKIP
 >>> water_mu.method_P
 'LUCAS'
->>> water_mu.add_tabular_data_P(Ts, Ps, table)
->>> water_mu.method_P
+>>> water_mu.add_tabular_data_P(Ts, Ps, table)  # doctest: +SKIP
+>>> water_mu.method_P  # doctest: +SKIP
 'Tabular data series #0'
->>> water_mu(400, 1e7), water_mu.calculate_P(400, 1e7, "COOLPROP")
+>>> water_mu(400, 1e7), water_mu.calculate_P(400, 1e7, "COOLPROP")  # doctest: +SKIP
 (0.000221166933349, 0.000221166933349)
->>> water_mu(450, 5e6), water_mu.calculate_P(450, 5e6, "COOLPROP")
+>>> water_mu(450, 5e6), water_mu.calculate_P(450, 5e6, "COOLPROP")  # doctest: +SKIP
 (0.00011340, 0.00015423)
 
 The more data points used, the closer a property will match.

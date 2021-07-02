@@ -113,38 +113,31 @@ Do a T-P flash:
 
 Do a temperature and vapor-fraction flash:
 
->>> flasher.flash(T=300, VF=.3)
-<EquilibriumState, T=300.0000, P=17641.8497, zs=[1.0], betas=[0.3, 0.7], phases=[<CEOSGas, T=300 K, P=17641.8 Pa>, <CEOSLiquid, T=300 K, P=17641.8 Pa>]>
+>>> res = flasher.flash(T=300, VF=.3)
 
 Do a pressure and vapor-fraction flash:
 
->>> flasher.flash(P=1e5, VF=.5)
-<EquilibriumState, T=336.9998, P=100000.0000, zs=[1.0], betas=[0.5, 0.5], phases=[<CEOSGas, T=337 K, P=100000 Pa>, <CEOSLiquid, T=337 K, P=100000 Pa>]>
+>>> res = flasher.flash(P=1e5, VF=.5)
 
 Do a pressure and enthalpy flash:
 
->>> flasher.flash(P=1e5, H=100)
-<EquilibriumState, T=336.9998, P=100000.0000, zs=[1.0], betas=[0.95955195, 0.0404480443], phases=[<CEOSGas, T=337 K, P=100000 Pa>, <CEOSLiquid, T=337 K, P=100000 Pa>]>
+>>> res = flasher.flash(P=1e5, H=100)
 
 Do a pressure and entropy flash:
 
->>> flasher.flash(P=1e5, S=30)
-<EquilibriumState, T=530.7967, P=100000.0000, zs=[1.0], betas=[1.0], phases=[<CEOSGas, T=530.797 K, P=100000 Pa>]>
+>>> res = flasher.flash(P=1e5, S=30)
 
 Do a temperature and entropy flash:
 
->>> flasher.flash(T=400.0, S=30)
-<EquilibriumState, T=400.0000, P=14736.5078, zs=[1.0], betas=[1.0], phases=[<CEOSGas, T=400 K, P=14736.5 Pa>]>
+>>> res = flasher.flash(T=400.0, S=30)
 
 Do a temperature and enthalpy flash:
 
->>> flasher.flash(T=400.0, H=1000)
-<EquilibriumState, T=400.0000, P=801322.3731, zs=[1.0], betas=[0.90923194, 0.09076805], phases=[<CEOSGas, T=400 K, P=801322 Pa>, <CEOSLiquid, T=400 K, P=801322 Pa>]>
+>>> res = flasher.flash(T=400.0, H=1000)
 
 Do a volume and internal energy flash:
 
->>> flasher.flash(V=1e-4, U=1000)
-<EquilibriumState, T=655.5447, P=47575958.4564, zs=[1.0], betas=[1.0], phases=[<CEOSLiquid, T=655.545 K, P=4.7576e+07 Pa>]>
+>>> res = flasher.flash(V=1e-4, U=1000)
 
 
 As you can see, the interface is convenient and supports most types of flashes. In fact, the algorithms are generic; any of `H`, `S`, `U`, and can be combined with any combination of `T`, `P`, and `V`. Although most of the flashes shown above except TS and TH are usually well behaved, depending on the EOS combination there may be multiple solutions. No real guarantees can be made about which solution will be returned in those cases.
@@ -155,8 +148,7 @@ It is not necessary to use the same phase model for liquid and gas phases; the b
 
 >>> SRK_gas = CEOSGas(SRKMIX, HeatCapacityGases=HeatCapacityGases, eos_kwargs=eos_kwargs)
 >>> flasher_inconsistent = FlashPureVLS(constants, correlations, gas=SRK_gas, liquids=[liquid], solids=[])
->>> flasher_inconsistent.flash(T=400.0, VF=1)
-<EquilibriumState, T=400.0000, P=797342.2263, zs=[1.0], betas=[1, 0.0], phases=[<CEOSGas, T=400 K, P=797342 Pa>, <CEOSLiquid, T=400 K, P=797342 Pa>]>
+>>> res = flasher_inconsistent.flash(T=400.0, VF=1)
 
 Choosing to use an inconsistent model will slow down many calculations as more checks are required; and some flashes may have issues with discontinuities in some conditions, and simply a lack of solution in other conditions.
 
