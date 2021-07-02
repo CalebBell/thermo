@@ -355,7 +355,9 @@ def load_all_interaction_parameters():
     chemsep_db_path = os.path.join(folder, 'ChemSep')
     ip_files = {'ChemSep PR': os.path.join(chemsep_db_path, 'pr.json'),
                 'ChemSep NRTL': os.path.join(chemsep_db_path, 'nrtl.json'),
-                'ChemSep UNIQUAC': os.path.join(chemsep_db_path, 'uniquac.json')}
+                'ChemSep UNIQUAC': os.path.join(chemsep_db_path, 'uniquac.json'),
+                # 'ChemSep Wilson': os.path.join(chemsep_db_path, 'wilson.json'),
+                }
 
 
     IPDB = InteractionParameterDB()
