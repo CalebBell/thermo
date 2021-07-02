@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from thermo import *
 from fluids.numerics import logspace
-
 water_psat = VaporPressure(Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344, CASRN='7732-18-5')
 
 water_mu = ViscosityLiquid(CASRN="7732-18-5", MW=18.01528, Tm=273.15, Tc=647.14, Pc=22048320.0, 

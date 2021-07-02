@@ -26,6 +26,7 @@ We can use the :obj:`GCEOS <thermo.eos.GCEOS>` (short for "General Cubic Equatio
 
 The state must be specified along with the critical constants when initializing a :obj:`GCEOS <thermo.eos.GCEOS>` object; we use 400 K and 1e6 Pa here:
 
+>>> from thermo import *
 >>> eos = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400., P=1E6)
 >>> eos
 PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400.0, P=1000000.0)
@@ -146,7 +147,7 @@ PRMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs
 >>> eos.to(T=300.0, P=1e5, zs=[.1, .9])
 PRMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0289], [0.0289, 0.0]], zs=[0.1, 0.9], T=300.0, P=100000.0)
 >>> eos.to(V=1, P=1e5, zs=[.4, .6])
-PRMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0289], [0.0289, 0.0]], zs=[0.4, 0.6], P=100000.0, V=1.0)
+PRMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0289], [0.0289, 0.0]], zs=[0.4, 0.6], P=100000.0, V=1)
 >>> eos.to(V=1.0, T=300.0, zs=[.4, .6])
 PRMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0289], [0.0289, 0.0]], zs=[0.4, 0.6], T=300.0, V=1.0)
 
@@ -242,9 +243,9 @@ There is a pint wrapper to use these objects  as well.
 >>> kwargs = dict(T=400.0*u.degC, P=30*u.psi, Tcs=[126.1, 190.6]*u.K, Pcs=[33.94E5, 46.04E5]*u.Pa, omegas=[0.04, 0.011]*u.dimensionless, zs=[0.5, 0.5]*u.dimensionless, kijs=[[0.0, 0.0289], [0.0289, 0.0]]*u.dimensionless)
 >>> eos_units = PRMIX(**kwargs)
 >>> eos_units.H_dep_g, eos_units.T
-(-2.53858853748 <Unit('joule / mole')>, 673.15 <Unit('kelvin')>)
+(<Quantity(-2.53858854, 'joule / mole')>, <Quantity(673.15, 'kelvin')>)
 
 
 >>> base = IG(T=300.0*u.K, P=1e6*u.Pa)
 >>> base.V_g
-0.0024943387854 meter3/mole
+<Quantity(0.00249433879, 'meter ** 3 / mole')>

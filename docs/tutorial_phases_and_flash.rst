@@ -47,6 +47,8 @@ Serialization
 All phase models offer a :obj:`as_json <thermo.phases.Phase.as_json>` method and a :obj:`from_json <thermo.phases.Phase.from_json>` to serialize the object state for transport over a network, storing to disk, and passing data between processes.
 
 >>> import json
+>>> from scipy.constants import R
+>>> from thermo import HeatCapacityGas, IdealGas, Phase
 >>> HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])), HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
 >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=HeatCapacityGases)
 >>> json_stuff = json.dumps(phase.as_json())
@@ -77,15 +79,16 @@ The following example illustrates some of the types of flashes supported using t
 
 Obtain a heat capacity object, and select a source:
 
->>> from thermo.heat_capacity import POLING
+>>> from thermo.heat_capacity import POLING_POLY
 >>> CpObj = HeatCapacityGas(CASRN='67-56-1')
->>> CpObj.method = POLING
+>>> CpObj.method = POLING_POLY
 >>> CpObj.POLING_coefs # Show the coefficients
 [4.714, -0.006986, 4.211e-05, -4.443e-08, 1.535e-11]
 >>> HeatCapacityGases = [CpObj]
 
 Create a :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>` object which holds constant properties of the object, using a minimum of values:
 
+>>> from thermo import ChemicalConstantsPackage, PropertyCorrelationsPackage, PRMIX, SRKMIX, CEOSLiquid, CEOSGas, FlashPureVLS
 >>> constants = ChemicalConstantsPackage(Tcs=[512.5], Pcs=[8084000.0], omegas=[0.559], MWs=[32.04186], CASs=['67-56-1'])
 
 Create a :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>` object which holds temperature-dependent property objects, also setting `skip_missing` to True so no database lookups are performed:
@@ -106,42 +109,35 @@ Do a T-P flash:
 
 >>> res = flasher.flash(T=300, P=1e5)
 >>> res.phase, res.liquid0
-('L', <CEOSLiquid, T=300 K, P=100000 Pa>)
+('L', CEOSLiquid(eos_class=PRMIX, eos_kwargs={"Tcs": [512.5], "Pcs": [8084000.0], "omegas": [0.559]}, HeatCapacityGases=[HeatCapacityGas(CASRN="67-56-1", extrapolation="linear", method="POLING_POLY")], T=300, P=100000.0, zs=[1.0]))
 
 Do a temperature and vapor-fraction flash:
 
->>> flasher.flash(T=300, VF=.3)
-<EquilibriumState, T=300.0000, P=17641.8497, zs=[1.0], betas=[0.3, 0.7], phases=[<CEOSGas, T=300 K, P=17641.8 Pa>, <CEOSLiquid, T=300 K, P=17641.8 Pa>]>
+>>> res = flasher.flash(T=300, VF=.3)
 
 Do a pressure and vapor-fraction flash:
 
->>> flasher.flash(P=1e5, VF=.5)
-<EquilibriumState, T=336.9998, P=100000.0000, zs=[1.0], betas=[0.5, 0.5], phases=[<CEOSGas, T=337 K, P=100000 Pa>, <CEOSLiquid, T=337 K, P=100000 Pa>]>
+>>> res = flasher.flash(P=1e5, VF=.5)
 
 Do a pressure and enthalpy flash:
 
->>> flasher.flash(P=1e5, H=100)
-<EquilibriumState, T=336.9998, P=100000.0000, zs=[1.0], betas=[0.95955195, 0.0404480443], phases=[<CEOSGas, T=337 K, P=100000 Pa>, <CEOSLiquid, T=337 K, P=100000 Pa>]>
+>>> res = flasher.flash(P=1e5, H=100)
 
 Do a pressure and entropy flash:
 
->>> flasher.flash(P=1e5, S=30)
-<EquilibriumState, T=530.7967, P=100000.0000, zs=[1.0], betas=[1.0], phases=[<CEOSGas, T=530.797 K, P=100000 Pa>]>
+>>> res = flasher.flash(P=1e5, S=30)
 
 Do a temperature and entropy flash:
 
->>> flasher.flash(T=400.0, S=30)
-<EquilibriumState, T=400.0000, P=14736.5078, zs=[1.0], betas=[1.0], phases=[<CEOSGas, T=400 K, P=14736.5 Pa>]>
+>>> res = flasher.flash(T=400.0, S=30)
 
 Do a temperature and enthalpy flash:
 
->>> flasher.flash(T=400.0, H=1000)
-<EquilibriumState, T=400.0000, P=801322.3731, zs=[1.0], betas=[0.90923194, 0.09076805], phases=[<CEOSGas, T=400 K, P=801322 Pa>, <CEOSLiquid, T=400 K, P=801322 Pa>]>
+>>> res = flasher.flash(T=400.0, H=1000)
 
 Do a volume and internal energy flash:
 
->>> flasher.flash(V=1e-4, U=1000)
-<EquilibriumState, T=655.5447, P=47575958.4564, zs=[1.0], betas=[1.0], phases=[<CEOSLiquid, T=655.545 K, P=4.7576e+07 Pa>]>
+>>> res = flasher.flash(V=1e-4, U=1000)
 
 
 As you can see, the interface is convenient and supports most types of flashes. In fact, the algorithms are generic; any of `H`, `S`, `U`, and can be combined with any combination of `T`, `P`, and `V`. Although most of the flashes shown above except TS and TH are usually well behaved, depending on the EOS combination there may be multiple solutions. No real guarantees can be made about which solution will be returned in those cases.
@@ -152,8 +148,7 @@ It is not necessary to use the same phase model for liquid and gas phases; the b
 
 >>> SRK_gas = CEOSGas(SRKMIX, HeatCapacityGases=HeatCapacityGases, eos_kwargs=eos_kwargs)
 >>> flasher_inconsistent = FlashPureVLS(constants, correlations, gas=SRK_gas, liquids=[liquid], solids=[])
->>> flasher_inconsistent.flash(T=400.0, VF=1)
-<EquilibriumState, T=400.0000, P=797342.2263, zs=[1.0], betas=[1, 0.0], phases=[<CEOSGas, T=400 K, P=797342 Pa>, <CEOSLiquid, T=400 K, P=797342 Pa>]>
+>>> res = flasher_inconsistent.flash(T=400.0, VF=1)
 
 Choosing to use an inconsistent model will slow down many calculations as more checks are required; and some flashes may have issues with discontinuities in some conditions, and simply a lack of solution in other conditions.
 

@@ -653,21 +653,14 @@ class ViscosityLiquid(TPDependentProperty):
         validity : bool
             Whether or not a method is valid
         '''
-        validity = True
+        
         if method == LUCAS:
-            pass
+            validity = True
         elif method == COOLPROP:
             validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['liquid', 'supercritical_liquid']
-        elif method in self.tabular_data:
-            if not self.tabular_extrapolation_permitted:
-                Ts, Ps, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1] or P < Ps[0] or P > Ps[-1]:
-                    validity = False
         else:
-            raise ValueError('Method not valid')
+            validity = super(ViscosityLiquid, self).test_method_validity_P(T, P, method)
         return validity
-
-
 
 GHARAGHEIZI = 'GHARAGHEIZI'
 YOON_THODOS = 'YOON_THODOS'
@@ -1053,13 +1046,8 @@ class ViscosityGas(TPDependentProperty):
         validity = True
         if method == COOLPROP:
             validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['gas', 'supercritical_gas', 'supercritical', 'supercritical_liquid']
-        elif method in self.tabular_data:
-            if not self.tabular_extrapolation_permitted:
-                Ts, Ps, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1] or P < Ps[0] or P > Ps[-1]:
-                    validity = False
         else:
-            raise Exception('Method not valid')
+            validity = super(ViscosityGas, self).test_method_validity_P(T, P, method)
         return validity
 
 
@@ -1305,16 +1293,12 @@ class ViscosityLiquidMixture(MixtureProperty):
         else:
             raise ValueError('Method not valid')
 
-
-
-
 BROKAW = 'BROKAW'
 HERNING_ZIPPERER = 'HERNING_ZIPPERER'
 WILKE = 'WILKE'
 viscosity_gas_mixture_methods = [BROKAW, HERNING_ZIPPERER, WILKE, LINEAR]
 '''Holds all mixing rules available for the :obj:`ViscosityGasMixture`
 class, for use in iterating over them.'''
-
 
 
 class ViscosityGasMixture(MixtureProperty):

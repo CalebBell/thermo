@@ -19,10 +19,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
+import pytest
+from thermo.utils import TDependentProperty, POLY_FIT
 from fluids.numerics import assert_close
 import pytest
 from math import log
-from thermo.utils import TDependentProperty
 
 def test_local_constant_method():
     # Test user defined method
@@ -55,8 +56,6 @@ def test_local_constant_method():
     obj.extrapolation = None
     obj.add_method(constant, Tmin, Tmax)
     assert obj.T_dependent_property(T) is None
-    for order in (1, 2, 3):
-        assert obj.T_dependent_property_derivative(T, order) is None
     # assert obj.T_dependent_property_integral(T, T+10.) is None
     # assert obj.T_dependent_property_integral_over_T(T, T+10) is None
     
@@ -98,10 +97,6 @@ def test_local_method():
     obj.extrapolation = None
     obj.add_method(f, Tmin, Tmax)
     assert obj.T_dependent_property(T) is None
-    for order in (1, 2, 3):
-        assert obj.T_dependent_property_derivative(T, order) is None
-    # assert obj.T_dependent_property_integral(T, T+10.) is None
-    # assert obj.T_dependent_property_integral_over_T(T, T+10) is None
     
 def test_many_local_methods():
     obj = TDependentProperty(extrapolation='linear')
@@ -113,3 +108,45 @@ def test_many_local_methods():
     assert_close(M1_value, obj.T_dependent_property(300.))
     obj.method = 'M2'
     assert_close(M2_value, obj.T_dependent_property(300.))
+def test_t_dependent_property_exceptions():
+    BAD_METHOD = 'BAD_METHOD'
+    CRAZY_METHOD = 'CRAZY_METHOD' 
+    class MockVaporPressure(TDependentProperty):
+        name = 'vapor pressure'
+        units = 'Pa'
+        ranked_methods = [BAD_METHOD, CRAZY_METHOD]
+        
+        def __init__(self, extrapolation, CASRN, **kwargs):
+            self.CASRN = CASRN
+            super(MockVaporPressure, self).__init__(extrapolation, **kwargs)
+        
+        def load_all_methods(self, load_data):
+            if load_data:
+                self.T_limits = {BAD_METHOD: (300., 500.),
+                                 CRAZY_METHOD: (300, 500)}
+                self.all_methods = {BAD_METHOD, CRAZY_METHOD}
+    
+        def calculate(self, T, method):
+            if method == BAD_METHOD:
+                raise Exception('BAD CALCULATION')
+            elif method == CRAZY_METHOD:
+                return -1e6
+            else:
+                return self._base_calculate(T, method)
+    
+    MVP = MockVaporPressure(extrapolation='linear', CASRN='7732-18-5')
+    MVP.RAISE_PROPERTY_CALCULATION_ERROR = True
+    with pytest.raises(RuntimeError):
+        MVP.T_dependent_property(340.)
+    with pytest.raises(RuntimeError):
+        MVP.T_dependent_property(520.)
+    MVP.extrapolation = None
+    with pytest.raises(RuntimeError):
+        MVP.T_dependent_property(520.)
+    MVP.method = CRAZY_METHOD
+    with pytest.raises(RuntimeError):
+        MVP.T_dependent_property(350.)
+    MVP.method = None
+    with pytest.raises(RuntimeError):
+        MVP.T_dependent_property(340.)
+    

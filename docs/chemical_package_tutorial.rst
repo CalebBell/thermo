@@ -24,6 +24,7 @@ Creating ChemicalConstantsPackage Objects
 
 A :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>` can be created by specifying the known constant values of each chemical. All values are technically optional; the requirements of each :obj:`Flash <thermo.flash.Flash>` algorithm are different, but a minimum suggested amount is `names`, `CASs`, `MWs`, `Tcs`, `Pcs`, `omegas`, `Tbs`, and `atomss`. The list of all accepted properties can be found :obj:`here <thermo.chemical_package.ChemicalConstantsPackage.properties>`.
 
+>>> from thermo import ChemicalConstantsPackage, PropertyCorrelationsPackage
 >>> constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165, 106.165, 106.165], names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.344, 0.3118, 0.324, 0.331], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tcs=[647.14, 630.3, 616.2, 617.0])
 
 Using ChemicalConstantsPackage Objects
@@ -82,7 +83,7 @@ When working with a fixed set of components, it may be a good idea to take this 
 
 >>> small_obj = obj.subset(properties=('names', 'CASs', 'MWs', 'Tcs', 'Pcs', 'omegas', 'Tbs', 'Tms', 'atomss'))
 >>> small_obj
-ChemicalConstantsPackage(atomss=[{'C': 1, 'H': 4, 'O': 1}, {'C': 2, 'H': 6, 'O': 1}, {'C': 3, 'H': 8, 'O': 1}], CASs=['67-56-1', '64-17-5', '67-63-0'], MWs=[32.04186, 46.06844, 60.09502], names=['methanol', 'ethanol', 'isopropanol'], omegas=[0.5589999999999999, 0.635, 0.665], Pcs=[8084000.0, 6137000.0, 4764000.0], Tbs=[337.65, 351.39, 355.36], Tcs=[512.5, 514.0, 508.3], Tms=[175.15, 159.05, 183.65])
+ChemicalConstantsPackage(atomss=[{'C': 1, 'H': 4, 'O': 1}, {'C': 2, 'H': 6, 'O': 1}, {'C': 3, 'H': 8, 'O': 1}], CASs=['67-56-1', '64-17-5', '67-63-0'], MWs=[32.04186, 46.06844, 60.09502], names=['methanol', 'ethanol', 'isopropanol'], omegas=[0.559, 0.635, 0.665], Pcs=[8084000.0, 6137000.0, 4764000.0], Tbs=[337.65, 351.39, 355.36], Tcs=[512.5, 514.0, 508.3], Tms=[175.15, 159.05, 183.65])
 
 Once the object is printed, the generated text can be copy/pasted as valid Python into a program:
 
@@ -113,8 +114,8 @@ For larger applications with many components, it is not as feasible to convert t
 
 >>> obj = ChemicalConstantsPackage(MWs=[106.165, 106.165], names=['o-xylene', 'm-xylene'])
 >>> constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
->>> string = constants.as_JSON()
->>> new_constants = ChemicalConstantsPackage.from_JSON(string)
+>>> string = constants.as_json()
+>>> new_constants = ChemicalConstantsPackage.from_json(string)
 >>> hash(new_constants) == hash(constants)
 True
 
