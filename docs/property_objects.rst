@@ -94,7 +94,7 @@ Limits and Extrapolation
 
 Each correlation is associated with temperature limits. These can be inspected as part of the :obj:`T_limits <thermo.utils.TDependentProperty.T_limits>` attribute which is loaded on creation of the property object.
 
->>> ethanol_psat.T_limits
+>>> ethanol_psat.T_limits # doctest: +SKIP
 {'WAGNER_MCGARRY': (293.0, 513.92), 'WAGNER_POLING': (159.05, 513.92), 'ANTOINE_POLING': (276.5, 369.54), 'DIPPR_PERRY_8E': (159.05, 514.0), 'COOLPROP': (159.1, 514.71), 'VDI_TABULAR': (300.0, 513.9), 'VDI_PPDS': (159.05, 513.9), 'BOILING_CRITICAL': (0.01, 514.0), 'LEE_KESLER_PSAT': (0.01, 514.0), 'AMBROSE_WALTON': (0.01, 514.0), 'SANJARI': (0.01, 514.0), 'EDALAT': (0.01, 514.0)}
 
 Because there is often a need to obtain a property outside the range of the correlation, there are some extrapolation methods available; depending on the method these may be enabled by default.
