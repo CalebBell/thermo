@@ -57,7 +57,7 @@ The DDBST has published numerous sample problems using UNIFAC; a simple
 binary system from example P05.22a in [2]_ with n-hexane and butanone-2
 is shown below:
 
->>> from thermo.unifac import UFIP, UFSG
+>>> from thermo.unifac import UFIP, UFSG, UNIFAC
 >>> GE = UNIFAC.from_subgroups(chemgroups=[{1:2, 2:4}, {1:1, 2:1, 18:1}], T=60+273.15, xs=[0.5, 0.5], version=0, interaction_data=UFIP, subgroups=UFSG)
 
 The solution given by the `DDBST <http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/05.22a%20VLE%20of%20Hexane-Butanone-2%20Via%20UNIFAC%20-%20Step%20by%20Step.xps>`_ has the activity coefficient values [1.428, 1.365], which match those calculated by the UNIFAC object:
@@ -120,6 +120,7 @@ If working with many components or if Numpy arrays are desired as inputs and out
 >>> tausA = tausC = tausD = tausE = tausF = np.array([[0.0]*N for i in range(N)])
 >>> tausB = np.array([[0, -526.02, -309.64], [318.06, 0, 91.532], [-1325.1, -302.57, 0]])
 >>> ABCDEF = (tausA, tausB, tausC, tausD, tausE, tausF)
+>>> from thermo import UNIQUAC
 >>> GE2 = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=ABCDEF)
 >>> GE2.gammas()
 array([ 1.57039333,  0.29482416, 18.11432905])
@@ -145,6 +146,7 @@ The limiting infinite-dilution activity coefficients can be obtained with a call
 
 All activity coefficient models offer a :obj:`as_json <thermo.activity.GibbsExcess.as_json>` method and a :obj:`from_json <thermo.activity.GibbsExcess.from_json>` to serialize the object state for transport over a network, storing to disk, and passing data between processes. 
 
+>>> from thermo import IdealSolution
 >>> import json
 >>> model = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
 >>> json_view = model.as_json()

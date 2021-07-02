@@ -151,7 +151,7 @@ the creation of a Chemical instance.
     >>> tol.Tm, tol.Tb, tol.Tc
     (179.2, 383.75, 591.75)
     >>> tol.rho, tol.Cp, tol.k, tol.mu
-    (862.2380125827527, 1706.0746129119084, 0.13034801424538045, 0.0005521951637285534)
+    (862.238, 1706.07, 0.13034, 0.0005522)
 
 
 For pure species, the phase is easily
@@ -164,8 +164,10 @@ by appending 'l' or 'g' or 's' to the property.
 
 .. code-block:: python
 
+    >>> from thermo.chemical import Chemical
+    >>> tol = Chemical('toluene')
     >>> tol.rhog, tol.Cpg, tol.kg, tol.mug
-    (4.032009635018902, 1126.5533755283168, 0.010736843919054837, 6.973325939594919e-06)
+    (4.0320096, 1126.553, 0.010736, 6.97332e-06)
 
 Creating a chemical object involves identifying the appropriate chemical by name
 through a database, and retrieving all constant and temperature and pressure dependent

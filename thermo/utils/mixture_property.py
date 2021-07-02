@@ -30,6 +30,7 @@ from thermo.eos_mix import GCEOSMIX
 import numpy as np
 
 class MixtureProperty(object):
+    RAISE_PROPERTY_CALCULATION_ERROR = False
     name = 'Test'
     units = 'test units'
     property_min = 0.0
@@ -323,25 +324,20 @@ class MixtureProperty(object):
         prop : float
             Calculated property, [`units`]
         '''
-        if zs is None or ws is None:
-            zs, ws = self._complete_zs_ws(zs, ws)
-        try:
-            method = self._method
-            if not self.skip_method_validity_check:
-                if not self.test_method_validity(T, P, zs, ws, method):
-                    return None
-
-            prop = self.calculate(T, P, zs, ws, self._method)
-            if self.skip_prop_validity_check:
-                return prop
+        if zs is None or ws is None: zs, ws = self._complete_zs_ws(zs, ws)
+        method = self._method
+        if not self.skip_method_validity_check or self.test_method_validity(T, P, zs, ws, method):
+            try:
+                prop = self.calculate(T, P, zs, ws, self._method)
+            except Exception as e:
+                if self.RAISE_PROPERTY_CALCULATION_ERROR: raise e
             else:
-                if self.test_property_validity(prop):
+                if self.skip_prop_validity_check or self.test_property_validity(prop):
                     return prop
-        except:  # pragma: no cover
-            pass
-
-        # Function returns None if it does not work.
-        return None
+                elif self.RAISE_PROPERTY_CALCULATION_ERROR:
+                    raise RuntimeError("%s method '%s' computed an invalid value of %s %s" %(self.name, method, prop, self.units))
+        elif self.RAISE_PROPERTY_CALCULATION_ERROR:
+            raise RuntimeError("%s method '%s' is not valid at T=%s K and P=%s Pa" %(self.name, method, T, P))
 
     def excess_property(self, T, P, zs=None, ws=None):
         r'''Method to calculate the excess property with sanity checking and

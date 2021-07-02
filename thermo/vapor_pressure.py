@@ -802,7 +802,7 @@ class SublimationPressure(TDependentProperty):
         validity : bool
             Whether or not a method is valid
         '''
-        if method in [PSUB_CLAPEYRON]:
+        if method == PSUB_CLAPEYRON:
             return True
             # No lower limit
         elif method == POLY_FIT:

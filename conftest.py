@@ -6,7 +6,8 @@ ver_tup = tuple(int(i) for i in ver_tup)
 
 def pytest_ignore_collect(path):
     path = str(path)
-    if path.endswith('chemical.py') or path.endswith('mixture.py')  or path.endswith('stream.py'):
+    # Serious technical debt
+    if path.endswith('chemical.py') or path.endswith('mixture.py')  or path.endswith('stream.py') or path.endswith('README.rst'):
         return True
     if 'benchmarks' in path:
         return True
@@ -36,10 +37,5 @@ def pytest_configure(config):
     if sys.version[0] == '3':
         import pytest
         if pytest.__version__.split('.')[0] >= '6':
-            #config.addinivalue_line("addopts", '--doctest-modules')
-            #config.option.doctestmodules = True
             config.addinivalue_line("doctest_optionflags", "NUMBER")
-#        config.addinivalue_line("addopts", config.inicfg['addopts'].replace('//', '') + ' --doctest-modules')
-        #config.inicfg['addopts'] = config.inicfg['addopts'] + ' --doctest-modules'
-        #
         config.addinivalue_line("doctest_optionflags", "NORMALIZE_WHITESPACE")
