@@ -341,19 +341,19 @@ def wilson_gammas_binaries_jac(xs, lambda12, lambda21, calc=None):
         
         c0 = lambda12*x2
         c1 = c0 + x1
-        c2 = 1/c1
+        c2 = 1.0/c1
         c3 = lambda21*x1
         c4 = c3 + x2
-        c5 = 1/c4
+        c5 = 1.0/c4
         c6 = c2*lambda12 - c5*lambda21
-        c7 = exp(c6*x2)
+        c7 = trunc_exp(c6*x2)
         c8 = c2*c5
-        c9 = exp(-c6*x1)
+        c9 = trunc_exp(-c6*x1)
 
-        calc[i2][0] = -c7*lambda12*x2**2/c1**3
-        calc[i2 + 1][0] = c8*c9*x1*(c0*c2 - 1)
-        calc[i2][1] = c7*c8*x2*(c3*c5 - 1)
-        calc[i2+1][1] = -c9*lambda21*x1**2/c4**3
+        calc[i2][0] = -c7*lambda12*x2*x2*c2*c2*c2
+        calc[i2][1] = c7*c8*x2*(c3*c5 - 1.0)
+        calc[i2 + 1][0] = c8*c9*x1*(c0*c2 - 1.0)
+        calc[i2 + 1][1] = -c9*lambda21*x1*x1*c5*c5*c5
     return calc
 
 
@@ -1594,14 +1594,16 @@ class Wilson(GibbsExcess):
     @classmethod
     def regress_binary_lambdas(cls, gammas, xs, use_numba=False,
                             do_statistics=True, **kwargs):
-        if kwargs.get('use_numba', False):
+        if use_numba:
             from thermo.numba import wilson_gammas_binaries as work_func, wilson_gammas_binaries_jac as jac_func
         else:
             work_func = wilson_gammas_binaries
             jac_func = wilson_gammas_binaries_jac
             
         gammas_working = zeros(len(xs)*2)
-        
+        jac_working = zeros((len(xs)*2, 2))
+
+
         def fitting_func(xs, lambda12, lambda21):
             # Capture rs, qs unfortunately is necessary. Works nicely with numba though.
             # try:
@@ -1610,7 +1612,7 @@ class Wilson(GibbsExcess):
             #     print(xs.tolist(), lambda12, lambda21)
             
         def analytical_jac(xs, lambda12, lambda21):
-            return jac_func(xs, lambda12, lambda21)
+            return jac_func(xs, lambda12, lambda21, jac_working)
         # wilson_gammas_binaries_jac
         
         
@@ -1629,6 +1631,7 @@ class Wilson(GibbsExcess):
                                {'lambda12': 2.2, 'lambda21': 3.0},
                                {'lambda12': 0.015, 'lambda21': 37.0},
                                {'lambda12': 0.5, 'lambda21': 40.0},
+                               # {'lambda12': 0.9412, 'lambda21': 1.0606}, # Didn't seem to help
                                
                                {'lambda12': 0.5, 'lambda21': 1e-7},
                                {'lambda12': 1.9, 'lambda21': 1e-12},
