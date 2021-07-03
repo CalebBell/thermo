@@ -260,7 +260,7 @@ class Wilson(GibbsExcess):
     lambda_coeffs : list[list[list[float]]], optional
         Wilson parameters, indexed by [i][j] and then each value is a 6
         element list with parameters [`a`, `b`, `c`, `d`, `e`, `f`];
-        either `lambda_coeffs` or the lambda parameters are required, [-]
+        either `lambda_coeffs` or the lambda parameters are required, [various]
     ABCDEF : tuple(list[list[float]], 6), optional
         The lamba parameters can be provided as a tuple, [various]
     lambda_as : list[list[float]], optional

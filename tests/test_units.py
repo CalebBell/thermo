@@ -138,16 +138,48 @@ def test_VaporPressure_calculate_units():
     # ans = EtOH.T_dependent_property(300*u.K)
     # assert_pint_allclose(ans, 8491.523803275244, u.Pa)
 
-# Willl not work because ABCDEF can't handle units
-# def test_Wilson_units():
-#     import numpy as np
-#     T = (331.42 -273.15)*u.degC
-#     N = 3
-#     Vs_ddbst = np.array([74.04, 80.67, 40.73])*u.cm**3/u.mol
-#     as_ddbst = np.array([[0, 375.2835, 31.1208], [-1722.58, 0, -1140.79], [747.217, 3596.17, 0.0]])*u.K
-#     bs_ddbst = np.array([[0, -3.78434, -0.67704], [6.405502, 0, 2.59359], [-0.256645, -6.2234, 0]])*u.dimensionless
-#     cs_ddbst = np.array([[0.0, 7.91073e-3, 8.68371e-4], [-7.47788e-3, 0.0, 3.1e-5], [-1.24796e-3, 3e-5, 0.0]])/u.K
-#     params = Wilson.from_DDBST_as_matrix(Vs=Vs_ddbst, ais=as_ddbst, bis=bs_ddbst, cis=cs_ddbst, unit_conversion=False)
-#     xs = np.array([0.229, 0.175, 0.596])*u.dimensionless
-#     GE = Wilson(T=T, xs=xs, ABCDEF=params)
-#     GE.GE()
+def test_Wilson_units_1():
+    T = 331.42
+    N = 3
+    
+    A = [[0.0, 3.870101271243586, 0.07939943395502425],
+                 [-6.491263271243587, 0.0, -3.276991837288562],
+                 [0.8542855660449756, 6.906801837288562, 0.0]]
+    
+    B = [[0.0, -375.2835, -31.1208],
+                 [1722.58, 0.0, 1140.79],
+                 [-747.217, -3596.17, -0.0]]
+    D = [[-0.0, -0.00791073, -0.000868371],
+                 [0.00747788, -0.0, -3.1e-05],
+                 [0.00124796, -3e-05, -0.0]]
+    
+    C = E = F = [[0.0]*N for _ in range(N)]
+    
+    xs = [0.229, 0.175, 0.596]
+    
+    lambda_coeffs = [[[A[i][j], B[i][j], C[i][j], D[i][j], E[i][j], F[i][j]] for j in range(N)] for i in range(N)]
+    
+    model_ABD = Wilson(T=T*u.K, xs=np.array(xs)*u.dimensionless, lambda_as=np.array(A)*u.dimensionless,
+                      lambda_bs=np.array(B)*u.K, lambda_ds=np.array(D)/u.K)
+    GE_expect = 480.2639266306882
+    dGE_dxs = [-2199.9758989394595, -2490.5759162306467, -2241.0570605371795]
+    gammas = [1.223393433488855, 1.1009459024701462, 1.2052899281172034]
+
+    # From DDBST
+    T = (331.42 -273.15)*u.degC
+    Vs_ddbst = np.array([74.04, 80.67, 40.73])*u.cm**3/u.mol
+    as_ddbst = np.array([[0, 375.2835, 31.1208], [-1722.58, 0, -1140.79], [747.217, 3596.17, 0.0]])*u.K
+    bs_ddbst = np.array([[0, -3.78434, -0.67704], [6.405502, 0, 2.59359], [-0.256645, -6.2234, 0]])*u.dimensionless
+    cs_ddbst = np.array([[0.0, 7.91073e-3, 8.68371e-4], [-7.47788e-3, 0.0, 3.1e-5], [-1.24796e-3, 3e-5, 0.0]])/u.K
+    params = Wilson.from_DDBST_as_matrix(Vs=Vs_ddbst, ais=as_ddbst, bis=bs_ddbst, cis=cs_ddbst, unit_conversion=False)
+    xs = np.array([0.229, 0.175, 0.596])*u.dimensionless
+    model_from_DDBST = Wilson(T=T, xs=xs, lambda_as=params[0], lambda_bs=params[1], lambda_cs=params[2], lambda_ds=params[3], lambda_es=params[4], lambda_fs=params[5])
+    
+
+    model_lambda_coeffs = Wilson(T=T, xs=np.array(xs)*u.dimensionless, lambda_coeffs=np.array(lambda_coeffs)*u.dimensionless)
+
+    for model in (model_ABD, model_from_DDBST, model_lambda_coeffs):
+        assert_pint_allclose(model.GE(), GE_expect, u.J/u.mol)
+        for i in range(3):
+            assert_pint_allclose(model.dGE_dxs()[i], dGE_dxs[i], u.J/u.mol)
+            assert_pint_allclose(model.gammas()[i], gammas[i], u.dimensionless)
