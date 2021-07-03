@@ -464,8 +464,8 @@ def test_wilson_parameter_different_inputs_errors():
          Wilson(T=T, xs=xs, ABCDEF=(lamdasA, None, None, [[0.0, 9.64e-8], [1.53e-7, 0.0, 1.11e-7], [7.9e-8, 2.276e-8, 0]]))
     with pytest.raises(ValueError):
          Wilson(T=T, xs=xs, ABCDEF=(lamdasA, None, None,  [[0.0, 9.64e-8, 8.94e-8], [1.53e-7, 0.0, 1.11e-7]]))
-    with pytest.raises(ValueError):
-         Wilson(T=T, xs=xs)
+    
+    assert_close1d(Wilson(T=T, xs=xs).gammas(), [1, 1], rtol=1e-13)
 
     # No coefficients
     ABCDEF = (None, None, None, None, None, None)
@@ -787,8 +787,8 @@ def test_Wilson_numpy_output_correct_array_internal_ownership():
     lambda_coeffs = [[[A[i][j], B[i][j], C[i][j], D[i][j], E[i][j], F[i][j]] for j in range(N)] for i in range(N)]
     xs = [0.229, 0.175, 0.596]
     modelnp = Wilson(T=T, xs=np.array(xs), lambda_coeffs=np.array(lambda_coeffs))
-    for name in ('lambda_coeffs_A', 'lambda_coeffs_B', 'lambda_coeffs_C',
-                 'lambda_coeffs_D', 'lambda_coeffs_E', 'lambda_coeffs_F'):
+    for name in ('lambda_as', 'lambda_bs', 'lambda_cs',
+                 'lambda_ds', 'lambda_es', 'lambda_fs'):
         obj = getattr(modelnp, name)
         assert obj.flags.c_contiguous
         assert obj.flags.owndata

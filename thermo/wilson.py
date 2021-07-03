@@ -260,22 +260,21 @@ class Wilson(GibbsExcess):
     lambda_coeffs : list[list[list[float]]], optional
         Wilson parameters, indexed by [i][j] and then each value is a 6
         element list with parameters [`a`, `b`, `c`, `d`, `e`, `f`];
-        either `lambda_coeffs` or `ABCDEF` are required, [-]
-    ABCDEF : tuple[list[list[float]], 6], optional
-        Contains the following. One of `lambda_coeffs` or `ABCDEF` are
-        required, [-]
-        a : list[list[float]]
-            `a` parameters used in calculating :obj:`Wilson.lambdas`, [-]
-        b : list[list[float]]
-            `b` parameters used in calculating :obj:`Wilson.lambdas`, [K]
-        c : list[list[float]]
-            `c` parameters used in calculating :obj:`Wilson.lambdas`, [-]
-        d : list[list[float]]
-            `d` paraemeters used in calculating :obj:`Wilson.lambdas`, [1/K]
-        e : list[list[float]]
-            `e` parameters used in calculating :obj:`Wilson.lambdas`, [K^2]
-        f : list[list[float]]
-            `f` parameters used in calculating :obj:`Wilson.lambdas`, [1/K^2]
+        either `lambda_coeffs` or the lambda parameters are required, [-]
+    ABCDEF : tuple(list[list[float]], 6), optional
+        The lamba parameters can be provided as a tuple, [various]
+    lambda_as : list[list[float]], optional
+        `a` parameters used in calculating :obj:`Wilson.lambdas`, [-]
+    lambda_bs : list[list[float]], optional
+        `b` parameters used in calculating :obj:`Wilson.lambdas`, [K]
+    lambda_cs : list[list[float]], optional
+        `c` parameters used in calculating :obj:`Wilson.lambdas`, [-]
+    lambda_ds : list[list[float]], optional
+        `d` paraemeters used in calculating :obj:`Wilson.lambdas`, [1/K]
+    lambda_es : list[list[float]], optional
+        `e` parameters used in calculating :obj:`Wilson.lambdas`, [K^2]
+    lambda_fs : list[list[float]], optional
+        `f` parameters used in calculating :obj:`Wilson.lambdas`, [1/K^2]
 
     Attributes
     ----------
@@ -305,9 +304,9 @@ class Wilson(GibbsExcess):
     >>> dis = eis = fis = [[0.0]*N for _ in range(N)]
     >>> params = Wilson.from_DDBST_as_matrix(Vs=Vs_ddbst, ais=as_ddbst, bis=bs_ddbst, cis=cs_ddbst, dis=dis, eis=eis, fis=fis, unit_conversion=False)
     >>> xs = [0.229, 0.175, 0.596]
-    >>> GE = Wilson(T=T, xs=xs, ABCDEF=params)
+    >>> GE = Wilson(T=T, xs=xs, lambda_as=params[0], lambda_bs=params[1], lambda_cs=params[2], lambda_ds=params[3], lambda_es=params[4], lambda_fs=params[5])
     >>> GE
-    Wilson(T=331.42, xs=[0.229, 0.175, 0.596], ABCDEF=([[0.0, 3.870101271243586, 0.07939943395502425], [-6.491263271243587, 0.0, -3.276991837288562], [0.8542855660449756, 6.906801837288562, 0.0]], [[0.0, -375.2835, -31.1208], [1722.58, 0.0, 1140.79], [-747.217, -3596.17, -0.0]], [[-0.0, -0.0, -0.0], [-0.0, -0.0, -0.0], [-0.0, -0.0, -0.0]], [[-0.0, -0.00791073, -0.000868371], [0.00747788, -0.0, -3.1e-05], [0.00124796, -3e-05, -0.0]], [[-0.0, -0.0, -0.0], [-0.0, -0.0, -0.0], [-0.0, -0.0, -0.0]], [[-0.0, -0.0, -0.0], [-0.0, -0.0, -0.0], [-0.0, -0.0, -0.0]]))
+    Wilson(T=331.42, xs=[0.229, 0.175, 0.596], lambda_as=[[0.0, 3.870101271243586, 0.07939943395502425], [-6.491263271243587, 0.0, -3.276991837288562], [0.8542855660449756, 6.906801837288562, 0.0]], lambda_bs=[[0.0, -375.2835, -31.1208], [1722.58, 0.0, 1140.79], [-747.217, -3596.17, -0.0]], lambda_ds=[[-0.0, -0.00791073, -0.000868371], [0.00747788, -0.0, -3.1e-05], [0.00124796, -3e-05, -0.0]])
     >>> GE.GE(), GE.dGE_dT(), GE.d2GE_dT2()
     (480.2639266306882, 4.355962766232997, -0.029130384525017247)
     >>> GE.HE(), GE.SE(), GE.dHE_dT(), GE.dSE_dT()
@@ -333,7 +332,7 @@ class Wilson(GibbsExcess):
     >>> bis = cis = dis = eis = fis = [[0.0]*N for _ in range(N)]
     >>> params = Wilson.from_DDBST_as_matrix(Vs=Vs, ais=ais, bis=bis, cis=cis, dis=dis, eis=eis, fis=fis, unit_conversion=True)
     >>> xs = [0.25, 0.75]
-    >>> GE = Wilson(T=T, xs=xs, ABCDEF=params)
+    >>> GE = Wilson(T=T, xs=xs, lambda_as=params[0], lambda_bs=params[1], lambda_cs=params[2], lambda_ds=params[3], lambda_es=params[4], lambda_fs=params[5])
     >>> GE.gammas()
     [2.124064516, 1.1903745834]
 
@@ -341,11 +340,12 @@ class Wilson(GibbsExcess):
     with a slight error from their use of 1.987 as a gas constant).
 
     References
-    ----------x
+    ----------
     .. [1] Smith, H. C. Van Ness Joseph M. Introduction to Chemical Engineering
        Thermodynamics 4th Edition, Joseph M. Smith, H. C. Van
        Ness, 1987.
     '''
+    
     model_id = 200
     @staticmethod
     def from_DDBST(Vi, Vj, a, b, c, d=0.0, e=0.0, f=0.0, unit_conversion=True):
@@ -500,15 +500,18 @@ class Wilson(GibbsExcess):
             f_mat.append(f_row)
         return (a_mat, b_mat, c_mat, d_mat, e_mat, f_mat)
 
-    def __init__(self, T, xs, lambda_coeffs=None, ABCDEF=None):
+    def __init__(self, T, xs, lambda_coeffs=None, ABCDEF=None, lambda_as=None, lambda_bs=None,
+                 lambda_cs=None, lambda_ds=None, lambda_es=None, lambda_fs=None):
         self.T = T
         self.xs = xs
         self.scalar = scalar = type(xs) is list
-
         self.N = N = len(xs)
-
-
-        if ABCDEF is not None:
+        
+        if ABCDEF is None:
+            ABCDEF = (lambda_as, lambda_bs, lambda_cs, lambda_ds, lambda_es, lambda_fs)
+        if lambda_coeffs is not None:
+            pass
+        else:
             try:
                 all_lengths = tuple(len(coeffs) for coeffs in ABCDEF if coeffs is not None)
                 if len(set(all_lengths)) > 1:
@@ -518,66 +521,83 @@ class Wilson(GibbsExcess):
                     raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths_inner,))
             except:
                 raise ValueError("Coefficients not input correctly")
-        elif lambda_coeffs is not None:
-            pass
-        else:
-            raise ValueError("`lambda_coeffs` or `ABCDEF` is required")
 
         if scalar:
             zero_coeffs = [[0.0]*N for _ in range(N)]
         else:
             zero_coeffs = zeros((N, N))
 
-        if ABCDEF is not None:
+        if lambda_coeffs is not None:
+            if scalar:
+                self.lambda_as = [[i[0] for i in l] for l in lambda_coeffs]
+                self.lambda_bs = [[i[1] for i in l] for l in lambda_coeffs]
+                self.lambda_cs = [[i[2] for i in l] for l in lambda_coeffs]
+                self.lambda_ds = [[i[3] for i in l] for l in lambda_coeffs]
+                self.lambda_es = [[i[4] for i in l] for l in lambda_coeffs]
+                self.lambda_fs = [[i[5] for i in l] for l in lambda_coeffs]                
+            else:
+                self.lambda_as = array(lambda_coeffs[:,:,0], order='C', copy=True)
+                self.lambda_bs = array(lambda_coeffs[:,:,1], order='C', copy=True)
+                self.lambda_cs = array(lambda_coeffs[:,:,2], order='C', copy=True)
+                self.lambda_ds = array(lambda_coeffs[:,:,3], order='C', copy=True)
+                self.lambda_es = array(lambda_coeffs[:,:,4], order='C', copy=True)
+                self.lambda_fs = array(lambda_coeffs[:,:,5], order='C', copy=True)
+        else:
             len_ABCDEF = len(ABCDEF)
             if len_ABCDEF == 0 or ABCDEF[0] is None:
-                self.lambda_coeffs_A = zero_coeffs
+                self.lambda_as = zero_coeffs
             else:
-                self.lambda_coeffs_A = ABCDEF[0]
+                self.lambda_as = ABCDEF[0]
             if len_ABCDEF < 2 or ABCDEF[1] is None:
-                self.lambda_coeffs_B = zero_coeffs
+                self.lambda_bs = zero_coeffs
             else:
-                self.lambda_coeffs_B = ABCDEF[1]
+                self.lambda_bs = ABCDEF[1]
             if len_ABCDEF < 3 or ABCDEF[2] is None:
-                self.lambda_coeffs_C = zero_coeffs
+                self.lambda_cs = zero_coeffs
             else:
-                self.lambda_coeffs_C = ABCDEF[2]
+                self.lambda_cs = ABCDEF[2]
             if len_ABCDEF < 4 or ABCDEF[3] is None:
-                self.lambda_coeffs_D = zero_coeffs
+                self.lambda_ds = zero_coeffs
             else:
-                self.lambda_coeffs_D = ABCDEF[3]
+                self.lambda_ds = ABCDEF[3]
             if len_ABCDEF < 5 or ABCDEF[4] is None:
-                self.lambda_coeffs_E = zero_coeffs
+                self.lambda_es = zero_coeffs
             else:
-                self.lambda_coeffs_E = ABCDEF[4]
+                self.lambda_es = ABCDEF[4]
             if len_ABCDEF < 6 or ABCDEF[5] is None:
-                self.lambda_coeffs_F = zero_coeffs
+                self.lambda_fs = zero_coeffs
             else:
-                self.lambda_coeffs_F = ABCDEF[5]
-        elif lambda_coeffs is not None:
-            if scalar:
-                self.lambda_coeffs_A = [[i[0] for i in l] for l in lambda_coeffs]
-                self.lambda_coeffs_B = [[i[1] for i in l] for l in lambda_coeffs]
-                self.lambda_coeffs_C = [[i[2] for i in l] for l in lambda_coeffs]
-                self.lambda_coeffs_D = [[i[3] for i in l] for l in lambda_coeffs]
-                self.lambda_coeffs_E = [[i[4] for i in l] for l in lambda_coeffs]
-                self.lambda_coeffs_F = [[i[5] for i in l] for l in lambda_coeffs]
-            else:
-                self.lambda_coeffs_A = array(lambda_coeffs[:,:,0], order='C', copy=True)
-                self.lambda_coeffs_B = array(lambda_coeffs[:,:,1], order='C', copy=True)
-                self.lambda_coeffs_C = array(lambda_coeffs[:,:,2], order='C', copy=True)
-                self.lambda_coeffs_D = array(lambda_coeffs[:,:,3], order='C', copy=True)
-                self.lambda_coeffs_E = array(lambda_coeffs[:,:,4], order='C', copy=True)
-                self.lambda_coeffs_F = array(lambda_coeffs[:,:,5], order='C', copy=True)
+                self.lambda_fs = ABCDEF[5]
+        
+        # Make an array of values identifying what coefficients are zero.
+        # This may be useful for performance optimization in the future but is
+        # especially important for reducing the size of the __repr__ string.
+        self.lambda_coeffs_nonzero = lambda_coeffs_nonzero = [True]*6 if scalar else ones(6, bool)
+        for k, coeffs in enumerate([self.lambda_as, self.lambda_bs, self.lambda_cs,
+                           self.lambda_ds, self.lambda_es, self.lambda_fs]):
+            nonzero = False
+            for i in range(N):
+                r = coeffs[i]
+                for j in range(N):
+                    if r[j] != 0.0:
+                        nonzero = True
+                        break
+                if nonzero:
+                    break
+                    
+            lambda_coeffs_nonzero[k] = nonzero
 
 
-    model_attriubtes = ('lambda_coeffs_A', 'lambda_coeffs_B', 'lambda_coeffs_C',
-                        'lambda_coeffs_D', 'lambda_coeffs_E', 'lambda_coeffs_F')
+    model_attriubtes = ('lambda_as', 'lambda_bs', 'lambda_cs',
+                        'lambda_ds', 'lambda_es', 'lambda_fs')
 
     def __repr__(self):
-        s = '%s(T=%s, xs=%s, ABCDEF=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs),
-                (self.lambda_coeffs_A,  self.lambda_coeffs_B, self.lambda_coeffs_C,
-                 self.lambda_coeffs_D, self.lambda_coeffs_E, self.lambda_coeffs_F))
+        
+        s = '%s(T=%s, xs=%s' %(self.__class__.__name__, repr(self.T), repr(self.xs))
+        for i, attr in enumerate(self.model_attriubtes):
+            if self.lambda_coeffs_nonzero[i]:
+                s += ', %s=%s' %(attr, getattr(self, attr))
+        s += ')'
         return s
 
     def to_T_xs(self, T, xs):
@@ -608,10 +628,11 @@ class Wilson(GibbsExcess):
         new.xs = xs
         new.scalar = self.scalar
         new.N = self.N
-        (new.lambda_coeffs_A, new.lambda_coeffs_B, new.lambda_coeffs_C,
-         new.lambda_coeffs_D, new.lambda_coeffs_E, new.lambda_coeffs_F) = (
-                 self.lambda_coeffs_A, self.lambda_coeffs_B, self.lambda_coeffs_C,
-                 self.lambda_coeffs_D, self.lambda_coeffs_E, self.lambda_coeffs_F)
+        (new.lambda_as, new.lambda_bs, new.lambda_cs,
+         new.lambda_ds, new.lambda_es, new.lambda_fs) = (
+                 self.lambda_as, self.lambda_bs, self.lambda_cs,
+                 self.lambda_ds, self.lambda_es, self.lambda_fs)
+        new.lambda_coeffs_nonzero = self.lambda_coeffs_nonzero
 
         if T == self.T:
             try:
@@ -663,9 +684,9 @@ class Wilson(GibbsExcess):
         else:
             lambdas = zeros((N, N))
 
-        lambdas = interaction_exp(self.T, N, self.lambda_coeffs_A, self.lambda_coeffs_B,
-                                  self.lambda_coeffs_C, self.lambda_coeffs_D,
-                                  self.lambda_coeffs_E, self.lambda_coeffs_F, lambdas)
+        lambdas = interaction_exp(self.T, N, self.lambda_as, self.lambda_bs,
+                                  self.lambda_cs, self.lambda_ds,
+                                  self.lambda_es, self.lambda_fs, lambdas)
         self._lambdas = lambdas
         return lambdas
 
@@ -694,11 +715,11 @@ class Wilson(GibbsExcess):
         except AttributeError:
             pass
 
-        B = self.lambda_coeffs_B
-        C = self.lambda_coeffs_C
-        D = self.lambda_coeffs_D
-        E = self.lambda_coeffs_E
-        F = self.lambda_coeffs_F
+        B = self.lambda_bs
+        C = self.lambda_cs
+        D = self.lambda_ds
+        E = self.lambda_es
+        F = self.lambda_fs
 
         T, N = self.T, self.N
         try:
@@ -756,10 +777,10 @@ class Wilson(GibbsExcess):
         else:
             d2lambdas_dT2 = zeros((N, N))
 
-        self._d2lambdas_dT2 = d2interaction_exp_dT2(T, N, self.lambda_coeffs_B,
-                                                                     self.lambda_coeffs_C,
-                                                                     self.lambda_coeffs_E,
-                                                                     self.lambda_coeffs_F,
+        self._d2lambdas_dT2 = d2interaction_exp_dT2(T, N, self.lambda_bs,
+                                                                     self.lambda_cs,
+                                                                     self.lambda_es,
+                                                                     self.lambda_fs,
                                                                      lambdas, dlambdas_dT, d2lambdas_dT2)
         return d2lambdas_dT2
 
@@ -794,10 +815,10 @@ class Wilson(GibbsExcess):
             pass
 
         T, N = self.T, self.N
-        lambda_coeffs_B = self.lambda_coeffs_B
-        lambda_coeffs_C = self.lambda_coeffs_C
-        lambda_coeffs_E = self.lambda_coeffs_E
-        lambda_coeffs_F = self.lambda_coeffs_F
+        lambda_bs = self.lambda_bs
+        lambda_cs = self.lambda_cs
+        lambda_es = self.lambda_es
+        lambda_fs = self.lambda_fs
 
         try:
             lambdas = self._lambdas
@@ -813,8 +834,8 @@ class Wilson(GibbsExcess):
         else:
             d3lambdas_dT3s = zeros((N, N))
 
-        self._d3lambdas_dT3 = d3interaction_exp_dT3(T, N, lambda_coeffs_B, lambda_coeffs_C, lambda_coeffs_E,
-                                                    lambda_coeffs_F, lambdas, dlambdas_dT, d3lambdas_dT3s)
+        self._d3lambdas_dT3 = d3interaction_exp_dT3(T, N, lambda_bs, lambda_cs, lambda_es,
+                                                    lambda_fs, lambdas, dlambdas_dT, d3lambdas_dT3s)
         return d3lambdas_dT3s
 
     def xj_Lambda_ijs(self):
