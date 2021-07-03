@@ -1395,14 +1395,14 @@ class Wilson(GibbsExcess):
         return GibbsExcess._regress_binary_taus(gammas, xs, fitting_func=fitting_func,
                                                 fit_parameters=['lambda12', 'lambda21'], 
                                                 use_fit_parameters=['lambda12', 'lambda21'],
-                                                initial_guesses=cls.zero_gamma_lambda_guess,
+                                                initial_guesses=cls._zero_gamma_lambda_guess,
                                                 analytical_jac=None,
                                                 use_numba=use_numba,
                                                 do_statistics=do_statistics,
                                                 **kwargs)
 
 
-    zero_gamma_lambda_guess = [{'lambda12': 1, 'lambda21': 1},
+    _zero_gamma_lambda_guess = [{'lambda12': 1, 'lambda21': 1},
                                {'lambda12': 2.2, 'lambda21': 3.0},
                                {'lambda12': 0.015, 'lambda21': 37.0},
                                {'lambda12': 0.5, 'lambda21': 40.0},
@@ -1411,9 +1411,9 @@ class Wilson(GibbsExcess):
                                {'lambda12': 1.9, 'lambda21': 1e-12},
                                {'lambda12': 10, 'lambda21': 1e-12},
                                ]
-    for i in range(len(zero_gamma_lambda_guess)):
-        r = zero_gamma_lambda_guess[i]
-        zero_gamma_lambda_guess.append({'lambda12': r['lambda21'], 'lambda21': r['lambda12']})
+    for i in range(len(_zero_gamma_lambda_guess)):
+        r = _zero_gamma_lambda_guess[i]
+        _zero_gamma_lambda_guess.append({'lambda12': r['lambda21'], 'lambda21': r['lambda12']})
     del i, r
 
 def Wilson_gammas(xs, params):

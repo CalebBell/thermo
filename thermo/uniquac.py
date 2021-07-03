@@ -1632,14 +1632,14 @@ class UNIQUAC(GibbsExcess):
         return GibbsExcess._regress_binary_taus(gammas, xs, fitting_func=fitting_func,
                                                 fit_parameters=['tau12', 'tau21'], 
                                                 use_fit_parameters=['tau12', 'tau21'],
-                                                initial_guesses=cls.zero_gamma_tau_guess,
+                                                initial_guesses=cls._zero_gamma_tau_guess,
                                                 analytical_jac=None,
                                                 use_numba=use_numba,
                                                 do_statistics=do_statistics,
                                                 **kwargs)
          
     
-    zero_gamma_tau_guess = [{'tau12': 1, 'tau21': 1},
+    _zero_gamma_tau_guess = [{'tau12': 1, 'tau21': 1},
                             {'tau12': 1.0529981904211922, 'tau21': 1.1976772649513237},
                             {'tau12': 1.8748910210873349, 'tau21': 998.612171671497}, # Found seeking gamma = 1 for rs, qs = [[1.4, 7.219], [39.95, 47.2727]]
                             {'tau12': 0.6080855151163854, 'tau21': 1.5266917396579502},  # Found seeking gamma = 1 for rs, qs = [[30.49447368421054, 38.253], [30.195389473684212, 42.39346842105263]]
@@ -1650,9 +1650,9 @@ class UNIQUAC(GibbsExcess):
                             {'tau12': 1.45, 'tau21': 2.2e-7}, # methanol and ethene, chloro- from ChemSep main
                             ]
     
-    for i in range(len(zero_gamma_tau_guess)):
-        r = zero_gamma_tau_guess[i]
-        zero_gamma_tau_guess.append({'tau12': r['tau21'], 'tau21': r['tau12']})
+    for i in range(len(_zero_gamma_tau_guess)):
+        r = _zero_gamma_tau_guess[i]
+        _zero_gamma_tau_guess.append({'tau12': r['tau21'], 'tau21': r['tau12']})
         
          
 
