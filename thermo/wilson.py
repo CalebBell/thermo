@@ -256,7 +256,11 @@ def wilson_gammas_binaries(xs, lambda12, lambda21, calc=None):
     The lambda values are hard-coded to replace values under zero which are
     mathematically impossible, with a very small number. This is helpful for
     regression which might try to make those values negative.
-
+    
+    Examples
+    --------
+    >>> wilson_gammas_binaries([.1, .9, 0.3, 0.7, .85, .15], 0.1759, 0.7991)
+    [3.42989, 1.03432, 1.74338, 1.21234, 1.01766, 2.30656]
     '''
     if lambda12 < MIN_LAMBDA_WILSON:
         lambda12 = MIN_LAMBDA_WILSON
