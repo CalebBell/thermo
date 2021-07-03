@@ -48,7 +48,7 @@ Wilson Functional Calculations
 from __future__ import division
 from math import log, exp
 from fluids.constants import R
-from fluids.numerics import numpy as np
+from fluids.numerics import numpy as np, trunc_exp
 from thermo.activity import GibbsExcess, interaction_exp, dinteraction_exp_dT, d2interaction_exp_dT2, d3interaction_exp_dT3
 
 try:
@@ -209,9 +209,37 @@ def wilson_gammas(xs, N, lambdas, xj_Lambda_ijs_inv, gammas=None, vec0=None):
 MIN_LAMBDA_WILSON = 1e-20
 
 def wilson_gammas_binaries(xs, lambda12, lambda21, calc=None):
+    # Highly optimized implementation for use in regression.
     # xs: array [x0_0, x1_0, (component 1 point1, component 2 point 1)
     #           x0_1, x1_1, (component 1 point2, component 2 point 2)
     #           ...]
+    if lambda12 < MIN_LAMBDA_WILSON:
+        lambda12 = MIN_LAMBDA_WILSON
+    if lambda21 < MIN_LAMBDA_WILSON:
+        lambda21 = MIN_LAMBDA_WILSON
+    pts = len(xs)//2 # Always even
+    
+    if calc is None:
+        allocate_size = (pts*2)
+        calc = [0.0]*allocate_size
+
+    for i in range(pts):
+        i2 = i*2
+        x1 = xs[i2]
+        x2 = 1.0 - x1
+        
+        c0 = 1.0/(x1 + x2*lambda12)
+        c1 = 1.0/(x2 + x1*lambda21)
+        c3 = lambda12*c0 - lambda21*c1
+        
+        calc[i2] = trunc_exp(c3*x2)*c0
+        calc[i2 + 1] = trunc_exp(-c3*x1)*c1
+    return calc
+
+    
+'''
+Actually readable expression of `wilson_gammas_binaries`:
+    
     if lambda12 < MIN_LAMBDA_WILSON:
         lambda12 = MIN_LAMBDA_WILSON
     if lambda21 < MIN_LAMBDA_WILSON:
@@ -244,9 +272,9 @@ def wilson_gammas_binaries(xs, lambda12, lambda21, calc=None):
         calc[i2] = gammas[0]
         calc[i2 + 1] = gammas[1]
     return calc
+'''
+    
 
-    
-    
 class Wilson(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
     by the Wilson equation. This model is capable of representing most
