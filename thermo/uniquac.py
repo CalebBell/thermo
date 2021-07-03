@@ -436,10 +436,10 @@ class UNIQUAC(GibbsExcess):
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
     z = 10.0
-    x_infinite_dilution = 1e-12
+    _x_infinite_dilution = 1e-12
     model_id = 300
 
-    model_attriubtes = ('tau_coeffs_A', 'tau_coeffs_B', 'tau_coeffs_C',
+    _model_attributes = ('tau_coeffs_A', 'tau_coeffs_B', 'tau_coeffs_C',
                         'tau_coeffs_D', 'tau_coeffs_E', 'tau_coeffs_F',
                         'rs', 'qs')
 

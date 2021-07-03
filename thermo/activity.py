@@ -282,7 +282,7 @@ class GibbsExcess(object):
     immutable.
 
     '''
-    x_infinite_dilution = 0.0
+    _x_infinite_dilution = 0.0
     '''When set, this will be the limiting mole fraction used to approximate
     the :obj:`gammas_infinite_dilution` calculation. This is important
     as not all models can mathematically be evaluated at zero mole-fraction.'''
@@ -346,7 +346,7 @@ class GibbsExcess(object):
         except AttributeError:
             pass
         to_hash = [self.__class__.__name__, self.N]
-        for k in self.model_attriubtes:
+        for k in self._model_attributes:
             v = getattr(self, k)
             if type(v) is ndarray:
                 v = v.tolist()
@@ -840,7 +840,7 @@ class GibbsExcess(object):
         '''
         T, N = self.T, self.N
         xs_base = self.xs
-        x_infinite_dilution = self.x_infinite_dilution
+        x_infinite_dilution = self._x_infinite_dilution
         if self.scalar:
             gammas_inf = [0.0]*N
             copy_fun = list
@@ -1073,7 +1073,7 @@ class IdealSolution(GibbsExcess):
     >>> model.dgammas_dT()
     [0.0, 0.0, 0.0, 0.0]
     '''
-    model_attriubtes = ()
+    _model_attributes = ()
     
     model_id = 0
 

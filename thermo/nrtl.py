@@ -531,7 +531,7 @@ class NRTL(GibbsExcess):
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
     
-    model_attriubtes = ('tau_coeffs_A', 'tau_coeffs_B', 'tau_coeffs_E', 'tau_coeffs_F',
+    _model_attributes = ('tau_coeffs_A', 'tau_coeffs_B', 'tau_coeffs_E', 'tau_coeffs_F',
                          'tau_coeffs_G', 'tau_coeffs_H', 'alpha_coeffs_c', 'alpha_coeffs_d')
     model_id = 100
     

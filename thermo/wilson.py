@@ -282,6 +282,8 @@ class Wilson(GibbsExcess):
         Temperature, [K]
     xs : list[float]
         Mole fractions, [-]
+    model_id : int
+        Unique identifier for the Wilson activity model, [-]
 
     Notes
     -----
@@ -347,6 +349,7 @@ class Wilson(GibbsExcess):
     '''
     
     model_id = 200
+    
     @staticmethod
     def from_DDBST(Vi, Vj, a, b, c, d=0.0, e=0.0, f=0.0, unit_conversion=True):
         r'''Converts parameters for the wilson equation in the DDBST to the
@@ -588,13 +591,13 @@ class Wilson(GibbsExcess):
             lambda_coeffs_nonzero[k] = nonzero
 
 
-    model_attriubtes = ('lambda_as', 'lambda_bs', 'lambda_cs',
+    _model_attributes = ('lambda_as', 'lambda_bs', 'lambda_cs',
                         'lambda_ds', 'lambda_es', 'lambda_fs')
 
     def __repr__(self):
         
         s = '%s(T=%s, xs=%s' %(self.__class__.__name__, repr(self.T), repr(self.xs))
-        for i, attr in enumerate(self.model_attriubtes):
+        for i, attr in enumerate(self._model_attributes):
             if self.lambda_coeffs_nonzero[i]:
                 s += ', %s=%s' %(attr, getattr(self, attr))
         s += ')'
@@ -1411,6 +1414,7 @@ class Wilson(GibbsExcess):
     for i in range(len(zero_gamma_lambda_guess)):
         r = zero_gamma_lambda_guess[i]
         zero_gamma_lambda_guess.append({'lambda12': r['lambda21'], 'lambda21': r['lambda12']})
+    del i, r
 
 def Wilson_gammas(xs, params):
     r'''Calculates the activity coefficients of each species in a mixture

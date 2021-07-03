@@ -3683,7 +3683,7 @@ class UNIFAC(GibbsExcess):
             return UNIFAC(T=T, xs=xs, rs=rs, qs=qs, Qs=Qs, vs=vs, psi_abc=(psi_a, psi_b, psi_c), version=version)
         return UNIFAC(T=T, xs=xs, rs=array(rs), qs=array(qs), Qs=array(Qs), vs=array(vs), psi_abc=(array(psi_a), array(psi_b), array(psi_c)), version=version)
 
-    model_attriubtes = ('rs', 'qs', 'psi_a', 'psi_b', 'psi_c', 'version')
+    _model_attributes = ('rs', 'qs', 'psi_a', 'psi_b', 'psi_c', 'version')
 
     def __repr__(self):  # pragma: no cover
 

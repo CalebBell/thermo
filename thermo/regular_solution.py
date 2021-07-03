@@ -286,7 +286,7 @@ class RegularSolution(GibbsExcess):
         self.xsVs_sum = xsVs_sum
         self.xsVs_sum_inv = 1.0/xsVs_sum
 
-    model_attriubtes = ('Vs', 'SPs', 'lambda_coeffs')
+    _model_attributes = ('Vs', 'SPs', 'lambda_coeffs')
 
     def __repr__(self):
         s = '%s(T=%s, xs=%s, Vs=%s, SPs=%s, lambda_coeffs=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs),

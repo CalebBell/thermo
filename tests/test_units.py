@@ -162,6 +162,7 @@ def test_Wilson_units_1():
     model_ABD = Wilson(T=T*u.K, xs=np.array(xs)*u.dimensionless, lambda_as=np.array(A)*u.dimensionless,
                       lambda_bs=np.array(B)*u.K, lambda_ds=np.array(D)/u.K)
     GE_expect = 480.2639266306882
+    CpE_expect = 9.654392039281216
     dGE_dxs = [-2199.9758989394595, -2490.5759162306467, -2241.0570605371795]
     gammas = [1.223393433488855, 1.1009459024701462, 1.2052899281172034]
 
@@ -180,6 +181,7 @@ def test_Wilson_units_1():
 
     for model in (model_ABD, model_from_DDBST, model_lambda_coeffs):
         assert_pint_allclose(model.GE(), GE_expect, u.J/u.mol)
+        assert_pint_allclose(model.CpE(), CpE_expect, u.J/u.mol/u.K)
         for i in range(3):
             assert_pint_allclose(model.dGE_dxs()[i], dGE_dxs[i], u.J/u.mol)
             assert_pint_allclose(model.gammas()[i], gammas[i], u.dimensionless)
