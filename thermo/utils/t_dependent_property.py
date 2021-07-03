@@ -1910,7 +1910,7 @@ class TDependentProperty(object):
             return self.calculate(T, POLY_FIT)
         elif method is None:
             if self.RAISE_PROPERTY_CALCULATION_ERROR: 
-                raise RuntimeError("No method selected for component with CASRN '%s'" %self.CASRN)
+                raise RuntimeError("No %s method selected for component with CASRN '%s'" %(self.name.lower(), self.CASRN))
         else:
             try:
                 T_low, T_high = self.T_limits[method]
@@ -1921,7 +1921,7 @@ class TDependentProperty(object):
                 try: prop = self.calculate(T, method)
                 except: 
                     if self.RAISE_PROPERTY_CALCULATION_ERROR:
-                        raise RuntimeError("Failed to evaluate %s method '%s' at T=%s K for component with CASRN '%s'" %(self.name, method, T, self.CASRN))
+                        raise RuntimeError("Failed to evaluate %s method '%s' at T=%s K for component with CASRN '%s'" %(self.name.lower(), method, T, self.CASRN))
                 else:
                     if self.test_property_validity(prop):
                         return prop
@@ -1932,7 +1932,7 @@ class TDependentProperty(object):
                     return self.extrapolate(T, method)
                 except:
                     if self.RAISE_PROPERTY_CALCULATION_ERROR:
-                        raise RuntimeError("failed to extrapolate %s method '%s' at T=%s K for component with CASRN '%s'" %(self.name, method, T, self.CASRN))
+                        raise RuntimeError("Failed to extrapolate %s method '%s' at T=%s K for component with CASRN '%s'" %(self.name.lower(), method, T, self.CASRN))
             elif self.RAISE_PROPERTY_CALCULATION_ERROR: 
                 raise RuntimeError("%s method '%s' is not valid at T=%s K for component with CASRN '%s'" %(self.name, method, T, self.CASRN))
 
