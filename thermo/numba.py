@@ -185,7 +185,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                  'wilson.wilson_xj_Lambda_ijs', 'wilson.wilson_d2GE_dTdxs',
                  'wilson.wilson_dGE_dxs', 'wilson.wilson_d2GE_dxixjs',
                  'wilson.wilson_d3GE_dxixjxks', 'wilson.wilson_gammas',
-                 'wilson.wilson_gammas_binaries',
+                 'wilson.wilson_gammas_binaries', 'wilson.wilson_gammas_binaries_jac',
 
                  'uniquac.UNIQUAC',
                  'uniquac.uniquac_phis',

@@ -59,7 +59,7 @@ try:
 except (ImportError, AttributeError):
     pass
 
-__all__ = ['Wilson', 'Wilson_gammas', 'wilson_gammas_binaries']
+__all__ = ['Wilson', 'Wilson_gammas', 'wilson_gammas_binaries', 'wilson_gammas_binaries_jac']
 
 
 def wilson_xj_Lambda_ijs(xs, lambdas, N, xj_Lambda_ijs=None):
@@ -323,6 +323,39 @@ Actually readable expression of `wilson_gammas_binaries`:
     return calc
 '''
     
+def wilson_gammas_binaries_jac(xs, lambda12, lambda21, calc=None):
+    if lambda12 < MIN_LAMBDA_WILSON:
+        lambda12 = MIN_LAMBDA_WILSON
+    if lambda21 < MIN_LAMBDA_WILSON:
+        lambda21 = MIN_LAMBDA_WILSON
+    pts = len(xs)//2 # Always even
+    
+    if calc is None:
+        allocate_size = (pts*2)
+        calc = np.zeros((allocate_size, 2))
+    
+    for i in range(pts):
+        i2 = i*2
+        x1 = xs[i2]
+        x2 = 1.0 - x1
+        
+        c0 = lambda12*x2
+        c1 = c0 + x1
+        c2 = 1/c1
+        c3 = lambda21*x1
+        c4 = c3 + x2
+        c5 = 1/c4
+        c6 = c2*lambda12 - c5*lambda21
+        c7 = exp(c6*x2)
+        c8 = c2*c5
+        c9 = exp(-c6*x1)
+
+        calc[i2][0] = -c7*lambda12*x2**2/c1**3
+        calc[i2 + 1][0] = c8*c9*x1*(c0*c2 - 1)
+        calc[i2][1] = c7*c8*x2*(c3*c5 - 1)
+        calc[i2+1][1] = -c9*lambda21*x1**2/c4**3
+    return calc
+
 
 class Wilson(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
@@ -1562,9 +1595,10 @@ class Wilson(GibbsExcess):
     def regress_binary_lambdas(cls, gammas, xs, use_numba=False,
                             do_statistics=True, **kwargs):
         if kwargs.get('use_numba', False):
-            from thermo.numba import wilson_gammas_binaries as work_func
+            from thermo.numba import wilson_gammas_binaries as work_func, wilson_gammas_binaries_jac as jac_func
         else:
             work_func = wilson_gammas_binaries
+            jac_func = wilson_gammas_binaries_jac
             
         gammas_working = zeros(len(xs)*2)
         
@@ -1574,6 +1608,10 @@ class Wilson(GibbsExcess):
             return work_func(xs, lambda12, lambda21, gammas_working)
             # except:
             #     print(xs.tolist(), lambda12, lambda21)
+            
+        def analytical_jac(xs, lambda12, lambda21):
+            return jac_func(xs, lambda12, lambda21)
+        # wilson_gammas_binaries_jac
         
         
         
@@ -1581,7 +1619,7 @@ class Wilson(GibbsExcess):
                                                 fit_parameters=['lambda12', 'lambda21'], 
                                                 use_fit_parameters=['lambda12', 'lambda21'],
                                                 initial_guesses=cls._zero_gamma_lambda_guess,
-                                                analytical_jac=None,
+                                                analytical_jac=analytical_jac,
                                                 use_numba=use_numba,
                                                 do_statistics=do_statistics,
                                                 **kwargs)
