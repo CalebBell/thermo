@@ -1516,11 +1516,13 @@ class Wilson(GibbsExcess):
             from thermo.numba import wilson_gammas_binaries as work_func
         else:
             work_func = wilson_gammas_binaries
+            
+        gammas_working = zeros(len(xs)*2)
         
         def fitting_func(xs, lambda12, lambda21):
             # Capture rs, qs unfortunately is necessary. Works nicely with numba though.
             # try:
-            return work_func(xs, lambda12, lambda21)
+            return work_func(xs, lambda12, lambda21, gammas_working)
             # except:
             #     print(xs.tolist(), lambda12, lambda21)
         
