@@ -20,9 +20,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 import pytest
-from thermo.utils import TDependentProperty, POLY_FIT
+from thermo.utils import TDependentProperty
 from fluids.numerics import assert_close
-import pytest
 from math import log
 
 def test_local_constant_method():
@@ -56,8 +55,6 @@ def test_local_constant_method():
     obj.extrapolation = None
     obj.add_method(constant, Tmin, Tmax)
     assert obj.T_dependent_property(T) is None
-    # assert obj.T_dependent_property_integral(T, T+10.) is None
-    # assert obj.T_dependent_property_integral_over_T(T, T+10) is None
     
 def test_local_method():
     # Test user defined method
@@ -108,11 +105,12 @@ def test_many_local_methods():
     assert_close(M1_value, obj.T_dependent_property(300.))
     obj.method = 'M2'
     assert_close(M2_value, obj.T_dependent_property(300.))
+    
 def test_t_dependent_property_exceptions():
     BAD_METHOD = 'BAD_METHOD'
     CRAZY_METHOD = 'CRAZY_METHOD' 
     class MockVaporPressure(TDependentProperty):
-        name = 'vapor pressure'
+        name = 'Vapor pressure'
         units = 'Pa'
         ranked_methods = [BAD_METHOD, CRAZY_METHOD]
         
@@ -137,16 +135,46 @@ def test_t_dependent_property_exceptions():
     MVP = MockVaporPressure(extrapolation='linear', CASRN='7732-18-5')
     MVP.RAISE_PROPERTY_CALCULATION_ERROR = True
     with pytest.raises(RuntimeError):
-        MVP.T_dependent_property(340.)
+        try:
+            MVP.T_dependent_property(340.)
+        except RuntimeError as error:
+            assert str(error) == ("Failed to evaluate vapor pressure method "
+                                  "'BAD_METHOD' at T=340.0 K for component with "
+                                  "CASRN '7732-18-5'")
+            raise error
     with pytest.raises(RuntimeError):
-        MVP.T_dependent_property(520.)
+        try:
+            MVP.T_dependent_property(520.)
+        except RuntimeError as error:
+            assert str(error) == ("Failed to extrapolate vapor pressure method "
+                                  "'BAD_METHOD' at T=520.0 K for component with "
+                                  "CASRN '7732-18-5'")
+            raise error
     MVP.extrapolation = None
     with pytest.raises(RuntimeError):
-        MVP.T_dependent_property(520.)
+        try:
+            MVP.T_dependent_property(520.)
+        except RuntimeError as error:
+            assert str(error) == ("Vapor pressure method 'BAD_METHOD' is not "
+                                  "valid at T=520.0 K for component with CASRN "
+                                  "'7732-18-5'")
+            raise error
     MVP.method = CRAZY_METHOD
     with pytest.raises(RuntimeError):
-        MVP.T_dependent_property(350.)
+        try:
+            MVP.T_dependent_property(350.)
+        except RuntimeError as error:
+            assert str(error) == ("Vapor pressure method 'CRAZY_METHOD' "
+                                  "computed an invalid value of -1000000.0 Pa "
+                                  "for component with CASRN '7732-18-5'")
+            raise error
     MVP.method = None
     with pytest.raises(RuntimeError):
-        MVP.T_dependent_property(340.)
+        try:
+            MVP.T_dependent_property(340.)
+        except RuntimeError as error:
+            assert str(error) == ("No vapor pressure method selected for "
+                                  "component with CASRN '7732-18-5'")
+            raise error
+        
     

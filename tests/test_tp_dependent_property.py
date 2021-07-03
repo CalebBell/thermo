@@ -20,14 +20,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 import pytest
-from thermo.utils import TPDependentProperty, POLY_FIT
+from thermo.utils import TPDependentProperty
     
 def test_tp_dependent_property_exceptions():
     BAD_METHOD = 'BAD_METHOD'
     CRAZY_METHOD = 'CRAZY_METHOD' 
     class MockVaporPressure(TPDependentProperty):
-        name = 'vapor pressure'
-        units = 'Pa'
+        name = 'Heat capacity'
+        units = 'J/mol'
         ranked_methods_P = [BAD_METHOD, CRAZY_METHOD]
         
         def __init__(self, extrapolation, CASRN, **kwargs):
@@ -51,16 +51,36 @@ def test_tp_dependent_property_exceptions():
     MVP = MockVaporPressure(extrapolation='linear', CASRN='7732-18-5')
     MVP.RAISE_PROPERTY_CALCULATION_ERROR = True
     with pytest.raises(RuntimeError):
-        MVP.TP_dependent_property(340., 101325.)
+        try:
+            MVP.TP_dependent_property(340., 101325.)
+        except RuntimeError as error:
+            assert str(error) == ("Failed to evaluate heat capacity method "
+                                  "'BAD_METHOD' at T=340.0 K and P=101325.0 Pa "
+                                  "for component with CASRN '7732-18-5'")
+            raise error
     with pytest.raises(RuntimeError):
-        MVP.TP_dependent_property(520., 101325.)
-    MVP.extrapolation = None
-    with pytest.raises(RuntimeError):
-        MVP.TP_dependent_property(520., 101325.)
+        try:
+            MVP.TP_dependent_property(520., 101325.)
+        except RuntimeError as error:
+            assert str(error) == ("Heat capacity method 'BAD_METHOD' is not "
+                                  "valid at T=520.0 K and P=101325.0 Pa for "
+                                  "component with CASRN '7732-18-5'")
+            raise error
     MVP.method_P = CRAZY_METHOD
     with pytest.raises(RuntimeError):
-        MVP.TP_dependent_property(350., 101325.)
-    MVP.method = None
+        try:
+            MVP.TP_dependent_property(350., 101325.)
+        except RuntimeError as error:
+            assert str(error) == ("Heat capacity method 'CRAZY_METHOD' "
+                                  "computed an invalid value of -1000000.0 J/mol "
+                                  "for component with CASRN '7732-18-5'")
+            raise error
+    MVP.method_P = None
     with pytest.raises(RuntimeError):
-        MVP.TP_dependent_property(340., 101325.)
+        try:
+            MVP.TP_dependent_property(340., 101325.)
+        except RuntimeError as error:
+            assert str(error) == ("No pressure-dependent heat capacity method "
+                                  "selected for component with CASRN '7732-18-5'")
+            raise error
     
