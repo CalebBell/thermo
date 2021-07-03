@@ -792,3 +792,17 @@ def test_Wilson_numpy_output_correct_array_internal_ownership():
         obj = getattr(modelnp, name)
         assert obj.flags.c_contiguous
         assert obj.flags.owndata
+
+def test_Wilson_chemsep():
+    from thermo.interaction_parameters import IPDB
+    CAS1 = '64-17-5'
+    CAS2 = '7732-18-5'
+    N = 2
+    T = 273.15 + 70
+    tausC = tausD = tausE = tausF = [[0.0]*N for _ in range(N)]
+    tausB = IPDB.get_ip_asymmetric_matrix(name='ChemSep Wilson', CASs=[CAS1, CAS2], ip='bij')
+    tausA = IPDB.get_ip_asymmetric_matrix(name='ChemSep Wilson', CASs=[CAS1, CAS2], ip='aij')
+    ABCDEF = (tausA, tausB, tausC, tausD, tausE, tausF)
+    GE = Wilson(T=T, xs=[0.252, 1-0.252], ABCDEF=ABCDEF)
+    gammas = GE.gammas()
+    assert_close1d(gammas, [1.9573311040154513, 1.1600677182620136], rtol=1e-12)
