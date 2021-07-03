@@ -51,7 +51,7 @@ from fluids.numerics import numpy as np, trunc_exp
 from fluids.constants import R
 from thermo.activity import GibbsExcess, interaction_exp, dinteraction_exp_dT, d2interaction_exp_dT2, d3interaction_exp_dT3
 
-__all__ = ['UNIQUAC', 'UNIQUAC_gammas', 'UNIQUAC_gamma', 'UNIQUAC_gammas_binary', 'UNIQUAC_gammas_binaries']
+__all__ = ['UNIQUAC', 'UNIQUAC_gammas', 'UNIQUAC_gammas_binary', 'UNIQUAC_gammas_binaries']
 
 try:
     array, zeros, npsum, nplog = np.array, np.zeros, np.sum, np.log
@@ -1721,50 +1721,6 @@ def UNIQUAC_gammas_binary(x1, r1, r2, q1, q2, tau12, tau21):
     x42 = x0*x13 - x0*x8 + x1*x35 - x1*(x34 + x35) - x2*x37 + x2*(x37 + x41) + x3*x38 - x3*x39    
     return (x15*trunc_exp(x34 + x42), x36*trunc_exp(x41 + x42))
     
-
-def UNIQUAC_gamma(x1, r1, r2, q1, q2, tau12, tau21):
-    x0 = r1*x1
-    x2 = x1 - 1
-    x3 = r2*x2
-    x4 = x0 - x3
-    x5 = 1/x4
-    x6 = r1*x5
-    x7 = log(x6)
-    x8 = r2*x5
-    x9 = log(x8)
-    x10 = q1*x1
-    x11 = tau12*x10
-    x12 = q2*x2
-    x13 = -x12
-    x14 = x11 + x13
-    x15 = x10 + x13
-    x16 = 1/x15
-    x17 = log(x14*x16)
-    x18 = 1 - x1
-    x19 = r2*x18
-    x20 = x0 + x19
-    x21 = x4/x20**2
-    x22 = x16*x4
-    x23 = 5*log(q2*x22/r2)
-    x24 = q2*x18
-    x25 = 1/(x10 + x24)
-    x26 = x20*x25
-    x27 = x10*x25
-    x28 = x15*x27
-    x29 = 5*x5
-    x30 = x24*x25
-    x31 = x15*x25
-    x32 = x31/x14
-    x33 = -tau21*x12 + x10
-    x34 = 1/x33
-    x35 = 1/x20
-    x36 = x15*x29
-    x37 = log(x16*x33)
-    x38 = 5*log(q1*x22/r1)
-    x39 = q1*x26
-    x40 = (q1**2*x1*x31*x34*(tau21*x30 + x27 - 1) - q1*x12*x32*(-tau12*(1 - x27) + x30) - q1*x37 + q1*x38 - x0*x21 + x12*x29*x31*(-r1 + x39) + x2*x6 - x36*x39*(-x0*x35 + x27))
-    return ((x6*exp(x1*x7 - x1*(x40 + x7) - x10*x37 + x10*x38 + x12*x17 - x12*x23 - x2*x9 + x2*(-q2**2*x2*x32*(x11*x25 + x30 - 1) - q2*x17 + q2*x23 + q2*x28*x34*(-tau21*(1 - x30) + x27) - x1*x8 + x12*x26*x36*(-x19*x35 + x30)/x18 + x21*x3 - x28*x29*(q2*x26 - r2) + x9) + x40)))
-
     
 def UNIQUAC_gammas(xs, rs, qs, taus):
     r'''Calculates the activity coefficients of each species in a mixture
