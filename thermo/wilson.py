@@ -42,6 +42,9 @@ Wilson Functional Calculations
 ==============================
 .. autofunction:: Wilson_gammas
 
+Wilson Regression Calculations
+==============================
+.. autofunction:: wilson_gammas_binaries
 
 '''
 
@@ -209,10 +212,52 @@ def wilson_gammas(xs, N, lambdas, xj_Lambda_ijs_inv, gammas=None, vec0=None):
 MIN_LAMBDA_WILSON = 1e-20
 
 def wilson_gammas_binaries(xs, lambda12, lambda21, calc=None):
-    # Highly optimized implementation for use in regression.
-    # xs: array [x0_0, x1_0, (component 1 point1, component 2 point 1)
-    #           x0_1, x1_1, (component 1 point2, component 2 point 2)
-    #           ...]
+    r'''Calculates activity coefficients at fixed `lambda` values for
+    a binary system at a series of mole fractions. This is used for 
+    regression of `lambda` parameters. This function is highly optimized,
+    and operates on multiple points at a time.
+    
+    .. math::
+        \ln \gamma_1 = -\ln(x_1 + \Lambda_{12}x_2) + x_2\left(
+        \frac{\Lambda_{12}}{x_1 + \Lambda_{12}x_2} 
+        - \frac{\Lambda_{21}}{x_2 + \Lambda_{21}x_1}
+        \right)
+
+    .. math::
+        \ln \gamma_2 = -\ln(x_2 + \Lambda_{21}x_1) - x_1\left(
+        \frac{\Lambda_{12}}{x_1 + \Lambda_{12}x_2} 
+        - \frac{\Lambda_{21}}{x_2 + \Lambda_{21}x_1}
+        \right)
+
+    Parameters
+    ----------
+    xs : list[float]
+        Liquid mole fractions of each species in the format
+        x0_0, x1_0, (component 1 point1, component 2 point 1),
+        x0_1, x1_1, (component 1 point2, component 2 point 2), ...
+        [-]
+    lambda12 : float
+        `lambda` parameter for 12, [-]
+    lambda21 : float
+        `lambda` parameter for 21, [-]
+    gammas : list[float], optional
+        Array to store the activity coefficient for each species in the liquid 
+        mixture, indexed the same as `xs`; can be omitted or provided
+        for slightly better performance [-]
+
+    Returns
+    -------
+    gammas : list[float]
+        Activity coefficient for each species in the liquid mixture,
+        indexed the same as `xs`, [-]
+
+    Notes
+    -----
+    The lambda values are hard-coded to replace values under zero which are
+    mathematically impossible, with a very small number. This is helpful for
+    regression which might try to make those values negative.
+
+    '''
     if lambda12 < MIN_LAMBDA_WILSON:
         lambda12 = MIN_LAMBDA_WILSON
     if lambda21 < MIN_LAMBDA_WILSON:
