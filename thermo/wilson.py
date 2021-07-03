@@ -299,6 +299,13 @@ class Wilson(GibbsExcess):
     -----
     In addition to the methods presented here, the methods of its base class
     :obj:`thermo.activity.GibbsExcess` are available as well.
+
+    .. warning::
+        If parameters are ommited for all interactions, this model
+        reverts to :obj:`thermo.activity.IdealSolution`. In large systems it
+        is common to only regress parameters for the most important components;
+        set `lambda` parameters for other components to 0 to "ignore" them and
+        treat them as ideal components.
     
     This class works with python lists, numpy arrays, and can be accelerated
     with Numba or PyPy quite effectively.
