@@ -360,6 +360,20 @@ class Wilson(GibbsExcess):
     >>> GE = Wilson(T=273.15+70, xs=[.252, .748], lambda_as=lambda_as, lambda_bs=lambda_bs)
     >>> GE.gammas()
     [1.95733110, 1.1600677]
+    Wils
+    In ChemSep, the form of the Wilson `lambda` equation is
+    
+    .. math::
+        \Lambda_{ij} = \frac{V_j}{V_i}\exp\left( \frac{-A_{ij}}{RT}\right)
+    
+    The parameters were converted to the form used by Thermo as follows:
+        
+    .. math::
+        a_{ij} = \log\left(\frac{V_j}{V_i}\right)
+        
+    .. math::
+        b_{ij} = \frac{-A_{ij}}{R}= \frac{-A_{ij}}{ 1.9872042586408316}
+        
     
     This system was chosen because there is also a sample problem for the same
     components from the DDBST which can be found here:
