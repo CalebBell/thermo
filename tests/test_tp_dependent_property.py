@@ -25,14 +25,14 @@ from thermo.utils import TPDependentProperty
 def test_tp_dependent_property_exceptions():
     BAD_METHOD = 'BAD_METHOD'
     CRAZY_METHOD = 'CRAZY_METHOD' 
-    class MockVaporPressure(TPDependentProperty):
+    class MockHeatCapacity(TPDependentProperty):
         name = 'Heat capacity'
         units = 'J/mol'
         ranked_methods_P = [BAD_METHOD, CRAZY_METHOD]
         
         def __init__(self, extrapolation, CASRN, **kwargs):
             self.CASRN = CASRN
-            super(MockVaporPressure, self).__init__(extrapolation, **kwargs)
+            super(MockHeatCapacity, self).__init__(extrapolation, **kwargs)
         
         def load_all_methods(self, load_data):
             if load_data:
@@ -48,7 +48,7 @@ def test_tp_dependent_property_exceptions():
             else:
                 return self._base_calculate(T, method)
     
-    MVP = MockVaporPressure(extrapolation='linear', CASRN='7732-18-5')
+    MVP = MockHeatCapacity(extrapolation='linear', CASRN='7732-18-5')
     MVP.RAISE_PROPERTY_CALCULATION_ERROR = True
     with pytest.raises(RuntimeError):
         try:
