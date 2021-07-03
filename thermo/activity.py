@@ -905,7 +905,7 @@ class GibbsExcess(object):
         Returns
         -------
         dgammas_dns : list[list[float]]
-            Mole number derivatives of activity coefficients, [-]
+            Mole number derivatives of activity coefficients, [1/mol]
 
         Notes
         -----

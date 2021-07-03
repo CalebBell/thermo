@@ -292,6 +292,40 @@ class Wilson(GibbsExcess):
 
     Examples
     --------
+    **Example 1**
+    
+    This object-oriented class provides access to many more thermodynamic
+    properties than :obj:`Wilson_gammas`, but it can also be used like that 
+    function. In the following example, `gammas` are calculated with both
+    functions. The `lambdas` cannot be specified in this class; but fixed
+    values can be converted with the `log` function so that fixed values will
+    be obtained.
+    
+    >>> Wilson_gammas([0.252, 0.748], [[1, 0.154], [0.888, 1]])
+    [1.881492608717, 1.165577493112]
+    >>> GE = Wilson(T=300.0, xs=[0.252, 0.748], lambda_as=[[0, log(0.154)], [log(0.888), 0]])
+    >>> GE.gammas()
+    [1.881492608717, 1.165577493112]
+    
+    We can check that the same lambda values were computed as well, and that
+    there is no temperature dependency:
+        
+    >>> GE.lambdas()
+    [[1.0, 0.154], [0.888, 1.0]]
+    >>> GE.dlambdas_dT()
+    [[0.0, 0.0], [0.0, 0.0]]
+    
+    In this case, there is no temperature dependency in the Wilson model as the
+    `lambda` values are fixed, so the excess enthalpy is always zero. Other
+    properties are not always zero.
+    
+    >>> GE.HE(), GE.CpE()
+    (0.0, 0.0)
+    >>> GE.GE(), GE.SE(), GE.dGE_dT()
+    (683.165839398, -2.277219464, 2.2772194646)
+
+    **Example 2**
+    
     The DDBST has published some sample problems which are fun to work with.
     Because the DDBST uses a different equation form for the coefficients than
     this model implements, we must initialize the :obj:`Wilson` object with
@@ -322,6 +356,8 @@ class Wilson(GibbsExcess):
     http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/05.09%20Compare%20Experimental%20VLE%20to%20Wilson%20Equation%20Results.xps
 
 
+    **Example 3**
+    
     A simple example is given in [1]_; other textbooks sample problems are
     normally in the same form as this - with only volumes and the `a` term
     specified. The system is 2-propanol/water at 353.15 K, and the mole
@@ -339,7 +375,7 @@ class Wilson(GibbsExcess):
     [2.124064516, 1.1903745834]
 
     The activity coefficients given in [1]_ are [2.1244, 1.1904]; matching (
-    with a slight error from their use of 1.987 as a gas constant).
+    with a slight deviation from their use of 1.987 as a gas constant).
 
     References
     ----------
@@ -1475,7 +1511,7 @@ def Wilson_gammas(xs, params):
     Ethanol-water example, at 343.15 K and 1 MPa:
 
     >>> Wilson_gammas([0.252, 0.748], [[1, 0.154], [0.888, 1]])
-    [1.8814926087178843, 1.1655774931125487]
+    [1.881492608717, 1.165577493112]
 
     References
     ----------
