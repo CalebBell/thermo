@@ -547,7 +547,8 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
                    fit_method, objective, multiple_tries_max_objective, 
                    guesses=None, initial_guesses=None, analytical_jac=None,
                    solver_kwargs=None, use_numba=False, multiple_tries=False,
-                   do_statistics=False, multiple_tries_max_err=1e-5):
+                   do_statistics=False, multiple_tries_max_err=1e-5,
+                   func_wrapped_for_leastsq=None, jac_wrapped_for_leastsq=None):
     if solver_kwargs is None: solver_kwargs = {}
     if use_numba:
         import thermo.numba, fluids.numba
@@ -602,12 +603,14 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
         array_init_guesses = [p0]
     
 
-    def func_wrapped_for_leastsq(params):
-        # jacobian is the same
-        return fitting_func(Ts, *params) - data
+    if func_wrapped_for_leastsq is None:
+        def func_wrapped_for_leastsq(params):
+            # jacobian is the same
+            return fitting_func(Ts, *params) - data
 
-    def jac_wrapped_for_leastsq(params):
-        return analytical_jac(Ts, *params)
+    if jac_wrapped_for_leastsq is None:
+        def jac_wrapped_for_leastsq(params):
+            return analytical_jac(Ts, *params)
 
     pcov = None
     if fit_method == 'differential_evolution':

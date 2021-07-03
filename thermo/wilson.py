@@ -1594,36 +1594,55 @@ class Wilson(GibbsExcess):
     @classmethod
     def regress_binary_lambdas(cls, gammas, xs, use_numba=False,
                             do_statistics=True, **kwargs):
+        # Load the functions either locally or with numba
         if use_numba:
             from thermo.numba import wilson_gammas_binaries as work_func, wilson_gammas_binaries_jac as jac_func
         else:
             work_func = wilson_gammas_binaries
             jac_func = wilson_gammas_binaries_jac
-            
-        gammas_working = zeros(len(xs)*2)
-        jac_working = zeros((len(xs)*2, 2))
+        
+        # Allocate all working memory
+        pts = len(xs)
+        gammas_iter = zeros(pts*2)
+        jac_iter = zeros((pts*2, 2))
 
-
+        # Plain objective functions
         def fitting_func(xs, lambda12, lambda21):
-            # Capture rs, qs unfortunately is necessary. Works nicely with numba though.
-            # try:
-            return work_func(xs, lambda12, lambda21, gammas_working)
-            # except:
-            #     print(xs.tolist(), lambda12, lambda21)
+            return work_func(xs, lambda12, lambda21, gammas_iter)
             
         def analytical_jac(xs, lambda12, lambda21):
-            return jac_func(xs, lambda12, lambda21, jac_working)
-        # wilson_gammas_binaries_jac
+            return jac_func(xs, lambda12, lambda21, jac_iter)
+        
+        xs_working = []
+        for i in range(pts):
+            xs_working.append(xs[i][0])
+            xs_working.append(xs[i][1])
+        gammas_working = []
+        for i in range(pts):
+            gammas_working.append(gammas[i][0])
+            gammas_working.append(gammas[i][1])
+            
+        xs_working = array(xs_working)
+        gammas_working = array(gammas_working)
+        
+        # Objective functions for leastsq maximum speed
+        def func_wrapped_for_leastsq(params):
+            return work_func(xs_working, params[0], params[1], gammas_iter) - gammas_working
+
+        def jac_wrapped_for_leastsq(params):
+            return jac_func(xs_working, params[0], params[1], jac_iter)
+
         
         
-        
-        return GibbsExcess._regress_binary_taus(gammas, xs, fitting_func=fitting_func,
+        return GibbsExcess._regress_binary_taus(gammas_working, xs_working, fitting_func=fitting_func,
                                                 fit_parameters=['lambda12', 'lambda21'], 
                                                 use_fit_parameters=['lambda12', 'lambda21'],
                                                 initial_guesses=cls._zero_gamma_lambda_guess,
                                                 analytical_jac=analytical_jac,
                                                 use_numba=use_numba,
                                                 do_statistics=do_statistics,
+                                                func_wrapped_for_leastsq=func_wrapped_for_leastsq,
+                                                jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
                                                 **kwargs)
 
 

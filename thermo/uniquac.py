@@ -1628,8 +1628,20 @@ class UNIQUAC(GibbsExcess):
             #     print(xs.tolist(), tau12, tau21)
         
         
-        
-        return GibbsExcess._regress_binary_taus(gammas, xs, fitting_func=fitting_func,
+        pts = len(xs)
+        xs_working = []
+        for i in range(pts):
+            xs_working.append(xs[i][0])
+            xs_working.append(xs[i][1])
+        gammas_working = []
+        for i in range(pts):
+            gammas_working.append(gammas[i][0])
+            gammas_working.append(gammas[i][1])
+            
+        xs_working = np.array(xs_working)
+        gammas_working = np.array(gammas_working)
+
+        return GibbsExcess._regress_binary_taus(gammas_working, xs_working, fitting_func=fitting_func,
                                                 fit_parameters=['tau12', 'tau21'], 
                                                 use_fit_parameters=['tau12', 'tau21'],
                                                 initial_guesses=cls._zero_gamma_tau_guess,

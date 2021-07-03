@@ -1018,19 +1018,7 @@ class GibbsExcess(object):
     def _regress_binary_taus(cls, gammas, xs, fitting_func, fit_parameters,
                              use_fit_parameters, initial_guesses=None, analytical_jac=None,
                              **kwargs):
-        pts = len(xs)
-        xs_working = []
-        for i in range(pts):
-            xs_working.append(xs[i][0])
-            xs_working.append(xs[i][1])
-        gammas_working = []
-        for i in range(pts):
-            gammas_working.append(gammas[i][0])
-            gammas_working.append(gammas[i][1])
-            
-        xs_working = np.array(xs_working)
-        gammas_working = np.array(gammas_working)
-        
+
         fit_kwargs = dict(fit_method='lm', 
                     # fit_method='differential_evolution', 
                    objective='MeanSquareErr', multiple_tries_max_objective='MeanRelErr', 
@@ -1040,7 +1028,7 @@ class GibbsExcess(object):
         fit_kwargs.update(kwargs)
          
              
-        res = fit_customized(xs_working, data=gammas_working, fitting_func=fitting_func, fit_parameters=fit_parameters, use_fit_parameters=use_fit_parameters, 
+        res = fit_customized(xs, data=gammas, fitting_func=fitting_func, fit_parameters=fit_parameters, use_fit_parameters=use_fit_parameters,
                     **fit_kwargs)
         return res
 
