@@ -250,6 +250,16 @@ class Wilson(GibbsExcess):
     by the Wilson equation. This model is capable of representing most
     nonideal liquids for vapor-liquid equilibria, but is not recommended for
     liquid-liquid equilibria.
+    
+    The two basic equations are as follows; all other properties are derived 
+    from these.
+
+    .. math::
+        g^E = -RT\sum_i x_i \ln\left(\sum_j x_j \lambda_{i,j} \right)
+
+    .. math::
+        \Lambda_{ij} = \exp\left[a_{ij}+\frac{b_{ij}}{T}+c_{ij}\ln T
+                + d_{ij}T + \frac{e_{ij}}{T^2} + f_{ij}{T^2}\right]
 
     Parameters
     ----------
@@ -289,6 +299,9 @@ class Wilson(GibbsExcess):
     -----
     In addition to the methods presented here, the methods of its base class
     :obj:`thermo.activity.GibbsExcess` are available as well.
+    
+    This class works with python lists, numpy arrays, and can be accelerated
+    with Numba or PyPy quite effectively.
 
     Examples
     --------
@@ -323,8 +336,38 @@ class Wilson(GibbsExcess):
     (0.0, 0.0)
     >>> GE.GE(), GE.SE(), GE.dGE_dT()
     (683.165839398, -2.277219464, 2.2772194646)
-
+    
     **Example 2**
+    
+    ChemSep is a (partially) free program for modeling distillation. Besides
+    being a wonderful program, it also ships with a permissive license several
+    sets of binary interaction parameters. The Wilson parameters in it can
+    be accessed from Thermo as follows. In the following case, we compute
+    activity coefficients of the ethanol-water system at mole fractions of
+    [.252, 0.748].
+    
+    >>> from thermo.interaction_parameters import IPDB
+    >>> CAS1, CAS2 = '64-17-5', '7732-18-5'
+    >>> lambda_as = IPDB.get_ip_asymmetric_matrix(name='ChemSep Wilson', CASs=[CAS1, CAS2], ip='aij')
+    >>> lambda_bs = IPDB.get_ip_asymmetric_matrix(name='ChemSep Wilson', CASs=[CAS1, CAS2], ip='bij')
+    >>> GE = Wilson(T=273.15+70, xs=[.252, .748], lambda_as=lambda_as, lambda_bs=lambda_bs)
+    >>> GE.gammas()
+    [1.95733110, 1.1600677]
+    
+    This system was chosen because there is also a sample problem for the same
+    components from the DDBST which can be found here:
+    http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/P05.01a%20VLE%20Behavior%20of%20Ethanol%20-%20Water%20Using%20Wilson.xps
+    
+    In that example, with different data sets and parameters, they obtain at
+    the same conditions activity coefficients of [1.881, 1.165]. Different
+    sources of parameters for the same system will generally have similar 
+    behavior if regressed in the same temperature range. As higher order
+    `lambda` parameters are added, models become more likely to behave 
+    differently. It is recommended in [3]_ to regress the minimum number of
+    parameters required.
+    
+    
+    **Example 3**
     
     The DDBST has published some sample problems which are fun to work with.
     Because the DDBST uses a different equation form for the coefficients than
@@ -356,7 +399,7 @@ class Wilson(GibbsExcess):
     http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/05.09%20Compare%20Experimental%20VLE%20to%20Wilson%20Equation%20Results.xps
 
 
-    **Example 3**
+    **Example 4**
     
     A simple example is given in [1]_; other textbooks sample problems are
     normally in the same form as this - with only volumes and the `a` term
@@ -382,6 +425,10 @@ class Wilson(GibbsExcess):
     .. [1] Smith, H. C. Van Ness Joseph M. Introduction to Chemical Engineering
        Thermodynamics 4th Edition, Joseph M. Smith, H. C. Van
        Ness, 1987.
+    .. [2] Kooijman, Harry A., and Ross Taylor. The ChemSep Book. Books on 
+       Demand Norderstedt, Germany, 2000.
+    .. [3] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
+       Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
     
     model_id = 200
@@ -1508,7 +1555,9 @@ def Wilson_gammas(xs, params):
 
     Examples
     --------
-    Ethanol-water example, at 343.15 K and 1 MPa:
+    Ethanol-water example, at 343.15 K and 1 MPa, from [2]_ also posted online
+    http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/P05.01a%20VLE%20Behavior%20of%20Ethanol%20-%20Water%20Using%20Wilson.xps
+    :
 
     >>> Wilson_gammas([0.252, 0.748], [[1, 0.154], [0.888, 1]])
     [1.881492608717, 1.165577493112]

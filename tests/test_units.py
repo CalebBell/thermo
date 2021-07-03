@@ -140,6 +140,8 @@ def test_VaporPressure_calculate_units():
     # assert_pint_allclose(ans, 8491.523803275244, u.Pa)
 
 def test_Wilson_units_1():
+    '''All the time taken by this function is in pint. Yes, all of it.
+    '''
     T = 331.42
     N = 3
     
