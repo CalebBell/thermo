@@ -228,18 +228,19 @@ def wilson_gammas_binaries(xs, lambda12, lambda21, calc=None):
     xj_Lambda_ijs_vec = [0.0]*2
     vec0 = [0.0]*2
     gammas = [0.0]*2
-    xs_pt = [0.0, 0.0]
+    xs_pt = [0.0]*2
 
     for i in range(pts):
-        xs_pt[0] = xs[i*2]
+        i2 = i*2
+        xs_pt[0] = xs[i2]
         xs_pt[1] = 1.0 - xs_pt[0]
         
         xj_Lambda_ijs = wilson_xj_Lambda_ijs(xs_pt, lambdas, N=2, xj_Lambda_ijs=xj_Lambda_ijs_vec)
         xj_Lambda_ijs[0] = 1.0/xj_Lambda_ijs[0]
         xj_Lambda_ijs[1] = 1.0/xj_Lambda_ijs[1]
         gammas = wilson_gammas(xs_pt, N=2, lambdas=lambdas, xj_Lambda_ijs_inv=xj_Lambda_ijs, gammas=gammas, vec0=vec0)
-        calc[i*2] = gammas[0]
-        calc[i*2+1] = gammas[1]
+        calc[i2] = gammas[0]
+        calc[i2 + 1] = gammas[1]
     return calc
 
     
@@ -1378,6 +1379,13 @@ class Wilson(GibbsExcess):
 
 
     zero_gamma_lambda_guess = [{'lambda12': 1, 'lambda21': 1},
+                               {'lambda12': 2.2, 'lambda21': 3.0},
+                               {'lambda12': 0.015, 'lambda21': 37.0},
+                               {'lambda12': 0.5, 'lambda21': 40.0},
+                               
+                               {'lambda12': 0.5, 'lambda21': 1e-7},
+                               {'lambda12': 1.9, 'lambda21': 1e-12},
+                               {'lambda12': 10, 'lambda21': 1e-12},
                                ]
     for i in range(len(zero_gamma_lambda_guess)):
         r = zero_gamma_lambda_guess[i]
