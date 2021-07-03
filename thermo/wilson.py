@@ -209,7 +209,9 @@ def wilson_gammas(xs, N, lambdas, xj_Lambda_ijs_inv, gammas=None, vec0=None):
 MIN_LAMBDA_WILSON = 1e-20
 
 def wilson_gammas_binaries(xs, lambda12, lambda21, calc=None):
-    # xs: array [x0_0, x1_0, x0_1, x1_1]
+    # xs: array [x0_0, x1_0, (component 1 point1, component 2 point 1)
+    #           x0_1, x1_1, (component 1 point2, component 2 point 2)
+    #           ...]
     if lambda12 < MIN_LAMBDA_WILSON:
         lambda12 = MIN_LAMBDA_WILSON
     if lambda21 < MIN_LAMBDA_WILSON:
@@ -360,7 +362,7 @@ class Wilson(GibbsExcess):
     >>> GE = Wilson(T=273.15+70, xs=[.252, .748], lambda_as=lambda_as, lambda_bs=lambda_bs)
     >>> GE.gammas()
     [1.95733110, 1.1600677]
-    Wils
+
     In ChemSep, the form of the Wilson `lambda` equation is
     
     .. math::

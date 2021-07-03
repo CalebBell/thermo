@@ -28,7 +28,7 @@ from fluids.constants import R
 from thermo.activity import GibbsExcess
 from thermo import *
 import numpy as np
-from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d, assert_close3d
+from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d, assert_close3d, linspace
 from thermo.test_utils import check_np_output_activity
 import pickle
 
@@ -806,3 +806,19 @@ def test_Wilson_chemsep():
     GE = Wilson(T=T, xs=[0.252, 1-0.252], ABCDEF=ABCDEF)
     gammas = GE.gammas()
     assert_close1d(gammas, [1.9573311040154513, 1.1600677182620136], rtol=1e-12)
+
+def test_wilson_gammas_binaries():
+    GE = Wilson(T=343.15, xs=[0.252, 0.748], lambda_as=[[0.0, -1.1769274893976625], [1.1769274893976625, 0.0]], lambda_bs=[[0.0, -192.38082765657816], [-480.8011032813958, 0.0]])
+    lambdas = GE.lambdas()
+    lambda12 = lambdas[0][1]
+    lambda21 = lambdas[1][0]
+    
+    xs = []
+    gammas_object = []
+    for x in linspace(0, 1, 5):
+        xs.append(x)
+        xs.append(1-x)
+        gammas_object.extend(GE.to_T_xs(T=GE.T, xs=xs[-2:]).gammas())
+    
+    all_gammas = wilson_gammas_binaries(xs, lambda12, lambda21)
+    assert_close1d(all_gammas, gammas_object, rtol=1e-13)
