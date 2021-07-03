@@ -21,6 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+import pint
 import types
 import numpy as np
 import pytest
@@ -163,8 +164,8 @@ def test_Wilson_units_1():
                       lambda_bs=np.array(B)*u.K, lambda_ds=np.array(D)/u.K)
     GE_expect = 480.2639266306882
     CpE_expect = 9.654392039281216
-    dGE_dxs = [-2199.9758989394595, -2490.5759162306467, -2241.0570605371795]
-    gammas = [1.223393433488855, 1.1009459024701462, 1.2052899281172034]
+    dGE_dxs_expect = [-2199.9758989394595, -2490.5759162306467, -2241.0570605371795]
+    gammas_expect = [1.223393433488855, 1.1009459024701462, 1.2052899281172034]
 
     # From DDBST
     T = (331.42 -273.15)*u.degC
@@ -182,6 +183,18 @@ def test_Wilson_units_1():
     for model in (model_ABD, model_from_DDBST, model_lambda_coeffs):
         assert_pint_allclose(model.GE(), GE_expect, u.J/u.mol)
         assert_pint_allclose(model.CpE(), CpE_expect, u.J/u.mol/u.K)
+        dGE_dxs = model.dGE_dxs()
+        gammas = model.gammas()
         for i in range(3):
-            assert_pint_allclose(model.dGE_dxs()[i], dGE_dxs[i], u.J/u.mol)
-            assert_pint_allclose(model.gammas()[i], gammas[i], u.dimensionless)
+            assert_pint_allclose(dGE_dxs[i], dGE_dxs_expect[i], u.J/u.mol)
+            assert_pint_allclose(gammas[i], gammas_expect[i], u.dimensionless)
+            
+    get_properties = ['CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns', 'd2GE_dTdxs', 'd2GE_dxixjs', 
+                      'd2lambdas_dT2', 'd2nGE_dTdns', 'd2nGE_dninjs', 'd3GE_dT3', 'd3GE_dxixjxks',
+                      'd3lambdas_dT3', 'dGE_dT', 'dGE_dns', 'dGE_dxs', 'dHE_dT', 'dHE_dns', 'dHE_dxs',
+                      'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns', 'dlambdas_dT', 
+                      'dnGE_dns', 'dnHE_dns', 'dnSE_dns', 'gammas', 'gammas_infinite_dilution', 'lambdas']
+    for model in (model_ABD, model_from_DDBST, model_lambda_coeffs):
+        for prop in get_properties:
+            res = getattr(model, prop)()
+            assert isinstance(res, pint.Quantity)
