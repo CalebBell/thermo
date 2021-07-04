@@ -488,3 +488,14 @@ def test_NRTL_chemsep():
         assert_close(gammas[0], gammas_ethanol[i], rtol=1e-5)
         assert_close(gammas[1], gammas_water[i], rtol=1e-5)
     
+def test_NRTL_partial_inputs():
+    from fluids.constants import R, calorie
+    N = 2
+    T = 70.0 + 273.15
+    xs = [0.252, 0.748]
+    tau_bs = [[0, -121.2691/R*calorie], [1337.8574/R*calorie, 0]]
+    alpha_cs =  [[0, 0.2974],[.2974, 0]]
+    GE = NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs)
+    GE.gammas()
+    gammas_expect = [1.936051651447544, 1.1536630452052914]
+    assert_close1d(GE.gammas(), gammas_expect, rtol=1e-13)

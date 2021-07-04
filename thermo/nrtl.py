@@ -448,6 +448,20 @@ class NRTL(GibbsExcess):
     by the NRTL equation. This model is capable of representing VL and LL
     behavior. [1]_ and [2]_ are good references on this model.
 
+    .. math::
+        g^E = RT\sum_i x_i \frac{\sum_j \tau_{ji} G_{ji} x_j}
+        {\sum_j G_{ji}x_j}
+
+    .. math::
+        G_{ij}=\exp(-\alpha_{ij}\tau_{ij})
+
+    .. math::
+        \alpha_{ij}=c_{ij} + d_{ij}T
+
+    .. math::
+        \tau_{ij}=A_{ij}+\frac{B_{ij}}{T}+E_{ij}\ln T + F_{ij}T
+        + \frac{G_{ij}}{T^2} + H_{ij}{T^2}
+
     Parameters
     ----------
     T : float
@@ -462,24 +476,23 @@ class NRTL(GibbsExcess):
         NRTL alpha parameters, []
     ABEFGHCD : tuple[list[list[float]], 8], optional
         Contains the following. One of (`tau_coeffs` and `alpha_coeffs`) or
-        `ABEFGHCD` are required, [-]
-
-        a : list[list[float]]
-            `a` parameters used in calculating :obj:`NRTL.taus`, [-]
-        b : list[list[float]]
-            `b` parameters used in calculating :obj:`NRTL.taus`, [K]
-        e : list[list[float]]
-            `e` parameters used in calculating :obj:`NRTL.taus`, [-]
-        f : list[list[float]]
-            `f` paraemeters used in calculating :obj:`NRTL.taus`, [1/K]
-        e : list[list[float]]
-            `e` parameters used in calculating :obj:`NRTL.taus`, [K^2]
-        f : list[list[float]]
-            `f` parameters used in calculating :obj:`NRTL.taus`, [1/K^2]
-        c : list[list[float]]
-            `c` parameters used in calculating :obj:`NRTL.alphas`, [-]
-        d : list[list[float]]
-            `d` paraemeters used in calculating :obj:`NRTL.alphas`, [1/K]
+        `ABEFGHCD` or some of the `tau` or `alpha` parameters are required, [-]
+    tau_as : list[list[float]], optional
+        `a` parameters used in calculating :obj:`NRTL.taus`, [-]
+    tau_bs : list[list[float]], optional
+        `b` parameters used in calculating :obj:`NRTL.taus`, [K]
+    tau_es : list[list[float]], optional
+        `e` parameters used in calculating :obj:`NRTL.taus`, [-]
+    tau_fs : list[list[float]], optional
+        `f` paraemeters used in calculating :obj:`NRTL.taus`, [1/K]
+    tau_gs : list[list[float]], optional
+        `e` parameters used in calculating :obj:`NRTL.taus`, [K^2]
+    tau_hs : list[list[float]], optional
+        `f` parameters used in calculating :obj:`NRTL.taus`, [1/K^2]
+    alpha_cs : list[list[float]], optional
+        `c` parameters used in calculating :obj:`NRTL.alphas`, [-]
+    alpha_ds : list[list[float]], optional
+        `d` paraemeters used in calculating :obj:`NRTL.alphas`, [1/K]
 
     Attributes
     ----------
