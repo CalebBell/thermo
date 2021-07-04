@@ -30,7 +30,7 @@ from thermo.nrtl import NRTL
 from random import random
 from thermo import *
 import numpy as np
-from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d
+from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d, linspace
 from thermo.test_utils import check_np_output_activity
 import pickle
 
@@ -474,3 +474,15 @@ def test_NRTL_chemsep():
     GE = NRTL(T=T, xs=xs, ABEFGHCD=ABEFGHCD)
     gammas = GE.gammas()
     assert_close1d(gammas, [1.985383485664009, 1.146380779201308], rtol=1e-7)
+    
+    # Table of values right from ChemSep
+    gammas_ethanol = [5.66232, 4.283, 3.3749, 2.75365, 2.31475, 1.99622, 1.75984, 1.58121, 1.44425, 1.33807, 1.25512, 1.19003, 1.13894, 1.09896, 1.06796, 1.0443, 1.02671, 1.0142, 1.00598, 1.00142, 1]
+    gammas_water = [1, 1.00705, 1.02657, 1.05673, 1.09626, 1.14429, 1.20021, 1.26357, 1.33405, 1.41139, 1.49541, 1.58593, 1.68281, 1.78591, 1.89509, 2.0102, 2.1311, 2.25761, 2.38956, 2.52675, 2.66895]
+    pts = 21
+    xs_ethanol = linspace(0, 1, 21)
+    for i in range(pts):
+        GE2 = GE.to_T_xs(T=T, xs=[xs_ethanol[i], 1-xs_ethanol[i]])
+        gammas = GE2.gammas()
+        assert_close(gammas[0], gammas_ethanol[i], rtol=1e-5)
+        assert_close(gammas[1], gammas_water[i], rtol=1e-5)
+    
