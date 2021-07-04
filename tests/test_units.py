@@ -198,7 +198,7 @@ def test_Wilson_units_1():
     model_from_DDBST = Wilson(T=T, xs=xs, lambda_as=params[0], lambda_bs=params[1], lambda_cs=params[2], lambda_ds=params[3], lambda_es=params[4], lambda_fs=params[5])
     
 
-    model_lambda_coeffs = Wilson(T=T, xs=np.array(xs)*u.dimensionless, lambda_coeffs=np.array(lambda_coeffs)*u.dimensionless)
+    model_lambda_coeffs = Wilson(T=T, xs=xs, lambda_coeffs=np.array(lambda_coeffs)*u.dimensionless)
 
     for model in (model_ABD, model_from_DDBST, model_lambda_coeffs):
         assert_pint_allclose(model.GE(), GE_expect, u.J/u.mol)

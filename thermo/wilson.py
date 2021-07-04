@@ -381,7 +381,7 @@ class Wilson(GibbsExcess):
         Mole fractions, [-]
     lambda_coeffs : list[list[list[float]]], optional
         Wilson parameters, indexed by [i][j] and then each value is a 6
-        element list with parameters [`a`, `b`, `c`, `d`, `e`, `f`];
+        element list with parameters (`a`, `b`, `c`, `d`, `e`, `f`);
         either `lambda_coeffs` or the lambda parameters are required, [various]
     ABCDEF : tuple(list[list[float]], 6), optional
         The lamba parameters can be provided as a tuple, [various]
