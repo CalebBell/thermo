@@ -431,7 +431,7 @@ def test_NRTL_numpy_output_correct_array_internal_ownership():
     xs = [.2, .3, .5]
     modelnp = NRTL(T=T, xs=np.array(xs), tau_coeffs=np.array(taus), alpha_coeffs=np.array(alphas))
 
-    for name in ('tau_coeffs_A', 'tau_coeffs_B', 'tau_coeffs_E', 'tau_coeffs_F', 'tau_coeffs_G', 'tau_coeffs_H', 'alpha_coeffs_c', 'alpha_coeffs_d'):
+    for name in ('tau_as', 'tau_bs', 'tau_es', 'tau_fs', 'tau_gs', 'tau_hs', 'alpha_cs', 'alpha_ds'):
         obj = getattr(modelnp, name)
         assert obj.flags.c_contiguous
         assert obj.flags.owndata

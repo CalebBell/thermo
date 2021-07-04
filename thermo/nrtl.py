@@ -55,7 +55,7 @@ from thermo.activity import GibbsExcess
 __all__ = ['NRTL', 'NRTL_gammas']
 
 try:
-    array, zeros, npsum, nplog = np.array, np.zeros, np.sum, np.log
+    array, zeros, ones, npsum, nplog = np.array, np.zeros, np.ones, np.sum, np.log
 except (ImportError, AttributeError):
     pass
 
@@ -531,8 +531,8 @@ class NRTL(GibbsExcess):
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
     
-    _model_attributes = ('tau_coeffs_A', 'tau_coeffs_B', 'tau_coeffs_E', 'tau_coeffs_F',
-                         'tau_coeffs_G', 'tau_coeffs_H', 'alpha_coeffs_c', 'alpha_coeffs_d')
+    _model_attributes = ('tau_as', 'tau_bs', 'tau_es', 'tau_fs',
+                         'tau_gs', 'tau_hs', 'alpha_cs', 'alpha_ds')
     model_id = 100
     
     def __init__(self, T, xs, tau_coeffs=None, alpha_coeffs=None,
@@ -542,47 +542,47 @@ class NRTL(GibbsExcess):
         self.scalar = scalar = type(xs) is list
 
         if ABEFGHCD is not None:
-            (self.tau_coeffs_A, self.tau_coeffs_B, self.tau_coeffs_E,
-            self.tau_coeffs_F, self.tau_coeffs_G, self.tau_coeffs_H,
-            self.alpha_coeffs_c, self.alpha_coeffs_d) = ABEFGHCD
-            self.N = N = len(self.tau_coeffs_A)
+            (self.tau_as, self.tau_bs, self.tau_es,
+            self.tau_fs, self.tau_gs, self.tau_hs,
+            self.alpha_cs, self.alpha_ds) = ABEFGHCD
+            self.N = N = len(self.tau_as)
         else:
             if tau_coeffs is not None:
                 if scalar:
-                    self.tau_coeffs_A = [[i[0] for i in l] for l in tau_coeffs]
-                    self.tau_coeffs_B = [[i[1] for i in l] for l in tau_coeffs]
-                    self.tau_coeffs_E = [[i[2] for i in l] for l in tau_coeffs]
-                    self.tau_coeffs_F = [[i[3] for i in l] for l in tau_coeffs]
-                    self.tau_coeffs_G = [[i[4] for i in l] for l in tau_coeffs]
-                    self.tau_coeffs_H = [[i[5] for i in l] for l in tau_coeffs]
+                    self.tau_as = [[i[0] for i in l] for l in tau_coeffs]
+                    self.tau_bs = [[i[1] for i in l] for l in tau_coeffs]
+                    self.tau_es = [[i[2] for i in l] for l in tau_coeffs]
+                    self.tau_fs = [[i[3] for i in l] for l in tau_coeffs]
+                    self.tau_gs = [[i[4] for i in l] for l in tau_coeffs]
+                    self.tau_hs = [[i[5] for i in l] for l in tau_coeffs]
                 else:
-                    self.tau_coeffs_A = array(tau_coeffs[:,:,0], order='C', copy=True)
-                    self.tau_coeffs_B = array(tau_coeffs[:,:,1], order='C', copy=True)
-                    self.tau_coeffs_E = array(tau_coeffs[:,:,2], order='C', copy=True)
-                    self.tau_coeffs_F = array(tau_coeffs[:,:,3], order='C', copy=True)
-                    self.tau_coeffs_G = array(tau_coeffs[:,:,4], order='C', copy=True)
-                    self.tau_coeffs_H = array(tau_coeffs[:,:,5], order='C', copy=True)
+                    self.tau_as = array(tau_coeffs[:,:,0], order='C', copy=True)
+                    self.tau_bs = array(tau_coeffs[:,:,1], order='C', copy=True)
+                    self.tau_es = array(tau_coeffs[:,:,2], order='C', copy=True)
+                    self.tau_fs = array(tau_coeffs[:,:,3], order='C', copy=True)
+                    self.tau_gs = array(tau_coeffs[:,:,4], order='C', copy=True)
+                    self.tau_hs = array(tau_coeffs[:,:,5], order='C', copy=True)
             else:
                 raise ValueError("`tau_coeffs` is required")
 
             if alpha_coeffs is not None:
                 if scalar:
-                    self.alpha_coeffs_c = [[i[0] for i in l] for l in alpha_coeffs]
-                    self.alpha_coeffs_d = [[i[1] for i in l] for l in alpha_coeffs]
+                    self.alpha_cs = [[i[0] for i in l] for l in alpha_coeffs]
+                    self.alpha_ds = [[i[1] for i in l] for l in alpha_coeffs]
                 else:
-                    self.alpha_coeffs_c = array(alpha_coeffs[:,:,0], order='C', copy=True)
-                    self.alpha_coeffs_d = array(alpha_coeffs[:,:,1], order='C', copy=True)
+                    self.alpha_cs = array(alpha_coeffs[:,:,0], order='C', copy=True)
+                    self.alpha_ds = array(alpha_coeffs[:,:,1], order='C', copy=True)
             else:
                 raise ValueError("`alpha_coeffs` is required")
 
-            self.N = N = len(self.tau_coeffs_A)
+            self.N = N = len(self.tau_as)
 
         # Make an array of values identifying what coefficients are zero.
         # This may be useful for performance optimization in the future but is
         # especially important for reducing the size of the __repr__ string.
         self.tau_coeffs_nonzero = tau_coeffs_nonzero = [True]*6 if scalar else ones(6, bool)
-        for k, coeffs in enumerate([self.tau_coeffs_A, self.tau_coeffs_B, self.tau_coeffs_E,
-                           self.tau_coeffs_F, self.tau_coeffs_G, self.tau_coeffs_H]):
+        for k, coeffs in enumerate([self.tau_as, self.tau_bs, self.tau_es,
+                           self.tau_fs, self.tau_gs, self.tau_hs]):
             nonzero = False
             for i in range(N):
                 r = coeffs[i]
@@ -615,9 +615,9 @@ class NRTL(GibbsExcess):
 
     def __repr__(self):
         s = '%s(T=%s, xs=%s, ABEFGHCD=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs),
-                (self.tau_coeffs_A,  self.tau_coeffs_B, self.tau_coeffs_E,
-                 self.tau_coeffs_F, self.tau_coeffs_G, self.tau_coeffs_H,
-                 self.alpha_coeffs_c, self.alpha_coeffs_d))
+                (self.tau_as,  self.tau_bs, self.tau_es,
+                 self.tau_fs, self.tau_gs, self.tau_hs,
+                 self.alpha_cs, self.alpha_ds))
         return s
 
 
@@ -649,11 +649,11 @@ class NRTL(GibbsExcess):
         new.xs = xs
         new.N = self.N
         new.scalar = self.scalar
-        (new.tau_coeffs_A, new.tau_coeffs_B, new.tau_coeffs_E,
-         new.tau_coeffs_F, new.tau_coeffs_G, new.tau_coeffs_H,
-         new.alpha_coeffs_c, new.alpha_coeffs_d, new.tau_coeffs_nonzero) = (self.tau_coeffs_A, self.tau_coeffs_B, self.tau_coeffs_E,
-                         self.tau_coeffs_F, self.tau_coeffs_G, self.tau_coeffs_H,
-                         self.alpha_coeffs_c, self.alpha_coeffs_d, self.tau_coeffs_nonzero)
+        (new.tau_as, new.tau_bs, new.tau_es,
+         new.tau_fs, new.tau_gs, new.tau_hs,
+         new.alpha_cs, new.alpha_ds, new.tau_coeffs_nonzero) = (self.tau_as, self.tau_bs, self.tau_es,
+                         self.tau_fs, self.tau_gs, self.tau_hs,
+                         self.alpha_cs, self.alpha_ds, self.tau_coeffs_nonzero)
 
         if T == self.T:
             try:
@@ -748,12 +748,12 @@ class NRTL(GibbsExcess):
             return self._taus
         except AttributeError:
             pass
-        A = self.tau_coeffs_A
-        B = self.tau_coeffs_B
-        E = self.tau_coeffs_E
-        F = self.tau_coeffs_F
-        G = self.tau_coeffs_G
-        H = self.tau_coeffs_H
+        A = self.tau_as
+        B = self.tau_bs
+        E = self.tau_es
+        F = self.tau_fs
+        G = self.tau_gs
+        H = self.tau_hs
         T, N = self.T, self.N
         if self.scalar:
             taus = [[0.0]*N for _ in range(N)]
@@ -785,11 +785,11 @@ class NRTL(GibbsExcess):
         except AttributeError:
             pass
         # Believed all correct but not tested
-        B = self.tau_coeffs_B
-        E = self.tau_coeffs_E
-        F = self.tau_coeffs_F
-        G = self.tau_coeffs_G
-        H = self.tau_coeffs_H
+        B = self.tau_bs
+        E = self.tau_es
+        F = self.tau_fs
+        G = self.tau_gs
+        H = self.tau_hs
         T, N = self.T, self.N
         if self.scalar:
             dtaus_dT = [[0.0]*N for _ in range(N)]
@@ -820,10 +820,10 @@ class NRTL(GibbsExcess):
             return self._d2taus_dT2
         except AttributeError:
             pass
-        B = self.tau_coeffs_B
-        E = self.tau_coeffs_E
-        G = self.tau_coeffs_G
-        H = self.tau_coeffs_H
+        B = self.tau_bs
+        E = self.tau_es
+        G = self.tau_gs
+        H = self.tau_hs
         T, N = self.T, self.N
 
         if self.scalar:
@@ -855,9 +855,9 @@ class NRTL(GibbsExcess):
             return self._d3taus_dT3
         except AttributeError:
             pass
-        B = self.tau_coeffs_B
-        E = self.tau_coeffs_E
-        G = self.tau_coeffs_G
+        B = self.tau_bs
+        E = self.tau_es
+        G = self.tau_gs
         T, N = self.T, self.N
         if self.scalar:
             d3taus_dT3 = [[0.0]*N for _ in range(N)]
@@ -906,12 +906,12 @@ class NRTL(GibbsExcess):
         else:
             alphas = zeros((N, N))
 
-        self._alphas = nrtl_alphas(self.T, N, self.alpha_coeffs_c, self.alpha_coeffs_d, alphas)
+        self._alphas = nrtl_alphas(self.T, N, self.alpha_cs, self.alpha_ds, alphas)
         return alphas
 
     def dalphas_dT(self):
         '''Keep it as a function in case this needs to become more complicated.'''
-        return self.alpha_coeffs_d
+        return self.alpha_ds
 
     def d2alphas_dT2(self):
         '''Keep it as a function in case this needs to become more complicated.'''
