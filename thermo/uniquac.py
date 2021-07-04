@@ -310,6 +310,21 @@ class UNIQUAC(GibbsExcess):
     by the UNIQUAC equation. This model is capable of representing VL and LL
     behavior.
 
+    .. math::
+        \frac{G^E}{RT} = \sum_i x_i \ln\frac{\phi_i}{x_i}
+        + \frac{z}{2}\sum_i q_i x_i \ln\frac{\theta_i}{\phi_i}
+        - \sum_i q_i x_i \ln\left(\sum_j \theta_j \tau_{ji}   \right)
+
+    .. math::
+        \phi_i = \frac{r_i x_i}{\sum_j r_j x_j}
+
+    .. math::
+        \theta_i = \frac{q_i x_i}{\sum_j q_j x_j}
+
+    .. math::
+        \tau_{ij} = \exp\left[a_{ij}+\frac{b_{ij}}{T}+c_{ij}\ln T
+                + d_{ij}T + \frac{e_{ij}}{T^2} + f_{ij}{T^2}\right]
+
     Parameters
     ----------
     T : float
@@ -327,21 +342,20 @@ class UNIQUAC(GibbsExcess):
         element list with parameters [`a`, `b`, `c`, `d`, `e`, `f`];
         either `tau_coeffs` or `ABCDEF` are required, [-]
     ABCDEF : tuple[list[list[float]], 6], optional
-        Contains the following. One of `tau_coeffs` or `ABCDEF` are
-        required, [-]
-
-        a : list[list[float]] or None
-            `a` parameters used in calculating :obj:`UNIQUAC.taus`, [-]
-        b : list[list[float]] or None
-            `b` parameters used in calculating :obj:`UNIQUAC.taus`, [K]
-        c : list[list[float]] or None
-            `c` parameters used in calculating :obj:`UNIQUAC.taus`, [-]
-        d : list[list[float]] or None
-            `d` paraemeters used in calculating :obj:`UNIQUAC.taus`, [1/K]
-        e : list[list[float]] or None
-            `e` parameters used in calculating :obj:`UNIQUAC.taus`, [K^2]
-        f : list[list[float]] or None
-            `f` parameters used in calculating :obj:`UNIQUAC.taus`, [1/K^2]
+        Contains the following. One of `tau_coeffs` or `ABCDEF` or some of the
+        `tau_as`, etc parameters are required, [-]
+    tau_as : list[list[float]] or None, optional
+        `a` parameters used in calculating :obj:`UNIQUAC.taus`, [-]
+    tau_bs : list[list[float]] or None, optional
+        `b` parameters used in calculating :obj:`UNIQUAC.taus`, [K]
+    tau_cs : list[list[float]] or None, optional
+        `c` parameters used in calculating :obj:`UNIQUAC.taus`, [-]
+    tau_ds : list[list[float]] or None, optional
+        `d` paraemeters used in calculating :obj:`UNIQUAC.taus`, [1/K]
+    tau_es : list[list[float]] or None, optional
+        `e` parameters used in calculating :obj:`UNIQUAC.taus`, [K^2]
+    tau_fs : list[list[float]] or None, optional
+        `f` parameters used in calculating :obj:`UNIQUAC.taus`, [1/K^2]
 
     Attributes
     ----------
@@ -447,14 +461,12 @@ class UNIQUAC(GibbsExcess):
     >>> qs = [1.97, 1.400]
     >>> N = 2
     >>> T = 343.15
-    >>> tausA = tausC = tausD = tausE = tausF = [[0.0]*N for _ in range(N)]
-    >>> tausB = IPDB.get_ip_asymmetric_matrix(name='ChemSep UNIQUAC', CASs=['64-17-5', '7732-18-5'], ip='bij')
-    >>> ABCDEF = (tausA, tausB, tausC, tausD, tausE, tausF)
-    >>> GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=ABCDEF)
+    >>> tau_bs = IPDB.get_ip_asymmetric_matrix(name='ChemSep UNIQUAC', CASs=['64-17-5', '7732-18-5'], ip='bij')
+    >>> GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, tau_bs=tau_bs)
     >>> GE.gammas()
     [1.977454, 1.1397696]
 
-    In ChemSep, the form of the UNIQUAC `tauu` equation is
+    In ChemSep, the form of the UNIQUAC `tau` equation is
     
     .. math::
         \tau_{ij} = \exp\left( \frac{-A_{ij}}{RT}\right)
@@ -462,7 +474,7 @@ class UNIQUAC(GibbsExcess):
     The parameters were converted to the form used by Thermo as follows:
         
     .. math::
-        b_{ij} = \frac{-A_{ij}}{R}= \frac{-A_{ij}}{ 1.9872042586408316}
+        b_{ij} = \frac{-A_{ij}}{R}= \frac{-A_{ij}}{1.9872042586408316}
         
     
     This system was chosen because there is also a sample problem for the same
@@ -494,8 +506,9 @@ class UNIQUAC(GibbsExcess):
                  self.tau_coeffs_D, self.tau_coeffs_E, self.tau_coeffs_F))
         return s
 
-    def __init__(self, T, xs, rs, qs, tau_coeffs=None,
-                 ABCDEF=None):
+    def __init__(self, T, xs, rs, qs, tau_coeffs=None, ABCDEF=None, 
+                 tau_as=None, tau_bs=None, tau_cs=None, tau_ds=None, 
+                 tau_es=None, tau_fs=None):
         self.T = T
         self.xs = xs
         self.scalar = scalar = type(rs) is list
@@ -504,7 +517,20 @@ class UNIQUAC(GibbsExcess):
 
         self.N = N = len(rs)
 
-        if ABCDEF is not None:
+        multiple_inputs = (tau_as, tau_bs, tau_cs, tau_ds, tau_es, tau_fs)
+        
+        input_count = ((tau_coeffs is not None) + (ABCDEF is not None) 
+                       + (any(i is not None for i in multiple_inputs)))
+        if input_count > 1:
+            raise ValueError("Input only one of tau_coeffs, ABCDEF, or (tau_as..)")
+
+        if ABCDEF is None:
+            ABCDEF = multiple_inputs
+
+
+        if tau_coeffs is not None:
+            pass
+        elif ABCDEF is not None:
             try:
                 all_lengths = tuple(len(coeffs) for coeffs in ABCDEF if coeffs is not None)
                 if len(set(all_lengths)) > 1:
@@ -514,8 +540,6 @@ class UNIQUAC(GibbsExcess):
                     raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths_inner,))
             except:
                 raise ValueError("Coefficients not input correctly")
-        elif tau_coeffs is not None:
-            pass
         else:
             raise ValueError("`tau_coeffs` or `ABCDEF` is required")
         
@@ -524,7 +548,22 @@ class UNIQUAC(GibbsExcess):
         else:
             self.zero_coeffs = zero_coeffs = zeros((N, N))
 
-        if ABCDEF is not None:
+        if tau_coeffs is not None:
+            if scalar:
+                self.tau_coeffs_A = [[i[0] for i in l] for l in tau_coeffs]
+                self.tau_coeffs_B = [[i[1] for i in l] for l in tau_coeffs]
+                self.tau_coeffs_C = [[i[2] for i in l] for l in tau_coeffs]
+                self.tau_coeffs_D = [[i[3] for i in l] for l in tau_coeffs]
+                self.tau_coeffs_E = [[i[4] for i in l] for l in tau_coeffs]
+                self.tau_coeffs_F = [[i[5] for i in l] for l in tau_coeffs]
+            else:
+                self.tau_coeffs_A = array(tau_coeffs[:,:,0], order='C', copy=True)
+                self.tau_coeffs_B = array(tau_coeffs[:,:,1], order='C', copy=True)
+                self.tau_coeffs_C = array(tau_coeffs[:,:,2], order='C', copy=True)
+                self.tau_coeffs_D = array(tau_coeffs[:,:,3], order='C', copy=True)
+                self.tau_coeffs_E = array(tau_coeffs[:,:,4], order='C', copy=True)
+                self.tau_coeffs_F = array(tau_coeffs[:,:,5], order='C', copy=True)
+        else:
             len_ABCDEF = len(ABCDEF)
             if len_ABCDEF == 0 or ABCDEF[0] is None:
                 self.tau_coeffs_A = zero_coeffs
@@ -550,22 +589,6 @@ class UNIQUAC(GibbsExcess):
                 self.tau_coeffs_F = zero_coeffs
             else:
                 self.tau_coeffs_F = ABCDEF[5]
-        else:
-            if tau_coeffs is not None:
-                if scalar:
-                    self.tau_coeffs_A = [[i[0] for i in l] for l in tau_coeffs]
-                    self.tau_coeffs_B = [[i[1] for i in l] for l in tau_coeffs]
-                    self.tau_coeffs_C = [[i[2] for i in l] for l in tau_coeffs]
-                    self.tau_coeffs_D = [[i[3] for i in l] for l in tau_coeffs]
-                    self.tau_coeffs_E = [[i[4] for i in l] for l in tau_coeffs]
-                    self.tau_coeffs_F = [[i[5] for i in l] for l in tau_coeffs]
-                else:
-                    self.tau_coeffs_A = array(tau_coeffs[:,:,0], order='C', copy=True)
-                    self.tau_coeffs_B = array(tau_coeffs[:,:,1], order='C', copy=True)
-                    self.tau_coeffs_C = array(tau_coeffs[:,:,2], order='C', copy=True)
-                    self.tau_coeffs_D = array(tau_coeffs[:,:,3], order='C', copy=True)
-                    self.tau_coeffs_E = array(tau_coeffs[:,:,4], order='C', copy=True)
-                    self.tau_coeffs_F = array(tau_coeffs[:,:,5], order='C', copy=True)
 
     def to_T_xs(self, T, xs):
         r'''Method to construct a new :obj:`UNIQUAC` instance at
