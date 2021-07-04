@@ -513,3 +513,7 @@ def test_NRTL_partial_inputs():
         
     with pytest.raises(ValueError):
         NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs, ABEFGHCD=(tau_bs,))
+        
+        
+    GE = NRTL(T=T, xs=xs)
+    assert_close1d(GE.gammas(), [1.0, 1.0], rtol=1e-13)
