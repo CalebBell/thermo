@@ -851,7 +851,7 @@ def test_UNIFAC_default_data():
 
 def call_all_methods_first_UNIFAC(kwargs):
     cls = UNIFAC
-    skip_methods = ('__init__', 'to_T_xs', '__delattr__', '__format__', '__getattribute__', '__setattr__', 'from_json', 'model_id', '_regress_binary_taus')
+    skip_methods = ('__init__', 'to_T_xs', '__delattr__', '__format__', '__getattribute__', '__setattr__', 'from_json', 'model_id', '_regress_binary_parameters')
     special_methods = {1: ('Vis_modified', 'dVis_modified_dxs', 'd2Vis_modified_dxixjs', 'd3Vis_modified_dxixjxks')}
     special_methods[4] = special_methods[1]
 

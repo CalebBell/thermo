@@ -1592,8 +1592,8 @@ class Wilson(GibbsExcess):
         return gammas
 
     @classmethod
-    def regress_binary_lambdas(cls, gammas, xs, use_numba=False,
-                            do_statistics=True, **kwargs):
+    def regress_binary_parameters(cls, gammas, xs, use_numba=False,
+                                  do_statistics=True, **kwargs):
         # Load the functions either locally or with numba
         if use_numba:
             from thermo.numba import wilson_gammas_binaries as work_func, wilson_gammas_binaries_jac as jac_func
@@ -1634,16 +1634,16 @@ class Wilson(GibbsExcess):
 
         
         
-        return GibbsExcess._regress_binary_taus(gammas_working, xs_working, fitting_func=fitting_func,
-                                                fit_parameters=['lambda12', 'lambda21'], 
-                                                use_fit_parameters=['lambda12', 'lambda21'],
-                                                initial_guesses=cls._zero_gamma_lambda_guess,
-                                                analytical_jac=analytical_jac,
-                                                use_numba=use_numba,
-                                                do_statistics=do_statistics,
-                                                func_wrapped_for_leastsq=func_wrapped_for_leastsq,
-                                                jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
-                                                **kwargs)
+        return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
+                                                      fit_parameters=['lambda12', 'lambda21'],
+                                                      use_fit_parameters=['lambda12', 'lambda21'],
+                                                      initial_guesses=cls._zero_gamma_lambda_guess,
+                                                      analytical_jac=analytical_jac,
+                                                      use_numba=use_numba,
+                                                      do_statistics=do_statistics,
+                                                      func_wrapped_for_leastsq=func_wrapped_for_leastsq,
+                                                      jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
+                                                      **kwargs)
 
 
     _zero_gamma_lambda_guess = [{'lambda12': 1, 'lambda21': 1},

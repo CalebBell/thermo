@@ -366,5 +366,5 @@ def test_UNIQUAC_fitting_gamma_1_success_cases():
     qs = [3.316, 3.856]
     xs = [[xi, 1.0 - xi] for xi in linspace(1e-7, 1-1e-7, pts)]
     gammas = [[1, 1] for i in range(pts)]
-    coeffs, stats = UNIQUAC.regress_binary_taus(gammas, xs, rs, qs)
+    coeffs, stats = UNIQUAC.regress_binary_parameters(gammas, xs, rs, qs)
     assert stats['MAE'] < 1e-5

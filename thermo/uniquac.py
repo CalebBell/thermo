@@ -35,7 +35,7 @@ UNIQUAC Class
 .. autoclass:: UNIQUAC
     :members: to_T_xs, GE, dGE_dT, d2GE_dT2, d3GE_dT3, d2GE_dTdxs, dGE_dxs,
               d2GE_dxixjs, taus, dtaus_dT, d2taus_dT2, d3taus_dT3, phis, 
-              thetas, regress_binary_taus
+              thetas, regress_binary_parameters
     :undoc-members:
     :show-inheritance:
     :exclude-members:
@@ -367,7 +367,9 @@ class UNIQUAC(GibbsExcess):
 
     Examples
     --------
-
+    
+    **Example 1**
+    
     Example 5.19 in [2]_ includes the calculation of liquid-liquid activity
     coefficients for the water-ethanol-benzene system. Two calculations are
     reproduced accurately here. Note that the DDBST-style coefficients assume
@@ -408,6 +410,8 @@ class UNIQUAC(GibbsExcess):
     >>> GE.HE(), GE.SE(), GE.dHE_dT(), GE.dSE_dT()
     (-153.19624152, -6.69851118521, 4.7394001431, 0.0158960259705)
 
+    **Example 2**
+    
     Another problem is 8.32 in [1]_ - acetonitrile, benzene, n-heptane at
     45 °C. The sign flip is needed here as well to convert their single
     temperature-dependent values into the correct form, but it has already been
@@ -1516,8 +1520,8 @@ class UNIQUAC(GibbsExcess):
         return d2GE_dxixjs
 
     @classmethod
-    def regress_binary_taus(cls, gammas, xs, rs, qs, use_numba=False,
-                            do_statistics=True, **kwargs):
+    def regress_binary_parameters(cls, gammas, xs, rs, qs, use_numba=False,
+                                  do_statistics=True, **kwargs):
         r'''Perform a basic regression to determine the values of the `tau`
         terms in the UNIQUAC model, given a series of known or predicted
         activity coefficients and mole fractions. 
@@ -1574,7 +1578,7 @@ class UNIQUAC(GibbsExcess):
         >>> qs = [3.316, 3.856]
         >>> xs = [[xi, 1.0 - xi] for xi in np.linspace(1e-7, 1-1e-7, pts)]
         >>> gammas = [[1, 1] for i in range(pts)]
-        >>> coeffs, stats = UNIQUAC.regress_binary_taus(gammas, xs, rs, qs)
+        >>> coeffs, stats = UNIQUAC.regress_binary_parameters(gammas, xs, rs, qs)
         >>> coeffs
         {'tau12': 1.04220685, 'tau21': 0.95538082}
         >>> assert stats['MAE'] < 1e-6
@@ -1608,7 +1612,7 @@ class UNIQUAC(GibbsExcess):
         >>> pts = 6
         >>> xs = [[xi, 1.0 - xi] for xi in np.linspace(1e-7, 1-1e-7, pts)]
         >>> gammas = [[1, 1] for i in range(pts)]
-        >>> coeffs, stats = UNIQUAC.regress_binary_taus(gammas, xs, rs, qs)
+        >>> coeffs, stats = UNIQUAC.regress_binary_parameters(gammas, xs, rs, qs)
         >>> stats['MAE']
         0.0254
         
@@ -1641,14 +1645,14 @@ class UNIQUAC(GibbsExcess):
         xs_working = np.array(xs_working)
         gammas_working = np.array(gammas_working)
 
-        return GibbsExcess._regress_binary_taus(gammas_working, xs_working, fitting_func=fitting_func,
-                                                fit_parameters=['tau12', 'tau21'], 
-                                                use_fit_parameters=['tau12', 'tau21'],
-                                                initial_guesses=cls._zero_gamma_tau_guess,
-                                                analytical_jac=None,
-                                                use_numba=use_numba,
-                                                do_statistics=do_statistics,
-                                                **kwargs)
+        return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
+                                                      fit_parameters=['tau12', 'tau21'],
+                                                      use_fit_parameters=['tau12', 'tau21'],
+                                                      initial_guesses=cls._zero_gamma_tau_guess,
+                                                      analytical_jac=None,
+                                                      use_numba=use_numba,
+                                                      do_statistics=do_statistics,
+                                                      **kwargs)
          
     
     _zero_gamma_tau_guess = [{'tau12': 1, 'tau21': 1},

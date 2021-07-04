@@ -1015,9 +1015,9 @@ class GibbsExcess(object):
         return dgammas_dT
     
     @classmethod
-    def _regress_binary_taus(cls, gammas, xs, fitting_func, fit_parameters,
-                             use_fit_parameters, initial_guesses=None, analytical_jac=None,
-                             **kwargs):
+    def _regress_binary_parameters(cls, gammas, xs, fitting_func, fit_parameters,
+                                   use_fit_parameters, initial_guesses=None, analytical_jac=None,
+                                   **kwargs):
 
         fit_kwargs = dict(fit_method='lm', 
                     # fit_method='differential_evolution', 
