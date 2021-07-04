@@ -368,3 +368,18 @@ def test_UNIQUAC_fitting_gamma_1_success_cases():
     gammas = [[1, 1] for i in range(pts)]
     coeffs, stats = UNIQUAC.regress_binary_parameters(gammas, xs, rs, qs)
     assert stats['MAE'] < 1e-5
+    
+    
+def test_UNIQUAC_chemsep():
+    from thermo.interaction_parameters import IPDB
+    xs = [0.252, 0.748]
+    rs = [2.11, 0.92]
+    qs = [1.97, 1.400]
+    N = 2
+    T = 343.15
+    tausA = tausC = tausD = tausE = tausF = [[0.0]*N for _ in range(N)]
+    tausB = IPDB.get_ip_asymmetric_matrix(name='ChemSep UNIQUAC', CASs=['64-17-5', '7732-18-5'], ip='bij')
+    ABCDEF = (tausA, tausB, tausC, tausD, tausE, tausF)
+    GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=ABCDEF)
+    gammas = GE.gammas()
+    assert_close1d(gammas, [1.977454791958557, 1.1397696289861017], rtol=1e-12)
