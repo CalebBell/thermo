@@ -139,6 +139,15 @@ def test_VaporPressure_calculate_units():
     # ans = EtOH.T_dependent_property(300*u.K)
     # assert_pint_allclose(ans, 8491.523803275244, u.Pa)
 
+def test_RegularSolution_units():
+    GE = RegularSolution(T=80*u.degC, xs=np.array([.5, .5])*u.dimensionless, Vs=np.array([89, 109])*u.cm**3/u.mol,
+                         SPs=np.array([18818.442018403115, 16772.95919031582])*u.Pa**0.5)
+    gammas_infinite = GE.gammas_infinite_dilution()
+    gammas_infinite_expect = [1.1352128394577634, 1.1680305837879223]
+    for i in range(2):
+        assert_pint_allclose(gammas_infinite[i], gammas_infinite_expect[i], u.dimensionless)
+
+
 def test_Wilson_units_1():
     '''All the time taken by this function is in pint. Yes, all of it.
     '''

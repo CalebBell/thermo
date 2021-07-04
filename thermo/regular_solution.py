@@ -204,7 +204,7 @@ class RegularSolution(GibbsExcess):
         Mole fractions, [-]
     Vs : list[float]
         Molar volumes of each compond at a reference temperature (often 298.15
-        K), [K]
+        K), [m^3/mol]
     SPs : list[float]
         Solubility parameters of each compound; normally at a reference
         temperature of 298.15 K, [Pa^0.5]
