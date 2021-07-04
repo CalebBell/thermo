@@ -536,46 +536,93 @@ class NRTL(GibbsExcess):
     model_id = 100
     
     def __init__(self, T, xs, tau_coeffs=None, alpha_coeffs=None,
-                 ABEFGHCD=None):
+                 ABEFGHCD=None, tau_as=None, tau_bs=None, tau_es=None,
+                 tau_fs=None, tau_gs=None, tau_hs=None, alpha_cs=None, 
+                 alpha_ds=None):
         self.T = T
         self.xs = xs
         self.scalar = scalar = type(xs) is list
+        self.N = N = len(xs)
 
-        if ABEFGHCD is not None:
-            (self.tau_as, self.tau_bs, self.tau_es,
-            self.tau_fs, self.tau_gs, self.tau_hs,
-            self.alpha_cs, self.alpha_ds) = ABEFGHCD
-            self.N = N = len(self.tau_as)
+        if ABEFGHCD is None:
+            ABEFGHCD = (tau_as, tau_bs, tau_es, tau_fs, tau_gs, tau_hs, 
+                        alpha_cs, alpha_ds)
+
+        if tau_coeffs is not None and alpha_coeffs is not None:
+            pass
         else:
-            if tau_coeffs is not None:
-                if scalar:
-                    self.tau_as = [[i[0] for i in l] for l in tau_coeffs]
-                    self.tau_bs = [[i[1] for i in l] for l in tau_coeffs]
-                    self.tau_es = [[i[2] for i in l] for l in tau_coeffs]
-                    self.tau_fs = [[i[3] for i in l] for l in tau_coeffs]
-                    self.tau_gs = [[i[4] for i in l] for l in tau_coeffs]
-                    self.tau_hs = [[i[5] for i in l] for l in tau_coeffs]
-                else:
-                    self.tau_as = array(tau_coeffs[:,:,0], order='C', copy=True)
-                    self.tau_bs = array(tau_coeffs[:,:,1], order='C', copy=True)
-                    self.tau_es = array(tau_coeffs[:,:,2], order='C', copy=True)
-                    self.tau_fs = array(tau_coeffs[:,:,3], order='C', copy=True)
-                    self.tau_gs = array(tau_coeffs[:,:,4], order='C', copy=True)
-                    self.tau_hs = array(tau_coeffs[:,:,5], order='C', copy=True)
-            else:
-                raise ValueError("`tau_coeffs` is required")
+            try:
+                all_lengths = tuple(len(coeffs) for coeffs in ABEFGHCD if coeffs is not None)
+                if len(set(all_lengths)) > 1:
+                    raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths,))
+                all_lengths_inner = tuple(len(coeffs[0]) for coeffs in ABEFGHCD if coeffs is not None)
+                if len(set(all_lengths_inner)) > 1:
+                    raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths_inner,))
+            except:
+                raise ValueError("Coefficients not input correctly")
 
-            if alpha_coeffs is not None:
-                if scalar:
-                    self.alpha_cs = [[i[0] for i in l] for l in alpha_coeffs]
-                    self.alpha_ds = [[i[1] for i in l] for l in alpha_coeffs]
-                else:
-                    self.alpha_cs = array(alpha_coeffs[:,:,0], order='C', copy=True)
-                    self.alpha_ds = array(alpha_coeffs[:,:,1], order='C', copy=True)
+        if tau_coeffs is not None and alpha_coeffs is not None:
+            if scalar:
+                self.tau_as = [[i[0] for i in l] for l in tau_coeffs]
+                self.tau_bs = [[i[1] for i in l] for l in tau_coeffs]
+                self.tau_es = [[i[2] for i in l] for l in tau_coeffs]
+                self.tau_fs = [[i[3] for i in l] for l in tau_coeffs]
+                self.tau_gs = [[i[4] for i in l] for l in tau_coeffs]
+                self.tau_hs = [[i[5] for i in l] for l in tau_coeffs]
             else:
-                raise ValueError("`alpha_coeffs` is required")
+                self.tau_as = array(tau_coeffs[:,:,0], order='C', copy=True)
+                self.tau_bs = array(tau_coeffs[:,:,1], order='C', copy=True)
+                self.tau_es = array(tau_coeffs[:,:,2], order='C', copy=True)
+                self.tau_fs = array(tau_coeffs[:,:,3], order='C', copy=True)
+                self.tau_gs = array(tau_coeffs[:,:,4], order='C', copy=True)
+                self.tau_hs = array(tau_coeffs[:,:,5], order='C', copy=True)
+            if scalar:
+                self.alpha_cs = [[i[0] for i in l] for l in alpha_coeffs]
+                self.alpha_ds = [[i[1] for i in l] for l in alpha_coeffs]
+            else:
+                self.alpha_cs = array(alpha_coeffs[:,:,0], order='C', copy=True)
+                self.alpha_ds = array(alpha_coeffs[:,:,1], order='C', copy=True)
 
-            self.N = N = len(self.tau_as)
+        else:
+            if ABEFGHCD[0] is None:
+                self.tau_as = self.zero_coeffs
+            else:
+                self.tau_as = ABEFGHCD[0]
+                
+            if ABEFGHCD[1] is None:
+                self.tau_bs = self.zero_coeffs
+            else:
+                self.tau_bs = ABEFGHCD[1]
+                
+            if ABEFGHCD[2] is None:
+                self.tau_es = self.zero_coeffs
+            else:
+                self.tau_es = ABEFGHCD[2]
+                
+            if ABEFGHCD[3] is None:
+                self.tau_fs = self.zero_coeffs
+            else:
+                self.tau_fs = ABEFGHCD[3]
+                
+            if ABEFGHCD[4] is None:
+                self.tau_gs = self.zero_coeffs
+            else:
+                self.tau_gs = ABEFGHCD[4]
+                
+            if ABEFGHCD[5] is None:
+                self.tau_hs = self.zero_coeffs
+            else:
+                self.tau_hs = ABEFGHCD[5]
+
+            if ABEFGHCD[6] is None:
+                self.alpha_cs = self.zero_coeffs
+            else:
+                self.alpha_cs = ABEFGHCD[6]
+
+            if ABEFGHCD[7] is None:
+                self.alpha_ds = self.zero_coeffs
+            else:
+                self.alpha_ds = ABEFGHCD[7]
 
         # Make an array of values identifying what coefficients are zero.
         # This may be useful for performance optimization in the future but is

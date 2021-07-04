@@ -455,12 +455,14 @@ def test_NRTL_missing_inputs():
     T = 273.15+70
     dT = T*1e-8
     xs = [.2, .3, .5]
-    with pytest.raises(ValueError):
-        GE = NRTL(T, xs, tau_coeffs=taus)
-    with pytest.raises(ValueError):
-        GE = NRTL(T, xs, taus)
-    with pytest.raises(ValueError):
-        GE = NRTL(T, xs, alpha_coeffs=alphas)
+    GE = NRTL(T, xs, tau_coeffs=taus)
+    assert_close1d(GE.gammas(), [1, 1, 1], rtol=1e-13)
+    
+    GE = NRTL(T, xs, taus)
+    assert_close1d(GE.gammas(), [1, 1, 1], rtol=1e-13)
+
+    GE = NRTL(T, xs, alpha_coeffs=alphas)
+    assert_close1d(GE.gammas(), [1, 1, 1], rtol=1e-13)
 
 def test_NRTL_chemsep():
     from thermo.interaction_parameters import IPDB
