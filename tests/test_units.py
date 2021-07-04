@@ -156,7 +156,25 @@ def test_RegularSolution_units():
         res = getattr(GE, prop)()
         assert isinstance(res, pint.Quantity)
     
+
+def test_NRTL_units_1():
+    N = 2
+    T = 70.0*u.degC
+    xs = np.array([0.252, 0.748])*u.dimensionless
+    tau_bs = np.array([[0, -61.02497992981518], [673.2359767158717, 0]])*u.K
+    alpha_cs = np.array([[0, 0.2974],[.2974, 0]])*u.dimensionless
+    GE = NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs)
+
+    get_properties = ['CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns', 'd2GE_dTdxs', 'd2GE_dxixjs', 
+                      'd2nGE_dTdns', 'd2nGE_dninjs',
+                      'dGE_dT', 'dGE_dns', 'dGE_dxs', 'dHE_dT', 'dHE_dns', 'dHE_dxs',
+                      'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns', 
+                      'dnGE_dns', 'dnHE_dns', 'dnSE_dns', 'gammas', 'gammas_infinite_dilution']
+    for prop in get_properties:
+        res = getattr(GE, prop)()
+        assert isinstance(res, pint.Quantity)
     
+
 def test_Wilson_units_1():
     '''All the time taken by this function is in pint. Yes, all of it.
     '''
