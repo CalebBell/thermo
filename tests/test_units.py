@@ -147,7 +147,16 @@ def test_RegularSolution_units():
     for i in range(2):
         assert_pint_allclose(gammas_infinite[i], gammas_infinite_expect[i], u.dimensionless)
 
-
+    get_properties = ['CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns', 'd2GE_dTdxs', 'd2GE_dxixjs', 
+                      'd2nGE_dTdns', 'd2nGE_dninjs', 'd3GE_dT3', 'd3GE_dxixjxks',
+                      'dGE_dT', 'dGE_dns', 'dGE_dxs', 'dHE_dT', 'dHE_dns', 'dHE_dxs',
+                      'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns', 
+                      'dnGE_dns', 'dnHE_dns', 'dnSE_dns', 'gammas', 'gammas_infinite_dilution']
+    for prop in get_properties:
+        res = getattr(GE, prop)()
+        assert isinstance(res, pint.Quantity)
+    
+    
 def test_Wilson_units_1():
     '''All the time taken by this function is in pint. Yes, all of it.
     '''
