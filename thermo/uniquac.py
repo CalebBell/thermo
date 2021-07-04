@@ -431,6 +431,47 @@ class UNIQUAC(GibbsExcess):
 
     The given values in [1]_ are [7.15, 1.25, 1.06].
 
+    **Example 3**
+    
+    ChemSep is a program for modeling distillation. Chemsep ships with a 
+    permissive license several
+    sets of binary interaction parameters. The UNIQUAC parameters in it can
+    be accessed from Thermo as follows. In the following case, we compute
+    activity coefficients of the ethanol-water system at mole fractions of
+    [.252, 0.748].
+    
+    >>> from thermo.interaction_parameters import IPDB
+    >>> CAS1, CAS2 = '64-17-5', '7732-18-5'
+    >>> xs = [0.252, 0.748]
+    >>> rs = [2.11, 0.92]
+    >>> qs = [1.97, 1.400]
+    >>> N = 2
+    >>> T = 343.15
+    >>> tausA = tausC = tausD = tausE = tausF = [[0.0]*N for _ in range(N)]
+    >>> tausB = IPDB.get_ip_asymmetric_matrix(name='ChemSep UNIQUAC', CASs=['64-17-5', '7732-18-5'], ip='bij')
+    >>> ABCDEF = (tausA, tausB, tausC, tausD, tausE, tausF)
+    >>> GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=ABCDEF)
+    >>> GE.gammas()
+    [1.977454, 1.1397696]
+
+    In ChemSep, the form of the UNIQUAC `tauu` equation is
+    
+    .. math::
+        \tau_{ij} = \exp\left( \frac{-A_{ij}}{RT}\right)
+    
+    The parameters were converted to the form used by Thermo as follows:
+        
+    .. math::
+        b_{ij} = \frac{-A_{ij}}{R}= \frac{-A_{ij}}{ 1.9872042586408316}
+        
+    
+    This system was chosen because there is also a sample problem for the same
+    components from the DDBST which can be found here:
+    http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/P05.01c%20VLE%20Behavior%20of%20Ethanol%20-%20Water%20Using%20UNIQUAC.xps
+    
+    In that example, with different data sets and parameters, they obtain at
+    the same conditions activity coefficients of [2.359, 1.244].
+    
     References
     ----------
     .. [1] Poling, Bruce E., John M. Prausnitz, and John P. O’Connell. The
