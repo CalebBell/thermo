@@ -556,10 +556,17 @@ class NRTL(GibbsExcess):
         self.xs = xs
         self.scalar = scalar = type(xs) is list
         self.N = N = len(xs)
+        
+        multiple_inputs = (tau_as, tau_bs, tau_es, tau_fs, tau_gs, tau_hs, 
+                        alpha_cs, alpha_ds)
+        
+        input_count = ((tau_coeffs is not None or alpha_coeffs is not None) 
+                       + (ABEFGHCD is not None) + (any(i is not None for i in multiple_inputs)))
+        if input_count > 1:
+            raise ValueError("Input only one of (tau_coeffs, alpha_coeffs), ABEFGHCD, or (tau_as...alpha_ds)")
 
         if ABEFGHCD is None:
-            ABEFGHCD = (tau_as, tau_bs, tau_es, tau_fs, tau_gs, tau_hs, 
-                        alpha_cs, alpha_ds)
+            ABEFGHCD = multiple_inputs
 
         if tau_coeffs is not None and alpha_coeffs is not None:
             pass

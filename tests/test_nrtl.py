@@ -511,3 +511,6 @@ def test_NRTL_partial_inputs():
         
     with pytest.raises(ValueError):        
         NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs, tau_es=[None, 3])
+        
+    with pytest.raises(ValueError):
+        NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs, ABEFGHCD=(tau_bs,))
