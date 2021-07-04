@@ -155,7 +155,31 @@ def test_RegularSolution_units():
     for prop in get_properties:
         res = getattr(GE, prop)()
         assert isinstance(res, pint.Quantity)
+
+def test_UNIQUAC_units_1():
+    N = 3
+    T = 25.0*u.degC
+    xs = np.array([0.7273, 0.0909, 0.1818])*u.dimensionless
+    rs = np.array([.92, 2.1055, 3.1878])*u.dimensionless
+    qs = np.array([1.4, 1.972, 2.4])*u.dimensionless
+    tau_as = tau_cs = tau_ds = tau_es = tau_fs = np.array([[0.0]*N for i in range(N)])
+    tau_bs = np.array([[0, -526.02, -309.64], [318.06, 0, 91.532], [-1325.1, -302.57, 0]])
+    GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, tau_as=tau_as*u.dimensionless, tau_bs=tau_bs*u.K,
+                 tau_cs=tau_cs*u.dimensionless, tau_ds=tau_ds/u.K, tau_es=tau_es*u.K**2, tau_fs=tau_fs/u.K**2)
     
+    gammas_expect = [1.5703933283666178, 0.29482416148177104, 18.114329048355312]
+    gammas = GE.gammas()
+    for i in range(3):
+        assert_pint_allclose(gammas[i], gammas_expect[i], u.dimensionless, rtol=1e-10)
+    
+    get_properties = ['CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns', 'd2GE_dTdxs', 'd2GE_dxixjs', 
+                      'd2nGE_dTdns', 'd2nGE_dninjs',
+                      'dGE_dT', 'dGE_dns', 'dGE_dxs', 'dHE_dT', 'dHE_dns', 'dHE_dxs',
+                      'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns', 
+                      'dnGE_dns', 'dnHE_dns', 'dnSE_dns', 'gammas', 'gammas_infinite_dilution']
+    for prop in get_properties:
+        res = getattr(GE, prop)()
+        assert isinstance(res, pint.Quantity)
 
 def test_NRTL_units_1():
     N = 2
