@@ -577,6 +577,27 @@ class NRTL(GibbsExcess):
 
             self.N = N = len(self.tau_coeffs_A)
 
+        # Make an array of values identifying what coefficients are zero.
+        # This may be useful for performance optimization in the future but is
+        # especially important for reducing the size of the __repr__ string.
+        self.tau_coeffs_nonzero = tau_coeffs_nonzero = [True]*6 if scalar else ones(6, bool)
+        for k, coeffs in enumerate([self.tau_coeffs_A, self.tau_coeffs_B, self.tau_coeffs_E,
+                           self.tau_coeffs_F, self.tau_coeffs_G, self.tau_coeffs_H]):
+            nonzero = False
+            for i in range(N):
+                r = coeffs[i]
+                for j in range(N):
+                    if r[j] != 0.0:
+                        nonzero = True
+                        break
+                if nonzero:
+                    break
+                    
+            tau_coeffs_nonzero[k] = nonzero
+
+
+
+
     @property
     def zero_coeffs(self):
         '''Method to return a 2D list-of-lists of zeros.
@@ -630,9 +651,9 @@ class NRTL(GibbsExcess):
         new.scalar = self.scalar
         (new.tau_coeffs_A, new.tau_coeffs_B, new.tau_coeffs_E,
          new.tau_coeffs_F, new.tau_coeffs_G, new.tau_coeffs_H,
-         new.alpha_coeffs_c, new.alpha_coeffs_d) = (self.tau_coeffs_A, self.tau_coeffs_B, self.tau_coeffs_E,
+         new.alpha_coeffs_c, new.alpha_coeffs_d, new.tau_coeffs_nonzero) = (self.tau_coeffs_A, self.tau_coeffs_B, self.tau_coeffs_E,
                          self.tau_coeffs_F, self.tau_coeffs_G, self.tau_coeffs_H,
-                         self.alpha_coeffs_c, self.alpha_coeffs_d)
+                         self.alpha_coeffs_c, self.alpha_coeffs_d, self.tau_coeffs_nonzero)
 
         if T == self.T:
             try:
