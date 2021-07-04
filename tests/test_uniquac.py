@@ -382,4 +382,5 @@ def test_UNIQUAC_chemsep():
     ABCDEF = (tausA, tausB, tausC, tausD, tausE, tausF)
     GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=ABCDEF)
     gammas = GE.gammas()
+    # Checked against ChemSep TPxy plot/data table - shows 5 decimal places
     assert_close1d(gammas, [1.977454791958557, 1.1397696289861017], rtol=1e-12)

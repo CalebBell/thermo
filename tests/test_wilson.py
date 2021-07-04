@@ -805,6 +805,7 @@ def test_Wilson_chemsep():
     ABCDEF = (tausA, tausB, tausC, tausD, tausE, tausF)
     GE = Wilson(T=T, xs=[0.252, 1-0.252], ABCDEF=ABCDEF)
     gammas = GE.gammas()
+    # Checked against ChemSep TPxy plot/data table - shows 5 decimal places
     assert_close1d(gammas, [1.9573311040154513, 1.1600677182620136], rtol=1e-12)
 
 def test_wilson_gammas_binaries():

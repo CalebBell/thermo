@@ -64,7 +64,7 @@ def test_basic_chemsep_PR():
 def test_basic_chemsep_NRTL():
     # ethanol water, converted to metric, simple T dependence
     bijs = IPDB.get_ip_asymmetric_matrix('ChemSep NRTL', ['64-17-5', '7732-18-5'], 'bij')
-
+    assert_close2d(bijs, [[0.0, -29.166654483541816], [624.8676222389441, 0.0]], rtol=1e-7)
     alphas_known = [[0.0, 0.2937, 0.3009], [0.2937, 0.0, 0.2999], [0.3009, 0.2999, 0.0]]
     # Test is works both symmetric and asymmetric
     alphas = IPDB.get_ip_asymmetric_matrix('ChemSep NRTL', ['64-17-5', '7732-18-5', '67-56-1'], 'alphaij')
