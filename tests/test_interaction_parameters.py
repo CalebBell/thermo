@@ -71,3 +71,9 @@ def test_basic_chemsep_NRTL():
     assert_close2d(alphas, alphas_known)
     alphas = IPDB.get_ip_symmetric_matrix('ChemSep NRTL', ['64-17-5', '7732-18-5', '67-56-1'], 'alphaij')
     assert_close2d(alphas, alphas_known)
+    
+    
+    
+def test_basic_chemsep_UNIQUAC():
+    tausB = IPDB.get_ip_asymmetric_matrix(name='ChemSep UNIQUAC', CASs=['64-17-5', '7732-18-5'], ip='bij')
+    assert_close2d(tausB, [[0.0, -87.46005814161899], [-55.288075960115854, 0.0]], rtol=1e-5)
