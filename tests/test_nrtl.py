@@ -499,3 +499,15 @@ def test_NRTL_partial_inputs():
     GE.gammas()
     gammas_expect = [1.936051651447544, 1.1536630452052914]
     assert_close1d(GE.gammas(), gammas_expect, rtol=1e-13)
+    
+    with pytest.raises(ValueError):
+        NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs, alpha_ds=[[0],[.2974, 0]])
+        
+    with pytest.raises(ValueError):
+        NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs, tau_es=[[0],[.2974, 0]])
+
+    with pytest.raises(ValueError):        
+        NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs, tau_es=[[0, 3]])
+        
+    with pytest.raises(ValueError):        
+        NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs, tau_es=[None, 3])
