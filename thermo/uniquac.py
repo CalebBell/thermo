@@ -1613,7 +1613,7 @@ class UNIQUAC(GibbsExcess):
         0.0254
         
         '''
-        if kwargs.get('use_numba', False):
+        if use_numba:
             from thermo.numba import UNIQUAC_gammas_binaries as work_func
             rs = array(rs)
             qs = array(qs)
@@ -1676,7 +1676,7 @@ def UNIQUAC_gammas_binaries(xs, rs, qs, tau12, tau21, calc=None):
         tau12 = MIN_TAU_UNIQUAC
     if tau21 < MIN_TAU_UNIQUAC:
         tau21 = MIN_TAU_UNIQUAC
-    pts = int(len(xs)/2) # Always even
+    pts = len(xs)//2 # Always even
     r1, r2 = rs
     q1, q2 = qs
     allocate_size = (pts*2)
