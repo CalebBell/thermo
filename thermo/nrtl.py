@@ -973,13 +973,16 @@ class NRTL(GibbsExcess):
         except AttributeError:
             pass
         N = self.N
-
-        if self.scalar:
-            alphas = [[0.0]*N for _ in range(N)]
+        
+        if self.alpha_temperature_independent:
+            self._alphas = alphas = self.alpha_cs
         else:
-            alphas = zeros((N, N))
-
-        self._alphas = nrtl_alphas(self.T, N, self.alpha_cs, self.alpha_ds, alphas)
+            if self.scalar:
+                alphas = [[0.0]*N for _ in range(N)]
+            else:
+                alphas = zeros((N, N))
+    
+            self._alphas = nrtl_alphas(self.T, N, self.alpha_cs, self.alpha_ds, alphas)
         return alphas
 
     def dalphas_dT(self):
