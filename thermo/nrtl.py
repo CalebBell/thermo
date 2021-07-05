@@ -659,7 +659,9 @@ class NRTL(GibbsExcess):
                         break
                 if nonzero:
                     break
-        
+            tau_coeffs_nonzero[k] = nonzero
+
+
         alpha_ds = self.alpha_ds
         alpha_temperature_independent = True
         for i in range(N):
@@ -686,10 +688,14 @@ class NRTL(GibbsExcess):
         return self._zero_coeffs
 
     def __repr__(self):
-        s = '%s(T=%s, xs=%s, ABEFGHCD=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs),
-                (self.tau_as,  self.tau_bs, self.tau_es,
-                 self.tau_fs, self.tau_gs, self.tau_hs,
-                 self.alpha_cs, self.alpha_ds))
+        s = '%s(T=%s, xs=%s' %(self.__class__.__name__, repr(self.T), repr(self.xs))
+        for i, attr in enumerate(self._model_attributes[:6]):
+            if self.tau_coeffs_nonzero[i]:
+                s += ', %s=%s' %(attr, getattr(self, attr))
+        s += ', alpha_cs=%s' %(self.alpha_cs)        
+        if not self.alpha_temperature_independent:
+            s += ', alpha_ds=%s' %(self.alpha_ds)
+        s += ')'
         return s
 
 
@@ -717,10 +723,7 @@ class NRTL(GibbsExcess):
         have been calculated, they will be set to the new object as well.
         '''
         new = self.__class__.__new__(self.__class__)
-        new.T = T
-        new.xs = xs
-        new.N = self.N
-        new.scalar = self.scalar
+        (new.T, new.xs, new.N, new.scalar) = T, xs, self.N, self.scalar
         (new.tau_as, new.tau_bs, new.tau_es,
          new.tau_fs, new.tau_gs, new.tau_hs,
          new.alpha_cs, new.alpha_ds, new.tau_coeffs_nonzero, 

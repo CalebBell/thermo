@@ -123,7 +123,16 @@ def test_wrap_UNIFAC_classmethod():
     GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=1, interaction_data=DOUFIP2006, subgroups=DOUFSG)
     assert_pint_allclose(GE.GE(), 1292.0910446403327, u.J/u.mol)
     
-
+    get_properties = ['CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns', 'd2GE_dTdxs', 'd2GE_dxixjs', 
+                      'd2nGE_dTdns', 'd2nGE_dninjs',
+                      'dGE_dT', 'dGE_dns', 'dGE_dxs', 'dHE_dT', 'dHE_dns', 'dHE_dxs',
+                      'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns', 
+                      'dnGE_dns', 'dnHE_dns', 'dnSE_dns', 'gammas', 'gammas_infinite_dilution']
+    for prop in get_properties:
+        res = getattr(GE, prop)()
+        assert isinstance(res, pint.Quantity)
+        
+        
 def test_ChemicalConstantsPackage_units():
     obj = ChemicalConstantsPackage(MWs=[18.01528, 106.165]*u.g/u.mol, names=['water', 'm-xylene'],
                              CASs=['7732-18-5', '108-38-3'],
