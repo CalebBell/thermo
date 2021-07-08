@@ -511,12 +511,15 @@ class EquilibriumState(object):
         Notes
         -----
         '''
-        liquids_betas = self.liquids_betas
-        tot = 0.0
-        for vi in liquids_betas:
-            tot += vi
-        tot = 1.0/tot
-        return [vi*tot for vi in liquids_betas]
+        if self.liquid_count > 0:
+            liquids_betas = self.liquids_betas
+            tot = 0.0
+            for vi in liquids_betas:
+                tot += vi
+            tot = 1.0/tot
+            return [vi*tot for vi in liquids_betas]
+        else:
+            return []
 
     @property
     def betas_mass_liquids(self):
@@ -534,15 +537,18 @@ class EquilibriumState(object):
         Notes
         -----
         '''
-        phase_iter = range(self.liquid_count)
-        betas = self.liquids_betas
-        MWs_phases = [i.MW() for i in self.liquids]
-        tot = 0.0
-        for i in phase_iter:
-            tot += MWs_phases[i]*betas[i]
-        tot_inv = 1.0/tot
-        return [betas[i]*MWs_phases[i]*tot_inv for i in phase_iter]
-
+        if self.liquid_count > 0:
+            phase_iter = range(self.liquid_count)
+            betas = self.liquids_betas
+            MWs_phases = [i.MW() for i in self.liquids]
+            tot = 0.0
+            for i in phase_iter:
+                tot += MWs_phases[i]*betas[i]
+            tot_inv = 1.0/tot
+            return [betas[i]*MWs_phases[i]*tot_inv for i in phase_iter]
+        else:
+            return []
+    
     @property
     def betas_volume_liquids(self):
         r'''Method to calculate and return the fraction of the liquid phase
@@ -559,16 +565,19 @@ class EquilibriumState(object):
         Notes
         -----
         '''
-        phase_iter = range(self.liquid_count)
-        betas = self.liquids_betas
-        Vs_phases = [i.V() for i in self.liquids]
+        if self.liquid_count > 0:
+            phase_iter = range(self.liquid_count)
+            betas = self.liquids_betas
+            Vs_phases = [i.V() for i in self.liquids]
 
-        tot = 0.0
-        for i in phase_iter:
-            tot += Vs_phases[i]*betas[i]
-        tot_inv = 1.0/tot
-        return [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
-
+            tot = 0.0
+            for i in phase_iter:
+                tot += Vs_phases[i]*betas[i]
+            tot_inv = 1.0/tot
+            return [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
+        else:
+            return []
+    
     def V_liquids_ref(self):
         r'''Method to calculate and return the liquid reference molar volumes
         according to the temperature variable `T_liquid_volume_ref` of
