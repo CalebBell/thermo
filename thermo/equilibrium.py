@@ -511,15 +511,14 @@ class EquilibriumState(object):
         Notes
         -----
         '''
-        if self.liquid_count > 0:
-            liquids_betas = self.liquids_betas
-            tot = 0.0
-            for vi in liquids_betas:
-                tot += vi
-            tot = 1.0/tot
-            return [vi*tot for vi in liquids_betas]
-        else:
+        liquids_betas = self.liquids_betas
+        tot = 0.0
+        for vi in liquids_betas:
+            tot += vi
+        if tot == 0.0:
             return []
+        tot = 1.0/tot
+        return [vi*tot for vi in liquids_betas]
 
     @property
     def betas_mass_liquids(self):
@@ -537,7 +536,7 @@ class EquilibriumState(object):
         Notes
         -----
         '''
-        if self.liquid_count > 0:
+        if self.liquid_count:
             phase_iter = range(self.liquid_count)
             betas = self.liquids_betas
             MWs_phases = [i.MW() for i in self.liquids]
@@ -565,7 +564,7 @@ class EquilibriumState(object):
         Notes
         -----
         '''
-        if self.liquid_count > 0:
+        if self.liquid_count:
             phase_iter = range(self.liquid_count)
             betas = self.liquids_betas
             Vs_phases = [i.V() for i in self.liquids]
