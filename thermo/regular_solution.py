@@ -36,12 +36,16 @@ Regular Solution Class
     :undoc-members:
     :show-inheritance:
     :exclude-members:
+
+Regular Solution Regression Calculations
+========================================
+.. autofunction:: regular_solution_gammas_binaries
 '''
 
 from __future__ import division
 from fluids.numerics import numpy as np
 from thermo.activity import GibbsExcess
-from chemicals.utils import exp
+from chemicals.utils import exp, log
 from fluids.constants import R
 
 try:
@@ -49,7 +53,7 @@ try:
 except (ImportError, AttributeError):
     pass
 
-__all__ = ['RegularSolution', 'regular_solution_gammas']
+__all__ = ['RegularSolution', 'regular_solution_gammas', 'regular_solution_gammas_binaries']
 
 
 def regular_solution_Hi_sums(SPs, Vs, xsVs, coeffs, N, Hi_sums=None):
@@ -58,6 +62,7 @@ def regular_solution_Hi_sums(SPs, Vs, xsVs, coeffs, N, Hi_sums=None):
     for i in range(N):
         t = 0.0
         for j in range(N):
+            # Hi does not depend on composition at all and can be stored as a matrix.
             SPi_m_SPj = SPs[i] - SPs[j]
             Hi = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
             t += xsVs[j]*Hi
@@ -89,7 +94,7 @@ def regular_solution_dGE_dxs(Vs, Hi_sums, N, xsVs_sum_inv, GE, dGE_dxs=None):
     if dGE_dxs is None:
         dGE_dxs = [0.0]*N
     for i in range(N):
-        # i is what is being differentiatedregular_solution_Hi_sums(self.SPs, self.Vs, self.xsVs, self.lambda_coeffs, self.N, Hi_sums)
+        # i is what is being differentiated
         dGE_dxs[i] = (Hi_sums[i] - GE*Vs[i])*xsVs_sum_inv
     return dGE_dxs
 
@@ -230,9 +235,22 @@ class RegularSolution(GibbsExcess):
     -----
     In addition to the methods presented here, the methods of its base class
     :obj:`thermo.activity.GibbsExcess` are available as well.
+    
+    Additional equations of note are as follows.
+    
+    .. math::
+        G^E = H^E
+    
+    .. math::
+        S^E = 0
+        
+    .. math::
+        \delta = \sqrt{\frac{\Delta H_{vap} - RT}{V_m}}
 
     Examples
     --------
+    **Example 1**
+    
     From [2]_, calculate the activity coefficients at infinite dilution for the
     system benzene-cyclohexane at 253.15 K using the regular solution model
     (example 5.20, with unit conversion in-line):
@@ -243,6 +261,37 @@ class RegularSolution(GibbsExcess):
     [1.1352128394, 1.16803058378]
 
     This matches the solution given of [1.135, 1.168].
+    
+    **Example 2**
+    
+    Benzene and cyclohexane calculation from [3]_, without interaction
+    parameters.
+    
+    >>> GE = RegularSolution(T=353, xs=[0.01, 0.99], Vs=[8.90e-05, 1.09e-04], SPs=[9.2*(calorie/1e-6)**0.5, 8.2*(calorie/1e-6)**0.5])
+    >>> GE.gammas()
+    [1.1329295, 1.00001039]
+    
+    
+    **Example 3**
+    
+    Another common model is the Flory-Huggins model. This isn't implemented 
+    as a separate model, but it is possible to modify the activity coefficient
+    results of :obj:`RegularSolution` to obtain the activity coefficients from
+    the Flory-Huggins model anyway. ChemSep [4]_ implements the Flory-Huggins model
+    and calls it the regular solution model, so results can't be compared with
+    ChemSep except when making the following manual solution. The example below
+    uses parameters from ChemSep for ethanol and water.
+        
+    >>> GE = RegularSolution(T=298.15, xs=[0.5, 0.5], Vs=[0.05868e-3, 0.01807e-3], SPs=[26140.0, 47860.0])
+    >>> GE.gammas() # Regular solution activity coefficients
+    [1.8570955489, 7.464567232]
+    >>> lngammass = [log(g) for g in GE.gammas()]
+    >>> thetas = [GE.Vs[i]/sum(GE.xs[i]*GE.Vs[i] for i in range(GE.N)) for i in range(GE.N)]
+    >>> gammas_flory_huggins = [exp(lngammass[i] + log(thetas[i]) + 1 - thetas[i]) for i in range(GE.N)]
+    >>> gammas_flory_huggins
+    [1.672945693, 5.9663471]
+    
+    This matches the values calculated from ChemSep exactly.
 
     References
     ----------
@@ -251,6 +300,10 @@ class RegularSolution(GibbsExcess):
        Professional, 2000.
     .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
+    .. [3] Elliott, J., and Carl Lira. Introductory Chemical Engineering 
+       Thermodynamics. 2nd edition. Upper Saddle River, NJ: Prentice Hall, 2012.
+    .. [4] Kooijman, Harry A., and Ross Taylor. The ChemSep Book. Books on 
+       Demand Norderstedt, Germany, 2000.
     '''
     model_id = 400
 
@@ -269,6 +322,17 @@ class RegularSolution(GibbsExcess):
             else:
                 lambda_coeffs = zeros((N, N))
         self.lambda_coeffs = lambda_coeffs
+        
+        lambda_coeffs_zero = True
+        for i in range(N):
+            r = lambda_coeffs[i]
+            for j in range(N):
+                if r[j] != 0.0:
+                    lambda_coeffs_zero = False
+                    break
+            if not lambda_coeffs_zero:
+                break
+        self._lambda_coeffs_zero = lambda_coeffs_zero
 
         if scalar:
             xsVs = []
@@ -289,8 +353,13 @@ class RegularSolution(GibbsExcess):
     _model_attributes = ('Vs', 'SPs', 'lambda_coeffs')
 
     def __repr__(self):
-        s = '%s(T=%s, xs=%s, Vs=%s, SPs=%s, lambda_coeffs=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs),
-                self.Vs, self.SPs, self.lambda_coeffs)
+        s = '%s(T=%s, xs=%s, Vs=%s, SPs=%s' %(self.__class__.__name__, repr(self.T), repr(self.xs),
+                self.Vs, self.SPs)
+        if not self._lambda_coeffs_zero:
+            s += ' , lambda_coeffs=%s)' %(self.lambda_coeffs,)
+        else:
+            s += ')'
+        
         return s
 
     def to_T_xs(self, T, xs):
@@ -320,6 +389,7 @@ class RegularSolution(GibbsExcess):
         new.Vs = Vs = self.Vs
         new.N = N = self.N
         new.lambda_coeffs = self.lambda_coeffs
+        new._lambda_coeffs_zero = self._lambda_coeffs_zero
         new.scalar = scalar = self.scalar
 
         if scalar:
@@ -613,3 +683,147 @@ class RegularSolution(GibbsExcess):
         -----
         '''
         return 0.0
+
+
+    @classmethod
+    def regress_binary_parameters(cls, gammas, xs, Vs, SPs, Ts, use_numba=False,
+                                  do_statistics=True, **kwargs):
+        # Load the functions either locally or with numba
+        if use_numba:
+            from thermo.numba import regular_solution_gammas_binaries as work_func
+        else:
+            work_func = regular_solution_gammas_binaries
+        
+        # Allocate all working memory
+        pts = len(xs)
+        gammas_iter = zeros(pts*2)
+        jac_iter = zeros((pts*2, 2))
+
+        # Plain objective functions
+        def fitting_func(xs, lambda12, lambda21):
+            return work_func(xs, Vs, SPs, Ts, lambda12, lambda21, gammas_iter)
+        
+        xs_working = []
+        for i in range(pts):
+            xs_working.append(xs[i][0])
+            xs_working.append(xs[i][1])
+        gammas_working = []
+        for i in range(pts):
+            gammas_working.append(gammas[i][0])
+            gammas_working.append(gammas[i][1])
+            
+        xs_working = array(xs_working)
+        gammas_working = array(gammas_working)
+        
+        # Objective functions for leastsq maximum speed
+        def func_wrapped_for_leastsq(params):
+            return work_func(xs_working, Vs, SPs, Ts, params[0], params[1], gammas_iter) - gammas_working
+
+        
+        
+        return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
+                                                      fit_parameters=['lambda12', 'lambda21'],
+                                                      use_fit_parameters=['lambda12', 'lambda21'],
+                                                      initial_guesses=cls._zero_gamma_lambda_guess,
+                                                      analytical_jac=None,
+                                                      use_numba=use_numba,
+                                                      do_statistics=do_statistics,
+                                                      func_wrapped_for_leastsq=func_wrapped_for_leastsq,
+                                                      jac_wrapped_for_leastsq=None,
+                                                      **kwargs)
+    _zero_gamma_lambda_guess = [{'lambda12': 1, 'lambda21': 1},
+                                ]
+    for i in range(len(_zero_gamma_lambda_guess)):
+        r = _zero_gamma_lambda_guess[i]
+        _zero_gamma_lambda_guess.append({'lambda12': r['lambda21'], 'lambda21': r['lambda12']})
+    del i, r
+
+
+MIN_LAMBDA_REGULAR_SOLUTION = -1e100
+
+
+def regular_solution_gammas_binaries(xs, Vs, SPs, Ts, lambda12, lambda21, 
+                                     gammas=None):
+    r'''Calculates activity coefficients with the regular solution model
+    at fixed `lambda` values for
+    a binary system at a series of mole fractions at specified temperatures.
+    This is used for 
+    regression of `lambda` parameters. This function is highly optimized,
+    and operates on multiple points at a time.
+    
+    .. math::
+        \ln \gamma_1 = \frac{V_1\phi_2^2}{RT}\left[
+            (\text{SP}_1-\text{SP}_2)^2 + \lambda_{12}\text{SP}_1\text{SP}_2
+            + \lambda_{21}\text{SP}_1\text{SP}_2
+            \right]
+
+    .. math::
+        \ln \gamma_2 =  \frac{V_2\phi_1^2}{RT}\left[
+            (\text{SP}_1-\text{SP}_2)^2 + \lambda_{12}\text{SP}_1\text{SP}_2
+            + \lambda_{21}\text{SP}_1\text{SP}_2
+            \right]
+    
+    .. math::
+        \phi_1 = \frac{x_1 V_1}{x_1 V_1 + x_2 V_2}
+
+    .. math::
+        \phi_2 = \frac{x_2 V_2}{x_1 V_1 + x_2 V_2}
+
+    Parameters
+    ----------
+    xs : list[float]
+        Liquid mole fractions of each species in the format
+        x0_0, x1_0, (component 1 point1, component 2 point 1),
+        x0_1, x1_1, (component 1 point2, component 2 point 2), ...
+        size pts*2
+        [-]
+    Vs : list[float]
+        Molar volumes of each of the two components, [m^3/mol]
+    SPs : list[float]
+        Solubility parameters of each of the two components, [Pa^0.5]
+    Ts : flist[float]
+        Temperatures of each composition point; half the length of `xs`, [K]
+    lambda12 : float
+        `lambda` parameter for 12, [-]
+    lambda21 : float
+        `lambda` parameter for 21, [-]
+    gammas : list[float], optional
+        Array to store the activity coefficient for each species in the liquid 
+        mixture, indexed the same as `xs`; can be omitted or provided
+        for slightly better performance [-]
+
+    Returns
+    -------
+    gammas : list[float]
+        Activity coefficient for each species in the liquid mixture,
+        indexed the same as `xs`, [-]
+
+    Notes
+    -----
+    
+    Examples
+    --------
+    >>> regular_solution_gammas_binaries([.1, .9, 0.3, 0.7, .85, .15], Vs=[7.421e-05, 8.068e-05], SPs=[19570.2, 18864.7], Ts=[300.0, 400.0, 500.0], lambda12=0.1759, lambda21=0.7991)
+    [6818.90697, 1.105437, 62.6628, 2.01184, 1.181434, 137.6232]
+    '''
+    if lambda12 < MIN_LAMBDA_REGULAR_SOLUTION:
+        lambda12 = MIN_LAMBDA_REGULAR_SOLUTION
+    if lambda21 < MIN_LAMBDA_REGULAR_SOLUTION:
+        lambda21 = MIN_LAMBDA_REGULAR_SOLUTION
+    pts = len(xs)//2 # Always even
+    
+    if gammas is None:
+        allocate_size = (pts*2)
+        gammas = [0.0]*allocate_size
+        
+    lambda_coeffs = [[0.0, lambda12], [lambda21, 0.0]]
+
+    for i in range(pts):
+        i2 = i*2
+        x1 = xs[i2]
+        x2 = 1.0 - x1
+        gammas_calc = RegularSolution(xs=[x1, x2], T=Ts[i], Vs=Vs, SPs=SPs, lambda_coeffs=lambda_coeffs).gammas()
+        gammas[i2] = gammas_calc[0]
+        gammas[i2 + 1] = gammas_calc[1]
+    return gammas
+

@@ -58,7 +58,21 @@ def test_4_components():
 
     GE2 = RegularSolution.from_json(GE.as_json())
     assert GE2.__dict__ == GE.__dict__
-
+    
+    # Test with no interaction parameters
+    GE3 = RegularSolution(T, xs, Vs, SPs)
+    GE4 = eval(str(GE3))
+    assert GE3 == GE4
+    assert GE4.GE() == GE3.GE()
+    GE5 = RegularSolution.from_json(GE4.as_json())
+    assert GE4.__dict__ == GE3.__dict__
+    assert GE5.__dict__ == GE3.__dict__
+    assert GE5 == GE3
+    assert hash(GE5) == hash(GE3)
+    GE6 = eval(str(GE4))
+    assert GE5.model_hash() == GE6.model_hash()
+    assert GE5.state_hash() == GE6.state_hash()
+    
     dT = 1e-7*T
     gammas_expect = [1.1928784349228994, 1.3043087978251762, 3.2795596493820955, 197.92137114651274]
     assert_close1d(GE.gammas(), gammas_expect, rtol=1e-12)
@@ -197,3 +211,20 @@ def test_numpy_inputs():
     assert modelnp_pickle == modelnp
     model_pickle = pickle.loads(pickle.dumps(model))
     assert model_pickle == model
+
+
+def test_regular_solution_gammas_binaries():
+    kwargs = dict(xs=[.1, .9, 0.3, 0.7, .85, .15], Vs=[7.421e-05, 8.068e-05], SPs=[19570.2, 18864.7], Ts=[300.0, 400.0, 500.0], lambda12=0.1759, lambda21=0.7991)
+    gammas_expect = [6818.906971998236, 1.105437709428331, 62.66284813913256, 2.0118436126911754, 1.1814344452004402, 137.6232341969005]
+    gammas_1 = regular_solution_gammas_binaries(**kwargs)
+    assert_close1d(gammas_1, gammas_expect, rtol=1e-13)
+    
+    # Check the array can be set to bad values and still be right
+    for i in range(len(gammas_1)):
+        gammas_1[i] = -1e00
+    gammas_out = regular_solution_gammas_binaries(gammas=gammas_1, **kwargs)
+    assert_close1d(gammas_out, gammas_expect, rtol=1e-13)
+    
+    assert gammas_out is gammas_1
+    
+

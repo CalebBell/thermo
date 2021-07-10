@@ -164,6 +164,11 @@ def test_RegularSolution_units():
     for prop in get_properties:
         res = getattr(GE, prop)()
         assert isinstance(res, pint.Quantity)
+    
+    # Another example
+    GE2 = RegularSolution(T=353*u.K, xs=np.array([.01, .99])*u.dimensionless, Vs=np.array([89, 109])*u.cm**3/u.mol, 
+                SPs=np.array([9.2, 8.2])*u("(cal/ml)**0.5"))
+    GE.gammas()
 
 def test_UNIQUAC_units_1():
     N = 3

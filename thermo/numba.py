@@ -180,6 +180,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                  'regular_solution.regular_solution_d3GE_dxixjxks',
                  'regular_solution.regular_solution_gammas',
                  'regular_solution.RegularSolution',
+                 'regular_solution.regular_solution_gammas_binaries',
 
                  'wilson.Wilson',
                  'wilson.wilson_xj_Lambda_ijs', 'wilson.wilson_d2GE_dTdxs',

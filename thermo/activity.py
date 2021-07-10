@@ -69,7 +69,7 @@ from __future__ import division
 
 __all__ = ['GibbsExcess', 'IdealSolution']
 from fluids.constants import R, R_inv
-from fluids.numerics import numpy as np
+from fluids.numerics import numpy as np, trunc_exp
 from chemicals.utils import exp, log
 from chemicals.utils import normalize, dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, d2xs_to_dxdn_partials, hash_any_primitive
 from thermo import serialize
@@ -879,7 +879,7 @@ class GibbsExcess(object):
         if self.scalar:
             dG_dns = dxs_to_dn_partials(dG_dxs, self.xs, GE)
             RT_inv = 1.0/(R*self.T)
-            gammas = [exp(i*RT_inv) for i in dG_dns]
+            gammas = [trunc_exp(i*RT_inv) for i in dG_dns]
         else:
             gammas = gibbs_excess_gammas(self.xs, dG_dxs, GE, self.T)
             if type(gammas) is list:
