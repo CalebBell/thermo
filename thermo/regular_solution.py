@@ -734,14 +734,15 @@ class RegularSolution(GibbsExcess):
                                                       fit_parameters=['lambda12', 'lambda21'],
                                                       use_fit_parameters=['lambda12', 'lambda21'],
                                                       initial_guesses=cls._zero_gamma_lambda_guess,
-                                                      analytical_jac=jac_func,
+                                                       analytical_jac=jac_func,
                                                       use_numba=use_numba,
                                                       do_statistics=do_statistics,
                                                       func_wrapped_for_leastsq=func_wrapped_for_leastsq,
-                                                      jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
+                                                       jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
                                                       **kwargs)
-    _zero_gamma_lambda_guess = [{'lambda12': 1, 'lambda21': 1},
-                                # {'lambda12': 1e7, 'lambda21': -1e7},
+    _zero_gamma_lambda_guess = [{'lambda12': 1.0, 'lambda21': 1.0},
+                                {'lambda12': 1e7, 'lambda21': -1e7},
+                                {'lambda12': 0.01, 'lambda21': 0.01},
                                 ]
     for i in range(len(_zero_gamma_lambda_guess)):
         r = _zero_gamma_lambda_guess[i]
@@ -750,7 +751,10 @@ class RegularSolution(GibbsExcess):
 
 
 MIN_LAMBDA_REGULAR_SOLUTION = -1e100
+MAX_LAMBDA_REGULAR_SOLUTION = 1e100
 
+# MIN_LAMBDA_REGULAR_SOLUTION = -10.0
+# MAX_LAMBDA_REGULAR_SOLUTION = 10.0
 
 def regular_solution_gammas_binaries(xs, Vs, SPs, Ts, lambda12, lambda21, 
                                      gammas=None):
@@ -820,7 +824,12 @@ def regular_solution_gammas_binaries(xs, Vs, SPs, Ts, lambda12, lambda21,
         lambda12 = MIN_LAMBDA_REGULAR_SOLUTION
     if lambda21 < MIN_LAMBDA_REGULAR_SOLUTION:
         lambda21 = MIN_LAMBDA_REGULAR_SOLUTION
+    if lambda12 > MAX_LAMBDA_REGULAR_SOLUTION:
+        lambda12 = MAX_LAMBDA_REGULAR_SOLUTION
+    if lambda21 > MAX_LAMBDA_REGULAR_SOLUTION:
+        lambda21 = MAX_LAMBDA_REGULAR_SOLUTION
     pts = len(xs)//2 # Always even
+    # lambda21 = lambda12
     
     if gammas is None:
         allocate_size = (pts*2)
@@ -851,6 +860,10 @@ def regular_solution_gammas_binaries_jac(xs, Vs, SPs, Ts, lambda12, lambda21, ja
         lambda12 = MIN_LAMBDA_REGULAR_SOLUTION
     if lambda21 < MIN_LAMBDA_REGULAR_SOLUTION:
         lambda21 = MIN_LAMBDA_REGULAR_SOLUTION
+    if lambda12 > MAX_LAMBDA_REGULAR_SOLUTION:
+        lambda12 = MAX_LAMBDA_REGULAR_SOLUTION
+    if lambda21 > MAX_LAMBDA_REGULAR_SOLUTION:
+        lambda21 = MAX_LAMBDA_REGULAR_SOLUTION
     pts = len(xs)//2 # Always even
     
     if jac is None:
