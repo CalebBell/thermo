@@ -40,6 +40,8 @@ Regular Solution Class
 Regular Solution Regression Calculations
 ========================================
 .. autofunction:: regular_solution_gammas_binaries
+.. autofunction:: regular_solution_gammas_binaries_jac
+
 '''
 
 from __future__ import division
@@ -53,7 +55,9 @@ try:
 except (ImportError, AttributeError):
     pass
 
-__all__ = ['RegularSolution', 'regular_solution_gammas', 'regular_solution_gammas_binaries']
+__all__ = ['RegularSolution', 'regular_solution_gammas', 
+           'regular_solution_gammas_binaries',
+           'regular_solution_gammas_binaries_jac']
 
 
 def regular_solution_Hi_sums(SPs, Vs, xsVs, coeffs, N, Hi_sums=None):
@@ -690,9 +694,11 @@ class RegularSolution(GibbsExcess):
                                   do_statistics=True, **kwargs):
         # Load the functions either locally or with numba
         if use_numba:
-            from thermo.numba import regular_solution_gammas_binaries as work_func
+            from thermo.numba import regular_solution_gammas_binaries as work_func, regular_solution_gammas_binaries_jac as jac_func
+            Vs, SPs, Ts = array(Vs), array(SPs), array(Ts)
         else:
             work_func = regular_solution_gammas_binaries
+            jac_func = regular_solution_gammas_binaries_jac
         
         # Allocate all working memory
         pts = len(xs)
@@ -703,6 +709,9 @@ class RegularSolution(GibbsExcess):
         def fitting_func(xs, lambda12, lambda21):
             return work_func(xs, Vs, SPs, Ts, lambda12, lambda21, gammas_iter)
         
+        def analytical_jac(xs, lambda12, lambda21):
+            return jac_func(xs, Vs, SPs, Ts, lambda12, lambda21, jac_iter)
+
         xs_working = []
         for i in range(pts):
             xs_working.append(xs[i][0])
@@ -719,17 +728,20 @@ class RegularSolution(GibbsExcess):
         def func_wrapped_for_leastsq(params):
             return work_func(xs_working, Vs, SPs, Ts, params[0], params[1], gammas_iter) - gammas_working
 
-        
+        def jac_wrapped_for_leastsq(params):
+            return jac_func(xs_working, Vs, SPs, Ts, params[0], params[1], jac_iter)
+
+        from fluids.numerics import jacobian
         
         return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
                                                       fit_parameters=['lambda12', 'lambda21'],
                                                       use_fit_parameters=['lambda12', 'lambda21'],
                                                       initial_guesses=cls._zero_gamma_lambda_guess,
-                                                      analytical_jac=None,
+                                                      analytical_jac=jac_func,
                                                       use_numba=use_numba,
                                                       do_statistics=do_statistics,
                                                       func_wrapped_for_leastsq=func_wrapped_for_leastsq,
-                                                      jac_wrapped_for_leastsq=None,
+                                                      jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
                                                       **kwargs)
     _zero_gamma_lambda_guess = [{'lambda12': 1, 'lambda21': 1},
                                 ]
@@ -836,3 +848,40 @@ def regular_solution_gammas_binaries(xs, Vs, SPs, Ts, lambda12, lambda21,
         gammas[i2 + 1] = trunc_exp(V1*phi0*phi0*term)
     return gammas
 
+def regular_solution_gammas_binaries_jac(xs, Vs, SPs, Ts, lambda12, lambda21, jac=None):
+    if lambda12 < MIN_LAMBDA_REGULAR_SOLUTION:
+        lambda12 = MIN_LAMBDA_REGULAR_SOLUTION
+    if lambda21 < MIN_LAMBDA_REGULAR_SOLUTION:
+        lambda21 = MIN_LAMBDA_REGULAR_SOLUTION
+    pts = len(xs)//2 # Always even
+    
+    if jac is None:
+        allocate_size = (pts*2)
+        jac = np.zeros((allocate_size, 2))
+        
+    l01, l10 = lambda12, lambda21
+    SP0, SP1 = SPs
+    V0, V1 = Vs
+    
+    
+    for i in range(pts):
+        i2 = i*2
+        x0 = xs[i2]
+        x1 = 1.0 - x0
+        T = Ts[i]
+        
+        x2 = SP0*SP1
+        x3 = 1/(R*T*(V0*x0 + V1*x1)**2)
+        x4 = x3*(l01*x2 + l10*x2 + (SP0 - SP1)**2)
+        x5 = V0*V1**2*x1**2
+        x6 = x2*x3
+        x7 = x5*x6*trunc_exp(x4*x5)
+        x8 = V0**2*V1*x0**2
+        x9 = x6*x8*trunc_exp(x4*x8)
+
+
+        jac[i2][0] = x7
+        jac[i2][1] = x7
+        jac[i2 + 1][0] = x9 
+        jac[i2 + 1][1] = x9
+    return jac

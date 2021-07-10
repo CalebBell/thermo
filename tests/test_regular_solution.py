@@ -221,10 +221,28 @@ def test_regular_solution_gammas_binaries():
     
     # Check the array can be set to bad values and still be right
     for i in range(len(gammas_1)):
-        gammas_1[i] = -1e00
+        gammas_1[i] = -1e100
     gammas_out = regular_solution_gammas_binaries(gammas=gammas_1, **kwargs)
     assert_close1d(gammas_out, gammas_expect, rtol=1e-13)
     
     assert gammas_out is gammas_1
     
+def test_regular_solution_gammas_binaries_jac():
+    kwargs = dict(xs=[.1, .9, 0.3, 0.7, .85, .15], Vs=[7.421e-05, 8.068e-05], SPs=[19570.2, 18864.7], Ts=[300.0, 400.0, 500.0], lambda12=0.1759, lambda21=0.7991)
 
+    res = regular_solution_gammas_binaries_jac(**kwargs)
+    res_expect = [[61651.76714001304, 61651.76714001304],
+     [0.1134949564269304, 0.1134949564269304],
+     [265.5654802072593, 265.5654802072593],
+     [1.4404516377618741, 1.4404516377618741],
+     [0.20175156664075444, 0.20175156664075444],
+     [694.1461546179326, 694.1461546179326]]
+    assert_close2d(res, res_expect, rtol=1e-13)
+    
+    for i in range(len(res)):
+        for j in range(len(res[i])):
+            res[i][j] = -1e100
+    jac = res
+    res = regular_solution_gammas_binaries_jac(jac=res, **kwargs)
+    assert res is jac
+    assert_close2d(res, res_expect, rtol=1e-13)
