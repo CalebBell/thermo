@@ -34,6 +34,7 @@ from fluids.numerics import (quad, brenth, secant, linspace,
                              polyder, horner, numpy as np, curve_fit, 
                              differential_evolution, fit_minimization_targets, 
                              leastsq)
+import fluids
 import chemicals
 from chemicals.utils import isnan, log, e, hash_any_primitive
 from chemicals.vapor_pressure import (Antoine, Antoine_AB_coeffs_from_point,
@@ -156,13 +157,17 @@ def generate_fitting_function(model,
             
             jac_skip_row_idxs = np.array(jac_skip_row_idxs)
             #for k in fit_parameters:
-            def fitting_function(Ts, *args):
-                for i, v in enumerate(args):
-                    reusable_args[arg_dest_idxs[i]] = v
-                out = f(Ts, *reusable_args)
-                return np.delete(out, jac_skip_row_idxs, axis=1)
             if for_leastsq:
-                return None
+                def fitting_function(args):
+                    for i, v in enumerate(args):
+                        reusable_args[arg_dest_idxs[i]] = v
+                    return np.delete(f(Ts, *reusable_args), jac_skip_row_idxs, axis=1)
+            else:
+                def fitting_function(Ts, *args):
+                    for i, v in enumerate(args):
+                        reusable_args[arg_dest_idxs[i]] = v
+                    out = f(Ts, *reusable_args)
+                    return np.delete(out, jac_skip_row_idxs, axis=1)
         else:
             if for_leastsq:
                 def fitting_function(args):
@@ -1494,7 +1499,6 @@ class TDependentProperty(object):
             Statistics, calculated and returned only if `do_statistics` is True, [-]
         '''
         if use_numba:
-            import thermo.numba, fluids.numba
             fit_func_dict = fluids.numba.numerics.fit_minimization_targets
         else:
             fit_func_dict = fit_minimization_targets

@@ -37,8 +37,10 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              max_abs_error, max_abs_rel_error, max_squared_error, 
                              max_squared_rel_error, mean_abs_error, mean_abs_rel_error, 
                              mean_squared_error, mean_squared_rel_error,
-                             curve_fit, differential_evolution, fit_minimization_targets, leastsq)
+                             curve_fit, differential_evolution, fit_minimization_targets, leastsq,
+                             lmder, lmfit)
 from fluids.constants import R
+import fluids, thermo
 try:
     from numpy.polynomial.chebyshev import poly2cheb
     from numpy.polynomial.chebyshev import cheb2poly
@@ -551,7 +553,6 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
                    func_wrapped_for_leastsq=None, jac_wrapped_for_leastsq=None):
     if solver_kwargs is None: solver_kwargs = {}
     if use_numba:
-        import thermo.numba, fluids.numba
         fit_func_dict = fluids.numba.numerics.fit_minimization_targets
     else:
         fit_func_dict = fit_minimization_targets
@@ -655,8 +656,7 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
                 try:
                     if lm_direct:
                         if Dfun is not None:
-                            from scipy.optimize._minpack import _lmder
-                            popt = _lmder(func_wrapped_for_leastsq, Dfun, p0, tuple(), False,
+                            popt = lmder(func_wrapped_for_leastsq, Dfun, p0, tuple(), False,
                                       0, 1.49012e-8, 1.49012e-8, 0.0, solver_kwargs['maxfev'],
                                       100, None)[0]
                         else:
