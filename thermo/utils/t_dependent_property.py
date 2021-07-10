@@ -413,7 +413,7 @@ class TDependentProperty(object):
     
     correlation_models = {
 
-        'Antoine': (['A', 'B', 'C'], [], {'f': Antoine, 'f_der': dAntoine_dT, 'f_der2': d2Antoine_dT2}, 
+        'Antoine': (['A', 'B', 'C'], ['base'], {'f': Antoine, 'f_der': dAntoine_dT, 'f_der2': d2Antoine_dT2}, 
                     {'fit_params': ['A', 'B', 'C'],
                      'fit_jac' : Antoine_fitting_jacobian,
                     'initial_guesses': [{'A': 9.0, 'B': 1000.0, 'C': -70.0},

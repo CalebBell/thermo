@@ -443,7 +443,7 @@ def test_lnphis_direct_and_sequential_substitution_2P_functional():
     
     
 @mark_as_numba
-def test_fit_T_dep_numba():
+def test_fit_T_dep_numba_Rackett():
     Tc, rhoc, b, n, MW = 545.03, 739.99, 0.3, 0.28571, 105.921
     Ts = np.linspace(331.15, 332.9, 10)
     props_calc = [Rackett_fit(T, Tc, rhoc, b, n, MW) for T in Ts]
@@ -452,6 +452,8 @@ def test_fit_T_dep_numba():
                           fit_method='lm')
     assert stats['MAE'] < 1e-5
 
+@mark_as_numba
+def test_fit_T_dep_numba_Antoine_1():
     # Numba was evaluating a 0 division when it shouldn't have, try excepted it
     Ts = np.linspace(845.15, 1043.1999999999998, 20)
     props_calc = [Antoine(T, A=1.9823770201329391, B=651.916, C=-1248.487) for T in Ts]
@@ -459,3 +461,18 @@ def test_fit_T_dep_numba():
                           do_statistics=True, use_numba=True, model_kwargs={'base':10.0},
                           fit_method='lm')
     assert stats['MAE'] < 1e-5
+    
+@mark_as_numba
+def test_fit_T_dep_numba_Antoine_2():
+    from math import e
+    Ts = [80.0, 84.33333333333333, 88.66666666666666, 92.99999999999999, 97.33333333333331, 101.66666666666664, 105.99999999999997, 110.3333333333333, 114.66666666666663, 119.0] 
+    data = [117529.41043039897, 182563.197936732, 272219.9291192508, 391769.39009698987, 546647.2723936989, 742321.9818708885, 984172.0518229883, 1277378.6662114232, 1626835.7331915696, 2037078.3006621948]
+    
+    res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=data, model='Antoine',
+                          do_statistics=True, use_numba=True, fit_method='lm', model_kwargs={'base': e},
+                                      multiple_tries=True, multiple_tries_max_err=1e-5)
+    assert stats['MAE'] < 1e-5
+    assert_close(res['A'], 20.72)
+    assert_close(res['B'], 765.88)
+    assert_close(res['C'], 4.6692)
+    
