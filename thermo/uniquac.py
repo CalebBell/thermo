@@ -1719,7 +1719,7 @@ class UNIQUAC(GibbsExcess):
                                                       **kwargs)
          
     
-    _zero_gamma_tau_guess = [{'tau12': 1, 'tau21': 1},
+    _zero_gamma_tau_guess = [#{'tau12': 1, 'tau21': 1}, # 1 is always tried
                             {'tau12': 1.0529981904211922, 'tau21': 1.1976772649513237},
                             {'tau12': 1.8748910210873349, 'tau21': 998.612171671497}, # Found seeking gamma = 1 for rs, qs = [[1.4, 7.219], [39.95, 47.2727]]
                             {'tau12': 0.6080855151163854, 'tau21': 1.5266917396579502},  # Found seeking gamma = 1 for rs, qs = [[30.49447368421054, 38.253], [30.195389473684212, 42.39346842105263]]

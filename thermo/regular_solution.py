@@ -689,7 +689,8 @@ class RegularSolution(GibbsExcess):
 
 
     @classmethod
-    def regress_binary_parameters(cls, gammas, xs, Vs, SPs, Ts, use_numba=False,
+    def regress_binary_parameters(cls, gammas, xs, Vs, SPs, Ts, symmetric=False,
+                                  use_numba=False,
                                   do_statistics=True, **kwargs):
         # Load the functions either locally or with numba
         if use_numba:
@@ -705,12 +706,20 @@ class RegularSolution(GibbsExcess):
         jac_iter = zeros((pts*2, 2))
 
         # Plain objective functions
-        def fitting_func(xs, lambda12, lambda21):
-            return work_func(xs, Vs, SPs, Ts, lambda12, lambda21, gammas_iter)
-        
-        def analytical_jac(xs, lambda12, lambda21):
-            return jac_func(xs, Vs, SPs, Ts, lambda12, lambda21, jac_iter)
-
+        if symmetric:
+            def fitting_func(xs, lambda12):
+                return work_func(xs, Vs, SPs, Ts, lambda12, lambda12, gammas_iter)
+            
+            def analytical_jac(xs, lambda12):
+                return jac_func(xs, Vs, SPs, Ts, lambda12, lambda12, jac_iter).sum(axis=1)
+    
+        else:
+            def fitting_func(xs, lambda12, lambda21):
+                return work_func(xs, Vs, SPs, Ts, lambda12, lambda21, gammas_iter)
+            
+            def analytical_jac(xs, lambda12, lambda21):
+                return jac_func(xs, Vs, SPs, Ts, lambda12, lambda21, jac_iter)
+    
         xs_working = []
         for i in range(pts):
             xs_working.append(xs[i][0])
@@ -724,15 +733,27 @@ class RegularSolution(GibbsExcess):
         gammas_working = array(gammas_working)
         
         # Objective functions for leastsq maximum speed
-        def func_wrapped_for_leastsq(params):
-            return work_func(xs_working, Vs, SPs, Ts, params[0], params[1], gammas_iter) - gammas_working
-
-        def jac_wrapped_for_leastsq(params):
-            return jac_func(xs_working, Vs, SPs, Ts, params[0], params[1], jac_iter)
+        if symmetric:
+            def func_wrapped_for_leastsq(params):
+                return work_func(xs_working, Vs, SPs, Ts, params[0], params[0], gammas_iter) - gammas_working
+    
+            def jac_wrapped_for_leastsq(params):
+                return jac_func(xs_working, Vs, SPs, Ts, params[0], params[0], jac_iter).sum(axis=1)
         
+        else:
+            def func_wrapped_for_leastsq(params):
+                return work_func(xs_working, Vs, SPs, Ts, params[0], params[1], gammas_iter) - gammas_working
+    
+            def jac_wrapped_for_leastsq(params):
+                return jac_func(xs_working, Vs, SPs, Ts, params[0], params[1], jac_iter)
+        
+        if symmetric:
+            use_fit_parameters = ['lambda12']
+        else:
+            use_fit_parameters = ['lambda12', 'lambda21']
         return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
-                                                      fit_parameters=['lambda12', 'lambda21'],
-                                                      use_fit_parameters=['lambda12', 'lambda21'],
+                                                      fit_parameters=use_fit_parameters,
+                                                      use_fit_parameters=use_fit_parameters,
                                                       initial_guesses=cls._zero_gamma_lambda_guess,
                                                        analytical_jac=jac_func,
                                                       use_numba=use_numba,
@@ -740,13 +761,14 @@ class RegularSolution(GibbsExcess):
                                                       func_wrapped_for_leastsq=func_wrapped_for_leastsq,
                                                        jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
                                                       **kwargs)
-    _zero_gamma_lambda_guess = [{'lambda12': 1.0, 'lambda21': 1.0},
+    _zero_gamma_lambda_guess = [#{'lambda12': 1.0, 'lambda21': 1.0}, # 1 is always tried!
                                 {'lambda12': 1e7, 'lambda21': -1e7},
                                 {'lambda12': 0.01, 'lambda21': 0.01},
                                 ]
     for i in range(len(_zero_gamma_lambda_guess)):
         r = _zero_gamma_lambda_guess[i]
-        _zero_gamma_lambda_guess.append({'lambda12': r['lambda21'], 'lambda21': r['lambda12']})
+        if r['lambda21'] != r['lambda12']:
+            _zero_gamma_lambda_guess.append({'lambda12': r['lambda21'], 'lambda21': r['lambda12']})
     del i, r
 
 

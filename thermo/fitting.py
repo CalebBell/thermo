@@ -654,6 +654,11 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
             for p0 in array_init_guesses:
                 try:
                     if lm_direct:
+                        # from scipy.optimize._minpack import _lmder
+                        # popt = _lmder(func_wrapped_for_leastsq, Dfun, p0, tuple(), False,
+                        #          0, 1.49012e-8, 1.49012e-8, 0.0, solver_kwargs['maxfev'],
+                        #          100, None)[0]
+
                         popt, _ = leastsq(func_wrapped_for_leastsq, p0, Dfun=Dfun, **solver_kwargs)
                         pcov = None
                     else:
