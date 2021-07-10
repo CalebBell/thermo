@@ -1603,8 +1603,8 @@ class Wilson(GibbsExcess):
         
         # Allocate all working memory
         pts = len(xs)
-        gammas_iter = zeros(pts*2)
-        jac_iter = zeros((pts*2, 2))
+        pts2 = pts*2
+        gammas_iter, jac_iter = zeros(pts2), zeros((pts2, 2))
 
         # Plain objective functions
         def fitting_func(xs, lambda12, lambda21):
@@ -1613,14 +1613,13 @@ class Wilson(GibbsExcess):
         def analytical_jac(xs, lambda12, lambda21):
             return jac_func(xs, lambda12, lambda21, jac_iter)
         
+        # The extend calls has been tested to be the fastest compared to numpy and list comprehension
         xs_working = []
-        for i in range(pts):
-            xs_working.append(xs[i][0])
-            xs_working.append(xs[i][1])
+        for xsi in xs:
+            xs_working.extend(xsi)
         gammas_working = []
-        for i in range(pts):
-            gammas_working.append(gammas[i][0])
-            gammas_working.append(gammas[i][1])
+        for gammasi in gammas:
+            gammas_working.extend(gammasi)
             
         xs_working = array(xs_working)
         gammas_working = array(gammas_working)
@@ -1633,10 +1632,10 @@ class Wilson(GibbsExcess):
             return jac_func(xs_working, params[0], params[1], jac_iter)
 
         
-        
+        fit_parameters = ['lambda12', 'lambda21']
         return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
-                                                      fit_parameters=['lambda12', 'lambda21'],
-                                                      use_fit_parameters=['lambda12', 'lambda21'],
+                                                      fit_parameters=fit_parameters,
+                                                      use_fit_parameters=fit_parameters,
                                                       initial_guesses=cls._zero_gamma_lambda_guess,
                                                       analytical_jac=analytical_jac,
                                                       use_numba=use_numba,

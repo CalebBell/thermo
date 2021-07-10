@@ -50,7 +50,8 @@ from chemicals.vapor_pressure import (Antoine, Antoine_AB_coeffs_from_point,
                                       d2TRC_Antoine_extended_dT2, 
                                       Wagner_fitting_jacobian, 
                                       Wagner_original_fitting_jacobian, 
-                                      Antoine_fitting_jacobian)
+                                      Antoine_fitting_jacobian,
+                                      TRC_Antoine_extended_fitting_jacobian)
 from chemicals.dippr import EQ100, EQ101, EQ102, EQ104, EQ105, EQ106, EQ107, EQ114, EQ115, EQ116, EQ127, EQ102_fitting_jacobian, EQ101_fitting_jacobian, EQ106_fitting_jacobian, EQ105_fitting_jacobian, EQ107_fitting_jacobian
 from chemicals.phase_change import Watson, Watson_n, Alibakhshi, PPDS12
 from chemicals.viscosity import (Viswanath_Natarajan_2, Viswanath_Natarajan_2_exponential,
@@ -407,6 +408,7 @@ class TDependentProperty(object):
         'TRC_Antoine_extended': (['Tc', 'to', 'A', 'B', 'C', 'n', 'E', 'F'], [],
                                  {'f': TRC_Antoine_extended, 'f_der': dTRC_Antoine_extended_dT, 'f_der2': d2TRC_Antoine_extended_dT2},
                                  {'fit_params': ['to', 'A', 'B', 'C', 'n', 'E', 'F'],
+                                  'fit_jac': TRC_Antoine_extended_fitting_jacobian,
                                   'initial_guesses': [
                                       {'to': 3.0, 'A': 8.9, 'B': 933., 'C': -33., 'n': 2.25, 'E': -55., 'F': 3300.0},
                                       {'to': -76.0, 'A': 8.9, 'B': 650., 'C': -23., 'n': 2.5, 'E': 63.0, 'F': -2130.},
