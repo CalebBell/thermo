@@ -43,10 +43,10 @@ Regular Solution Regression Calculations
 '''
 
 from __future__ import division
-from fluids.numerics import numpy as np
+from fluids.numerics import numpy as np, trunc_exp
 from thermo.activity import GibbsExcess
 from chemicals.utils import exp, log
-from fluids.constants import R
+from fluids.constants import R, R_inv
 
 try:
     array, zeros, npsum = np.array, np.zeros, np.sum
@@ -816,14 +816,23 @@ def regular_solution_gammas_binaries(xs, Vs, SPs, Ts, lambda12, lambda21,
         allocate_size = (pts*2)
         gammas = [0.0]*allocate_size
         
-    lambda_coeffs = [[0.0, lambda12], [lambda21, 0.0]]
+    l01, l10 = lambda12, lambda21
+    SP0, SP1 = SPs
+    V0, V1 = Vs
+    c0 = (SP0-SP1)
+    base_term = (c0*c0 + l01*SP0*SP1 + l10*SP0*SP1)*R_inv
 
     for i in range(pts):
         i2 = i*2
-        x1 = xs[i2]
-        x2 = 1.0 - x1
-        gammas_calc = RegularSolution(xs=[x1, x2], T=Ts[i], Vs=Vs, SPs=SPs, lambda_coeffs=lambda_coeffs).gammas()
-        gammas[i2] = gammas_calc[0]
-        gammas[i2 + 1] = gammas_calc[1]
+        x0 = xs[i2]
+        x1 = 1.0 - x0
+        
+        x0V0 = x0*V0
+        x1V1 = x1*V1
+        den_inv = 1.0/(x0V0 + x1V1)
+        phi0, phi1 = x0V0*den_inv, x1V1*den_inv
+        term = base_term/(Ts[i])
+        gammas[i2] = trunc_exp(V0*phi1*phi1*term)
+        gammas[i2 + 1] = trunc_exp(V1*phi0*phi0*term)
     return gammas
 
