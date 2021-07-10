@@ -91,7 +91,9 @@ def generate_fitting_function(model,
                               optional_kwargs,
                               const_kwargs,
                               try_numba=True,
-                              jac=False):
+                              jac=False,
+                              for_leastsq=False,
+                              Ts=None, data=None):
     '''Private function to create a fitting objective function for
     consumption by curve_fit. Other minimizers will require a different
     objective function.
@@ -151,6 +153,7 @@ def generate_fitting_function(model,
             if k not in fit_parameters:
                 jac_skip_row_idxs.append(i)
         if jac_skip_row_idxs:
+            
             jac_skip_row_idxs = np.array(jac_skip_row_idxs)
             #for k in fit_parameters:
             def fitting_function(Ts, *args):
@@ -158,17 +161,32 @@ def generate_fitting_function(model,
                     reusable_args[arg_dest_idxs[i]] = v
                 out = f(Ts, *reusable_args)
                 return np.delete(out, jac_skip_row_idxs, axis=1)
+            if for_leastsq:
+                return None
+        else:
+            if for_leastsq:
+                def fitting_function(args):
+                    for i, v in enumerate(args):
+                        reusable_args[arg_dest_idxs[i]] = v
+                    return f(Ts, *reusable_args)
+            else:
+                def fitting_function(Ts, *args):
+                    for i, v in enumerate(args):
+                        reusable_args[arg_dest_idxs[i]] = v
+                    return f(Ts, *reusable_args)
+    else:
+        if for_leastsq:
+            def fitting_function(args):
+                ld = arg_dest_idxs
+                for i, v in enumerate(args):
+                    reusable_args[ld[i]] = v
+                return f(Ts, *reusable_args) - data
         else:
             def fitting_function(Ts, *args):
+                ld = arg_dest_idxs
                 for i, v in enumerate(args):
-                    reusable_args[arg_dest_idxs[i]] = v
+                    reusable_args[ld[i]] = v
                 return f(Ts, *reusable_args)
-    else:
-        def fitting_function(Ts, *args):
-            ld = arg_dest_idxs
-            for i, v in enumerate(args):
-                reusable_args[ld[i]] = v
-            return f(Ts, *reusable_args)
     return fitting_function
 
 def create_local_method(f, f_der, f_der2, f_der3, f_int, f_int_over_T):
@@ -1516,7 +1534,12 @@ class TDependentProperty(object):
             if k not in model_kwargs and k not in use_fit_parameters:
                 raise ValueError("The selected model requires an input parameter {}".format(k))
         fitting_func = generate_fitting_function(model_function_name, param_order,
-                              fit_parameters, all_fit_parameters, model_kwargs, const_kwargs, try_numba=use_numba)
+                              fit_parameters, all_fit_parameters, model_kwargs, const_kwargs, try_numba=use_numba,
+                              Ts=Ts, data=data)
+        
+        func_wrapped_for_leastsq = generate_fitting_function(model_function_name, param_order,
+                              fit_parameters, all_fit_parameters, model_kwargs, const_kwargs, try_numba=use_numba,
+                              for_leastsq=True, Ts=Ts, data=data)
 
         err_func = fit_func_dict[objective]
         err_fun_multiple_guesses = fit_func_dict[multiple_tries_max_objective]
@@ -1527,16 +1550,22 @@ class TDependentProperty(object):
             # else:
             analytical_jac = generate_fitting_function(model_function_name, param_order,
                                                      fit_parameters, all_fit_parameters, model_kwargs, const_kwargs,
-                                                     try_numba=use_numba, jac=True)
+                                                     try_numba=use_numba, jac=True, Ts=Ts, data=data)
+            
+            jac_wrapped_for_leastsq = generate_fitting_function(model_function_name, param_order,
+                                                     fit_parameters, all_fit_parameters, model_kwargs, const_kwargs,
+                                                     try_numba=use_numba, jac=True, Ts=Ts, data=data, for_leastsq=True)
         else:
-            analytical_jac = None
+            analytical_jac = jac_wrapped_for_leastsq = None
             
             
         res = fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters, 
                    fit_method, objective, multiple_tries_max_objective, 
                    guesses=guesses, initial_guesses=initial_guesses, analytical_jac=analytical_jac,
                    solver_kwargs=solver_kwargs, use_numba=use_numba, multiple_tries=multiple_tries,
-                   do_statistics=do_statistics, multiple_tries_max_err=multiple_tries_max_err)
+                   do_statistics=do_statistics, multiple_tries_max_err=multiple_tries_max_err,
+                   func_wrapped_for_leastsq=func_wrapped_for_leastsq,
+                   jac_wrapped_for_leastsq=jac_wrapped_for_leastsq)
         if do_statistics:
             ans = res[0]
             ans.update(model_kwargs)
@@ -1544,151 +1573,6 @@ class TDependentProperty(object):
         else:
             res.update(model_kwargs)
             return res
-
-        # do_minimization = fit_method == 'differential_evolution'
-        
-        # if do_minimization:
-        #     def minimize_func(params):
-        #         calc = fitting_func(Ts, *params)
-        #         err = err_func(data, calc)
-        #         return err
-            
-        # p0 = [1.0]*len(fit_parameters)
-        # if guesses:
-        #     for i, k in enumerate(use_fit_parameters):
-        #         if k in guesses:
-        #             p0[i] = guesses[k]
-                    
-        # if initial_guesses:
-        #     # iterate over all the initial guess parameters we have and find the one
-        #     # with the lowest error (according to the error criteria)
-        #     best_hardcoded_guess = None
-        #     best_hardcoded_err = 1e300
-        #     hardcoded_errors = []
-        #     hardcoded_guesses = initial_guesses
-        #     extra_user_guess = [{k: v for k, v in zip(use_fit_parameters, p0)}]
-        #     all_iter_guesses = hardcoded_guesses + extra_user_guess
-        #     array_init_guesses = []
-        #     err_func_init = fit_func_dict['MeanRelErr']
-        #     for hardcoded in all_iter_guesses:
-        #         ph = [None]*len(fit_parameters)
-        #         for i, k in enumerate(use_fit_parameters):
-        #             ph[i] = hardcoded[k]
-        #         array_init_guesses.append(ph)
-                
-        #         calc = fitting_func(Ts, *ph)
-        #         err = err_func_init(data, calc)
-        #         hardcoded_errors.append(err)
-        #         if err < best_hardcoded_err:
-        #             best_hardcoded_err = err
-        #             best_hardcoded_guess = ph
-        #     p0 = best_hardcoded_guess
-        #     array_init_guesses = [p0 for _, p0 in sorted(zip(hardcoded_errors, array_init_guesses))]
-        # else:
-        #     array_init_guesses = [p0]
-        
-
-        # def func_wrapped_for_leastsq(params):
-        #     # jacobian is the same
-        #     return fitting_func(Ts, *params) - data
-
-        # def jac_wrapped_for_leastsq(params):
-        #     return analytical_jac(Ts, *params)
-
-        # pcov = None
-        # if fit_method == 'differential_evolution':
-        #     if 'bounds' in solver_kwargs:
-        #         working_bounds = solver_kwargs.pop('bounds')
-        #     else:
-        #         try:
-        #             bounds = fit_data['bounds']
-        #             working_bounds = [bounds[k] for k in use_fit_parameters]
-        #         except KeyError:
-        #             factor = 4.0
-        #             if len(array_init_guesses) > 3:
-        #                 lowers_guess, uppers_guess = np.array(array_init_guesses).min(axis=0), np.array(array_init_guesses).max(axis=0)
-        #                 working_bounds = [(lowers_guess[i]*factor if lowers_guess[i] < 0. else lowers_guess[i]*(1.0/factor),
-        #                                    uppers_guess[i]*(1.0/factor) if uppers_guess[i] < 0. else uppers_guess[i]*(factor),
-        #                                    ) for i in range(len(use_fit_parameters))]
-        #             else:
-        #                 working_bounds = [(-1e30, 1e30) for k in use_fit_parameters]
-        #     popsize = solver_kwargs.get('popsize', 15)*len(fit_parameters)
-        #     init = array_init_guesses
-        #     for i in range(len(init), popsize):
-        #         to_add = [uniform(ll, lh) for ll, lh in working_bounds]
-        #         init.append(to_add)
-                
-        #     res = differential_evolution(minimize_func, init=np.array(init),
-        #                                  bounds=working_bounds, **solver_kwargs)
-        #     popt = res['x']
-        # else:
-        #     lm_direct = fit_method == 'lm'
-        #     Dfun = jac_wrapped_for_leastsq if analytical_jac is not None else None
-        #     if 'maxfev' not in solver_kwargs and fit_method == 'lm':
-        #         # DO NOT INCREASE THIS! Make an analytical jacobian instead please.
-        #         # Fought very hard to bring the analytical jacobian maxiters down to 500!
-        #         # 250 seems too small.
-        #         if analytical_jac is not None:
-        #             solver_kwargs['maxfev'] = 500
-        #         else:
-        #             solver_kwargs['maxfev'] = 5000 
-        #     if multiple_tries:
-        #         multiple_tries_best_error = 1e300
-        #         best_popt, best_pcov = None, None
-        #         popt = None
-        #         if type(multiple_tries) is int and len(array_init_guesses) > multiple_tries:
-        #             array_init_guesses = array_init_guesses[0:multiple_tries]
-        #         for p0 in array_init_guesses:
-        #             try:
-        #                 if lm_direct:
-        #                     popt, _ = leastsq(func_wrapped_for_leastsq, p0, Dfun=Dfun, **solver_kwargs)
-        #                     pcov = None
-        #                 else:
-        #                     popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, jac=analytical_jac, 
-        #                                            method=fit_method, **solver_kwargs)
-        #             except:
-        #                 continue
-        #             calc = fitting_func(Ts, *popt)
-        #             curr_err = err_fun_multiple_guesses(data, calc)
-        #             if curr_err < multiple_tries_best_error:
-        #                 best_popt, best_pcov = popt, pcov
-        #                 multiple_tries_best_error = curr_err
-        #                 if curr_err < multiple_tries_max_err:
-        #                     break
-                    
-        #         if best_popt is None:
-        #             raise ValueError("No guesses converged")
-        #         else:
-        #             popt, pcov = best_popt, best_pcov
-        #     else:
-        #         if lm_direct:
-        #             popt, _ = leastsq(func_wrapped_for_leastsq, p0, Dfun=Dfun, **solver_kwargs)
-        #             pcov = None
-        #         else:
-        #             popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, jac=analytical_jac,
-        #                                    method=fit_method, **solver_kwargs)
-        # out_kwargs = model_kwargs.copy()
-        # for param_name, param_value in zip(fit_parameters, popt):
-        #     out_kwargs[param_name] = float(param_value)
-
-        # if do_statistics:
-        #     if not use_numba:
-        #         stats_func = data_fit_statistics 
-        #     else:
-        #         stats_func = thermo.numba.fitting.data_fit_statistics
-        #     calc = fitting_func(Ts, *popt)
-        #     stats = stats_func(Ts, data, calc)
-        #     statistics = {}
-        #     statistics['calc'] = calc
-        #     statistics['MAE'] = stats[0]
-        #     statistics['STDEV'] = stats[1]
-        #     statistics['min_ratio'] = stats[2]
-        #     statistics['max_ratio'] = stats[3]
-        #     statistics['pcov'] = pcov
-        #     return out_kwargs, statistics
-
-
-        # return out_kwargs
 
     @property
     def method(self):
