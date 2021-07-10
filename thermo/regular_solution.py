@@ -40,7 +40,6 @@ Regular Solution Class
 Regular Solution Regression Calculations
 ========================================
 .. autofunction:: regular_solution_gammas_binaries
-.. autofunction:: regular_solution_gammas_binaries_jac
 
 '''
 
@@ -730,8 +729,6 @@ class RegularSolution(GibbsExcess):
 
         def jac_wrapped_for_leastsq(params):
             return jac_func(xs_working, Vs, SPs, Ts, params[0], params[1], jac_iter)
-
-        from fluids.numerics import jacobian
         
         return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
                                                       fit_parameters=['lambda12', 'lambda21'],
@@ -744,6 +741,7 @@ class RegularSolution(GibbsExcess):
                                                       jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
                                                       **kwargs)
     _zero_gamma_lambda_guess = [{'lambda12': 1, 'lambda21': 1},
+                                # {'lambda12': 1e7, 'lambda21': -1e7},
                                 ]
     for i in range(len(_zero_gamma_lambda_guess)):
         r = _zero_gamma_lambda_guess[i]
@@ -863,6 +861,11 @@ def regular_solution_gammas_binaries_jac(xs, Vs, SPs, Ts, lambda12, lambda21, ja
     SP0, SP1 = SPs
     V0, V1 = Vs
     
+    x2 = SP0*SP1
+    c99 =  (SP0 - SP1)
+    c100 = (l01*x2 + l10*x2 + c99*c99)
+    c101 = V0*V1*V1
+    c102 = V0*V0*V1
     
     for i in range(pts):
         i2 = i*2
@@ -870,15 +873,15 @@ def regular_solution_gammas_binaries_jac(xs, Vs, SPs, Ts, lambda12, lambda21, ja
         x1 = 1.0 - x0
         T = Ts[i]
         
-        x2 = SP0*SP1
-        x3 = 1/(R*T*(V0*x0 + V1*x1)**2)
-        x4 = x3*(l01*x2 + l10*x2 + (SP0 - SP1)**2)
-        x5 = V0*V1**2*x1**2
+        c0 = (V0*x0 + V1*x1)
+        
+        x3 = R_inv/(T*c0*c0)
+        x4 = x3*c100
+        x5 = c101*x1*x1
         x6 = x2*x3
         x7 = x5*x6*trunc_exp(x4*x5)
-        x8 = V0**2*V1*x0**2
+        x8 = c102*x0*x0
         x9 = x6*x8*trunc_exp(x4*x8)
-
 
         jac[i2][0] = x7
         jac[i2][1] = x7
