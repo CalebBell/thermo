@@ -520,7 +520,9 @@ def test_NRTL_partial_inputs():
     with pytest.raises(ValueError):
         NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs, ABEFGHCD=(tau_bs,))
         
-        
+def test_NRTL_ideal_ones():
+    T = 70.0 + 273.15
+    xs = [0.252, 0.748]
     GE = NRTL(T=T, xs=xs)
     assert_close1d(GE.gammas(), [1.0, 1.0], rtol=1e-13)
     

@@ -1641,7 +1641,7 @@ class NRTL(GibbsExcess):
         jac_iter = zeros((pts*2, 4))
 
         # Plain objective functions
-        if symmetric:
+        if symmetric_alphas:
             def fitting_func(xs, tau12, tau21, alpha):
                 return work_func(xs, tau12, tau21, alpha, alpha, gammas_iter)
             
@@ -1667,7 +1667,7 @@ class NRTL(GibbsExcess):
         gammas_working = array(gammas_working)
         
         # Objective functions for leastsq maximum speed
-        if symmetric:
+        if symmetric_alphas:
             def func_wrapped_for_leastsq(params):
                 return work_func(xs_working, params[0], params[1], params[2], params[2], gammas_iter) - gammas_working
     
@@ -1681,19 +1681,22 @@ class NRTL(GibbsExcess):
             def jac_wrapped_for_leastsq(params):
                 return jac_func(xs_working, params[0], params[1], params[2], params[3], jac_iter)
         
-        if symmetric:
+        if symmetric_alphas:
             use_fit_parameters = ['tau12', 'tau21', 'alpha12']
         else:
             use_fit_parameters = ['tau12', 'tau21', 'alpha12', 'alpha21']
+        from fluids.numerics import jacobian
         return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
                                                       fit_parameters=use_fit_parameters,
                                                       use_fit_parameters=use_fit_parameters,
                                                       initial_guesses=cls._gamma_parameter_guesses,
-                                                       analytical_jac=jac_func,
+                                                       # analytical_jac=jac_func,
+                                                       analytical_jac=None,
                                                       use_numba=use_numba,
                                                       do_statistics=do_statistics,
                                                       func_wrapped_for_leastsq=func_wrapped_for_leastsq,
-                                                       jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
+                                                       # jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
+                                                       jac_wrapped_for_leastsq=None,
                                                       **kwargs)
 
     # Larger value on the right always (tau)
@@ -1827,6 +1830,8 @@ def NRTL_gammas_binaries_jac(xs, tau12, tau21, alpha12, alpha21, calc=None):
         alpha21 = MIN_ALPHA_NRTL
     pts = len(xs)//2 # Always even
     
+    tau01, tau10, alpha01, alpha10 = tau12, tau21, alpha12, alpha21
+
     if calc is None:
         allocate_size = (pts*2)
         calc = np.zeros((allocate_size, 2))
