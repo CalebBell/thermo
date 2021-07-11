@@ -1836,7 +1836,7 @@ def NRTL_gammas_binaries_jac(xs, tau12, tau21, alpha12, alpha21, calc=None):
 
     if calc is None:
         allocate_size = (pts*2)
-        calc = np.zeros((allocate_size, 2))
+        calc = np.zeros((allocate_size, 4))
     
     for i in range(pts):
         i2 = i*2

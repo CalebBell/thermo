@@ -547,3 +547,9 @@ def test_NRTL_gammas_binaries_vs_object():
           alpha_cs=[[0, 0.2974], [0.35, 0]])
     gammas_calc = NRTL_gammas_binaries(GE.xs, GE.taus()[0][1], GE.taus()[1][0], GE.alphas()[0][1], GE.alphas()[1][0])
     assert_close1d(gammas_calc, GE.gammas(), rtol=1e-13)
+    
+    
+def test_NRTL_gammas_binaries_jac():
+    expect = [[1.1789916307339643, -0.26111310616433153, -3.3538119188199227, -6.741171640572135], [0.028442736322554146, 0.12389510256475463, -0.4669633093241108, -0.24619435634886436], [0.6880803492773255, -0.1604580514041915, -1.2421051941611734, -3.0460013493889275], [0.07924102114006676, 0.14519919300123013, -0.9799779542489997, -0.9023280256735463]]
+    jac_calc = NRTL_gammas_binaries_jac([.3, .7, .4, .6], 2, 3, .2, .4)
+    assert_close2d(expect, jac_calc, rtol=1e-12)
