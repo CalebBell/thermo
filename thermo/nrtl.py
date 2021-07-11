@@ -43,16 +43,19 @@ NRTL Functional Calculations
 ============================
 .. autofunction:: NRTL_gammas
 
+NRTL Regression Calculations
+============================
+.. autofunction:: NRTL_gammas_binaries
 
 '''
 
 from __future__ import division
 from math import log, exp
 from fluids.constants import R
-from fluids.numerics import numpy as np
+from fluids.numerics import numpy as np, trunc_exp
 from thermo.activity import GibbsExcess
 
-__all__ = ['NRTL', 'NRTL_gammas']
+__all__ = ['NRTL', 'NRTL_gammas', 'NRTL_gammas_binaries']
 
 try:
     array, zeros, ones, npsum, nplog = np.array, np.zeros, np.ones, np.sum, np.log
@@ -1621,7 +1624,113 @@ class NRTL(GibbsExcess):
         return d2GE_dTdxs
 
 
+    # Larger value on the right always (tau)
+    # Alpha will almost exclusively be fit as one parameter
+    _gamma_parameter_guesses = [{'tau12': 1, 'tau21': 1, 'alpha12': 0.2, 'alpha21': 0.2},
+                                {'tau12': 1, 'tau21': 1, 'alpha12': 0.3, 'alpha21': 0.3},
+                                {'tau12': 1, 'tau21': 1, 'alpha12': 0.47, 'alpha21': 0.47},
+                               ]
+    
+    for i in range(len(_gamma_parameter_guesses)):
+        r = _gamma_parameter_guesses[i]
+        # Swap the taus
+        _gamma_parameter_guesses.append({'tau12': r['tau21'], 'tau21': r['tau12'], 'alpha12': r['alpha12'], 'alpha21': r['alpha21']})
+        # Swap the alphas
+        _gamma_parameter_guesses.append({'tau12': r['tau12'], 'tau21': r['tau21'], 'alpha12': r['alpha21'], 'alpha21': r['alpha12']})
+        # Swap both
+        _gamma_parameter_guesses.append({'tau12': r['tau21'], 'tau21': r['tau12'], 'alpha12': r['alpha21'], 'alpha21': r['alpha12']})
+    del i, r
 
+MIN_TAU_NRTL = -1e100
+MIN_ALPHA_NRTL = 1e-10
+
+def NRTL_gammas_binaries(xs, tau12, tau21, alpha12, alpha21, gammas=None):
+    r'''Calculates activity coefficients at fixed `tau` and `alpha` values for
+    a binary system at a series of mole fractions. This is used for 
+    regression of `tau` and `alpha` parameters. This function is highly optimized,
+    and operates on multiple points at a time.
+    
+    .. math::
+        \ln \gamma_1 = x_2^2\left[\tau_{21}\left(\frac{G_{21}}{x_1 + x_2 G_{21}}
+            \right)^2 + \frac{\tau_{12}G_{12}}{(x_2 + x_1G_{12})^2}
+            \right]
+        
+    .. math::
+        \ln \gamma_2 =  x_1^2\left[\tau_{12}\left(\frac{G_{12}}{x_2 + x_1 G_{12}}
+            \right)^2 + \frac{\tau_{21}G_{21}}{(x_1 + x_2 G_{21})^2}
+            \right]
+        
+    .. math::
+        G_{ij}=\exp(-\alpha_{ij}\tau_{ij})
+        
+
+    Parameters
+    ----------
+    xs : list[float]
+        Liquid mole fractions of each species in the format
+        x0_0, x1_0, (component 1 point1, component 2 point 1),
+        x0_1, x1_1, (component 1 point2, component 2 point 2), ...
+        [-]
+    tau12 : float
+        `tau` parameter for 12, [-]
+    tau21 : float
+        `tau` parameter for 21, [-]
+    alpha12 : float
+        `alpha` parameter for 12, [-]
+    alpha21 : float
+        `alpha` parameter for 21, [-]
+    gammas : list[float], optional
+        Array to store the activity coefficient for each species in the liquid 
+        mixture, indexed the same as `xs`; can be omitted or provided
+        for slightly better performance [-]
+
+    Returns
+    -------
+    gammas : list[float]
+        Activity coefficient for each species in the liquid mixture,
+        indexed the same as `xs`, [-]
+
+    Notes
+    -----
+    
+    Examples
+    --------
+    >>> NRTL_gammas_binaries([.1, .9, 0.3, 0.7, .85, .15], 0.1759, 0.7991, .2, .3)
+    [2.121421, 1.011342, 1.52177, 1.09773, 1.016062, 1.841391]
+    '''
+    if tau12 < MIN_TAU_NRTL:
+        tau12 = MIN_TAU_NRTL
+    if tau21 < MIN_TAU_NRTL:
+        tau21 = MIN_TAU_NRTL
+    if alpha12 < MIN_ALPHA_NRTL:
+        alpha12 = MIN_ALPHA_NRTL
+    if alpha21 < MIN_ALPHA_NRTL:
+        alpha21 = MIN_ALPHA_NRTL
+        
+    pts = len(xs)//2 # Always even
+    
+    if gammas is None:
+        allocate_size = (pts*2)
+        gammas = [0.0]*allocate_size
+        
+    tau01, tau10, alpha01, alpha10 = tau12, tau21, alpha12, alpha21
+
+    G01 = exp(-alpha01*tau01)
+    G10 = exp(-alpha10*tau10)
+
+    for i in range(pts):
+        i2 = i*2
+        x0 = xs[i2]
+        x1 = 1.0 - x0
+        
+
+        gamma0 = exp(x1**2*(tau10*(G10/(x0+x1*G10))**2 + G01*tau01/(x1+x0*G01)**2))
+        gamma1 = exp(x0**2*(tau01*(G01/(x1+x0*G01))**2 + G10*tau10/(x0+x1*G10)**2))
+
+
+        gammas[i2] = gamma0
+        gammas[i2 + 1] = gamma1
+    return gammas
 
 def NRTL_gammas(xs, taus, alphas):
     r'''Calculates the activity coefficients of each species in a mixture

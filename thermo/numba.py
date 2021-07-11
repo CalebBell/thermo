@@ -216,6 +216,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                  'nrtl.nrtl_dGE_dxs',
                  'nrtl.nrtl_d2GE_dxixjs',
                  'nrtl.nrtl_d2GE_dTdxs',
+                 'nrtl.NRTL_gammas_binaries',
 
                 'unifac.unifac_psis',
                 'unifac.unifac_dpsis_dT',

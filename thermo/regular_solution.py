@@ -754,21 +754,21 @@ class RegularSolution(GibbsExcess):
         return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
                                                       fit_parameters=use_fit_parameters,
                                                       use_fit_parameters=use_fit_parameters,
-                                                      initial_guesses=cls._zero_gamma_lambda_guess,
+                                                      initial_guesses=cls._gamma_parameter_guesses,
                                                        analytical_jac=jac_func,
                                                       use_numba=use_numba,
                                                       do_statistics=do_statistics,
                                                       func_wrapped_for_leastsq=func_wrapped_for_leastsq,
                                                        jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
                                                       **kwargs)
-    _zero_gamma_lambda_guess = [#{'lambda12': 1.0, 'lambda21': 1.0}, # 1 is always tried!
+    _gamma_parameter_guesses = [#{'lambda12': 1.0, 'lambda21': 1.0}, # 1 is always tried!
                                 {'lambda12': 1e7, 'lambda21': -1e7},
                                 {'lambda12': 0.01, 'lambda21': 0.01},
                                 ]
-    for i in range(len(_zero_gamma_lambda_guess)):
-        r = _zero_gamma_lambda_guess[i]
+    for i in range(len(_gamma_parameter_guesses)):
+        r = _gamma_parameter_guesses[i]
         if r['lambda21'] != r['lambda12']:
-            _zero_gamma_lambda_guess.append({'lambda12': r['lambda21'], 'lambda21': r['lambda12']})
+            _gamma_parameter_guesses.append({'lambda12': r['lambda21'], 'lambda21': r['lambda12']})
     del i, r
 
 

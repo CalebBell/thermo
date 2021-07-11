@@ -1636,7 +1636,7 @@ class Wilson(GibbsExcess):
         return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
                                                       fit_parameters=fit_parameters,
                                                       use_fit_parameters=fit_parameters,
-                                                      initial_guesses=cls._zero_gamma_lambda_guess,
+                                                      initial_guesses=cls._gamma_parameter_guesses,
                                                       analytical_jac=analytical_jac,
                                                       use_numba=use_numba,
                                                       do_statistics=do_statistics,
@@ -1644,20 +1644,19 @@ class Wilson(GibbsExcess):
                                                       jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
                                                       **kwargs)
 
-
-    _zero_gamma_lambda_guess = [{'lambda12': 1, 'lambda21': 1},
+    
+    # Larger value on the right always
+    _gamma_parameter_guesses = [{'lambda12': 1, 'lambda21': 1},
                                {'lambda12': 2.2, 'lambda21': 3.0},
                                {'lambda12': 0.015, 'lambda21': 37.0},
-                               {'lambda12': 0.5, 'lambda21': 40.0},
-                               # {'lambda12': 0.9412, 'lambda21': 1.0606}, # Didn't seem to help
-                               
-                               {'lambda12': 0.5, 'lambda21': 1e-7},
-                               {'lambda12': 1.9, 'lambda21': 1e-12},
-                               {'lambda12': 10, 'lambda21': 1e-12},
+                               {'lambda12': 0.5, 'lambda21': 40.0},                               
+                               {'lambda12': 1e-7, 'lambda21': .5},
+                               {'lambda12': 1e-12, 'lambda21': 1.9},
+                               {'lambda12': 1e-12, 'lambda21': 10.0},
                                ]
-    for i in range(len(_zero_gamma_lambda_guess)):
-        r = _zero_gamma_lambda_guess[i]
-        _zero_gamma_lambda_guess.append({'lambda12': r['lambda21'], 'lambda21': r['lambda12']})
+    for i in range(len(_gamma_parameter_guesses)):
+        r = _gamma_parameter_guesses[i]
+        _gamma_parameter_guesses.append({'lambda12': r['lambda21'], 'lambda21': r['lambda12']})
     del i, r
 
 def Wilson_gammas(xs, params):

@@ -523,3 +523,25 @@ def test_NRTL_partial_inputs():
         
     GE = NRTL(T=T, xs=xs)
     assert_close1d(GE.gammas(), [1.0, 1.0], rtol=1e-13)
+    
+def test_NRTL_asymmetric_alpha():
+    GE = NRTL(T=343.15, xs=[0.252, 0.748], tau_bs=[[0, -61.02497992981518], [673.2359767158717, 0]], 
+          alpha_cs=[[0, 0.2974], [0.35, 0]])
+    assert_close1d(GE.gammas(), [1.8254928709184535, 1.1578302838386516], rtol=1e-12)
+    
+def test_NRTL_gammas_binaries():
+    gammas_calc = NRTL_gammas_binaries([0.252, 0.748, .7, .3, 1e-10, 1-1e-10], -0.1778376218266507, 1.9619291176333142, .2974, .35)
+    gammas_expect = [1.825492870918453, 1.1578302838386514, 1.0471700487668791, 1.782792759735783, 5.896934778222999, 1.0]
+    assert_close1d(gammas_calc, gammas_expect, rtol=1e-13)
+    
+    # Test providing the output array
+    gammas_calc_dup = NRTL_gammas_binaries([0.1, 0.9, .2, .8, .5, .5], -0.1778376218266507, 1.9619291176333142, .2974, .35)
+    gammas_calc_same_array = NRTL_gammas_binaries([0.1, 0.9, .2, .8, .5, .5], -0.1778376218266507, 1.9619291176333142, .2974, .35, gammas_calc)
+    assert_close1d(gammas_calc_dup, gammas_calc_same_array, rtol=1e-13)
+    assert gammas_calc is gammas_calc_same_array
+    
+def test_NRTL_gammas_binaries_vs_object():
+    GE = NRTL(T=343.15, xs=[.2, .8], tau_bs=[[0, -61.02497992981518], [673.2359767158717, 0]], 
+          alpha_cs=[[0, 0.2974], [0.35, 0]])
+    gammas_calc = NRTL_gammas_binaries(GE.xs, GE.taus()[0][1], GE.taus()[1][0], GE.alphas()[0][1], GE.alphas()[1][0])
+    assert_close1d(gammas_calc, GE.gammas(), rtol=1e-13)
