@@ -1717,15 +1717,26 @@ def NRTL_gammas_binaries(xs, tau12, tau21, alpha12, alpha21, gammas=None):
 
     G01 = exp(-alpha01*tau01)
     G10 = exp(-alpha10*tau10)
+    
+    G10_2_tau10 = G10*G10*tau10
+    G10_tau10 = G10*tau10
+
+    G01_2_tau01 = G01*G01*tau01
+    G01_tau01 = G01*tau01
 
     for i in range(pts):
         i2 = i*2
         x0 = xs[i2]
         x1 = 1.0 - x0
         
+        c0 = 1.0/(x0 + x1*G10)
+        c0 *= c0
+        
+        c1 = 1.0/(x1 + x0*G01)
+        c1 *= c1
 
-        gamma0 = exp(x1**2*(tau10*(G10/(x0+x1*G10))**2 + G01*tau01/(x1+x0*G01)**2))
-        gamma1 = exp(x0**2*(tau01*(G01/(x1+x0*G01))**2 + G10*tau10/(x0+x1*G10)**2))
+        gamma0 = trunc_exp(x1*x1*(G10_2_tau10*c0 + G01_tau01*c1))
+        gamma1 = trunc_exp(x0*x0*(G01_2_tau01*c1 + G10_tau10*c0))
 
 
         gammas[i2] = gamma0
