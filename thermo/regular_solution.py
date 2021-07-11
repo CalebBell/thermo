@@ -720,14 +720,13 @@ class RegularSolution(GibbsExcess):
             def analytical_jac(xs, lambda12, lambda21):
                 return jac_func(xs, Vs, SPs, Ts, lambda12, lambda21, jac_iter)
     
+        # The extend calls has been tested to be the fastest compared to numpy and list comprehension
         xs_working = []
-        for i in range(pts):
-            xs_working.append(xs[i][0])
-            xs_working.append(xs[i][1])
+        for xsi in xs:
+            xs_working.extend(xsi)
         gammas_working = []
-        for i in range(pts):
-            gammas_working.append(gammas[i][0])
-            gammas_working.append(gammas[i][1])
+        for gammasi in gammas:
+            gammas_working.extend(gammasi)
             
         xs_working = array(xs_working)
         gammas_working = array(gammas_working)

@@ -58,7 +58,7 @@ from thermo.activity import GibbsExcess
 __all__ = ['NRTL', 'NRTL_gammas', 'NRTL_gammas_binaries', 'NRTL_gammas_binaries_jac']
 
 try:
-    array, zeros, ones, npsum, nplog = np.array, np.zeros, np.ones, np.sum, np.log
+    array, zeros, ones, delete, npsum, nplog = np.array, np.zeros, np.ones, np.delete, np.sum, np.log
 except (ImportError, AttributeError):
     pass
 
@@ -1623,6 +1623,78 @@ class NRTL(GibbsExcess):
                     xj_Gs_dtaus_dT_jis, d2GE_dTdxs)
         return d2GE_dTdxs
 
+
+    @classmethod
+    def regress_binary_parameters(cls, gammas, xs, symmetric_alphas=False,
+                                  use_numba=False,
+                                  do_statistics=True, **kwargs):
+        # Load the functions either locally or with numba
+        if use_numba:
+            from thermo.numba import NRTL_gammas_binaries as work_func, NRTL_gammas_binaries_jac as jac_func
+        else:
+            work_func = NRTL_gammas_binaries
+            jac_func = NRTL_gammas_binaries_jac
+        
+        # Allocate all working memory
+        pts = len(xs)
+        gammas_iter = zeros(pts*2)
+        jac_iter = zeros((pts*2, 4))
+
+        # Plain objective functions
+        if symmetric:
+            def fitting_func(xs, tau12, tau21, alpha):
+                return work_func(xs, tau12, tau21, alpha, alpha, gammas_iter)
+            
+            def analytical_jac(xs, tau12, tau21, alpha):
+                return delete(jac_func(xs, tau12, tau21, alpha, alpha, jac_iter), 3, axis=1)
+    
+        else:
+            def fitting_func(xs, tau12, tau21, alpha12, alpha21):
+                return work_func(xs, tau12, tau21, alpha12, alpha21, gammas_iter)
+            
+            def analytical_jac(xs, tau12, tau21, alpha12, alpha21):
+                return jac_func(xs, tau12, tau21, alpha12, alpha21, jac_iter)
+    
+        # The extend calls has been tested to be the fastest compared to numpy and list comprehension
+        xs_working = []
+        for xsi in xs:
+            xs_working.extend(xsi)
+        gammas_working = []
+        for gammasi in gammas:
+            gammas_working.extend(gammasi)
+            
+        xs_working = array(xs_working)
+        gammas_working = array(gammas_working)
+        
+        # Objective functions for leastsq maximum speed
+        if symmetric:
+            def func_wrapped_for_leastsq(params):
+                return work_func(xs_working, params[0], params[1], params[2], params[2], gammas_iter) - gammas_working
+    
+            def jac_wrapped_for_leastsq(params):
+                return delete(jac_func(xs_working, params[0], params[1], params[2], params[2], jac_iter), 3, axis=1)
+        
+        else:
+            def func_wrapped_for_leastsq(params):
+                return work_func(xs_working, params[0], params[1], params[2], params[3], gammas_iter) - gammas_working
+    
+            def jac_wrapped_for_leastsq(params):
+                return jac_func(xs_working, params[0], params[1], params[2], params[3], jac_iter)
+        
+        if symmetric:
+            use_fit_parameters = ['tau12', 'tau21', 'alpha12']
+        else:
+            use_fit_parameters = ['tau12', 'tau21', 'alpha12', 'alpha21']
+        return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
+                                                      fit_parameters=use_fit_parameters,
+                                                      use_fit_parameters=use_fit_parameters,
+                                                      initial_guesses=cls._gamma_parameter_guesses,
+                                                       analytical_jac=jac_func,
+                                                      use_numba=use_numba,
+                                                      do_statistics=do_statistics,
+                                                      func_wrapped_for_leastsq=func_wrapped_for_leastsq,
+                                                       jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
+                                                      **kwargs)
 
     # Larger value on the right always (tau)
     # Alpha will almost exclusively be fit as one parameter
