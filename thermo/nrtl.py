@@ -1672,7 +1672,10 @@ class NRTL(GibbsExcess):
                 return work_func(xs_working, params[0], params[1], params[2], params[2], gammas_iter) - gammas_working
     
             def jac_wrapped_for_leastsq(params):
-                return delete(jac_func(xs_working, params[0], params[1], params[2], params[2], jac_iter), 3, axis=1)
+                out = jac_func(xs_working, params[0], params[1], params[2], params[2], jac_iter)
+                new_out = delete(out, 3, axis=1)
+                new_out[:, 2] = out[:, 2] + out[:, 3]
+                return new_out
         
         else:
             def func_wrapped_for_leastsq(params):
@@ -1690,13 +1693,13 @@ class NRTL(GibbsExcess):
                                                       fit_parameters=use_fit_parameters,
                                                       use_fit_parameters=use_fit_parameters,
                                                       initial_guesses=cls._gamma_parameter_guesses,
-                                                       # analytical_jac=jac_func,
-                                                       analytical_jac=None,
+                                                        analytical_jac=jac_func,
+                                                       # analytical_jac=None,
                                                       use_numba=use_numba,
                                                       do_statistics=do_statistics,
                                                       func_wrapped_for_leastsq=func_wrapped_for_leastsq,
-                                                       # jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
-                                                       jac_wrapped_for_leastsq=None,
+                                                        jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
+                                                       # jac_wrapped_for_leastsq=None,
                                                       **kwargs)
 
     # Larger value on the right always (tau)
@@ -1871,13 +1874,13 @@ def NRTL_gammas_binaries_jac(xs, tau12, tau21, alpha12, alpha21, calc=None):
 
         
         
-        calc[i2][0] = x19*(x2 - x8 + 1)
-        calc[i2][1] = -x21*x9*(x8 - 1)
-        calc[i2][2] = -x15*x18*(x24 - 1)
-        calc[i2][3] = x25*(x11 - x24 + 1)
-        calc[i2 + 1][0] = -x19*x26*(x7 - 1)
-        calc[i2 + 1][1] = -x21*x26*x6/x5**3
-        calc[i2 + 1][2] = -x18*x22*x27/x14**3
+        calc[i2][0] = x19*(x2 - x8 + 1)# Right
+        calc[i2][1] = -x15*x18*(x24 - 1) # Right
+        calc[i2][2] = -x19*x26*(x7 - 1) # Right
+        calc[i2][3] =-x18*x22*x27/x14**3
+        calc[i2 + 1][0] = -x21*x9*(x8 - 1)
+        calc[i2 + 1][1] = x25*(x11 - x24 + 1)
+        calc[i2 + 1][2] = -x21*x26*x6/x5**3
         calc[i2 + 1][3] = -x25*x27*(x23 - 1)
     return calc
 
