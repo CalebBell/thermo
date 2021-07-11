@@ -553,3 +553,30 @@ def test_NRTL_gammas_binaries_jac():
     expect = [[1.1789916307339643, -0.26111310616433153, -3.3538119188199227, -6.741171640572135], [0.028442736322554146, 0.12389510256475463, -0.4669633093241108, -0.24619435634886436], [0.6880803492773255, -0.1604580514041915, -1.2421051941611734, -3.0460013493889275], [0.07924102114006676, 0.14519919300123013, -0.9799779542489997, -0.9023280256735463]]
     jac_calc = NRTL_gammas_binaries_jac([.3, .7, .4, .6], 2, 3, .2, .4)
     assert_close2d(expect, jac_calc, rtol=1e-12)
+    
+    
+def test_NRTL_regression_basics():
+    # ethanol-water
+    GE = UNIFAC.from_subgroups(T=298.15, xs=[.9, .1], chemgroups=[{1: 1, 2: 1, 14: 1}, {16: 1}])
+    pts = 10
+    xs_points = [[xi, 1-xi] for xi in linspace(0.01, 0.99, pts)]
+    many_gammas_expect = [GE.to_T_xs(T=GE.T, xs=xs_points[i]).gammas() for i in range(pts)]
+    
+    res, stats = NRTL.regress_binary_parameters(gammas=many_gammas_expect, xs=xs_points, use_numba=False,
+                                                symmetric_alphas=True, multiple_tries=True)
+    
+    assert_close(res['tau12'], 0.38703486403040827)
+    assert_close(res['tau21'], 1.7353246253228976)
+    assert_close(res['alpha12'], 0.64618267549806)
+    assert stats['MAE'] < 0.01
+    
+
+    # Regression without symmetry
+    res, stats = NRTL.regress_binary_parameters(gammas=many_gammas_expect, xs=xs_points, use_numba=False,
+                                                symmetric_alphas=False, multiple_tries=False)
+    
+    assert_close(res['tau12'], 0.229234995043471)
+    assert_close(res['tau21'], 1.974654718742523)
+    assert_close(res['alpha12'], 6.207804509017788)
+    assert_close(res['alpha21'], 0.4898957291346906)
+    assert stats['MAE'] < 0.001
