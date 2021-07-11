@@ -1688,7 +1688,6 @@ class NRTL(GibbsExcess):
             use_fit_parameters = ['tau12', 'tau21', 'alpha12']
         else:
             use_fit_parameters = ['tau12', 'tau21', 'alpha12', 'alpha21']
-        from fluids.numerics import jacobian
         return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
                                                       fit_parameters=use_fit_parameters,
                                                       use_fit_parameters=use_fit_parameters,
