@@ -563,7 +563,7 @@ def test_NRTL_regression_basics():
     many_gammas_expect = [GE.to_T_xs(T=GE.T, xs=xs_points[i]).gammas() for i in range(pts)]
     
     res, stats = NRTL.regress_binary_parameters(gammas=many_gammas_expect, xs=xs_points, use_numba=False,
-                                                symmetric_alphas=True, multiple_tries=True)
+                                                symmetric_alphas=True, multiple_tries=False)
     
     assert_close(res['tau12'], 0.38703486403040827)
     assert_close(res['tau21'], 1.7353246253228976)
