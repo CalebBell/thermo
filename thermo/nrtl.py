@@ -55,7 +55,7 @@ from fluids.constants import R
 from fluids.numerics import numpy as np, trunc_exp
 from thermo.activity import GibbsExcess
 
-__all__ = ['NRTL', 'NRTL_gammas', 'NRTL_gammas_binaries']
+__all__ = ['NRTL', 'NRTL_gammas', 'NRTL_gammas_binaries', 'NRTL_gammas_binaries_jac']
 
 try:
     array, zeros, ones, npsum, nplog = np.array, np.zeros, np.ones, np.sum, np.log
@@ -1742,6 +1742,67 @@ def NRTL_gammas_binaries(xs, tau12, tau21, alpha12, alpha21, gammas=None):
         gammas[i2] = gamma0
         gammas[i2 + 1] = gamma1
     return gammas
+
+
+def NRTL_gammas_binaries_jac(xs, tau12, tau21, alpha12, alpha21, calc=None):
+    if tau12 < MIN_TAU_NRTL:
+        tau12 = MIN_TAU_NRTL
+    if tau21 < MIN_TAU_NRTL:
+        tau21 = MIN_TAU_NRTL
+    if alpha12 < MIN_ALPHA_NRTL:
+        alpha12 = MIN_ALPHA_NRTL
+    if alpha21 < MIN_ALPHA_NRTL:
+        alpha21 = MIN_ALPHA_NRTL
+    pts = len(xs)//2 # Always even
+    
+    if calc is None:
+        allocate_size = (pts*2)
+        calc = np.zeros((allocate_size, 2))
+    
+    for i in range(pts):
+        i2 = i*2
+        x0 = xs[i2]
+        x1 = 1.0 - x0
+
+
+        x2 = alpha01*tau01
+        x3 = exp(x2)
+        x4 = x1*x3
+        x5 = x0 + x4
+        x6 = 2*x4
+        x7 = x6/x5
+        x8 = x2*x7
+        x9 = x5**(-2)
+        x10 = x1**2
+        x11 = alpha10*tau10
+        x12 = exp(x11)
+        x13 = x0*x12
+        x14 = x1 + x13
+        x15 = x14**(-2)
+        x16 = tau10*x15
+        x17 = tau01*x9
+        x18 = x10*exp(x10*(x16 + x17*x3))
+        x19 = x18*x3*x9
+        x20 = x0**2
+        x21 = x20*exp(x20*(x12*x16 + x17))
+        x22 = 2*x13
+        x23 = x22/x14
+        x24 = x11*x23
+        x25 = x12*x15*x21
+        x26 = tau01**2
+        x27 = tau10**2
+
+        
+        
+        calc[i2][0] = x19*(x2 - x8 + 1)
+        calc[i2][1] = -x21*x9*(x8 - 1)
+        calc[i2][2] = -x15*x18*(x24 - 1)
+        calc[i2][3] = x25*(x11 - x24 + 1)
+        calc[i2 + 1][0] = -x19*x26*(x7 - 1)
+        calc[i2 + 1][1] = -x21*x26*x6/x5**3
+        calc[i2 + 1][2] = -x18*x22*x27/x14**3
+        calc[i2 + 1][3] = -x25*x27*(x23 - 1)
+    return calc
 
 def NRTL_gammas(xs, taus, alphas):
     r'''Calculates the activity coefficients of each species in a mixture
