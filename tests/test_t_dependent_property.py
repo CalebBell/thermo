@@ -88,6 +88,8 @@ def test_local_method():
     # Extrapolate
     Tmin = 300. + 1e-3
     obj.add_method(f, Tmin, Tmax)
+    # obj.RAISE_PROPERTY_CALCULATION_ERROR = True
+    # obj.CASRN = 'CASRN'
     assert_close(obj.T_dependent_property(T), f(T))
     for order in (1, 2, 3):
         assert obj.T_dependent_property_derivative(T, order) is not None

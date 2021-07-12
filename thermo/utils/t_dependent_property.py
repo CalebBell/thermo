@@ -2695,95 +2695,40 @@ class TDependentProperty(object):
                 return None
         return integral
 
-    def _get_extrapolation_coeffs(self, extrapolation, method):
+    def _get_extrapolation_coeffs(self, extrapolation, method, low):
+        if extrapolation is None or extrapolation == 'None': return
         T_limits = self.T_limits
+        Tmin, Tmax = T_limits[method]
+        T = Tmin if low else Tmax
         if extrapolation == 'linear':
             interpolation_T = self.interpolation_T
             interpolation_property = self.interpolation_property
-            interpolation_property_inv = self.interpolation_property_inv
-            Tmin, Tmax = T_limits[method]
-            if interpolation_T is not None:
-                Tmin_trans, Tmax_trans = interpolation_T(Tmin), interpolation_T(Tmax)
-            try:
-                v_low = self.calculate(T=Tmin, method=method)
-                if interpolation_property is not None:
-                    v_low = interpolation_property(v_low)
-                d_low = self._calculate_derivative_transformed(T=Tmin, method=method, order=1)
-            except:
-                v_low, d_low = None, None
-            try:
-                v_high = self.calculate(T=Tmax, method=method)
-                if interpolation_property is not None:
-                    v_high = interpolation_property(v_high)
-                d_high = self._calculate_derivative_transformed(T=Tmax, method=method, order=1)
-            except:
-                v_high, d_high = None, None
-            coefficients = [v_low, d_low, v_high, d_high]
+            v = self.calculate(T, method=method)
+            if interpolation_property is not None: v = interpolation_property(v)
+            d = self._calculate_derivative_transformed(T=T, method=method, order=1)
+            coefficients = (v, d)
         elif extrapolation == 'constant':
-            Tmin, Tmax = T_limits[method]
-            try:
-                v_low = self.calculate(T=Tmin, method=method)
-            except:
-                v_low = None
-            try:
-                v_high = self.calculate(T=Tmax, method=method)
-            except:
-                v_high = None
-            coefficients = [v_low, v_high]
+            coefficients = self.calculate(T, method=method)
         elif extrapolation == 'AntoineAB':
-            Tmin, Tmax = T_limits[method]
-            try:
-                v_low = self.calculate(T=Tmin, method=method)
-                d_low = self.calculate_derivative(T=Tmin, method=method, order=1)
-                AB_low = Antoine_AB_coeffs_from_point(T=Tmin, Psat=v_low, dPsat_dT=d_low, base=e)
-            except:
-                AB_low = None
-            try:
-                v_high = self.calculate(T=Tmax, method=method)
-                d_high = self.calculate_derivative(T=Tmax, method=method, order=1)
-                AB_high = Antoine_AB_coeffs_from_point(T=Tmax, Psat=v_high, dPsat_dT=d_high, base=e)
-            except:
-                AB_high = None
-            coefficients = [AB_low, AB_high]
+            v = self.calculate(T, method=method)
+            d = self.calculate_derivative(T, method=method, order=1)
+            coefficients = Antoine_AB_coeffs_from_point(T=T, Psat=v, dPsat_dT=d, base=e)
         elif extrapolation == 'DIPPR101_ABC':
-            Tmin, Tmax = T_limits[method]
-            try:
-                v_low = self.calculate(T=Tmin, method=method)
-                d0_low = self.calculate_derivative(T=Tmin, method=method, order=1)
-                d1_low = self.calculate_derivative(T=Tmin, method=method, order=2)
-                DIPPR101_ABC_low = DIPPR101_ABC_coeffs_from_point(Tmin, v_low, d0_low, d1_low)
-            except:
-                DIPPR101_ABC_low = None
-            try:
-                v_high = self.calculate(T=Tmax, method=method)
-                d0_high = self.calculate_derivative(T=Tmax, method=method, order=1)
-                d1_high = self.calculate_derivative(T=Tmax, method=method, order=2)
-                DIPPR101_ABC_high = DIPPR101_ABC_coeffs_from_point(Tmax, v_high, d0_high, d1_high)
-            except:
-                DIPPR101_ABC_high = None
-            coefficients = [DIPPR101_ABC_low, DIPPR101_ABC_high]
+            v = self.calculate(T, method=method)
+            d0 = self.calculate_derivative(T, method=method, order=1)
+            d1 = self.calculate_derivative(T, method=method, order=2)
+            coefficients = DIPPR101_ABC_coeffs_from_point(T, v, d0, d1)
         elif extrapolation == 'Watson':
-            Tmin, Tmax = T_limits[method]
-            delta = (Tmax-Tmin)*1e-4
-            try:
-                v0_low = self.calculate(T=Tmin, method=method)
-                v1_low = self.calculate(T=Tmin+delta, method=method)
-                n_low = Watson_n(Tmin, Tmin+delta, v0_low, v1_low, self.Tc)
-            except:
-                v0_low, v1_low, n_low = None, None, None
-            try:
-                v0_high = self.calculate(T=Tmax, method=method)
-                v1_high = self.calculate(T=Tmax-delta, method=method)
-                n_high = Watson_n(Tmax, Tmax-delta, v0_high, v1_high, self.Tc)
-            except:
-                v0_high, v1_high, n_high = None, None, None
-            coefficients = [v0_low, n_low, v0_high, n_high]
+            delta = (Tmax - Tmin)*1e-4
+            dT = delta if low else -delta
+            v0 = self.calculate(T, method=method)
+            v1 = self.calculate(T + dT, method=method)
+            n = Watson_n(T, T + dT, v0, v1, self.Tc)
+            coefficients = (v0, n)
         elif extrapolation == 'interp1d':
             from scipy.interpolate import interp1d
             interpolation_T = self.interpolation_T
             interpolation_property = self.interpolation_property
-            interpolation_property_inv = self.interpolation_property_inv
-            Tmin, Tmax = T_limits[method]
             if method in self.tabular_data:
                 Ts, properties = self.tabular_data[method]
             else:
@@ -2801,8 +2746,6 @@ class TDependentProperty(object):
             # Only allow linear extrapolation, but with whatever transforms are specified
             extrapolator = interp1d(Ts_interp, properties_interp, fill_value='extrapolate', kind=self.interp1d_extrapolate_kind)
             coefficients = extrapolator
-        elif extrapolation is None or extrapolation == 'None':
-            coefficients = None
         else:
             raise ValueError("Could not recognize extrapolation setting")
         return coefficients
@@ -2868,88 +2811,46 @@ class TDependentProperty(object):
             extrapolation = self._extrapolation_high
         else:
             raise ValueError("Not outside normal range")
-        key = (extrapolation, method)
+        key = (extrapolation, method, low)
         extrapolation_coeffs = self.extrapolation_coeffs
         if key in extrapolation_coeffs:
             coeffs = extrapolation_coeffs[key]
         else:
-            extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(extrapolation, method)
-            
+            extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
         if extrapolation == 'linear':
-            v_low, d_low, v_high, d_high = coeffs
+            v, d = coeffs
             interpolation_T = self.interpolation_T
             interpolation_property_inv = self.interpolation_property_inv
+            T_lim = T_low if low else T_high
             if interpolation_T is not None:
-                T_low, T_high = interpolation_T(T_low), interpolation_T(T_high)
+                T_lim = interpolation_T(T_lim)
                 T = interpolation_T(T)
-            if low:
-                if v_low is None:
-                    raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
-                val = v_low + d_low*(T - T_low)
-                if interpolation_property_inv is not None:
-                    val = interpolation_property_inv(val)
-                return val
-            else:
-                if v_high is None:
-                    raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
-                val = v_high + d_high*(T - T_high)
-                if interpolation_property_inv is not None:
-                    val = interpolation_property_inv(val)
-                return val
+            val = v + d * (T - T_lim)
+            if interpolation_property_inv is not None:
+                val = interpolation_property_inv(val)
+            return val
         elif extrapolation == 'constant':
-            v_low, v_high = coeffs
-            if low:
-                if v_low is None:
-                    raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
-                return v_low
-            else:
-                if v_high is None:
-                    raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
-                return v_high
-
+            return coeffs
         elif extrapolation == 'AntoineAB':
-            T_low, T_high = T_limits[method]
-            AB_low, AB_high = coeffs
-            if low:
-                if AB_low is None:
-                    raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
-                return Antoine(T, A=AB_low[0], B=AB_low[1], C=0.0, base=e)
-            else:
-                if AB_high is None:
-                    raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
-                return Antoine(T, A=AB_high[0], B=AB_high[1], C=0.0, base=e)
+            A, B = coeffs
+            return Antoine(T, A=A, B=B, C=0.0, base=e)
         elif extrapolation == 'DIPPR101_ABC':
-            T_low, T_high = T_limits[method]
-            DIPPR101_ABC_low, DIPPR101_ABC_high = coeffs
-            if low:
-                if DIPPR101_ABC_low is None:
-                    raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
-                return EQ101(T, DIPPR101_ABC_low[0], DIPPR101_ABC_low[1], DIPPR101_ABC_low[2], 0.0, 0.0)
-            else:
-                if DIPPR101_ABC_high is None:
-                    raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
-                return EQ101(T, DIPPR101_ABC_high[0], DIPPR101_ABC_high[1], DIPPR101_ABC_high[2], 0.0, 0.0)
+            A, B, C = coeffs
+            return EQ101(T, A, B, C, 0.0, 0.0)
         elif extrapolation == 'Watson':
-            T_low, T_high = T_limits[method]
-            v0_low, n_low, v0_high, n_high = coeffs
-            if low:
-                if v0_low is None:
-                    raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
-                return Watson(T, Hvap_ref=v0_low, T_ref=T_low, Tc=self.Tc, exponent=n_low)
-            else:
-                if v0_high is None:
-                    raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
-                return Watson(T, Hvap_ref=v0_high, T_ref=T_high, Tc=self.Tc, exponent=n_high)
+            v0, n = coeffs
+            T_lim = T_low if low else T_high
+            return Watson(T, Hvap_ref=v0, T_ref=T_lim, Tc=self.Tc, exponent=n)
         elif extrapolation == 'interp1d':
-            T_low, T_high = T_limits[method]
             extrapolator = coeffs
             interpolation_T = self.interpolation_T
-            if interpolation_T is not None:
-                T = interpolation_T(T)
+            if interpolation_T is not None: T = interpolation_T(T)
             prop = extrapolator(T)
             if self.interpolation_property is not None:
                 prop = self.interpolation_property_inv(prop)
-        return float(prop)
+            return float(prop)
+        else:
+            raise RuntimeError("Unknown extrapolation '%s'" %extrapolation)
 
     def extrapolate_integral(self, T1, T2, method, in_range='error'):
         r'''Extrapolate the integral of a given method according to the
@@ -2992,16 +2893,8 @@ class TDependentProperty(object):
             if key in extrapolation_coeffs:
                 coeffs = extrapolation_coeffs[key]
             else:
-                extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(extrapolation, method)
-            v_low, v_high = coeffs
-            if low:
-                if v_low is None:
-                    raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
-                return v_low * (T2 - T1)
-            else:
-                if v_high is None:
-                    raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
-                return v_high * (T2 - T1)
+                extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(extrapolation, method, low)
+            return coeffs * (T2 - T1)
         else:
             return float(quad(self.extrapolate, T1, T2, args=(method,))[0])
 
@@ -3046,16 +2939,8 @@ class TDependentProperty(object):
             if key in extrapolation_coeffs:
                 coeffs = extrapolation_coeffs[key]
             else:
-                extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(extrapolation, method)
-            v_low, v_high = coeffs
-            if low:
-                if v_low is None:
-                    raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
-                return v_low * log(T2/T1)
-            else:
-                if v_high is None:
-                    raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
-                return v_high * log(T2/T1)
+                extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(extrapolation, method, low)
+            return coeffs * log(T2/T1)
         else:
             return float(quad(lambda T: self.extrapolate(T, method)/T, T1, T2)[0])
 
