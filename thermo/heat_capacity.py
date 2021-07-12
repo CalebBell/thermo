@@ -272,10 +272,11 @@ class HeatCapacityGas(TDependentProperty):
     custom_args = ('MW', 'similarity_variable')
 
     def __init__(self, CASRN='', MW=None, similarity_variable=None,
-                 extrapolation='linear', **kwargs):
+                 extrapolation='linear', iscyclic_aliphatic=False, **kwargs):
         self.CASRN = CASRN
         self.MW = MW
         self.similarity_variable = similarity_variable
+        self.iscyclic_aliphatic = iscyclic_aliphatic
         super(HeatCapacityGas, self).__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data=True):
@@ -405,8 +406,7 @@ class HeatCapacityGas(TDependentProperty):
         elif method == CRCSTD:
             Cp = self.CRCSTD_constant
         elif method == LASTOVKA_SHAW:
-            Cp = Lastovka_Shaw(T, self.similarity_variable)
-            Cp = property_mass_to_molar(Cp, self.MW)
+            Cp = Lastovka_Shaw(T, self.similarity_variable, self.iscyclic_aliphatic, self.MW)
         else:
             return self._base_calculate(T, method)
         return Cp
@@ -498,9 +498,14 @@ class HeatCapacityGas(TDependentProperty):
         elif method == CRCSTD:
             return (T2 - T1)*self.CRCSTD_constant
         elif method == LASTOVKA_SHAW:
-            dH = (Lastovka_Shaw_integral(T2, self.similarity_variable)
-                    - Lastovka_Shaw_integral(T1, self.similarity_variable))
-            return property_mass_to_molar(dH, self.MW)
+            similarity_variable = self.similarity_variable
+            iscyclic_aliphatic = self.iscyclic_aliphatic
+            MW = self.MW
+            term_A = Lastovka_Shaw_term_A(similarity_variable, iscyclic_aliphatic)
+            return (
+                Lastovka_Shaw_integral(T2, similarity_variable, iscyclic_aliphatic, MW, term_A)
+                - Lastovka_Shaw_integral(T1, similarity_variable, iscyclic_aliphatic, MW, term_A)
+            )
         else:
             return super(HeatCapacityGas, self).calculate_integral(T1, T2, method)
 
@@ -546,9 +551,14 @@ class HeatCapacityGas(TDependentProperty):
             S1 = ((((0.25*E)*T1 + D/3.)*T1 + 0.5*C)*T1 + B)*T1
             return R*(S2-S1 + A*log(T2/T1))
         elif method == LASTOVKA_SHAW:
-            dS = (Lastovka_Shaw_integral_over_T(T2, self.similarity_variable)
-                 - Lastovka_Shaw_integral_over_T(T1, self.similarity_variable))
-            return property_mass_to_molar(dS, self.MW)
+            similarity_variable = self.similarity_variable
+            iscyclic_aliphatic = self.iscyclic_aliphatic
+            MW = self.MW
+            term_A = Lastovka_Shaw_term_A(similarity_variable, iscyclic_aliphatic)
+            return (
+                Lastovka_Shaw_integral_over_T(T2, similarity_variable, iscyclic_aliphatic, MW, term_A)
+                - Lastovka_Shaw_integral_over_T(T1, similarity_variable, iscyclic_aliphatic, MW, term_A)
+            )
         return super(HeatCapacityGas, self).calculate_integral_over_T(T1, T2, method)
 
 

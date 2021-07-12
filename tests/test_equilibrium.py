@@ -523,6 +523,13 @@ def test_two_eos_pure_flash_all_properties():
     assert_close(eq.H_C_ratio_mass(), 0.3356806847227889, rtol=1e-12)
     assert_close(eq.bulk.H_C_ratio_mass(), 0.3356806847227889, rtol=1e-12)
     assert_close1d([i.H_C_ratio_mass() for i in eq.phases], [0.3356806847227889]*2, rtol=1e-12)
+    
+    
+    # Test some methods that failed
+    eq = flasher.flash(T=500.0, P=1e5)
+    assert [] == eq.betas_liquids
+    assert [] == eq.betas_mass_liquids
+    assert [] == eq.betas_volume_liquids
 
 
 def test_thermodynamic_derivatives_settings_with_flash():
