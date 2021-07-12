@@ -2489,35 +2489,79 @@ class TDependentProperty(object):
         integral : float
             Calculated integral of the property over the given range,
             [`units*K`]
+        
         '''
         if T2 < T1: return - self.T_dependent_property_integral(T2, T1)
         method = self._method 
         T_limits = self.T_limits
+        extrapolation = self._extrapolation
+        integral = 0.
         if method in T_limits:
             Tmin, Tmax = T_limits[method]
-            extrapolations = []
             if T1 < Tmin:
-                if self.RAISE_PROPERTY_CALCULATION_ERROR:
-                    pass
+                if extrapolation:
+                    try:
+                        if T2 >= Tmin:
+                            integral += self.extrapolate_integral(T1, Tmin)
+                        else:
+                            Tmin = T2
+                            return self.extrapolate_integral(T1, Tmin)
+                    except:
+                        if self.RAISE_PROPERTY_CALCULATION_ERROR:
+                            raise RuntimeError(
+                                "Failed to extrapolate integral of %s method '%s' "
+                                "between T=%s to %s K for component with CASRN '%s'" 
+                                %(self.name.lower(), method, T1, Tmin, self.CASRN)
+                            )
+                        else:
+                            return None
+                elif self.RAISE_PROPERTY_CALCULATION_ERROR:
+                    raise RuntimeError(
+                        "%s method '%s' is not valid between T=%s to T=%s K "
+                        "for component with CASRN '%s'" 
+                        %(self.name, method, T1, Tmin, self.CASRN)
+                    )
                 else:
-                    extrapolations.append((T1, Tmin))
+                    return None
                 T1 = Tmin
             if T2 > Tmax:
-                if self.RAISE_PROPERTY_CALCULATION_ERROR:
-                    pass
+                if extrapolation:
+                    try:
+                        if T1 <= Tmax:
+                            integral += self.extrapolate_integral(Tmax, T2)
+                        else:
+                            Tmax = T1
+                            return self.extrapolate_integral(Tmax, T2)
+                    except:
+                        if self.RAISE_PROPERTY_CALCULATION_ERROR:
+                            raise RuntimeError(
+                                "Failed to extrapolate integral of %s method '%s' "
+                                "between T=%s to %s K for component with CASRN '%s'" 
+                                %(self.name.lower(), method, Tmax, T2, self.CASRN)
+                            )
+                        else:
+                            return None
+                elif self.RAISE_PROPERTY_CALCULATION_ERROR:
+                    raise RuntimeError(
+                        "%s method '%s' is not valid between T=%s to T=%s K "
+                        "for component with CASRN '%s'" 
+                        %(self.name, method, T2, Tmax, self.CASRN)
+                    )
                 else:
-                    extrapolations.append((Tmax, T2))
+                    return None
                 T2 = Tmax
-            integral = self.calculate_integral(T1, T2, self._method)
-            for T1, T2 in extrapolations:
-                integral += self.extrapolate_integral(T1, T2)
-        else:
-            try:
-                return self.calculate_integral(T1, T2, self._method)
-            except Exception as e:
-                if self.RAISE_PROPERTY_CALCULATION_ERROR: 
-                    raise e
-        return None
+        try:
+            integral += self.calculate_integral(T1, T2, self._method)
+        except:
+            if self.RAISE_PROPERTY_CALCULATION_ERROR: 
+                raise RuntimeError(
+                    "Failed to evaluate integral of %s method '%s' "
+                    "between T=%s to %s K for component with CASRN '%s'" 
+                    %(self.name.lower(), method, Tmax, T2, self.CASRN)
+                )
+            else:
+                return None
+        return integral
 
     def calculate_integral_over_T(self, T1, T2, method):
         r'''Method to calculate the integral of a property over temperature
@@ -2579,11 +2623,77 @@ class TDependentProperty(object):
             Calculated integral of the property over the given range,
             [`units`]
         '''
+        if T2 < T1: return - self.T_dependent_property_integral_over_T(T2, T1)
+        method = self._method 
+        T_limits = self.T_limits
+        extrapolation = self._extrapolation
+        integral = 0.
+        if method in T_limits:
+            Tmin, Tmax = T_limits[method]
+            if T1 < Tmin:
+                if extrapolation:
+                    try:
+                        if T2 >= Tmin:
+                            integral += self.extrapolate_integral_over_T(T1, Tmin)
+                        else:
+                            Tmin = T2
+                            return self.extrapolate_integral_over_T(T1, Tmin)
+                    except:
+                        if self.RAISE_PROPERTY_CALCULATION_ERROR:
+                            raise RuntimeError(
+                                "Failed to extrapolate integral-over-T of %s method '%s' "
+                                "between T=%s to %s K for component with CASRN '%s'" 
+                                %(self.name.lower(), method, T1, Tmin, self.CASRN)
+                            )
+                        else:
+                            return None
+                elif self.RAISE_PROPERTY_CALCULATION_ERROR:
+                    raise RuntimeError(
+                        "%s method '%s' is not valid between T=%s to T=%s K "
+                        "for component with CASRN '%s'" 
+                        %(self.name, method, T1, Tmin, self.CASRN)
+                    )
+                else:
+                    return None
+                T1 = Tmin
+            if T2 > Tmax:
+                if extrapolation:
+                    try:
+                        if T1 <= Tmax:
+                            integral += self.extrapolate_integral_over_T(Tmax, T2)
+                        else:
+                            Tmax = T1
+                            return self.extrapolate_integral_over_T(Tmax, T2)
+                    except:
+                        if self.RAISE_PROPERTY_CALCULATION_ERROR:
+                            raise RuntimeError(
+                                "Failed to extrapolate integral-over-T of %s method '%s' "
+                                "between T=%s to %s K for component with CASRN '%s'" 
+                                %(self.name.lower(), method, Tmax, T2, self.CASRN)
+                            )
+                        else:
+                            return None
+                elif self.RAISE_PROPERTY_CALCULATION_ERROR:
+                    raise RuntimeError(
+                        "%s method '%s' is not valid between T=%s to T=%s K "
+                        "for component with CASRN '%s'" 
+                        %(self.name, method, T2, Tmax, self.CASRN)
+                    )
+                else:
+                    return None
+                T2 = Tmax
         try:
-            return self.calculate_integral_over_T(T1, T2, self._method)
+            integral += self.calculate_integral_over_T(T1, T2, self._method)
         except:
-            pass
-        return None
+            if self.RAISE_PROPERTY_CALCULATION_ERROR: 
+                raise RuntimeError(
+                    "Failed to evaluate integral-over-T of %s method '%s' "
+                    "between T=%s to %s K for component with CASRN '%s'" 
+                    %(self.name.lower(), method, Tmax, T2, self.CASRN)
+                )
+            else:
+                return None
+        return integral
 
     def _get_extrapolation_coeffs(self, extrapolation, method):
         T_limits = self.T_limits
@@ -2776,6 +2886,125 @@ class TDependentProperty(object):
                 if v_low is None:
                     raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
                 val = v_low + d_low*(T - T_low)
+                if interpolation_property_inv is not None:
+                    val = interpolation_property_inv(val)
+                return val
+            else:
+                if v_high is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
+                val = v_high + d_high*(T - T_high)
+                if interpolation_property_inv is not None:
+                    val = interpolation_property_inv(val)
+                return val
+        elif extrapolation == 'constant':
+            v_low, v_high = coeffs
+            if low:
+                if v_low is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
+                return v_low
+            else:
+                if v_high is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
+                return v_high
+
+        elif extrapolation == 'AntoineAB':
+            T_low, T_high = T_limits[method]
+            AB_low, AB_high = coeffs
+            if low:
+                if AB_low is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
+                return Antoine(T, A=AB_low[0], B=AB_low[1], C=0.0, base=e)
+            else:
+                if AB_high is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
+                return Antoine(T, A=AB_high[0], B=AB_high[1], C=0.0, base=e)
+        elif extrapolation == 'DIPPR101_ABC':
+            T_low, T_high = T_limits[method]
+            DIPPR101_ABC_low, DIPPR101_ABC_high = coeffs
+            if low:
+                if DIPPR101_ABC_low is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
+                return EQ101(T, DIPPR101_ABC_low[0], DIPPR101_ABC_low[1], DIPPR101_ABC_low[2], 0.0, 0.0)
+            else:
+                if DIPPR101_ABC_high is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
+                return EQ101(T, DIPPR101_ABC_high[0], DIPPR101_ABC_high[1], DIPPR101_ABC_high[2], 0.0, 0.0)
+        elif extrapolation == 'Watson':
+            T_low, T_high = T_limits[method]
+            v0_low, n_low, v0_high, n_high = coeffs
+            if low:
+                if v0_low is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
+                return Watson(T, Hvap_ref=v0_low, T_ref=T_low, Tc=self.Tc, exponent=n_low)
+            else:
+                if v0_high is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at maximum temperature")
+                return Watson(T, Hvap_ref=v0_high, T_ref=T_high, Tc=self.Tc, exponent=n_high)
+        elif extrapolation == 'interp1d':
+            T_low, T_high = T_limits[method]
+            extrapolator = coeffs
+            interpolation_T = self.interpolation_T
+            if interpolation_T is not None:
+                T = interpolation_T(T)
+            prop = extrapolator(T)
+            if self.interpolation_property is not None:
+                prop = self.interpolation_property_inv(prop)
+        return float(prop)
+
+    def extrapolate_integral(self, T, method, in_range='error'):
+        r'''Extrapolate the integral of a given method according to the
+        :obj:`extrapolation` setting.
+
+        Parameters
+        ----------
+        T1 : float
+            Lower temperature at which to extrapolate the property, [K]
+        T2 : float
+            Upper temperature at which to extrapolate the property, [K]
+        method : str
+            The method to use, [-]
+        in_range : str
+            How to handle inputs which are not outside the temperature limits;
+            set to 'low' to use the low T extrapolation, 'high' to use the
+            high T extrapolation, and 'error' or anything else to raise an
+            error in those cases, [-]
+
+        Returns
+        -------
+        prop : float
+            Calculated property, [`units`*K]
+        '''
+        T_limits = self.T_limits
+        if T < 0.0:
+            raise ValueError("Negative temperature")
+        T_low, T_high = T_limits[method]
+        if T <= T_low or in_range == 'low':
+            low = True
+            extrapolation = self._extrapolation_low
+        elif T >= T_high or in_range == 'high':
+            low = False
+            extrapolation = self._extrapolation_high
+        else:
+            raise ValueError("Not outside normal range")
+        key = (extrapolation, method)
+        extrapolation_coeffs = self.extrapolation_coeffs
+        if key in extrapolation_coeffs:
+            coeffs = extrapolation_coeffs[key]
+        else:
+            extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(extrapolation, method)
+            
+        if extrapolation == 'linear':
+            v_low, d_low, v_high, d_high = coeffs
+            interpolation_T = self.interpolation_T
+            interpolation_property_inv = self.interpolation_property_inv
+            if interpolation_T is not None:
+                T_low, T_high = interpolation_T(T_low), interpolation_T(T_high)
+                T = interpolation_T(T)
+            if low:
+                if v_low is None:
+                    raise ValueError("Could not extrapolate - model failed to calculate at minimum temperature")
+                dT = T - T_low
+                val = v_low * T + d_low * dT * dT * 0.5
                 if interpolation_property_inv is not None:
                     val = interpolation_property_inv(val)
                 return val
