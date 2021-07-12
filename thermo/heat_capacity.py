@@ -919,15 +919,15 @@ class HeatCapacityLiquid(TDependentProperty):
         elif method == ZABRANSKY_SPLINE:
             return self.Zabransky_spline.force_calculate(T)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL:
-            return self.Zabransky_quasipolynomial.calculate(T)
+            return self.Zabransky_quasipolynomial.force_calculate(T)
         elif method == ZABRANSKY_SPLINE_C:
             return self.Zabransky_spline_iso.force_calculate(T)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
-            return self.Zabransky_quasipolynomial_iso.calculate(T)
+            return self.Zabransky_quasipolynomial_iso.force_calculate(T)
         elif method == ZABRANSKY_SPLINE_SAT:
             return self.Zabransky_spline_sat.force_calculate(T)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
-            return self.Zabransky_quasipolynomial_sat.calculate(T)
+            return self.Zabransky_quasipolynomial_sat.force_calculate(T)
         elif method == COOLPROP:
             return CoolProp_T_dependent_property(T, self.CASRN , 'CPMOLAR', 'l')
         elif method == POLING_CONST:
