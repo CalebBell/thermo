@@ -51,6 +51,10 @@ def test_local_constant_method():
     assert_close(obj.T_dependent_property_integral(T1, T2), constant * dT)
     assert_close(obj.T_dependent_property_integral_over_T(T1, T2), constant * log(T2 / T1))
     
+    # Test extrapolation on both sides
+    assert_close(obj.T_dependent_property_integral(Tmin - 50, Tmax + 50), constant * (100 + Tmax - Tmin))
+    assert_close(obj.T_dependent_property_integral_over_T(Tmin - 50, Tmax + 50), constant * log((Tmax + 50) / (Tmin - 50)))
+    
     # Do not allow extrapolation
     obj.extrapolation = None
     obj.add_method(constant, Tmin, Tmax)
