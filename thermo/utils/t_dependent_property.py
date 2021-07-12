@@ -2888,7 +2888,7 @@ class TDependentProperty(object):
         else:
             raise ValueError("Not outside normal range")
         if extrapolation == 'constant':
-            key = (extrapolation, method)
+            key = (extrapolation, method, low)
             extrapolation_coeffs = self.extrapolation_coeffs
             if key in extrapolation_coeffs:
                 coeffs = extrapolation_coeffs[key]
