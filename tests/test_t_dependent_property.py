@@ -94,6 +94,8 @@ def test_local_method():
     obj.extrapolation = None
     obj.add_method(f, Tmin, Tmax)
     assert obj.T_dependent_property(T) is None
+    assert obj.T_dependent_property_integral(T1, T2) is None
+    assert obj.T_dependent_property_integral_over_T(T1, T2) is None
     
 def test_many_local_methods():
     obj = TDependentProperty(extrapolation='linear')
