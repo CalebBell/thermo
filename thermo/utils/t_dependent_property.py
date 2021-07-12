@@ -2893,7 +2893,7 @@ class TDependentProperty(object):
             if key in extrapolation_coeffs:
                 coeffs = extrapolation_coeffs[key]
             else:
-                extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(extrapolation, method, low)
+                extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
             return coeffs * (T2 - T1)
         else:
             return float(quad(self.extrapolate, T1, T2, args=(method,))[0])
@@ -2934,12 +2934,12 @@ class TDependentProperty(object):
         else:
             raise ValueError("Not outside normal range")
         if extrapolation == 'constant':
-            key = (extrapolation, method)
+            key = (extrapolation, method, low)
             extrapolation_coeffs = self.extrapolation_coeffs
             if key in extrapolation_coeffs:
                 coeffs = extrapolation_coeffs[key]
             else:
-                extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(extrapolation, method, low)
+                extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
             return coeffs * log(T2/T1)
         else:
             return float(quad(lambda T: self.extrapolate(T, method)/T, T1, T2)[0])
