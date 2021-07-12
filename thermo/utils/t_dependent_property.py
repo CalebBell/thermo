@@ -2490,10 +2490,33 @@ class TDependentProperty(object):
             Calculated integral of the property over the given range,
             [`units*K`]
         '''
-        try:
-            return self.calculate_integral(T1, T2, self._method)
-        except:
-            pass
+        if T2 < T1: return - self.T_dependent_property_integral(T2, T1)
+        method = self._method 
+        T_limits = self.T_limits
+        if method in T_limits:
+            Tmin, Tmax = T_limits[method]
+            extrapolations = []
+            if T1 < Tmin:
+                if self.RAISE_PROPERTY_CALCULATION_ERROR:
+                    pass
+                else:
+                    extrapolations.append((T1, Tmin))
+                T1 = Tmin
+            if T2 > Tmax:
+                if self.RAISE_PROPERTY_CALCULATION_ERROR:
+                    pass
+                else:
+                    extrapolations.append((Tmax, T2))
+                T2 = Tmax
+            integral = self.calculate_integral(T1, T2, self._method)
+            for T1, T2 in extrapolations:
+                integral += self.extrapolate_integral(T1, T2)
+        else:
+            try:
+                return self.calculate_integral(T1, T2, self._method)
+            except Exception as e:
+                if self.RAISE_PROPERTY_CALCULATION_ERROR: 
+                    raise e
         return None
 
     def calculate_integral_over_T(self, T1, T2, method):
