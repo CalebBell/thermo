@@ -1835,8 +1835,15 @@ def NRTL_gammas_binaries_jac(xs, tau12, tau21, alpha12, alpha21, calc=None):
     tau01, tau10, alpha01, alpha10 = tau12, tau21, alpha12, alpha21
 
     if calc is None:
-        allocate_size = (pts*2)
+        allocate_size = pts*2
         calc = np.zeros((allocate_size, 4))
+    
+    x2 = alpha01*tau01
+    x3 = trunc_exp(x2)
+    x11 = alpha10*tau10
+    x12 = trunc_exp(x11)
+    x26 = tau01*tau01
+    x27 = tau10*tau10
     
     for i in range(pts):
         i2 = i*2
@@ -1844,43 +1851,41 @@ def NRTL_gammas_binaries_jac(xs, tau12, tau21, alpha12, alpha21, calc=None):
         x1 = 1.0 - x0
 
 
-        x2 = alpha01*tau01
-        x3 = exp(x2)
         x4 = x1*x3
         x5 = x0 + x4
-        x6 = 2*x4
-        x7 = x6/x5
+        x5_inv = 1.0/x5
+        x6 = 2.0*x4
+        x7 = x6*x5_inv
         x8 = x2*x7
-        x9 = x5**(-2)
-        x10 = x1**2
-        x11 = alpha10*tau10
-        x12 = exp(x11)
+        x9 = x5_inv*x5_inv
+        x10 = x1*x1
         x13 = x0*x12
         x14 = x1 + x13
-        x15 = x14**(-2)
+        x14_inv = 1.0/x14
+        x15 = x14_inv*x14_inv
         x16 = tau10*x15
         x17 = tau01*x9
-        x18 = x10*exp(x10*(x16 + x17*x3))
+        x18 = x10*trunc_exp(x10*(x16 + x17*x3))
         x19 = x18*x3*x9
-        x20 = x0**2
-        x21 = x20*exp(x20*(x12*x16 + x17))
-        x22 = 2*x13
-        x23 = x22/x14
+        x20 = x0*x0
+        x21 = x20*trunc_exp(x20*(x12*x16 + x17))
+        x22 = 2.0*x13
+        x23 = x22*x14_inv
         x24 = x11*x23
         x25 = x12*x15*x21
-        x26 = tau01**2
-        x27 = tau10**2
 
         
+        gamma0_row = calc[i2]
+        gamma0_row[0] = x19*(x2 - x8 + 1.0)# Right
+        gamma0_row[1] = -x15*x18*(x24 - 1.0) # Right
+        gamma0_row[2] = -x19*x26*(x7 - 1.0) # Right
+        gamma0_row[3] =-x18*x22*x27*x15*x14_inv
         
-        calc[i2][0] = x19*(x2 - x8 + 1)# Right
-        calc[i2][1] = -x15*x18*(x24 - 1) # Right
-        calc[i2][2] = -x19*x26*(x7 - 1) # Right
-        calc[i2][3] =-x18*x22*x27/x14**3
-        calc[i2 + 1][0] = -x21*x9*(x8 - 1)
-        calc[i2 + 1][1] = x25*(x11 - x24 + 1)
-        calc[i2 + 1][2] = -x21*x26*x6/x5**3
-        calc[i2 + 1][3] = -x25*x27*(x23 - 1)
+        gamma1_row = calc[i2+1]
+        gamma1_row[0] = -x21*x9*(x8 - 1.0)
+        gamma1_row[1] = x25*(x11 - x24 + 1.0)
+        gamma1_row[2] = -x21*x26*x6*x5_inv*x9
+        gamma1_row[3] = -x25*x27*(x23 - 1.0)
     return calc
 
 def NRTL_gammas(xs, taus, alphas):

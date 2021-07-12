@@ -554,6 +554,29 @@ def test_NRTL_gammas_binaries_jac():
     jac_calc = NRTL_gammas_binaries_jac([.3, .7, .4, .6], 2, 3, .2, .4)
     assert_close2d(expect, jac_calc, rtol=1e-12)
     
+    # The optimized code was generated as follows with sympy
+    '''
+    from sympy import *
+    tau01, tau10, alpha01, alpha10, x0, x1 = symbols('tau01, tau10, alpha01, alpha10, x0, x1')
+    
+    G01 = exp(-alpha01*tau01)
+    G10 = exp(-alpha10*tau10)
+    
+    gamma0 = exp(x1**2*(tau10*(G10/(x0+x1*G10))**2 + G01*tau01/(x1+x0*G01)**2))
+    gamma1 = exp(x0**2*(tau01*(G01/(x1+x0*G01))**2 + G10*tau10/(x0+x1*G10)**2))
+    
+    outs, mains  = cse([gamma0, gamma1], optimizations='basic')
+    
+    gammas = [simplify(gamma0), simplify(gamma1)]
+    to_diff_on = [tau01, tau10, alpha01, alpha10]
+    
+    to_cse = [diff(g, v) for v in to_diff_on for g in gammas]
+    outs, mains  = cse(to_cse, optimizations='basic')
+    for k, v in outs:
+        print("%s = %s" %(k, v))
+    print(mains)
+    '''
+    
     
 def test_NRTL_regression_basics():
     # ethanol-water

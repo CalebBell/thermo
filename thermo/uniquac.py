@@ -1763,13 +1763,13 @@ def UNIQUAC_gammas_binary(x1, r1, r2, q1, q2, tau12, tau21):
     x4 = -tau21*x3 + x0
     x5 = -x3
     x6 = x0 + x5
-    x7 = 1/x6
+    x7 = 1.0/x6
     x8 = log(x4*x7)
     x9 = r1*x1
     x10 = r2*x2
     x11 = -x10 + x9
     x12 = x11*x7
-    x13 = 5*log(q1*x12/r1)
+    x13 = 5.0*log(q1*x12/r1)
     x14 = 1/x11
     x15 = r1*x14
     x16 = 1 - x1
