@@ -2503,7 +2503,7 @@ class TDependentProperty(object):
                     try:
                         if T2 >= Tmin:
                             integral += self.extrapolate_integral(T1, Tmin, method)
-                        else: # pragma: no cover
+                        else:
                             Tmin = T2
                             return self.extrapolate_integral(T1, Tmin, method)
                     except: # pragma: no cover
@@ -2515,7 +2515,7 @@ class TDependentProperty(object):
                             )
                         else:
                             return None
-                elif self.RAISE_PROPERTY_CALCULATION_ERROR: # pragma: no cover
+                elif self.RAISE_PROPERTY_CALCULATION_ERROR:
                     raise RuntimeError(
                         "%s method '%s' is not valid between T=%s to T=%s K "
                         "for component with CASRN '%s'" 
@@ -2529,10 +2529,10 @@ class TDependentProperty(object):
                     try:
                         if T1 <= Tmax:
                             integral += self.extrapolate_integral(Tmax, T2, method)
-                        else: # pragma: no cover
+                        else: 
                             Tmax = T1
                             return self.extrapolate_integral(Tmax, T2, method)
-                    except: # pragma: no cover
+                    except: 
                         if self.RAISE_PROPERTY_CALCULATION_ERROR:
                             raise RuntimeError(
                                 "Failed to extrapolate integral of %s method '%s' "
@@ -2541,13 +2541,13 @@ class TDependentProperty(object):
                             )
                         else:
                             return None
-                elif self.RAISE_PROPERTY_CALCULATION_ERROR: # pragma: no cover
+                elif self.RAISE_PROPERTY_CALCULATION_ERROR:
                     raise RuntimeError(
                         "%s method '%s' is not valid between T=%s to T=%s K "
                         "for component with CASRN '%s'" 
                         %(self.name, method, T2, Tmax, self.CASRN)
                     )
-                else: # pragma: no cover
+                else: 
                     return None
                 T2 = Tmax
         try:
@@ -2638,7 +2638,7 @@ class TDependentProperty(object):
                         else:
                             Tmin = T2
                             return self.extrapolate_integral_over_T(T1, Tmin, method)
-                    except: # pragma: no cover
+                    except:
                         if self.RAISE_PROPERTY_CALCULATION_ERROR:
                             raise RuntimeError(
                                 "Failed to extrapolate integral-over-T of %s method '%s' "
@@ -2647,7 +2647,7 @@ class TDependentProperty(object):
                             )
                         else:
                             return None
-                elif self.RAISE_PROPERTY_CALCULATION_ERROR: # pragma: no cover
+                elif self.RAISE_PROPERTY_CALCULATION_ERROR: 
                     raise RuntimeError(
                         "%s method '%s' is not valid between T=%s to T=%s K "
                         "for component with CASRN '%s'" 
@@ -2661,7 +2661,7 @@ class TDependentProperty(object):
                     try:
                         if T1 <= Tmax:
                             integral += self.extrapolate_integral_over_T(Tmax, T2, method)
-                        else: # pragma: no cover
+                        else: 
                             Tmax = T1
                             return self.extrapolate_integral_over_T(Tmax, T2, method)
                     except: # pragma: no cover
@@ -2673,18 +2673,18 @@ class TDependentProperty(object):
                             )
                         else:
                             return None
-                elif self.RAISE_PROPERTY_CALCULATION_ERROR: # pragma: no cover
+                elif self.RAISE_PROPERTY_CALCULATION_ERROR:
                     raise RuntimeError(
                         "%s method '%s' is not valid between T=%s to T=%s K "
                         "for component with CASRN '%s'" 
                         %(self.name, method, T2, Tmax, self.CASRN)
                     )
-                else: # pragma: no cover
+                else:
                     return None
                 T2 = Tmax
         try:
             integral += self.calculate_integral_over_T(T1, T2, method)
-        except: # pragma: no cover
+        except: 
             if self.RAISE_PROPERTY_CALCULATION_ERROR: 
                 raise RuntimeError(
                     "Failed to evaluate integral-over-T of %s method '%s' "
