@@ -51,10 +51,70 @@ def test_local_constant_method():
     assert_close(obj.T_dependent_property_integral(T1, T2), constant * dT)
     assert_close(obj.T_dependent_property_integral_over_T(T1, T2), constant * log(T2 / T1))
     
+    # Test extrapolation on both sides
+    assert_close(obj.T_dependent_property_integral(Tmin - 50, Tmax + 50), constant * (100 + Tmax - Tmin))
+    assert_close(obj.T_dependent_property_integral_over_T(Tmin - 50, Tmax + 50), constant * log((Tmax + 50) / (Tmin - 50)))
+    
     # Do not allow extrapolation
     obj.extrapolation = None
     obj.add_method(constant, Tmin, Tmax)
     assert obj.T_dependent_property(T) is None
+    
+def test_integrals():
+    obj = TDependentProperty(extrapolation='constant')
+    Tmin = 300
+    Tmax = 400
+    f = lambda T: T
+    f_int = lambda T1, T2: (T2*T2 - T1*T1) / 2.
+    f_int_over_T = lambda T1, T2: T2 - T1
+    obj.add_method(f=f, f_int=f_int, f_int_over_T=f_int_over_T, Tmin=Tmin, Tmax=Tmax)
+    
+    # Within valid T range
+    T1 = 300.
+    T2 = 310.
+    dT = T2 - T1
+    assert_close(obj.T_dependent_property_integral(T1, T2), f_int(T1, T2))
+    assert_close(obj.T_dependent_property_integral_over_T(T1, T2), f_int_over_T(T1, T2))
+    
+    # Extrapolate left
+    T1 = Tmin - 50
+    T2 = Tmin - 25
+    dT = T2 - T1
+    constant_low = f(Tmin)
+    assert_close(obj.T_dependent_property_integral(T1, T2), constant_low * dT)
+    assert_close(obj.T_dependent_property_integral_over_T(T1, T2), constant_low * log(T2/T1))
+    
+    # Extrapolate right
+    T1 = Tmax + 25
+    T2 = Tmax + 50
+    dT = T2 - T1
+    constant_high = f(Tmax)
+    assert_close(obj.T_dependent_property_integral(T1, T2), constant_high * dT)
+    assert_close(obj.T_dependent_property_integral_over_T(T1, T2), constant_high * log(T2/T1))
+    
+    # Extrapolate left to center (piece-wise)
+    T1 = Tmin - 50
+    T2 = Tmin + 25
+    constant_low = f(Tmin)
+    assert_close(obj.T_dependent_property_integral(T1, T2), f_int(Tmin, T2) + constant_low * (Tmin - T1))
+    assert_close(obj.T_dependent_property_integral_over_T(T1, T2), f_int_over_T(Tmin, T2) + constant_low * log(Tmin/T1))
+    
+    # Extrapolate right to center (piece-wise)
+    T1 = Tmax - 25
+    T2 = Tmax + 50
+    constant_high = f(Tmax)
+    assert_close(obj.T_dependent_property_integral(T1, T2), f_int(T1, Tmax) + constant_high * (T2 - Tmax))
+    assert_close(obj.T_dependent_property_integral_over_T(T1, T2), f_int_over_T(T1, Tmax) + constant_high * log(T2/Tmax))
+    
+    # Extrapolate across both sides (piece-wise)
+    T1 = Tmin - 50
+    T2 = Tmax + 50
+    constant_low = f(Tmin)
+    constant_high = f(Tmax)
+    assert_close(obj.T_dependent_property_integral(T1, T2), constant_low * (Tmin - T1) + f_int(Tmin, Tmax) + constant_high * (T2 - Tmax))
+    assert_close(obj.T_dependent_property_integral_over_T(T1, T2), constant_low * log(Tmin/T1) + f_int_over_T(Tmin, Tmax) + constant_high * log(T2/Tmax))
+    
+    
     
 def test_local_method():
     # Test user defined method
@@ -84,6 +144,8 @@ def test_local_method():
     # Extrapolate
     Tmin = 300. + 1e-3
     obj.add_method(f, Tmin, Tmax)
+    # obj.RAISE_PROPERTY_CALCULATION_ERROR = True
+    # obj.CASRN = 'CASRN'
     assert_close(obj.T_dependent_property(T), f(T))
     for order in (1, 2, 3):
         assert obj.T_dependent_property_derivative(T, order) is not None
@@ -94,6 +156,8 @@ def test_local_method():
     obj.extrapolation = None
     obj.add_method(f, Tmin, Tmax)
     assert obj.T_dependent_property(T) is None
+    assert obj.T_dependent_property_integral(T1, T2) is None
+    assert obj.T_dependent_property_integral_over_T(T1, T2) is None
     
 def test_many_local_methods():
     obj = TDependentProperty(extrapolation='linear')
