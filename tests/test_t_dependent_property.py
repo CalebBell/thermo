@@ -114,8 +114,6 @@ def test_integrals():
     assert_close(obj.T_dependent_property_integral(T1, T2), constant_low * (Tmin - T1) + f_int(Tmin, Tmax) + constant_high * (T2 - Tmax))
     assert_close(obj.T_dependent_property_integral_over_T(T1, T2), constant_low * log(Tmin/T1) + f_int_over_T(Tmin, Tmax) + constant_high * log(T2/Tmax))
     
-    
-    
 def test_local_method():
     # Test user defined method
     

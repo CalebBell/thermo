@@ -2381,10 +2381,7 @@ class TDependentProperty(object):
                 return calls['f_der2'](T, **model_kwargs)
             elif order == 3 and 'f_der3' in calls:
                 return calls['f_der3'](T, **model_kwargs)
-        
-        Tmin, Tmax = self.T_limits[method]
-        in_range = Tmin <= T <= Tmax
-        if method in self.local_methods and in_range:
+        if method in self.local_methods:
             local_method = self.local_methods[method]
             if order == 1:
                 if local_method.f_der is not None: return local_method.f_der(T)
@@ -2395,16 +2392,10 @@ class TDependentProperty(object):
         pts = 1 + order*2
         dx = T*1e-6
         args = (method,)
-        if in_range:
-            # Adjust to be just inside bounds
-            return derivative(self.calculate, T, dx=dx, args=args, n=order, order=pts,
-                              lower_limit=Tmin, upper_limit=Tmax)
-        elif self._extrapolation is not None:
-            # Allow extrapolation
-            return derivative(self.extrapolate, T, dx=dx, args=args, n=order, order=pts)
-        else:
-            raise ValueError("temperature is outside the valid range")
-#
+        Tmin, Tmax = self.T_limits[method]
+        # Adjust to be just inside bounds
+        return derivative(self.calculate, T, dx=dx, args=args, n=order, order=pts,
+                          lower_limit=Tmin, upper_limit=Tmax)
 
     def T_dependent_property_derivative(self, T, order=1):
         r'''Method to obtain a derivative of a property with respect to
@@ -2428,7 +2419,42 @@ class TDependentProperty(object):
         derivative : float
             Calculated derivative property, [`units/K^order`]
         '''
-        return self.calculate_derivative(T, self._method, order)
+        method = self._method 
+        T_limits = self.T_limits
+        extrapolation = self._extrapolation
+        if method in T_limits:
+            Tmin, Tmax = T_limits[method]
+            if Tmin <= T <= Tmax:
+                return self.calculate_derivative(T, method, order)
+            elif extrapolation:
+                try:
+                    self.extrapolate_derivative(T, method, order)
+                except:
+                    if self.RAISE_PROPERTY_CALCULATION_ERROR:
+                        raise RuntimeError(
+                            "Failed to extrapolate %sth derivative of %s method '%s' "
+                            "at T=%s K for component with CASRN '%s'" 
+                            %(order, self.name.lower(), method, T, self.CASRN)
+                        )
+                else:
+                    return None
+            elif self.RAISE_PROPERTY_CALCULATION_ERROR:
+                raise RuntimeError(
+                    "%s method '%s' is not valid at T=%s K "
+                    "for component with CASRN '%s'" 
+                    %(self.name, method, T, self.CASRN)
+                )
+            else:
+                return None
+        try:
+            return self.calculate_derivative(T, self._method, order)
+        except:
+            if self.RAISE_PROPERTY_CALCULATION_ERROR:
+                raise RuntimeError(
+                    "Failed to evaluate %sth derivative of %s method '%s' "
+                    "at T=%s K for component with CASRN '%s'" 
+                    %(order, self.name.lower(), method, T, self.CASRN)
+                )
 
     def calculate_integral(self, T1, T2, method):
         r'''Method to calculate the integral of a property with respect to
@@ -2851,6 +2877,48 @@ class TDependentProperty(object):
             return float(prop)
         else:
             raise RuntimeError("Unknown extrapolation '%s'" %extrapolation)
+
+    def extrapolate_derivative(self, T, method, order, in_range='error'):
+        r'''Extrapolate the derivative of a given method according to the
+        :obj:`extrapolation` setting.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to extrapolate the property, [K]
+        method : str
+            The method to use, [-]
+        order : int
+            Order of the derivative, >= 1
+        in_range : str
+            How to handle inputs which are not outside the temperature limits;
+            set to 'low' to use the low T extrapolation, 'high' to use the
+            high T extrapolation, and 'error' or anything else to raise an
+            error in those cases, [-]
+
+        Returns
+        -------
+        prop : float
+            Calculated property, [`units`/K]
+        '''
+        T_limits = self.T_limits
+        if T < 0.0: raise ValueError("Negative temperature")
+        Tmin, Tmax = T_limits[method]
+        if T < Tmin or in_range == 'low':
+            low = True
+            extrapolation = self._extrapolation_low
+        elif T >= Tmax or in_range == 'high':
+            low = False
+            extrapolation = self._extrapolation_high
+        else:
+            raise ValueError("Not outside normal range")
+        if extrapolation == 'constant':
+            return 0.
+        else:
+            pts = 1 + order*2
+            dx = T*1e-6
+            args = (method,)
+            return derivative(self.extrapolate, T, dx=dx, args=args, n=order, order=pts)
 
     def extrapolate_integral(self, T1, T2, method, in_range='error'):
         r'''Extrapolate the integral of a given method according to the
