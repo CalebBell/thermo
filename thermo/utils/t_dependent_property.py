@@ -2803,14 +2803,21 @@ class TDependentProperty(object):
         if T < 0.0:
             raise ValueError("Negative temperature")
         T_low, T_high = T_limits[method]
-        if T <= T_low or in_range == 'low':
+        if T <= T_low:
             low = True
             extrapolation = self._extrapolation_low
-        elif T >= T_high or in_range == 'high':
+        elif T >= T_high:
+            low = False
+            extrapolation = self._extrapolation_high
+        elif in_range == 'low':
+            low = True
+            extrapolation = self._extrapolation_low
+        elif in_range == 'high':
             low = False
             extrapolation = self._extrapolation_high
         else:
             raise ValueError("Not outside normal range")
+            
         key = (extrapolation, method, low)
         extrapolation_coeffs = self.extrapolation_coeffs
         if key in extrapolation_coeffs:
@@ -2879,10 +2886,16 @@ class TDependentProperty(object):
         if T1 < 0.0:
             raise ValueError("Negative temperature")
         T_low, T_high = T_limits[method]
-        if T2 <= T_low or in_range == 'low':
+        if T2 <= T_low:
             low = True
             extrapolation = self._extrapolation_low
-        elif T1 >= T_high or in_range == 'high':
+        elif T1 >= T_high:
+            low = False
+            extrapolation = self._extrapolation_high
+        elif in_range == 'low':
+            low = True
+            extrapolation = self._extrapolation_low
+        elif in_range == 'high':
             low = False
             extrapolation = self._extrapolation_high
         else:
@@ -2925,10 +2938,16 @@ class TDependentProperty(object):
         if T1 < 0.0:
             raise ValueError("Negative temperature")
         T_low, T_high = T_limits[method]
-        if T2 <= T_low or in_range == 'low':
+        if T2 <= T_low:
             low = True
             extrapolation = self._extrapolation_low
-        elif T1 >= T_high or in_range == 'high':
+        elif T1 >= T_high:
+            low = False
+            extrapolation = self._extrapolation_high
+        elif in_range == 'low':
+            low = True
+            extrapolation = self._extrapolation_low
+        elif in_range == 'high':
             low = False
             extrapolation = self._extrapolation_high
         else:
