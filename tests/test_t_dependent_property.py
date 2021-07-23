@@ -60,6 +60,30 @@ def test_local_constant_method():
     obj.add_method(constant, Tmin, Tmax)
     assert obj.T_dependent_property(T) is None
     
+def test_extrapolation():
+    obj = TDependentProperty(extrapolation='constant')
+    Tmin = 300
+    Tmax = 400
+    f = lambda T: T
+    f_int = lambda T1, T2: (T2*T2 - T1*T1) / 2.
+    f_int_over_T = lambda T1, T2: T2 - T1
+    obj.add_method(f=f, Tmin=Tmin, Tmax=Tmax)
+    
+    with pytest.raises(ValueError):
+        obj.extrapolate(350, obj.method, in_range='error')
+    
+    T_low = Tmin - 100
+    T_inrange = (Tmin + Tmax) * 0.5
+    T_high = Tmax + 100
+    assert_close(Tmin, obj.extrapolate(T_low, obj.method, in_range='error'))
+    assert_close(Tmax, obj.extrapolate(T_high, obj.method, in_range='error'))
+    assert_close(Tmin, obj.extrapolate(T_low, obj.method, in_range='low'))
+    assert_close(Tmin, obj.extrapolate(T_inrange, obj.method, in_range='low'))
+    assert_close(Tmax, obj.extrapolate(T_high, obj.method, in_range='low'))
+    assert_close(Tmin, obj.extrapolate(T_low, obj.method, in_range='high'))
+    assert_close(Tmax, obj.extrapolate(T_inrange, obj.method, in_range='high'))
+    assert_close(Tmax, obj.extrapolate(T_high, obj.method, in_range='high'))
+    
 def test_integrals():
     obj = TDependentProperty(extrapolation='constant')
     Tmin = 300
