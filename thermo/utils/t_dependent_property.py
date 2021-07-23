@@ -2001,6 +2001,7 @@ class TDependentProperty(object):
                 title += ' of ' + self.CASRN
             plt.title(title)
         elif order > 0:
+            original_method = self.method
             for method in methods:
                 if only_valid:
                     properties, Ts2 = [], []
@@ -2014,8 +2015,10 @@ class TDependentProperty(object):
                                 pass
                     plot_fun(Ts2, properties, label=method)
                 else:
-                    properties = [self.calculate_derivative(T=T, method=method, order=order) for T in Ts]
+                    self.method = method
+                    properties = [self.T_dependent_property_derivative(T=T, order=order) for T in Ts]
                     plot_fun(Ts, properties, label=method)
+            self.method = original_method
             plt.ylabel(self.name + ', ' + self.units + '/K^%d derivative of order %d' % (order, order))
 
             title = self.name + ' derivative of order %d' % order
