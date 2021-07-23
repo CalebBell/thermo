@@ -138,6 +138,32 @@ def test_integrals():
     assert_close(obj.T_dependent_property_integral(T1, T2), constant_low * (Tmin - T1) + f_int(Tmin, Tmax) + constant_high * (T2 - Tmax))
     assert_close(obj.T_dependent_property_integral_over_T(T1, T2), constant_low * log(Tmin/T1) + f_int_over_T(Tmin, Tmax) + constant_high * log(T2/Tmax))
     
+def test_derivative():
+    obj = TDependentProperty(extrapolation='linear')
+    Tmin = 300
+    Tmax = 400
+    f = lambda T: T*T*T
+    f_der = lambda T: 3*T*T
+    f_der2 = lambda T: 6*T
+    f_der3 = lambda T: 6
+    obj.add_method(f=f, f_der=f_der, f_der2=f_der2, f_der3=f_der3, Tmin=Tmin, Tmax=Tmax)
+    
+    
+    T_in_range = (Tmin + Tmax) * 0.5
+    for order, fun in zip([1,2,3], [f_der, f_der2, f_der3]):
+        # Within valid T range
+        assert_close(obj.T_dependent_property_derivative(T_in_range, order=order), fun(T_in_range))
+    
+    # Extrapolate left
+    T = Tmin - 50
+    obj.RAISE_PROPERTY_CALCULATION_ERROR = True
+    assert_close(obj.T_dependent_property_derivative(T, order=1), f_der(Tmin))
+    
+    # Extrapolate right
+    T = Tmax + 50
+    assert_close(obj.T_dependent_property_derivative(T, order=1), f_der(Tmax))
+    
+    
 def test_local_method():
     # Test user defined method
     

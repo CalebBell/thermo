@@ -1957,7 +1957,7 @@ class TDependentProperty(object):
             methods = self.all_methods
         if Tmin is None:
             T_limits = self.T_limits
-            Tmin = min(T_limits[m][0] for m in methods)
+            Tmin = max(T_limits[m][0] for m in methods)
         if Tmax is None:
             T_limits = self.T_limits
             Tmax = min(T_limits[m][1] for m in methods)
@@ -2428,7 +2428,7 @@ class TDependentProperty(object):
                 return self.calculate_derivative(T, method, order)
             elif extrapolation:
                 try:
-                    self.extrapolate_derivative(T, method, order)
+                    return self.extrapolate_derivative(T, method, order)
                 except:
                     if self.RAISE_PROPERTY_CALCULATION_ERROR:
                         raise RuntimeError(
@@ -2436,7 +2436,6 @@ class TDependentProperty(object):
                             "at T=%s K for component with CASRN '%s'" 
                             %(order, self.name.lower(), method, T, self.CASRN)
                         )
-                else:
                     return None
             elif self.RAISE_PROPERTY_CALCULATION_ERROR:
                 raise RuntimeError(
@@ -2911,21 +2910,35 @@ class TDependentProperty(object):
         T_limits = self.T_limits
         if T < 0.0: raise ValueError("Negative temperature")
         Tmin, Tmax = T_limits[method]
-        if T < Tmin or in_range == 'low':
+        if T < Tmin:
             low = True
             extrapolation = self._extrapolation_low
-        elif T >= Tmax or in_range == 'high':
+        elif T >= Tmax:
+            low = False
+            extrapolation = self._extrapolation_high
+        elif in_range == 'low':
+            low = True
+            extrapolation = self._extrapolation_low
+        elif in_range == 'high':
             low = False
             extrapolation = self._extrapolation_high
         else:
             raise ValueError("Not outside normal range")
         if extrapolation == 'constant':
             return 0.
-        else:
-            pts = 1 + order*2
-            dx = T*1e-6
-            args = (method,)
-            return derivative(self.extrapolate, T, dx=dx, args=args, n=order, order=pts)
+        elif extrapolation == 'linear':
+            key = (extrapolation, method, low)
+            extrapolation_coeffs = self.extrapolation_coeffs
+            if key in extrapolation_coeffs:
+                coeffs = extrapolation_coeffs[key]
+            else:
+                extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
+            if self.interpolation_T is None and self.interpolation_property_inv is None:
+                return coeffs[1]
+        pts = 1 + order*2
+        dx = T*1e-6
+        args = (method,)
+        return derivative(self.extrapolate, T, dx=dx, args=args, n=order, order=pts)
 
     def extrapolate_integral(self, T1, T2, method, in_range='error'):
         r'''Extrapolate the integral of a given method according to the
