@@ -88,9 +88,9 @@ def test_integrals():
     obj = TDependentProperty(extrapolation='constant')
     Tmin = 300
     Tmax = 400
-    f = lambda T: T
-    f_int = lambda T1, T2: (T2*T2 - T1*T1) / 2.
-    f_int_over_T = lambda T1, T2: T2 - T1
+    f = lambda T: T + 10.
+    f_int = lambda T1, T2: (T2*T2 - T1*T1) * 0.5 + 10 * (T2 - T1)
+    f_int_over_T = lambda T1, T2: T2 - T1 + 10 * log(T2/T1)
     obj.add_method(f=f, f_int=f_int, f_int_over_T=f_int_over_T, Tmin=Tmin, Tmax=Tmax)
     
     # Within valid T range
@@ -137,6 +137,47 @@ def test_integrals():
     constant_high = f(Tmax)
     assert_close(obj.T_dependent_property_integral(T1, T2), constant_low * (Tmin - T1) + f_int(Tmin, Tmax) + constant_high * (T2 - Tmax))
     assert_close(obj.T_dependent_property_integral_over_T(T1, T2), constant_low * log(Tmin/T1) + f_int_over_T(Tmin, Tmax) + constant_high * log(T2/Tmax))
+    
+    ### Test linear extrapolation
+    obj.extrapolation = 'linear'
+    
+    # Extrapolate left
+    T1 = Tmin - 50
+    T2 = Tmin - 25
+    dT = T2 - T1
+    constant_low = f(Tmin)
+    assert_close(obj.T_dependent_property_integral(T1, T2), f_int(T1, T2))
+    assert_close(obj.T_dependent_property_integral_over_T(T1, T2), f_int_over_T(T1, T2))
+    
+    # Extrapolate right
+    T1 = Tmax + 25
+    T2 = Tmax + 50
+    dT = T2 - T1
+    constant_high = f(Tmax)
+    assert_close(obj.T_dependent_property_integral(T1, T2), f_int(T1, T2))
+    assert_close(obj.T_dependent_property_integral_over_T(T1, T2), f_int_over_T(T1, T2))
+    
+    # Extrapolate left to center (piece-wise)
+    T1 = Tmin - 50
+    T2 = Tmin + 25
+    constant_low = f(Tmin)
+    assert_close(obj.T_dependent_property_integral(T1, T2), f_int(T1, T2))
+    assert_close(obj.T_dependent_property_integral_over_T(T1, T2), f_int_over_T(T1, T2))
+    
+    # Extrapolate right to center (piece-wise)
+    T1 = Tmax - 25
+    T2 = Tmax + 50
+    constant_high = f(Tmax)
+    assert_close(obj.T_dependent_property_integral(T1, T2), f_int(T1, T2))
+    assert_close(obj.T_dependent_property_integral_over_T(T1, T2), f_int_over_T(T1, T2))
+    
+    # Extrapolate across both sides (piece-wise)
+    T1 = Tmin - 50
+    T2 = Tmax + 50
+    constant_low = f(Tmin)
+    constant_high = f(Tmax)
+    assert_close(obj.T_dependent_property_integral(T1, T2), f_int(T1, T2))
+    assert_close(obj.T_dependent_property_integral_over_T(T1, T2), f_int_over_T(T1, T2))
     
 def test_derivative():
     obj = TDependentProperty(extrapolation='linear')

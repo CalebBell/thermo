@@ -2001,7 +2001,6 @@ class TDependentProperty(object):
                 title += ' of ' + self.CASRN
             plt.title(title)
         elif order > 0:
-            original_method = self.method
             for method in methods:
                 if only_valid:
                     properties, Ts2 = [], []
@@ -2015,10 +2014,15 @@ class TDependentProperty(object):
                                 pass
                     plot_fun(Ts2, properties, label=method)
                 else:
-                    self.method = method
-                    properties = [self.T_dependent_property_derivative(T=T, order=order) for T in Ts]
+                    properties = []
+                    Tmin, Tmax = self.T_limits[method]
+                    for T in Ts:
+                        if Tmin <= T <= Tmax:
+                            value = self.calculate_derivative(T=T, method=method, order=order)
+                        else:
+                            value = self.extrapolate_derivative(T=T, method=method, order=order)
+                        properties.append(value)
                     plot_fun(Ts, properties, label=method)
-            self.method = original_method
             plt.ylabel(self.name + ', ' + self.units + '/K^%d derivative of order %d' % (order, order))
 
             title = self.name + ' derivative of order %d' % order
@@ -2992,6 +2996,18 @@ class TDependentProperty(object):
             else:
                 extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
             return coeffs * (T2 - T1)
+        elif (extrapolation == 'linear' 
+              and self.interpolation_T is None 
+              and self.interpolation_property is None):
+            key = (extrapolation, method, low)
+            extrapolation_coeffs = self.extrapolation_coeffs
+            if key in extrapolation_coeffs:
+                coeffs = extrapolation_coeffs[key]
+            else:
+                extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
+            v, d = coeffs
+            c = T_low if low else T_high
+            return (v - c*d) * (T2 - T1) + 0.5 * d * (T2*T2 - T1*T1)
         else:
             return float(quad(self.extrapolate, T1, T2, args=(method,))[0])
 
@@ -3044,6 +3060,18 @@ class TDependentProperty(object):
             else:
                 extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
             return coeffs * log(T2/T1)
+        elif (extrapolation == 'linear' 
+              and self.interpolation_T is None 
+              and self.interpolation_property is None):
+            key = (extrapolation, method, low)
+            extrapolation_coeffs = self.extrapolation_coeffs
+            if key in extrapolation_coeffs:
+                coeffs = extrapolation_coeffs[key]
+            else:
+                extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
+            v, d = coeffs
+            c = T_low if low else T_high
+            return d * (T2 - T1) + (v - c*d)*log(T2/T1)
         else:
             return float(quad(lambda T: self.extrapolate(T, method)/T, T1, T2)[0])
 
