@@ -452,9 +452,9 @@ class EnthalpyVaporization(TDependentProperty):
         elif method == PITZER:
             Hvap = Pitzer(T, self.Tc, self.omega)
         elif method == CLAPEYRON:
-            Zg = self.Zg(T) if hasattr(self.Zg, '__call__') else self.Zg
-            Zl = self.Zl(T) if hasattr(self.Zl, '__call__') else self.Zl
-            Psat = self.Psat(T) if hasattr(self.Psat, '__call__') else self.Psat
+            Psat = self.Psat(T) if callable(self.Psat) else self.Psat
+            Zg = self.Zg(T, Psat) if callable(self.Zg) else self.Zg
+            Zl = self.Zl(T, Psat) if callable(self.Zl) else self.Zl
             if Zg:
                 if Zl:
                     dZ = Zg-Zl
