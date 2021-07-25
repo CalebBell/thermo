@@ -394,7 +394,7 @@ class VolumeLiquid(TPDependentProperty):
                    'Psat', 'eos')
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
                  omega=None, dipole=None, Psat=None, CASRN='', eos=None,
-                 extrapolation='constant', **kwargs):
+                 has_hydroxyl=None, extrapolation='constant', **kwargs):
         self.CASRN = CASRN
         self.MW = MW
         self.Tb = Tb
@@ -406,7 +406,7 @@ class VolumeLiquid(TPDependentProperty):
         self.dipole = dipole
         self.Psat = Psat
         self.eos = eos
-
+        self.has_hydroxyl = has_hydroxyl
         super(VolumeLiquid, self).__init__(extrapolation, **kwargs)
 
     def _custom_set_poly_fit(self):
@@ -596,7 +596,7 @@ class VolumeLiquid(TPDependentProperty):
         elif method == MMSNM0FIT:
             Vm = SNM0(T, self.Tc, self.Vc, self.omega, self.SNM0_delta_SRK)
         elif method == CAMPBELL_THODOS:
-            Vm = Campbell_Thodos(T, self.Tb, self.Tc, self.Pc, self.MW, self.dipole)
+            Vm = Campbell_Thodos(T, self.Tb, self.Tc, self.Pc, self.MW, self.dipole, self.has_hydroxyl)
         elif method == HTCOSTALDFIT:
             Vm = COSTALD(T, self.Tc, self.COSTALD_Vchar, self.COSTALD_omega_SRK)
         elif method == RACKETTFIT:
