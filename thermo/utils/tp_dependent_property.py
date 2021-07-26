@@ -108,6 +108,15 @@ class TPDependentProperty(TDependentProperty):
                     break
         self.method_P = method_P
         
+    def load_all_methods(self, load_data):
+        self.all_methods_P = set()
+        '''Set of all methods available for a given CASRN and properties;
+        filled by :obj:`load_all_methods`.'''
+        
+        self.all_methods = set()
+        '''Set of all P-dependent methods available for a given CASRN and properties;
+        filled by :obj:`load_all_methods`.'''
+        
     @property
     def method_P(self):
         r'''Method used to set or get a specific property method.

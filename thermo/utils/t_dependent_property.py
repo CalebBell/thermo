@@ -3107,9 +3107,6 @@ class TDependentProperty(object):
         interpolation_property, interpolation_property_inv) to ensure that
         if an interpolation transform is altered, the old interpolator which
         had been created is no longer used.'''
-        self.all_methods = set()
-        '''Set of all methods available for a given CASRN and properties;
-        filled by :obj:`load_all_methods`.'''
         self.load_all_methods(kwargs.get('load_data', True))
 
         self.extrapolation = extrapolation
@@ -3159,7 +3156,9 @@ class TDependentProperty(object):
         self.method = method
 
     def load_all_methods(self, load_data):
-        pass
+        self.all_methods = set()
+        '''Set of all methods available for a given CASRN and properties;
+        filled by :obj:`load_all_methods`.'''
 
     def calculate(self, T, method):
         r'''Method to calculate a property with a specified method, with no
