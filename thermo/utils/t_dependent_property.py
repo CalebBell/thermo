@@ -1706,7 +1706,8 @@ class TDependentProperty(object):
     @method.setter
     def method(self, method):
         if method not in self.all_methods and method != POLY_FIT and method is not None:
-            raise ValueError("The given method is not available for this chemical")
+            raise ValueError("Method '%s' is not available for this chemical; "
+                             "available methods are %s" %(method, self.all_methods))
         self.T_cached = None
         self._method = method
 
