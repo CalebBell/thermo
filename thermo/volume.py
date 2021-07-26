@@ -1468,6 +1468,7 @@ class VolumeGas(TPDependentProperty):
                 methods_P.append(COOLPROP)
                 self.CP_f = coolprop_fluids[self.CASRN]
                 T_limits[CRC_VIRIAL] = (self.CP_f.Tmin, self.CP_f.Tmax)
+        self.all_methods = set()
         self.all_methods_P = set(methods_P)
         for m in self.ranked_methods_P:
             if m in self.all_methods_P:
@@ -1639,7 +1640,7 @@ class VolumeGasMixture(MixtureProperty):
     '''
     name = 'Gas volume'
     units = 'm^3/mol'
-    property_min = 0
+    property_min = 0.
     '''Mimimum valid value of gas molar volume. It should normally be well
     above this.'''
     property_max = 1E10
@@ -1820,7 +1821,7 @@ class VolumeSolid(TDependentProperty):
     '''No interpolation transformation by default.'''
     tabular_extrapolation_permitted = True
     '''Allow tabular extrapolation by default.'''
-    property_min = 1e-6
+    property_min = 0.
     '''Molar volume cannot be under 0.'''
     property_max = 2e-3
     '''Maximum value of Heat capacity; arbitrarily set to 0.002, as the largest
