@@ -291,14 +291,12 @@ class HeatCapacityGas(TDependentProperty):
         to reset the parameters.
         '''
         methods = []
-        Tmins, Tmaxs = [], []
         self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN in heat_capacity.TRC_gas_data.index:
                 methods.append(TRCIG)
                 self.TRCIG_Tmin, self.TRCIG_Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = heat_capacity.TRC_gas_values[heat_capacity.TRC_gas_data.index.get_loc(self.CASRN)].tolist()
                 self.TRCIG_coefs = [a0, a1, a2, a3, a4, a5, a6, a7]
-                Tmins.append(self.TRCIG_Tmin); Tmaxs.append(self.TRCIG_Tmax)
                 T_limits[TRCIG] = (self.TRCIG_Tmin, self.TRCIG_Tmax)
             if self.CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[self.CASRN, 'a0']):
                 POLING_Tmin, POLING_Tmax, a0, a1, a2, a3, a4, Cpg, Cpl = heat_capacity.Cp_values_Poling[heat_capacity.Cp_data_Poling.index.get_loc(self.CASRN)].tolist()
@@ -308,9 +306,7 @@ class HeatCapacityGas(TDependentProperty):
                 if isnan(POLING_Tmax):
                     POLING_Tmax = 1000.0
                 self.POLING_Tmin = POLING_Tmin
-                Tmins.append(POLING_Tmin)
                 self.POLING_Tmax = POLING_Tmax
-                Tmaxs.append(POLING_Tmax)
                 self.POLING_coefs = [a0, a1, a2, a3, a4]
                 T_limits[POLING_POLY] = (POLING_Tmin, POLING_Tmax)
             if self.CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[self.CASRN, 'Cpg']):
@@ -332,21 +328,17 @@ class HeatCapacityGas(TDependentProperty):
                 self.VDI_Tmin = Ts[0]
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
-                Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
                 T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[self.CASRN]
                 Tmin = max(self.CP_f.Tt, self.CP_f.Tmin)
                 Tmax = min(self.CP_f.Tc, self.CP_f.Tmax)
-                Tmins.append(Tmin); Tmaxs.append(Tmax)
                 T_limits[COOLPROP] = (Tmin, Tmax)
         if self.MW and self.similarity_variable:
             methods.append(LASTOVKA_SHAW)
             T_limits[LASTOVKA_SHAW] = (1e-3, 1e5)
         self.all_methods = set(methods)
-        if Tmins and Tmaxs:
-            self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
 
     @staticmethod
     def _method_indexes():
@@ -818,7 +810,6 @@ class HeatCapacityLiquid(TDependentProperty):
         to reset the parameters.
         '''
         methods = []
-        Tmins, Tmaxs = [], []
         self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN in heat_capacity.zabransky_dict_const_s:
@@ -867,14 +858,12 @@ class HeatCapacityLiquid(TDependentProperty):
                 self.VDI_Tmin = Ts[0]
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
-                Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
                 T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[self.CASRN]
                 Tmin = max(self.CP_f.Tt, self.CP_f.Tmin)
                 Tmax = min(self.CP_f.Tc*.9999, self.CP_f.Tmax)
-                Tmins.append(Tmin); Tmaxs.append(Tmax)
                 T_limits[COOLPROP] = (Tmin, Tmax)
         if self.Tc and self.omega:
             methods.extend([ROWLINSON_POLING, ROWLINSON_BONDI])
@@ -883,12 +872,8 @@ class HeatCapacityLiquid(TDependentProperty):
             T_limits[ROWLINSON_BONDI] = limits_Tc
         if self.MW and self.similarity_variable:
             methods.append(DADGOSTAR_SHAW)
-            T_limits[DADGOSTAR_SHAW] = (1e-3, self.Tc if self.Tc is not None else 10000)
+            T_limits[DADGOSTAR_SHAW] = (1e-3, 10000. if self.Tc is None else self.Tc)
         self.all_methods = set(methods)
-        if Tmins and Tmaxs:
-            # TODO: More Tmin, Tmax ranges
-            self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
-
 
     def calculate(self, T, method):
         r'''Method to calculate heat capacity of a liquid at temperature `T`
@@ -1250,7 +1235,6 @@ class HeatCapacitySolid(TDependentProperty):
         to reset the parameters.
         '''
         methods = []
-        Tmins, Tmaxs = [], []
         self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN and self.CASRN in heat_capacity.Cp_dict_PerryI and 'c' in heat_capacity.Cp_dict_PerryI[self.CASRN]:
@@ -1261,7 +1245,6 @@ class HeatCapacitySolid(TDependentProperty):
                 self.PERRY151_quad = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Quad']
                 self.PERRY151_quadinv = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Quadinv']
                 methods.append(PERRY151)
-                Tmins.append(self.PERRY151_Tmin); Tmaxs.append(self.PERRY151_Tmax)
                 T_limits[PERRY151] = (self.PERRY151_Tmin, self.PERRY151_Tmax)
             if self.CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cps']):
                 self.CRCSTD_Cp = float(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cps'])
@@ -1269,12 +1252,9 @@ class HeatCapacitySolid(TDependentProperty):
                 T_limits[CRCSTD] = (298.15, 298.15)
         if self.MW and self.similarity_variable:
             methods.append(LASTOVKA_S)
-            Tmins.append(1.0); Tmaxs.append(10000)
             T_limits[LASTOVKA_S] = (1.0, 1e4)
             # Works above roughly 1 K up to 10K.
         self.all_methods = set(methods)
-        if Tmins and Tmaxs:
-            self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
 
     def calculate(self, T, method):
         r'''Method to calculate heat capacity of a solid at temperature `T`

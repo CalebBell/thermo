@@ -342,7 +342,6 @@ class ViscosityLiquid(TPDependentProperty):
         to reset the parameters.
         '''
         methods, methods_P = [], []
-        Tmins, Tmaxs = [], []
         self.T_limits = T_limits = {}
         if load_data:
             if has_CoolProp() and self.CASRN in coolprop_dict:
@@ -350,7 +349,6 @@ class ViscosityLiquid(TPDependentProperty):
                 if CP_f.has_mu:
                     self.CP_f = CP_f
                     methods.append(COOLPROP); methods_P.append(COOLPROP)
-                    Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
                     T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc)
             if self.CASRN in miscdata.VDI_saturation_dict:
                 methods.append(VDI_TABULAR)
@@ -358,37 +356,31 @@ class ViscosityLiquid(TPDependentProperty):
                 self.VDI_Tmin = Ts[0]
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
-                Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
                 T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
             if self.CASRN in viscosity.mu_data_Dutt_Prasad.index:
                 methods.append(DUTT_PRASAD)
                 A, B, C, self.DUTT_PRASAD_Tmin, self.DUTT_PRASAD_Tmax = viscosity.mu_values_Dutt_Prasad[viscosity.mu_data_Dutt_Prasad.index.get_loc(self.CASRN)].tolist()
                 self.DUTT_PRASAD_coeffs = [A - 3.0, B, C]
-                Tmins.append(self.DUTT_PRASAD_Tmin); Tmaxs.append(self.DUTT_PRASAD_Tmax)
                 T_limits[DUTT_PRASAD] = (self.DUTT_PRASAD_Tmin, self.DUTT_PRASAD_Tmax)
             if self.CASRN in viscosity.mu_data_VN3.index:
                 methods.append(VISWANATH_NATARAJAN_3)
                 A, B, C, self.VISWANATH_NATARAJAN_3_Tmin, self.VISWANATH_NATARAJAN_3_Tmax = viscosity.mu_values_VN3[viscosity.mu_data_VN3.index.get_loc(self.CASRN)].tolist()
                 self.VISWANATH_NATARAJAN_3_coeffs = [A - 3.0, B, C]
-                Tmins.append(self.VISWANATH_NATARAJAN_3_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_3_Tmax)
                 T_limits[VISWANATH_NATARAJAN_3] = (self.VISWANATH_NATARAJAN_3_Tmin, self.VISWANATH_NATARAJAN_3_Tmax)
             if self.CASRN in viscosity.mu_data_VN2.index:
                 methods.append(VISWANATH_NATARAJAN_2)
                 A, B, self.VISWANATH_NATARAJAN_2_Tmin, self.VISWANATH_NATARAJAN_2_Tmax = viscosity.mu_values_VN2[viscosity.mu_data_VN2.index.get_loc(self.CASRN)].tolist()
                 self.VISWANATH_NATARAJAN_2_coeffs = [A - 4.605170185988092, B] # log(100) = 4.605170185988092
-                Tmins.append(self.VISWANATH_NATARAJAN_2_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_2_Tmax)
                 T_limits[VISWANATH_NATARAJAN_2] = (self.VISWANATH_NATARAJAN_2_Tmin, self.VISWANATH_NATARAJAN_2_Tmax)
             if self.CASRN in viscosity.mu_data_VN2E.index:
                 methods.append(VISWANATH_NATARAJAN_2E)
                 C, D, self.VISWANATH_NATARAJAN_2E_Tmin, self.VISWANATH_NATARAJAN_2E_Tmax = viscosity.mu_values_VN2E[viscosity.mu_data_VN2E.index.get_loc(self.CASRN)].tolist()
                 self.VISWANATH_NATARAJAN_2E_coeffs = [C, D]
-                Tmins.append(self.VISWANATH_NATARAJAN_2E_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_2E_Tmax)
                 T_limits[VISWANATH_NATARAJAN_2E] = (self.VISWANATH_NATARAJAN_2E_Tmin, self.VISWANATH_NATARAJAN_2E_Tmax)
             if self.CASRN in viscosity.mu_data_Perrys_8E_2_313.index:
                 methods.append(DIPPR_PERRY_8E)
                 C1, C2, C3, C4, C5, self.Perrys2_313_Tmin, self.Perrys2_313_Tmax = viscosity.mu_values_Perrys_8E_2_313[viscosity.mu_data_Perrys_8E_2_313.index.get_loc(self.CASRN)].tolist()
                 self.Perrys2_313_coeffs = [C1, C2, C3, C4, C5]
-                Tmins.append(self.Perrys2_313_Tmin); Tmaxs.append(self.Perrys2_313_Tmax)
                 T_limits[DIPPR_PERRY_8E] = (self.Perrys2_313_Tmin, self.Perrys2_313_Tmax)
             if self.CASRN in viscosity.mu_data_VDI_PPDS_7.index:
                 methods.append(VDI_PPDS)
@@ -436,22 +428,17 @@ class ViscosityLiquid(TPDependentProperty):
                         low = T_switch
 
                 T_limits[VDI_PPDS] = (low, high)
-                Tmins.append(low); Tmaxs.append(high)
 
         if all((self.MW, self.Tc, self.Pc, self.omega)):
             methods.append(LETSOU_STIEL)
-            Tmins.append(self.Tc/4); Tmaxs.append(self.Tc) # TODO: test model at low T
             T_limits[LETSOU_STIEL] = (self.Tc/4, self.Tc)
         if all((self.MW, self.Tm, self.Tc, self.Pc, self.Vc, self.omega, self.Vml)):
             methods.append(PRZEDZIECKI_SRIDHAR)
-            Tmins.append(self.Tm); Tmaxs.append(self.Tc) # TODO: test model at Tm
             T_limits[PRZEDZIECKI_SRIDHAR] = (self.Tm, self.Tc)
         if all([self.Tc, self.Pc, self.omega]):
             methods_P.append(LUCAS)
         self.all_methods = set(methods)
         self.all_methods_P = set(methods_P)
-        if Tmins and Tmaxs:
-            self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
 
     @staticmethod
     def _method_indexes():
@@ -836,7 +823,6 @@ class ViscosityGas(TPDependentProperty):
         to reset the parameters.
         '''
         methods, methods_P = [], []
-        Tmins, Tmaxs = [], []
         self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN in miscdata.VDI_saturation_dict:
@@ -845,7 +831,6 @@ class ViscosityGas(TPDependentProperty):
                 self.VDI_Tmin = Ts[0]
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
-                Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
                 T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 CP_f = coolprop_fluids[self.CASRN]
@@ -853,13 +838,11 @@ class ViscosityGas(TPDependentProperty):
                     self.CP_f = CP_f
                     methods.append(COOLPROP); methods_P.append(COOLPROP)
 #                    T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tmax)
-                    Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tmax)
                     T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tmax*.9999)
             if self.CASRN in viscosity.mu_data_Perrys_8E_2_312.index:
                 methods.append(DIPPR_PERRY_8E)
                 C1, C2, C3, C4, self.Perrys2_312_Tmin, self.Perrys2_312_Tmax = viscosity.mu_values_Perrys_8E_2_312[viscosity.mu_data_Perrys_8E_2_312.index.get_loc(self.CASRN)].tolist()
                 self.Perrys2_312_coeffs = [C1, C2, C3, C4]
-                Tmins.append(self.Perrys2_312_Tmin); Tmaxs.append(self.Perrys2_312_Tmax)
                 T_limits[DIPPR_PERRY_8E] = (self.Perrys2_312_Tmin, self.Perrys2_312_Tmax)
             if self.CASRN in viscosity.mu_data_VDI_PPDS_8.index:
                 methods.append(VDI_PPDS)
@@ -870,18 +853,14 @@ class ViscosityGas(TPDependentProperty):
             methods.append(GHARAGHEIZI)
             methods.append(YOON_THODOS)
             methods.append(STIEL_THODOS)
-            Tmins.append(0); Tmaxs.append(5E3)  # Intelligently set limit
             T_limits[YOON_THODOS] = T_limits[STIEL_THODOS] = T_limits[GHARAGHEIZI] = (1e-3, 5E3)
             # GHARAGHEIZI turns nonsesical at ~15 K, YOON_THODOS fine to 0 K,
             # same as STIEL_THODOS
         if all([self.Tc, self.Pc, self.Zc, self.MW]):
             methods.append(LUCAS_GAS)
-            Tmins.append(0); Tmaxs.append(1E3)
             T_limits[LUCAS_GAS] = (1e-3, 1E3)
         self.all_methods = set(methods)
         self.all_methods_P = set(methods_P)
-        if Tmins and Tmaxs:
-            self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
 
     @staticmethod
     def _method_indexes():

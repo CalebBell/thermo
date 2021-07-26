@@ -294,13 +294,11 @@ class VaporPressure(TDependentProperty):
         '''
         self.T_limits = T_limits = {}
         methods = []
-        Tmins, Tmaxs = [], []
         if load_data:
             if self.CASRN in vapor_pressure.Psat_data_WagnerMcGarry.index:
                 methods.append(WAGNER_MCGARRY)
                 A, B, C, D, self.WAGNER_MCGARRY_Pc, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Tmin = vapor_pressure.Psat_values_WagnerMcGarry[vapor_pressure.Psat_data_WagnerMcGarry.index.get_loc(self.CASRN)].tolist()
                 self.WAGNER_MCGARRY_coefs = [A, B, C, D]
-                Tmins.append(self.WAGNER_MCGARRY_Tmin); Tmaxs.append(self.WAGNER_MCGARRY_Tc)
                 T_limits[WAGNER_MCGARRY] = (self.WAGNER_MCGARRY_Tmin, self.WAGNER_MCGARRY_Tc)
 
             if self.CASRN in vapor_pressure.Psat_data_WagnerPoling.index:
@@ -310,33 +308,28 @@ class VaporPressure(TDependentProperty):
                 Tmin = Tmin if not isnan(Tmin) else self.WAGNER_POLING_Tmax*0.1
                 self.WAGNER_POLING_Tmin = Tmin
                 self.WAGNER_POLING_coefs = [A, B, C, D]
-                Tmins.append(Tmin); Tmaxs.append(self.WAGNER_POLING_Tmax)
                 T_limits[WAGNER_POLING] = (self.WAGNER_POLING_Tmin, self.WAGNER_POLING_Tmax)
 
             if self.CASRN in vapor_pressure.Psat_data_AntoineExtended.index:
                 methods.append(ANTOINE_EXTENDED_POLING)
                 A, B, C, Tc, to, n, E, F, self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax = vapor_pressure.Psat_values_AntoineExtended[vapor_pressure.Psat_data_AntoineExtended.index.get_loc(self.CASRN)].tolist()
                 self.ANTOINE_EXTENDED_POLING_coefs = [Tc, to, A, B, C, n, E, F]
-                Tmins.append(self.ANTOINE_EXTENDED_POLING_Tmin); Tmaxs.append(self.ANTOINE_EXTENDED_POLING_Tmax)
                 T_limits[ANTOINE_EXTENDED_POLING] = (self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax)
 
             if self.CASRN in vapor_pressure.Psat_data_AntoinePoling.index:
                 methods.append(ANTOINE_POLING)
                 A, B, C, self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax = vapor_pressure.Psat_values_AntoinePoling[vapor_pressure.Psat_data_AntoinePoling.index.get_loc(self.CASRN)].tolist()
                 self.ANTOINE_POLING_coefs = [A, B, C]
-                Tmins.append(self.ANTOINE_POLING_Tmin); Tmaxs.append(self.ANTOINE_POLING_Tmax)
                 T_limits[ANTOINE_POLING] = (self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax)
 
             if self.CASRN in vapor_pressure.Psat_data_Perrys2_8.index:
                 methods.append(DIPPR_PERRY_8E)
                 C1, C2, C3, C4, C5, self.Perrys2_8_Tmin, self.Perrys2_8_Tmax = vapor_pressure.Psat_values_Perrys2_8[vapor_pressure.Psat_data_Perrys2_8.index.get_loc(self.CASRN)].tolist()
                 self.Perrys2_8_coeffs = [C1, C2, C3, C4, C5]
-                Tmins.append(self.Perrys2_8_Tmin); Tmaxs.append(self.Perrys2_8_Tmax)
                 T_limits[DIPPR_PERRY_8E] = (self.Perrys2_8_Tmin, self.Perrys2_8_Tmax)
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[self.CASRN]
-                Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
                 T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc)
 
             if self.CASRN in miscdata.VDI_saturation_dict:
@@ -345,7 +338,6 @@ class VaporPressure(TDependentProperty):
                 self.VDI_Tmin = Ts[0]
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
-                Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
                 T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
 
             if self.CASRN in vapor_pressure.Psat_data_VDI_PPDS_3.index:
@@ -355,11 +347,9 @@ class VaporPressure(TDependentProperty):
                 self.VDI_PPDS_Tm = Tm
                 self.VDI_PPDS_Pc = Pc
                 methods.append(VDI_PPDS)
-                Tmins.append(self.VDI_PPDS_Tm); Tmaxs.append(self.VDI_PPDS_Tc)
                 T_limits[VDI_PPDS] = (self.VDI_PPDS_Tm, self.VDI_PPDS_Tc)
         if all((self.Tb, self.Tc, self.Pc)):
             methods.append(BOILING_CRITICAL)
-            Tmins.append(0.01); Tmaxs.append(self.Tc)
             T_limits[BOILING_CRITICAL] = (0.01, self.Tc)
         if all((self.Tc, self.Pc, self.omega)):
             methods.append(LEE_KESLER_PSAT)
@@ -369,13 +359,8 @@ class VaporPressure(TDependentProperty):
             if self.eos:
                 methods.append(EOS)
                 T_limits[EOS] = (0.1*self.Tc, self.Tc)
-            Tmins.append(0.01); Tmaxs.append(self.Tc)
             T_limits[LEE_KESLER_PSAT] = T_limits[AMBROSE_WALTON] = T_limits[SANJARI] = T_limits[EDALAT] = (0.01, self.Tc)
         self.all_methods = set(methods)
-        if Tmins and Tmaxs:
-            self.Tmin = min(Tmins)
-            self.Tmax = max(Tmaxs)
-
     def calculate(self, T, method):
         r'''Method to calculate vapor pressure of a fluid at temperature `T`
         with a given method.
@@ -727,16 +712,11 @@ class SublimationPressure(TDependentProperty):
         to reset the parameters.
         '''
         methods = []
-        Tmins, Tmaxs = [], []
         self.T_limits = T_limits = {}
         if all((self.Tt, self.Pt, self.Hsub_t)):
             methods.append(PSUB_CLAPEYRON)
-            Tmins.append(1.0); Tmaxs.append(self.Tt*1.5)
             T_limits[PSUB_CLAPEYRON] = (1.0, self.Tt*1.5)
         self.all_methods = set(methods)
-        if Tmins and Tmaxs:
-            self.Tmin = min(Tmins)
-            self.Tmax = max(Tmaxs)
 
     @staticmethod
     def _method_indexes():

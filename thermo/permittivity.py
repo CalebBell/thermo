@@ -170,7 +170,6 @@ class PermittivityLiquid(TDependentProperty):
         to reset the parameters.
         '''
         methods = []
-        Tmins, Tmaxs = [], []
         self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN in permittivity.permittivity_data_CRC.index:
@@ -183,14 +182,10 @@ class PermittivityLiquid(TDependentProperty):
                 self.CRC_Tmin = Tmin
                 self.CRC_Tmax = Tmax
                 if self.CRC_coeffs[0] and not isnan(Tmin):
-                    Tmins.append(Tmin); Tmaxs.append(Tmax)
                     methods.append(CRC)
                     T_limits[CRC] = (Tmin, Tmax)
 
         self.all_methods = set(methods)
-        if Tmins and Tmaxs:
-            self.Tmin = min(Tmins)
-            self.Tmax = max(Tmaxs)
 
     def calculate(self, T, method):
         r'''Method to calculate permittivity of a liquid at temperature `T`

@@ -320,13 +320,11 @@ class EnthalpyVaporization(TDependentProperty):
         to reset the parameters.
         '''
         methods = []
-        Tmins, Tmaxs = [], []
         self.T_limits = T_limits = {}
         if load_data:
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[self.CASRN]
-                Tmins.append(self.CP_f.Tt); Tmaxs.append(self.CP_f.Tc)
                 T_limits[COOLPROP] = (self.CP_f.Tt, self.CP_f.Tc*.9999)
             if self.CASRN in miscdata.VDI_saturation_dict:
                 methods.append(VDI_TABULAR)
@@ -334,13 +332,11 @@ class EnthalpyVaporization(TDependentProperty):
                 self.VDI_Tmin = Ts[0]
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
-                Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
                 T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
 
             if self.CASRN in phase_change.phase_change_data_Alibakhshi_Cs.index and self.Tc is not None:
                 methods.append(ALIBAKHSHI)
                 self.Alibakhshi_C = float(phase_change.phase_change_data_Alibakhshi_Cs.at[self.CASRN, 'C'])
-                Tmaxs.append( max(self.Tc-100., 0) )
                 T_limits[ALIBAKHSHI] = (self.Tc*.3, max(self.Tc-100., 0))
             if self.CASRN in phase_change.Hvap_data_CRC.index and not isnan(phase_change.Hvap_data_CRC.at[self.CASRN, 'HvapTb']):
                 methods.append(CRC_HVAP_TB)
@@ -368,32 +364,25 @@ class EnthalpyVaporization(TDependentProperty):
                 methods.append(DIPPR_PERRY_8E)
                 Tc, C1, C2, C3, C4, self.Perrys2_150_Tmin, self.Perrys2_150_Tmax = phase_change.phase_change_values_Perrys2_150[phase_change.phase_change_data_Perrys2_150.index.get_loc(self.CASRN)].tolist()
                 self.Perrys2_150_coeffs = [Tc, C1, C2, C3, C4]
-                Tmins.append(self.Perrys2_150_Tmin); Tmaxs.append(self.Perrys2_150_Tmax)
                 T_limits[DIPPR_PERRY_8E] = (self.Perrys2_150_Tmin, self.Perrys2_150_Tmax)
             if self.CASRN in phase_change.phase_change_data_VDI_PPDS_4.index:
                 Tc, A, B, C, D, E = phase_change.phase_change_values_VDI_PPDS_4[phase_change.phase_change_data_VDI_PPDS_4.index.get_loc(self.CASRN)].tolist()
                 self.VDI_PPDS_coeffs = [A, B, C, D, E]
                 self.VDI_PPDS_Tc = Tc
                 methods.append(VDI_PPDS)
-                Tmaxs.append(self.VDI_PPDS_Tc);
                 T_limits[VDI_PPDS] = (0.1*self.VDI_PPDS_Tc, self.VDI_PPDS_Tc)
         if all((self.Tc, self.omega)):
             methods.extend(self.CSP_methods)
-            Tmaxs.append(self.Tc); Tmins.append(0)
             for m in self.CSP_methods:
                 T_limits[m] = (1e-4, self.Tc)
         if all((self.Tc, self.Pc)):
             methods.append(CLAPEYRON)
-            Tmaxs.append(self.Tc); Tmins.append(0)
             T_limits[CLAPEYRON] = (1e-4, self.Tc)
         if all((self.Tb, self.Tc, self.Pc)):
             methods.extend(self.boiling_methods)
-            Tmaxs.append(self.Tc); Tmins.append(0)
             for m in self.boiling_methods:
                 T_limits[m] = (1e-4, self.Tc)
         self.all_methods = set(methods)
-        if Tmins and Tmaxs:
-            self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
 
     @staticmethod
     def _method_indexes():
@@ -690,7 +679,6 @@ class EnthalpySublimation(TDependentProperty):
         to reset the parameters.
         '''
         methods = []
-        Tmins, Tmaxs = [], []
         self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN in phase_change.Hsub_data_Gharagheizi.index:
@@ -706,15 +694,7 @@ class EnthalpySublimation(TDependentProperty):
                     T_limits[CRC_HFUS_HVAP_TM] = (self.Tm, self.Tm)
                 else:
                     T_limits[CRC_HFUS_HVAP_TM] = (298.15, 298.15)
-        try:
-            Tmins.append(0.01*self.Tm)
-            Tmaxs.append(self.Tm)
-            Tmaxs.append(self.Tt)
-        except:
-            pass
         self.all_methods = set(methods)
-        if Tmins and Tmaxs:
-            self.Tmin, self.Tmax = min(i for i in Tmins if i is not None), max(i for i in Tmaxs if i is not None)
 
     @staticmethod
     def _method_indexes():

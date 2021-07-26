@@ -306,26 +306,22 @@ class SurfaceTension(TDependentProperty):
         to reset the parameters.
         '''
         methods = []
-        Tmins, Tmaxs = [], []
         self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN in interface.sigma_data_Mulero_Cachadina.index:
                 methods.append(STREFPROP)
                 sigma0, n0, sigma1, n1, sigma2, n2, Tc, self.STREFPROP_Tmin, self.STREFPROP_Tmax = interface.sigma_values_Mulero_Cachadina[interface.sigma_data_Mulero_Cachadina.index.get_loc(self.CASRN)].tolist()
                 self.STREFPROP_coeffs = [sigma0, n0, sigma1, n1, sigma2, n2, Tc]
-                Tmins.append(self.STREFPROP_Tmin); Tmaxs.append(self.STREFPROP_Tmax)
                 T_limits[STREFPROP] = (self.STREFPROP_Tmin, self.STREFPROP_Tmax)
             if self.CASRN in interface.sigma_data_Somayajulu2.index:
                 methods.append(SOMAYAJULU2)
                 self.SOMAYAJULU2_Tt, self.SOMAYAJULU2_Tc, A, B, C = interface.sigma_values_Somayajulu2[interface.sigma_data_Somayajulu2.index.get_loc(self.CASRN)].tolist()
                 self.SOMAYAJULU2_coeffs = [A, B, C]
-                Tmins.append(self.SOMAYAJULU2_Tt); Tmaxs.append(self.SOMAYAJULU2_Tc)
                 T_limits[SOMAYAJULU2] = (self.SOMAYAJULU2_Tt, self.SOMAYAJULU2_Tc)
             if self.CASRN in interface.sigma_data_Somayajulu.index:
                 methods.append(SOMAYAJULU)
                 self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc, A, B, C = interface.sigma_values_Somayajulu[interface.sigma_data_Somayajulu.index.get_loc(self.CASRN)].tolist()
                 self.SOMAYAJULU_coeffs = [A, B, C]
-                Tmins.append(self.SOMAYAJULU_Tt); Tmaxs.append(self.SOMAYAJULU_Tc)
                 T_limits[SOMAYAJULU] = (self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc)
             if self.CASRN in miscdata.VDI_saturation_dict:
                 methods.append(VDI_TABULAR)
@@ -333,7 +329,6 @@ class SurfaceTension(TDependentProperty):
                 self.VDI_Tmin = Ts[0]
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
-                Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
                 T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
             if self.CASRN in interface.sigma_data_Jasper_Lange.index:
                 methods.append(JASPER)
@@ -344,7 +339,6 @@ class SurfaceTension(TDependentProperty):
                 if isnan(self.JASPER_Tmin):
                     self.JASPER_Tmin = 0.0
                 self.JASPER_coeffs = [a, b]
-                Tmins.append(self.JASPER_Tmin); Tmaxs.append(self.JASPER_Tmax)
                 T_limits[JASPER] = (self.JASPER_Tmin, self.JASPER_Tmax)
             if self.CASRN in interface.sigma_data_VDI_PPDS_11.index:
                 Tm, Tc, A, B, C, D, E = interface.sigma_values_VDI_PPDS_11[interface.sigma_data_VDI_PPDS_11.index.get_loc(self.CASRN)].tolist()
@@ -352,21 +346,18 @@ class SurfaceTension(TDependentProperty):
                 self.VDI_PPDS_Tc = Tc
                 self.VDI_PPDS_Tm = Tm
                 methods.append(VDI_PPDS)
-                Tmins.append(self.VDI_PPDS_Tm) ; Tmaxs.append(self.VDI_PPDS_Tc);
                 T_limits[VDI_PPDS] = (self.VDI_PPDS_Tm, self.VDI_PPDS_Tc)
         if all((self.Tc, self.Vc, self.omega)):
             methods.append(MIQUEU)
-            Tmins.append(0.0); Tmaxs.append(self.Tc)
+            T_limits[MIQUEU] = (0.0, self.Tc)
         if all((self.Tb, self.Tc, self.Pc)):
             methods.append(BROCK_BIRD)
             methods.append(SASTRI_RAO)
-            Tmins.append(0.0); Tmaxs.append(self.Tc)
+            T_limits[BROCK_BIRD] = T_limits[SASTRI_RAO] = (0.0, self.Tc)
         if all((self.Tc, self.Pc, self.omega)):
             methods.append(PITZER)
             methods.append(ZUO_STENBY)
-            T_limits[PITZER] = (1e-10, self.Tc)
-            T_limits[ZUO_STENBY] = (1e-10, self.Tc)
-            Tmins.append(0.0); Tmaxs.append(self.Tc)
+            T_limits[PITZER] = T_limits[ZUO_STENBY] = (1e-10, self.Tc)
         if all((self.Tb, self.Hvap_Tb, self.MW)):
             # Cache Cpl at Tb for ease of calculation of Tmax
             self.Cpl_Tb = self.Cpl(self.Tb) if hasattr(self.Cpl, '__call__') else self.Cpl
@@ -379,12 +370,8 @@ class SurfaceTension(TDependentProperty):
                 # well above Tc. If Tc is available, limit it to that.
                 if self.Tc:
                     Tmax_possible = min(self.Tc, Tmax_possible)
-                Tmins.append(0.0); Tmaxs.append(Tmax_possible)
+                T_limits[ALEEM] = (0.0, Tmax_possible)
         self.all_methods = set(methods)
-        if Tmins and Tmaxs:
-            # Note: All methods work right down to 0 K.
-            self.Tmin = min(Tmins)
-            self.Tmax = max(Tmaxs)
 
     def calculate(self, T, method):
         r'''Method to calculate surface tension of a liquid at temperature `T`
