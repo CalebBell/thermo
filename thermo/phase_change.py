@@ -396,7 +396,9 @@ class EnthalpyVaporization(TDependentProperty):
                 VDI_PPDS: phase_change.phase_change_data_VDI_PPDS_4.index,
                 }
 
-
+    def _set_poly_fit(self, poly_fit):
+        self.poly_fit_Tc = poly_fit[2]
+        super()._set_poly_fit((poly_fit[0], poly_fit[1], poly_fit[3]))
 
     def calculate(self, T, method):
         r'''Method to calculate heat of vaporization of a liquid at

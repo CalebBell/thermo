@@ -1672,15 +1672,29 @@ class TDependentProperty(object):
 
     @property
     def Tmin(self):
-        '''Minimum temperature at which no method can calculate the
+        '''Minimum temperature (K) at which the current method can calculate the
+        property.'''
+        method = self._method
+        T_limits = self.T_limits
+        return T_limits[method][0] if method in T_limits else None
+
+    @property
+    def Tmax(self):
+        '''Maximum temperature (K) at which the current method can calculate the
+        property.'''
+        method = self._method
+        T_limits = self.T_limits
+        return T_limits[method][1] if method in T_limits else None
+
+    def _T_min_any(self):
+        '''Return the minimum temperature (K) at which no method can calculate the
         property under.'''
         Tmins = [i[0] for i in self.T_limits.values()]
         Tmins = [i for i in Tmins if i is not None]
         return min(Tmins) if Tmins else None
 
-    @property
-    def Tmax(self):
-        '''Maximum temperature at which no method can calculate the
+    def _T_max_any(self):
+        '''Maximum temperature (K) at which no method can calculate the
         property above.'''
         Tmaxs = [i[1] for i in self.T_limits.values()]
         Tmaxs = [i for i in Tmaxs if i is not None]
@@ -1772,7 +1786,7 @@ class TDependentProperty(object):
     def _custom_set_poly_fit(self):
         pass
 
-    def _set_poly_fit(self, poly_fit, set_limits=False):
+    def _set_poly_fit(self, poly_fit):
         if (poly_fit is not None and len(poly_fit) and (poly_fit[0] is not None
            and poly_fit[1] is not None and  poly_fit[2] is not None)
             and not isnan(poly_fit[0]) and not isnan(poly_fit[1])):
@@ -1824,13 +1838,8 @@ class TDependentProperty(object):
             self.poly_fit_Tmin_dT2 = horner(self.poly_fit_d2_coeffs, self.poly_fit_Tmin)
 
             self._custom_set_poly_fit()
-
-            if set_limits:
-                if self.Tmin is None:
-                    self.Tmin = self.poly_fit_Tmin
-                if self.Tmax is None:
-                    self.Tmax = self.poly_fit_Tmax
-
+            self.T_limits[POLY_FIT] = (self.poly_fit_Tmin, self.poly_fit_Tmax)
+            
     def as_poly_fit(self):
         return '%s(load_data=False, poly_fit=(%s, %s, %s))' %(self.__class__.__name__,
                   repr(self.poly_fit_Tmin), repr(self.poly_fit_Tmax),
@@ -3130,23 +3139,7 @@ class TDependentProperty(object):
         poly_fit = kwargs.get('poly_fit', None)
         method =  kwargs.get('method', getattr(self, '_method', None))
         if poly_fit is not None:
-            if self.__class__.__name__ == 'EnthalpyVaporization':
-                self.poly_fit_Tc = poly_fit[2]
-                self._set_poly_fit((poly_fit[0], poly_fit[1], poly_fit[3]))
-            elif self.__class__.__name__ == 'VaporPressure':
-                self._set_poly_fit(poly_fit)
-                if self.Tmin is None and hasattr(self, 'poly_fit_Tmin'):
-                    self.Tmin = self.poly_fit_Tmin*.01
-                if self.Tmax is None and hasattr(self, 'poly_fit_Tmax'):
-                    self.Tmax = self.poly_fit_Tmax*10.0
-            elif self.__class__.__name__ == 'SublimationPressure':
-                self._set_poly_fit(poly_fit)
-                if self.Tmin is None and hasattr(self, 'poly_fit_Tmin'):
-                    self.Tmin = self.poly_fit_Tmin*.001
-                if self.Tmax is None and hasattr(self, 'poly_fit_Tmax'):
-                    self.Tmax = self.poly_fit_Tmax*10.0
-            else:
-                self._set_poly_fit(poly_fit)
+            self._set_poly_fit(poly_fit)
             method = POLY_FIT
         elif method is None:
             all_methods = self.all_methods
@@ -3155,6 +3148,11 @@ class TDependentProperty(object):
                     method = i
                     break
         self.method = method
+        for i, (Tmin, Tmax) in self.T_limits.items():
+            if Tmin is None:
+                raise RuntimeError(f'no Tmin for method {i}')
+            if Tmax is None:
+                raise RuntimeError(f'no Tmax for method {i}')
 
     def load_all_methods(self, load_data):
         self.all_methods = set()

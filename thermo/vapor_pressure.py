@@ -361,6 +361,7 @@ class VaporPressure(TDependentProperty):
                 T_limits[EOS] = (0.1*self.Tc, self.Tc)
             T_limits[LEE_KESLER_PSAT] = T_limits[AMBROSE_WALTON] = T_limits[SANJARI] = T_limits[EDALAT] = (0.01, self.Tc)
         self.all_methods = set(methods)
+    
     def calculate(self, T, method):
         r'''Method to calculate vapor pressure of a fluid at temperature `T`
         with a given method.
