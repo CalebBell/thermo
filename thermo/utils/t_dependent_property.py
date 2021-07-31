@@ -3148,11 +3148,6 @@ class TDependentProperty(object):
                     method = i
                     break
         self.method = method
-        for i, (Tmin, Tmax) in self.T_limits.items():
-            if Tmin is None:
-                raise RuntimeError(f'no Tmin for method {i}')
-            if Tmax is None:
-                raise RuntimeError(f'no Tmax for method {i}')
 
     def load_all_methods(self, load_data):
         self.all_methods = set()
