@@ -1686,6 +1686,7 @@ class TDependentProperty(object):
         T_limits = self.T_limits
         return T_limits[method][1] if method in T_limits else None
 
+    @property
     def _T_min_any(self):
         '''Return the minimum temperature (K) at which no method can calculate the
         property under.'''
@@ -1693,6 +1694,7 @@ class TDependentProperty(object):
         Tmins = [i for i in Tmins if i is not None]
         return min(Tmins) if Tmins else None
 
+    @property
     def _T_max_any(self):
         '''Maximum temperature (K) at which no method can calculate the
         property above.'''
