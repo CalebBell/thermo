@@ -286,6 +286,14 @@ class GibbsExcess(object):
     the :obj:`gammas_infinite_dilution` calculation. This is important
     as not all models can mathematically be evaluated at zero mole-fraction.'''
     
+    
+    _point_properties = ('CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns',
+                         'd2GE_dTdxs', 'd2GE_dxixjs', 'd2nGE_dTdns', 'd2nGE_dninjs',
+                         'dGE_dT', 'dGE_dns', 'dGE_dxs', 'dHE_dT', 'dHE_dns', 'dHE_dxs',
+                         'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns',
+                         'dnGE_dns', 'dnHE_dns', 'dnSE_dns', 'gammas')
+    '''These are all methods which take no arguments. For use in testing.'''
+    
     def __init_subclass__(cls):
         cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
 

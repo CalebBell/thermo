@@ -353,3 +353,14 @@ def test_Uniquac_numpy_output_correct_array_internal_ownership():
         obj = getattr(modelnp, name)
         assert obj.flags.c_contiguous
         assert obj.flags.owndata
+        
+        
+def test_UNIQUAC_one_component():
+    GE = UNIQUAC(T=300, xs=[1], rs=[1], qs=[1], ABCDEF=([[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]]))
+    
+    # d2GE_dTdxs, d2GE_dxixjs, dGE_dxs, dSE_dxs all do not have to be zero because the equation can be evaluated with x != 0.
+    
+    for s in GE._point_properties:
+        if hasattr(GE, s):
+            res = getattr(GE, s)()
+            # print(res, s)

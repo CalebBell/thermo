@@ -729,3 +729,10 @@ def test_Wilson_numpy_output_correct_array_internal_ownership():
         obj = getattr(modelnp, name)
         assert obj.flags.c_contiguous
         assert obj.flags.owndata
+
+
+def test_Wilson_one_component():
+    GE = Wilson(T=300, xs=[1], ABCDEF=([[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]]))
+    for s in GE._point_properties:
+        if hasattr(GE, s):
+            res = getattr(GE, s)()

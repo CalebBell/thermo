@@ -461,3 +461,9 @@ def test_NRTL_missing_inputs():
         GE = NRTL(T, xs, taus)
     with pytest.raises(ValueError):
         GE = NRTL(T, xs, alpha_coeffs=alphas)
+
+def test_NRTL_one_component():
+    GE = NRTL(T=350.0, xs=[1.0], ABEFGHCD=([[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]]))
+    for s in GE._point_properties:
+        if hasattr(GE, s):
+            res = getattr(GE, s)()

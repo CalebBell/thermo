@@ -197,3 +197,10 @@ def test_numpy_inputs():
     assert modelnp_pickle == modelnp
     model_pickle = pickle.loads(pickle.dumps(model))
     assert model_pickle == model
+
+def test_regular_solution_one_component():
+    GE = RegularSolution(T=325.0, xs=[1], Vs=[7.421e-05], SPs=[19570.2])
+    
+    for s in GE._point_properties:
+        if hasattr(GE, s):
+            res = getattr(GE, s)()

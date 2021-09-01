@@ -85,3 +85,9 @@ def test_IdealSolution_numpy_output():
     assert model_pickle == model
 
 
+
+def test_IdealSolution():
+    GE = IdealSolution(T=300.0, xs=[1])
+    for s in GE._point_properties:
+        if hasattr(GE, s):
+            res = getattr(GE, s)()
