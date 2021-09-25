@@ -390,3 +390,15 @@ def test_UNIQUAC_chemsep():
     # Partial inputs
     GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, tau_bs=tausB)
     assert_close1d(GE.gammas(), gammas_expect, rtol=1e-12)
+
+
+
+def test_UNIQUAC_one_component():
+    GE = UNIQUAC(T=300, xs=[1], rs=[1], qs=[1], ABCDEF=([[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]]))
+    
+    # d2GE_dTdxs, d2GE_dxixjs, dGE_dxs, dSE_dxs all do not have to be zero because the equation can be evaluated with x != 0.
+    
+    for s in GE._point_properties:
+        if hasattr(GE, s):
+            res = getattr(GE, s)()
+            # print(res, s)

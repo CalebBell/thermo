@@ -471,8 +471,6 @@ def test_wilson_parameter_different_inputs_errors():
     ABCDEF = (None, None, None, None, None, None)
     obj = Wilson(T=T, xs=xs, ABCDEF=ABCDEF)
     assert_close1d(obj.gammas(), [1, 1], rtol=1e-13)
-
-
 def test_multicomnent_madeup():
     T=273.15+70
     xs = [1/7.0]*7
@@ -792,6 +790,14 @@ def test_Wilson_numpy_output_correct_array_internal_ownership():
         obj = getattr(modelnp, name)
         assert obj.flags.c_contiguous
         assert obj.flags.owndata
+
+
+def test_Wilson_one_component():
+    GE = Wilson(T=300, xs=[1], ABCDEF=([[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]]))
+    for s in GE._point_properties:
+        if hasattr(GE, s):
+            res = getattr(GE, s)()
+
 
 def test_Wilson_chemsep():
     from thermo.interaction_parameters import IPDB

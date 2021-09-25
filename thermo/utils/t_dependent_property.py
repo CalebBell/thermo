@@ -1579,6 +1579,38 @@ class TDependentProperty(object):
             return res
 
     @property
+    def Tmin(self):
+        '''Minimum temperature (K) at which the current method can calculate the
+        property.'''
+        method = self._method
+        T_limits = self.T_limits
+        return T_limits[method][0] if method in T_limits else None
+
+    @property
+    def Tmax(self):
+        '''Maximum temperature (K) at which the current method can calculate the
+        property.'''
+        method = self._method
+        T_limits = self.T_limits
+        return T_limits[method][1] if method in T_limits else None
+
+    @property
+    def _T_min_any(self):
+        '''Return the minimum temperature (K) at which no method can calculate the
+        property under.'''
+        Tmins = [i[0] for i in self.T_limits.values()]
+        Tmins = [i for i in Tmins if i is not None]
+        return min(Tmins) if Tmins else None
+
+    @property
+    def _T_max_any(self):
+        '''Maximum temperature (K) at which no method can calculate the
+        property above.'''
+        Tmaxs = [i[1] for i in self.T_limits.values()]
+        Tmaxs = [i for i in Tmaxs if i is not None]
+        return max(Tmaxs) if Tmaxs else None
+
+    @property
     def method(self):
         r'''Method used to set a specific property method or to obtain the name
         of the method in use.
@@ -1598,7 +1630,8 @@ class TDependentProperty(object):
     @method.setter
     def method(self, method):
         if method not in self.all_methods and method != POLY_FIT and method is not None:
-            raise ValueError("The given method is not available for this chemical")
+            raise ValueError("Method '%s' is not available for this chemical; "
+                             "available methods are %s" %(method, self.all_methods))
         self.T_cached = None
         self._method = method
 
@@ -1663,7 +1696,7 @@ class TDependentProperty(object):
     def _custom_set_poly_fit(self):
         pass
 
-    def _set_poly_fit(self, poly_fit, set_limits=False):
+    def _set_poly_fit(self, poly_fit):
         if (poly_fit is not None and len(poly_fit) and (poly_fit[0] is not None
            and poly_fit[1] is not None and  poly_fit[2] is not None)
             and not isnan(poly_fit[0]) and not isnan(poly_fit[1])):
@@ -1715,13 +1748,8 @@ class TDependentProperty(object):
             self.poly_fit_Tmin_dT2 = horner(self.poly_fit_d2_coeffs, self.poly_fit_Tmin)
 
             self._custom_set_poly_fit()
-
-            if set_limits:
-                if self.Tmin is None:
-                    self.Tmin = self.poly_fit_Tmin
-                if self.Tmax is None:
-                    self.Tmax = self.poly_fit_Tmax
-
+            self.T_limits[POLY_FIT] = (self.poly_fit_Tmin, self.poly_fit_Tmax)
+            
     def as_poly_fit(self):
         return '%s(load_data=False, poly_fit=(%s, %s, %s))' %(self.__class__.__name__,
                   repr(self.poly_fit_Tmin), repr(self.poly_fit_Tmax),
@@ -1865,7 +1893,7 @@ class TDependentProperty(object):
             methods = self.all_methods
         if Tmin is None:
             T_limits = self.T_limits
-            Tmin = min(T_limits[m][0] for m in methods)
+            Tmin = max(T_limits[m][0] for m in methods)
         if Tmax is None:
             T_limits = self.T_limits
             Tmax = min(T_limits[m][1] for m in methods)
@@ -1922,7 +1950,14 @@ class TDependentProperty(object):
                                 pass
                     plot_fun(Ts2, properties, label=method)
                 else:
-                    properties = [self.calculate_derivative(T=T, method=method, order=order) for T in Ts]
+                    properties = []
+                    Tmin, Tmax = self.T_limits[method]
+                    for T in Ts:
+                        if Tmin <= T <= Tmax:
+                            value = self.calculate_derivative(T=T, method=method, order=order)
+                        else:
+                            value = self.extrapolate_derivative(T=T, method=method, order=order)
+                        properties.append(value)
                     plot_fun(Ts, properties, label=method)
             plt.ylabel(self.name + ', ' + self.units + '/K^%d derivative of order %d' % (order, order))
 
@@ -2289,10 +2324,7 @@ class TDependentProperty(object):
                 return calls['f_der2'](T, **model_kwargs)
             elif order == 3 and 'f_der3' in calls:
                 return calls['f_der3'](T, **model_kwargs)
-        
-        Tmin, Tmax = self.T_limits[method]
-        in_range = Tmin <= T <= Tmax
-        if method in self.local_methods and in_range:
+        if method in self.local_methods:
             local_method = self.local_methods[method]
             if order == 1:
                 if local_method.f_der is not None: return local_method.f_der(T)
@@ -2303,16 +2335,10 @@ class TDependentProperty(object):
         pts = 1 + order*2
         dx = T*1e-6
         args = (method,)
-        if in_range:
-            # Adjust to be just inside bounds
-            return derivative(self.calculate, T, dx=dx, args=args, n=order, order=pts,
-                              lower_limit=Tmin, upper_limit=Tmax)
-        elif self._extrapolation is not None:
-            # Allow extrapolation
-            return derivative(self.extrapolate, T, dx=dx, args=args, n=order, order=pts)
-        else:
-            raise ValueError("temperature is outside the valid range")
-#
+        Tmin, Tmax = self.T_limits[method]
+        # Adjust to be just inside bounds
+        return derivative(self.calculate, T, dx=dx, args=args, n=order, order=pts,
+                          lower_limit=Tmin, upper_limit=Tmax)
 
     def T_dependent_property_derivative(self, T, order=1):
         r'''Method to obtain a derivative of a property with respect to
@@ -2336,7 +2362,41 @@ class TDependentProperty(object):
         derivative : float
             Calculated derivative property, [`units/K^order`]
         '''
-        return self.calculate_derivative(T, self._method, order)
+        method = self._method 
+        T_limits = self.T_limits
+        extrapolation = self._extrapolation
+        if method in T_limits:
+            Tmin, Tmax = T_limits[method]
+            if Tmin <= T <= Tmax:
+                return self.calculate_derivative(T, method, order)
+            elif extrapolation:
+                try:
+                    return self.extrapolate_derivative(T, method, order)
+                except:
+                    if self.RAISE_PROPERTY_CALCULATION_ERROR:
+                        raise RuntimeError(
+                            "Failed to extrapolate %sth derivative of %s method '%s' "
+                            "at T=%s K for component with CASRN '%s'" 
+                            %(order, self.name.lower(), method, T, self.CASRN)
+                        )
+                    return None
+            elif self.RAISE_PROPERTY_CALCULATION_ERROR:
+                raise RuntimeError(
+                    "%s method '%s' is not valid at T=%s K "
+                    "for component with CASRN '%s'" 
+                    %(self.name, method, T, self.CASRN)
+                )
+            else:
+                return None
+        try:
+            return self.calculate_derivative(T, self._method, order)
+        except:
+            if self.RAISE_PROPERTY_CALCULATION_ERROR:
+                raise RuntimeError(
+                    "Failed to evaluate %sth derivative of %s method '%s' "
+                    "at T=%s K for component with CASRN '%s'" 
+                    %(order, self.name.lower(), method, T, self.CASRN)
+                )
 
     def calculate_integral(self, T1, T2, method):
         r'''Method to calculate the integral of a property with respect to
@@ -2711,14 +2771,21 @@ class TDependentProperty(object):
         if T < 0.0:
             raise ValueError("Negative temperature")
         T_low, T_high = T_limits[method]
-        if T <= T_low or in_range == 'low':
+        if T <= T_low:
             low = True
             extrapolation = self._extrapolation_low
-        elif T >= T_high or in_range == 'high':
+        elif T >= T_high:
+            low = False
+            extrapolation = self._extrapolation_high
+        elif in_range == 'low':
+            low = True
+            extrapolation = self._extrapolation_low
+        elif in_range == 'high':
             low = False
             extrapolation = self._extrapolation_high
         else:
             raise ValueError("Not outside normal range")
+            
         key = (extrapolation, method, low)
         extrapolation_coeffs = self.extrapolation_coeffs
         if key in extrapolation_coeffs:
@@ -2760,6 +2827,62 @@ class TDependentProperty(object):
         else:
             raise RuntimeError("Unknown extrapolation '%s'" %extrapolation)
 
+    def extrapolate_derivative(self, T, method, order, in_range='error'):
+        r'''Extrapolate the derivative of a given method according to the
+        :obj:`extrapolation` setting.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to extrapolate the property, [K]
+        method : str
+            The method to use, [-]
+        order : int
+            Order of the derivative, >= 1
+        in_range : str
+            How to handle inputs which are not outside the temperature limits;
+            set to 'low' to use the low T extrapolation, 'high' to use the
+            high T extrapolation, and 'error' or anything else to raise an
+            error in those cases, [-]
+
+        Returns
+        -------
+        prop : float
+            Calculated property, [`units`/K]
+        '''
+        T_limits = self.T_limits
+        if T < 0.0: raise ValueError("Negative temperature")
+        Tmin, Tmax = T_limits[method]
+        if T < Tmin:
+            low = True
+            extrapolation = self._extrapolation_low
+        elif T >= Tmax:
+            low = False
+            extrapolation = self._extrapolation_high
+        elif in_range == 'low':
+            low = True
+            extrapolation = self._extrapolation_low
+        elif in_range == 'high':
+            low = False
+            extrapolation = self._extrapolation_high
+        else:
+            raise ValueError("Not outside normal range")
+        if extrapolation == 'constant':
+            return 0.
+        elif extrapolation == 'linear':
+            key = (extrapolation, method, low)
+            extrapolation_coeffs = self.extrapolation_coeffs
+            if key in extrapolation_coeffs:
+                coeffs = extrapolation_coeffs[key]
+            else:
+                extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
+            if self.interpolation_T is None and self.interpolation_property_inv is None:
+                return coeffs[1]
+        pts = 1 + order*2
+        dx = T*1e-6
+        args = (method,)
+        return derivative(self.extrapolate, T, dx=dx, args=args, n=order, order=pts)
+
     def extrapolate_integral(self, T1, T2, method, in_range='error'):
         r'''Extrapolate the integral of a given method according to the
         :obj:`extrapolation` setting.
@@ -2787,10 +2910,16 @@ class TDependentProperty(object):
         if T1 < 0.0:
             raise ValueError("Negative temperature")
         T_low, T_high = T_limits[method]
-        if T2 <= T_low or in_range == 'low':
+        if T2 <= T_low:
             low = True
             extrapolation = self._extrapolation_low
-        elif T1 >= T_high or in_range == 'high':
+        elif T1 >= T_high:
+            low = False
+            extrapolation = self._extrapolation_high
+        elif in_range == 'low':
+            low = True
+            extrapolation = self._extrapolation_low
+        elif in_range == 'high':
             low = False
             extrapolation = self._extrapolation_high
         else:
@@ -2803,6 +2932,18 @@ class TDependentProperty(object):
             else:
                 extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
             return coeffs * (T2 - T1)
+        elif (extrapolation == 'linear' 
+              and self.interpolation_T is None 
+              and self.interpolation_property is None):
+            key = (extrapolation, method, low)
+            extrapolation_coeffs = self.extrapolation_coeffs
+            if key in extrapolation_coeffs:
+                coeffs = extrapolation_coeffs[key]
+            else:
+                extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
+            v, d = coeffs
+            c = T_low if low else T_high
+            return (v - c*d) * (T2 - T1) + 0.5 * d * (T2*T2 - T1*T1)
         else:
             return float(quad(self.extrapolate, T1, T2, args=(method,))[0])
 
@@ -2833,10 +2974,16 @@ class TDependentProperty(object):
         if T1 < 0.0:
             raise ValueError("Negative temperature")
         T_low, T_high = T_limits[method]
-        if T2 <= T_low or in_range == 'low':
+        if T2 <= T_low:
             low = True
             extrapolation = self._extrapolation_low
-        elif T1 >= T_high or in_range == 'high':
+        elif T1 >= T_high:
+            low = False
+            extrapolation = self._extrapolation_high
+        elif in_range == 'low':
+            low = True
+            extrapolation = self._extrapolation_low
+        elif in_range == 'high':
             low = False
             extrapolation = self._extrapolation_high
         else:
@@ -2849,6 +2996,18 @@ class TDependentProperty(object):
             else:
                 extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
             return coeffs * log(T2/T1)
+        elif (extrapolation == 'linear' 
+              and self.interpolation_T is None 
+              and self.interpolation_property is None):
+            key = (extrapolation, method, low)
+            extrapolation_coeffs = self.extrapolation_coeffs
+            if key in extrapolation_coeffs:
+                coeffs = extrapolation_coeffs[key]
+            else:
+                extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
+            v, d = coeffs
+            c = T_low if low else T_high
+            return d * (T2 - T1) + (v - c*d)*log(T2/T1)
         else:
             return float(quad(lambda T: self.extrapolate(T, method)/T, T1, T2)[0])
 
@@ -2858,12 +3017,6 @@ class TDependentProperty(object):
         self.extrapolation_coeffs = {}
         """extrapolation_coeffs, dict[tuple[str, str], object]: Cached 
         coefficients and methods used for extrapolation."""
-        self.Tmin = None
-        '''Minimum temperature at which no method can calculate the
-        property under.'''
-        self.Tmax = None
-        '''Maximum temperature at which no method can calculate the
-        property above.'''
         self.tabular_data = {}
         '''tabular_data, dict: Stored (Ts, properties) for any
         tabular data; indexed by provided or autogenerated name.'''
@@ -2874,9 +3027,6 @@ class TDependentProperty(object):
         interpolation_property, interpolation_property_inv) to ensure that
         if an interpolation transform is altered, the old interpolator which
         had been created is no longer used.'''
-        self.all_methods = set()
-        '''Set of all methods available for a given CASRN and properties;
-        filled by :obj:`load_all_methods`.'''
         self.load_all_methods(kwargs.get('load_data', True))
 
         self.extrapolation = extrapolation
@@ -2899,23 +3049,7 @@ class TDependentProperty(object):
         poly_fit = kwargs.get('poly_fit', None)
         method =  kwargs.get('method', getattr(self, '_method', None))
         if poly_fit is not None:
-            if self.__class__.__name__ == 'EnthalpyVaporization':
-                self.poly_fit_Tc = poly_fit[2]
-                self._set_poly_fit((poly_fit[0], poly_fit[1], poly_fit[3]))
-            elif self.__class__.__name__ == 'VaporPressure':
-                self._set_poly_fit(poly_fit)
-                if self.Tmin is None and hasattr(self, 'poly_fit_Tmin'):
-                    self.Tmin = self.poly_fit_Tmin*.01
-                if self.Tmax is None and hasattr(self, 'poly_fit_Tmax'):
-                    self.Tmax = self.poly_fit_Tmax*10.0
-            elif self.__class__.__name__ == 'SublimationPressure':
-                self._set_poly_fit(poly_fit)
-                if self.Tmin is None and hasattr(self, 'poly_fit_Tmin'):
-                    self.Tmin = self.poly_fit_Tmin*.001
-                if self.Tmax is None and hasattr(self, 'poly_fit_Tmax'):
-                    self.Tmax = self.poly_fit_Tmax*10.0
-            else:
-                self._set_poly_fit(poly_fit)
+            self._set_poly_fit(poly_fit)
             method = POLY_FIT
         elif method is None:
             all_methods = self.all_methods
@@ -2926,7 +3060,9 @@ class TDependentProperty(object):
         self.method = method
 
     def load_all_methods(self, load_data):
-        pass
+        self.all_methods = set()
+        '''Set of all methods available for a given CASRN and properties;
+        filled by :obj:`load_all_methods`.'''
 
     def calculate(self, T, method):
         r'''Method to calculate a property with a specified method, with no

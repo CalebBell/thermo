@@ -394,7 +394,7 @@ class VolumeLiquid(TPDependentProperty):
                    'Psat', 'eos')
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
                  omega=None, dipole=None, Psat=None, CASRN='', eos=None,
-                 extrapolation='constant', **kwargs):
+                 has_hydroxyl=None, extrapolation='constant', **kwargs):
         self.CASRN = CASRN
         self.MW = MW
         self.Tb = Tb
@@ -406,7 +406,7 @@ class VolumeLiquid(TPDependentProperty):
         self.dipole = dipole
         self.Psat = Psat
         self.eos = eos
-
+        self.has_hydroxyl = has_hydroxyl
         super(VolumeLiquid, self).__init__(extrapolation, **kwargs)
 
     def _custom_set_poly_fit(self):
@@ -452,23 +452,19 @@ class VolumeLiquid(TPDependentProperty):
         self.T_limits = T_limits = {}
         methods = []
         methods_P = []
-        Tmins, Tmaxs = [], []
         if load_data:
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 methods.append(COOLPROP); methods_P.append(COOLPROP)
                 self.CP_f = coolprop_fluids[self.CASRN]
-                Tmins.append(self.CP_f.Tt); Tmaxs.append(self.CP_f.Tc)
                 T_limits[COOLPROP] = (self.CP_f.Tt, self.CP_f.Tc)
             if self.CASRN in volume.rho_data_CRC_inorg_l.index:
                 methods.append(CRC_INORG_L)
                 self.CRC_INORG_L_MW, self.CRC_INORG_L_rho, self.CRC_INORG_L_k, self.CRC_INORG_L_Tm, self.CRC_INORG_L_Tmax = volume.rho_values_CRC_inorg_l[volume.rho_data_CRC_inorg_l.index.get_loc(self.CASRN)].tolist()
-                Tmins.append(self.CRC_INORG_L_Tm); Tmaxs.append(self.CRC_INORG_L_Tmax)
                 T_limits[CRC_INORG_L] = (self.CRC_INORG_L_Tm, self.CRC_INORG_L_Tmax)
             if self.CASRN in volume.rho_data_Perry_8E_105_l.index:
                 methods.append(DIPPR_PERRY_8E)
                 C1, C2, C3, C4, self.DIPPR_Tmin, self.DIPPR_Tmax = volume.rho_values_Perry_8E_105_l[volume.rho_data_Perry_8E_105_l.index.get_loc(self.CASRN)].tolist()
                 self.DIPPR_coeffs = [C1, C2, C3, C4]
-                Tmins.append(self.DIPPR_Tmin); Tmaxs.append(self.DIPPR_Tmax)
                 T_limits[DIPPR_PERRY_8E] = (self.DIPPR_Tmin, self.DIPPR_Tmax)
             if self.CASRN in volume.rho_data_VDI_PPDS_2.index:
                 methods.append(VDI_PPDS)
@@ -477,7 +473,6 @@ class VolumeLiquid(TPDependentProperty):
                 self.VDI_PPDS_MW = MW
                 self.VDI_PPDS_Tc = Tc
                 self.VDI_PPDS_rhoc = rhoc
-                Tmaxs.append(self.VDI_PPDS_Tc)
                 T_limits[VDI_PPDS] = (0.3*self.VDI_PPDS_Tc, self.VDI_PPDS_Tc)
             if self.CASRN in miscdata.VDI_saturation_dict:
                 methods.append(VDI_TABULAR)
@@ -485,18 +480,15 @@ class VolumeLiquid(TPDependentProperty):
                 self.VDI_Tmin = Ts[0]
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
-                Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
                 T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
             if self.Tc and self.CASRN in volume.rho_data_COSTALD.index:
                 methods.append(HTCOSTALDFIT)
                 self.COSTALD_Vchar = float(volume.rho_data_COSTALD.at[self.CASRN, 'Vchar'])
                 self.COSTALD_omega_SRK = float(volume.rho_data_COSTALD.at[self.CASRN, 'omega_SRK'])
-                Tmins.append(0); Tmaxs.append(self.Tc)
                 T_limits[HTCOSTALDFIT] = (0.0, self.Tc)
             if self.Tc and self.Pc and self.CASRN in volume.rho_data_COSTALD.index and not isnan(volume.rho_data_COSTALD.at[self.CASRN, 'Z_RA']):
                 methods.append(RACKETTFIT)
                 self.RACKETT_Z_RA = float(volume.rho_data_COSTALD.at[self.CASRN, 'Z_RA'])
-                Tmins.append(0); Tmaxs.append(self.Tc)
                 T_limits[RACKETTFIT] = (0.0, self.Tc)
             if self.CASRN in volume.rho_data_CRC_inorg_l_const.index:
                 methods.append(CRC_INORG_L_CONST)
@@ -505,16 +497,13 @@ class VolumeLiquid(TPDependentProperty):
                 # Roughly data at STP; not guaranteed however; not used for Trange
         if all((self.Tc, self.Vc, self.Zc)):
             methods.append(YEN_WOODS_SAT)
-            Tmins.append(0); Tmaxs.append(self.Tc)
             T_limits[YEN_WOODS_SAT] = (0.0, self.Tc)
         if all((self.Tc, self.Pc, self.Zc)):
             methods.append(RACKETT)
-            Tmins.append(0); Tmaxs.append(self.Tc)
             T_limits[RACKETT] = (0.0, self.Tc)
         if all((self.Tc, self.Pc, self.omega)):
             methods.append(YAMADA_GUNN)
             methods.append(BHIRUD_NORMAL)
-            Tmins.append(0); Tmaxs.append(self.Tc)
             T_limits[YAMADA_GUNN] = T_limits[BHIRUD_NORMAL] = (0.0, self.Tc)
         if all((self.Tc, self.Vc, self.omega)):
             methods.append(TOWNSEND_HALES)
@@ -525,11 +514,9 @@ class VolumeLiquid(TPDependentProperty):
                 self.SNM0_delta_SRK = float(volume.rho_data_SNM0.at[self.CASRN, 'delta_SRK'])
                 T_limits[MMSNM0FIT] = (0.0, self.Tc)
             T_limits[TOWNSEND_HALES] = T_limits[HTCOSTALD] = T_limits[MMSNM0] = (0.0, self.Tc)
-            Tmins.append(0); Tmaxs.append(self.Tc)
         if all((self.Tc, self.Vc, self.omega, self.Tb, self.MW)):
             methods.append(CAMPBELL_THODOS)
             T_limits[CAMPBELL_THODOS] = (0.0, self.Tc)
-            Tmins.append(0); Tmaxs.append(self.Tc)
         if self.eos:
             try:
                 T_limits[EOS] = (0.2*self.eos[0].Tc, self.eos[0].Tc)
@@ -540,9 +527,6 @@ class VolumeLiquid(TPDependentProperty):
             methods_P.append(COSTALD_COMPRESSED)
             if self.eos:
                 methods_P.append(EOS)
-
-        if Tmins and Tmaxs:
-            self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
 
         self.all_methods = set(methods)
         self.all_methods_P = set(methods_P)
@@ -596,7 +580,7 @@ class VolumeLiquid(TPDependentProperty):
         elif method == MMSNM0FIT:
             Vm = SNM0(T, self.Tc, self.Vc, self.omega, self.SNM0_delta_SRK)
         elif method == CAMPBELL_THODOS:
-            Vm = Campbell_Thodos(T, self.Tb, self.Tc, self.Pc, self.MW, self.dipole)
+            Vm = Campbell_Thodos(T, self.Tb, self.Tc, self.Pc, self.MW, self.dipole, self.has_hydroxyl)
         elif method == HTCOSTALDFIT:
             Vm = COSTALD(T, self.Tc, self.COSTALD_Vchar, self.COSTALD_omega_SRK)
         elif method == RACKETTFIT:
@@ -864,13 +848,6 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         self.Psat = Psat
         self.eos = eos
 
-        self.Tmin = None
-        '''Minimum temperature at which no method can calculate the
-        liquid molar volume under.'''
-        self.Tmax = None
-        '''Maximum temperature at which no method can calculate the
-        liquid molar volume above.'''
-
         self.tabular_data = {}
         '''tabular_data, dict: Stored (Ts, properties) for any
         tabular data; indexed by provided or autogenerated name.'''
@@ -913,22 +890,15 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         '''
         methods = []
         methods_P = []
-        Tmins, Tmaxs = [], []
         self.T_limits = T_limits = {}
         if has_CoolProp() and self.CASRN in coolprop_dict:
             methods_P.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]
-            Tmins.append(self.CP_f.Tc); Tmaxs.append(self.CP_f.Tmax)
             T_limits[COOLPROP] = (self.CP_f.Tc, self.CP_f.Tmax)
         if all((self.Tc, self.Pc, self.omega)):
             if self.eos:
                 methods_P.append(EOS)
-                Tmins.append(self.Tc)
                 T_limits[EOS] = (self.Tc, self.Tc*100)
-
-        if Tmins and Tmaxs:
-            self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
-
         self.all_methods = set(methods)
         self.all_methods_P = set(methods_P)
 
@@ -1464,13 +1434,7 @@ class VolumeGas(TPDependentProperty):
         self.omega = omega
         self.dipole = dipole
         self.eos = eos
-
         super(VolumeGas, self).__init__(extrapolation, **kwargs)
-
-        self.Tmin = 0
-        self.Tmax = 2E9
-
-
 
     def load_all_methods(self, load_data):
         r'''Method which picks out coefficients for the specified chemical
@@ -1504,6 +1468,7 @@ class VolumeGas(TPDependentProperty):
                 methods_P.append(COOLPROP)
                 self.CP_f = coolprop_fluids[self.CASRN]
                 T_limits[CRC_VIRIAL] = (self.CP_f.Tmin, self.CP_f.Tmax)
+        self.all_methods = set()
         self.all_methods_P = set(methods_P)
         for m in self.ranked_methods_P:
             if m in self.all_methods_P:
@@ -1675,7 +1640,7 @@ class VolumeGasMixture(MixtureProperty):
     '''
     name = 'Gas volume'
     units = 'm^3/mol'
-    property_min = 0
+    property_min = 0.
     '''Mimimum valid value of gas molar volume. It should normally be well
     above this.'''
     property_max = 1E10
@@ -1856,7 +1821,7 @@ class VolumeSolid(TDependentProperty):
     '''No interpolation transformation by default.'''
     tabular_extrapolation_permitted = True
     '''Allow tabular extrapolation by default.'''
-    property_min = 1e-6
+    property_min = 0.
     '''Molar volume cannot be under 0.'''
     property_max = 2e-3
     '''Maximum value of Heat capacity; arbitrarily set to 0.002, as the largest

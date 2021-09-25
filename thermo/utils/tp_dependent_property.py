@@ -108,6 +108,15 @@ class TPDependentProperty(TDependentProperty):
                     break
         self.method_P = method_P
         
+    def load_all_methods(self, load_data):
+        self.all_methods_P = set()
+        '''Set of all methods available for a given CASRN and properties;
+        filled by :obj:`load_all_methods`.'''
+        
+        self.all_methods = set()
+        '''Set of all P-dependent methods available for a given CASRN and properties;
+        filled by :obj:`load_all_methods`.'''
+        
     @property
     def method_P(self):
         r'''Method used to set or get a specific property method.
@@ -539,15 +548,15 @@ class TPDependentProperty(TDependentProperty):
             raise Exception('Optional dependency matplotlib is required for plotting')
         import matplotlib.pyplot as plt
         if Tmin is None:
-            if self.Tmin is not None:
-                Tmin = self.Tmin
+            if self._T_min_any is not None:
+                Tmin = self._T_min_any
             else:
-                raise Exception('Minimum pressure could not be auto-detected; please provide it')
+                raise Exception('Minimum temperature could not be auto-detected; please provide it')
         if Tmax is None:
-            if self.Tmax is not None:
-                Tmax = self.Tmax
+            if self._T_max_any is not None:
+                Tmax = self._T_max_any
             else:
-                raise Exception('Maximum pressure could not be auto-detected; please provide it')
+                raise Exception('Maximum temperature could not be auto-detected; please provide it')
         if hasattr(P, '__call__'):
             P_changes = True
             P_func = P
@@ -641,15 +650,15 @@ class TPDependentProperty(TDependentProperty):
             else:
                 raise Exception('Maximum pressure could not be auto-detected; please provide it')
         if Tmin is None:
-            if self.Tmin is not None:
-                Tmin = self.Tmin
+            if self._T_min_any is not None:
+                Tmin = self._T_min_any
             else:
-                raise Exception('Minimum pressure could not be auto-detected; please provide it')
+                raise Exception('Minimum temperature could not be auto-detected; please provide it')
         if Tmax is None:
-            if self.Tmax is not None:
-                Tmax = self.Tmax
+            if self._T_max_any is not None:
+                Tmax = self._T_max_any
             else:
-                raise Exception('Maximum pressure could not be auto-detected; please provide it')
+                raise Exception('Maximum temperature could not be auto-detected; please provide it')
 
         if not methods_P:
             methods_P = self.all_methods_P

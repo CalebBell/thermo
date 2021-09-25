@@ -38,6 +38,7 @@ def test_tp_dependent_property_exceptions():
             if load_data:
                 self.T_limits = {BAD_METHOD: (300., 500.),
                                  CRAZY_METHOD: (300, 500)}
+                self.all_methods = set()
                 self.all_methods_P = {BAD_METHOD, CRAZY_METHOD}
     
         def calculate_P(self, T, P, method):

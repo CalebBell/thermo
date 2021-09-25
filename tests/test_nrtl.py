@@ -504,7 +504,6 @@ def test_NRTL_partial_inputs():
     assert 'tau_cs' not in s
     assert 'alpha_ds' not in s
 
-
     with pytest.raises(ValueError):
         NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs, alpha_ds=[[0],[.2974, 0]])
         
@@ -603,3 +602,10 @@ def test_NRTL_regression_basics():
     assert_close(res['alpha12'], 6.207804509017788)
     assert_close(res['alpha21'], 0.4898957291346906)
     assert stats['MAE'] < 0.001
+
+
+def test_NRTL_one_component():
+    GE = NRTL(T=350.0, xs=[1.0], ABEFGHCD=([[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]]))
+    for s in GE._point_properties:
+        if hasattr(GE, s):
+            res = getattr(GE, s)()

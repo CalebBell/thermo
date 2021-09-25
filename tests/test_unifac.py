@@ -974,6 +974,33 @@ def test_unifac_np_output_and_hash():
     model_pickle = pickle.loads(pickle.dumps(model))
     assert model_pickle == model
 
+
+
+
+
+
+def test_UNIFAC_one_component():
+    GE = UNIFAC(T=300.0, xs=[1.0], rs=[4.8907], qs=[4.096], Qs=[0.848, 0.54, 1.088], vs=[[1], [4], [1]], psi_abc=([[0.0, 0.0, 298.9], [0.0, 0.0, 298.9], [-72.88, -72.88, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]), version=0)
+    
+    assert GE.GE() == 0
+    assert GE.HE() == 0
+    assert GE.SE() == 0
+    assert GE.dGE_dT() == 0
+    assert GE.CpE() == 0
+    assert GE.dHE_dT() == 0
+    assert GE.d2GE_dT2() == 0
+    
+    
+    assert GE.lngammas_r()[0] == 0
+    assert GE.lngammas_c()[0] == 0
+    assert GE.gammas()[0] == 1
+    assert GE.d2GE_dxixjs()[0][0] == 0
+    
+    for s in GE._point_properties:
+        if hasattr(GE, s):
+            res = getattr(GE, s)()
+
+
 def test_UNIFAC_large():
     constants, correlations = ChemicalConstantsPackage.from_IDs(IDs=list(dippr_compounds())[0:200])
     groups, CASs = [], []

@@ -42,6 +42,7 @@ classifiers=[
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: Implementation :: CPython',
     'Programming Language :: Python :: Implementation :: PyPy',
     'Topic :: Education',
@@ -55,10 +56,10 @@ setup(
   name = 'thermo',
   packages = ['thermo'],
   license='MIT',
-  version = '0.2.7',
+  version = '0.2.9',
   description = 'Chemical properties component of Chemical Engineering Design Library (ChEDL)',
   author = 'Caleb Bell',
-  install_requires=['fluids>=1.0.8', 'scipy', 'pandas', 'chemicals>=1.0.10'],
+  install_requires=['fluids>=1.0.9', 'scipy', 'pandas', 'chemicals>=1.0.11'],
   extras_require = {
       'Coverage documentation':  ['wsgiref>=0.1.2', 'coverage>=4.0.3']
   },
@@ -66,7 +67,7 @@ setup(
   platforms=["Windows", "Linux", "Mac OS", "Unix"],
   author_email = 'Caleb.Andrew.Bell@gmail.com',
   url = 'https://github.com/CalebBell/thermo',
-  download_url = 'https://github.com/CalebBell/thermo/tarball/0.2.7',
+  download_url = 'https://github.com/CalebBell/thermo/tarball/0.2.9',
   keywords = ['chemical engineering', 'chemistry', 'mechanical engineering',
   'thermodynamics', 'databases', 'cheminformatics', 'engineering','viscosity',
   'density', 'heat capacity', 'thermal conductivity', 'surface tension',
@@ -78,7 +79,7 @@ setup(
   'Law/*', 'Misc/*', 'Phase Change/*', 'Reactions/*', 'Safety/*',
   'Solubility/*', 'Interface/*', 'Triple Properties/*',
   'Thermal Conductivity/*', 'Interaction Parameters/*',
-  'flash/*', 'phases/*',
+  'flash/*', 'phases/*', 'utils/*',
   'Interaction Parameters/ChemSep/*',
   'Vapor Pressure/*', 'Viscosity/*']}
 )

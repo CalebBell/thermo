@@ -58,6 +58,7 @@ def test_4_components():
 
     GE2 = RegularSolution.from_json(GE.as_json())
     assert GE2.__dict__ == GE.__dict__
+
     
     # Test with no interaction parameters
     GE3 = RegularSolution(T, xs, Vs, SPs)
@@ -211,8 +212,6 @@ def test_numpy_inputs():
     assert modelnp_pickle == modelnp
     model_pickle = pickle.loads(pickle.dumps(model))
     assert model_pickle == model
-
-
 def test_regular_solution_gammas_binaries():
     kwargs = dict(xs=[.1, .9, 0.3, 0.7, .85, .15], Vs=[7.421e-05, 8.068e-05], SPs=[19570.2, 18864.7], Ts=[300.0, 400.0, 500.0], lambda12=0.1759, lambda21=0.7991)
     gammas_expect = [6818.906971998236, 1.105437709428331, 62.66284813913256, 2.0118436126911754, 1.1814344452004402, 137.6232341969005]
@@ -278,4 +277,12 @@ def test_regular_solution_gammas_fit_not_great():
     res, stats = RegularSolution.regress_binary_parameters(**kwargs)
     assert stats['MAE'] < .12
     
+
+
+def test_regular_solution_one_component():
+    GE = RegularSolution(T=325.0, xs=[1], Vs=[7.421e-05], SPs=[19570.2])
+    
+    for s in GE._point_properties:
+        if hasattr(GE, s):
+            res = getattr(GE, s)()
 

@@ -5979,7 +5979,10 @@ class UNIFAC(GibbsExcess):
         else:
             lngammas_r = zeros(N)
 
-        self._lngammas_r = unifac_lngammas_r(N, N_groups, lnGammas_subgroups_pure, lnGammas_subgroups, vs, lngammas_r)
+        if N != 1:
+            unifac_lngammas_r(N, N_groups, lnGammas_subgroups_pure, lnGammas_subgroups, vs, lngammas_r)
+
+        self._lngammas_r = lngammas_r
 
         return lngammas_r
 
@@ -6208,12 +6211,15 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         T, xs, N = self.T, self.xs, self.N
-        lngammas_r = self.lngammas_r()
-        if self.skip_comb:
-            GE = unifac_GE_skip_comb(T, xs, N, lngammas_r)
+        if N == 1:
+            GE = 0.0
         else:
-            lngammas_c = self.lngammas_c()
-            GE = unifac_GE(T, xs, N, lngammas_r, lngammas_c)
+            lngammas_r = self.lngammas_r()
+            if self.skip_comb:
+                GE = unifac_GE_skip_comb(T, xs, N, lngammas_r)
+            else:
+                lngammas_c = self.lngammas_c()
+                GE = unifac_GE(T, xs, N, lngammas_r, lngammas_c)
         self._GE = GE
         return GE
 
@@ -6323,7 +6329,6 @@ class UNIFAC(GibbsExcess):
 
         dlngammas_r_dxs = self.dlngammas_r_dxs()
         d2lngammas_r_dxixjs = self.d2lngammas_r_dxixjs()
-        RT = R*T
 
         if self.scalar:
             d2GE_dxixjs = [[0.0]*N for _ in range(N)]
@@ -6331,13 +6336,14 @@ class UNIFAC(GibbsExcess):
             d2GE_dxixjs = zeros((N, N))
 
 
-
-        if skip_comb:
-            self._d2GE_dxixjs = unifac_d2GE_dxixjs_skip_comb(T, xs, N, dlngammas_r_dxs, d2lngammas_r_dxixjs, d2GE_dxixjs)
-        else:
-            dlngammas_c_dxs = self.dlngammas_c_dxs()
-            d2lngammas_c_dxixjs = self.d2lngammas_c_dxixjs()
-            self._d2GE_dxixjs = unifac_d2GE_dxixjs(T, xs, N, dlngammas_r_dxs, d2lngammas_r_dxixjs, dlngammas_c_dxs, d2lngammas_c_dxixjs, d2GE_dxixjs)
+        if N != 1:
+            if skip_comb:
+                unifac_d2GE_dxixjs_skip_comb(T, xs, N, dlngammas_r_dxs, d2lngammas_r_dxixjs, d2GE_dxixjs)
+            else:
+                dlngammas_c_dxs = self.dlngammas_c_dxs()
+                d2lngammas_c_dxixjs = self.d2lngammas_c_dxixjs()
+                unifac_d2GE_dxixjs(T, xs, N, dlngammas_r_dxs, d2lngammas_r_dxixjs, dlngammas_c_dxs, d2lngammas_c_dxixjs, d2GE_dxixjs)
+        self._d2GE_dxixjs = d2GE_dxixjs
         return d2GE_dxixjs
 
     def dGE_dT(self):
@@ -6598,8 +6604,9 @@ class UNIFAC(GibbsExcess):
             lngammas_c = [0.0]*N
         else:
             lngammas_c = zeros(N)
-
-        self._lngammas_c = unifac_lngammas_c(N, version, qs, Fis, Vis, Vis_modified, lngammas_c)
+        if N != 1:
+            unifac_lngammas_c(N, version, qs, Fis, Vis, Vis_modified, lngammas_c)
+        self._lngammas_c = lngammas_c
         return lngammas_c
 
     def dlngammas_c_dT(self):
