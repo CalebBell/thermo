@@ -900,11 +900,11 @@ class Mixture(object):
         self.HeatCapacityGasMixture = HeatCapacityGasMixture(MWs=self.MWs, CASs=self.CASs, HeatCapacityGases=self.HeatCapacityGases)
         self.HeatCapacitySolidMixture = HeatCapacitySolidMixture(MWs=self.MWs, CASs=self.CASs, HeatCapacitySolids=self.HeatCapacitySolids)
 
-        self.ViscosityLiquidMixture = ViscosityLiquidMixture(MWs=self.MWs, CASs=self.CASs, ViscosityLiquids=self.ViscosityLiquids)
-        self.ViscosityGasMixture = ViscosityGasMixture(MWs=self.MWs, molecular_diameters=self.molecular_diameters, Stockmayers=self.Stockmayers, CASs=self.CASs, ViscosityGases=self.ViscosityGases)
+        self.ViscosityLiquidMixture = ViscosityLiquidMixture(MWs=self.MWs, CASs=self.CASs, ViscosityLiquids=self.ViscosityLiquids, correct_pressure_pure=False)
+        self.ViscosityGasMixture = ViscosityGasMixture(MWs=self.MWs, molecular_diameters=self.molecular_diameters, Stockmayers=self.Stockmayers, CASs=self.CASs, ViscosityGases=self.ViscosityGases, correct_pressure_pure=False)
 
-        self.ThermalConductivityLiquidMixture = ThermalConductivityLiquidMixture(CASs=self.CASs, MWs=self.MWs, ThermalConductivityLiquids=self.ThermalConductivityLiquids)
-        self.ThermalConductivityGasMixture = ThermalConductivityGasMixture(MWs=self.MWs, Tbs=self.Tbs, CASs=self.CASs, ThermalConductivityGases=self.ThermalConductivityGases, ViscosityGases=self.ViscosityGases)
+        self.ThermalConductivityLiquidMixture = ThermalConductivityLiquidMixture(CASs=self.CASs, MWs=self.MWs, ThermalConductivityLiquids=self.ThermalConductivityLiquids, correct_pressure_pure=False)
+        self.ThermalConductivityGasMixture = ThermalConductivityGasMixture(MWs=self.MWs, Tbs=self.Tbs, CASs=self.CASs, ThermalConductivityGases=self.ThermalConductivityGases, ViscosityGases=self.ViscosityGases, correct_pressure_pure=False)
 
         self.SurfaceTensionMixture = SurfaceTensionMixture(MWs=self.MWs, Tbs=self.Tbs, Tcs=self.Tcs, CASs=self.CASs, SurfaceTensions=self.SurfaceTensions, VolumeLiquids=self.VolumeLiquids)
 
