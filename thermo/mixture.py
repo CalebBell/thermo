@@ -803,22 +803,23 @@ class Mixture(object):
     def set_constants(self):
         # None of this takes much time or is important
         # Melting point
-        self.Tm = mixing_simple(self.Tms, self.zs)
+        zs = self.zs
+        self.Tm = mixing_simple(self.Tms, zs)
         # Critical Point
         try:
-            self.Tc = mixing_simple(zs, Tcs)
+            self.Tc = mixing_simple(zs, self.Tcs)
         except:
             self.Tc = None
         try:
-            self.Pc = mixing_simple(zs, Pcs)
+            self.Pc = mixing_simple(zs, self.Pcs)
         except:
             self.Pc = None
         try:
-            self.Vc = mixing_simple(zs, Vcs)
+            self.Vc = mixing_simple(zs, self.Vcs)
         except:
             self.Vc = None
         try:
-            self.omega = mixing_simple(zs, omegas)
+            self.omega = mixing_simple(zs, self.omegas)
         except:
             self.omega = None
 
