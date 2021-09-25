@@ -1585,6 +1585,7 @@ class VolumeGas(TPDependentProperty):
             return super(VolumeGas, self).test_method_validity_P(T, P, method)
         return validity
 
+LINEAR_MISSING_IDEAL = 'LINEAR_MISSING_IDEAL'
 
 volume_gas_mixture_methods = [EOS, LINEAR, IDEAL]
 '''Holds all methods available for the :obj:`VolumeGasMixture` class, for use
@@ -1647,7 +1648,7 @@ class VolumeGasMixture(MixtureProperty):
     '''Maximum valid value of gas molar volume. Set roughly at an ideal gas
     at 1 Pa and 2 billion K.'''
 
-    ranked_methods = [EOS, LINEAR, IDEAL]
+    ranked_methods = [EOS, LINEAR, IDEAL, LINEAR_MISSING_IDEAL]
 
     pure_references = ('VolumeGases',)
     pure_reference_types = (VolumeGas, )
@@ -1673,7 +1674,7 @@ class VolumeGasMixture(MixtureProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods = [LINEAR, IDEAL]
+        methods = [LINEAR, IDEAL, LINEAR_MISSING_IDEAL]
         if self.eos:
             methods.append(EOS)
         self.all_methods = all_methods =  set(methods)
@@ -1711,13 +1712,20 @@ class VolumeGasMixture(MixtureProperty):
         if method == LINEAR:
             Vms = [i(T, P) for i in self.VolumeGases]
             return mixing_simple(zs, Vms)
+        elif method == LINEAR_MISSING_IDEAL:
+            Vms = [i(T, P) for i in self.VolumeGases]
+            V_ideal = ideal_gas(T, P)
+            for i in range(len(Vms)):
+                if Vms[i] is None:
+                    Vms[i] = V_ideal
+            return mixing_simple(zs, Vms)
         elif method == IDEAL:
             return ideal_gas(T, P)
         elif method == EOS:
             self.eos[0] = self.eos[0].to_TP_zs(T=T, P=P, zs=zs)
             return self.eos[0].V_g
         else:
-            raise Exception('Method not valid')
+            raise ValueError('Method not valid')
 
     def test_method_validity(self, T, P, zs, ws, method):
         r'''Method to test the validity of a specified method for the given

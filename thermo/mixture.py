@@ -39,7 +39,7 @@ from chemicals.elements import atom_fractions, mass_fractions, simple_formula_pa
 
 from thermo.chemical import Chemical
 from thermo.thermal_conductivity import ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
-from thermo.volume import VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture
+from thermo.volume import VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture, LINEAR_MISSING_IDEAL
 from thermo.permittivity import *
 from thermo.heat_capacity import HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
 from thermo.interface import SurfaceTensionMixture
@@ -892,6 +892,9 @@ class Mixture(object):
         self.VolumeSolidMixture = VolumeSolidMixture(CASs=self.CASs, MWs=self.MWs, VolumeSolids=self.VolumeSolids)
         self.VolumeLiquidMixture = VolumeLiquidMixture(MWs=self.MWs, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, CASs=self.CASs, VolumeLiquids=self.VolumeLiquids)
         self.VolumeGasMixture = VolumeGasMixture(eos=self.eos_in_a_box, MWs=self.MWs, CASs=self.CASs, VolumeGases=self.VolumeGases)
+        
+        # Temporary
+        self.VolumeGasMixture.method = LINEAR_MISSING_IDEAL
 
         self.HeatCapacityLiquidMixture = HeatCapacityLiquidMixture(MWs=self.MWs, CASs=self.CASs, HeatCapacityLiquids=self.HeatCapacityLiquids)
         self.HeatCapacityGasMixture = HeatCapacityGasMixture(MWs=self.MWs, CASs=self.CASs, HeatCapacityGases=self.HeatCapacityGases)
