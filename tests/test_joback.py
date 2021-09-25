@@ -96,3 +96,5 @@ def test_Joback_database():
     [f.write(line) for line in sorted(lines)]
     f.close()
 
+# Maybe use this again if more work is done on Joback
+del test_Joback_database
