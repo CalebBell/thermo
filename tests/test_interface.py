@@ -100,6 +100,12 @@ def test_SurfaceTension_fitting0_yaws():
     assert stats['MAE'] < 1e-5
 
 
+@pytest.mark.meta_T_dept
+def test_SurfaceTension_no_polyfit():
+    sigma_kwargs_no_polyfit = {'CASRN': '7727-37-9', 'MW': 28.0134, 'Tb': 77.355, 'Tc': 126.2, 'Pc': 3394387.5, 'Vc': 8.95e-05, 'Zc': 0.2895282296391198, 'omega': 0.04, 'StielPolar': 0.009288558616105336, 'Hvap_Tb': 199160.50751339202, 'poly_fit': ()}
+    created = SurfaceTension(**sigma_kwargs_no_polyfit)
+    assert created(100) is not None
+
 
 def test_SurfaceTensionMixture():
     # ['pentane', 'dichloromethane']

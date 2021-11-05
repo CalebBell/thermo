@@ -3048,7 +3048,7 @@ class TDependentProperty(object):
 
         poly_fit = kwargs.get('poly_fit', None)
         method =  kwargs.get('method', getattr(self, '_method', None))
-        if poly_fit is not None:
+        if poly_fit is not None and len(poly_fit):
             self._set_poly_fit(poly_fit)
             method = POLY_FIT
         elif method is None:
