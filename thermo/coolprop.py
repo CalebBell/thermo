@@ -129,6 +129,24 @@ CoolProp_failing_PT_flashes = set(['115-07-1', '115-25-3', '1717-00-6', '420-46-
                                 '431-63-0', '431-89-0', '690-39-1', '75-68-3', '75-69-4', '75-71-8', '75-72-9', '75-73-0', '76-19-7',
                                 '110-82-7', '7782-44-7'])
 
+CoolProp_Tmin_overrides = {
+    '106-97-8': 135,
+    '106-98-9': 87.9,
+    '109-66-0': 144,
+    '110-82-7': 279.52,
+    '67-56-1': 175.7,
+    '74-82-8': 90.8,
+    '74-84-0': 90.4,
+    '74-85-1': 104.1,
+    '75-28-5': 114,
+    '7727-37-9': 63.2,
+    '100-41-4': 263.5,
+}
+
+CoolProp_Tmax_overrides = {
+    '107-51-7': 563,
+}
+
 class CP_fluid(object):
     # Basic object to store constants for a coolprop fluid, much faster than
     # calling coolprop to retrieve the data when needed
@@ -422,7 +440,11 @@ if has_CoolProp and 0:
         HEOS = AbstractState("HEOS", CAS)
 
         obj.Tmin = HEOS.Tmin()
+        if CAS in CoolProp_Tmin_overrides:
+            obj.Tmin = max(obj.Tmin, CoolProp_Tmin_overrides[CAS])
         obj.Tmax = HEOS.Tmax()
+        if CAS in CoolProp_Tmax_overrides:
+            obj.Tmax = max(obj.Tmax, CoolProp_Tmax_overrides[CAS])
         obj.Pmax = HEOS.pmax()
         obj.has_melting_line = HEOS.has_melting_line()
         obj.Tc = HEOS.T_critical()

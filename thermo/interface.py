@@ -419,7 +419,13 @@ class SurfaceTension(TDependentProperty):
         elif method == ALEEM:
             Cpl = self.Cpl(T) if hasattr(self.Cpl, '__call__') else self.Cpl
             Cpl = property_molar_to_mass(Cpl, self.MW)
-            Vml = self.Vml(T) if hasattr(self.Vml, '__call__') else self.Vml
+            try:
+                Vml = self.Vml.T_dependent_property(T)
+            except:
+                try:
+                    Vml = self.Vml(T)
+                except:
+                    Vml = self.Vml
             rhol = Vm_to_rho(Vml, self.MW)
             sigma = Aleem(T=T, MW=self.MW, Tb=self.Tb, rhol=rhol, Hvap_Tb=self.Hvap_Tb, Cpl=Cpl)
         else:
