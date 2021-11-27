@@ -83,7 +83,7 @@ from thermo.coolprop import coolprop_fluids
 from thermo.fitting import data_fit_statistics, fit_customized
 from math import inf
 import thermo
-from thermo.utils import VDI_TABULAR, POLY_FIT, has_matplotlib
+from thermo.utils import VDI_TABULAR, POLY_FIT, EXP_POLY_FIT, POLY_FIT_LN_TAU, EXP_POLY_FIT_LN_TAU, has_matplotlib
 
 
 def generate_fitting_function(model,
@@ -620,13 +620,13 @@ class TDependentProperty(object):
        'signature': 'array'},
       {'fit_params': []},
       ),
-    'ln_tau_polynomial': (['Tc', 'coeffs'], # For enthalpy of vaporization 
+    'polynomial_ln_tau': (['Tc', 'coeffs'], # For enthalpy of vaporization 
       [],
       {'f': horner_backwards_ln_tau,
        'signature': 'array'},
       {'fit_params': []},
       ),
-    'exp_ln_tau_polynomial': (['Tc', 'coeffs'], # For surface tension
+    'exp_polynomial_ln_tau': (['Tc', 'coeffs'], # For surface tension
       [],
       {'f': exp_horner_backwards_ln_tau,
        'signature': 'array'},

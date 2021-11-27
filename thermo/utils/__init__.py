@@ -73,13 +73,19 @@ Temperature, Pressure, and Composition Dependent
 
 '''
 NEGLIGIBLE = 'NEGLIGIBLE'
-DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
+LINEAR = 'LINEAR'
+
 POLY_FIT = 'POLY_FIT'
+EXP_POLY_FIT = 'EXP_POLY_FIT'
+POLY_FIT_LN_TAU = 'POLY_FIT_LN_TAU'
+EXP_POLY_FIT_LN_TAU = 'EXP_POLY_FIT_LN_TAU'
+
+DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
 VDI_TABULAR = 'VDI_TABULAR'
 VDI_PPDS = 'VDI_PPDS'
 COOLPROP = 'COOLPROP'
 EOS = 'EOS'
-LINEAR = 'LINEAR'
+
 
 from . import functional
 from .functional import *

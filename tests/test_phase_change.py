@@ -161,7 +161,7 @@ def test_EnthalpyVaporization_bestfit_polynomial():
     Tc = 591.75
     obj_bestfit = EnthalpyVaporization(Tc=Tc, poly_fit=(178.01, 586.749, Tc, coeffs))
     
-    obj_polynomial = EnthalpyVaporization(Tc=Tc, ln_tau_polynomial_parameters={'test': {'coeffs': coeffs,
+    obj_polynomial = EnthalpyVaporization(Tc=Tc, polynomial_ln_tau_parameters={'test': {'coeffs': coeffs,
                                                         'Tmin': 178.01, 'Tmax': 586.749, 'Tc': Tc}})
     
     vals = obj_polynomial(500), obj_bestfit(500)
