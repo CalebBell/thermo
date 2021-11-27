@@ -33,7 +33,8 @@ from fluids.numerics import (quad, brenth, secant, linspace,
                              polyint, polyint_over_x, derivative, 
                              polyder, horner, numpy as np, curve_fit, 
                              differential_evolution, fit_minimization_targets, 
-                             leastsq, horner_backwards, exp_horner_backwards)
+                             leastsq, horner_backwards, exp_horner_backwards,
+                             horner_backwards_ln_tau)
 import fluids
 import chemicals
 from chemicals.utils import isnan, log, e, hash_any_primitive
@@ -616,6 +617,12 @@ class TDependentProperty(object):
     'exp_polynomial': (['coeffs'],
       [],
       {'f': exp_horner_backwards,
+       'signature': 'array'},
+      {'fit_params': []},
+      ),
+    'ln_tau_polynomial': (['Tc', 'coeffs'],
+      [],
+      {'f': horner_backwards_ln_tau,
        'signature': 'array'},
       {'fit_params': []},
       ),

@@ -156,6 +156,20 @@ def test_EnthalpyVaporization_Watson_extrapolation():
 
 
 @pytest.mark.meta_T_dept
+def test_EnthalpyVaporization_bestfit_polynomial():
+    coeffs = [9.661381155485653, 224.16316385569456, 2195.419519751738, 11801.26111760343, 37883.05110910901, 74020.46380982929, 87244.40329893673, 69254.45831263301, 61780.155823216155]
+    Tc = 591.75
+    obj_bestfit = EnthalpyVaporization(Tc=Tc, poly_fit=(178.01, 586.749, Tc, coeffs))
+    
+    obj_polynomial = EnthalpyVaporization(Tc=Tc, ln_tau_polynomial_parameters={'test': {'coeffs': coeffs,
+                                                        'Tmin': 178.01, 'Tmax': 586.749, 'Tc': Tc}})
+    
+    vals = obj_polynomial(500), obj_bestfit(500)
+    for v in vals:
+        assert_close(v, 24168.867169087476, rtol=1e-13)
+    
+    
+@pytest.mark.meta_T_dept
 def test_EnthalpySublimation_no_numpy():
     assert type(EnthalpySublimation(CASRN='1327-53-3').CRC_Hfus) is float
 
