@@ -33,7 +33,7 @@ from fluids.numerics import (quad, brenth, secant, linspace,
                              polyint, polyint_over_x, derivative, 
                              polyder, horner, numpy as np, curve_fit, 
                              differential_evolution, fit_minimization_targets, 
-                             leastsq, horner_backwards)
+                             leastsq, horner_backwards, exp_horner_backwards)
 import fluids
 import chemicals
 from chemicals.utils import isnan, log, e, hash_any_primitive
@@ -613,6 +613,13 @@ class TDependentProperty(object):
       # Fitting is not supported for variable-length arrays
       {'fit_params': []},
       ),
+    'exp_polynomial': (['coeffs'],
+      [],
+      {'f': exp_horner_backwards,
+       'signature': 'array'},
+      {'fit_params': []},
+      ),
+    
      'DIPPR101': (['A', 'B'],
       ['C', 'D', 'E'],
       {'f': EQ101,

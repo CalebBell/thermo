@@ -461,6 +461,7 @@ def test_VaporPressure_extrapolation_AB():
                      obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin+1e-6))
 
 
+@pytest.mark.meta_T_dept
 def test_VaporPressure_fast_Psat_poly_fit():
     corr = VaporPressure(poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))
     # Low temperature values - up to 612 Pa
@@ -492,6 +493,18 @@ def test_VaporPressure_fast_Psat_poly_fit():
     assert_close(obj.calculate(400, POLY_FIT), 157199.6909849476, rtol=1e-10)
     assert_close(obj.calculate(400, BEST_FIT_AB), 157199.6909849476, rtol=1e-10)
     assert_close(obj.calculate(400, BEST_FIT_ABC), 157199.6909849476, rtol=1e-10)
+
+@pytest.mark.meta_T_dept
+def test_VaporPressure_generic_polynomial_exp_parameters():
+    coeffs = [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10,
+                                                -2.443464113936029e-07, 7.893819658700523e-05, -0.016615779444332356, 2.1842496316772264, -134.19766175812708]
+    
+    obj_bestfit = VaporPressure(poly_fit=(175.7, 512.49, coeffs))
+    obj_polynomial = VaporPressure(exp_polynomial_parameters={'test': {'coeffs': coeffs,
+                                                        'Tmin': 175.7, 'Tmax': 512.49}})
+    assert_close(obj_bestfit.T_dependent_property(300), 18601.061401014867, rtol=1e-11)
+    
+    assert_close(obj_polynomial(300), obj_bestfit.T_dependent_property(300), rtol=1e-13)
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_extrapolation_no_validation():
