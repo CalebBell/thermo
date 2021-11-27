@@ -34,7 +34,7 @@ from fluids.numerics import (quad, brenth, secant, linspace,
                              polyder, horner, numpy as np, curve_fit, 
                              differential_evolution, fit_minimization_targets, 
                              leastsq, horner_backwards, exp_horner_backwards,
-                             horner_backwards_ln_tau)
+                             horner_backwards_ln_tau, exp_horner_backwards_ln_tau)
 import fluids
 import chemicals
 from chemicals.utils import isnan, log, e, hash_any_primitive
@@ -616,13 +616,19 @@ class TDependentProperty(object):
       ),
     'exp_polynomial': (['coeffs'],
       [],
-      {'f': exp_horner_backwards,
+      {'f': exp_horner_backwards, # for mul, Psat, Psub
        'signature': 'array'},
       {'fit_params': []},
       ),
-    'ln_tau_polynomial': (['Tc', 'coeffs'],
+    'ln_tau_polynomial': (['Tc', 'coeffs'], # For enthalpy of vaporization 
       [],
       {'f': horner_backwards_ln_tau,
+       'signature': 'array'},
+      {'fit_params': []},
+      ),
+    'exp_ln_tau_polynomial': (['Tc', 'coeffs'], # For surface tension
+      [],
+      {'f': exp_horner_backwards_ln_tau,
        'signature': 'array'},
       {'fit_params': []},
       ),
