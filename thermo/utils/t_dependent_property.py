@@ -1662,7 +1662,7 @@ class TDependentProperty(object):
 
     @method.setter
     def method(self, method):
-        if method not in self.all_methods and method != POLY_FIT and method is not None:
+        if method not in self.all_methods and method is not None:
             raise ValueError("Method '%s' is not available for this chemical; "
                              "available methods are %s" %(method, self.all_methods))
         self.T_cached = None
@@ -1728,7 +1728,28 @@ class TDependentProperty(object):
 
     def _custom_set_poly_fit(self):
         pass
+    
+    def _set_exp_poly_fit_ln_tau(self, poly_fit):
+        if len(poly_fit) != 4:
+            raise ValueError("exp_poly_fit_ln_tau should be a tuple of 4 "
+                             "elements, in order (Tmin, Tmax, Tc, coefficients) "
+                             "with the coefficients being an interable")
+            
+        Tmin, Tmax, Tc = constants = poly_fit[0:3]
+        for v in constants:
+            if v is None:
+                raise ValueError("exp_poly_fit_ln_tau contains a None")
+            if isnan(v):
+                raise ValueError("exp_poly_fit_ln_tau contains a nan")
+        poly_fit_coeffs = poly_fit[3]
+        self.exp_poly_fit_ln_tau_Tmin = Tmin
+        self.exp_poly_fit_ln_tau_Tmax = Tmax
+        self.exp_poly_fit_ln_tau_Tc = Tc
+        self.exp_poly_fit_ln_tau_coeffs = poly_fit_coeffs
+        self.T_limits[EXP_POLY_FIT_LN_TAU] = (Tmin, Tmax)
 
+
+        
     def _set_poly_fit(self, poly_fit):
         if (poly_fit is not None and len(poly_fit) and (poly_fit[0] is not None
            and poly_fit[1] is not None and  poly_fit[2] is not None)
@@ -1796,6 +1817,8 @@ class TDependentProperty(object):
         elif method in self.correlations:
             call, kwargs, _ = self.correlations[method]
             return call(T, **kwargs)
+        elif method == EXP_POLY_FIT_LN_TAU:
+            return exp_horner_backwards_ln_tau(T, self.exp_poly_fit_ln_tau_Tc, self.exp_poly_fit_ln_tau_coeffs)
         else:
             raise ValueError("Unknown method; methods are %s" %(self.all_methods))
 
@@ -3087,11 +3110,26 @@ class TDependentProperty(object):
                                          **corr_kwargs)
 
         poly_fit = kwargs.get('poly_fit', None)
+        exp_poly_fit = kwargs.get('exp_poly_fit', None)
+        poly_fit_ln_tau = kwargs.get('poly_fit_ln_tau', None)
+        exp_poly_fit_ln_tau = kwargs.get('exp_poly_fit_ln_tau', None)
+        
         method =  kwargs.get('method', getattr(self, '_method', None))
         if poly_fit is not None and len(poly_fit):
             self._set_poly_fit(poly_fit)
             method = POLY_FIT
-        elif method is None:
+            self.all_methods.add(POLY_FIT)
+        if exp_poly_fit is not None and len(exp_poly_fit):
+            method = EXP_POLY_FIT
+            self.all_methods.add(EXP_POLY_FIT)
+        if exp_poly_fit is not None and len(poly_fit_ln_tau):
+            method = POLY_FIT_LN_TAU
+            self.all_methods.add(POLY_FIT_LN_TAU)
+        if exp_poly_fit_ln_tau is not None and len(exp_poly_fit_ln_tau):
+            self._set_exp_poly_fit_ln_tau(exp_poly_fit_ln_tau)
+            method = EXP_POLY_FIT_LN_TAU
+            self.all_methods.add(EXP_POLY_FIT_LN_TAU)
+        if method is None:
             all_methods = self.all_methods
             for i in self.ranked_methods: 
                 if i in all_methods:
