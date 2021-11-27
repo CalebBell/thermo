@@ -544,6 +544,20 @@ def test_HeatCapacityLiquidMixture():
         obj.test_method_validity(300.0, P=101325.0, zs=zs, ws=ws, method='BADMETHOD')
 
 
+@pytest.mark.meta_T_dept
+def test_HeatCapacityGas_polynomial_input_forms():
+    obj_basic = HeatCapacityGas(quadratic_parameters={'WebBook': {'A': 1e-5, 'B': 2e-5, 'C': 4e-5,
+                                                        'Tmin': 177.7, 'Tmax': 264.93}})
+    val0 = obj_basic.T_dependent_property(200)
+    obj_polynomial = HeatCapacityGas(polynomial_parameters={'test': {'coeffs': [1e-5, 2e-5, 4e-5][::-1],
+                                                        'Tmin': 177.7, 'Tmax': 264.93}})
+    val1 = obj_polynomial.T_dependent_property(200)
+    obj_bestfit = HeatCapacityGas(poly_fit=(177.7, 264.93, [1e-5, 2e-5, 4e-5][::-1]))
+    val2 = obj_bestfit.T_dependent_property(200)
+    
+    for v in (val0, val1, val2):
+        assert_close(v, 1.60401, rtol=1e-13)
+
 @pytest.mark.slow
 @pytest.mark.fuzz
 def test_locked_integral():

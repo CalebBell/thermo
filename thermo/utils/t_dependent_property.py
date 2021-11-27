@@ -33,7 +33,7 @@ from fluids.numerics import (quad, brenth, secant, linspace,
                              polyint, polyint_over_x, derivative, 
                              polyder, horner, numpy as np, curve_fit, 
                              differential_evolution, fit_minimization_targets, 
-                             leastsq)
+                             leastsq, horner_backwards)
 import fluids
 import chemicals
 from chemicals.utils import isnan, log, e, hash_any_primitive
@@ -605,6 +605,13 @@ class TDependentProperty(object):
        'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D', 'E']},
+      ),
+    'polynomial': (['coeffs'],
+      [],
+      {'f': horner_backwards,
+       'signature': 'array'},
+      # Fitting is not supported for variable-length arrays
+      {'fit_params': []},
       ),
      'DIPPR101': (['A', 'B'],
       ['C', 'D', 'E'],
@@ -1525,6 +1532,8 @@ class TDependentProperty(object):
         
         required_args, optional_args, functions, fit_data = cls.correlation_models[model]
         fit_parameters = fit_data['fit_params']
+        if not fit_parameters:
+            raise NotImplementedError("Fitting is not available for this model")
         initial_guesses = fit_data.get('initial_guesses', None)
         all_fit_parameters = fit_parameters
         
