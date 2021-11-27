@@ -2287,19 +2287,18 @@ class TDependentProperty(object):
         if interpolation_property is None:
             interpolation_property = lambda x: x
 
-        try:
+        Tmin, Tmax = self.T_limits[method]
+        if Tmin is None or Tmax is None:
             return derivative(lambda T_trans: (interpolation_property(self.calculate(interpolation_T(T_trans), method=method))),
                               interpolation_T(T), dx=interpolation_T(T)*1e-6, n=order, order=1+order*2)
-        except:
-            Tmin, Tmax = self.T_limits[method]
-            Tmin_trans, Tmax_trans = interpolation_T(Tmin), interpolation_T(Tmax)
-            lower_limit = min(Tmin_trans, Tmax_trans)
-            upper_limit = max(Tmin_trans, Tmax_trans)
+        Tmin_trans, Tmax_trans = interpolation_T(Tmin), interpolation_T(Tmax)
+        lower_limit = min(Tmin_trans, Tmax_trans)
+        upper_limit = max(Tmin_trans, Tmax_trans)
 
-            return derivative(lambda T_trans: interpolation_property(self.calculate(interpolation_T(T_trans), method=method)),
-                              interpolation_T(T),
-                              dx=interpolation_T(T)*1e-6, n=order, order=1+order*2,
-                              lower_limit=lower_limit, upper_limit=upper_limit)
+        return derivative(lambda T_trans: interpolation_property(self.calculate(interpolation_T(T_trans), method=method)),
+                          interpolation_T(T),
+                          dx=interpolation_T(T)*1e-6, n=order, order=1+order*2,
+                          lower_limit=lower_limit, upper_limit=upper_limit)
 
     def calculate_derivative(self, T, method, order=1):
         r'''Method to calculate a derivative of a property with respect to
