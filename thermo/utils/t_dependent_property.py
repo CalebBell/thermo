@@ -34,7 +34,10 @@ from fluids.numerics import (quad, brenth, secant, linspace,
                              polyder, horner, numpy as np, curve_fit, 
                              differential_evolution, fit_minimization_targets, 
                              leastsq, horner_backwards, exp_horner_backwards,
-                             horner_backwards_ln_tau, exp_horner_backwards_ln_tau)
+                             horner_backwards_ln_tau, exp_horner_backwards_ln_tau,
+                             exp_horner_backwards_ln_tau_and_der,
+                             exp_horner_backwards_ln_tau_and_der2)
+
 import fluids
 import chemicals
 from chemicals.utils import isnan, log, e, hash_any_primitive
@@ -2395,6 +2398,15 @@ class TDependentProperty(object):
                 if local_method.f_der2 is not None: return local_method.f_der2(T)
             elif order == 3:
                 if local_method.f_der3 is not None: return local_method.f_der3(T)
+        if method == EXP_POLY_FIT_LN_TAU:
+            if order == 1:
+                return exp_horner_backwards_ln_tau_and_der(T, self.exp_poly_fit_ln_tau_Tc, self.exp_poly_fit_ln_tau_coeffs)[1]
+            if order == 2:
+                return exp_horner_backwards_ln_tau_and_der2(T, self.exp_poly_fit_ln_tau_Tc, self.exp_poly_fit_ln_tau_coeffs)[2]
+        if order == 1 and method == POLY_FIT:
+            v, der = horner_and_der(self.poly_fit_coeffs, T)
+            return der*exp(v)
+
         pts = 1 + order*2
         dx = T*1e-6
         args = (method,)
