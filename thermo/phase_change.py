@@ -138,12 +138,6 @@ class EnthalpyVaporization(TDependentProperty):
         None to not extrapolate; see
         :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
         for a full list of all options, [-]
-    poly_fit : tuple(float, float, list[float]), optional
-        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
-        enthalpy of vaporization of the compound; the coefficients are evaluated with
-        horner's method, and the input variable and output are transformed by
-        the default transformations of this object; used instead of any other
-        default method if provided. [-]
     method : str or None, optional
         If specified, use this method by default and do not use the ranked
         sorting; an exception is raised if this is not a valid method for the
@@ -591,12 +585,6 @@ class EnthalpySublimation(TDependentProperty):
         None to not extrapolate; see
         :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
         for a full list of all options, [-]
-    poly_fit : tuple(float, float, list[float]), optional
-        Tuple of (Tmin, Tmax, coeffs) representing a prefered fit to the
-        enthalpy of sublimation of the compound; the coefficients are evaluated with
-        horner's method, and the input variable and output are transformed by
-        the default transformations of this object; used instead of any other
-        default method if provided. [-]
     method : str or None, optional
         If specified, use this method by default and do not use the ranked
         sorting; an exception is raised if this is not a valid method for the
