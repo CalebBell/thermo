@@ -106,6 +106,19 @@ def test_SurfaceTension_no_polyfit():
     created = SurfaceTension(**sigma_kwargs_no_polyfit)
     assert created(100) is not None
 
+def test_SurfaceTension_exp_poly_fit_ln_tau():
+    coeffs = [-1.2616237655927602e-05, -0.0004061873638525952, -0.005563382112542401, -0.04240531802937599, -0.19805733513004808, -0.5905741856310869, -1.1388001144550794, -0.1477584393673108, -2.401287527958821] 
+    Tc = 647.096
+    Tmin, Tmax = 233.22, 646.15
+
+    # Create an object with no CAS, check a value
+    good_obj = SurfaceTension(exp_poly_fit_ln_tau=(Tmin, Tmax, Tc, coeffs))
+    expect = 0.07175344047522199
+    assert_close(good_obj(300), expect, rtol=1e-12)
+    
+    # Create an object with a CAS, check a value
+    good_obj2 = SurfaceTension(CASRN='7732-18-5', exp_poly_fit_ln_tau=(Tmin, Tmax, Tc, coeffs))
+    assert_close(good_obj2(300), expect, rtol=1e-12)
 
 def test_SurfaceTensionMixture():
     # ['pentane', 'dichloromethane']
