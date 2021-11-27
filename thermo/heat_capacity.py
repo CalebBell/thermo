@@ -339,6 +339,13 @@ class HeatCapacityGas(TDependentProperty):
             methods.append(LASTOVKA_SHAW)
             T_limits[LASTOVKA_SHAW] = (1e-3, 1e5)
         self.all_methods = set(methods)
+        
+    @property
+    def T_limits_fitting(self):
+        values = self.T_limits.copy()
+        if LASTOVKA_SHAW in values:
+            values[LASTOVKA_SHAW] = (150, 3000)
+        return values
 
     @staticmethod
     def _method_indexes():

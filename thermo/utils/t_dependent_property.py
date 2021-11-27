@@ -1332,6 +1332,10 @@ class TDependentProperty(object):
 
         return dat
 
+    @property
+    def T_limits_fitting(self):
+        return self.T_limits
+
     def fit_polynomial(self, method, n=None, start_n=3, max_n=30, eval_pts=100):
         r'''Method to fit a T-dependent property to a polynomial. The degree
         of the polynomial can be specified with the `n` parameter, or it will
@@ -2080,6 +2084,14 @@ class TDependentProperty(object):
         if model not in self.available_correlations:
             raise ValueError("Model is not available; available models are %s" %(self.available_correlations,))
         model_data = self.correlation_models[model]
+        if 'coefficients' in kwargs:
+            kwargs = kwargs.copy()
+            try_map_kwargs = model_data[0] + model_data[1]
+            for v, k in zip(kwargs['coefficients'], try_map_kwargs):
+                kwargs[k] = v
+            del kwargs['coefficients']
+
+
         if not all(k in kwargs and kwargs[k] is not None for k in model_data[0]):
             raise ValueError("Required arguments for this model are %s" %(model_data[0],))
         if name in self.all_methods:

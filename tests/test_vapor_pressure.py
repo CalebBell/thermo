@@ -542,6 +542,12 @@ def test_VaporPressure_Antoine_inputs():
         obj.add_correlation(name='WebBook', model='Antoine', Tmin=177.70, Tmax=264.93,  A=3.45604+5, B=1044.038, C=-53.893)
     with pytest.raises(ValueError):
         obj.add_correlation(name='WebBook4', model='NOTAMODEL', Tmin=177.70, Tmax=264.93,  A=3.45604+5, B=1044.038, C=-53.893)
+        
+    
+    # Test with the new 'coefficients' input method
+    obj = VaporPressure(Antoine_parameters={'WebBook': {'coefficients': [8.45604, 1044.038, -53.893],
+                                                    'Tmin': 177.7, 'Tmax': 264.93}})
+    assert_close(obj(220), 148.15143004993493, rtol=1e-13)
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_DIPPR101_inputs():
