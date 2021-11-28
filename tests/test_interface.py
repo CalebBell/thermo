@@ -147,6 +147,24 @@ def test_SurfaceTension_exp_poly_ln_tau_extrapolate():
     assert_close(good_obj.calculate(647, good_obj.method), good_obj(647), rtol=1e-7)
 
 
+@pytest.mark.meta_T_dept
+def test_SurfaceTension_EQ106_ABC_extrapolate():
+    Tmin, Tc, A, B = 194.0, 592.5, 0.056, 1.32
+    C = -0.01
+    Tmax = 590.0
+    
+    good_obj = SurfaceTension(Tc=Tc, DIPPR106_parameters={'Test': {'Tmin': Tmin,
+                                'Tmax': Tmax, 'Tc': Tc, 'A': A, 'B': B, 'C': C}},
+                              extrapolation='DIPPR106_ABC')
+    assert_close(good_obj(591), good_obj.calculate(591, good_obj.method), rtol=1e-13)
+    assert_close(good_obj(50), good_obj.calculate(50, good_obj.method), rtol=1e-13)
+
+    good_obj = SurfaceTension(Tc=Tc, DIPPR106_parameters={'Test': {'Tmin': Tmin,
+                                'Tmax': Tmax, 'Tc': Tc, 'A': A, 'B': B}},
+                              extrapolation='DIPPR106_AB')
+    assert_close(good_obj(591), good_obj.calculate(591, good_obj.method), rtol=1e-13)
+    assert_close(good_obj(50), good_obj.calculate(50, good_obj.method), rtol=1e-13)
+
 def test_SurfaceTensionMixture():
     # ['pentane', 'dichloromethane']
     T = 298.15

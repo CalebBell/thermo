@@ -58,7 +58,7 @@ from chemicals.vapor_pressure import (Antoine, Antoine_AB_coeffs_from_point,
                                       Wagner_original_fitting_jacobian, 
                                       Antoine_fitting_jacobian,
                                       TRC_Antoine_extended_fitting_jacobian)
-from chemicals.dippr import EQ100, EQ101, EQ102, EQ104, EQ105, EQ106, EQ107, EQ114, EQ115, EQ116, EQ127, EQ102_fitting_jacobian, EQ101_fitting_jacobian, EQ106_fitting_jacobian, EQ105_fitting_jacobian, EQ107_fitting_jacobian
+from chemicals.dippr import EQ100, EQ101, EQ102, EQ104, EQ105, EQ106, EQ107, EQ114, EQ115, EQ116, EQ127, EQ102_fitting_jacobian, EQ101_fitting_jacobian, EQ106_fitting_jacobian, EQ105_fitting_jacobian, EQ107_fitting_jacobian, EQ106_AB, EQ106_ABC
 from chemicals.phase_change import Watson, Watson_n, Alibakhshi, PPDS12
 from chemicals.viscosity import (Viswanath_Natarajan_2, Viswanath_Natarajan_2_exponential,
                                  Viswanath_Natarajan_3, PPDS9, dPPDS9_dT,
@@ -305,6 +305,15 @@ class TDependentProperty(object):
           derivative to fit the model linearly in the equation
           :math:`\text{prop} = \exp(a + b\cdot\ln\tau)`, so that it is always 
           zero at the critical point; suitable for surface tension.
+        * 'DIPPR106_AB' - uses the models's critical temperature and 
+          derivative to fit the model linearly in the equation
+          :obj:`EQ106 <chemicals.dippr.EQ106>`'s
+          equation at the temperature limits using only the A and B coefficient
+        * 'DIPPR106_ABC' - uses the models's critical temperature and 
+          first two derivatives to fit the model quadratically in the equation
+          :obj:`EQ106 <chemicals.dippr.EQ106>`'s
+          equation at the temperature limits using only the A, B, and C
+          coefficient.
 
     It is possible to use different extrapolation methods for the
     low-temperature and the high-temperature region. Specify the extrapolation
@@ -2782,6 +2791,15 @@ class TDependentProperty(object):
             d0 = self.calculate_derivative(T, method=method, order=1)
             d1 = self.calculate_derivative(T, method=method, order=2)
             coefficients = exp_poly_ln_tau_coeffs3(T, self.Tc, v, d0, d1)
+        elif extrapolation == 'DIPPR106_AB':
+            v = self.calculate(T, method=method)
+            d0 = self.calculate_derivative(T, method=method, order=1)
+            coefficients = EQ106_AB(T, self.Tc, v, d0)
+        elif extrapolation == 'DIPPR106_ABC':
+            v = self.calculate(T, method=method)
+            d0 = self.calculate_derivative(T, method=method, order=1)
+            d1 = self.calculate_derivative(T, method=method, order=2)
+            coefficients = EQ106_ABC(T, self.Tc, v, d0, d1)
         elif extrapolation == 'interp1d':
             from scipy.interpolate import interp1d
             interpolation_T = self.interpolation_T
@@ -2901,6 +2919,12 @@ class TDependentProperty(object):
         elif extrapolation == 'DIPPR101_ABC':
             A, B, C = coeffs
             return EQ101(T, A, B, C, 0.0, 0.0)
+        elif extrapolation == 'DIPPR106_AB':
+            A, B = coeffs
+            return EQ106(T, self.Tc, A, B)
+        elif extrapolation == 'DIPPR106_ABC':
+            A, B, C = coeffs
+            return EQ106(T, self.Tc, A, B, C)
         elif extrapolation == 'Watson':
             v0, n = coeffs
             T_lim = T_low if low else T_high
