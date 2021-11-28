@@ -52,6 +52,7 @@ def test_SurfaceTension():
     assert_close(EtOH.calculate(305., VDI_TABULAR), 0.021533867879206747, rtol=1E-4)
 
     # Test that methods return None
+    EtOH.extrapolation = None
     for i in methods:
         EtOH.method = i
         assert EtOH.T_dependent_property(5000) is None

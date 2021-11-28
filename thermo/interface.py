@@ -257,7 +257,7 @@ class SurfaceTension(TDependentProperty):
 
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
                  omega=None, StielPolar=None, Hvap_Tb=None, CASRN='', Vml=None,
-                 Cpl=None, extrapolation=None, **kwargs):
+                 Cpl=None, extrapolation='EXP_POLY_LN_TAU2', **kwargs):
         self.MW = MW
         self.Tb = Tb
         self.Tc = Tc
