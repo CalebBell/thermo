@@ -128,6 +128,24 @@ def test_SurfaceTension_exp_poly_fit_ln_tau():
     assert_close(good_obj.T_dependent_property_derivative(300, order=2), expect_der2, rtol=1e-13)
 
 
+@pytest.mark.meta_T_dept
+def test_SurfaceTension_exp_poly_ln_tau_extrapolate():
+    coeffs = [1.1624065398371628, -1.9976745939643825]
+    
+    Tc = 647.096
+    Tmin, Tmax = 233.22, 646.15
+    good_obj = SurfaceTension(Tc=Tc, exp_poly_fit_ln_tau=(Tmin, Tmax, Tc, coeffs), extrapolation='EXP_POLY_LN_TAU2')
+    assert_close(good_obj.calculate(1, good_obj.method), good_obj(1), rtol=1e-13)
+    assert_close(good_obj.calculate(647, good_obj.method), good_obj(647), rtol=1e-13)
+
+    
+    # Floating-point errors pile up in this one
+    coeffs = [-0.02235848200899392,  1.0064575672832703,  -2.0629066032890777 ]
+    good_obj = SurfaceTension(Tc=Tc, exp_poly_fit_ln_tau=(Tmin, Tmax, Tc, coeffs), extrapolation='EXP_POLY_LN_TAU3')
+    assert_close(good_obj.calculate(200, good_obj.method), good_obj(200), rtol=1e-7)
+    assert_close(good_obj.calculate(647, good_obj.method), good_obj(647), rtol=1e-7)
+
+
 def test_SurfaceTensionMixture():
     # ['pentane', 'dichloromethane']
     T = 298.15

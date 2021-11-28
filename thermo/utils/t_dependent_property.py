@@ -36,7 +36,8 @@ from fluids.numerics import (quad, brenth, secant, linspace,
                              leastsq, horner_backwards, exp_horner_backwards,
                              horner_backwards_ln_tau, exp_horner_backwards_ln_tau,
                              exp_horner_backwards_ln_tau_and_der,
-                             exp_horner_backwards_ln_tau_and_der2)
+                             exp_horner_backwards_ln_tau_and_der2,
+                             exp_poly_ln_tau_coeffs2, exp_poly_ln_tau_coeffs3)
 
 import fluids
 import chemicals
@@ -249,7 +250,7 @@ class ConstantLocalMethod:
 
 
 class TDependentProperty(object):
-    '''Class for calculating temperature-dependent chemical properties.
+    r'''Class for calculating temperature-dependent chemical properties.
 
     On creation, a :obj:`TDependentProperty` examines all the possible methods
     implemented for calculating the property, loads whichever coefficients it
@@ -300,6 +301,10 @@ class TDependentProperty(object):
           :obj:`EQ101 <chemicals.dippr.EQ101>` equation
         * 'Watson' - fits the model to the Heat of Vaporization model
           :obj:`Watson <chemicals.phase_change.Watson>`
+        * 'EXP_POLY_LN_TAU2' - uses the models's critical temperature and 
+          derivative to fit the model linearly in the equation
+          :math:`\text{prop} = \exp(a + b\cdot\ln\tau)`, so that it is always 
+          zero at the critical point; suitable for surface tension.
 
     It is possible to use different extrapolation methods for the
     low-temperature and the high-temperature region. Specify the extrapolation
@@ -2768,6 +2773,15 @@ class TDependentProperty(object):
             v1 = self.calculate(T + dT, method=method)
             n = Watson_n(T, T + dT, v0, v1, self.Tc)
             coefficients = (v0, n)
+        elif extrapolation == 'EXP_POLY_LN_TAU2':
+            v = self.calculate(T, method=method)
+            d0 = self.calculate_derivative(T, method=method, order=1)
+            coefficients = exp_poly_ln_tau_coeffs2(T, self.Tc, v, d0)
+        elif extrapolation == 'EXP_POLY_LN_TAU3':
+            v = self.calculate(T, method=method)
+            d0 = self.calculate_derivative(T, method=method, order=1)
+            d1 = self.calculate_derivative(T, method=method, order=2)
+            coefficients = exp_poly_ln_tau_coeffs3(T, self.Tc, v, d0, d1)
         elif extrapolation == 'interp1d':
             from scipy.interpolate import interp1d
             interpolation_T = self.interpolation_T
@@ -2891,6 +2905,8 @@ class TDependentProperty(object):
             v0, n = coeffs
             T_lim = T_low if low else T_high
             return Watson(T, Hvap_ref=v0, T_ref=T_lim, Tc=self.Tc, exponent=n)
+        elif extrapolation == 'EXP_POLY_LN_TAU2' or extrapolation == 'EXP_POLY_LN_TAU3':
+            return exp_horner_backwards_ln_tau(T, self.Tc, coeffs)
         elif extrapolation == 'interp1d':
             extrapolator = coeffs
             interpolation_T = self.interpolation_T
