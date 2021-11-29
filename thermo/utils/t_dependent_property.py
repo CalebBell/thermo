@@ -37,7 +37,9 @@ from fluids.numerics import (quad, brenth, secant, linspace,
                              horner_backwards_ln_tau, exp_horner_backwards_ln_tau,
                              exp_horner_backwards_ln_tau_and_der,
                              exp_horner_backwards_ln_tau_and_der2,
-                             exp_poly_ln_tau_coeffs2, exp_poly_ln_tau_coeffs3)
+                             exp_poly_ln_tau_coeffs2, exp_poly_ln_tau_coeffs3,
+                             exp_horner_backwards, exp_horner_backwards_and_der,
+                             exp_horner_backwards_and_der2, exp_horner_backwards_and_der3)
 
 import fluids
 import chemicals
@@ -1746,6 +1748,24 @@ class TDependentProperty(object):
     def _custom_set_poly_fit(self):
         pass
     
+    def _set_exp_poly_fit(self, poly_fit):
+        if len(poly_fit) != 3:
+            raise ValueError("exp_poly_fit should be a tuple of 3 "
+                             "elements, in order (Tmin, Tmax, coefficients) "
+                             "with the coefficients being an interable")
+            
+        Tmin, Tmax = constants = poly_fit[0:2]
+        for v in constants:
+            if v is None:
+                raise ValueError("exp_poly_fit contains a None")
+            if isnan(v):
+                raise ValueError("exp_poly_fit contains a nan")
+        poly_fit_coeffs = poly_fit[2]
+        self.exp_poly_fit_Tmin = Tmin
+        self.exp_poly_fit_Tmax = Tmax
+        self.exp_poly_fit_coeffs = poly_fit_coeffs
+        self.T_limits[EXP_POLY_FIT] = (Tmin, Tmax)
+
     def _set_exp_poly_fit_ln_tau(self, poly_fit):
         if len(poly_fit) != 4:
             raise ValueError("exp_poly_fit_ln_tau should be a tuple of 4 "
@@ -1834,6 +1854,8 @@ class TDependentProperty(object):
         elif method in self.correlations:
             call, kwargs, _ = self.correlations[method]
             return call(T, **kwargs)
+        elif method == EXP_POLY_FIT:
+            return exp_horner_backwards(T, self.exp_poly_fit_coeffs)
         elif method == EXP_POLY_FIT_LN_TAU:
             return exp_horner_backwards_ln_tau(T, self.exp_poly_fit_ln_tau_Tc, self.exp_poly_fit_ln_tau_coeffs)
         else:
@@ -2417,6 +2439,14 @@ class TDependentProperty(object):
                 return exp_horner_backwards_ln_tau_and_der(T, self.exp_poly_fit_ln_tau_Tc, self.exp_poly_fit_ln_tau_coeffs)[1]
             if order == 2:
                 return exp_horner_backwards_ln_tau_and_der2(T, self.exp_poly_fit_ln_tau_Tc, self.exp_poly_fit_ln_tau_coeffs)[2]
+        if method == EXP_POLY_FIT:
+            if order == 1:
+                return exp_horner_backwards_and_der(T, self.exp_poly_fit_coeffs)[1]
+            if order == 2:
+                return exp_horner_backwards_and_der2(T, self.exp_poly_fit_coeffs)[2]
+            if order == 3:
+                return exp_horner_backwards_and_der3(T, self.exp_poly_fit_coeffs)[3]
+            
         if order == 1 and method == POLY_FIT:
             v, der = horner_and_der(self.poly_fit_coeffs, T)
             return der*exp(v)
@@ -3173,8 +3203,9 @@ class TDependentProperty(object):
             self.all_methods.add(POLY_FIT)
         if exp_poly_fit is not None and len(exp_poly_fit):
             method = EXP_POLY_FIT
+            self._set_exp_poly_fit(exp_poly_fit)
             self.all_methods.add(EXP_POLY_FIT)
-        if exp_poly_fit is not None and len(poly_fit_ln_tau):
+        if poly_fit_ln_tau is not None and len(poly_fit_ln_tau):
             method = POLY_FIT_LN_TAU
             self.all_methods.add(POLY_FIT_LN_TAU)
         if exp_poly_fit_ln_tau is not None and len(exp_poly_fit_ln_tau):
