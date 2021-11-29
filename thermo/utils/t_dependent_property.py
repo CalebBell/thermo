@@ -29,17 +29,25 @@ try:
     from random import uniform
 except: # pragma: no cover
     pass
+from math import inf, exp
+
 from fluids.numerics import (quad, brenth, secant, linspace, 
                              polyint, polyint_over_x, derivative, 
                              polyder, horner, numpy as np, curve_fit, 
                              differential_evolution, fit_minimization_targets, 
                              leastsq, horner_backwards, exp_horner_backwards,
-                             horner_backwards_ln_tau, exp_horner_backwards_ln_tau,
+                             exp_horner_backwards_ln_tau,
                              exp_horner_backwards_ln_tau_and_der,
                              exp_horner_backwards_ln_tau_and_der2,
                              exp_poly_ln_tau_coeffs2, exp_poly_ln_tau_coeffs3,
                              exp_horner_backwards, exp_horner_backwards_and_der,
-                             exp_horner_backwards_and_der2, exp_horner_backwards_and_der3)
+                             exp_horner_backwards_and_der2, 
+                             exp_horner_backwards_and_der3,
+                             horner_and_der,
+                             horner_backwards_ln_tau,
+                             horner_backwards_ln_tau_and_der, 
+                             horner_backwards_ln_tau_and_der2,
+                             horner_backwards_ln_tau_and_der3)
 
 import fluids
 import chemicals
@@ -87,7 +95,6 @@ from thermo.eos_alpha_functions import (Twu91_alpha_pure, Soave_1979_alpha_pure,
 from thermo.eos import GCEOS
 from thermo.coolprop import coolprop_fluids
 from thermo.fitting import data_fit_statistics, fit_customized
-from math import inf
 import thermo
 from thermo.utils import VDI_TABULAR, POLY_FIT, EXP_POLY_FIT, POLY_FIT_LN_TAU, EXP_POLY_FIT_LN_TAU, has_matplotlib
 
@@ -1766,6 +1773,25 @@ class TDependentProperty(object):
         self.exp_poly_fit_coeffs = poly_fit_coeffs
         self.T_limits[EXP_POLY_FIT] = (Tmin, Tmax)
 
+    def _set_poly_fit_ln_tau(self, poly_fit):
+        if len(poly_fit) != 4:
+            raise ValueError("poly_fit_ln_tau should be a tuple of 4 "
+                             "elements, in order (Tmin, Tmax, Tc, coefficients) "
+                             "with the coefficients being an interable")
+            
+        Tmin, Tmax, Tc = constants = poly_fit[0:3]
+        for v in constants:
+            if v is None:
+                raise ValueError("poly_fit_ln_tau contains a None")
+            if isnan(v):
+                raise ValueError("poly_fit_ln_tau contains a nan")
+        poly_fit_coeffs = poly_fit[3]
+        self.poly_fit_ln_tau_Tmin = Tmin
+        self.poly_fit_ln_tau_Tmax = Tmax
+        self.poly_fit_ln_tau_Tc = Tc
+        self.poly_fit_ln_tau_coeffs = poly_fit_coeffs
+        self.T_limits[POLY_FIT_LN_TAU] = (Tmin, Tmax)
+
     def _set_exp_poly_fit_ln_tau(self, poly_fit):
         if len(poly_fit) != 4:
             raise ValueError("exp_poly_fit_ln_tau should be a tuple of 4 "
@@ -1856,6 +1882,8 @@ class TDependentProperty(object):
             return call(T, **kwargs)
         elif method == EXP_POLY_FIT:
             return exp_horner_backwards(T, self.exp_poly_fit_coeffs)
+        elif method == POLY_FIT_LN_TAU:
+            return horner_backwards_ln_tau(T, self.poly_fit_ln_tau_Tc, self.poly_fit_ln_tau_coeffs)
         elif method == EXP_POLY_FIT_LN_TAU:
             return exp_horner_backwards_ln_tau(T, self.exp_poly_fit_ln_tau_Tc, self.exp_poly_fit_ln_tau_coeffs)
         else:
@@ -2446,10 +2474,13 @@ class TDependentProperty(object):
                 return exp_horner_backwards_and_der2(T, self.exp_poly_fit_coeffs)[2]
             if order == 3:
                 return exp_horner_backwards_and_der3(T, self.exp_poly_fit_coeffs)[3]
-            
-        if order == 1 and method == POLY_FIT:
-            v, der = horner_and_der(self.poly_fit_coeffs, T)
-            return der*exp(v)
+        if method == POLY_FIT_LN_TAU:
+            if order == 1:
+                return horner_backwards_ln_tau_and_der(T, self.poly_fit_ln_tau_Tc, self.poly_fit_ln_tau_coeffs)[1]
+            if order == 2:
+                return horner_backwards_ln_tau_and_der2(T, self.poly_fit_ln_tau_Tc, self.poly_fit_ln_tau_coeffs)[2]
+            if order == 3:
+                return horner_backwards_ln_tau_and_der3(T, self.poly_fit_ln_tau_Tc, self.poly_fit_ln_tau_coeffs)[3]
 
         pts = 1 + order*2
         dx = T*1e-6
@@ -3207,6 +3238,7 @@ class TDependentProperty(object):
             self.all_methods.add(EXP_POLY_FIT)
         if poly_fit_ln_tau is not None and len(poly_fit_ln_tau):
             method = POLY_FIT_LN_TAU
+            self._set_poly_fit_ln_tau(poly_fit_ln_tau)
             self.all_methods.add(POLY_FIT_LN_TAU)
         if exp_poly_fit_ln_tau is not None and len(exp_poly_fit_ln_tau):
             self._set_exp_poly_fit_ln_tau(exp_poly_fit_ln_tau)

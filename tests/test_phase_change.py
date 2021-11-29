@@ -168,6 +168,18 @@ def test_EnthalpyVaporization_bestfit_polynomial():
     for v in vals:
         assert_close(v, 24168.867169087476, rtol=1e-13)
     
+@pytest.mark.meta_T_dept
+def test_EnthalpyVaporization_bestfit_polynomial_generic():
+    coeffs = [9.661381155485653, 224.16316385569456, 2195.419519751738, 11801.26111760343, 37883.05110910901, 74020.46380982929, 87244.40329893673, 69254.45831263301, 61780.155823216155]
+    Tc = 591.75
+    T = 300.0
+    obj2 = EnthalpyVaporization(Tc=Tc, poly_fit_ln_tau=(178.01, 586.749, Tc, coeffs))
+    assert_close(obj2(T), 37900.38881665646, rtol=1e-13)
+    
+    assert_close(obj2.T_dependent_property_derivative(T), -54.63227984184944, rtol=1e-14)
+    assert_close(obj2.T_dependent_property_derivative(T, order=2), 0.037847046150971016, rtol=1e-14)
+    assert_close(obj2.T_dependent_property_derivative(T, order=3), -0.001920502581912092, rtol=1e-13)
+
     
 @pytest.mark.meta_T_dept
 def test_EnthalpySublimation_no_numpy():
