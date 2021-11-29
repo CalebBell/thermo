@@ -507,6 +507,21 @@ def test_VaporPressure_generic_polynomial_exp_parameters():
     assert_close(obj_polynomial(300), obj_bestfit.T_dependent_property(300), rtol=1e-13)
 
 @pytest.mark.meta_T_dept
+def test_VaporPressure_generic_polynomial_exp_parameters_complicated():
+    coeffs = [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10,
+    -2.443464113936029e-07, 7.893819658700523e-05, -0.016615779444332356, 2.1842496316772264, -134.19766175812708]
+    T = 300.0
+    
+    obj2 = VaporPressure(exp_poly_fit=(175.7, 512.49, coeffs))
+    assert_close(obj2(T), 18601.061401014867, rtol=1e-13)
+    
+    assert_close(obj2.T_dependent_property_derivative(T), 954.1652489206775, rtol=1e-14)
+    assert_close(obj2.T_dependent_property_derivative(T, order=2), 41.8787546283273, rtol=1e-14)
+    assert_close(obj2.T_dependent_property_derivative(T, order=3), 1.496803960985584, rtol=1e-13)
+    
+    
+
+@pytest.mark.meta_T_dept
 def test_VaporPressure_extrapolation_no_validation():
     N2 = VaporPressure(CASRN='7727-37-9', extrapolation='DIPPR101_ABC')
     N2.method = WAGNER_MCGARRY
