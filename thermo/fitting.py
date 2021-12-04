@@ -358,7 +358,7 @@ def fit_cheb_poly_auto(func, low, high, start_n=3, max_n=20, eval_pts=100,
     worked_ns, worked_coeffs, worked_stats = fit_many_cheb_poly(func, low, high, ns=range(start_n, max_n+1),
                   interpolation_property=interpolation_property, interpolation_property_inv=interpolation_property_inv,
                   interpolation_x=interpolation_x, interpolation_x_inv=interpolation_x_inv,
-                  arg_func=arg_func, eval_pts=eval_pts, method=FIT_CHEBTOOLS_POLY)
+                  arg_func=arg_func, eval_pts=eval_pts, method=method)
     idx = select_index_from_stats(worked_stats, worked_ns)
 
     return worked_ns[idx], worked_coeffs[idx], worked_stats[idx]

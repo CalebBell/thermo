@@ -44,6 +44,8 @@ from fluids.numerics import (quad, brenth, secant, linspace, newton,
                              exp_horner_backwards, exp_horner_backwards_and_der,
                              exp_horner_backwards_and_der2, 
                              exp_horner_backwards_and_der3,
+                             polynomial_offset_scale,
+                             chebval, chebder,
                              horner_and_der, horner_and_der2, horner_and_der3,
                              horner_stable_and_der2,
                              horner_backwards_ln_tau,
@@ -1833,7 +1835,8 @@ class TDependentProperty(object):
         self.cheb_fit_Tmax = Tmax
         self.cheb_fit_coeffs = cheb_fit_coeffs
         self.T_limits[CHEB_FIT] = (Tmin, Tmax)
-        
+        self.cheb_fit_offset, self.cheb_fit_scale = polynomial_offset_scale(Tmin, Tmax)
+
         
 
     def _set_exp_cheb_fit(self, cheb_fit):
@@ -1853,7 +1856,8 @@ class TDependentProperty(object):
         self.exp_cheb_fit_Tmax = Tmax
         self.exp_cheb_fit_coeffs = cheb_fit_coeffs
         self.T_limits[EXP_CHEB_FIT] = (Tmin, Tmax)
-        
+        self.exp_cheb_fit_offset, self.exp_cheb_fit_scale = polynomial_offset_scale(Tmin, Tmax)
+
         
         
 
@@ -1875,6 +1879,7 @@ class TDependentProperty(object):
         self.cheb_fit_ln_tau_Tc = Tc
         self.cheb_fit_ln_tau_coeffs = cheb_fit_coeffs
         self.T_limits[CHEB_FIT_LN_TAU] = (Tmin, Tmax)
+        self.cheb_fit_ln_tau_offset, self.cheb_fit_ln_tau_scale = polynomial_offset_scale(Tmin, Tmax)
 
 
     def _set_exp_cheb_fit_ln_tau(self, cheb_fit):
@@ -1895,6 +1900,7 @@ class TDependentProperty(object):
         self.exp_cheb_fit_ln_tau_Tc = Tc
         self.exp_cheb_fit_ln_tau_coeffs = cheb_fit_coeffs
         self.T_limits[EXP_CHEB_FIT_LN_TAU] = (Tmin, Tmax)
+        self.exp_cheb_fit_ln_tau_offset, self.exp_cheb_fit_ln_tau_scale = polynomial_offset_scale(Tmin, Tmax)
 
     def _set_stablepoly_fit(self, stablepoly_fit):
         if len(stablepoly_fit) != 3:
@@ -2188,6 +2194,8 @@ class TDependentProperty(object):
             return exp_horner_backwards_ln_tau(T, self.exp_poly_fit_ln_tau_Tc, self.exp_poly_fit_ln_tau_coeffs)
         elif method == STABLEPOLY_FIT:
             return horner_stable(T, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)
+        elif method == CHEB_FIT:
+            return chebval(T, self.cheb_fit_coeffs, self.cheb_fit_offset, self.cheb_fit_scale)
         elif method in self.tabular_data:
             return self.interpolate(T, method)
         elif method in self.local_methods:
