@@ -45,12 +45,15 @@ from fluids.numerics import (quad, brenth, secant, linspace, newton,
                              exp_horner_backwards_and_der2, 
                              exp_horner_backwards_and_der3,
                              horner_and_der, horner_and_der2, horner_and_der3,
+                             horner_stable_and_der2,
                              horner_backwards_ln_tau,
                              horner_backwards_ln_tau_and_der, 
                              horner_backwards_ln_tau_and_der2,
                              horner_backwards_ln_tau_and_der3,
                              fit_integral_linear_extrapolation,
-                             fit_integral_over_T_linear_extrapolation)
+                             fit_integral_over_T_linear_extrapolation,
+                             horner_stable, horner_stable_and_der, horner_stable_and_der2,
+                             horner_stable_and_der3, horner_stable_and_der4)
 
 import fluids
 import chemicals
@@ -99,7 +102,11 @@ from thermo.eos import GCEOS
 from thermo.coolprop import coolprop_fluids
 from thermo.fitting import data_fit_statistics, fit_customized
 import thermo
-from thermo.utils import VDI_TABULAR, POLY_FIT, EXP_POLY_FIT, POLY_FIT_LN_TAU, EXP_POLY_FIT_LN_TAU, has_matplotlib
+from thermo.utils import (VDI_TABULAR, POLY_FIT, EXP_POLY_FIT, POLY_FIT_LN_TAU,
+                          EXP_POLY_FIT_LN_TAU, STABLEPOLY_FIT, EXP_STABLEPOLY_FIT, 
+                          STABLEPOLY_FIT_LN_TAU, EXP_STABLEPOLY_FIT_LN_TAU,
+                          CHEB_FIT, EXP_CHEB_FIT, CHEB_FIT_LN_TAU, EXP_CHEB_FIT_LN_TAU,
+                          has_matplotlib)
 
 
 def generate_fitting_function(model,
@@ -1506,7 +1513,7 @@ class TDependentProperty(object):
 
             stats = poly_fit_statistics(func, coeffs=coeffs, low=low, high=high, pts=eval_pts,
                                       interpolation_property_inv=interpolation_property_inv,
-                                      interpolation_x=interpolation_T,
+                                      interpolation_x=interpolation_T,method=fit_method,
                       )
 
         return coeffs, (low, high), stats
@@ -1808,6 +1815,168 @@ class TDependentProperty(object):
 
     def _custom_set_poly_fit(self):
         pass
+
+    def _set_cheb_fit(self, cheb_fit):
+        if len(cheb_fit) != 3:
+            raise ValueError("cheb_fit should be a tuple of 3 "
+                             "elements, in order (Tmin, Tmax, coefficients) "
+                             "with the coefficients being an interable")
+            
+        Tmin, Tmax = constants = cheb_fit[0:2]
+        for v in constants:
+            if v is None:
+                raise ValueError("cheb_fit contains a None")
+            if isnan(v):
+                raise ValueError("cheb_fit contains a nan")
+        cheb_fit_coeffs = cheb_fit[2]
+        self.cheb_fit_Tmin = Tmin
+        self.cheb_fit_Tmax = Tmax
+        self.cheb_fit_coeffs = cheb_fit_coeffs
+        self.T_limits[CHEB_FIT] = (Tmin, Tmax)
+        
+        
+
+    def _set_exp_cheb_fit(self, cheb_fit):
+        if len(cheb_fit) != 3:
+            raise ValueError("exp_cheb_fit should be a tuple of 3 "
+                             "elements, in order (Tmin, Tmax, coefficients) "
+                             "with the coefficients being an interable")
+            
+        Tmin, Tmax = constants = cheb_fit[0:2]
+        for v in constants:
+            if v is None:
+                raise ValueError("exp_cheb_fit contains a None")
+            if isnan(v):
+                raise ValueError("exp_cheb_fit contains a nan")
+        cheb_fit_coeffs = cheb_fit[2]
+        self.exp_cheb_fit_Tmin = Tmin
+        self.exp_cheb_fit_Tmax = Tmax
+        self.exp_cheb_fit_coeffs = cheb_fit_coeffs
+        self.T_limits[EXP_CHEB_FIT] = (Tmin, Tmax)
+        
+        
+        
+
+    def _set_cheb_fit_ln_tau(self, cheb_fit):
+        if len(cheb_fit) != 4:
+            raise ValueError("cheb_fit_ln_tau should be a tuple of 4 "
+                             "elements, in order (Tmin, Tmax, Tc, coefficients) "
+                             "with the coefficients being an interable")
+            
+        Tmin, Tmax, Tc = constants = cheb_fit[0:3]
+        for v in constants:
+            if v is None:
+                raise ValueError("cheb_fit_ln_tau contains a None")
+            if isnan(v):
+                raise ValueError("cheb_fit_ln_tau contains a nan")
+        cheb_fit_coeffs = cheb_fit[3]
+        self.cheb_fit_ln_tau_Tmin = Tmin
+        self.cheb_fit_ln_tau_Tmax = Tmax
+        self.cheb_fit_ln_tau_Tc = Tc
+        self.cheb_fit_ln_tau_coeffs = cheb_fit_coeffs
+        self.T_limits[CHEB_FIT_LN_TAU] = (Tmin, Tmax)
+
+
+    def _set_exp_cheb_fit_ln_tau(self, cheb_fit):
+        if len(cheb_fit) != 4:
+            raise ValueError("exp_cheb_fit_ln_tau should be a tuple of 4 "
+                             "elements, in order (Tmin, Tmax, Tc, coefficients) "
+                             "with the coefficients being an interable")
+            
+        Tmin, Tmax, Tc = constants = cheb_fit[0:3]
+        for v in constants:
+            if v is None:
+                raise ValueError("exp_cheb_fit_ln_tau contains a None")
+            if isnan(v):
+                raise ValueError("exp_cheb_fit_ln_tau contains a nan")
+        cheb_fit_coeffs = cheb_fit[3]
+        self.exp_cheb_fit_ln_tau_Tmin = Tmin
+        self.exp_cheb_fit_ln_tau_Tmax = Tmax
+        self.exp_cheb_fit_ln_tau_Tc = Tc
+        self.exp_cheb_fit_ln_tau_coeffs = cheb_fit_coeffs
+        self.T_limits[EXP_CHEB_FIT_LN_TAU] = (Tmin, Tmax)
+
+    def _set_stablepoly_fit(self, stablepoly_fit):
+        if len(stablepoly_fit) != 3:
+            raise ValueError("stablepoly_fit should be a tuple of 3 "
+                             "elements, in order (Tmin, Tmax, coefficients) "
+                             "with the coefficients being an interable")
+            
+        Tmin, Tmax = constants = stablepoly_fit[0:2]
+        for v in constants:
+            if v is None:
+                raise ValueError("stablepoly_fit contains a None")
+            if isnan(v):
+                raise ValueError("stablepoly_fit contains a nan")
+        stablepoly_fit_coeffs = stablepoly_fit[2]
+        self.stablepoly_fit_Tmin = Tmin
+        self.stablepoly_fit_Tmax = Tmax
+        self.stablepoly_fit_coeffs = stablepoly_fit_coeffs
+        self.stablepoly_fit_offset, self.stablepoly_fit_scale = polynomial_offset_scale(Tmin, Tmax)
+        
+        self.T_limits[STABLEPOLY_FIT] = (Tmin, Tmax)
+        
+        
+        self.stablepoly_fit_Tmax_value, self.stablepoly_fit_Tmax_slope, self.stablepoly_fit_Tmax_dT2 = horner_stable_and_der2(self.stablepoly_fit_Tmax, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)
+        self.stablepoly_fit_Tmin_value, self.stablepoly_fit_Tmin_slope, self.stablepoly_fit_Tmin_dT2 = horner_stable_and_der2(self.stablepoly_fit_Tmin, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)
+
+    def _set_exp_stablepoly_fit(self, stablepoly_fit):
+        if len(stablepoly_fit) != 3:
+            raise ValueError("exp_stablepoly_fit should be a tuple of 3 "
+                             "elements, in order (Tmin, Tmax, coefficients) "
+                             "with the coefficients being an interable")
+            
+        Tmin, Tmax = constants = stablepoly_fit[0:2]
+        for v in constants:
+            if v is None:
+                raise ValueError("exp_stablepoly_fit contains a None")
+            if isnan(v):
+                raise ValueError("exp_stablepoly_fit contains a nan")
+        stablepoly_fit_coeffs = stablepoly_fit[2]
+        self.exp_stablepoly_fit_Tmin = Tmin
+        self.exp_stablepoly_fit_Tmax = Tmax
+        self.exp_stablepoly_fit_coeffs = stablepoly_fit_coeffs
+        self.T_limits[EXP_STABLEPOLY_FIT] = (Tmin, Tmax)
+        
+        
+
+    def _set_stablepoly_fit_ln_tau(self, stablepoly_fit):
+        if len(stablepoly_fit) != 4:
+            raise ValueError("stablepoly_fit_ln_tau should be a tuple of 4 "
+                             "elements, in order (Tmin, Tmax, Tc, coefficients) "
+                             "with the coefficients being an interable")
+            
+        Tmin, Tmax, Tc = constants = stablepoly_fit[0:3]
+        for v in constants:
+            if v is None:
+                raise ValueError("stablepoly_fit_ln_tau contains a None")
+            if isnan(v):
+                raise ValueError("stablepoly_fit_ln_tau contains a nan")
+        stablepoly_fit_coeffs = stablepoly_fit[3]
+        self.stablepoly_fit_ln_tau_Tmin = Tmin
+        self.stablepoly_fit_ln_tau_Tmax = Tmax
+        self.stablepoly_fit_ln_tau_Tc = Tc
+        self.stablepoly_fit_ln_tau_coeffs = stablepoly_fit_coeffs
+        self.T_limits[STABLEPOLY_FIT_LN_TAU] = (Tmin, Tmax)
+
+    def _set_exp_stablepoly_fit_ln_tau(self, stablepoly_fit):
+        if len(stablepoly_fit) != 4:
+            raise ValueError("exp_stablepoly_fit_ln_tau should be a tuple of 4 "
+                             "elements, in order (Tmin, Tmax, Tc, coefficients) "
+                             "with the coefficients being an interable")
+            
+        Tmin, Tmax, Tc = constants = stablepoly_fit[0:3]
+        for v in constants:
+            if v is None:
+                raise ValueError("exp_stablepoly_fit_ln_tau contains a None")
+            if isnan(v):
+                raise ValueError("exp_stablepoly_fit_ln_tau contains a nan")
+        stablepoly_fit_coeffs = stablepoly_fit[3]
+        self.exp_stablepoly_fit_ln_tau_Tmin = Tmin
+        self.exp_stablepoly_fit_ln_tau_Tmax = Tmax
+        self.exp_stablepoly_fit_ln_tau_Tc = Tc
+        self.exp_stablepoly_fit_ln_tau_coeffs = stablepoly_fit_coeffs
+        self.T_limits[EXP_STABLEPOLY_FIT_LN_TAU] = (Tmin, Tmax)
     
     def _set_exp_poly_fit(self, poly_fit):
         if len(poly_fit) != 3:
@@ -1934,7 +2103,9 @@ class TDependentProperty(object):
     def as_poly_fit(self):
         method = self.method
         use_method = None
-        possible_methods = (POLY_FIT, EXP_POLY_FIT, POLY_FIT_LN_TAU, EXP_POLY_FIT_LN_TAU)
+        possible_methods = (POLY_FIT, EXP_POLY_FIT, POLY_FIT_LN_TAU, EXP_POLY_FIT_LN_TAU,
+                            STABLEPOLY_FIT, EXP_STABLEPOLY_FIT, STABLEPOLY_FIT_LN_TAU, EXP_STABLEPOLY_FIT_LN_TAU, 
+                            CHEB_FIT, EXP_CHEB_FIT, CHEB_FIT_LN_TAU, EXP_CHEB_FIT_LN_TAU)
         if method in possible_methods:
             use_method = method
         else:
@@ -1965,6 +2136,46 @@ class TDependentProperty(object):
                   repr(self.exp_poly_fit_ln_tau_Tmin), repr(self.exp_poly_fit_ln_tau_Tmax),
                   repr(self.exp_poly_fit_ln_tau_Tc),
                   repr(self.exp_poly_fit_ln_tau_coeffs))
+        elif method == STABLEPOLY_FIT:
+            return '%s(load_data=False, stablepoly_fit=(%s, %s, %s))' %(self.__class__.__name__,
+                  repr(self.stablepoly_fit_Tmin), repr(self.stablepoly_fit_Tmax),
+                  repr(self.stablepoly_fit_coeffs))
+        elif method == EXP_STABLEPOLY_FIT:
+            return '%s(load_data=False, exp_stablepoly_fit=(%s, %s, %s))' %(self.__class__.__name__,
+                  repr(self.exp_stablepoly_fit_Tmin), repr(self.exp_stablepoly_fit_Tmax),
+                  repr(self.exp_stablepoly_fit_coeffs))
+        elif method == STABLEPOLY_FIT_LN_TAU:
+            return '%s(load_data=False, Tc=%s, stablepoly_fit_ln_tau=(%s, %s, %s, %s))' %(self.__class__.__name__,
+                  repr(self.stablepoly_fit_ln_tau_Tc),
+                  repr(self.stablepoly_fit_ln_tau_Tmin), repr(self.stablepoly_fit_ln_tau_Tmax),
+                  repr(self.stablepoly_fit_ln_tau_Tc),
+                  repr(self.stablepoly_fit_ln_tau_coeffs))
+        elif method == EXP_STABLEPOLY_FIT_LN_TAU:
+            return '%s(load_data=False, Tc=%s, exp_stablepoly_fit_ln_tau=(%s, %s, %s, %s))' %(self.__class__.__name__,
+                  repr(self.exp_stablepoly_fit_ln_tau_Tc),
+                  repr(self.exp_stablepoly_fit_ln_tau_Tmin), repr(self.exp_stablepoly_fit_ln_tau_Tmax),
+                  repr(self.exp_stablepoly_fit_ln_tau_Tc),
+                  repr(self.exp_stablepoly_fit_ln_tau_coeffs))
+        elif method == CHEB_FIT:
+            return '%s(load_data=False, cheb_fit=(%s, %s, %s))' %(self.__class__.__name__,
+                  repr(self.cheb_fit_Tmin), repr(self.cheb_fit_Tmax),
+                  repr(self.cheb_fit_coeffs))
+        elif method == EXP_CHEB_FIT:
+            return '%s(load_data=False, exp_cheb_fit=(%s, %s, %s))' %(self.__class__.__name__,
+                  repr(self.exp_cheb_fit_Tmin), repr(self.exp_cheb_fit_Tmax),
+                  repr(self.exp_cheb_fit_coeffs))
+        elif method == CHEB_FIT_LN_TAU:
+            return '%s(load_data=False, Tc=%s, cheb_fit_ln_tau=(%s, %s, %s, %s))' %(self.__class__.__name__,
+                  repr(self.cheb_fit_ln_tau_Tc),
+                  repr(self.cheb_fit_ln_tau_Tmin), repr(self.cheb_fit_ln_tau_Tmax),
+                  repr(self.cheb_fit_ln_tau_Tc),
+                  repr(self.cheb_fit_ln_tau_coeffs))
+        elif method == EXP_CHEB_FIT_LN_TAU:
+            return '%s(load_data=False, Tc=%s, exp_cheb_fit_ln_tau=(%s, %s, %s, %s))' %(self.__class__.__name__,
+                  repr(self.exp_cheb_fit_ln_tau_Tc),
+                  repr(self.exp_cheb_fit_ln_tau_Tmin), repr(self.exp_cheb_fit_ln_tau_Tmax),
+                  repr(self.exp_cheb_fit_ln_tau_Tc),
+                  repr(self.exp_cheb_fit_ln_tau_coeffs))
 
     def _base_calculate(self, T, method):
         if method == POLY_FIT:
@@ -1975,6 +2186,8 @@ class TDependentProperty(object):
             return horner_backwards_ln_tau(T, self.poly_fit_ln_tau_Tc, self.poly_fit_ln_tau_coeffs)
         elif method == EXP_POLY_FIT_LN_TAU:
             return exp_horner_backwards_ln_tau(T, self.exp_poly_fit_ln_tau_Tc, self.exp_poly_fit_ln_tau_coeffs)
+        elif method == STABLEPOLY_FIT:
+            return horner_stable(T, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)
         elif method in self.tabular_data:
             return self.interpolate(T, method)
         elif method in self.local_methods:
@@ -2611,6 +2824,15 @@ class TDependentProperty(object):
                 return horner_backwards_ln_tau_and_der2(T, self.poly_fit_ln_tau_Tc, self.poly_fit_ln_tau_coeffs)[2]
             if order == 3:
                 return horner_backwards_ln_tau_and_der3(T, self.poly_fit_ln_tau_Tc, self.poly_fit_ln_tau_coeffs)[3]
+        if method == STABLEPOLY_FIT:
+            if order == 1:
+                return horner_stable_and_der(T, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)[1]
+            if order == 2:
+                return horner_stable_and_der2(T, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)[2]
+            if order == 3:
+                return horner_stable_and_der3(T, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)[3]
+            if order == 4:
+                return horner_stable_and_der4(T, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)[4]
 
         pts = 1 + order*2
         dx = T*1e-6
@@ -3384,6 +3606,16 @@ class TDependentProperty(object):
         poly_fit_ln_tau = kwargs.get('poly_fit_ln_tau', None)
         exp_poly_fit_ln_tau = kwargs.get('exp_poly_fit_ln_tau', None)
         
+        cheb_fit = kwargs.get('cheb_fit', None)
+        exp_cheb_fit = kwargs.get('exp_cheb_fit', None)
+        cheb_fit_ln_tau = kwargs.get('cheb_fit_ln_tau', None)
+        exp_cheb_fit_ln_tau = kwargs.get('exp_cheb_fit_ln_tau', None)
+
+        stablepoly_fit = kwargs.get('stablepoly_fit', None)
+        exp_stablepoly_fit = kwargs.get('exp_stablepoly_fit', None)
+        stablepoly_fit_ln_tau = kwargs.get('stablepoly_fit_ln_tau', None)
+        exp_stablepoly_fit_ln_tau = kwargs.get('exp_stablepoly_fit_ln_tau', None)
+
         method =  kwargs.get('method', getattr(self, '_method', None))
         if poly_fit is not None and len(poly_fit):
             self._set_poly_fit(poly_fit)
@@ -3401,6 +3633,38 @@ class TDependentProperty(object):
             self._set_exp_poly_fit_ln_tau(exp_poly_fit_ln_tau)
             method = EXP_POLY_FIT_LN_TAU
             self.all_methods.add(EXP_POLY_FIT_LN_TAU)
+        if stablepoly_fit is not None and len(stablepoly_fit):
+            self._set_stablepoly_fit(stablepoly_fit)
+            method = STABLEPOLY_FIT
+            self.all_methods.add(STABLEPOLY_FIT)
+        if exp_stablepoly_fit is not None and len(exp_stablepoly_fit):
+            method = EXP_STABLEPOLY_FIT
+            self._set_exp_stablepoly_fit(exp_stablepoly_fit)
+            self.all_methods.add(EXP_STABLEPOLY_FIT)
+        if stablepoly_fit_ln_tau is not None and len(stablepoly_fit_ln_tau):
+            method = STABLEPOLY_FIT_LN_TAU
+            self._set_stablepoly_fit_ln_tau(stablepoly_fit_ln_tau)
+            self.all_methods.add(STABLEPOLY_FIT_LN_TAU)
+        if exp_stablepoly_fit_ln_tau is not None and len(exp_stablepoly_fit_ln_tau):
+            self._set_exp_stablepoly_fit_ln_tau(exp_stablepoly_fit_ln_tau)
+            method = EXP_STABLEPOLY_FIT_LN_TAU
+            self.all_methods.add(EXP_STABLEPOLY_FIT_LN_TAU)
+        if cheb_fit is not None and len(cheb_fit):
+            self._set_cheb_fit(cheb_fit)
+            method = CHEB_FIT
+            self.all_methods.add(CHEB_FIT)
+        if exp_cheb_fit is not None and len(exp_cheb_fit):
+            method = EXP_CHEB_FIT
+            self._set_exp_cheb_fit(exp_cheb_fit)
+            self.all_methods.add(EXP_CHEB_FIT)
+        if cheb_fit_ln_tau is not None and len(cheb_fit_ln_tau):
+            method = CHEB_FIT_LN_TAU
+            self._set_cheb_fit_ln_tau(cheb_fit_ln_tau)
+            self.all_methods.add(CHEB_FIT_LN_TAU)
+        if exp_cheb_fit_ln_tau is not None and len(exp_cheb_fit_ln_tau):
+            self._set_exp_cheb_fit_ln_tau(exp_cheb_fit_ln_tau)
+            method = EXP_CHEB_FIT_LN_TAU
+            self.all_methods.add(EXP_CHEB_FIT_LN_TAU)
         if method is None:
             all_methods = self.all_methods
             for i in self.ranked_methods: 
