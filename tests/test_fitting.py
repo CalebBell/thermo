@@ -31,13 +31,18 @@ from math import log, exp
 
 from thermo.eos import PR
 from chemicals import SMK
+from thermo.fitting import FIT_CHEBTOOLS_CHEB, FIT_CHEBTOOLS_POLY, FIT_CHEBTOOLS_STABLEPOLY, FIT_NUMPY_POLY, FIT_NUMPY_STABLEPOLY
 
 try:
     import ChebTools
     has_ChebTools = True
 except:
     has_ChebTools = False
+
+
 def test_poly_fit_statistics():
+    
+    
     eos = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400., P=1E6)
     coeffs_linear_short = [4.237517714500429e-17, -1.6220845282077796e-13, 2.767061931081117e-10, -2.7334899251582114e-07, 0.00017109676992782628, -0.06958709998929116, 18.296622011252442, -3000.9526306002426, 279584.4945619958, -11321565.153797101]
     assert_close1d(poly_fit_statistics(eos.Psat, coeffs_linear_short, 350, 370, pts=20),
@@ -67,32 +72,33 @@ def test_poly_fit_statistics():
 def test_fit_cheb_poly():
     eos = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400., P=1E6)
 
-    coeffs_linear_short = fit_cheb_poly(eos.Psat, 350, 370, 10)
+    coeffs_linear_short = fit_polynomial(eos.Psat, 350, 370, 10, method=FIT_CHEBTOOLS_POLY)
     for T in linspace(350, 370, 30):
         assert_close(eos.Psat(T), horner(coeffs_linear_short, T), rtol=1e-9)
 
 
 
     # Test transformation of the output only
-    coeffs_log_wide = fit_cheb_poly(eos.Psat, 200, 400, 15, interpolation_property=lambda x: log(x),
-                                            interpolation_property_inv=lambda x: exp(x))
+    coeffs_log_wide = fit_polynomial(eos.Psat, 200, 400, 15, interpolation_property=lambda x: log(x),
+                                     interpolation_property_inv=lambda x: exp(x), method=FIT_CHEBTOOLS_POLY)
 
     for T in linspace(200, 400, 30):
         assert_close(eos.Psat(T), exp(horner(coeffs_log_wide, T)), rtol=1e-9)
 
     # Test ability to have other arguments depend on it
-    coeffs_linear_short_under_P = fit_cheb_poly(lambda T, P: eos.to(T=T, P=P).V_l, 350, 370, 7,
-                                                arg_func=lambda T: (eos.Psat(T)*1.1,))
+    coeffs_linear_short_under_P = fit_polynomial(lambda T, P: eos.to(T=T, P=P).V_l, 350, 370, 7,
+                                                 arg_func=lambda T: (eos.Psat(T)*1.1,), method=FIT_CHEBTOOLS_POLY)
 
     for T in linspace(350, 370, 30):
         P = eos.Psat(T)*1.1
         assert_close(eos.to(T=T, P=P).V_l, horner(coeffs_linear_short_under_P, T), rtol=1e-9)
 
     # Test ability to have other arguments depend on it
-    coeffs_log_short_above_P = fit_cheb_poly(lambda T, P: eos.to(T=T, P=P).V_g, 350, 370, 7,
-                                             arg_func=lambda T: (eos.Psat(T)*.7,),
-                                             interpolation_property=lambda x: log(x),
-                                             interpolation_property_inv=lambda x: exp(x))
+    coeffs_log_short_above_P = fit_polynomial(lambda T, P: eos.to(T=T, P=P).V_g, 350, 370, 7,
+                                              arg_func=lambda T: (eos.Psat(T)*.7,),
+                                              interpolation_property=lambda x: log(x),
+                                              interpolation_property_inv=lambda x: exp(x),
+                                              method=FIT_CHEBTOOLS_POLY)
     for T in linspace(350, 370, 30):
         P = eos.Psat(T)*0.7
         assert_close(eos.to(T=T, P=P).V_g, exp(horner(coeffs_log_short_above_P, T)), rtol=1e-9)
@@ -100,15 +106,16 @@ def test_fit_cheb_poly():
 
     # test interpolation_x
     Tc = 750.0
-    coeffs_linear_short_SMK_x_trans = fit_cheb_poly(lambda T: SMK(T, Tc=Tc, omega=0.04), 200, 748, 20,
-                                            interpolation_x=lambda T: log(1. - T/Tc),
-                                            interpolation_x_inv=lambda x: -(exp(x)-1.0)*Tc)
+    coeffs_linear_short_SMK_x_trans = fit_polynomial(lambda T: SMK(T, Tc=Tc, omega=0.04), 200, 748, 20,
+                                                     interpolation_x=lambda T: log(1. - T/Tc),
+                                                     interpolation_x_inv=lambda x: -(exp(x)-1.0)*Tc,
+                                                     method=FIT_CHEBTOOLS_POLY)
     for T in linspace(200, 748, 30):
         x =  log(1. - T/Tc)
         assert_close(SMK(T, Tc=Tc, omega=0.04), horner(coeffs_linear_short_SMK_x_trans, x), rtol=1e-7)
 
     # Case with one coefficient and no T bounds
-    assert_close1d(fit_cheb_poly(func=lambda T: 102.5, low=298.15, high=298.15, n=1), [102.5])
+    assert_close1d(fit_polynomial(func=lambda T: 102.5, low=298.15, high=298.15, n=1, method=FIT_CHEBTOOLS_POLY), [102.5])
 
 def test_Twu91_check_params():
     assert Twu91_check_params((0.694911381318495, 0.919907783415812, 1.70412689631515)) # Ian Bell, methanol

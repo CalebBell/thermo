@@ -25,15 +25,16 @@ from __future__ import division
 __all__ = ['alpha_Twu91_objf', 'alpha_Twu91_objfc', 'fit_function',
            'Twu91_check_params', 'postproc_lmfit',
            'alpha_poly_objf', 'alpha_poly_objfc', 'poly_check_params',
-           'fit_cheb_poly', 'poly_fit_statistics', 'fit_cheb_poly_auto',
+           'fit_polynomial', 'poly_fit_statistics', 'fit_cheb_poly_auto',
            'data_fit_statistics', 'fit_customized']
 
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, newton,
                              bisect, inf, polyder, chebder, std, min_max_ratios,
-                             trunc_exp, secant, linspace, logspace,
+                             trunc_exp, secant, linspace, logspace, stable_poly_to_unstable,
                              horner, horner_and_der2, horner_and_der3,
                              is_poly_positive, is_poly_negative,
+                             horner_stable, horner_stable_and_der, horner_stable_offset_scale,
                              max_abs_error, max_abs_rel_error, max_squared_error, 
                              max_squared_rel_error, mean_abs_error, mean_abs_rel_error, 
                              mean_squared_error, mean_squared_rel_error,
@@ -42,8 +43,7 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
 from fluids.constants import R
 import fluids, thermo
 try:
-    from numpy.polynomial.chebyshev import poly2cheb
-    from numpy.polynomial.chebyshev import cheb2poly
+    from numpy.polynomial.chebyshev import poly2cheb, cheb2poly, Chebyshev
     from numpy.polynomial.polynomial import Polynomial
 except:
     pass
@@ -53,10 +53,17 @@ except:
     pass
 
 ChebTools = None
-def fit_cheb_poly(func, low, high, n,
-                  interpolation_property=None, interpolation_property_inv=None,
-                  interpolation_x=lambda x: x, interpolation_x_inv=lambda x: x,
-                  arg_func=None):
+
+FIT_CHEBTOOLS_CHEB = 'ChebTools'
+FIT_CHEBTOOLS_POLY = 'ChebTools polynomial'
+FIT_CHEBTOOLS_STABLEPOLY = 'ChebTools stable polynomial'
+FIT_NUMPY_POLY = 'NumPy polynomial'
+FIT_NUMPY_STABLEPOLY = 'NumPy stable polynomial'
+
+def fit_polynomial(func, low, high, n,
+                   interpolation_property=None, interpolation_property_inv=None,
+                   interpolation_x=lambda x: x, interpolation_x_inv=lambda x: x,
+                   arg_func=None, method=FIT_CHEBTOOLS_POLY):
     r'''Fit a function of one variable to a polynomial of degree `n` using the
     Chebyshev approximation technique. Transformations of the base function
     are allowed as lambdas.
@@ -94,6 +101,8 @@ def fit_cheb_poly(func, low, high, n,
     arg_func : None or callable
         Function which is called with the value of `x` in the original domain,
         and that returns arguments to `func`.
+    method : str
+        Which fitting method to use, [-]
 
     Returns
     -------
@@ -149,17 +158,30 @@ def fit_cheb_poly(func, low, high, n,
     func_fun = np.vectorize(func_fun)
     if n == 1:
         coeffs = [func_fun(0.5*(low + high)).tolist()]
+        return coeffs
     else:
-        cheb_fun = ChebTools.generate_Chebyshev_expansion(n-1, func_fun, low, high)
-
-        coeffs = cheb_fun.coef()
-        coeffs = cheb2poly(coeffs)[::-1].tolist() # Convert to polynomial basis
-    # Mix in low high limits to make it a normal polynomial
-    if high != low:
-        # Handle the case of no transformation, no limits
-        my_poly = Polynomial([-0.5*(high + low)*2.0/(high - low), 2.0/(high - low)])
-        coeffs = horner(coeffs, my_poly).coef[::-1].tolist()
-    return coeffs
+        if method in (FIT_CHEBTOOLS_CHEB, FIT_CHEBTOOLS_POLY, FIT_CHEBTOOLS_STABLEPOLY):
+            cheb_fun = ChebTools.generate_Chebyshev_expansion(n-1, func_fun, low, high)
+            cheb_coeffs = cheb_fun.coef()
+            
+            if method == FIT_CHEBTOOLS_STABLEPOLY or method == FIT_CHEBTOOLS_POLY:
+                coeffs = cheb2poly(cheb_coeffs)[::-1].tolist()
+            if method == FIT_CHEBTOOLS_CHEB:
+                return cheb_coeffs.tolist()
+            elif method == FIT_CHEBTOOLS_STABLEPOLY:
+            # Can use Polynomial(coeffs[::-1], domain=(low, high)) to evaluate, or horner_domain(x, coeffs, xmin, xmax)
+                return coeffs
+            elif method == FIT_CHEBTOOLS_POLY:
+                return stable_poly_to_unstable(coeffs, low, high)
+        elif method in (FIT_NUMPY_POLY, FIT_NUMPY_STABLEPOLY):
+            x = linspace(low, high, 200)
+            y = [func_fun(xi) for xi in x]
+            coeffs = Polynomial.fit(x, y, n)
+            coeffs = coefs[::-1].tolist()
+            if method == FIT_NUMPY_STABLEPOLY:
+                return coeffs
+            elif method == FIT_NUMPY_POLY:
+                return stable_poly_to_unstable(coeffs, low, high)
 
 def data_fit_statistics(xs, actual_pts, calc_pts):
     pts = len(xs)
@@ -281,10 +303,10 @@ def fit_many_cheb_poly(func, low, high, ns, eval_pts=30,
                   arg_func=None):
 
     def a_fit(n, eval_pts=eval_pts):
-        coeffs = fit_cheb_poly(func, low, high, n,
-                  interpolation_property=interpolation_property, interpolation_property_inv=interpolation_property_inv,
-                  interpolation_x=interpolation_x, interpolation_x_inv=interpolation_x_inv,
-                  arg_func=arg_func)
+        coeffs = fit_polynomial(func, low, high, n,
+                                interpolation_property=interpolation_property, interpolation_property_inv=interpolation_property_inv,
+                                interpolation_x=interpolation_x, interpolation_x_inv=interpolation_x_inv,
+                                arg_func=arg_func)
         err_avg, err_std, min_ratio, max_ratio = poly_fit_statistics(func, coeffs, low, high, pts=eval_pts,
                                 interpolation_property_inv=interpolation_property_inv,
                                 interpolation_x=interpolation_x,

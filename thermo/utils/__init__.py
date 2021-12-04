@@ -33,7 +33,7 @@ Temperature Dependent
 ---------------------
 .. autoclass:: TDependentProperty
    :members: name, units, extrapolation, property_min, property_max,
-             critical_zero, ranked_methods, __call__, fit_polynomial,
+             critical_zero, ranked_methods, __call__, polynomial_from_method,
              method, valid_methods, test_property_validity,
              T_dependent_property, plot_T_dependent_property, interpolate,
              add_method, add_tabular_data, fit_add_model, fit_data_to_model, solve_property,
@@ -104,4 +104,6 @@ __all__ = (
     *t_dependent_property.__all__,
     *tp_dependent_property.__all__,
     *mixture_property.__all__,
+    NEGLIGIBLE, LINEAR, POLY_FIT, EXP_POLY_FIT, POLY_FIT_LN_TAU, EXP_POLY_FIT_LN_TAU, 
+    DIPPR_PERRY_8E, VDI_TABULAR, VDI_PPDS, COOLPROP, 
 )
