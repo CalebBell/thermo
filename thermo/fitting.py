@@ -34,7 +34,7 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              trunc_exp, secant, linspace, logspace, stable_poly_to_unstable,
                              horner, horner_and_der2, horner_and_der3,
                              is_poly_positive, is_poly_negative,
-                             horner_stable, horner_stable_and_der, horner_stable_offset_scale,
+                             horner_stable, horner_stable_and_der,
                              max_abs_error, max_abs_rel_error, max_squared_error, 
                              max_squared_rel_error, mean_abs_error, mean_abs_rel_error, 
                              mean_squared_error, mean_squared_rel_error,
@@ -176,8 +176,9 @@ def fit_polynomial(func, low, high, n,
         elif method in (FIT_NUMPY_POLY, FIT_NUMPY_STABLEPOLY):
             x = linspace(low, high, 200)
             y = [func_fun(xi) for xi in x]
-            coeffs = Polynomial.fit(x, y, n)
-            coeffs = coefs[::-1].tolist()
+            fit = Polynomial.fit(x, y, n)
+            coeffs = fit.coef
+            coeffs = coeffs[::-1].tolist()
             if method == FIT_NUMPY_STABLEPOLY:
                 return coeffs
             elif method == FIT_NUMPY_POLY:
@@ -199,7 +200,7 @@ def data_fit_statistics(xs, actual_pts, calc_pts):
 def poly_fit_statistics(func, coeffs, low, high, pts=200,
                         interpolation_property_inv=None,
                         interpolation_x=lambda x: x,
-                        arg_func=None):
+                        arg_func=None, method='polynomial'):
     r'''Function to check how accurate a fit function is to a polynomial.
 
     This function uses the asolute relative error definition.
@@ -229,6 +230,9 @@ def poly_fit_statistics(func, coeffs, low, high, pts=200,
     arg_func : None or callable
         Function which is called with the value of `x` in the original domain,
         and that returns arguments to `func`.
+    method : str
+        Which type of polynomial the coefficients are;
+        one of 'polynomial', 'stablepolynomial', 'chebyshev' [-]
 
     Returns
     -------
@@ -251,9 +255,15 @@ def poly_fit_statistics(func, coeffs, low, high, pts=200,
     # Get the low, high, and x points in the transformed domain
     low, high = interpolation_x(low_orig), interpolation_x(high_orig)
     all_points = [interpolation_x(v) for v in all_points_orig]
+    offset, scale = polynomial_offset_scale(low, high)
 
     # Calculate the fit values
-    calc_pts = [horner(coeffs, x) for x in all_points]
+    if method == 'polynomial:
+        calc_pts = [horner(coeffs, x) for x in all_points]
+    elif method == 'stablepolynomial':
+        calc_pts = [horner_stable(x, coeffs, offset, scale) for x in all_points]
+    elif method == 'chebyshev':
+        calc_pts = [chebval(x, coeffs, offset, scale) for x in all_points]
     if interpolation_property_inv:
         for i in range(pts):
             calc_pts[i] = interpolation_property_inv(calc_pts[i])
