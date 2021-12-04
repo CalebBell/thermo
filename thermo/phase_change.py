@@ -297,11 +297,6 @@ class EnthalpyVaporization(TDependentProperty):
         super(EnthalpyVaporization, self).__init__(extrapolation, **kwargs)
 
 
-    def as_poly_fit(self):
-        return '%s(poly_fit=(%s, %s, %s, %s))' %(self.__class__.__name__,
-                  repr(self.poly_fit_Tmin), repr(self.poly_fit_Tmax),
-                  repr(self.poly_fit_Tc), repr(self.poly_fit_coeffs))
-
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
@@ -390,9 +385,6 @@ class EnthalpyVaporization(TDependentProperty):
                 VDI_PPDS: phase_change.phase_change_data_VDI_PPDS_4.index,
                 }
 
-    def _set_poly_fit(self, poly_fit):
-        self.poly_fit_Tc = poly_fit[2]
-        super()._set_poly_fit((poly_fit[0], poly_fit[1], poly_fit[3]))
 
     def calculate(self, T, method):
         r'''Method to calculate heat of vaporization of a liquid at
@@ -413,13 +405,7 @@ class EnthalpyVaporization(TDependentProperty):
         Hvap : float
             Heat of vaporization of the liquid at T, [J/mol]
         '''
-        if method == POLY_FIT:
-            if T > self.poly_fit_Tc:
-                Hvap = 0.0
-            else:
-                Hvap = horner(self.poly_fit_coeffs, log(1.0 - T/self.poly_fit_Tc))
-
-        elif method == COOLPROP:
+        if method == COOLPROP:
             Hvap = PropsSI('HMOLAR', 'T', T, 'Q', 1, self.CASRN) - PropsSI('HMOLAR', 'T', T, 'Q', 0, self.CASRN)
         elif method == DIPPR_PERRY_8E:
             Hvap = EQ106(T, *self.Perrys2_150_coeffs)
@@ -647,7 +633,7 @@ class EnthalpySublimation(TDependentProperty):
 
     custom_args = ('Tm', 'Tt', 'Cpg', 'Cps', 'Hvap')
     def __init__(self, CASRN='', Tm=None, Tt=None, Cpg=None, Cps=None,
-                 Hvap=None, extrapolation=None, **kwargs):
+                 Hvap=None, extrapolation='linear', **kwargs):
         self.CASRN = CASRN
         self.Tm = Tm
         self.Tt = Tt
@@ -713,15 +699,7 @@ class EnthalpySublimation(TDependentProperty):
         Hsub : float
             Heat of sublimation of the solid at T, [J/mol]
         '''
-        if method == POLY_FIT:
-            if T < self.poly_fit_Tmin:
-                Hsub = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
-            elif T > self.poly_fit_Tmax:
-                Hsub = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
-            else:
-                Hsub = horner(self.poly_fit_coeffs, T)
-
-        elif method == GHARAGHEIZI_HSUB_298:
+        if method == GHARAGHEIZI_HSUB_298:
             Hsub = self.GHARAGHEIZI_Hsub
         elif method == GHARAGHEIZI_HSUB:
             T_base = 298.15

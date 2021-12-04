@@ -557,19 +557,23 @@ def test_HeatCapacityGas_polynomial_input_forms():
     
     for v in (val0, val1, val2):
         assert_close(v, 1.60401, rtol=1e-13)
+    
+    for o in (obj_basic, obj_polynomial, obj_bestfit):
+        assert HeatCapacityGas.from_json(o.as_json()) == o
+        assert eval(str(o)) == o
 
 @pytest.mark.slow
 @pytest.mark.fuzz
 def test_locked_integral():
-    obj = HeatCapacityGas(load_data=False, CASRN="7732-18-5", similarity_variable=0.16652530518537598, MW=18.01528, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))
+    obj = HeatCapacityGas(load_data=False, CASRN="7732-18-5", similarity_variable=0.16652530518537598, MW=18.01528, 
+                          extrapolation="linear", method="POLY_FIT", 
+                          poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))
 
-    def to_int(T):
-        return obj.calculate(T, 'POLY_FIT')
     for i in range(10):
         T1 = uniform(0, 4000)
         T2 = uniform(0, 4000)
-        quad_ans = quad(to_int, T1, T2)[0]
-        analytical_ans = obj.calculate_integral(T1, T2, "POLY_FIT")
+        quad_ans = quad(obj, T1, T2)[0]
+        analytical_ans = obj.T_dependent_property_integral(T1, T2)
         assert_close(quad_ans, analytical_ans, rtol=1e-6)
 
 
@@ -579,10 +583,10 @@ def test_locked_integral_over_T():
     obj = HeatCapacityGas(load_data=False, CASRN="7732-18-5", similarity_variable=0.16652530518537598, MW=18.01528, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))
 
     def to_int(T):
-        return obj.calculate(T, 'POLY_FIT')/T
+        return obj(T)/T
     for i in range(10):
         T1 = uniform(0, 4000)
         T2 = uniform(0, 4000)
         quad_ans = quad(to_int, T1, T2)[0]
-        analytical_ans = obj.calculate_integral_over_T(T1, T2, "POLY_FIT")
+        analytical_ans = obj.T_dependent_property_integral_over_T(T1, T2)
         assert_close(quad_ans, analytical_ans, rtol=1e-5)

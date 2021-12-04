@@ -550,14 +550,7 @@ class VolumeLiquid(TPDependentProperty):
         Vm : float
             Molar volume of the liquid at T and a low pressure, [m^3/mol]
         '''
-        if method == POLY_FIT:
-            if T < self.poly_fit_Tmin:
-                Vm = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
-            elif T > self.poly_fit_Tmax:
-                Vm = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
-            else:
-                Vm = horner(self.poly_fit_coeffs, T)
-        elif method == RACKETT:
+        if method == RACKETT:
             Vm = Rackett(T, self.Tc, self.Pc, self.Zc)
         elif method == YAMADA_GUNN:
             Vm = Yamada_Gunn(T, self.Tc, self.Pc, self.omega)
@@ -913,16 +906,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         Vm : float
             Molar volume of the liquid at T and a supercritical pressure, [m^3/mol]
         '''
-        if method == POLY_FIT:
-            if T < self.poly_fit_Tmin:
-                Vm = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
-            elif T > self.poly_fit_Tmax:
-                Vm = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
-            else:
-                Vm = horner(self.poly_fit_coeffs, T)
-        else:
-            return self._base_calculate(T, method)
-        return Vm
+        return self._base_calculate(T, method)
 
     def calculate_P(self, T, P, method):
         r'''Method to calculate pressure-dependent liquid molar volume at
@@ -1565,8 +1549,6 @@ class VolumeGas(TPDependentProperty):
                 validity = False
         elif method == COOLPROP:
             validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['gas', 'supercritical_gas', 'supercritical', 'supercritical_liquid']
-        elif method == POLY_FIT:
-            validity = True
         else:
             return super(VolumeGas, self).test_method_validity_P(T, P, method)
         return validity
@@ -1877,13 +1859,6 @@ class VolumeSolid(TDependentProperty):
             Vms = self.CRC_INORG_S_Vm
         elif method == GOODMAN:
             Vms = Goodman(T, self.Tt, self.Vml_Tt)
-        elif method == POLY_FIT:
-            if T < self.poly_fit_Tmin:
-                Vms = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
-            elif T > self.poly_fit_Tmax:
-                Vms = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
-            else:
-                Vms = horner(self.poly_fit_coeffs, T)
         else:
             return self._base_calculate(T, method)
         return Vms

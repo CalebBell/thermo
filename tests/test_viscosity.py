@@ -147,6 +147,16 @@ def test_ViscosityLiquid():
     with pytest.raises(Exception):
         EtOH.test_method_validity_P(300, 1E5, 'BADMETHOD')
 
+@pytest.mark.meta_T_dept
+def test_ViscosityLiquid_derivative_exp_poly_fit():
+    thing = ViscosityLiquid(load_data=False, method='linear', exp_poly_fit=(90.8, 190.554, [-4.2380635484289735e-14, 4.5493522318564076e-11, -2.116492796413691e-08, 5.572829307777471e-06, -0.0009082059294533955, 0.0937979289971011, -5.994475607852222, 216.68461775245618, -3398.7238594522332]))
+    # The first derivative should match closely.
+    assert_close(thing.T_dependent_property_derivative(190.553999999999),
+        thing.T_dependent_property_derivative(190.55400000001), rtol=1e-4)
+
+    assert_close(thing.T_dependent_property_derivative(90.80000000001),
+        thing.T_dependent_property_derivative(90.79999999999999), rtol=1e-5)
+
 @pytest.mark.fitting
 @pytest.mark.meta_T_dept
 def test_ViscosityLiquid_fitting0():

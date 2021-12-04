@@ -32,7 +32,8 @@ from thermo.phase_change import COOLPROP, VDI_PPDS, CLAPEYRON, LIU, ALIBAKHSHI, 
 
 @pytest.mark.meta_T_dept
 def test_EnthalpyVaporization():
-    EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, Psat=7872.2, Zg=0.9633, Zl=0.0024, CASRN='64-17-5')
+    EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954,
+                                Psat=7872.2, Zg=0.9633, Zl=0.0024, CASRN='64-17-5')
 
     EtOH.method = VDI_PPDS
     assert_close(EtOH.T_dependent_property(305), 42099.23631527565)
@@ -85,7 +86,8 @@ def test_EnthalpyVaporization():
     assert_close1d(Hvap_calc, Hvap_exp)
 
     # Test Clapeyron, without Zl
-    EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, Psat=7872.2, Zg=0.9633, CASRN='64-17-5')
+    EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954,
+                                Psat=7872.2, Zg=0.9633, CASRN='64-17-5')
     assert_close(EtOH.calculate(298.15, 'CLAPEYRON'), 37864.70507798813)
 
     EtOH = EnthalpyVaporization(Tb=351.39, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, Psat=7872.2, Zg=0.9633, CASRN='64-17-5')
@@ -112,7 +114,8 @@ def test_EnthalpyVaporization():
 @pytest.mark.meta_T_dept
 @pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_EnthalpyVaporization_CoolProp():
-    EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, Psat=7872.2, Zg=0.9633, Zl=0.0024, CASRN='64-17-5')
+    EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, 
+                                Psat=7872.2, Zg=0.9633, Zl=0.0024, CASRN='64-17-5')
 
     EtOH.method = COOLPROP
     assert_close(EtOH.T_dependent_property(305), 42062.9371631488)
@@ -159,12 +162,13 @@ def test_EnthalpyVaporization_Watson_extrapolation():
 def test_EnthalpyVaporization_bestfit_polynomial():
     coeffs = [9.661381155485653, 224.16316385569456, 2195.419519751738, 11801.26111760343, 37883.05110910901, 74020.46380982929, 87244.40329893673, 69254.45831263301, 61780.155823216155]
     Tc = 591.75
-    obj_bestfit = EnthalpyVaporization(Tc=Tc, poly_fit=(178.01, 586.749, Tc, coeffs))
     
     obj_polynomial = EnthalpyVaporization(Tc=Tc, polynomial_ln_tau_parameters={'test': {'coeffs': coeffs,
                                                         'Tmin': 178.01, 'Tmax': 586.749, 'Tc': Tc}})
     
-    vals = obj_polynomial(500), obj_bestfit(500)
+    assert EnthalpyVaporization.from_json(obj_polynomial.as_json()) == obj_polynomial
+
+    vals = obj_polynomial(500), 
     for v in vals:
         assert_close(v, 24168.867169087476, rtol=1e-13)
     
@@ -180,7 +184,9 @@ def test_EnthalpyVaporization_bestfit_polynomial_generic():
     assert_close(obj2.T_dependent_property_derivative(T, order=2), 0.037847046150971016, rtol=1e-14)
     assert_close(obj2.T_dependent_property_derivative(T, order=3), -0.001920502581912092, rtol=1e-13)
 
-    
+    assert EnthalpyVaporization.from_json(obj2.as_json()) == obj2
+    assert eval(str(obj2)) == obj2
+
 @pytest.mark.meta_T_dept
 def test_EnthalpySublimation_no_numpy():
     assert type(EnthalpySublimation(CASRN='1327-53-3').CRC_Hfus) is float

@@ -114,12 +114,12 @@ def test_SurfaceTension_exp_poly_fit_ln_tau():
     Tmin, Tmax = 233.22, 646.15
 
     # Create an object with no CAS, check a value
-    good_obj = SurfaceTension(exp_poly_fit_ln_tau=(Tmin, Tmax, Tc, coeffs))
+    good_obj = SurfaceTension(Tc=Tc, exp_poly_fit_ln_tau=(Tmin, Tmax, Tc, coeffs))
     expect = 0.07175344047522199
     assert_close(good_obj(300), expect, rtol=1e-12)
     
     # Create an object with a CAS, check a value
-    good_obj2 = SurfaceTension(CASRN='7732-18-5', exp_poly_fit_ln_tau=(Tmin, Tmax, Tc, coeffs))
+    good_obj2 = SurfaceTension(Tc=Tc, CASRN='7732-18-5', exp_poly_fit_ln_tau=(Tmin, Tmax, Tc, coeffs))
     assert_close(good_obj2(300), expect, rtol=1e-12)
 
     expect_der = -0.000154224581713238
@@ -129,6 +129,11 @@ def test_SurfaceTension_exp_poly_fit_ln_tau():
     assert_close(good_obj.T_dependent_property_derivative(300, order=2), expect_der2, rtol=1e-13)
 
 
+    assert SurfaceTension.from_json(good_obj2.as_json()) == good_obj2
+    assert SurfaceTension.from_json(good_obj.as_json()) == good_obj
+    assert eval(str(good_obj2)) == good_obj2
+    assert eval(str(good_obj)) == good_obj
+    
 @pytest.mark.meta_T_dept
 def test_SurfaceTension_exp_poly_ln_tau_extrapolate():
     coeffs = [1.1624065398371628, -1.9976745939643825]

@@ -431,7 +431,7 @@ def test_VaporPressure_extrapolation_solve_prop():
     assert_close(cycloheptane.solve_property(3e7), 979.2026813626704)
 
 def test_VaporPressure_bestfit_derivatives():
-    obj = VaporPressure(poly_fit=(175.7, 512.49, [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10,
+    obj = VaporPressure(exp_poly_fit=(175.7, 512.49, [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10,
                                                 -2.443464113936029e-07, 7.893819658700523e-05, -0.016615779444332356, 2.1842496316772264, -134.19766175812708]))
     assert_close(obj.T_dependent_property(300), 18601.061401014867, rtol=1e-11)
     assert_close(obj.T_dependent_property_derivative(300), 954.1652489206775, rtol=1e-11)
@@ -461,50 +461,61 @@ def test_VaporPressure_extrapolation_AB():
                      obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin+1e-6))
 
 
-@pytest.mark.meta_T_dept
-def test_VaporPressure_fast_Psat_poly_fit():
-    corr = VaporPressure(poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))
-    # Low temperature values - up to 612 Pa
-    assert_close(corr.solve_property(1e-5), corr.solve_prop_poly_fit(1e-5), rtol=1e-10)
-    assert_close(corr.solve_property(1), corr.solve_prop_poly_fit(1), rtol=1e-10)
-    assert_close(corr.solve_property(100), corr.solve_prop_poly_fit(100), rtol=1e-10)
+# @pytest.mark.meta_T_dept
+# def test_VaporPressure_fast_Psat_poly_fit():
+#     corr = VaporPressure(exp_poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))
+    
+#     # Low transition
+#     P_trans = corr.exp_poly_fit_Tmin_value
+#     assert_close(corr.solve_property(P_trans), corr.solve_property_exp_poly_fit(P_trans), rtol=1e-10)
+#     assert_close(corr.solve_property(P_trans + 1e-7), corr.solve_property_exp_poly_fit(P_trans + 1e-7), rtol=1e-10)
+    
+#     # High transition
+#     P_trans = corr.exp_poly_fit_Tmax_value
+#     assert_close(corr.solve_property(P_trans), corr.solve_property_exp_poly_fit(P_trans), rtol=1e-10)
+#     assert_close(corr.solve_property(P_trans + 1e-7), corr.solve_property_exp_poly_fit(P_trans + 1e-7), rtol=1e-10)
 
-    P_trans = exp(corr.poly_fit_Tmin_value)
-    assert_close(corr.solve_property(P_trans), corr.solve_prop_poly_fit(P_trans), rtol=1e-10)
-    assert_close(corr.solve_property(P_trans + 1e-7), corr.solve_prop_poly_fit(P_trans + 1e-7), rtol=1e-10)
 
-    # Solver region
-    assert_close(corr.solve_property(1e5), corr.solve_prop_poly_fit(1e5), rtol=1e-10)
-    assert_close(corr.solve_property(1e7), corr.solve_prop_poly_fit(1e7), rtol=1e-10)
+#     # Low temperature values - up to 612 Pa
+#     assert_close(corr.solve_property(1e-5), corr.solve_property_exp_poly_fit(1e-5), rtol=1e-10)
+#     assert_close(corr.solve_property(1), corr.solve_property_exp_poly_fit(1), rtol=1e-10)
+#     assert_close(corr.solve_property(100), corr.solve_property_exp_poly_fit(100), rtol=1e-10)
 
-    P_trans = exp(corr.poly_fit_Tmax_value)
-    assert_close(corr.solve_property(P_trans), corr.solve_prop_poly_fit(P_trans), rtol=1e-10)
-    assert_close(corr.solve_property(P_trans + 1e-7), corr.solve_prop_poly_fit(P_trans + 1e-7), rtol=1e-10)
 
-    # High T
-    assert_close(corr.solve_property(1e8), corr.solve_prop_poly_fit(1e8), rtol=1e-10)
+#     # Solver region
+#     assert_close(corr.solve_property(1e5), corr.solve_property_exp_poly_fit(1e5), rtol=1e-10)
+#     assert_close(corr.solve_property(1e7), corr.solve_property_exp_poly_fit(1e7), rtol=1e-10)
 
-    # Extrapolation
-    from thermo.vapor_pressure import POLY_FIT, BEST_FIT_AB, BEST_FIT_ABC
-    obj = VaporPressure(poly_fit=(178.01, 591.74, [-8.638045111752356e-20, 2.995512203611858e-16, -4.5148088801006036e-13, 3.8761537879200513e-10, -2.0856828984716705e-07, 7.279010846673517e-05, -0.01641020023565049, 2.2758331029405516, -146.04484159879843]))
-    assert_close(obj.calculate(1000, BEST_FIT_AB), 78666155.90418352, rtol=1e-10)
-    assert_close(obj.calculate(1000, BEST_FIT_ABC), 156467764.5930495, rtol=1e-10)
+#     # High T
+#     assert_close(corr.solve_property(1e8), corr.solve_property_exp_poly_fit(1e8), rtol=1e-10)
 
-    assert_close(obj.calculate(400, POLY_FIT), 157199.6909849476, rtol=1e-10)
-    assert_close(obj.calculate(400, BEST_FIT_AB), 157199.6909849476, rtol=1e-10)
-    assert_close(obj.calculate(400, BEST_FIT_ABC), 157199.6909849476, rtol=1e-10)
+#     # Extrapolation
+#     from thermo.vapor_pressure import POLY_FIT, BEST_FIT_AB, BEST_FIT_ABC
+#     obj = VaporPressure(poly_fit=(178.01, 591.74, [-8.638045111752356e-20, 2.995512203611858e-16, -4.5148088801006036e-13, 3.8761537879200513e-10, -2.0856828984716705e-07, 7.279010846673517e-05, -0.01641020023565049, 2.2758331029405516, -146.04484159879843]))
+#     assert_close(obj.calculate(1000, BEST_FIT_AB), 78666155.90418352, rtol=1e-10)
+#     assert_close(obj.calculate(1000, BEST_FIT_ABC), 156467764.5930495, rtol=1e-10)
+
+#     assert_close(obj.calculate(400, POLY_FIT), 157199.6909849476, rtol=1e-10)
+#     assert_close(obj.calculate(400, BEST_FIT_AB), 157199.6909849476, rtol=1e-10)
+#     assert_close(obj.calculate(400, BEST_FIT_ABC), 157199.6909849476, rtol=1e-10)
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_generic_polynomial_exp_parameters():
     coeffs = [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10,
                                                 -2.443464113936029e-07, 7.893819658700523e-05, -0.016615779444332356, 2.1842496316772264, -134.19766175812708]
     
-    obj_bestfit = VaporPressure(poly_fit=(175.7, 512.49, coeffs))
+    obj_bestfit = VaporPressure(exp_poly_fit=(175.7, 512.49, coeffs))
     obj_polynomial = VaporPressure(exp_polynomial_parameters={'test': {'coeffs': coeffs,
                                                         'Tmin': 175.7, 'Tmax': 512.49}})
     assert_close(obj_bestfit.T_dependent_property(300), 18601.061401014867, rtol=1e-11)
     
     assert_close(obj_polynomial(300), obj_bestfit.T_dependent_property(300), rtol=1e-13)
+
+    assert VaporPressure.from_json(obj_bestfit.as_json()) == obj_bestfit
+    assert eval(str(obj_bestfit)) == obj_bestfit
+
+    assert VaporPressure.from_json(obj_polynomial.as_json()) == obj_polynomial
+    assert eval(str(obj_polynomial)) == obj_polynomial
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_generic_polynomial_exp_parameters_complicated():
@@ -531,14 +542,13 @@ def test_VaporPressure_extrapolation_no_validation():
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_fast_Psat_poly_fit_extrapolation():
-    obj = VaporPressure(poly_fit=(175.7, 512.49, [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10,
+    obj = VaporPressure(exp_poly_fit=(175.7, 512.49, [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10,
                                                 -2.443464113936029e-07, 7.893819658700523e-05, -0.016615779444332356, 2.1842496316772264, -134.19766175812708]))
     obj.extrapolation = 'AntoineAB|DIPPR101_ABC'
-    # If the extrapolation is made generic, the extrapolated results will change
-    # right now it is not going off the direct property calc
-    assert_close(obj.solve_property(.0000000000001), 3.2040851644645945)
+    assert_close(obj.solve_property(1e-13), 88.65839225764933)
     assert_close(obj.solve_property(300), 237.7793675652309)
-    assert_close(obj.solve_property(1e8), 661.6135315674736)
+    assert_close(1e8, obj.extrapolate(obj.solve_property(1e8), 'EXP_POLY_FIT'))
+    assert_close(obj.extrapolate(800, 'EXP_POLY_FIT'), 404793143.0358333)
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_Antoine_inputs():

@@ -447,13 +447,6 @@ class ThermalConductivityLiquid(TPDependentProperty):
             kl = horner(self.VDI_PPDS_coeffs, T)
         elif method == COOLPROP:
             kl = CoolProp_T_dependent_property(T, self.CASRN, 'L', 'l')
-        elif method == POLY_FIT:
-            if T < self.poly_fit_Tmin:
-                kl = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
-            elif T > self.poly_fit_Tmax:
-                kl = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
-            else:
-                kl = horner(self.poly_fit_coeffs, T)
         else:
             return self._base_calculate(T, method)
         return kl
@@ -1118,13 +1111,6 @@ class ThermalConductivityGas(TPDependentProperty):
             kg = Bahadori_gas(T, self.MW)
         elif method == COOLPROP:
             kg = CoolProp_T_dependent_property(T, self.CASRN, 'L', 'g')
-        elif method == POLY_FIT:
-            if T < self.poly_fit_Tmin:
-                kg = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
-            elif T > self.poly_fit_Tmax:
-                kg = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
-            else:
-                kg = horner(self.poly_fit_coeffs, T)
         else:
             return self._base_calculate(T, method)
         return kg

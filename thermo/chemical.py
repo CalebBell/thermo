@@ -999,7 +999,7 @@ class Chemical(object): # pragma: no cover
         self.VaporPressure = VaporPressure(Tb=self.Tb, Tc=self.Tc, Pc=self.Pc,
                                            omega=self.omega, CASRN=self.CAS,
                                            eos=self.eos_in_a_box,
-                                           poly_fit=get_chemical_constants(self.CAS, 'VaporPressure'))
+                                           exp_poly_fit=get_chemical_constants(self.CAS, 'VaporPressure'))
         self.Psat_298 = self.VaporPressure.T_dependent_property(298.15)
         self.phase_STP = identify_phase(T=298.15, P=101325., Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat_298)
         if self.Pt is None and self.Tt is not None:
@@ -1152,7 +1152,9 @@ class Chemical(object): # pragma: no cover
 
         self.HeatCapacityLiquid = HeatCapacityLiquid(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable, Tc=self.Tc, omega=self.omega, Cpgm=self.HeatCapacityGas.T_dependent_property, poly_fit=get_chemical_constants(self.CAS, 'HeatCapacityLiquid'))
 
-        self.EnthalpyVaporization = EnthalpyVaporization(CASRN=self.CAS, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, similarity_variable=self.similarity_variable, poly_fit=get_chemical_constants(self.CAS, 'EnthalpyVaporization'))
+        self.EnthalpyVaporization = EnthalpyVaporization(CASRN=self.CAS, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega,
+                                                         similarity_variable=self.similarity_variable,
+                                                         poly_fit_ln_tau=get_chemical_constants(self.CAS, 'EnthalpyVaporization'))
         self.Hvap_Tbm = self.EnthalpyVaporization.T_dependent_property(self.Tb) if self.Tb else None
         self.Hvap_Tb = property_molar_to_mass(self.Hvap_Tbm, self.MW)
         self.Svap_Tbm = self.Hvap_Tb/self.Tb if (self.Tb is not None and self.Hvap_Tb is not None) else None
@@ -1172,11 +1174,11 @@ class Chemical(object): # pragma: no cover
 
 
         self.SublimationPressure = SublimationPressure(CASRN=self.CAS, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_Ttm,
-                                                       poly_fit=get_chemical_constants(self.CAS, 'SublimationPressure'))
+                                                       exp_poly_fit=get_chemical_constants(self.CAS, 'SublimationPressure'))
 
 
         self.ViscosityLiquid = ViscosityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, omega=self.omega, Psat=self.VaporPressure, Vml=self.VolumeLiquid,
-                                               poly_fit=get_chemical_constants(self.CAS, 'ViscosityLiquid'))
+                                               exp_poly_fit=get_chemical_constants(self.CAS, 'ViscosityLiquid'))
 
         Vmg_atm_T_dependent = lambda T : self.VolumeGas.TP_dependent_property(T, 101325)
         self.ViscosityGas = ViscosityGas(CASRN=self.CAS, MW=self.MW, Tc=self.Tc, Pc=self.Pc, Zc=self.Zc, dipole=self.dipole, Vmg=Vmg_atm_T_dependent,
@@ -1190,9 +1192,9 @@ class Chemical(object): # pragma: no cover
                                                              poly_fit=get_chemical_constants(self.CAS, 'ThermalConductivityGas'))
 
         self.SurfaceTension = SurfaceTension(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, StielPolar=self.StielPolar, Hvap_Tb=self.Hvap_Tb, Vml=self.VolumeLiquid, Cpl=self.HeatCapacityLiquid,
-                                             poly_fit=get_chemical_constants(self.CAS, 'SurfaceTension'))
+                                             exp_poly_fit_ln_tau=get_chemical_constants(self.CAS, 'SurfaceTension'))
 
-        self.Permittivity = PermittivityLiquid(CASRN=self.CAS)
+        self.Permittivity = self.PermittivityLiquid = PermittivityLiquid(CASRN=self.CAS, poly_fit=get_chemical_constants(self.CAS, 'PermittivityLiquid'))
 
 
         # set molecular_diameter; depends on Vml_Tb, Vml_Tm

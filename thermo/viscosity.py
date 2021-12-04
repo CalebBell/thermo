@@ -493,16 +493,6 @@ class ViscosityLiquid(TPDependentProperty):
             mu = Przedziecki_Sridhar(T, self.Tm, self.Tc, self.Pc, self.Vc, Vml, self.omega, self.MW)
         elif method == VDI_PPDS:
             return PPDS9(T, *self.VDI_PPDS_coeffs)
-        elif method == POLY_FIT:
-            if T < self.poly_fit_Tmin:
-                mu = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
-            elif T > self.poly_fit_Tmax:
-                mu = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
-            else:
-                mu = 0.0
-                for c in self.poly_fit_coeffs:
-                    mu = mu*T + c
-            mu = exp(mu)
         else:
             return self._base_calculate(T, method)
         return mu
@@ -896,15 +886,6 @@ class ViscosityGas(TPDependentProperty):
             mu = Stiel_Thodos(T, self.Tc, self.Pc, self.MW)
         elif method == LUCAS_GAS:
             mu = Lucas_gas(T, self.Tc, self.Pc, self.Zc, self.MW, self.dipole, CASRN=self.CASRN)
-        elif method == POLY_FIT:
-            if T < self.poly_fit_Tmin:
-                mu = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
-            elif T > self.poly_fit_Tmax:
-                mu = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
-            else:
-                mu = 0.0
-                for c in self.poly_fit_coeffs:
-                    mu = mu*T + c
         else:
             return self._base_calculate(T, method)
 

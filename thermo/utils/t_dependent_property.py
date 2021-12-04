@@ -31,7 +31,7 @@ except: # pragma: no cover
     pass
 from math import inf, exp
 
-from fluids.numerics import (quad, brenth, secant, linspace, 
+from fluids.numerics import (quad, brenth, secant, linspace, newton,
                              polyint, polyint_over_x, derivative, 
                              polyder, horner, numpy as np, curve_fit, 
                              differential_evolution, fit_minimization_targets, 
@@ -43,11 +43,13 @@ from fluids.numerics import (quad, brenth, secant, linspace,
                              exp_horner_backwards, exp_horner_backwards_and_der,
                              exp_horner_backwards_and_der2, 
                              exp_horner_backwards_and_der3,
-                             horner_and_der,
+                             horner_and_der, horner_and_der2, horner_and_der3,
                              horner_backwards_ln_tau,
                              horner_backwards_ln_tau_and_der, 
                              horner_backwards_ln_tau_and_der2,
-                             horner_backwards_ln_tau_and_der3)
+                             horner_backwards_ln_tau_and_der3,
+                             fit_integral_linear_extrapolation,
+                             fit_integral_over_T_linear_extrapolation)
 
 import fluids
 import chemicals
@@ -303,6 +305,8 @@ class TDependentProperty(object):
 
         * 'constant' - returns the model values as calculated at the temperature limits
         * 'linear' - fits the model at its temperature limits to a linear model
+        * 'nolimit' - attempt to evaluate the model outside of its limits;
+          this will error in most cases and return None
         * 'interp1d' - SciPy's :obj:`interp1d <scipy.interpolate.interp1d>` is used to extrapolate
         * 'AntoineAB' - fits the model to :obj:`Antoine <chemicals.vapor_pressure.Antoine>`'s
           equation at the temperature limits using only the A and B coefficient
@@ -1179,6 +1183,16 @@ class TDependentProperty(object):
 
         if hasattr(self, 'poly_fit_Tmin') and self.poly_fit_Tmin is not None:
             base += 'poly_fit=(%s, %s, %s), ' %(self.poly_fit_Tmin, self.poly_fit_Tmax, self.poly_fit_coeffs)
+        if hasattr(self, 'exp_poly_fit_Tmin') and self.exp_poly_fit_Tmin is not None:
+            base += 'exp_poly_fit=(%s, %s, %s), ' %(self.exp_poly_fit_Tmin, self.exp_poly_fit_Tmax, self.exp_poly_fit_coeffs)
+        if hasattr(self, 'exp_poly_fit_ln_tau_Tmin') and self.exp_poly_fit_ln_tau_Tmin is not None:
+            base += 'exp_poly_fit_ln_tau=(%s, %s, %s, %s), ' %(self.exp_poly_fit_ln_tau_Tmin, self.exp_poly_fit_ln_tau_Tmax, self.exp_poly_fit_ln_tau_Tc, self.exp_poly_fit_ln_tau_coeffs)
+            # if 'Tc=' not in base:
+            #     base += 'Tc=%s, ' %(self.exp_poly_fit_ln_tau_Tc)
+        if hasattr(self, 'poly_fit_ln_tau_Tmin') and self.poly_fit_ln_tau_Tmin is not None:
+            base += 'poly_fit_ln_tau=(%s, %s, %s, %s), ' %(self.poly_fit_ln_tau_Tmin, self.poly_fit_ln_tau_Tmax, self.poly_fit_ln_tau_Tc, self.poly_fit_ln_tau_coeffs)
+            # if 'Tc=' not in base:
+            #     base += 'Tc=%s, ' %(self.poly_fit_ln_tau_Tc)
         for k in self.correlation_parameters.values():
             extra_model = getattr(self, k, None)
             if extra_model:
@@ -1772,6 +1786,11 @@ class TDependentProperty(object):
         self.exp_poly_fit_Tmax = Tmax
         self.exp_poly_fit_coeffs = poly_fit_coeffs
         self.T_limits[EXP_POLY_FIT] = (Tmin, Tmax)
+        
+        
+        self.exp_poly_fit_Tmax_value, self.exp_poly_fit_Tmax_slope, self.exp_poly_fit_Tmax_dT2 = exp_horner_backwards_and_der2(self.exp_poly_fit_Tmax, self.exp_poly_fit_coeffs)
+        self.exp_poly_fit_Tmin_value, self.exp_poly_fit_Tmin_slope, self.exp_poly_fit_Tmin_dT2 = exp_horner_backwards_and_der2(self.exp_poly_fit_Tmin, self.exp_poly_fit_coeffs)
+        
 
     def _set_poly_fit_ln_tau(self, poly_fit):
         if len(poly_fit) != 4:
@@ -1792,6 +1811,9 @@ class TDependentProperty(object):
         self.poly_fit_ln_tau_coeffs = poly_fit_coeffs
         self.T_limits[POLY_FIT_LN_TAU] = (Tmin, Tmax)
 
+        self.poly_fit_ln_tau_Tmax_value, self.poly_fit_ln_tau_Tmax_slope, self.poly_fit_ln_tau_Tmax_dT2 = horner_backwards_ln_tau_and_der2(Tmax, Tc, poly_fit_coeffs)
+        self.poly_fit_ln_tau_Tmin_value, self.poly_fit_ln_tau_Tmin_slope, self.poly_fit_ln_tau_Tmin_dT2 = horner_backwards_ln_tau_and_der2(Tmin, Tc, poly_fit_coeffs)
+
     def _set_exp_poly_fit_ln_tau(self, poly_fit):
         if len(poly_fit) != 4:
             raise ValueError("exp_poly_fit_ln_tau should be a tuple of 4 "
@@ -1810,6 +1832,9 @@ class TDependentProperty(object):
         self.exp_poly_fit_ln_tau_Tc = Tc
         self.exp_poly_fit_ln_tau_coeffs = poly_fit_coeffs
         self.T_limits[EXP_POLY_FIT_LN_TAU] = (Tmin, Tmax)
+
+        self.exp_poly_fit_ln_tau_Tmax_value, self.exp_poly_fit_ln_tau_Tmax_slope, self.exp_poly_fit_ln_tau_Tmax_dT2 = exp_horner_backwards_ln_tau_and_der2(Tmax, Tc, poly_fit_coeffs)
+        self.exp_poly_fit_ln_tau_Tmin_value, self.exp_poly_fit_ln_tau_Tmin_slope, self.exp_poly_fit_ln_tau_Tmin_dT2 = exp_horner_backwards_ln_tau_and_der2(Tmin, Tc, poly_fit_coeffs)
 
 
         
@@ -1832,7 +1857,7 @@ class TDependentProperty(object):
             poly_fit_d_coeffs.reverse()
 
             # Extrapolation slope on high and low
-            slope_delta_T = (self.poly_fit_Tmax - self.poly_fit_Tmin)*.05
+            # slope_delta_T = (self.poly_fit_Tmax - self.poly_fit_Tmin)*.05
 
             self.poly_fit_Tmax_value = self.calculate(self.poly_fit_Tmax, POLY_FIT)
             if self.interpolation_property is not None:
@@ -1846,9 +1871,7 @@ class TDependentProperty(object):
 
 #            self.poly_fit_Tmax_slope = (self.poly_fit_Tmax_value
 #                                        - fit_value_high)/slope_delta_T
-            self.poly_fit_Tmax_slope = horner(self.poly_fit_d_coeffs, self.poly_fit_Tmax)
-            self.poly_fit_Tmax_dT2 = horner(self.poly_fit_d2_coeffs, self.poly_fit_Tmax)
-
+            _, self.poly_fit_Tmax_slope, self.poly_fit_Tmax_dT2 = horner_and_der2(self.poly_fit_coeffs, self.poly_fit_Tmax)
 
             # Extrapolation to lower T
             self.poly_fit_Tmin_value = self.calculate(self.poly_fit_Tmin, POLY_FIT)
@@ -1861,31 +1884,64 @@ class TDependentProperty(object):
 #            self.poly_fit_Tmin_slope = (fit_value_low
 #                                        - self.poly_fit_Tmin_value)/slope_delta_T
 
-            self.poly_fit_Tmin_slope = horner(self.poly_fit_d_coeffs, self.poly_fit_Tmin)
-            self.poly_fit_Tmin_dT2 = horner(self.poly_fit_d2_coeffs, self.poly_fit_Tmin)
+            # self.poly_fit_Tmin_slope = horner(self.poly_fit_d_coeffs, self.poly_fit_Tmin)
+            # self.poly_fit_Tmin_dT2 = horner(self.poly_fit_d2_coeffs, self.poly_fit_Tmin)
+            _, self.poly_fit_Tmin_slope, self.poly_fit_Tmin_dT2 = horner_and_der2(self.poly_fit_coeffs, self.poly_fit_Tmin)
 
             self._custom_set_poly_fit()
             self.T_limits[POLY_FIT] = (self.poly_fit_Tmin, self.poly_fit_Tmax)
             
     def as_poly_fit(self):
-        return '%s(load_data=False, poly_fit=(%s, %s, %s))' %(self.__class__.__name__,
+        method = self.method
+        use_method = None
+        possible_methods = (POLY_FIT, EXP_POLY_FIT, POLY_FIT_LN_TAU, EXP_POLY_FIT_LN_TAU)
+        if method in possible_methods:
+            use_method = method
+        else:
+            for m in possible_methods:
+                if m in self.all_methods:
+                    use_method = m
+                    break
+        if use_method is None:
+            raise ValueError("No polynomial fit defined")
+            
+        if method == POLY_FIT:
+            return '%s(load_data=False, poly_fit=(%s, %s, %s))' %(self.__class__.__name__,
                   repr(self.poly_fit_Tmin), repr(self.poly_fit_Tmax),
                   repr(self.poly_fit_coeffs))
+        elif method == EXP_POLY_FIT:
+            return '%s(load_data=False, exp_poly_fit=(%s, %s, %s))' %(self.__class__.__name__,
+                  repr(self.exp_poly_fit_Tmin), repr(self.exp_poly_fit_Tmax),
+                  repr(self.exp_poly_fit_coeffs))
+        elif method == POLY_FIT_LN_TAU:
+            return '%s(load_data=False, Tc=%s, poly_fit_ln_tau=(%s, %s, %s, %s))' %(self.__class__.__name__,
+                  repr(self.poly_fit_ln_tau_Tc),
+                  repr(self.poly_fit_ln_tau_Tmin), repr(self.poly_fit_ln_tau_Tmax),
+                  repr(self.poly_fit_ln_tau_Tc),
+                  repr(self.poly_fit_ln_tau_coeffs))
+        elif method == EXP_POLY_FIT_LN_TAU:
+            return '%s(load_data=False, Tc=%s, exp_poly_fit_ln_tau=(%s, %s, %s, %s))' %(self.__class__.__name__,
+                  repr(self.exp_poly_fit_ln_tau_Tc),
+                  repr(self.exp_poly_fit_ln_tau_Tmin), repr(self.exp_poly_fit_ln_tau_Tmax),
+                  repr(self.exp_poly_fit_ln_tau_Tc),
+                  repr(self.exp_poly_fit_ln_tau_coeffs))
 
     def _base_calculate(self, T, method):
-        if method in self.tabular_data:
-            return self.interpolate(T, method)
-        elif method in self.local_methods:
-            return self.local_methods[method].f(T)
-        elif method in self.correlations:
-            call, kwargs, _ = self.correlations[method]
-            return call(T, **kwargs)
+        if method == POLY_FIT:
+            return horner(self.poly_fit_coeffs, T)
         elif method == EXP_POLY_FIT:
             return exp_horner_backwards(T, self.exp_poly_fit_coeffs)
         elif method == POLY_FIT_LN_TAU:
             return horner_backwards_ln_tau(T, self.poly_fit_ln_tau_Tc, self.poly_fit_ln_tau_coeffs)
         elif method == EXP_POLY_FIT_LN_TAU:
             return exp_horner_backwards_ln_tau(T, self.exp_poly_fit_ln_tau_Tc, self.exp_poly_fit_ln_tau_coeffs)
+        elif method in self.tabular_data:
+            return self.interpolate(T, method)
+        elif method in self.local_methods:
+            return self.local_methods[method].f(T)
+        elif method in self.correlations:
+            call, kwargs, _ = self.correlations[method]
+            return call(T, **kwargs)
         else:
             raise ValueError("Unknown method; methods are %s" %(self.all_methods))
 
@@ -1896,10 +1952,6 @@ class TDependentProperty(object):
             raise ValueError("Unknown method")
 
     def _calculate_extrapolate(self, T, method):
-        if method == POLY_FIT:
-            try: return self.calculate(T, POLY_FIT)
-            except: return None
-
         if method is None:
             return None
         try:
@@ -1945,11 +1997,7 @@ class TDependentProperty(object):
             Calculated property, [`units`]
         '''
         method = self._method
-        if method == POLY_FIT:
-            # There is no use case where this will fail; it is designed to 
-            # always calculate a value
-            return self.calculate(T, POLY_FIT)
-        elif method is None:
+        if method is None:
             if self.RAISE_PROPERTY_CALCULATION_ERROR: 
                 raise RuntimeError("No %s method selected for component with CASRN '%s'" %(self.name.lower(), self.CASRN))
         else:
@@ -2372,6 +2420,8 @@ class TDependentProperty(object):
             except ValueError:
                 raise Exception('To within the implemented temperature range, it is not possible to calculate the desired value.')
         else:
+            # if self.method == POLY_FIT:
+            #     return self.solve_prop_poly_fit(goal)
             high = self.Tc if self.critical_zero and self.Tc is not None else None
             x0 = T_limits[0]
             x1 = T_limits[1]
@@ -2392,6 +2442,39 @@ class TDependentProperty(object):
             return secant(error, x0=x0, x1=x1, f0=f0, f1=f1, low=1e-4, xtol=1e-12, bisection=True, high=high)
             #except:
             #    return secant(error, x0=x0, x1=x1, f0=f0, f1=f1, low=1e-4, xtol=1e-12, bisection=True, high=high, damping=.01)
+
+    # def solve_property_exp_poly_fit(self, goal):
+    #     exp_poly_fit_Tmin, exp_poly_fit_Tmax = self.exp_poly_fit_Tmin, self.exp_poly_fit_Tmax
+    #     exp_poly_fit_Tmin_slope, exp_poly_fit_Tmax_slope = self.exp_poly_fit_Tmin_slope, self.exp_poly_fit_Tmax_slope
+    #     exp_poly_fit_Tmin_value, exp_poly_fit_Tmax_value = self.exp_poly_fit_Tmin_value, self.exp_poly_fit_Tmax_value
+        
+    #     coeffs = self.exp_poly_fit_coeffs
+
+    #     T_low = log(goal*exp(exp_poly_fit_Tmin*exp_poly_fit_Tmin_slope - exp_poly_fit_Tmin_value))/exp_poly_fit_Tmin_slope
+    #     if T_low <= exp_poly_fit_Tmin:
+    #         return T_low
+    #     T_high = log(goal*exp(exp_poly_fit_Tmax*exp_poly_fit_Tmax_slope - exp_poly_fit_Tmax_value))/exp_poly_fit_Tmax_slope
+    #     if T_high >= exp_poly_fit_Tmax:
+    #         return T_high
+    #     else:
+    #         lnPGoal = log(goal)
+    #         def to_solve(T):
+    #             # dPsat and Psat are both in log basis
+    #             dPsat = Psat = 0.0
+    #             for c in coeffs:
+    #                 dPsat = T*dPsat + Psat
+    #                 Psat = T*Psat + c
+
+    #             return Psat - lnPGoal, dPsat
+    #         # Guess with the two extrapolations from the linear fits
+    #         # By definition both guesses are in the range of they would have been returned
+    #         if T_low > exp_poly_fit_Tmax:
+    #             T_low = exp_poly_fit_Tmax
+    #         if T_high < exp_poly_fit_Tmin:
+    #             T_high = exp_poly_fit_Tmin
+    #         T = newton(to_solve, 0.5*(T_low + T_high), fprime=True, low=exp_poly_fit_Tmin, high=exp_poly_fit_Tmax)
+    #         return T
+
 
     def _calculate_derivative_transformed(self, T, method, order=1):
         r'''Basic funtion which wraps calculate_derivative such that the output
@@ -2474,6 +2557,13 @@ class TDependentProperty(object):
                 return exp_horner_backwards_and_der2(T, self.exp_poly_fit_coeffs)[2]
             if order == 3:
                 return exp_horner_backwards_and_der3(T, self.exp_poly_fit_coeffs)[3]
+        if method == POLY_FIT:
+            if order == 1:
+                return horner_and_der(self.poly_fit_coeffs, T)[1]
+            if order == 2:
+                return horner_and_der2(self.poly_fit_coeffs, T)[2]
+            if order == 3:
+                return horner_and_der3(self.poly_fit_coeffs, T)[3]
         if method == POLY_FIT_LN_TAU:
             if order == 1:
                 return horner_backwards_ln_tau_and_der(T, self.poly_fit_ln_tau_Tc, self.poly_fit_ln_tau_coeffs)[1]
@@ -2574,6 +2664,12 @@ class TDependentProperty(object):
             Calculated integral of the property over the given range,
             [`units*K`]
         '''
+        if method == POLY_FIT:
+            return fit_integral_linear_extrapolation(T1, T2,
+                self.poly_fit_int_coeffs, self.poly_fit_Tmin,
+                self.poly_fit_Tmax, self.poly_fit_Tmin_value,
+                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
+                self.poly_fit_Tmax_slope)
         if method in self.correlations:
             _, model_kwargs, model = self.correlations[method]
             calls = self.correlation_models[model][2]
@@ -2707,6 +2803,13 @@ class TDependentProperty(object):
             Calculated integral of the property over the given range,
             [`units`]
         '''
+        if method == POLY_FIT:
+            return fit_integral_over_T_linear_extrapolation(T1, T2,
+                self.poly_fit_T_int_T_coeffs, self.poly_fit_log_coeff,
+                self.poly_fit_Tmin, self.poly_fit_Tmax,
+                self.poly_fit_Tmin_value,
+                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
+                self.poly_fit_Tmax_slope)
         if method in self.correlations:
             _, model_kwargs, model = self.correlations[method]
             calls = self.correlation_models[model][2]
@@ -2827,6 +2930,8 @@ class TDependentProperty(object):
             coefficients = (v, d)
         elif extrapolation == 'constant':
             coefficients = self.calculate(T, method=method)
+        elif extrapolation == 'nolimit':
+            coefficients = tuple()
         elif extrapolation == 'AntoineAB':
             v = self.calculate(T, method=method)
             d = self.calculate_derivative(T, method=method, order=1)
@@ -2927,7 +3032,8 @@ class TDependentProperty(object):
         in_range : str
             How to handle inputs which are not outside the temperature limits;
             set to 'low' to use the low T extrapolation, 'high' to use the
-            high T extrapolation, and 'error' or anything else to raise an
+            high T extrapolation, 'nearest' to use the nearest value,
+            and 'error' or anything else to raise an
             error in those cases, [-]
 
         Returns
@@ -2951,6 +3057,15 @@ class TDependentProperty(object):
         elif in_range == 'high':
             low = False
             extrapolation = self._extrapolation_high
+        elif in_range == 'nearest':
+            delta_low = abs(T-T_low)
+            delta_high = abs(T_high - T)
+            if delta_low < delta_high:
+                low = True
+                extrapolation = self._extrapolation_low
+            else:
+                low = False
+                extrapolation = self._extrapolation_high
         else:
             raise ValueError("Not outside normal range")
             
@@ -2977,6 +3092,8 @@ class TDependentProperty(object):
         elif extrapolation == 'AntoineAB':
             A, B = coeffs
             return Antoine(T, A=A, B=B, C=0.0, base=e)
+        elif extrapolation == 'nolimit':
+            return self.calculate(T, method)
         elif extrapolation == 'DIPPR101_ABC':
             A, B, C = coeffs
             return EQ101(T, A, B, C, 0.0, 0.0)
@@ -3056,7 +3173,7 @@ class TDependentProperty(object):
                 return coeffs[1]
         pts = 1 + order*2
         dx = T*1e-6
-        args = (method,)
+        args = (method, 'nearest')
         return derivative(self.extrapolate, T, dx=dx, args=args, n=order, order=pts)
 
     def extrapolate_integral(self, T1, T2, method, in_range='error'):

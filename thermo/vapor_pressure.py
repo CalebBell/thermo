@@ -455,15 +455,8 @@ class VaporPressure(TDependentProperty):
             return Tmin <= T <= Tmax
         elif method == POLY_FIT:
             return True
-        elif method in self.tabular_data:
-            if self.tabular_extrapolation_permitted:
-                # good to go without checking
-                return True
-            else:
-                Ts, properties = self.tabular_data[method]
-                return Ts[0] < T < Ts[-1]
         else:
-            raise ValueError("invalid method '%s'" %method)
+            return super(VaporPressure, self).test_method_validity(T, method)
 
     def calculate_derivative(self, T, method, order=1):
         r'''Method to calculate a derivative of a vapor pressure with respect to
@@ -490,10 +483,10 @@ class VaporPressure(TDependentProperty):
             Calculated derivative property, [`units/K^order`]
         '''
         Tmin, Tmax = self.T_limits[method]
-        if order == 1 and method == POLY_FIT:
-            v, der = horner_and_der(self.poly_fit_coeffs, T)
-            return der*exp(v)
-        elif method == WAGNER_MCGARRY:
+        # if order == 1 and method == POLY_FIT:
+        #     v, der = horner_and_der(self.poly_fit_coeffs, T)
+        #     return der*exp(v)
+        if method == WAGNER_MCGARRY:
             if Tmin <= T <= Tmax:
                 if order == 1:
                     return dWagner_original_dT(T, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Pc, *self.WAGNER_MCGARRY_coefs)
@@ -533,9 +526,9 @@ class VaporPressure(TDependentProperty):
                     return EQ101(T, *self.Perrys2_8_coeffs, order=1)
                 if order == 2:
                     return EQ101(T, *self.Perrys2_8_coeffs, order=2)
-        elif order == 2 and method == POLY_FIT:
-            v, der, der2 = horner_and_der2(self.poly_fit_coeffs, T)
-            return (der*der + der2)*exp(v)
+        # elif order == 2 and method == POLY_FIT:
+        #     v, der, der2 = horner_and_der2(self.poly_fit_coeffs, T)
+        #     return (der*der + der2)*exp(v)
         return super(VaporPressure, self).calculate_derivative(T, method, order)
 
     def _custom_set_poly_fit(self):
@@ -575,37 +568,6 @@ class VaporPressure(TDependentProperty):
 
         except:
             pass
-
-    def solve_prop_poly_fit(self, goal):
-        poly_fit_Tmin, poly_fit_Tmax = self.poly_fit_Tmin, self.poly_fit_Tmax
-        poly_fit_Tmin_slope, poly_fit_Tmax_slope = self.poly_fit_Tmin_slope, self.poly_fit_Tmax_slope
-        poly_fit_Tmin_value, poly_fit_Tmax_value = self.poly_fit_Tmin_value, self.poly_fit_Tmax_value
-        coeffs = self.poly_fit_coeffs
-
-        T_low = log(goal*exp(poly_fit_Tmin*poly_fit_Tmin_slope - poly_fit_Tmin_value))/poly_fit_Tmin_slope
-        if T_low <= poly_fit_Tmin:
-            return T_low
-        T_high = log(goal*exp(poly_fit_Tmax*poly_fit_Tmax_slope - poly_fit_Tmax_value))/poly_fit_Tmax_slope
-        if T_high >= poly_fit_Tmax:
-            return T_high
-        else:
-            lnPGoal = log(goal)
-            def to_solve(T):
-                # dPsat and Psat are both in log basis
-                dPsat = Psat = 0.0
-                for c in coeffs:
-                    dPsat = T*dPsat + Psat
-                    Psat = T*Psat + c
-
-                return Psat - lnPGoal, dPsat
-            # Guess with the two extrapolations from the linear fits
-            # By definition both guesses are in the range of they would have been returned
-            if T_low > poly_fit_Tmax:
-                T_low = poly_fit_Tmax
-            if T_high < poly_fit_Tmin:
-                T_high = poly_fit_Tmin
-            T = newton(to_solve, 0.5*(T_low + T_high), fprime=True, low=poly_fit_Tmin, high=poly_fit_Tmax)
-            return T
 
 
 PSUB_CLAPEYRON = 'PSUB_CLAPEYRON'
@@ -682,7 +644,7 @@ class SublimationPressure(TDependentProperty):
     custom_args = ('Tt', 'Pt', 'Hsub_t')
 
     def __init__(self, CASRN=None, Tt=None, Pt=None, Hsub_t=None,
-                 extrapolation=None, **kwargs):
+                 extrapolation='linear', **kwargs):
         self.CASRN = CASRN
         self.Tt = Tt
         self.Pt = Pt
@@ -734,15 +696,7 @@ class SublimationPressure(TDependentProperty):
         Psub : float
             Sublimation pressure at T, [Pa]
         '''
-        if method == POLY_FIT:
-            if T < self.poly_fit_Tmin:
-                Psub = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
-            elif T > self.poly_fit_Tmax:
-                Psub = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
-            else:
-                Psub = horner(self.poly_fit_coeffs, T)
-            Psub = exp(Psub)
-        elif method == PSUB_CLAPEYRON:
+        if method == PSUB_CLAPEYRON:
             Psub = max(Psub_Clapeyron(T, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_t), 1e-200)
         else:
             return self._base_calculate(T, method)
@@ -774,17 +728,8 @@ class SublimationPressure(TDependentProperty):
         if method == PSUB_CLAPEYRON:
             return True
             # No lower limit
-        elif method == POLY_FIT:
-            validity = True
-        elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
-                Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    return False
         else:
-            raise Exception('Method not valid')
-        return True
+            return super(VaporPressure, self).test_method_validity(T, method)
 try:
     SublimationPressure._custom_set_poly_fit = VaporPressure._custom_set_poly_fit
 except:

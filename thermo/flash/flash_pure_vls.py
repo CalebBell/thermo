@@ -578,7 +578,7 @@ class FlashPureVLS(Flash):
             sat_liq = self.liquids[0].to_TP_zs(Tsat, P, zs, other_eos=sat_gas.eos_mix)
             return Tsat, sat_liq, sat_gas, 0, 0.0
         elif self.VL_IG_activity:
-            Tsat = self.correlations.VaporPressures[0].solve_prop_poly_fit(P)
+            Tsat = self.correlations.VaporPressures[0].solve_property(P)
             sat_gas = self.gas.to_TP_zs(Tsat, P, zs)
             sat_liq = self.liquid.to_TP_zs(Tsat, P, zs)
             return Tsat, sat_liq, sat_gas, 0, 0.0

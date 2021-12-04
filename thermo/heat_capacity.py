@@ -374,14 +374,7 @@ class HeatCapacityGas(TDependentProperty):
         Cp : float
             Calculated heat capacity, [J/mol/K]
         '''
-        if method == POLY_FIT:
-            if T < self.poly_fit_Tmin:
-                Cp = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
-            elif T > self.poly_fit_Tmax:
-                Cp = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
-            else:
-                Cp = horner(self.poly_fit_coeffs, T)
-        elif method == TRCIG:
+        if method == TRCIG:
             Cp = TRCCp(T, *self.TRCIG_coefs)
         elif method == COOLPROP:
             try:
@@ -471,13 +464,7 @@ class HeatCapacityGas(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units*K`]
         '''
-        if method == POLY_FIT:
-            return fit_integral_linear_extrapolation(T1, T2,
-                self.poly_fit_int_coeffs, self.poly_fit_Tmin,
-                self.poly_fit_Tmax, self.poly_fit_Tmin_value,
-                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
-                self.poly_fit_Tmax_slope)
-        elif method == TRCIG:
+        if method == TRCIG:
             H2 = TRCCp_integral(T2, *self.TRCIG_coefs)
             H1 = TRCCp_integral(T1, *self.TRCIG_coefs)
             return H2 - H1
@@ -523,14 +510,7 @@ class HeatCapacityGas(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units`]
         '''
-        if method == POLY_FIT:
-            return fit_integral_over_T_linear_extrapolation(T1, T2,
-                self.poly_fit_T_int_T_coeffs, self.poly_fit_log_coeff,
-                self.poly_fit_Tmin, self.poly_fit_Tmax,
-                self.poly_fit_Tmin_value,
-                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
-                self.poly_fit_Tmax_slope)
-        elif method == TRCIG:
+        if method == TRCIG:
             S2 = TRCCp_integral_over_T(T2, *self.TRCIG_coefs)
             S1 = TRCCp_integral_over_T(T1, *self.TRCIG_coefs)
             return S2 - S1
@@ -889,14 +869,7 @@ class HeatCapacityLiquid(TDependentProperty):
         Cp : float
             Heat capacity of the liquid at T, [J/mol/K]
         '''
-        if method == POLY_FIT:
-            if T < self.poly_fit_Tmin:
-                return (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
-            elif T > self.poly_fit_Tmax:
-                return (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
-            else:
-                return horner(self.poly_fit_coeffs, T)
-        elif method == ZABRANSKY_SPLINE:
+        if method == ZABRANSKY_SPLINE:
             return self.Zabransky_spline.force_calculate(T)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL:
             return self.Zabransky_quasipolynomial.calculate(T)
@@ -1011,13 +984,7 @@ class HeatCapacityLiquid(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units*K`]
         '''
-        if method == POLY_FIT:
-            return fit_integral_linear_extrapolation(T1, T2,
-                self.poly_fit_int_coeffs, self.poly_fit_Tmin,
-                self.poly_fit_Tmax, self.poly_fit_Tmin_value,
-                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
-                self.poly_fit_Tmax_slope)
-        elif method == ZABRANSKY_SPLINE:
+        if method == ZABRANSKY_SPLINE:
             return self.Zabransky_spline.calculate_integral(T1, T2)
         elif method == ZABRANSKY_SPLINE_C:
             return self.Zabransky_spline_iso.force_calculate_integral(T1, T2)
@@ -1064,14 +1031,7 @@ class HeatCapacityLiquid(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units`]
         '''
-        if method == POLY_FIT:
-            return fit_integral_over_T_linear_extrapolation(T1, T2,
-                self.poly_fit_T_int_T_coeffs, self.poly_fit_log_coeff,
-                self.poly_fit_Tmin, self.poly_fit_Tmax,
-                self.poly_fit_Tmin_value,
-                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
-                self.poly_fit_Tmax_slope)
-        elif method == ZABRANSKY_SPLINE:
+        if method == ZABRANSKY_SPLINE:
             return self.Zabransky_spline.calculate_integral_over_T(T1, T2)
         elif method == ZABRANSKY_SPLINE_C:
             return self.Zabransky_spline_iso.calculate_integral_over_T(T1, T2)
@@ -1264,14 +1224,7 @@ class HeatCapacitySolid(TDependentProperty):
         Cp : float
             Heat capacity of the solid at T, [J/mol/K]
         '''
-        if method == POLY_FIT:
-            if T < self.poly_fit_Tmin:
-                Cp = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
-            elif T > self.poly_fit_Tmax:
-                Cp = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
-            else:
-                Cp = horner(self.poly_fit_coeffs, T)
-        elif method == PERRY151:
+        if method == PERRY151:
             Cp = (self.PERRY151_const + self.PERRY151_lin*T
             + self.PERRY151_quadinv/T**2 + self.PERRY151_quad*T**2)*calorie
         elif method == CRCSTD:
@@ -1342,13 +1295,7 @@ class HeatCapacitySolid(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units*K`]
         '''
-        if method == POLY_FIT:
-            return fit_integral_linear_extrapolation(T1, T2,
-                self.poly_fit_int_coeffs, self.poly_fit_Tmin,
-                self.poly_fit_Tmax, self.poly_fit_Tmin_value,
-                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
-                self.poly_fit_Tmax_slope)
-        elif method == PERRY151:
+        if method == PERRY151:
             H2 = (self.PERRY151_const*T2 + 0.5*self.PERRY151_lin*T2**2
                   - self.PERRY151_quadinv/T2 + self.PERRY151_quad*T2**3/3.)
             H1 = (self.PERRY151_const*T1 + 0.5*self.PERRY151_lin*T1**2
@@ -1383,14 +1330,7 @@ class HeatCapacitySolid(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units`]
         '''
-        if method == POLY_FIT:
-            return fit_integral_over_T_linear_extrapolation(T1, T2,
-                self.poly_fit_T_int_T_coeffs, self.poly_fit_log_coeff,
-                self.poly_fit_Tmin, self.poly_fit_Tmax,
-                self.poly_fit_Tmin_value,
-                self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
-                self.poly_fit_Tmax_slope)
-        elif method == PERRY151:
+        if method == PERRY151:
             S2 = (self.PERRY151_const*log(T2) + self.PERRY151_lin*T2
                   - self.PERRY151_quadinv/(2.*T2**2) + 0.5*self.PERRY151_quad*T2**2)
             S1 = (self.PERRY151_const*log(T1) + self.PERRY151_lin*T1
