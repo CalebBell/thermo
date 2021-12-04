@@ -39,6 +39,7 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              max_squared_rel_error, mean_abs_error, mean_abs_rel_error, 
                              mean_squared_error, mean_squared_rel_error,
                              curve_fit, differential_evolution, fit_minimization_targets, leastsq,
+                             polynomial_offset_scale,
                              lmder, lmfit)
 from fluids.constants import R
 import fluids, thermo
@@ -59,6 +60,15 @@ FIT_CHEBTOOLS_POLY = 'ChebTools polynomial'
 FIT_CHEBTOOLS_STABLEPOLY = 'ChebTools stable polynomial'
 FIT_NUMPY_POLY = 'NumPy polynomial'
 FIT_NUMPY_STABLEPOLY = 'NumPy stable polynomial'
+
+
+FIT_METHOD_MAP = {FIT_CHEBTOOLS_CHEB: 'chebyshev',
+                  FIT_CHEBTOOLS_POLY: 'polynomial',
+                  FIT_CHEBTOOLS_STABLEPOLY: 'stablepolynomial',
+                  FIT_NUMPY_POLY:'polynomial',
+                  FIT_NUMPY_STABLEPOLY: 'stablepolynomial',
+                  }
+
 
 def fit_polynomial(func, low, high, n,
                    interpolation_property=None, interpolation_property_inv=None,
@@ -257,8 +267,11 @@ def poly_fit_statistics(func, coeffs, low, high, pts=200,
     all_points = [interpolation_x(v) for v in all_points_orig]
     offset, scale = polynomial_offset_scale(low, high)
 
+    if method in FIT_METHOD_MAP:
+        method = FIT_METHOD_MAP[method]
+
     # Calculate the fit values
-    if method == 'polynomial:
+    if method == 'polynomial':
         calc_pts = [horner(coeffs, x) for x in all_points]
     elif method == 'stablepolynomial':
         calc_pts = [horner_stable(x, coeffs, offset, scale) for x in all_points]
@@ -310,17 +323,19 @@ def select_index_from_stats(stats, ns):
 def fit_many_cheb_poly(func, low, high, ns, eval_pts=30,
                   interpolation_property=None, interpolation_property_inv=None,
                   interpolation_x=lambda x: x, interpolation_x_inv=lambda x: x,
-                  arg_func=None):
+                  arg_func=None, method=FIT_CHEBTOOLS_POLY):
 
     def a_fit(n, eval_pts=eval_pts):
         coeffs = fit_polynomial(func, low, high, n,
                                 interpolation_property=interpolation_property, interpolation_property_inv=interpolation_property_inv,
                                 interpolation_x=interpolation_x, interpolation_x_inv=interpolation_x_inv,
-                                arg_func=arg_func)
+                                arg_func=arg_func, method=method)
+
+        method2 = FIT_METHOD_MAP[method]
         err_avg, err_std, min_ratio, max_ratio = poly_fit_statistics(func, coeffs, low, high, pts=eval_pts,
                                 interpolation_property_inv=interpolation_property_inv,
                                 interpolation_x=interpolation_x,
-                                arg_func=arg_func)
+                                arg_func=arg_func, method=method2)
         return coeffs, err_avg, err_std, min_ratio, max_ratio
 
     worked_ns, worked_coeffs, worked_stats = [], [], []
@@ -339,11 +354,11 @@ def fit_many_cheb_poly(func, low, high, ns, eval_pts=30,
 def fit_cheb_poly_auto(func, low, high, start_n=3, max_n=20, eval_pts=100,
                   interpolation_property=None, interpolation_property_inv=None,
                   interpolation_x=lambda x: x, interpolation_x_inv=lambda x: x,
-                  arg_func=None):
+                  arg_func=None, method=FIT_CHEBTOOLS_POLY):
     worked_ns, worked_coeffs, worked_stats = fit_many_cheb_poly(func, low, high, ns=range(start_n, max_n+1),
                   interpolation_property=interpolation_property, interpolation_property_inv=interpolation_property_inv,
                   interpolation_x=interpolation_x, interpolation_x_inv=interpolation_x_inv,
-                  arg_func=arg_func, eval_pts=eval_pts)
+                  arg_func=arg_func, eval_pts=eval_pts, method=FIT_CHEBTOOLS_POLY)
     idx = select_index_from_stats(worked_stats, worked_ns)
 
     return worked_ns[idx], worked_coeffs[idx], worked_stats[idx]

@@ -1405,7 +1405,7 @@ class TDependentProperty(object):
         return self.T_limits
 
     def polynomial_from_method(self, method, n=None, start_n=3, max_n=30, 
-                               eval_pts=100, fit_form=POLY_FIT):
+                               eval_pts=100, fit_form=POLY_FIT, fit_method=None):
         r'''Method to fit a T-dependent property to a polynomial. The degree
         of the polynomial can be specified with the `n` parameter, or it will
         be automatically selected for maximum accuracy.
@@ -1450,7 +1450,7 @@ class TDependentProperty(object):
             Highest ratio of calc/actual in any found points, [-]
         '''
         # Ready to be documented
-        from thermo.fitting import fit_polynomial, poly_fit_statistics, fit_cheb_poly_auto
+        from thermo.fitting import fit_polynomial, poly_fit_statistics, fit_cheb_poly_auto, FIT_CHEBTOOLS_POLY
         interpolation_T = lambda x: x
         interpolation_T_inv = lambda x: x
         
@@ -1484,6 +1484,9 @@ class TDependentProperty(object):
             raise ValueError("Unknown method")
 
         func = lambda T: self.calculate(T, method)
+        
+        if fit_method is None:
+            fit_method = FIT_CHEBTOOLS_POLY
 
         if n is None:
             n, coeffs, stats = fit_cheb_poly_auto(func, low=low, high=high,
@@ -1491,14 +1494,14 @@ class TDependentProperty(object):
                       interpolation_property_inv=interpolation_property_inv,
                       interpolation_x=interpolation_T,
                       interpolation_x_inv=interpolation_T_inv,
-                      start_n=start_n, max_n=max_n, eval_pts=eval_pts)
+                      start_n=start_n, max_n=max_n, eval_pts=eval_pts, method=fit_method)
         else:
 
             coeffs = fit_polynomial(func, low=low, high=high, n=n,
                                     interpolation_property=interpolation_property,
                                     interpolation_property_inv=interpolation_property_inv,
                                     interpolation_x=interpolation_T,
-                                    interpolation_x_inv=interpolation_T_inv,
+                                    interpolation_x_inv=interpolation_T_inv, method=fit_method,
                                     )
 
             stats = poly_fit_statistics(func, coeffs=coeffs, low=low, high=high, pts=eval_pts,
