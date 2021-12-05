@@ -102,6 +102,7 @@ from thermo.eos_alpha_functions import (Twu91_alpha_pure, Soave_1979_alpha_pure,
                                         Saffari_alpha_pure, Chen_Yang_alpha_pure)
 from thermo.eos import GCEOS
 from thermo.coolprop import coolprop_fluids
+from thermo.base import data_dir, source_path
 from thermo.fitting import data_fit_statistics, fit_customized
 import thermo
 from thermo.utils import (VDI_TABULAR, POLY_FIT, EXP_POLY_FIT, POLY_FIT_LN_TAU,
@@ -1372,7 +1373,7 @@ class TDependentProperty(object):
 
     @classmethod
     def _fit_export_polynomials(cls, method=None, start_n=3, max_n=30,
-                                eval_pts=100, save=False):
+                                eval_pts=100, save=False, fit_form=POLY_FIT, fit_method=None):
         import json
         dat = {}
         folder = os.path.join(source_path, cls.name)
@@ -1394,7 +1395,8 @@ class TDependentProperty(object):
             for CAS in index:
                 print(CAS)
                 obj = cls(CASRN=CAS)
-                coeffs, (low, high), stats = obj.polynomial_from_method(method, n=n, start_n=start_n, max_n=max_n_method, eval_pts=eval_pts)
+                coeffs, (low, high), stats = obj.polynomial_from_method(method, n=n, start_n=start_n, max_n=max_n_method, eval_pts=eval_pts,
+                                                                        fit_form=fit_form, fit_method=fit_method)
                 max_error = max(abs(1.0 - stats[2]), abs(1.0 - stats[3]))
                 method_dat[CAS] = {'Tmax': high, 'Tmin': low, 'error_average': stats[0],
                    'error_std': stats[1], 'max_error': max_error , 'method': method,
