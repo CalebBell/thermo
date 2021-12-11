@@ -45,7 +45,7 @@ from fluids.numerics import (quad, brenth, secant, linspace, newton,
                              exp_horner_backwards_and_der2, 
                              exp_horner_backwards_and_der3,
                              polynomial_offset_scale,
-                             chebval, chebder,
+                             chebval, chebder, chebint,
                              horner_and_der, horner_and_der2, horner_and_der3,
                              horner_stable_and_der2,
                              horner_backwards_ln_tau,
@@ -55,7 +55,15 @@ from fluids.numerics import (quad, brenth, secant, linspace, newton,
                              fit_integral_linear_extrapolation,
                              fit_integral_over_T_linear_extrapolation,
                              horner_stable, horner_stable_and_der, horner_stable_and_der2,
-                             horner_stable_and_der3, horner_stable_and_der4)
+                             horner_stable_and_der3, horner_stable_and_der4,
+                             exp_horner_stable, exp_horner_stable_and_der,
+                             exp_horner_stable_and_der2, exp_horner_stable_and_der3,
+                             exp_cheb, exp_cheb_and_der, exp_cheb_and_der2, exp_cheb_and_der3,
+                             chebval_ln_tau, chebval_ln_tau_and_der, chebval_ln_tau_and_der2, chebval_ln_tau_and_der3,
+                             horner_stable_ln_tau, horner_stable_ln_tau_and_der, horner_stable_ln_tau_and_der2, horner_stable_ln_tau_and_der3,
+                             exp_cheb_ln_tau, exp_cheb_ln_tau_and_der, exp_cheb_ln_tau_and_der2,
+                             exp_horner_stable_ln_tau, exp_horner_stable_ln_tau_and_der, exp_horner_stable_ln_tau_and_der2,
+)
 
 import fluids
 import chemicals
@@ -1480,6 +1488,8 @@ class TDependentProperty(object):
             Tc = self.Tc
             interpolation_T=lambda T: trunc_log(1. - T/Tc)
             interpolation_T_inv=lambda x: -(trunc_exp(x)-1.0)*Tc
+            interpolation_property = lambda x: x
+            interpolation_property_inv = interpolation_property
         elif fit_form == EXP_POLY_FIT_LN_TAU:
             Tc = self.Tc
             interpolation_T=lambda T: trunc_log(1. - T/Tc)
@@ -1836,10 +1846,16 @@ class TDependentProperty(object):
         self.cheb_fit_Tmin = Tmin
         self.cheb_fit_Tmax = Tmax
         self.cheb_fit_coeffs = cheb_fit_coeffs
+        
+        
         self.T_limits[CHEB_FIT] = (Tmin, Tmax)
         self.cheb_fit_offset, self.cheb_fit_scale = polynomial_offset_scale(Tmin, Tmax)
+        self.cheb_fit_d1_coeffs = chebder(cheb_fit_coeffs, m=1, scl=self.cheb_fit_scale)
+        self.cheb_fit_d2_coeffs = chebder(self.cheb_fit_d1_coeffs, m=1, scl=self.cheb_fit_scale)
+        self.cheb_fit_d3_coeffs = chebder(self.cheb_fit_d2_coeffs, m=1, scl=self.cheb_fit_scale)
+        self.cheb_fit_d4_coeffs = chebder(self.cheb_fit_d3_coeffs, m=1, scl=self.cheb_fit_scale)
 
-        
+        self.cheb_fit_int_coeffs = chebint(cheb_fit_coeffs, scl=1.0/self.cheb_fit_scale)
 
     def _set_exp_cheb_fit(self, cheb_fit):
         if len(cheb_fit) != 3:
@@ -1860,7 +1876,10 @@ class TDependentProperty(object):
         self.T_limits[EXP_CHEB_FIT] = (Tmin, Tmax)
         self.exp_cheb_fit_offset, self.exp_cheb_fit_scale = polynomial_offset_scale(Tmin, Tmax)
 
-        
+        self.exp_cheb_fit_d1_coeffs = chebder(cheb_fit_coeffs, m=1, scl=self.exp_cheb_fit_scale)
+        self.exp_cheb_fit_d2_coeffs = chebder(self.exp_cheb_fit_d1_coeffs, m=1, scl=self.exp_cheb_fit_scale)
+        self.exp_cheb_fit_d3_coeffs = chebder(self.exp_cheb_fit_d2_coeffs, m=1, scl=self.exp_cheb_fit_scale)
+        self.exp_cheb_fit_d4_coeffs = chebder(self.exp_cheb_fit_d3_coeffs, m=1, scl=self.exp_cheb_fit_scale)
         
 
     def _set_cheb_fit_ln_tau(self, cheb_fit):
@@ -1869,20 +1888,26 @@ class TDependentProperty(object):
                              "elements, in order (Tmin, Tmax, Tc, coefficients) "
                              "with the coefficients being an interable")
             
-        Tmin, Tmax, Tc = constants = cheb_fit[0:3]
-        for v in constants:
+        Tmin, Tmax, Tc, cheb_fit_coeffs = cheb_fit
+        for v in (Tmin, Tmax, Tc):
             if v is None:
                 raise ValueError("cheb_fit_ln_tau contains a None")
             if isnan(v):
                 raise ValueError("cheb_fit_ln_tau contains a nan")
-        cheb_fit_coeffs = cheb_fit[3]
         self.cheb_fit_ln_tau_Tmin = Tmin
         self.cheb_fit_ln_tau_Tmax = Tmax
         self.cheb_fit_ln_tau_Tc = Tc
         self.cheb_fit_ln_tau_coeffs = cheb_fit_coeffs
         self.T_limits[CHEB_FIT_LN_TAU] = (Tmin, Tmax)
-        self.cheb_fit_ln_tau_offset, self.cheb_fit_ln_tau_scale = polynomial_offset_scale(Tmin, Tmax)
+        
+        xmin = trunc_log(1.0 - Tmin/Tc)
+        xmax = trunc_log(1.0 - Tmax/Tc)
+        self.cheb_fit_ln_tau_offset, self.cheb_fit_ln_tau_scale = polynomial_offset_scale(xmin, xmax)
 
+        self.cheb_fit_ln_tau_d1_coeffs = chebder(cheb_fit_coeffs, m=1, scl=self.cheb_fit_ln_tau_scale)
+        self.cheb_fit_ln_tau_d2_coeffs = chebder(self.cheb_fit_ln_tau_d1_coeffs, m=1, scl=self.cheb_fit_ln_tau_scale)
+        self.cheb_fit_ln_tau_d3_coeffs = chebder(self.cheb_fit_ln_tau_d2_coeffs, m=1, scl=self.cheb_fit_ln_tau_scale)
+        self.cheb_fit_ln_tau_d4_coeffs = chebder(self.cheb_fit_ln_tau_d3_coeffs, m=1, scl=self.cheb_fit_ln_tau_scale)
 
     def _set_exp_cheb_fit_ln_tau(self, cheb_fit):
         if len(cheb_fit) != 4:
@@ -1901,8 +1926,15 @@ class TDependentProperty(object):
         self.exp_cheb_fit_ln_tau_Tmax = Tmax
         self.exp_cheb_fit_ln_tau_Tc = Tc
         self.exp_cheb_fit_ln_tau_coeffs = cheb_fit_coeffs
+        xmin = trunc_log(1.0 - Tmin/Tc)
+        xmax = trunc_log(1.0 - Tmax/Tc)
         self.T_limits[EXP_CHEB_FIT_LN_TAU] = (Tmin, Tmax)
-        self.exp_cheb_fit_ln_tau_offset, self.exp_cheb_fit_ln_tau_scale = polynomial_offset_scale(Tmin, Tmax)
+        self.exp_cheb_fit_ln_tau_offset, self.exp_cheb_fit_ln_tau_scale = polynomial_offset_scale(xmin, xmax)
+        
+        self.exp_cheb_fit_ln_tau_d1_coeffs = chebder(cheb_fit_coeffs, m=1, scl=self.exp_cheb_fit_ln_tau_scale)
+        self.exp_cheb_fit_ln_tau_d2_coeffs = chebder(self.exp_cheb_fit_ln_tau_d1_coeffs, m=1, scl=self.exp_cheb_fit_ln_tau_scale)
+        self.exp_cheb_fit_ln_tau_d3_coeffs = chebder(self.exp_cheb_fit_ln_tau_d2_coeffs, m=1, scl=self.exp_cheb_fit_ln_tau_scale)
+        self.exp_cheb_fit_ln_tau_d4_coeffs = chebder(self.exp_cheb_fit_ln_tau_d3_coeffs, m=1, scl=self.exp_cheb_fit_ln_tau_scale)
 
     def _set_stablepoly_fit(self, stablepoly_fit):
         if len(stablepoly_fit) != 3:
@@ -1944,7 +1976,12 @@ class TDependentProperty(object):
         self.exp_stablepoly_fit_Tmin = Tmin
         self.exp_stablepoly_fit_Tmax = Tmax
         self.exp_stablepoly_fit_coeffs = stablepoly_fit_coeffs
+        self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale = polynomial_offset_scale(Tmin, Tmax)
         self.T_limits[EXP_STABLEPOLY_FIT] = (Tmin, Tmax)
+                
+        self.exp_stablepoly_fit_Tmax_value, self.exp_stablepoly_fit_Tmax_slope, self.exp_stablepoly_fit_Tmax_dT2 = exp_horner_stable_and_der2(self.exp_stablepoly_fit_Tmax, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)
+        self.exp_stablepoly_fit_Tmin_value, self.exp_stablepoly_fit_Tmin_slope, self.exp_stablepoly_fit_Tmin_dT2 = exp_horner_stable_and_der2(self.exp_stablepoly_fit_Tmin, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)
+        
         
         
 
@@ -1965,6 +2002,10 @@ class TDependentProperty(object):
         self.stablepoly_fit_ln_tau_Tmax = Tmax
         self.stablepoly_fit_ln_tau_Tc = Tc
         self.stablepoly_fit_ln_tau_coeffs = stablepoly_fit_coeffs
+        
+        xmin, xmax = trunc_log(1.0 - Tmin/Tc), trunc_log(1.0 - Tmax/Tc)
+        
+        self.stablepoly_fit_ln_tau_offset, self.stablepoly_fit_ln_tau_scale = polynomial_offset_scale(xmin, xmax)
         self.T_limits[STABLEPOLY_FIT_LN_TAU] = (Tmin, Tmax)
 
     def _set_exp_stablepoly_fit_ln_tau(self, stablepoly_fit):
@@ -1984,7 +2025,9 @@ class TDependentProperty(object):
         self.exp_stablepoly_fit_ln_tau_Tmax = Tmax
         self.exp_stablepoly_fit_ln_tau_Tc = Tc
         self.exp_stablepoly_fit_ln_tau_coeffs = stablepoly_fit_coeffs
+        xmin, xmax = trunc_log(1.0 - Tmin/Tc), trunc_log(1.0 - Tmax/Tc)
         self.T_limits[EXP_STABLEPOLY_FIT_LN_TAU] = (Tmin, Tmax)
+        self.exp_stablepoly_fit_offset_ln_tau, self.exp_stablepoly_fit_scale_ln_tau = polynomial_offset_scale(xmin, xmax)
     
     def _set_exp_poly_fit(self, poly_fit):
         if len(poly_fit) != 3:
@@ -2196,8 +2239,20 @@ class TDependentProperty(object):
             return exp_horner_backwards_ln_tau(T, self.exp_poly_fit_ln_tau_Tc, self.exp_poly_fit_ln_tau_coeffs)
         elif method == STABLEPOLY_FIT:
             return horner_stable(T, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)
+        elif method == EXP_STABLEPOLY_FIT:
+            return exp_horner_stable(T, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)
         elif method == CHEB_FIT:
             return chebval(T, self.cheb_fit_coeffs, self.cheb_fit_offset, self.cheb_fit_scale)
+        elif method == EXP_CHEB_FIT:
+            return exp_cheb(T, self.exp_cheb_fit_coeffs, self.exp_cheb_fit_offset, self.exp_cheb_fit_scale)
+        elif method == CHEB_FIT_LN_TAU:
+            return chebval_ln_tau(T, self.cheb_fit_ln_tau_Tc, self.cheb_fit_ln_tau_coeffs, self.cheb_fit_ln_tau_offset, self.cheb_fit_ln_tau_scale)
+        elif method == STABLEPOLY_FIT_LN_TAU:
+            return horner_stable_ln_tau(T, self.stablepoly_fit_ln_tau_Tc, self.stablepoly_fit_ln_tau_coeffs, self.stablepoly_fit_ln_tau_offset, self.stablepoly_fit_ln_tau_scale)
+        elif method == EXP_CHEB_FIT_LN_TAU:
+            return exp_cheb_ln_tau(T, self.exp_cheb_fit_ln_tau_Tc, self.exp_cheb_fit_ln_tau_coeffs, self.exp_cheb_fit_ln_tau_offset, self.exp_cheb_fit_ln_tau_scale)
+        elif method == EXP_STABLEPOLY_FIT_LN_TAU:
+            return exp_horner_stable_ln_tau(T, self.exp_stablepoly_fit_ln_tau_Tc, self.exp_stablepoly_fit_ln_tau_coeffs, self.exp_stablepoly_fit_offset_ln_tau, self.exp_stablepoly_fit_scale_ln_tau)
         elif method in self.tabular_data:
             return self.interpolate(T, method)
         elif method in self.local_methods:
@@ -2834,6 +2889,7 @@ class TDependentProperty(object):
                 return horner_backwards_ln_tau_and_der2(T, self.poly_fit_ln_tau_Tc, self.poly_fit_ln_tau_coeffs)[2]
             if order == 3:
                 return horner_backwards_ln_tau_and_der3(T, self.poly_fit_ln_tau_Tc, self.poly_fit_ln_tau_coeffs)[3]
+
         if method == STABLEPOLY_FIT:
             if order == 1:
                 return horner_stable_and_der(T, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)[1]
@@ -2843,7 +2899,54 @@ class TDependentProperty(object):
                 return horner_stable_and_der3(T, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)[3]
             if order == 4:
                 return horner_stable_and_der4(T, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)[4]
-
+        if method == CHEB_FIT:
+            if order == 1:
+                return chebval(T, self.cheb_fit_d1_coeffs, self.cheb_fit_offset, self.cheb_fit_scale)
+            if order == 2:
+                return chebval(T, self.cheb_fit_d2_coeffs, self.cheb_fit_offset, self.cheb_fit_scale)
+            if order == 3:
+                return chebval(T, self.cheb_fit_d3_coeffs, self.cheb_fit_offset, self.cheb_fit_scale)
+            if order == 4:
+                return chebval(T, self.cheb_fit_d4_coeffs, self.cheb_fit_offset, self.cheb_fit_scale)
+        if method == EXP_STABLEPOLY_FIT:
+            if order == 1:
+                return exp_horner_stable_and_der(T, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)[1]
+            if order == 2:
+                return exp_horner_stable_and_der2(T, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)[2]
+            if order == 3:
+                return exp_horner_stable_and_der3(T, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)[3]            
+        if method == EXP_CHEB_FIT:
+            if order == 1:
+                return exp_cheb_and_der(T, self.exp_cheb_fit_coeffs, self.exp_cheb_fit_d1_coeffs, self.exp_cheb_fit_offset, self.exp_cheb_fit_scale)[1]
+            if order == 2:
+                return exp_cheb_and_der2(T, self.exp_cheb_fit_coeffs, self.exp_cheb_fit_d1_coeffs, self.exp_cheb_fit_d2_coeffs, self.exp_cheb_fit_offset, self.exp_cheb_fit_scale)[2]
+            if order == 3:
+                return exp_cheb_and_der3(T, self.exp_cheb_fit_coeffs, self.exp_cheb_fit_d1_coeffs, self.exp_cheb_fit_d2_coeffs, self.exp_cheb_fit_d3_coeffs, self.exp_cheb_fit_offset, self.exp_cheb_fit_scale)[3]
+        elif method == CHEB_FIT_LN_TAU:
+            if order == 1:
+                return chebval_ln_tau_and_der(T, self.cheb_fit_ln_tau_Tc, self.cheb_fit_ln_tau_coeffs, self.cheb_fit_ln_tau_d1_coeffs, self.cheb_fit_ln_tau_offset, self.cheb_fit_ln_tau_scale)[1]
+            if order == 2:
+                return chebval_ln_tau_and_der2(T, self.cheb_fit_ln_tau_Tc, self.cheb_fit_ln_tau_coeffs, self.cheb_fit_ln_tau_d1_coeffs, self.cheb_fit_ln_tau_d2_coeffs, self.cheb_fit_ln_tau_offset, self.cheb_fit_ln_tau_scale)[2]
+            if order == 3:
+                return chebval_ln_tau_and_der3(T, self.cheb_fit_ln_tau_Tc, self.cheb_fit_ln_tau_coeffs, self.cheb_fit_ln_tau_d1_coeffs, self.cheb_fit_ln_tau_d2_coeffs, self.cheb_fit_ln_tau_d3_coeffs, self.cheb_fit_ln_tau_offset, self.cheb_fit_ln_tau_scale)[3]
+        
+        elif method == STABLEPOLY_FIT_LN_TAU:
+            if order == 1:
+                return horner_stable_ln_tau_and_der(T, self.stablepoly_fit_ln_tau_Tc, self.stablepoly_fit_ln_tau_coeffs, self.stablepoly_fit_ln_tau_offset, self.stablepoly_fit_ln_tau_scale)[1]
+            if order == 2:
+                return horner_stable_ln_tau_and_der2(T, self.stablepoly_fit_ln_tau_Tc, self.stablepoly_fit_ln_tau_coeffs, self.stablepoly_fit_ln_tau_offset, self.stablepoly_fit_ln_tau_scale)[2]
+            if order == 3:
+                return horner_stable_ln_tau_and_der3(T, self.stablepoly_fit_ln_tau_Tc, self.stablepoly_fit_ln_tau_coeffs, self.stablepoly_fit_ln_tau_offset, self.stablepoly_fit_ln_tau_scale)[3]
+        elif method == EXP_CHEB_FIT_LN_TAU:
+            if order == 1:
+                return exp_cheb_ln_tau_and_der(T, self.exp_cheb_fit_ln_tau_Tc, self.exp_cheb_fit_ln_tau_coeffs, self.exp_cheb_fit_ln_tau_d1_coeffs, self.exp_cheb_fit_ln_tau_offset, self.exp_cheb_fit_ln_tau_scale)[1]
+            if order == 2:
+                return exp_cheb_ln_tau_and_der2(T, self.exp_cheb_fit_ln_tau_Tc, self.exp_cheb_fit_ln_tau_coeffs, self.exp_cheb_fit_ln_tau_d1_coeffs, self.exp_cheb_fit_ln_tau_d2_coeffs, self.exp_cheb_fit_ln_tau_offset, self.exp_cheb_fit_ln_tau_scale)[2]
+        elif method == EXP_STABLEPOLY_FIT_LN_TAU:
+            if order == 1:
+                return exp_horner_stable_ln_tau_and_der(T, self.exp_stablepoly_fit_ln_tau_Tc, self.exp_stablepoly_fit_ln_tau_coeffs, self.exp_stablepoly_fit_offset_ln_tau, self.exp_stablepoly_fit_scale_ln_tau)[1]
+            if order == 2:
+                return exp_horner_stable_ln_tau_and_der2(T, self.exp_stablepoly_fit_ln_tau_Tc, self.exp_stablepoly_fit_ln_tau_coeffs, self.exp_stablepoly_fit_offset_ln_tau, self.exp_stablepoly_fit_scale_ln_tau)[2]
         pts = 1 + order*2
         dx = T*1e-6
         args = (method,)

@@ -158,8 +158,35 @@ def test_EnthalpyVaporization_Watson_extrapolation():
     assert eval(str(obj)) == obj
 
 
+
+
 @pytest.mark.meta_T_dept
-def test_EnthalpyVaporization_bestfit_polynomial():
+def test_EnthalpyVaporization_cheb_fit_ln_tau():
+    coeffs = [18231.740838720892, -18598.514785409734, 5237.841944302821, -1010.5549489362293, 147.88312821848922, -17.412144225239444, 1.7141064359038864, -0.14493639179363527, 0.01073811633477817, -0.0007078634084791702, 4.202655964036239e-05, -2.274648068123497e-06, 1.1239490049774759e-07]
+    obj2 = EnthalpyVaporization(Tc=591.75, cheb_fit_ln_tau=((178.18, 591.0, 591.75, coeffs)))
+    T = 500
+    assert_close(obj2(T), 24498.131947622023, rtol=1e-13)
+    assert_close(obj2.T_dependent_property_derivative(T), -100.77476795241955, rtol=1e-13)
+    assert_close(obj2.T_dependent_property_derivative(T, order=2), -0.6838185834436981, rtol=1e-13)
+    assert_close(obj2.T_dependent_property_derivative(T, order=3), -0.012093191904152178, rtol=1e-13)
+    
+    
+@pytest.mark.meta_T_dept
+def test_EnthalpyVaporization_stablepoly_fit_ln_tau():
+    coeffs = [-0.00854738149791956, 0.05600738152861595, -0.30758192972280085, 1.6848304651211947, -8.432931053161155, 37.83695791102946, -150.87603890354512, 526.4891248463246, -1574.7593541151946, 3925.149223414621, -7826.869059381197, 11705.265444382389, -11670.331914006258, 5817.751307862842]
+    obj2 = EnthalpyVaporization(Tc=591.75, stablepoly_fit_ln_tau=((178.18, 591.74, 591.75, coeffs)))
+    
+    T = 500
+    assert_close(obj2(T), 24498.131947494512, rtol=1e-13)
+    
+    assert_close(obj2.T_dependent_property_derivative(T), -100.77476796035525, rtol=1e-13)
+    assert_close(obj2.T_dependent_property_derivative(T, order=2), -0.6838185833621794, rtol=1e-13)
+    assert_close(obj2.T_dependent_property_derivative(T, order=3), -0.012093191888904656, rtol=1e-13)
+
+
+
+@pytest.mark.meta_T_dept
+def test_EnthalpyVaporization_polynomial_ln_tau_parameters():
     coeffs = [9.661381155485653, 224.16316385569456, 2195.419519751738, 11801.26111760343, 37883.05110910901, 74020.46380982929, 87244.40329893673, 69254.45831263301, 61780.155823216155]
     Tc = 591.75
     
@@ -173,7 +200,7 @@ def test_EnthalpyVaporization_bestfit_polynomial():
         assert_close(v, 24168.867169087476, rtol=1e-13)
     
 @pytest.mark.meta_T_dept
-def test_EnthalpyVaporization_bestfit_polynomial_generic():
+def test_EnthalpyVaporization_poly_fit_ln_tau():
     coeffs = [9.661381155485653, 224.16316385569456, 2195.419519751738, 11801.26111760343, 37883.05110910901, 74020.46380982929, 87244.40329893673, 69254.45831263301, 61780.155823216155]
     Tc = 591.75
     T = 300.0

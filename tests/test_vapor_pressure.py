@@ -300,12 +300,13 @@ def test_VaporPressure_fitting7_reduced_fit_params_with_jac():
 @pytest.mark.fitting
 @pytest.mark.meta_T_dept
 def test_VaporPressure_fitting8_TRC_AntoineExtended():
+    hard_CASs = frozenset(['110-82-7'])
     for i, CAS in enumerate(chemicals.vapor_pressure.Psat_data_AntoineExtended.index):
         obj = VaporPressure(CASRN=CAS)
         Ts = linspace(obj.ANTOINE_EXTENDED_POLING_Tmin, obj.ANTOINE_EXTENDED_POLING_Tmax, 10)
         props_calc = [obj.calculate(T, ANTOINE_EXTENDED_POLING) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='TRC_Antoine_extended',
-                              do_statistics=True, use_numba=False, 
+                              do_statistics=True, use_numba=False, multiple_tries=CAS in hard_CASs,# multiple_tries_max_err=1e-4,
                               fit_method='lm', model_kwargs={'Tc': obj.ANTOINE_EXTENDED_POLING_coefs[0], 
                                                              'to': obj.ANTOINE_EXTENDED_POLING_coefs[1]})
         assert stats['MAE'] < 1e-4
@@ -530,8 +531,26 @@ def test_VaporPressure_generic_polynomial_exp_parameters_complicated():
     assert_close(obj2.T_dependent_property_derivative(T, order=2), 41.8787546283273, rtol=1e-14)
     assert_close(obj2.T_dependent_property_derivative(T, order=3), 1.496803960985584, rtol=1e-13)
     
-    
 
+@pytest.mark.meta_T_dept
+def test_VaporPressure_exp_stablepoly_fit():
+    obj2 = VaporPressure(Tc=591.72, exp_stablepoly_fit=((309.0, 591.72, [0.008603558174828078, 0.007358688688856427, -0.016890323025782954, -0.005289197721114957, -0.0028824712174469625, 0.05130960832946553, -0.12709896610233662, 0.37774977659528036, -0.9595325030688526, 2.7931528759840174, 13.10149649770156])))
+    assert_close(obj2(400), 157191.01706242564, rtol=1e-13)
+    assert_close(obj2.T_dependent_property_derivative(400, order=1), 4056.436943642117, rtol=1e-13)
+    
+    assert_close(obj2.T_dependent_property_derivative(400, order=2), 81.32645570045084, rtol=1e-13)
+    assert_close(obj2.T_dependent_property_derivative(400, order=3), 1.103603650822488, rtol=1e-13)
+
+@pytest.mark.meta_T_dept
+def test_VaporPressure_exp_cheb_fit():
+    obj2 = VaporPressure(Tc=591.72, exp_cheb_fit=((309.0, 591.72, [12.570668791524573, 3.1092695610681673, -0.5485217707981505, 0.11115875762247596, -0.01809803938553478, 0.003674911307077089, -0.00037626163070525465, 0.0001962813915017403, 6.120764548889213e-05, 3.602752453735203e-05])))
+    assert_close(obj2(300), 4186.189338463003, rtol=1e-13)
+    
+    assert_close(obj2.T_dependent_property_derivative(400, order=1), 4056.277312107932, rtol=1e-13)
+    
+    assert_close(obj2.T_dependent_property_derivative(400, order=2), 81.34302144188977, rtol=1e-13)
+    assert_close(obj2.T_dependent_property_derivative(400, order=3),1.105438780935656, rtol=1e-13)
+    
 @pytest.mark.meta_T_dept
 def test_VaporPressure_extrapolation_no_validation():
     N2 = VaporPressure(CASRN='7727-37-9', extrapolation='DIPPR101_ABC')

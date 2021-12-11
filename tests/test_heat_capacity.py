@@ -137,9 +137,22 @@ def test_HeatCapacityGas_CoolProp():
 
 @pytest.mark.meta_T_dept
 def test_HeatCapacityGas_cheb_fit():
+    Tmin, Tmax = 50, 1500.0
     toluene_TRC_cheb_fit = [194.9993931442641, 135.143566535142, -31.391834328585, -0.03951841213554952, 5.633110876073714, -3.686554783541794, 1.3108038668007862, -0.09053861376310801, -0.2614279887767278, 0.24832452742026911, -0.15919652548841812, 0.09374295717647019, -0.06233192560577938, 0.050814520356653126, -0.046331125185531064, 0.0424579816955023, -0.03739513702085129, 0.031402017733109244, -0.025212485578021915, 0.01939423141593144, -0.014231480849538403, 0.009801281575488097, -0.006075456686871594, 0.0029909809015365996, -0.0004841890018462136, -0.0014991199985455728, 0.0030051480117581075, -0.004076901418829215, 0.004758297389532928, -0.005096275567543218, 0.00514099984344718, -0.004944736724873944, 0.004560044671604424, -0.004037777783658769, 0.0034252408915679267, -0.002764690626354871, 0.0020922734527478726, -0.0014374230267101273, 0.0008226963858916081, -0.00026400260413972365, -0.0002288377348015347, 0.0006512726893767029, -0.0010030137199867895, 0.0012869214641443305, -0.001507857723972772, 0.001671575150882565, -0.0017837100581746812, 0.001848935469520696, -0.0009351605848800237]
-    fit_obj = HeatCapacityGas(cheb_fit=(50.0, 1500.0, toluene_TRC_cheb_fit))
+    fit_obj = HeatCapacityGas(cheb_fit=(Tmin, Tmax, toluene_TRC_cheb_fit))
+
     assert_close(fit_obj(300), 104.46956642594124, rtol=1e-13)
+    obj = np.polynomial.chebyshev.Chebyshev(toluene_TRC_cheb_fit, domain=(Tmin, Tmax))
+    assert_close(obj.deriv(1)(300), fit_obj.T_dependent_property_derivative(300, order=1), rtol=1e-15)
+    assert_close(obj.deriv(2)(300), fit_obj.T_dependent_property_derivative(300, order=2), rtol=1e-15)
+    assert_close(obj.deriv(3)(300), fit_obj.T_dependent_property_derivative(300, order=3), rtol=1e-15)
+    assert_close(obj.deriv(4)(300), fit_obj.T_dependent_property_derivative(300, order=4), rtol=1e-15)
+    
+    
+    assert_close(fit_obj.T_dependent_property_derivative(300, order=1), 0.36241217517888635, rtol=1e-13)
+    assert_close(fit_obj.T_dependent_property_derivative(300, order=2), -6.445511348110282e-06, rtol=1e-13)
+    assert_close(fit_obj.T_dependent_property_derivative(300, order=3), -8.804754988590911e-06, rtol=1e-13)
+    assert_close(fit_obj.T_dependent_property_derivative(300, order=4), 1.2298003967617247e-07, rtol=1e-13)
     
 
 @pytest.mark.meta_T_dept
