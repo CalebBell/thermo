@@ -597,7 +597,8 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
                    guesses=None, initial_guesses=None, analytical_jac=None,
                    solver_kwargs=None, use_numba=False, multiple_tries=False,
                    do_statistics=False, multiple_tries_max_err=1e-5,
-                   func_wrapped_for_leastsq=None, jac_wrapped_for_leastsq=None):
+                   func_wrapped_for_leastsq=None, jac_wrapped_for_leastsq=None,
+                   sigma=None):
     if solver_kwargs is None: solver_kwargs = {}
     if use_numba:
         fit_func_dict = fluids.numba.numerics.fit_minimization_targets
@@ -683,7 +684,7 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
                                       bounds=working_bounds, **solver_kwargs)
         popt = res['x']
     else:
-        lm_direct = fit_method == 'lm'
+        lm_direct = (fit_method == 'lm' and sigma is None)
         Dfun = jac_wrapped_for_leastsq if analytical_jac is not None else None
         if 'maxfev' not in solver_kwargs and fit_method == 'lm':
             # DO NOT INCREASE THIS! Make an analytical jacobian instead please.
@@ -711,8 +712,8 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
 
                         pcov = None
                     else:
-                        popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, jac=analytical_jac, 
-                                                method=fit_method, **solver_kwargs)
+                        popt, pcov = curve_fit(fitting_func, Ts, data, sigma=sigma, p0=p0, jac=analytical_jac, 
+                                                method=fit_method, absolute_sigma=True, **solver_kwargs)
                 except:
                     continue
                 calc = fitting_func(Ts, *popt)
@@ -732,8 +733,8 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
                 popt, _ = leastsq(func_wrapped_for_leastsq, p0, Dfun=Dfun, **solver_kwargs)
                 pcov = None
             else:
-                popt, pcov = curve_fit(fitting_func, Ts, data, p0=p0, jac=analytical_jac,
-                                        method=fit_method, **solver_kwargs)
+                popt, pcov = curve_fit(fitting_func, Ts, data, sigma=sigma, p0=p0, jac=analytical_jac,
+                                        method=fit_method, absolute_sigma=True, **solver_kwargs)
     out_kwargs = {}
     for param_name, param_value in zip(fit_parameters, popt):
         out_kwargs[param_name] = float(param_value)

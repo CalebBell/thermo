@@ -1566,7 +1566,7 @@ class TDependentProperty(object):
     
     @classmethod
     def fit_data_to_model(cls, Ts, data, model, model_kwargs=None, 
-                          fit_method='lm', use_numba=False,
+                          fit_method='lm', sigma=None, use_numba=False,
                           do_statistics=False, guesses=None,
                           solver_kwargs=None, objective='MeanSquareErr',
                           multiple_tries=False, multiple_tries_max_err=1e-5,
@@ -1590,6 +1590,8 @@ class TDependentProperty(object):
         fit_method : str, optional
             The fit method to use; one of {`lm`, `trf`, `dogbox`, 
             `differential_evolution`}, [-]
+        sigma : None or list[float]
+            Uncertainty parameters used by `curve_fit`, [-]
         use_numba : bool, optional
             Whether or not to try to use numba to speed up the computation, [-]
         do_statistics : bool, optional
@@ -1697,12 +1699,12 @@ class TDependentProperty(object):
             analytical_jac = jac_wrapped_for_leastsq = None
             
             
-        res = fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters, 
-                   fit_method, objective, multiple_tries_max_objective, 
+        res = fit_customized(Ts=Ts, data=data, fitting_func=fitting_func, fit_parameters=fit_parameters, use_fit_parameters=use_fit_parameters, 
+                   fit_method=fit_method, objective=objective, multiple_tries_max_objective=multiple_tries_max_objective, 
                    guesses=guesses, initial_guesses=initial_guesses, analytical_jac=analytical_jac,
                    solver_kwargs=solver_kwargs, use_numba=use_numba, multiple_tries=multiple_tries,
                    do_statistics=do_statistics, multiple_tries_max_err=multiple_tries_max_err,
-                   func_wrapped_for_leastsq=func_wrapped_for_leastsq,
+                   func_wrapped_for_leastsq=func_wrapped_for_leastsq, sigma=sigma,
                    jac_wrapped_for_leastsq=jac_wrapped_for_leastsq)
         if do_statistics:
             ans = res[0]
@@ -2345,7 +2347,7 @@ class TDependentProperty(object):
 
     def plot_T_dependent_property(self, Tmin=None, Tmax=None, methods=[],
                                   pts=250, only_valid=True, order=0, show=True,
-                                  axes='semilogy'):
+                                  tabular_points=True, axes='semilogy'):
         r'''Method to create a plot of the property vs temperature according to
         either a specified list of methods, or user methods (if set), or all
         methods. User-selectable number of points, and temperature range. If
@@ -2374,6 +2376,9 @@ class TDependentProperty(object):
             checking and use methods outside their bounds
         show : bool
             If True, displays the plot; otherwise, returns it
+        tabular_points : bool, optional
+            If True, tabular data will only be shows as the original points;
+            otherwise interpolated values are shown, [-]
         '''
         # This function cannot be tested
         if not has_matplotlib():
@@ -2382,10 +2387,10 @@ class TDependentProperty(object):
             methods = self.all_methods
         if Tmin is None:
             T_limits = self.T_limits
-            Tmin = max(T_limits[m][0] for m in methods)
+            Tmin = min(T_limits[m][0] for m in methods)
         if Tmax is None:
             T_limits = self.T_limits
-            Tmax = min(T_limits[m][1] for m in methods)
+            Tmax = max(T_limits[m][1] for m in methods)
         import matplotlib.pyplot as plt
 
             
@@ -2404,22 +2409,26 @@ class TDependentProperty(object):
                 fmt = '-'
                 if method in tabular_data:
                     fmt = 'x'
-                
-                if only_valid:
-                    properties, Ts2 = [], []
-                    for T in Ts:
-                        if self.test_method_validity(T, method):
-                            try:
-                                p = self._calculate_extrapolate(T=T, method=method)
-                                if self.test_property_validity(p):
-                                    properties.append(p)
-                                    Ts2.append(T)
-                            except:
-                                pass
-                    plot_fun(Ts2, properties, fmt, label=method)
+                if method in tabular_data and tabular_points:
+                    plot_fun(tabular_data[method][0], tabular_data[method][1], fmt, label=method)
+
                 else:
-                    properties = [self._calculate_extrapolate(T=T, method=method) for T in Ts]
-                    plot_fun(Ts, properties, fmt, label=method)
+                
+                    if only_valid:
+                        properties, Ts2 = [], []
+                        for T in Ts:
+                            if self.test_method_validity(T, method):
+                                try:
+                                    p = self._calculate_extrapolate(T=T, method=method)
+                                    if self.test_property_validity(p):
+                                        properties.append(p)
+                                        Ts2.append(T)
+                                except:
+                                    pass
+                        plot_fun(Ts2, properties, fmt, label=method)
+                    else:
+                        properties = [self._calculate_extrapolate(T=T, method=method) for T in Ts]
+                        plot_fun(Ts, properties, fmt, label=method)
             plt.ylabel(self.name + ', ' + self.units)
             title = self.name
             if self.CASRN:
@@ -2696,7 +2705,7 @@ class TDependentProperty(object):
             for p in properties:
                 if not self.test_property_validity(p):
                     raise ValueError('One of the properties specified are not feasible')
-        if not all(b > a for a, b in zip(Ts, Ts[1:])):
+        if not all(b >= a for a, b in zip(Ts, Ts[1:])):
             raise ValueError('Temperatures are not sorted in increasing order')
 
         if name is None:
@@ -2794,16 +2803,15 @@ class TDependentProperty(object):
     #         return T
 
 
-    def _calculate_derivative_transformed(self, T, method, order=1):
+    def _calculate_derivative_transformed(self, T, method, order=1,
+                                          interpolation_property=None, interpolation_T=None):
         r'''Basic funtion which wraps calculate_derivative such that the output
         of the derivative is in the transformed basis.'''
-        if self.interpolation_property is None and self.interpolation_T is None:
-            return self.calculate_derivative(T, method, order=1)
+        if interpolation_property is None  and interpolation_T is None:
+            return self.calculate_derivative(T, method, order=order)
 
-        interpolation_T = self.interpolation_T
         if interpolation_T is None:
             interpolation_T = lambda T: T
-        interpolation_property = self.interpolation_property
         if interpolation_property is None:
             interpolation_property = lambda x: x
 
@@ -3301,7 +3309,11 @@ class TDependentProperty(object):
             interpolation_property = self.interpolation_property
             v = self.calculate(T, method=method)
             if interpolation_property is not None: v = interpolation_property(v)
-            d = self._calculate_derivative_transformed(T=T, method=method, order=1)
+            d = self._calculate_derivative_transformed(T=T, method=method, order=1, interpolation_property=self.interpolation_property, interpolation_T=self.interpolation_T)
+            coefficients = (v, d)
+        elif extrapolation == 'log(linear)':
+            v = log(self.calculate(T, method=method))
+            d = self._calculate_derivative_transformed(T=T, method=method, order=1, interpolation_property=lambda x: log(x))
             coefficients = (v, d)
         elif extrapolation == 'constant':
             coefficients = self.calculate(T, method=method)
@@ -3462,6 +3474,11 @@ class TDependentProperty(object):
             if interpolation_property_inv is not None:
                 val = interpolation_property_inv(val)
             return val
+        elif extrapolation == 'log(linear)':
+            v, d = coeffs
+            T_lim = T_low if low else T_high
+            val = v + d * (T - T_lim)
+            return exp(val)
         elif extrapolation == 'constant':
             return coeffs
         elif extrapolation == 'AntoineAB':
