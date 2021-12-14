@@ -22,14 +22,15 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['TDependentProperty',]
+__all__ = ['TDependentProperty', 'PROPERTY_TRANSFORM_LN', 'PROPERTY_TRANSFORM_DLN', 
+           'PROPERTY_TRANSFORM_D2LN', 'PROPERTY_TRANSFORM_D_X', 'PROPERTY_TRANSFORM_D2_X']
 
 import os
 try:
     from random import uniform
 except: # pragma: no cover
     pass
-from math import inf, exp
+from math import inf, exp, log
 
 from fluids.numerics import (quad, brenth, secant, linspace, newton,
                              polyint, polyint_over_x, derivative, 
@@ -277,6 +278,17 @@ class ConstantLocalMethod:
 
     def f_int_over_T(self, Ta, Tb):
         return self.value * log(Tb/Ta)
+
+# Intended for internal use only; should be interned
+PROPERTY_TRANSFORM_LN = 'lnx'
+PROPERTY_TRANSFORM_DLN = 'dlnxoverdT'
+PROPERTY_TRANSFORM_D2LN = 'd2lnxdT2'
+PROPERTY_TRANSFORM_D_X = 'dxdToverx'
+PROPERTY_TRANSFORM_D2_X = 'd2xdT2overx'
+
+
+
+
 
 
 class TDependentProperty(object):
@@ -2117,42 +2129,15 @@ class TDependentProperty(object):
             self.poly_fit_d2_coeffs.reverse()
             self.poly_fit_d_coeffs = poly_fit_d_coeffs
             poly_fit_d_coeffs.reverse()
-
-            # Extrapolation slope on high and low
-            # slope_delta_T = (self.poly_fit_Tmax - self.poly_fit_Tmin)*.05
-
             self.poly_fit_Tmax_value = self.calculate(self.poly_fit_Tmax, POLY_FIT)
-            if self.interpolation_property is not None:
-                self.poly_fit_Tmax_value = self.interpolation_property(self.poly_fit_Tmax_value)
-
-
-            # Calculate the average derivative for the last 5% of the curve
-#            fit_value_high = self.calculate(self.poly_fit_Tmax - slope_delta_T, POLY_FIT)
-#            if self.interpolation_property is not None:
-#                fit_value_high = self.interpolation_property(fit_value_high)
-
-#            self.poly_fit_Tmax_slope = (self.poly_fit_Tmax_value
-#                                        - fit_value_high)/slope_delta_T
             _, self.poly_fit_Tmax_slope, self.poly_fit_Tmax_dT2 = horner_and_der2(self.poly_fit_coeffs, self.poly_fit_Tmax)
-
-            # Extrapolation to lower T
             self.poly_fit_Tmin_value = self.calculate(self.poly_fit_Tmin, POLY_FIT)
-            if self.interpolation_property is not None:
-                self.poly_fit_Tmin_value = self.interpolation_property(self.poly_fit_Tmin_value)
-
-#            fit_value_low = self.calculate(self.poly_fit_Tmin + slope_delta_T, POLY_FIT)
-#            if self.interpolation_property is not None:
-#                fit_value_low = self.interpolation_property(fit_value_low)
-#            self.poly_fit_Tmin_slope = (fit_value_low
-#                                        - self.poly_fit_Tmin_value)/slope_delta_T
-
-            # self.poly_fit_Tmin_slope = horner(self.poly_fit_d_coeffs, self.poly_fit_Tmin)
-            # self.poly_fit_Tmin_dT2 = horner(self.poly_fit_d2_coeffs, self.poly_fit_Tmin)
             _, self.poly_fit_Tmin_slope, self.poly_fit_Tmin_dT2 = horner_and_der2(self.poly_fit_coeffs, self.poly_fit_Tmin)
-
-            self._custom_set_poly_fit()
             self.T_limits[POLY_FIT] = (self.poly_fit_Tmin, self.poly_fit_Tmax)
-            
+            try:
+                self._custom_set_poly_fit()
+            except:
+                pass
     def as_poly_fit(self):
         method = self.method
         use_method = None
@@ -2344,6 +2329,166 @@ class TDependentProperty(object):
                         raise RuntimeError("Failed to extrapolate %s method '%s' at T=%s K for component with CASRN '%s'" %(self.name.lower(), method, T, self.CASRN))
             elif self.RAISE_PROPERTY_CALCULATION_ERROR: 
                 raise RuntimeError("%s method '%s' is not valid at T=%s K for component with CASRN '%s'" %(self.name, method, T, self.CASRN))
+    
+    def calculate_transform(self, T, method, transform):
+        if transform == PROPERTY_TRANSFORM_LN:
+            if method == EXP_POLY_FIT:
+                return horner(self.exp_poly_fit_coeffs, T)
+            
+            return log(self.calculate(T, method))
+        elif transform == PROPERTY_TRANSFORM_DLN:
+            if method == EXP_POLY_FIT:
+                return horner_and_der(self.exp_poly_fit_coeffs, T)[1]
+            return derivative(lambda T: log(self.calculate(T, method)), T, dx=T*1e-6)
+        elif transform == PROPERTY_TRANSFORM_D2LN:
+            if method == EXP_POLY_FIT:
+                return horner_and_der2(self.exp_poly_fit_coeffs, T)[2]
+            return derivative(lambda T: log(self.calculate(T, method)), T, n=2, dx=T*1e-6)
+        elif transform == PROPERTY_TRANSFORM_D_X:
+            v = self.calculate(T, method)
+            der = self.calculate_derivative(T, method)
+            return der/v
+        elif transform == PROPERTY_TRANSFORM_D2_X:
+            v = self.calculate(T, method)
+            der = self.calculate_derivative(T, method, order=2)
+            return der/v
+        else:
+            raise ValueError("Unknown transform")
+        
+    def extrapolate_transform(self, T, method, transform):
+        T_limits = self.T_limits
+        if T < 0.0:
+            raise ValueError("Negative temperature")
+        T_low, T_high = T_limits[method]
+        if T <= T_low:
+            low = True
+            extrapolation = self._extrapolation_low
+        elif T >= T_high:
+            low = False
+            extrapolation = self._extrapolation_high
+        elif in_range == 'low':
+            low = True
+            extrapolation = self._extrapolation_low
+        elif in_range == 'high':
+            low = False
+            extrapolation = self._extrapolation_high
+        elif in_range == 'nearest':
+            delta_low = abs(T-T_low)
+            delta_high = abs(T_high - T)
+            if delta_low < delta_high:
+                low = True
+                extrapolation = self._extrapolation_low
+            else:
+                low = False
+                extrapolation = self._extrapolation_high
+        else:
+            raise ValueError("Not outside normal range")
+            
+        key = (extrapolation, method, low)
+        extrapolation_coeffs = self.extrapolation_coeffs
+        if key in extrapolation_coeffs:
+            coeffs = extrapolation_coeffs[key]
+        else:
+            extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
+
+        if transform == PROPERTY_TRANSFORM_LN:
+            if extrapolation == 'AntoineAB':
+                A, B = coeffs
+                return A - B/T
+            elif extrapolation == 'DIPPR101_ABC':
+                A, B, C = coeffs
+                return A + B/T + C*trunc_log(T)
+        elif transform == PROPERTY_TRANSFORM_DLN:
+            if extrapolation == 'DIPPR101_ABC':
+                A, B, C = coeffs
+                return (-B/T + C)/T
+            if extrapolation == 'AntoineAB':
+                A, B = coeffs
+                return B/(T*T)
+        elif transform == PROPERTY_TRANSFORM_D2LN:
+            if extrapolation == 'DIPPR101_ABC':
+                A, B, C = coeffs
+                T_inv = 1.0/T
+                return (2.0*B*T_inv - C)*T_inv*T_inv
+            if extrapolation == 'AntoineAB':
+                A, B = coeffs
+                return -2.0*B/(T*T*T)
+        elif transform == PROPERTY_TRANSFORM_D_X:
+            if extrapolation == 'DIPPR101_ABC':
+                A, B, C = coeffs
+                return (-B + C*T)/(T*T)
+            if extrapolation == 'AntoineAB':
+                A, B = coeffs
+                return B/(T*T)
+        elif transform ==PROPERTY_TRANSFORM_D2_X:
+            if extrapolation == 'DIPPR101_ABC':
+                A, B, C = coeffs
+                T2 = T*T
+                t0 = (B - C*T)
+                return (2*B*T - C*T2 + t0*t0)/(T2*T2)
+            if extrapolation == 'AntoineAB':
+                A, B = coeffs
+                T2 = T*T
+                return B*(B - 2.0*T)/(T2*T2)
+
+
+
+        if transform == PROPERTY_TRANSFORM_LN:
+            return log(self.extrapolate(T, method))
+        elif transform == PROPERTY_TRANSFORM_DLN:
+            return derivative(lambda T: log(self.extrapolate(T, method)), T, dx=T*1e-6)
+        elif transform == PROPERTY_TRANSFORM_D2LN:
+            return derivative(lambda T: log(self.extrapolate(T, method)), T, n=2, dx=T*1e-6)
+        elif transform == PROPERTY_TRANSFORM_D_X:
+            v = self.extrapolate(T, method)
+            der = self.extrapolate_derivative(T, method, order=1)
+            return der/v
+        elif transform == PROPERTY_TRANSFORM_D2_X:
+            v = self.extrapolate(T, method)
+            der = self.extrapolate_derivative(T, method, order=2)
+            return der/v
+        else:
+            raise ValueError("Unknown transform")
+
+    def T_dependent_property_transform(self, T, transform):
+        r'''Method to calculate the property according to certain predefined
+        mathematical rules; this is typically needed when a property reaches 
+        zero in double floating point precision
+
+        If calculation of the property fails, None is returned.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the property, [K]
+
+        Returns
+        -------
+        log(prop) : float
+            Log of the calculated property, [log(`units`)]
+        '''
+        method = self._method
+        if method is None:
+            if self.RAISE_PROPERTY_CALCULATION_ERROR: 
+                raise RuntimeError("No %s method selected for component with CASRN '%s'" %(self.name.lower(), self.CASRN))
+        else:
+            try:
+                T_low, T_high = self.T_limits[method]
+                in_range = T_low <= T <= T_high
+            except KeyError:
+                in_range = self.test_method_validity(T, method)
+            if in_range:
+                try: 
+                    return self.calculate_transform(T, method, transform)
+                except: 
+                    if self.RAISE_PROPERTY_CALCULATION_ERROR:
+                        raise RuntimeError("Failed to evaluate %s method '%s' at T=%s K for component with CASRN '%s'" %(self.name.lower(), method, T, self.CASRN))
+            else:
+                try:
+                    return self.extrapolate_transform(T, method, transform)
+                except:
+                    if self.RAISE_PROPERTY_CALCULATION_ERROR:
+                        raise RuntimeError("Failed to extrapolate %s method '%s' at T=%s K for component with CASRN '%s'" %(self.name.lower(), method, T, self.CASRN))
 
     def plot_T_dependent_property(self, Tmin=None, Tmax=None, methods=[],
                                   pts=250, only_valid=True, order=0, show=True,
@@ -3554,15 +3699,41 @@ class TDependentProperty(object):
             raise ValueError("Not outside normal range")
         if extrapolation == 'constant':
             return 0.
-        elif extrapolation == 'linear':
+        elif extrapolation in ('linear', 'DIPPR101_ABC', 'AntoineAB', 'DIPPR106_AB', 'DIPPR106_ABC', 'EXP_POLY_LN_TAU2', 'EXP_POLY_LN_TAU3'):
             key = (extrapolation, method, low)
             extrapolation_coeffs = self.extrapolation_coeffs
             if key in extrapolation_coeffs:
                 coeffs = extrapolation_coeffs[key]
             else:
                 extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
-            if self.interpolation_T is None and self.interpolation_property_inv is None:
-                return coeffs[1]
+            if extrapolation == 'linear':
+                if order == 1:
+                    if self.interpolation_T is None and self.interpolation_property_inv is None:
+                        return coeffs[1]
+            elif extrapolation == 'DIPPR101_ABC':
+                if order in (0, 1, 2, 3):
+                    A, B, C = coeffs
+                    return EQ101(T, A, B, C, 0.0, 0.0, order=order)
+            elif extrapolation == 'AntoineAB':
+                A, B = coeffs
+                if order == 1:
+                    return dAntoine_dT(T, A=A, B=B, C=0.0, base=e)
+                elif order == 2:
+                    return d2Antoine_dT2(T, A=A, B=B, C=0.0, base=e)
+            elif extrapolation == 'DIPPR106_AB':
+                if order in (0, 1, 2, 3):
+                    A, B = coeffs
+                    return EQ106(T, self.Tc, A, B, order=order)
+            elif extrapolation == 'DIPPR106_ABC':
+                if order in (0, 1, 2, 3):
+                    A, B, C = coeffs
+                    return EQ106(T, self.Tc, A, B, C, order=order)
+            elif extrapolation == 'EXP_POLY_LN_TAU2' or extrapolation == 'EXP_POLY_LN_TAU3':
+                if order == 1:
+                    return exp_horner_backwards_ln_tau_and_der(T, self.Tc, coeffs)[1]
+                elif order == 2:
+                    return exp_horner_backwards_ln_tau_and_der2(T, self.Tc, coeffs)[2]
+
         pts = 1 + order*2
         dx = T*1e-6
         args = (method, 'nearest')

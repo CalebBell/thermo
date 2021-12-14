@@ -31,7 +31,7 @@ from fluids.numerics import (horner_and_der2, derivative,
                              trunc_exp, secant)
 from chemicals.utils import log, exp
 from thermo.activity import IdealSolution
-from thermo.utils import POLY_FIT
+from thermo.utils import POLY_FIT, PROPERTY_TRANSFORM_LN, PROPERTY_TRANSFORM_DLN, PROPERTY_TRANSFORM_D2LN, PROPERTY_TRANSFORM_D_X, PROPERTY_TRANSFORM_D2_X
 from thermo.heat_capacity import HeatCapacityGas, HeatCapacityLiquid
 from thermo.volume import VolumeLiquid, VolumeSolid
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
@@ -823,7 +823,8 @@ class GibbsExcessLiquid(Phase):
                 lnPsats.append(Psat)
             self._lnPsats = lnPsats
             return lnPsats
-        self._lnPsats = [log(i) for i in self.Psats()]
+        
+        self._lnPsats = [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_LN) for VaporPressure in self.VaporPressures]
         return self._lnPsats
 
     def dlnPsats_dT(self):
@@ -848,7 +849,8 @@ class GibbsExcessLiquid(Phase):
                         dPsat_dT = dPsat_dT*T + c
                 dlnPsats_dT.append(dPsat_dT)
             return dlnPsats_dT
-
+        return [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_DLN) for VaporPressure in self.VaporPressures]
+    
     def d2lnPsats_dT2(self):
         T, cmps = self.T, range(self.N)
         T_inv = 1.0/T
@@ -872,6 +874,7 @@ class GibbsExcessLiquid(Phase):
                         d2lnPsat_dT2 = d2lnPsat_dT2*T + c
                 d2lnPsats_dT2.append(d2lnPsat_dT2)
             return d2lnPsats_dT2
+        return [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D2LN) for VaporPressure in self.VaporPressures]
 
     def dPsats_dT_over_Psats(self):
         try:
@@ -899,7 +902,9 @@ class GibbsExcessLiquid(Phase):
             self._dPsats_dT_over_Psats = dPsat_dT_over_Psats
             return dPsat_dT_over_Psats
 
-        dPsat_dT_over_Psats = [i/j for i, j in zip(self.dPsats_dT(), self.Psats())]
+        # dPsat_dT_over_Psats = [i/j for i, j in zip(self.dPsats_dT(), self.Psats())]
+        dPsat_dT_over_Psats = [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D_X) for VaporPressure in self.VaporPressures]
+
         self._dPsats_dT_over_Psats = dPsat_dT_over_Psats
         return dPsat_dT_over_Psats
 
@@ -939,7 +944,8 @@ class GibbsExcessLiquid(Phase):
             self._d2Psats_dT2_over_Psats = d2Psat_dT2_over_Psats
             return d2Psat_dT2_over_Psats
 
-        d2Psat_dT2_over_Psats = [i/j for i, j in zip(self.d2Psats_dT2(), self.Psats())]
+        # d2Psat_dT2_over_Psats = [i/j for i, j in zip(self.d2Psats_dT2(), self.Psats())]
+        d2Psat_dT2_over_Psats = [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D2_X) for VaporPressure in self.VaporPressures]
         self._d2Psats_dT2_over_Psats = d2Psat_dT2_over_Psats
         return d2Psat_dT2_over_Psats
 

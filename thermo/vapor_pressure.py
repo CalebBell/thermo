@@ -76,7 +76,7 @@ from chemicals.vapor_pressure import dAntoine_dT, d2Antoine_dT2, dWagner_origina
 
 from chemicals import vapor_pressure
 from thermo.utils import TDependentProperty
-from thermo.utils import VDI_TABULAR, DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, EOS, POLY_FIT
+from thermo.utils import VDI_TABULAR, DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, EOS
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
 from thermo.base import source_path
 
@@ -91,8 +91,6 @@ LEE_KESLER_PSAT = 'LEE_KESLER_PSAT'
 AMBROSE_WALTON = 'AMBROSE_WALTON'
 SANJARI = 'SANJARI'
 EDALAT = 'EDALAT'
-BEST_FIT_AB = 'POLY_FIT AB extrapolation'
-BEST_FIT_ABC = 'POLY_FIT ABC extrapolation'
 
 vapor_pressure_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                           DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
@@ -375,25 +373,7 @@ class VaporPressure(TDependentProperty):
         Psat : float
             Vapor pressure at T, [Pa]
         '''
-        if method == POLY_FIT:
-            if T < self.poly_fit_Tmin:
-                Psat = (T - self.poly_fit_Tmin)*self.poly_fit_Tmin_slope + self.poly_fit_Tmin_value
-            elif T > self.poly_fit_Tmax:
-                Psat = (T - self.poly_fit_Tmax)*self.poly_fit_Tmax_slope + self.poly_fit_Tmax_value
-            else:
-                Psat = horner(self.poly_fit_coeffs, T)
-            Psat = exp(Psat)
-        elif method == BEST_FIT_AB:
-            if T < self.poly_fit_Tmax:
-                return self.calculate(T, POLY_FIT)
-            A, B = self.poly_fit_AB_high_ABC_compat
-            return exp(A + B/T)
-        elif method == BEST_FIT_ABC:
-            if T < self.poly_fit_Tmax:
-                return self.calculate(T, POLY_FIT)
-            A, B, C = self.DIPPR101_ABC_high
-            return exp(A + B/T + C*log(T))
-        elif method == WAGNER_MCGARRY:
+        if method == WAGNER_MCGARRY:
             Psat = Wagner_original(T, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Pc, *self.WAGNER_MCGARRY_coefs)
         elif method == WAGNER_POLING:
             Psat = Wagner(T, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, *self.WAGNER_POLING_coefs)
@@ -420,8 +400,6 @@ class VaporPressure(TDependentProperty):
             Psat = Edalat(T, self.Tc, self.Pc, self.omega)
         elif method == EOS:
             Psat = self.eos[0].Psat(T)
-        elif method == POLY_FIT:
-            Psat = exp(horner(self.poly_fit_coeffs, T))
         else:
             return self._base_calculate(T, method)
         return Psat
@@ -453,8 +431,6 @@ class VaporPressure(TDependentProperty):
         if method in T_limits:
             Tmin, Tmax = T_limits[method]
             return Tmin <= T <= Tmax
-        elif method == POLY_FIT:
-            return True
         else:
             return super(VaporPressure, self).test_method_validity(T, method)
 
@@ -483,9 +459,6 @@ class VaporPressure(TDependentProperty):
             Calculated derivative property, [`units/K^order`]
         '''
         Tmin, Tmax = self.T_limits[method]
-        # if order == 1 and method == POLY_FIT:
-        #     v, der = horner_and_der(self.poly_fit_coeffs, T)
-        #     return der*exp(v)
         if method == WAGNER_MCGARRY:
             if Tmin <= T <= Tmax:
                 if order == 1:
@@ -526,49 +499,7 @@ class VaporPressure(TDependentProperty):
                     return EQ101(T, *self.Perrys2_8_coeffs, order=1)
                 if order == 2:
                     return EQ101(T, *self.Perrys2_8_coeffs, order=2)
-        # elif order == 2 and method == POLY_FIT:
-        #     v, der, der2 = horner_and_der2(self.poly_fit_coeffs, T)
-        #     return (der*der + der2)*exp(v)
         return super(VaporPressure, self).calculate_derivative(T, method, order)
-
-    def _custom_set_poly_fit(self):
-        try:
-            Tmin, Tmax = self.poly_fit_Tmin, self.poly_fit_Tmax
-            poly_fit_coeffs = self.poly_fit_coeffs
-            v_Tmin = horner(poly_fit_coeffs, Tmin)
-            for T_trans in linspace(Tmin, Tmax, 25):
-                v, d1, d2 = horner_and_der2(poly_fit_coeffs, T_trans)
-                Psat = exp(v)
-                dPsat_dT = Psat*d1
-                d2Psat_dT2 = Psat*(d1*d1 + d2)
-
-                A, B, C = Antoine_ABC = Antoine_coeffs_from_point(T_trans, Psat, dPsat_dT, d2Psat_dT2, base=e)
-                self.poly_fit_AB = list(Antoine_AB_coeffs_from_point(T_trans, Psat, dPsat_dT, base=e))
-                self.DIPPR101_ABC = list(DIPPR101_ABC_coeffs_from_point(T_trans, Psat, dPsat_dT, d2Psat_dT2))
-
-                B_OK = B > 0.0 # B is negated in this implementation, so the requirement is reversed
-                C_OK = -T_trans < C < 0.0
-                if B_OK and C_OK:
-                    self.poly_fit_Antoine = Antoine_ABC
-                    break
-                else:
-                    continue
-
-            # Calculate the extrapolation values
-            v_Tmax = horner(poly_fit_coeffs, Tmax)
-            v, d1, d2 = horner_and_der2(poly_fit_coeffs, Tmax)
-            Psat = exp(v)
-            dPsat_dT = Psat*d1
-            d2Psat_dT2 = Psat*(d1*d1 + d2)
-#                A, B, C = Antoine_ABC = Antoine_coeffs_from_point(T_trans, Psat, dPsat_dT, d2Psat_dT2, base=e)
-            self.poly_fit_AB_high = list(Antoine_AB_coeffs_from_point(Tmax, Psat, dPsat_dT, base=e))
-            self.poly_fit_AB_high_ABC_compat = [self.poly_fit_AB_high[0], -self.poly_fit_AB_high[1]]
-            self.DIPPR101_ABC_high = list(DIPPR101_ABC_coeffs_from_point(Tmax, Psat, dPsat_dT, d2Psat_dT2))
-
-
-        except:
-            pass
-
 
 PSUB_CLAPEYRON = 'PSUB_CLAPEYRON'
 
@@ -730,8 +661,3 @@ class SublimationPressure(TDependentProperty):
             # No lower limit
         else:
             return super(VaporPressure, self).test_method_validity(T, method)
-try:
-    SublimationPressure._custom_set_poly_fit = VaporPressure._custom_set_poly_fit
-except:
-    pass
-
