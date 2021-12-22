@@ -22,17 +22,17 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['DSL_data', 'CAN_DSL_flags', 'TSCA_flags', 'TSCA_data',
-           'EINECS_data', 'SPIN_data', 'NLP_data', 'legal_status_methods',
+__all__ = [#'DSL_data', 'TSCA_data',
+           #'EINECS_data', 'SPIN_data', 'NLP_data',
+           'CAN_DSL_flags', 'TSCA_flags',
+           'legal_status_methods',
            'legal_status', 'HPV_data', '_ECHATonnageDict', '_EPACDRDict',
            'economic_status', 'economic_status_methods', 'load_economic_data',
            'load_law_data']
 
 import os
 from chemicals.identifiers import CAS_to_int
-from chemicals.utils import to_num, os_path_join
-
-
+from chemicals.utils import to_num, os_path_join, can_load_data, PY37
 
 DSL = 'DSL'
 TSCA = 'TSCA'
@@ -71,13 +71,13 @@ TSCA_flags = {
     'Y2': 'exempt polymer that is a polyester and is made only from reactants included in a specified list of low-concern reactants that comprises one of the eligibility criteria for the exemption rule'
 }
 
-DSL_data, TSCA_data, EINECS_data, SPIN_data, NLP_data = [None]*5
-
 def load_law_data():
-    global DSL_data
-    if DSL_data is not None:
-        return None
-    global TSCA_data, EINECS_data, SPIN_data, NLP_data
+    global DSL_data, TSCA_data, EINECS_data, SPIN_data, NLP_data
+    try:
+        TSCA_data
+        return
+    except:
+        pass
     import pandas as pd
     import zipfile
     folder = os_path_join(os.path.dirname(__file__), 'Law')
@@ -100,6 +100,20 @@ def load_law_data():
     NLP_data = pd.read_csv(os.path.join(folder, 'EC Inventory No Longer Polymers (NLP).csv'),
                            sep='\t', index_col=0)
     # 161162-67-6 is not a valid CAS number and was removed.
+
+
+if PY37:
+    def __getattr__(name):
+        if name in ('DSL_data', 'TSCA_data',
+                    'EINECS_data', 'SPIN_data',
+                    'NLP_data'):
+            load_law_data()
+            return globals()[name]
+        raise AttributeError("module %s has no attribute %s" %(__name__, name))
+else: # pragma: no cover
+    if can_load_data:
+        load_law_data()
+
 
 legal_status_methods = [COMBINED, DSL, TSCA, EINECS, SPIN, NLP]
 
