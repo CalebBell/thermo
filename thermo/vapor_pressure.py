@@ -73,6 +73,7 @@ from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
 from chemicals.vapor_pressure import *
 from chemicals.vapor_pressure import dAntoine_dT, d2Antoine_dT2, dWagner_original_dT, d2Wagner_original_dT2, dWagner_dT, d2Wagner_dT2, dTRC_Antoine_extended_dT, d2TRC_Antoine_extended_dT2
+from chemicals.identifiers import CAS_to_int
 
 from chemicals import vapor_pressure
 from thermo.utils import TDependentProperty
@@ -84,6 +85,7 @@ from thermo.base import source_path
 WAGNER_MCGARRY = 'WAGNER_MCGARRY'
 WAGNER_POLING = 'WAGNER_POLING'
 ANTOINE_POLING = 'ANTOINE_POLING'
+ANTOINE_WEBBOOK = 'ANTOINE_WEBBOOK'
 ANTOINE_EXTENDED_POLING = 'ANTOINE_EXTENDED_POLING'
 
 BOILING_CRITICAL = 'BOILING_CRITICAL'
@@ -93,7 +95,8 @@ SANJARI = 'SANJARI'
 EDALAT = 'EDALAT'
 
 vapor_pressure_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
-                          DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
+                          DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR, 
+                          ANTOINE_WEBBOOK, AMBROSE_WALTON,
                           LEE_KESLER_PSAT, EDALAT, EOS, BOILING_CRITICAL, SANJARI]
 '''Holds all methods available for the VaporPressure class, for use in
 iterating over them.'''
@@ -149,7 +152,11 @@ class VaporPressure(TDependentProperty):
     **ANTOINE_POLING**:
         Standard Antoine equation, as documented in the function
         :obj:`chemicals.vapor_pressure.Antoine` and with data for 325 fluids from [2]_.
-        Coefficients were altered to be in units of Pa and Celcius.
+        Coefficients were altered to be in units of Pa and Kelvin.
+    **ANTOINE_WEBBOOK**:
+        Standard Antoine equation, as documented in the function
+        :obj:`chemicals.vapor_pressure.Antoine` and with data for ~1400 fluids 
+        from [6]_. Coefficients were altered to be in units of Pa and Kelvin.
     **DIPPR_PERRY_8E**:
         A collection of 341 coefficient sets from the DIPPR database published
         openly in [5]_. Provides temperature limits for all its fluids.
@@ -209,6 +216,8 @@ class VaporPressure(TDependentProperty):
        Berlin; New York:: Springer, 2010.
     .. [5] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
+    .. [6] Shen, V.K., Siderius, D.W., Krekelberg, W.P., and Hatch, H.W., Eds.,
+       NIST WebBook, NIST, http://doi.org/10.18434/T4M88Q
     '''
     name = 'Vapor pressure'
     units = 'Pa'
@@ -241,7 +250,8 @@ class VaporPressure(TDependentProperty):
     highest known.'''
 
     ranked_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
-                      DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
+                      DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR, 
+                      ANTOINE_WEBBOOK, AMBROSE_WALTON,
                       LEE_KESLER_PSAT, EDALAT, BOILING_CRITICAL, EOS, SANJARI]
     '''Default rankings of the available methods.'''
 
@@ -287,13 +297,22 @@ class VaporPressure(TDependentProperty):
         self.T_limits = T_limits = {}
         methods = []
         if load_data:
-            if self.CASRN in vapor_pressure.Psat_data_WagnerMcGarry.index:
+            CASRN = self.CASRN
+            CASRN_int = None if not CASRN else CAS_to_int(CASRN)
+            df_wb = miscdata.webbook_data
+            if CASRN_int in df_wb.index and not isnan(float(df_wb.at[CASRN_int, 'AntoineA'])):
+                methods.append(ANTOINE_WEBBOOK)
+                self.ANTOINE_WEBBOOK_coefs = [float(df_wb.at[CASRN_int, 'AntoineA']),
+                                              float(df_wb.at[CASRN_int, 'AntoineB']),
+                                              float(df_wb.at[CASRN_int, 'AntoineC'])]
+                T_limits[ANTOINE_WEBBOOK] = (float(df_wb.at[CASRN_int, 'AntoineTmin']),float(df_wb.at[CASRN_int, 'AntoineTmax']))
+            if CASRN in vapor_pressure.Psat_data_WagnerMcGarry.index:
                 methods.append(WAGNER_MCGARRY)
                 A, B, C, D, self.WAGNER_MCGARRY_Pc, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Tmin = vapor_pressure.Psat_values_WagnerMcGarry[vapor_pressure.Psat_data_WagnerMcGarry.index.get_loc(self.CASRN)].tolist()
                 self.WAGNER_MCGARRY_coefs = [A, B, C, D]
                 T_limits[WAGNER_MCGARRY] = (self.WAGNER_MCGARRY_Tmin, self.WAGNER_MCGARRY_Tc)
 
-            if self.CASRN in vapor_pressure.Psat_data_WagnerPoling.index:
+            if CASRN in vapor_pressure.Psat_data_WagnerPoling.index:
                 methods.append(WAGNER_POLING)
                 A, B, C, D, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, Tmin, self.WAGNER_POLING_Tmax = vapor_pressure.Psat_values_WagnerPoling[vapor_pressure.Psat_data_WagnerPoling.index.get_loc(self.CASRN)].tolist()
                 # Some Tmin values are missing; Arbitrary choice of 0.1 lower limit
@@ -302,38 +321,38 @@ class VaporPressure(TDependentProperty):
                 self.WAGNER_POLING_coefs = [A, B, C, D]
                 T_limits[WAGNER_POLING] = (self.WAGNER_POLING_Tmin, self.WAGNER_POLING_Tmax)
 
-            if self.CASRN in vapor_pressure.Psat_data_AntoineExtended.index:
+            if CASRN in vapor_pressure.Psat_data_AntoineExtended.index:
                 methods.append(ANTOINE_EXTENDED_POLING)
                 A, B, C, Tc, to, n, E, F, self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax = vapor_pressure.Psat_values_AntoineExtended[vapor_pressure.Psat_data_AntoineExtended.index.get_loc(self.CASRN)].tolist()
                 self.ANTOINE_EXTENDED_POLING_coefs = [Tc, to, A, B, C, n, E, F]
                 T_limits[ANTOINE_EXTENDED_POLING] = (self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax)
 
-            if self.CASRN in vapor_pressure.Psat_data_AntoinePoling.index:
+            if CASRN in vapor_pressure.Psat_data_AntoinePoling.index:
                 methods.append(ANTOINE_POLING)
                 A, B, C, self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax = vapor_pressure.Psat_values_AntoinePoling[vapor_pressure.Psat_data_AntoinePoling.index.get_loc(self.CASRN)].tolist()
                 self.ANTOINE_POLING_coefs = [A, B, C]
                 T_limits[ANTOINE_POLING] = (self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax)
 
-            if self.CASRN in vapor_pressure.Psat_data_Perrys2_8.index:
+            if CASRN in vapor_pressure.Psat_data_Perrys2_8.index:
                 methods.append(DIPPR_PERRY_8E)
                 C1, C2, C3, C4, C5, self.Perrys2_8_Tmin, self.Perrys2_8_Tmax = vapor_pressure.Psat_values_Perrys2_8[vapor_pressure.Psat_data_Perrys2_8.index.get_loc(self.CASRN)].tolist()
                 self.Perrys2_8_coeffs = [C1, C2, C3, C4, C5]
                 T_limits[DIPPR_PERRY_8E] = (self.Perrys2_8_Tmin, self.Perrys2_8_Tmax)
-            if has_CoolProp() and self.CASRN in coolprop_dict:
+            if has_CoolProp() and CASRN in coolprop_dict:
                 methods.append(COOLPROP)
-                self.CP_f = coolprop_fluids[self.CASRN]
+                self.CP_f = coolprop_fluids[CASRN]
                 T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc)
 
-            if self.CASRN in miscdata.VDI_saturation_dict:
+            if CASRN in miscdata.VDI_saturation_dict:
                 methods.append(VDI_TABULAR)
-                Ts, props = lookup_VDI_tabular_data(self.CASRN, 'P')
+                Ts, props = lookup_VDI_tabular_data(CASRN, 'P')
                 self.VDI_Tmin = Ts[0]
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
                 T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
 
-            if self.CASRN in vapor_pressure.Psat_data_VDI_PPDS_3.index:
-                Tm, Tc, Pc, A, B, C, D = vapor_pressure.Psat_values_VDI_PPDS_3[vapor_pressure.Psat_data_VDI_PPDS_3.index.get_loc(self.CASRN)].tolist()
+            if CASRN in vapor_pressure.Psat_data_VDI_PPDS_3.index:
+                Tm, Tc, Pc, A, B, C, D = vapor_pressure.Psat_values_VDI_PPDS_3[vapor_pressure.Psat_data_VDI_PPDS_3.index.get_loc(CASRN)].tolist()
                 self.VDI_PPDS_coeffs = [A, B, C, D]
                 self.VDI_PPDS_Tc = Tc
                 self.VDI_PPDS_Tm = Tm
@@ -382,6 +401,9 @@ class VaporPressure(TDependentProperty):
         elif method == ANTOINE_POLING:
             A, B, C = self.ANTOINE_POLING_coefs
             Psat = Antoine(T, A, B, C, base=10.0)
+        elif method == ANTOINE_WEBBOOK:
+            A, B, C = self.ANTOINE_WEBBOOK_coefs
+            Psat = Antoine(T, A, B, C, base=e)
         elif method == DIPPR_PERRY_8E:
             Psat = EQ101(T, *self.Perrys2_8_coeffs)
         elif method == VDI_PPDS:

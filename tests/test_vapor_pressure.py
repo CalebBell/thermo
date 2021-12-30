@@ -28,7 +28,7 @@ from math import isnan
 from fluids.numerics import linspace, assert_close, derivative, assert_close1d
 from chemicals.vapor_pressure import *
 from thermo.vapor_pressure import *
-from thermo.vapor_pressure import SANJARI, EDALAT, AMBROSE_WALTON, LEE_KESLER_PSAT, BOILING_CRITICAL, COOLPROP, VDI_PPDS, VDI_TABULAR, WAGNER_MCGARRY, ANTOINE_EXTENDED_POLING, ANTOINE_POLING, WAGNER_POLING, DIPPR_PERRY_8E
+from thermo.vapor_pressure import SANJARI, EDALAT, AMBROSE_WALTON, LEE_KESLER_PSAT, BOILING_CRITICAL, COOLPROP, VDI_PPDS, VDI_TABULAR, WAGNER_MCGARRY, ANTOINE_EXTENDED_POLING, ANTOINE_POLING, WAGNER_POLING, DIPPR_PERRY_8E, ANTOINE_WEBBOOK
 from thermo.utils import TDependentProperty
 from chemicals.identifiers import check_CAS
 import chemicals
@@ -44,7 +44,7 @@ def test_VaporPressure_CoolProp():
     assert_close(EtOH.calculate(305.0, COOLPROP), 11592.205263402893, rtol=1e-7)
 
 @pytest.mark.meta_T_dept
-def test_VaporPressure():
+def test_VaporPressure_ethanol():
     # Ethanol, test as many methods asa possible at once
     EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
     
@@ -57,7 +57,7 @@ def test_VaporPressure():
     # Check valid_methods call
     assert set(EtOH.valid_methods()) == EtOH.all_methods
     # For Ethanol, all methods are valid around 300 K
-    assert EtOH.valid_methods(300) == EtOH.valid_methods()
+    assert EtOH.valid_methods(365) == EtOH.valid_methods()
     
     # Check test_property_validity
     assert not EtOH.test_property_validity(1j)
@@ -70,6 +70,8 @@ def test_VaporPressure():
     methods.remove(VDI_TABULAR)
     if COOLPROP in methods:
         methods.remove(COOLPROP)
+        
+    EtOH.extrapolation = 'nolimit'
 
     Psats_expected = {WAGNER_MCGARRY: 11579.634014300127,
                      WAGNER_POLING: 11590.408779316374,
@@ -80,7 +82,9 @@ def test_VaporPressure():
                      LEE_KESLER_PSAT: 11350.156640503357,
                      AMBROSE_WALTON: 11612.378633936816,
                      SANJARI: 9210.262000640221,
-                     EDALAT: 12081.738947110121}
+                     EDALAT: 12081.738947110121,
+                     ANTOINE_WEBBOOK: 10827.523813517917,
+                     }
 
     T = 305.0
     Psat_calcs = {}
@@ -88,7 +92,8 @@ def test_VaporPressure():
         EtOH.method = i
         Psat_calcs[i] = EtOH.T_dependent_property(T)
         Tmin, Tmax = EtOH.T_limits[i]
-        assert Tmin < T < Tmax
+        if i not in (ANTOINE_WEBBOOK,):
+            assert Tmin < T < Tmax
 
     for k, v in Psats_expected.items():
         assert_close(v, Psat_calcs[k], rtol=1e-11)
@@ -101,8 +106,17 @@ def test_VaporPressure():
     obj2 = VaporPressure.from_json(s)
     assert EtOH == obj2
 
+    # Test that methods return None
+    EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
+    EtOH.extrapolation = None
+    for i in list(EtOH.all_methods):
+        EtOH.method = i
+        assert EtOH.T_dependent_property(5000) is None
 
 
+
+@pytest.mark.meta_T_dept
+def test_VaporPressure_extended_poling():
     # Use another chemical to get in ANTOINE_EXTENDED_POLING
     a = VaporPressure(CASRN='589-81-1')
 
@@ -112,19 +126,15 @@ def test_VaporPressure():
         Psat_calcs.append(a.T_dependent_property(410))
 
 
-    Psat_exp = [162944.82134710113, 162870.44794192078, 162865.5380455795]
+    Psat_exp = [162944.82134710113, 162870.44794192078, 170508.47471278594, 162865.5380455795]
     assert_close1d(sorted(Psat_calcs), sorted(Psat_exp))
 
     s = a.as_json()
     obj2 = VaporPressure.from_json(s)
     assert a == obj2
 
-    # Test that methods return None
-    EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
-    EtOH.extrapolation = None
-    for i in list(EtOH.all_methods):
-        EtOH.method = i
-        assert EtOH.T_dependent_property(5000) is None
+@pytest.mark.meta_T_dept
+def test_VaporPressure_water():
 
     # Test interpolation, extrapolation
     w = VaporPressure(Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344, CASRN='7732-18-5')
@@ -142,6 +152,9 @@ def test_VaporPressure():
     Ts_rev = list(reversed(Ts))
     with pytest.raises(ValueError):
         w.add_tabular_data(Ts=Ts_rev, properties=Ps)
+
+@pytest.mark.meta_T_dept
+def test_VaporPressure_cycloheptane():
 
     # Get a check for Antoine Extended
     cycloheptane = VaporPressure(Tb=391.95, Tc=604.2, Pc=3820000.0, omega=0.2384, CASRN='291-64-5')
@@ -680,3 +693,8 @@ def test_VaporPressure_weird_signatures():
             dln = derivative(lambda T: log(obj(T)), T, n=2, dx=T*1e-5)
             assert_close(dln, obj.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D2LN), rtol=4e-4)
     
+@pytest.mark.meta_T_dept
+def test_VaporPressure_WebBook():
+    obj = VaporPressure(CASRN='7440-57-5')
+    obj.method = 'ANTOINE_WEBBOOK'
+    assert_close(obj(3000), 36784.98996094166, rtol=1e-13)
