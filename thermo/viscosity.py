@@ -113,6 +113,8 @@ from chemicals.dippr import EQ101, EQ102
 from chemicals import viscosity
 from chemicals.viscosity import *
 from chemicals.viscosity import viscosity_gas_Gharagheizi, dPPDS9_dT
+from chemicals.identifiers import CAS_to_int
+from chemicals.miscdata import JOBACK
 
 from thermo.utils import NEGLIGIBLE, DIPPR_PERRY_8E, POLY_FIT, VDI_TABULAR, VDI_PPDS, COOLPROP, LINEAR
 from thermo.volume import VolumeGas, VolumeLiquid
@@ -128,7 +130,7 @@ LUCAS = 'LUCAS'
 
 viscosity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                          VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
-                         VDI_TABULAR, LETSOU_STIEL, PRZEDZIECKI_SRIDHAR]
+                         VDI_TABULAR, LETSOU_STIEL, JOBACK, PRZEDZIECKI_SRIDHAR]
 '''Holds all low-pressure methods available for the ViscosityLiquid class, for
 use in iterating over them.'''
 viscosity_liquid_methods_P = [COOLPROP, LUCAS]
@@ -143,7 +145,8 @@ class ViscosityLiquid(TPDependentProperty):
     For low-pressure (at 1 atm while under the vapor pressure; along the
     saturation line otherwise) liquids, there are six coefficient-based methods
     from three data sources, one source of tabular information, two
-    corresponding-states estimators, and the external library CoolProp.
+    corresponding-states estimators, one group contribution method, and the 
+    external library CoolProp.
 
     For high-pressure liquids (also, <1 atm liquids), there is one
     corresponding-states estimator, and the external library CoolProp.
@@ -227,6 +230,9 @@ class ViscosityLiquid(TPDependentProperty):
         smooth exponential increase. However, for some chemicals such as
         glycerol, extrapolated to higher temperatures viscosity is predicted
         to increase above a certain point.
+    **JOBACK**:
+        An estimation method for organic substances in [5]_; this also requires
+        molecular weight as an input.
 
     High pressure methods:
 
@@ -247,6 +253,7 @@ class ViscosityLiquid(TPDependentProperty):
     chemicals.viscosity.Letsou_Stiel
     chemicals.viscosity.Przedziecki_Sridhar
     chemicals.viscosity.Lucas
+    thermo.joback.Joback
 
     References
     ----------
@@ -261,6 +268,10 @@ class ViscosityLiquid(TPDependentProperty):
        Berlin; New York:: Springer, 2010.
     .. [4] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
+    .. [5] Joback, K.G., and R.C. Reid. "Estimation of Pure-Component
+       Properties from Group-Contributions." Chemical Engineering
+       Communications 57, no. 1-6 (July 1, 1987): 233-43.
+       doi:10.1080/00986448708960487.
     '''
     name = 'liquid viscosity'
     units = 'Pa*s'
@@ -299,7 +310,7 @@ class ViscosityLiquid(TPDependentProperty):
 
     ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                       VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
-                      VDI_TABULAR, LETSOU_STIEL, PRZEDZIECKI_SRIDHAR]
+                      VDI_TABULAR, LETSOU_STIEL, JOBACK, PRZEDZIECKI_SRIDHAR]
     '''Default rankings of the low-pressure methods.'''
     ranked_methods_P = [COOLPROP, LUCAS]
     '''Default rankings of the high-pressure methods.'''
@@ -337,49 +348,61 @@ class ViscosityLiquid(TPDependentProperty):
         '''
         methods, methods_P = [], []
         self.T_limits = T_limits = {}
+        CASRN = self.CASRN
         if load_data:
-            if has_CoolProp() and self.CASRN in coolprop_dict:
-                CP_f = coolprop_fluids[self.CASRN]
+            CASRN_int = None if not CASRN else CAS_to_int(CASRN)
+            jb_df = miscdata.joback_predictions
+            if self.MW is not None and CASRN_int in jb_df.index:
+                mul0 = float(jb_df.at[CASRN_int, 'mul0'])
+                if not isnan(mul0):
+                    methods.append(JOBACK)
+                    self.joback_coeffs = [mul0, float(jb_df.at[CASRN_int, 'mul1'])]
+                                          
+                    Tmin_jb, Tmax_jb = float(jb_df.at[CASRN_int, 'Tm']), float(jb_df.at[CASRN_int, 'Tc'])*2.5
+                    T_limits[JOBACK] = (Tmin_jb, Tmax_jb)
+
+            if has_CoolProp() and CASRN in coolprop_dict:
+                CP_f = coolprop_fluids[CASRN]
                 if CP_f.has_mu:
                     self.CP_f = CP_f
                     methods.append(COOLPROP); methods_P.append(COOLPROP)
                     T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc)
-            if self.CASRN in miscdata.VDI_saturation_dict:
+            if CASRN in miscdata.VDI_saturation_dict:
                 methods.append(VDI_TABULAR)
-                Ts, props = lookup_VDI_tabular_data(self.CASRN, 'Mu (l)')
+                Ts, props = lookup_VDI_tabular_data(CASRN, 'Mu (l)')
                 self.VDI_Tmin = Ts[0]
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
                 T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
-            if self.CASRN in viscosity.mu_data_Dutt_Prasad.index:
+            if CASRN in viscosity.mu_data_Dutt_Prasad.index:
                 methods.append(DUTT_PRASAD)
-                A, B, C, self.DUTT_PRASAD_Tmin, self.DUTT_PRASAD_Tmax = viscosity.mu_values_Dutt_Prasad[viscosity.mu_data_Dutt_Prasad.index.get_loc(self.CASRN)].tolist()
+                A, B, C, self.DUTT_PRASAD_Tmin, self.DUTT_PRASAD_Tmax = viscosity.mu_values_Dutt_Prasad[viscosity.mu_data_Dutt_Prasad.index.get_loc(CASRN)].tolist()
                 self.DUTT_PRASAD_coeffs = [A - 3.0, B, C]
                 T_limits[DUTT_PRASAD] = (self.DUTT_PRASAD_Tmin, self.DUTT_PRASAD_Tmax)
-            if self.CASRN in viscosity.mu_data_VN3.index:
+            if CASRN in viscosity.mu_data_VN3.index:
                 methods.append(VISWANATH_NATARAJAN_3)
-                A, B, C, self.VISWANATH_NATARAJAN_3_Tmin, self.VISWANATH_NATARAJAN_3_Tmax = viscosity.mu_values_VN3[viscosity.mu_data_VN3.index.get_loc(self.CASRN)].tolist()
+                A, B, C, self.VISWANATH_NATARAJAN_3_Tmin, self.VISWANATH_NATARAJAN_3_Tmax = viscosity.mu_values_VN3[viscosity.mu_data_VN3.index.get_loc(CASRN)].tolist()
                 self.VISWANATH_NATARAJAN_3_coeffs = [A - 3.0, B, C]
                 T_limits[VISWANATH_NATARAJAN_3] = (self.VISWANATH_NATARAJAN_3_Tmin, self.VISWANATH_NATARAJAN_3_Tmax)
-            if self.CASRN in viscosity.mu_data_VN2.index:
+            if CASRN in viscosity.mu_data_VN2.index:
                 methods.append(VISWANATH_NATARAJAN_2)
-                A, B, self.VISWANATH_NATARAJAN_2_Tmin, self.VISWANATH_NATARAJAN_2_Tmax = viscosity.mu_values_VN2[viscosity.mu_data_VN2.index.get_loc(self.CASRN)].tolist()
+                A, B, self.VISWANATH_NATARAJAN_2_Tmin, self.VISWANATH_NATARAJAN_2_Tmax = viscosity.mu_values_VN2[viscosity.mu_data_VN2.index.get_loc(CASRN)].tolist()
                 self.VISWANATH_NATARAJAN_2_coeffs = [A - 4.605170185988092, B] # log(100) = 4.605170185988092
                 T_limits[VISWANATH_NATARAJAN_2] = (self.VISWANATH_NATARAJAN_2_Tmin, self.VISWANATH_NATARAJAN_2_Tmax)
-            if self.CASRN in viscosity.mu_data_VN2E.index:
+            if CASRN in viscosity.mu_data_VN2E.index:
                 methods.append(VISWANATH_NATARAJAN_2E)
-                C, D, self.VISWANATH_NATARAJAN_2E_Tmin, self.VISWANATH_NATARAJAN_2E_Tmax = viscosity.mu_values_VN2E[viscosity.mu_data_VN2E.index.get_loc(self.CASRN)].tolist()
+                C, D, self.VISWANATH_NATARAJAN_2E_Tmin, self.VISWANATH_NATARAJAN_2E_Tmax = viscosity.mu_values_VN2E[viscosity.mu_data_VN2E.index.get_loc(CASRN)].tolist()
                 self.VISWANATH_NATARAJAN_2E_coeffs = [C, D]
                 T_limits[VISWANATH_NATARAJAN_2E] = (self.VISWANATH_NATARAJAN_2E_Tmin, self.VISWANATH_NATARAJAN_2E_Tmax)
-            if self.CASRN in viscosity.mu_data_Perrys_8E_2_313.index:
+            if CASRN in viscosity.mu_data_Perrys_8E_2_313.index:
                 methods.append(DIPPR_PERRY_8E)
-                C1, C2, C3, C4, C5, self.Perrys2_313_Tmin, self.Perrys2_313_Tmax = viscosity.mu_values_Perrys_8E_2_313[viscosity.mu_data_Perrys_8E_2_313.index.get_loc(self.CASRN)].tolist()
+                C1, C2, C3, C4, C5, self.Perrys2_313_Tmin, self.Perrys2_313_Tmax = viscosity.mu_values_Perrys_8E_2_313[viscosity.mu_data_Perrys_8E_2_313.index.get_loc(CASRN)].tolist()
                 self.Perrys2_313_coeffs = [C1, C2, C3, C4, C5]
                 T_limits[DIPPR_PERRY_8E] = (self.Perrys2_313_Tmin, self.Perrys2_313_Tmax)
-            if self.CASRN in viscosity.mu_data_VDI_PPDS_7.index:
+            if CASRN in viscosity.mu_data_VDI_PPDS_7.index:
                 methods.append(VDI_PPDS)
                 # No temperature limits - ideally could use critical point
-                self.VDI_PPDS_coeffs = VDI_PPDS_coeffs = viscosity.mu_values_PPDS_7[viscosity.mu_data_VDI_PPDS_7.index.get_loc(self.CASRN)].tolist()
+                self.VDI_PPDS_coeffs = VDI_PPDS_coeffs = viscosity.mu_values_PPDS_7[viscosity.mu_data_VDI_PPDS_7.index.get_loc(CASRN)].tolist()
                 low = low_orig = min(self.VDI_PPDS_coeffs[2], self.VDI_PPDS_coeffs[3])# + 5.0
                 high = high_orig = max(self.VDI_PPDS_coeffs[2], self.VDI_PPDS_coeffs[3])# - 5.0
                 if low > 0.0:
@@ -486,6 +509,9 @@ class ViscosityLiquid(TPDependentProperty):
             mu = EQ101(T, *self.Perrys2_313_coeffs)
         elif method == COOLPROP:
             mu = CoolProp_T_dependent_property(T, self.CASRN, 'V', 'l')
+        elif method == JOBACK:
+            A, B = self.joback_coeffs
+            mu = self.MW*exp(A/T + B)
         elif method == LETSOU_STIEL:
             mu = Letsou_Stiel(T, self.MW, self.Tc, self.Pc, self.omega)
         elif method == PRZEDZIECKI_SRIDHAR:

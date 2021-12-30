@@ -190,6 +190,10 @@ def test_HeatCapacityGas_Joback():
     obj = HeatCapacityGas(CASRN='55-18-5')
     assert JOBACK not in obj.all_methods
     
+    # Chemical with no Tc
+    obj = HeatCapacityGas(CASRN='23213-96-9')
+    assert not isnan(obj.T_limits[JOBACK][1])
+
 
 
 @pytest.mark.meta_T_dept

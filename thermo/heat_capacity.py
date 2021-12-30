@@ -324,7 +324,10 @@ class HeatCapacityGas(TDependentProperty):
                                           float(jb_df.at[CASRN_int, 'Cpg2']),
                                           float(jb_df.at[CASRN_int, 'Cpg1']),
                                           float(jb_df.at[CASRN_int, 'Cpg0'])]
-                    T_limits[JOBACK] = (float(jb_df.at[CASRN_int, 'Tm']),float(jb_df.at[CASRN_int, 'Tc'])*2.5)
+                    Tmin_jb, Tmax_jb = float(jb_df.at[CASRN_int, 'Tm']),float(jb_df.at[CASRN_int, 'Tc'])*2.5
+                    # if isnan(Tmin_jb): Tmin_jb = 100.0 # The same groups are defined for Tm as for Cp, should never be a nan
+                    if isnan(Tmax_jb): Tmax_jb = 10000.0
+                    T_limits[JOBACK] = (Tmin_jb, Tmax_jb)
 
             if CASRN in heat_capacity.WebBook_Shomate_gases:
                 methods.append(WEBBOOK_SHOMATE)

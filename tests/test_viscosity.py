@@ -33,7 +33,7 @@ from chemicals.utils import normalize, mixing_simple, zs_to_ws
 from chemicals.viscosity import *
 from thermo.viscosity import *
 from chemicals.identifiers import check_CAS
-from thermo.viscosity import COOLPROP, LUCAS
+from thermo.viscosity import COOLPROP, LUCAS, JOBACK
 from thermo.mixture import Mixture
 from thermo.eos import PR
 from thermo.volume import VolumeGas
@@ -96,6 +96,8 @@ def test_ViscosityLiquid():
     EtOH.extrapolation = None
     for i in EtOH.all_methods:
         EtOH.method = i
+        if i == JOBACK:
+            continue
         assert EtOH.T_dependent_property(600) is None
 
 
@@ -146,6 +148,13 @@ def test_ViscosityLiquid():
 
     with pytest.raises(Exception):
         EtOH.test_method_validity_P(300, 1E5, 'BADMETHOD')
+
+@pytest.mark.meta_T_dept
+def test_ViscosityLiquid_Joback():
+    obj = ViscosityLiquid(CASRN='124-18-5', MW=142.28168)
+    obj.method = JOBACK
+    assert_close(obj.T_dependent_property(300), 0.0008245072864231092)
+
 
 @pytest.mark.meta_T_dept
 def test_ViscosityLiquid_derivative_exp_poly_fit():
