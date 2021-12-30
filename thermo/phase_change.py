@@ -664,7 +664,7 @@ class EnthalpySublimation(TDependentProperty):
         methods = []
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
-        CASRN_int = None if CASRN is None else CAS_to_int(CASRN)
+        CASRN_int = None if not CASRN else CAS_to_int(CASRN)
         if load_data:
             if CASRN_int in miscdata.webbook_data.index and not isnan(float(miscdata.webbook_data.at[CASRN_int, 'Hsub'])):
                 methods.append(WEBBOOK_HSUB)

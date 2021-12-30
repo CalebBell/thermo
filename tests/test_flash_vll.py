@@ -842,7 +842,7 @@ def test_problem_8_Ivanov():
 def test_problem_9_Ivanov():
     IDs = ['methane', 'ethane', 'propane', 'n-butane',
            'n-pentane', 'n-hexane', 'C7_16', 'C17+']
-    CASs = ['74-82-8', '74-84-0', '74-98-6', '106-97-8', '109-66-0', '110-54-3', 'C7_16', 'C17+']
+    CASs = ['74-82-8', '74-84-0', '74-98-6', '106-97-8', '109-66-0', '110-54-3', None, None]
 
     T = 353
     P = 385e5
