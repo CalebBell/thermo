@@ -73,6 +73,7 @@ from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
 from chemicals import phase_change
 from chemicals.phase_change import *
+from chemicals.identifiers import CAS_to_int
 
 from thermo.vapor_pressure import VaporPressure
 from thermo.heat_capacity import HeatCapacityGas, HeatCapacitySolid
@@ -535,8 +536,9 @@ class EnthalpyVaporization(TDependentProperty):
 GHARAGHEIZI_HSUB_298 = 'GHARAGHEIZI_HSUB_298'
 GHARAGHEIZI_HSUB = 'GHARAGHEIZI_HSUB'
 CRC_HFUS_HVAP_TM = 'CRC_HFUS_HVAP_TM' # Gets Tm
+WEBBOOK_HSUB = 'WEBBOOK_HSUB'
 
-enthalpy_sublimation_methods = [GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM,
+enthalpy_sublimation_methods = [WEBBOOK_HSUB, GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM,
                                 GHARAGHEIZI_HSUB_298]
 '''Holds all methods available for the EnthalpySublimation class, for use in
 iterating over them.'''
@@ -624,7 +626,7 @@ class EnthalpySublimation(TDependentProperty):
     property_max = 1E6
     '''Maximum valid of heat of sublimation. A theoretical concept only.'''
 
-    ranked_methods = [GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM,
+    ranked_methods = [WEBBOOK_HSUB, GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM,
                       GHARAGHEIZI_HSUB_298]
 
     obj_references = pure_references = ('Cpg', 'Cps', 'Hvap')
@@ -656,7 +658,15 @@ class EnthalpySublimation(TDependentProperty):
         '''
         methods = []
         self.T_limits = T_limits = {}
+        CASRN = self.CASRN
+        CASRN_int = None if CASRN is None else CAS_to_int(CASRN)
         if load_data:
+            if CASRN_int in miscdata.webbook_data.index and not isnan(float(miscdata.webbook_data.at[CASRN_int, 'Hsub'])):
+                methods.append(WEBBOOK_HSUB)
+                self.webbook_Hsub = float(miscdata.webbook_data.at[CASRN_int, 'Hsub'])
+                if self.Tm is not None:
+                    T_limits[WEBBOOK_HSUB] = (self.Tm, self.Tm)
+
             if self.CASRN in phase_change.Hsub_data_Gharagheizi.index:
                 methods.append(GHARAGHEIZI_HSUB_298)
                 self.GHARAGHEIZI_Hsub = float(phase_change.Hsub_data_Gharagheizi.at[self.CASRN, 'Hsub'])
@@ -701,6 +711,8 @@ class EnthalpySublimation(TDependentProperty):
         '''
         if method == GHARAGHEIZI_HSUB_298:
             Hsub = self.GHARAGHEIZI_Hsub
+        elif method == WEBBOOK_HSUB:
+            Hsub = self.webbook_Hsub
         elif method == GHARAGHEIZI_HSUB:
             T_base = 298.15
             Hsub = self.GHARAGHEIZI_Hsub
@@ -745,7 +757,7 @@ class EnthalpySublimation(TDependentProperty):
             Whether or not a method is valid
         '''
         validity = True
-        if method in (GHARAGHEIZI_HSUB_298, GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM):
+        if method in (GHARAGHEIZI_HSUB_298, GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM, WEBBOOK_HSUB):
             validity = True
         else:
             return super(EnthalpySublimation, self).test_method_validity(T, method)

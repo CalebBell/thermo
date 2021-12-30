@@ -218,6 +218,12 @@ def test_EnthalpyVaporization_poly_fit_ln_tau():
 def test_EnthalpySublimation_no_numpy():
     assert type(EnthalpySublimation(CASRN='1327-53-3').CRC_Hfus) is float
 
+def test_EnthalpySublimation_webbook():
+    # Magnesium, bis(η5-2,4-cyclopentadien-1-yl)- Hsub present in the One dimensional data sections
+    obj = EnthalpySublimation(CASRN='1284-72-6')
+    obj.method = 'WEBBOOK_HSUB'
+    assert_close(obj(300), 68200.0, rtol=1e-10)
+
 @pytest.mark.meta_T_dept
 @pytest.mark.fitting
 def test_EnthalpyVaporization_fitting0():
