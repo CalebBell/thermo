@@ -104,7 +104,7 @@ iterating over them.'''
 
 class VaporPressure(TDependentProperty):
     '''Class for dealing with vapor pressure as a function of temperature.
-    Consists of four coefficient-based methods and four data sources, one
+    Consists of five coefficient-based methods and four data sources, one
     source of tabular information, four corresponding-states estimators,
     any provided equation of state, and the external library CoolProp.
 
