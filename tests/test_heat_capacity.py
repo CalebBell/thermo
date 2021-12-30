@@ -124,6 +124,10 @@ def test_HeatCapacityGas_webbook():
     assert_close(obj.calculate_integral_over_T(1, 3000, WEBBOOK_SHOMATE), 41340.46968129815)
     assert_close(obj.calculate_integral_over_T(1, 6000, WEBBOOK_SHOMATE), 41380.892814134764)
 
+    assert eval(str(obj)) == obj
+    new = HeatCapacityGas.from_json(json.loads(json.dumps(obj.as_json())))
+    assert new == obj
+
     # Hydrogen peroxide
     obj = HeatCapacityGas(CASRN='7722-84-1')
     obj.method = WEBBOOK_SHOMATE
@@ -136,7 +140,10 @@ def test_HeatCapacityGas_webbook():
     assert_close(obj.T_dependent_property_integral(330, 700), 19434.50551451386)
     assert_close(obj.T_dependent_property_integral_over_T(330, 700), 38.902796756264706)
     
-    
+    assert eval(str(obj)) == obj
+    new = HeatCapacityGas.from_json(json.loads(json.dumps(obj.as_json())))
+    assert new == obj
+
     
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
@@ -434,6 +441,10 @@ def test_HeatCapacityLiquid_webbook():
     
     assert_close(obj.T_dependent_property_integral(330, 450), 9202.213117294952)
     assert_close(obj.T_dependent_property_integral_over_T(330, 450), 23.75523929492681)
+
+    assert eval(str(obj)) == obj
+    new = HeatCapacityLiquid.from_json(json.loads(json.dumps(obj.as_json())))
+    assert new == obj
 
 
 @pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')

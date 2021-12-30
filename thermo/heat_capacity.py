@@ -271,6 +271,15 @@ class HeatCapacityGas(TDependentProperty):
 
     custom_args = ('MW', 'similarity_variable')
 
+    _json_obj_by_CAS = ('webbook_shomate', 'CP_f')
+    @classmethod
+    def _load_json_CAS_references(cls, d):
+        CASRN = d['CASRN']
+        if CASRN in heat_capacity.WebBook_Shomate_gases:
+            d['webbook_shomate'] = heat_capacity.WebBook_Shomate_gases[CASRN]
+        if 'CP_f' in d:
+            d['CP_f'] = coolprop_fluids[CASRN]
+
     def __init__(self, CASRN='', MW=None, similarity_variable=None,
                  extrapolation='linear', iscyclic_aliphatic=False, **kwargs):
         self.CASRN = CASRN
@@ -735,7 +744,8 @@ class HeatCapacityLiquid(TDependentProperty):
 
     _json_obj_by_CAS = ('Zabransky_spline', 'Zabransky_spline_iso', 'Zabransky_spline_sat',
                         'Zabransky_quasipolynomial', 'Zabransky_quasipolynomial_iso',
-                        'Zabransky_quasipolynomial_sat', 'CP_f')
+                        'Zabransky_quasipolynomial_sat', 'CP_f',
+                        'webbook_shomate')
 
     obj_references = pure_references = ('Cpgm',)
     obj_references_types = pure_reference_types = (HeatCapacityGas,)
@@ -787,6 +797,8 @@ class HeatCapacityLiquid(TDependentProperty):
             d['Zabransky_quasipolynomial_sat'] = heat_capacity.zabransky_dict_sat_p[CASRN]
         if 'CP_f' in d:
             d['CP_f'] = coolprop_fluids[CASRN]
+        if CASRN in heat_capacity.WebBook_Shomate_liquids:
+            d['webbook_shomate'] = heat_capacity.WebBook_Shomate_liquids[CASRN]
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
