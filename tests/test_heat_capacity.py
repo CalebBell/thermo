@@ -25,7 +25,7 @@ import pytest
 from chemicals.utils import ws_to_zs
 import json
 from thermo.heat_capacity import *
-from thermo.heat_capacity import TRCIG, POLING_POLY, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR, LASTOVKA_SHAW, ROWLINSON_BONDI, ZABRANSKY_QUASIPOLYNOMIAL_C, CRCSTD, ROWLINSON_POLING, POLING_CONST, ZABRANSKY_SPLINE_SAT, DADGOSTAR_SHAW, COOLPROP, ZABRANSKY_SPLINE_C, VDI_TABULAR, WEBBOOK_SHOMATE
+from thermo.heat_capacity import TRCIG, POLING_POLY, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR, LASTOVKA_SHAW, ROWLINSON_BONDI, ZABRANSKY_QUASIPOLYNOMIAL_C, CRCSTD, ROWLINSON_POLING, POLING_CONST, ZABRANSKY_SPLINE_SAT, DADGOSTAR_SHAW, COOLPROP, ZABRANSKY_SPLINE_C, VDI_TABULAR, WEBBOOK_SHOMATE, JOBACK
 from random import uniform
 from math import *
 from fluids.numerics import linspace, logspace, NotBoundedError, assert_close, assert_close1d
@@ -55,7 +55,8 @@ def test_HeatCapacityGas():
                      POLING_POLY: 66.40066070415111,
                      POLING_CONST: 65.21,
                      CRCSTD: 65.6,
-                     LASTOVKA_SHAW: 71.07236200126606}
+                     LASTOVKA_SHAW: 71.07236200126606,
+                     JOBACK: 65.74656180000001}
 
     T = 305.0
     Cps_calc = {}
@@ -174,6 +175,16 @@ def test_HeatCapacityGas_CoolProp():
     new = HeatCapacityGas.from_json(obj.as_json())
     assert new == obj
     assert_close(obj.calculate(obj.T_limits[COOLPROP][0], COOLPROP), 72.45489837498226, rtol=1e-7)
+
+
+@pytest.mark.meta_T_dept
+def test_HeatCapacityGas_Joback():
+    obj = HeatCapacityGas(CASRN='124-18-5')
+    obj.method = 'JOBACK'
+    assert_close(obj(300), 236.04260000000002)
+    assert_close(obj.calculate(300, 'JOBACK'), 236.04260000000002)
+
+
 
 @pytest.mark.meta_T_dept
 def test_HeatCapacityGas_cheb_fit():

@@ -127,15 +127,18 @@ from chemicals.heat_capacity import *
 from chemicals.utils import log, exp, isnan
 from chemicals.utils import (to_num, property_molar_to_mass, none_and_length_check,
                           mixing_simple, property_mass_to_molar)
+from chemicals.identifiers import CAS_to_int
 from chemicals import heat_capacity
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
+
 from thermo import electrochem
 from thermo.electrochem import Laliberte_heat_capacity
 from thermo.utils import TDependentProperty, MixtureProperty
 from thermo.coolprop import *
 from cmath import log as clog, exp as cexp
 from thermo.utils import VDI_TABULAR, COOLPROP, POLY_FIT, LINEAR
+from chemicals.miscdata import JOBACK
 
 TRCIG = 'TRCIG'
 POLING_POLY = 'POLING_POLY'
@@ -144,7 +147,7 @@ CRCSTD = 'CRCSTD'
 LASTOVKA_SHAW = 'LASTOVKA_SHAW'
 WEBBOOK_SHOMATE = 'WEBBOOK_SHOMATE'
 heat_capacity_gas_methods = [COOLPROP, TRCIG, WEBBOOK_SHOMATE, POLING_POLY, LASTOVKA_SHAW, CRCSTD,
-                             POLING_CONST, VDI_TABULAR]
+                             POLING_CONST, JOBACK, VDI_TABULAR]
 '''Holds all methods available for the :obj:`HeatCapacityGas` class, for use in
 iterating over them.'''
 
@@ -152,8 +155,8 @@ iterating over them.'''
 class HeatCapacityGas(TDependentProperty):
     r'''Class for dealing with gas heat capacity as a function of temperature.
     Consists of three coefficient-based methods, two constant methods,
-    one tabular source, one simple estimator, and the external library
-    CoolProp.
+    one tabular source, one simple estimator, one group-contribution estimator,
+    and the external library CoolProp.
 
     Parameters
     ----------
@@ -206,7 +209,8 @@ class HeatCapacityGas(TDependentProperty):
         data is along the saturation curve.
     **WEBBOOK_SHOMATE**:
         Shomate form coefficients from [6]_ for ~700 compounds.
-
+    **JOBACK**:
+        An estimation method for organic substances in [7]_
 
     See Also
     --------
@@ -215,6 +219,7 @@ class HeatCapacityGas(TDependentProperty):
     chemicals.heat_capacity.Lastovka_Shaw
     chemicals.heat_capacity.Rowlinson_Poling
     chemicals.heat_capacity.Rowlinson_Bondi
+    thermo.joback.Joback
 
     Examples
     --------
@@ -240,6 +245,10 @@ class HeatCapacityGas(TDependentProperty):
        Berlin; New York:: Springer, 2010.
     .. [6] Shen, V.K., Siderius, D.W., Krekelberg, W.P., and Hatch, H.W., Eds.,
        NIST WebBook, NIST, http://doi.org/10.18434/T4M88Q
+    .. [7] Joback, K.G., and R.C. Reid. "Estimation of Pure-Component
+       Properties from Group-Contributions." Chemical Engineering
+       Communications 57, no. 1-6 (July 1, 1987): 233-43.
+       doi:10.1080/00986448708960487.
     '''
     name = 'gas heat capacity'
     units = 'J/mol/K'
@@ -259,7 +268,8 @@ class HeatCapacityGas(TDependentProperty):
     '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
     the critical point, this value can be obscenely high.'''
 
-    ranked_methods = [TRCIG, WEBBOOK_SHOMATE, POLING_POLY, COOLPROP, LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
+    ranked_methods = [TRCIG, WEBBOOK_SHOMATE, POLING_POLY, COOLPROP, JOBACK,
+                      LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
     '''Default rankings of the available methods.'''
 
 
@@ -302,17 +312,29 @@ class HeatCapacityGas(TDependentProperty):
         methods = []
         self.T_limits = T_limits = {}
         if load_data:
-            if self.CASRN in heat_capacity.WebBook_Shomate_gases:
+            CASRN = self.CASRN
+            CASRN_int = None if not CASRN else CAS_to_int(CASRN)
+
+            jb_df = miscdata.joback_predictions
+            if CASRN_int in jb_df.index:
+                methods.append(JOBACK)
+                self.joback_coeffs = [float(jb_df.at[CASRN_int, 'Cpg3']),
+                                      float(jb_df.at[CASRN_int, 'Cpg2']),
+                                      float(jb_df.at[CASRN_int, 'Cpg1']),
+                                      float(jb_df.at[CASRN_int, 'Cpg0'])]
+                T_limits[JOBACK] = (float(jb_df.at[CASRN_int, 'Tm']),float(jb_df.at[CASRN_int, 'Tc'])*2.5)
+
+            if CASRN in heat_capacity.WebBook_Shomate_gases:
                 methods.append(WEBBOOK_SHOMATE)
-                self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_gases[self.CASRN]
+                self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_gases[CASRN]
                 T_limits[WEBBOOK_SHOMATE] = (webbook_shomate.Tmin, webbook_shomate.Tmax)
-            if self.CASRN in heat_capacity.TRC_gas_data.index:
+            if CASRN in heat_capacity.TRC_gas_data.index:
                 methods.append(TRCIG)
-                self.TRCIG_Tmin, self.TRCIG_Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = heat_capacity.TRC_gas_values[heat_capacity.TRC_gas_data.index.get_loc(self.CASRN)].tolist()
+                self.TRCIG_Tmin, self.TRCIG_Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = heat_capacity.TRC_gas_values[heat_capacity.TRC_gas_data.index.get_loc(CASRN)].tolist()
                 self.TRCIG_coefs = [a0, a1, a2, a3, a4, a5, a6, a7]
                 T_limits[TRCIG] = (self.TRCIG_Tmin, self.TRCIG_Tmax)
-            if self.CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[self.CASRN, 'a0']):
-                POLING_Tmin, POLING_Tmax, a0, a1, a2, a3, a4, Cpg, Cpl = heat_capacity.Cp_values_Poling[heat_capacity.Cp_data_Poling.index.get_loc(self.CASRN)].tolist()
+            if CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[CASRN, 'a0']):
+                POLING_Tmin, POLING_Tmax, a0, a1, a2, a3, a4, Cpg, Cpl = heat_capacity.Cp_values_Poling[heat_capacity.Cp_data_Poling.index.get_loc(CASRN)].tolist()
                 methods.append(POLING_POLY)
                 if isnan(POLING_Tmin):
                     POLING_Tmin = 50.0
@@ -322,29 +344,29 @@ class HeatCapacityGas(TDependentProperty):
                 self.POLING_Tmax = POLING_Tmax
                 self.POLING_coefs = [a0, a1, a2, a3, a4]
                 T_limits[POLING_POLY] = (POLING_Tmin, POLING_Tmax)
-            if self.CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[self.CASRN, 'Cpg']):
+            if CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpg']):
                 methods.append(POLING_CONST)
                 self.POLING_T = 298.15
-                self.POLING_constant = float(heat_capacity.Cp_data_Poling.at[self.CASRN, 'Cpg'])
+                self.POLING_constant = float(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpg'])
                 T_limits[POLING_CONST] = (self.POLING_T-50.0, self.POLING_T+50.0)
-            if self.CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cpg']):
+            if CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[CASRN, 'Cpg']):
                 methods.append(CRCSTD)
                 self.CRCSTD_T = 298.15
-                self.CRCSTD_constant = float(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cpg'])
+                self.CRCSTD_constant = float(heat_capacity.CRC_standard_data.at[CASRN, 'Cpg'])
                 T_limits[CRCSTD] = (self.CRCSTD_T-50.0, self.CRCSTD_T+50.0)
-            if self.CASRN in miscdata.VDI_saturation_dict:
+            if CASRN in miscdata.VDI_saturation_dict:
                 # NOTE: VDI data is for the saturation curve, i.e. at increasing
                 # pressure; it is normally substantially higher than the ideal gas
                 # value
                 methods.append(VDI_TABULAR)
-                Ts, props = lookup_VDI_tabular_data(self.CASRN, 'Cp (g)')
+                Ts, props = lookup_VDI_tabular_data(CASRN, 'Cp (g)')
                 self.VDI_Tmin = Ts[0]
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
                 T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
-            if has_CoolProp() and self.CASRN in coolprop_dict:
+            if has_CoolProp() and CASRN in coolprop_dict:
                 methods.append(COOLPROP)
-                self.CP_f = coolprop_fluids[self.CASRN]
+                self.CP_f = coolprop_fluids[CASRN]
                 Tmin = max(self.CP_f.Tt, self.CP_f.Tmin)
                 Tmax = min(self.CP_f.Tc, self.CP_f.Tmax)
                 T_limits[COOLPROP] = (Tmin, Tmax)
@@ -397,6 +419,8 @@ class HeatCapacityGas(TDependentProperty):
             Cp = TRCCp(T, *self.TRCIG_coefs)
         elif method == WEBBOOK_SHOMATE:
             Cp = self.webbook_shomate.force_calculate(T)
+        elif method == JOBACK:
+            Cp = horner(self.joback_coeffs, T)
         elif method == COOLPROP:
             try:
                 # Some cases due to melting point need a high pressure
