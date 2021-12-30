@@ -398,6 +398,23 @@ def test_HeatCapacityLiquid():
     new = HeatCapacityLiquid.from_json(ctp.as_json())
     assert new == ctp
 
+@pytest.mark.meta_T_dept
+def test_HeatCapacityLiquid_webbook():
+    obj = HeatCapacityLiquid(CASRN='7732-18-5')
+    obj.method = WEBBOOK_SHOMATE
+    assert_close(obj.calculate(300, WEBBOOK_SHOMATE), 75.35107055555557)
+    assert_close(obj(340), 75.41380745425609)
+    assert_close(obj.calculate(250, WEBBOOK_SHOMATE), 77.78926287500002)
+    assert_close(obj.calculate(510, WEBBOOK_SHOMATE), 84.94628487578056)
+    
+    
+    assert_close(obj.calculate_integral(330, 450, WEBBOOK_SHOMATE), 9202.213117294952)
+    assert_close(obj.calculate_integral_over_T(330, 450, WEBBOOK_SHOMATE), 23.75523929492681)
+    
+    assert_close(obj.T_dependent_property_integral(330, 450), 9202.213117294952)
+    assert_close(obj.T_dependent_property_integral_over_T(330, 450), 23.75523929492681)
+
+
 @pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept

@@ -560,7 +560,7 @@ DADGOSTAR_SHAW = 'DADGOSTAR_SHAW'
 heat_capacity_liquid_methods = [ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
-                      VDI_TABULAR, ROWLINSON_POLING, ROWLINSON_BONDI, COOLPROP,
+                      WEBBOOK_SHOMATE, VDI_TABULAR, ROWLINSON_POLING, ROWLINSON_BONDI, COOLPROP,
                       DADGOSTAR_SHAW, POLING_CONST, CRCSTD]
 '''Holds all methods available for the :obj:`HeatCapacityLiquid class`, for use in
 iterating over them.'''
@@ -568,7 +568,7 @@ iterating over them.'''
 
 class HeatCapacityLiquid(TDependentProperty):
     r'''Class for dealing with liquid heat capacity as a function of temperature.
-    Consists of six coefficient-based methods, two constant methods,
+    Consists of seven coefficient-based methods, two constant methods,
     one tabular source, two CSP methods based on gas heat capacity, one simple
     estimator, and the external library CoolProp.
 
@@ -664,6 +664,8 @@ class HeatCapacityLiquid(TDependentProperty):
 
         Constant values tabulated in [4]_ at 298.15 K; data is available for 433
         liquids.
+    **WEBBOOK_SHOMATE**:
+        Shomate form coefficients from [6]_ for ~200 compounds.
 
     See Also
     --------
@@ -672,6 +674,7 @@ class HeatCapacityLiquid(TDependentProperty):
     chemicals.heat_capacity.Rowlinson_Poling
     chemicals.heat_capacity.Rowlinson_Bondi
     chemicals.heat_capacity.Dadgostar_Shaw
+    chemicals.heat_capacity.Shomate
 
     Examples
     --------
@@ -693,6 +696,8 @@ class HeatCapacityLiquid(TDependentProperty):
        Chemistry and Physics. [Boca Raton, FL]: CRC press, 2014.
     .. [5] Gesellschaft, V. D. I., ed. VDI Heat Atlas. 2nd edition.
        Berlin; New York:: Springer, 2010.
+    .. [6] Shen, V.K., Siderius, D.W., Krekelberg, W.P., and Hatch, H.W., Eds.,
+       NIST WebBook, NIST, http://doi.org/10.18434/T4M88Q
     '''
     name = 'Liquid heat capacity'
     units = 'J/mol/K'
@@ -717,7 +722,7 @@ class HeatCapacityLiquid(TDependentProperty):
     ranked_methods = [ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
-                      VDI_TABULAR, COOLPROP, DADGOSTAR_SHAW, ROWLINSON_POLING,
+                      WEBBOOK_SHOMATE, VDI_TABULAR, COOLPROP, DADGOSTAR_SHAW, ROWLINSON_POLING,
                       ROWLINSON_BONDI,
                       POLING_CONST, CRCSTD]
     '''Default rankings of the available methods.'''
@@ -801,6 +806,10 @@ class HeatCapacityLiquid(TDependentProperty):
                 methods.append(ZABRANSKY_SPLINE)
                 self.Zabransky_spline = heat_capacity.zabransky_dict_const_s[self.CASRN]
                 T_limits[ZABRANSKY_SPLINE] = (self.Zabransky_spline.Tmin, self.Zabransky_spline.Tmax)
+            if self.CASRN in heat_capacity.WebBook_Shomate_liquids:
+                methods.append(WEBBOOK_SHOMATE)
+                self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_liquids[self.CASRN]
+                T_limits[WEBBOOK_SHOMATE] = (webbook_shomate.Tmin, webbook_shomate.Tmax)
             if self.CASRN in heat_capacity.zabransky_dict_const_p:
                 methods.append(ZABRANSKY_QUASIPOLYNOMIAL)
                 self.Zabransky_quasipolynomial = heat_capacity.zabransky_dict_const_p[self.CASRN]
@@ -891,6 +900,8 @@ class HeatCapacityLiquid(TDependentProperty):
             return self.Zabransky_spline_sat.force_calculate(T)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
             return self.Zabransky_quasipolynomial_sat.calculate(T)
+        elif method == WEBBOOK_SHOMATE:
+            return self.webbook_shomate.force_calculate(T)
         elif method == COOLPROP:
             return CoolProp_T_dependent_property(T, self.CASRN , 'CPMOLAR', 'l')
         elif method == POLING_CONST:
@@ -1006,6 +1017,8 @@ class HeatCapacityLiquid(TDependentProperty):
             return self.Zabransky_quasipolynomial_iso.calculate_integral(T1, T2)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
             return self.Zabransky_quasipolynomial_sat.calculate_integral(T1, T2)
+        elif method == WEBBOOK_SHOMATE:
+            return self.webbook_shomate.force_calculate_integral(T1, T2)
         elif method == POLING_CONST:
             return (T2 - T1)*self.POLING_constant
         elif method == CRCSTD:
@@ -1053,6 +1066,8 @@ class HeatCapacityLiquid(TDependentProperty):
             return self.Zabransky_quasipolynomial_iso.calculate_integral_over_T(T1, T2)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
             return self.Zabransky_quasipolynomial_sat.calculate_integral_over_T(T1, T2)
+        elif method == WEBBOOK_SHOMATE:
+            return self.webbook_shomate.force_calculate_integral_over_T(T1, T2)
         elif method == POLING_CONST:
             return self.POLING_constant*log(T2/T1)
         elif method == CRCSTD:
