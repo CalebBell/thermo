@@ -582,7 +582,10 @@ class EnthalpySublimation(TDependentProperty):
     -----
     To iterate over all methods, use the list stored in
     :obj:`enthalpy_sublimation_methods`.
-
+    
+    **WEBBOOK_HSUB**:
+        Enthalpy of sublimation at a constant temperature of 298.15 K as given 
+        in [3]_.
     **GHARAGHEIZI_HSUB_298**:
         Enthalpy of sublimation at a constant temperature of 298 K as given in
         [1]_.
@@ -609,6 +612,8 @@ class EnthalpySublimation(TDependentProperty):
        (September 25, 2013): 265-doi:10.1016/j.fluid.2013.06.046.
     .. [2] Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of
        Chemistry and Physics, 95E. Boca Raton, FL: CRC press, 2014.
+    .. [3] Shen, V.K., Siderius, D.W., Krekelberg, W.P., and Hatch, H.W., Eds.,
+       NIST WebBook, NIST, http://doi.org/10.18434/T4M88Q
     '''
     name = 'Enthalpy of sublimation'
     units = 'J/mol'
