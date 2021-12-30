@@ -259,7 +259,7 @@ def test_HeatCapacitySolid():
         NaCl.method = i
         Cps_calc.append(NaCl.T_dependent_property(298.15))
 
-    Cps_exp = [50.38469032, 50.5, 20.065072074682337]
+    Cps_exp = [50.38469032, 50.5, 50.50124702353165, 20.065072074682337]
     assert_close1d(sorted(Cps_calc), sorted(Cps_exp))
 
     NaCl.extrapolation = None
@@ -285,6 +285,23 @@ def test_HeatCapacitySolid():
 #    assert eval(str(NaCl)) == NaCl # Need tabular data in init
     new = HeatCapacitySolid.from_json(NaCl.as_json())
     assert new == NaCl
+
+@pytest.mark.meta_T_dept
+def test_HeatCapacitySolid_BaBr2():
+    BaBr2 = HeatCapacitySolid(CASRN='10553-31-8')
+    BaBr2.extrapolation = 'nolimit'
+    assert_close(BaBr2(200), 74.890978176)
+    assert_close(BaBr2(400),79.216280568)
+    
+    assert_close(BaBr2.calculate_integral(330, 450, WEBBOOK_SHOMATE), 9480.005596336567)
+    assert_close(BaBr2.calculate_integral_over_T(330, 450, WEBBOOK_SHOMATE), 24.481487055089474)
+    
+    assert_close(BaBr2.T_dependent_property_integral(330, 450), 9480.005596336567)
+    assert_close(BaBr2.T_dependent_property_integral_over_T(330, 450), 24.481487055089474)
+    
+    assert_close(BaBr2.T_dependent_property_integral(1, 10000), 1790167.9273896758)
+    assert_close(BaBr2.T_dependent_property_integral_over_T(1, 10000), 832.6150719313177)
+
 
 
 @pytest.mark.meta_T_dept

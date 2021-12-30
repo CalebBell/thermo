@@ -1082,14 +1082,14 @@ class HeatCapacityLiquid(TDependentProperty):
 
 LASTOVKA_S = 'LASTOVKA_S'
 PERRY151 = '''PERRY151'''
-heat_capacity_solid_methods = [PERRY151, CRCSTD, LASTOVKA_S]
+heat_capacity_solid_methods = [WEBBOOK_SHOMATE, PERRY151, CRCSTD, LASTOVKA_S]
 '''Holds all methods available for the :obj:`HeatCapacitySolid` class, for use in
 iterating over them.'''
 
 
 class HeatCapacitySolid(TDependentProperty):
     r'''Class for dealing with solid heat capacity as a function of temperature.
-    Consists of one temperature-dependent simple expression, one constant
+    Consists of two temperature-dependent expressions, one constant
     value source, and one simple estimator.
 
     Parameters
@@ -1135,10 +1135,13 @@ class HeatCapacitySolid(TDependentProperty):
         A basic estimation method using the `similarity variable` concept;
         requires only molecular structure, so is very convenient. See
         :obj:`Lastovka_solid <chemicals.heat_capacity.Lastovka_solid>` for details.
+    **WEBBOOK_SHOMATE**:
+        Shomate form coefficients from [3]_ for ~300 compounds.
 
     See Also
     --------
     chemicals.heat_capacity.Lastovka_solid
+    chemicals.heat_capacity.Shomate
 
     Examples
     --------
@@ -1152,6 +1155,8 @@ class HeatCapacitySolid(TDependentProperty):
        Chemistry and Physics. [Boca Raton, FL]: CRC press, 2014.
     .. [2] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
+    .. [3] Shen, V.K., Siderius, D.W., Krekelberg, W.P., and Hatch, H.W., Eds.,
+       NIST WebBook, NIST, http://doi.org/10.18434/T4M88Q
     '''
     name = 'solid heat capacity'
     units = 'J/mol/K'
@@ -1170,7 +1175,7 @@ class HeatCapacitySolid(TDependentProperty):
     property_max = 1E4
     '''Maximum value of Heat capacity; arbitrarily set.'''
 
-    ranked_methods = [PERRY151, CRCSTD, LASTOVKA_S]
+    ranked_methods = [WEBBOOK_SHOMATE, PERRY151, CRCSTD, LASTOVKA_S]
     '''Default rankings of the available methods.'''
 
     _fit_force_n = {}
@@ -1224,6 +1229,10 @@ class HeatCapacitySolid(TDependentProperty):
                 self.CRCSTD_Cp = float(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cps'])
                 methods.append(CRCSTD)
                 T_limits[CRCSTD] = (298.15, 298.15)
+            if self.CASRN in heat_capacity.WebBook_Shomate_solids:
+                methods.append(WEBBOOK_SHOMATE)
+                self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_solids[self.CASRN]
+                T_limits[WEBBOOK_SHOMATE] = (webbook_shomate.Tmin, webbook_shomate.Tmax)
         if self.MW and self.similarity_variable:
             methods.append(LASTOVKA_S)
             T_limits[LASTOVKA_S] = (1.0, 1e4)
@@ -1257,6 +1266,8 @@ class HeatCapacitySolid(TDependentProperty):
         elif method == LASTOVKA_S:
             Cp = Lastovka_solid(T, self.similarity_variable)
             Cp = property_mass_to_molar(Cp, self.MW)
+        elif method == WEBBOOK_SHOMATE:
+            Cp = self.webbook_shomate.force_calculate(T)
         else:
             return self._base_calculate(T, method)
         return Cp
@@ -1328,6 +1339,8 @@ class HeatCapacitySolid(TDependentProperty):
             return (H2-H1)*calorie
         elif method == CRCSTD:
             return (T2-T1)*self.CRCSTD_Cp
+        elif method == WEBBOOK_SHOMATE:
+            return self.webbook_shomate.force_calculate_integral(T1, T2)
         elif method == LASTOVKA_S:
             dH = (Lastovka_solid_integral(T2, self.similarity_variable)
                     - Lastovka_solid_integral(T1, self.similarity_variable))
@@ -1369,6 +1382,8 @@ class HeatCapacitySolid(TDependentProperty):
             dS = (Lastovka_solid_integral_over_T(T2, self.similarity_variable)
                     - Lastovka_solid_integral_over_T(T1, self.similarity_variable))
             return property_mass_to_molar(dS, self.MW)
+        elif method == WEBBOOK_SHOMATE:
+            return self.webbook_shomate.force_calculate_integral_over_T(T1, T2)
         else:
             return super(HeatCapacitySolid, self).calculate_integral_over_T(T1, T2, method)
 
