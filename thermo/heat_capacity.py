@@ -142,7 +142,8 @@ POLING_POLY = 'POLING_POLY'
 POLING_CONST = 'POLING_CONST'
 CRCSTD = 'CRCSTD'
 LASTOVKA_SHAW = 'LASTOVKA_SHAW'
-heat_capacity_gas_methods = [COOLPROP, TRCIG, POLING_POLY, LASTOVKA_SHAW, CRCSTD,
+WEBBOOK_SHOMATE = 'WEBBOOK_SHOMATE'
+heat_capacity_gas_methods = [COOLPROP, TRCIG, WEBBOOK_SHOMATE, POLING_POLY, LASTOVKA_SHAW, CRCSTD,
                              POLING_CONST, VDI_TABULAR]
 '''Holds all methods available for the :obj:`HeatCapacityGas` class, for use in
 iterating over them.'''
@@ -150,7 +151,7 @@ iterating over them.'''
 
 class HeatCapacityGas(TDependentProperty):
     r'''Class for dealing with gas heat capacity as a function of temperature.
-    Consists of two coefficient-based methods, two constant methods,
+    Consists of three coefficient-based methods, two constant methods,
     one tabular source, one simple estimator, and the external library
     CoolProp.
 
@@ -203,11 +204,14 @@ class HeatCapacityGas(TDependentProperty):
     **VDI_TABULAR**:
         Tabular data up to the critical point available in [5]_. Note that this
         data is along the saturation curve.
+    **WEBBOOK_SHOMATE**:
+        Shomate form coefficients from [6]_ for ~700 compounds.
 
 
     See Also
     --------
     chemicals.heat_capacity.TRCCp
+    chemicals.heat_capacity.Shomate
     chemicals.heat_capacity.Lastovka_Shaw
     chemicals.heat_capacity.Rowlinson_Poling
     chemicals.heat_capacity.Rowlinson_Bondi
@@ -234,6 +238,8 @@ class HeatCapacityGas(TDependentProperty):
        Chemistry and Physics. [Boca Raton, FL]: CRC press, 2014.
     .. [5] Gesellschaft, V. D. I., ed. VDI Heat Atlas. 2nd edition.
        Berlin; New York:: Springer, 2010.
+    .. [6] Shen, V.K., Siderius, D.W., Krekelberg, W.P., and Hatch, H.W., Eds.,
+       NIST WebBook, NIST, http://doi.org/10.18434/T4M88Q
     '''
     name = 'gas heat capacity'
     units = 'J/mol/K'
@@ -253,7 +259,7 @@ class HeatCapacityGas(TDependentProperty):
     '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
     the critical point, this value can be obscenely high.'''
 
-    ranked_methods = [TRCIG, POLING_POLY, COOLPROP, LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
+    ranked_methods = [TRCIG, WEBBOOK_SHOMATE, POLING_POLY, COOLPROP, LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
     '''Default rankings of the available methods.'''
 
 
@@ -287,6 +293,10 @@ class HeatCapacityGas(TDependentProperty):
         methods = []
         self.T_limits = T_limits = {}
         if load_data:
+            if self.CASRN in heat_capacity.WebBook_Shomate_gases:
+                methods.append(WEBBOOK_SHOMATE)
+                self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_gases[self.CASRN]
+                T_limits[WEBBOOK_SHOMATE] = (webbook_shomate.Tmin, webbook_shomate.Tmax)
             if self.CASRN in heat_capacity.TRC_gas_data.index:
                 methods.append(TRCIG)
                 self.TRCIG_Tmin, self.TRCIG_Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = heat_capacity.TRC_gas_values[heat_capacity.TRC_gas_data.index.get_loc(self.CASRN)].tolist()
@@ -376,6 +386,8 @@ class HeatCapacityGas(TDependentProperty):
         '''
         if method == TRCIG:
             Cp = TRCCp(T, *self.TRCIG_coefs)
+        elif method == WEBBOOK_SHOMATE:
+            Cp = self.webbook_shomate.force_calculate(T)
         elif method == COOLPROP:
             try:
                 # Some cases due to melting point need a high pressure
@@ -423,13 +435,7 @@ class HeatCapacityGas(TDependentProperty):
             Whether or not a specifid method is valid
         '''
         validity = True
-        if method == TRCIG:
-            if T < self.TRCIG_Tmin or T > self.TRCIG_Tmax:
-                return False
-        elif method == POLING_POLY:
-            if T < self.POLING_Tmin or T > self.POLING_Tmax:
-                return False
-        elif method == POLING_CONST:
+        if method == POLING_CONST:
             if T > self.POLING_T + 50.0 or T < self.POLING_T - 50.0:
                 return False
         elif method == CRCSTD:
@@ -468,6 +474,8 @@ class HeatCapacityGas(TDependentProperty):
             H2 = TRCCp_integral(T2, *self.TRCIG_coefs)
             H1 = TRCCp_integral(T1, *self.TRCIG_coefs)
             return H2 - H1
+        elif method == WEBBOOK_SHOMATE:
+            return self.webbook_shomate.force_calculate_integral(T1, T2)
         elif method == POLING_POLY:
             A, B, C, D, E = self.POLING_coefs
             H2 = (((((0.2*E)*T2 + 0.25*D)*T2 + C/3.)*T2 + 0.5*B)*T2 + A)*T2
@@ -514,6 +522,8 @@ class HeatCapacityGas(TDependentProperty):
             S2 = TRCCp_integral_over_T(T2, *self.TRCIG_coefs)
             S1 = TRCCp_integral_over_T(T1, *self.TRCIG_coefs)
             return S2 - S1
+        elif method == WEBBOOK_SHOMATE:
+            return self.webbook_shomate.force_calculate_integral_over_T(T1, T2)
         elif method == CRCSTD:
             return self.CRCSTD_constant*log(T2/T1)
         elif method == POLING_CONST:

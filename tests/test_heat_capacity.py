@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 from chemicals.utils import ws_to_zs
 from thermo.heat_capacity import *
-from thermo.heat_capacity import TRCIG, POLING_POLY, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR, LASTOVKA_SHAW, ROWLINSON_BONDI, ZABRANSKY_QUASIPOLYNOMIAL_C, CRCSTD, ROWLINSON_POLING, POLING_CONST, ZABRANSKY_SPLINE_SAT, DADGOSTAR_SHAW, COOLPROP, ZABRANSKY_SPLINE_C, VDI_TABULAR
+from thermo.heat_capacity import TRCIG, POLING_POLY, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR, LASTOVKA_SHAW, ROWLINSON_BONDI, ZABRANSKY_QUASIPOLYNOMIAL_C, CRCSTD, ROWLINSON_POLING, POLING_CONST, ZABRANSKY_SPLINE_SAT, DADGOSTAR_SHAW, COOLPROP, ZABRANSKY_SPLINE_C, VDI_TABULAR, WEBBOOK_SHOMATE
 from random import uniform
 from math import *
 from fluids.numerics import linspace, logspace, NotBoundedError, assert_close, assert_close1d
@@ -105,6 +105,38 @@ def test_HeatCapacityGas():
     new = HeatCapacityGas.from_json(obj.as_json())
     assert new == obj
 
+@pytest.mark.meta_T_dept
+def test_HeatCapacityGas_webbook():
+    obj = HeatCapacityGas(CASRN='7732-18-5')
+    assert_close(obj.calculate(700, WEBBOOK_SHOMATE), 37.5018469222449)
+
+    obj.method = WEBBOOK_SHOMATE
+    assert_close(obj.calculate(700, WEBBOOK_SHOMATE), 37.5018469222449)
+    assert_close(obj.calculate(3000, WEBBOOK_SHOMATE), 55.74187422222222)
+    assert_close(obj.calculate(6000, WEBBOOK_SHOMATE), 60.588267555555554)
+    
+    assert_close(obj.calculate_integral(1, 700, WEBBOOK_SHOMATE), 105354.51298924106)
+    assert_close(obj.calculate_integral(1, 3000, WEBBOOK_SHOMATE), 217713.25484195515)
+    assert_close(obj.calculate_integral(1, 6000, WEBBOOK_SHOMATE), 393461.64992528845)
+    
+    assert_close(obj.calculate_integral_over_T(1, 700, WEBBOOK_SHOMATE), 41272.70183405447)
+    assert_close(obj.calculate_integral_over_T(1, 3000, WEBBOOK_SHOMATE), 41340.46968129815)
+    assert_close(obj.calculate_integral_over_T(1, 6000, WEBBOOK_SHOMATE), 41380.892814134764)
+
+    # Hydrogen peroxide
+    obj = HeatCapacityGas(CASRN='7722-84-1')
+    obj.method = WEBBOOK_SHOMATE
+    assert_close(obj.calculate(700, WEBBOOK_SHOMATE), 57.91556132204081)
+    assert_close(obj(700), 57.91556132204081)
+    assert_close(obj.calculate(3000, WEBBOOK_SHOMATE), 128.73412366666665)
+    assert_close(obj.calculate_integral(1, 700, WEBBOOK_SHOMATE), -387562.193149271)
+    assert_close(obj.calculate_integral_over_T(1, 700, WEBBOOK_SHOMATE), -210822.6509202891)
+    
+    assert_close(obj.T_dependent_property_integral(330, 700), 19434.50551451386)
+    assert_close(obj.T_dependent_property_integral_over_T(330, 700), 38.902796756264706)
+    
+    
+    
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
 @pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
