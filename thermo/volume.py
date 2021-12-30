@@ -129,7 +129,9 @@ from chemicals.volume import *
 from chemicals import volume
 from chemicals.virial import BVirial_Pitzer_Curl, BVirial_Abbott, BVirial_Tsonopoulos, BVirial_Tsonopoulos_extended
 from chemicals import miscdata
-from chemicals.miscdata import lookup_VDI_tabular_data
+from chemicals.miscdata import lookup_VDI_tabular_data, COMMON_CHEMISTRY
+from chemicals.identifiers import CAS_to_int
+
 from thermo import electrochem
 from thermo.electrochem import Laliberte_density
 from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property
@@ -181,7 +183,7 @@ CRC_INORG_L_CONST = 'CRC_INORG_L_CONST'
 
 volume_liquid_methods = [DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, MMSNM0FIT, VDI_TABULAR,
                          HTCOSTALDFIT, RACKETTFIT, CRC_INORG_L,
-                         CRC_INORG_L_CONST, MMSNM0, HTCOSTALD,
+                         CRC_INORG_L_CONST, COMMON_CHEMISTRY, MMSNM0, HTCOSTALD,
                          YEN_WOODS_SAT, RACKETT, YAMADA_GUNN,
                          BHIRUD_NORMAL, TOWNSEND_HALES, CAMPBELL_THODOS, EOS]
 '''Holds all low-pressure methods available for the :obj:`VolumeLiquid` class, for use
@@ -372,7 +374,7 @@ class VolumeLiquid(TPDependentProperty):
 
     ranked_methods = [DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, MMSNM0FIT, VDI_TABULAR,
                       HTCOSTALDFIT, RACKETTFIT, CRC_INORG_L,
-                      CRC_INORG_L_CONST, MMSNM0, HTCOSTALD,
+                      CRC_INORG_L_CONST, COMMON_CHEMISTRY, MMSNM0, HTCOSTALD,
                       YEN_WOODS_SAT, RACKETT, YAMADA_GUNN,
                       BHIRUD_NORMAL, TOWNSEND_HALES, CAMPBELL_THODOS, EOS]
     '''Default rankings of the low-pressure methods.'''
