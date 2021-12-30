@@ -183,8 +183,9 @@ def test_HeatCapacityGas_Joback():
     obj.method = 'JOBACK'
     assert_close(obj(300), 236.04260000000002)
     assert_close(obj.calculate(300, 'JOBACK'), 236.04260000000002)
-
-
+    assert_close(obj.T_dependent_property_integral(300, 400), 26820.025000000005)
+    assert_close(obj.T_dependent_property_integral_over_T(300, 400), 76.72232911998739)
+    
 
 @pytest.mark.meta_T_dept
 def test_HeatCapacityGas_cheb_fit():
