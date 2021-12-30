@@ -180,12 +180,17 @@ def test_HeatCapacityGas_CoolProp():
 @pytest.mark.meta_T_dept
 def test_HeatCapacityGas_Joback():
     obj = HeatCapacityGas(CASRN='124-18-5')
-    obj.method = 'JOBACK'
+    obj.method = JOBACK
     assert_close(obj(300), 236.04260000000002)
-    assert_close(obj.calculate(300, 'JOBACK'), 236.04260000000002)
+    assert_close(obj.calculate(300, JOBACK), 236.04260000000002)
     assert_close(obj.T_dependent_property_integral(300, 400), 26820.025000000005)
     assert_close(obj.T_dependent_property_integral_over_T(300, 400), 76.72232911998739)
     
+    # Chemical for which  Joback did not work
+    obj = HeatCapacityGas(CASRN='55-18-5')
+    assert JOBACK not in obj.all_methods
+    
+
 
 @pytest.mark.meta_T_dept
 def test_HeatCapacityGas_cheb_fit():

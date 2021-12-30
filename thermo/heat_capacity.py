@@ -317,12 +317,14 @@ class HeatCapacityGas(TDependentProperty):
 
             jb_df = miscdata.joback_predictions
             if CASRN_int in jb_df.index:
-                methods.append(JOBACK)
-                self.joback_coeffs = [float(jb_df.at[CASRN_int, 'Cpg3']),
-                                      float(jb_df.at[CASRN_int, 'Cpg2']),
-                                      float(jb_df.at[CASRN_int, 'Cpg1']),
-                                      float(jb_df.at[CASRN_int, 'Cpg0'])]
-                T_limits[JOBACK] = (float(jb_df.at[CASRN_int, 'Tm']),float(jb_df.at[CASRN_int, 'Tc'])*2.5)
+                Cpg3 = float(jb_df.at[CASRN_int, 'Cpg3'])
+                if not isnan(Cpg3):
+                    methods.append(JOBACK)
+                    self.joback_coeffs = [Cpg3,
+                                          float(jb_df.at[CASRN_int, 'Cpg2']),
+                                          float(jb_df.at[CASRN_int, 'Cpg1']),
+                                          float(jb_df.at[CASRN_int, 'Cpg0'])]
+                    T_limits[JOBACK] = (float(jb_df.at[CASRN_int, 'Tm']),float(jb_df.at[CASRN_int, 'Tc'])*2.5)
 
             if CASRN in heat_capacity.WebBook_Shomate_gases:
                 methods.append(WEBBOOK_SHOMATE)
