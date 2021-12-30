@@ -23,6 +23,7 @@ SOFTWARE.'''
 import numpy as np
 import pytest
 from chemicals.utils import ws_to_zs
+import json
 from thermo.heat_capacity import *
 from thermo.heat_capacity import TRCIG, POLING_POLY, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR, LASTOVKA_SHAW, ROWLINSON_BONDI, ZABRANSKY_QUASIPOLYNOMIAL_C, CRCSTD, ROWLINSON_POLING, POLING_CONST, ZABRANSKY_SPLINE_SAT, DADGOSTAR_SHAW, COOLPROP, ZABRANSKY_SPLINE_C, VDI_TABULAR, WEBBOOK_SHOMATE
 from random import uniform
@@ -302,6 +303,9 @@ def test_HeatCapacitySolid_BaBr2():
     assert_close(BaBr2.T_dependent_property_integral(1, 10000), 1790167.9273896758)
     assert_close(BaBr2.T_dependent_property_integral_over_T(1, 10000), 832.6150719313177)
 
+    assert eval(str(BaBr2)) == BaBr2
+    new = HeatCapacitySolid.from_json(json.loads(json.dumps(BaBr2.as_json())))
+    assert new == BaBr2
 
 
 @pytest.mark.meta_T_dept

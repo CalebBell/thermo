@@ -1186,6 +1186,14 @@ class HeatCapacitySolid(TDependentProperty):
 
     custom_args = ('MW', 'similarity_variable')
 
+    _json_obj_by_CAS = ('webbook_shomate',)
+
+    @classmethod
+    def _load_json_CAS_references(cls, d):
+        CASRN = d['CASRN']
+        if CASRN in heat_capacity.WebBook_Shomate_solids:
+            d['webbook_shomate'] = heat_capacity.WebBook_Shomate_solids[CASRN]
+
     def __init__(self, CASRN='', similarity_variable=None, MW=None,
                  extrapolation='linear', **kwargs):
         self.similarity_variable = similarity_variable
