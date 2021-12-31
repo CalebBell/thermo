@@ -10,3 +10,4 @@ More details on the unit handling library can be found at :doc:`fluids.units <fl
 .. toctree::
     Examples/Working with Heat Transfer Fluids - Therminol LT.ipynb
     Examples/Validating Flash Calculations.ipynb
+    Examples/High Molecular Weight Petroleum Pseudocomponents.ipynb
