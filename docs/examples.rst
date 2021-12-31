@@ -11,3 +11,4 @@ More details on the unit handling library can be found at :doc:`fluids.units <fl
     Examples/Working with Heat Transfer Fluids - Therminol LT.ipynb
     Examples/Validating Flash Calculations.ipynb
     Examples/High Molecular Weight Petroleum Pseudocomponents.ipynb
+    Examples/Performing Large Numbers of Calculations with Thermo in Parallel.ipynb
