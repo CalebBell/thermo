@@ -396,6 +396,31 @@ class ScalarParameterDB(object):
         except KeyError:
             return self.metadata[name]['missing'][parameter]
 
+    def get_tables_with_type(self, parameter):
+        '''Get a list of tables which have a type of a parameter.
+
+        Parameters
+        ----------
+        parameter : str
+            Name of the parameter type, [-]
+
+        Returns
+        -------
+        table_names : list[str]
+            Interaction parameter tables including `parameter`, [-]
+
+        Examples
+        --------
+
+        >>> from thermo.interaction_parameters import SPDB
+        >>> SPDB.get_tables_with_type('PRTwu')
+        ['PRTwu_PinaMartinez', 'PRTwu_ibell_2018']
+        '''
+        tables = []
+        for key, d in self.metadata.items():
+            if d['type'] == parameter:
+                tables.append(key)
+        return tables
 
 _loaded_interactions = False
 def load_all_interaction_parameters():
