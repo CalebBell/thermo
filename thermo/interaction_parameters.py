@@ -452,6 +452,69 @@ class ScalarParameterDB(object):
                 tables.append(key)
         return tables
 
+    def get_parameter_automatic(self, CAS, parameter_type, parameter):
+        '''Get an interaction parameter for the first table containing the
+        value.
+
+        Parameters
+        ----------
+        CAS : str
+            CAS number, [-]
+        parameter_type : str
+            Name of the parameter type, [-]
+        parameter : str
+            Name of the parameter to retrieve, [-]
+
+        Returns
+        -------
+        value : float
+            Parameter value specified by `parameter`, [-]
+
+        Examples
+        --------
+
+        >>> from thermo.interaction_parameters import SPDB
+        >>> SPDB.get_parameter_automatic('7727-37-9', parameter_type='PRTwu', parameter='L')
+        0.1243
+        '''
+        table = self.get_tables_with_type(parameter_type)[0]
+        return self.get_parameter_specific(table, CAS, parameter)
+
+    def get_parameter_vector(self, name, CASs, parameter):
+        '''Get a list of parameters from a specified source
+        for the specified parameter.
+
+        Parameters
+        ----------
+        name : str
+            Name of the data table, [-]
+        CASs : Iterable[str]
+            CAS numbers; the returned values will be in this order, [-]
+        parameter : str
+            Name of the parameter to retrieve, [-]
+
+        Returns
+        -------
+        values : list[float]
+            Parameter specified by `parameter`, [-]
+
+        Examples
+        --------
+
+        >>> from thermo.interaction_parameters import SPDB
+        >>> SPDB.get_parameter_vector(name='PRTwu_PinaMartinez', CASs=['7727-37-9', '74-84-0', '74-98-6'], parameter='L')
+        [0.1243, 0.3053, 0.7455]
+        >>> SPDB.get_parameter_vector(name='PRVolumeTranslation_PinaMartinez', CASs=['7727-37-9', '74-84-0', '74-98-6'], parameter='c')
+        [-3.643e-06, -3.675e-06, -3.735e-06]
+        '''
+        table = self.tables[name]
+        N = len(CASs)
+        values = [None]*N
+        for i in range(N):
+            values[i] = self.get_parameter_specific(name, CASs[i], parameter)
+        return values
+
+
 _loaded_interactions = False
 def load_all_interaction_parameters():
     global IPDB, _loaded_interactions
