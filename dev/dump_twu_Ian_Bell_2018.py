@@ -38,12 +38,11 @@ article_source = "Consistent Twu Parameters for More than 2500 Pure Fluids from 
 PR_Twu_metadata = {
   "metadata": {
     "source": article_source,
-    "type": "PRTwu",
     "necessary keys": [
-      "L", "M", "N",
+      "TwuPRL", "TwuPRM", "TwuPRN", "TwuPRc",
     ],
     "missing": {
-      "L": None, "M": None, "N": None,
+      "TwuPRL": None, "TwuPRM": None, "TwuPRN": None, "TwuPRc": 0.0,
     }
   }
 }
@@ -81,7 +80,7 @@ for i in range(len(inchikeys)):
 data = {}
 for CAS, L, M, N in zip(CASs, PRLs, PRMs, PRNs):
     if CAS is not None:
-        data[CAS] = {"name": CAS, "L": L, "M": M, "N": N}
+        data[CAS] = {"name": CAS, "TwuPRL": L, "TwuPRM": M, "TwuPRN": N}
 PR_Twu_metadata['data'] = data
 
 f = open(os.path.join(folder, 'PRTwu_ibell_2018.json'), 'w')

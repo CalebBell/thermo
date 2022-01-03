@@ -41,10 +41,10 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 .. autoclass:: ScalarParameterDB
 
-.. autodata:: SPDB
+SPDB
 
     Example scalar parameters for models. This is lazy-loaded,
-   access it as `thermo.interaction_parameters.SPDB`.
+    access it as `thermo.interaction_parameters.SPDB`.
 '''
 
 from __future__ import division
@@ -353,6 +353,48 @@ class InteractionParameterDB(object):
         return values
 
 class ScalarParameterDB(object):
+    '''Basic database framework for scalar parameters of various thermodynamic
+    models. The following keys are used:
+    
+    **Peng-Robinson**
+    
+    :obj:`Twu Volume-translated Peng-Robinson <thermo.eos_mix.PRMIXTranslatedConsistent>`:
+    `TwuPRL`, `TwuPRM`, `TwuPRN`, `TwuPRc`
+    
+    :obj:`Volume-translated Peng-Robinson <thermo.eos_mix.PRMIXTranslated>`:
+    `PRc`
+    
+    :obj:`Peng-Robinson-Stryjek-Vera  <thermo.eos_mix.PRSVMIX>`:
+    `PRSVkappa1`
+    
+    :obj:`Peng-Robinson-Stryjek-Vera 2  <thermo.eos_mix.PRSV2MIX>`:
+    `PRSV2kappa1`, `PRSV2kappa2`, `PRSV2kappa3`
+    
+    **SRK**
+    
+    :obj:`Twu Volume-translated Peng-Robinson <thermo.eos_mix.SRKMIXTranslatedConsistent>`:
+    `TwuSRKL`, `TwuSRKM`, `TwuSRKN`, `TwuSRKc`
+    
+    :obj:`Volume-translated Peng-Robinson <thermo.eos_mix.SRKMIXTranslated>`:
+    `SRKc`
+
+    :obj:`Refinery Soave-Redlich-Kwong  <thermo.eos_mix.APISRKMIX>`:
+    `APISRKS1`, `APISRKS2`
+    
+    :obj:`MSRK  <thermo.eos_mix.MSRKMIXTranslated>`:
+    `MSRKM`, `MSRKN`, `MSRKc`
+
+    :obj:`Predictive Soave-Redlich-Kwong <thermo.eos_mix.PSRK>`:
+    `MCSRKC1`, `MCSRKC2`, `MCSRKC3`
+
+    
+    **Excess Gibbs Energy Models**
+    
+    :obj:`Regular Solution <thermo.regular_solution.RegularSolution>`:
+    `RegularSolutionV`, `RegularSolutionSP`
+    
+        
+    '''
     def __init__(self):
         self.tables = {}
         self.metadata = {}
@@ -388,7 +430,7 @@ class ScalarParameterDB(object):
         Get the `L` Twu parameter for PR from Piña-Martinez (2021):
 
         >>> from thermo.interaction_parameters import SPDB
-        >>> SPDB.get_parameter_specific('PRTwu_PinaMartinez', '7727-37-9', 'L')
+        >>> SPDB.get_parameter_specific('PRTwu_PinaMartinez', '7727-37-9', 'TwuPRL')
         0.1243
         '''
         try:
@@ -417,22 +459,23 @@ class ScalarParameterDB(object):
         --------
 
         >>> from thermo.interaction_parameters import SPDB
-        >>> SPDB.has_parameter_specific('PRTwu_PinaMartinez', '7727-37-9', 'L')
+        >>> SPDB.has_parameter_specific('PRTwu_PinaMartinez', '7727-37-9', 'TwuPRL')
         True
-        >>> SPDB.has_parameter_specific('PRTwu_PinaMartinez', '7439-89-6', 'L')
+        >>> SPDB.has_parameter_specific('PRTwu_PinaMartinez', '7439-89-6', 'TwuPRL')
         False
         '''
         table = self.tables[name]
         if CAS not in table:
             return False
         return parameter in table[CAS]
+
     def get_tables_with_type(self, parameter):
-        '''Get a list of tables which have a type of a parameter.
+        '''Get a list of tables which have a parameter.
 
         Parameters
         ----------
         parameter : str
-            Name of the parameter type, [-]
+            Name of the parameter, [-]
 
         Returns
         -------
@@ -443,16 +486,16 @@ class ScalarParameterDB(object):
         --------
 
         >>> from thermo.interaction_parameters import SPDB
-        >>> SPDB.get_tables_with_type('PRTwu')
+        >>> SPDB.get_tables_with_type('TwuPRL')
         ['PRTwu_PinaMartinez', 'PRTwu_ibell_2018']
         '''
         tables = []
         for key, d in self.metadata.items():
-            if d['type'] == parameter:
+            if parameter in d['missing']:
                 tables.append(key)
         return tables
 
-    def get_parameter_automatic(self, CAS, parameter_type, parameter):
+    def get_parameter_automatic(self, CAS, parameter):
         '''Get an interaction parameter for the first table containing the
         value.
 
@@ -460,8 +503,6 @@ class ScalarParameterDB(object):
         ----------
         CAS : str
             CAS number, [-]
-        parameter_type : str
-            Name of the parameter type, [-]
         parameter : str
             Name of the parameter to retrieve, [-]
 
@@ -474,10 +515,10 @@ class ScalarParameterDB(object):
         --------
 
         >>> from thermo.interaction_parameters import SPDB
-        >>> SPDB.get_parameter_automatic('7727-37-9', parameter_type='PRTwu', parameter='L')
+        >>> SPDB.get_parameter_automatic('7727-37-9', parameter='TwuPRL')
         0.1243
         '''
-        table = self.get_tables_with_type(parameter_type)[0]
+        table = self.get_tables_with_type(parameter)[0]
         return self.get_parameter_specific(table, CAS, parameter)
 
     def get_parameter_vector(self, name, CASs, parameter):
@@ -502,9 +543,9 @@ class ScalarParameterDB(object):
         --------
 
         >>> from thermo.interaction_parameters import SPDB
-        >>> SPDB.get_parameter_vector(name='PRTwu_PinaMartinez', CASs=['7727-37-9', '74-84-0', '74-98-6'], parameter='L')
+        >>> SPDB.get_parameter_vector(name='PRTwu_PinaMartinez', CASs=['7727-37-9', '74-84-0', '74-98-6'], parameter='TwuPRL')
         [0.1243, 0.3053, 0.7455]
-        >>> SPDB.get_parameter_vector(name='PRVolumeTranslation_PinaMartinez', CASs=['7727-37-9', '74-84-0', '74-98-6'], parameter='c')
+        >>> SPDB.get_parameter_vector(name='PRVolumeTranslation_PinaMartinez', CASs=['7727-37-9', '74-84-0', '74-98-6'], parameter='PRc')
         [-3.643e-06, -3.675e-06, -3.735e-06]
         '''
         table = self.tables[name]

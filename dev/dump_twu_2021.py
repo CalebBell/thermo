@@ -33,12 +33,11 @@ article_source = "Use of 300,000 pseudo-experimental data over 1800 pure fluids 
 PR_Twu_metadata = {
   "metadata": {
     "source": article_source,
-    "type": "PRTwu",
     "necessary keys": [
-      "L", "M", "N",
+      "TwuPRL", "TwuPRM", "TwuPRN", "TwuPRc",
     ],
     "missing": {
-      "L": None, "M": None, "N": None,
+      "TwuPRL": None, "TwuPRM": None, "TwuPRN": None, "TwuPRc": 0.0,
     }
   }
 }
@@ -46,12 +45,11 @@ PR_Twu_metadata = {
 PR_C_metadata = {
   "metadata": {
     "source": article_source,
-    "type": "PRVolumeTranslation",
     "necessary keys": [
-      "c",
+      "PRc",
     ],
     "missing": {
-      "c": None,
+      "PRc": 0.0,
     }
   }
 }
@@ -59,12 +57,11 @@ PR_C_metadata = {
 SRK_Twu_metadata = {
   "metadata": {
     "source": article_source,
-    "type": "SRKTwu",
     "necessary keys": [
-      "L", "M", "N",
+      "TwuSRKL", "TwuSRKM", "TwuSRKN", "TwuSRKc",
     ],
     "missing": {
-      "L": None, "M": None, "N": None,
+      "TwuSRKL": None, "TwuSRKM": None, "TwuSRKN": None, "TwuSRKc": 0.0,
     }
   }
 }
@@ -72,12 +69,11 @@ SRK_Twu_metadata = {
 SRK_C_metadata = {
   "metadata": {
     "source": article_source,
-    "type": "SRKVolumeTranslation",
     "necessary keys": [
-      "c",
+      "SRKc",
     ],
     "missing": {
-      "c": None,
+      "SRKc": 0.0,
     }
   }
 }
@@ -94,13 +90,13 @@ SRKCs = df2['SRKC'].values.tolist()
 
 
 data = {}
-for CAS, L, M, N in zip(CASs, PRLs, PRMs, PRNs):
-    data[CAS] = {"name": CAS, "L": L, "M": M, "N": N}
+for CAS, L, M, N, c in zip(CASs, PRLs, PRMs, PRNs, PRCs):
+    data[CAS] = {"name": CAS, "TwuPRL": L, "TwuPRM": M, "TwuPRN": N, "TwuPRc": c}
 PR_Twu_metadata['data'] = data
 
 data = {}
 for CAS, c in zip(CASs, PRCs):
-    data[CAS] = {"name": CAS, "c": c}
+    data[CAS] = {"name": CAS, "PRc": c}
 PR_C_metadata['data'] = data
 
 f = open(os.path.join(folder, 'PRTwu_PinaMartinez.json'), 'w')
@@ -113,13 +109,13 @@ f.close()
 
 
 data = {}
-for CAS, L, M, N in zip(CASs, SRKLs, SRKMs, SRKNs):
-    data[CAS] = {"name": CAS, "L": L, "M": M, "N": N}
+for CAS, L, M, N, c in zip(CASs, SRKLs, SRKMs, SRKNs, SRKCs):
+    data[CAS] = {"name": CAS, "TwuSRKL": L, "TwuSRKM": M, "TwuSRKN": N, "TwuSRKc": c}
 SRK_Twu_metadata['data'] = data
 
 data = {}
 for CAS, c in zip(CASs, SRKCs):
-    data[CAS] = {"name": CAS, "c": c}
+    data[CAS] = {"name": CAS, "SRKc": c}
 SRK_C_metadata['data'] = data
 
 f = open(os.path.join(folder, 'SRKTwu_PinaMartinez.json'), 'w')
