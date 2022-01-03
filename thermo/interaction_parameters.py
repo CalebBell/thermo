@@ -39,11 +39,17 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
    Exmple database with NRTL and PR values from ChemSep. This is lazy-loaded,
    access it as `thermo.interaction_parameters.IPDB`.
 
+.. autoclass:: ScalarParameterDB
+
+.. autodata:: SPDB
+
+    Example scalar parameters for models. This is lazy-loaded,
+   access it as `thermo.interaction_parameters.SPDB`.
 '''
 
 from __future__ import division
 
-__all__ = ['InteractionParameterDB']
+__all__ = ['InteractionParameterDB', 'ScalarParameterDB']
 
 import os
 from math import isnan
@@ -346,6 +352,50 @@ class InteractionParameterDB(object):
                 values[i][j] = i_ip
         return values
 
+class ScalarParameterDB(object):
+    def __init__(self):
+        self.tables = {}
+        self.metadata = {}
+    def load_json(self, file, name):
+        
+        import json
+        f = open(file).read()
+        dat = json.loads(f)
+        self.tables[name] = dat['data']
+        self.metadata[name] = dat['metadata']
+        
+    def get_parameter_specific(self, name, CAS, parameter):
+        '''Get a parameter from a table. If the specified
+        parameter is missing, the default `missing` value as defined in
+        the data file is returned instead.
+
+        Parameters
+        ----------
+        name : str
+            Name of the data table, [-]
+        CAS : str
+            CAS number, [-]
+        parameter : str
+            Name of the parameter to retrieve, [-]
+
+        Returns
+        -------
+        value : float
+            Interaction parameter specified by `ip`, [-]
+
+        Examples
+        --------
+        Get the `L` Twu parameter for PR from Piña-Martinez (2021):
+
+        >>> from thermo.interaction_parameters import SPDB
+        >>> SPDB.get_parameter_specific('PRTwu_PinaMartinez', '7727-37-9', 'L')
+        0.1243
+        '''
+        try:
+            return self.tables[name][CAS][parameter]
+        except KeyError:
+            return self.metadata[name]['missing'][parameter]
+
 
 _loaded_interactions = False
 def load_all_interaction_parameters():
@@ -366,12 +416,34 @@ def load_all_interaction_parameters():
 
     _loaded_interactions = True
 
+_loaded_scalars = False
+def load_all_scalar_parameters():
+    global SPDB, _loaded_scalars
+
+    folder = os.path.join(os.path.dirname(__file__), 'Scalar Parameters')
+    sp_files = {'PRTwu_PinaMartinez': os.path.join(folder, 'PRTwu_PinaMartinez.json'),
+                'SRKTwu_PinaMartinez': os.path.join(folder, 'SRKTwu_PinaMartinez.json'),
+                'PRVolumeTranslation_PinaMartinez': os.path.join(folder, 'PRVolumeTranslation_PinaMartinez.json'),
+                'SRKVolumeTranslation_PinaMartinez': os.path.join(folder, 'SRKVolumeTranslation_PinaMartinez.json'),
+                }
+
+
+    SPDB = ScalarParameterDB()
+    for name, file in sp_files.items():
+        SPDB.load_json(file, name)
+
+    _loaded_scalars = True
+
 if PY37:
     def __getattr__(name):
         if name in ('IPDB',):
             load_all_interaction_parameters()
             return globals()[name]
+        if name in ('SPDB',):
+            load_all_scalar_parameters()
+            return globals()[name]
         raise AttributeError("module %s has no attribute %s" %(__name__, name))
 else:
     if can_load_data:
         load_all_interaction_parameters()
+        load_all_scalar_parameters()
