@@ -425,6 +425,7 @@ def load_all_scalar_parameters():
                 'SRKTwu_PinaMartinez': os.path.join(folder, 'SRKTwu_PinaMartinez.json'),
                 'PRVolumeTranslation_PinaMartinez': os.path.join(folder, 'PRVolumeTranslation_PinaMartinez.json'),
                 'SRKVolumeTranslation_PinaMartinez': os.path.join(folder, 'SRKVolumeTranslation_PinaMartinez.json'),
+                'PRTwu_ibell_2018': os.path.join(folder, 'PRTwu_ibell_2018.json'),
                 }
 
 
