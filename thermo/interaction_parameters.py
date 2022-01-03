@@ -585,6 +585,10 @@ def load_all_scalar_parameters():
                 'PRVolumeTranslation_PinaMartinez': os.path.join(folder, 'PRVolumeTranslation_PinaMartinez.json'),
                 'SRKVolumeTranslation_PinaMartinez': os.path.join(folder, 'SRKVolumeTranslation_PinaMartinez.json'),
                 'PRTwu_ibell_2018': os.path.join(folder, 'PRTwu_ibell_2018.json'),
+
+                'chemsep_regular_solution': os.path.join(folder, 'chemsep_regular_solution.json'),
+                'chemsep_PSRK_matthias_copeman': os.path.join(folder, 'chemsep_PSRK_matthias_copeman.json'),
+                'chemsep_APISRK': os.path.join(folder, 'chemsep_APISRK.json'),
                 }
 
 

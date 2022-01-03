@@ -1,0 +1,2130 @@
+{
+  "data": {
+    "100-18-5": {
+      "RegularSolutionSP": 16930.0,
+      "RegularSolutionV": 0.00019023599999999999,
+      "name": "100-18-5"
+    },
+    "100-37-8": {
+      "RegularSolutionSP": 19100.0,
+      "RegularSolutionV": 0.000132864,
+      "name": "100-37-8"
+    },
+    "100-41-4": {
+      "RegularSolutionSP": 17980.0,
+      "RegularSolutionV": 0.000122763,
+      "name": "100-41-4"
+    },
+    "100-42-5": {
+      "RegularSolutionSP": 19020.0,
+      "RegularSolutionV": 0.000115667,
+      "name": "100-42-5"
+    },
+    "100-66-3": {
+      "RegularSolutionSP": 20110.0,
+      "RegularSolutionV": 0.00010916700000000001,
+      "name": "100-66-3"
+    },
+    "10024-97-2": {
+      "RegularSolutionSP": 8275.0,
+      "RegularSolutionV": 3.6002e-05,
+      "name": "10024-97-2"
+    },
+    "10028-15-6": {
+      "RegularSolutionSP": 18740.0,
+      "RegularSolutionV": 3.54e-05,
+      "name": "10028-15-6"
+    },
+    "10034-85-2": {
+      "RegularSolutionSP": 17120.0,
+      "RegularSolutionV": 4.57176e-05,
+      "name": "10034-85-2"
+    },
+    "10102-43-9": {
+      "RegularSolutionSP": 23120.0,
+      "RegularSolutionV": 2.34267e-05,
+      "name": "10102-43-9"
+    },
+    "10102-44-0": {
+      "RegularSolutionSP": 33390.0,
+      "RegularSolutionV": 3.17854e-05,
+      "name": "10102-44-0"
+    },
+    "102-09-0": {
+      "RegularSolutionSP": 18788.28,
+      "RegularSolutionV": 0.00018261,
+      "name": "102-09-0"
+    },
+    "102-71-6": {
+      "RegularSolutionSP": 27430.0,
+      "RegularSolutionV": 0.000132992,
+      "name": "102-71-6"
+    },
+    "103-65-1": {
+      "RegularSolutionSP": 17670.0,
+      "RegularSolutionV": 0.000139831,
+      "name": "103-65-1"
+    },
+    "104-51-8": {
+      "RegularSolutionSP": 17510.0,
+      "RegularSolutionV": 0.000156494,
+      "name": "104-51-8"
+    },
+    "105-05-5": {
+      "RegularSolutionSP": 17660.0,
+      "RegularSolutionV": 0.00015645,
+      "name": "105-05-5"
+    },
+    "105-58-8": {
+      "RegularSolutionSP": 18727.86,
+      "RegularSolutionV": 9.721000000000001e-05,
+      "name": "105-58-8"
+    },
+    "105-59-9": {
+      "RegularSolutionSP": 28140.0,
+      "RegularSolutionV": 0.000115302,
+      "name": "105-59-9"
+    },
+    "10544-72-6": {
+      "RegularSolutionSP": 24123.32,
+      "RegularSolutionV": 6.407e-05,
+      "name": "10544-72-6"
+    },
+    "10544-73-7": {
+      "RegularSolutionSP": 32600.0,
+      "RegularSolutionV": 5.31885e-05,
+      "name": "10544-73-7"
+    },
+    "106-35-4": {
+      "RegularSolutionSP": 17940.0,
+      "RegularSolutionV": 0.000140257,
+      "name": "106-35-4"
+    },
+    "106-42-3": {
+      "RegularSolutionSP": 17910.0,
+      "RegularSolutionV": 0.000123921,
+      "name": "106-42-3"
+    },
+    "106-44-5": {
+      "RegularSolutionSP": 24030.0,
+      "RegularSolutionV": 0.00010495699999999999,
+      "name": "106-44-5"
+    },
+    "106-46-7": {
+      "RegularSolutionSP": 19330.0,
+      "RegularSolutionV": 0.000117341,
+      "name": "106-46-7"
+    },
+    "106-50-3": {
+      "RegularSolutionSP": 24810.0,
+      "RegularSolutionV": 0.000102198,
+      "name": "106-50-3"
+    },
+    "106-97-8": {
+      "RegularSolutionSP": 13510.0,
+      "RegularSolutionV": 9.65533e-05,
+      "name": "106-97-8"
+    },
+    "106-98-9": {
+      "RegularSolutionSP": 13630.0,
+      "RegularSolutionV": 8.963290000000001e-05,
+      "name": "106-98-9"
+    },
+    "106-99-0": {
+      "RegularSolutionSP": 14460.0,
+      "RegularSolutionV": 8.302429999999999e-05,
+      "name": "106-99-0"
+    },
+    "1067-08-9": {
+      "RegularSolutionSP": 15060.0,
+      "RegularSolutionV": 0.00015788,
+      "name": "1067-08-9"
+    },
+    "1067-20-5": {
+      "RegularSolutionSP": 15220.0,
+      "RegularSolutionV": 0.000171012,
+      "name": "1067-20-5"
+    },
+    "107-00-6": {
+      "RegularSolutionSP": 15950.0,
+      "RegularSolutionV": 8.09511e-05,
+      "name": "107-00-6"
+    },
+    "107-03-9": {
+      "RegularSolutionSP": 18020.0,
+      "RegularSolutionV": 9.11676e-05,
+      "name": "107-03-9"
+    },
+    "107-06-2": {
+      "RegularSolutionSP": 20260.0,
+      "RegularSolutionV": 7.94424e-05,
+      "name": "107-06-2"
+    },
+    "107-12-0": {
+      "RegularSolutionSP": 21760.0,
+      "RegularSolutionV": 7.085650000000001e-05,
+      "name": "107-12-0"
+    },
+    "107-13-1": {
+      "RegularSolutionSP": 21560.0,
+      "RegularSolutionV": 6.62367e-05,
+      "name": "107-13-1"
+    },
+    "107-21-1": {
+      "RegularSolutionSP": 33840.0,
+      "RegularSolutionV": 5.5908899999999996e-05,
+      "name": "107-21-1"
+    },
+    "107-31-3": {
+      "RegularSolutionSP": 20500.0,
+      "RegularSolutionV": 6.20841e-05,
+      "name": "107-31-3"
+    },
+    "107-83-5": {
+      "RegularSolutionSP": 14400.0,
+      "RegularSolutionV": 0.000132931,
+      "name": "107-83-5"
+    },
+    "107-87-9": {
+      "RegularSolutionSP": 18290.0,
+      "RegularSolutionV": 0.00010732999999999999,
+      "name": "107-87-9"
+    },
+    "107-92-6": {
+      "RegularSolutionSP": 20180.0,
+      "RegularSolutionV": 9.24567e-05,
+      "name": "107-92-6"
+    },
+    "1070-87-7": {
+      "RegularSolutionSP": 14150.0,
+      "RegularSolutionV": 0.00017923,
+      "name": "1070-87-7"
+    },
+    "1071-26-7": {
+      "RegularSolutionSP": 14720.0,
+      "RegularSolutionV": 0.00018151000000000002,
+      "name": "1071-26-7"
+    },
+    "1074-43-7": {
+      "RegularSolutionSP": 17510.0,
+      "RegularSolutionV": 0.00015662300000000002,
+      "name": "1074-43-7"
+    },
+    "1074-55-1": {
+      "RegularSolutionSP": 17460.0,
+      "RegularSolutionV": 0.00015709699999999998,
+      "name": "1074-55-1"
+    },
+    "108-01-0": {
+      "RegularSolutionSP": 22790.0,
+      "RegularSolutionV": 0.000101094,
+      "name": "108-01-0"
+    },
+    "108-03-2": {
+      "RegularSolutionSP": 21290.0,
+      "RegularSolutionV": 8.946790000000001e-05,
+      "name": "108-03-2"
+    },
+    "108-05-4": {
+      "RegularSolutionSP": 18580.0,
+      "RegularSolutionV": 9.29486e-05,
+      "name": "108-05-4"
+    },
+    "108-08-7": {
+      "RegularSolutionSP": 14290.0,
+      "RegularSolutionV": 0.00014995,
+      "name": "108-08-7"
+    },
+    "108-10-1": {
+      "RegularSolutionSP": 17420.0,
+      "RegularSolutionV": 0.00012581000000000002,
+      "name": "108-10-1"
+    },
+    "108-18-9": {
+      "RegularSolutionSP": 15060.0,
+      "RegularSolutionV": 0.0001,
+      "name": "108-18-9"
+    },
+    "108-20-3": {
+      "RegularSolutionSP": 14450.0,
+      "RegularSolutionV": 0.00014177500000000002,
+      "name": "108-20-3"
+    },
+    "108-21-4": {
+      "RegularSolutionSP": 17150.0,
+      "RegularSolutionV": 0.00011757900000000001,
+      "name": "108-21-4"
+    },
+    "108-24-7": {
+      "RegularSolutionSP": 22010.0,
+      "RegularSolutionV": 9.49602e-05,
+      "name": "108-24-7"
+    },
+    "108-31-6": {
+      "RegularSolutionSP": 25870.0,
+      "RegularSolutionV": 7.412150000000001e-05,
+      "name": "108-31-6"
+    },
+    "108-32-7": {
+      "RegularSolutionSP": 27300.0,
+      "RegularSolutionV": 8.52768e-05,
+      "name": "108-32-7"
+    },
+    "108-38-3": {
+      "RegularSolutionSP": 18050.0,
+      "RegularSolutionV": 0.000123391,
+      "name": "108-38-3"
+    },
+    "108-39-4": {
+      "RegularSolutionSP": 23900.0,
+      "RegularSolutionV": 0.00010499600000000001,
+      "name": "108-39-4"
+    },
+    "108-67-8": {
+      "RegularSolutionSP": 17940.0,
+      "RegularSolutionV": 0.00014299,
+      "name": "108-67-8"
+    },
+    "108-83-8": {
+      "RegularSolutionSP": 16450.0,
+      "RegularSolutionV": 0.000177418,
+      "name": "108-83-8"
+    },
+    "108-86-1": {
+      "RegularSolutionSP": 19940.0,
+      "RegularSolutionV": 0.000105567,
+      "name": "108-86-1"
+    },
+    "108-87-2": {
+      "RegularSolutionSP": 16060.0,
+      "RegularSolutionV": 0.00012834,
+      "name": "108-87-2"
+    },
+    "108-88-3": {
+      "RegularSolutionSP": 18250.0,
+      "RegularSolutionV": 0.00010685000000000001,
+      "name": "108-88-3"
+    },
+    "108-90-7": {
+      "RegularSolutionSP": 19350.0,
+      "RegularSolutionV": 0.00010229000000000001,
+      "name": "108-90-7"
+    },
+    "108-93-0": {
+      "RegularSolutionSP": 23730.0,
+      "RegularSolutionV": 0.000104294,
+      "name": "108-93-0"
+    },
+    "108-94-1": {
+      "RegularSolutionSP": 20250.0,
+      "RegularSolutionV": 0.000104167,
+      "name": "108-94-1"
+    },
+    "108-95-2": {
+      "RegularSolutionSP": 24630.0,
+      "RegularSolutionV": 8.314000000000001e-05,
+      "name": "108-95-2"
+    },
+    "109-60-4": {
+      "RegularSolutionSP": 17890.0,
+      "RegularSolutionV": 0.00011571199999999999,
+      "name": "109-60-4"
+    },
+    "109-66-0": {
+      "RegularSolutionSP": 14380.0,
+      "RegularSolutionV": 0.00011612599999999999,
+      "name": "109-66-0"
+    },
+    "109-67-1": {
+      "RegularSolutionSP": 14410.0,
+      "RegularSolutionV": 0.000110474,
+      "name": "109-67-1"
+    },
+    "109-83-1": {
+      "RegularSolutionSP": 25930.0,
+      "RegularSolutionV": 8.2206e-05,
+      "name": "109-83-1"
+    },
+    "109-87-5": {
+      "RegularSolutionSP": 17430.0,
+      "RegularSolutionV": 8.91275e-05,
+      "name": "109-87-5"
+    },
+    "109-89-7": {
+      "RegularSolutionSP": 16610.0,
+      "RegularSolutionV": 0.00010423399999999999,
+      "name": "109-89-7"
+    },
+    "109-94-4": {
+      "RegularSolutionSP": 19070.0,
+      "RegularSolutionV": 8.08277e-05,
+      "name": "109-94-4"
+    },
+    "109-99-9": {
+      "RegularSolutionSP": 18970.0,
+      "RegularSolutionV": 8.19417e-05,
+      "name": "109-99-9"
+    },
+    "110-02-1": {
+      "RegularSolutionSP": 20120.0,
+      "RegularSolutionV": 7.94773e-05,
+      "name": "110-02-1"
+    },
+    "110-06-5": {
+      "RegularSolutionSP": 15680.0,
+      "RegularSolutionV": 0.00019470000000000002,
+      "name": "110-06-5"
+    },
+    "110-12-3": {
+      "RegularSolutionSP": 17740.0,
+      "RegularSolutionV": 0.00014129800000000001,
+      "name": "110-12-3"
+    },
+    "110-16-7": {
+      "RegularSolutionSP": 30550.0,
+      "RegularSolutionV": 9.083500000000001e-05,
+      "name": "110-16-7"
+    },
+    "110-19-0": {
+      "RegularSolutionSP": 17050.0,
+      "RegularSolutionV": 0.00013387,
+      "name": "110-19-0"
+    },
+    "110-43-0": {
+      "RegularSolutionSP": 17400.0,
+      "RegularSolutionV": 0.000140675,
+      "name": "110-43-0"
+    },
+    "110-54-3": {
+      "RegularSolutionSP": 14870.0,
+      "RegularSolutionV": 0.000131306,
+      "name": "110-54-3"
+    },
+    "110-62-3": {
+      "RegularSolutionSP": 18440.0,
+      "RegularSolutionV": 0.00010703500000000001,
+      "name": "110-62-3"
+    },
+    "110-63-4": {
+      "RegularSolutionSP": 28850.0,
+      "RegularSolutionV": 8.88513e-05,
+      "name": "110-63-4"
+    },
+    "110-74-7": {
+      "RegularSolutionSP": 18470.0,
+      "RegularSolutionV": 9.79424e-05,
+      "name": "110-74-7"
+    },
+    "110-81-6": {
+      "RegularSolutionSP": 18630.0,
+      "RegularSolutionV": 0.00012376,
+      "name": "110-81-6"
+    },
+    "110-82-7": {
+      "RegularSolutionSP": 16740.0,
+      "RegularSolutionV": 0.00010886,
+      "name": "110-82-7"
+    },
+    "110-83-8": {
+      "RegularSolutionSP": 17420.0,
+      "RegularSolutionV": 0.000101877,
+      "name": "110-83-8"
+    },
+    "110-85-0": {
+      "RegularSolutionSP": 17960.0,
+      "RegularSolutionV": 0.000129371,
+      "name": "110-85-0"
+    },
+    "110-86-1": {
+      "RegularSolutionSP": 21570.0,
+      "RegularSolutionV": 8.083410000000001e-05,
+      "name": "110-86-1"
+    },
+    "110-97-4": {
+      "RegularSolutionSP": 26610.0,
+      "RegularSolutionV": 0.00013476299999999998,
+      "name": "110-97-4"
+    },
+    "111-01-3": {
+      "RegularSolutionSP": 14490.0,
+      "RegularSolutionV": 0.0005261350000000001,
+      "name": "111-01-3"
+    },
+    "111-27-3": {
+      "RegularSolutionSP": 21830.0,
+      "RegularSolutionV": 0.00012518999999999999,
+      "name": "111-27-3"
+    },
+    "111-31-9": {
+      "RegularSolutionSP": 17450.0,
+      "RegularSolutionV": 0.000141006,
+      "name": "111-31-9"
+    },
+    "111-34-2": {
+      "RegularSolutionSP": 16460.0,
+      "RegularSolutionV": 0.000130251,
+      "name": "111-34-2"
+    },
+    "111-40-0": {
+      "RegularSolutionSP": 22210.0,
+      "RegularSolutionV": 0.000108088,
+      "name": "111-40-0"
+    },
+    "111-41-1": {
+      "RegularSolutionSP": 29230.0,
+      "RegularSolutionV": 0.000101519,
+      "name": "111-41-1"
+    },
+    "111-42-2": {
+      "RegularSolutionSP": 29260.0,
+      "RegularSolutionV": 9.6244e-05,
+      "name": "111-42-2"
+    },
+    "111-46-6": {
+      "RegularSolutionSP": 28920.0,
+      "RegularSolutionV": 9.526809999999999e-05,
+      "name": "111-46-6"
+    },
+    "111-47-7": {
+      "RegularSolutionSP": 17110.0,
+      "RegularSolutionV": 0.000141918,
+      "name": "111-47-7"
+    },
+    "111-65-9": {
+      "RegularSolutionSP": 15490.0,
+      "RegularSolutionV": 0.00016345499999999999,
+      "name": "111-65-9"
+    },
+    "111-66-0": {
+      "RegularSolutionSP": 15540.0,
+      "RegularSolutionV": 0.00015785,
+      "name": "111-66-0"
+    },
+    "111-70-6": {
+      "RegularSolutionSP": 21540.0,
+      "RegularSolutionV": 0.00014195,
+      "name": "111-70-6"
+    },
+    "111-71-7": {
+      "RegularSolutionSP": 17780.0,
+      "RegularSolutionV": 0.000140287,
+      "name": "111-71-7"
+    },
+    "111-84-2": {
+      "RegularSolutionSP": 15630.0,
+      "RegularSolutionV": 0.000179507,
+      "name": "111-84-2"
+    },
+    "112-27-6": {
+      "RegularSolutionSP": 25710.0,
+      "RegularSolutionV": 0.000134187,
+      "name": "112-27-6"
+    },
+    "112-40-3": {
+      "RegularSolutionSP": 15930.0,
+      "RegularSolutionV": 0.000228633,
+      "name": "112-40-3"
+    },
+    "112-60-7": {
+      "RegularSolutionSP": 23690.0,
+      "RegularSolutionV": 0.000173363,
+      "name": "112-60-7"
+    },
+    "112-95-8": {
+      "RegularSolutionSP": 16000.0,
+      "RegularSolutionV": 0.000360385,
+      "name": "112-95-8"
+    },
+    "1120-21-4": {
+      "RegularSolutionSP": 15880.0,
+      "RegularSolutionV": 0.000212215,
+      "name": "1120-21-4"
+    },
+    "115-07-1": {
+      "RegularSolutionSP": 11890.0,
+      "RegularSolutionV": 6.895600000000001e-05,
+      "name": "115-07-1"
+    },
+    "115-10-6": {
+      "RegularSolutionSP": 15120.0,
+      "RegularSolutionV": 7.03107e-05,
+      "name": "115-10-6"
+    },
+    "115-11-7": {
+      "RegularSolutionSP": 13660.0,
+      "RegularSolutionV": 9.53727e-05,
+      "name": "115-11-7"
+    },
+    "118-90-1": {
+      "RegularSolutionSP": 22920.0,
+      "RegularSolutionV": 0.000126888,
+      "name": "118-90-1"
+    },
+    "118-96-7": {
+      "RegularSolutionSP": 23070.0,
+      "RegularSolutionV": 0.000154989,
+      "name": "118-96-7"
+    },
+    "1186-53-4": {
+      "RegularSolutionSP": 14730.0,
+      "RegularSolutionV": 0.00017922900000000001,
+      "name": "1186-53-4"
+    },
+    "1192-18-3": {
+      "RegularSolutionSP": 16160.0,
+      "RegularSolutionV": 0.00012782199999999998,
+      "name": "1192-18-3"
+    },
+    "120-61-6": {
+      "RegularSolutionSP": 17710.0,
+      "RegularSolutionV": 0.000180564,
+      "name": "120-61-6"
+    },
+    "120-82-1": {
+      "RegularSolutionSP": 20620.0,
+      "RegularSolutionV": 0.00012525,
+      "name": "120-82-1"
+    },
+    "121-14-2": {
+      "RegularSolutionSP": 21470.0,
+      "RegularSolutionV": 0.000137448,
+      "name": "121-14-2"
+    },
+    "121-44-8": {
+      "RegularSolutionSP": 15170.0,
+      "RegularSolutionV": 0.000139672,
+      "name": "121-44-8"
+    },
+    "123-19-3": {
+      "RegularSolutionSP": 17410.0,
+      "RegularSolutionV": 0.00014062500000000002,
+      "name": "123-19-3"
+    },
+    "123-38-6": {
+      "RegularSolutionSP": 19320.0,
+      "RegularSolutionV": 7.34076e-05,
+      "name": "123-38-6"
+    },
+    "123-72-8": {
+      "RegularSolutionSP": 18660.0,
+      "RegularSolutionV": 9.043279999999999e-05,
+      "name": "123-72-8"
+    },
+    "123-86-4": {
+      "RegularSolutionSP": 17670.0,
+      "RegularSolutionV": 0.00013251,
+      "name": "123-86-4"
+    },
+    "123-91-1": {
+      "RegularSolutionSP": 20540.0,
+      "RegularSolutionV": 8.56635e-05,
+      "name": "123-91-1"
+    },
+    "124-04-9": {
+      "RegularSolutionSP": 25370.0,
+      "RegularSolutionV": 0.000133942,
+      "name": "124-04-9"
+    },
+    "124-11-8": {
+      "RegularSolutionSP": 15500.0,
+      "RegularSolutionV": 0.00017405,
+      "name": "124-11-8"
+    },
+    "124-18-5": {
+      "RegularSolutionSP": 15720.0,
+      "RegularSolutionV": 0.000195806,
+      "name": "124-18-5"
+    },
+    "124-38-9": {
+      "RegularSolutionSP": 14560.0,
+      "RegularSolutionV": 3.72744e-05,
+      "name": "124-38-9"
+    },
+    "126-33-0": {
+      "RegularSolutionSP": 26110.0,
+      "RegularSolutionV": 9.52677e-05,
+      "name": "126-33-0"
+    },
+    "126-98-7": {
+      "RegularSolutionSP": 19090.0,
+      "RegularSolutionV": 8.44058e-05,
+      "name": "126-98-7"
+    },
+    "127-19-5": {
+      "RegularSolutionSP": 22350.0,
+      "RegularSolutionV": 9.30285e-05,
+      "name": "127-19-5"
+    },
+    "129-00-0": {
+      "RegularSolutionSP": 19670.0,
+      "RegularSolutionV": 0.00017368,
+      "name": "129-00-0"
+    },
+    "132259-10-0": {
+      "RegularSolutionSP": 12750.0,
+      "RegularSolutionV": 3.29147e-05,
+      "name": "132259-10-0"
+    },
+    "13286-92-5": {
+      "RegularSolutionSP": 16850.0,
+      "RegularSolutionV": 0.00014123600000000001,
+      "name": "13286-92-5"
+    },
+    "1333-74-0": {
+      "RegularSolutionSP": 6648.0,
+      "RegularSolutionV": 2.85681e-05,
+      "name": "1333-74-0"
+    },
+    "135-01-3": {
+      "RegularSolutionSP": 17760.0,
+      "RegularSolutionV": 0.00015328,
+      "name": "135-01-3"
+    },
+    "135-98-8": {
+      "RegularSolutionSP": 17050.0,
+      "RegularSolutionV": 0.000156497,
+      "name": "135-98-8"
+    },
+    "13509-27-8": {
+      "RegularSolutionSP": 19646.23,
+      "RegularSolutionV": 0.0001385,
+      "name": "13509-27-8"
+    },
+    "137-32-6": {
+      "RegularSolutionSP": 22080.0,
+      "RegularSolutionV": 0.00010829999999999999,
+      "name": "137-32-6"
+    },
+    "140-31-8": {
+      "RegularSolutionSP": 21520.0,
+      "RegularSolutionV": 0.00013225700000000002,
+      "name": "140-31-8"
+    },
+    "141-43-5": {
+      "RegularSolutionSP": 31830.0,
+      "RegularSolutionV": 6.03415e-05,
+      "name": "141-43-5"
+    },
+    "141-78-6": {
+      "RegularSolutionSP": 18350.0,
+      "RegularSolutionV": 9.85939e-05,
+      "name": "141-78-6"
+    },
+    "141-93-5": {
+      "RegularSolutionSP": 17460.0,
+      "RegularSolutionV": 0.000156083,
+      "name": "141-93-5"
+    },
+    "142-82-5": {
+      "RegularSolutionSP": 15240.0,
+      "RegularSolutionV": 0.000147014,
+      "name": "142-82-5"
+    },
+    "142-92-7": {
+      "RegularSolutionSP": 17200.0,
+      "RegularSolutionV": 0.000166008,
+      "name": "142-92-7"
+    },
+    "142-96-1": {
+      "RegularSolutionSP": 15830.0,
+      "RegularSolutionV": 0.00017041000000000002,
+      "name": "142-96-1"
+    },
+    "144-62-7": {
+      "RegularSolutionSP": 35980.0,
+      "RegularSolutionV": 6.14585e-05,
+      "name": "144-62-7"
+    },
+    "15869-80-4": {
+      "RegularSolutionSP": 15300.0,
+      "RegularSolutionV": 0.000177515,
+      "name": "15869-80-4"
+    },
+    "15869-85-9": {
+      "RegularSolutionSP": 15440.0,
+      "RegularSolutionV": 0.000195298,
+      "name": "15869-85-9"
+    },
+    "15869-87-1": {
+      "RegularSolutionSP": 14870.0,
+      "RegularSolutionV": 0.000197405,
+      "name": "15869-87-1"
+    },
+    "15870-10-7": {
+      "RegularSolutionSP": 15180.0,
+      "RegularSolutionV": 0.00015665499999999998,
+      "name": "15870-10-7"
+    },
+    "1634-04-4": {
+      "RegularSolutionSP": 15070.0,
+      "RegularSolutionV": 0.000119887,
+      "name": "1634-04-4"
+    },
+    "1638-26-2": {
+      "RegularSolutionSP": 15460.0,
+      "RegularSolutionV": 0.00013092500000000002,
+      "name": "1638-26-2"
+    },
+    "1640-89-7": {
+      "RegularSolutionSP": 16250.0,
+      "RegularSolutionV": 0.000128749,
+      "name": "1640-89-7"
+    },
+    "16747-30-1": {
+      "RegularSolutionSP": 14590.0,
+      "RegularSolutionV": 0.000178125,
+      "name": "16747-30-1"
+    },
+    "16747-38-9": {
+      "RegularSolutionSP": 15110.0,
+      "RegularSolutionV": 0.00017076,
+      "name": "16747-38-9"
+    },
+    "16747-50-5": {
+      "RegularSolutionSP": 15840.0,
+      "RegularSolutionV": 0.000144502,
+      "name": "16747-50-5"
+    },
+    "1678-91-7": {
+      "RegularSolutionSP": 16340.0,
+      "RegularSolutionV": 0.000143117,
+      "name": "1678-91-7"
+    },
+    "1678-92-8": {
+      "RegularSolutionSP": 16350.0,
+      "RegularSolutionV": 0.00015975800000000002,
+      "name": "1678-92-8"
+    },
+    "1678-93-9": {
+      "RegularSolutionSP": 16400.0,
+      "RegularSolutionV": 0.000176266,
+      "name": "1678-93-9"
+    },
+    "17301-94-9": {
+      "RegularSolutionSP": 15500.0,
+      "RegularSolutionV": 0.00019542599999999998,
+      "name": "17301-94-9"
+    },
+    "1758-88-9": {
+      "RegularSolutionSP": 17610.0,
+      "RegularSolutionV": 0.000153715,
+      "name": "1758-88-9"
+    },
+    "1759-58-6": {
+      "RegularSolutionSP": 15660.0,
+      "RegularSolutionV": 0.00013264,
+      "name": "1759-58-6"
+    },
+    "1860-27-1": {
+      "RegularSolutionSP": 15260.0,
+      "RegularSolutionV": 0.000155791,
+      "name": "1860-27-1"
+    },
+    "20333-39-5": {
+      "RegularSolutionSP": 18730.0,
+      "RegularSolutionV": 0.0001066,
+      "name": "20333-39-5"
+    },
+    "2040-95-1": {
+      "RegularSolutionSP": 16390.0,
+      "RegularSolutionV": 0.000161572,
+      "name": "2040-95-1"
+    },
+    "2040-96-2": {
+      "RegularSolutionSP": 16360.0,
+      "RegularSolutionV": 0.000145193,
+      "name": "2040-96-2"
+    },
+    "206-44-0": {
+      "RegularSolutionSP": 19290.0,
+      "RegularSolutionV": 0.000184693,
+      "name": "206-44-0"
+    },
+    "2177-47-1": {
+      "RegularSolutionSP": 19650.0,
+      "RegularSolutionV": 0.000133656,
+      "name": "2177-47-1"
+    },
+    "218-01-9": {
+      "RegularSolutionSP": 18920.0,
+      "RegularSolutionV": 0.000210334,
+      "name": "218-01-9"
+    },
+    "2207-01-4": {
+      "RegularSolutionSP": 16250.0,
+      "RegularSolutionV": 0.000141645,
+      "name": "2207-01-4"
+    },
+    "2207-03-6": {
+      "RegularSolutionSP": 16040.0,
+      "RegularSolutionV": 0.000143768,
+      "name": "2207-03-6"
+    },
+    "2207-04-7": {
+      "RegularSolutionSP": 15490.0,
+      "RegularSolutionV": 0.000147921,
+      "name": "2207-04-7"
+    },
+    "2216-33-3": {
+      "RegularSolutionSP": 15380.0,
+      "RegularSolutionV": 0.000178944,
+      "name": "2216-33-3"
+    },
+    "2216-34-4": {
+      "RegularSolutionSP": 15300.0,
+      "RegularSolutionV": 0.000179037,
+      "name": "2216-34-4"
+    },
+    "2532-58-3": {
+      "RegularSolutionSP": 15490.0,
+      "RegularSolutionV": 0.00013191,
+      "name": "2532-58-3"
+    },
+    "2551-62-4": {
+      "RegularSolutionSP": 7681.0,
+      "RegularSolutionV": 7.981000000000001e-05,
+      "name": "2551-62-4"
+    },
+    "287-92-3": {
+      "RegularSolutionSP": 16550.0,
+      "RegularSolutionV": 9.350890000000001e-05,
+      "name": "287-92-3"
+    },
+    "2870-04-4": {
+      "RegularSolutionSP": 18140.0,
+      "RegularSolutionV": 0.00015142400000000002,
+      "name": "2870-04-4"
+    },
+    "30453-31-7": {
+      "RegularSolutionSP": 17840.0,
+      "RegularSolutionV": 0.00014050000000000003,
+      "name": "30453-31-7"
+    },
+    "3178-22-1": {
+      "RegularSolutionSP": 16040.0,
+      "RegularSolutionV": 0.0001734,
+      "name": "3178-22-1"
+    },
+    "3221-61-2": {
+      "RegularSolutionSP": 15310.0,
+      "RegularSolutionV": 0.00018075,
+      "name": "3221-61-2"
+    },
+    "352-93-2": {
+      "RegularSolutionSP": 17490.0,
+      "RegularSolutionV": 0.00010851,
+      "name": "352-93-2"
+    },
+    "3522-94-9": {
+      "RegularSolutionSP": 14380.0,
+      "RegularSolutionV": 0.00018225,
+      "name": "3522-94-9"
+    },
+    "3875-51-2": {
+      "RegularSolutionSP": 15940.0,
+      "RegularSolutionV": 0.00014527000000000002,
+      "name": "3875-51-2"
+    },
+    "3877-15-4": {
+      "RegularSolutionSP": 17710.0,
+      "RegularSolutionV": 0.000107699,
+      "name": "3877-15-4"
+    },
+    "3878-46-4": {
+      "RegularSolutionSP": 18670.52,
+      "RegularSolutionV": 0.00018104999999999998,
+      "name": "3878-46-4"
+    },
+    "4050-45-7": {
+      "RegularSolutionSP": 15250.0,
+      "RegularSolutionV": 0.000125,
+      "name": "4050-45-7"
+    },
+    "463-49-0": {
+      "RegularSolutionSP": 14010.0,
+      "RegularSolutionV": 6.04292e-05,
+      "name": "463-49-0"
+    },
+    "463-51-4": {
+      "RegularSolutionSP": 13820.0,
+      "RegularSolutionV": 6.374000000000001e-05,
+      "name": "463-51-4"
+    },
+    "463-58-1": {
+      "RegularSolutionSP": 14270.0,
+      "RegularSolutionV": 5.10474e-05,
+      "name": "463-58-1"
+    },
+    "463-82-1": {
+      "RegularSolutionSP": 12510.0,
+      "RegularSolutionV": 0.00011955100000000001,
+      "name": "463-82-1"
+    },
+    "464-06-2": {
+      "RegularSolutionSP": 14250.0,
+      "RegularSolutionV": 0.00014615,
+      "name": "464-06-2"
+    },
+    "488-23-3": {
+      "RegularSolutionSP": 18860.0,
+      "RegularSolutionV": 0.000149073,
+      "name": "488-23-3"
+    },
+    "493-01-6": {
+      "RegularSolutionSP": 17625.3,
+      "RegularSolutionV": 0.000154615,
+      "name": "493-01-6"
+    },
+    "493-02-7": {
+      "RegularSolutionSP": 17042.7,
+      "RegularSolutionV": 0.000159325,
+      "name": "493-02-7"
+    },
+    "496-11-7": {
+      "RegularSolutionSP": 19420.0,
+      "RegularSolutionV": 0.000123128,
+      "name": "496-11-7"
+    },
+    "50-00-0": {
+      "RegularSolutionSP": 21190.0,
+      "RegularSolutionV": 3.69129e-05,
+      "name": "50-00-0"
+    },
+    "503-17-3": {
+      "RegularSolutionSP": 17480.0,
+      "RegularSolutionV": 7.89036e-05,
+      "name": "503-17-3"
+    },
+    "513-35-9": {
+      "RegularSolutionSP": 15210.0,
+      "RegularSolutionV": 0.000106707,
+      "name": "513-35-9"
+    },
+    "513-44-0": {
+      "RegularSolutionSP": 17240.0,
+      "RegularSolutionV": 0.000108751,
+      "name": "513-44-0"
+    },
+    "513-53-1": {
+      "RegularSolutionSP": 17000.0,
+      "RegularSolutionV": 0.00010943,
+      "name": "513-53-1"
+    },
+    "526-73-8": {
+      "RegularSolutionSP": 18480.0,
+      "RegularSolutionV": 0.00013322,
+      "name": "526-73-8"
+    },
+    "527-53-7": {
+      "RegularSolutionSP": 18330.0,
+      "RegularSolutionV": 0.000151385,
+      "name": "527-53-7"
+    },
+    "527-84-4": {
+      "RegularSolutionSP": 17160.0,
+      "RegularSolutionV": 0.000153824,
+      "name": "527-84-4"
+    },
+    "535-77-3": {
+      "RegularSolutionSP": 17110.0,
+      "RegularSolutionV": 0.000156604,
+      "name": "535-77-3"
+    },
+    "538-93-2": {
+      "RegularSolutionSP": 16860.0,
+      "RegularSolutionV": 0.00015808,
+      "name": "538-93-2"
+    },
+    "540-67-0": {
+      "RegularSolutionSP": 15370.0,
+      "RegularSolutionV": 8.585e-05,
+      "name": "540-67-0"
+    },
+    "540-84-1": {
+      "RegularSolutionSP": 14080.0,
+      "RegularSolutionV": 0.000165452,
+      "name": "540-84-1"
+    },
+    "541-73-1": {
+      "RegularSolutionSP": 19570.0,
+      "RegularSolutionV": 0.00011464100000000002,
+      "name": "541-73-1"
+    },
+    "544-76-3": {
+      "RegularSolutionSP": 16190.0,
+      "RegularSolutionV": 0.000294064,
+      "name": "544-76-3"
+    },
+    "554-12-1": {
+      "RegularSolutionSP": 18630.0,
+      "RegularSolutionV": 9.69396e-05,
+      "name": "554-12-1"
+    },
+    "557-17-5": {
+      "RegularSolutionSP": 15730.0,
+      "RegularSolutionV": 0.0001032,
+      "name": "557-17-5"
+    },
+    "56-23-5": {
+      "RegularSolutionSP": 17550.0,
+      "RegularSolutionV": 9.71395e-05,
+      "name": "56-23-5"
+    },
+    "560-21-4": {
+      "RegularSolutionSP": 14920.0,
+      "RegularSolutionV": 0.000158155,
+      "name": "560-21-4"
+    },
+    "562-49-2": {
+      "RegularSolutionSP": 14530.0,
+      "RegularSolutionV": 0.0001454,
+      "name": "562-49-2"
+    },
+    "563-16-6": {
+      "RegularSolutionSP": 14880.0,
+      "RegularSolutionV": 0.00016181000000000002,
+      "name": "563-16-6"
+    },
+    "563-45-1": {
+      "RegularSolutionSP": 13780.0,
+      "RegularSolutionV": 0.00011181900000000001,
+      "name": "563-45-1"
+    },
+    "563-46-2": {
+      "RegularSolutionSP": 14700.0,
+      "RegularSolutionV": 0.00010868,
+      "name": "563-46-2"
+    },
+    "563-80-4": {
+      "RegularSolutionSP": 17710.0,
+      "RegularSolutionV": 0.000106975,
+      "name": "563-80-4"
+    },
+    "564-02-3": {
+      "RegularSolutionSP": 14690.0,
+      "RegularSolutionV": 0.00016034399999999998,
+      "name": "564-02-3"
+    },
+    "565-59-3": {
+      "RegularSolutionSP": 14820.0,
+      "RegularSolutionV": 0.00014505,
+      "name": "565-59-3"
+    },
+    "565-75-3": {
+      "RegularSolutionSP": 14940.0,
+      "RegularSolutionV": 0.000159513,
+      "name": "565-75-3"
+    },
+    "565-80-0": {
+      "RegularSolutionSP": 16330.0,
+      "RegularSolutionV": 0.000142561,
+      "name": "565-80-0"
+    },
+    "583-48-2": {
+      "RegularSolutionSP": 15140.0,
+      "RegularSolutionV": 0.00015973000000000002,
+      "name": "583-48-2"
+    },
+    "584-94-1": {
+      "RegularSolutionSP": 15020.0,
+      "RegularSolutionV": 0.00016131,
+      "name": "584-94-1"
+    },
+    "589-34-4": {
+      "RegularSolutionSP": 14950.0,
+      "RegularSolutionV": 0.00014674000000000002,
+      "name": "589-34-4"
+    },
+    "589-38-8": {
+      "RegularSolutionSP": 17930.0,
+      "RegularSolutionV": 0.00012343,
+      "name": "589-38-8"
+    },
+    "589-43-5": {
+      "RegularSolutionSP": 14650.0,
+      "RegularSolutionV": 0.00016408000000000001,
+      "name": "589-43-5"
+    },
+    "589-53-7": {
+      "RegularSolutionSP": 15140.0,
+      "RegularSolutionV": 0.00016306,
+      "name": "589-53-7"
+    },
+    "589-81-1": {
+      "RegularSolutionSP": 15180.0,
+      "RegularSolutionV": 0.00016278,
+      "name": "589-81-1"
+    },
+    "590-18-1": {
+      "RegularSolutionSP": 14720.0,
+      "RegularSolutionV": 8.74127e-05,
+      "name": "590-18-1"
+    },
+    "590-19-2": {
+      "RegularSolutionSP": 15650.0,
+      "RegularSolutionV": 8.165060000000001e-05,
+      "name": "590-19-2"
+    },
+    "590-35-2": {
+      "RegularSolutionSP": 14260.0,
+      "RegularSolutionV": 0.00014967,
+      "name": "590-35-2"
+    },
+    "590-66-9": {
+      "RegularSolutionSP": 15670.0,
+      "RegularSolutionV": 0.000144469,
+      "name": "590-66-9"
+    },
+    "590-73-8": {
+      "RegularSolutionSP": 14580.0,
+      "RegularSolutionV": 0.00016528999999999998,
+      "name": "590-73-8"
+    },
+    "591-50-4": {
+      "RegularSolutionSP": 20450.0,
+      "RegularSolutionV": 0.00011197600000000001,
+      "name": "591-50-4"
+    },
+    "591-76-4": {
+      "RegularSolutionSP": 14730.0,
+      "RegularSolutionV": 0.0001486,
+      "name": "591-76-4"
+    },
+    "591-78-6": {
+      "RegularSolutionSP": 17600.0,
+      "RegularSolutionV": 0.0001241,
+      "name": "591-78-6"
+    },
+    "5911-04-6": {
+      "RegularSolutionSP": 15470.0,
+      "RegularSolutionV": 0.000195076,
+      "name": "5911-04-6"
+    },
+    "592-13-2": {
+      "RegularSolutionSP": 14740.0,
+      "RegularSolutionV": 0.0001657,
+      "name": "592-13-2"
+    },
+    "592-27-8": {
+      "RegularSolutionSP": 15050.0,
+      "RegularSolutionV": 0.00016463,
+      "name": "592-27-8"
+    },
+    "592-41-6": {
+      "RegularSolutionSP": 15130.0,
+      "RegularSolutionV": 0.00012576499999999999,
+      "name": "592-41-6"
+    },
+    "592-76-7": {
+      "RegularSolutionSP": 15310.0,
+      "RegularSolutionV": 0.000141709,
+      "name": "592-76-7"
+    },
+    "593-45-3": {
+      "RegularSolutionSP": 16100.0,
+      "RegularSolutionV": 0.00032666,
+      "name": "593-45-3"
+    },
+    "593-49-7": {
+      "RegularSolutionSP": 15810.0,
+      "RegularSolutionV": 0.00048814999999999997,
+      "name": "593-49-7"
+    },
+    "594-82-1": {
+      "RegularSolutionSP": 12790.0,
+      "RegularSolutionV": 0.00013902,
+      "name": "594-82-1"
+    },
+    "598-53-8": {
+      "RegularSolutionSP": 15160.0,
+      "RegularSolutionV": 0.0001046,
+      "name": "598-53-8"
+    },
+    "60-29-7": {
+      "RegularSolutionSP": 15420.0,
+      "RegularSolutionV": 0.00010469199999999999,
+      "name": "60-29-7"
+    },
+    "6032-29-7": {
+      "RegularSolutionSP": 21700.0,
+      "RegularSolutionV": 0.000109448,
+      "name": "6032-29-7"
+    },
+    "605-02-7": {
+      "RegularSolutionSP": 19910.0,
+      "RegularSolutionV": 0.00018992500000000002,
+      "name": "605-02-7"
+    },
+    "606-20-2": {
+      "RegularSolutionSP": 20760.0,
+      "RegularSolutionV": 0.000136568,
+      "name": "606-20-2"
+    },
+    "609-26-7": {
+      "RegularSolutionSP": 15140.0,
+      "RegularSolutionV": 0.00015972,
+      "name": "609-26-7"
+    },
+    "610-39-9": {
+      "RegularSolutionSP": 21410.0,
+      "RegularSolutionV": 0.000139231,
+      "name": "610-39-9"
+    },
+    "611-14-3": {
+      "RegularSolutionSP": 18090.0,
+      "RegularSolutionV": 0.00013696700000000002,
+      "name": "611-14-3"
+    },
+    "616-38-6": {
+      "RegularSolutionSP": 20240.0,
+      "RegularSolutionV": 8.4825e-05,
+      "name": "616-38-6"
+    },
+    "6163-64-0": {
+      "RegularSolutionSP": 16230.0,
+      "RegularSolutionV": 0.00012697,
+      "name": "6163-64-0"
+    },
+    "617-78-7": {
+      "RegularSolutionSP": 15040.0,
+      "RegularSolutionV": 0.0001444,
+      "name": "617-78-7"
+    },
+    "618-85-9": {
+      "RegularSolutionSP": 21440.0,
+      "RegularSolutionV": 0.00014057700000000002,
+      "name": "618-85-9"
+    },
+    "619-15-8": {
+      "RegularSolutionSP": 21390.0,
+      "RegularSolutionV": 0.000135666,
+      "name": "619-15-8"
+    },
+    "619-99-8": {
+      "RegularSolutionSP": 15210.0,
+      "RegularSolutionV": 0.00016100999999999998,
+      "name": "619-99-8"
+    },
+    "62-53-3": {
+      "RegularSolutionSP": 24120.0,
+      "RegularSolutionV": 9.16034e-05,
+      "name": "62-53-3"
+    },
+    "620-14-4": {
+      "RegularSolutionSP": 17630.0,
+      "RegularSolutionV": 0.00013968500000000002,
+      "name": "620-14-4"
+    },
+    "622-96-8": {
+      "RegularSolutionSP": 17710.0,
+      "RegularSolutionV": 0.0001396,
+      "name": "622-96-8"
+    },
+    "623-53-0": {
+      "RegularSolutionSP": 20328.39,
+      "RegularSolutionV": 0.0001108,
+      "name": "623-53-0"
+    },
+    "624-29-3": {
+      "RegularSolutionSP": 15980.0,
+      "RegularSolutionV": 0.00014410600000000002,
+      "name": "624-29-3"
+    },
+    "624-64-6": {
+      "RegularSolutionSP": 14210.0,
+      "RegularSolutionV": 8.93483e-05,
+      "name": "624-64-6"
+    },
+    "624-89-5": {
+      "RegularSolutionSP": 18010.0,
+      "RegularSolutionV": 9.102e-05,
+      "name": "624-89-5"
+    },
+    "624-92-0": {
+      "RegularSolutionSP": 20060.0,
+      "RegularSolutionV": 8.90926e-05,
+      "name": "624-92-0"
+    },
+    "625-25-2": {
+      "RegularSolutionSP": 17397.3,
+      "RegularSolutionV": 0.00015788,
+      "name": "625-25-2"
+    },
+    "625-44-5": {
+      "RegularSolutionSP": 15100.0,
+      "RegularSolutionV": 0.000121242,
+      "name": "625-44-5"
+    },
+    "627-05-4": {
+      "RegularSolutionSP": 20780.0,
+      "RegularSolutionV": 0.000106476,
+      "name": "627-05-4"
+    },
+    "627-20-3": {
+      "RegularSolutionSP": 15060.0,
+      "RegularSolutionV": 0.00010792000000000001,
+      "name": "627-20-3"
+    },
+    "628-63-7": {
+      "RegularSolutionSP": 17360.0,
+      "RegularSolutionV": 0.000149382,
+      "name": "628-63-7"
+    },
+    "629-19-6": {
+      "RegularSolutionSP": 17950.0,
+      "RegularSolutionV": 0.00015722900000000002,
+      "name": "629-19-6"
+    },
+    "629-50-5": {
+      "RegularSolutionSP": 16060.0,
+      "RegularSolutionV": 0.000244445,
+      "name": "629-50-5"
+    },
+    "629-59-4": {
+      "RegularSolutionSP": 16140.0,
+      "RegularSolutionV": 0.000261791,
+      "name": "629-59-4"
+    },
+    "629-62-9": {
+      "RegularSolutionSP": 16210.0,
+      "RegularSolutionV": 0.000277673,
+      "name": "629-62-9"
+    },
+    "629-78-7": {
+      "RegularSolutionSP": 16100.0,
+      "RegularSolutionV": 0.00031045,
+      "name": "629-78-7"
+    },
+    "629-92-5": {
+      "RegularSolutionSP": 16200.0,
+      "RegularSolutionV": 0.00034370099999999997,
+      "name": "629-92-5"
+    },
+    "629-94-7": {
+      "RegularSolutionSP": 15900.0,
+      "RegularSolutionV": 0.000376581,
+      "name": "629-94-7"
+    },
+    "629-97-0": {
+      "RegularSolutionSP": 15800.0,
+      "RegularSolutionV": 0.00039322600000000005,
+      "name": "629-97-0"
+    },
+    "629-99-2": {
+      "RegularSolutionSP": 15800.0,
+      "RegularSolutionV": 0.00044276700000000005,
+      "name": "629-99-2"
+    },
+    "630-01-3": {
+      "RegularSolutionSP": 15800.0,
+      "RegularSolutionV": 0.00045610000000000003,
+      "name": "630-01-3"
+    },
+    "630-02-4": {
+      "RegularSolutionSP": 15700.0,
+      "RegularSolutionV": 0.000492645,
+      "name": "630-02-4"
+    },
+    "630-03-5": {
+      "RegularSolutionSP": 15500.0,
+      "RegularSolutionV": 0.000523824,
+      "name": "630-03-5"
+    },
+    "630-08-0": {
+      "RegularSolutionSP": 6402.0,
+      "RegularSolutionV": 3.54426e-05,
+      "name": "630-08-0"
+    },
+    "637-92-3": {
+      "RegularSolutionSP": 14800.0,
+      "RegularSolutionV": 0.000138991,
+      "name": "637-92-3"
+    },
+    "638-04-0": {
+      "RegularSolutionSP": 15640.0,
+      "RegularSolutionV": 0.000147281,
+      "name": "638-04-0"
+    },
+    "638-67-5": {
+      "RegularSolutionSP": 15800.0,
+      "RegularSolutionV": 0.0004074,
+      "name": "638-67-5"
+    },
+    "64-17-5": {
+      "RegularSolutionSP": 26140.0,
+      "RegularSolutionV": 5.8617700000000006e-05,
+      "name": "64-17-5"
+    },
+    "64-19-7": {
+      "RegularSolutionSP": 19060.0,
+      "RegularSolutionV": 5.7580399999999995e-05,
+      "name": "64-19-7"
+    },
+    "646-04-8": {
+      "RegularSolutionSP": 14970.0,
+      "RegularSolutionV": 0.000109083,
+      "name": "646-04-8"
+    },
+    "646-31-1": {
+      "RegularSolutionSP": 15800.0,
+      "RegularSolutionV": 0.00042608800000000003,
+      "name": "646-31-1"
+    },
+    "65-85-0": {
+      "RegularSolutionSP": 24590.0,
+      "RegularSolutionV": 0.000112442,
+      "name": "65-85-0"
+    },
+    "66-25-1": {
+      "RegularSolutionSP": 18150.0,
+      "RegularSolutionV": 0.000123708,
+      "name": "66-25-1"
+    },
+    "67-56-1": {
+      "RegularSolutionSP": 29440.0,
+      "RegularSolutionV": 4.07027e-05,
+      "name": "67-56-1"
+    },
+    "67-63-0": {
+      "RegularSolutionSP": 23420.0,
+      "RegularSolutionV": 7.689880000000001e-05,
+      "name": "67-63-0"
+    },
+    "67-64-1": {
+      "RegularSolutionSP": 19730.0,
+      "RegularSolutionV": 7.383860000000001e-05,
+      "name": "67-64-1"
+    },
+    "67-66-3": {
+      "RegularSolutionSP": 18920.0,
+      "RegularSolutionV": 8.05048e-05,
+      "name": "67-66-3"
+    },
+    "67-68-5": {
+      "RegularSolutionSP": 26750.0,
+      "RegularSolutionV": 7.127699999999999e-05,
+      "name": "67-68-5"
+    },
+    "674-76-0": {
+      "RegularSolutionSP": 14730.0,
+      "RegularSolutionV": 0.00012673899999999998,
+      "name": "674-76-0"
+    },
+    "68-12-2": {
+      "RegularSolutionSP": 23960.0,
+      "RegularSolutionV": 7.737429999999999e-05,
+      "name": "68-12-2"
+    },
+    "6863-58-7": {
+      "RegularSolutionSP": 14950.0,
+      "RegularSolutionV": 0.00017157700000000001,
+      "name": "6863-58-7"
+    },
+    "6876-23-9": {
+      "RegularSolutionSP": 15780.0,
+      "RegularSolutionV": 0.00014534700000000002,
+      "name": "6876-23-9"
+    },
+    "689-97-4": {
+      "RegularSolutionSP": 16360.0,
+      "RegularSolutionV": 7.40148e-05,
+      "name": "689-97-4"
+    },
+    "69-72-7": {
+      "RegularSolutionSP": 24210.0,
+      "RegularSolutionV": 0.000119591,
+      "name": "69-72-7"
+    },
+    "691-38-3": {
+      "RegularSolutionSP": 14610.0,
+      "RegularSolutionV": 0.000126648,
+      "name": "691-38-3"
+    },
+    "71-23-8": {
+      "RegularSolutionSP": 24450.0,
+      "RegularSolutionV": 7.49393e-05,
+      "name": "71-23-8"
+    },
+    "71-36-3": {
+      "RegularSolutionSP": 23510.0,
+      "RegularSolutionV": 9.197e-05,
+      "name": "71-36-3"
+    },
+    "71-41-0": {
+      "RegularSolutionSP": 22520.0,
+      "RegularSolutionV": 0.00010863000000000001,
+      "name": "71-41-0"
+    },
+    "71-43-2": {
+      "RegularSolutionSP": 18700.0,
+      "RegularSolutionV": 8.941e-05,
+      "name": "71-43-2"
+    },
+    "7154-79-2": {
+      "RegularSolutionSP": 15060.0,
+      "RegularSolutionV": 0.00017034,
+      "name": "7154-79-2"
+    },
+    "7154-80-5": {
+      "RegularSolutionSP": 15010.0,
+      "RegularSolutionV": 0.00019248000000000003,
+      "name": "7154-80-5"
+    },
+    "74-82-8": {
+      "RegularSolutionSP": 11600.0,
+      "RegularSolutionV": 3.78392e-05,
+      "name": "74-82-8"
+    },
+    "74-84-0": {
+      "RegularSolutionSP": 12400.0,
+      "RegularSolutionV": 5.51979e-05,
+      "name": "74-84-0"
+    },
+    "74-85-1": {
+      "RegularSolutionSP": 12440.0,
+      "RegularSolutionV": 4.9321400000000005e-05,
+      "name": "74-85-1"
+    },
+    "74-86-2": {
+      "RegularSolutionSP": 7921.0,
+      "RegularSolutionV": 4.21382e-05,
+      "name": "74-86-2"
+    },
+    "74-87-3": {
+      "RegularSolutionSP": 17320.0,
+      "RegularSolutionV": 5.01264e-05,
+      "name": "74-87-3"
+    },
+    "74-88-4": {
+      "RegularSolutionSP": 20180.0,
+      "RegularSolutionV": 6.2667e-05,
+      "name": "74-88-4"
+    },
+    "74-89-5": {
+      "RegularSolutionSP": 21270.0,
+      "RegularSolutionV": 4.47131e-05,
+      "name": "74-89-5"
+    },
+    "74-90-8": {
+      "RegularSolutionSP": 24810.0,
+      "RegularSolutionV": 3.97695e-05,
+      "name": "74-90-8"
+    },
+    "74-98-6": {
+      "RegularSolutionSP": 13100.0,
+      "RegularSolutionV": 7.57055e-05,
+      "name": "74-98-6"
+    },
+    "74-99-7": {
+      "RegularSolutionSP": 15870.0,
+      "RegularSolutionV": 5.96157e-05,
+      "name": "74-99-7"
+    },
+    "7439-90-9": {
+      "RegularSolutionSP": 15280.0,
+      "RegularSolutionV": 3.463e-05,
+      "name": "7439-90-9"
+    },
+    "7440-01-9": {
+      "RegularSolutionSP": 9440.0,
+      "RegularSolutionV": 1.67622e-05,
+      "name": "7440-01-9"
+    },
+    "7440-37-1": {
+      "RegularSolutionSP": 14138.3,
+      "RegularSolutionV": 2.85865e-05,
+      "name": "7440-37-1"
+    },
+    "7440-59-7": {
+      "RegularSolutionSP": 1222.0,
+      "RegularSolutionV": 3.254e-05,
+      "name": "7440-59-7"
+    },
+    "7440-63-3": {
+      "RegularSolutionSP": 15910.0,
+      "RegularSolutionV": 4.291e-05,
+      "name": "7440-63-3"
+    },
+    "7446-09-5": {
+      "RegularSolutionSP": 12270.0,
+      "RegularSolutionV": 4.38228e-05,
+      "name": "7446-09-5"
+    },
+    "7446-11-9": {
+      "RegularSolutionSP": 31130.0,
+      "RegularSolutionV": 4.20954e-05,
+      "name": "7446-11-9"
+    },
+    "75-00-3": {
+      "RegularSolutionSP": 17250.0,
+      "RegularSolutionV": 7.084260000000001e-05,
+      "name": "75-00-3"
+    },
+    "75-01-4": {
+      "RegularSolutionSP": 15960.0,
+      "RegularSolutionV": 6.46597e-05,
+      "name": "75-01-4"
+    },
+    "75-04-7": {
+      "RegularSolutionSP": 19100.0,
+      "RegularSolutionV": 6.56335e-05,
+      "name": "75-04-7"
+    },
+    "75-05-8": {
+      "RegularSolutionSP": 24050.0,
+      "RegularSolutionV": 5.2677200000000004e-05,
+      "name": "75-05-8"
+    },
+    "75-07-0": {
+      "RegularSolutionSP": 20110.0,
+      "RegularSolutionV": 5.64965e-05,
+      "name": "75-07-0"
+    },
+    "75-08-1": {
+      "RegularSolutionSP": 18250.0,
+      "RegularSolutionV": 7.461329999999999e-05,
+      "name": "75-08-1"
+    },
+    "75-15-0": {
+      "RegularSolutionSP": 20400.0,
+      "RegularSolutionV": 6.06387e-05,
+      "name": "75-15-0"
+    },
+    "75-18-3": {
+      "RegularSolutionSP": 18530.0,
+      "RegularSolutionV": 7.30914e-05,
+      "name": "75-18-3"
+    },
+    "75-21-8": {
+      "RegularSolutionSP": 21050.0,
+      "RegularSolutionV": 4.9704600000000005e-05,
+      "name": "75-21-8"
+    },
+    "75-28-5": {
+      "RegularSolutionSP": 12560.0,
+      "RegularSolutionV": 0.000105238,
+      "name": "75-28-5"
+    },
+    "75-34-3": {
+      "RegularSolutionSP": 18300.0,
+      "RegularSolutionV": 8.47207e-05,
+      "name": "75-34-3"
+    },
+    "75-36-5": {
+      "RegularSolutionSP": 19730.0,
+      "RegularSolutionV": 7.123269999999999e-05,
+      "name": "75-36-5"
+    },
+    "75-44-5": {
+      "RegularSolutionSP": 17140.0,
+      "RegularSolutionV": 7.05389e-05,
+      "name": "75-44-5"
+    },
+    "75-50-3": {
+      "RegularSolutionSP": 14360.0,
+      "RegularSolutionV": 9.02163e-05,
+      "name": "75-50-3"
+    },
+    "75-52-5": {
+      "RegularSolutionSP": 25700.0,
+      "RegularSolutionV": 5.3960000000000005e-05,
+      "name": "75-52-5"
+    },
+    "75-56-9": {
+      "RegularSolutionSP": 19050.0,
+      "RegularSolutionV": 7.054810000000001e-05,
+      "name": "75-56-9"
+    },
+    "75-65-0": {
+      "RegularSolutionSP": 21620.0,
+      "RegularSolutionV": 9.488000000000001e-05,
+      "name": "75-65-0"
+    },
+    "75-66-1": {
+      "RegularSolutionSP": 15790.0,
+      "RegularSolutionV": 0.000113524,
+      "name": "75-66-1"
+    },
+    "75-83-2": {
+      "RegularSolutionSP": 13770.0,
+      "RegularSolutionV": 0.000133712,
+      "name": "75-83-2"
+    },
+    "75-84-3": {
+      "RegularSolutionSP": 19040.0,
+      "RegularSolutionV": 0.00012550000000000001,
+      "name": "75-84-3"
+    },
+    "75-85-4": {
+      "RegularSolutionSP": 20840.0,
+      "RegularSolutionV": 0.0001095,
+      "name": "75-85-4"
+    },
+    "75-87-6": {
+      "RegularSolutionSP": 19150.0,
+      "RegularSolutionV": 9.83111e-05,
+      "name": "75-87-6"
+    },
+    "75-97-8": {
+      "RegularSolutionSP": 16920.0,
+      "RegularSolutionV": 0.000124869,
+      "name": "75-97-8"
+    },
+    "76-02-8": {
+      "RegularSolutionSP": 18010.0,
+      "RegularSolutionV": 0.000112737,
+      "name": "76-02-8"
+    },
+    "763-29-1": {
+      "RegularSolutionSP": 15070.0,
+      "RegularSolutionV": 0.000124649,
+      "name": "763-29-1"
+    },
+    "7647-01-0": {
+      "RegularSolutionSP": 12190.0,
+      "RegularSolutionV": 3.0563e-05,
+      "name": "7647-01-0"
+    },
+    "76589-16-7": {
+      "RegularSolutionSP": 14871.82,
+      "RegularSolutionV": 0.00018511,
+      "name": "76589-16-7"
+    },
+    "7664-41-7": {
+      "RegularSolutionSP": 24790.0,
+      "RegularSolutionV": 2.49801e-05,
+      "name": "7664-41-7"
+    },
+    "767-59-9": {
+      "RegularSolutionSP": 19120.0,
+      "RegularSolutionV": 0.00013420699999999998,
+      "name": "767-59-9"
+    },
+    "7688-21-3": {
+      "RegularSolutionSP": 15360.0,
+      "RegularSolutionV": 0.0001234,
+      "name": "7688-21-3"
+    },
+    "7697-37-2": {
+      "RegularSolutionSP": 29610.0,
+      "RegularSolutionV": 4.1734000000000004e-05,
+      "name": "7697-37-2"
+    },
+    "77-73-6": {
+      "RegularSolutionSP": 17800.0,
+      "RegularSolutionV": 0.00013858500000000002,
+      "name": "77-73-6"
+    },
+    "7726-95-6": {
+      "RegularSolutionSP": 23590.0,
+      "RegularSolutionV": 5.14795e-05,
+      "name": "7726-95-6"
+    },
+    "7727-37-9": {
+      "RegularSolutionSP": 9082.0,
+      "RegularSolutionV": 3.4672300000000003e-05,
+      "name": "7727-37-9"
+    },
+    "7732-18-5": {
+      "RegularSolutionSP": 47860.0,
+      "RegularSolutionV": 1.8067400000000003e-05,
+      "name": "7732-18-5"
+    },
+    "7782-41-4": {
+      "RegularSolutionSP": 15210.0,
+      "RegularSolutionV": 2.516e-05,
+      "name": "7782-41-4"
+    },
+    "7782-44-7": {
+      "RegularSolutionSP": 8182.0,
+      "RegularSolutionV": 2.8022499999999998e-05,
+      "name": "7782-44-7"
+    },
+    "7782-50-5": {
+      "RegularSolutionSP": 17360.0,
+      "RegularSolutionV": 4.55063e-05,
+      "name": "7782-50-5"
+    },
+    "7783-06-4": {
+      "RegularSolutionSP": 18000.0,
+      "RegularSolutionV": 3.58604e-05,
+      "name": "7783-06-4"
+    },
+    "78-78-4": {
+      "RegularSolutionSP": 13870.0,
+      "RegularSolutionV": 0.000117098,
+      "name": "78-78-4"
+    },
+    "78-79-5": {
+      "RegularSolutionSP": 15330.0,
+      "RegularSolutionV": 0.00010077500000000001,
+      "name": "78-79-5"
+    },
+    "78-83-1": {
+      "RegularSolutionSP": 22900.0,
+      "RegularSolutionV": 9.235000000000001e-05,
+      "name": "78-83-1"
+    },
+    "78-84-2": {
+      "RegularSolutionSP": 18450.0,
+      "RegularSolutionV": 9.201370000000001e-05,
+      "name": "78-84-2"
+    },
+    "78-92-2": {
+      "RegularSolutionSP": 22620.0,
+      "RegularSolutionV": 9.235000000000001e-05,
+      "name": "78-92-2"
+    },
+    "78-93-3": {
+      "RegularSolutionSP": 18880.0,
+      "RegularSolutionV": 9.01936e-05,
+      "name": "78-93-3"
+    },
+    "79-00-5": {
+      "RegularSolutionSP": 19890.0,
+      "RegularSolutionV": 9.29898e-05,
+      "name": "79-00-5"
+    },
+    "79-01-6": {
+      "RegularSolutionSP": 18800.0,
+      "RegularSolutionV": 9.01371e-05,
+      "name": "79-01-6"
+    },
+    "79-02-7": {
+      "RegularSolutionSP": 21090.0,
+      "RegularSolutionV": 7.88193e-05,
+      "name": "79-02-7"
+    },
+    "79-09-4": {
+      "RegularSolutionSP": 19490.0,
+      "RegularSolutionV": 7.49523e-05,
+      "name": "79-09-4"
+    },
+    "79-10-7": {
+      "RegularSolutionSP": 19230.0,
+      "RegularSolutionV": 6.8927e-05,
+      "name": "79-10-7"
+    },
+    "79-20-9": {
+      "RegularSolutionSP": 19350.0,
+      "RegularSolutionV": 7.98903e-05,
+      "name": "79-20-9"
+    },
+    "79-24-3": {
+      "RegularSolutionSP": 23090.0,
+      "RegularSolutionV": 7.20005e-05,
+      "name": "79-24-3"
+    },
+    "79-29-8": {
+      "RegularSolutionSP": 14300.0,
+      "RegularSolutionV": 0.00013105000000000001,
+      "name": "79-29-8"
+    },
+    "79-36-7": {
+      "RegularSolutionSP": 19510.0,
+      "RegularSolutionV": 9.7018e-05,
+      "name": "79-36-7"
+    },
+    "79-41-4": {
+      "RegularSolutionSP": 21000.0,
+      "RegularSolutionV": 8.52843e-05,
+      "name": "79-41-4"
+    },
+    "79-46-9": {
+      "RegularSolutionSP": 20530.0,
+      "RegularSolutionV": 9.055349999999999e-05,
+      "name": "79-46-9"
+    },
+    "80-15-9": {
+      "RegularSolutionSP": 21500.0,
+      "RegularSolutionV": 0.000145892,
+      "name": "80-15-9"
+    },
+    "80-62-6": {
+      "RegularSolutionSP": 18530.0,
+      "RegularSolutionV": 0.000106736,
+      "name": "80-62-6"
+    },
+    "821-95-4": {
+      "RegularSolutionSP": 15680.0,
+      "RegularSolutionV": 0.0002065,
+      "name": "821-95-4"
+    },
+    "822-50-4": {
+      "RegularSolutionSP": 15760.0,
+      "RegularSolutionV": 0.00013147400000000002,
+      "name": "822-50-4"
+    },
+    "83-32-9": {
+      "RegularSolutionSP": 19480.0,
+      "RegularSolutionV": 0.00014979200000000002,
+      "name": "83-32-9"
+    },
+    "85-01-8": {
+      "RegularSolutionSP": 19910.0,
+      "RegularSolutionV": 0.000167078,
+      "name": "85-01-8"
+    },
+    "86-73-7": {
+      "RegularSolutionSP": 19820.0,
+      "RegularSolutionV": 0.00012823699999999999,
+      "name": "86-73-7"
+    },
+    "871-83-0": {
+      "RegularSolutionSP": 15380.0,
+      "RegularSolutionV": 0.00019682600000000002,
+      "name": "871-83-0"
+    },
+    "874-41-9": {
+      "RegularSolutionSP": 17650.0,
+      "RegularSolutionV": 0.000153864,
+      "name": "874-41-9"
+    },
+    "88-72-2": {
+      "RegularSolutionSP": 21420.0,
+      "RegularSolutionV": 0.000118442,
+      "name": "88-72-2"
+    },
+    "882-33-7": {
+      "RegularSolutionSP": 20480.0,
+      "RegularSolutionV": 0.0002076,
+      "name": "882-33-7"
+    },
+    "90-12-0": {
+      "RegularSolutionSP": 19890.0,
+      "RegularSolutionV": 0.0001398,
+      "name": "90-12-0"
+    },
+    "91-20-3": {
+      "RegularSolutionSP": 19490.0,
+      "RegularSolutionV": 0.000130825,
+      "name": "91-20-3"
+    },
+    "91-57-6": {
+      "RegularSolutionSP": 19680.0,
+      "RegularSolutionV": 0.000143396,
+      "name": "91-57-6"
+    },
+    "919-94-8": {
+      "RegularSolutionSP": 14970.0,
+      "RegularSolutionV": 0.000152635,
+      "name": "919-94-8"
+    },
+    "92-52-4": {
+      "RegularSolutionSP": 19383.0,
+      "RegularSolutionV": 0.000155536,
+      "name": "92-52-4"
+    },
+    "934-80-5": {
+      "RegularSolutionSP": 17990.0,
+      "RegularSolutionV": 0.000154172,
+      "name": "934-80-5"
+    },
+    "95-13-6": {
+      "RegularSolutionSP": 20310.0,
+      "RegularSolutionV": 0.00011685600000000001,
+      "name": "95-13-6"
+    },
+    "95-47-6": {
+      "RegularSolutionSP": 18390.0,
+      "RegularSolutionV": 0.000121145,
+      "name": "95-47-6"
+    },
+    "95-48-7": {
+      "RegularSolutionSP": 22870.0,
+      "RegularSolutionV": 0.000104368,
+      "name": "95-48-7"
+    },
+    "95-50-1": {
+      "RegularSolutionSP": 20310.0,
+      "RegularSolutionV": 0.00011318000000000001,
+      "name": "95-50-1"
+    },
+    "95-63-6": {
+      "RegularSolutionSP": 18090.0,
+      "RegularSolutionV": 0.00013600000000000003,
+      "name": "95-63-6"
+    },
+    "95-93-2": {
+      "RegularSolutionSP": 17140.0,
+      "RegularSolutionV": 0.00015228,
+      "name": "95-93-2"
+    },
+    "96-14-0": {
+      "RegularSolutionSP": 14680.0,
+      "RegularSolutionV": 0.000130633,
+      "name": "96-14-0"
+    },
+    "96-22-0": {
+      "RegularSolutionSP": 18410.0,
+      "RegularSolutionV": 0.000106401,
+      "name": "96-22-0"
+    },
+    "96-37-7": {
+      "RegularSolutionSP": 16100.0,
+      "RegularSolutionV": 0.000113042,
+      "name": "96-37-7"
+    },
+    "96-49-1": {
+      "RegularSolutionSP": 29660.0,
+      "RegularSolutionV": 6.64942e-05,
+      "name": "96-49-1"
+    },
+    "98-01-1": {
+      "RegularSolutionSP": 23610.0,
+      "RegularSolutionV": 8.323e-05,
+      "name": "98-01-1"
+    },
+    "98-06-6": {
+      "RegularSolutionSP": 17130.0,
+      "RegularSolutionV": 0.00015560499999999998,
+      "name": "98-06-6"
+    },
+    "98-82-8": {
+      "RegularSolutionSP": 17420.0,
+      "RegularSolutionV": 0.00013985400000000002,
+      "name": "98-82-8"
+    },
+    "98-95-3": {
+      "RegularSolutionSP": 22610.0,
+      "RegularSolutionV": 0.000102717,
+      "name": "98-95-3"
+    },
+    "99-08-1": {
+      "RegularSolutionSP": 21470.0,
+      "RegularSolutionV": 0.000118913,
+      "name": "99-08-1"
+    },
+    "99-87-6": {
+      "RegularSolutionSP": 17290.0,
+      "RegularSolutionV": 0.00015748999999999998,
+      "name": "99-87-6"
+    },
+    "99-94-5": {
+      "RegularSolutionSP": 22040.0,
+      "RegularSolutionV": 0.00012981699999999998,
+      "name": "99-94-5"
+    },
+    "99-99-0": {
+      "RegularSolutionSP": 21110.0,
+      "RegularSolutionV": 0.00012189400000000001,
+      "name": "99-99-0"
+    },
+    "994-05-8": {
+      "RegularSolutionSP": 15480.0,
+      "RegularSolutionV": 0.000133437,
+      "name": "994-05-8"
+    }
+  },
+  "metadata": {
+    "missing": {
+      "RegularSolutionSP": null,
+      "RegularSolutionV": null
+    },
+    "necessary keys": [
+      "RegularSolutionV",
+      "RegularSolutionSP"
+    ],
+    "source": "ChemSep 8.26"
+  }
+}

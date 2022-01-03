@@ -22,19 +22,20 @@ SOFTWARE.
 """
 
 import os
+import json
 import xml.etree.cElementTree as ET
-folder = os.path.dirname(__file__),
+folder = os.path.dirname(__file__)
 tree = ET.parse(os.path.join(folder, 'ChemSep8.26.xml'))
 root = tree.getroot()
 parameter_tags = ['ApiSrkS1',
  'ApiSrkS2',
  'RacketParameter',
   'SolubilityParameter',
-#   'COSTALDVolume',
-#    'CostaldAcentricFactor',
-#     'ChaoSeaderAcentricFactor',
-#  'ChaoSeaderLiquidVolume',
-#  'ChaoSeaderSolubilityParameter',
+   'COSTALDVolume',
+    'CostaldAcentricFactor',
+     'ChaoSeaderAcentricFactor',
+  'ChaoSeaderLiquidVolume',
+  'ChaoSeaderSolubilityParameter',
   'MatthiasCopemanC1',
  'MatthiasCopemanC2',
  'MatthiasCopemanC3',
@@ -64,8 +65,11 @@ for child in root:
 #        formula = [i.attrib['value'] for i in child if i.tag == 'StructureFormula'][0]
 
 
+folder = os.path.join(os.path.dirname(__file__), '..', 'thermo', 'Scalar Parameters')
 
 article_source = "ChemSep 8.26"
+'''
+'''
 PSRK_metadata = {
   "metadata": {
     "source": article_source,
@@ -77,3 +81,59 @@ PSRK_metadata = {
     }
   }
 }
+    
+data = {}
+for CAS in parameter_dicts['MatthiasCopemanC1'].keys():
+    data[CAS] = {"name": CAS, "MCSRKC1": parameter_dicts['MatthiasCopemanC1'][CAS], "MCSRKC2": parameter_dicts['MatthiasCopemanC2'][CAS], "MCSRKC3": parameter_dicts['MatthiasCopemanC3'][CAS]}
+PSRK_metadata['data'] = data
+
+f = open(os.path.join(folder, 'chemsep_PSRK_matthias_copeman.json'), 'w')
+f.write(json.dumps(PSRK_metadata, sort_keys=True, indent=2))
+f.close()
+
+
+APISRK_metadata = {
+  "metadata": {
+    "source": article_source,
+    "necessary keys": [
+      "APISRKS1", "APISRKS2"
+    ],
+    "missing": {
+      "APISRKS1": None, "APISRKS2": None,
+    }
+  }
+}
+
+data = {}
+for CAS in parameter_dicts['ApiSrkS1'].keys():
+    data[CAS] = {"name": CAS, "APISRKS1": parameter_dicts['ApiSrkS1'][CAS], "APISRKS2": parameter_dicts['ApiSrkS2'][CAS]}
+APISRK_metadata['data'] = data
+
+f = open(os.path.join(folder, 'chemsep_APISRK.json'), 'w')
+f.write(json.dumps(APISRK_metadata, sort_keys=True, indent=2))
+f.close()
+
+
+
+RegularSolution_metadata = {
+  "metadata": {
+    "source": article_source,
+    "necessary keys": [
+      "RegularSolutionV", "RegularSolutionSP"
+    ],
+    "missing": {
+      "RegularSolutionV": None, "RegularSolutionSP": None,
+    }
+  }
+}
+
+
+data = {}
+for CAS in parameter_dicts['WilsonVolume'].keys():
+    if CAS in parameter_dicts['SolubilityParameter']:
+        data[CAS] = {"name": CAS, "RegularSolutionV": parameter_dicts['WilsonVolume'][CAS]*0.001, "RegularSolutionSP": parameter_dicts['SolubilityParameter'][CAS]}
+RegularSolution_metadata['data'] = data
+
+f = open(os.path.join(folder, 'chemsep_regular_solution.json'), 'w')
+f.write(json.dumps(RegularSolution_metadata, sort_keys=True, indent=2))
+f.close()
