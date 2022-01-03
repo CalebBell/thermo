@@ -17,7 +17,7 @@ def pytest_ignore_collect(path):
             return True
         if '.rst' in path: # skip .rst tests as different rendering from pint and no support for NUMBER flag
             return True
-    if 'manual_runner' in path or 'make_test_stubs' in path or 'plot' in path or 'prerelease' in path:
+    if 'manual_runner' in path or 'make_test_stubs' in path or 'plot' in path or 'prerelease' in path or 'dump' in path:
         return True
     if sys.version[0] == '2':
         if 'numba' in path or 'typing_utils' in path:
