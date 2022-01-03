@@ -10813,6 +10813,6 @@
       "N"
     ],
     "source": "Use of 300,000 pseudo-experimental data over 1800 pure fluids to assess the performance of four cubic equations of state: SRK, PR, tc-RK, and tc-PR",
-    "type": "TwuPR"
+    "type": "PRTwu"
   }
 }
