@@ -396,6 +396,36 @@ class ScalarParameterDB(object):
         except KeyError:
             return self.metadata[name]['missing'][parameter]
 
+    def has_parameter_specific(self, name, CAS, parameter):
+        '''Check if a parameter exists in a table.
+
+        Parameters
+        ----------
+        name : str
+            Name of the data table, [-]
+        CAS : str
+            CAS number, [-]
+        parameter : str
+            Name of the parameter to retrieve, [-]
+
+        Returns
+        -------
+        present : bool
+            Whether or not the data is included in the table, [-]
+
+        Examples
+        --------
+
+        >>> from thermo.interaction_parameters import SPDB
+        >>> SPDB.has_parameter_specific('PRTwu_PinaMartinez', '7727-37-9', 'L')
+        True
+        >>> SPDB.has_parameter_specific('PRTwu_PinaMartinez', '7439-89-6', 'L')
+        False
+        '''
+        table = self.tables[name]
+        if CAS not in table:
+            return False
+        return parameter in table[CAS]
     def get_tables_with_type(self, parameter):
         '''Get a list of tables which have a type of a parameter.
 
