@@ -1212,7 +1212,7 @@ class GCEOS(object):
 #        good_roots = [i.real for i in Vs if (i.real > 0.0 and (i.real == 0.0 or abs(i.imag) < 1E-9))]
         good_root_count = len(good_roots)
 
-        if good_root_count == 1 or (good_roots[0] == good_roots[1]):
+        if good_root_count == 1:
             self.phase = self.set_properties_from_solution(self.T, self.P,
                                                            good_roots[0], b,
                                                            self.delta, self.epsilon,
@@ -1234,7 +1234,29 @@ class GCEOS(object):
                                                   force_l=force_l,
                                                   force_g=force_g)
                 self.phase = 'l/g'
-        elif good_root_count > 1:
+        elif good_root_count == 2 and (good_roots[0] == good_roots[1]):
+	    self.phase = self.set_properties_from_solution(self.T, self.P,
+                                                           good_roots[0], b,
+                                                           self.delta, self.epsilon,
+                                                           self.a_alpha, self.da_alpha_dT,
+                                                           self.d2a_alpha_dT2)
+
+            if self.N == 1 and (
+                    (self.multicomponent and (self.Tcs[0] == self.T and self.Pcs[0] == self.P))
+                    or (not self.multicomponent and self.Tc == self.T and self.Pc == self.P)):
+                # Do not have any tests for this - not good!
+
+                force_l = not self.phase == 'l'
+                force_g = not self.phase == 'g'
+                self.set_properties_from_solution(self.T, self.P,
+                                                  good_roots[0], b,
+                                                  self.delta, self.epsilon,
+                                                  self.a_alpha, self.da_alpha_dT,
+                                                  self.d2a_alpha_dT2,
+                                                  force_l=force_l,
+                                                  force_g=force_g)
+                self.phase = 'l/g'
+	elif good_root_count > 1:
             V_l, V_g = min(good_roots), max(good_roots)
 
             if not only_g:
