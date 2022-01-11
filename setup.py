@@ -80,7 +80,8 @@ setup(
   'Solubility/*', 'Interface/*', 'Triple Properties/*',
   'Thermal Conductivity/*', 'Interaction Parameters/*',
   'flash/*', 'phases/*', 'utils/*',
+  'Scalar Parameters/*',
   'Interaction Parameters/ChemSep/*',
-  'Vapor Pressure/*', 'Viscosity/*']}
+  'Vapor Pressure/*', 'Viscosity/*']}  
 )
 
