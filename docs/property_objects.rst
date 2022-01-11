@@ -354,6 +354,7 @@ Fitting coefficients is a complicated numerical problem. MINPACK's lmfit impleme
 
 Initial guesses for parameters can also be provided. In the below example, the initial parameters from http://ddbonline.ddbst.com/AntoineCalculation/AntoineCalculationCGI.exe for acetone are provided as initial guesses (converting them to a Pa and K basis, from mmHg and deg C).
 
+>>> from math import log10
 >>> res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=Psats, model='Antoine', do_statistics=True, multiple_tries=True, guesses={'A':  7.6313 +log10(101325/760), 'B':  1566.69 , 'C': 273.419 -273.15}, model_kwargs={'base': 10.0})
 
 In this case the initial guesses are good, but different parameters are still obtained by the fitting algorithm.

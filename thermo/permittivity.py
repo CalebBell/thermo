@@ -53,21 +53,23 @@ from fluids.constants import N_A, epsilon_0, k
 from chemicals.utils import isnan
 from chemicals.permittivity import permittivity_IAPWS
 from chemicals import permittivity
+from chemicals.iapws import iapws95_rhol_sat
 
-from thermo.utils import TDependentProperty
+
+from thermo.utils import TDependentProperty, IAPWS
 
 
 CRC = 'CRC'
 CRC_CONSTANT = 'CRC_CONSTANT'
-permittivity_methods = [CRC, CRC_CONSTANT]
+permittivity_methods = [CRC, CRC_CONSTANT, IAPWS]
 '''Holds all methods available for the :obj:`PermittivityLiquid` class, for use in
 iterating over them.'''
 
 
 class PermittivityLiquid(TDependentProperty):
     r'''Class for dealing with liquid permittivity as a function of temperature.
-    Consists of one temperature-dependent simple expression and one constant
-    value source.
+    Consists of one temperature-dependent simple expression, one constant
+    value source, and IAPWS.
 
     Parameters
     ----------
@@ -102,6 +104,8 @@ class PermittivityLiquid(TDependentProperty):
     **CRC_CONSTANT**:
         Constant permittivity values at specified temperatures only.
         Data is from [1]_, and is available for 1303 liquids.
+    **IAPWS**:
+        The IAPWS model for water permittivity as a liquid.
 
     References
     ----------
@@ -124,7 +128,7 @@ class PermittivityLiquid(TDependentProperty):
     property_max = 1000.0
     '''Maximum valid of permittivity; highest in the data available is ~240.'''
 
-    ranked_methods = [CRC, CRC_CONSTANT]
+    ranked_methods = [IAPWS, CRC, CRC_CONSTANT]
     '''Default rankings of the available methods.'''
 
     _fit_force_n = {}
@@ -178,7 +182,9 @@ class PermittivityLiquid(TDependentProperty):
                 if self.CRC_coeffs[0] and not isnan(Tmin):
                     methods.append(CRC)
                     T_limits[CRC] = (Tmin, Tmax)
-
+        if self.CASRN == '7732-18-5':
+            methods.append(IAPWS)
+            T_limits[IAPWS] = (273.15, 873.15)
         self.all_methods = set(methods)
 
     def calculate(self, T, method):
@@ -205,6 +211,9 @@ class PermittivityLiquid(TDependentProperty):
             epsilon = A + T*(B + T*(C + D*T))
         elif method == CRC_CONSTANT:
             epsilon = self.CRC_permittivity
+        elif method == IAPWS:
+            rho = iapws95_rhol_sat(T)
+            epsilon = permittivity_IAPWS(T, rho)
         else:
             epsilon = self._base_calculate(T, self._method)
         return epsilon
@@ -231,21 +240,5 @@ class PermittivityLiquid(TDependentProperty):
         validity : bool
             Whether or not a method is valid
         '''
-        validity = True
-        if method == CRC:
-            if T < self.CRC_Tmin or T > self.CRC_Tmax:
-                validity = False
-        elif method == CRC_CONSTANT:
-            # Arbitraty choice of temperature limits
-            if T < self.CRC_CONSTANT_T - 20 or T > self.CRC_CONSTANT_T + 20:
-                validity = False
-        elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
-                Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    validity = False
-        else:
-            raise ValueError('Method not valid')
-        return validity
+        return super(PermittivityLiquid, self).test_method_validity(T, method)
 

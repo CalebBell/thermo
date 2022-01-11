@@ -124,7 +124,7 @@ def test_lemmon2000_case_issues():
 
     
     
-    PT = flasher.flash(T=2000.0000000000002, P=3827.4944785162643)
+    PT = flasher.flash(T=2000., P=3827.4944785162643)
     V = PT.V()
     U = PT.U()
     res = flasher.flash(V=V, U=U)
@@ -150,3 +150,19 @@ def test_lemmon2000_case_issues():
     Ps = logspace(log10(6985879.746785077/2), log10(519770184.42714685*2), 2000)
     Us = [flasher.flash(T=1652.4510785539342, P=P).U() for P in Ps ]
     '''
+    
+    
+def test_lemmon2000_properties():
+    gas = DryAirLemmon(T=300.0, P=1000e5)
+    flasher = FlashPureVLS(constants=lemmon2000_constants, correlations=lemmon2000_correlations,
+                           gas=gas, liquids=[], solids=[])
+    # Isentropic exponents
+    res = flasher.flash(T=300.0, P=1000e5)
+    
+    for obj in (res, res.bulk, gas, res.gas):
+    
+        assert_close(obj.isentropic_exponent(), 4.100576762582646, rtol=1e-12)
+        assert_close(obj.isentropic_exponent_PV(), 4.100576762582646, rtol=1e-12)
+        
+        assert_close(obj.isentropic_exponent_PT(), 1.3248727035044343, rtol=1e-12)
+        assert_close(obj.isentropic_exponent_TV(), 2.0055044950839136, rtol=1e-12)

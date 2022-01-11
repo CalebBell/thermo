@@ -1310,6 +1310,8 @@ class Bulk(Phase):
         elif dP_dT_method == EQUILIBRIUM_DERIVATIVE:
             return self._equilibrium_derivative(of='P', wrt='T', const='V')
         return self._property_mixing_rule(dP_dT_method, None, None, 'dP_dT')
+    
+    dP_dT_V = dP_dT
 
     def dP_dV(self):
         r'''Method to calculate and return the first volume derivative of
@@ -1326,6 +1328,8 @@ class Bulk(Phase):
         elif dP_dV_method == EQUILIBRIUM_DERIVATIVE:
             return self._equilibrium_derivative(of='P', wrt='V', const='T')
         return self._property_mixing_rule(dP_dV_method, None, None, 'dP_dV')
+    
+    dP_dV_T = dP_dV
 
     def d2P_dT2(self):
         r'''Method to calculate and return the second temperature derivative of

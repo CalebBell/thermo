@@ -2767,6 +2767,15 @@ def test_DryAirLemmon():
     assert_close(g0.mu()*1e6, 17.7623, atol=.00005)
 
 
+    # Isentropic exponents
+    phase = gas.to(T=300.0, P=1000e5, zs=[1])
+    
+    assert_close(phase.isentropic_exponent(), 4.100576762582646, rtol=1e-12)
+    assert_close(phase.isentropic_exponent_PV(), 4.100576762582646, rtol=1e-12)
+    
+    assert_close(phase.isentropic_exponent_PT(), 1.3248727035044343, rtol=1e-12)
+    assert_close(phase.isentropic_exponent_TV(), 2.0055044950839136, rtol=1e-12)
+
 def test_lnphis_at_zs_eos_mix():
     # Acetone, chloroform, methanol
     T, P, zs = 331.42, 90923,  [0.229, 0.175, 0.596]

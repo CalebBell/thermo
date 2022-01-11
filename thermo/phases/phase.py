@@ -36,7 +36,8 @@ from fluids.numerics import (horner, horner_log, jacobian,
                              newton_system, trunc_exp, is_micropython)
 from chemicals.utils import (log, Cp_minus_Cv, phase_identification_parameter,
                              Joule_Thomson, speed_of_sound, dxs_to_dns, dns_to_dn_partials,
-                             hash_any_primitive)
+                             hash_any_primitive, isentropic_exponent_TV,
+                             isentropic_exponent_PT, isentropic_exponent_PV)
 from thermo.utils import POLY_FIT
 from thermo import phases
 from .phase_utils import object_lookups
@@ -2210,8 +2211,63 @@ class Phase(object):
         '''
         return self.Cp()/self.Cv()
 
-    isentropic_exponent = Cp_Cv_ratio
+    
+    def isentropic_exponent_PV(self):
+        r'''Method to calculate and return the real gas isentropic exponent
+        of the phase, which satisfies the relationship 
+        :math:`PV^k = \text{const}`.
 
+        .. math::
+            k = -\frac{V}{P}\frac{C_p}{C_v}\left(\frac{\partial P}{\partial V}\right)_T
+
+        Returns
+        -------
+        k_PV : float
+            Isentropic exponent of a real fluid, [-]
+    
+        Notes
+        -----
+        '''
+        return isentropic_exponent_PV(Cp=self.Cp(), Cv=self.Cv(), Vm=self.V(), P=self.P, dP_dV_T=self.dP_dV_T())
+    
+    isentropic_exponent = isentropic_exponent_PV
+    
+    def isentropic_exponent_PT(self):
+        r'''Method to calculate and return the real gas isentropic exponent
+        of the phase, which satisfies the relationship 
+        :math:`P^{(1-k)}T^k = \text{const}`.
+
+        .. math::
+            k = \frac{1}{1 - \frac{P}{C_p}\left(\frac{\partial V}{\partial T}\right)_P}
+
+        Returns
+        -------
+        k_PT : float
+            Isentropic exponent of a real fluid, [-]
+    
+        Notes
+        -----
+        '''
+        return isentropic_exponent_PT(Cp=self.Cp(), P=self.P, dV_dT_P=self.dV_dT_P())
+    
+    def isentropic_exponent_TV(self):
+        r'''Method to calculate and return the real gas isentropic exponent
+        of the phase, which satisfies the relationship 
+        :math:`TV^{k-1} = \text{const}`.
+
+        .. math::
+            k = 1 + \frac{V}{C_v} \left(\frac{\partial P}{\partial T}\right)_V
+
+        Returns
+        -------
+        k_TV : float
+            Isentropic exponent of a real fluid, [-]
+    
+        Notes
+        -----
+        '''
+        return isentropic_exponent_TV(Cv=self.Cv(), Vm=self.V(), dP_dT_V=self.dP_dT_V())
+    
     def Z(self):
         r'''Method to calculate and return the compressibility factor of the
         phase.
