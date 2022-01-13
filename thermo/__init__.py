@@ -142,6 +142,7 @@ if not numerics.is_micropython:
     from chemicals.temperature import *
     from .activity import *
     from .fitting import *
+    from .functional_groups import *
     
     #from chemicals import *
     
@@ -157,7 +158,8 @@ if not numerics.is_micropython:
      'datasheet', 'dippr', 'unifac', 'stream', 'mixture', 'property_package_constants',
      'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution',
      'equilibrium', 'phase_identification', 'temperature', 'fitting',
-     'eos_alpha_functions', 'eos_volume', 'bulk', 'eos_mix_methods', 'activity']
+     'eos_alpha_functions', 'eos_volume', 'bulk', 'eos_mix_methods', 'activity',
+     'functional_groups']
     
     __all__.extend(eos_volume.__all__)
     __all__.extend(eos_alpha_functions.__all__)
@@ -217,6 +219,7 @@ if not numerics.is_micropython:
     __all__.extend(eos_mix_methods.__all__)
     __all__.extend(activity.__all__)
     __all__.extend(fitting.__all__)
+    __all__.extend(functional_groups.__all__)
     
     
     # backwards compatibility hack to allow thermo.chemical.Mixture to still be importable
@@ -233,7 +236,7 @@ if not numerics.is_micropython:
                   mixture, nrtl, permittivity, phase_change, phase_identification,
                   property_package, property_package_constants, regular_solution, 
                   stream, thermal_conductivity, unifac, uniquac, safety,
-                  fitting,
+                  fitting,functional_groups,
                   utils, vapor_pressure, viscosity, volume, wilson, eos_alpha_functions,
                   eos_volume, eos_mix_methods,              
                   flash, flash.flash_base, flash.flash_pure_vls,

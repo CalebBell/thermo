@@ -17,6 +17,7 @@ API Reference
    thermo.eos_alpha_functions
    thermo.equilibrium
    thermo.flash
+   thermo.functional_groups
    thermo.heat_capacity
    thermo.interface
    thermo.interaction_parameters
