@@ -31,6 +31,8 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 Specific molecule matching functions
 
+.. autofunction:: thermo.functional_groups.is_organic
+.. autofunction:: thermo.functional_groups.is_inorganic
 .. autofunction:: thermo.functional_groups.is_alkane
 .. autofunction:: thermo.functional_groups.is_mercaptan
 .. autofunction:: thermo.functional_groups.is_cycloalkane
@@ -57,7 +59,9 @@ Specific molecule matching functions
 .. autofunction:: thermo.functional_groups.is_secondary_amine
 .. autofunction:: thermo.functional_groups.is_tertiary_amine
 .. autofunction:: thermo.functional_groups.is_ester
+.. autofunction:: thermo.functional_groups.is_amide
 .. autofunction:: thermo.functional_groups.is_branched_alkane
+
 
 '''
 
@@ -70,7 +74,9 @@ __all__ = ['is_mercaptan', 'is_alkane', 'is_cycloalkane', 'is_alkene',
            'is_haloalkane', 'is_fluoroalkane', 'is_chloroalkane', 
            'is_bromoalkane', 'is_iodoalkane',
            'is_amine', 'is_primary_amine', 'is_secondary_amine',
-           'is_tertiary_amine', 'is_ester', 'is_branched_alkane']
+           'is_tertiary_amine', 'is_ester', 'is_branched_alkane',
+           'is_amide',
+           'is_organic', 'is_inorganic']
 
 
 rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
@@ -115,6 +121,36 @@ def smarts_mol_cache(smarts):
     mol_smarts_cache[smarts] = mol
     return mol
 
+amide_smarts_3 = '[NX3][CX3](=[OX1])[#6]'
+amide_smarts_2 = 'O=C([c,CX4])[$([NH2]),$([NH][c,CX4]),$(N([c,CX4])[c,CX4])]'
+amide_smarts_1 = '[CX3;$([R0][#6]),$([H1R0])](=[OX1])[#7X3;$([H2]),$([H1][#6;!$(C=[O,N,S])]),$([#7]([#6;!$(C=[O,N,S])])[#6;!$(C=[O,N,S])])]'
+amide_smarts_collection = [amide_smarts_3, amide_smarts_2, amide_smarts_1]
+def is_amide(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule has a amide RC(=O)NR′R″ group.
+
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_amide : bool
+        Whether or not the compound is a amide or not, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles
+    >>> is_amide(MolFromSmiles('CN(C)C=O'))
+    True
+    '''
+    for s in amide_smarts_collection:
+        hits = mol.GetSubstructMatches(smarts_mol_cache(s))
+        if len(hits):
+            return True
+    return False
 
 def is_mercaptan(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
@@ -832,3 +868,134 @@ def is_branched_alkane(mol):
     if only_aliphatic and mol.GetSubstructMatches(smarts_mol_cache(branched_alkane_smarts)):
         return True
     return False
+
+
+hardcoded_organic_smiles = frozenset([
+    'C', # methane
+    'CO', # methanol
+])
+hardcoded_controversial_organic_smiles = frozenset([
+    'NC(N)=O', # Urea - CRC, history
+    'O=C(OC(=O)C(F)(F)F)C(F)(F)F', # Trifluoroacetic anhydride CRC, not a hydrogen in it
+    
+    ])
+hardcoded_inorganic_smiles = frozenset([
+    '[C-]#[O+]', # carbon monoxide
+    'O=C=O', # Carbon dioxide
+    'S=C=S', # Carbon disulfide
+    'BrC(Br)(Br)Br', # Carbon tetrabromide
+    'ClC(Cl)(Cl)Cl', # Carbon tetrachloride
+    'FC(F)(F)F', # Carbon tetrafluoride
+    'IC(I)(I)I', # Carbon tetraiodide
+    'O=C(O)O', # Carbonic acid
+    'O=C(Cl)Cl', # Carbonyl chloride
+    'O=C(F)F', # Carbonyl fluoride
+    'O=C=S', # Carbonyl sulfide
+    ])
+hardcoded_controversial_inorganic_smiles = frozenset([
+    'C#N', # hydrogen cyanide
+])
+
+default_inorganic_smiles = frozenset().union(hardcoded_controversial_inorganic_smiles, hardcoded_inorganic_smiles)
+default_organic_smiles = frozenset().union(hardcoded_organic_smiles, hardcoded_controversial_organic_smiles)
+
+# allowed_organic_atoms = frozenset(['H','C','N','O','F','S','Cl','Br'])
+
+
+organic_smarts_groups = [alkane_smarts, alkene_smarts, alkyne_smarts,
+                         aromatic_smarts, '[C][H]', '[C@H]', '[CR]',
+                         ] + amide_smarts_collection
+
+
+def is_organic(mol, restrict_atoms=None,
+               organic_smiles=default_organic_smiles,
+               inorganic_smiles=default_inorganic_smiles):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is organic. The definition of organic vs. inorganic compounds is
+    arabitrary. The rules implemented here are fairly complex.
+    
+    * If a compound has an C-C bond, a C=C bond, a carbon triple bond, a
+      carbon attatched however to a hydrogen, a carbon in a ring, or an amide 
+      group.
+    * If a compound is in the list of canonical smiles `organic_smiles`,
+      either the defaults in the library or those provided as an input to the
+      function, the molecule is considered organic.
+    * If a compound is in the list of canonical smiles `inorganic_smiles`,
+      either the defaults in the library or those provided as an input to the
+      function, the molecule is considered inorganic.
+    * If `restrict_atoms` is provided and atoms are present in the molecule
+      that are restricted, the compound is considered restricted.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+    restrict_atoms : Iterable[str]
+        Atoms that cannot be found in an organic molecule, [-]
+    organic_smiles : Iterable[str]
+        Smiles that are hardcoded to be organic, [-]
+    inorganic_smiles : Iterable[str]
+        Smiles that are hardcoded to be inorganic, [-]
+    
+    Returns
+    -------
+    is_organic : bool
+        Whether or not the compound is a organic or not, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles
+    >>> is_organic(MolFromSmiles("CC(C)C(C)C(C)C"))
+    True
+    '''
+    if not loaded_rdkit:
+        load_rdkit_modules()
+    # Check the hardcoded list first
+    smiles = CanonSmiles(MolToSmiles(mol))
+    if smiles in organic_smiles:
+        return True
+    if smiles in default_inorganic_smiles:
+        return False
+
+    if restrict_atoms is not None:
+        atoms = {}
+        for atom in mol.GetAtoms():
+            symbol = atom.GetSymbol()
+            try:
+                atoms[symbol] += 1
+            except:
+                atoms[symbol] = 1
+        found_atoms = set(atoms.keys())
+    
+        if not found_atoms.issubset(restrict_atoms):
+            return False
+    
+    for smart in organic_smarts_groups:
+        matches = mol.GetSubstructMatches(smarts_mol_cache(smart))
+        if matches:
+            return True
+    return False
+
+def is_inorganic(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is inorganic. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+    
+    Returns
+    -------
+    is_inorganic : bool
+        Whether or not the compound is inorganic or not, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles
+    >>> is_inorganic(MolFromSmiles("O=[Zr].Cl.Cl"))
+    True
+    '''
+    return not is_organic(mol)
