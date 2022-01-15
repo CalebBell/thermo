@@ -142,8 +142,8 @@ def is_amide(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_amide(MolFromSmiles('CN(C)C=O'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_amide(MolFromSmiles('CN(C)C=O')) # doctest:+SKIP
     True
     '''
     for s in amide_smarts_collection:
@@ -169,8 +169,8 @@ def is_mercaptan(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_mercaptan(MolFromSmiles("CS"))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_mercaptan(MolFromSmiles("CS")) # doctest:+SKIP
     True
     '''
     # https://smarts.plus/smartsview/a9b45f9cc6f17d3b5649b77a81f535dfe0729a84fc3ac453c9aaa60286e6
@@ -197,8 +197,8 @@ def is_alkane(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_alkane(MolFromSmiles("CCC"))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_alkane(MolFromSmiles("CCC")) # doctest:+SKIP
     True
     '''
     # Also parafins
@@ -224,8 +224,8 @@ def is_cycloalkane(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_cycloalkane(MolFromSmiles('C1CCCCCCCCC1'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_cycloalkane(MolFromSmiles('C1CCCCCCCCC1')) # doctest:+SKIP
     True
     '''
     # naphthenes are a synonym
@@ -253,8 +253,8 @@ def is_alkene(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_alkene(MolFromSmiles('C=C'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_alkene(MolFromSmiles('C=C')) # doctest:+SKIP
     True
     '''
     # Has at least one double carbon bond
@@ -281,8 +281,8 @@ def is_alkyne(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_alkyne(MolFromSmiles('CC#C'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_alkyne(MolFromSmiles('CC#C')) # doctest:+SKIP
     True
     '''
     # Has at least one triple carbon bond
@@ -309,8 +309,8 @@ def is_aromatic(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_aromatic(MolFromSmiles('CC1=CC=CC=C1C'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_aromatic(MolFromSmiles('CC1=CC=CC=C1C')) # doctest:+SKIP
     True
     '''
     # https://smarts.plus/smartsview/6011201068306235ac861ddaa794a4559576e23361a5437373562ae3cc45
@@ -337,8 +337,8 @@ def is_alcohol(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_alcohol(MolFromSmiles('CCO'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_alcohol(MolFromSmiles('CCO')) # doctest:+SKIP
     True
     '''
     # https://smarts.plus/smartsview/644c9799417838a70f3c8d126b1d20a3bd96e9a634742bff7f3b67fcaa0a
@@ -362,8 +362,8 @@ def is_polyol(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_polyol(MolFromSmiles('C(C(CO)O)O'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_polyol(MolFromSmiles('C(C(CO)O)O')) # doctest:+SKIP
     True
     '''
     # More than one alcohol group
@@ -388,8 +388,8 @@ def is_acid(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_acid(MolFromSmiles('CC(=O)O'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_acid(MolFromSmiles('CC(=O)O')) # doctest:+SKIP
     True
     '''
     # https://smarts.plus/smartsview/4878307fc4fa813db953aba8a928e809a256f7cc0080c7c28ebf944e3ce9
@@ -414,8 +414,8 @@ def is_ketone(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_ketone(MolFromSmiles('C1CCC(=O)CC1'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_ketone(MolFromSmiles('C1CCC(=O)CC1')) # doctest:+SKIP
     True
     '''
     # https://smarts.plus/smartsview/947488b11c90e968703137c3faa9ae07a6536644f1de63ce48772e2680c8
@@ -441,8 +441,8 @@ def is_aldehyde(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_aldehyde(MolFromSmiles('C=O'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_aldehyde(MolFromSmiles('C=O')) # doctest:+SKIP
     True
     '''
     # https://smarts.plus/smartsview/8c5ed80db53e19cc40dcfef58453d90fec96e18d8b7f602d34ff1e3a566c
@@ -468,8 +468,8 @@ def is_anhydride(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_anhydride(MolFromSmiles('C1=CC(=O)OC1=O'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_anhydride(MolFromSmiles('C1=CC(=O)OC1=O')) # doctest:+SKIP
     True
     '''
     # https://smarts.plus/smartsview/8d10c9a838fc851160958f7b48e6d07eda26e0e544aaeae2d6b8a065bcd8
@@ -494,8 +494,8 @@ def is_ether(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_ether(MolFromSmiles('CC(C)OC(C)C'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_ether(MolFromSmiles('CC(C)OC(C)C')) # doctest:+SKIP
     True
     '''
     # https://smarts.plus/smartsview/1e2e9cdb5e1275b0eb4168ef37600b8cb7e9301e08801ac9ae9a6f4a9729
@@ -520,8 +520,8 @@ def is_phenol(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_phenol(MolFromSmiles('CC(=O)NC1=CC=C(C=C1)O'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_phenol(MolFromSmiles('CC(=O)NC1=CC=C(C=C1)O')) # doctest:+SKIP
     True
     '''
     # https://smarts.plus/smartsview/0dbfd2ece438a9b9dec68765cc7e0f76ada4193d45dc1b2de95585b4cf2f
@@ -546,8 +546,8 @@ def is_nitrile(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_nitrile(MolFromSmiles('CC#N'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_nitrile(MolFromSmiles('CC#N')) # doctest:+SKIP
     True
     '''
     # https://smarts.plus/smartsview/a04d5a51cd03fd469672f34a226fbd049a5d220d3819992fe210bd6d77a7
@@ -574,8 +574,8 @@ def is_carboxylic_acid(mol):
     --------
     Butyric acid (butter)
     
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_carboxylic_acid(MolFromSmiles('CCCC(=O)O'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_carboxylic_acid(MolFromSmiles('CCCC(=O)O')) # doctest:+SKIP
     True
     '''
     #https://smarts.plus/smartsview/a33ad72207a43d56151d62438cef247f6dcd3071fa7e3e944eabc2923e53
@@ -600,8 +600,8 @@ def is_haloalkane(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_haloalkane(MolFromSmiles('CCCl'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_haloalkane(MolFromSmiles('CCCl')) # doctest:+SKIP
     True
     '''
     # https://smarts.plus/smartsview/d0f0d91e09810af5bf2aba9a8498fe264931efb6559430ca44d46a719211
@@ -626,8 +626,8 @@ def is_fluoroalkane(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_fluoroalkane(MolFromSmiles('CF'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_fluoroalkane(MolFromSmiles('CF')) # doctest:+SKIP
     True
     '''
     matches = mol.GetSubstructMatches(smarts_mol_cache(fluoroalkane_smarts))
@@ -651,8 +651,8 @@ def is_chloroalkane(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_chloroalkane(MolFromSmiles('CCl'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_chloroalkane(MolFromSmiles('CCl')) # doctest:+SKIP
     True
     '''
     matches = mol.GetSubstructMatches(smarts_mol_cache(chloroalkane_smarts))
@@ -676,8 +676,8 @@ def is_bromoalkane(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_bromoalkane(MolFromSmiles('CBr'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_bromoalkane(MolFromSmiles('CBr')) # doctest:+SKIP
     True
     '''
     matches = mol.GetSubstructMatches(smarts_mol_cache(bromoalkane_smarts))
@@ -701,8 +701,8 @@ def is_iodoalkane(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_iodoalkane(MolFromSmiles('CI'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_iodoalkane(MolFromSmiles('CI')) # doctest:+SKIP
     True
     '''
     matches = mol.GetSubstructMatches(smarts_mol_cache(iodoalkane_smarts))
@@ -726,8 +726,8 @@ def is_amine(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_amine(MolFromSmiles('CN'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_amine(MolFromSmiles('CN')) # doctest:+SKIP
     True
     '''
     matches = mol.GetSubstructMatches(smarts_mol_cache(amine_smarts))
@@ -751,8 +751,8 @@ def is_primary_amine(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_primary_amine(MolFromSmiles('CN'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_primary_amine(MolFromSmiles('CN')) # doctest:+SKIP
     True
     '''
     matches = mol.GetSubstructMatches(smarts_mol_cache(primary_amine_smarts))
@@ -776,8 +776,8 @@ def is_secondary_amine(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_secondary_amine(MolFromSmiles('CNC'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_secondary_amine(MolFromSmiles('CNC')) # doctest:+SKIP
     True
     '''
     matches = mol.GetSubstructMatches(smarts_mol_cache(secondary_amine_smarts))
@@ -801,8 +801,8 @@ def is_tertiary_amine(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_tertiary_amine(MolFromSmiles('CN(C)C'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_tertiary_amine(MolFromSmiles('CN(C)C')) # doctest:+SKIP
     True
     '''
     matches = mol.GetSubstructMatches(smarts_mol_cache(tertiary_amine_smarts))
@@ -829,8 +829,8 @@ def is_ester(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_ester(MolFromSmiles('CCOC(=O)C'))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_ester(MolFromSmiles('CCOC(=O)C')) # doctest:+SKIP
     True
     '''
     matches = mol.GetSubstructMatches(smarts_mol_cache(ester_smarts))
@@ -856,8 +856,8 @@ def is_branched_alkane(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_branched_alkane(MolFromSmiles("CC(C)C(C)C(C)C"))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_branched_alkane(MolFromSmiles("CC(C)C(C)C(C)C")) # doctest:+SKIP
     True
     '''
     ri = mol.GetRingInfo()
@@ -945,8 +945,8 @@ def is_organic(mol, restrict_atoms=None,
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_organic(MolFromSmiles("CC(C)C(C)C(C)C"))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_organic(MolFromSmiles("CC(C)C(C)C(C)C")) # doctest:+SKIP
     True
     '''
     if not loaded_rdkit:
@@ -994,8 +994,8 @@ def is_inorganic(mol):
     Examples
     --------
 
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> is_inorganic(MolFromSmiles("O=[Zr].Cl.Cl"))
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_inorganic(MolFromSmiles("O=[Zr].Cl.Cl")) # doctest:+SKIP
     True
     '''
     return not is_organic(mol)
