@@ -46,6 +46,8 @@ def test_is_mercaptan():
         assert is_mercaptan(Chemical(c).rdkitmol)
         
         
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_alkane():
     for i in range(2, 50):
         mol = Chemical('C%d' %(i)).rdkitmol
@@ -59,6 +61,8 @@ def test_is_alkane():
         assert is_alkane(Chemical(c).rdkitmol)
 
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_cycloalkane():
     non_cycloalkanes =  ['CO2', 'water', 'toluene'] + ['C%d' %(i) for i in range(2, 20)]
     for c in non_cycloalkanes:
@@ -70,6 +74,8 @@ def test_is_cycloalkane():
     for c in is_cycloalkanes:
         assert is_cycloalkane(Chemical(c).rdkitmol)
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_alkene():
     not_alkenes = ['CO2', 'water', 'toluene', 'methane','butane', 'cyclopentane', 'benzene']
     for c in not_alkenes:
@@ -80,6 +86,8 @@ def test_is_alkene():
     for c in is_alkenes:
         assert is_alkene(Chemical(c).rdkitmol)
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_alkyne():
     not_alkynes = ['CO2', 'water', 'toluene', 'methane','butane', 'cyclopentane', 'benzene']
     for c in not_alkynes:
@@ -93,6 +101,8 @@ def test_is_alkyne():
         assert is_alkyne(Chemical(c).rdkitmol)
 
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_aromatic():
     not_aromatic = ['CO2', 'water', 'methane','butane', 'cyclopentane']
     for c in not_aromatic:
@@ -104,6 +114,8 @@ def test_is_aromatic():
         assert is_aromatic(Chemical(c).rdkitmol)
 
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_alcohol():
     not_alcohol = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
     for c in not_alcohol:
@@ -116,6 +128,8 @@ def test_is_alcohol():
     for c in is_alcohols:
         assert is_alcohol(Chemical(c).rdkitmol)
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_polyol():
     not_polyol = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene',
                   'ethanol', 'methanol', 'cyclopentanol']
@@ -129,6 +143,8 @@ def test_is_polyol():
     for c in is_polyols:
         assert is_polyol(Chemical(c).rdkitmol)
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_acid():
     not_acid = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
     for c in not_acid:
@@ -144,6 +160,8 @@ def test_is_acid():
         assert is_acid(Chemical(c).rdkitmol)
         
         
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_ketone():
     not_ketone = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
     for c in not_ketone:
@@ -158,6 +176,8 @@ def test_is_ketone():
         assert is_ketone(Chemical(c).rdkitmol)
 
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_aldehyde():
     not_aldehyde = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
     for c in not_aldehyde:
@@ -174,6 +194,8 @@ def test_is_aldehyde():
     for c in is_aldehydes:
         assert is_aldehyde(Chemical(c).rdkitmol)
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_anhydride():
     not_anhydride = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
     for c in not_anhydride:
@@ -184,6 +206,8 @@ def test_is_anhydride():
     for c in is_anhydrides:
         assert is_anhydride(Chemical(c).rdkitmol)
         
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_ether():
     not_ether = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
     for c in not_ether:
@@ -198,6 +222,8 @@ def test_is_ether():
         assert is_ether(Chemical(c).rdkitmol)
         
         
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_phenol():
     not_phenols = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
     for c in not_phenols:
@@ -212,6 +238,8 @@ def test_is_phenol():
         assert is_phenol(Chemical(c).rdkitmol)
         
         
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_nitrile():
     not_nitrile = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
     for c in not_nitrile:
@@ -231,6 +259,8 @@ def test_is_nitrile():
     for c in nitrile_chemicals:
         assert is_nitrile(Chemical(c).rdkitmol)
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_carboxylic_acid():
     not_carboxylic_acid = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
     for c in not_carboxylic_acid:
@@ -250,6 +280,8 @@ def test_is_carboxylic_acid():
     for c in carboxylic_acid_chemicals:
         assert is_carboxylic_acid(Chemical(c).rdkitmol)
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_haloalkane():
     not_is_haloalkane = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
     for c in not_is_haloalkane:
@@ -263,6 +295,8 @@ def test_is_haloalkane():
     for c in haloalkane_chemicals:
         assert is_haloalkane(Chemical(c).rdkitmol)
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_amine():
     not_is_amine = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
     for c in not_is_amine:
@@ -278,6 +312,8 @@ def test_is_amine():
     for c in amine_chemicals:
         assert is_amine(Chemical(c).rdkitmol)
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_primary_amine():
     not_is_primary_amine = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
     for c in not_is_primary_amine:
@@ -290,6 +326,8 @@ def test_is_primary_amine():
     for c in primary_amine_chemicals:
         assert is_primary_amine(Chemical(c).rdkitmol)
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_secondary_amine():
     not_is_secondary_amine = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
     for c in not_is_secondary_amine:
@@ -299,6 +337,8 @@ def test_is_secondary_amine():
     for c in secondary_amine_chemicals:
         assert is_secondary_amine(Chemical(c).rdkitmol)
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_tertiary_amine():
     not_is_tertiary_amine = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
     for c in not_is_tertiary_amine:
@@ -308,6 +348,8 @@ def test_is_tertiary_amine():
     for c in tertiary_amine_chemicals:
         assert is_tertiary_amine(Chemical(c).rdkitmol)
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_ester():
     not_ester = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
     for c in not_ester:
@@ -424,6 +466,8 @@ branched_alkanes = ["2-Methylpentane", "3-Methylpentane", "2,2-Dimethylbutane", 
     "2,2,3-Trimethyldecane", "2,2,8-Trimethyldecane", "2,5,9-Trimethyldecane", "4-Propyldecane", "5-Propyldecane", "4,4,6,6-Tetramethylnonane",
     "3-Methyl-5-propylnonane", "5-Butylnonane", "3,5-Diethyl-3,5-dimethylheptane", "4,4-Dipropylheptane"
 ]
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_branched_alkane():
     not_branched_alkane = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] + ['C%d' %(i) for i in range(2, 20)]
     for c in not_branched_alkane:
