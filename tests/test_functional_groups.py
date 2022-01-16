@@ -696,5 +696,31 @@ def test_is_organic():
     #     except:
     #         print(CAS,c.name, c.smiles)
         
-        
+def test_count_ring_ring_attatchments():
+    mol = Chemical('Dibenz[a,h]anthracene').rdkitmol
+    assert 4 == count_ring_ring_attatchments(mol)
+    
+    mol = Chemical('Pyrene').rdkitmol
+    assert 5 == count_ring_ring_attatchments(mol)
+    
+    mol = Chemical('Benzo[a]pyrene').rdkitmol
+    assert 6 == count_ring_ring_attatchments(mol)
+    
+    mol = Chemical('Porphine').rdkitmol
+    assert 4 == count_ring_ring_attatchments(mol)
+    
+    
+    mol = Chemical('cubane').rdkitmol
+    assert 12 == count_ring_ring_attatchments(mol)
+    
+    no_shared_rings = ['[18]annulene', 'pyridine', 'Methyl 2-pyridyl ketone',
+                      ' 2-Methoxy-5-methylpyrazine', 'Pyrimidine', 'Imidazole', 'Furan', 'Thiophene',
+                       'Pyrrole']
+    for name in no_shared_rings:
+        mol = Chemical(name).rdkitmol
+    #     print(name)
+        assert 0 == count_ring_ring_attatchments(mol)
+    
+
+    
     

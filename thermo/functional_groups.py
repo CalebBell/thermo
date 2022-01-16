@@ -62,6 +62,10 @@ Specific molecule matching functions
 .. autofunction:: thermo.functional_groups.is_amide
 .. autofunction:: thermo.functional_groups.is_branched_alkane
 
+Utility functions
+
+.. autofunction:: thermo.functional_groups.count_ring_ring_attatchments
+
 
 '''
 
@@ -76,7 +80,7 @@ __all__ = ['is_mercaptan', 'is_alkane', 'is_cycloalkane', 'is_alkene',
            'is_amine', 'is_primary_amine', 'is_secondary_amine',
            'is_tertiary_amine', 'is_ester', 'is_branched_alkane',
            'is_amide',
-           'is_organic', 'is_inorganic']
+           'is_organic', 'is_inorganic', 'count_ring_ring_attatchments']
 
 
 rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
@@ -999,3 +1003,42 @@ def is_inorganic(mol):
     True
     '''
     return not is_organic(mol)
+
+
+def count_ring_ring_attatchments(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, count the number
+    of of times a ring in the molecule is bonded with another ring
+    in the molecule.
+    
+    An easy explanation is cubane - each edge of the cube is a ring uniquely 
+    bonding with another ring; so this function returns twelve.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    ring_ring_attatchments : bool
+        The number of ring-ring bonds, [-].
+
+    Examples
+    --------
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> count_ring_ring_attatchments(MolFromSmiles('C12C3C4C1C5C2C3C45')) # doctest:+SKIP
+    12
+    '''
+    ri =  mol.GetRingInfo()
+    atom_rings = ri.AtomRings()
+    ring_count = len(atom_rings)
+    ring_ids = [frozenset(t) for t in atom_rings]
+    ring_ring_attatchments = 0
+    for i in range(ring_count):
+        for j in range(i+1, ring_count):
+#             print(ring_ids[i].intersection(ring_ids[j]))
+            shared_atoms = int(len(ring_ids[i].intersection(ring_ids[j])) > 0)
+            ring_ring_attatchments += shared_atoms
+    return ring_ring_attatchments
+    
+
