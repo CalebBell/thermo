@@ -695,7 +695,8 @@ def test_is_organic():
     #         assert is_organic(mol)
     #     except:
     #         print(CAS,c.name, c.smiles)
-        
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_count_ring_ring_attatchments():
     mol = Chemical('Dibenz[a,h]anthracene').rdkitmol
     assert 4 == count_ring_ring_attatchments(mol)
@@ -722,7 +723,8 @@ def test_count_ring_ring_attatchments():
         assert 0 == count_ring_ring_attatchments(mol)
     
 
-    
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_count_rings_attatched_to_rings():
     mol = Chemical('Dibenz[a,h]anthracene').rdkitmol
     assert 5 == count_rings_attatched_to_rings(mol)
