@@ -723,4 +723,20 @@ def test_count_ring_ring_attatchments():
     
 
     
+def test_count_rings_attatched_to_rings():
+    mol = Chemical('Dibenz[a,h]anthracene').rdkitmol
+    assert 5 == count_rings_attatched_to_rings(mol)
     
+    mol = Chemical('Pyrene').rdkitmol
+    assert 4 == count_rings_attatched_to_rings(mol)
+    
+    mol = Chemical('Benzo[a]pyrene').rdkitmol
+    assert 5 == count_rings_attatched_to_rings(mol)
+    
+    mol = Chemical('cubane').rdkitmol
+    assert 6 == count_rings_attatched_to_rings(mol)
+    assert 6 == count_rings_attatched_to_rings(mol, allow_neighbors=False)
+    
+    mol = Chemical('biphenyl').rdkitmol
+    assert 2 == count_rings_attatched_to_rings(mol)
+    assert 0 == count_rings_attatched_to_rings(mol, allow_neighbors=False)

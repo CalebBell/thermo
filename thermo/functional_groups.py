@@ -65,6 +65,7 @@ Specific molecule matching functions
 Utility functions
 
 .. autofunction:: thermo.functional_groups.count_ring_ring_attatchments
+.. autofunction:: thermo.functional_groups.count_rings_attatched_to_rings
 
 
 '''
@@ -80,7 +81,8 @@ __all__ = ['is_mercaptan', 'is_alkane', 'is_cycloalkane', 'is_alkene',
            'is_amine', 'is_primary_amine', 'is_secondary_amine',
            'is_tertiary_amine', 'is_ester', 'is_branched_alkane',
            'is_amide',
-           'is_organic', 'is_inorganic', 'count_ring_ring_attatchments']
+           'is_organic', 'is_inorganic', 'count_ring_ring_attatchments',
+           'count_rings_attatched_to_rings']
 
 
 rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
@@ -1007,7 +1009,7 @@ def is_inorganic(mol):
 
 def count_ring_ring_attatchments(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, count the number
-    of of times a ring in the molecule is bonded with another ring
+    of times a ring in the molecule is bonded with another ring
     in the molecule.
     
     An easy explanation is cubane - each edge of the cube is a ring uniquely 
@@ -1042,3 +1044,59 @@ def count_ring_ring_attatchments(mol):
     return ring_ring_attatchments
     
 
+def count_rings_attatched_to_rings(mol, allow_neighbors=True):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, count the number
+    of rings in the molecule that are attatched to another ring.
+    if `allow_neighbors` is True, any bond to another atom that is part of a
+    ring is allowed; if it is False, the rings have to share a wall.
+        
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+    allow_neighbors : bool
+        Whether or not to count neighboring rings or just ones sharing a wall, [-]
+
+    Returns
+    -------
+    rings_attatched_to_rings : bool
+        The number of rings bonded to other rings, [-].
+
+    Examples
+    --------
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> count_rings_attatched_to_rings(MolFromSmiles('C12C3C4C1C5C2C3C45')) # doctest:+SKIP
+    6
+    '''
+    ri =  mol.GetRingInfo()
+    atom_rings = ri.AtomRings()
+    ring_count = len(atom_rings)
+    ring_ids = [frozenset(t) for t in atom_rings]
+    rings_attatched_to_rings = 0
+    for i in range(ring_count):
+        attatched_to_ring = False
+        other_ring_atoms = set()
+        for j in range(ring_count):
+            if i != j:
+                other_ring_atoms.update(atom_rings[j])
+        
+        
+        for atom in atom_rings[i]:
+            if attatched_to_ring:
+                break
+                
+            if atom in other_ring_atoms:
+                attatched_to_ring = True
+                break
+            if allow_neighbors:
+                atom_obj = mol.GetAtomWithIdx(atom)
+                neighbors = atom_obj.GetNeighbors()
+                for n in neighbors:
+                    if n.GetIdx() in other_ring_atoms:
+                        attatched_to_ring = True
+                        break
+                if attatched_to_ring:
+                    break
+        if attatched_to_ring:
+            rings_attatched_to_rings+= 1
+    return rings_attatched_to_rings
