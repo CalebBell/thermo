@@ -1044,7 +1044,7 @@ def count_ring_ring_attatchments(mol):
     return ring_ring_attatchments
     
 
-def count_rings_attatched_to_rings(mol, allow_neighbors=True):
+def count_rings_attatched_to_rings(mol, allow_neighbors=True, atom_rings=None):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, count the number
     of rings in the molecule that are attatched to another ring.
     if `allow_neighbors` is True, any bond to another atom that is part of a
@@ -1056,6 +1056,8 @@ def count_rings_attatched_to_rings(mol, allow_neighbors=True):
         Molecule [-]
     allow_neighbors : bool
         Whether or not to count neighboring rings or just ones sharing a wall, [-]
+    atom_rings : rdkit.Chem.rdchem.RingInfo, optional
+        Internal parameter, used for performance only
 
     Returns
     -------
@@ -1068,14 +1070,16 @@ def count_rings_attatched_to_rings(mol, allow_neighbors=True):
     >>> count_rings_attatched_to_rings(MolFromSmiles('C12C3C4C1C5C2C3C45')) # doctest:+SKIP
     6
     '''
-    ri =  mol.GetRingInfo()
-    atom_rings = ri.AtomRings()
+    if atom_rings is None:
+        ring_info = mol.GetRingInfo()
+        atom_rings = ring_info.AtomRings()
     ring_count = len(atom_rings)
     ring_ids = [frozenset(t) for t in atom_rings]
     rings_attatched_to_rings = 0
+    other_ring_atoms = set()
     for i in range(ring_count):
+        other_ring_atoms.clear()
         attatched_to_ring = False
-        other_ring_atoms = set()
         for j in range(ring_count):
             if i != j:
                 other_ring_atoms.update(atom_rings[j])
