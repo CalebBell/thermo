@@ -37,15 +37,360 @@ mercaptan_chemicals = ['methanethiol', 'Ethanethiol', '1-Propanethiol', '2-Propa
                       'Thiophenol', 'Dimercaptosuccinic acid', 'Thioacetic acid',
                       'Glutathione', 'Cysteine', '2-Mercaptoethanol',
                       'Dithiothreitol', 'Furan-2-ylmethanethiol', '3-Mercaptopropane-1,2-diol',
-                       '3-Mercapto-1-propanesulfonic acid', '1-Hexadecanethiol', 'Pentachlorobenzenethiol']
+                      '1-Hexadecanethiol', 'Pentachlorobenzenethiol']
 
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_mercaptan():
-    for c in mercaptan_chemicals:
+    chemicals = [ '3-Mercapto-1-propanesulfonic acid'] + mercaptan_chemicals
+    for c in chemicals:
         assert is_mercaptan(Chemical(c).rdkitmol)
-        
-        
+       
+sulfide_chemicals = ['propylene sulfide', 'monochlorodimethyl sulfide', 'Dimethyl sulfide', 'Ethyl methyl sulfide', 'Diethyl sulfide', 'Methyl propyl sulfide', 'Ethyl propyl sulfide', 'Butyl methyl sulfide', 'Butyl ethyl sulfide', 'Methyl pentyl sulfide', 'Dibutyl sulfide', 'Dipentyl sulfide', 'Dihexyl sulfide', 'Diheptyl sulfide', 'Dioctyl sulfide', 'Isopropyl methyl sulfide', 'Tert-butyl methyl sulfide', 'Ethyl isopropyl sulfide', 'Diallyl sulfide', 'Tert-butyl ethyl sulfide', 'Methyl phenyl sulfide', 'Phenyl vinyl sulfide', 'Ethyl phenyl sulfide', 'Di-tert-butyl sulfide', 'Di-sec-butyl sulfide', 'Allyl phenyl sulfide', 'Diphenyl sulfide', 'Dibenzyl sulfide']
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_sulfide():
+    not_is_sulfide = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene',
+    '1-Decanethiol', '3-Pentanethiol', 'Di-phenyl disulfide'] + mercaptan_chemicals + disulfide_chemicals
+    for c in not_is_sulfide:
+        assert not is_sulfide(Chemical(c).rdkitmol)
+
+    for c in sulfide_chemicals:
+        assert is_sulfide(Chemical(c).rdkitmol)
+
+disulfide_chemicals = ['Di-phenyl disulfide', "Dimethyl disulfide", "Diethyl disulfide", "Diallyl disulfide", "Diisopropyl disulfide", "Dipentyl disulfide", "Dihexyl disulfide", "Diheptyl disulfide", "Dioctyl disulfide", "Dipropyl disulfide", "Di-tert-butyl disulfide", "Dibutyl disulfide", "Di-phenyl disulfide", "Dicyclohexyl disulfide", "Di-2-naphthyl disulfide"]
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_disulfide():
+    not_is_sulfide = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene',
+    '1-Decanethiol', '3-Pentanethiol'] + sulfide_chemicals
+    for c in not_is_sulfide:
+        assert not is_disulfide(Chemical(c).rdkitmol)
+
+    for c in disulfide_chemicals:
+        assert is_disulfide(Chemical(c).rdkitmol)
+
+sulfoxide_chemicals = ['Tetrahydrothiophene 1-oxide', 'Diphenyl sulfoxide', 'Methyl phenyl sulfoxide', 'Dimethyl sulfoxide', 'tert-Butyl methyl sulfoxide', '3-Chloropropyl octyl sulfoxide', 'Alliin', 'Alpha-Amanitin', 'Beta-Amanitin', 'Diethyl sulfoxide', 'Dimethyl sulfoxide', 'Fensulfothion', 'Mesoridazine', 'Methyl phenyl sulfoxide', 'Oxfendazole', 'Oxydemeton-methyl', 'Oxydisulfoton', 'Sulfoxide']
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_sulfoxide():
+    not_is_sulfide = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene',
+    '1-Decanethiol', '3-Pentanethiol'] + sulfide_chemicals + disulfide_chemicals + mercaptan_chemicals
+    for c in not_is_sulfide:
+        assert not is_sulfoxide(Chemical(c).rdkitmol)
+
+    for c in sulfoxide_chemicals:
+        assert is_sulfoxide(Chemical(c).rdkitmol)
+
+sulfone_chemicals = ['trifluoromethanesulfonyl fluoride',
+'4-(methylsulfonyl)benzonitrile',
+'2-chloro-4-(methylsulfonyl)aniline',
+'3-chloro-1-benzothiophene 1,1-dioxide',
+'diethyl sulfone',
+'picryl sulfone',
+'1,2,2,2-tetrafluoroethanesulfonyl fluoride',
+'isopropylsulfamoyl chloride',
+'bis(3-nitrophenyl)sulfone',
+'sulfone, hexyl vinyl',
+'3-chloropropanesulfonyl chloride',
+'5-chloro-2-((p-tolyl)sulphonyl)aniline',
+'5-bromo-2-methoxybenzenesulfonyl chloride',
+'1,4-butane sultone',
+'2,4,5-trichlorobenzenesulfonyl chloride',
+'dimethyl sulfate',
+'2,4-dimethylsulfolane',
+'3-sulfolene',
+'2-(phenylsulfonyl)ethanol',
+'pyrogallol sulfonphthalein',
+'2-methyl-5-nitrobenzenesulfonyl chloride',
+'peraktivin',
+"4,4'-sulfonyldibenzoic acid",
+'quinoline-8-sulfonyl chloride',
+'3-methylsulfolene',
+'methyl p-tolyl sulfone',
+'di-p-tolyl sulfone',
+'ethyl phenyl sulfone',
+'3-amino-4-chlorobenzenesulfonyl fluoride',
+'methanesulfonyl chloride',
+'2-chloroethanesulfonyl chloride',
+'(propylsulfonyl)benzene',
+'thiete sulfone',
+'2-(3-nitrophenylsulfonyl)ethanol',
+'phenyl t-butyl sulfone',
+'sulfolane',
+'3-bromo-1-benzothiophene 1,1-dioxide',
+'phenyl tribromomethyl sulfone',
+'2-thiophenesulfonyl chloride',
+'pentamethylene sulfone',
+'3,5-dichloro-2-hydroxybenzenesulfonyl chloride',
+'sulfone, phenyl p-tolyl',
+'tetradifon',
+'2-tosylethanol',
+'o-toluenesulfonyl chloride',
+'sulfone, p-tolyl 2,5-xylyl',
+'4-chloro-2-nitrophenyl methyl sulfone',
+'2,4-dimethyldiphenylsulfone',
+'3-(trifluoromethyl)benzenesulfonyl chloride',
+'monoacetyldapsone',
+'methyl 4-methanesulfonylbenzoate',
+'acedapsone',
+'4-(methylsulfonyl)-2-nitroaniline',
+"2,4'-dihydroxydiphenyl sulfone",
+'4-(methylsulfonyl)phenol',
+'n,n-bis(trifluoromethylsulfonyl)aniline',
+'2-(ethylsulfonyl)ethanol',
+'3-nitrobenzenesulfonyl chloride',
+'disyston sulfone',
+'2,5-dichlorothiophene-3-sulfonyl chloride',
+'phenyl styryl sulfone',
+'2-chloro-5-nitrobenzenesulfonyl chloride',
+'p-toluenesulfonhydrazide',
+'3-amino-4-methoxybenzenesulfonyl fluoride',
+'2,5-xylyl sulfone',
+'di-tert-butyl sulfone',
+'4-(trifluoromethoxy)benzenesulfonyl chloride',
+'benzyl phenyl sulfone',
+'benzyl methyl sulfone',
+'albendazole sulfone',
+'2,5-dichlorobenzenesulfonyl chloride',
+'tetrabromophenol blue',
+'2-(trifluoromethyl)benzenesulfonyl chloride',
+'2-(phenylsulfonyl)thiophene',
+'benzenesulfonyl chloride',
+'5-fluoro-2-methylbenzenesulfonyl chloride',
+'2,4,6-trimethyldiphenylsulphone',
+'2-naphthalenesulfonyl chloride',
+'mesityl sulfone',
+'4-(trifluoromethylsulfonyl)aniline',
+'cresol red',
+'benzenesulfonyl fluoride',
+'sulfonyl diamine',
+'trifluoromethanesulfonyl chloride',
+'2-(phenylsulfonyl)aniline',
+'2-nitrobenzenesulfonyl chloride',
+'sulfonyldiethanol',
+'2-bromobenzothiophene sulfone',
+'phenyl benzenesulfinyl sulfone',
+'4-(methylsulfonyl)benzaldehyde',
+'metanilyl fluoride, hydrochloride',
+'2-amino-4-(methylsulfonyl)phenol',
+'1-butanesulfonyl chloride',
+'1-(methylsulfonyl)-4-nitrobenzene',
+'3,4-dichlorobenzenesulfonyl chloride',
+'diallyl sulfone',
+'3-chloro-2-methylbenzenesulfonyl chloride',
+'di-n-octyl sulfone',
+'tinidazole',
+'sulfone, butyl ethyl',
+'sulfamoyldapsone',
+'4,5-dibromothiophene-2-sulfonyl chloride',
+'2-chloro-4-fluorobenzenesulfonyl chloride',
+'chlordetal',
+'2,4,5-trichlorobenzenesulfonohydrazide',
+'sulfonyldiacetic acid',
+'bromophenol blue',
+'2,4-dimethylbenzenesulfonyl chloride',
+'methyl phenyl sulfone',
+'octyl disulfone',
+'2-methyl-2-propenyl p-tolyl sulphone',
+'4-chloro-3-nitrobenzenesulfonyl chloride',
+'tosyl fluoride',
+'phorate sulfone',
+'4-chlorophenyl methyl sulfone',
+'4-bromobenzenesulfonyl chloride',
+'p-chlorophenyl 2-chloro-1,1,2-trifluoroethyl sulfone',
+'tosyl chloride',
+'divinyl sulfone',
+'4-chlorobenzenesulfonyl chloride',
+'bromocresol purple',
+'disulfone, dihexyl',
+'allyl methyl sulfone',
+'pipsyl chloride',
+'4-methoxybenzenesulfonyl chloride',
+'oxycarboxin',
+'bromothymol blue',
+'4-nitrobenzenesulfonyl chloride',
+'1-nitro-4-(phenylsulfonyl)benzene',
+'didecyl sulfone',
+'thietane 1,1-dioxide',
+'dapsone',
+'chlorophenol red',
+"disodium 4,4'-sulfonyldiphenolate",
+'demeton-s-methylsulphon',
+'4-(methylsulfonyl)aniline',
+'bromocresol green',
+'1-naphthalenesulfonyl chloride',
+'dimethyl sulfone',
+'4-fluorophenyl methyl sulfone',
+"dimethyl 4,4'-sulfonyldibenzoate",
+"n,n'-dimethylsulfamide",
+'methanesulfonyl fluoride',
+'2-bromobenzenesulfonyl chloride',
+'1-propanesulfonyl chloride',
+'methiocarb sulfone',
+'2-(methylsulphonyl)-2-methylpropane',
+'phenylmethylsulfonyl fluoride',
+'allyl phenyl sulfone',
+'thymol blue',
+'ethyl methyl sulfone',
+'diisobutyl sulfone',
+'2,4,6-triisopropylbenzenesulfonyl chloride',
+'2,3,4-trichlorobenzenesulfonyl chloride',
+'diphenyl disulfone',
+'4-fluorobenzenesulfonyl chloride',
+'tosylmethyl isocyanide',
+'p-(p-nitrophenylsulfonyl)aniline',
+'sulfonmethane',
+'phenol red',
+'dibutyl sulfone',
+'methyl vinyl sulfone',
+'benzenesulfonyl isocyanate',
+'1,3-dithiane 1,1,3,3-tetraoxide',
+'2-methylsulfonylethenylbenzene',
+'2,4-dixylylsulfone',
+'methyl pentyl sulfone',
+'dl-methionine sulfone',
+'methyl propyl sulfone',
+'sulfone, 3-butynyl p-tolyl',
+'2-(p-methoxyphenyl)vinylmethylsulfone',
+'sulfone, bis(2-bromoethyl)',
+'sulfone, 2-butynyl phenyl',
+'amical 48',
+'4-tert-butylbenzenesulfonyl chloride',
+'benzenesulfonyl hydrazide',
+'p-tolyl allyl sulfone',
+'3-chloro-4-fluorobenzenesulfonyl chloride',
+'2-(p-methylphenyl)vinylmethylsulfone',
+'ethyl isobutyl sulfone',
+'3-chlorobenzenesulfonyl chloride',
+'2,2-dichlorocyclopropyl phenyl sulfone',
+'2,3-dichlorothiophene-5-sulfonyl chloride',
+'4-hydroxy-3-nitrobenzenesulfonyl chloride',
+'dansyl chloride',
+'p-cyanophenyl sulfone',
+'2-(methylsulfonyl)ethanol',
+'dimethylsulfamoyl chloride',
+'2-nitro-4-(ethylsulfonyl)aniline',
+'2,5-dimethoxybenzenesulfonyl chloride',
+'fluoresone',
+'4-bromophenyl sulfone',
+'diiodomethyl m-tolyl sulfone',
+'3-nitrobenzenesulfonyl fluoride',
+'diiodomethyl o-tolyl sulfone',
+'pentafluorobenzenesulfonyl chloride',
+'phenylmethanesulfonyl chloride',
+'2-chlorobenzothiophene sulfone',
+'diiodomethyl benzyl sulfone',
+'ethyl isopropyl sulfone',
+'bis(phenylsulfonyl)methane',
+'phenyl propargyl sulfone',
+'amsacrine hydrochloride',
+'2-mesitylenesulfonyl chloride',
+'2-fluorobenzenesulfonyl chloride',
+'sulfone, butyl methyl',
+'ethyl vinyl sulfone',
+'2-(methylsulfonyl)benzenesulfonyl chloride',
+'thioxane sulfone',
+"4,4'-biphenyldisulfonyl chloride",
+'3-bromobenzenesulfonyl chloride',
+'isopropyl methyl sulfone',
+'dibenzyl sulfone',
+'bis(2-chloroethyl) sulfone',
+'2-chloroethyl phenyl sulfone',
+'benzene, dimethyl((methylphenyl)sulfonyl)-',
+"3,3'-sulfonyldianiline",
+'4-chlorophenyl phenyl sulfone',
+'fenthione sulfone',
+'2,2,2-trifluoroethanesulfonyl chloride',
+'ethanesulfonyl chloride',
+'sulfacetamide',
+'2,3,5,6-tetrachloro-4-(methylsulfonyl)pyridine',
+'chlorosulfona',
+'benzyl 2-chloroethyl sulfone',
+'2,4,6-trichlorobenzenesulfonyl chloride',
+'bis(4-chlorophenyl) sulfone',
+'4-(bromomethyl)benzenesulfonyl chloride',
+'propyl sulfone',
+"4,4'-sulfonyldiphenol",
+"2,2'-sulfonyldiphenol",
+'1-octanesulfonyl chloride',
+'4726-22-1',
+'sulfuryl chloride fluoride',
+"2,2'-sulphonylbisethyl diacetate",
+'2-(benzenesulfonyl)acetamide',
+'sulfonethylmethane',
+'3,4-epoxysulfolane',
+'2,4-dinitrobenzenesulfonyl chloride',
+'2-methoxy-5-methylbenzenesulfonyl chloride',
+'thiazosulfone',
+'promin',
+'demeton-sulfone',
+'3-amino-4-[(4-methylphenyl)sulfonyl]benzenesulfonic acid',
+'diphenyl sulfone',
+'cheirolin',
+'1-dodecanesulfonyl chloride',
+'benzenesulphonylacetone',
+'bis[4-chlorobenzyl]sulfone',
+'2-chlorobenzenesulfonyl chloride',
+'chloromethanesulfonyl chloride',
+'diisopropyl sulfone',
+'p-sulfanilylphenol',
+'dipyrone',
+'diformyldapsone',
+'propane, 2-[(2-chloroethyl)sulfonyl]-2-methyl-',
+'aldoxycarb',
+'3,5-dichlorobenzenesulfonyl chloride',
+'4-bromobenzenesulfonohydrazide',
+'2,4-dichlorobenzenesulfonyl chloride',
+'2,5-dimethylbenzenesulfonyl chloride',
+'3-iodosulfolane',
+'2,3,5,6-tetramethylbenzenesulfonyl chloride',
+'phenyl vinyl sulfone',
+'5-chlorothiophene-2-sulfonyl chloride',
+'4-fluorophenyl sulfone',
+'p-tosylethylene',
+'4-(n-butoxy)benzenesulfonyl chloride',
+'3-methyl-1-benzothiophene 1,1-dioxide',
+'dibenzothiophene sulfone',
+'4-fluorophenyl phenyl sulfone',
+'2,6-dichlorobenzenesulfonyl chloride']
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_sulfone():
+    not_is_sulfone = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene',
+    '1-Decanethiol', '3-Pentanethiol']+ sulfide_chemicals + disulfide_chemicals + mercaptan_chemicals + sulfoxide_chemicals
+    for c in not_is_sulfone:
+        assert not is_sulfone(Chemical(c).rdkitmol)
+    chemicals = sulfone_chemicals + ['Chlormezanone', 'Davicil', 'Methylsulfonylmethane', 'Nifurtimox', 'Oxycarboxin', 'Sulfolane', 'Sulfolene', 'Sulfonmethane', 'Tinidazole', 'Trional', 'Vinyl sulfone']
+
+    for c in chemicals:
+        assert is_sulfone(Chemical(c).rdkitmol)
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_siloxane():
+    not_siloxanes = ['CO2', 'water', 'toluene', 'methane','butane', 'cyclopentane', 'benzene']
+    for c in not_siloxanes:
+        assert not is_siloxane(Chemical(c).rdkitmol)
+    
+    is_siloxanes = ['dodecasiloxane, hexacosamethyl-',
+                    'tetradecamethylhexasiloxane',
+                    'decamethylcyclopentasiloxane',
+                    'hexamethylcyclotrisiloxane',
+                    'hexamethyldisiloxane',
+                    'decamethyltetrasiloxane',
+                    'dodecamethylpentasiloxane',
+                    'octamethylcyclotetrasiloxane',
+                    'cyclooctasiloxane, hexadecamethyl-',
+                    'octasiloxane, octadecamethyl-',
+                    'octamethyltrisiloxane',
+                    'icosamethylnonasiloxane',
+                    'dodecamethylcyclohexasiloxane',
+                    'heptasiloxane, hexadecamethyl-']
+    
+    for c in is_siloxanes:
+        assert is_siloxane(Chemical(c).rdkitmol)
+
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_alkane():
@@ -297,55 +642,89 @@ def test_is_haloalkane():
 
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_nitro():
+    not_is_nitro = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
+    for c in not_is_nitro:
+        assert not is_nitro(Chemical(c).rdkitmol)
+    
+    nitro_chemicals = ['Nitromethane',
+                       '1-Nitropyrene', '2,4-Dinitroaniline', '2-Nitrofluorene', '3-Nitrobenzanthrone', 
+                       '4-Nitropyridine-N-oxide', '4-Nitroquinoline 1-oxide', '5-Nitro-2-propoxyaniline',
+                       '7-Nitroindazole', 'Acifluorfen', 'Aclonifen', 'Aristolochic acid', 'Benfluralin',
+                       'Beta-Nitropropionic acid', 'Beta-Nitrostyrene', 'Bifenox', 'Bronidox', 'Bronopol',
+                       'Chloropicrin', 'CNQX', 'DMDNB', 'DNQX', 'Fluazinam', 'NBQX', 'Nitrocyclohexane', 
+                       'Nitroethylene', 'Nitrofen', 'Nitrotyrosine', 'Nitroxinil', 'Nitroxoline', 
+                       'Oxamniquine', 'Sivifene', 'Trinitroethylorthocarbonate']
+    for c in nitro_chemicals:
+        assert is_nitro(Chemical(c).rdkitmol)
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_amine():
     not_is_amine = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
     for c in not_is_amine:
         assert not is_amine(Chemical(c).rdkitmol)
     
-    amine_chemicals = ['methylamine', 'ethylamine', 'propylamine', 'butylamine', 'pentylamine', 
-                       'hexylamine', 'heptylamine', 'octylamine', 'nonylamine', 'decylamine', 
-                       'Ethanolamine',
-                       
-                       'dimethylamine', 'diethylamine',    'Diethanolamine',
-                       
-                       'trimethylamine', 'triethylamine', 'Methyl diethanolamine']
-    for c in amine_chemicals:
+    chemicals = ['tetramethylthiuram disulfide'] + amine_chemicals
+    # chemicals = amine_chemicals
+    for c in chemicals:
         assert is_amine(Chemical(c).rdkitmol)
+
+primary_amine_chemicals = ['methylamine', 'ethylamine', 'propylamine', 'butylamine', 'pentylamine', 
+                   'hexylamine', 'heptylamine', 'octylamine', 'nonylamine', 'decylamine', 
+                   'Ethanolamine', 'Aniline', 'o-Phenylenediamine', 'm-phenylenediamine',
+                   'p-phenylenediamine', 'o-toluidine ', 'm-toluidine ', 'p-toluidine ',
+                   '2,4-Diaminotoluene', '2,6-Diaminotoluene', '2,5-Diaminotoluene',
+                   '1-Naphthylamine', '2-Naphthylamine',
+                   '2-Aminopyridine', '3-Aminopyridine', '4-Aminopyridine','Cytosine',
+                   '4-Aminoquinoline', '8-Aminoquinoline', 'Primaquine',
+                   '2-Aminopurine', 'Guanine',
+                   '2-Aminoacridine', '3-Aminoacridine', '4-Aminoacridine', '9-Aminoacridine',
+                   ]
+secondary_amine_chemicals = ['dimethylamine', 'diethylamine', 'Diethanolamine',]
+tertiary_amine_chemicals = ['trimethylamine', 'triethylamine', 'Methyl diethanolamine', "Wurster's blue",
+                            #"Prodan" not in database
+                            ]
+amine_chemicals = ['methylamine', 'ethylamine', 'propylamine', 'butylamine', 'pentylamine', 
+                   'hexylamine', 'heptylamine', 'octylamine', 'nonylamine', 'decylamine', 
+                   'Ethanolamine',
+                   
+                   'dimethylamine', 'diethylamine',    'Diethanolamine','Aniline',
+                   
+                   'trimethylamine', 'triethylamine', 'Methyl diethanolamine']
+amine_chemicals = amine_chemicals + primary_amine_chemicals + secondary_amine_chemicals + tertiary_amine_chemicals
+# test_is_amine()
 
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_primary_amine():
-    not_is_primary_amine = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
+    not_is_primary_amine = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] + secondary_amine_chemicals + tertiary_amine_chemicals
     for c in not_is_primary_amine:
         assert not is_primary_amine(Chemical(c).rdkitmol)
-    
-    primary_amine_chemicals = ['methylamine', 'ethylamine', 'propylamine', 'butylamine', 'pentylamine', 
-                       'hexylamine', 'heptylamine', 'octylamine', 'nonylamine', 'decylamine', 
-                       'Ethanolamine'
-                       ]
-    for c in primary_amine_chemicals:
+    chemicals = primary_amine_chemicals + ['Dimethyl-4-phenylenediamine', 'Congo red']
+    for c in chemicals:
         assert is_primary_amine(Chemical(c).rdkitmol)
 
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_secondary_amine():
-    not_is_secondary_amine = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
+    not_is_secondary_amine = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] + tertiary_amine_chemicals + primary_amine_chemicals
     for c in not_is_secondary_amine:
         assert not is_secondary_amine(Chemical(c).rdkitmol)
     
-    secondary_amine_chemicals = ['dimethylamine', 'diethylamine', 'Diethanolamine',]
     for c in secondary_amine_chemicals:
         assert is_secondary_amine(Chemical(c).rdkitmol)
 
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_tertiary_amine():
-    not_is_tertiary_amine = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
+    not_is_tertiary_amine = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] + primary_amine_chemicals + secondary_amine_chemicals
+
     for c in not_is_tertiary_amine:
         assert not is_tertiary_amine(Chemical(c).rdkitmol)
     
-    tertiary_amine_chemicals = ['trimethylamine', 'triethylamine', 'Methyl diethanolamine']
-    for c in tertiary_amine_chemicals:
+    chemicals = tertiary_amine_chemicals + ['tetramethylthiuram disulfide']
+    for c in chemicals:
         assert is_tertiary_amine(Chemical(c).rdkitmol)
 
 @pytest.mark.rdkit
@@ -742,3 +1121,89 @@ def test_count_rings_attatched_to_rings():
     mol = Chemical('biphenyl').rdkitmol
     assert 2 == count_rings_attatched_to_rings(mol)
     assert 0 == count_rings_attatched_to_rings(mol, allow_neighbors=False)
+    
+    
+boronic_acids = ['4-ethylphenylboronic acid',
+ '2-fluorophenylboronic acid',
+ '4-borono-dl-phenylalanine',
+ '3-formylphenylboronic acid',
+ '3-hydroxyphenylboronic acid',
+ 'oleyl borate',
+ '3,5-bis(trifluoromethyl)phenylboronic acid',
+ '3-iodophenylboronic acid',
+ '1-naphthaleneboronic acid',
+ 'formaldehyde, polymer with phenol, borate',
+ '3-methoxyphenylboronic acid',
+ '1,4-benzenediboronic acid',
+ '3-methylphenylboronic acid',
+ '4-phenoxyphenylboronic acid',
+ 'quinoline-8-boronic acid',
+ 'methylboronic acid',
+ 'isooctyl borate',
+ 'thianthrene-1-boronic acid',
+ '3-(trifluoromethoxy)phenylboronic acid',
+ '3-carboxyphenylboronic acid',
+ '3-(trifluoromethyl)phenylboronic acid',
+ '2-methoxyphenylboronic acid',
+ '4-vinylphenylboronic acid',
+ '4-(methylthio)phenylboronic acid',
+ '3-aminophenylboronic acid monohydrate',
+ '4-fluorophenylboronic acid',
+ 'thiophene-2-boronic acid',
+ '4-chlorophenylboronic acid',
+ '2-methylphenylboronic acid',
+ 'isobutaneboronic acid',
+ 'thiophene-3-boronic acid',
+ '5-methyl-2-(propan-2-yl)cyclohexyl dihydrogen borate',
+ 'nonylboronic acid',
+ '4-bromophenylboronic acid',
+ '3-fluorophenylboronic acid',
+ '1-propanol, 3-((3-(boronooxy)propyl)amino)-',
+ 'ethylboronic acid',
+ '3-benzyloxybenzeneboronic acid',
+ 'octadecylboronic acid',
+ '4-benzyloxyphenylboronic acid',
+ '4-methoxyphenylboronic acid',
+ 'biphenyl-3-boronic acid',
+ '4-tolylboronic acid',
+ '2,6-dimethylphenylboronic acid',
+ '3-bromophenylboronic acid',
+ '5-bromothiophene-2-boronic acid',
+ '3-nitrophenylboronic acid',
+ '3-chlorophenylboronic acid',
+ '5-chlorothiophene-2-boronic acid',
+ '3-cyanophenylboronic acid',
+ '4-cyanophenylboronic acid',
+ '3,4-dichlorophenylboronic acid',
+ '2,3-difluorophenylboronic acid',
+ 'phenylboronic acid',
+ '2,4-difluorophenylboronic acid',
+ '2-aminoethyl dihydrogen borate',
+ '2,5-difluorophenylboronic acid',
+ '4-iodophenylboronic acid',
+ '2,6-difluorophenylboronic acid',
+ 'isoquinolin-1-ylboronic acid',
+ '3,4-difluorophenylboronic acid',
+ '2-acetylphenylboronic acid',
+ '2,5-dimethoxyphenylboronic acid',
+ '2,6-dimethoxyphenylboronic acid',
+ 'ethyl borate',
+ 'propylboronic acid',
+ '4-(dimethylamino)phenylboronic acid',
+ '3-acetylphenylboronic acid',
+ 'styrylboronic acid',
+ '1-butaneboronic acid',
+ '3,4-dimethylphenylboronic acid',
+ '4-carboxyphenylboronic acid',
+ '3,5-dimethylphenylboronic acid',
+ '4-ethoxyphenylboronic acid']
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_boronic_acids():
+    not_boronic_acid = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
+    for c in not_boronic_acid:
+        assert not is_boronic_acid(Chemical(c).rdkitmol)
+    
+    
+    for c in boronic_acids:
+        assert is_boronic_acid(Chemical(c).rdkitmol)

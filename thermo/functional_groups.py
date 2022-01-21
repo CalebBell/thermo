@@ -33,8 +33,10 @@ Specific molecule matching functions
 
 .. autofunction:: thermo.functional_groups.is_organic
 .. autofunction:: thermo.functional_groups.is_inorganic
+
+
 .. autofunction:: thermo.functional_groups.is_alkane
-.. autofunction:: thermo.functional_groups.is_mercaptan
+
 .. autofunction:: thermo.functional_groups.is_cycloalkane
 .. autofunction:: thermo.functional_groups.is_alkene
 .. autofunction:: thermo.functional_groups.is_alkyne
@@ -47,20 +49,41 @@ Specific molecule matching functions
 .. autofunction:: thermo.functional_groups.is_anhydride
 .. autofunction:: thermo.functional_groups.is_ether
 .. autofunction:: thermo.functional_groups.is_phenol
-.. autofunction:: thermo.functional_groups.is_nitrile
 .. autofunction:: thermo.functional_groups.is_carboxylic_acid
 .. autofunction:: thermo.functional_groups.is_haloalkane
 .. autofunction:: thermo.functional_groups.is_fluoroalkane
 .. autofunction:: thermo.functional_groups.is_chloroalkane
 .. autofunction:: thermo.functional_groups.is_bromoalkane
 .. autofunction:: thermo.functional_groups.is_iodoalkane
+.. autofunction:: thermo.functional_groups.is_ester
+.. autofunction:: thermo.functional_groups.is_branched_alkane
+
+Sulfur Groups
+
+.. autofunction:: thermo.functional_groups.is_mercaptan
+.. autofunction:: thermo.functional_groups.is_sulfide
+.. autofunction:: thermo.functional_groups.is_disulfide
+.. autofunction:: thermo.functional_groups.is_sulfoxide
+.. autofunction:: thermo.functional_groups.is_sulfone
+
+Nitro Groups
+
+.. autofunction:: thermo.functional_groups.is_nitrile
+.. autofunction:: thermo.functional_groups.is_nitro
+.. autofunction:: thermo.functional_groups.is_amide
 .. autofunction:: thermo.functional_groups.is_amine
 .. autofunction:: thermo.functional_groups.is_primary_amine
 .. autofunction:: thermo.functional_groups.is_secondary_amine
 .. autofunction:: thermo.functional_groups.is_tertiary_amine
-.. autofunction:: thermo.functional_groups.is_ester
-.. autofunction:: thermo.functional_groups.is_amide
-.. autofunction:: thermo.functional_groups.is_branched_alkane
+
+Silicon Groups
+
+.. autofunction:: thermo.functional_groups.is_siloxane
+
+Boron Groups
+
+.. autofunction:: thermo.functional_groups.is_boronic_acid
+
 
 Utility functions
 
@@ -72,7 +95,10 @@ Utility functions
 
 from __future__ import division
 
-__all__ = ['is_mercaptan', 'is_alkane', 'is_cycloalkane', 'is_alkene',
+__all__ = ['is_mercaptan', 'is_sulfide', 'is_disulfide', 'is_sulfoxide',
+           'is_sulfone',
+           'is_siloxane',
+           'is_alkane', 'is_cycloalkane', 'is_alkene',
            'is_alkyne', 'is_aromatic', 'is_alcohol', 'is_polyol',
            'is_acid', 'is_ketone', 'is_aldehyde', 'is_anhydride',
            'is_ether', 'is_phenol', 'is_nitrile', 'is_carboxylic_acid',
@@ -80,7 +106,8 @@ __all__ = ['is_mercaptan', 'is_alkane', 'is_cycloalkane', 'is_alkene',
            'is_bromoalkane', 'is_iodoalkane',
            'is_amine', 'is_primary_amine', 'is_secondary_amine',
            'is_tertiary_amine', 'is_ester', 'is_branched_alkane',
-           'is_amide',
+           'is_amide', 'is_nitro',
+           'is_boronic_acid',
            'is_organic', 'is_inorganic', 'count_ring_ring_attatchments',
            'count_rings_attatched_to_rings']
 
@@ -113,7 +140,6 @@ def substructures_are_entire_structure(mol, matches, exclude_Hs=True):
 
 
 
-mercaptan_smarts = '[#16X2H]'
 
 mol_smarts_cache = {}
 def smarts_mol_cache(smarts):
@@ -158,9 +184,10 @@ def is_amide(mol):
             return True
     return False
 
+mercaptan_smarts = '[#16X2H]'
 def is_mercaptan(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule has a mercaptan R-SH group.
+    molecule has a mercaptan R-SH group. This is also called a thiol.
 
     Parameters
     ----------
@@ -183,6 +210,130 @@ def is_mercaptan(mol):
     hits = mol.GetSubstructMatches(smarts_mol_cache(mercaptan_smarts))
     return len(hits) > 0
 
+sulfide_smarts = '[!#16][#16X2H0][!#16]'
+def is_sulfide(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a sulfide. This group excludes disulfides.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_sulfide : bool
+        Whether or not the compound is a sulfide, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_sulfide(MolFromSmiles('CSC')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(sulfide_smarts))
+    return bool(matches)
+
+disulfide_smarts = '[#16X2H0][#16X2H0]'
+def is_disulfide(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a disulfide. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_disulfide : bool
+        Whether or not the compound is a disulfide, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_disulfide(MolFromSmiles('CSSC')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(disulfide_smarts))
+    return bool(matches)
+
+sulfoxide_smarts = '[$([#16X3]=[OX1]),$([#16X3+][OX1-])]'
+def is_sulfoxide(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a sulfoxide. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_sulfoxide : bool
+        Whether or not the compound is a sulfoxide, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_sulfoxide(MolFromSmiles('CS(=O)C')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(sulfoxide_smarts))
+    return bool(matches)
+
+sulfone_smarts = '[$([#16X4](=[OX1])=[OX1]),$([#16X4+2]([OX1-])[OX1-])]'
+def is_sulfone(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a sulfone. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_sulfone : bool
+        Whether or not the compound is a sulfone, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_sulfone(MolFromSmiles('CS(=O)(=O)C')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(sulfone_smarts))
+    return bool(matches)
+
+siloxane_smarts = '[Si][O][Si]'
+def is_siloxane(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a siloxane. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_siloxane : bool
+        Whether or not the compound is a siloxane, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_siloxane(MolFromSmiles('C[Si]1(O[Si](O[Si](O[Si](O1)(C)C)(C)C)(C)C)C')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(siloxane_smarts))
+    return bool(matches)
 
 alkane_smarts = '[CX4]' 
 def is_alkane(mol):
@@ -322,6 +473,33 @@ def is_aromatic(mol):
     # https://smarts.plus/smartsview/6011201068306235ac861ddaa794a4559576e23361a5437373562ae3cc45
     matches = mol.GetSubstructMatches(smarts_mol_cache(aromatic_smarts))
     return bool(matches)
+
+boronic_acid_smarts = '[BX3]([OX2H])([OX2H])'
+
+def is_boronic_acid(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule has any boronic acid functional groups.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_boronic_acid : bool
+        Whether or not the compound is an boronic acid, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_boronic_acid(MolFromSmiles('B(C)(O)O')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(boronic_acid_smarts))
+    return bool(matches)
+
 
 
 alcohol_smarts = '[#6][OX2H]'
@@ -560,6 +738,31 @@ def is_nitrile(mol):
     matches = mol.GetSubstructMatches(smarts_mol_cache(nitrile_smarts))
     return bool(matches)
 
+nitro_smarts = '[$([NX3](=O)=O),$([NX3+](=O)[O-])][!#8]'
+def is_nitro(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a nitro.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_nitro : bool
+        Whether or not the compound is a nitro, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_nitro(MolFromSmiles('C[N+](=O)[O-]')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(nitro_smarts))
+    return bool(matches)
+
 carboxylic_acid_smarts = '[CX3](=O)[OX2H1]'
 
 def is_carboxylic_acid(mol):
@@ -714,32 +917,9 @@ def is_iodoalkane(mol):
     matches = mol.GetSubstructMatches(smarts_mol_cache(iodoalkane_smarts))
     return bool(matches)
 
-amine_smarts = '[$([NH2][CX4]),$([$([NH]([CX4])[CX4]);!$([NH]([CX4])[CX4][O,N]);!$([NH]([CX4])[CX4][O,N])]),$([ND3]([CX4])([CX4])[CX4])]'
-def is_amine(mol):
-    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a amine.
-    
-    Parameters
-    ----------
-    mol : rdkit.Chem.rdchem.Mol
-        Molecule [-]
-
-    Returns
-    -------
-    is_amine : bool
-        Whether or not the compound is a amine, [-].
-
-    Examples
-    --------
-
-    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
-    >>> is_amine(MolFromSmiles('CN')) # doctest:+SKIP
-    True
-    '''
-    matches = mol.GetSubstructMatches(smarts_mol_cache(amine_smarts))
-    return bool(matches)
-
 primary_amine_smarts = '[CX4][NH2]'
+primary_amine_smarts_aliphatic = '[NX3H2+0,NX4H3+;!$([N][!C]);!$([N]*~[#7,#8,#15,#16])]'
+primary_amine_smarts_aromatic = '[NX3H2+0,NX4H3+]c'
 def is_primary_amine(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a primary amine.
@@ -761,8 +941,11 @@ def is_primary_amine(mol):
     >>> is_primary_amine(MolFromSmiles('CN')) # doctest:+SKIP
     True
     '''
-    matches = mol.GetSubstructMatches(smarts_mol_cache(primary_amine_smarts))
-    return bool(matches)
+    for s in (primary_amine_smarts, primary_amine_smarts_aliphatic, primary_amine_smarts_aromatic):
+        matches = mol.GetSubstructMatches(smarts_mol_cache(s))
+        if bool(matches):
+            return True
+    return False
 
 secondary_amine_smarts = '[$([NH]([CX4])[CX4]);!$([NH]([CX4])[CX4][O,N]);!$([NH]([CX4])[CX4][O,N])]'
 def is_secondary_amine(mol):
@@ -790,6 +973,10 @@ def is_secondary_amine(mol):
     return bool(matches)
 
 tertiary_amine_smarts = '[ND3]([CX4])([CX4])[CX4]'
+tertiary_amine_smarts_aliphatic = "[NX3H0+0,NX4H1+;!$([N][!c]);!$([N]*~[#7,#8,#15,#16])]"
+tertiary_amine_smarts_aromatic = "[NX3H0+0,NX4H1+;!$([N][!C]);!$([N]*~[#7,#8,#15,#16])]"
+tertiary_amine_smarts_mixed = '[NX3H0+0,NX4H1+;$([N]([c])([C])[#6]);!$([N]*~[#7,#8,#15,#16])]'
+tertiary_amine_1 = '[#6]-[#7](-[#6])-[#6]'
 def is_tertiary_amine(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a tertiary amine.
@@ -811,8 +998,46 @@ def is_tertiary_amine(mol):
     >>> is_tertiary_amine(MolFromSmiles('CN(C)C')) # doctest:+SKIP
     True
     '''
-    matches = mol.GetSubstructMatches(smarts_mol_cache(tertiary_amine_smarts))
-    return bool(matches)
+    for s in (tertiary_amine_smarts, tertiary_amine_smarts_aliphatic, tertiary_amine_smarts_aromatic, tertiary_amine_smarts_mixed, tertiary_amine_1):
+        matches = mol.GetSubstructMatches(smarts_mol_cache(s))
+        if bool(matches):
+            return True
+    return False
+
+
+amine_smarts = '[$([NH2][CX4]),$([$([NH]([CX4])[CX4]);!$([NH]([CX4])[CX4][O,N]);!$([NH]([CX4])[CX4][O,N])]),$([ND3]([CX4])([CX4])[CX4])]'
+amine_smarts = '[NX3+0,NX4+;!$([N]~[!#6]);!$([N]*~[#7,#8,#15,#16])]'
+all_amine_smarts = (amine_smarts, tertiary_amine_smarts, tertiary_amine_smarts_aliphatic,
+              tertiary_amine_smarts_aromatic, tertiary_amine_smarts_mixed, tertiary_amine_1,
+              primary_amine_smarts, primary_amine_smarts_aliphatic, primary_amine_smarts_aromatic)
+
+def is_amine(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a amine.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_amine : bool
+        Whether or not the compound is a amine, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_amine(MolFromSmiles('CN')) # doctest:+SKIP
+    True
+    '''
+    for s in all_amine_smarts:
+        matches = mol.GetSubstructMatches(smarts_mol_cache(s))
+        if bool(matches):
+            return True
+    return False
+
 
 # ester_smarts = '[#6][CX3](=O)[OX2H0][#6]'
 # ester_smarts = '[$([#6]);!$(C=[O,S,N])]C(=O)O[$([#6]);!$(C=[O,S,N])]'
