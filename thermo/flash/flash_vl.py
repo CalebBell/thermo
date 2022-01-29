@@ -29,6 +29,7 @@ from .flash_utils import (
     nonlin_2P_newton,
     WILSON_GUESS,
     IDEAL_PSAT,
+    LAST_CONVERGED,
     TB_TC_GUESS,
     dew_bubble_Michelsen_Mollerup,
     dew_bubble_newton_zs,
@@ -147,9 +148,13 @@ class FlashVL(Flash):
         (`T`, `P`, `V`) spec and one (`H`, `S`, `G`, `U`, `A`) spec using a
         full newton solver, [-]
     TPV_HSGUA_NEWTON_MAXITER : float
-        Absolute tolerance in the (`H`, `S`, `G`, `U`, `A`) spec when
+        Maximum number of iterations when
         converging a flash with one (`T`, `P`, `V`) spec and one (`H`, `S`,
         `G`, `U`, `A`) spec using full newton solver, [-]
+    TPV_HSGUA_SECANT_MAXITER : float
+        Maximum number of iterations when
+        converging a flash with one (`T`, `P`, `V`) spec and one (`H`, `S`,
+        `G`, `U`, `A`) spec using a secant solver, [-]
     HSGUA_NEWTON_ANALYTICAL_JAC : bool
         Whether or not to calculate the full newton jacobian analytically or
         numerically; this would need to be set to False if the phase objects
@@ -296,6 +301,7 @@ class FlashVL(Flash):
     TPV_HSGUA_NEWTON_MAXITER = 1000
     TPV_HSGUA_NEWTON_SOLVER = 'hybr'
     HSGUA_NEWTON_ANALYTICAL_JAC = True
+    TPV_HSGUA_SECANT_MAXITER = 1000
 
     solids = None
     skip_solids = True
@@ -773,34 +779,39 @@ class FlashVL(Flash):
                     return True
                 return False
 
-        try:
-            solutions_1P = []
-            G_min = 1e100
-            results_G_min_1P = None
-            for phase in self.unique_phases:
-                try:
-                    T, P, phase, iterations, err = solve_PTV_HSGUA_1P(
-                        phase, zs, fixed_val, spec_val, fixed_var=fixed_var,
-                        spec=spec, iter_var=iter_var, constants=constants, 
-                        correlations=correlations
-                    )
-                    G = fun(phase)
-                    new = [T, phase, iterations, err, G]
-                    if results_G_min_1P is None or selection_fun_1P(new, results_G_min_1P):
-                        G_min = G
-                        results_G_min_1P = new
+        if 0:
+            try:
+                solutions_1P = []
+                G_min = 1e100
+                results_G_min_1P = None
+                last_conv = None
+                if hot_start is not None:
+                    last_conv = hot_start.value(iter_var)
+                for phase in self.unique_phases:
+                    try:
+                        T, P, phase, iterations, err = solve_PTV_HSGUA_1P(
+                            phase, zs, fixed_val, spec_val, fixed_var=fixed_var,
+                            spec=spec, iter_var=iter_var, constants=constants,
+                            correlations=correlations, last_conv=last_conv
+                        )
+                        G = fun(phase)
+                        new = [T, phase, iterations, err, G]
+                        if results_G_min_1P is None or selection_fun_1P(new, results_G_min_1P):
+                            G_min = G
+                            results_G_min_1P = new
 
-                    solutions_1P.append(new)
-                except Exception as e:
-#                    print(e)
-                    solutions_1P.append(None)
-        except:
-            pass
+                        solutions_1P.append(new)
+                    except Exception as e:
+    #                    print(e)
+                        solutions_1P.append(None)
+            except:
+                pass
 
         if 1:
             try:
                 res, flash_convergence = self.solve_PT_HSGUA_NP_guess_bisect(zs, fixed_val, spec_val,
-                                                               fixed_var=fixed_var, spec=spec, iter_var=iter_var)
+                                                               fixed_var=fixed_var, spec=spec, iter_var=iter_var,
+                                                                             hot_start=hot_start)
                 return None, res.phases, [], res.betas, flash_convergence
             except:
                 g, ls, ss, betas, flash_convergence = self.solve_PT_HSGUA_NP_guess_newton_2P(zs, fixed_val, spec_val,
@@ -874,7 +885,7 @@ class FlashVL(Flash):
 
 
     def solve_PT_HSGUA_NP_guess_bisect(self, zs, fixed_val, spec_val,
-                                       fixed_var='P', spec='H', iter_var='T'):
+                                       fixed_var='P', spec='H', iter_var='T', hot_start=None):
         phases = self.phases
         constants = self.constants
         correlations = self.correlations
@@ -883,23 +894,27 @@ class FlashVL(Flash):
         init_methods = [SHAW_ELEMENTAL, IDEAL_WILSON]
         guess = None
 
-        for method in init_methods:
-            try:
-                guess, VF, xs, ys = TPV_solve_HSGUA_guesses_VL(
-                    zs, method, constants, correlations,
-                    fixed_val, spec_val,
-                    iter_var=iter_var, fixed_var=fixed_var, spec=spec,
-                    maxiter=50, xtol=1E-5, ytol=None,
-                    bounded=False, min_bound=min_bound, max_bound=max_bound,
-                    user_guess=None, last_conv=None, T_ref=298.15,
-                    P_ref=101325.0
-                )
-                break
-            except NotImplementedError:
-                continue
-            except Exception as e:
-                #print(e)
-                pass
+        last_conv = None
+        if hot_start is not None:
+            guess = hot_start.value(iter_var)
+        else:
+            for method in init_methods:
+                try:
+                    guess, VF, xs, ys = TPV_solve_HSGUA_guesses_VL(
+                        zs, method, constants, correlations,
+                        fixed_val, spec_val,
+                        iter_var=iter_var, fixed_var=fixed_var, spec=spec,
+                        maxiter=50, xtol=1E-5, ytol=None,
+                        bounded=False, min_bound=min_bound, max_bound=max_bound,
+                        user_guess=None, last_conv=last_conv, T_ref=298.15,
+                        P_ref=101325.0
+                    )
+                    break
+                except NotImplementedError:
+                    continue
+                except Exception as e:
+                    #print(e)
+                    pass
         if guess is None:
             if iter_var == 'T':
                 guess = 298.15
@@ -923,7 +938,7 @@ class FlashVL(Flash):
         ytol = abs(spec_val)*self.TPV_HSGUA_BISECT_YTOL
         sln_val = secant(to_solve, guess, xtol=self.TPV_HSGUA_BISECT_XTOL, ytol=ytol,
                          require_xtol=self.TPV_HSGUA_BISECT_YTOL_ONLY, require_eval=True, bisection=True,
-                         low=min_bound, high=max_bound)
+                         low=min_bound, high=max_bound, maxiter=self.TPV_HSGUA_SECANT_MAXITER)
         return sln[0], {'iterations': iterations, 'err': sln[1]}
 
 

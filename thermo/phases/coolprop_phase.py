@@ -104,6 +104,9 @@ def set_coolprop_constants():
     def caching_state_CoolProp(backend, fluid, spec0, spec1, spec_set, phase, zs):
         # Pretty sure about as optimized as can get!
         # zs should be a tuple, not a list
+        if type(fluid) is list:
+            fluid = '&'.join(fluid)
+        
         key = (backend, fluid, spec0, spec1, spec_set, phase, zs)
         if key in caching_states_CoolProp:
             AS = caching_states_CoolProp[key]
@@ -204,9 +207,12 @@ class CoolPropPhase(Phase):
         self.backend = backend
         self.fluid = fluid
 
-        self.skip_comp = skip_comp = (backend in ('IF97') or fluid in ('water') or '&' not in fluid)
-        if zs is None:
-            zs = [1.0]
+        if type(fluid) is list:
+            self.skip_comp = skip_comp = False
+        else:
+            self.skip_comp = skip_comp = (backend in ('IF97') or fluid in ('water') or '&' not in fluid)
+            if zs is None:
+                zs = [1.0]
         self.zs = zs
         self.N = N = len(zs)
         if skip_comp or N == 1:

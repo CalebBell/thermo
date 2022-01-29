@@ -222,6 +222,7 @@ class Flash(object):
 
         flash_specs = {'zs': zs}
         if T_spec:
+            T = float(T)
             flash_specs['T'] = T
             if T < self.T_MIN_FLASH:
                 raise ValueError("Specified temperature (%s K) is below the minimum temeprature (%s K) "
@@ -229,31 +230,41 @@ class Flash(object):
             # if T <= 0.0:
             #     raise ValueError("Specified temperature (%s K) is unphysical" %(T,))
         if P_spec:
+            P = float(P)
             flash_specs['P'] = P
             if P <= 0.0:
                 raise ValueError("Specified pressure (%s Pa) is unphysical"%(P,))
         if V_spec:
+            # high-precision volumes are needed in some cases
+            # V = float(V)
             flash_specs['V'] = V
             if V <= 0.0:
                 raise ValueError("Specified molar volume (%s m^3/mol) is unphysical"%(V,))
         if H_spec:
+            H = float(H)
             flash_specs['H'] = H
         if S_spec:
+            S = float(S)
             flash_specs['S'] = S
         if U_spec:
+            U = float(U)
             flash_specs['U'] = U
         if G_spec:
+            G = float(G)
             flash_specs['G'] = G
         if A_spec:
+            A = float(A)
             flash_specs['A'] = A
 
         if VF_spec:
+            VF_spec = float(VF_spec)
             flash_specs['VF'] = VF
             if VF < 0.0 or VF > 1.0:
                 raise ValueError("Specified vapor fraction (%s) is not between 0 and 1"%(VF,))
             elif not self.supports_VF_flash:
                 raise ValueError("Cannot flash with a vapor fraction spec without at least one gas and liquid phase defined")
         if SF_spec:
+            SF_spec = float(SF_spec)
             flash_specs['SF'] = SF
             if SF < 0.0 or SF > 1.0:
                 raise ValueError("Specified solid fraction (%s) is not between 0 and 1"%(VF,))
