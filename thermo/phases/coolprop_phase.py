@@ -122,7 +122,12 @@ def set_coolprop_constants():
             AS.specify_phase(phase)
             if zs is not None:
                 AS.set_mole_fractions(zs)
-            AS.update(spec_set, spec0, spec1) # A failed call here takes ~400 us.
+            try:
+                AS.update(spec_set, spec0, spec1) # A failed call here takes ~400 us.
+            except:
+                # The best workaround is to impose a different phase with CoolProp
+                AS.specify_phase(CPliquid if phase == CPgas else CPgas)
+                AS.update(spec_set, spec0, spec1)
             caching_states_CoolProp[key] = AS
             return AS
         else:
