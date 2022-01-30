@@ -24,6 +24,7 @@ import pytest
 import thermo
 from thermo import *
 from thermo.coolprop import *
+from thermo.coolprop import has_CoolProp
 from thermo.phases import CoolPropGas, CoolPropLiquid
 from fluids.numerics import assert_close
 from fluids.numerics import *
@@ -81,6 +82,8 @@ backends = ['HEOS']
 @pytest.mark.parametric
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("backend", backends)
+@pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_PV_plot(fluid, backend):
     T, P = 298.15, 101325.0
     zs = [1.0]
@@ -136,6 +139,8 @@ del test_PV_plot
 @pytest.mark.parametric
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("backend", backends)
+@pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_TV_plot_CoolProp(fluid, backend):
     T, P = 298.15, 101325.0
     zs = [1.0]
@@ -176,6 +181,8 @@ def test_TV_plot_CoolProp(fluid, backend):
 @pytest.mark.fuzz
 @pytest.mark.slow
 @pytest.mark.plot
+@pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_water_95():
     # TVF, PVF, TP, TV, PV are covered and optimized
     T, P = 298.15, 1e5
@@ -247,3 +254,19 @@ def test_water_95():
         H_base = PropsSI('HMOLAR', 'T', T_max, 'P', P, fluid)
         H_flashed = flasher.flash(T=T_max, P=P).H()
         assert_close(H_base, H_flashed)
+
+@pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
+def test_three_phase_flash_CoolProp():
+    T, P = 298.15, 1e5
+    zs = [.8, .15, .05]
+    names = ['methane', 'decane', 'water']
+    constants, properties = ChemicalConstantsPackage.from_IDs(names)
+    
+    CPP_gas = CoolPropGas('HEOS', names, T=T, P=P, zs=zs)
+    CPP_gas.constants = constants
+    CPP_liq = CoolPropLiquid('HEOS', names, T=T, P=P, zs=zs)
+    CPP_liq.constants = constants
+    flasher = FlashVLN(constants, properties, gas=CPP_gas, liquids=[CPP_liq,CPP_liq] )
+    res = flasher.flash(T=300, P=1e5, zs=zs)
+    assert res.phase_count == 3
