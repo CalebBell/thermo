@@ -3951,17 +3951,32 @@ class Phase(object):
            Environmental Earth Sciences 70, no. 8 (April 10, 2013): 3497-3503.
            https://doi.org/10.1007/s12665-013-2394-z.
         '''
-        n0 = getattr(self, 'd%s_d%s_%s'%(a, x, y))()
-        n1 = getattr(self, 'd%s_d%s_%s'%(c, y, x))()
-
-        n2 = getattr(self, 'd%s_d%s_%s'%(a, y, x))()
-        n3 = getattr(self, 'd%s_d%s_%s'%(c, x, y))()
-
-        d0 = getattr(self, 'd%s_d%s_%s'%(b, x, y))()
-        d1 = getattr(self, 'd%s_d%s_%s'%(c, y, x))()
-
-        d2 = getattr(self, 'd%s_d%s_%s'%(b, y, x))()
-        d3 = getattr(self, 'd%s_d%s_%s'%(c, x, y))()
+        try:
+            der_str = 'd%s_d%s_%s'%(a, x, y)
+            n0 = getattr(self, der_str)()
+            
+            der_str = 'd%s_d%s_%s'%(c, y, x)
+            n1 = getattr(self, der_str)()
+            
+            der_str = 'd%s_d%s_%s'%(a, y, x)
+            n2 = getattr(self, der_str)()
+            
+            der_str = 'd%s_d%s_%s'%(c, x, y)
+            n3 = getattr(self, der_str)()
+    
+            der_str = 'd%s_d%s_%s'%(b, x, y)
+            d0 = getattr(self, der_str)()
+            
+            der_str = 'd%s_d%s_%s'%(c, y, x)
+            d1 = getattr(self, der_str)()
+            
+            der_str = 'd%s_d%s_%s'%(b, y, x)
+            d2 = getattr(self, der_str)()
+            
+            der_str = 'd%s_d%s_%s'%(c, x, y)
+            d3 = getattr(self, der_str)()
+        except AttributeError:
+            raise NotImplementedError("Derivative %s is not implemented" %(der_str))
 
         return (n0*n1 - n2*n3)/(d0*d1 - d2*d3)
 
