@@ -1286,7 +1286,7 @@ class Bulk(Phase):
         pert = self.settings.equilibrium_perturbation
         wrt_value2 = wrt_value*(1.0 + pert)
         delta = wrt_value2 - wrt_value
-        kwargs = {wrt: wrt_value2, const: const_value}
+        kwargs = {wrt: wrt_value2, const: const_value}#, 'hot_start':self.result}
         results = self.flasher.flash(zs=self.zs, **kwargs)
 
         of_value2 = results.value(of)

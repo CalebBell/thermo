@@ -158,18 +158,22 @@ except (ImportError, AttributeError):
 
 
 class UNIFAC_subgroup(object):
-    __slots__ = ['group', 'main_group_id', 'main_group', 'R', 'Q', 'smarts']
+    __slots__ = ['group', 'main_group_id', 'main_group', 'R', 'Q', 'smarts', 'priority', 'atoms', 'bonds']
 
     def __repr__(self):   # pragma: no cover
         return '<%s>' %self.group
 
-    def __init__(self, group, main_group_id, main_group, R, Q, smarts=None):
+    def __init__(self, group, main_group_id, main_group, R, Q, smarts=None,
+                 priority=None, atoms=None, bonds=None):
         self.group = group
         self.main_group_id = main_group_id
         self.main_group = main_group
         self.R = R
         self.Q = Q
         self.smarts = smarts
+        self.priority = priority
+        self.atoms = atoms
+        self.bonds = bonds
 
 
 
@@ -231,31 +235,71 @@ UFMG[55] = ('SULFONES', [118, 119])
 UFMG[84] = ('IMIDAZOL', [178])
 UFMG[85] = ('BTI', [179])
 
+SINGLE_BOND = 'single'
+DOUBLE_BOND = 'double'
+TRIPLE_BOND = 'triple '
+AROMATIC_BOND = 'aromatic'
+
 
 UFSG = {}
-# UFSG[subgroup ID] = (subgroup formula, main group ID, subgroup R, subgroup Q)
+# UFSG[subgroup ID] = (subgroup formula, main group ID, subgroup  R, subgroup Q)
 # http://www.ddbst.com/published-parameters-unifac.html
-UFSG[1] = UNIFAC_subgroup('CH3', 1, 'CH2', 0.9011, 0.848, smarts='[CX4;H3]')
-UFSG[2] = UNIFAC_subgroup('CH2', 1, 'CH2', 0.6744, 0.54, smarts='[CX4;H2]')
-UFSG[3] = UNIFAC_subgroup('CH', 1, 'CH2', 0.4469, 0.228, smarts='[CX4;H1]')
-UFSG[4] = UNIFAC_subgroup('C', 1, 'CH2', 0.2195, 0, smarts='[CX4;H0]')
-UFSG[5] = UNIFAC_subgroup('CH2=CH', 2, 'C=C', 1.3454, 1.176, smarts='[CX3;H2]=[CX3;H1]')
-UFSG[6] = UNIFAC_subgroup('CH=CH', 2, 'C=C', 1.1167, 0.867, smarts='[CX3;H1]=[CX3;H1]') # Could restrict the next connection from being  H
-UFSG[7] = UNIFAC_subgroup('CH2=C', 2, 'C=C', 1.1173, 0.988, smarts='[CX3;H2]=[CX3;H0]')
-UFSG[8] = UNIFAC_subgroup('CH=C', 2, 'C=C', 0.8886, 0.676, smarts='[CX3;H1]=[CX3;H0]')
-UFSG[9] = UNIFAC_subgroup('ACH', 3, 'ACH', 0.5313, 0.4, smarts='[cX3;H1]')
-UFSG[10] = UNIFAC_subgroup('AC', 3, 'ACH', 0.3652, 0.12, smarts='[cX3;H0]')
-UFSG[11] = UNIFAC_subgroup('ACCH3', 4, 'ACCH2', 1.2663, 0.968, smarts='[cX3;H0][CX4;H3]')
-UFSG[12] = UNIFAC_subgroup('ACCH2', 4, 'ACCH2', 1.0396, 0.66, smarts='[cX3;H0][CX4;H2]')
-UFSG[13] = UNIFAC_subgroup('ACCH', 4, 'ACCH2', 0.8121, 0.348, smarts='[cX3;H0][CX4;H1]')
-UFSG[14] = UNIFAC_subgroup('OH', 5, 'OH', 1, 1.2, smarts='[OX2;H1]')
-UFSG[15] = UNIFAC_subgroup('CH3OH', 6, 'CH3OH', 1.4311, 1.432, smarts='[CX4;H3][OX2;H1]') # One extra radical; otherwise perfect, six matches
-UFSG[16] = UNIFAC_subgroup('H2O', 7, 'H2O', 0.92, 1.4, smarts='[OH2]')
-UFSG[17] = UNIFAC_subgroup('ACOH', 8, 'ACOH', 0.8952, 0.68, smarts='[cX3;H0;R][OX2;H1]') # pretty good 5 extra
-UFSG[18] = UNIFAC_subgroup('CH3CO', 9, 'CH2CO', 1.6724, 1.488, smarts='[CX4;H3][CX3](=O)')
-UFSG[19] = UNIFAC_subgroup('CH2CO', 9, 'CH2CO', 1.4457, 1.18, smarts='[CX4;H2;!$([CX4,CX3;H0,H1][CX3](=O)[CX4;H2][CX3](=O)[CX4,CX3;H0,H1])][CX3;!$([CX4,CX3;H0,H1][CX3](=O)[CX4;H2][CX3](=O)[CX4,CX3;H0,H1])](=O)[#6;!$([CX4;H3]);!$([CX4,CX3;H0,H1][CX3](=O)[CX4;H2][CX3](=O)[CX4,CX3;H0,H1])]') # '[CX4;H2][CX3](=O)'
-UFSG[20] = UNIFAC_subgroup('CHO', 10, 'CHO', 0.998, 0.948, smarts='[CX3H1](=O)')
-UFSG[21] = UNIFAC_subgroup('CH3COO', 11, 'CCOO', 1.9031, 1.728, smarts='C(=O)[OH0]') # can't distinguish between 21, 22
+# priority : (Manual priority (higher = takes prescedence), number of atoms, number of hydrogens)
+UFSG[1] = UNIFAC_subgroup('CH3', 1, 'CH2', 0.9011, 0.848, smarts='[CX4;H3]', atoms={'C': 1, 'H': 3})
+UFSG[2] = UNIFAC_subgroup('CH2', 1, 'CH2', 0.6744, 0.54, smarts='[CX4;H2]', atoms={'C': 1, 'H': 2})
+UFSG[3] = UNIFAC_subgroup('CH', 1, 'CH2', 0.4469, 0.228, smarts='[CX4;H1]', atoms={'C': 1, 'H': 1})
+UFSG[4] = UNIFAC_subgroup('C', 1, 'CH2', 0.2195, 0, smarts='[CX4;H0]', atoms={'C': 1, 'H': 0})
+
+UFSG[5] = UNIFAC_subgroup('CH2=CH', 2, 'C=C', 1.3454, 1.176, smarts='[CX3;H2]=[CX3;H1]', 
+                          bonds={DOUBLE_BOND: 1}, atoms={'C': 2, 'H': 3})
+UFSG[6] = UNIFAC_subgroup('CH=CH', 2, 'C=C', 1.1167, 0.867, 
+                          bonds={DOUBLE_BOND: 1}, atoms={'C': 2, 'H': 2},
+                          smarts='[CX3;H1]=[CX3;H1]') # Could restrict the next connection from being  H
+
+UFSG[7] = UNIFAC_subgroup('CH2=C', 2, 'C=C', 1.1173, 0.988, bonds={DOUBLE_BOND: 1}, atoms={'C': 2, 'H': 2},
+                          smarts='[CX3;H2]=[CX3;H0]')
+
+UFSG[8] = UNIFAC_subgroup('CH=C', 2, 'C=C', 0.8886, 0.676, bonds={DOUBLE_BOND: 1}, atoms={'C': 2, 'H': 1},
+                          smarts='[CX3;H1]=[CX3;H0]')
+
+UFSG[9] = UNIFAC_subgroup('ACH', 3, 'ACH', 0.5313, 0.4, smarts='[cX3;H1]',
+                          atoms={'C': 1, 'H': 1}, bonds={AROMATIC_BOND: 1})
+
+UFSG[10] = UNIFAC_subgroup('AC', 3, 'ACH', 0.3652, 0.12, smarts='[cX3;H0]',
+                           atoms={'C': 1}, bonds={AROMATIC_BOND: 1})
+
+UFSG[11] = UNIFAC_subgroup('ACCH3', 4, 'ACCH2', 1.2663, 0.968, smarts='[cX3;H0][CX4;H3]',
+                           atoms={'C': 2, 'H': 3}, bonds={AROMATIC_BOND: 1, SINGLE_BOND: 1})
+
+UFSG[12] = UNIFAC_subgroup('ACCH2', 4, 'ACCH2', 1.0396, 0.66, smarts='[cX3;H0][CX4;H2]', 
+                           atoms={'C': 2, 'H': 2}, bonds={AROMATIC_BOND: 1, SINGLE_BOND: 1})
+
+UFSG[13] = UNIFAC_subgroup('ACCH', 4, 'ACCH2', 0.8121, 0.348, smarts='[cX3;H0][CX4;H1]',
+                           atoms={'C': 2, 'H': 1}, bonds={AROMATIC_BOND: 1, SINGLE_BOND: 1})
+
+UFSG[14] = UNIFAC_subgroup('OH', 5, 'OH', 1, 1.2, smarts='[OX2;H1]', atoms={'O': 1, 'H': 1},)
+
+UFSG[15] = UNIFAC_subgroup('CH3OH', 6, 'CH3OH', 1.4311, 1.432, smarts='[CX4;H3][OX2;H1]',
+                           atoms={'C': 1, 'H': 4, 'O': 1}) # One extra radical; otherwise perfect, six matches
+
+UFSG[16] = UNIFAC_subgroup('H2O', 7, 'H2O', 0.92, 1.4, smarts='[OH2]', atoms={'H': 2, 'O': 1})
+
+UFSG[17] = UNIFAC_subgroup('ACOH', 8, 'ACOH', 0.8952, 0.68, smarts='[cX3;H0;R][OX2;H1]',
+                           atoms={'C': 1, 'O': 1, 'H': 1}) # pretty good 5 extra
+
+UFSG[18] = UNIFAC_subgroup('CH3CO', 9, 'CH2CO', 1.6724, 1.488, smarts='[CX4;H3][CX3](=O)',
+                           atoms={'C': 2, 'H': 3, 'O': 1}, bonds={DOUBLE_BOND: 1})
+
+UFSG[19] = UNIFAC_subgroup('CH2CO', 9, 'CH2CO', 1.4457, 1.18, 
+                           atoms={'C': 2, 'H': 2, 'O': 1},  bonds={DOUBLE_BOND: 1},
+                           smarts='[CX4;H2;!$([CX4,CX3;H0,H1][CX3](=O)[CX4;H2][CX3](=O)[CX4,CX3;H0,H1])][CX3;!$([CX4,CX3;H0,H1][CX3](=O)[CX4;H2][CX3](=O)[CX4,CX3;H0,H1])](=O)[#6;!$([CX4;H3]);!$([CX4,CX3;H0,H1][CX3](=O)[CX4;H2][CX3](=O)[CX4,CX3;H0,H1])]') # '[CX4;H2][CX3](=O)'
+
+UFSG[20] = UNIFAC_subgroup('CHO', 10, 'CHO', 0.998, 0.948, atoms={'C': 1, 'H': 1, 'O': 1}, bonds={DOUBLE_BOND: 1},
+                           smarts='[CX3H1](=O)')
+
+UFSG[21] = UNIFAC_subgroup('CH3COO', 11, 'CCOO', 1.9031, 1.728, atoms={'C': 2, 'H': 3, 'O': 2},
+                           smarts='C(=O)[OH0]') # can't distinguish between 21, 22
+
 UFSG[22] = UNIFAC_subgroup('CH2COO', 11, 'CCOO', 1.6764, 1.42, smarts='[CX4;H2][CX3](=[OX1])[OX2]') # Custom, lots of extra matches
 UFSG[23] = UNIFAC_subgroup('HCOO', 12, 'HCOO', 1.242, 1.188, smarts='[CX3;H1](=[OX1])[OX2][#6;!$([CX3]=[#8])]')
 UFSG[24] = UNIFAC_subgroup('CH3O', 13, 'CH2O', 1.145, 1.088, smarts='[CH3][O]')
@@ -272,7 +316,9 @@ UFSG[34] = UNIFAC_subgroup('CH3N', 16, '(C)3N', 1.1865, 0.94, smarts='[CX4;H3][N
 UFSG[35] = UNIFAC_subgroup('CH2N', 16, '(C)3N', 0.9597, 0.632, smarts='[CX4;H2][NX3;H0]')
 UFSG[36] = UNIFAC_subgroup('ACNH2', 17, 'ACNH2', 1.06, 0.816, smarts='[c][NX3;H2]')
 UFSG[37] = UNIFAC_subgroup('C5H5N', 18, 'PYRIDINE', 2.9993, 2.113, smarts='[cX3;H1][cX3;H1][cX3;H1][cX3;H1][nX2;H0][cX3;H1]') # There is another match from ddbst 3,4-Didehydropyridine  but it is C5H3N and so wrong; only one real hit
-UFSG[38] = UNIFAC_subgroup('C5H4N', 18, 'PYRIDINE', 2.8332, 1.833, smarts='[$([nX2;H0]1[cX3;H0][cX3;H1][cX3;H1][cX3;H1][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H0][cX3;H1][cX3;H1][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H1][cX3;H0][cX3;H1][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H1][cX3;H1][cX3;H0][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H1][cX3;H1][cX3;H1][cX3;H0]1)]') # Perfect hand made
+UFSG[38] = UNIFAC_subgroup('C5H4N', 18, 'PYRIDINE', 2.8332, 1.833, smarts='[$([nX2;H0]1[cX3;H0][cX3;H1][cX3;H1][cX3;H1][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H0][cX3;H1][cX3;H1][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H1][cX3;H0][cX3;H1][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H1][cX3;H1][cX3;H0][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H1][cX3;H1][cX3;H1][cX3;H0]1)]',
+                           atoms={'C': 5, 'H': 4, 'N': 1}, bonds={AROMATIC_BOND: 6}) # Perfect hand made
+
 UFSG[39] = UNIFAC_subgroup('C5H3N', 18, 'PYRIDINE', 2.667, 1.553, smarts='[$([nX2;H0]1[cX3;H0][cX3;H0][cX3;H1][cX3;H1][cX3;H1]1),$([nX2;H0]1[cX3;H0][cX3;H1][cX3;H0][cX3;H1][cX3;H1]1),$([nX2;H0]1[cX3;H0][cX3;H1][cX3;H1][cX3;H0][cX3;H1]1),$([nX2;H0]1[cX3;H0][cX3;H1][cX3;H1][cX3;H1][cX3;H0]1),$([nX2;H0]1[cX3;H1][cX3;H0][cX3;H0][cX3;H1][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H0][cX3;H1][cX3;H0][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H0][cX3;H1][cX3;H1][cX3;H0]1),$([nX2;H0]1[cX3;H1][cX3;H1][cX3;H0][cX3;H0][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H1][cX3;H0][cX3;H1][cX3;H0]1),$([nX2;H0]1[cX3;H1][cX3;H1][cX3;H1][cX3;H0][cX3;H0]1)]') # Very much not fun to make, 200 matches perfectly, 10 different ring combos
 UFSG[40] = UNIFAC_subgroup('CH3CN', 19, 'CCN', 1.8701, 1.724, smarts='[CX4;H3][CX2]#[NX1]')
 UFSG[41] = UNIFAC_subgroup('CH2CN', 19, 'CCN', 1.6434, 1.416, smarts='[CX4;H2][CX2]#[NX1]')
