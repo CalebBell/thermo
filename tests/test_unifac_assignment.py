@@ -38,9 +38,22 @@ groups = [UFSG[i] for i in group_ids]
 
 def test_UNIFAC_original():
     rdkitmol = Chemical('17059-44-8').rdkitmol
-    assignment, *args = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
-    assert assignment =={'ACCH3': 2, 'ACCH2': 1, 'ACH': 3, 'CH3': 1, 'CH2': 1}
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {'ACCH3': 2, 'ACCH2': 1, 'ACH': 3, 'CH3': 1, 'CH2': 1}
+    assert success
     
+    rdkitmol = Chemical('methanol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {'CH3OH': 1}
+    assert success
+    
+    rdkitmol = Chemical('water').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {'H2O': 1}
+    assert success
+    
+
+
 
 def test_UNIFAC_failures():
     rdkitmol = Chemical('5-Methylfurfuryl alcohol').rdkitmol
