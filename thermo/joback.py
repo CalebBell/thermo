@@ -55,7 +55,8 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 from __future__ import division
 
-__all__ = ['smarts_fragment', 'Joback', 'J_BIGGS_JOBACK_SMARTS',
+__all__ = ['smarts_fragment', 'smarts_fragment_priority',
+           'Joback', 'J_BIGGS_JOBACK_SMARTS',
            'J_BIGGS_JOBACK_SMARTS_id_dict', 'Fedors', 'Wilson_Jasperson']
 
 from chemicals.utils import to_num, horner, exp
@@ -273,6 +274,116 @@ for i, line in enumerate(joback_data_txt.split('\n')):
     j = JOBACK(i+1, *parsed)
     joback_groups_str_dict[parsed[0]] = j
     joback_groups_id_dict[i+1] = j
+
+
+def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
+    r'''Fragments a molecule into a set of unique groups and counts as
+    specified by the `catalog`, which is a list of objects containing
+    the attributes `smarts`, `group`, and `priority`.
+    
+    The molecule can either be an rdkit
+    molecule object, or a smiles string which will be parsed by rdkit.
+    Returns a dictionary of groups and their counts according to the
+    priorities of the catalog provided, as well as some other information
+
+    Parameters
+    ----------
+    catalog : list
+        List of objects, [-]
+    rdkitmol : mol, optional
+        Molecule as rdkit object, [-]
+    smi : str, optional
+        Smiles string representing a chemical, [-]
+
+    Returns
+    -------
+    counts : dict
+        Dictionaty of integer counts of the found groups only, indexed by
+        the `group` [-]
+    group_assignments : dict[`group`: [(matched_atoms_0,), (matched_atoms_0,)]]
+        A dictionary of which atoms were included in each of the groups identified, [-]
+    matched_atoms : set
+        A set of all of the atoms which were matched, [-]
+    success : bool
+        Whether or not molecule was fully fragmented, [-]
+    status : str
+        A string holding an explanation of why the molecule failed to be
+        fragmented, if it fails; 'OK' if it suceeds.
+
+    Notes
+    -----
+    Raises an exception if rdkit is not installed, or `smi` or `rdkitmol` is
+    not defined.
+
+    Examples
+    --------
+    '''
+    if not loaded_rdkit:
+        load_rdkit_modules()
+    if rdkitmol is None and smi is None:
+        raise Exception('Either an rdkit mol or a smiles string is required')
+    if smi is not None:
+        rdkitmol = Chem.MolFromSmiles(smi)
+        if rdkitmol is None:
+            status = 'Failed to construct mol'
+            success = False
+            return {}, success, status
+    from collections import Counter
+
+    atom_count = len(rdkitmol.GetAtoms())
+    status = 'OK'
+    success = True
+    
+    counts = {}
+    all_matches = {}
+    for obj in catalog:
+        smart = obj.smarts
+        key = obj.group
+        if isinstance(smart, str):
+            patt = Chem.MolFromSmarts(smart)
+        else:
+            patt = smart
+        hits = list(rdkitmol.GetSubstructMatches(patt))
+        if hits:
+            all_matches[key] = hits
+            counts[key] = len(hits)
+
+    # Higher should be lower
+    priorities = [i.priority for i in catalog]
+    groups = [i.group for i in catalog]
+    group_to_obj = {o.group: o for o in catalog}
+    catalog_by_priority =  [group_to_obj[g] for _, g in sorted(zip(priorities, groups), reverse=True)]
+    
+    # excludes H
+    matched_atoms = set()
+    final_group_counts = {}
+    final_assignments = {}
+    
+    for obj in catalog_by_priority:
+        if obj.group in all_matches:
+            for match in all_matches[obj.group]:
+                if set(match).intersection(matched_atoms):
+                    # At least one atom is already matched - keep looking
+                    continue
+                matched_atoms.update(match)
+                try:
+                    final_group_counts[obj.group]
+                except:
+                    final_group_counts[obj.group] = 0
+                final_group_counts[obj.group] += 1
+                
+                try:
+                    final_assignments[obj.group]
+                except:
+                    final_assignments[obj.group] = []
+                final_assignments[obj.group].append(match)
+    
+    success = atom_count == len(matched_atoms)                        
+    if not success:
+        status = 'Did not match all atoms present'
+
+    return final_group_counts, final_assignments, matched_atoms, success, status
+
 
 
 def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
