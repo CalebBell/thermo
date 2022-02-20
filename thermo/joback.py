@@ -362,8 +362,36 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     
     ignore_matches = set()
     matched_atoms, final_group_counts, final_assignments = run_match(catalog_by_priority, all_matches, ignore_matches, all_atom_idxs, H_count)
-    
-    success = atom_count == len(matched_atoms)                        
+    # Count the hydrogens
+
+    heavy_atom_matched = atom_count == len(matched_atoms)
+    hydrogens_found = sum(group_to_obj[g].atoms.get('H', 0)*v for g, v in final_group_counts.items())
+    hydrogens_matched = hydrogens_found == H_count
+
+    if not heavy_atom_matched:
+        status = 'Did not match all atoms present'
+        success = False
+        return final_group_counts, final_assignments, matched_atoms, success, status
+
+    success = heavy_atom_matched and hydrogens_matched
+    if not success:
+        done = False
+        # Try removing the highest priority group
+        for group in final_assignments.keys():
+            if done:
+                break
+            for group_idxs in final_assignments[group]:
+                ignore_matches = set([(group, group_idxs)])
+                matched_atoms, final_group_counts, final_assignments = run_match(catalog_by_priority, all_matches, ignore_matches, all_atom_idxs, H_count)
+                heavy_atom_matched = atom_count == len(matched_atoms)
+                hydrogens_found = sum(group_to_obj[g].atoms.get('H', 0)*v for g, v in final_group_counts.items())
+                hydrogens_matched = hydrogens_found == H_count
+                success = heavy_atom_matched and hydrogens_matched
+
+                if success:
+                    done = True
+                    break
+
     if not success:
         status = 'Did not match all atoms present'
 
