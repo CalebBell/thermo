@@ -359,10 +359,21 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     catalog_by_priority =  [group_to_obj[g] for _, g in sorted(zip(priorities, groups), reverse=True)]
     
     # excludes H
+    
+    ignore_matches = set()
+    matched_atoms, final_group_counts, final_assignments = run_match(catalog_by_priority, all_matches, ignore_matches, all_atom_idxs, H_count)
+    
+    success = atom_count == len(matched_atoms)                        
+    if not success:
+        status = 'Did not match all atoms present'
+
+    return final_group_counts, final_assignments, matched_atoms, success, status
+
+def run_match(catalog_by_priority, all_matches, ignore_matches, all_atom_idxs,
+              H_count):
     matched_atoms = set()
     final_group_counts = {}
     final_assignments = {}
-    
     for obj in catalog_by_priority:
         if obj.group in all_matches:
             for match in all_matches[obj.group]:
@@ -373,6 +384,9 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
 
                 # If the group matches everything, check the group has the right number of hydrogens
                 if match_set == all_atom_idxs and H_count and obj.atoms.get('H', 0) != H_count:
+                    continue
+                
+                if (obj.group, match) in ignore_matches:
                     continue
                 matched_atoms.update(match)
                 try:
@@ -386,13 +400,8 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
                 except:
                     final_assignments[obj.group] = []
                 final_assignments[obj.group].append(match)
+    return matched_atoms, final_group_counts, final_assignments
     
-    success = atom_count == len(matched_atoms)                        
-    if not success:
-        status = 'Did not match all atoms present'
-
-    return final_group_counts, final_assignments, matched_atoms, success, status
-
 
 
 def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
