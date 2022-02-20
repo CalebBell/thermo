@@ -72,6 +72,10 @@ def test_UNIFAC_original():
     assert assignment == {'CHO': 1, 'CH3': 1, 'CH2': 2}
     assert success
 
+    rdkitmol = Chemical('glutaraldehyde').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {'CHO': 2, 'CH2': 3}
+    assert success
 
 def test_UNIFAC_failures():
     rdkitmol = Chemical('5-Methylfurfuryl alcohol').rdkitmol

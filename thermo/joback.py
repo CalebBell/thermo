@@ -329,6 +329,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
             success = False
             return {}, success, status
     from collections import Counter
+    from itertools import combinations
     
     rdkitmol_Hs = Chem.AddHs(rdkitmol)
     H_count = rdkitmol_Hs.GetNumAtoms() - rdkitmol.GetNumAtoms()
@@ -374,14 +375,19 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
         return final_group_counts, final_assignments, matched_atoms, success, status
 
     success = heavy_atom_matched and hydrogens_matched
+    remove_up_to = 5
     if not success:
+        things_to_ignore = []
+        for k in final_assignments:
+            for v in final_assignments[k]:
+                things_to_ignore.append((k, v))
+
         done = False
-        # Try removing the highest priority group
-        for group in final_assignments.keys():
+        for remove in range(1, remove_up_to+1):
             if done:
                 break
-            for group_idxs in final_assignments[group]:
-                ignore_matches = set([(group, group_idxs)])
+            for ignore_matches in combinations(things_to_ignore, remove):
+                ignore_matches = set(ignore_matches)
                 matched_atoms, final_group_counts, final_assignments = run_match(catalog_by_priority, all_matches, ignore_matches, all_atom_idxs, H_count)
                 heavy_atom_matched = atom_count == len(matched_atoms)
                 hydrogens_found = sum(group_to_obj[g].atoms.get('H', 0)*v for g, v in final_group_counts.items())
