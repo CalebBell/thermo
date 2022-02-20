@@ -319,7 +319,8 @@ UFSG[20] = UNIFAC_subgroup('CHO', 10, 'CHO', 0.998, 0.948, atoms={'C': 1, 'H': 1
                            smarts='[CX3H1](=O)')
 
 UFSG[21] = UNIFAC_subgroup('CH3COO', 11, 'CCOO', 1.9031, 1.728, atoms={'C': 2, 'H': 3, 'O': 2},
-                           smarts='C(=O)[OH0]') # can't distinguish between 21, 22
+                            bonds={DOUBLE_BOND: 1, SINGLE_BOND: 2},
+                           smarts='C(=O)[OH0]') # can't distinguish between 21, 22 https://en.wikipedia.org/wiki/Triacetin
 
 UFSG[22] = UNIFAC_subgroup('CH2COO', 11, 'CCOO', 1.6764, 1.42, smarts='[CX4;H2][CX3](=[OX1])[OX2]') # Custom, lots of extra matches
 UFSG[23] = UNIFAC_subgroup('HCOO', 12, 'HCOO', 1.242, 1.188, smarts='[CX3;H1](=[OX1])[OX2][#6;!$([CX3]=[#8])]')
