@@ -282,7 +282,7 @@ UFSG[14] = UNIFAC_subgroup('OH', 5, 'OH', 1, 1.2, smarts='[OX2;H1]', atoms={'O':
 UFSG[15] = UNIFAC_subgroup('CH3OH', 6, 'CH3OH', 1.4311, 1.432, smarts='[CX4;H3][OX2;H1]',
                            atoms={'C': 1, 'H': 4, 'O': 1}) # One extra radical; otherwise perfect, six matches
 
-UFSG[16] = UNIFAC_subgroup('H2O', 7, 'H2O', 0.92, 1.4, smarts='[OH2]', atoms={'H': 2, 'O': 1})
+UFSG[16] = UNIFAC_subgroup('H2O', 7, 'H2O', 0.92, 1.4, smarts='[O]([H])[H]', atoms={'H': 2, 'O': 1})
 
 UFSG[17] = UNIFAC_subgroup('ACOH', 8, 'ACOH', 0.8952, 0.68, smarts='[cX3;H0;R][OX2;H1]',
                            atoms={'C': 1, 'O': 1, 'H': 1}) # pretty good 5 extra
