@@ -240,6 +240,21 @@ DOUBLE_BOND = 'double'
 TRIPLE_BOND = 'triple '
 AROMATIC_BOND = 'aromatic'
 
+def priority_from_atoms(atoms, bonds=None):
+    priority = 0
+    
+    if 'H' in atoms:
+        priority += atoms['H']
+    
+    if 'C' in atoms:
+        priority += atoms['C']*100
+    
+    if bonds is not None:
+        priority += bonds.get(SINGLE_BOND, 0)*2
+        priority += bonds.get(DOUBLE_BOND, 0)*10
+        priority += bonds.get(TRIPLE_BOND, 0)*100
+        priority += bonds.get(AROMATIC_BOND, 0)*1000
+    return priority
 
 UFSG = {}
 # UFSG[subgroup ID] = (subgroup formula, main group ID, subgroup  R, subgroup Q)
@@ -400,6 +415,10 @@ UFSG[178] = UNIFAC_subgroup('IMIDAZOL', 84, 'IMIDAZOL', 2.026, 0.868, smarts='c1
 UFSG[179] = UNIFAC_subgroup('BTI', 85, 'BTI', 5.774, 4.932, smarts='C(F)(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F') # untested
 
 
+for group in UFSG.values():
+    if group.atoms or group.bonds:
+        group.priority = priority_from_atoms(group.atoms, group.bonds)
+        
 
 # http://www.ddbst.com/PublishedParametersUNIFACDO.html#ListOfSubGroupsAndTheirGroupSurfacesAndVolumes
 #  subgroup = (subgroup, #maingroup, maingroup, R, Q)
