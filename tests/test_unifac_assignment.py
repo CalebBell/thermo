@@ -52,6 +52,11 @@ def test_UNIFAC_original():
     assert assignment == {'H2O': 1}
     assert success
     
+    rdkitmol = Chemical('4-hydroxybenzaldehyde').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {'ACOH': 1, 'ACH': 4, 'AC': 1, 'CHO': 1}
+    assert success
+    
 
 
 

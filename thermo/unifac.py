@@ -256,6 +256,11 @@ def priority_from_atoms(atoms, bonds=None):
         priority += bonds.get(AROMATIC_BOND, 0)*1000
     return priority
 
+
+'''Rules for bonds: 
+All groups that have any any atoms as part of any aromatic ring should have at least one aromatic bond.
+'''
+
 UFSG = {}
 # UFSG[subgroup ID] = (subgroup formula, main group ID, subgroup  R, subgroup Q)
 # http://www.ddbst.com/published-parameters-unifac.html
@@ -300,7 +305,7 @@ UFSG[15] = UNIFAC_subgroup('CH3OH', 6, 'CH3OH', 1.4311, 1.432, smarts='[CX4;H3][
 UFSG[16] = UNIFAC_subgroup('H2O', 7, 'H2O', 0.92, 1.4, smarts='[OH2]', atoms={'H': 2, 'O': 1})
 
 UFSG[17] = UNIFAC_subgroup('ACOH', 8, 'ACOH', 0.8952, 0.68, smarts='[cX3;H0;R][OX2;H1]',
-                           atoms={'C': 1, 'O': 1, 'H': 1}) # pretty good 5 extra
+                           atoms={'C': 1, 'O': 1, 'H': 1}, bonds={AROMATIC_BOND: 1}) # pretty good 5 extra
 
 UFSG[18] = UNIFAC_subgroup('CH3CO', 9, 'CH2CO', 1.6724, 1.488, smarts='[CX4;H3][CX3](=O)',
                            atoms={'C': 2, 'H': 3, 'O': 1}, bonds={DOUBLE_BOND: 1})
