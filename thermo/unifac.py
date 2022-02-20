@@ -282,7 +282,7 @@ UFSG[14] = UNIFAC_subgroup('OH', 5, 'OH', 1, 1.2, smarts='[OX2;H1]', atoms={'O':
 UFSG[15] = UNIFAC_subgroup('CH3OH', 6, 'CH3OH', 1.4311, 1.432, smarts='[CX4;H3][OX2;H1]',
                            atoms={'C': 1, 'H': 4, 'O': 1}) # One extra radical; otherwise perfect, six matches
 
-UFSG[16] = UNIFAC_subgroup('H2O', 7, 'H2O', 0.92, 1.4, smarts='[O]([H])[H]', atoms={'H': 2, 'O': 1})
+UFSG[16] = UNIFAC_subgroup('H2O', 7, 'H2O', 0.92, 1.4, smarts='[OH2]', atoms={'H': 2, 'O': 1})
 
 UFSG[17] = UNIFAC_subgroup('ACOH', 8, 'ACOH', 0.8952, 0.68, smarts='[cX3;H0;R][OX2;H1]',
                            atoms={'C': 1, 'O': 1, 'H': 1}) # pretty good 5 extra
@@ -305,7 +305,11 @@ UFSG[23] = UNIFAC_subgroup('HCOO', 12, 'HCOO', 1.242, 1.188, smarts='[CX3;H1](=[
 UFSG[24] = UNIFAC_subgroup('CH3O', 13, 'CH2O', 1.145, 1.088, smarts='[CH3][O]')
 UFSG[25] = UNIFAC_subgroup('CH2O', 13, 'CH2O', 0.9183, 0.78, smarts='[CH2][O]')
 UFSG[26] = UNIFAC_subgroup('CHO', 13, 'CH2O', 0.6908, 0.468, smarts='[C;H1][O]')
-UFSG[27] = UNIFAC_subgroup('THF', 13, 'CH2O', 0.9183, 1.1, smarts='[CX4,CX3;H2,H1;R][OX2;R]') # CX3, H1 needed to allow 290-67-5 and 255-37-8 but adds a lot of false positives;
+
+
+UFSG[27] = UNIFAC_subgroup('THF', 13, 'CH2O', 0.9183, 1.1, smarts='[CX4;H2;R][OX2;R]',  #old smarts - '[CX4,CX3;H2,H1;R][OX2;R]',
+                           bonds={SINGLE_BOND: 1}, atoms={'O': 1, 'C': 1, 'H': 2}) # CX3, H1 needed to allow 290-67-5 and 255-37-8 but adds a lot of false positives;
+
 UFSG[28] = UNIFAC_subgroup('CH3NH2', 14, 'CNH2', 1.5959, 1.544, smarts='[CX4;H3][NX3;H2]') # Perfect
 UFSG[29] = UNIFAC_subgroup('CH2NH2', 14, 'CNH2', 1.3692, 1.236, smarts='[CX4;H2][NX3;H2]')
 UFSG[30] = UNIFAC_subgroup('CHNH2', 14, 'CNH2', 1.1417, 0.924, smarts='[CX4;H1][NX3;H2]')
