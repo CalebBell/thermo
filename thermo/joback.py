@@ -329,8 +329,12 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
             success = False
             return {}, success, status
     from collections import Counter
+    
+    rdkitmol_Hs = Chem.AddHs(rdkitmol)
+    H_count = rdkitmol_Hs.GetNumAtoms() - rdkitmol.GetNumAtoms()
 
-    atom_count = len(rdkitmol.GetAtoms())
+    all_atom_idxs = set(i.GetIdx() for i in rdkitmol.GetAtoms())
+    atom_count = len(all_atom_idxs)
     status = 'OK'
     success = True
     
@@ -362,8 +366,13 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     for obj in catalog_by_priority:
         if obj.group in all_matches:
             for match in all_matches[obj.group]:
-                if set(match).intersection(matched_atoms):
+                match_set = set(match)
+                if match_set.intersection(matched_atoms):
                     # At least one atom is already matched - keep looking
+                    continue
+
+                # If the group matches everything, check the group has the right number of hydrogens
+                if match_set == all_atom_idxs and H_count and obj.atoms.get('H', 0) != H_count:
                     continue
                 matched_atoms.update(match)
                 try:
