@@ -275,8 +275,7 @@ for i, line in enumerate(joback_data_txt.split('\n')):
     joback_groups_id_dict[i+1] = j
 
 
-def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True,
-                    by_priority=False):
+def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
     r'''Fragments a molecule into a set of unique groups and counts as
     specified by the `catalog`. The molecule can either be an rdkit
     molecule object, or a smiles string which will be parsed by rdkit.
@@ -291,9 +290,6 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True,
         Molecule as rdkit object, [-]
     smi : str, optional
         Smiles string representing a chemical, [-]
-    by_priority : bool, optional
-        If True, the catalog should be full of objects with attributes
-        `atoms`, `bonds`, and `smiles`.
 
     Returns
     -------
