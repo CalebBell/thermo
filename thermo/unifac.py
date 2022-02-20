@@ -312,7 +312,8 @@ UFSG[18] = UNIFAC_subgroup('CH3CO', 9, 'CH2CO', 1.6724, 1.488, smarts='[CX4;H3][
 
 UFSG[19] = UNIFAC_subgroup('CH2CO', 9, 'CH2CO', 1.4457, 1.18, 
                            atoms={'C': 2, 'H': 2, 'O': 1},  bonds={DOUBLE_BOND: 1},
-                           smarts='[CX4;H2;!$([CX4,CX3;H0,H1][CX3](=O)[CX4;H2][CX3](=O)[CX4,CX3;H0,H1])][CX3;!$([CX4,CX3;H0,H1][CX3](=O)[CX4;H2][CX3](=O)[CX4,CX3;H0,H1])](=O)[#6;!$([CX4;H3]);!$([CX4,CX3;H0,H1][CX3](=O)[CX4;H2][CX3](=O)[CX4,CX3;H0,H1])]') # '[CX4;H2][CX3](=O)'
+                           smarts='[CX4;H2][CX3](=O)')
+                           #'[CX4;H2;!$([CX4,CX3;H0,H1][CX3](=O)[CX4;H2][CX3](=O)[CX4,CX3;H0,H1])][CX3;!$([CX4,CX3;H0,H1][CX3](=O)[CX4;H2][CX3](=O)[CX4,CX3;H0,H1])](=O)[#6;!$([CX4;H3]);!$([CX4,CX3;H0,H1][CX3](=O)[CX4;H2][CX3](=O)[CX4,CX3;H0,H1])]') # '[CX4;H2][CX3](=O)'
 
 UFSG[20] = UNIFAC_subgroup('CHO', 10, 'CHO', 0.998, 0.948, atoms={'C': 1, 'H': 1, 'O': 1}, bonds={DOUBLE_BOND: 1},
                            smarts='[CX3H1](=O)')
