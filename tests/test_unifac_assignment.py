@@ -33,7 +33,7 @@ from thermo.unifac import UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP
 from thermo import Chemical
 from thermo.joback import smarts_fragment_priority
 
-group_ids = list(range(1, 67))
+group_ids = list(range(1, 69))
 groups = [UFSG[i] for i in group_ids]
 
 def test_UNIFAC_original():
@@ -336,6 +336,16 @@ def test_UNIFAC_original():
     assert success
     
 
+    rdkitmol = Chemical('dimethylsulfoxide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {67: 1}
+    assert success
+    
+    rdkitmol = Chemical('Acrylonitrile').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {68: 1}
+    assert success
+    
 
 
 def test_UNIFAC_failures():

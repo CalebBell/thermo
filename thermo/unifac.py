@@ -508,8 +508,15 @@ UFSG[66] = UNIFAC_subgroup(66, 'C=-C', 34, 'C=-C', 1.0613, 0.784,
                            atoms={'C': 2, 'H': 0}, bonds={TRIPLE_BOND: 1},
                            smarts='[CX2;H0]#[CX2;H0]')
 
-UFSG[67] = UNIFAC_subgroup(67, 'DMSO', 35, 'DMSO', 2.8266, 2.472, smarts='CS(=O)C') # Compound smarts; some extra matches
-UFSG[68] = UNIFAC_subgroup(68, 'ACRY', 36, 'ACRY', 2.3144, 2.052, smarts='N#CC=C') # Easy, compount smarts
+UFSG[67] = UNIFAC_subgroup(67, 'DMSO', 35, 'DMSO', 2.8266, 2.472, 
+                           atoms={'C': 2, 'H': 6, 'O': 1, 'S': 1}, bonds={DOUBLE_BOND: 1, SINGLE_BOND: 2},
+                           smarts='[SX3H0](=[OX1])([CX4;H3])[CX4;H3]') # Compound smarts
+
+UFSG[68] = UNIFAC_subgroup(68, 'ACRY', 36, 'ACRY', 2.3144, 2.052, 
+                           atoms={'C': 3, 'H': 3, 'N': 1}, bonds={DOUBLE_BOND: 1, SINGLE_BOND: 1, TRIPLE_BOND: 1},
+                           smarts='[CX3;H2]=[CX3;H1][CX2;H0]#[NX1;H0]') # Easy, compount smarts
+
+
 UFSG[69] = UNIFAC_subgroup(69, 'CL-(C=C)', 37, 'CLCC', 0.791, 0.724, smarts='Cl[CX3]=[CX3]')
 UFSG[70] = UNIFAC_subgroup(70, 'C=C', 2, 'C=C', 0.6605, 0.485, smarts='[CX3;H0]=[CX3;H0]') # ddbst matches some of these into rings incorrectly
 UFSG[71] = UNIFAC_subgroup(71, 'ACF', 38, 'ACF', 0.6948, 0.524, smarts='[cX3][F]') # Perfect for many, except 71671-89-1
