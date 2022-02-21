@@ -411,8 +411,14 @@ UFSG[40] = UNIFAC_subgroup(40, 'CH3CN', 19, 'CCN', 1.8701, 1.724, atoms={'C': 2,
 UFSG[41] = UNIFAC_subgroup(41, 'CH2CN', 19, 'CCN', 1.6434, 1.416, atoms={'C': 2, 'H': 2, 'N': 1}, bonds={TRIPLE_BOND: 1, SINGLE_BOND: 1},
                            smarts='[CX4;H2][CX2]#[NX1]')
 
-UFSG[42] = UNIFAC_subgroup(42, 'COOH', 20, 'COOH', 1.3013, 1.224, smarts='[CX3](=[OX1])[O;H1]') # Tried '[C][CX3](=[OX1])[OH1]' at first but fails for a few hundred
-UFSG[43] = UNIFAC_subgroup(43, 'HCOOH', 20, 'COOH', 1.528, 1.532, smarts='[CX3;H1](=[OX1])[OX2;H1]') # effortlessly web - missing one hit
+UFSG[42] = UNIFAC_subgroup(42, 'COOH', 20, 'COOH', 1.3013, 1.224,
+                           atoms={'C': 1, 'H': 1, 'O': 2}, bonds={DOUBLE_BOND: 1, SINGLE_BOND: 1},
+                           smarts='[CX3](=[OX1])[O;H1]') # Tried '[C][CX3](=[OX1])[OH1]' at first but fails for a few hundred
+
+UFSG[43] = UNIFAC_subgroup(43, 'HCOOH', 20, 'COOH', 1.528, 1.532, 
+                           atoms={'C': 1, 'H': 2, 'O': 2}, bonds={DOUBLE_BOND: 1, SINGLE_BOND: 1},
+                           smarts='[CX3;H1](=[OX1])[OX2;H1]') # effortlessly web - missing one hit
+
 UFSG[44] = UNIFAC_subgroup(44, 'CH2CL', 21, 'CCL', 1.4654, 1.264, smarts='[CX4;H2;!$(C(Cl)(Cl))](Cl)') # Matches perfectly effortlessly web
 UFSG[45] = UNIFAC_subgroup(45, 'CHCL', 21, 'CCL', 1.238, 0.952, smarts='[CX4;H1;!$(C(Cl)(Cl))](Cl)') # effortlessly web
 UFSG[46] = UNIFAC_subgroup(46, 'CCL', 21, 'CCL', 1.0106, 0.724, smarts='[CX4;H0;!$(C(Cl)(Cl))](Cl)') # effortlessly web
