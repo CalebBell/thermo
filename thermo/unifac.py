@@ -468,10 +468,23 @@ UFSG[56] = UNIFAC_subgroup(56, 'CHNO2', 26, 'CNO2', 1.5544, 1.248,
                            atoms={'N': 1, 'H': 1, 'O': 2, 'C': 1}, bonds={DOUBLE_BOND: 1, SINGLE_BOND: 2},
                            smarts='[CX4;H1][NX3](=[OX1])([OX1])')
 
-UFSG[57] = UNIFAC_subgroup(57, 'ACNO2', 27, 'ACNO2', 1.4199, 1.104, smarts='[cX3][NX3](=[OX1])(=[OX1])')
-UFSG[58] = UNIFAC_subgroup(58, 'CS2', 28, 'CS2', 2.057, 1.65, smarts='C(=S)=S') # Easy, compount smarts
-UFSG[59] = UNIFAC_subgroup(59, 'CH3SH', 29, 'CH3SH', 1.877, 1.676, smarts='[SX2H][CX4;H3]') # perfect match
-UFSG[60] = UNIFAC_subgroup(60, 'CH2SH', 29, 'CH3SH', 1.651, 1.368, smarts='[SX2H][CX4;H2]')
+UFSG[57] = UNIFAC_subgroup(57, 'ACNO2', 27, 'ACNO2', 1.4199, 1.104,
+                           atoms={'N': 1, 'O': 2, 'C': 1}, bonds={DOUBLE_BOND: 1, SINGLE_BOND: 2, AROMATIC_BOND: 1},
+                           smarts='[cX3][NX3](=[OX1])([OX1])')
+
+
+UFSG[58] = UNIFAC_subgroup(58, 'CS2', 28, 'CS2', 2.057, 1.65, 
+                           atoms={'C': 1, 'S': 2}, bonds={DOUBLE_BOND: 2},
+                           smarts='C(=S)=S') # Easy, compount smarts
+
+UFSG[59] = UNIFAC_subgroup(59, 'CH3SH', 29, 'CH3SH', 1.877, 1.676, 
+                           atoms={'C': 1, 'S': 1, 'H': 4}, bonds={SINGLE_BOND: 1},
+                           smarts='[SX2H][CX4;H3]') # perfect match
+
+UFSG[60] = UNIFAC_subgroup(60, 'CH2SH', 29, 'CH3SH', 1.651, 1.368, 
+                           atoms={'C': 1, 'S': 1, 'H': 3}, bonds={SINGLE_BOND: 1},
+                           smarts='[SX2H][CX4;H2]')
+
 UFSG[61] = UNIFAC_subgroup(61, 'FURFURAL', 30, 'FURFURAL', 3.168, 2.484, smarts='c1cc(oc1)C=O') # Easy, compound smarts, 1 hit only
 UFSG[62] = UNIFAC_subgroup(62, 'DOH', 31, 'DOH', 2.4088, 2.248, smarts='C(CO)O') # Probably going to cause problems, match too much
 UFSG[63] = UNIFAC_subgroup(63, 'I', 32, 'I', 1.264, 0.992, smarts='[I]')
