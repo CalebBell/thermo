@@ -39,67 +39,67 @@ groups = [UFSG[i] for i in group_ids]
 def test_UNIFAC_original():
     rdkitmol = Chemical('17059-44-8').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
-    assert assignment == {'ACCH3': 2, 'ACCH2': 1, 'ACH': 3, 'CH3': 1, 'CH2': 1}
+    assert assignment == {11: 2, 12: 1, 9: 3, 1: 1, 2: 1}
     assert success
     
     rdkitmol = Chemical('methanol').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
-    assert assignment == {'CH3OH': 1}
+    assert assignment == {15: 1}
     assert success
     
     rdkitmol = Chemical('water').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
-    assert assignment == {'H2O': 1}
+    assert assignment == {16: 1}
     assert success
     
     rdkitmol = Chemical('4-hydroxybenzaldehyde').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
-    assert assignment == {'ACOH': 1, 'ACH': 4, 'AC': 1, 'CHO': 1}
+    assert assignment == {17: 1, 9: 4, 10: 1, 20: 1}
     assert success
     
     rdkitmol = Chemical('acetaldehyde').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
-    assert assignment == {'CHO': 1, 'CH3': 1}
+    assert assignment == {20: 1, 1: 1}
     assert success
 
     rdkitmol = Chemical('camphor').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
-    assert assignment == {'CH2CO': 1, 'CH3': 3, 'CH2': 2, 'CH': 1, 'C': 2}
+    assert assignment == {19: 1, 1: 3, 2: 2, 3: 1, 4: 2}
     assert success
 
     rdkitmol = Chemical('butyraldehyde').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
-    assert assignment == {'CHO': 1, 'CH3': 1, 'CH2': 2}
+    assert assignment == {20: 1, 1: 1, 2: 2}
     assert success
 
     rdkitmol = Chemical('glutaraldehyde').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
-    assert assignment == {'CHO': 2, 'CH2': 3}
+    assert assignment == {20: 2, 2: 3}
     assert success
     
     rdkitmol = Chemical('triacetin').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
-    assert assignment == {'CH3COO': 3, 'CH2': 2, 'CH': 1}
+    assert assignment == {21: 3, 2: 2, 3: 1}
     assert success
     
     rdkitmol = Chemical('1,4-dioxin').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
-    assert assignment == {'THF': 2, 'CH=CH': 1}
+    assert assignment == {27: 2, 6: 1}
     assert success
 
     rdkitmol = Chemical('phthalan').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
-    assert assignment == {'ACCH2': 1, 'ACH': 4, 'AC': 1, 'THF': 1}
+    assert assignment == {12: 1, 9: 4, 10: 1, 27: 1}
     assert success
     
     rdkitmol = Chemical('butyl propionate').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
-    assert assignment == {'CH2COO': 1, 'CH3': 2, 'CH2': 3}
+    assert assignment == {22: 1, 1: 2, 2: 3}
     assert success
 
     rdkitmol = Chemical('ethyl formate').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
-    assert assignment == {'HCOO': 1, 'CH3': 1, 'CH2': 1}
+    assert assignment == {23: 1, 1: 1, 2: 1}
     assert success
 
 
@@ -108,7 +108,7 @@ def test_UNIFAC_original():
 def test_UNIFAC_failures():
     rdkitmol = Chemical('5-Methylfurfuryl alcohol').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
-    assert assignment == {'ACCH3': 1, 'ACCH2': 1, 'ACH': 2, 'OH': 1}
+    assert assignment == {11: 1, 12: 1, 9: 2, 14: 1}
     assert not success
 
 

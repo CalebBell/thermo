@@ -351,7 +351,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
                 patt = Chem.MolFromSmarts(smart)
             obj.smart_rdkit = patt
 
-        key = obj.group
+        key = obj.group_id
         if isinstance(patt, (list, tuple)):
             hits = set()
             for p in patt:
@@ -365,8 +365,8 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
 
     # Higher should be lower
     priorities = [i.priority for i in catalog]
-    groups = [i.group for i in catalog]
-    group_to_obj = {o.group: o for o in catalog}
+    groups = [i.group_id for i in catalog]
+    group_to_obj = {o.group_id: o for o in catalog}
     catalog_by_priority =  [group_to_obj[g] for _, g in sorted(zip(priorities, groups), reverse=True)]
 
     all_heavies_matched_by_a_pattern = set()
@@ -439,8 +439,8 @@ def run_match(catalog_by_priority, all_matches, ignore_matches, all_atom_idxs,
     final_group_counts = {}
     final_assignments = {}
     for obj in catalog_by_priority:
-        if obj.group in all_matches:
-            for match in all_matches[obj.group]:
+        if obj.group_id in all_matches:
+            for match in all_matches[obj.group_id]:
                 match_set = set(match)
                 if match_set.intersection(matched_atoms):
                     # At least one atom is already matched - keep looking
@@ -450,20 +450,20 @@ def run_match(catalog_by_priority, all_matches, ignore_matches, all_atom_idxs,
                 if match_set == all_atom_idxs and H_count and obj.atoms.get('H', 0) != H_count:
                     continue
                 
-                if (obj.group, match) in ignore_matches:
+                if (obj.group_id, match) in ignore_matches:
                     continue
                 matched_atoms.update(match)
                 try:
-                    final_group_counts[obj.group]
+                    final_group_counts[obj.group_id]
                 except:
-                    final_group_counts[obj.group] = 0
-                final_group_counts[obj.group] += 1
+                    final_group_counts[obj.group_id] = 0
+                final_group_counts[obj.group_id] += 1
                 
                 try:
-                    final_assignments[obj.group]
+                    final_assignments[obj.group_id]
                 except:
-                    final_assignments[obj.group] = []
-                final_assignments[obj.group].append(match)
+                    final_assignments[obj.group_id] = []
+                final_assignments[obj.group_id].append(match)
     return matched_atoms, final_group_counts, final_assignments
     
 
