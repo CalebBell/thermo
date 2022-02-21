@@ -449,8 +449,14 @@ UFSG[51] = UNIFAC_subgroup(51, 'CCL3', 23, 'CCL3', 2.6401, 2.184,
                            smarts='[CX4;H0;!$([CX4;H0](Cl)(Cl)(Cl)(Cl))](Cl)(Cl)(Cl)') # effortlessly web
 
 
-UFSG[52] = UNIFAC_subgroup(52, 'CCL4', 24, 'CCL4', 3.39, 2.91, smarts='[CX4;H0]([Cl])([Cl])([Cl])([Cl])')
-UFSG[53] = UNIFAC_subgroup(53, 'ACCL', 25, 'ACCL', 1.1562, 0.844, smarts='aCl') # Does take up one of the carbon spaces on the ring
+UFSG[52] = UNIFAC_subgroup(52, 'CCL4', 24, 'CCL4', 3.39, 2.91, 
+                           atoms={'Cl': 4, 'H': 0, 'C': 1}, bonds={SINGLE_BOND: 4},
+                           smarts='[CX4;H0]([Cl])([Cl])([Cl])([Cl])')
+
+UFSG[53] = UNIFAC_subgroup(53, 'ACCL', 25, 'ACCL', 1.1562, 0.844, 
+                           atoms={'Cl': 1, 'H': 0, 'C': 1}, bonds={AROMATIC_BOND: 1},
+                           smarts='[c][Cl]') # Does take up one of the carbon spaces on the ring
+
 UFSG[54] = UNIFAC_subgroup(54, 'CH3NO2', 26, 'CNO2', 2.0086, 1.868, smarts='[CX4;H3][NX3](=[OX1])(=[OX1])') # untested
 UFSG[55] = UNIFAC_subgroup(55, 'CH2NO2', 26, 'CNO2', 1.7818, 1.56, smarts='[CX4;H2][NX3](=[OX1])(=[OX1])') # untested
 UFSG[56] = UNIFAC_subgroup(56, 'CHNO2', 26, 'CNO2', 1.5544, 1.248, smarts='[CX4;H1][NX3](=[OX1])(=[OX1])') # untested
