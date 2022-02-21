@@ -330,7 +330,12 @@ UFSG[21] = UNIFAC_subgroup('CH3COO', 11, 'CCOO', 1.9031, 1.728, atoms={'C': 2, '
 UFSG[22] = UNIFAC_subgroup('CH2COO', 11, 'CCOO', 1.6764, 1.42, smarts='[CX4;H2][CX3](=[OX1])[OX2]',
                             atoms={'C': 2, 'H': 2, 'O': 2},
                             bonds={DOUBLE_BOND: 1, SINGLE_BOND: 2},) # Custom, lots of extra matches
-UFSG[23] = UNIFAC_subgroup('HCOO', 12, 'HCOO', 1.242, 1.188, smarts='[CX3;H1](=[OX1])[OX2][#6;!$([CX3]=[#8])]')
+
+UFSG[23] = UNIFAC_subgroup('HCOO', 12, 'HCOO', 1.242, 1.188, atoms={'C': 1, 'H': 1, 'O': 2},
+                            bonds={DOUBLE_BOND: 1, SINGLE_BOND: 1},
+                            smarts='[CX3;H1](=[OX1])[OX2]',#'[CX3;H1](=[OX1])[OX2][#6;!$([CX3]=[#8])]'
+                            )
+
 UFSG[24] = UNIFAC_subgroup('CH3O', 13, 'CH2O', 1.145, 1.088, smarts='[CH3][O]')
 UFSG[25] = UNIFAC_subgroup('CH2O', 13, 'CH2O', 0.9183, 0.78, smarts='[CH2][O]')
 UFSG[26] = UNIFAC_subgroup('CHO', 13, 'CH2O', 0.6908, 0.468, smarts='[C;H1][O]')
