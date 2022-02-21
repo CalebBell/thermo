@@ -398,7 +398,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
         return final_group_counts, final_assignments, matched_atoms, success, status
 
     success = heavy_atom_matched and hydrogens_matched
-    remove_up_to = 5
+    remove_up_to = 4
     if not success:
         things_to_ignore = []
         for k in all_matches:

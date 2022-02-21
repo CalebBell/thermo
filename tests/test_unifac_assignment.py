@@ -33,7 +33,7 @@ from thermo.unifac import UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP
 from thermo import Chemical
 from thermo.joback import smarts_fragment_priority
 
-group_ids = list(range(1, 28))
+group_ids = list(range(1, 34))
 groups = [UFSG[i] for i in group_ids]
 
 def test_UNIFAC_original():
@@ -132,6 +132,37 @@ def test_UNIFAC_original():
     assert assignment == {20: 1, 14: 1, 2: 1}
     assert success
 
+    rdkitmol = Chemical('methylamine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {28: 1}
+    assert success
+
+    rdkitmol = Chemical('ethylamine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {29: 1, 1: 1}
+    assert success
+    
+    rdkitmol = Chemical('isopropyl amine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {30: 1, 1: 2}
+    assert success
+    
+    rdkitmol = Chemical('dimethylamine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {31: 1, 1: 1}
+    assert success
+    
+    
+    rdkitmol = Chemical('diethylamine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {32: 1, 1: 2, 2: 1}
+    assert success
+    
+    rdkitmol = Chemical('diisopropyl amine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {33: 1, 1: 4, 3: 1}
+    assert success
+
 
 
 def test_UNIFAC_failures():
@@ -141,5 +172,18 @@ def test_UNIFAC_failures():
     assert not success
 
 
+'''
+The following compounds were investigated and found to have a different fragmentation.
+hydroxyacetone
+'''
+
+'''The following compounds need isotopic help
+c = Chemical('n,n-dideuterio-1-phenyl-methanamine')
+'''
+
+'''The following compounds need a better tria-and-error algorithm
+c = Chemical('5-[1,3-bis(oxidanyl)propan-2-ylamino]-1-(hydroxymethyl)cyclohexane-1,2,3,4-tetrol')
+
+'''
 test_UNIFAC_original()
 test_UNIFAC_failures()

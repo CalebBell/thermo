@@ -254,6 +254,8 @@ def priority_from_atoms(atoms, bonds=None):
     
     if 'O' in atoms:
         priority += atoms['O']*150
+    if 'N' in atoms:
+        priority += atoms['N']*175
         
     if bonds is not None:
         priority += bonds.get(SINGLE_BOND, 0)*2
@@ -349,12 +351,20 @@ UFSG[27] = UNIFAC_subgroup(27, 'THF', 13, 'CH2O', 0.9183, 1.1, smarts=['[CX4;H2;
                            bonds={SINGLE_BOND: 1}, atoms={'O': 1, 'C': 1, 'H': 2},
                            hydrogen_from_smarts=True) # CX3, H1 needed to allow 290-67-5 and 255-37-8 but adds a lot of false positives;
 
-UFSG[28] = UNIFAC_subgroup(28, 'CH3NH2', 14, 'CNH2', 1.5959, 1.544, smarts='[CX4;H3][NX3;H2]') # Perfect
-UFSG[29] = UNIFAC_subgroup(29, 'CH2NH2', 14, 'CNH2', 1.3692, 1.236, smarts='[CX4;H2][NX3;H2]')
-UFSG[30] = UNIFAC_subgroup(30, 'CHNH2', 14, 'CNH2', 1.1417, 0.924, smarts='[CX4;H1][NX3;H2]')
-UFSG[31] = UNIFAC_subgroup(31, 'CH3NH', 15, 'CNH', 1.4337, 1.244, smarts='[CX4;H3][NX3;H1]')
-UFSG[32] = UNIFAC_subgroup(32, 'CH2NH', 15, 'CNH', 1.207, 0.936, smarts='[CX4;H2][NX3;H1]')
-UFSG[33] = UNIFAC_subgroup(33, 'CHNH', 15, 'CNH', 0.9795, 0.624, smarts='[CX4;H1][NX3;H1]')
+UFSG[28] = UNIFAC_subgroup(28, 'CH3NH2', 14, 'CNH2', 1.5959, 1.544, smarts='[CX4;H3][NX3;H2]',
+                           bonds={SINGLE_BOND: 1}, atoms={'N': 1, 'C': 1, 'H': 5},) # Perfect
+UFSG[29] = UNIFAC_subgroup(29, 'CH2NH2', 14, 'CNH2', 1.3692, 1.236, smarts='[CX4;H2][NX3;H2]',
+                           bonds={SINGLE_BOND: 1}, atoms={'N': 1, 'C': 1, 'H': 4})
+UFSG[30] = UNIFAC_subgroup(30, 'CHNH2', 14, 'CNH2', 1.1417, 0.924, smarts='[CX4;H1][NX3;H2]',
+                           bonds={SINGLE_BOND: 1}, atoms={'N': 1, 'C': 1, 'H': 3})
+
+UFSG[31] = UNIFAC_subgroup(31, 'CH3NH', 15, 'CNH', 1.4337, 1.244, smarts='[CX4;H3][NX3;H1]',
+                           bonds={SINGLE_BOND: 1}, atoms={'N': 1, 'C': 1, 'H': 4})
+UFSG[32] = UNIFAC_subgroup(32, 'CH2NH', 15, 'CNH', 1.207, 0.936, smarts='[CX4;H2][NX3;H1]',
+                           bonds={SINGLE_BOND: 1}, atoms={'N': 1, 'C': 1, 'H': 3})
+UFSG[33] = UNIFAC_subgroup(33, 'CHNH', 15, 'CNH', 0.9795, 0.624, smarts='[CX4;H1][NX3;H1]',
+                           bonds={SINGLE_BOND: 1}, atoms={'N': 1, 'C': 1, 'H': 2})
+
 UFSG[34] = UNIFAC_subgroup(34, 'CH3N', 16, '(C)3N', 1.1865, 0.94, smarts='[CX4;H3][NX3;H0]')
 UFSG[35] = UNIFAC_subgroup(35, 'CH2N', 16, '(C)3N', 0.9597, 0.632, smarts='[CX4;H2][NX3;H0]')
 UFSG[36] = UNIFAC_subgroup(36, 'ACNH2', 17, 'ACNH2', 1.06, 0.816, smarts='[c][NX3;H2]')
