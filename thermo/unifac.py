@@ -490,7 +490,10 @@ UFSG[61] = UNIFAC_subgroup(61, 'FURFURAL', 30, 'FURFURAL', 3.168, 2.484,
                            smarts='c1cc(oc1)C=O') # Easy, compound smarts, 1 hit only
 
 
-UFSG[62] = UNIFAC_subgroup(62, 'DOH', 31, 'DOH', 2.4088, 2.248, smarts='C(CO)O') # Probably going to cause problems, match too much
+UFSG[62] = UNIFAC_subgroup(62, 'DOH', 31, 'DOH', 2.4088, 2.248, 
+                           atoms={'C': 2, 'H': 6, 'O': 2}, bonds={SINGLE_BOND: 3},
+                           smarts='[OX2;H1][CX4;H2][CX4;H2][OX2;H1]') # Probably going to cause problems, match too much
+
 UFSG[63] = UNIFAC_subgroup(63, 'I', 32, 'I', 1.264, 0.992, smarts='[I]')
 UFSG[64] = UNIFAC_subgroup(64, 'BR', 33, 'BR', 0.9492, 0.832, smarts='[Br]')
 UFSG[65] = UNIFAC_subgroup(65, 'CH=-C', 34, 'C=-C', 1.292, 1.088, smarts='[CX2;H1]#[CX2;H0]')
