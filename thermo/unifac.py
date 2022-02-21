@@ -431,9 +431,16 @@ UFSG[46] = UNIFAC_subgroup(46, 'CCL', 21, 'CCL', 1.0106, 0.724,
                            atoms={'Cl': 1, 'H': 0, 'C': 1}, bonds={SINGLE_BOND: 1},
                            smarts='[CX4;H0](Cl)') # effortlessly web
 
-UFSG[47] = UNIFAC_subgroup(47, 'CH2CL2', 22, 'CCL2', 2.2564, 1.988, smarts='[CX4;H2;!$(C(Cl)(Cl)(Cl))](Cl)(Cl)') # effortlessly web
-UFSG[48] = UNIFAC_subgroup(48, 'CHCL2', 22, 'CCL2', 2.0606, 1.684, smarts='[CX4;H1;!$(C(Cl)(Cl)(Cl))](Cl)(Cl)') # effortlessly web
-UFSG[49] = UNIFAC_subgroup(49, 'CCL2', 22, 'CCL2', 1.8016, 1.448, smarts='[CX4;H0;!$(C(Cl)(Cl)(Cl))](Cl)(Cl)') # effortlessly web
+UFSG[47] = UNIFAC_subgroup(47, 'CH2CL2', 22, 'CCL2', 2.2564, 1.988, 
+                           atoms={'Cl': 2, 'H': 2, 'C': 1}, bonds={SINGLE_BOND: 2},
+                           smarts='[CX4;H2;!$(C(Cl)(Cl)(Cl))](Cl)(Cl)') # effortlessly web
+UFSG[48] = UNIFAC_subgroup(48, 'CHCL2', 22, 'CCL2', 2.0606, 1.684, 
+                           atoms={'Cl': 2, 'H': 1, 'C': 1}, bonds={SINGLE_BOND: 2},
+                           smarts='[CX4;H1;!$(C(Cl)(Cl)(Cl))](Cl)(Cl)') # effortlessly web
+UFSG[49] = UNIFAC_subgroup(49, 'CCL2', 22, 'CCL2', 1.8016, 1.448, 
+                           atoms={'Cl': 2, 'H': 0, 'C': 1}, bonds={SINGLE_BOND: 2},
+                           smarts='[CX4;H0;!$(C(Cl)(Cl)(Cl))](Cl)(Cl)') # effortlessly web
+
 UFSG[50] = UNIFAC_subgroup(50, 'CHCL3', 23, 'CCL3', 2.87, 2.41, smarts='[CX4;H1;!$([CX4;H0](Cl)(Cl)(Cl)(Cl))](Cl)(Cl)(Cl)') # effortlessly web
 UFSG[51] = UNIFAC_subgroup(51, 'CCL3', 23, 'CCL3', 2.6401, 2.184, smarts='[CX4;H0;!$([CX4;H0](Cl)(Cl)(Cl)(Cl))](Cl)(Cl)(Cl)') # effortlessly web
 UFSG[52] = UNIFAC_subgroup(52, 'CCL4', 24, 'CCL4', 3.39, 2.91, smarts='[CX4;H0]([Cl])([Cl])([Cl])([Cl])')
