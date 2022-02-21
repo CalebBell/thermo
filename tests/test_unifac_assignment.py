@@ -33,7 +33,7 @@ from thermo.unifac import UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP
 from thermo import Chemical
 from thermo.joback import smarts_fragment_priority
 
-group_ids = list(range(1, 37))
+group_ids = list(range(1, 38))
 groups = [UFSG[i] for i in group_ids]
 
 def test_UNIFAC_original():
@@ -178,6 +178,13 @@ def test_UNIFAC_original():
     assert assignment == {9: 5, 36: 1}
     assert success
 
+    rdkitmol = Chemical('pyridine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {37: 1}
+    assert success
+
+
+
 
 def test_UNIFAC_failures():
     rdkitmol = Chemical('5-Methylfurfuryl alcohol').rdkitmol
@@ -197,6 +204,12 @@ c = Chemical('n,n-dideuterio-1-phenyl-methanamine')
 
 '''The following compounds need a better tria-and-error algorithm
 c = Chemical('5-[1,3-bis(oxidanyl)propan-2-ylamino]-1-(hydroxymethyl)cyclohexane-1,2,3,4-tetrol')
+'''
+
+'''
+The following compounds were processed by the DDBST web application but don't
+actually have UNIFAC groups.
+4,5-didehydropyridine
 
 '''
 test_UNIFAC_original()
