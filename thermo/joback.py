@@ -368,7 +368,12 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     groups = [i.group for i in catalog]
     group_to_obj = {o.group: o for o in catalog}
     catalog_by_priority =  [group_to_obj[g] for _, g in sorted(zip(priorities, groups), reverse=True)]
-    
+
+    all_heavies_matched_by_a_pattern = set()
+    for v in all_matches.values():
+        for t in v:
+            all_heavies_matched_by_a_pattern.update(t)
+
     # excludes H
     
     ignore_matches = set()
@@ -387,7 +392,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     #hydrogens_found = sum(group_to_obj[g].atoms.get('H', 0)*v for g, v in final_group_counts.items())
     hydrogens_matched = hydrogens_found == H_count
 
-    if not heavy_atom_matched:
+    if len(all_heavies_matched_by_a_pattern) != atom_count:
         status = 'Did not match all atoms present'
         success = False
         return final_group_counts, final_assignments, matched_atoms, success, status
