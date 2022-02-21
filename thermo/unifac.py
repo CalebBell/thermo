@@ -387,11 +387,30 @@ UFSG[38] = UNIFAC_subgroup(38, 'C5H4N', 18, 'PYRIDINE', 2.8332, 1.833,
                            atoms={'C': 5, 'H': 4, 'N': 1}, bonds={AROMATIC_BOND: 6}) # Perfect hand made
 
 UFSG[39] = UNIFAC_subgroup(39, 'C5H3N', 18, 'PYRIDINE', 2.667, 1.553, 
-                           smarts='[$([nX2;H0]1[cX3;H0][cX3;H0][cX3;H1][cX3;H1][cX3;H1]1),$([nX2;H0]1[cX3;H0][cX3;H1][cX3;H0][cX3;H1][cX3;H1]1),$([nX2;H0]1[cX3;H0][cX3;H1][cX3;H1][cX3;H0][cX3;H1]1),$([nX2;H0]1[cX3;H0][cX3;H1][cX3;H1][cX3;H1][cX3;H0]1),$([nX2;H0]1[cX3;H1][cX3;H0][cX3;H0][cX3;H1][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H0][cX3;H1][cX3;H0][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H0][cX3;H1][cX3;H1][cX3;H0]1),$([nX2;H0]1[cX3;H1][cX3;H1][cX3;H0][cX3;H0][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H1][cX3;H0][cX3;H1][cX3;H0]1),$([nX2;H0]1[cX3;H1][cX3;H1][cX3;H1][cX3;H0][cX3;H0]1)]') # Very much not fun to make, 200 matches perfectly, 10 different ring combos
+                           atoms={'C': 5, 'H': 3, 'N': 1}, bonds={AROMATIC_BOND: 6},
+                           smarts=['[cX3;H0]1:[cX3;H0]:[cX3;H1]:[nX2;H0]:[cX3;H1]:[cX3;H1]:1',
+                                   '[cX3;H0]1:[cX3;H1]:[cX3;H0]:[nX2;H0]:[cX3;H1]:[cX3;H1]:1',
+                                   '[cX3;H0]1:[cX3;H1]:[cX3;H1]:[nX2;H0]:[cX3;H0]:[cX3;H1]:1',
+                                   '[cX3;H0]1:[cX3;H1]:[cX3;H1]:[nX2;H0]:[cX3;H1]:[cX3;H0]:1',
+                                   
+                                   '[cX3;H1]1:[cX3;H0]:[cX3;H0]:[nX2;H0]:[cX3;H1]:[cX3;H1]:1',
+                                   '[cX3;H1]1:[cX3;H0]:[cX3;H1]:[nX2;H0]:[cX3;H0]:[cX3;H1]:1',
+                                   '[cX3;H1]1:[cX3;H0]:[cX3;H1]:[nX2;H0]:[cX3;H1]:[cX3;H0]:1',
+                                   
+                                   '[cX3;H1]1:[cX3;H1]:[cX3;H0]:[nX2;H0]:[cX3;H0]:[cX3;H1]:1',
+                                   '[cX3;H1]1:[cX3;H1]:[cX3;H0]:[nX2;H0]:[cX3;H1]:[cX3;H0]:1',
+                                   
+                                   '[cX3;H1]1:[cX3;H1]:[cX3;H1]:[nX2;H0]:[cX3;H0]:[cX3;H0]:1']
+                           )
+                           
+# Very much not fun to make, 200 matches perfectly, 10 different ring combos
 
 
-UFSG[40] = UNIFAC_subgroup(40, 'CH3CN', 19, 'CCN', 1.8701, 1.724, smarts='[CX4;H3][CX2]#[NX1]')
-UFSG[41] = UNIFAC_subgroup(41, 'CH2CN', 19, 'CCN', 1.6434, 1.416, smarts='[CX4;H2][CX2]#[NX1]')
+UFSG[40] = UNIFAC_subgroup(40, 'CH3CN', 19, 'CCN', 1.8701, 1.724, atoms={'C': 2, 'H': 3, 'N': 1}, bonds={TRIPLE_BOND: 1, SINGLE_BOND: 1},
+                           smarts='[CX4;H3][CX2]#[NX1]')
+UFSG[41] = UNIFAC_subgroup(41, 'CH2CN', 19, 'CCN', 1.6434, 1.416, atoms={'C': 2, 'H': 3, 'N': 1}, bonds={TRIPLE_BOND: 1, SINGLE_BOND: 1},
+                           smarts='[CX4;H2][CX2]#[NX1]')
+
 UFSG[42] = UNIFAC_subgroup(42, 'COOH', 20, 'COOH', 1.3013, 1.224, smarts='[CX3](=[OX1])[O;H1]') # Tried '[C][CX3](=[OX1])[OH1]' at first but fails for a few hundred
 UFSG[43] = UNIFAC_subgroup(43, 'HCOOH', 20, 'COOH', 1.528, 1.532, smarts='[CX3;H1](=[OX1])[OX2;H1]') # effortlessly web - missing one hit
 UFSG[44] = UNIFAC_subgroup(44, 'CH2CL', 21, 'CCL', 1.4654, 1.264, smarts='[CX4;H2;!$(C(Cl)(Cl))](Cl)') # Matches perfectly effortlessly web
