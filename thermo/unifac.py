@@ -408,7 +408,7 @@ UFSG[39] = UNIFAC_subgroup(39, 'C5H3N', 18, 'PYRIDINE', 2.667, 1.553,
 
 UFSG[40] = UNIFAC_subgroup(40, 'CH3CN', 19, 'CCN', 1.8701, 1.724, atoms={'C': 2, 'H': 3, 'N': 1}, bonds={TRIPLE_BOND: 1, SINGLE_BOND: 1},
                            smarts='[CX4;H3][CX2]#[NX1]')
-UFSG[41] = UNIFAC_subgroup(41, 'CH2CN', 19, 'CCN', 1.6434, 1.416, atoms={'C': 2, 'H': 3, 'N': 1}, bonds={TRIPLE_BOND: 1, SINGLE_BOND: 1},
+UFSG[41] = UNIFAC_subgroup(41, 'CH2CN', 19, 'CCN', 1.6434, 1.416, atoms={'C': 2, 'H': 2, 'N': 1}, bonds={TRIPLE_BOND: 1, SINGLE_BOND: 1},
                            smarts='[CX4;H2][CX2]#[NX1]')
 
 UFSG[42] = UNIFAC_subgroup(42, 'COOH', 20, 'COOH', 1.3013, 1.224, smarts='[CX3](=[OX1])[O;H1]') # Tried '[C][CX3](=[OX1])[OH1]' at first but fails for a few hundred

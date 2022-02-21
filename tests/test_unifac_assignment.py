@@ -33,7 +33,7 @@ from thermo.unifac import UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP
 from thermo import Chemical
 from thermo.joback import smarts_fragment_priority
 
-group_ids = list(range(1, 40))
+group_ids = list(range(1, 42))
 groups = [UFSG[i] for i in group_ids]
 
 def test_UNIFAC_original():
@@ -193,7 +193,18 @@ def test_UNIFAC_original():
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
     assert assignment == {1: 2, 39: 1}
     assert success
-
+    
+    rdkitmol = Chemical('acetonitrile').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {40:1}
+    assert success
+    
+    rdkitmol = Chemical('propionitrile').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {1: 1, 41: 1}
+    assert success
+    
+    
 
 
 
@@ -216,6 +227,7 @@ c = Chemical('n,n-dideuterio-1-phenyl-methanamine')
 
 '''The following compounds need a better tria-and-error algorithm
 c = Chemical('5-[1,3-bis(oxidanyl)propan-2-ylamino]-1-(hydroxymethyl)cyclohexane-1,2,3,4-tetrol')
+2-[4-[bis(2-hydroxyethyl)amino]-2,6-bis[4-[bis(2-hydroxyethyl)amino]phenyl]phenyl]ethanenitrile
 '''
 
 '''
