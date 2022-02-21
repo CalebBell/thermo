@@ -127,6 +127,10 @@ def test_UNIFAC_original():
     assert assignment == {2: 1, 20: 2}
     assert success
     
+    rdkitmol = Chemical('glycolaldehyde').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {20: 1, 14: 1, 2: 1}
+    assert success
 
 
 
