@@ -365,9 +365,14 @@ UFSG[32] = UNIFAC_subgroup(32, 'CH2NH', 15, 'CNH', 1.207, 0.936, smarts='[CX4;H2
 UFSG[33] = UNIFAC_subgroup(33, 'CHNH', 15, 'CNH', 0.9795, 0.624, smarts='[CX4;H1][NX3;H1]',
                            bonds={SINGLE_BOND: 1}, atoms={'N': 1, 'C': 1, 'H': 2})
 
-UFSG[34] = UNIFAC_subgroup(34, 'CH3N', 16, '(C)3N', 1.1865, 0.94, smarts='[CX4;H3][NX3;H0]')
-UFSG[35] = UNIFAC_subgroup(35, 'CH2N', 16, '(C)3N', 0.9597, 0.632, smarts='[CX4;H2][NX3;H0]')
-UFSG[36] = UNIFAC_subgroup(36, 'ACNH2', 17, 'ACNH2', 1.06, 0.816, smarts='[c][NX3;H2]')
+UFSG[34] = UNIFAC_subgroup(34, 'CH3N', 16, '(C)3N', 1.1865, 0.94, smarts='[CX4;H3][NX3;H0]',
+                            bonds={SINGLE_BOND: 1}, atoms={'N': 1, 'C': 1, 'H': 3})
+UFSG[35] = UNIFAC_subgroup(35, 'CH2N', 16, '(C)3N', 0.9597, 0.632, smarts='[CX4;H2][NX3;H0]',
+                            bonds={SINGLE_BOND: 1}, atoms={'N': 1, 'C': 1, 'H': 2})
+
+UFSG[36] = UNIFAC_subgroup(36, 'ACNH2', 17, 'ACNH2', 1.06, 0.816, smarts='[c][NX3;H2]',
+                           bonds={SINGLE_BOND: 1, AROMATIC_BOND: 1}, atoms={'N': 1, 'C': 1, 'H': 2})
+
 UFSG[37] = UNIFAC_subgroup(37, 'C5H5N', 18, 'PYRIDINE', 2.9993, 2.113, smarts='[cX3;H1][cX3;H1][cX3;H1][cX3;H1][nX2;H0][cX3;H1]') # There is another match from ddbst 3,4-Didehydropyridine  but it is C5H3N and so wrong; only one real hit
 UFSG[38] = UNIFAC_subgroup(38, 'C5H4N', 18, 'PYRIDINE', 2.8332, 1.833, smarts='[$([nX2;H0]1[cX3;H0][cX3;H1][cX3;H1][cX3;H1][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H0][cX3;H1][cX3;H1][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H1][cX3;H0][cX3;H1][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H1][cX3;H1][cX3;H0][cX3;H1]1),$([nX2;H0]1[cX3;H1][cX3;H1][cX3;H1][cX3;H1][cX3;H0]1)]',
                            atoms={'C': 5, 'H': 4, 'N': 1}, bonds={AROMATIC_BOND: 6}) # Perfect hand made
