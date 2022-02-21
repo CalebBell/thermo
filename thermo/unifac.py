@@ -441,8 +441,14 @@ UFSG[49] = UNIFAC_subgroup(49, 'CCL2', 22, 'CCL2', 1.8016, 1.448,
                            atoms={'Cl': 2, 'H': 0, 'C': 1}, bonds={SINGLE_BOND: 2},
                            smarts='[CX4;H0;!$(C(Cl)(Cl)(Cl))](Cl)(Cl)') # effortlessly web
 
-UFSG[50] = UNIFAC_subgroup(50, 'CHCL3', 23, 'CCL3', 2.87, 2.41, smarts='[CX4;H1;!$([CX4;H0](Cl)(Cl)(Cl)(Cl))](Cl)(Cl)(Cl)') # effortlessly web
-UFSG[51] = UNIFAC_subgroup(51, 'CCL3', 23, 'CCL3', 2.6401, 2.184, smarts='[CX4;H0;!$([CX4;H0](Cl)(Cl)(Cl)(Cl))](Cl)(Cl)(Cl)') # effortlessly web
+UFSG[50] = UNIFAC_subgroup(50, 'CHCL3', 23, 'CCL3', 2.87, 2.41, 
+                           atoms={'Cl': 3, 'H': 1, 'C': 1}, bonds={SINGLE_BOND: 3},
+                           smarts='[CX4;H1;!$([CX4;H0](Cl)(Cl)(Cl)(Cl))](Cl)(Cl)(Cl)') # effortlessly web
+UFSG[51] = UNIFAC_subgroup(51, 'CCL3', 23, 'CCL3', 2.6401, 2.184, 
+                           atoms={'Cl': 3, 'H': 0, 'C': 1}, bonds={SINGLE_BOND: 3},
+                           smarts='[CX4;H0;!$([CX4;H0](Cl)(Cl)(Cl)(Cl))](Cl)(Cl)(Cl)') # effortlessly web
+
+
 UFSG[52] = UNIFAC_subgroup(52, 'CCL4', 24, 'CCL4', 3.39, 2.91, smarts='[CX4;H0]([Cl])([Cl])([Cl])([Cl])')
 UFSG[53] = UNIFAC_subgroup(53, 'ACCL', 25, 'ACCL', 1.1562, 0.844, smarts='aCl') # Does take up one of the carbon spaces on the ring
 UFSG[54] = UNIFAC_subgroup(54, 'CH3NO2', 26, 'CNO2', 2.0086, 1.868, smarts='[CX4;H3][NX3](=[OX1])(=[OX1])') # untested
