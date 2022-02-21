@@ -336,9 +336,12 @@ UFSG[23] = UNIFAC_subgroup('HCOO', 12, 'HCOO', 1.242, 1.188, atoms={'C': 1, 'H':
                             smarts='[CX3;H1](=[OX1])[OX2]',#'[CX3;H1](=[OX1])[OX2][#6;!$([CX3]=[#8])]'
                             )
 
-UFSG[24] = UNIFAC_subgroup('CH3O', 13, 'CH2O', 1.145, 1.088, smarts='[CH3][O]')
-UFSG[25] = UNIFAC_subgroup('CH2O', 13, 'CH2O', 0.9183, 0.78, smarts='[CH2][O]')
-UFSG[26] = UNIFAC_subgroup('CHO', 13, 'CH2O', 0.6908, 0.468, smarts='[C;H1][O]')
+UFSG[24] = UNIFAC_subgroup('CH3O', 13, 'CH2O', 1.145, 1.088, smarts='[CH3][O]', atoms={'C': 1, 'H': 3, 'O': 1},
+                            bonds={SINGLE_BOND: 1},)
+UFSG[25] = UNIFAC_subgroup('CH2O', 13, 'CH2O', 0.9183, 0.78, smarts='[CH2][O]', atoms={'C': 1, 'H': 2, 'O': 1},
+                            bonds={SINGLE_BOND: 1},)
+UFSG[26] = UNIFAC_subgroup('CHO', 13, 'CH2O', 0.6908, 0.468, smarts='[C;H1][O]', atoms={'C': 1, 'H': 1, 'O': 1},
+                            bonds={SINGLE_BOND: 1},)
 
 
 UFSG[27] = UNIFAC_subgroup('THF', 13, 'CH2O', 0.9183, 1.1, smarts=['[CX4;H2;R][OX2;R]','[CX3;H1;R][OX2;R]'],  #old smarts - '[CX4,CX3;H2,H1;R][OX2;R]',
