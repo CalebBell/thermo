@@ -33,7 +33,7 @@ from thermo.unifac import UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP
 from thermo import Chemical
 from thermo.joback import smarts_fragment_priority
 
-group_ids = list(range(1, 38))
+group_ids = list(range(1, 39))
 groups = [UFSG[i] for i in group_ids]
 
 def test_UNIFAC_original():
@@ -181,6 +181,12 @@ def test_UNIFAC_original():
     rdkitmol = Chemical('pyridine').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
     assert assignment == {37: 1}
+    assert success
+
+
+    rdkitmol = Chemical('2-methylpyridine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {38: 1, 1: 1}
     assert success
 
 
