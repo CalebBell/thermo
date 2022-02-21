@@ -401,8 +401,8 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     remove_up_to = 5
     if not success:
         things_to_ignore = []
-        for k in final_assignments:
-            for v in final_assignments[k]:
+        for k in all_matches:
+            for v in all_matches[k]:
                 things_to_ignore.append((k, v))
 
         done = False
