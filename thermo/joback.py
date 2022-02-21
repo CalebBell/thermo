@@ -334,6 +334,11 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     rdkitmol_Hs = Chem.AddHs(rdkitmol)
     H_count = rdkitmol_Hs.GetNumAtoms() - rdkitmol.GetNumAtoms()
 
+    H_counts_by_idx = {}
+    for at in rdkitmol.GetAtoms():
+        H_counts_by_idx[at.GetIdx()] = at.GetTotalNumHs(includeNeighbors=True)
+
+
     all_atom_idxs = set(i.GetIdx() for i in rdkitmol.GetAtoms())
     atom_count = len(all_atom_idxs)
     status = 'OK'
@@ -385,7 +390,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     for found_group in final_assignments.keys():
         for found_atoms in final_assignments[found_group]:
             if group_to_obj[found_group].hydrogen_from_smarts:
-                hydrogens_found += sum(rdkitmol.GetAtomWithIdx(i).GetTotalNumHs(includeNeighbors=True) for i in found_atoms)
+                hydrogens_found += sum(H_counts_by_idx[i] for i in found_atoms)
             else:
                 hydrogens_found += group_to_obj[found_group].atoms.get('H', 0)
 
@@ -398,29 +403,47 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
         return final_group_counts, final_assignments, matched_atoms, success, status
 
     success = heavy_atom_matched and hydrogens_matched
-    remove_up_to = 4
     if not success:
         things_to_ignore = []
         for k in all_matches:
             for v in all_matches[k]:
                 things_to_ignore.append((k, v))
+                
+        # if len(things_to_ignore) < 25:
+            # remove_up_to = 4
+        # elif len(things_to_ignore) < 25:
+        #     remove_up_to = 3
+        # elif len(things_to_ignore) < 18:
+        #     remove_up_to = 2
+        # else:
+            # remove_up_to = 3
+        remove_up_to = 4
+        max_tries = 20000
+        tries = 0
 
         done = False
         for remove in range(1, remove_up_to+1):
             if done:
                 break
             for ignore_matches in combinations(things_to_ignore, remove):
+                tries += 1
+                if tries > max_tries:
+                    break
+                
                 ignore_matches = set(ignore_matches)
                 matched_atoms, final_group_counts, final_assignments = run_match(catalog_by_priority, all_matches, ignore_matches, all_atom_idxs, H_count)
                 heavy_atom_matched = atom_count == len(matched_atoms)
+                if not heavy_atom_matched:
+                    continue
+
                 hydrogens_found = 0
                 for found_group in final_assignments.keys():
                     for found_atoms in final_assignments[found_group]:
                         if group_to_obj[found_group].hydrogen_from_smarts:
-                            hydrogens_found += sum(
-                                rdkitmol.GetAtomWithIdx(i).GetTotalNumHs(includeNeighbors=True) for i in found_atoms)
+                            hydrogens_found += sum(H_counts_by_idx[i] for i in found_atoms)
                         else:
                             hydrogens_found += group_to_obj[found_group].atoms.get('H', 0)
+                
                 hydrogens_matched = hydrogens_found == H_count
                 success = heavy_atom_matched and hydrogens_matched
 
