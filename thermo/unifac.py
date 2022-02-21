@@ -256,6 +256,8 @@ def priority_from_atoms(atoms, bonds=None):
         priority += atoms['O']*150
     if 'N' in atoms:
         priority += atoms['N']*175
+    if 'Cl' in atoms:
+        priority += atoms['Cl']*300
         
     if bonds is not None:
         priority += bonds.get(SINGLE_BOND, 0)*2
@@ -419,9 +421,16 @@ UFSG[43] = UNIFAC_subgroup(43, 'HCOOH', 20, 'COOH', 1.528, 1.532,
                            atoms={'C': 1, 'H': 2, 'O': 2}, bonds={DOUBLE_BOND: 1, SINGLE_BOND: 1},
                            smarts='[CX3;H1](=[OX1])[OX2;H1]') # effortlessly web - missing one hit
 
-UFSG[44] = UNIFAC_subgroup(44, 'CH2CL', 21, 'CCL', 1.4654, 1.264, smarts='[CX4;H2;!$(C(Cl)(Cl))](Cl)') # Matches perfectly effortlessly web
-UFSG[45] = UNIFAC_subgroup(45, 'CHCL', 21, 'CCL', 1.238, 0.952, smarts='[CX4;H1;!$(C(Cl)(Cl))](Cl)') # effortlessly web
-UFSG[46] = UNIFAC_subgroup(46, 'CCL', 21, 'CCL', 1.0106, 0.724, smarts='[CX4;H0;!$(C(Cl)(Cl))](Cl)') # effortlessly web
+UFSG[44] = UNIFAC_subgroup(44, 'CH2CL', 21, 'CCL', 1.4654, 1.264,
+                           smarts='[CX4;H2;!$(C(Cl)(Cl))](Cl)',
+                           atoms={'Cl': 1, 'H': 2, 'C': 1}, bonds={SINGLE_BOND: 1}) # Matches perfectly effortlessly web
+UFSG[45] = UNIFAC_subgroup(45, 'CHCL', 21, 'CCL', 1.238, 0.952,
+                           atoms={'Cl': 1, 'H': 1, 'C': 1}, bonds={SINGLE_BOND: 1},
+                           smarts='[CX4;H1;!$(C(Cl)(Cl))](Cl)') # effortlessly web
+UFSG[46] = UNIFAC_subgroup(46, 'CCL', 21, 'CCL', 1.0106, 0.724,
+                           atoms={'Cl': 1, 'H': 0, 'C': 1}, bonds={SINGLE_BOND: 1},
+                           smarts='[CX4;H0](Cl)') # effortlessly web
+
 UFSG[47] = UNIFAC_subgroup(47, 'CH2CL2', 22, 'CCL2', 2.2564, 1.988, smarts='[CX4;H2;!$(C(Cl)(Cl)(Cl))](Cl)(Cl)') # effortlessly web
 UFSG[48] = UNIFAC_subgroup(48, 'CHCL2', 22, 'CCL2', 2.0606, 1.684, smarts='[CX4;H1;!$(C(Cl)(Cl)(Cl))](Cl)(Cl)') # effortlessly web
 UFSG[49] = UNIFAC_subgroup(49, 'CCL2', 22, 'CCL2', 1.8016, 1.448, smarts='[CX4;H0;!$(C(Cl)(Cl)(Cl))](Cl)(Cl)') # effortlessly web
