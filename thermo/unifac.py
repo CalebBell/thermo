@@ -158,13 +158,13 @@ except (ImportError, AttributeError):
 
 
 class UNIFAC_subgroup(object):
-    __slots__ = ['group', 'main_group_id', 'main_group', 'R', 'Q', 'smarts', 'priority', 'atoms', 'bonds']
+    __slots__ = ['group', 'main_group_id', 'main_group', 'R', 'Q', 'smarts', 'priority', 'atoms', 'bonds', 'smart_rdkit', 'hydrogen_from_smarts']
 
     def __repr__(self):   # pragma: no cover
         return '<%s>' %self.group
 
     def __init__(self, group, main_group_id, main_group, R, Q, smarts=None,
-                 priority=None, atoms=None, bonds=None):
+                 priority=None, atoms=None, bonds=None, hydrogen_from_smarts=False):
         self.group = group
         self.main_group_id = main_group_id
         self.main_group = main_group
@@ -174,6 +174,8 @@ class UNIFAC_subgroup(object):
         self.priority = priority
         self.atoms = atoms
         self.bonds = bonds
+        self.smart_rdkit = None
+        self.hydrogen_from_smarts = hydrogen_from_smarts
 
 
 
@@ -249,6 +251,9 @@ def priority_from_atoms(atoms, bonds=None):
     if 'C' in atoms:
         priority += atoms['C']*100
     
+    if 'O' in atoms:
+        priority += atoms['O']*150
+        
     if bonds is not None:
         priority += bonds.get(SINGLE_BOND, 0)*2
         priority += bonds.get(DOUBLE_BOND, 0)*10
@@ -329,8 +334,9 @@ UFSG[25] = UNIFAC_subgroup('CH2O', 13, 'CH2O', 0.9183, 0.78, smarts='[CH2][O]')
 UFSG[26] = UNIFAC_subgroup('CHO', 13, 'CH2O', 0.6908, 0.468, smarts='[C;H1][O]')
 
 
-UFSG[27] = UNIFAC_subgroup('THF', 13, 'CH2O', 0.9183, 1.1, smarts='[CX4;H2;R][OX2;R]',  #old smarts - '[CX4,CX3;H2,H1;R][OX2;R]',
-                           bonds={SINGLE_BOND: 1}, atoms={'O': 1, 'C': 1, 'H': 2}) # CX3, H1 needed to allow 290-67-5 and 255-37-8 but adds a lot of false positives;
+UFSG[27] = UNIFAC_subgroup('THF', 13, 'CH2O', 0.9183, 1.1, smarts=['[CX4;H2;R][OX2;R]','[CX3;H1;R][OX2;R]'],  #old smarts - '[CX4,CX3;H2,H1;R][OX2;R]',
+                           bonds={SINGLE_BOND: 1}, atoms={'O': 1, 'C': 1, 'H': 2},
+                           hydrogen_from_smarts=True) # CX3, H1 needed to allow 290-67-5 and 255-37-8 but adds a lot of false positives;
 
 UFSG[28] = UNIFAC_subgroup('CH3NH2', 14, 'CNH2', 1.5959, 1.544, smarts='[CX4;H3][NX3;H2]') # Perfect
 UFSG[29] = UNIFAC_subgroup('CH2NH2', 14, 'CNH2', 1.3692, 1.236, smarts='[CX4;H2][NX3;H2]')
