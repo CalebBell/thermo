@@ -501,8 +501,13 @@ UFSG[64] = UNIFAC_subgroup(64, 'BR', 33, 'BR', 0.9492, 0.832,
                            atoms={'Br': 1}, bonds={SINGLE_BOND: 1},
                            smarts='[Br]')
 
-UFSG[65] = UNIFAC_subgroup(65, 'CH=-C', 34, 'C=-C', 1.292, 1.088, smarts='[CX2;H1]#[CX2;H0]')
-UFSG[66] = UNIFAC_subgroup(66, 'C=-C', 34, 'C=-C', 1.0613, 0.784, smarts='[CX2;H0]#[CX2;H0]')
+UFSG[65] = UNIFAC_subgroup(65, 'CH=-C', 34, 'C=-C', 1.292, 1.088, 
+                           atoms={'C': 2, 'H': 1}, bonds={TRIPLE_BOND: 1},
+                           smarts='[CX2;H1]#[CX2;H0]')
+UFSG[66] = UNIFAC_subgroup(66, 'C=-C', 34, 'C=-C', 1.0613, 0.784, 
+                           atoms={'C': 2, 'H': 0}, bonds={TRIPLE_BOND: 1},
+                           smarts='[CX2;H0]#[CX2;H0]')
+
 UFSG[67] = UNIFAC_subgroup(67, 'DMSO', 35, 'DMSO', 2.8266, 2.472, smarts='CS(=O)C') # Compound smarts; some extra matches
 UFSG[68] = UNIFAC_subgroup(68, 'ACRY', 36, 'ACRY', 2.3144, 2.052, smarts='N#CC=C') # Easy, compount smarts
 UFSG[69] = UNIFAC_subgroup(69, 'CL-(C=C)', 37, 'CLCC', 0.791, 0.724, smarts='Cl[CX3]=[CX3]')
