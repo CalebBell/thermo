@@ -523,7 +523,10 @@ UFSG[69] = UNIFAC_subgroup(69, 'CL-(C=C)', 37, 'CLCC', 0.791, 0.724,
                            # smarts='Cl[CX3]=[CX3]')
                            smarts='[$([Cl;H0]([C]=[C]))]')
 
-UFSG[70] = UNIFAC_subgroup(70, 'C=C', 2, 'C=C', 0.6605, 0.485, smarts='[CX3;H0]=[CX3;H0]') # ddbst matches some of these into rings incorrectly
+UFSG[70] = UNIFAC_subgroup(70, 'C=C', 2, 'C=C', 0.6605, 0.485,
+                           atoms={'C': 2}, bonds={DOUBLE_BOND: 1},
+                           smarts='[CX3;H0]=[CX3;H0]') # ddbst matches some of these into rings incorrectly
+
 UFSG[71] = UNIFAC_subgroup(71, 'ACF', 38, 'ACF', 0.6948, 0.524, smarts='[cX3][F]') # Perfect for many, except 71671-89-1
 UFSG[72] = UNIFAC_subgroup(72, 'DMF', 39, 'DMF', 3.0856, 2.736, smarts='CN(C)C=O') # Probably going to cause problems, match too much
 UFSG[73] = UNIFAC_subgroup(73, 'HCON(CH2)2', 39, 'DMF', 2.6322, 2.12, smarts='[CX4;H2,H1,H3][CX4;H2,H1][NX3][CX3;H1](=[OX1])') # No idea why extra H3 was needed  to match one compound
