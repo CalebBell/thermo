@@ -544,10 +544,10 @@ UFSG[74] = UNIFAC_subgroup(74, 'CF3', 40, 'CF2', 1.406, 1.38,
                            smarts='C(F)(F)F')
 UFSG[75] = UNIFAC_subgroup(75, 'CF2', 40, 'CF2', 1.0105, 0.92, 
                            atoms={'C': 1, 'F': 2}, bonds={SINGLE_BOND: 2},
-                           smarts='C(F)F') # Probably going to cause problems, match too much
+                           smarts='C(F)F')
 UFSG[76] = UNIFAC_subgroup(76, 'CF', 40, 'CF2', 0.615, 0.46, 
                            atoms={'C': 1, 'F': 1}, bonds={SINGLE_BOND: 1},
-                           smarts='C(F)') # Probably going to cause problems, match too much
+                           smarts='C(F)')
 
 UFSG[77] = UNIFAC_subgroup(77, 'COO', 41, 'COO', 1.38, 1.2, smarts='[CX3,cX3](=[OX1])[OX2,oX2]') # ddbst wants match into rings, thus the cX3, oX2
 UFSG[78] = UNIFAC_subgroup(78, 'SIH3', 42, 'SIH2', 1.6035, 1.2632, smarts='[SiX4,SiX3,SiX5;H3]') # some db smiles compounds missing Hs, not matched not due to smarts
