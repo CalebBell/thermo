@@ -33,7 +33,7 @@ from thermo.unifac import UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP
 from thermo import Chemical
 from thermo.joback import smarts_fragment_priority
 
-group_ids = list(range(1, 71))
+group_ids = list(range(1, 72))
 groups = [UFSG[i] for i in group_ids]
 
 def test_UNIFAC_original():
@@ -355,6 +355,12 @@ def test_UNIFAC_original():
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
     assert assignment == {1: 4, 70: 1}
     assert success
+    
+    rdkitmol = Chemical('hexafluorobenzene').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {71: 6}
+    assert success
+    
 
 def test_UNIFAC_failures():
     rdkitmol = Chemical('5-Methylfurfuryl alcohol').rdkitmol
