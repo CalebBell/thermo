@@ -531,7 +531,10 @@ UFSG[71] = UNIFAC_subgroup(71, 'ACF', 38, 'ACF', 0.6948, 0.524,
                            atoms={'C': 1, 'F': 1}, bonds={AROMATIC_BOND: 1, SINGLE_BOND:1},
                            smarts='[cX3][F]') # Perfect for many, except 71671-89-1
 
-UFSG[72] = UNIFAC_subgroup(72, 'DMF', 39, 'DMF', 3.0856, 2.736, smarts='CN(C)C=O') # Probably going to cause problems, match too much
+UFSG[72] = UNIFAC_subgroup(72, 'DMF', 39, 'DMF', 3.0856, 2.736, 
+                           atoms={'C': 3, 'O': 1, 'N': 1, 'H': 7}, bonds={SINGLE_BOND: 3, DOUBLE_BOND:1},
+                           smarts='[CX4;H3][N]([CX4;H3])[CX3;H1]=[O]')
+
 UFSG[73] = UNIFAC_subgroup(73, 'HCON(CH2)2', 39, 'DMF', 2.6322, 2.12, smarts='[CX4;H2,H1,H3][CX4;H2,H1][NX3][CX3;H1](=[OX1])') # No idea why extra H3 was needed  to match one compound
 UFSG[74] = UNIFAC_subgroup(74, 'CF3', 40, 'CF2', 1.406, 1.38, smarts='C(F)(F)F')
 UFSG[75] = UNIFAC_subgroup(75, 'CF2', 40, 'CF2', 1.0105, 0.92, smarts='C(F)F') # Probably going to cause problems, match too much
