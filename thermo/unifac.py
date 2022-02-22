@@ -535,10 +535,20 @@ UFSG[72] = UNIFAC_subgroup(72, 'DMF', 39, 'DMF', 3.0856, 2.736,
                            atoms={'C': 3, 'O': 1, 'N': 1, 'H': 7}, bonds={SINGLE_BOND: 3, DOUBLE_BOND:1},
                            smarts='[CX4;H3][N]([CX4;H3])[CX3;H1]=[O]')
 
-UFSG[73] = UNIFAC_subgroup(73, 'HCON(CH2)2', 39, 'DMF', 2.6322, 2.12, smarts='[CX4;H2,H1,H3][CX4;H2,H1][NX3][CX3;H1](=[OX1])') # No idea why extra H3 was needed  to match one compound
-UFSG[74] = UNIFAC_subgroup(74, 'CF3', 40, 'CF2', 1.406, 1.38, smarts='C(F)(F)F')
-UFSG[75] = UNIFAC_subgroup(75, 'CF2', 40, 'CF2', 1.0105, 0.92, smarts='C(F)F') # Probably going to cause problems, match too much
-UFSG[76] = UNIFAC_subgroup(76, 'CF', 40, 'CF2', 0.615, 0.46, smarts='C(F)') # Probably going to cause problems, match too much
+UFSG[73] = UNIFAC_subgroup(73, 'HCON(CH2)2', 39, 'DMF', 2.6322, 2.12, 
+                           atoms={'C': 3, 'O': 1, 'N': 1, 'H': 5}, bonds={SINGLE_BOND: 3, DOUBLE_BOND:1},
+                           smarts='[NX3]([CX4;H2])([CX4;H2])[CX3;H1](=[OX1])')
+
+UFSG[74] = UNIFAC_subgroup(74, 'CF3', 40, 'CF2', 1.406, 1.38, 
+                           atoms={'C': 1, 'F': 3}, bonds={SINGLE_BOND: 3},
+                           smarts='C(F)(F)F')
+UFSG[75] = UNIFAC_subgroup(75, 'CF2', 40, 'CF2', 1.0105, 0.92, 
+                           atoms={'C': 1, 'F': 2}, bonds={SINGLE_BOND: 2},
+                           smarts='C(F)F') # Probably going to cause problems, match too much
+UFSG[76] = UNIFAC_subgroup(76, 'CF', 40, 'CF2', 0.615, 0.46, 
+                           atoms={'C': 1, 'F': 1}, bonds={SINGLE_BOND: 1},
+                           smarts='C(F)') # Probably going to cause problems, match too much
+
 UFSG[77] = UNIFAC_subgroup(77, 'COO', 41, 'COO', 1.38, 1.2, smarts='[CX3,cX3](=[OX1])[OX2,oX2]') # ddbst wants match into rings, thus the cX3, oX2
 UFSG[78] = UNIFAC_subgroup(78, 'SIH3', 42, 'SIH2', 1.6035, 1.2632, smarts='[SiX4,SiX3,SiX5;H3]') # some db smiles compounds missing Hs, not matched not due to smarts
 UFSG[79] = UNIFAC_subgroup(79, 'SIH2', 42, 'SIH2', 1.4443, 1.0063, smarts='[SiX4,SiX3,SiX5,SiX2;H2]') # some db smiles compounds missing Hs, not matched not due to smarts
