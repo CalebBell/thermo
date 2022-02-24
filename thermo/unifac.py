@@ -258,7 +258,13 @@ def priority_from_atoms(atoms, bonds=None):
         priority += atoms['N']*175
     if 'Cl' in atoms:
         priority += atoms['Cl']*300
-        
+    if 'F' in atoms:
+        priority += atoms['F']*400
+    if 'Si' in atoms:
+        priority += atoms['Si']*200
+    if 'S' in atoms:
+        priority += atoms['S']*250
+    
     if bonds is not None:
         priority += bonds.get(SINGLE_BOND, 0)*2
         priority += bonds.get(DOUBLE_BOND, 0)*10
@@ -404,8 +410,6 @@ UFSG[39] = UNIFAC_subgroup(39, 'C5H3N', 18, 'PYRIDINE', 2.667, 1.553,
                                    
                                    '[cX3;H1]1:[cX3;H1]:[cX3;H1]:[nX2;H0]:[cX3;H0]:[cX3;H0]:1']
                            )
-                           
-# Very much not fun to make, 200 matches perfectly, 10 different ring combos
 
 
 UFSG[40] = UNIFAC_subgroup(40, 'CH3CN', 19, 'CCN', 1.8701, 1.724, atoms={'C': 2, 'H': 3, 'N': 1}, bonds={TRIPLE_BOND: 1, SINGLE_BOND: 1},
@@ -549,43 +553,153 @@ UFSG[76] = UNIFAC_subgroup(76, 'CF', 40, 'CF2', 0.615, 0.46,
                            atoms={'C': 1, 'F': 1}, bonds={SINGLE_BOND: 1},
                            smarts='C(F)')
 
-UFSG[77] = UNIFAC_subgroup(77, 'COO', 41, 'COO', 1.38, 1.2, smarts='[CX3,cX3](=[OX1])[OX2,oX2]') # ddbst wants match into rings, thus the cX3, oX2
-UFSG[78] = UNIFAC_subgroup(78, 'SIH3', 42, 'SIH2', 1.6035, 1.2632, smarts='[SiX4,SiX3,SiX5;H3]') # some db smiles compounds missing Hs, not matched not due to smarts
-UFSG[79] = UNIFAC_subgroup(79, 'SIH2', 42, 'SIH2', 1.4443, 1.0063, smarts='[SiX4,SiX3,SiX5,SiX2;H2]') # some db smiles compounds missing Hs, not matched not due to smarts
-UFSG[80] = UNIFAC_subgroup(80, 'SIH', 42, 'SIH2', 1.2853, 0.7494, smarts='[SiX4,SiX3,SiX5,SiX2,SiX1;H1]') # some db smiles compounds missing Hs, not matched not due to smarts
-UFSG[81] = UNIFAC_subgroup(81, 'SI', 42, 'SIH2', 1.047, 0.4099, smarts='[Si]')
-UFSG[82] = UNIFAC_subgroup(82, 'SIH2O', 43, 'SIO', 1.4838, 1.0621) # Cannot find; Si problems
-UFSG[83] = UNIFAC_subgroup(83, 'SIHO', 43, 'SIO', 1.303, 0.7639) # Cannot find; Si problems
-UFSG[84] = UNIFAC_subgroup(84, 'SIO', 43, 'SIO', 1.1044, 0.4657) # Cannot find; Si problems
-UFSG[85] = UNIFAC_subgroup(85, 'NMP', 44, 'NMP', 3.981, 3.2, smarts='CN1CCCC1=O') # 1 compound
-UFSG[86] = UNIFAC_subgroup(86, 'CCL3F', 45, 'CCLF', 3.0356, 2.644, smarts='C(F)(Cl)(Cl)Cl') # pure compound?
-UFSG[87] = UNIFAC_subgroup(87, 'CCL2F', 45, 'CCLF', 2.2287, 1.916, smarts='C(F)(Cl)Cl')
-UFSG[88] = UNIFAC_subgroup(88, 'HCCL2F', 45, 'CCLF', 2.406, 2.116, smarts='ClC(Cl)F')
-UFSG[89] = UNIFAC_subgroup(89, 'HCCLF', 45, 'CCLF', 1.6493, 1.416, smarts='C(Cl)F')
-UFSG[90] = UNIFAC_subgroup(90, 'CCLF2', 45, 'CCLF', 1.8174, 1.648, smarts='ClC(F)(F)')
-UFSG[91] = UNIFAC_subgroup(91, 'HCCLF2', 45, 'CCLF', 1.967, 1.828, smarts='ClC(F)F')
-UFSG[92] = UNIFAC_subgroup(92, 'CCLF3', 45, 'CCLF', 2.1721, 2.1, smarts='ClC(F)(F)F') # perfect
-UFSG[93] = UNIFAC_subgroup(93, 'CCL2F2', 45, 'CCLF', 2.6243, 2.376, smarts='ClC(Cl)(F)F') # perfect
-UFSG[94] = UNIFAC_subgroup(94, 'AMH2', 46, 'CON(AM)', 1.4515, 1.248, smarts='[CX3;H0](=[OX1])[NX3;H2]')
-UFSG[95] = UNIFAC_subgroup(95, 'AMHCH3', 46, 'CON(AM)', 2.1905, 1.796, smarts='[CX3;H0](=[OX1])[NX3;H1][CX4;H3]') # 3 extra hits, effortlessly web
-UFSG[96] = UNIFAC_subgroup(96, 'AMHCH2', 46, 'CON(AM)', 1.9637, 1.488, smarts='[CX3;H0](=[OX1])[NX3;H1][CX4;H2]') # 4 extra hits, effortlessly web
-UFSG[97] = UNIFAC_subgroup(97, 'AM(CH3)2', 46, 'CON(AM)', 2.8589, 2.428, smarts='[CX3;H0](=[OX1])[NX3;H0]([CX4;H3])[CX4;H3]') # effortlessly web
-UFSG[98] = UNIFAC_subgroup(98, 'AMCH3CH2', 46, 'CON(AM)', 2.6322, 2.12, smarts='[CX3;H0](=[OX1])[NX3;H0]([CX4;H3])[CX4;H2]') # 1 extra hits, effortlessly web
-UFSG[99] = UNIFAC_subgroup(99, 'AM(CH2)2', 46, 'CON(AM)', 2.4054, 1.812, smarts='[CX3;H0](=[OX1])[NX3;H0]([CX4;H2])[CX4;H2]') # 2 extra hits, effortlessly web
-UFSG[100] = UNIFAC_subgroup(100, 'C2H5O2', 47, 'OCCOH', 2.1226, 1.904, smarts='[CX4;H2]([OX2;H1])[CX4;H2][OX2;H0]') # Matches all; 53 extra hits
-UFSG[101] = UNIFAC_subgroup(101, 'C2H4O2', 47, 'OCCOH', 1.8952, 1.592, smarts='[$([CX4;H1]([OX2;H1])[CX4;H2][OX2;H0]),$([CX4;H2]([OX2;H1])[CX4;H1][OX2;H0])]') # custom expression
-UFSG[102] = UNIFAC_subgroup(102, 'CH3S', 48, 'CH2S', 1.613, 1.368, smarts='[CX4;H3][SX2]')
-UFSG[103] = UNIFAC_subgroup(103, 'CH2S', 48, 'CH2S', 1.3863, 1.06, smarts='[CX4;H2][SX2]')
-UFSG[104] = UNIFAC_subgroup(104, 'CHS', 48, 'CH2S', 1.1589, 0.748, smarts='[CX4,CX3,CX2;H1][S]') # S bond might need to be more restricted; C bond might need to be more restricted
-UFSG[105] = UNIFAC_subgroup(105, 'MORPH', 49, 'MORPH', 3.474, 2.796, smarts='C1CNCCO1') # lots of extra hits 100
-UFSG[106] = UNIFAC_subgroup(106, 'C4H4S', 50, 'THIOPHEN', 2.8569, 2.14, smarts='[cX3;H1][cX3;H1][cX3;H1][sX2;H0][cX3;H1]') # Custom tuned - matches perfectly no extras, might need to be more slack in the future
-UFSG[107] = UNIFAC_subgroup(107, 'C4H3S', 50, 'THIOPHEN', 2.6908, 1.86, smarts='[$([cX3;H1][cX3;H1][cX3;H1][sX2;H0][cX3;H0]),$([cX3;H1][cX3;H0][cX3;H1][sX2;H0][cX3;H1])]') # 1 extra - custom tuned
-UFSG[108] = UNIFAC_subgroup(108, 'C4H2S', 50, 'THIOPHEN', 2.5247, 1.58, smarts='[cX3;H1,H0;r5][cX3;H1,H0;r5][cX3;H0,H1;r5][sX2;H0;r5][cX3;H0,H1;r5]') # Not sure if this is right - probably not!!!
-UFSG[109] = UNIFAC_subgroup(109, 'NCO', 51, 'NCO', 1.0567, 0.732, smarts='[NX2]=[CX2]=[OX1]') # Bonds might need to be different - but this smarts matches them all so far
-UFSG[118] = UNIFAC_subgroup(118, '(CH2)2SU', 55, 'SULFONES', 2.6869, 2.12, smarts='CC[SX4](=O)(=O)') # TYPO on their part; Makes no sense for there to be CH3 groups
-UFSG[119] = UNIFAC_subgroup(119, 'CH2CHSU', 55, 'SULFONES', 2.4595, 1.808, smarts='[CX4;H2][CX4;H1][SX4](=O)(=O)') # 3 missing of 6
-UFSG[178] = UNIFAC_subgroup(178, 'IMIDAZOL', 84, 'IMIDAZOL', 2.026, 0.868, smarts='c1cnc[nH]1') # untested
-UFSG[179] = UNIFAC_subgroup(179, 'BTI', 85, 'BTI', 5.774, 4.932, smarts='C(F)(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F') # untested
+UFSG[77] = UNIFAC_subgroup(77, 'COO', 41, 'COO', 1.38, 1.2, 
+                           atoms={'C': 1, 'O': 2}, bonds={SINGLE_BOND: 1, DOUBLE_BOND:1},
+                           smarts='[CX3,cX3](=[OX1])[OX2,oX2]') # ddbst wants match into rings, thus the cX3, oX2
+
+UFSG[78] = UNIFAC_subgroup(78, 'SIH3', 42, 'SIH2', 1.6035, 1.2632,
+                           atoms={'Si': 1, 'H': 3}, bonds={},
+                           smarts='[SiX4,SiX3,SiX5;H3]') # some db smiles compounds missing Hs, not matched not due to smarts
+UFSG[79] = UNIFAC_subgroup(79, 'SIH2', 42, 'SIH2', 1.4443, 1.0063, 
+                           atoms={'Si': 1, 'H': 2}, bonds={},
+                           smarts='[SiX4,SiX3,SiX5,SiX2;H2]') # some db smiles compounds missing Hs, not matched not due to smarts
+UFSG[80] = UNIFAC_subgroup(80, 'SIH', 42, 'SIH2', 1.2853, 0.7494,
+                           atoms={'Si': 1, 'H': 1}, bonds={},
+                           smarts='[SiX4,SiX3,SiX5,SiX2,SiX1;H1]') # some db smiles compounds missing Hs, not matched not due to smarts
+
+UFSG[81] = UNIFAC_subgroup(81, 'SI', 42, 'SIH2', 1.047, 0.4099, 
+                           atoms={'Si': 1, 'H': 0}, bonds={},
+                           smarts='[Si]')
+
+UFSG[82] = UNIFAC_subgroup(82, 'SIH2O', 43, 'SIO', 1.4838, 1.0621,
+                           smarts='[SiH2][O]',
+                           atoms={'Si': 1, 'H': 2, 'O': 1}, bonds={SINGLE_BOND: 1})
+UFSG[83] = UNIFAC_subgroup(83, 'SIHO', 43, 'SIO', 1.303, 0.7639,
+                            smarts='[SiH1][O]',
+                           atoms={'Si': 1, 'H': 1, 'O': 1}, bonds={SINGLE_BOND: 1})
+UFSG[84] = UNIFAC_subgroup(84, 'SIO', 43, 'SIO', 1.1044, 0.4657, smarts='[SiH0][O]',
+                           atoms={'Si': 1, 'H': 0, 'O': 1}, bonds={SINGLE_BOND: 1})
+
+UFSG[85] = UNIFAC_subgroup(85, 'NMP', 44, 'NMP', 3.981, 3.2, 
+                           atoms={'C': 5, 'H': 9, 'O': 1, 'N': 1}, bonds={SINGLE_BOND: 6, DOUBLE_BOND: 1},
+                           smarts='[CX4;H3][NX3;H0]1[CX4;H2][CX4;H2][CX4;H2][CX3;H0]1=[OX1;H0]')
+
+UFSG[86] = UNIFAC_subgroup(86, 'CCL3F', 45, 'CCLF', 3.0356, 2.644, 
+                           bonds={SINGLE_BOND: 4}, atoms={'C': 1, 'Cl': 3, 'F': 1},
+                           smarts='[CX4;H0]([F])([Cl])([Cl])[Cl]') # pure compound?
+
+UFSG[87] = UNIFAC_subgroup(87, 'CCL2F', 45, 'CCLF', 2.2287, 1.916,
+                           bonds={SINGLE_BOND: 3}, atoms={'C': 1, 'Cl': 2, 'F': 1},
+                           smarts='C(F)(Cl)Cl')
+
+UFSG[88] = UNIFAC_subgroup(88, 'HCCL2F', 45, 'CCLF', 2.406, 2.116, 
+                           bonds={SINGLE_BOND: 3}, atoms={'C': 1, 'H': 1, 'Cl': 2, 'F': 1},
+                           smarts='ClC(Cl)F')
+
+UFSG[89] = UNIFAC_subgroup(89, 'HCCLF', 45, 'CCLF', 1.6493, 1.416, 
+                           bonds={SINGLE_BOND: 2}, atoms={'C': 1, 'H': 1, 'Cl': 1, 'F': 1},
+                           smarts='C(Cl)F')
+UFSG[90] = UNIFAC_subgroup(90, 'CCLF2', 45, 'CCLF', 1.8174, 1.648, 
+                           bonds={SINGLE_BOND: 3}, atoms={'C': 1, 'Cl': 1, 'F': 2},
+                           smarts='Cl[CX4;H0](F)(F)')
+UFSG[91] = UNIFAC_subgroup(91, 'HCCLF2', 45, 'CCLF', 1.967, 1.828,
+                           bonds={SINGLE_BOND: 3}, atoms={'H': 1, 'C': 1, 'Cl': 1, 'F': 2},
+                           smarts='Cl[CX4;H1](F)F')
+UFSG[92] = UNIFAC_subgroup(92, 'CCLF3', 45, 'CCLF', 2.1721, 2.1, 
+                           bonds={SINGLE_BOND: 4}, atoms={'C': 1, 'Cl': 1, 'F': 3},
+                           smarts='ClC(F)(F)F') # perfect
+UFSG[93] = UNIFAC_subgroup(93, 'CCL2F2', 45, 'CCLF', 2.6243, 2.376, 
+                           bonds={SINGLE_BOND: 4}, atoms={'C': 1, 'Cl': 2, 'F': 2},
+                           smarts='ClC(Cl)(F)F') # perfect
+
+UFSG[94] = UNIFAC_subgroup(94, 'AMH2', 46, 'CON(AM)', 1.4515, 1.248, 
+                           bonds={SINGLE_BOND: 1, DOUBLE_BOND: 1}, atoms={'C': 1, 'O': 1, 'N': 1, 'H': 2},
+                           smarts='[CX3;H0](=[OX1])[NX3;H2]')
+
+UFSG[95] = UNIFAC_subgroup(95, 'AMHCH3', 46, 'CON(AM)', 2.1905, 1.796, 
+                           # CONHCH3
+                           bonds={SINGLE_BOND: 2, DOUBLE_BOND: 1}, atoms={'C': 2, 'O': 1, 'N': 1, 'H': 4},
+                           smarts='[CX3;H0](=[OX1])[NX3;H1][CX4;H3]') # 3 extra hits, effortlessly web
+
+UFSG[96] = UNIFAC_subgroup(96, 'AMHCH2', 46, 'CON(AM)', 1.9637, 1.488,
+                           bonds={SINGLE_BOND: 2, DOUBLE_BOND: 1}, atoms={'C': 2, 'O': 1, 'N': 1, 'H': 3},
+                           smarts='[CX3;H0](=[OX1])[NX3;H1][CX4;H2]') # 4 extra hits, effortlessly web
+
+UFSG[97] = UNIFAC_subgroup(97, 'AM(CH3)2', 46, 'CON(AM)', 2.8589, 2.428,
+                           bonds={SINGLE_BOND: 3, DOUBLE_BOND: 1}, atoms={'C': 3, 'O': 1, 'N': 1, 'H': 6},
+                           smarts='[CX3;H0](=[OX1])[NX3;H0]([CX4;H3])[CX4;H3]') # effortlessly web
+
+UFSG[98] = UNIFAC_subgroup(98, 'AMCH3CH2', 46, 'CON(AM)', 2.6322, 2.12, 
+                           bonds={SINGLE_BOND: 3, DOUBLE_BOND: 1}, atoms={'C': 3, 'O': 1, 'N': 1, 'H': 5},
+                           smarts='[CX3;H0](=[OX1])[NX3;H0]([CX4;H3])[CX4;H2]') # 1 extra hits, effortlessly web
+
+UFSG[99] = UNIFAC_subgroup(99, 'AM(CH2)2', 46, 'CON(AM)', 2.4054, 1.812, 
+                           bonds={SINGLE_BOND: 3, DOUBLE_BOND: 1}, atoms={'C': 3, 'O': 1, 'N': 1, 'H': 4},
+                           smarts='[CX3;H0](=[OX1])[NX3;H0]([CX4;H2])[CX4;H2]') # 2 extra hits, effortlessly web
+
+UFSG[100] = UNIFAC_subgroup(100, 'C2H5O2', 47, 'OCCOH', 2.1226, 1.904, 
+                            bonds={SINGLE_BOND: 3}, atoms={'C': 2, 'H': 5, 'O': 2},
+                            smarts='[CX4;H2]([OX2;H1])[CX4;H2][OX2;H0]') # Matches all; 53 extra hits
+UFSG[101] = UNIFAC_subgroup(101, 'C2H4O2', 47, 'OCCOH', 1.8952, 1.592, 
+                            bonds={SINGLE_BOND: 3}, atoms={'C': 2, 'H': 4, 'O': 2},
+                            smarts=['[CX4;H1]([OX2;H1])[CX4;H2][OX2;H0]', '[CX4;H2]([OX2;H1])[CX4;H1][OX2;H0]']) # custom expression
+
+UFSG[102] = UNIFAC_subgroup(102, 'CH3S', 48, 'CH2S', 1.613, 1.368, 
+                            bonds={SINGLE_BOND: 1}, atoms={'C': 1, 'H': 3, 'S': 1},
+                            smarts='[CX4;H3][SX2]')
+UFSG[103] = UNIFAC_subgroup(103, 'CH2S', 48, 'CH2S', 1.3863, 1.06, 
+                            bonds={SINGLE_BOND: 1}, atoms={'C': 1, 'H': 2, 'S': 1},
+                            smarts='[CX4;H2][SX2]')
+UFSG[104] = UNIFAC_subgroup(104, 'CHS', 48, 'CH2S', 1.1589, 0.748, 
+                            bonds={SINGLE_BOND: 1}, atoms={'C': 1, 'H': 1, 'S': 1},
+                            smarts='[CX4,CX3,CX2;H1][S]') # S bond might need to be more restricted; C bond might need to be more restricted
+
+UFSG[105] = UNIFAC_subgroup(105, 'MORPH', 49, 'MORPH', 3.474, 2.796, 
+                            bonds={SINGLE_BOND: 6}, atoms={'C': 4, 'H': 9, 'O': 1, 'N': 1},
+                            smarts='[CX4;H2]1[CX4;H2][OX2;H0][CX4;H2][CX4;H2][NX3;H1]1')
+
+UFSG[106] = UNIFAC_subgroup(106, 'C4H4S', 50, 'THIOPHEN', 2.8569, 2.14,
+                            bonds={AROMATIC_BOND: 5}, atoms={'C': 4, 'H': 4, 'S': 1},
+                            smarts='[cX3;H1]1[cX3;H1][cX3;H1][sX2;H0][cX3;H1]1')
+ 
+# Custom tuned - matches perfectly no extras, might need to be more slack in the future
+UFSG[107] = UNIFAC_subgroup(107, 'C4H3S', 50, 'THIOPHEN', 2.6908, 1.86,
+                            bonds={AROMATIC_BOND: 5}, atoms={'C': 4, 'H': 3, 'S': 1},
+                            smarts=['[cX3;H1]1[cX3;H1][cX3;H1][sX2;H0][cX3;H0]1',
+                                    '[cX3;H1]1[cX3;H0][cX3;H1][sX2;H0][cX3;H1]1']) # 1 extra - custom tuned
+
+UFSG[108] = UNIFAC_subgroup(108, 'C4H2S', 50, 'THIOPHEN', 2.5247, 1.58, 
+                            bonds={AROMATIC_BOND: 5}, atoms={'C': 4, 'H': 2, 'S': 1},
+                            smarts=['[cX3;H0]1[cX3;H0][cX3;H1][sX2;H0][cX3;H1]1',
+                                    '[cX3;H0]1[cX3;H1][cX3;H0][sX2;H0][cX3;H1]1',
+                                    '[cX3;H0]1[cX3;H1][cX3;H1][sX2;H0][cX3;H0]1',
+                                    
+                                    '[cX3;H1]1[cX3;H0][cX3;H0][sX2;H0][cX3;H1]1',
+                                    '[cX3;H1]1[cX3;H0][cX3;H1][sX2;H0][cX3;H0]1',
+                                    
+                                    '[cX3;H1]1[cX3;H1][cX3;H0][sX2;H0][cX3;H0]1']) # Not sure if this is right - probably not!!!
+
+UFSG[109] = UNIFAC_subgroup(109, 'NCO', 51, 'NCO', 1.0567, 0.732,
+                            atoms={'C': 1, 'N': 1, 'O': 1}, bonds={DOUBLE_BOND: 2},
+                            smarts='[NX2H0]=[CX2H0]=[OX1H0]') # Bonds might need to be different - but this smarts matches them all so far
+
+UFSG[118] = UNIFAC_subgroup(118, '(CH2)2SU', 55, 'SULFONES', 2.6869, 2.12, 
+                            atoms={'S': 1, 'O': 2, 'H': 4, 'C': 2}, bonds={SINGLE_BOND: 2, DOUBLE_BOND: 2},
+                            smarts='[CX4;H2][SX4](=O)(=O)[CX4;H2]') # TYPO on their part; Makes no sense for there to be CH3 groups
+
+UFSG[119] = UNIFAC_subgroup(119, 'CH2CHSU', 55, 'SULFONES', 2.4595, 1.808, 
+                            atoms={'S': 1, 'O': 2, 'H': 3, 'C': 2}, bonds={SINGLE_BOND: 2, DOUBLE_BOND: 2},
+                            smarts='[CX4;H2][SX4](=O)(=O)[CX4;H1]') # 3 missing of 6
+
+UFSG[178] = UNIFAC_subgroup(178, 'IMIDAZOL', 84, 'IMIDAZOL', 2.026, 0.868, 
+                            atoms={'C': 3, 'N': 2, 'H': 3}, bonds={AROMATIC_BOND: 5},
+                            smarts='[c]1:[c]:[n]:[c]:[n]:1') # DDBST fragmentation indicates N cannot have a hydrogen attatched
+
+
+UFSG[179] = UNIFAC_subgroup(179, 'BTI', 85, 'BTI', 5.774, 4.932,
+                            bonds={DOUBLE_BOND: 4, SINGLE_BOND: 4},
+                            atoms={'C':2, 'O': 4, 'F': 6, 'S': 2, 'N': 1},
+                            smarts='C(F)(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F')
 
 
 for group in UFSG.values():

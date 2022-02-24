@@ -33,10 +33,11 @@ from thermo.unifac import UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP
 from thermo import Chemical
 from thermo.joback import smarts_fragment_priority
 
-group_ids = list(range(1, 77))
-groups = [UFSG[i] for i in group_ids]
 
 def test_UNIFAC_original():
+    # http://www.aim.env.uea.ac.uk/aim/info/UNIFACgroups.html was very helpful in this development
+    
+    from rdkit import Chem
     rdkitmol = Chemical('17059-44-8').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
     assert assignment == {11: 2, 12: 1, 9: 3, 1: 1, 2: 1}
@@ -381,6 +382,238 @@ def test_UNIFAC_original():
     assert assignment == {74: 1, 75: 5, 76: 1}
     assert success
 
+    rdkitmol = Chemical('methyl acrylate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {77: 1, 5: 1, 1: 1}
+    assert success
+    
+    # Si compounds not in database - TODO
+    rdkitmol = Chem.MolFromSmiles('C[SiH3]') # methylsilane
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {1: 1, 78: 1}
+    assert success
+    
+    
+    # diethylsilane with H2 on the Si - pubchem disagrees but common chemistry is right
+    # https://commonchemistry.cas.org/detail?cas_rn=542-91-6&search=diethylsilane
+    rdkitmol = Chem.inchi.MolFromInchi('InChI=1S/C4H12Si/c1-3-5-4-2/h3-5H2,1-2H3')
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {1: 2, 2: 2, 79: 1}
+    assert success
+    
+    # heptamethyltrisiloxane
+    # https://commonchemistry.cas.org/detail?cas_rn=2895-07-0&search=heptamethyltrisiloxane
+    rdkitmol = Chem.MolFromSmiles('O([SiH](C)C)[Si](O[Si](C)(C)C)(C)C')
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {83: 1, 84: 1, 81: 1, 1: 7} 
+    assert success
+    
+    # https://commonchemistry.cas.org/detail?cas_rn=1873-88-7&search=1,1,1,3,5,5,5-Heptamethyltrisiloxane
+    # Different groups matching, don't test the results speficically may change
+    rdkitmol = Chem.MolFromSmiles('O([Si](C)(C)C)[SiH](O[Si](C)(C)C)C')
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert success
+    
+    # 1,3-dimethyldisiloxane
+    rdkitmol = Chem.MolFromSmiles('O([SiH2]C)[SiH2]C')
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {82: 1, 79: 1, 1: 2}
+    assert success
+    
+    
+    # 1,1,3,3-tetramethyldisiloxane
+    rdkitmol = Chem.MolFromSmiles('O([SiH](C)C)[SiH](C)C')
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {83: 1, 80: 1, 1: 4}
+    assert success
+
+    # octamethylcyclotetrasiloxane
+    rdkitmol = Chem.MolFromSmiles('C[Si]1(C)O[Si](C)(C)O[Si](C)(C)O[Si](C)(C)O1')
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {84: 4, 1: 8}
+    assert success
+    
+    
+    # N-Methyl-2-pyrrolidone NMP
+    rdkitmol = Chemical('872-50-4').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {85: 1}
+    assert success
+    
+    rdkitmol = Chemical('Trichlorofluoromethane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {86: 1}
+    assert success
+    
+    rdkitmol = Chemical('tetrachloro-1,2-difluoroethane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {87: 2}
+    assert success
+
+    rdkitmol = Chemical('dichlorofluoromethane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {88: 1}
+    assert success
+
+    rdkitmol = Chemical('1-chloro-1,2,2,2-tetrafluoroethane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {74: 1, 89: 1}
+    assert success
+    
+    rdkitmol = Chemical('1,2-dichlorotetrafluoroethane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {90: 2}
+    assert success
+    
+    rdkitmol = Chemical('chlorodifluoromethane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {91: 1}
+    assert success
+
+    rdkitmol = Chemical('chlorotrifluoromethane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {92: 1}
+    assert success
+
+    rdkitmol = Chemical('dichlorodifluoromethane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {93: 1}
+    assert success
+
+    # Issue with this at one point but fixed the smiles
+    rdkitmol = Chemical('2-chloranyl-2,2-bis(fluoranyl)ethanoic acid').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {90: 1, 42: 1}
+    assert success
+
+    rdkitmol = Chemical('acetamide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {94: 1, 1:1}
+    assert success
+
+    rdkitmol = Chemical('n-methylacetamide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {95: 1, 1:1}
+    assert success
+
+    rdkitmol = Chemical('n-ethylacetamide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {96: 1, 1: 2}
+    assert success
+
+    rdkitmol = Chemical('n,n-dimethylacetamide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {1: 1, 97: 1}
+    assert success
+
+    # N-ethyl-N-methylacetamide
+    rdkitmol = Chem.MolFromSmiles('CCN(C)C(=O)C')
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {98: 1, 1: 2} 
+    assert success
+
+    rdkitmol = Chemical('n,n-diethylacetamide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {99: 1, 1: 3}
+    assert success
+    
+    rdkitmol = Chemical('2-ethoxyethanol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {100: 1, 1: 1, 2: 1}
+    assert success
+    
+    rdkitmol = Chemical('1-Propanol, 2-ethoxy-').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {101: 1, 1: 2, 2: 1}
+    assert success
+
+
+    # Investigated this one wondering what was causing a difference, I like this match better
+    rdkitmol = Chemical('2-hydroxyethyl ethanoate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert success
+    
+
+    rdkitmol = Chemical('dimethylsulphide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {102: 1, 1: 1}
+    assert success
+
+    rdkitmol = Chemical('diethyl thioether').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {103: 1, 1: 2, 2: 1}
+    assert success
+
+    rdkitmol = Chemical('Diisopropyl sulfide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {104: 1, 1: 4, 3: 1}
+    assert success
+
+    rdkitmol = Chemical('morpholine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {105: 1}
+    assert success
+
+
+    rdkitmol = Chemical('thiophene').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {106: 1}
+    assert success
+
+    rdkitmol = Chemical('2-methylthiophene').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {107: 1, 1: 1}
+    assert success
+
+
+    rdkitmol = Chemical('2,3-dimethylthiophene').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {1: 2, 108: 1}
+    assert success
+    
+    rdkitmol = Chemical('Methyl Isocyanate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {1: 1, 109: 1}
+    assert success
+
+    rdkitmol = Chemical('sulfolane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {118: 1, 2: 2} 
+    assert success
+
+    rdkitmol = Chemical('2,4-dimethylsulfolane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {119: 1, 1: 2, 2: 1, 3: 1}
+    assert success
+
+    # Mistake on my part, wrongly identified this earlier
+    rdkitmol = Chemical('1-ethylsulfonylethane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {118: 1, 1: 2}
+    assert success
+
+    # Mistake on my part, wrongly identified this earlier
+    rdkitmol = Chemical('2-ethylsulfonylpropane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {1: 3, 119: 1}
+    assert success
+    
+    
+    # Node that Imidazole itself does not match this definition; it is only imidazolium ionic liquids
+    rdkitmol = Chem.MolFromSmiles('CCN1C=C[N+](=C1)C')
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {178: 1, 1: 2, 2: 1} 
+    assert success
+    
+    
+    rdkitmol = Chem.MolFromSmiles('CCn1cc[n+](C)c1.FC(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F')
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
+    assert assignment == {178: 1, 179: 1, 1: 2, 2: 1} 
+    assert success
+
+
+group_ids = [k for k in UFSG.keys() if k < 2000]
+groups = [UFSG[i] for i in group_ids]
 
 
 def test_UNIFAC_failures():
