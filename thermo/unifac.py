@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2017, 2018, 2019, 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022
+ Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -158,7 +159,9 @@ except (ImportError, AttributeError):
 
 
 class UNIFAC_subgroup(object):
-    __slots__ = ['group_id', 'group', 'main_group_id', 'main_group', 'R', 'Q', 'smarts', 'priority', 'atoms', 'bonds', 'smart_rdkit', 'hydrogen_from_smarts']
+    __slots__ = ['group_id', 'group', 'main_group_id', 'main_group', 'R', 'Q', 
+                 'smarts', 'smart_rdkit', 'hydrogen_from_smarts', 
+                 'priority', 'atoms', 'bonds']
 
     def __repr__(self):   # pragma: no cover
         return '<%s>' %self.group
