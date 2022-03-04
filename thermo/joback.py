@@ -74,7 +74,7 @@ def load_rdkit_modules():
 
 # See https://www.atmos-chem-phys.net/16/4401/2016/acp-16-4401-2016.pdf for more
 # smarts patterns
-
+# TODO switch to https://www.ncbi.nlm.nih.gov/labs/pmc/articles/PMC6645593/
 
 J_BIGGS_JOBACK_SMARTS = [["Methyl","-CH3", "[CX4H3]"],
 ["Secondary acyclic", "-CH2-", "[!R;CX4H2]"],

@@ -454,9 +454,12 @@ class CoolPropPhase(Phase):
 
     def dS_dT(self):
         return self.AS.first_partial_deriv(CPiSmolar, CPiT, CPiP)
+    dS_dT_P = dS_dT
 
     def dS_dP(self):
         return self.AS.first_partial_deriv(CPiSmolar, CPiP, CPiT)
+    
+    dS_dP_T = dS_dP
 
     def dS_dT_V(self):
         return self.AS.first_partial_deriv(CPiSmolar, CPiT, CPiDmolar)

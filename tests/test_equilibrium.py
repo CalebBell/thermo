@@ -88,6 +88,9 @@ def test_two_eos_pure_flash_all_properties():
     # Test all the results
     T, VF = 300.0, 0.4
     eq = flasher.flash(T=T, VF=VF)
+    
+    assert eq.VF == VF
+    assert eq.LF == 1 - VF
 
     # Meta
     assert eq.phases[0] is eq.gas

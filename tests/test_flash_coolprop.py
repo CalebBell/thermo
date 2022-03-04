@@ -75,6 +75,27 @@ correlations = PropertyCorrelationsPackage(constants=constants, HeatCapacityGase
                                                                                    HeatCapacityGas(poly_fit=(50.0, 1000.0, [1.1878323802695824e-20, -5.701277266842367e-17, 1.1513022068830274e-13, -1.270076105261405e-10, 8.309937583537026e-08, -3.2694889968431594e-05, 0.007443050245274358, -0.8722920255910297, 66.82863369121873])),
                                                                                    ])
 
+def test_CoolProp_basic_flashes():
+    T, P = 298.15, 101325.0
+    zs = [1.0]
+    fluid = 'water'
+    fluid_idx = pure_fluids.index(fluid)
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    backend = 'HEOS'
+    gas = CoolPropGas(backend, fluid, T=T, P=P, zs=zs)
+    liquid = CoolPropLiquid(backend, fluid, T=T, P=P, zs=zs)
+
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+    flasher.flash(T=300, P=1e5)
+    flasher.flash(T=300, VF=1)
+    flasher.flash(P=1e5, VF=1)
+    flasher.flash(T=300, VF=0)
+    flasher.flash(P=1e5, VF=0)
+    flasher.flash(P=1e5, H=100)
+    
+    # One phase
+    assert 1 == flasher.flash(P=1e5, S=10).phase_count
+    assert 2 == flasher.flash(P=1e5, S=100).phase_count
 
 backends = ['HEOS']
 @pytest.mark.plot

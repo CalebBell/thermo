@@ -338,7 +338,7 @@ class EquilibriumState(object):
         Returns
         -------
         VF : float
-            Vapor fraction, [-]
+            Vapor molar fraction, [-]
 
         Notes
         -----
@@ -346,6 +346,22 @@ class EquilibriumState(object):
         if self.gas is not None:
             return self.betas[0]
         return 0.0 # No gas phase
+    
+    
+    @property
+    def LF(self):
+        r'''Method to return the liquid fraction of the equilibrium state.
+        If no liquid is present, 0 is always returned.
+
+        Returns
+        -------
+        LF : float
+            Liquid molar fraction, [-]
+
+        Notes
+        -----
+        '''
+        return sum(self.liquids_betas)
 
     @property
     def quality(self):

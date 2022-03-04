@@ -38,9 +38,9 @@ from chemicals.exceptions import PhaseExistenceImpossible
 from thermo.bulk import default_settings
 from thermo.eos_mix import IGMIX
 from thermo.coolprop import CPiP_min
+from thermo.phases import coolprop_phase
 from thermo.phases.coolprop_phase import (
-    caching_state_CoolProp,
-    CPPQ_INPUTS, 
+    CPPQ_INPUTS,
     CPQT_INPUTS, 
     CPunknown, 
     CPiDmolar,
@@ -524,7 +524,9 @@ class FlashPureVLS(Flash):
     def flash_TVF(self, T, VF=None, zs=None, hot_start=None):
         zs = [1.0]
         if self.VL_only_CoolProp:
-            sat_gas_CoolProp = caching_state_CoolProp(self.gas.backend, self.gas.fluid, 1, T, CPQT_INPUTS, CPunknown, None)
+            if coolprop_phase.caching_state_CoolProp is None:
+                coolprop_phase.set_coolprop_constants()
+            sat_gas_CoolProp = coolprop_phase.caching_state_CoolProp(self.gas.backend, self.gas.fluid, 1, T, CPQT_INPUTS, CPunknown, None)
             sat_gas = self.gas.from_AS(sat_gas_CoolProp)
             sat_liq = self.liquid.to(zs=zs, T=T, V=1.0/sat_gas_CoolProp.saturated_liquid_keyed_output(CPiDmolar))
             return sat_gas.P, sat_liq, sat_gas, 0, 0.0
@@ -563,7 +565,9 @@ class FlashPureVLS(Flash):
     def flash_PVF(self, P, VF=None, zs=None, hot_start=None):
         zs = [1.0]
         if self.VL_only_CoolProp:
-            sat_gas_CoolProp = caching_state_CoolProp(self.gas.backend, self.gas.fluid, P, 1.0, CPPQ_INPUTS, CPunknown, None)
+            if coolprop_phase.caching_state_CoolProp is None:
+                coolprop_phase.set_coolprop_constants()
+            sat_gas_CoolProp = coolprop_phase.caching_state_CoolProp(self.gas.backend, self.gas.fluid, P, 1.0, CPPQ_INPUTS, CPunknown, None)
             sat_gas = self.gas.from_AS(sat_gas_CoolProp)
             sat_liq = self.liquids[0].to(zs=zs, T=sat_gas.T, V=1.0/sat_gas_CoolProp.saturated_liquid_keyed_output(CPiDmolar))
             return sat_gas.T, sat_liq, sat_gas, 0, 0.0
