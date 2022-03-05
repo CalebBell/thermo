@@ -41,3 +41,4 @@ thermo/Misc/constants dump 2018.json
 thermo/Misc/constants dump*
 .pytest_cache
 .asv
+docs/Examples/.ipynb_checkpoints/*
