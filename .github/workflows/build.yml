@@ -43,7 +43,7 @@ jobs:
           # scipy dropped 32 bit windows builds 
           - os: windows-latest
             architecture: x86
-            python-version: 3.10
+            python-version: '3.10'
 steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }} ${{ matrix.architecture }}
