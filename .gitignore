@@ -42,3 +42,4 @@ thermo/Misc/constants dump*
 .pytest_cache
 .asv
 docs/Examples/.ipynb_checkpoints/*
+*.ipynb_checkpoints*
