@@ -109,7 +109,7 @@ Do a T-P flash:
 
 >>> res = flasher.flash(T=300, P=1e5)
 >>> res.phase, res.liquid0
-('L', CEOSLiquid(eos_class=PRMIX, eos_kwargs={"Tcs": [512.5], "Pcs": [8084000.0], "omegas": [0.559]}, HeatCapacityGases=[HeatCapacityGas(CASRN="67-56-1", extrapolation="linear", method="POLING_POLY")], T=300, P=100000.0, zs=[1.0]))
+('L', CEOSLiquid(eos_class=PRMIX, eos_kwargs={"Tcs": [512.5], "Pcs": [8084000.0], "omegas": [0.559]}, HeatCapacityGases=[HeatCapacityGas(CASRN="67-56-1", extrapolation="linear", method="POLING_POLY")], T=300.0, P=100000.0, zs=[1.0]))
 
 Do a temperature and vapor-fraction flash:
 

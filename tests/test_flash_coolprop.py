@@ -24,6 +24,7 @@ import pytest
 import thermo
 from thermo import *
 from thermo.coolprop import *
+from thermo.coolprop import has_CoolProp
 from thermo.phases import CoolPropGas, CoolPropLiquid
 from fluids.numerics import assert_close
 from fluids.numerics import *
@@ -74,6 +75,29 @@ correlations = PropertyCorrelationsPackage(constants=constants, HeatCapacityGase
                                                                                    HeatCapacityGas(poly_fit=(50.0, 1000.0, [1.1878323802695824e-20, -5.701277266842367e-17, 1.1513022068830274e-13, -1.270076105261405e-10, 8.309937583537026e-08, -3.2694889968431594e-05, 0.007443050245274358, -0.8722920255910297, 66.82863369121873])),
                                                                                    ])
 
+@pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
+def test_CoolProp_basic_flashes():
+    T, P = 298.15, 101325.0
+    zs = [1.0]
+    fluid = 'water'
+    fluid_idx = pure_fluids.index(fluid)
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    backend = 'HEOS'
+    gas = CoolPropGas(backend, fluid, T=T, P=P, zs=zs)
+    liquid = CoolPropLiquid(backend, fluid, T=T, P=P, zs=zs)
+
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+    flasher.flash(T=300, P=1e5)
+    flasher.flash(T=300, VF=1)
+    flasher.flash(P=1e5, VF=1)
+    flasher.flash(T=300, VF=0)
+    flasher.flash(P=1e5, VF=0)
+    flasher.flash(P=1e5, H=100)
+    
+    # One phase
+    assert 1 == flasher.flash(P=1e5, S=10).phase_count
+    assert 2 == flasher.flash(P=1e5, S=100).phase_count
 
 backends = ['HEOS']
 @pytest.mark.plot
@@ -81,6 +105,8 @@ backends = ['HEOS']
 @pytest.mark.parametric
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("backend", backends)
+@pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_PV_plot(fluid, backend):
     T, P = 298.15, 101325.0
     zs = [1.0]
@@ -136,6 +162,8 @@ del test_PV_plot
 @pytest.mark.parametric
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("backend", backends)
+@pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_TV_plot_CoolProp(fluid, backend):
     T, P = 298.15, 101325.0
     zs = [1.0]
@@ -176,6 +204,8 @@ def test_TV_plot_CoolProp(fluid, backend):
 @pytest.mark.fuzz
 @pytest.mark.slow
 @pytest.mark.plot
+@pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_water_95():
     # TVF, PVF, TP, TV, PV are covered and optimized
     T, P = 298.15, 1e5
@@ -247,3 +277,19 @@ def test_water_95():
         H_base = PropsSI('HMOLAR', 'T', T_max, 'P', P, fluid)
         H_flashed = flasher.flash(T=T_max, P=P).H()
         assert_close(H_base, H_flashed)
+
+@pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
+def test_three_phase_flash_CoolProp():
+    T, P = 298.15, 1e5
+    zs = [.8, .15, .05]
+    names = ['methane', 'decane', 'water']
+    constants, properties = ChemicalConstantsPackage.from_IDs(names)
+    
+    CPP_gas = CoolPropGas('HEOS', names, T=T, P=P, zs=zs)
+    CPP_gas.constants = constants
+    CPP_liq = CoolPropLiquid('HEOS', names, T=T, P=P, zs=zs)
+    CPP_liq.constants = constants
+    flasher = FlashVLN(constants, properties, gas=CPP_gas, liquids=[CPP_liq,CPP_liq] )
+    res = flasher.flash(T=300, P=1e5, zs=zs)
+    assert res.phase_count == 3

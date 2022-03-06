@@ -294,7 +294,10 @@ class FlashVLN(FlashVL):
                     if idx == i:
                         liquids[j] = l
                 if i == gas_to_unique_liquid:
-                    gas = self.gas.to_TP_zs(T, P, zs, other_eos=l.eos_mix)
+                    try:
+                        gas = self.gas.to_TP_zs(T, P, zs, other_eos=l.eos_mix)
+                    except:
+                        gas = self.gas.to_TP_zs(T, P, zs)
 
             if gas is None:
                 gas = self.gas.to(T=T, P=P, zs=zs)

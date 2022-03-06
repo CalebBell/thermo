@@ -27,6 +27,7 @@ from thermo.coolprop import *
 from thermo.phases import IAPWS95Gas, IAPWS95Liquid
 from thermo.chemical_package import iapws_correlations
 from fluids.numerics import *
+from chemicals.iapws import iapws95_Tc, iapws95_Pc
 from thermo.test_utils import mark_plot_unsupported
 from math import *
 import json
@@ -66,6 +67,16 @@ def test_iapws95_basic_flash():
 
     assert_close(flasher.flash(P=1e5, H=flasher.flash(T=273.15, P=1e5).H()).T, 273.15, rtol=1e-10)
 
+
+
+    T1 = 350 + 273.15
+    P1 = 100*1e5
+    P2 = 1e5
+    stage_1 = flasher.flash(P=P1, T=T1)
+    stage_2 = flasher.flash(P=P2, S=stage_1.S())
+    assert_close(stage_2.VF, 0.7666960540476834)
+    
+    
 def test_iapws95_basic_flashes_no_hacks():
     liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
     gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
@@ -159,3 +170,46 @@ def test_plot_IAPWS95(variables):
 
 # test_plot_IAPWS95('VUT')
 # test_plot_IAPWS95('PUT')
+
+
+@pytest.mark.plot
+@pytest.mark.slow
+@pytest.mark.parametric
+@pytest.mark.parametrize("variables", ['PSS', 'TSS'])
+def test_plot_IAPWS95_VF(variables):
+    spec0, spec1, check_prop = variables
+    plot_name = variables[0:2] + 'VF'
+    eos = IAPWS95
+    T, P = 298.15, 101325.0
+    zs = [1.0]
+    liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
+    gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
+
+    flasher = FlashPureVLS(constants=iapws_constants, correlations=iapws_correlations,
+                       gas=gas, liquids=[liquid], solids=[])
+    flasher.TPV_HSGUA_xtol = 1e-13
+    
+    flash_spec = frozenset([spec0, spec1])
+    res = flasher.TPV_inputs(zs=[1.0], pts=200, spec0='T', spec1='VF',
+                             check0=spec0, check1=spec1, prop0=check_prop,
+                             Tmax=iapws95_Tc*(1-1e-12),
+                             Pmax=iapws95_Pc*(1-1e-12),
+                           trunc_err_low=1e-13,
+                           trunc_err_high=1, color_map=cm_flash_tol(),
+                           show=False, verbose=True)
+
+    matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
+
+    path = os.path.join(pure_surfaces_dir, fluid, plot_name)
+    if not os.path.exists(path):
+        os.makedirs(path)
+        
+    tol = 5e-10
+
+    key = '%s - %s - %s' %(plot_name, eos.__name__, fluid)
+
+    plot_fig.savefig(os.path.join(path, key + '.png'))
+    plt.close()
+
+    max_err = np.max(np.abs(errs))
+    assert max_err < tol

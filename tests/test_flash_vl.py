@@ -392,3 +392,29 @@ def test_flash_GibbsExcessLiquid_ideal_PsatPoynting():
     res = flasher.flash(T=15, P=1e5, zs=zs)
     assert res.phase_count == 1
     assert res.liquid_count == 1
+
+
+def test_PRTranslated_air_two_phase():
+    HeatCapacityGases = [HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="TRCIG"),
+     HeatCapacityGas(CASRN="7782-44-7", MW=31.9988, similarity_variable=0.06250234383789392, extrapolation="linear", method="TRCIG"),
+     HeatCapacityGas(CASRN="7440-37-1", MW=39.948, similarity_variable=0.025032542304996495, extrapolation="linear", method="WEBBOOK_SHOMATE")]
+    
+    constants = ChemicalConstantsPackage(atom_fractions=[{'N': 1.0}, {'O': 1.0}, {'Ar': 1.0}], atomss=[{'N': 2}, {'O': 2}, {'Ar': 1}], MWs=[28.0134, 31.9988, 39.948], omegas=[0.04, 0.021, -0.004], Pcs=[3394387.5, 5042945.25, 4873732.5], phase_STPs=['g', 'g', 'g'], rhocs=[11173.1843575419, 13623.978201634878, 13351.134846461948], similarity_variables=[0.07139440410660612, 0.06250234383789392, 0.025032542304996495], Tbs=[77.355, 90.188, 87.302], Tcs=[126.2, 154.58, 150.8], Tms=[63.15, 54.36, 83.81], Vcs=[8.95e-05, 7.34e-05, 7.49e-05], Zcs=[0.2895282296391198, 0.2880002236716698, 0.29114409080360165])
+    properties = PropertyCorrelationsPackage(constants=constants, HeatCapacityGases=HeatCapacityGases)
+    
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas, 'kijs': [[0.0, -0.0159, -0.0004],
+      [-0.0159, 0.0, 0.0089],
+      [-0.0004, 0.0089, 0.0]],
+     'cs': [-3.643e-06, -2.762e-06, -3.293e-06],
+     'alpha_coeffs': [(0.1243, 0.8898, 2.0129),
+      (0.2339, 0.8896, 1.3053),
+      (0.1227, 0.9045, 1.8541)]}
+    
+    gas = CEOSGas(PRMIXTranslatedConsistent, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    liquid = CEOSLiquid(PRMIXTranslatedConsistent, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
+    zs = normalize([78.08, 20.95, .93])
+    
+    res = flasher.flash(P=200000, H=-11909.90990990991, zs=zs)
+    assert_close(res.gas_beta, 0.0010452858012690303, rtol=1e-5)
+    

@@ -676,6 +676,8 @@ def Laliberte_heat_capacity_w(T):
     '''
     if T > 365.1800756083714: # 92, when the fits crossover
         return iapws95_Cpl_mass_sat(T)
+    elif T < 273.15 - 15:
+        T = 273.15 - 15
     return chebval(0.012903225806451612892*(T - 335.64999999999997726),
                    Laliberte_heat_capacity_coeffs)
 
@@ -722,6 +724,8 @@ def Laliberte_heat_capacity_i(T, w_w, a1, a2, a3, a4, a5, a6):
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
     '''
+    if T < 273.15-15:
+        T = 273.15-15
     t = T - 273.15
     alpha = a2*t + a3*exp(0.01*t) + a4*(1. - w_w)
     Cp_i = a1*exp(alpha) + a5*(1. - w_w)**a6

@@ -2802,6 +2802,8 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
                                                    iter_var=iter_var, fixed_var=fixed_var, spec=spec, oscillation_detection=oscillation_detection,
                                                    minimum_progress=1e-4, maxiter=maxiter, fprime=True, xtol=xtol,
                                                    bounded=True, min_bound=min_bound, max_bound=max_bound)
+    if isinstance(phase, IAPWS95) and abs(err) > 1e-4:
+        raise ValueError("Bad solution found")
     T, P = phase.T, phase.P
     return T, P, phase, iterations, err
 

@@ -104,6 +104,9 @@ def set_coolprop_constants():
     def caching_state_CoolProp(backend, fluid, spec0, spec1, spec_set, phase, zs):
         # Pretty sure about as optimized as can get!
         # zs should be a tuple, not a list
+        if type(fluid) is list:
+            fluid = '&'.join(fluid)
+        
         key = (backend, fluid, spec0, spec1, spec_set, phase, zs)
         if key in caching_states_CoolProp:
             AS = caching_states_CoolProp[key]
@@ -119,7 +122,12 @@ def set_coolprop_constants():
             AS.specify_phase(phase)
             if zs is not None:
                 AS.set_mole_fractions(zs)
-            AS.update(spec_set, spec0, spec1) # A failed call here takes ~400 us.
+            try:
+                AS.update(spec_set, spec0, spec1) # A failed call here takes ~400 us.
+            except:
+                # The best workaround is to impose a different phase with CoolProp
+                AS.specify_phase(CPliquid if phase == CPgas else CPgas)
+                AS.update(spec_set, spec0, spec1)
             caching_states_CoolProp[key] = AS
             return AS
         else:
@@ -204,9 +212,12 @@ class CoolPropPhase(Phase):
         self.backend = backend
         self.fluid = fluid
 
-        self.skip_comp = skip_comp = (backend in ('IF97') or fluid in ('water') or '&' not in fluid)
-        if zs is None:
-            zs = [1.0]
+        if type(fluid) is list:
+            self.skip_comp = skip_comp = False
+        else:
+            self.skip_comp = skip_comp = (backend in ('IF97') or fluid in ('water') or '&' not in fluid)
+            if zs is None:
+                zs = [1.0]
         self.zs = zs
         self.N = N = len(zs)
         if skip_comp or N == 1:
@@ -443,9 +454,12 @@ class CoolPropPhase(Phase):
 
     def dS_dT(self):
         return self.AS.first_partial_deriv(CPiSmolar, CPiT, CPiP)
+    dS_dT_P = dS_dT
 
     def dS_dP(self):
         return self.AS.first_partial_deriv(CPiSmolar, CPiP, CPiT)
+    
+    dS_dP_T = dS_dP
 
     def dS_dT_V(self):
         return self.AS.first_partial_deriv(CPiSmolar, CPiT, CPiDmolar)
