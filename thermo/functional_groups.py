@@ -29,45 +29,41 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 .. contents:: :local:
 
+------------------------------------
 Specific molecule matching functions
+------------------------------------
 
 .. autofunction:: thermo.functional_groups.is_organic
 .. autofunction:: thermo.functional_groups.is_inorganic
 
+------------------
+Hydrocarbon Groups
+------------------
 
 .. autofunction:: thermo.functional_groups.is_alkane
-
 .. autofunction:: thermo.functional_groups.is_cycloalkane
+.. autofunction:: thermo.functional_groups.is_branched_alkane
 .. autofunction:: thermo.functional_groups.is_alkene
 .. autofunction:: thermo.functional_groups.is_alkyne
 .. autofunction:: thermo.functional_groups.is_aromatic
+
+-------------
+Oxygen Groups
+-------------
+
 .. autofunction:: thermo.functional_groups.is_alcohol
 .. autofunction:: thermo.functional_groups.is_polyol
-.. autofunction:: thermo.functional_groups.is_acid
 .. autofunction:: thermo.functional_groups.is_ketone
 .. autofunction:: thermo.functional_groups.is_aldehyde
-.. autofunction:: thermo.functional_groups.is_anhydride
+.. autofunction:: thermo.functional_groups.is_carboxylic_acid
 .. autofunction:: thermo.functional_groups.is_ether
 .. autofunction:: thermo.functional_groups.is_phenol
-.. autofunction:: thermo.functional_groups.is_carboxylic_acid
-.. autofunction:: thermo.functional_groups.is_haloalkane
-.. autofunction:: thermo.functional_groups.is_fluoroalkane
-.. autofunction:: thermo.functional_groups.is_chloroalkane
-.. autofunction:: thermo.functional_groups.is_bromoalkane
-.. autofunction:: thermo.functional_groups.is_iodoalkane
 .. autofunction:: thermo.functional_groups.is_ester
-.. autofunction:: thermo.functional_groups.is_branched_alkane
+.. autofunction:: thermo.functional_groups.is_anhydride
 
-Sulfur Groups
-
-.. autofunction:: thermo.functional_groups.is_mercaptan
-.. autofunction:: thermo.functional_groups.is_sulfide
-.. autofunction:: thermo.functional_groups.is_disulfide
-.. autofunction:: thermo.functional_groups.is_sulfoxide
-.. autofunction:: thermo.functional_groups.is_sulfone
-
+------------
 Nitro Groups
-
+------------
 .. autofunction:: thermo.functional_groups.is_nitrile
 .. autofunction:: thermo.functional_groups.is_nitro
 .. autofunction:: thermo.functional_groups.is_amide
@@ -76,16 +72,81 @@ Nitro Groups
 .. autofunction:: thermo.functional_groups.is_secondary_amine
 .. autofunction:: thermo.functional_groups.is_tertiary_amine
 
+-------------
+Sulfur Groups
+-------------
+
+.. autofunction:: thermo.functional_groups.is_mercaptan
+.. autofunction:: thermo.functional_groups.is_sulfide
+.. autofunction:: thermo.functional_groups.is_disulfide
+.. autofunction:: thermo.functional_groups.is_sulfoxide
+.. autofunction:: thermo.functional_groups.is_sulfone
+.. autofunction:: thermo.functional_groups.is_sulfinic_acid
+.. autofunction:: thermo.functional_groups.is_sulfonic_acid
+.. autofunction:: thermo.functional_groups.is_sulfonate_ester
+.. autofunction:: thermo.functional_groups.is_thiocyanate
+.. autofunction:: thermo.functional_groups.is_isothiocyanate
+.. autofunction:: thermo.functional_groups.is_thioketone
+.. autofunction:: thermo.functional_groups.is_thial
+.. autofunction:: thermo.functional_groups.is_carbothioic_s_acid
+.. autofunction:: thermo.functional_groups.is_carbothioic_o_acid
+.. autofunction:: thermo.functional_groups.is_thiolester
+.. autofunction:: thermo.functional_groups.is_thionoester
+.. autofunction:: thermo.functional_groups.is_carbodithioic_acid
+.. autofunction:: thermo.functional_groups.is_carbodithio
+
+--------------
 Silicon Groups
+--------------
 
 .. autofunction:: thermo.functional_groups.is_siloxane
+.. autofunction:: thermo.functional_groups.is_silyl_ether
 
+------------
 Boron Groups
+------------
 
 .. autofunction:: thermo.functional_groups.is_boronic_acid
+.. autofunction:: thermo.functional_groups.is_boronic_ester
+.. autofunction:: thermo.functional_groups.is_borinic_acid
+.. autofunction:: thermo.functional_groups.is_borinic_ester
 
+-----------------
+Phosphorus Groups
+-----------------
 
+.. autofunction:: thermo.functional_groups.is_phosphine
+.. autofunction:: thermo.functional_groups.is_phosphonic_acid
+.. autofunction:: thermo.functional_groups.is_phosphodiester
+.. autofunction:: thermo.functional_groups.is_phosphate
+
+--------------
+Halogen Groups
+--------------
+
+.. autofunction:: thermo.functional_groups.is_haloalkane
+.. autofunction:: thermo.functional_groups.is_fluoroalkane
+.. autofunction:: thermo.functional_groups.is_chloroalkane
+.. autofunction:: thermo.functional_groups.is_bromoalkane
+.. autofunction:: thermo.functional_groups.is_iodoalkane
+
+--------------------
+Organometalic Groups
+--------------------
+
+.. autofunction:: thermo.functional_groups.is_alkyllithium
+.. autofunction:: thermo.functional_groups.is_alkylaluminium
+.. autofunction:: thermo.functional_groups.is_alkylmagnesium_halide
+
+------------
+Other Groups
+------------
+
+.. autofunction:: thermo.functional_groups.is_acid
+
+-----------------
 Utility functions
+-----------------
 
 .. autofunction:: thermo.functional_groups.count_ring_ring_attatchments
 .. autofunction:: thermo.functional_groups.count_rings_attatched_to_rings
@@ -96,7 +157,12 @@ Utility functions
 from __future__ import division
 
 __all__ = ['is_mercaptan', 'is_sulfide', 'is_disulfide', 'is_sulfoxide',
-           'is_sulfone',
+           'is_sulfone', 'is_sulfinic_acid', 'is_sulfonic_acid',
+           'is_sulfonate_ester', 'is_thiocyanate', 'is_isothiocyanate',
+           'is_thioketone', 'is_thial', 'is_carbothioic_s_acid',
+           'is_carbothioic_o_acid', 'is_thiolester', 'is_thionoester',
+           'is_carbodithioic_acid', 'is_carbodithio',
+           
            'is_siloxane',
            'is_alkane', 'is_cycloalkane', 'is_alkene',
            'is_alkyne', 'is_aromatic', 'is_alcohol', 'is_polyol',
@@ -107,8 +173,19 @@ __all__ = ['is_mercaptan', 'is_sulfide', 'is_disulfide', 'is_sulfoxide',
            'is_amine', 'is_primary_amine', 'is_secondary_amine',
            'is_tertiary_amine', 'is_ester', 'is_branched_alkane',
            'is_amide', 'is_nitro',
-           'is_boronic_acid',
-           'is_organic', 'is_inorganic', 'count_ring_ring_attatchments',
+           
+           'is_boronic_acid', 'is_boronic_ester', 'is_borinic_acid',
+           'is_borinic_ester',
+           
+           'is_phosphine', 'is_phosphonic_acid', 'is_phosphodiester',
+           'is_phosphate',
+           
+           'is_alkyllithium', 'is_alkylmagnesium_halide', 'is_alkylaluminium',
+           'is_silyl_ether',
+           
+           'is_organic', 'is_inorganic',
+           
+           'count_ring_ring_attatchments',
            'count_rings_attatched_to_rings']
 
 
@@ -310,6 +387,346 @@ def is_sulfone(mol):
     matches = mol.GetSubstructMatches(smarts_mol_cache(sulfone_smarts))
     return bool(matches)
 
+sulfinic_acid_smarts = '[SX3H0](=O)([OX2H])[!H]'
+def is_sulfinic_acid(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a sulfinic acid. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_sulfinic_acid : bool
+        Whether or not the compound is a sulfinic acid, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_sulfinic_acid(MolFromSmiles('O=S(O)CCN')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(sulfinic_acid_smarts))
+    return bool(matches)
+
+sulfonic_acid_smarts = '[SX4H0](=O)(=O)([OX2H])[!H]'
+
+def is_sulfonic_acid(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a sulfonic acid. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_sulfonic_acid : bool
+        Whether or not the compound is a sulfonic acid, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_sulfonic_acid(MolFromSmiles('OS(=O)(=O)c1ccccc1')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(sulfonic_acid_smarts))
+    return bool(matches)
+
+sulfonate_ester_smarts = '[SX4H0](=O)(=O)([OX2H0])[!H]'
+def is_sulfonate_ester(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a sulfonate ester. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_sulfonate_ester : bool
+        Whether or not the compound is a sulfonate ester, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_sulfonate_ester(MolFromSmiles('COS(=O)(=O)C(F)(F)F')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(sulfonate_ester_smarts))
+    return bool(matches)
+
+thiocyanate_smarts = '[SX2H0]([!H])[CH0]#[NX1H0]'
+def is_thiocyanate(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a thiocyanate. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_thiocyanate : bool
+        Whether or not the compound is a thiocyanate, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_thiocyanate(MolFromSmiles('C1=CC=C(C=C1)SC#N')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(thiocyanate_smarts))
+    return bool(matches)
+
+isothiocyanate_smarts = '[!H][NX2H0]=[CX2H0]=[SX1H0]'
+
+def is_isothiocyanate(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a isothiocyanate. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_isothiocyanate : bool
+        Whether or not the compound is a isothiocyanate, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_isothiocyanate(MolFromSmiles('C=CCN=C=S')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(isothiocyanate_smarts))
+    return bool(matches)
+
+thioketone_smarts = '[#6X3;H0]([!H])([!H])=[SX1H0]'
+
+def is_thioketone(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a thioketone. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_thioketone : bool
+        Whether or not the compound is a thioketone, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_thioketone(MolFromSmiles('C1=CC=C(C=C1)C(=S)C2=CC=CC=C2')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(thioketone_smarts))
+    return bool(matches)
+
+thial_smarts = '[#6X3;H1](=[SX1H0])([!H])'
+
+def is_thial(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a thial. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_thial : bool
+        Whether or not the compound is a thial, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_thial(MolFromSmiles('CC=S')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(thial_smarts))
+    return bool(matches)
+
+
+carbothioic_s_acid_smarts = '[#6X3;H0](=[OX1H0])([SX2H1])([!H])'
+
+def is_carbothioic_s_acid(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a Carbothioic S-acid. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_carbothioic_s_acid : bool
+        Whether or not the compound is a Carbothioic S-acid, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_carbothioic_s_acid(MolFromSmiles('C1=CC=C(C=C1)C(=O)S')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(carbothioic_s_acid_smarts))
+    return bool(matches)
+
+
+carbothioic_o_acid_smarts = '[#6X3;H0]([OX2H1])(=[SX1H0])([!H])'
+
+def is_carbothioic_o_acid(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a Carbothioic S-acid. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_carbothioic_o_acid : bool
+        Whether or not the compound is a Carbothioic S-acid, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_carbothioic_o_acid(MolFromSmiles('OC(=S)c1ccccc1O')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(carbothioic_o_acid_smarts))
+    return bool(matches)
+
+
+thiolester_smarts = '[#6X3;H0](=[OX1H0])([*])[SX2H0][!H]'
+
+def is_thiolester(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a thiolester. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_thiolester : bool
+        Whether or not the compound is a thiolester, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_thiolester(MolFromSmiles('CSC(=O)C=C')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(thiolester_smarts))
+    return bool(matches)
+
+thionoester_smarts = '[#6X3;H0](=[SX1H0])([*])[OX2H0][!H]'
+
+def is_thionoester(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a thionoester. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_thionoester : bool
+        Whether or not the compound is a thionoester, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_thionoester(MolFromSmiles('CCOC(=S)S')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(thionoester_smarts))
+    return bool(matches)
+
+carbodithioic_acid_smarts = '[#6X3;H0](=[SX1H0])([!H])[SX2H1]'
+
+def is_carbodithioic_acid(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a carbodithioic acid . 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_carbodithioic_acid : bool
+        Whether or not the compound is a carbodithioic acid , [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_carbodithioic_acid(MolFromSmiles('C1=CC=C(C=C1)C(=S)S')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(carbodithioic_acid_smarts))
+    return bool(matches)
+
+carbodithio_smarts = '[#6X3;H0](=[SX1H0])([!H])[SX2H0]([!H])'
+
+def is_carbodithio(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a carbodithio. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_carbodithio : bool
+        Whether or not the compound is a carbodithio, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_carbodithio(MolFromSmiles('C(=S)(N)SSC(=S)N')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(carbodithio_smarts))
+    return bool(matches)
+
+
+
 siloxane_smarts = '[Si][O][Si]'
 def is_siloxane(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
@@ -500,7 +917,88 @@ def is_boronic_acid(mol):
     matches = mol.GetSubstructMatches(smarts_mol_cache(boronic_acid_smarts))
     return bool(matches)
 
+boronic_ester_smarts = '[BX3;H0]([OX2H0])([OX2H0])[!O@!H]'
 
+def is_boronic_ester(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a boronic ester.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_boronic_ester : bool
+        Whether or not the compound is a boronic ester, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_boronic_ester(MolFromSmiles('B(C)(OC(C)C)OC(C)C')) # doctest:+SKIP
+    True
+    '''
+    hits = mol.GetSubstructMatches(smarts_mol_cache(boronic_ester_smarts))
+    return len(hits) > 0
+
+borinic_acid_smarts = '[BX3;H0]([OX2H1])([!O])[!O]'
+borinic_acid_smarts_H1 = '[BX3;H1]([OX2H1])[!O]'
+borinic_acid_smarts_H2 = '[BX3;H2][OX2H1]'
+borinic_acid_smarts = (borinic_acid_smarts, borinic_acid_smarts_H1, borinic_acid_smarts_H2)
+def is_borinic_acid(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a borinic acid.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_borinic_acid : bool
+        Whether or not the compound is a borinic acid, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_borinic_acid(MolFromSmiles('BO')) # doctest:+SKIP
+    True
+    '''
+    for s in borinic_acid_smarts:
+        hits = mol.GetSubstructMatches(smarts_mol_cache(s))
+        if len(hits) > 0:
+            return True
+    return False
+
+borinic_ester_smarts = '[BX3;H0]([OX2H0])([!O])[!O]'
+
+def is_borinic_ester(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a borinic ester.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_borinic_ester : bool
+        Whether or not the compound is a borinic ester, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_borinic_ester(MolFromSmiles('B(C1=CC=CC=C1)(C2=CC=CC=C2)OCCN')) # doctest:+SKIP
+    True
+    '''
+    hits = mol.GetSubstructMatches(smarts_mol_cache(borinic_ester_smarts))
+    return len(hits) > 0
 
 alcohol_smarts = '[#6][OX2H]'
 
@@ -1039,6 +1537,109 @@ def is_amine(mol):
     return False
 
 
+
+phosphine_smarts = '[PX3]'
+def is_phosphine(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a phosphine.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_phosphine : bool
+        Whether or not the compound is a phosphine, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_phosphine(MolFromSmiles('CCCPC')) # doctest:+SKIP
+    True
+    '''
+    hits = mol.GetSubstructMatches(smarts_mol_cache(phosphine_smarts))
+    return len(hits) > 0
+
+phosphonic_acid_smarts = '[PX4](=O)([OX2H])[OX2H]'
+
+def is_phosphonic_acid(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a phosphonic_acid.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_phosphonic_acid : bool
+        Whether or not the compound is a phosphonic_acid, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_phosphonic_acid(MolFromSmiles('C1=CC=C(C=C1)CP(=O)(O)O')) # doctest:+SKIP
+    True
+    '''
+    hits = mol.GetSubstructMatches(smarts_mol_cache(phosphonic_acid_smarts))
+    # phosphonic acid itself only has an H for the last group
+    return len(hits) > 0 or CanonSmiles(MolToSmiles(mol)) == 'O=[PH](O)O' 
+
+phosphodiester_smarts = '[PX4;H0](=O)([OX2H])([OX2H0])[OX2H0]'
+def is_phosphodiester(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a phosphodiester.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_phosphodiester : bool
+        Whether or not the compound is a phosphodiester, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_phosphodiester(MolFromSmiles('C(COP(=O)(O)OCC(C(=O)O)N)N=C(N)N')) # doctest:+SKIP
+    True
+    '''
+    hits = mol.GetSubstructMatches(smarts_mol_cache(phosphodiester_smarts))
+    return len(hits) > 0
+
+phosphate_smarts = '[PX4;H0](=O)([OX2H])([OX2H])[OX2H0]'
+def is_phosphate(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a phosphate.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_phosphate : bool
+        Whether or not the compound is a phosphate, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_phosphate(MolFromSmiles('C1=CN(C(=O)N=C1N)[C@H]2[C@@H]([C@@H]([C@H](O2)COP(=O)(O)OP(=O)(O)OP(=O)(O)O)O)O')) # doctest:+SKIP
+    True
+    '''
+    hits = mol.GetSubstructMatches(smarts_mol_cache(phosphate_smarts))
+    return len(hits) > 0
+
 # ester_smarts = '[#6][CX3](=O)[OX2H0][#6]'
 # ester_smarts = '[$([#6]);!$(C=[O,S,N])]C(=O)O[$([#6]);!$(C=[O,S,N])]'
 # ester_smarts = '[CX3H1,CX3](=O)'
@@ -1065,6 +1666,115 @@ def is_ester(mol):
     True
     '''
     matches = mol.GetSubstructMatches(smarts_mol_cache(ester_smarts))
+    return bool(matches)
+
+alkyllithium_smarts = '[Li+;H0].[C-]'
+
+def is_alkyllithium(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule any alkyllithium functional groups.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_alkyllithium : bool
+        Whether or not the compound is an alkyllithium, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_alkyllithium(MolFromSmiles('[Li+].[CH3-]')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(alkyllithium_smarts))
+    return bool(matches)
+
+alkylaluminium_smarts = '[Al][C,c]'
+
+def is_alkylaluminium(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule any alkylaluminium functional groups.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_alkylaluminium : bool
+        Whether or not the compound is an alkylaluminium, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_alkylaluminium(MolFromSmiles('CC[Al](CC)CC')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(alkylaluminium_smarts))
+    return bool(matches)
+
+smarts_alkylmagnesium_halide_Mg1 = '[I-,Br-,Cl-,F-].[Mg+][C,c]'
+smarts_alkylmagnesium_halide_Mg0 = '[I,Br,Cl,F][Mg]'
+smarts_alkylmagnesium_halide_Mg2 = '[c-,C-].[Mg+2].[I-,Br-,Cl-,F-]'
+
+def is_alkylmagnesium_halide(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule any alkylmagnesium_halide functional groups.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_alkylmagnesium_halide : bool
+        Whether or not the compound is an alkylmagnesium_halide, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_alkylmagnesium_halide(MolFromSmiles('C1=CC=[C-]C=C1.[Mg+2].[Br-]')) # doctest:+SKIP
+    True
+    '''
+    for s in (smarts_alkylmagnesium_halide_Mg1, smarts_alkylmagnesium_halide_Mg0, smarts_alkylmagnesium_halide_Mg2):
+        hits = mol.GetSubstructMatches(smarts_mol_cache(s))
+        if len(hits) > 0:
+            return True
+    return False
+
+silyl_ether_smarts = '[SiX4]([OX2H0])([!H])([!H])[!H]'
+
+def is_silyl_ether(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule any silyl ether functional groups.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_silyl_ether : bool
+        Whether or not the compound is an silyl ether, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_silyl_ether(MolFromSmiles('C[Si](C)(C)OS(=O)(=O)C(F)(F)F')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(silyl_ether_smarts))
     return bool(matches)
 
 

@@ -1123,6 +1123,64 @@ def test_count_rings_attatched_to_rings():
     assert 0 == count_rings_attatched_to_rings(mol, allow_neighbors=False)
     
     
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_phosphine():
+    not_phosphine = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
+    for c in not_phosphine:
+        assert not is_phosphine(Chemical(c).rdkitmol)
+    
+    phosphines = ['diphosphorous tetrafluoride', 'difluoroiodophosphine', 'difluorophosphine', 'phenylphosphine', 'Methyl diphenylphosphinite']
+    
+    for c in phosphines:
+        assert is_phosphine(Chemical(c).rdkitmol)
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_phosphonic_acid():
+    not_phosphonic_acid = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene',
+                           'calcium metaphosphate', 'barium metaphosphate']
+    for c in not_phosphonic_acid:
+        assert not is_phosphonic_acid(Chemical(c).rdkitmol)
+    
+    phosphonic_acids = ['Benzylphosphonic acid', 'phosphonoacetic acid', '3-phosphonopropanoic acid',
+                        'medronic acid', 'hypophosphoric acid', 'phosphonic acid']
+    
+    for c in phosphonic_acids:
+        assert is_phosphonic_acid(Chemical(c).rdkitmol)
+        
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_phosphodiester():
+    not_phosphodiester = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene', 'calcium metaphosphate', 'difluorophosphine']
+    for c in not_phosphodiester:
+        assert not is_phosphodiester(Chemical(c).rdkitmol)
+    
+    phosphodiesters = ['dipropyl hydrogen phosphate', 'didecyl phosphate', 'diicosoxyphosphinic acid', 'diadenosine tetraphosphate', 'citicoline', 'dioctyl phosphate', 'ditetradecyl phosphate', 'diphosphoric acid, trioctyl ester', 'adenosine triphosphate']
+    
+    for c in phosphodiesters:
+        assert is_phosphodiester(Chemical(c).rdkitmol)
+
+phosphates = ['monotridecyl phosphate', 'phosphoglycolic acid',
+              'phosphoglycolic acid', 'glucose-1-phosphate', 'isoamyl ammonium phosphate', 'cytidylic acid', 'thuringiensin',
+                'synadenylic acid',
+                'cytidine triphosphate',
+                'propyl phosphate', 'octacosyl dihydrogen phosphate',
+                'hexacosyl dihydrogen phosphate',
+                'tetracosyl dihydrogen phosphate', 'uridylic acid',
+                'triethyl lead phosphate',]
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_phosphate():
+    not_phosphate = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']
+    for c in not_phosphate:
+        assert not is_phosphate(Chemical(c).rdkitmol)
+    
+    for c in phosphates:
+        assert is_phosphate(Chemical(c).rdkitmol)
+
 boronic_acids = ['4-ethylphenylboronic acid',
  '2-fluorophenylboronic acid',
  '4-borono-dl-phenylalanine',
@@ -1207,3 +1265,472 @@ def test_is_boronic_acids():
     
     for c in boronic_acids:
         assert is_boronic_acid(Chemical(c).rdkitmol)
+boronic_esters =[ 'Diisopropoxymethylborane',
+                     'difluoroboroxin',
+ 'fluoroboroxin', 'trichloroboroxin',
+ 'trifluoroboroxine', 'fluorodimethoxyborane', 'chloro(diethoxy)borane',
+ 'chlorodimethoxyborane',
+ 'butyldiisopropoxyborane',
+ 'ethyldimethoxyborane',
+ 'diisopropoxymethylborane',
+ '2-bromo-1,3,2-benzodioxaborole',
+ 'trimethylboroxine',]
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_boronic_ester():
+    not_boronic_ester = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] + boronic_acids + borinic_acids
+    for c in not_boronic_ester:
+        assert not is_boronic_ester(Chemical(c).rdkitmol)
+    
+    
+    for c in boronic_esters:
+        assert is_boronic_ester(Chemical(c).rdkitmol)
+
+borinic_acids =  ['diphenylborinic acid', 'difluorohydroxyborane']
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_borinic_acid():
+    not_borinic_acid = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] + boronic_esters + boronic_acids + borinic_esters
+    for c in not_borinic_acid:
+        assert not is_borinic_acid(Chemical(c).rdkitmol)
+    
+    
+    for c in borinic_acids:
+        assert is_borinic_acid(Chemical(c).rdkitmol)
+
+    smiles_hits = ['BO', 'B(C1=CC=C(C=C1)Cl)(C2=CC=C(C=C2)Cl)O']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_borinic_acid(mol)
+
+
+borinic_esters = [ 'methoxydichloroborane',
+ 'methoxydiethylborane',
+ 'methoxychlorofluoroborane',
+ 'methoxybromofluoroborane',
+ 'methoxybromochloroborane', 'methoxydifluoroborane', 'dichloro-(ethoxy)borane',
+ 'dichloro-(n-propoxy)borane', 'methoxydiiodoborane',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_borinic_ester():
+    not_borinic_ester = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] + boronic_esters + boronic_acids + borinic_acids
+    for c in not_borinic_ester:
+        assert not is_borinic_ester(Chemical(c).rdkitmol)
+    
+    
+    for c in borinic_esters:
+        assert is_borinic_ester(Chemical(c).rdkitmol)
+
+    smiles_hits = []
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_borinic_ester(mol)
+
+
+alkyllithiums = [ 'methyllithium', 'tert-butyllithium', 'n-butyllithium', 'lithium cyanide', 'lithium cyclopentadienide', 'isopropyllithium',
+ 'ethyllithium',
+ 'n-hexyllithium', 'sec-butyllithium',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_alkyllithium():
+    not_alkyllithium = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_alkyllithium:
+        assert not is_alkyllithium(Chemical(c).rdkitmol)
+    
+    
+    for c in alkyllithiums:
+        assert is_alkyllithium(Chemical(c).rdkitmol)
+
+    smiles_hits = []
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_alkyllithium(mol)
+
+alkylmagnesium_halides = [ 'bromopentylmagnesium', 'ethylmagnesiumbromide', 'bromophenylmagnesium', 'chloroethylmagnesium',
+ 'chloromethylmagnesium', 'methyl magnesium bromide',
+ 'benzylmagnesium chloride','cyclohexylmagnesium chloride', '4-methylphenylmagnesium bromide',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_alkylmagnesium_halide():
+    not_alkylmagnesium_halide = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_alkylmagnesium_halide:
+        assert not is_alkylmagnesium_halide(Chemical(c).rdkitmol)
+    
+    
+    for c in alkylmagnesium_halides:
+        assert is_alkylmagnesium_halide(Chemical(c).rdkitmol)
+
+    smiles_hits = ['C1=CC=[C-]C=C1.[Mg+2].[Br-]', 'Br[Mg]c1ccccc1', '[Cl-].[Mg+]C']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_alkylmagnesium_halide(mol)
+
+
+
+alkylaluminiums = ['trimethylaluminium', 'Triethylaluminium', 'diethylaluminum ethoxide', 'tris(triacontyl)aluminium', '(e)-didecyl(dodec-1-enyl)aluminium', 'trineopentylaluminium',
+                   'tripropylaluminum', 'triisobutylaluminum', 'dimethylaluminum chloride', 'diisobutylaluminum chloride', 'isobutylaluminum dichloride', 'chlorodioctylaluminium']
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_alkylaluminium():
+    not_alkylaluminium = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_alkylaluminium:
+        assert not is_alkylaluminium(Chemical(c).rdkitmol)
+    
+    
+    for c in alkylaluminiums:
+        assert is_alkylaluminium(Chemical(c).rdkitmol)
+
+    smiles_hits = []
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_alkylaluminium(mol)
+        
+
+silyl_ethers = [  'methyltriethoxysilane', '3-cyanopropyltriethoxysilane', 'tris(trimethylsiloxy)silane', '2-(3-cyclohexenyl)ethyltrimethoxysilane',
+ 'diisobutyldimethoxysilane',
+ 'octamethyltetrasiloxane-1,7-diol', '3-isocyanatopropyltrimethoxysilane', 'trimethoxy(octyl)silane',
+ 'octadecyltrimethoxysilane', 'diethyldiethoxysilane', 'methyldodecyldiethoxysilane', '1-phenoxysilatrane', 'phenylsilatrane', 'hexaphenyldisiloxane',
+ '1,3-dibenzyltetramethyldisiloxane',
+ 'methyltris(trimethylsiloxy)silane',
+ 'isopropenyloxytrimethylsilane',
+ 'pentamethylphenylcyclotrisiloxane', 'tris(trimethylsilyloxy)ethylene', 'octadecyltriethoxysilane',
+ '1,1-dimethoxysiletane', 'ethoxysilatrane',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_silyl_ether():
+    not_silyl_ether = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene']  + alkylaluminiums+ alkylmagnesium_halides+alkyllithiums
+    for c in not_silyl_ether:
+        assert not is_silyl_ether(Chemical(c).rdkitmol)
+    
+    
+    for c in silyl_ethers:
+        assert is_silyl_ether(Chemical(c).rdkitmol)
+
+    smiles_hits = ['C[Si](C)(C)OS(=O)(=O)C(F)(F)F']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_silyl_ether(mol)
+
+sulfinic_acids = [ 'bisulfite',
+ 'thiourea dioxide', 'methanesulfinic acid', 'p-toluenesulfinic acid',
+ 'sodium bisulfite', 'calcium bisulfite', 'choline bisulfite',
+ 'potassium hydrogen sulfite',
+ 'benzenesulfinic acid',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_sulfinic_acid():
+    not_sulfinic_acid = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_sulfinic_acid:
+        assert not is_sulfinic_acid(Chemical(c).rdkitmol)
+    
+    
+    for c in sulfinic_acids:
+        assert is_sulfinic_acid(Chemical(c).rdkitmol)
+
+    smiles_hits = ['O=S(O)CCN']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_sulfinic_acid(mol)
+
+sulfonic_acids = ['Benzenesulfonic acid',
+                  'n-acetylsulfanilic acid', 'guabenxane', 'diphenyl epsilon acid',
+ 'chromotropic acid', 'ergocristinine methanesulfonate',
+ 'ergocorninine methanesulfonate',
+ 'ergocryptinine methanesulfonate',
+ 'ergotaminine methanesulfonate', 'persilic acid', '4-amino-2-methylbenzenesulfonic acid',
+ '4-sulfophthalic anhydride', 'peroxydisulfuric acid', 'fluorosulfonic acid',
+ 'chlorosulfuric acid',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_sulfonic_acid():
+    not_sulfonic_acid = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_sulfonic_acid:
+        assert not is_sulfonic_acid(Chemical(c).rdkitmol)
+    
+    
+    for c in sulfonic_acids:
+        assert is_sulfonic_acid(Chemical(c).rdkitmol)
+
+    smiles_hits = ['OS(=O)(=O)c1ccccc1']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_sulfonic_acid(mol)
+
+sulfonate_esters = [ 'phenyl methanesulfonate', 'propylene dimethanesulfonate',
+ 'isopropyl methanesulfonate', 'multergan', 'allyl methanesulfonate',
+ 'potassium persulfate', 'magnesium tetradecyl sulfate',
+ 'magnesium decyl sulfate', 'dipropyl sulfate', 'potassium pyrosulfate', 'ammonium persulfate',
+ 'sodium persulfate',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_sulfonate_ester():
+    not_sulfonate_ester = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_sulfonate_ester:
+        assert not is_sulfonate_ester(Chemical(c).rdkitmol)
+    
+    
+    for c in sulfonate_esters:
+        assert is_sulfonate_ester(Chemical(c).rdkitmol)
+
+    smiles_hits = ['COS(=O)(=O)C(F)(F)F']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_sulfonate_ester(mol)
+
+
+thiocyanates = ['heptyl thiocyanate',
+ 'bornate',
+ 'methyl thiocyanate',
+ 'iodine thiocyanate', 'ethyl thiocyanate',
+ '4-methyl-2-nitrophenylthiocyanate',
+ '4-nitrobenzyl thiocyanate', 'chlorine thiocyanate', 'methylene dithiocyanate',
+ 'sulfur dicyanide', 'lauryl thiocyanate', 'octyl thiocyanate', '4-fluorobutyl thiocyanate',
+ 'chloromethyl thiocyanate', 'trimethyltin thiocyanate',
+ 'benzyl thiocyanate', 'phenyl thiocyanate', 'trichloromethyl thiocyanate',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_thiocyanate():
+    not_thiocyanate = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_thiocyanate:
+        assert not is_thiocyanate(Chemical(c).rdkitmol)
+    
+    
+    for c in thiocyanates:
+        assert is_thiocyanate(Chemical(c).rdkitmol)
+
+    smiles_hits = ['C1=CC=C(C=C1)SC#N']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_thiocyanate(mol)
+
+
+isothiocyanates =  ['crotonyl isothiocyanate',
+ '4-isopropylphenyl isothiocyanate', '2-chlorobenzoyl isothiocyanate',
+ '3-chlorobenzoyl isothiocyanate',
+ 'octadecyl isothiocyanate',
+ 'ethyl 4-isothiocyanatobutanoate', 'trityl isothiocyanate', 'methyl isothiocyanate',
+ 'cyanogen isothiocyanate', 'allyl isothiocyanate', 'ethyl isothiocyanate', 'benzoyl isothiocyanate',
+ 'phenyl isothiocyanate', '3-bromopropyl isothiocyanate', 'dodecyl isothiocyanate',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_isothiocyanate():
+    not_isothiocyanate = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_isothiocyanate:
+        assert not is_isothiocyanate(Chemical(c).rdkitmol)
+    
+    
+    for c in isothiocyanates:
+        assert is_isothiocyanate(Chemical(c).rdkitmol)
+
+    smiles_hits = ['C=CCN=C=S']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_isothiocyanate(mol)
+
+
+is_thioketones =  ['Diphenylmethanethione',
+ 'thioacetamide', 'nickel dibutyldithiocarbamate', 'dimethylthiocarbamoyl chloride', 'propyl dipropyldithiocarbamate', 'sodium ethylxanthate', 'diethyl xanthate', 'thioisonicotinamide', 'thiourea', 'potassium butylxanthate', '2-phenethyl-3-thiosemicarbazide', 'ammonium thiocarbamate', 'zinc isopropylxanthate', 'thiadiazinthion', '3-anilinorhodanine', 'thiuram disulfide', '2-bornanethione',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_thioketone():
+    not_thioketone = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_thioketone:
+        assert not is_thioketone(Chemical(c).rdkitmol)
+    
+    
+    for c in is_thioketones:
+        assert is_thioketone(Chemical(c).rdkitmol)
+
+    smiles_hits = ['C1=CC=C(C=C1)C(=S)C2=CC=CC=C2']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_thioketone(mol)
+
+
+is_thials =  ['ethanethial',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_thial():
+    not_thial = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_thial:
+        assert not is_thial(Chemical(c).rdkitmol)
+    
+    
+    for c in is_thials:
+        assert is_thial(Chemical(c).rdkitmol)
+
+    smiles_hits = ['CC=S', 'CN(C)C=S', 'C(=S)N', 'C(=S)C#N']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_thial(mol)
+
+
+is_carbothioic_s_acids =  ['Thiobenzoic acid', 'thioacetic acid', 'trifluorothiolacetic acid','dithioterephthalic acid',
+ 'aminothioacetic acid',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_carbothioic_s_acid():
+    not_carbothioic_s_acid = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_carbothioic_s_acid:
+        assert not is_carbothioic_s_acid(Chemical(c).rdkitmol)
+    
+    
+    for c in is_carbothioic_s_acids:
+        assert is_carbothioic_s_acid(Chemical(c).rdkitmol)
+
+    smiles_hits = ['C1=CC=C(C=C1)C(=O)S']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_carbothioic_s_acid(mol)
+
+
+
+is_carbothioic_o_acids =  []
+# Literally nothing in the database
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_carbothioic_o_acid():
+    not_carbothioic_o_acid = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_carbothioic_o_acid:
+        assert not is_carbothioic_o_acid(Chemical(c).rdkitmol)
+    
+    
+    for c in is_carbothioic_o_acids:
+        assert is_carbothioic_o_acid(Chemical(c).rdkitmol)
+
+    smiles_hits = ['OC(=S)c1ccccc1O']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_carbothioic_o_acid(mol)
+
+
+is_thiolesters =  [ '2-benzothiophene-1,3-dione', 's-phenyl carbonochloridothioate',
+ 's-tert-butyl thioacetate', 'ecadotril', 'tibenzate', 's-ethyl thiopropionate',
+ 's-propyl propanethioate',
+ 's-methyl hexanethioate',
+ 's-propyl chlorothioformate', '2-methyl-3-(acetylthio)propionyl chloride', 'tiocarbazil',
+ 'cycloate', 'fenothiocarb', 'prosulfocarb', 'previcur',
+ 'molinate', 'acetylthiocholine iodide',
+ 'butyrylthiocholine iodide', 's-phenyl thioacetate',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_thiolester():
+    not_thiolester = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_thiolester:
+        assert not is_thiolester(Chemical(c).rdkitmol)
+    
+    
+    for c in is_thiolesters:
+        assert is_thiolester(Chemical(c).rdkitmol)
+
+    smiles_hits = ['CSC(=O)C=C']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_thiolester(mol)
+
+
+is_thionoesters =  [ 'allyl thiopropionate',
+ 'o-ethyl ethanethioate', 'potassium butylxanthate',
+ 'dibutylxanthogen', 'potassium amylxanthate', 'o-phenyl chlorothioformate', 'o-ethyl thiocarbamate', 'potassium isopentyl dithiocarbonate',
+ 'pentafluorophenyl chlorothionoformate',
+ 'trichloromethyl methyl perthioxanthate', 'sodium ethylxanthate',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_thionoester():
+    not_thionoester = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_thionoester:
+        assert not is_thionoester(Chemical(c).rdkitmol)
+    
+    
+    for c in is_thionoesters:
+        assert is_thionoester(Chemical(c).rdkitmol)
+
+    smiles_hits = ['CCOC(=S)S']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_thionoester(mol)
+
+
+is_carbodithioic_acids =  [ 'Dithiobenzoic acid', 'xanthate', '4-morpholinecarbodithioic acid', 'bis(2-methylpropyl)carbamodithioic acid', 'ammonium diethyldithiocarbamate', 'azepanium azepane-1-carbodithioate',
+ 'dipropyldithiocarbamic acid',
+ 'pyrrolidine dithiocarbamate',
+ 'ethane(dithioic) acid',
+ 'benzenecarbodithioic acid', 'ditiocarb',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_carbodithioic_acid():
+    not_carbodithioic_acid = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_carbodithioic_acid:
+        assert not is_carbodithioic_acid(Chemical(c).rdkitmol)
+    
+    
+    for c in is_carbodithioic_acids:
+        assert is_carbodithioic_acid(Chemical(c).rdkitmol)
+
+    smiles_hits = ['C1=CC=C(C=C1)C(=S)S']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_carbodithioic_acid(mol)
+
+
+is_carbodithios =  [  '1,3-dithiolane-2-thione', 'tetrabutylthiuram disulfide', 'chlorothioformylsulfenylchloride',
+ 'dimorpholinethiuram disulfide', 'allyl dimethyldithiocarbamate',
+ 'phenyl chlorodithioformate', 'thiadiazinthion',
+ 'dimethyl trithiocarbonate',
+ 'ethyl dithioacetate', '3-allylrhodanine',
+ '3-anilinorhodanine', 'dixanthogen', 'cystogon', 'monosulfiram',
+ 'sulfallate',
+ '2-benzothiazolyl diethyldithiocarbamate', 'dipentamethylenethiuram disulfide',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_carbodithio():
+    not_carbodithio = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_carbodithio:
+        assert not is_carbodithio(Chemical(c).rdkitmol)
+    
+    
+    for c in is_carbodithios:
+        assert is_carbodithio(Chemical(c).rdkitmol)
+
+    smiles_hits = ['C(=S)(N)SSC(=S)N']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_carbodithio(mol)
+
+
