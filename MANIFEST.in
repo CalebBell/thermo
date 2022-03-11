@@ -18,3 +18,5 @@ global-exclude .*ipynb_checkpoints*
 prune thermo/__pycache__
 prune docs/Data/.ipynb_checkpoints/
 recursive-exclude docs *ipynb_checkpoints
+recursive-exclude docs 
+prune docs
