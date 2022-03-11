@@ -1734,3 +1734,171 @@ def test_is_carbodithio():
         assert is_carbodithio(mol)
 
 
+is_acyl_halides =  ['4-bromobenzoyl chloride', 'isophthaloyl dichloride',
+ 'terephthaloyl chloride', 'heptanoyl chloride', '4-methylvaleryl chloride',
+ '2-chloroisobutyryl chloride', 'acetyl bromide',
+ 'acetyl iodide',
+ 'benzoyl iodide', '2-furoyl chloride', '4-ethoxybenzoyl chloride',
+ '5-bromovaleryl chloride',
+ 'propionyl chloride', 'isovaleryl chloride',
+ '2,3,3-trifluoroacryloyl fluoride',
+ '3-nitrobenzoyl chloride',
+ '4-chlorobenzoyl chloride',
+ '4-nitrobenzoyl chloride', 'perfluoroglutaryl chloride',
+ 'perfluoroglutaryl fluoride', 'chlorodifluoroacetyl chloride',
+ 'chlorodifluoroacetyl fluoride',
+ 'trifluoroacetyl fluoride',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_acyl_halide():
+    not_acyl_halide = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_acyl_halide:
+        assert not is_acyl_halide(Chemical(c).rdkitmol)
+    
+    
+    for c in is_acyl_halides:
+        assert is_acyl_halide(Chemical(c).rdkitmol)
+
+    smiles_hits = ['C(CCC(=O)Cl)CC(=O)Cl']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_acyl_halide(mol)
+
+
+is_carbonates =  [ 'Triphosgene', 'dihexyl carbonate', 'triphosgene',
+ 'isobutyl carbonate', 'dibutyl carbonate',
+ '4-formylphenyl methyl carbonate',
+ 'ethyl phenyl carbonate',
+ 'ethyl methyl carbonate', 'ethylene carbonate', 'dimethyl carbonate',
+ 'clorethate', 'decachlorodiphenyl carbonate', 'dipropyl carbonate',
+ 'bis(2-chloroethyl) carbonate', 'diallyl carbonate', 'diethyl pyrocarbonate', 'bismuth subcarbonate',
+ 'diamyl carbonate',
+ 'diethyl carbonate',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_carbonate():
+    not_carbonate = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_carbonate:
+        assert not is_carbonate(Chemical(c).rdkitmol)
+    
+    
+    for c in is_carbonates:
+        assert is_carbonate(Chemical(c).rdkitmol)
+
+    smiles_hits = ['C(=O)(OC(Cl)(Cl)Cl)OC(Cl)(Cl)Cl']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_carbonate(mol)
+
+is_carboxylates =  [ 'Sodium acetate', 'ammonium acetate', 'potassium acetate',
+ 'sodium acetate', 'praseodymium oxalate', 'bismuth oxalate', 'iron oleate', 'zinc octanoate',
+ 'calcium valproate', 'cefodizime sodium',
+ 'cadmium lactate','stannous tartrate',
+ 'pentolonium tartrate',
+ 'indium citrate',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_carboxylate():
+    not_carboxylate = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_carboxylate:
+        assert not is_carboxylate(Chemical(c).rdkitmol)
+    
+    
+    for c in is_carboxylates:
+        assert is_carboxylate(Chemical(c).rdkitmol)
+
+    smiles_hits = [ 'CC(=O)[O-].[Na+]']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_carboxylate(mol)
+
+is_hydroperoxides =  [  'octadecaneperoxoic acid',
+ 'tetradecaneperoxoic acid', '1-methylcyclohexyl hydroperoxide', 'n-butylhydroperoxide', 'peroxytridecanoic acid', 'trifluoromethyl peroxyacetate', 'hydroperoxymethanol', 'pentyl hydroperoxide', 'dodecaneperoxoic acid', 'tert-butyl hydroperoxide', 'methyl hydroperoxide',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_hydroperoxide():
+    not_hydroperoxide = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_hydroperoxide:
+        assert not is_hydroperoxide(Chemical(c).rdkitmol)
+    
+    
+    for c in is_hydroperoxides:
+        assert is_hydroperoxide(Chemical(c).rdkitmol)
+
+    smiles_hits = ['CC(C)(C)OO']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_hydroperoxide(mol)
+
+
+
+is_peroxides =  [ 'hydrogen peroxide', '1,2-dioxane', 'tert-butyl octaneperoxoate', '2,2-di(tert-butylperoxy)butane', 'butyl peroxide', 'bis(1-oxononyl) peroxide',
+ 'dioctanoyl peroxide', 'acetyl benzoyl peroxide', 'octyl peroxide', 'benzoyl peroxide', 'fluorine dioxide', 'peroxydisulfuric acid', '1,2-dioxocane',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_peroxide():
+    not_peroxide = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_peroxide:
+        assert not is_peroxide(Chemical(c).rdkitmol)
+    
+    
+    for c in is_peroxides:
+        assert is_peroxide(Chemical(c).rdkitmol)
+
+    smiles_hits = [ 'CC(C)(C)OOC(C)(C)C']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_peroxide(mol)
+
+is_orthoesters =  ['Triethyl orthoacetate', 'tetraethyl orthocarbonate',
+ 'triethyl orthoacetate', 'trimethyl orthoacetate', 'trimethyl orthobenzoate', 'trimethyl orthopropionate', 'trimethyl orthobutyrate',
+ 'triethyl orthopropionate', 'trimethyl orthovalerate',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_orthoester():
+    not_orthoester = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_orthoester:
+        assert not is_orthoester(Chemical(c).rdkitmol)
+    
+    
+    for c in is_orthoesters:
+        assert is_orthoester(Chemical(c).rdkitmol)
+
+    smiles_hits = ['CCOC(C)(OCC)OCC']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_orthoester(mol)
+
+
+is_methylenedioxys =  [ '4,4-dimethyl-1,3-dioxane', 'narcotine', 'piperic acid', 'cubebin', '1,3,5-trioxane', 'homarylamine',
+ 'oxolinic acid', '1-piperonylpiperazine', 'sesamol',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_methylenedioxy():
+    not_methylenedioxy = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_methylenedioxy:
+        assert not is_methylenedioxy(Chemical(c).rdkitmol)
+    
+    
+    for c in is_methylenedioxys:
+        assert is_methylenedioxy(Chemical(c).rdkitmol)
+
+    smiles_hits = ['C1OC2=CC=CC=C2O1']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_methylenedioxy(mol)
+

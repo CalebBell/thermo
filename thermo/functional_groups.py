@@ -60,6 +60,16 @@ Oxygen Groups
 .. autofunction:: thermo.functional_groups.is_phenol
 .. autofunction:: thermo.functional_groups.is_ester
 .. autofunction:: thermo.functional_groups.is_anhydride
+.. autofunction:: thermo.functional_groups.is_acyl_halide
+.. autofunction:: thermo.functional_groups.is_carbonate
+.. autofunction:: thermo.functional_groups.is_carboxylate
+.. autofunction:: thermo.functional_groups.is_hydroperoxide
+.. autofunction:: thermo.functional_groups.is_peroxide
+.. autofunction:: thermo.functional_groups.is_orthoester
+.. autofunction:: thermo.functional_groups.is_methylenedioxy
+
+
+
 
 ------------
 Nitro Groups
@@ -165,14 +175,19 @@ __all__ = ['is_mercaptan', 'is_sulfide', 'is_disulfide', 'is_sulfoxide',
            
            'is_siloxane',
            'is_alkane', 'is_cycloalkane', 'is_alkene',
-           'is_alkyne', 'is_aromatic', 'is_alcohol', 'is_polyol',
-           'is_acid', 'is_ketone', 'is_aldehyde', 'is_anhydride',
-           'is_ether', 'is_phenol', 'is_nitrile', 'is_carboxylic_acid',
+           'is_alkyne', 'is_aromatic', 'is_nitrile', 'is_carboxylic_acid',
            'is_haloalkane', 'is_fluoroalkane', 'is_chloroalkane', 
            'is_bromoalkane', 'is_iodoalkane',
            'is_amine', 'is_primary_amine', 'is_secondary_amine',
            'is_tertiary_amine', 'is_ester', 'is_branched_alkane',
            'is_amide', 'is_nitro',
+           
+           # oxygen
+           'is_acyl_halide', 'is_alcohol', 'is_polyol',
+           'is_acid', 'is_ketone', 'is_aldehyde', 'is_anhydride',
+           'is_ether', 'is_phenol', 'is_carbonate', 'is_carboxylate',
+           'is_hydroperoxide', 'is_peroxide', 'is_orthoester',
+           'is_methylenedioxy',
            
            'is_boronic_acid', 'is_boronic_ester', 'is_borinic_acid',
            'is_borinic_ester',
@@ -1130,6 +1145,191 @@ def is_aldehyde(mol):
     # https://smarts.plus/smartsview/8c5ed80db53e19cc40dcfef58453d90fec96e18d8b7f602d34ff1e3a566c
     matches = mol.GetSubstructMatches(smarts_mol_cache(aldehyde_smarts))
     return bool(matches) or CanonSmiles(MolToSmiles(mol)) == 'C=O' 
+
+
+acyl_halide_smarts = '[#6X3;H0](=[OX1H0])([FX1,ClX1,BrX1,IX1])[!H]'
+
+def is_acyl_halide(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a acyl halide. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_acyl_halide : bool
+        Whether or not the compound is a acyl halide, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_acyl_halide(MolFromSmiles('C(CCC(=O)Cl)CC(=O)Cl')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(acyl_halide_smarts))
+    return bool(matches)
+
+carbonate_smarts =  '[!H][OX2H0][CX3H0](=[OX1H0])[OX2H0][!H]'
+
+def is_carbonate(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a carbonate. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_carbonate : bool
+        Whether or not the compound is a carbonate, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_carbonate(MolFromSmiles('C(=O)(OC(Cl)(Cl)Cl)OC(Cl)(Cl)Cl')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(carbonate_smarts))
+    return bool(matches)
+
+carboxylate_smarts =  '[C][C](=[OX1H0])[O-X1H0]'
+
+def is_carboxylate(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a carboxylate. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_carboxylate : bool
+        Whether or not the compound is a carboxylate, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_carboxylate(MolFromSmiles('CC(=O)[O-].[Na+]')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(carboxylate_smarts))
+    return bool(matches)
+
+hydroperoxide_smarts = '[!H][OX2H0][OX2H1]'
+
+def is_hydroperoxide(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a hydroperoxide. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_hydroperoxide : bool
+        Whether or not the compound is a hydroperoxide, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_hydroperoxide(MolFromSmiles('CC(C)(C)OO')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(hydroperoxide_smarts))
+    return bool(matches)
+
+
+peroxide_smarts = '[!H][OX2H0][OX2H0][!H]'
+
+def is_peroxide(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a peroxide. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_peroxide : bool
+        Whether or not the compound is a peroxide, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_peroxide(MolFromSmiles('CC(C)(C)OOC(C)(C)C')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(peroxide_smarts))
+    return bool(matches) or CanonSmiles(MolToSmiles(mol)) == 'OO' 
+
+orthoester_smarts = '[*][CX4]([OX2H0])([OX2H0])([OX2H0])'
+
+def is_orthoester(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a orthoester. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_orthoester : bool
+        Whether or not the compound is a orthoester, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_orthoester(MolFromSmiles('CCOC(C)(OCC)OCC')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(orthoester_smarts))
+    return bool(matches)
+
+methylenedioxy_smarts = '[CX4H2;R]([OX2H0;R])([OX2H0;R])'
+
+def is_methylenedioxy(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a methylenedioxy. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_methylenedioxy : bool
+        Whether or not the compound is a methylenedioxy, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_methylenedioxy(MolFromSmiles('C1OC2=CC=CC=C2O1')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(methylenedioxy_smarts))
+    return bool(matches)
+
 
 anhydride_smarts = '[CX3](=[OX1])[OX2][CX3](=[OX1])'
 
