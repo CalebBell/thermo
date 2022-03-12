@@ -67,9 +67,8 @@ Oxygen Groups
 .. autofunction:: thermo.functional_groups.is_peroxide
 .. autofunction:: thermo.functional_groups.is_orthoester
 .. autofunction:: thermo.functional_groups.is_methylenedioxy
-
-
-
+.. autofunction:: thermo.functional_groups.is_orthocarbonate_ester
+.. autofunction:: thermo.functional_groups.is_carboxylic_anhydride
 
 ------------
 Nitro Groups
@@ -77,10 +76,15 @@ Nitro Groups
 .. autofunction:: thermo.functional_groups.is_nitrile
 .. autofunction:: thermo.functional_groups.is_nitro
 .. autofunction:: thermo.functional_groups.is_amide
+.. autofunction:: thermo.functional_groups.is_amidine
 .. autofunction:: thermo.functional_groups.is_amine
 .. autofunction:: thermo.functional_groups.is_primary_amine
 .. autofunction:: thermo.functional_groups.is_secondary_amine
 .. autofunction:: thermo.functional_groups.is_tertiary_amine
+.. autofunction:: thermo.functional_groups.is_primary_ketimine
+.. autofunction:: thermo.functional_groups.is_secondary_ketimine
+.. autofunction:: thermo.functional_groups.is_primary_aldimine
+.. autofunction:: thermo.functional_groups.is_secondary_aldimine
 
 -------------
 Sulfur Groups
@@ -178,16 +182,21 @@ __all__ = ['is_mercaptan', 'is_sulfide', 'is_disulfide', 'is_sulfoxide',
            'is_alkyne', 'is_aromatic', 'is_nitrile', 'is_carboxylic_acid',
            'is_haloalkane', 'is_fluoroalkane', 'is_chloroalkane', 
            'is_bromoalkane', 'is_iodoalkane',
+           
+           
            'is_amine', 'is_primary_amine', 'is_secondary_amine',
-           'is_tertiary_amine', 'is_ester', 'is_branched_alkane',
-           'is_amide', 'is_nitro',
+           'is_tertiary_amine', 'is_branched_alkane',
+           'is_amide', 'is_nitro', 'is_amidine', 'is_primary_ketimine',
+           'is_secondary_ketimine', 'is_primary_aldimine',
+           'is_secondary_aldimine',
            
            # oxygen
            'is_acyl_halide', 'is_alcohol', 'is_polyol',
            'is_acid', 'is_ketone', 'is_aldehyde', 'is_anhydride',
            'is_ether', 'is_phenol', 'is_carbonate', 'is_carboxylate',
            'is_hydroperoxide', 'is_peroxide', 'is_orthoester',
-           'is_methylenedioxy',
+           'is_methylenedioxy', 'is_orthocarbonate_ester',
+           'is_carboxylic_anhydride', 'is_ester',
            
            'is_boronic_acid', 'is_boronic_ester', 'is_borinic_acid',
            'is_borinic_ester',
@@ -248,7 +257,8 @@ def smarts_mol_cache(smarts):
 amide_smarts_3 = '[NX3][CX3](=[OX1])[#6]'
 amide_smarts_2 = 'O=C([c,CX4])[$([NH2]),$([NH][c,CX4]),$(N([c,CX4])[c,CX4])]'
 amide_smarts_1 = '[CX3;$([R0][#6]),$([H1R0])](=[OX1])[#7X3;$([H2]),$([H1][#6;!$(C=[O,N,S])]),$([#7]([#6;!$(C=[O,N,S])])[#6;!$(C=[O,N,S])])]'
-amide_smarts_collection = [amide_smarts_3, amide_smarts_2, amide_smarts_1]
+amide_smarts_4 = '[*][CX3](=[OX1H0])[NX3]([*])([*])' # Doesn't match ones without H
+amide_smarts_collection = [amide_smarts_3, amide_smarts_2, amide_smarts_1, amide_smarts_4]
 def is_amide(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule has a amide RC(=O)NR′R″ group.
@@ -275,6 +285,150 @@ def is_amide(mol):
         if len(hits):
             return True
     return False
+
+amidine_smarts_1 = '[*][NX2]=[CX3H0]([*])[NX3]([*])([*])'
+amidine_smarts_2 = '[NX2H1]=[CX3H0]([*])[NX3]([*])([*])'
+amidine_smarts_3 = '[NX2H1]=[CX3H0]([*])[NX3H1]([*])'
+amidine_smarts_4 = '[NX2H1]=[CX3H0]([*])[NX3H2]'
+amidine_smarts_5 = '[*][NX2]=[CX3H0]([*])[NX3H1]([*])'
+amidine_smarts_6 = '[*][NX2]=[CX3H0]([*])[NX3H2]'
+amidine_smarts_collection = [amidine_smarts_1, amidine_smarts_2, 
+                             amidine_smarts_3, amidine_smarts_4, 
+                             amidine_smarts_5, amidine_smarts_6]
+
+def is_amidine(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule has a amidine RC(NR)NR2 group.
+
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_amidine : bool
+        Whether or not the compound is a amidine or not, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_amidine(MolFromSmiles('C1=CC(=CC=C1C(=N)N)OCCCCCOC2=CC=C(C=C2)C(=N)N')) # doctest:+SKIP
+    True
+    '''
+    for s in amidine_smarts_collection:
+        hits = mol.GetSubstructMatches(smarts_mol_cache(s))
+        if len(hits):
+            return True
+    return False
+
+primary_ketimine_smarts = '[*][CX3H0](=[NX2H1])([*])'
+
+def is_primary_ketimine(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a primary ketimine. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_primary_ketimine : bool
+        Whether or not the compound is a primary ketimine, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_primary_ketimine(MolFromSmiles('C1=CC=C(C=C1)C(=N)C2=CC=CC=C2')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(primary_ketimine_smarts))
+    return bool(matches)
+
+
+secondary_ketimine_smarts = '[*][CX3H0]([*])=[NX2H0]([*])'
+
+def is_secondary_ketimine(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a secondary ketimine. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_secondary_ketimine : bool
+        Whether or not the compound is a secondary ketimine, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_secondary_ketimine(MolFromSmiles('CC(C)CC(=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C(C)CC(C)C)C')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(secondary_ketimine_smarts))
+    return bool(matches)
+
+primary_aldimine_smarts = '[*][CX3H1]=[NX2H1]'
+
+def is_primary_aldimine(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a primary aldimine. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_primary_aldimine : bool
+        Whether or not the compound is a primary aldimine, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_primary_aldimine(MolFromSmiles('CC=N')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(primary_aldimine_smarts))
+    return bool(matches)
+
+secondary_aldimine_smarts = '[*][CX3H1]=[NX2H0]'
+
+def is_secondary_aldimine(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a secondary aldimine. 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_secondary_aldimine : bool
+        Whether or not the compound is a secondary aldimine, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_secondary_aldimine(MolFromSmiles( 'C1=CC=C(C=C1)/C=N\\O')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(secondary_aldimine_smarts))
+    return bool(matches)
+
+
 
 mercaptan_smarts = '[#16X2H]'
 def is_mercaptan(mol):
@@ -1303,6 +1457,59 @@ def is_orthoester(mol):
     '''
     matches = mol.GetSubstructMatches(smarts_mol_cache(orthoester_smarts))
     return bool(matches)
+
+orthocarbonate_ester_smarts = '[CX4H0]([OX2])([OX2])([OX2])([OX2])'
+
+def is_orthocarbonate_ester (mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a orthocarbonate ester . 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_orthocarbonate_ester  : bool
+        Whether or not the compound is a orthocarbonate ester , [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_orthocarbonate_ester (MolFromSmiles('COC(OC)(OC)OC') # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(orthocarbonate_ester_smarts))
+    return bool(matches)
+
+carboxylic_anhydride_smarts = '[*][CX3H0](=[OX1H0])[OX2H0][CX3H0](=[OX1H0])[*]'
+
+def is_carboxylic_anhydride(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a carboxylic anhydride . 
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_carboxylic_anhydride  : bool
+        Whether or not the compound is a carboxylic anhydride, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_carboxylic_anhydride (MolFromSmiles('CCCC(=O)OC(=O)CCC') # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(carboxylic_anhydride_smarts))
+    return bool(matches)
+
 
 methylenedioxy_smarts = '[CX4H2;R]([OX2H0;R])([OX2H0;R])'
 

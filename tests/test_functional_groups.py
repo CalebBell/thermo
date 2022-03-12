@@ -1902,3 +1902,147 @@ def test_is_methylenedioxy():
         mol = Chem.MolFromSmiles(smiles)
         assert is_methylenedioxy(mol)
 
+is_orthocarbonate_esters =  [ 'Tetramethoxymethane' ,'tetraethyl orthocarbonate',
+ 'tetrapropoxymethane',
+ 'tetramethoxymethane',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_orthocarbonate_ester():
+    not_orthocarbonate_ester = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_orthocarbonate_ester:
+        assert not is_orthocarbonate_ester(Chemical(c).rdkitmol)
+    
+    
+    for c in is_orthocarbonate_esters:
+        assert is_orthocarbonate_ester(Chemical(c).rdkitmol)
+
+    smiles_hits = ['COC(OC)(OC)OC']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_orthocarbonate_ester(mol)
+
+is_carboxylic_anhydrides =  [ 'Butyric anhydride', 'pivalic anhydride',
+ 'hexadecylsuccinic anhydride', '4-nitrobenzoic anhydride', '3-methylphthalic anhydride', 'dibromomaleic anhydride',
+ 'dichloromaleic anhydride', 'oxacycloundecane-2,11-dione', '2-methylphenyl anhydride',
+ 'iodine monoacetate', 'homophthalic anhydride',
+ 'difluoromaleic anhydride', 'citraconic anhydride', 'heptafluorobutyric anhydride',
+ 'hexafluoroglutaric anhydride',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_carboxylic_anhydride():
+    not_carboxylic_anhydride = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_carboxylic_anhydride:
+        assert not is_carboxylic_anhydride(Chemical(c).rdkitmol)
+    
+    
+    for c in is_carboxylic_anhydrides:
+        assert is_carboxylic_anhydride(Chemical(c).rdkitmol)
+
+    smiles_hits = ['CCCC(=O)OC(=O)CCC']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_carboxylic_anhydride(mol)
+
+
+is_amidines =  [ 'acetamidine', 'DBU', 'Pentamidine']
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_amidine():
+    not_amidine = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_amidine:
+        assert not is_amidine(Chemical(c).rdkitmol)
+    
+    
+    for c in is_amidines:
+        assert is_amidine(Chemical(c).rdkitmol)
+
+    smiles_hits = ['C1=CC(=CC=C1C(=N)N)OCCCCCOC2=CC=C(C=C2)C(=N)N',
+                   'C1=CC(=CC=C1C(=N)N)N/N=N/C2=CC=C(C=C2)C(=N)N',
+                   '[NH]=C(N)c1ccccc1',
+                   'C1=CC=C2C(=C1)C3=CC=CC=C3C2=CC4=CC=C(C=C4)C(=N)N']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_amidine(mol)
+is_primary_ketimines =  [ 'benzophenone imine']
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_primary_ketimine():
+    not_primary_ketimine = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_primary_ketimine:
+        assert not is_primary_ketimine(Chemical(c).rdkitmol)
+    
+    
+    for c in is_primary_ketimines:
+        assert is_primary_ketimine(Chemical(c).rdkitmol)
+
+    smiles_hits = ['C1=CC=C(C=C1)C(=N)C2=CC=CC=C2']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_primary_ketimine(mol)
+
+
+is_secondary_ketimines =  [ '54688-30-1']
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_secondary_ketimine():
+    not_secondary_ketimine = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_secondary_ketimine:
+        assert not is_secondary_ketimine(Chemical(c).rdkitmol)
+    
+    
+    for c in is_secondary_ketimines:
+        assert is_secondary_ketimine(Chemical(c).rdkitmol)
+
+    smiles_hits = [ 'CC(C)CC(=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C(C)CC(C)C)C']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_secondary_ketimine(mol)
+is_primary_aldimines =  [ 'Ethanimine', 'phenylmethanimine']
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_primary_aldimine():
+    not_primary_aldimine = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_primary_aldimine:
+        assert not is_primary_aldimine(Chemical(c).rdkitmol)
+    
+    
+    for c in is_primary_aldimines:
+        assert is_primary_aldimine(Chemical(c).rdkitmol)
+
+    smiles_hits = ['CC=N', 'C1=CC=C(C=C1)C=N', 'CN1C(C2=CC=CC=C2SC1=O)C=N',]
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_primary_aldimine(mol)
+
+is_secondary_aldimines =  [ 'benzaldoxime',  'hydrobenzamide', 'nifuradene', '2-nitrobenzaldoxime', 'amfecloral', '2-furaldehyde oxime', 'covidarabine', 'chlordimeform hydrochloride', 'furapyrimidone', 'nitrofurazone',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_secondary_aldimine():
+    not_secondary_aldimine = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_secondary_aldimine:
+        assert not is_secondary_aldimine(Chemical(c).rdkitmol)
+    
+    
+    for c in is_secondary_aldimines:
+        assert is_secondary_aldimine(Chemical(c).rdkitmol)
+
+    smiles_hits = [ 'C1=CC=C(C=C1)/C=N\\O']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_secondary_aldimine(mol)
+
+
