@@ -32,7 +32,9 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/chemicals/>`_
 
 '''
 from thermo.group_contribution import joback
+from thermo.group_contribution import wilson_japerson
+
 from thermo.group_contribution.joback import *
+from thermo.group_contribution.wilson_japerson import *
 
-__all__ = joback.__all__ 
-
+__all__ = (joback.__all__ + wilson_japerson.__all__)
