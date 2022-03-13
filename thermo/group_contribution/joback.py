@@ -74,7 +74,7 @@ def load_rdkit_modules():
         from rdkit.Chem import rdMolDescriptors
         loaded_rdkit = True
     except:
-        if not hasRDKit: # pragma: no cover
+        if not loaded_rdkit: # pragma: no cover
             raise Exception(rdkit_missing)
 
 # See https://www.atmos-chem-phys.net/16/4401/2016/acp-16-4401-2016.pdf for more
@@ -265,7 +265,7 @@ for i, line in enumerate(joback_data_txt.split('\n')):
     j = JOBACK(i+1, *parsed)
     joback_groups_str_dict[parsed[0]] = j
     joback_groups_id_dict[i+1] = j
-
+del joback_data_txt
 
 class Joback(object):
     r'''Class for performing chemical property estimations with the Joback

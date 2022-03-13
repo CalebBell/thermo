@@ -36,7 +36,7 @@ def load_rdkit_modules():
         from rdkit.Chem import rdMolDescriptors
         loaded_rdkit = True
     except:
-        if not hasRDKit: # pragma: no cover
+        if not loaded_rdkit: # pragma: no cover
             raise Exception(rdkit_missing)
 
 def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
