@@ -91,7 +91,6 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
             status = 'Failed to construct mol'
             success = False
             return {}, success, status
-    from collections import Counter
     from itertools import combinations
     
     rdkitmol_Hs = Chem.AddHs(rdkitmol)
@@ -360,7 +359,6 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
                 continue
             else:
                 # Remove matches that are not the largest
-                max_idx = sizes.index(max_size)
                 for group, idx, positions, size in dup_smart_matches:
                     if size != max_size:
                         # Not handling the case of multiple duplicate matches right, indexes changing!!!

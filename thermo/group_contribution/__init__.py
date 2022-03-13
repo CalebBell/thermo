@@ -32,12 +32,12 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/chemicals/>`_
 
 '''
 from thermo.group_contribution import joback
-from thermo.group_contribution import wilson_japerson
+from thermo.group_contribution import wilson_jasperson
 from thermo.group_contribution import fedors
 
 from thermo.group_contribution.joback import *
-from thermo.group_contribution.wilson_japerson import *
+from thermo.group_contribution.wilson_jasperson import *
 from thermo.group_contribution.fedors import *
 
-__all__ = (joback.__all__ + wilson_japerson.__all__
+__all__ = (joback.__all__ + wilson_jasperson.__all__
            + fedors.__all__)

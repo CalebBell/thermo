@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-This module contains an implementation of the Wilson-Japerson
+This module contains an implementation of the Wilson-Jasperson
 group-contribution method.
 This functionality requires the RDKit library to work.
 
@@ -32,9 +32,9 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 .. autofunction:: thermo.group_contribution.Wilson_Jasperson
 '''
-__all__ = ['Wilson_Jasperson', 'Wilson_Japerson_Tc_increments',
-           'Wilson_Japerson_Pc_increments',
-           'Wilson_Japerson_Tc_groups', 'Wilson_Japerson_Pc_groups']
+__all__ = ['Wilson_Jasperson', 'Wilson_Jasperson_Tc_increments',
+           'Wilson_Jasperson_Pc_increments',
+           'Wilson_Jasperson_Tc_groups', 'Wilson_Jasperson_Pc_groups']
 from math import exp
 
 from chemicals.elements import simple_formula_parser
@@ -46,7 +46,7 @@ from thermo.functional_groups import (smarts_mol_cache, alcohol_smarts, ether_sm
                                       is_haloalkane, all_amine_smarts,
                                       mercaptan_smarts, sulfide_smarts, disulfide_smarts)
 
-Wilson_Japerson_Tc_increments = {
+Wilson_Jasperson_Tc_increments = {
 'H': 0.002793,
 'D': 0.002793,
 'T': 0.002793,
@@ -92,7 +92,7 @@ Wilson_Japerson_Tc_increments = {
 'U': 0.015,
 }
 
-Wilson_Japerson_Pc_increments = {
+Wilson_Jasperson_Pc_increments = {
 'H': 0.1266,
 'D': 0.1266,
 'T': 0.1266,
@@ -138,18 +138,19 @@ Wilson_Japerson_Pc_increments = {
 'U': 2.04,
 }
 
-Wilson_Japerson_Tc_groups = {'OH_large': 0.01, 'OH_small': 0.0350, '-O-': -0.0075, 'amine': -0.004,
+Wilson_Jasperson_Tc_groups = {'OH_large': 0.01, 'OH_small': 0.0350, '-O-': -0.0075, 'amine': -0.004,
                             '-CHO': 0, '>CO': -0.0550, '-COOH': 0.017, '-COO-': -0.015,
                              '-CN': 0.017, '-NO2': -0.02, 'halide': 0.002, 'sulfur_groups': 0.0,
                             'siloxane': -0.025}
-Wilson_Japerson_Pc_groups = {'OH_large': 0, 'OH_small': 0, '-O-': 0, 'amine': 0,
+Wilson_Jasperson_Pc_groups = {'OH_large': 0, 'OH_small': 0, '-O-': 0, 'amine': 0,
                             '-CHO': 0.5, '>CO': 0, '-COOH': 0.5, '-COO-': 0,
                              '-CN': 1.5, '-NO2': 1.0, 'halide': 0, 'sulfur_groups': 0.0,
                             'siloxane': -0.5}
 
 def Wilson_Jasperson(mol, Tb, second_order=True):
     r'''Estimate the critical temperature and pressure of a molecule using
-    the molecule itself, and a known or estimated boiling point.
+    the molecule itself, and a known or estimated boiling point
+    using the Wilson-Jasperson method.
 
     Parameters
     ----------
@@ -177,7 +178,7 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
     Raises an exception if rdkit is not installed, or `smi` or `rdkitmol` is
     not defined.
     
-    Calculated values were published in [1]_ for 448 compounds, as calculated
+    Calculated values were published in [3]_ for 448 compounds, as calculated
     by NIST TDE. There appear to be further modifications to the method in
     NIST TDE, as ~25% of values have differences larger than 5 K.
 
@@ -278,7 +279,7 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
     Tc_inc = 0.0
     for k, v in atoms.items():
         try:
-            Tc_inc += Wilson_Japerson_Tc_increments[k]*v
+            Tc_inc += Wilson_Jasperson_Tc_increments[k]*v
         except KeyError:
             missing_Tc_increments = True
     
@@ -286,7 +287,7 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
     Pc_inc = 0.0
     for k, v in atoms.items():
         try:
-            Pc_inc += Wilson_Japerson_Pc_increments[k]*v
+            Pc_inc += Wilson_Jasperson_Pc_increments[k]*v
         except (KeyError, TypeError):
             missing_Pc_increments = True
             
@@ -294,9 +295,9 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
     second_order_Tc = 0.0
     if second_order:
         for k, v in group_contributions.items():
-            second_order_Tc += Wilson_Japerson_Tc_groups[k]*v
+            second_order_Tc += Wilson_Jasperson_Tc_groups[k]*v
         for k, v in group_contributions.items():
-            second_order_Pc += Wilson_Japerson_Pc_groups[k]*v
+            second_order_Pc += Wilson_Jasperson_Pc_groups[k]*v
             
 #     print(atoms)
 #     print(group_contributions)

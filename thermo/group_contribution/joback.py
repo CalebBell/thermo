@@ -36,13 +36,11 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 .. contents:: :local:
 
 
-.. autoclass:: thermo.joback.Joback
+.. autoclass:: thermo.group_contribution.joback.Joback
     :members:
     :undoc-members:
     :show-inheritance:
-        
 
-.. autofunction:: thermo.joback.smarts_fragment
 .. autodata:: J_BIGGS_JOBACK_SMARTS
 .. autodata:: J_BIGGS_JOBACK_SMARTS_id_dict
 
@@ -52,8 +50,7 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 from __future__ import division
 
-__all__ = ['smarts_fragment', 'smarts_fragment_priority',
-           'Joback', 'J_BIGGS_JOBACK_SMARTS',
+__all__ = ['Joback', 'J_BIGGS_JOBACK_SMARTS',
            'J_BIGGS_JOBACK_SMARTS_id_dict']
 
 from chemicals.utils import to_num, horner, exp
