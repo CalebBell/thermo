@@ -48,7 +48,7 @@ if not numerics.is_micropython:
     from . import heat_capacity
     from chemicals import identifiers
     from . import interaction_parameters
-    from . import joback
+    from . import group_contribution
     from . import law
     from chemicals import lennard_jones
     from chemicals import miscdata
@@ -105,7 +105,7 @@ if not numerics.is_micropython:
     from .eos_mix import *
     from .flash import *
     from .heat_capacity import *
-    from .joback import *
+    from .group_contribution import *
     from chemicals.identifiers import *
     from .interaction_parameters import *
     from .law import *
@@ -149,7 +149,7 @@ if not numerics.is_micropython:
     
     __all__ = ['rachford_rice', 'flash_basic', 'chemical', 'chemical_package', 'combustion', 'critical', 'flash',
      'dipole', 'electrochem', 'elements', 'environment', 'eos', 'eos_mix',
-     'heat_capacity',  'identifiers', 'joback', 'law', 'lennard_jones',
+     'heat_capacity',  'identifiers', 'group_contribution', 'law', 'lennard_jones',
      'miscdata',
      'permittivity', 'phase_change', 'phases', 'property_package', 'reaction',
      'refractivity', 'safety', 'solubility', 'interface', 'interaction_parameters',
@@ -183,7 +183,7 @@ if not numerics.is_micropython:
     __all__.extend(heat_capacity.__all__)
     __all__.extend(identifiers.__all__)
     __all__.extend(interaction_parameters.__all__)
-    __all__.extend(joback.__all__)
+    __all__.extend(group_contribution.__all__)
     __all__.extend(law.__all__)
     __all__.extend(lennard_jones.__all__)
     __all__.extend(miscdata.__all__)
@@ -232,7 +232,7 @@ if not numerics.is_micropython:
     # documentation and Sphinx currently has no wat to exclude them
     submodules = [activity, chemical, chemical_package, chemical_utils, coolprop, datasheet,
                   electrochem, eos, eos_mix, equilibrium, heat_capacity,
-                  identifiers, interaction_parameters, interface, joback, law,
+                  identifiers, interaction_parameters, interface, group_contribution.joback, law,
                   mixture, nrtl, permittivity, phase_change, phase_identification,
                   property_package, property_package_constants, regular_solution, 
                   stream, thermal_conductivity, unifac, uniquac, safety,

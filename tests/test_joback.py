@@ -23,8 +23,8 @@ SOFTWARE.'''
 import os
 import pytest
 from fluids.numerics import assert_close, assert_close1d
-from thermo.joback import *
-from thermo.joback import J_BIGGS_JOBACK_SMARTS_id_dict
+from thermo.group_contribution.joback import *
+from thermo.group_contribution.joback import J_BIGGS_JOBACK_SMARTS_id_dict
 
 from chemicals.identifiers import pubchem_db
 
