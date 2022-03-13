@@ -31,7 +31,7 @@ from fluids.numerics import *
 from fluids.constants import R
 from thermo.unifac import UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP, NISTKTUFIP, PSRKIP, VTPRIP, DOUFSG
 from thermo import Chemical
-from thermo.group_contribution import smarts_fragment_priority
+from thermo.group_contribution.group_contribution_base import smarts_fragment_priority
 
 
 def test_UNIFAC_original():
