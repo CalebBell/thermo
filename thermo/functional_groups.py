@@ -70,9 +70,9 @@ Oxygen Groups
 .. autofunction:: thermo.functional_groups.is_orthocarbonate_ester
 .. autofunction:: thermo.functional_groups.is_carboxylic_anhydride
 
-------------
-Nitro Groups
-------------
+---------------
+Nitrogen Groups
+---------------
 .. autofunction:: thermo.functional_groups.is_nitrile
 .. autofunction:: thermo.functional_groups.is_nitro
 .. autofunction:: thermo.functional_groups.is_amide
@@ -85,6 +85,8 @@ Nitro Groups
 .. autofunction:: thermo.functional_groups.is_secondary_ketimine
 .. autofunction:: thermo.functional_groups.is_primary_aldimine
 .. autofunction:: thermo.functional_groups.is_secondary_aldimine
+.. autofunction:: thermo.functional_groups.is_imide
+
 
 -------------
 Sulfur Groups
@@ -188,7 +190,7 @@ __all__ = ['is_mercaptan', 'is_sulfide', 'is_disulfide', 'is_sulfoxide',
            'is_tertiary_amine', 'is_branched_alkane',
            'is_amide', 'is_nitro', 'is_amidine', 'is_primary_ketimine',
            'is_secondary_ketimine', 'is_primary_aldimine',
-           'is_secondary_aldimine',
+           'is_secondary_aldimine', 'is_imide',
            
            # oxygen
            'is_acyl_halide', 'is_alcohol', 'is_polyol',
@@ -1641,6 +1643,32 @@ def is_nitrile(mol):
     '''
     # https://smarts.plus/smartsview/a04d5a51cd03fd469672f34a226fbd049a5d220d3819992fe210bd6d77a7
     matches = mol.GetSubstructMatches(smarts_mol_cache(nitrile_smarts))
+    return bool(matches)
+
+imide_smarts = '[CX3H0](=[OX1H0])([*])[NX3][CX3H0](=[OX1H0])[*]'
+def is_imide(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a imide.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_imide : bool
+        Whether or not the compound is a imide, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_imide(MolFromSmiles('C1=CC=C2C(=C1)C(=O)NC2=O')) # doctest:+SKIP
+    True
+    '''
+    # https://smarts.plus/smartsview/a04d5a51cd03fd469672f34a226fbd049a5d220d3819992fe210bd6d77a7
+    matches = mol.GetSubstructMatches(smarts_mol_cache(imide_smarts))
     return bool(matches)
 
 nitro_smarts = '[$([NX3](=O)=O),$([NX3+](=O)[O-])][!#8]'

@@ -2046,3 +2046,27 @@ def test_is_secondary_aldimine():
         assert is_secondary_aldimine(mol)
 
 
+is_imides =  [ 'Succinimide', 'Maleimide', 'Glutarimide', 'Phthalimide',
+ 'cefoperazone sodium', 'barbituric acid', 'aprobarbital', 'dichloromaleimide', 'acetylpheneturide', 'dioxatrine',
+ 'benzetimide',
+ 'methetoin', 'butabarbital', 'tetrabromophthalimide',
+ 'benzobarbital', 'dibenzamide', 'heptabarbital', 'captafol',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_imide():
+    not_imide = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_imide:
+        assert not is_imide(Chemical(c).rdkitmol)
+    
+    
+    for c in is_imides:
+        assert is_imide(Chemical(c).rdkitmol)
+
+    smiles_hits = ['C1=CC=C2C(=C1)C(=O)NC2=O']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_imide(mol)
+
+
