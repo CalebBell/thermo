@@ -2070,3 +2070,23 @@ def test_is_imide():
         assert is_imide(mol)
 
 
+is_azides =  [ 'Phenyl azide','azidosilane',
+ 'aziprotryne', 'chlorine azide', 'benzenesulfonyl azide', 'azidomethane', 'cyclohexyl azide', 'benzoyl azide', 'trityl azide', '1,2-diazidoethane', 'azidobenzene', '1-azidohexane', 'pentanedioyl azide', 'azidoacetic acid', 'triethylazidosilane', 'azidocodeine',]
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_azide():
+    not_azide = ['CO2', 'water', 'methane','butane', 'cyclopentane', 'benzene', 'toluene'] 
+    for c in not_azide:
+        assert not is_azide(Chemical(c).rdkitmol)
+    
+    
+    for c in is_azides:
+        assert is_azide(Chemical(c).rdkitmol)
+
+    smiles_hits = ['C1=CC=C(C=C1)N=[N+]=[N-]']
+    for smiles in smiles_hits:
+        mol = Chem.MolFromSmiles(smiles)
+        assert is_azide(mol)
+

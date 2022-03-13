@@ -86,6 +86,7 @@ Nitrogen Groups
 .. autofunction:: thermo.functional_groups.is_primary_aldimine
 .. autofunction:: thermo.functional_groups.is_secondary_aldimine
 .. autofunction:: thermo.functional_groups.is_imide
+.. autofunction:: thermo.functional_groups.is_azide
 
 
 -------------
@@ -190,7 +191,7 @@ __all__ = ['is_mercaptan', 'is_sulfide', 'is_disulfide', 'is_sulfoxide',
            'is_tertiary_amine', 'is_branched_alkane',
            'is_amide', 'is_nitro', 'is_amidine', 'is_primary_ketimine',
            'is_secondary_ketimine', 'is_primary_aldimine',
-           'is_secondary_aldimine', 'is_imide',
+           'is_secondary_aldimine', 'is_imide', 'is_azide',
            
            # oxygen
            'is_acyl_halide', 'is_alcohol', 'is_polyol',
@@ -1667,9 +1668,35 @@ def is_imide(mol):
     >>> is_imide(MolFromSmiles('C1=CC=C2C(=C1)C(=O)NC2=O')) # doctest:+SKIP
     True
     '''
-    # https://smarts.plus/smartsview/a04d5a51cd03fd469672f34a226fbd049a5d220d3819992fe210bd6d77a7
     matches = mol.GetSubstructMatches(smarts_mol_cache(imide_smarts))
     return bool(matches)
+
+azide_smarts = '[NX2]=[N+X2H0]=[N-X1H0]'
+
+def is_azide(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is a azide.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_azide : bool
+        Whether or not the compound is a azide, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_azide(MolFromSmiles('C1=CC=C(C=C1)N=[N+]=[N-]')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(azide_smarts))
+    return bool(matches)
+
 
 nitro_smarts = '[$([NX3](=O)=O),$([NX3+](=O)[O-])][!#8]'
 def is_nitro(mol):
