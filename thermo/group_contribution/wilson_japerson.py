@@ -21,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 This module contains an implementation of the Wilson-Japerson
- group-contribution method.
+group-contribution method.
 This functionality requires the RDKit library to work.
 
 For submitting pull requests,
@@ -30,7 +30,7 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 .. contents:: :local:
 
 
-.. autofunction:: thermo.joback.Wilson_Jasperson
+.. autofunction:: thermo.group_contribution.Wilson_Jasperson
 '''
 __all__ = ['Wilson_Jasperson', 'Wilson_Japerson_Tc_increments',
            'Wilson_Japerson_Pc_increments',
