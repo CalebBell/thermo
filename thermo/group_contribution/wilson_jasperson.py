@@ -24,9 +24,6 @@ This module contains an implementation of the Wilson-Jasperson
 group-contribution method.
 This functionality requires the RDKit library to work.
 
-For submitting pull requests,
-please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
-
 .. contents:: :local:
 
 
