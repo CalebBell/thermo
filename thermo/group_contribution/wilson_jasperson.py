@@ -183,10 +183,10 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
     --------
     Example for 2-ethylphenol in [2]_:
         
-    >>> Tc, Pc, _, _ = Wilson_Jasperson('CCC1=CC=CC=C1O', Tb=477.67)
+    >>> Tc, Pc, _, _ = Wilson_Jasperson('CCC1=CC=CC=C1O', Tb=477.67) # doctest:+SKIP
     >>> (Tc, Pc)
     (693.567, 3743819.6667)
-    >>> Tc, Pc, _, _ = Wilson_Jasperson('CCC1=CC=CC=C1O', Tb=477.67, second_order=False)
+    >>> Tc, Pc, _, _ = Wilson_Jasperson('CCC1=CC=CC=C1O', Tb=477.67, second_order=False) # doctest:+SKIP
     >>> (Tc, Pc)
     (702.883, 3794106.49)
 

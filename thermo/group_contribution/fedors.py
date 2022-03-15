@@ -83,8 +83,8 @@ def Fedors(mol):
     --------
     Example for sec-butanol in [2]_:
         
-    >>> Vc, status, _, _, _ = Fedors('CCC(C)O')
-    >>> Vc, status
+    >>> Vc, status, _, _, _ = Fedors('CCC(C)O') # doctest:+SKIP
+    >>> Vc, status # doctest:+SKIP
     (0.000274024, 'OK')
     
     References

@@ -33,7 +33,14 @@ from thermo.unifac import UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP
 from thermo import Chemical
 from thermo.group_contribution.group_contribution_base import smarts_fragment_priority
 
+try:
+    import rdkit
+    from rdkit import Chem
+except:
+    rdkit = None
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_UNIFAC_original():
     # http://www.aim.env.uea.ac.uk/aim/info/UNIFACgroups.html was very helpful in this development
     
@@ -616,6 +623,8 @@ group_ids = [k for k in UFSG.keys() if k < 2000]
 groups = [UFSG[i] for i in group_ids]
 
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_UNIFAC_failures():
     rdkitmol = Chemical('5-Methylfurfuryl alcohol').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
