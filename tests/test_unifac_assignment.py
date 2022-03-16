@@ -701,12 +701,7 @@ def test_UNIFAC_LLE_success():
     assert assignment == {57: 1}
     assert success
 
-
-
-
 UNIFAC_LLE_GROUPS = [LLEUFSG[i] for i in [k for k in LLEUFSG.keys()]]
-test_UNIFAC_LLE_success()
-
 
 PSRK_GROUPS = [PSRKSG[i] for i in [k for k in PSRKSG.keys()]]
 
@@ -838,4 +833,3 @@ def test_PSRK_group_detection():
     assert assignment == {136: 1, 1: 1}
     assert success
 
-test_PSRK_group_detection()
