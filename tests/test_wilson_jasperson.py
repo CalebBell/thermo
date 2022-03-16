@@ -54,6 +54,12 @@ def test_Wilson_Jasperson():
     Tc, Pc, _, _ = Wilson_Jasperson(c.rdkitmol, Tb=580.6)
     assert_close(Tc, 807.2810024378236)
     assert_close(Pc, 2555268.114365961)
+    
+    # Osmium - can't work as a pure component
+    c = Chemical('7440-04-2')
+    Tc, Pc, missing_Tc_increments, missing_Pc_increments = Wilson_Jasperson(c.rdkitmol, Tb=5281.15)
+    assert missing_Tc_increments
+    assert missing_Pc_increments
 
 
     # Can't make it match no matter what I do, but nothing looks like an issue

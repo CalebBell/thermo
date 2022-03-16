@@ -44,7 +44,6 @@ except:
 def test_UNIFAC_original():
     # http://www.aim.env.uea.ac.uk/aim/info/UNIFACgroups.html was very helpful in this development
     
-    from rdkit import Chem
     rdkitmol = Chemical('17059-44-8').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=groups, rdkitmol=rdkitmol)
     assert assignment == {11: 2, 12: 1, 9: 3, 1: 1, 2: 1}
@@ -652,3 +651,191 @@ actually have UNIFAC groups.
 4,5-didehydropyridine
 
 '''
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_UNIFAC_LLE_success():    
+    rdkitmol = Chemical('1-propanol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=UNIFAC_LLE_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {15: 1}
+    assert success
+
+    rdkitmol = Chemical('2-propanol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=UNIFAC_LLE_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {16: 1}
+    assert success
+
+
+    rdkitmol = Chemical('water').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=UNIFAC_LLE_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {17: 1}
+    assert success
+    
+    rdkitmol = Chemical('diethylene glycol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=UNIFAC_LLE_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {49: 1}
+    assert success
+    
+    rdkitmol = Chemical('trichloroethylene').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=UNIFAC_LLE_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {53: 1}
+    assert success
+    
+    rdkitmol = Chemical('methylformamide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=UNIFAC_LLE_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {54: 1}
+    assert success
+
+    rdkitmol = Chemical('dimethylformamide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=UNIFAC_LLE_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {55: 1}
+    assert success
+
+    rdkitmol = Chemical('tetramethylene sulfone').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=UNIFAC_LLE_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {56: 1}
+    assert success
+
+    rdkitmol = Chemical('DMSO').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=UNIFAC_LLE_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {57: 1}
+    assert success
+
+
+
+
+UNIFAC_LLE_GROUPS = [LLEUFSG[i] for i in [k for k in LLEUFSG.keys()]]
+test_UNIFAC_LLE_success()
+
+
+PSRK_GROUPS = [PSRKSG[i] for i in [k for k in PSRKSG.keys()]]
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_PSRK_group_detection():
+    rdkitmol = Chemical('ammonia').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {111: 1}
+    assert success
+
+    rdkitmol = Chemical('carbon monoxide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {112: 1}
+    assert success
+
+    #TODO make this work or hardcode it
+    # rdkitmol = Chemical('hydrogen').rdkitmol
+    # assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    # assert assignment == {113: 1}
+    # assert success
+
+    rdkitmol = Chemical('hydrogen sulfide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {114: 1}
+    assert success
+
+    rdkitmol = Chemical('nitrogen').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {115: 1}
+    assert success
+
+    rdkitmol = Chemical('argon').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {116: 1}
+    assert success
+    rdkitmol = Chemical('carbon dioxide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {117: 1}
+    assert success
+
+    rdkitmol = Chemical('methane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {118: 1}
+    assert success
+
+    rdkitmol = Chemical('oxygen').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {119: 1}
+    assert success
+
+    rdkitmol = Chemical('SO2').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {121: 1}
+    assert success
+    
+    rdkitmol = Chemical('Nitric oxide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {122: 1}
+    assert success
+
+    rdkitmol = Chemical('N2O').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {123: 1}
+    assert success
+
+    rdkitmol = Chemical('SF6').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {124: 1}
+    assert success
+
+    rdkitmol = Chemical('He').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {125: 1}
+    assert success
+
+    rdkitmol = Chemical('Ne').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {126: 1}
+    assert success
+
+    rdkitmol = Chemical('Kr').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {127: 1}
+    assert success
+
+    rdkitmol = Chemical('Xe').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {128: 1}
+    assert success
+
+    rdkitmol = Chemical('HF').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {129: 1}
+    assert success
+    
+    rdkitmol = Chemical('hydrogen chloride').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {130: 1}
+    assert success
+
+    rdkitmol = Chemical('hydrogen bromide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {131: 1}
+    assert success
+
+    rdkitmol = Chemical('hydrogen iodide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {132: 1}
+    assert success
+
+    rdkitmol = Chemical('Carbonyl sulfide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {133: 1}
+    assert success
+    
+    rdkitmol = Chemical('2-propanethiol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {134: 1, 1: 2}
+    assert success
+
+    rdkitmol = Chemical('2-methyl-2-propanethiol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {135: 1, 1: 3}
+    assert success
+
+    rdkitmol = Chemical('propyleneoxide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {136: 1, 1: 1}
+    assert success
+
+test_PSRK_group_detection()

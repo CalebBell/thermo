@@ -184,10 +184,10 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
     Example for 2-ethylphenol in [2]_:
         
     >>> Tc, Pc, _, _ = Wilson_Jasperson('CCC1=CC=CC=C1O', Tb=477.67) # doctest:+SKIP
-    >>> (Tc, Pc)
+    >>> (Tc, Pc) # doctest:+SKIP
     (693.567, 3743819.6667)
     >>> Tc, Pc, _, _ = Wilson_Jasperson('CCC1=CC=CC=C1O', Tb=477.67, second_order=False) # doctest:+SKIP
-    >>> (Tc, Pc)
+    >>> (Tc, Pc) # doctest:+SKIP
     (702.883, 3794106.49)
 
     References
@@ -229,44 +229,52 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
     group_contributions['-O-'] = len(ether_O_matches)
     
     
+    group_contributions['-CN'] = 0
     amine_groups = set()
-    for s in all_amine_smarts:
-        amine_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(s))
-        for h in amine_matches:
-            # Get the N atom and store its index
-            for at in h:
-                atom = rdkitmol.GetAtomWithIdx(at)
-                if atom.GetSymbol() == 'N':
-                    amine_groups.add(at)
+    if 'N' in atoms:
+        nitro_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(nitro_smarts))
+        group_contributions['-NO2'] = len(nitro_matches)
+
+        nitrile_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(nitrile_smarts))
+        group_contributions['-CN'] = len(nitrile_matches)
+
+        for s in all_amine_smarts:
+            amine_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(s))
+            for h in amine_matches:
+                # Get the N atom and store its index
+                for at in h:
+                    atom = rdkitmol.GetAtomWithIdx(at)
+                    if atom.GetSymbol() == 'N':
+                        amine_groups.add(at)
 #     print(amine_groups)
     group_contributions['amine'] = len(amine_groups)
     
-    aldehyde_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(aldehyde_smarts))
-    group_contributions['-CHO'] = len(aldehyde_matches)
+    if 'O' in atoms and 'C' in atoms:
+        aldehyde_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(aldehyde_smarts))
+        group_contributions['-CHO'] = len(aldehyde_matches)
+        
+        ketone_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(ketone_smarts))
+        group_contributions['>CO'] = len(ketone_matches)
     
-    ketone_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(ketone_smarts))
-    group_contributions['>CO'] = len(ketone_matches)
-
-    carboxylic_acid_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(carboxylic_acid_smarts))
-    group_contributions['-COOH'] = len(carboxylic_acid_matches)
+        carboxylic_acid_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(carboxylic_acid_smarts))
+        group_contributions['-COOH'] = len(carboxylic_acid_matches)
+        
+        ester_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(ester_smarts))
+        group_contributions['-COO-'] = len(ester_matches)
+        
     
-    ester_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(ester_smarts))
-    group_contributions['-COO-'] = len(ester_matches)
-    
-    nitrile_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(nitrile_smarts))
-    group_contributions['-CN'] = len(nitrile_matches)
-    
-    nitro_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(nitro_smarts))
-    group_contributions['-NO2'] = len(nitro_matches)
     
     group_contributions['halide'] = 1 if is_haloalkane(rdkitmol) else 0
     
     group_contributions['sulfur_groups'] = 0
-    for s in (mercaptan_smarts, sulfide_smarts, disulfide_smarts):
-        group_contributions['sulfur_groups'] += len(rdkitmol.GetSubstructMatches(smarts_mol_cache(s)))
+    if 'S' in atoms:
+        for s in (mercaptan_smarts, sulfide_smarts, disulfide_smarts):
+            group_contributions['sulfur_groups'] += len(rdkitmol.GetSubstructMatches(smarts_mol_cache(s)))
     
-    siloxane_matches = rdkitmol.GetSubstructMatches(smarts_mol_cache(siloxane_smarts))
-    group_contributions['siloxane'] = len(siloxane_matches)
+    group_contributions['siloxane'] = 0
+    if 'Si' in atoms:
+        siloxane_matches = rdkitmol.GetSubstructMatches(smarts_mol_cache(siloxane_smarts))
+        group_contributions['siloxane'] = len(siloxane_matches)
 
 #     group_contributions = {'OH_large': 0, '-O-': 0, 'amine': 0, '-CHO': 0,
 #                            '>CO': 0, '-COOH': 0, '-COO-': 0, '-CN': 0, 
@@ -300,7 +308,13 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
 #     print(group_contributions)
 #     print('rings', Nr)
 #     print(Tc_inc, second_order_Tc)
-    Tc = Tb/(0.048271 - 0.019846*Nr + Tc_inc + second_order_Tc)**0.2
+    den = 0.048271 - 0.019846*Nr + Tc_inc + second_order_Tc
+    if den >= 0:
+        Tc = Tb/(den)**0.2
+    else:
+        # Can't make a prediction
+        missing_Tc_increments = True
+        Tc = Tb*2.5
     
     Y = -0.00922295 - 0.0290403*Nr + 0.041*(second_order_Pc + Pc_inc)
 

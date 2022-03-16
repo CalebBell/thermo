@@ -93,6 +93,9 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
             return {}, success, status
     from itertools import combinations
     
+    # Remove this
+    catalog = [i for i in catalog if i.priority is not None]
+    
     rdkitmol_Hs = Chem.AddHs(rdkitmol)
     H_count = rdkitmol_Hs.GetNumAtoms() - rdkitmol.GetNumAtoms()
 
