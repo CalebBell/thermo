@@ -737,7 +737,9 @@ DOUFSG[12] = UNIFAC_subgroup(12, 'ACCH2', 4, 'ACCH2', 0.91, 0.7962,
 DOUFSG[13] = UNIFAC_subgroup(13, 'ACCH', 4, 'ACCH2', 0.91, 0.3769,
                              atoms=UFSG[13].atoms, bonds=UFSG[13].bonds, smarts=UFSG[13].smarts)
 
-DOUFSG[14] = UNIFAC_subgroup(14, 'OH(P)', 5, 'OH', 1.2302, 0.8927) # OH bonded to a primary carbon, OH(S) and OH(T) are secondary and tertiary
+DOUFSG[14] = UNIFAC_subgroup(14, 'OH(P)', 5, 'OH', 1.2302, 0.8927,
+                             atoms={'O': 1, 'H': 1}, bonds={}, smarts='[OH1;$([OH1][CX4H2])]')
+                             # OH bonded to a primary carbon, OH(S) and OH(T) are secondary and tertiary
 
 DOUFSG[15] = UNIFAC_subgroup(15, 'CH3OH', 6, 'CH3OH', 0.8585, 0.9938,
                              atoms=UFSG[15].atoms, bonds=UFSG[15].bonds, smarts=UFSG[15].smarts)
@@ -784,9 +786,12 @@ DOUFSG[35] = UNIFAC_subgroup(35, 'CH2N', 16, '(C)3N', 1.0746, 0.824,
 DOUFSG[36] = UNIFAC_subgroup(36, 'ACNH2', 17, 'ACNH2', 1.1849, 0.8067,
                              atoms=UFSG[36].atoms, bonds=UFSG[36].bonds, smarts=UFSG[36].smarts)
 
-DOUFSG[37] = UNIFAC_subgroup(37, 'AC2H2N', 18, 'PYRIDINE', 1.4578, 0.9022)
-DOUFSG[38] = UNIFAC_subgroup(38, 'AC2HN', 18, 'PYRIDINE', 1.2393, 0.633)
-DOUFSG[39] = UNIFAC_subgroup(39, 'AC2N', 18, 'PYRIDINE', 1.0731, 0.353)
+DOUFSG[37] = UNIFAC_subgroup(37, 'AC2H2N', 18, 'PYRIDINE', 1.4578, 0.9022,
+                             atoms={'C': 2, 'H': 2, 'N': 1}, bonds={AROMATIC_BOND: 2}, smarts='[cX3H1][n][cX3H1]')
+DOUFSG[38] = UNIFAC_subgroup(38, 'AC2HN', 18, 'PYRIDINE', 1.2393, 0.633,
+                             atoms={'C': 2, 'H': 1, 'N': 1}, bonds={AROMATIC_BOND: 2}, smarts='[cX3H0][n][cX3H1]')
+DOUFSG[39] = UNIFAC_subgroup(39, 'AC2N', 18, 'PYRIDINE', 1.0731, 0.353,
+                             atoms={'C': 2, 'N': 1}, bonds={AROMATIC_BOND: 2}, smarts='[cX3H0][n][cX3H0]')
 
 DOUFSG[40] = UNIFAC_subgroup(40, 'CH3CN', 19, 'CH2CN', 1.5575, 1.5193,
                              atoms=UFSG[40].atoms, bonds=UFSG[40].bonds, smarts=UFSG[40].smarts)
@@ -865,12 +870,21 @@ DOUFSG[76] = UNIFAC_subgroup(76, 'CF', 40, 'CF2', 0.8215, 0.5135,
 DOUFSG[77] = UNIFAC_subgroup(77, 'COO', 41, 'COO', 1.6, 0.9,
                              atoms=UFSG[77].atoms, bonds=UFSG[77].bonds, smarts=UFSG[77].smarts)
 
-DOUFSG[78] = UNIFAC_subgroup(78, 'CY-CH2', 42, 'CY-CH2', 0.7136, 0.8635)
-DOUFSG[79] = UNIFAC_subgroup(79, 'CY-CH', 42, 'CY-CH2', 0.3479, 0.1071)
-DOUFSG[80] = UNIFAC_subgroup(80, 'CY-C', 42, 'CY-CH2', 0.347, 0)
 
-DOUFSG[81] = UNIFAC_subgroup(81, 'OH(S)', 5, 'OH', 1.063, 0.8663)
-DOUFSG[82] = UNIFAC_subgroup(82, 'OH(T)', 5, 'OH', 0.6895, 0.8345)
+# TODO revise
+DOUFSG[78] = UNIFAC_subgroup(78, 'CY-CH2', 42, 'CY-CH2', 0.7136, 0.8635,
+                             atoms={'C': 1, 'H': 2}, bonds={}, smarts='[CH2;R]')
+
+DOUFSG[79] = UNIFAC_subgroup(79, 'CY-CH', 42, 'CY-CH2', 0.3479, 0.1071,
+                             atoms={'C': 1, 'H': 1}, bonds={}, smarts='[CH1;R]')
+DOUFSG[80] = UNIFAC_subgroup(80, 'CY-C', 42, 'CY-CH2', 0.347, 0,
+                             atoms={'C': 1}, bonds={}, smarts='[CH0;R]')
+
+DOUFSG[81] = UNIFAC_subgroup(81, 'OH(S)', 5, 'OH', 1.063, 0.8663,
+                             atoms={'O': 1, 'H': 1}, bonds={}, smarts='[OH1;$([OH1][CX4H1])]')
+DOUFSG[82] = UNIFAC_subgroup(82, 'OH(T)', 5, 'OH', 0.6895, 0.8345,
+                             atoms={'O': 1, 'H': 1}, bonds={}, smarts='[OH1;$([OH1][CX4H0])]')
+
 
 DOUFSG[83] = UNIFAC_subgroup(83, 'CY-CH2O', 43, 'CY-CH2O', 1.4046, 1.4)
 DOUFSG[84] = UNIFAC_subgroup(84, 'TRIOXAN', 43, 'CY-CH2O', 1.0413, 1.0116)
@@ -1658,15 +1672,18 @@ PSRKSG[107] = UNIFAC_subgroup(107, 'C4H3S', 50, 'THIOPHEN', 2.6908, 1.8600,
                               atoms=UFSG[107].atoms, bonds=UFSG[107].bonds, smarts=UFSG[107].smarts)
 PSRKSG[108] = UNIFAC_subgroup(108, 'C4H2S', 50, 'THIOPHEN', 2.5247, 1.5800,
                               atoms=UFSG[108].atoms, bonds=UFSG[108].bonds, smarts=UFSG[108].smarts)
-PSRKSG[109] = UNIFAC_subgroup(109, 'H2C=CH2', 2, 'C=C', 1.3564, 1.3098)
-PSRKSG[110] = UNIFAC_subgroup(110, 'CH=-CH', 34, 'C=-C', 0.7910, 0.7200)
+PSRKSG[109] = UNIFAC_subgroup(109, 'H2C=CH2', 2, 'C=C', 1.3564, 1.3098,
+                              atoms={'H': 4, 'C': 2}, bonds={DOUBLE_BOND: 1}, smarts='[CX3H2]=[CX3H2]') # ethylene
+PSRKSG[110] = UNIFAC_subgroup(110, 'CH=-CH', 34, 'C=-C', 0.7910, 0.7200,
+                              atoms={'C': 2, 'H': 2}, bonds={TRIPLE_BOND: 1},
+                           smarts='[CX2;H1]#[CX2;H1]') # ethyne
 
 PSRKSG[111] = UNIFAC_subgroup(111, 'NH3', 55, 'NH3', 0.8510, 0.7780,
                               atoms={'N': 1, 'H': 3}, bonds={SINGLE_BOND: 3}, smarts='[NX3H3]')
 PSRKSG[112] = UNIFAC_subgroup(112, 'CO', 63, 'CO', 0.7110, 0.8280,
                               atoms={'C': 1, 'O': 1}, bonds={TRIPLE_BOND: 1}, smarts='[C-]#[O+]')
 PSRKSG[113] = UNIFAC_subgroup(113, 'H2', 62, 'H2', 0.4160, 0.5710,
-                              atoms={'H': 2}, bonds={SINGLE_BOND: 1}, smarts='[HH]', priority=1000000000)
+                              atoms={'H': 2}, bonds={SINGLE_BOND: 1}, smarts='[HH]', priority=1000000000) # TODO
 PSRKSG[114] = UNIFAC_subgroup(114, 'H2S', 61, 'H2S', 1.2350, 1.2020,
                               atoms={'S': 1, 'H': 2}, bonds={}, smarts='[SH2]')
 PSRKSG[115] = UNIFAC_subgroup(115, 'N2', 60, 'N2', 0.8560, 0.9300,
@@ -1680,7 +1697,7 @@ PSRKSG[118] = UNIFAC_subgroup(118, 'CH4', 57, 'CH4', 1.1292, 1.1240,
 PSRKSG[119] = UNIFAC_subgroup(119, 'O2', 58, 'O2', 0.7330, 0.8490,
                               atoms={'O': 2}, bonds={DOUBLE_BOND: 1}, smarts='[OX1H0]=[OX1H0]')
 
-PSRKSG[120] = UNIFAC_subgroup(120, 'D2', 62, 'H2', 0.3700, 0.5270)
+PSRKSG[120] = UNIFAC_subgroup(120, 'D2', 62, 'H2', 0.3700, 0.5270) # TODO
 
 PSRKSG[121] = UNIFAC_subgroup(121, 'SO2', 65, 'SO2', 1.3430, 1.1640,
                               atoms={'S': 1, 'O': 2}, bonds={DOUBLE_BOND: 2}, smarts='[OX1H0]=[SX2H0]=[OX1H0]')
@@ -1717,24 +1734,41 @@ PSRKSG[135] = UNIFAC_subgroup(135, 'CSH', 29, 'CH3SH', 1.1990, 0.7520,
                               atoms={'C': 1, 'S': 1, 'H': 1}, bonds={SINGLE_BOND: 1}, smarts='[CX4H0][SX2H1]', priority=1000000)
 
 PSRKSG[136] = UNIFAC_subgroup(136, 'H2COCH', 51, 'EPOXY', 1.3652, 1.0080,
-                              atoms={'H': 3, 'C': 2, 'O': 1}, bonds={SINGLE_BOND: 2}, smarts='[CX4H2]1[CX4H1][OX2H0]1')
+                              atoms={'H': 3, 'C': 2, 'O': 1}, bonds={SINGLE_BOND: 3}, smarts='[CX4H2]1[CX4H1][OX2H0]1')
 
-PSRKSG[137] = UNIFAC_subgroup(137, 'HCOCH', 51, 'EPOXY', 1.1378, 0.6960)
-PSRKSG[138] = UNIFAC_subgroup(138, 'HCOC', 51, 'EPOXY', 0.9104, 0.4680)
-PSRKSG[139] = UNIFAC_subgroup(139, 'H2COCH2', 51, 'EPOXY', 1.5926, 1.3200)
-PSRKSG[140] = UNIFAC_subgroup(140, 'H2COC', 51, 'EPOXY', 1.1378, 0.7800)
-PSRKSG[141] = UNIFAC_subgroup(141, 'COC', 51, 'EPOXY', 0.6829, 0.2400)
+PSRKSG[137] = UNIFAC_subgroup(137, 'HCOCH', 51, 'EPOXY', 1.1378, 0.6960,
+                              atoms={'C': 2, 'O': 1, 'H': 2}, bonds={SINGLE_BOND: 3},  smarts='[CX4H1]1[CX4H1][OX2H0]1')
+PSRKSG[138] = UNIFAC_subgroup(138, 'HCOC', 51, 'EPOXY', 0.9104, 0.4680,
+                              atoms={'C': 2, 'O': 1, 'H': 1}, bonds={SINGLE_BOND: 3}, smarts='[CX4H1]1[CX4H0][OX2H0]1')
+PSRKSG[139] = UNIFAC_subgroup(139, 'H2COCH2', 51, 'EPOXY', 1.5926, 1.3200,
+                              atoms={'C': 2, 'H': 4, 'O': 1}, bonds={SINGLE_BOND: 3}, smarts='[CX4H2]1[CX4H2][OX2H0]1')
+PSRKSG[140] = UNIFAC_subgroup(140, 'H2COC', 51, 'EPOXY', 1.1378, 0.7800,
+                              atoms={'C': 2, 'O': 1, 'H': 2}, bonds={SINGLE_BOND: 3}, smarts='[CX4H2]1[CX4H0][OX2H0]1')
+PSRKSG[141] = UNIFAC_subgroup(141, 'COC', 51, 'EPOXY', 0.6829, 0.2400,
+                              atoms={'C': 2, 'O': 1}, bonds={SINGLE_BOND: 3}, smarts='[CX4H0]1[CX4H0][OX2H0]1')
+
 
 # These are structural groups but also believed to be individual gases
-PSRKSG[142] = UNIFAC_subgroup(142, 'F2', 78, 'F2', 0.7500, 0.8800)
-PSRKSG[143] = UNIFAC_subgroup(143, 'CL2', 79, 'CL2', 1.5300, 1.4400)
-PSRKSG[144] = UNIFAC_subgroup(144, 'BR2', 80, 'BR2', 1.9000, 1.6600)
-PSRKSG[145] = UNIFAC_subgroup(145, 'HCN', 81, 'HCN', 1.2000, 1.1900)
-PSRKSG[146] = UNIFAC_subgroup(146, 'NO2', 82, 'NO2', 1.0000, 1.1000)
-PSRKSG[147] = UNIFAC_subgroup(147, 'CF4', 83, 'CF4', 1.7800, 1.8200)
-PSRKSG[148] = UNIFAC_subgroup(148, 'O3', 84, 'O3', 1.1000, 1.2700)
-PSRKSG[149] = UNIFAC_subgroup(149, 'CLNO', 85, 'CLNO', 1.4800, 1.3400)
-PSRKSG[152] = UNIFAC_subgroup(152, 'CNH2', 14, 'CNH2', 0.9147, 0.6140)
+PSRKSG[142] = UNIFAC_subgroup(142, 'F2', 78, 'F2', 0.7500, 0.8800,
+                              atoms={'F': 2}, bonds={SINGLE_BOND: 1}, smarts='[F][F]')
+PSRKSG[143] = UNIFAC_subgroup(143, 'CL2', 79, 'CL2', 1.5300, 1.4400,
+                              atoms={'Cl': 2}, bonds={SINGLE_BOND: 1}, smarts='[Cl][Cl]')
+PSRKSG[144] = UNIFAC_subgroup(144, 'BR2', 80, 'BR2', 1.9000, 1.6600,
+                              atoms={'Br': 2}, bonds={SINGLE_BOND: 1}, smarts='[Br][Br]')
+PSRKSG[145] = UNIFAC_subgroup(145, 'HCN', 81, 'HCN', 1.2000, 1.1900,
+                              atoms={'H': 1, 'C': 1, 'N': 1}, bonds={TRIPLE_BOND: 1}, smarts='[CX2H1]#[NX1H0]')
+PSRKSG[146] = UNIFAC_subgroup(146, 'NO2', 82, 'NO2', 1.0000, 1.1000,
+                              atoms={'N': 1, 'O': 2}, bonds={SINGLE_BOND: 1, DOUBLE_BOND: 1}, smarts='[OX1H0][NX2H0]=[OX1H0]')
+PSRKSG[147] = UNIFAC_subgroup(147, 'CF4', 83, 'CF4', 1.7800, 1.8200,
+                              atoms={'C': 1, 'F': 4}, bonds={SINGLE_BOND: 4}, smarts='[CX4H0]([FX1])([FX1])([FX1])[FX1]')
+PSRKSG[148] = UNIFAC_subgroup(148, 'O3', 84, 'O3', 1.1000, 1.2700,
+                              atoms={'O': 3}, bonds={SINGLE_BOND: 1, DOUBLE_BOND: 1}, smarts='[O-X1H0][O+X2H0]=[OX1H0]')
+PSRKSG[149] = UNIFAC_subgroup(149, 'CLNO', 85, 'CLNO', 1.4800, 1.3400,
+                              atoms={'Cl': 1, 'N': 1, 'O': 1}, bonds={SINGLE_BOND: 1, DOUBLE_BOND: 1}, smarts='[NX2H0](=[OX1H0])[ClX1H0]')
+# Can't figure out what 152 is supposed to match!
+PSRKSG[152] = UNIFAC_subgroup(152, 'CNH2', 14, 'CNH2', 0.9147, 0.6140,
+                              # atoms={'C': 1, 'N': 1, 'H': 2}, bonds={DOUBLE_BOND: 1}
+                              )
 
 PSRKMG = {1: ("CH2", [1, 2, 3, 4]),
 2: ("C=C", [5, 6, 7, 8, 70, 109]),

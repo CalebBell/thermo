@@ -833,3 +833,122 @@ def test_PSRK_group_detection():
     assert assignment == {136: 1, 1: 1}
     assert success
 
+    rdkitmol = Chemical('ethylene').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {109: 1}
+    assert success
+    
+    rdkitmol = Chemical('ethyne').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {110: 1}
+    assert success
+    
+    rdkitmol = Chemical('2,3-epoxybutane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {137: 1, 1: 2}
+    assert success
+    
+    rdkitmol = Chemical('2,2,3-trimethyloxirane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {138: 1, 1: 3}
+    assert success
+     
+    rdkitmol = Chemical('ethylene Oxide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {139: 1}
+    assert success
+
+    rdkitmol = Chemical('2-methyl-1,2-epoxypropane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {140: 1, 1: 2}
+    assert success
+
+    rdkitmol = Chemical('2,3-dimethyl-2,3-epoxybutane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {141: 1, 1: 4}
+    assert success
+
+    rdkitmol = Chemical('fluorine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {142: 1}
+    assert success
+
+    rdkitmol = Chemical('Chlorine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {143: 1}
+    assert success
+
+    rdkitmol = Chemical('bromine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {144: 1}
+    assert success
+
+    rdkitmol = Chemical('hydrogen cyanide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {145: 1}
+    assert success
+
+    rdkitmol = Chemical('NO2').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {146: 1}
+    assert success
+    
+    rdkitmol = Chemical('tetrafluoromethane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {147: 1}
+    assert success
+    
+    rdkitmol = Chemical('ozone').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {148: 1}
+    assert success
+
+    rdkitmol = Chemical('nitrosyl chloride').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {149: 1}
+    assert success
+
+# test_PSRK_group_detection()
+DOUFSG_GROUPS = [DOUFSG[i] for i in [k for k in DOUFSG.keys()]]
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_DOUFSG_group_detection():
+    rdkitmol = Chemical('1-propanol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1:1, 2:2, 14:1}
+    assert success
+
+    rdkitmol = Chemical('2-propanol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {3:1, 1:2, 81:1}
+    assert success
+
+    rdkitmol = Chemical('2-methylpropan-2-ol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1:3, 4:1, 82:1}
+    assert success
+    
+    rdkitmol = Chemical('4-Methylpyridine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {37: 1, 11:1, 9:2}
+    assert success
+
+    rdkitmol = Chemical('2-Methylpyridine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {38: 1, 9: 3, 1: 1}
+    assert success
+    
+    # Typo in article, this one does not actually match 39
+    rdkitmol = Chemical('2,5-dimethylpyridine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {38: 1, 11: 1, 9: 2, 1: 1}
+    assert success
+
+    rdkitmol = Chemical('2,6-dimethylpyridine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {39: 1, 9: 3, 1: 2}
+    assert success
+
+
+# test_DOUFSG_group_detection()
