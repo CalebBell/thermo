@@ -21,6 +21,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 '''
+from chemicals.elements import simple_formula_parser
+
 rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
 
 loaded_rdkit = False
@@ -97,7 +99,9 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     catalog = [i for i in catalog if i.priority is not None]
     
     rdkitmol_Hs = Chem.AddHs(rdkitmol)
-    H_count = rdkitmol_Hs.GetNumAtoms() - rdkitmol.GetNumAtoms()
+    # H_count = rdkitmol_Hs.GetNumAtoms() - rdkitmol.GetNumAtoms()
+    atoms = simple_formula_parser(rdMolDescriptors.CalcMolFormula(rdkitmol))
+    H_count = atoms.get('H', 0)
 
     H_counts_by_idx = {}
     for at in rdkitmol.GetAtoms():

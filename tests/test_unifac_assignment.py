@@ -718,11 +718,15 @@ def test_PSRK_group_detection():
     assert assignment == {112: 1}
     assert success
 
-    #TODO make this work or hardcode it
-    # rdkitmol = Chemical('hydrogen').rdkitmol
-    # assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
-    # assert assignment == {113: 1}
-    # assert success
+    rdkitmol = Chemical('hydrogen').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {113: 1}
+    assert success
+
+    rdkitmol = Chemical('deuterium').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {120: 1}
+    assert success
 
     rdkitmol = Chemical('hydrogen sulfide').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_GROUPS, rdkitmol=rdkitmol)
@@ -950,5 +954,71 @@ def test_DOUFSG_group_detection():
     assert assignment == {39: 1, 9: 3, 1: 2}
     assert success
 
+    rdkitmol = Chemical('1,3,5-Trioxane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    # This might become 83, 84 and 83 are a total dumpster fire
+    assert assignment == {84:3}
+    assert success
 
-# test_DOUFSG_group_detection()
+    rdkitmol = Chemical('cycloleucine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {42: 1, 78: 4, 85:1}
+    assert success
+    
+    rdkitmol = Chemical('N-Methylcaprolactam').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {86: 1, 78: 5}
+    assert success
+
+
+    rdkitmol = Chemical('oxiracetam').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    # print(assignment)
+    # Disagrees with the assesment
+    # assert assignment == {78: 2, 79: 1, 81: 1, 87: 1, 91:1}
+    assert success
+    
+    # disagrees
+    rdkitmol = Chemical('piracetam').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    assert success
+    
+
+    rdkitmol = Chemical('1-octyl-2-pyrrolidone').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {87: 1, 78: 3, 2: 6, 1:1}
+    assert success
+
+    rdkitmol = Chemical('1-(isopropyl)pyrrolidin-2-one').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    # May prefer 87 and a different fragmentation
+    assert assignment == {1: 2, 78: 3, 88:1}
+    assert success
+
+    rdkitmol = Chemical('aziridinone, 1,3-bis(1,1-dimethylethyl)-').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {89: 1, 79: 1, 4: 1, 1:6}
+    assert success
+
+    rdkitmol = Chemical('2,2-Dichloroacetamide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {91: 1, 48: 1}
+    assert success
+
+    # This one would be good for a solver, not a ton of matches
+    rdkitmol = Chemical('N-Methylacetamide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    # print(assignment)
+    # assert assignment == {92: 1, 1: 1}
+    assert success
+
+    rdkitmol = Chemical('n-ethylacetamide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
+    assert assignment == {100: 1, 1:2}
+    assert success
+
+
+
+
+
+test_DOUFSG_group_detection()
