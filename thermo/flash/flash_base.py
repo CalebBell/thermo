@@ -183,6 +183,25 @@ class Flash(object):
 
         Notes
         -----
+        
+        .. warning::
+            Not all flash specifications have a unique solution. Not all flash
+            specifications will converge, whether from a bad model, bad inputs,
+            or simply a lack of convergence by the implemented algorithms.
+            You are welcome to submit these cases to the author but the library
+            is provided AS IS, with NO SUPPORT.
+
+        .. warning::
+            Convergence of a flash may be impaired by providing `hot_start`. 
+            If reliability is desired, do not use this parameter.
+
+        .. warning::
+            The most likely thermodynamic methods to converge are 
+            thermodynamically consistent ones. This means e.g. an ideal liquid
+            and an ideal gas; or an equation of state for both
+            phases. Mixing thermodynamic models increases the possibility of
+            multiple solutions, discontinuities, and other not-fun issues for
+            the algorithms.
 
         Examples
         --------
