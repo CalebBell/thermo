@@ -79,7 +79,7 @@ setup(
   'Law/*', 'Misc/*', 'Phase Change/*', 'Reactions/*', 'Safety/*',
   'Solubility/*', 'Interface/*', 'Triple Properties/*',
   'Thermal Conductivity/*', 'Interaction Parameters/*',
-  'flash/*', 'phases/*', 'utils/*',
+  'flash/*', 'phases/*', 'utils/*','group_contribution/*',
   'Scalar Parameters/*',
   'Interaction Parameters/ChemSep/*',
   'Vapor Pressure/*', 'Viscosity/*']}  
