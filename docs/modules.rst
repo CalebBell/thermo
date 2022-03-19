@@ -17,10 +17,10 @@ API Reference
    thermo.eos_alpha_functions
    thermo.equilibrium
    thermo.flash
+   thermo.functional_groups
    thermo.heat_capacity
    thermo.interface
    thermo.interaction_parameters
-   thermo.joback
    thermo.law
    thermo.nrtl
    thermo.mixture
@@ -40,4 +40,6 @@ API Reference
    thermo.volume
    thermo.wilson
    thermo.uniquac
-
+   thermo.group_contribution.joback
+   thermo.group_contribution.fedors
+   thermo.group_contribution.wilson_jasperson

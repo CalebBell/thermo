@@ -99,7 +99,7 @@ __all__ = ['viscosity_liquid_methods', 'viscosity_liquid_methods_P',
            'LUCAS', 'GHARAGHEIZI', 'YOON_THODOS', 'STIEL_THODOS', 'LUCAS_GAS']
 
 import os
-from fluids.numerics import newton, interp, horner, brenth, numpy as np
+from fluids.numerics import newton, interp, horner, brenth, numpy as np, trunc_log
 
 from chemicals.utils import log, exp, log10, isinf, isnan
 from chemicals.utils import none_and_length_check, mixing_simple, mixing_logarithmic
@@ -1219,7 +1219,7 @@ class ViscosityLiquidMixture(MixtureProperty):
         if method == MIXING_LOG_MOLAR:
             ln_mu = 0.0
             for i in range(len(zs)):
-                ln_mu += zs[i]*log(mus[i])
+                ln_mu += zs[i]*trunc_log(mus[i])
             return exp(ln_mu)
         elif method == MIXING_LOG_MASS:
             ln_mu = 0.0

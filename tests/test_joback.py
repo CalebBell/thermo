@@ -23,8 +23,8 @@ SOFTWARE.'''
 import os
 import pytest
 from fluids.numerics import assert_close, assert_close1d
-from thermo.joback import *
-from thermo.joback import J_BIGGS_JOBACK_SMARTS_id_dict
+from thermo.group_contribution.joback import *
+from thermo.group_contribution.joback import J_BIGGS_JOBACK_SMARTS_id_dict
 
 from chemicals.identifiers import pubchem_db
 
@@ -35,6 +35,7 @@ try:
     from rdkit import Chem
 except:
     rdkit = None
+from thermo import Chemical
 
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
@@ -98,3 +99,4 @@ def test_Joback_database():
 
 # Maybe use this again if more work is done on Joback
 del test_Joback_database
+

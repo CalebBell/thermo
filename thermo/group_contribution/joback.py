@@ -36,23 +36,25 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 .. contents:: :local:
 
 
-.. autoclass:: thermo.joback.Joback
+.. autoclass:: thermo.group_contribution.joback.Joback
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. autofunction:: thermo.joback.smarts_fragment
 .. autodata:: J_BIGGS_JOBACK_SMARTS
 .. autodata:: J_BIGGS_JOBACK_SMARTS_id_dict
+
+
 
 '''
 
 from __future__ import division
 
-__all__ = ['smarts_fragment', 'Joback', 'J_BIGGS_JOBACK_SMARTS',
+__all__ = ['Joback', 'J_BIGGS_JOBACK_SMARTS',
            'J_BIGGS_JOBACK_SMARTS_id_dict']
 
 from chemicals.utils import to_num, horner, exp
+from thermo.group_contribution.group_contribution_base import smarts_fragment, smarts_fragment_priority
 
 rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
 
@@ -69,7 +71,7 @@ def load_rdkit_modules():
         from rdkit.Chem import rdMolDescriptors
         loaded_rdkit = True
     except:
-        if not hasRDKit: # pragma: no cover
+        if not loaded_rdkit: # pragma: no cover
             raise Exception(rdkit_missing)
 
 # See https://www.atmos-chem-phys.net/16/4401/2016/acp-16-4401-2016.pdf for more
@@ -260,152 +262,7 @@ for i, line in enumerate(joback_data_txt.split('\n')):
     j = JOBACK(i+1, *parsed)
     joback_groups_str_dict[parsed[0]] = j
     joback_groups_id_dict[i+1] = j
-
-
-def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
-    r'''Fragments a molecule into a set of unique groups and counts as
-    specified by the `catalog`. The molecule can either be an rdkit
-    molecule object, or a smiles string which will be parsed by rdkit.
-    Returns a dictionary of groups and their counts according to the
-    indexes of the catalog provided.
-
-    Parameters
-    ----------
-    catalog : dict
-        Dictionary indexed by keys pointing to smarts strings, [-]
-    rdkitmol : mol, optional
-        Molecule as rdkit object, [-]
-    smi : str, optional
-        Smiles string representing a chemical, [-]
-
-    Returns
-    -------
-    counts : dict
-        Dictionaty of integer counts of the found groups only, indexed by
-        the same keys used by the catalog [-]
-    success : bool
-        Whether or not molecule was fully and uniquely fragmented, [-]
-    status : str
-        A string holding an explanation of why the molecule failed to be
-        fragmented, if it fails; 'OK' if it suceeds.
-
-    Notes
-    -----
-    Raises an exception if rdkit is not installed, or `smi` or `rdkitmol` is
-    not defined.
-
-    Examples
-    --------
-    Acetone:
-
-    >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='CC(=O)C') # doctest:+SKIP
-    ({1: 2, 24: 1}, True, 'OK')
-
-    Sodium sulfate, (Na2O4S):
-
-    >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='[O-]S(=O)(=O)[O-].[Na+].[Na+]') # doctest:+SKIP
-    ({29: 4}, False, 'Did not match all atoms present')
-
-    Propionic anhydride (C6H10O3):
-
-    >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='CCC(=O)OC(=O)CC') # doctest:+SKIP
-    ({1: 2, 2: 2, 28: 2}, False, 'Matched some atoms repeatedly: [4]')
-    '''
-    if not loaded_rdkit:
-        load_rdkit_modules()
-    if rdkitmol is None and smi is None:
-        raise Exception('Either an rdkit mol or a smiles string is required')
-    if smi is not None:
-        rdkitmol = Chem.MolFromSmiles(smi)
-        if rdkitmol is None:
-            status = 'Failed to construct mol'
-            success = False
-            return {}, success, status
-    from collections import Counter
-
-    atom_count = len(rdkitmol.GetAtoms())
-    status = 'OK'
-    success = True
-
-    counts = {}
-    all_matches = {}
-    for key, smart in catalog.items():
-        if isinstance(smart, str):
-            patt = Chem.MolFromSmarts(smart)
-        else:
-            patt = smart
-        hits = list(rdkitmol.GetSubstructMatches(patt))
-        if hits:
-            all_matches[key] = hits
-            counts[key] = len(hits)
-
-    # Duplicate group cleanup
-    matched_atoms = []
-    for i in all_matches.values():
-        for j in i:
-            matched_atoms.extend(j)
-
-    if deduplicate:
-        dups = [i for i, c in Counter(matched_atoms).items() if c > 1]
-        iteration = 0
-        while (dups and iteration < 100):
-            dup = dups[0]
-
-            dup_smart_matches = []
-            for group, group_match_list in all_matches.items():
-                for i, group_match_i in enumerate(group_match_list):
-                    if dup in group_match_i:
-                        dup_smart_matches.append((group, i, group_match_i, len(group_match_i)))
-
-
-            sizes = [i[3] for i in dup_smart_matches]
-            max_size = max(sizes)
-#            print(sizes, 'sizes', 'dup', dup, 'working_data', dup_smart_matches)
-            if sizes.count(max_size) > 1:
-                iteration += 1
-#                print('BAD')
-                # Two same size groups, continue, can't do anything
-                continue
-            else:
-                # Remove matches that are not the largest
-                max_idx = sizes.index(max_size)
-                for group, idx, positions, size in dup_smart_matches:
-                    if size != max_size:
-                        # Not handling the case of multiple duplicate matches right, indexes changing!!!
-                        del all_matches[group][idx]
-                        continue
-
-            matched_atoms = []
-            for i in all_matches.values():
-                for j in i:
-                    matched_atoms.extend(j)
-
-            dups = [i for i, c in Counter(matched_atoms).items() if c > 1]
-            iteration += 1
-
-    matched_atoms = set()
-    for i in all_matches.values():
-        for j in i:
-            matched_atoms.update(j)
-    if len(matched_atoms) != atom_count:
-        status = 'Did not match all atoms present'
-        success = False
-
-    # Check the atom aount again, this time looking for duplicate matches (only if have yet to fail)
-    if success:
-        matched_atoms = []
-        for i in all_matches.values():
-            for j in i:
-                matched_atoms.extend(j)
-        if len(matched_atoms) < atom_count:
-            status = 'Matched %d of %d atoms only' %(len(matched_atoms), atom_count)
-            success = False
-        elif len(matched_atoms) > atom_count:
-            status = 'Matched some atoms repeatedly: %s' %( [i for i, c in Counter(matched_atoms).items() if c > 1])
-            success = False
-
-    return counts, success, status
-
+del joback_data_txt
 
 class Joback(object):
     r'''Class for performing chemical property estimations with the Joback
@@ -1086,3 +943,4 @@ class Joback(object):
             return self.MW*exp(a/T + b)
         except:
             return None
+
