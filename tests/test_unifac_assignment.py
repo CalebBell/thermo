@@ -1016,9 +1016,3 @@ def test_DOUFSG_group_detection():
     assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_GROUPS, rdkitmol=rdkitmol)
     assert assignment == {100: 1, 1:2}
     assert success
-
-
-
-
-
-test_DOUFSG_group_detection()
