@@ -29,7 +29,7 @@ from fluids.numerics import (horner_and_der2, derivative,
                              evaluate_linear_fits, evaluate_linear_fits_d,
                              evaluate_linear_fits_d2,
                              trunc_exp, secant)
-from chemicals.utils import log, exp
+from chemicals.utils import log, exp, phase_identification_parameter
 from thermo.activity import IdealSolution
 from thermo.utils import POLY_FIT, PROPERTY_TRANSFORM_LN, PROPERTY_TRANSFORM_DLN, PROPERTY_TRANSFORM_D2LN, PROPERTY_TRANSFORM_D_X, PROPERTY_TRANSFORM_D2_X
 from thermo.heat_capacity import HeatCapacityGas, HeatCapacityLiquid
@@ -180,6 +180,7 @@ class GibbsExcessLiquid(Phase):
         often an assumption that is made.
 
     '''
+    PIP_INCALCULABLE_VALUE = 2
     force_phase = 'l'
     phase = 'l'
     is_gas = False
@@ -688,9 +689,12 @@ class GibbsExcessLiquid(Phase):
 
         return Psats
 
-#    def PIP(self):
-#        # Force liquid
-#        return 2.0
+    def PIP(self):
+        dP_dT = self.dP_dT()
+        if dP_dT == 0:
+            return self.PIP_INCALCULABLE_VALUE
+        return phase_identification_parameter(self.V(), self.dP_dT(), self.dP_dV(),
+                                              self.d2P_dV2(), self.d2P_dTdV())
 
     @staticmethod
     def _dPsats_dT_at_poly_fit(T, Psats_data, cmps, Psats):
