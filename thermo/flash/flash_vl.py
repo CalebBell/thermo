@@ -49,7 +49,7 @@ from .flash_utils import (
 from .flash_pure_vls  import FlashPureVLS
 from chemicals.utils import log
 from chemicals.exceptions import TrivialSolutionError
-from fluids.numerics import secant, UnconvergedError
+from fluids.numerics import secant, trunc_log, UnconvergedError
 from thermo.property_package import StabilityTester
 from thermo.bulk import default_settings
 from thermo.coolprop import CPiP_min
@@ -546,7 +546,7 @@ class FlashVL(Flash):
                         continue
                     lnK_2_tot = 0.0
                     for k in range(self.N):
-                        lnK = log(Ks[k])
+                        lnK = trunc_log(Ks[k])
                         lnK_2_tot += lnK*lnK
                     sum_criteria = abs(sum_zs_test - 1.0)
                     if sum_criteria < 1e-9 or lnK_2_tot < 1e-7:
