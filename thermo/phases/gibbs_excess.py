@@ -1595,6 +1595,7 @@ class GibbsExcessLiquid(Phase):
             gammas = self._gammas
         except AttributeError:
             gammas = self.gammas()
+            
 
         try:
             Psats = self._Psats

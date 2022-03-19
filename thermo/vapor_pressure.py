@@ -66,7 +66,7 @@ import os
 from fluids.constants import R
 from fluids.numerics import polyint_over_x, horner_log, horner, polyint, horner_and_der2, horner_and_der, derivative, newton, linspace, numpy as np
 
-from math import e
+from math import e, inf
 from chemicals.utils import log, exp, isnan
 from chemicals.dippr import EQ101
 from chemicals import miscdata
@@ -485,23 +485,29 @@ class VaporPressure(TDependentProperty):
             if Tmin <= T <= Tmax:
                 if order == 1:
                     return dWagner_original_dT(T, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Pc, *self.WAGNER_MCGARRY_coefs)
-                if order == 2 and T < Tmax:
-                    # infinity at Tmax
-                    return d2Wagner_original_dT2(T, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Pc, *self.WAGNER_MCGARRY_coefs)
+                if order == 2:
+                    if T < Tmax:
+                        return d2Wagner_original_dT2(T, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Pc, *self.WAGNER_MCGARRY_coefs)
+                    elif T == Tmax:
+                        return inf
         elif method == WAGNER_POLING:
             if Tmin <= T <= Tmax:
                 if order == 1:
                     return dWagner_dT(T, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, *self.WAGNER_POLING_coefs)
-                if order == 2 and T < Tmax:
-                    # infinity at Tmax
-                    return d2Wagner_dT2(T, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, *self.WAGNER_POLING_coefs)
+                if order == 2:
+                    if T < Tmax:
+                        return d2Wagner_dT2(T, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, *self.WAGNER_POLING_coefs)
+                    elif T == Tmax:
+                        return inf
         elif method == VDI_PPDS:
             if Tmin <= T <= Tmax:
                 if order == 1:
                     return dWagner_dT(T, self.VDI_PPDS_Tc, self.VDI_PPDS_Pc, *self.VDI_PPDS_coeffs)
-                if order == 2 and T < Tmax:
-                    # infinity at Tmax
-                    return d2Wagner_dT2(T, self.VDI_PPDS_Tc, self.VDI_PPDS_Pc, *self.VDI_PPDS_coeffs)
+                if order == 2:
+                    if T < Tmax:
+                        return d2Wagner_dT2(T, self.VDI_PPDS_Tc, self.VDI_PPDS_Pc, *self.VDI_PPDS_coeffs)
+                    elif T == Tmax:
+                        return inf
         elif method == ANTOINE_EXTENDED_POLING:
             if Tmin <= T <= Tmax:
                 if order == 1:
