@@ -546,7 +546,7 @@ class FlashVL(Flash):
                         continue
                     lnK_2_tot = 0.0
                     for k in range(self.N):
-                        lnK = log(Ks[k])
+                        lnK = trunc_log(Ks[k])
                         lnK_2_tot += lnK*lnK
                     sum_criteria = abs(sum_zs_test - 1.0)
                     if sum_criteria < 1e-9 or lnK_2_tot < 1e-7:

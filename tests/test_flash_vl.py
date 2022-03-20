@@ -418,3 +418,30 @@ def test_PRTranslated_air_two_phase():
     res = flasher.flash(P=200000, H=-11909.90990990991, zs=zs)
     assert_close(res.gas_beta, 0.0010452858012690303, rtol=1e-5)
     
+    
+def test_issue106_Michelson_stability_test_log_zero():
+    T = 500
+    P = 1e12
+    zs = [0, 0.81, 0.16, 0.02, 0.01]
+    activity_model = NRTL(T=T, xs=zs, tau_as=[[0, -5.1549, 0, 0, 0], [5.8547, 0, -0.40926, 0, 0], [0, -0.39036, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]], tau_bs=[[0, 2270.62, 284.966, 0, 0], [229.497, 0, 1479.46, 0, 0], [-216.256, 447.003, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]], alpha_cs=[[0, 0.2, 0.3, 0, 0], [0.2, 0, 0.46, 0, 0], [0.3, 0.46, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
+    chemicals = ['nitrobenzene', 'water', 'aniline', 'hydrogen', 'methane']
+    constants, properties = ChemicalConstantsPackage.from_IDs(chemicals)
+    kijs = [[0.0, 0, 0, 0, 0], [0, 0.0, 0, 0, 0], [0, 0, 0.0, 0, 0], [0, 0, 0, 0.0, -0.0044], [0, 0, 0, -0.0044, 0.0]]
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas, 'kijs': kijs}
+    gas = CEOSGas(PRMIX, HeatCapacityGases=properties.HeatCapacityGases, eos_kwargs=eos_kwargs)
+    
+    liquid = GibbsExcessLiquid(
+        VaporPressures=properties.VaporPressures,
+        HeatCapacityGases=properties.HeatCapacityGases,
+        VolumeLiquids=properties.VolumeLiquids,
+        GibbsExcessModel=activity_model,
+        equilibrium_basis='Psat', caloric_basis='Psat',
+        T=T, P=P, zs=zs)
+    
+    conditions = {'T': 500, 'P': 1e12}
+    flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
+    assert liquid.to(T=T, P=P, zs=zs).G() < gas.to(T=T, P=P, zs=zs).G()
+    res = flasher.flash(T=T, P=P, zs=zs)
+    assert res.phase_count == 1
+    assert res.liquid0 is not None
+    assert isinstance(res.liquid0, GibbsExcessLiquid)
