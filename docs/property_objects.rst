@@ -107,7 +107,7 @@ The low-pressure region uses :math:`\log(P_{sat}) = A - B/T`, where the coeffici
 When extrapolation is turned on, it is used automatically if a property is requested out of range:
 
 >>> ethanol_psat(100.0), ethanol_psat(1000)
-(1.047582e-11, 3.49039e+22)
+(1.047582e-11, 1779196575.4962692)
 
 The default extrapolation methods may be changed in the future, but can be manually specified also by changing the value of the :obj:`extrapolation <thermo.utils.TDependentProperty.extrapolation>` attribute. For example, if the `linear` extrapolation method is set, extrapolation will be linear instead of using those fit equations. Because not all properties are suitable for linear extrapolation, some methods have a default `transform` to make the property behave as linearly as possible. This is also used in tabular interpolation:
 

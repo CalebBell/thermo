@@ -167,7 +167,7 @@ def test_VaporPressure_cycloheptane():
         cycloheptane.test_method_validity(300, 'BADMETHOD')
 
     obj = VaporPressure(CASRN="71-43-2", Tb=353.23, Tc=562.05, Pc=4895000.0, omega=0.212, extrapolation="AntoineAB|DIPPR101_ABC", method="WAGNER_MCGARRY")
-    assert_close(obj.T_dependent_property_derivative(600.0), 2379682.4349338813, rtol=1e-4)
+    assert_close(obj.T_dependent_property_derivative(600.0), 89196.777813, rtol=1e-4)
 
 @pytest.mark.fitting
 @pytest.mark.meta_T_dept
