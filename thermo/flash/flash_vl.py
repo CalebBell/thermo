@@ -560,7 +560,7 @@ class FlashVL(Flash):
                             if diff < 1e-4:
                                 existing_phase = True
                                 break
-                            diffs2 = [abs(1.0-(existing_comp[i]/appearing_zs[i])) for i in range(self.N)]
+                            diffs2 = [abs(1.0-(existing_comp[i]/(appearing_zs[i] if appearing_zs[i]!=0.0 else 1)  )) for i in range(self.N)]
                             diff2 = sum(diffs2)/self.N
                             if diff2 < .02:
                                 existing_phase = True

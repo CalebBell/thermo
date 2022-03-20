@@ -3849,7 +3849,8 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
         if V_over_F != 0.0:
             lnphis_test = test_phase.lnphis_at_zs(zs_test) #test_phase.lnphis()
             for i in range(N):
-                dG_RT += zs_test[i]*(log(zs_test[i]) + lnphis_test[i])
+                # Sometimes z will converge to literally be zero, so the trunc_log takes care of that
+                dG_RT += zs_test[i]*(trunc_log(zs_test[i]) + lnphis_test[i])
             dG_RT *= V_over_F
 #        print(dG_RT)
 
