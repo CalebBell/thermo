@@ -27,6 +27,7 @@ from fluids.numerics import newton
 from chemicals.utils import log 
 from thermo.heat_capacity import HeatCapacityGas
 from .phase import Phase
+from thermo.phases.ceos import CEOSGas
 
 from chemicals.virial import BVirial_Pitzer_Curl, Z_from_virial_density_form
 class VirialCorrelationsPitzerCurl(object):
@@ -317,6 +318,8 @@ class VirialGas(Phase):
         self._dH_dep_dT = dH_dep_dT = (self.R*(2.0*T*T*V*self.d2B_dT2() + T*T*self.d2C_dT2()
             + 2.0*T*V*self.dB_dT() - 2.0*V*self.B() - 2.0*self.C())/(2.0*V*V))
         return dH_dep_dT
+    
+    Cp_dep = dH_dep_dT
 
     def S_dep(self):
         r'''
@@ -569,3 +572,7 @@ class VirialGas(Phase):
                     d2C_dT2 += zs[i]*zs[j]*zs[k]*d2C_dT2val
         self._d2C_dT2 = d2C_dT2
         return d2C_dT2
+
+VirialGas.H = CEOSGas.H
+VirialGas.S = CEOSGas.S
+VirialGas.Cp = CEOSGas.Cp
