@@ -29,9 +29,13 @@ from thermo.heat_capacity import HeatCapacityGas
 from thermo.phases.phase import Phase
 from thermo.phases.ceos import CEOSGas
 
-from chemicals.virial import (BVirial_Pitzer_Curl, Z_from_virial_density_form,
+from chemicals.virial import (BVirial_Pitzer_Curl,
+                              Z_from_virial_density_form, BVirial_mixture,
+                              CVirial_mixture_Orentlicher_Prausnitz,
                               BVirial_Xiang, CVirial_Orbey_Vera, CVirial_Liu_Xiang,
                               BVirial_Xiang_vec, BVirial_Xiang_mat,
+                              CVirial_Orbey_Vera_mat, CVirial_Liu_Xiang_mat,
+                              CVirial_Orbey_Vera_vec, CVirial_Liu_Xiang_vec,
                               Tarakad_Danner_virial_CSP_kijs, Tarakad_Danner_virial_CSP_Tcijs,
                               Tarakad_Danner_virial_CSP_Pcijs, Lee_Kesler_virial_CSP_Vcijs,
                               Tarakad_Danner_virial_CSP_omegaijs)
@@ -43,128 +47,15 @@ except (ImportError, AttributeError):
     pass
 
 VIRIAL_B_XIANG = 'Xiang'
+
 VIRIAL_C_XIANG = 'Xiang'
 VIRIAL_C_ORBEY_VERA = 'Orbey-Vera'
 
-VIRIAL_CROSS_B_TARAKAD_DANNER = 'Tarakad_Danner'
+VIRIAL_CROSS_B_ZEROS = VIRIAL_CROSS_C_ZEROS = 'Zeros'
+VIRIAL_CROSS_B_TARAKAD_DANNER = 'Tarakad-Danner'
+VIRIAL_CROSS_C_TARAKAD_DANNER = 'Tarakad-Danner'
 
-
-class VirialCSPInteractions(object):
-    def __init__(self, Tcs, Pcs, Vcs, omegas,
-                 B_model=VIRIAL_B_XIANG, 
-                 
-                 cross_B_model=VIRIAL_B_XIANG,
-                 # always require kijs in this model
-                 cross_B_model_kijs=None,
-                 
-                 C_model=VIRIAL_C_XIANG,
-                 ):
-        self.Tcs = Tcs
-        self.Pcs = Pcs
-        self.Vcs = Vcs
-        self.omegas = omegas
-        self.N = len(Tcs)
-        self.scalar = scalar = type(xs) is list
-        
-        self.B_model = B_model
-        self.cross_B_model = cross_B_model
-        self.cross_B_model_Tcijs = Tarakad_Danner_virial_CSP_Tcijs(Tcs, self.cross_B_model_kijs)
-        self.cross_B_model_Pcijs = Tarakad_Danner_virial_CSP_Pcijs(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, Tcijs=self.cross_B_model_Tcijs)
-        self.cross_B_model_Vcijs = Lee_Kesler_virial_CSP_Vcijs(Vcs=Vcs)
-        self.cross_B_model_omegaijs = Tarakad_Danner_virial_CSP_omegaijs(omegas=omegas)
-        self.cross_B_model_kijs = cross_B_model_kijs
-
-        self.C_model = C_model
-        
-    def B_pures_at_T(self, T):
-        N = self.N
-        Tcs, Pcs, Vcs, omegas = self.Tcs, self.Pcs, self.Vcs, self.omegas
-        if self.scalar:
-            Bs = [0.0]*N
-            dB_dTs = [0.0]*N
-            d2B_dTs = [0.0]*N
-            d3B_dTs = [0.0]*N
-        else:
-            Bs = zeros(N)
-            dB_dTs = zeros(N)
-            d2B_dTs = zeros(N)
-            d3B_dTs = zeros(N)
-
-        if self.B_model == VIRIAL_B_XIANG:
-            Bs_pure, dB_dTs_pure, d2B_dT2s_pure, d3B_dT3s_pure = BVirial_Xiang_vec(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, Bs=Bs, dB_dTs=dB_dTs, d2B_dTs=d2B_dTs, d3B_dTs=d3B_dTs)
-        return Bs_pure, dB_dTs_pure, d2B_dT2s_pure, d3B_dT3s_pure
-    
-    def _set_B_and_der_pure(self, T):
-        Bs_pure, dB_dTs_pure, d2B_dT2s_pure, d3B_dT3s_pure = self.B_pures_at_T(T)
-        
-        self.Bs_pure = Bs_pure
-        self.dB_dTs_pure = dB_dTs_pure
-        self.d2B_dT2s_pure = d2B_dT2s_pure
-        self.d3B_dT3s_pure = d3B_dT3s_pure
-
-    
-class VirialCorrelationsPitzerCurl(object):
-    
-    def __copy__(self):
-        new = self.__class__.__new__(self.__class__)
-        new.Tcs = self.Tcs
-        new.Pcs = self.Pcs
-        new.omegas = self.omegas
-        new.N = self.N
-        return new
-
-    def __init__(self, Tcs, Pcs, omegas):
-        self.Tcs = Tcs
-        self.Pcs = Pcs
-        self.omegas = omegas
-        self.N = len(Tcs)
-
-    def C_pures(self):
-        return [0.0]*self.N
-
-    def dC_dT_pures(self):
-        return [0.0]*self.N
-
-    def d2C_dT2_pures(self):
-        return [0.0]*self.N
-
-    def C_interactions(self):
-        N = self.N
-        Ciij = [[0.0]*N for i in range(N)]
-        Cijj = [[0.0]*N for i in range(N)]
-
-#        Full return should be (Ciij, Ciji, Cjii), (Cijj, Cjij, Cjji)
-#        but due to symmetry there is only those two matrices
-        return Ciij, Cijj
-
-    def dC_dT_interactions(self):
-        N = self.N
-        Ciij = [[0.0]*N for i in range(N)]
-        Cijj = [[0.0]*N for i in range(N)]
-        return Ciij, Cijj
-
-    def d2C_dT2_interactions(self):
-        N = self.N
-        Ciij = [[0.0]*N for i in range(N)]
-        Cijj = [[0.0]*N for i in range(N)]
-        return Ciij, Cijj
-
-    def B_pures(self):
-        Tcs, Pcs, omegas = self.Tcs, self.Pcs, self.omegas
-        return [BVirial_Pitzer_Curl(self.T, Tcs[i], Pcs[i], omegas[i]) for i in range(self.N)]
-
-    def dB_dT_pures(self):
-        Tcs, Pcs, omegas = self.Tcs, self.Pcs, self.omegas
-        return [BVirial_Pitzer_Curl(self.T, Tcs[i], Pcs[i], omegas[i], 1) for i in range(self.N)]
-
-    def B_interactions(self):
-        N = self.N
-        return [[0.0]*N for i in range(N)]
-
-    def dB_dT_interactions(self):
-        N = self.N
-        return [[0.0]*N for i in range(N)]
-
+class VirialCSPBase(object):
     def B_matrix(self):
         T = self.T
         N = self.N
@@ -193,16 +84,7 @@ class VirialCorrelationsPitzerCurl(object):
                 B_mat[j][i] = B_interactions[j][i]
 
         return B_mat
-
-
-    def d2B_dT2_pures(self):
-        Tcs, Pcs, omegas = self.Tcs, self.Pcs, self.omegas
-        T = self.T
-        return [BVirial_Pitzer_Curl(T, Tcs[i], Pcs[i], omegas[i], 2) for i in range(self.N)]
-    def d2B_dT2_interactions(self):
-        N = self.N
-        return [[0.0]*N for i in range(N)]
-
+    
     def d2B_dT2_matrix(self):
         N = self.N
         B_mat = [[0.0]*N for i in range(N)]
@@ -216,6 +98,322 @@ class VirialCorrelationsPitzerCurl(object):
                 B_mat[j][i] = B_interactions[j][i]
 
         return B_mat
+
+class VirialCSPInteractions(VirialCSPBase):
+    cross_B_calculated = False
+    cross_C_calculated = False
+    pure_B_calculated = False
+    pure_C_calculated = False
+    def __init__(self, Tcs, Pcs, Vcs, omegas,
+                 B_model=VIRIAL_B_XIANG, 
+                 
+                 cross_B_model=VIRIAL_B_XIANG,
+                 # always require kijs in this model
+                 cross_B_model_kijs=None,
+                 
+                 C_model=VIRIAL_C_XIANG,
+                 ):
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.Vcs = Vcs
+        self.omegas = omegas
+        self.N = len(Tcs)
+        self.scalar = scalar = type(Tcs) is list
+        
+        self.B_model = B_model
+        self.cross_B_model = cross_B_model
+        self.cross_B_model_kijs = cross_B_model_kijs
+
+        self.cross_B_model_Tcijs = Tarakad_Danner_virial_CSP_Tcijs(Tcs, self.cross_B_model_kijs)
+        self.cross_B_model_Pcijs = Tarakad_Danner_virial_CSP_Pcijs(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, Tcijs=self.cross_B_model_Tcijs)
+        self.cross_B_model_Vcijs = Lee_Kesler_virial_CSP_Vcijs(Vcs=Vcs)
+        self.cross_B_model_omegaijs = Tarakad_Danner_virial_CSP_omegaijs(omegas=omegas)
+
+        self.cross_C_model_Tcijs = self.cross_B_model_Tcijs
+        self.cross_C_model_Pcijs = self.cross_B_model_Pcijs
+        self.cross_C_model_Vcijs = self.cross_B_model_Vcijs
+        self.cross_C_model_omegaijs = self.cross_B_model_omegaijs
+
+        self.C_model = C_model
+        
+        
+    def B_interactions_at_T(self, T):
+        N = self.N
+        Tcijs, Pcijs, Vcijs, omegaijs = self.cross_B_model_Tcijs, self.cross_B_model_Pcijs, self.cross_B_model_Vcijs, self.cross_B_model_omegaijs
+        if self.scalar:
+            Bs = [[0.0]*N for _ in range(N)]
+            dB_dTs = [[0.0]*N for _ in range(N)]
+            d2B_dT2s = [[0.0]*N for _ in range(N)]
+            d3B_dT3s = [[0.0]*N for _ in range(N)]
+        else:
+            Bs = zeros((N, N))
+            dB_dTs = zeros((N, N))
+            d2B_dT2s = zeros((N, N))
+            d3B_dT3s = zeros((N, N))
+            
+        if self.B_model == VIRIAL_B_XIANG:
+            Bs_interactions, dB_dTs_interactions, d2B_dT2s_interactions, d3B_dT3s_interactions = BVirial_Xiang_mat(T=T, Tcs=Tcijs, Pcs=Pcijs, Vcs=Vcijs, omegas=omegaijs,
+                                                                                   Bs=Bs, dB_dTs=dB_dTs, d2B_dT2s=d2B_dT2s, d3B_dT3s=d3B_dT3s)
+        return Bs_interactions, dB_dTs_interactions, d2B_dT2s_interactions, d3B_dT3s_interactions
+    
+    def _set_B_and_der_interactions(self):
+        Bs_interactions, dB_dTs_interactions, d2B_dT2s_interactions, d3B_dT3s_interactions = self.B_interactions_at_T(self.T)
+        
+        self.Bs_interactions = Bs_interactions
+        self.dB_dTs_interactions = dB_dTs_interactions
+        self.d2B_dT2s_interactions = d2B_dT2s_interactions
+        self.d3B_dT3s_interactions = d3B_dT3s_interactions
+        self.cross_B_calculated = True
+
+    
+    def B_pures_at_T(self, T):
+        N = self.N
+        Tcs, Pcs, Vcs, omegas = self.Tcs, self.Pcs, self.Vcs, self.omegas
+        if self.scalar:
+            Bs = [0.0]*N
+            dB_dTs = [0.0]*N
+            d2B_dT2s = [0.0]*N
+            d3B_dT3s = [0.0]*N
+        else:
+            Bs = zeros(N)
+            dB_dTs = zeros(N)
+            d2B_dT2s = zeros(N)
+            d3B_dT3s = zeros(N)
+
+        if self.B_model == VIRIAL_B_XIANG:
+            Bs_pure, dB_dTs_pure, d2B_dT2s_pure, d3B_dT3s_pure = BVirial_Xiang_vec(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+                                                                                   Bs=Bs, dB_dTs=dB_dTs, d2B_dT2s=d2B_dT2s, d3B_dT3s=d3B_dT3s)
+        return Bs_pure, dB_dTs_pure, d2B_dT2s_pure, d3B_dT3s_pure
+    
+    def _set_B_and_der_pure(self):
+        Bs_pure, dB_dTs_pure, d2B_dT2s_pure, d3B_dT3s_pure = self.B_pures_at_T(self.T)
+        
+        self.Bs_pure = Bs_pure
+        self.dB_dTs_pure = dB_dTs_pure
+        self.d2B_dT2s_pure = d2B_dT2s_pure
+        self.d3B_dT3s_pure = d3B_dT3s_pure
+        self.pure_B_calculated = True
+
+    def B_pures(self):
+        if not self.pure_B_calculated:
+            self._set_B_and_der_pure()
+        return self.Bs_pure
+        
+    def dB_dT_pures(self):
+        if not self.pure_B_calculated:
+            self._set_B_and_der_pure()
+        return self.dB_dTs_pure
+
+    def d2B_dT2_pures(self):
+        if not self.pure_B_calculated:
+            self._set_B_and_der_pure()
+        return self.d2B_dT2s_pure
+
+    def d3B_dT3_pures(self):
+        if not self.pure_B_calculated:
+            self._set_B_and_der_pure()
+        return self.d3B_dT3s_pure
+    
+    def B_interactions(self):
+        if not self.cross_B_calculated:
+            self._set_B_and_der_interactions()
+        return self.Bs_interactions
+    
+    B_matrix = B_interactions
+    
+    def dB_dT_interactions(self):
+        if not self.cross_B_calculated:
+            self._set_B_and_der_interactions()
+        return self.dB_dTs_interactions
+    
+    dB_dT_matrix = dB_dT_interactions
+
+    def d2B_dT2_interactions(self):
+        if not self.cross_B_calculated:
+            self._set_B_and_der_interactions()
+        return self.d2B_dT2s_interactions
+    
+    d2B_dT2_matrix = d2B_dT2_interactions
+    
+    def d3B_dT3_interactions(self):
+        if not self.cross_B_calculated:
+            self._set_B_and_der_interactions()
+        return self.d3B_dT3s_interactions
+    
+    d3B_dT3_matrix = d3B_dT3_interactions
+
+    def C_interactions_at_T(self, T):
+        N = self.N
+        Tcijs, Pcijs, Vcijs, omegaijs = self.cross_C_model_Tcijs, self.cross_C_model_Pcijs, self.cross_C_model_Vcijs, self.cross_C_model_omegaijs
+        if self.scalar:
+            Cs = [[0.0]*N for _ in range(N)]
+            dC_dTs = [[0.0]*N for _ in range(N)]
+            d2C_dT2s = [[0.0]*N for _ in range(N)]
+            d3C_dT3s = [[0.0]*N for _ in range(N)]
+        else:
+            Cs = zeros((N, N))
+            dC_dTs = zeros((N, N))
+            d2C_dT2s = zeros((N, N))
+            d3C_dT3s = zeros((N, N))
+            
+        if self.C_model == VIRIAL_C_XIANG:
+            Cs_interactions, dC_dTs_interactions, d2C_dT2s_interactions, d3C_dT3s_interactions = CVirial_Liu_Xiang_mat(T=T, Tcs=Tcijs, Pcs=Pcijs, Vcs=Vcijs, omegas=omegaijs,
+                                                                                   Cs=Cs, dC_dTs=dC_dTs, d2C_dT2s=d2C_dT2s, d3C_dT3s=d3C_dT3s)
+        elif self.C_model == VIRIAL_C_ORBEY_VERA:
+            Cs_interactions, dC_dTs_interactions, d2C_dT2s_interactions, d3C_dT3s_interactions = CVirial_Orbey_Vera_mat(T=T, Tcs=Tcijs, Pcs=Pcijs, omegas=omegaijs,
+                                                                                   Cs=Cs, dC_dTs=dC_dTs, d2C_dT2s=d2C_dT2s, d3C_dT3s=d3C_dT3s)        
+        
+        return Cs_interactions, dC_dTs_interactions, d2C_dT2s_interactions, d3C_dT3s_interactions
+
+    def C_pures_at_T(self, T):
+        N = self.N
+        Tcs, Pcs, Vcs, omegas = self.Tcs, self.Pcs, self.Vcs, self.omegas
+        if self.scalar:
+            Cs = [0.0]*N
+            dC_dTs = [0.0]*N
+            d2C_dT2s = [0.0]*N
+            d3C_dT3s = [0.0]*N
+        else:
+            Cs = zeros(N)
+            dC_dTs = zeros(N)
+            d2C_dT2s = zeros(N)
+            d3C_dT3s = zeros(N)
+
+        if self.C_model == VIRIAL_C_XIANG:
+            Cs_pure, dC_dTs_pure, d2C_dT2s_pure, d3C_dT3s_pure = CVirial_Liu_Xiang_vec(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+                                                                                   Cs=Cs, dC_dTs=dC_dTs, d2C_dT2s=d2C_dT2s, d3C_dT3s=d3C_dT3s)
+        elif self.C_model == VIRIAL_C_ORBEY_VERA:
+            Cs_pure, dC_dTs_pure, d2C_dT2s_pure, d3C_dT3s_pure = CVirial_Orbey_Vera_vec(T=T, Tcs=Tcs, Pcs=Pcs, omegas=omegas,
+                                                                                   Cs=Cs, dC_dTs=dC_dTs, d2C_dT2s=d2C_dT2s, d3C_dT3s=d3C_dT3s)
+        return Cs_pure, dC_dTs_pure, d2C_dT2s_pure, d3C_dT3s_pure
+    
+
+    def _set_C_and_der_pure(self):
+        Cs_pure, dC_dTs_pure, d2C_dT2s_pure, d3C_dT3s_pure = self.C_pures_at_T(self.T)
+        
+        self.Cs_pure = Cs_pure
+        self.dC_dTs_pure = dC_dTs_pure
+        self.d2C_dT2s_pure = d2C_dT2s_pure
+        self.d3C_dT3s_pure = d3C_dT3s_pure
+        self.pure_C_calculated = True
+
+    def _set_C_and_der_interactions(self):
+        Cs_interactions, dC_dTs_interactions, d2C_dT2s_interactions, d3C_dT3s_interactions = self.C_interactions_at_T(self.T)
+        
+        self.Cs_interactions = Cs_interactions
+        self.dC_dTs_interactions = dC_dTs_interactions
+        self.d2C_dT2s_interactions = d2C_dT2s_interactions
+        self.d3C_dT3s_interactions = d3C_dT3s_interactions
+        self.cross_C_calculated = True
+
+    def C_pures(self):
+        if not self.pure_C_calculated:
+            self._set_C_and_der_pure()
+        return self.Cs_pure
+        
+    def dC_dT_pures(self):
+        if not self.pure_C_calculated:
+            self._set_C_and_der_pure()
+        return self.dC_dTs_pure
+
+    def d2C_dT2_pures(self):
+        if not self.pure_C_calculated:
+            self._set_C_and_der_pure()
+        return self.d2C_dT2s_pure
+
+    def d3C_dT3_pures(self):
+        if not self.pure_C_calculated:
+            self._set_C_and_der_pure()
+        return self.d3C_dT3s_pure
+
+    def C_interactions(self):
+        if not self.cross_C_calculated:
+            self._set_C_and_der_interactions()
+        return self.Cs_interactions
+    
+    def dC_dT_interactions(self):
+        if not self.cross_C_calculated:
+            self._set_C_and_der_interactions()
+        return self.dC_dTs_interactions
+    
+    def d2C_dT2_interactions(self):
+        if not self.cross_C_calculated:
+            self._set_C_and_der_interactions()
+        return self.d2C_dT2s_interactions
+    
+    def d3C_dT3_interactions(self):
+        if not self.cross_C_calculated:
+            self._set_C_and_der_interactions()
+        return self.d3C_dT3s_interactions
+    
+
+
+class VirialCorrelationsPitzerCurl(VirialCSPBase):
+    
+    def __copy__(self):
+        new = self.__class__.__new__(self.__class__)
+        new.Tcs = self.Tcs
+        new.Pcs = self.Pcs
+        new.omegas = self.omegas
+        new.N = self.N
+        return new
+
+    def __init__(self, Tcs, Pcs, omegas):
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.N = len(Tcs)
+
+    def C_pures(self):
+        return [0.0]*self.N
+
+    def dC_dT_pures(self):
+        return [0.0]*self.N
+
+    def d2C_dT2_pures(self):
+        return [0.0]*self.N
+
+    def C_interactions(self):
+        N = self.N
+        Cijs = [[0.0]*N for i in range(N)]
+        return Cijs
+
+    def dC_dT_interactions(self):
+        N = self.N
+        dCijs = [[0.0]*N for i in range(N)]
+        return dCijs
+
+    def d2C_dT2_interactions(self):
+        N = self.N
+        d2Cijs = [[0.0]*N for i in range(N)]
+        return d2Cijs
+
+    def B_pures(self):
+        Tcs, Pcs, omegas = self.Tcs, self.Pcs, self.omegas
+        return [BVirial_Pitzer_Curl(self.T, Tcs[i], Pcs[i], omegas[i]) for i in range(self.N)]
+
+    def dB_dT_pures(self):
+        Tcs, Pcs, omegas = self.Tcs, self.Pcs, self.omegas
+        return [BVirial_Pitzer_Curl(self.T, Tcs[i], Pcs[i], omegas[i], 1) for i in range(self.N)]
+
+    def B_interactions(self):
+        N = self.N
+        return [[0.0]*N for i in range(N)]
+
+    def dB_dT_interactions(self):
+        N = self.N
+        return [[0.0]*N for i in range(N)]
+
+
+
+    def d2B_dT2_pures(self):
+        Tcs, Pcs, omegas = self.Tcs, self.Pcs, self.omegas
+        T = self.T
+        return [BVirial_Pitzer_Curl(T, Tcs[i], Pcs[i], omegas[i], 2) for i in range(self.N)]
+    def d2B_dT2_interactions(self):
+        N = self.N
+        return [[0.0]*N for i in range(N)]
+
 
 
 class VirialGas(Phase):
@@ -526,20 +724,13 @@ class VirialGas(Phase):
         except:
             pass
         N = self.N
-        T = self.T
         if N == 1:
-            return self.model.B_pures()[0]
+            self._B = B = self.model.B_pures()[0]
+            return B
+
         zs = self.zs
         B_matrix = self.model.B_matrix()
-        B = 0.0
-        for i in range(N):
-            B_tmp = 0.0
-            row = B_matrix[i]
-            for j in range(N):
-                B += zs[j]*row[j]
-            B += zs[i]*B_tmp
-
-        self._B = B
+        self._B = B = BVirial_mixture(zs, B_matrix)
         return B
 
     def dB_dT(self):
@@ -548,20 +739,11 @@ class VirialGas(Phase):
         except:
             pass
         N = self.N
-        T = self.T
         if N == 1:
             return self.model.dB_dT_pures()[0]
         zs = self.zs
         dB_dT_matrix = self.model.dB_dT_matrix()
-        dB_dT = 0.0
-        for i in range(N):
-            dB_dT_tmp = 0.0
-            row = dB_dT_matrix[i]
-            for j in range(N):
-                dB_dT += zs[j]*row[j]
-            dB_dT += zs[i]*dB_dT_tmp
-
-        self._dB_dT = dB_dT
+        self._dB_dT = dB_dT = BVirial_mixture(zs, dB_dT_matrix)
         return dB_dT
 
     def d2B_dT2(self):
@@ -570,21 +752,26 @@ class VirialGas(Phase):
         except:
             pass
         N = self.N
-        T = self.T
         if N == 1:
             return self.model.d2B_dT2_pures()[0]
         zs = self.zs
         d2B_dT2_matrix = self.model.d2B_dT2_matrix()
-        d2B_dT2 = 0.0
-        for i in range(N):
-            d2B_dT2_tmp = 0.0
-            row = d2B_dT2_matrix[i]
-            for j in range(N):
-                d2B_dT2 += zs[j]*row[j]
-            d2B_dT2 += zs[i]*d2B_dT2_tmp
-
-        self._d2B_dT2 = d2B_dT2
+        self._d2B_dT2 = d2B_dT2 = BVirial_mixture(zs, d2B_dT2_matrix)
         return d2B_dT2
+
+    def d3B_dT3(self):
+        try:
+            return self._d3B_dT3
+        except:
+            pass
+        N = self.N
+        if N == 1:
+            return self.model.d3B_dT3_pures()[0]
+        zs = self.zs
+        d3B_dT3_matrix = self.model.d3B_dT3_matrix()
+        self._d3B_dT3 = d3B_dT3 = BVirial_mixture(zs, d3B_dT3_matrix)
+        return d3B_dT3
+
 
     def C(self):
         try:
@@ -593,22 +780,10 @@ class VirialGas(Phase):
             pass
         T = self.T
         zs = self.zs
-        C_pures = self.model.C_pures()
-        Ciij, Cijj = self.model.C_interactions()
+        Cijs = self.model.C_interactions()
         C = 0.0
         N = self.N
-        for i in range(N):
-            for j in range(N):
-                # poling 5-4.3b should be able to be used to take out the k loop?
-                for k in range(N):
-                    if i == j == k:
-                        Cval = C_pures[i]
-                    elif i == j:
-                        Cval = Ciij[i][j]
-                    else:
-                        Cval = Cijj[i][j]
-                    C += zs[i]*zs[j]*zs[k]*Cval
-        self._C = C
+        self._C = C = CVirial_mixture_Orentlicher_Prausnitz(zs, Cijs)
         return C
 
     def dC_dT(self):
@@ -619,21 +794,17 @@ class VirialGas(Phase):
         T = self.T
         zs = self.zs
         dC_dT_pures = self.model.dC_dT_pures()
-        dC_dTiij, dC_dTijj = self.model.dC_dT_interactions()
-        dC_dT = 0.0
-        N = self.N
-        for i in range(N):
-            for j in range(N):
-                # poling 5-4.3b should be able to be used to take out the k loop?
-                for k in range(N):
-                    if i == j == k:
-                        dC_dTval = dC_dT_pures[i]
-                    elif i == j:
-                        dC_dTval = dC_dTiij[i][j]
-                    else:
-                        dC_dTval = dC_dTijj[i][j]
-                    dC_dT += zs[i]*zs[j]*zs[k]*dC_dTval
-        self._dC_dT = dC_dT
+        dC_dTijs = self.model.dC_dT_interactions()
+        # TODO
+        '''
+        from sympy import *
+        Cij, Cik, Cjk = symbols('Cij, Cik, Cjk', cls=Function)
+        T = symbols('T')
+        # The derivative of this is messy
+        expr = (Cij(T)*Cik(T)*Cjk(T))**Rational('1/3')
+        # diff(expr, T, 3)
+        '''
+        self._dC_dT = dC_dT = 0#CVirial_mixture_Orentlicher_Prausnitz(zs, dC_dTijs)
         return dC_dT
 
     def d2C_dT2(self):
@@ -644,21 +815,11 @@ class VirialGas(Phase):
         T = self.T
         zs = self.zs
         d2C_dT2_pures = self.model.d2C_dT2_pures()
-        d2C_dT2iij, d2C_dT2ijj = self.model.d2C_dT2_interactions()
+        d2C_dT2ijs = self.model.d2C_dT2_interactions()
         d2C_dT2 = 0.0
         N = self.N
-        for i in range(N):
-            for j in range(N):
-                # poling 5-4.3b should be able to be used to take out the k loop?
-                for k in range(N):
-                    if i == j == k:
-                        d2C_dT2val = d2C_dT2_pures[i]
-                    elif i == j:
-                        d2C_dT2val = d2C_dT2iij[i][j]
-                    else:
-                        d2C_dT2val = d2C_dT2ijj[i][j]
-                    d2C_dT2 += zs[i]*zs[j]*zs[k]*d2C_dT2val
-        self._d2C_dT2 = d2C_dT2
+        # TODO
+        self._d2C_dT2 = d2C_dT2 = 0#CVirial_mixture_Orentlicher_Prausnitz(zs, d2C_dT2ijs)
         return d2C_dT2
 
 VirialGas.H = CEOSGas.H
