@@ -23,8 +23,9 @@ SOFTWARE.
 '''
 __all__ = ['VirialCorrelationsPitzerCurl', 'VirialGas']
 
+from fluids.constants import R, R_inv
 from fluids.numerics import newton, numpy as np
-from chemicals.utils import log 
+from chemicals.utils import log, mixing_simple
 from thermo.heat_capacity import HeatCapacityGas
 from thermo.phases.phase import Phase
 from thermo.phases.ceos import CEOSGas
@@ -32,6 +33,7 @@ from thermo.phases.ceos import CEOSGas
 from chemicals.virial import (BVirial_Pitzer_Curl,
                               Z_from_virial_density_form, BVirial_mixture,
                               CVirial_mixture_Orentlicher_Prausnitz,
+                              dCVirial_mixture_dT_Orentlicher_Prausnitz,
                               BVirial_Xiang, CVirial_Orbey_Vera, CVirial_Liu_Xiang,
                               BVirial_Xiang_vec, BVirial_Xiang_mat,
                               CVirial_Orbey_Vera_mat, CVirial_Liu_Xiang_mat,
@@ -47,9 +49,12 @@ except (ImportError, AttributeError):
     pass
 
 VIRIAL_B_XIANG = 'Xiang'
+VIRIAL_B_ZERO = 'zero'
 
 VIRIAL_C_XIANG = 'Xiang'
 VIRIAL_C_ORBEY_VERA = 'Orbey-Vera'
+VIRIAL_C_ZERO = VIRIAL_B_ZERO
+
 
 VIRIAL_CROSS_B_ZEROS = VIRIAL_CROSS_C_ZEROS = 'Zeros'
 VIRIAL_CROSS_B_TARAKAD_DANNER = 'Tarakad-Danner'
@@ -117,12 +122,20 @@ class VirialCSPInteractions(VirialCSPBase):
         self.Pcs = Pcs
         self.Vcs = Vcs
         self.omegas = omegas
-        self.N = len(Tcs)
+        self.N = N = len(Tcs)
         self.scalar = scalar = type(Tcs) is list
         
         self.B_model = B_model
         self.cross_B_model = cross_B_model
+        
+        if cross_B_model_kijs is None:
+            if scalar:
+                cross_B_model_kijs = [[0.0]*N for i in range(N)]
+            else:
+                cross_B_model_kijs = zeros((N, N))
+
         self.cross_B_model_kijs = cross_B_model_kijs
+        
 
         self.cross_B_model_Tcijs = Tarakad_Danner_virial_CSP_Tcijs(Tcs, self.cross_B_model_kijs)
         self.cross_B_model_Pcijs = Tarakad_Danner_virial_CSP_Pcijs(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, Tcijs=self.cross_B_model_Tcijs)
@@ -135,6 +148,32 @@ class VirialCSPInteractions(VirialCSPBase):
         self.cross_C_model_omegaijs = self.cross_B_model_omegaijs
 
         self.C_model = C_model
+        self.C_zero = C_model == VIRIAL_C_ZERO
+        
+    def to(self, T):
+        new = self.__class__.__new__(self.__class__)
+        new.Tcs = self.Tcs
+        new.Pcs = self.Pcs
+        new.Vcs = self.Vcs
+        new.omegas = self.omegas
+        new.N = self.N
+        new.scalar = self.scalar
+        new.B_model = self.B_model
+        new.cross_B_model = self.cross_B_model
+        new.cross_B_model_kijs = self.cross_B_model_kijs
+        new.cross_B_model_Tcijs = self.cross_B_model_Tcijs
+        new.cross_B_model_Pcijs = self.cross_B_model_Pcijs
+        new.cross_B_model_Vcijs = self.cross_B_model_Vcijs
+        new.cross_B_model_omegaijs = self.cross_B_model_omegaijs
+        new.cross_C_model_Tcijs = self.cross_C_model_Tcijs
+        new.cross_C_model_Pcijs = self.cross_C_model_Pcijs
+        new.cross_C_model_Vcijs = self.cross_C_model_Vcijs
+        new.cross_C_model_omegaijs = self.cross_C_model_omegaijs
+        new.C_model = self.C_model
+        new.C_zero = self.C_zero
+        new.T = T
+        return new
+        
         
         
     def B_interactions_at_T(self, T):
@@ -150,7 +189,9 @@ class VirialCSPInteractions(VirialCSPBase):
             dB_dTs = zeros((N, N))
             d2B_dT2s = zeros((N, N))
             d3B_dT3s = zeros((N, N))
-            
+        
+        if self.B_model == VIRIAL_B_ZERO:
+            return Bs, dB_dTs, d2B_dT2s, d3B_dT3s
         if self.B_model == VIRIAL_B_XIANG:
             Bs_interactions, dB_dTs_interactions, d2B_dT2s_interactions, d3B_dT3s_interactions = BVirial_Xiang_mat(T=T, Tcs=Tcijs, Pcs=Pcijs, Vcs=Vcijs, omegas=omegaijs,
                                                                                    Bs=Bs, dB_dTs=dB_dTs, d2B_dT2s=d2B_dT2s, d3B_dT3s=d3B_dT3s)
@@ -180,7 +221,9 @@ class VirialCSPInteractions(VirialCSPBase):
             d2B_dT2s = zeros(N)
             d3B_dT3s = zeros(N)
 
-        if self.B_model == VIRIAL_B_XIANG:
+        if self.B_model == VIRIAL_B_ZERO:
+            return Bs, dB_dTs, d2B_dT2s, d3B_dT3s
+        elif self.B_model == VIRIAL_B_XIANG:
             Bs_pure, dB_dTs_pure, d2B_dT2s_pure, d3B_dT3s_pure = BVirial_Xiang_vec(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                                                                    Bs=Bs, dB_dTs=dB_dTs, d2B_dT2s=d2B_dT2s, d3B_dT3s=d3B_dT3s)
         return Bs_pure, dB_dTs_pure, d2B_dT2s_pure, d3B_dT3s_pure
@@ -256,7 +299,10 @@ class VirialCSPInteractions(VirialCSPBase):
             d2C_dT2s = zeros((N, N))
             d3C_dT3s = zeros((N, N))
             
-        if self.C_model == VIRIAL_C_XIANG:
+        if self.C_model == VIRIAL_C_ZERO:
+            return Cs, dC_dTs, d2C_dT2s, d3C_dT3s
+            
+        elif self.C_model == VIRIAL_C_XIANG:
             Cs_interactions, dC_dTs_interactions, d2C_dT2s_interactions, d3C_dT3s_interactions = CVirial_Liu_Xiang_mat(T=T, Tcs=Tcijs, Pcs=Pcijs, Vcs=Vcijs, omegas=omegaijs,
                                                                                    Cs=Cs, dC_dTs=dC_dTs, d2C_dT2s=d2C_dT2s, d3C_dT3s=d3C_dT3s)
         elif self.C_model == VIRIAL_C_ORBEY_VERA:
@@ -279,7 +325,9 @@ class VirialCSPInteractions(VirialCSPBase):
             d2C_dT2s = zeros(N)
             d3C_dT3s = zeros(N)
 
-        if self.C_model == VIRIAL_C_XIANG:
+        if self.C_model == VIRIAL_C_ZERO:
+            return Cs, dC_dTs, d2C_dT2s, d3C_dT3s
+        elif self.C_model == VIRIAL_C_XIANG:
             Cs_pure, dC_dTs_pure, d2C_dT2s_pure, d3C_dT3s_pure = CVirial_Liu_Xiang_vec(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                                                                    Cs=Cs, dC_dTs=dC_dTs, d2C_dT2s=d2C_dT2s, d3C_dT3s=d3C_dT3s)
         elif self.C_model == VIRIAL_C_ORBEY_VERA:
@@ -349,13 +397,14 @@ class VirialCSPInteractions(VirialCSPBase):
 
 
 class VirialCorrelationsPitzerCurl(VirialCSPBase):
-    
-    def __copy__(self):
+    C_zero = True
+    def to(self, T):
         new = self.__class__.__new__(self.__class__)
         new.Tcs = self.Tcs
         new.Pcs = self.Pcs
         new.omegas = self.omegas
         new.N = self.N
+        new.T = T
         return new
 
     def __init__(self, Tcs, Pcs, omegas):
@@ -425,12 +474,18 @@ class VirialGas(Phase):
     pure_references = ('HeatCapacityGases',)
     pure_reference_types = (HeatCapacityGas, )
 
+
+    model_attributes = ('Hfs', 'Gfs', 'Sfs') + pure_references
+
     def __init__(self, model, HeatCapacityGases=None, Hfs=None, Gfs=None, 
-                 T=None, P=None, zs=None):
+                 T=None, P=None, zs=None,
+                 cross_B_coefficients=True, cross_C_coefficients=True):
         self.model = model
         self.HeatCapacityGases = HeatCapacityGases
         self.Hfs = Hfs
         self.Gfs = Gfs
+        self.cross_B_coefficients = cross_B_coefficients
+        self.cross_C_coefficients = cross_C_coefficients
         if Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
             self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
         else:
@@ -661,10 +716,11 @@ class VirialGas(Phase):
         new.P = P
         new.zs = zs
         new.N = self.N
+        new.cross_B_coefficients = self.cross_B_coefficients
+        new.cross_C_coefficients = self.cross_C_coefficients
 
         new.HeatCapacityGases = self.HeatCapacityGases
-        new.model = self.model.__copy__()
-        new.model.T = T
+        new.model = self.model.to(T)
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
@@ -676,8 +732,11 @@ class VirialGas(Phase):
         new = self.__class__.__new__(self.__class__)
         new.zs = zs
         new.N = self.N
+        new.cross_B_coefficients = self.cross_B_coefficients
+        new.cross_C_coefficients = self.cross_C_coefficients
+        
         new.HeatCapacityGases = self.HeatCapacityGases
-        new.model = model = self.model.__copy__()
+        new.model = model = self.model.to(T=None)
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
@@ -727,8 +786,12 @@ class VirialGas(Phase):
         if N == 1:
             self._B = B = self.model.B_pures()[0]
             return B
-
         zs = self.zs
+        if not self.cross_B_coefficients:
+            Bs = self.model.B_pures()
+            self._B = B = mixing_simple(zs, Bs)
+            return B
+
         B_matrix = self.model.B_matrix()
         self._B = B = BVirial_mixture(zs, B_matrix)
         return B
@@ -742,6 +805,10 @@ class VirialGas(Phase):
         if N == 1:
             return self.model.dB_dT_pures()[0]
         zs = self.zs
+        if not self.cross_B_coefficients:
+            Bs = self.model.dB_dT_pures()
+            self._dB_dT = dB_dT = mixing_simple(zs, Bs)
+            return dB_dT
         dB_dT_matrix = self.model.dB_dT_matrix()
         self._dB_dT = dB_dT = BVirial_mixture(zs, dB_dT_matrix)
         return dB_dT
@@ -755,6 +822,10 @@ class VirialGas(Phase):
         if N == 1:
             return self.model.d2B_dT2_pures()[0]
         zs = self.zs
+        if not self.cross_B_coefficients:
+            Bs = self.model.d2B_dT2_pures()
+            self._d2B_dT2 = d2B_dT2 = mixing_simple(zs, Bs)
+            return d2B_dT2
         d2B_dT2_matrix = self.model.d2B_dT2_matrix()
         self._d2B_dT2 = d2B_dT2 = BVirial_mixture(zs, d2B_dT2_matrix)
         return d2B_dT2
@@ -768,6 +839,10 @@ class VirialGas(Phase):
         if N == 1:
             return self.model.d3B_dT3_pures()[0]
         zs = self.zs
+        if not self.cross_B_coefficients:
+            Bs = self.model.d2B_dT2_pures()
+            self._d3B_dT3 = d3B_dT3 = mixing_simple(zs, Bs)
+            return d2B_dT2
         d3B_dT3_matrix = self.model.d3B_dT3_matrix()
         self._d3B_dT3 = d3B_dT3 = BVirial_mixture(zs, d3B_dT3_matrix)
         return d3B_dT3
@@ -780,10 +855,17 @@ class VirialGas(Phase):
             pass
         T = self.T
         zs = self.zs
-        Cijs = self.model.C_interactions()
-        C = 0.0
         N = self.N
-        self._C = C = CVirial_mixture_Orentlicher_Prausnitz(zs, Cijs)
+        if self.model.C_zero:
+            self._C = C = 0
+            return C
+        if not self.cross_C_coefficients:
+            Cs = self.model.C_pures()
+            self._C = C = mixing_simple(zs, Cs)
+            return C
+        else:
+            Cijs = self.model.C_interactions()
+            self._C = C = CVirial_mixture_Orentlicher_Prausnitz(zs, Cijs)
         return C
 
     def dC_dT(self):
@@ -793,8 +875,17 @@ class VirialGas(Phase):
             pass
         T = self.T
         zs = self.zs
-        dC_dT_pures = self.model.dC_dT_pures()
-        dC_dTijs = self.model.dC_dT_interactions()
+        if self.model.C_zero:
+            self._dC_dT = dC_dT = 0
+            return dC_dT
+
+        if not self.cross_C_coefficients:
+            dC_dTs = self.model.dC_dT_pures()
+            self._dC_dT = dC_dT = mixing_simple(zs, dC_dTs)
+            return dC_dT
+
+        Cijs = self.model.C_interactions()
+        dCijs = self.model.dC_dT_interactions()
         # TODO
         '''
         from sympy import *
@@ -804,7 +895,7 @@ class VirialGas(Phase):
         expr = (Cij(T)*Cik(T)*Cjk(T))**Rational('1/3')
         # diff(expr, T, 3)
         '''
-        self._dC_dT = dC_dT = 0#CVirial_mixture_Orentlicher_Prausnitz(zs, dC_dTijs)
+        self._dC_dT = dC_dT = dCVirial_mixture_dT_Orentlicher_Prausnitz(zs, Cijs, dCijs)
         return dC_dT
 
     def d2C_dT2(self):
@@ -814,6 +905,11 @@ class VirialGas(Phase):
             pass
         T = self.T
         zs = self.zs
+        if not self.cross_C_coefficients:
+            d2C_dT2s = self.model.d2C_dT2_pures()
+            self._d2C_dT2 = d2C_dT2 = mixing_simple(zs, d2C_dT2s)
+            return d2C_dT2
+
         d2C_dT2_pures = self.model.d2C_dT2_pures()
         d2C_dT2ijs = self.model.d2C_dT2_interactions()
         d2C_dT2 = 0.0
@@ -821,6 +917,27 @@ class VirialGas(Phase):
         # TODO
         self._d2C_dT2 = d2C_dT2 = 0#CVirial_mixture_Orentlicher_Prausnitz(zs, d2C_dT2ijs)
         return d2C_dT2
+    
+    def lnphis(self):
+        B = self.B()
+        Bijs = self.model.B_interactions()
+        T = self.T
+        P = self.P
+        N = self.N
+        zs = self.zs
+        if self.scalar:
+            lnphis = [0.0]*N
+        else:
+            lnphis = zeros(N)
+        
+        fact = P*R_inv/(T)
+        for i in range(N):
+            Bis = Bijs[i]
+            tot = 0.0
+            for j in range(N):
+                tot += zs[j]*Bis[j]
+            lnphis[i] = (2*tot - B)*fact
+        return lnphis
 
 VirialGas.H = CEOSGas.H
 VirialGas.S = CEOSGas.S
