@@ -34,6 +34,8 @@ from chemicals.virial import (BVirial_Pitzer_Curl,
                               Z_from_virial_density_form, BVirial_mixture,
                               CVirial_mixture_Orentlicher_Prausnitz,
                               dCVirial_mixture_dT_Orentlicher_Prausnitz,
+                              d2CVirial_mixture_dT2_Orentlicher_Prausnitz,
+                              d3CVirial_mixture_dT3_Orentlicher_Prausnitz,
                               BVirial_Xiang, CVirial_Orbey_Vera, CVirial_Liu_Xiang,
                               BVirial_Xiang_vec, BVirial_Xiang_mat,
                               CVirial_Orbey_Vera_mat, CVirial_Liu_Xiang_mat,
@@ -905,19 +907,45 @@ class VirialGas(Phase):
             pass
         T = self.T
         zs = self.zs
+        if self.model.C_zero:
+            self._d2C_dT2 = d2C_dT2 = 0.0
+            return d2C_dT2
+
         if not self.cross_C_coefficients:
             d2C_dT2s = self.model.d2C_dT2_pures()
             self._d2C_dT2 = d2C_dT2 = mixing_simple(zs, d2C_dT2s)
             return d2C_dT2
 
-        d2C_dT2_pures = self.model.d2C_dT2_pures()
+        Cijs = self.model.C_interactions()
+        dCijs = self.model.dC_dT_interactions()
         d2C_dT2ijs = self.model.d2C_dT2_interactions()
-        d2C_dT2 = 0.0
         N = self.N
-        # TODO
-        self._d2C_dT2 = d2C_dT2 = 0#CVirial_mixture_Orentlicher_Prausnitz(zs, d2C_dT2ijs)
+        self._d2C_dT2 = d2C_dT2 = d2CVirial_mixture_dT2_Orentlicher_Prausnitz(zs, Cijs, dCijs, d2C_dT2ijs)
         return d2C_dT2
     
+    def d3C_dT3(self):
+        try:
+            return self._d3C_dT3
+        except:
+            pass
+        T = self.T
+        zs = self.zs
+        if self.model.C_zero:
+            self._d3C_dT3 = d3C_dT3 = 0.0
+            return d3C_dT3
+        if not self.cross_C_coefficients:
+            d3C_dT3s = self.model.d3C_dT3_pures()
+            self._d3C_dT3 = d3C_dT3 = mixing_simple(zs, d3C_dT3s)
+            return d3C_dT3s
+
+        Cijs = self.model.C_interactions()
+        dCijs = self.model.dC_dT_interactions()
+        d2C_dT2ijs = self.model.d2C_dT2_interactions()
+        d3C_dT3ijs = self.model.d3C_dT3_interactions()
+        N = self.N
+        self._d3C_dT3 = d3C_dT3 = d3CVirial_mixture_dT3_Orentlicher_Prausnitz(zs, Cijs, dCijs, d2C_dT2ijs, d3C_dT3ijs)
+        return d3C_dT3
+
     def lnphis(self):
         B = self.B()
         Bijs = self.model.B_interactions()
