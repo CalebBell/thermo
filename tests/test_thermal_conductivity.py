@@ -149,6 +149,11 @@ def test_ThermalConductivityLiquid_extrapolation_polyfit():
     val, der = obj.T_dependent_property_derivative(obj.poly_fit_Tmax), obj.T_dependent_property(obj.poly_fit_Tmax)
     assert_close(obj.T_dependent_property(obj.poly_fit_Tmax+10), 0.1683192796177408, rtol=1e-10)
 
+    obj = ThermalConductivityLiquid(extrapolation='linear|linear',extrapolation_min=0.1, extrapolation_max=0.225,
+                                    poly_fit=(175.61, 460.0, [-2.0427137654192538e-21, 5.397904343028161e-18, -6.3763077367349095e-15, 4.417686780434988e-12, -1.9632755240328655e-09, 5.709120910380979e-07, -0.00010549847813202652, 0.011071902367193028, -0.2719858296092696]))
+    assert obj(1, None) == 0.225
+    assert obj(10000, None) == 0.1
+
 
 @pytest.mark.fitting
 @pytest.mark.meta_T_dept

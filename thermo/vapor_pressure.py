@@ -74,10 +74,11 @@ from chemicals.miscdata import lookup_VDI_tabular_data
 from chemicals.vapor_pressure import *
 from chemicals.vapor_pressure import dAntoine_dT, d2Antoine_dT2, dWagner_original_dT, d2Wagner_original_dT2, dWagner_dT, d2Wagner_dT2, dTRC_Antoine_extended_dT, d2TRC_Antoine_extended_dT2
 from chemicals.identifiers import CAS_to_int
+from chemicals.iapws import iapws95_Tc, iapws95_Psat, iapws95_dPsat_dT
 
 from chemicals import vapor_pressure
 from thermo.utils import TDependentProperty
-from thermo.utils import VDI_TABULAR, DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, EOS
+from thermo.utils import VDI_TABULAR, DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, EOS, IAPWS
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
 from thermo.base import source_path
 
@@ -94,7 +95,8 @@ AMBROSE_WALTON = 'AMBROSE_WALTON'
 SANJARI = 'SANJARI'
 EDALAT = 'EDALAT'
 
-vapor_pressure_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
+vapor_pressure_methods = [IAPWS,
+                          WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                           DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR, 
                           ANTOINE_WEBBOOK, AMBROSE_WALTON,
                           LEE_KESLER_PSAT, EDALAT, EOS, BOILING_CRITICAL, SANJARI]
@@ -106,7 +108,8 @@ class VaporPressure(TDependentProperty):
     '''Class for dealing with vapor pressure as a function of temperature.
     Consists of five coefficient-based methods and four data sources, one
     source of tabular information, four corresponding-states estimators,
-    any provided equation of state, and the external library CoolProp.
+    any provided equation of state, the external library CoolProp,
+    and one substance-specific formulation.
 
     Parameters
     ----------
@@ -186,6 +189,8 @@ class VaporPressure(TDependentProperty):
     **EOS**:
         Equation of state provided by user; must implement
         :obj:`thermo.eos.GCEOS.Psat`
+    **IAPWS**:
+        IAPWS-95 formulation documented in :obj:`chemicals.iapws.iapws95_Psat`.
 
     See Also
     --------
@@ -198,6 +203,7 @@ class VaporPressure(TDependentProperty):
     chemicals.vapor_pressure.Ambrose_Walton
     chemicals.vapor_pressure.Sanjari
     chemicals.vapor_pressure.Edalat
+    chemicals.iapws.iapws95_Psat
 
     References
     ----------
@@ -249,7 +255,7 @@ class VaporPressure(TDependentProperty):
     point estimated for Iridium; Mercury's 160 MPa critical point is the
     highest known.'''
 
-    ranked_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
+    ranked_methods = [IAPWS, WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                       DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR, 
                       ANTOINE_WEBBOOK, AMBROSE_WALTON,
                       LEE_KESLER_PSAT, EDALAT, BOILING_CRITICAL, EOS, SANJARI]
@@ -300,6 +306,10 @@ class VaporPressure(TDependentProperty):
             CASRN = self.CASRN
             CASRN_int = None if not CASRN else CAS_to_int(CASRN)
             df_wb = miscdata.webbook_data
+            if CASRN == '7732-18-5':
+                methods.append(IAPWS)
+                T_limits[IAPWS] = (235.0, iapws95_Tc)
+                
             if CASRN_int in df_wb.index and not isnan(float(df_wb.at[CASRN_int, 'AntoineA'])):
                 methods.append(ANTOINE_WEBBOOK)
                 self.ANTOINE_WEBBOOK_coefs = [float(df_wb.at[CASRN_int, 'AntoineA']),
@@ -420,6 +430,8 @@ class VaporPressure(TDependentProperty):
             Psat = Sanjari(T, self.Tc, self.Pc, self.omega)
         elif method == EDALAT:
             Psat = Edalat(T, self.Tc, self.Pc, self.omega)
+        elif method == IAPWS:
+            Psat = iapws95_Psat(T)
         elif method == EOS:
             Psat = self.eos[0].Psat(T)
         else:
@@ -527,6 +539,10 @@ class VaporPressure(TDependentProperty):
                     return EQ101(T, *self.Perrys2_8_coeffs, order=1)
                 if order == 2:
                     return EQ101(T, *self.Perrys2_8_coeffs, order=2)
+        elif method == IAPWS:
+            if Tmin <= T <= Tmax:
+                if order == 1:
+                    return iapws95_dPsat_dT(T)[0]
         return super(VaporPressure, self).calculate_derivative(T, method, order)
 
 PSUB_CLAPEYRON = 'PSUB_CLAPEYRON'

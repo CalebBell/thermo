@@ -245,6 +245,12 @@ class ViscosityLiquid(TPDependentProperty):
         described in [2]_. Very slow, but unparalled in accuracy for pressure
         dependence.
 
+    A minimum viscosity value of 1e-5 Pa*s is set according to [4]_.
+    This is also just above the lowest experimental values of viscosity of 
+    helium, 9.4e-6 Pa*s. This excludes the behavior of superfluids,
+    and also systems where the mean free path between moleules approaches
+    the geometry of the system and then the viscosity is geometry-dependent.
+
     See Also
     --------
     chemicals.viscosity.Viswanath_Natarajan_3
@@ -272,6 +278,9 @@ class ViscosityLiquid(TPDependentProperty):
        Properties from Group-Contributions." Chemical Engineering
        Communications 57, no. 1-6 (July 1, 1987): 233-43.
        doi:10.1080/00986448708960487.
+    .. [6] Trachenko, K., and V. V. Brazhkin. "Minimal Quantum Viscosity from 
+       Fundamental Physical Constants." Science Advances, April 2020.
+       https://doi.org/10.1126/sciadv.aba3747.
     '''
     name = 'liquid viscosity'
     units = 'Pa*s'
@@ -322,6 +331,7 @@ class ViscosityLiquid(TPDependentProperty):
 
     def __init__(self, CASRN='', MW=None, Tm=None, Tc=None, Pc=None, Vc=None,
                  omega=None, Psat=None, Vml=None, extrapolation='linear',
+                 extrapolation_min=1e-5,
                  **kwargs):
         self.CASRN = CASRN
         self.MW = MW
@@ -332,6 +342,8 @@ class ViscosityLiquid(TPDependentProperty):
         self.omega = omega
         self.Psat = Psat
         self.Vml = Vml
+        if 'extrapolation_min' not in kwargs:
+            kwargs['extrapolation_min'] = extrapolation_min
         super(ViscosityLiquid, self).__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data=True):
@@ -755,6 +767,11 @@ class ViscosityGas(TPDependentProperty):
         Range is limited to that of the equations of state it uses, as
         described in [1]_. Very slow, but unparalled in accuracy for pressure
         dependence.
+        
+        
+    A minimum viscosity value of 1e-5 Pa*s is set according to [4]_.
+    This is also just above the lowest experimental values of viscosity of 
+    helium, 9.4e-6 Pa*s.
 
     See Also
     --------
@@ -774,6 +791,9 @@ class ViscosityGas(TPDependentProperty):
        Berlin; New York:: Springer, 2010.
     .. [3] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
+    .. [4] Trachenko, K., and V. V. Brazhkin. "Minimal Quantum Viscosity from 
+       Fundamental Physical Constants." Science Advances, April 2020.
+       https://doi.org/10.1126/sciadv.aba3747.
     '''
     name = 'Gas viscosity'
     units = 'Pa*s'
@@ -787,7 +807,7 @@ class ViscosityGas(TPDependentProperty):
     '''No interpolation transformation by default.'''
     tabular_extrapolation_permitted = True
     '''Allow tabular extrapolation by default.'''
-    property_min = 0
+    property_min = 0.0
     '''Mimimum valid value of gas viscosity; limiting condition at low pressure
     is 0.'''
     property_max = 1E-3
@@ -804,7 +824,8 @@ class ViscosityGas(TPDependentProperty):
 
     custom_args = ('MW', 'Tc', 'Pc', 'Zc', 'dipole', 'Vmg')
     def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, Zc=None,
-                 dipole=None, Vmg=None, extrapolation='linear', **kwargs):
+                 dipole=None, Vmg=None, extrapolation='linear', extrapolation_min=1e-5,
+                 **kwargs):
         self.CASRN = CASRN
         self.MW = MW
         self.Tc = Tc
@@ -812,6 +833,8 @@ class ViscosityGas(TPDependentProperty):
         self.Zc = Zc
         self.dipole = dipole
         self.Vmg = Vmg
+        if 'extrapolation_min' not in kwargs:
+            kwargs['extrapolation_min'] = extrapolation_min
         super(ViscosityGas, self).__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data=True):

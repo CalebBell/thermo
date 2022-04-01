@@ -698,3 +698,15 @@ def test_VaporPressure_WebBook():
     obj = VaporPressure(CASRN='7440-57-5')
     obj.method = 'ANTOINE_WEBBOOK'
     assert_close(obj(3000), 36784.98996094166, rtol=1e-13)
+    
+@pytest.mark.meta_T_dept
+def test_VaporPressure_IAPWS95():
+
+    water = VaporPressure(CASRN="7732-18-5", Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344, 
+                          extrapolation="AntoineAB|DIPPR101_ABC", method="IAPWS")
+    assert water(3000) is not None
+    assert water(2000) > water(600) 
+    
+    assert water(20) > water(10) 
+    assert water(10) > water(4) 
+    assert_close(water(400), 245769.3455657166, rtol=1e-10)

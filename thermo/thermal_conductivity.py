@@ -309,7 +309,9 @@ class ThermalConductivityLiquid(TPDependentProperty):
     custom_args = ('MW', 'Tm', 'Tb', 'Tc', 'Pc', 'omega', 'Hfus')
 
     def __init__(self, CASRN='', MW=None, Tm=None, Tb=None, Tc=None, Pc=None,
-                 omega=None, Hfus=None, extrapolation='linear', **kwargs):
+                 omega=None, Hfus=None, extrapolation='linear', 
+                 extrapolation_min=1e-4,
+                 **kwargs):
         self.CASRN = CASRN
         self.MW = MW
         self.Tm = Tm
@@ -318,7 +320,8 @@ class ThermalConductivityLiquid(TPDependentProperty):
         self.Pc = Pc
         self.omega = omega
         self.Hfus = Hfus
-
+        if 'extrapolation_min' not in kwargs:
+            kwargs['extrapolation_min'] = extrapolation_min
         super(ThermalConductivityLiquid, self).__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data=True):
@@ -966,7 +969,7 @@ class ThermalConductivityGas(TPDependentProperty):
 
     def __init__(self, CASRN='', MW=None, Tb=None, Tc=None, Pc=None, Vc=None,
                  Zc=None, omega=None, dipole=None, Vmg=None, Cpgm=None, mug=None,
-                 extrapolation='linear', **kwargs):
+                 extrapolation='linear', extrapolation_min=1e-4, **kwargs):
         self.CASRN = CASRN
         self.MW = MW
         self.Tb = Tb
@@ -979,6 +982,8 @@ class ThermalConductivityGas(TPDependentProperty):
         self.Vmg = Vmg
         self.Cpgm = Cpgm
         self.mug = mug
+        if 'extrapolation_min' not in kwargs:
+            kwargs['extrapolation_min'] = extrapolation_min
 
         super(ThermalConductivityGas, self).__init__(extrapolation, **kwargs)
 

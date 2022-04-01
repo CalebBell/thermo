@@ -3618,34 +3618,33 @@ class TDependentProperty(object):
             val = v + d * (T - T_lim)
             if interpolation_property_inv is not None:
                 val = interpolation_property_inv(val)
-            return val
         elif extrapolation == 'log(linear)':
             v, d = coeffs
             T_lim = T_low if low else T_high
             val = v + d * (T - T_lim)
-            return exp(val)
+            val = exp(val)
         elif extrapolation == 'constant':
-            return coeffs
+            val = coeffs
         elif extrapolation == 'AntoineAB':
             A, B = coeffs
-            return Antoine(T, A=A, B=B, C=0.0, base=e)
+            val = Antoine(T, A=A, B=B, C=0.0, base=e)
         elif extrapolation == 'nolimit':
-            return self.calculate(T, method)
+            val = self.calculate(T, method)
         elif extrapolation == 'DIPPR101_ABC':
             A, B, C = coeffs
-            return EQ101(T, A, B, C, 0.0, 0.0)
+            val = EQ101(T, A, B, C, 0.0, 0.0)
         elif extrapolation == 'DIPPR106_AB':
             A, B = coeffs
-            return EQ106(T, self.Tc, A, B)
+            val = EQ106(T, self.Tc, A, B)
         elif extrapolation == 'DIPPR106_ABC':
             A, B, C = coeffs
-            return EQ106(T, self.Tc, A, B, C)
+            val = EQ106(T, self.Tc, A, B, C)
         elif extrapolation == 'Watson':
             v0, n = coeffs
             T_lim = T_low if low else T_high
-            return Watson(T, Hvap_ref=v0, T_ref=T_lim, Tc=self.Tc, exponent=n)
+            val = Watson(T, Hvap_ref=v0, T_ref=T_lim, Tc=self.Tc, exponent=n)
         elif extrapolation == 'EXP_POLY_LN_TAU2' or extrapolation == 'EXP_POLY_LN_TAU3':
-            return exp_horner_backwards_ln_tau(T, self.Tc, coeffs)
+            val = exp_horner_backwards_ln_tau(T, self.Tc, coeffs)
         elif extrapolation == 'interp1d':
             extrapolator = coeffs
             interpolation_T = self.interpolation_T
@@ -3653,9 +3652,16 @@ class TDependentProperty(object):
             prop = extrapolator(T)
             if self.interpolation_property is not None:
                 prop = self.interpolation_property_inv(prop)
-            return float(prop)
+            val = float(prop)
         else:
             raise RuntimeError("Unknown extrapolation '%s'" %extrapolation)
+        
+        if self._extrapolation_min is not None and val < self._extrapolation_min:
+            val = self._extrapolation_min
+        elif self._extrapolation_max is not None and val > self._extrapolation_max:
+            val = self._extrapolation_max
+        return val
+    
 
     def extrapolate_derivative(self, T, method, order, in_range='error'):
         r'''Extrapolate the derivative of a given method according to the
@@ -3901,6 +3907,11 @@ class TDependentProperty(object):
                 for corr_i, corr_kwargs in kwargs[correlation_key].items():
                     self.add_correlation(name=corr_i, model=correlation_name,
                                          **corr_kwargs)
+
+        extrapolation_min = kwargs.get('extrapolation_min', None)
+        extrapolation_max = kwargs.get('extrapolation_max', None)
+        self._extrapolation_min = extrapolation_min
+        self._extrapolation_max = extrapolation_max
 
         poly_fit = kwargs.get('poly_fit', None)
         exp_poly_fit = kwargs.get('exp_poly_fit', None)
