@@ -69,10 +69,11 @@ from chemicals.utils import log, exp, isnan
 from chemicals.utils import mixing_simple, none_and_length_check, Vm_to_rho, property_molar_to_mass
 from chemicals.dippr import EQ106
 from chemicals.interface import *
+from chemicals.iapws import iapws95_Tc
 from chemicals import interface
 from fluids.numerics import numpy as np
 from fluids.constants import N_A, k
-from thermo.utils import TDependentProperty, MixtureProperty, LINEAR, VDI_TABULAR
+from thermo.utils import TDependentProperty, MixtureProperty, LINEAR, VDI_TABULAR, IAPWS
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
 from thermo.volume import VolumeLiquid
@@ -93,7 +94,7 @@ ALEEM = 'Aleem'
 VDI_PPDS = 'VDI_PPDS'
 
 
-surface_tension_methods = [STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
+surface_tension_methods = [IAPWS, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
                            JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
                            ZUO_STENBY, ALEEM]
 '''Holds all methods available for the :obj:`SurfaceTension` class, for use in
@@ -103,7 +104,8 @@ iterating over them.'''
 class SurfaceTension(TDependentProperty):
     '''Class for dealing with surface tension as a function of temperature.
     Consists of three coefficient-based methods and four data sources, one
-    source of tabular information, and five corresponding-states estimators.
+    source of tabular information, five corresponding-states estimators,
+    and one substance-specific method.
 
     Parameters
     ----------
@@ -150,6 +152,9 @@ class SurfaceTension(TDependentProperty):
     To iterate over all methods, use the list stored in
     :obj:`surface_tension_methods`.
 
+    ***IAPWS**:
+        The IAPWS formulation for water,
+        :obj:`REFPROP_sigma <chemicals.interface.sigma_IAPWS>`
     **STREFPROP**:
         The REFPROP coefficient-based method, documented in the function
         :obj:`REFPROP_sigma <chemicals.interface.REFPROP_sigma>` for 115 fluids from [5]_.
@@ -191,6 +196,7 @@ class SurfaceTension(TDependentProperty):
     chemicals.interface.Zuo_Stenby
     chemicals.interface.Miqueu
     chemicals.interface.Aleem
+    chemicals.interface.sigma_IAPWS
 
     References
     ----------
@@ -234,7 +240,7 @@ class SurfaceTension(TDependentProperty):
     '''Whether or not the property is declining and reaching zero at the
     critical point.'''
 
-    ranked_methods = [STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
+    ranked_methods = [IAPWS, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
                       JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
                       ZUO_STENBY, ALEEM]
     '''Default rankings of the available methods.'''
@@ -257,7 +263,7 @@ class SurfaceTension(TDependentProperty):
 
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
                  omega=None, StielPolar=None, Hvap_Tb=None, CASRN='', Vml=None,
-                 Cpl=None, extrapolation='EQ106_AB', **kwargs):
+                 Cpl=None, extrapolation='DIPPR106_AB', **kwargs):
         self.MW = MW
         self.Tb = Tb
         self.Tc = Tc
@@ -302,6 +308,9 @@ class SurfaceTension(TDependentProperty):
         methods = []
         self.T_limits = T_limits = {}
         if load_data:
+            if self.CASRN == '7732-18-5':
+                methods.append(IAPWS)
+                T_limits[IAPWS] = (273.15-25.0, iapws95_Tc)
             if self.CASRN in interface.sigma_data_Mulero_Cachadina.index:
                 methods.append(STREFPROP)
                 sigma0, n0, sigma1, n1, sigma2, n2, Tc, self.STREFPROP_Tmin, self.STREFPROP_Tmax = interface.sigma_values_Mulero_Cachadina[interface.sigma_data_Mulero_Cachadina.index.get_loc(self.CASRN)].tolist()
@@ -400,6 +409,8 @@ class SurfaceTension(TDependentProperty):
             sigma = Somayajulu(T, Tc=self.SOMAYAJULU_Tc, A=A, B=B, C=C)
         elif method == JASPER:
             sigma = Jasper(T, a=self.JASPER_coeffs[0], b=self.JASPER_coeffs[1])
+        elif method == IAPWS:
+            sigma = sigma_IAPWS(T)
         elif method == BROCK_BIRD:
             sigma = Brock_Bird(T, self.Tb, self.Tc, self.Pc)
         elif method == SASTRI_RAO:

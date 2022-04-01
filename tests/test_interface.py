@@ -77,6 +77,17 @@ def test_SurfaceTension():
     assert CH4.test_method_validity(100, 'Aleem')
 
 @pytest.mark.meta_T_dept
+def test_SurfaceTension_water_iapws():
+    water = SurfaceTension(CASRN="7732-18-5", MW=18.01528, Tb=373.124, Tc=647.14, Pc=22048320.0, Vc=5.6e-05, Zc=0.229, omega=0.344, StielPolar=0.0232, Hvap_Tb=2256470., extrapolation="DIPPR106_AB", method="IAPWS")
+    assert water.method == 'IAPWS'
+    assert_close(water(400), 0.05357792640201927)
+    
+    assert water(3) is not None
+    assert water(3) > 0
+
+
+
+@pytest.mark.meta_T_dept
 def test_SurfaceTensionJasperMissingLimits():
     obj = SurfaceTension(CASRN='110-01-0')
     assert_close(obj.calculate(obj.JASPER_Tmax, 'JASPER'), 0, atol=1e-10)
