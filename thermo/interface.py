@@ -69,7 +69,7 @@ from chemicals.utils import log, exp, isnan
 from chemicals.utils import mixing_simple, none_and_length_check, Vm_to_rho, property_molar_to_mass
 from chemicals.dippr import EQ106
 from chemicals.interface import *
-from chemicals.iapws import iapws95_Tt, iapws95_Tc
+from chemicals.iapws import iapws95_Tc
 from chemicals import interface
 from fluids.numerics import numpy as np
 from fluids.constants import N_A, k
