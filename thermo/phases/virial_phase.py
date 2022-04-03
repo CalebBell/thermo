@@ -25,13 +25,15 @@ __all__ = ['VirialCorrelationsPitzerCurl', 'VirialGas']
 
 from fluids.constants import R, R_inv
 from fluids.numerics import newton, numpy as np
-from chemicals.utils import log, mixing_simple
+from chemicals.utils import log, mixing_simple, dxs_to_dns, dxs_to_dn_partials
 from thermo.heat_capacity import HeatCapacityGas
 from thermo.phases.phase import Phase
 from thermo.phases.ceos import CEOSGas
 
+
 from chemicals.virial import (BVirial_Pitzer_Curl,
                               Z_from_virial_density_form, BVirial_mixture,
+                              dBVirial_mixture_dzs, d2BVirial_mixture_dzizjs, d3BVirial_mixture_dzizjzks,
                               CVirial_mixture_Orentlicher_Prausnitz,
                               dCVirial_mixture_dT_Orentlicher_Prausnitz,
                               d2CVirial_mixture_dT2_Orentlicher_Prausnitz,
@@ -481,13 +483,24 @@ class VirialGas(Phase):
 
     def __init__(self, model, HeatCapacityGases=None, Hfs=None, Gfs=None, 
                  T=None, P=None, zs=None,
-                 cross_B_coefficients=True, cross_C_coefficients=True):
+                 cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz'):
         self.model = model
         self.HeatCapacityGases = HeatCapacityGases
         self.Hfs = Hfs
         self.Gfs = Gfs
-        self.cross_B_coefficients = cross_B_coefficients
-        self.cross_C_coefficients = cross_C_coefficients
+        
+        if cross_B_model not in ('theory', 'linear'):
+            raise ValueError("Unsupported value for `cross_B_model`")
+        if cross_C_model not in ('Orentlicher-Prausnitz', 'linear'):
+            raise ValueError("Unsupported value for `cross_C_model`")
+        self.cross_B_model = cross_B_model
+        self.cross_C_model = cross_C_model
+        
+        # Store the virial cross model as a boolean
+        # It is likely additional `C` models will be published, the current one is emperical
+        self.cross_B_coefficients = cross_B_model == 'theory'
+        self.cross_C_coefficients = cross_C_model == 'Orentlicher-Prausnitz'
+        
         if Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
             self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
         else:
@@ -720,6 +733,8 @@ class VirialGas(Phase):
         new.N = self.N
         new.cross_B_coefficients = self.cross_B_coefficients
         new.cross_C_coefficients = self.cross_C_coefficients
+        new.cross_B_model = self.cross_B_model
+        new.cross_C_model = self.cross_C_model
 
         new.HeatCapacityGases = self.HeatCapacityGases
         new.model = self.model.to(T)
@@ -736,7 +751,9 @@ class VirialGas(Phase):
         new.N = self.N
         new.cross_B_coefficients = self.cross_B_coefficients
         new.cross_C_coefficients = self.cross_C_coefficients
-        
+        new.cross_B_model = self.cross_B_model
+        new.cross_C_model = self.cross_C_model
+
         new.HeatCapacityGases = self.HeatCapacityGases
         new.model = model = self.model.to(T=None)
         new.Hfs = self.Hfs
@@ -814,6 +831,8 @@ class VirialGas(Phase):
         dB_dT_matrix = self.model.dB_dT_matrix()
         self._dB_dT = dB_dT = BVirial_mixture(zs, dB_dT_matrix)
         return dB_dT
+
+        
 
     def d2B_dT2(self):
         try:
@@ -945,6 +964,80 @@ class VirialGas(Phase):
         N = self.N
         self._d3C_dT3 = d3C_dT3 = d3CVirial_mixture_dT3_Orentlicher_Prausnitz(zs, Cijs, dCijs, d2C_dT2ijs, d3C_dT3ijs)
         return d3C_dT3
+
+    def dB_dzs(self):
+        try:
+            return self._dB_dzs
+        except:
+            pass
+
+        zs = self.zs
+        if not self.cross_B_coefficients:
+            Bs = self.model.B_pures()
+            self._dB_dzs = dB_dzs = Bs
+            return dB_dzs
+
+        B_matrix = self.model.B_matrix()
+        self._dB_dzs = dB_dzs = dBVirial_mixture_dzs(zs, B_matrix)
+        return dB_dzs
+
+    def d2B_dzizjs(self):
+        try:
+            return self._d2B_dzizjs
+        except:
+            pass
+
+        N = self.N
+        zs = self.zs
+        if not self.cross_B_coefficients:
+            if self.scalar:
+                d2B_dzizjs = [[0.0]*N for _ in range(N)]
+            else:
+                d2B_dzizjs = zeros((N, N))
+            self._d2B_dzizjs = d2B_dzizjs
+            return d2B_dzizjs
+
+        B_matrix = self.model.B_matrix()
+        self._d2B_dzizjs = d2B_dzizjs = d2BVirial_mixture_dzizjs(zs, B_matrix)
+        return d2B_dzizjs
+
+    def d3B_dzizjzks(self):
+        try:
+            return self._d3B_dzizjzks
+        except:
+            pass
+
+        N = self.N
+        zs = self.zs
+        if not self.cross_B_coefficients:
+            if self.scalar:
+                d3B_dzizjzks = [[[0.0]*N for _ in range(N)] for _ in range(N)]
+            else:
+                d3B_dzizjzks = zeros((N, N, N))
+            self._d3B_dzizjzks = d3B_dzizjzks
+            return d3B_dzizjzks
+
+        B_matrix = self.model.B_matrix()
+        self._d3B_dzizjzks = d3B_dzizjzks = d3BVirial_mixture_dzizjzks(zs, B_matrix)
+        return d3B_dzizjzks
+
+    def dB_dns(self):
+        try:
+            return self._dB_dns
+        except:
+            pass
+        
+        self._dB_dns = dB_dns = dxs_to_dns(dxs=self.dB_dzs(), xs=self.zs)
+        return dB_dns 
+        
+    def dnB_dns(self):
+        try:
+            return self._dnB_dns
+        except:
+            pass
+        
+        self._dnB_dns = dnB_dns = dxs_to_dns(dxs=self.dB_dzs(), xs=self.zs, F=self.B())
+        return dnB_dns 
 
     def lnphis(self):
         B = self.B()
