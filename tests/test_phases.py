@@ -3103,3 +3103,59 @@ def test_UNIFAC_lnphis_direct():
             args = liquid_base.lnphis_args()
             
             assert_close1d(lnphis_direct(xs2, *args), liquid_base.to(T=T, P=P, zs=xs2).lnphis(), rtol=1e-12)
+            
+            
+            
+def test_virial_phase_pure_B_only_pitzer_curl():
+    Tcs = [190.564]
+    Pcs = [4599000.0]
+    omegas = [0.008]
+    Vcs = [9.86e-05]
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593]))]
+    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model=VIRIAL_B_PITZER_CURL, C_model=VIRIAL_C_ZERO)
+    PT = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=300.0, P=1e5, zs=[1])
+    
+    assert_close(PT.rho(), 40.159125929164205, rtol=1e-13)
+    assert_close(PT.V(), 0.02490094036817131, rtol=1e-13)
+    assert_close(PT.B(), -4.2375251149270624e-05, rtol=1e-14)
+    
+    assert_close(PT.to_TP_zs(T=PT.T, P=PT.P, zs=[1]).V(), PT.V())
+    
+    TV = PT.to(T=PT.T, V=PT.V(), zs=[1])
+    assert_close(TV.P, PT.P, rtol=1e-13)
+    
+    PV = PT.to(P=PT.P, V=PT.V(), zs=[1])
+    assert_close(PV.T, 300, rtol=1e-13)
+    
+    PT2 = PT.to(P=PT.P, T=PT.T, zs=[1])
+    assert_close(PT2.V(), 0.02490094036817131, rtol=1e-13)
+    assert_close(PT2.B(), -4.2375251149270624e-05, rtol=1e-14)
+    
+    assert_close(PT.dP_dT(), 334.86796331728914, rtol=1e-13)
+    assert_close(PT.dP_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).P, PT.T, PT.T*1e-7), rtol=1e-10)
+    
+    assert_close(PT.dP_dV(), -4009066.851663165, rtol=1e-13)
+    assert_close(PT.dP_dV(), derivative(lambda V: PT.to(T=PT.T, V=V, zs=[1]).P, PT.V(), PT.V()*1e-7), rtol=1e-8)
+    
+    assert_close(PT.d2P_dTdV(), -13486.814969771252, rtol=1e-13)
+    assert_close(PT.d2P_dTdV(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).dP_dV(), PT.T, PT.T*1e-7), rtol=1e-9)
+    
+    assert_close(PT.d2P_dV2(), 321451403.1386218, rtol=1e-13)
+    assert_close(PT.d2P_dV2(), derivative(lambda V: PT.to(T=PT.T, V=V, zs=[1]).dP_dV(), PT.V(), PT.V()*1e-7), rtol=1e-8)
+    
+    assert_close(PT.d2P_dT2(), -0.0020770847374848075, rtol=1e-13)
+    assert_close(PT.d2P_dT2(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).dP_dT(), PT.T, PT.T*8e-7), rtol=1e-6)
+    
+    assert_close(PT.H_dep(), 15.708867544147836, rtol=1e-13)
+    H_dep_Poling = (-(PT.B() - PT.T*PT.dB_dT())/PT.V())*R*PT.T
+    assert_close(PT.H_dep(), H_dep_Poling, rtol=1e-13)
+    
+    assert_close(PT.dH_dep_dT(), -0.03958097657787867, rtol=1e-13)
+    assert_close(PT.dH_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).H_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
+    
+    S_dep_Poling = -((PT.B() + PT.T*PT.dB_dT())/PT.V()- log(PT.Z()))*R
+    assert_close(PT.S_dep(), -0.03822578258348812, rtol=1e-13)
+    assert_close(PT.S_dep(), S_dep_Poling, rtol=1e-13)
+    
+    assert_close(PT.dS_dep_dT(), 0.0001793175995307205, rtol=1e-13)
+    assert_close(PT.dS_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).S_dep(), PT.T, PT.T*3e-7), rtol=1e-7)

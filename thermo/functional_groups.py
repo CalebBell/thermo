@@ -180,6 +180,14 @@ Utility functions
 .. autofunction:: thermo.functional_groups.count_rings_attatched_to_rings
 
 
+------------------------------------
+Functions using group identification
+------------------------------------
+
+.. autofunction:: thermo.functional_groups.BVirial_Tsonopoulos_extended_ab
+
+
+
 '''
 
 from __future__ import division
@@ -232,7 +240,9 @@ __all__ = [# sulfur
            'is_organic', 'is_inorganic',
            
            'count_ring_ring_attatchments',
-           'count_rings_attatched_to_rings']
+           'count_rings_attatched_to_rings',
+           
+           'BVirial_Tsonopoulos_extended_ab']
 
 
 rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
@@ -2826,3 +2836,138 @@ def count_rings_attatched_to_rings(mol, allow_neighbors=True, atom_rings=None):
         if attatched_to_ring:
             rings_attatched_to_rings+= 1
     return rings_attatched_to_rings
+
+
+
+### Calculate things using functional groups - basic
+
+def BVirial_Tsonopoulos_extended_ab(Tc, Pc, dipole, smiles):
+    r'''Calculates the  of `a` and `b` parameters of the Tsonopoulos (extended)
+    second virial coefficient prediction method. These parameters account for
+    polarity. This function uses `rdkit` to identify the component type of the 
+    molecule.
+
+    Parameters
+    ----------
+    Tc : float
+        Critical temperature of fluid [K]
+    Pc : float
+        Critical pressure of the fluid [Pa]
+    dipole : float
+        dipole moment, optional, [Debye]
+
+    Returns
+    -------
+    a : float
+        Fit parameter matched to one of the supported chemical classes.
+    b : float
+        Fit parameter matched to one of the supported chemical classes.
+
+    Notes
+    -----
+    
+    To calculate `a` or `b`, the following rules are used:
+
+    For 'simple' or 'normal' fluids:
+
+    .. math::
+        a = 0
+
+    .. math::
+        b = 0
+
+    For 'ketone', 'aldehyde', 'alkyl nitrile', 'ether', 'carboxylic acid',
+    or 'ester' types of chemicals:
+
+    .. math::
+        a = -2.14\times 10^{-4} \mu_r - 4.308 \times 10^{-21} (\mu_r)^8
+
+    .. math::
+        b = 0
+
+    For 'alkyl halide', 'mercaptan', 'sulfide', or 'disulfide' types of
+    chemicals:
+
+    .. math::
+        a = -2.188\times 10^{-4} (\mu_r)^4 - 7.831 \times 10^{-21} (\mu_r)^8
+
+    .. math::
+        b = 0
+
+    For 'alkanol' types of chemicals (except methanol):
+
+    .. math::
+        a = 0.0878
+
+    .. math::
+        b = 0.00908 + 0.0006957 \mu_r
+
+    For methanol:
+
+    .. math::
+        a = 0.0878
+
+    .. math::
+        b = 0.0525
+
+    For water:
+
+    .. math::
+        a = -0.0109
+
+    .. math::
+        b = 0
+
+    If required, the form of dipole moment used in the calculation of some
+    types of `a` and `b` values is as follows:
+
+    .. math::
+        \mu_r = 100000\frac{\mu^2(Pc/101325.0)}{Tc^2}
+
+    References
+    ----------
+    .. [1] Tsonopoulos, C., and J. L. Heidman. "From the Virial to the Cubic
+       Equation of State." Fluid Phase Equilibria 57, no. 3 (1990): 261-76.
+       doi:10.1016/0378-3812(90)85126-U
+    .. [2] Tsonopoulos, Constantine, and John H. Dymond. "Second Virial
+       Coefficients of Normal Alkanes, Linear 1-Alkanols (and Water), Alkyl
+       Ethers, and Their Mixtures." Fluid Phase Equilibria, International
+       Workshop on Vapour-Liquid Equilibria and Related Properties in Binary
+       and Ternary Mixtures of Ethers, Alkanes and Alkanols, 133, no. 1-2
+       (June 1997): 11-34. doi:10.1016/S0378-3812(97)00058-7.
+
+    '''
+    if smiles == 'CO':
+        # methanol
+        a, b = 0.0878, 0.0525
+    elif smiles == 'O':
+        # water
+        a, b = -0.0109, 0.0
+    else:
+        from rdkit.Chem import MolFromSmiles
+        mol = MolFromSmiles(smiles)
+        
+        dipole_r = 1E5*dipole**2*(Pc/101325.0)/Tc**2
+        
+        if (is_ketone(mol) 
+            or is_aldehyde(mol) 
+            or is_nitrile(mol) 
+            or is_ether(mol)
+            or is_carboxylic_acid(mol)
+            or is_ester(mol)
+            # ammonia, H2S, HCN
+            or smiles in ('N', 'S', 'C#N')):
+            a, b = -2.14E-4*dipole_r -4.308E-21*dipole_r**8, 0.0
+            
+        elif (is_haloalkane(mol) or is_mercaptan(mol)
+              or is_sulfide(mol) or is_disulfide(mol)):
+            a, b = -2.188E-4*dipole_r**4 - 7.831E-21*dipole_r**8, 0.0
+        
+        elif (is_alcohol(mol) 
+              and not is_aromatic(mol) 
+              and not is_alkyne(mol) 
+              and not is_alkene(mol)):
+            a, b = 0.0878, 0.00908 + 0.0006957*dipole_r
+        else:
+            a, b = 0.0, 0.0
+    return (a, b)

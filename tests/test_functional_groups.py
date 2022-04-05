@@ -2339,3 +2339,37 @@ def test_is_quat():
         mol = Chem.MolFromSmiles(smiles)
         assert is_quat(mol)
 
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_BVirial_Tsonopoulos_extended_ab():
+    res = BVirial_Tsonopoulos_extended_ab(Tc=405.65, Pc=11.28e6, dipole=1.469, smiles='N')
+    assert_close1d(res, (-0.03213165965970815, 0.0))
+    
+    
+    res = BVirial_Tsonopoulos_extended_ab(Tc=512.5, Pc=8084000.0, dipole=1.7, smiles="CO")
+    assert_close1d(res, (0.0878, 0.0525))
+    res = BVirial_Tsonopoulos_extended_ab(Tc=647.14, Pc=22048320.0, dipole=1.85, smiles="O")
+    assert_close1d(res, (-0.0109, 0.0))
+    res = BVirial_Tsonopoulos_extended_ab(Tc=536.7, Pc=4207000.0, dipole=2.78, smiles="CCC(=O)C")
+    assert_close1d(res, (-0.023941613881302313, 0.0))
+    res = BVirial_Tsonopoulos_extended_ab(Tc=408.0, Pc=6586125.0, dipole=2.33, smiles="C=O")
+    assert_close1d(res, (-0.06293245357806315, 0.0))
+    res = BVirial_Tsonopoulos_extended_ab(Tc=466.7, Pc=3644000.0, dipole=1.15, smiles="CCOCC")
+    assert_close1d(res, (-0.0046729983628324544, 0.0))
+    res = BVirial_Tsonopoulos_extended_ab(Tc=615.0, Pc=5674200.0, dipole=1.4599896871365, smiles="C=CC(=O)O")
+    assert_close1d(res, (-0.006753850104414003, 0.0))
+    res = BVirial_Tsonopoulos_extended_ab(Tc=514.0, Pc=6137000.0, dipole=1.44, smiles="CCO")
+    assert_close1d(res, (0.0878, 0.04215198485694609))
+    res = BVirial_Tsonopoulos_extended_ab(Tc=536.8, Pc=5169000.0, dipole=1.55, smiles="CCCO")
+    assert_close1d(res, (0.0878, 0.038670363833023684))
+    res = BVirial_Tsonopoulos_extended_ab(Tc=562.05, Pc=4895000.0, dipole=0.0, smiles="C1=CC=CC=C1")
+    assert_close1d(res, (0.0, 0.0))
+    res = BVirial_Tsonopoulos_extended_ab(Tc=405.6, Pc=11277472.5, dipole=1.47, smiles="N")
+    assert_close1d(res, (-0.032184806598961786, 0.0))
+    res = BVirial_Tsonopoulos_extended_ab(Tc=373.2, Pc=8936865.0, dipole=0.97, smiles="S")
+    assert_close1d(res, (-0.012751634807714006, 0.0))
+    res = BVirial_Tsonopoulos_extended_ab(Tc=457.0, Pc=5400000.0, dipole=2.98, smiles="C#N")
+    assert_close1d(res, (-0.07845103454306249, 0.0))
+    res = BVirial_Tsonopoulos_extended_ab(Tc=317.4, Pc=5870000.0, dipole=1.85, smiles="CF")
+    assert_close1d(res, (-328285.5327580192, 0.0))
