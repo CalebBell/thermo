@@ -525,6 +525,7 @@ class VirialGas(Phase):
                 break
         if zs is not None:
             self.zs = zs
+            self.scalar = scalar = type(zs) is list
         if T is not None:
             self.T = T
             self.model.T = T
@@ -744,6 +745,7 @@ class VirialGas(Phase):
         new.P = P
         new.zs = zs
         new.N = self.N
+        new.scalar = self.scalar
         new.cross_B_coefficients = self.cross_B_coefficients
         new.cross_C_coefficients = self.cross_C_coefficients
         new.cross_B_model = self.cross_B_model
@@ -761,6 +763,7 @@ class VirialGas(Phase):
     def to(self, zs, T=None, P=None, V=None):
         new = self.__class__.__new__(self.__class__)
         new.zs = zs
+        new.scalar = self.scalar
         new.N = self.N
         new.cross_B_coefficients = self.cross_B_coefficients
         new.cross_C_coefficients = self.cross_C_coefficients
@@ -821,11 +824,11 @@ class VirialGas(Phase):
         zs = self.zs
         if not self.cross_B_coefficients:
             Bs = self.model.B_pures()
-            self._B = B = mixing_simple(zs, Bs)
+            self._B = B = float(mixing_simple(zs, Bs))
             return B
 
         B_interactions = self.model.B_interactions()
-        self._B = B = BVirial_mixture(zs, B_interactions)
+        self._B = B = float(BVirial_mixture(zs, B_interactions))
         return B
 
     def dB_dT(self):
@@ -839,10 +842,10 @@ class VirialGas(Phase):
         zs = self.zs
         if not self.cross_B_coefficients:
             Bs = self.model.dB_dT_pures()
-            self._dB_dT = dB_dT = mixing_simple(zs, Bs)
+            self._dB_dT = dB_dT = float(mixing_simple(zs, Bs))
             return dB_dT
         dB_dT_interactions = self.model.dB_dT_interactions()
-        self._dB_dT = dB_dT = BVirial_mixture(zs, dB_dT_interactions)
+        self._dB_dT = dB_dT = float(BVirial_mixture(zs, dB_dT_interactions))
         return dB_dT
 
         
@@ -858,10 +861,10 @@ class VirialGas(Phase):
         zs = self.zs
         if not self.cross_B_coefficients:
             Bs = self.model.d2B_dT2_pures()
-            self._d2B_dT2 = d2B_dT2 = mixing_simple(zs, Bs)
+            self._d2B_dT2 = d2B_dT2 = float(mixing_simple(zs, Bs))
             return d2B_dT2
         d2B_dT2_interactions = self.model.d2B_dT2_interactions()
-        self._d2B_dT2 = d2B_dT2 = BVirial_mixture(zs, d2B_dT2_interactions)
+        self._d2B_dT2 = d2B_dT2 = float(BVirial_mixture(zs, d2B_dT2_interactions))
         return d2B_dT2
 
     def d3B_dT3(self):
@@ -873,12 +876,13 @@ class VirialGas(Phase):
         if N == 1:
             return self.model.d3B_dT3_pures()[0]
         zs = self.zs
+        
         if not self.cross_B_coefficients:
-            Bs = self.model.d2B_dT2_pures()
-            self._d3B_dT3 = d3B_dT3 = mixing_simple(zs, Bs)
-            return d2B_dT2
+            Bs = self.model.d3B_dT3_pures()
+            self._d3B_dT3 = d3B_dT3 = float(mixing_simple(zs, Bs))
+            return d3B_dT3
         d3B_dT3_matrix = self.model.d3B_dT3_matrix()
-        self._d3B_dT3 = d3B_dT3 = BVirial_mixture(zs, d3B_dT3_matrix)
+        self._d3B_dT3 = d3B_dT3 = float(BVirial_mixture(zs, d3B_dT3_matrix))
         return d3B_dT3
 
 
@@ -891,15 +895,15 @@ class VirialGas(Phase):
         zs = self.zs
         N = self.N
         if self.model.C_zero:
-            self._C = C = 0
+            self._C = C = 0.0
             return C
         if not self.cross_C_coefficients:
             Cs = self.model.C_pures()
-            self._C = C = mixing_simple(zs, Cs)
+            self._C = C = float(mixing_simple(zs, Cs))
             return C
         else:
             Cijs = self.model.C_interactions()
-            self._C = C = CVirial_mixture_Orentlicher_Prausnitz(zs, Cijs)
+            self._C = C = float(CVirial_mixture_Orentlicher_Prausnitz(zs, Cijs))
         return C
 
     def dC_dT(self):
@@ -910,12 +914,12 @@ class VirialGas(Phase):
         T = self.T
         zs = self.zs
         if self.model.C_zero:
-            self._dC_dT = dC_dT = 0
+            self._dC_dT = dC_dT = 0.0
             return dC_dT
 
         if not self.cross_C_coefficients:
             dC_dTs = self.model.dC_dT_pures()
-            self._dC_dT = dC_dT = mixing_simple(zs, dC_dTs)
+            self._dC_dT = dC_dT = float(mixing_simple(zs, dC_dTs))
             return dC_dT
 
         Cijs = self.model.C_interactions()
@@ -929,7 +933,7 @@ class VirialGas(Phase):
         expr = (Cij(T)*Cik(T)*Cjk(T))**Rational('1/3')
         # diff(expr, T, 3)
         '''
-        self._dC_dT = dC_dT = dCVirial_mixture_dT_Orentlicher_Prausnitz(zs, Cijs, dCijs)
+        self._dC_dT = dC_dT = float(dCVirial_mixture_dT_Orentlicher_Prausnitz(zs, Cijs, dCijs))
         return dC_dT
 
     def d2C_dT2(self):
@@ -945,14 +949,14 @@ class VirialGas(Phase):
 
         if not self.cross_C_coefficients:
             d2C_dT2s = self.model.d2C_dT2_pures()
-            self._d2C_dT2 = d2C_dT2 = mixing_simple(zs, d2C_dT2s)
+            self._d2C_dT2 = d2C_dT2 = float(mixing_simple(zs, d2C_dT2s))
             return d2C_dT2
 
         Cijs = self.model.C_interactions()
         dCijs = self.model.dC_dT_interactions()
         d2C_dT2ijs = self.model.d2C_dT2_interactions()
         N = self.N
-        self._d2C_dT2 = d2C_dT2 = d2CVirial_mixture_dT2_Orentlicher_Prausnitz(zs, Cijs, dCijs, d2C_dT2ijs)
+        self._d2C_dT2 = d2C_dT2 = float(d2CVirial_mixture_dT2_Orentlicher_Prausnitz(zs, Cijs, dCijs, d2C_dT2ijs))
         return d2C_dT2
     
     def d3C_dT3(self):
@@ -967,7 +971,7 @@ class VirialGas(Phase):
             return d3C_dT3
         if not self.cross_C_coefficients:
             d3C_dT3s = self.model.d3C_dT3_pures()
-            self._d3C_dT3 = d3C_dT3 = mixing_simple(zs, d3C_dT3s)
+            self._d3C_dT3 = d3C_dT3 = float(mixing_simple(zs, d3C_dT3s))
             return d3C_dT3s
 
         Cijs = self.model.C_interactions()
@@ -975,7 +979,7 @@ class VirialGas(Phase):
         d2C_dT2ijs = self.model.d2C_dT2_interactions()
         d3C_dT3ijs = self.model.d3C_dT3_interactions()
         N = self.N
-        self._d3C_dT3 = d3C_dT3 = d3CVirial_mixture_dT3_Orentlicher_Prausnitz(zs, Cijs, dCijs, d2C_dT2ijs, d3C_dT3ijs)
+        self._d3C_dT3 = d3C_dT3 = float(d3CVirial_mixture_dT3_Orentlicher_Prausnitz(zs, Cijs, dCijs, d2C_dT2ijs, d3C_dT3ijs))
         return d3C_dT3
 
     def dB_dzs(self):
@@ -989,10 +993,78 @@ class VirialGas(Phase):
             Bs = self.model.B_pures()
             self._dB_dzs = dB_dzs = Bs
             return dB_dzs
+        N = self.N
+        if self.scalar:
+            dB_dzs = [0.0]*N
+        else:
+            dB_dzs = zeros(N)
 
         B_interactions = self.model.B_interactions()
-        self._dB_dzs = dB_dzs = dBVirial_mixture_dzs(zs, B_interactions)
+        self._dB_dzs = dB_dzs = dBVirial_mixture_dzs(zs, B_interactions, dB_dzs)
         return dB_dzs
+
+    def d2B_dTdzs(self):
+        try:
+            return self._d2B_dTdzs
+        except:
+            pass
+
+        zs = self.zs
+        if not self.cross_B_coefficients:
+            Bs = self.model.dB_dT_pures()
+            self._d2B_dTdzs = d2B_dTdzs = Bs
+            return d2B_dTdzs
+
+        N = self.N
+        if self.scalar:
+            d2B_dTdzs = [0.0]*N
+        else:
+            d2B_dTdzs = zeros(N)
+        B_interactions = self.model.dB_dT_interactions()
+        self._d2B_dTdzs = d2B_dTdzs = dBVirial_mixture_dzs(zs, B_interactions, d2B_dTdzs)
+        return d2B_dTdzs
+
+    def d3B_dT2dzs(self):
+        try:
+            return self._d3B_dT2dzs
+        except:
+            pass
+
+        zs = self.zs
+        if not self.cross_B_coefficients:
+            Bs = self.model.d2B_dT2_pures()
+            self._d3B_dT2dzs = d3B_dT2dzs = Bs
+            return d3B_dT2dzs
+
+        N = self.N
+        if self.scalar:
+            d3B_dT2dzs = [0.0]*N
+        else:
+            d3B_dT2dzs = zeros(N)
+        B_interactions = self.model.d2B_dT2_interactions()
+        self._d3B_dT2dzs = d3B_dT2dzs = dBVirial_mixture_dzs(zs, B_interactions, d3B_dT2dzs)
+        return d3B_dT2dzs
+
+    def d4B_dT3dzs(self):
+        try:
+            return self._d4B_dT3dzs
+        except:
+            pass
+
+        zs = self.zs
+        if not self.cross_B_coefficients:
+            Bs = self.model.d3B_dT3_pures()
+            self._d4B_dT3dzs = d4B_dT3dzs = Bs
+            return d4B_dT3dzs
+        N = self.N
+        if self.scalar:
+            d4B_dT3dzs = [0.0]*N
+        else:
+            d4B_dT3dzs = zeros(N)
+
+        B_interactions = self.model.d3B_dT3_interactions()
+        self._d4B_dT3dzs = d4B_dT3dzs = dBVirial_mixture_dzs(zs, B_interactions, d4B_dT3dzs)
+        return d4B_dT3dzs
 
     def d2B_dzizjs(self):
         try:
@@ -1002,17 +1074,57 @@ class VirialGas(Phase):
 
         N = self.N
         zs = self.zs
+        if self.scalar:
+            d2B_dzizjs = [[0.0]*N for _ in range(N)]
+        else:
+            d2B_dzizjs = zeros((N, N))
         if not self.cross_B_coefficients:
-            if self.scalar:
-                d2B_dzizjs = [[0.0]*N for _ in range(N)]
-            else:
-                d2B_dzizjs = zeros((N, N))
             self._d2B_dzizjs = d2B_dzizjs
             return d2B_dzizjs
 
         B_interactions = self.model.B_interactions()
-        self._d2B_dzizjs = d2B_dzizjs = d2BVirial_mixture_dzizjs(zs, B_interactions)
+        self._d2B_dzizjs = d2B_dzizjs = d2BVirial_mixture_dzizjs(zs, B_interactions, d2B_dzizjs)
         return d2B_dzizjs
+
+    def d3B_dTdzizjs(self):
+        try:
+            return self._d3B_dTdzizjs
+        except:
+            pass
+
+        N = self.N
+        zs = self.zs
+        if self.scalar:
+            d3B_dTdzizjs = [[0.0]*N for _ in range(N)]
+        else:
+            d3B_dTdzizjs = zeros((N, N))
+        if not self.cross_B_coefficients:
+            self._d3B_dTdzizjs = d3B_dTdzizjs
+            return d3B_dTdzizjs
+
+        B_interactions = self.model.dB_dT_interactions()
+        self._d3B_dTdzizjs = d3B_dTdzizjs = d2BVirial_mixture_dzizjs(zs, B_interactions, d3B_dTdzizjs)
+        return d3B_dTdzizjs
+
+    def d4B_dT2dzizjs(self):
+        try:
+            return self._d4B_dT2dzizjs
+        except:
+            pass
+
+        N = self.N
+        zs = self.zs
+        if self.scalar:
+            d4B_dT2dzizjs = [[0.0]*N for _ in range(N)]
+        else:
+            d4B_dT2dzizjs = zeros((N, N))
+        if not self.cross_B_coefficients:
+            self._d4B_dT2dzizjs = d4B_dT2dzizjs
+            return d4B_dT2dzizjs
+
+        B_interactions = self.model.d2B_dT2_interactions()
+        self._d4B_dT2dzizjs = d4B_dT2dzizjs = d2BVirial_mixture_dzizjs(zs, B_interactions, d4B_dT2dzizjs)
+        return d4B_dT2dzizjs
 
     def d3B_dzizjzks(self):
         try:
@@ -1022,25 +1134,33 @@ class VirialGas(Phase):
 
         N = self.N
         zs = self.zs
+        if self.scalar:
+            d3B_dzizjzks = [[[0.0]*N for _ in range(N)] for _ in range(N)]
+        else:
+            d3B_dzizjzks = zeros((N, N, N))
         if not self.cross_B_coefficients:
-            if self.scalar:
-                d3B_dzizjzks = [[[0.0]*N for _ in range(N)] for _ in range(N)]
-            else:
-                d3B_dzizjzks = zeros((N, N, N))
             self._d3B_dzizjzks = d3B_dzizjzks
             return d3B_dzizjzks
 
         B_interactions = self.model.B_interactions()
-        self._d3B_dzizjzks = d3B_dzizjzks = d3BVirial_mixture_dzizjzks(zs, B_interactions)
+        self._d3B_dzizjzks = d3B_dzizjzks = d3BVirial_mixture_dzizjzks(zs, B_interactions, d3B_dzizjzks)
         return d3B_dzizjzks
+    
+    d4B_dTdzizjzks = d3B_dzizjzks
+    d5B_dT2dzizjzks = d3B_dzizjzks
+    d6B_dT3dzizjzks = d3B_dzizjzks
 
     def dB_dns(self):
         try:
             return self._dB_dns
         except:
             pass
-        
-        self._dB_dns = dB_dns = dxs_to_dns(dxs=self.dB_dzs(), xs=self.zs)
+        N = self.N
+        if self.scalar:
+            dB_dns = [0.0]*N
+        else:
+            dB_dns = zeros(N)
+        self._dB_dns = dB_dns = dxs_to_dns(dxs=self.dB_dzs(), xs=self.zs, dns=dB_dns)
         return dB_dns 
         
     def dnB_dns(self):
@@ -1048,8 +1168,13 @@ class VirialGas(Phase):
             return self._dnB_dns
         except:
             pass
+        N = self.N
+        if self.scalar:
+            dnB_dns = [0.0]*N
+        else:
+            dnB_dns = zeros(N)
         
-        self._dnB_dns = dnB_dns = dxs_to_dns(dxs=self.dB_dzs(), xs=self.zs, F=self.B())
+        self._dnB_dns = dnB_dns = dxs_to_dn_partials(dxs=self.dB_dzs(), xs=self.zs, F=self.B(), partial_properties=dnB_dns)
         return dnB_dns 
 
     def lnphis(self):

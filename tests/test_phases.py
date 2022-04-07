@@ -21,8 +21,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 import pytest
-from fluids.numerics import derivative, assert_close, jacobian, hessian, assert_close1d, assert_close2d
-
+from fluids.numerics import derivative, assert_close, jacobian, hessian, assert_close1d, assert_close2d, assert_close3d, normalize
+import numpy as np
 from copy import deepcopy, copy
 from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationsPackage
 from thermo import Chemical, Mixture
@@ -32,6 +32,7 @@ from thermo.equilibrium import *
 from thermo.bulk import *
 from thermo.utils import LINEAR
 from chemicals.utils import rho_to_Vm, Vm_to_rho
+from chemicals.virial import Meng_Duan_2005_virial_CSP_kijs
 from thermo.phases import *
 from thermo.eos_mix import *
 from thermo.phases.phase_utils import lnphis_direct, fugacities_direct
@@ -3113,12 +3114,21 @@ def test_virial_phase_pure_B_only_pitzer_curl():
     Vcs = [9.86e-05]
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593]))]
     model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model=VIRIAL_B_PITZER_CURL, C_model=VIRIAL_C_ZERO)
-    PT = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=300.0, P=1e5, zs=[1])
+    zs = [1]
+    PT = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=300.0, P=1e5, zs=zs)
     
     assert_close(PT.rho(), 40.159125929164205, rtol=1e-13)
     assert_close(PT.V(), 0.02490094036817131, rtol=1e-13)
     assert_close(PT.B(), -4.2375251149270624e-05, rtol=1e-14)
     
+    assert_close(PT.dB_dT(), derivative(lambda T: PT.to(T=T, P=PT.P, zs=zs).B(), PT.T, PT.T*3e-7), rtol=1e-7)
+    assert_close(PT.d2B_dT2(), derivative(lambda T: PT.to(T=T, P=PT.P, zs=zs).dB_dT(), PT.T, PT.T*3e-7), rtol=1e-7)
+    assert_close(PT.d3B_dT3(), derivative(lambda T: PT.to(T=T, P=PT.P, zs=zs).d2B_dT2(), PT.T, PT.T*3e-7), rtol=1e-7)
+    assert_close(PT.dC_dT(), derivative(lambda T: PT.to(T=T, P=PT.P, zs=zs).C(), PT.T, PT.T*3e-7), rtol=1e-7)
+    assert_close(PT.d2C_dT2(), derivative(lambda T: PT.to(T=T, P=PT.P, zs=zs).dC_dT(), PT.T, PT.T*3e-7), rtol=1e-7)
+    assert_close(PT.d3C_dT3(), derivative(lambda T: PT.to(T=T, P=PT.P, zs=zs).d2C_dT2(), PT.T, PT.T*3e-7), rtol=1e-7)
+
+
     assert_close(PT.to_TP_zs(T=PT.T, P=PT.P, zs=[1]).V(), PT.V())
     
     TV = PT.to(T=PT.T, V=PT.V(), zs=[1])
@@ -3159,3 +3169,352 @@ def test_virial_phase_pure_B_only_pitzer_curl():
     
     assert_close(PT.dS_dep_dT(), 0.0001793175995307205, rtol=1e-13)
     assert_close(PT.dS_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).S_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
+
+def test_virial_phase_ternary_B_only_pitzer_curl():
+    CASs = ['7727-37-9', '74-82-8', '124-38-9']
+    atomss = [{'N': 2}, {'C': 1, 'H': 4}, {'C': 1, 'O': 2}]
+    Tcs = [126.2, 190.564, 304.2]
+    Tcs_np = np.array(Tcs)
+    Pcs = [3394387.5, 4599000.0, 7376460.0]
+    Pcs_np = np.array(Pcs)
+    Vcs = [8.95e-05, 9.86e-05, 9.4e-05]
+    Vcs_np = np.array(Vcs)
+    omegas = [0.04, 0.008, 0.2252]
+    omegas_np = np.array(omegas)
+    N = 3
+    
+    HeatCapacityGases = [HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
+     HeatCapacityGas(CASRN="74-82-8", MW=16.04246, similarity_variable=0.3116728980468083, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
+     HeatCapacityGas(CASRN="124-38-9", MW=44.0095, similarity_variable=0.0681671002851657, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644]))]
+
+    # Specifically test without kijs
+    kijs = [[0.0]*3 for _ in range(N)]
+    kijs_np = np.array(kijs)
+    
+    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+                                  B_model=VIRIAL_B_ABBOTT, 
+                                  cross_B_model=VIRIAL_B_ABBOTT,
+                                  cross_B_model_kijs=kijs,
+                                  C_model=VIRIAL_C_ZERO)
+    model_np = VirialCSP(Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
+                              B_model=VIRIAL_B_ABBOTT, 
+                              cross_B_model=VIRIAL_B_ABBOTT,
+                              cross_B_model_kijs=kijs_np,
+                              C_model=VIRIAL_C_ZERO)
+
+
+    T = 300
+    P = 1e5
+    zs = [.02, .92, .06]
+    zs_np = np.array(zs)
+    gas = VirialGas(model=model, HeatCapacityGases=HeatCapacityGases,
+                    cross_B_model='theory',
+                T=T, P=P, zs=zs)
+    gas_np = VirialGas(model=model_np, HeatCapacityGases=HeatCapacityGases,
+                    cross_B_model='theory',
+                T=T, P=P, zs=zs_np)
+
+    
+    # Test some basics
+    B, dB, d2B, d3B =  -4.413104126753512e-05, 3.9664296537847194e-07,  -3.488354169403768e-09,  4.274046794787785e-11
+    assert_close(gas.B(), B, rtol=1e-13)
+    assert_close(gas.dB_dT(), dB, rtol=1e-13)
+    assert_close(gas.d2B_dT2(), d2B, rtol=1e-13)
+    assert_close(gas.d3B_dT3(), d3B, rtol=1e-13)
+    assert_close(gas_np.B(), B, rtol=1e-13)
+    assert_close(gas_np.dB_dT(), dB, rtol=1e-13)
+    assert_close(gas_np.d2B_dT2(), d2B, rtol=1e-13)
+    assert_close(gas_np.d3B_dT3(), d3B, rtol=1e-13)
+    
+    
+    for val in (gas.B(), gas.dB_dT(), gas.d2B_dT2(), gas.d3B_dT3(),
+                gas_np.B(), gas_np.dB_dT(), gas_np.d2B_dT2(), gas_np.d3B_dT3()):
+        assert type(val) is float
+
+
+    for val in (gas.C(), gas.dC_dT(), gas.d2C_dT2(), gas.d3C_dT3(),
+                gas_np.C(), gas_np.dC_dT(), gas_np.d2C_dT2(), gas_np.d3C_dT3()):
+        assert val == 0.0
+        assert type(val) is float
+    
+    V = 0.024899178456922296
+    assert_close(gas.V(), V, rtol=1e-13)
+    assert_close(gas_np.V(), V, rtol=1e-13)
+
+    
+    # Check the B and T derivatives
+    assert_close(gas.dB_dT(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).B(), gas.T, gas.T*3e-7), rtol=1e-7)
+    assert_close(gas.d2B_dT2(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).dB_dT(), gas.T, gas.T*3e-7), rtol=1e-7)
+    assert_close(gas.d3B_dT3(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).d2B_dT2(), gas.T, gas.T*3e-7), rtol=1e-7)
+    assert_close(gas.dC_dT(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).C(), gas.T, gas.T*3e-7), rtol=1e-7)
+    assert_close(gas.d2C_dT2(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).dC_dT(), gas.T, gas.T*3e-7), rtol=1e-7)
+    assert_close(gas.d3C_dT3(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).d2C_dT2(), gas.T, gas.T*3e-7), rtol=1e-7)
+    assert_close(gas_np.dB_dT(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).B(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
+    assert_close(gas_np.d2B_dT2(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).dB_dT(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
+    assert_close(gas_np.d3B_dT3(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).d2B_dT2(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
+    assert_close(gas_np.dC_dT(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).C(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
+    assert_close(gas_np.d2C_dT2(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).dC_dT(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
+    assert_close(gas_np.d3C_dT3(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).d2C_dT2(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
+    
+    
+    # Mole fraction derivatives of B, including its temperature derivatives
+    dB_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).B(), zs, perturbation=1e-7)
+    dB_dzs_expect = [-4.1226874244236366e-05, -8.550397384968317e-05, -0.0001462314851412832]
+    assert_close1d(gas.dB_dzs(), dB_dzs_expect, rtol=1e-13)
+    assert_close1d(gas_np.dB_dzs(), dB_dzs_expect, rtol=1e-13)
+    assert isinstance(gas_np.dB_dzs(), np.ndarray)
+    assert_close1d(dB_dzs, gas.dB_dzs())
+
+    d2B_dTdzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).dB_dT(), zs, perturbation=1e-7)
+    d2B_dTdzs_expect = [5.260937128431123e-07, 7.722240212573212e-07, 1.2052992823891033e-06]
+    assert_close1d(gas.d2B_dTdzs(), d2B_dTdzs_expect, rtol=1e-13)
+    assert_close1d(gas_np.d2B_dTdzs(), d2B_dTdzs_expect, rtol=1e-13)
+    assert isinstance(gas_np.d2B_dTdzs(), np.ndarray)
+    assert_close1d(d2B_dTdzs, gas.d2B_dTdzs())
+
+    d3B_dT2dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).d2B_dT2(), zs, perturbation=1e-7)
+    d3B_dT2dzs_expect = [-4.596636740922754e-09, -6.7485932495824905e-09, -1.1267830239553159e-08]
+    assert_close1d(gas.d3B_dT2dzs(), d3B_dT2dzs_expect, rtol=1e-13)
+    assert_close1d(gas_np.d3B_dT2dzs(), d3B_dT2dzs_expect, rtol=1e-13)
+    assert isinstance(gas_np.d3B_dT2dzs(), np.ndarray)
+    assert_close1d(d3B_dT2dzs, gas.d3B_dT2dzs())
+
+    d4B_dT3dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).d3B_dT3(), zs, perturbation=1e-7)
+    d4B_dT3dzs_expect = [5.580371109330211e-11, 8.195352679443102e-11, 1.4946028371688516e-10]
+    assert_close1d(gas.d4B_dT3dzs(), d4B_dT3dzs_expect, rtol=1e-13)
+    assert_close1d(gas_np.d4B_dT3dzs(), d4B_dT3dzs_expect, rtol=1e-13)
+    assert isinstance(gas_np.d4B_dT3dzs(), np.ndarray)
+    assert_close1d(d4B_dT3dzs, gas.d4B_dT3dzs())
+    
+    
+    # Second mole fraction derivatives
+    d2B_dzizjs = hessian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).B(), zs, perturbation=125e-5)
+    d2B_dzizjs_expect = [[-1.0639357784985337e-05, -3.966321845899801e-05, -7.53987684376414e-05], [-3.966321845899801e-05, -8.286257232134107e-05, -0.00014128571574782375], [-7.53987684376414e-05, -0.00014128571574782375, -0.00024567752140887547]]
+    assert_close2d(d2B_dzizjs_expect, gas.d2B_dzizjs(), rtol=1e-13)
+    assert_close1d(gas_np.d2B_dzizjs(), d2B_dzizjs_expect, rtol=1e-13)
+    assert_close2d(d2B_dzizjs, gas.d2B_dzizjs(), rtol=1e-6)
+    assert isinstance(gas_np.d2B_dzizjs(), np.ndarray)
+
+    d3B_dTdzizjs = hessian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).dB_dT(), zs, perturbation=125e-5)
+    d3B_dTdzizjs_expect = [[3.4972455964751027e-07, 5.136445106798038e-07, 7.757711970790444e-07], [5.136445106798038e-07, 7.522549586697655e-07, 1.1646094844590136e-06], [7.757711970790444e-07, 1.1646094844590136e-06, 1.9723855457538296e-06]]
+    assert_close2d(d3B_dTdzizjs_expect, gas.d3B_dTdzizjs(), rtol=1e-13)
+    assert_close1d(gas_np.d3B_dTdzizjs(), d3B_dTdzizjs_expect, rtol=1e-13)
+    assert_close2d(d3B_dTdzizjs, gas.d3B_dTdzizjs(), rtol=1e-6)
+    assert isinstance(gas_np.d3B_dTdzizjs(), np.ndarray)
+
+    d4B_dT2dzizjs = hessian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).d2B_dT2(), zs, perturbation=125e-5)
+    d4B_dT2dzizjs_expect = [[-3.0445377873470256e-09, -4.4720495115515925e-09, -7.024340575805803e-09], [-4.4720495115515925e-09, -6.536647166125688e-09, -1.0757281108597095e-08], [-7.024340575805803e-09, -1.0757281108597095e-08, -2.051074680212858e-08]]
+    assert_close2d(d4B_dT2dzizjs_expect, gas.d4B_dT2dzizjs(), rtol=1e-13)
+    assert_close1d(gas_np.d4B_dT2dzizjs(), d4B_dT2dzizjs_expect, rtol=1e-13)
+    assert_close2d(d4B_dT2dzizjs, gas.d4B_dT2dzizjs(), rtol=1e-6)
+    assert isinstance(gas_np.d4B_dT2dzizjs(), np.ndarray)
+    
+    # Third mole fraction derivatives
+    d3B_dzizjzks_expect = [[[0.0]*N for _ in range(N)] for _ in range(N)]
+    assert_close3d(d3B_dzizjzks_expect, gas.d3B_dzizjzks(), atol=0)
+    assert_close3d(d3B_dzizjzks_expect, gas.d4B_dTdzizjzks(), atol=0)
+    assert_close3d(d3B_dzizjzks_expect, gas.d5B_dT2dzizjzks(), atol=0)
+    assert_close3d(d3B_dzizjzks_expect, gas.d6B_dT3dzizjzks(), atol=0)
+    
+    assert_close3d(d3B_dzizjzks_expect, gas_np.d3B_dzizjzks(), atol=0)
+    assert isinstance(gas_np.d3B_dzizjzks(), np.ndarray)
+    assert_close3d(d3B_dzizjzks_expect, gas_np.d4B_dTdzizjzks(), atol=0)
+    assert isinstance(gas_np.d4B_dTdzizjzks(), np.ndarray)
+    assert_close3d(d3B_dzizjzks_expect, gas_np.d5B_dT2dzizjzks(), atol=0)
+    assert isinstance(gas_np.d5B_dT2dzizjzks(), np.ndarray)
+    assert_close3d(d3B_dzizjzks_expect, gas_np.d6B_dT3dzizjzks(), atol=0)
+    assert isinstance(gas_np.d6B_dT3dzizjzks(), np.ndarray)
+    
+    
+    # Mole number derivatives
+    def dB_dns_to_jac(ns):
+        zs = normalize(ns)
+        return gas.to(T=T, P=P, zs=zs).B()
+
+    dB_dns = jacobian(dB_dns_to_jac, zs, perturbation=1e-7)
+    dB_dns_expect = [4.7035208290833874e-05, 2.7581086853870686e-06, -5.796940260621295e-05]
+    assert_close1d(gas.dB_dns(), dB_dns_expect, rtol=1e-13)
+    assert_close1d(gas_np.dB_dns(), dB_dns_expect, rtol=1e-13)
+    assert isinstance(gas_np.dB_dns(), np.ndarray)
+    assert_close1d(dB_dns, gas.dB_dns())
+
+    # Partial derivatives
+    dnB_dns_expect = [2.904167023298754e-06, -4.137293258214805e-05, -0.00010210044387374808]
+    assert_close1d(gas.dnB_dns(), dnB_dns_expect, rtol=1e-13)
+    assert_close1d(gas_np.dnB_dns(), dnB_dns_expect, rtol=1e-13)
+    assert isinstance(gas_np.dnB_dns(), np.ndarray)
+
+def test_virial_phase_ternary_B_only_pitzer_curl_no_interactions():
+    CASs = ['7727-37-9', '74-82-8', '124-38-9']
+    atomss = [{'N': 2}, {'C': 1, 'H': 4}, {'C': 1, 'O': 2}]
+    Tcs = [126.2, 190.564, 304.2]
+    Tcs_np = np.array(Tcs)
+    Pcs = [3394387.5, 4599000.0, 7376460.0]
+    Pcs_np = np.array(Pcs)
+    Vcs = [8.95e-05, 9.86e-05, 9.4e-05]
+    Vcs_np = np.array(Vcs)
+    omegas = [0.04, 0.008, 0.2252]
+    omegas_np = np.array(omegas)
+    N = 3
+    
+    HeatCapacityGases = [HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
+     HeatCapacityGas(CASRN="74-82-8", MW=16.04246, similarity_variable=0.3116728980468083, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
+     HeatCapacityGas(CASRN="124-38-9", MW=44.0095, similarity_variable=0.0681671002851657, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644]))]
+
+    # Specifically test without kijs
+    kijs = [[0.0]*3 for _ in range(N)]
+    kijs_np = np.array(kijs)
+    
+    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+                                  B_model=VIRIAL_B_ABBOTT, 
+                                  cross_B_model=VIRIAL_B_ABBOTT,
+                                  cross_B_model_kijs=kijs,
+                                  C_model=VIRIAL_C_ZERO)
+    model_np = VirialCSP(Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
+                              B_model=VIRIAL_B_ABBOTT, 
+                              cross_B_model=VIRIAL_B_ABBOTT,
+                              cross_B_model_kijs=kijs_np,
+                              C_model=VIRIAL_C_ZERO)
+
+
+    T = 300
+    P = 1e5
+    zs = [.02, .92, .06]
+    zs_np = np.array(zs)
+    gas = VirialGas(model=model, HeatCapacityGases=HeatCapacityGases,
+                    cross_B_model='linear',
+                T=T, P=P, zs=zs)
+    gas_np = VirialGas(model=model_np, HeatCapacityGases=HeatCapacityGases,
+                    cross_B_model='linear',
+                T=T, P=P, zs=zs_np)
+
+    
+    # Test some basics
+    B, dB, d2B, d3B = (-4.559350248793301e-05, 4.0870609295718214e-07, -3.6526254783551437e-09, 4.574694317862753e-11)
+    assert_close(gas.B(), B, rtol=1e-13)
+    assert_close(gas.dB_dT(), dB, rtol=1e-13)
+    assert_close(gas.d2B_dT2(), d2B, rtol=1e-13)
+    assert_close(gas.d3B_dT3(), d3B, rtol=1e-13)
+    assert_close(gas_np.B(), B, rtol=1e-13)
+    assert_close(gas_np.dB_dT(), dB, rtol=1e-13)
+    assert_close(gas_np.d2B_dT2(), d2B, rtol=1e-13)
+    assert_close(gas_np.d3B_dT3(), d3B, rtol=1e-13)
+    
+    
+    for val in (gas.B(), gas.dB_dT(), gas.d2B_dT2(), gas.d3B_dT3(),
+                gas_np.B(), gas_np.dB_dT(), gas_np.d2B_dT2(), gas_np.d3B_dT3()):
+        assert type(val) is float
+
+
+    for val in (gas.C(), gas.dC_dT(), gas.d2C_dT2(), gas.d3C_dT3(),
+                gas_np.C(), gas_np.dC_dT(), gas_np.d2C_dT2(), gas_np.d3C_dT3()):
+        assert val == 0.0
+        assert type(val) is float
+    
+    V = 0.024897710706483875
+    assert_close(gas.V(), V, rtol=1e-13)
+    assert_close(gas_np.V(), V, rtol=1e-13)
+
+    
+    # Check the B and T derivatives
+    assert_close(gas.dB_dT(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).B(), gas.T, gas.T*3e-7), rtol=1e-7)
+    assert_close(gas.d2B_dT2(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).dB_dT(), gas.T, gas.T*3e-7), rtol=1e-7)
+    assert_close(gas.d3B_dT3(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).d2B_dT2(), gas.T, gas.T*3e-7), rtol=1e-7)
+    assert_close(gas.dC_dT(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).C(), gas.T, gas.T*3e-7), rtol=1e-7)
+    assert_close(gas.d2C_dT2(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).dC_dT(), gas.T, gas.T*3e-7), rtol=1e-7)
+    assert_close(gas.d3C_dT3(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).d2C_dT2(), gas.T, gas.T*3e-7), rtol=1e-7)
+    assert_close(gas_np.dB_dT(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).B(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
+    assert_close(gas_np.d2B_dT2(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).dB_dT(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
+    assert_close(gas_np.d3B_dT3(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).d2B_dT2(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
+    assert_close(gas_np.dC_dT(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).C(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
+    assert_close(gas_np.d2C_dT2(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).dC_dT(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
+    assert_close(gas_np.d3C_dT3(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).d2C_dT2(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
+    
+    
+    # Mole fraction derivatives of B, including its temperature derivatives
+    dB_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).B(), zs, perturbation=1e-7)
+    dB_dzs_expect =  [-5.3196788924926625e-06, -4.143128616067054e-05, -0.00012283876070443773]
+    assert_close1d(gas.dB_dzs(), dB_dzs_expect, rtol=1e-13)
+    assert_close1d(gas_np.dB_dzs(), dB_dzs_expect, rtol=1e-13)
+    assert isinstance(gas_np.dB_dzs(), np.ndarray)
+    assert_close1d(dB_dzs, gas.dB_dzs())
+
+    d2B_dTdzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).dB_dT(), zs, perturbation=1e-7)
+    d2B_dTdzs_expect =  [1.7486227982375503e-07, 3.761274793348827e-07, 9.861927728769148e-07]
+    assert_close1d(gas.d2B_dTdzs(), d2B_dTdzs_expect, rtol=1e-13)
+    assert_close1d(gas_np.d2B_dTdzs(), d2B_dTdzs_expect, rtol=1e-13)
+    assert isinstance(gas_np.d2B_dTdzs(), np.ndarray)
+    assert_close1d(d2B_dTdzs, gas.d2B_dTdzs())
+
+    d3B_dT2dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).d2B_dT2(), zs, perturbation=4e-7)
+    d3B_dT2dzs_expect = [-1.5222688936735118e-09, -3.268323583062844e-09, -1.025537340106429e-08]
+    assert_close1d(gas.d3B_dT2dzs(), d3B_dT2dzs_expect, rtol=1e-13)
+    assert_close1d(gas_np.d3B_dT2dzs(), d3B_dT2dzs_expect, rtol=1e-13)
+    assert isinstance(gas_np.d3B_dT2dzs(), np.ndarray)
+    assert_close1d(d3B_dT2dzs, gas.d3B_dT2dzs())
+
+    d4B_dT3dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).d3B_dT3(), zs, perturbation=1e-7)
+    d4B_dT3dzs_expect = [1.8385020623121148e-11, 3.9368119318647694e-11, 1.5267621655015376e-10]
+    assert_close1d(gas.d4B_dT3dzs(), d4B_dT3dzs_expect, rtol=1e-13)
+    assert_close1d(gas_np.d4B_dT3dzs(), d4B_dT3dzs_expect, rtol=1e-13)
+    assert isinstance(gas_np.d4B_dT3dzs(), np.ndarray)
+    assert_close1d(d4B_dT3dzs, gas.d4B_dT3dzs())
+    
+    
+    # Second mole fraction derivatives
+    d2B_dzizjs = hessian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).B(), zs, perturbation=125e-5)
+    d2B_dzizjs_expect = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+    assert_close2d(d2B_dzizjs_expect, gas.d2B_dzizjs(), rtol=1e-13)
+    assert_close1d(gas_np.d2B_dzizjs(), d2B_dzizjs_expect, rtol=1e-13)
+    assert_close2d(d2B_dzizjs, gas.d2B_dzizjs(), rtol=1e-6)
+    assert isinstance(gas_np.d2B_dzizjs(), np.ndarray)
+
+    d3B_dTdzizjs = hessian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).dB_dT(), zs, perturbation=125e-5)
+    d3B_dTdzizjs_expect =  [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+    assert_close2d(d3B_dTdzizjs_expect, gas.d3B_dTdzizjs(), rtol=1e-13)
+    assert_close1d(gas_np.d3B_dTdzizjs(), d3B_dTdzizjs_expect, rtol=1e-13)
+    assert_close2d(d3B_dTdzizjs, gas.d3B_dTdzizjs(), atol=1e-6)
+    assert isinstance(gas_np.d3B_dTdzizjs(), np.ndarray)
+
+    d4B_dT2dzizjs = hessian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).d2B_dT2(), zs, perturbation=125e-5)
+    d4B_dT2dzizjs_expect =  [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+    assert_close2d(d4B_dT2dzizjs_expect, gas.d4B_dT2dzizjs(), rtol=1e-13)
+    assert_close1d(gas_np.d4B_dT2dzizjs(), d4B_dT2dzizjs_expect, rtol=1e-13)
+    assert_close2d(d4B_dT2dzizjs, gas.d4B_dT2dzizjs(), atol=1e-6)
+    assert isinstance(gas_np.d4B_dT2dzizjs(), np.ndarray)
+    
+    # Third mole fraction derivatives
+    d3B_dzizjzks_expect = [[[0.0]*N for _ in range(N)] for _ in range(N)]
+    assert_close3d(d3B_dzizjzks_expect, gas.d3B_dzizjzks(), atol=0)
+    assert_close3d(d3B_dzizjzks_expect, gas.d4B_dTdzizjzks(), atol=0)
+    assert_close3d(d3B_dzizjzks_expect, gas.d5B_dT2dzizjzks(), atol=0)
+    assert_close3d(d3B_dzizjzks_expect, gas.d6B_dT3dzizjzks(), atol=0)
+    
+    assert_close3d(d3B_dzizjzks_expect, gas_np.d3B_dzizjzks(), atol=0)
+    assert isinstance(gas_np.d3B_dzizjzks(), np.ndarray)
+    assert_close3d(d3B_dzizjzks_expect, gas_np.d4B_dTdzizjzks(), atol=0)
+    assert isinstance(gas_np.d4B_dTdzizjzks(), np.ndarray)
+    assert_close3d(d3B_dzizjzks_expect, gas_np.d5B_dT2dzizjzks(), atol=0)
+    assert isinstance(gas_np.d5B_dT2dzizjzks(), np.ndarray)
+    assert_close3d(d3B_dzizjzks_expect, gas_np.d6B_dT3dzizjzks(), atol=0)
+    assert isinstance(gas_np.d6B_dT3dzizjzks(), np.ndarray)
+    
+    
+    # Mole number derivatives
+    def dB_dns_to_jac(ns):
+        zs = normalize(ns)
+        return gas.to(T=T, P=P, zs=zs).B()
+
+    dB_dns = jacobian(dB_dns_to_jac, zs, perturbation=.5e-7)
+    dB_dns_expect = [4.0273823595440354e-05, 4.162216327262471e-06, -7.724525821650472e-05]
+    assert_close1d(gas.dB_dns(), dB_dns_expect, rtol=1e-13)
+    assert_close1d(gas_np.dB_dns(), dB_dns_expect, rtol=1e-13)
+    assert isinstance(gas_np.dB_dns(), np.ndarray)
+    assert_close1d(dB_dns, gas.dB_dns())
+
+    # Partial derivatives
+    dnB_dns_expect = [-5.3196788924926625e-06, -4.143128616067054e-05, -0.00012283876070443773]
+    assert_close1d(gas.dnB_dns(), dnB_dns_expect, rtol=1e-13)
+    assert_close1d(gas_np.dnB_dns(), dnB_dns_expect, rtol=1e-13)
+    assert isinstance(gas_np.dnB_dns(), np.ndarray)
+
