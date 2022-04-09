@@ -584,7 +584,8 @@ def Helmholtz_dA0_dtau(tau, delta=0.0,
     if IdealGasHelmholtzPlanckEinstein_ns is not None:
         for i in range(len(IdealGasHelmholtzPlanckEinstein_ns)):
             ni, ti = IdealGasHelmholtzPlanckEinstein_ns[i], IdealGasHelmholtzPlanckEinstein_ts[i]
-            dA0 += ni*ti*exp(-tau*ti)/(1 - exp(-tau*ti)) # done
+            x0 = exp(-tau*ti)
+            dA0 += ni*ti*x0/(1.0 - x0) # done
 
     if IdealGasHelmholtzPower_ns is not None:
         lntau = log(tau)
@@ -599,7 +600,8 @@ def Helmholtz_dA0_dtau(tau, delta=0.0,
         for i in range(len(IdealGasHelmholtzPlanckEinsteinGeneralized_ns)):
             ni, ti = IdealGasHelmholtzPlanckEinsteinGeneralized_ns[i], IdealGasHelmholtzPlanckEinsteinGeneralized_ts[i]
             ci, di = IdealGasHelmholtzPlanckEinsteinGeneralized_cs[i], IdealGasHelmholtzPlanckEinsteinGeneralized_ds[i]
-            dA0 += di*ni*ti*exp(tau*ti)/(ci + di*exp(tau*ti)) # done
+            x0 = di*exp(tau*ti)
+            dA0 += ni*ti*x0/(ci + x0) # done
     return dA0
 
 def Helmholtz_d2A0_dtau2(tau, delta=0.0, 
@@ -625,9 +627,10 @@ def Helmholtz_d2A0_dtau2(tau, delta=0.0,
             d2A0 -= ni*(ti + x2)*x2 # done
 
     if IdealGasHelmholtzPower_ns is not None:
+        lntau = log(tau)
         for i in range(len(IdealGasHelmholtzPower_ns)):
             ni, ti = IdealGasHelmholtzPower_ns[i], IdealGasHelmholtzPower_ts[i]
-            d2A0 += ni*tau**ti*ti*(ti - 1)/tau**2 # done
+            d2A0 += ni*ti*(ti - 1.0)*exp((ti-2.0)*lntau)
             
     if IdealGasHelmholtzPlanckEinsteinGeneralized_ns is not None:
         for i in range(len(IdealGasHelmholtzPlanckEinsteinGeneralized_ns)):
