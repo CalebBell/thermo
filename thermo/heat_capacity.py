@@ -134,7 +134,7 @@ from chemicals.miscdata import lookup_VDI_tabular_data
 
 from thermo import electrochem
 from thermo.electrochem import Laliberte_heat_capacity
-from thermo.utils import TDependentProperty, MixtureProperty
+from thermo.utils import TDependentProperty, MixtureProperty, IAPWS
 from thermo.coolprop import *
 from cmath import log as clog, exp as cexp
 from thermo.utils import VDI_TABULAR, COOLPROP, POLY_FIT, LINEAR
@@ -146,7 +146,7 @@ POLING_CONST = 'POLING_CONST'
 CRCSTD = 'CRCSTD'
 LASTOVKA_SHAW = 'LASTOVKA_SHAW'
 WEBBOOK_SHOMATE = 'WEBBOOK_SHOMATE'
-heat_capacity_gas_methods = [COOLPROP, TRCIG, WEBBOOK_SHOMATE, POLING_POLY, LASTOVKA_SHAW, CRCSTD,
+heat_capacity_gas_methods = [IAPWS, COOLPROP, TRCIG, WEBBOOK_SHOMATE, POLING_POLY, LASTOVKA_SHAW, CRCSTD,
                              POLING_CONST, JOBACK, VDI_TABULAR]
 '''Holds all methods available for the :obj:`HeatCapacityGas` class, for use in
 iterating over them.'''
@@ -156,7 +156,7 @@ class HeatCapacityGas(TDependentProperty):
     r'''Class for dealing with gas heat capacity as a function of temperature.
     Consists of three coefficient-based methods, two constant methods,
     one tabular source, one simple estimator, one group-contribution estimator,
-    and the external library CoolProp.
+    one component specific method, and the external library CoolProp.
 
     Parameters
     ----------
@@ -211,6 +211,8 @@ class HeatCapacityGas(TDependentProperty):
         Shomate form coefficients from [6]_ for ~700 compounds.
     **JOBACK**:
         An estimation method for organic substances in [7]_
+    **IAPWS**:
+        The IAPWS-95 heat capacity method
 
     See Also
     --------
@@ -268,7 +270,7 @@ class HeatCapacityGas(TDependentProperty):
     '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
     the critical point, this value can be obscenely high.'''
 
-    ranked_methods = [TRCIG, WEBBOOK_SHOMATE, POLING_POLY, COOLPROP, JOBACK,
+    ranked_methods = [IAPWS, TRCIG, WEBBOOK_SHOMATE, POLING_POLY, COOLPROP, JOBACK,
                       LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
     '''Default rankings of the available methods.'''
 
@@ -375,6 +377,9 @@ class HeatCapacityGas(TDependentProperty):
                 Tmin = max(self.CP_f.Tt, self.CP_f.Tmin)
                 Tmax = min(self.CP_f.Tc, self.CP_f.Tmax)
                 T_limits[COOLPROP] = (Tmin, Tmax)
+            # if CASRN == '7732-18-5':
+                # methods.append(IAPWS)
+                # T_limits[IAPWS] = (webbook_shomate.Tmin, webbook_shomate.Tmax)
         if self.MW and self.similarity_variable:
             methods.append(LASTOVKA_SHAW)
             T_limits[LASTOVKA_SHAW] = (1e-3, 1e5)
@@ -1560,10 +1565,10 @@ class HeatCapacityLiquidMixture(MixtureProperty):
                 self.Laliberte_a5s = a5s
                 self.Laliberte_a6s = a6s
 
-            wCASs = [i for i in self.CASs if i != '7732-18-5']
-            methods.append(LALIBERTE)
-            self.wCASs = wCASs
-            self.index_w = self.CASs.index('7732-18-5')
+                wCASs = [i for i in self.CASs if i != '7732-18-5']
+                methods.append(LALIBERTE)
+                self.wCASs = wCASs
+                self.index_w = self.CASs.index('7732-18-5')
         self.all_methods = all_methods = set(methods)
         for m in self.ranked_methods:
             if m in all_methods:
