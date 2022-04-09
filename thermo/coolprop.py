@@ -636,7 +636,9 @@ def Helmholtz_d2A0_dtau2(tau, delta=0.0,
         for i in range(len(IdealGasHelmholtzPlanckEinsteinGeneralized_ns)):
             ni, ti = IdealGasHelmholtzPlanckEinsteinGeneralized_ns[i], IdealGasHelmholtzPlanckEinsteinGeneralized_ts[i]
             ci, di = IdealGasHelmholtzPlanckEinsteinGeneralized_cs[i], IdealGasHelmholtzPlanckEinsteinGeneralized_ds[i]
-            d2A0 += -di*ni*ti**2*(di*exp(tau*ti)/(ci + di*exp(tau*ti)) - 1)*exp(tau*ti)/(ci + di*exp(tau*ti)) # done
+            x0 = exp(tau*ti)
+            x1 = di*x0/(ci + di*x0)
+            d2A0 += -ni*ti*ti*(x1 - 1.0)*x1 # done
     return d2A0
 
 def Helmholtz_d3A0_dtau3(tau, delta=0.0, 
@@ -657,16 +659,21 @@ def Helmholtz_d3A0_dtau3(tau, delta=0.0,
     if IdealGasHelmholtzPlanckEinstein_ns is not None:
         for i in range(len(IdealGasHelmholtzPlanckEinstein_ns)):
             ni, ti = IdealGasHelmholtzPlanckEinstein_ns[i], IdealGasHelmholtzPlanckEinstein_ts[i]
-            d3A0 +=ni*ti**3*(1 + 3*exp(-tau*ti)/(1 - exp(-tau*ti)) + 2*exp(-2*tau*ti)/(1 - exp(-tau*ti))**2)*exp(-tau*ti)/(1 - exp(-tau*ti)) # done
+            x1 = exp(-tau*ti)
+            x3 = x1/(1.0 - x1)
+            d3A0 += ni*ti*ti*ti*x3*(3.0*x3 + 1.0 + 2.0*x3*x3)
 
     if IdealGasHelmholtzPower_ns is not None:
+        lntau = log(tau)
         for i in range(len(IdealGasHelmholtzPower_ns)):
             ni, ti = IdealGasHelmholtzPower_ns[i], IdealGasHelmholtzPower_ts[i]
-            d3A0 += ni*tau**ti*ti*(ti**2 - 3*ti + 2)/tau**3 # done
+            d3A0 += ni*ti*(ti*ti - 3.0*ti + 2.0)*exp((ti-3.0)*lntau)
             
     if IdealGasHelmholtzPlanckEinsteinGeneralized_ns is not None:
         for i in range(len(IdealGasHelmholtzPlanckEinsteinGeneralized_ns)):
             ni, ti = IdealGasHelmholtzPlanckEinsteinGeneralized_ns[i], IdealGasHelmholtzPlanckEinsteinGeneralized_ts[i]
             ci, di = IdealGasHelmholtzPlanckEinsteinGeneralized_cs[i], IdealGasHelmholtzPlanckEinsteinGeneralized_ds[i]
-            d3A0 += di*ni*ti**3*(2*di**2*exp(2*tau*ti)/(ci + di*exp(tau*ti))**2 - 3*di*exp(tau*ti)/(ci + di*exp(tau*ti)) + 1)*exp(tau*ti)/(ci + di*exp(tau*ti)) # done
+            x1 = di*exp(tau*ti)
+            x3 = x1/(ci + x1)
+            d3A0 += ni*ti*ti*ti*x3*(2.0*x3*x3 - 3.0*x3 + 1.0)
     return d3A0
