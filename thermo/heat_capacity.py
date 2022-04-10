@@ -146,7 +146,7 @@ POLING_CONST = 'POLING_CONST'
 CRCSTD = 'CRCSTD'
 LASTOVKA_SHAW = 'LASTOVKA_SHAW'
 WEBBOOK_SHOMATE = 'WEBBOOK_SHOMATE'
-heat_capacity_gas_methods = [IAPWS, COOLPROP, TRCIG, WEBBOOK_SHOMATE, POLING_POLY, LASTOVKA_SHAW, CRCSTD,
+heat_capacity_gas_methods = [COOLPROP, TRCIG, WEBBOOK_SHOMATE, POLING_POLY, LASTOVKA_SHAW, CRCSTD,
                              POLING_CONST, JOBACK, VDI_TABULAR]
 '''Holds all methods available for the :obj:`HeatCapacityGas` class, for use in
 iterating over them.'''
@@ -194,7 +194,10 @@ class HeatCapacityGas(TDependentProperty):
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
         Range is limited to that of the equations of state it uses, as
-        described in [3]_. Very slow.
+        described in [3]_. The heat capacity and enthalpy are implemented
+        analytically and fairly fast; the entropy integral has no analytical
+        integral and so is numerical. CoolProp's amazing coefficient collection
+        is used directly in Python.
     **LASTOVKA_SHAW**:
         A basic estimation method using the `similarity variable` concept;
         requires only molecular structure, so is very convenient. See
@@ -211,8 +214,6 @@ class HeatCapacityGas(TDependentProperty):
         Shomate form coefficients from [6]_ for ~700 compounds.
     **JOBACK**:
         An estimation method for organic substances in [7]_
-    **IAPWS**:
-        The IAPWS-95 heat capacity method
 
     See Also
     --------
@@ -270,7 +271,7 @@ class HeatCapacityGas(TDependentProperty):
     '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
     the critical point, this value can be obscenely high.'''
 
-    ranked_methods = [IAPWS, TRCIG, WEBBOOK_SHOMATE, POLING_POLY, COOLPROP, JOBACK,
+    ranked_methods = [TRCIG, WEBBOOK_SHOMATE, POLING_POLY, COOLPROP, JOBACK,
                       LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
     '''Default rankings of the available methods.'''
 
@@ -374,12 +375,32 @@ class HeatCapacityGas(TDependentProperty):
             if has_CoolProp() and CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[CASRN]
-                Tmin = max(self.CP_f.Tt, self.CP_f.Tmin)
-                Tmax = min(self.CP_f.Tc, self.CP_f.Tmax)
+                if CASRN in Helmholtz_A0_data:
+                    # We can do the fast calculation in Python
+                    CoolProp_dat = Helmholtz_A0_data[CASRN]
+                    A0_dat = CoolProp_dat['alpha0']
+                    self.CoolProp_A0_args = (CoolProp_dat['Tc'], CoolProp_dat['R'],
+                                             A0_dat.get('IdealGasHelmholtzLead_a1', 0.0),
+                                             A0_dat.get('IdealGasHelmholtzLead_a2', 0.0),
+                                             A0_dat.get('IdealGasHelmholtzLogTau_a', 0.0),
+                                             A0_dat.get('IdealGasHelmholtzPlanckEinstein_ns', None),
+                                             A0_dat.get('IdealGasHelmholtzPlanckEinstein_ts', None),
+                                             A0_dat.get('IdealGasHelmholtzPower_ns', None),
+                                             A0_dat.get('IdealGasHelmholtzPower_ts', None),
+                                             A0_dat.get('IdealGasHelmholtzPlanckEinsteinGeneralized_ns', None),
+                                             A0_dat.get('IdealGasHelmholtzPlanckEinsteinGeneralized_ts', None),
+                                             A0_dat.get('IdealGasHelmholtzPlanckEinsteinGeneralized_cs', None),
+                                             A0_dat.get('IdealGasHelmholtzPlanckEinsteinGeneralized_ds', None),
+                                             )
+                    
+                    Tmin = min(self.CP_f.Tt, self.CP_f.Tmin)
+                    Tmax = max(self.CP_f.Tc, self.CP_f.Tmax)
+                else:
+                    # Use the more conservative limits to try to get CoolProp to solve
+                    self.CoolProp_A0_args = None
+                    Tmin = max(self.CP_f.Tt, self.CP_f.Tmin)
+                    Tmax = min(self.CP_f.Tc, self.CP_f.Tmax)
                 T_limits[COOLPROP] = (Tmin, Tmax)
-            # if CASRN == '7732-18-5':
-                # methods.append(IAPWS)
-                # T_limits[IAPWS] = (webbook_shomate.Tmin, webbook_shomate.Tmax)
         if self.MW and self.similarity_variable:
             methods.append(LASTOVKA_SHAW)
             T_limits[LASTOVKA_SHAW] = (1e-3, 1e5)
@@ -432,12 +453,15 @@ class HeatCapacityGas(TDependentProperty):
         elif method == JOBACK:
             Cp = horner(self.joback_coeffs, T)
         elif method == COOLPROP:
-            try:
-                # Some cases due to melting point need a high pressure
-                Cp = PropsSI('Cp0molar', 'T', T,'P', 10132500.0, self.CASRN)
-            except:
-                # And some cases don't converge at high P
-                Cp = PropsSI('Cp0molar', 'T', T,'P', 101325.0, self.CASRN)
+            if self.CoolProp_A0_args is not None:
+                Cp = Cp_ideal_gas_Helmholtz(T, *self.CoolProp_A0_args)
+            else:
+                try:
+                    # Some cases due to melting point need a high pressure
+                    Cp = PropsSI('Cp0molar', 'T', T,'P', 10132500.0, self.CASRN)
+                except:
+                    # And some cases don't converge at high P
+                    Cp = PropsSI('Cp0molar', 'T', T,'P', 101325.0, self.CASRN)
         elif method == POLING_POLY:
             Cp = R*(self.POLING_coefs[0] + self.POLING_coefs[1]*T
             + self.POLING_coefs[2]*T**2 + self.POLING_coefs[3]*T**3
@@ -537,6 +561,9 @@ class HeatCapacityGas(TDependentProperty):
                 Lastovka_Shaw_integral(T2, similarity_variable, iscyclic_aliphatic, MW, term_A)
                 - Lastovka_Shaw_integral(T1, similarity_variable, iscyclic_aliphatic, MW, term_A)
             )
+        elif method == COOLPROP and self.CoolProp_A0_args is not None:
+            return (H_ideal_gas_Helmholtz(T2, *self.CoolProp_A0_args)
+                    -H_ideal_gas_Helmholtz(T1, *self.CoolProp_A0_args))
         else:
             return super(HeatCapacityGas, self).calculate_integral(T1, T2, method)
 
