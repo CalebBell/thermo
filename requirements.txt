@@ -3,4 +3,4 @@ scipy
 pandas
 coolprop
 fluids>=1.0.10
-chemicals>=1.0.17
+chemicals>=1.0.20
