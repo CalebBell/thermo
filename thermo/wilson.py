@@ -1566,13 +1566,14 @@ class Wilson(GibbsExcess):
 
 
     def gammas(self):
+        # With this formula implemented, dgammas_dxs cannot be calculated
+        # numerically.
         # Don't bother documenting or exposing; implemented only for a bit more
         # speed and precision.
         try:
             return self._gammas
         except AttributeError:
             pass
-#        xs, cmps = self.xs, self.cmps
         try:
             lambdas = self._lambdas
         except AttributeError:
