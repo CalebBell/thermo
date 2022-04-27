@@ -52,6 +52,7 @@ from chemicals.virial import (BVirial_Pitzer_Curl,BVirial_Pitzer_Curl_fast,
                               dCVirial_mixture_dT_Orentlicher_Prausnitz,
                               d2CVirial_mixture_dT2_Orentlicher_Prausnitz,
                               d3CVirial_mixture_dT3_Orentlicher_Prausnitz,
+                              dCVirial_mixture_Orentlicher_Prausnitz_dzs,
                               CVirial_Orbey_Vera, CVirial_Liu_Xiang,
                               CVirial_Orbey_Vera_mat, CVirial_Liu_Xiang_mat,
                               CVirial_Orbey_Vera_vec, CVirial_Liu_Xiang_vec,
@@ -1176,6 +1177,27 @@ class VirialGas(Phase):
         
         self._dnB_dns = dnB_dns = dxs_to_dn_partials(dxs=self.dB_dzs(), xs=self.zs, F=self.B(), partial_properties=dnB_dns)
         return dnB_dns 
+
+    def dC_dzs(self):
+        try:
+            return self._dC_dzs
+        except:
+            pass
+
+        zs = self.zs
+        if not self.cross_C_coefficients:
+            Cs = self.model.C_pures()
+            self._dC_dzs = dC_dzs = Cs
+            return dC_dzs
+        N = self.N
+        if self.scalar:
+            dC_dzs = [0.0]*N
+        else:
+            dC_dzs = zeros(N)
+
+        C_interactions = self.model.C_interactions()
+        self._dC_dzs = dC_dzs = dCVirial_mixture_Orentlicher_Prausnitz_dzs(zs, C_interactions)
+        return dC_dzs
 
     def lnphis(self):
         B = self.B()
