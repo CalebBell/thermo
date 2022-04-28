@@ -70,10 +70,6 @@ def nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas=None, vec
     if vec1 is None:
         vec1 = [0.0]*N
 
-    for j in range(N):
-        vec0[j] = xs[j]*xj_Gs_jis_inv[j]
-    for j in range(N):
-        vec1[j] = xj_Gs_taus_jis[j]*xj_Gs_jis_inv[j]
 
     vec0 = [xs[j]*xj_Gs_jis_inv[j] for j in range(N)]
     vec1 = [xj_Gs_taus_jis[j]*xj_Gs_jis_inv[j] for j in range(N)]
