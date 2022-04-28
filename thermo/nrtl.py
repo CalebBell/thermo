@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -47,7 +47,7 @@ NRTL Regression Calculations
 ============================
 .. autofunction:: NRTL_gammas_binaries
 
-'''
+"""
 
 from __future__ import division
 from math import log, exp
@@ -55,48 +55,54 @@ from fluids.constants import R
 from fluids.numerics import numpy as np, trunc_exp
 from thermo.activity import GibbsExcess
 
-__all__ = ['NRTL', 'NRTL_gammas', 'NRTL_gammas_binaries', 'NRTL_gammas_binaries_jac']
+__all__ = ["NRTL", "NRTL_gammas", "NRTL_gammas_binaries", "NRTL_gammas_binaries_jac"]
 
 try:
-    array, zeros, ones, delete, npsum, nplog = np.array, np.zeros, np.ones, np.delete, np.sum, np.log
+    array, zeros, ones, delete, npsum, nplog = (
+        np.array,
+        np.zeros,
+        np.ones,
+        np.delete,
+        np.sum,
+        np.log,
+    )
 except (ImportError, AttributeError):
     pass
 
-def nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas=None, vec0=None, vec1=None):
+
+def nrtl_gammas(
+    xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas=None, vec0=None, vec1=None
+):
     if gammas is None:
-        gammas = [0.0]*N
+        gammas = [0.0] * N
     if vec0 is None:
-        vec0 = [0.0]*N
+        vec0 = [0.0] * N
     if vec1 is None:
-        vec1 = [0.0]*N
+        vec1 = [0.0] * N
 
-    for j in range(N):
-        vec0[j] = xs[j]*xj_Gs_jis_inv[j]
-    for j in range(N):
-        vec1[j] = xj_Gs_taus_jis[j]*xj_Gs_jis_inv[j]
-
-    vec0 = [xs[j]*xj_Gs_jis_inv[j] for j in range(N)]
-    vec1 = [xj_Gs_taus_jis[j]*xj_Gs_jis_inv[j] for j in range(N)]
+    vec0 = [xs[j] * xj_Gs_jis_inv[j] for j in range(N)]
+    vec1 = [xj_Gs_taus_jis[j] * xj_Gs_jis_inv[j] for j in range(N)]
 
     for i in range(N):
-        tot = xj_Gs_taus_jis[i]*xj_Gs_jis_inv[i]
+        tot = xj_Gs_taus_jis[i] * xj_Gs_jis_inv[i]
         Gsi = Gs[i]
         tausi = taus[i]
         for j in range(N):
-            tot += vec0[j]*Gsi[j]*(tausi[j] - vec1[j])
+            tot += vec0[j] * Gsi[j] * (tausi[j] - vec1[j])
 
         gammas[i] = exp(tot)
     return gammas
 
+
 def nrtl_taus(T, N, A, B, E, F, G, H, taus=None):
 
     if taus is None:
-        taus = [[0.0]*N for _ in range(N)] # numba: delete
-#        taus = zeros((N, N)) # numba: uncomment
+        taus = [[0.0] * N for _ in range(N)]  # numba: delete
+    #        taus = zeros((N, N)) # numba: uncomment
 
-    T2 = T*T
-    Tinv = 1.0/T
-    T2inv = Tinv*Tinv
+    T2 = T * T
+    Tinv = 1.0 / T
+    T2inv = Tinv * Tinv
     logT = log(T)
     for i in range(N):
         Ai = A[i]
@@ -107,19 +113,25 @@ def nrtl_taus(T, N, A, B, E, F, G, H, taus=None):
         Hi = H[i]
         tausi = taus[i]
         for j in range(N):
-            tausi[j] = (Ai[j] + Bi[j]*Tinv + Ei[j]*logT
-                            + Fi[j]*T + Gi[j]*T2inv
-                            + Hi[j]*T2)
+            tausi[j] = (
+                Ai[j]
+                + Bi[j] * Tinv
+                + Ei[j] * logT
+                + Fi[j] * T
+                + Gi[j] * T2inv
+                + Hi[j] * T2
+            )
     return taus
+
 
 def nrtl_dtaus_dT(T, N, B, E, F, G, H, dtaus_dT=None):
     if dtaus_dT is None:
-        dtaus_dT = [[0.0]*N for _ in range(N)] # numba: delete
-#        dtaus_dT = zeros((N, N)) # numba: uncomment
+        dtaus_dT = [[0.0] * N for _ in range(N)]  # numba: delete
+    #        dtaus_dT = zeros((N, N)) # numba: uncomment
 
-    Tinv = 1.0/T
-    nT2inv = -Tinv*Tinv
-    n2T3inv = 2.0*nT2inv*Tinv
+    Tinv = 1.0 / T
+    nT2inv = -Tinv * Tinv
+    n2T3inv = 2.0 * nT2inv * Tinv
     T2 = T + T
     for i in range(N):
         Bi = B[i]
@@ -129,21 +141,23 @@ def nrtl_dtaus_dT(T, N, B, E, F, G, H, dtaus_dT=None):
         Hi = H[i]
         dtaus_dTi = dtaus_dT[i]
         for j in range(N):
-            dtaus_dTi[j] = (Fi[j] + nT2inv*Bi[j] + Tinv*Ei[j]
-            + n2T3inv*Gi[j] + T2*Hi[j])
+            dtaus_dTi[j] = (
+                Fi[j] + nT2inv * Bi[j] + Tinv * Ei[j] + n2T3inv * Gi[j] + T2 * Hi[j]
+            )
     return dtaus_dT
+
 
 def nrtl_d2taus_dT2(T, N, B, E, G, H, d2taus_dT2=None):
     if d2taus_dT2 is None:
-        d2taus_dT2 = [[0.0]*N for _ in range(N)] # numba: delete
-#        d2taus_dT2 = zeros((N, N)) # numba: uncomment
+        d2taus_dT2 = [[0.0] * N for _ in range(N)]  # numba: delete
+    #        d2taus_dT2 = zeros((N, N)) # numba: uncomment
 
-    Tinv = 1.0/T
-    Tinv2 = Tinv*Tinv
+    Tinv = 1.0 / T
+    Tinv2 = Tinv * Tinv
 
-    T3inv2 = 2.0*(Tinv2*Tinv)
-    nT2inv = -Tinv*Tinv
-    T4inv6 = 6.0*(Tinv2*Tinv2)
+    T3inv2 = 2.0 * (Tinv2 * Tinv)
+    nT2inv = -Tinv * Tinv
+    T4inv6 = 6.0 * (Tinv2 * Tinv2)
     for i in range(N):
         Bi = B[i]
         Ei = E[i]
@@ -151,21 +165,22 @@ def nrtl_d2taus_dT2(T, N, B, E, G, H, d2taus_dT2=None):
         Hi = H[i]
         d2taus_dT2i = d2taus_dT2[i]
         for j in range(N):
-            d2taus_dT2i[j] = (2.0*Hi[j] + T3inv2*Bi[j]
-                                + nT2inv*Ei[j]
-                                + T4inv6*Gi[j])
+            d2taus_dT2i[j] = (
+                2.0 * Hi[j] + T3inv2 * Bi[j] + nT2inv * Ei[j] + T4inv6 * Gi[j]
+            )
     return d2taus_dT2
+
 
 def nrtl_d3taus_dT3(T, N, B, E, G, d3taus_dT3=None):
     if d3taus_dT3 is None:
-        d3taus_dT3 = [[0.0]*N for _ in range(N)] # numba: delete
-#        d3taus_dT3 = zeros((N, N)) # numba: uncomment
+        d3taus_dT3 = [[0.0] * N for _ in range(N)]  # numba: delete
+    #        d3taus_dT3 = zeros((N, N)) # numba: uncomment
 
-    Tinv = 1.0/T
-    T2inv = Tinv*Tinv
-    nT4inv6 = -6.0*T2inv*T2inv
-    T3inv2 = 2.0*T2inv*Tinv
-    T5inv24 = -24.0*(T2inv*T2inv*Tinv)
+    Tinv = 1.0 / T
+    T2inv = Tinv * Tinv
+    nT4inv6 = -6.0 * T2inv * T2inv
+    T3inv2 = 2.0 * T2inv * Tinv
+    T5inv24 = -24.0 * (T2inv * T2inv * Tinv)
 
     for i in range(N):
         Bi = B[i]
@@ -173,41 +188,42 @@ def nrtl_d3taus_dT3(T, N, B, E, G, d3taus_dT3=None):
         Gi = G[i]
         d3taus_dT3i = d3taus_dT3[i]
         for j in range(N):
-            d3taus_dT3i[j] = (nT4inv6*Bi[j]
-                                  + T3inv2*Ei[j]
-                                  + T5inv24*Gi[j])
+            d3taus_dT3i[j] = nT4inv6 * Bi[j] + T3inv2 * Ei[j] + T5inv24 * Gi[j]
     return d3taus_dT3
+
 
 def nrtl_alphas(T, N, c, d, alphas=None):
     if alphas is None:
-        alphas = [[0.0]*N for _ in range(N)] # numba: delete
-#        alphas = zeros((N, N)) # numba: uncomment
+        alphas = [[0.0] * N for _ in range(N)]  # numba: delete
+    #        alphas = zeros((N, N)) # numba: uncomment
 
     for i in range(N):
         ci = c[i]
         di = d[i]
         alphasi = alphas[i]
         for j in range(N):
-            alphasi[j] = ci[j] + di[j]*T
+            alphasi[j] = ci[j] + di[j] * T
     return alphas
+
 
 def nrtl_Gs(N, alphas, taus, Gs=None):
     if Gs is None:
-        Gs = [[0.0]*N for _ in range(N)] # numba: delete
-#        Gs = zeros((N, N)) # numba: uncomment
+        Gs = [[0.0] * N for _ in range(N)]  # numba: delete
+    #        Gs = zeros((N, N)) # numba: uncomment
 
     for i in range(N):
         alphasi = alphas[i]
         tausi = taus[i]
         Gsi = Gs[i]
         for j in range(N):
-            Gsi[j] = exp(-alphasi[j]*tausi[j])
+            Gsi[j] = exp(-alphasi[j] * tausi[j])
     return Gs
+
 
 def nrtl_dGs_dT(N, alphas, dalphas_dT, taus, dtaus_dT, Gs, dGs_dT=None):
     if dGs_dT is None:
-        dGs_dT = [[0.0]*N for _ in range(N)] # numba: delete
-#        dGs_dT = zeros((N, N)) # numba: uncomment
+        dGs_dT = [[0.0] * N for _ in range(N)]  # numba: delete
+    #        dGs_dT = zeros((N, N)) # numba: uncomment
 
     for i in range(N):
         alphasi = alphas[i]
@@ -217,13 +233,14 @@ def nrtl_dGs_dT(N, alphas, dalphas_dT, taus, dtaus_dT, Gs, dGs_dT=None):
         Gsi = Gs[i]
         dGs_dTi = dGs_dT[i]
         for j in range(N):
-            dGs_dTi[j] = (-alphasi[j]*dtausi[j] - tausi[j]*dalphasi[j])*Gsi[j]
+            dGs_dTi[j] = (-alphasi[j] * dtausi[j] - tausi[j] * dalphasi[j]) * Gsi[j]
     return dGs_dT
+
 
 def nrtl_d2Gs_dT2(N, alphas, dalphas_dT, taus, dtaus_dT, d2taus_dT2, Gs, d2Gs_dT2=None):
     if d2Gs_dT2 is None:
-        d2Gs_dT2 = [[0.0]*N for _ in range(N)] # numba: delete
-#        d2Gs_dT2 = zeros((N, N)) # numba: uncomment
+        d2Gs_dT2 = [[0.0] * N for _ in range(N)]  # numba: delete
+    #        d2Gs_dT2 = zeros((N, N)) # numba: uncomment
 
     for i in range(N):
         alphasi = alphas[i]
@@ -234,15 +251,19 @@ def nrtl_d2Gs_dT2(N, alphas, dalphas_dT, taus, dtaus_dT, d2taus_dT2, Gs, d2Gs_dT
         Gsi = Gs[i]
         d2Gs_dT2i = d2Gs_dT2[i]
         for j in range(N):
-            t1 = alphasi[j]*dtausi[j] + tausi[j]*dalphasi[j]
-            d2Gs_dT2i[j] = (t1*t1 - alphasi[j]*d2taus_dT2i[j]
-                                    - 2.0*dalphasi[j]*dtausi[j])*Gsi[j]
+            t1 = alphasi[j] * dtausi[j] + tausi[j] * dalphasi[j]
+            d2Gs_dT2i[j] = (
+                t1 * t1 - alphasi[j] * d2taus_dT2i[j] - 2.0 * dalphasi[j] * dtausi[j]
+            ) * Gsi[j]
     return d2Gs_dT2
 
-def nrtl_d3Gs_dT3(N, alphas, dalphas_dT, taus, dtaus_dT, d2taus_dT2, d3taus_dT3, Gs, d3Gs_dT3=None):
+
+def nrtl_d3Gs_dT3(
+    N, alphas, dalphas_dT, taus, dtaus_dT, d2taus_dT2, d3taus_dT3, Gs, d3Gs_dT3=None
+):
     if d3Gs_dT3 is None:
-        d3Gs_dT3 = [[0.0]*N for _ in range(N)] # numba: delete
-#        d3Gs_dT3 = zeros((N, N)) # numba: uncomment
+        d3Gs_dT3 = [[0.0] * N for _ in range(N)]  # numba: delete
+    #        d3Gs_dT3 = zeros((N, N)) # numba: uncomment
 
     for i in range(N):
         alphasi = alphas[i]
@@ -260,65 +281,99 @@ def nrtl_d3Gs_dT3(N, alphas, dalphas_dT, taus, dtaus_dT, d2taus_dT2, d3taus_dT3,
 
             x3 = d2taus_dT2i[j]
             x4 = dtaus_dTi[j]
-            x5 = x0*x4 + x1*x2
-            d3Gs_dT3i[j] = Gsi[j]*(-x0*d3taus_dT3i[j] - 3.0*x2*x3 - x5*x5*x5 + 3.0*x5*(x0*x3 + 2.0*x2*x4))
+            x5 = x0 * x4 + x1 * x2
+            d3Gs_dT3i[j] = Gsi[j] * (
+                -x0 * d3taus_dT3i[j]
+                - 3.0 * x2 * x3
+                - x5 * x5 * x5
+                + 3.0 * x5 * (x0 * x3 + 2.0 * x2 * x4)
+            )
     return d3Gs_dT3
 
-def nrtl_xj_Gs_jis_and_Gs_taus_jis(N, xs, Gs, taus, xj_Gs_jis=None, xj_Gs_taus_jis=None):
+
+def nrtl_xj_Gs_jis_and_Gs_taus_jis(
+    N, xs, Gs, taus, xj_Gs_jis=None, xj_Gs_taus_jis=None
+):
     if xj_Gs_jis is None:
-        xj_Gs_jis = [0.0]*N
+        xj_Gs_jis = [0.0] * N
     if xj_Gs_taus_jis is None:
-        xj_Gs_taus_jis = [0.0]*N
+        xj_Gs_taus_jis = [0.0] * N
 
     for i in range(N):
         tot1 = 0.0
         tot2 = 0.0
         for j in range(N):
-            xjGji = xs[j]*Gs[j][i]
+            xjGji = xs[j] * Gs[j][i]
             tot1 += xjGji
-            tot2 += xjGji*taus[j][i]
+            tot2 += xjGji * taus[j][i]
         xj_Gs_jis[i] = tot1
         xj_Gs_taus_jis[i] = tot2
     return xj_Gs_jis, xj_Gs_taus_jis
 
+
 def nrtl_xj_Gs_jis(N, xs, Gs, xj_Gs_jis=None):
     if xj_Gs_jis is None:
-        xj_Gs_jis = [0.0]*N
+        xj_Gs_jis = [0.0] * N
 
     for i in range(N):
         tot1 = 0.0
         for j in range(N):
-            tot1 += xs[j]*Gs[j][i]
+            tot1 += xs[j] * Gs[j][i]
         xj_Gs_jis[i] = tot1
     return xj_Gs_jis
 
+
 def nrtl_xj_Gs_taus_jis(N, xs, Gs, taus, xj_Gs_taus_jis=None):
     if xj_Gs_taus_jis is None:
-        xj_Gs_taus_jis = [0.0]*N
+        xj_Gs_taus_jis = [0.0] * N
 
     for i in range(N):
         tot2 = 0.0
         for j in range(N):
-            tot2 += xs[j]*Gs[j][i]*taus[j][i]
+            tot2 += xs[j] * Gs[j][i] * taus[j][i]
         xj_Gs_taus_jis[i] = tot2
     return xj_Gs_taus_jis
+
 
 def nrtl_GE(N, T, xs, xj_Gs_taus_jis, xj_Gs_jis_inv):
     GE = 0.0
     for i in range(N):
-        GE += xs[i]*xj_Gs_taus_jis[i]*xj_Gs_jis_inv[i]
-    GE *= T*R
+        GE += xs[i] * xj_Gs_taus_jis[i] * xj_Gs_jis_inv[i]
+    GE *= T * R
     return GE
 
-def nrtl_dGE_dT(N, T, xs, xj_Gs_taus_jis, xj_Gs_jis_inv, xj_dGs_dT_jis, xj_taus_dGs_dT_jis, xj_Gs_dtaus_dT_jis):
+
+def nrtl_dGE_dT(
+    N,
+    T,
+    xs,
+    xj_Gs_taus_jis,
+    xj_Gs_jis_inv,
+    xj_dGs_dT_jis,
+    xj_taus_dGs_dT_jis,
+    xj_Gs_dtaus_dT_jis,
+):
     dGE_dT = 0.0
     for i in range(N):
-        dGE_dT += (xs[i]*(xj_Gs_taus_jis[i] + T*((xj_taus_dGs_dT_jis[i] + xj_Gs_dtaus_dT_jis[i])
-                - (xj_Gs_taus_jis[i]*xj_dGs_dT_jis[i])*xj_Gs_jis_inv[i]))*xj_Gs_jis_inv[i])
+        dGE_dT += (
+            xs[i]
+            * (
+                xj_Gs_taus_jis[i]
+                + T
+                * (
+                    (xj_taus_dGs_dT_jis[i] + xj_Gs_dtaus_dT_jis[i])
+                    - (xj_Gs_taus_jis[i] * xj_dGs_dT_jis[i]) * xj_Gs_jis_inv[i]
+                )
+            )
+            * xj_Gs_jis_inv[i]
+        )
     dGE_dT *= R
     return dGE_dT
 
-def nrtl_d2GE_dT2(N, T, xs, taus, dtaus_dT, d2taus_dT2, alphas, dalphas_dT, Gs, dGs_dT, d2Gs_dT2):
+
+def nrtl_d2GE_dT2(
+    N, T, xs, taus, dtaus_dT, d2taus_dT2, alphas, dalphas_dT, Gs, dGs_dT, d2Gs_dT2
+):
     tot = 0.0
     for i in range(N):
         sum1 = 0.0
@@ -335,87 +390,125 @@ def nrtl_d2GE_dT2(N, T, xs, taus, dtaus_dT, d2taus_dT2, alphas, dalphas_dT, Gs, 
             tauji = taus[j][i]
             dtaus_dTji = dtaus_dT[j][i]
 
-            Gjixj = Gs[j][i]*xs[j]
-            dGjidTxj = dGs_dT[j][i]*xs[j]
-            d2GjidT2xj = xs[j]*d2Gs_dT2[j][i]
+            Gjixj = Gs[j][i] * xs[j]
+            dGjidTxj = dGs_dT[j][i] * xs[j]
+            d2GjidT2xj = xs[j] * d2Gs_dT2[j][i]
 
             sum1 += Gjixj
-            sum2 += tauji*Gjixj
+            sum2 += tauji * Gjixj
             sum3 += dGjidTxj
 
-            sum4 += tauji*dGjidTxj
-            sum5 += dtaus_dTji*Gjixj
+            sum4 += tauji * dGjidTxj
+            sum5 += dtaus_dTji * Gjixj
 
             sum6 += d2GjidT2xj
 
-            sum7 += tauji*d2GjidT2xj
+            sum7 += tauji * d2GjidT2xj
 
-            sum8 += Gjixj*d2taus_dT2[j][i]
+            sum8 += Gjixj * d2taus_dT2[j][i]
 
-            sum9 += dGjidTxj*dtaus_dTji
+            sum9 += dGjidTxj * dtaus_dTji
 
-        term1 = -T*sum2*(sum6 - 2.0*sum3*sum3/sum1)/sum1
-        term2 = T*(sum7 + sum8 + 2.0*sum9)
-        term3 = -2.0*T*(sum3*(sum4 + sum5))/sum1
-        term4 = -2.0*(sum2*sum3)/sum1
-        term5 = 2*(sum4 + sum5)
+        term1 = -T * sum2 * (sum6 - 2.0 * sum3 * sum3 / sum1) / sum1
+        term2 = T * (sum7 + sum8 + 2.0 * sum9)
+        term3 = -2.0 * T * (sum3 * (sum4 + sum5)) / sum1
+        term4 = -2.0 * (sum2 * sum3) / sum1
+        term5 = 2 * (sum4 + sum5)
 
-        tot += xs[i]*(term1 + term2 + term3 + term4 + term5)/sum1
-    d2GE_dT2 = R*tot
+        tot += xs[i] * (term1 + term2 + term3 + term4 + term5) / sum1
+    d2GE_dT2 = R * tot
     return d2GE_dT2
+
 
 def nrtl_dGE_dxs(N, T, xs, taus, Gs, xj_Gs_taus_jis, xj_Gs_jis_inv, dGE_dxs=None):
     if dGE_dxs is None:
-        dGE_dxs = [0.0]*N
+        dGE_dxs = [0.0] * N
 
-    RT = R*T
+    RT = R * T
     for k in range(N):
         # k is what is being differentiated
-        tot = xj_Gs_taus_jis[k]*xj_Gs_jis_inv[k]
+        tot = xj_Gs_taus_jis[k] * xj_Gs_jis_inv[k]
         for i in range(N):
-            tot += xs[i]*xj_Gs_jis_inv[i]*Gs[k][i]*(taus[k][i] - xj_Gs_jis_inv[i]*xj_Gs_taus_jis[i])
-        dGE_dxs[k] = tot*RT
+            tot += (
+                xs[i]
+                * xj_Gs_jis_inv[i]
+                * Gs[k][i]
+                * (taus[k][i] - xj_Gs_jis_inv[i] * xj_Gs_taus_jis[i])
+            )
+        dGE_dxs[k] = tot * RT
     return dGE_dxs
 
-def nrtl_d2GE_dxixjs(N, T, xs, taus, alphas, Gs, xj_Gs_taus_jis, xj_Gs_jis_inv, d2GE_dxixjs=None):
-    if d2GE_dxixjs is None:
-        d2GE_dxixjs = [[0.0]*N for _ in range(N)] # numba: delete
-#        d2GE_dxixjs = zeros((N, N)) # numba: uncomment
 
-    RT = R*T
+def nrtl_d2GE_dxixjs(
+    N, T, xs, taus, alphas, Gs, xj_Gs_taus_jis, xj_Gs_jis_inv, d2GE_dxixjs=None
+):
+    if d2GE_dxixjs is None:
+        d2GE_dxixjs = [[0.0] * N for _ in range(N)]  # numba: delete
+    #        d2GE_dxixjs = zeros((N, N)) # numba: uncomment
+
+    RT = R * T
     for i in range(N):
         row = d2GE_dxixjs[i]
         for j in range(N):
             tot = 0.0
             # two small terms
-            tot += Gs[i][j]*taus[i][j]*xj_Gs_jis_inv[j]
-            tot += Gs[j][i]*taus[j][i]*xj_Gs_jis_inv[i]
+            tot += Gs[i][j] * taus[i][j] * xj_Gs_jis_inv[j]
+            tot += Gs[j][i] * taus[j][i] * xj_Gs_jis_inv[i]
 
             # Two large terms
-            tot -= xj_Gs_taus_jis[j]*Gs[i][j]*(xj_Gs_jis_inv[j]*xj_Gs_jis_inv[j])
-            tot -= xj_Gs_taus_jis[i]*Gs[j][i]*(xj_Gs_jis_inv[i]*xj_Gs_jis_inv[i])
+            tot -= xj_Gs_taus_jis[j] * Gs[i][j] * (xj_Gs_jis_inv[j] * xj_Gs_jis_inv[j])
+            tot -= xj_Gs_taus_jis[i] * Gs[j][i] * (xj_Gs_jis_inv[i] * xj_Gs_jis_inv[i])
 
             # Three terms
             for k in range(N):
-                tot += 2.0*xs[k]*xj_Gs_taus_jis[k]*Gs[i][k]*Gs[j][k]*(xj_Gs_jis_inv[k]*xj_Gs_jis_inv[k]*xj_Gs_jis_inv[k])
+                tot += (
+                    2.0
+                    * xs[k]
+                    * xj_Gs_taus_jis[k]
+                    * Gs[i][k]
+                    * Gs[j][k]
+                    * (xj_Gs_jis_inv[k] * xj_Gs_jis_inv[k] * xj_Gs_jis_inv[k])
+                )
 
             # 6 terms
             for k in range(N):
-                tot -= xs[k]*Gs[i][k]*Gs[j][k]*(taus[j][k] + taus[i][k])*xj_Gs_jis_inv[k]*xj_Gs_jis_inv[k]
+                tot -= (
+                    xs[k]
+                    * Gs[i][k]
+                    * Gs[j][k]
+                    * (taus[j][k] + taus[i][k])
+                    * xj_Gs_jis_inv[k]
+                    * xj_Gs_jis_inv[k]
+                )
 
             tot *= RT
             row[j] = tot
     return d2GE_dxixjs
 
-def nrtl_d2GE_dTdxs(N, T, xs, taus, dtaus_dT, Gs, dGs_dT, xj_Gs_taus_jis,
-                    xj_Gs_jis_inv, xj_dGs_dT_jis, xj_taus_dGs_dT_jis,
-                    xj_Gs_dtaus_dT_jis, d2GE_dTdxs=None, vec0=None, vec1=None):
+
+def nrtl_d2GE_dTdxs(
+    N,
+    T,
+    xs,
+    taus,
+    dtaus_dT,
+    Gs,
+    dGs_dT,
+    xj_Gs_taus_jis,
+    xj_Gs_jis_inv,
+    xj_dGs_dT_jis,
+    xj_taus_dGs_dT_jis,
+    xj_Gs_dtaus_dT_jis,
+    d2GE_dTdxs=None,
+    vec0=None,
+    vec1=None,
+):
     if d2GE_dTdxs is None:
-        d2GE_dTdxs = [0.0]*N
+        d2GE_dTdxs = [0.0] * N
     if vec0 is None:
-        vec0 = [0.0]*N
+        vec0 = [0.0] * N
     if vec1 is None:
-        vec1 = [0.0]*N
+        vec1 = [0.0] * N
 
     sum1 = xj_Gs_jis_inv
     sum2 = xj_Gs_taus_jis
@@ -424,30 +517,37 @@ def nrtl_d2GE_dTdxs(N, T, xs, taus, dtaus_dT, Gs, dGs_dT, xj_Gs_taus_jis,
     sum5 = xj_Gs_dtaus_dT_jis
 
     for i in range(N):
-        vec0[i] = xs[i]*sum1[i]
+        vec0[i] = xs[i] * sum1[i]
     for i in range(N):
-        vec1[i] = sum1[i]*sum2[i]
+        vec1[i] = sum1[i] * sum2[i]
 
     for i in range(N):
         others = vec1[i]
-        tot1 = sum1[i]*(sum3[i]*vec1[i] - (sum5[i] + sum4[i])) # Last singleton and second last singleton
+        tot1 = sum1[i] * (
+            sum3[i] * vec1[i] - (sum5[i] + sum4[i])
+        )  # Last singleton and second last singleton
 
         Gsi = Gs[i]
         tausi = taus[i]
         for j in range(N):
-            t0 = vec1[j]*dGs_dT[i][j]
-            t0 += sum1[j]*Gsi[j]*(sum3[j]*(tausi[j] - vec1[j] - vec1[j]) + sum5[j] + sum4[j]) # Could store and factor this stuff out but just makes it slower
-            t0 -= (Gsi[j]*dtaus_dT[i][j] + tausi[j]*dGs_dT[i][j])
+            t0 = vec1[j] * dGs_dT[i][j]
+            t0 += (
+                sum1[j]
+                * Gsi[j]
+                * (sum3[j] * (tausi[j] - vec1[j] - vec1[j]) + sum5[j] + sum4[j])
+            )  # Could store and factor this stuff out but just makes it slower
+            t0 -= Gsi[j] * dtaus_dT[i][j] + tausi[j] * dGs_dT[i][j]
 
-            tot1 += t0*vec0[j]
+            tot1 += t0 * vec0[j]
 
-            others += vec0[j]*Gsi[j]*(tausi[j] - vec1[j])
+            others += vec0[j] * Gsi[j] * (tausi[j] - vec1[j])
 
-        d2GE_dTdxs[i] = -R*(T*tot1 - others)
+        d2GE_dTdxs[i] = -R * (T * tot1 - others)
     return d2GE_dTdxs
 
+
 class NRTL(GibbsExcess):
-    r'''Class for representing an a liquid with excess gibbs energy represented
+    r"""Class for representing an a liquid with excess gibbs energy represented
     by the NRTL equation. This model is capable of representing VL and LL
     behavior. [1]_ and [2]_ are good references on this model.
 
@@ -545,28 +645,61 @@ class NRTL(GibbsExcess):
        Professional, 2000.
     .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
-    '''
-    
-    _model_attributes = ('tau_as', 'tau_bs', 'tau_es', 'tau_fs',
-                         'tau_gs', 'tau_hs', 'alpha_cs', 'alpha_ds')
+    """
+
+    _model_attributes = (
+        "tau_as",
+        "tau_bs",
+        "tau_es",
+        "tau_fs",
+        "tau_gs",
+        "tau_hs",
+        "alpha_cs",
+        "alpha_ds",
+    )
     model_id = 100
-    
-    def __init__(self, T, xs, tau_coeffs=None, alpha_coeffs=None,
-                 ABEFGHCD=None, tau_as=None, tau_bs=None, tau_es=None,
-                 tau_fs=None, tau_gs=None, tau_hs=None, alpha_cs=None, 
-                 alpha_ds=None):
+
+    def __init__(
+        self,
+        T,
+        xs,
+        tau_coeffs=None,
+        alpha_coeffs=None,
+        ABEFGHCD=None,
+        tau_as=None,
+        tau_bs=None,
+        tau_es=None,
+        tau_fs=None,
+        tau_gs=None,
+        tau_hs=None,
+        alpha_cs=None,
+        alpha_ds=None,
+    ):
         self.T = T
         self.xs = xs
         self.scalar = scalar = type(xs) is list
         self.N = N = len(xs)
-        
-        multiple_inputs = (tau_as, tau_bs, tau_es, tau_fs, tau_gs, tau_hs, 
-                        alpha_cs, alpha_ds)
-        
-        input_count = ((tau_coeffs is not None or alpha_coeffs is not None) 
-                       + (ABEFGHCD is not None) + (any(i is not None for i in multiple_inputs)))
+
+        multiple_inputs = (
+            tau_as,
+            tau_bs,
+            tau_es,
+            tau_fs,
+            tau_gs,
+            tau_hs,
+            alpha_cs,
+            alpha_ds,
+        )
+
+        input_count = (
+            (tau_coeffs is not None or alpha_coeffs is not None)
+            + (ABEFGHCD is not None)
+            + (any(i is not None for i in multiple_inputs))
+        )
         if input_count > 1:
-            raise ValueError("Input only one of (tau_coeffs, alpha_coeffs), ABEFGHCD, or (tau_as...alpha_ds)")
+            raise ValueError(
+                "Input only one of (tau_coeffs, alpha_coeffs), ABEFGHCD, or (tau_as...alpha_ds)"
+            )
 
         if ABEFGHCD is None:
             ABEFGHCD = multiple_inputs
@@ -575,12 +708,22 @@ class NRTL(GibbsExcess):
             pass
         else:
             try:
-                all_lengths = tuple(len(coeffs) for coeffs in ABEFGHCD if coeffs is not None)
+                all_lengths = tuple(
+                    len(coeffs) for coeffs in ABEFGHCD if coeffs is not None
+                )
                 if len(set(all_lengths)) > 1:
-                    raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths,))
-                all_lengths_inner = tuple(len(coeffs[0]) for coeffs in ABEFGHCD if coeffs is not None)
+                    raise ValueError(
+                        "Coefficient arrays of different size found: %s"
+                        % (all_lengths,)
+                    )
+                all_lengths_inner = tuple(
+                    len(coeffs[0]) for coeffs in ABEFGHCD if coeffs is not None
+                )
                 if len(set(all_lengths_inner)) > 1:
-                    raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths_inner,))
+                    raise ValueError(
+                        "Coefficient arrays of different size found: %s"
+                        % (all_lengths_inner,)
+                    )
             except:
                 raise ValueError("Coefficients not input correctly")
 
@@ -593,45 +736,45 @@ class NRTL(GibbsExcess):
                 self.tau_gs = [[i[4] for i in l] for l in tau_coeffs]
                 self.tau_hs = [[i[5] for i in l] for l in tau_coeffs]
             else:
-                self.tau_as = array(tau_coeffs[:,:,0], order='C', copy=True)
-                self.tau_bs = array(tau_coeffs[:,:,1], order='C', copy=True)
-                self.tau_es = array(tau_coeffs[:,:,2], order='C', copy=True)
-                self.tau_fs = array(tau_coeffs[:,:,3], order='C', copy=True)
-                self.tau_gs = array(tau_coeffs[:,:,4], order='C', copy=True)
-                self.tau_hs = array(tau_coeffs[:,:,5], order='C', copy=True)
+                self.tau_as = array(tau_coeffs[:, :, 0], order="C", copy=True)
+                self.tau_bs = array(tau_coeffs[:, :, 1], order="C", copy=True)
+                self.tau_es = array(tau_coeffs[:, :, 2], order="C", copy=True)
+                self.tau_fs = array(tau_coeffs[:, :, 3], order="C", copy=True)
+                self.tau_gs = array(tau_coeffs[:, :, 4], order="C", copy=True)
+                self.tau_hs = array(tau_coeffs[:, :, 5], order="C", copy=True)
             if scalar:
                 self.alpha_cs = [[i[0] for i in l] for l in alpha_coeffs]
                 self.alpha_ds = [[i[1] for i in l] for l in alpha_coeffs]
             else:
-                self.alpha_cs = array(alpha_coeffs[:,:,0], order='C', copy=True)
-                self.alpha_ds = array(alpha_coeffs[:,:,1], order='C', copy=True)
+                self.alpha_cs = array(alpha_coeffs[:, :, 0], order="C", copy=True)
+                self.alpha_ds = array(alpha_coeffs[:, :, 1], order="C", copy=True)
 
         else:
             if ABEFGHCD[0] is None:
                 self.tau_as = self.zero_coeffs
             else:
                 self.tau_as = ABEFGHCD[0]
-                
+
             if ABEFGHCD[1] is None:
                 self.tau_bs = self.zero_coeffs
             else:
                 self.tau_bs = ABEFGHCD[1]
-                
+
             if ABEFGHCD[2] is None:
                 self.tau_es = self.zero_coeffs
             else:
                 self.tau_es = ABEFGHCD[2]
-                
+
             if ABEFGHCD[3] is None:
                 self.tau_fs = self.zero_coeffs
             else:
                 self.tau_fs = ABEFGHCD[3]
-                
+
             if ABEFGHCD[4] is None:
                 self.tau_gs = self.zero_coeffs
             else:
                 self.tau_gs = ABEFGHCD[4]
-                
+
             if ABEFGHCD[5] is None:
                 self.tau_hs = self.zero_coeffs
             else:
@@ -650,9 +793,19 @@ class NRTL(GibbsExcess):
         # Make an array of values identifying what coefficients are zero.
         # This may be useful for performance optimization in the future but is
         # especially important for reducing the size of the __repr__ string.
-        self.tau_coeffs_nonzero = tau_coeffs_nonzero = [True]*6 if scalar else ones(6, bool)
-        for k, coeffs in enumerate([self.tau_as, self.tau_bs, self.tau_es,
-                           self.tau_fs, self.tau_gs, self.tau_hs]):
+        self.tau_coeffs_nonzero = tau_coeffs_nonzero = (
+            [True] * 6 if scalar else ones(6, bool)
+        )
+        for k, coeffs in enumerate(
+            [
+                self.tau_as,
+                self.tau_bs,
+                self.tau_es,
+                self.tau_fs,
+                self.tau_gs,
+                self.tau_hs,
+            ]
+        ):
             nonzero = False
             for i in range(N):
                 r = coeffs[i]
@@ -664,7 +817,6 @@ class NRTL(GibbsExcess):
                     break
             tau_coeffs_nonzero[k] = nonzero
 
-
         alpha_ds = self.alpha_ds
         alpha_temperature_independent = True
         for i in range(N):
@@ -674,36 +826,33 @@ class NRTL(GibbsExcess):
                     alpha_temperature_independent = False
         self.alpha_temperature_independent = alpha_temperature_independent
 
-
     @property
     def zero_coeffs(self):
-        '''Method to return a 2D list-of-lists of zeros.
-        '''
+        """Method to return a 2D list-of-lists of zeros."""
         try:
             return self._zero_coeffs
         except AttributeError:
             pass
         N = self.N
         if self.scalar:
-            self._zero_coeffs = [[0.0]*N for _ in range(N)]
+            self._zero_coeffs = [[0.0] * N for _ in range(N)]
         else:
             self._zero_coeffs = zeros((N, N))
         return self._zero_coeffs
 
     def __repr__(self):
-        s = '%s(T=%s, xs=%s' %(self.__class__.__name__, repr(self.T), repr(self.xs))
+        s = "%s(T=%s, xs=%s" % (self.__class__.__name__, repr(self.T), repr(self.xs))
         for i, attr in enumerate(self._model_attributes[:6]):
             if self.tau_coeffs_nonzero[i]:
-                s += ', %s=%s' %(attr, getattr(self, attr))
-        s += ', alpha_cs=%s' %(self.alpha_cs)        
+                s += ", %s=%s" % (attr, getattr(self, attr))
+        s += ", alpha_cs=%s" % (self.alpha_cs)
         if not self.alpha_temperature_independent:
-            s += ', alpha_ds=%s' %(self.alpha_ds)
-        s += ')'
+            s += ", alpha_ds=%s" % (self.alpha_ds)
+        s += ")"
         return s
 
-
     def to_T_xs(self, T, xs):
-        r'''Method to construct a new :obj:`NRTL` instance at
+        r"""Method to construct a new :obj:`NRTL` instance at
         temperature `T`, and mole fractions `xs`
         with the same parameters as the existing object.
 
@@ -724,15 +873,32 @@ class NRTL(GibbsExcess):
         If the new temperature is the same temperature as the existing
         temperature, if the `tau`, `Gs`, or `alphas` terms or their derivatives
         have been calculated, they will be set to the new object as well.
-        '''
+        """
         new = self.__class__.__new__(self.__class__)
         (new.T, new.xs, new.N, new.scalar) = T, xs, self.N, self.scalar
-        (new.tau_as, new.tau_bs, new.tau_es,
-         new.tau_fs, new.tau_gs, new.tau_hs,
-         new.alpha_cs, new.alpha_ds, new.tau_coeffs_nonzero, 
-         new.alpha_temperature_independent) = (self.tau_as, self.tau_bs, self.tau_es,
-                         self.tau_fs, self.tau_gs, self.tau_hs,
-                         self.alpha_cs, self.alpha_ds, self.tau_coeffs_nonzero, self.alpha_temperature_independent)
+        (
+            new.tau_as,
+            new.tau_bs,
+            new.tau_es,
+            new.tau_fs,
+            new.tau_gs,
+            new.tau_hs,
+            new.alpha_cs,
+            new.alpha_ds,
+            new.tau_coeffs_nonzero,
+            new.alpha_temperature_independent,
+        ) = (
+            self.tau_as,
+            self.tau_bs,
+            self.tau_es,
+            self.tau_fs,
+            self.tau_gs,
+            self.tau_hs,
+            self.alpha_cs,
+            self.alpha_ds,
+            self.tau_coeffs_nonzero,
+            self.alpha_temperature_independent,
+        )
 
         if T == self.T:
             try:
@@ -798,16 +964,17 @@ class NRTL(GibbsExcess):
         xj_Gs_jis_inv, xj_Gs_taus_jis = self.xj_Gs_jis_inv(), self.xj_Gs_taus_jis()
 
         if self.scalar:
-            gammas = [0.0]*self.N
+            gammas = [0.0] * self.N
         else:
             gammas = zeros(self.N)
 
-        self._gammas = nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas)
+        self._gammas = nrtl_gammas(
+            xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas
+        )
         return gammas
 
-
     def taus(self):
-        r'''Calculate and return the `tau` terms for the NRTL model for a
+        r"""Calculate and return the `tau` terms for the NRTL model for a
         specified temperature.
 
         .. math::
@@ -822,7 +989,7 @@ class NRTL(GibbsExcess):
         Notes
         -----
         These `tau ij` values (and the coefficients) are NOT symmetric.
-        '''
+        """
         try:
             return self._taus
         except AttributeError:
@@ -835,7 +1002,7 @@ class NRTL(GibbsExcess):
         H = self.tau_hs
         T, N = self.T, self.N
         if self.scalar:
-            taus = [[0.0]*N for _ in range(N)]
+            taus = [[0.0] * N for _ in range(N)]
         else:
             taus = zeros((N, N))
 
@@ -843,7 +1010,7 @@ class NRTL(GibbsExcess):
         return taus
 
     def dtaus_dT(self):
-        r'''Calculate and return the temperature derivative of the `tau` terms
+        r"""Calculate and return the temperature derivative of the `tau` terms
         for the NRTL model for a specified temperature.
 
         .. math::
@@ -858,7 +1025,7 @@ class NRTL(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._dtaus_dT
         except AttributeError:
@@ -871,7 +1038,7 @@ class NRTL(GibbsExcess):
         H = self.tau_hs
         T, N = self.T, self.N
         if self.scalar:
-            dtaus_dT = [[0.0]*N for _ in range(N)]
+            dtaus_dT = [[0.0] * N for _ in range(N)]
         else:
             dtaus_dT = zeros((N, N))
         self._dtaus_dT = nrtl_dtaus_dT(T, N, B, E, F, G, H, dtaus_dT)
@@ -879,7 +1046,7 @@ class NRTL(GibbsExcess):
         return dtaus_dT
 
     def d2taus_dT2(self):
-        r'''Calculate and return the second temperature derivative of the `tau` terms for
+        r"""Calculate and return the second temperature derivative of the `tau` terms for
         the NRTL model for a specified temperature.
 
         .. math::
@@ -894,7 +1061,7 @@ class NRTL(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._d2taus_dT2
         except AttributeError:
@@ -906,7 +1073,7 @@ class NRTL(GibbsExcess):
         T, N = self.T, self.N
 
         if self.scalar:
-            d2taus_dT2 = [[0.0]*N for _ in range(N)]
+            d2taus_dT2 = [[0.0] * N for _ in range(N)]
         else:
             d2taus_dT2 = zeros((N, N))
 
@@ -914,7 +1081,7 @@ class NRTL(GibbsExcess):
         return d2taus_dT2
 
     def d3taus_dT3(self):
-        r'''Calculate and return the third temperature derivative of the `tau`
+        r"""Calculate and return the third temperature derivative of the `tau`
         terms for the NRTL model for a specified temperature.
 
         .. math::
@@ -929,7 +1096,7 @@ class NRTL(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._d3taus_dT3
         except AttributeError:
@@ -939,14 +1106,14 @@ class NRTL(GibbsExcess):
         G = self.tau_gs
         T, N = self.T, self.N
         if self.scalar:
-            d3taus_dT3 = [[0.0]*N for _ in range(N)]
+            d3taus_dT3 = [[0.0] * N for _ in range(N)]
         else:
             d3taus_dT3 = zeros((N, N))
         self._d3taus_dT3 = nrtl_d3taus_dT3(T, N, B, E, G, d3taus_dT3)
         return d3taus_dT3
 
     def alphas(self):
-        r'''Calculates and return the `alpha` terms in the NRTL model for a
+        r"""Calculates and return the `alpha` terms in the NRTL model for a
         specified temperature.
 
         .. math::
@@ -973,38 +1140,38 @@ class NRTL(GibbsExcess):
         0.47 Strongly self associative systems, interacting with non-polar substances
 
         `alpha_coeffs` should be a list[list[cij, dij]] so a 3d array
-        '''
+        """
         try:
             return self._alphas
         except AttributeError:
             pass
         N = self.N
-        
+
         if self.alpha_temperature_independent:
             self._alphas = alphas = self.alpha_cs
         else:
             if self.scalar:
-                alphas = [[0.0]*N for _ in range(N)]
+                alphas = [[0.0] * N for _ in range(N)]
             else:
                 alphas = zeros((N, N))
-    
+
             self._alphas = nrtl_alphas(self.T, N, self.alpha_cs, self.alpha_ds, alphas)
         return alphas
 
     def dalphas_dT(self):
-        '''Keep it as a function in case this needs to become more complicated.'''
+        """Keep it as a function in case this needs to become more complicated."""
         return self.alpha_ds
 
     def d2alphas_dT2(self):
-        '''Keep it as a function in case this needs to become more complicated.'''
+        """Keep it as a function in case this needs to become more complicated."""
         return self.zero_coeffs
 
     def d3alphas_dT3(self):
-        '''Keep it as a function in case this needs to become more complicated.'''
+        """Keep it as a function in case this needs to become more complicated."""
         return self.zero_coeffs
 
     def Gs(self):
-        r'''Calculates and return the `G` terms in the NRTL model for a
+        r"""Calculates and return the `G` terms in the NRTL model for a
         specified temperature.
 
         .. math::
@@ -1017,7 +1184,7 @@ class NRTL(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._Gs
         except AttributeError:
@@ -1027,7 +1194,7 @@ class NRTL(GibbsExcess):
         N = self.N
 
         if self.scalar:
-            Gs = [[0.0]*N for _ in range(N)]
+            Gs = [[0.0] * N for _ in range(N)]
         else:
             Gs = zeros((N, N))
 
@@ -1035,7 +1202,7 @@ class NRTL(GibbsExcess):
         return Gs
 
     def dGs_dT(self):
-        r'''Calculates and return the first temperature derivative of `G` terms
+        r"""Calculates and return the first temperature derivative of `G` terms
         in the NRTL model for a specified temperature.
 
         .. math::
@@ -1056,7 +1223,7 @@ class NRTL(GibbsExcess):
         >>> T = symbols('T') # doctest:+SKIP
         >>> alpha, tau = symbols('alpha, tau', cls=Function) # doctest:+SKIP
         >>> diff(exp(-alpha(T)*tau(T)), T) # doctest:+SKIP
-        '''
+        """
         try:
             return self._dGs_dT
         except AttributeError:
@@ -1069,7 +1236,7 @@ class NRTL(GibbsExcess):
         N = self.N
 
         if self.scalar:
-            dGs_dT = [[0.0]*N for _ in range(N)]
+            dGs_dT = [[0.0] * N for _ in range(N)]
         else:
             dGs_dT = zeros((N, N))
 
@@ -1077,7 +1244,7 @@ class NRTL(GibbsExcess):
         return dGs_dT
 
     def d2Gs_dT2(self):
-        r'''Calculates and return the second temperature derivative of `G` terms
+        r"""Calculates and return the second temperature derivative of `G` terms
         in the NRTL model for a specified temperature.
 
         .. math::
@@ -1103,7 +1270,7 @@ class NRTL(GibbsExcess):
         >>> T = symbols('T') # doctest:+SKIP
         >>> alpha, tau = symbols('alpha, tau', cls=Function) # doctest:+SKIP
         >>> diff(exp(-alpha(T)*tau(T)), T, 2) # doctest:+SKIP
-        '''
+        """
         try:
             return self._d2Gs_dT2
         except AttributeError:
@@ -1117,15 +1284,17 @@ class NRTL(GibbsExcess):
         N = self.N
 
         if self.scalar:
-            d2Gs_dT2 = [[0.0]*N for _ in range(N)]
+            d2Gs_dT2 = [[0.0] * N for _ in range(N)]
         else:
             d2Gs_dT2 = zeros((N, N))
 
-        self._d2Gs_dT2 = nrtl_d2Gs_dT2(N, alphas, dalphas_dT, taus, dtaus_dT, d2taus_dT2, Gs, d2Gs_dT2)
+        self._d2Gs_dT2 = nrtl_d2Gs_dT2(
+            N, alphas, dalphas_dT, taus, dtaus_dT, d2taus_dT2, Gs, d2Gs_dT2
+        )
         return d2Gs_dT2
 
     def d3Gs_dT3(self):
-        r'''Calculates and return the third temperature derivative of `G` terms
+        r"""Calculates and return the third temperature derivative of `G` terms
         in the NRTL model for a specified temperature.
 
         .. math::
@@ -1154,7 +1323,7 @@ class NRTL(GibbsExcess):
         >>> T = symbols('T') # doctest:+SKIP
         >>> alpha, tau = symbols('alpha, tau', cls=Function) # doctest:+SKIP
         >>> diff(exp(-alpha(T)*tau(T)), T, 3) # doctest:+SKIP
-        '''
+        """
         try:
             return self._d3Gs_dT3
         except AttributeError:
@@ -1169,14 +1338,14 @@ class NRTL(GibbsExcess):
         Gs = self.Gs()
 
         if self.scalar:
-            d3Gs_dT3 = [[0.0]*N for _ in range(N)]
+            d3Gs_dT3 = [[0.0] * N for _ in range(N)]
         else:
             d3Gs_dT3 = zeros((N, N))
 
-        self._d3Gs_dT3 = nrtl_d3Gs_dT3(N, alphas, dalphas_dT, taus, dtaus_dT, d2taus_dT2, d3taus_dT3, Gs, d3Gs_dT3)
+        self._d3Gs_dT3 = nrtl_d3Gs_dT3(
+            N, alphas, dalphas_dT, taus, dtaus_dT, d2taus_dT2, d3taus_dT3, Gs, d3Gs_dT3
+        )
         return d3Gs_dT3
-
-
 
     def xj_Gs_jis(self):
         # sum1
@@ -1195,8 +1364,8 @@ class NRTL(GibbsExcess):
 
         xs, N = self.xs, self.N
         if self.scalar:
-            _xj_Gs_jis = [0.0]*N
-            _xj_Gs_taus_jis = [0.0]*N
+            _xj_Gs_jis = [0.0] * N
+            _xj_Gs_taus_jis = [0.0] * N
         else:
             _xj_Gs_jis = zeros(N)
             _xj_Gs_taus_jis = zeros(N)
@@ -1218,9 +1387,9 @@ class NRTL(GibbsExcess):
             xj_Gs_jis = self.xj_Gs_jis()
 
         if self.scalar:
-            self._xj_Gs_jis_inv = [1.0/i for i in xj_Gs_jis]
+            self._xj_Gs_jis_inv = [1.0 / i for i in xj_Gs_jis]
         else:
-            self._xj_Gs_jis_inv = 1.0/xj_Gs_jis
+            self._xj_Gs_jis_inv = 1.0 / xj_Gs_jis
         return self._xj_Gs_jis_inv
 
     def xj_Gs_taus_jis(self):
@@ -1243,12 +1412,11 @@ class NRTL(GibbsExcess):
 
         xs, N = self.xs, self.N
         if self.scalar:
-            xj_Gs_taus_jis = [0.0]*N
+            xj_Gs_taus_jis = [0.0] * N
         else:
             xj_Gs_taus_jis = zeros(N)
         self._xj_Gs_taus_jis = nrtl_xj_Gs_taus_jis(N, xs, Gs, taus, xj_Gs_taus_jis)
         return xj_Gs_taus_jis
-
 
     def xj_dGs_dT_jis(self):
         # sum3
@@ -1263,7 +1431,7 @@ class NRTL(GibbsExcess):
 
         xs, N = self.xs, self.N
         if self.scalar:
-            xj_dGs_dT_jis = [0.0]*N
+            xj_dGs_dT_jis = [0.0] * N
         else:
             xj_dGs_dT_jis = zeros(N)
         self._xj_dGs_dT_jis = nrtl_xj_Gs_jis(N, xs, dGs_dT, xj_dGs_dT_jis)
@@ -1286,10 +1454,12 @@ class NRTL(GibbsExcess):
             taus = self.taus()
 
         if self.scalar:
-            xj_taus_dGs_dT_jis = [0.0]*N
+            xj_taus_dGs_dT_jis = [0.0] * N
         else:
             xj_taus_dGs_dT_jis = zeros(N)
-        self._xj_taus_dGs_dT_jis = nrtl_xj_Gs_taus_jis(N, xs, dGs_dT, taus, xj_taus_dGs_dT_jis)
+        self._xj_taus_dGs_dT_jis = nrtl_xj_Gs_taus_jis(
+            N, xs, dGs_dT, taus, xj_taus_dGs_dT_jis
+        )
 
         return xj_taus_dGs_dT_jis
 
@@ -1310,14 +1480,16 @@ class NRTL(GibbsExcess):
             Gs = self.Gs()
 
         if self.scalar:
-            xj_Gs_dtaus_dT_jis = [0.0]*N
+            xj_Gs_dtaus_dT_jis = [0.0] * N
         else:
             xj_Gs_dtaus_dT_jis = zeros(N)
-        self._xj_Gs_dtaus_dT_jis = nrtl_xj_Gs_taus_jis(N, xs, Gs, dtaus_dT, xj_Gs_dtaus_dT_jis)
+        self._xj_Gs_dtaus_dT_jis = nrtl_xj_Gs_taus_jis(
+            N, xs, Gs, dtaus_dT, xj_Gs_dtaus_dT_jis
+        )
         return xj_Gs_dtaus_dT_jis
 
     def GE(self):
-        r'''Calculate and return the excess Gibbs energy of a liquid phase
+        r"""Calculate and return the excess Gibbs energy of a liquid phase
         represented by the NRTL model.
 
         .. math::
@@ -1331,7 +1503,7 @@ class NRTL(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._GE
         except AttributeError:
@@ -1344,7 +1516,7 @@ class NRTL(GibbsExcess):
         return GE
 
     def dGE_dT(self):
-        r'''Calculate and return the first tempreature derivative of excess
+        r"""Calculate and return the first tempreature derivative of excess
         Gibbs energy of a liquid phase represented by the NRTL model.
 
         Returns
@@ -1354,33 +1526,41 @@ class NRTL(GibbsExcess):
 
         Notes
         -----
-        '''
-        '''from sympy import *
+        """
+        """from sympy import *
         R, T, x = symbols('R, T, x')
         g, tau = symbols('g, tau', cls=Function)
         m, n, o = symbols('m, n, o', cls=Function)
         r, s, t = symbols('r, s, t', cls=Function)
         u, v, w = symbols('u, v, w', cls=Function)
         diff(T* (m(T)*n(T) + r(T)*s(T) + u(T)*v(T))/(o(T) + t(T) + w(T)), T)
-        '''
+        """
         try:
             return self._dGE_dT
         except AttributeError:
             pass
         T, xs, N = self.T, self.xs, self.N
 
-        xj_Gs_jis_inv = self.xj_Gs_jis_inv() # sum1 inv
-        xj_Gs_taus_jis = self.xj_Gs_taus_jis() # sum2
-        xj_dGs_dT_jis = self.xj_dGs_dT_jis() # sum3
-        xj_taus_dGs_dT_jis = self.xj_taus_dGs_dT_jis() # sum4
-        xj_Gs_dtaus_dT_jis = self.xj_Gs_dtaus_dT_jis() # sum5
+        xj_Gs_jis_inv = self.xj_Gs_jis_inv()  # sum1 inv
+        xj_Gs_taus_jis = self.xj_Gs_taus_jis()  # sum2
+        xj_dGs_dT_jis = self.xj_dGs_dT_jis()  # sum3
+        xj_taus_dGs_dT_jis = self.xj_taus_dGs_dT_jis()  # sum4
+        xj_Gs_dtaus_dT_jis = self.xj_Gs_dtaus_dT_jis()  # sum5
 
-        self._dGE_dT = nrtl_dGE_dT(N, T, xs, xj_Gs_taus_jis, xj_Gs_jis_inv, xj_dGs_dT_jis, xj_taus_dGs_dT_jis, xj_Gs_dtaus_dT_jis)
+        self._dGE_dT = nrtl_dGE_dT(
+            N,
+            T,
+            xs,
+            xj_Gs_taus_jis,
+            xj_Gs_jis_inv,
+            xj_dGs_dT_jis,
+            xj_taus_dGs_dT_jis,
+            xj_Gs_dtaus_dT_jis,
+        )
         return self._dGE_dT
 
-
     def d2GE_dT2(self):
-        r'''Calculate and return the second tempreature derivative of excess
+        r"""Calculate and return the second tempreature derivative of excess
         Gibbs energy of a liquid phase represented by the NRTL model.
 
         Returns
@@ -1390,8 +1570,8 @@ class NRTL(GibbsExcess):
 
         Notes
         -----
-        '''
-        '''from sympy import *
+        """
+        """from sympy import *
         R, T, x = symbols('R, T, x')
         g, tau = symbols('g, tau', cls=Function)
         m, n, o = symbols('m, n, o', cls=Function)
@@ -1399,7 +1579,7 @@ class NRTL(GibbsExcess):
         u, v, w = symbols('u, v, w', cls=Function)
 
         (diff(T*(m(T)*n(T) + r(T)*s(T))/(o(T) + t(T)), T, 2))
-        '''
+        """
         try:
             return self._d2GE_dT2
         except AttributeError:
@@ -1416,11 +1596,23 @@ class NRTL(GibbsExcess):
         dGs_dT = self.dGs_dT()
         d2Gs_dT2 = self.d2Gs_dT2()
 
-        self._d2GE_dT2 = d2GE_dT2 = nrtl_d2GE_dT2(N, T, xs, taus, dtaus_dT, d2taus_dT2, alphas, dalphas_dT, Gs, dGs_dT, d2Gs_dT2)
+        self._d2GE_dT2 = d2GE_dT2 = nrtl_d2GE_dT2(
+            N,
+            T,
+            xs,
+            taus,
+            dtaus_dT,
+            d2taus_dT2,
+            alphas,
+            dalphas_dT,
+            Gs,
+            dGs_dT,
+            d2Gs_dT2,
+        )
         return d2GE_dT2
 
     def dGE_dxs(self):
-        r'''Calculate and return the mole fraction derivatives of excess Gibbs
+        r"""Calculate and return the mole fraction derivatives of excess Gibbs
         energy of a liquid represented by the NRTL model.
 
         .. math::
@@ -1433,8 +1625,8 @@ class NRTL(GibbsExcess):
 
         Notes
         -----
-        '''
-        '''
+        """
+        """
         from sympy import *
         N = 3
         R, T = symbols('R, T')
@@ -1463,7 +1655,7 @@ class NRTL(GibbsExcess):
             ge += xs[i]*num/den
         ge = ge#*R*T
         diff(ge, x1), diff(ge, x2)
-        '''
+        """
         try:
             return self._dGE_dxs
         except AttributeError:
@@ -1474,15 +1666,17 @@ class NRTL(GibbsExcess):
         xj_Gs_jis_inv = self.xj_Gs_jis_inv()
         xj_Gs_taus_jis = self.xj_Gs_taus_jis()
         if self.scalar:
-            dGE_dxs = [0.0]*N
+            dGE_dxs = [0.0] * N
         else:
             dGE_dxs = zeros(N)
 
-        self._dGE_dxs = nrtl_dGE_dxs(N, T, xs, taus, Gs, xj_Gs_taus_jis, xj_Gs_jis_inv, dGE_dxs)
+        self._dGE_dxs = nrtl_dGE_dxs(
+            N, T, xs, taus, Gs, xj_Gs_taus_jis, xj_Gs_jis_inv, dGE_dxs
+        )
         return dGE_dxs
 
     def d2GE_dxixjs(self):
-        r'''Calculate and return the second mole fraction derivatives of excess
+        r"""Calculate and return the second mole fraction derivatives of excess
         Gibbs energy of a liquid represented by the NRTL model.
 
         .. math::
@@ -1503,8 +1697,8 @@ class NRTL(GibbsExcess):
 
         Notes
         -----
-        '''
-        '''
+        """
+        """
         from sympy import *
         N = 3
         R, T = symbols('R, T')
@@ -1544,7 +1738,7 @@ class NRTL(GibbsExcess):
         ge = ge#R*T
 
         diff(ge, x0, x1)
-        '''
+        """
         try:
             return self._d2GE_dxixjs
         except AttributeError:
@@ -1556,16 +1750,17 @@ class NRTL(GibbsExcess):
         xj_Gs_jis_inv = self.xj_Gs_jis_inv()
         xj_Gs_taus_jis = self.xj_Gs_taus_jis()
         if self.scalar:
-            d2GE_dxixjs = [[0.0]*N for _ in range(N)]
+            d2GE_dxixjs = [[0.0] * N for _ in range(N)]
         else:
             d2GE_dxixjs = zeros((N, N))
 
-        self._d2GE_dxixjs = nrtl_d2GE_dxixjs(N, T, xs, taus, alphas, Gs, xj_Gs_taus_jis, xj_Gs_jis_inv, d2GE_dxixjs)
+        self._d2GE_dxixjs = nrtl_d2GE_dxixjs(
+            N, T, xs, taus, alphas, Gs, xj_Gs_taus_jis, xj_Gs_jis_inv, d2GE_dxixjs
+        )
         return d2GE_dxixjs
 
-
     def d2GE_dTdxs(self):
-        r'''Calculate and return the temperature derivative of mole fraction
+        r"""Calculate and return the temperature derivative of mole fraction
         derivatives of excess Gibbs energy of a liquid represented by the NRTL
         model.
 
@@ -1594,7 +1789,7 @@ class NRTL(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._d2GE_dTdxs
         except AttributeError:
@@ -1606,7 +1801,6 @@ class NRTL(GibbsExcess):
         xj_taus_dGs_dT_jis = self.xj_taus_dGs_dT_jis()
         xj_Gs_dtaus_dT_jis = self.xj_Gs_dtaus_dT_jis()
 
-
         T, xs, N = self.T, self.xs, self.N
         taus = self.taus()
         dtaus_dT = self.dtaus_dT()
@@ -1614,47 +1808,71 @@ class NRTL(GibbsExcess):
         Gs = self.Gs()
         dGs_dT = self.dGs_dT()
         if self.scalar:
-            d2GE_dTdxs = [0.0]*N
+            d2GE_dTdxs = [0.0] * N
         else:
             d2GE_dTdxs = zeros(N)
 
-        self._d2GE_dTdxs = nrtl_d2GE_dTdxs(N, T, xs, taus, dtaus_dT, Gs, dGs_dT, xj_Gs_taus_jis,
-                    xj_Gs_jis_inv, xj_dGs_dT_jis, xj_taus_dGs_dT_jis,
-                    xj_Gs_dtaus_dT_jis, d2GE_dTdxs)
+        self._d2GE_dTdxs = nrtl_d2GE_dTdxs(
+            N,
+            T,
+            xs,
+            taus,
+            dtaus_dT,
+            Gs,
+            dGs_dT,
+            xj_Gs_taus_jis,
+            xj_Gs_jis_inv,
+            xj_dGs_dT_jis,
+            xj_taus_dGs_dT_jis,
+            xj_Gs_dtaus_dT_jis,
+            d2GE_dTdxs,
+        )
         return d2GE_dTdxs
 
-
     @classmethod
-    def regress_binary_parameters(cls, gammas, xs, symmetric_alphas=False,
-                                  use_numba=False,
-                                  do_statistics=True, **kwargs):
+    def regress_binary_parameters(
+        cls,
+        gammas,
+        xs,
+        symmetric_alphas=False,
+        use_numba=False,
+        do_statistics=True,
+        **kwargs
+    ):
         # Load the functions either locally or with numba
         if use_numba:
-            from thermo.numba import NRTL_gammas_binaries as work_func, NRTL_gammas_binaries_jac as jac_func
+            from thermo.numba import (
+                NRTL_gammas_binaries as work_func,
+                NRTL_gammas_binaries_jac as jac_func,
+            )
         else:
             work_func = NRTL_gammas_binaries
             jac_func = NRTL_gammas_binaries_jac
-        
+
         # Allocate all working memory
         pts = len(xs)
-        gammas_iter = zeros(pts*2)
-        jac_iter = zeros((pts*2, 4))
+        gammas_iter = zeros(pts * 2)
+        jac_iter = zeros((pts * 2, 4))
 
         # Plain objective functions
         if symmetric_alphas:
+
             def fitting_func(xs, tau12, tau21, alpha):
                 return work_func(xs, tau12, tau21, alpha, alpha, gammas_iter)
-            
+
             def analytical_jac(xs, tau12, tau21, alpha):
-                return delete(jac_func(xs, tau12, tau21, alpha, alpha, jac_iter), 3, axis=1)
-    
+                return delete(
+                    jac_func(xs, tau12, tau21, alpha, alpha, jac_iter), 3, axis=1
+                )
+
         else:
+
             def fitting_func(xs, tau12, tau21, alpha12, alpha21):
                 return work_func(xs, tau12, tau21, alpha12, alpha21, gammas_iter)
-            
+
             def analytical_jac(xs, tau12, tau21, alpha12, alpha21):
                 return jac_func(xs, tau12, tau21, alpha12, alpha21, jac_iter)
-    
+
         # The extend calls has been tested to be the fastest compared to numpy and list comprehension
         xs_working = []
         for xsi in xs:
@@ -1662,84 +1880,138 @@ class NRTL(GibbsExcess):
         gammas_working = []
         for gammasi in gammas:
             gammas_working.extend(gammasi)
-            
+
         xs_working = array(xs_working)
         gammas_working = array(gammas_working)
-        
+
         # Objective functions for leastsq maximum speed
         if symmetric_alphas:
+
             def func_wrapped_for_leastsq(params):
-                return work_func(xs_working, params[0], params[1], params[2], params[2], gammas_iter) - gammas_working
-    
+                return (
+                    work_func(
+                        xs_working,
+                        params[0],
+                        params[1],
+                        params[2],
+                        params[2],
+                        gammas_iter,
+                    )
+                    - gammas_working
+                )
+
             def jac_wrapped_for_leastsq(params):
-                out = jac_func(xs_working, params[0], params[1], params[2], params[2], jac_iter)
+                out = jac_func(
+                    xs_working, params[0], params[1], params[2], params[2], jac_iter
+                )
                 new_out = delete(out, 3, axis=1)
                 new_out[:, 2] = out[:, 2] + out[:, 3]
                 return new_out
-        
+
         else:
+
             def func_wrapped_for_leastsq(params):
-                return work_func(xs_working, params[0], params[1], params[2], params[3], gammas_iter) - gammas_working
-    
+                return (
+                    work_func(
+                        xs_working,
+                        params[0],
+                        params[1],
+                        params[2],
+                        params[3],
+                        gammas_iter,
+                    )
+                    - gammas_working
+                )
+
             def jac_wrapped_for_leastsq(params):
-                return jac_func(xs_working, params[0], params[1], params[2], params[3], jac_iter)
-        
+                return jac_func(
+                    xs_working, params[0], params[1], params[2], params[3], jac_iter
+                )
+
         if symmetric_alphas:
-            use_fit_parameters = ['tau12', 'tau21', 'alpha12']
+            use_fit_parameters = ["tau12", "tau21", "alpha12"]
         else:
-            use_fit_parameters = ['tau12', 'tau21', 'alpha12', 'alpha21']
-        return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
-                                                      fit_parameters=use_fit_parameters,
-                                                      use_fit_parameters=use_fit_parameters,
-                                                      initial_guesses=cls._gamma_parameter_guesses,
-                                                        analytical_jac=jac_func,
-                                                       # analytical_jac=None,
-                                                      use_numba=use_numba,
-                                                      do_statistics=do_statistics,
-                                                      func_wrapped_for_leastsq=func_wrapped_for_leastsq,
-                                                        jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
-                                                       # jac_wrapped_for_leastsq=None,
-                                                      **kwargs)
+            use_fit_parameters = ["tau12", "tau21", "alpha12", "alpha21"]
+        return GibbsExcess._regress_binary_parameters(
+            gammas_working,
+            xs_working,
+            fitting_func=fitting_func,
+            fit_parameters=use_fit_parameters,
+            use_fit_parameters=use_fit_parameters,
+            initial_guesses=cls._gamma_parameter_guesses,
+            analytical_jac=jac_func,
+            # analytical_jac=None,
+            use_numba=use_numba,
+            do_statistics=do_statistics,
+            func_wrapped_for_leastsq=func_wrapped_for_leastsq,
+            jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
+            # jac_wrapped_for_leastsq=None,
+            **kwargs
+        )
 
     # Larger value on the right always (tau)
     # Alpha will almost exclusively be fit as one parameter
-    _gamma_parameter_guesses = [{'tau12': 1, 'tau21': 1, 'alpha12': 0.2, 'alpha21': 0.2},
-                                {'tau12': 1, 'tau21': 1, 'alpha12': 0.3, 'alpha21': 0.3},
-                                {'tau12': 1, 'tau21': 1, 'alpha12': 0.47, 'alpha21': 0.47},
-                               ]
-    
+    _gamma_parameter_guesses = [
+        {"tau12": 1, "tau21": 1, "alpha12": 0.2, "alpha21": 0.2},
+        {"tau12": 1, "tau21": 1, "alpha12": 0.3, "alpha21": 0.3},
+        {"tau12": 1, "tau21": 1, "alpha12": 0.47, "alpha21": 0.47},
+    ]
+
     for i in range(len(_gamma_parameter_guesses)):
         r = _gamma_parameter_guesses[i]
         # Swap the taus
-        _gamma_parameter_guesses.append({'tau12': r['tau21'], 'tau21': r['tau12'], 'alpha12': r['alpha12'], 'alpha21': r['alpha21']})
+        _gamma_parameter_guesses.append(
+            {
+                "tau12": r["tau21"],
+                "tau21": r["tau12"],
+                "alpha12": r["alpha12"],
+                "alpha21": r["alpha21"],
+            }
+        )
         # Swap the alphas
-        _gamma_parameter_guesses.append({'tau12': r['tau12'], 'tau21': r['tau21'], 'alpha12': r['alpha21'], 'alpha21': r['alpha12']})
+        _gamma_parameter_guesses.append(
+            {
+                "tau12": r["tau12"],
+                "tau21": r["tau21"],
+                "alpha12": r["alpha21"],
+                "alpha21": r["alpha12"],
+            }
+        )
         # Swap both
-        _gamma_parameter_guesses.append({'tau12': r['tau21'], 'tau21': r['tau12'], 'alpha12': r['alpha21'], 'alpha21': r['alpha12']})
+        _gamma_parameter_guesses.append(
+            {
+                "tau12": r["tau21"],
+                "tau21": r["tau12"],
+                "alpha12": r["alpha21"],
+                "alpha21": r["alpha12"],
+            }
+        )
     del i, r
+
 
 MIN_TAU_NRTL = -1e100
 MIN_ALPHA_NRTL = 1e-10
 
+
 def NRTL_gammas_binaries(xs, tau12, tau21, alpha12, alpha21, gammas=None):
-    r'''Calculates activity coefficients at fixed `tau` and `alpha` values for
-    a binary system at a series of mole fractions. This is used for 
+    r"""Calculates activity coefficients at fixed `tau` and `alpha` values for
+    a binary system at a series of mole fractions. This is used for
     regression of `tau` and `alpha` parameters. This function is highly optimized,
     and operates on multiple points at a time.
-    
+
     .. math::
         \ln \gamma_1 = x_2^2\left[\tau_{21}\left(\frac{G_{21}}{x_1 + x_2 G_{21}}
             \right)^2 + \frac{\tau_{12}G_{12}}{(x_2 + x_1G_{12})^2}
             \right]
-        
+
     .. math::
         \ln \gamma_2 =  x_1^2\left[\tau_{12}\left(\frac{G_{12}}{x_2 + x_1 G_{12}}
             \right)^2 + \frac{\tau_{21}G_{21}}{(x_1 + x_2 G_{21})^2}
             \right]
-        
+
     .. math::
         G_{ij}=\exp(-\alpha_{ij}\tau_{ij})
-        
+
 
     Parameters
     ----------
@@ -1757,7 +2029,7 @@ def NRTL_gammas_binaries(xs, tau12, tau21, alpha12, alpha21, gammas=None):
     alpha21 : float
         `alpha` parameter for 21, [-]
     gammas : list[float], optional
-        Array to store the activity coefficient for each species in the liquid 
+        Array to store the activity coefficient for each species in the liquid
         mixture, indexed the same as `xs`; can be omitted or provided
         for slightly better performance [-]
 
@@ -1769,12 +2041,12 @@ def NRTL_gammas_binaries(xs, tau12, tau21, alpha12, alpha21, gammas=None):
 
     Notes
     -----
-    
+
     Examples
     --------
     >>> NRTL_gammas_binaries([.1, .9, 0.3, 0.7, .85, .15], 0.1759, 0.7991, .2, .3)
     [2.121421, 1.011342, 1.52177, 1.09773, 1.016062, 1.841391]
-    '''
+    """
     if tau12 < MIN_TAU_NRTL:
         tau12 = MIN_TAU_NRTL
     if tau21 < MIN_TAU_NRTL:
@@ -1783,38 +2055,37 @@ def NRTL_gammas_binaries(xs, tau12, tau21, alpha12, alpha21, gammas=None):
         alpha12 = MIN_ALPHA_NRTL
     if alpha21 < MIN_ALPHA_NRTL:
         alpha21 = MIN_ALPHA_NRTL
-        
-    pts = len(xs)//2 # Always even
-    
+
+    pts = len(xs) // 2  # Always even
+
     if gammas is None:
-        allocate_size = (pts*2)
-        gammas = [0.0]*allocate_size
-        
+        allocate_size = pts * 2
+        gammas = [0.0] * allocate_size
+
     tau01, tau10, alpha01, alpha10 = tau12, tau21, alpha12, alpha21
 
-    G01 = exp(-alpha01*tau01)
-    G10 = exp(-alpha10*tau10)
-    
-    G10_2_tau10 = G10*G10*tau10
-    G10_tau10 = G10*tau10
+    G01 = exp(-alpha01 * tau01)
+    G10 = exp(-alpha10 * tau10)
 
-    G01_2_tau01 = G01*G01*tau01
-    G01_tau01 = G01*tau01
+    G10_2_tau10 = G10 * G10 * tau10
+    G10_tau10 = G10 * tau10
+
+    G01_2_tau01 = G01 * G01 * tau01
+    G01_tau01 = G01 * tau01
 
     for i in range(pts):
-        i2 = i*2
+        i2 = i * 2
         x0 = xs[i2]
         x1 = 1.0 - x0
-        
-        c0 = 1.0/(x0 + x1*G10)
+
+        c0 = 1.0 / (x0 + x1 * G10)
         c0 *= c0
-        
-        c1 = 1.0/(x1 + x0*G01)
+
+        c1 = 1.0 / (x1 + x0 * G01)
         c1 *= c1
 
-        gamma0 = trunc_exp(x1*x1*(G10_2_tau10*c0 + G01_tau01*c1))
-        gamma1 = trunc_exp(x0*x0*(G01_2_tau01*c1 + G10_tau10*c0))
-
+        gamma0 = trunc_exp(x1 * x1 * (G10_2_tau10 * c0 + G01_tau01 * c1))
+        gamma1 = trunc_exp(x0 * x0 * (G01_2_tau01 * c1 + G10_tau10 * c0))
 
         gammas[i2] = gamma0
         gammas[i2 + 1] = gamma1
@@ -1830,66 +2101,65 @@ def NRTL_gammas_binaries_jac(xs, tau12, tau21, alpha12, alpha21, calc=None):
         alpha12 = MIN_ALPHA_NRTL
     if alpha21 < MIN_ALPHA_NRTL:
         alpha21 = MIN_ALPHA_NRTL
-    pts = len(xs)//2 # Always even
-    
+    pts = len(xs) // 2  # Always even
+
     tau01, tau10, alpha01, alpha10 = tau12, tau21, alpha12, alpha21
 
     if calc is None:
-        allocate_size = pts*2
+        allocate_size = pts * 2
         calc = np.zeros((allocate_size, 4))
-    
-    x2 = alpha01*tau01
+
+    x2 = alpha01 * tau01
     x3 = trunc_exp(x2)
-    x11 = alpha10*tau10
+    x11 = alpha10 * tau10
     x12 = trunc_exp(x11)
-    x26 = tau01*tau01
-    x27 = tau10*tau10
-    
+    x26 = tau01 * tau01
+    x27 = tau10 * tau10
+
     for i in range(pts):
-        i2 = i*2
+        i2 = i * 2
         x0 = xs[i2]
         x1 = 1.0 - x0
 
-
-        x4 = x1*x3
+        x4 = x1 * x3
         x5 = x0 + x4
-        x5_inv = 1.0/x5
-        x6 = 2.0*x4
-        x7 = x6*x5_inv
-        x8 = x2*x7
-        x9 = x5_inv*x5_inv
-        x10 = x1*x1
-        x13 = x0*x12
+        x5_inv = 1.0 / x5
+        x6 = 2.0 * x4
+        x7 = x6 * x5_inv
+        x8 = x2 * x7
+        x9 = x5_inv * x5_inv
+        x10 = x1 * x1
+        x13 = x0 * x12
         x14 = x1 + x13
-        x14_inv = 1.0/x14
-        x15 = x14_inv*x14_inv
-        x16 = tau10*x15
-        x17 = tau01*x9
-        x18 = x10*trunc_exp(x10*(x16 + x17*x3))
-        x19 = x18*x3*x9
-        x20 = x0*x0
-        x21 = x20*trunc_exp(x20*(x12*x16 + x17))
-        x22 = 2.0*x13
-        x23 = x22*x14_inv
-        x24 = x11*x23
-        x25 = x12*x15*x21
+        x14_inv = 1.0 / x14
+        x15 = x14_inv * x14_inv
+        x16 = tau10 * x15
+        x17 = tau01 * x9
+        x18 = x10 * trunc_exp(x10 * (x16 + x17 * x3))
+        x19 = x18 * x3 * x9
+        x20 = x0 * x0
+        x21 = x20 * trunc_exp(x20 * (x12 * x16 + x17))
+        x22 = 2.0 * x13
+        x23 = x22 * x14_inv
+        x24 = x11 * x23
+        x25 = x12 * x15 * x21
 
-        
         gamma0_row = calc[i2]
-        gamma0_row[0] = x19*(x2 - x8 + 1.0)# Right
-        gamma0_row[1] = -x15*x18*(x24 - 1.0) # Right
-        gamma0_row[2] = -x19*x26*(x7 - 1.0) # Right
-        gamma0_row[3] =-x18*x22*x27*x15*x14_inv
-        
-        gamma1_row = calc[i2+1]
-        gamma1_row[0] = -x21*x9*(x8 - 1.0)
-        gamma1_row[1] = x25*(x11 - x24 + 1.0)
-        gamma1_row[2] = -x21*x26*x6*x5_inv*x9
-        gamma1_row[3] = -x25*x27*(x23 - 1.0)
+        gamma0_row[0] = x19 * (x2 - x8 + 1.0)  # Right
+        gamma0_row[1] = -x15 * x18 * (x24 - 1.0)  # Right
+        gamma0_row[2] = -x19 * x26 * (x7 - 1.0)  # Right
+        gamma0_row[3] = -x18 * x22 * x27 * x15 * x14_inv
+
+        gamma1_row = calc[i2 + 1]
+        gamma1_row[0] = -x21 * x9 * (x8 - 1.0)
+        gamma1_row[1] = x25 * (x11 - x24 + 1.0)
+        gamma1_row[2] = -x21 * x26 * x6 * x5_inv * x9
+        gamma1_row[3] = -x25 * x27 * (x23 - 1.0)
     return calc
 
+
 def NRTL_gammas(xs, taus, alphas):
-    r'''Calculates the activity coefficients of each species in a mixture
+    r"""Calculates the activity coefficients of each species in a mixture
     using the Non-Random Two-Liquid (NRTL) method, given their mole fractions,
     dimensionless interaction parameters, and nonrandomness constants. Those
     are normally correlated with temperature in some form, and need to be
@@ -1963,7 +2233,7 @@ def NRTL_gammas(xs, taus, alphas):
     .. [2] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey.
        Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim:
        Wiley-VCH, 2012.
-    '''
+    """
     gammas = []
     cmps = range(len(xs))
     # Gs does not depend on composition
@@ -1971,8 +2241,7 @@ def NRTL_gammas(xs, taus, alphas):
     for i in cmps:
         alphasi = alphas[i]
         tausi = taus[i]
-        Gs.append([exp(-alphasi[j]*tausi[j]) for j in cmps])
-
+        Gs.append([exp(-alphasi[j] * tausi[j]) for j in cmps])
 
     td2s = []
     tn3s = []
@@ -1980,25 +2249,25 @@ def NRTL_gammas(xs, taus, alphas):
         td2 = 0.0
         tn3 = 0.0
         for k in cmps:
-            xkGkj = xs[k]*Gs[k][j]
+            xkGkj = xs[k] * Gs[k][j]
             td2 += xkGkj
-            tn3 += xkGkj*taus[k][j]
-        td2 = 1.0/td2
-        td2xj = td2*xs[j]
+            tn3 += xkGkj * taus[k][j]
+        td2 = 1.0 / td2
+        td2xj = td2 * xs[j]
         td2s.append(td2xj)
-        tn3s.append(tn3*td2*td2xj)
+        tn3s.append(tn3 * td2 * td2xj)
 
     for i in cmps:
-        tn1, td1, total2 = 0., 0., 0.
+        tn1, td1, total2 = 0.0, 0.0, 0.0
         Gsi = Gs[i]
         tausi = taus[i]
         for j in cmps:
-            xjGji = xs[j]*Gs[j][i]
+            xjGji = xs[j] * Gs[j][i]
 
             td1 += xjGji
-            tn1 += xjGji*taus[j][i]
-            total2 += Gsi[j]*(tausi[j]*td2s[j] - tn3s[j])
+            tn1 += xjGji * taus[j][i]
+            total2 += Gsi[j] * (tausi[j] * td2s[j] - tn3s[j])
 
-        gamma = exp(tn1/td1 + total2)
+        gamma = exp(tn1 / td1 + total2)
         gammas.append(gamma)
     return gammas
