@@ -70,6 +70,33 @@ Liquid Phases
    :members: __init__
    :exclude-members: __init__
 
+
+Virial Equations of State
+=========================
+
+Gas Phase Object
+----------------
+.. autoclass:: VirialGas
+   :show-inheritance:
+   :members: V, dP_dT, dP_dV, d2P_dTdV, d2P_dV2, d2P_dT2,
+             H_dep, dH_dep_dT, S_dep, dS_dep_dT,
+             B, dB_dT, d2B_dT2, d3B_dT3, 
+             C, dC_dT, d2C_dT2, d3C_dT3, 
+             dB_dzs, d2B_dTdzs, d2B_dzizjs, 
+             dC_dzs, d2C_dTdzs, d2C_dzizjs,
+             d2V_dzizjs, dV_dzs, dG_dep_dzs,
+             lnphis, __repr__
+
+Corresponding States Virial Model
+---------------------------------
+.. autoclass:: VirialCSP
+   :show-inheritance:
+   :members: to, __repr__, B_pures, dB_dT_pures, d2B_dT2_pures, d3B_dT3_pures,
+             B_interactions, dB_dT_interactions, d2B_dT2_interactions, d3B_dT3_interactions, 
+             C_pures, dC_dT_pures, d2C_dT2_pures, d3C_dT3_pures, 
+             C_interactions, dC_dT_interactions, d2C_dT2_interactions, d3C_dT3_interactions,
+
+
 Activity Based Liquids
 ======================
 .. autoclass:: GibbsExcessLiquid
@@ -148,13 +175,6 @@ Solids Phases
    :show-inheritance:
    :members: __init__
    :exclude-members: __init__
-
-Virial Equations of State
-=========================
-
-.. autoclass:: VirialGas
-   :show-inheritance:
-   :members:
 
 '''
 

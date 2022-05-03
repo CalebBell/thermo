@@ -304,6 +304,8 @@ class Phase(object):
                 pass
         # Note: not all attributes are in __dict__, must use getattr
         to_hash = [getattr(self, v) for v in self.model_attributes]
+        to_hash = [v.model_hash() if( hasattr(v, 'model_hash') and not isinstance(v, type)) else v for v in to_hash]
+        # print(to_hash)
         self._model_hash_ignore_phase = h = hash_any_primitive(to_hash)
         self._model_hash = hash((self.__class__.__name__, h))
         if ignore_phase:
