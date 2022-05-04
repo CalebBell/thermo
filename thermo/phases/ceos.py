@@ -475,6 +475,56 @@ class CEOSGas(Phase):
         except AttributeError:
             return self.eos_mix.Cp_dep_l
 
+    def dS_dep_dT(self):
+        try:
+            return self.eos_mix.dS_dep_dT_g
+        except AttributeError:
+            return self.eos_mix.dS_dep_dT_l
+
+    def dS_dep_dP_V(self):
+        try:
+            dS_dP_V = self.eos_mix.dS_dep_dP_g_V
+        except AttributeError:
+            dS_dP_V = self.eos_mix.dS_dep_dP_l_V
+        return dS_dP_V
+
+    def dS_dep_dP_T(self):
+        try:
+            return self.eos_mix.dS_dep_dP_g
+        except AttributeError:
+            return self.eos_mix.dS_dep_dP_l
+
+    def dS_dep_dT_V(self):
+        try:
+            return self.eos_mix.dS_dep_dT_g_V
+        except AttributeError:
+            return self.eos_mix.dS_dep_dT_l_V
+
+    def dH_dep_dP_V(self):
+        try:
+            return self.eos_mix.dH_dep_dP_g_V
+        except AttributeError:
+            return self.eos_mix.dH_dep_dP_l_V
+        
+    def dH_dep_dP_T(self):
+        try:
+            return self.eos_mix.dH_dep_dP_g
+        except AttributeError:
+            return self.eos_mix.dH_dep_dP_l
+    
+    def dH_dep_dV_T(self):
+        try:
+            return self.eos_mix.dH_dep_dV_g_T
+        except AttributeError:
+            return self.eos_mix.dH_dep_dV_l_T
+        
+    def dH_dep_dV_P(self):
+        try:
+            return self.eos_mix.dH_dep_dV_g_P
+        except AttributeError:
+            return self.eos_mix.dH_dep_dV_l_P
+
+
     def V(self):
         r'''Method to calculate and return the molar volume of the phase.
 
@@ -673,11 +723,10 @@ class CEOSGas(Phase):
             return self._dH_dP
         except AttributeError:
             pass
-        try:
-            self._dH_dP = dH_dP = self.eos_mix.dH_dep_dP_g
-        except AttributeError:
-            self._dH_dP = dH_dP = self.eos_mix.dH_dep_dP_l
+        self._dH_dP = dH_dP = self.dH_dep_dP_T()
         return dH_dP
+    
+    dH_dP_T = dH_dP
 
     def d2H_dT2(self):
         try:
@@ -732,26 +781,15 @@ class CEOSGas(Phase):
 
     def dH_dP_V(self):
         dH_dP_V = self.Cp_ideal_gas()*self.dT_dP()
-        try:
-            dH_dP_V += self.eos_mix.dH_dep_dP_g_V
-        except AttributeError:
-            dH_dP_V += self.eos_mix.dH_dep_dP_l_V
+        dH_dP_V+= self.dH_dep_dP_V()
         return dH_dP_V
 
     def dH_dV_T(self):
-        dH_dV_T = 0.0
-        try:
-            dH_dV_T += self.eos_mix.dH_dep_dV_g_T
-        except AttributeError:
-            dH_dV_T += self.eos_mix.dH_dep_dV_l_T
-        return dH_dV_T
+        return self.dH_dep_dV_T()
 
     def dH_dV_P(self):
         dH_dV_P = self.dT_dV()*self.Cp_ideal_gas()
-        try:
-            dH_dV_P += self.eos_mix.dH_dep_dV_g_P
-        except AttributeError:
-            dH_dV_P += self.eos_mix.dH_dep_dV_l_P
+        dH_dV_P += self.dH_dep_dV_P()
         return dH_dV_P
 
     def dH_dzs(self):
@@ -776,20 +814,14 @@ class CEOSGas(Phase):
         P_REF_IG_INV = self.P_REF_IG_INV
 
         dS_dT = self.Cp_ideal_gas()/T
-        try:
-            dS_dT += self.eos_mix.dS_dep_dT_g
-        except AttributeError:
-            dS_dT += self.eos_mix.dS_dep_dT_l
+        dS_dT += self.dS_dep_dT()
         return dS_dT
 
     def dS_dP(self):
         dS = 0.0
         P = self.P
         dS -= self.R/P
-        try:
-            dS += self.eos_mix.dS_dep_dP_g
-        except AttributeError:
-            dS += self.eos_mix.dS_dep_dP_l
+        dS += self.dS_dep_dP_T()
         return dS
 
     def d2S_dP2(self):
@@ -829,18 +861,13 @@ class CEOSGas(Phase):
         diff(expr, T)
         '''
         dS_dT_V = self.Cp_ideal_gas()/self.T - self.R/self.P*self.dP_dT()
-        try:
-            dS_dT_V += self.eos_mix.dS_dep_dT_g_V
-        except AttributeError:
-            dS_dT_V += self.eos_mix.dS_dep_dT_l_V
+        dS_dT_V += self.dS_dep_dT_V()
         return dS_dT_V
-
+    
+    
     def dS_dP_V(self):
         dS_dP_V = -self.R/self.P + self.Cp_ideal_gas()/self.T*self.dT_dP()
-        try:
-            dS_dP_V += self.eos_mix.dS_dep_dP_g_V
-        except AttributeError:
-            dS_dP_V += self.eos_mix.dS_dep_dP_l_V
+        dS_dP_V += self.dS_dep_dP_V()
         return dS_dP_V
 
     # The following - likely should be reimplemented generically

@@ -408,6 +408,7 @@ class VirialCSP(object):
 
         self.C_model = C_model
         self.C_zero = C_model == VIRIAL_C_ZERO
+        self.B_zero = B_model == VIRIAL_B_ZERO
         
     def to(self, T=None):
         r'''Method to construct a new object at a new temperature.
@@ -458,6 +459,7 @@ class VirialCSP(object):
         new.cross_C_model_omegaijs = self.cross_C_model_omegaijs
         new.C_model = self.C_model
         new.C_zero = self.C_zero
+        new.B_zero = self.B_zero
         new.T = T
         return new
         
@@ -501,7 +503,7 @@ class VirialCSP(object):
             Bs_interactions, dB_dTs_interactions, d2B_dT2s_interactions, d3B_dT3s_interactions = BVirial_Xiang_mat(T=T, Tcs=Tcijs, Pcs=Pcijs, Vcs=Vcijs, omegas=omegaijs,
                                                                                    Bs=Bs, dB_dTs=dB_dTs, d2B_dT2s=d2B_dT2s, d3B_dT3s=d3B_dT3s)
         elif self.B_model == VIRIAL_B_MENG:
-            Bs_interactions, dB_dTs_interactions, d2B_dT2s_interactions, d3B_dT3s_interactions = BVirial_Meng_mat(T=T, Tcs=Tcijs, Pcs=Pcijs, omegas=omegaijs,
+            Bs_interactions, dB_dTs_interactions, d2B_dT2s_interactions, d3B_dT3s_interactions = BVirial_Meng_mat(T=T, Tcs=Tcijs, Pcs=Pcijs, Vcs=Vcijs, omegas=omegaijs,
                                                                                                   ais=self.B_model_Meng_as,
                                                                                    Bs=Bs, dB_dTs=dB_dTs, d2B_dT2s=d2B_dT2s, d3B_dT3s=d3B_dT3s)
 
@@ -555,7 +557,7 @@ class VirialCSP(object):
             Bs_pure, dB_dTs_pure, d2B_dT2s_pure, d3B_dT3s_pure = BVirial_Xiang_vec(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                                                                    Bs=Bs, dB_dTs=dB_dTs, d2B_dT2s=d2B_dT2s, d3B_dT3s=d3B_dT3s)
         elif self.B_model == VIRIAL_B_MENG:
-            Bs_pure, dB_dTs_pure, d2B_dT2s_pure, d3B_dT3s_pure = BVirial_Meng_vec(T=T, Tcs=Tcs, Pcs=Pcs, omegas=omegas,
+            Bs_pure, dB_dTs_pure, d2B_dT2s_pure, d3B_dT3s_pure = BVirial_Meng_vec(T=T, Tcs=Tcs, Pcs=Pcs, omegas=omegas, Vcs=Vcs,
                                                                                                   ais=self.B_model_Meng_as_pure,
                                                                                    Bs=Bs, dB_dTs=dB_dTs, d2B_dT2s=d2B_dT2s, d3B_dT3s=d3B_dT3s)
 
@@ -1389,6 +1391,339 @@ class VirialGas(Phase):
         return dH_dep_dT
     
     Cp_dep = dH_dep_dT
+    
+    def dH_dep_dP_V(self):
+        r'''Method to calculate and return the first pressure derivative of  
+        molar departure enthalpy at constant volume.
+        
+        .. math::
+           \left(\frac{\partial H_{dep}}{\partial P}\right)_{V} = 
+           - R \left(-1 + \frac{V^{2} + V B{\left(P \right)} + C{\left(P \right)}}
+           {V^{2}}\right) \frac{d}{d P} T{\left(P \right)} - \frac{R \left(- 2 V
+           \operatorname{dB_{dT}}{\left(P \right)} - \operatorname{dC_{dT}}
+           {\left(P \right)}\right) T{\left(P \right)} \frac{d}{d P} T{\left(P 
+            \right)}}{V^{2}} - \frac{R \left(V \frac{d}{d P} B{\left(P \right)} 
+            + \frac{d}{d P} C{\left(P \right)}\right) T{\left(P \right)}}{V^{2}} 
+            - \frac{R \left(- 2 V \frac{d}{d P} \operatorname{dB_{dT}}
+           {\left(P \right)} - \frac{d}{d P} \operatorname{dC_{dT}}{\left(P
+            \right)}\right) T^{2}{\left(P \right)}}{2 V^{2}}
+           
+        Returns
+        -------
+        dH_dep_dP_V : float
+            First pressure derivative of departure enthalpy at constant volume
+            [J/(mol*Pa)]
+        
+        '''
+        '''
+        from sympy import *
+        R, V, P = symbols('R, V, P')
+        dB_dT, dC_dT, T, B, C = symbols('dB_dT, dC_dT, T, B, C', cls=Function)
+        H_dep_const_V = -R*T(P)**2*(-2*V*dB_dT(P)- dC_dT(P))/(2*V**2) - R*T(P)*(-1 + (V**2 + V*B(P) + C(P))/V**2)
+        print(diff(H_dep_const_V, P))
+        '''
+        T, V = self.T, self._V
+        B = self.B()
+        C = self.C()
+        dB_dT = self.dB_dT()
+        dC_dT = self.dC_dT()
+        dB_dP_V = self.dB_dP_V()
+        dC_dP_V=self.dC_dP_V()
+        
+        d2B_dTdP_V=self.d2B_dTdP_V()
+        d2C_dTdP_V=self.d2C_dTdP_V()
+        dT_dP_V = self.dT_dP_V()
+
+        dH_dep_dP_V = (-R*(-1 + (V**2 + V*B + C)/V**2)*dT_dP_V - R*(-2*V*dB_dT - dC_dT)*T*dT_dP_V/V**2 
+                           - R*(V*dB_dP_V + dC_dP_V)*T/V**2
+                           - R*(-2*V*d2B_dTdP_V - d2C_dTdP_V)*T**2/(2*V**2))
+        return dH_dep_dP_V
+        
+    def dS_dep_dP_V(self):
+        r'''Method to calculate and return the first pressure derivative of  
+        molar departure entropy at constant volume.
+        
+        .. math::
+           \left(\frac{\partial S_{dep}}{\partial P}\right)_{V} = 
+           \frac{R \left(V \frac{d}{d P} B{\left(P \right)} + \frac{d}{d P} 
+           C{\left(P \right)}\right)}{V^{2} + V B{\left(P \right)} + C{\left(P \right)}} 
+           + \frac{- R T{\left(P \right)} \frac{d}{d P} \operatorname{dC_{dT}}
+          {\left(P \right)} - R \operatorname{dC_{dT}}{\left(P \right)}
+          \frac{d}{d P} T{\left(P \right)} - R \frac{d}{d P} C{\left(P \right)} 
+          + V \left(- 2 R T{\left(P \right)} \frac{d}{d P} \operatorname{dB_{dT}}
+          {\left(P \right)} - 2 R \operatorname{dB_{dT}}{\left(P \right)}
+          \frac{d}{d P} T{\left(P \right)} - 2 R \frac{d}{d P}
+          B{\left(P \right)}\right)}{2 V^{2}}
+           
+        Returns
+        -------
+        dS_dep_dP_V : float
+            First pressure derivative of departure entropy at constant volume
+            [J/(mol*Pa*K)]
+        
+        '''
+        T, V = self.T, self._V
+        B = self.B()
+        C = self.C()
+        dB_dT = self.dB_dT()
+        dC_dT = self.dC_dT()
+        dB_dP_V = self.dB_dP_V()
+        dC_dP_V=self.dC_dP_V()
+        
+        d2B_dTdP_V=self.d2B_dTdP_V()
+        d2C_dTdP_V=self.d2C_dTdP_V()
+        dT_dP_V = self.dT_dP_V()
+
+        dS_dep_dP_V = (R*(V*dB_dP_V + dC_dP_V)/(V**2 + V*B
+                        + C) + (-R*T*d2C_dTdP_V - R*dC_dT*dT_dP_V
+                        - R*dC_dP_V + V*(-2*R*T*d2B_dTdP_V - 2*R*dB_dT*dT_dP_V
+                        - 2*R*dB_dP_V))/(2*V**2))
+        return dS_dep_dP_V
+
+    def dH_dep_dP_T(self):
+        r'''Method to calculate and return the first pressure derivative of  
+        molar departure enthalpy at constant temperature.
+        
+        .. math::
+           \left(\frac{\partial H_{dep}}{\partial P}\right)_{T} = 
+           \frac{R T^{2} dB_{dT} \frac{d}{d P} V{\left(P \right)}}{V^{2}{\left(P 
+            \right)}} + \frac{R T^{2} \left(- 2 dB_{dT} V{\left(P \right)} 
+            - dC_{dT}\right) \frac{d}{d P} V{\left(P \right)}}{V^{3}{\left(P 
+            \right)}} - R T \left(\frac{B \frac{d}{d P} V{\left(P \right)} 
+            + 2 V{\left(P \right)} \frac{d}{d P} V{\left(P \right)}}{V^{2}
+            {\left(P \right)}} - \frac{2 \left(B V{\left(P \right)} + C + V^{2}
+            {\left(P \right)}\right) \frac{d}{d P} V{\left(P \right)}}
+            {V^{3}{\left(P \right)}}\right)
+           
+        Returns
+        -------
+        dH_dep_dP_T : float
+            First pressure derivative of departure enthalpy at constant 
+            temperature [J/(mol*Pa)]
+        
+        '''
+        '''
+        from sympy import *
+        R, P, T, B, C, dB_dT, dC_dT = symbols('R, P, T, B, C, dB_dT, dC_dT')
+        V = symbols('V', cls=Function)
+        H_dep_const_T = -R*T**2*(-2*V(P)*dB_dT - dC_dT)/(2*V(P)**2) - R*T*(-1 + (V(P)**2 + V(P)*B + C)/V(P)**2)
+        print(diff(H_dep_const_T, P))
+        '''
+        T, V = self.T, self._V
+        B = self.B()
+        C = self.C()
+        dB_dT = self.dB_dT()
+        dC_dT = self.dC_dT()
+        dV_dP = self.dV_dP()
+        
+        dH_dep_dP_T =(R*T**2*dB_dT*dV_dP/V**2 + R*T**2*(-2*dB_dT*V - dC_dT)*dV_dP/V**3 - R*T*((B*dV_dP + 2*V*dV_dP)/V**2 - 2*(B*V + C + V**2)*dV_dP/V**3))
+        return dH_dep_dP_T
+    
+    def dS_dep_dP_T(self):
+        r'''Method to calculate and return the first pressure derivative of  
+        molar departure entropy at constant temperature.
+        
+        .. math::
+           \left(\frac{\partial S_{dep}}{\partial P}\right)_{T} = 
+           \frac{R \left(\frac{B \frac{d}{d P} V{\left(P \right)}
+            + 2 V{\left(P \right)} \frac{d}{d P} V{\left(P \right)}}{V^{2}
+            {\left(P \right)}} - \frac{2 \left(B V{\left(P \right)} + C 
+            + V^{2}{\left(P \right)}\right) \frac{d}{d P} V{\left(P \right)}}
+            {V^{3}{\left(P \right)}}\right) V^{2}{\left(P \right)}}{B 
+            V{\left(P \right)} + C + V^{2}{\left(P \right)}} + \frac{\left(
+            - 2 B R - 2 R T dB_{dT}\right) \frac{d}{d P} V{\left(P \right)}}
+            {2 V^{2}{\left(P \right)}} - \frac{\left(- C R - R T dC_{dT}
+            + \left(- 2 B R - 2 R T dB_{dT}\right) V{\left(P \right)}\right) 
+            \frac{d}{d P} V{\left(P \right)}}{V^{3}{\left(P \right)}}
+           
+        Returns
+        -------
+        dS_dep_dP_T : float
+            First pressure derivative of departure entropy at constant 
+            temperature [J/(mol*Pa*K)]
+        
+        '''
+        '''
+        from sympy import *
+        R, P, T, B, C, dB_dT, dC_dT = symbols('R, P, T, B, C, dB_dT, dC_dT')
+        V = symbols('V', cls=Function)
+        S_dep_to_diff = R*log((V(P)**2 + V(P)*B + C)/V(P)**2) + (-R*T*dC_dT - R*C + V(P)*(-2*R*T*dB_dT - 2*R*B))/(2*V(P)**2)
+        print((diff(S_dep_to_diff, P)))
+        '''
+        T, V = self.T, self._V
+        B = self.B()
+        C = self.C()
+        dB_dT = self.dB_dT()
+        dC_dT = self.dC_dT()
+        dV_dP = self.dV_dP()
+        
+        dS_dep_dP_T =(R*((B*dV_dP + 2*V*dV_dP)/V**2 - 2*(B*V + C + V**2)*dV_dP/V**3)*V**2/(B*V + C + V**2) 
+                      + (-2*B*R - 2*R*T*dB_dT)*dV_dP/(2*V**2) - (-C*R - R*T*dC_dT + (-2*B*R - 2*R*T*dB_dT)*V)*dV_dP/V**3)
+        return dS_dep_dP_T
+
+    def dH_dep_dV_T(self):
+        r'''Method to calculate and return the first volume derivative of  
+        molar departure enthalpy at constant temperature.
+        
+        .. math::
+           \left(\frac{\partial H_{dep}}{\partial V}\right)_{T} = 
+           \frac{R T^{2} dB_{dT}}{V^{2}} + \frac{R T^{2} \left(- 2 V dB_{dT} 
+            - dC_{dT}\right)}{V^{3}} - R T \left(\frac{B + 2 V}{V^{2}} 
+            - \frac{2 \left(B V + C + V^{2}\right)}{V^{3}}\right)
+           
+        Returns
+        -------
+        dH_dep_dV_T : float
+            First volume derivative of departure enthalpy at constant 
+            temperature [J/(m^3)]
+        
+        '''
+        '''
+        from sympy import *
+        R, V, T, B, C, dB_dT, dC_dT = symbols('R, V, T, B, C, dB_dT, dC_dT')
+        P = symbols('P', cls=Function)
+        H_dep_const_T = -R*T**2*(-2*V*dB_dT - dC_dT)/(2*V**2) - R*T*(-1 + (V**2 + V*B + C)/V**2)
+        print(diff(H_dep_const_T, V))
+        '''
+        T, V = self.T, self._V
+        B = self.B()
+        C = self.C()
+        dB_dT = self.dB_dT()
+        dC_dT = self.dC_dT()
+        return (R*T**2*dB_dT/V**2 + R*T**2*(-2*V*dB_dT - dC_dT)/V**3 - R*T*((B + 2*V)/V**2 - 2*(B*V + C + V**2)/V**3))
+
+
+    def dS_dep_dV_T(self):
+        r'''Method to calculate and return the first volume derivative of  
+        molar departure entropy at constant temperature.
+        
+        .. math::
+           \left(\frac{\partial S_{dep}}{\partial V}\right)_{T} = 
+           \frac{R V^{2} \left(\frac{B + 2 V}{V^{2}} - \frac{2 \left(B V + C 
+           + V^{2}\right)}{V^{3}}\right)}{B V + C + V^{2}} + \frac{- 2 B R 
+           - 2 R T dB_{dT}}{2 V^{2}} - \frac{- C R - R T dC_{dT} + V \left(
+           - 2 B R - 2 R T dB_{dT}\right)}{V^{3}}
+           
+        Returns
+        -------
+        dS_dep_dV_T : float
+            First volume derivative of departure entropy at constant 
+            temperature [J/(m^3*K)]
+        
+        '''
+        '''
+        from sympy import *
+        R, V, T, B, C, dB_dT, dC_dT = symbols('R, V, T, B, C, dB_dT, dC_dT')
+        P = symbols('P', cls=Function)
+        S_dep_const_T = R*log((V**2 + V*B + C)/V**2) + (-R*T*dC_dT - R*C + V*(-2*R*T*dB_dT - 2*R*B))/(2*V**2)
+        print(latex(diff(S_dep_const_T, V)))
+        '''
+        T, V = self.T, self._V
+        B = self.B()
+        C = self.C()
+        dB_dT = self.dB_dT()
+        dC_dT = self.dC_dT()
+        return (R*V**2*((B + 2*V)/V**2 - 2*(B*V + C + V**2)/V**3)/(B*V + C + V**2)
+                + (-2*B*R - 2*R*T*dB_dT)/(2*V**2) - (-C*R - R*T*dC_dT + V*(-2*B*R - 2*R*T*dB_dT))/V**3)
+
+    def dH_dep_dV_P(self):
+        r'''Method to calculate and return the first volume derivative of  
+        molar departure enthalpy at constant pressure.
+        
+        .. math::
+           \left(\frac{\partial H_{dep}}{\partial V}\right)_{P} = 
+           - R \left(-1 + \frac{V^{2} + V B{\left(V \right)} + C{\left(V \right)}}
+            {V^{2}}\right) \frac{d}{d V} T{\left(V \right)} - R \left(\frac{V
+            \frac{d}{d V} B{\left(V \right)} + 2 V + B{\left(V \right)} 
+           + \frac{d}{d V} C{\left(V \right)}}{V^{2}} - \frac{2 \left(V^{2} 
+           + V B{\left(V \right)} + C{\left(V \right)}\right)}{V^{3}}\right) 
+            T{\left(V \right)} - \frac{R \left(- 2 V \operatorname{dB_{dT}}
+           {\left(V \right)} - \operatorname{dC_{dT}}{\left(V \right)}\right)
+            T{\left(V \right)} \frac{d}{d V} T{\left(V \right)}}{V^{2}} 
+            - \frac{R \left(- 2 V \frac{d}{d V} \operatorname{dB_{dT}}{\left(V 
+            \right)} - 2 \operatorname{dB_{dT}}{\left(V \right)} 
+            - \frac{d}{d V} \operatorname{dC_{dT}}{\left(V \right)}\right) 
+            T^{2}{\left(V \right)}}{2 V^{2}} + \frac{R \left(- 2 V 
+            \operatorname{dB_{dT}}{\left(V \right)} - \operatorname{dC_{dT}}
+            {\left(V \right)}\right) T^{2}{\left(V \right)}}{V^{3}}
+           
+        Returns
+        -------
+        dH_dep_dV_P : float
+            First volume derivative of departure enthalpy at constant 
+            pressure [J/(m^3)]
+        
+        '''
+        '''
+        from sympy import *
+        R, V, P = symbols('R, V, P')
+        dB_dT, dC_dT, T, B, C = symbols('dB_dT, dC_dT, T, B, C', cls=Function)
+        H_dep_const_P = -R*T(V)**2*(-2*V*dB_dT(V)- dC_dT(V))/(2*V**2) - R*T(V)*(-1 + (V**2 + V*B(V) + C(V))/V**2)
+        print((diff(H_dep_const_P, V)))
+        '''
+        T, V = self.T, self._V
+        B = self.B()
+        C = self.C()
+        dT_dV = self.dT_dV()
+        dB_dT = self.dB_dT()
+        dC_dT = self.dC_dT()
+        dB_dV_P = self.dB_dV_P()
+        dC_dV_P = self.dC_dV_P()
+        d2B_dTdV_P = self.d2B_dTdV_P()
+        d2C_dTdV_P = self.d2C_dTdV_P()
+        return (-R*(-1 + (V**2 + V*B + C)/V**2)*dT_dV - R*((V*dB_dV_P + 2*V + B + dC_dV_P)/V**2 
+                - 2*(V**2 + V*B + C)/V**3)*T - R*(-2*V*dB_dT - dC_dT)*T*dT_dV/V**2
+            - R*(-2*V*d2B_dTdV_P - 2*dB_dT - d2C_dTdV_P)*T**2/(2*V**2) + R*(-2*V*dB_dT - dC_dT)*T**2/V**3)
+
+    def dS_dep_dV_P(self):
+        r'''Method to calculate and return the first volume derivative of  
+        molar departure entropy at constant pressure.
+        
+        .. math::
+           \left(\frac{\partial S_{dep}}{\partial V}\right)_{P} = 
+           \frac{R V^{2} \left(\frac{V \frac{d}{d V} B{\left(V \right)} 
+            + 2 V + B{\left(V \right)} + \frac{d}{d V} C{\left(V \right)}}{V^{2}}
+           - \frac{2 \left(V^{2} + V B{\left(V \right)} + C{\left(V \right)}
+            \right)}{V^{3}}\right)}{V^{2} + V B{\left(V \right)} + C{\left(V 
+            \right)}} + \frac{- 2 R B{\left(V \right)} - 2 R T{\left(V \right)} 
+            \operatorname{dB_{dT}}{\left(V \right)} - R T{\left(V \right)}
+            \frac{d}{d V} \operatorname{dC_{dT}}{\left(V \right)}
+            - R \operatorname{dC_{dT}}{\left(V \right)} \frac{d}{d V} T{\left(V
+            \right)} - R \frac{d}{d V} C{\left(V \right)} + V \left(- 2 R T
+            {\left(V \right)} \frac{d}{d V} \operatorname{dB_{dT}}{\left(V 
+            \right)} - 2 R \operatorname{dB_{dT}}{\left(V \right)} \frac{d}
+            {d V} T{\left(V \right)} - 2 R \frac{d}{d V} B{\left(V \right)}
+            \right)}{2 V^{2}} - \frac{- R C{\left(V \right)} - R T{\left(V 
+            \right)} \operatorname{dC_{dT}}{\left(V \right)} + V \left(- 2 R 
+            B{\left(V \right)} - 2 R T{\left(V \right)} \operatorname{dB_{dT}}
+            {\left(V \right)}\right)}{V^{3}}
+           
+        Returns
+        -------
+        dS_dep_dV_P : float
+            First volume derivative of departure entropy at constant 
+            pressure [J/(m^3)]
+        
+        '''
+        '''
+        from sympy import *
+        R, V, P = symbols('R, V, P')
+        dB_dT, dC_dT, T, B, C = symbols('dB_dT, dC_dT, T, B, C', cls=Function)
+        term = R*log((V**2 + V*B(V) + C(V))/V**2) + (-R*T(V)*dC_dT(V) - R*C(V) + V*(-2*R*T(V)*dB_dT(V) - 2*R*B(V)))/(2*V**2)
+        print((diff(term, V)))
+        '''
+        T, V = self.T, self._V
+        B = self.B()
+        C = self.C()
+        dT_dV = self.dT_dV()
+        dB_dT = self.dB_dT()
+        dC_dT = self.dC_dT()
+        dB_dV_P = self.dB_dV_P()
+        dC_dV_P = self.dC_dV_P()
+        d2B_dTdV_P = self.d2B_dTdV_P()
+        d2C_dTdV_P = self.d2C_dTdV_P()
+        return (R*V**2*((V*dB_dV_P + 2*V + B + dC_dV_P)/V**2 - 2*(V**2 + V*B + C)/V**3)/(V**2 + V*B + C) + (-2*R*B - 2*R*T*dB_dT - R*T*d2C_dTdV_P - R*dC_dT*dT_dV - R*dC_dV_P + V*(-2*R*T*d2B_dTdV_P - 2*R*dB_dT*dT_dV - 2*R*dB_dV_P))/(2*V**2) - (-R*C - R*T*dC_dT + V*(-2*R*B - 2*R*T*dB_dT))/V**3)
+
 
     def S_dep(self):
         r'''Method to calculate and return the molar departure entropy.
@@ -1454,6 +1789,9 @@ class VirialGas(Phase):
         self._dS_dep_dT = dS_dep_dT = (self.R*(2.0*V2*(V*self.dB_dT() + self.dC_dT()) - (V2 + V*self.B() + self.C())*(T*self.d2C_dT2()
         + 2.0*V*(T*self.d2B_dT2() + 2.0*self.dB_dT()) + 2.0*self.dC_dT()))/(2.0*V2*(V2 + V*self.B() + self.C())))
         return dS_dep_dT
+    
+    dS_dep_dT_P = dS_dep_dT
+    dS_dep_dT_V = dS_dep_dT
 
     def to_TP_zs(self, T, P, zs):
         new = self.__class__.__new__(self.__class__)
@@ -1496,13 +1834,18 @@ class VirialGas(Phase):
             new.model.T = T
             if P is not None:
                 new.P = P
-                Z = Z_from_virial_density_form(T, P, new.B(), new.C())
+                B = new.B()
+                C = new.C()
+                Z = Z_from_virial_density_form(T, P, B, C)
                 new._V = Z*self.R*T/P
             elif V is not None:
                 P = new.P = self.R*T*(V*V + V*new.B() + new.C())/(V*V*V)
                 new._V = V
+            else:
+                raise ValueError("Two of T, P, or V are needed")
         elif P is not None and V is not None:
             new.P = P
+            new._V = V
             # PV specified, solve for T
             def err(T):
                 # Solve for P matching; probably there is a better solution here that does not
@@ -1654,7 +1997,9 @@ class VirialGas(Phase):
         if self.model.C_zero:
             self._C = C = 0.0
             return C
-        if not self.cross_C_coefficients:
+        elif self.N == 1:
+            self._C = C = self.model.C_pures()[0]
+        elif not self.cross_C_coefficients:
             Cs = self.model.C_pures()
             self._C = C = float(mixing_simple(zs, Cs))
             return C
@@ -1682,25 +2027,27 @@ class VirialGas(Phase):
         if self.model.C_zero:
             self._dC_dT = dC_dT = 0.0
             return dC_dT
-
-        if not self.cross_C_coefficients:
+        elif self.N == 1:
+            self._dC_dT = dC_dT = self.model.dC_dT_pures()[0]
+            return dC_dT
+        elif not self.cross_C_coefficients:
             dC_dTs = self.model.dC_dT_pures()
             self._dC_dT = dC_dT = float(mixing_simple(zs, dC_dTs))
             return dC_dT
-
-        Cijs = self.model.C_interactions()
-        dCijs = self.model.dC_dT_interactions()
-        # TODO
-        '''
-        from sympy import *
-        Cij, Cik, Cjk = symbols('Cij, Cik, Cjk', cls=Function)
-        T = symbols('T')
-        # The derivative of this is messy
-        expr = (Cij(T)*Cik(T)*Cjk(T))**Rational('1/3')
-        # diff(expr, T, 3)
-        '''
-        self._dC_dT = dC_dT = float(dCVirial_mixture_dT_Orentlicher_Prausnitz(zs, Cijs, dCijs))
-        return dC_dT
+        else:
+            Cijs = self.model.C_interactions()
+            dCijs = self.model.dC_dT_interactions()
+            # TODO
+            '''
+            from sympy import *
+            Cij, Cik, Cjk = symbols('Cij, Cik, Cjk', cls=Function)
+            T = symbols('T')
+            # The derivative of this is messy
+            expr = (Cij(T)*Cik(T)*Cjk(T))**Rational('1/3')
+            # diff(expr, T, 3)
+            '''
+            self._dC_dT = dC_dT = float(dCVirial_mixture_dT_Orentlicher_Prausnitz(zs, Cijs, dCijs))
+            return dC_dT
 
     def d2C_dT2(self):
         r'''Method to calculate and return the second temperature derivative of 
@@ -1722,17 +2069,20 @@ class VirialGas(Phase):
             self._d2C_dT2 = d2C_dT2 = 0.0
             return d2C_dT2
 
-        if not self.cross_C_coefficients:
+        elif self.N == 1:
+            self._d2C_dT2 = d2C_dT2 = self.model.d2C_dT2_pures()[0]
+            return d2C_dT2
+        elif not self.cross_C_coefficients:
             d2C_dT2s = self.model.d2C_dT2_pures()
             self._d2C_dT2 = d2C_dT2 = float(mixing_simple(zs, d2C_dT2s))
             return d2C_dT2
-
-        Cijs = self.model.C_interactions()
-        dCijs = self.model.dC_dT_interactions()
-        d2C_dT2ijs = self.model.d2C_dT2_interactions()
-        N = self.N
-        self._d2C_dT2 = d2C_dT2 = float(d2CVirial_mixture_dT2_Orentlicher_Prausnitz(zs, Cijs, dCijs, d2C_dT2ijs))
-        return d2C_dT2
+        else:
+            Cijs = self.model.C_interactions()
+            dCijs = self.model.dC_dT_interactions()
+            d2C_dT2ijs = self.model.d2C_dT2_interactions()
+            N = self.N
+            self._d2C_dT2 = d2C_dT2 = float(d2CVirial_mixture_dT2_Orentlicher_Prausnitz(zs, Cijs, dCijs, d2C_dT2ijs))
+            return d2C_dT2
     
     def d3C_dT3(self):
         r'''Method to calculate and return the third temperature derivative of 
@@ -1753,18 +2103,21 @@ class VirialGas(Phase):
         if self.model.C_zero:
             self._d3C_dT3 = d3C_dT3 = 0.0
             return d3C_dT3
-        if not self.cross_C_coefficients:
+        elif self.N == 1:
+            self._d3C_dT3 = d3C_dT3 = self.model.d3C_dT3_pures()[0]
+            return d3C_dT3
+        elif not self.cross_C_coefficients:
             d3C_dT3s = self.model.d3C_dT3_pures()
             self._d3C_dT3 = d3C_dT3 = float(mixing_simple(zs, d3C_dT3s))
             return d3C_dT3
-
-        Cijs = self.model.C_interactions()
-        dCijs = self.model.dC_dT_interactions()
-        d2C_dT2ijs = self.model.d2C_dT2_interactions()
-        d3C_dT3ijs = self.model.d3C_dT3_interactions()
-        N = self.N
-        self._d3C_dT3 = d3C_dT3 = float(d3CVirial_mixture_dT3_Orentlicher_Prausnitz(zs, Cijs, dCijs, d2C_dT2ijs, d3C_dT3ijs))
-        return d3C_dT3
+        else:
+            Cijs = self.model.C_interactions()
+            dCijs = self.model.dC_dT_interactions()
+            d2C_dT2ijs = self.model.d2C_dT2_interactions()
+            d3C_dT3ijs = self.model.d3C_dT3_interactions()
+            N = self.N
+            self._d3C_dT3 = d3C_dT3 = float(d3CVirial_mixture_dT3_Orentlicher_Prausnitz(zs, Cijs, dCijs, d2C_dT2ijs, d3C_dT3ijs))
+            return d3C_dT3
 
     def dB_dzs(self):
         r'''Method to calculate and return the first mole fraction derivatives 
@@ -2238,8 +2591,90 @@ class VirialGas(Phase):
         
         self._dnC_dns = dnC_dns = dxs_to_dn_partials(dxs=self.dC_dzs(), xs=self.zs, F=self.C(), partial_properties=dnC_dns)
         return dnC_dns 
+    
+    
+    def dB_dP_V(self):
+        return self.dB_dT()/self.dP_dT()
+    
+    def dC_dP_V(self):
+        return self.dC_dT()/self.dP_dT()
 
+    def d2B_dTdP_V(self):
+        return self.d2B_dT2()/self.dP_dT()
+    
+    def d2C_dTdP_V(self):
+        return self.d2C_dT2()/self.dP_dT()
+
+    def d3B_dT2dP_V(self):
+        return self.d3B_dT3()/self.dP_dT()
+    
+    def d3C_dT2dP_V(self):
+        return self.d3C_dT3()/self.dP_dT()
+    
+    def dB_dV_P(self):
+        return self.dB_dT()*self.dT_dV()
+    
+    def dC_dV_P(self):
+        return self.dC_dT()*self.dT_dV()
+
+    def d2B_dTdV_P(self):
+        return self.d2B_dT2()*self.dT_dV()
+    
+    def d2C_dTdV_P(self):
+        return self.d2C_dT2()*self.dT_dV()
+
+    def d3B_dT2dV_P(self):
+        return self.d3B_dT3()*self.dT_dV()
+    
+    def d3C_dT2dV_P(self):
+        return self.d3C_dT3()*self.dT_dV()
+    
+    # Overrides for precision in regression to ideal gas
+    def d2T_dV2(self):
+        if self.model.C_zero and self.model.B_zero:
+            return 0.0
+        return super().d2T_dV2()
+    
+    def d2T_dV2_P(self):
+        if self.model.C_zero and self.model.B_zero:
+            return 0.0
+        return super().d2T_dV2_P()
+    
+    def d2V_dT2(self):
+        if self.model.C_zero and self.model.B_zero:
+            return 0.0
+        return super().d2V_dT2()
+    
+    d2V_dT2_P = d2V_dT2
+    
+
+    dP_dT_V = dP_dT
+    dP_dV_T = dP_dV
+    d2P_dT2_V = d2P_dT2
+    d2P_dV2_T = d2P_dV2
 
 VirialGas.H = CEOSGas.H
-VirialGas.S = CEOSGas.S
 VirialGas.Cp = CEOSGas.Cp
+VirialGas.dH_dT = CEOSGas.dH_dT
+VirialGas.dH_dT_V = CEOSGas.Cp
+VirialGas.dH_dP_V = CEOSGas.dH_dP_V
+VirialGas.dH_dP_T = CEOSGas.dH_dP_T
+VirialGas.dH_dP = CEOSGas.dH_dP
+VirialGas.dH_dV_T = CEOSGas.dH_dV_T
+VirialGas.dH_dV_P = CEOSGas.dH_dV_P
+
+VirialGas.S = CEOSGas.S
+VirialGas.dS_dT = CEOSGas.dS_dT
+VirialGas.dS_dT_P = CEOSGas.dS_dT
+VirialGas.dS_dP_V = CEOSGas.dS_dP_V
+VirialGas.dS_dP = CEOSGas.dS_dP
+VirialGas.dS_dP_T = CEOSGas.dS_dP_T
+VirialGas.dS_dT_V = CEOSGas.dS_dT_V
+
+VirialGas.d2V_dP2_T = Phase.d2V_dP2
+VirialGas.d2T_dP2_V = Phase.d2T_dP2
+
+VirialGas.dV_dP_T = Phase.dV_dP
+VirialGas.dV_dT_P = Phase.dV_dT
+VirialGas.dT_dP_V = Phase.dT_dP
+VirialGas.dT_dV_P = Phase.dT_dV

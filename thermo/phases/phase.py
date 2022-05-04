@@ -4608,7 +4608,8 @@ prop_names = {'A' : 'Helmholtz energy',
               'T': 'temperature',
               'P': 'pressure',
               'V': 'volume', 'Cv': 'Constant-volume heat capacity'}
-prop_units = {'Cv': 'J/(mol*K)', 'A': 'J/mol', 'G': 'J/mol', 'H': 'J/mol', 'S': 'J/(mol*K)', 'U': 'J/mol', 'T': 'K', 'P': 'Pa', 'V': 'm^3/mol'}
+prop_units = {'Cv': 'J/(mol*K)', 'A': 'J/mol', 'G': 'J/mol', 'H': 'J/mol',
+              'S': 'J/(mol*K)', 'U': 'J/mol', 'T': 'K', 'P': 'Pa', 'V': 'm^3/mol'}
 for attr in derivatives_thermodynamic:
     def _der(self, prop=attr):
         return getattr(self, prop)()*1e3*self.MW_inv()
