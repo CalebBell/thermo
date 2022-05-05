@@ -246,6 +246,11 @@ def create_local_method(f, f_der, f_der2, f_der3, f_int, f_int_over_T):
 class LocalMethod:
     __slots__ = ('f', 'f_der', 'f_der2', 'f_der3', 'f_int', 'f_int_over_T')
     
+    def __hash__(self):
+        # Don't compare hased on this object id, compapre based on the functions
+        # implemented
+        return hash(id(getattr, o) for o in self.__slots__)
+    
     def __init__(self, f, f_der, f_der2, f_der3, f_int, f_int_over_T):
         self.f = f
         self.f_der = f_der
@@ -470,6 +475,12 @@ class TDependentProperty(object):
 
     obj_references = ()
     obj_references_types = ()
+    
+    
+    extra_correlations = {}
+    '''Dictionary containing extra methods not fully coded into a property
+    t dependent object; this is more manageable for one-off equations.
+    '''
 
     _json_obj_by_CAS = ('CP_f',)
     
@@ -1315,6 +1326,10 @@ class TDependentProperty(object):
                 d['eos'] = eos[0].as_json()
         except:
             pass
+        
+        # Cannot store local methods
+        if 'local_methods' in d:
+            d['local_methods'] = {}
         return d
 
     @classmethod
@@ -1385,10 +1400,12 @@ class TDependentProperty(object):
                     correlations[model_name] = (call, model_kwargs, correlation_name)
 
         d['extrapolation_coeffs'] = {}
+        
         del d['py/object']
         del d["json_version"]
         new = cls.__new__(cls)
         new.__dict__ = d
+        new.add_extra_correlations()
         return new
 
     @classmethod
@@ -3977,6 +3994,9 @@ class TDependentProperty(object):
             self._set_exp_cheb_fit_ln_tau(exp_cheb_fit_ln_tau)
             method = EXP_CHEB_FIT_LN_TAU
             self.all_methods.add(EXP_CHEB_FIT_LN_TAU)
+            
+        self.add_extra_correlations()
+        
         if method is None:
             all_methods = self.all_methods
             for i in self.ranked_methods: 
@@ -3984,6 +4004,20 @@ class TDependentProperty(object):
                     method = i
                     break
         self.method = method
+        
+    def add_extra_correlations(self):
+        # Load any component specific methods
+        if hasattr(self, 'CASRN'):
+            CASRN = self.CASRN
+            extra_correlations = self.extra_correlations
+            if CASRN in extra_correlations:
+                ranked_methods = list(self.ranked_methods)
+                for model in extra_correlations[CASRN]:
+                    self.add_method(**model)
+                    if model['name'] not in ranked_methods:
+                        ranked_methods.insert(0, model['name'])
+                self.ranked_methods = ranked_methods
+        
 
     def load_all_methods(self, load_data):
         self.all_methods = set()

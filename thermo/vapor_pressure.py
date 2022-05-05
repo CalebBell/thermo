@@ -83,6 +83,59 @@ from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluid
 from thermo.base import source_path
 
 
+'''
+Move this to its own file?
+'''
+from math import exp
+
+# These methods will be higher priority than the other types of methods
+Psat_extra_correlations = {}
+
+
+def Psat_mercury_Huber_Laesecke_Friend_2006(T):
+    '''Equation 4 in 
+    
+    Huber, Marcia L., Arno Laesecke, and Daniel G. Friend. "Correlation for the Vapor 
+    Pressure of Mercury."" Industrial & Engineering Chemistry Research 45, no. 21 
+    (October 1, 2006): 7351-61. https://doi.org/10.1021/ie060560s.
+    '''
+    Tc = 1764
+    Pc = 167e6
+    ais = [-4.57618368, -1.40726277, 2.36263541, -31.0889985, 58.0183959, -27.6304546]
+    powers = [1.0, 1.89, 2.0, 8.0, 8.5, 9.0]
+    tau = 1.0 - T/Tc
+    return Pc*exp(Tc/T*sum(ais[i]*tau**powers[i] for i in range(len(ais))))
+
+
+Psat_extra_correlations['7439-97-6'] = [
+    {'name': 'HUBER_LAESECKE_FRIEND_2006',
+    'Tmax': 1764.0, 'Tmin': 273.15,
+    'f': Psat_mercury_Huber_Laesecke_Friend_2006}
+]
+
+def Psat_beryllium_Arblaster_2016(T):
+    '''Table 5 vapor pressure for liquid phase
+    
+    Arblaster, J. W. “Thermodynamic Properties of Beryllium.” Journal of 
+    Phase Equilibria and Diffusion 37, no. 5 (October 1, 2016): 581–91. 
+    https://doi.org/10.1007/s11669-016-0488-5.
+    '''
+    A, B, C, D, E = 18.14516, -0.512217, -37525.7, -1.54090910E-4, 2.18352910584E-9
+    return 1e5*exp(A + B*log(T) + C/T + D*T + E*T*T)
+    
+Psat_extra_correlations['7440-41-7'] = [
+    {'name': 'ARBLASTER_2016',
+    'Tmax': 2800, 'Tmin': 1560,
+    'f': Psat_beryllium_Arblaster_2016}
+]
+
+'''
+End specific correlations
+'''
+
+
+
+
 WAGNER_MCGARRY = 'WAGNER_MCGARRY'
 WAGNER_POLING = 'WAGNER_POLING'
 ANTOINE_POLING = 'ANTOINE_POLING'
@@ -227,6 +280,7 @@ class VaporPressure(TDependentProperty):
     '''
     name = 'Vapor pressure'
     units = 'Pa'
+    extra_correlations = Psat_extra_correlations
 
     @staticmethod
     def interpolation_T(T):
