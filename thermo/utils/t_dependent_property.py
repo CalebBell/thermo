@@ -263,6 +263,10 @@ class LocalMethod:
 class ConstantLocalMethod:
     __slots__ = ('value',)
     
+    
+    def __hash__(self):
+        return hash(self.value)
+
     def __init__(self, value):
         self.value = value
         

@@ -141,6 +141,8 @@ WAGNER_POLING = 'WAGNER_POLING'
 ANTOINE_POLING = 'ANTOINE_POLING'
 ANTOINE_WEBBOOK = 'ANTOINE_WEBBOOK'
 ANTOINE_EXTENDED_POLING = 'ANTOINE_EXTENDED_POLING'
+ALCOCK_ELEMENTS = 'ALCOCK_ELEMENTS'
+
 
 BOILING_CRITICAL = 'BOILING_CRITICAL'
 LEE_KESLER_PSAT = 'LEE_KESLER_PSAT'
@@ -151,7 +153,7 @@ EDALAT = 'EDALAT'
 vapor_pressure_methods = [IAPWS,
                           WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                           DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR, 
-                          ANTOINE_WEBBOOK, AMBROSE_WALTON,
+                          ANTOINE_WEBBOOK, ALCOCK_ELEMENTS, AMBROSE_WALTON,
                           LEE_KESLER_PSAT, EDALAT, EOS, BOILING_CRITICAL, SANJARI]
 '''Holds all methods available for the VaporPressure class, for use in
 iterating over them.'''
@@ -244,6 +246,9 @@ class VaporPressure(TDependentProperty):
         :obj:`thermo.eos.GCEOS.Psat`
     **IAPWS**:
         IAPWS-95 formulation documented in :obj:`chemicals.iapws.iapws95_Psat`.
+    **ALCOCK_ELEMENTS**:
+        A collection of vapor pressure data for metallic elements, in
+        :obj:`chemicals.dippr.EQ101` form [7]_
 
     See Also
     --------
@@ -277,6 +282,10 @@ class VaporPressure(TDependentProperty):
        Eighth Edition. McGraw-Hill Professional, 2007.
     .. [6] Shen, V.K., Siderius, D.W., Krekelberg, W.P., and Hatch, H.W., Eds.,
        NIST WebBook, NIST, http://doi.org/10.18434/T4M88Q
+    .. [7] Alcock, C. B., V. P. Itkin, and M. K. Horrigan. "Vapour Pressure
+        Equations for the Metallic Elements: 298-2500K." Canadian Metallurgical
+        Quarterly 23, no. 3 (July 1, 1984): 309-13. 
+        https://doi.org/10.1179/cmq.1984.23.3.309.
     '''
     name = 'Vapor pressure'
     units = 'Pa'
@@ -311,7 +320,7 @@ class VaporPressure(TDependentProperty):
 
     ranked_methods = [IAPWS, WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                       DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR, 
-                      ANTOINE_WEBBOOK, AMBROSE_WALTON,
+                      ANTOINE_WEBBOOK, ALCOCK_ELEMENTS, AMBROSE_WALTON,
                       LEE_KESLER_PSAT, EDALAT, BOILING_CRITICAL, EOS, SANJARI]
     '''Default rankings of the available methods.'''
 
@@ -338,6 +347,7 @@ class VaporPressure(TDependentProperty):
                 ANTOINE_EXTENDED_POLING: vapor_pressure.Psat_data_AntoineExtended.index,
                 ANTOINE_POLING: vapor_pressure.Psat_data_AntoinePoling.index,
                 DIPPR_PERRY_8E: vapor_pressure.Psat_data_Perrys2_8.index,
+                ALCOCK_ELEMENTS: vapor_pressure.Psat_data_Alcock_elements.index,
                 COOLPROP: coolprop_dict,
                 VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
                 VDI_PPDS: vapor_pressure.Psat_data_VDI_PPDS_3.index,
@@ -414,6 +424,11 @@ class VaporPressure(TDependentProperty):
                 self.VDI_Tmax = Ts[-1]
                 self.tabular_data[VDI_TABULAR] = (Ts, props)
                 T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
+            if CASRN in vapor_pressure.Psat_data_Alcock_elements.index:
+                methods.append(ALCOCK_ELEMENTS)
+                A, B, C, D, E, Alcock_Tmin, Alcock_Tmax = vapor_pressure.Psat_values_Alcock_elements[vapor_pressure.Psat_data_Alcock_elements.index.get_loc(self.CASRN)].tolist()
+                self.Alcock_coeffs = [A, B, C, D, E,]
+                T_limits[ALCOCK_ELEMENTS] = (Alcock_Tmin, Alcock_Tmax)
 
             if CASRN in vapor_pressure.Psat_data_VDI_PPDS_3.index:
                 Tm, Tc, Pc, A, B, C, D = vapor_pressure.Psat_values_VDI_PPDS_3[vapor_pressure.Psat_data_VDI_PPDS_3.index.get_loc(CASRN)].tolist()
@@ -470,6 +485,8 @@ class VaporPressure(TDependentProperty):
             Psat = Antoine(T, A, B, C, base=e)
         elif method == DIPPR_PERRY_8E:
             Psat = EQ101(T, *self.Perrys2_8_coeffs)
+        elif method == ALCOCK_ELEMENTS:
+            Psat = EQ101(T, *self.Alcock_coeffs)
         elif method == VDI_PPDS:
             Psat = Wagner(T, self.VDI_PPDS_Tc, self.VDI_PPDS_Pc, *self.VDI_PPDS_coeffs)
         elif method == COOLPROP:

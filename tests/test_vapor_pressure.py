@@ -726,3 +726,8 @@ def test_accurate_vapor_pressure_beryllium():
     obj = VaporPressure(CASRN='7440-41-7')
     assert_close(obj(2742.30), 1e5, atol=.01)
 
+
+@pytest.mark.meta_T_dept
+def test_vapor_pressure_element_metals():
+    K = VaporPressure(CASRN='7439-93-2')
+    assert_close(K.calculate(1000, 'ALCOCK_ELEMENTS'), 104.2837434179671)
