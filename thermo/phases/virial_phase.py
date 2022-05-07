@@ -981,8 +981,7 @@ class VirialGas(Phase):
         if P is not None:
             self.P = P
         if T is not None and P is not None and zs is not None:
-            Z = Z_from_virial_density_form(T, P, self.B(), self.C())
-            self._V = Z*self.R*T/P
+            self._set_V_TP(T, P)
         
     def __repr__(self):
         r'''Method to create a string representation of the phase object, with
@@ -1792,7 +1791,19 @@ class VirialGas(Phase):
     
     dS_dep_dT_P = dS_dep_dT
     dS_dep_dT_V = dS_dep_dT
-
+    
+    def _set_V_TP(self, T, P):
+        try:
+            Z = Z_from_virial_density_form(T, P, self.B(), self.C())
+        except:
+            if not self.model.B_zero and self.model.C_zero:
+                B = -R*T/(4*P)*(1-1e-13)
+                Z = Z_from_virial_density_form(T, P, B, 0.0)
+                self._B = 0.5
+                self._B_truncated = True
+                self._d3B_dT3 = self._d2B_dT2 = self._dB_dT = 0.0
+        self._V = Z*self.R*T/P
+        
     def to_TP_zs(self, T, P, zs):
         new = self.__class__.__new__(self.__class__)
         new.T = T
@@ -1810,8 +1821,7 @@ class VirialGas(Phase):
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
-        Z = Z_from_virial_density_form(T, P, new.B(), new.C())
-        new._V = Z*self.R*T/P
+        new._set_V_TP(T, P)
         return new
 
     def to(self, zs, T=None, P=None, V=None):
@@ -1834,10 +1844,7 @@ class VirialGas(Phase):
             new.model.T = T
             if P is not None:
                 new.P = P
-                B = new.B()
-                C = new.C()
-                Z = Z_from_virial_density_form(T, P, B, C)
-                new._V = Z*self.R*T/P
+                new._set_V_TP(T, P)
             elif V is not None:
                 P = new.P = self.R*T*(V*V + V*new.B() + new.C())/(V*V*V)
                 new._V = V
