@@ -614,7 +614,7 @@ class ChemicalConstantsPackage(object):
         Hfus_Tms_mass = [Hfus*1000.0/MW if Hfus is not None else None for Hfus, MW in zip(Hfus_Tms, MWs)]
 
         EnthalpyVaporizations = [EnthalpyVaporization(CASRN=CAS, Tb=Tb, Tc=Tc, Pc=Pc, omega=omega, similarity_variable=sv,
-                                                      poly_fit=get_chemical_constants(CAS, 'EnthalpyVaporization'))
+                                                      poly_fit_ln_tau=get_chemical_constants(CAS, 'EnthalpyVaporization'))
                                  for CAS, Tb, Tc, Pc, sv, omega in zip(CASs, Tbs, Tcs, Pcs, similarity_variables, omegas)]
 
 
