@@ -1672,7 +1672,7 @@ class EquilibriumStream(EquilibriumState):
     def __init__(self, flasher, zs=None, ws=None, Vfls=None, Vfgs=None,
                  ns=None, ms=None, Qls=None, Qgs=None,
                  n=None, m=None, Q=None,
-                 T=None, P=None, VF=None, H=None, H_mass=None, S=None, S_mass=None,
+                 T=None, P=None, V=None, VF=None, H=None, H_mass=None, S=None, S_mass=None,
                  energy=None, Vf_TP=None, Q_TP=None, hot_start=None,
                  existing_flash=None):
 
@@ -1806,7 +1806,7 @@ class EquilibriumStream(EquilibriumState):
 
         else:
             dest = super(EquilibriumStream, self).__init__
-            flasher.flash(T=T, P=P, VF=VF, H=H, S=S, dest=dest, zs=zs, hot_start=hot_start)
+            flasher.flash(T=T, P=P, V=V, VF=VF, H=H, S=S, dest=dest, zs=zs, hot_start=hot_start)
 
         # Convert the flow rate into total molar flow
         if m is not None:

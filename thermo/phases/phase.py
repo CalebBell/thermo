@@ -4565,6 +4565,187 @@ class Phase(object):
         '''
         return self.result.gas_beta
 
+    @property
+    def n(self):
+        r'''Method to return the molar flow rate of this phase.
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        n : float
+            Molar flow of the phase, [mol/s]
+
+        Notes
+        -----
+        '''
+        try:
+            return self.result.n*self.beta
+        except:
+            return None
+
+    @property
+    def m(self):
+        r'''Method to return the mass flow rate of this phase.
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        m : float
+            Mass flow of the phase, [kg/s]
+
+        Notes
+        -----
+        '''
+        try:
+            return self.result.m*self.beta_mass
+        except:
+            return None
+
+    @property
+    def Q(self):
+        r'''Method to return the actual volumetric flow rate of this phase.
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        Q : float
+            Volume flow of the phase, [m^3/s]
+
+        Notes
+        -----
+        '''
+        try:
+            return self.n*self.V()
+        except:
+            return None
+
+    @property
+    def ns(self):
+        r'''Method to return the molar flow rates of each component in
+        this phase. This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        ns : float
+            Molar flow of the components in the phase, [mol/s]
+
+        Notes
+        -----
+        '''
+        try:
+            n = self.result.n*self.beta
+            return [n*zi for zi in self.zs]
+        except:
+            return None
+
+    @property
+    def ms(self):
+        r'''Method to return the mass flow rates of each component in
+        this phase. This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        ms : float
+            Mass flow of the components in the phase, [kg/s]
+
+        Notes
+        -----
+        '''
+        try:
+            m = self.result.m*self.beta_mass
+            return [m*wi for wi in self.ws()]
+        except:
+            return None
+    
+    @property
+    def Qgs(self):
+        r'''Method to return the volume flow rate of each component in
+        this phase as an ideal gas, using the configured
+        temperature `T_gas_ref` and pressure `P_gas_ref`. This method is only
+        available when the phase is linked to an EquilibriumStream.
+        This method totally ignores phase equilibrium.
+
+        Returns
+        -------
+        Qgs : float
+            Ideal gas flow rates of the components in the phase, [m^3/s]
+
+        Notes
+        -----
+        '''
+        settings = self.result.settings
+        V = R*settings.T_gas_ref/settings.P_gas_ref
+        n = self.n
+        Vn = V*n
+        return [zi*Vn for zi in self.zs]
+
+    @property
+    def Qg(self):
+        r'''Method to return the volume flow rate of 
+        this phase as an ideal gas, using the configured
+        temperature `T_gas_ref` and pressure `P_gas_ref`. This method is only
+        available when the phase is linked to an EquilibriumStream.
+        This method totally ignores phase equilibrium.
+
+        Returns
+        -------
+        Qg : float
+            Ideal gas flow rate of the phase, [m^3/s]
+
+        Notes
+        -----
+        '''
+        try:
+            return sum(self.Qgs)
+        except:
+            return None
+
+    @property
+    def Qls(self):
+        r'''Method to return the volume flow rate of each component in
+        this phase as an ideal liquid, using the configured
+        standard molar volumes `Vml_STPs`. This method is only
+        available when the phase is linked to an EquilibriumStream.
+        This method totally ignores phase equilibrium.
+
+        Returns
+        -------
+        Qls : float
+            Ideal liquid flow rates of the components in the phase, [m^3/s]
+
+        Notes
+        -----
+        '''
+        ns = self.ns
+        Vms_TP = self.result.constants.Vml_STPs
+        return [ns[i]*Vms_TP[i] for i in range(self.N)]
+
+    @property
+    def Ql(self):
+        r'''Method to return the volume flow rate of
+        this phase as an ideal liquid, using the configured
+        standard molar volumes `Vml_STPs`. This method is only
+        available when the phase is linked to an EquilibriumStream.
+        This method totally ignores phase equilibrium.
+
+        Returns
+        -------
+        Ql : float
+            Ideal liquid flow rate of the phase, [m^3/s]
+
+        Notes
+        -----
+        '''
+        try:
+            return sum(self.Qls)
+        except:
+            return None
+
 
 derivatives_jacobian = []
 

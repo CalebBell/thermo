@@ -573,6 +573,11 @@ class Bulk(Phase):
         return [betas[i]*MWs_phases[i]*tot_inv for i in phase_iter]
 
     @property
+    def beta_mass(self):
+        return sum(self.betas_mass)
+
+
+    @property
     def betas_volume(self):
         r'''Method to calculate and return the volume fraction of all of the
         phases in the bulk.
@@ -595,6 +600,10 @@ class Bulk(Phase):
             tot += Vs_phases[i]*betas[i]
         tot_inv = 1.0/tot
         return [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
+
+    @property
+    def beta_volume(self):
+        return sum(self.betas_volume)
 
     def _property_mixing_rule(self, method, exponent, mix_obj, attr):
         if method == AS_ONE_LIQUID:
