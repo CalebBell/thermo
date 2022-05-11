@@ -1558,9 +1558,36 @@ def test_methane_water_decane_mole_mass_flows():
     assert_close(state.gas.water_partial_pressure(), 3069.425770433731, rtol=1e-4)
     assert_close(state.liquid0.water_partial_pressure(), 189999.64883157378, rtol=1e-4)
     
+    assert_close2d([state.gas.concentrations(), state.liquid0.concentrations(), state.liquid1.concentrations(), state.bulk.concentrations()
+                    , state.concentrations()],
+                   [[75.15974410964803, 1.2361027326019718, 0.11993713814815492],
+                    [0.08689140844466525, 47012.589566907445, 1.1319435693962356e-16],
+                    [45.582219753268916, 82.61150556877838, 4739.448097731596],
+                    [74.57996588198152, 74.57996588198152, 74.57996588198152],
+                    [74.57996588198152, 74.57996588198152, 74.57996588198152]],
+                   rtol=1e-9)
+
+    assert_close(sum(state.concentrations()), state.rho())
+
+    assert_close2d([state.gas.concentrations_mass(), state.liquid0.concentrations_mass(), state.liquid1.concentrations_mass(), state.bulk.concentrations_mass()
+                    , state.concentrations_mass()],
+                   [[1.2057471884892643, 0.02226873683658965, 0.01706485751011157],
+                   [0.0013939519443172048, 846.9449645729165, 1.61054832718893e-17],
+                   [0.7312509371030262, 1.4882694040431017, 674.3366376180555],
+                   [1.196446119463053, 1.343578967754344, 10.611362840031012],
+                   [1.196446119463053, 1.343578967754344, 10.611362840031012]],
+                   rtol=1e-9)
+    
+    assert_close(sum(state.concentrations_mass()), state.rho_mass())
+
+    
+test_methane_water_decane_mole_mass_flows()
+
 
 def test_PH_TODO():
     '''Secant is finding false bounds, meaning a failed PT - but the plot looks good. Needs more detail, and enthalpy plot.
+    Nice! it fixed itelf.
+    Takes 10 seconds though.
 
     constants = ChemicalConstantsPackage(atomss=[{'H': 2, 'O': 1}, {'C': 2, 'H': 6, 'O': 1}], CASs=['7732-18-5', '64-17-5'], MWs=[18.01528, 46.06844], names=['water', 'ethanol'], omegas=[0.344, 0.635], Pcs=[22048320.0, 6137000.0], Tcs=[647.14, 514.0])
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),

@@ -2477,6 +2477,8 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
               'mu', 'k', 'sigma',
               'isentropic_exponent', 'isentropic_exponent_PV', 'isentropic_exponent_TV',
               'isentropic_exponent_PT',
+              
+              'concentrations_mass', 'concentrations', 'Ql', 'Qls', 'Qg', 'ms', 'ns', 'Q', 'm', 'n',
               ]
 
 

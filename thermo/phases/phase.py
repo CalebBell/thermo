@@ -4745,6 +4745,39 @@ class Phase(object):
             return sum(self.Qls)
         except:
             return None
+        
+    def concentrations(self):
+        r'''Method to return the molar concentrations of each component in the 
+        phase in units of mol/m^3. Molarity is a term used in chemistry for a
+        similar concept, usually given in units of mol/L.
+
+        Returns
+        -------
+        concentrations : list[float]
+            Molar concentrations of all the components in the phase, [mol/m^3]
+
+        Notes
+        -----
+        '''
+        rho = self.rho()
+        zs = self.zs
+        return [rho*zi for zi in zs]
+    
+    def concentrations_mass(self):
+        r'''Method to return the mass concentrations of each component in the 
+        phase in units of kg/m^3. 
+        
+        Returns
+        -------
+        concentrations_mass : list[float]
+            Mass concentrations of all the components in the phase, [kg/m^3]
+
+        Notes
+        -----
+        '''
+        rho_mass = self.rho_mass()
+        ws = self.ws()
+        return [rho_mass*wi for wi in ws]
 
 
 derivatives_jacobian = []

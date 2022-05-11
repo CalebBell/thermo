@@ -1921,7 +1921,7 @@ class EquilibriumStream(EquilibriumState):
         T_liquid_volume_ref = self.flasher.settings.T_liquid_volume_ref
         ns = self.ns
         Vms_TP = self.constants.Vml_STPs
-        return [ns[i]*Vms_TP[i] for i in self.cmps]
+        return [ns[i]*Vms_TP[i] for i in range(self.N)]
 
     Qls_calc = Qls
 
