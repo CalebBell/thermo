@@ -1592,6 +1592,7 @@ def test_single_phase_viscosity_thermal_conductivity():
     phase.constants = constants
     phase.correlations = correlations
     assert_close(phase.mu(), 1.1006640924847626e-05, rtol=1e-7)
+    assert_close(phase.nu(), 3.791422144639066e-07, rtol=1e-7)
     assert_close(phase.k(), 0.01591594304085816, rtol=1e-7)
 
     # Gas phase but becomes a liquid property as volume root is liquid
@@ -1599,6 +1600,7 @@ def test_single_phase_viscosity_thermal_conductivity():
     phase.constants = constants
     phase.correlations = correlations
     assert_close(phase.mu(), 0.00028727346628185633, rtol=1e-7)
+    assert_close(phase.nu(), 3.059835918888456e-07, rtol=1e-7)
     assert_close(phase.k(), 0.15487898658770405, rtol=1e-7)
 
     # Liquid point
@@ -1606,6 +1608,7 @@ def test_single_phase_viscosity_thermal_conductivity():
     phase.constants = constants
     phase.correlations = correlations
     assert_close(phase.mu(), 0.00028727346628185633, rtol=1e-7)
+    assert_close(phase.nu(), 3.1035782949479826e-07, rtol=1e-7)
     assert_close(phase.k(), 0.15487898658770405, rtol=1e-7)
 
     # Liquid point but becomes a gas as volume root is gas
@@ -1615,6 +1618,7 @@ def test_single_phase_viscosity_thermal_conductivity():
     phase.correlations = correlations
     assert_close(phase.rho_mass(), 1.602260139151343, rtol=1e-7)
     assert_close(phase.mu(), 1.52014008290963e-05, rtol=1e-7)
+    assert_close(phase.nu(), 9.487473636551871e-06, rtol=1e-7)
     assert_close(phase.k(), 0.028032831809820278, rtol=1e-7)
 
     # Check we can back, phase transition - and the liquid viscosity is higher
@@ -1632,6 +1636,7 @@ def test_single_phase_viscosity_thermal_conductivity():
     phase.constants = constants
     phase.correlations = correlations
     assert_close(phase.mu(), 1.1006640924847626e-05, rtol=1e-7)
+    assert_close(phase.nu(), 5.048066405365861e-07, rtol=1e-7)
     assert_close(phase.k(), 0.01591594304085816, rtol=1e-7)
 
     # Gibbs excess liquid
@@ -1642,7 +1647,10 @@ def test_single_phase_viscosity_thermal_conductivity():
     phase.constants = constants
     phase.correlations = correlations
     assert_close(phase.mu(), 0.00028727346628185633, rtol=1e-7)
+    assert_close(phase.nu(), 2.883501552352984e-07, rtol=1e-7)
+    assert_close(phase.kinematic_viscosity(), 2.883501552352984e-07, rtol=1e-7)
     assert_close(phase.k(), 0.15487898658770405, rtol=1e-7)
+
 
 def test_BulkSettings_normal_standard():
     T, P = 298.15, 1e5

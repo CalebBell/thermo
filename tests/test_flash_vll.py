@@ -1579,9 +1579,25 @@ def test_methane_water_decane_mole_mass_flows():
                    rtol=1e-9)
     
     assert_close(sum(state.concentrations_mass()), state.rho_mass())
-
     
-test_methane_water_decane_mole_mass_flows()
+    
+    assert_close2d([state.gas.partial_pressures(), state.liquid0.partial_pressures(), 
+                    state.liquid1.partial_pressures(), state.bulk.partial_pressures()
+                    , state.partial_pressures()],
+                   [[186632.75258986393, 3069.425770433731, 297.8216397023035],
+                   [0.35116842622488303, 189999.64883157378, 4.574708235894151e-16],
+                   [1779.223301127769, 3224.597583110814, 184996.17911576145],
+                   [63333.33333333333, 63333.33333333333, 63333.33333333333],
+                   [63333.33333333333, 63333.33333333333, 63333.33333333333]],
+                   rtol=1e-6)
+    
+    assert_close(sum(state.partial_pressures()), state.P)
+    assert_close(sum(state.bulk.partial_pressures()), state.P)
+    assert_close(sum(state.gas.partial_pressures()), state.P)
+    assert_close(sum(state.liquid0.partial_pressures()), state.P)
+    assert_close(sum(state.liquid1.partial_pressures()), state.P)
+    assert_close(sum(state.liquid_bulk.partial_pressures()), state.P)
+
 
 
 def test_PH_TODO():

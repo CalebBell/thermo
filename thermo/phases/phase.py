@@ -4427,6 +4427,25 @@ class Phase(object):
             return self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
         else:
             raise NotImplementedError("Did not work")
+            
+    def nu(self):
+        r'''Method to calculate and return the kinematic viscosity of the 
+        phase, [m^2/s]
+
+        Returns
+        -------
+        nu : float
+            Kinematic viscosity, [m^2/s]
+
+        Notes
+        -----
+        '''
+        mu = self.mu()
+        if mu is None:
+            return None
+        return mu/self.rho_mass()
+    
+    kinematic_viscosity = nu
 
     def ws(self):
         r'''Method to calculate and return the mass fractions of the phase, [-]
@@ -4778,6 +4797,25 @@ class Phase(object):
         rho_mass = self.rho_mass()
         ws = self.ws()
         return [rho_mass*wi for wi in ws]
+
+    def partial_pressures(self):
+        r'''Method to return the partial pressures of each component in the 
+        phase. Note that this is the conventional definition assumed in almost
+        every source; there is also a non-ideal definition.
+        
+        .. math::
+            P_i = z_i P
+        
+        Returns
+        -------
+        partial_pressures : list[float]
+            Partial pressures of all the components in the phase, [Pa]
+
+        Notes
+        -----
+        '''
+        P = self.P
+        return [zi*P for zi in self.zs]
 
 
 derivatives_jacobian = []
