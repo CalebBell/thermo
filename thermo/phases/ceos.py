@@ -35,7 +35,7 @@ try:
 except:
     pass
 
-class CEOSGas(IdealGasDeparturePhase):
+class CEOSPhase(IdealGasDeparturePhase):
     r'''Class for representing a cubic equation of state gas phase
     as a phase object. All departure
     properties are actually calculated by the code in :obj:`thermo.eos` and
@@ -79,10 +79,6 @@ class CEOSGas(IdealGasDeparturePhase):
     29.2285050
 
     '''
-    is_gas = True
-    is_liquid = False
-    ideal_gas_basis = True
-
     pure_references = ('HeatCapacityGases',)
     pure_reference_types = (HeatCapacityGas,)
     obj_references = ('eos_mix',)
@@ -96,13 +92,6 @@ class CEOSGas(IdealGasDeparturePhase):
 
     model_attributes = ('Hfs', 'Gfs', 'Sfs', 'eos_class',
                         'eos_kwargs') + pure_references
-
-    @property
-    def phase(self):
-        phase = self.eos_mix.phase
-        if phase in ('l', 'g'):
-            return phase
-        return 'g'
 
     def __repr__(self):
         r'''Method to create a string representation of the phase object, with
@@ -222,7 +211,7 @@ class CEOSGas(IdealGasDeparturePhase):
             new.eos_mix = other_eos
         else:
             try:
-                new.eos_mix = self.eos_mix.to_TP_zs_fast(T=T, P=P, zs=zs, only_g=True,
+                new.eos_mix = self.eos_mix.to_TP_zs_fast(T=T, P=P, zs=zs, only_g=self.is_gas, only_l=self.is_liquid,
                                                          full_alphas=True) # optimize alphas?
                                                          # Be very careful doing this in the future - wasted
                                                          # 1 hour on this because the heat capacity calculation was wrong
@@ -250,6 +239,7 @@ class CEOSGas(IdealGasDeparturePhase):
 
         return new
 
+
     def to(self, zs, T=None, P=None, V=None):
         new = self.__class__.__new__(self.__class__)
         new.zs = zs
@@ -257,7 +247,7 @@ class CEOSGas(IdealGasDeparturePhase):
         if T is not None:
             if P is not None:
                 try:
-                    new.eos_mix = self.eos_mix.to_TP_zs_fast(T=T, P=P, zs=zs, only_g=True,
+                    new.eos_mix = self.eos_mix.to_TP_zs_fast(T=T, P=P, zs=zs, only_g=self.is_gas, only_l=self.is_liquid,
                                                              full_alphas=True)
                 except AttributeError:
                     new.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
@@ -269,9 +259,9 @@ class CEOSGas(IdealGasDeparturePhase):
                 P = new.eos_mix.P
         elif P is not None and V is not None:
             try:
-                new.eos_mix = self.eos_mix.to_PV_zs(P=P, V=V, zs=zs, only_g=True, fugacities=False)
+                new.eos_mix = self.eos_mix.to_PV_zs(P=P, V=V, zs=zs, only_g=self.is_gas, only_l=self.is_liquid, fugacities=False)
             except AttributeError:
-                new.eos_mix = self.eos_class(P=P, V=V, zs=zs, only_g=True, **self.eos_kwargs)
+                new.eos_mix = self.eos_class(P=P, V=V, zs=zs, only_g=self.is_gas, only_l=self.is_liquid, **self.eos_kwargs)
             T = new.eos_mix.T
         else:
             raise ValueError("Two of T, P, or V are needed")
@@ -299,26 +289,6 @@ class CEOSGas(IdealGasDeparturePhase):
             pass
 
         return new
-
-    def V_iter(self, force=False):
-        # Can be some severe issues in the very low pressure/temperature range
-        # For that reason, consider not doing TV iterations.
-        # Cal occur also with PV iterations
-
-        T, P = self.T, self.P
-#        if 0 and ((P < 1.0 or T < 1.0) or (P/T < 500.0 and T < 50.0)):
-        eos_mix = self.eos_mix
-        V = self.V()
-        P_err = abs((self.R*T/(V-eos_mix.b) - eos_mix.a_alpha/(V*V + eos_mix.delta*V + eos_mix.epsilon)) - P)
-        if (P_err/P) < 1e-9 and not force:
-            return V
-        try:
-            return eos_mix.V_g_mpmath.real
-        except:
-            return eos_mix.V_l_mpmath.real
-#        else:
-#            return self.V()
-
     def lnphis_G_min(self):
         eos_mix = self.eos_mix
         if eos_mix.phase == 'l/g':
@@ -352,6 +322,89 @@ class CEOSGas(IdealGasDeparturePhase):
         # if eos_mix.__class__.__name__ in ('PRMIX', 'VDWMIX', 'SRKMIX', 'RKMIX'):
         return lnphis_direct(zs, *self.lnphis_args())
         # return self.to_TP_zs(self.T, self.P, zs).lnphis()
+
+    def T_max_at_V(self, V):
+        T_max = self.eos_mix.T_max_at_V(V)
+        if T_max is not None:
+            T_max = T_max*(1.0-1e-12)
+        return T_max
+
+    def P_max_at_V(self, V):
+        P_max = self.eos_mix.P_max_at_V(V)
+        if P_max is not None:
+            P_max = P_max*(1.0-1e-12)
+        return P_max
+
+    def mu(self):
+#        try:
+#            return self._mu
+#        except AttributeError:
+#            pass
+        try:
+            phase = self.assigned_phase
+        except:
+            phase = self.phase
+            if phase == 'l/g': phase = 'g'
+        try:
+            ws = self._ws
+        except:
+            ws = self.ws()
+        if phase == 'g':
+            mu = self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, ws)
+        else:
+            mu = self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, ws)
+        self._mu = mu
+        return mu
+
+    def k(self):
+        try:
+            return self._k
+        except AttributeError:
+            pass
+        try:
+            phase = self.assigned_phase
+        except:
+            phase = self.phase
+            if phase == 'l/g': phase = 'g'
+        if phase == 'g':
+            k = self.correlations.ThermalConductivityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+        elif phase == 'l':
+            k = self.correlations.ThermalConductivityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+        self._k = k
+        return k
+
+
+
+class CEOSGas(CEOSPhase):
+    is_gas = True
+    is_liquid = False
+    ideal_gas_basis = True
+
+    @property
+    def phase(self):
+        phase = self.eos_mix.phase
+        if phase in ('l', 'g'):
+            return phase
+        return 'g'
+
+    def V_iter(self, force=False):
+        # Can be some severe issues in the very low pressure/temperature range
+        # For that reason, consider not doing TV iterations.
+        # Cal occur also with PV iterations
+
+        T, P = self.T, self.P
+#        if 0 and ((P < 1.0 or T < 1.0) or (P/T < 500.0 and T < 50.0)):
+        eos_mix = self.eos_mix
+        V = self.V()
+        P_err = abs((self.R*T/(V-eos_mix.b) - eos_mix.a_alpha/(V*V + eos_mix.delta*V + eos_mix.epsilon)) - P)
+        if (P_err/P) < 1e-9 and not force:
+            return V
+        try:
+            return eos_mix.V_g_mpmath.real
+        except:
+            return eos_mix.V_l_mpmath.real
+#        else:
+#            return self.V()
 
 
 
@@ -779,55 +832,6 @@ class CEOSGas(IdealGasDeparturePhase):
         except:
             return [self.eos_mix.T_discriminant_zero_g()]
 
-    def T_max_at_V(self, V):
-        T_max = self.eos_mix.T_max_at_V(V)
-        if T_max is not None:
-            T_max = T_max*(1.0-1e-12)
-        return T_max
-
-    def P_max_at_V(self, V):
-        P_max = self.eos_mix.P_max_at_V(V)
-        if P_max is not None:
-            P_max = P_max*(1.0-1e-12)
-        return P_max
-
-    def mu(self):
-#        try:
-#            return self._mu
-#        except AttributeError:
-#            pass
-        try:
-            phase = self.assigned_phase
-        except:
-            phase = self.eos_mix.phase
-            if phase == 'l/g': phase = 'g'
-        try:
-            ws = self._ws
-        except:
-            ws = self.ws()
-        if phase == 'g':
-            mu = self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, ws)
-        else:
-            mu = self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, ws)
-        self._mu = mu
-        return mu
-
-    def k(self):
-        try:
-            return self._k
-        except AttributeError:
-            pass
-        try:
-            phase = self.assigned_phase
-        except:
-            phase = self.eos_mix.phase
-            if phase == 'l/g': phase = 'g'
-        if phase == 'g':
-            k = self.correlations.ThermalConductivityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
-        elif phase == 'l':
-            k = self.correlations.ThermalConductivityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
-        self._k = k
-        return k
 
 def build_CEOSLiquid():
     import inspect
@@ -855,7 +859,7 @@ def build_CEOSLiquid():
         source = source.replace('gORIG', s+'_l')
     return source
 
-# print(build_CEOSLiquid())
+print(build_CEOSLiquid())
 
 from fluids.numerics import is_micropython
 if is_micropython:
