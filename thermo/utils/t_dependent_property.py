@@ -249,7 +249,7 @@ class LocalMethod:
     def __hash__(self):
         # Don't compare hased on this object id, compapre based on the functions
         # implemented
-        return hash(id(getattr, o) for o in self.__slots__)
+        return hash(tuple(id(getattr(self, o)) for o in self.__slots__))
     
     def __init__(self, f, f_der, f_der2, f_der3, f_int, f_int_over_T):
         self.f = f
