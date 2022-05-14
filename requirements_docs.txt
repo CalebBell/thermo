@@ -4,7 +4,7 @@ numpydoc
 pint
 nbsphinx
 fluids>=1.0.10
-chemicals>=1.0.20
+chemicals>=1.0.21
 IPython
 ipython
 numba

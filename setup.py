@@ -43,6 +43,7 @@ classifiers=[
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: Implementation :: CPython',
     'Programming Language :: Python :: Implementation :: PyPy',
     'Topic :: Education',
@@ -59,7 +60,7 @@ setup(
   version = '0.2.20',
   description = 'Chemical properties component of Chemical Engineering Design Library (ChEDL)',
   author = 'Caleb Bell',
-  install_requires=['fluids>=1.0.15', 'scipy', 'pandas', 'chemicals>=1.0.17'],
+  install_requires=['fluids>=1.0.15', 'scipy', 'pandas', 'chemicals>=1.0.21'],
   extras_require = {
       'Coverage documentation':  ['wsgiref>=0.1.2', 'coverage>=4.0.3']
   },
