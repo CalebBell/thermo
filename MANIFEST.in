@@ -20,3 +20,16 @@ prune docs/Data/.ipynb_checkpoints/
 recursive-exclude docs *ipynb_checkpoints
 recursive-exclude docs 
 prune docs
+prune .asv 
+prune .github
+prune benchmarks 
+prune dev
+prune .flake8 
+prune .gitignore 
+prune .pylintrc 
+global-exclude .asv.conf.json 
+prune environment.yml
+global-exclude .hypothesis
+prune thermo/.hypothesis/
+global-exclude thermo/Misc/constants*
+global-exclude tests/Data/joback_log_good_sorted.txt
