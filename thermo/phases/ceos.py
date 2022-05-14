@@ -79,6 +79,8 @@ class CEOSPhase(IdealGasDeparturePhase):
     29.2285050
 
     '''
+    ideal_gas_basis = True
+
     pure_references = ('HeatCapacityGases',)
     pure_reference_types = (HeatCapacityGas,)
     obj_references = ('eos_mix',)
@@ -534,17 +536,24 @@ class CEOSPhase(IdealGasDeparturePhase):
             Second volume derivative of pressure, [Pa*mol^2/m^6]
         '''
         pass
-class CEOSGas(CEOSPhase):
-    is_gas = True
-    is_liquid = False
-    ideal_gas_basis = True
 
-    @property
-    def phase(self):
-        phase = self.eos_mix.phase
-        if phase in ('l', 'g'):
-            return phase
-        return 'g'
+    def fugacities_lowest_Gibbs(self):
+        eos_mix = self.eos_mix
+        P = self.P
+        zs = self.zs
+        try:
+            if eos_mix.G_dep_g < eos_mix.G_dep_l:
+                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_g)
+            else:
+                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_l)
+        except:
+            # Do not have both phases, only one will work,
+            # order of attempt does not matter
+            try:
+                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_g)
+            except:
+                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_l)
+        return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
 
     def V_iter(self, force=False):
         # Can be some severe issues in the very low pressure/temperature range
@@ -558,19 +567,33 @@ class CEOSGas(CEOSPhase):
         P_err = abs((self.R*T/(V-eos_mix.b) - eos_mix.a_alpha/(V*V + eos_mix.delta*V + eos_mix.epsilon)) - P)
         if (P_err/P) < 1e-9 and not force:
             return V
-        try:
-            return eos_mix.V_g_mpmath.real
-        except:
-            return eos_mix.V_l_mpmath.real
+        if self.phase == 'g':
+            try:
+                return eos_mix.V_g_mpmath.real
+            except:
+                return eos_mix.V_l_mpmath.real
+        else:
+            try:
+                return eos_mix.V_l_mpmath.real
+            except:
+                return eos_mix.V_g_mpmath.real
 
+class CEOSGas(CEOSPhase):
+    is_gas = True
+    is_liquid = False
 
+    @property
+    def phase(self):
+        phase = self.eos_mix.phase
+        if phase in ('l', 'g'):
+            return phase
+        return 'g'
 
     def lnphis(self):
         try:
             return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_g)
         except AttributeError:
             return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_l)
-
 
     def dlnphis_dT(self):
         try:
@@ -592,31 +615,11 @@ class CEOSGas(CEOSPhase):
             return eos_mix.dlnphis_dns(eos_mix.Z_l)
 
     def dlnphis_dzs(self):
-        # Confirmed to be mole fraction derivatives - taked with sum not 1 -
-        # of the log fugacity coefficients!
         eos_mix = self.eos_mix
         try:
             return eos_mix.dlnphis_dzs(eos_mix.Z_g)
         except:
             return eos_mix.dlnphis_dzs(eos_mix.Z_l)
-
-    def fugacities_lowest_Gibbs(self):
-        eos_mix = self.eos_mix
-        P = self.P
-        zs = self.zs
-        try:
-            if eos_mix.G_dep_g < eos_mix.G_dep_l:
-                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_g)
-            else:
-                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_l)
-        except:
-            try:
-                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_g)
-            except:
-                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_l)
-        return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
-    
-    
 
     def phi_pures(self):
         phis_pure = []
@@ -701,7 +704,6 @@ class CEOSGas(CEOSPhase):
         except AttributeError:
             return self.eos_mix.dH_dep_dV_l_P
 
-
     def V(self):
         try:
             return self.eos_mix.V_g
@@ -746,8 +748,9 @@ class CEOSGas(CEOSPhase):
         except AttributeError:
             return self.eos_mix.d2P_dTdV_l
 
-    # because of the ideal gas model, for some reason need to use the right ones
-    # FOR THIS MODEL ONLY
+    # The following methods are implemented to provide numerically precise answers
+    # for the ideal gas equation of state only, the rest of the EOSs are fine without
+    # these methods
     def d2T_dV2(self):
         try:
             return self.eos_mix.d2T_dV2_g
@@ -917,5 +920,8 @@ else:
 CEOSLiquid.is_gas = False
 CEOSLiquid.is_liquid = True
 
-CEOSGas.__doc__ = CEOSPhase.__doc__
-CEOSLiquid.__doc__ = CEOSPhase.__doc__
+try:
+    CEOSGas.__doc__ = CEOSPhase.__doc__
+    CEOSLiquid.__doc__ = CEOSPhase.__doc__
+except:
+    pass
