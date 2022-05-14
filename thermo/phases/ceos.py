@@ -437,6 +437,8 @@ class CEOSGas(IealGasDeparturePhase):
             except:
                 lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_l)
         return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
+    
+    
 
 
     def gammas(self):
@@ -670,35 +672,18 @@ class CEOSGas(IealGasDeparturePhase):
             dV_dzs = self.eos_mix.dV_dzs(eos_mix.Z_l)
         return dV_dzs
 
-
-    def d2H_dT2(self):
+    def d2H_dep_dT2(self):
         try:
-            return self._d2H_dT2
+            return self.eos_mix.d2H_dep_dT2_g
         except AttributeError:
-            pass
-        dCpigs_pure = self.dCpigs_dT_pure()
-        dCp, zs = 0.0, self.zs
-        for i in range(self.N):
-            dCp += zs[i]*dCpigs_pure[i]
-        try:
-            dCp += self.eos_mix.d2H_dep_dT2_g
-        except AttributeError:
-            dCp += self.eos_mix.d2H_dep_dT2_l
-        self._d2H_dT2 = dCp
-        return dCp
+            return self.eos_mix.d2H_dep_dT2_l
 
-    def d2H_dT2_V(self):
-        # Turned out not to be needed when I thought it was - ignore this!
-        dCpigs_pure = self.dCpigs_dT_pure()
-        dCp, zs = 0.0, self.zs
-        for i in range(self.N):
-            dCp += zs[i]*dCpigs_pure[i]
-
+    def d2H_dep_dT2_V(self):
         try:
-            dCp += self.eos_mix.d2H_dep_dT2_g_V
+            return self.eos_mix.d2H_dep_dT2_g_V
         except AttributeError:
-            dCp += self.eos_mix.d2H_dep_dT2_l_V
-        return dCp
+            return self.eos_mix.d2H_dep_dT2_l_V
+
 
 
     def d2H_dP2(self):
@@ -719,91 +704,24 @@ class CEOSGas(IealGasDeparturePhase):
         except:
             return self.eos_mix.dH_dep_dT_l_V
         
-
-
-    def dH_dzs(self):
+    def dH_dep_dzs(self):
         try:
-            return self._dH_dzs
+            return self.eos_mix.dH_dep_dzs(self.eos_mix.Z_g)
         except AttributeError:
-            pass
-        eos_mix = self.eos_mix
+            return self.eos_mix.dH_dep_dzs(self.eos_mix.Z_l)
+        
+    def d2S_dep_dP(self):
         try:
-            dH_dep_dzs = self.eos_mix.dH_dep_dzs(eos_mix.Z_g)
+            return self.eos_mix.d2S_dep_dP_g
         except AttributeError:
-            dH_dep_dzs = self.eos_mix.dH_dep_dzs(eos_mix.Z_l)
-        Cpig_integrals_pure = self.Cpig_integrals_pure()
-        self._dH_dzs = [dH_dep_dzs[i] + Cpig_integrals_pure[i] for i in range(self.N)]
-        return self._dH_dzs
+            return self.eos_mix.d2S_dep_dP_l
 
-    def dS_dT(self):
-        HeatCapacityGases = self.HeatCapacityGases
-        cmps = range(self.N)
-        T, zs = self.T, self.zs
-        T_REF_IG = self.T_REF_IG
-        P_REF_IG_INV = self.P_REF_IG_INV
 
-        dS_dT = self.Cp_ideal_gas()/T
-        dS_dT += self.dS_dep_dT()
-        return dS_dT
-
-    def dS_dP(self):
-        dS = 0.0
-        P = self.P
-        dS -= self.R/P
-        dS += self.dS_dep_dP_T()
-        return dS
-
-    def d2S_dP2(self):
-        P = self.P
-        d2S = self.R/(P*P)
-        try:
-            d2S += self.eos_mix.d2S_dep_dP_g
-        except AttributeError:
-            d2S += self.eos_mix.d2S_dep_dP_l
-        return d2S
-
-    def dS_dT_P(self):
-        return self.dS_dT()
-
-    def dS_dT_V(self):
-        r'''Method to calculate and return the first temperature derivative of
-        molar entropy at constant volume of the phase.
-
-        .. math::
-            \left(\frac{\partial S}{\partial T}\right)_V =
-            \frac{C_p^{ig}}{T} - \frac{R}{P}\frac{\partial P}{\partial T}
-            + \left(\frac{\partial S_{dep}}{\partial T}\right)_V
-
-        Returns
-        -------
-        dS_dT_V : float
-            First temperature derivative of molar entropy at constant volume,
-            [J/(mol*K^2)]
-        '''
-        # Good
-        '''
-        # Second last bit from
-        from sympy import *
-        T, R = symbols('T, R')
-        P = symbols('P', cls=Function)
-        expr =-R*log(P(T)/101325)
-        diff(expr, T)
-        '''
-        dS_dT_V = self.Cp_ideal_gas()/self.T - self.R/self.P*self.dP_dT()
-        dS_dT_V += self.dS_dep_dT_V()
-        return dS_dT_V
-    
-    
-    def dS_dP_V(self):
-        dS_dP_V = -self.R/self.P + self.Cp_ideal_gas()/self.T*self.dT_dP()
-        dS_dP_V += self.dS_dep_dP_V()
-        return dS_dP_V
 
     # The following - likely should be reimplemented generically
     # http://www.coolprop.org/_static/doxygen/html/class_cool_prop_1_1_abstract_state.html#a0815380e76a7dc9c8cc39493a9f3df46
 
     def d2P_dTdP(self):
-
         try:
             return self.eos_mix.d2P_dTdP_g
         except AttributeError:
@@ -826,25 +744,13 @@ class CEOSGas(IealGasDeparturePhase):
             return self.eos_mix.d2P_dT2_PV_g
         except AttributeError:
             return self.eos_mix.d2P_dT2_PV_l
-
-    def dS_dzs(self):
+    
+    def dS_dep_dzs(self):
         try:
-            return self._dS_dzs
+            return self.eos_mix.dS_dep_dzs(self.eos_mix.Z_g)
         except AttributeError:
-            pass
-        cmps, eos_mix = range(self.N), self.eos_mix
-
-        log_zs = self.log_zs()
-        integrals = self.Cpig_integrals_over_T_pure()
-
-        try:
-            dS_dep_dzs = self.eos_mix.dS_dep_dzs(eos_mix.Z_g)
-        except AttributeError:
-            dS_dep_dzs = self.eos_mix.dS_dep_dzs(eos_mix.Z_l)
-        R = self.R
-        self._dS_dzs = [integrals[i] - R*(log_zs[i] + 1.0) + dS_dep_dzs[i]
-                        for i in cmps]
-        return self._dS_dzs
+            return self.eos_mix.dS_dep_dzs(self.eos_mix.Z_l)
+        
 
     def _set_mechanical_critical_point(self):
         zs = self.zs

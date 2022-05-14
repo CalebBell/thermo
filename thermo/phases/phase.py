@@ -4898,7 +4898,113 @@ class IealGasDeparturePhase(Phase):
         dH_dV_P = self.dT_dV()*self.Cp_ideal_gas()
         dH_dV_P += self.dH_dep_dV_P()
         return dH_dV_P
+
+    def d2H_dT2(self):
+        try:
+            return self._d2H_dT2
+        except AttributeError:
+            pass
+        dCpigs_pure = self.dCpigs_dT_pure()
+        dCp, zs = 0.0, self.zs
+        for i in range(self.N):
+            dCp += zs[i]*dCpigs_pure[i]
+        dCp += self.d2H_dep_dT2()
+        self._d2H_dT2 = dCp
+        return dCp
+
+    def d2H_dT2_V(self):
+        dCpigs_pure = self.dCpigs_dT_pure()
+        dCp, zs = 0.0, self.zs
+        for i in range(self.N):
+            dCp += zs[i]*dCpigs_pure[i]
+        return dCp + self.d2H_dep_dT2_V()
+
+
+    def dH_dzs(self):
+        try:
+            return self._dH_dzs
+        except AttributeError:
+            pass
+        dH_dep_dzs = self.dH_dep_dzs()
+        Cpig_integrals_pure = self.Cpig_integrals_pure()
+        self._dH_dzs = [dH_dep_dzs[i] + Cpig_integrals_pure[i] for i in range(self.N)]
+        return self._dH_dzs
+
+    def dS_dT(self):
+        HeatCapacityGases = self.HeatCapacityGases
+        cmps = range(self.N)
+        T, zs = self.T, self.zs
+        T_REF_IG = self.T_REF_IG
+        P_REF_IG_INV = self.P_REF_IG_INV
+
+        dS_dT = self.Cp_ideal_gas()/T
+        dS_dT += self.dS_dep_dT()
+        return dS_dT
+
+    def dS_dP(self):
+        dS = 0.0
+        P = self.P
+        dS -= self.R/P
+        dS += self.dS_dep_dP_T()
+        return dS
+
+    def dS_dT_P(self):
+        return self.dS_dT()
+
+    def dS_dT_V(self):
+        r'''Method to calculate and return the first temperature derivative of
+        molar entropy at constant volume of the phase.
+
+        .. math::
+            \left(\frac{\partial S}{\partial T}\right)_V =
+            \frac{C_p^{ig}}{T} - \frac{R}{P}\frac{\partial P}{\partial T}
+            + \left(\frac{\partial S_{dep}}{\partial T}\right)_V
+
+        Returns
+        -------
+        dS_dT_V : float
+            First temperature derivative of molar entropy at constant volume,
+            [J/(mol*K^2)]
+        '''
+        # Good
+        '''
+        # Second last bit from
+        from sympy import *
+        T, R = symbols('T, R')
+        P = symbols('P', cls=Function)
+        expr =-R*log(P(T)/101325)
+        diff(expr, T)
+        '''
+        dS_dT_V = self.Cp_ideal_gas()/self.T - self.R/self.P*self.dP_dT()
+        dS_dT_V += self.dS_dep_dT_V()
+        return dS_dT_V
     
+    
+    def dS_dP_V(self):
+        dS_dP_V = -self.R/self.P + self.Cp_ideal_gas()/self.T*self.dT_dP()
+        dS_dP_V += self.dS_dep_dP_V()
+        return dS_dP_V
+
+    def d2S_dP2(self):
+        P = self.P
+        d2S = self.R/(P*P)
+        return d2S + self.d2S_dep_dP()
+
+    def dS_dzs(self):
+        try:
+            return self._dS_dzs
+        except AttributeError:
+            pass
+        cmps, eos_mix = range(self.N), self.eos_mix
+
+        log_zs = self.log_zs()
+        integrals = self.Cpig_integrals_over_T_pure()
+        dS_dep_dzs = self.dS_dep_dzs()
+        R = self.R
+        self._dS_dzs = [integrals[i] - R*(log_zs[i] + 1.0) + dS_dep_dzs[i]
+                        for i in cmps]
+        return self._dS_dzs
+
 derivatives_jacobian = []
 
 prop_iter = (('T', 'P', 'V', 'rho'), ('T', 'P', 'V', r'\rho'), ('K', 'Pa', 'm^3/mol', 'mol/m^3'), ('temperature', 'pressure', 'volume', 'density'))
