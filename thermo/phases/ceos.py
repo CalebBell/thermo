@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2019, 2020, 2021, 2022 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -851,74 +851,278 @@ class CEOSGas(CEOSPhase):
             return self.eos_mix.dS_dep_dzs(self.eos_mix.Z_l)
         
 
+class CEOSLiquid(CEOSPhase):
+    is_gas = False
+    is_liquid = True
 
+    @property
+    def phase(self):
+        phase = self.eos_mix.phase
+        if phase in ('g', 'l'):
+            return phase
+        return 'l'
 
+    def lnphis(self):
+        try:
+            return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_l)
+        except AttributeError:
+            return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_g)
 
-def build_CEOSLiquid():
-    import inspect
-    source = inspect.getsource(CEOSGas)
-    source = source.replace('CEOSGas', 'CEOSLiquid').replace('only_g', 'only_l')
-    source = source.replace("'g'", "'gORIG'")
-    source = source.replace("'l'", "'g'")
-    source = source.replace("'gORIG'", "'l'")
-    source = source.replace("ViscosityGasMixture", "gViscosityGasMixture")
-    source = source.replace("ViscosityLiquidMixture", "ViscosityGasMixture")
-    source = source.replace("gViscosityGasMixture", "ViscosityLiquidMixture")
-    source = source.replace("ThermalConductivityGasMixture", "gThermalConductivityGasMixture")
-    source = source.replace("ThermalConductivityLiquidMixture", "ThermalConductivityGasMixture")
-    source = source.replace("gThermalConductivityGasMixture", "ThermalConductivityLiquidMixture")
-    # TODO add new volume derivatives
-    swap_strings = ('Cp_dep', 'd2P_dT2', 'd2P_dTdV', 'd2P_dV2', 'd2T_dV2',
-                    'd2V_dT2', 'dH_dep_dP', 'dP_dT', 'dP_dV', 'phi',
-                    'dS_dep_dP', 'dS_dep_dT', 'G_dep', 'H_dep', 'S_dep', '.V', '.Z',
-                    'd2P_dVdT_TP', 'd2P_dT2_PV', 'd2P_dVdP', 'd2P_dTdP',
-                    'd2S_dep_dP', 'dH_dep_dV', 'dH_dep_dT', 'd2H_dep_dTdP',
-                    'd2H_dep_dP2', 'd2H_dep_dT2')
-    for s in swap_strings:
-        source = source.replace(s+'_g', 'gORIG')
-        source = source.replace(s+'_l', s+'_g')
-        source = source.replace('gORIG', s+'_l')
-    return source
+    def dlnphis_dT(self):
+        try:
+            return self.eos_mix.dlnphis_dT('l')
+        except:
+            return self.eos_mix.dlnphis_dT('g')
 
-print(build_CEOSLiquid())
+    def dlnphis_dP(self):
+        try:
+            return self.eos_mix.dlnphis_dP('l')
+        except:
+            return self.eos_mix.dlnphis_dP('g')
 
-from fluids.numerics import is_micropython
-if is_micropython:
-    class CEOSLiquid(object): 
-        __full_path__ = None
-else:
-    try:
-        CEOSLiquid
-    except:
-        loaded_data = False
-        # Cost is ~10 ms - must be pasted in the future!
-        try:  # pragma: no cover
-            from appdirs import user_data_dir, user_config_dir
-            data_dir = user_config_dir('thermo')
-        except ImportError:  # pragma: no cover
-            data_dir = ''
-        if data_dir:
-            import marshal
+    def dlnphis_dns(self):
+        eos_mix = self.eos_mix
+        try:
+            return eos_mix.dlnphis_dns(eos_mix.Z_l)
+        except:
+            return eos_mix.dlnphis_dns(eos_mix.Z_g)
+
+    def dlnphis_dzs(self):
+        eos_mix = self.eos_mix
+        try:
+            return eos_mix.dlnphis_dzs(eos_mix.Z_l)
+        except:
+            return eos_mix.dlnphis_dzs(eos_mix.Z_g)
+
+    def phi_pures(self):
+        phis_pure = []
+        for i in self.eos_mix.pures():
             try:
-                1/0
-                f = open(os.path.join(data_dir, 'CEOSLiquid.dat'), 'rb')
-                compiled_CEOSLiquid = marshal.load(f)
-                f.close()
-                loaded_data = True
-            except:
-                pass
-            if not loaded_data:
-                compiled_CEOSLiquid = compile(build_CEOSLiquid(), '<string>', 'exec')
-                f = open(os.path.join(data_dir, 'CEOSLiquid.dat'), 'wb')
-                marshal.dump(compiled_CEOSLiquid, f)
-                f.close()
-        else:
-            compiled_CEOSLiquid = compile(build_CEOSLiquid(), '<string>', 'exec')
-        exec(compiled_CEOSLiquid)
-        # exec(build_CEOSLiquid())
+                phis_pure.append(i.phi_l)
+            except AttributeError:
+                phis_pure.append(i.phi_g)
+        return phis_pure
+    
 
-CEOSLiquid.is_gas = False
-CEOSLiquid.is_liquid = True
+    def H_dep(self):
+        try:
+            return self.eos_mix.H_dep_l
+        except AttributeError:
+            return self.eos_mix.H_dep_g
+
+    def S_dep(self):
+        try:
+            return self.eos_mix.S_dep_l
+        except AttributeError:
+            return self.eos_mix.S_dep_g
+
+    def G_dep(self):
+        try:
+            return self.eos_mix.G_dep_l
+        except AttributeError:
+            return self.eos_mix.G_dep_g
+
+    def Cp_dep(self):
+        try:
+            return self.eos_mix.Cp_dep_l
+        except AttributeError:
+            return self.eos_mix.Cp_dep_g
+
+    def dS_dep_dT(self):
+        try:
+            return self.eos_mix.dS_dep_dT_l
+        except AttributeError:
+            return self.eos_mix.dS_dep_dT_g
+
+    def dS_dep_dP_V(self):
+        try:
+            dS_dP_V = self.eos_mix.dS_dep_dP_l_V
+        except AttributeError:
+            dS_dP_V = self.eos_mix.dS_dep_dP_g_V
+        return dS_dP_V
+
+    def dS_dep_dP_T(self):
+        try:
+            return self.eos_mix.dS_dep_dP_l
+        except AttributeError:
+            return self.eos_mix.dS_dep_dP_g
+
+    def dS_dep_dT_V(self):
+        try:
+            return self.eos_mix.dS_dep_dT_l_V
+        except AttributeError:
+            return self.eos_mix.dS_dep_dT_g_V
+
+    def dH_dep_dP_V(self):
+        try:
+            return self.eos_mix.dH_dep_dP_l_V
+        except AttributeError:
+            return self.eos_mix.dH_dep_dP_g_V
+        
+    def dH_dep_dP_T(self):
+        try:
+            return self.eos_mix.dH_dep_dP_l
+        except AttributeError:
+            return self.eos_mix.dH_dep_dP_g
+    
+    def dH_dep_dV_T(self):
+        try:
+            return self.eos_mix.dH_dep_dV_l_T
+        except AttributeError:
+            return self.eos_mix.dH_dep_dV_g_T
+        
+    def dH_dep_dV_P(self):
+        try:
+            return self.eos_mix.dH_dep_dV_l_P
+        except AttributeError:
+            return self.eos_mix.dH_dep_dV_g_P
+
+    def V(self):
+        try:
+            return self.eos_mix.V_l
+        except AttributeError:
+            return self.eos_mix.V_g
+
+    def dP_dT(self):
+        try:
+            return self.eos_mix.dP_dT_l
+        except AttributeError:
+            return self.eos_mix.dP_dT_g
+
+    dP_dT_V = dP_dT
+
+    def dP_dV(self):
+        try:
+            return self.eos_mix.dP_dV_l
+        except AttributeError:
+            return self.eos_mix.dP_dV_g
+
+    dP_dV_T = dP_dV
+
+    def d2P_dT2(self):
+        try:
+            return self.eos_mix.d2P_dT2_l
+        except AttributeError:
+            return self.eos_mix.d2P_dT2_g
+
+    d2P_dT2_V = d2P_dT2
+
+    def d2P_dV2(self):
+        try:
+            return self.eos_mix.d2P_dV2_l
+        except AttributeError:
+            return self.eos_mix.d2P_dV2_g
+
+    d2P_dV2_T = d2P_dV2
+
+    def d2P_dTdV(self):
+        try:
+            return self.eos_mix.d2P_dTdV_l
+        except AttributeError:
+            return self.eos_mix.d2P_dTdV_g
+
+    # The following methods are implemented to provide numerically precise answers
+    # for the ideal gas equation of state only, the rest of the EOSs are fine without
+    # these methods
+    def d2T_dV2(self):
+        try:
+            return self.eos_mix.d2T_dV2_l
+        except AttributeError:
+            return self.eos_mix.d2T_dV2_g
+
+    d2T_dV2_P = d2T_dV2
+
+    def d2V_dT2(self):
+        try:
+            return self.eos_mix.d2V_dT2_l
+        except AttributeError:
+            return self.eos_mix.d2V_dT2_g
+
+    d2V_dT2_P = d2V_dT2
+
+    def dV_dzs(self):
+        eos_mix = self.eos_mix
+        try:
+            dV_dzs = self.eos_mix.dV_dzs(eos_mix.Z_l)
+        except AttributeError:
+            dV_dzs = self.eos_mix.dV_dzs(eos_mix.Z_g)
+        return dV_dzs
+
+    def d2H_dep_dT2(self):
+        try:
+            return self.eos_mix.d2H_dep_dT2_l
+        except AttributeError:
+            return self.eos_mix.d2H_dep_dT2_g
+
+    def d2H_dep_dT2_V(self):
+        try:
+            return self.eos_mix.d2H_dep_dT2_l_V
+        except AttributeError:
+            return self.eos_mix.d2H_dep_dT2_g_V
+
+
+
+    def d2H_dP2(self):
+        try:
+            return self.eos_mix.d2H_dep_dP2_l
+        except AttributeError:
+            return self.eos_mix.d2H_dep_dP2_g
+
+    def d2H_dTdP(self):
+        try:
+            return self.eos_mix.d2H_dep_dTdP_l
+        except AttributeError:
+            return self.eos_mix.d2H_dep_dTdP_g
+        
+    def dH_dep_dT_V(self):
+        try:
+            return self.eos_mix.dH_dep_dT_l_V
+        except:
+            return self.eos_mix.dH_dep_dT_g_V
+        
+    def dH_dep_dzs(self):
+        try:
+            return self.eos_mix.dH_dep_dzs(self.eos_mix.Z_l)
+        except AttributeError:
+            return self.eos_mix.dH_dep_dzs(self.eos_mix.Z_g)
+        
+    def d2S_dep_dP(self):
+        try:
+            return self.eos_mix.d2S_dep_dP_l
+        except AttributeError:
+            return self.eos_mix.d2S_dep_dP_g
+
+
+    def d2P_dTdP(self):
+        try:
+            return self.eos_mix.d2P_dTdP_l
+        except AttributeError:
+            return self.eos_mix.d2P_dTdP_g
+
+    def d2P_dVdP(self):
+        try:
+            return self.eos_mix.d2P_dVdP_l
+        except AttributeError:
+            return self.eos_mix.d2P_dVdP_g
+
+    def d2P_dVdT_TP(self):
+        try:
+            return self.eos_mix.d2P_dVdT_TP_l
+        except AttributeError:
+            return self.eos_mix.d2P_dVdT_TP_g
+
+    def d2P_dT2_PV(self):
+        try:
+            return self.eos_mix.d2P_dT2_PV_l
+        except AttributeError:
+            return self.eos_mix.d2P_dT2_PV_g
+    
+    def dS_dep_dzs(self):
+        try:
+            return self.eos_mix.dS_dep_dzs(self.eos_mix.Z_l)
+        except AttributeError:
+            return self.eos_mix.dS_dep_dzs(self.eos_mix.Z_g)
+            return self.eos_mix.dS_dep_dzs(self.eos_mix.Z_g)
 
 try:
     CEOSGas.__doc__ = CEOSPhase.__doc__
