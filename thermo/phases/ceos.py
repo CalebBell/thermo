@@ -373,8 +373,167 @@ class CEOSPhase(IdealGasDeparturePhase):
         self._k = k
         return k
 
+    def _set_mechanical_critical_point(self):
+        zs = self.zs
+        new = self.eos_mix.to_mechanical_critical_point()
+        self._mechanical_critical_T = new.T
+        self._mechanical_critical_P = new.P
+        try:
+            V = new.V_l
+        except:
+            V = new.V_g
+        self._mechanical_critical_V = V
+        return new.T, new.P, V
 
+    def P_transitions(self):
+        e = self.eos_mix
+        return e.P_discriminant_zeros_analytical(e.T, e.b, e.delta, e.epsilon, e.a_alpha, valid=True)
+        # EOS is guaranteed to be at correct temperature
+        try:
+            return [self.eos_mix.P_discriminant_zero_l()]
+        except:
+            return [self.eos_mix.P_discriminant_zero_g()]
 
+    def T_transitions(self):
+        try:
+            return [self.eos_mix.T_discriminant_zero_l()]
+        except:
+            return [self.eos_mix.T_discriminant_zero_g()]
+
+    def d2P_dTdV(self):
+        r'''Method to calculate and return the second derivative of
+        pressure with respect to temperature and volume of the phase.
+
+        .. math::
+            \left(\frac{\partial^2 P}{\partial T \partial V}\right) = - \frac{
+            R}{\left(V - b\right)^{2}} + \frac{a \left(2 V + \delta\right)
+            \frac{d \alpha{\left (T \right )}}{d T}}{\left(V^{2} + V \delta
+            + \epsilon\right)^{2}}
+
+        Returns
+        -------
+        d2P_dTdV : float
+            Second volume derivative of pressure, [mol*Pa^2/(J*K)]
+        '''
+        pass
+    
+    def lnphis(self):
+        r'''Method to calculate and return the log of fugacity coefficients of
+        each component in the phase. The calculation is performed by
+        :obj:`thermo.eos_mix.GCEOSMIX.fugacity_coefficients` or a simpler formula in the case
+        of most specific models.
+
+        Returns
+        -------
+        lnphis : list[float]
+            Log fugacity coefficients, [-]
+        '''
+        pass
+    def dlnphis_dT(self):
+        r'''Method to calculate and return the first temperature derivative of
+        the log of fugacity coefficients of
+        each component in the phase. The calculation is performed by
+        :obj:`thermo.eos_mix.GCEOSMIX.dlnphis_dT` or a simpler formula in the
+        case of most specific models.
+
+        Returns
+        -------
+        dlnphis_dT : list[float]
+            First temperature derivative of log fugacity coefficients, [1/K]
+        '''
+        pass
+
+    def dlnphis_dP(self):
+        r'''Method to calculate and return the first pressure derivative of
+        the log of fugacity coefficients of
+        each component in the phase. The calculation is performed by
+        :obj:`thermo.eos_mix.GCEOSMIX.dlnphis_dP` or a simpler formula in the
+        case of most specific models.
+
+        Returns
+        -------
+        dlnphis_dP : list[float]
+            First pressure derivative of log fugacity coefficients, [1/Pa]
+        '''
+        pass
+        
+    def V(self):
+        r'''Method to calculate and return the molar volume of the phase.
+
+        Returns
+        -------
+        V : float
+            Molar volume, [m^3/mol]
+        '''
+        pass
+        
+    def dP_dT(self):
+        r'''Method to calculate and return the first temperature derivative of
+        pressure of the phase.
+
+        .. math::
+            \left(\frac{\partial P}{\partial T}\right)_V = \frac{R}{V - b}
+            - \frac{a \frac{d \alpha{\left (T \right )}}{d T}}{V^{2} + V \delta
+            + \epsilon}
+
+        Returns
+        -------
+        dP_dT : float
+            First temperature derivative of pressure, [Pa/K]
+        '''
+        pass
+        
+        
+    def dP_dV(self):
+        r'''Method to calculate and return the first volume derivative of
+        pressure of the phase.
+
+        .. math::
+            \left(\frac{\partial P}{\partial V}\right)_T = - \frac{R T}{\left(
+            V - b\right)^{2}} - \frac{a \left(- 2 V - \delta\right) \alpha{
+            \left (T \right )}}{\left(V^{2} + V \delta + \epsilon\right)^{2}}
+
+        Returns
+        -------
+        dP_dV : float
+            First volume derivative of pressure, [Pa*mol/m^3]
+        '''
+        pass
+        
+        
+    def d2P_dT2(self):
+        r'''Method to calculate and return the second temperature derivative of
+        pressure of the phase.
+
+        .. math::
+            \left(\frac{\partial^2  P}{\partial T^2}\right)_V =  - \frac{a
+            \frac{d^{2} \alpha{\left (T \right )}}{d T^{2}}}{V^{2} + V \delta
+            + \epsilon}
+
+        Returns
+        -------
+        d2P_dT2 : float
+            Second temperature derivative of pressure, [Pa/K^2]
+        '''
+        pass
+        
+    def d2P_dV2(self):
+        r'''Method to calculate and return the second volume derivative of
+        pressure of the phase.
+
+        .. math::
+            \left(\frac{\partial^2  P}{\partial V^2}\right)_T = 2 \left(\frac{
+            R T}{\left(V - b\right)^{3}} - \frac{a \left(2 V + \delta\right)^{
+            2} \alpha{\left (T \right )}}{\left(V^{2} + V \delta + \epsilon
+            \right)^{3}} + \frac{a \alpha{\left (T \right )}}{\left(V^{2} + V
+            \delta + \epsilon\right)^{2}}\right)
+
+        Returns
+        -------
+        d2P_dV2 : float
+            Second volume derivative of pressure, [Pa*mol^2/m^6]
+        '''
+        pass
 class CEOSGas(CEOSPhase):
     is_gas = True
     is_liquid = False
@@ -403,22 +562,10 @@ class CEOSGas(CEOSPhase):
             return eos_mix.V_g_mpmath.real
         except:
             return eos_mix.V_l_mpmath.real
-#        else:
-#            return self.V()
 
 
 
     def lnphis(self):
-        r'''Method to calculate and return the log of fugacity coefficients of
-        each component in the phase. The calculation is performed by
-        :obj:`thermo.eos_mix.GCEOSMIX.fugacity_coefficients` or a simpler formula in the case
-        of most specific models.
-
-        Returns
-        -------
-        lnphis : list[float]
-            Log fugacity coefficients, [-]
-        '''
         try:
             return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_g)
         except AttributeError:
@@ -426,34 +573,12 @@ class CEOSGas(CEOSPhase):
 
 
     def dlnphis_dT(self):
-        r'''Method to calculate and return the first temperature derivative of
-        the log of fugacity coefficients of
-        each component in the phase. The calculation is performed by
-        :obj:`thermo.eos_mix.GCEOSMIX.dlnphis_dT` or a simpler formula in the
-        case of most specific models.
-
-        Returns
-        -------
-        dlnphis_dT : list[float]
-            First temperature derivative of log fugacity coefficients, [1/K]
-        '''
         try:
             return self.eos_mix.dlnphis_dT('g')
         except:
             return self.eos_mix.dlnphis_dT('l')
 
     def dlnphis_dP(self):
-        r'''Method to calculate and return the first pressure derivative of
-        the log of fugacity coefficients of
-        each component in the phase. The calculation is performed by
-        :obj:`thermo.eos_mix.GCEOSMIX.dlnphis_dP` or a simpler formula in the
-        case of most specific models.
-
-        Returns
-        -------
-        dlnphis_dP : list[float]
-            First pressure derivative of log fugacity coefficients, [1/Pa]
-        '''
         try:
             return self.eos_mix.dlnphis_dP('g')
         except:
@@ -493,18 +618,15 @@ class CEOSGas(CEOSPhase):
     
     
 
-
-    def gammas(self):
-        #         liquid.phis()/np.array([i.phi_l for i in liquid.eos_mix.pures()])
-        phis = self.phis()
+    def phi_pures(self):
         phis_pure = []
         for i in self.eos_mix.pures():
             try:
                 phis_pure.append(i.phi_g)
             except AttributeError:
                 phis_pure.append(i.phi_l)
-        return [phis[i]/phis_pure[i] for i in range(self.N)]
-
+        return phis_pure
+    
 
     def H_dep(self):
         try:
@@ -581,32 +703,12 @@ class CEOSGas(CEOSPhase):
 
 
     def V(self):
-        r'''Method to calculate and return the molar volume of the phase.
-
-        Returns
-        -------
-        V : float
-            Molar volume, [m^3/mol]
-        '''
         try:
             return self.eos_mix.V_g
         except AttributeError:
             return self.eos_mix.V_l
 
     def dP_dT(self):
-        r'''Method to calculate and return the first temperature derivative of
-        pressure of the phase.
-
-        .. math::
-            \left(\frac{\partial P}{\partial T}\right)_V = \frac{R}{V - b}
-            - \frac{a \frac{d \alpha{\left (T \right )}}{d T}}{V^{2} + V \delta
-            + \epsilon}
-
-        Returns
-        -------
-        dP_dT : float
-            First temperature derivative of pressure, [Pa/K]
-        '''
         try:
             return self.eos_mix.dP_dT_g
         except AttributeError:
@@ -615,19 +717,6 @@ class CEOSGas(CEOSPhase):
     dP_dT_V = dP_dT
 
     def dP_dV(self):
-        r'''Method to calculate and return the first volume derivative of
-        pressure of the phase.
-
-        .. math::
-            \left(\frac{\partial P}{\partial V}\right)_T = - \frac{R T}{\left(
-            V - b\right)^{2}} - \frac{a \left(- 2 V - \delta\right) \alpha{
-            \left (T \right )}}{\left(V^{2} + V \delta + \epsilon\right)^{2}}
-
-        Returns
-        -------
-        dP_dV : float
-            First volume derivative of pressure, [Pa*mol/m^3]
-        '''
         try:
             return self.eos_mix.dP_dV_g
         except AttributeError:
@@ -636,19 +725,6 @@ class CEOSGas(CEOSPhase):
     dP_dV_T = dP_dV
 
     def d2P_dT2(self):
-        r'''Method to calculate and return the second temperature derivative of
-        pressure of the phase.
-
-        .. math::
-            \left(\frac{\partial^2  P}{\partial T^2}\right)_V =  - \frac{a
-            \frac{d^{2} \alpha{\left (T \right )}}{d T^{2}}}{V^{2} + V \delta
-            + \epsilon}
-
-        Returns
-        -------
-        d2P_dT2 : float
-            Second temperature derivative of pressure, [Pa/K^2]
-        '''
         try:
             return self.eos_mix.d2P_dT2_g
         except AttributeError:
@@ -657,21 +733,6 @@ class CEOSGas(CEOSPhase):
     d2P_dT2_V = d2P_dT2
 
     def d2P_dV2(self):
-        r'''Method to calculate and return the second volume derivative of
-        pressure of the phase.
-
-        .. math::
-            \left(\frac{\partial^2  P}{\partial V^2}\right)_T = 2 \left(\frac{
-            R T}{\left(V - b\right)^{3}} - \frac{a \left(2 V + \delta\right)^{
-            2} \alpha{\left (T \right )}}{\left(V^{2} + V \delta + \epsilon
-            \right)^{3}} + \frac{a \alpha{\left (T \right )}}{\left(V^{2} + V
-            \delta + \epsilon\right)^{2}}\right)
-
-        Returns
-        -------
-        d2P_dV2 : float
-            Second volume derivative of pressure, [Pa*mol^2/m^6]
-        '''
         try:
             return self.eos_mix.d2P_dV2_g
         except AttributeError:
@@ -680,20 +741,6 @@ class CEOSGas(CEOSPhase):
     d2P_dV2_T = d2P_dV2
 
     def d2P_dTdV(self):
-        r'''Method to calculate and return the second derivative of
-        pressure with respect to temperature and volume of the phase.
-
-        .. math::
-            \left(\frac{\partial^2 P}{\partial T \partial V}\right) = - \frac{
-            R}{\left(V - b\right)^{2}} + \frac{a \left(2 V + \delta\right)
-            \frac{d \alpha{\left (T \right )}}{d T}}{\left(V^{2} + V \delta
-            + \epsilon\right)^{2}}
-
-        Returns
-        -------
-        d2P_dTdV : float
-            Second volume derivative of pressure, [mol*Pa^2/(J*K)]
-        '''
         try:
             return self.eos_mix.d2P_dTdV_g
         except AttributeError:
@@ -770,10 +817,6 @@ class CEOSGas(CEOSPhase):
             return self.eos_mix.d2S_dep_dP_l
 
 
-
-    # The following - likely should be reimplemented generically
-    # http://www.coolprop.org/_static/doxygen/html/class_cool_prop_1_1_abstract_state.html#a0815380e76a7dc9c8cc39493a9f3df46
-
     def d2P_dTdP(self):
         try:
             return self.eos_mix.d2P_dTdP_g
@@ -805,32 +848,7 @@ class CEOSGas(CEOSPhase):
             return self.eos_mix.dS_dep_dzs(self.eos_mix.Z_l)
         
 
-    def _set_mechanical_critical_point(self):
-        zs = self.zs
-        new = self.eos_mix.to_mechanical_critical_point()
-        self._mechanical_critical_T = new.T
-        self._mechanical_critical_P = new.P
-        try:
-            V = new.V_l
-        except:
-            V = new.V_g
-        self._mechanical_critical_V = V
-        return new.T, new.P, V
 
-    def P_transitions(self):
-        e = self.eos_mix
-        return e.P_discriminant_zeros_analytical(e.T, e.b, e.delta, e.epsilon, e.a_alpha, valid=True)
-        # EOS is guaranteed to be at correct temperature
-        try:
-            return [self.eos_mix.P_discriminant_zero_l()]
-        except:
-            return [self.eos_mix.P_discriminant_zero_g()]
-
-    def T_transitions(self):
-        try:
-            return [self.eos_mix.T_discriminant_zero_l()]
-        except:
-            return [self.eos_mix.T_discriminant_zero_g()]
 
 
 def build_CEOSLiquid():
@@ -898,3 +916,6 @@ else:
 
 CEOSLiquid.is_gas = False
 CEOSLiquid.is_liquid = True
+
+CEOSGas.__doc__ = CEOSPhase.__doc__
+CEOSLiquid.__doc__ = CEOSPhase.__doc__

@@ -5005,6 +5005,12 @@ class IdealGasDeparturePhase(Phase):
                         for i in cmps]
         return self._dS_dzs
 
+    def gammas(self):
+        phis = self.phis()
+        phi_pures = self.phi_pures()
+        return [phis[i]/phi_pures[i] for i in range(self.N)]
+
+
 derivatives_jacobian = []
 
 prop_iter = (('T', 'P', 'V', 'rho'), ('T', 'P', 'V', r'\rho'), ('K', 'Pa', 'm^3/mol', 'mol/m^3'), ('temperature', 'pressure', 'volume', 'density'))
