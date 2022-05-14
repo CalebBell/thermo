@@ -29,13 +29,13 @@ from chemicals.utils import log
 from thermo.eos_mix import IGMIX, eos_mix_full_path_dict, eos_mix_full_path_reverse_dict
 from thermo.phases.phase_utils import PR_lnphis_fastest, lnphis_direct
 from thermo.heat_capacity import HeatCapacityGas
-from thermo.phases.phase import Phase
+from thermo.phases.phase import Phase, IealGasDeparturePhase
 try:
     zeros = np.zeros
 except:
     pass
 
-class CEOSGas(Phase):
+class CEOSGas(IealGasDeparturePhase):
     r'''Class for representing a cubic equation of state gas phase
     as a phase object. All departure
     properties are actually calculated by the code in :obj:`thermo.eos` and
@@ -670,63 +670,6 @@ class CEOSGas(Phase):
             dV_dzs = self.eos_mix.dV_dzs(eos_mix.Z_l)
         return dV_dzs
 
-    def H(self):
-        try:
-            return self._H
-        except AttributeError:
-            pass
-        H = self.H_dep()
-        for zi, Cp_int in zip(self.zs, self.Cpig_integrals_pure()):
-            H += zi*Cp_int
-        self._H = H
-        return H
-
-    def S(self):
-        try:
-            return self._S
-        except AttributeError:
-            pass
-        Cpig_integrals_over_T_pure = self.Cpig_integrals_over_T_pure()
-        log_zs = self.log_zs()
-        P, zs, cmps = self.P, self.zs, range(self.N)
-        P_REF_IG_INV = self.P_REF_IG_INV
-        R = self.R
-        S = 0.0
-        S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
-        S -= R*log(P*P_REF_IG_INV)
-
-        for i in cmps:
-            S += zs[i]*Cpig_integrals_over_T_pure[i]
-        S += self.S_dep()
-        self._S = S
-        return S
-
-
-
-    def Cp(self):
-        try:
-            return self._Cp
-        except AttributeError:
-            pass
-        Cpigs_pure = self.Cpigs_pure()
-        Cp, zs = 0.0, self.zs
-        for i in range(self.N):
-            Cp += zs[i]*Cpigs_pure[i]
-        Cp += self.Cp_dep()
-        self._Cp = Cp
-        return Cp
-
-    dH_dT = dH_dT_P = Cp
-
-    def dH_dP(self):
-        try:
-            return self._dH_dP
-        except AttributeError:
-            pass
-        self._dH_dP = dH_dP = self.dH_dep_dP_T()
-        return dH_dP
-    
-    dH_dP_T = dH_dP
 
     def d2H_dT2(self):
         try:
@@ -769,28 +712,14 @@ class CEOSGas(Phase):
             return self.eos_mix.d2H_dep_dTdP_g
         except AttributeError:
             return self.eos_mix.d2H_dep_dTdP_l
-
-
-    def dH_dT_V(self):
-        dH_dT_V = self.Cp_ideal_gas()
+        
+    def dH_dep_dT_V(self):
         try:
-            dH_dT_V += self.eos_mix.dH_dep_dT_g_V
-        except AttributeError:
-            dH_dT_V += self.eos_mix.dH_dep_dT_l_V
-        return dH_dT_V
+            return self.eos_mix.dH_dep_dT_g_V
+        except:
+            return self.eos_mix.dH_dep_dT_l_V
+        
 
-    def dH_dP_V(self):
-        dH_dP_V = self.Cp_ideal_gas()*self.dT_dP()
-        dH_dP_V+= self.dH_dep_dP_V()
-        return dH_dP_V
-
-    def dH_dV_T(self):
-        return self.dH_dep_dV_T()
-
-    def dH_dV_P(self):
-        dH_dV_P = self.dT_dV()*self.Cp_ideal_gas()
-        dH_dV_P += self.dH_dep_dV_P()
-        return dH_dV_P
 
     def dH_dzs(self):
         try:
@@ -1019,6 +948,8 @@ def build_CEOSLiquid():
         source = source.replace(s+'_l', s+'_g')
         source = source.replace('gORIG', s+'_l')
     return source
+
+# print(build_CEOSLiquid())
 
 from fluids.numerics import is_micropython
 if is_micropython:

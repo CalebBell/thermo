@@ -23,6 +23,7 @@ SOFTWARE.
 
 __all__ = [
     'Phase', 
+    'IealGasDeparturePhase',
     'derivatives_thermodynamic', 
     'derivatives_thermodynamic_mass', 
     'derivatives_jacobian',
@@ -4818,6 +4819,86 @@ class Phase(object):
         return [zi*P for zi in self.zs]
 
 
+class IealGasDeparturePhase(Phase):
+    # Internal phase base for calculating properties that use the ideal gas
+    # reference state with Ideal Gas objects
+    def H(self):
+        try:
+            return self._H
+        except AttributeError:
+            pass
+        H = self.H_dep()
+        for zi, Cp_int in zip(self.zs, self.Cpig_integrals_pure()):
+            H += zi*Cp_int
+        self._H = H
+        return H
+
+    def S(self):
+        try:
+            return self._S
+        except AttributeError:
+            pass
+        Cpig_integrals_over_T_pure = self.Cpig_integrals_over_T_pure()
+        log_zs = self.log_zs()
+        P, zs, cmps = self.P, self.zs, range(self.N)
+        P_REF_IG_INV = self.P_REF_IG_INV
+        R = self.R
+        S = 0.0
+        S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
+        S -= R*log(P*P_REF_IG_INV)
+
+        for i in cmps:
+            S += zs[i]*Cpig_integrals_over_T_pure[i]
+        S += self.S_dep()
+        self._S = S
+        return S
+
+
+
+    def Cp(self):
+        try:
+            return self._Cp
+        except AttributeError:
+            pass
+        Cpigs_pure = self.Cpigs_pure()
+        Cp, zs = 0.0, self.zs
+        for i in range(self.N):
+            Cp += zs[i]*Cpigs_pure[i]
+        Cp += self.Cp_dep()
+        self._Cp = Cp
+        return Cp
+
+    dH_dT = dH_dT_P = Cp
+
+    def dH_dP(self):
+        try:
+            return self._dH_dP
+        except AttributeError:
+            pass
+        self._dH_dP = dH_dP = self.dH_dep_dP_T()
+        return dH_dP
+    
+    dH_dP_T = dH_dP
+    
+    
+    def dH_dT_V(self):
+        dH_dT_V = self.Cp_ideal_gas()
+        dH_dT_V += self.dH_dep_dT_V()
+        return dH_dT_V
+
+    def dH_dP_V(self):
+        dH_dP_V = self.Cp_ideal_gas()*self.dT_dP()
+        dH_dP_V+= self.dH_dep_dP_V()
+        return dH_dP_V
+
+    def dH_dV_T(self):
+        return self.dH_dep_dV_T()
+
+    def dH_dV_P(self):
+        dH_dV_P = self.dT_dV()*self.Cp_ideal_gas()
+        dH_dV_P += self.dH_dep_dV_P()
+        return dH_dV_P
+    
 derivatives_jacobian = []
 
 prop_iter = (('T', 'P', 'V', 'rho'), ('T', 'P', 'V', r'\rho'), ('K', 'Pa', 'm^3/mol', 'mol/m^3'), ('temperature', 'pressure', 'volume', 'density'))
