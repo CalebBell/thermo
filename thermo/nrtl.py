@@ -71,11 +71,14 @@ def nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas=None, vec
         vec1 = [0.0]*N
 
 
-    vec0 = [xs[j]*xj_Gs_jis_inv[j] for j in range(N)]
-    vec1 = [xj_Gs_taus_jis[j]*xj_Gs_jis_inv[j] for j in range(N)]
-
+    for j in range(N):
+        vec0[j] = xs[j]*xj_Gs_jis_inv[j]
+    
+    for j in range(N):
+        vec1[j] = xj_Gs_taus_jis[j]*xj_Gs_jis_inv[j]
+    
     for i in range(N):
-        tot = xj_Gs_taus_jis[i]*xj_Gs_jis_inv[i]
+        tot = vec1[i]
         Gsi = Gs[i]
         tausi = taus[i]
         for j in range(N):
