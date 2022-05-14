@@ -1082,6 +1082,7 @@ class IdealSolution(GibbsExcess):
             self.scalar = type(xs) is list
         else:
             self.scalar = True
+            self.N = None
 
     def to_T_xs(self, T, xs):
         r'''Method to construct a new :obj:`IdealSolution` instance at

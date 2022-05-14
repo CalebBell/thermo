@@ -325,6 +325,10 @@ def test_two_eos_pure_flash_all_properties():
     assert_close(eq.pseudo_Zc(), constants.Zcs[0], rtol=1e-12)
     assert_close(eq.bulk.pseudo_Zc(), constants.Zcs[0], rtol=1e-12)
     assert_close1d([i.pseudo_Zc() for i in eq.phases], [constants.Zcs[0]]*2, rtol=1e-12)
+    
+    assert_close(eq.pseudo_omega(), constants.omegas[0], rtol=1e-12)
+    assert_close(eq.bulk.pseudo_omega(), constants.omegas[0], rtol=1e-12)
+    assert_close1d([i.pseudo_omega() for i in eq.phases], [constants.omegas[0]]*2, rtol=1e-12)
 
     # Standard volumes
     V_std_expect = 0.02364483003622853

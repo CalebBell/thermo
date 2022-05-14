@@ -1411,8 +1411,199 @@ def test_TVF_PVF_reversed_mole_balance():
     assert err < 1e-6
 
 
+def test_methane_water_decane_hot_start_issue():
+    constants = ChemicalConstantsPackage(atomss=[{'C': 1, 'H': 4}, {'H': 2, 'O': 1}, {'C': 10, 'H': 22}], MWs=[16.04246, 18.01528, 142.28168], omegas=[0.008, 0.344, 0.49], Pcs=[4599000.0, 22048320.0, 2110000.0], Tcs=[190.564, 647.14, 611.7], Vcs=[9.86e-05, 5.6e-05, 0.000624])
+    HeatCapacityGases = [HeatCapacityGas(CASRN="74-82-8", MW=16.04246, similarity_variable=0.3116728980468083, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
+     HeatCapacityGas(CASRN="7732-18-5", MW=18.01528, similarity_variable=0.16652530518537598, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+     HeatCapacityGas(CASRN="124-18-5", MW=142.28168, similarity_variable=0.22490597524572384, extrapolation="linear", method="POLY_FIT", poly_fit=(200.0, 1000.0, [-1.702672546011891e-21, 6.6751002084997075e-18, -7.624102919104147e-15, -4.071140876082743e-12, 1.863822577724324e-08, -1.9741705032236747e-05, 0.009781408958916831, -1.6762677829939379, 252.8975930305735]))]
+    
+    properties = PropertyCorrelationsPackage(constants=constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    
+    eos_kwargs = {'Pcs': [4599000.0, 22048320.0, 2110000.0],
+     'Tcs': [190.564, 647.14, 611.7],
+     'omegas': [0.008, 0.344, 0.49],
+     'kijs': [[0.0, 0, 0.0411], [0, 0.0, 0], [0.0411, 0, 0.0]]}
+    
+    gas = CEOSGas(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    liquid1 = CEOSLiquid(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    liquid2 = CEOSLiquid(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    flasher = FlashVLN(constants, properties, liquids=[liquid1, liquid2], gas=gas)
+    
+    zs = [1/3, 1/3, 1/3]
+    
+    
+    state = flasher.flash(T=400, P=190000, zs=zs)
+    reflash = flasher.flash(T=600, P=189900, zs=zs, hot_start = state)
+    assert state.phase_count == 2
+    assert reflash.phase_count == 1
+    assert_close(reflash.V(), 0.026070314738216745, rtol=1e-7)
+    
+    # Three phase hot start
+    state = flasher.flash(T=300, P=190000, zs=zs)
+    
+    # Test convergence to 1 phase from 3
+    reflash = flasher.flash(T=600, P=189900, zs=zs, hot_start = state)
+    assert reflash.phase_count == 1
+    assert_close(reflash.V(), 0.026070314738216745, rtol=1e-7)
+    # Test convergence to 3 phase from 3
+    reflash = flasher.flash(T=301, P=189900, zs=zs, hot_start = state)
+    assert_close1d(reflash.gas.zs, [0.98115515980832, 0.017172713474410774, 0.0016721267172691817], rtol=1e-5)
+
+def test_methane_water_decane_mole_mass_flows():
+    constants = ChemicalConstantsPackage(atomss=[{'C': 1, 'H': 4}, {'H': 2, 'O': 1}, {'C': 10, 'H': 22}], MWs=[16.04246, 18.01528, 142.28168], omegas=[0.008, 0.344, 0.49], Pcs=[4599000.0, 22048320.0, 2110000.0], Tcs=[190.564, 647.14, 611.7], Vcs=[9.86e-05, 5.6e-05, 0.000624],
+                                         CASs=['74-82-8', '7732-18-5', '124-18-5'],
+                                         Vml_STPs=[5.858784737746477e-05, 1.808720510576827e-05, 0.00019580845677729525])
+    HeatCapacityGases = [HeatCapacityGas(CASRN="74-82-8", MW=16.04246, similarity_variable=0.3116728980468083, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
+     HeatCapacityGas(CASRN="7732-18-5", MW=18.01528, similarity_variable=0.16652530518537598, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+     HeatCapacityGas(CASRN="124-18-5", MW=142.28168, similarity_variable=0.22490597524572384, extrapolation="linear", method="POLY_FIT", poly_fit=(200.0, 1000.0, [-1.702672546011891e-21, 6.6751002084997075e-18, -7.624102919104147e-15, -4.071140876082743e-12, 1.863822577724324e-08, -1.9741705032236747e-05, 0.009781408958916831, -1.6762677829939379, 252.8975930305735]))]
+    
+    properties = PropertyCorrelationsPackage(constants=constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    
+    eos_kwargs = {'Pcs': [4599000.0, 22048320.0, 2110000.0],
+     'Tcs': [190.564, 647.14, 611.7],
+     'omegas': [0.008, 0.344, 0.49],
+     'kijs': [[0.0, 0, 0.0411], [0, 0.0, 0], [0.0411, 0, 0.0]]}
+    
+    gas = CEOSGas(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    liquid1 = CEOSLiquid(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    liquid2 = CEOSLiquid(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    flasher = FlashVLN(constants, properties, liquids=[liquid1, liquid2], gas=gas)
+    
+    zs = [1/3, 1/3, 1/3]
+    
+    state = EquilibriumStream(T=300, P=190000, zs=zs, flasher=flasher, n=100)
+
+    # Test a few unrelated properties related to mass flow - maybe make this its own test
+    assert_close(state.gas.n, 33.60882051261701, rtol=1e-4)
+    assert_close(state.liquid0.n, 32.21034435334316, rtol=1e-4)
+    assert_close(state.liquid1.n, 34.18083513403984, rtol=1e-4)
+    assert_close(state.bulk.n, 100, atol=0, rtol=0)
+
+    assert_close(state.gas.m, 0.5468897314984643, rtol=1e-4)
+    assert_close(state.liquid0.m, 0.5802782550073167, rtol=1e-4)
+    assert_close(state.liquid1.m, 4.750812680160885, rtol=1e-4)
+    assert_close(state.bulk.m, 5.877980666666666, rtol=1e-12)
+    
+    assert_close(state.gas.Q, 0.43924036014878864, rtol=1e-4)
+    assert_close(state.liquid0.Q, 0.0006851416847518282, rtol=1e-4)
+    assert_close(state.liquid1.Q, 0.00702205223320992, rtol=1e-4)
+    assert_close(state.bulk.Q, 0.44694755406675035, rtol=1e-4)
+
+    assert_close(state.bulk.beta, 1, rtol=1e-12)
+    assert_close(state.bulk.beta_mass, 1, rtol=1e-12)
+    assert_close(state.bulk.beta_volume, 1, rtol=1e-12)
+
+    # mole flow rate
+    assert_close1d(state.gas.ns, [33.013193071412594, 0.5429462094489919, 0.05268123175541058], rtol=1e-4)
+    assert_close1d(state.liquid0.ns, [5.9532925972237186e-05, 32.210284820417186, 7.755417241801349e-20], rtol=1e-4)
+    assert_close1d(state.liquid1.ns, [0.32008072801310733, 0.580102307168074, 33.28065209885866], rtol=1e-4)
+    assert_close1d(state.bulk.ns, [33.33333333333333, 33.33333333333333, 33.33333333333333], rtol=1e-12)
+    assert_close(sum(state.gas.ns), state.gas.n, rtol=1e-13)
+    assert_close(sum(state.liquid0.ns), state.liquid0.n, rtol=1e-13)
+    assert_close(sum(state.liquid1.ns), state.liquid1.n, rtol=1e-13)
+    assert_close(sum(state.bulk.ns), state.bulk.n, rtol=1e-13)
+
+    # mass flow rate
+    assert_close1d(state.gas.ms, [0.5296128293506854, 0.009781327988721316, 0.0074955741590576], rtol=1e-4)
+    assert_close1d(state.liquid0.ms, [9.550545836471654e-07, 0.580277299952733, 1.1034537943275334e-20], rtol=1e-4)
+    assert_close1d(state.liquid1.ms, [0.005134882276214654, 0.010450705492876204, 4.735227092391794], rtol=1e-4)
+    assert_close1d(state.bulk.ms, [0.5347486666666665, 0.6005093333333332, 4.742722666666666], rtol=1e-12)
+    assert_close(sum(state.gas.ms), state.gas.m, rtol=1e-13)
+    assert_close(sum(state.liquid0.ms), state.liquid0.m, rtol=1e-13)
+    assert_close(sum(state.liquid1.ms), state.liquid1.m, rtol=1e-13)
+    assert_close(sum(state.bulk.ms), state.bulk.m, rtol=1e-13)
+    
+    # volume flow rate
+    assert_close2d([state.gas.Qgs, state.liquid0.Qgs, state.liquid1.Qgs, state.bulk.Qgs],
+                   ([0.7805913391267482, 0.012837870841235948, 0.0012456387709558483],
+                     [1.4076459161729235e-06, 0.7616067099972762, 1.8337552254242914e-21],
+                     [0.007568254411742214, 0.013716420456613143, 0.7869153623723653],
+                     [0.7881610012076177, 0.7881610012076177, 0.7881610012076177]),
+                   rtol=1e-9)
+    
+    for i in range(3):
+        assert_close(state.gas.Qgs[i]+ state.liquid0.Qgs[i]+ state.liquid1.Qgs[i], state.bulk.Qgs[i], rtol=1e-9)
+        
+    assert_close(sum(state.gas.Qgs), state.gas.Qg, rtol=1e-14)
+    assert_close(sum(state.liquid0.Qgs), state.liquid0.Qg, rtol=1e-14)
+    assert_close(sum(state.liquid1.Qgs), state.liquid1.Qg, rtol=1e-14)
+    assert_close(sum(state.bulk.Qgs), state.bulk.Qg, rtol=1e-14)
+
+    assert_close2d([state.gas.Qls, state.liquid0.Qls, state.liquid1.Qls, state.bulk.Qls],
+                   ([0.0019341719171106985, 9.820379451703334e-06, 1.0315430691153987e-05],
+                     [3.487905980795341e-09, 0.0005825940280620999, 1.5185762817811496e-23],
+                     [1.8752840841299744e-05, 1.0492429412078341e-05, 0.006516633128019566],
+                     [0.0019529282459154922, 0.0006029068368589423, 0.006526948559243174]), rtol=1e-9)
+    
+    for i in range(3):
+        assert_close(state.gas.Qls[i]+ state.liquid0.Qls[i]+ state.liquid1.Qls[i], state.bulk.Qls[i], rtol=1e-9)
+
+    assert_close(sum(state.gas.Qls), state.gas.Ql, rtol=1e-14)
+    assert_close(sum(state.liquid0.Qls), state.liquid0.Ql, rtol=1e-14)
+    assert_close(sum(state.liquid1.Qls), state.liquid1.Ql, rtol=1e-14)
+    assert_close(sum(state.bulk.Qls), state.bulk.Ql, rtol=1e-14)
+    
+    # atom fractions
+    for p in (state, state.gas, state.liquid0, state.liquid1, state.bulk):
+        assert_close(p.atom_fractions()['C'], p.Carbon_atom_fraction(), rtol=1e-12)
+        assert_close(p.atom_fractions()['H'], p.Hydrogen_atom_fraction(), rtol=1e-12)
+        assert_close(p.atom_fractions()['O'], p.Oxygen_atom_fraction(), rtol=1e-12)
+    
+        assert_close(p.atom_mass_fractions()['C'], p.Carbon_atom_mass_fraction(), rtol=1e-12)
+        assert_close(p.atom_mass_fractions()['H'], p.Hydrogen_atom_mass_fraction(), rtol=1e-12)
+        assert_close(p.atom_mass_fractions()['O'], p.Oxygen_atom_mass_fraction(), rtol=1e-12)
+        
+    # partial pressure component specific
+    assert_close(state.water_partial_pressure(), 63333.33333333333, rtol=1e-4)
+    assert_close(state.gas.water_partial_pressure(), 3069.425770433731, rtol=1e-4)
+    assert_close(state.liquid0.water_partial_pressure(), 189999.64883157378, rtol=1e-4)
+    
+    assert_close2d([state.gas.concentrations(), state.liquid0.concentrations(), state.liquid1.concentrations(), state.bulk.concentrations()
+                    , state.concentrations()],
+                   [[75.15974410964803, 1.2361027326019718, 0.11993713814815492],
+                    [0.08689140844466525, 47012.589566907445, 1.1319435693962356e-16],
+                    [45.582219753268916, 82.61150556877838, 4739.448097731596],
+                    [74.57996588198152, 74.57996588198152, 74.57996588198152],
+                    [74.57996588198152, 74.57996588198152, 74.57996588198152]],
+                   rtol=1e-9)
+
+    assert_close(sum(state.concentrations()), state.rho())
+
+    assert_close2d([state.gas.concentrations_mass(), state.liquid0.concentrations_mass(), state.liquid1.concentrations_mass(), state.bulk.concentrations_mass()
+                    , state.concentrations_mass()],
+                   [[1.2057471884892643, 0.02226873683658965, 0.01706485751011157],
+                   [0.0013939519443172048, 846.9449645729165, 1.61054832718893e-17],
+                   [0.7312509371030262, 1.4882694040431017, 674.3366376180555],
+                   [1.196446119463053, 1.343578967754344, 10.611362840031012],
+                   [1.196446119463053, 1.343578967754344, 10.611362840031012]],
+                   rtol=1e-9)
+    
+    assert_close(sum(state.concentrations_mass()), state.rho_mass())
+    
+    
+    assert_close2d([state.gas.partial_pressures(), state.liquid0.partial_pressures(), 
+                    state.liquid1.partial_pressures(), state.bulk.partial_pressures()
+                    , state.partial_pressures()],
+                   [[186632.75258986393, 3069.425770433731, 297.8216397023035],
+                   [0.35116842622488303, 189999.64883157378, 4.574708235894151e-16],
+                   [1779.223301127769, 3224.597583110814, 184996.17911576145],
+                   [63333.33333333333, 63333.33333333333, 63333.33333333333],
+                   [63333.33333333333, 63333.33333333333, 63333.33333333333]],
+                   rtol=1e-6)
+    
+    assert_close(sum(state.partial_pressures()), state.P)
+    assert_close(sum(state.bulk.partial_pressures()), state.P)
+    assert_close(sum(state.gas.partial_pressures()), state.P)
+    assert_close(sum(state.liquid0.partial_pressures()), state.P)
+    assert_close(sum(state.liquid1.partial_pressures()), state.P)
+    assert_close(sum(state.liquid_bulk.partial_pressures()), state.P)
+
+
+
 def test_PH_TODO():
     '''Secant is finding false bounds, meaning a failed PT - but the plot looks good. Needs more detail, and enthalpy plot.
+    Nice! it fixed itelf.
+    Takes 10 seconds though.
 
     constants = ChemicalConstantsPackage(atomss=[{'H': 2, 'O': 1}, {'C': 2, 'H': 6, 'O': 1}], CASs=['7732-18-5', '64-17-5'], MWs=[18.01528, 46.06844], names=['water', 'ethanol'], omegas=[0.344, 0.635], Pcs=[22048320.0, 6137000.0], Tcs=[647.14, 514.0])
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),

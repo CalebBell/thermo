@@ -23,6 +23,7 @@ SOFTWARE.
 
 __all__ = [
     'Phase', 
+    'IdealGasDeparturePhase',
     'derivatives_thermodynamic', 
     'derivatives_thermodynamic_mass', 
     'derivatives_jacobian',
@@ -304,6 +305,8 @@ class Phase(object):
                 pass
         # Note: not all attributes are in __dict__, must use getattr
         to_hash = [getattr(self, v) for v in self.model_attributes]
+        to_hash = [v.model_hash() if( hasattr(v, 'model_hash') and not isinstance(v, type)) else v for v in to_hash]
+        # print(to_hash)
         self._model_hash_ignore_phase = h = hash_any_primitive(to_hash)
         self._model_hash = hash((self.__class__.__name__, h))
         if ignore_phase:
@@ -4425,6 +4428,25 @@ class Phase(object):
             return self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
         else:
             raise NotImplementedError("Did not work")
+            
+    def nu(self):
+        r'''Method to calculate and return the kinematic viscosity of the 
+        phase, [m^2/s]
+
+        Returns
+        -------
+        nu : float
+            Kinematic viscosity, [m^2/s]
+
+        Notes
+        -----
+        '''
+        mu = self.mu()
+        if mu is None:
+            return None
+        return mu/self.rho_mass()
+    
+    kinematic_viscosity = nu
 
     def ws(self):
         r'''Method to calculate and return the mass fractions of the phase, [-]
@@ -4563,6 +4585,431 @@ class Phase(object):
         '''
         return self.result.gas_beta
 
+    @property
+    def n(self):
+        r'''Method to return the molar flow rate of this phase.
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        n : float
+            Molar flow of the phase, [mol/s]
+
+        Notes
+        -----
+        '''
+        try:
+            return self.result.n*self.beta
+        except:
+            return None
+
+    @property
+    def m(self):
+        r'''Method to return the mass flow rate of this phase.
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        m : float
+            Mass flow of the phase, [kg/s]
+
+        Notes
+        -----
+        '''
+        try:
+            return self.result.m*self.beta_mass
+        except:
+            return None
+
+    @property
+    def Q(self):
+        r'''Method to return the actual volumetric flow rate of this phase.
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        Q : float
+            Volume flow of the phase, [m^3/s]
+
+        Notes
+        -----
+        '''
+        try:
+            return self.n*self.V()
+        except:
+            return None
+
+    @property
+    def ns(self):
+        r'''Method to return the molar flow rates of each component in
+        this phase. This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        ns : float
+            Molar flow of the components in the phase, [mol/s]
+
+        Notes
+        -----
+        '''
+        try:
+            n = self.result.n*self.beta
+            return [n*zi for zi in self.zs]
+        except:
+            return None
+
+    @property
+    def ms(self):
+        r'''Method to return the mass flow rates of each component in
+        this phase. This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        ms : float
+            Mass flow of the components in the phase, [kg/s]
+
+        Notes
+        -----
+        '''
+        try:
+            m = self.result.m*self.beta_mass
+            return [m*wi for wi in self.ws()]
+        except:
+            return None
+    
+    @property
+    def Qgs(self):
+        r'''Method to return the volume flow rate of each component in
+        this phase as an ideal gas, using the configured
+        temperature `T_gas_ref` and pressure `P_gas_ref`. This method is only
+        available when the phase is linked to an EquilibriumStream.
+        This method totally ignores phase equilibrium.
+
+        Returns
+        -------
+        Qgs : float
+            Ideal gas flow rates of the components in the phase, [m^3/s]
+
+        Notes
+        -----
+        '''
+        settings = self.result.settings
+        V = R*settings.T_gas_ref/settings.P_gas_ref
+        n = self.n
+        Vn = V*n
+        return [zi*Vn for zi in self.zs]
+
+    @property
+    def Qg(self):
+        r'''Method to return the volume flow rate of 
+        this phase as an ideal gas, using the configured
+        temperature `T_gas_ref` and pressure `P_gas_ref`. This method is only
+        available when the phase is linked to an EquilibriumStream.
+        This method totally ignores phase equilibrium.
+
+        Returns
+        -------
+        Qg : float
+            Ideal gas flow rate of the phase, [m^3/s]
+
+        Notes
+        -----
+        '''
+        try:
+            return sum(self.Qgs)
+        except:
+            return None
+
+    @property
+    def Qls(self):
+        r'''Method to return the volume flow rate of each component in
+        this phase as an ideal liquid, using the configured
+        standard molar volumes `Vml_STPs`. This method is only
+        available when the phase is linked to an EquilibriumStream.
+        This method totally ignores phase equilibrium.
+
+        Returns
+        -------
+        Qls : float
+            Ideal liquid flow rates of the components in the phase, [m^3/s]
+
+        Notes
+        -----
+        '''
+        ns = self.ns
+        Vms_TP = self.result.constants.Vml_STPs
+        return [ns[i]*Vms_TP[i] for i in range(self.N)]
+
+    @property
+    def Ql(self):
+        r'''Method to return the volume flow rate of
+        this phase as an ideal liquid, using the configured
+        standard molar volumes `Vml_STPs`. This method is only
+        available when the phase is linked to an EquilibriumStream.
+        This method totally ignores phase equilibrium.
+
+        Returns
+        -------
+        Ql : float
+            Ideal liquid flow rate of the phase, [m^3/s]
+
+        Notes
+        -----
+        '''
+        try:
+            return sum(self.Qls)
+        except:
+            return None
+        
+    def concentrations(self):
+        r'''Method to return the molar concentrations of each component in the 
+        phase in units of mol/m^3. Molarity is a term used in chemistry for a
+        similar concept, usually given in units of mol/L.
+
+        Returns
+        -------
+        concentrations : list[float]
+            Molar concentrations of all the components in the phase, [mol/m^3]
+
+        Notes
+        -----
+        '''
+        rho = self.rho()
+        zs = self.zs
+        return [rho*zi for zi in zs]
+    
+    def concentrations_mass(self):
+        r'''Method to return the mass concentrations of each component in the 
+        phase in units of kg/m^3. 
+        
+        Returns
+        -------
+        concentrations_mass : list[float]
+            Mass concentrations of all the components in the phase, [kg/m^3]
+
+        Notes
+        -----
+        '''
+        rho_mass = self.rho_mass()
+        ws = self.ws()
+        return [rho_mass*wi for wi in ws]
+
+    def partial_pressures(self):
+        r'''Method to return the partial pressures of each component in the 
+        phase. Note that this is the conventional definition assumed in almost
+        every source; there is also a non-ideal definition.
+        
+        .. math::
+            P_i = z_i P
+        
+        Returns
+        -------
+        partial_pressures : list[float]
+            Partial pressures of all the components in the phase, [Pa]
+
+        Notes
+        -----
+        '''
+        P = self.P
+        return [zi*P for zi in self.zs]
+
+
+class IdealGasDeparturePhase(Phase):
+    # Internal phase base for calculating properties that use the ideal gas
+    # reference state with Ideal Gas objects
+    def H(self):
+        try:
+            return self._H
+        except AttributeError:
+            pass
+        H = self.H_dep()
+        for zi, Cp_int in zip(self.zs, self.Cpig_integrals_pure()):
+            H += zi*Cp_int
+        self._H = H
+        return H
+
+    def S(self):
+        try:
+            return self._S
+        except AttributeError:
+            pass
+        Cpig_integrals_over_T_pure = self.Cpig_integrals_over_T_pure()
+        log_zs = self.log_zs()
+        P, zs, cmps = self.P, self.zs, range(self.N)
+        P_REF_IG_INV = self.P_REF_IG_INV
+        R = self.R
+        S = 0.0
+        S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
+        S -= R*log(P*P_REF_IG_INV)
+
+        for i in cmps:
+            S += zs[i]*Cpig_integrals_over_T_pure[i]
+        S += self.S_dep()
+        self._S = S
+        return S
+
+
+
+    def Cp(self):
+        try:
+            return self._Cp
+        except AttributeError:
+            pass
+        Cpigs_pure = self.Cpigs_pure()
+        Cp, zs = 0.0, self.zs
+        for i in range(self.N):
+            Cp += zs[i]*Cpigs_pure[i]
+        Cp += self.Cp_dep()
+        self._Cp = Cp
+        return Cp
+
+    dH_dT = dH_dT_P = Cp
+
+    def dH_dP(self):
+        try:
+            return self._dH_dP
+        except AttributeError:
+            pass
+        self._dH_dP = dH_dP = self.dH_dep_dP_T()
+        return dH_dP
+    
+    dH_dP_T = dH_dP
+    
+    
+    def dH_dT_V(self):
+        dH_dT_V = self.Cp_ideal_gas()
+        dH_dT_V += self.dH_dep_dT_V()
+        return dH_dT_V
+
+    def dH_dP_V(self):
+        dH_dP_V = self.Cp_ideal_gas()*self.dT_dP()
+        dH_dP_V+= self.dH_dep_dP_V()
+        return dH_dP_V
+
+    def dH_dV_T(self):
+        return self.dH_dep_dV_T()
+
+    def dH_dV_P(self):
+        dH_dV_P = self.dT_dV()*self.Cp_ideal_gas()
+        dH_dV_P += self.dH_dep_dV_P()
+        return dH_dV_P
+
+    def d2H_dT2(self):
+        try:
+            return self._d2H_dT2
+        except AttributeError:
+            pass
+        dCpigs_pure = self.dCpigs_dT_pure()
+        dCp, zs = 0.0, self.zs
+        for i in range(self.N):
+            dCp += zs[i]*dCpigs_pure[i]
+        dCp += self.d2H_dep_dT2()
+        self._d2H_dT2 = dCp
+        return dCp
+
+    def d2H_dT2_V(self):
+        dCpigs_pure = self.dCpigs_dT_pure()
+        dCp, zs = 0.0, self.zs
+        for i in range(self.N):
+            dCp += zs[i]*dCpigs_pure[i]
+        return dCp + self.d2H_dep_dT2_V()
+
+
+    def dH_dzs(self):
+        try:
+            return self._dH_dzs
+        except AttributeError:
+            pass
+        dH_dep_dzs = self.dH_dep_dzs()
+        Cpig_integrals_pure = self.Cpig_integrals_pure()
+        self._dH_dzs = [dH_dep_dzs[i] + Cpig_integrals_pure[i] for i in range(self.N)]
+        return self._dH_dzs
+
+    def dS_dT(self):
+        HeatCapacityGases = self.HeatCapacityGases
+        cmps = range(self.N)
+        T, zs = self.T, self.zs
+        T_REF_IG = self.T_REF_IG
+        P_REF_IG_INV = self.P_REF_IG_INV
+
+        dS_dT = self.Cp_ideal_gas()/T
+        dS_dT += self.dS_dep_dT()
+        return dS_dT
+
+    def dS_dP(self):
+        dS = 0.0
+        P = self.P
+        dS -= self.R/P
+        dS += self.dS_dep_dP_T()
+        return dS
+
+    def dS_dT_P(self):
+        return self.dS_dT()
+
+    def dS_dT_V(self):
+        r'''Method to calculate and return the first temperature derivative of
+        molar entropy at constant volume of the phase.
+
+        .. math::
+            \left(\frac{\partial S}{\partial T}\right)_V =
+            \frac{C_p^{ig}}{T} - \frac{R}{P}\frac{\partial P}{\partial T}
+            + \left(\frac{\partial S_{dep}}{\partial T}\right)_V
+
+        Returns
+        -------
+        dS_dT_V : float
+            First temperature derivative of molar entropy at constant volume,
+            [J/(mol*K^2)]
+        '''
+        # Good
+        '''
+        # Second last bit from
+        from sympy import *
+        T, R = symbols('T, R')
+        P = symbols('P', cls=Function)
+        expr =-R*log(P(T)/101325)
+        diff(expr, T)
+        '''
+        dS_dT_V = self.Cp_ideal_gas()/self.T - self.R/self.P*self.dP_dT()
+        dS_dT_V += self.dS_dep_dT_V()
+        return dS_dT_V
+    
+    
+    def dS_dP_V(self):
+        dS_dP_V = -self.R/self.P + self.Cp_ideal_gas()/self.T*self.dT_dP()
+        dS_dP_V += self.dS_dep_dP_V()
+        return dS_dP_V
+
+    def d2S_dP2(self):
+        P = self.P
+        d2S = self.R/(P*P)
+        return d2S + self.d2S_dep_dP()
+
+    def dS_dzs(self):
+        try:
+            return self._dS_dzs
+        except AttributeError:
+            pass
+        cmps, eos_mix = range(self.N), self.eos_mix
+
+        log_zs = self.log_zs()
+        integrals = self.Cpig_integrals_over_T_pure()
+        dS_dep_dzs = self.dS_dep_dzs()
+        R = self.R
+        self._dS_dzs = [integrals[i] - R*(log_zs[i] + 1.0) + dS_dep_dzs[i]
+                        for i in cmps]
+        return self._dS_dzs
+
+    def gammas(self):
+        phis = self.phis()
+        phi_pures = self.phi_pures()
+        return [phis[i]/phi_pures[i] for i in range(self.N)]
+
 
 derivatives_jacobian = []
 
@@ -4606,7 +5053,8 @@ prop_names = {'A' : 'Helmholtz energy',
               'T': 'temperature',
               'P': 'pressure',
               'V': 'volume', 'Cv': 'Constant-volume heat capacity'}
-prop_units = {'Cv': 'J/(mol*K)', 'A': 'J/mol', 'G': 'J/mol', 'H': 'J/mol', 'S': 'J/(mol*K)', 'U': 'J/mol', 'T': 'K', 'P': 'Pa', 'V': 'm^3/mol'}
+prop_units = {'Cv': 'J/(mol*K)', 'A': 'J/mol', 'G': 'J/mol', 'H': 'J/mol',
+              'S': 'J/(mol*K)', 'U': 'J/mol', 'T': 'K', 'P': 'Pa', 'V': 'm^3/mol'}
 for attr in derivatives_thermodynamic:
     def _der(self, prop=attr):
         return getattr(self, prop)()*1e3*self.MW_inv()

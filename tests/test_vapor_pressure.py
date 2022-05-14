@@ -710,3 +710,24 @@ def test_VaporPressure_IAPWS95():
     assert water(20) > water(10) 
     assert water(10) > water(4) 
     assert_close(water(400), 245769.3455657166, rtol=1e-10)
+    
+
+@pytest.mark.meta_T_dept
+def test_accurate_vapor_pressure_mercury():
+    obj = VaporPressure(CASRN='7439-97-6')
+    assert_close(obj(333.15), 3.508170, rtol=1e-7)
+    
+    new = VaporPressure.from_json(json.loads(json.dumps(obj.as_json())))
+    assert new == obj
+
+
+@pytest.mark.meta_T_dept
+def test_accurate_vapor_pressure_beryllium():
+    obj = VaporPressure(CASRN='7440-41-7')
+    assert_close(obj(2742.30), 1e5, atol=.01)
+
+
+@pytest.mark.meta_T_dept
+def test_vapor_pressure_element_metals():
+    K = VaporPressure(CASRN='7439-93-2')
+    assert_close(K.calculate(1000, 'ALCOCK_ELEMENTS'), 104.2837434179671)

@@ -321,7 +321,9 @@ class FlashVLN(FlashVL):
             double_check_sln = self.flash_2P(T, P, zs, xs, ys, hot_start.phases[0],
                                                          hot_start.phases[1],
                                                          None, None, V_over_F_guess=hot_start.betas[1], LL=True)
-            return double_check_sln
+            failed = not double_check_sln[0] and not double_check_sln[1]
+            if not failed:
+                return double_check_sln
         elif hot_start.phase_count > 2:
             phases = hot_start.phases
             comps = [i.zs for i in hot_start.phases]
@@ -333,6 +335,8 @@ class FlashVLN(FlashVL):
             )
             return None, slnN[2], [], slnN[0], {'iterations': slnN[3], 'err': slnN[4],
                                                 'stab_guess_name': None}
+        if failed:
+            return self.flash_TPV(T=T, P=P, V=V, zs=zs, solution=solution)
 
 
     def flash_TP_K_composition_idependent(self, T, P, zs):
@@ -369,11 +373,11 @@ class FlashVLN(FlashVL):
             return gas, [liquid], [], [VF, 1.0 - VF], empty_flash_conv
 
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
-        if hot_start is not None and hot_start.phase_count > 1:
+        if hot_start is not None and hot_start.phase_count > 1 and solution is None:
             # Only allow hot start when there are multiple phases
             try:
                 return self.flash_TPV_hot(T, P, V, zs, hot_start, solution=solution)
-            except:
+            except Exception as e:
                 # Let anything fail
                 pass
         if self.K_composition_independent and self.K_COMPOSITION_INDEPENDENT_HACK and solution is None:

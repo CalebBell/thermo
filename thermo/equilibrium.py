@@ -45,7 +45,7 @@ from fluids.constants import R, R_inv
 from fluids.core import thermal_diffusivity
 from chemicals.utils import log, exp, normalize, zs_to_ws, vapor_mass_quality, mixing_simple, Vm_to_rho, SG
 from chemicals.virial import B_from_Z
-from chemicals.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
+from chemicals.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition, periodic_table
 from thermo.phases import gas_phases, liquid_phases, solid_phases, Phase, derivatives_thermodynamic, derivatives_thermodynamic_mass, derivatives_jacobian
 from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationsPackage, constants_docstrings
 from thermo.bulk import Bulk, BulkSettings, default_settings
@@ -690,7 +690,7 @@ class EquilibriumState(object):
 
         tot_inv = 1.0/sum(things.values())
         return {atom : value*tot_inv for atom, value in things.items()}
-
+    
     def atom_mass_fractions(self, phase=None):
         r'''Method to calculate and return the atomic mass fractions of the phase;
         returns a dictionary of atom fraction (by mass), containing only those
@@ -910,6 +910,31 @@ class EquilibriumState(object):
             Zc += zs[i]*Zcs[i]
         return Zc
 
+    def pseudo_omega(self, phase=None):
+        r'''Method to calculate and return the pseudocritical acentric factor
+        calculated using Kay's rule (linear mole fractions):
+
+        .. math::
+            \omega_{pseudo} = \sum_i z_i \omega_{i}
+
+        Returns
+        -------
+        pseudo_omega : float
+            Pseudo acentric factor of the phase, [-]
+
+        Notes
+        -----
+        '''
+        if phase is None:
+            zs = self.zs
+        else:
+            zs = phase.zs
+
+        omegas = self.constants.omegas
+        omega = 0.0
+        for i in range(self.N):
+            omega += zs[i]*omegas[i]
+        return omega
 
     def Tmc(self, phase=None):
         r'''Method to calculate and return the mechanical critical temperature
@@ -2407,6 +2432,7 @@ for name in PropertyCorrelationsPackage.correlations:
 phases_properties_to_EquilibriumState = ['atom_fractions', 'atom_mass_fractions','API',
                                          'Hc', 'Hc_mass', 'Hc_lower', 'Hc_lower_mass', 'SG', 'SG_gas',
                                          'pseudo_Tc', 'pseudo_Pc', 'pseudo_Vc', 'pseudo_Zc',
+                                         'pseudo_omega',
                                          'V_gas_standard', 'V_gas_normal', 'V_gas',
                                          'Hc_normal', 'Hc_standard',
                                          'Hc_lower_normal', 'Hc_lower_standard',
@@ -2451,6 +2477,9 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
               'mu', 'k', 'sigma',
               'isentropic_exponent', 'isentropic_exponent_PV', 'isentropic_exponent_TV',
               'isentropic_exponent_PT',
+              
+              'concentrations_mass', 'concentrations', 'Ql', 'Qls', 'Qg', 'ms', 'ns', 'Q', 'm', 'n',
+              'nu', 'kinematic_viscosity', 'partial_pressures',
               ]
 
 
@@ -2469,4 +2498,65 @@ try:
     EquilibriumState.__doc__ = EquilibriumState.__doc__ +'\n    ' + '\n    '.join(_add_attrs_doc)
 except:
     pass
+
+def _make_getter_atom_fraction(element_symbol):
+    def get(self):
+        return self.atom_fractions()[element_symbol]
+    return get
+for ele in periodic_table:
+    getter = _make_getter_atom_fraction(ele.symbol)
+    name = '%s_atom_fraction' %(ele.name)
+    
+    _add_attrs_doc =  r'''Method to calculate and return the mole fraction which is
+            %s element, [-]
+            ''' %(ele.name)
+    getter.__doc__ = _add_attrs_doc
+    setattr(EquilibriumState, name, getter)
+    setattr(Phase, name, getter)
+
+def _make_getter_atom_mass_fraction(element_symbol):
+    def get(self):
+        return self.atom_mass_fractions()[element_symbol]
+    return get
+for ele in periodic_table:
+    getter = _make_getter_atom_mass_fraction(ele.symbol)
+    name = '%s_atom_mass_fraction' %(ele.name)
+    
+    _add_attrs_doc =  r'''Method to calculate and return the mass fraction which is
+            %s element, [-]
+            ''' %(ele.name)
+    getter.__doc__ = _add_attrs_doc
+    setattr(EquilibriumState, name, getter)
+    setattr(Phase, name, getter)
+
+_comonent_specific_properties = {'water': CAS_H2O,
+                                 'carbon_dioxide': '124-38-9',
+                                 'hydrogen_sulfide': '7783-06-4',
+                                 'hydrogen': '1333-74-0',
+                                 'helium': '7440-59-7',
+                                 'nitrogen': '7727-37-9',
+                                 'oxygen': '7782-44-7',
+                                 'argon': '7440-37-1',
+                                 'methane': '74-82-8',
+                                 'ammonia': '7664-41-7',
+                                 }
+def _make_getter_partial_pressure(CAS):
+    def get(self):
+        try:
+            idx = self.CASs.index(CAS)
+        except ValueError:
+            # Not present
+            return 0.0
+        return self.P*self.zs[idx]
+    return get
+for _name, _CAS in _comonent_specific_properties.items():
+    getter = _make_getter_partial_pressure(_CAS)
+    name = '%s_partial_pressure' %(_name)
+    
+    _add_attrs_doc =  r'''Method to calculate and return the ideal partial pressure of %s, [Pa]
+            ''' %(_name)
+    getter.__doc__ = _add_attrs_doc
+    setattr(EquilibriumState, name, getter)
+    setattr(Phase, name, getter)
+
 del _add_attrs_doc

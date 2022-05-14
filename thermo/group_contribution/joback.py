@@ -180,51 +180,6 @@ SHI_CHENYANG_JOBACK_SMARTS =  [
 SHI_CHENYANG_JOBACK_SMARTS_id_dict = {i+1: j[1] for i, j in enumerate(SHI_CHENYANG_JOBACK_SMARTS)}
 SHI_CHENYANG_JOBACK_SMARTS_str_dict = {i[0]: i[1] for i in SHI_CHENYANG_JOBACK_SMARTS}
 
-joback_data_txt = u'''-CH3 	0.0141 	-0.0012 	65 	23.58 	-5.10 	-76.45 	-43.96 	1.95E+1 	-8.08E-3 	1.53E-4 	-9.67E-8 	0.908 	2.373 	548.29 	-1.719
--CH2- 	0.0189 	0.0000 	56 	22.88 	11.27 	-20.64 	8.42 	-9.09E-1 	9.50E-2 	-5.44E-5 	1.19E-8 	2.590 	2.226 	94.16 	-0.199
->CH- 	0.0164 	0.0020 	41 	21.74 	12.64 	29.89 	58.36 	-2.30E+1 	2.04E-1 	-2.65E-4 	1.20E-7 	0.749 	1.691 	-322.15 	1.187
->C< 	0.0067 	0.0043 	27 	18.25 	46.43 	82.23 	116.02 	-6.62E+1 	4.27E-1 	-6.41E-4 	3.01E-7 	-1.460 	0.636 	-573.56 	2.307
-=CH2 	0.0113 	-0.0028 	56 	18.18 	-4.32 	-9.630 	3.77 	2.36E+1 	-3.81E-2 	1.72E-4 	-1.03E-7 	-0.473 	1.724 	495.01 	-1.539
-=CH- 	0.0129 	-0.0006 	46 	24.96 	8.73 	37.97 	48.53 	-8.00 	1.05E-1 	-9.63E-5 	3.56E-8 	2.691 	2.205 	82.28 	-0.242
-=C< 	0.0117 	0.0011 	38 	24.14 	11.14 	83.99 	92.36 	-2.81E+1 	2.08E-1 	-3.06E-4 	1.46E-7 	3.063 	2.138 	n. a. 	n. a.
-=C= 	0.0026 	0.0028 	36 	26.15 	17.78 	142.14 	136.70 	2.74E+1 	-5.57E-2 	1.01E-4 	-5.02E-8 	4.720 	2.661 	n. a. 	n. a.
-≡CH 	0.0027 	-0.0008 	46 	9.20 	-11.18 	79.30 	77.71 	2.45E+1 	-2.71E-2 	1.11E-4 	-6.78E-8 	2.322 	1.155 	n. a. 	n. a.
-≡C- 	0.0020 	0.0016 	37 	27.38 	64.32 	115.51 	109.82 	7.87 	2.01E-2 	-8.33E-6 	1.39E-9 	4.151 	3.302 	n. a. 	n. a.
--CH2- (ring)	0.0100 	0.0025 	48 	27.15 	7.75 	-26.80 	-3.68 	-6.03 	8.54E-2 	-8.00E-6 	-1.80E-8 	0.490 	2.398 	307.53 	-0.798
->CH- (ring)	0.0122 	0.0004 	38 	21.78 	19.88 	8.67 	40.99 	-2.05E+1 	1.62E-1 	-1.60E-4 	6.24E-8 	3.243 	1.942 	-394.29 	1.251
->C< (ring)	0.0042 	0.0061 	27 	21.32 	60.15 	79.72 	87.88 	-9.09E+1 	5.57E-1 	-9.00E-4 	4.69E-7 	-1.373 	0.644 	n. a. 	n. a.
-=CH- (ring)	0.0082 	0.0011 	41 	26.73 	8.13 	2.09 	11.30 	-2.14 	5.74E-2 	-1.64E-6 	-1.59E-8 	1.101 	2.544 	259.65 	-0.702
-=C< (ring)	0.0143 	0.0008 	32 	31.01 	37.02 	46.43 	54.05 	-8.25 	1.01E-1 	-1.42E-4 	6.78E-8 	2.394 	3.059 	-245.74 	0.912
--F 	0.0111 	-0.0057 	27 	-0.03 	-15.78 	-251.92 	-247.19 	2.65E+1 	-9.13E-2 	1.91E-4 	-1.03E-7 	1.398 	-0.670 	n. a. 	n. a.
--Cl 	0.0105 	-0.0049 	58 	38.13 	13.55 	-71.55 	-64.31 	3.33E+1 	-9.63E-2 	1.87E-4 	-9.96E-8 	2.515 	4.532 	625.45 	-1.814
--Br 	0.0133 	0.0057 	71 	66.86 	43.43 	-29.48 	-38.06 	2.86E+1 	-6.49E-2 	1.36E-4 	-7.45E-8 	3.603 	6.582 	738.91 	-2.038
--I 	0.0068 	-0.0034 	97 	93.84 	41.69 	21.06 	5.74 	3.21E+1 	-6.41E-2 	1.26E-4 	-6.87E-8 	2.724 	9.520 	809.55 	-2.224
--OH (alcohol) 	0.0741 	0.0112 	28 	92.88 	44.45 	-208.04 	-189.20 	2.57E+1 	-6.91E-2 	1.77E-4 	-9.88E-8 	2.406 	16.826 	2173.72 	-5.057
--OH (phenol) 	0.0240 	0.0184 	-25 	76.34 	82.83 	-221.65 	-197.37 	-2.81 	1.11E-1 	-1.16E-4 	4.94E-8 	4.490 	12.499 	3018.17 	-7.314
--O- (nonring) 	0.0168 	0.0015 	18 	22.42 	22.23 	-132.22 	-105.00 	2.55E+1 	-6.32E-2 	1.11E-4 	-5.48E-8 	1.188 	2.410 	122.09 	-0.386
--O- (ring) 	0.0098 	0.0048 	13 	31.22 	23.05 	-138.16 	-98.22 	1.22E+1 	-1.26E-2 	6.03E-5 	-3.86E-8 	5.879 	4.682 	440.24 	-0.953
->C=O (nonring) 	0.0380 	0.0031 	62 	76.75 	61.20 	-133.22 	-120.50 	6.45 	6.70E-2 	-3.57E-5 	2.86E-9 	4.189 	8.972 	340.35 	-0.350
->C=O (ring) 	0.0284 	0.0028 	55 	94.97 	75.97 	-164.50 	-126.27 	3.04E+1 	-8.29E-2 	2.36E-4 	-1.31E-7 	0. 	6.645 	n. a. 	n. a.
-O=CH- (aldehyde) 	0.0379 	0.0030 	82 	72.24 	36.90 	-162.03 	-143.48 	3.09E+1 	-3.36E-2 	1.60E-4 	-9.88E-8 	3.197 	9.093 	740.92 	-1.713
--COOH (acid) 	0.0791 	0.0077 	89 	169.09 	155.50 	-426.72 	-387.87 	2.41E+1 	4.27E-2 	8.04E-5 	-6.87E-8 	11.051 	19.537 	1317.23 	-2.578
--COO- (ester) 	0.0481 	0.0005 	82 	81.10 	53.60 	-337.92 	-301.95 	2.45E+1 	4.02E-2 	4.02E-5 	-4.52E-8 	6.959 	9.633 	483.88 	-0.966
-=O (other than above) 	0.0143 	0.0101 	36 	-10.50 	2.08 	-247.61 	-250.83 	6.82 	1.96E-2 	1.27E-5 	-1.78E-8 	3.624 	5.909 	675.24 	-1.340
--NH2 	0.0243 	0.0109 	38 	73.23 	66.89 	-22.02 	14.07 	2.69E+1 	-4.12E-2 	1.64E-4 	-9.76E-8 	3.515 	10.788 	n. a. 	n. a.
->NH (nonring) 	0.0295 	0.0077 	35 	50.17 	52.66 	53.47 	89.39 	-1.21 	7.62E-2 	-4.86E-5 	1.05E-8 	5.099 	6.436 	n. a. 	n. a.
->NH (ring) 	0.0130 	0.0114 	29 	52.82 	101.51 	31.65 	75.61 	1.18E+1 	-2.30E-2 	1.07E-4 	-6.28E-8 	7.490 	6.930 	n. a. 	n. a.
->N- (nonring) 	0.0169 	0.0074 	9 	11.74 	48.84 	123.34 	163.16 	-3.11E+1 	2.27E-1 	-3.20E-4 	1.46E-7 	4.703 	1.896 	n. a. 	n. a.
--N= (nonring) 	0.0255 	-0.0099 	n. a. 	74.60 	n. a. 	23.61 	n. a. 	n. a. 	n. a. 	n. a. 	n. a. 	n. a. 	3.335 	n. a. 	n. a.
--N= (ring) 	0.0085 	0.0076 	34 	57.55 	68.40 	55.52 	79.93 	8.83 	-3.84E-3 	4.35E-5 	-2.60E-8 	3.649 	6.528 	n. a. 	n. a.
-=NH 	n. a. 	n. a. 	n. a. 	83.08 	68.91 	93.70 	119.66 	5.69 	-4.12E-3 	1.28E-4 	-8.88E-8 	n. a. 	12.169 	n. a. 	n. a.
--CN 	0.0496 	-0.0101 	91 	125.66 	59.89 	88.43 	89.22 	3.65E+1 	-7.33E-2 	1.84E-4 	-1.03E-7 	2.414 	12.851 	n. a. 	n. a.
--NO2 	0.0437 	0.0064 	91 	152.54 	127.24 	-66.57 	-16.83 	2.59E+1 	-3.74E-3 	1.29E-4 	-8.88E-8 	9.679 	16.738 	n. a. 	n. a.
--SH 	0.0031 	0.0084 	63 	63.56 	20.09 	-17.33 	-22.99 	3.53E+1 	-7.58E-2 	1.85E-4 	-1.03E-7 	2.360 	6.884 	n. a. 	n. a.
--S- (nonring) 	0.0119 	0.0049 	54 	68.78 	34.40 	41.87 	33.12 	1.96E+1 	-5.61E-3 	4.02E-5 	-2.76E-8 	4.130 	6.817 	n. a. 	n. a.
--S- (ring) 	0.0019 	0.0051 	38 	52.10 	79.93 	39.10 	27.76 	1.67E+1 	4.81E-3 	2.77E-5 	-2.11E-8 	1.557 	5.984 	n. a. 	n. a.'''
-
-joback_groups_str_dict = {}
-joback_groups_id_dict = {}
-#JOBACK = namedtuple('JOBACK', 'i, name, Tc, Pc, Vc, Tb, Tm, Hform, Gform, Cpa, Cpb, Cpc, Cpd, Hfus, Hvap, mua, mub')
 
 class JOBACK(object):
     __slots__ = ('i', 'name', 'Tc', 'Pc', 'Vc', 'Tb', 'Tm', 'Hform',
@@ -257,12 +212,93 @@ Cpa=%r, Cpb=%r, Cpc=%r, Cpd=%r, Hfus=%r, Hvap=%r, mua=%r, mub=%r)''' % (
         self.Hform, self.Gform, self.Cpa, self.Cpb, self.Cpc, self.Cpd,
         self.Hfus, self.Hvap, self.mua, self.mub)
 
-for i, line in enumerate(joback_data_txt.split('\n')):
-    parsed = to_num(line.split('\t'))
-    j = JOBACK(i+1, *parsed)
-    joback_groups_str_dict[parsed[0]] = j
-    joback_groups_id_dict[i+1] = j
-del joback_data_txt
+joback_groups_str_dict = {'-CH3': JOBACK(i=1, name='-CH3', Tc=0.0141, Pc=-0.0012, Vc=65.0, Tb=23.58, Tm=-5.1, Hform=-76.45, Gform=-43.96,
+ Cpa=19.5, Cpb=-0.00808, Cpc=0.000153, Cpd=-9.67e-08, Hfus=0.908, Hvap=2.373, mua=548.29, mub=-1.719),
+ '-CH2-': JOBACK(i=2, name='-CH2-', Tc=0.0189, Pc=0.0, Vc=56.0, Tb=22.88, Tm=11.27, Hform=-20.64, Gform=8.42,
+ Cpa=-0.909, Cpb=0.095, Cpc=-5.44e-05, Cpd=1.19e-08, Hfus=2.59, Hvap=2.226, mua=94.16, mub=-0.199),
+ '>CH-': JOBACK(i=3, name='>CH-', Tc=0.0164, Pc=0.002, Vc=41.0, Tb=21.74, Tm=12.64, Hform=29.89, Gform=58.36,
+ Cpa=-23.0, Cpb=0.204, Cpc=-0.000265, Cpd=1.2e-07, Hfus=0.749, Hvap=1.691, mua=-322.15, mub=1.187),
+ '>C<': JOBACK(i=4, name='>C<', Tc=0.0067, Pc=0.0043, Vc=27.0, Tb=18.25, Tm=46.43, Hform=82.23, Gform=116.02,
+ Cpa=-66.2, Cpb=0.427, Cpc=-0.000641, Cpd=3.01e-07, Hfus=-1.46, Hvap=0.636, mua=-573.56, mub=2.307),
+ '=CH2': JOBACK(i=5, name='=CH2', Tc=0.0113, Pc=-0.0028, Vc=56.0, Tb=18.18, Tm=-4.32, Hform=-9.63, Gform=3.77,
+ Cpa=23.6, Cpb=-0.0381, Cpc=0.000172, Cpd=-1.03e-07, Hfus=-0.473, Hvap=1.724, mua=495.01, mub=-1.539),
+ '=CH-': JOBACK(i=6, name='=CH-', Tc=0.0129, Pc=-0.0006, Vc=46.0, Tb=24.96, Tm=8.73, Hform=37.97, Gform=48.53,
+ Cpa=-8.0, Cpb=0.105, Cpc=-9.63e-05, Cpd=3.56e-08, Hfus=2.691, Hvap=2.205, mua=82.28, mub=-0.242),
+ '=C<': JOBACK(i=7, name='=C<', Tc=0.0117, Pc=0.0011, Vc=38.0, Tb=24.14, Tm=11.14, Hform=83.99, Gform=92.36,
+ Cpa=-28.1, Cpb=0.208, Cpc=-0.000306, Cpd=1.46e-07, Hfus=3.063, Hvap=2.138, mua=None, mub=None),
+ '=C=': JOBACK(i=8, name='=C=', Tc=0.0026, Pc=0.0028, Vc=36.0, Tb=26.15, Tm=17.78, Hform=142.14, Gform=136.7,
+ Cpa=27.4, Cpb=-0.0557, Cpc=0.000101, Cpd=-5.02e-08, Hfus=4.72, Hvap=2.661, mua=None, mub=None),
+ '≡CH': JOBACK(i=9, name='≡CH', Tc=0.0027, Pc=-0.0008, Vc=46.0, Tb=9.2, Tm=-11.18, Hform=79.3, Gform=77.71,
+ Cpa=24.5, Cpb=-0.0271, Cpc=0.000111, Cpd=-6.78e-08, Hfus=2.322, Hvap=1.155, mua=None, mub=None),
+ '≡C-': JOBACK(i=10, name='≡C-', Tc=0.002, Pc=0.0016, Vc=37.0, Tb=27.38, Tm=64.32, Hform=115.51, Gform=109.82,
+ Cpa=7.87, Cpb=0.0201, Cpc=-8.33e-06, Cpd=1.39e-09, Hfus=4.151, Hvap=3.302, mua=None, mub=None),
+ '-CH2- (ring)': JOBACK(i=11, name='-CH2- (ring)', Tc=0.01, Pc=0.0025, Vc=48.0, Tb=27.15, Tm=7.75, Hform=-26.8, Gform=-3.68,
+ Cpa=-6.03, Cpb=0.0854, Cpc=-8e-06, Cpd=-1.8e-08, Hfus=0.49, Hvap=2.398, mua=307.53, mub=-0.798),
+ '>CH- (ring)': JOBACK(i=12, name='>CH- (ring)', Tc=0.0122, Pc=0.0004, Vc=38.0, Tb=21.78, Tm=19.88, Hform=8.67, Gform=40.99,
+ Cpa=-20.5, Cpb=0.162, Cpc=-0.00016, Cpd=6.24e-08, Hfus=3.243, Hvap=1.942, mua=-394.29, mub=1.251),
+ '>C< (ring)': JOBACK(i=13, name='>C< (ring)', Tc=0.0042, Pc=0.0061, Vc=27.0, Tb=21.32, Tm=60.15, Hform=79.72, Gform=87.88,
+ Cpa=-90.9, Cpb=0.557, Cpc=-0.0009, Cpd=4.69e-07, Hfus=-1.373, Hvap=0.644, mua=None, mub=None),
+ '=CH- (ring)': JOBACK(i=14, name='=CH- (ring)', Tc=0.0082, Pc=0.0011, Vc=41.0, Tb=26.73, Tm=8.13, Hform=2.09, Gform=11.3,
+ Cpa=-2.14, Cpb=0.0574, Cpc=-1.64e-06, Cpd=-1.59e-08, Hfus=1.101, Hvap=2.544, mua=259.65, mub=-0.702),
+ '=C< (ring)': JOBACK(i=15, name='=C< (ring)', Tc=0.0143, Pc=0.0008, Vc=32.0, Tb=31.01, Tm=37.02, Hform=46.43, Gform=54.05,
+ Cpa=-8.25, Cpb=0.101, Cpc=-0.000142, Cpd=6.78e-08, Hfus=2.394, Hvap=3.059, mua=-245.74, mub=0.912),
+ '-F': JOBACK(i=16, name='-F', Tc=0.0111, Pc=-0.0057, Vc=27.0, Tb=-0.03, Tm=-15.78, Hform=-251.92, Gform=-247.19,
+ Cpa=26.5, Cpb=-0.0913, Cpc=0.000191, Cpd=-1.03e-07, Hfus=1.398, Hvap=-0.67, mua=None, mub=None),
+ '-Cl': JOBACK(i=17, name='-Cl', Tc=0.0105, Pc=-0.0049, Vc=58.0, Tb=38.13, Tm=13.55, Hform=-71.55, Gform=-64.31,
+ Cpa=33.3, Cpb=-0.0963, Cpc=0.000187, Cpd=-9.96e-08, Hfus=2.515, Hvap=4.532, mua=625.45, mub=-1.814),
+ '-Br': JOBACK(i=18, name='-Br', Tc=0.0133, Pc=0.0057, Vc=71.0, Tb=66.86, Tm=43.43, Hform=-29.48, Gform=-38.06,
+ Cpa=28.6, Cpb=-0.0649, Cpc=0.000136, Cpd=-7.45e-08, Hfus=3.603, Hvap=6.582, mua=738.91, mub=-2.038),
+ '-I': JOBACK(i=19, name='-I', Tc=0.0068, Pc=-0.0034, Vc=97.0, Tb=93.84, Tm=41.69, Hform=21.06, Gform=5.74,
+ Cpa=32.1, Cpb=-0.0641, Cpc=0.000126, Cpd=-6.87e-08, Hfus=2.724, Hvap=9.52, mua=809.55, mub=-2.224),
+ '-OH (alcohol)': JOBACK(i=20, name='-OH (alcohol)', Tc=0.0741, Pc=0.0112, Vc=28.0, Tb=92.88, Tm=44.45, Hform=-208.04, Gform=-189.2,
+ Cpa=25.7, Cpb=-0.0691, Cpc=0.000177, Cpd=-9.88e-08, Hfus=2.406, Hvap=16.826, mua=2173.72, mub=-5.057),
+ '-OH (phenol)': JOBACK(i=21, name='-OH (phenol)', Tc=0.024, Pc=0.0184, Vc=-25.0, Tb=76.34, Tm=82.83, Hform=-221.65, Gform=-197.37,
+ Cpa=-2.81, Cpb=0.111, Cpc=-0.000116, Cpd=4.94e-08, Hfus=4.49, Hvap=12.499, mua=3018.17, mub=-7.314),
+ '-O- (nonring)': JOBACK(i=22, name='-O- (nonring)', Tc=0.0168, Pc=0.0015, Vc=18.0, Tb=22.42, Tm=22.23, Hform=-132.22, Gform=-105.0,
+ Cpa=25.5, Cpb=-0.0632, Cpc=0.000111, Cpd=-5.48e-08, Hfus=1.188, Hvap=2.41, mua=122.09, mub=-0.386),
+ '-O- (ring)': JOBACK(i=23, name='-O- (ring)', Tc=0.0098, Pc=0.0048, Vc=13.0, Tb=31.22, Tm=23.05, Hform=-138.16, Gform=-98.22,
+ Cpa=12.2, Cpb=-0.0126, Cpc=6.03e-05, Cpd=-3.86e-08, Hfus=5.879, Hvap=4.682, mua=440.24, mub=-0.953),
+ '>C=O (nonring)': JOBACK(i=24, name='>C=O (nonring)', Tc=0.038, Pc=0.0031, Vc=62.0, Tb=76.75, Tm=61.2, Hform=-133.22, Gform=-120.5,
+ Cpa=6.45, Cpb=0.067, Cpc=-3.57e-05, Cpd=2.86e-09, Hfus=4.189, Hvap=8.972, mua=340.35, mub=-0.35),
+ '>C=O (ring)': JOBACK(i=25, name='>C=O (ring)', Tc=0.0284, Pc=0.0028, Vc=55.0, Tb=94.97, Tm=75.97, Hform=-164.5, Gform=-126.27,
+ Cpa=30.4, Cpb=-0.0829, Cpc=0.000236, Cpd=-1.31e-07, Hfus=0.0, Hvap=6.645, mua=None, mub=None),
+ 'O=CH- (aldehyde)': JOBACK(i=26, name='O=CH- (aldehyde)', Tc=0.0379, Pc=0.003, Vc=82.0, Tb=72.24, Tm=36.9, Hform=-162.03, Gform=-143.48,
+ Cpa=30.9, Cpb=-0.0336, Cpc=0.00016, Cpd=-9.88e-08, Hfus=3.197, Hvap=9.093, mua=740.92, mub=-1.713),
+ '-COOH (acid)': JOBACK(i=27, name='-COOH (acid)', Tc=0.0791, Pc=0.0077, Vc=89.0, Tb=169.09, Tm=155.5, Hform=-426.72, Gform=-387.87,
+ Cpa=24.1, Cpb=0.0427, Cpc=8.04e-05, Cpd=-6.87e-08, Hfus=11.051, Hvap=19.537, mua=1317.23, mub=-2.578),
+ '-COO- (ester)': JOBACK(i=28, name='-COO- (ester)', Tc=0.0481, Pc=0.0005, Vc=82.0, Tb=81.1, Tm=53.6, Hform=-337.92, Gform=-301.95,
+ Cpa=24.5, Cpb=0.0402, Cpc=4.02e-05, Cpd=-4.52e-08, Hfus=6.959, Hvap=9.633, mua=483.88, mub=-0.966),
+ '=O (other than above)': JOBACK(i=29, name='=O (other than above)', Tc=0.0143, Pc=0.0101, Vc=36.0, Tb=-10.5, Tm=2.08, Hform=-247.61, Gform=-250.83,
+ Cpa=6.82, Cpb=0.0196, Cpc=1.27e-05, Cpd=-1.78e-08, Hfus=3.624, Hvap=5.909, mua=675.24, mub=-1.34),
+ '-NH2': JOBACK(i=30, name='-NH2', Tc=0.0243, Pc=0.0109, Vc=38.0, Tb=73.23, Tm=66.89, Hform=-22.02, Gform=14.07,
+ Cpa=26.9, Cpb=-0.0412, Cpc=0.000164, Cpd=-9.76e-08, Hfus=3.515, Hvap=10.788, mua=None, mub=None),
+ '>NH (nonring)': JOBACK(i=31, name='>NH (nonring)', Tc=0.0295, Pc=0.0077, Vc=35.0, Tb=50.17, Tm=52.66, Hform=53.47, Gform=89.39,
+ Cpa=-1.21, Cpb=0.0762, Cpc=-4.86e-05, Cpd=1.05e-08, Hfus=5.099, Hvap=6.436, mua=None, mub=None),
+ '>NH (ring)': JOBACK(i=32, name='>NH (ring)', Tc=0.013, Pc=0.0114, Vc=29.0, Tb=52.82, Tm=101.51, Hform=31.65, Gform=75.61,
+ Cpa=11.8, Cpb=-0.023, Cpc=0.000107, Cpd=-6.28e-08, Hfus=7.49, Hvap=6.93, mua=None, mub=None),
+ '>N- (nonring)': JOBACK(i=33, name='>N- (nonring)', Tc=0.0169, Pc=0.0074, Vc=9.0, Tb=11.74, Tm=48.84, Hform=123.34, Gform=163.16,
+ Cpa=-31.1, Cpb=0.227, Cpc=-0.00032, Cpd=1.46e-07, Hfus=4.703, Hvap=1.896, mua=None, mub=None),
+ '-N= (nonring)': JOBACK(i=34, name='-N= (nonring)', Tc=0.0255, Pc=-0.0099, Vc=None, Tb=74.6, Tm=None, Hform=23.61, Gform=None,
+ Cpa=None, Cpb=None, Cpc=None, Cpd=None, Hfus=None, Hvap=3.335, mua=None, mub=None),
+ '-N= (ring)': JOBACK(i=35, name='-N= (ring)', Tc=0.0085, Pc=0.0076, Vc=34.0, Tb=57.55, Tm=68.4, Hform=55.52, Gform=79.93,
+ Cpa=8.83, Cpb=-0.00384, Cpc=4.35e-05, Cpd=-2.6e-08, Hfus=3.649, Hvap=6.528, mua=None, mub=None),
+ '=NH': JOBACK(i=36, name='=NH', Tc=None, Pc=None, Vc=None, Tb=83.08, Tm=68.91, Hform=93.7, Gform=119.66,
+ Cpa=5.69, Cpb=-0.00412, Cpc=0.000128, Cpd=-8.88e-08, Hfus=None, Hvap=12.169, mua=None, mub=None),
+ '-CN': JOBACK(i=37, name='-CN', Tc=0.0496, Pc=-0.0101, Vc=91.0, Tb=125.66, Tm=59.89, Hform=88.43, Gform=89.22,
+ Cpa=36.5, Cpb=-0.0733, Cpc=0.000184, Cpd=-1.03e-07, Hfus=2.414, Hvap=12.851, mua=None, mub=None),
+ '-NO2': JOBACK(i=38, name='-NO2', Tc=0.0437, Pc=0.0064, Vc=91.0, Tb=152.54, Tm=127.24, Hform=-66.57, Gform=-16.83,
+ Cpa=25.9, Cpb=-0.00374, Cpc=0.000129, Cpd=-8.88e-08, Hfus=9.679, Hvap=16.738, mua=None, mub=None),
+ '-SH': JOBACK(i=39, name='-SH', Tc=0.0031, Pc=0.0084, Vc=63.0, Tb=63.56, Tm=20.09, Hform=-17.33, Gform=-22.99,
+ Cpa=35.3, Cpb=-0.0758, Cpc=0.000185, Cpd=-1.03e-07, Hfus=2.36, Hvap=6.884, mua=None, mub=None),
+ '-S- (nonring)': JOBACK(i=40, name='-S- (nonring)', Tc=0.0119, Pc=0.0049, Vc=54.0, Tb=68.78, Tm=34.4, Hform=41.87, Gform=33.12,
+ Cpa=19.6, Cpb=-0.00561, Cpc=4.02e-05, Cpd=-2.76e-08, Hfus=4.13, Hvap=6.817, mua=None, mub=None),
+ '-S- (ring)': JOBACK(i=41, name='-S- (ring)', Tc=0.0019, Pc=0.0051, Vc=38.0, Tb=52.1, Tm=79.93, Hform=39.1, Gform=27.76,
+ Cpa=16.7, Cpb=0.00481, Cpc=2.77e-05, Cpd=-2.11e-08, Hfus=1.557, Hvap=5.984, mua=None, mub=None)}
+
+joback_groups_id_dict = {}
+for j in joback_groups_str_dict.values():
+    joback_groups_id_dict[j.i] = j 
+    
 
 class Joback(object):
     r'''Class for performing chemical property estimations with the Joback
