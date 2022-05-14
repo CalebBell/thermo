@@ -27,7 +27,7 @@ from fluids.constants import R, R_inv
 from fluids.numerics import newton, numpy as np
 from chemicals.utils import log, mixing_simple, dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, hash_any_primitive
 from thermo.heat_capacity import HeatCapacityGas
-from thermo.phases.phase import Phase
+from thermo.phases.phase import Phase, IdealGasDeparturePhase
 from thermo.phases.ceos import CEOSGas
 
 
@@ -866,7 +866,7 @@ class VirialCSP(object):
     
 
 
-class VirialGas(Phase):
+class VirialGas(IdealGasDeparturePhase):
     r'''Class for representing a real gas defined by the virial equation of
     state (density form), as a phase object. The equation includes the `B`
     and `C` coefficients but not further coefficients as they cannot be 
@@ -2653,23 +2653,7 @@ class VirialGas(Phase):
     d2P_dT2_V = d2P_dT2
     d2P_dV2_T = d2P_dV2
 
-VirialGas.H = CEOSGas.H
-VirialGas.Cp = CEOSGas.Cp
-VirialGas.dH_dT = CEOSGas.dH_dT
-VirialGas.dH_dT_V = CEOSGas.Cp
-VirialGas.dH_dP_V = CEOSGas.dH_dP_V
-VirialGas.dH_dP_T = CEOSGas.dH_dP_T
-VirialGas.dH_dP = CEOSGas.dH_dP
-VirialGas.dH_dV_T = CEOSGas.dH_dV_T
-VirialGas.dH_dV_P = CEOSGas.dH_dV_P
-
-VirialGas.S = CEOSGas.S
-VirialGas.dS_dT = CEOSGas.dS_dT
-VirialGas.dS_dT_P = CEOSGas.dS_dT
-VirialGas.dS_dP_V = CEOSGas.dS_dP_V
-VirialGas.dS_dP = CEOSGas.dS_dP
-VirialGas.dS_dP_T = CEOSGas.dS_dP_T
-VirialGas.dS_dT_V = CEOSGas.dS_dT_V
+VirialGas.dH_dT_V = IdealGasDeparturePhase.Cp
 
 VirialGas.d2V_dP2_T = Phase.d2V_dP2
 VirialGas.d2T_dP2_V = Phase.d2T_dP2

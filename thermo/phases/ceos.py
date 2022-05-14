@@ -29,13 +29,13 @@ from chemicals.utils import log
 from thermo.eos_mix import IGMIX, eos_mix_full_path_dict, eos_mix_full_path_reverse_dict
 from thermo.phases.phase_utils import PR_lnphis_fastest, lnphis_direct
 from thermo.heat_capacity import HeatCapacityGas
-from thermo.phases.phase import Phase, IealGasDeparturePhase
+from thermo.phases.phase import Phase, IdealGasDeparturePhase
 try:
     zeros = np.zeros
 except:
     pass
 
-class CEOSGas(IealGasDeparturePhase):
+class CEOSGas(IdealGasDeparturePhase):
     r'''Class for representing a cubic equation of state gas phase
     as a phase object. All departure
     properties are actually calculated by the code in :obj:`thermo.eos` and

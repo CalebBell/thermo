@@ -23,7 +23,7 @@ SOFTWARE.
 
 __all__ = [
     'Phase', 
-    'IealGasDeparturePhase',
+    'IdealGasDeparturePhase',
     'derivatives_thermodynamic', 
     'derivatives_thermodynamic_mass', 
     'derivatives_jacobian',
@@ -4819,7 +4819,7 @@ class Phase(object):
         return [zi*P for zi in self.zs]
 
 
-class IealGasDeparturePhase(Phase):
+class IdealGasDeparturePhase(Phase):
     # Internal phase base for calculating properties that use the ideal gas
     # reference state with Ideal Gas objects
     def H(self):
