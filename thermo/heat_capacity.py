@@ -314,8 +314,8 @@ class HeatCapacityGas(TDependentProperty):
         '''
         methods = []
         self.T_limits = T_limits = {}
-        if load_data:
-            CASRN = self.CASRN
+        CASRN = self.CASRN
+        if load_data and CASRN:
             CASRN_int = None if not CASRN else CAS_to_int(CASRN)
 
             jb_df = miscdata.joback_predictions
