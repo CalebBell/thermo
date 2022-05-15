@@ -3,7 +3,8 @@ import platform
 is_pypy = 'PyPy' in sys.version
 ver_tup = platform.python_version_tuple()[0:2]
 ver_tup = tuple(int(i) for i in ver_tup)
-
+import fluids, chemicals, thermo
+import numpy
 def pytest_ignore_collect(path):
     path = str(path)
     # Serious technical debt
