@@ -4064,6 +4064,8 @@ class Phase(object):
         Notes
         -----
         Requires `dV_dT`, `MW`, and `V`.
+        '''
+        '''
 
         This expression is readily obtainable with SymPy:
 
@@ -4101,6 +4103,8 @@ class Phase(object):
         Notes
         -----
         Requires `dV_dP`, `MW`, and `V`.
+        '''
+        '''
 
         This expression is readily obtainable with SymTy:
 
