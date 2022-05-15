@@ -1548,11 +1548,12 @@ def test_methane_water_decane_mole_mass_flows():
         assert_close(p.atom_fractions()['C'], p.Carbon_atom_fraction(), rtol=1e-12)
         assert_close(p.atom_fractions()['H'], p.Hydrogen_atom_fraction(), rtol=1e-12)
         assert_close(p.atom_fractions()['O'], p.Oxygen_atom_fraction(), rtol=1e-12)
-    
+        assert_close(0, p.Chlorine_atom_fraction(), rtol=1e-12)
+        
         assert_close(p.atom_mass_fractions()['C'], p.Carbon_atom_mass_fraction(), rtol=1e-12)
         assert_close(p.atom_mass_fractions()['H'], p.Hydrogen_atom_mass_fraction(), rtol=1e-12)
         assert_close(p.atom_mass_fractions()['O'], p.Oxygen_atom_mass_fraction(), rtol=1e-12)
-        
+        assert_close(0, p.Chlorine_atom_mass_fraction(), rtol=1e-12)
     # partial pressure component specific
     assert_close(state.water_partial_pressure(), 63333.33333333333, rtol=1e-4)
     assert_close(state.gas.water_partial_pressure(), 3069.425770433731, rtol=1e-4)

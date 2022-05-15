@@ -2501,7 +2501,10 @@ except:
 
 def _make_getter_atom_fraction(element_symbol):
     def get(self):
-        return self.atom_fractions()[element_symbol]
+        try:
+            return self.atom_fractions()[element_symbol]
+        except KeyError:
+            return 0.0
     return get
 for ele in periodic_table:
     getter = _make_getter_atom_fraction(ele.symbol)
@@ -2516,7 +2519,11 @@ for ele in periodic_table:
 
 def _make_getter_atom_mass_fraction(element_symbol):
     def get(self):
-        return self.atom_mass_fractions()[element_symbol]
+        try:
+            return self.atom_mass_fractions()[element_symbol]
+        except KeyError:
+            return 0.0
+
     return get
 for ele in periodic_table:
     getter = _make_getter_atom_mass_fraction(ele.symbol)
