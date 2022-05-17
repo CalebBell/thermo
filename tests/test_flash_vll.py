@@ -1598,8 +1598,113 @@ def test_methane_water_decane_mole_mass_flows():
     assert_close(sum(state.liquid0.partial_pressures()), state.P)
     assert_close(sum(state.liquid1.partial_pressures()), state.P)
     assert_close(sum(state.liquid_bulk.partial_pressures()), state.P)
+    
+    
+    
+    atom_content = state.atom_content()
+    assert_close(atom_content['C'], (1+10)/3, rtol=1e-13)
+    assert_close(atom_content['H'], (4+2+22)/3, rtol=1e-13)
+    assert_close(atom_content['O'], (1)/3, rtol=1e-13)
+    
+    atom_content = state.gas.atom_content()
+    assert_close(atom_content['C'], 0.9979524683520365, rtol=1e-6)
+    assert_close(atom_content['H'], 3.995904936704073, rtol=1e-6)
+    assert_close(atom_content['O'], 0.016154872475967006, rtol=1e-6)
+    
+    atom_content = state.liquid_bulk.atom_content()
+    assert_close(atom_content['C'], 5.017634327656933, rtol=1e-6)
+    assert_close(atom_content['H'], 12.035268655313866, rtol=1e-6)
+    assert_close(atom_content['O'], 0.49389674021105096, rtol=1e-6)
+    
+    assert_close(state.Oxygen_atom_mass_flow(), 0.5333133333333332)
+    assert_close(state.gas.Oxygen_atom_mass_flow(), 0.008686813583954723)
+    
+    assert_close(state.Oxygen_atom_flow(), 100/3, rtol=1e-13)
+    assert_close(state.Carbon_atom_flow(), 366.66666666666663, rtol=1e-13)
+    assert_close(state.gas.Oxygen_atom_flow(), 0.5429462094489919, rtol=1e-6)   
+    
+    
+    atom_flows = state.atom_flows()
+    assert_close(atom_flows['C'], 100*(1+10)/3, rtol=1e-13)
+    assert_close(atom_flows['H'], 100*(4+2+22)/3, rtol=1e-13)
+    assert_close(atom_flows['O'], 100*(1)/3, rtol=1e-13)
+    
+    assert_close(state.gas.atom_flows()['O'], state.gas.Oxygen_atom_flow(), rtol=1e-13)
+    assert_close(state.gas.atom_flows()['H'], state.gas.Hydrogen_atom_flow(), rtol=1e-13)
+    assert_close(state.gas.atom_flows()['C'], state.gas.Carbon_atom_flow(), rtol=1e-13)
+    assert 0 ==  state.gas.Iron_atom_flow()
+    
+    atom_mass_flows = state.atom_mass_flows()
+    assert_close(atom_mass_flows['C'], 4.403923333333333, rtol=1e-13)
+    assert_close(atom_mass_flows['H'], 0.940744, rtol=1e-13)
+    assert_close(atom_mass_flows['O'], 0.5333133333333332, rtol=1e-13)
+    assert 0 ==  state.gas.Iron_atom_mass_flow()
+
+    atom_mass_flows = state.gas.atom_mass_flows()
+    assert_close(atom_mass_flows['C'], 0.4028389427482879, rtol=1e-6)
+    assert_close(atom_mass_flows['H'], 0.13536397516622173, rtol=1e-6)
+    assert_close(atom_mass_flows['O'], 0.008686813583954723, rtol=1e-6)
+    
+    assert_close(state.Oxygen_atom_count_flow(), 2.007380253333333e+25)
+    assert_close(state.Carbon_atom_count_flow(), 2.2081182786666662e+26)
+    assert_close(state.gas.Oxygen_atom_count_flow(), 3.269698498410271e+23, rtol=1e-5)
+    assert 0 == state.Iron_atom_count_flow()
+    assert 0 == state.gas.Iron_atom_count_flow()
 
 
+    assert_close(state.gas.atom_count_flows()['O'], state.gas.Oxygen_atom_count_flow(), rtol=1e-13)
+    assert_close(state.gas.atom_count_flows()['H'], state.gas.Hydrogen_atom_count_flow(), rtol=1e-13)
+    assert_close(state.gas.atom_count_flows()['C'], state.gas.Carbon_atom_count_flow(), rtol=1e-13)
+    
+    assert_close(state.atom_count_flows()['O'], state.Oxygen_atom_count_flow(), rtol=1e-13)
+    assert_close(state.atom_count_flows()['H'], state.Hydrogen_atom_count_flow(), rtol=1e-13)
+    assert_close(state.atom_count_flows()['C'], state.Carbon_atom_count_flow(), rtol=1e-13)
+    
+
+    # calc once, also get the cached versions
+    for i in range(2):
+    
+        calc = [state.gas.H_flow(), state.liquid0.H_flow(), state.liquid1.H_flow(), state.liquid_bulk.H_flow(), state.bulk.H_flow(), state.H_flow()]
+        expect = [1025.0344902476986, -1467448.4719594691, -1627495.395822481, -2054769.7382928678, -3093918.8332917024, -3093918.8332917024]
+        assert_close1d(calc, expect, rtol=1e-6)
+        
+        calc = [state.gas.S_flow(), state.liquid0.S_flow(), state.liquid1.S_flow(), state.liquid_bulk.S_flow(), state.bulk.S_flow(), state.S_flow()]
+        expect = [-144.62478667806292, -3949.6037477860937, -3778.6417926825343, -5130.873367998199, -7872.870327146691, -7872.870327146691]
+        assert_close1d(calc, expect, rtol=1e-6)
+        
+        calc = [state.gas.G_flow(), state.liquid0.G_flow(), state.liquid1.G_flow(), state.liquid_bulk.G_flow(), state.bulk.G_flow(), state.G_flow()]
+        expect = [44412.47049366657, -282567.34762364114, -493902.8580177207, -515507.72789340816, -732057.7351476949, -732057.7351476949]
+        assert_close1d(calc, expect, rtol=1e-6)
+        
+        calc = [state.gas.U_flow(), state.liquid0.U_flow(), state.liquid1.U_flow(), state.liquid_bulk.U_flow(), state.bulk.U_flow(), state.U_flow()]
+        expect = [-82430.63393802213, -1467578.648879572, -1628829.5857467907, -2055741.9487128956, -3178838.868564385, -3178838.868564385]
+        assert_close1d(calc, expect, rtol=1e-6)
+        
+        calc = [state.gas.A_flow(), state.liquid0.A_flow(), state.liquid1.A_flow(), state.liquid_bulk.A_flow(), state.bulk.A_flow(), state.A_flow()]
+        expect = [-39043.19793460326, -282697.524543744, -495237.0479420305, -516479.93831343605, -816977.7704203774, -816977.7704203774]
+        assert_close1d(calc, expect, rtol=1e-6)
+    
+    
+        calc = [state.gas.H_dep_flow(), state.liquid0.H_dep_flow(), state.liquid1.H_dep_flow(), state.liquid_bulk.H_dep_flow(), state.bulk.H_dep_flow(), state.H_dep_flow()]
+        expect = [-1221.6033836873603, -1469448.8244505627, -1641935.3674129113, -2071210.0623743918, -3112605.795248172, -3112605.795248172]
+        assert_close1d(calc, expect, rtol=1e-5)
+        
+        calc = [state.gas.S_dep_flow(), state.liquid0.S_dep_flow(), state.liquid1.S_dep_flow(), state.liquid_bulk.S_dep_flow(), state.bulk.S_dep_flow(), state.S_dep_flow()]
+        expect = [-2.8167554595340234, -3787.928480891734, -3687.7291384401638, -5236.4190376915785, -8326.067304468768, -8326.067304468768]
+        assert_close1d(calc, expect, rtol=1e-5)
+        
+        calc = [state.gas.G_dep_flow(), state.liquid0.G_dep_flow(), state.liquid1.G_dep_flow(), state.liquid_bulk.G_dep_flow(), state.bulk.G_dep_flow(), state.G_dep_flow()]
+        expect = [-376.5767458271534, -333070.28018304234, -535616.6258808621, -500284.3510669181, -614785.6039075414, -614785.6039075414]
+        assert_close1d(calc, expect, rtol=1e-5)
+        
+        calc = [state.gas.U_dep_flow(), state.liquid0.U_dep_flow(), state.liquid1.U_dep_flow(), state.liquid_bulk.U_dep_flow(), state.bulk.U_dep_flow(), state.U_dep_flow()]
+        expect =[-845.4872742444248, -1389235.490157551, -1558010.974543451, -1906580.178787535, -2948091.9519762574, -2948091.9519762574]
+        assert_close1d(calc, expect, rtol=1e-5)
+        
+        calc = [state.gas.A_dep_flow(), state.liquid0.A_dep_flow(), state.liquid1.A_dep_flow(), state.liquid_bulk.A_dep_flow(), state.bulk.A_dep_flow(), state.A_dep_flow()]
+        expect = [-0.4606363842178823, -252856.94589003065, -451692.233011402, -335654.4674800615, -450271.7606356269, -450271.7606356269]
+        assert_close1d(calc, expect, rtol=1e-5)
+    
 
 def test_PH_TODO():
     '''Secant is finding false bounds, meaning a failed PT - but the plot looks good. Needs more detail, and enthalpy plot.

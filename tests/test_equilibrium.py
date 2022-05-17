@@ -105,6 +105,7 @@ def test_two_eos_pure_flash_all_properties():
     assert_close1d(eq.betas, [.4, .6], rtol=1e-12)
     assert_close1d(eq.betas_mass, [.4, .6], rtol=1e-12)
     assert_close1d(eq.betas_volume, [0.9994907285990579, 0.0005092714009421547], rtol=1e-12)
+    assert_close(eq.quality, 0.4)
 
     assert_close(eq.T, T, rtol=1e-12)
     for phase in eq.phases:
@@ -532,11 +533,45 @@ def test_two_eos_pure_flash_all_properties():
     assert_close1d([i.H_C_ratio_mass() for i in eq.phases], [0.3356806847227889]*2, rtol=1e-12)
     
     
+    
     # Test some methods that failed
-    eq = flasher.flash(T=500.0, P=1e5)
-    assert [] == eq.betas_liquids
-    assert [] == eq.betas_mass_liquids
-    assert [] == eq.betas_volume_liquids
+    # gas flash
+    pure_gas = flasher.flash(T=500.0, P=1e5)
+    assert [] == pure_gas.betas_liquids
+    assert [] == pure_gas.betas_mass_liquids
+    assert [] == pure_gas.betas_volume_liquids
+    
+    assert_close(pure_gas.quality, 1, atol=0, rtol=0)
+    assert_close(pure_gas.VF, 1, atol=0, rtol=0)
+    assert_close(pure_gas.LF, 0, atol=0, rtol=0)
+    assert_close1d(pure_gas.betas_mass, [1], atol=0, rtol=0)
+    assert_close1d(pure_gas.betas_volume, [1], atol=0, rtol=0)
+    assert_close1d(pure_gas.betas, [1], atol=0, rtol=0)
+    
+    assert pure_gas.betas_liquids == []
+    assert pure_gas.betas_mass_liquids == []
+    assert pure_gas.betas_volume_liquids == []
+
+    # liquid
+    pure_liquid = flasher.flash(T=100.0, P=1e5)
+    assert_close(pure_liquid.quality, 0, atol=0, rtol=0)
+    assert_close(pure_liquid.VF, 0, atol=0, rtol=0)
+    assert_close(pure_liquid.LF, 1, atol=0, rtol=0)
+    assert_close1d(pure_liquid.betas_mass, [1], atol=0, rtol=0)
+    assert_close1d(pure_liquid.betas_volume, [1], atol=0, rtol=0)
+    assert_close1d(pure_liquid.betas, [1], atol=0, rtol=0)
+    
+    assert_close1d(pure_liquid.betas_liquids, [1], atol=0, rtol=0)
+    assert_close1d(pure_liquid.betas_mass_liquids, [1], atol=0, rtol=0)
+    assert_close1d(pure_liquid.betas_volume_liquids, [1], atol=0, rtol=0)
+    
+
+    assert_close1d(pure_liquid.betas_states, [0, 1, 0], atol=0, rtol=1e-13)
+    assert_close1d(pure_liquid.betas_mass_states, [0, 1, 0], atol=0, rtol=1e-13)
+    assert_close1d(pure_liquid.betas_volume_states, [0, 1, 0], atol=0, rtol=1e-13)
+    
+    
+    
 
 
 def test_thermodynamic_derivatives_settings_with_flash():

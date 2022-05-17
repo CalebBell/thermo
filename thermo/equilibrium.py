@@ -41,7 +41,7 @@ EquilibriumState
 from __future__ import division
 __all__ = ['EquilibriumState']
 
-from fluids.constants import R, R_inv
+from fluids.constants import R, R_inv, N_A
 from fluids.core import thermal_diffusivity
 from chemicals.utils import log, exp, normalize, zs_to_ws, vapor_mass_quality, mixing_simple, Vm_to_rho, SG
 from chemicals.virial import B_from_Z
@@ -378,9 +378,19 @@ class EquilibriumState(object):
         -----
         '''
         try:
-            return vapor_mass_quality(self.gas_beta, MWl=self.liquid_bulk.MW(), MWg=self.gas.MW())
+            return self._quality
         except:
-            return 0.0
+            pass
+        gas = self.gas
+        liquid_bulk = self.liquid_bulk
+        if gas is not None and liquid_bulk is not None:
+            quality = vapor_mass_quality(self.gas_beta, MWl=liquid_bulk.MW(), MWg=gas.MW())
+        elif gas is not None:
+            quality = 1.0
+        else:
+            quality = 0.0
+        self._quality = quality
+        return quality
 
     @property
     def betas_states(self):
@@ -416,7 +426,7 @@ class EquilibriumState(object):
         # Compute the mass fraction of the gas phase
         gas, liquids, solids = self.gas, self.liquids, self.solids
         beta_gas, betas_liquids, betas_solids = self.gas_beta, self.liquids_betas, self.solids_betas
-        gas_MW = gas.MW()
+        gas_MW = gas.MW() if gas is not None else 0.
         liq_MWs = [i.MW() for i in liquids]
         solid_MWs = [i.MW() for i in solids]
 
@@ -448,7 +458,7 @@ class EquilibriumState(object):
         # Compute the mass fraction of the gas phase
         gas, liquids, solids = self.gas, self.liquids, self.solids
         beta_gas, betas_liquids, betas_solids = self.gas_beta, self.liquids_betas, self.solids_betas
-        gas_V = gas.V()
+        gas_V = gas.V() if gas is not None else 0.0
         liq_Vs = [i.V() for i in liquids]
         solid_Vs = [i.V() for i in solids]
 
@@ -663,15 +673,16 @@ class EquilibriumState(object):
         MW = phase.MW()
         return Vm_to_rho(V, MW)
 
-    def atom_fractions(self, phase=None):
-        r'''Method to calculate and return the atomic composition of the phase;
-        returns a dictionary of atom fraction (by count), containing only those
+    def atom_content(self, phase=None):
+        r'''Method to calculate and return the number of moles of each atom
+        in the phase per mole of the phase;
+        returns a dictionary of atom counts, containing only those
         elements who are present.
 
         Returns
         -------
-        atom_fractions : dict[str: float]
-            Atom fractions, [-]
+        atom_content : dict[str: float]
+            Atom counts, [-]
 
         Notes
         -----
@@ -687,7 +698,23 @@ class EquilibriumState(object):
                     things[atom] += zi*count
                 else:
                     things[atom] = zi*count
+        
+        return things
 
+    def atom_fractions(self, phase=None):
+        r'''Method to calculate and return the atomic composition of the phase;
+        returns a dictionary of atom fraction (by count), containing only those
+        elements who are present.
+
+        Returns
+        -------
+        atom_fractions : dict[str: float]
+            Atom fractions, [-]
+
+        Notes
+        -----
+        '''
+        things = self.atom_content(phase)
         tot_inv = 1.0/sum(things.values())
         return {atom : value*tot_inv for atom, value in things.items()}
     
@@ -715,6 +742,65 @@ class EquilibriumState(object):
                 else:
                     things[atom] = zi*count
         return mass_fractions(things, phase.MW())
+
+
+    def atom_flows(self, phase=None):
+        r'''Method to calculate and return the atomic flow rates of the phase;
+        returns a dictionary of atom flows, containing only those
+        elements who are present.
+
+        Returns
+        -------
+        atom_flows : dict[str: float]
+            Atom flows, [mol/s]
+
+        Notes
+        -----
+        '''
+        if phase is None:
+            phase = self.bulk
+        atom_content = self.atom_content(phase)
+        n = phase.n
+        return {k:v*n for k, v in atom_content.items()}
+    
+    def atom_count_flows(self, phase=None):
+        r'''Method to calculate and return the atom count flow rates of the phase;
+        returns a dictionary of atom count flows, containing only those
+        elements who are present.
+
+        Returns
+        -------
+        atom_count_flows : dict[str: float]
+            Atom flows, [atoms/s]
+
+        Notes
+        -----
+        '''
+        if phase is None:
+            phase = self.bulk
+        atom_content = self.atom_content(phase)
+        n = phase.n
+        return {k:v*n*N_A for k, v in atom_content.items()}
+    
+    def atom_mass_flows(self, phase=None):
+        r'''Method to calculate and return the atomic mass flow rates of the phase;
+        returns a dictionary of atom mass flows, containing only those
+        elements who are present.
+
+        Returns
+        -------
+        atom_mass_flows : dict[str: float]
+            Atom mass flows, [kg/s]
+
+        Notes
+        -----
+        '''
+        if phase is None:
+            phase = self.bulk
+        atom_mass_fractions = self.atom_mass_fractions(phase)
+        m = phase.m
+        return {k:v*m for k, v in atom_mass_fractions.items()}
+    
 
     def ws(self, phase=None):
         r'''Method to calculate and return the mass fractions of the phase, [-]
@@ -1024,6 +1110,121 @@ class EquilibriumState(object):
         MW = phase.MW()
         return 1.0/Vm_to_rho(V, MW)
 
+    def H_flow(self, phase=None):
+        r'''Method to return the flow rate of enthalpy of this phase.
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        H_flow : float
+            Flow rate of energy, [J/s]
+
+        Notes
+        -----
+        '''
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase._H_flow
+        except:
+            pass
+        H_flow = phase.n*phase.H()
+        phase._H_flow = H_flow
+        return H_flow
+
+    def S_flow(self, phase=None):
+        r'''Method to return the flow rate of entropy of this phase.
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        S_flow : float
+            Flow rate of entropy, [J/(K*s)]
+
+        Notes
+        -----
+        '''
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase._S_flow
+        except:
+            pass
+        S_flow = phase.n*phase.S()
+        phase._S_flow = S_flow
+        return S_flow
+
+    def U_flow(self, phase=None):
+        r'''Method to return the flow rate of internal energy of this phase.
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        U_flow : float
+            Flow rate of internal energy, [J/s]
+
+        Notes
+        -----
+        '''
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase._U_flow
+        except:
+            pass
+        U_flow = phase.n*phase.U()
+        phase._U_flow = U_flow
+        return U_flow
+
+    def A_flow(self, phase=None):
+        r'''Method to return the flow rate of Helmholtz energy of this phase.
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        A_flow : float
+            Flow rate of Helmholtz energy, [J/s]
+
+        Notes
+        -----
+        '''
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase._A_flow
+        except:
+            pass
+        A_flow = phase.n*phase.A()
+        phase._A_flow = A_flow
+        return A_flow
+
+    def G_flow(self, phase=None):
+        r'''Method to return the flow rate of Gibbs free energy of this phase.
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        G_flow : float
+            Flow rate of Gibbs energy, [J/s]
+
+        Notes
+        -----
+        '''
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase._G_flow
+        except:
+            pass
+        G_flow = phase.n*phase.G()
+        phase._G_flow = G_flow
+        return G_flow
+
     def H_mass(self, phase=None):
         r'''Method to calculate and return mass enthalpy of the phase.
 
@@ -1194,7 +1395,7 @@ class EquilibriumState(object):
         '''
         if phase is None:
             phase = self.bulk
-        elif phase is not self.bulk:
+        elif phase is not self.bulk and phase is not self.liquid_bulk:
             try:
                 return phase.S_dep()
             except:
@@ -1244,6 +1445,128 @@ class EquilibriumState(object):
             except:
                 pass
         return phase.Cv() - self.Cv_ideal_gas(phase)
+
+
+    def H_dep_flow(self, phase=None):
+        r'''Method to return the flow rate of the difference between the
+        ideal-gas energy of this phase and the actual energy of the phase
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        H_dep_flow : float
+            Flow rate of departure energy, [J/s]
+
+        Notes
+        -----
+        '''
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase._H_dep_flow
+        except:
+            pass
+        H_dep_flow = phase.n*phase.H_dep()
+        phase._H_dep_flow = H_dep_flow
+        return H_dep_flow
+
+    def S_dep_flow(self, phase=None):
+        r'''Method to return the flow rate of the difference between the
+        ideal-gas entropy of this phase and the actual entropy of the phase
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        S_dep_flow : float
+            Flow rate of departure entropy, [J/(K*s)]
+
+        Notes
+        -----
+        '''
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase._S_dep_flow
+        except:
+            pass
+        S_dep_flow = phase.n*phase.S_dep()
+        phase._S_dep_flow = S_dep_flow
+        return S_dep_flow
+
+    def U_dep_flow(self, phase=None):
+        r'''Method to return the flow rate of the difference between the
+        ideal-gas internal energy of this phase and the actual internal energy of the phase
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        U_dep_flow : float
+            Flow rate of departure internal energy, [J/s]
+
+        Notes
+        -----
+        '''
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase._U_dep_flow
+        except:
+            pass
+        U_dep_flow = phase.n*phase.U_dep()
+        phase._U_dep_flow = U_dep_flow
+        return U_dep_flow
+
+    def A_dep_flow(self, phase=None):
+        r'''Method to return the flow rate of the difference between the
+        ideal-gas Helmholtz energy of this phase and the Helmholtz energy of the phase
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        A_dep_flow : float
+            Flow rate of departure Helmholtz energy, [J/s]
+
+        Notes
+        -----
+        '''
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase._A_dep_flow
+        except:
+            pass
+        A_dep_flow = phase.n*phase.A_dep()
+        phase._A_dep_flow = A_dep_flow
+        return A_dep_flow
+
+    def G_dep_flow(self, phase=None):
+        r'''Method to return the flow rate of the difference between the
+        ideal-gas Gibbs free energy of this phase and the actual Gibbs free energy of the phase
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+        
+        Returns
+        -------
+        G_dep_flow : float
+            Flow rate of departure Gibbs energy, [J/s]
+
+        Notes
+        -----
+        '''
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase._G_dep_flow
+        except:
+            pass
+        G_dep_flow = phase.n*phase.G_dep()
+        phase._G_dep_flow = G_dep_flow
+        return G_dep_flow
+
 
     def H_ideal_gas(self, phase=None):
         r'''Method to calculate and return the ideal-gas enthalpy of the phase.
@@ -2429,7 +2752,8 @@ for name in PropertyCorrelationsPackage.correlations:
 
 ### For certain properties not supported by Phases/Bulk, allow them to call up to the
 # EquilibriumState to get the property
-phases_properties_to_EquilibriumState = ['atom_fractions', 'atom_mass_fractions','API',
+phases_properties_to_EquilibriumState = ['atom_content', 'atom_fractions', 'atom_mass_fractions',
+                                         'atom_flows','atom_mass_flows', 'atom_count_flows', 'API',
                                          'Hc', 'Hc_mass', 'Hc_lower', 'Hc_lower_mass', 'SG', 'SG_gas',
                                          'pseudo_Tc', 'pseudo_Pc', 'pseudo_Vc', 'pseudo_Zc',
                                          'pseudo_omega',
@@ -2445,6 +2769,8 @@ phases_properties_to_EquilibriumState = ['atom_fractions', 'atom_mass_fractions'
                                          'ws_no_water', 'zs_no_water',
                                          'H_C_ratio', 'H_C_ratio_mass',
                                          'Vfls', 'Vfgs',
+                                         'H_flow', 'G_flow', 'S_flow', 'U_flow', 'A_flow',
+                                         'H_dep_flow', 'S_dep_flow', 'G_dep_flow', 'U_dep_flow', 'A_dep_flow',
                                          ]
 for name in phases_properties_to_EquilibriumState:
     method = _make_getter_EquilibriumState(name)
@@ -2510,8 +2836,8 @@ for ele in periodic_table:
     getter = _make_getter_atom_fraction(ele.symbol)
     name = '%s_atom_fraction' %(ele.name)
     
-    _add_attrs_doc =  r'''Method to calculate and return the mole fraction which is
-            %s element, [-]
+    _add_attrs_doc =  r'''Method to calculate and return the mole fraction that 
+            is %s element, [-]
             ''' %(ele.name)
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
@@ -2529,12 +2855,70 @@ for ele in periodic_table:
     getter = _make_getter_atom_mass_fraction(ele.symbol)
     name = '%s_atom_mass_fraction' %(ele.name)
     
-    _add_attrs_doc =  r'''Method to calculate and return the mass fraction which is
-            %s element, [-]
+    _add_attrs_doc =  r'''Method to calculate and return the mass fraction of the phase 
+            that is %s element, [-]
             ''' %(ele.name)
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
+
+def _make_getter_atom_mass_flow(element_symbol):
+    def get(self):
+        try:
+            return self.atom_mass_fractions()[element_symbol]*self.m
+        except KeyError:
+            return 0.0
+    return get
+    
+for ele in periodic_table:
+    getter = _make_getter_atom_mass_flow(ele.symbol)
+    name = '%s_atom_mass_flow' %(ele.name)
+    
+    _add_attrs_doc =  r'''Method to calculate and return the mass flow of atoms
+            that are %s element, [kg/s]
+            ''' %(ele.name)
+    getter.__doc__ = _add_attrs_doc
+    setattr(EquilibriumState, name, getter)
+    setattr(Phase, name, getter)
+
+def _make_getter_atom_flow(element_symbol):
+    def get(self):
+        try:
+            return self.atom_content()[element_symbol]*self.n
+        except KeyError:
+            return 0.0
+    return get
+    
+for ele in periodic_table:
+    getter = _make_getter_atom_flow(ele.symbol)
+    name = '%s_atom_flow' %(ele.name)
+    
+    _add_attrs_doc =  r'''Method to calculate and return the mole flow that is
+            %s, [mol/s]
+            ''' %(ele.name)
+    getter.__doc__ = _add_attrs_doc
+    setattr(EquilibriumState, name, getter)
+    setattr(Phase, name, getter)
+
+def _make_getter_atom_count_flow(element_symbol):
+    def get(self):
+        try:
+            return self.atom_content()[element_symbol]*self.n*N_A
+        except KeyError:
+            return 0.0
+    return get
+    
+for ele in periodic_table:
+    getter = _make_getter_atom_count_flow(ele.symbol)
+    name = '%s_atom_count_flow' %(ele.name)
+    
+    _add_attrs_doc =  r'''Method to calculate and return the number of atoms in the
+            flow which are %s, [atoms/s]
+            ''' %(ele.name)
+    getter.__doc__ = _add_attrs_doc
+    setattr(EquilibriumState, name, getter)
+    setattr(Phase, name, getter)
+
 
 _comonent_specific_properties = {'water': CAS_H2O,
                                  'carbon_dioxide': '124-38-9',

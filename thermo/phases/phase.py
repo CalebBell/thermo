@@ -41,7 +41,7 @@ from chemicals.utils import (log, Cp_minus_Cv, phase_identification_parameter,
                              isentropic_exponent_PT, isentropic_exponent_PV)
 from thermo.utils import POLY_FIT
 from thermo import phases
-from .phase_utils import object_lookups
+from thermo.phases.phase_utils import object_lookups
 
 class Phase(object):
     '''`Phase` is the base class for all phase objects in `thermo`. Each
