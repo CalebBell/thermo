@@ -524,6 +524,8 @@ class Bulk(Phase):
 
 
     '''
+    bulk_phase_type = True
+    
     def __init__(self, T, P, zs, phases, phase_fractions, phase_bulk=None):
         self.T = T
         self.P = P

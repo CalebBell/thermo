@@ -511,9 +511,9 @@ def test_two_eos_pure_flash_all_properties():
     assert_close1d([i.V_liquid_ref() for i in eq.phases], [V_liquid_ref_expect]*2, rtol=1e-12)
 
     # Water contect
-    assert_close(eq.molar_water_content(), 0, atol=0)
-    assert_close(eq.bulk.molar_water_content(), 0, atol=0)
-    assert_close1d([i.molar_water_content() for i in eq.phases], [0]*2, atol=0)
+    assert_close(eq.water_molar_weight(), 0, atol=0)
+    assert_close(eq.bulk.water_molar_weight(), 0, atol=0)
+    assert_close1d([i.water_molar_weight() for i in eq.phases], [0]*2, atol=0)
 
     assert_close1d(eq.zs_no_water(), [1], atol=0)
     assert_close1d(eq.bulk.zs_no_water(), [1], atol=0)
@@ -1084,3 +1084,31 @@ def test_thermodynamic_derivatives_named_settings():
     assert_close(res.speed_of_sound(), v, rtol=1e-8)
     assert_close(res.bulk.speed_of_sound(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.speed_of_sound(), v2)
+    
+    
+def test_equilibrium_ternary_air_PR():
+    constants = ChemicalConstantsPackage(atomss=[{'O': 2}, {'N': 2}, {'H': 2, 'O': 1}], CASs=['7782-44-7', '7727-37-9', '7732-18-5'], Gfgs=[0.0, 0.0, -228554.325], Hfgs=[0.0, 0.0, -241822.0], MWs=[31.9988, 28.0134, 18.01528], names=['oxygen', 'nitrogen', 'water'], omegas=[0.021, 0.04, 0.344], Pcs=[5042945.25, 3394387.5, 22048320.0], Sfgs=[0.0, 0.0, -44.499999999999964], Tbs=[90.188, 77.355, 373.124], Tcs=[154.58, 126.2, 647.14], Tms=[54.36, 63.15, 273.15], Vcs=[7.34e-05, 8.95e-05, 5.6e-05])
+    
+    HeatCapacityGases = [HeatCapacityGas(CASRN="7782-44-7", MW=31.9988, similarity_variable=0.06250234383789392, extrapolation="linear", method="TRCIG"),
+     HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="TRCIG"),
+     HeatCapacityGas(CASRN="7732-18-5", MW=18.01528, similarity_variable=0.16652530518537598, extrapolation="linear", method="TRCIG")]
+    
+    properties = PropertyCorrelationsPackage(constants=constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    kijs = [[0.0, -0.0159, 0], [-0.0159, 0.0, 0], [0, 0, 0.0]]
+    
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas, 'kijs': kijs}
+    gas = CEOSGas(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    liquid = CEOSLiquid(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
+    
+    zs = [.20669, .77755, 0.01576]
+    
+    res = flasher.flash(T=300, P=1e5, zs=zs)
+    assert_close(res.water_molar_weight(), 0.2839208128)
+                 
+    assert_close(res.humidity_ratio(), 0.009998742813826613)
+
+    assert_close(res.gas.humidity_ratio(), 0.009998742813826613)
+    assert_close(res.bulk.humidity_ratio(), 0.009998742813826613)
+    
+# test_equilibrium_ternary_air_PR()

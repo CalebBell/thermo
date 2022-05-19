@@ -1374,11 +1374,8 @@ class EquilibriumState(object):
         '''
         if phase is None:
             phase = self.bulk
-        elif phase is not self.bulk:
-            try:
-                return phase.H_dep()
-            except:
-                pass
+        if not phase.bulk_phase_type:
+            return phase.H_dep()
         return phase.H() - self.H_ideal_gas(phase)
 
     def S_dep(self, phase=None):
@@ -1395,11 +1392,8 @@ class EquilibriumState(object):
         '''
         if phase is None:
             phase = self.bulk
-        elif phase is not self.bulk and phase is not self.liquid_bulk:
-            try:
-                return phase.S_dep()
-            except:
-                pass
+        if not phase.bulk_phase_type:
+            return phase.S_dep()
         return phase.S() - self.S_ideal_gas(phase)
 
     def Cp_dep(self, phase=None):
@@ -1417,11 +1411,8 @@ class EquilibriumState(object):
         '''
         if phase is None:
             phase = self.bulk
-        elif phase is not self.bulk:
-            try:
-                return phase.Cp_dep()
-            except:
-                pass
+        if not phase.bulk_phase_type:
+            return phase.Cp_dep()
         return phase.Cp() - self.Cp_ideal_gas(phase)
 
     def Cv_dep(self, phase=None):
@@ -1439,11 +1430,8 @@ class EquilibriumState(object):
         '''
         if phase is None:
             phase = self.bulk
-        elif phase is not self.bulk:
-            try:
-                return phase.Cv_dep()
-            except:
-                pass
+        if not phase.bulk_phase_type:
+            return phase.Cv_dep()
         return phase.Cv() - self.Cv_ideal_gas(phase)
 
 
@@ -1740,11 +1728,8 @@ class EquilibriumState(object):
         '''
         if phase is None:
             phase = self.bulk
-        elif phase is not self.bulk:
-            try:
-                return phase.H_formation_ideal_gas()
-            except:
-                pass
+        if not phase.bulk_phase_type:
+            return phase.H_formation_ideal_gas()
 
         Hf = 0.0
         zs = phase.zs
@@ -1771,11 +1756,8 @@ class EquilibriumState(object):
         '''
         if phase is None:
             phase = self.bulk
-        elif phase is not self.bulk:
-            try:
-                return phase.S_formation_ideal_gas()
-            except:
-                pass
+        if not phase.bulk_phase_type:
+            return phase.S_formation_ideal_gas()
 
         Sf = 0.0
         zs = phase.zs
@@ -2175,17 +2157,18 @@ class EquilibriumState(object):
         return self._water_index
 
 
-    def molar_water_content(self, phase=None):
-        r'''Method to calculate and return the molar water content; this is
-        the g/mol of the fluid which is coming from water, [g/mol].
+    def humidity_ratio(self, phase=None):
+        r'''Method to calculate and return the humidity ratio of the phase;
+        normally defined as the kg water/kg dry air, the definition here is
+        kg water/(kg rest of the phase) [-]
 
         .. math::
-            \text{water content} = \text{MW}_{H2O} w_{H2O}
+            \text{humidity ratio} = \text{HR} = \frac{w_{H2O}}{1 - w_{H2O}}
 
         Returns
         -------
-        molar_water_content : float
-            Molar water content, [g/mol]
+        humidity_ratio : float
+            Humidity ratio, [-]
 
         Notes
         -----
@@ -2196,9 +2179,8 @@ class EquilibriumState(object):
         water_index = self.water_index
         if water_index is None:
             return 0.0
-
-        MW_water = self.constants.MWs[water_index]
-        return MW_water*phase.ws()[water_index]
+        w_H2O = self.ws()[water_index]
+        return w_H2O/(1.0 - w_H2O)
 
     def zs_no_water(self, phase=None):
         r'''Method to calculate and return the mole fractions of all species
@@ -2766,7 +2748,7 @@ phases_properties_to_EquilibriumState = ['atom_content', 'atom_fractions', 'atom
                                          'Wobbe_index_mass', 'Wobbe_index', 'V_mass',
                                          'rho_mass_liquid_ref', 'V_liquid_ref',
                                          'molar_water_content',
-                                         'ws_no_water', 'zs_no_water',
+                                         'ws_no_water', 'zs_no_water', 'humidity_ratio',
                                          'H_C_ratio', 'H_C_ratio_mass',
                                          'Vfls', 'Vfgs',
                                          'H_flow', 'G_flow', 'S_flow', 'U_flow', 'A_flow',
@@ -2949,5 +2931,30 @@ for _name, _CAS in _comonent_specific_properties.items():
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
+    
+    
+def _make_getter_component_molar_weight(CAS):
+    def get(self):
+        try:
+            idx = self.CASs.index(CAS)
+        except ValueError:
+            # Not present
+            return 0.0
+        return self.MW()*self.ws()[idx]
+    return get
 
+
+for _name, _CAS in _comonent_specific_properties.items():
+    getter = _make_getter_component_molar_weight(_CAS)
+    name = '%s_molar_weight' %(_name)
+    
+    _add_attrs_doc =  r'''Method to calculate and return the effective quantiy
+    of %s in the phase as a molar weight, [g/mol].
+    
+    This is the molecular weight of the phase times the mass fraction of the 
+    %s component.
+            ''' %(_name, _name)
+    getter.__doc__ = _add_attrs_doc
+    setattr(EquilibriumState, name, getter)
+    setattr(Phase, name, getter)
 del _add_attrs_doc

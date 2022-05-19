@@ -135,6 +135,8 @@ class Phase(object):
     '''Tuple of dictionaries for object -> string
     '''
     
+    bulk_phase_type = False
+    
     if not is_micropython:
         def __init_subclass__(cls):
             cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
