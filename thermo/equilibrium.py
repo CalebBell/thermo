@@ -1394,7 +1394,10 @@ class EquilibriumState(object):
             phase = self.bulk
         if not phase.bulk_phase_type:
             return phase.S_dep()
-        return phase.S() - self.S_ideal_gas(phase)
+        S_dep = 0.0
+        for p, beta in zip(phase.phases, phase.phase_fractions):
+            S_dep += p.S_dep()*beta
+        return S_dep
 
     def Cp_dep(self, phase=None):
         r'''Method to calculate and return the difference between the actual
@@ -1569,10 +1572,10 @@ class EquilibriumState(object):
         '''
         if phase is None:
             phase = self.bulk
-        try:
+
+        # Return the phase implementation of ideal gas
+        if not phase.bulk_phase_type:
             return phase.H_ideal_gas()
-        except:
-            pass
 
         HeatCapacityGases = self.correlations.HeatCapacityGases
         T, T_REF_IG = self.T, self.T_REF_IG
@@ -1597,10 +1600,8 @@ class EquilibriumState(object):
         '''
         if phase is None:
             phase = self.bulk
-        try:
+        if not phase.bulk_phase_type:
             return phase.S_ideal_gas()
-        except:
-            pass
 
         HeatCapacityGases = self.correlations.HeatCapacityGases
         T, T_REF_IG = self.T, self.T_REF_IG

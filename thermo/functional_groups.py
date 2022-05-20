@@ -192,6 +192,28 @@ Functions using group identification
 
 from __future__ import division
 
+
+group_names = ['mercaptan', 'sulfide', 'disulfide', 'sulfoxide', 'sulfone', 
+               'sulfinic_acid', 'sulfonic_acid', 'sulfonate_ester', 'thiocyanate', 
+               'isothiocyanate', 'thioketone', 'thial', 'carbothioic_s_acid', 
+               'carbothioic_o_acid', 'thiolester', 'thionoester', 
+               'carbodithioic_acid', 'carbodithio', 'siloxane',
+               'branched_alkane', 'alkane', 'cycloalkane', 'alkene', 'alkyne', 
+               'aromatic', 'nitrile', 'carboxylic_acid', 'haloalkane',
+               'fluoroalkane', 'chloroalkane', 'bromoalkane', 'iodoalkane', 
+               'amine', 'primary_amine', 'secondary_amine', 'tertiary_amine', 
+               'quat', 'amide', 'nitro', 'amidine', 'imine', 'primary_ketimine',
+               'secondary_ketimine', 'primary_aldimine', 'secondary_aldimine',
+               'imide', 'azide', 'azo', 'cyanate', 'isocyanate', 'nitrate', 
+               'isonitrile', 'nitrite', 'nitroso', 'oxime', 'pyridyl',
+               'carbamate', 'acyl_halide', 'alcohol', 'polyol', 'acid',
+               'ketone', 'aldehyde', 'anhydride', 'ether', 'phenol', 'carbonate', 
+               'carboxylate', 'hydroperoxide', 'peroxide', 'orthoester',
+               'methylenedioxy', 'orthocarbonate_ester', 'carboxylic_anhydride', 
+               'ester', 'boronic_acid', 'boronic_ester', 'borinic_acid',
+               'borinic_ester', 'phosphine', 'phosphonic_acid', 'phosphodiester',
+               'phosphate', 'alkyllithium', 'alkylmagnesium_halide', 
+               'alkylaluminium', 'silyl_ether', 'organic', 'inorganic'] 
 __all__ = [# sulfur
            'is_mercaptan', 'is_sulfide', 'is_disulfide', 'is_sulfoxide',
            'is_sulfone', 'is_sulfinic_acid', 'is_sulfonic_acid',
@@ -241,6 +263,7 @@ __all__ = [# sulfur
            
            'count_ring_ring_attatchments',
            'count_rings_attatched_to_rings',
+           'group_names',
            
            'BVirial_Tsonopoulos_extended_ab']
 

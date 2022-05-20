@@ -63,8 +63,8 @@ from thermo.electrochem import conductivity, conductivity_methods
 from thermo.eos import *
 from thermo.eos_mix import *
 from thermo.unifac import DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments, load_group_assignments_DDBST, UNIFAC_RQ, Van_der_Waals_volume, Van_der_Waals_area
-
-
+from thermo import functional_groups
+from thermo.functional_groups import group_names
 
 
 caching = True
@@ -3186,3 +3186,8 @@ class Chemical(object): # pragma: no cover
     def Peclet_heat(self, V=None, D=None):
         return Peclet_heat(V=V, L=D, rho=self.rho, Cp=self.Cp, k=self.k)
 
+
+
+# from thermo import functional_groups
+# from thermo.functional_groups import group_names
+# 

@@ -1690,19 +1690,19 @@ def test_methane_water_decane_mole_mass_flows():
         assert_close1d(calc, expect, rtol=1e-5)
         
         calc = [state.gas.S_dep_flow(), state.liquid0.S_dep_flow(), state.liquid1.S_dep_flow(), state.liquid_bulk.S_dep_flow(), state.bulk.S_dep_flow(), state.S_dep_flow()]
-        expect = [-2.8167554595340234, -3787.928480891734, -3687.7291384401638, -5236.4190376915785, -8326.067304468768, -8326.067304468768]
+        expect = [-2.8167554595340234, -3787.928480891734, -3687.7291384401638, -4963.1772679128635, -7478.474374791432, -7478.474374791432]
         assert_close1d(calc, expect, rtol=1e-5)
         
         calc = [state.gas.G_dep_flow(), state.liquid0.G_dep_flow(), state.liquid1.G_dep_flow(), state.liquid_bulk.G_dep_flow(), state.bulk.G_dep_flow(), state.G_dep_flow()]
-        expect = [-376.5767458271534, -333070.28018304234, -535616.6258808621, -500284.3510669181, -614785.6039075414, -614785.6039075414]
+        expect = [-376.5767458271534, -333070.28018304234, -535616.6258808621, -582256.8820005328, -869063.4828107425, -869063.4828107425]
         assert_close1d(calc, expect, rtol=1e-5)
         
         calc = [state.gas.U_dep_flow(), state.liquid0.U_dep_flow(), state.liquid1.U_dep_flow(), state.liquid_bulk.U_dep_flow(), state.bulk.U_dep_flow(), state.U_dep_flow()]
-        expect =[-845.4872742444248, -1389235.490157551, -1558010.974543451, -1906580.178787535, -2948091.9519762574, -2948091.9519762574]
+        expect = [-845.4872742444248, -1389235.490157551, -1558010.974543451, -1906580.178787535, -2948091.9519762574, -2948091.9519762574]
         assert_close1d(calc, expect, rtol=1e-5)
         
         calc = [state.gas.A_dep_flow(), state.liquid0.A_dep_flow(), state.liquid1.A_dep_flow(), state.liquid_bulk.A_dep_flow(), state.bulk.A_dep_flow(), state.A_dep_flow()]
-        expect = [-0.4606363842178823, -252856.94589003065, -451692.233011402, -335654.4674800615, -450271.7606356269, -450271.7606356269]
+        expect = [-0.4606363842178823, -252856.94589003065, -451692.233011402, -417626.9984136762, -704549.6395388279, -704549.6395388279]
         assert_close1d(calc, expect, rtol=1e-5)
     
 
