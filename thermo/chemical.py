@@ -3186,8 +3186,18 @@ class Chemical(object): # pragma: no cover
     def Peclet_heat(self, V=None, D=None):
         return Peclet_heat(V=V, L=D, rho=self.rho, Cp=self.Cp, k=self.k)
 
-
-
-# from thermo import functional_groups
-# from thermo.functional_groups import group_names
-# 
+# Add the functional groups
+def _make_getter_group(name):
+    def get(self):
+        base_name = 'is_%s' %(name)
+        ref = getattr(functional_groups, base_name)
+        return ref(self.rdkitmol)
+        
+    return get
+for _name in group_names:
+    getter = property(_make_getter_group(_name))
+    name = 'is_%s' %(_name)
+    _add_attrs_doc =  r'''Method to return whether or not this chemical is in the category %s, [-]
+            ''' %(_name)
+    getter.__doc__ = _add_attrs_doc
+    setattr(Chemical, name, getter)
