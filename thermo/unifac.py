@@ -47,7 +47,7 @@ Misc Functions
 .. autofunction:: Van_der_Waals_volume
 .. autofunction:: Van_der_Waals_area
 .. autofunction:: chemgroups_to_matrix
-.. autofunction:: load_group_assignments_DDBST
+.. autofunction:: UNIFAC_group_assignment_DDBST
 
 Data for Original UNIFAC
 ------------------------
@@ -137,6 +137,7 @@ __all__ = ['UNIFAC_gammas','UNIFAC', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', '
 
            'DDBST_UNIFAC_assignments',
            'DDBST_MODIFIED_UNIFAC_assignments', 'DDBST_PSRK_assignments',
+           'UNIFAC_group_assignment_DDBST',
 
            'UNIFAC_RQ', 'Van_der_Waals_volume', 'Van_der_Waals_area',
            'load_group_assignments_DDBST',
@@ -150,7 +151,9 @@ import os
 from fluids.constants import R
 from fluids.numerics import numpy as np
 from chemicals.utils import log, exp, dxs_to_dns, can_load_data, PY37
+from chemicals.identifiers import CAS_to_int
 from thermo.activity import GibbsExcess
+from thermo.group_contribution.group_contribution_base import str_group_assignment_to_dict
 
 try:
     array, zeros, npexp, array_equal = np.array, np.zeros, np.exp, np.array_equal
@@ -2613,7 +2616,60 @@ def load_group_assignments_DDBST():
                         d_data[int(groups[i*2])] = int(groups[i*2+1])
                     storage[key] = d_data
 
+## Database lookup
+UNIFAC_DDBST_ASSIGNMENT_CURSOR = None
 
+def init_ddbst_UNIFAC_db():
+    global UNIFAC_DDBST_ASSIGNMENT_CURSOR
+    import sqlite3
+    conn = sqlite3.connect(os.path.join(os.path.dirname(__file__), 'Phase Change', 'DDBST_UNIFAC_assignments.sqlite'))
+    UNIFAC_DDBST_ASSIGNMENT_CURSOR = conn.cursor()
+
+def UNIFAC_group_assignment_DDBST(CAS, model):
+    r'''Lookup the group assignment of a compound in either the 'UNIFAC'
+    the 'UNIFAC_MODIFIED', or the 'PSRK' model. These values are read from a
+    sqlite database on demand.
+
+    Parameters
+    ----------
+    CAS : str
+        CAS number, [-]
+    model : str
+        One of  'UNIFAC', 'UNIFAC_MODIFIED', or 'PSRK', [-]
+
+    Returns
+    -------
+    asssignments : dict
+        The group assignments and their counts; note that an empty dictionary
+        indicates the fragmentation is not available, [-]
+        
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> UNIFAC_group_assignment_DDBST('50-14-6', 'UNIFAC')
+    {1: 5, 2: 8, 3: 6, 4: 1, 6: 1, 7: 1, 8: 2, 14: 1}
+
+    '''
+    if UNIFAC_DDBST_ASSIGNMENT_CURSOR is None:
+        init_ddbst_UNIFAC_db()
+    CASi = CAS_to_int(CAS)
+    UNIFAC_DDBST_ASSIGNMENT_CURSOR.execute("SELECT * FROM DDBST WHERE `index`=?", (str(CASi),))
+    result = UNIFAC_DDBST_ASSIGNMENT_CURSOR.fetchone()
+    if result is None:
+        return {}
+    if model == 'UNIFAC':
+        assignment = result[1]
+    elif model == 'MODIFIED_UNIFAC':
+        assignment = result[2]
+    elif model == 'PSRK':
+        assignment = result[3]
+    else:
+        raise ValueError("Allowed models are 'UNIFAC', 'PSRK', 'MODIFIED_UNIFAC' ")
+    return str_group_assignment_to_dict(assignment)
+    
+    
 def UNIFAC_RQ(groups, subgroup_data=None):
     r'''Calculates UNIFAC parameters R and Q for a chemical, given a dictionary
     of its groups, as shown in [1]_. Most UNIFAC methods use the same subgroup

@@ -1018,3 +1018,13 @@ def test_UNIFAC_large():
     GE.to_T_xs(T=310.0, xs=xs).gammas() # 16.7 ms at 200 components
 
 del test_UNIFAC_large
+
+
+def test_UNIFAC_group_assignment_DDBST():
+    assert UNIFAC_group_assignment_DDBST('50-14-6', 'UNIFAC') == {1: 5, 2: 8, 3: 6, 4: 1, 6: 1, 7: 1, 8: 2, 14: 1}
+    assert UNIFAC_group_assignment_DDBST('50-14-6', 'MODIFIED_UNIFAC') == {1: 5, 3: 3, 6: 1, 7: 1, 8: 2, 78: 8, 79: 3, 80: 1, 81: 1}
+    assert UNIFAC_group_assignment_DDBST('50-14-6', 'PSRK') == {1: 5, 2: 8, 3: 6, 4: 1, 6: 1, 7: 1, 8: 2, 14: 1}
+    
+    assert {} == UNIFAC_group_assignment_DDBST('50-37-3', 'PSRK')
+    assert {} == UNIFAC_group_assignment_DDBST('50-37-3', 'UNIFAC')
+    assert UNIFAC_group_assignment_DDBST('50-37-3', 'MODIFIED_UNIFAC') == {1: 2, 8: 1, 9: 3, 10: 3, 34: 1, 38: 1, 78: 2, 79: 2, 103: 1}

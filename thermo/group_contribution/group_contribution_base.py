@@ -100,7 +100,11 @@ def str_group_assignment_to_dict(counts, pair_separator=',', key_val_separator='
     --------
     >>> str_group_assignment_to_dict('1:5,4:1,9:5,10:1,81:1')
     {1: 5, 4: 1, 9: 5, 10: 1, 81: 1}
+    >>> str_group_assignment_to_dict('')
+    {}
     '''
+    if not counts:
+        return {}
     groups = {}
     for group in counts.split(pair_separator):
         k, v = group.split(key_val_separator)
