@@ -22,6 +22,8 @@ SOFTWARE.
 
 '''
 from chemicals.elements import simple_formula_parser
+__all__ = ['str_group_assignment_to_dict', 'group_assignment_to_str',
+           'smarts_fragment_priority', 'smarts_fragment']
 
 rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
 
@@ -40,6 +42,73 @@ def load_rdkit_modules():
     except:
         if not loaded_rdkit: # pragma: no cover
             raise Exception(rdkit_missing)
+
+def group_assignment_to_str(counts, pair_separator=',', key_val_separator=':'):
+    r'''Take a group contribution dictionary, and turn it into a string.
+    The string is usually more memory efficient.
+
+    Parameters
+    ----------
+    counts : dict
+        Dictionaty of integer counts of the found groups only, indexed by
+        the `group` [-]
+    pair_separator : str, optional
+        The separator between pairs of group assignments, [-]
+    key_val_separator : str, optional
+        The separator between the group, and the amount of that group, [-]
+
+    Returns
+    -------
+    counts : str
+        String of counts of the found groups only [-]
+
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> group_assignment_to_str({1: 5, 4: 1, 9: 5, 10: 1, 81: 1})
+    '1:5,4:1,9:5,10:1,81:1'
+    '''
+    elements = []
+    for k, v in counts.items():
+        elements.append(f"{k}{key_val_separator}{v}")
+    return pair_separator.join(elements)
+
+def str_group_assignment_to_dict(counts, pair_separator=',', key_val_separator=':'):
+    r'''Take a group contribution string, and turn it into a dictionary.
+
+    Parameters
+    ----------
+    counts : str
+        String of counts of the found groups only [-]
+    pair_separator : str, optional
+        The separator between pairs of group assignments, [-]
+    key_val_separator : str, optional
+        The separator between the group, and the amount of that group, [-]
+
+    Returns
+    -------
+    counts : dict
+        Dictionaty of integer counts of the found groups only, indexed by
+        the `group` [-]
+
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> str_group_assignment_to_dict('1:5,4:1,9:5,10:1,81:1')
+    {1: 5, 4: 1, 9: 5, 10: 1, 81: 1}
+    '''
+    groups = {}
+    for group in counts.split(pair_separator):
+        k, v = group.split(key_val_separator)
+        groups[int(k)] = int(v)
+    return groups
+
+
+
 
 def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     r'''Fragments a molecule into a set of unique groups and counts as
