@@ -47,6 +47,9 @@ all_InChIs = list(set((list(thermo.unifac.DDBST_UNIFAC_assignments.keys()) +
                list(thermo.unifac.DDBST_MODIFIED_UNIFAC_assignments.keys()) + 
                list(thermo.unifac.DDBST_PSRK_assignments.keys()))))
 
+dev_folder = os.path.dirname(__file__)
+to_location = os.path.join(dev_folder, '..', 'thermo', 'Phase Change', 'DDBST_UNIFAC_assignments.sqlite')
+
 for inchi in all_InChIs:
     try:
         CASi = pubchem_db.InChI_key_index[inchi].CAS
@@ -79,7 +82,7 @@ df = pd.DataFrame(prop_array_T, columns=['UNIFAC', 'MODIFIED_UNIFAC', 'PSRK'], i
 df.sort_index(inplace=True)
 
 from sqlalchemy import create_engine
-engine = create_engine('sqlite:///../thermo/Phase Change/DDBST_UNIFAC_assignments.sqlite', echo=False)
-if os.path.exists("../chemicals/Misc/DDBST_UNIFAC_assignments.sqlite"):
-    os.remove("../chemicals/Misc/DDBST_UNIFAC_assignments.sqlite")
+engine = create_engine('sqlite:///' + to_location, echo=False)
+if os.path.exists(to_location):
+    os.remove(to_location)
 df.to_sql('DDBST', con=engine)

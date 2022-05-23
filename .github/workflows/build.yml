@@ -87,6 +87,9 @@ jobs:
       if: ${{ matrix.python-version == '3.6' || matrix.python-version == '3.7' || matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10' }}
       run: |
         pip install numba
+    - name: Generate Files
+      run: |
+        python dev/dump_UNIFAC_assignments_to_sqlite.py
     - name: Test with pytest
       run: |
         pytest . -v --cov-report html --cov=thermo --cov-report term-missing -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow"
