@@ -94,7 +94,7 @@ from chemicals.refractivity import RI
 from chemicals.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser, molecular_weight, charge_from_formula, periodic_table, homonuclear_elements
 from chemicals.combustion import combustion_stoichiometry, HHV_stoichiometry, LHV_from_HHV
 
-from thermo.unifac import DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments, load_group_assignments_DDBST, UNIFAC_RQ, Van_der_Waals_volume, Van_der_Waals_area
+from thermo.unifac import UNIFAC_group_assignment_DDBST, UNIFAC_RQ, Van_der_Waals_volume, Van_der_Waals_area
 from thermo.electrochem import conductivity
 from thermo.law import legal_status, economic_status
 from thermo.eos import PR
@@ -795,11 +795,18 @@ class ChemicalConstantsPackage(object):
         molecular_diameters = [molecular_diameter(Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i], Zc=Zcs[i], omega=omegas[i],
                                                   Vm=Vml_Tms[i], Vb=Vml_Tbs[i], CASRN=CASs[i]) for i in range(N)]
 
-        load_group_assignments_DDBST()
-
-        UNIFAC_groups = [DDBST_UNIFAC_assignments.get(InChI_Keys[i], None) for i in range(N)]
-        UNIFAC_Dortmund_groups = [DDBST_MODIFIED_UNIFAC_assignments.get(InChI_Keys[i], None) for i in range(N)]
-        PSRK_groups = [DDBST_PSRK_assignments.get(InChI_Keys[i], None) for i in range(N)]
+        UNIFAC_group_assignment_DDBST
+        
+        UNIFAC_groups = []
+        UNIFAC_Dortmund_groups = []
+        PSRK_groups = []
+        for CAS in CASs:
+            assignment = UNIFAC_group_assignment_DDBST(CAS, 'UNIFAC')
+            UNIFAC_groups.append(assignment)
+            assignment = UNIFAC_group_assignment_DDBST(CAS, 'MODIFIED_UNIFAC')
+            UNIFAC_Dortmund_groups.append(assignment)
+            assignment = UNIFAC_group_assignment_DDBST(CAS, 'PSRK')
+            PSRK_groups.append(assignment)
 
         UNIFAC_Rs, UNIFAC_Qs = [None]*N, [None]*N
         for i in range(N):

@@ -62,7 +62,7 @@ from thermo.law import legal_status, economic_status
 from thermo.electrochem import conductivity, conductivity_methods
 from thermo.eos import *
 from thermo.eos_mix import *
-from thermo.unifac import DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments, load_group_assignments_DDBST, UNIFAC_RQ, Van_der_Waals_volume, Van_der_Waals_area
+from thermo.unifac import DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments, UNIFAC_group_assignment_DDBST, UNIFAC_RQ, Van_der_Waals_volume, Van_der_Waals_area
 from thermo import functional_groups
 from thermo.functional_groups import group_names
 
@@ -679,9 +679,6 @@ class Chemical(object): # pragma: no cover
 
     __atom_fractions = None
     __mass_fractions = None
-    __UNIFAC_groups = None
-    __UNIFAC_Dortmund_groups = None
-    __PSRK_groups = None
     __rdkitmol = None
     __rdkitmol_Hs = None
     __Hill = None
@@ -1726,15 +1723,15 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('Cumene').UNIFAC_groups
         {1: 2, 9: 5, 13: 1}
         '''
-        if self.__UNIFAC_groups:
+        try:
             return self.__UNIFAC_groups
-        else:
-            load_group_assignments_DDBST()
-            if self.InChI_Key in DDBST_UNIFAC_assignments:
-                self.__UNIFAC_groups = DDBST_UNIFAC_assignments[self.InChI_Key]
-                return self.__UNIFAC_groups
-            else:
-                return None
+        except:
+            pass
+        assignment = UNIFAC_group_assignment_DDBST(self.CAS, 'UNIFAC')
+        if not assignment:
+            assignment = None
+        self.__UNIFAC_groups = assignment
+        return assignment
 
     @property
     def UNIFAC_Dortmund_groups(self):
@@ -1746,15 +1743,15 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('Cumene').UNIFAC_Dortmund_groups
         {1: 2, 9: 5, 13: 1}
         '''
-        if self.__UNIFAC_Dortmund_groups:
+        try:
             return self.__UNIFAC_Dortmund_groups
-        else:
-            load_group_assignments_DDBST()
-            if self.InChI_Key in DDBST_MODIFIED_UNIFAC_assignments:
-                self.__UNIFAC_Dortmund_groups = DDBST_MODIFIED_UNIFAC_assignments[self.InChI_Key]
-                return self.__UNIFAC_Dortmund_groups
-            else:
-                return None
+        except:
+            pass
+        assignment = UNIFAC_group_assignment_DDBST(self.CAS, 'MODIFIED_UNIFAC')
+        if not assignment:
+            assignment = None
+        self.__UNIFAC_Dortmund_groups = assignment
+        return assignment
 
     @property
     def PSRK_groups(self):
@@ -1766,15 +1763,15 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('Cumene').PSRK_groups
         {1: 2, 9: 5, 13: 1}
         '''
-        if self.__PSRK_groups:
+        try:
             return self.__PSRK_groups
-        else:
-            load_group_assignments_DDBST()
-            if self.InChI_Key in DDBST_PSRK_assignments:
-                self.__PSRK_groups = DDBST_PSRK_assignments[self.InChI_Key]
-                return self.__PSRK_groups
-            else:
-                return None
+        except:
+            pass
+        assignment = UNIFAC_group_assignment_DDBST(self.CAS, 'PSRK')
+        if not assignment:
+            assignment = None
+        self.__PSRK_groups = assignment
+        return assignment
 
     @property
     def UNIFAC_R(self):

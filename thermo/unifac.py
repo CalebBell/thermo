@@ -2627,7 +2627,7 @@ def init_ddbst_UNIFAC_db():
 
 def UNIFAC_group_assignment_DDBST(CAS, model):
     r'''Lookup the group assignment of a compound in either the 'UNIFAC'
-    the 'UNIFAC_MODIFIED', or the 'PSRK' model. These values are read from a
+    the 'MODIFIED_UNIFAC', or the 'PSRK' model. These values are read from a
     sqlite database on demand.
 
     Parameters
@@ -2635,7 +2635,7 @@ def UNIFAC_group_assignment_DDBST(CAS, model):
     CAS : str
         CAS number, [-]
     model : str
-        One of  'UNIFAC', 'UNIFAC_MODIFIED', or 'PSRK', [-]
+        One of  'UNIFAC', 'MODIFIED_UNIFAC', or 'PSRK', [-]
 
     Returns
     -------
