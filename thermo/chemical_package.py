@@ -838,9 +838,9 @@ class ChemicalConstantsPackage(object):
 
         atom_fractionss = [atom_fractions(atomss[i]) for i in range(N)]
 
-
-        economic_statuses = [economic_status(CASs[i], method='Combined') for i in range(N)]
-        legal_statuses = [legal_status(CASs[i], method='COMBINED') for i in range(N)]
+        # Too slow
+        economic_statuses = [None]*N#[economic_status(CASs[i], method='Combined') for i in range(N)]
+        legal_statuses = [None]*N#[legal_status(CASs[i], method='COMBINED') for i in range(N)]
 
         GWPs = [GWP(CASRN=CASs[i]) for i in range(N)]
         ODPs = [ODP(CASRN=CASs[i]) for i in range(N)]
