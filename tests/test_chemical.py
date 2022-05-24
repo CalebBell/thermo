@@ -45,20 +45,20 @@ def test_Chemical_properties():
     assert_close(w.rhoc, 321.7014285714285, rtol=1E-4)
     assert_close(w.rhocm, 17857.142857142855, rtol=1E-4)
 
-    assert_close(w.StielPolar, 0.023222134391615246, rtol=1E-3)
+    assert_close(w.StielPolar, 0.023677, rtol=1E-3)
 
     pentane = Chemical('pentane')
-    assert_close(pentane.Tt, 143.47)
+    assert_close(pentane.Tt, 143.483967, atol=.02)
 
     # Vapor pressure correlation did not extend down far enough once made strict
-    assert_close(pentane.Pt, 0.12218586819726474)
+    assert_close(pentane.Pt, 0.12249844319109172, rtol=1e-3)
 
     assert_close(pentane.Hfus, 116426.08509804323, rtol=1E-3)
     assert_close(pentane.Hfusm, 8400.0, rtol=1E-3)
 
     phenol = Chemical('phenol')
-    assert_close(phenol.Hsub, 736964.419015, rtol=1E-3)
-    assert_close(phenol.Hsubm, 69356.6353093363)
+    assert_close(phenol.Hsub, 735197.017912, rtol=5E-3)
+    assert_close(phenol.Hsubm, 69356.6353093363, rtol=5e-3)
 
     assert_close(phenol.Hfm, -165100.)
     assert_close(phenol.Hcm, -3053219.)
@@ -87,7 +87,7 @@ def test_Chemical_properties():
     assert_close(w.Stockmayer, 501.01)
 
     CH4 = Chemical('methane')
-    assert_close(CH4.GWP, 25.0)
+    assert_close(CH4.GWP, 72.0)
 
     assert Chemical('Bromochlorodifluoromethane').ODP == 7.9
 
@@ -107,7 +107,7 @@ def test_Chemical_properties():
 @pytest.mark.deprecated
 def test_Chemical_properties_T_dependent_constants():
     w = Chemical('water')
-    assert_close(w.Psat_298, 3167.418523735963, rtol=1e-4)
+    assert_close(w.Psat_298, 3169.929339, rtol=1e-4)
 
     assert_close(w.Vml_Tb, 1.8829559687798784e-05, rtol=1e-4)
     assert_close(w.Vml_Tm, 1.7908144191247533e-05, rtol=1e-4)
@@ -131,7 +131,7 @@ def test_Chemical_properties_T_dependent():
     s = Chemical('water', T=500, P=1E5)
     Pd = Chemical('palladium')
 
-    assert_close(w.Psat, 3533.918074415897, rtol=1e-4)
+    assert_close(w.Psat, 3536.806752, rtol=1e-4)
     assert_close(w.Hvapm, 43908.418874478055, rtol=1e-4)
     assert_close(w.Hvap, 2437287.6177599267, rtol=1e-4)
 
@@ -174,10 +174,10 @@ def test_Chemical_properties_T_dependent():
     assert_close(w.kl, 0.6094991151038377, rtol=1e-4)
     assert_close(s.kg, 0.036031817846801754, rtol=1e-4)
 
-    assert_close(w.sigma, 0.07176932405246211, rtol=1e-4)
+    assert_close(w.sigma, 0.07168596252716256, rtol=1e-4)
 
-    assert_close(w.permittivity, 77.70030000000001, rtol=1e-4)
-    assert_close(w.absolute_permittivity, 6.879730496854497e-10, rtol=1e-4)
+    assert_close(w.permittivity, 77.744307, rtol=1e-4)
+    assert_close(w.absolute_permittivity,  6.883626985013713e-10, rtol=1e-4)
 
     assert_close(w.JTl, -2.2029508371866032e-07, rtol=1E-3)
     assert_close(s.JTg, 1.9548097005716312e-05, rtol=1E-3)
@@ -363,24 +363,27 @@ def test_all_chemicals():
         c.PSRK_groups
         c.R_specific
 
-@pytest.mark.deprecated
 def test_specific_chemical_failures():
     # D2O - failed on Hf, Gf
     Chemical('7789-20-0')
 
     # Tc failure
     Chemical('132259-10-0')
+    
+def test_chemical_issue96():
+    assert Chemical('neon', T=310.9277777777778, P=275790).rho is not None
 
 @pytest.mark.fuzz
 @pytest.mark.slow
 @pytest.mark.deprecated
 def test_all_element_Chemicals():
-    things = [periodic_table.CAS_to_elements, periodic_table.name_to_elements, periodic_table.symbol_to_elements]
+    things = [periodic_table._CAS_to_elements, periodic_table._name_to_elements, periodic_table._symbol_to_elements]
     failed_CASs = []
     for thing in things:
         for i in thing.keys():
             try:
                 Chemical(i)
-            except:
+            except Exception as e:
+                print(i, e)
                 failed_CASs.append(periodic_table[i].name)
     assert 0 == len(set(failed_CASs))
