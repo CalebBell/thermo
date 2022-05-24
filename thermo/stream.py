@@ -1663,6 +1663,14 @@ first stream.' %self.IDs[i])
 class EquilibriumStream(EquilibriumState):
     flashed = True
 
+    # def __repr__(self):
+    #     s = '%s(T=%s, P=%s, zs=%s, betas=%s, n=%s' %(self.__class__.__name__, self.T, self.P, self.zs, self.betas, self.n)
+    #     s += ', gas=%s' %(self.gas.__repr__())
+    #     s += ', liquids=%s' %(self.liquids)
+    #     s += ', solids=%s' %(self.solids)
+    #     s += ')'
+    #     return s
+
     def __repr__(self):
         s = '<EquilibriumStream, T=%.4f, P=%.4f, zs=%s, betas=%s, mass flow=%s kg/s, mole flow=%s mol/s, phases=%s>'
         s = s %(self.T, self.P, self.zs, self.betas, self.m, self.n, self.phases)

@@ -54,27 +54,6 @@ def test_Stream_inputs():
     flow_inputs = {'ns': [2027.0435669809347, 1377.998529332439], 'ms': [36.517757431360295, 63.482242568639705],
                   'Qls': [0.036643922302061455, 0.08101987400787004], 'Qgs': [50.561333889092964, 34.371951780014115]}
 
-    for key1, val1 in compositions.items():
-        for key2, val2 in inputs.items():
-            m = Stream(['water', 'ethanol'], T=300, P=1E5, **{key1:val1, key2:val2})
-            assert_allclose(m.n, inputs['n'])
-            assert_allclose(m.m, inputs['m'])
-            assert_allclose(m.Q, inputs['Q'], rtol=1e-5)
-            assert_allclose(m.ns, flow_inputs['ns'])
-            assert_allclose(m.ms, flow_inputs['ms'])
-            assert_allclose(m.Qls, flow_inputs['Qls'], rtol=1e-5)
-            assert_allclose(m.Qgs, flow_inputs['Qgs'], rtol=1e-5)
-
-    for key, val in flow_inputs.items():
-        m = Stream(['water', 'ethanol'], T=300, P=1E5, **{key:val})
-        other_tol = 1e-7 if key not in ('Qls', 'Qgs') else 1e-5
-        assert_allclose(m.n, inputs['n'], rtol=other_tol)
-        assert_allclose(m.m, inputs['m'], rtol=other_tol)
-        assert_allclose(m.Q, inputs['Q'], rtol=1e-5)
-        assert_allclose(m.ns, flow_inputs['ns'], rtol=other_tol)
-        assert_allclose(m.ms, flow_inputs['ms'], rtol=other_tol)
-        assert_allclose(m.Qls, flow_inputs['Qls'], rtol=1e-5)
-        assert_allclose(m.Qgs, flow_inputs['Qgs'], rtol=1e-5)
 
     # Test ordereddict input
     IDs = ['water', 'ethanol']
@@ -130,6 +109,27 @@ def test_Stream_inputs():
         # no flow rate
         Stream(['water', 'ethanol'], zs=[.5, .5], T=300, P=1E5)
 
+    for key1, val1 in compositions.items():
+        for key2, val2 in inputs.items():
+            m = Stream(['water', 'ethanol'], T=300, P=1E5, **{key1:val1, key2:val2})
+            assert_allclose(m.n, inputs['n'])
+            assert_allclose(m.m, inputs['m'])
+            assert_allclose(m.Q, inputs['Q'], rtol=1e-5)
+            assert_allclose(m.ns, flow_inputs['ns'])
+            assert_allclose(m.ms, flow_inputs['ms'])
+            assert_allclose(m.Qls, flow_inputs['Qls'], rtol=1e-5)
+            assert_allclose(m.Qgs, flow_inputs['Qgs'], rtol=1e-5)
+
+    for key, val in flow_inputs.items():
+        m = Stream(['water', 'ethanol'], T=300, P=1E5, **{key:val})
+        other_tol = 1e-7 if key not in ('Qls', 'Qgs') else 1e-5
+        assert_allclose(m.n, inputs['n'], rtol=other_tol)
+        assert_allclose(m.m, inputs['m'], rtol=other_tol)
+        assert_allclose(m.Q, inputs['Q'], rtol=1e-5)
+        assert_allclose(m.ns, flow_inputs['ns'], rtol=other_tol)
+        assert_allclose(m.ms, flow_inputs['ms'], rtol=other_tol)
+        assert_allclose(m.Qls, flow_inputs['Qls'], rtol=1e-5)
+        assert_allclose(m.Qgs, flow_inputs['Qgs'], rtol=1e-5)
 
 @pytest.mark.deprecated
 def test_stream_TP_Q():

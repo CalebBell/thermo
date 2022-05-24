@@ -1389,8 +1389,8 @@ class VolumeGas(TPDependentProperty):
     under.'''
     ranked_methods = []
     '''Default rankings of the low-pressure methods.'''
-    ranked_methods_P = [COOLPROP, EOS, TSONOPOULOS_EXTENDED, TSONOPOULOS, ABBOTT,
-                        PITZER_CURL, CRC_VIRIAL, IDEAL]
+    ranked_methods_P = [IDEAL, COOLPROP, EOS, TSONOPOULOS_EXTENDED, TSONOPOULOS, ABBOTT,
+                        PITZER_CURL, CRC_VIRIAL]
     '''Default rankings of the pressure-dependent methods.'''
 
 
@@ -1537,7 +1537,7 @@ class VolumeGas(TPDependentProperty):
         if T < 0 or P < 0:
             validity = False
         elif method in [TSONOPOULOS_EXTENDED, TSONOPOULOS, ABBOTT,
-                        PITZER_CURL, CRC_VIRIAL, IDEAL]:
+                        PITZER_CURL, CRC_VIRIAL, IDEAL, EOS]:
             pass
             # Would be nice to have a limit on CRC_VIRIAL
         elif method == EOS:

@@ -42,10 +42,10 @@ def test_Mixture():
     Mixture('water')
 
     s = Mixture(['water', 'ethanol'], P=5200, zs=[0.5, 0.5])
-    assert_close(s.V_over_F, 0.3061646720256255, rtol=1E-3)
+    assert_close(s.V_over_F, 0.3061646720256255, rtol=6E-3)
 
     s = Mixture(['water', 'ethanol'], P=5200, zs=[0.5, 0.5])
-    assert_close(s.quality, 0.34745483870024646, rtol=1E-3)
+    assert_close(s.quality, 0.34745483870024646, rtol=6E-3)
 
     with pytest.raises(Exception):
         Mixture(['2,2-Dichloro-1,1,1-trifluoroethane'], T=276.15, P=37000, zs=[0.5, 0.5])

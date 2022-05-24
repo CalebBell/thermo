@@ -210,18 +210,21 @@ class EquilibriumState(object):
 
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
-    def __str__(self):
-        s = '<EquilibriumState, T=%.4f, P=%.4f, zs=%s, betas=%s, phases=%s>'
-        s = s %(self.T, self.P, self.zs, self.betas, str([str(i) for i in self.phases]).replace("'", ''))
-        return s
+    # def __str__(self):
+    #     s = '<EquilibriumState, T=%.4f, P=%.4f, zs=%s, betas=%s, phases=%s>'
+    #     s = s %(self.T, self.P, self.zs, self.betas, str([str(i) for i in self.phases]).replace("'", ''))
+    #     return s
 
     def __repr__(self):
         s = '%s(T=%s, P=%s, zs=%s, betas=%s' %(self.__class__.__name__, self.T, self.P, self.zs, self.betas)
-        s += ', gas=%s' %(self.gas)
+        s += ', gas=%s' %(self.gas.__repr__())
         s += ', liquids=%s' %(self.liquids)
         s += ', solids=%s' %(self.solids)
         s += ')'
         return s
+    
+    __str__ = __repr__
+    
 
     def __init__(self, T, P, zs,
                  gas, liquids, solids, betas,

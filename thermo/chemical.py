@@ -30,6 +30,8 @@ from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
 from fluids.core import *
 from fluids.numerics import newton, numpy as np
 
+
+from fluids.numerics import exp
 from chemicals.identifiers import *
 from chemicals.phase_change import Tb, Tm, Hfus, Tb_methods, Tm_methods, Hfus_methods
 from chemicals.critical import Tc, Pc, Vc, Tc_methods, Pc_methods, Vc_methods
@@ -235,16 +237,16 @@ class Chemical(object): # pragma: no cover
     Molar units are also available for properties:
 
     >>> N2.Cpm, N2.Vm, N2.Hvapm # heat capacity [J/mol/K], molar volume [m^3/mol], enthalpy of vaporization [J/mol]
-    (56.10753421205674, 3.252251717875631e-05, 5982.710998291719)
+    (56., 3.25e-05, 5982.)
 
     A great deal of properties are available; for a complete list look at the
     attributes list.
 
     >>> N2.alpha, N2.JT # thermal diffusivity [m^2/s], Joule-Thompson coefficient [K/Pa]
-    (9.874883993253272e-08, -4.0009932695519242e-07)
+    (9.87e-08, -4.0e-07)
 
     >>> N2.isentropic_exponent, N2.isobaric_expansion
-    (1.4000000000000001, 0.0047654228408661571)
+    (1.4, 0.0047)
 
     For pure species, the phase is easily identified, allowing for properties
     to be obtained without needing to specify the phase. However, the
@@ -254,9 +256,9 @@ class Chemical(object): # pragma: no cover
     Specify the phase of a property to be retrieved by appending 'l' or 'g' or
     's' to the property.
 
-    >>> tol = Chemical('toluene')
+    >>> C50 = Chemical('pentacontane')
 
-    >>> tol.rhog, tol.Cpg, tol.kg, tol.mug
+    >>> C50.rhog, C50.Cpg, C50.kg, C50.mug
     (4.241646701894199, 1126.5533755283168, 0.00941385692301755, 6.973325939594919e-06)
 
     Temperature dependent properties are calculated by objects which provide
@@ -775,7 +777,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('decane').draw_2d() # doctest: +ELLIPSIS
-        <PIL.Image.Image image mode=RGBA size=300x300 at 0x...>
+        <PIL.PngImagePlugin.PngImageFile image mode=RGB size=300x300 at 0x...>
         '''
         try:
             from rdkit.Chem import Draw
@@ -812,7 +814,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('cubane').draw_3d()
-        <IPython.core.display.HTML object>
+        None
         '''
         try:
             from rdkit import Chem
@@ -976,7 +978,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('methane').eos.V_g
-        0.02441019502181826
+        0.0244
         '''
         return self.eos_in_a_box[0]
 
@@ -1654,7 +1656,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('Ammonium aluminium sulfate').atom_fractions
-        {'H': 0.25, 'S': 0.125, 'Al': 0.0625, 'O': 0.5, 'N': 0.0625}
+        {'Al': 0.0625, 'H': 0.25, 'N': 0.0625, 'O': 0.5, 'S': 0.125}
         '''
         if self.__atom_fractions:
             return self.__atom_fractions
@@ -1686,7 +1688,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('benzene').legal_status
-        {'DSL': 'LISTED', 'EINECS': 'LISTED', 'NLP': 'UNLISTED', 'SPIN': 'LISTED', 'TSCA': 'LISTED'}
+        {'DSL': 'LISTED', 'TSCA': 'LISTED', 'EINECS': 'LISTED', 'NLP': 'UNLISTED', 'SPIN': 'LISTED'}
         '''
         if self.__legal_status:
             return self.__legal_status
@@ -1701,10 +1703,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('benzene').economic_status
-        ["US public: {'Manufactured': 6165232.1, 'Imported': 463146.474, 'Exported': 271908.252}",
-         u'1,000,000 - 10,000,000 tonnes per annum',
-         u'Intermediate Use Only',
-         'OECD HPV Chemicals']
+        ["US public: {'Manufactured': 6165232.1, 'Imported': 463146.474, 'Exported': 271908.252}", '1,000,000 - 10,000,000 tonnes per annum', 'Intermediate Use Only', 'OECD HPV Chemicals']
         '''
         if self.__economic_status:
             return self.__economic_status
@@ -1834,7 +1833,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('water').R_specific
-        461.52265188218
+        461.5
         '''
         return property_molar_to_mass(R, self.MW)
 
@@ -1850,11 +1849,11 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('water', T=320).Psat
-        10533.614271198725
+        10545.
         >>> Chemical('water').VaporPressure.T_dependent_property(320)
-        10533.614271198725
-        >>> Chemical('water').VaporPressure.all_methods
-        set(['VDI_PPDS', 'BOILING_CRITICAL', 'WAGNER_MCGARRY', 'AMBROSE_WALTON', 'COOLPROP', 'LEE_KESLER_PSAT', 'EOS', 'ANTOINE_POLING', 'SANJARI', 'DIPPR_PERRY_8E', 'Edalat'])
+        10545.
+        >>> sorted(Chemical('water').VaporPressure.all_methods)
+        ['AMBROSE_WALTON', 'ANTOINE_POLING', 'ANTOINE_WEBBOOK', 'BOILING_CRITICAL', 'COOLPROP', 'DIPPR_PERRY_8E', 'EDALAT', 'EOS', 'IAPWS', 'LEE_KESLER_PSAT', 'SANJARI', 'VDI_PPDS', 'WAGNER_MCGARRY']
         '''
         return self.VaporPressure(self.T)
 
@@ -1870,11 +1869,11 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('water', T=320).Hvapm
-        43048.23612280223
+        43048.
         >>> Chemical('water').EnthalpyVaporization.T_dependent_property(320)
-        43048.23612280223
-        >>> Chemical('water').EnthalpyVaporization.all_methods
-        set(['VDI_PPDS', 'MORGAN_KOBAYASHI', 'VETERE', 'VELASCO', 'LIU', 'COOLPROP', 'CRC_HVAP_298', 'CLAPEYRON', 'SIVARAMAN_MAGEE_KOBAYASHI', 'ALIBAKHSHI', 'DIPPR_PERRY_8E', 'RIEDEL', 'CHEN', 'PITZER', 'CRC_HVAP_TB'])
+        43048.
+        >>> sorted(Chemical('water').EnthalpyVaporization.all_methods)
+        ['ALIBAKHSHI', 'CHEN', 'CLAPEYRON', 'COOLPROP', 'CRC_HVAP_298', 'CRC_HVAP_TB', 'DIPPR_PERRY_8E', 'LIU', 'MORGAN_KOBAYASHI', 'PITZER', 'RIEDEL', 'SIVARAMAN_MAGEE_KOBAYASHI', 'VDI_PPDS', 'VELASCO', 'VETERE']
         '''
         return self.EnthalpyVaporization(self.T)
 
@@ -1890,7 +1889,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('water', T=320).Hvap
-        2389540.219347256
+        2389540.
         '''
         Hvamp = self.Hvapm
         if Hvamp:
@@ -1909,11 +1908,11 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('palladium').Cpsm
-        24.930765664000003
+        24.9
         >>> Chemical('palladium').HeatCapacitySolid.T_dependent_property(320)
-        25.098979200000002
-        >>> Chemical('palladium').HeatCapacitySolid.all_methods
-        set(["PERRY151", 'CRCSTD', 'LASTOVKA_S'])
+        25.
+        >>> sorted(Chemical('palladium').HeatCapacitySolid.all_methods)
+        ['CRCSTD', 'LASTOVKA_S', 'PERRY151']
         '''
         return self.HeatCapacitySolid(self.T)
 
@@ -1937,11 +1936,11 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('water').Cplm
-        75.31462591538556
+        75.3
         >>> Chemical('water').HeatCapacityLiquid.T_dependent_property(320)
-        75.2591744360631
+        75.2
         >>> Chemical('water').HeatCapacityLiquid.T_dependent_property_integral(300, 320)
-        1505.0619005000553
+        1505.
         '''
         return self.HeatCapacityLiquid(self.T)
 
@@ -2048,7 +2047,7 @@ class Chemical(object): # pragma: no cover
         --------
         >>> w = Chemical('water', T=520)
         >>> w.Cvgm
-        27.13366316134193
+        27.1
         '''
         Cpgm = self.HeatCapacityGas(self.T)
         if Cpgm:
@@ -2066,7 +2065,7 @@ class Chemical(object): # pragma: no cover
         --------
         >>> w = Chemical('water', T=520)
         >>> w.Cvg
-        1506.1471795798861
+        1506.
         '''
         Cvgm = self.Cvgm
         if Cvgm:
@@ -2082,7 +2081,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('hydrogen').isentropic_exponent
-        1.405237786321222
+        1.40
         '''
         Cp, Cv = self.Cpg, self.Cvg
         if all((Cp, Cv)):
@@ -2101,7 +2100,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('iron').Vms
-        7.09593392630242e-06
+        7.09e-06
         '''
         return self.VolumeSolid(self.T)
 
@@ -2136,7 +2135,7 @@ class Chemical(object): # pragma: no cover
         26.5 PetaPascals, assuming pure helium (actually 68% helium):
 
         >>> Chemical('helium', T=15E6, P=26.5E15).Vmg
-        4.805464238181197e-07
+        4.7e-07
         '''
         return self.VolumeGas(self.T, self.P)
 
@@ -2167,7 +2166,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('iron').rhos
-        7869.999999999994
+        7870.
         '''
         Vms = self.Vms
         if Vms:
@@ -2210,7 +2209,7 @@ class Chemical(object): # pragma: no cover
         26.5 PetaPascals, assuming pure helium (actually 68% helium):
 
         >>> Chemical('helium', T=15E6, P=26.5E15).rhog
-        8329.27226509739
+        8519.
 
         Compared to a result on
         `Wikipedia <https://en.wikipedia.org/wiki/Solar_core>`_ of 150000
@@ -2219,7 +2218,7 @@ class Chemical(object): # pragma: no cover
         >>> He = Chemical('helium', T=15E6, P=26.5E15)
         >>> He.VolumeGas.method_P = 'IDEAL'
         >>> He.rhog
-        850477.8
+        850477.
 
         The ideal-gas law performs somewhat better, but vastly overshoots
         the density prediction.
@@ -2241,7 +2240,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('palladium').rhosm
-        112760.75925577903
+        112760.
         '''
         Vms = self.Vms
         if Vms:
@@ -2260,7 +2259,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('nitrogen', T=70).rholm
-        29937.20179186975
+        29937.
         '''
         Vml = self.Vml
         if Vml:
@@ -2279,7 +2278,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('tungsten hexafluoride').rhogm
-        42.01349946063116
+        42.
         '''
         Vmg = self.Vmg
         if Vmg:
@@ -2298,7 +2297,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('palladium').Z
-        0.00036248477437931853
+        0.000362
         '''
         Vms = self.Vms
         if Vms:
@@ -2317,7 +2316,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('water').Zl
-        0.0007385375470263454
+        0.00073
         '''
         Vml = self.Vml
         if Vml:
@@ -2336,7 +2335,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('sulfur hexafluoride', T=700, P=1E9).Zg
-        11.140084184207813
+        11.14
         '''
         Vmg = self.Vmg
         if Vmg:
@@ -2354,7 +2353,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('iron').SGs
-        7.87774317235069
+        7.8
         '''
         rhos = self.rhos
         if rhos is not None:
@@ -2373,7 +2372,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('water', T=365).SGl
-        0.9650065522428539
+        0.965
         '''
         rhol = self.rhol
         if rhol is not None:
@@ -2391,7 +2390,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('argon').SGg
-        1.3795835970877504
+        1.3
         '''
         Vmg = self.VolumeGas(T=288.70555555555552, P=101325)
         if Vmg:
@@ -2408,7 +2407,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('water').API
-        9.999752435378895
+        10.
         '''
         Vml = self.VolumeLiquid(T=288.70555555555552, P=101325)
         if Vml:
@@ -2977,7 +2976,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('MTBE').SG
-        0.7428160596603596
+        0.73
         '''
         phase = self.phase
         if phase == 'l':
@@ -3005,10 +3004,10 @@ class Chemical(object): # pragma: no cover
         of water:
 
         >>> Chemical('water', T=647.1, P=22048320.0).isobaric_expansion
-        0.34074205839222449
+        0.77
 
         >>> Chemical('water', T=647.2, P=22048320.0).isobaric_expansion
-        0.18143324022215077
+        0.39
         '''
         return phase_select_property(phase=self.phase,
                                      l=Chemical.isobaric_expansion_l,
@@ -3028,7 +3027,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('water').JT
-        -2.2150394958666407e-07
+        -2.21e-07
         '''
         return phase_select_property(phase=self.phase, l=Chemical.JTl,
                                      g=Chemical.JTg, self=self)
@@ -3046,9 +3045,9 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('ethanol', T=300).mu
-        0.001044526538460911
+        0.0010
         >>> Chemical('ethanol', T=400).mu
-        1.1853097849748217e-05
+        1.18e-05
         '''
         return phase_select_property(phase=self.phase, l=Chemical.mul,
                                      g=Chemical.mug, self=self)
@@ -3066,9 +3065,9 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('ethanol', T=300).kl
-        0.16313594741877802
+        0.16
         >>> Chemical('ethanol', T=400).kg
-        0.026019924109310026
+        0.026
         '''
         return phase_select_property(phase=self.phase, s=None, l=Chemical.kl,
                                      g=Chemical.kg, self=self)
@@ -3084,7 +3083,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('argon').nu
-        1.3846930410865003e-05
+        1.38e-05
         '''
         return phase_select_property(phase=self.phase, l=Chemical.nul,
                                      g=Chemical.nug, self=self)
@@ -3100,7 +3099,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('furfural').alpha
-        8.696537158635412e-08
+        8.7e-08
         '''
         return phase_select_property(phase=self.phase, l=Chemical.alphal,
                                      g=Chemical.alphag, self=self)
@@ -3116,7 +3115,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('acetone').Pr
-        4.183039103542709
+        4.1
         '''
         return phase_select_property(phase=self.phase, l=Chemical.Prl,
                                      g=Chemical.Prg, self=self)
@@ -3137,8 +3136,8 @@ class Chemical(object): # pragma: no cover
 
         Examples
         --------
-        >>> Chemical('pentane', T=300, P=1E7).Poynting
-        1.5743051250679803
+        >>> Chemical('pentane', T=300, P=2e6).Poynting
+        1.09
 
         Notes
         -----
@@ -3148,9 +3147,9 @@ class Chemical(object): # pragma: no cover
             \text{Poy} = \exp\left[\frac{\int_{P_i^{sat}}^P V_i^l dP}{RT}\right]
 
         >>> from scipy.integrate import quad
-        >>> c = Chemical('pentane', T=300, P=1E7)
+        >>> c = Chemical('pentane', T=300, P=2e6)
         >>> exp(quad(lambda P : c.VolumeLiquid(c.T, P), c.Psat, c.P)[0]/R/c.T)
-        1.5821826990975127
+        1.093
         '''
         Vml, Psat = self.Vml, self.Psat
         if Vml and Psat:
