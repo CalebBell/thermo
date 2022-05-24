@@ -15,3 +15,4 @@ mpmath
 fuzzywuzzy
 pytz
 wheel
+sqlalchemy # sqlite database for pandas
