@@ -1035,7 +1035,7 @@ class Flash(object):
 
 
     def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=None,
-                ignore_errors=True, values=False, show=True, hot=True): # pragma: no cover
+                ignore_errors=True, values=False, show=True, hot=False): # pragma: no cover
         r'''Method to create a plot of the phase envelope as can be calculated
         from a series of temperature & vapor fraction spec flashes. By default
         vapor fractions of 0 and 1 are plotted; additional vapor fraction
@@ -1145,7 +1145,7 @@ class Flash(object):
 
 
     def plot_PT(self, zs, Pmin=None, Pmax=None, pts=50, branches=[],
-                ignore_errors=True, values=False, hot=True): # pragma: no cover
+                ignore_errors=True, values=False, hot=False): # pragma: no cover
         if not has_matplotlib() and not values:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if not Pmin:

@@ -178,18 +178,9 @@ Solids Phases
 
 '''
 
-from . import phase
-from . import ideal_gas
-from . import ceos
-from . import gibbs_excess
-from . import helmholtz_eos
-from . import air_phase
-from . import iapws_phase
-from . import coolprop_phase
-from . import virial_phase
-from . import petroleum
-from . import combined
-
+from thermo.phases import( phase, ideal_gas, ceos, gibbs_excess, helmholtz_eos, 
+                          air_phase, iapws_phase, coolprop_phase, virial_phase,
+                          petroleum, combined)
 from .phase import *
 from .ideal_gas import *
 from .ceos import *
