@@ -181,17 +181,17 @@ Solids Phases
 from thermo.phases import( phase, ideal_gas, ceos, gibbs_excess, helmholtz_eos, 
                           air_phase, iapws_phase, coolprop_phase, virial_phase,
                           petroleum, combined)
-from .phase import *
-from .ideal_gas import *
-from .ceos import *
-from .gibbs_excess import *
-from .helmholtz_eos import *
-from .iapws_phase import *
-from .air_phase import *
-from .coolprop_phase import *
-from .virial_phase import *
-from .petroleum import *
-from .combined import *
+from thermo.phases.phase import *
+from thermo.phases.ideal_gas import *
+from thermo.phases.ceos import *
+from thermo.phases.gibbs_excess import *
+from thermo.phases.helmholtz_eos import *
+from thermo.phases.iapws_phase import *
+from thermo.phases.air_phase import *
+from thermo.phases.coolprop_phase import *
+from thermo.phases.virial_phase import *
+from thermo.phases.petroleum import *
+from thermo.phases.combined import *
 
 __all__ = (phase.__all__ + ideal_gas.__all__ + ceos.__all__
            + gibbs_excess.__all__ + air_phase.__all__ + helmholtz_eos.__all__ 
