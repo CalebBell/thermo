@@ -24,8 +24,7 @@ __all__ = ['has_matplotlib', 'Stateva_Tsvetkov_TPDF', 'TPD',
 'assert_component_balance', 'assert_energy_balance', 'allclose_variable',
 'identify_phase', 'phase_select_property']
 
-import numpy as np
-from fluids.numerics import assert_close
+from fluids.numerics import assert_close, numpy as np
 from fluids.constants import R
 from chemicals.utils import log, mix_multiple_component_flows
 

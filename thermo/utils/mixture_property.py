@@ -24,10 +24,9 @@ __all__ = ['MixtureProperty']
 
 from chemicals.utils import (hash_any_primitive, ws_to_zs, zs_to_ws,
                              normalize)
-from fluids.numerics import linspace, derivative
+from fluids.numerics import linspace, derivative, numpy as np
 from thermo.utils import has_matplotlib, POLY_FIT
 from thermo.eos_mix import GCEOSMIX
-import numpy as np
 
 class MixtureProperty(object):
     RAISE_PROPERTY_CALCULATION_ERROR = False

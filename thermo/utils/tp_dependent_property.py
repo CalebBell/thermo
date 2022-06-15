@@ -21,8 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from thermo.utils import TDependentProperty, has_matplotlib
-from fluids.numerics import linspace, derivative
-import numpy as np
+from fluids.numerics import linspace, derivative, numpy as np
 
 __all__ = ['TPDependentProperty']
 
