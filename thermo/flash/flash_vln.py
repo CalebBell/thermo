@@ -560,7 +560,7 @@ class FlashVLN(FlashVL):
                     if G_2P < G_3P:
                         raise ValueError("Should never happen")
                     return None, sln3[2], [], sln3[0], {'iterations': sln3[3], 'err': sln3[4],
-                                                                   'stab_guess_name': stab_guess_name, 'G_2P': G_2P}
+                                                        'stab_guess_name': stab_guess_name, 'G_2P': G_2P}
                 if not good_betas or G_3P > G_2P:
                     # Might need to make this true
                     try_LL_3P_failed = False
@@ -600,7 +600,8 @@ class FlashVLN(FlashVL):
 
         if self.N == 3:
             # Cannot have a four phase system with three components (and so on)
-            return slnN
+            return None, sln3[2], [], sln3[0], {'iterations': sln3[3], 'err': sln3[4],
+                                                'stab_guess_name': stab_guess_name, 'G_2P': G_2P}
 
         # We are here after solving three phases
         liquid_idx = 2

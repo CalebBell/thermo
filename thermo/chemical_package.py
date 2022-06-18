@@ -361,6 +361,9 @@ class ChemicalConstantsPackage(object):
             idxs = self.cmps
         if properties is None:
             properties = self.non_vector_properties
+        else:
+            if 'MWs' not in properties:
+                properties = properties + ('MWs',)
         is_slice = isinstance(idxs, slice)
         if not is_slice:
             is_one = len(idxs) == 1

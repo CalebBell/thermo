@@ -1705,7 +1705,26 @@ def test_methane_water_decane_mole_mass_flows():
         expect = [-0.4606363842178823, -252856.94589003065, -451692.233011402, -417626.9984136762, -704549.6395388279, -704549.6395388279]
         assert_close1d(calc, expect, rtol=1e-5)
     
-
+def test_extra_liquid_phase_three_components_no_issue():
+    chemicals = ['water', 'methane', 'decane']
+    HeatCapacityGases = [HeatCapacityGas(CASRN="7732-18-5", MW=18.01528, similarity_variable=0.16652530518537598, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+     HeatCapacityGas(CASRN="74-82-8", MW=16.04246, similarity_variable=0.3116728980468083, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
+     HeatCapacityGas(CASRN="124-18-5", MW=142.28168, similarity_variable=0.22490597524572384, extrapolation="linear", method="POLY_FIT", poly_fit=(200.0, 1000.0, [-1.702672546011891e-21, 6.6751002084997075e-18, -7.624102919104147e-15, -4.071140876082743e-12, 1.863822577724324e-08, -1.9741705032236747e-05, 0.009781408958916831, -1.6762677829939379, 252.8975930305735]))]
+    
+    constants = ChemicalConstantsPackage(atomss=[{'H': 2, 'O': 1}, {'C': 1, 'H': 4}, {'C': 10, 'H': 22}], MWs=[18.01528, 16.04246, 142.28168], omegas=[0.344, 0.008, 0.49], Pcs=[22048320.0, 4599000.0, 2110000.0], Tbs=[373.124, 111.65, 447.25], Tcs=[647.14, 190.564, 611.7], Tms=[273.15, 90.75, 243.225], Vcs=[5.6e-05, 9.86e-05, 0.000624], Zcs=[0.2294727397218464, 0.2861971332411768, 0.2588775438016263])
+    properties = PropertyCorrelationsPackage(constants=constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    
+    kijs = [[0.0, 0, 0], [0, 0.0, 0.0411], [0, 0.0411, 0.0]]
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas, 'kijs': kijs}
+    gas = CEOSGas(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    liquid = CEOSLiquid(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    
+    flasher = FlashVLN(constants, properties, liquids=[liquid, liquid, liquid], gas=gas)
+    
+    res = flasher.flash(T=298.15, P=101325, zs=[.3, .3, .4])
+    assert res.phase_count == 3
+    
+    
 def test_PH_TODO():
     '''Secant is finding false bounds, meaning a failed PT - but the plot looks good. Needs more detail, and enthalpy plot.
     Nice! it fixed itelf.
