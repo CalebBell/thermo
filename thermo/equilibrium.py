@@ -720,14 +720,21 @@ class EquilibriumState(object):
         Notes
         -----
         '''
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase._atom_fractions
+        except:
+            pass
         things = self.atom_content(phase)
         tot_inv = 1.0/sum(things.values())
-        return {atom : value*tot_inv for atom, value in things.items()}
+        phase._atom_fractions = {atom : value*tot_inv for atom, value in things.items()}
+        return phase._atom_fractions
     
     def atom_mass_fractions(self, phase=None):
         r'''Method to calculate and return the atomic mass fractions of the phase;
         returns a dictionary of atom fraction (by mass), containing only those
-        elements who are present.
+        elements who arxe present.
 
         Returns
         -------
@@ -739,6 +746,10 @@ class EquilibriumState(object):
         '''
         if phase is None:
             phase = self.bulk
+        try:
+            return phase._atom_mass_fractions
+        except:
+            pass
         zs = phase.zs
         things = {}
         for zi, atoms in zip(zs, self.constants.atomss):
@@ -747,7 +758,8 @@ class EquilibriumState(object):
                     things[atom] += zi*count
                 else:
                     things[atom] = zi*count
-        return mass_fractions(things, phase.MW())
+        phase._atom_mass_fractions = mass_fractions(things, phase.MW())
+        return phase._atom_mass_fractions
 
 
     def atom_flows(self, phase=None):
@@ -765,9 +777,14 @@ class EquilibriumState(object):
         '''
         if phase is None:
             phase = self.bulk
+        try:
+            return phase._atom_flows
+        except:
+            pass
         atom_content = self.atom_content(phase)
         n = phase.n
-        return {k:v*n for k, v in atom_content.items()}
+        phase._atom_flows = {k:v*n for k, v in atom_content.items()}
+        return phase._atom_flows
     
     def atom_count_flows(self, phase=None):
         r'''Method to calculate and return the atom count flow rates of the phase;
