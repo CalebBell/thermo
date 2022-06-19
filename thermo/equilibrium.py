@@ -2817,7 +2817,9 @@ def _make_getter_atom_fraction(element_symbol):
         try:
             try:
                 return self._atom_fractions[element_symbol]
-            except:
+            except KeyError:
+                return 0.0
+            except AttributeError:
                 return self.atom_fractions()[element_symbol]
         except KeyError:
             return 0.0
@@ -2839,7 +2841,9 @@ def _make_getter_atom_mass_fraction(element_symbol):
         try:
             try:
                 return self._atom_mass_fractions[element_symbol]
-            except:
+            except KeyError:
+                return 0.0
+            except AttributeError:
                 return self.atom_mass_fractions()[element_symbol]
         except KeyError:
             return 0.0
@@ -2861,7 +2865,9 @@ def _make_getter_atom_mass_flow(element_symbol):
         try:
             try:
                 return self._atom_mass_fractions[element_symbol]*self.m
-            except:
+            except KeyError:
+                return 0.0
+            except AttributeError:
                 return self.atom_mass_fractions()[element_symbol]*self.m
         except KeyError:
             return 0.0
@@ -2883,7 +2889,9 @@ def _make_getter_atom_flow(element_symbol):
         try:
             try:
                 return self._atom_content[element_symbol]*self.n
-            except:
+            except KeyError:
+                return 0.0
+            except AttributeError:
                 return self.atom_content()[element_symbol]*self.n
         except KeyError:
             return 0.0
@@ -2905,7 +2913,9 @@ def _make_getter_atom_count_flow(element_symbol):
         try:
             try:
                 return self._atom_content[element_symbol]*self.n*N_A
-            except:
+            except KeyError:
+                return 0.0
+            except AttributeError:
                 return self.atom_content()[element_symbol]*self.n*N_A
         except KeyError:
             return 0.0
