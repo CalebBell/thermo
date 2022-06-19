@@ -35,10 +35,12 @@ from thermo.serialize import arrays_to_lists
 from fluids.numerics import (horner, horner_log, jacobian, 
                              poly_fit_integral_value, poly_fit_integral_over_T_value,
                              newton_system, trunc_exp, is_micropython)
+from fluids.core import thermal_diffusivity
 from chemicals.utils import (log, Cp_minus_Cv, phase_identification_parameter,
                              Joule_Thomson, speed_of_sound, dxs_to_dns, dns_to_dn_partials,
                              hash_any_primitive, isentropic_exponent_TV,
-                             isentropic_exponent_PT, isentropic_exponent_PV)
+                             isentropic_exponent_PT, isentropic_exponent_PV,
+                             )
 from thermo.utils import POLY_FIT
 from thermo import phases
 from thermo.phases.phase_utils import object_lookups
@@ -4453,6 +4455,26 @@ class Phase(object):
         return mu/self.rho_mass()
     
     kinematic_viscosity = nu
+
+    def alpha(self):
+        r'''Method to calculate and return the thermal diffusivity of the
+        phase.
+
+        .. math::
+            \alpha = \frac{k}{\rho Cp}
+
+        Returns
+        -------
+        alpha : float
+            Thermal diffusivity, [m^2/s]
+
+        Notes
+        -----
+        '''
+        rho = self.rho_mass()
+        k = self.k()
+        Cp = self.Cp_mass()
+        return thermal_diffusivity(k=k, rho=rho, Cp=Cp)
 
     def ws(self):
         r'''Method to calculate and return the mass fractions of the phase, [-]

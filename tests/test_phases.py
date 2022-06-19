@@ -1602,6 +1602,7 @@ def test_single_phase_viscosity_thermal_conductivity():
     assert_close(phase.mu(), 0.00028727346628185633, rtol=1e-7)
     assert_close(phase.nu(), 3.059835918888456e-07, rtol=1e-7)
     assert_close(phase.k(), 0.15487898658770405, rtol=1e-7)
+    assert_close(phase.alpha(), 9.157870980845976e-08, rtol=1e-7)
 
     # Liquid point
     phase = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
@@ -1610,6 +1611,7 @@ def test_single_phase_viscosity_thermal_conductivity():
     assert_close(phase.mu(), 0.00028727346628185633, rtol=1e-7)
     assert_close(phase.nu(), 3.1035782949479826e-07, rtol=1e-7)
     assert_close(phase.k(), 0.15487898658770405, rtol=1e-7)
+    assert_close(phase.alpha(), 9.066955110234245e-08, rtol=1e-7)
 
     # Liquid point but becomes a gas as volume root is gas
     # Have to increase temperature to make it happen
@@ -1638,6 +1640,7 @@ def test_single_phase_viscosity_thermal_conductivity():
     assert_close(phase.mu(), 1.1006640924847626e-05, rtol=1e-7)
     assert_close(phase.nu(), 5.048066405365861e-07, rtol=1e-7)
     assert_close(phase.k(), 0.01591594304085816, rtol=1e-7)
+    assert_close(phase.alpha(), 7.519903994564694e-07, rtol=1e-7)
 
     # Gibbs excess liquid
     phase = GibbsExcessLiquid(VaporPressures=VaporPressures, VolumeLiquids=VolumeLiquids,
@@ -1650,6 +1653,7 @@ def test_single_phase_viscosity_thermal_conductivity():
     assert_close(phase.nu(), 2.883501552352984e-07, rtol=1e-7)
     assert_close(phase.kinematic_viscosity(), 2.883501552352984e-07, rtol=1e-7)
     assert_close(phase.k(), 0.15487898658770405, rtol=1e-7)
+
 
 
 def test_BulkSettings_normal_standard():

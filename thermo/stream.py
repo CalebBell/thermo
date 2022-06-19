@@ -1933,6 +1933,10 @@ class EquilibriumStream(EquilibriumState):
 
     Qls_calc = Qls
 
+    @property
+    def Q_liquid_ref(self):
+        return sum(self.Qls)
+
     def StreamArgs(self):
         '''Goal to create a StreamArgs instance, with the user specified
         variables always being here.

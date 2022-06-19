@@ -42,7 +42,6 @@ from __future__ import division
 __all__ = ['EquilibriumState']
 
 from fluids.constants import R, R_inv, N_A
-from fluids.core import thermal_diffusivity
 from chemicals.utils import log, exp, normalize, zs_to_ws, vapor_mass_quality, mixing_simple, Vm_to_rho, SG
 from chemicals.virial import B_from_Z
 from chemicals.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition, periodic_table
@@ -691,9 +690,12 @@ class EquilibriumState(object):
         -----
         '''
         if phase is None:
-            zs = self.zs
-        else:
-            zs = phase.zs
+            phase = self
+        try:
+            return phase._atom_content
+        except:
+            pass
+        zs = phase.zs
         things = dict()
         for zi, atoms in zip(zs, self.constants.atomss):
             for atom, count in atoms.items():
@@ -702,6 +704,7 @@ class EquilibriumState(object):
                 else:
                     things[atom] = zi*count
         
+        phase._atom_content = things
         return things
 
     def atom_fractions(self, phase=None):
@@ -1830,25 +1833,6 @@ class EquilibriumState(object):
         Af = self.U_formation_ideal_gas(phase) - self.T_REF_IG*self.S_formation_ideal_gas(phase)
         return Af
 
-    def alpha(self, phase=None):
-        r'''Method to calculate and return the thermal diffusivity of the
-        equilibrium state.
-
-        .. math::
-            \alpha = \frac{k}{\rho Cp}
-
-        Returns
-        -------
-        alpha : float
-            Thermal diffusivity, [m^2/s]
-
-        Notes
-        -----
-        '''
-        rho = self.rho_mass(phase)
-        k = self.k(phase)
-        Cp = self.Cp_mass(phase)
-        return thermal_diffusivity(k=k, rho=rho, Cp=Cp)
 
 
 
@@ -2742,7 +2726,7 @@ phases_properties_to_EquilibriumState = ['atom_content', 'atom_fractions', 'atom
                                          'atom_flows','atom_mass_flows', 'atom_count_flows', 'API',
                                          'Hc', 'Hc_mass', 'Hc_lower', 'Hc_lower_mass', 'SG', 'SG_gas',
                                          'pseudo_Tc', 'pseudo_Pc', 'pseudo_Vc', 'pseudo_Zc',
-                                         'pseudo_omega',
+                                         'pseudo_omega', 
                                          'V_gas_standard', 'V_gas_normal', 'V_gas',
                                          'Hc_normal', 'Hc_standard',
                                          'Hc_lower_normal', 'Hc_lower_standard',
@@ -2766,7 +2750,7 @@ for name in phases_properties_to_EquilibriumState:
 # EquilibriumState to get the property
 Bulk_properties_to_EquilibriumState = [#'H_ideal_gas', 'Cp_ideal_gas','S_ideal_gas',
        'V_ideal_gas', 'G_ideal_gas', 'U_ideal_gas',
-        'Cv_ideal_gas', 'Cp_Cv_ratio_ideal_gas',
+        'Cv_ideal_gas', 'Cp_Cv_ratio_ideal_gas', 
        'A_ideal_gas', 'H_formation_ideal_gas', 'S_formation_ideal_gas',
        'G_formation_ideal_gas', 'U_formation_ideal_gas', 'A_formation_ideal_gas',
        'H_dep', 'S_dep', 'Cp_dep', 'Cv_dep']
@@ -2782,7 +2766,7 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
               'dP_dT_frozen', 'dP_dV_frozen', 'd2P_dT2_frozen', 'd2P_dV2_frozen',
               'd2P_dTdV_frozen',
               'd2P_dTdV', 'd2P_dV2', 'd2P_dT2', 'dP_dV', 'dP_dT', 'isentropic_exponent',
-
+              'alpha',
               'PIP', 'kappa', 'isobaric_expansion', 'Joule_Thomson', 'speed_of_sound',
               'speed_of_sound_mass',
               'U_dep', 'G_dep', 'A_dep', 'V_dep',
