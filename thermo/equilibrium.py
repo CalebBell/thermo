@@ -2666,42 +2666,42 @@ for s in dir(EquilibriumState):
 # Add some fancy things for easier access to properties
 
 def _make_getter_constants(name):
-    def get(self):
+    def get_constant(self):
         return getattr(self.constants, name)
-    return get
+    return get_constant
 
 def _make_getter_correlations(name):
-    def get(self):
+    def get_correlation(self):
         return getattr(self.correlations, name)
 
     text = '''Wrapper to obtain the list of %s objects of the associated
 :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`.''' %(name)
     try:
-        get.__doc__ = text
+        get_correlation.__doc__ = text
     except:
         pass
-    return get
+    return get_correlation
 
 def _make_getter_EquilibriumState(name):
-    def get(self):
+    def get_EquilibriumState(self):
         return getattr(self.result, name)(self)
     try:
-        get.__doc__ = getattr(EquilibriumState, name).__doc__
+        get_EquilibriumState.__doc__ = getattr(EquilibriumState, name).__doc__
     except:
         pass
-    return get
+    return get_EquilibriumState
 
 def _make_getter_bulk_props(name):
-    def get(self):
+    def get_bulk_prop(self):
         return getattr(self.bulk, name)()
     try:
         doc = getattr(Bulk, name).__doc__
         if doc is None:
             doc = getattr(Phase, name).__doc__
-        get.__doc__ = doc
+        get_bulk_prop.__doc__ = doc
     except:
         pass
-    return get
+    return get_bulk_prop
 
 ### For the pure component fixed properties, allow them to be retrived from the phase
 # and bulk object as well as the Equilibrium State Object
@@ -2813,12 +2813,16 @@ except:
     pass
 
 def _make_getter_atom_fraction(element_symbol):
-    def get(self):
+    def get_atom_fraction(self):
         try:
-            return self.atom_fractions()[element_symbol]
+            try:
+                return self._atom_fractions[element_symbol]
+            except:
+                return self.atom_fractions()[element_symbol]
         except KeyError:
             return 0.0
-    return get
+    return get_atom_fraction
+
 for ele in periodic_table:
     getter = _make_getter_atom_fraction(ele.symbol)
     name = '%s_atom_fraction' %(ele.name)
@@ -2831,13 +2835,16 @@ for ele in periodic_table:
     setattr(Phase, name, getter)
 
 def _make_getter_atom_mass_fraction(element_symbol):
-    def get(self):
+    def get_atom_mass_fraction(self):
         try:
-            return self.atom_mass_fractions()[element_symbol]
+            try:
+                return self._atom_mass_fractions[element_symbol]
+            except:
+                return self.atom_mass_fractions()[element_symbol]
         except KeyError:
             return 0.0
 
-    return get
+    return get_atom_mass_fraction
 for ele in periodic_table:
     getter = _make_getter_atom_mass_fraction(ele.symbol)
     name = '%s_atom_mass_fraction' %(ele.name)
@@ -2850,12 +2857,15 @@ for ele in periodic_table:
     setattr(Phase, name, getter)
 
 def _make_getter_atom_mass_flow(element_symbol):
-    def get(self):
+    def get_atom_mass_flow(self):
         try:
-            return self.atom_mass_fractions()[element_symbol]*self.m
+            try:
+                return self._atom_mass_fractions[element_symbol]*self.m
+            except:
+                return self.atom_mass_fractions()[element_symbol]*self.m
         except KeyError:
             return 0.0
-    return get
+    return get_atom_mass_flow
     
 for ele in periodic_table:
     getter = _make_getter_atom_mass_flow(ele.symbol)
@@ -2869,12 +2879,15 @@ for ele in periodic_table:
     setattr(Phase, name, getter)
 
 def _make_getter_atom_flow(element_symbol):
-    def get(self):
+    def get_atom_flow(self):
         try:
-            return self.atom_content()[element_symbol]*self.n
+            try:
+                return self._atom_content[element_symbol]*self.n
+            except:
+                return self.atom_content()[element_symbol]*self.n
         except KeyError:
             return 0.0
-    return get
+    return get_atom_flow
     
 for ele in periodic_table:
     getter = _make_getter_atom_flow(ele.symbol)
@@ -2888,12 +2901,15 @@ for ele in periodic_table:
     setattr(Phase, name, getter)
 
 def _make_getter_atom_count_flow(element_symbol):
-    def get(self):
+    def get_atom_count_flow(self):
         try:
-            return self.atom_content()[element_symbol]*self.n*N_A
+            try:
+                return self._atom_content[element_symbol]*self.n*N_A
+            except:
+                return self.atom_content()[element_symbol]*self.n*N_A
         except KeyError:
             return 0.0
-    return get
+    return get_atom_count_flow
     
 for ele in periodic_table:
     getter = _make_getter_atom_count_flow(ele.symbol)
