@@ -3523,6 +3523,27 @@ class Phase(object):
         self._Cp_ideal_gas = Cp
         return Cp
 
+    def Cp_ideal_gas_mass(self):
+        r'''Method to calculate and return mass constant pressure 
+        departure heat capacity of the phase.
+
+        .. math::
+            Cp_{ideal, mass} = \frac{1000 Cp_{ideal, molar}}{MW}
+
+        Returns
+        -------
+        Cp_ideal_gas_mass : float
+            Mass departure heat capacity, [J/(kg*K)]
+        '''
+        try:
+            return self._Cp_ideal_gas_mass
+        except AttributeError:
+            pass
+
+        self._Cp_ideal_gas_mass = Cp_ideal_gas_mass = self.Cp_ideal_gas()*1e3*self.MW_inv()
+        return Cp_ideal_gas_mass
+
+
     def Cv_ideal_gas(self):
         r'''Method to calculate and return the ideal-gas constant volume heat
         capacity of the phase.
@@ -4244,6 +4265,27 @@ class Phase(object):
         self._Cp_mass = Cp_mass = self.Cp()*1e3*self.MW_inv()
         return Cp_mass
 
+    def Cp_dep_mass(self):
+        r'''Method to calculate and return mass constant pressure 
+        departure heat capacity of the phase.
+
+        .. math::
+            Cp_{dep, mass} = \frac{1000 Cp_{dep, molar}}{MW}
+
+        Returns
+        -------
+        Cp_dep_mass : float
+            Mass departure heat capacity, [J/(kg*K)]
+        '''
+        try:
+            return self._Cp_dep_mass
+        except AttributeError:
+            pass
+
+        self._Cp_dep_mass = Cp_dep_mass = self.Cp_dep()*1e3*self.MW_inv()
+        return Cp_dep_mass
+
+
     def Cv_mass(self):
         r'''Method to calculate and return mass constant volume heat capacity
         of the phase.
@@ -4263,6 +4305,26 @@ class Phase(object):
 
         self._Cv_mass = Cv_mass = self.Cv()*1e3*self.MW_inv()
         return Cv_mass
+
+    def Cv_dep_mass(self):
+        r'''Method to calculate and return mass constant pressure 
+        departure heat capacity of the phase.
+
+        .. math::
+            Cv_{dep, mass} = \frac{1000 Cv_{dep, molar}}{MW}
+
+        Returns
+        -------
+        Cv_dep_mass : float
+            Mass departure heat capacity, [J/(kg*K)]
+        '''
+        try:
+            return self._Cv_dep_mass
+        except AttributeError:
+            pass
+
+        self._Cv_dep_mass = Cv_dep_mass = self.Cv_dep()*1e3*self.MW_inv()
+        return Cv_dep_mass
 
     def P_transitions(self):
         r'''Dummy method. The idea behind this method is to calculate any
@@ -4612,6 +4674,26 @@ class Phase(object):
         -----
         '''
         return self.result.gas_beta
+    
+    @property
+    def energy(self):
+        r'''Method to return the energy (enthalpy times flow rate) of this 
+        phase.
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        energy : float
+            Enthalpy flow rate, [W]
+
+        Notes
+        -----
+        '''
+        try:
+            return self.result.n*self.H()
+        except:
+            return None
 
     @property
     def n(self):

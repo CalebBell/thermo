@@ -288,6 +288,10 @@ def test_two_eos_pure_flash_all_properties():
     assert_close(eq.bulk.U_ideal_gas(), -2412.161626352657, rtol=1e-12)
     assert_close1d([i.U_ideal_gas() for i in eq.phases], [-2412.161626352657]*2, rtol=1e-12)
 
+    assert_close(eq.Cp_ideal_gas_mass(), 1388.0132289428354, rtol=1e-9)
+    assert_close(eq.bulk.Cp_ideal_gas_mass(), 1388.0132289428354, rtol=1e-9)
+    assert_close1d([i.Cp_ideal_gas_mass() for i in eq.phases], [1388.0132289428354]*2, rtol=1e-9)
+
     # Ideal formation basis
 
     assert_close(eq.H_formation_ideal_gas(), -200700.0, rtol=1e-12)
@@ -495,9 +499,18 @@ def test_two_eos_pure_flash_all_properties():
     assert_close(eq.bulk.Cp_dep(), 40.83182119120029, rtol=1e-9)
     assert_close1d([i.Cp_dep() for i in eq.phases], [0.1572998702515953, 67.94816873849943], rtol=1e-9)
 
+    assert_close(eq.Cp_dep_mass(), 1274.3274326522903, rtol=1e-9)
+    assert_close(eq.bulk.Cp_dep_mass(), 1274.3274326522903, rtol=1e-9)
+    assert_close1d([i.Cp_dep_mass() for i in eq.phases], [4.90919909929209, 2120.606255020956], rtol=1e-9)
+
     assert_close(eq.Cv_dep(), 29.61435675899918, rtol=1e-12)
     assert_close(eq.bulk.Cv_dep(), 29.61435675899918, rtol=1e-12)
     assert_close1d([i.Cv_dep() for i in eq.phases], [0.023070609291153232, 43.71066323157659], rtol=1e-12)
+
+    assert_close(eq.Cv_dep_mass(), 924.2396277556492, rtol=1e-12)
+    assert_close(eq.bulk.Cv_dep_mass(), 924.2396277556492, rtol=1e-12)
+    assert_close1d([i.Cv_dep_mass() for i in eq.phases], [0.720014671157275, 1364.1737162441768], rtol=1e-12)
+
 
     # Standard liquid density
     rho_mass_liquid_ref_expect = 784.8585085234012

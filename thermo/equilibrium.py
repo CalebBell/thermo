@@ -2787,6 +2787,7 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
               'PIP', 'kappa', 'isobaric_expansion', 'Joule_Thomson', 'speed_of_sound',
               'speed_of_sound_mass',
               'U_dep', 'G_dep', 'A_dep', 'V_dep',
+              'Cp_dep_mass', 'Cp_ideal_gas_mass', 'Cv_dep_mass',
               'mu', 'k', 'sigma',
               'isentropic_exponent', 'isentropic_exponent_PV', 'isentropic_exponent_TV',
               'isentropic_exponent_PT',
