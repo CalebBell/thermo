@@ -4786,7 +4786,12 @@ class Phase(object):
         -----
         '''
         try:
-            return self.result.n*self.beta
+            try:
+                return self._n
+            except:
+                pass
+            self._n = self.result.n*self.beta
+            return self._n
         except:
             return None
 
@@ -4805,7 +4810,11 @@ class Phase(object):
         -----
         '''
         try:
-            return self.result.m*self.beta_mass
+            try:
+                return self._m
+            except:
+                self._m = self.result.m*self.beta_mass
+                return self._m
         except:
             return None
 
@@ -4824,7 +4833,11 @@ class Phase(object):
         -----
         '''
         try:
-            return self.n*self.V()
+            try:
+                return self._Q
+            except:
+                self._Q = self.n*self.V()
+                return self._Q
         except:
             return None
 
@@ -4843,8 +4856,12 @@ class Phase(object):
         -----
         '''
         try:
-            n = self.result.n*self.beta
-            return [n*zi for zi in self.zs]
+            try:
+                return self._ns
+            except:
+                n = self.result.n*self.beta
+                self._ns = [n*zi for zi in self.zs]
+                return self._ns
         except:
             return None
 
@@ -4889,11 +4906,16 @@ class Phase(object):
         Notes
         -----
         '''
+        try:
+            return self._Qgs
+        except:
+            pass
         settings = self.result.settings
         V = R*settings.T_gas_ref/settings.P_gas_ref
         n = self.n
         Vn = V*n
-        return [zi*Vn for zi in self.zs]
+        self._Qgs = [zi*Vn for zi in self.zs]
+        return self._Qgs
 
     @property
     def Qg(self):
@@ -4912,7 +4934,12 @@ class Phase(object):
         -----
         '''
         try:
-            return sum(self.Qgs)
+            try:
+                return self._Qg
+            except:
+                pass
+            self._Qg = sum(self.Qgs)
+            return self._Qg
         except:
             return None
 
@@ -4932,9 +4959,14 @@ class Phase(object):
         Notes
         -----
         '''
+        try:
+            return self._Qls
+        except:
+            pass
         ns = self.ns
         Vms_TP = self.result.constants.Vml_STPs
-        return [ns[i]*Vms_TP[i] for i in range(self.N)]
+        self._Qls = [ns[i]*Vms_TP[i] for i in range(self.N)]
+        return self._Qls
 
     @property
     def Ql(self):
@@ -4953,7 +4985,12 @@ class Phase(object):
         -----
         '''
         try:
-            return sum(self.Qls)
+            try:
+                return self._Ql
+            except:
+                pass
+            self._Ql = sum(self.Qls)
+            return self._Ql
         except:
             return None
         
@@ -5212,9 +5249,14 @@ class IdealGasDeparturePhase(Phase):
         return self._dS_dzs
 
     def gammas(self):
+        try:
+            return self._gammas
+        except:
+            pass
         phis = self.phis()
         phi_pures = self.phi_pures()
-        return [phis[i]/phi_pures[i] for i in range(self.N)]
+        self._gammas = [phis[i]/phi_pures[i] for i in range(self.N)]
+        return self._gammas
 
 
 derivatives_jacobian = []
