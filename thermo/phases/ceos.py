@@ -338,10 +338,10 @@ class CEOSPhase(IdealGasDeparturePhase):
         return P_max
 
     def mu(self):
-#        try:
-#            return self._mu
-#        except AttributeError:
-#            pass
+        try:
+            return self._mu
+        except AttributeError:
+            pass
         try:
             phase = self.assigned_phase
         except:

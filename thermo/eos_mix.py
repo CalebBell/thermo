@@ -1385,8 +1385,8 @@ class GCEOSMIX(GCEOS):
         x26 = x13*x21/9.0
 
 
-        F1 = P*x0*x3 - x11*x9 - x13/3.0 + x5
-        F2 = -x11*x5 + x13*x12/27.0 - b_eos*x0*x4*x6*x1*x7*x2
+        F1 = P*x0*x3 - x11*x9 - x13*(1/3.0) + x5
+        F2 = -x11*x5 + x13*x12*(1/27.0) - b_eos*x0*x4*x6*x1*x7*x2
         dF1_dT = x14*(x15*x6 - 2.0*x17 - x18 + x19 + x20 + x22)
         dF1_dP = x16*(x17 + x18 - x19 - x20 - x22)
         dF2_dT = x14*(-P*b_eos*x1*x15*x7 + 3.0*x23 + x24 + x25 - x26)
