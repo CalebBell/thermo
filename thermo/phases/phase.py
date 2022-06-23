@@ -593,13 +593,18 @@ class Phase(object):
             :math:`|1 - S^{\text{from phi}}/S^\text{implemented}|`, [-]
         '''
         # From coco
+        try:
+            return self._S_phi_consistency
+        except:
+            pass
         S0 = self.S_ideal_gas()
         lnphis = self.lnphis()
         dlnphis_dT = self.dlnphis_dT()
         T, zs = self.T, self.zs
         for i in range(self.N):
             S0 -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
-        return abs(1.0 - S0/self.S())
+        self._S_phi_consistency = abs(1.0 - S0/self.S())
+        return self._S_phi_consistency
 
 
     def H_phi_consistency(self):
@@ -617,7 +622,12 @@ class Phase(object):
             Relative consistency error
             :math:`|1 - H^{\text{from phi}}/H^\text{implemented}|`, [-]
         '''
-        return abs(1.0 - self.H_from_phi()/self.H())
+        try:
+            return self._H_phi_consistency
+        except:
+            pass
+        self._H_phi_consistency = abs(1.0 - self.H_from_phi()/self.H())
+        return self._H_phi_consistency
 
     def G_dep_phi_consistency(self):
         r'''Method to calculate and return a consistency check between
@@ -633,12 +643,17 @@ class Phase(object):
             :math:`|1 - G^{\text{from phi}}_{dep}/G^\text{implemented}_{dep}|`, [-]
         '''
         # Chapter 2 equation 31 Michaelson
+        try:
+            return self._G_dep_phi_consistency
+        except:
+            pass
         zs, T = self.zs, self.T
         G_dep_RT = 0.0
         lnphis = self.lnphis()
         G_dep_RT = sum(zs[i]*lnphis[i] for i in range(self.N))
         G_dep = G_dep_RT*R*T
-        return abs(1.0 - G_dep/self.G_dep())
+        self._G_dep_phi_consistency = abs(1.0 - G_dep/self.G_dep())
+        return self._G_dep_phi_consistency
 
     def H_dep_phi_consistency(self):
         r'''Method to calculate and return a consistency check between
@@ -655,13 +670,18 @@ class Phase(object):
             Relative consistency error
             :math:`|1 - H^{\text{from phi}}_{dep}/H^\text{implemented}_{dep}|`, [-]
         '''
+        try:
+            return self._H_dep_phi_consistency
+        except:
+            pass
         H_dep_RT2 = 0.0
         dlnphis_dTs = self.dlnphis_dT()
         zs, T = self.zs, self.T
         H_dep_RT2 = sum([zs[i]*dlnphis_dTs[i] for i in range(self.N)])
         H_dep_recalc = -H_dep_RT2*R*T*T
         H_dep = self.H_dep()
-        return abs(1.0 - H_dep/H_dep_recalc)
+        self._H_dep_phi_consistency = abs(1.0 - H_dep/H_dep_recalc)
+        return self._H_dep_phi_consistency
 
     def S_dep_phi_consistency(self):
         r'''Method to calculate and return a consistency check between ideal
@@ -678,6 +698,10 @@ class Phase(object):
             Relative consistency error
             :math:`|1 - S^{\text{from phi}}_{dep}/S^\text{implemented}_{dep}|`, [-]
         '''
+        try:
+            return self._S_dep_phi_consistency
+        except:
+            pass
         # From coco
         lnphis = self.lnphis()
         dlnphis_dT = self.dlnphis_dT()
@@ -685,7 +709,8 @@ class Phase(object):
         S_dep = 0.0
         for i in range(self.N):
             S_dep -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
-        return abs(1.0 - S_dep/self.S_dep())
+        self._S_dep_phi_consistency = abs(1.0 - S_dep/self.S_dep())
+        return self._S_dep_phi_consistency
 
     def V_phi_consistency(self):
         r'''Method to calculate and return a consistency check between
@@ -703,13 +728,18 @@ class Phase(object):
             Relative consistency error
             :math:`|1 - V^{\text{from phi P der}}/V^\text{implemented}|`, [-]
         '''
+        try:
+            return self._V_phi_consistency
+        except:
+            pass
         zs, P = self.zs, self.P
         dlnphis_dP = self.dlnphis_dP()
         lhs = sum(zs[i]*dlnphis_dP[i] for i in range(self.N))
         Z_calc = lhs*P + 1.0
         V_calc = Z_calc*self.R*self.T/P
         V = self.V()
-        return abs(1.0 - V_calc/V)
+        self._V_phi_consistency = abs(1.0 - V_calc/V)
+        return self._V_phi_consistency
 
     def H_from_phi(self):
         r'''Method to calculate and return the enthalpy of the fluid as
@@ -4732,7 +4762,12 @@ class Phase(object):
         -----
         '''
         try:
-            return self.result.n*self.H()
+            try:
+                return self._energy
+            except:
+                pass
+            self._energy = self.result.n*self.H()
+            return self._energy
         except:
             return None
 
@@ -4828,8 +4863,13 @@ class Phase(object):
         -----
         '''
         try:
+            try:
+                return self._ms
+            except:
+                pass
             m = self.result.m*self.beta_mass
-            return [m*wi for wi in self.ws()]
+            self._ms = [m*wi for wi in self.ws()]
+            return self._ms
         except:
             return None
     
