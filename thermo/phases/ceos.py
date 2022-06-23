@@ -622,12 +622,17 @@ class CEOSGas(CEOSPhase):
             return eos_mix.dlnphis_dzs(eos_mix.Z_l)
 
     def phi_pures(self):
+        try:
+            return self._phi_pures
+        except:
+            pass
         phis_pure = []
         for i in self.eos_mix.pures():
             try:
                 phis_pure.append(i.phi_g)
             except AttributeError:
                 phis_pure.append(i.phi_l)
+        self._phi_pures = phis_pure
         return phis_pure
     
 
@@ -895,12 +900,17 @@ class CEOSLiquid(CEOSPhase):
             return eos_mix.dlnphis_dzs(eos_mix.Z_g)
 
     def phi_pures(self):
+        try:
+            return self._phi_pures
+        except:
+            pass
         phis_pure = []
         for i in self.eos_mix.pures():
             try:
                 phis_pure.append(i.phi_l)
             except AttributeError:
                 phis_pure.append(i.phi_g)
+        self._phi_pures = phis_pure
         return phis_pure
     
 

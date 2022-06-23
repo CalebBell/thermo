@@ -41,6 +41,7 @@ from chemicals.utils import (log, Cp_minus_Cv, phase_identification_parameter,
                              hash_any_primitive, isentropic_exponent_TV,
                              isentropic_exponent_PT, isentropic_exponent_PV,
                              )
+from chemicals.virial import B_from_Z
 from thermo.utils import POLY_FIT
 from thermo import phases
 from thermo.phases.phase_utils import object_lookups
@@ -911,10 +912,15 @@ class Phase(object):
         fugacities : list[float]
             Fugacities, [Pa]
         '''
+        try:
+            return self._fugacities
+        except:
+            pass
         P = self.P
         zs = self.zs
         lnphis = self.lnphis()
-        return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(self.N)]
+        self._fugacities = [P*zs[i]*trunc_exp(lnphis[i]) for i in range(self.N)]
+        return self._fugacities
 
     def lnfugacities(self):
         r'''Method to calculate and return the log of fugacities of the phase.
@@ -928,11 +934,16 @@ class Phase(object):
         lnfugacities : list[float]
             Log fugacities, [log(Pa)]
         '''
+        try:
+            return self._lnfugacities
+        except:
+            pass
         P = self.P
         lnphis = self.lnphis()
         logP = log(P)
         log_zs = self.log_zs()
-        return [logP + log_zs[i] + lnphis[i] for i in range(self.N)]
+        self._lnfugacities = [logP + log_zs[i] + lnphis[i] for i in range(self.N)]
+        return self._lnfugacities
 
     fugacities_lowest_Gibbs = fugacities
 
@@ -953,9 +964,14 @@ class Phase(object):
         Notes
         -----
         '''
+        try:
+            return self._dfugacities_dT
+        except:
+            pass
         dphis_dT = self.dphis_dT()
         P, zs = self.P, self.zs
-        return [P*zs[i]*dphis_dT[i] for i in range(self.N)]
+        self._dfugacities_dT = [P*zs[i]*dphis_dT[i] for i in range(self.N)]
+        return self._dfugacities_dT
 
     def lnphis_G_min(self):
         r'''Method to calculate and return the log fugacity coefficients of the
@@ -982,7 +998,12 @@ class Phase(object):
         phis : list[float]
             Fugacity coefficients, [-]
         '''
-        return [trunc_exp(i) for i in self.lnphis()]
+        try:
+            return self._phis
+        except:
+            pass
+        self._phis = [trunc_exp(i) for i in self.lnphis()]
+        return self._phis
 
     def dphis_dT(self):
         r'''Method to calculate and return the temperature derivative of fugacity
@@ -2186,6 +2207,10 @@ class Phase(object):
         gammas : list[float]
             Activity coefficients, [-]
         '''
+        try:
+            return self._gammas
+        except:
+            pass
         # For a good discussion, see
         # Thermodynamics: Fundamentals for Applications, J. P. O'Connell, J. M. Haile
         # 5.5 ACTIVITY COEFFICIENTS FROM FUGACITY COEFFICIENTS
@@ -2193,13 +2218,15 @@ class Phase(object):
         # the most generally used one for EOSs; and activity methods
         # override this
         phis = self.phis()
-        gammas = []
+        self._gammas = gammas = []
         T, P, N = self.T, self.P, self.N
         for i in range(N):
             zeros = [0.0]*N
             zeros[i] = 1.0
             phi = self.to_TP_zs(T=T, P=P, zs=zeros).phis()[i]
             gammas.append(phis[i]/phi)
+        
+        self._gammas = gammas
         return gammas
 
     def Cp_Cv_ratio(self):
@@ -2869,6 +2896,20 @@ class Phase(object):
         '''
         return (self.P - self.rho()*self.dP_drho())/(self.R*self.T)
     # Could add more
+
+    def Bvirial(self):
+        r'''Method to calculate and return the `B` virial coefficient of the
+        phase at its current conditions.
+
+        Returns
+        -------
+        Bvirial : float
+            Virial coefficient, [m^3/mol]
+
+        Notes
+        -----
+        '''
+        return B_from_Z(self.Z(), self.T, self.P)
 
     ### Derivatives in the molar density basis
     def dP_drho(self):
@@ -4889,9 +4930,14 @@ class Phase(object):
         Notes
         -----
         '''
+        try:
+            return self._concentrations
+        except:
+            pass
         rho = self.rho()
         zs = self.zs
-        return [rho*zi for zi in zs]
+        self._concentrations = concentrations = [rho*zi for zi in zs]
+        return concentrations
     
     def concentrations_mass(self):
         r'''Method to return the mass concentrations of each component in the 
@@ -4905,9 +4951,14 @@ class Phase(object):
         Notes
         -----
         '''
+        try:
+            return self._concentrations_mass
+        except:
+            pass
         rho_mass = self.rho_mass()
         ws = self.ws()
-        return [rho_mass*wi for wi in ws]
+        self._concentrations_mass = [rho_mass*wi for wi in ws]
+        return self._concentrations_mass
 
     def partial_pressures(self):
         r'''Method to return the partial pressures of each component in the 
@@ -4925,8 +4976,13 @@ class Phase(object):
         Notes
         -----
         '''
+        try:
+            return self._partial_pressures
+        except:
+            pass
         P = self.P
-        return [zi*P for zi in self.zs]
+        self._partial_pressures = [zi*P for zi in self.zs]
+        return self._partial_pressures
 
 
 class IdealGasDeparturePhase(Phase):

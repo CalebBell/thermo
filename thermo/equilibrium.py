@@ -1978,21 +1978,6 @@ class EquilibriumState(object):
         '''
         return R*self.settings.T_gas_ref/self.settings.P_gas_ref
 
-    def Bvirial(self, phase=None):
-        r'''Method to calculate and return the `B` virial coefficient of the
-        phase at its current conditions.
-
-        Returns
-        -------
-        Bvirial : float
-            Virial coefficient, [m^3/mol]
-
-        Notes
-        -----
-        '''
-        if phase is None:
-            phase = self.bulk
-        return B_from_Z(phase.Z(), self.T, self.P)
 
     def H_C_ratio(self, phase=None):
         r'''Method to calculate and return the atomic ratio of hydrogen atoms
@@ -2786,7 +2771,7 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
               'alpha',
               'PIP', 'kappa', 'isobaric_expansion', 'Joule_Thomson', 'speed_of_sound',
               'speed_of_sound_mass',
-              'U_dep', 'G_dep', 'A_dep', 'V_dep',
+              'U_dep', 'G_dep', 'A_dep', 'V_dep', 'B_from_Z',
               'Cp_dep_mass', 'Cp_ideal_gas_mass', 'Cv_dep_mass',
               'mu', 'k', 'sigma',
               'isentropic_exponent', 'isentropic_exponent_PV', 'isentropic_exponent_TV',
