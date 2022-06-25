@@ -1271,3 +1271,26 @@ class Flash(object):
         fig.subplots_adjust(top=0.85)
         plt.show()
 
+
+    
+    def V_liquids_ref(self):
+        r'''Method to calculate and return the liquid reference molar volumes
+        according to the temperature variable `T_liquid_volume_ref` of
+        :obj:`thermo.bulk.BulkSettings`.
+
+        Returns
+        -------
+        V_liquids_ref : list[float]
+            Liquid molar volumes at the reference condition, [m^3/mol]
+
+        Notes
+        -----
+        '''
+        T_liquid_volume_ref = self.settings.T_liquid_volume_ref
+        if T_liquid_volume_ref == 298.15:
+            Vls = self.constants.Vml_STPs
+        elif T_liquid_volume_ref == 288.7055555555555:
+            Vls = self.constants.Vml_60Fs
+        else:
+            Vls = [i(T_liquid_volume_ref) for i in self.properties.VolumeLiquids]
+        return Vls
