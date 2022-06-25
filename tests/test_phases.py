@@ -1029,7 +1029,7 @@ def test_GibbsExcessLiquid_low_T_phis_sat():
 
     assert_close1d(low_T.d2phis_sat_dT2(), [0]*2, rtol=1e-15)
 
-def test_EOSGas_phis():
+def test_CEOS_phis():
     # Acetone, chloroform, methanol
     T = 331.42
     P = 90923
@@ -1046,40 +1046,114 @@ def test_EOSGas_phis():
      HeatCapacityGas(poly_fit=(50.0, 1000.0, [2.3511458696647882e-21, -9.223721411371584e-18, 1.3574178156001128e-14, -8.311274917169928e-12, 4.601738891380102e-10, 1.78316202142183e-06, -0.0007052056417063217, 0.13263597297874355, 28.44324970462924]))]
 
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liquid = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    
+    gas_liquid = gas.to(T=100, P=1e5, zs=zs) # only has V_l
+    liquid_gas = liquid.to(T=500, P=1e5, zs=zs) # only has V_g
+
+    assert eval((gas.__repr__())).state_hash() == gas.state_hash()
+    assert eval((liquid.__repr__())).state_hash() == liquid.state_hash()
+    assert eval((gas_liquid.__repr__())).state_hash() == gas_liquid.state_hash()
+    assert eval((liquid_gas.__repr__())).state_hash() == liquid_gas.state_hash()
 
     lnphis_expect = [-0.02360432649642419, -0.024402271514780954, -0.016769813943198587]
     assert_close1d(gas.lnphis(), lnphis_expect, rtol=1e-12)
+    lnphis_expect = [0.8253284443531399, 0.11977973815900889, 0.10965732949863494]
+    assert_close1d(liquid.lnphis(), lnphis_expect, rtol=1e-12)
+    lnphis_expect = [-26.257643489591743, -28.123302577785182, -39.391352729666025]
+    assert_close1d(gas_liquid.lnphis(), lnphis_expect, rtol=1e-12)
+    lnphis_expect = [-0.0076796355290965155, -0.008453288415352122, -0.004934801579277686]
+    assert_close1d(liquid_gas.lnphis(), lnphis_expect, rtol=1e-12)
 
     phis_expect = [0.9766720765776962, 0.9758930568084294, 0.9833700166511827]
     assert_close1d(gas.phis(), phis_expect, rtol=1e-12)
+    phis_expect = [2.2826303592744255, 1.1272485343955392, 1.1158956204237194]
+    assert_close1d(liquid.phis(), phis_expect, rtol=1e-12)
+    phis_expect = [3.948665312867091e-12, 6.112303036029843e-13, 7.808234986201727e-18]
+    assert_close1d(gas_liquid.phis(), phis_expect, rtol=1e-12)
+    phis_expect = [0.9923497775298149, 0.9915823401635989, 0.9950773545497871]
+    assert_close1d(liquid_gas.phis(), phis_expect, rtol=1e-12)
 
     fugacities_expect = [20335.64774507632, 15527.946770733744, 53288.92740628939]
     assert_close1d(gas.fugacities(), fugacities_expect, rtol=1e-12)
+    fugacities_expect = [47527.48443579467, 17936.24323624798, 60470.50418748836]
+    assert_close1d(liquid.fugacities(), fugacities_expect, rtol=1e-12)
+    fugacities_expect = [9.042443566465638e-08, 1.0696530313052224e-08, 4.65370805177623e-13]
+    assert_close1d(gas_liquid.fugacities(), fugacities_expect, rtol=1e-12)
+    fugacities_expect = [22724.80990543276, 17352.69095286298, 59306.61033116731]
+    assert_close1d(liquid_gas.fugacities(), fugacities_expect, rtol=1e-12)
 
     lnfugacities_expect = [9.920130671538276, 9.650396696889194, 10.88348384760261]
     assert_close1d(gas.lnfugacities(), lnfugacities_expect, rtol=1e-9)
+    lnfugacities_expect= [10.76906344238784, 9.794578706562984, 11.009910991044444]
+    assert_close1d(liquid.lnfugacities(), lnfugacities_expect, rtol=1e-9)
 
     dlnphis_dT_expect = [0.0001969437889400412, 0.0001955309568834383, 0.00014847122768410804]
     assert_close1d(gas.dlnphis_dT(), dlnphis_dT_expect, rtol=1e-12)
+    dlnphis_dT_expect = [0.028116879744042797, 0.0309210585805397, 0.03968436849600533]
+    assert_close1d(liquid.dlnphis_dT(), dlnphis_dT_expect, rtol=1e-12)
+    dlnphis_dT_expect = [0.42224908829411933, 0.4328709598907219, 0.6273954631895595]
+    assert_close1d(gas_liquid.dlnphis_dT(), dlnphis_dT_expect, rtol=1e-12)
+    dlnphis_dT_expect = [4.964705486439562e-05, 5.1013083479209264e-05, 3.539985214728983e-05]
+    assert_close1d(liquid_gas.dlnphis_dT(), dlnphis_dT_expect, rtol=1e-12)
 
     dphis_dT_expect = [0.00019234949931314953, 0.00019081730321365582, 0.00014600215363994287]
     assert_close1d(gas.dphis_dT(), dphis_dT_expect, rtol=1e-12)
+    dphis_dT_expect = [0.06418044331182023, 0.03485571796687199, 0.04428361300397337]
+    assert_close1d(liquid.dphis_dT(), dphis_dT_expect, rtol=1e-12)
 
     dfugacities_dT_expect = [4.004979517465334, 3.036194290516665, 7.911872473981097]
     assert_close1d(gas.dfugacities_dT(), dfugacities_dT_expect, rtol=1e-12)
+    dfugacities_dT_expect = [1336.3245644181045, 554.6076278228328, 2399.733771315521]
+    assert_close1d(liquid.dfugacities_dT(), dfugacities_dT_expect, rtol=1e-12)
 
     dlnphis_dP_expect = [-2.6201216188562436e-07, -2.709988856769895e-07, -1.857038475967749e-07]
     assert_close1d(gas.dlnphis_dP(), dlnphis_dP_expect, rtol=1e-12)
+    dlnphis_dP_expect = [-1.0965733028267606e-05, -1.0968811849253641e-05, -1.0980206376622312e-05]
+    assert_close1d(liquid.dlnphis_dP(), dlnphis_dP_expect, rtol=1e-12)
+    dlnphis_dP_expect = [-9.912896658435803e-06, -9.919010813911682e-06, -9.949413769208111e-06]
+    assert_close1d(gas_liquid.dlnphis_dP(), dlnphis_dP_expect, rtol=1e-12)
+    dlnphis_dP_expect = [-7.691859711965383e-08, -8.470543388963487e-08, -4.940327140367246e-08]
+    assert_close1d(liquid_gas.dlnphis_dP(), dlnphis_dP_expect, rtol=1e-12)
 
     dphis_dP_expect = [-2.558999622374442e-07, -2.644659309349954e-07, -1.8261559570342924e-07]
     assert_close1d(gas.dphis_dP(), dphis_dP_expect, rtol=1e-12)
+    dphis_dP_expect = [-2.503071512202192e-05, -1.2364577081131591e-05, -1.2252764207021434e-05]
+    assert_close1d(liquid.dphis_dP(), dphis_dP_expect, rtol=1e-12)
 
     dfugacities_dP_expect = [0.21832971850726046, 0.16657322866975469, 0.5761925710704517]
     assert_close1d(gas.dfugacities_dP(), dfugacities_dP_expect, rtol=1e-12)
+    dfugacities_dP_expect = [0.00154864644577525, 0.0005292161783670202, 0.0010951740955108188]
+    assert_close1d(liquid.dfugacities_dP(), dfugacities_dP_expect, rtol=1e-12)
 
     analytical_dphis_dzs = gas.dphis_dzs()
     numerical_dphis_dzs = jacobian(lambda zs: gas.to(T=T, P=P, zs=zs).phis(), zs, scalar=False, perturbation=5e-7)
     assert_close2d(analytical_dphis_dzs, numerical_dphis_dzs, rtol=2e-6)
+    analytical_dphis_dzs = liquid.dphis_dzs()
+    numerical_dphis_dzs = jacobian(lambda zs: liquid.to(T=T, P=P, zs=zs).phis(), zs, scalar=False, perturbation=5e-7)
+    assert_close2d(analytical_dphis_dzs, numerical_dphis_dzs, rtol=2e-6)
+    
+    analytical_dphis_dzs = gas_liquid.dphis_dzs()
+    numerical_dphis_dzs = jacobian(lambda zs: gas_liquid.to(T=gas_liquid.T, P=gas_liquid.P, zs=zs).phis(), zs, scalar=False, perturbation=5e-7)
+    assert_close2d(analytical_dphis_dzs, numerical_dphis_dzs, rtol=2e-6)
+
+    analytical_dphis_dzs = liquid_gas.dphis_dzs()
+    numerical_dphis_dzs = jacobian(lambda zs: liquid_gas.to(T=liquid_gas.T, P=liquid_gas.P, zs=zs).phis(), zs, scalar=False, perturbation=1e-6)
+    assert_close2d(analytical_dphis_dzs, numerical_dphis_dzs, rtol=5e-6)
+
+    def to_jac(ns, obj):
+        zs = normalize(ns)
+        return obj.to(T=obj.T, P=obj.P, zs=zs).lnphis()
+    
+    analytical_dlnphis_dns = gas.dlnphis_dns()
+    numerical_dlnphis_dns = jacobian(to_jac, zs, scalar=False, perturbation=1e-7, args=(gas,))
+    analytical_dlnphis_dns = liquid.dlnphis_dns()
+    numerical_dlnphis_dns = jacobian(to_jac, zs, scalar=False, perturbation=1e-7, args=(liquid,))
+    analytical_dlnphis_dns = gas_liquid.dlnphis_dns()
+    numerical_dlnphis_dns = jacobian(to_jac, zs, scalar=False, perturbation=1e-7, args=(gas_liquid,))
+    analytical_dlnphis_dns = liquid_gas.dlnphis_dns()
+    numerical_dlnphis_dns = jacobian(to_jac, zs, scalar=False, perturbation=1e-7, args=(liquid_gas,))
+
 
     assert_close(gas.H(), 1725.7273210879043, rtol=1e-12)
     assert_close(gas.S(), 14.480694885134456, rtol=1e-12)
@@ -1088,11 +1162,117 @@ def test_EOSGas_phis():
     assert_close(gas.dH_dP(), -0.0017158255316092434, rtol=1e-12)
     assert_close(gas.dS_dT(), 0.17726291337892383, rtol=1e-12)
     assert_close(gas.dS_dP(), -9.480886482495667e-05, rtol=1e-12)
+    
+    
+    assert_close(liquid.H(), -30543.21665080462, rtol=1e-12)
+    assert_close(liquid.S(), -85.33768319131639, rtol=1e-12)
+    assert_close(liquid.Cp(), 114.73501353272819, rtol=1e-12)
+    assert_close(liquid.dH_dT(), liquid.Cp(), rtol=1e-12)
+    assert_close(liquid.dH_dP(), 3.163018471163666e-05, rtol=1e-12)
+    assert_close(liquid.dS_dT(), 0.3461921837328108, rtol=1e-12)
+    assert_close(liquid.dS_dP(), -9.928068947054097e-08, rtol=1e-12)
+
+    assert_close(gas_liquid.Cp_dep(), 68.09911422761513, rtol=1e-12)
+    assert_close(liquid_gas.Cp_dep(), 0.30150682122153327, rtol=1e-12)
+
+    assert_close(gas_liquid.dS_dep_dT(), 0.6809911422761513, rtol=1e-12)
+    assert_close(liquid_gas.dS_dep_dT(), 0.0006030136424430634, rtol=1e-12)
+
+    assert_close(gas_liquid.dS_dep_dP_T(), 8.312296493639824e-05, rtol=1e-12)
+    assert_close(liquid_gas.dS_dep_dP_T(), -1.2138989852233441e-06, rtol=1e-12)
+
+    assert_close(gas.dS_dep_dT_V(), 0.0012085298595288687, rtol=1e-12)
+    assert_close(liquid.dS_dep_dT_V(), 99.20729011448317, rtol=1e-12)
+    assert_close(gas_liquid.dS_dep_dT_V(), 554.2730721447513, rtol=1e-12)
+    assert_close(liquid_gas.dS_dep_dT_V(), 0.0003566938120055271, rtol=1e-12)
+
+    assert_close(gas.dH_dep_dP_V(), 0.0008076181560301456, rtol=1e-12)
+    assert_close(liquid.dH_dep_dP_V(), 8.393104932782119e-05, rtol=1e-12)
+    assert_close(gas_liquid.dH_dep_dP_V(), 6.149545262103091e-05, rtol=1e-12)
+    assert_close(liquid_gas.dH_dep_dP_V(), 0.000621660342980645, rtol=1e-12)
+
+    assert_close(gas.dH_dep_dP_T(), -0.0017158255316092434, rtol=1e-12)
+    assert_close(liquid.dH_dep_dP_T(), 3.163018471163666e-05, rtol=1e-12)
+    assert_close(gas_liquid.dH_dep_dP_T(), 5.1270233586301765e-05, rtol=1e-12)
+    assert_close(liquid_gas.dH_dep_dP_T(), -0.0008642079432576721, rtol=1e-12)
+
+    assert_close(gas.dH_dep_dV_T(), 5145.945682278029, rtol=1e-12)
+    assert_close(liquid.dH_dep_dV_T(), -345415823.75057036, rtol=1e-12)
+    assert_close(gas_liquid.dH_dep_dV_T(), -15763429985.057583, rtol=1e-12)
+    assert_close(liquid_gas.dH_dep_dV_T(), 2078.768388365616, rtol=1e-12)
+
+    assert_close(gas.dH_dep_dV_P(), 7568.079568498304, rtol=1e-12)
+    assert_close(liquid.dH_dep_dV_P(), 571148932.545442, rtol=1e-12)
+    assert_close(gas_liquid.dH_dep_dV_P(), 3143822702.982494, rtol=1e-12)
+    assert_close(liquid_gas.dH_dep_dV_P(), 3574.1120488477895, rtol=1e-12)
+
+    assert_close(gas.d2P_dT2(), -0.009887846156943233, rtol=1e-12)
+    assert_close(liquid.d2P_dT2(), -1071.9442908154294, rtol=1e-12)
+    assert_close(gas_liquid.d2P_dT2(), -9254.478294240269, rtol=1e-12)
+    assert_close(liquid_gas.d2P_dT2(), -0.002761229737666557, rtol=1e-12)
+
+    assert_close(gas.d2T_dV2(), 29492.455975795572, rtol=1e-12)
+    assert_close(liquid.d2T_dV2(), -923343600246.9388, rtol=1e-12)
+    assert_close(gas_liquid.d2T_dV2(), -12315566013344.643, rtol=1e-12)
+    assert_close(liquid_gas.d2T_dV2(), 10200.374247437287, rtol=1e-12)
+
+    assert_close(gas.d2V_dT2(), -2.513377829277688e-08, rtol=1e-12)
+    assert_close(liquid.d2V_dT2(), 9.03561456890459e-10, rtol=1e-12)
+    assert_close(gas_liquid.d2V_dT2(), 1.2517126115725623e-10, rtol=1e-12)
+    assert_close(liquid_gas.d2V_dT2(), -6.12354679984025e-09, rtol=1e-12)
+    
+    # not fully implemented, change answers later
+    assert_close(gas.d2H_dep_dT2(), -0.005152154534022128, rtol=1e-3)
+    assert_close(liquid.d2H_dep_dT2(), 0.10497212232734983, rtol=1e-3)
+    assert_close(gas_liquid.d2H_dep_dT2(), -0.3061197417986963, rtol=1e-3)
+    assert_close(liquid_gas.d2H_dep_dT2(), -0.0014181599480259665, rtol=1e-3)
+
+    assert_close(gas.d2H_dep_dT2_V(), -0.0004541011757809128, rtol=1e-3)
+    assert_close(liquid.d2H_dep_dT2_V(), -0.11743722035666537, rtol=1e-3)
+    assert_close(gas_liquid.d2H_dep_dT2_V(), -0.8323910932197357, rtol=1e-3)
+    assert_close(liquid_gas.d2H_dep_dT2_V(), -0.00017633836181849124, rtol=1e-3)
+
+    assert_close(gas.d2H_dTdP(), 8.32983680179208e-06, rtol=1e-12)
+    assert_close(liquid.d2H_dTdP(), -2.994583380426358e-07, rtol=1e-12)
+    assert_close(gas_liquid.d2H_dTdP(), -1.2517126115725674e-08, rtol=1e-12)
+    assert_close(liquid_gas.d2H_dTdP(), 3.0617733999201342e-06, rtol=1e-12)
+
+    assert_close(gas.dH_dep_dT_V(), 0.22963976420660615, rtol=1e-12)
+    assert_close(liquid.dH_dep_dT_V(), 90.99718094947374, rtol=1e-12)
+    assert_close(gas_liquid.dH_dep_dT_V(), 409.5546352889844, rtol=1e-12)
+    assert_close(liquid_gas.dH_dep_dT_V(), 0.12614498581573308, rtol=1e-12)
+
+    assert_close(gas.d2P_dTdP(), 0.0032413812888592007, rtol=1e-12)
+    assert_close(liquid.d2P_dTdP(), 0.00584559701760284, rtol=1e-12)
+    assert_close(gas_liquid.d2P_dTdP(), 0.010798864425320338, rtol=1e-12)
+    assert_close(liquid_gas.d2P_dTdP(), 0.002058615893473141, rtol=1e-12)
+
+    assert_close(gas.d2P_dVdP(), -65.9478163603093, rtol=1e-12)
+    assert_close(liquid.d2P_dVdP(), -219387.8708797463, rtol=1e-12)
+    assert_close(gas_liquid.d2P_dVdP(), -1327988.6859768846, rtol=1e-12)
+    assert_close(liquid_gas.d2P_dVdP(), -48.10717075414112, rtol=1e-12)
+
+    assert_close(gas.d2P_dVdT_TP(), 9030.482396365882, rtol=1e-12)
+    assert_close(liquid.d2P_dVdT_TP(), 174021529525.64987, rtol=1e-12)
+    assert_close(gas_liquid.d2P_dVdT_TP(), 5524100547941.416, rtol=1e-12)
+    assert_close(liquid_gas.d2P_dVdT_TP(), 4809.925838934209, rtol=1e-12)
+
+    assert_close(gas.d2P_dT2_PV(), -0.931548694566034, rtol=1e-12)
+    assert_close(liquid.d2P_dT2_PV(), -7409.680490095692, rtol=1e-12)
+    assert_close(gas_liquid.d2P_dT2_PV(), -81174.02344341649, rtol=1e-12)
+    assert_close(liquid_gas.d2P_dT2_PV(), -0.4204878478409189, rtol=1e-12)
+
+
 
     dH_dzs_expect = [2227.672637816117, 1886.132133010868, 1210.163163133309]
     assert_close1d(gas.dH_dzs(), dH_dzs_expect, rtol=1e-12)
     dS_dzs_expect = [11.452747620043832, 12.611417881165302, 0.2036373977480378]
     assert_close1d(gas.dS_dzs(), dS_dzs_expect, rtol=1e-12)
+    
+    dH_dzs_expect = [-27493.790837492666, -30397.549320841797, -39119.62412792998]
+    assert_close1d(liquid.dH_dzs(), dH_dzs_expect, rtol=1e-12)
+    dS_dzs_expect = [-20.79523368000522, -21.50796960808049, -58.045799265074926]
+    assert_close1d(liquid.dS_dzs(), dS_dzs_expect, rtol=1e-12)
 
     # Volumetric properties - should be implemented in the model only
     assert_close(gas.V(), 0.029705728448677898, rtol=1e-12)
@@ -1101,6 +1281,13 @@ def test_EOSGas_phis():
     assert_close(gas.d2P_dT2(), -0.009887846156943235, rtol=1e-12)
     assert_close(gas.d2P_dV2(), 197784608.40171462, rtol=1e-12)
     assert_close(gas.d2P_dTdV(), -9721.251806049266, rtol=1e-12)
+
+    assert_close(liquid.V(), 6.453379081596598e-05, rtol=1e-12)
+    assert_close(liquid.dP_dT(), 1084189.7209464565, rtol=1e-12)
+    assert_close(liquid.dP_dV(), -10920449150064.332, rtol=1e-12)
+    assert_close(liquid.d2P_dT2(), -1071.9442908154294, rtol=1e-12)
+    assert_close(liquid.d2P_dV2(), 2.395814088083149e+18, rtol=1e-12)
+    assert_close(liquid.d2P_dTdV(), -63836544982.49955, rtol=1e-12)
 
     # Volumetric properties - base class
     assert_close(gas.Z(), 0.9801692315172096, rtol=1e-12)
@@ -1199,12 +1386,54 @@ def test_EOSGas_phis():
     assert_close(gas.V_from_phi(), gas.V(), rtol=1e-13)
 
 
+
+
+    assert_close1d(gas.dV_dzs(), [-0.0013993827945232515, -0.001424146423687046, -0.0011891091908125212], rtol=1e-12)
+    assert_close1d(liquid.dV_dzs(), [6.990847078274815e-05, 6.14245357103024e-05, 3.0026013089013102e-05], rtol=1e-12)
+    assert_close1d(gas_liquid.dV_dzs(), [7.072666350080501e-05, 6.564307178622353e-05, 4.036464825685018e-05], rtol=1e-12)
+    assert_close1d(liquid_gas.dV_dzs(), [-0.0006319510106149584, -0.0006643226922337928, -0.0005175634370690416], rtol=1e-12)
+
+    assert_close1d(gas.dV_dns(), [-0.00012098943270793107, -0.0001457530618717256, 8.928417100279918e-05], rtol=1e-12)
+    assert_close1d(liquid.dV_dns(), [2.5254633423144095e-05, 1.6770698350698345e-05, -1.4627824270590951e-05], rtol=1e-12)
+    assert_close1d(gas_liquid.dV_dns(), [1.898538963544884e-05, 1.3901797920867354e-05, -1.1376625608505993e-05], rtol=1e-12)
+    assert_close1d(liquid_gas.dV_dns(), [-6.25099495500705e-05, -9.48816311689049e-05, 5.187762399584629e-05], rtol=1e-12)
+
+    assert_close1d(gas.dnV_dns(), [0.029584739015969967, 0.029559975386806173, 0.0297950126196807], rtol=1e-12)
+    assert_close1d(liquid.dnV_dns(), [8.978842423911006e-05, 8.130448916666431e-05, 4.990596654537502e-05], rtol=1e-12)
+    assert_close1d(gas_liquid.dnV_dns(), [7.242174773516578e-05, 6.73381560205843e-05, 4.205973249121094e-05], rtol=1e-12)
+    assert_close1d(liquid_gas.dnV_dns(), [0.041252544690570124, 0.04122017300895129, 0.041366932264116044], rtol=1e-12)
+    
+    assert_close1d(gas.dH_dep_dzs(), [-344.1196331217192, -342.82935851167326, -299.85186981600106], rtol=1e-12)
+    assert_close1d(liquid.dH_dep_dzs(), [-30065.583108430503, -32626.510812364337, -40629.63916087929], rtol=1e-12)
+    assert_close1d(gas_liquid.dH_dep_dzs(), [-35405.208439565475, -36288.35998281319, -52462.02709274337], rtol=1e-12)
+    assert_close1d(liquid_gas.dH_dep_dzs(), [-195.48824501185004, -198.32769347514878, -165.87378641069262], rtol=1e-12)
+
+    assert_close1d(gas.dS_dep_dzs(), [-0.6609998909448161, -0.6504722362887957, -0.5842552084703039], rtol=1e-12)
+    assert_close1d(liquid.dS_dep_dzs(), [-32.90898119099387, -34.76985972553459, -58.83369187129327], rtol=1e-12)
+    assert_close1d(gas_liquid.dS_dep_dzs(), [-64.57327072985238, -57.89283341532733, -125.94172274734002], rtol=1e-12)
+    assert_close1d(liquid_gas.dS_dep_dzs(), [-0.2650735889071967, -0.2643199778315958, -0.2286664909736887], rtol=1e-12)
+
+
+
     # Volume mole number and mole fraction derivatives
     assert_close1d(gas.dZ_dzs(), [-0.04617398831595753, -0.04699108820323984, -0.0392358074558725])
     assert_close1d(gas.dZ_dns(), [-0.003992163312336275, -0.004809263199618587, 0.0029460175477487582])
-    assert_close1d(gas.dV_dzs(), [-0.0013993827945232515, -0.001424146423687046, -0.0011891091908125214])
-    assert_close1d(gas.dV_dns(), [-0.00012098943270793107, -0.0001457530618717256, 8.928417100279896e-05])
 
+
+    assert_close1d(liquid.dZ_dzs(), [0.002306697585351395, 0.0020267619448378848, 0.0009907373328962583])
+    assert_close1d(liquid.dZ_dns(), [0.0008333010475531258, 0.0005533654070396157, -0.0004826592049020108])
+
+    assert_close1d(gas.phi_pures(), [0.9744535279230511, 0.9752663293624126, 0.9829028984177026])
+    assert_close1d(liquid.phi_pures(), [1.1483097675991527, 0.9766406053743517, 0.8598482326676178])
+    assert_close1d(gas_liquid.phi_pures(), [2.2698477036626342e-14, 9.632419452178548e-14, 7.758828599246118e-19])
+    assert_close1d(liquid_gas.phi_pures(), [0.9915211595728428, 0.9912401596178513, 0.9948812587761393])
+
+
+    assert_close1d(gas.lnphis_G_min(), [-0.02360432649642427, -0.02440227151478101, -0.016769813943198538], rtol=1e-12)
+    assert_close1d(liquid.lnphis_G_min(), [-0.02360432649642427, -0.02440227151478101, -0.016769813943198538], rtol=1e-12)
+    assert_close1d(gas_liquid.lnphis_G_min(), [-26.257643489591743, -28.123302577785182, -39.391352729666025], rtol=1e-12)
+    assert_close1d(liquid_gas.lnphis_G_min(), [-0.0076796355290965155, -0.008453288415352122, -0.004934801579277686], rtol=1e-12)
+    
 
 
 def test_chemical_potential():

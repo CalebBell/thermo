@@ -29,6 +29,7 @@ from thermo.eos_mix import *
 from chemicals.utils import *
 from thermo.eos import *
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
+from thermo.interface import SurfaceTension
 from thermo.volume import *
 from thermo.heat_capacity import *
 from thermo.phase_change import *
@@ -36,6 +37,8 @@ from thermo import ChemicalConstantsPackage, PropertyCorrelationsPackage
 from thermo.flash import FlashPureVLS, FlashVLN, FlashVL
 from thermo.bulk import *
 from thermo.equilibrium import EquilibriumState
+from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas
+from thermo.viscosity import ViscosityLiquid, ViscosityGas
 
 
 def test_two_eos_pure_flash_all_properties():
@@ -72,8 +75,18 @@ def test_two_eos_pure_flash_all_properties():
     VolumeSolids = [VolumeSolid(poly_fit=(52.677, 175.59, [3.9379562779372194e-30, 1.4859309728437516e-27, 3.897856765862211e-24, 5.012758300685479e-21, 7.115820892078097e-18,
                                                            9.987967202910477e-15, 1.4030825662633013e-11, 1.970935889948393e-08, 2.7686131179275174e-05])),]
 
+    SurfaceTensions = [SurfaceTension(CASRN='67-56-1', method="SOMAYAJULU2")]
+    
+    ThermalConductivityLiquids=[ThermalConductivityLiquid(poly_fit=(390.65, 558.9, [-1.7703926719478098e-31, 5.532831178371296e-28, -7.157706109850407e-25, 4.824017093238245e-22, -1.678132299010268e-19, 1.8560214447222824e-17, 6.274769714658382e-15, -0.00020340000228224661, 0.21360000021862866])),]
+    ThermalConductivityGases=[ThermalConductivityGas(poly_fit=(390.65, 558.9, [1.303338742188738e-26, -5.948868042722525e-23, 1.2393384322893673e-19, -1.5901481819379786e-16, 1.4993659486913432e-13, -1.367840742416352e-10, 1.7997602278525846e-07, 3.5456258123020795e-06, -9.803647813554084e-05])),]
+    ViscosityLiquids=[ViscosityLiquid(extrapolation_min=0, exp_poly_fit=(190.0, 391.9, [1.8379049563136273e-17, -4.5666126233131545e-14, 4.9414486397781785e-11, -3.042378423089263e-08, 1.166244931040138e-05, -0.0028523723735774113, 0.4352378275340892, -37.99358630363772, 1456.8338572042996])),]
+    ViscosityGases=[ViscosityGas(extrapolation_min=0, poly_fit=(390.65, 558.9, [4.166385860107714e-29, -1.859399624586853e-25, 3.723945144634823e-22, -4.410000193606962e-19, 3.412270901850386e-16, -1.7666632565075753e-13, 5.266250837132718e-11, 1.8202807683935545e-08, -3.7907568022643496e-07])),]
+
     correlations = PropertyCorrelationsPackage(constants, VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases, HeatCapacityLiquids=HeatCapacityLiquids, VolumeLiquids=VolumeLiquids,
                                                EnthalpyVaporizations=EnthalpyVaporizations, HeatCapacitySolids=HeatCapacitySolids, SublimationPressures=SublimationPressures,
+                                               SurfaceTensions=SurfaceTensions,
+                                               ViscosityLiquids=ViscosityLiquids, ViscosityGases=ViscosityGases,
+                                               ThermalConductivityGases=ThermalConductivityGases, ThermalConductivityLiquids=ThermalConductivityLiquids,                                               
                                                EnthalpySublimations=EnthalpySublimations, VolumeSolids=VolumeSolids)
 
     eos_liquid = CEOSLiquid(PRMIX, dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas), HeatCapacityGases=HeatCapacityGases,
@@ -511,6 +524,9 @@ def test_two_eos_pure_flash_all_properties():
     assert_close(eq.bulk.Cv_dep_mass(), 924.2396277556492, rtol=1e-12)
     assert_close1d([i.Cv_dep_mass() for i in eq.phases], [0.720014671157275, 1364.1737162441768], rtol=1e-12)
 
+    assert_close(eq.Prandtl(), 0.48005958856452213, rtol=1e-12)
+    assert_close(eq.bulk.Prandtl(), 0.48005958856452213, rtol=1e-12)
+    assert_close1d([i.Prandtl() for i in eq.phases], [0.7214758636275177, 55.88821681003973], rtol=1e-12)
 
     # Standard liquid density
     rho_mass_liquid_ref_expect = 784.8585085234012
@@ -545,8 +561,76 @@ def test_two_eos_pure_flash_all_properties():
     assert_close(eq.bulk.H_C_ratio_mass(), 0.3356806847227889, rtol=1e-12)
     assert_close1d([i.H_C_ratio_mass() for i in eq.phases], [0.3356806847227889]*2, rtol=1e-12)
     
-    
-    
+    # T dependent Properties
+    Psats_expect = [18601.061401014867]
+    assert_close(eq.Psats(), Psats_expect, rtol=1e-12)
+    assert_close(eq.bulk.Psats(), Psats_expect, rtol=1e-12)
+    assert_close1d([i.Psats() for i in eq.phases], [Psats_expect]*2, rtol=1e-12)
+
+    Psubs_expect = [71141.90625119829]
+    assert_close(eq.Psubs(), Psubs_expect, rtol=1e-12)
+    assert_close(eq.bulk.Psubs(), Psubs_expect, rtol=1e-12)
+    assert_close1d([i.Psubs() for i in eq.phases], [Psubs_expect]*2, rtol=1e-12)
+
+    Hvaps_expect = [37451.34864357495]
+    assert_close(eq.Hvaps(), Hvaps_expect, rtol=1e-12)
+    assert_close(eq.bulk.Hvaps(), Hvaps_expect, rtol=1e-12)
+    assert_close1d([i.Hvaps() for i in eq.phases], [Hvaps_expect]*2, rtol=1e-12)
+
+    Hsubs_expect = [46440.90932236852]
+    assert_close(eq.Hsubs(), Hsubs_expect, rtol=1e-12)
+    assert_close(eq.bulk.Hsubs(), Hsubs_expect, rtol=1e-12)
+    assert_close1d([i.Hsubs() for i in eq.phases], [Hsubs_expect]*2, rtol=1e-12)
+
+    sigmas_expect = [0.02207096941582757]
+    assert_close(eq.sigmas(), sigmas_expect, rtol=1e-12)
+    assert_close(eq.bulk.sigmas(), sigmas_expect, rtol=1e-12)
+    assert_close1d([i.sigmas() for i in eq.phases], [sigmas_expect]*2, rtol=1e-12)
+
+    Cpgs_expect = [44.47452555993428]
+    assert_close(eq.Cpgs(), Cpgs_expect, rtol=1e-12)
+    assert_close(eq.bulk.Cpgs(), Cpgs_expect, rtol=1e-12)
+    assert_close1d([i.Cpgs() for i in eq.phases], [Cpgs_expect]*2, rtol=1e-12)
+
+    Cpls_expect = [81.3943246804397]
+    assert_close(eq.Cpls(), Cpls_expect, rtol=1e-12)
+    assert_close(eq.bulk.Cpls(), Cpls_expect, rtol=1e-12)
+    assert_close1d([i.Cpls() for i in eq.phases], [Cpls_expect]*2, rtol=1e-12)
+
+    Cpss_expect = [50.51643348033296]
+    assert_close(eq.Cpss(), Cpss_expect, rtol=1e-12)
+    assert_close(eq.bulk.Cpss(), Cpss_expect, rtol=1e-12)
+    assert_close1d([i.Cpss() for i in eq.phases], [Cpss_expect]*2, rtol=1e-12)
+
+    kls_expect = [0.15258000000000385]
+    assert_close(eq.kls(), kls_expect, rtol=1e-12)
+    assert_close(eq.bulk.kls(), kls_expect, rtol=1e-12)
+    assert_close1d([i.kls() for i in eq.phases], [kls_expect]*2, rtol=1e-12)
+
+    kgs_expect = [0.013562053222594605]
+    assert_close(eq.kgs(), kgs_expect, rtol=1e-12)
+    assert_close(eq.bulk.kgs(), kgs_expect, rtol=1e-12)
+    assert_close1d([i.kgs() for i in eq.phases], [kgs_expect]*2, rtol=1e-12)
+
+    mugs_expect = [7.0245793048842185e-06]
+    assert_close(eq.mugs(), mugs_expect, rtol=1e-12)
+    assert_close(eq.bulk.mugs(), mugs_expect, rtol=1e-12)
+    assert_close1d([i.mugs() for i in eq.phases], [mugs_expect]*2, rtol=1e-12)
+
+    muls_expect = [0.0024304214691421573]
+    assert_close(eq.muls(), muls_expect, rtol=1e-12)
+    assert_close(eq.bulk.muls(), muls_expect, rtol=1e-12)
+    assert_close1d([i.muls() for i in eq.phases], [muls_expect]*2, rtol=1e-12)
+
+    Vls_expect = [4.092047606233306e-05]
+    assert_close(eq.Vls(), Vls_expect, rtol=1e-12)
+    assert_close(eq.bulk.Vls(), Vls_expect, rtol=1e-12)
+    assert_close1d([i.Vls() for i in eq.phases], [Vls_expect]*2, rtol=1e-12)
+
+    Vss_expect = [3.484395907522045e-05]
+    assert_close(eq.Vss(), Vss_expect, rtol=1e-12)
+    assert_close(eq.bulk.Vss(), Vss_expect, rtol=1e-12)
+    assert_close1d([i.Vss() for i in eq.phases], [Vss_expect]*2, rtol=1e-12)
     # Test some methods that failed
     # gas flash
     pure_gas = flasher.flash(T=500.0, P=1e5)

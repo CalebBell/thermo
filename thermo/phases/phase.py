@@ -2332,6 +2332,24 @@ class Phase(object):
         '''
         return isentropic_exponent_TV(Cv=self.Cv(), Vm=self.V(), dP_dT_V=self.dP_dT_V())
     
+    
+    def Prandtl(self):
+        r'''Method to calculate and return the Prandtl number of the phase
+
+        .. math::
+            Pr = \frac{C_p \mu}{k} = \frac{\nu}{\alpha} = \frac{C_p \rho \nu}{k}
+        
+        Returns
+        -------
+        Pr : float
+            Prandtl number []
+        
+        Notes
+        -----
+        '''
+        return self.Cp_mass()*self.mu()/self.k()
+
+    
     def Z(self):
         r'''Method to calculate and return the compressibility factor of the
         phase.
@@ -2684,6 +2702,23 @@ class Phase(object):
         '''
         return dxs_to_dns(self.dZ_dzs(), self.zs)
 
+    def dV_dzs(self):
+        r'''Method to calculate and return the mole fraction derivatives of the
+        molar volume `V` of the phase.
+
+        .. math::
+            \frac{\partial V}{\partial z_i}
+
+        Returns
+        -------
+        dV_dzs : list[float]
+            Mole fraction derivatives of the molar volume of the phase, [m^3/mol]
+
+        Notes
+        -----
+        '''
+        raise NotImplementedError("Must be implemented by subphases")
+    
     def dV_dns(self):
         r'''Method to calculate and return the mole number derivatives of the
         molar volume `V` of the phase.
@@ -2694,12 +2729,30 @@ class Phase(object):
         Returns
         -------
         dV_dns : list[float]
-            Mole number derivatives of the molar volume of the phase, [m^3]
+            Mole number derivatives of the molar volume of the phase, [m^3/mol^2]
 
         Notes
         -----
         '''
         return dxs_to_dns(self.dV_dzs(), self.zs)
+
+    def dnV_dns(self):
+        r'''Method to calculate and return the partial mole number derivatives 
+        of the molar volume `V` of the phase.
+
+        .. math::
+            \frac{\partial n V}{\partial n_i}
+
+        Returns
+        -------
+        dnV_dns : list[float]
+            Partial mole number derivatives of the molar volume of the phase,
+            [m^3/mol]
+
+        Notes
+        -----
+        '''
+        return dns_to_dn_partials(self.dV_dns(), self.V())
 
     # Derived properties
     def PIP(self):

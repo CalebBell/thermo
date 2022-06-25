@@ -2603,6 +2603,347 @@ class EquilibriumState(object):
         SG_gas = phase.SG_gas()
         return Hc*SG_gas**-0.5
 
+    # T dependent property correlations only - separate from phases
+    def Psats(self):
+        r'''Method to calculate and return the pure-component vapor pressures
+        of each species from the :obj:`thermo.vapor_pressure.VaporPressure`
+        objects.
+        
+
+        Returns
+        -------
+        Psats : list[float]
+            Vapor pressures, [Pa]
+
+        Notes
+        -----
+        .. warning::
+
+            This is not necessarily consistent with the saturation pressure
+            calculated by a flash algorithm.
+        '''
+        try:
+            return self._Psats
+        except:
+            pass
+        T = self.T
+        self._Psats = [o.T_dependent_property(T) for o in self.VaporPressures]
+        return self._Psats
+
+    def Psubs(self):
+        r'''Method to calculate and return the pure-component sublimation
+        of each species from the :obj:`thermo.vapor_pressure.SublimationPressure`
+        objects.
+        
+
+        Returns
+        -------
+        Psubs : list[float]
+            Sublimation pressures, [Pa]
+
+        Notes
+        -----
+        .. warning::
+
+            This is not necessarily consistent with the saturation pressure
+            calculated by a flash algorithm.
+        '''
+        try:
+            return self._Psubs
+        except:
+            pass
+        T = self.T
+        self._Psubs = [o.T_dependent_property(T) for o in self.SublimationPressures]
+        return self._Psubs
+
+    def Hsubs(self):
+        r'''Method to calculate and return the pure-component enthalpy of sublimation
+        of each species from the :obj:`thermo.phase_change.EnthalpySublimation`
+        objects.
+        
+
+        Returns
+        -------
+        Hsubs : list[float]
+            Sublimation enthalpies, [J/mol]
+
+        Notes
+        -----
+        .. warning::
+
+            This is not necessarily consistent with the saturation 
+            enthalpy change calculated by a flash algorithm.
+        '''
+        try:
+            return self._Hsubs
+        except:
+            pass
+        T = self.T
+        self._Hsubs = [o.T_dependent_property(T) for o in self.EnthalpySublimations]
+        return self._Hsubs
+
+    def Hvaps(self):
+        r'''Method to calculate and return the pure-component enthalpy of vaporization
+        of each species from the :obj:`thermo.phase_change.EnthalpyVaporization`
+        objects.
+        
+
+        Returns
+        -------
+        Hvaps : list[float]
+            Enthalpies of vaporization, [J/mol]
+
+        Notes
+        -----
+        .. warning::
+
+            This is not necessarily consistent with the saturation 
+            enthalpy change calculated by a flash algorithm.
+        '''
+        try:
+            return self._Hvaps
+        except:
+            pass
+        T = self.T
+        self._Hvaps = [o.T_dependent_property(T) for o in self.EnthalpyVaporizations]
+        return self._Hvaps
+
+    def sigmas(self):
+        r'''Method to calculate and return the pure-component surface tensions
+        of each species from the :obj:`thermo.interface.SurfaceTension`
+        objects.
+        
+
+        Returns
+        -------
+        sigmas : list[float]
+            Surface tensions, [N/m]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._sigmas
+        except:
+            pass
+        T = self.T
+        self._sigmas = [o.T_dependent_property(T) for o in self.SurfaceTensions]
+        return self._sigmas
+
+    def Cpgs(self):
+        r'''Method to calculate and return the pure-component ideal gas heat capacities
+        of each species from the :obj:`thermo.heat_capacity.HeatCapacityGas`
+        objects.
+        
+
+        Returns
+        -------
+        Cpgs : list[float]
+            Ideal gas pure component heat capacities, [J/(mol*K)]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._Cpgs
+        except:
+            pass
+        T = self.T
+        self._Cpgs = [o.T_dependent_property(T) for o in self.HeatCapacityGases]
+        return self._Cpgs
+
+    def Cpls(self):
+        r'''Method to calculate and return the pure-component liquid 
+        temperature-dependent heat capacities
+        of each species from the :obj:`thermo.heat_capacity.HeatCapacityLiquid`
+        objects.
+        
+        Note that some correlation methods for liquid heat capacity are at
+        low pressure, and others are along the saturation line. There is a
+        large difference in values.
+
+        Returns
+        -------
+        Cpls : list[float]
+            Pure component liquid heat capacities, [J/(mol*K)]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._Cpls
+        except:
+            pass
+        T = self.T
+        self._Cpls = [o.T_dependent_property(T) for o in self.HeatCapacityLiquids]
+        return self._Cpls
+
+    def Cpss(self):
+        r'''Method to calculate and return the pure-component solid heat capacities
+        of each species from the :obj:`thermo.heat_capacity.HeatCapacitySolid`
+        objects.
+        
+        Returns
+        -------
+        Cpss : list[float]
+            Pure component solid heat capacities, [J/(mol*K)]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._Cpss
+        except:
+            pass
+        T = self.T
+        self._Cpss = [o.T_dependent_property(T) for o in self.HeatCapacitySolids]
+        return self._Cpss
+
+
+    def kls(self):
+        r'''Method to calculate and return the pure-component liquid 
+        temperature-dependent thermal conductivity
+        of each species from the :obj:`thermo.thermal_conductivity.ThermalConductivityLiquid`
+        objects.
+        
+        These values are normally at low pressure, not along the saturation line.
+
+        Returns
+        -------
+        kls : list[float]
+            Pure component temperature dependent liquid thermal conductivities,
+            [W/(m*K)]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._kls
+        except:
+            pass
+        T = self.T
+        self._kls = [o.T_dependent_property(T) for o in self.ThermalConductivityLiquids]
+        return self._kls
+
+    def kgs(self):
+        r'''Method to calculate and return the pure-component gas 
+        temperature-dependent thermal conductivity
+        of each species from the :obj:`thermo.thermal_conductivity.ThermalConductivityGas`
+        objects.
+        
+        These values are normally at low pressure, not along the saturation line.
+
+        Returns
+        -------
+        kgs : list[float]
+            Pure component temperature dependent gas thermal conductivities, 
+            [W/(m*K)]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._kgs
+        except:
+            pass
+        T = self.T
+        self._kgs = [o.T_dependent_property(T) for o in self.ThermalConductivityGases]
+        return self._kgs
+
+    def muls(self):
+        r'''Method to calculate and return the pure-component liquid 
+        temperature-dependent viscosity
+        of each species from the :obj:`thermo.viscosity.ViscosityLiquid`
+        objects.
+        
+        These values are normally at low pressure, not along the saturation line.
+
+        Returns
+        -------
+        muls : list[float]
+            Pure component temperature dependent liquid viscosities, [Pa*s]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._muls
+        except:
+            pass
+        T = self.T
+        self._muls = [o.T_dependent_property(T) for o in self.ViscosityLiquids]
+        return self._muls
+
+    def mugs(self):
+        r'''Method to calculate and return the pure-component gas 
+        temperature-dependent viscosity
+        of each species from the :obj:`thermo.viscosity.ViscosityGas`
+        objects.
+        
+        These values are normally at low pressure, not along the saturation line.
+
+        Returns
+        -------
+        mugs : list[float]
+            Pure component temperature dependent gas viscosities, [Pa*s]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._mugs
+        except:
+            pass
+        T = self.T
+        self._mugs = [o.T_dependent_property(T) for o in self.ViscosityGases]
+        return self._mugs
+
+    def Vls(self):
+        r'''Method to calculate and return the pure-component liquid 
+        temperature-dependent molar volume
+        of each species from the :obj:`thermo.volume.VolumeLiquid`
+        objects.
+        
+        These values are normally along the saturation line.
+
+        Returns
+        -------
+        Vls : list[float]
+            Pure component temperature dependent liquid molar volume, [m^3/mol]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._Vls
+        except:
+            pass
+        T = self.T
+        self._Vls = [o.T_dependent_property(T) for o in self.VolumeLiquids]
+        return self._Vls
+
+    def Vss(self):
+        r'''Method to calculate and return the pure-component solid 
+        temperature-dependent molar volume
+        of each species from the :obj:`thermo.volume.VolumeSolid`
+        objects.
+        
+        Returns
+        -------
+        Vss : list[float]
+            Pure component temperature dependent solid molar volume, [m^3/mol]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._Vss
+        except:
+            pass
+        T = self.T
+        self._Vss = [o.T_dependent_property(T) for o in self.VolumeSolids]
+        return self._Vss
+
     def value(self, name, phase=None):
         r'''Method to retrieve a property from a string. This more or less
         wraps `getattr`, but also allows for the property to be returned for a
@@ -2706,6 +3047,16 @@ def _make_getter_EquilibriumState(name):
         pass
     return get_EquilibriumState
 
+def _make_getter_argumentless_EquilibriumState(name):
+    def get_EquilibriumState_argumentless(self):
+        return getattr(self.result, name)()
+    try:
+        get_EquilibriumState.__doc__ = getattr(EquilibriumState, name).__doc__
+    except:
+        pass
+    return get_EquilibriumState_argumentless
+
+
 def _make_getter_bulk_props(name):
     def get_bulk_prop(self):
         return getattr(self.bulk, name)()
@@ -2777,6 +3128,15 @@ phases_properties_to_EquilibriumState = ['atom_content', 'atom_fractions', 'atom
 for name in phases_properties_to_EquilibriumState:
     method = _make_getter_EquilibriumState(name)
     setattr(Phase, name, method)
+    
+    
+# things without any arguments
+phases_properties_argumentless_to_EquilibriumState = ['Psats','Psubs', 'Hvaps', 
+                'Hsubs', 'sigmas', 'Cpgs', 'Cpls', 'Cpss', 'kls', 'kgs',
+                'muls', 'mugs', 'Vls', 'Vss']
+for name in phases_properties_argumentless_to_EquilibriumState:
+    method = _make_getter_argumentless_EquilibriumState(name)
+    setattr(Phase, name, method)
 
 ### For certain properties not supported by Bulk, allow them to call up to the
 # EquilibriumState to get the property
@@ -2803,7 +3163,7 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
               'speed_of_sound_mass',
               'U_dep', 'G_dep', 'A_dep', 'V_dep', 'B_from_Z',
               'Cp_dep_mass', 'Cp_ideal_gas_mass', 'Cv_dep_mass',
-              'mu', 'k', 'sigma',
+              'mu', 'k', 'sigma', 'Prandtl',
               'isentropic_exponent', 'isentropic_exponent_PV', 'isentropic_exponent_TV',
               'isentropic_exponent_PT',
               

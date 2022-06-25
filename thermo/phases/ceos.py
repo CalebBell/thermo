@@ -780,6 +780,22 @@ class CEOSGas(CEOSPhase):
             dV_dzs = self.eos_mix.dV_dzs(eos_mix.Z_l)
         return dV_dzs
 
+    def dV_dns(self):
+        eos_mix = self.eos_mix
+        try:
+            dV_dns = self.eos_mix.dV_dns(eos_mix.Z_g)
+        except AttributeError:
+            dV_dns = self.eos_mix.dV_dns(eos_mix.Z_l)
+        return dV_dns
+
+    def dnV_dns(self):
+        eos_mix = self.eos_mix
+        try:
+            dnV_dns = self.eos_mix.dnV_dns(eos_mix.Z_g)
+        except AttributeError:
+            dnV_dns = self.eos_mix.dnV_dns(eos_mix.Z_l)
+        return dnV_dns
+
     def d2H_dep_dT2(self):
         try:
             return self.eos_mix.d2H_dep_dT2_g
@@ -791,14 +807,6 @@ class CEOSGas(CEOSPhase):
             return self.eos_mix.d2H_dep_dT2_g_V
         except AttributeError:
             return self.eos_mix.d2H_dep_dT2_l_V
-
-
-
-    def d2H_dP2(self):
-        try:
-            return self.eos_mix.d2H_dep_dP2_g
-        except AttributeError:
-            return self.eos_mix.d2H_dep_dP2_l
 
     def d2H_dTdP(self):
         try:
@@ -818,12 +826,6 @@ class CEOSGas(CEOSPhase):
         except AttributeError:
             return self.eos_mix.dH_dep_dzs(self.eos_mix.Z_l)
         
-    def d2S_dep_dP(self):
-        try:
-            return self.eos_mix.d2S_dep_dP_g
-        except AttributeError:
-            return self.eos_mix.d2S_dep_dP_l
-
 
     def d2P_dTdP(self):
         try:
@@ -1058,6 +1060,22 @@ class CEOSLiquid(CEOSPhase):
             dV_dzs = self.eos_mix.dV_dzs(eos_mix.Z_g)
         return dV_dzs
 
+    def dV_dns(self):
+        eos_mix = self.eos_mix
+        try:
+            dV_dns = self.eos_mix.dV_dns(eos_mix.Z_l)
+        except AttributeError:
+            dV_dns = self.eos_mix.dV_dns(eos_mix.Z_g)
+        return dV_dns
+
+    def dnV_dns(self):
+        eos_mix = self.eos_mix
+        try:
+            dnV_dns = self.eos_mix.dnV_dns(eos_mix.Z_l)
+        except AttributeError:
+            dnV_dns = self.eos_mix.dnV_dns(eos_mix.Z_g)
+        return dnV_dns
+
     def d2H_dep_dT2(self):
         try:
             return self.eos_mix.d2H_dep_dT2_l
@@ -1071,12 +1089,6 @@ class CEOSLiquid(CEOSPhase):
             return self.eos_mix.d2H_dep_dT2_g_V
 
 
-
-    def d2H_dP2(self):
-        try:
-            return self.eos_mix.d2H_dep_dP2_l
-        except AttributeError:
-            return self.eos_mix.d2H_dep_dP2_g
 
     def d2H_dTdP(self):
         try:
@@ -1096,12 +1108,6 @@ class CEOSLiquid(CEOSPhase):
         except AttributeError:
             return self.eos_mix.dH_dep_dzs(self.eos_mix.Z_g)
         
-    def d2S_dep_dP(self):
-        try:
-            return self.eos_mix.d2S_dep_dP_l
-        except AttributeError:
-            return self.eos_mix.d2S_dep_dP_g
-
 
     def d2P_dTdP(self):
         try:
@@ -1131,7 +1137,6 @@ class CEOSLiquid(CEOSPhase):
         try:
             return self.eos_mix.dS_dep_dzs(self.eos_mix.Z_l)
         except AttributeError:
-            return self.eos_mix.dS_dep_dzs(self.eos_mix.Z_g)
             return self.eos_mix.dS_dep_dzs(self.eos_mix.Z_g)
 
 try:
