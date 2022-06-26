@@ -1742,6 +1742,20 @@ def test_IdealGas_hash_json_storage():
     assert hash(phase) == h0
 
 
+def test_ideal_gas_speed_of_sound():
+
+    constants = ChemicalConstantsPackage(MWs=[31.9988, 28.0134])
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
+                         HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
+    phase = IdealGas(T=300.0, P=1e5, zs=[1, 0], HeatCapacityGases=HeatCapacityGases)
+    phase.constants = constants
+    assert_close(phase.speed_of_sound_mass(), phase.speed_of_sound_ideal_gas_mass())
+    assert_close(phase.speed_of_sound_ideal_gas(), phase.speed_of_sound())
+    
+    
+
+
+
 
 def test_dlnfugacities_SRK():
     T = 115.0

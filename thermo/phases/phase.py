@@ -35,7 +35,7 @@ from thermo.serialize import arrays_to_lists
 from fluids.numerics import (horner, horner_log, jacobian, 
                              poly_fit_integral_value, poly_fit_integral_over_T_value,
                              newton_system, trunc_exp, is_micropython)
-from fluids.core import thermal_diffusivity
+from fluids.core import thermal_diffusivity, c_ideal_gas
 from chemicals.utils import (log, Cp_minus_Cv, phase_identification_parameter,
                              Joule_Thomson, speed_of_sound, dxs_to_dns, dns_to_dn_partials,
                              hash_any_primitive, isentropic_exponent_TV,
@@ -2931,6 +2931,43 @@ class Phase(object):
         '''
         # Intentionally molar
         return speed_of_sound(self.V(), self.dP_dV(), self.Cp(), self.Cv())
+
+    def speed_of_sound_ideal_gas_mass(self):
+        r'''Method to calculate and return the mass speed of sound
+        of an ideal gas phase at the current conditions.
+
+        .. math::
+            c = \sqrt{kR_{specific, ideal gas}T}
+
+        Returns
+        -------
+        w : float
+            Speed of sound for an ideal gas, [m/s]
+        '''
+        k = self.Cp_ideal_gas()/self.Cv_ideal_gas()
+        return c_ideal_gas(self.T, k, self.MW())
+
+    def speed_of_sound_ideal_gas(self):
+        r'''Method to calculate and return the molar speed of sound
+        of an ideal gas phase at the current conditions.
+
+
+        .. math::
+            w = \left[-V^2 \left(\frac{\partial P}{\partial V}\right)_T \frac{C_p}
+            {C_v}\right]^{1/2}
+        
+        .. math::
+            \left(\frac{\partial P}{\partial V}\right)_T = \frac{-P^2}{RT}
+                                                                          
+        Returns
+        -------
+        w : float
+            Speed of sound for a real gas, [m*kg^0.5/(s*mol^0.5)]
+        '''
+        # Intentionally molar
+        V = self.R*self.T/self.P
+        dP_dV = -self.P*self.P/(self.R*self.T)
+        return speed_of_sound(V, dP_dV, self.Cp_ideal_gas(), self.Cv_ideal_gas())
 
     ### Compressibility factor derivatives
     def dZ_dT(self):
