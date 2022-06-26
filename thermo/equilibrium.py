@@ -3158,7 +3158,7 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
               'dP_dT_frozen', 'dP_dV_frozen', 'd2P_dT2_frozen', 'd2P_dV2_frozen',
               'd2P_dTdV_frozen',
               'd2P_dTdV', 'd2P_dV2', 'd2P_dT2', 'dP_dV', 'dP_dT', 'isentropic_exponent',
-              'alpha',
+              'alpha', 'thermal_diffusivity',
               'PIP', 'kappa', 'isobaric_expansion', 'Joule_Thomson', 'speed_of_sound',
               'speed_of_sound_mass',
               'U_dep', 'G_dep', 'A_dep', 'V_dep', 'B_from_Z',

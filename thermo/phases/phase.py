@@ -2349,7 +2349,7 @@ class Phase(object):
         '''
         return self.Cp_mass()*self.mu()/self.k()
 
-    
+
     def Z(self):
         r'''Method to calculate and return the compressibility factor of the
         phase.
@@ -4661,6 +4661,8 @@ class Phase(object):
         k = self.k()
         Cp = self.Cp_mass()
         return thermal_diffusivity(k=k, rho=rho, Cp=Cp)
+    
+    thermal_diffusivity = alpha
 
     def ws(self):
         r'''Method to calculate and return the mass fractions of the phase, [-]
