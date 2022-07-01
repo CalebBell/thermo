@@ -397,13 +397,25 @@ class StreamArgs(object):
                 return normalize(ns)
 
         if self.equilibrium_pkg:
-            MWs = self.pkg.constants.MWs
             ws = s['ws']
             if ws is not None and None not in ws:
+                MWs = self.pkg.constants.MWs
                 return ws_to_zs(ws, MWs)
+            Vfls = s['Vfls']
+            if Vfls is not None and None not in Vfls:
+                Vms = self.pkg.V_liquids_ref()
+                return Vfs_to_zs(Vfls, Vms)
+
             ms = s['ms']
             if ms is not None and None not in ms:
+                MWs = self.pkg.constants.MWs
                 return ws_to_zs(normalize(ms), MWs)
+
+            Qls = s['Qls']
+            if Qls is not None and None not in Qls:
+                Vms = self.pkg.V_liquids_ref()
+                return Vfs_to_zs(normalize(Qls), Vms)
+            
 
         return None
 
@@ -534,6 +546,7 @@ class StreamArgs(object):
         return self.specifications['Qls']
     @Qls.setter
     def Qls(self, arg):
+        s = self.specifications
         if arg is None:
             s['Qls'] = arg
         else:

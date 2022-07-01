@@ -1292,5 +1292,5 @@ class Flash(object):
         elif T_liquid_volume_ref == 288.7055555555555:
             Vls = self.constants.Vml_60Fs
         else:
-            Vls = [i(T_liquid_volume_ref) for i in self.properties.VolumeLiquids]
+            Vls = [i(T_liquid_volume_ref, None) for i in self.correlations.VolumeLiquids]
         return Vls
