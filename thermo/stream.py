@@ -575,14 +575,15 @@ class StreamArgs(object):
     @property
     def ms_calc(self):
         ns = self.ns_calc
-        zs = self.zs_calc
-        n = sum(ns)
-        MW = self.MW
-        m = property_mass_to_molar(n, MW)
-        MW_inv = 1.0/MW
-        MWs = self.pkg.constants.MWs
-        ws = [zi*MWi*MW_inv for zi, MWi in zip(zs, MWs)]
-        return [m*wi for wi in ws]
+        if ns is not None:
+            zs = self.zs_calc
+            n = sum(ns)
+            MW = self.MW
+            m = property_mass_to_molar(n, MW)
+            MW_inv = 1.0/MW
+            MWs = self.pkg.constants.MWs
+            ws = [zi*MWi*MW_inv for zi, MWi in zip(zs, MWs)]
+            return [m*wi for wi in ws]
 
     @property
     def Qls(self):
@@ -602,9 +603,10 @@ class StreamArgs(object):
     @property
     def Qls_calc(self):
         ns_calc = self.ns_calc
-        Vms = self.pkg.V_liquids_ref()
-        Qls = [ni*Vm for ni, Vm in zip(ns_calc, Vms)]
-        return Qls
+        if ns_calc is not None:
+            Vms = self.pkg.V_liquids_ref()
+            Qls = [ni*Vm for ni, Vm in zip(ns_calc, Vms)]
+            return Qls
 
     @property
     def Qgs(self):

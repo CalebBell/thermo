@@ -771,14 +771,23 @@ def test_liquid_ref_volumes_available():
     # Stream args tests
     stream = StreamArgs(pkg=flasher)
     stream.Vfls = [.3, .7]
+    assert stream.ns_calc is None
+    assert stream.ms_calc is None
+    assert stream.Qls_calc is None
     assert_close1d(stream.zs_calc, [0.5807907240833159, 0.4192092759166841])
     
     stream = StreamArgs(pkg=flasher)
     stream.ws = [.5, .5]
+    assert stream.ns_calc is None
+    assert stream.ms_calc is None
+    assert stream.Qls_calc is None
     assert_close1d(stream.zs_calc, [0.7188789914193495, 0.2811210085806504])
 
     stream = StreamArgs(pkg=flasher)
     stream.zs = [.5, .5]
+    assert stream.ns_calc is None
+    assert stream.ms_calc is None
+    assert stream.Qls_calc is None
     assert_close1d(stream.zs_calc, [0.5, 0.5])
 
     stream = StreamArgs(pkg=flasher)
