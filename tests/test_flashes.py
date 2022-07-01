@@ -788,7 +788,11 @@ def test_liquid_ref_volumes_available():
     stream = StreamArgs(pkg=flasher)
     stream.ms = [10, 10]
     assert_close1d(stream.zs_calc,  [0.7188789914193495, 0.2811210085806504])
+    assert_close1d(stream.ws_calc, [0.5, 0.5])
+    assert_close1d(stream.Vfls_calc, [0.4416643100868171, 0.5583356899131828])
 
     stream = StreamArgs(pkg=flasher)
     stream.Qls = [3, 7]
     assert_close1d(stream.zs_calc, [0.5807907240833159, 0.4192092759166841])
+    assert_close1d(stream.ws_calc, [0.3514007794731887, 0.6485992205268114])
+    assert_close1d(stream.Vfls_calc, [0.3, 0.7])

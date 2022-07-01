@@ -34,7 +34,7 @@ from fluids.constants import R
 from chemicals.utils import property_molar_to_mass, property_mass_to_molar, solve_flow_composition_mix
 from chemicals.exceptions import OverspeficiedError
 from chemicals.volume import ideal_gas
-from chemicals.utils import mixing_simple, normalize, Vfs_to_zs, ws_to_zs, zs_to_ws, Vm_to_rho
+from chemicals.utils import mixing_simple, normalize, Vfs_to_zs, ws_to_zs, zs_to_ws, Vm_to_rho, zs_to_Vfs
 from thermo.mixture import Mixture, preprocess_mixture_composition
 from thermo.equilibrium import EquilibriumState
 from thermo.flash import Flash
@@ -373,8 +373,6 @@ class StreamArgs(object):
             specifications['zs'] = arg
         else:
             if self.single_composition_basis:
-#                args = {'zs': arg, 'ws': None, 'Vfls': None, 'Vfgs': None, 'ns': None,
-#                        'ms': None, 'Qls': None, 'Qgs': None}
                 s['zs'] = arg
                 s['ws'] = s['Vfls'] = s['Vfgs'] = s['ns'] = s['ms'] = s['Qls'] = s['Qgs'] = None
             else:
@@ -382,6 +380,9 @@ class StreamArgs(object):
 
     @property
     def zs_calc(self):
+        '''
+        '''
+        # This forms the basis for the calculations
         s = self.specifications
         zs = s['zs']
         if zs is not None:
@@ -433,6 +434,13 @@ class StreamArgs(object):
                 self.specifications.update(args)
             else:
                 self.specifications['ws'] = arg
+                
+    @property
+    def ws_calc(self):
+        zs = self.zs_calc
+        if zs is not None:
+            MWs = self.pkg.constants.MWs
+            return zs_to_ws(zs, MWs)
 
     @property
     def Vfls(self):
@@ -448,6 +456,15 @@ class StreamArgs(object):
                 self.specifications.update(args)
             else:
                 self.specifications['Vfls'] = arg
+
+                
+    @property
+    def Vfls_calc(self):
+        zs = self.zs_calc
+        if zs is not None:
+            Vms = self.pkg.V_liquids_ref()
+            return zs_to_Vfs(zs, Vms)
+    
 
     @property
     def Vfgs(self):
