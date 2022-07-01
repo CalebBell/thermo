@@ -521,6 +521,19 @@ class StreamArgs(object):
                 return [n*zi for zi in zs]
             except:
                 pass
+        ms = s['ms']
+        if ms is not None and None not in ms:
+            zs = self.zs_calc
+            m = sum(ms)
+            MWs = self.pkg.constants.MWs
+            MW = mixing_simple(MWs, zs)
+            n = property_molar_to_mass(m, MW)
+            return [n*zi for zi in zs]
+        Qls = s['Qls']
+        if Qls is not None and None not in Qls:
+            Vms = self.pkg.V_liquids_ref()
+            return [Ql/Vm for Vm, Ql in zip(Vms, Qls)]
+        
         Q = s['Q']
         if Q is not None:
             zs = self.zs_calc
@@ -626,20 +639,7 @@ class StreamArgs(object):
         ns_calc = self.ns_calc
         if ns_calc is not None and None not in ns_calc:
             return sum(ns_calc)
-
-
-
-#        m = s['m']
-#        if m is not None:
-#            zs = self.zs_calc
-#            if zs is not None and None not in zs:
-#                try:
-#                    MWs = self.pkg.constants.MWs
-#                    MW = mixing_simple(MWs, zs)
-#                    n = property_molar_to_mass(m, MW)
-#                    return n
-#                except:
-#                    pass
+    
         return None
 
     @property
