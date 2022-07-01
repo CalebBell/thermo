@@ -527,7 +527,7 @@ class StreamArgs(object):
             m = sum(ms)
             MWs = self.pkg.constants.MWs
             MW = mixing_simple(MWs, zs)
-            n = property_molar_to_mass(m, MW)
+            n = m*1000.0/MW
             return [n*zi for zi in zs]
         Qls = s['Qls']
         if Qls is not None and None not in Qls:
@@ -571,6 +571,21 @@ class StreamArgs(object):
                 s['ms'] = arg
             else:
                 s['ms'] = arg
+
+    @property
+    def ms_calc(self):
+        ns = self.ns_calc
+        zs = self.zs_calc
+        
+        n = sum(ns)
+        MW = self.MW
+        m = property_mass_to_molar(n, MW)
+        MW_inv = 1.0/MW
+        MWs = self.pkg.constants.MWs
+
+        ws = [zi*MWi*MW_inv for zi, MWi in zip(zs, MWs)]
+        return [m*wi for wi in ws]
+
     @property
     def Qls(self):
         return self.specifications['Qls']

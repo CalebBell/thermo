@@ -807,3 +807,11 @@ def test_liquid_ref_volumes_available():
     assert_close1d(stream.ns_calc, [10.0, 10.0])
         
 
+    stream = StreamArgs(pkg=flasher)
+    stream.ns = [5, 10]
+    assert_close1d(stream.ms_calc, [0.0900764, 0.4606844000000001])
+    restream = StreamArgs(pkg=flasher)
+    restream.ms = stream.ms_calc
+    assert_close1d(restream.ns_calc, stream.ns)
+
+    
