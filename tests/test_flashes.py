@@ -805,6 +805,11 @@ def test_liquid_ref_volumes_available():
     assert_close1d(stream.ns_calc, [1.0, 1.0])
     stream.Qls = [i*10 for i in Vml_60Fs]
     assert_close1d(stream.ns_calc, [10.0, 10.0])
+    
+    restream = StreamArgs(pkg=flasher)
+    restream.ns = [10.0, 10.0]
+    assert_close1d(restream.Qls_calc, [i*10 for i in Vml_60Fs])
+    
         
 
     stream = StreamArgs(pkg=flasher)
