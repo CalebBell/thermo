@@ -128,7 +128,7 @@ class ChemicalConstantsPackage(object):
                  'Hfgs', 'Hfgs_mass', 'Hfus_Tms', 'Hfus_Tms_mass', 'Hsub_Tts',
                  'Hsub_Tts_mass', 'Hvap_298s', 'Hvap_298s_mass', 'Hvap_Tbs', 'Hvap_Tbs_mass',
                  'InChI_Keys', 'InChIs', 'legal_statuses', 'LFLs', 'logPs',
-                 'molecular_diameters', 'MWs', 'names', 'ODPs', 'omegas',
+                 'molecular_diameters', 'MWs', 'names', 'aliases', 'ODPs', 'omegas',
                  'Parachors', 'Pcs', 'phase_STPs', 'Psat_298s', 'PSRK_groups',
                  'Pts', 'PubChems', 'rhocs', 'rhocs_mass', 'rhol_STPs',
                  'rhol_STPs_mass', 'RIs', 'S0gs', 'S0gs_mass', 'Sfgs',
@@ -574,6 +574,7 @@ class ChemicalConstantsPackage(object):
         InChIs = [i.InChI for i in metadatas]
         InChI_Keys = [i.InChI_key for i in metadatas]
         atomss = [simple_formula_parser(f) for f in formulas]
+        aliases = IDs
 #        MWs = [i.MW for i in metadatas] # Should be the same but there are still some inconsistencies
         MWs = [molecular_weight(atomss[i]) for i in range(N)]
 
@@ -885,7 +886,7 @@ class ChemicalConstantsPackage(object):
                PSRK_groups=PSRK_groups,
                  # Other identifiers
                  PubChems=PubChems, formulas=formulas, smiless=smiless, InChIs=InChIs,
-                 InChI_Keys=InChI_Keys,
+                 InChI_Keys=InChI_Keys, aliases=aliases,
 
                  economic_statuses=economic_statuses, legal_statuses=legal_statuses,
                  GWPs=GWPs, ODPs=ODPs, logPs=logPs,
@@ -968,7 +969,7 @@ class ChemicalConstantsPackage(object):
                  solubility_parameters=None,
                  # Other identifiers
                  PubChems=None, formulas=None, smiless=None, InChIs=None,
-                 InChI_Keys=None,
+                 InChI_Keys=None, aliases=None,
                  # Groups
                  UNIFAC_groups=None, UNIFAC_Dortmund_groups=None,
                  PSRK_groups=None, UNIFAC_Rs=None, UNIFAC_Qs=None,
@@ -982,6 +983,7 @@ class ChemicalConstantsPackage(object):
         if atomss is None: atomss = empty_list
         if Carcinogens is None: Carcinogens = empty_list
         if CASs is None: CASs = empty_list
+        if aliases is None: aliases = empty_list
         if Ceilings is None: Ceilings = empty_list
         if charges is None: charges = empty_list
         if conductivities is None: conductivities = empty_list
@@ -1102,6 +1104,7 @@ class ChemicalConstantsPackage(object):
         self.InChI_Keys = InChI_Keys
         self.InChIs = InChIs
         self.legal_statuses = legal_statuses
+        self.aliases = aliases
         self.LFLs = LFLs
         self.logPs = logPs
         self.molecular_diameters = molecular_diameters
@@ -1217,6 +1220,7 @@ constants_docstrings = {'N': (int, "Number of components in the package", "[-]",
 'molecular_diameters': ("list[float]", "Lennard-Jones molecular diameters for each component", "[angstrom]", None),
 'MWs': ("list[float]", "Molecular weights for each component", "[g/mol]", None),
 'names': ("list[str]", "Names for each component", "[-]", None),
+'aliases': ("list[str]", "Aliases for each component", "[-]", None),
 'ODPs': ("list[float]", "Ozone Depletion Potentials for each component (impact/mass chemical)/(impact/mass CFC-11)", "[-]", None),
 'omegas': ("list[float]", "Acentric factors for each component", "[-]", None),
 'Parachors': ("list[float]", "Parachors for each component", "[N^0.25*m^2.75/mol]", None),

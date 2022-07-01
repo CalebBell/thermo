@@ -437,6 +437,9 @@ class StreamArgs(object):
                 
     @property
     def ws_calc(self):
+        ws = self.specifications['ws']
+        if ws is not None:
+            return ws
         zs = self.zs_calc
         if zs is not None:
             MWs = self.pkg.constants.MWs
@@ -460,6 +463,9 @@ class StreamArgs(object):
                 
     @property
     def Vfls_calc(self):
+        Vfls = self.specifications['Vfls']
+        if Vfls is not None:
+            return Vfls
         zs = self.zs_calc
         if zs is not None:
             Vms = self.pkg.V_liquids_ref()
