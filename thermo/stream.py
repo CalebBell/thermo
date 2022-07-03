@@ -404,11 +404,18 @@ class StreamArgs(object):
             ws = s['ws']
             if ws is not None and None not in ws:
                 MWs = self.pkg.constants.MWs
-                return ws_to_zs(ws, MWs)
+                try:
+                    return ws_to_zs(ws, MWs)
+                except ZeroDivisionError:
+                    pass
             Vfls = s['Vfls']
             if Vfls is not None and None not in Vfls:
                 Vms = self.pkg.V_liquids_ref()
-                return Vfs_to_zs(Vfls, Vms)
+                try:
+                    return Vfs_to_zs(Vfls, Vms)
+                except ZeroDivisionError:
+                    pass
+
 
             ms = s['ms']
             if ms is not None and None not in ms:
@@ -901,13 +908,13 @@ class StreamArgs(object):
     def composition_specified(self):
         if self.equilibrium_pkg:
             s = self.specifications
-            if s['zs'] is not None and None not in s['zs']:
+            if s['zs'] is not None and None not in s['zs'] and sum(s['zs']) != 0.0:
                 return True
-            if s['ws'] is not None and None not in s['ws']:
+            if s['ws'] is not None and None not in s['ws'] and sum(s['ws']) != 0.0:
                 return True
-            if s['Vfls'] is not None and None not in s['Vfls']:
+            if s['Vfls'] is not None and None not in s['Vfls'] and sum(s['Vfls']) != 0.0:
                 return True
-            if s['Vfgs'] is not None and None not in s['Vfgs']:
+            if s['Vfgs'] is not None and None not in s['Vfgs'] and sum(s['Vfgs']) != 0.0:
                 return True
             if s['ns'] is not None and None not in s['ns']:
                 return True
