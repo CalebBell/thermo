@@ -828,4 +828,25 @@ def test_liquid_ref_volumes_available():
     restream.ms = stream.ms_calc
     assert_close1d(restream.ns_calc, stream.ns)
 
+
+
+    # empty tests
+    stream = StreamArgs()
+    assert stream.zs_calc is None
+    assert stream.ws_calc is None
+    assert stream.Vfls_calc is None
     
+    stream.zs = []
+    assert stream.zs_calc is None
+    assert stream.ws_calc is None
+    assert stream.Vfls_calc is None
+
+    stream.ws = []
+    assert stream.zs_calc is None
+    assert stream.ws_calc is None
+    assert stream.Vfls_calc is None
+
+    stream.Vfls = []
+    assert stream.zs_calc is None
+    assert stream.ws_calc is None
+    assert stream.Vfls_calc is None

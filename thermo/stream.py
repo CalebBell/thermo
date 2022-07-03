@@ -372,6 +372,9 @@ class StreamArgs(object):
         if arg is None:
             specifications['zs'] = arg
         else:
+            # enforce a length
+            if not arg:
+                arg = None
             if self.single_composition_basis:
                 s['zs'] = arg
                 s['ws'] = s['Vfls'] = s['Vfgs'] = s['ns'] = s['ms'] = s['Qls'] = s['Qgs'] = None
@@ -428,6 +431,9 @@ class StreamArgs(object):
         if arg is None:
             self.specifications['ws'] = arg
         else:
+            # enforce a length
+            if not arg:
+                arg = None
             if self.single_composition_basis:
                 args = {'zs': None, 'ws': arg, 'Vfls': None, 'Vfgs': None, 'ns': None,
                         'ms': None, 'Qls': None, 'Qgs': None}
@@ -453,6 +459,9 @@ class StreamArgs(object):
         if arg is None:
             self.specifications['Vfls'] = arg
         else:
+            # enforce a length
+            if not arg:
+                arg = None
             if self.single_composition_basis:
                 args = {'zs': None, 'ws': None, 'Vfls': arg, 'Vfgs': None, 'ns': None,
                         'ms': None, 'Qls': None, 'Qgs': None}
@@ -480,6 +489,9 @@ class StreamArgs(object):
         if arg is None:
             self.specifications['Vfgs'] = arg
         else:
+            # enforce a length
+            if not arg:
+                arg = None
             if self.single_composition_basis:
                 args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': arg, 'ns': None,
                         'ms': None, 'Qls': None, 'Qgs': None}
