@@ -1985,3 +1985,50 @@ def test_VF_SF_spec_bound_0_1_and_negative_TPV():
         
     with pytest.raises(ValueError):              
         flasher.flash(T=300.0, V=0)
+        
+        
+def test_mass_inputs_flash_and_rho():
+    constants = ChemicalConstantsPackage(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], MWs=[18.01528],  CASs=['7732-18-5'],)
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))]
+    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
+                 HeatCapacityGases=HeatCapacityGases)
+    
+    P = 1e5
+    T = 200
+    liquid = CEOSLiquid(PR78MIX, T=T, P=P, zs=[1], **kwargs)
+    gas = CEOSGas(PR78MIX, T=T, P=P, zs=[1], **kwargs)
+    flasher = FlashPureVLS(constants, correlations, gas, [liquid], []) #
+    
+    res = flasher.flash(T=T, P=P, zs=[1])
+    
+    check_base = flasher.flash(P=P, V=res.V())
+    assert_close(res.T, check_base.T)
+    
+    check_rho = flasher.flash(P=P, rho=res.rho())
+    assert_close(res.T, check_rho.T)
+    
+    check_rho_mass = flasher.flash(P=P, rho_mass=res.rho_mass())
+    assert_close(res.T, check_rho_mass.T)
+    
+    
+    check_H_mass = flasher.flash(P=P, H_mass=res.H_mass())
+    assert_close(res.T, check_H_mass.T)
+    
+    
+    check_S_mass = flasher.flash(P=P, S_mass=res.S_mass())
+    assert_close(res.T, check_S_mass.T)
+    
+    
+    check_U_mass = flasher.flash(P=P, U_mass=res.U_mass())
+    assert_close(res.T, check_U_mass.T)
+    
+    
+    # Hit up the vapor fractions
+    res = flasher.flash(VF=.5, P=P, zs=[1])
+    
+    check_A_mass = flasher.flash(VF=res.VF, A_mass=res.A_mass())
+    assert_close(res.T, check_A_mass.T)
+    
+    check_G_mass = flasher.flash(VF=res.VF, G_mass=res.G_mass())
+    assert_close(res.T, check_G_mass.T)

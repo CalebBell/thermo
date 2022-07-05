@@ -45,12 +45,6 @@ from fluids.pump import voltages_1_phase_residential, voltages_3_phase, resident
 # This might be useful for regular streams too, just to keep track of what values were specified by the user!
 # If one composition value gets set to, remove those from every other value
 
-base_specifications = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None,
-                       'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
-                       'n': None, 'm': None, 'Q': None,
-                       'T': None, 'P': None, 'VF': None, 'H': None,
-                       'Hm': None, 'S': None, 'Sm': None, 'energy': None}
-
 class StreamArgs(object):
     flashed = False
     _state_cache = None
@@ -58,16 +52,27 @@ class StreamArgs(object):
     def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
                  T=None, P=None,
                  VF=None, H=None, Hm=None, S=None, Sm=None,
+                 U=None, Um=None, G=None, Gm=None, A=None, Am=None,
+                 V=None, rho=None, rho_mass=None,
+                 
                  ns=None, ms=None, Qls=None, Qgs=None, m=None, n=None, Q=None,
                  energy=None,
                  Vf_TP=(None, None), Q_TP=(None, None, ''), pkg=None,
                  single_composition_basis=True):
-#        self.specifications = base_specifications.copy()
         self.specifications = s = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None,
                        'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
                        'n': None, 'm': None, 'Q': None,
-                       'T': None, 'P': None, 'VF': None, 'H': None,
-                       'Hm': None, 'S': None, 'Sm': None, 'energy': None}
+                       
+                       'T': None, 'P': None, 
+                       'V': None, 'rho': None, 'rho_mass': None,
+                       
+                       'VF': None, 
+                       'H': None,'Hm': None,
+                       'S': None, 'Sm': None,
+                       'U': None, 'Um': None,
+                       'A': None, 'Am': None,
+                       'G': None, 'Gm': None,
+                       'energy': None}
 
         # If this is False, DO NOT CLEAR OTHER COMPOSITION / FLOW VARIABLES WHEN SETTING ONE!
         # This makes sense for certain cases but not all.
@@ -126,6 +131,15 @@ class StreamArgs(object):
         if P is not None:
             s['P'] = P
             state_specs += 1
+        if V is not None:
+            s['V'] = V
+            state_specs += 1
+        if rho is not None:
+            s['rho'] = rho
+            state_specs += 1
+        if rho_mass is not None:
+            s['rho_mass'] = rho_mass
+            state_specs += 1
         if VF is not None:
             s['VF'] = VF
             state_specs += 1
@@ -140,6 +154,24 @@ class StreamArgs(object):
             state_specs += 1
         if S is not None:
             s['S'] = S
+            state_specs += 1
+        if Um is not None:
+            s['Um'] = Um
+            state_specs += 1
+        if U is not None:
+            s['U'] = U
+            state_specs += 1
+        if Gm is not None:
+            s['Gm'] = Gm
+            state_specs += 1
+        if G is not None:
+            s['G'] = G
+            state_specs += 1
+        if Am is not None:
+            s['Am'] = Am
+            state_specs += 1
+        if A is not None:
+            s['A'] = A
             state_specs += 1
         if energy is not None:
             s['energy'] = energy
@@ -304,6 +336,42 @@ class StreamArgs(object):
         s['P'] = P
 
     @property
+    def V(self):
+        return self.specifications['V']
+    @V.setter
+    def V(self, V):
+        if V is None:
+            self.specifications['V'] = V
+            return None
+        if self.state_specified and self.V is None:
+            raise Exception('Two state vars already specified; unset another first')
+        self.specifications['V'] = V
+
+    @property
+    def rho(self):
+        return self.specifications['rho']
+    @rho.setter
+    def rho(self, rho):
+        if rho is None:
+            self.specifications['rho'] = rho
+            return None
+        if self.state_specified and self.rho is None:
+            raise Exception('Two state vars already specified; unset another first')
+        self.specifications['rho'] = rho
+
+    @property
+    def rho_mass(self):
+        return self.specifications['rho_mass']
+    @rho_mass.setter
+    def rho_mass(self, rho_mass):
+        if rho_mass is None:
+            self.specifications['rho_mass'] = rho_mass
+            return None
+        if self.state_specified and self.rho_mass is None:
+            raise Exception('Two state vars already specified; unset another first')
+        self.specifications['rho_mass'] = rho_mass
+
+    @property
     def VF(self):
         return self.specifications['VF']
     @VF.setter
@@ -338,6 +406,78 @@ class StreamArgs(object):
         if self.specified_state_vars > 1 and self.Hm is None:
             raise Exception('Two state vars already specified; unset another first')
         self.specifications['Hm'] = Hm
+
+    @property
+    def U(self):
+        return self.specifications['U']
+    @U.setter
+    def U(self, U):
+        if U is None:
+            self.specifications['U'] = U
+            return None
+        if self.state_specified and self.U is None:
+            raise Exception('Two state vars already specified; unset another first')
+        self.specifications['U'] = U
+
+    @property
+    def Um(self):
+        return self.specifications['Um']
+    @Um.setter
+    def Um(self, Um):
+        if Um is None:
+            self.specifications['Um'] = Um
+            return None
+        if self.specified_state_vars > 1 and self.Um is None:
+            raise Exception('Two state vars already specified; unset another first')
+        self.specifications['Um'] = Um
+
+    @property
+    def G(self):
+        return self.specifications['G']
+    @G.setter
+    def G(self, G):
+        if G is None:
+            self.specifications['G'] = G
+            return None
+        if self.state_specified and self.G is None:
+            raise Exception('Two state vars already specified; unset another first')
+        self.specifications['G'] = G
+
+    @property
+    def Gm(self):
+        return self.specifications['Gm']
+    @Gm.setter
+    def Gm(self, Gm):
+        if Gm is None:
+            self.specifications['Gm'] = Gm
+            return None
+        if self.specified_state_vars > 1 and self.Gm is None:
+            raise Exception('Two state vars already specified; unset another first')
+        self.specifications['Gm'] = Gm
+
+    @property
+    def A(self):
+        return self.specifications['A']
+    @A.setter
+    def A(self, A):
+        if A is None:
+            self.specifications['A'] = A
+            return None
+        if self.state_specified and self.A is None:
+            raise Exception('Two state vars already specified; unset another first')
+        self.specifications['A'] = A
+
+    @property
+    def Am(self):
+        return self.specifications['Am']
+    @Am.setter
+    def Am(self, Am):
+        if Am is None:
+            self.specifications['Am'] = Am
+            return None
+        if self.specified_state_vars > 1 and self.Am is None:
+            raise Exception('Two state vars already specified; unset another first')
+        self.specifications['Am'] = Am
 
     @property
     def S(self):
@@ -942,6 +1082,12 @@ class StreamArgs(object):
             specs.append(('T', s['T']))
         if s['P'] is not None:
             specs.append(('P', s['P']))
+        if s['V'] is not None:
+            specs.append(('V', s['V']))
+        if s['rho'] is not None:
+            specs.append(('rho', s['rho']))
+        if s['rho_mass'] is not None:
+            specs.append(('rho_mass', s['rho_mass']))
         if s['VF'] is not None:
             specs.append(('VF', s['VF']))
         if s['Hm'] is not None:
@@ -952,6 +1098,18 @@ class StreamArgs(object):
             specs.append(('Sm', s['Sm']))
         if s['S'] is not None:
             specs.append(('S', s['S']))
+        if s['Um'] is not None:
+            specs.append(('Um', s['Um']))
+        if s['U'] is not None:
+            specs.append(('U', s['U']))
+        if s['Gm'] is not None:
+            specs.append(('Gm', s['Gm']))
+        if s['G'] is not None:
+            specs.append(('G', s['G']))
+        if s['Am'] is not None:
+            specs.append(('Am', s['Am']))
+        if s['A'] is not None:
+            specs.append(('A', s['A']))
         if s['energy'] is not None:
             specs.append(('energy', s['energy']))
 #        for var in ('T', 'P', 'VF', 'Hm', 'H', 'Sm', 'S', 'energy'):
@@ -963,7 +1121,10 @@ class StreamArgs(object):
     @property
     def specified_state_vars(self):
         # Slightly faster
-        return sum(self.specifications[i] is not None for i in ('T', 'P', 'VF', 'Hm', 'H', 'Sm', 'S', 'energy'))
+        return sum(self.specifications[i] is not None for i in ('T', 'P', 'V', 'rho', 'rho_mass', 
+                                                                'VF', 'Hm', 'H', 'Sm', 'S',
+                                                                'Um', 'U', 'Am', 'A', 'Gm', 'G',
+                                                                'energy'))
 #        return sum(i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S, self.energy))
 
     @property
@@ -975,6 +1136,12 @@ class StreamArgs(object):
             state_vars += 1
         if s['P'] is not None:
             state_vars += 1
+        if s['V'] is not None:
+            state_vars += 1
+        if s['rho'] is not None:
+            state_vars += 1
+        if s['rho_mass'] is not None:
+            state_vars += 1
         if s['VF'] is not None:
             state_vars += 1
         if s['Hm'] is not None:
@@ -985,6 +1152,18 @@ class StreamArgs(object):
             state_vars += 1
         if s['Sm'] is not None:
             state_vars += 1
+        if s['U'] is not None:
+            state_vars += 1
+        if s['Um'] is not None:
+            state_vars += 1
+        if s['G'] is not None:
+            state_vars += 1
+        if s['Gm'] is not None:
+            state_vars += 1
+        if s['A'] is not None:
+            state_vars += 1
+        if s['Am'] is not None:
+            state_vars += 1
         if s['energy'] is not None:
             state_vars += 1
 #        state_vars = (i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S, self.energy))
@@ -994,7 +1173,10 @@ class StreamArgs(object):
 
     @property
     def non_pressure_spec_specified(self):
-        state_vars = (i is not None for i in (self.T, self.VF, self.Hm, self.H, self.Sm, self.S, self.energy))
+        state_vars = (i is not None for i in (self.T, self.VF, self.V, self.rho, self.rho_mass, 
+                                              self.Hm, self.H, self.Sm, self.S, 
+                                              self.Um, self.U, self.Am, self.A, self.Gm, self.G,
+                                              self.energy))
         if sum(state_vars) >= 1:
             return True
         return False
@@ -1075,6 +1257,30 @@ class StreamArgs(object):
             if s['Hm'] is not None:
                 s['H'] = s['Hm']
             del s['Hm']
+        if 'U' in s:
+            if s['U'] is not None:
+                s['U_mass'] = s['U']
+            del s['U']
+        if 'Um' in s:
+            if s['Um'] is not None:
+                s['U'] = s['Um']
+            del s['Um']
+        if 'A' in s:
+            if s['A'] is not None:
+                s['A_mass'] = s['A']
+            del s['A']
+        if 'Am' in s:
+            if s['Am'] is not None:
+                s['A'] = s['Am']
+            del s['Am']
+        if 'G' in s:
+            if s['G'] is not None:
+                s['G_mass'] = s['G']
+            del s['G']
+        if 'Gm' in s:
+            if s['Gm'] is not None:
+                s['G'] = s['Gm']
+            del s['Gm']
         return EquilibriumStream(self.property_package, hot_start=hot_start,
                                  existing_flash=existing_flash, **s)
 
@@ -1100,6 +1306,30 @@ class StreamArgs(object):
                     if s['Hm'] is not None:
                         s['H'] = s['Hm']
                     del s['Hm']
+                if 'G' in s:
+                    if s['G'] is not None:
+                        s['G_mass'] = s['G']
+                    del s['G']
+                if 'Gm' in s:
+                    if s['Gm'] is not None:
+                        s['G'] = s['Gm']
+                    del s['Gm']
+                if 'U' in s:
+                    if s['U'] is not None:
+                        s['U_mass'] = s['U']
+                    del s['U']
+                if 'Um' in s:
+                    if s['Um'] is not None:
+                        s['U'] = s['Um']
+                    del s['Um']
+                if 'A' in s:
+                    if s['A'] is not None:
+                        s['A_mass'] = s['A']
+                    del s['A']
+                if 'Am' in s:
+                    if s['Am'] is not None:
+                        s['A'] = s['Am']
+                    del s['Am']
                 return EquilibriumStream(self.property_package, **s)
         else:
             if self.IDs and self.composition_specified and self.state_specified and self.flow_specified:
@@ -1116,19 +1346,43 @@ class StreamArgs(object):
             s = self.specifications
             # Flash call only takes `zs`
             zs = self.zs_calc
-            T, P, H, S, VF = s['T'], s['P'], s['Hm'], s['Sm'], s['VF']
+            T, P, VF = s['T'], s['P'], s['VF']
+            H = None
             # Do we need
             spec_count = 0
             if T is not None:
                 spec_count += 1
             if P is not None:
                 spec_count += 1
-            if H is not None:
+            if s['V'] is not None:
                 spec_count += 1
-            if S is not None:
+            if s['rho'] is not None:
+                spec_count += 1
+            if s['rho_mass'] is not None:
+                spec_count += 1
+            if s['Hm'] is not None:
+                spec_count += 1
+            if s['H'] is not None:
+                spec_count += 1
+            if s['Sm'] is not None:
+                spec_count += 1
+            if s['S'] is not None:
+                spec_count += 1
+            if s['Um'] is not None:
+                spec_count += 1
+            if s['U'] is not None:
+                spec_count += 1
+            if s['Gm'] is not None:
+                spec_count += 1
+            if s['G'] is not None:
+                spec_count += 1
+            if s['Am'] is not None:
+                spec_count += 1
+            if s['A'] is not None:
                 spec_count += 1
             if VF is not None:
                 spec_count += 1
+                
             if spec_count < 2:
                 energy = s['energy']
                 if energy is not None:
@@ -1136,30 +1390,25 @@ class StreamArgs(object):
                     if n is not None:
                         H = energy/n
                         spec_count += 1
-            if spec_count < 2:
-                H_mass = s['H']
-                if H_mass is not None:
-                    MW = self.MW
-                    if MW is not None:
-                        H = property_mass_to_molar(H_mass, MW)
-                        spec_count += 1
-            if spec_count < 2:
-                S_mass = s['S']
-                if S_mass is not None:
-                    MW = self.MW
-                    if MW is not None:
-                        S = property_mass_to_molar(S_mass, MW)
-                        spec_count += 1
+            
+            H_flash = s['Hm'] if s['Hm'] is not None else H
 
-
-            state_cache = (T, P, H, S, VF, tuple(zs))
+            state_cache = (T, P, VF, s['Sm'], s['S'], s['H'], H_flash, 
+                           s['U'], s['Um'], s['G'], s['Gm'], s['A'], s['Am'], 
+                           s['V'], s['rho'], s['rho_mass'], tuple(zs))
             if state_cache == self._state_cache:
                 try:
                     return self._mixture
                 except:
                     pass
 
-            m = self.property_package.flash(T=T, P=P, zs=zs, H=H, S=S, VF=VF, hot_start=hot_start)
+            m = self.property_package.flash(T=T, P=P, zs=zs, H=H_flash, H_mass=s['H'],
+                                            S=s['Sm'], S_mass=s['S'],
+                                            U=s['Um'], U_mass=s['U'],
+                                            G=s['Gm'], G_mass=s['G'],
+                                            A=s['Am'], A_mass=s['A'],
+                                            V=s['V'], rho=s['rho'], rho_mass=s['rho_mass'],
+                                            VF=VF, hot_start=hot_start)
             self._mixture = m
             self._state_cache = state_cache
             return m
@@ -1757,7 +2006,16 @@ class EquilibriumStream(EquilibriumState):
     def __init__(self, flasher, zs=None, ws=None, Vfls=None, Vfgs=None,
                  ns=None, ms=None, Qls=None, Qgs=None,
                  n=None, m=None, Q=None,
-                 T=None, P=None, V=None, VF=None, H=None, H_mass=None, S=None, S_mass=None,
+                 T=None, P=None, 
+                 
+                 V=None, rho=None, rho_mass=None,
+                 
+                 VF=None,
+                 H=None, H_mass=None,
+                 S=None, S_mass=None,
+                 U=None, U_mass=None,
+                 G=None, G_mass=None,
+                 A=None, A_mass=None,
                  energy=None, Vf_TP=None, Q_TP=None, hot_start=None,
                  existing_flash=None):
 
@@ -1865,10 +2123,6 @@ class EquilibriumStream(EquilibriumState):
         self._MW = MW
         MW_inv = 1.0/MW
 
-        if H_mass is not None:
-            H = property_mass_to_molar(H_mass, MW)
-        if S_mass is not None:
-            S = property_mass_to_molar(S_mass, MW)
         if energy is not None:
             # Handle the various mole flows - converting to get energy; subset for now
             if m is not None:
@@ -1891,7 +2145,12 @@ class EquilibriumStream(EquilibriumState):
 
         else:
             dest = super(EquilibriumStream, self).__init__
-            flasher.flash(T=T, P=P, V=V, VF=VF, H=H, S=S, dest=dest, zs=zs, hot_start=hot_start)
+            flasher.flash(T=T, P=P, V=V, rho=rho, rho_mass=rho_mass, VF=VF,
+                          H=H, H_mass=H_mass, S=S, S_mass=S_mass,
+                          G=G, G_mass=G_mass, U=U, U_mass=U_mass,
+                          A=A, A_mass=A_mass,
+                          
+                          dest=dest, zs=zs, hot_start=hot_start)
 
         # Convert the flow rate into total molar flow
         if m is not None:

@@ -74,7 +74,7 @@ from thermo.equilibrium import EquilibriumState
 from thermo.phase_identification import identify_sort_phases
 from thermo.utils import has_matplotlib
 from fluids.numerics import logspace, linspace, numpy as np
-from chemicals.utils import log10, floor
+from chemicals.utils import log10, floor, rho_to_Vm, mixing_simple, property_mass_to_molar
 from thermo import phases
 
 spec_to_iter_vars = {
@@ -119,7 +119,8 @@ class Flash(object):
 
     def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
               S=None, G=None, U=None, A=None, solution=None, hot_start=None,
-              retry=False, dest=None):
+              retry=False, dest=None, rho=None, rho_mass=None, H_mass=None,
+              S_mass=None, G_mass=None, U_mass=None, A_mass=None):
         r'''Method to perform a flash calculation and return the result as an
         :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>` object.
         This generic interface allows flashes with any combination of valid
@@ -174,6 +175,27 @@ class Flash(object):
         dest : None or :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>` or :obj:`EquilibriumStream <thermo.stream.EquilibriumStream>`
             What type of object the flash result is set into; leave as None to
             obtain the normal `EquilibriumState` results, [-]
+        rho : float, optional
+            Molar density of the overall bulk; this is trivially converted to
+            a `V` spec, [mol/m^3]
+        rho_mass : float, optional
+            Mass density of the overall bulk; this is trivially converted to
+            a `rho` spec, [kg/m^3]
+        H_mass : float, optional
+            Mass enthalpy of the overall bulk; this is trivially converted to
+            a `H` spec, [J/kg]
+        S_mass : float, optional
+            Mass entropy of the overall bulk; this is trivially converted to
+            a `S` spec, [J/(kg*K)]
+        G_mass : float, optional
+            Mass Gibbs free energy of the overall bulk; this is trivially converted to
+            a `G` spec, [J/kg]
+        U_mass : float, optional
+            Mass internal energy of the overall bulk; this is trivially converted to
+            a `U` spec, [J/kg]
+        A_mass : float, optional
+            Mass Helmholtz energy of the overall bulk; this is trivially converted to
+            a `A` spec, [J/kg]
 
         Returns
         -------
@@ -223,6 +245,22 @@ class Flash(object):
 #                                           V=V, H=H, S=S, U=U, G=G, A=A,
 #                                           solution=solution, retry=retry,
 #                                           hot_start=hot_start)
+        if rho is not None:
+            V, rho = 1.0/rho, None
+        if rho_mass is not None:
+            V, rho_mass = rho_to_Vm(rho_mass, mixing_simple(zs, constants.MWs)), None
+        if H_mass is not None:
+            H, H_mass = property_mass_to_molar(H_mass, mixing_simple(zs, constants.MWs)), None
+        if S_mass is not None:
+            S, S_mass = property_mass_to_molar(S_mass, mixing_simple(zs, constants.MWs)), None
+        if G_mass is not None:
+            G, G_mass = property_mass_to_molar(G_mass, mixing_simple(zs, constants.MWs)), None
+        if U_mass is not None:
+            U, U_mass = property_mass_to_molar(U_mass, mixing_simple(zs, constants.MWs)), None
+        if A_mass is not None:
+            A, A_mass = property_mass_to_molar(A_mass, mixing_simple(zs, constants.MWs)), None
+        
+
         T_spec = T is not None
         P_spec = P is not None
         V_spec = V is not None

@@ -26,13 +26,15 @@ import pytest
 from chemicals.exceptions import OverspeficiedError
 from thermo.chemical import Chemical
 from thermo.mixture import Mixture
-from thermo.stream import Stream, StreamArgs, mole_balance
+from thermo.stream import Stream, StreamArgs, mole_balance, EquilibriumStream
 import thermo
 from scipy.integrate import quad
 from math import *
 from fluids.constants import R
 from fluids.numerics import assert_close, assert_close1d
 
+
+from thermo import ChemicalConstantsPackage, HeatCapacityGas, PropertyCorrelationsPackage, CEOSLiquid, CEOSGas, PR78MIX, FlashPureVLS
 
 @pytest.mark.deprecated
 def test_Stream():
@@ -569,3 +571,49 @@ def test_mole_balance_backward():
     ns_expect = [10, None, None, 22]
     ns_now = [f0.n_calc, f1.n_calc, f2.n_calc, p0.n_calc]
     assert_close1d(ns_expect, ns_now)
+    
+    
+def test_EquilibriumStream_unusual_inputs():
+    constants = ChemicalConstantsPackage(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], MWs=[18.01528],  CASs=['7732-18-5'],)
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))]
+    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
+                 HeatCapacityGases=HeatCapacityGases)
+    
+    P = 1e5
+    T = 200
+    liquid = CEOSLiquid(PR78MIX, T=T, P=P, zs=[1], **kwargs)
+    gas = CEOSGas(PR78MIX, T=T, P=P, zs=[1], **kwargs)
+    flasher = FlashPureVLS(constants, correlations, gas, [liquid], []) #
+    
+    
+    stream = EquilibriumStream(T=T, P=P, zs=[1], m=1, flasher=flasher)
+    
+    check_base = EquilibriumStream(P=P, V=stream.V(), zs=[1], m=1, flasher=flasher)
+    assert_close(stream.T, check_base.T)
+    
+    check = EquilibriumStream(P=P, rho=stream.rho(), zs=[1], m=1, flasher=flasher)
+    assert_close(stream.T, check.T)
+    
+    
+    check = EquilibriumStream(P=P, rho_mass=stream.rho_mass(), zs=[1], m=1, flasher=flasher)
+    assert_close(stream.T, check.T)
+    
+    check = EquilibriumStream(P=P, H_mass=stream.H_mass(), zs=[1], m=1, flasher=flasher)
+    assert_close(stream.T, check.T)
+    
+    check = EquilibriumStream(P=P, S_mass=stream.S_mass(), zs=[1], m=1, flasher=flasher)
+    assert_close(stream.T, check.T)
+    
+    check = EquilibriumStream(P=P, U_mass=stream.U_mass(), zs=[1], m=1, flasher=flasher)
+    assert_close(stream.T, check.T)
+    
+    # Hit up the vapor fractions
+    stream = EquilibriumStream(VF=.5, P=P, zs=[1], m=1, flasher=flasher)
+    
+    check = EquilibriumStream(VF=stream.VF, A_mass=stream.A_mass(), zs=[1], m=1, flasher=flasher)
+    assert_close(stream.T, check.T)
+    
+    check = EquilibriumStream(VF=stream.VF, G_mass=stream.G_mass(), zs=[1], m=1, flasher=flasher)
+    assert_close(stream.T, check.T)
+    
