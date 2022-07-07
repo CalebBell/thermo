@@ -48,6 +48,12 @@ from fluids.pump import voltages_1_phase_residential, voltages_3_phase, resident
 class StreamArgs(object):
     flashed = False
     _state_cache = None
+    
+    @property
+    def equilibrium_pkg(self):
+        if isinstance(self.pkg, Flash):
+            return True
+        return False
 
     def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
                  T=None, P=None,
@@ -81,8 +87,7 @@ class StreamArgs(object):
         self.Vf_TP = Vf_TP
         self.Q_TP = Q_TP
         # pkg should be either a property package or property package constants
-        self.pkg = self.property_package = self.property_package_constants = pkg
-        self.equilibrium_pkg = isinstance(pkg, Flash)
+        self.pkg = self.property_package = pkg
 
         composition_specs = state_specs = flow_specs = 0
         if zs is not None:
@@ -1065,9 +1070,12 @@ class StreamArgs(object):
             if s['Qgs'] is not None and None not in s['Qgs']:
                 return True
             return False
-        IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=self.IDs,
-                                zs=self.zs, ws=self.ws, Vfls=self.Vfls,
-                                Vfgs=self.Vfgs, ignore_exceptions=True)
+        try:
+            IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=self.IDs,
+                                    zs=self.zs, ws=self.ws, Vfls=self.Vfls,
+                                    Vfgs=self.Vfgs, ignore_exceptions=True)
+        except:
+            return False
 
         specified_vals = (i is not None for i in (zs, ws, Vfls, Vfgs, self.ns, self.ms, self.Qls, self.Qgs))
         if any(specified_vals) and IDs:
@@ -2372,6 +2380,8 @@ class EnergyStream(object):
 
     def copy(self):
         return EnergyStream(Q=self.Q, medium=self.medium)
+    
+    __copy__ = copy
 
     def __repr__(self):
         try:

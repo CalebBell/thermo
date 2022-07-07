@@ -118,26 +118,21 @@ __all__ = [
            'VolumeLiquidMixture', 'VolumeGasMixture', 'VolumeSolidMixture',
            'Tait_parameters_COSTALD']
 
-import os
-
 from fluids.numerics import horner, np, polyder, horner_and_der2, linspace, quadratic_from_f_ders
-from fluids.constants import R
-from chemicals.utils import log, exp, isnan
-from chemicals.utils import Vm_to_rho, rho_to_Vm, mixing_simple, none_and_length_check
+from chemicals.utils import exp, isnan
+from chemicals.utils import rho_to_Vm, mixing_simple, none_and_length_check
 from chemicals.dippr import EQ105, EQ116
 from chemicals.volume import *
 from chemicals import volume
 from chemicals.virial import BVirial_Pitzer_Curl, BVirial_Abbott, BVirial_Tsonopoulos, BVirial_Tsonopoulos_extended
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data, COMMON_CHEMISTRY
-from chemicals.identifiers import CAS_to_int
 
 from thermo import electrochem
 from thermo.electrochem import Laliberte_density
 from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property
 from thermo.utils import TDependentProperty, TPDependentProperty, MixtureProperty
-from thermo.utils import POLY_FIT, VDI_TABULAR, VDI_PPDS, COOLPROP, EOS, DIPPR_PERRY_8E, LINEAR
-from thermo.eos import PR78
+from thermo.utils import  VDI_TABULAR, VDI_PPDS, COOLPROP, EOS, DIPPR_PERRY_8E, LINEAR
 from thermo.vapor_pressure import VaporPressure
 
 def Tait_parameters_COSTALD(Tc, Pc, omega, Tr_min=.27, Tr_max=.95):
@@ -403,7 +398,7 @@ class VolumeLiquid(TPDependentProperty):
         self.Psat = Psat
         self.eos = eos
         self.has_hydroxyl = has_hydroxyl
-        super(VolumeLiquid, self).__init__(extrapolation, **kwargs)
+        super().__init__(extrapolation, **kwargs)
 
     def _custom_set_poly_fit(self):
         try:
@@ -450,7 +445,8 @@ class VolumeLiquid(TPDependentProperty):
         methods_P = []
         if load_data:
             if has_CoolProp() and self.CASRN in coolprop_dict:
-                methods.append(COOLPROP); methods_P.append(COOLPROP)
+                methods.append(COOLPROP)
+                methods_P.append(COOLPROP)
                 self.CP_f = coolprop_fluids[self.CASRN]
                 T_limits[COOLPROP] = (self.CP_f.Tt, self.CP_f.Tc)
             if self.CASRN in volume.rho_data_CRC_inorg_l.index:
@@ -685,7 +681,7 @@ class VolumeLiquid(TPDependentProperty):
             if T >= self.eos[0].Tc:
                 validity = False
         else:
-            return super(VolumeLiquid, self).test_method_validity(T, method)
+            return super().test_method_validity(T, method)
         return validity
 
     def test_method_validity_P(self, T, P, method):
@@ -725,7 +721,7 @@ class VolumeLiquid(TPDependentProperty):
             self.eos[0] = self.eos[0].to_TP(T=T, P=P)
             validity = hasattr(self.eos[0], 'V_l')
         else:
-            return super(VolumeLiquid, self).test_method_validity_P(T, P, method)
+            return super().test_method_validity_P(T, P, method)
         return validity
 
 
@@ -964,7 +960,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         validity : bool
             Whether or not a method is valid
         '''
-        return super(VolumeSupercriticalLiquid, self).test_method_validity(T, method)
+        return super().test_method_validity(T, method)
 
     def test_method_validity_P(self, T, P, method):
         r'''Method to check the validity of a high-pressure method. For
@@ -998,7 +994,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
             self.eos[0] = self.eos[0].to_TP(T=T, P=P)
             validity = hasattr(self.eos[0], 'V_l')
         else:
-            return super(VolumeSupercriticalLiquid, self).test_method_validity_P(T, P, method)
+            return super().test_method_validity_P(T, P, method)
         return validity
 
 LALIBERTE = 'LALIBERTE'
@@ -1103,7 +1099,7 @@ class VolumeLiquidMixture(MixtureProperty):
         self.omegas = omegas
         self.CASs = CASs
         self.VolumeLiquids = VolumeLiquids
-        super(VolumeLiquidMixture, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 
     def load_all_methods(self):
@@ -1122,7 +1118,7 @@ class VolumeLiquidMixture(MixtureProperty):
 
         if none_and_length_check([self.Tcs, self.Vcs, self.omegas]):
             methods.append(COSTALD_MIXTURE)
-            if none_and_length_check([self.Tcs, self.CASs]) and all([i in volume.rho_data_COSTALD.index for i in self.CASs]):
+            if none_and_length_check([self.Tcs, self.CASs]) and all((i in volume.rho_data_COSTALD.index for i in self.CASs)):
                 self.COSTALD_Vchars = [volume.rho_data_COSTALD.at[CAS, 'Vchar'] for CAS in self.CASs]
                 self.COSTALD_omegas = [volume.rho_data_COSTALD.at[CAS, 'omega_SRK'] for CAS in self.CASs]
                 methods.append(COSTALD_MIXTURE_FIT)
@@ -1213,7 +1209,8 @@ class VolumeLiquidMixture(MixtureProperty):
                 Vms = [i.T_dependent_property(T) for i in self.VolumeLiquids]
             return Amgat(zs, Vms)
         elif method == LALIBERTE:
-            ws = list(ws) ; ws.pop(self.index_w)
+            ws = list(ws)
+            ws.pop(self.index_w)
             rho = Laliberte_density(T, ws, self.wCASs)
             MW = mixing_simple(zs, self.MWs)
             return rho_to_Vm(rho, MW)
@@ -1685,8 +1682,8 @@ class VolumeGasMixture(MixtureProperty):
         elif method == LINEAR_MISSING_IDEAL:
             Vms = [i(T, P) for i in self.VolumeGases]
             V_ideal = ideal_gas(T, P)
-            for i in range(len(Vms)):
-                if Vms[i] is None:
+            for i, Vm in enumerate(Vms):
+                if Vm is None:
                     Vms[i] = V_ideal
             return mixing_simple(zs, Vms)
         elif method == IDEAL:
