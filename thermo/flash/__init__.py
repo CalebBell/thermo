@@ -66,17 +66,13 @@ interfaces. The implemented specific flash algorithms may be changed in the
 future, but reading their source code may be helpful for instructive purposes.
 
 '''
-from . import flash_utils
-from . import flash_base
-from . import flash_vl
-from . import flash_vln
-from . import flash_pure_vls
+from thermo.flash import flash_utils, flash_base, flash_vl, flash_vln, flash_pure_vls
 
-from .flash_utils import *
-from .flash_base import *
-from .flash_vl import *
-from .flash_vln import *
-from .flash_pure_vls import *
+from thermo.flash.flash_utils import *
+from thermo.flash.flash_base import *
+from thermo.flash.flash_vl import *
+from thermo.flash.flash_vln import *
+from thermo.flash.flash_pure_vls import *
 
 __all__ = (flash_utils.__all__ + flash_base.__all__ + flash_vl.__all__
            + flash_vln.__all__ + flash_pure_vls.__all__)

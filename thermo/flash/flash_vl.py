@@ -20,8 +20,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from .flash_base import Flash
-from .flash_utils import (
+from thermo.flash.flash_base import Flash
+from thermo.flash.flash_utils import (
     PT_SS, PT_SS_MEHRA, PT_SS_GDEM3, PT_NEWTON_lNKVF,
     sequential_substitution_2P,
     sequential_substitution_Mehra_2P,
@@ -46,7 +46,7 @@ from .flash_utils import (
     SHAW_ELEMENTAL, IDEAL_WILSON,
     nonlin_spec_NP,
 )
-from .flash_pure_vls  import FlashPureVLS
+from thermo.flash.flash_pure_vls  import FlashPureVLS
 from chemicals.utils import log
 from chemicals.exceptions import TrivialSolutionError
 from fluids.numerics import secant, trunc_log, UnconvergedError

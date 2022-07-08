@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 __all__ = ['FlashVLN']
 
-from .flash_vl import FlashVL
+from thermo.flash.flash_vl import FlashVL
 from chemicals.rachford_rice import flash_inner_loop
 from chemicals.exceptions import (
     TrivialSolutionError,
@@ -37,7 +37,7 @@ from fluids.numerics import (
 from thermo.phase_identification import identify_sort_phases
 from thermo.property_package import StabilityTester
 from thermo.bulk import default_settings
-from .flash_utils import (
+from thermo.flash.flash_utils import (
     sequential_substitution_NP,
     sequential_substitution_2P,
     one_in_list,

@@ -27,7 +27,7 @@ __all__ = ['IdealGas']
 from fluids.constants import R
 from chemicals.utils import log
 from thermo.heat_capacity import HeatCapacityGas
-from .phase import Phase
+from thermo.phases.phase import Phase
 
 class IdealGas(Phase):
     r'''Class for representing an ideal gas as a phase object. All departure

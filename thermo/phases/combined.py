@@ -23,7 +23,7 @@ SOFTWARE.
 '''
 __all__ = ['CombinedPhase']
 
-from .phase import Phase
+from thermo.phases.phase import Phase
 
 
 class CombinedPhase(Phase):

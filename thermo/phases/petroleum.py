@@ -25,7 +25,7 @@ __all__ = ['GraysonStreed', 'ChaoSeader']
 
 from chemicals.utils import log, log10
 from thermo.activity import IdealSolution
-from .phase import Phase
+from thermo.phases.phase import Phase
 
 # hydrogen, methane
 Grayson_Streed_special_CASs = set(['1333-74-0', '74-82-8'])
