@@ -56,10 +56,18 @@ __all__ = [
     'nonlin_spec_NP',
     'TPV_solve_HSGUA_guesses_VL',
     'solve_P_VF_IG_K_composition_independent',
-    'solve_T_VF_IG_K_composition_independent'
+    'solve_T_VF_IG_K_composition_independent',
+    'incipient_phase_bounded_naive', 
+    'generate_incipient_phase_boundaries_naive', 
+    'incipient_phase_status', 'VLN_or_LN_boolean_check', 'VL_boolean_check', 
+    'VLL_or_LL_boolean_check', 'VLL_boolean_check', 'LL_boolean_check',
+    'incipient_liquid_bounded_PT_sat',
+    'generate_pure_phase_boolean_check',
+    'flash_mixing_minimum_factor', 
+    'flash_mixing_remove_overlap',
 ]
 
-
+from random import shuffle
 from fluids.constants import R
 from fluids.numerics import (UnconvergedError, trunc_exp, newton,
                              brenth, secant, translate_bound_f_jac,
@@ -68,10 +76,10 @@ from fluids.numerics import (UnconvergedError, trunc_exp, newton,
                              OscillationError, NotBoundedError, jacobian,
                              best_bounding_bounds, isclose, newton_system,
                              make_damp_initial, newton_minimize,
-                             root, minimize, fsolve)
-from fluids.numerics import py_solve, trunc_log
+                             root, minimize, fsolve, linspace, logspace)
+from fluids.numerics import py_solve, trunc_log, bisect
 
-from chemicals.utils import (exp, log, copysign, normalize,
+from chemicals.utils import (exp, log, log10, copysign, normalize,
                              mixing_simple, property_mass_to_molar)
 from chemicals.heat_capacity import (Dadgostar_Shaw_integral, 
                                      Dadgostar_Shaw_integral_over_T, 
@@ -4313,3 +4321,289 @@ one_in_list = [1.0]
 empty_list = []
 
 
+
+def flash_mixing_minimum_factor(zs_existing, zs_added):
+    # Check if nothing can be removed
+    for i in range(len(zs_existing)):
+        if zs_added[i] > 0 and zs_existing[i] == 0:
+            return 0
+        
+    factor = None
+    for i in range(len(zs_existing)):
+        if zs_added[i] > 0:
+            factor_calc = -zs_existing[i]/zs_added[i]
+            if factor is None:
+                factor = factor_calc
+            else:
+                if factor_calc > factor:
+                    factor = factor_calc
+    if factor is None:
+        factor = 0
+    return factor
+
+def flash_mixing_remove_overlap(zs_existing, zs_added):
+    '''For the problem of considering mixing one stream with another stream,
+    and seeking to find the correct mixing ratio, it may be useful to 
+    actually remove some of the new stream. However, this is a nastier numerical
+    problem. It is nicer to remove as much as possible of the new stream 
+    before trying to solve the problem. This function will adjust the 
+    composition of the initial feed to make that happen.
+    '''
+    factor = flash_mixing_minimum_factor(zs_existing, zs_added)
+    
+    # Create the new composition which will not sum to 1
+    new = [zs_existing[i] + factor*zs_added[i] for i in range(len(zs_existing))]
+    # normalize the new composition
+    return normalize(new)
+
+
+def generate_pure_phase_boolean_check(idx, required_zi=0.999, required_wi=None):
+    '''Generate and return a function which will return -1 if 
+    a pure-ish phase with the required concentration is not found;
+    and 1 if it is found.
+    '''
+    def component_check(res):
+        has_comp = -1
+        for p in res.phases:
+            if required_zi is not None:
+                if p.zs[idx] > required_zi:
+                    has_comp  = 1
+            elif required_wi is not None:
+                if p.ws()[idx] > required_wi:
+                    has_comp  = 1
+        return has_comp
+    return component_check
+
+def VL_boolean_check(res):
+    '''Function that returns 1 if a gas is present and there is a liquid 
+    present and there are only two phases, and -1 otherwise.
+    
+    '''
+    if res.gas is not None and res.liquids is not None and res.phase_count==2 and res.solid_count == 0:
+        return 1
+    return -1
+
+def LL_boolean_check(res):
+    '''Function that returns 1 if there are only two liquid phases and -1 otherwise.
+    
+    '''
+    if res.phase_count==2 and res.liquid_count == 2:
+        return 1
+    return -1
+
+def VLN_or_LN_boolean_check(res):
+    '''Function that returns 1 if two or more non-solid phases are present,
+    and -1 otherwise.
+    '''
+    if res.phase_count > 1 and res.solid_count == 0:
+        return 1
+    return -1
+
+def VLL_or_LL_boolean_check(res):
+    '''Function that returns 1 if two or more non-solid phases are present
+    and at least two liquids are present,
+    and -1 otherwise.
+    '''
+    if res.phase_count > 1 and res.solid_count == 0 and res.liquid_count == 2:
+        return 1
+    return -1
+
+def VLL_boolean_check(res):
+    '''Function that returns 1 if two liquid phases and one gas phase
+    is present, and -1 otherwise.
+    '''
+    if res.phase_count == 3 and res.solid_count == 0 and res.liquid_count == 2:
+        return 1
+    return -1
+
+def incipient_phase_status(mix_ratio, flasher, specs, zs_existing, zs_added,
+                           check, store=None):
+    '''Perform a check whether or not the incipient phase is formed.
+    
+    Parameters
+    ----------
+    mix_ratio : float
+        The multiplier on the number of moles of the `zs_added` stream, [-]
+    flasher : Flash
+        Flash object, [-]
+    specs : dict
+        Other specifications to a flash - normally T and P, and their values,
+        [-]
+    zs_existing : list[float]
+        Mole composition of the original stream
+    zs_added : list[float]
+        The composition of the stream being mixed in, [-]
+    check : function
+        The function to determine whether or not the incipient phase
+        and other conditions are met, [-]
+    store : list or None
+        If provided, the flash results will be appended to this list
+
+    Returns
+    -------
+    check_val : float
+        Whether or not the condition was met, as a -1 or 1 value suitable
+        for a bisection algorithm, [-]
+
+    '''
+    N = len(zs_existing)
+    ns = [zs_existing[i] + mix_ratio*zs_added[i] for i in range(N)]
+    zs = normalize(ns)
+#     print(zs)
+    res = flasher.flash(zs=zs, **specs)
+    if type(store) is list:
+        store.append(res)
+    check_ans = check(res)
+    # print(check_ans, mix_ratio, zs)
+    return check_ans
+
+
+MAX_FACTOR_INCIPIENT_PHASE_NAIVE = 1000
+zero_one_factors = [.25, .5, .75]
+above_one_factors = [1.5, 2, 3, 5, 10, 50, 100, 400]
+all_factors = zero_one_factors + above_one_factors
+
+_tmp_pts = linspace(0,1, 20)
+shuffle(_tmp_pts)
+all_factors += _tmp_pts
+
+_tmp_pts = logspace(log10(1), log10(MAX_FACTOR_INCIPIENT_PHASE_NAIVE), 20)
+shuffle(_tmp_pts)
+all_factors += _tmp_pts
+
+# might not be necessary to add these many attempts
+# all_factors += linspace(0,1, 80) + logspace(log10(1), log10(MAX_FACTOR_INCIPIENT_PHASE_NAIVE), 80)
+
+
+def generate_incipient_phase_boundaries_naive(flasher, specs, zs_existing, 
+                                              zs_added, check):
+    '''Attempt to bound the formation of an incipient phase, using a 
+    factor-based approach.
+    '''
+    negative_bound = positive_bound = None
+    store = []
+     
+    zero = incipient_phase_status(0, flasher, specs, zs_existing, zs_added, check, store=store)
+    if zero == -1:
+        negative_bound = 0
+        negative_bound_res = store[-1]
+    elif zero == 1:
+        positive_bound = 0
+        positive_bound_res = store[-1]
+        
+    one = incipient_phase_status(1, flasher, specs, zs_existing, zs_added, check, store=store)
+    if one == -1:
+        negative_bound = 1
+        negative_bound_res = store[-1]
+    elif one == 1:
+        positive_bound = 1
+        positive_bound_res = store[-1]
+        
+    if negative_bound is not None and positive_bound is not None:
+        return (negative_bound, positive_bound, negative_bound_res, positive_bound_res, len(store))
+    
+    
+    for factor in all_factors:
+        num = incipient_phase_status(factor, flasher, specs, zs_existing, zs_added, check, store=store)
+        if num == -1:
+            negative_bound = factor
+            negative_bound_res = store[-1]
+        elif num == 1:
+            positive_bound = factor
+            positive_bound_res = store[-1]
+        if negative_bound is not None and positive_bound is not None:
+            return (negative_bound, positive_bound, negative_bound_res, positive_bound_res, len(store))
+    raise ValueError("Failed to bound the flash")
+
+
+def incipient_phase_bounded_naive(flasher, specs, zs_existing, zs_added, check, xtol=1e-6):
+    '''
+    
+    Returns
+    -------
+    res : EquilibriumState
+        The flash results at the incipient phase condition, [-]
+    bounding_attempts : int
+        The number of attempts to bound the problem, [-]
+    iters : int
+        The number of attempts to converge the problem, [-]
+    multiplier : float
+        The multiplier used to mix the two streams in the end, [-]
+    '''
+    zs_existing = flash_mixing_remove_overlap(zs_existing, zs_added)
+    
+    (negative_bound, positive_bound, negative_bound_res, positive_bound_res,
+     attempts) = generate_incipient_phase_boundaries_naive(flasher, specs=specs, 
+                                                           zs_existing=zs_existing, zs_added=zs_added, check=check)
+    
+    # print(low, high, 'bounds')
+    store = []
+    args = (flasher, specs, zs_existing, zs_added, check, store)
+    multiplier = bisect(incipient_phase_status, a=negative_bound, b=positive_bound, 
+                      args=args,
+                     xtol=xtol)
+    
+    # import matplotlib.pyplot as plt
+    # pts = linspace(negative_bound, positive_bound, 500)
+    # vals = [incipient_phase_status(p, *args) for p in pts]
+    # plt.plot(pts, vals, 'x')
+    # plt.show()
+    
+
+    # Make sure the final return value matches the criteria
+    for v in store[::-1]:
+        if check(v) == 1:
+            break
+    
+    return v, attempts, len(store), multiplier
+
+
+def incipient_liquid_bounded_PT_sat(flasher, specs, zs_existing, zs_added, check, VF=1, xtol=1e-6):
+    specs_working = specs.copy()
+    has_T = False
+    has_P = False
+    if 'T' in specs:
+        T = specs_working.pop('T')
+        has_T = True
+    elif 'P' in specs:
+        P = specs_working.pop('P')
+        has_P = True
+    else:
+        raise ValueError("This algorithm requires T or P as a specification")
+    other_spec, other_spec_value = list(specs_working.keys())[0], list(specs_working.values())[0]
+    zs_existing = flash_mixing_remove_overlap(zs_existing, zs_added)
+    
+    (negative_bound, positive_bound, negative_bound_res, positive_bound_res,
+     attempts) = generate_incipient_phase_boundaries_naive(flasher, specs=specs, 
+                                                           zs_existing=zs_existing, zs_added=zs_added, check=check)
+                                                           
+    iterations = 0
+    store = []
+    N = len(zs_existing)
+    def to_solve(mix_ratio):
+        nonlocal iterations
+        iterations += 1
+        
+        ns = [zs_existing[i] + mix_ratio*zs_added[i] for i in range(N)]
+        zs = normalize(ns)
+        if has_T:
+            point = flasher.flash(T=T, VF=VF, zs=zs)
+        elif has_P:
+            point = flasher.flash(P=P, VF=VF, zs=zs)
+        store.append(point)
+        err = point.value(other_spec) - other_spec_value
+        # print(err, mix_ratio, zs)
+        return err
+
+    x0 = 0.99*negative_bound + positive_bound*0.01
+    multiplier = secant(to_solve, x0=x0, low=negative_bound, high=positive_bound, xtol=xtol)
+    
+    # Make sure the final return value matches the criteria
+    for v in store[::-1]:
+        if check(v) == 1:
+            break
+    
+    return v, attempts, iterations, multiplier
+    
+
+            

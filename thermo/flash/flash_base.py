@@ -70,9 +70,14 @@ future, but reading their source code may be helpful for instructive purposes.
 __all__ = ['Flash']
 
 from fluids.constants import R
+from math import nan
 from thermo.equilibrium import EquilibriumState
 from thermo.phase_identification import identify_sort_phases
 from thermo.utils import has_matplotlib
+from thermo.flash.flash_utils import (incipient_phase_bounded_naive, incipient_liquid_bounded_PT_sat,
+                                      VLN_or_LN_boolean_check,
+                                      VL_boolean_check, VLL_or_LL_boolean_check,
+                                      VLL_boolean_check, LL_boolean_check)
 from fluids.numerics import logspace, linspace, numpy as np
 from chemicals.utils import log10, floor, rho_to_Vm, mixing_simple, property_mass_to_molar
 from thermo import phases
@@ -109,6 +114,9 @@ spec_to_iter_vars_backup =  {
 empty_flash_conv = {'iterations': 0, 'err': 0.0, 'stab_guess_name': None}
 one_in_list = [1.0]
 empty_list = []
+
+NAIVE_BISECTION_PHASE_MIXING_BOUNDARY = 'NAIVE_BISECTION_PHASE_MIXING_BOUNDARY'
+SATURATION_SECANT_PHASE_MIXING_BOUNDARY = 'SATURATION_SECANT_PHASE_MIXING_BOUNDARY'
 
 class Flash(object):
     r'''Base class for performing flash calculations. All Flash objects need
@@ -460,6 +468,51 @@ class Flash(object):
         else:
             raise Exception('Flash inputs unsupported')
 
+    flash_mixing_phase_boundary_methods = [NAIVE_BISECTION_PHASE_MIXING_BOUNDARY,
+                                           SATURATION_SECANT_PHASE_MIXING_BOUNDARY]
+    flash_mixing_phase_boundary_algos = [incipient_phase_bounded_naive,
+                                         incipient_liquid_bounded_PT_sat]
+    
+    def flash_mixing_phase_boundary(self, specs, zs_existing, zs_added, boundary='VL'):
+        if boundary == 'VL':
+            # if we start from a liquid, will converge to a gas with VF=0
+            # if we start from a gas, will converge to a liquid with LF=0
+            check = VL_boolean_check
+        elif boundary == 'LL':
+            check = LL_boolean_check
+        elif boundary == 'VLL':
+            # Hard to say if this flash will converge to a VF=0 or a second liquid fraction of 0
+            check = VLL_boolean_check
+        elif boundary == 'VLN/LN':
+            check = VLN_or_LN_boolean_check
+        elif boundary == 'VLL/LL':
+            check = VLL_or_LL_boolean_check
+        else:
+            raise ValueError("Unrecognized boundary")
+        
+
+        for method in self.flash_mixing_phase_boundary_algos:
+            try:
+                if method is incipient_phase_bounded_naive:
+                    res, bounding_attempts, iters, mixing_factor = incipient_phase_bounded_naive(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check)
+                elif method is incipient_liquid_bounded_PT_sat and boundary == 'VL':
+                    res, bounding_attempts, iters, mixing_factor = incipient_liquid_bounded_PT_sat(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check)
+
+
+
+                res.flash_convergence = {'inner_flash_convergence': res.flash_convergence,
+                                         'bounding_attempts': bounding_attempts,
+                                         'iterations': iters,
+                                         'mixing_factor': mixing_factor}
+
+
+                return res
+            except Exception as e:
+                print(e)
+        raise ValueError("Could not find a solution")
+                
+                
+                
     def generate_Ts(self, Ts=None, Tmin=None, Tmax=None, pts=50, zs=None,
                     method=None):
         if method is None:
@@ -970,6 +1023,64 @@ class Flash(object):
 
         return props
 
+    def debug_mixing_phase_boundary_PT(self, zs, zs_mixing, Pmin=None, Pmax=None, 
+                                       Tmin=None, Tmax=None, pts=50,
+                ignore_errors=True, values=False, verbose=False, show=False,
+                T_pts=None, P_pts=None, Ts=None, Ps=None, boundary='VL'): # pragma: no cover
+        if not has_matplotlib() and not values:
+            raise Exception('Optional dependency matplotlib is required for plotting')
+        if Pmin is None:
+            Pmin = 1e2
+        if Pmax is None:
+            Pmax = min(self.constants.Pcs)
+        if Tmin is None:
+            Tmin = min(self.constants.Tms)*.9
+        if Tmax is None:
+            Tmax = max(self.constants.Tcs)*1.5
+        if T_pts is None:
+            T_pts = pts
+        if P_pts is None:
+            P_pts = pts
+
+        Ts = self.generate_Ts(Ts=Ts, Tmin=Tmin, Tmax=Tmax, pts=T_pts, zs=zs)
+        Ps = self.generate_Ps(Ps=Ps, Pmin=Pmin, Pmax=Pmax, pts=P_pts, zs=zs)
+
+        matrix = []
+        for T in Ts:
+            row = []
+            for P in Ps:
+                try:
+                    state = self.flash_mixing_phase_boundary(specs={'T': T, 'P': P}, zs_existing=zs, zs_added=zs_mixing, boundary=boundary)
+                    row.append(state.flash_convergence['mixing_factor'])
+                except Exception as e:
+                    if verbose:
+                        print([T, P, e])
+                    if ignore_errors:
+                        row.append(nan)
+                    else:
+                        raise e
+            matrix.append(row)
+
+        if values:
+            return Ts, Ps, matrix
+        
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+        
+        Ts, Ps = np.meshgrid(Ts, Ps)
+        im = ax.pcolormesh(Ts, Ps, matrix, cmap=plt.get_cmap('viridis'))
+        cbar = fig.colorbar(im, ax=ax)
+        cbar.set_label('Factor')
+        
+        ax.set_yscale('log')
+        ax.set_xlabel('Temperature [K]')
+        ax.set_ylabel('Pressure [Pa]')
+        plt.title('PT flash mixing %s boundary flashes, zs=%s, zs_mixing=%s' %(boundary, zs, zs_mixing))
+        if show:
+            plt.show()
+        else:
+            return fig
+    
     def debug_PT(self, zs, Pmin=None, Pmax=None, Tmin=None, Tmax=None, pts=50,
                 ignore_errors=True, values=False, verbose=False, show=False,
                 T_pts=None, P_pts=None, Ts=None, Ps=None): # pragma: no cover

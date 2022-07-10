@@ -24,7 +24,7 @@ __all__ = ['has_matplotlib', 'Stateva_Tsvetkov_TPDF', 'TPD',
 'assert_component_balance', 'assert_energy_balance', 'allclose_variable',
 'identify_phase', 'phase_select_property']
 
-from fluids.numerics import assert_close, numpy as np
+from fluids.numerics import assert_close, numpy as np, trunc_log
 from fluids.constants import R
 from chemicals.utils import log, mix_multiple_component_flows
 
@@ -331,8 +331,10 @@ def TPD(T, zs, lnphis, ys, lnphis_test):
     '''
     tot = 0.0
     for yi, phi_yi, zi, phi_zi in zip(ys, lnphis_test, zs, lnphis):
-        di = log(zi) + phi_zi
-        tot += yi*(log(yi) + phi_yi - di)
+        if yi == 0 and zi == 0:
+            continue
+        di = trunc_log(zi) + phi_zi
+        tot += yi*(trunc_log(yi) + phi_yi - di)
     return tot*R*T
 
 def Stateva_Tsvetkov_TPDF(lnphis, zs, lnphis_trial, ys):
