@@ -575,25 +575,25 @@ class FlashVL(Flash):
                         always_stable = stable
                     if all_solutions:
                         stab_guess_name = self.stab.incipient_guess_name(i, expect_liquid=expect_liquid)
-                        all_solutions_list.append((trial_zs, appearing_zs, V_over_F, stab_guess_name, i, sum_criteria, lnK_2_tot))
+                        all_solutions_list.append((trial_zs, appearing_zs, V_over_F, stab_guess_name, i, sum_criteria, lnK_2_tot, dG_RT))
                     if not stable:
                         if highest_comp_diff:
                             if min_diff > comp_diff_max:
                                 if min_comp_diff is not None and min_diff > min_comp_diff and not all_solutions:
                                     highest_comp_diff = highest_comp_diff = False
                                     break
-                                comp_diff_solution = (trial_zs, appearing_zs, V_over_F, i, sum_criteria, lnK_2_tot)
+                                comp_diff_solution = (trial_zs, appearing_zs, V_over_F, i, sum_criteria, lnK_2_tot, dG_RT)
                                 comp_diff_max = min_diff
                             continue
 
                         if lowest_dG:
                             if dG_RT > dG_min:
                                 dG_min = dG_RT
-                                lowest_solution = (trial_zs, appearing_zs, V_over_F, i, sum_criteria, lnK_2_tot)
+                                lowest_solution = (trial_zs, appearing_zs, V_over_F, i, sum_criteria, lnK_2_tot, dG_RT)
                             continue
 
                         if handle_iffy and sum_criteria < 1e-5:
-                            iffy_solution = (trial_zs, appearing_zs, V_over_F, i, sum_criteria, lnK_2_tot)
+                            iffy_solution = (trial_zs, appearing_zs, V_over_F, i, sum_criteria, lnK_2_tot, dG_RT)
 #                        continue
                         elif all_solutions:
                             continue
@@ -608,17 +608,17 @@ class FlashVL(Flash):
             if not lowest_dG and not highest_comp_diff and not handle_iffy:
                 pass
             elif highest_comp_diff:
-                trial_zs, appearing_zs, V_over_F, i, sum_criteria, lnK_2_tot = comp_diff_solution
+                trial_zs, appearing_zs, V_over_F, i, sum_criteria, lnK_2_tot, dG_RT = comp_diff_solution
             elif lowest_dG:
-                trial_zs, appearing_zs, V_over_F, i, sum_criteria, lnK_2_tot = lowest_solution
+                trial_zs, appearing_zs, V_over_F, i, sum_criteria, lnK_2_tot, dG_RT = lowest_solution
             elif handle_iffy:
-                trial_zs, appearing_zs, V_over_F, i, sum_criteria, lnK_2_tot = iffy_solution
+                trial_zs, appearing_zs, V_over_F, i, sum_criteria, lnK_2_tot, dG_RT = iffy_solution
             if skip is not None:
                 i += skip
             stab_guess_name = self.stab.incipient_guess_name(i, expect_liquid=expect_liquid)
-            return (False, (trial_zs, appearing_zs, V_over_F, stab_guess_name, i, sum_criteria, lnK_2_tot))
+            return (False, (trial_zs, appearing_zs, V_over_F, stab_guess_name, i, sum_criteria, lnK_2_tot, dG_RT))
         else:
-            return (stable, (None, None, None, None, None, None, None))
+            return (stable, (None, None, None, None, None, None, None, None))
 
 
     def flash_TP_stability_test(self, T, P, zs, liquid, gas, solution=None, LL=False, phases_ready=False):
@@ -637,7 +637,7 @@ class FlashVL(Flash):
         else:
             min_phase, other_phase = gas, liquid
 
-        stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_guess_number, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(
+        stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_guess_number, stab_sum_zs_test, stab_lnK_2_tot, _) = self.stability_test_Michelsen(
                 T, P, zs, min_phase, other_phase, highest_comp_diff=self.SS_2P_STAB_HIGHEST_COMP_DIFF, min_comp_diff=self.SS_2P_STAB_COMP_DIFF_MIN)
         if stable:
             ls, g = ([liquid], None) if min_phase is liquid else ([], gas)

@@ -4557,6 +4557,60 @@ def incipient_phase_bounded_naive(flasher, specs, zs_existing, zs_added, check, 
     
     return v, attempts, len(store), multiplier
 
+def incipient_phase_bounded_secant(flasher, gas, liquid, T, P, zs_existing, zs_added, check, xtol=1e-6):
+    '''Solver which, when the PT flash does not converge to a two-phase
+    solution, uses the stability test to return a vapor fraction that 
+    makes the objective function continuous.
+    '''
+    zs_existing = flash_mixing_remove_overlap(zs_existing, zs_added)
+    
+    (negative_bound, positive_bound, negative_bound_res, positive_bound_res,
+     attempts) = generate_incipient_phase_boundaries_naive(flasher, specs={'T': T, 'P': P}, 
+                                                           zs_existing=zs_existing, zs_added=zs_added, check=check)
+    
+    iterations = 0
+    store = []
+    N = len(zs_existing)
+    def to_solve(mix_ratio):
+        nonlocal iterations
+        iterations += 1
+        ns = [zs_existing[i] + mix_ratio*zs_added[i] for i in range(N)]
+        zs = normalize(ns)
+        point = flasher.flash(zs=zs, T=T, P=P)
+        store.append(point)
+        print(mix_ratio, 'mix_ratio')
+        if point.phase_count == 2:
+            print('real phase', point.LF)
+            return point.LF
+        else:
+            # stability test
+            min_phase = gas.to(zs=zs, T=T, P=P)
+            other_phase = liquid.to(zs=zs, T=T, P=P)
+            slns = flasher.stability_test_Michelsen(T=T, P=P, zs=zs, min_phase=min_phase, other_phase=other_phase, all_solutions=True)
+            frac, lowest_dG = -1e-10, 1e100
+            for sln in slns:
+                dG_sln = sln[7]
+                if dG_sln < lowest_dG:
+                    frac = sln[2]
+            print('pseudophase', frac)
+            return frac
+        raise ValueError("Shold not get here")
+
+    x0 = 0.5*negative_bound + positive_bound*0.5
+    
+    # import matplotlib.pyplot as plt
+    # pts = linspace(negative_bound, positive_bound, 500)
+    # vals = [to_solve(p) for p in pts]
+    # plt.plot(pts, vals, 'x')
+    # plt.show()
+
+    # multiplier = brenth(to_solve, negative_bound, positive_bound, xtol=xtol)
+    multiplier = secant(to_solve, x0=x0, low=negative_bound, high=positive_bound, xtol=xtol, bisection=True)
+    for v in store[::-1]:
+        if check(v) == 1:
+            break
+
+    return v, attempts, len(store), multiplier
 
 def incipient_liquid_bounded_PT_sat(flasher, specs, zs_existing, zs_added, check, VF=1, xtol=1e-6):
     specs_working = specs.copy()

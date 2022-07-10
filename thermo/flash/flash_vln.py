@@ -468,7 +468,7 @@ class FlashVLN(FlashVL):
             all_solutions = self.stability_test_Michelsen(T, P, zs, another_phase, base_phase, all_solutions=True) + self.stability_test_Michelsen(T, P, zs, base_phase, another_phase, all_solutions=True)
             all_solutions = deduplicate_stab_results(all_solutions)
             for stab_sln in all_solutions:
-                trial_zs, appearing_zs, V_over_F, stab_guess_name, _, _, _ = stab_sln
+                trial_zs, appearing_zs, V_over_F, stab_guess_name, _, _, _, _ = stab_sln
                 if V_over_F < 1.000001 and V_over_F > -.000001:
                     try:
                         double_check_sln = self.flash_2P(T, P, zs, trial_zs, appearing_zs, another_phase,
@@ -519,12 +519,12 @@ class FlashVLN(FlashVL):
             # Probably a water phase exists
             expect_aqueous = True
 
-        stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_guess_number, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(
+        stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_guess_number, stab_sum_zs_test, stab_lnK_2_tot, _) = self.stability_test_Michelsen(
                 T, P, zs, min_phase, other_phase, existing_comps=existing_comps, expect_liquid=expect_liquid,
                 expect_aqueous=expect_aqueous, handle_iffy=False, highest_comp_diff=self.SS_NP_STAB_HIGHEST_COMP_DIFF, min_comp_diff=self.SS_NP_STAB_COMP_DIFF_MIN)
         if stable and self.unique_liquid_count > 2:
             for other_phase in liquids[2:]:
-                stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_guess_number, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(T, P, zs,
+                stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_guess_number, stab_sum_zs_test, stab_lnK_2_tot, _) = self.stability_test_Michelsen(T, P, zs,
                                                                                                             min_phase,
                                                                                                             other_phase, existing_comps=existing_comps)
                 if not stable:
@@ -610,10 +610,10 @@ class FlashVLN(FlashVL):
             existing_comps = slnN[1]
             # hardcoded for now - need to track
             other_phase = liquids[liquid_idx]
-            stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_guess_number, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(T, P, zs, min_phase, other_phase, existing_comps=existing_comps)
+            stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_guess_number, stab_sum_zs_test, stab_lnK_2_tot, _) = self.stability_test_Michelsen(T, P, zs, min_phase, other_phase, existing_comps=existing_comps)
         # if stable and self.unique_liquid_count > 3:
         #     for other_phase in liquids[3:]:
-        #         stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_guess_number, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(T, P, zs,
+        #         stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_guess_number, stab_sum_zs_test, stab_lnK_2_tot, _) = self.stability_test_Michelsen(T, P, zs,
         #                                                                                                     min_phase,
         #                                                                                                     other_phase, existing_comps=existing_comps)
         #         if not stable:
