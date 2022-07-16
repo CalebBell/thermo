@@ -432,12 +432,6 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
 
     Examples
     --------
-    >>> from thermo.stream import Stream
-    >>> f1 = Stream(['water', 'ethanol', 'pentane'], zs=[.5, .4, .1], T=300, P=1E6, n=50)
-    >>> f2 = Stream(['water', 'methanol'], zs=[.5, .5], T=300, P=9E5, n=25)
-    >>> f3 = Stream(IDs=['109-66-0', '64-17-5', '67-56-1', '7732-18-5'], ns=[5.0, 20.0, 12.5, 37.5], T=300, P=850000)
-    >>> assert_component_balance([f1, f2], f3)
-    >>> assert_component_balance([f1, f2], f3, reactive=True)
     '''
     try:
         [_ for _ in inlets]
@@ -456,9 +450,9 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
         assert_close(sum([i.m for i in inlets]), sum([i.m for i in outlets]))
 
         try:
-            ws = [i.ws for i in inlets]
-        except:
             ws = [i.ws() for i in inlets]
+        except:
+            ws = [i.ws for i in inlets]
 
         feed_cmps, feed_masses = mix_multiple_component_flows(IDs=feed_CASs,
                                                               flows=[i.m for i in inlets],
@@ -479,15 +473,23 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
             raise Exception('Product and feeds have different components in them')
 
         # element balance
-        feed_cmps, feed_element_flows = mix_multiple_component_flows(IDs=[list(i.atoms.keys()) for i in inlets],
-                                                              flows=[i.n for i in inlets],
-                                                              fractions=[list(i.atoms.values()) for i in inlets])
+        feed_cmps, feed_element_flows = mix_multiple_component_flows(
+            IDs=[list(i.atom_flows().keys()) for i in inlets],
+            flows=[1 for i in inlets],
+            fractions=[list(i.atom_flows().values()) for i in inlets])
+
+        # feed_cmps, feed_element_flows = mix_multiple_component_flows(IDs=[list(i.atoms.keys()) for i in inlets],
+        #                                                       flows=[i.n for i in inlets],
+        #                                                       fractions=[list(i.atoms.values()) for i in inlets])
         feed_element_flows = {i:j for i, j in zip(feed_cmps, feed_element_flows)}
 
 
-        product_cmps, product_element_flows = mix_multiple_component_flows(IDs=[list(i.atoms.keys()) for i in outlets],
-                                                              flows=[i.n for i in outlets],
-                                                              fractions=[list(i.atoms.values()) for i in outlets])
+        product_cmps, product_element_flows = mix_multiple_component_flows(IDs=[list(i.atom_flows().keys()) for i in outlets],
+                                                              flows=[1 for i in outlets],
+                                                              fractions=[list(i.atom_flows().values()) for i in outlets])
+        # product_cmps, product_element_flows = mix_multiple_component_flows(IDs=[list(i.atoms.keys()) for i in outlets],
+        #                                                       flows=[i.n for i in outlets],
+        #                                                       fractions=[list(i.atoms.values()) for i in outlets])
         product_element_flows = {i:j for i, j in zip(product_cmps, product_element_flows)}
 
         for ele, flow in feed_element_flows.items():

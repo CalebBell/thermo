@@ -118,6 +118,9 @@ empty_list = []
 NAIVE_BISECTION_PHASE_MIXING_BOUNDARY = 'NAIVE_BISECTION_PHASE_MIXING_BOUNDARY'
 SATURATION_SECANT_PHASE_MIXING_BOUNDARY = 'SATURATION_SECANT_PHASE_MIXING_BOUNDARY'
 
+CAS_H2O = '7732-18-5'
+
+
 class Flash(object):
     r'''Base class for performing flash calculations. All Flash objects need
     to inherit from this, and common methods can be added to it.'''
@@ -1443,3 +1446,28 @@ class Flash(object):
         else:
             Vls = [i(T_liquid_volume_ref, None) for i in self.correlations.VolumeLiquids]
         return Vls
+
+
+    @property
+    def water_index(self):
+        r'''The index of the component water in the components. None if water
+        is not present. Water is recognized by its CAS number.
+
+        Returns
+        -------
+        water_index : int
+            The index of the component water, [-]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._water_index
+        except AttributeError:
+            pass
+
+        try:
+            self._water_index = self.constants.CASs.index(CAS_H2O)
+        except ValueError:
+            self._water_index = None
+        return self._water_index

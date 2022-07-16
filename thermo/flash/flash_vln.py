@@ -234,9 +234,9 @@ class FlashVLN(FlashVL):
 
         self.T_MIN_FLASH = max(p.T_MIN_FLASH for p in self.phases)
         try:
-            self.water_index = constants.CASs.index(CAS_H2O)
+            self._water_index = constants.CASs.index(CAS_H2O)
         except ValueError:
-            self.water_index = None
+            self._water_index = None
 
 #        self.flash_pure = FlashPureVLS(constants=constants, correlations=correlations,
 #                                       gas=gas, liquids=unique_liquids, solids=[],
