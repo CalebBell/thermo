@@ -75,7 +75,7 @@ from thermo.equilibrium import EquilibriumState
 from thermo.phase_identification import identify_sort_phases
 from thermo.utils import has_matplotlib
 from thermo.flash.flash_utils import (incipient_phase_bounded_naive, incipient_liquid_bounded_PT_sat,
-                                      VLN_or_LN_boolean_check,
+                                      incipient_phase_one_sided_secant, VLN_or_LN_boolean_check,
                                       VL_boolean_check, VLL_or_LL_boolean_check,
                                       VLL_boolean_check, LL_boolean_check)
 from fluids.numerics import logspace, linspace, numpy as np
@@ -117,6 +117,7 @@ empty_list = []
 
 NAIVE_BISECTION_PHASE_MIXING_BOUNDARY = 'NAIVE_BISECTION_PHASE_MIXING_BOUNDARY'
 SATURATION_SECANT_PHASE_MIXING_BOUNDARY = 'SATURATION_SECANT_PHASE_MIXING_BOUNDARY'
+PT_SECANT_PHASE_MIXING_BOUNDARY = 'SATURATION_SECANT_PHASE_MIXING_BOUNDARY'
 
 CAS_H2O = '7732-18-5'
 
@@ -472,9 +473,11 @@ class Flash(object):
             raise Exception('Flash inputs unsupported')
 
     flash_mixing_phase_boundary_methods = [NAIVE_BISECTION_PHASE_MIXING_BOUNDARY,
-                                           SATURATION_SECANT_PHASE_MIXING_BOUNDARY]
+                                           SATURATION_SECANT_PHASE_MIXING_BOUNDARY,
+                                           PT_SECANT_PHASE_MIXING_BOUNDARY]
     flash_mixing_phase_boundary_algos = [incipient_phase_bounded_naive,
-                                         incipient_liquid_bounded_PT_sat]
+                                         incipient_liquid_bounded_PT_sat,
+                                         incipient_phase_one_sided_secant]
     
     def flash_mixing_phase_boundary(self, specs, zs_existing, zs_added, boundary='VL'):
         if boundary == 'VL':
@@ -495,23 +498,25 @@ class Flash(object):
         
 
         for method in self.flash_mixing_phase_boundary_algos:
-            try:
-                if method is incipient_phase_bounded_naive:
-                    res, bounding_attempts, iters, mixing_factor = incipient_phase_bounded_naive(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check)
-                elif method is incipient_liquid_bounded_PT_sat and boundary == 'VL':
-                    res, bounding_attempts, iters, mixing_factor = incipient_liquid_bounded_PT_sat(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check)
+            # try:
+            if method is incipient_phase_bounded_naive:
+                res, bounding_attempts, iters, mixing_factor = incipient_phase_bounded_naive(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check)
+            elif method is incipient_liquid_bounded_PT_sat and boundary == 'VL':
+                res, bounding_attempts, iters, mixing_factor = incipient_liquid_bounded_PT_sat(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check)
+            elif method is incipient_phase_one_sided_secant:
+                res, bounding_attempts, iters, mixing_factor = incipient_phase_one_sided_secant(
+                    flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check)
 
 
+            res.flash_convergence = {'inner_flash_convergence': res.flash_convergence,
+                                     'bounding_attempts': bounding_attempts,
+                                     'iterations': iters,
+                                     'mixing_factor': mixing_factor}
 
-                res.flash_convergence = {'inner_flash_convergence': res.flash_convergence,
-                                         'bounding_attempts': bounding_attempts,
-                                         'iterations': iters,
-                                         'mixing_factor': mixing_factor}
 
-
-                return res
-            except Exception as e:
-                print(e)
+            return res
+            # except Exception as e:
+            #     print(e)
         raise ValueError("Could not find a solution")
                 
                 

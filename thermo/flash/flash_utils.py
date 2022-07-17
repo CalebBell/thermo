@@ -65,6 +65,7 @@ __all__ = [
     'generate_pure_phase_boolean_check',
     'flash_mixing_minimum_factor', 
     'flash_mixing_remove_overlap',
+    'incipient_phase_one_sided_secant',
 ]
 
 from random import shuffle
@@ -75,7 +76,7 @@ from fluids.numerics import (UnconvergedError, trunc_exp, newton,
                              damping_maintain_sign, oscillation_checking_wrapper,
                              OscillationError, NotBoundedError, jacobian,
                              best_bounding_bounds, isclose, newton_system,
-                             make_damp_initial, newton_minimize,
+                             make_damp_initial, newton_minimize, one_sided_secant,
                              root, minimize, fsolve, linspace, logspace)
 from fluids.numerics import py_solve, trunc_log, bisect
 
@@ -4555,6 +4556,64 @@ def incipient_phase_bounded_naive(flasher, specs, zs_existing, zs_added, check, 
         if check(v) == 1:
             break
     
+    return v, attempts, len(store), multiplier
+
+def incipient_phase_one_sided_secant(flasher, specs, zs_existing, zs_added,
+                                     check, ytol=1e-6, xtol=None):
+    '''Solver which uses a one-sided secant algorithm to converge
+    with the same convergence order as secant.
+    A line search algorithm is used to make every step a secant one.
+    
+    Returns
+    -------
+    res : EquilibriumState
+        The flash results at the incipient phase condition, [-]
+    bounding_attempts : int
+        The number of attempts to bound the problem, [-]
+    iters : int
+        The number of attempts to converge the problem, [-]
+    multiplier : float
+        The multiplier used to mix the two streams in the end, [-]
+    '''
+    zs_existing = flash_mixing_remove_overlap(zs_existing, zs_added)
+    
+    (negative_bound, positive_bound, negative_bound_res, positive_bound_res,
+     attempts) = generate_incipient_phase_boundaries_naive(flasher, specs=specs, 
+                                                           zs_existing=zs_existing, zs_added=zs_added, check=check)
+    
+    iterations = 0
+    store = []
+    N = len(zs_existing)
+    flat = -1.0
+    def to_solve(mix_ratio):
+        nonlocal iterations
+        iterations += 1
+        ns = [zs_existing[i] + mix_ratio*zs_added[i] for i in range(N)]
+        zs = normalize(ns)
+        point = flasher.flash(zs=zs, **specs)
+        store.append(point)
+        # print(mix_ratio, 'mix_ratio')
+        if point.phase_count == 2:
+            # print('real phase', point.LF)
+            # TODO: be able to oprimize for VF=0 and the same for other phases
+            return point.LF
+        else:
+            return flat
+
+    # import matplotlib.pyplot as plt
+    # pts = linspace(negative_bound, positive_bound, 500)
+    # vals = [to_solve(p) for p in pts]
+    # plt.plot(pts, vals, 'x')
+    # plt.show()
+
+    multiplier = one_sided_secant(to_solve, x_flat=negative_bound, 
+                                  x0=positive_bound, y_flat=flat,
+                                  x1=positive_bound*(1-1e-9),
+                                  xtol=xtol, ytol=ytol)
+    for v in store[::-1]:
+        if check(v) == 1:
+            break
+
     return v, attempts, len(store), multiplier
 
 def incipient_phase_bounded_secant(flasher, gas, liquid, T, P, zs_existing, zs_added, check, xtol=1e-6):
