@@ -103,7 +103,7 @@ def test_flash_mixing_phase_boundary_air():
     
     # test base - start as liquid and converge to gas
     res = flasher.flash_mixing_phase_boundary(specs={'T': 300, 'P': 1e5}, zs_existing=[1-3e-7, 1e-7, 1e-7, 1e-7],
-                                zs_added=[0, .5, 5, 0], boundary='VL')
+                                zs_added=[0, .5, .5, 0], boundary='VL')
     assert_close(res.VF, 0, atol=1e-5)
     
     # test base with a PH instead of a PT flash
@@ -177,7 +177,7 @@ def test_flash_mixing_phase_boundary_air():
     res = flasher_dew.flash_mixing_phase_boundary(specs={'T': 300, 'P': 1e5}, zs_existing=[0, .2, .79, .01],
                                     zs_added=[1, 0, 0, 0], boundary='VL')
     # Check that the compositions are similar
-    assert_close1d(res.zs, res_first_base.zs, rtol=1e-5)
+    assert_close1d(res.zs, res_first_base.zs, rtol=5e-5)
     # check we didn't accidentally use the same algorithm
     assert res.zs != res_first_base.zs
 

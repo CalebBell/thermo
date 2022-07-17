@@ -77,7 +77,8 @@ from thermo.utils import has_matplotlib
 from thermo.flash.flash_utils import (incipient_phase_bounded_naive, incipient_liquid_bounded_PT_sat,
                                       incipient_phase_one_sided_secant, VLN_or_LN_boolean_check,
                                       VL_boolean_check, VLL_or_LL_boolean_check,
-                                      VLL_boolean_check, LL_boolean_check)
+                                      VLL_boolean_check, LL_boolean_check,
+                                      flash_phase_boundary_one_sided_secant)
 from fluids.numerics import logspace, linspace, numpy as np
 from chemicals.utils import log10, floor, rho_to_Vm, mixing_simple, property_mass_to_molar
 from thermo import phases
@@ -118,6 +119,8 @@ empty_list = []
 NAIVE_BISECTION_PHASE_MIXING_BOUNDARY = 'NAIVE_BISECTION_PHASE_MIXING_BOUNDARY'
 SATURATION_SECANT_PHASE_MIXING_BOUNDARY = 'SATURATION_SECANT_PHASE_MIXING_BOUNDARY'
 PT_SECANT_PHASE_MIXING_BOUNDARY = 'SATURATION_SECANT_PHASE_MIXING_BOUNDARY'
+
+SECANT_PHASE_BOUNDARY = 'SECANT_PHASE_BOUNDARY'
 
 CAS_H2O = '7732-18-5'
 
@@ -471,13 +474,63 @@ class Flash(object):
 
         else:
             raise Exception('Flash inputs unsupported')
+            
+    flash_phase_boundary_algos = [flash_phase_boundary_one_sided_secant]
+    flash_phase_boundary_methods = [SECANT_PHASE_BOUNDARY]
+            
+    def flash_phase_boundary(self, zs, phase_frac_check, T=None, P=None, V=None, H=None, S=None, U=None,
+                             hot_start=None):
+        T_spec = T is not None
+        P_spec = P is not None
+        V_spec = V is not None
+        H_spec = H is not None
+        S_spec = S is not None
+        U_spec = U is not None
+        spec_count = T_spec + P_spec + V_spec + H_spec + S_spec + U_spec
+        if spec_count != 1:
+            raise ValueError("One specification must be provided")
+        if T_spec:
+            iter_var, backup_iter_var = 'P', 'H'
+            spec_var, spec_val = 'T', T
+        if P_spec:
+            iter_var, backup_iter_var = 'T', 'H'
+            spec_var, spec_val = 'P', P
+        if V_spec:
+            iter_var, backup_iter_var = 'P', 'H'
+            spec_var, spec_val = 'V', V
+        if H_spec:
+            iter_var, backup_iter_var = 'P', 'T'
+            spec_var, spec_val = 'H', H
+        if S_spec:
+            iter_var, backup_iter_var = 'P', 'T'
+            spec_var, spec_val = 'S', S
+        if U_spec:
+            iter_var, backup_iter_var = 'P', 'T'
+            spec_var, spec_val = 'U', U
+            
+            
+        for method in self.flash_phase_boundary_algos:
+            res, bounding_attempts, iterations = method(flasher=self, zs=zs, spec_var=spec_var, spec_val=spec_val, iter_var=iter_var,
+                                                    check=phase_frac_check, hot_start=hot_start)
 
-    flash_mixing_phase_boundary_methods = [NAIVE_BISECTION_PHASE_MIXING_BOUNDARY,
+            res.flash_convergence = {'inner_flash_convergence': res.flash_convergence,
+                                     'bounding_attempts': bounding_attempts,
+                                     'iterations': iterations}
+
+
+            return res
+        raise ValueError("Could not find a solution")
+
+
+        
+    flash_mixing_phase_boundary_methods = [PT_SECANT_PHASE_MIXING_BOUNDARY,
+                                           NAIVE_BISECTION_PHASE_MIXING_BOUNDARY,
                                            SATURATION_SECANT_PHASE_MIXING_BOUNDARY,
-                                           PT_SECANT_PHASE_MIXING_BOUNDARY]
-    flash_mixing_phase_boundary_algos = [incipient_phase_bounded_naive,
+                                           ]
+    flash_mixing_phase_boundary_algos = [incipient_phase_one_sided_secant,
+                                         incipient_phase_bounded_naive,
                                          incipient_liquid_bounded_PT_sat,
-                                         incipient_phase_one_sided_secant]
+                                         ]
     
     def flash_mixing_phase_boundary(self, specs, zs_existing, zs_added, boundary='VL'):
         if boundary == 'VL':
@@ -499,13 +552,16 @@ class Flash(object):
 
         for method in self.flash_mixing_phase_boundary_algos:
             # try:
-            if method is incipient_phase_bounded_naive:
+            if method is incipient_phase_one_sided_secant:
+                # can only solve two phase prolems
+                if boundary not in ('VL',):
+                    continue
+                res, bounding_attempts, iters, mixing_factor = incipient_phase_one_sided_secant(
+                    flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check)
+            elif method is incipient_phase_bounded_naive:
                 res, bounding_attempts, iters, mixing_factor = incipient_phase_bounded_naive(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check)
             elif method is incipient_liquid_bounded_PT_sat and boundary == 'VL':
                 res, bounding_attempts, iters, mixing_factor = incipient_liquid_bounded_PT_sat(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check)
-            elif method is incipient_phase_one_sided_secant:
-                res, bounding_attempts, iters, mixing_factor = incipient_phase_one_sided_secant(
-                    flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check)
 
 
             res.flash_convergence = {'inner_flash_convergence': res.flash_convergence,

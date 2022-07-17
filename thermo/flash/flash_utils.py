@@ -66,6 +66,8 @@ __all__ = [
     'flash_mixing_minimum_factor', 
     'flash_mixing_remove_overlap',
     'incipient_phase_one_sided_secant',
+    'flash_phase_boundary_one_sided_secant', 
+    'generate_phase_boundaries_naive'
 ]
 
 from random import shuffle
@@ -4357,6 +4359,135 @@ def flash_mixing_remove_overlap(zs_existing, zs_added):
     # normalize the new composition
     return normalize(new)
 
+phase_boundaries_T_guesses = [300, 400, 200, 250, 350, 500, 100, 800, 1000, 1500, 2000, 50, 5000, 10000, 50000, 10, 1, .1, ]
+phase_boundaries_P_guesses = [1e5, 1e6, 1e4, 1e7, 1e3, 1e2, 1, 1e8, 1e9]
+phase_boundaries_V_guesses = [1e-3, 1e-4, 1e-5, 1e-6, 1e-2, 1e-1, 1, 10, 100]
+phase_boundaries_H_guesses = linspace(-10000, 10000, 20)
+phase_boundaries_S_guesses = phase_boundaries_H_guesses
+phase_boundaries_U_guesses = phase_boundaries_H_guesses
+
+def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, check, hot_start=None,
+                                    iter_guesses=None):
+    '''Attempt to bound the formation of an incipient phase, using a 
+    variety of hardcoded options.
+    '''
+    if iter_var == 'T':
+        guesses = phase_boundaries_T_guesses
+    elif iter_var == 'P':
+        guesses = phase_boundaries_P_guesses
+    elif iter_var == 'V':
+        guesses = phase_boundaries_V_guesses
+    elif iter_var == 'H':
+        guesses = phase_boundaries_H_guesses
+    elif iter_var == 'S':
+        guesses = phase_boundaries_S_guesses
+    elif iter_var == 'U':
+        guesses = phase_boundaries_U_guesses
+        
+    kwargs = {spec_var: spec_val}
+    kwargs_pert = {spec_var: spec_val}
+    if iter_guesses is not None:
+        all_iter_guesses = iter_guesses + guesses
+    else:
+        all_iter_guesses = guesses
+    if hot_start is not None:
+        all_iter_guesses = [hot_start.value(iter_var)] + all_iter_guesses
+    
+    # does not necessarily bound in the right direction
+    # that means at least two points are needed in the real region
+    # this is a huge hole and bug
+
+    non_phase_val = phase_val = check_phase_val = check_phase_derivative = None
+
+
+    non_phase_vals = []
+    non_phase_results = []
+    
+    for i, iter_val in enumerate(all_iter_guesses):
+        kwargs[iter_var] = iter_val
+        try:
+            res = flasher.flash(zs=zs, **kwargs)
+        except Exception as e:
+            print('While finding boundary, flash failed with error', e)
+            # flash failure
+            continue
+        check_val = check(res)
+        print(f'{iter_var}={iter_val}, check={check_val}')
+        if check_val < 0:
+            # non_phase_val = iter_val
+            # non_phase_res = res
+
+            non_phase_vals.append(iter_val)
+            non_phase_results.append(res)
+        else:
+            if phase_val is None:
+                phase_val = iter_val
+                phase_res = res
+                check_phase_val = check_val
+                
+                kwargs_pert[iter_var] = iter_val*(1+1e-8)
+                res_pert = flasher.flash(zs=zs, **kwargs_pert)
+                check_pert = check(res_pert)
+                der = (check_pert - check_phase_val)/(kwargs_pert[iter_var] - kwargs[iter_var])
+                der_dir = der > 0
+            else:
+                if check_phase_val < check_phase_val:
+                    phase_val = iter_val
+                    phase_res = res
+
+                    kwargs_pert[iter_var] = iter_val*(1+1e-8)
+                    res_pert = flasher.flash(zs=zs, **kwargs_pert)
+                    check_pert = check(res_pert)
+                    der = (check_pert - check_phase_val)/(kwargs_pert[iter_var] - kwargs[iter_var])
+                    der_dir = der > 0
+
+        if non_phase_vals and phase_val is not None:
+            # go through the solutions and see if any are right
+            for non_phase_val, non_phase_res in zip(non_phase_vals, non_phase_results):
+                if not der_dir and non_phase_val > phase_val:
+                    return (non_phase_val, phase_val, non_phase_res, phase_res, i + 1)
+                elif der_dir and non_phase_val < phase_val:
+                    return (non_phase_val, phase_val, non_phase_res, phase_res, i + 1)
+
+    raise ValueError("Failed to bound the flash")
+
+def flash_phase_boundary_one_sided_secant(flasher, zs, spec_var, spec_val, iter_var, check, hot_start=None,
+                                          ytol=1e-6, xtol=None, iter_guesses=None):
+    
+    non_phase_val, phase_val, non_phase_res, phase_res, bounding_iter = generate_phase_boundaries_naive(
+        flasher=flasher, zs=zs, spec_var=spec_var, spec_val=spec_val, iter_var=iter_var, 
+        check=check, hot_start=hot_start,
+                                    iter_guesses=iter_guesses)
+
+    iterations = 0
+    store = []
+    flat = -1.0
+    specs = {spec_var: spec_val}
+    
+    def to_solve(guess):
+        nonlocal iterations
+        iterations += 1
+        specs[iter_var] = guess
+        point = flasher.flash(zs=zs, **specs)
+        store.append(point)
+        # print(guess, check(point))
+        return check(point)
+
+    # import matplotlib.pyplot as plt
+    # pts = linspace(non_phase_val, phase_val, 50)
+    # vals = [to_solve(p) for p in pts]
+    # plt.plot(pts, vals, 'x')
+    # plt.show()
+
+    guess = one_sided_secant(to_solve, x_flat=non_phase_val, 
+                                  x0=phase_val, y_flat=flat,
+                                  x1=phase_val*(1-1e-9),
+                                  xtol=xtol, ytol=ytol)
+    for v in store[::-1]:
+        if check(v) != flat:
+            break
+
+    return v, bounding_iter, iterations
 
 def generate_pure_phase_boolean_check(idx, required_zi=0.999, required_wi=None):
     '''Generate and return a function which will return -1 if 
@@ -4368,10 +4499,10 @@ def generate_pure_phase_boolean_check(idx, required_zi=0.999, required_wi=None):
         for p in res.phases:
             if required_zi is not None:
                 if p.zs[idx] > required_zi:
-                    has_comp  = 1
+                    return p.beta
             elif required_wi is not None:
                 if p.ws()[idx] > required_wi:
-                    has_comp  = 1
+                    return p.beta
         return has_comp
     return component_check
 
@@ -4575,16 +4706,35 @@ def incipient_phase_one_sided_secant(flasher, specs, zs_existing, zs_added,
     multiplier : float
         The multiplier used to mix the two streams in the end, [-]
     '''
+    zs_existing_orig = zs_existing
     zs_existing = flash_mixing_remove_overlap(zs_existing, zs_added)
+    removed_composition = zs_existing_orig != zs_existing
     
     (negative_bound, positive_bound, negative_bound_res, positive_bound_res,
      attempts) = generate_incipient_phase_boundaries_naive(flasher, specs=specs, 
                                                            zs_existing=zs_existing, zs_added=zs_added, check=check)
-    
+    if check is LL_boolean_check:
+        mode = 'LF0' # Does not work for phase label transitions but does
+        # work for an appearing liquid phase - I think
+    elif check is VL_boolean_check:
+        if not removed_composition:
+            if negative_bound_res.zs == zs_existing_orig:
+                start = negative_bound_res
+            elif positive_bound_res.zs == zs_existing_orig:
+                start = negative_bound_res
+            else:
+                start = flasher.flash(zs=zs_existing, **specs)
+        else:
+            start = flasher.flash(zs=zs_existing, **specs)
+
+        mode = 'LF' if start.VF > 0.5 else 'VF'
+
     iterations = 0
     store = []
     N = len(zs_existing)
     flat = -1.0
+
+    
     def to_solve(mix_ratio):
         nonlocal iterations
         iterations += 1
@@ -4596,12 +4746,20 @@ def incipient_phase_one_sided_secant(flasher, specs, zs_existing, zs_added,
         if point.phase_count == 2:
             # print('real phase', point.LF)
             # TODO: be able to oprimize for VF=0 and the same for other phases
-            return point.LF
-        else:
-            return flat
+            if mode == 'LF0':
+                if point.liquid_count == 2:
+                    return min(point.betas_liquids)
+                return flat
+            elif mode == 'LF':
+                if point.LF is not None:
+                    return point.LF
+            else:
+                if point.VF is not None:
+                    return point.VF
+        return flat
 
     # import matplotlib.pyplot as plt
-    # pts = linspace(negative_bound, positive_bound, 500)
+    # pts = linspace(negative_bound, positive_bound, 50)
     # vals = [to_solve(p) for p in pts]
     # plt.plot(pts, vals, 'x')
     # plt.show()
@@ -4719,4 +4877,3 @@ def incipient_liquid_bounded_PT_sat(flasher, specs, zs_existing, zs_added, check
     return v, attempts, iterations, multiplier
     
 
-            
