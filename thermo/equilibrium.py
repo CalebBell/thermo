@@ -3162,7 +3162,7 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
               'PIP', 'kappa', 'isobaric_expansion', 'Joule_Thomson', 'speed_of_sound',
               'speed_of_sound_mass', 'speed_of_sound_ideal_gas', 'speed_of_sound_ideal_gas_mass',
               'U_dep', 'G_dep', 'A_dep', 'V_dep', 'B_from_Z',
-              'Cp_dep_mass', 'Cp_ideal_gas_mass', 'Cv_dep_mass',
+              'Cp_dep_mass', 'Cp_ideal_gas_mass', 'Cv_dep_mass', 'G_min_criteria',
               'mu', 'k', 'sigma', 'Prandtl',
               'isentropic_exponent', 'isentropic_exponent_PV', 'isentropic_exponent_TV',
               'isentropic_exponent_PT', 

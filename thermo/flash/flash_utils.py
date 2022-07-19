@@ -82,7 +82,7 @@ from fluids.numerics import (UnconvergedError, trunc_exp, newton,
                              root, minimize, fsolve, linspace, logspace)
 from fluids.numerics import py_solve, trunc_log, bisect
 
-from chemicals.utils import (exp, log, log10, copysign, normalize,
+from chemicals.utils import (exp, log, log10, copysign, normalize, isinf,
                              mixing_simple, property_mass_to_molar)
 from chemicals.heat_capacity import (Dadgostar_Shaw_integral, 
                                      Dadgostar_Shaw_integral_over_T, 
@@ -140,6 +140,7 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
     V_over_F_old = V_over_F
     restrained = 0
     restrained_switch_count = 300
+    error_increases = 0
 
     # Code for testing phis at zs
     l, g = liquid_phase, gas_phase
@@ -280,7 +281,7 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
                 except ZeroDivisionError:
                     pass
 
-        if err > 0.0 and err in (err1, err2, err3):
+        if err > 0.0 and err in (err1, err2, err3) or error_increases > 3:
             raise OscillationError("Converged to cycle in errors, no progress being made")
         # Accept the new compositions
         xs_old, ys_old, Ks_old = xs, ys, Ks
@@ -291,7 +292,7 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
         lnphis_g_old, lnphis_l_old = lnphis_g, lnphis_l
         l_old, g_old = l, g
 
-#        print(err, V_over_F, Ks) # xs, ys
+        #print(err, V_over_F, Ks) # xs, ys
 
         # Check for
         comp_difference = sum([abs(xi - yi) for xi, yi in zip(xs, ys)])
@@ -318,6 +319,10 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
                 return V_over_F_old, xs_old, ys_old, l, g, iteration, err
         # elif err < tol and limited_Z:
         #     print(l.fugacities()/np.array(g.fugacities()))
+
+        # If we aren't in a cycle but still making no progress
+        if err1 != 0 and abs(err/err1) > 20:
+            error_increases += 1
         err1, err2, err3 = err, err1, err2
     raise UnconvergedError('End of SS without convergence')
 
@@ -3795,10 +3800,17 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
             trial_phase = trial_phase.to(T=T, P=P, zs=zs)
             fugacities_trial = trial_phase.fugacities_lowest_Gibbs()
             break
-
-    # Basis of equations is for the test phase being a gas, the trial phase assumed is a liquid
-    # makes no real difference
     Ks = [0.0]*N
+
+    # makes no real difference
+    for i in range(N):
+        if isinf(fugacities_trial[i]):
+            # Stable
+            V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = 0.0, zs, zs
+            return 1e100, Ks, zs_test, V_over_F, trial_zs, appearing_zs, 0.0
+
+
+# Basis of equations is for the test phase being a gas, the trial phase assumed is a liquid
     corrections = [1.0]*N
 
     # Model converges towards fictional K values which, when evaluated, yield the
@@ -3810,8 +3822,8 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
     converged = False
     for _ in range(maxiter):
 #        test_phase = test_phase.to(T=T, P=P, zs=zs_test)
-#        fugacities_test = test_phase.fugacities_lowest_Gibbs()
-        fugacities_test = test_phase.fugacities_at_zs(zs_test)
+        fugacities_test = test_phase.to(T=T, P=P, zs=zs_test).fugacities_lowest_Gibbs()
+#        fugacities_test = test_phase.fugacities_at_zs(zs_test)
 
         err = 0.0
         try:
@@ -3838,6 +3850,8 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
         sum_zs_test = 0.0
         for i in range(N):
             sum_zs_test += zs_test[i]
+        if sum_zs_test== 0:
+            a = 1
         try:
             sum_zs_test_inv = 1.0/sum_zs_test
         except:
@@ -3858,7 +3872,8 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
         # Calculate the dG of the feed
         dG_RT = 0.0
         if V_over_F != 0.0:
-            lnphis_test = test_phase.lnphis_at_zs(zs_test) #test_phase.lnphis()
+            lnphis_test = test_phase.to(T=T, P=P, zs=zs_test).lnphis_lowest_Gibbs()
+            #lnphis_test = test_phase.lnphis_at_zs(zs_test) #test_phase.lnphis()
             for i in range(N):
                 # Sometimes z will converge to literally be zero, so the trunc_log takes care of that
                 dG_RT += zs_test[i]*(trunc_log(zs_test[i]) + lnphis_test[i])
@@ -4366,11 +4381,14 @@ phase_boundaries_H_guesses = linspace(-10000, 10000, 20)
 phase_boundaries_S_guesses = phase_boundaries_H_guesses
 phase_boundaries_U_guesses = phase_boundaries_H_guesses
 
+phase_boundary_perturbation_factors = [1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10]
+
 def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, check, hot_start=None,
                                     iter_guesses=None):
     '''Attempt to bound the formation of an incipient phase, using a 
     variety of hardcoded options.
     '''
+    unperturbable_msg = "Multiple perturbations around the found point did not provide a stable derivative, revise the objective function"
     if iter_var == 'T':
         guesses = phase_boundaries_T_guesses
     elif iter_var == 'P':
@@ -4397,12 +4415,19 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
     # that means at least two points are needed in the real region
     # this is a huge hole and bug
 
-    non_phase_val = phase_val = check_phase_val = check_phase_derivative = None
+    non_phase_val = phase_val = check_phase_val = check_phase_derivative = res_pert = None
 
 
     non_phase_vals = []
     non_phase_results = []
     
+    all_phase_vals = []
+    all_phase_ress = []
+    all_phase_check_vals = []
+    
+    all_phase_der_dirs = []
+    all_phase_perts = []
+
     for i, iter_val in enumerate(all_iter_guesses):
         kwargs[iter_var] = iter_val
         try:
@@ -4420,41 +4445,107 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
             non_phase_vals.append(iter_val)
             non_phase_results.append(res)
         else:
+            # Store all of these. May need to check each of them.
+            all_phase_vals.append(iter_val)
+            all_phase_ress.append(res)
+            all_phase_check_vals.append(check_val)
             if phase_val is None:
                 phase_val = iter_val
                 phase_res = res
                 check_phase_val = check_val
-                
-                kwargs_pert[iter_var] = iter_val*(1+1e-8)
-                res_pert = flasher.flash(zs=zs, **kwargs_pert)
-                check_pert = check(res_pert)
-                der = (check_pert - check_phase_val)/(kwargs_pert[iter_var] - kwargs[iter_var])
-                der_dir = der > 0
+                res_pert = None
             else:
+                # Keep the phase value with the lowest phase fraction only
+                # we are always seeking to go in the direction the phase almost disappears
                 if check_phase_val < check_phase_val:
                     phase_val = iter_val
                     phase_res = res
 
-                    kwargs_pert[iter_var] = iter_val*(1+1e-8)
-                    res_pert = flasher.flash(zs=zs, **kwargs_pert)
-                    check_pert = check(res_pert)
-                    der = (check_pert - check_phase_val)/(kwargs_pert[iter_var] - kwargs[iter_var])
-                    der_dir = der > 0
+                    res_pert = None # clear any perturbation calculation we did
 
         if non_phase_vals and phase_val is not None:
             # go through the solutions and see if any are right
-            for non_phase_val, non_phase_res in zip(non_phase_vals, non_phase_results):
-                if not der_dir and non_phase_val > phase_val:
-                    return (non_phase_val, phase_val, non_phase_res, phase_res, i + 1)
-                elif der_dir and non_phase_val < phase_val:
-                    return (non_phase_val, phase_val, non_phase_res, phase_res, i + 1)
 
+            if res_pert is None:
+                # only recalculate the perturbation if needed
+                # try different factors in case we border onto the flat region
+                for fact in phase_boundary_perturbation_factors:
+                    kwargs_pert[iter_var] = phase_res.value(iter_var)*(1 + fact)
+                    res_pert = flasher.flash(zs=zs, **kwargs_pert)
+                    check_pert = check(res_pert)
+                    der = (check_pert - check_phase_val)/(kwargs_pert[iter_var] -phase_res.value(iter_var))
+                    der_dir = der > 0
+                    if check_pert >= 0:
+                        break
+
+                if check_pert < 0:
+                    raise ValueError(unperturbable_msg)
+
+            best_non_phase_val = best_non_phase_res = None
+            best_non_phase_distance = 1e100
+
+            # Iterate through all the flatest solutions and make sure we select the closest one
+            for non_phase_val, non_phase_res in zip(non_phase_vals, non_phase_results):
+                distance = abs(non_phase_res.value(iter_var) - phase_res.value(iter_var))
+
+                if (not der_dir and non_phase_val > phase_val) or (der_dir and non_phase_val < phase_val):
+                    if distance < best_non_phase_distance:
+                        best_non_phase_distance = distance
+                        best_non_phase_val = non_phase_val
+                        best_non_phase_res = non_phase_res
+
+            if best_non_phase_val is not None:
+                return (best_non_phase_val, phase_val, best_non_phase_res, phase_res, res_pert, i + 1)
+    
+    # We are out of guesses. Try searching through all of them to see if any non-flat values have a derivative that goes to the criteria
+    # instead of just testing against the lowest one
+    # Start by Calculating all of the perturbations
+    if non_phase_vals and phase_val is not None:
+        all_phase_der_dirs = []
+        all_phase_perts = []
+        for (iter_val, phase_res, check_phase_val) in zip(all_phase_vals, all_phase_ress, all_phase_check_vals):
+            for fact in phase_boundary_perturbation_factors:
+                kwargs_pert[iter_var] = phase_res.value(iter_var)*(1 + fact)
+                res_pert = flasher.flash(zs=zs, **kwargs_pert)
+                check_pert = check(res_pert)
+                der = (check_pert - check_phase_val)/(kwargs_pert[iter_var] - phase_res.value(iter_var))
+                der_dir = der > 0
+                if check_pert >= 0:
+                    break
+    
+            if check_pert < 0:
+                raise ValueError(unperturbable_msg)
+                
+            all_phase_perts.append(res_pert)
+            all_phase_der_dirs.append(der_dir)
+
+        for non_phase_val, non_phase_res in zip(non_phase_vals, non_phase_results):
+            best_non_phase_val = best_non_phase_res = None
+            best_phase_val = best_phase_res = best_res_pert = None
+            best_non_phase_distance = 1e100
+
+            for (iter_val, phase_res, check_phase_val, der_dir, res_pert) in zip(all_phase_vals, all_phase_ress, all_phase_check_vals, all_phase_der_dirs, all_phase_perts):
+                distance = abs(non_phase_res.value(iter_var) - phase_res.value(iter_var))
+    
+                if (not der_dir and non_phase_val > phase_val) or (der_dir and non_phase_val < phase_val):
+                    if distance < best_non_phase_distance:
+                        best_non_phase_distance = distance
+                        best_non_phase_val = non_phase_val
+                        best_non_phase_res = non_phase_res
+                        best_phase_res = phase_res
+                        best_phase_val = iter_val
+                        best_res_pert = res_pert
+    
+            if best_non_phase_val is not None:
+                return (best_non_phase_val, best_phase_val, best_non_phase_res, best_phase_res, best_res_pert, len(all_iter_guesses))
+    
+                
     raise ValueError("Failed to bound the flash")
 
 def flash_phase_boundary_one_sided_secant(flasher, zs, spec_var, spec_val, iter_var, check, hot_start=None,
-                                          ytol=1e-6, xtol=None, iter_guesses=None):
+                                          ytol=1e-6, xtol=None, maxiter=100, iter_guesses=None):
     
-    non_phase_val, phase_val, non_phase_res, phase_res, bounding_iter = generate_phase_boundaries_naive(
+    non_phase_val, phase_val, non_phase_res, phase_res, res_pert, bounding_iter = generate_phase_boundaries_naive(
         flasher=flasher, zs=zs, spec_var=spec_var, spec_val=spec_val, iter_var=iter_var, 
         check=check, hot_start=hot_start,
                                     iter_guesses=iter_guesses)
@@ -4474,20 +4565,56 @@ def flash_phase_boundary_one_sided_secant(flasher, zs, spec_var, spec_val, iter_
         return check(point)
 
     # import matplotlib.pyplot as plt
-    # pts = linspace(non_phase_val, phase_val, 50)
+    # pts = linspace(non_phase_val, phase_val, 500)
     # vals = [to_solve(p) for p in pts]
     # plt.plot(pts, vals, 'x')
     # plt.show()
+    
+    y0 = check(phase_res)
+    y1 = check(res_pert)
 
     guess = one_sided_secant(to_solve, x_flat=non_phase_val, 
                                   x0=phase_val, y_flat=flat,
-                                  x1=phase_val*(1-1e-9),
-                                  xtol=xtol, ytol=ytol)
+                                  x1=res_pert.value(iter_var),
+                                  y0=y0, y1=y1,
+                                  xtol=xtol, ytol=ytol, maxiter=maxiter)
     for v in store[::-1]:
         if check(v) != flat:
             break
 
     return v, bounding_iter, iterations
+
+def generate_hydrocarbon_phase_check(atomss, required_zi=0.5, required_wi=None,
+                                             require_liquid=False, require_density=100):
+    include_idxs = []
+    for i in range(len(atomss)):
+        atoms = atomss[i]
+        if (len(atoms) == 2 and 'C' in atoms 
+            and 'H' in atoms 
+            and not (atoms['C'] == 1 and atoms['H'] == 4)):
+            include_idxs.append(i)
+    
+    def component_check(res):
+        phases = res.phases if not require_liquid else res.liquids
+        
+        for p in phases:
+            z_hydro_total = 0.0
+            w_hydro_total = 0.0
+            zs = p.zs
+            ws = p.ws()
+            for idx in include_idxs:
+                z_hydro_total += zs[idx]
+                w_hydro_total += ws[idx]
+            rho_total = w_hydro_total*p.rho_mass()
+            if require_density and rho_total < require_density:
+                continue
+            if required_zi and z_hydro_total < required_zi:
+                continue
+            if required_wi and w_hydro_total < required_wi:
+                continue
+            return p.beta
+        return -1
+    return component_check
 
 def generate_pure_phase_boolean_check(idx, required_zi=0.999, required_wi=None):
     '''Generate and return a function which will return -1 if 

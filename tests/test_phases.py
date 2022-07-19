@@ -51,6 +51,22 @@ import json
 from fluids.constants import *
 from thermo.coolprop import has_CoolProp
 
+def test_CEOS_low_T_high_P_fug_infinity():
+    # Ideally we would have good numerical behavior here
+    from math import isinf
+    
+    a_phase = CEOSLiquid(eos_class=PRMIXTranslatedConsistent,
+               eos_kwargs={"Pcs": [3394387.5, 5042945.25, 4873732.5], "Tcs": [126.2, 154.58, 150.8],
+                           "omegas": [0.04, 0.021, -0.004],
+                           "kijs": [[0.0, -0.0159, -0.0004], [-0.0159, 0.0, 0.0089], [-0.0004, 0.0089, 0.0]], 
+                           "cs": [-3.643e-06, -2.762e-06, -3.293e-06], 
+                           "alpha_coeffs": [(0.1243, 0.8898, 2.0129), (0.2339, 0.8896, 1.3053), (0.1227, 0.9045, 1.8541)]}, 
+               HeatCapacityGases=[HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="TRCIG"), 
+                                  HeatCapacityGas(CASRN="7782-44-7", MW=31.9988, similarity_variable=0.06250234383789392, extrapolation="linear", method="TRCIG"), 
+                                  HeatCapacityGas(CASRN="7440-37-1", MW=39.948, similarity_variable=0.025032542304996495, extrapolation="linear", method="WEBBOOK_SHOMATE")], 
+               T=0.001, P=200000.0, zs=[0.781112444977991, 0.20958383353341334, 0.009303721488595438])
+    assert isinf(a_phase.fugacities()[1])    
+    
 def test_GibbbsExcessLiquid_VaporPressure():
     # Binary ethanol-water
     VaporPressures = [VaporPressure(extrapolation='DIPPR101_ABC|AntoineAB', exp_poly_fit=(159.11, 514.7, [-2.3617526481119e-19, 7.318686894378096e-16, -9.835941684445551e-13, 7.518263303343784e-10, -3.598426432676194e-07, 0.00011171481063640762, -0.022458952185007635, 2.802615041941912, -166.43524219017118])),
@@ -1056,10 +1072,13 @@ def test_CEOS_phis():
     assert eval((gas_liquid.__repr__())).state_hash() == gas_liquid.state_hash()
     assert eval((liquid_gas.__repr__())).state_hash() == liquid_gas.state_hash()
 
-    lnphis_expect = [-0.02360432649642419, -0.024402271514780954, -0.016769813943198587]
+    lnphis_expect = lnphis_expect_gas = [-0.02360432649642419, -0.024402271514780954, -0.016769813943198587]
     assert_close1d(gas.lnphis(), lnphis_expect, rtol=1e-12)
+    assert_close1d(gas.lnphis_lowest_Gibbs(), lnphis_expect, rtol=1e-12)
+    
     lnphis_expect = [0.8253284443531399, 0.11977973815900889, 0.10965732949863494]
     assert_close1d(liquid.lnphis(), lnphis_expect, rtol=1e-12)
+    assert_close1d(liquid.lnphis_lowest_Gibbs(), lnphis_expect_gas, rtol=1e-12)
     lnphis_expect = [-26.257643489591743, -28.123302577785182, -39.391352729666025]
     assert_close1d(gas_liquid.lnphis(), lnphis_expect, rtol=1e-12)
     lnphis_expect = [-0.0076796355290965155, -0.008453288415352122, -0.004934801579277686]

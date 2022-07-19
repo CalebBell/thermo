@@ -533,6 +533,7 @@ class FlashVLN(FlashVL):
             # Return the two phase solution
             return sln_2P
         else:
+            sln3 = None
             flash_phases = found_phases + [other_phase]
             flash_comps = [i.zs for i in found_phases]
             flash_comps.append(appearing_zs)
@@ -562,8 +563,7 @@ class FlashVLN(FlashVL):
                     return None, sln3[2], [], sln3[0], {'iterations': sln3[3], 'err': sln3[4],
                                                         'stab_guess_name': stab_guess_name, 'G_2P': G_2P}
                 if not good_betas or G_3P > G_2P:
-                    # Might need to make this true
-                    try_LL_3P_failed = False
+                    try_LL_3P_failed = True # used to try to make this False but it just isn't correct
                     failed_3P = True
             except:
                 try_LL_3P_failed = True
@@ -591,10 +591,18 @@ class FlashVLN(FlashVL):
                             a = 1
                         else:
                             return sln_2P
-                    except TrivialSolutionError:
+                    except (TrivialSolutionError, OscillationError, PhaseCountReducedError):
                         return sln_2P
                 else:
                     return sln_2P
+            elif LL_solved and failed_3P:
+                # We are unstable but we couldn't converge the two phase point
+                # not very good, but we also don't have anything else to try, except maybe
+                # converging other guesses from the stability test
+                # TODO
+                return sln_2P
+                
+
 
         slnN = sln3
 
@@ -641,9 +649,3 @@ class FlashVLN(FlashVL):
         return None, slnN[2], [], slnN[0], {'iterations': slnN[3], 'err': slnN[4],
                                             'stab_guess_name': stab_guess_name, 'G_2P': G_2P}
 
-    # Should be straightforward for stability test
-    # How handle which phase to stability test? May need both
-    # After 2 phase flash, drop into 3 phase flash
-    # Start with water-methane-octanol example?
-
-    # Vapor fraction flashes - if anything other than VF=1, need a 3 phase stability test

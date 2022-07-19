@@ -2339,6 +2339,13 @@ def test_is_quat():
         mol = Chem.MolFromSmiles(smiles)
         assert is_quat(mol)
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_hydrocarbon():
+    
+    assert is_hydrocarbon(Chem.MolFromSmiles("CCC"))
+    assert not is_hydrocarbon(Chem.MolFromSmiles('C1=CC=C(C=C1)N=O'))
+    
 
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")

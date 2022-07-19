@@ -478,6 +478,11 @@ class Flash(object):
     flash_phase_boundary_algos = [flash_phase_boundary_one_sided_secant]
     flash_phase_boundary_methods = [SECANT_PHASE_BOUNDARY]
             
+    FLASH_PHASE_BOUNDARY_MAXITER = 100
+    FLASH_PHASE_BOUNDARY_MAXITER_XTOL = None
+    FLASH_PHASE_BOUNDARY_MAXITER_YTOL = 1e-6
+
+
     def flash_phase_boundary(self, zs, phase_frac_check, T=None, P=None, V=None, H=None, S=None, U=None,
                              hot_start=None):
         T_spec = T is not None
@@ -511,7 +516,10 @@ class Flash(object):
             
         for method in self.flash_phase_boundary_algos:
             res, bounding_attempts, iterations = method(flasher=self, zs=zs, spec_var=spec_var, spec_val=spec_val, iter_var=iter_var,
-                                                    check=phase_frac_check, hot_start=hot_start)
+                                                    check=phase_frac_check, hot_start=hot_start,
+                                                    xtol=self.FLASH_PHASE_BOUNDARY_MAXITER_XTOL,
+                                                    ytol=self.FLASH_PHASE_BOUNDARY_MAXITER_YTOL,
+                                                    maxiter=self.FLASH_PHASE_BOUNDARY_MAXITER)
 
             res.flash_convergence = {'inner_flash_convergence': res.flash_convergence,
                                      'bounding_attempts': bounding_attempts,
@@ -1190,7 +1198,8 @@ class Flash(object):
 
 
         regions = {'V': 1, 'L': 2, 'S': 3, 'VL': 4, 'LL': 5, 'VLL': 6,
-                       'VLS': 7, 'VLLS': 8, 'VLLSS': 9, 'LLL': 10, 'F': 0}
+                       'VLS': 7, 'VLLS': 8, 'VLLSS': 9, 'LLL': 10, 'VLLL': 11,
+                       'VLLLL': 12, 'LLLL': 13, 'F': 0}
 
         used_regions = set([])
         for row in matrix:
@@ -1214,7 +1223,7 @@ class Flash(object):
         Ts, Ps = np.meshgrid(Ts, Ps)
 
         # need 3 more
-        cmap = colors.ListedColormap(['y','b','r', 'g', 'c', 'm', 'k', 'w', 'w', 'w', 'w'][0:len(used_values)])
+        cmap = colors.ListedColormap(['y','b','r', 'g', 'c', 'm', 'k', 'fuchsia', 'gold', 'lime', 'indigo', 'cyan'][0:len(used_values)])
 
         vmax = len(used_values) - 1
 

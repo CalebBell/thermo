@@ -1566,3 +1566,6 @@ class Bulk(Phase):
             S += zs[i]*Cpig_integrals_over_T_pure[i]
 
         return S
+
+    def G_min_criteria(self):
+        return sum(self.phase_fractions[i]*p.G_min_criteria() for i, p in enumerate(self.phases))

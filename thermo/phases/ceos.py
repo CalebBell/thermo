@@ -537,10 +537,13 @@ class CEOSPhase(IdealGasDeparturePhase):
         '''
         pass
 
-    def fugacities_lowest_Gibbs(self):
+    
+    def lnphis_lowest_Gibbs(self):
+        try:
+            return self._lnphis_lowest_Gibbs
+        except:
+            pass
         eos_mix = self.eos_mix
-        P = self.P
-        zs = self.zs
         try:
             if eos_mix.G_dep_g < eos_mix.G_dep_l:
                 lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_g)
@@ -553,6 +556,14 @@ class CEOSPhase(IdealGasDeparturePhase):
                 lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_g)
             except:
                 lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_l)
+
+        self._lnphis_lowest_Gibbs = lnphis
+        return lnphis
+
+    def fugacities_lowest_Gibbs(self):
+        P = self.P
+        zs = self.zs
+        lnphis = self.lnphis_lowest_Gibbs()
         return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
 
     def V_iter(self, force=False):

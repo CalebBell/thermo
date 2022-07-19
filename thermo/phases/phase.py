@@ -32,7 +32,7 @@ __all__ = [
 from fluids.constants import R, R_inv
 from math import sqrt
 from thermo.serialize import arrays_to_lists
-from fluids.numerics import (horner, horner_log, jacobian, 
+from fluids.numerics import (horner, horner_log, jacobian, trunc_log,
                              poly_fit_integral_value, poly_fit_integral_over_T_value,
                              newton_system, trunc_exp, is_micropython)
 from fluids.core import thermal_diffusivity, c_ideal_gas
@@ -976,6 +976,20 @@ class Phase(object):
         return self._lnfugacities
 
     fugacities_lowest_Gibbs = fugacities
+    
+    def lnphis_lowest_Gibbs(self):
+        try:
+            return self._lnphis_lowest_Gibbs
+        except:
+            pass
+        P = self.P
+        zs = self.zs
+        fugacities_lowest_Gibbs = self.fugacities_lowest_Gibbs()
+        lnphis_lowest_Gibbs = [trunc_log(fi/(zi*P)) for fi, zi in zip(fugacities_lowest_Gibbs, zs)]
+        
+        
+        self._lnphis_lowest_Gibbs = lnphis_lowest_Gibbs
+        return lnphis_lowest_Gibbs
 
     def dfugacities_dT(self):
         r'''Method to calculate and return the temperature derivative of fugacities

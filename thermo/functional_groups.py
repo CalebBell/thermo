@@ -40,6 +40,7 @@ Specific molecule matching functions
 Hydrocarbon Groups
 ------------------
 
+.. autofunction:: thermo.functional_groups.is_hydrocarbon
 .. autofunction:: thermo.functional_groups.is_alkane
 .. autofunction:: thermo.functional_groups.is_cycloalkane
 .. autofunction:: thermo.functional_groups.is_branched_alkane
@@ -191,7 +192,7 @@ Functions using group identification
 '''
 
 from __future__ import division
-
+from chemicals.elements import simple_formula_parser
 
 group_names = ['mercaptan', 'sulfide', 'disulfide', 'sulfoxide', 'sulfone', 
                'sulfinic_acid', 'sulfonic_acid', 'sulfonate_ester', 'thiocyanate', 
@@ -213,7 +214,8 @@ group_names = ['mercaptan', 'sulfide', 'disulfide', 'sulfoxide', 'sulfone',
                'ester', 'boronic_acid', 'boronic_ester', 'borinic_acid',
                'borinic_ester', 'phosphine', 'phosphonic_acid', 'phosphodiester',
                'phosphate', 'alkyllithium', 'alkylmagnesium_halide', 
-               'alkylaluminium', 'silyl_ether', 'organic', 'inorganic'] 
+               'alkylaluminium', 'silyl_ether', 'organic', 'inorganic',
+               'is_hydrocarbon'] 
 __all__ = [# sulfur
            'is_mercaptan', 'is_sulfide', 'is_disulfide', 'is_sulfoxide',
            'is_sulfone', 'is_sulfinic_acid', 'is_sulfonic_acid',
@@ -225,7 +227,7 @@ __all__ = [# sulfur
            'is_siloxane',
            
            # other
-           'is_branched_alkane',
+           'is_hydrocarbon', 'is_branched_alkane',
            'is_alkane', 'is_cycloalkane', 'is_alkene',
            'is_alkyne', 'is_aromatic', 'is_nitrile', 'is_carboxylic_acid',
            'is_haloalkane', 'is_fluoroalkane', 'is_chloroalkane', 
@@ -996,6 +998,34 @@ def is_siloxane(mol):
     '''
     matches = mol.GetSubstructMatches(smarts_mol_cache(siloxane_smarts))
     return bool(matches)
+
+def is_hydrocarbon(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule is an hydrocarbon (molecule containing hydrogen and carbon only)
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_hydrocarbon : bool
+        Whether or not the compound is a hydrocarbon or not, [-].
+
+    Examples
+    --------
+
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_hydrocarbon(MolFromSmiles("CCC")) # doctest:+SKIP
+    True
+    '''
+    if not loaded_rdkit:
+        load_rdkit_modules()
+    # Check the hardcoded list first
+    formula = rdMolDescriptors.CalcMolFormula(mol)
+    atoms = simple_formula_parser(formula)
+    return ('C' in atoms and 'H' in atoms and len(atoms) == 2)
 
 alkane_smarts = '[CX4]' 
 def is_alkane(mol):

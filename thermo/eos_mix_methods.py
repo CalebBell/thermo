@@ -226,11 +226,12 @@ def a_alpha_and_derivatives(a_alphas, T, zs, kijs, a_alpha_ijs=None,
     for i in range(N):
         a_alpha_ijs_i = a_alpha_ijs[i]
         zi = zs[i]
-        for j in range(i+1, N):
-            term = a_alpha_ijs_i[j]*zi*zs[j]
-            a_alpha += term + term
-
-        a_alpha += a_alpha_ijs_i[i]*zi*zi
+        if zi > 0.0:
+            for j in range(i+1, N):
+                term = a_alpha_ijs_i[j]*zi*zs[j]
+                a_alpha += term + term
+    
+            a_alpha += a_alpha_ijs_i[i]*zi*zi
 
     return a_alpha, None, a_alpha_ijs
 
@@ -396,45 +397,46 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
         a_alpha_ij_roots_inv_i = a_alpha_ij_roots_inv[i]
         da_alpha_dT_ijs_i = da_alpha_dT_ijs[i]
 
-        for j in range(N):
-#        for j in range(0, i+1):
-            if j < i:
-#                # skip the duplicates
-                continue
-            a_alphaj = a_alphas[j]
-            x0_05_inv = a_alpha_ij_roots_inv_i[j]
-            zi_zj = z_products_i[j]
-            da_alpha_dT_j = da_alpha_dTs[j]
-
-            x1 = a_alphai*da_alpha_dT_j
-            x2 = a_alphaj*da_alpha_dT_i
-            x1_x2 = x1 + x2
-            x3 = x1_x2 + x1_x2
-
-            kij_m1 = kijs_i[j] - 1.0
-
-            da_alpha_dT_ij = -0.5*kij_m1*x1_x2*x0_05_inv
-            # For temperature derivatives of fugacities
-            da_alpha_dT_ijs_i[j] = da_alpha_dT_ijs[j][i] = da_alpha_dT_ij
-
-            da_alpha_dT_ij *= zi_zj
-
-
-            x0 = a_alphai*a_alphaj
-
-            d2a_alpha_dT2_ij = kij_m1*(  (x0*(
-            -0.5*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2_i)
-            - da_alpha_dT_i*da_alpha_dT_j) +.25*x1_x2*x1_x2)/(x0_05_inv*x0*x0))
-            d2a_alpha_dT2_ijs[i][j] = d2a_alpha_dT2_ijs[j][i] = d2a_alpha_dT2_ij
-
-            d2a_alpha_dT2_ij *= zi_zj
-
-            if i != j:
-                da_alpha_dT += da_alpha_dT_ij + da_alpha_dT_ij
-                d2a_alpha_dT2 += d2a_alpha_dT2_ij + d2a_alpha_dT2_ij
-            else:
-                da_alpha_dT += da_alpha_dT_ij
-                d2a_alpha_dT2 += d2a_alpha_dT2_ij
+        if zs[i] > 0.0:
+            for j in range(N):
+    #        for j in range(0, i+1):
+                if j < i:
+    #                # skip the duplicates
+                    continue
+                a_alphaj = a_alphas[j]
+                x0_05_inv = a_alpha_ij_roots_inv_i[j]
+                zi_zj = z_products_i[j]
+                da_alpha_dT_j = da_alpha_dTs[j]
+    
+                x1 = a_alphai*da_alpha_dT_j
+                x2 = a_alphaj*da_alpha_dT_i
+                x1_x2 = x1 + x2
+                x3 = x1_x2 + x1_x2
+    
+                kij_m1 = kijs_i[j] - 1.0
+    
+                da_alpha_dT_ij = -0.5*kij_m1*x1_x2*x0_05_inv
+                # For temperature derivatives of fugacities
+                da_alpha_dT_ijs_i[j] = da_alpha_dT_ijs[j][i] = da_alpha_dT_ij
+    
+                da_alpha_dT_ij *= zi_zj
+    
+    
+                x0 = a_alphai*a_alphaj
+    
+                d2a_alpha_dT2_ij = kij_m1*(  (x0*(
+                -0.5*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2_i)
+                - da_alpha_dT_i*da_alpha_dT_j) +.25*x1_x2*x1_x2)/(x0_05_inv*x0*x0))
+                d2a_alpha_dT2_ijs[i][j] = d2a_alpha_dT2_ijs[j][i] = d2a_alpha_dT2_ij
+    
+                d2a_alpha_dT2_ij *= zi_zj
+    
+                if i != j:
+                    da_alpha_dT += da_alpha_dT_ij + da_alpha_dT_ij
+                    d2a_alpha_dT2 += d2a_alpha_dT2_ij + d2a_alpha_dT2_ij
+                else:
+                    da_alpha_dT += da_alpha_dT_ij
+                    d2a_alpha_dT2 += d2a_alpha_dT2_ij
 
     return a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs
 

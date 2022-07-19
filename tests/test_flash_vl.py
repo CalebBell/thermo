@@ -415,6 +415,11 @@ def test_PRTranslated_air_two_phase():
     flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
     zs = normalize([78.08, 20.95, .93])
     
+    # This test case was finding some infinities in fugacities, very nasty
+    res = flasher.flash(P=200000, T=1e-3, zs=zs)
+    assert res.phase_count == 1
+    assert res.liquid0 is not None
+    
     res = flasher.flash(P=200000, H=-11909.90990990991, zs=zs)
     assert_close(res.gas_beta, 0.0010452858012690303, rtol=1e-5)
     
