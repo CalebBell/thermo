@@ -2072,7 +2072,8 @@ class GCEOS(object):
                 kwargs['P'] = P
                 try:
                     obj = self.to(**kwargs)
-                except:
+                except Exception as e:
+                    print('Failed to go to point, kwargs=%s with exception %s' %(kwargs, e))
                     # So bad we failed to calculate a real point
                     val = 1.0
                 if timing:

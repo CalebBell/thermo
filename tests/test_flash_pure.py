@@ -869,7 +869,7 @@ def test_Psat_plot(fluid, eos):
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_list)
 @pytest.mark.parametrize("P_range", ['high', 'low'])
-@pytest.mark.parametrize("solver", [GCEOS.volume_solutions])
+@pytest.mark.parametrize("solver", [staticmethod(GCEOS.volume_solutions)])
 def test_V_error_plot(fluid, eos, P_range, solver):
     path = os.path.join(pure_surfaces_dir, fluid, "V_error")
     if not os.path.exists(path):
@@ -957,8 +957,8 @@ def test_V_error_plot(fluid, eos, P_range, solver):
     assert max_err < 1e-13
 
 
-
-#test_V_error_plot('ethane', SRK, 'low')
+# test_V_error_plot('oxygen', PRSV, 'high', staticmethod(eos_volume.volume_solutions_halley))
+# test_V_error_plot('ethane', SRK, 'low')
 #test_V_error_plot('hydrogen', PR, 'low')
 #test_V_error_plot('decane', PR, 'low')
 # test_V_error_plot('ethane', SRK, 'high')
