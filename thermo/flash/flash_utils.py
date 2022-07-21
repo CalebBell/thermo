@@ -3990,8 +3990,8 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
         raise ValueError("Fixed variable must be one of `T`, `P`, `V`")
     if iter_var not in ('T', 'P', 'V'):
         raise ValueError("Iteration variable must be one of `T`, `P`, `V`")
-    if spec not in ('H', 'S', 'G', 'U', 'A'):
-        raise ValueError("Spec variable must be one of `H`, `S`, `G` `U`, `A`")
+    if spec not in ('H', 'S', 'G', 'U', 'A', 'V'):
+        raise ValueError("Spec variable must be one of `H`, `S`, `G` `U`, `A`, `V`")
 
 
     cmps = range(len(zs))
@@ -4012,7 +4012,7 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
 
     always_S = spec in ('S', 'G', 'A')
     always_H = spec in ('H', 'G', 'U', 'A')
-    always_V = spec in ('U', 'A')
+    always_V = spec in ('U', 'A', 'V')
 
 
     def H_model(T, P, xs, ys, V_over_F):
@@ -4095,6 +4095,8 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
             err = (H - P*V) - spec_val
         elif spec == 'A':
             err = (H - P*V - T*S) - spec_val
+        elif spec == 'V':
+            err = V - spec_val
 #         print(T, P, V, 'TPV', err)
         return err
 

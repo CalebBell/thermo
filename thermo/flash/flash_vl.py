@@ -724,7 +724,24 @@ class FlashVL(Flash):
             except Exception as e:
                 a = 1
 
+    def flash_PV(self, P, V, zs, solution=None, hot_start=None):
+        return self.flash_TPV_HSGUA(fixed_val=P, spec_val=V, fixed_var='P', spec='V',
+                            iter_var='T', zs=zs, solution=solution,
+                            hot_start=hot_start)
+    
+
+    def flash_TV(self, T, V, zs, solution=None, hot_start=None):
+        return self.flash_TPV_HSGUA(fixed_val=T, spec_val=V, fixed_var='T', spec='V',
+                            iter_var='P', zs=zs, solution=solution,
+                            hot_start=hot_start)
+
+
+
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
+        if T is None:
+            return self.flash_PV(P, V, zs, solution, hot_start)
+        if P is None:
+            return self.flash_TV(T, V, zs, solution, hot_start)
         if hot_start is not None:
             try:
                 VF_guess, xs, ys = hot_start.beta_gas, hot_start.liquid0.zs, hot_start.gas.zs

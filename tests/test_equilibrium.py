@@ -699,10 +699,8 @@ def test_thermodynamic_derivatives_settings_with_flash():
     assert res.liquid_bulk.settings is settings
 
     # This will be taken care of in the future
-    with pytest.raises(NotImplementedError):
-        res.dP_dT()
-    with pytest.raises(NotImplementedError):
-        flashN.flash(T=361.0, V=res.V(), zs=zs)
+    res.dP_dT()
+    flashN.flash(T=361.0, V=res.V(), zs=zs)
 
 def test_thermodynamic_derivatives_settings_with_flash_binary():
     # Tests that only need two phases
