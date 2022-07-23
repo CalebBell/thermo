@@ -155,18 +155,19 @@ def test_water_C1_C8():
     res_PR = FlashVLN(constants, properties, liquids=[liq], gas=gas).flash(T=298.15, VF=1, zs=zs)
     res_SRK = FlashVLN(constants, properties, liquids=[liq_SRK], gas=gas).flash(T=298.15, VF=1, zs=zs)
     assert res_PR.G() > res_SRK.G()
-    res_both_liquids = FlashVLN(constants, properties, liquids=[liq, liq_SRK], gas=gas).flash(T=298.15, VF=1, zs=zs)
-    assert_close(res_both_liquids.G(), res_SRK.G(), rtol=1e-7)
-    assert_close(res_PR.P, 6022.265230194498, rtol=1e-5)
-    assert_close(res_SRK.P, 5555.019566177178, rtol=1e-5)
+    new_flasher = FlashVLN(constants, properties, liquids=[liq, liq_SRK], gas=gas)
+    res_both_liquids = new_flasher.flash(T=298.15, VF=1, zs=zs)
+    assert_close(res_both_liquids.G(), res_SRK.G(), rtol=1e-4)
+    assert_close(res_PR.P, 6022.265230194498, rtol=5e-4)
+    assert_close(res_SRK.P, 5555.019566177178, rtol=5e-4)
 
     res_PR = FlashVLN(constants, properties, liquids=[liq], gas=gas).flash(P=6000.0, VF=1, zs=zs)
     res_SRK = FlashVLN(constants, properties, liquids=[liq_SRK], gas=gas).flash(P=6000.0, VF=1, zs=zs)
     assert res_PR.G() > res_SRK.G()
     res_both_liquids = FlashVLN(constants, properties, liquids=[liq, liq_SRK], gas=gas).flash(P=6000.0, VF=1, zs=zs)
-    assert_close(res_both_liquids.G(), res_SRK.G(), rtol=1e-7)
-    assert_close(res_PR.T, 298.0822786634035, rtol=1e-5)
-    assert_close(res_SRK.T, 299.5323133142487, rtol=1e-5)
+    assert_close(res_both_liquids.G(), res_SRK.G(), rtol=1e-4)
+    assert_close(res_PR.T, 298.0822786634035, rtol=5e-4)
+    assert_close(res_SRK.T, 299.5323133142487, rtol=5e-4)
 
 
 def test_C1_to_C5_water_gas():

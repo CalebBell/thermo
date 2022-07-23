@@ -67,6 +67,8 @@ __all__ = [
     'flash_mixing_remove_overlap',
     'incipient_phase_one_sided_secant',
     'flash_phase_boundary_one_sided_secant', 
+    'VLN_bubble_boolean_check', 
+    'VL_dew_boolean_check',
     'generate_phase_boundaries_naive'
 ]
 
@@ -1693,6 +1695,70 @@ def dew_P_newton(P_guess, T, zs, liquid_phase, gas_phase,
     xs = [zs[i]/(1.0 + V_over_F*(exp(lnKsP[i]) - 1.0)) for i in cmps]
 #    ys = [exp(lnKsP[i])*xs[i] for i in cmps]
     return lnKsP[-1], xs, zs, iterations
+
+def dew_bubble_bounded_naive(guess, fixed_val, zs, flasher, iter_var='T', fixed_var='P', V_over_F=1, #
+                             maxiter=200, xtol=1E-10, ytol=None,
+                             ):
+    # Bound the problem
+    if V_over_F == 1:
+        check = VL_dew_boolean_check
+        check2 = one_sided_dew_point_err
+    elif V_over_F == 0:
+        check = VLN_bubble_boolean_check
+        check2 = one_sided_bubble_point_err
+    else:
+        raise ValueError("Not implemented")
+    non_phase_val, phase_val, non_phase_res, phase_res, res_pert, bounding_iter = generate_phase_boundaries_naive(flasher=flasher, zs=zs, spec_var=fixed_var, spec_val=fixed_val, iter_var=iter_var, check=check,
+                                    ignore_der=True,
+                                                    iter_guesses=[guess, guess*.9, guess*1.1, guess*0.95, guess*1.05,
+                                                  guess*0.8, guess*0.7, guess*1.2, guess*1.3])
+
+    iterations = 0
+    store = []
+    flat = -1.0
+    specs = {fixed_var: fixed_val}
+
+    def to_solve(guess):
+        nonlocal iterations
+        iterations += 1
+        specs[iter_var] = guess
+        point = flasher.flash(zs=zs, **specs)
+        store.append(point)
+        # print(guess, check(point))
+        err = check2(point)
+        return err
+
+    # import matplotlib.pyplot as plt
+    # pts = linspace(non_phase_val, phase_val, 500)
+    # vals = [to_solve(p) for p in pts]
+    # plt.plot(pts, vals, 'x')
+    # plt.show()
+
+
+    y0 = check2(phase_res)
+    y1 = check2(res_pert)
+
+    try:
+        guess = one_sided_secant(to_solve, x_flat=non_phase_val,
+                                 x0=phase_val, y_flat=flat,
+                                 x1=res_pert.value(iter_var),
+                                 y0=y0, y1=y1,
+                                 xtol=xtol, ytol=ytol, maxiter=maxiter)
+    except Exception as e:
+        check2 = one_sided_sat_point_err
+        y0 = check2(phase_res)
+        y1 = check2(res_pert)
+        guess = one_sided_secant(to_solve, x_flat=non_phase_val,
+                                 x0=phase_val, y_flat=flat,
+                                 x1=res_pert.value(iter_var),
+                                 y0=y0, y1=y1,
+                                 xtol=xtol, ytol=ytol, maxiter=maxiter)
+    for res in store[::-1]:
+        check2_val = check2(res)
+        if check2_val != flat:
+            break
+
+    return res.value(iter_var), res.liquids, res.gas, iterations+bounding_iter, check2_val
 
 
 def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
@@ -4386,7 +4452,7 @@ phase_boundaries_U_guesses = phase_boundaries_H_guesses
 phase_boundary_perturbation_factors = [1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10]
 
 def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, check, hot_start=None,
-                                    iter_guesses=None):
+                                    iter_guesses=None, ignore_der=False):
     '''Attempt to bound the formation of an incipient phase, using a 
     variety of hardcoded options.
     '''
@@ -4422,6 +4488,7 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
 
     non_phase_vals = []
     non_phase_results = []
+    non_phase_checks = []
     
     all_phase_vals = []
     all_phase_ress = []
@@ -4439,14 +4506,15 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
             # flash failure
             continue
         check_val = check(res)
-        print(f'{iter_var}={iter_val}, check={check_val}')
-        if check_val < 0:
+        # print(f'{iter_var}={iter_val}, check={check_val}')
+        if check_val == -1.0:
             # non_phase_val = iter_val
             # non_phase_res = res
 
             non_phase_vals.append(iter_val)
             non_phase_results.append(res)
-        else:
+            non_phase_checks.append(check_val)
+        elif check_val >= 0:
             # Store all of these. May need to check each of them.
             all_phase_vals.append(iter_val)
             all_phase_ress.append(res)
@@ -4490,7 +4558,7 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
             for non_phase_val, non_phase_res in zip(non_phase_vals, non_phase_results):
                 distance = abs(non_phase_res.value(iter_var) - phase_res.value(iter_var))
 
-                if (not der_dir and non_phase_val > phase_val) or (der_dir and non_phase_val < phase_val):
+                if (not der_dir and non_phase_val > phase_val) or (der_dir and non_phase_val < phase_val) or ignore_der:
                     if distance < best_non_phase_distance:
                         best_non_phase_distance = distance
                         best_non_phase_val = non_phase_val
@@ -4635,6 +4703,39 @@ def generate_pure_phase_boolean_check(idx, required_zi=0.999, required_wi=None):
         return has_comp
     return component_check
 
+def one_sided_dew_point_err(res):
+    if res.gas is not None and res.liquid_count:
+        return res.LF
+    return -1
+
+def one_sided_bubble_point_err(res):
+    if res.gas is not None and res.liquid_count:
+        return res.VF
+    return -1
+
+def one_sided_sat_point_err(res):
+    if res.gas is not None and res.liquid_count:
+        return min(res.LF, res.VF)
+    return -1
+
+def VLN_bubble_boolean_check(res):
+    if res.gas is not None and res.liquids is not None and res.phase_count >= 2 and res.solid_count == 0:
+        # we are in the two phase region
+        return min(res.LF, res.VF)
+    elif res.liquid_count == 1 and res.phase_count == 1:
+        return -1
+    return -10000
+
+def VL_dew_boolean_check(res):
+    # dew points are always two phases never two liquids
+    if res.gas is not None and res.liquids is not None and res.phase_count==2 and res.solid_count == 0:
+        # we are in the two phase region
+        return min(res.LF, res.VF)
+    elif res.gas is not None and res.phase_count == 1:
+        return -1
+    # Something else, need to avoid this
+    return -10000
+    
 def VL_boolean_check(res):
     '''Function that returns 1 if a gas is present and there is a liquid 
     present and there are only two phases, and -1 otherwise.

@@ -39,6 +39,7 @@ from thermo.flash.flash_utils import (
     dew_bubble_newton_zs,
     solve_P_VF_IG_K_composition_independent,
     dew_bubble_newton_zs,
+    dew_bubble_bounded_naive,
     TP_solve_VF_guesses,
     stability_iteration_Michelsen,
     solve_PTV_HSGUA_1P,
@@ -277,9 +278,10 @@ class FlashVL(Flash):
     ]
 
     dew_bubble_flash_algos = [
-        dew_bubble_Michelsen_Mollerup, 
-        dew_bubble_newton_zs,                
-        SS_VF_simultaneous
+        dew_bubble_bounded_naive,
+        dew_bubble_Michelsen_Mollerup,
+        dew_bubble_newton_zs,
+        SS_VF_simultaneous,
     ]
     dew_T_flash_algos = bubble_T_flash_algos = dew_bubble_flash_algos
     dew_P_flash_algos = bubble_P_flash_algos = dew_bubble_flash_algos
@@ -426,10 +428,18 @@ class FlashVL(Flash):
         if integral_VF:
             for algo in algos:
                 try:
-                    sln = algo(P, fixed_val=T, zs=zs, liquid_phase=liquid, gas_phase=gas,
-                                iter_var='P', fixed_var='T', V_over_F=VF,
-                                maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol,
-                                comp_guess=comp_guess)
+                    if algo is dew_bubble_bounded_naive:
+                        if self.unique_liquid_count > 1:
+                            # cannott force flash each liquid easily
+                            continue
+                        sln = dew_bubble_bounded_naive(guess=P, fixed_val=T, zs=zs, flasher=self, iter_var='P', fixed_var='T', V_over_F=VF,
+                                                       maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol)
+                        return sln
+                    else:
+                        sln = algo(P, fixed_val=T, zs=zs, liquid_phase=liquid, gas_phase=gas,
+                                    iter_var='P', fixed_var='T', V_over_F=VF,
+                                    maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol,
+                                    comp_guess=comp_guess)
                     break
                 except Exception as e:
                     print(e)
@@ -493,7 +503,17 @@ class FlashVL(Flash):
         if integral_VF:
             for algo in algos:
                 try:
-                    sln = algo(T, fixed_val=P, zs=zs, liquid_phase=liquid, gas_phase=gas,
+                    if algo is dew_bubble_bounded_naive:
+                        if self.unique_liquid_count > 1:
+                            # cannot force flash each liquid easily
+                            continue
+                        # This one doesn't like being low tolerance because the PT tolerance isn't there
+                        sln = dew_bubble_bounded_naive(guess=T, fixed_val=P, zs=zs, flasher=self, iter_var='T', fixed_var='P', V_over_F=VF,
+                                                       maxiter=dew_bubble_maxiter, xtol=max(dew_bubble_xtol, 1e-6))
+                        return sln
+                    else:
+
+                        sln = algo(T, fixed_val=P, zs=zs, liquid_phase=liquid, gas_phase=gas,
                                 iter_var='T', fixed_var='P', V_over_F=VF,
                                 maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol,
                                 comp_guess=comp_guess)
