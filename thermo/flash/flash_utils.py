@@ -5170,9 +5170,9 @@ def cricondentherm_direct_criteria(res, require_two_phase=True, require_gas=Fals
     else:
         dlnphis_dP_gas = res.lightest_liquid.dlnphis_dP()
     dlnphis_dP_liquid = res.heaviest_liquid.dlnphis_dP()
-    ys = res.heaviest_liquid.zs
+    xs = res.heaviest_liquid.zs
     for i in range(res.N):
-        tot += ys[i]*(dlnphis_dP_gas[i] - dlnphis_dP_liquid[i])
+        tot += xs[i]*(dlnphis_dP_gas[i] - dlnphis_dP_liquid[i])
     return tot
  
 
