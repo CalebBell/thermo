@@ -5160,3 +5160,32 @@ def incipient_liquid_bounded_PT_sat(flasher, specs, zs_existing, zs_added, check
     return v, attempts, iterations, multiplier
     
 
+def cricondentherm_direct_criteria(res, require_two_phase=True, require_gas=False):
+    if require_two_phase and res.phase_count != 2:
+        raise ValueError("Solution is not two phase")
+    tot = 0.0
+    
+    if require_gas or res.gas is not None:
+        dlnphis_dP_gas = res.gas.dlnphis_dP()
+    else:
+        dlnphis_dP_gas = res.lightest_liquid.dlnphis_dP()
+    dlnphis_dP_liquid = res.heaviest_liquid.dlnphis_dP()
+    ys = res.liquid0.zs
+    for i in range(res.N):
+        tot += ys[i]*(dlnphis_dP_gas[i] - dlnphis_dP_liquid[i])
+    return tot
+ 
+
+def critcondenbar_direct_criteria(res, require_two_phase=True, require_gas=False):
+    if require_two_phase and res.phase_count != 2:
+        raise ValueError("Solution is not two phase")
+    tot = 0.0
+    if require_gas or res.gas is not None:
+        dlnphis_dT_gas = res.gas.dlnphis_dT()
+    else:
+        dlnphis_dT_gas = res.lightest_liquid.dlnphis_dT()
+    dlnphis_dT_liquid = res.heaviest_liquid.dlnphis_dT()
+    ys = res.gas.zs
+    for i in range(res.N):
+        tot += ys[i]*(dlnphis_dT_gas[i] - dlnphis_dT_liquid[i])
+    return tot
