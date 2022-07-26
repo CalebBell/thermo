@@ -509,7 +509,14 @@ class FlashVL(Flash):
                             continue
                         # This one doesn't like being low tolerance because the PT tolerance isn't there
                         sln = dew_bubble_bounded_naive(guess=T, fixed_val=P, zs=zs, flasher=self, iter_var='T', fixed_var='P', V_over_F=VF,
-                                                       maxiter=dew_bubble_maxiter, xtol=max(dew_bubble_xtol, 1e-6))
+                                                       maxiter=dew_bubble_maxiter, xtol=max(dew_bubble_xtol, 1e-6), hot_start=hot_start)
+                        # This one should never need anything else
+                        # as it has its own stability test
+                        #stable, info = self.stability_test_Michelsen(sln[2].value('T'), sln[2].value('P'), zs, min_phase=sln[1][0], other_phase=sln[2])
+                        #if stable:
+                        #    return sln
+                        #else:
+                        #    continue
                         return sln
                     else:
 
@@ -517,12 +524,16 @@ class FlashVL(Flash):
                                 iter_var='T', fixed_var='P', V_over_F=VF,
                                 maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol,
                                 comp_guess=comp_guess)
-                    break
+
+                    guess, comp_guess, iter_phase, const_phase, iterations, err = sln
+
+                    stable, info = self.stability_test_Michelsen(iter_phase.T, iter_phase.P, zs, min_phase=iter_phase, other_phase=const_phase)
+                    if stable:
+                        break
                 except Exception as e:
                     print(e)
                     continue
 
-            guess, comp_guess, iter_phase, const_phase, iterations, err = sln
             if dew:
                 l, g = iter_phase, const_phase
             else:

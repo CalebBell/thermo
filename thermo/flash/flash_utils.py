@@ -1697,7 +1697,7 @@ def dew_P_newton(P_guess, T, zs, liquid_phase, gas_phase,
     return lnKsP[-1], xs, zs, iterations
 
 def dew_bubble_bounded_naive(guess, fixed_val, zs, flasher, iter_var='T', fixed_var='P', V_over_F=1, #
-                             maxiter=200, xtol=1E-10, ytol=None,
+                             maxiter=200, xtol=1E-10, ytol=None, hot_start=None
                              ):
     # Bound the problem
     if V_over_F == 1:
@@ -1708,10 +1708,15 @@ def dew_bubble_bounded_naive(guess, fixed_val, zs, flasher, iter_var='T', fixed_
         check2 = one_sided_bubble_point_err
     else:
         raise ValueError("Not implemented")
+    check2 = one_sided_sat_point_err
+    guesses = [guess, guess*.9, guess*1.1, guess*0.95, guess*1.05,
+               guess*0.8, guess*0.7, guess*1.2, guess*1.3]
+    if hot_start is not None:
+        hot_start_guess = hot_start.value(iter_var)
+        guesses = [hot_start_guess, hot_start_guess*0.99, hot_start_guess*1.01, hot_start_guess*0.95, hot_start_guess*1.05, hot_start_guess*.9, hot_start_guess*1.1] + guesses
+
     non_phase_val, phase_val, non_phase_res, phase_res, res_pert, bounding_iter = generate_phase_boundaries_naive(flasher=flasher, zs=zs, spec_var=fixed_var, spec_val=fixed_val, iter_var=iter_var, check=check,
-                                    ignore_der=True,
-                                                    iter_guesses=[guess, guess*.9, guess*1.1, guess*0.95, guess*1.05,
-                                                  guess*0.8, guess*0.7, guess*1.2, guess*1.3])
+                    ignore_der=True, iter_guesses=guesses)
 
     iterations = 0
     store = []
@@ -1766,7 +1771,26 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
                         maxiter=200, xtol=1E-10, comp_guess=None,
                         max_step_damping=1e5, damping=1.0,
                         trivial_solution_tol=1e-4, debug=False,
-                        method='newton', opt_kwargs=None):
+                        method='newton', opt_kwargs=None,
+                        min_iter_val=1.0, max_iter_val=1e10,
+                        hot_start=None):
+    if hot_start is not None and hot_start.phase_count == 2:
+        # To use the hot start it must be:
+        # 1) Same composition
+        # 2) At saturation
+        # 3) Two phases
+        present_phase_hot = None
+        for phase in hot_start.phases:
+            if phase.beta == 1:
+                present_phase_hot = phase
+                break
+            
+        if present_phase_hot.zs == zs:
+            other_phase = hot_start.phases[1] if present_phase_hot is hot_start.phases[0] else hot_start.phases[0]
+            comp_guess = other_phase.zs
+            guess = hot_start.value(iter_var)
+    # print('Composition guess', comp_guess)
+    # print('Variable guess', guess)
     V = None
     N = len(zs)
     cmps = range(N)
@@ -1786,10 +1810,15 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
     errs = [0.0]*size
     comp_invs = [0.0]*N
     J = [[0.0]*size for i in range(size)]
+
+    # We can arbitrarily increase this factor to weight the error of the composition higher
+    comp_factor = 10
+    comp_factor_inv = 1.0/comp_factor
+
     #J[N][N] = 0.0 as well
     JN = J[N]
     for i in cmps:
-        JN[i] = -1.0
+        JN[i] = -comp_factor
 
     s = 'dlnphis_d%s' %(iter_var)
     dlnphis_diter_var_iter = getattr(iter_phase.__class__, s)
@@ -1805,16 +1834,19 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
         iter_val = iter_vals[-1]
 
         kwargs[iter_var] = iter_val
+        # print(f'Incipient phase composition = {comp}, iteration variable {iter_val}')
         p_iter = iter_phase.to(comp, **kwargs)
         p_const = const_phase.to(zs, **kwargs)
 
         lnphis_iter = p_iter.lnphis()
         lnphis_const = p_const.lnphis()
         for i in cmps:
-            comp_invs[i] = comp_inv = 1.0/comp[i]
-            lnKs[i] = log(zs[i]*comp_inv)
-            errs[i] = lnKs[i] - lnphis_iter[i] + lnphis_const[i]
-        errs[-1] = 1.0 - sum(comp)
+            if zs[i] != 0.0:
+                # for components with no error, no need to move in any direction
+                comp_invs[i] = comp_inv = 1.0/comp[i]
+                lnKs[i] = log(zs[i]*comp_inv)
+                errs[i] = lnKs[i] - lnphis_iter[i] + lnphis_const[i]
+        errs[-1] = comp_factor - comp_factor*sum(comp)
 
         if jac:
             dlnphis_dxs = dlnphis_dzs(p_iter)
@@ -1828,34 +1860,57 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
                 Ji[i] -= comp_invs[i]
 
             info[:] = [p_iter, p_const, errs, J]
+            # print('Errs', errs)
+            # print('Jac', J)
             return errs, J
 
         return errs
+
+    low = [.0]*N
+    low.append(min_iter_val)  # guess at minimum pressure
+    high = [1.0]*N
+    high.append(max_iter_val)  # guess at maximum pressure
+
+
     damping = 1.0
     guesses = list(comp_guess)
     guesses.append(guess)
     if method == 'newton':
-        comp_val, iterations = newton_system(to_solve_comp, guesses, jac=True,
+        # numerical_j = jacobian(lambda g: to_solve_comp(g)[0], guesses, perturbation=1e-6, scalar=False)
+        # implemented_j = to_solve_comp(guesses)[1]
+        f_j, into, outof = translate_bound_f_jac(to_solve_comp, jac=True, low=low, high=high, as_np=True)
+        guesses_in = into(guesses)
+
+        # numerical_j = jacobian(lambda g: f_j(g)[0], guesses_in, perturbation=1e-6, scalar=False)
+        # implemented_j = f_j(guesses_in)[1]
+
+        comp_val, iterations = newton_system(f_j, guesses, jac=True,
                                              xtol=xtol, damping=damping,
                                              solve_func=py_solve,
+                                             line_search=True,
                                              # solve_func=lambda x, y:np.linalg.solve(x, y).tolist(),
-                                             damping_func=damping_maintain_sign)
-    elif method == 'odeint':
-        # Not even close to working
-        # equations are hard
-        from scipy.integrate import odeint
-        def fun_and_jac(x, t):
-            x, j = to_solve_comp(x.tolist() + [t])
-            return np.array(x), np.array(j)
-        def fun(x, t):
-            x, j = to_solve_comp(x.tolist() +[t])
-            return np.array(x)
-        def jac(x, t):
-            x, j = to_solve_comp(x.tolist() + [t])
-            return np.array(j)
+                                             # damping_func=damping_maintain_sign
+                                             )
 
-        ans = odeint(func=fun, y0=np.array(guesses), t=np.linspace(guess, guess*2, 5), Dfun=jac)
-        return ans
+        comp_val = outof(comp_val)
+
+
+    # elif method == 'odeint':
+    #     # Not even close to working
+    #     # equations are hard
+    #     from scipy.integrate import odeint
+    #     def fun_and_jac(x, t):
+    #         x, j = to_solve_comp(x.tolist() + [t])
+    #         return np.array(x), np.array(j)
+    #     def fun(x, t):
+    #         x, j = to_solve_comp(x.tolist() +[t])
+    #         return np.array(x)
+    #     def jac(x, t):
+    #         x, j = to_solve_comp(x.tolist() + [t])
+    #         return np.array(j)
+
+    #     ans = odeint(func=fun, y0=np.array(guesses), t=np.linspace(guess, guess*2, 5), Dfun=jac)
+    #     return ans
     else:
         if opt_kwargs is None:
             opt_kwargs = {}
@@ -1863,11 +1918,7 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
         #     x, j = to_solve_comp(x.tolist())
         #     return np.array(x), np.array(j)
         
-        low = [.0]*N
-        low.append(1.0) # guess at minimum pressure
-        high = [1.0]*N
-        high.append(1e10) # guess at maximum pressure
-        
+
         f_j, into, outof = translate_bound_f_jac(to_solve_comp, jac=True, low=low, high=high, as_np=True)
 
         ans = root(f_j, np.array(into(guesses)), jac=True, method=method, tol=xtol, **opt_kwargs)
@@ -1910,7 +1961,8 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
                                   iter_var='T', fixed_var='P', V_over_F=1,
                                   maxiter=200, xtol=1E-10, comp_guess=None,
                                   max_step_damping=.25, guess_update_frequency=1,
-                                  trivial_solution_tol=1e-7, V_diff=.00002, damping=1.0):
+                                  trivial_solution_tol=1e-7, V_diff=.00002, damping=1.0,
+                                  hot_start=None):
     # for near critical, V diff very wrong - .005 seen, both g as or both liquid
     kwargs = {fixed_var: fixed_val}
     N = len(zs)
@@ -3560,7 +3612,8 @@ def sequential_substitution_2P_sat(T, P, V, zs_dry, xs_guess, ys_guess, liquid_p
 def SS_VF_simultaneous(guess, fixed_val, zs, liquid_phase, gas_phase,
                                 iter_var='T', fixed_var='P', V_over_F=1,
                                 maxiter=200, xtol=1E-10, comp_guess=None,
-                                damping=0.8, tol_eq=1e-12, update_frequency=3):
+                                damping=0.8, tol_eq=1e-12, update_frequency=3,
+                                hot_start=None):
     if comp_guess is None:
         comp_guess = zs
 
@@ -4715,7 +4768,7 @@ def one_sided_bubble_point_err(res):
 
 def one_sided_sat_point_err(res):
     if res.gas is not None and res.liquid_count:
-        return min(res.LF, res.VF)
+        return min(res.betas)
     return -1
 
 def VLN_bubble_boolean_check(res):
