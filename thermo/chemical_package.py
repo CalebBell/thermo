@@ -1868,6 +1868,9 @@ for use with the :obj:`thermo.phases.IAPWS95` phase object.
 '''
 
 iapws_correlations = PropertyCorrelationsPackage(constants=iapws_constants, skip_missing=True,
+                                                 SurfaceTensions=[SurfaceTension(load_data=False, Tc=647.14, exp_poly_fit_ln_tau=(248.14999999999998, 643.9043, 647.14, 
+                                                    [-2.8494246663280267e-05, -0.0007642770215779117, -0.0087879657158058, -0.056840919106152674, -0.22915223013722677, -0.607083777358256, 
+                                                     -1.0946692428934923, -0.08982641235684152, -2.383855224250596]))],
                                                  HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18,
                                                                             4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))])
 ''':obj:`PropertyCorrelationsPackage`: IAPWS correlations and properties, [-]'''

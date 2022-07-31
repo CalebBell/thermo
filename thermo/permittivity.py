@@ -53,7 +53,7 @@ from fluids.constants import N_A, epsilon_0, k
 from chemicals.utils import isnan
 from chemicals.permittivity import permittivity_IAPWS
 from chemicals import permittivity
-from chemicals.iapws import iapws95_rhol_sat
+from chemicals.iapws import iapws95_rhol_sat, iapws95_Tc, iapws95_rho, iapws95_Pc
 
 
 from thermo.utils import TDependentProperty, IAPWS
@@ -212,7 +212,11 @@ class PermittivityLiquid(TDependentProperty):
         elif method == CRC_CONSTANT:
             epsilon = self.CRC_permittivity
         elif method == IAPWS:
-            rho = iapws95_rhol_sat(T)
+            if T <= iapws95_Tc:
+                rho = iapws95_rhol_sat(T)
+            else:
+                # reduce discontinuities
+                rho = iapws95_rho(T, iapws95_Pc)
             epsilon = permittivity_IAPWS(T, rho)
         else:
             epsilon = self._base_calculate(T, self._method)

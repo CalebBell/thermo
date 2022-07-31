@@ -134,6 +134,9 @@ class CEOSPhase(IdealGasDeparturePhase):
         self.HeatCapacityGases = HeatCapacityGases
         if HeatCapacityGases is not None:
             self.N = N = len(HeatCapacityGases)
+            for obj in HeatCapacityGases:
+                if not isinstance(obj, HeatCapacityGas):
+                    raise ValueError("A HeatCapacityGas object is required")
         elif 'Tcs' in eos_kwargs:
             self.N = N = len(eos_kwargs['Tcs'])
 

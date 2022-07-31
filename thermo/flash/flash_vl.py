@@ -278,9 +278,9 @@ class FlashVL(Flash):
     ]
 
     dew_bubble_flash_algos = [
-        dew_bubble_bounded_naive,
         dew_bubble_Michelsen_Mollerup,
         dew_bubble_newton_zs,
+        dew_bubble_bounded_naive,
         SS_VF_simultaneous,
     ]
     dew_T_flash_algos = bubble_T_flash_algos = dew_bubble_flash_algos
