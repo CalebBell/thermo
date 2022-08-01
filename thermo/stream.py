@@ -2025,7 +2025,7 @@ class EquilibriumStream(EquilibriumState):
                  G=None, G_mass=None,
                  A=None, A_mass=None,
                  energy=None, Vf_TP=None, Q_TP=None, hot_start=None,
-                 existing_flash=None):
+                 existing_flash=None, spec_fun=None):
 
         constants = flasher.constants
 
@@ -2158,7 +2158,8 @@ class EquilibriumStream(EquilibriumState):
                           G=G, G_mass=G_mass, U=U, U_mass=U_mass,
                           A=A, A_mass=A_mass,
                           
-                          dest=dest, zs=zs, hot_start=hot_start)
+                          dest=dest, zs=zs, hot_start=hot_start,
+                          spec_fun=spec_fun)
 
         # Convert the flow rate into total molar flow
         if m is not None:

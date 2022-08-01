@@ -135,7 +135,8 @@ class Flash(object):
     def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
               S=None, G=None, U=None, A=None, solution=None, hot_start=None,
               retry=False, dest=None, rho=None, rho_mass=None, H_mass=None,
-              S_mass=None, G_mass=None, U_mass=None, A_mass=None):
+              S_mass=None, G_mass=None, U_mass=None, A_mass=None,
+              spec_fun=None):
         r'''Method to perform a flash calculation and return the result as an
         :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>` object.
         This generic interface allows flashes with any combination of valid
@@ -445,11 +446,11 @@ class Flash(object):
             # Only allow one
 #            g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
             try:
-                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var, zs=zs, solution=solution, hot_start=hot_start)
+                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var, zs=zs, solution=solution, hot_start=hot_start, spec_fun=spec_fun)
             except Exception as e:
                 if retry:
                     print('retrying HSGUA flash')
-                    g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, zs=zs, solution=solution, hot_start=hot_start)
+                    g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, zs=zs, solution=solution, hot_start=hot_start, spec_fun=spec_fun)
                 else:
                     raise e
 #            except UnconvergedError as e:

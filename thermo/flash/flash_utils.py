@@ -2616,7 +2616,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
                        maxiter=200, xtol=1E-10, ytol=None, fprime=False,
                        minimum_progress=0.3, oscillation_detection=True,
                        bounded=False, min_bound=None, max_bound=None,
-                       multi_solution=False):
+                       multi_solution=False, spec_fun=None):
     r'''Solve a single-phase flash where one of `T`, `P`, or `V` are specified
     and one of `H`, `S`, `G`, `U`, or `A` are also specified. The iteration
     (changed input variable) variable must be specified as be one of `T`, `P`,
@@ -2684,8 +2684,10 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
     multiple_solutions = (fixed_var, spec) in multiple_solution_sets
 
     phase_kwargs = {fixed_var: fixed_var_val, 'zs': zs}
-    spec_fun = getattr(phase.__class__, spec)
-#    print('spec_fun', spec_fun)
+    spec_getter = getattr(phase.__class__, spec)
+    if spec_fun is not None:
+        fprime = False
+#    print('spec_getter', spec_getter)
     if fprime:
         try:
             # Gotta be a lookup by (spec, iter_var, fixed_var)
@@ -2703,9 +2705,11 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
         else:
             phase_kwargs[iter_var] = guess
             p = phase.to(**phase_kwargs)
-
-        err = spec_fun(p) - spec_val
-#        err = (spec_fun(p) - spec_val)/spec_val
+        if spec_fun is not None:
+            err = spec_getter(p) - spec_fun(p)
+        else:
+            err = spec_getter(p) - spec_val
+#        err = (spec_getter(p) - spec_val)/spec_val
         store[:] = (p, err)
         if fprime:
 #            print([err, guess, p.eos_mix.phase, der_attr])
@@ -2810,10 +2814,13 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
     # tests = logspace(log10(10.6999), log10(10.70005), 15000)
     # tests = logspace(log10(10.6), log10(10.8), 15000)
     # tests = logspace(log10(min_bound), log10(max_bound), 1500)
-    # values = [to_solve(t)[0] for t in tests]
+    # if fprime:
+    #     values = [to_solve(t)[0] for t in tests]
+    # else:
+    #     values = [to_solve(t) for t in tests]
     # values = [abs(t) for t in values]
     # import matplotlib.pyplot as plt
-    # plt.loglog(tests, values)
+    # plt.loglog(tests, values, 'x')
     # plt.show()
 
     if oscillation_detection and ytol is not None:
@@ -2871,7 +2878,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
 def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
                        spec, iter_var, constants, correlations, last_conv=None,
                        oscillation_detection=True, guess_maxiter=50,
-                       guess_xtol=1e-7, maxiter=80, xtol=1e-10):
+                       guess_xtol=1e-7, maxiter=80, xtol=1e-10, spec_fun=None):
     # TODO: replace oscillation detection with bounding parameters and translation
     # The cost should be less.
 
@@ -2935,7 +2942,7 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
     _, phase, iterations, err = TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val=fixed_var_val, spec_val=spec_val, ytol=ytol,
                                                    iter_var=iter_var, fixed_var=fixed_var, spec=spec, oscillation_detection=oscillation_detection,
                                                    minimum_progress=1e-4, maxiter=maxiter, fprime=True, xtol=xtol,
-                                                   bounded=True, min_bound=min_bound, max_bound=max_bound)
+                                                   bounded=True, min_bound=min_bound, max_bound=max_bound, spec_fun=spec_fun)
     if isinstance(phase, IAPWS95) and abs(err) > 1e-4:
         raise ValueError("Bad solution found")
     T, P = phase.T, phase.P

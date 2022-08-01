@@ -721,7 +721,7 @@ class FlashPureVLS(Flash):
     def flash_TPV_HSGUA(self, fixed_var_val, spec_val, fixed_var='P', spec='H',
                         iter_var='T', zs=None, solution=None,
                         selection_fun_1P=None, hot_start=None,
-                        iter_var_backup=None):
+                        iter_var_backup=None, spec_fun=None):
         # Be prepared to have a flag here to handle zero flow
         zs = [1.0]
         constants, correlations = self.constants, self.correlations
@@ -824,12 +824,12 @@ class FlashPureVLS(Flash):
                         else:
                             one_phase_solution_test_phases = [self.gas]
             for phase in one_phase_solution_test_phases:
-                # TODO: for eoss wit boundaries, and well behaved fluids, only solve ocne instead of twice (i.e. per phase, doubling the computation.)
+                # TODO: for eoss wit boundaries, and well behaved fluids, only solve once instead of twice (i.e. per phase, doubling the computation.)
                 try:
                     T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var,
                                                                       spec=spec, iter_var=iter_var, constants=constants, correlations=correlations,
                                                                       guess_maxiter=self.TPV_HSGUA_guess_maxiter, guess_xtol=self.TPV_HSGUA_guess_xtol,
-                                                                      maxiter=self.TPV_HSGUA_maxiter, xtol=self.TPV_HSGUA_xtol)
+                                                                      maxiter=self.TPV_HSGUA_maxiter, xtol=self.TPV_HSGUA_xtol, spec_fun=spec_fun)
 
                     G = fun(phase)
                     new = [T, phase, iterations, err, G]

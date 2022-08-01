@@ -795,7 +795,7 @@ class FlashVL(Flash):
 
     def flash_TPV_HSGUA(self, fixed_val, spec_val, fixed_var='P', spec='H',
                         iter_var='T', zs=None, solution=None,
-                        selection_fun_1P=None, hot_start=None):
+                        selection_fun_1P=None, hot_start=None, spec_fun=None):
 
         constants, correlations = self.constants, self.correlations
         if solution is None:
@@ -859,7 +859,7 @@ class FlashVL(Flash):
             try:
                 res, flash_convergence = self.solve_PT_HSGUA_NP_guess_bisect(zs, fixed_val, spec_val,
                                                                fixed_var=fixed_var, spec=spec, iter_var=iter_var,
-                                                                             hot_start=hot_start)
+                                                                             hot_start=hot_start, spec_fun=spec_fun)
                 return None, res.phases, [], res.betas, flash_convergence
             except:
                 g, ls, ss, betas, flash_convergence = self.solve_PT_HSGUA_NP_guess_newton_2P(zs, fixed_val, spec_val,
@@ -896,7 +896,7 @@ class FlashVL(Flash):
         return min_bound, max_bound
 
     def solve_PT_HSGUA_NP_guess_newton_2P(self, zs, fixed_val, spec_val,
-                                          fixed_var='P', spec='H', iter_var='T'):
+                                          fixed_var='P', spec='H', iter_var='T',):
         phases = self.phases
         constants = self.constants
         correlations = self.correlations
@@ -933,7 +933,7 @@ class FlashVL(Flash):
 
 
     def solve_PT_HSGUA_NP_guess_bisect(self, zs, fixed_val, spec_val,
-                                       fixed_var='P', spec='H', iter_var='T', hot_start=None):
+                                       fixed_var='P', spec='H', iter_var='T', hot_start=None, spec_fun=None):
         phases = self.phases
         constants = self.constants
         correlations = self.correlations
@@ -979,7 +979,10 @@ class FlashVL(Flash):
             iterations += 1
             kwargs[iter_var] = iter_val
             res = self.flash(**kwargs)
-            err = getattr(res, spec)() - spec_val
+            if spec_fun is not None:
+                err = getattr(res, spec)() - spec_fun(res)
+            else:
+                err = getattr(res, spec)() - spec_val
             sln[:] = (res, iter_val)
             return err
 
