@@ -826,7 +826,7 @@ class ChemicalConstantsPackage(object):
 
         SurfaceTensions = [SurfaceTension(CASRN=CASs[i], MW=MWs[i], Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i], Zc=Zcs[i],
                           omega=omegas[i], StielPolar=StielPolars[i], Hvap_Tb=Hvap_Tbs[i], Vml=VolumeLiquids[i],
-                          Cpl=HeatCapacityLiquids[i], poly_fit=get_chemical_constants(CASs[i], 'SurfaceTension'))
+                          Cpl=HeatCapacityLiquids[i], exp_poly_fit_ln_tau=get_chemical_constants(CASs[i], 'SurfaceTension'))
                                              for i in range(N)]
 
         sigma_STPs = [SurfaceTensions[i].T_dependent_property(298.15) for i in range(N)]

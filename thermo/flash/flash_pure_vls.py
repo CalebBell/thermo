@@ -781,32 +781,6 @@ class FlashPureVLS(Flash):
             iter_var = 'T'
 #            if sln is not None:
 #                return sln
-        try:
-            solutions_1P = []
-            G_min = 1e100
-            results_G_min_1P = None
-            for phase in self.phases:
-                # TODO: for eoss wit boundaries, and well behaved fluids, only solve ocne instead of twice (i.e. per phase, doubling the computation.)
-                try:
-                    T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var,
-                                                                      spec=spec, iter_var=iter_var, constants=constants, correlations=correlations,
-                                                                      guess_maxiter=self.TPV_HSGUA_guess_maxiter, guess_xtol=self.TPV_HSGUA_guess_xtol,
-                                                                      maxiter=self.TPV_HSGUA_maxiter, xtol=self.TPV_HSGUA_xtol)
-
-                    G = fun(phase)
-                    new = [T, phase, iterations, err, G]
-                    if results_G_min_1P is None or selection_fun_1P(new, results_G_min_1P):
-#                    if G < G_min:
-                        G_min = G
-                        results_G_min_1P = new
-
-                    solutions_1P.append(new)
-                except Exception as e:
-#                    print(e)
-                    solutions_1P.append(None)
-        except:
-            pass
-
 
         try:
             VL_liq, VL_gas = None, None
@@ -836,6 +810,42 @@ class FlashPureVLS(Flash):
         except Exception as e:
 #            print(e, spec)
             VF = None
+
+        try:
+            solutions_1P = []
+            G_min = 1e100
+            results_G_min_1P = None
+            one_phase_solution_test_phases = self.phases
+            if self.VL_only_IAPWS95:
+                if fixed_var == 'P' and spec == 'H':
+                    if VL_liq is not None:
+                        if spec_val_l > spec_val:
+                            one_phase_solution_test_phases = self.liquids
+                        else:
+                            one_phase_solution_test_phases = [self.gas]
+            for phase in one_phase_solution_test_phases:
+                # TODO: for eoss wit boundaries, and well behaved fluids, only solve ocne instead of twice (i.e. per phase, doubling the computation.)
+                try:
+                    T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var,
+                                                                      spec=spec, iter_var=iter_var, constants=constants, correlations=correlations,
+                                                                      guess_maxiter=self.TPV_HSGUA_guess_maxiter, guess_xtol=self.TPV_HSGUA_guess_xtol,
+                                                                      maxiter=self.TPV_HSGUA_maxiter, xtol=self.TPV_HSGUA_xtol)
+
+                    G = fun(phase)
+                    new = [T, phase, iterations, err, G]
+                    if results_G_min_1P is None or selection_fun_1P(new, results_G_min_1P):
+#                    if G < G_min:
+                        G_min = G
+                        results_G_min_1P = new
+
+                    solutions_1P.append(new)
+                except Exception as e:
+#                    print(e)
+                    solutions_1P.append(None)
+        except:
+            pass
+
+
 
         try:
             G_SF = 1e100
