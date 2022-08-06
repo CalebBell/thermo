@@ -24,6 +24,7 @@ SOFTWARE.
 __all__ = ['IAPWS95', 'IAPWS95Gas', 'IAPWS95Liquid', 'IAPWS97']
 
 from chemicals import iapws
+from chemicals.interface import sigma_IAPWS
 from chemicals.viscosity import mu_IAPWS
 from chemicals.thermal_conductivity import k_IAPWS
 from thermo.phases.helmholtz_eos import HelmholtzEOS
@@ -179,6 +180,15 @@ class IAPWS95Liquid(IAPWS95):
     is_gas = False
     is_liquid = True
 
+    def sigma(self):
+        try:
+            return self._sigma
+        except:
+            pass
+        
+        self._sigma = sigma_IAPWS(self.T)
+        return self._sigma
+    
 class IAPWS97(Phase):
     model_name = 'iapws97'
     model_attributes = ('model_name',)

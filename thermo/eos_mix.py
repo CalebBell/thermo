@@ -2822,7 +2822,7 @@ class GCEOSMIX(GCEOS):
                 d2b_dninjs.append([bb - bi - bj for bj in bs])
         else:
             N = self.N
-            d2b_dninjs = full((N, N), bb)
+            d2b_dninjs = np.full((N, N), bb, float)
             d2b_dninjs -= bs
             d2b_dninjs = d2b_dninjs.transpose()
             d2b_dninjs -= bs
@@ -2888,7 +2888,7 @@ class GCEOSMIX(GCEOS):
         else:
             bs2 = 2.0*self.bs
             N = self.N
-            d3b_dninjnks = full((N, N, N), n6b)
+            d3b_dninjnks = np.full((N, N, N), n6b)
             d3b_dninjnks += bs2
             d3b_dninjnks = d3b_dninjnks.transpose((2, 1, 0))
             d3b_dninjnks += bs2
