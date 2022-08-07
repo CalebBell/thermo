@@ -568,14 +568,14 @@ class SurfaceTensionMixture(MixtureProperty):
     custom_args = ('MWs', 'Tbs', 'Tcs')
 
     def __init__(self, MWs=[], Tbs=[], Tcs=[], CASs=[], SurfaceTensions=[],
-                 VolumeLiquids=[], **kwargs):
+                 VolumeLiquids=[], correct_pressure_pure=False, **kwargs):
         self.MWs = MWs
         self.Tbs = Tbs
         self.Tcs = Tcs
         self.CASs = CASs
         self.SurfaceTensions = SurfaceTensions
         self.VolumeLiquids = VolumeLiquids
-        super(SurfaceTensionMixture, self).__init__(**kwargs)
+        super(SurfaceTensionMixture, self).__init__(correct_pressure_pure=correct_pressure_pure, **kwargs)
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
