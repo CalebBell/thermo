@@ -217,6 +217,42 @@ class GibbsExcessLiquid(Phase):
 
     obj_references = ('GibbsExcessModel', 'eos_pure_instances')
     
+    def __repr__(self):
+        r'''Method to create a string representation of the phase object, with
+        the goal of making it easy to obtain standalone code which reproduces
+        the current state of the phase. This is extremely helpful in creating
+        new test cases.
+
+        Returns
+        -------
+        recreation : str
+            String which is valid Python and recreates the current state of
+            the object if ran, [-]
+
+        '''
+        pure_strs = ''
+        for k in self.pure_references:
+            v = getattr(self, k)
+            if v is not None:
+                try:
+                    s = '[' + ', '.join(str(o) for o in v) + ']'
+                except:
+                    continue
+                pure_strs += '%s=%s, ' %(k, s)
+                
+                
+        base = f'{self.__class__.__name__}(GibbsExcessModel={self.GibbsExcessModel}, '\
+               f'equilibrium_basis={self.equilibrium_basis}, caloric_basis={self.caloric_basis}, '\
+               f'eos_pure_instances={self.eos_pure_instances}, {pure_strs}'
+        for s in ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs'):
+            if hasattr(self, s) and getattr(self, s) is not None:
+                base += '%s=%s, ' %(s, getattr(self, s))
+        if base[-2:] == ', ':
+            base = base[:-2]
+        base += ')'
+        return base
+
+
     def __init__(self, VaporPressures, VolumeLiquids=None,
                  HeatCapacityGases=None,
                  GibbsExcessModel=None,

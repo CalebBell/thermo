@@ -81,7 +81,7 @@ from fluids.numerics import (UnconvergedError, trunc_exp, newton,
                              OscillationError, NotBoundedError, jacobian,
                              best_bounding_bounds, isclose, newton_system,
                              make_damp_initial, newton_minimize, one_sided_secant,
-                             root, minimize, fsolve, linspace, logspace)
+                             root, minimize, fsolve, linspace, logspace, make_max_step_initial)
 from fluids.numerics import py_solve, trunc_log, bisect
 
 from chemicals.utils import (exp, log, log10, copysign, normalize, isinf,
@@ -3517,10 +3517,13 @@ def solve_P_VF_IG_K_composition_independent(VF, P, zs, gas, liq, xtol=1e-10):
     global Ks, iterations, err
     iterations = 0
     def to_solve(T):
+        # print(T)
         global Ks, iterations, err
         iterations += 1
         dlnphis_dT_l, liquid_phis = liq.dphis_dT_at(T, P, zs, phis_also=True)
         Ks = liquid_phis
+        # print(Ks, 'Ks')
+        # print(dlnphis_dT_l, liquid_phis)
 #        l = liq.to(T=T, P=P, zs=zs)
 #        Ks = liquid_phis = l.phis()
 #        dlnphis_dT_l = l.dphis_dT()
@@ -3533,8 +3536,17 @@ def solve_P_VF_IG_K_composition_independent(VF, P, zs, gas, liq, xtol=1e-10):
             err += x1*x4
             derr += x4*(1.0 - x2*x3)*dlnphis_dT_l[i]
         return err, derr
+
+    # import matplotlib.pyplot as plt
+    # pts = linspace(1, 1000, 500)
+    # vals = [to_solve(T) for T in pts]
+    # plt.plot(pts, vals, 'x')
+    # plt.show()
+
     try:
-        T = newton(to_solve, 300.0, xtol=xtol, fprime=True, low=1e-6)
+        T = newton(to_solve, 300.0, xtol=xtol, fprime=True, low=1e-6,
+                   damping_func=make_max_step_initial(steps=3, max_step=100),
+                   bisection=True)
     except:
         try:
             T = brenth(lambda x: to_solve(x)[0], 300, 1000)
