@@ -687,9 +687,9 @@ class MixtureProperty(object):
         if zs is None or ws is None:
             zs, ws = self._complete_zs_ws(zs, ws)
         if has_matplotlib():
-            raise Exception('Optional dependency matplotlib is required for plotting')
-        else:
             import matplotlib.pyplot as plt
+        else:
+            raise Exception('Optional dependency matplotlib is required for plotting')
         if Tmin is None:
             if self.Tmin is not None:
                 Tmin = self.Tmin
