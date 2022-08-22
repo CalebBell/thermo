@@ -788,12 +788,12 @@ class MixtureProperty(object):
             if self.Tmin is not None:
                 Tmin = self.Tmin
             else:
-                raise Exception('Minimum pressure could not be auto-detected; please provide it')
+                raise Exception('Minimum temperature could not be auto-detected; please provide it')
         if Tmax is None:
             if self.Tmax is not None:
                 Tmax = self.Tmax
             else:
-                raise Exception('Maximum pressure could not be auto-detected; please provide it')
+                raise Exception('Maximum temperature could not be auto-detected; please provide it')
 
         if not methods:
             methods = [self._method]
