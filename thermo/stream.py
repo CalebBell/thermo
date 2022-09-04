@@ -906,8 +906,17 @@ class StreamArgs(object):
                     'n': None, 'm': None, 'Q': arg}
             self.specifications.update(args)
 
+    # def __repr__(self):
+    #     return '<StreamArgs, specs %s>' % self.specifications
+    
     def __repr__(self):
-        return '<StreamArgs, specs %s>' % self.specifications
+        s = '%s(pkg=%s, ' %(self.__class__.__name__, self.pkg is not None)
+        for k, v in self.specifications.items():
+            if v is not None:
+                s += '%s=%s, ' %(k, repr(v))
+        s = s[:-2]
+        s += ')'
+        return s
 
     def reconcile_flows(self, n_tol=2e-15, m_tol=2e-15):
         s = self.specifications
@@ -2010,6 +2019,9 @@ class EquilibriumStream(EquilibriumState):
         s = s %(self.T, self.P, self.zs, self.betas, self.m, self.n, self.phases)
         return s
 
+    def __copy__(self):
+        # immutable
+        return self
 
     def __init__(self, flasher, zs=None, ws=None, Vfls=None, Vfgs=None,
                  ns=None, ms=None, Qls=None, Qgs=None,

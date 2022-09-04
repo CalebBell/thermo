@@ -984,6 +984,7 @@ class FlashVL(Flash):
             else:
                 err = getattr(res, spec)() - spec_val
             sln[:] = (res, iter_val)
+            # print(f'{iter_val=}, {err=}')
             return err
 
         ytol = abs(spec_val)*self.TPV_HSGUA_BISECT_YTOL
