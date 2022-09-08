@@ -41,9 +41,53 @@ from thermo.flash import Flash
 from fluids.pump import voltages_1_phase_residential, voltages_3_phase, residential_power_frequencies
 
 
-# Could just assume IDs is always specified and constant.
-# This might be useful for regular streams too, just to keep track of what values were specified by the user!
-# If one composition value gets set to, remove those from every other value
+def stream_args_specs_to_specs(s):
+    s = s.copy()
+    try:
+        del s['IDs']
+    except:
+        pass
+    if 'S' in s:
+        if s['S'] is not None:
+            s['S_mass'] = s['S']
+        del s['S']
+    if 'Sm' in s:
+        if s['Sm'] is not None:
+            s['S'] = s['Sm']
+        del s['Sm']
+    if 'H' in s:
+        if s['H'] is not None:
+            s['H_mass'] = s['H']
+        del s['H']
+    if 'Hm' in s:
+        if s['Hm'] is not None:
+            s['H'] = s['Hm']
+        del s['Hm']
+    if 'U' in s:
+        if s['U'] is not None:
+            s['U_mass'] = s['U']
+        del s['U']
+    if 'Um' in s:
+        if s['Um'] is not None:
+            s['U'] = s['Um']
+        del s['Um']
+    if 'A' in s:
+        if s['A'] is not None:
+            s['A_mass'] = s['A']
+        del s['A']
+    if 'Am' in s:
+        if s['Am'] is not None:
+            s['A'] = s['Am']
+        del s['Am']
+    if 'G' in s:
+        if s['G'] is not None:
+            s['G_mass'] = s['G']
+        del s['G']
+    if 'Gm' in s:
+        if s['Gm'] is not None:
+            s['G'] = s['Gm']
+        del s['Gm']
+    return s
 
 class StreamArgs(object):
     flashed = False
@@ -1256,48 +1300,7 @@ class StreamArgs(object):
 
     def flash(self, hot_start=None, existing_flash=None):
 #        if self.flow_specified and self.composition_specified and self.state_specified:
-        s = self.specifications.copy()
-        del s['IDs']
-        if 'S' in s:
-            if s['S'] is not None:
-                s['S_mass'] = s['S']
-            del s['S']
-        if 'Sm' in s:
-            if s['Sm'] is not None:
-                s['S'] = s['Sm']
-            del s['Sm']
-        if 'H' in s:
-            if s['H'] is not None:
-                s['H_mass'] = s['H']
-            del s['H']
-        if 'Hm' in s:
-            if s['Hm'] is not None:
-                s['H'] = s['Hm']
-            del s['Hm']
-        if 'U' in s:
-            if s['U'] is not None:
-                s['U_mass'] = s['U']
-            del s['U']
-        if 'Um' in s:
-            if s['Um'] is not None:
-                s['U'] = s['Um']
-            del s['Um']
-        if 'A' in s:
-            if s['A'] is not None:
-                s['A_mass'] = s['A']
-            del s['A']
-        if 'Am' in s:
-            if s['Am'] is not None:
-                s['A'] = s['Am']
-            del s['Am']
-        if 'G' in s:
-            if s['G'] is not None:
-                s['G_mass'] = s['G']
-            del s['G']
-        if 'Gm' in s:
-            if s['Gm'] is not None:
-                s['G'] = s['Gm']
-            del s['Gm']
+        s = stream_args_specs_to_specs(self.specifications)
         return EquilibriumStream(self.property_package, hot_start=hot_start,
                                  existing_flash=existing_flash, **s)
 
