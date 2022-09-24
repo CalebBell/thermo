@@ -244,7 +244,6 @@ class Flash(object):
         Examples
         --------
         '''
-        # print(locals())
         if zs is None:
             if self.N == 1:
                 zs = [1.0]
