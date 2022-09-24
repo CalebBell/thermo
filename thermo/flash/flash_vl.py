@@ -48,7 +48,7 @@ from thermo.flash.flash_utils import (
     nonlin_spec_NP,
 )
 from thermo.flash.flash_pure_vls  import FlashPureVLS
-from chemicals.utils import log
+from chemicals.utils import log, isinf
 from chemicals.exceptions import TrivialSolutionError
 from fluids.numerics import secant, trunc_log, UnconvergedError
 from thermo.property_package import StabilityTester
@@ -580,7 +580,7 @@ class FlashVL(Flash):
                         lnK = trunc_log(Ks[k])
                         lnK_2_tot += lnK*lnK
                     sum_criteria = abs(sum_zs_test - 1.0)
-                    if sum_criteria < 1e-9 or lnK_2_tot < 1e-7 or sum_criteria > 1e20:
+                    if sum_criteria < 1e-9 or lnK_2_tot < 1e-7 or sum_criteria > 1e20 or isinf(lnK_2_tot):
                         continue
                     if existing_comps:
                         existing_phase = False
