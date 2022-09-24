@@ -84,7 +84,7 @@ from fluids.numerics import (UnconvergedError, trunc_exp, newton,
                              root, minimize, fsolve, linspace, logspace, make_max_step_initial)
 from fluids.numerics import py_solve, trunc_log, bisect
 
-from chemicals.utils import (exp, log, log10, copysign, normalize, isinf,
+from chemicals.utils import (exp, log, log10, copysign, normalize, isinf, isnan,
                              mixing_simple, property_mass_to_molar)
 from chemicals.heat_capacity import (Dadgostar_Shaw_integral, 
                                      Dadgostar_Shaw_integral_over_T, 
@@ -3998,7 +3998,15 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
             break
         for i in range(N):
             zs_test[i] *= sum_zs_test_inv
-
+        dead = False
+        for i in range(N):
+            if isnan(zs_test[i]):
+                dead = True
+        for i in range(N):
+            if isinf(zs_test[i]):
+                dead = True
+        if dead:
+            break
 
     if converged:
         try:

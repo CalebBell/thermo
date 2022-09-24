@@ -468,3 +468,7 @@ def test_case_air_Odhran_2022_09_24():
     zs = normalize([78.08, 20.95, .93])
     res = flasher.flash(zs=zs, T=0.5185328860513607,  P=3000000.0)
     assert_close(res.G(), -25510.432580278408)
+
+    # was going to 0
+    res = flasher.flash(zs=zs, T=0.46078924591519266,  P=3000000.0)
+    assert_close(res.G(), -26018.476463001498)
