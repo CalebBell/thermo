@@ -687,9 +687,9 @@ class MixtureProperty(object):
         if zs is None or ws is None:
             zs, ws = self._complete_zs_ws(zs, ws)
         if has_matplotlib():
-            raise Exception('Optional dependency matplotlib is required for plotting')
-        else:
             import matplotlib.pyplot as plt
+        else:
+            raise Exception('Optional dependency matplotlib is required for plotting')
         if Tmin is None:
             if self.Tmin is not None:
                 Tmin = self.Tmin
@@ -788,12 +788,12 @@ class MixtureProperty(object):
             if self.Tmin is not None:
                 Tmin = self.Tmin
             else:
-                raise Exception('Minimum pressure could not be auto-detected; please provide it')
+                raise Exception('Minimum temperature could not be auto-detected; please provide it')
         if Tmax is None:
             if self.Tmax is not None:
                 Tmax = self.Tmax
             else:
-                raise Exception('Maximum pressure could not be auto-detected; please provide it')
+                raise Exception('Maximum temperature could not be auto-detected; please provide it')
 
         if not methods:
             methods = [self._method]
