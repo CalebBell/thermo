@@ -135,7 +135,8 @@ class Flash(object):
     def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
               S=None, G=None, U=None, A=None, solution=None, hot_start=None,
               retry=False, dest=None, rho=None, rho_mass=None, H_mass=None,
-              S_mass=None, G_mass=None, U_mass=None, A_mass=None):
+              S_mass=None, G_mass=None, U_mass=None, A_mass=None,
+              spec_fun=None):
         r'''Method to perform a flash calculation and return the result as an
         :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>` object.
         This generic interface allows flashes with any combination of valid
@@ -445,11 +446,11 @@ class Flash(object):
             # Only allow one
 #            g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
             try:
-                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var, zs=zs, solution=solution, hot_start=hot_start)
+                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var, zs=zs, solution=solution, hot_start=hot_start, spec_fun=spec_fun)
             except Exception as e:
                 if retry:
                     print('retrying HSGUA flash')
-                    g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, zs=zs, solution=solution, hot_start=hot_start)
+                    g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, zs=zs, solution=solution, hot_start=hot_start, spec_fun=spec_fun)
                 else:
                     raise e
 #            except UnconvergedError as e:
@@ -1494,7 +1495,126 @@ class Flash(object):
         plt.show()
 
 
-    
+    def plot_Txy(self, P, pts=30, display=True, ignore_errors=True,
+                 values=False): # pragma: no cover
+        if not has_matplotlib() and values is not False:
+            raise Exception('Optional dependency matplotlib is required for plotting')
+        if self.N != 2:
+            raise Exception('Txy plotting requires a mixture of exactly two components')
+        z1 = linspace(0, 1, pts)
+        z2 = [1.0 - zi for zi in z1]
+        Ts_dew = []
+        Ts_bubble = []
+
+        for i in range(pts):
+            try:
+                res = self.flash(P=P, VF=0, zs=[z1[i], z2[i]])
+                Ts_bubble.append(res.T)
+            except Exception as e:
+                if ignore_errors:
+                    Ts_bubble.append(None)
+                else:
+                    raise e
+            try:
+                res = self.flash(P=P, VF=1, zs=[z1[i], z2[i]])
+                Ts_dew.append(res.T)
+            except Exception as e:
+                if ignore_errors:
+                    Ts_dew.append(None)
+                else:
+                    raise e
+        if values:
+            return z1, z2, Ts_bubble, Ts_dew
+        import matplotlib.pyplot as plt
+        plt.title('Txy diagram at P=%s Pa' %P)
+        plt.plot(z1, Ts_dew, label='Dew temperature, K')
+        plt.plot(z1, Ts_bubble, label='Bubble temperature, K')
+        plt.xlabel('Mole fraction x1')
+        plt.ylabel('System temperature, K')
+        plt.legend(loc='best')
+        if display:
+            plt.show()
+        else:
+            return plt
+
+    def plot_Pxy(self, T, pts=30, display=True, ignore_errors=True,
+                 values=False): # pragma: no cover
+        if not has_matplotlib() and values is not False:
+            raise Exception('Optional dependency matplotlib is required for plotting')
+        if self.N != 2:
+            raise Exception('Pxy plotting requires a mixture of exactly two components')
+        z1 = linspace(0, 1, pts)
+        z2 = [1.0 - zi for zi in z1]
+        Ps_dew = []
+        Ps_bubble = []
+
+        for i in range(pts):
+            try:
+                res = self.flash(T=T, VF=0, zs=[z1[i], z2[i]])
+                Ps_bubble.append(res.P)
+            except Exception as e:
+                if ignore_errors:
+                    Ps_bubble.append(None)
+                else:
+                    raise e
+            try:
+                res = self.flash(T=T, VF=1, zs=[z1[i], z2[i]])
+                Ps_dew.append(res.P)
+            except Exception as e:
+                if ignore_errors:
+                    Ps_dew.append(None)
+                else:
+                    raise e
+        if values:
+            return z1, z2, Ps_bubble, Ps_dew
+
+        import matplotlib.pyplot as plt
+        plt.title('Pxy diagram at T=%s K' %T)
+        plt.plot(z1, Ps_dew, 'x', label='Dew pressure')
+        plt.plot(z1, Ps_bubble, 'x', label='Bubble pressure')
+        plt.xlabel('Mole fraction x1')
+        plt.ylabel('System pressure, Pa')
+        plt.legend(loc='best')
+        if display:
+            plt.show()
+        else:
+            return plt
+
+    def plot_xy(self, P=None, T=None, pts=30, display=True): # pragma: no cover
+        if not has_matplotlib():
+            raise Exception('Optional dependency matplotlib is required for plotting')
+        if self.N != 2:
+            raise Exception('xy plotting requires a mixture of exactly two components')
+        import matplotlib.pyplot as plt
+        z1 = linspace(0.0, 1.0, pts)
+        z2 = [1.0 - zi for zi in z1]
+        y1_bubble = []
+        x1_bubble = []
+        for i in range(pts):
+            try:
+                if T is not None:
+                    res = self.flash(T=T, VF=0.0, zs=[z1[i], z2[i]])
+                elif P is not None:
+                    res = self.flash(P=P, VF=0.0, zs=[z1[i], z2[i]])
+                x1_bubble.append(res.liquid_bulk.zs[0])
+                y1_bubble.append(res.gas.zs[0])
+            except Exception as e:
+                print('Failed on pt %d' %(i), e)
+        if T:
+            plt.title('xy diagram at T=%s K (varying P)' %T)
+        else:
+            plt.title('xy diagram at P=%s Pa (varying T)' %P)
+        plt.xlabel('Liquid mole fraction x1')
+        plt.ylabel('Vapor mole fraction x1')
+        plt.plot(x1_bubble, y1_bubble, '-', label='liquid vs vapor composition')
+        plt.legend(loc='best')
+        plt.plot([0, 1], [0, 1], '--')
+        plt.axis((0,1,0,1))
+        if display:
+            plt.show()
+        else:
+            return plt
+
     def V_liquids_ref(self):
         r'''Method to calculate and return the liquid reference molar volumes
         according to the temperature variable `T_liquid_volume_ref` of

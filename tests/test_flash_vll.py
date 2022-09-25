@@ -155,18 +155,19 @@ def test_water_C1_C8():
     res_PR = FlashVLN(constants, properties, liquids=[liq], gas=gas).flash(T=298.15, VF=1, zs=zs)
     res_SRK = FlashVLN(constants, properties, liquids=[liq_SRK], gas=gas).flash(T=298.15, VF=1, zs=zs)
     assert res_PR.G() > res_SRK.G()
-    res_both_liquids = FlashVLN(constants, properties, liquids=[liq, liq_SRK], gas=gas).flash(T=298.15, VF=1, zs=zs)
-    assert_close(res_both_liquids.G(), res_SRK.G(), rtol=1e-7)
-    assert_close(res_PR.P, 6022.265230194498, rtol=1e-5)
-    assert_close(res_SRK.P, 5555.019566177178, rtol=1e-5)
+    new_flasher = FlashVLN(constants, properties, liquids=[liq, liq_SRK], gas=gas)
+    res_both_liquids = new_flasher.flash(T=298.15, VF=1, zs=zs)
+    assert_close(res_both_liquids.G(), res_SRK.G(), rtol=1e-4)
+    assert_close(res_PR.P, 6022.265230194498, rtol=5e-4)
+    assert_close(res_SRK.P, 5555.019566177178, rtol=5e-4)
 
     res_PR = FlashVLN(constants, properties, liquids=[liq], gas=gas).flash(P=6000.0, VF=1, zs=zs)
     res_SRK = FlashVLN(constants, properties, liquids=[liq_SRK], gas=gas).flash(P=6000.0, VF=1, zs=zs)
     assert res_PR.G() > res_SRK.G()
     res_both_liquids = FlashVLN(constants, properties, liquids=[liq, liq_SRK], gas=gas).flash(P=6000.0, VF=1, zs=zs)
-    assert_close(res_both_liquids.G(), res_SRK.G(), rtol=1e-7)
-    assert_close(res_PR.T, 298.0822786634035, rtol=1e-5)
-    assert_close(res_SRK.T, 299.5323133142487, rtol=1e-5)
+    assert_close(res_both_liquids.G(), res_SRK.G(), rtol=1e-4)
+    assert_close(res_PR.T, 298.0822786634035, rtol=5e-4)
+    assert_close(res_SRK.T, 299.5323133142487, rtol=5e-4)
 
 
 def test_C1_to_C5_water_gas():
@@ -361,6 +362,47 @@ def test_three_phase_ethylene_ethanol_nitrogen():
     res = flashN.flash(T=200, P=6e5, zs=zs)
     assert_close(res.G(), -2873.6029915490544, rtol=1e-5)
     assert res.phase_count == 3
+
+def test_methane_nitrogen_sharp_T_flash_failure_2_component_dew():
+    constants = ChemicalConstantsPackage(atomss=[{'C': 1, 'H': 4}, {'N': 2}], CASs=['74-82-8', '7727-37-9'], Gfgs=[-50443.48000000001, 0.0], Hfgs=[-74534.0, 0.0], MWs=[16.04246, 28.0134], names=['methane', 'nitrogen'], omegas=[0.008, 0.04], Pcs=[4599000.0, 3394387.5], Sfgs=[-80.79999999999997, 0.0], Tbs=[111.65, 77.355], Tcs=[190.564, 126.2])
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+    VaporPressures=[VaporPressure(load_data=False, exp_poly_fit=(90.8, 190.554, [1.2367137894255505e-16, -1.1665115522755316e-13, 4.4703690477414014e-11, -8.405199647262538e-09, 5.966277509881474e-07, 5.895879890001534e-05, -0.016577129223752325, 1.502408290283573, -42.86926854012409])),
+    VaporPressure(load_data=False, exp_poly_fit=(63.2, 126.18199999999999, [5.490876411024536e-15, -3.709517805130509e-12, 1.0593254238679989e-09, -1.6344291780087318e-07, 1.4129990091975526e-05, -0.0005776268289835264, -0.004489180523814208, 1.511854256824242, -36.95425216567675])),
+    ],
+    VolumeLiquids=[VolumeLiquid(load_data=False, poly_fit=(90.8, 180.564, [7.730541828225242e-20, -7.911042356530585e-17, 3.51935763791471e-14, -8.885734012624568e-12, 1.3922694980104743e-09, -1.3860056394382538e-07, 8.560110533953199e-06, -0.00029978743425740123, 0.004589555868318768])),
+    VolumeLiquid(load_data=False, poly_fit=(63.2, 116.192, [9.50261462694019e-19, -6.351064785670885e-16, 1.8491415360234833e-13, -3.061531642102745e-11, 3.151588109585604e-09, -2.0650965261816766e-07, 8.411110954342014e-06, -0.00019458305886755787, 0.0019857193167955463])),
+    ],
+    HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
+    HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
+    ],
+    ViscosityLiquids=[ViscosityLiquid(load_data=False, exp_poly_fit=(90.8, 190.554, [-4.2380635484289735e-14, 4.5493522318564076e-11, -2.116492796413691e-08, 5.572829307777471e-06, -0.0009082059294533955, 0.0937979289971011, -5.994475607852222, 216.68461775245618, -3398.7238594522332])),
+    ViscosityLiquid(load_data=False, exp_poly_fit=(63.2, 126.18199999999999, [-2.0668914276868663e-12, 1.4981401912829941e-09, -4.7120662288238675e-07, 8.398998068709547e-05, -0.009278622651904659, 0.6505143753550678, -28.263815807515204, 695.73318887296, -7435.03033205167])),
+    ],
+    ViscosityGases=[ViscosityGas(load_data=False, poly_fit=(111.67, 190.0, [-1.8353011229090837e-22, 2.3304595414632153e-19, -1.2923749174024514e-16, 4.090196030268957e-14, -8.086198992052456e-12, 1.0237770716128214e-09, -8.126336931959868e-08, 3.756286853489369e-06, -7.574255749674298e-05])),
+    ViscosityGas(load_data=False, poly_fit=(63.15, 1970.0, [-1.5388147506777722e-30, 1.4725459575473186e-26, -5.996335123822459e-23, 1.363536066391023e-19, -1.9231682598532616e-16, 1.7971629245352389e-13, -1.208040032788892e-10, 8.598598782963851e-08, -6.144085424881471e-07])),
+    ],
+    ThermalConductivityLiquids=[ThermalConductivityLiquid(load_data=False, poly_fit=(111.67, 190.0, [3.107229777952286e-14, -3.625875816800732e-11, 1.841942435684153e-08, -5.320308033725668e-06, 0.000955671235716168, -0.10931807345178432, 7.776665057881068, -314.5634801502922, 5539.755822768863])),
+    ThermalConductivityLiquid(load_data=False, poly_fit=(63.15, 124.0, [1.480216570198736e-14, -1.0579062797590458e-11, 3.280674520280696e-09, -5.764768809161848e-07, 6.277076059293551e-05, -0.004336498214082066, 0.18560707561089, -4.501802805954049, 47.61060499154285])),
+    ],
+    ThermalConductivityGases=[ThermalConductivityGas(load_data=False, poly_fit=(111.67, 190.0, [9.856442420122018e-18, -1.166766850419619e-14, 6.0247529665376486e-12, -1.7727942423970953e-09, 3.252242772879454e-07, -3.8104800250279826e-05, 0.002785928728604635, -0.11616844943039516, 2.1217398913337955])),
+    ThermalConductivityGas(load_data=False, poly_fit=(63.15, 2000.0, [-1.2990458062959103e-27, 1.2814214036910465e-23, -5.4091093020176117e-20, 1.2856405826340633e-16, -1.9182872623250277e-13, 1.9265592624751723e-10, -1.405720023370681e-07, 0.00012060144315254995, -0.0014802322860337641])),
+    ],
+    SurfaceTensions=[SurfaceTension(load_data=False, Tc=190.564, exp_poly_fit_ln_tau=(90.67, 188.84, 190.564, [-3.4962367358992735e-05, -0.0008289010193078861, -0.00843287807824276, -0.04779630061606634, -0.16511409618486522, -0.35428823877130233, -0.4686689898988202, 0.8594918266347117, -3.3914597815553464])),
+    SurfaceTension(load_data=False, Tc=126.2, exp_poly_fit_ln_tau=(64.8, 120.24, 126.2, [-1.4230749474462855e-08, -1.0305965235744322e-07, -6.754987900429734e-07, -9.296769895431879e-07, -6.091084410916199e-06, 1.0046797865808803e-05, -4.1631671079768105e-05, 1.246078177155456, -3.54114947415937])),
+    ],
+    )
+    
+    gas = IdealGas(HeatCapacityGases=correlations.HeatCapacityGases, Hfs=[-74534.0, 0.0], Gfs=[-50443.48000000001, 0.0], T=298.15, P=101325.0, zs=[0.5, 0.5])
+    
+    
+    liquid = GibbsExcessLiquid(GibbsExcessModel=IdealSolution(T=298.15, xs=[0.5, 0.5]),VaporPressures=correlations.VaporPressures, VolumeLiquids=correlations.VolumeLiquids, HeatCapacityGases=correlations.HeatCapacityGases,
+                               equilibrium_basis=None, caloric_basis=None, eos_pure_instances=None, Hfs=[-74534.0, 0.0], Gfs=[-50443.48000000001, 0.0], T=298.15, P=101325.0, zs=[0.5, 0.5])
+    
+    
+    flasher = FlashVLN(gas=gas, liquids=[liquid, liquid], constants=constants, correlations=correlations)
+    res = flasher.flash(P=1.5e5, zs=[.97, .03], VF=1)
+    assert_close(res.T, 116.28043156536933)
+    
 
 def test_ethanol_water_cyclohexane_3_liquids():
     zs = [.35, .06, .59]

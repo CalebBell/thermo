@@ -150,6 +150,7 @@ def test_HeatCapacityGas_webbook():
 @pytest.mark.meta_T_dept
 @pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_HeatCapacityGas_CoolProp():
+    from CoolProp.CoolProp import PropsSI
     EtOH = HeatCapacityGas(CASRN='64-17-5', similarity_variable=0.1953615, MW=46.06844, extrapolation=None, method=COOLPROP)
     assert EtOH.T_dependent_property(5000.0) is None
     assert EtOH.T_dependent_property(1.0) is None
@@ -175,7 +176,14 @@ def test_HeatCapacityGas_CoolProp():
     new = HeatCapacityGas.from_json(obj.as_json())
     assert new == obj
     assert_close(obj.calculate(obj.T_limits[COOLPROP][0], COOLPROP), 72.45489837498226, rtol=1e-7)
-
+    
+    # issue # 120
+    H2 = HeatCapacityGas(CASRN='1333-74-0')
+    for T in [50, 100, 200, 500, 800, 1000, 2000]:
+    
+        assert_close(H2.calculate(T, 'COOLPROP'),
+                     PropsSI('Cp0molar', 'T', T,'P', 101325.0, 'hydrogen'), rtol=1e-13)
+    
 
 @pytest.mark.meta_T_dept
 def test_HeatCapacityGas_Joback():

@@ -24,6 +24,7 @@ SOFTWARE.
 __all__ = ['IAPWS95', 'IAPWS95Gas', 'IAPWS95Liquid', 'IAPWS97']
 
 from chemicals import iapws
+from chemicals.interface import sigma_IAPWS
 from chemicals.viscosity import mu_IAPWS
 from chemicals.thermal_conductivity import k_IAPWS
 from thermo.phases.helmholtz_eos import HelmholtzEOS
@@ -57,8 +58,8 @@ class IAPWS95(HelmholtzEOS):
     cmps = [0]
 #    HeatCapacityGases = iapws_correlations.HeatCapacityGases
 
-    T_MAX_FIXED = 5000.0
-    T_MIN_FIXED = 243.0 # PU has flash failures at < 242 ish K
+    T_MAX_FLASH = T_MAX_FIXED = 5000.0
+    T_MIN_FLASH = T_MIN_FIXED = 243.0 # PU has flash failures at < 242 ish K
 
     _d4Ar_ddelta2dtau2_func = staticmethod(iapws.iapws95_d4Ar_ddelta2dtau2)
     _d3Ar_ddeltadtau2_func = staticmethod(iapws.iapws95_d3Ar_ddeltadtau2)
@@ -179,6 +180,15 @@ class IAPWS95Liquid(IAPWS95):
     is_gas = False
     is_liquid = True
 
+    def sigma(self):
+        try:
+            return self._sigma
+        except:
+            pass
+        
+        self._sigma = sigma_IAPWS(self.T)
+        return self._sigma
+    
 class IAPWS97(Phase):
     model_name = 'iapws97'
     model_attributes = ('model_name',)

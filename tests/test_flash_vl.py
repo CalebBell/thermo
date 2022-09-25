@@ -450,3 +450,25 @@ def test_issue106_Michelson_stability_test_log_zero():
     assert res.phase_count == 1
     assert res.liquid0 is not None
     assert isinstance(res.liquid0, GibbsExcessLiquid)
+    
+    
+def test_case_air_Odhran_2022_09_24():
+    constants = ChemicalConstantsPackage(atomss=[{'N': 2}, {'O': 2}, {'Ar': 1}], CASs=['7727-37-9', '7782-44-7', '7440-37-1'], Gfgs=[0.0, 0.0, 0.0], Hfgs=[0.0, 0.0, 0.0], MWs=[28.0134, 31.9988, 39.948], names=['nitrogen', 'oxygen', 'argon'], omegas=[0.04, 0.021, -0.004], Pcs=[3394387.5, 5042945.25, 4873732.5], Tbs=[77.355, 90.188, 87.302], Tcs=[126.2, 154.58, 150.8], Tms=[63.15, 54.36, 83.81], Vcs=[8.95e-05, 7.34e-05, 7.49e-05])
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+    HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 5000.0, [-2.8946147064530805e-27, 5.818275034669907e-23, -4.519291247965907e-19, 1.609185011831327e-15, -1.9359711365420902e-12, -3.146524643467457e-09, 9.702047239977565e-06, -0.0025354183983147998, 29.203539884897914])),
+    HeatCapacityGas(load_data=False, poly_fit=(50.0, 5000.0, [1.2283565107055296e-26, -2.7951451726762067e-22, 2.6334919674696596e-18, -1.3233024602402331e-14, 3.7962829852713573e-11, -6.128657296759334e-08, 4.962798152953606e-05, -0.009971787087565588, 29.48256621272467])),
+    HeatCapacityGas(load_data=False, poly_fit=(298.0, 6000.0, [-3.314740108347415e-34, 9.351547491936385e-30, -1.1038315945910408e-25, 7.065840421054809e-22, -2.65775666980227e-18, 5.9597846928676876e-15, -7.7937356614881e-12, 5.408021118723734e-09, 20.785998601382207])),
+    ],
+    )
+    
+    eos_kwargs = {'Pcs': [3394387.5, 5042945.25, 4873732.5], 'Tcs': [126.2, 154.58, 150.8], 'omegas': [0.04, 0.021, -0.004], 'kijs': [[0.0, -0.0159, -0.0004], [-0.0159, 0.0, 0.0089], [-0.0004, 0.0089, 0.0]]}
+    gas = CEOSGas(PRMIXTranslatedConsistent, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases)
+    liquid = CEOSLiquid(PRMIXTranslatedConsistent, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases)
+    flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas)
+    zs = normalize([78.08, 20.95, .93])
+    res = flasher.flash(zs=zs, T=0.5185328860513607,  P=3000000.0)
+    assert_close(res.G(), -25510.432580278408)
+
+    # was going to 0
+    res = flasher.flash(zs=zs, T=0.46078924591519266,  P=3000000.0)
+    assert_close(res.G(), -26018.476463001498)

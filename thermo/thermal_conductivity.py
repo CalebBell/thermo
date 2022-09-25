@@ -1095,7 +1095,7 @@ class ThermalConductivityGas(TPDependentProperty):
         if method in (DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD, EUCKEN):
             Cvgm = self.Cpgm(T)-R if hasattr(self.Cpgm, '__call__') else self.Cpgm - R
             if method != ELI_HANLEY:
-                mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
+                mug = self.mug(T, 101325.0) if hasattr(self.mug, '__call__') else self.mug
         if method == GHARAGHEIZI_G:
             kg = Gharagheizi_gas(T, self.MW, self.Tb, self.Pc, self.omega)
         elif method == DIPPR_9B:

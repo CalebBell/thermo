@@ -39,6 +39,7 @@ from thermo.flash.flash_utils import (
     dew_bubble_newton_zs,
     solve_P_VF_IG_K_composition_independent,
     dew_bubble_newton_zs,
+    dew_bubble_bounded_naive,
     TP_solve_VF_guesses,
     stability_iteration_Michelsen,
     solve_PTV_HSGUA_1P,
@@ -47,7 +48,7 @@ from thermo.flash.flash_utils import (
     nonlin_spec_NP,
 )
 from thermo.flash.flash_pure_vls  import FlashPureVLS
-from chemicals.utils import log
+from chemicals.utils import log, isinf
 from chemicals.exceptions import TrivialSolutionError
 from fluids.numerics import secant, trunc_log, UnconvergedError
 from thermo.property_package import StabilityTester
@@ -277,9 +278,10 @@ class FlashVL(Flash):
     ]
 
     dew_bubble_flash_algos = [
-        dew_bubble_Michelsen_Mollerup, 
-        dew_bubble_newton_zs,                
-        SS_VF_simultaneous
+        dew_bubble_Michelsen_Mollerup,
+        dew_bubble_newton_zs,
+        dew_bubble_bounded_naive,
+        SS_VF_simultaneous,
     ]
     dew_T_flash_algos = bubble_T_flash_algos = dew_bubble_flash_algos
     dew_P_flash_algos = bubble_P_flash_algos = dew_bubble_flash_algos
@@ -375,7 +377,7 @@ class FlashVL(Flash):
         self.unique_liquid_hashes = unique_liquid_hashes
         
         self.T_MIN_FLASH = max(p.T_MIN_FLASH for p in self.phases)
-
+        self.T_MAX_FLASH = min(p.T_MAX_FLASH for p in self.phases)
 
     def flash_TVF(self, T, VF, zs, solution=None, hot_start=None):
         return self.flash_TVF_2P(T, VF, zs, self.liquid, self.gas, solution=solution, hot_start=hot_start)
@@ -426,10 +428,18 @@ class FlashVL(Flash):
         if integral_VF:
             for algo in algos:
                 try:
-                    sln = algo(P, fixed_val=T, zs=zs, liquid_phase=liquid, gas_phase=gas,
-                                iter_var='P', fixed_var='T', V_over_F=VF,
-                                maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol,
-                                comp_guess=comp_guess)
+                    if algo is dew_bubble_bounded_naive:
+                        if self.unique_liquid_count > 1:
+                            # cannott force flash each liquid easily
+                            continue
+                        sln = dew_bubble_bounded_naive(guess=P, fixed_val=T, zs=zs, flasher=self, iter_var='P', fixed_var='T', V_over_F=VF,
+                                                       maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol)
+                        return sln
+                    else:
+                        sln = algo(P, fixed_val=T, zs=zs, liquid_phase=liquid, gas_phase=gas,
+                                    iter_var='P', fixed_var='T', V_over_F=VF,
+                                    maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol,
+                                    comp_guess=comp_guess)
                     break
                 except Exception as e:
                     print(e)
@@ -493,16 +503,37 @@ class FlashVL(Flash):
         if integral_VF:
             for algo in algos:
                 try:
-                    sln = algo(T, fixed_val=P, zs=zs, liquid_phase=liquid, gas_phase=gas,
+                    if algo is dew_bubble_bounded_naive:
+                        if self.unique_liquid_count > 1:
+                            # cannot force flash each liquid easily
+                            continue
+                        # This one doesn't like being low tolerance because the PT tolerance isn't there
+                        sln = dew_bubble_bounded_naive(guess=T, fixed_val=P, zs=zs, flasher=self, iter_var='T', fixed_var='P', V_over_F=VF,
+                                                       maxiter=dew_bubble_maxiter, xtol=max(dew_bubble_xtol, 1e-6), hot_start=hot_start)
+                        # This one should never need anything else
+                        # as it has its own stability test
+                        #stable, info = self.stability_test_Michelsen(sln[2].value('T'), sln[2].value('P'), zs, min_phase=sln[1][0], other_phase=sln[2])
+                        #if stable:
+                        #    return sln
+                        #else:
+                        #    continue
+                        return sln
+                    else:
+
+                        sln = algo(T, fixed_val=P, zs=zs, liquid_phase=liquid, gas_phase=gas,
                                 iter_var='T', fixed_var='P', V_over_F=VF,
                                 maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol,
                                 comp_guess=comp_guess)
-                    break
+
+                    guess, comp_guess, iter_phase, const_phase, iterations, err = sln
+
+                    stable, info = self.stability_test_Michelsen(iter_phase.T, iter_phase.P, zs, min_phase=iter_phase, other_phase=const_phase)
+                    if stable:
+                        break
                 except Exception as e:
                     print(e)
                     continue
 
-            guess, comp_guess, iter_phase, const_phase, iterations, err = sln
             if dew:
                 l, g = iter_phase, const_phase
             else:
@@ -549,7 +580,7 @@ class FlashVL(Flash):
                         lnK = trunc_log(Ks[k])
                         lnK_2_tot += lnK*lnK
                     sum_criteria = abs(sum_zs_test - 1.0)
-                    if sum_criteria < 1e-9 or lnK_2_tot < 1e-7 or sum_criteria > 1e20:
+                    if sum_criteria < 1e-9 or lnK_2_tot < 1e-7 or sum_criteria > 1e20 or isinf(lnK_2_tot):
                         continue
                     if existing_comps:
                         existing_phase = False
@@ -724,7 +755,24 @@ class FlashVL(Flash):
             except Exception as e:
                 a = 1
 
+    def flash_PV(self, P, V, zs, solution=None, hot_start=None):
+        return self.flash_TPV_HSGUA(fixed_val=P, spec_val=V, fixed_var='P', spec='V',
+                            iter_var='T', zs=zs, solution=solution,
+                            hot_start=hot_start)
+    
+
+    def flash_TV(self, T, V, zs, solution=None, hot_start=None):
+        return self.flash_TPV_HSGUA(fixed_val=T, spec_val=V, fixed_var='T', spec='V',
+                            iter_var='P', zs=zs, solution=solution,
+                            hot_start=hot_start)
+
+
+
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
+        if T is None:
+            return self.flash_PV(P, V, zs, solution, hot_start)
+        if P is None:
+            return self.flash_TV(T, V, zs, solution, hot_start)
         if hot_start is not None:
             try:
                 VF_guess, xs, ys = hot_start.beta_gas, hot_start.liquid0.zs, hot_start.gas.zs
@@ -747,7 +795,7 @@ class FlashVL(Flash):
 
     def flash_TPV_HSGUA(self, fixed_val, spec_val, fixed_var='P', spec='H',
                         iter_var='T', zs=None, solution=None,
-                        selection_fun_1P=None, hot_start=None):
+                        selection_fun_1P=None, hot_start=None, spec_fun=None):
 
         constants, correlations = self.constants, self.correlations
         if solution is None:
@@ -811,7 +859,7 @@ class FlashVL(Flash):
             try:
                 res, flash_convergence = self.solve_PT_HSGUA_NP_guess_bisect(zs, fixed_val, spec_val,
                                                                fixed_var=fixed_var, spec=spec, iter_var=iter_var,
-                                                                             hot_start=hot_start)
+                                                                             hot_start=hot_start, spec_fun=spec_fun)
                 return None, res.phases, [], res.betas, flash_convergence
             except:
                 g, ls, ss, betas, flash_convergence = self.solve_PT_HSGUA_NP_guess_newton_2P(zs, fixed_val, spec_val,
@@ -848,7 +896,7 @@ class FlashVL(Flash):
         return min_bound, max_bound
 
     def solve_PT_HSGUA_NP_guess_newton_2P(self, zs, fixed_val, spec_val,
-                                          fixed_var='P', spec='H', iter_var='T'):
+                                          fixed_var='P', spec='H', iter_var='T',):
         phases = self.phases
         constants = self.constants
         correlations = self.correlations
@@ -885,7 +933,7 @@ class FlashVL(Flash):
 
 
     def solve_PT_HSGUA_NP_guess_bisect(self, zs, fixed_val, spec_val,
-                                       fixed_var='P', spec='H', iter_var='T', hot_start=None):
+                                       fixed_var='P', spec='H', iter_var='T', hot_start=None, spec_fun=None):
         phases = self.phases
         constants = self.constants
         correlations = self.correlations
@@ -931,8 +979,12 @@ class FlashVL(Flash):
             iterations += 1
             kwargs[iter_var] = iter_val
             res = self.flash(**kwargs)
-            err = getattr(res, spec)() - spec_val
+            if spec_fun is not None:
+                err = getattr(res, spec)() - spec_fun(res)
+            else:
+                err = getattr(res, spec)() - spec_val
             sln[:] = (res, iter_val)
+            # print(f'{iter_val=}, {err=}')
             return err
 
         ytol = abs(spec_val)*self.TPV_HSGUA_BISECT_YTOL

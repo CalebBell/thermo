@@ -47,7 +47,7 @@ class DryAirLemmon(HelmholtzEOS):
     zs = [1.0]
     cmps = [0]
     N = 1
-    T_MAX_FIXED = 2000.0
+    T_MAX_FLASH = T_MAX_FIXED = 2000.0
     T_MIN_FLASH = T_MIN_FIXED = 132.6313 # For now gas only.
     T_fixed_transport = 265.262
 

@@ -1,4 +1,4 @@
-<compounds library="ChemSep v8.1 pure component data - Copyright (c) Harry Kooijman and Ross Taylor (2018) - http://www.perlfoundation.org/artistic_license_2_0" file="E:\ChemSep8.26.xml" create-date="7/3/2017" create-time="9:29:07 AM" create-user="caleb" >
+<compounds library="glycerolChemSep v8.3 pure component data - Copyright (c) Harry Kooijman and Ross Taylor (2021) - http://www.perlfoundation.org/artistic_license_2_0" file="c:\program files\chemsepl8v32\pcd\chemsep1.xml" create-date="30-8-2022" create-time="0:23:18" create-user="harry" >
 
 <compound>
 <LibraryIndex name="Index"  value="915" />
@@ -3644,7 +3644,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="173.748" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="25.18" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="-5.603" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0241" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0187106" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.52364" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.71438" />
@@ -6546,7 +6546,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="417" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="31.25" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="-0.66558" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0185" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.015687" />
 <SpecificGravity name="Specific gravity"  units="_"  value="0.794395" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.5536" />
@@ -8647,7 +8647,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.15354" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.927671E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="80.36225" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.260911" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.201855" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="43.27" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="-1.05284" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0221" />
@@ -10861,7 +10861,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="431" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="51.77" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0.96946" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0277" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.022601" />
 <SpecificGravity name="Specific gravity"  units="_"  value="0.79598" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.634" />
@@ -11324,7 +11324,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="378.5562" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="57.88" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0334" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0261796" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.11071" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.48683" />
@@ -12208,7 +12208,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.186019" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.077183E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="135.7552" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.259865" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.220797" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="59.17" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="-2.1648" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0272" />
@@ -14446,7 +14446,7 @@
 <RacketParameter name="Rackett parameter"  units="_"  value="0.2493" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="72.28999" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="3.2725" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0368" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0293033" />
 <SpecificGravity name="Specific gravity"  units="_"  value="0.786" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.66368" />
@@ -14683,7 +14683,7 @@
 <RacketParameter name="Rackett parameter"  units="_"  value="0.2451" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="72.28999" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="2.198" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.038" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0293982" />
 <SpecificGravity name="Specific gravity"  units="_"  value="0.804" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.62489" />
@@ -15122,7 +15122,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.19966" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="5.439658E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="245.3258" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.281184" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.264002" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="72.84" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0.15143" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.028" />
@@ -19309,7 +19309,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.327425" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.990302E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="212.828" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.257009" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.290731" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="117.2" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0454" />
@@ -19524,7 +19524,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.304288" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.226349E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="237.4774" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.258662" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.2333" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="95.04" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0386" />
 <SpecificGravity name="Specific gravity"  units="_"  value="0.94469" />
@@ -20199,7 +20199,7 @@
 <RacketParameter name="Rackett parameter"  units="_"  value="0.2538" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="92.81" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="2.3141" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0486" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0364321" />
 <SpecificGravity name="Specific gravity"  units="_"  value="0.813869" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.5928" />
@@ -20436,7 +20436,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="272.4898" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="92.81" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0.75293" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.048" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0361484" />
 <SpecificGravity name="Specific gravity"  units="_"  value="0.804234" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.58828" />
@@ -20672,7 +20672,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="244.9968" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="92.81" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0.21667" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0476" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0358947" />
 <SpecificGravity name="Specific gravity"  units="_"  value="0.813869" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.5792" />
@@ -21328,14 +21328,14 @@
   <Tmax units="K"  value="1000" />
   </VaporThermalConductivity>
 <SurfaceTension name="Surface tension"  units="N/m" >
-  <eqno value="16" />
-  <A value="-0.030468" />
-  <B value="-174.37" />
-  <C value="-1.1319" />
-  <D value="-0.0029512" />
-  <E value="4.9272E-07" />
-  <Tmin units="K"  value="293.15" />
-  <Tmax units="K"  value="518.15" />
+  <eqno value="116" />
+  <A value="0" />
+  <B value="-0.0648458" />
+  <C value="0.111405" />
+  <D value="0.156705" />
+  <E value="-0.141678" />
+  <Tmin units="K"  value="200" />
+  <Tmax units="K"  value="744.6" />
   </SurfaceTension>
 <RPPHeatCapacityCp name="Ideal gas heat capacity (RPP)"  units="J/kmol/K" >
   <eqno value="4" />
@@ -21375,7 +21375,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="252.6928" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="105.03" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="-8.3213" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0583" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0445199" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.12142" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="1.2005" />
@@ -23182,7 +23182,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.2883" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="5.513596E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="347.3953" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.260813" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.277349" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="102.6" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0.00916" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0386" />
@@ -23414,7 +23414,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.2951" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="5.870098E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="290.9223" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.2944" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.270141" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="102.6" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0.01383" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0391" />
@@ -25700,7 +25700,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="308.1505" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="128.34" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0514" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0500142" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.2946" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.215834" />
@@ -25923,7 +25923,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.361537" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.152857E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="286.8836" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.271326" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.253547" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="128.34" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="1.1558" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0495" />
@@ -26149,7 +26149,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.36165" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="6.914152E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="308.5109" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.265583" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.258222" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="128.34" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="2.1786" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0501" />
@@ -27499,7 +27499,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="278.3631" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="97.06999" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="-3.46962" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.04" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0394845" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.05593" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.42969" />
@@ -27954,7 +27954,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.3271" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.4136E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="211.4629" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.23" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.247771" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="124.61" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0447" />
@@ -28845,7 +28845,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.3377" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="6.623128E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="305.6995" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.24" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.258523" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="129.23" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="2.33694" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0456" />
@@ -30212,10 +30212,10 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.463689" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="8.297988E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="253.1291" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.224225" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.240468" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="152.18" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0853" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0620681" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.12845" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.758714" />
@@ -30893,7 +30893,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.342" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="6.980332E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="274.6595" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.241" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.258887" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="117.59" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="-0.28602" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0461" />
@@ -32510,7 +32510,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="307.6339" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="127.38" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0621" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0486305" />
 <SpecificGravity name="Specific gravity"  units="_"  value="0.909306" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.24199" />
@@ -39215,7 +39215,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.500752" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.820483E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="393.9754" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.257114" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.235566" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="177.3" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0645" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.08499" />
@@ -39441,6 +39441,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.48899" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="6.396712E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="628.324" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.275228" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="177.3" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.068" />
@@ -39895,7 +39896,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="267.486" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="193.2" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="1.5595" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0696" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0651" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.29618" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.349259" />
@@ -40341,7 +40342,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.554142" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="9.328059E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="251.6539" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.249255" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.233591" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="209.1" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="-2.0273" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0735" />
@@ -41008,10 +41009,10 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.615194" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="9.603459E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="283.9585" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.239005" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.227055" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="222.6" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="-1.4092" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0815" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0768" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.16484" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.5" />
@@ -41229,10 +41230,10 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.615194" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="9.942347E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="266.6866" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.246034" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.217071" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="222.6" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="-1.4079" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0807" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0719" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.27404" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.507416" />
@@ -41890,9 +41891,9 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.724274" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="1.042713E-09" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="274.4211" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.237646" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.21625" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="259.02" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0932" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0775" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.27729" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.603954" />
@@ -43006,7 +43007,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.335173" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="6.161351E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="319.315" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.248616" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.264615" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="113.33" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="3.08387" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0428" />
@@ -43163,7 +43164,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.139908" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="3.391187E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="956.7623" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.386" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.268002" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0111154" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.431227" />
@@ -43346,7 +43347,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.159449" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="4.665358E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="148.6014" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.233" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.367911" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="-4.24638" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.00859559" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.46343" />
@@ -43543,7 +43544,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.037046" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="3.038669E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="4.496969" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.301" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.236658" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="2.67" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.00399858" />
@@ -44330,7 +44331,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.0888007" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="4.892771E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="84.53657" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.229" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.245638" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="18.33" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0135255" />
@@ -44948,7 +44949,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.227469" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.322352E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="178.8339" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.212" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.232816" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="74.67" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0325977" />
@@ -45163,7 +45164,7 @@
 <RacketParameter name="Rackett parameter"  units="_"  value="0.242" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="353.46" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="-1.9601" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.122765" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.128272" />
 <SpecificGravity name="Specific gravity"  units="_"  value="0.779388" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.762" />
@@ -45387,7 +45388,7 @@
 <RacketParameter name="Rackett parameter"  units="_"  value="0.247" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="373.98" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.127864" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.13583" />
 <SpecificGravity name="Specific gravity"  units="_"  value="0.78311" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.808" />
@@ -45608,10 +45609,10 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="1.318669" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="1.21838E-09" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="196.1125" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.215" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.234962" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="394.5" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.135494" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.142853" />
 <SpecificGravity name="Specific gravity"  units="_"  value="0.787872" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.8271" />
@@ -45831,7 +45832,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="1.486861" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="1.281752E-09" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="192.611" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.211" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.231564" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="435.54" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.158831" />
@@ -46062,7 +46063,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="1.567299" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="1.316045E-09" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="188.4938" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.209" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.230005" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="456.06" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.167898" />
@@ -46284,7 +46285,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="1.644437" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="1.342746E-09" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="187.4249" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.208" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.229129" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="476.58" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.17165" />
@@ -46507,7 +46508,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="1.715072" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="1.368548E-09" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="182.344" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.207" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.228598" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="497.1" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.173787" />
@@ -46730,7 +46731,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="1.778027" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="1.403995E-09" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="181.8002" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.205" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.227859" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="517.62" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.189742" />
@@ -46953,7 +46954,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="1.831535" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="1.438745E-09" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="177.2562" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.203" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.226541" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="538.14" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.197603" />
@@ -47176,7 +47177,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="1.871975" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="1.472771E-09" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="173.3321" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.203" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.226318" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="558.66" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.191283" />
@@ -47399,7 +47400,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="1.897158" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="1.499321E-09" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="167.6674" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.2" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.225555" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="579.18" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.207041" />
@@ -47621,7 +47622,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="1.69" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="1.533337E-09" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="166.673" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.2" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.224829" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="599.7" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.207949" />
@@ -51817,7 +51818,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.486848" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.470891E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="253.2065" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.251" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.266364" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="168.78" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0599069" />
@@ -61876,7 +61877,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.438832" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="6.87092E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="359.8914" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.272" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.257944" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="164.16" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0565457" />
@@ -62106,7 +62107,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.438832" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="6.87092E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="359.8914" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.272" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.258525" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="164.16" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0.50855" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0569489" />
@@ -62336,7 +62337,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.438832" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="6.850979E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="350.4008" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.271" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.263785" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="164.16" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0.9739" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0567868" />
@@ -62558,7 +62559,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.57156" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.868773E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="289.5641" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.25" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.261746" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="205.2" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.069791" />
 <SpecificGravity name="Specific gravity"  units="_"  value="0.81854" />
@@ -62787,7 +62788,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.440073" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.253199E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="333.0414" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.26" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.248039" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="152.52" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0565227" />
@@ -63027,7 +63028,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.440073" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.618039E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="299.61" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.254" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.243582" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="152.52" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0566058" />
@@ -67212,7 +67213,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.507256" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.535834E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="310.7879" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.252" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.274724" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="173.04" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0654917" />
@@ -69521,7 +69522,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.317875" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.001774E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="208.7519" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.238" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.254998" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="108.71" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.042749" />
@@ -70881,7 +70882,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.434469" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="6.949942E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="305.9995" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.262" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.280468" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="133.85" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="-0.68836" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0550018" />
@@ -71529,7 +71530,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.317875" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="6.283707E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="299.3623" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.264" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.248481" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="108.71" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.042492" />
@@ -71753,7 +71754,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.375336" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="6.739367E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="296.1391" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.26" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.247825" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="129.23" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0492739" />
@@ -71985,7 +71986,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.434587" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="6.82117E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="339.3681" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.267" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.247368" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="149.75" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0559389" />
@@ -74893,7 +74894,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.337297" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="6.900063E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="229.2309" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.25" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.267969" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="114.82" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0449492" />
@@ -81989,7 +81990,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.20696" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="5.140324E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="431.8628" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.284" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.266147" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="51.539" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0284" />
@@ -82440,7 +82441,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.493725" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="9.903848E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="162.2381" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.202" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.246963" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="152.92" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.063602" />
@@ -82667,7 +82668,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.2203" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="4.064853E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="771.612" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.337" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.25944" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="56.533" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="-1.7134" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0304359" />
@@ -82869,7 +82870,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.41328" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="2.408637E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="491.4633" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.308" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.282376" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="134.59" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0523754" />
@@ -83740,7 +83741,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="343.4411" />
 <RacketParameter name="Rackett parameter"  units="_"  value="0.248" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="104.66" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0460999" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0422" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.164317" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.53864" />
@@ -83954,10 +83955,10 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.304509" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="4.901426E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="712.6282" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.323" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.268312" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="95.78" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0290647" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.035751" />
 <SpecificGravity name="Specific gravity"  units="_"  value="0.720588" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.41376" />
@@ -84616,7 +84617,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.16151" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="6.84307E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="134.6848" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.208" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.22211" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="39.59" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="-0.9816" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0238563" />
@@ -85956,7 +85957,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.398619" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="8.328918E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="238.341" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.229" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.24705" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="107.72" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.054156" />
@@ -86189,7 +86190,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.398619" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="6.686394E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="459.4169" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.275" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.247051" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="107.72" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0536831" />
@@ -87301,7 +87302,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.483027" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="8.219819E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="297.6324" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.238" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.18751" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="122.08" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0647636" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.370051" />
@@ -87728,7 +87729,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="207.4664" />
 <RacketParameter name="Rackett parameter"  units="_"  value="0.215" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="60.86" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0276727" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0239" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.703223" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.917597" />
@@ -87931,7 +87932,7 @@
 <RacketParameter name="Rackett parameter"  units="_"  value="0.23" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="69.16" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0296714" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0283784" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.058208" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.220736" />
@@ -88354,7 +88355,7 @@
 <RacketParameter name="Rackett parameter"  units="_"  value="0.246" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="119.08" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0475472" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.04397" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.185846" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.602794" />
@@ -88566,7 +88567,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="310.1352" />
 <RacketParameter name="Rackett parameter"  units="_"  value="0.245" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="139.6" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0563975" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.05133" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.153456" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.657237" />
@@ -88781,7 +88782,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="287.5873" />
 <RacketParameter name="Rackett parameter"  units="_"  value="0.238" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="139.6" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0546655" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.04786" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.207575" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.661017" />
@@ -88997,7 +88998,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="462.5464" />
 <RacketParameter name="Rackett parameter"  units="_"  value="0.275" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="125.19" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0500667" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.04495" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.298112" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.851182" />
@@ -89211,9 +89212,9 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.434587" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="8.945443E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="191.8011" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.21" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.23143" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="142.94" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0512838" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.04675" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.204857" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="1.05065" />
@@ -89404,9 +89405,9 @@
   <Tmin units="K"  value="274.15" />
   <Tmax units="K"  value="444.15" />
   </RelativeStaticPermittivity>
-<RacketParameter name="Rackett parameter"  units="_"  value="0.242627" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.251142" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="147.2" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0493" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.05874" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.451" />
 <Charge name="Charge"  units="_"  value="0" />
 <UniquacR  name="UNIQUAC r"  units="_"  value="5.456" />
@@ -89612,7 +89613,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="258.283" />
 <RacketParameter name="Rackett parameter"  units="_"  value="0.231" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="97.28" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0397792" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.03631" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.407506" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.997587" />
@@ -89763,7 +89764,7 @@
   <Tmin units="K"  value="844.65" />
   <Tmax units="K"  value="1113" />
   </AntoineVaporPressure>
-<RacketParameter name="Rackett parameter"  units="_"  value="0.242627" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.208079" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="147.2" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.049" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.51" />
@@ -89972,7 +89973,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="187.2234" />
 <RacketParameter name="Rackett parameter"  units="_"  value="0.23" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0382651" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0400971" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.08656" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.453" />
@@ -90187,7 +90188,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="400.3339" />
 <RacketParameter name="Rackett parameter"  units="_"  value="0.266" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0337942" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.03219" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.32293" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.54629" />
@@ -90801,10 +90802,10 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.563654" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="8.849681E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="249.999" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.229" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.24506" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="169.94" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0718832" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.06683" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.174947" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.637086" />
@@ -91024,7 +91025,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.182307" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="6.279053E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="153.7272" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.228" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.248811" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="67.67" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="-1.02" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0273464" />
@@ -91431,7 +91432,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.204617" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.690725E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="120.5504" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.204" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.216826" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="63.79" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="-2.1562" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0289561" />
@@ -91606,14 +91607,14 @@
   <Tmax units="K"  value="1000" />
   </VaporThermalConductivity>
 <SurfaceTension name="Surface tension"  units="N/m" >
-  <eqno value="16" />
-  <A value="-0.0075981" />
-  <B value="639.66" />
-  <C value="-8.4539" />
-  <D value="0.016647" />
-  <E value="-0.000022126" />
-  <Tmin units="K"  value="273.15" />
-  <Tmax units="K"  value="548" />
+  <eqno value="116" />
+  <A value="0" />
+  <B value="0" />
+  <C value="0" />
+  <D value="0.0365301" />
+  <E value="0.0365301" />
+  <Tmin units="K"  value="276.15" />
+  <Tmax units="K"  value="557" />
   </SurfaceTension>
 <RPPHeatCapacityCp name="Ideal gas heat capacity (RPP)"  units="J/kmol/K" >
   <eqno value="4" />
@@ -91704,6 +91705,15 @@
 <HeatOfFusionAtMeltingPoint name="Heat of fusion at melting point"  units="J/kmol"  value="9510000" />
 <MatthiasCopemanC1 name="Mathias-Copeman C1"  units="_"  value="1.16122" />
 <HeatOfCombustion name="Standard net heat of combustion LHV"  units="J/kmol"  value="-2.4954E+09" />
+<LiquidDensity name="Liquid density"  units="kmol/m3" >
+  <eqno value="105" />
+  <A value="0.668" />
+  <B value="0.25" />
+  <C value="577" />
+  <D value="0.29" />
+  <Tmin units="K"  value="263.15" />
+  <Tmax units="K"  value="577" />
+  </LiquidDensity>
 <VaporPressure name="Vapour pressure"  units="Pa" >
   <eqno value="10" />
   <A value="20.45386" />
@@ -91738,6 +91748,16 @@
   <Tmin units="K"  value="126.9366" />
   <Tmax units="K"  value="1500" />
   </IdealGasHeatCapacityCp>
+<LiquidViscosity name="Liquid viscosity"  units="Pa.s" >
+  <eqno value="101" />
+  <A value="-52.2135" />
+  <B value="2618.11" />
+  <C value="6.516931" />
+  <D value="-0.0000100719" />
+  <E value="2" />
+  <Tmin units="K"  value="263.15" />
+  <Tmax units="K"  value="577" />
+  </LiquidViscosity>
 <VaporViscosity name="Vapour viscosity"  units="Pa.s" >
   <eqno value="2" />
   <A value="-0.0000012839" />
@@ -91745,6 +91765,16 @@
   <Tmin units="K"  value="263.12" />
   <Tmax units="K"  value="1000" />
   </VaporViscosity>
+<SurfaceTension name="Surface tension"  units="N/m" >
+  <eqno value="116" />
+  <A value="0" />
+  <B value="0" />
+  <C value="0" />
+  <D value="0.0229831" />
+  <E value="0.0229831" />
+  <Tmin units="K"  value="230.15" />
+  <Tmax units="K"  value="577" />
+  </SurfaceTension>
 <RPPHeatCapacityCp name="Ideal gas heat capacity (RPP)"  units="J/kmol/K" >
   <eqno value="4" />
   <A value="8394.8" />
@@ -91776,7 +91806,7 @@
 <RacketParameter name="Rackett parameter"  units="_"  value="0.254676" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="120.93" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0.3544" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0445" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0457018" />
 <SpecificGravity name="Specific gravity"  units="_"  value="0.975" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.3544" />
@@ -91872,6 +91902,16 @@
   <Tmin units="K"  value="203.08" />
   <Tmax units="K"  value="1000" />
   </VaporViscosity>
+<SurfaceTension name="Surface tension"  units="N/m" >
+  <eqno value="116" />
+  <A value="0" />
+  <B value="0" />
+  <C value="0" />
+  <D value="0.0219363" />
+  <E value="0.0219363" />
+  <Tmin units="K"  value="258.65" />
+  <Tmax units="K"  value="566" />
+  </SurfaceTension>
 <RPPHeatCapacityCp name="Ideal gas heat capacity (RPP)"  units="J/kmol/K" >
   <eqno value="4" />
   <A value="6744.2" />
@@ -91883,10 +91923,10 @@
   </RPPHeatCapacityCp>
 <AntoineVaporPressure name="Antoine"  units="Pa" >
   <eqno value="10" />
-  <A value="20.80696" />
-  <B value="3020.518" />
-  <C value="-60.22383" />
-  <Tmin units="K"  value="308.544" />
+  <A value="21.71526" />
+  <B value="3376.626" />
+  <C value="-49.45911" />
+  <Tmin units="K"  value="273" />
   <Tmax units="K"  value="565.93" />
   </AntoineVaporPressure>
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.329198" />
@@ -91895,7 +91935,7 @@
 <RacketParameter name="Rackett parameter"  units="_"  value="0.24531" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="100.41" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0.31086" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0396" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0385887" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.31086" />
@@ -91988,6 +92028,16 @@
   <Tmin units="K"  value="403.23" />
   <Tmax units="K"  value="1000" />
   </VaporViscosity>
+<SurfaceTension name="Surface tension"  units="N/m" >
+  <eqno value="116" />
+  <A value="0" />
+  <B value="0" />
+  <C value="0" />
+  <D value="0.0275543" />
+  <E value="0.0275543" />
+  <Tmin units="K"  value="273" />
+  <Tmax units="K"  value="704.8714" />
+  </SurfaceTension>
 <RPPHeatCapacityCp name="Ideal gas heat capacity (RPP)"  units="J/kmol/K" >
   <eqno value="4" />
   <A value="-33746" />
@@ -92010,7 +92060,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="257.1649" />
 <RacketParameter name="Rackett parameter"  units="_"  value="0.244961" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="145.71" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.05" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.05534" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.14" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.41299" />
@@ -92103,6 +92153,16 @@
   <Tmin units="K"  value="427.89" />
   <Tmax units="K"  value="1000" />
   </VaporViscosity>
+<SurfaceTension name="Surface tension"  units="N/m" >
+  <eqno value="116" />
+  <A value="0" />
+  <B value="0" />
+  <C value="0" />
+  <D value="0.0276342" />
+  <E value="0.0276342" />
+  <Tmin units="K"  value="273" />
+  <Tmax units="K"  value="717.3434" />
+  </SurfaceTension>
 <RPPHeatCapacityCp name="Ideal gas heat capacity (RPP)"  units="J/kmol/K" >
   <eqno value="4" />
   <A value="-32096" />
@@ -92125,7 +92185,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="274.1277" />
 <RacketParameter name="Rackett parameter"  units="_"  value="0.230336" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="166.23" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0644" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0624532" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.108" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.54406" />
@@ -92252,14 +92312,14 @@
   <Tmax units="K"  value="643.15" />
   </VaporThermalConductivity>
 <SurfaceTension name="Surface tension"  units="N/m" >
-  <eqno value="106" />
-  <A value="0.0985657" />
-  <B value="1.232" />
+  <eqno value="116" />
+  <A value="0" />
+  <B value="0" />
   <C value="0" />
-  <D value="0" />
-  <E value="0" />
-  <Tmin units="K"  value="273.15" />
-  <Tmax units="K"  value="760.5541" />
+  <D value="0.0416997" />
+  <E value="0.0416997" />
+  <Tmin units="K"  value="352.15" />
+  <Tmax units="K"  value="795.1034" />
   </SurfaceTension>
 <RPPHeatCapacityCp name="Ideal gas heat capacity (RPP)"  units="J/kmol/K" >
   <eqno value="100" />
@@ -92284,7 +92344,7 @@
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="355.1485" />
 <RacketParameter name="Rackett parameter"  units="_"  value="0.251145" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="211.53" />
-<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0722" />
+<Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0792045" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.272" />
 <Charge name="Charge"  units="_"  value="0" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="0.55805" />
@@ -92459,14 +92519,14 @@
   <Tmax units="K"  value="1000" />
   </VaporThermalConductivity>
 <SurfaceTension name="Surface tension"  units="N/m" >
-  <eqno value="16" />
-  <A value="-0.069239" />
-  <B value="49.575" />
-  <C value="-2.2485" />
-  <D value="-0.0002049" />
-  <E value="-5.0141E-07" />
-  <Tmin units="K"  value="309.55" />
-  <Tmax units="K"  value="779.87" />
+  <eqno value="116" />
+  <A value="0" />
+  <B value="0" />
+  <C value="0" />
+  <D value="0.0366997" />
+  <E value="0.0366997" />
+  <Tmin units="K"  value="309.15" />
+  <Tmax units="K"  value="806" />
   </SurfaceTension>
 <RPPHeatCapacityCp name="Ideal gas heat capacity (RPP)"  units="J/kmol/K" >
   <eqno value="4" />
@@ -92503,7 +92563,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.202594" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.668715E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="146.3433" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.195" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.236254" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="75.27" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0299348" />
@@ -92679,13 +92739,13 @@
   <Tmax units="K"  value="1000" />
   </VaporThermalConductivity>
 <SurfaceTension name="Surface tension"  units="N/m" >
-  <eqno value="16" />
-  <A value="-0.0051901" />
-  <B value="69.321" />
-  <C value="-3.1157" />
-  <D value="0.00082804" />
-  <E value="-0.0000049222" />
-  <Tmin units="K"  value="224.85" />
+  <eqno value="116" />
+  <A value="0" />
+  <B value="0" />
+  <C value="0" />
+  <D value="0.0358859" />
+  <E value="0.0358859" />
+  <Tmin units="K"  value="218.62" />
   <Tmax units="K"  value="778" />
   </SurfaceTension>
 <RPPHeatCapacityCp name="Ideal gas heat capacity (RPP)"  units="J/kmol/K" >
@@ -92723,7 +92783,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.239863" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.784834E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="172.1134" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.206" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.243726" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="95.79" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0381263" />
@@ -93437,7 +93497,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.23868" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.209402E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="115.9081" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.211" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.251246" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="78.39999" />
 <MatthiasCopemanC2 name="Mathias-Copeman C2"  units="_"  value="0" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.0337574" />
@@ -93872,7 +93932,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.438537" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="7.157819E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="298.6167" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.259" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.231974" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="140.7" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.05675" />
 <SpecificGravity name="Specific gravity"  units="_"  value="0.884" />
@@ -94101,7 +94161,7 @@
 <COSTALDVolume name="COSTLD characteristic volume (V*)"  units="m3/kmol"  value="0.467647" />
 <DiameterLJ name="Lennard Jones diameter"  units="m"  value="6.25685E-10" />
 <EnergyLJ name="Lennard Jones energy"  units="K"  value="528.4525" />
-<RacketParameter name="Rackett parameter"  units="_"  value="0.293" />
+<RacketParameter name="Rackett parameter"  units="_"  value="0.264275" />
 <FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="146.81" />
 <Parachor name="Parachor"  units="kg0.25.m3/s0.5/kmol"  value="0.057223" />
 <SpecificGravity name="Specific gravity"  units="_"  value="0.999" />
@@ -94561,7 +94621,7 @@
 <CompoundID name="Name"  value="Glycerol" />
 <StructureFormula name="Structure"  value="HOCH2CH(OH)CH2OH" />
 <Family name="Family"  value="49" />
-<CriticalTemperature name="Critical temperature"  units="K"  value="725.15" />
+<CriticalTemperature name="Critical temperature"  units="K"  value="850" />
 <CriticalPressure name="Critical pressure"  units="Pa"  value="6660000" />
 <CriticalVolume name="Critical volume"  units="m3/kmol"  value="0.264" />
 <CriticalCompressibility name="Critical compressibility factor"  units="_"  value="0.28" />
@@ -94606,7 +94666,7 @@
   <eqno value="101" />
   <A value="99.57469" />
   <B value="-13673.87" />
-  <C value="-10.09699" />
+  <C value="-10.07" />
   <D value="1.227718E-11" />
   <E value="2" />
   <Tmin units="K"  value="291.33" />
@@ -94614,13 +94674,13 @@
   </VaporPressure>
 <HeatOfVaporization name="Heat of vaporization"  units="J/kmol" >
   <eqno value="106" />
-  <A value="1.1E+08" />
-  <B value="1" />
-  <C value="-2.5" />
-  <D value="3.4" />
-  <E value="-1.65" />
+  <A value="1.123245E+08" />
+  <B value="1.032674" />
+  <C value="-2.401706" />
+  <D value="3.408528" />
+  <E value="-1.535068" />
   <Tmin units="K"  value="291.33" />
-  <Tmax units="K"  value="765" />
+  <Tmax units="K"  value="850" />
   </HeatOfVaporization>
 <SolidHeatCapacityCp name="Solid heat capacity"  units="J/kmol/K" >
   <eqno value="4" />
@@ -94730,11 +94790,11 @@
   </RelativeStaticPermittivity>
 <AntoineVaporPressure name="Antoine"  units="Pa" >
   <eqno value="10" />
-  <A value="21.09229" />
-  <B value="4300" />
-  <C value="-125" />
+  <A value="26.02717" />
+  <B value="7444.483" />
+  <C value="-48.3386" />
   <Tmin units="K"  value="280" />
-  <Tmax units="K"  value="725.15" />
+  <Tmax units="K"  value="600" />
   </AntoineVaporPressure>
 <LiquidViscosityRPS name="Liquid viscosity (RPS)"  units="Pa.s" >
   <eqno value="10" />
@@ -94746,6 +94806,7 @@
   <Tmin units="K"  value="231.15" />
   <Tmax units="K"  value="473.15" />
   </LiquidViscosityRPS>
+<FullerVolume name="Fuller et al. diffusion volume"  units="_"  value="84.50999" />
 <SpecificGravity name="Specific gravity"  units="_"  value="1.26078" />
 <CostaldAcentricFactor name="SRK acentric factor"  units="_"  value="1.544133" />
 <UniquacR  name="UNIQUAC r"  units="_"  value="3.385629" />

@@ -76,6 +76,13 @@ def test_iapws95_basic_flash():
     stage_2 = flasher.flash(P=P2, S=stage_1.S())
     assert_close(stage_2.VF, 0.7666960540476834)
     
+    # point where phase ID was wrong
+    PT = flasher.flash(T=300, P=1e5) 
+    H = PT.H()
+    PH = flasher.flash(H=H, P=1e5) 
+    assert PH.gas is None
+
+    
     
 def test_iapws95_basic_flashes_no_hacks():
     liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])

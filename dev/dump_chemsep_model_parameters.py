@@ -25,7 +25,7 @@ import os
 import json
 import xml.etree.cElementTree as ET
 folder = os.path.dirname(__file__)
-tree = ET.parse(os.path.join(folder, 'ChemSep8.26.xml'))
+tree = ET.parse(os.path.join(folder, 'ChemSep8.32.xml'))
 root = tree.getroot()
 parameter_tags = ['ApiSrkS1',
  'ApiSrkS2',

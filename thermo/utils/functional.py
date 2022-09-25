@@ -26,7 +26,7 @@ __all__ = ['has_matplotlib', 'Stateva_Tsvetkov_TPDF', 'TPD',
 
 from fluids.numerics import assert_close, numpy as np, trunc_log
 from fluids.constants import R
-from chemicals.utils import log, mix_multiple_component_flows
+from chemicals.utils import log, mix_multiple_component_flows, velocity_to_molar_velocity
 
 global _has_matplotlib
 _has_matplotlib = None
@@ -518,7 +518,9 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
         assert_close(flow, product_flows[CAS], rtol=rtol, atol=atol)
 
 def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets,
-                          rtol=1E-9, atol=0.0, reactive=False):
+                          rtol=1E-9, atol=0.0, reactive=False,
+                          inlet_areas=None, outlet_areas=None,
+                          inlet_elevations=None, outlet_elevations=None):
     try:
         [_ for _ in inlets]
     except TypeError:
@@ -536,6 +538,11 @@ def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets,
         [_ for _ in energy_outlets]
     except TypeError:
         energy_outlets = [energy_outlets]
+    
+    if inlet_areas is not None:
+        inlet_molar_velocity = [velocity_to_molar_velocity(inlet.Q/A, inlet.MW()) for A, inlet in zip(inlet_areas, inlets)]
+    if outlet_areas is not None:
+        outlet_molar_velocity = [velocity_to_molar_velocity(outlet.Q/A, outlet.MW()) for A, outlet in zip(outlet_areas, outlets)]
 
     # Energy streams need to handle direction, not just magnitude
     energy_in = 0.0
@@ -546,6 +553,9 @@ def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets,
             energy_in += feed.energy_reactive
     for feed in energy_inlets:
         energy_in += feed.Q
+    if inlet_areas is not None:
+        for v, inlet in zip(inlet_molar_velocity, inlets):
+            energy_in += 0.5*v*v*inlet.n
 
     energy_out = 0.0
     for product in outlets:
@@ -555,5 +565,8 @@ def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets,
             energy_out += product.energy_reactive
     for product in energy_outlets:
         energy_out += product.Q
+    if outlet_areas is not None:
+        for v, outlet in zip(outlet_molar_velocity, outlets):
+            energy_out += 0.5*v*v*outlet.n
 
     assert_close(energy_in, energy_out, rtol=rtol, atol=atol)

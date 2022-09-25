@@ -74,7 +74,7 @@ from thermo.flash.flash_utils import (
     PSF_pure_newton,
     solve_PTV_HSGUA_1P
 )
-
+from thermo.equilibrium import EquilibriumState
 
 class FlashPureVLS(Flash):
     r'''Class for performing flash calculations on pure-component systems.
@@ -386,7 +386,7 @@ class FlashPureVLS(Flash):
         self.unique_phase_count = (1 if gas is not None else 0) + self.unique_liquid_count + len(solids)
         self.unique_liquid_hashes = unique_liquid_hashes
         self.T_MIN_FLASH = max(p.T_MIN_FLASH for p in self.phases)
-
+        self.T_MAX_FLASH = min(p.T_MAX_FLASH for p in self.phases)
 
 
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
@@ -639,7 +639,7 @@ class FlashPureVLS(Flash):
 
     def flash_TPV_HSGUA_VL_bound_first(self, fixed_var_val, spec_val, fixed_var='P',
                                  spec='H', iter_var='T', hot_start=None,
-                                 selection_fun_1P=None, cubic=True):
+                                 selection_fun_1P=None, cubic=True, spec_fun=None):
         constants, correlations = self.constants, self.correlations
         zs = [1.0]
         VL_liq, VL_gas = None, None
@@ -658,7 +658,25 @@ class FlashPureVLS(Flash):
             need_both = False
             spec_val_l = getattr(VL_liq, spec)()
             spec_val_g = getattr(VL_gas, spec)()
-            VF = (spec_val - spec_val_l) / (spec_val_g - spec_val_l)
+            if spec_fun is not None:
+                eq_all_gas = EquilibriumState(T=VL_gas.T, P=VL_gas.P, gas=VL_gas, liquids=[VL_liq], betas=[1, 0], zs=zs, solids=[], constants=self.constants, correlations=self.correlations, flasher=self, settings=self.settings)
+                eq_all_liquid = EquilibriumState(T=VL_gas.T, P=VL_gas.P, gas=VL_gas, liquids=[VL_liq], betas=[0, 1], zs=zs, solids=[], constants=self.constants, correlations=self.correlations, flasher=self, settings=self.settings)
+                spec_err_all_gas = getattr(VL_gas, spec)() - spec_fun(eq_all_gas)
+                spec_err_all_liquid = getattr(VL_liq, spec)() - spec_fun(eq_all_liquid)
+                if spec_err_all_gas*spec_err_all_liquid < 0.0:
+                    def to_solve(VF):
+                        eq = EquilibriumState(T=VL_gas.T, P=VL_gas.P, gas=VL_gas, liquids=[VL_liq],
+                                                         betas=[VF, 1-VF], zs=zs, solids=[],
+                                              constants=self.constants, correlations=self.correlations, flasher=self, settings=self.settings)
+                        err = getattr(eq, spec)() - spec_fun(eq)
+                        return err
+                    VF = secant(to_solve, .5, high=1, low=0, bisection=True)
+                else:
+                    # probably doesn't make any sense to solve now
+                    VF = (spec_val - spec_err_all_liquid)/(spec_err_all_gas - spec_err_all_liquid)
+            else:
+
+                VF = (spec_val - spec_val_l) / (spec_val_g - spec_val_l)
             if 0.0 <= VF <= 1.0:
                 return VL_gas, [VL_liq], [], [VF, 1.0 - VF], flash_convergence
             elif VF < 0.0:
@@ -682,7 +700,7 @@ class FlashPureVLS(Flash):
                                                                   spec=spec, iter_var=iter_var, constants=constants, correlations=correlations, last_conv=last_conv,
                                                                   oscillation_detection=cubic,
                                                                   guess_maxiter=self.TPV_HSGUA_guess_maxiter, guess_xtol=self.TPV_HSGUA_guess_xtol,
-                                                                  maxiter=self.TPV_HSGUA_maxiter, xtol=self.TPV_HSGUA_xtol)
+                                                                  maxiter=self.TPV_HSGUA_maxiter, xtol=self.TPV_HSGUA_xtol, spec_fun=spec_fun)
                 if cubic:
                     phase.eos_mix.solve_missing_volumes()
                     if phase.eos_mix.phase == 'l/g':
@@ -721,7 +739,7 @@ class FlashPureVLS(Flash):
     def flash_TPV_HSGUA(self, fixed_var_val, spec_val, fixed_var='P', spec='H',
                         iter_var='T', zs=None, solution=None,
                         selection_fun_1P=None, hot_start=None,
-                        iter_var_backup=None):
+                        iter_var_backup=None, spec_fun=None):
         # Be prepared to have a flag here to handle zero flow
         zs = [1.0]
         constants, correlations = self.constants, self.correlations
@@ -773,7 +791,7 @@ class FlashPureVLS(Flash):
         if (self.VL_only_CEOSs_same or self.VL_IG_activity) and not selection_fun_1P_specified and solution is None and fixed_var != 'V':
             try:
                 return self.flash_TPV_HSGUA_VL_bound_first(fixed_var_val=fixed_var_val, spec_val=spec_val, fixed_var=fixed_var,
-                                     spec=spec, iter_var=iter_var, hot_start=hot_start, selection_fun_1P=selection_fun_1P, cubic=self.VL_only_CEOSs_same)
+                                     spec=spec, iter_var=iter_var, hot_start=hot_start, selection_fun_1P=selection_fun_1P, cubic=self.VL_only_CEOSs_same, spec_fun=spec_fun)
             except PhaseExistenceImpossible:
                 pass
         elif self.V_only_lemmon2000 and not selection_fun_1P_specified and fixed_var == 'V' and iter_var == 'P':
@@ -781,32 +799,6 @@ class FlashPureVLS(Flash):
             iter_var = 'T'
 #            if sln is not None:
 #                return sln
-        try:
-            solutions_1P = []
-            G_min = 1e100
-            results_G_min_1P = None
-            for phase in self.phases:
-                # TODO: for eoss wit boundaries, and well behaved fluids, only solve ocne instead of twice (i.e. per phase, doubling the computation.)
-                try:
-                    T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var,
-                                                                      spec=spec, iter_var=iter_var, constants=constants, correlations=correlations,
-                                                                      guess_maxiter=self.TPV_HSGUA_guess_maxiter, guess_xtol=self.TPV_HSGUA_guess_xtol,
-                                                                      maxiter=self.TPV_HSGUA_maxiter, xtol=self.TPV_HSGUA_xtol)
-
-                    G = fun(phase)
-                    new = [T, phase, iterations, err, G]
-                    if results_G_min_1P is None or selection_fun_1P(new, results_G_min_1P):
-#                    if G < G_min:
-                        G_min = G
-                        results_G_min_1P = new
-
-                    solutions_1P.append(new)
-                except Exception as e:
-#                    print(e)
-                    solutions_1P.append(None)
-        except:
-            pass
-
 
         try:
             VL_liq, VL_gas = None, None
@@ -836,6 +828,42 @@ class FlashPureVLS(Flash):
         except Exception as e:
 #            print(e, spec)
             VF = None
+
+        try:
+            solutions_1P = []
+            G_min = 1e100
+            results_G_min_1P = None
+            one_phase_solution_test_phases = self.phases
+            if self.VL_only_IAPWS95:
+                if fixed_var == 'P' and spec == 'H':
+                    if VL_liq is not None:
+                        if spec_val_l > spec_val:
+                            one_phase_solution_test_phases = self.liquids
+                        else:
+                            one_phase_solution_test_phases = [self.gas]
+            for phase in one_phase_solution_test_phases:
+                # TODO: for eoss wit boundaries, and well behaved fluids, only solve once instead of twice (i.e. per phase, doubling the computation.)
+                try:
+                    T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var,
+                                                                      spec=spec, iter_var=iter_var, constants=constants, correlations=correlations,
+                                                                      guess_maxiter=self.TPV_HSGUA_guess_maxiter, guess_xtol=self.TPV_HSGUA_guess_xtol,
+                                                                      maxiter=self.TPV_HSGUA_maxiter, xtol=self.TPV_HSGUA_xtol, spec_fun=spec_fun)
+
+                    G = fun(phase)
+                    new = [T, phase, iterations, err, G]
+                    if results_G_min_1P is None or selection_fun_1P(new, results_G_min_1P):
+#                    if G < G_min:
+                        G_min = G
+                        results_G_min_1P = new
+
+                    solutions_1P.append(new)
+                except Exception as e:
+#                    print(e)
+                    solutions_1P.append(None)
+        except:
+            pass
+
+
 
         try:
             G_SF = 1e100

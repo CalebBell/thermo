@@ -233,6 +233,7 @@ class FlashVLN(FlashVL):
 
 
         self.T_MIN_FLASH = max(p.T_MIN_FLASH for p in self.phases)
+        self.T_MAX_FLASH = min(p.T_MAX_FLASH for p in self.phases)
         try:
             self._water_index = constants.CASs.index(CAS_H2O)
         except ValueError:
@@ -371,8 +372,13 @@ class FlashVLN(FlashVL):
             gas = self.gas.to(T=T, P=P, zs=ys)
             liquid = self.liquid0.to(T=T, P=P, zs=xs)
             return gas, [liquid], [], [VF, 1.0 - VF], empty_flash_conv
-
+    
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
+        if T is None:
+            return self.flash_PV(P, V, zs, solution, hot_start)
+        if P is None:
+            return self.flash_TV(T, V, zs, solution, hot_start)
+            
         if hot_start is not None and hot_start.phase_count > 1 and solution is None:
             # Only allow hot start when there are multiple phases
             try:
@@ -418,8 +424,6 @@ class FlashVLN(FlashVL):
         VL_solved, LL_solved = False, False
         phase_evolved = [False]*self.max_phases
 
-        if T is None or P is None:
-            raise NotImplementedError("Multiphase isochoric flashes are not yet implemented")
 
         try:
             sln_2P = self.flash_TP_stability_test(T, P, zs, liquids[0], gas, solution=solution, phases_ready=True)

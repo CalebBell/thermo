@@ -59,7 +59,7 @@ def loadChemicalConstants(data, rows=True):
     if rows:
         for row in data:
             kwargs = dict(CAS=row[0], Tc=row[1], Pc=row[2], Vc=row[3], omega=row[4], Tb=row[5],
-                         Tm=row[6], Tt=row[7], Pt=row[8], Hfus=row[9], Hsub=row[10], Hf=row[11],
+                         Tm=row[6], Tt=row[7], Pt=row[8], Hfus=row[9], Hsub=row[10], Hfg=row[11],
                          dipole=row[12],
                          HeatCapacityGas=row[13], HeatCapacityLiquid=row[14],
                          HeatCapacitySolid=row[15],
@@ -81,7 +81,7 @@ def loadChemicalConstants(data, rows=True):
                     Pt=item['Pt']['value'],
                     Hfus=item['Hfus']['value'],
                     Hsub=item['Hsub']['value'],
-                    Hf=item['Hf']['value'],
+                    Hfg=item['Hfg']['value'],
                     dipole=item['dipole']['value'])
 
             for prop_key, store in marshal_properties:
@@ -122,7 +122,7 @@ def marshal_json_data(full_data, path):
         row.append(data['Pt']['value'])
         row.append(data['Hfus']['value'])
         row.append(data['Hsub']['value'])
-        row.append(data['Hf']['value'])
+        row.append(data['Hfg']['value'])
         row.append(data['dipole']['value'])
 
         for prop_key, store in marshal_properties:
@@ -165,7 +165,7 @@ marshal_properties = [('HeatCapacityGas', True),
            ('SublimationPressure', True),
            ('EnthalpySublimation', True),
            ('VolumeSolid', True),
-           ('VolumeSupercriticalLiquid', True),
+           ('SurfaceTension', True),
            ]
 
 

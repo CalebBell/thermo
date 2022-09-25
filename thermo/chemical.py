@@ -93,7 +93,7 @@ reference_states = [IAPWS, ASHRAE, IIR, REFPROP, CHEMSEP, PRO_II, HYSYS,
 
 class ChemicalConstants(object):
     __slots__ = ('CAS', 'Tc', 'Pc', 'Vc', 'omega', 'Tb', 'Tm', 'Tt', 'Pt',
-                 'Hfus', 'Hsub', 'Hf', 'dipole',
+                 'Hfus', 'Hsub', 'Hfg', 'dipole',
                  'HeatCapacityGas', 'HeatCapacityLiquid', 'HeatCapacitySolid',
                  'ThermalConductivityLiquid', 'ThermalConductivityGas',
                  'ViscosityLiquid', 'ViscosityGas',
@@ -105,7 +105,7 @@ class ChemicalConstants(object):
 
     # Or can I store the actual objects without doing the searches?
     def __init__(self, CAS, Tc=None, Pc=None, Vc=None, omega=None, Tb=None,
-                 Tm=None, Tt=None, Pt=None, Hfus=None, Hsub=None, Hf=None,
+                 Tm=None, Tt=None, Pt=None, Hfus=None, Hsub=None, Hfg=None,
                  dipole=None,
                  HeatCapacityGas=(), HeatCapacityLiquid=(),
                  HeatCapacitySolid=(),
@@ -127,7 +127,7 @@ class ChemicalConstants(object):
         self.Pt = Pt
         self.Hfus = Hfus
         self.Hsub = Hsub
-        self.Hf = Hf
+        self.Hfg = Hfg
         self.dipole = dipole
         self.HeatCapacityGas = HeatCapacityGas
         self.HeatCapacityLiquid = HeatCapacityLiquid

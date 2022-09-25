@@ -362,8 +362,9 @@ class ChemicalConstantsPackage(object):
         if properties is None:
             properties = self.non_vector_properties
         else:
+            properties = list(properties)
             if 'MWs' not in properties:
-                properties = properties + ('MWs',)
+                properties.append('MWs')
         is_slice = isinstance(idxs, slice)
         if not is_slice:
             is_one = len(idxs) == 1
@@ -599,7 +600,7 @@ class ChemicalConstantsPackage(object):
             except:
                 pass
         VaporPressures = [VaporPressure(Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], CASRN=CASs[i],
-                                        poly_fit=get_chemical_constants(CASs[i], 'VaporPressure'))
+                                        exp_poly_fit=get_chemical_constants(CASs[i], 'VaporPressure'))
                             for i in range(N)]
         Psat_298s = [VaporPressures[i].T_dependent_property(298.15) for i in range(N)]
 
@@ -826,7 +827,7 @@ class ChemicalConstantsPackage(object):
 
         SurfaceTensions = [SurfaceTension(CASRN=CASs[i], MW=MWs[i], Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i], Zc=Zcs[i],
                           omega=omegas[i], StielPolar=StielPolars[i], Hvap_Tb=Hvap_Tbs[i], Vml=VolumeLiquids[i],
-                          Cpl=HeatCapacityLiquids[i], poly_fit=get_chemical_constants(CASs[i], 'SurfaceTension'))
+                          Cpl=HeatCapacityLiquids[i], exp_poly_fit_ln_tau=get_chemical_constants(CASs[i], 'SurfaceTension'))
                                              for i in range(N)]
 
         sigma_STPs = [SurfaceTensions[i].T_dependent_property(298.15) for i in range(N)]
@@ -896,13 +897,13 @@ class ChemicalConstantsPackage(object):
             return constants
 
         SublimationPressures = [SublimationPressure(CASRN=CASs[i], Tt=Tts[i], Pt=Pts[i], Hsub_t=Hsub_Tts[i],
-                                                    poly_fit=get_chemical_constants(CASs[i], 'SublimationPressure'))
+                                                    exp_poly_fit=get_chemical_constants(CASs[i], 'SublimationPressure'))
                                                     for i in range(N)]
 
         PermittivityLiquids = [PermittivityLiquid(CASRN=CASs[i], poly_fit=get_chemical_constants(CASs[i], 'PermittivityLiquid')) for i in range(N)]
 
         ViscosityLiquids = [ViscosityLiquid(CASRN=CASs[i], MW=MWs[i], Tm=Tms[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i], omega=omegas[i], Psat=VaporPressures[i],
-                                            Vml=VolumeLiquids[i], poly_fit=get_chemical_constants(CASs[i], 'ViscosityLiquid')) for i in range(N)]
+                                            Vml=VolumeLiquids[i], exp_poly_fit=get_chemical_constants(CASs[i], 'ViscosityLiquid')) for i in range(N)]
 
         ViscosityGases = [ViscosityGas(CASRN=CASs[i], MW=MWs[i], Tc=Tcs[i], Pc=Pcs[i], Zc=Zcs[i], dipole=dipoles[i],
                                        Vmg=VolumeGases[i], poly_fit=get_chemical_constants(CASs[i], 'ViscosityGas')) for i in range(N)]
@@ -1670,7 +1671,7 @@ class PropertyCorrelationsPackage(object):
         if VaporPressures is None and not skip_missing:
             VaporPressures = [VaporPressure(Tb=constants.Tbs[i], Tc=constants.Tcs[i], Pc=constants.Pcs[i],
                                             omega=constants.omegas[i], CASRN=constants.CASs[i],
-                                            poly_fit=get_chemical_constants(constants.CASs[i], 'VaporPressure'))
+                                            exp_poly_fit=get_chemical_constants(constants.CASs[i], 'VaporPressure'))
                               for i in cmps]
 
         if VolumeLiquids is None and not skip_missing:
@@ -1868,6 +1869,9 @@ for use with the :obj:`thermo.phases.IAPWS95` phase object.
 '''
 
 iapws_correlations = PropertyCorrelationsPackage(constants=iapws_constants, skip_missing=True,
+                                                 SurfaceTensions=[SurfaceTension(load_data=False, Tc=647.14, exp_poly_fit_ln_tau=(248.14999999999998, 643.9043, 647.14, 
+                                                    [-2.8494246663280267e-05, -0.0007642770215779117, -0.0087879657158058, -0.056840919106152674, -0.22915223013722677, -0.607083777358256, 
+                                                     -1.0946692428934923, -0.08982641235684152, -2.383855224250596]))],
                                                  HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18,
                                                                             4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))])
 ''':obj:`PropertyCorrelationsPackage`: IAPWS correlations and properties, [-]'''

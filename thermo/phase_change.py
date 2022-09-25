@@ -671,6 +671,8 @@ class EnthalpySublimation(TDependentProperty):
                 self.webbook_Hsub = float(miscdata.webbook_data.at[CASRN_int, 'Hsub'])
                 if self.Tm is not None:
                     T_limits[WEBBOOK_HSUB] = (self.Tm, self.Tm)
+                else:
+                    T_limits[WEBBOOK_HSUB] = (298.15, 298.15)
 
             if self.CASRN in phase_change.Hsub_data_Gharagheizi.index:
                 methods.append(GHARAGHEIZI_HSUB_298)

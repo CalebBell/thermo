@@ -67,6 +67,8 @@ __all__ = [
     'flash_mixing_remove_overlap',
     'incipient_phase_one_sided_secant',
     'flash_phase_boundary_one_sided_secant', 
+    'VLN_bubble_boolean_check', 
+    'VL_dew_boolean_check',
     'generate_phase_boundaries_naive'
 ]
 
@@ -79,10 +81,10 @@ from fluids.numerics import (UnconvergedError, trunc_exp, newton,
                              OscillationError, NotBoundedError, jacobian,
                              best_bounding_bounds, isclose, newton_system,
                              make_damp_initial, newton_minimize, one_sided_secant,
-                             root, minimize, fsolve, linspace, logspace)
+                             root, minimize, fsolve, linspace, logspace, make_max_step_initial)
 from fluids.numerics import py_solve, trunc_log, bisect
 
-from chemicals.utils import (exp, log, log10, copysign, normalize, isinf,
+from chemicals.utils import (exp, log, log10, copysign, normalize, isinf, isnan,
                              mixing_simple, property_mass_to_molar)
 from chemicals.heat_capacity import (Dadgostar_Shaw_integral, 
                                      Dadgostar_Shaw_integral_over_T, 
@@ -1694,13 +1696,101 @@ def dew_P_newton(P_guess, T, zs, liquid_phase, gas_phase,
 #    ys = [exp(lnKsP[i])*xs[i] for i in cmps]
     return lnKsP[-1], xs, zs, iterations
 
+def dew_bubble_bounded_naive(guess, fixed_val, zs, flasher, iter_var='T', fixed_var='P', V_over_F=1, #
+                             maxiter=200, xtol=1E-10, ytol=None, hot_start=None
+                             ):
+    # Bound the problem
+    if V_over_F == 1:
+        check = VL_dew_boolean_check
+        check2 = one_sided_dew_point_err
+    elif V_over_F == 0:
+        check = VLN_bubble_boolean_check
+        check2 = one_sided_bubble_point_err
+    else:
+        raise ValueError("Not implemented")
+    check2 = one_sided_sat_point_err
+    guesses = [guess, guess*.9, guess*1.1, guess*0.95, guess*1.05,
+               guess*0.8, guess*0.7, guess*1.2, guess*1.3]
+    if hot_start is not None:
+        hot_start_guess = hot_start.value(iter_var)
+        guesses = [hot_start_guess, hot_start_guess*0.99, hot_start_guess*1.01, hot_start_guess*0.95, hot_start_guess*1.05, hot_start_guess*.9, hot_start_guess*1.1] + guesses
+
+    non_phase_val, phase_val, non_phase_res, phase_res, res_pert, bounding_iter = generate_phase_boundaries_naive(flasher=flasher, zs=zs, spec_var=fixed_var, spec_val=fixed_val, iter_var=iter_var, check=check,
+                    ignore_der=True, iter_guesses=guesses)
+
+    iterations = 0
+    store = []
+    flat = -1.0
+    specs = {fixed_var: fixed_val}
+
+    def to_solve(guess):
+        nonlocal iterations
+        iterations += 1
+        specs[iter_var] = guess
+        point = flasher.flash(zs=zs, **specs)
+        store.append(point)
+        # print(guess, check(point))
+        err = check2(point)
+        return err
+
+    # import matplotlib.pyplot as plt
+    # pts = linspace(non_phase_val, phase_val, 500)
+    # vals = [to_solve(p) for p in pts]
+    # plt.plot(pts, vals, 'x')
+    # plt.show()
+
+
+    y0 = check2(phase_res)
+    y1 = check2(res_pert)
+
+    try:
+        guess = one_sided_secant(to_solve, x_flat=non_phase_val,
+                                 x0=phase_val, y_flat=flat,
+                                 x1=res_pert.value(iter_var),
+                                 y0=y0, y1=y1,
+                                 xtol=xtol, ytol=ytol, maxiter=maxiter)
+    except Exception as e:
+        check2 = one_sided_sat_point_err
+        y0 = check2(phase_res)
+        y1 = check2(res_pert)
+        guess = one_sided_secant(to_solve, x_flat=non_phase_val,
+                                 x0=phase_val, y_flat=flat,
+                                 x1=res_pert.value(iter_var),
+                                 y0=y0, y1=y1,
+                                 xtol=xtol, ytol=ytol, maxiter=maxiter)
+    for res in store[::-1]:
+        check2_val = check2(res)
+        if check2_val != flat:
+            break
+
+    return res.value(iter_var), res.liquids, res.gas, iterations+bounding_iter, check2_val
+
 
 def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
                         iter_var='T', fixed_var='P', V_over_F=1, # 1 = dew, 0 = bubble
                         maxiter=200, xtol=1E-10, comp_guess=None,
                         max_step_damping=1e5, damping=1.0,
                         trivial_solution_tol=1e-4, debug=False,
-                        method='newton', opt_kwargs=None):
+                        method='newton', opt_kwargs=None,
+                        min_iter_val=1.0, max_iter_val=1e10,
+                        hot_start=None):
+    if hot_start is not None and hot_start.phase_count == 2:
+        # To use the hot start it must be:
+        # 1) Same composition
+        # 2) At saturation
+        # 3) Two phases
+        present_phase_hot = None
+        for phase in hot_start.phases:
+            if phase.beta == 1:
+                present_phase_hot = phase
+                break
+            
+        if present_phase_hot.zs == zs:
+            other_phase = hot_start.phases[1] if present_phase_hot is hot_start.phases[0] else hot_start.phases[0]
+            comp_guess = other_phase.zs
+            guess = hot_start.value(iter_var)
+    # print('Composition guess', comp_guess)
+    # print('Variable guess', guess)
     V = None
     N = len(zs)
     cmps = range(N)
@@ -1720,10 +1810,15 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
     errs = [0.0]*size
     comp_invs = [0.0]*N
     J = [[0.0]*size for i in range(size)]
+
+    # We can arbitrarily increase this factor to weight the error of the composition higher
+    comp_factor = 10
+    comp_factor_inv = 1.0/comp_factor
+
     #J[N][N] = 0.0 as well
     JN = J[N]
     for i in cmps:
-        JN[i] = -1.0
+        JN[i] = -comp_factor
 
     s = 'dlnphis_d%s' %(iter_var)
     dlnphis_diter_var_iter = getattr(iter_phase.__class__, s)
@@ -1739,16 +1834,19 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
         iter_val = iter_vals[-1]
 
         kwargs[iter_var] = iter_val
+        # print(f'Incipient phase composition = {comp}, iteration variable {iter_val}')
         p_iter = iter_phase.to(comp, **kwargs)
         p_const = const_phase.to(zs, **kwargs)
 
         lnphis_iter = p_iter.lnphis()
         lnphis_const = p_const.lnphis()
         for i in cmps:
-            comp_invs[i] = comp_inv = 1.0/comp[i]
-            lnKs[i] = log(zs[i]*comp_inv)
-            errs[i] = lnKs[i] - lnphis_iter[i] + lnphis_const[i]
-        errs[-1] = 1.0 - sum(comp)
+            if zs[i] != 0.0:
+                # for components with no error, no need to move in any direction
+                comp_invs[i] = comp_inv = 1.0/comp[i]
+                lnKs[i] = log(zs[i]*comp_inv)
+                errs[i] = lnKs[i] - lnphis_iter[i] + lnphis_const[i]
+        errs[-1] = comp_factor - comp_factor*sum(comp)
 
         if jac:
             dlnphis_dxs = dlnphis_dzs(p_iter)
@@ -1762,34 +1860,57 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
                 Ji[i] -= comp_invs[i]
 
             info[:] = [p_iter, p_const, errs, J]
+            # print('Errs', errs)
+            # print('Jac', J)
             return errs, J
 
         return errs
+
+    low = [.0]*N
+    low.append(min_iter_val)  # guess at minimum pressure
+    high = [1.0]*N
+    high.append(max_iter_val)  # guess at maximum pressure
+
+
     damping = 1.0
     guesses = list(comp_guess)
     guesses.append(guess)
     if method == 'newton':
-        comp_val, iterations = newton_system(to_solve_comp, guesses, jac=True,
+        # numerical_j = jacobian(lambda g: to_solve_comp(g)[0], guesses, perturbation=1e-6, scalar=False)
+        # implemented_j = to_solve_comp(guesses)[1]
+        f_j, into, outof = translate_bound_f_jac(to_solve_comp, jac=True, low=low, high=high, as_np=True)
+        guesses_in = into(guesses)
+
+        # numerical_j = jacobian(lambda g: f_j(g)[0], guesses_in, perturbation=1e-6, scalar=False)
+        # implemented_j = f_j(guesses_in)[1]
+
+        comp_val, iterations = newton_system(f_j, guesses, jac=True,
                                              xtol=xtol, damping=damping,
                                              solve_func=py_solve,
+                                             line_search=True,
                                              # solve_func=lambda x, y:np.linalg.solve(x, y).tolist(),
-                                             damping_func=damping_maintain_sign)
-    elif method == 'odeint':
-        # Not even close to working
-        # equations are hard
-        from scipy.integrate import odeint
-        def fun_and_jac(x, t):
-            x, j = to_solve_comp(x.tolist() + [t])
-            return np.array(x), np.array(j)
-        def fun(x, t):
-            x, j = to_solve_comp(x.tolist() +[t])
-            return np.array(x)
-        def jac(x, t):
-            x, j = to_solve_comp(x.tolist() + [t])
-            return np.array(j)
+                                             # damping_func=damping_maintain_sign
+                                             )
 
-        ans = odeint(func=fun, y0=np.array(guesses), t=np.linspace(guess, guess*2, 5), Dfun=jac)
-        return ans
+        comp_val = outof(comp_val)
+
+
+    # elif method == 'odeint':
+    #     # Not even close to working
+    #     # equations are hard
+    #     from scipy.integrate import odeint
+    #     def fun_and_jac(x, t):
+    #         x, j = to_solve_comp(x.tolist() + [t])
+    #         return np.array(x), np.array(j)
+    #     def fun(x, t):
+    #         x, j = to_solve_comp(x.tolist() +[t])
+    #         return np.array(x)
+    #     def jac(x, t):
+    #         x, j = to_solve_comp(x.tolist() + [t])
+    #         return np.array(j)
+
+    #     ans = odeint(func=fun, y0=np.array(guesses), t=np.linspace(guess, guess*2, 5), Dfun=jac)
+    #     return ans
     else:
         if opt_kwargs is None:
             opt_kwargs = {}
@@ -1797,11 +1918,7 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
         #     x, j = to_solve_comp(x.tolist())
         #     return np.array(x), np.array(j)
         
-        low = [.0]*N
-        low.append(1.0) # guess at minimum pressure
-        high = [1.0]*N
-        high.append(1e10) # guess at maximum pressure
-        
+
         f_j, into, outof = translate_bound_f_jac(to_solve_comp, jac=True, low=low, high=high, as_np=True)
 
         ans = root(f_j, np.array(into(guesses)), jac=True, method=method, tol=xtol, **opt_kwargs)
@@ -1844,7 +1961,8 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
                                   iter_var='T', fixed_var='P', V_over_F=1,
                                   maxiter=200, xtol=1E-10, comp_guess=None,
                                   max_step_damping=.25, guess_update_frequency=1,
-                                  trivial_solution_tol=1e-7, V_diff=.00002, damping=1.0):
+                                  trivial_solution_tol=1e-7, V_diff=.00002, damping=1.0,
+                                  hot_start=None):
     # for near critical, V diff very wrong - .005 seen, both g as or both liquid
     kwargs = {fixed_var: fixed_val}
     N = len(zs)
@@ -2498,7 +2616,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
                        maxiter=200, xtol=1E-10, ytol=None, fprime=False,
                        minimum_progress=0.3, oscillation_detection=True,
                        bounded=False, min_bound=None, max_bound=None,
-                       multi_solution=False):
+                       multi_solution=False, spec_fun=None):
     r'''Solve a single-phase flash where one of `T`, `P`, or `V` are specified
     and one of `H`, `S`, `G`, `U`, or `A` are also specified. The iteration
     (changed input variable) variable must be specified as be one of `T`, `P`,
@@ -2566,8 +2684,10 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
     multiple_solutions = (fixed_var, spec) in multiple_solution_sets
 
     phase_kwargs = {fixed_var: fixed_var_val, 'zs': zs}
-    spec_fun = getattr(phase.__class__, spec)
-#    print('spec_fun', spec_fun)
+    spec_getter = getattr(phase.__class__, spec)
+    if spec_fun is not None:
+        fprime = False
+#    print('spec_getter', spec_getter)
     if fprime:
         try:
             # Gotta be a lookup by (spec, iter_var, fixed_var)
@@ -2585,9 +2705,11 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
         else:
             phase_kwargs[iter_var] = guess
             p = phase.to(**phase_kwargs)
-
-        err = spec_fun(p) - spec_val
-#        err = (spec_fun(p) - spec_val)/spec_val
+        if spec_fun is not None:
+            err = spec_getter(p) - spec_fun(p)
+        else:
+            err = spec_getter(p) - spec_val
+#        err = (spec_getter(p) - spec_val)/spec_val
         store[:] = (p, err)
         if fprime:
 #            print([err, guess, p.eos_mix.phase, der_attr])
@@ -2692,10 +2814,13 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
     # tests = logspace(log10(10.6999), log10(10.70005), 15000)
     # tests = logspace(log10(10.6), log10(10.8), 15000)
     # tests = logspace(log10(min_bound), log10(max_bound), 1500)
-    # values = [to_solve(t)[0] for t in tests]
+    # if fprime:
+    #     values = [to_solve(t)[0] for t in tests]
+    # else:
+    #     values = [to_solve(t) for t in tests]
     # values = [abs(t) for t in values]
     # import matplotlib.pyplot as plt
-    # plt.loglog(tests, values)
+    # plt.loglog(tests, values, 'x')
     # plt.show()
 
     if oscillation_detection and ytol is not None:
@@ -2753,7 +2878,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
 def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
                        spec, iter_var, constants, correlations, last_conv=None,
                        oscillation_detection=True, guess_maxiter=50,
-                       guess_xtol=1e-7, maxiter=80, xtol=1e-10):
+                       guess_xtol=1e-7, maxiter=80, xtol=1e-10, spec_fun=None):
     # TODO: replace oscillation detection with bounding parameters and translation
     # The cost should be less.
 
@@ -2817,7 +2942,7 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
     _, phase, iterations, err = TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val=fixed_var_val, spec_val=spec_val, ytol=ytol,
                                                    iter_var=iter_var, fixed_var=fixed_var, spec=spec, oscillation_detection=oscillation_detection,
                                                    minimum_progress=1e-4, maxiter=maxiter, fprime=True, xtol=xtol,
-                                                   bounded=True, min_bound=min_bound, max_bound=max_bound)
+                                                   bounded=True, min_bound=min_bound, max_bound=max_bound, spec_fun=spec_fun)
     if isinstance(phase, IAPWS95) and abs(err) > 1e-4:
         raise ValueError("Bad solution found")
     T, P = phase.T, phase.P
@@ -3392,10 +3517,13 @@ def solve_P_VF_IG_K_composition_independent(VF, P, zs, gas, liq, xtol=1e-10):
     global Ks, iterations, err
     iterations = 0
     def to_solve(T):
+        # print(T)
         global Ks, iterations, err
         iterations += 1
         dlnphis_dT_l, liquid_phis = liq.dphis_dT_at(T, P, zs, phis_also=True)
         Ks = liquid_phis
+        # print(Ks, 'Ks')
+        # print(dlnphis_dT_l, liquid_phis)
 #        l = liq.to(T=T, P=P, zs=zs)
 #        Ks = liquid_phis = l.phis()
 #        dlnphis_dT_l = l.dphis_dT()
@@ -3408,8 +3536,17 @@ def solve_P_VF_IG_K_composition_independent(VF, P, zs, gas, liq, xtol=1e-10):
             err += x1*x4
             derr += x4*(1.0 - x2*x3)*dlnphis_dT_l[i]
         return err, derr
+
+    # import matplotlib.pyplot as plt
+    # pts = linspace(1, 1000, 500)
+    # vals = [to_solve(T) for T in pts]
+    # plt.plot(pts, vals, 'x')
+    # plt.show()
+
     try:
-        T = newton(to_solve, 300.0, xtol=xtol, fprime=True, low=1e-6)
+        T = newton(to_solve, 300.0, xtol=xtol, fprime=True, low=1e-6,
+                   damping_func=make_max_step_initial(steps=3, max_step=100),
+                   bisection=True)
     except:
         try:
             T = brenth(lambda x: to_solve(x)[0], 300, 1000)
@@ -3494,7 +3631,8 @@ def sequential_substitution_2P_sat(T, P, V, zs_dry, xs_guess, ys_guess, liquid_p
 def SS_VF_simultaneous(guess, fixed_val, zs, liquid_phase, gas_phase,
                                 iter_var='T', fixed_var='P', V_over_F=1,
                                 maxiter=200, xtol=1E-10, comp_guess=None,
-                                damping=0.8, tol_eq=1e-12, update_frequency=3):
+                                damping=0.8, tol_eq=1e-12, update_frequency=3,
+                                hot_start=None):
     if comp_guess is None:
         comp_guess = zs
 
@@ -3860,7 +3998,15 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
             break
         for i in range(N):
             zs_test[i] *= sum_zs_test_inv
-
+        dead = False
+        for i in range(N):
+            if isnan(zs_test[i]):
+                dead = True
+        for i in range(N):
+            if isinf(zs_test[i]):
+                dead = True
+        if dead:
+            break
 
     if converged:
         try:
@@ -3990,8 +4136,8 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
         raise ValueError("Fixed variable must be one of `T`, `P`, `V`")
     if iter_var not in ('T', 'P', 'V'):
         raise ValueError("Iteration variable must be one of `T`, `P`, `V`")
-    if spec not in ('H', 'S', 'G', 'U', 'A'):
-        raise ValueError("Spec variable must be one of `H`, `S`, `G` `U`, `A`")
+    if spec not in ('H', 'S', 'G', 'U', 'A', 'V'):
+        raise ValueError("Spec variable must be one of `H`, `S`, `G` `U`, `A`, `V`")
 
 
     cmps = range(len(zs))
@@ -4012,7 +4158,7 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
 
     always_S = spec in ('S', 'G', 'A')
     always_H = spec in ('H', 'G', 'U', 'A')
-    always_V = spec in ('U', 'A')
+    always_V = spec in ('U', 'A', 'V')
 
 
     def H_model(T, P, xs, ys, V_over_F):
@@ -4095,6 +4241,8 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
             err = (H - P*V) - spec_val
         elif spec == 'A':
             err = (H - P*V - T*S) - spec_val
+        elif spec == 'V':
+            err = V - spec_val
 #         print(T, P, V, 'TPV', err)
         return err
 
@@ -4384,7 +4532,7 @@ phase_boundaries_U_guesses = phase_boundaries_H_guesses
 phase_boundary_perturbation_factors = [1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10]
 
 def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, check, hot_start=None,
-                                    iter_guesses=None):
+                                    iter_guesses=None, ignore_der=False):
     '''Attempt to bound the formation of an incipient phase, using a 
     variety of hardcoded options.
     '''
@@ -4420,6 +4568,7 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
 
     non_phase_vals = []
     non_phase_results = []
+    non_phase_checks = []
     
     all_phase_vals = []
     all_phase_ress = []
@@ -4437,14 +4586,15 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
             # flash failure
             continue
         check_val = check(res)
-        print(f'{iter_var}={iter_val}, check={check_val}')
-        if check_val < 0:
+        # print(f'{iter_var}={iter_val}, check={check_val}')
+        if check_val == -1.0:
             # non_phase_val = iter_val
             # non_phase_res = res
 
             non_phase_vals.append(iter_val)
             non_phase_results.append(res)
-        else:
+            non_phase_checks.append(check_val)
+        elif check_val >= 0:
             # Store all of these. May need to check each of them.
             all_phase_vals.append(iter_val)
             all_phase_ress.append(res)
@@ -4488,7 +4638,7 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
             for non_phase_val, non_phase_res in zip(non_phase_vals, non_phase_results):
                 distance = abs(non_phase_res.value(iter_var) - phase_res.value(iter_var))
 
-                if (not der_dir and non_phase_val > phase_val) or (der_dir and non_phase_val < phase_val):
+                if (not der_dir and non_phase_val > phase_val) or (der_dir and non_phase_val < phase_val) or ignore_der:
                     if distance < best_non_phase_distance:
                         best_non_phase_distance = distance
                         best_non_phase_val = non_phase_val
@@ -4633,6 +4783,39 @@ def generate_pure_phase_boolean_check(idx, required_zi=0.999, required_wi=None):
         return has_comp
     return component_check
 
+def one_sided_dew_point_err(res):
+    if res.gas is not None and res.liquid_count:
+        return res.LF
+    return -1
+
+def one_sided_bubble_point_err(res):
+    if res.gas is not None and res.liquid_count:
+        return res.VF
+    return -1
+
+def one_sided_sat_point_err(res):
+    if res.gas is not None and res.liquid_count:
+        return min(res.betas)
+    return -1
+
+def VLN_bubble_boolean_check(res):
+    if res.gas is not None and res.liquids is not None and res.phase_count >= 2 and res.solid_count == 0:
+        # we are in the two phase region
+        return min(res.LF, res.VF)
+    elif res.liquid_count == 1 and res.phase_count == 1:
+        return -1
+    return -10000
+
+def VL_dew_boolean_check(res):
+    # dew points are always two phases never two liquids
+    if res.gas is not None and res.liquids is not None and res.phase_count==2 and res.solid_count == 0:
+        # we are in the two phase region
+        return min(res.LF, res.VF)
+    elif res.gas is not None and res.phase_count == 1:
+        return -1
+    # Something else, need to avoid this
+    return -10000
+    
 def VL_boolean_check(res):
     '''Function that returns 1 if a gas is present and there is a liquid 
     present and there are only two phases, and -1 otherwise.
@@ -5004,3 +5187,33 @@ def incipient_liquid_bounded_PT_sat(flasher, specs, zs_existing, zs_added, check
     return v, attempts, iterations, multiplier
     
 
+def cricondentherm_direct_criteria(res, require_two_phase=True, require_gas=False):
+    if require_two_phase and res.phase_count != 2:
+        raise ValueError("Solution is not two phase")
+    tot = 0.0
+    
+    if require_gas or res.gas is not None:
+        dlnphis_dP_gas = res.gas.dlnphis_dP()
+    else:
+        dlnphis_dP_gas = res.lightest_liquid.dlnphis_dP()
+    dlnphis_dP_liquid = res.heaviest_liquid.dlnphis_dP()
+    xs = res.heaviest_liquid.zs
+    for i in range(res.N):
+        tot += xs[i]*(dlnphis_dP_gas[i] - dlnphis_dP_liquid[i])
+    return tot
+ 
+
+def critcondenbar_direct_criteria(res, require_two_phase=True, require_gas=False):
+    if require_two_phase and res.phase_count != 2:
+        raise ValueError("Solution is not two phase")
+    tot = 0.0
+    if require_gas or res.gas is not None:
+        dlnphis_dT_gas = res.gas.dlnphis_dT()
+        ys = res.gas.zs
+    else:
+        dlnphis_dT_gas = res.lightest_liquid.dlnphis_dT()
+        ys = res.lightest_liquid.zs
+    dlnphis_dT_liquid = res.heaviest_liquid.dlnphis_dT()
+    for i in range(res.N):
+        tot += ys[i]*(dlnphis_dT_gas[i] - dlnphis_dT_liquid[i])
+    return tot
