@@ -3,8 +3,8 @@ scipy
 numpydoc
 pint
 nbsphinx
-fluids>=1.0.10
-chemicals>=1.0.21
+fluids>=1.0.22
+chemicals>=1.1.2
 IPython
 ipython
 numba
