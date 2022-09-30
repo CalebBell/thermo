@@ -896,6 +896,9 @@ class StreamArgs(object):
         ms = self.specifications['ms']
         if ms is not None and None not in ms:
             return sum(ms)
+        ms_calc = self.ms_calc
+        if ms_calc is not None:
+            return sum(ms_calc)
         return None
 
     @property

@@ -64,10 +64,8 @@ extensions = [
 
 katex_css_path = \
     'https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css'
-katex_js_path = \
-    'https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.js'
-katex_autorender_path = \
-    'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.12.0/contrib/auto-render.min.js'
+katex_js_path = 'katex.min.js'
+katex_autorender_path = 'auto-render.min.js'    
 
 nbsphinx_requirejs_path = '' # fixes katex not working
 
