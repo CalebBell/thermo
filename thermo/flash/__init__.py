@@ -55,7 +55,7 @@ Base Flash Class
 ----------------
 .. autoclass:: Flash
    :show-inheritance:
-   :members: flash, plot_TP
+   :members: flash, plot_TP, plot_PT, plot_ternary, plot_Txy, plot_Pxy, plot_xy
    :exclude-members:
 
 
