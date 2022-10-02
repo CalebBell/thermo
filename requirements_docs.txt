@@ -13,3 +13,4 @@ sphinxcontrib-katex
 sphinx-sitemap
 sphinx==4.3.0
 matplotlib
+mpmath
