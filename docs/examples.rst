@@ -14,9 +14,12 @@ More details on the unit handling library can be found at :doc:`fluids.units <fl
     Examples/Validating Flash Calculations.ipynb
     Examples/High Molecular Weight Petroleum Pseudocomponents.ipynb
     Examples/Performing Large Numbers of Calculations with Thermo in Parallel.ipynb
+    Examples/Creating Nitrogen, oxygen, and nitrogen ternary air system phase envelope.ipynb
+    Examples/Creating Txy, Pxy, and xy diagrams for the binary water ethanol system with Modified UNIFAC (Dortmund).ipynb
 
     Examples/Chemical Thermodynamics for Process Simulation/Example 14.2 Joule-Thomson Effect.ipynb
     Examples/Chemical Thermodynamics for Process Simulation/Example 14.3 Adiabatic Compression and Expansion.ipynb
+    Examples/Chemical Thermodynamics for Process Simulation/Problem 14.01 Joule-Thomson Coefficient of Nitrogen  Using the Virial Equation and the SRK EOS.ipynb
     Examples/Chemical Thermodynamics for Process Simulation/Problem 14.02 Work and Temperature Change Upon Isentropic Compression of Oxygen.ipynb
     Examples/Chemical Thermodynamics for Process Simulation/Problem 14.03 Reversible and Isothermal Compression of Liquid Water.ipynb
     Examples/Chemical Thermodynamics for Process Simulation/Problem 14.04 Heat Effect Upon Mixing of Methane and Dodecane at Elevated Temperature and Pressure Using SRK.ipynb
