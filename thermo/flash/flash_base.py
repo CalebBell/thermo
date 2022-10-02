@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2019, 2020, 2021, 2022 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -55,7 +55,7 @@ Base Flash Class
 ----------------
 .. autoclass:: Flash
    :show-inheritance:
-   :members: flash, plot_TP
+   :members: flash, plot_TP, plot_PT, plot_ternary, plot_Txy, plot_Pxy, plot_xy
    :exclude-members:
 
 
@@ -1264,7 +1264,6 @@ class Flash(object):
         vapor fractions of 0 and 1 are plotted; additional vapor fraction
         specifications can be specified in the `branches` argument as a list.
 
-
         Parameters
         ----------
         zs : list[float]
@@ -1279,13 +1278,16 @@ class Flash(object):
         branches : list[float], optional
             Extra vapor fraction values to plot, [-]
         ignore_errors : bool, optional
-            Whether to fail on a calculation failure or to ignore the bad
+            Whether to fail on a calculation failure, or to ignore the bad
             point, [-]
         values : bool, optional
             If True, the calculated values will be returned instead of
             plotted, [-]
         show : bool, optional
-            If False, the plot will be returned instead of shown, [-]
+            If True, the plot will be created and displayed; if False and `values`
+            is False, the plot Figure object will be returned but not displayed; 
+            and if False and `values` is False, no plot will be created or shown
+            [-]
         hot : bool, optional
             Whether to restart the next flash from the previous flash or not
             (intended to speed the call when True), [-]
@@ -1294,8 +1296,14 @@ class Flash(object):
         -------
         Ts : list[float]
             Temperatures, [K]
-        P_dews, P_bubbles, branch_Ps
-
+        P_dews : list[float]
+            Bubble point pressures at the evaluated points, [Pa]
+        P_bubbles : list[float]
+            Dew point pressures at the evaluated points, [Pa]
+        branch_Ps : None or list[list[float]]
+            Pressures which yield the equilibrium vapor fractions specified;
+            formatted as [[P1_VFx, P2_VFx, ... Pn_VFx], ...,
+            [P1_VFy, P2_VFy, ... Pn_VFy]], [Pa]
         '''
         if not has_matplotlib() and not values:
             raise Exception('Optional dependency matplotlib is required for plotting')
@@ -1368,7 +1376,53 @@ class Flash(object):
 
 
     def plot_PT(self, zs, Pmin=None, Pmax=None, pts=50, branches=[],
-                ignore_errors=True, values=False, hot=False): # pragma: no cover
+                ignore_errors=True, values=False, show=True, hot=False): # pragma: no cover
+        r'''Method to create a plot of the phase envelope as can be calculated
+        from a series of pressure & vapor fraction spec flashes. By default
+        vapor fractions of 0 and 1 are plotted; additional vapor fraction
+        specifications can be specified in the `branches` argument as a list.
+
+        Parameters
+        ----------
+        zs : list[float]
+            Mole fractions of the feed, [-]
+        Pmin : float, optional
+            Minimum pressure to begin the plot, [Pa]
+        Pmax : float, optional
+            Maximum pressure to end the plot, [Pa]
+        pts : int, optional
+           The number of points to calculated for each vapor fraction value,
+           [-]
+        branches : list[float], optional
+            Extra vapor fraction values to plot, [-]
+        ignore_errors : bool, optional
+            Whether to fail on a calculation failure, or to ignore the bad
+            point, [-]
+        values : bool, optional
+            If True, the calculated values will be returned instead of
+            plotted, [-]
+        show : bool, optional
+            If True, the plot will be created and displayed; if False and `values`
+            is False, the plot Figure object will be returned but not displayed; 
+            and if False and `values` is False, no plot will be created or shown
+            [-]
+        hot : bool, optional
+            Whether to restart the next flash from the previous flash or not
+            (intended to speed the call when True), [-]
+
+        Returns
+        -------
+        Ps : list[float]
+            Pressures, [Pa]
+        T_dews : list[float]
+            Bubble point temperatures at the evaluated points, [K]
+        T_bubbles : list[float]
+            Dew point temperatures at the evaluated points, [K]
+        branch_Ts : None or list[list[float]]
+            Temperatures which yield the equilibrium vapor fractions specified;
+            formatted as [[T1_VFx, T2_VFx, ... Tn_VFx], ...,
+            [T1_VFy, T2_VFy, ... Tn_VFy]], [k]
+        '''
         if not has_matplotlib() and not values:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if not Pmin:
@@ -1419,6 +1473,7 @@ class Flash(object):
         if values:
             return Ps, T_dews, T_bubbles, branch_Ts
         import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
         plt.plot(Ps, T_dews, label='PT dew point curve')
         plt.plot(Ps, T_bubbles, label='PT bubble point curve')
         plt.xlabel('System pressure, Pa')
@@ -1428,28 +1483,54 @@ class Flash(object):
             for VF, Ts in zip(branches, branch_Ts):
                 plt.plot(Ps, Ts, label='PT curve for VF=%s'%VF)
         plt.legend(loc='best')
-        plt.show()
 
-    def plot_ternary(self, T, scale=10): # pragma: no cover
+        if show:
+            plt.show()
+        else:
+            return fig
+
+    def plot_ternary(self, T=None, P=None, scale=10): # pragma: no cover
+        r'''Method to create a ternary plot of the system at either a specified 
+        temperature or pressure. 
+
+        Parameters
+        ----------
+        T : float, optional
+            Temperature, [K]
+        P : float, optional
+            Pressure, [Pa]
+        '''
         if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
         try:
             import ternary
         except:
-            raise Exception('Optional dependency ternary is required for ternary plotting')
+            raise Exception('Optional dependency python-ternary is required for ternary plotting')
         if self.N != 3:
             raise Exception('Ternary plotting requires a mixture of exactly three components')
+        
+        is_T_spec = T is not None
+        if not is_T_spec and P is None:
+            raise ValueError("Either T or P must be specified")
+        values = []
+        
+        cond = {'T': T} if is_T_spec else {'P': P}
 
-        P_values = []
+        def dew_at_zs(zs):
+            res = self.flash(zs=zs, VF=0, **cond)
+            if is_T_spec:
+                values.append(res.P)
+                return res.P
+            else:
+                values.append(res.T)
+                return res.T
 
-        def P_dew_at_T_zs(zs):
-            res = self.flash(T=T, zs=zs, VF=0)
-            P_values.append(res.P)
-            return res.P
-
-        def P_bubble_at_T_zs(zs):
-            res = self.flash(T=T, zs=zs, VF=1)
-            return res.P
+        def bubble_at_zs(zs):
+            res = self.flash(zs=zs, VF=1, **cond)
+            if is_T_spec:
+                return res.P
+            else:
+                return res.T
 
         import matplotlib.pyplot as plt
         import matplotlib
@@ -1458,22 +1539,23 @@ class Flash(object):
 
         fig, ax = plt.subplots(1, 3, gridspec_kw = {'width_ratios':[4, 4, 1]})
         ax[0].axis("off") ; ax[1].axis("off")  ; ax[2].axis("off")
+        names = self.constants.aliases
 
-        for axis, f, i in zip(ax[0:2], [P_dew_at_T_zs, P_bubble_at_T_zs], [0, 1]):
+        for axis, f, i in zip(ax[0:2], [dew_at_zs, bubble_at_zs], [0, 1]):
             figure, tax = ternary.figure(ax=axis, scale=scale)
             figure.set_size_inches(12, 4)
             if not i:
                 tax.heatmapf(f, boundary=True, colorbar=False, vmin=0)
             else:
-                tax.heatmapf(f, boundary=True, colorbar=False, vmin=0, vmax=max(P_values))
+                tax.heatmapf(f, boundary=True, colorbar=False, vmin=0, vmax=max(values))
 
             tax.boundary(linewidth=2.0)
-            tax.left_axis_label("mole fraction $x_2$", offset=0.16, color=axes_colors['l'])
-            tax.right_axis_label("mole fraction $x_1$", offset=0.16, color=axes_colors['r'])
-            tax.bottom_axis_label("mole fraction $x_3$", offset=-0.06, color=axes_colors['b'])
+            tax.left_axis_label(f"mole fraction {names[1]}", offset=0.16, color=axes_colors['l'])
+            tax.right_axis_label(f"mole fraction {names[0]}", offset=0.16, color=axes_colors['r'])
+            tax.bottom_axis_label(f"mole fraction {names[2]}", offset=0.16, color=axes_colors['b'])
 
             tax.ticks(ticks=ticks, axis='rlb', linewidth=1, clockwise=True,
-                      axes_colors=axes_colors, offset=0.03)
+                      axes_colors=axes_colors, offset=0.03, tick_formats="%.1f")
 
             tax.gridlines(multiple=scale/10., linewidth=2,
                           horizontal_kwargs={'color':axes_colors['b']},
@@ -1481,22 +1563,62 @@ class Flash(object):
                           right_kwargs={'color':axes_colors['r']},
                           alpha=0.5)
 
-        norm = plt.Normalize(vmin=0, vmax=max(P_values))
+        norm = plt.Normalize(vmin=0, vmax=max(values))
         sm = plt.cm.ScalarMappable(cmap=plt.get_cmap('viridis'), norm=norm)
         sm._A = []
         cb = plt.colorbar(sm, ax=ax[2])
+        text = 'Pressure, [Pa]' if is_T_spec else 'Temperature, [K]'
+        cb.set_label(text, rotation=270, ha='center', va='center')
         cb.locator = matplotlib.ticker.LinearLocator(numticks=7)
         cb.formatter = matplotlib.ticker.ScalarFormatter()
         cb.formatter.set_powerlimits((0, 0))
         cb.update_ticks()
-        plt.tight_layout()
-        fig.suptitle("Bubble pressure vs composition (left) and dew pressure vs composition (right) at %s K, in Pa" %T, fontsize=14);
+        # plt.tight_layout()
+        if is_T_spec:
+            text = "Bubble pressure vs composition (left) and dew pressure vs composition (right) at %s K" %T
+        else:
+            text = "Bubble temperature vs composition (left) and dew temperature vs composition (right) at %s Pa" %P
+        fig.suptitle(text, fontsize=14);
         fig.subplots_adjust(top=0.85)
         plt.show()
 
 
-    def plot_Txy(self, P, pts=30, display=True, ignore_errors=True,
-                 values=False): # pragma: no cover
+    def plot_Txy(self, P, pts=30, ignore_errors=True, values=False, show=True): # pragma: no cover
+        r'''Method to create a Txy plot for a binary system (holding pressure 
+        constant); the mole fraction of the first species is varied.
+
+        Parameters
+        ----------
+        P : float
+            Pressure for the plot, [Pa]
+        pts : int, optional
+           The number of points to calculated for each vapor fraction value,
+           [-]
+        ignore_errors : bool, optional
+            Whether to fail on a calculation failure, or to ignore the bad
+            point, [-]
+        values : bool, optional
+            If True, the calculated values will be returned instead of
+            plotted, [-]
+        show : bool, optional
+            If True, the plot will be created and displayed; if False and `values`
+            is False, the plot Figure object will be returned but not displayed; 
+            and if False and `values` is False, no plot will be created or shown
+            [-]
+
+        Returns
+        -------
+        fig : Figure
+            Plot object, [-]
+        z1 : list[float]
+            Mole fractions of the first component at each point, [-]
+        z2 : list[float]
+            Mole fractions of the second component at each point, [-]
+        T_dews : list[float]
+            Bubble point temperatures at the evaluated points, [K]
+        T_bubbles : list[float]
+            Dew point temperatures at the evaluated points, [K]
+        '''
         if not has_matplotlib() and values is not False:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if self.N != 2:
@@ -1524,21 +1646,57 @@ class Flash(object):
                 else:
                     raise e
         if values:
-            return z1, z2, Ts_bubble, Ts_dew
+            return z1, z2, Ts_dew, Ts_bubble
         import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+        names = self.constants.aliases
         plt.title('Txy diagram at P=%s Pa' %P)
         plt.plot(z1, Ts_dew, label='Dew temperature, K')
         plt.plot(z1, Ts_bubble, label='Bubble temperature, K')
-        plt.xlabel('Mole fraction x1')
+        plt.xlabel(f'Mole fraction {names[0]}')
         plt.ylabel('System temperature, K')
         plt.legend(loc='best')
-        if display:
+        if show:
             plt.show()
         else:
-            return plt
+            return fig
 
-    def plot_Pxy(self, T, pts=30, display=True, ignore_errors=True,
-                 values=False): # pragma: no cover
+    def plot_Pxy(self, T, pts=30, ignore_errors=True, values=False, show=True): # pragma: no cover
+        r'''Method to create a Pxy plot for a binary system (holding temperature 
+        constant); the mole fraction of the first species is varied.
+
+        Parameters
+        ----------
+        T : float
+            Temperature for the plot, [K]
+        pts : int, optional
+           The number of points to calculated for each vapor fraction value,
+           [-]
+        ignore_errors : bool, optional
+            Whether to fail on a calculation failure, or to ignore the bad
+            point, [-]
+        values : bool, optional
+            If True, the calculated values will be returned instead of
+            plotted, [-]
+        show : bool, optional
+            If True, the plot will be created and displayed; if False and `values`
+            is False, the plot Figure object will be returned but not displayed; 
+            and if False and `values` is False, no plot will be created or shown
+            [-]
+
+        Returns
+        -------
+        fig : Figure
+            Plot object, [-]
+        z1 : list[float]
+            Mole fractions of the first component at each point, [-]
+        z2 : list[float]
+            Mole fractions of the second component at each point, [-]
+        P_dews : list[float]
+            Bubble point pressures at the evaluated points, [Pa]
+        P_bubbles : list[float]
+            Dew point pressures at the evaluated points, [Pa]
+        '''
         if not has_matplotlib() and values is not False:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if self.N != 2:
@@ -1547,6 +1705,7 @@ class Flash(object):
         z2 = [1.0 - zi for zi in z1]
         Ps_dew = []
         Ps_bubble = []
+        names = self.constants.aliases
 
         for i in range(pts):
             try:
@@ -1566,26 +1725,64 @@ class Flash(object):
                 else:
                     raise e
         if values:
-            return z1, z2, Ps_bubble, Ps_dew
+            return z1, z2, Ps_dew, Ps_bubble
 
         import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
         plt.title('Pxy diagram at T=%s K' %T)
-        plt.plot(z1, Ps_dew, 'x', label='Dew pressure')
-        plt.plot(z1, Ps_bubble, 'x', label='Bubble pressure')
-        plt.xlabel('Mole fraction x1')
+        plt.plot(z1, Ps_dew, label='Dew pressure')
+        plt.plot(z1, Ps_bubble, label='Bubble pressure')
+        plt.xlabel(f'Mole fraction {names[0]}')
         plt.ylabel('System pressure, Pa')
         plt.legend(loc='best')
-        if display:
+        if show:
             plt.show()
         else:
-            return plt
+            return fig
 
-    def plot_xy(self, P=None, T=None, pts=30, display=True): # pragma: no cover
+    def plot_xy(self, P=None, T=None, pts=30, ignore_errors=True, values=False, 
+                show=True, VF=0.0): # pragma: no cover
+        r'''Method to create a xy diagram for a binary system. Either a
+        temperature or pressure can be specified. By default, bubble point
+        flashes are performed; this can be varied by changing `VF`.
+
+        Parameters
+        ----------
+        P : float, optional
+            The specified pressure, [Pa]
+        T : float, optional
+            The specified temperature, [K]
+        pts : int, optional
+           The number of points in the plot [-]
+        ignore_errors : bool, optional
+            Whether to fail on a calculation failure, or to ignore the bad
+            point, [-]
+        values : bool, optional
+            If True, the calculated values will be returned instead of
+            plotted, [-]
+        show : bool, optional
+            If True, the plot will be created and displayed; if False and `values`
+            is False, the plot Figure object will be returned but not displayed; 
+            and if False and `values` is False, no plot will be created or shown
+            [-]
+
+        Returns
+        -------
+        fig : Figure
+            Plot object, [-]
+        z1 : list[float]
+            Overall mole fractions of the first component at each point, [-]
+        z2 : list[float]
+            Overall mole fractions of the second component at each point, [-]
+        x1 : list[float]
+            Liquid mole fractions of component 1 at each point, [-]
+        y1 : list[float]
+            Vapor mole fractions of component 1 at each point, [-]
+        '''
         if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
         if self.N != 2:
             raise Exception('xy plotting requires a mixture of exactly two components')
-        import matplotlib.pyplot as plt
         z1 = linspace(0.0, 1.0, pts)
         z2 = [1.0 - zi for zi in z1]
         y1_bubble = []
@@ -1593,27 +1790,35 @@ class Flash(object):
         for i in range(pts):
             try:
                 if T is not None:
-                    res = self.flash(T=T, VF=0.0, zs=[z1[i], z2[i]])
+                    res = self.flash(T=T, VF=VF, zs=[z1[i], z2[i]])
                 elif P is not None:
-                    res = self.flash(P=P, VF=0.0, zs=[z1[i], z2[i]])
+                    res = self.flash(P=P, VF=VF, zs=[z1[i], z2[i]])
                 x1_bubble.append(res.liquid_bulk.zs[0])
                 y1_bubble.append(res.gas.zs[0])
             except Exception as e:
-                print('Failed on pt %d' %(i), e)
-        if T:
+                if ignore_errors:
+                    print('Failed on pt %d' %(i), e)
+                else:
+                    raise e
+        if values:
+            return z1, z2, x1_bubble, y1_bubble
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+        if T is not None:
             plt.title('xy diagram at T=%s K (varying P)' %T)
         else:
             plt.title('xy diagram at P=%s Pa (varying T)' %P)
-        plt.xlabel('Liquid mole fraction x1')
-        plt.ylabel('Vapor mole fraction x1')
+        names = self.constants.aliases
+        plt.xlabel(f'Liquid mole fraction {names[0]}')
+        plt.ylabel(f'Vapor mole fraction {names[0]}')
         plt.plot(x1_bubble, y1_bubble, '-', label='liquid vs vapor composition')
         plt.legend(loc='best')
         plt.plot([0, 1], [0, 1], '--')
         plt.axis((0,1,0,1))
-        if display:
+        if show:
             plt.show()
         else:
-            return plt
+            return fig
 
     def V_liquids_ref(self):
         r'''Method to calculate and return the liquid reference molar volumes

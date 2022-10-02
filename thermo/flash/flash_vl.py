@@ -409,7 +409,8 @@ class FlashVL(Flash):
                                                            xtol=xtol, maxiter=dew_bubble_maxiter)
                     break
                 except Exception as e:
-                    print(e)
+                    pass
+                    # print(e)
 
         if VF == 1.0:
             dew = True
@@ -442,7 +443,7 @@ class FlashVL(Flash):
                                     comp_guess=comp_guess)
                     break
                 except Exception as e:
-                    print(e)
+                    # print(e)
                     continue
 
             guess, comp_guess, iter_phase, const_phase, iterations, err = sln
@@ -484,7 +485,8 @@ class FlashVL(Flash):
                                                            xtol=xtol, maxiter=dew_bubble_maxiter)
                     break
                 except Exception as e:
-                    print(e)
+                    pass
+                    # print(e)
 
         if VF == 1.0:
             dew = True
@@ -531,7 +533,7 @@ class FlashVL(Flash):
                     if stable:
                         break
                 except Exception as e:
-                    print(e)
+                    # print(e)
                     continue
 
             if dew:
@@ -787,7 +789,7 @@ class FlashVL(Flash):
                 assert 0.0 <= V_over_F <= 1.0
                 return g, [l], [], [V_over_F, 1.0 - V_over_F], {'iterations': iteration, 'err': err}
             except Exception as e:
-                print('FAILED from hot start TP')
+                # print('FAILED from hot start TP')
                 pass
 
 
@@ -916,7 +918,7 @@ class FlashVL(Flash):
                 )
                 break
             except Exception as e:
-                print(e)
+                # print(e)
                 pass
 
         sln = nonlin_spec_NP(guess, fixed_val, spec_val, zs, [xs, ys], [1.0-VF, VF],

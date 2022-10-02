@@ -190,7 +190,7 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
         if check_G:
             V_over_F_G = min(max(V_over_F_old, 0), 1)
             G = g.G()*V_over_F_G + (1.0 - V_over_F_G)*l.G()
-            print('new G', G, 'old G', G_old)
+            # print('new G', G, 'old G', G_old)
             if G_old is not None:
                 if G > G_old:
                     step = .5
@@ -214,7 +214,7 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
                         g = gas_phase.to(ys_new, T=T, P=P, V=V)
                         l = liquid_phase.to(xs_new, T=T, P=P, V=V)
                         G = g.G()*V_over_F_G + (1.0 - V_over_F_G)*l.G()
-                        print('step', step, G, V_over_F, Ks)
+                        # print('step', step, G, V_over_F, Ks)
                         step *= 0.5
                     # xs, ys = xs_working, ys_working
 
@@ -237,7 +237,7 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
                     g = gas_phase.to(ys_new, T=T, P=P, V=V)
                     # lnphis_g = g.lnphis()
                     # lnphis_l = l.lnphis()
-                    print('step', step, V_over_F, g.Z())
+                    # print('step', step, V_over_F, g.Z())
                     step *= 0.5
                 xs, ys = xs_new, ys_new
                 lnphis_g = g.lnphis()
@@ -529,7 +529,7 @@ def sequential_substitution_Mehra_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
             lambdas = np.abs(gis.T*gis/(gis_old.T*(gis - gis_old))).tolist() # 34, working
             lambdas = [min(max(li, lambda_min), lambda_max) for li in lambdas]
 #            print(lambdas[0:5])
-            print(lambdas)
+            # print(lambdas)
 #            print('Ks', Ks, )
 #            print(Ks[-1], phis_l[-1], phis_g[-1], lambdas[-1], gis[-1], gis_old[-1])
             Ks = [Ks[i]*(phis_l[i]/phis_g[i]/Ks[i])**lambdas[i] for i in cmps]
@@ -564,7 +564,7 @@ def sequential_substitution_Mehra_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
             # Could divide by the old Ks as well.
             err_i = Ki*xi/yi - 1.0
             err += err_i*err_i
-        print(err)
+        # print(err)
         # Accept the new compositions
         xs, ys = xs_new, ys_new
         # Check for
@@ -621,7 +621,7 @@ def sequential_substitution_GDEM3_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
         lnKs = [(l - g) for l, g in zip(lnphis_l, lnphis_g)]
         if not (iteration %acc_frequency) and iteration > acc_delay:
             dlnKs = gdem(lnKs, all_lnKs[-1], all_lnKs[-2], all_lnKs[-3])
-            print(dlnKs)
+            # print(dlnKs)
             lnKs = [lnKs[i] + dlnKs[i] for i in cmps]
 
 
@@ -1525,7 +1525,7 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
 
         if G < min_G:
             #  'phases', iter_phases
-            print('new min G', G,  'betas', iter_betas, 'comp', iter_comps)
+            # print('new min G', G,  'betas', iter_betas, 'comp', iter_comps)
             info[:] = iter_betas, iter_comps, iter_phases, G
             min_G = G
         last[:] = iter_betas, iter_comps, iter_phases, G
@@ -2043,7 +2043,7 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
                         const_phase = const_phase.to(zs=zs, **kwargs)
                         lnphis_const = const_phase.lnphis()
                         dlnphis_dvar_const = dlnphis_diter_var_const(const_phase)
-                        print('adj iter phase', split)
+                        # print('adj iter phase', split)
                     elif const_phase.eos_mix.phase == expect_phase:
                         if skip < 0:
                             skip = 4
@@ -2067,7 +2067,7 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
                         iter_phase = iter_phase.to(zs=comp_guess, **kwargs)
                         # Also need to adjust the other phase to keep it in sync
 
-                        print('adj const phase', split)
+                        # print('adj const phase', split)
 
             lnphis_iter = iter_phase.lnphis()
             dlnphis_dvar_iter = dlnphis_diter_var_iter(iter_phase)
@@ -3777,7 +3777,7 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
 
         if comp_diff < trivial_solution_tol and iteration: # Allow the first iteration to start with the same composition
             raise ValueError("Converged to trivial condition, compositions of both phases equal")
-        print('Guess: %g, Eq Err: %g, Spec Err: %g, VF: %g' %(p0, err_eq, spec_err, V_over_F))
+        # print('Guess: %g, Eq Err: %g, Spec Err: %g, VF: %g' %(p0, err_eq, spec_err, V_over_F))
 #        print(p0, err_eq, spec_err, V_over_F)
 #        print(p0, err, spec_err, xs, ys, V_over_F)
         if err_eq < tol_eq and abs(spec_err) < tol_spec_abs:
@@ -4076,7 +4076,7 @@ def TPV_double_solve_1P(zs, phase, guesses, spec_vals,
         errs = [err0, err1]
 
         cache[:] = [new, errs, jac]
-        print(kwargs, errs)
+        # print(kwargs, errs)
         return errs, jac
 
 #
@@ -4582,7 +4582,7 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
         try:
             res = flasher.flash(zs=zs, **kwargs)
         except Exception as e:
-            print('While finding boundary, flash failed with error', e)
+            # print('While finding boundary, flash failed with error', e)
             # flash failure
             continue
         check_val = check(res)
@@ -5105,9 +5105,9 @@ def incipient_phase_bounded_secant(flasher, gas, liquid, T, P, zs_existing, zs_a
         zs = normalize(ns)
         point = flasher.flash(zs=zs, T=T, P=P)
         store.append(point)
-        print(mix_ratio, 'mix_ratio')
+        # print(mix_ratio, 'mix_ratio')
         if point.phase_count == 2:
-            print('real phase', point.LF)
+            # print('real phase', point.LF)
             return point.LF
         else:
             # stability test
@@ -5119,7 +5119,7 @@ def incipient_phase_bounded_secant(flasher, gas, liquid, T, P, zs_existing, zs_a
                 dG_sln = sln[7]
                 if dG_sln < lowest_dG:
                     frac = sln[2]
-            print('pseudophase', frac)
+            # print('pseudophase', frac)
             return frac
         raise ValueError("Shold not get here")
 
