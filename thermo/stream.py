@@ -2475,7 +2475,7 @@ def mole_balance(inlets, outlets, compounds, use_mass=True):
                         ns = list(ns)
                     for i in range(len(MWs)):
                         if ns[i] is None and ms[i] is not None:
-                            ns[i] = property_mass_to_molar(ms[i], MWs[i])
+                            ns[i] = property_molar_to_mass(ms[i], MWs[i])
 
             all_out_known = False
             out_unknown_count += 1
@@ -2552,7 +2552,7 @@ def mole_balance(inlets, outlets, compounds, use_mass=True):
                 else:
                     set_to_ms = inlets[idx_missing].specifications['ms']
                     if set_to_ms is not None:
-                        set_to_ms[j] = property_molar_to_mass(-v, inlets[idx_missing].pkg.constants.MWs[j])
+                        set_to_ms[j] = property_mass_to_molar(-v, inlets[idx_missing].pkg.constants.MWs[j])
             else:
                 set_to_ns = outlets[idx_missing].specifications['ns']
                 if set_to_ns is not None:
@@ -2560,7 +2560,7 @@ def mole_balance(inlets, outlets, compounds, use_mass=True):
                 else:
                     set_to_ms = outlets[idx_missing].specifications['ms']
                     if set_to_ms is not None:
-                        set_to_ms[j] = property_molar_to_mass(v, outlets[idx_missing].pkg.constants.MWs[j])
+                        set_to_ms[j] = property_mass_to_molar(v, outlets[idx_missing].pkg.constants.MWs[j])
 
     if progress:
         return progress
