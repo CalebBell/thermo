@@ -441,6 +441,9 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
         [_ for _ in outlets]
     except TypeError:
         outlets = [outlets]
+    
+    if not inlets and not outlets:
+        return True
 
     feed_CASs = [i.CASs for i in inlets]
     product_CASs = [i.CASs for i in outlets]
@@ -497,7 +500,7 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
 
         if set(feed_cmps) != set(product_cmps):
             raise Exception('Product and feeds have different elements in them')
-        return
+        return True
 
     feed_ns = [i.n for i in inlets]
     feed_zs = [i.zs for i in inlets]
@@ -516,6 +519,8 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
         raise ValueError('Product and feeds have different components in them')
     for CAS, flow in feed_flows.items():
         assert_close(flow, product_flows[CAS], rtol=rtol, atol=atol)
+    
+    return True
 
 def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets,
                           rtol=1E-9, atol=0.0, reactive=False,

@@ -2428,7 +2428,7 @@ class EnergyStream(object):
 
 
 
-def mole_balance(inlets, outlets, compounds):
+def mole_balance(inlets, outlets, compounds, use_mass=True):
     inlet_count = len(inlets)
     outlet_count = len(outlets)
 
@@ -2446,9 +2446,13 @@ def mole_balance(inlets, outlets, compounds):
         if ns is None:
             ns = f.ns_calc
         if ns is None or None in ns:
-            all_in_known = False
-            in_unknown_count += 1
-            in_unknown_idx = i
+            if use_mass:
+                # Try to get some mole flow rates
+                a = 1
+            else:
+                all_in_known = False
+                in_unknown_count += 1
+                in_unknown_idx = i
         all_ns_in.append(ns)
 
     for i in range(outlet_count):
@@ -2460,6 +2464,19 @@ def mole_balance(inlets, outlets, compounds):
         if ns is None:
             ns = f.ns_calc
         if ns is None or None in ns:
+            if use_mass:
+                # Try to get some mole flow rates
+                ms = f.specifications['ms']
+                if ms is not None and any(v is not None for v in ms):
+                    MWs = f.pkg.constants.MWs
+                    if ns is None:
+                        ns = [None]*len(MWs)
+                    else:
+                        ns = list(ns)
+                    for i in range(len(MWs)):
+                        if ns[i] is None and ms[i] is not None:
+                            ns[i] = property_mass_to_molar(ms[i], MWs[i])
+
             all_out_known = False
             out_unknown_count += 1
             out_unknown_idx = i
@@ -2529,9 +2546,21 @@ def mole_balance(inlets, outlets, compounds):
         if missing_count == 1:
             progress = True
             if in_missing:
-                inlets[idx_missing].specifications['ns'][j] = -v
+                set_to_ns = inlets[idx_missing].specifications['ns']
+                if set_to_ns is not None:
+                    set_to_ns[j] = -v
+                else:
+                    set_to_ms = inlets[idx_missing].specifications['ms']
+                    if set_to_ms is not None:
+                        set_to_ms[j] = property_molar_to_mass(-v, inlets[idx_missing].pkg.constants.MWs[j])
             else:
-                outlets[idx_missing].specifications['ns'][j] = v
+                set_to_ns = outlets[idx_missing].specifications['ns']
+                if set_to_ns is not None:
+                    set_to_ns[j] = v
+                else:
+                    set_to_ms = outlets[idx_missing].specifications['ms']
+                    if set_to_ms is not None:
+                        set_to_ms[j] = property_molar_to_mass(v, outlets[idx_missing].pkg.constants.MWs[j])
 
     if progress:
         return progress
@@ -2592,22 +2621,23 @@ def energy_balance(inlets, outlets):
     if inlet_count == 1 and outlet_count == 1:
         # Don't need flow rates for one in one out
         fin = inlets[0]
-        try:
-            Hin = fin.H()
-        except:
-            Hin = fin.Hm_calc
         fout = outlets[0]
-        try:
-            Hout = fout.H()
-        except:
-            Hout = fout.Hm_calc
+        if not isinstance(fin, EnergyStream) and not isinstance(fout, EnergyStream):
+            try:
+                Hin = fin.H()
+            except:
+                Hin = fin.Hm_calc
+            try:
+                Hout = fout.H()
+            except:
+                Hout = fout.Hm_calc
 
-        if Hin is not None and Hout is None:
-            fout.Hm = Hin
-            return True
-        elif Hin is None and Hout is not None:
-            fin.Hm = Hout
-            return True
+            if Hin is not None and Hout is None:
+                fout.Hm = Hin
+                return True
+            elif Hin is None and Hout is not None:
+                fin.Hm = Hout
+                return True
 
     for i in range(inlet_count):
         f = inlets[i]
