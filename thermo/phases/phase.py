@@ -40,6 +40,7 @@ from chemicals.utils import (log, Cp_minus_Cv, phase_identification_parameter,
                              Joule_Thomson, speed_of_sound, dxs_to_dns, dns_to_dn_partials,
                              hash_any_primitive, isentropic_exponent_TV,
                              isentropic_exponent_PT, isentropic_exponent_PV,
+                             property_molar_to_mass,
                              )
 from chemicals.virial import B_from_Z
 from thermo.utils import POLY_FIT
@@ -3810,6 +3811,59 @@ class Phase(object):
         '''
         A_ideal_gas = self.U_ideal_gas() - self.T*self.S_ideal_gas()
         return A_ideal_gas
+
+    def H_ideal_gas_mass(self):
+        r'''Method to calculate and return the mass ideal-gas enthalpy of the phase.
+
+        Returns
+        -------
+        H_ideal_gas_mass : float
+            Ideal gas mass enthalpy, [J/(kg)]
+        '''
+        return property_molar_to_mass(self.H_ideal_gas(), self.MW())
+
+    def S_ideal_gas_mass(self):
+        r'''Method to calculate and return the mass ideal-gas entropy of the phase.
+
+        Returns
+        -------
+        S_ideal_gas_mass : float
+            Ideal gas mass entropy, [J/(kg*K)]
+        '''
+        return property_molar_to_mass(self.S_ideal_gas(), self.MW())
+
+    def G_ideal_gas_mass(self):
+        r'''Method to calculate and return the mass ideal-gas Gibbs free energy of
+        the phase.
+
+        Returns
+        -------
+        G_ideal_gas_mass : float
+            Ideal gas mass free energy, [J/(kg)]
+        '''
+        return property_molar_to_mass(self.G_ideal_gas(), self.MW())
+
+    def U_ideal_gas_mass(self):
+        r'''Method to calculate and return the mass ideal-gas internal energy of
+        the phase.
+
+        Returns
+        -------
+        U_ideal_gas_mass : float
+            Ideal gas mass internal energy, [J/(kg)]
+        '''
+        return property_molar_to_mass(self.U_ideal_gas(), self.MW())
+
+    def A_ideal_gas_mass(self):
+        r'''Method to calculate and return the mass ideal-gas Helmholtz energy of
+        the phase.
+
+        Returns
+        -------
+        A_ideal_gas_mass : float
+            Ideal gas mass Helmholtz free energy, [J/(kg)]
+        '''
+        return property_molar_to_mass(self.A_ideal_gas(), self.MW())
 
     def _set_mechanical_critical_point(self):
         zs = self.zs

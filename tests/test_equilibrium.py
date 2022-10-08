@@ -323,9 +323,33 @@ def test_two_eos_pure_flash_all_properties():
     assert_close(eq.bulk.U_ideal_gas(), -2412.161626352657, rtol=1e-12)
     assert_close1d([i.U_ideal_gas() for i in eq.phases], [-2412.161626352657]*2, rtol=1e-12)
 
+    # Same with mass
+
+    assert_close(eq.H_ideal_gas_mass(), property_molar_to_mass(eq.H_ideal_gas(), eq.MW()), rtol=1e-12)
+    assert_close(eq.bulk.H_ideal_gas_mass(), property_molar_to_mass(eq.bulk.H_ideal_gas(), eq.MW()), rtol=1e-12)
+    assert_close1d([i.H_ideal_gas_mass() for i in eq.phases], [property_molar_to_mass(p.H_ideal_gas(), p.MW()) for p in eq.phases], rtol=1e-12)
+    
+    assert_close(eq.S_ideal_gas_mass(), property_molar_to_mass(eq.S_ideal_gas(), eq.MW()), rtol=1e-12)
+    assert_close(eq.bulk.S_ideal_gas_mass(), property_molar_to_mass(eq.bulk.S_ideal_gas(), eq.MW()), rtol=1e-12)
+    assert_close1d([i.S_ideal_gas_mass() for i in eq.phases], [property_molar_to_mass(p.S_ideal_gas(), p.MW()) for p in eq.phases], rtol=1e-12)
+    
+    assert_close(eq.G_ideal_gas_mass(), property_molar_to_mass(eq.G_ideal_gas(), eq.MW()), rtol=1e-12)
+    assert_close(eq.bulk.G_ideal_gas_mass(), property_molar_to_mass(eq.bulk.G_ideal_gas(), eq.MW()), rtol=1e-12)
+    assert_close1d([i.G_ideal_gas_mass() for i in eq.phases], [property_molar_to_mass(p.G_ideal_gas(), p.MW()) for p in eq.phases], rtol=1e-12)
+    
+    assert_close(eq.U_ideal_gas_mass(), property_molar_to_mass(eq.U_ideal_gas(), eq.MW()), rtol=1e-12)
+    assert_close(eq.bulk.U_ideal_gas_mass(), property_molar_to_mass(eq.bulk.U_ideal_gas(), eq.MW()), rtol=1e-12)
+    assert_close1d([i.U_ideal_gas_mass() for i in eq.phases], [property_molar_to_mass(p.U_ideal_gas(), p.MW()) for p in eq.phases], rtol=1e-12)
+    
+    assert_close(eq.A_ideal_gas_mass(), property_molar_to_mass(eq.A_ideal_gas(), eq.MW()), rtol=1e-12)
+    assert_close(eq.bulk.A_ideal_gas_mass(), property_molar_to_mass(eq.bulk.A_ideal_gas(), eq.MW()), rtol=1e-12)
+    assert_close1d([i.A_ideal_gas_mass() for i in eq.phases], [property_molar_to_mass(p.A_ideal_gas(), p.MW()) for p in eq.phases], rtol=1e-12)
+
+
     assert_close(eq.Cp_ideal_gas_mass(), 1388.0132289428354, rtol=1e-9)
     assert_close(eq.bulk.Cp_ideal_gas_mass(), 1388.0132289428354, rtol=1e-9)
     assert_close1d([i.Cp_ideal_gas_mass() for i in eq.phases], [1388.0132289428354]*2, rtol=1e-9)
+
 
     # Ideal formation basis
 
