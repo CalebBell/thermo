@@ -93,13 +93,8 @@ class StreamArgs(object):
     flashed = False
     _state_cache = None
     
-    @property
-    def equilibrium_pkg(self):
-        if isinstance(self.pkg, Flash):
-            return True
-        return False
 
-    def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
+    def __init__(self, zs=None, ws=None, Vfls=None, Vfgs=None,
                  T=None, P=None,
                  VF=None, H=None, Hm=None, S=None, Sm=None,
                  U=None, Um=None, G=None, Gm=None, A=None, Am=None,
@@ -127,7 +122,6 @@ class StreamArgs(object):
         # If this is False, DO NOT CLEAR OTHER COMPOSITION / FLOW VARIABLES WHEN SETTING ONE!
         # This makes sense for certain cases but not all.
         self.single_composition_basis = single_composition_basis
-        self.IDs = IDs
         self.Vf_TP = Vf_TP
         self.Q_TP = Q_TP
         # pkg should be either a property package or property package constants
@@ -244,10 +238,6 @@ class StreamArgs(object):
         a_state_specs, b_state_specs = self.state_specs, b.state_specs
 
         args = {}
-        if b.IDs:
-            args['IDs'] = b.IDs
-        elif self.IDs:
-            args['IDs'] = self.IDs
 
         flow_spec = b_flow_spec if b_flow_spec else a_flow_spec
         if flow_spec:
@@ -294,15 +284,6 @@ class StreamArgs(object):
                  single_composition_basis=self.single_composition_basis, **kwargs)
 
     __copy__ = copy
-#        return self.copy()
-#        return deepcopy(self)
-
-    @property
-    def IDs(self):
-        return self.specifications['IDs']
-    @IDs.setter
-    def IDs(self, IDs):
-        self.specifications['IDs'] = IDs
 
     @property
     def energy(self):
@@ -559,7 +540,7 @@ class StreamArgs(object):
     def zs(self, arg):
         s = self.specifications
         if arg is None:
-            specifications['zs'] = arg
+            s['zs'] = arg
         else:
             # enforce a length
             if not arg:
@@ -568,7 +549,7 @@ class StreamArgs(object):
                 s['zs'] = arg
                 s['ws'] = s['Vfls'] = s['Vfgs'] = s['ns'] = s['ms'] = s['Qls'] = s['Qgs'] = None
             else:
-                specifications['zs'] = arg
+                s['zs'] = arg
 
     @property
     def zs_calc(self):
@@ -589,32 +570,35 @@ class StreamArgs(object):
             if self.single_composition_basis:
                 return normalize(ns)
 
-        if self.equilibrium_pkg:
-            ws = s['ws']
-            if ws is not None and None not in ws:
-                MWs = self.pkg.constants.MWs
-                try:
-                    return ws_to_zs(ws, MWs)
-                except ZeroDivisionError:
-                    pass
-            Vfls = s['Vfls']
-            if Vfls is not None and None not in Vfls:
-                Vms = self.pkg.V_liquids_ref()
-                try:
-                    return Vfs_to_zs(Vfls, Vms)
-                except ZeroDivisionError:
-                    pass
+        ws = s['ws']
+        if ws is not None and None not in ws:
+            MWs = self.pkg.constants.MWs
+            try:
+                return ws_to_zs(ws, MWs)
+            except ZeroDivisionError:
+                pass
+        Vfls = s['Vfls']
+        if Vfls is not None and None not in Vfls:
+            Vms = self.pkg.V_liquids_ref()
+            try:
+                return Vfs_to_zs(Vfls, Vms)
+            except ZeroDivisionError:
+                pass
 
 
-            ms = s['ms']
-            if ms is not None and None not in ms:
-                MWs = self.pkg.constants.MWs
-                return ws_to_zs(normalize(ms), MWs)
+        ms = s['ms']
+        if ms is not None and None not in ms:
+            MWs = self.pkg.constants.MWs
+            return ws_to_zs(normalize(ms), MWs)
 
-            Qls = s['Qls']
-            if Qls is not None and None not in Qls:
-                Vms = self.pkg.V_liquids_ref()
-                return Vfs_to_zs(normalize(Qls), Vms)
+        Qls = s['Qls']
+        if Qls is not None and None not in Qls:
+            Vms = self.pkg.V_liquids_ref()
+            return Vfs_to_zs(normalize(Qls), Vms)
+        
+        Qgs = s['Qgs']
+        if Qgs is not None and None not in Qgs:
+            return normalize(Qgs)
             
 
         return None
@@ -747,7 +731,11 @@ class StreamArgs(object):
         if Qls is not None and None not in Qls:
             Vms = self.pkg.V_liquids_ref()
             return [Ql/Vm for Vm, Ql in zip(Vms, Qls)]
-        
+        Qgs = s['Qgs']
+        if Qgs is not None and None not in Qgs:
+            flasher = self.pkg
+            V = R*flasher.settings.T_gas_ref/flasher.settings.P_gas_ref
+            return [Qgi/V for Qgi in Qgs]
         Q = s['Q']
         if Q is not None:
             zs = self.zs_calc
@@ -837,6 +825,15 @@ class StreamArgs(object):
                 self.specifications.update(args)
             else:
                 self.specifications['Qgs'] = arg
+
+    @property
+    def Qgs_calc(self):
+        ns_calc = self.ns_calc
+        if ns_calc is not None:
+            flasher = self.pkg
+            V = R*flasher.settings.T_gas_ref/flasher.settings.P_gas_ref
+            Qgs = [ni*V for ni in ns_calc]
+            return Qgs
 
     @property
     def m(self):
@@ -953,8 +950,6 @@ class StreamArgs(object):
                     'n': None, 'm': None, 'Q': arg}
             self.specifications.update(args)
 
-    # def __repr__(self):
-    #     return '<StreamArgs, specs %s>' % self.specifications
     
     def __repr__(self):
         s = '%s(pkg=%s, ' %(self.__class__.__name__, self.pkg is not None)
@@ -968,7 +963,6 @@ class StreamArgs(object):
     def reconcile_flows(self, n_tol=2e-15, m_tol=2e-15):
         s = self.specifications
         n, m, Q = s['n'], s['m'], s['Q']
-        overspecified = False
         if n is not None:
             if m is not None:
                 raise OverspeficiedError("Flow specification is overspecified: n=%g, m=%g" %(n, m))
@@ -1023,9 +1017,6 @@ class StreamArgs(object):
                     else:
                         ns[i] = ni
 
-
-
-
         if (zs is not None or ns is not None) and (ws is not None or ms is not None) and (m is not None or n is not None or ns is not None or ms is not None):
             # We need the MWs
             try:
@@ -1040,56 +1031,30 @@ class StreamArgs(object):
                 return False
 
 
-#            # Do our best to compute mole flows of everything
-#            if ns is not None:
-#                pass
-
 
     @property
     def composition_spec(self):
-        if self.equilibrium_pkg:
-            s = self.specifications
-            if s['zs'] is not None:
-                return 'zs', s['zs']
-            if s['ws'] is not None:
-                return 'ws', s['ws']
-            if s['Vfls'] is not None:
-                return 'Vfls', s['Vfls']
-            if s['Vfgs'] is not None:
-                return 'Vfgs', s['Vfgs']
-            if s['ns'] is not None:
-                return 'ns', s['ns']
-            if s['ms'] is not None:
-                return 'ms', s['ms']
-            if s['Qls'] is not None:
-                return 'Qls', s['Qls']
-            if s['Qgs'] is not None:
-                return 'Qgs', s['Qgs']
-        else:
-            IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=self.IDs,
-                                    zs=self.zs, ws=self.ws, Vfls=self.Vfls,
-                                    Vfgs=self.Vfgs, ignore_exceptions=True)
-
-            if zs is not None:
-                return 'zs', zs
-            elif ws is not None:
-                return 'ws', ws
-            elif Vfls is not None:
-                return 'Vfls', Vfls
-            elif Vfgs is not None:
-                return 'Vfgs', Vfgs
-            elif self.ns is not None:
-                return 'ns', self.ns
-            elif self.ms is not None:
-                return 'ms', self.ms
-            elif self.Qls is not None:
-                return 'Qls', self.Qls
-            elif self.Qgs is not None:
-                return 'Qgs', self.Qgs
+        s = self.specifications
+        if s['zs'] is not None:
+            return 'zs', s['zs']
+        if s['ws'] is not None:
+            return 'ws', s['ws']
+        if s['Vfls'] is not None:
+            return 'Vfls', s['Vfls']
+        if s['Vfgs'] is not None:
+            return 'Vfgs', s['Vfgs']
+        if s['ns'] is not None:
+            return 'ns', s['ns']
+        if s['ms'] is not None:
+            return 'ms', s['ms']
+        if s['Qls'] is not None:
+            return 'Qls', s['Qls']
+        if s['Qgs'] is not None:
+            return 'Qgs', s['Qgs']
 
     @property
     def clean(self):
-        '''If no variables (other than IDs) have been specified, return True,
+        '''If no variables have been specified, return True,
         otherwise return False.
         '''
         if self.composition_specified or self.state_specs or self.flow_specified:
@@ -1098,43 +1063,23 @@ class StreamArgs(object):
 
 
     @property
-    def specified_composition_vars(self):
-        IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=self.IDs,
-                                zs=self.zs, ws=self.ws, Vfls=self.Vfls,
-                                Vfgs=self.Vfgs, ignore_exceptions=True)
-
-        return sum(i is not None for i in (zs, ws, Vfls, Vfgs, self.ns, self.ms, self.Qls, self.Qgs))
-
-    @property
     def composition_specified(self):
-        if self.equilibrium_pkg:
-            s = self.specifications
-            if s['zs'] is not None and None not in s['zs'] and sum(s['zs']) != 0.0:
-                return True
-            if s['ws'] is not None and None not in s['ws'] and sum(s['ws']) != 0.0:
-                return True
-            if s['Vfls'] is not None and None not in s['Vfls'] and sum(s['Vfls']) != 0.0:
-                return True
-            if s['Vfgs'] is not None and None not in s['Vfgs'] and sum(s['Vfgs']) != 0.0:
-                return True
-            if s['ns'] is not None and None not in s['ns']:
-                return True
-            if s['ms'] is not None and None not in s['ms']:
-                return True
-            if s['Qls'] is not None and None not in s['Qls']:
-                return True
-            if s['Qgs'] is not None and None not in s['Qgs']:
-                return True
-            return False
-        try:
-            IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=self.IDs,
-                                    zs=self.zs, ws=self.ws, Vfls=self.Vfls,
-                                    Vfgs=self.Vfgs, ignore_exceptions=True)
-        except:
-            return False
-
-        specified_vals = (i is not None for i in (zs, ws, Vfls, Vfgs, self.ns, self.ms, self.Qls, self.Qgs))
-        if any(specified_vals) and IDs:
+        s = self.specifications
+        if s['zs'] is not None and None not in s['zs'] and sum(s['zs']) != 0.0:
+            return True
+        if s['ws'] is not None and None not in s['ws'] and sum(s['ws']) != 0.0:
+            return True
+        if s['Vfls'] is not None and None not in s['Vfls'] and sum(s['Vfls']) != 0.0:
+            return True
+        if s['Vfgs'] is not None and None not in s['Vfgs'] and sum(s['Vfgs']) != 0.0:
+            return True
+        if s['ns'] is not None and None not in s['ns']:
+            return True
+        if s['ms'] is not None and None not in s['ms']:
+            return True
+        if s['Qls'] is not None and None not in s['Qls']:
+            return True
+        if s['Qgs'] is not None and None not in s['Qgs']:
             return True
         return False
 
@@ -1309,61 +1254,49 @@ class StreamArgs(object):
 
     @property
     def stream(self):
-        if self.equilibrium_pkg:
-            if self.flow_specified and self.composition_specified and self.state_specified:
-                s = self.specifications.copy()
-                del s['IDs']
-                if 'S' in s:
-                    if s['S'] is not None:
-                        s['S_mass'] = s['S']
-                    del s['S']
-                if 'Sm' in s:
-                    if s['Sm'] is not None:
-                        s['S'] = s['Sm']
-                    del s['Sm']
-                if 'H' in s:
-                    if s['H'] is not None:
-                        s['H_mass'] = s['H']
-                    del s['H']
-                if 'Hm' in s:
-                    if s['Hm'] is not None:
-                        s['H'] = s['Hm']
-                    del s['Hm']
-                if 'G' in s:
-                    if s['G'] is not None:
-                        s['G_mass'] = s['G']
-                    del s['G']
-                if 'Gm' in s:
-                    if s['Gm'] is not None:
-                        s['G'] = s['Gm']
-                    del s['Gm']
-                if 'U' in s:
-                    if s['U'] is not None:
-                        s['U_mass'] = s['U']
-                    del s['U']
-                if 'Um' in s:
-                    if s['Um'] is not None:
-                        s['U'] = s['Um']
-                    del s['Um']
-                if 'A' in s:
-                    if s['A'] is not None:
-                        s['A_mass'] = s['A']
-                    del s['A']
-                if 'Am' in s:
-                    if s['Am'] is not None:
-                        s['A'] = s['Am']
-                    del s['Am']
-                return EquilibriumStream(self.property_package, **s)
-        else:
-            if self.IDs and self.composition_specified and self.state_specified and self.flow_specified:
-                return Stream(IDs=self.IDs, zs=self.zs, ws=self.ws, Vfls=self.Vfls, Vfgs=self.Vfgs,
-                     ns=self.ns, ms=self.ms, Qls=self.Qls, Qgs=self.Qgs,
-                     n=self.n, m=self.m, Q=self.Q,
-                     T=self.T, P=self.P, VF=self.VF, H=self.H, S=self.S,
-                     Hm=self.Hm, Sm=self.Sm,
-                     Vf_TP=self.Vf_TP, Q_TP=self.Q_TP, energy=self.energy,
-                     pkg=self.property_package)
-
+        if self.flow_specified and self.composition_specified and self.state_specified:
+            s = self.specifications.copy()
+            if 'S' in s:
+                if s['S'] is not None:
+                    s['S_mass'] = s['S']
+                del s['S']
+            if 'Sm' in s:
+                if s['Sm'] is not None:
+                    s['S'] = s['Sm']
+                del s['Sm']
+            if 'H' in s:
+                if s['H'] is not None:
+                    s['H_mass'] = s['H']
+                del s['H']
+            if 'Hm' in s:
+                if s['Hm'] is not None:
+                    s['H'] = s['Hm']
+                del s['Hm']
+            if 'G' in s:
+                if s['G'] is not None:
+                    s['G_mass'] = s['G']
+                del s['G']
+            if 'Gm' in s:
+                if s['Gm'] is not None:
+                    s['G'] = s['Gm']
+                del s['Gm']
+            if 'U' in s:
+                if s['U'] is not None:
+                    s['U_mass'] = s['U']
+                del s['U']
+            if 'Um' in s:
+                if s['Um'] is not None:
+                    s['U'] = s['Um']
+                del s['Um']
+            if 'A' in s:
+                if s['A'] is not None:
+                    s['A_mass'] = s['A']
+                del s['A']
+            if 'Am' in s:
+                if s['Am'] is not None:
+                    s['A'] = s['Am']
+                del s['Am']
+            return EquilibriumStream(self.property_package, **s)
     def flash_state(self, hot_start=None):
         if self.composition_specified and self.state_specified:
             s = self.specifications
@@ -1437,13 +1370,7 @@ class StreamArgs(object):
             return m
     @property
     def mixture(self):
-        if self.equilibrium_pkg:
-            return self.flash_state()
-        else:
-            if self.IDs and self.composition_specified and self.state_specified:
-                return Mixture(IDs=self.IDs, zs=self.zs, ws=self.ws, Vfls=self.Vfls, Vfgs=self.Vfgs,
-                     T=self.T, P=self.P, VF=self.VF, H=self.H, S=self.S, Hm=self.Hm, Sm=self.Sm,
-                     Vf_TP=self.Vf_TP, pkg=self.property_package)
+        return self.flash_state()
 
 class Stream(Mixture):
     '''Creates a Stream object which is useful for modeling mass and energy
@@ -2133,6 +2060,7 @@ class EquilibriumStream(EquilibriumState):
                 Vfls = normalize(Qls)
             if Vf_TP is not None and Vf_TP != (None, None):
                 VolumeObjects = flasher.properties.VolumeLiquids
+                T_vf, P_vf = Vf_TP
                 Vms_TP = [i(T_vf, P_vf) for i in VolumeObjects]
             else:
                 Vms_TP = constants.Vml_STPs
@@ -2143,8 +2071,9 @@ class EquilibriumStream(EquilibriumState):
             zs = Vfgs
 
         MW = 0.0
+        N = constants.N
         MWs = constants.MWs
-        for i in range(len(zs)):
+        for i in range(N):
             MW  += zs[i]*MWs[i]
         self._MW = MW
         MW_inv = 1.0/MW
@@ -2204,9 +2133,10 @@ class EquilibriumStream(EquilibriumState):
                 raise Exception('Molar volume could not be calculated to determine the flow rate of the stream.')
         elif Qls is not None:
             n = 0.0
+            Vms = flasher.V_liquids_ref()
             try:
-                for i in self.cmps:
-                    n += Qls[i]/Vms_TP[i]
+                for i in range(N):
+                    n += Qls[i]/Vms[i]
             except:
                 raise Exception('Liquid molar volume could not be calculated to determine the flow rate of the stream.')
         elif Qgs is not None:
@@ -2249,6 +2179,10 @@ class EquilibriumStream(EquilibriumState):
     @property
     def ms_calc(self):
         return self.ms
+
+    @property
+    def m_calc(self):
+        return self.m
 
     @property
     def n_calc(self):
@@ -2427,8 +2361,42 @@ class EnergyStream(object):
     energy_calc = energy
 
 
+def _mole_balance_process_ns(f, ns, compounds, use_mass=True, use_volume=True):
+    if use_mass:
+        ms = f.specifications['ms']
+        if ms is not None and any(v is not None for v in ms):
+            MWs = f.pkg.constants.MWs
+            if ns is None:
+                ns = [None]*compounds
+            else:
+                ns = list(ns)
+            for i in range(compounds):
+                if ns[i] is None and ms[i] is not None:
+                    ns[i] = property_molar_to_mass(ms[i], MWs[i])
+    if use_volume:
+        Qls = f.specifications['Qls']
+        if Qls is not None and any(v is not None for v in Qls):
+            Vms = f.pkg.V_liquids_ref()
+            if ns is None:
+                ns = [None]*compounds
+            else:
+                ns = list(ns)
+            for i in range(compounds):
+                if ns[i] is None and Qls[i] is not None:
+                    ns[i] = Qls[i]/Vms[i]
+        Qgs = f.specifications['Qgs']
+        if Qgs is not None and any(v is not None for v in Qgs):
+            Vm = R*f.pkg.settings.T_gas_ref/f.pkg.settings.P_gas_ref
+            if ns is None:
+                ns = [None]*compounds
+            else:
+                ns = list(ns)
+            for i in range(compounds):
+                if ns[i] is None and Qgs[i] is not None:
+                    ns[i] = Qgs[i]/Vm
+    return ns
 
-def mole_balance(inlets, outlets, compounds, use_mass=True):
+def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
     inlet_count = len(inlets)
     outlet_count = len(outlets)
 
@@ -2443,16 +2411,14 @@ def mole_balance(inlets, outlets, compounds, use_mass=True):
             ns = f.specifications['ns']
         except:
             ns = f.ns
-        if ns is None:
+        if ns is None and use_mass:
             ns = f.ns_calc
         if ns is None or None in ns:
             if use_mass:
-                # Try to get some mole flow rates
-                a = 1
-            else:
-                all_in_known = False
-                in_unknown_count += 1
-                in_unknown_idx = i
+                ns = _mole_balance_process_ns(f, ns, compounds, use_mass, use_volume)
+            all_in_known = False
+            in_unknown_count += 1
+            in_unknown_idx = i
         all_ns_in.append(ns)
 
     for i in range(outlet_count):
@@ -2461,22 +2427,11 @@ def mole_balance(inlets, outlets, compounds, use_mass=True):
             ns = f.specifications['ns']
         except:
             ns = f.ns
-        if ns is None:
+        if ns is None and use_mass:
             ns = f.ns_calc
         if ns is None or None in ns:
             if use_mass:
-                # Try to get some mole flow rates
-                ms = f.specifications['ms']
-                if ms is not None and any(v is not None for v in ms):
-                    MWs = f.pkg.constants.MWs
-                    if ns is None:
-                        ns = [None]*len(MWs)
-                    else:
-                        ns = list(ns)
-                    for i in range(len(MWs)):
-                        if ns[i] is None and ms[i] is not None:
-                            ns[i] = property_molar_to_mass(ms[i], MWs[i])
-
+                ns = _mole_balance_process_ns(f, ns, compounds, use_mass, use_volume)
             all_out_known = False
             out_unknown_count += 1
             out_unknown_idx = i
@@ -2553,6 +2508,16 @@ def mole_balance(inlets, outlets, compounds, use_mass=True):
                     set_to_ms = inlets[idx_missing].specifications['ms']
                     if set_to_ms is not None:
                         set_to_ms[j] = property_mass_to_molar(-v, inlets[idx_missing].pkg.constants.MWs[j])
+                    else:
+                        set_to_Qls = inlets[idx_missing].specifications['Qls']
+                        if set_to_Qls is not None:
+                            Vms = inlets[idx_missing].pkg.V_liquids_ref()
+                            set_to_Qls[j] = -v*Vms[j]
+                        else:
+                            set_to_Qgs = inlets[idx_missing].specifications['Qgs']
+                            if set_to_Qgs is not None:
+                                Vm = R*inlets[idx_missing].pkg.settings.T_gas_ref/inlets[idx_missing].pkg.settings.P_gas_ref
+                                set_to_Qgs[j] = -v*Vm
             else:
                 set_to_ns = outlets[idx_missing].specifications['ns']
                 if set_to_ns is not None:
@@ -2561,7 +2526,16 @@ def mole_balance(inlets, outlets, compounds, use_mass=True):
                     set_to_ms = outlets[idx_missing].specifications['ms']
                     if set_to_ms is not None:
                         set_to_ms[j] = property_mass_to_molar(v, outlets[idx_missing].pkg.constants.MWs[j])
-
+                    else:
+                        set_to_Qls = outlets[idx_missing].specifications['Qls']
+                        if set_to_Qls is not None:
+                            Vms = outlets[idx_missing].pkg.V_liquids_ref()
+                            set_to_Qls[j] = v*Vms[j]
+                        else:
+                            set_to_Qgs = outlets[idx_missing].specifications['Qgs']
+                            if set_to_Qgs is not None:
+                                Vm = R*outlets[idx_missing].pkg.settings.T_gas_ref/outlets[idx_missing].pkg.settings.P_gas_ref
+                                set_to_Qgs[j] = v*Vm
     if progress:
         return progress
 
