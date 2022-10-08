@@ -55,7 +55,7 @@ class StreamArgs(object):
                  
                  ns=None, ms=None, Qls=None, Qgs=None, m=None, n=None, Q=None,
                  energy=None,
-                 Vf_TP=(None, None), Q_TP=(None, None, ''), pkg=None,
+                 Vf_TP=(None, None), Q_TP=(None, None, ''), flasher=None,
                  single_composition_basis=True):
         self.specifications = s = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None,
                        'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
@@ -77,8 +77,7 @@ class StreamArgs(object):
         self.single_composition_basis = single_composition_basis
         self.Vf_TP = Vf_TP
         self.Q_TP = Q_TP
-        # pkg should be either a property package or property package constants
-        self.pkg = pkg
+        self.flasher = flasher
 
         composition_specs = state_specs = flow_specs = 0
         if zs is not None:
@@ -233,7 +232,7 @@ class StreamArgs(object):
             kwargs['Vfgs'] = [i for i in kwargs['Vfgs']]
         if kwargs['Vfls'] is not None:
             kwargs['Vfls'] = [i for i in kwargs['Vfls']]
-        return StreamArgs(Vf_TP=self.Vf_TP, Q_TP=self.Q_TP, pkg=self.pkg,
+        return StreamArgs(Vf_TP=self.Vf_TP, Q_TP=self.Q_TP, flasher=self.flasher,
                  single_composition_basis=self.single_composition_basis, **kwargs)
 
     __copy__ = copy
@@ -534,14 +533,14 @@ class StreamArgs(object):
 
         ws = s['ws']
         if ws is not None and None not in ws:
-            MWs = self.pkg.constants.MWs
+            MWs = self.flasher.constants.MWs
             try:
                 return ws_to_zs(ws, MWs)
             except ZeroDivisionError:
                 pass
         Vfls = s['Vfls']
         if Vfls is not None and None not in Vfls:
-            Vms = self.pkg.V_liquids_ref()
+            Vms = self.flasher.V_liquids_ref()
             try:
                 return Vfs_to_zs(Vfls, Vms)
             except ZeroDivisionError:
@@ -550,12 +549,12 @@ class StreamArgs(object):
 
         ms = s['ms']
         if ms is not None and None not in ms:
-            MWs = self.pkg.constants.MWs
+            MWs = self.flasher.constants.MWs
             return ws_to_zs(normalize(ms), MWs)
 
         Qls = s['Qls']
         if Qls is not None and None not in Qls:
-            Vms = self.pkg.V_liquids_ref()
+            Vms = self.flasher.V_liquids_ref()
             return Vfs_to_zs(normalize(Qls), Vms)
         
         Qgs = s['Qgs']
@@ -590,7 +589,7 @@ class StreamArgs(object):
             return ws
         zs = self.zs_calc
         if zs is not None:
-            MWs = self.pkg.constants.MWs
+            MWs = self.flasher.constants.MWs
             return zs_to_ws(zs, MWs)
 
     @property
@@ -619,7 +618,7 @@ class StreamArgs(object):
             return Vfls
         zs = self.zs_calc
         if zs is not None:
-            Vms = self.pkg.V_liquids_ref()
+            Vms = self.flasher.V_liquids_ref()
             return zs_to_Vfs(zs, Vms)
     
 
@@ -675,7 +674,7 @@ class StreamArgs(object):
         if m is not None:
             zs = self.zs_calc
             try:
-                MWs = self.pkg.constants.MWs
+                MWs = self.flasher.constants.MWs
                 MW = mixing_simple(MWs, zs)
                 n = property_molar_to_mass(m, MW)
                 return [n*zi for zi in zs]
@@ -685,17 +684,17 @@ class StreamArgs(object):
         if ms is not None and None not in ms:
             zs = self.zs_calc
             m = sum(ms)
-            MWs = self.pkg.constants.MWs
+            MWs = self.flasher.constants.MWs
             MW = mixing_simple(MWs, zs)
             n = m*1000.0/MW
             return [n*zi for zi in zs]
         Qls = s['Qls']
         if Qls is not None and None not in Qls:
-            Vms = self.pkg.V_liquids_ref()
+            Vms = self.flasher.V_liquids_ref()
             return [Ql/Vm for Vm, Ql in zip(Vms, Qls)]
         Qgs = s['Qgs']
         if Qgs is not None and None not in Qgs:
-            flasher = self.pkg
+            flasher = self.flasher
             V = R*flasher.settings.T_gas_ref/flasher.settings.P_gas_ref
             return [Qgi/V for Qgi in Qgs]
         Q = s['Q']
@@ -706,12 +705,12 @@ class StreamArgs(object):
                 if Q_TP is not None:
                     if len(Q_TP) == 2 or (len(Q_TP) == 3 and not Q_TP[-1]):
                         # Calculate the volume via the property package
-                        expensive_flash = self.pkg.flash(zs=zs, T=Q_TP[0], P=Q_TP[1])
+                        expensive_flash = self.flasher.flash(zs=zs, T=Q_TP[0], P=Q_TP[1])
                         V = expensive_flash.V()
                     if Q_TP[-1] == 'l':
-                        V = self.pkg.liquids[0].to(T=Q_TP[0], P=Q_TP[1], zs=zs).V()
+                        V = self.flasher.liquids[0].to(T=Q_TP[0], P=Q_TP[1], zs=zs).V()
                     elif Q_TP[-1] == 'g':
-                        V = self.pkg.gas.to(T=Q_TP[0], P=Q_TP[1], zs=zs).V()
+                        V = self.flasher.gas.to(T=Q_TP[0], P=Q_TP[1], zs=zs).V()
                 else:
                     mixture = self.mixture
                     if mixture is not None:
@@ -745,7 +744,7 @@ class StreamArgs(object):
             MW = self.MW
             m = property_mass_to_molar(n, MW)
             MW_inv = 1.0/MW
-            MWs = self.pkg.constants.MWs
+            MWs = self.flasher.constants.MWs
             ws = [zi*MWi*MW_inv for zi, MWi in zip(zs, MWs)]
             return [m*wi for wi in ws]
 
@@ -768,7 +767,7 @@ class StreamArgs(object):
     def Qls_calc(self):
         ns_calc = self.ns_calc
         if ns_calc is not None:
-            Vms = self.pkg.V_liquids_ref()
+            Vms = self.flasher.V_liquids_ref()
             Qls = [ni*Vm for ni, Vm in zip(ns_calc, Vms)]
             return Qls
 
@@ -792,7 +791,7 @@ class StreamArgs(object):
     def Qgs_calc(self):
         ns_calc = self.ns_calc
         if ns_calc is not None:
-            flasher = self.pkg
+            flasher = self.flasher
             V = R*flasher.settings.T_gas_ref/flasher.settings.P_gas_ref
             Qgs = [ni*V for ni in ns_calc]
             return Qgs
@@ -840,7 +839,7 @@ class StreamArgs(object):
     @property
     def MW(self):
         try:
-            MWs = self.pkg.constants.MWs
+            MWs = self.flasher.constants.MWs
             zs = self.zs_calc
             MW = mixing_simple(MWs, zs)
             return MW
@@ -914,7 +913,7 @@ class StreamArgs(object):
 
     
     def __repr__(self):
-        s = '%s(pkg=%s, ' %(self.__class__.__name__, self.pkg is not None)
+        s = '%s(flasher=%s, ' %(self.__class__.__name__, self.flasher is not None)
         for k, v in self.specifications.items():
             if v is not None:
                 s += '%s=%s, ' %(k, repr(v))
@@ -968,7 +967,7 @@ class StreamArgs(object):
         if ns is not None and ms is not None:
             try:
             # Convert any ms to ns
-                MWs = self.pkg.constants.MWs
+                MWs = self.flasher.constants.MWs
             except:
                 return False
             for i in range(len(ms)):
@@ -982,7 +981,7 @@ class StreamArgs(object):
         if (zs is not None or ns is not None) and (ws is not None or ms is not None) and (m is not None or n is not None or ns is not None or ms is not None):
             # We need the MWs
             try:
-                MWs = self.pkg.constants.MWs
+                MWs = self.flasher.constants.MWs
                 if zs is None:
                     zs = [None]*len(MWs)
                 if ws is None:
@@ -1211,14 +1210,14 @@ class StreamArgs(object):
     def flash(self, hot_start=None, existing_flash=None):
 #        if self.flow_specified and self.composition_specified and self.state_specified:
         s = self.specifications
-        return EquilibriumStream(self.pkg, hot_start=hot_start,
+        return EquilibriumStream(self.flasher, hot_start=hot_start,
                                  existing_flash=existing_flash, **s)
 
     @property
     def stream(self):
         if self.flow_specified and self.composition_specified and self.state_specified:
             s = self.specifications.copy()
-            return EquilibriumStream(self.pkg, **s)
+            return EquilibriumStream(self.flasher, **s)
     def flash_state(self, hot_start=None):
         if self.composition_specified and self.state_specified:
             s = self.specifications
@@ -1280,7 +1279,7 @@ class StreamArgs(object):
                 except:
                     pass
 
-            m = self.pkg.flash(T=T, P=P, zs=zs, H=H_flash, H_mass=s['H_mass'],
+            m = self.flasher.flash(T=T, P=P, zs=zs, H=H_flash, H_mass=s['H_mass'],
                                             S=s['S'], S_mass=s['S_mass'],
                                             U=s['U'], U_mass=s['U_mass'],
                                             G=s['G'], G_mass=s['G_mass'],
@@ -2270,7 +2269,7 @@ def _mole_balance_process_ns(f, ns, compounds, use_mass=True, use_volume=True):
     if use_mass:
         ms = f.specifications['ms']
         if ms is not None and any(v is not None for v in ms):
-            MWs = f.pkg.constants.MWs
+            MWs = f.flasher.constants.MWs
             if ns is None:
                 ns = [None]*compounds
             else:
@@ -2281,7 +2280,7 @@ def _mole_balance_process_ns(f, ns, compounds, use_mass=True, use_volume=True):
     if use_volume:
         Qls = f.specifications['Qls']
         if Qls is not None and any(v is not None for v in Qls):
-            Vms = f.pkg.V_liquids_ref()
+            Vms = f.flasher.V_liquids_ref()
             if ns is None:
                 ns = [None]*compounds
             else:
@@ -2291,7 +2290,7 @@ def _mole_balance_process_ns(f, ns, compounds, use_mass=True, use_volume=True):
                     ns[i] = Qls[i]/Vms[i]
         Qgs = f.specifications['Qgs']
         if Qgs is not None and any(v is not None for v in Qgs):
-            Vm = R*f.pkg.settings.T_gas_ref/f.pkg.settings.P_gas_ref
+            Vm = R*f.flasher.settings.T_gas_ref/f.flasher.settings.P_gas_ref
             if ns is None:
                 ns = [None]*compounds
             else:
@@ -2412,16 +2411,16 @@ def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
                 else:
                     set_to_ms = inlets[idx_missing].specifications['ms']
                     if set_to_ms is not None:
-                        set_to_ms[j] = property_mass_to_molar(-v, inlets[idx_missing].pkg.constants.MWs[j])
+                        set_to_ms[j] = property_mass_to_molar(-v, inlets[idx_missing].flasher.constants.MWs[j])
                     else:
                         set_to_Qls = inlets[idx_missing].specifications['Qls']
                         if set_to_Qls is not None:
-                            Vms = inlets[idx_missing].pkg.V_liquids_ref()
+                            Vms = inlets[idx_missing].flasher.V_liquids_ref()
                             set_to_Qls[j] = -v*Vms[j]
                         else:
                             set_to_Qgs = inlets[idx_missing].specifications['Qgs']
                             if set_to_Qgs is not None:
-                                Vm = R*inlets[idx_missing].pkg.settings.T_gas_ref/inlets[idx_missing].pkg.settings.P_gas_ref
+                                Vm = R*inlets[idx_missing].flasher.settings.T_gas_ref/inlets[idx_missing].flasher.settings.P_gas_ref
                                 set_to_Qgs[j] = -v*Vm
             else:
                 set_to_ns = outlets[idx_missing].specifications['ns']
@@ -2430,16 +2429,16 @@ def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
                 else:
                     set_to_ms = outlets[idx_missing].specifications['ms']
                     if set_to_ms is not None:
-                        set_to_ms[j] = property_mass_to_molar(v, outlets[idx_missing].pkg.constants.MWs[j])
+                        set_to_ms[j] = property_mass_to_molar(v, outlets[idx_missing].flasher.constants.MWs[j])
                     else:
                         set_to_Qls = outlets[idx_missing].specifications['Qls']
                         if set_to_Qls is not None:
-                            Vms = outlets[idx_missing].pkg.V_liquids_ref()
+                            Vms = outlets[idx_missing].flasher.V_liquids_ref()
                             set_to_Qls[j] = v*Vms[j]
                         else:
                             set_to_Qgs = outlets[idx_missing].specifications['Qgs']
                             if set_to_Qgs is not None:
-                                Vm = R*outlets[idx_missing].pkg.settings.T_gas_ref/outlets[idx_missing].pkg.settings.P_gas_ref
+                                Vm = R*outlets[idx_missing].flasher.settings.T_gas_ref/outlets[idx_missing].flasher.settings.P_gas_ref
                                 set_to_Qgs[j] = v*Vm
     if progress:
         return progress

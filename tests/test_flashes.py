@@ -836,40 +836,40 @@ def test_liquid_ref_volumes_available():
 
 
     # Stream args tests
-    stream = StreamArgs(pkg=flasher)
+    stream = StreamArgs(flasher=flasher)
     stream.Vfls = [.3, .7]
     assert stream.ns_calc is None
     assert stream.ms_calc is None
     assert stream.Qls_calc is None
     assert_close1d(stream.zs_calc, [0.5807907240833159, 0.4192092759166841])
     
-    stream = StreamArgs(pkg=flasher)
+    stream = StreamArgs(flasher=flasher)
     stream.ws = [.5, .5]
     assert stream.ns_calc is None
     assert stream.ms_calc is None
     assert stream.Qls_calc is None
     assert_close1d(stream.zs_calc, [0.7188789914193495, 0.2811210085806504])
 
-    stream = StreamArgs(pkg=flasher)
+    stream = StreamArgs(flasher=flasher)
     stream.zs = [.5, .5]
     assert stream.ns_calc is None
     assert stream.ms_calc is None
     assert stream.Qls_calc is None
     assert_close1d(stream.zs_calc, [0.5, 0.5])
 
-    stream = StreamArgs(pkg=flasher)
+    stream = StreamArgs(flasher=flasher)
     stream.ns = [10, 10]
     assert_close1d(stream.zs_calc, [0.5, 0.5])
     assert_close1d(stream.ns_calc, [10, 10])
     
-    stream = StreamArgs(pkg=flasher)
+    stream = StreamArgs(flasher=flasher)
     stream.ms = [10, 10]
     assert_close1d(stream.zs_calc,  [0.7188789914193495, 0.2811210085806504])
     assert_close1d(stream.ws_calc, [0.5, 0.5])
     assert_close1d(stream.Vfls_calc, [0.4416643100868171, 0.5583356899131828])
     assert_close1d(stream.ns_calc, [555.0843506179199, 217.0683444023718])
 
-    stream = StreamArgs(pkg=flasher)
+    stream = StreamArgs(flasher=flasher)
     stream.Qls = [3, 7]
     assert_close1d(stream.zs_calc, [0.5807907240833159, 0.4192092759166841])
     assert_close1d(stream.ws_calc, [0.3514007794731887, 0.6485992205268114])
@@ -882,16 +882,16 @@ def test_liquid_ref_volumes_available():
     stream.Qls = [i*10 for i in Vml_60Fs]
     assert_close1d(stream.ns_calc, [10.0, 10.0])
     
-    restream = StreamArgs(pkg=flasher)
+    restream = StreamArgs(flasher=flasher)
     restream.ns = [10.0, 10.0]
     assert_close1d(restream.Qls_calc, [i*10 for i in Vml_60Fs])
     
         
 
-    stream = StreamArgs(pkg=flasher)
+    stream = StreamArgs(flasher=flasher)
     stream.ns = [5, 10]
     assert_close1d(stream.ms_calc, [0.0900764, 0.4606844000000001])
-    restream = StreamArgs(pkg=flasher)
+    restream = StreamArgs(flasher=flasher)
     restream.ms = stream.ms_calc
     assert_close1d(restream.ns_calc, stream.ns)
 
