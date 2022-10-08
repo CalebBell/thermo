@@ -78,7 +78,7 @@ class StreamArgs(object):
         self.Vf_TP = Vf_TP
         self.Q_TP = Q_TP
         # pkg should be either a property package or property package constants
-        self.pkg = self.property_package = pkg
+        self.pkg = pkg
 
         composition_specs = state_specs = flow_specs = 0
         if zs is not None:
@@ -1211,14 +1211,14 @@ class StreamArgs(object):
     def flash(self, hot_start=None, existing_flash=None):
 #        if self.flow_specified and self.composition_specified and self.state_specified:
         s = self.specifications
-        return EquilibriumStream(self.property_package, hot_start=hot_start,
+        return EquilibriumStream(self.pkg, hot_start=hot_start,
                                  existing_flash=existing_flash, **s)
 
     @property
     def stream(self):
         if self.flow_specified and self.composition_specified and self.state_specified:
             s = self.specifications.copy()
-            return EquilibriumStream(self.property_package, **s)
+            return EquilibriumStream(self.pkg, **s)
     def flash_state(self, hot_start=None):
         if self.composition_specified and self.state_specified:
             s = self.specifications
@@ -1280,7 +1280,7 @@ class StreamArgs(object):
                 except:
                     pass
 
-            m = self.property_package.flash(T=T, P=P, zs=zs, H=H_flash, H_mass=s['H_mass'],
+            m = self.pkg.flash(T=T, P=P, zs=zs, H=H_flash, H_mass=s['H_mass'],
                                             S=s['S'], S_mass=s['S_mass'],
                                             U=s['U'], U_mass=s['U_mass'],
                                             G=s['G'], G_mass=s['G_mass'],
@@ -2106,7 +2106,7 @@ class EquilibriumStream(EquilibriumState):
     energy_reactive_calc = energy_reactive
 
     @property
-    def property_package(self):
+    def pkg(self):
         return self.flasher
 
     @property
