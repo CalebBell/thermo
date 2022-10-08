@@ -41,53 +41,6 @@ from thermo.flash import Flash
 from fluids.pump import voltages_1_phase_residential, voltages_3_phase, residential_power_frequencies
 
 
-def stream_args_specs_to_specs(s):
-    s = s.copy()
-    try:
-        del s['IDs']
-    except:
-        pass
-    if 'S' in s:
-        if s['S'] is not None:
-            s['S_mass'] = s['S']
-        del s['S']
-    if 'Sm' in s:
-        if s['Sm'] is not None:
-            s['S'] = s['Sm']
-        del s['Sm']
-    if 'H' in s:
-        if s['H'] is not None:
-            s['H_mass'] = s['H']
-        del s['H']
-    if 'Hm' in s:
-        if s['Hm'] is not None:
-            s['H'] = s['Hm']
-        del s['Hm']
-    if 'U' in s:
-        if s['U'] is not None:
-            s['U_mass'] = s['U']
-        del s['U']
-    if 'Um' in s:
-        if s['Um'] is not None:
-            s['U'] = s['Um']
-        del s['Um']
-    if 'A' in s:
-        if s['A'] is not None:
-            s['A_mass'] = s['A']
-        del s['A']
-    if 'Am' in s:
-        if s['Am'] is not None:
-            s['A'] = s['Am']
-        del s['Am']
-    if 'G' in s:
-        if s['G'] is not None:
-            s['G_mass'] = s['G']
-        del s['G']
-    if 'Gm' in s:
-        if s['Gm'] is not None:
-            s['G'] = s['Gm']
-        del s['Gm']
-    return s
 
 class StreamArgs(object):
     flashed = False
@@ -96,8 +49,8 @@ class StreamArgs(object):
 
     def __init__(self, zs=None, ws=None, Vfls=None, Vfgs=None,
                  T=None, P=None,
-                 VF=None, H=None, Hm=None, S=None, Sm=None,
-                 U=None, Um=None, G=None, Gm=None, A=None, Am=None,
+                 VF=None, H=None, H_mass=None, S=None, S_mass=None,
+                 U=None, U_mass=None, G=None, G_mass=None, A=None, A_mass=None,
                  V=None, rho=None, rho_mass=None,
                  
                  ns=None, ms=None, Qls=None, Qgs=None, m=None, n=None, Q=None,
@@ -112,11 +65,11 @@ class StreamArgs(object):
                        'V': None, 'rho': None, 'rho_mass': None,
                        
                        'VF': None, 
-                       'H': None,'Hm': None,
-                       'S': None, 'Sm': None,
-                       'U': None, 'Um': None,
-                       'A': None, 'Am': None,
-                       'G': None, 'Gm': None,
+                       'H': None,'H_mass': None,
+                       'S': None, 'S_mass': None,
+                       'U': None, 'U_mass': None,
+                       'A': None, 'A_mass': None,
+                       'G': None, 'G_mass': None,
                        'energy': None}
 
         # If this is False, DO NOT CLEAR OTHER COMPOSITION / FLOW VARIABLES WHEN SETTING ONE!
@@ -186,32 +139,32 @@ class StreamArgs(object):
         if VF is not None:
             s['VF'] = VF
             state_specs += 1
-        if Hm is not None:
-            s['Hm'] = Hm
+        if H_mass is not None:
+            s['H_mass'] = H_mass
             state_specs += 1
         if H is not None:
             s['H'] = H
             state_specs += 1
-        if Sm is not None:
-            s['Sm'] = Sm
+        if S_mass is not None:
+            s['S_mass'] = S_mass
             state_specs += 1
         if S is not None:
             s['S'] = S
             state_specs += 1
-        if Um is not None:
-            s['Um'] = Um
+        if U_mass is not None:
+            s['U_mass'] = U_mass
             state_specs += 1
         if U is not None:
             s['U'] = U
             state_specs += 1
-        if Gm is not None:
-            s['Gm'] = Gm
+        if G_mass is not None:
+            s['G_mass'] = G_mass
             state_specs += 1
         if G is not None:
             s['G'] = G
             state_specs += 1
-        if Am is not None:
-            s['Am'] = Am
+        if A_mass is not None:
+            s['A_mass'] = A_mass
             state_specs += 1
         if A is not None:
             s['A'] = A
@@ -341,18 +294,6 @@ class StreamArgs(object):
             return None
 
     @property
-    def Hm_calc(self):
-        Hm = self.specifications['Hm']
-        if Hm is not None:
-            return Hm
-        try:
-            return self.mixture.H()
-        except:
-            return None
-
-
-
-    @property
     def P(self):
         return self.specifications['P']
     @P.setter
@@ -416,6 +357,7 @@ class StreamArgs(object):
     @property
     def H(self):
         return self.specifications['H']
+    
     @H.setter
     def H(self, H):
         if H is None:
@@ -426,16 +368,36 @@ class StreamArgs(object):
         self.specifications['H'] = H
 
     @property
-    def Hm(self):
-        return self.specifications['Hm']
-    @Hm.setter
-    def Hm(self, Hm):
-        if Hm is None:
-            self.specifications['Hm'] = Hm
+    def H_calc(self):
+        H = self.specifications['H']
+        if H is not None:
+            return H
+        try:
+            return self.mixture.H()
+        except:
             return None
-        if self.specified_state_vars > 1 and self.Hm is None:
+
+    @property
+    def H_mass(self):
+        return self.specifications['H_mass']
+    @H_mass.setter
+    def H_mass(self, H_mass):
+        if H_mass is None:
+            self.specifications['H_mass'] = H_mass
+            return None
+        if self.specified_state_vars > 1 and self.H_mass is None:
             raise Exception('Two state vars already specified; unset another first')
-        self.specifications['Hm'] = Hm
+        self.specifications['H_mass'] = H_mass
+
+    @property
+    def H_mass_calc(self):
+        H_mass = self.specifications['H_mass']
+        if H_mass is not None:
+            return H_mass
+        try:
+            return self.mixture.H_mass()
+        except:
+            return None
 
     @property
     def U(self):
@@ -450,16 +412,16 @@ class StreamArgs(object):
         self.specifications['U'] = U
 
     @property
-    def Um(self):
-        return self.specifications['Um']
-    @Um.setter
-    def Um(self, Um):
-        if Um is None:
-            self.specifications['Um'] = Um
+    def U_mass(self):
+        return self.specifications['U_mass']
+    @U_mass.setter
+    def U_mass(self, U_mass):
+        if U_mass is None:
+            self.specifications['U_mass'] = U_mass
             return None
-        if self.specified_state_vars > 1 and self.Um is None:
+        if self.specified_state_vars > 1 and self.U_mass is None:
             raise Exception('Two state vars already specified; unset another first')
-        self.specifications['Um'] = Um
+        self.specifications['U_mass'] = U_mass
 
     @property
     def G(self):
@@ -474,16 +436,16 @@ class StreamArgs(object):
         self.specifications['G'] = G
 
     @property
-    def Gm(self):
-        return self.specifications['Gm']
-    @Gm.setter
-    def Gm(self, Gm):
-        if Gm is None:
-            self.specifications['Gm'] = Gm
+    def G_mass(self):
+        return self.specifications['G_mass']
+    @G_mass.setter
+    def G_mass(self, G_mass):
+        if G_mass is None:
+            self.specifications['G_mass'] = G_mass
             return None
-        if self.specified_state_vars > 1 and self.Gm is None:
+        if self.specified_state_vars > 1 and self.G_mass is None:
             raise Exception('Two state vars already specified; unset another first')
-        self.specifications['Gm'] = Gm
+        self.specifications['G_mass'] = G_mass
 
     @property
     def A(self):
@@ -498,16 +460,16 @@ class StreamArgs(object):
         self.specifications['A'] = A
 
     @property
-    def Am(self):
-        return self.specifications['Am']
-    @Am.setter
-    def Am(self, Am):
-        if Am is None:
-            self.specifications['Am'] = Am
+    def A_mass(self):
+        return self.specifications['A_mass']
+    @A_mass.setter
+    def A_mass(self, A_mass):
+        if A_mass is None:
+            self.specifications['A_mass'] = A_mass
             return None
-        if self.specified_state_vars > 1 and self.Am is None:
+        if self.specified_state_vars > 1 and self.A_mass is None:
             raise Exception('Two state vars already specified; unset another first')
-        self.specifications['Am'] = Am
+        self.specifications['A_mass'] = A_mass
 
     @property
     def S(self):
@@ -522,16 +484,16 @@ class StreamArgs(object):
         self.specifications['S'] = S
 
     @property
-    def Sm(self):
-        return self.specifications['Sm']
-    @Sm.setter
-    def Sm(self, Sm):
-        if Sm is None:
-            self.specifications['Sm'] = Sm
+    def S_mass(self):
+        return self.specifications['S_mass']
+    @S_mass.setter
+    def S_mass(self, S_mass):
+        if S_mass is None:
+            self.specifications['S_mass'] = S_mass
             return None
-        if self.specified_state_vars > 1 and self.Sm is None:
+        if self.specified_state_vars > 1 and self.S_mass is None:
             raise Exception('Two state vars already specified; unset another first')
-        self.specifications['Sm'] = Sm
+        self.specifications['S_mass'] = S_mass
 
     @property
     def zs(self):
@@ -905,7 +867,7 @@ class StreamArgs(object):
         Q = s['energy']
         m, n = None, None
         if Q is None:
-            H = s['Hm']
+            H = s['H']
             if H is not None:
                 n = s['n']
                 if n is None:
@@ -914,7 +876,7 @@ class StreamArgs(object):
                     Q = n*H
         # Try to get H from a mass specification
         if Q is None:
-            H_mass = s['H']
+            H_mass = s['H_mass']
             if H_mass is not None:
                 m = s['m']
                 if m is None:
@@ -1099,24 +1061,24 @@ class StreamArgs(object):
             specs.append(('rho_mass', s['rho_mass']))
         if s['VF'] is not None:
             specs.append(('VF', s['VF']))
-        if s['Hm'] is not None:
-            specs.append(('Hm', s['Hm']))
+        if s['H_mass'] is not None:
+            specs.append(('H_mass', s['H_mass']))
         if s['H'] is not None:
             specs.append(('H', s['H']))
-        if s['Sm'] is not None:
-            specs.append(('Sm', s['Sm']))
+        if s['S_mass'] is not None:
+            specs.append(('S_mass', s['S_mass']))
         if s['S'] is not None:
             specs.append(('S', s['S']))
-        if s['Um'] is not None:
-            specs.append(('Um', s['Um']))
+        if s['U_mass'] is not None:
+            specs.append(('U_mass', s['U_mass']))
         if s['U'] is not None:
             specs.append(('U', s['U']))
-        if s['Gm'] is not None:
-            specs.append(('Gm', s['Gm']))
+        if s['G_mass'] is not None:
+            specs.append(('G_mass', s['G_mass']))
         if s['G'] is not None:
             specs.append(('G', s['G']))
-        if s['Am'] is not None:
-            specs.append(('Am', s['Am']))
+        if s['A_mass'] is not None:
+            specs.append(('A_mass', s['A_mass']))
         if s['A'] is not None:
             specs.append(('A', s['A']))
         if s['energy'] is not None:
@@ -1131,8 +1093,8 @@ class StreamArgs(object):
     def specified_state_vars(self):
         # Slightly faster
         return sum(self.specifications[i] is not None for i in ('T', 'P', 'V', 'rho', 'rho_mass', 
-                                                                'VF', 'Hm', 'H', 'Sm', 'S',
-                                                                'Um', 'U', 'Am', 'A', 'Gm', 'G',
+                                                                'VF', 'H_mass', 'H', 'S_mass', 'S',
+                                                                'U_mass', 'U', 'A_mass', 'A', 'G_mass', 'G',
                                                                 'energy'))
 #        return sum(i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S, self.energy))
 
@@ -1153,25 +1115,25 @@ class StreamArgs(object):
             state_vars += 1
         if s['VF'] is not None:
             state_vars += 1
-        if s['Hm'] is not None:
+        if s['H_mass'] is not None:
             state_vars += 1
         if s['H'] is not None:
             state_vars += 1
         if s['S'] is not None:
             state_vars += 1
-        if s['Sm'] is not None:
+        if s['S_mass'] is not None:
             state_vars += 1
         if s['U'] is not None:
             state_vars += 1
-        if s['Um'] is not None:
+        if s['U_mass'] is not None:
             state_vars += 1
         if s['G'] is not None:
             state_vars += 1
-        if s['Gm'] is not None:
+        if s['G_mass'] is not None:
             state_vars += 1
         if s['A'] is not None:
             state_vars += 1
-        if s['Am'] is not None:
+        if s['A_mass'] is not None:
             state_vars += 1
         if s['energy'] is not None:
             state_vars += 1
@@ -1183,8 +1145,8 @@ class StreamArgs(object):
     @property
     def non_pressure_spec_specified(self):
         state_vars = (i is not None for i in (self.T, self.VF, self.V, self.rho, self.rho_mass, 
-                                              self.Hm, self.H, self.Sm, self.S, 
-                                              self.Um, self.U, self.Am, self.A, self.Gm, self.G,
+                                              self.H_mass, self.H, self.S_mass, self.S, 
+                                              self.U_mass, self.U, self.A_mass, self.A, self.G_mass, self.G,
                                               self.energy))
         if sum(state_vars) >= 1:
             return True
@@ -1248,7 +1210,7 @@ class StreamArgs(object):
 
     def flash(self, hot_start=None, existing_flash=None):
 #        if self.flow_specified and self.composition_specified and self.state_specified:
-        s = stream_args_specs_to_specs(self.specifications)
+        s = self.specifications
         return EquilibriumStream(self.property_package, hot_start=hot_start,
                                  existing_flash=existing_flash, **s)
 
@@ -1256,46 +1218,6 @@ class StreamArgs(object):
     def stream(self):
         if self.flow_specified and self.composition_specified and self.state_specified:
             s = self.specifications.copy()
-            if 'S' in s:
-                if s['S'] is not None:
-                    s['S_mass'] = s['S']
-                del s['S']
-            if 'Sm' in s:
-                if s['Sm'] is not None:
-                    s['S'] = s['Sm']
-                del s['Sm']
-            if 'H' in s:
-                if s['H'] is not None:
-                    s['H_mass'] = s['H']
-                del s['H']
-            if 'Hm' in s:
-                if s['Hm'] is not None:
-                    s['H'] = s['Hm']
-                del s['Hm']
-            if 'G' in s:
-                if s['G'] is not None:
-                    s['G_mass'] = s['G']
-                del s['G']
-            if 'Gm' in s:
-                if s['Gm'] is not None:
-                    s['G'] = s['Gm']
-                del s['Gm']
-            if 'U' in s:
-                if s['U'] is not None:
-                    s['U_mass'] = s['U']
-                del s['U']
-            if 'Um' in s:
-                if s['Um'] is not None:
-                    s['U'] = s['Um']
-                del s['Um']
-            if 'A' in s:
-                if s['A'] is not None:
-                    s['A_mass'] = s['A']
-                del s['A']
-            if 'Am' in s:
-                if s['Am'] is not None:
-                    s['A'] = s['Am']
-                del s['Am']
             return EquilibriumStream(self.property_package, **s)
     def flash_state(self, hot_start=None):
         if self.composition_specified and self.state_specified:
@@ -1316,23 +1238,23 @@ class StreamArgs(object):
                 spec_count += 1
             if s['rho_mass'] is not None:
                 spec_count += 1
-            if s['Hm'] is not None:
+            if s['H_mass'] is not None:
                 spec_count += 1
             if s['H'] is not None:
                 spec_count += 1
-            if s['Sm'] is not None:
+            if s['S_mass'] is not None:
                 spec_count += 1
             if s['S'] is not None:
                 spec_count += 1
-            if s['Um'] is not None:
+            if s['U_mass'] is not None:
                 spec_count += 1
             if s['U'] is not None:
                 spec_count += 1
-            if s['Gm'] is not None:
+            if s['G_mass'] is not None:
                 spec_count += 1
             if s['G'] is not None:
                 spec_count += 1
-            if s['Am'] is not None:
+            if s['A_mass'] is not None:
                 spec_count += 1
             if s['A'] is not None:
                 spec_count += 1
@@ -1347,10 +1269,10 @@ class StreamArgs(object):
                         H = energy/n
                         spec_count += 1
             
-            H_flash = s['Hm'] if s['Hm'] is not None else H
+            H_flash = s['H'] if s['H'] is not None else H
 
-            state_cache = (T, P, VF, s['Sm'], s['S'], s['H'], H_flash, 
-                           s['U'], s['Um'], s['G'], s['Gm'], s['A'], s['Am'], 
+            state_cache = (T, P, VF, s['S_mass'], s['S'], s['H'], H_flash, 
+                           s['U'], s['U_mass'], s['G'], s['G_mass'], s['A'], s['A_mass'], 
                            s['V'], s['rho'], s['rho_mass'], tuple(zs))
             if state_cache == self._state_cache:
                 try:
@@ -1358,11 +1280,11 @@ class StreamArgs(object):
                 except:
                     pass
 
-            m = self.property_package.flash(T=T, P=P, zs=zs, H=H_flash, H_mass=s['H'],
-                                            S=s['Sm'], S_mass=s['S'],
-                                            U=s['Um'], U_mass=s['U'],
-                                            G=s['Gm'], G_mass=s['G'],
-                                            A=s['Am'], A_mass=s['A'],
+            m = self.property_package.flash(T=T, P=P, zs=zs, H=H_flash, H_mass=s['H_mass'],
+                                            S=s['S'], S_mass=s['S_mass'],
+                                            U=s['U'], U_mass=s['U_mass'],
+                                            G=s['G'], G_mass=s['G_mass'],
+                                            A=s['A'], A_mass=s['A_mass'],
                                             V=s['V'], rho=s['rho'], rho_mass=s['rho_mass'],
                                             VF=VF, hot_start=hot_start)
             self._mixture = m
@@ -1760,23 +1682,6 @@ class Stream(Mixture):
                 self.Qg = self.mg/self.rhog
             else:
                 self.Qg = None
-
-    def StreamArgs(self):
-        '''Goal to create a StreamArgs instance, with the user specified
-        variables always being here.
-
-        The state variables are currently correctly tracked. The flow rate and
-        composition variable needs to be tracked as a function of what was
-        specified as the input variables.
-
-        The flow rate needs to be changed wen the stream flow rate is changed.
-        Note this stores unnormalized specs, but that this is OK.
-        '''
-        kwargs = {i:j for i, j in zip(('T', 'P', 'VF', 'H', 'Hm', 'S', 'Sm'), self.specs)}
-        kwargs['IDs'] = self.IDs
-        kwargs[self.composition_spec[0]] = self.composition_spec[1]
-        kwargs[self.flow_spec[0]] = self.flow_spec[1]
-        return StreamArgs(**kwargs)
 
 
     # flow_spec, composition_spec are attributes already
@@ -2600,17 +2505,17 @@ def energy_balance(inlets, outlets):
             try:
                 Hin = fin.H()
             except:
-                Hin = fin.Hm_calc
+                Hin = fin.H_calc
             try:
                 Hout = fout.H()
             except:
-                Hout = fout.Hm_calc
+                Hout = fout.H_calc
 
             if Hin is not None and Hout is None:
-                fout.Hm = Hin
+                fout.H = Hin
                 return True
             elif Hin is None and Hout is not None:
-                fin.Hm = Hout
+                fin.H = Hout
                 return True
 
     for i in range(inlet_count):
