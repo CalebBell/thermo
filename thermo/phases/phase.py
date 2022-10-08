@@ -4344,6 +4344,26 @@ class Phase(object):
         self._H_mass = H_mass = self.H()*1e3*self.MW_inv()
         return H_mass
 
+    def H_reactive_mass(self):
+        r'''Method to calculate and return mass enthalpy on a reactive basis
+        of the phase.
+
+        .. math::
+            H_{reactive,mass} = \frac{1000 H_{reactive, molar}}{MW}
+
+        Returns
+        -------
+        H_reactive_mass : float
+            Mass enthalpy on a reactive basis, [J/kg]
+        '''
+        try:
+            return self._H_reactive_mass
+        except AttributeError:
+            pass
+
+        self._H_reactive_mass = H_reactive_mass = self.H_reactive()*1e3*self.MW_inv()
+        return H_reactive_mass
+    
     def S_mass(self):
         r'''Method to calculate and return mass entropy of the phase.
 
@@ -4362,6 +4382,26 @@ class Phase(object):
 
         self._S_mass = S_mass = self.S()*1e3*self.MW_inv()
         return S_mass
+
+    def S_reactive_mass(self):
+        r'''Method to calculate and return mass entropy on a reactive basis
+        of the phase.
+
+        .. math::
+            S_{reactive,mass} = \frac{1000 S_{reactive, molar}}{MW}
+
+        Returns
+        -------
+        S_reactive_mass : float
+            Mass entropy on a reactive basis, [J/(kg*K)]
+        '''
+        try:
+            return self._S_reactive_mass
+        except AttributeError:
+            pass
+
+        self._S_reactive_mass = S_reactive_mass = self.S_reactive()*1e3*self.MW_inv()
+        return S_reactive_mass
 
     def U_mass(self):
         r'''Method to calculate and return mass internal energy of the phase.
@@ -4382,6 +4422,26 @@ class Phase(object):
         self._U_mass = U_mass = self.U()*1e3*self.MW_inv()
         return U_mass
 
+    def U_reactive_mass(self):
+        r'''Method to calculate and return mass internal energy on a reactive basis
+        of the phase.
+
+        .. math::
+            U_{reactive,mass} = \frac{1000 U_{reactive, molar}}{MW}
+
+        Returns
+        -------
+        U_reactive_mass : float
+            Mass internal energy on a reactive basis, [J/kg]
+        '''
+        try:
+            return self._U_reactive_mass
+        except AttributeError:
+            pass
+
+        self._U_reactive_mass = U_reactive_mass = self.U_reactive()*1e3*self.MW_inv()
+        return U_reactive_mass
+
     def A_mass(self):
         r'''Method to calculate and return mass Helmholtz energy of the phase.
 
@@ -4401,6 +4461,26 @@ class Phase(object):
         self._A_mass = A_mass = self.A()*1e3*self.MW_inv()
         return A_mass
 
+    def A_reactive_mass(self):
+        r'''Method to calculate and return mass Helmholtz energy on a reactive basis
+        of the phase.
+
+        .. math::
+            A_{reactive,mass} = \frac{1000 A_{reactive, molar}}{MW}
+
+        Returns
+        -------
+        A_reactive_mass : float
+            Mass Helmholtz energy on a reactive basis, [J/kg]
+        '''
+        try:
+            return self._A_reactive_mass
+        except AttributeError:
+            pass
+
+        self._A_reactive_mass = A_reactive_mass = self.A_reactive()*1e3*self.MW_inv()
+        return A_reactive_mass
+
     def G_mass(self):
         r'''Method to calculate and return mass Gibbs energy of the phase.
 
@@ -4419,6 +4499,26 @@ class Phase(object):
 
         self._G_mass = G_mass = self.G()*1e3*self.MW_inv()
         return G_mass
+
+    def G_reactive_mass(self):
+        r'''Method to calculate and return mass Gibbs free energy on a reactive basis
+        of the phase.
+
+        .. math::
+            G_{reactive,mass} = \frac{1000 G_{reactive, molar}}{MW}
+
+        Returns
+        -------
+        G_reactive_mass : float
+           Gibbs free energy on a reactive basis, [J/kg]
+        '''
+        try:
+            return self._G_reactive_mass
+        except AttributeError:
+            pass
+
+        self._G_reactive_mass = G_reactive_mass = self.G_reactive()*1e3*self.MW_inv()
+        return G_reactive_mass
 
     def Cp_mass(self):
         r'''Method to calculate and return mass constant pressure heat capacity

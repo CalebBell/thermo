@@ -206,6 +206,28 @@ def test_two_eos_pure_flash_all_properties():
     assert_close(eq.U_mass(), -783306.0663445955, rtol=1e-12)
     assert_close(eq.bulk.U_mass(), -783306.0663445955, rtol=1e-12)
     assert_close1d([i.U_mass() for i in eq.phases], [-75904.18285780508, -1254907.322002456], rtol=1e-12)
+    
+    # mass HSGUA reactive
+    assert_close(eq.H_reactive_mass(), property_molar_to_mass(eq.H_reactive(), eq.MW()), rtol=1e-12)
+    assert_close(eq.bulk.H_reactive_mass(), property_molar_to_mass(eq.bulk.H_reactive(), eq.MW()), rtol=1e-12)
+    assert_close1d([i.H_reactive_mass() for i in eq.phases], [property_molar_to_mass(p.H_reactive(), p.MW()) for p in eq.phases], rtol=1e-12)
+    
+    assert_close(eq.S_reactive_mass(), property_molar_to_mass(eq.S_reactive(), eq.MW()), rtol=1e-12)
+    assert_close(eq.bulk.S_reactive_mass(), property_molar_to_mass(eq.bulk.S_reactive(), eq.MW()), rtol=1e-12)
+    assert_close1d([i.S_reactive_mass() for i in eq.phases], [property_molar_to_mass(p.S_reactive(), p.MW()) for p in eq.phases], rtol=1e-12)
+    
+    assert_close(eq.G_reactive_mass(), property_molar_to_mass(eq.G_reactive(), eq.MW()), rtol=1e-12)
+    assert_close(eq.bulk.G_reactive_mass(), property_molar_to_mass(eq.bulk.G_reactive(), eq.MW()), rtol=1e-12)
+    assert_close1d([i.G_reactive_mass() for i in eq.phases], [property_molar_to_mass(p.G_reactive(), p.MW()) for p in eq.phases], rtol=1e-12)
+    
+    assert_close(eq.U_reactive_mass(), property_molar_to_mass(eq.U_reactive(), eq.MW()), rtol=1e-12)
+    assert_close(eq.bulk.U_reactive_mass(), property_molar_to_mass(eq.bulk.U_reactive(), eq.MW()), rtol=1e-12)
+    assert_close1d([i.U_reactive_mass() for i in eq.phases], [property_molar_to_mass(p.U_reactive(), p.MW()) for p in eq.phases], rtol=1e-12)
+    
+    assert_close(eq.A_reactive_mass(), property_molar_to_mass(eq.A_reactive(), eq.MW()), rtol=1e-12)
+    assert_close(eq.bulk.A_reactive_mass(), property_molar_to_mass(eq.bulk.A_reactive(), eq.MW()), rtol=1e-12)
+    assert_close1d([i.A_reactive_mass() for i in eq.phases], [property_molar_to_mass(p.A_reactive(), p.MW()) for p in eq.phases], rtol=1e-12)
+
 
     # Other
     assert_close(eq.MW(), 32.04186, rtol=1e-12)
