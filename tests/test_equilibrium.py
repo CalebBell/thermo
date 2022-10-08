@@ -372,6 +372,27 @@ def test_two_eos_pure_flash_all_properties():
     assert_close(eq.A_formation_ideal_gas(), -176326.22853759234, rtol=1e-12)
     assert_close(eq.bulk.A_formation_ideal_gas(), -176326.22853759234, rtol=1e-12)
     assert_close1d([i.A_formation_ideal_gas() for i in eq.phases], [-176326.22853759234]*2, rtol=1e-12)
+    
+    # mass deps
+    assert_close(eq.H_dep_mass(), property_molar_to_mass(eq.H_dep(), eq.MW()), rtol=1e-12)
+    assert_close(eq.bulk.H_dep_mass(), property_molar_to_mass(eq.bulk.H_dep(), eq.MW()), rtol=1e-12)
+    assert_close1d([i.H_dep_mass() for i in eq.phases], [property_molar_to_mass(p.H_dep(), p.MW()) for p in eq.phases], rtol=1e-12)
+    
+    assert_close(eq.S_dep_mass(), property_molar_to_mass(eq.S_dep(), eq.MW()), rtol=1e-12)
+    assert_close(eq.bulk.S_dep_mass(), property_molar_to_mass(eq.bulk.S_dep(), eq.MW()), rtol=1e-12)
+    assert_close1d([i.S_dep_mass() for i in eq.phases], [property_molar_to_mass(p.S_dep(), p.MW()) for p in eq.phases], rtol=1e-12)
+    
+    assert_close(eq.G_dep_mass(), property_molar_to_mass(eq.G_dep(), eq.MW()), rtol=1e-12)
+    assert_close(eq.bulk.G_dep_mass(), property_molar_to_mass(eq.bulk.G_dep(), eq.MW()), rtol=1e-12)
+    assert_close1d([i.G_dep_mass() for i in eq.phases], [property_molar_to_mass(p.G_dep(), p.MW()) for p in eq.phases], rtol=1e-12)
+    
+    assert_close(eq.U_dep_mass(), property_molar_to_mass(eq.U_dep(), eq.MW()), rtol=1e-12)
+    assert_close(eq.bulk.U_dep_mass(), property_molar_to_mass(eq.bulk.U_dep(), eq.MW()), rtol=1e-12)
+    assert_close1d([i.U_dep_mass() for i in eq.phases], [property_molar_to_mass(p.U_dep(), p.MW()) for p in eq.phases], rtol=1e-12)
+    
+    assert_close(eq.A_dep_mass(), property_molar_to_mass(eq.A_dep(), eq.MW()), rtol=1e-12)
+    assert_close(eq.bulk.A_dep_mass(), property_molar_to_mass(eq.bulk.A_dep(), eq.MW()), rtol=1e-12)
+    assert_close1d([i.A_dep_mass() for i in eq.phases], [property_molar_to_mass(p.A_dep(), p.MW()) for p in eq.phases], rtol=1e-12)
 
     # Pseudo critical properties
     assert_close(eq.pseudo_Tc(), constants.Tcs[0], rtol=1e-12)

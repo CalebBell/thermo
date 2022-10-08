@@ -1872,6 +1872,75 @@ class Phase(object):
         '''
         return self.U_dep() - self.T*self.S_dep()
 
+    def H_dep_mass(self):
+        r'''Method to calculate and return the mass departure enthalpy of
+        the phase.
+
+        Returns
+        -------
+        H_dep_mass : float
+            Departure mass enthalpy free energy, [J/kg]
+
+        Notes
+        -----
+        '''
+        return property_molar_to_mass(self.H_dep(), self.MW())
+        
+    def S_dep_mass(self):
+        r'''Method to calculate and return the mass departure entropy of
+        the phase.
+
+        Returns
+        -------
+        S_dep_mass : float
+            Departure mass entropy free energy, [J/(kg*K)]
+
+        Notes
+        -----
+        '''
+        return property_molar_to_mass(self.S_dep(), self.MW())
+        
+    def G_dep_mass(self):
+        r'''Method to calculate and return the mass departure Gibbs free energy of
+        the phase.
+
+        Returns
+        -------
+        G_dep_mass : float
+            Departure mass Gibbs free energy, [J/kg]
+
+        Notes
+        -----
+        '''
+        return property_molar_to_mass(self.G_dep(), self.MW())
+
+    def U_dep_mass(self):
+        r'''Method to calculate and return the departure mass internal energy of
+        the phase.
+
+        Returns
+        -------
+        U_dep_mass : float
+            Departure mass internal energy, [J/kg]
+
+        Notes
+        -----
+        '''
+        return property_molar_to_mass(self.U_dep(), self.MW())
+
+    def A_dep_mass(self):
+        r'''Method to calculate and return the departure mass Helmholtz energy of
+        the phase.
+
+        Returns
+        -------
+        A_dep_mass : float
+            Departure mass Helmholtz energy, [J/kg]
+
+        Notes
+        -----
+        '''
+        return property_molar_to_mass(self.A_dep(), self.MW())
 
     def H_reactive(self):
         r'''Method to calculate and return the enthalpy of the phase on a

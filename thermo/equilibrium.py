@@ -3156,6 +3156,7 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
               'H_reactive', 'S_reactive', 'G_reactive', 'U_reactive', 'A_reactive',
               'H_reactive_mass', 'S_reactive_mass', 'G_reactive_mass', 'U_reactive_mass', 'A_reactive_mass',
               'H_ideal_gas_mass', 'S_ideal_gas_mass', 'G_ideal_gas_mass', 'U_ideal_gas_mass', 'A_ideal_gas_mass',
+              'H_dep_mass', 'S_dep_mass', 'G_dep_mass', 'U_dep_mass', 'A_dep_mass',
               'Cp_Cv_ratio', 'log_zs', 'isothermal_bulk_modulus',
               'dP_dT_frozen', 'dP_dV_frozen', 'd2P_dT2_frozen', 'd2P_dV2_frozen',
               'd2P_dTdV_frozen',
