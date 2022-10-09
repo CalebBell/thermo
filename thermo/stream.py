@@ -54,7 +54,7 @@ class StreamArgs(object):
                  V=None, rho=None, rho_mass=None,
                  
                  ns=None, ms=None, Qls=None, Qgs=None, m=None, n=None, Q=None,
-                 energy=None, energy_reactive=None,
+                 energy=None, energy_reactive=None, H_reactive=None,
                  Vf_TP=(None, None), Q_TP=(None, None, ''), flasher=None,
                  single_composition_basis=True):
         self.specifications = s = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None,
@@ -70,7 +70,7 @@ class StreamArgs(object):
                        'U': None, 'U_mass': None,
                        'A': None, 'A_mass': None,
                        'G': None, 'G_mass': None,
-                       'energy': None, 'energy_reactive': None}
+                       'energy': None, 'energy_reactive': None, 'H_reactive': None}
 
         # If this is False, DO NOT CLEAR OTHER COMPOSITION / FLOW VARIABLES WHEN SETTING ONE!
         # This makes sense for certain cases but not all.
@@ -174,7 +174,9 @@ class StreamArgs(object):
         if energy_reactive is not None:
             s['energy_reactive'] = energy_reactive
             state_specs += 1
-
+        if H_reactive is not None:
+            s['H_reactive'] = H_reactive
+            state_specs += 1
         if flow_specs > 1 or composition_specs > 1:
             self.reconcile_flows()
 #            raise ValueError("Flow specification is overspecified")
@@ -509,6 +511,17 @@ class StreamArgs(object):
             raise Exception('Two state vars already specified; unset another first')
         self.specifications['S_mass'] = S_mass
 
+    @property
+    def H_reactive(self):
+        return self.specifications['H_reactive']
+    @H_reactive.setter
+    def H_reactive(self, H_reactive):
+        if H_reactive is None:
+            self.specifications['H_reactive'] = H_reactive
+            return None
+        if self.state_specified and self.H_reactive is None:
+            raise Exception('Two state vars already specified; unset another first')
+        self.specifications['H_reactive'] = H_reactive
     @property
     def zs(self):
         return self.specifications['zs']
@@ -1160,6 +1173,8 @@ class StreamArgs(object):
             state_vars += 1
         if s['energy_reactive'] is not None:
             state_vars += 1
+        if s['H_reactive'] is not None:
+            state_vars += 1
         if state_vars == 2:
             return True
         return False
@@ -1169,7 +1184,7 @@ class StreamArgs(object):
         state_vars = (i is not None for i in (self.T, self.VF, self.V, self.rho, self.rho_mass, 
                                               self.H_mass, self.H, self.S_mass, self.S, 
                                               self.U_mass, self.U, self.A_mass, self.A, self.G_mass, self.G,
-                                              self.energy, self.energy_reactive))
+                                              self.energy, self.energy_reactive, self.H_reactive))
         if sum(state_vars) >= 1:
             return True
         return False
@@ -1247,7 +1262,7 @@ class StreamArgs(object):
             # Flash call only takes `zs`
             zs = self.zs_calc
             T, P, VF = s['T'], s['P'], s['VF']
-            H = None
+            H = H_reactive = None
             # Do we need
             spec_count = 0
             if T is not None:
@@ -1280,6 +1295,8 @@ class StreamArgs(object):
                 spec_count += 1
             if s['A'] is not None:
                 spec_count += 1
+            if s['H_reactive'] is not None:
+                spec_count += 1
             if VF is not None:
                 spec_count += 1
                 
@@ -1292,11 +1309,14 @@ class StreamArgs(object):
                         spec_count += 1
                 energy_reactive = s['energy_reactive']
                 if energy_reactive is not None:
-                    pass
+                    n = self.n_calc
+                    if n is not None:
+                        H_reactive = energy_reactive/n
+                        spec_count += 1
             
             H_flash = s['H'] if s['H'] is not None else H
-
-            state_cache = (T, P, VF, s['S_mass'], s['S'], s['H'], H_flash, 
+            H_reactive = s['H_reactive'] if s['H_reactive'] is not None else H_reactive
+            state_cache = (T, P, VF, s['S_mass'], s['S'], s['H'], H_flash, s['H_reactive'], H_reactive,
                            s['U'], s['U_mass'], s['G'], s['G_mass'], s['A'], s['A_mass'], 
                            s['V'], s['rho'], s['rho_mass'], tuple(zs))
             if state_cache == self._state_cache:
@@ -1311,6 +1331,7 @@ class StreamArgs(object):
                                             G=s['G'], G_mass=s['G_mass'],
                                             A=s['A'], A_mass=s['A_mass'],
                                             V=s['V'], rho=s['rho'], rho_mass=s['rho_mass'],
+                                            H_reactive=H_reactive,
                                             VF=VF, hot_start=hot_start)
             self._mixture = m
             self._state_cache = state_cache
@@ -1896,7 +1917,8 @@ class EquilibriumStream(EquilibriumState):
                  U=None, U_mass=None,
                  G=None, G_mass=None,
                  A=None, A_mass=None,
-                 energy=None, energy_reactive=None, Vf_TP=None, Q_TP=None, hot_start=None,
+                 energy=None, energy_reactive=None, H_reactive=None,
+                 Vf_TP=None, Q_TP=None, hot_start=None,
                  existing_flash=None, spec_fun=None):
 
         constants = flasher.constants
@@ -1967,13 +1989,13 @@ class EquilibriumStream(EquilibriumState):
 
         if flow_option_count < 1:
             raise Exception("No flow rate information is provided; one of "
-                            "'m', 'n', 'Q', 'ms', 'ns', 'Qls', 'Qgs' or "
-                            "'energy' must be specified")
+                            "'m', 'n', 'Q', 'ms', 'ns', 'Qls', 'Qgs' "
+                            "'energy' or 'energy_reactive' must be specified")
         elif flow_option_count > 1:
             raise Exception("More than one source of flow rate information is "
                             "provided; only one of "
-                            "'m', 'n', 'Q', 'ms', 'ns', 'Qls', 'Qgs' or "
-                            "'energy' can be specified")
+                            "'m', 'n', 'Q', 'ms', 'ns', 'Qls', 'Qgs' "
+                            "'energy' or 'energy_reactive' can be specified")
 
         # Make sure mole fractions are available
         if ns is not None:
@@ -2014,6 +2036,14 @@ class EquilibriumStream(EquilibriumState):
             elif ms is not None:
                 n = property_molar_to_mass(sum(ms), MW)
             H = energy/n
+        elif energy_reactive is not None:
+            if m is not None:
+                n = property_molar_to_mass(m, MW)  # m*10000/MW
+            elif ns is not None:
+                n = sum(ns)
+            elif ms is not None:
+                n = property_molar_to_mass(sum(ms), MW)
+            H_reactive = energy/n
 
         if existing_flash is not None:
             # All variable which have been set
@@ -2030,7 +2060,7 @@ class EquilibriumStream(EquilibriumState):
             flasher.flash(T=T, P=P, V=V, rho=rho, rho_mass=rho_mass, VF=VF,
                           H=H, H_mass=H_mass, S=S, S_mass=S_mass,
                           G=G, G_mass=G_mass, U=U, U_mass=U_mass,
-                          A=A, A_mass=A_mass,
+                          A=A, A_mass=A_mass, H_reactive=H_reactive,
                           
                           dest=dest, zs=zs, hot_start=hot_start,
                           spec_fun=spec_fun)

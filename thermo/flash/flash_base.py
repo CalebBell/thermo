@@ -97,7 +97,7 @@ class Flash(object):
               S=None, G=None, U=None, A=None, solution=None, hot_start=None,
               retry=False, dest=None, rho=None, rho_mass=None, H_mass=None,
               S_mass=None, G_mass=None, U_mass=None, A_mass=None,
-              spec_fun=None):
+              spec_fun=None, H_reactive=None):
         r'''Method to perform a flash calculation and return the result as an
         :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>` object.
         This generic interface allows flashes with any combination of valid
@@ -173,6 +173,8 @@ class Flash(object):
         A_mass : float, optional
             Mass Helmholtz energy of the overall bulk; this is trivially converted to
             a `A` spec, [J/kg]
+        H_reactive : float, optional
+            Molar reactive enthalpy, [J/mol]
 
         Returns
         -------
@@ -236,7 +238,10 @@ class Flash(object):
             U, U_mass = property_mass_to_molar(U_mass, mixing_simple(zs, constants.MWs)), None
         if A_mass is not None:
             A, A_mass = property_mass_to_molar(A_mass, mixing_simple(zs, constants.MWs)), None
-        
+        if H_reactive is not None:
+            Hfgs = constants.Hfgs
+            H = H_reactive - sum(zs[i]*Hfgs[i] for i in range(constants.N))
+            H_reactive = None        
 
         T_spec = T is not None
         P_spec = P is not None
