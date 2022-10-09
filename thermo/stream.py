@@ -394,6 +394,16 @@ class StreamArgs(object):
             return None
 
     @property
+    def H_reactive_calc(self):
+        H_reactive = self.specifications['H_reactive']
+        if H_reactive is not None:
+            return H_reactive
+        try:
+            return self.flash_state().H_reactive()
+        except:
+            return None
+
+    @property
     def H_mass(self):
         return self.specifications['H_mass']
     @H_mass.setter
@@ -2540,7 +2550,7 @@ def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
     return progress
 
 
-def energy_balance(inlets, outlets):
+def energy_balance(inlets, outlets, reactive=False):
     inlet_count = len(inlets)
     outlet_count = len(outlets)
 
@@ -2554,27 +2564,50 @@ def energy_balance(inlets, outlets):
         fin = inlets[0]
         fout = outlets[0]
         if not isinstance(fin, EnergyStream) and not isinstance(fout, EnergyStream):
-            try:
-                Hin = fin.H()
-            except:
-                Hin = fin.H_calc
-            try:
-                Hout = fout.H()
-            except:
-                Hout = fout.H_calc
+            if reactive:
+                try:
+                    H_reactive_in = fin.H_reactive()
+                except:
+                    H_reactive_in = fin.H_reactive_calc
+                try:
+                    H_reactive_out = fout.H_reactive()
+                except:
+                    H_reactive_out = fout.H_reactive_calc
 
-            if Hin is not None and Hout is None:
-                fout.H = Hin
-                return True
-            elif Hin is None and Hout is not None:
-                fin.H = Hout
-                return True
+                if H_reactive_in is not None and H_reactive_out is None:
+                    fout.H_reactive = H_reactive_in
+                    return True
+                elif H_reactive_in is None and H_reactive_out is not None:
+                    fin.H_reactive = H_reactive_out
+                    return True
+            else:
+                try:
+                    Hin = fin.H()
+                except:
+                    Hin = fin.H_calc
+                try:
+                    Hout = fout.H()
+                except:
+                    Hout = fout.H_calc
+
+                if Hin is not None and Hout is None:
+                    fout.H = Hin
+                    return True
+                elif Hin is None and Hout is not None:
+                    fin.H = Hout
+                    return True
 
     for i in range(inlet_count):
         f = inlets[i]
-        Q = f.energy
-        if Q is None:
-            Q = f.energy_calc
+        if reactive and not isinstance(f, EnergyStream):
+            Q = f.energy_reactive
+            if Q is None:
+                Q = f.energy_reactive_calc
+        else:
+            Q = f.energy
+            if Q is None:
+                Q = f.energy_calc
+            
         if Q is None:
             all_in_known = False
             in_unknown_count += 1
@@ -2583,9 +2616,14 @@ def energy_balance(inlets, outlets):
 
     for i in range(outlet_count):
         f = outlets[i]
-        Q = f.energy
-        if Q is None:
-            Q = f.energy_calc
+        if reactive and not isinstance(f, EnergyStream):
+            Q = f.energy_reactive
+            if Q is None:
+                Q = f.energy_reactive_calc
+        else:
+            Q = f.energy
+            if Q is None:
+                Q = f.energy_calc
         if Q is None:
             all_out_known = False
             out_unknown_count += 1
@@ -2606,13 +2644,20 @@ def energy_balance(inlets, outlets):
         for v in all_energy_out:
             if v is not None:
                 set_energy -= v
-        outlets[out_unknown_idx].energy = set_energy
+        if reactive and not isinstance(outlets[out_unknown_idx], EnergyStream):
+            outlets[out_unknown_idx].energy_reactive = set_energy
+        else:
+            outlets[out_unknown_idx].energy = set_energy
         return True
     if in_unknown_count == 1 and out_unknown_count == 0:
         set_energy = outlet_energy
         for v in all_energy_in:
             if v is not None:
                 set_energy -= v
-        inlets[in_unknown_idx].energy = set_energy
+        if reactive and not isinstance(inlets[in_unknown_idx], EnergyStream):
+            inlets[in_unknown_idx].energy_reactive = set_energy
+        else:
+            inlets[in_unknown_idx].energy = set_energy
+
         return True
     return False
