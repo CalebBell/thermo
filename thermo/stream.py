@@ -54,7 +54,7 @@ class StreamArgs(object):
                  V=None, rho=None, rho_mass=None,
                  
                  ns=None, ms=None, Qls=None, Qgs=None, m=None, n=None, Q=None,
-                 energy=None,
+                 energy=None, energy_reactive=None,
                  Vf_TP=(None, None), Q_TP=(None, None, ''), flasher=None,
                  single_composition_basis=True):
         self.specifications = s = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None,
@@ -70,7 +70,7 @@ class StreamArgs(object):
                        'U': None, 'U_mass': None,
                        'A': None, 'A_mass': None,
                        'G': None, 'G_mass': None,
-                       'energy': None}
+                       'energy': None, 'energy_reactive': None}
 
         # If this is False, DO NOT CLEAR OTHER COMPOSITION / FLOW VARIABLES WHEN SETTING ONE!
         # This makes sense for certain cases but not all.
@@ -171,6 +171,9 @@ class StreamArgs(object):
         if energy is not None:
             s['energy'] = energy
             state_specs += 1
+        if energy_reactive is not None:
+            s['energy_reactive'] = energy_reactive
+            state_specs += 1
 
         if flow_specs > 1 or composition_specs > 1:
             self.reconcile_flows()
@@ -250,6 +253,18 @@ class StreamArgs(object):
         self.specifications['energy'] = energy
 
     @property
+    def energy_reactive(self):
+        return self.specifications['energy_reactive']
+    @energy_reactive.setter
+    def energy_reactive(self, energy_reactive):
+        if energy_reactive is None:
+            self.specifications['energy_reactive'] = energy_reactive
+            return None
+        if self.specified_state_vars > 1 and self.flow_specified and self.energy_reactive is None:
+            raise Exception('Two state vars and a flow var already specified; unset another first')
+        self.specifications['energy_reactive'] = energy_reactive
+
+    @property
     def T(self):
         return self.specifications['T']
     @T.setter
@@ -268,7 +283,7 @@ class StreamArgs(object):
         if T is not None:
             return T
         try:
-            return self.mixture.T
+            return self.flash_state().T
         except:
             return None
 
@@ -278,7 +293,7 @@ class StreamArgs(object):
         if P is not None:
             return P
         try:
-            return self.mixture.P
+            return self.flash_state().P
         except:
             return None
 
@@ -288,7 +303,7 @@ class StreamArgs(object):
         if VF is not None:
             return VF
         try:
-            return self.mixture.VF
+            return self.flash_state().VF
         except:
             return None
 
@@ -372,7 +387,7 @@ class StreamArgs(object):
         if H is not None:
             return H
         try:
-            return self.mixture.H()
+            return self.flash_state().H()
         except:
             return None
 
@@ -394,7 +409,7 @@ class StreamArgs(object):
         if H_mass is not None:
             return H_mass
         try:
-            return self.mixture.H_mass()
+            return self.flash_state().H_mass()
         except:
             return None
 
@@ -712,7 +727,7 @@ class StreamArgs(object):
                     elif Q_TP[-1] == 'g':
                         V = self.flasher.gas.to(T=Q_TP[0], P=Q_TP[1], zs=zs).V()
                 else:
-                    mixture = self.mixture
+                    mixture = self.flash_state()
                     if mixture is not None:
                         V = mixture.V()
                 if V is not None:
@@ -889,13 +904,17 @@ class StreamArgs(object):
             if n is None:
                 m = self.m_calc
             if m is not None or n is not None:
-                mixture = self.mixture
+                mixture = self.flash_state()
                 if mixture is not None:
                     if n is not None:
                         Q = mixture.H()*n
                     elif m is not None:
                         Q = mixture.H()*property_molar_to_mass(m, mixture.MW())
         return Q
+    
+    @property
+    def energy_reactive_calc(self):
+        return self.specifications['energy_reactive']
 
 
 
@@ -1082,6 +1101,8 @@ class StreamArgs(object):
             specs.append(('A', s['A']))
         if s['energy'] is not None:
             specs.append(('energy', s['energy']))
+        if s['energy_reactive'] is not None:
+            specs.append(('energy_reactive', s['energy_reactive']))
 #        for var in ('T', 'P', 'VF', 'Hm', 'H', 'Sm', 'S', 'energy'):
 #            v = getattr(self, var)
 #            if v is not None:
@@ -1091,10 +1112,11 @@ class StreamArgs(object):
     @property
     def specified_state_vars(self):
         # Slightly faster
-        return sum(self.specifications[i] is not None for i in ('T', 'P', 'V', 'rho', 'rho_mass', 
+        s = self.specifications
+        return sum(s[i] is not None for i in ('T', 'P', 'V', 'rho', 'rho_mass', 
                                                                 'VF', 'H_mass', 'H', 'S_mass', 'S',
                                                                 'U_mass', 'U', 'A_mass', 'A', 'G_mass', 'G',
-                                                                'energy'))
+                                                                'energy', 'energy_reactive'))
 #        return sum(i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S, self.energy))
 
     @property
@@ -1136,7 +1158,8 @@ class StreamArgs(object):
             state_vars += 1
         if s['energy'] is not None:
             state_vars += 1
-#        state_vars = (i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S, self.energy))
+        if s['energy_reactive'] is not None:
+            state_vars += 1
         if state_vars == 2:
             return True
         return False
@@ -1146,7 +1169,7 @@ class StreamArgs(object):
         state_vars = (i is not None for i in (self.T, self.VF, self.V, self.rho, self.rho_mass, 
                                               self.H_mass, self.H, self.S_mass, self.S, 
                                               self.U_mass, self.U, self.A_mass, self.A, self.G_mass, self.G,
-                                              self.energy))
+                                              self.energy, self.energy_reactive))
         if sum(state_vars) >= 1:
             return True
         return False
@@ -1267,6 +1290,9 @@ class StreamArgs(object):
                     if n is not None:
                         H = energy/n
                         spec_count += 1
+                energy_reactive = s['energy_reactive']
+                if energy_reactive is not None:
+                    pass
             
             H_flash = s['H'] if s['H'] is not None else H
 
@@ -1289,9 +1315,6 @@ class StreamArgs(object):
             self._mixture = m
             self._state_cache = state_cache
             return m
-    @property
-    def mixture(self):
-        return self.flash_state()
 
 class Stream(Mixture):
     '''Creates a Stream object which is useful for modeling mass and energy
@@ -1873,7 +1896,7 @@ class EquilibriumStream(EquilibriumState):
                  U=None, U_mass=None,
                  G=None, G_mass=None,
                  A=None, A_mass=None,
-                 energy=None, Vf_TP=None, Q_TP=None, hot_start=None,
+                 energy=None, energy_reactive=None, Vf_TP=None, Q_TP=None, hot_start=None,
                  existing_flash=None, spec_fun=None):
 
         constants = flasher.constants
