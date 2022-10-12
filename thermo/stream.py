@@ -1347,6 +1347,14 @@ class StreamArgs(object):
             self._state_cache = state_cache
             return m
 
+    def value(self, name):
+        v = getattr(self, name)
+        try:
+            v = v()
+        except:
+            pass
+        return v
+
 class Stream(Mixture):
     '''Creates a Stream object which is useful for modeling mass and energy
     balances.
