@@ -54,12 +54,13 @@ class StreamArgs(object):
                  V=None, rho=None, rho_mass=None,
                  
                  ns=None, ms=None, Qls=None, Qgs=None, m=None, n=None, Q=None,
+                 Ql=None,
                  energy=None, energy_reactive=None, H_reactive=None,
                  Vf_TP=(None, None), Q_TP=(None, None, ''), flasher=None,
                  single_composition_basis=True):
         self.specifications = s = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None,
                        'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
-                       'n': None, 'm': None, 'Q': None,
+                       'n': None, 'm': None, 'Q': None, 'Ql': None,
                        
                        'T': None, 'P': None, 
                        'V': None, 'rho': None, 'rho_mass': None,
@@ -119,6 +120,10 @@ class StreamArgs(object):
         if Q is not None:
             s['Q'] = Q
             flow_specs += 1
+        if Ql is not None:
+            s['Ql'] = Ql
+            flow_specs += 1
+
 
         if T is not None:
             s['T'] = T
@@ -687,7 +692,7 @@ class StreamArgs(object):
             s['ns'] = arg
         else:
             if self.single_composition_basis:
-                s['zs'] = s['ws'] = s['Vfls'] = s['Vfgs'] = s['ms'] = s['Qls'] = s['Qgs'] = s['n'] = s['m'] = s['Q'] = None
+                s['zs'] = s['ws'] = s['Vfls'] = s['Vfgs'] = s['ms'] = s['Qls'] = s['Qgs'] = s['n'] = s['m'] = s['Q'] = s['Ql'] = None
                 s['ns'] = arg
             else:
                 s['ns'] = arg
@@ -730,6 +735,11 @@ class StreamArgs(object):
         if Qls is not None and None not in Qls:
             Vms = self.flasher.V_liquids_ref()
             return [Ql/Vm for Vm, Ql in zip(Vms, Qls)]
+        Ql = s['Ql']
+        if Ql is not None:
+            Vms = self.flasher.V_liquids_ref()
+            zs = self.zs_calc
+            return [Ql*zi/Vm for Vm, zi in zip(Vms, zs)]
         Qgs = s['Qgs']
         if Qgs is not None and None not in Qgs:
             flasher = self.flasher
@@ -768,7 +778,7 @@ class StreamArgs(object):
             s['ms'] = arg
         else:
             if self.single_composition_basis:
-                s['zs'] = s['ws'] = s['Vfls'] = s['Vfgs'] = s['ns'] = s['Qls'] = s['Qgs'] = s['n'] = s['m'] = s['Q'] = None
+                s['zs'] = s['ws'] = s['Vfls'] = s['Vfgs'] = s['ns'] = s['Qls'] = s['Qgs'] = s['n'] = s['m'] = s['Q'] = s['Ql'] = None
                 s['ms'] = arg
             else:
                 s['ms'] = arg
@@ -796,7 +806,7 @@ class StreamArgs(object):
             s['Qls'] = arg
         else:
             if self.single_composition_basis:
-                s['zs'] = s['ws'] = s['Vfls'] = s['Vfgs'] = s['ms'] = s['ns'] = s['Qgs'] = s['n'] = s['m'] = s['Q'] = None
+                s['zs'] = s['ws'] = s['Vfls'] = s['Vfgs'] = s['ms'] = s['ns'] = s['Qgs'] = s['n'] = s['m'] = s['Q'] = s['Ql'] = None
                 s['Qls'] = arg
             else:
                 s['Qls'] = arg
@@ -820,7 +830,7 @@ class StreamArgs(object):
             if self.single_composition_basis:
                 args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None,
                         'ns': None, 'ms': None, 'Qls': None, 'Qgs': arg,
-                        'n': None, 'm': None, 'Q': None}
+                        'n': None, 'm': None, 'Q': None, 'Ql': None}
                 self.specifications.update(args)
             else:
                 self.specifications['Qgs'] = arg
@@ -843,8 +853,21 @@ class StreamArgs(object):
             self.specifications['m'] = arg
         else:
             args = {'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
-                    'n': None, 'm': arg, 'Q': None}
+                    'n': None, 'm': arg, 'Q': None, 'Ql': None}
             self.specifications.update(args)
+
+    @property
+    def m_calc(self):
+        m = self.specifications['m']
+        if m is not None:
+            return m
+        ms = self.specifications['ms']
+        if ms is not None and None not in ms:
+            return sum(ms)
+        ms_calc = self.ms_calc
+        if ms_calc is not None:
+            return sum(ms_calc)
+        return None
 
     @property
     def n(self):
@@ -856,7 +879,7 @@ class StreamArgs(object):
             s['n'] = None
         else:
             s['n'] = arg
-            s['ns'] = s['ms'] = s['Qls'] = s['Qgs'] = s['m'] = s['Q'] = None
+            s['ns'] = s['ms'] = s['Qls'] = s['Qgs'] = s['m'] = s['Q'] = s['Ql'] = None
 
     @property
     def n_calc(self):
@@ -875,6 +898,30 @@ class StreamArgs(object):
         return None
 
     @property
+    def Ql(self):
+        return self.specifications['Ql']
+    @Ql.setter
+    def Ql(self, arg):
+        if arg is None:
+            self.specifications['Ql'] = arg
+        else:
+            args = {'ns': None, 'Qls': None, 'Qls': None, 'Qgs': None,
+                    'n': None, 'Ql': arg, 'Q': None, 'm': None}
+            self.specifications.update(args)
+
+    @property
+    def Ql_calc(self):
+        Ql = self.specifications['Ql']
+        if Ql is not None:
+            return Ql
+        Qls = self.specifications['Qls']
+        if Qls is not None and None not in Qls:
+            return sum(Qls)
+        Qls_calc = self.Qls_calc
+        if Qls_calc is not None:
+            return sum(Qls_calc)
+        return None
+    @property
     def MW(self):
         try:
             MWs = self.flasher.constants.MWs
@@ -883,19 +930,6 @@ class StreamArgs(object):
             return MW
         except:
             return None
-
-    @property
-    def m_calc(self):
-        m = self.specifications['m']
-        if m is not None:
-            return m
-        ms = self.specifications['ms']
-        if ms is not None and None not in ms:
-            return sum(ms)
-        ms_calc = self.ms_calc
-        if ms_calc is not None:
-            return sum(ms_calc)
-        return None
 
     @property
     def energy_calc(self):
@@ -950,7 +984,7 @@ class StreamArgs(object):
             self.specifications['Q'] = arg
         else:
             args = {'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
-                    'n': None, 'm': None, 'Q': arg}
+                    'n': None, 'm': None, 'Q': arg, 'Ql': None}
             self.specifications.update(args)
 
     
@@ -1216,6 +1250,8 @@ class StreamArgs(object):
             return ('n', s['n'])
         if s['Q'] is not None:
             return ('Q', s['Q'])
+        if s['Ql'] is not None:
+            return ('Ql', s['Ql'])
 #
 #        # TODO consider energy?
 #        specs = []
@@ -1226,7 +1262,7 @@ class StreamArgs(object):
 
     @property
     def specified_flow_vars(self):
-        return sum(i is not None for i in (self.ns, self.ms, self.Qls, self.Qgs, self.m, self.n, self.Q))
+        return sum(i is not None for i in (self.ns, self.ms, self.Qls, self.Qgs, self.m, self.n, self.Q, self.Ql))
 
     @property
     def flow_specified(self):
@@ -1244,6 +1280,8 @@ class StreamArgs(object):
         if s['n'] is not None:
             return True
         if s['Q'] is not None:
+            return True
+        if s['Ql'] is not None:
             return True
         return False
 #        flow_vars = (i is not None for i in (self.ns, self.ms, self.Qls, self.Qgs, self.m, self.n, self.Q))
@@ -1924,7 +1962,7 @@ class EquilibriumStream(EquilibriumState):
 
     def __init__(self, flasher, zs=None, ws=None, Vfls=None, Vfgs=None,
                  ns=None, ms=None, Qls=None, Qgs=None,
-                 n=None, m=None, Q=None,
+                 n=None, m=None, Q=None, Ql=None,
                  T=None, P=None, 
                  
                  V=None, rho=None, rho_mass=None,
@@ -1999,6 +2037,9 @@ class EquilibriumStream(EquilibriumState):
         if Q is not None:
             flow_option_count += 1
             self.flow_spec = ('Q', Q)
+        if Ql is not None:
+            flow_option_count += 1
+            self.flow_spec = ('Ql', Ql)
 
 
         if flow_option_count > 1 and energy is not None:
@@ -2012,7 +2053,7 @@ class EquilibriumStream(EquilibriumState):
         elif flow_option_count > 1:
             raise Exception("More than one source of flow rate information is "
                             "provided; only one of "
-                            "'m', 'n', 'Q', 'ms', 'ns', 'Qls', 'Qgs' "
+                            "'m', 'n', 'Q', 'Ql', 'ms', 'ns', 'Qls', 'Qgs' "
                             "'energy' or 'energy_reactive' can be specified")
 
         # Make sure mole fractions are available
@@ -2112,6 +2153,14 @@ class EquilibriumStream(EquilibriumState):
             try:
                 for i in range(N):
                     n += Qls[i]/Vms[i]
+            except:
+                raise Exception('Liquid molar volume could not be calculated to determine the flow rate of the stream.')
+        elif Ql is not None:
+            n = 0.0
+            Vms = flasher.V_liquids_ref()
+            try:
+                for i in range(N):
+                    n += Ql*zs[i]/Vms[i]
             except:
                 raise Exception('Liquid molar volume could not be calculated to determine the flow rate of the stream.')
         elif Qgs is not None:
