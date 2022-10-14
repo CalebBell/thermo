@@ -5169,6 +5169,8 @@ class Phase(object):
             return self._energy
         except:
             return None
+        
+    energy_calc = energy
 
     @property
     def energy_reactive(self):
@@ -5194,7 +5196,9 @@ class Phase(object):
             return self._energy_reactive
         except:
             return None
-
+    
+    energy_reactive_calc = energy_reactive
+    
     @property
     def n(self):
         r'''Method to return the molar flow rate of this phase.
@@ -5218,6 +5222,8 @@ class Phase(object):
             return self._n
         except:
             return None
+    
+    n_calc = n
 
     @property
     def m(self):
@@ -5241,6 +5247,8 @@ class Phase(object):
                 return self._m
         except:
             return None
+        
+    m_calc = m
 
     @property
     def Q(self):
@@ -5264,6 +5272,8 @@ class Phase(object):
                 return self._Q
         except:
             return None
+        
+    Q_calc = Q
 
     @property
     def ns(self):
@@ -5288,6 +5298,8 @@ class Phase(object):
                 return self._ns
         except:
             return None
+        
+    ns_calc = ns
 
     @property
     def ms(self):
@@ -5313,6 +5325,8 @@ class Phase(object):
             return self._ms
         except:
             return None
+        
+    ms_calc = ms
     
     @property
     def Qgs(self):
@@ -5340,6 +5354,8 @@ class Phase(object):
         Vn = V*n
         self._Qgs = [zi*Vn for zi in self.zs]
         return self._Qgs
+    
+    Qgs_calc = Qgs
 
     @property
     def Qg(self):
@@ -5366,12 +5382,14 @@ class Phase(object):
             return self._Qg
         except:
             return None
+        
+    Qg_calc = Qg
 
     @property
     def Qls(self):
         r'''Method to return the volume flow rate of each component in
         this phase as an ideal liquid, using the configured
-        standard molar volumes `Vml_STPs`. This method is only
+        `V_liquids_ref`. This method is only
         available when the phase is linked to an EquilibriumStream.
         This method totally ignores phase equilibrium.
 
@@ -5388,9 +5406,11 @@ class Phase(object):
         except:
             pass
         ns = self.ns
-        Vms_TP = self.result.constants.Vml_STPs
-        self._Qls = [ns[i]*Vms_TP[i] for i in range(self.N)]
+        Vmls = self.result.V_liquids_ref()
+        self._Qls = [ns[i]*Vmls[i] for i in range(self.N)]
         return self._Qls
+    
+    Qls_calc = Qls
 
     @property
     def Ql(self):
@@ -5417,6 +5437,8 @@ class Phase(object):
             return self._Ql
         except:
             return None
+        
+    Ql_calc = Ql
         
     def concentrations(self):
         r'''Method to return the molar concentrations of each component in the 

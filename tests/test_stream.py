@@ -33,8 +33,10 @@ from math import *
 from fluids.constants import R
 from fluids.numerics import assert_close, assert_close1d
 
+from thermo import ChemicalConstantsPackage, HeatCapacityGas, PropertyCorrelationsPackage, CEOSLiquid, CEOSGas, PR78MIX, PRMIX, FlashPureVLS, VolumeLiquid
+from thermo import FlashVLN
+from chemicals import property_molar_to_mass
 
-from thermo import ChemicalConstantsPackage, HeatCapacityGas, PropertyCorrelationsPackage, CEOSLiquid, CEOSGas, PR78MIX, FlashPureVLS
 
 @pytest.mark.deprecated
 def test_Stream():
@@ -617,3 +619,157 @@ def test_EquilibriumStream_unusual_inputs():
     check = EquilibriumStream(VF=stream.VF, G_mass=stream.G_mass(), zs=[1], m=1, flasher=flasher)
     assert_close(stream.T, check.T)
     
+def test_EquilibriumStream_different_input_sources():
+    constants = ChemicalConstantsPackage(atomss=[{'H': 2, 'O': 1}, {'C': 1, 'H': 4}, {'C': 10, 'H': 22}], CASs=['7732-18-5', '74-82-8', '124-18-5'], Gfgs=[-228554.325, -50443.48000000001, 33414.534999999916], Hfgs=[-241822.0, -74534.0, -249500.0], MWs=[18.01528, 16.04246, 142.28168], names=['water', 'methane', 'decane'], omegas=[0.344, 0.008, 0.49], Pcs=[22048320.0, 4599000.0, 2110000.0], Sfgs=[-44.499999999999964, -80.79999999999997, -948.8999999999997], Tbs=[373.124, 111.65, 447.25], Tcs=[647.14, 190.564, 611.7], Vml_STPs=[1.8087205105724903e-05, 5.858784737690099e-05, 0.00019580845677748954], Vml_60Fs=[1.8036021352633123e-05, 5.858784737690099e-05, 0.00019404661845090487])
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+    HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+    HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
+    HeatCapacityGas(load_data=False, poly_fit=(200.0, 1000.0, [-1.702672546011891e-21, 6.6751002084997075e-18, -7.624102919104147e-15, -4.071140876082743e-12, 1.863822577724324e-08, -1.9741705032236747e-05, 0.009781408958916831, -1.6762677829939379, 252.8975930305735])),
+    ],
+    VolumeLiquids=[VolumeLiquid(load_data=False, poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652])),
+    VolumeLiquid(load_data=False, poly_fit=(90.8, 180.564, [7.730541828225242e-20, -7.911042356530585e-17, 3.51935763791471e-14, -8.885734012624568e-12, 1.3922694980104743e-09, -1.3860056394382538e-07, 8.560110533953199e-06, -0.00029978743425740123, 0.004589555868318768])),
+    VolumeLiquid(load_data=False, poly_fit=(243.51, 607.7, [1.0056823442253386e-22, -3.2166293088353376e-19, 4.442027873447809e-16, -3.4574825216883073e-13, 1.6583965814129937e-10, -5.018203505211133e-08, 9.353680499788552e-06, -0.0009817356348626736, 0.04459313654596568])),
+    ],
+    )
+    
+    gas = CEOSGas(eos_class=PRMIX, eos_kwargs={"Pcs":constants.Pcs, "Tcs": constants.Tcs,
+                                               "omegas": constants.omegas}, HeatCapacityGases=correlations.HeatCapacityGases,
+                  Hfs=constants.Hfgs, Gfs=constants.Gfgs, T=298.15, P=101325.0, zs=[0.3333333333333333, 0.3333333333333333, 0.3333333333333333])
+    liquid = CEOSLiquid(eos_class=PRMIX, eos_kwargs={"Pcs":constants.Pcs, "Tcs": constants.Tcs,
+                                               "omegas": constants.omegas}, HeatCapacityGases=correlations.HeatCapacityGases,
+                  Hfs=constants.Hfgs, Gfs=constants.Gfgs, T=298.15, P=101325.0, zs=[0.3333333333333333, 0.3333333333333333, 0.3333333333333333])
+    flasher = FlashVLN(constants=constants, correlations=correlations, gas=gas, liquids=[liquid, liquid])
+    
+    
+    base = EquilibriumStream(T=300.0, P=1e5, zs=[.5, .3, .2], n=10, flasher=flasher)
+    case_zs_m = EquilibriumStream(T=300.0, P=1e5, zs=[.5, .3, .2], m=base.m, flasher=flasher)
+    case_zs_Ql = EquilibriumStream(T=300.0, P=1e5, zs=[.5, .3, .2], Ql=base.Ql, flasher=flasher)
+    case_zs_Qg = EquilibriumStream(T=300.0, P=1e5, zs=[.5, .3, .2], Qg=base.Qg, flasher=flasher)
+    case_zs_Q = EquilibriumStream(T=300.0, P=1e5, zs=[.5, .3, .2], Q=base.Q, flasher=flasher)
+    
+    case_ws_n = EquilibriumStream(T=300.0, P=1e5, ws=base.ws(), n=10, flasher=flasher)
+    case_ws_m = EquilibriumStream(T=300.0, P=1e5, ws=base.ws(), m=base.m, flasher=flasher)
+    case_ws_Ql = EquilibriumStream(T=300.0, P=1e5, ws=base.ws(), Ql=base.Ql, flasher=flasher)
+    case_ws_Qg = EquilibriumStream(T=300.0, P=1e5, ws=base.ws(), Qg=base.Qg, flasher=flasher)
+    case_ws_Q = EquilibriumStream(T=300.0, P=1e5, ws=base.ws(), Q=base.Q, flasher=flasher)
+    
+    case_Vfgs_n = EquilibriumStream(T=300.0, P=1e5, Vfgs=base.Vfgs(), n=10, flasher=flasher)
+    case_Vfgs_m = EquilibriumStream(T=300.0, P=1e5, Vfgs=base.Vfgs(), m=base.m, flasher=flasher)
+    case_Vfgs_Ql = EquilibriumStream(T=300.0, P=1e5, Vfgs=base.Vfgs(), Ql=base.Ql, flasher=flasher)
+    case_Vfgs_Qg = EquilibriumStream(T=300.0, P=1e5, Vfgs=base.Vfgs(), Qg=base.Qg, flasher=flasher)
+    case_Vfgs_Q = EquilibriumStream(T=300.0, P=1e5, Vfgs=base.Vfgs(), Q=base.Q, flasher=flasher)
+    
+    case_Vfls_n = EquilibriumStream(T=300.0, P=1e5, Vfls=base.Vfls(), n=10, flasher=flasher)
+    case_Vfls_m = EquilibriumStream(T=300.0, P=1e5, Vfls=base.Vfls(), m=base.m, flasher=flasher)
+    case_Vfls_Ql = EquilibriumStream(T=300.0, P=1e5, Vfls=base.Vfls(), Ql=base.Ql, flasher=flasher)
+    case_Vfls_Qg = EquilibriumStream(T=300.0, P=1e5, Vfls=base.Vfls(), Qg=base.Qg, flasher=flasher)
+    case_Vfls_Q = EquilibriumStream(T=300.0, P=1e5, Vfls=base.Vfls(), Q=base.Q, flasher=flasher)
+    
+    case_ns = EquilibriumStream(T=300.0, P=1e5, ns=base.ns, flasher=flasher)
+    case_ms = EquilibriumStream(T=300.0, P=1e5, ms=base.ms, flasher=flasher)
+    case_Qls = EquilibriumStream(T=300.0, P=1e5, Qls=base.Qls, flasher=flasher)
+    case_Qgs = EquilibriumStream(T=300.0, P=1e5, Qgs=base.Qgs, flasher=flasher)
+    
+    case_energy_ns = EquilibriumStream(energy=base.energy, P=1e5, ns=base.ns, flasher=flasher)
+    case_energy_ms = EquilibriumStream(energy=base.energy, P=1e5, ms=base.ms, flasher=flasher)
+    case_energy_Qls = EquilibriumStream(energy=base.energy, P=1e5, Qls=base.Qls, flasher=flasher)
+    case_energy_Qgs = EquilibriumStream(energy=base.energy, P=1e5, Qgs=base.Qgs, flasher=flasher)
+    
+    all_cases = [base, case_zs_m, case_zs_Ql, case_zs_Qg, case_zs_Q,
+                 case_ws_n, case_ws_m, case_ws_Ql, case_ws_Qg, case_ws_Q,
+                case_Vfgs_n, case_Vfgs_m, case_Vfgs_Ql, case_Vfgs_Qg, case_Vfgs_Q,
+                case_Vfls_n, case_Vfls_m, case_Vfls_Ql, case_Vfls_Qg, case_Vfls_Q,
+                case_ns, case_ms, case_Qls, case_Qgs, 
+                case_energy_ns, case_energy_ms, case_energy_Qls, case_energy_Qgs
+                ]
+    
+    for i, case in enumerate(all_cases):
+        assert_close1d(case.ns, [5.0, 3.0, 2.0], rtol=1e-13)
+        assert_close1d(case.ms, [0.0900764, 0.04812738, 0.28456336], rtol=1e-13)
+        assert_close1d(case.Qls, [9.043602552862452e-05, 0.00017576354213070296, 0.0003916169135549791], rtol=1e-13)
+        assert_close1d(case.Qgs, [0.11822415018114264, 0.07093449010868558, 0.04728966007245706], rtol=1e-13)
+        assert_close(case.n, sum(case.ns), rtol=1e-13)
+        assert_close(case.m, sum(case.ms), rtol=1e-13)
+        assert_close(case.Ql, sum(case.Qls), rtol=1e-13)
+        assert_close(case.Qg, sum(case.Qgs), rtol=1e-13)
+    
+        assert_close(case.T, 300.0, rtol=1e-13)
+        assert_close(case.P, 1e5, rtol=1e-13)
+        assert_close(case.VF, 0.3091453647967936, rtol=1e-8)
+        assert_close(case.V(), 0.007743939818830943, rtol=1e-8)
+        assert_close(case.rho(), 129.13323494176691, rtol=1e-8)
+        assert_close(case.rho_mass(), 5.459328841527886, rtol=1e-8)
+    
+        assert_close(case.H(), -31916.667302523703, rtol=1e-8)
+        assert_close(case.S(), -81.83421232611906, rtol=1e-8)
+        assert_close(case.G(), -7366.403604687985, rtol=1e-8)
+        assert_close(case.U(), -32691.0612844068, rtol=1e-8)
+        assert_close(case.A(), -8140.79758657108, rtol=1e-8)
+    
+        assert_close(case.H_mass(), property_molar_to_mass(case.H(), case.MW()), rtol=1e-13)
+        assert_close(case.S_mass(), property_molar_to_mass(case.S(), case.MW()), rtol=1e-13)
+        assert_close(case.G_mass(), property_molar_to_mass(case.G(), case.MW()), rtol=1e-13)
+        assert_close(case.U_mass(), property_molar_to_mass(case.U(), case.MW()), rtol=1e-13)
+        assert_close(case.A_mass(), property_molar_to_mass(case.A(), case.MW()), rtol=1e-13)
+    
+        assert_close(case.H_reactive(), -225087.8673030599, rtol=1e-8)
+        assert_close(case.energy, case.H()*case.n, rtol=1e-13)
+        assert_close(case.energy_reactive, case.H_reactive()*case.n, rtol=1e-13)
+    
+        assert_close1d(case.zs, [.5, .3, .2], rtol=1e-13)
+        assert_close1d(case.ws(), [0.21306386300505759, 0.11383898001154961, 0.6730971569833928], rtol=1e-13)
+        assert_close1d(case.Vfls(), [0.13747911174509148, 0.26719236618433384, 0.5953285220705747], rtol=1e-13)
+        assert_close1d(case.Vfgs(), [0.5, 0.3, 0.2], rtol=1e-13)
+    
+        assert_close1d(case.ns, case.bulk.ns, rtol=1e-13)
+        assert_close1d(case.ms, case.bulk.ms, rtol=1e-13)
+        assert_close1d(case.Qls, case.bulk.Qls, rtol=1e-13)
+        assert_close1d(case.Qgs, case.bulk.Qgs, rtol=1e-13)
+        assert_close(case.n, case.bulk.n, rtol=1e-13)
+        assert_close(case.m, case.bulk.m, rtol=1e-13)
+        assert_close(case.Ql, case.bulk.Ql, rtol=1e-13)
+        assert_close(case.Qg, case.bulk.Qg, rtol=1e-13)
+    
+        assert_close1d(case.ns_calc, case.bulk.ns_calc, rtol=1e-13)
+        assert_close1d(case.ms_calc, case.bulk.ms_calc, rtol=1e-13)
+        assert_close1d(case.Qls_calc, case.bulk.Qls_calc, rtol=1e-13)
+        assert_close1d(case.Qgs_calc, case.bulk.Qgs_calc, rtol=1e-13)
+        assert_close(case.n_calc, case.bulk.n_calc, rtol=1e-13)
+        assert_close(case.m_calc, case.bulk.m_calc, rtol=1e-13)
+        assert_close(case.Ql_calc, case.bulk.Ql_calc, rtol=1e-13)
+        assert_close(case.Qg_calc, case.bulk.Qg_calc, rtol=1e-13)
+    
+        
+        
+        assert_close(case.T, case.bulk.T, rtol=1e-13)
+        assert_close(case.P, case.bulk.P, rtol=1e-13)
+        assert_close(case.VF, case.bulk.VF, rtol=1e-13)
+        assert_close(case.energy, case.bulk.energy, rtol=1e-13)
+        assert_close(case.energy_reactive, case.bulk.energy_reactive, rtol=1e-13)
+    
+        assert_close(case.V(), case.bulk.V(), rtol=1e-8)
+        assert_close(case.rho(), case.bulk.rho(), rtol=1e-13)
+        assert_close(case.rho_mass(), case.bulk.rho_mass(), rtol=1e-13)
+    
+        assert_close(case.H(), case.bulk.H(), rtol=1e-13)
+        assert_close(case.S(), case.bulk.S(), rtol=1e-13)
+        assert_close(case.G(), case.bulk.G(), rtol=1e-13)
+        assert_close(case.U(), case.bulk.U(), rtol=1e-13)
+        assert_close(case.A(), case.bulk.A(), rtol=1e-13)
+    
+        assert_close(case.H_mass(), case.bulk.H_mass(), rtol=1e-13)
+        assert_close(case.S_mass(), case.bulk.S_mass(), rtol=1e-13)
+        assert_close(case.G_mass(), case.bulk.G_mass(), rtol=1e-13)
+        assert_close(case.U_mass(), case.bulk.U_mass(), rtol=1e-13)
+        assert_close(case.A_mass(), case.bulk.A_mass(), rtol=1e-13)
+    
+        assert_close(case.H_reactive(), case.bulk.H_reactive(), rtol=1e-13)
+    
+        assert_close1d(case.zs, case.bulk.zs, rtol=1e-13)
+        assert_close1d(case.ws(), case.bulk.ws(), rtol=1e-13)
+        assert_close1d(case.Vfls(), case.bulk.Vfls(), rtol=1e-13)
+        assert_close1d(case.Vfgs(), case.bulk.Vfgs(), rtol=1e-13)
+    
+        # Generic volume
+        assert_close(case.Q, 0.07743939818830943, rtol=1e-9)
+        assert_close(case.Q, case.bulk.Q)

@@ -3201,7 +3201,10 @@ for name in bulk_props:
     setattr(EquilibriumState, name, getter)
 
 # properties
-bulk_properties = ['Ql', 'Qg', 'energy_reactive']
+bulk_properties = ['Ql', 'Ql_calc', 'Qls_calc', 'Qls', 'Qg_calc', 'Qg', 'Qgs_calc', 'Qgs', 'ms_calc',
+                     'ns_calc',  'Q_calc', 'Q', 'm_calc',  'n_calc',
+                    #'n','m','ns','ms',
+                    'energy_reactive_calc', 'energy_reactive', 'energy_calc', 'energy']
 for name in bulk_properties:
     # Maybe take this out and implement it manually for performance?
     getter = _make_getter_bulk_property(name)

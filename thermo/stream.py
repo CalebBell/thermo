@@ -1962,7 +1962,7 @@ class EquilibriumStream(EquilibriumState):
 
     def __init__(self, flasher, zs=None, ws=None, Vfls=None, Vfgs=None,
                  ns=None, ms=None, Qls=None, Qgs=None,
-                 n=None, m=None, Q=None, Ql=None,
+                 n=None, m=None, Q=None, Ql=None, Qg=None,
                  T=None, P=None, 
                  
                  V=None, rho=None, rho_mass=None,
@@ -2040,7 +2040,9 @@ class EquilibriumStream(EquilibriumState):
         if Ql is not None:
             flow_option_count += 1
             self.flow_spec = ('Ql', Ql)
-
+        if Qg is not None:
+            flow_option_count += 1
+            self.flow_spec = ('Qg', Qg)
 
         if flow_option_count > 1 and energy is not None:
             if H is not None or H_mass is not None:
@@ -2053,7 +2055,7 @@ class EquilibriumStream(EquilibriumState):
         elif flow_option_count > 1:
             raise Exception("More than one source of flow rate information is "
                             "provided; only one of "
-                            "'m', 'n', 'Q', 'Ql', 'ms', 'ns', 'Qls', 'Qgs' "
+                            "'m', 'n', 'Q', 'Ql', 'Qg', 'ms', 'ns', 'Qls', 'Qgs' "
                             "'energy' or 'energy_reactive' can be specified")
 
         # Make sure mole fractions are available
@@ -2094,6 +2096,14 @@ class EquilibriumStream(EquilibriumState):
                 n = sum(ns)
             elif ms is not None:
                 n = property_molar_to_mass(sum(ms), MW)
+            elif Qls is not None:
+                n = 0.0
+                Vms = flasher.V_liquids_ref()
+                for i in range(N):
+                    n += Qls[i]/Vms[i]
+            elif Qgs is not None:
+                V_ig = R*flasher.settings.T_gas_ref/flasher.settings.P_gas_ref
+                n = sum(Qgs)/V_ig
             H = energy/n
         elif energy_reactive is not None:
             if m is not None:
@@ -2116,6 +2126,12 @@ class EquilibriumStream(EquilibriumState):
 
         else:
             dest = super(EquilibriumStream, self).__init__
+            # print(dict(T=T, P=P, V=V, rho=rho, rho_mass=rho_mass, VF=VF,
+            #               H=H, H_mass=H_mass, S=S, S_mass=S_mass,
+            #               G=G, G_mass=G_mass, U=U, U_mass=U_mass,
+            #               A=A, A_mass=A_mass, H_reactive=H_reactive,
+                          
+            #               zs=zs))
             flasher.flash(T=T, P=P, V=V, rho=rho, rho_mass=rho_mass, VF=VF,
                           H=H, H_mass=H_mass, S=S, S_mass=S_mass,
                           G=G, G_mass=G_mass, U=U, U_mass=U_mass,
@@ -2125,7 +2141,9 @@ class EquilibriumStream(EquilibriumState):
                           spec_fun=spec_fun)
 
         # Convert the flow rate into total molar flow
-        if m is not None:
+        if n is not None:
+            pass
+        elif m is not None:
             n = property_molar_to_mass(m, MW) # m*10000/MW
         elif ns is not None:
             n = sum(ns)
@@ -2161,10 +2179,16 @@ class EquilibriumStream(EquilibriumState):
             Vfls = zs_to_Vfs(zs, Vms)
             try:
                 for i in range(N):
-                    # n += Ql*zs[i]/Vms[i]
                     n += Ql*Vfls[i]/(Vms[i])
-                    # n += Ql*zs[i]*Vms[i]
-                    # n += Vms[i]/(Ql*zs[i])
+            except:
+                raise Exception('Liquid molar volume could not be calculated to determine the flow rate of the stream.')
+        elif Qg is not None:
+            n = 0.0
+            settings = self.flasher.settings
+            V = R*settings.T_gas_ref/settings.P_gas_ref
+            try:
+                for i in range(N):
+                    n += Qg*zs[i]/V
             except:
                 raise Exception('Liquid molar volume could not be calculated to determine the flow rate of the stream.')
         elif Qgs is not None:
@@ -2205,14 +2229,6 @@ class EquilibriumStream(EquilibriumState):
         return self.ws()
 
     @property
-    def ns_calc(self):
-        return self.ns
-
-    @property
-    def ms_calc(self):
-        return self.ms
-
-    @property
     def m_calc(self):
         return self.m
 
@@ -2231,10 +2247,6 @@ class EquilibriumStream(EquilibriumState):
         return self.Vfls()
 
     @property
-    def pkg(self):
-        return self.flasher
-
-    @property
     def Q(self):
         return self.n*self.V()
 
@@ -2249,7 +2261,6 @@ class EquilibriumStream(EquilibriumState):
         Vn = V*n
         return [zi*Vn for zi in self.zs]
 
-    Qgs_calc = Qgs
 
     @property
     def Qls(self):
