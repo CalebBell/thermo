@@ -231,18 +231,6 @@ def test_sub_streams():
 
 
 
-@pytest.mark.deprecated
-def test_StreamArgs():
-    s = StreamArgs(T=540)
-    s.P = 1E6
-    s.n = 2
-    s.ws = [.5, .5]
-    s.IDs = ['water', 'ethane']
-    assert s.stream is not None
-
-    s = StreamArgs(T=540, P=1E6, n=2, ws=[.5, .5], IDs=['water', 'ethanol'])
-    assert s.stream is not None
-
 def test_StreamArgs_flow_overspecified():
 
     with pytest.raises(OverspeficiedError):
@@ -684,6 +672,7 @@ def test_EquilibriumStream_different_input_sources():
                 ]
     
     for i, case in enumerate(all_cases):
+        print(i)
         assert_close1d(case.ns, [5.0, 3.0, 2.0], rtol=1e-13)
         assert_close1d(case.ms, [0.0900764, 0.04812738, 0.28456336], rtol=1e-13)
         assert_close1d(case.Qls, [9.043602552862452e-05, 0.00017576354213070296, 0.0003916169135549791], rtol=1e-13)
@@ -773,3 +762,25 @@ def test_EquilibriumStream_different_input_sources():
         # Generic volume
         assert_close(case.Q, 0.07743939818830943, rtol=1e-9)
         assert_close(case.Q, case.bulk.Q)
+        
+        assert_close(case.T_calc, case.bulk.T_calc, rtol=1e-13)
+        assert_close(case.T_calc, case.T, rtol=1e-13)
+        assert_close(case.P_calc, case.bulk.P_calc, rtol=1e-13)
+        assert_close(case.P_calc, case.P, rtol=1e-13)
+        assert_close(case.VF_calc, case.bulk.VF_calc, rtol=1e-13)
+        assert_close(case.VF_calc, case.VF, rtol=1e-13)
+        assert_close(case.energy_calc, case.bulk.energy_calc, rtol=1e-13)
+        assert_close(case.energy_calc, case.energy, rtol=1e-13)
+        assert_close(case.energy_reactive_calc, case.bulk.energy_reactive_calc, rtol=1e-13)
+        assert_close(case.energy_reactive_calc, case.energy_reactive, rtol=1e-13)
+        assert_close(case.H_calc, case.bulk.H_calc, rtol=1e-13)
+        assert_close(case.H_calc, case.H(), rtol=1e-13)
+    
+        assert_close1d(case.zs, case.zs_calc, rtol=1e-13)
+        assert_close1d(case.zs_calc, case.bulk.zs_calc, rtol=1e-13)
+        assert_close1d(case.ws(), case.ws_calc, rtol=1e-13)
+        assert_close1d(case.ws_calc, case.bulk.ws_calc, rtol=1e-13)
+        assert_close1d(case.Vfls(), case.Vfls_calc, rtol=1e-13)
+        assert_close1d(case.Vfls_calc, case.bulk.Vfls_calc, rtol=1e-13)
+        assert_close1d(case.Vfgs(), case.Vfgs_calc, rtol=1e-13)
+        assert_close1d(case.Vfgs_calc, case.bulk.Vfgs_calc, rtol=1e-13)

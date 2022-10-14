@@ -2208,44 +2208,8 @@ class EquilibriumStream(EquilibriumState):
         self.ms = [m*wi for wi in ws]
 
 
-    @property
-    def T_calc(self):
-        return self.T
-
-    @property
-    def P_calc(self):
-        return self.P
-
-    @property
-    def VF_calc(self):
-        return self.VF
-
-    @property
-    def zs_calc(self):
-        return self.zs
-
-    @property
-    def ws_calc(self):
-        return self.ws()
-
-    @property
-    def m_calc(self):
-        return self.m
-
-    @property
-    def n_calc(self):
-        return self.n
-
-    @property
-    def energy(self):
-        return self.H()*self.n
-
-    energy_calc = energy
 
     
-    def Vfls_calc(self):
-        return self.Vfls()
-
     @property
     def Q(self):
         return self.n*self.V()

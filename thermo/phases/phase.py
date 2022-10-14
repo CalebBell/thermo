@@ -5440,6 +5440,47 @@ class Phase(object):
         
     Ql_calc = Ql
         
+
+    @property
+    def T_calc(self):
+        return self.T
+
+    @property
+    def P_calc(self):
+        return self.P
+
+    @property
+    def VF_calc(self):
+        return self.VF
+
+    @property
+    def zs_calc(self):
+        return self.zs
+
+    @property
+    def ws_calc(self):
+        return self.ws()
+
+    @property
+    def Vfls_calc(self):
+        return self.Vfls()
+    
+    @property
+    def Vfgs_calc(self):
+        return self.zs
+    
+    @property
+    def m_calc(self):
+        return self.m
+
+    @property
+    def n_calc(self):
+        return self.n
+    
+    @property
+    def H_calc(self):
+        return self.H()
+
     def concentrations(self):
         r'''Method to return the molar concentrations of each component in the 
         phase in units of mol/m^3. Molarity is a term used in chemistry for a

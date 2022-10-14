@@ -3203,7 +3203,9 @@ for name in bulk_props:
 # properties
 bulk_properties = ['Ql', 'Ql_calc', 'Qls_calc', 'Qls', 'Qg_calc', 'Qg', 'Qgs_calc', 'Qgs', 'ms_calc',
                      'ns_calc',  'Q_calc', 'Q', 'm_calc',  'n_calc',
+                     'H_calc',
                     #'n','m','ns','ms',
+                    'T_calc', 'P_calc', 'VF_calc', 'zs_calc', 'ws_calc',  'Vfls_calc', 'Vfgs_calc',
                     'energy_reactive_calc', 'energy_reactive', 'energy_calc', 'energy']
 for name in bulk_properties:
     # Maybe take this out and implement it manually for performance?
