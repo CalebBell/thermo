@@ -5171,6 +5171,31 @@ class Phase(object):
             return None
 
     @property
+    def energy_reactive(self):
+        r'''Method to return the reactive energy (reactive enthalpy times flow rate) of this 
+        phase.
+        This method is only
+        available when the phase is linked to an EquilibriumStream.
+
+        Returns
+        -------
+        energy_reactive : float
+            Reactive enthalpy flow rate, [W]
+
+        Notes
+        -----
+        '''
+        try:
+            try:
+                return self._energy_reactive
+            except:
+                pass
+            self._energy_reactive = self.result.n*self.H_reactive()
+            return self._energy_reactive
+        except:
+            return None
+
+    @property
     def n(self):
         r'''Method to return the molar flow rate of this phase.
         This method is only

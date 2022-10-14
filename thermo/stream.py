@@ -2071,7 +2071,7 @@ class EquilibriumStream(EquilibriumState):
                 T_vf, P_vf = Vf_TP
                 Vms_TP = [i(T_vf, P_vf) for i in VolumeObjects]
             else:
-                Vms_TP = constants.Vml_STPs
+                Vms_TP = flasher.V_liquids_ref()
             zs = Vfs_to_zs(Vfls, Vms_TP)
         elif Qgs is not None:
             zs = normalize(Qgs)
@@ -2158,9 +2158,13 @@ class EquilibriumStream(EquilibriumState):
         elif Ql is not None:
             n = 0.0
             Vms = flasher.V_liquids_ref()
+            Vfls = zs_to_Vfs(zs, Vms)
             try:
                 for i in range(N):
-                    n += Ql*zs[i]/Vms[i]
+                    # n += Ql*zs[i]/Vms[i]
+                    n += Ql*Vfls[i]/(Vms[i])
+                    # n += Ql*zs[i]*Vms[i]
+                    # n += Vms[i]/(Ql*zs[i])
             except:
                 raise Exception('Liquid molar volume could not be calculated to determine the flow rate of the stream.')
         elif Qgs is not None:
@@ -2197,6 +2201,10 @@ class EquilibriumStream(EquilibriumState):
         return self.zs
 
     @property
+    def ws_calc(self):
+        return self.ws()
+
+    @property
     def ns_calc(self):
         return self.ns
 
@@ -2218,11 +2226,9 @@ class EquilibriumStream(EquilibriumState):
 
     energy_calc = energy
 
-    @property
-    def energy_reactive(self):
-        return self.H_reactive()*self.n
-
-    energy_reactive_calc = energy_reactive
+    
+    def Vfls_calc(self):
+        return self.Vfls()
 
     @property
     def pkg(self):
@@ -2247,12 +2253,17 @@ class EquilibriumStream(EquilibriumState):
 
     @property
     def Qls(self):
-        T_liquid_volume_ref = self.flasher.settings.T_liquid_volume_ref
         ns = self.ns
-        Vms_TP = self.constants.Vml_STPs
+        Vms_TP = self.V_liquids_ref()
         return [ns[i]*Vms_TP[i] for i in range(self.N)]
 
     Qls_calc = Qls
+    
+    @property
+    def Ql(self):
+        return sum(self.Qls)
+    
+    Ql_calc = Ql
 
     @property
     def Q_liquid_ref(self):

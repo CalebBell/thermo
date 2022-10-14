@@ -3069,6 +3069,19 @@ def _make_getter_bulk_props(name):
         pass
     return get_bulk_prop
 
+def _make_getter_bulk_property(name):
+    @property
+    def get_bulk_property(self):
+        return getattr(self.bulk, name)
+    try:
+        doc = getattr(Bulk, name).__doc__
+        if doc is None:
+            doc = getattr(Phase, name).__doc__
+        get_bulk_property.__doc__ = doc
+    except:
+        pass
+    return get_bulk_property
+
 ### For the pure component fixed properties, allow them to be retrived from the phase
 # and bulk object as well as the Equilibrium State Object
 constant_blacklist = set(['atom_fractions'])
@@ -3172,7 +3185,7 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
               'isentropic_exponent', 'isentropic_exponent_PV', 'isentropic_exponent_TV',
               'isentropic_exponent_PT', 
               
-              'concentrations_mass', 'concentrations', 'Ql', 'Qls', 'Qg', 'ms', 'ns', 'Q', 'm', 'n',
+              'concentrations_mass', 'concentrations', 'Qls', 'ms', 'ns', 'Q', 'm', 'n',
               'nu', 'kinematic_viscosity', 'partial_pressures',
               ]
 
@@ -3187,6 +3200,12 @@ for name in bulk_props:
     getter = _make_getter_bulk_props(name)
     setattr(EquilibriumState, name, getter)
 
+# properties
+bulk_properties = ['Ql', 'Qg', 'energy_reactive']
+for name in bulk_properties:
+    # Maybe take this out and implement it manually for performance?
+    getter = _make_getter_bulk_property(name)
+    setattr(EquilibriumState, name, getter)
 
 try:
     EquilibriumState.__doc__ = EquilibriumState.__doc__ +'\n    ' + '\n    '.join(_add_attrs_doc)
