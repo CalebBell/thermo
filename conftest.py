@@ -8,7 +8,7 @@ import numpy
 def pytest_ignore_collect(path):
     path = str(path)
     # Serious technical debt
-    if path.endswith('chemical.py') or path.endswith('mixture.py')  or path.endswith('stream.py') or path.endswith('README.rst'):
+    if ((path.endswith('chemical.py') or path.endswith('mixture.py')  or path.endswith('stream.py') ) and not 'test' in path) or path.endswith('README.rst'):
         return True
     if 'benchmarks' in path:
         return True

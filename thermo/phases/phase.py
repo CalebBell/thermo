@@ -5165,7 +5165,7 @@ class Phase(object):
                 return self._energy
             except:
                 pass
-            self._energy = self.result.n*self.H()
+            self._energy = self.n*self.H()
             return self._energy
         except:
             return None
@@ -5192,7 +5192,7 @@ class Phase(object):
                 return self._energy_reactive
             except:
                 pass
-            self._energy_reactive = self.result.n*self.H_reactive()
+            self._energy_reactive = self.n*self.H_reactive()
             return self._energy_reactive
         except:
             return None
