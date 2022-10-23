@@ -716,7 +716,7 @@ class VolumeLiquid(TPDependentProperty):
         if method == COSTALD_COMPRESSED:
             pass
         elif method == COOLPROP:
-            validity = PhaseSI('T', T, 'P', P, self.CASRN) == 'liquid'
+            validity = PhaseSI('T', T, 'P', P, self.CASRN) in ('liquid', 'supercritical_liquid')
         elif method == EOS:
             self.eos[0] = self.eos[0].to_TP(T=T, P=P)
             validity = hasattr(self.eos[0], 'V_l')

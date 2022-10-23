@@ -153,20 +153,20 @@ def test_Chemical_properties_T_dependent():
 
     assert_close(Pd.rhos, 12000.000000000005, rtol=1e-4)
     assert_close(w.rhol, 996.5570041967351, rtol=1e-4)
-    assert_close(s.rhog, 0.4351403649367513, rtol=1e-4)
+    assert_close(s.rhog, 0.4333480304708244, rtol=1e-4)
 
     assert_close(Pd.rhosm, 112760.75925577903, rtol=1e-4)
     assert_close(w.rholm, 55317.319752828436, rtol=1e-4)
-    assert_close(s.rhogm, 24.153960689856124, rtol=1e-4)
+    assert_close(s.rhogm, 24.054471, rtol=1e-4)
 
     assert_close(Pd.Zs, 0.00036248477437931853, rtol=1e-4)
     assert_close(w.Zl, 0.0007247422467681115, rtol=1e-4)
-    assert_close(s.Zg, 0.9958810199872231, rtol=1e-4)
+    assert_close(s.Zg, 1, rtol=1e-4)
 
-    assert_close(s.Bvirial, -0.0001712355267057688, rtol=1e-4)
+    assert_close(s.Bvirial, 0, rtol=1e-4)
 
     assert_close(w.isobaric_expansion_l, 0.00027479530461365189, rtol=1E-3)
-    assert_close(s.isobaric_expansion_g, 0.0020332741204046327, rtol=1E-3)
+    assert_close(s.isobaric_expansion_g, 0.002, rtol=1E-3)
 
     assert_close(w.mul, 0.0008537426062537152, rtol=1e-4)
     assert_close(s.mug, 1.729908278164999e-05, rtol=1e-4)
@@ -180,10 +180,10 @@ def test_Chemical_properties_T_dependent():
     assert_close(w.absolute_permittivity,  6.883626985013713e-10, rtol=1e-4)
 
     assert_close(w.JTl, -2.2029508371866032e-07, rtol=1E-3)
-    assert_close(s.JTg, 1.9548097005716312e-05, rtol=1E-3)
+    assert_close(s.JTg, 5.942459e-12, rtol=1E-3)
 
     assert_close(w.nul, 8.566921938819405e-07, rtol=1E-3)
-    assert_close(s.nug, 3.975517827256603e-05, rtol=1E-3)
+    assert_close(s.nug, 3.991961e-05, rtol=1E-3)
 
     assert_close(w.Prl, 5.854395582989558, rtol=1E-3)
     assert_close(s.Prg, 0.9390303617687221, rtol=1E-3)

@@ -985,7 +985,7 @@ class FlashVL(Flash):
                 err = getattr(res, spec)() - spec_fun(res)
             else:
                 err = getattr(res, spec)() - spec_val
-            sln[:] = (res, iter_val)
+            sln[:] = (res, err)
             # print(f'{iter_val=}, {err=}')
             return err
 

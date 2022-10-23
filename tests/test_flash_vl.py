@@ -472,3 +472,10 @@ def test_case_air_Odhran_2022_09_24():
     # was going to 0
     res = flasher.flash(zs=zs, T=0.46078924591519266,  P=3000000.0)
     assert_close(res.G(), -26018.476463001498)
+    
+    # Test using another flasher
+    flasher_gas = FlashVLN(constants, correlations, liquids=[], gas=gas)
+    res = flasher_gas.flash(T=130, P=3328741.8516244013*2, zs=zs)
+    res2 = flasher_gas.flash(P=res.P, H=res.H(), zs=zs)
+    
+    assert_close(res2.flash_convergence['err'], 0, atol=1e-2)
