@@ -295,11 +295,8 @@ class HeatCapacityGas(TDependentProperty):
 
     def __init__(self, CASRN='', MW=None, similarity_variable=None,
                  extrapolation='linear', iscyclic_aliphatic=False, **kwargs):
-        self.CASRN = CASRN
-        self.MW = MW
-        self.similarity_variable = similarity_variable
-        self.iscyclic_aliphatic = iscyclic_aliphatic
-        super(HeatCapacityGas, self).__init__(extrapolation, **kwargs)
+        self.CASRN, self.MW, self.similarity_variable, self.iscyclic_aliphatic = CASRN, MW, similarity_variable, iscyclic_aliphatic
+        super().__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
@@ -401,7 +398,7 @@ class HeatCapacityGas(TDependentProperty):
                     Tmin = max(self.CP_f.Tt, self.CP_f.Tmin)
                     Tmax = min(self.CP_f.Tc, self.CP_f.Tmax)
                 T_limits[COOLPROP] = (Tmin, Tmax)
-        if self.MW and self.similarity_variable:
+        if self.MW is not None and self.similarity_variable is not None:
             methods.append(LASTOVKA_SHAW)
             T_limits[LASTOVKA_SHAW] = (1e-3, 1e5)
         self.all_methods = set(methods)

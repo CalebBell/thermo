@@ -1158,6 +1158,7 @@ class TDependentProperty(object):
     available_correlations = frozenset(correlation_models.keys())
 
     correlation_parameters = {k: k + '_parameters' for k in correlation_models.keys()}
+    correlation_keys_to_parameters = {v: k for k, v in correlation_parameters.items()}
 
 
 
@@ -3910,7 +3911,11 @@ class TDependentProperty(object):
         interpolation_property, interpolation_property_inv) to ensure that
         if an interpolation transform is altered, the old interpolator which
         had been created is no longer used.'''
-        self.load_all_methods(kwargs.get('load_data', True))
+        try:
+            load_data = kwargs.pop('load_data')
+        except:
+            load_data = True
+        self.load_all_methods(load_data)
 
         self.extrapolation = extrapolation
 
@@ -3919,12 +3924,9 @@ class TDependentProperty(object):
                 self.add_tabular_data(Ts, properties, name=name, check_properties=False)
 
         self.correlations = {}
-        for correlation_name in self.correlation_models.keys():
-            # Should be lazy created?
-            correlation_key = self.correlation_parameters[correlation_name]
-#            setattr(self, correlation_key, {})
-
+        for correlation_key in self.correlation_keys_to_parameters.keys():
             if correlation_key in kwargs:
+                correlation_name = self.correlation_keys_to_parameters[correlation_key]
                 for corr_i, corr_kwargs in kwargs[correlation_key].items():
                     self.add_correlation(name=corr_i, model=correlation_name,
                                          **corr_kwargs)
