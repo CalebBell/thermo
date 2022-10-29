@@ -3923,30 +3923,37 @@ class TDependentProperty(object):
                 self.add_tabular_data(Ts, properties, name=name, check_properties=False)
 
         self.correlations = {}
-        for correlation_key in self.correlation_keys_to_parameters.keys():
-            if correlation_key in kwargs:
-                correlation_name = self.correlation_keys_to_parameters[correlation_key]
-                for corr_i, corr_kwargs in kwargs[correlation_key].items():
-                    self.add_correlation(name=corr_i, model=correlation_name,
-                                         **corr_kwargs)
 
+        poly_fit = kwargs.pop('poly_fit', None)
+        exp_poly_fit = kwargs.pop('exp_poly_fit', None)
+        poly_fit_ln_tau = kwargs.pop('poly_fit_ln_tau', None)
+        exp_poly_fit_ln_tau = kwargs.pop('exp_poly_fit_ln_tau', None)
 
-        poly_fit = kwargs.get('poly_fit', None)
-        exp_poly_fit = kwargs.get('exp_poly_fit', None)
-        poly_fit_ln_tau = kwargs.get('poly_fit_ln_tau', None)
-        exp_poly_fit_ln_tau = kwargs.get('exp_poly_fit_ln_tau', None)
-        
-        cheb_fit = kwargs.get('cheb_fit', None)
-        exp_cheb_fit = kwargs.get('exp_cheb_fit', None)
-        cheb_fit_ln_tau = kwargs.get('cheb_fit_ln_tau', None)
-        exp_cheb_fit_ln_tau = kwargs.get('exp_cheb_fit_ln_tau', None)
+        cheb_fit = kwargs.pop('cheb_fit', None)
+        exp_cheb_fit = kwargs.pop('exp_cheb_fit', None)
+        cheb_fit_ln_tau = kwargs.pop('cheb_fit_ln_tau', None)
+        exp_cheb_fit_ln_tau = kwargs.pop('exp_cheb_fit_ln_tau', None)
 
-        stablepoly_fit = kwargs.get('stablepoly_fit', None)
-        exp_stablepoly_fit = kwargs.get('exp_stablepoly_fit', None)
-        stablepoly_fit_ln_tau = kwargs.get('stablepoly_fit_ln_tau', None)
-        exp_stablepoly_fit_ln_tau = kwargs.get('exp_stablepoly_fit_ln_tau', None)
+        stablepoly_fit = kwargs.pop('stablepoly_fit', None)
+        exp_stablepoly_fit = kwargs.pop('exp_stablepoly_fit', None)
+        stablepoly_fit_ln_tau = kwargs.pop('stablepoly_fit_ln_tau', None)
+        exp_stablepoly_fit_ln_tau = kwargs.pop('exp_stablepoly_fit_ln_tau', None)
 
-        method =  kwargs.get('method', getattr(self, '_method', None))
+        if kwargs:
+            for correlation_key in self.correlation_keys_to_parameters.keys():
+                if correlation_key in kwargs:
+                    correlation_name = self.correlation_keys_to_parameters[correlation_key]
+                    for corr_i, corr_kwargs in kwargs[correlation_key].items():
+                        self.add_correlation(name=corr_i, model=correlation_name,
+                                             **corr_kwargs)
+        try:
+            method = kwargs['method']
+        except:
+            try:
+                method = self._method
+            except:
+                method = None
+
         if poly_fit is not None and len(poly_fit):
             self._set_poly_fit(poly_fit)
             method = POLY_FIT
