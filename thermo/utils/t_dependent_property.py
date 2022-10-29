@@ -3911,13 +3911,12 @@ class TDependentProperty(object):
         interpolation_property, interpolation_property_inv) to ensure that
         if an interpolation transform is altered, the old interpolator which
         had been created is no longer used.'''
-        try:
-            load_data = kwargs.pop('load_data')
-        except:
-            load_data = True
+        load_data = kwargs.pop('load_data', True)
         self.load_all_methods(load_data)
 
         self.extrapolation = extrapolation
+        self._extrapolation_min = kwargs.pop('extrapolation_min', None)
+        self._extrapolation_max = kwargs.pop('extrapolation_max', None)
 
         if kwargs.get('tabular_data', None):
             for name, (Ts, properties) in kwargs['tabular_data'].items():
@@ -3931,10 +3930,6 @@ class TDependentProperty(object):
                     self.add_correlation(name=corr_i, model=correlation_name,
                                          **corr_kwargs)
 
-        extrapolation_min = kwargs.get('extrapolation_min', None)
-        extrapolation_max = kwargs.get('extrapolation_max', None)
-        self._extrapolation_min = extrapolation_min
-        self._extrapolation_max = extrapolation_max
 
         poly_fit = kwargs.get('poly_fit', None)
         exp_poly_fit = kwargs.get('exp_poly_fit', None)
@@ -4000,7 +3995,7 @@ class TDependentProperty(object):
             self._set_exp_cheb_fit_ln_tau(exp_cheb_fit_ln_tau)
             method = EXP_CHEB_FIT_LN_TAU
             self.all_methods.add(EXP_CHEB_FIT_LN_TAU)
-            
+
         self.add_extra_correlations()
         
         if method is None:
