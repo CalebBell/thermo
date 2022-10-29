@@ -2116,17 +2116,13 @@ class TDependentProperty(object):
                              "elements, in order (Tmin, Tmax, Tc, coefficients) "
                              "with the coefficients being an interable")
             
-        Tmin, Tmax, Tc = constants = poly_fit[0:3]
+        self.exp_poly_fit_ln_tau_Tmin, self.exp_poly_fit_ln_tau_Tmax, self.exp_poly_fit_ln_tau_Tc = Tmin, Tmax, Tc = constants = poly_fit[0:3]
         for v in constants:
             if v is None:
                 raise ValueError("exp_poly_fit_ln_tau contains a None")
             if isnan(v):
                 raise ValueError("exp_poly_fit_ln_tau contains a nan")
-        poly_fit_coeffs = poly_fit[3]
-        self.exp_poly_fit_ln_tau_Tmin = Tmin
-        self.exp_poly_fit_ln_tau_Tmax = Tmax
-        self.exp_poly_fit_ln_tau_Tc = Tc
-        self.exp_poly_fit_ln_tau_coeffs = poly_fit_coeffs
+        self.exp_poly_fit_ln_tau_coeffs = poly_fit_coeffs = poly_fit[3]
         self.T_limits[EXP_POLY_FIT_LN_TAU] = (Tmin, Tmax)
 
         self.exp_poly_fit_ln_tau_Tmax_value, self.exp_poly_fit_ln_tau_Tmax_slope, self.exp_poly_fit_ln_tau_Tmax_dT2 = exp_horner_backwards_ln_tau_and_der2(Tmax, Tc, poly_fit_coeffs)
