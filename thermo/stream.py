@@ -2156,7 +2156,7 @@ class EquilibriumStream(EquilibriumState):
                 n = sum(ns)
             elif ms is not None:
                 n = property_molar_to_mass(sum(ms), MW)
-            H_reactive = energy/n
+            H_reactive = energy_reactive/n
 
         if existing_flash is not None:
             # All variable which have been set
