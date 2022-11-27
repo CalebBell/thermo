@@ -78,7 +78,7 @@ __all__ = ['Bulk', 'BulkSettings', 'default_settings']
 from fluids.constants import R, R_inv, atm
 from fluids.two_phase_voidage import (McAdams, Beattie_Whalley, Cicchitti,
                                       Lin_Kwok, Fourar_Bories, Duckler, gas_liquid_viscosity)
-from chemicals.utils import (log, exp, phase_identification_parameter,
+from chemicals.utils import (log, exp, sqrt, phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion,
                           Joule_Thomson, speed_of_sound)
 from thermo.phases import Phase
@@ -127,12 +127,13 @@ D2P_DT2_METHODS = D2P_DV2_METHODS
 D2P_DTDV_METHODS = D2P_DV2_METHODS
 '''List of all valid and implemented calculation methods for the `D2P_DTDV` bulk setting'''
 
+FIROOZABADI_PAN = 'FIROOZABADI_PAN'
 
 SPEED_OF_SOUND_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
                 LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED,
                 LOG_PROP_VOLUME_WEIGHTED, MINIMUM_PHASE_PROP,
                 MAXIMUM_PHASE_PROP, FROM_DERIVATIVE_SETTINGS,
-                EQUILIBRIUM_DERIVATIVE]
+                EQUILIBRIUM_DERIVATIVE, FIROOZABADI_PAN]
 '''List of all valid and implemented calculation methods for the `speed_of_sound` bulk setting'''
 
 BETA_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
@@ -1480,6 +1481,10 @@ class Bulk(Phase):
             return speed_of_sound(self.V(), self.dP_dV(), self.Cp(), self.Cv())
         elif speed_of_sound_method == EQUILIBRIUM_DERIVATIVE:
             return self._equilibrium_derivative(of='P', wrt='rho', const='S')**0.5
+        elif speed_of_sound_method == FIROOZABADI_PAN:
+            # Equation 3.103 Thermodynamics and Applications in Hydrocarbon Energy Production
+            Cs = -1.0/self.V()*self._equilibrium_derivative(of='V', wrt='P', const='S')
+            return sqrt(self.V()/Cs)
         return self._property_mixing_rule(speed_of_sound_method, None, None, 'speed_of_sound')
 
     def Tmc(self):
