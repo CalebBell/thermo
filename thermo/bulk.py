@@ -131,7 +131,8 @@ D2P_DTDV_METHODS = D2P_DV2_METHODS
 SPEED_OF_SOUND_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
                 LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED,
                 LOG_PROP_VOLUME_WEIGHTED, MINIMUM_PHASE_PROP,
-                MAXIMUM_PHASE_PROP, FROM_DERIVATIVE_SETTINGS]
+                MAXIMUM_PHASE_PROP, FROM_DERIVATIVE_SETTINGS,
+                EQUILIBRIUM_DERIVATIVE]
 '''List of all valid and implemented calculation methods for the `speed_of_sound` bulk setting'''
 
 BETA_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
@@ -1477,6 +1478,8 @@ class Bulk(Phase):
         speed_of_sound_method = self.settings.speed_of_sound
         if speed_of_sound_method == FROM_DERIVATIVE_SETTINGS:
             return speed_of_sound(self.V(), self.dP_dV(), self.Cp(), self.Cv())
+        elif speed_of_sound_method == EQUILIBRIUM_DERIVATIVE:
+            return self._equilibrium_derivative(of='P', wrt='rho', const='S')**0.5
         return self._property_mixing_rule(speed_of_sound_method, None, None, 'speed_of_sound')
 
     def Tmc(self):
