@@ -2827,6 +2827,7 @@ def main_derivatives_and_departures_slow(T, P, V, b, delta, epsilon, a_alpha,
     Cv_dep = -T*(sqrt(1/(delta**2 - 4*epsilon))*log(V - delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 + 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))) - sqrt(1/(delta**2 - 4*epsilon))*log(V + delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 - 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))))*d2a_alpha_dT2
     return dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
 
+@pytest.mark.multiversion
 def test_main_derivatives_and_departures():
     kwargs = {'T': 300.0, 'P': 100000.0, 'V': 0.024888940620893717, 'b': 2.6802397529801146e-05, 'delta': 5.360479505960229e-05, 'epsilon': -7.183685133454906e-10, 'a_alpha': 0.20287549938143976, 'da_alpha_dT': -0.00036422262742582075, 'd2a_alpha_dT2': 9.339823723591864e-07}
     calc = main_derivatives_and_departures(**kwargs)
