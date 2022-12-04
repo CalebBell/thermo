@@ -30,18 +30,9 @@ from fluids.constants import R
 from math import log, exp, sqrt, log10
 from fluids.numerics import linspace, derivative, logspace, assert_close, assert_close1d, assert_close2d, assert_close3d
 from thermo.eos_alpha_functions import *
+from math import atanh as catanh
 
-def main_derivatives_and_departures_slow(T, P, V, b, delta, epsilon, a_alpha,
-                                    da_alpha_dT, d2a_alpha_dT2):
-    dP_dT = R/(V - b) - da_alpha_dT/(V**2 + V*delta + epsilon)
-    dP_dV = -R*T/(V - b)**2 - (-2*V - delta)*a_alpha/(V**2 + V*delta + epsilon)**2
-    d2P_dT2 = -d2a_alpha_dT2/(V**2 + V*delta + epsilon)
-    d2P_dV2 = 2*(R*T/(V - b)**3 - (2*V + delta)**2*a_alpha/(V**2 + V*delta + epsilon)**3 + a_alpha/(V**2 + V*delta + epsilon)**2)
-    d2P_dTdV = -R/(V - b)**2 + (2*V + delta)*da_alpha_dT/(V**2 + V*delta + epsilon)**2
-    H_dep = P*V - R*T + 2*(T*da_alpha_dT - a_alpha)*catanh((2*V + delta)/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon)
-    S_dep = -R*log(V) + R*log(P*V/(R*T)) + R*log(V - b) + 2*da_alpha_dT*catanh((2*V + delta)/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon)
-    Cv_dep = -T*(sqrt(1/(delta**2 - 4*epsilon))*log(V - delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 + 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))) - sqrt(1/(delta**2 - 4*epsilon))*log(V + delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 - 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))))*d2a_alpha_dT2
-    return dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
+    
 
 @pytest.mark.slow
 @pytest.mark.sympy
@@ -2822,3 +2813,22 @@ def test_eos_alpha_fit_points_Chen_Yang():
     der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-6)
     assert_close(der, alphas[2], rtol=1e-8)
 
+
+
+def main_derivatives_and_departures_slow(T, P, V, b, delta, epsilon, a_alpha,
+                                    da_alpha_dT, d2a_alpha_dT2):
+    dP_dT = R/(V - b) - da_alpha_dT/(V**2 + V*delta + epsilon)
+    dP_dV = -R*T/(V - b)**2 - (-2*V - delta)*a_alpha/(V**2 + V*delta + epsilon)**2
+    d2P_dT2 = -d2a_alpha_dT2/(V**2 + V*delta + epsilon)
+    d2P_dV2 = 2*(R*T/(V - b)**3 - (2*V + delta)**2*a_alpha/(V**2 + V*delta + epsilon)**3 + a_alpha/(V**2 + V*delta + epsilon)**2)
+    d2P_dTdV = -R/(V - b)**2 + (2*V + delta)*da_alpha_dT/(V**2 + V*delta + epsilon)**2
+    H_dep = P*V - R*T + 2*(T*da_alpha_dT - a_alpha)*catanh((2*V + delta)/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon)
+    S_dep = -R*log(V) + R*log(P*V/(R*T)) + R*log(V - b) + 2*da_alpha_dT*catanh((2*V + delta)/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon)
+    Cv_dep = -T*(sqrt(1/(delta**2 - 4*epsilon))*log(V - delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 + 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))) - sqrt(1/(delta**2 - 4*epsilon))*log(V + delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 - 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))))*d2a_alpha_dT2
+    return dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
+
+def test_main_derivatives_and_departures():
+    kwargs = {'T': 300.0, 'P': 100000.0, 'V': 0.024888940620893717, 'b': 2.6802397529801146e-05, 'delta': 5.360479505960229e-05, 'epsilon': -7.183685133454906e-10, 'a_alpha': 0.20287549938143976, 'da_alpha_dT': -0.00036422262742582075, 'd2a_alpha_dT2': 9.339823723591864e-07}
+    calc = main_derivatives_and_departures(**kwargs)
+    expect = (335.0093744690117, -4009092.183615425, -0.0015044993307978941, 321457504.67707026, -13498.177640579832, -17.9726470946639, -0.041745599988721786, 0.011245698258219375)
+    assert_close1d(calc, expect, rtol=1e-10)

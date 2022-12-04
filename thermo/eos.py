@@ -300,7 +300,6 @@ R_2 = 0.5*R
 R_inv = 1.0/R
 R_inv2 = R_inv*R_inv
 
-from fluids.numerics.special import CM_SQRT_LARGE_DOUBLE
 
 def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
                                     da_alpha_dT, d2a_alpha_dT2):
