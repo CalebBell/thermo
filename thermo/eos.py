@@ -267,7 +267,7 @@ __all__.extend(['main_derivatives_and_departures',
 
 
 from cmath import log as clog
-from math import isnan, isinf
+from math import isnan, isinf, log1p
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, newton,
                              bisect, inf, polyder, chebder, is_micropython,
@@ -300,7 +300,7 @@ R_2 = 0.5*R
 R_inv = 1.0/R
 R_inv2 = R_inv*R_inv
 
-
+from fluids.numerics.special import CM_SQRT_LARGE_DOUBLE
 
 def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
                                     da_alpha_dT, d2a_alpha_dT2):
@@ -326,7 +326,10 @@ def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
 #    arg2 = (arg + 1.0)/(arg - 1.0)
 #    fancy = 0.25*log(arg2*arg2)
 #    x12 = 2.*x11*fancy # Possible to use a catan, but then a complex division and sq root is needed too
-    x12 = 2.*x11*catanh(x11*x5).real # Possible to use a catan, but then a complex division and sq root is needed too
+    hard_input = x11*x5    
+    hard_term = catanh(hard_input).real # numba: delete
+#    hard_term = 0.25*log1p(4.*hard_input/((1.0-hard_input)*(1.0-hard_input))) # numba: uncomment
+    x12 = 2.*x11*hard_term # Possible to use a catan, but then a complex division and sq root is needed too
     x14 = 0.5*x5
     x15 = epsilon2*x11
     x16 = x11_half*x9
