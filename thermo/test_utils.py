@@ -24,9 +24,8 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 
-from thermo import *
-from fluids.numerics import *
-from math import *
+from fluids.numerics import linspace, logspace
+from math import log10
 import json
 import os
 from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d

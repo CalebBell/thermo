@@ -111,7 +111,10 @@ from thermo.electrochem import Laliberte_viscosity
 from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property, CoolProp_failing_PT_flashes
 from chemicals.dippr import EQ101, EQ102
 from chemicals import viscosity
-from chemicals.viscosity import *
+from chemicals.viscosity import (Brokaw, Herning_Zipperer, Letsou_Stiel, Lucas, Lucas_gas, PPDS9,
+                                 Przedziecki_Sridhar, Stiel_Thodos, Viswanath_Natarajan_2,
+                                 Viswanath_Natarajan_2_exponential, Viswanath_Natarajan_3,
+                                 Wilke_prefactored, Wilke_prefactors, Yoon_Thodos)
 from chemicals.viscosity import viscosity_gas_Gharagheizi, dPPDS9_dT
 from chemicals.identifiers import CAS_to_int
 from chemicals.miscdata import JOBACK

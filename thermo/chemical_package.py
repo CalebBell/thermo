@@ -64,18 +64,17 @@ __all__ = ['ChemicalConstantsPackage', 'PropertyCorrelationsPackage',
 from fluids.constants import R
 
 from thermo.chemical import Chemical, get_chemical_constants
-from chemicals.identifiers import *
+from chemicals.identifiers import CAS_from_any
 from chemicals import identifiers
 from chemicals.utils import hash_any_primitive
 
 from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture, VolumeLiquid, VolumeGas, VolumeSolid
-from thermo.permittivity import *
+from thermo.permittivity import PermittivityLiquid
 from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture
 from chemicals.utils import property_molar_to_mass, Parachor
-from thermo.utils import *
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
 from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
 
@@ -94,6 +93,7 @@ from chemicals.refractivity import RI
 from chemicals.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser, molecular_weight, charge_from_formula, periodic_table, homonuclear_elements
 from chemicals.combustion import combustion_stoichiometry, HHV_stoichiometry, LHV_from_HHV
 
+from thermo.utils import identify_phase
 from thermo.unifac import UNIFAC_group_assignment_DDBST, UNIFAC_RQ, Van_der_Waals_volume, Van_der_Waals_area
 from thermo.electrochem import conductivity
 from thermo.law import legal_status, economic_status

@@ -27,12 +27,12 @@ __all__ = ['Chemical', 'reference_states']
 from fluids.constants import epsilon_0
 
 from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
-from fluids.core import *
+from fluids.core import Jakob, Prandtl, nu_mu_converter, thermal_diffusivity
 from fluids.numerics import newton, numpy as np
 
 
-from fluids.numerics import exp
-from chemicals.identifiers import *
+from fluids.numerics import exp, log
+from chemicals.identifiers import search_chemical
 from chemicals.phase_change import Tb, Tm, Hfus, Tb_methods, Tm_methods, Hfus_methods
 from chemicals.critical import Tc, Pc, Vc, Tc_methods, Pc_methods, Vc_methods
 from chemicals.acentric import omega, Stiel_polar_factor, omega_methods
@@ -44,7 +44,8 @@ from chemicals.combustion import combustion_stoichiometry, HHV_stoichiometry, LH
 from chemicals.safety import T_flash, T_autoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, T_flash_methods, T_autoignition_methods, LFL_methods, UFL_methods, TWA_methods, STEL_methods, Ceiling_methods, Skin_methods, Carcinogen_methods
 from chemicals.solubility import solubility_parameter
 from chemicals.dipole import dipole_moment as dipole, dipole_moment_methods
-from chemicals.utils import *
+from chemicals.utils import (Joule_Thomson, Parachor, R, SG, SG_to_API, Vm_to_rho, Z,
+                             isentropic_exponent, isobaric_expansion, property_molar_to_mass)
 from chemicals.lennard_jones import Stockmayer_methods, molecular_diameter_methods, Stockmayer, molecular_diameter
 from chemicals.environment import GWP, ODP, logP, GWP_methods, ODP_methods, logP_methods
 from chemicals.refractivity import RI, RI_methods
@@ -52,18 +53,16 @@ from chemicals.elements import atom_fractions, mass_fractions, similarity_variab
 
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
 from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
-from thermo.utils import identify_phase
+from thermo.utils import identify_phase, phase_select_property
 from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid, VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture
-from thermo.permittivity import *
+from thermo.permittivity import PermittivityLiquid
 from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture
-from thermo.utils import *
 from thermo.law import legal_status, economic_status
 from thermo.electrochem import conductivity, conductivity_methods
-from thermo.eos import *
-from thermo.eos_mix import *
+from thermo.eos import IG, PR
 from thermo.unifac import DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments, UNIFAC_group_assignment_DDBST, UNIFAC_RQ, Van_der_Waals_volume, Van_der_Waals_area
 from thermo import functional_groups
 from thermo.functional_groups import group_names

@@ -64,8 +64,7 @@ from thermo.nrtl import NRTL_gammas
 from chemicals.rachford_rice import Rachford_Rice_flash_error
 from thermo.unifac import UNIFAC_gammas, UFSG, DOUFSG
 from thermo import unifac
-from thermo.eos_mix import *
-from thermo.eos import *
+from thermo.eos_mix import PRMIX
 from chemicals.heat_capacity import Lastovka_Shaw_T_for_Hm, Lastovka_Shaw_T_for_Sm, Dadgostar_Shaw_integral_over_T, Dadgostar_Shaw_integral, Lastovka_Shaw_integral
 from thermo.phase_change import SMK
 
@@ -4568,59 +4567,6 @@ class GceosBase(Ideal):
                             fugacities=fugacities, only_l=only_l,
                             only_g=only_g, **self.eos_kwargs)
 
-
-    def flash_TP_zs_3P(self, T, P, zs):
-        "From 5.9: Multiphase Split and Stability Analysis"
-        phase, xs, ys, beta_y = self.flash_TP_zs(T=T, P=P, zs=zs)
-        eos_l, eos_g = self.eos_l, self.eos_g
-
-        Ks_y = [yi/xi for yi, xi in zip(ys, xs)]
-        print('2PHASE KS', Ks_y)
-
-        # TODO only call stability test on heavier MW phase
-        def is_stable():
-            stable, Ks_initial, Ks_extra = eos_l.stability_Michelsen(T=T, P=P, zs=zs,
-                                                      Ks_initial=None,
-                                                      maxiter=self.stability_maxiter,
-                                                      xtol=self.stability_xtol)
-            if not stable:
-                return stable, Ks_extra[-1]
-
-#            print('RESULTS ZS', stable, Ks_initial, Ks_extra)
-
-            stable, Ks_initial, Ks_extra = eos_l.stability_Michelsen(T=T, P=P, zs=ys,
-                                                      Ks_initial=None,
-                                                      maxiter=self.stability_maxiter,
-                                                      xtol=self.stability_xtol)
-#            print('RESULTS YS', stable, Ks_initial, Ks_extra)
-            if not stable:
-                return stable, Ks_extra[-1]
-
-            stable, Ks_initial, Ks_extra = eos_l.stability_Michelsen(T=T, P=P, zs=xs,
-                                                      Ks_initial=None,
-                                                      maxiter=self.stability_maxiter,
-                                                      xtol=self.stability_xtol)
-#            print('RESULTS XS', stable, Ks_initial, Ks_extra)
-#            print('DONE STABLE PART')
-
-            return stable, Ks_extra[-1]
-        stable, Ks_z = is_stable()
-#        print(stable, Ks_z, comp_test)
-#        Ks_z = [zi/xi for xi, zi in zip(xs, comp_test)]
-#        print(Ks_z, Ks_y)
-
-        print('DOING RR2 with Ks', Ks_y, Ks_z)
-        beta_y, beta_z, xs, ys, zs = Rachford_Rice_solution2(zs, Ks_y=Ks_y,
-                                                             Ks_z=Ks_z)
-        print('done RR2; betas', beta_y, beta_z, 'fractions', xs, ys, zs)
-#
-##        beta_z, _, _ = flash_inner_loop(comp_test, Ks_z)
-#        print(beta_z, 'beta_z', 'beta_y', beta_y)
-
-# Try to hardcode them
-#        Ks_y = []
-
-        print(eos_l.sequential_substitution_3P(Ks_y, Ks_z, beta_y, beta_z=beta_z))
 
 
     def stability_test_VL(self, T, P, zs, require_convergence=False,

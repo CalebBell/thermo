@@ -72,7 +72,8 @@ from chemicals.dippr import EQ106
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
 from chemicals import phase_change
-from chemicals.phase_change import *
+from chemicals.phase_change import (Alibakhshi, Chen, Clapeyron, Liu, MK, PPDS12, Pitzer, Riedel,
+                                    SMK, Velasco, Vetere, Watson)
 from chemicals.identifiers import CAS_to_int
 
 from thermo.vapor_pressure import VaporPressure

@@ -123,7 +123,12 @@ from fluids.constants import R, R_inv, N_A, k
 from chemicals.utils import log, exp, sqrt
 from chemicals.utils import mixing_simple, none_and_length_check
 from chemicals.dippr import EQ100, EQ102
-from chemicals.thermal_conductivity import *
+from chemicals.thermal_conductivity import (Bahadori_gas, Bahadori_liquid, Chung, Chung_dense,
+                                            DIPPR9B, DIPPR9G, DIPPR9H, Eli_Hanley, Eli_Hanley_dense,
+                                            Eucken, Eucken_modified, Filippov, Gharagheizi_gas,
+                                            Gharagheizi_liquid, Lakshmi_Prasad, Lindsay_Bromley,
+                                            Missenard, Nicola, Nicola_original, Sato_Riedel,
+                                            Sheffy_Johnson, Stiel_Thodos_dense)
 from chemicals import thermal_conductivity
 
 from thermo.utils import TPDependentProperty, MixtureProperty

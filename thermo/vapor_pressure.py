@@ -71,7 +71,9 @@ from chemicals.utils import log, exp, isnan
 from chemicals.dippr import EQ101
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
-from chemicals.vapor_pressure import *
+from chemicals.vapor_pressure import (Ambrose_Walton, Antoine, Edalat, Lee_Kesler, Psub_Clapeyron,
+                                      Sanjari, TRC_Antoine_extended, Wagner, Wagner_original,
+                                      boiling_critical_relation)
 from chemicals.vapor_pressure import dAntoine_dT, d2Antoine_dT2, dWagner_original_dT, d2Wagner_original_dT2, dWagner_dT, d2Wagner_dT2, dTRC_Antoine_extended_dT, d2TRC_Antoine_extended_dT2
 from chemicals.identifiers import CAS_to_int
 from chemicals.iapws import iapws95_Tc, iapws95_Psat, iapws95_dPsat_dT

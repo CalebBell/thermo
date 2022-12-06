@@ -46,7 +46,8 @@ from thermo.eos_mix import PRMIX, SRKMIX
 from thermo.eos import PR, SRK
 from thermo.chemical import Chemical
 from thermo.mixture import Mixture
-from thermo.property_package import *
+from thermo.property_package import (GceosBase, IdealCaloric, Nrtl, UnifacCaloric,
+                                     UnifacDortmundCaloric)
 
 
 

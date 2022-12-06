@@ -37,7 +37,7 @@ Base Class
     :undoc-members:
     :show-inheritance:
     :exclude-members: a_alpha_and_derivatives_numpy, a_alpha_and_derivatives_py, main_derivatives_and_departures, derivatives_and_departures,
-                      sequential_substitution_3P, sequential_substitution_VL, stability_Michelsen, stability_iteration_Michelsen, newton_VL, broyden2_VL,
+                      sequential_substitution_VL, stability_Michelsen, stability_iteration_Michelsen, newton_VL, broyden2_VL,
                       d2A_dep_dninjs, d2A_dep_dninjs_Vt, d2A_dninjs_Vt, d2A_dninjs_Vt_another, d2P_dninjs_Vt, d2nA_dninjs_Vt, d3P_dninjnks_Vt,
                       dScomp_dns, d2Scomp_dninjs, dA_dep_dns_Vt, dP_dns_Vt
 
@@ -229,7 +229,9 @@ from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91
                                         PRSV_a_alphas_vectorized, PRSV_a_alpha_and_derivatives_vectorized,
                                         PRSV2_a_alphas_vectorized, PRSV2_a_alpha_and_derivatives_vectorized,
                                         APISRK_a_alphas_vectorized, APISRK_a_alpha_and_derivatives_vectorized)
-from thermo.eos import *
+from thermo.eos import (APISRK, GCEOS, IG, MSRKTranslated, PR, PR78, PRSV, PRSV2, PRTranslated,
+                        PRTranslatedConsistent, PRTranslatedPPJP, RK, SRK, SRKTranslated,
+                        SRKTranslatedConsistent, TWUPR, TWUSRK, VDW)
 
 try:
     (zeros, array, npexp, npsqrt, empty, full, npwhere, npmin, npmax) = (
@@ -1938,22 +1940,6 @@ class GCEOSMIX(GCEOS):
         info[:] = VF, xs, ys, eos_l, eos_g
         return Fs
 
-    def sequential_substitution_3P(self, Ks_y, Ks_z, beta_y, beta_z=0.0,
-
-                                   maxiter=1000,
-                                   xtol=1E-13, near_critical=True,
-                                   xs=None, ys=None, zs=None,
-                                   trivial_solution_tol=1e-5):
-
-
-        print(Ks_y, Ks_z, beta_y, beta_z)
-        beta_y, beta_z, xs_new, ys_new, zs_new = Rachford_Rice_solution2(ns=self.zs,
-                                                                         Ks_y=Ks_y, Ks_z=Ks_z,
-                                                                         beta_y=beta_y, beta_z=beta_z)
-        print(beta_y, beta_z, xs_new, ys_new, zs_new)
-
-        Ks_y = [exp(lnphi_x - lnphi_y) for lnphi_x, lnphi_y in zip(lnphis_x, lnphis_y)]
-        Ks_z = [exp(lnphi_x - lnphi_z) for lnphi_x, lnphi_z in zip(lnphis_x, lnphis_z)]
 
     def newton_VL(self, Ks_initial=None, maxiter=30,
                   ytol=1E-7, near_critical=True,
@@ -5756,7 +5742,7 @@ class GCEOSMIX(GCEOS):
         '''
         d2dxs = self.d2lnphi_dzizjs(Z)
         d2ns = d2xs_to_dxdn_partials(d2dxs, self.zs)
-        if sefl.scalar:
+        if self.scalar:
             return d2ns
         return array(d2ns)
 

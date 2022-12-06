@@ -122,7 +122,9 @@ from fluids.numerics import horner, np, polyder, horner_and_der2, linspace, quad
 from chemicals.utils import exp, isnan
 from chemicals.utils import rho_to_Vm, mixing_simple, none_and_length_check
 from chemicals.dippr import EQ105, EQ116
-from chemicals.volume import *
+from chemicals.volume import (Amgat, Bhirud_normal, COSTALD, COSTALD_compressed, COSTALD_mixture,
+                              CRC_inorganic, Campbell_Thodos, Goodman, Rackett, Rackett_mixture,
+                              SNM0, Townsend_Hales, Yamada_Gunn, Yen_Woods_saturation, ideal_gas)
 from chemicals import volume
 from chemicals.virial import BVirial_Pitzer_Curl, BVirial_Abbott, BVirial_Tsonopoulos, BVirial_Tsonopoulos_extended
 from chemicals import miscdata

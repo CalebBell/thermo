@@ -123,7 +123,12 @@ from fluids.numerics import (polyint_over_x, horner_log, horner, polyint,
                              numpy as np)
 from fluids.numerics import brenth, secant, polylog2
 from fluids.constants import R, calorie
-from chemicals.heat_capacity import *
+from chemicals.heat_capacity import (Dadgostar_Shaw, Dadgostar_Shaw_integral,
+                                     Dadgostar_Shaw_integral_over_T, Lastovka_Shaw,
+                                     Lastovka_Shaw_integral, Lastovka_Shaw_integral_over_T,
+                                     Lastovka_Shaw_term_A, Lastovka_solid, Lastovka_solid_integral,
+                                     Lastovka_solid_integral_over_T, Rowlinson_Bondi,
+                                     Rowlinson_Poling, TRCCp, TRCCp_integral, TRCCp_integral_over_T)
 from chemicals.utils import log, exp, isnan
 from chemicals.utils import (to_num, property_molar_to_mass, none_and_length_check,
                           mixing_simple, property_mass_to_molar)
@@ -135,7 +140,9 @@ from chemicals.miscdata import lookup_VDI_tabular_data
 from thermo import electrochem
 from thermo.electrochem import Laliberte_heat_capacity
 from thermo.utils import TDependentProperty, MixtureProperty, IAPWS
-from thermo.coolprop import *
+from thermo.coolprop import (CoolProp_T_dependent_property, Cp_ideal_gas_Helmholtz,
+                             H_ideal_gas_Helmholtz, Helmholtz_A0_data, PropsSI, coolprop_dict,
+                             coolprop_fluids, has_CoolProp)
 from cmath import log as clog, exp as cexp
 from thermo.utils import VDI_TABULAR, COOLPROP, POLY_FIT, LINEAR
 from chemicals.miscdata import JOBACK
