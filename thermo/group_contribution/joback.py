@@ -53,7 +53,7 @@ from __future__ import division
 __all__ = ['Joback', 'J_BIGGS_JOBACK_SMARTS',
            'J_BIGGS_JOBACK_SMARTS_id_dict']
 
-from chemicals.utils import to_num, horner, exp
+from fluids.numerics import horner, exp
 from thermo.group_contribution.group_contribution_base import smarts_fragment, smarts_fragment_priority
 
 rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
