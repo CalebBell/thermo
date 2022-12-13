@@ -408,6 +408,7 @@ class HeatCapacityGas(TDependentProperty):
         if self.MW is not None and self.similarity_variable is not None:
             methods.append(LASTOVKA_SHAW)
             T_limits[LASTOVKA_SHAW] = (1e-3, 1e5)
+            self.Lastovka_Shaw_term_A = Lastovka_Shaw_term_A(self.similarity_variable, self.iscyclic_aliphatic)
         self.all_methods = set(methods)
         
     @property
@@ -560,7 +561,7 @@ class HeatCapacityGas(TDependentProperty):
             similarity_variable = self.similarity_variable
             iscyclic_aliphatic = self.iscyclic_aliphatic
             MW = self.MW
-            term_A = Lastovka_Shaw_term_A(similarity_variable, iscyclic_aliphatic)
+            term_A = self.Lastovka_Shaw_term_A
             return (
                 Lastovka_Shaw_integral(T2, similarity_variable, iscyclic_aliphatic, MW, term_A)
                 - Lastovka_Shaw_integral(T1, similarity_variable, iscyclic_aliphatic, MW, term_A)
@@ -611,7 +612,7 @@ class HeatCapacityGas(TDependentProperty):
             similarity_variable = self.similarity_variable
             iscyclic_aliphatic = self.iscyclic_aliphatic
             MW = self.MW
-            term_A = Lastovka_Shaw_term_A(similarity_variable, iscyclic_aliphatic)
+            term_A = self.Lastovka_Shaw_term_A
             return (
                 Lastovka_Shaw_integral_over_T(T2, similarity_variable, iscyclic_aliphatic, MW, term_A)
                 - Lastovka_Shaw_integral_over_T(T1, similarity_variable, iscyclic_aliphatic, MW, term_A)
