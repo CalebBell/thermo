@@ -409,7 +409,7 @@ class VolumeLiquid(TPDependentProperty):
             v_Tmin = horner(poly_fit_coeffs, Tmin)
             for T_trans in linspace(Tmin, Tmax, 25):
                 # Create a new polynomial approximating the fit at T_trans;
-                p = quadratic_from_f_ders(Tmin, *horner_and_der2(poly_fit_coeffs, T_trans))
+                p = list(quadratic_from_f_ders(Tmin, *horner_and_der2(poly_fit_coeffs, T_trans)))
                 # Evaluate the first and second derivative at Tmin
                 v_Tmin_refit, d1_Tmin, d2_Tmin = horner_and_der2(p, Tmin)
                 # If the first derivative is negative (volume liquid should always be posisitive except for water)
@@ -422,7 +422,7 @@ class VolumeLiquid(TPDependentProperty):
                     # When this happens, note the middle `p` coefficient becomes zero - this is expected
                     d2_Tmin = d1_Tmin/Tmin
                 self._Tmin_T_trans = T_trans
-                p = quadratic_from_f_ders(Tmin, v_Tmin, d1_Tmin, d2_Tmin)
+                p = list(quadratic_from_f_ders(Tmin, v_Tmin, d1_Tmin, d2_Tmin))
                 self.poly_fit_Tmin_quadratic = p
                 break
 
