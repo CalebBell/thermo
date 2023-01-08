@@ -4632,6 +4632,21 @@ def test_eos_mix_model_ids_no_duplicated():
         if k.model_id in model_ids:
             raise ValueError("Duplicate Model ID = %s, existing model is %s" %(k, model_ids[k.model_id]))
         model_ids[k.model_id] = k
+def test_eos_mix_one_minus_kijs():
+    import pickle
+    eos = PRSV2MIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6, kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
+    json_copy = eos.as_json()
+    assert 'kijs' in json_copy
+    assert 'one_minus_kijs' not in json_copy
+    json_stuff = pickle.dumps(json_copy)
+    new_eos = GCEOSMIX.from_json(pickle.loads(json_stuff))
+
+    assert new_eos == eos
+    assert_close2d(new_eos.one_minus_kijs, [[1.0]])
+
+    assert_close2d(eos.to(T=303.34, P=1e5, zs=[1]).one_minus_kijs, [[1.0]])
+    assert_close2d(eos.to_TP_zs_fast(T=303.34, P=1e5, zs=[1]).one_minus_kijs, [[1.0]])
+    
 
 
 def test_numpy_properties_all_eos_mix():

@@ -234,8 +234,8 @@ from thermo.eos import (APISRK, GCEOS, IG, MSRKTranslated, PR, PR78, PRSV, PRSV2
                         SRKTranslatedConsistent, TWUPR, TWUSRK, VDW)
 
 try:
-    (zeros, array, npexp, npsqrt, empty, full, npwhere, npmin, npmax) = (
-        np.zeros, np.array, np.exp, np.sqrt, np.empty, np.full, np.where, np.min, np.max)
+    (zeros, array, npexp, npsqrt, empty, full, npwhere, npmin, npmax, ndarray) = (
+        np.zeros, np.array, np.exp, np.sqrt, np.empty, np.full, np.where, np.min, np.max, np.ndarray)
 except:
     pass
 
@@ -250,6 +250,11 @@ root_two_p1 = root_two + 1.0
 
 c1R2_PR = PR.c1R2
 c2R_PR = PR.c2R
+
+def one_minus_kijs(kijs):
+    if type(kijs) is ndarray:
+        return 1.0 - kijs
+    return [[1.0-v for v in row] for row in kijs]
 
 
 class GCEOSMIX(GCEOS):
@@ -416,6 +421,11 @@ class GCEOSMIX(GCEOS):
 
         eos = eos_mix_full_path_dict[eos_name]
 
+        try:
+            d['one_minus_kijs'] = one_minus_kijs(d['kijs'])
+        except:
+            pass
+
         if eos.kwargs_keys:
             d['kwargs'] = {k: d[k] for k in eos.kwargs_keys}
             try:
@@ -474,6 +484,7 @@ class GCEOSMIX(GCEOS):
         new.Pcs = self.Pcs
         new.omegas = self.omegas
         new.kijs = self.kijs
+        new.one_minus_kijs = self.one_minus_kijs
         new.kwargs = self.kwargs
         new.ais = self.ais
         new.bs = self.bs
@@ -6338,6 +6349,7 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
         if kijs is None:
             kijs = zeros2d
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
         self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
@@ -6590,6 +6602,7 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
             else:
                 kijs = zeros((N, N))
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
         self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
@@ -6927,6 +6940,7 @@ class PRMIX(GCEOSMIX, PR):
             else:
                 kijs = zeros((N, N))
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
         self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
@@ -7964,6 +7978,7 @@ class PRMIXTranslated(PRMIX):
             else:
                 kijs = zeros((N, N))
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
         self.T = T
         self.P = P
         self.V = V
@@ -8365,6 +8380,7 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
             else:
                 kijs = zeros((N, N))
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
         self.T = T
         self.P = P
         self.V = V
@@ -8534,6 +8550,7 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
             else:
                 kijs = zeros((N, N))
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
         self.T = T
         self.P = P
         self.V = V
@@ -8719,6 +8736,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
             else:
                 kijs = zeros((N, N))
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
         self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
@@ -9091,6 +9109,7 @@ class SRKMIXTranslated(SRKMIX):
             else:
                 kijs = zeros((N, N))
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
         self.kwargs = {'kijs': kijs, 'cs': cs}
         self.T = T
         self.P = P
@@ -9502,6 +9521,7 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
             else:
                 kijs = zeros((N, N))
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
         self.T = T
         self.P = P
         self.V = V
@@ -9707,6 +9727,7 @@ class MSRKMIXTranslated(Soave_1979_a_alpha, SRKMIXTranslatedConsistent):
         if kijs is None:
             kijs = [[0.0]*N for i in cmps]
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
         self.T = T
         self.P = P
         self.V = V
@@ -9856,6 +9877,7 @@ class PSRK(Mathias_Copeman_poly_a_alpha, PSRKMixingRules, SRKMIXTranslated):
         if cs is None:
             cs = [0.0]*N
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
         self.T = T
         self.P = P
         self.V = V
@@ -10017,6 +10039,7 @@ class PR78MIX(PRMIX):
             else:
                 kijs = zeros((N, N))
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
         self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
@@ -10147,6 +10170,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
             else:
                 kijs = zeros((N, N))
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
         self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
@@ -10635,6 +10659,7 @@ class PRSVMIX(PRMIX, PRSV):
             else:
                 kijs = zeros((N, N))
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
 
         if kappa1s is None:
             if scalar:
@@ -10877,6 +10902,7 @@ class PRSV2MIX(PRMIX, PRSV2):
             else:
                 kijs = zeros((N, N))
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
         
         if scalar:
             if kappa1s is None:
@@ -11128,6 +11154,7 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
             else:
                 kijs = zeros((N, N))
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
         self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
@@ -11282,6 +11309,7 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
             else:
                 kijs = zeros((N, N))
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
         self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
@@ -11425,6 +11453,7 @@ class APISRKMIX(SRKMIX, APISRK):
             else:
                 kijs = zeros((N, N))
         self.kijs = kijs
+        self.one_minus_kijs = one_minus_kijs(kijs)
         self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P

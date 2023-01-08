@@ -1031,6 +1031,10 @@ class GCEOS(object):
             del d['kwargs']
         except:
             pass
+        try:
+            del d['one_minus_kijs']
+        except:
+            pass
         d["py/object"] = self.__full_path__
         d['json_version'] = 1
         return d
