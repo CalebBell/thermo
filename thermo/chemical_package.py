@@ -622,7 +622,7 @@ class ChemicalConstantsPackage(object):
                                                       poly_fit_ln_tau=get_chemical_constants(CAS, 'EnthalpyVaporization'))
                                  for CAS, Tb, Tc, Pc, sv, omega in zip(CASs, Tbs, Tcs, Pcs, similarity_variables, omegas)]
 
-
+ 
         Hvap_Tbs = [o.T_dependent_property(Tb) if Tb else None for o, Tb, in zip(EnthalpyVaporizations, Tbs)]
         Hvap_Tbs_mass =  [Hvap*1000.0/MW if Hvap is not None else None for Hvap, MW in zip(Hvap_Tbs, MWs)]
 
@@ -1716,7 +1716,7 @@ class PropertyCorrelationsPackage(object):
             EnthalpyVaporizations = [EnthalpyVaporization(CASRN=constants.CASs[i], Tb=constants.Tbs[i],
                                                           Tc=constants.Tcs[i], Pc=constants.Pcs[i], omega=constants.omegas[i],
                                                           similarity_variable=constants.similarity_variables[i],
-                                                          poly_fit=get_chemical_constants(constants.CASs[i], 'EnthalpyVaporization'))
+                                                          poly_fit_ln_tau=get_chemical_constants(constants.CASs[i], 'EnthalpyVaporization'))
                               for i in cmps]
 
         if EnthalpySublimations is None and not skip_missing:
