@@ -119,7 +119,7 @@ root_two = sqrt(2.)
 root_two_m1 = root_two - 1.0
 root_two_p1 = root_two + 1.0
 
-def a_alpha_aijs_composition_independent(a_alphas, kijs):
+def a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs):
     r'''Calculates the matrix :math:`(a\alpha)_{ij}` as well as the array
     :math:`\sqrt{(a\alpha)_{i}}` and the matrix
     :math:`\frac{1}{\sqrt{(a\alpha)_{i}}\sqrt{(a\alpha)_{j}}}`.
@@ -136,8 +136,8 @@ def a_alpha_aijs_composition_independent(a_alphas, kijs):
     ----------
     a_alphas : list[float]
         EOS attractive terms, [J^2/mol^2/Pa]
-    kijs : list[list[float]]
-        Constant kijs, [-]
+    one_minus_kijs : list[list[float]]
+        One minus the constant kijs, [-]
 
     Returns
     -------
@@ -155,8 +155,9 @@ def a_alpha_aijs_composition_independent(a_alphas, kijs):
     Examples
     --------
     >>> kijs = [[0,.083],[0.083,0]]
+    >>> one_minus_kijs = [[1.0 - kij for kij in row] for row in kijs]
     >>> a_alphas = [0.2491099357671155, 0.6486495863528039]
-    >>> a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
+    >>> a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs)
     >>> a_alpha_ijs
     [[0.249109935767, 0.36861239374], [0.36861239374, 0.64864958635]]
     >>> a_alpha_roots
@@ -177,7 +178,7 @@ def a_alpha_aijs_composition_independent(a_alphas, kijs):
 #    a_alpha_ij_roots_inv = np.zeros((N, N)) # numba: uncomment
 
     for i in range(N):
-        kijs_i = kijs[i]
+        one_minus_kijs_i = one_minus_kijs[i]
         a_alpha_ijs_is = a_alpha_ijs[i]
         a_alpha_ij_roots_i_inv = a_alpha_ij_roots_inv[i]
         # Using range like this saves 20% of the comp time for 44 components!
@@ -185,11 +186,11 @@ def a_alpha_aijs_composition_independent(a_alphas, kijs):
         for j in range(i, N):
             term = a_alpha_i_root_i*a_alpha_roots[j]
             a_alpha_ij_roots_i_inv[j] = a_alpha_ij_roots_inv[j][i] = 1.0/term
-            a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*term
+            a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = one_minus_kijs_i[j]*term
     return a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv
 
 
-def a_alpha_aijs_composition_independent_support_zeros(a_alphas, kijs):
+def a_alpha_aijs_composition_independent_support_zeros(a_alphas, one_minus_kijs):
     # Same as the above but works when there are zeros
     N = len(a_alphas)
     cmps = range(N)
@@ -199,7 +200,7 @@ def a_alpha_aijs_composition_independent_support_zeros(a_alphas, kijs):
     a_alpha_ij_roots_inv = [[0.0] * N for _ in cmps]
 
     for i in cmps:
-        kijs_i = kijs[i]
+        one_minus_kijs_i = one_minus_kijs[i]
         a_alpha_i = a_alphas[i]
         a_alpha_ijs_is = a_alpha_ijs[i]
         a_alpha_ij_roots_i_inv = a_alpha_ij_roots_inv[i]
@@ -210,17 +211,17 @@ def a_alpha_aijs_composition_independent_support_zeros(a_alphas, kijs):
                 a_alpha_ij_roots_i_inv[j] = 1.0/term
             except ZeroDivisionError:
                 a_alpha_ij_roots_i_inv[j] = 1e100
-            a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j]) * term
+            a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = one_minus_kijs_i[j] * term
     return a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv
 
 
-def a_alpha_and_derivatives(a_alphas, T, zs, kijs, a_alpha_ijs=None,
+def a_alpha_and_derivatives(a_alphas, T, zs, one_minus_kijs, a_alpha_ijs=None,
                             a_alpha_roots=None, a_alpha_ij_roots_inv=None):
     N = len(a_alphas)
     da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
 
     if a_alpha_ijs is None or a_alpha_roots is None or a_alpha_ij_roots_inv is None:
-        a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
+        a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs)
 
     a_alpha = 0.0
     for i in range(N):
@@ -237,7 +238,7 @@ def a_alpha_and_derivatives(a_alphas, T, zs, kijs, a_alpha_ijs=None,
 
 
 def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
-                                 kijs, a_alpha_ijs=None, a_alpha_roots=None,
+                                 one_minus_kijs, a_alpha_ijs=None, a_alpha_roots=None,
                                  a_alpha_ij_roots_inv=None):
     r'''Calculates the `a_alpha` term, and its first two temperature
     derivatives, for an equation of state along with the
@@ -307,8 +308,8 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
         Temperature, not used, [K]
     zs : list[float]
         Mole fractions of each species
-    kijs : list[list[float]]
-        Constant kijs, [-]
+    one_minus_kijs : list[list[float]]
+        One minus the constant kijs, [-]
     a_alpha_ijs : list[list[float]], optional
         Matrix of :math:`(1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}`, [J^2/mol^2/Pa]
     a_alpha_roots : list[float], optional
@@ -343,11 +344,12 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
     Examples
     --------
     >>> kijs = [[0,.083],[0.083,0]]
+    >>> one_minus_kijs = [[1.0 - kij for kij in row] for row in kijs]
     >>> zs = [0.1164203, 0.8835797]
     >>> a_alphas = [0.2491099357671155, 0.6486495863528039]
     >>> da_alpha_dTs = [-0.0005102028006086241, -0.0011131153520304886]
     >>> d2a_alpha_dT2s = [1.8651128859234162e-06, 3.884331923127011e-06]
-    >>> a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs = a_alpha_and_derivatives_full(a_alphas=a_alphas, da_alpha_dTs=da_alpha_dTs, d2a_alpha_dT2s=d2a_alpha_dT2s, T=299.0, zs=zs, kijs=kijs)
+    >>> a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs = a_alpha_and_derivatives_full(a_alphas=a_alphas, da_alpha_dTs=da_alpha_dTs, d2a_alpha_dT2s=d2a_alpha_dT2s, T=299.0, zs=zs, one_minus_kijs=one_minus_kijs)
     >>> a_alpha, da_alpha_dT, d2a_alpha_dT2
     (0.58562139582, -0.001018667672, 3.56669817856e-06)
     >>> a_alpha_ijs
@@ -363,7 +365,7 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
     da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
 
     if a_alpha_ijs is None or a_alpha_roots is None or a_alpha_ij_roots_inv is None:
-        a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
+        a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs)
 
     z_products = [[zs[i]*zs[j] for j in range(N)] for i in range(N)] # numba : delete
 #    z_products = np.zeros((N, N)) # numba: uncomment
@@ -389,7 +391,7 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
     d2a_alpha_dT2_ij = 0.0
 
     for i in range(N):
-        kijs_i = kijs[i]
+        one_minus_kijs_i = one_minus_kijs[i]
         a_alphai = a_alphas[i]
         z_products_i = z_products[i]
         da_alpha_dT_i = da_alpha_dTs[i]
@@ -413,7 +415,7 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
                 x1_x2 = x1 + x2
                 x3 = x1_x2 + x1_x2
     
-                kij_m1 = kijs_i[j] - 1.0
+                kij_m1 = -one_minus_kijs_i[j]
     
                 da_alpha_dT_ij = -0.5*kij_m1*x1_x2*x0_05_inv
                 # For temperature derivatives of fugacities
@@ -441,7 +443,7 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
     return a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs
 
 
-def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs, 
+def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs, 
                             a_alpha_j_rows=None, vec0=None):
     r'''Calculates the `a_alpha` term for an equation of state along with the
     vector quantities needed to compute the fugacities of the mixture. This
@@ -468,8 +470,8 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs,
         Temperature, not used, [K]
     zs : list[float]
         Mole fractions of each species
-    kijs : list[list[float]]
-        Constant kijs, [-]
+    one_minus_kijs : list[list[float]]
+        One minus the constant kijs, [-]
     a_alpha_j_rows : list[float], optional
         EOS attractive term row destimation vector (does not need
         to be zeroed, should be provided to prevent allocations),
@@ -493,10 +495,11 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs,
     Examples
     --------
     >>> kijs = [[0,.083],[0.083,0]]
+    >>> one_minus_kijs = [[1.0 - kij for kij in row] for row in kijs]
     >>> zs = [0.1164203, 0.8835797]
     >>> a_alphas = [0.2491099357671155, 0.6486495863528039]
     >>> a_alpha_roots = [i**0.5 for i in a_alphas]
-    >>> a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, 299.0, zs, kijs)
+    >>> a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, 299.0, zs, one_minus_kijs)
     >>> a_alpha, a_alpha_j_rows
     (0.58562139582, [0.35469988173, 0.61604757237])
     '''
@@ -515,19 +518,19 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs,
     a_alpha = 0.0
     i = 0
     while i < N:
-        kijs_i = kijs[i]
+        one_minus_kijs_i = one_minus_kijs[i]
         j = 0
         while j < i:
             # Numba appears to be better with this split into two loops.
             # PyPy has 1.5x speed reduction when so.
-            a_alpha_j_rows[j] += (1. - kijs_i[j])*vec0[i]
-            a_alpha_j_rows[i] += (1. - kijs_i[j])*vec0[j]
+            a_alpha_j_rows[j] += (one_minus_kijs_i[j])*vec0[i]
+            a_alpha_j_rows[i] += (one_minus_kijs_i[j])*vec0[j]
             j += 1
         i += 1
 
     for i in range(N):
         a_alpha_j_rows[i] *= a_alpha_roots[i]
-        a_alpha_j_rows[i] += (1. -  kijs[i][i])*a_alphas[i]*zs[i]
+        a_alpha_j_rows[i] += (one_minus_kijs[i][i])*a_alphas[i]*zs[i]
         a_alpha += a_alpha_j_rows[i]*zs[i]
 
     return a_alpha, a_alpha_j_rows
@@ -557,7 +560,7 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs,
 
 def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
                                             da_alpha_dTs, d2a_alpha_dT2s, T,
-                                            zs, kijs, a_alpha_j_rows=None, 
+                                            zs, one_minus_kijs, a_alpha_j_rows=None, 
                                             da_alpha_dT_j_rows=None):
     r'''Calculates the `a_alpha` term, and its first two temperature
     derivatives, for an equation of state along with the
@@ -638,8 +641,8 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
         Temperature, not used, [K]
     zs : list[float]
         Mole fractions of each species
-    kijs : list[list[float]]
-        Constant kijs, [-]
+    one_minus_kijs : list[list[float]]
+        One minus the constant kijs, [-]
 
     Returns
     -------
@@ -662,12 +665,13 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
     Examples
     --------
     >>> kijs = [[0,.083],[0.083,0]]
+    >>> one_minus_kijs = [[1.0 - kij for kij in row] for row in kijs]
     >>> zs = [0.1164203, 0.8835797]
     >>> a_alphas = [0.2491099357671155, 0.6486495863528039]
     >>> a_alpha_roots = [i**0.5 for i in a_alphas]
     >>> da_alpha_dTs = [-0.0005102028006086241, -0.0011131153520304886]
     >>> d2a_alpha_dT2s = [1.8651128859234162e-06, 3.884331923127011e-06]
-    >>> a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots, da_alpha_dTs, d2a_alpha_dT2s, 299.0, zs, kijs)
+    >>> a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots, da_alpha_dTs, d2a_alpha_dT2s, 299.0, zs, one_minus_kijs)
     (0.58562139582, -0.001018667672, 3.56669817856e-06, [0.35469988173, 0.61604757237], [-0.000672387374, -0.001064293501])
     '''
     N = len(a_alphas)
@@ -680,7 +684,7 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
 
     # If d2a_alpha_dT2s were all halved, could save one more multiply
     for i in range(N):
-        kijs_i = kijs[i]
+        one_minus_kijs_i = one_minus_kijs[i]
         a_alpha_i_root_i = a_alpha_roots[i]
 
         # delete these references?
@@ -692,7 +696,7 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
         for j in range(i):
             # TODO: optimize this, compute a_alpha after
             v0 = a_alpha_i_root_i*a_alpha_roots[j]
-            a_alpha_ijs_ij = (1. - kijs_i[j])*v0
+            a_alpha_ijs_ij = (one_minus_kijs_i[j])*v0
             t200 = a_alpha_ijs_ij*zs[i]
             a_alpha_j_rows[j] += t200
             a_alpha_j_rows[i] += zs[j]*a_alpha_ijs_ij
@@ -707,7 +711,7 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
             x2 = a_alphaj*da_alpha_dT_i
             x1_x2 = x1 + x2
 
-            kij_m1 = kijs_i[j] - 1.0
+            kij_m1 = -one_minus_kijs_i[j]
 
             v0_inv = 1.0/v0
             v1 = kij_m1*v0_inv
@@ -844,8 +848,8 @@ def G_dep_lnphi_d_helper(T, P, b, delta, epsilon, a_alpha, N,
         out[i] = diff
     return out
 
-def eos_mix_a_alpha_volume(gas, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None):
-    a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs, a_alpha_j_rows, vec0)
+def eos_mix_a_alpha_volume(gas, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None):
+    a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs, a_alpha_j_rows, vec0)
 
     V0, V1, V2 = volume_solutions_halley(T, P, b, delta, epsilon, a_alpha)
     if not gas:
@@ -861,7 +865,7 @@ def eos_mix_a_alpha_volume(gas, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_a
                 V0 = V1
             if V0 < V2 and V2 > b:
                 V0 = V2
-    Z = Z = P*V0/(R*T)
+    Z = P*V0/(R*T)
     return Z, a_alpha, a_alpha_j_rows
 
 def eos_mix_db_dns(b, bs, N, out=None):
@@ -1280,12 +1284,27 @@ def PR_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=None):
 
     A = a_alpha*P_T*R2_inv*T_inv
     B = b*P_T*R_inv
-    x0 = log(Z - B)
+    to_log = Z - B
+    if to_log <= 0.0:
+        # Should never happen
+        x0 = 0.0
+    else:
+        x0 = log(to_log)
     root_two_B = B*root_two
     two_root_two_B = root_two_B + root_two_B
     ZB = Z + B
-    x4 = A*log((ZB + root_two_B)/(ZB - root_two_B))
-    t50 = (x4 + x4)/(a_alpha*two_root_two_B)
+    to_log = (ZB + root_two_B)/(ZB - root_two_B)
+    if to_log <= 0.0:
+        x4 = 0.0
+    else:
+        x4 = A*log(to_log)
+    to_div = a_alpha*two_root_two_B
+    if to_div != 0.0:
+        t50 = (x4 + x4)/(to_div)
+    else:
+        for i in range(N):
+            lnphis[i] = 0.0
+            return lnphis
     t51 = (x4 + (Z - 1.0)*two_root_two_B)/(b*two_root_two_B)
     for i in range(N):
         lnphis[i] = bs[i]*t51 - x0 - t50*a_alpha_j_rows[i]
@@ -1347,7 +1366,7 @@ def eos_mix_lnphis_general(T, P, Z, b, delta, epsilon, a_alpha, bs,
 
 
 
-def PR_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
+def PR_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
                       lnphis=None):
     b = 0.0
     for i in range(N):
@@ -1355,12 +1374,12 @@ def PR_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_al
     delta = 2.0*b
     epsilon = -b*b
     
-    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
+    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     return PR_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=lnphis)
 
 
-def SRK_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
+def SRK_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
                       lnphis=None):
     b = 0.0
     for i in range(N):
@@ -1368,12 +1387,12 @@ def SRK_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_a
     delta = b
     epsilon = 0.0
     
-    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
+    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     return SRK_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=lnphis)
 
 
-def VDW_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
+def VDW_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
                       lnphis=None):
     b = 0.0
     for i in range(N):
@@ -1381,12 +1400,12 @@ def VDW_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_a
     delta = 0.0
     epsilon = 0.0
     
-    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
+    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     return VDW_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_roots, N, lnphis=lnphis)
 
 
-def RK_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
+def RK_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, bs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
                       lnphis=None):
     b = 0.0
     for i in range(N):
@@ -1394,7 +1413,7 @@ def RK_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_al
     delta = b
     epsilon = 0.0
     
-    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
+    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     
     ddelta_dns = db_dns = eos_mix_db_dns(b, bs, N, out=None)
@@ -1407,7 +1426,7 @@ def RK_lnphis_fastest(zs, T, P, N, kijs, l, g, bs, a_alphas, a_alpha_roots, a_al
                            depsilon_dns, lnphis=lnphis)
 
 
-def PR_translated_lnphis_fastest(zs, T, P, N, kijs, l, g, b0s, bs, cs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
+def PR_translated_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, b0s, bs, cs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
                       lnphis=None):
     b0, c = 0.0, 0.0
     for i in range(N):
@@ -1417,7 +1436,7 @@ def PR_translated_lnphis_fastest(zs, T, P, N, kijs, l, g, b0s, bs, cs, a_alphas,
     b = b0 - c
     delta = 2.0*(c + b0)
     epsilon = -b0*b0 + c*(c + b0 + b0)
-    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
+    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     
     db_dns = eos_mix_db_dns(b, bs, N, out=None)
@@ -1431,7 +1450,7 @@ def PR_translated_lnphis_fastest(zs, T, P, N, kijs, l, g, b0s, bs, cs, a_alphas,
                            depsilon_dns, lnphis=lnphis)
 
 
-def SRK_translated_lnphis_fastest(zs, T, P, N, kijs, l, g, b0s, bs, cs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
+def SRK_translated_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, b0s, bs, cs, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None,
                       lnphis=None):
     b0, c = 0.0, 0.0
     for i in range(N):
@@ -1441,7 +1460,7 @@ def SRK_translated_lnphis_fastest(zs, T, P, N, kijs, l, g, b0s, bs, cs, a_alphas
     b = b0 - c
     delta =  c + c + b0
     epsilon = c*(b0 + c)
-    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
+    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     
     db_dns = eos_mix_db_dns(b, bs, N, out=None)

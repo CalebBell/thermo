@@ -38,7 +38,7 @@ import json, pickle
 from thermo.coolprop import has_CoolProp
 from thermo.property_package_constants import (PropertyPackageConstants,
                                                NRTL_PKG, IDEAL_PKG, PR_PKG)
-from thermo.eos_mix_methods import a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms
+from thermo.eos_mix_methods import a_alpha_and_derivatives_quadratic_terms
 
 
 def test_PRMIX_quick():

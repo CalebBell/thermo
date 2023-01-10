@@ -194,7 +194,7 @@ __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX',
 'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX', 'IGMIX', 'RKMIX',
 'PRMIXTranslatedConsistent', 'PRMIXTranslatedPPJP', 'PRMIXTranslated',
 'SRKMIXTranslatedConsistent', 'PSRK', 'MSRKMIXTranslated',
-'eos_mix_list', 'eos_mix_no_coeffs_list', 'SRKMIXTranslated']
+'eos_mix_list', 'eos_mix_no_coeffs_list', 'SRKMIXTranslated', 'one_minus_kijs']
 
 import sys
 from cmath import log as clog
@@ -212,7 +212,7 @@ from thermo import serialize
 from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
     a_alpha_aijs_composition_independent_support_zeros, a_alpha_and_derivatives, a_alpha_and_derivatives_full,
     a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms,
-    G_dep_lnphi_d_helper, eos_mix_dV_dzs, VDW_lnphis, SRK_lnphis, eos_mix_db_dns, PR_translated_ddelta_dns,
+    G_dep_lnphi_d_helper, eos_mix_dV_dzs, VDW_lnphis, PR_lnphis, SRK_lnphis, eos_mix_db_dns, PR_translated_ddelta_dns,
     PR_translated_depsilon_dns, PR_depsilon_dns, PR_translated_d2epsilon_dzizjs,
     PR_d2epsilon_dninjs, PR_d3epsilon_dninjnks, PR_d2delta_dninjs, PR_d3delta_dninjnks,
     PR_ddelta_dzs, PR_ddelta_dns, PR_d2epsilon_dzizjs, PR_depsilon_dzs,
@@ -252,9 +252,10 @@ c1R2_PR = PR.c1R2
 c2R_PR = PR.c2R
 
 def one_minus_kijs(kijs):
-    if type(kijs) is ndarray:
-        return 1.0 - kijs
-    return [[1.0-v for v in row] for row in kijs]
+#   return 1.0 - kijs # numba: uncomment
+    if type(kijs) is ndarray: # numba: delete
+        return 1.0 - kijs # numba: delete
+    return [[1.0-v for v in row] for row in kijs] # numba: delete
 
 
 class GCEOSMIX(GCEOS):
@@ -1028,7 +1029,8 @@ class GCEOSMIX(GCEOS):
         # 4 ms pypy for 44*4, 1.3 ms for pythran, 10 ms python with numpy
         # 2 components 1.89 pypy, pythran 1.75 us, regular python 12.7 us.
         # 10 components - regular python 148 us, 9.81 us PyPy, 8.37 pythran in PyPy (flags have no effect; 14.3 us in regular python)
-        zs, kijs, N = self.zs, self.kijs, self.N
+        zs, one_minus_kijs, N = self.zs, self.one_minus_kijs, self.N
+         
 
         same_T = T == self.T
         if quick:
@@ -1037,22 +1039,22 @@ class GCEOSMIX(GCEOS):
                 a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = self.a_alpha_ijs, self.a_alpha_roots, self.a_alpha_ij_roots_inv
             except (AttributeError, AssertionError):
                 try:
-                    a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
+                    a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs)
                 except ZeroDivisionError:
-                    a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent_support_zeros(a_alphas, kijs)
+                    a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent_support_zeros(a_alphas, one_minus_kijs)
                 self.a_alpha_ijs, self.a_alpha_roots, self.a_alpha_ij_roots_inv = a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv
         else:
             try:
-                a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
+                a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs)
             except:
-                a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent_support_zeros(a_alphas, kijs)
+                a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent_support_zeros(a_alphas, one_minus_kijs)
 
             if same_T:
                 self.a_alpha_ijs, self.a_alpha_roots, self.a_alpha_ij_roots_inv = a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv
 
         if full:
             try:
-                a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs = a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs,
+                a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs = a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, one_minus_kijs,
                                                                                                                                     a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv)
             except:
                 if self.N == 1:
@@ -1065,7 +1067,7 @@ class GCEOSMIX(GCEOS):
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
         else:
             # Priority - test, fix, and validate
-            a_alpha, _, a_alpha_ijs = a_alpha_and_derivatives(a_alphas, T, zs, kijs, a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv)
+            a_alpha, _, a_alpha_ijs = a_alpha_and_derivatives(a_alphas, T, zs, one_minus_kijs, a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv)
             self.da_alpha_dT_ijs = []
             self.a_alpha_ijs = a_alpha_ijs
             return a_alpha
@@ -1175,7 +1177,7 @@ class GCEOSMIX(GCEOS):
 #            return a_alpha
 
     def a_alpha_and_derivatives_py(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
-        zs, kijs, scalar, N = self.zs, self.kijs, self.scalar, self.N
+        zs, one_minus_kijs, scalar, N = self.zs, self.one_minus_kijs, self.scalar, self.N
         if scalar:
             self.a_alpha_roots = a_alpha_roots = [sqrt(i) for i in a_alphas]
         else:
@@ -1192,14 +1194,13 @@ class GCEOSMIX(GCEOS):
                 a_alpha_j_rows, da_alpha_dT_j_rows = zeros(N), zeros(N)
             a_alpha, da_alpha_dT, d2a_alpha_dT2, self.a_alpha_j_rows, self.da_alpha_dT_j_rows = (
                     a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots, da_alpha_dTs,
-                                                            d2a_alpha_dT2s, T, zs, kijs,
+                                                            d2a_alpha_dT2s, T, zs, one_minus_kijs,
                                                             a_alpha_j_rows=a_alpha_j_rows, da_alpha_dT_j_rows=da_alpha_dT_j_rows))
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
         else:
-#            a_alpha, self.a_alpha_j_rows = a_alpha_quadratic_terms(np.array(a_alphas), np.array(a_alpha_roots), T, np.array(zs), np.array(kijs))
             a_alpha_j_rows = [0.0]*N if scalar else zeros(N)
-            a_alpha, self.a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs, a_alpha_j_rows=a_alpha_j_rows)
+            a_alpha, self.a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs, a_alpha_j_rows=a_alpha_j_rows)
             return a_alpha
 
 
@@ -2528,13 +2529,13 @@ class GCEOSMIX(GCEOS):
 
     def _set_alpha_matrices(self):
         try:
-            a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(self.a_alphas, self.kijs)
+            a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(self.a_alphas, self.one_minus_kijs)
         except ZeroDivisionError:
-            a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent_support_zeros(self.a_alphas, self.kijs)
+            a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent_support_zeros(self.a_alphas, self.one_minus_kijs)
 
 
         _, _, _, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs = a_alpha_and_derivatives_full(
-                self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s, self.T, self.zs, self.kijs,
+                self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s, self.T, self.zs, self.one_minus_kijs,
                 a_alpha_ijs, self.a_alpha_roots, a_alpha_ij_roots_inv)
         self._d2a_alpha_dT2_ijs = d2a_alpha_dT2_ijs
         self._da_alpha_dT_ijs = da_alpha_dT_ijs
@@ -7133,6 +7134,9 @@ class PRMIX(GCEOSMIX, PR):
         log_phis : float
             Log fugacity coefficient for each species, [-]
         '''
+        N = self.N
+        return PR_lnphis(self.T, self.P, Z, self.b, self.a_alpha, self.bs, self.a_alpha_j_rows, N,
+                          lnphis=[0.0]*N if self.scalar else zeros(N))
         a_alpha = self.a_alpha
 #        a_alpha_ijs = self.a_alpha_ijs
         T_inv = 1.0/self.T

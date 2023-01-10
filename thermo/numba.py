@@ -129,6 +129,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                  'eos_mix_methods.a_alpha_and_derivatives_quadratic_terms',
                  'eos_mix_methods.a_alpha_aijs_composition_independent',
                  'eos_mix_methods.a_alpha_and_derivatives_full',
+                'eos_mix.one_minus_kijs',
 
                 'eos_mix_methods.PR_lnphis',
              'eos_mix_methods.VDW_lnphis',

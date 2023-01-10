@@ -231,13 +231,15 @@ def test_a_alpha_aijs_composition_independent():
     # TODO: a_alpha_aijs_composition_independent is being overwritten in thermo.numba somehow!
 
     kijs = np.array([[0,.083],[0.083,0]])
+    one_minus_kijs = 1.0 - kijs
+
     a_alphas = np.array([0.2491099357671155, 0.6486495863528039])
-    a0, a1, a2 = thermo.numba.eos_mix_methods.a_alpha_aijs_composition_independent(a_alphas, kijs)
+    a0, a1, a2 = thermo.numba.eos_mix_methods.a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs)
     assert type(a0) is np.ndarray
     assert type(a1) is np.ndarray
     assert type(a2) is np.ndarray
 
-    b0, b1, b2 = thermo.eos_mix_methods.a_alpha_aijs_composition_independent(a_alphas, kijs)
+    b0, b1, b2 = thermo.eos_mix_methods.a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs)
     assert_close1d(a1, b1, rtol=1e-13)
     assert_close2d(a0, b0, rtol=1e-13)
     assert_close2d(a2, b2, rtol=1e-13)
@@ -249,36 +251,38 @@ def test_a_alpha_aijs_composition_independent():
 def test_a_alpha_quadratic_terms_numba():
     T = 299.0
     kijs = np.array([[0,.083],[0.083,0]])
+    one_minus_kijs = 1.0 - kijs
     zs = np.array([0.1164203, 0.8835797])
     a_alphas = np.array([0.2491099357671155, 0.6486495863528039])
     a_alpha_roots = np.sqrt(a_alphas)
     da_alpha_dTs = np.array([-0.0005102028006086241, -0.0011131153520304886])
     d2a_alpha_dT2s = np.array([1.8651128859234162e-06, 3.884331923127011e-06])
-    a_alpha, a_alpha_j_rows = thermo.numba.a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs)
-    a_alpha_expect, a_alpha_j_rows_expect = thermo.eos_mix_methods.a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs)
+    a_alpha, a_alpha_j_rows = thermo.numba.a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs)
+    a_alpha_expect, a_alpha_j_rows_expect = thermo.eos_mix_methods.a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs)
     assert_close(a_alpha, a_alpha_expect, rtol=1e-13)
     assert_close1d(a_alpha_j_rows, a_alpha_j_rows_expect, rtol=1e-13)
     
     a_alpha_j_rows = np.zeros(len(zs))
     vec0 = np.zeros(len(zs))
-    a_alpha, a_alpha_j_rows = thermo.numba.a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs, a_alpha_j_rows, vec0)
+    a_alpha, a_alpha_j_rows = thermo.numba.a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs, a_alpha_j_rows, vec0)
     assert_close(a_alpha, a_alpha_expect, rtol=1e-13)
     assert_close1d(a_alpha_j_rows, a_alpha_j_rows_expect, rtol=1e-13)
     
-    a_alpha, a_alpha_j_rows = thermo.numba.a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, kijs, a_alpha_j_rows)
+    a_alpha, a_alpha_j_rows = thermo.numba.a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs, a_alpha_j_rows)
     assert_close(a_alpha, a_alpha_expect, rtol=1e-13)
     assert_close1d(a_alpha_j_rows, a_alpha_j_rows_expect, rtol=1e-13)
 
 @mark_as_numba
 def test_a_alpha_and_derivatives_full():
     kijs = np.array([[0,.083],[0.083,0]])
+    one_minus_kijs = 1.0 - kijs
     zs = np.array([0.1164203, 0.8835797])
     a_alphas = np.array([0.2491099357671155, 0.6486495863528039])
     da_alpha_dTs = np.array([-0.0005102028006086241, -0.0011131153520304886])
     d2a_alpha_dT2s = np.array([1.8651128859234162e-06, 3.884331923127011e-06])
-    a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs = thermo.numba.a_alpha_and_derivatives_full(a_alphas=a_alphas, da_alpha_dTs=da_alpha_dTs, d2a_alpha_dT2s=d2a_alpha_dT2s, T=299.0, zs=zs, kijs=kijs)
+    a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs = thermo.numba.a_alpha_and_derivatives_full(a_alphas=a_alphas, da_alpha_dTs=da_alpha_dTs, d2a_alpha_dT2s=d2a_alpha_dT2s, T=299.0, zs=zs, one_minus_kijs=one_minus_kijs)
 
-    a_alpha0, da_alpha_dT0, d2a_alpha_dT20, a_alpha_ijs0, da_alpha_dT_ijs0, d2a_alpha_dT2_ijs0 = thermo.eos_mix_methods.a_alpha_and_derivatives_full(a_alphas=a_alphas, da_alpha_dTs=da_alpha_dTs, d2a_alpha_dT2s=d2a_alpha_dT2s, T=299.0, zs=zs, kijs=kijs)
+    a_alpha0, da_alpha_dT0, d2a_alpha_dT20, a_alpha_ijs0, da_alpha_dT_ijs0, d2a_alpha_dT2_ijs0 = thermo.eos_mix_methods.a_alpha_and_derivatives_full(a_alphas=a_alphas, da_alpha_dTs=da_alpha_dTs, d2a_alpha_dT2s=d2a_alpha_dT2s, T=299.0, zs=zs, one_minus_kijs=one_minus_kijs)
 
 
     assert_close(a_alpha, a_alpha0, rtol=1e-13)
