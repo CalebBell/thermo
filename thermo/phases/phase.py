@@ -32,7 +32,7 @@ __all__ = [
 from fluids.constants import R, R_inv
 from math import sqrt
 from thermo.serialize import arrays_to_lists
-from fluids.numerics import (horner, horner_log, jacobian, trunc_log,
+from fluids.numerics import (horner, horner_log, jacobian, trunc_log, numpy as np,
                              poly_fit_integral_value, poly_fit_integral_over_T_value,
                              newton_system, trunc_exp, is_micropython)
 from fluids.core import thermal_diffusivity, c_ideal_gas
@@ -46,6 +46,11 @@ from chemicals.virial import B_from_Z
 from thermo.utils import POLY_FIT
 from thermo import phases
 from thermo.phases.phase_utils import object_lookups
+
+try:
+    dot, zeros = np.dot, np.zeros
+except:
+    pass
 
 class Phase(object):
     '''`Phase` is the base class for all phase objects in `thermo`. Each
@@ -1015,7 +1020,10 @@ class Phase(object):
             pass
         dphis_dT = self.dphis_dT()
         P, zs = self.P, self.zs
-        self._dfugacities_dT = [P*zs[i]*dphis_dT[i] for i in range(self.N)]
+        if self.scalar:
+            self._dfugacities_dT = [P*zs[i]*dphis_dT[i] for i in range(self.N)]
+        else:
+            self._dfugacities_dT = P*zs*dphis_dT
         return self._dfugacities_dT
 
     def lnphis_G_min(self):
@@ -1080,8 +1088,10 @@ class Phase(object):
             phis = self._phis
         except AttributeError:
             phis = self.phis()
-
-        self._dphis_dT = [dlnphis_dT[i]*phis[i] for i in range(self.N)]
+        if self.scalar:
+            self._dphis_dT = [dlnphis_dT[i]*phis[i] for i in range(self.N)]
+        else:
+            self._dphis_dT = dlnphis_dT*phis
         return self._dphis_dT
 
     def dphis_dP(self):
@@ -1114,8 +1124,11 @@ class Phase(object):
             phis = self._phis
         except AttributeError:
             phis = self.phis()
+        if self.scalar:
+            self._dphis_dP = [dlnphis_dP[i]*phis[i] for i in range(self.N)]
+        else:
+            self._dphis_dP = dlnphis_dP*phis
 
-        self._dphis_dP = [dlnphis_dP[i]*phis[i] for i in range(self.N)]
         return self._dphis_dP
     
     def dphis_dzs(self):
@@ -1186,7 +1199,10 @@ class Phase(object):
             phis = self.phis()
 
         P, zs = self.P, self.zs
-        return [zs[i]*(P*dphis_dP[i] + phis[i]) for i in range(self.N)]
+        if self.scalar:
+            return [zs[i]*(P*dphis_dP[i] + phis[i]) for i in range(self.N)]
+        else:
+            return zs*(P*dphis_dP + phis) 
 
     def dfugacities_dns(self):
         r'''Method to calculate and return the mole number derivative of the
@@ -1962,8 +1978,11 @@ class Phase(object):
         except AttributeError:
             pass
         H = self.H()
-        for zi, Hf in zip(self.zs, self.Hfs):
-            H += zi*Hf
+        if self.scalar:
+            for zi, Hf in zip(self.zs, self.Hfs):
+                H += zi*Hf
+        else:
+            H += dot(self.zs, self.Hfs)
         self._H_reactive = H
         return H
 
@@ -1987,8 +2006,11 @@ class Phase(object):
         except:
             pass
         S = self.S()
-        for zi, Sf in zip(self.zs, self.Sfs):
-            S += zi*Sf
+        if self.scalar:
+            for zi, Sf in zip(self.zs, self.Sfs):
+                S += zi*Sf
+        else:
+            S += dot(self.zs, self.Sfs)
         self._S_reactive = S
         return S
 
@@ -2067,8 +2089,11 @@ class Phase(object):
         except AttributeError:
             pass
         Hf_ideal_gas = 0.0
-        for zi, Hf in zip(self.zs, self.Hfs):
-            Hf_ideal_gas += zi*Hf
+        if self.scalar:
+            for zi, Hf in zip(self.zs, self.Hfs):
+                Hf_ideal_gas += zi*Hf
+        else:
+            Hf_ideal_gas = dot(self.zs, self.Hfs)
         self._H_formation_ideal_gas = Hf_ideal_gas
         return Hf_ideal_gas
 
@@ -2093,8 +2118,11 @@ class Phase(object):
         except:
             pass
         Sf_ideal_gas = 0.0
-        for zi, Sf in zip(self.zs, self.Sfs):
-            Sf_ideal_gas += zi*Sf
+        if self.scalar:
+            for zi, Sf in zip(self.zs, self.Sfs):
+                Sf_ideal_gas += zi*Sf
+        else:
+            Sf_ideal_gas = dot(self.zs, self.Sfs)
         self._S_formation_ideal_gas = Sf_ideal_gas
         return Sf_ideal_gas
 
@@ -2339,7 +2367,10 @@ class Phase(object):
         dS_dzs = self.dS_dzs()
         dH_dzs = self.dH_dzs()
         T, Hfs, Sfs = self.T, self.Hfs, self.Sfs
-        dG_reactive_dzs = [Hfs[i] - T*(Sfs[i] + dS_dzs[i]) + dH_dzs[i] for i in range(self.N)]
+        if self.scalar:
+            dG_reactive_dzs = [Hfs[i] - T*(Sfs[i] + dS_dzs[i]) + dH_dzs[i] for i in range(self.N)]
+        else:
+            dG_reactive_dzs = Hfs - T*(Sfs + dS_dzs) + dH_dzs
         dG_reactive_dns = dxs_to_dns(dG_reactive_dzs, self.zs)
         chemical_potentials = dns_to_dn_partials(dG_reactive_dns, self.G_reactive())
         self._chemical_potentials = chemical_potentials
@@ -2370,7 +2401,9 @@ class Phase(object):
         # CORRECT DO NOT CHANGE
         fugacities = self.fugacities()
         fugacities_std = self.fugacities_std() # TODO implement fugacities_std
-        return [fugacities[i]/fugacities_std[i] for i in range(self.N)]
+        if self.scalar:
+            return [fugacities[i]/fugacities_std[i] for i in range(self.N)]
+        return fugacities/fugacities_std
 
     def gammas(self):
         r'''Method to calculate and return the activity coefficients of the
@@ -2402,13 +2435,13 @@ class Phase(object):
         # the most generally used one for EOSs; and activity methods
         # override this
         phis = self.phis()
-        self._gammas = gammas = []
-        T, P, N = self.T, self.P, self.N
+        T, P, N, scalar = self.T, self.P, self.N, self.scalar
+        self._gammas = gammas = [0.0]*N if scalar else zeros(N)
         for i in range(N):
-            zeros = [0.0]*N
+            zeros = [0.0]*N if scalar else zeros(N)
             zeros[i] = 1.0
             phi = self.to_TP_zs(T=T, P=P, zs=zeros).phis()[i]
-            gammas.append(phis[i]/phi)
+            gammas[i] = phis[i]/phi
         
         self._gammas = gammas
         return gammas
@@ -5321,7 +5354,10 @@ class Phase(object):
             except:
                 pass
             m = self.result.m*self.beta_mass
-            self._ms = [m*wi for wi in self.ws()]
+            if self.scalar:
+                self._ms = [m*wi for wi in self.ws()]
+            else:
+                self._ms = m*self.ws()
             return self._ms
         except:
             return None
@@ -5352,7 +5388,10 @@ class Phase(object):
         V = R*settings.T_gas_ref/settings.P_gas_ref
         n = self.n
         Vn = V*n
-        self._Qgs = [zi*Vn for zi in self.zs]
+        if self.scalar:
+            self._Qgs = [zi*Vn for zi in self.zs]
+        else:
+            self._Qgs = self.zs*Vn
         return self._Qgs
     
     Qgs_calc = Qgs
@@ -5407,7 +5446,10 @@ class Phase(object):
             pass
         ns = self.ns
         Vmls = self.result.V_liquids_ref()
-        self._Qls = [ns[i]*Vmls[i] for i in range(self.N)]
+        if self.scalar:
+            self._Qls = [ns[i]*Vmls[i] for i in range(self.N)]
+        else:
+            self._Qls = ns*Vmls
         return self._Qls
     
     Qls_calc = Qls
@@ -5500,7 +5542,10 @@ class Phase(object):
             pass
         rho = self.rho()
         zs = self.zs
-        self._concentrations = concentrations = [rho*zi for zi in zs]
+        if self.scalar:
+            self._concentrations = concentrations = rho*zs
+        else:
+            self._concentrations = concentrations = [rho*zi for zi in zs]
         return concentrations
     
     def concentrations_mass(self):
@@ -5521,7 +5566,10 @@ class Phase(object):
             pass
         rho_mass = self.rho_mass()
         ws = self.ws()
-        self._concentrations_mass = [rho_mass*wi for wi in ws]
+        if self.scalar:
+            self._concentrations_mass = [rho_mass*wi for wi in ws]
+        else:
+            self._concentrations_mass = rho_mass*ws
         return self._concentrations_mass
 
     def partial_pressures(self):
@@ -5545,7 +5593,10 @@ class Phase(object):
         except:
             pass
         P = self.P
-        self._partial_pressures = [zi*P for zi in self.zs]
+        if self.scalar:
+            self._partial_pressures = [zi*P for zi in self.zs]
+        else:
+            self._partial_pressures = zs*P
         return self._partial_pressures
 
 
@@ -5558,8 +5609,12 @@ class IdealGasDeparturePhase(Phase):
         except AttributeError:
             pass
         H = self.H_dep()
-        for zi, Cp_int in zip(self.zs, self.Cpig_integrals_pure()):
-            H += zi*Cp_int
+        if self.scalar:
+            for zi, Cp_int in zip(self.zs, self.Cpig_integrals_pure()):
+                H += zi*Cp_int
+        else:
+            H += dot(self.zs, self.Cpig_integrals_pure())
+
         self._H = H
         return H
 
@@ -5574,11 +5629,15 @@ class IdealGasDeparturePhase(Phase):
         P_REF_IG_INV = self.P_REF_IG_INV
         R = self.R
         S = 0.0
-        S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
-        S -= R*log(P*P_REF_IG_INV)
 
-        for i in cmps:
-            S += zs[i]*Cpig_integrals_over_T_pure[i]
+        if self.scalar:
+            S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
+            for i in cmps:
+                S += zs[i]*Cpig_integrals_over_T_pure[i]
+        else:
+            S -= R*dot(zs, log_zs)
+            S += dot(zs, Cpig_integrals_over_T_pure)
+        S -= R*log(P*P_REF_IG_INV)
         S += self.S_dep()
         self._S = S
         return S
@@ -5592,8 +5651,11 @@ class IdealGasDeparturePhase(Phase):
             pass
         Cpigs_pure = self.Cpigs_pure()
         Cp, zs = 0.0, self.zs
-        for i in range(self.N):
-            Cp += zs[i]*Cpigs_pure[i]
+        if self.scalar:
+            for i in range(self.N):
+                Cp += zs[i]*Cpigs_pure[i]
+        else:
+            Cp = dot(zs, Cpigs_pure)
         Cp += self.Cp_dep()
         self._Cp = Cp
         return Cp
@@ -5636,8 +5698,11 @@ class IdealGasDeparturePhase(Phase):
             pass
         dCpigs_pure = self.dCpigs_dT_pure()
         dCp, zs = 0.0, self.zs
-        for i in range(self.N):
-            dCp += zs[i]*dCpigs_pure[i]
+        if self.scalar:
+            for i in range(self.N):
+                dCp += zs[i]*dCpigs_pure[i]
+        else:
+            dCp = dot(zs, dCpigs_pure)
         dCp += self.d2H_dep_dT2()
         self._d2H_dT2 = dCp
         return dCp
@@ -5645,8 +5710,11 @@ class IdealGasDeparturePhase(Phase):
     def d2H_dT2_V(self):
         dCpigs_pure = self.dCpigs_dT_pure()
         dCp, zs = 0.0, self.zs
-        for i in range(self.N):
-            dCp += zs[i]*dCpigs_pure[i]
+        if self.scalar:
+            for i in range(self.N):
+                dCp += zs[i]*dCpigs_pure[i]
+        else:
+            dCp = dot(zs, dCpigs_pure)
         return dCp + self.d2H_dep_dT2_V()
 
 
@@ -5657,7 +5725,10 @@ class IdealGasDeparturePhase(Phase):
             pass
         dH_dep_dzs = self.dH_dep_dzs()
         Cpig_integrals_pure = self.Cpig_integrals_pure()
-        self._dH_dzs = [dH_dep_dzs[i] + Cpig_integrals_pure[i] for i in range(self.N)]
+        if self.scalar:
+            self._dH_dzs = [dH_dep_dzs[i] + Cpig_integrals_pure[i] for i in range(self.N)]
+        else:
+            self._dH_dzs = dH_dep_dzs + Cpig_integrals_pure
         return self._dH_dzs
 
     def dS_dT(self):
@@ -5731,8 +5802,10 @@ class IdealGasDeparturePhase(Phase):
         integrals = self.Cpig_integrals_over_T_pure()
         dS_dep_dzs = self.dS_dep_dzs()
         R = self.R
-        self._dS_dzs = [integrals[i] - R*(log_zs[i] + 1.0) + dS_dep_dzs[i]
-                        for i in cmps]
+        if self.scalar:
+            self._dS_dzs = [integrals[i] - R*(log_zs[i] + 1.0) + dS_dep_dzs[i] for i in cmps]
+        else:
+            self._dS_dzs = integrals - R*(log_zs + 1.0) + dS_dep_dzs
         return self._dS_dzs
 
     def gammas(self):
@@ -5742,7 +5815,10 @@ class IdealGasDeparturePhase(Phase):
             pass
         phis = self.phis()
         phi_pures = self.phi_pures()
-        self._gammas = [phis[i]/phi_pures[i] for i in range(self.N)]
+        if self.scalar:
+            self._gammas = [phis[i]/phi_pures[i] for i in range(self.N)]
+        else:
+            self._gammas = phis[i]/phi_pures[i]
         return self._gammas
 
 

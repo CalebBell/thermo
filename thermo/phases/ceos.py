@@ -31,7 +31,7 @@ from thermo.phases.phase_utils import PR_lnphis_fastest, lnphis_direct
 from thermo.heat_capacity import HeatCapacityGas
 from thermo.phases.phase import Phase, IdealGasDeparturePhase
 try:
-    zeros = np.zeros
+    zeros, ndarray, full = np.zeros, np.ndarray, np.full
 except:
     pass
 
@@ -128,7 +128,7 @@ class CEOSPhase(IdealGasDeparturePhase):
         self.eos_class = eos_class
         self.eos_kwargs = eos_kwargs
 
-
+        self.scalar = scalar = not (any(type(v) is ndarray for v in eos_kwargs.values()) or any(type(v) is ndarray for v in (zs, Hfs, Gfs, Sfs)))
 
 
         self.HeatCapacityGases = HeatCapacityGases
@@ -155,7 +155,11 @@ class CEOSPhase(IdealGasDeparturePhase):
             self.zs = zs
             self.eos_mix = eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
         else:
-            zs = [1.0/N]*N
+            if scalar:
+                zs = [1.0/N]*N
+            else:
+                v = 1.0/N
+                zs = full(N, v)
             self.eos_mix = eos_mix = self.eos_class(T=298.15, P=101325.0, zs=zs, **self.eos_kwargs)
             self.T = 298.15
             self.P = 101325.0
@@ -211,6 +215,7 @@ class CEOSPhase(IdealGasDeparturePhase):
         new.T = T
         new.P = P
         new.zs = zs
+        new.scalar = self.scalar
         if other_eos is not None:
             other_eos.solve_missing_volumes()
             new.eos_mix = other_eos
@@ -287,6 +292,7 @@ class CEOSPhase(IdealGasDeparturePhase):
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
+        new.scalar = self.scalar
 
         try:
             new.N = self.N
@@ -311,7 +317,7 @@ class CEOSPhase(IdealGasDeparturePhase):
     def lnphis_args(self):
         N = self.N
         eos_mix = self.eos_mix
-        if self.eos_mix.scalar:
+        if self.scalar:
             a_alpha_j_rows, vec0 = [0.0]*N, [0.0]*N
         else:
             a_alpha_j_rows, vec0 = zeros(N), zeros(N)
