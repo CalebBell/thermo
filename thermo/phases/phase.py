@@ -48,7 +48,7 @@ from thermo import phases
 from thermo.phases.phase_utils import object_lookups
 
 try:
-    dot, zeros = np.dot, np.zeros
+    dot, zeros, array = np.dot, np.zeros, np.array
 except:
     pass
 
@@ -2869,7 +2869,9 @@ class Phase(object):
         -----
         '''
         factor = self.P/(self.T*self.R)
-        return [dV*factor for dV in self.dV_dzs()]
+        if self.scalar:
+            return [dV*factor for dV in self.dV_dzs()]
+        return factor*self.dV_dzs()
 
     def dZ_dns(self):
         r'''Method to calculate and return the mole number derivatives of the
@@ -3485,15 +3487,15 @@ class Phase(object):
 
 
     def _Cp_pure_fast(self, Cps_data):
-        Cps = []
-        T, cmps = self.T, range(self.N)
+        T, N = self.T, self.N
+        Cps = [0.0]*N if self.scalar else zeros(N)
         Tmins, Tmaxs, coeffs = Cps_data[0], Cps_data[3], Cps_data[12]
         Tmin_slopes = Cps_data[1]
         Tmin_values = Cps_data[2]
         Tmax_slopes = Cps_data[4]
         Tmax_values = Cps_data[5]
 
-        for i in cmps:
+        for i in range(N):
             if T < Tmins[i]:
                 Cp = (T -  Tmins[i])*Tmin_slopes[i] + Tmin_values[i]
             elif T > Tmaxs[i]:
@@ -3502,16 +3504,16 @@ class Phase(object):
                 Cp = 0.0
                 for c in coeffs[i]:
                     Cp = Cp*T + c
-            Cps.append(Cp)
+            Cps[i] = Cp
         return Cps
 
     def _dCp_dT_pure_fast(self, Cps_data):
-        dCps = []
-        T, cmps = self.T, range(self.N)
+        T, N = self.T, self.N
+        dCps = [0.0]*N if self.scalar else zeros(N)
         Tmins, Tmaxs, coeffs = Cps_data[0], Cps_data[3], Cps_data[12]
         Tmin_slopes = Cps_data[1]
         Tmax_slopes = Cps_data[4]
-        for i in cmps:
+        for i in range(N):
             if T < Tmins[i]:
                 dCp = Tmin_slopes[i]
             elif T > Tmaxs[i]:
@@ -3521,14 +3523,14 @@ class Phase(object):
                 for c in coeffs[i]:
                     dCp = T*dCp + Cp
                     Cp = T*Cp + c
-            dCps.append(dCp)
+            dCps[i] = dCp
         return dCps
 
     def _Cp_integrals_pure_fast(self, Cps_data):
-        Cp_integrals_pure = []
-        T, cmps = self.T, range(self.N)
+        T, N = self.T, self.N
+        Cp_integrals_pure = [0.0]*N if self.scalar else zeros(N)
         Tmins, Tmaxes, int_coeffs = Cps_data[0], Cps_data[3], Cps_data[13]
-        for i in cmps:
+        for i in range(N):
             # If indeed everything is working here, need to optimize to decide what to store
             # Try to save lookups to avoid cache misses
             # Instead of storing horner Tmin and Tmax, store -:
@@ -3576,15 +3578,15 @@ class Phase(object):
                 H = T*(0.5*Tmax_slope*T + x1) - Tmaxes[i]*(0.5*Tmax_slope*Tmaxes[i] + x1)
                 H += Cps_data[8][i]
 
-            Cp_integrals_pure.append(H - Cps_data[11][i])
+            Cp_integrals_pure[i] = (H - Cps_data[11][i])
         return Cp_integrals_pure
 
     def _Cp_integrals_over_T_pure_fast(self, Cps_data):
-        Cp_integrals_over_T_pure = []
-        T, cmps = self.T, range(self.N)
+        T, N = self.T, self.N
         Tmins, Tmaxes, T_int_T_coeffs = Cps_data[0], Cps_data[3], Cps_data[14]
+        Cp_integrals_over_T_pure = [0.0]*N if self.scalar else zeros(N)
         logT = log(T)
-        for i in cmps:
+        for i in range(N):
             Tmin = Tmins[i]
             if T < Tmin:
                 x1 = Cps_data[2][i] - Cps_data[1][i]*Tmin
@@ -3607,7 +3609,7 @@ class Phase(object):
                 x2 = Cps_data[5][i] - Tmaxes[i]*Cps_data[4][i]
                 S += -Cps_data[4][i]*(Tmaxes[i] - T) + x2*logT #- x2*log(Tmaxes[i])
 
-            Cp_integrals_over_T_pure.append(S - Cps_data[15][i])
+            Cp_integrals_over_T_pure[i] = (S - Cps_data[15][i])
         return Cp_integrals_over_T_pure
 
     def Cpigs_pure(self):
@@ -3631,8 +3633,11 @@ class Phase(object):
             return self._Cpigs
 
         T = self.T
-        self._Cpigs = [i.T_dependent_property(T) for i in self.HeatCapacityGases]
-        return self._Cpigs
+        Cpigs = [i.T_dependent_property(T) for i in self.HeatCapacityGases]
+        if not self.scalar:
+            Cpigs = array(Cpigs)
+        self._Cpigs = Cpigs
+        return Cpigs
 
     def Cpig_integrals_pure(self):
         r'''Method to calculate and return the integrals of the ideal-gas heat
@@ -3660,9 +3665,12 @@ class Phase(object):
             return self._Cpig_integrals_pure
 
         T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
-        self._Cpig_integrals_pure = [obj.T_dependent_property_integral(T_REF_IG, T)
+        Cpig_integrals_pure = [obj.T_dependent_property_integral(T_REF_IG, T)
                                    for obj in HeatCapacityGases]
-        return self._Cpig_integrals_pure
+        if not self.scalar:
+            Cpig_integrals_pure = array(Cpig_integrals_pure)
+        self._Cpig_integrals_pure = Cpig_integrals_pure
+        return Cpig_integrals_pure
 
     def Cpig_integrals_over_T_pure(self):
         r'''Method to calculate and return the integrals of the ideal-gas heat
@@ -3693,9 +3701,12 @@ class Phase(object):
 
 
         T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
-        self._Cpig_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
+        Cpig_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
                                    for obj in HeatCapacityGases]
-        return self._Cpig_integrals_over_T_pure
+        if not self.scalar:
+            Cpig_integrals_over_T_pure = array(Cpig_integrals_over_T_pure)
+        self._Cpig_integrals_over_T_pure = Cpig_integrals_over_T_pure
+        return Cpig_integrals_over_T_pure
 
     def dCpigs_dT_pure(self):
         r'''Method to calculate and return the first temperature derivative of
@@ -3722,8 +3733,11 @@ class Phase(object):
             return self._dCpigs_dT
 
         T = self.T
-        self._dCpigs_dT = [i.T_dependent_property_derivative(T) for i in self.HeatCapacityGases]
-        return self._dCpigs_dT
+        dCpigs_dT = [i.T_dependent_property_derivative(T) for i in self.HeatCapacityGases]
+        if not self.scalar:
+            dCpigs_dT = array(dCpigs_dT)
+        self._dCpigs_dT = dCpigs_dT
+        return dCpigs_dT
 
 
     def _Cpls_pure(self):
@@ -3736,8 +3750,11 @@ class Phase(object):
             return self._Cpls
 
         T = self.T
-        self._Cpls = [i.T_dependent_property(T) for i in self.HeatCapacityLiquids]
-        return self._Cpls
+        Cpls = [i.T_dependent_property(T) for i in self.HeatCapacityLiquids]
+        if not self.scalar:
+            Cpls = array(Cpls)
+        self._Cpls = Cpls
+        return Cpls
 
     def _Cpl_integrals_pure(self):
         try:
@@ -3757,9 +3774,12 @@ class Phase(object):
             return self._Cpl_integrals_pure
 
         T, T_REF_IG, HeatCapacityLiquids = self.T, self.T_REF_IG, self.HeatCapacityLiquids
-        self._Cpl_integrals_pure = [obj.T_dependent_property_integral(T_REF_IG, T)
+        Cpl_integrals_pure = [obj.T_dependent_property_integral(T_REF_IG, T)
                                    for obj in HeatCapacityLiquids]
-        return self._Cpl_integrals_pure
+        if not self.scalar:
+            Cpl_integrals_pure = array(Cpl_integrals_pure)
+        self._Cpl_integrals_pure = Cpl_integrals_pure
+        return Cpl_integrals_pure
 
     def _Cpl_integrals_over_T_pure(self):
         try:
@@ -3780,9 +3800,12 @@ class Phase(object):
 
 
         T, T_REF_IG, HeatCapacityLiquids = self.T, self.T_REF_IG, self.HeatCapacityLiquids
-        self._Cpl_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
+        Cpl_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
                                    for obj in HeatCapacityLiquids]
-        return self._Cpl_integrals_over_T_pure
+        if not self.scalar:
+            Cpl_integrals_over_T_pure = array(Cpl_integrals_over_T_pure)
+        self._Cpl_integrals_over_T_pure = Cpl_integrals_over_T_pure
+        return Cpl_integrals_over_T_pure
 
     def V_ideal_gas(self):
         r'''Method to calculate and return the ideal-gas molar volume of the
@@ -3813,9 +3836,12 @@ class Phase(object):
             return self._H_ideal_gas
         except AttributeError:
             pass
-        H = 0.0
-        for zi, Cp_int in zip(self.zs, self.Cpig_integrals_pure()):
-            H += zi*Cp_int
+        if self.scalar:
+            H = 0.0
+            for zi, Cp_int in zip(self.zs, self.Cpig_integrals_pure()):
+                H += zi*Cp_int
+        else:
+            H = dot(self.zs, self.Cpig_integrals_pure())
         self._H_ideal_gas = H
         return H
 
@@ -3840,11 +3866,15 @@ class Phase(object):
         P, zs, cmps = self.P, self.zs, range(self.N)
         P_REF_IG_INV = self.P_REF_IG_INV
         S = 0.0
-        S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
         S -= R*log(P*P_REF_IG_INV)
 
-        for i in cmps:
-            S += zs[i]*Cpig_integrals_over_T_pure[i]
+        if self.scalar:
+            S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
+            for i in cmps:
+                S += zs[i]*Cpig_integrals_over_T_pure[i]
+        else:
+            S -= R*dot(zs, log_zs)
+            S += dot(zs, Cpig_integrals_over_T_pure)
         self._S_ideal_gas = S
         return S
 
@@ -3866,8 +3896,11 @@ class Phase(object):
             pass
         Cpigs_pure = self.Cpigs_pure()
         Cp, zs = 0.0, self.zs
-        for i in range(self.N):
-            Cp += zs[i]*Cpigs_pure[i]
+        if self.scalar:
+            for i in range(self.N):
+                Cp += zs[i]*Cpigs_pure[i]
+        else:
+            Cp = dot(zs, Cpigs_pure)
         self._Cp_ideal_gas = Cp
         return Cp
 
@@ -4414,9 +4447,12 @@ class Phase(object):
         except AttributeError:
             pass
         zs, MWs = self.zs, self.constants.MWs
-        MW = 0.0
-        for i in range(self.N):
-            MW += zs[i]*MWs[i]
+        if self.scalar:
+            MW = 0.0
+            for i in range(self.N):
+                MW += zs[i]*MWs[i]
+        else:
+            MW = dot(zs, MWs)
         self._MW = MW
         return MW
 
@@ -5058,10 +5094,15 @@ class Phase(object):
             pass
         MWs = self.constants.MWs
         zs, cmps = self.zs, range(self.N)
-        ws = [zs[i]*MWs[i] for i in cmps]
-        Mavg = 1.0/sum(ws)
-        for i in cmps:
-            ws[i] *= Mavg
+        if self.scalar:
+            ws = [zs[i]*MWs[i] for i in cmps]
+            Mavg = 1.0/sum(ws)
+            for i in cmps:
+                ws[i] *= Mavg
+        else:
+            ws = zs*MWs
+            Mavg = 1.0/ws.sum()
+            ws *= Mavg
         self._ws = ws
         return ws
 
@@ -5327,7 +5368,10 @@ class Phase(object):
                 return self._ns
             except:
                 n = self.result.n*self.beta
-                self._ns = [n*zi for zi in self.zs]
+                if self.scalar:
+                    self._ns = [n*zi for zi in self.zs]
+                else:
+                    self._ns = self.zs*n
                 return self._ns
         except:
             return None
@@ -5543,9 +5587,9 @@ class Phase(object):
         rho = self.rho()
         zs = self.zs
         if self.scalar:
-            self._concentrations = concentrations = rho*zs
-        else:
             self._concentrations = concentrations = [rho*zi for zi in zs]
+        else:
+            self._concentrations = concentrations = rho*zs
         return concentrations
     
     def concentrations_mass(self):
