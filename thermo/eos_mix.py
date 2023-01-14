@@ -3738,6 +3738,7 @@ class GCEOSMIX(GCEOS):
         '''
         P = self.P
         T = self.T
+        N = self.N
         ddelta_dzs = self.ddelta_dzs
         depsilon_dzs = self.depsilon_dzs
         da_alpha_dzs = self.da_alpha_dzs
@@ -3764,7 +3765,7 @@ class GCEOSMIX(GCEOS):
         t1 = x10*t0*x13
         t2 = 2.0*x10*x13/(x13*x3*x3 - 1.0)
         x3_x13 = x3*x13
-        dH_dzs = []
+        dH_dzs = [0.0]*N if self.scalar else zeros(N)
         for i in range(self.N):
             x1 = dV_dzs[i]
             x11 = ddelta_dzs[i]
@@ -3772,7 +3773,7 @@ class GCEOSMIX(GCEOS):
 
             value = (P*x1 - x12*t1 + t2*(x12*x3_x13 - x1 - x1 - x11)
                      + t0*(T*da_alpha_dT_dzs[i] - da_alpha_dzs[i]))
-            dH_dzs.append(value)
+            dH_dzs[i] = value
         return dH_dzs
 
     def dS_dep_dzs(self, Z):
@@ -3807,7 +3808,9 @@ class GCEOSMIX(GCEOS):
         dH_dep_dzs = self.dH_dep_dzs(Z)
         dG_dep_dzs = self.dG_dep_dzs(Z)
         T_inv = 1.0/self.T
-        return [T_inv*(dH_dep_dzs[i] - dG_dep_dzs[i]) for i in range(self.N)]
+        if self.scalar:
+            return [T_inv*(dH_dep_dzs[i] - dG_dep_dzs[i]) for i in range(self.N)]
+        return T_inv*(dH_dep_dzs - dG_dep_dzs) 
 
     def dS_dep_dns(self, Z):
         r'''Calculates the molar departure entropy mole number derivatives
@@ -3852,6 +3855,7 @@ class GCEOSMIX(GCEOS):
 
         T = self.T
         b = self.b
+        N = self.N
         a_alpha = self.a_alpha
         epsilon = self.epsilon
         Vt2 = Vt*Vt
@@ -3868,10 +3872,10 @@ class GCEOSMIX(GCEOS):
         t3 = a_alpha*t2*t2
         t4 = t1*Vt -t3*(Vt*delta + Vt2 + Vt2)
 
-        dP_dns_Vt = []
-        for i in range(self.N):
+        dP_dns_Vt = [0.0]*N if self.scalar else zeros(N)
+        for i in range(N):
             v = (t4 + t1*db_dns[i] + t3*(Vt*ddelta_dns[i] + depsilon_dns[i]) - t2*da_alpha_dns[i])
-            dP_dns_Vt.append(v)
+            dP_dns_Vt[i] = v
         return dP_dns_Vt
 
 
@@ -3922,7 +3926,7 @@ class GCEOSMIX(GCEOS):
         t4 = 2.0*x12*x9_inv3
         t5 = 2.0*x0*x7_inv*x7_inv*x7_inv
 
-        hess = [[0.0]*N for _ in range(N)]
+        hess = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
         for i in range(N):
             x15 = ddelta_dns[i]
             x17 = -x15*Vt + x16 - depsilon_dns[i]
@@ -3972,7 +3976,7 @@ class GCEOSMIX(GCEOS):
         d3a_alpha_dninjnks = self.d3a_alpha_dninjnks
         d3b_dninjnks = self.d3b_dninjnks
 
-        mat = [[[0.0]*N for _ in range(N)] for _ in range(N)]
+        mat = [[[0.0]*N for _ in range(N)] for _ in range(N)] if self.scalar else zeros((N, N, N))
 
         for i in range(N):
             for j in range(N):
@@ -4344,9 +4348,8 @@ class GCEOSMIX(GCEOS):
         N = self.N
         RT = T*R
         RT_inv = 1.0/RT
-        hess = []
+        hess = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
         for i in range(N):
-            row = []
             for j in range(N):
                 # x1: i
                 # x2: j
@@ -4404,8 +4407,7 @@ class GCEOSMIX(GCEOS):
                     - 6*x16*x19*x27/x11**(5/2))
                 if not G:
                     v *= RT_inv
-                row.append(v)
-            hess.append(row)
+                hess[i][j] = v
         return hess
 
 
