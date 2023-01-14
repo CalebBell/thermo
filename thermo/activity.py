@@ -546,9 +546,8 @@ class GibbsExcess(object):
         Notes
         -----
         '''
-        dHE_dns = dxs_to_dns(self.dHE_dxs(), self.xs)
-        if not self.scalar and type(dHE_dns) is list:
-            dHE_dns = array(dHE_dns)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        dHE_dns = dxs_to_dns(self.dHE_dxs(), self.xs, out)
         return dHE_dns
 
     def dnHE_dns(self):
@@ -690,9 +689,8 @@ class GibbsExcess(object):
         Notes
         -----
         '''
-        dSE_dns = dxs_to_dns(self.dSE_dxs(), self.xs)
-        if not self.scalar and type(dSE_dns) is list:
-            dSE_dns = array(dSE_dns)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        dSE_dns = dxs_to_dns(self.dSE_dxs(), self.xs, out)
         return dSE_dns
 
     def dnSE_dns(self):
@@ -732,9 +730,8 @@ class GibbsExcess(object):
         Notes
         -----
         '''
-        dGE_dns = dxs_to_dns(self.dGE_dxs(), self.xs)
-        if not self.scalar and type(dGE_dns) is list:
-            dGE_dns = array(dGE_dns)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        dGE_dns = dxs_to_dns(self.dGE_dxs(), self.xs, out)
         return dGE_dns
 
     def dnGE_dns(self):
@@ -775,9 +772,8 @@ class GibbsExcess(object):
         Notes
         -----
         '''
-        d2GE_dTdns = dxs_to_dns(self.d2GE_dTdxs(), self.xs)
-        if not self.scalar and type(d2GE_dTdns) is list:
-            d2GE_dTdns = array(d2GE_dTdns)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        d2GE_dTdns = dxs_to_dns(self.d2GE_dTdxs(), self.xs, out)
         return d2GE_dTdns
 
 
@@ -976,12 +972,6 @@ class GibbsExcess(object):
 #            matrix.append(row)
 #        return matrix
 
-#    def dgammas_dxs(self):
-#   # Not done
-#        return dxs_to_dns(self.dgammas_dx(), self.xs)
-
-#    def dngammas_dxs(self):
-#        pass
 
     def dgammas_dT(self):
         r'''Calculate and return the temperature derivatives of activity

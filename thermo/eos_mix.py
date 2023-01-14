@@ -3401,9 +3401,8 @@ class GCEOSMIX(GCEOS):
         dV_dns : float
             Molar volume mole number derivatives, [m^3/mol^2]
         '''
-        dV_dns = dxs_to_dns(self.dV_dzs(Z), self.zs)
-        if not self.scalar:
-            dV_dns = array(dV_dns)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        dV_dns = dxs_to_dns(self.dV_dzs(Z), self.zs, out)
         return dV_dns
 
     def dnV_dns(self, Z):
@@ -3651,7 +3650,8 @@ class GCEOSMIX(GCEOS):
         dZ_dns : float
             Compressibility number derivatives, [1/mol]
         '''
-        return dxs_to_dns(self.dZ_dzs(Z), self.zs)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        return dxs_to_dns(self.dZ_dzs(Z), self.zs, out)
 
     def dnZ_dns(self, Z):
         r'''Calculates the partial compressibility of the specified phase
@@ -3833,7 +3833,8 @@ class GCEOSMIX(GCEOS):
         dS_dep_dns : float
             Departure entropy mole number derivatives, [J/mol^2/K]
         '''
-        return dxs_to_dns(self.dS_dep_dzs(Z), self.zs)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        return dxs_to_dns(self.dS_dep_dzs(Z), self.zs, out)
 
     def dP_dns_Vt(self, phase):
         # Checked numerically, working. Evaluated at constant temperature and total volume.
@@ -4068,7 +4069,8 @@ class GCEOSMIX(GCEOS):
         dH_dep_dns : float
             Departure enthalpy mole number derivatives, [J/mol^2]
         '''
-        return dxs_to_dns(self.dH_dep_dzs(Z), self.zs)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        return dxs_to_dns(self.dH_dep_dzs(Z), self.zs, out)
 
     def dnH_dep_dns(self, Z):
         r'''Calculates the partial molar departure enthalpy. No specific

@@ -1419,7 +1419,8 @@ class Phase(object):
         Notes
         -----
         '''
-        return dxs_to_dns(self.dH_dzs(), self.zs)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        return dxs_to_dns(self.dH_dzs(), self.zs, out)
 
     def dS_dns(self):
         r'''Method to calculate and return the mole number derivative of the
@@ -1437,7 +1438,8 @@ class Phase(object):
         Notes
         -----
         '''
-        return dxs_to_dns(self.dS_dzs(), self.zs)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        return dxs_to_dns(self.dS_dzs(), self.zs, out)
 
     def dG_dT(self):
         r'''Method to calculate and return the constant-pressure
@@ -2371,7 +2373,8 @@ class Phase(object):
             dG_reactive_dzs = [Hfs[i] - T*(Sfs[i] + dS_dzs[i]) + dH_dzs[i] for i in range(self.N)]
         else:
             dG_reactive_dzs = Hfs - T*(Sfs + dS_dzs) + dH_dzs
-        dG_reactive_dns = dxs_to_dns(dG_reactive_dzs, self.zs)
+        dG_reactive_dns = [0.0]*self.N if self.scalar else zeros(self.N)
+        dG_reactive_dns = dxs_to_dns(dG_reactive_dzs, self.zs, dG_reactive_dns)
         chemical_potentials = dns_to_dn_partials(dG_reactive_dns, self.G_reactive())
         self._chemical_potentials = chemical_potentials
         return chemical_potentials
@@ -2889,7 +2892,8 @@ class Phase(object):
         Notes
         -----
         '''
-        return dxs_to_dns(self.dZ_dzs(), self.zs)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        return dxs_to_dns(self.dZ_dzs(), self.zs, out)
 
     def dV_dzs(self):
         r'''Method to calculate and return the mole fraction derivatives of the
@@ -2923,7 +2927,8 @@ class Phase(object):
         Notes
         -----
         '''
-        return dxs_to_dns(self.dV_dzs(), self.zs)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        return dxs_to_dns(self.dV_dzs(), self.zs, out)
 
     def dnV_dns(self):
         r'''Method to calculate and return the partial mole number derivatives 
