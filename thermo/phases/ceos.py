@@ -31,7 +31,7 @@ from thermo.phases.phase_utils import PR_lnphis_fastest, lnphis_direct
 from thermo.heat_capacity import HeatCapacityGas
 from thermo.phases.phase import Phase, IdealGasDeparturePhase
 try:
-    zeros, ndarray, full = np.zeros, np.ndarray, np.full
+    zeros, ndarray, full, array = np.zeros, np.ndarray, np.full, np.array
 except:
     pass
 
@@ -253,6 +253,9 @@ class CEOSPhase(IdealGasDeparturePhase):
     def to(self, zs, T=None, P=None, V=None):
         new = self.__class__.__new__(self.__class__)
         new.zs = zs
+        # temporary TODO remove this statement
+        if not self.scalar and type(zs) is not ndarray:
+            zs = array(zs)
 
         if T is not None:
             if P is not None:

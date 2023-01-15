@@ -234,8 +234,8 @@ from thermo.eos import (APISRK, GCEOS, IG, MSRKTranslated, PR, PR78, PRSV, PRSV2
                         SRKTranslatedConsistent, TWUPR, TWUSRK, VDW)
 
 try:
-    (zeros, array, npexp, npsqrt, empty, full, npwhere, npmin, npmax, ndarray) = (
-        np.zeros, np.array, np.exp, np.sqrt, np.empty, np.full, np.where, np.min, np.max, np.ndarray)
+    (zeros, array, npexp, npsqrt, empty, full, npwhere, npmin, npmax, ndarray, dot) = (
+        np.zeros, np.array, np.exp, np.sqrt, np.empty, np.full, np.where, np.min, np.max, np.ndarray, np.dot)
 except:
     pass
 
@@ -6986,7 +6986,7 @@ class PRMIX(GCEOSMIX, PR):
             for bi, zi in zip(self.bs, self.zs):
                 b += bi*zi
         else:
-            b = float((self.bs*self.zs).sum())
+            b = float(dot(self.bs, self.zs))
         self.b = b
         self.delta = 2.0*b
         self.epsilon = -b*b
