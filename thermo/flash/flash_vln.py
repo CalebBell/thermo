@@ -239,6 +239,8 @@ class FlashVLN(FlashVL):
         except ValueError:
             self._water_index = None
 
+        self._finish_initialization_base()
+
 #        self.flash_pure = FlashPureVLS(constants=constants, correlations=correlations,
 #                                       gas=gas, liquids=unique_liquids, solids=[],
 #                                       settings=settings)

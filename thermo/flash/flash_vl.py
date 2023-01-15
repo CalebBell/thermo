@@ -378,6 +378,7 @@ class FlashVL(Flash):
         
         self.T_MIN_FLASH = max(p.T_MIN_FLASH for p in self.phases)
         self.T_MAX_FLASH = min(p.T_MAX_FLASH for p in self.phases)
+        self._finish_initialization_base()
 
     def flash_TVF(self, T, VF, zs, solution=None, hot_start=None):
         return self.flash_TVF_2P(T, VF, zs, self.liquid, self.gas, solution=solution, hot_start=hot_start)

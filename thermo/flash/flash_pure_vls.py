@@ -387,6 +387,7 @@ class FlashPureVLS(Flash):
         self.unique_liquid_hashes = unique_liquid_hashes
         self.T_MIN_FLASH = max(p.T_MIN_FLASH for p in self.phases)
         self.T_MAX_FLASH = min(p.T_MAX_FLASH for p in self.phases)
+        self._finish_initialization_base()
 
 
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):

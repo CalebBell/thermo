@@ -1030,8 +1030,6 @@ class GCEOSMIX(GCEOS):
         # 2 components 1.89 pypy, pythran 1.75 us, regular python 12.7 us.
         # 10 components - regular python 148 us, 9.81 us PyPy, 8.37 pythran in PyPy (flags have no effect; 14.3 us in regular python)
         zs, one_minus_kijs, N = self.zs, self.one_minus_kijs, self.N
-         
-
         same_T = T == self.T
         if quick:
             try:

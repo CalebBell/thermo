@@ -44,6 +44,11 @@ from fluids.numerics import logspace, linspace, numpy as np
 from chemicals.utils import log10, floor, rho_to_Vm, mixing_simple, property_mass_to_molar
 from thermo import phases
 
+try:
+    zeros, ones, ndarray = np.zeros, np.ones, np.ndarray
+except:
+    pass
+
 spec_to_iter_vars = {
      (True, False, False, True, False, False) : ('T', 'H', 'P'), # Iterating on P is slow, derivatives look OK
      # (True, False, False, True, False, False) : ('T', 'H', 'V'), # Iterating on P is slow, derivatives look OK
@@ -209,7 +214,7 @@ class Flash(object):
         '''
         if zs is None:
             if self.N == 1:
-                zs = [1.0]
+                zs = [1.0] if self.scalar else ones(1)
             else:
                 raise ValueError("Composition missing for flash")
         constants, correlations = self.constants, self.correlations
@@ -751,6 +756,13 @@ class Flash(object):
         elif store:
             return flashes
         return None
+
+    def _finish_initialization_base(self):
+        scalar = True
+        scalar_statuses = set(i.scalar for i in self.phases)
+        if len(scalar_statuses) > 1:
+            raise ValueError("Can only perform flashes with all phases in a numpy basis or all phases in a pure Python basis")
+        self.scalar = scalar_statuses.pop()
 
     def debug_grid_flash(self, zs, check0, check1, Ts=None, Ps=None, Vs=None,
                          VFs=None, SFs=None, Hs=None, Ss=None, Us=None,
