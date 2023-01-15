@@ -2645,7 +2645,8 @@ class GammaPhi(PropertyPackage):
         # needed in gammas temperature derivatives
         dGE_dT = self.dGE_dT(T, xs)
         d2GE_dTdns = self.d2GE_dTdns(T, xs)
-        return dns_to_dn_partials(d2GE_dTdns, dGE_dT)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        return dns_to_dn_partials(d2GE_dTdns, dGE_dT, out)
 
     def dHE_dT(self, T, xs):
         # excess enthalpy temperature derivative

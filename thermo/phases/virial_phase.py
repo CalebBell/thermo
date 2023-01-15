@@ -1185,12 +1185,12 @@ class VirialGas(IdealGasDeparturePhase):
         dG_dep_dns = self.dG_dep_dns()
         if self.scalar:
             dG_dep_dns_RT = [v*RT_inv for v in dG_dep_dns]
-            
         else:
             dG_dep_dns_RT = RT_inv*dG_dep_dns
         
-        log_phis = dns_to_dn_partials(dG_dep_dns_RT, lnphi)
-        return log_phis if self.scalar else array(log_phis)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        log_phis = dns_to_dn_partials(dG_dep_dns_RT, lnphi, out)
+        return log_phis
 
     
     

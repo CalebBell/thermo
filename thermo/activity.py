@@ -566,9 +566,8 @@ class GibbsExcess(object):
         Notes
         -----
         '''
-        dnHE_dns = dxs_to_dn_partials(self.dHE_dxs(), self.xs, self.HE())
-        if not self.scalar and type(dnHE_dns) is list:
-            dnHE_dns = array(dnHE_dns)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        dnHE_dns = dxs_to_dn_partials(self.dHE_dxs(), self.xs, self.HE(), out)
         return dnHE_dns
 
     def SE(self):
@@ -709,9 +708,8 @@ class GibbsExcess(object):
         Notes
         -----
         '''
-        dnSE_dns = dxs_to_dn_partials(self.dSE_dxs(), self.xs, self.SE())
-        if not self.scalar and type(dnSE_dns) is list:
-            dnSE_dns = array(dnSE_dns)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        dnSE_dns = dxs_to_dn_partials(self.dSE_dxs(), self.xs, self.SE(), out)
         return dnSE_dns
 
     def dGE_dns(self):
@@ -750,9 +748,8 @@ class GibbsExcess(object):
         Notes
         -----
         '''
-        dnGE_dns = dxs_to_dn_partials(self.dGE_dxs(), self.xs, self.GE())
-        if not self.scalar and type(dnGE_dns) is list:
-            dnGE_dns = array(dnGE_dns)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        dnGE_dns = dxs_to_dn_partials(self.dGE_dxs(), self.xs, self.GE(), out)
         return dnGE_dns
 
     def d2GE_dTdns(self):
@@ -797,9 +794,8 @@ class GibbsExcess(object):
         # needed in gammas temperature derivatives
         dGE_dT = self.dGE_dT()
         d2GE_dTdns = self.d2GE_dTdns()
-        d2nGE_dTdns = dns_to_dn_partials(d2GE_dTdns, dGE_dT)
-        if not self.scalar and type(d2nGE_dTdns) is list:
-            d2nGE_dTdns = array(d2nGE_dTdns)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        d2nGE_dTdns = dns_to_dn_partials(d2GE_dTdns, dGE_dT, out)
         return d2nGE_dTdns
 
 

@@ -24,7 +24,7 @@ SOFTWARE.
 __all__ = ['CEOSLiquid', 'CEOSGas']
 import os
 from fluids.constants import R
-from fluids.numerics import trunc_exp, numpy as np
+from fluids.numerics import trunc_exp, numpy as np, trunc_log_numpy, trunc_exp_numpy
 from chemicals.utils import log
 from thermo.eos_mix import IGMIX, eos_mix_full_path_dict, eos_mix_full_path_reverse_dict
 from thermo.phases.phase_utils import PR_lnphis_fastest, lnphis_direct
@@ -573,7 +573,10 @@ class CEOSPhase(IdealGasDeparturePhase):
         P = self.P
         zs = self.zs
         lnphis = self.lnphis_lowest_Gibbs()
-        return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
+        if self.scalar:
+            return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
+        else:
+            return trunc_exp_numpy(lnphis)*P*zs
 
     def V_iter(self, force=False):
         # Can be some severe issues in the very low pressure/temperature range

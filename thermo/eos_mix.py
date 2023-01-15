@@ -3429,7 +3429,8 @@ class GCEOSMIX(GCEOS):
             [m^3/mol]
         '''
         V = Z*R*self.T/self.P
-        return dxs_to_dn_partials(self.dV_dzs(Z), self.zs, V)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        return dxs_to_dn_partials(self.dV_dzs(Z), self.zs, V, out)
 
     def _d2V_dij_wrapper(self, V, d_Vs, dbs, d2bs, d_epsilons, d2_epsilons,
                          d_deltas, d2_deltas, da_alphas, d2a_alphas):
@@ -3676,7 +3677,8 @@ class GCEOSMIX(GCEOS):
             Partial compressibility of the mixture of the specified phase,
             [-]
         '''
-        return dxs_to_dn_partials(self.dZ_dzs(Z), self.zs, Z)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        return dxs_to_dn_partials(self.dZ_dzs(Z), self.zs, Z, out)
 
     def dH_dep_dzs(self, Z):
         r'''Calculates the molar departure enthalpy composition derivative
@@ -4100,7 +4102,8 @@ class GCEOSMIX(GCEOS):
                 F = self.H_dep_g
         except:
             F = self.H_dep_g
-        return dxs_to_dn_partials(self.dH_dep_dzs(Z), self.zs, F)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        return dxs_to_dn_partials(self.dH_dep_dzs(Z), self.zs, F, out)
 
     def _G_dep_lnphi_d_helper(self, Z, dbs, depsilons, ddelta, dVs, da_alphas,
                               G=True):
@@ -4340,8 +4343,9 @@ class GCEOSMIX(GCEOS):
             logF = log(F)
         except:
             logF = -690.7755278982137
-        log_phis = dns_to_dn_partials(self.dlnphi_dns(Z), logF)
-        return log_phis if self.scalar else array(log_phis)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        log_phis = dns_to_dn_partials(self.dlnphi_dns(Z), logF, out)
+        return log_phis
 
 
     def _d2_G_dep_lnphi_d2_helper(self, V, d_Vs, d2Vs, dbs, d2bs, d_epsilons, d2_epsilons,

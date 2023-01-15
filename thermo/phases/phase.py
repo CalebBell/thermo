@@ -33,6 +33,7 @@ from fluids.constants import R, R_inv
 from math import sqrt
 from thermo.serialize import arrays_to_lists
 from fluids.numerics import (horner, horner_log, jacobian, trunc_log, numpy as np,
+                             trunc_log_numpy, trunc_exp_numpy,
                              poly_fit_integral_value, poly_fit_integral_over_T_value,
                              newton_system, trunc_exp, is_micropython)
 from fluids.core import thermal_diffusivity, c_ideal_gas
@@ -869,8 +870,11 @@ class Phase(object):
         '''
         P = self.P
         lnphis = self.lnphis_at_zs(zs)
-        return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(self.N)]
-
+        if self.scalar:
+            return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(self.N)]
+        else:
+            return P*zs*trunc_exp_numpy(lnphis)
+            
     def lnphi(self):
         r'''Method to calculate and return the log of fugacity coefficient of
         the phase; provided the phase is 1 component.
@@ -955,7 +959,10 @@ class Phase(object):
         P = self.P
         zs = self.zs
         lnphis = self.lnphis()
-        self._fugacities = [P*zs[i]*trunc_exp(lnphis[i]) for i in range(self.N)]
+        if self.scalar:
+            self._fugacities = [P*zs[i]*trunc_exp(lnphis[i]) for i in range(self.N)]
+        else:
+            self._fugacities = P*zs*trunc_exp_numpy(lnphis)
         return self._fugacities
 
     def lnfugacities(self):
@@ -978,8 +985,12 @@ class Phase(object):
         lnphis = self.lnphis()
         logP = log(P)
         log_zs = self.log_zs()
-        self._lnfugacities = [logP + log_zs[i] + lnphis[i] for i in range(self.N)]
-        return self._lnfugacities
+        if self.scalar:
+            lnfugacities = [logP + log_zs[i] + lnphis[i] for i in range(self.N)]
+        else:
+            lnfugacities = logP + log_zs + lnphis
+        self._lnfugacities = lnfugacities
+        return lnfugacities
 
     fugacities_lowest_Gibbs = fugacities
     
@@ -991,9 +1002,10 @@ class Phase(object):
         P = self.P
         zs = self.zs
         fugacities_lowest_Gibbs = self.fugacities_lowest_Gibbs()
-        lnphis_lowest_Gibbs = [trunc_log(fi/(zi*P)) for fi, zi in zip(fugacities_lowest_Gibbs, zs)]
-        
-        
+        if self.scalar:
+            lnphis_lowest_Gibbs = [trunc_log(fi/(zi*P)) for fi, zi in zip(fugacities_lowest_Gibbs, zs)]
+        else:
+            lnphis_lowest_Gibbs = trunc_log_numpy(fugacities_lowest_Gibbs/(zs*P))
         self._lnphis_lowest_Gibbs = lnphis_lowest_Gibbs
         return lnphis_lowest_Gibbs
 
@@ -1055,7 +1067,10 @@ class Phase(object):
             return self._phis
         except:
             pass
-        self._phis = [trunc_exp(i) for i in self.lnphis()]
+        if self.scalar:
+            self._phis = [trunc_exp(i) for i in self.lnphis()]
+        else:
+            self._phis = trunc_exp_numpy(self.lnphis())
         return self._phis
 
     def dphis_dT(self):
@@ -1318,15 +1333,17 @@ class Phase(object):
             return self._log_zs
         except AttributeError:
             pass
-        try:
-            self._log_zs = [log(zi) for zi in self.zs]
-        except ValueError:
-            self._log_zs = _log_zs = []
-            for zi in self.zs:
-                try:
-                    _log_zs.append(log(zi))
-                except ValueError:
-                    _log_zs.append(-690.7755278982137) # log(1e-300)
+        if self.scalar:
+            self._log_zs = [trunc_log(zi) for zi in self.zs]
+        else:
+            self._log_zs = trunc_log_numpy(self.zs)
+        # except ValueError:
+        #     self._log_zs = _log_zs = []
+        #     for zi in self.zs:
+        #         try:
+        #             _log_zs.append(log(zi))
+        #         except ValueError:
+        #             _log_zs.append(-690.7755278982137) # log(1e-300)
         return self._log_zs
 
     def V_iter(self, force=False):
@@ -2946,7 +2963,8 @@ class Phase(object):
         Notes
         -----
         '''
-        return dns_to_dn_partials(self.dV_dns(), self.V())
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        return dns_to_dn_partials(self.dV_dns(), self.V(), out)
 
     # Derived properties
     def PIP(self):
