@@ -494,6 +494,7 @@ class GCEOSMIX(GCEOS):
         if copy_alphas:
             new.a_alphas = self.a_alphas
             try:
+                new.a_alpha_roots = self.a_alpha_roots # has to be first
                 new.da_alpha_dTs = self.da_alpha_dTs
                 new.d2a_alpha_dT2s = self.d2a_alpha_dT2s
             except:
@@ -1007,6 +1008,10 @@ class GCEOSMIX(GCEOS):
             else:
                 self.a_alphas = a_alphas = self.a_alphas_vectorized(T)
                 da_alpha_dTs = d2a_alpha_dT2s = None
+            if self.scalar:
+                self.a_alpha_roots = [sqrt(i) for i in a_alphas]
+            else:
+                self.a_alpha_roots = npsqrt(a_alphas)
         else:
             try:
                 a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s
@@ -1058,11 +1063,7 @@ class GCEOSMIX(GCEOS):
             return a_alpha
 
     def a_alpha_and_derivatives_py(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True):
-        zs, one_minus_kijs, scalar, N = self.zs, self.one_minus_kijs, self.scalar, self.N
-        if scalar:
-            self.a_alpha_roots = a_alpha_roots = [sqrt(i) for i in a_alphas]
-        else:
-            self.a_alpha_roots = a_alpha_roots = npsqrt(a_alphas)
+        zs, one_minus_kijs, scalar, N, a_alpha_roots = self.zs, self.one_minus_kijs, self.scalar, self.N, self.a_alpha_roots
         if full:
             if scalar:
                 a_alpha_j_rows, da_alpha_dT_j_rows = [0.0]*N, [0.0]*N
