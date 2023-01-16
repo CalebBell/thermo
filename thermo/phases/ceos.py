@@ -278,24 +278,16 @@ class CEOSPhase(IdealGasDeparturePhase):
             T = new.eos_mix.T
         else:
             raise ValueError("Two of T, P, or V are needed")
-        new.P = P
-        new.T = T
+        new.P, new.T = P, T
 
-        new.eos_class = self.eos_class
-        new.eos_kwargs = self.eos_kwargs
+        new.eos_class, new.eos_kwargs = self.eos_class, self.eos_kwargs
 
-        new.HeatCapacityGases = self.HeatCapacityGases
-        new._Cpgs_data = self._Cpgs_data
-        new.Cpgs_poly_fit = self.Cpgs_poly_fit
-
-        new.composition_independent = self.composition_independent
+        new.HeatCapacityGases, new._Cpgs_data, new.Cpgs_poly_fit = self.HeatCapacityGases, self._Cpgs_data, self.Cpgs_poly_fit
+        new.composition_independent, new.scalar = self.composition_independent, self.scalar
         if new.composition_independent:
             new.force_phase = 'g'
 
-        new.Hfs = self.Hfs
-        new.Gfs = self.Gfs
-        new.Sfs = self.Sfs
-        new.scalar = self.scalar
+        new.Hfs, new.Gfs, new.Sfs = self.Hfs, self.Gfs, self.Sfs
 
         try:
             new.N = self.N
