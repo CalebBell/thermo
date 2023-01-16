@@ -478,7 +478,7 @@ class GCEOSMIX(GCEOS):
         >>> base.to_TP_zs_fast(T=300, P=1e5, zs=base.zs)
         RKMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0], [0.0, 0.0]], zs=[0.6, 0.4], T=300, P=100000.0)
         '''
-        new = self.__class__.__new__(self.__class__)
+        new = self.__class__.__new__(self.__class__) # potentially also object.__new__(self.__class__)
         new.N, new.Tcs, new.Pcs, new.omegas, new.kijs, new.one_minus_kijs, new.kwargs, new.ais, new.bs, new.scalar = (
             self.N, self.Tcs, self.Pcs, self.omegas, self.kijs, self.one_minus_kijs, self.kwargs, self.ais, self.bs,
             self.scalar
