@@ -1018,8 +1018,8 @@ class GCEOSMIX(GCEOS):
                     self.a_alphas = a_alphas = self.a_alphas_vectorized(T)
                     da_alpha_dTs = d2a_alpha_dT2s = None
         if not IS_PYPY and self.N > 2000:
-            return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
-        return self.a_alpha_and_derivatives_py(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
+            return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full)
+        return self.a_alpha_and_derivatives_py(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full)
 
 
 
@@ -1031,25 +1031,15 @@ class GCEOSMIX(GCEOS):
         # 10 components - regular python 148 us, 9.81 us PyPy, 8.37 pythran in PyPy (flags have no effect; 14.3 us in regular python)
         zs, one_minus_kijs, N = self.zs, self.one_minus_kijs, self.N
         same_T = T == self.T
-        if quick:
-            try:
-                assert same_T
-                a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = self.a_alpha_ijs, self.a_alpha_roots, self.a_alpha_ij_roots_inv
-            except (AttributeError, AssertionError):
-                try:
-                    a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs)
-                except ZeroDivisionError:
-                    a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent_support_zeros(a_alphas, one_minus_kijs)
-                self.a_alpha_ijs, self.a_alpha_roots, self.a_alpha_ij_roots_inv = a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv
-        else:
+        try:
+            assert same_T
+            a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = self.a_alpha_ijs, self.a_alpha_roots, self.a_alpha_ij_roots_inv
+        except (AttributeError, AssertionError):
             try:
                 a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs)
-            except:
+            except ZeroDivisionError:
                 a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent_support_zeros(a_alphas, one_minus_kijs)
-
-            if same_T:
-                self.a_alpha_ijs, self.a_alpha_roots, self.a_alpha_ij_roots_inv = a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv
-
+            self.a_alpha_ijs, self.a_alpha_roots, self.a_alpha_ij_roots_inv = a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv
         if full:
             try:
                 a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs = a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, one_minus_kijs,
@@ -1059,133 +1049,21 @@ class GCEOSMIX(GCEOS):
                     a_alpha, da_alpha_dT, d2a_alpha_dT2 = a_alphas[0], da_alpha_dTs[0], d2a_alpha_dT2s[0]
                     d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs = [[d2a_alpha_dT2s[0]]], [[da_alpha_dTs[0]]], [[a_alphas[0]]]
 
-            self.d2a_alpha_dT2_ijs = d2a_alpha_dT2_ijs
-            self.da_alpha_dT_ijs = da_alpha_dT_ijs
-            self.a_alpha_ijs = a_alpha_ijs
+            self.d2a_alpha_dT2_ijs, self.da_alpha_dT_ijs, self.a_alpha_ijs = d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
         else:
-            # Priority - test, fix, and validate
             a_alpha, _, a_alpha_ijs = a_alpha_and_derivatives(a_alphas, T, zs, one_minus_kijs, a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv)
             self.da_alpha_dT_ijs = []
             self.a_alpha_ijs = a_alpha_ijs
             return a_alpha
 
-
-
-
-
-
-
-
-#        # DO NOT REMOVE THIS CODE! IT MAKES TIHNGS SLOWER IN PYPY, even though it never runs
-#        cmps = self.cmps
-#        da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
-#
-#        a_alpha_ijs = [[None]*N for _ in cmps]
-#        a_alpha_roots = [a_alpha_i**0.5 for a_alpha_i in a_alphas]
-#
-#        if full:
-#            a_alpha_ij_roots = [[None]*N for _ in cmps]
-#            for i in cmps:
-#                kijs_i = kijs[i]
-#                a_alpha_i = a_alphas[i]
-#                a_alpha_ijs_is = a_alpha_ijs[i]
-#                a_alpha_ij_roots_i = a_alpha_ij_roots[i]
-#                for j in cmps:
-#                    if j < i:
-#                        continue
-#                    a_alpha_ij_roots_i[j] = a_alpha_roots[i]*a_alpha_roots[j]#(a_alpha_i*a_alphas[j])**0.5
-#                    a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*a_alpha_ij_roots_i[j]
-#        else:
-#            for i in cmps:
-#                kijs_i = kijs[i]
-#                a_alpha_i = a_alphas[i]
-#                a_alpha_ijs_is = a_alpha_ijs[i]
-#                for j in cmps:
-#                    if j < i:
-#                        continue
-#                    a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*a_alpha_roots[i]*a_alpha_roots[j]
-#
-#        # Faster than an optimized loop in pypy even
-#        z_products = [[zs[i]*zs[j] for j in cmps] for i in cmps]
-#
-#        a_alpha = 0.0
-#        for i in cmps:
-#            a_alpha_ijs_i = a_alpha_ijs[i]
-#            z_products_i = z_products[i]
-#            for j in cmps:
-#                if j < i:
-#                    continue
-#                elif i != j:
-#                    a_alpha += 2.0*a_alpha_ijs_i[j]*z_products_i[j]
-#                else:
-#                    a_alpha += a_alpha_ijs_i[j]*z_products_i[j]
-#
-#        # List comprehension tested to be faster in CPython not pypy
-##        a_alpha = sum([a_alpha_ijs[i][j]*z_products[i][j]
-##                      for j in self.cmps for i in self.cmps])
-#        self.a_alpha_ijs = a_alpha_ijs
-#
-#        da_alpha_dT_ijs = self.da_alpha_dT_ijs = [[None]*N for _ in cmps]
-#
-#        if full:
-#            for i in cmps:
-#                kijs_i = kijs[i]
-#                a_alphai = a_alphas[i]
-#                z_products_i = z_products[i]
-#                da_alpha_dT_i = da_alpha_dTs[i]
-#                d2a_alpha_dT2_i = d2a_alpha_dT2s[i]
-#                a_alpha_ij_roots_i = a_alpha_ij_roots[i]
-#                for j in cmps:
-#                    if j < i:
-#                        # skip the duplicates
-#                        continue
-#                    a_alphaj = a_alphas[j]
-#                    x0 = a_alphai*a_alphaj
-#                    x0_05 = a_alpha_ij_roots_i[j]
-#                    zi_zj = z_products_i[j]
-#
-#                    x1 = a_alphai*da_alpha_dTs[j]
-#                    x2 = a_alphaj*da_alpha_dT_i
-#                    x1_x2 = x1 + x2
-#                    x3 = 2.0*x1_x2
-#
-#                    kij_m1 = kijs_i[j] - 1.0
-#
-#                    da_alpha_dT_ij = -0.5*kij_m1*x1_x2/x0_05
-#
-#                    # For temperature derivatives of fugacities
-#                    da_alpha_dT_ijs[i][j] = da_alpha_dT_ijs[j][i] = da_alpha_dT_ij
-#
-#                    da_alpha_dT_ij *= zi_zj
-#
-#                    d2a_alpha_dT2_ij = zi_zj*kij_m1*(-0.25*x0_05*(x0*(
-#                    2.0*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2_i)
-#                    + 4.*da_alpha_dT_i*da_alpha_dTs[j]) - x1*x3 - x2*x3 + x1_x2*x1_x2)/(x0*x0))
-#
-#                    if i != j:
-#                        da_alpha_dT += da_alpha_dT_ij + da_alpha_dT_ij
-#                        d2a_alpha_dT2 += d2a_alpha_dT2_ij + d2a_alpha_dT2_ij
-#                    else:
-#                        da_alpha_dT += da_alpha_dT_ij
-#                        d2a_alpha_dT2 += d2a_alpha_dT2_ij
-#
-#            return a_alpha, da_alpha_dT, d2a_alpha_dT2
-#        else:
-#            return a_alpha
-
-    def a_alpha_and_derivatives_py(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
+    def a_alpha_and_derivatives_py(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True):
         zs, one_minus_kijs, scalar, N = self.zs, self.one_minus_kijs, self.scalar, self.N
         if scalar:
             self.a_alpha_roots = a_alpha_roots = [sqrt(i) for i in a_alphas]
         else:
             self.a_alpha_roots = a_alpha_roots = npsqrt(a_alphas)
         if full:
-            # Converting kijs into a matrix kills the performance! 5x slower than the performance of the functions.
-            # converting the 1d arrays also takes as long as the function.
-#            a_alpha, da_alpha_dT, d2a_alpha_dT2, self.a_alpha_j_rows, self.da_alpha_dT_j_rows = (
-#                    a_alpha_and_derivatives_quadratic_terms(np.array(a_alphas), np.array(a_alpha_roots), np.array(da_alpha_dTs),
-#                                                            np.array(d2a_alpha_dT2s), T, np.array(zs), np.array(kijs)))
             if scalar:
                 a_alpha_j_rows, da_alpha_dT_j_rows = [0.0]*N, [0.0]*N
                 a_alpha, da_alpha_dT, d2a_alpha_dT2, self.a_alpha_j_rows, self.da_alpha_dT_j_rows = (
@@ -1207,7 +1085,7 @@ class GCEOSMIX(GCEOS):
 
 
 
-    def a_alpha_and_derivatives_numpy(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
+    def a_alpha_and_derivatives_numpy(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True):
         zs, kijs = self.zs, np.array(self.kijs)
         a_alphas = np.array(a_alphas)
         da_alpha_dTs = np.array(da_alpha_dTs)
