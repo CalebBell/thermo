@@ -478,20 +478,23 @@ class GCEOSMIX(GCEOS):
         >>> base.to_TP_zs_fast(T=300, P=1e5, zs=base.zs)
         RKMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0], [0.0, 0.0]], zs=[0.6, 0.4], T=300, P=100000.0)
         '''
-        copy_alphas = T == self.T
         new = self.__class__.__new__(self.__class__)
-        new.N = self.N
-        new.Tcs = self.Tcs
-        new.Pcs = self.Pcs
-        new.omegas = self.omegas
-        new.kijs = self.kijs
-        new.one_minus_kijs = self.one_minus_kijs
-        new.kwargs = self.kwargs
-        new.ais = self.ais
-        new.bs = self.bs
-        new.scalar = self.scalar
+        new.N, new.Tcs, new.Pcs, new.omegas, new.kijs, new.one_minus_kijs, new.kwargs, new.ais, new.bs, new.scalar = (
+            self.N, self.Tcs, self.Pcs, self.omegas, self.kijs, self.one_minus_kijs, self.kwargs, self.ais, self.bs,
+            self.scalar
+        )
+        # new.N = self.N
+        # new.Tcs = self.Tcs
+        # new.Pcs = self.Pcs
+        # new.omegas = self.omegas
+        # new.kijs = self.kijs
+        # new.one_minus_kijs = self.one_minus_kijs
+        # new.kwargs = self.kwargs
+        # new.ais = self.ais
+        # new.bs = self.bs
+        # new.scalar = self.scalar
 
-        if copy_alphas:
+        if T == self.T:
             new.a_alphas = self.a_alphas
             try:
                 new.a_alpha_roots = self.a_alpha_roots # has to be first
@@ -499,13 +502,13 @@ class GCEOSMIX(GCEOS):
                 new.d2a_alpha_dT2s = self.d2a_alpha_dT2s
             except:
                 pass
-
-        new.zs = zs
-        new.T = T
-        new.P = P
-        new.V = None
+        new.zs, new.T, new.P, new.V = zs, T, P, None
+        # new.zs = zs
+        # new.T = T
+        # new.P = P
+        # new.V = None
         new._fast_init_specific(self)
-        new.solve(pure_a_alphas=(not copy_alphas), only_l=only_l,
+        new.solve(pure_a_alphas=(T != self.T), only_l=only_l,
                   only_g=only_g, full_alphas=full_alphas)
         return new
 
