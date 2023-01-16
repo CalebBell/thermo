@@ -234,8 +234,8 @@ from thermo.eos import (APISRK, GCEOS, IG, MSRKTranslated, PR, PR78, PRSV, PRSV2
                         SRKTranslatedConsistent, TWUPR, TWUSRK, VDW)
 
 try:
-    (zeros, array, npexp, npsqrt, empty, full, npwhere, npmin, npmax, ndarray, dot) = (
-        np.zeros, np.array, np.exp, np.sqrt, np.empty, np.full, np.where, np.min, np.max, np.ndarray, np.dot)
+    (zeros, array, npexp, npsqrt, empty, full, npwhere, npmin, npmax, ndarray, dot, prodsum) = (
+        np.zeros, np.array, np.exp, np.sqrt, np.empty, np.full, np.where, np.min, np.max, np.ndarray, np.dot, np.dot)
 except:
     pass
 
@@ -1188,12 +1188,16 @@ class GCEOSMIX(GCEOS):
 #                                                            np.array(d2a_alpha_dT2s), T, np.array(zs), np.array(kijs)))
             if scalar:
                 a_alpha_j_rows, da_alpha_dT_j_rows = [0.0]*N, [0.0]*N
+                a_alpha, da_alpha_dT, d2a_alpha_dT2, self.a_alpha_j_rows, self.da_alpha_dT_j_rows = (
+                        a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots, da_alpha_dTs,
+                                                                d2a_alpha_dT2s, T, zs, one_minus_kijs,
+                                                                a_alpha_j_rows=a_alpha_j_rows, da_alpha_dT_j_rows=da_alpha_dT_j_rows))
             else:
                 a_alpha_j_rows, da_alpha_dT_j_rows = zeros(N), zeros(N)
-            a_alpha, da_alpha_dT, d2a_alpha_dT2, self.a_alpha_j_rows, self.da_alpha_dT_j_rows = (
-                    a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots, da_alpha_dTs,
-                                                            d2a_alpha_dT2s, T, zs, one_minus_kijs,
-                                                            a_alpha_j_rows=a_alpha_j_rows, da_alpha_dT_j_rows=da_alpha_dT_j_rows))
+                a_alpha, da_alpha_dT, d2a_alpha_dT2, self.a_alpha_j_rows, self.da_alpha_dT_j_rows = (
+                        a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots, da_alpha_dTs,
+                                                                d2a_alpha_dT2s, T, zs, one_minus_kijs,
+                                                                a_alpha_j_rows=a_alpha_j_rows, da_alpha_dT_j_rows=da_alpha_dT_j_rows))
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
         else:
@@ -6980,16 +6984,13 @@ class PRMIX(GCEOSMIX, PR):
             self.fugacities()
 
     def _fast_init_specific(self, other):
-        self.kappas = other.kappas
         if self.scalar:
             b = 0.0
             for bi, zi in zip(self.bs, self.zs):
                 b += bi*zi
         else:
-            b = float(dot(self.bs, self.zs))
-        self.b = b
-        self.delta = 2.0*b
-        self.epsilon = -b*b
+            b = float(prodsum(self.bs, self.zs))
+        self.kappas, self.b, self.delta, self.epsilon = other.kappas, b, 2.0*b, -b*b
 
     def a_alphas_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` for the PR EOS.
