@@ -777,7 +777,7 @@ def eos_mix_dV_dzs(T, P, Z, b, delta, epsilon, a_alpha, db_dzs, ddelta_dzs,
     x8 = x2*t0
     x10 = x0V + x2 + x9
     x10x10 = x10*x10
-    x11 = R*T*x10*x10x10
+    x11 = RT*x10*x10x10
     x13 = x0x1x5*x9
     x7x8 = x7 + x8
 
