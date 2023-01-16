@@ -1017,8 +1017,8 @@ class GCEOSMIX(GCEOS):
                 else:
                     self.a_alphas = a_alphas = self.a_alphas_vectorized(T)
                     da_alpha_dTs = d2a_alpha_dT2s = None
-        if not IS_PYPY and self.N > 2000:
-            return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full)
+        # if not IS_PYPY and self.N > 2000:
+        #     return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full)
         return self.a_alpha_and_derivatives_py(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full)
 
 
