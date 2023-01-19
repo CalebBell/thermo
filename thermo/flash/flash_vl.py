@@ -331,9 +331,9 @@ class FlashVL(Flash):
 
         self.stab = StabilityTester(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
 
-        self.flash_pure = FlashPureVLS(constants=constants, correlations=correlations,
-                                       gas=gas, liquids=[liquid], solids=[],
-                                       settings=settings)
+        # self.flash_pure = FlashPureVLS(constants=constants, correlations=correlations,
+        #                                gas=gas, liquids=[liquid], solids=[],
+        #                                settings=settings)
 
         self.K_composition_independent = gas.composition_independent and liquid.composition_independent
         self.ideal_gas_basis = gas.ideal_gas_basis and liquid.ideal_gas_basis

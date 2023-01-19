@@ -4681,99 +4681,99 @@ def test_numpy_properties_all_eos_mix():
         eos_np_base = obj(**kwargs_np)
         kwargs_plain = args(obj, False)
         eos_base = obj(**kwargs_plain)
-        
+
         eos_2 = eos_base.to_TP_zs_fast(T=300.0000000001, P=1e5, zs=[.7, .20000001, .09999999])
         eos_np_2 = eos_np_base.to_TP_zs_fast(T=300.0000000001, P=1e5, zs=np.array([.7, .20000001, .09999999]))
-        
+
         eos_3 = eos_base.to_TP_zs_fast(T=300.0000000001, P=1e5, zs=[.7, .20000001, .09999999], full_alphas=False)
         eos_np_3 = eos_np_base.to_TP_zs_fast(T=300.0000000001, P=1e5, zs=np.array([.7, .20000001, .09999999]),  full_alphas=False)
-        
+
         eos_4 = eos_base.to_TP_zs_fast(T=300.0000000001, P=1e5, zs=[.7, .20000001, .09999999], only_g=True)
         eos_np_4 = eos_np_base.to_TP_zs_fast(T=300.0000000001, P=1e5, zs=np.array([.7, .20000001, .09999999]), only_g=True)
 
         for eos, eos_np in zip([eos_base, eos_2, eos_3, eos_4], [eos_np_base, eos_np_2, eos_np_3, eos_np_4]):
-        
+
             assert_close(eos_np.b, eos.b, rtol=1e-14)
             assert type(eos_np.b) is float
-            
+
             assert_close(eos_np.delta, eos.delta, rtol=1e-14)
             assert type(eos_np.delta) is float
-            
+
             assert_close(eos_np.epsilon, eos.epsilon, rtol=1e-14)
             assert type(eos_np.epsilon) is float
-        
+
             assert_close2d(eos_np.kijs, eos.kijs, rtol=1e-14)
             assert isinstance(eos_np.kijs, np.ndarray)
             assert isinstance(eos.kijs, list)
-    
+
             assert_close1d(eos_np.bs, eos.bs, rtol=1e-14)
             assert isinstance(eos_np.bs, np.ndarray)
             assert isinstance(eos.bs, list)
-        
+
             assert_close1d(eos_np.ais, eos.ais, rtol=1e-14)
             assert isinstance(eos_np.ais, np.ndarray)
             assert isinstance(eos.ais, list)
-            
+
             assert_close1d(eos_np.a_alphas, eos.a_alphas, rtol=1e-14)
             assert isinstance(eos_np.a_alphas, np.ndarray)
             assert isinstance(eos.a_alphas, list)
-        
+
             if hasattr(eos, 'da_alpha_dTs'):
                 assert_close1d(eos_np.da_alpha_dTs, eos.da_alpha_dTs, rtol=1e-14)
                 assert isinstance(eos_np.da_alpha_dTs, np.ndarray)
                 assert isinstance(eos.da_alpha_dTs, list)
-            
+
                 assert_close1d(eos_np.d2a_alpha_dT2s, eos.d2a_alpha_dT2s, rtol=1e-14)
                 assert isinstance(eos_np.d2a_alpha_dT2s, np.ndarray)
                 assert isinstance(eos.d2a_alpha_dT2s, list)
-            
+
             # Component derivatives - epsilon
             assert_close1d(eos_np.depsilon_dzs, eos.depsilon_dzs, rtol=1e-14)
             assert isinstance(eos_np.depsilon_dzs, np.ndarray)
             assert isinstance(eos.depsilon_dzs, list)
-                
+
             assert_close1d(eos_np.depsilon_dns, eos.depsilon_dns, rtol=1e-14)
             assert isinstance(eos_np.depsilon_dns, np.ndarray)
             assert isinstance(eos.depsilon_dns, list)
-        
-            assert_close1d(eos_np.d2epsilon_dzizjs, eos.d2epsilon_dzizjs, rtol=1e-14)
+
+            assert_close2d(eos_np.d2epsilon_dzizjs, eos.d2epsilon_dzizjs, rtol=1e-14)
             assert isinstance(eos_np.d2epsilon_dzizjs, np.ndarray)
             assert isinstance(eos.d2epsilon_dzizjs, list)
-        
-            assert_close1d(eos_np.d2epsilon_dninjs, eos.d2epsilon_dninjs, rtol=1e-14)
+
+            assert_close2d(eos_np.d2epsilon_dninjs, eos.d2epsilon_dninjs, rtol=1e-14)
             assert isinstance(eos_np.d2epsilon_dninjs, np.ndarray)
             assert isinstance(eos.d2epsilon_dninjs, list)
-        
-            assert_close1d(eos_np.d3epsilon_dzizjzks, eos.d3epsilon_dzizjzks, rtol=1e-14)
+
+            assert_close3d(eos_np.d3epsilon_dzizjzks, eos.d3epsilon_dzizjzks, rtol=1e-14)
             assert isinstance(eos_np.d3epsilon_dzizjzks, np.ndarray)
             assert isinstance(eos.d3epsilon_dzizjzks, list)
-        
-            assert_close1d(eos_np.d3epsilon_dninjnks, eos.d3epsilon_dninjnks, rtol=1e-14)
+
+            assert_close3d(eos_np.d3epsilon_dninjnks, eos.d3epsilon_dninjnks, rtol=1e-14)
             assert isinstance(eos_np.d3epsilon_dninjnks, np.ndarray)
             assert isinstance(eos.d3epsilon_dninjnks, list)
-    
+
             # Component derivatives - delta
             assert_close1d(eos_np.ddelta_dzs, eos.ddelta_dzs, rtol=1e-14)
             assert isinstance(eos_np.ddelta_dzs, np.ndarray)
             assert isinstance(eos.ddelta_dzs, list)
-                
+
             assert_close1d(eos_np.ddelta_dns, eos.ddelta_dns, rtol=1e-14)
             assert isinstance(eos_np.ddelta_dns, np.ndarray)
             assert isinstance(eos.ddelta_dns, list)
-        
-            assert_close1d(eos_np.d2delta_dzizjs, eos.d2delta_dzizjs, rtol=1e-14)
+
+            assert_close2d(eos_np.d2delta_dzizjs, eos.d2delta_dzizjs, rtol=1e-14)
             assert isinstance(eos_np.d2delta_dzizjs, np.ndarray)
             assert isinstance(eos.d2delta_dzizjs, list)
-        
-            assert_close1d(eos_np.d2delta_dninjs, eos.d2delta_dninjs, rtol=1e-14)
+
+            assert_close2d(eos_np.d2delta_dninjs, eos.d2delta_dninjs, rtol=1e-14)
             assert isinstance(eos_np.d2delta_dninjs, np.ndarray)
             assert isinstance(eos.d2delta_dninjs, list)
-        
-            assert_close1d(eos_np.d3delta_dzizjzks, eos.d3delta_dzizjzks, rtol=1e-13)
+
+            assert_close3d(eos_np.d3delta_dzizjzks, eos.d3delta_dzizjzks, rtol=1e-13)
             assert isinstance(eos_np.d3delta_dzizjzks, np.ndarray)
             assert isinstance(eos.d3delta_dzizjzks, list)
-        
-            assert_close1d(eos_np.d3delta_dninjnks, eos.d3delta_dninjnks, rtol=1e-13)
+
+            assert_close3d(eos_np.d3delta_dninjnks, eos.d3delta_dninjnks, rtol=1e-13)
             assert isinstance(eos_np.d3delta_dninjnks, np.ndarray)
             assert isinstance(eos.d3delta_dninjnks, list)
 
@@ -4783,3 +4783,313 @@ def test_numpy_properties_all_eos_mix():
             assert isinstance(eos_np.lnphis_g, np.ndarray)
             assert isinstance(eos.lnphis_g, list)
             
+            assert_close2d(eos_np.a_alpha_ijs, eos.a_alpha_ijs, rtol=1e-13)
+            assert isinstance(eos_np.a_alpha_ijs, np.ndarray)
+            assert isinstance(eos.a_alpha_ijs, list)
+            
+            # start
+            assert_close1d(eos_np.a_alpha_j_rows, eos.a_alpha_j_rows, rtol=1e-13)
+            assert isinstance(eos_np.a_alpha_j_rows, np.ndarray)
+            assert isinstance(eos.a_alpha_j_rows, list)
+
+            assert_close1d(eos_np.a_alpha_roots, eos.a_alpha_roots, rtol=1e-13)
+            assert isinstance(eos_np.a_alpha_roots, np.ndarray)
+            assert isinstance(eos.a_alpha_roots, list)
+            
+            if obj not in (IGMIX, VDWMIX):
+                assert_close2d(eos_np.d2A_dep_dninjs(eos_np.Z_g), eos.d2A_dep_dninjs(eos.Z_g), rtol=1e-12)
+                assert isinstance(eos_np.d2A_dep_dninjs(eos_np.Z_g), np.ndarray)
+                assert isinstance(eos.d2A_dep_dninjs(eos.Z_g), list)
+            
+            if obj not in (IGMIX, VDWMIX):
+                assert_close2d(eos_np.d2A_dep_dninjs_Vt('g'), eos.d2A_dep_dninjs_Vt('g'), rtol=1e-10)
+                assert isinstance(eos_np.d2A_dep_dninjs_Vt('g'), np.ndarray)
+                assert isinstance(eos.d2A_dep_dninjs_Vt('g'), list)
+
+            if obj not in (IGMIX, VDWMIX):
+                assert_close2d(eos_np.d2A_dninjs_Vt('g'), eos.d2A_dninjs_Vt('g'), rtol=1e-13)
+                assert isinstance(eos_np.d2A_dninjs_Vt('g'), np.ndarray)
+                assert isinstance(eos.d2A_dninjs_Vt('g'), list)
+
+            assert_close2d(eos_np.d2G_dep_dninjs(eos_np.Z_g), eos.d2G_dep_dninjs(eos.Z_g), rtol=1e-12)
+            assert isinstance(eos_np.d2G_dep_dninjs(eos_np.Z_g), np.ndarray)
+            assert isinstance(eos.d2G_dep_dninjs(eos.Z_g), list)
+
+            assert_close2d(eos_np.d2G_dep_dzizjs(eos_np.Z_g), eos.d2G_dep_dzizjs(eos.Z_g), rtol=1e-12)
+            assert isinstance(eos_np.d2G_dep_dzizjs(eos_np.Z_g), np.ndarray)
+            assert isinstance(eos.d2G_dep_dzizjs(eos.Z_g), list)
+
+            assert_close2d(eos_np.d2P_dninjs_Vt('g'), eos.d2P_dninjs_Vt('g'), rtol=1e-13)
+            assert isinstance(eos_np.d2P_dninjs_Vt('g'), np.ndarray)
+            assert isinstance(eos.d2P_dninjs_Vt('g'), list)
+            
+            assert_close2d(eos_np.d2Scomp_dninjs('g'), eos.d2Scomp_dninjs('g'), rtol=1e-13)
+            assert isinstance(eos_np.d2Scomp_dninjs('g'), np.ndarray)
+            assert isinstance(eos.d2Scomp_dninjs('g'), list)
+
+            assert_close2d(eos_np.d2V_dninjs(eos_np.Z_g), eos.d2V_dninjs(eos.Z_g), rtol=1e-12)
+            assert isinstance(eos_np.d2V_dninjs(eos_np.Z_g), np.ndarray)
+            assert isinstance(eos.d2V_dninjs(eos.Z_g), list)
+
+            assert_close2d(eos_np.d2V_dzizjs(eos_np.Z_g), eos.d2V_dzizjs(eos.Z_g), rtol=1e-12)
+            assert isinstance(eos_np.d2V_dzizjs(eos_np.Z_g), np.ndarray)
+            assert isinstance(eos.d2V_dzizjs(eos.Z_g), list)
+
+            assert_close1d(eos_np.d2a_alpha_dT2_dns, eos.d2a_alpha_dT2_dns, rtol=1e-13)
+            assert isinstance(eos_np.d2a_alpha_dT2_dns, np.ndarray)
+            assert isinstance(eos.d2a_alpha_dT2_dns, list)
+
+            assert_close1d(eos_np.d2a_alpha_dT2_dzs, eos.d2a_alpha_dT2_dzs, rtol=1e-13)
+            assert isinstance(eos_np.d2a_alpha_dT2_dzs, np.ndarray)
+            assert isinstance(eos.d2a_alpha_dT2_dzs, list)
+
+            assert_close2d(eos_np.d2a_alpha_dT2_ijs, eos.d2a_alpha_dT2_ijs, rtol=1e-13)
+            assert isinstance(eos_np.d2a_alpha_dT2_ijs, np.ndarray)
+            assert isinstance(eos.d2a_alpha_dT2_ijs, list)
+
+            assert_close1d(eos_np.d2a_alpha_dT2s, eos.d2a_alpha_dT2s, rtol=1e-13)
+            assert isinstance(eos_np.d2a_alpha_dT2s, np.ndarray)
+            assert isinstance(eos.d2a_alpha_dT2s, list)
+
+            assert_close2d(eos_np.d2a_alpha_dninjs, eos.d2a_alpha_dninjs, rtol=1e-13)
+            assert isinstance(eos_np.d2a_alpha_dninjs, np.ndarray)
+            assert isinstance(eos.d2a_alpha_dninjs, list)
+
+            assert_close2d(eos_np.d2a_alpha_dzizjs, eos.d2a_alpha_dzizjs, rtol=1e-13)
+            assert isinstance(eos_np.d2a_alpha_dzizjs, np.ndarray)
+            assert isinstance(eos.d2a_alpha_dzizjs, list)
+
+            assert_close2d(eos_np.d2b_dninjs, eos.d2b_dninjs, rtol=1e-13)
+            assert isinstance(eos_np.d2b_dninjs, np.ndarray)
+            assert isinstance(eos.d2b_dninjs, list)
+
+            assert_close2d(eos_np.d2b_dzizjs, eos.d2b_dzizjs, rtol=1e-13)
+            assert isinstance(eos_np.d2b_dzizjs, np.ndarray)
+            assert isinstance(eos.d2b_dzizjs, list)
+
+            assert_close2d(eos_np.d2delta_dninjs, eos.d2delta_dninjs, rtol=1e-13)
+            assert isinstance(eos_np.d2delta_dninjs, np.ndarray)
+            assert isinstance(eos.d2delta_dninjs, list)
+
+            assert_close2d(eos_np.d2delta_dzizjs, eos.d2delta_dzizjs, rtol=1e-13)
+            assert isinstance(eos_np.d2delta_dzizjs, np.ndarray)
+            assert isinstance(eos.d2delta_dzizjs, list)
+
+            assert_close2d(eos_np.d2epsilon_dninjs, eos.d2epsilon_dninjs, rtol=1e-13)
+            assert isinstance(eos_np.d2epsilon_dninjs, np.ndarray)
+            assert isinstance(eos.d2epsilon_dninjs, list)
+
+            assert_close2d(eos_np.d2epsilon_dzizjs, eos.d2epsilon_dzizjs, rtol=1e-13)
+            assert isinstance(eos_np.d2epsilon_dzizjs, np.ndarray)
+            assert isinstance(eos.d2epsilon_dzizjs, list)
+            
+            assert_close2d(eos_np.d2lnphi_dninjs(eos_np.Z_g), eos.d2lnphi_dninjs(eos.Z_g), rtol=1e-12)
+            assert isinstance(eos_np.d2lnphi_dninjs(eos_np.Z_g), np.ndarray)
+            assert isinstance(eos.d2lnphi_dninjs(eos.Z_g), list)
+
+            assert_close2d(eos_np.d2lnphi_dzizjs(eos_np.Z_g), eos.d2lnphi_dzizjs(eos.Z_g), rtol=1e-12)
+            assert isinstance(eos_np.d2lnphi_dzizjs(eos_np.Z_g), np.ndarray)
+            assert isinstance(eos.d2lnphi_dzizjs(eos.Z_g), list)
+
+            if obj not in (IGMIX, VDWMIX):
+                assert_close2d(eos_np.d2nA_dninjs_Vt('g'), eos.d2nA_dninjs_Vt('g'), rtol=1e-12)
+                assert isinstance(eos_np.d2nA_dninjs_Vt('g'), np.ndarray)
+                assert isinstance(eos.d2nA_dninjs_Vt('g'), list)
+
+            if obj not in (IGMIX, VDWMIX):
+                assert_close1d(eos_np.dA_dep_dns_Vt('g'), eos.dA_dep_dns_Vt('g'), rtol=1e-9)
+                assert isinstance(eos_np.dA_dep_dns_Vt('g'), np.ndarray)
+                assert isinstance(eos.dA_dep_dns_Vt('g'), list)
+
+            assert_close1d(eos_np.dG_dep_dns(eos_np.V_g), eos.dG_dep_dns(eos.V_g), rtol=1e-13)
+            assert isinstance(eos_np.dG_dep_dns(eos_np.V_g), np.ndarray)
+            assert isinstance(eos.dG_dep_dns(eos.V_g), list)
+
+            assert_close1d(eos_np.dG_dep_dzs(eos_np.V_g), eos.dG_dep_dzs(eos.V_g), rtol=1e-13)
+            assert isinstance(eos_np.dG_dep_dzs(eos_np.V_g), np.ndarray)
+            assert isinstance(eos.dG_dep_dzs(eos.V_g), list)
+
+            assert_close1d(eos_np.dH_dep_dns(eos_np.V_g), eos.dH_dep_dns(eos.V_g), rtol=1e-13)
+            assert isinstance(eos_np.dH_dep_dns(eos_np.V_g), np.ndarray)
+            assert isinstance(eos.dH_dep_dns(eos.V_g), list)
+
+            assert_close1d(eos_np.dH_dep_dzs(eos_np.V_g), eos.dH_dep_dzs(eos.V_g), rtol=1e-13)
+            assert isinstance(eos_np.dH_dep_dzs(eos_np.V_g), np.ndarray)
+            assert isinstance(eos.dH_dep_dzs(eos.V_g), list)
+
+            assert_close1d(eos_np.dS_dep_dns(eos_np.V_g), eos.dS_dep_dns(eos.V_g), rtol=1e-13)
+            assert isinstance(eos_np.dS_dep_dns(eos_np.V_g), np.ndarray)
+            assert isinstance(eos.dS_dep_dns(eos.V_g), list)
+            
+            assert_close1d(eos_np.dS_dep_dzs(eos_np.V_g), eos.dS_dep_dzs(eos.V_g), rtol=1e-13)
+            assert isinstance(eos_np.dS_dep_dzs(eos_np.V_g), np.ndarray)
+            assert isinstance(eos.dS_dep_dzs(eos.V_g), list)
+
+            assert_close1d(eos_np.dV_dns(eos_np.V_g), eos.dV_dns(eos.V_g), rtol=1e-13)
+            assert isinstance(eos_np.dV_dns(eos_np.V_g), np.ndarray)
+            assert isinstance(eos.dV_dns(eos.V_g), list)
+            
+            assert_close1d(eos_np.dV_dzs(eos_np.V_g), eos.dV_dzs(eos.V_g), rtol=1e-13)
+            assert isinstance(eos_np.dV_dzs(eos_np.V_g), np.ndarray)
+            assert isinstance(eos.dV_dzs(eos.V_g), list)
+            
+            assert_close1d(eos_np.dZ_dns(eos_np.V_g), eos.dZ_dns(eos.V_g), rtol=1e-13)
+            assert isinstance(eos_np.dZ_dns(eos_np.V_g), np.ndarray)
+            assert isinstance(eos.dZ_dns(eos.V_g), list)
+
+            assert_close1d(eos_np.dZ_dns(eos_np.V_g), eos.dZ_dns(eos.V_g), rtol=1e-13)
+            assert isinstance(eos_np.dZ_dns(eos_np.V_g), np.ndarray)
+            assert isinstance(eos.dZ_dns(eos.V_g), list)
+
+            assert_close1d(eos_np.dZ_dzs(eos_np.V_g), eos.dZ_dzs(eos.V_g), rtol=1e-13)
+            assert isinstance(eos_np.dZ_dzs(eos_np.V_g), np.ndarray)
+            assert isinstance(eos.dZ_dzs(eos.V_g), list)
+            
+            assert_close1d(eos_np.da_alpha_dT_dns, eos.da_alpha_dT_dns, rtol=1e-14)
+            assert isinstance(eos_np.da_alpha_dT_dns, np.ndarray)
+            assert isinstance(eos.da_alpha_dT_dns, list)
+
+            assert_close1d(eos_np.da_alpha_dT_dzs, eos.da_alpha_dT_dzs, rtol=1e-14)
+            assert isinstance(eos_np.da_alpha_dT_dzs, np.ndarray)
+            assert isinstance(eos.da_alpha_dT_dzs, list)
+            
+            assert_close2d(eos_np.da_alpha_dT_ijs, eos.da_alpha_dT_ijs, rtol=1e-13)
+            assert isinstance(eos_np.da_alpha_dT_ijs, np.ndarray)
+            assert isinstance(eos.da_alpha_dT_ijs, list)
+
+            assert_close1d(eos_np.da_alpha_dT_j_rows, eos.da_alpha_dT_j_rows, rtol=1e-14)
+            assert isinstance(eos_np.da_alpha_dT_j_rows, np.ndarray)
+            assert isinstance(eos.da_alpha_dT_j_rows, list)
+
+            assert_close1d(eos_np.da_alpha_dns, eos.da_alpha_dns, rtol=1e-14)
+            assert isinstance(eos_np.da_alpha_dns, np.ndarray)
+            assert isinstance(eos.da_alpha_dns, list)
+
+            assert_close1d(eos_np.da_alpha_dzs, eos.da_alpha_dzs, rtol=1e-14)
+            assert isinstance(eos_np.da_alpha_dzs, np.ndarray)
+            assert isinstance(eos.da_alpha_dzs, list)
+
+            assert_close1d(eos_np.db_dns, eos.db_dns, rtol=1e-14)
+            assert isinstance(eos_np.db_dns, np.ndarray)
+            assert isinstance(eos.db_dns, list)
+            
+            assert_close1d(eos_np.db_dzs, eos.db_dzs, rtol=1e-14)
+            assert isinstance(eos_np.db_dzs, np.ndarray)
+            assert isinstance(eos.db_dzs, list)
+            
+            assert_close1d(eos_np.ddelta_dns, eos.ddelta_dns, rtol=1e-14)
+            assert isinstance(eos_np.ddelta_dns, np.ndarray)
+            assert isinstance(eos.ddelta_dns, list)
+            
+            assert_close1d(eos_np.ddelta_dzs, eos.ddelta_dzs, rtol=1e-14)
+            assert isinstance(eos_np.ddelta_dzs, np.ndarray)
+            assert isinstance(eos.ddelta_dzs, list)
+
+            assert_close1d(eos_np.depsilon_dns, eos.depsilon_dns, rtol=1e-14)
+            assert isinstance(eos_np.depsilon_dns, np.ndarray)
+            assert isinstance(eos.depsilon_dns, list)
+            
+            assert_close1d(eos_np.depsilon_dzs, eos.depsilon_dzs, rtol=1e-14)
+            assert isinstance(eos_np.depsilon_dzs, np.ndarray)
+            assert isinstance(eos.depsilon_dzs, list)
+
+            assert_close1d(eos_np.dlnphi_dns(eos_np.V_g), eos.dlnphi_dns(eos.V_g), rtol=1e-13)
+            assert isinstance(eos_np.dlnphi_dns(eos_np.V_g), np.ndarray)
+            assert isinstance(eos.dlnphi_dns(eos.V_g), list)
+
+            assert_close1d(eos_np.dlnphi_dzs(eos_np.V_g), eos.dlnphi_dzs(eos.V_g), rtol=1e-13)
+            assert isinstance(eos_np.dlnphi_dzs(eos_np.V_g), np.ndarray)
+            assert isinstance(eos.dlnphi_dzs(eos.V_g), list)
+            
+            assert_close1d(eos_np.dlnphis_dP('g'), eos.dlnphis_dP('g'), rtol=1e-12)
+            assert isinstance(eos_np.dlnphis_dP('g'), np.ndarray)
+            assert isinstance(eos.dlnphis_dP('g'), list)
+            
+            assert_close1d(eos_np.dlnphis_dT('g'), eos.dlnphis_dT('g'), rtol=1e-12)
+            assert isinstance(eos_np.dlnphis_dT('g'), np.ndarray)
+            assert isinstance(eos.dlnphis_dT('g'), list)
+            
+            assert_close2d(eos_np.dlnphis_dns(eos_np.Z_g), eos.dlnphis_dns(eos.Z_g), rtol=1e-12)
+            assert isinstance(eos_np.dlnphis_dns(eos_np.Z_g), np.ndarray)
+            assert isinstance(eos.dlnphis_dns(eos.Z_g), list)
+            
+            assert_close2d(eos_np.dlnphis_dzs(eos_np.Z_g), eos.dlnphis_dzs(eos.Z_g), rtol=1e-12)
+            assert isinstance(eos_np.dlnphis_dzs(eos_np.Z_g), np.ndarray)
+            assert isinstance(eos.dlnphis_dzs(eos.Z_g), list)
+            
+            assert_close1d(eos_np.dnG_dep_dns(eos_np.V_g), eos.dnG_dep_dns(eos.V_g), rtol=1e-12)
+            assert isinstance(eos_np.dnG_dep_dns(eos_np.V_g), np.ndarray)
+            assert isinstance(eos.dnG_dep_dns(eos.V_g), list)
+
+            assert_close1d(eos_np.dnH_dep_dns(eos_np.V_g), eos.dnH_dep_dns(eos.V_g), rtol=1e-12)
+            assert isinstance(eos_np.dnH_dep_dns(eos_np.V_g), np.ndarray)
+            assert isinstance(eos.dnH_dep_dns(eos.V_g), list)
+            
+            assert_close1d(eos_np.dnV_dns(eos_np.V_g), eos.dnV_dns(eos.V_g), rtol=1e-12)
+            assert isinstance(eos_np.dnV_dns(eos_np.V_g), np.ndarray)
+            assert isinstance(eos.dnV_dns(eos.V_g), list)
+
+            assert_close1d(eos_np.dnZ_dns(eos_np.V_g), eos.dnZ_dns(eos.V_g), rtol=1e-12)
+            assert isinstance(eos_np.dnZ_dns(eos_np.V_g), np.ndarray)
+            assert isinstance(eos.dnZ_dns(eos.V_g), list)
+
+            assert_close1d(eos_np.dna_alpha_dT_dns, eos.dna_alpha_dT_dns, rtol=1e-14)
+            assert isinstance(eos_np.dna_alpha_dT_dns, np.ndarray)
+            assert isinstance(eos.dna_alpha_dT_dns, list)
+            
+            assert_close1d(eos_np.dna_alpha_dns, eos.dna_alpha_dns, rtol=1e-14)
+            assert isinstance(eos_np.dna_alpha_dns, np.ndarray)
+            assert isinstance(eos.dna_alpha_dns, list)
+
+            assert_close1d(eos_np.dnb_dns, eos.dnb_dns, rtol=1e-14)
+            assert isinstance(eos_np.dnb_dns, np.ndarray)
+            assert isinstance(eos.dnb_dns, list)
+
+            assert_close1d(eos_np.dScomp_dns('g'), eos.dScomp_dns('g'), rtol=1e-12)
+            assert isinstance(eos_np.dScomp_dns('g'), np.ndarray)
+            assert isinstance(eos.dScomp_dns('g'), list)
+
+            assert_close1d(eos_np.dP_dns_Vt('g'), eos.dP_dns_Vt('g'), rtol=1e-12)
+            assert isinstance(eos_np.dP_dns_Vt('g'), np.ndarray)
+            assert isinstance(eos.dP_dns_Vt('g'), list)
+
+            assert_close3d(eos_np.d3epsilon_dzizjzks, eos.d3epsilon_dzizjzks, rtol=1e-14)
+            assert isinstance(eos_np.d3epsilon_dzizjzks, np.ndarray)
+            assert isinstance(eos.d3epsilon_dzizjzks, list)
+
+            assert_close3d(eos_np.d3epsilon_dninjnks, eos.d3epsilon_dninjnks, rtol=1e-14)
+            assert isinstance(eos_np.d3epsilon_dninjnks, np.ndarray)
+            assert isinstance(eos.d3epsilon_dninjnks, list)
+            
+            assert_close3d(eos_np.d3delta_dzizjzks, eos.d3delta_dzizjzks, rtol=1e-14)
+            assert isinstance(eos_np.d3delta_dzizjzks, np.ndarray)
+            assert isinstance(eos.d3delta_dzizjzks, list)
+            
+            assert_close3d(eos_np.d3delta_dninjnks, eos.d3delta_dninjnks, rtol=1e-13)
+            assert isinstance(eos_np.d3delta_dninjnks, np.ndarray)
+            assert isinstance(eos.d3delta_dninjnks, list)
+            
+            assert_close3d(eos_np.d3b_dzizjzks, eos.d3b_dzizjzks, rtol=1e-13)
+            assert isinstance(eos_np.d3b_dzizjzks, np.ndarray)
+            assert isinstance(eos.d3b_dzizjzks, list)
+            
+            assert_close3d(eos_np.d3b_dninjnks, eos.d3b_dninjnks, rtol=1e-13)
+            assert isinstance(eos_np.d3b_dninjnks, np.ndarray)
+            assert isinstance(eos.d3b_dninjnks, list)
+            
+            assert_close3d(eos_np.d3a_alpha_dzizjzks, eos.d3a_alpha_dzizjzks, rtol=1e-13)
+            assert isinstance(eos_np.d3a_alpha_dzizjzks, np.ndarray)
+            assert isinstance(eos.d3a_alpha_dzizjzks, list)
+
+            assert_close3d(eos_np.d3a_alpha_dninjnks, eos.d3a_alpha_dninjnks, rtol=1e-12)
+            assert isinstance(eos_np.d3a_alpha_dninjnks, np.ndarray)
+            assert isinstance(eos.d3a_alpha_dninjnks, list)
+
+            assert_close3d(eos_np.d3P_dninjnks_Vt('g'), eos.d3P_dninjnks_Vt('g'), rtol=1e-11)
+            assert isinstance(eos_np.d3P_dninjnks_Vt('g'), np.ndarray)
+            assert isinstance(eos.d3P_dninjnks_Vt('g'), list)
+            
+            if obj not in (IGMIX, VDWMIX):
+                assert_close2d(eos_np.d2A_dninjs_Vt_another('g'), eos.d2A_dninjs_Vt_another('g'), rtol=1e-11)
+                assert isinstance(eos_np.d2A_dninjs_Vt_another('g'), np.ndarray)
+                assert isinstance(eos.d2A_dninjs_Vt_another('g'), list)

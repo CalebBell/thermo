@@ -42,6 +42,7 @@ from __future__ import division
 __all__ = ['EquilibriumState']
 
 from fluids.constants import R, R_inv, N_A
+from fluids.numerics import numpy as np
 from chemicals.utils import log, exp, normalize, zs_to_ws, vapor_mass_quality, mixing_simple, Vm_to_rho, SG
 from chemicals.virial import B_from_Z
 from chemicals.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition, periodic_table
@@ -49,6 +50,11 @@ from thermo.phases import gas_phases, liquid_phases, solid_phases, Phase, deriva
 from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationsPackage, constants_docstrings
 from thermo.bulk import Bulk, BulkSettings, default_settings
 all_phases = gas_phases + liquid_phases + solid_phases
+
+try:
+    array = np.array
+except:
+    pass
 
 CAS_H2O = '7732-18-5'
 
@@ -2221,11 +2227,15 @@ class EquilibriumState(object):
         water_index = self.water_index
         if water_index is None:
             return phase.zs
-        zs = list(phase.zs)
+        scalar = self.flasher.scalar
+        zs = list(phase.zs) if scalar else array(phase.zs)
         z_water = zs[water_index]
         m = 1/(1.0 - z_water)
-        for i in range(self.N):
-            zs[i] *= m
+        if scalar:
+            for i in range(self.N):
+                zs[i] *= m
+        else:
+            zs *= m
         return m
 
     def ws_no_water(self, phase=None):
@@ -2247,11 +2257,15 @@ class EquilibriumState(object):
         water_index = self.water_index
         if water_index is None:
             return phase.ws()
-        ws = list(phase.ws())
+        scalar = self.flasher.scalar
+        ws = list(phase.ws())  if scalar else array(phase.ws())
         z_water = ws[water_index]
         m = 1/(1.0 - z_water)
-        for i in range(self.N):
-            ws[i] *= m
+        if scalar:
+            for i in range(self.N):
+                ws[i] *= m
+        else:
+            ws *= m
         return m
 
     def Ks(self, phase, phase_ref=None):
@@ -2291,7 +2305,10 @@ class EquilibriumState(object):
                     ref_phase = self.gas
         ref_zs = phase_ref.zs
         zs = phase.zs
-        Ks = [g/l for l, g in zip(ref_zs, zs)]
+        if self.flasher.scalar:
+            Ks = [g/l for l, g in zip(ref_zs, zs)]
+        else:
+            Ks = zs/ref_zs
         return Ks
 
     def Hc(self, phase=None):
@@ -2628,6 +2645,8 @@ class EquilibriumState(object):
             pass
         T = self.T
         self._Psats = [o.T_dependent_property(T) for o in self.VaporPressures]
+        if not self.flasher.scalar:
+            self._Psats = array(self._Psats)
         return self._Psats
 
     def Psubs(self):
@@ -2654,6 +2673,8 @@ class EquilibriumState(object):
             pass
         T = self.T
         self._Psubs = [o.T_dependent_property(T) for o in self.SublimationPressures]
+        if not self.flasher.scalar:
+            self._Psubs = array(self._Psubs)
         return self._Psubs
 
     def Hsubs(self):
@@ -2680,6 +2701,8 @@ class EquilibriumState(object):
             pass
         T = self.T
         self._Hsubs = [o.T_dependent_property(T) for o in self.EnthalpySublimations]
+        if not self.flasher.scalar:
+            self._Hsubs = array(self._Hsubs)
         return self._Hsubs
 
     def Hvaps(self):
@@ -2706,6 +2729,8 @@ class EquilibriumState(object):
             pass
         T = self.T
         self._Hvaps = [o.T_dependent_property(T) for o in self.EnthalpyVaporizations]
+        if not self.flasher.scalar:
+            self._Hvaps = array(self._Hvaps)
         return self._Hvaps
 
     def sigmas(self):
@@ -2728,6 +2753,8 @@ class EquilibriumState(object):
             pass
         T = self.T
         self._sigmas = [o.T_dependent_property(T) for o in self.SurfaceTensions]
+        if not self.flasher.scalar:
+            self._sigmas = array(self._sigmas)
         return self._sigmas
 
     def Cpgs(self):
@@ -2750,6 +2777,8 @@ class EquilibriumState(object):
             pass
         T = self.T
         self._Cpgs = [o.T_dependent_property(T) for o in self.HeatCapacityGases]
+        if not self.flasher.scalar:
+            self._Cpgs = array(self._Cpgs)
         return self._Cpgs
 
     def Cpls(self):
@@ -2776,6 +2805,8 @@ class EquilibriumState(object):
             pass
         T = self.T
         self._Cpls = [o.T_dependent_property(T) for o in self.HeatCapacityLiquids]
+        if not self.flasher.scalar:
+            self._Cpls = array(self._Cpls)
         return self._Cpls
 
     def Cpss(self):
@@ -2797,6 +2828,8 @@ class EquilibriumState(object):
             pass
         T = self.T
         self._Cpss = [o.T_dependent_property(T) for o in self.HeatCapacitySolids]
+        if not self.flasher.scalar:
+            self._Cpss = array(self._Cpss)
         return self._Cpss
 
 
@@ -2823,6 +2856,8 @@ class EquilibriumState(object):
             pass
         T = self.T
         self._kls = [o.T_dependent_property(T) for o in self.ThermalConductivityLiquids]
+        if not self.flasher.scalar:
+            self._kls = array(self._kls)
         return self._kls
 
     def kgs(self):
@@ -2848,6 +2883,8 @@ class EquilibriumState(object):
             pass
         T = self.T
         self._kgs = [o.T_dependent_property(T) for o in self.ThermalConductivityGases]
+        if not self.flasher.scalar:
+            self._kgs = array(self._kgs)
         return self._kgs
 
     def muls(self):
@@ -2872,6 +2909,8 @@ class EquilibriumState(object):
             pass
         T = self.T
         self._muls = [o.T_dependent_property(T) for o in self.ViscosityLiquids]
+        if not self.flasher.scalar:
+            self._muls = array(self._muls)
         return self._muls
 
     def mugs(self):
@@ -2896,6 +2935,8 @@ class EquilibriumState(object):
             pass
         T = self.T
         self._mugs = [o.T_dependent_property(T) for o in self.ViscosityGases]
+        if not self.flasher.scalar:
+            self._mugs = array(self._mugs)
         return self._mugs
 
     def Vls(self):
@@ -2920,6 +2961,8 @@ class EquilibriumState(object):
             pass
         T = self.T
         self._Vls = [o.T_dependent_property(T) for o in self.VolumeLiquids]
+        if not self.flasher.scalar:
+            self._Vls = array(self._Vls)
         return self._Vls
 
     def Vss(self):
@@ -2942,6 +2985,8 @@ class EquilibriumState(object):
             pass
         T = self.T
         self._Vss = [o.T_dependent_property(T) for o in self.VolumeSolids]
+        if not self.flasher.scalar:
+            self._Vss = array(self._Vss)
         return self._Vss
 
     def value(self, name, phase=None):

@@ -39,7 +39,6 @@ different performance characteristics.
 Implementations which store N^2 matrices for other calculations:
 
 .. autofunction:: a_alpha_aijs_composition_independent
-.. autofunction:: a_alpha_aijs_composition_independent_support_zeros
 .. autofunction:: a_alpha_and_derivatives_full
 
 Compute only the alpha term itself:
@@ -119,7 +118,8 @@ root_two = sqrt(2.)
 root_two_m1 = root_two - 1.0
 root_two_p1 = root_two + 1.0
 
-def a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs):
+def a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs, a_alpha_ijs=None, 
+a_alpha_roots=None, a_alpha_ij_roots_inv=None):
     r'''Calculates the matrix :math:`(a\alpha)_{ij}` as well as the array
     :math:`\sqrt{(a\alpha)_{i}}` and the matrix
     :math:`\frac{1}{\sqrt{(a\alpha)_{i}}\sqrt{(a\alpha)_{j}}}`.
@@ -138,6 +138,12 @@ def a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs):
         EOS attractive terms, [J^2/mol^2/Pa]
     one_minus_kijs : list[list[float]]
         One minus the constant kijs, [-]
+    a_alpha_ijs : list[list[float]]
+        Optional output array, [J^2/mol^2/Pa]
+    a_alpha_roots : list[float]
+        Optional output array, [J/mol/Pa^0.5]
+    a_alpha_ij_roots_inv : list[list[float]]
+        Optional output array, [mol^2*Pa/J^2]
 
     Returns
     -------
@@ -168,14 +174,17 @@ def a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs):
     N = len(a_alphas)
     _sqrt = sqrt
 
-    a_alpha_ijs = [[0.0]*N for _ in range(N)] # numba: comment
-#    a_alpha_ijs = np.zeros((N, N)) # numba: uncomment
-    a_alpha_roots = [0.0]*N
+    if a_alpha_ijs is None:
+        a_alpha_ijs = [[0.0]*N for _ in range(N)] # numba: comment
+#        a_alpha_ijs = np.zeros((N, N)) # numba: uncomment
+    if a_alpha_roots is None:
+        a_alpha_roots = [0.0]*N
     for i in range(N):
         a_alpha_roots[i] = _sqrt(a_alphas[i])
 
-    a_alpha_ij_roots_inv = [[0.0]*N for _ in range(N)] # numba: comment
-#    a_alpha_ij_roots_inv = np.zeros((N, N)) # numba: uncomment
+    if a_alpha_ij_roots_inv is None:
+        a_alpha_ij_roots_inv = [[0.0]*N for _ in range(N)] # numba: comment
+#        a_alpha_ij_roots_inv = np.zeros((N, N)) # numba: uncomment
 
     for i in range(N):
         one_minus_kijs_i = one_minus_kijs[i]
@@ -185,34 +194,14 @@ def a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs):
         a_alpha_i_root_i = a_alpha_roots[i]
         for j in range(i, N):
             term = a_alpha_i_root_i*a_alpha_roots[j]
-            a_alpha_ij_roots_i_inv[j] = a_alpha_ij_roots_inv[j][i] = 1.0/term
+            try:
+                a_alpha_ij_roots_i_inv[j] = a_alpha_ij_roots_inv[j][i] = 1.0/term
+            except:
+                a_alpha_ij_roots_i_inv[j] = 1e100
             a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = one_minus_kijs_i[j]*term
     return a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv
 
 
-def a_alpha_aijs_composition_independent_support_zeros(a_alphas, one_minus_kijs):
-    # Same as the above but works when there are zeros
-    N = len(a_alphas)
-    cmps = range(N)
-
-    a_alpha_ijs = [[0.0] * N for _ in cmps]
-    a_alpha_roots = [a_alpha_i ** 0.5 for a_alpha_i in a_alphas]
-    a_alpha_ij_roots_inv = [[0.0] * N for _ in cmps]
-
-    for i in cmps:
-        one_minus_kijs_i = one_minus_kijs[i]
-        a_alpha_i = a_alphas[i]
-        a_alpha_ijs_is = a_alpha_ijs[i]
-        a_alpha_ij_roots_i_inv = a_alpha_ij_roots_inv[i]
-        a_alpha_i_root_i = a_alpha_roots[i]
-        for j in range(i, N):
-            term = a_alpha_i_root_i * a_alpha_roots[j]
-            try:
-                a_alpha_ij_roots_i_inv[j] = 1.0/term
-            except ZeroDivisionError:
-                a_alpha_ij_roots_i_inv[j] = 1e100
-            a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = one_minus_kijs_i[j] * term
-    return a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv
 
 
 def a_alpha_and_derivatives(a_alphas, T, zs, one_minus_kijs, a_alpha_ijs=None,

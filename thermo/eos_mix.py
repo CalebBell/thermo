@@ -210,7 +210,7 @@ from chemicals.flash_basic import K_value, Wilson_K_value
 
 from thermo import serialize
 from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
-    a_alpha_aijs_composition_independent_support_zeros, a_alpha_and_derivatives, a_alpha_and_derivatives_full,
+    a_alpha_and_derivatives, a_alpha_and_derivatives_full,
     a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms,
     G_dep_lnphi_d_helper, eos_mix_dV_dzs, VDW_lnphis, PR_lnphis, SRK_lnphis, eos_mix_db_dns, PR_translated_ddelta_dns,
     PR_translated_depsilon_dns, PR_depsilon_dns, PR_translated_d2epsilon_dzizjs,
@@ -1043,27 +1043,32 @@ class GCEOSMIX(GCEOS):
             assert same_T
             a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = self.a_alpha_ijs, self.a_alpha_roots, self.a_alpha_ij_roots_inv
         except (AttributeError, AssertionError):
-            try:
-                a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs)
-            except ZeroDivisionError:
-                a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent_support_zeros(a_alphas, one_minus_kijs)
+            if self.scalar:
+                a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv =  [[0.0]*N for _ in range(N)], [0.0]*N, [[0.0]*N for _ in range(N)] 
+            else:
+                a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = zeros((N, N)), zeros(N), zeros((N, N))
+            a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs, a_alpha_ijs=a_alpha_ijs, a_alpha_roots=a_alpha_roots, a_alpha_ij_roots_inv=a_alpha_ij_roots_inv)
             self.a_alpha_ijs, self.a_alpha_roots, self.a_alpha_ij_roots_inv = a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv
         if full:
             try:
                 a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs = a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, one_minus_kijs,
                                                                                                                                     a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv)
+                if not self.scalar:
+                    d2a_alpha_dT2_ijs = array(d2a_alpha_dT2_ijs)
             except:
                 if self.N == 1:
                     a_alpha, da_alpha_dT, d2a_alpha_dT2 = a_alphas[0], da_alpha_dTs[0], d2a_alpha_dT2s[0]
                     d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs = [[d2a_alpha_dT2s[0]]], [[da_alpha_dTs[0]]], [[a_alphas[0]]]
+                    if not self.scalar:
+                        d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs = array(d2a_alpha_dT2_ijs), array(da_alpha_dT_ijs), array(a_alpha_ijs)
 
             self.d2a_alpha_dT2_ijs, self.da_alpha_dT_ijs, self.a_alpha_ijs = d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+            return float(a_alpha), float(da_alpha_dT), float(d2a_alpha_dT2)
         else:
             a_alpha, _, a_alpha_ijs = a_alpha_and_derivatives(a_alphas, T, zs, one_minus_kijs, a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv)
-            self.da_alpha_dT_ijs = []
+            self.da_alpha_dT_ijs = None
             self.a_alpha_ijs = a_alpha_ijs
-            return a_alpha
+            return float(a_alpha)
 
     def a_alpha_and_derivatives_py(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True):
         zs, one_minus_kijs, scalar, N, a_alpha_roots = self.zs, self.one_minus_kijs, self.scalar, self.N, self.a_alpha_roots
@@ -1080,12 +1085,12 @@ class GCEOSMIX(GCEOS):
                         a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots, da_alpha_dTs,
                                                                 d2a_alpha_dT2s, T, zs, one_minus_kijs,
                                                                 a_alpha_j_rows=a_alpha_j_rows, da_alpha_dT_j_rows=da_alpha_dT_j_rows))
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+            return float(a_alpha), float(da_alpha_dT), float(d2a_alpha_dT2)
 
         else:
             a_alpha_j_rows = [0.0]*N if scalar else zeros(N)
             a_alpha, self.a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs, a_alpha_j_rows=a_alpha_j_rows)
-            return a_alpha
+            return float(a_alpha)
 
 
 
@@ -2412,15 +2417,23 @@ class GCEOSMIX(GCEOS):
         return a_alpha_j_rows
 
     def _set_alpha_matrices(self):
-        try:
-            a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(self.a_alphas, self.one_minus_kijs)
-        except ZeroDivisionError:
-            a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent_support_zeros(self.a_alphas, self.one_minus_kijs)
+        N = self.N
+        if not hasattr(self, 'd2a_alpha_dT2s'):
+            self.a_alpha_and_derivatives(self.T, full=True, pure_a_alphas=True)
+        if self.scalar:
+            a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv =  [[0.0]*N for _ in range(N)], [0.0]*N, [[0.0]*N for _ in range(N)] 
+        else:
+            a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = zeros((N, N)), zeros(N), zeros((N, N))
+        a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(self.a_alphas, self.one_minus_kijs,
+                        a_alpha_ijs=a_alpha_ijs,a_alpha_roots=a_alpha_roots, a_alpha_ij_roots_inv=a_alpha_ij_roots_inv)
 
 
         _, _, _, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs = a_alpha_and_derivatives_full(
                 self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s, self.T, self.zs, self.one_minus_kijs,
                 a_alpha_ijs, self.a_alpha_roots, a_alpha_ij_roots_inv)
+        if not self.scalar:
+            d2a_alpha_dT2_ijs = array(d2a_alpha_dT2_ijs)
+            da_alpha_dT_ijs = array(da_alpha_dT_ijs)
         self._d2a_alpha_dT2_ijs = d2a_alpha_dT2_ijs
         self._da_alpha_dT_ijs = da_alpha_dT_ijs
         self._a_alpha_ijs = a_alpha_ijs
@@ -2535,11 +2548,11 @@ class GCEOSMIX(GCEOS):
             return self.da_alpha_dT_j_rows
         except:
             pass
-        zs, N, scalar = self.zs, self.N, self.N
+        zs, N, scalar = self.zs, self.N, self.scalar
         da_alpha_dT_ijs = self.da_alpha_dT_ijs
 
         # Handle the case of attempting to avoid a full alpha derivative matrix evaluation
-        if not da_alpha_dT_ijs:
+        if da_alpha_dT_ijs is None:
             self.resolve_full_alphas()
             da_alpha_dT_ijs = self.da_alpha_dT_ijs
 
@@ -3013,7 +3026,7 @@ class GCEOSMIX(GCEOS):
         This derivative is checked numerically.
         '''
         N = self.N
-        return [[[0.0]*N for _ in range(N)] for _ in range(N)]
+        return [[[0.0]*N for _ in range(N)] for _ in range(N)] if self.scalar else zeros((N, N, N))
 
     @property
     def d3a_alpha_dninjnks(self):
@@ -3045,7 +3058,7 @@ class GCEOSMIX(GCEOS):
         N = self.N
         zs = self.zs
         a_alpha6 = -6.0*a_alpha
-        matrix = []
+        matrix = [[[0.0]*N for _ in range(N)] for _ in range(N)] if self.scalar else zeros((N, N, N))
         for i in range(N):
             l = []
             for j in range(N):
@@ -3054,9 +3067,7 @@ class GCEOSMIX(GCEOS):
                     mid = a_alpha_ijs[i][j] + a_alpha_ijs[i][k] + a_alpha_ijs[j][k]
                     last = sum(zs[m]*(a_alpha_ijs[i][m] + a_alpha_ijs[j][m] + a_alpha_ijs[k][m]) for m in range(N))
                     ele = 4.0*(a_alpha6 - mid + 3.0*last)
-                    row.append(ele)
-                l.append(row)
-            matrix.append(l)
+                    matrix[i][j][k] = ele
         return matrix
 
 
@@ -3086,7 +3097,9 @@ class GCEOSMIX(GCEOS):
             da_alpha_dT_j_rows = self.da_alpha_dT_j_rows
         except:
             da_alpha_dT_j_rows = self._da_alpha_dT_j_rows
-        return [i + i for i in da_alpha_dT_j_rows]
+        if self.scalar:
+            return [i + i for i in da_alpha_dT_j_rows]
+        return 2.0*da_alpha_dT_j_rows
 
     @property
     def da_alpha_dT_dns(self):
@@ -3116,7 +3129,9 @@ class GCEOSMIX(GCEOS):
         except:
             da_alpha_dT_j_rows = self._da_alpha_dT_j_rows
         da_alpha_dT = self.da_alpha_dT
-        return [2.0*(t - da_alpha_dT) for t in da_alpha_dT_j_rows]
+        if self.scalar:
+            return [2.0*(t - da_alpha_dT) for t in da_alpha_dT_j_rows]
+        return 2.0*(da_alpha_dT_j_rows - da_alpha_dT)
 
     @property
     def dna_alpha_dT_dns(self):
@@ -3146,7 +3161,9 @@ class GCEOSMIX(GCEOS):
         except:
             da_alpha_dT_j_rows = self._da_alpha_dT_j_rows
         da_alpha_dT = self.da_alpha_dT
-        return [t + t - da_alpha_dT for t in da_alpha_dT_j_rows]
+        if self.scalar:
+            return [t + t - da_alpha_dT for t in da_alpha_dT_j_rows]
+        return 2.0*da_alpha_dT_j_rows - da_alpha_dT
 
 
     @property
@@ -3173,7 +3190,9 @@ class GCEOSMIX(GCEOS):
             d2a_alpha_dT2_j_rows = self.d2a_alpha_dT2_j_rows
         except:
             d2a_alpha_dT2_j_rows = self._d2a_alpha_dT2_j_rows
-        return [i + i for i in d2a_alpha_dT2_j_rows]
+        if self.scalar:
+            return [i + i for i in d2a_alpha_dT2_j_rows]
+        return 2.0*d2a_alpha_dT2_j_rows
 
     @property
     def d2a_alpha_dT2_dns(self):
@@ -3201,7 +3220,9 @@ class GCEOSMIX(GCEOS):
         except:
             d2a_alpha_dT2_j_rows = self._d2a_alpha_dT2_j_rows
         d2a_alpha_dT2 = self.d2a_alpha_dT2
-        return [2.0*(t - d2a_alpha_dT2) for t in d2a_alpha_dT2_j_rows]
+        if self.scalar:
+            return [2.0*(t - d2a_alpha_dT2) for t in d2a_alpha_dT2_j_rows]
+        return 2.0*(d2a_alpha_dT2_j_rows - d2a_alpha_dT2) 
 
     def dV_dzs(self, Z):
         r'''Calculates the molar volume composition derivative
@@ -3260,9 +3281,11 @@ class GCEOSMIX(GCEOS):
         >>> solve(diff(CUBIC, x), Derivative(V(x), x)) # doctest:+SKIP
         [(-R*T*(V(x)**2 + V(x)*delta(x) + epsilon(x))**3*Derivative(b(x), x) + (V(x) - b(x))**2*(V(x)**2 + V(x)*delta(x) + epsilon(x))**2*Derivative(a \alpha(x), x) - (V(x) - b(x))**2*V(x)**3*a \alpha(x)*Derivative(delta(x), x) - (V(x) - b(x))**2*V(x)**2*a \alpha(x)*delta(x)*Derivative(delta(x), x) - (V(x) - b(x))**2*V(x)**2*a \alpha(x)*Derivative(epsilon(x), x) - (V(x) - b(x))**2*V(x)*a \alpha(x)*delta(x)*Derivative(epsilon(x), x) - (V(x) - b(x))**2*V(x)*a \alpha(x)*epsilon(x)*Derivative(delta(x), x) - (V(x) - b(x))**2*a \alpha(x)*epsilon(x)*Derivative(epsilon(x), x))/(-R*T*(V(x)**2 + V(x)*delta(x) + epsilon(x))**3 + 2*(V(x) - b(x))**2*V(x)**3*a \alpha(x) + 3*(V(x) - b(x))**2*V(x)**2*a \alpha(x)*delta(x) + (V(x) - b(x))**2*V(x)*a \alpha(x)*delta(x)**2 + 2*(V(x) - b(x))**2*V(x)*a \alpha(x)*epsilon(x) + (V(x) - b(x))**2*a \alpha(x)*delta(x)*epsilon(x))]
         '''
+        N = self.N
+        out = [0.0]*N if self.scalar else zeros(N)
         return eos_mix_dV_dzs(self.T, self.P, Z, self.b, self.delta, self.epsilon,
                               self.a_alpha, self.db_dzs, self.ddelta_dzs,
-                              self.depsilon_dzs, self.da_alpha_dzs, self.N)
+                              self.depsilon_dzs, self.da_alpha_dzs, N, out)
 
     def dV_dns(self, Z):
         r'''Calculates the molar volume mole number derivatives
@@ -3344,14 +3367,10 @@ class GCEOSMIX(GCEOS):
         x38 = x17*x9
         x39 = x10*x38
 
-        hessian = []
         N = self.N
+        hessian = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
         for i in range(N):
-
-
-            row = []
             for j in range(N):
-
                 # TODO optimize this - symmetric, others
                 x15 = d_epsilons[i]
                 x16 = d_epsilons[j]
@@ -3390,9 +3409,7 @@ class GCEOSMIX(GCEOS):
                       + x24*x34*x36 - 2*x24*x44 - x28*x44 - x29*x34 + x30*x6
                       + x30*x8 + x32*x37 - x32*x39 - x33*x4*d3 - x35*x36
                       - x39*d4 - x42*x7 - x43*x7)/(x4*x9*(x11*x12 + x11*x7 - x13*x14)))
-                row.append(v)
-
-            hessian.append(row)
+                hessian[i][j] = v
         return hessian
 
     def d2V_dzizjs(self, Z):
@@ -3512,7 +3529,8 @@ class GCEOSMIX(GCEOS):
             Compressibility composition derivative, [-]
         '''
         factor = self.P/(self.T*R)
-        return [dV*factor for dV in self.dV_dzs(Z)]
+        dV_dzs =self.dV_dzs(Z)
+        return [dV*factor for dV in dV_dzs] if self.scalar else dV_dzs*factor
 
     def dZ_dns(self, Z):
         r'''Calculates the compressibility mole number derivatives
@@ -3991,10 +4009,11 @@ class GCEOSMIX(GCEOS):
 
     def _G_dep_lnphi_d_helper(self, Z, dbs, depsilons, ddelta, dVs, da_alphas,
                               G=True):
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
         return G_dep_lnphi_d_helper(self.T, self.P, self.b, self.delta,
                                     self.epsilon, self.a_alpha, self.N,
                                     Z, dbs, depsilons, ddelta, dVs, da_alphas,
-                                    G)
+                                    G, out=out)
 
     def dlnphi_dzs(self, Z):
         r'''Calculates the mixture log *fugacity coefficient* mole fraction
@@ -4182,7 +4201,8 @@ class GCEOSMIX(GCEOS):
         except:
             F = self.G_dep_g
         dG_dns = self.dG_dep_dns(Z)
-        return dns_to_dn_partials(dG_dns, F)
+        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        return dns_to_dn_partials(dG_dns, F, out)
 
     def fugacity_coefficients(self, Z):
         r'''Generic formula for calculating log fugacity coefficients for each
@@ -4470,7 +4490,9 @@ class GCEOSMIX(GCEOS):
         '''
         dns = self.dlnphi_dns(Z)
         d2ns = self.d2lnphi_dninjs(Z)
-        return d2ns_to_dn2_partials(d2ns, dns)
+        ans = d2ns_to_dn2_partials(d2ns, dns)
+        if not self.scalar: ans = array(ans)
+        return ans
 
     def dlnfugacities_dns(self, phase):
         r'''Generic formula for calculating the mole number derivaitves of
@@ -4511,7 +4533,7 @@ class GCEOSMIX(GCEOS):
             except AttributeError:
                 self.fugacities()
                 fugacities = self.fugacities_g
-        dlnfugacities_dns = [list(i) for i in self.dfugacities_dns(phase)]
+        dlnfugacities_dns = array([list(i) for i in self.dfugacities_dns(phase)])
         fugacities_inv = [1.0/fi for fi in fugacities]
         for i in range(N):
             r = dlnfugacities_dns[i]
@@ -4574,15 +4596,14 @@ class GCEOSMIX(GCEOS):
 
         P = self.P
         N = self.N
-        matrix = []
+        matrix = [[0.0]*N for _ in range(N)]  if self.scalar else zeros((N, N))
         for i in range(N):
             phi_P = P*phis[i]
             ziPphi = phi_P*zs[i]
             r = dlnphis_dns[i]
-#            row = [ziPphi*(r[j] - 1.0) for j in range(N)]
-            row = [ziPphi*(dlnphis_dns[j][i] - 1.0) for j in range(N)]
-            row[i] += phi_P
-            matrix.append(row)
+            for j in range(N):
+                matrix[i][j] = ziPphi*(dlnphis_dns[j][i] - 1.0) 
+            matrix[i][i] += phi_P
         return matrix
 
 
@@ -4652,10 +4673,9 @@ class GCEOSMIX(GCEOS):
         b = self.b
         N = self.N
         RT = T*R
-        hess = []
+        hess = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
 
         for i in range(N):
-            row = []
             for j in range(N):
                 x0 = V
                 x3 = b
@@ -4704,8 +4724,7 @@ class GCEOSMIX(GCEOS):
                      + x31*x36 - 3*x43*x9 - 2*x5) - 4*x15*x41*x42/x33**2
         + x19*x20*x21 - x20*x32*x35 + x21*x23*x24 - x24*x35*x38 + x27*x34*x42
         + x34*x40*x41 - x6*(x5 - d2bs[i][j])/x4 + x6*(x7 - dbs[i])*(x8 - dbs[j])/x4**2 - 6*x16*x19*x27/x11**(5/2.))
-                row.append(v)
-            hess.append(row)
+                hess[i][j] = v
 
         return hess
 
@@ -4791,7 +4810,7 @@ class GCEOSMIX(GCEOS):
         x18 = x0*x10
         x19 = x14*catanh(x11*x8**-0.5).real
 
-        jac = []
+        jac = [0.0]*N if self.scalar else zeros(N)
         for i in range(N):
             x20 = ddelta_dns[i]
             x21 = x20*x4 - 2*depsilon_dns[i]
@@ -4800,7 +4819,7 @@ class GCEOSMIX(GCEOS):
             v = (-(-x0*x1*x12*x15*(Vt + db_dns[i]) + x13*x16 - x16*(-x1*dP_dns_Vt[i] + x13)
                 + x18*x19*x8**3*da_alpha_dns[i] - x19*x21*x22*x8**2
                 + x22*x3*x8**(5/2)*(x11*x21 + x8*(2*Vt - x20)))/(x0*x1*x12*x3*x9))
-            jac.append(v)
+            jac[i] = v
         return jac
 
 
@@ -4829,7 +4848,7 @@ class GCEOSMIX(GCEOS):
         dP_dns_Vt = self.dP_dns_Vt(phase)
         d2P_dninjs_Vt = self.d2P_dninjs_Vt(phase)
 
-        hess = [[0.0]*N for i in range(N)]
+        hess = [[0.0]*N for i in range(N)] if self.scalar else zeros((N, N))
 
         for i in range(N):
             for j in range(i+1):
@@ -4944,7 +4963,10 @@ class GCEOSMIX(GCEOS):
             tot += zs[i]*logzs[i]
 
         const = R*self.T/self.P
-        return [mRT*(tot - logzs[i]) + const*dP_dns_Vt[i] for i in range(N)]
+        out = [0.0]*N if self.scalar else zeros(N)
+        for i in range(N):
+            out[i] = mRT*(tot - logzs[i]) + const*dP_dns_Vt[i]
+        return out
 
     def d2Scomp_dninjs(self, phase):
         '''P_ref = symbols('P_ref')
@@ -4960,7 +4982,7 @@ class GCEOSMIX(GCEOS):
 
         logzs = [log(zi) for zi in zs]
 
-        hess = []
+        hess = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
         for i in range(N):
             row = []
             for j in range(N):
@@ -4971,9 +4993,7 @@ class GCEOSMIX(GCEOS):
                     v = RT*(t - 2*logzs[i] - 3 - (zs[i] - 1.0)/zs[i])
 
                 v += const*(d2P_dninjs_Vt[i][j] - dP_dns_Vt[i]*dP_dns_Vt[j]/P)
-
-                row.append(v)
-            hess.append(row)
+                hess[i][j] = v
         return hess
 
 
@@ -4997,9 +5017,9 @@ class GCEOSMIX(GCEOS):
         N, zs = self.N, self.zs
 
         d2A_dep_dninjs_Vt = self.d2A_dep_dninjs_Vt(phase)
-        d2Scomp_dninjs = self.d2Scomp_dninjs
+        d2Scomp_dninjs = self.d2Scomp_dninjs(phase)
 
-        hess = [[0.0]*N for i in range(N)]
+        hess = [[0.0]*N for i in range(N)] if self.scalar else zeros((N, N))
         for i in range(N):
             for j in range(N):
                 hess[i][j] = d2Scomp_dninjs[i][j] + d2A_dep_dninjs_Vt[i][j]
@@ -5009,10 +5029,13 @@ class GCEOSMIX(GCEOS):
     def d2nA_dninjs_Vt(self, phase):
         d2ns = [[i+j for i, j in zip(r1, r2)] for r1, r2 in zip(self.d2A_dep_dninjs_Vt(phase), self.d2Scomp_dninjs(phase))]
         dns = [i+j for i, j in zip(self.dA_dep_dns_Vt(phase), self.dScomp_dns(phase))]
-        return d2ns_to_dn2_partials(d2ns, dns)
+        ans = d2ns_to_dn2_partials(d2ns, dns)
+        if not self.scalar: ans = array(ans)
+        return ans
 
     def d2A_dninjs_Vt_another(self, phase):
         d2ns = [[i+j for i, j in zip(r1, r2)] for r1, r2 in zip(self.d2A_dep_dninjs_Vt(phase), self.d2Scomp_dninjs(phase))]
+        if not self.scalar: d2ns = array(d2ns)
         return d2ns
 #        dns = [i+j for i, j in zip(self.dA_dep_dns_Vt(phase), self.dScomp_dns(phase))]
 #        return d2ns_to_dn2_partials(d2ns, dns)
@@ -5474,9 +5497,9 @@ class GCEOSMIX(GCEOS):
         x25 = 8*x19*x16*x16
 
         t50 = 1.0/(x0*x0)
-
-        dlnphis_dPs = []
-        for i in range(self.N):
+        N = self.N
+        dlnphis_dPs = [0.0]*N if self.scalar else zeros(N)
+        for i in range(N):
             # number dependent calculations
             x1 = dV_dns[i] # Derivative(x0, n)
             x7 = x1*t50
@@ -5492,7 +5515,7 @@ class GCEOSMIX(GCEOS):
             - x13*x21*x25*(2*x1 - x11*x26 - x12*x26 + x23)/x17**2
             + x18*x19*x2*x20*x4 + x2*x5 + x20*x22*da_alpha_dns[i]
             - x22*x24*x25 + x3*x4 - x4/x9 - x6*x7 + x6*(x1 - db_dns[i])/x9**2)
-            dlnphis_dPs.append(dlnphi_dP + dG_dep_dP)
+            dlnphis_dPs[i] = (dlnphi_dP + dG_dep_dP)
         return dlnphis_dPs
 
 
@@ -5597,7 +5620,7 @@ class GCEOSMIX(GCEOS):
         x34 = x7*self.da_alpha_dT
         x35 = 8*x13*x29*x5/x17**2
 
-        dlnphis_dTs = []
+        dlnphis_dTs = [0.0]*N if self.scalar else zeros(N)
         for i in range(N):
             x2 = d2V_dTdns[i]
             x8 = x2*x7
@@ -5617,7 +5640,7 @@ class GCEOSMIX(GCEOS):
             + x13*x28*x8 + x14*x23*x4 + x14*x28*x29 - x20*x35*x37/x25**2
             - x23*x7*da_alpha_dT_dns[i] - x26*x32*x35 - x3*x4*x6 - x30*x33
             - x30*x38 + x33*x34 + x34*x38 + x6*x8 - x2/x12 + x9*(x3 - db_dns[i])/x12**2)
-            dlnphis_dTs.append(dlnphi_dT + dG_dep_dT)
+            dlnphis_dTs[i] = dlnphi_dT + dG_dep_dT
         return dlnphis_dTs
 
     def dlnphis_dzs(self, Z):
@@ -6058,6 +6081,10 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
     
     @property
     def a_alpha_roots(self):
+        return self.zeros1d
+
+    @property
+    def a_alpha_j_rows(self):
         return self.zeros1d
 
     @property
@@ -6960,8 +6987,11 @@ class PRMIX(GCEOSMIX, PR):
         tot = 0.0
         zs = self.zs
         vs = self.d3a_alpha_dT3_vectorized(self.T)
-        for i in range(self.N):
-            tot += zs[i]*vs[i]
+        if self.scalar:
+            for i in range(self.N):
+                tot += zs[i]*vs[i]
+        else:
+            tot += float(dot(zs, vs))
         self._d3a_alpha_dT3 = tot
         return tot
 
@@ -7100,7 +7130,7 @@ class PRMIX(GCEOSMIX, PR):
             Z = self.Z_l
             dZ_dT = self.dZ_dT_l
 
-        bs, b = self.bs, self.b
+        bs, b, N = self.bs, self.b, self.N
 
         T_inv = 1.0/self.T
 
@@ -7152,8 +7182,9 @@ class PRMIX(GCEOSMIX, PR):
         a_alpha_j_rows = self._a_alpha_j_rows
         da_alpha_dT_j_rows = self._da_alpha_dT_j_rows
 
-        d_lnphis_dTs = [x52 + bs[i]*x58 + x50*(x59*a_alpha_j_rows[i] + da_alpha_dT_j_rows[i])
-                        for i in range(self.N)]
+        d_lnphis_dTs = [0.0]*N if self.scalar else zeros(N)
+        for i in range(N):
+            d_lnphis_dTs[i] = x52 + bs[i]*x58 + x50*(x59*a_alpha_j_rows[i] + da_alpha_dT_j_rows[i])
         return d_lnphis_dTs
 
     def dlnphis_dP(self, phase):
@@ -7202,13 +7233,14 @@ class PRMIX(GCEOSMIX, PR):
         a_alpha_j_rows = self._a_alpha_j_rows
 
         x50 = -2.0/a_alpha
-        d_lnphi_dPs = []
-        for i in range(self.N):
+        N = self.N
+        d_lnphi_dPs = [0.0]*N if self.scalar else zeros(N)
+        for i in range(N):
             x3 = bs[i]*x2
             x10 = x50*a_alpha_j_rows[i]
 #            d_lnphi_dP = dZ_dP*x3 + x15*(x10 + x3) + x9
             d_lnphi_dP = x16*x3 + x15*x10 + x9
-            d_lnphi_dPs.append(d_lnphi_dP)
+            d_lnphi_dPs[i] = d_lnphi_dP
         return d_lnphi_dPs
 
 
@@ -7495,17 +7527,18 @@ class PRMIX(GCEOSMIX, PR):
         G_inv = 1.0/G
         logG = log(G)
         C_inv = 1.0/C
-        dlnphis_dxs = []
-#        dlnphis_dxs = [[0.0]*N for _ in range(N)]
+        dlnphis_dxs = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
         t61s = [C_inv*dC_dxi for dC_dxi in dC_dxs]
         for i in range(N):
             dD_dxs_i = dD_dxs[i]
             dE_dxs_i = dE_dxs[i]
             E_G = Eis[i]*G_inv
 #            dlnphis_dxs_i = dlnphis_dxs[i]
-            dlnphis_dxs_i = [t61s[k] + dD_dxs_i[k] + logG*dE_dxs_i[k] + E_G*dG_dxs[k]
-                             for k in range(N)]
-            dlnphis_dxs.append(dlnphis_dxs_i)
+            for k in range(N):
+                dlnphis_dxs[i][k] = t61s[k] + dD_dxs_i[k] + logG*dE_dxs_i[k] + E_G*dG_dxs[k]
+            # dlnphis_dxs_i = [t61s[k] + dD_dxs_i[k] + logG*dE_dxs_i[k] + E_G*dG_dxs[k]
+            #                  for k in range(N)]
+            # dlnphis_dxs.append(dlnphis_dxs_i)
 
 #        return dlnphis_dxs
         return dlnphis_dxs#, dZ_dxs, dA_dxks, dB_dxks, dC_dxs, dD_dxs, dE_dxs, dG_dxs
@@ -8818,7 +8851,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         x52 = (dZ_dT + x2*x4)/(x6 - Z)
 
         # Composition stuff
-        d_lnphis_dTs = []
+        d_lnphis_dTs = [0.0]*N if self.scalar else zeros(N)
 
         a_alpha_j_rows = self.a_alpha_j_rows
 
@@ -8830,7 +8863,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
             x18 = -x16 + 2.0*x7*x9
 
             d_lhphi_dT = dZ_dT*x16 + x15 + x18*(x19 - x20 + x21)
-            d_lnphis_dTs.append(d_lhphi_dT)
+            d_lnphis_dTs[i] = d_lhphi_dT
         return d_lnphis_dTs
 
     def dlnphis_dP(self, phase):
@@ -8881,12 +8914,12 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         x10 = a_alpha*x9*(self.P*dZ_dP*x9 - 1.0)*RT_inv*RT_inv/((x5*x9 + 1.0))
 
         x50 = 2.0/a_alpha
-        d_lnphi_dPs = []
+        d_lnphi_dPs = [0.0]*N if self.scalar else zeros(N)
         for i in range(N):
             x8 = x50*a_alpha_j_rows[i]
             x3 = bs[i]*x2
             d_lnphi_dP = dZ_dP*x3 + x10*(x8 - x3) + x6
-            d_lnphi_dPs.append(d_lnphi_dP)
+            d_lnphi_dPs[i] = d_lnphi_dP
         return d_lnphi_dPs
 
 
@@ -10229,11 +10262,11 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         x15 = x4*(P*x13*(T_inv + x4*dZ_dT) - x14*dZ_dT)/x14
 
         # Composition stuff
-        d_lnphis_dTs = []
+        d_lnphis_dTs = [0.0]*N if self.scalar else zeros(N)
         for i in range(N):
             x1 = (ais[i]*x0)**0.5
             d_lhphi_dT = -bs[i]*x11 + x1*x5 + x1*x8 - x1*x9 + x15
-            d_lnphis_dTs.append(d_lhphi_dT)
+            d_lnphis_dTs[i] = d_lhphi_dT
         return d_lnphis_dTs
 
     def dlnphis_dP(self, phase):
@@ -10285,11 +10318,11 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         x14 = x12*x13 - 1.0
         x15 = -x5*(-x13*(x12*dZ_dP - 1.0) + x14*dZ_dP)/x14
 
-        d_lnphi_dPs = []
+        d_lnphi_dPs = [0.0]*N if self.scalar else zeros(N)
         for i in range(N):
             x1 = (ais[i]*a_alpha)**0.5
             d_lnphi_dP = -bs[i]*x11 - x1*x6 + x1*x8 + x15
-            d_lnphi_dPs.append(d_lnphi_dP)
+            d_lnphi_dPs[i] = d_lnphi_dP
         return d_lnphi_dPs
 
     @property

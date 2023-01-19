@@ -4700,4 +4700,39 @@ def test_virial_easy_B_C_models():
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
     
-# test_virial_easy_B_C_models()
+def test_CEOS_float_scalar_returns():
+    constants = ChemicalConstantsPackage(atom_fractions=[{'C': 0.2, 'H': 0.8}, {'C': 0.25, 'H': 0.75}, {'N': 1.0}], atomss=[{'C': 1, 'H': 4}, {'C': 2, 'H': 6}, {'N': 2}], Carcinogens=[{'International Agency for Research on Cancer': 'Unlisted', 'National Toxicology Program 13th Report on Carcinogens': 'Unlisted'}, {'International Agency for Research on Cancer': 'Unlisted', 'National Toxicology Program 13th Report on Carcinogens': 'Unlisted'}, {'International Agency for Research on Cancer': 'Unlisted', 'National Toxicology Program 13th Report on Carcinogens': 'Unlisted'}], CASs=['74-82-8', '74-84-0', '7727-37-9'], charges=[0, 0, 0], dipoles=[0.0, 0.0, 0.0], formulas=['CH4', 'C2H6', 'N2'], Gfgs=[-50443.48000000001, -31812.45500000001, 0.0], Gfgs_mass=[-3144373.1198332435, -1057980.4011035939, 0.0], GWPs=[84.0, None, None], Hcs=[-890590.0, -1560643.0, 0.0], Hcs_lower=[-802567.008, -1428608.512, 0.0], Hcs_lower_mass=[-50027677.0520232, -47510945.21142012, 0.0], Hcs_mass=[-55514553.25430141, -51901989.55470477, 0.0], Hfgs=[-74534.0, -83780.0, 0.0], Hfgs_mass=[-4646045.556604162, -2786254.566158414, 0.0], Hfus_Tms=[940.0, 2720.0, 710.0], Hfus_Tms_mass=[58594.50483279996, 90458.4915248375, 25345.013457845173], Hsub_Tts=[9669.293756722396, 20607.084758698762, 6747.408965565415], Hsub_Tts_mass=[602731.3614447159, 685325.6624986618, 240863.6211800572], Hvap_298s=[0.0, 5046.4723417249625, 0.0], Hvap_298s_mass=[0.0, 167829.51307141705, 0.0], Hvap_Tbs=[8195.035755115405, 14714.495861923642, 5579.162961175631], Hvap_Tbs_mass=[510834.10867880646, 489357.0217713516, 199160.50751339112], InChI_Keys=['VNWKTOKETHGBQD-UHFFFAOYSA-N', 'OTMSDBZUPAUEDD-UHFFFAOYSA-N', 'IJGRMHOSHXDMSA-UHFFFAOYSA-N'], InChIs=['CH4/h1H4', 'C2H6/c1-2/h1-2H3', 'N2/c1-2'], LFLs=[0.044, 0.024, None], logPs=[1.09, 1.81, 0.67], molecular_diameters=[3.58484, 4.17587, 3.798], MWs=[16.04246, 30.06904, 28.0134], names=['methane', 'ethane', 'nitrogen'], aliases=['methane', 'ethane', 'nitrogen'], omegas=[0.008, 0.098, 0.04], Parachors=[0.0, 1.3583923818817533e-05, 0.0], Pcs=[4599000.0, 4872000.0, 3394387.5], phase_STPs=['g', 'g', 'g'], Psat_298s=[88244896.93274347, 4187706.774463568, 1482500850.2055671], PSRK_groups=[{}, {1: 2}, {}], Pts=[11691.0384868421, 1.1, 12526.9697368421], PubChems=[297, 6324, 947], rhocs=[10141.987829614605, 6872.852233676976, 11173.1843575419], rhocs_mass=[162.7024340770791, 206.66006872852233, 312.9988826815643], rhol_STPs=[17068.386103467983, 10956.94837227306, 20241.159654801213], rhol_STPs_mass=[273.81890132944096, 329.4649188838136, 567.0237018738082], S0gs=[186.3, 229.2, 191.6], S0gs_mass=[11612.932181224078, 7622.458182901749, 6839.583913412866], Sfgs=[-80.79999999999997, -174.29999999999998, 0.0], Sfgs_mass=[-5036.634032436421, -5796.659953227638, 0.0], similarity_variables=[0.3116728980468083, 0.26605438683775734, 0.07139440410660612], Skins=[False, False, False], smiless=['C', 'CC', 'N#N'], StielPolars=[0.0029487754559869295, 0.005340433807338174, 0.009668068349140135], Stockmayers=[167.15, 213.99, 71.4], Tautoignitions=[873.15, 788.15, None], Tbs=[111.65, 184.55, 77.355], Tcs=[190.564, 305.32, 126.2], Tflashs=[None, 244.15, None], Tms=[90.75, 90.3, 63.15], Tts=[90.698, 90.358, 63.154106], TWAs=[(1000.0, 'ppm'), (1000.0, 'ppm'), None], UFLs=[0.17, 0.155, None], UNIFAC_Dortmund_groups=[{}, {1: 2}, {}], UNIFAC_groups=[{}, {1: 2}, {}], Van_der_Waals_areas=[0.0, 424000.0, 0.0], Van_der_Waals_volumes=[0.0, 2.7339374e-05, 0.0], Vcs=[9.86e-05, 0.0001455, 8.95e-05], Vml_STPs=[5.858784737690099e-05, 9.126628747567478e-05, 4.940428399628771e-05], Vml_Tms=[3.554064235691736e-05, 4.615138659130489e-05, 3.2304358441888077e-05], Zcs=[0.2861971332411768, 0.27924206063561996, 0.2895282296391198], UNIFAC_Rs=[0.0, 1.8022, 0.0], UNIFAC_Qs=[0.0, 1.696, 0.0], rhos_Tms=[31553.328003198352, 24239.540703698214, 34791.22154167482], Vms_Tms=[3.1692378055926036e-05, 4.1254907105043886e-05, 2.8742882706838718e-05], rhos_Tms_mass=[506.1930023581894, 728.8597190011299, 974.6204055355536], solubility_parameters=[None, 5303.9732955537775, None], Vml_60Fs=[5.858784737690099e-05, 8.451132407099178e-05, 4.940428399628771e-05], rhol_60Fs=[17068.386103467983, 11832.733790325818, 20241.159654801213], rhol_60Fs_mass=[273.81890132944096, 355.7989456506586, 567.0237018738082], Vmg_STPs=[0.024465403697038125, 0.024465403697038125, 0.024465403697038125], rhog_STPs=[40.87404452357612, 40.87404452357612, 40.87404452357612], rhog_STPs_mass=[0.6557202243076888, 1.2290432797411912, 1.145020958856747], sigma_STPs=[0.0, 0.0004834670555698062, 0.0], sigma_Tms=[0.017051675305804113, 0.03167471378415052, 0.012205391433051088], sigma_Tbs=[0.012924382826948695, 0.016194855330337782, 0.008879611306475167], Hf_STPs=[-74534.0, -83780.0, 0.0], Hf_STPs_mass=[-4646045.556604162, -2786254.566158414, 0.0])
+    kijs = [[0.0, -0.0059, 0.0289], [-0.0059, 0.0, 0.0533], [0.0289, 0.0533, 0.0]]
+
+    HeatCapacityGases = [HeatCapacityGas(CASRN="74-82-8", MW=16.04246, similarity_variable=0.3116728980468083, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 5000.0, [4.8986184697537195e-26, -1.1318000255051273e-21, 1.090383509787202e-17, -5.664719389870236e-14, 1.7090042167602582e-10, -2.9728679808459997e-07, 0.00026565262671378613, -0.054476667747310976, 35.35366254807737])),
+    HeatCapacityGas(CASRN="74-84-0", MW=30.06904, similarity_variable=0.26605438683775734, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1500.0, [-1.0480862560578738e-22, 6.795933556773635e-19, -1.752330995156058e-15, 2.1941287956874937e-12, -1.1560515172055718e-09, -1.8163596179818727e-07, 0.00044831921501838854, -0.038785639211185385, 34.10970704595796])),
+    HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 5000.0, [-2.8946147064530805e-27, 5.818275034669907e-23, -4.519291247965907e-19, 1.609185011831327e-15, -1.9359711365420902e-12, -3.146524643467457e-09, 9.702047239977565e-06, -0.0025354183983147998, 29.203539884897914]))]
+
+
+    eos_kwargs = {'Pcs': np.array([4599000.0, 4872000.0, 3394387.5]), 'Tcs': np.array([190.564, 305.32, 126.2]),
+                'omegas': np.array([0.008, 0.098, 0.04]), 'kijs': np.array(kijs)}
+    gas = CEOSGas(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=HeatCapacityGases)
+    liquid = CEOSLiquid(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=HeatCapacityGases)
+
+    for k, v in gas.eos_mix.__dict__.items():
+        assert type(v) is not np.float64
+
+
+
+    bad_names = ['__dict__', 'constants', 'HeatCapacityGases', 'P_transitions', 'T_transitions', 'eos_class', 'eos_mix'] + dir(constants)
+    for attr in dir(gas):
+        if attr.startswith('__') or attr.startswith('_'):
+            continue
+        if attr in bad_names:
+            continue
+        try:
+            obj = getattr(gas, attr)
+        except:
+            continue
+        try:
+            obj = obj()
+        except:
+            pass
+        if type(obj) is np.float64:
+            raise ValueError("Type should not have a numpy scalar output")
+            

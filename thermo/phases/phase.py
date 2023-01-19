@@ -608,8 +608,11 @@ class Phase(object):
         lnphis = self.lnphis()
         dlnphis_dT = self.dlnphis_dT()
         T, zs = self.T, self.zs
-        for i in range(self.N):
-            S0 -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
+        if self.scalar:
+            for i in range(self.N):
+                S0 -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
+        else:
+            S0 -= float((zs*(R*lnphis + R*T*dlnphis_dT)).sum())
         self._S_phi_consistency = abs(1.0 - S0/self.S())
         return self._S_phi_consistency
 
@@ -657,7 +660,10 @@ class Phase(object):
         zs, T = self.zs, self.T
         G_dep_RT = 0.0
         lnphis = self.lnphis()
-        G_dep_RT = sum(zs[i]*lnphis[i] for i in range(self.N))
+        if self.scalar:
+            G_dep_RT = sum(zs[i]*lnphis[i] for i in range(self.N))
+        else:
+            G_dep_RT = float(dot(zs, lnphis))
         G_dep = G_dep_RT*R*T
         self._G_dep_phi_consistency = abs(1.0 - G_dep/self.G_dep())
         return self._G_dep_phi_consistency
@@ -684,7 +690,10 @@ class Phase(object):
         H_dep_RT2 = 0.0
         dlnphis_dTs = self.dlnphis_dT()
         zs, T = self.zs, self.T
-        H_dep_RT2 = sum([zs[i]*dlnphis_dTs[i] for i in range(self.N)])
+        if self.scalar:
+            H_dep_RT2 = sum([zs[i]*dlnphis_dTs[i] for i in range(self.N)])
+        else:
+            H_dep_RT2 = float(dot(zs, dlnphis_dTs))
         H_dep_recalc = -H_dep_RT2*R*T*T
         H_dep = self.H_dep()
         self._H_dep_phi_consistency = abs(1.0 - H_dep/H_dep_recalc)
@@ -714,8 +723,11 @@ class Phase(object):
         dlnphis_dT = self.dlnphis_dT()
         T, zs = self.T, self.zs
         S_dep = 0.0
-        for i in range(self.N):
-            S_dep -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
+        if self.scalar:
+            for i in range(self.N):
+                S_dep -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
+        else:
+            S_dep -= float((zs*(R*lnphis + R*T*dlnphis_dT)).sum())
         self._S_dep_phi_consistency = abs(1.0 - S_dep/self.S_dep())
         return self._S_dep_phi_consistency
 
@@ -741,7 +753,10 @@ class Phase(object):
             pass
         zs, P = self.zs, self.P
         dlnphis_dP = self.dlnphis_dP()
-        lhs = sum(zs[i]*dlnphis_dP[i] for i in range(self.N))
+        if self.scalar:
+            lhs = sum(zs[i]*dlnphis_dP[i] for i in range(self.N))
+        else:
+            lhs = float(dot(zs, dlnphis_dP))
         Z_calc = lhs*P + 1.0
         V_calc = Z_calc*self.R*self.T/P
         V = self.V()
@@ -766,8 +781,11 @@ class Phase(object):
         H0 = self.H_ideal_gas()
         dlnphis_dT = self.dlnphis_dT()
         T, zs = self.T, self.zs
-        for i in range(self.N):
-            H0 -= R*T*T*zs[i]*dlnphis_dT[i]
+        if self.scalar:
+            for i in range(self.N):
+                H0 -= R*T*T*zs[i]*dlnphis_dT[i]
+        else:
+            H0 -= R*T*T*float(dot(zs, dlnphis_dT))
         return H0
 
     def S_from_phi(self):
@@ -789,8 +807,11 @@ class Phase(object):
         lnphis = self.lnphis()
         dlnphis_dT = self.dlnphis_dT()
         T, zs = self.T, self.zs
-        for i in range(self.N):
-            S0 -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
+        if self.scalar:
+            for i in range(self.N):
+                S0 -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
+        else:
+            S0 -= float((zs*(R*lnphis + R*T*dlnphis_dT)).sum())
         return S0
 
     def V_from_phi(self):
@@ -809,7 +830,10 @@ class Phase(object):
         '''
         zs, P = self.zs, self.P
         dlnphis_dP = self.dlnphis_dP()
-        obj = sum(zs[i]*dlnphis_dP[i] for i in range(self.N))
+        if self.scalar:
+            obj = sum(zs[i]*dlnphis_dP[i] for i in range(self.N))
+        else:
+            obj = float(dot(zs, dlnphis_dP))
         Z = P*obj + 1.0
         return Z*self.R*self.T/P
 
@@ -833,8 +857,11 @@ class Phase(object):
         zs = self.zs
         log_zs = self.log_zs()
         G_crit = 0.0
-        for i in range(self.N):
-            G_crit += zs[i]*log_zs[i]
+        if self.scalar:
+            for i in range(self.N):
+                G_crit += zs[i]*log_zs[i]
+        else:
+            G_crit += float(dot(zs, log_zs))
 
         G_crit = G_crit*R*self.T + self.G_dep()
         return G_crit
@@ -1180,6 +1207,8 @@ class Phase(object):
         N = self.N
         self._dphis_dzs = [[dlnphis_dzs[i][j]*phis[i] for j in range(N)] 
                            for i in range(N)]
+        if not self.scalar:
+            self._dphis_dzs = array(self._dphis_dzs)
         return self._dphis_dzs
     
 
@@ -1248,16 +1277,15 @@ class Phase(object):
         '''
         phis = self.phis()
         dlnphis_dns = self.dlnphis_dns()
-        P, zs = self.P, self.zs, 
-        matrix = []
-        cmps = range(self.N)
-        for i in cmps:
+        P, zs, N = self.P, self.zs, self.N
+        matrix = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
+        for i in range(N):
             phi_P = P*phis[i]
             ziPphi = phi_P*zs[i]
             r = dlnphis_dns[i]
-            row = [ziPphi*(r[j] - 1.0) for j in cmps]
-            row[i] += phi_P
-            matrix.append(row)
+            for j in range(N):
+                matrix[i][j] = ziPphi*(r[j] - 1.0) 
+            matrix[i][i] += phi_P
         return matrix
 
     def dlnfugacities_dns(self):
@@ -1279,6 +1307,8 @@ class Phase(object):
         '''
         fugacities = self.fugacities()
         dlnfugacities_dns = [list(i) for i in self.dfugacities_dns()]
+        if not self.scalar:
+            dlnfugacities_dns = array(dlnfugacities_dns)
         fugacities_inv = [1.0/fi for fi in fugacities]
         cmps = range(self.N)
         for i in cmps:
@@ -2001,7 +2031,7 @@ class Phase(object):
             for zi, Hf in zip(self.zs, self.Hfs):
                 H += zi*Hf
         else:
-            H += dot(self.zs, self.Hfs)
+            H += float(dot(self.zs, self.Hfs))
         self._H_reactive = H
         return H
 
@@ -2029,7 +2059,7 @@ class Phase(object):
             for zi, Sf in zip(self.zs, self.Sfs):
                 S += zi*Sf
         else:
-            S += dot(self.zs, self.Sfs)
+            S += float(dot(self.zs, self.Sfs))
         self._S_reactive = S
         return S
 
@@ -2112,7 +2142,7 @@ class Phase(object):
             for zi, Hf in zip(self.zs, self.Hfs):
                 Hf_ideal_gas += zi*Hf
         else:
-            Hf_ideal_gas = dot(self.zs, self.Hfs)
+            Hf_ideal_gas = float(self.zs, self.Hfs)
         self._H_formation_ideal_gas = Hf_ideal_gas
         return Hf_ideal_gas
 
@@ -2141,7 +2171,7 @@ class Phase(object):
             for zi, Sf in zip(self.zs, self.Sfs):
                 Sf_ideal_gas += zi*Sf
         else:
-            Sf_ideal_gas = dot(self.zs, self.Sfs)
+            Sf_ideal_gas = float(dot(self.zs, self.Sfs))
         self._S_formation_ideal_gas = Sf_ideal_gas
         return Sf_ideal_gas
 
@@ -3864,7 +3894,7 @@ class Phase(object):
             for zi, Cp_int in zip(self.zs, self.Cpig_integrals_pure()):
                 H += zi*Cp_int
         else:
-            H = dot(self.zs, self.Cpig_integrals_pure())
+            H = float(dot(self.zs, self.Cpig_integrals_pure()))
         self._H_ideal_gas = H
         return H
 
@@ -3896,8 +3926,8 @@ class Phase(object):
             for i in cmps:
                 S += zs[i]*Cpig_integrals_over_T_pure[i]
         else:
-            S -= R*dot(zs, log_zs)
-            S += dot(zs, Cpig_integrals_over_T_pure)
+            S -= R*float(dot(zs, log_zs))
+            S += float(dot(zs, Cpig_integrals_over_T_pure))
         self._S_ideal_gas = S
         return S
 
@@ -3923,7 +3953,7 @@ class Phase(object):
             for i in range(self.N):
                 Cp += zs[i]*Cpigs_pure[i]
         else:
-            Cp = dot(zs, Cpigs_pure)
+            Cp = float(dot(zs, Cpigs_pure))
         self._Cp_ideal_gas = Cp
         return Cp
 
@@ -4475,7 +4505,7 @@ class Phase(object):
             for i in range(self.N):
                 MW += zs[i]*MWs[i]
         else:
-            MW = dot(zs, MWs)
+            MW = float(dot(zs, MWs))
         self._MW = MW
         return MW
 
@@ -5663,7 +5693,7 @@ class Phase(object):
         if self.scalar:
             self._partial_pressures = [zi*P for zi in self.zs]
         else:
-            self._partial_pressures = zs*P
+            self._partial_pressures = self.zs*P
         return self._partial_pressures
 
 
@@ -5680,7 +5710,7 @@ class IdealGasDeparturePhase(Phase):
             for zi, Cp_int in zip(self.zs, self.Cpig_integrals_pure()):
                 H += zi*Cp_int
         else:
-            H += dot(self.zs, self.Cpig_integrals_pure())
+            H += float(dot(self.zs, self.Cpig_integrals_pure()))
 
         self._H = H
         return H
@@ -5702,8 +5732,8 @@ class IdealGasDeparturePhase(Phase):
             for i in cmps:
                 S += zs[i]*Cpig_integrals_over_T_pure[i]
         else:
-            S -= R*dot(zs, log_zs)
-            S += dot(zs, Cpig_integrals_over_T_pure)
+            S -= R*float(dot(zs, log_zs))
+            S += float(dot(zs, Cpig_integrals_over_T_pure))
         S -= R*log(P*P_REF_IG_INV)
         S += self.S_dep()
         self._S = S
@@ -5722,7 +5752,7 @@ class IdealGasDeparturePhase(Phase):
             for i in range(self.N):
                 Cp += zs[i]*Cpigs_pure[i]
         else:
-            Cp = dot(zs, Cpigs_pure)
+            Cp = float(dot(zs, Cpigs_pure))
         Cp += self.Cp_dep()
         self._Cp = Cp
         return Cp
@@ -5769,7 +5799,7 @@ class IdealGasDeparturePhase(Phase):
             for i in range(self.N):
                 dCp += zs[i]*dCpigs_pure[i]
         else:
-            dCp = dot(zs, dCpigs_pure)
+            dCp = float(dot(zs, dCpigs_pure))
         dCp += self.d2H_dep_dT2()
         self._d2H_dT2 = dCp
         return dCp
@@ -5781,7 +5811,7 @@ class IdealGasDeparturePhase(Phase):
             for i in range(self.N):
                 dCp += zs[i]*dCpigs_pure[i]
         else:
-            dCp = dot(zs, dCpigs_pure)
+            dCp = float(dot(zs, dCpigs_pure))
         return dCp + self.d2H_dep_dT2_V()
 
 
