@@ -25,9 +25,15 @@ SOFTWARE.
 __all__ = ['IdealGas']
 
 from fluids.constants import R
+from fluids.numerics import numpy as np
 from chemicals.utils import log
 from thermo.heat_capacity import HeatCapacityGas
 from thermo.phases.phase import Phase
+
+try:
+    ndarray, array, zeros, ones = np.ndarray, np.array, np.zeros, np.ones
+except:
+    pass
 
 class IdealGas(Phase):
     r'''Class for representing an ideal gas as a phase object. All departure
@@ -85,19 +91,22 @@ class IdealGas(Phase):
         self.HeatCapacityGases = HeatCapacityGases
         self.Hfs = Hfs
         self.Gfs = Gfs
+        self.scalar = scalar = not any(type(v) is ndarray for v in (zs, Hfs, Gfs))
+
         if Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
-            self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
+            T_ref_inv = 1.0/298.15
+            self.Sfs = [(Hfi - Gfi)*T_ref_inv for Hfi, Gfi in zip(Hfs, Gfs)]
         else:
             self.Sfs = None
 
         if zs is not None:
             self.N = N = len(zs)
-            self.zeros1d = [0.0]*N
-            self.ones1d = [1.0]*N
+            self.zeros1d = [0.0]*N if scalar else zeros(N)
+            self.ones1d = [1.0]*N if scalar else ones(N)
         elif HeatCapacityGases is not None:
             self.N = N = len(HeatCapacityGases)
-            self.zeros1d = [0.0]*N
-            self.ones1d = [1.0]*N
+            self.zeros1d = [0.0]*N if scalar else zeros(N)
+            self.ones1d = [1.0]*N if scalar else ones(N)
         if zs is not None:
             self.zs = zs
         if T is not None:
@@ -254,6 +263,7 @@ class IdealGas(Phase):
         new.N = self.N
         new.zeros1d = self.zeros1d
         new.ones1d = self.ones1d
+        new.scalar = self.scalar
 
         new.HeatCapacityGases = self.HeatCapacityGases
         new.Hfs = self.Hfs
@@ -284,6 +294,7 @@ class IdealGas(Phase):
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
+        new.scalar = self.scalar
 
         return new
 
