@@ -786,22 +786,18 @@ def G_dep_lnphi_d_helper(T, P, b, delta, epsilon, a_alpha, N,
     Z, dbs, depsilons, ddelta, dVs, da_alphas, G, out=None):
     if out is None:
         out = [0.0]*N
-
-    x3 = b
-    x4 = delta
-    x5 = epsilon
     RT = R*T
     x0 = V = Z*RT/P
 
     x2 = 1.0/(RT)
-    x6 = x4*x4 - 4.0*x5
+    x6 = delta*delta - 4.0*epsilon
     if x6 == 0.0:
         # VDW has x5 as zero as delta, epsilon = 0
         x6 = 1e-100
     x7 = 1.0/sqrt(x6)
     x8 = a_alpha
     x9 = x0 + x0
-    x10 = x4 + x9
+    x10 = delta + x9
     x11 = x2 + x2
     x12 = x11*catanh(x10*x7).real
     x15 = x7*x7
@@ -816,8 +812,8 @@ def G_dep_lnphi_d_helper(T, P, b, delta, epsilon, a_alpha, N,
     t2 = x11*x15*x8/(x10*x10*x15 - 1.0)
     t3 = x12*x8*x15*x7
     t4 = x12*x7
-    t5 = 1.0/(x0 - x3)
-    t6 = x4 + x9
+    t5 = 1.0/(x0 - b)
+    t6 = delta + x9
 
     if G:
         t1 *= RT
@@ -829,7 +825,7 @@ def G_dep_lnphi_d_helper(T, P, b, delta, epsilon, a_alpha, N,
     c0 = t1 + t2*2.0 - t5
     for i in range(N):
         x13 = ddelta_dns[i]
-        x14 = x13*x4 - 2.0*depsilon_dns[i]
+        x14 = x13*delta - 2.0*depsilon_dns[i]
         x16 = x14*x15
         diff = (dV_dns[i]*c0 - t4*da_alpha_dns[i] + t5*db_dns[i] 
                 + t2*(x13 - x16*t6) + x14*t3 )

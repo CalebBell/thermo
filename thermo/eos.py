@@ -321,8 +321,8 @@ def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
         x11 = 0.0
     x11_half = 0.5*x11
 
-#    arg = x11*x5
-#    arg2 = (arg + 1.0)/(arg - 1.0)
+#    hard_input = x11*x5
+#    arg2 = (hard_input + 1.0)/(hard_input - 1.0)
 #    fancy = 0.25*log(arg2*arg2)
 #    x12 = 2.*x11*fancy # Possible to use a catan, but then a complex division and sq root is needed too
     hard_input = x11*x5    
@@ -436,11 +436,9 @@ def eos_lnphi(T, P, V, b, delta, epsilon, a_alpha):
     x0 = 1.0/sqrt(delta*delta - 4.0*epsilon)
 
     arg = 2.0*V*x0 + delta*x0
-    fancy = catanh(arg).real
+    # fancy = catanh(arg).real
 
-# Possible optimization, numerical analysis required.
-#     arg2 = (arg + 1.0)/(arg - 1.0)
-#     fancy = 0.25*log(arg2*arg2)
+    fancy = 0.25*log1p(4.*arg/((1.0-arg)*(1.0-arg)))
 
     return (P*V*RT_inv + log(RT/(P*(V-b))) - 1.0
             - 2.0*a_alpha*fancy*RT_inv*x0)
