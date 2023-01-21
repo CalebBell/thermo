@@ -1064,7 +1064,7 @@ def SRK_translated_ddelta_dns(b0s, cs, delta, N, out=None):
     return out
 
 
-def SRK_translated_depsilon_dns(b0s, cs, b, c, N, out=None):
+def SRK_translated_depsilon_dns(b, c, b0s, cs, N, out=None):
     if out is None:
         out = [0.0]*N
     b0 = b + c
@@ -1450,7 +1450,7 @@ def SRK_translated_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, b0s, bs, cs
     
     db_dns = eos_mix_db_dns(b, bs, N, out=None)
     da_alpha_dns = eos_mix_da_alpha_dns(a_alpha, a_alpha_j_rows, N, out=None)
-    depsilon_dns = SRK_translated_depsilon_dns(b0s, cs, b, c, N, out=None)
+    depsilon_dns = SRK_translated_depsilon_dns(b, c, b0s, cs, N, out=None)
     ddelta_dns = SRK_translated_ddelta_dns(b0s, cs, delta, N, out=None)
 
     

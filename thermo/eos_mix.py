@@ -9238,7 +9238,7 @@ class SRKMIXTranslated(SRKMIX):
         This derivative is checked numerically.
         '''
         N = self.N
-        return SRK_translated_depsilon_dns(self.b0s, self.cs, self.b, self.c, N, out=[0.0]*N if self.scalar else zeros(N))
+        return SRK_translated_depsilon_dns(self.b, self.c, self.b0s, self.cs, N, out=[0.0]*N if self.scalar else zeros(N))
 
     @property
     def d2epsilon_dzizjs(self):
