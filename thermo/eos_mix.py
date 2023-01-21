@@ -8085,7 +8085,7 @@ class PRMIXTranslated(PRMIX):
         This derivative is checked numerically.
         '''
         N = self.N
-        return PR_translated_depsilon_dzs(self.epsilon, self.c, self.b, self.b0s, self.cs, N,
+        return PR_translated_depsilon_dzs(self.c, self.b, self.b0s, self.cs, N,
                                           [0.0]*N if self.scalar else zeros(N))
 
     @property
@@ -8108,9 +8108,9 @@ class PRMIXTranslated(PRMIX):
         -----
         This derivative is checked numerically.
         '''
-        epsilon, c, b = self.epsilon, self.c, self.b
+        c, b = self.c, self.b
         N, b0s, cs = self.N, self.b0s, self.cs
-        return PR_translated_depsilon_dns(epsilon, c, b, b0s, cs, N, out=([0.0]*N if self.scalar else zeros(N)))
+        return PR_translated_depsilon_dns(b, c, b0s, cs, N, out=([0.0]*N if self.scalar else zeros(N)))
 
     @property
     def d2epsilon_dzizjs(self):
