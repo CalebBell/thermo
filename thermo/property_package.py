@@ -47,7 +47,7 @@ try:
 except:
     pass
 from fluids.numerics import (OscillationError, UnconvergedError,
-                             ridder, derivative, caching_decorator,
+                             derivative, caching_decorator,
                              newton, linspace, logspace,
                              brenth, py_solve,
                              oscillation_checker, secant, damping_maintain_sign,
@@ -2454,7 +2454,7 @@ class GammaPhi(PropertyPackage):
             V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs)
             assert abs(V_over_F-VF) < 1E-6
         except:
-            T = ridder(self._P_VF_err, min(self.Tms), min(self.Tcs), args=(P, VF, zs))
+            T = brenth(self._P_VF_err, min(self.Tms), min(self.Tcs), args=(P, VF, zs))
             V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs)
         return 'l/g', xs, ys, V_over_F, T
 
@@ -2645,8 +2645,7 @@ class GammaPhi(PropertyPackage):
         # needed in gammas temperature derivatives
         dGE_dT = self.dGE_dT(T, xs)
         d2GE_dTdns = self.d2GE_dTdns(T, xs)
-        out = [0.0]*self.N if self.scalar else zeros(self.N)
-        return dns_to_dn_partials(d2GE_dTdns, dGE_dT, out)
+        return dns_to_dn_partials(d2GE_dTdns, dGE_dT)
 
     def dHE_dT(self, T, xs):
         # excess enthalpy temperature derivative
@@ -6169,7 +6168,7 @@ class GceosBase(Ideal):
 
         raise ValueError("Overall bubble P loop could not find a convergent method")
         Tmin, Tmax = self._bracket_bubble_T(P=P, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
-        T = ridder(self._err_bubble_T, Tmin, Tmax, args=(P, zs, maxiter, xtol, info))
+        T = brenth(self._err_bubble_T, Tmin, Tmax, args=(P, zs, maxiter, xtol, info))
         return info[0], info[1], info[5], T, info[3], info[4]
 
 
@@ -6509,13 +6508,13 @@ class GceosBase(Ideal):
                 pass
 
         Tmin, Tmax = self._bracket_dew_T(P=P, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
-        T_calc = ridder(self._err_dew_T, Tmin, Tmax, args=(P, zs, maxiter, xtol, info))
+        T_calc = brenth(self._err_dew_T, Tmin, Tmax, args=(P, zs, maxiter, xtol, info))
         val = self._err_dew_T(T_calc, P, zs, maxiter, xtol)
         if abs(val) < 1:
             T = T_calc
         else:
             Tmin, Tmax = self._bracket_dew_T(P=P, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial, check=True)
-            T=  ridder(self._err_dew_T, Tmin, Tmax, args=(P, zs, maxiter, xtol, info))
+            T=  brenth(self._err_dew_T, Tmin, Tmax, args=(P, zs, maxiter, xtol, info))
         return info[0], info[1], info[5], T
 
 
@@ -6792,7 +6791,7 @@ class GceosBase(Ideal):
 
         raise ValueError("Overall bubble P loop could not find a convergent method")
         Pmin, Pmax = self._bracket_dew_P(T=T, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
-        P = ridder(self._err_dew_P, Pmin, Pmax, args=(T, zs, maxiter, xtol, info))
+        P = brenth(self._err_dew_P, Pmin, Pmax, args=(T, zs, maxiter, xtol, info))
         return info[0], info[1], info[5], P, info[3], info[4]
 
 
@@ -7088,7 +7087,7 @@ class GceosBase(Ideal):
 
         raise ValueError("Overall bubble P loop could not find a convergent method")
         Pmin, Pmax = self._bracket_bubble_P(T=T, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
-        P = ridder(self._err_bubble_P, Pmin, Pmax, args=(T, zs, maxiter, xtol, info))
+        P = brenth(self._err_bubble_P, Pmin, Pmax, args=(T, zs, maxiter, xtol, info))
         return info[0], info[1], info[5], P, info[3], info[4]
 
 
