@@ -2837,7 +2837,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
         # for the secant method, only set the one variable
         if fprime:
             iter_var_val = newton(to_solve2, guess, xtol=xtol, ytol=ytol, fprime=True,
-                                  maxiter=maxiter, bisection=True, low=min_bound, high=high, gap_detection=False)
+                                  maxiter=maxiter, bisection=True, low=min_bound, high=high)
         else:
             iter_var_val = secant(to_solve2, guess, xtol=xtol, ytol=ytol,
                                   maxiter=maxiter, bisection=True, low=min_bound, high=high)

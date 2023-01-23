@@ -2147,7 +2147,7 @@ class GCEOS(object):
                       determinant_zeros=True, phase_ID_transition=True,
                       base_property='V', base_min=None, base_max=None,
                       base_selection='Gmin'):
-        r'''Method to create a plot of the special curves of a fluid -
+        r'''Method to create a plot of the special curves of a pure fluid -
         vapor pressure, determinant zeros, pseudo critical point,
         and mechanical critical point.
 
@@ -2155,6 +2155,9 @@ class GCEOS(object):
         has the minimum Gibbs energy (by default). If shown with a sufficient
         number of points, the curve between vapor and liquid should be shown
         smoothly.
+
+        When called on a mixture, this method does not have physical
+        significance for the `Psat` term.
 
         Parameters
         ----------
@@ -2222,8 +2225,8 @@ class GCEOS(object):
         g_prop = base_property + '_g'
         base_positive = True
 
-        # Are we an ideal-gas?
-        if self.Zc == 1.0:
+        # Are we an ideal-gas or multicomponent?
+        if self.Zc == 1.:
             phase_ID_transition = False
             Psat = False
 
@@ -4538,7 +4541,10 @@ class GCEOS(object):
         >>> high_T.P, high_T.PIP_g
         (12536704.763, 0.9999999999)
         '''
-        subcritical = T < self.Tc
+        try:
+            subcritical = T < self.Tc
+        except:
+            subcritical = T < self.pseudo_Tc
         if subcritical:
             return low_P_limit
         else:
