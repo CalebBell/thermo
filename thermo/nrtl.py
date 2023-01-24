@@ -317,7 +317,7 @@ def nrtl_dGE_dT(N, T, xs, xj_Gs_taus_jis, xj_Gs_jis_inv, xj_dGs_dT_jis, xj_taus_
     dGE_dT *= R
     return dGE_dT
 
-def nrtl_d2GE_dT2(N, T, xs, taus, dtaus_dT, d2taus_dT2, alphas, dalphas_dT, Gs, dGs_dT, d2Gs_dT2):
+def nrtl_d2GE_dT2(N, T, xs, taus, dtaus_dT, d2taus_dT2, Gs, dGs_dT, d2Gs_dT2):
     tot = 0.0
     for i in range(N):
         sum1 = 0.0
@@ -376,7 +376,7 @@ def nrtl_dGE_dxs(N, T, xs, taus, Gs, xj_Gs_taus_jis, xj_Gs_jis_inv, dGE_dxs=None
         dGE_dxs[k] = tot*RT
     return dGE_dxs
 
-def nrtl_d2GE_dxixjs(N, T, xs, taus, alphas, Gs, xj_Gs_taus_jis, xj_Gs_jis_inv, d2GE_dxixjs=None):
+def nrtl_d2GE_dxixjs(N, T, xs, taus, Gs, xj_Gs_taus_jis, xj_Gs_jis_inv, d2GE_dxixjs=None):
     if d2GE_dxixjs is None:
         d2GE_dxixjs = [[0.0]*N for _ in range(N)] # numba: delete
 #        d2GE_dxixjs = zeros((N, N)) # numba: uncomment
@@ -1415,7 +1415,7 @@ class NRTL(GibbsExcess):
         dGs_dT = self.dGs_dT()
         d2Gs_dT2 = self.d2Gs_dT2()
 
-        self._d2GE_dT2 = d2GE_dT2 = nrtl_d2GE_dT2(N, T, xs, taus, dtaus_dT, d2taus_dT2, alphas, dalphas_dT, Gs, dGs_dT, d2Gs_dT2)
+        self._d2GE_dT2 = d2GE_dT2 = nrtl_d2GE_dT2(N, T, xs, taus, dtaus_dT, d2taus_dT2, Gs, dGs_dT, d2Gs_dT2)
         return d2GE_dT2
 
     def dGE_dxs(self):
@@ -1559,7 +1559,7 @@ class NRTL(GibbsExcess):
         else:
             d2GE_dxixjs = zeros((N, N))
 
-        self._d2GE_dxixjs = nrtl_d2GE_dxixjs(N, T, xs, taus, alphas, Gs, xj_Gs_taus_jis, xj_Gs_jis_inv, d2GE_dxixjs)
+        self._d2GE_dxixjs = nrtl_d2GE_dxixjs(N, T, xs, taus, Gs, xj_Gs_taus_jis, xj_Gs_jis_inv, d2GE_dxixjs)
         return d2GE_dxixjs
 
 
