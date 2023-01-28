@@ -3961,6 +3961,7 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
 
     sum_zs_test = sum_zs_test_inv = 1.0
     converged = False
+    dead = False
     for _ in range(maxiter):
 #        test_phase = test_phase.to(T=T, P=P, zs=zs_test)
         fugacities_test = test_phase.to(T=T, P=P, zs=zs_test).fugacities_lowest_Gibbs()
@@ -4005,9 +4006,6 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
         for i in range(N):
             if isnan(zs_test[i]):
                 dead = True
-        for i in range(N):
-            if isinf(zs_test[i]):
-                dead = True
         if dead:
             break
 
@@ -4030,10 +4028,13 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
                 # Converged to trivial solution so closely the math does not work
                 V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = 0.0, zs, zs
         else:
-            try:
-                V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = flash_inner_loop(zs, Ks)
-            except:
-                # Converged to trivial solution so closely the math does not work
+            if not isinf(err) and not dead:
+                try:
+                    V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = flash_inner_loop(zs, Ks)
+                except:
+                    # Converged to trivial solution so closely the math does not work
+                    V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = 0.0, zs, zs
+            else:
                 V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = 0.0, zs, zs
 
         # Calculate the dG of the feed
