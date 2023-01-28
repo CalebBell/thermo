@@ -943,7 +943,8 @@ class Joback(object):
         try:
             if self.calculated_Cpig_coeffs is None:
                 self.calculated_Cpig_coeffs = Joback.Cpig_coeffs(self.counts)
-            return horner(reversed(self.calculated_Cpig_coeffs), T)
+            coeffs = list(reversed(self.calculated_Cpig_coeffs))
+            return horner(coeffs, T)
         except:
             return None
 

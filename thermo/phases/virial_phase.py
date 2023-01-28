@@ -1146,7 +1146,7 @@ class VirialGas(IdealGasDeparturePhase):
             dG_dep_dns = [0.0]*N
         else:
             dG_dep_dns = zeros(N)
-        self._dG_dep_dns = dG_dep_dns = dxs_to_dns(dxs=self.dG_dep_dzs(), xs=self.zs, dns=dG_dep_dns)
+        self._dG_dep_dns = dG_dep_dns = dxs_to_dns(self.dG_dep_dzs(), self.zs, dG_dep_dns)
         return dG_dep_dns 
 
     
@@ -1162,7 +1162,7 @@ class VirialGas(IdealGasDeparturePhase):
         else:
             dnG_dep_dns = zeros(N)
         
-        self._dnG_dep_dns = dnG_dep_dns = dxs_to_dn_partials(dxs=self.dG_dep_dzs(), xs=self.zs, F=self.G_dep(), partial_properties=dnG_dep_dns)
+        self._dnG_dep_dns = dnG_dep_dns = dxs_to_dn_partials(self.dG_dep_dzs(), self.zs, self.G_dep(), dnG_dep_dns)
         return dnG_dep_dns 
 
     def lnphi(self):
@@ -2385,7 +2385,7 @@ class VirialGas(IdealGasDeparturePhase):
             dB_dns = [0.0]*N
         else:
             dB_dns = zeros(N)
-        self._dB_dns = dB_dns = dxs_to_dns(dxs=self.dB_dzs(), xs=self.zs, dns=dB_dns)
+        self._dB_dns = dB_dns = dxs_to_dns(self.dB_dzs(), self.zs, dB_dns)
         return dB_dns 
         
     def dnB_dns(self):
@@ -2408,7 +2408,7 @@ class VirialGas(IdealGasDeparturePhase):
         else:
             dnB_dns = zeros(N)
         
-        self._dnB_dns = dnB_dns = dxs_to_dn_partials(dxs=self.dB_dzs(), xs=self.zs, F=self.B(), partial_properties=dnB_dns)
+        self._dnB_dns = dnB_dns = dxs_to_dn_partials(self.dB_dzs(), self.zs, self.B(), dnB_dns)
         return dnB_dns 
 
     def dC_dzs(self):
@@ -2566,7 +2566,7 @@ class VirialGas(IdealGasDeparturePhase):
             dC_dns = [0.0]*N
         else:
             dC_dns = zeros(N)
-        self._dC_dns = dC_dns = dxs_to_dns(dxs=self.dC_dzs(), xs=self.zs, dns=dC_dns)
+        self._dC_dns = dC_dns = dxs_to_dns(self.dC_dzs(), self.zs, dC_dns)
         return dC_dns 
         
     def dnC_dns(self):
@@ -2589,7 +2589,7 @@ class VirialGas(IdealGasDeparturePhase):
         else:
             dnC_dns = zeros(N)
         
-        self._dnC_dns = dnC_dns = dxs_to_dn_partials(dxs=self.dC_dzs(), xs=self.zs, F=self.C(), partial_properties=dnC_dns)
+        self._dnC_dns = dnC_dns = dxs_to_dn_partials(self.dC_dzs(), self.zs, self.C(), dnC_dns)
         return dnC_dns 
     
     

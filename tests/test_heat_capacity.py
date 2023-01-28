@@ -593,7 +593,7 @@ def test_HeatCapacityLiquid_integrals():
 def test_HeatCapacitySolidMixture():
     MWs = [107.8682, 195.078]
     ws = [0.95, 0.05]
-    zs = ws_to_zs(ws=ws, MWs=MWs)
+    zs = ws_to_zs(ws, MWs)
     T = 298.15
     P = 101325.0
 #    m = Mixture(['silver', 'platinum'], ws)
@@ -647,7 +647,7 @@ def test_HeatCapacityLiquidMixture_aqueous():
     Cp = obj(T=301.5, P=101325.0, ws=[.9, .1])
     assert_close(Cp, 72.29666542719279, rtol=1e-5)
     ws = [.9, .1]
-    zs = ws_to_zs(ws=ws, MWs=[18.01528, 58.44277])
+    zs = ws_to_zs(ws, [18.01528, 58.44277])
 
     Cp = obj.calculate(T=301.5, P=101325.0, zs=zs, ws=[.9, .1], method=LINEAR)
     assert_close(Cp, 77.08377446120679, rtol=1e-7)
@@ -656,7 +656,7 @@ def test_HeatCapacityLiquidMixture_aqueous():
 def test_HeatCapacityLiquidMixture():
     ws = [.9, .1]
     MWs = [92.13842, 142.28168]
-    zs = ws_to_zs(ws=ws, MWs=MWs)
+    zs = ws_to_zs(ws, MWs)
 #    m = Mixture(['toluene', 'decane'], ws=ws, T=300)
 
     HeatCapacityLiquids = [HeatCapacityLiquid(CASRN="108-88-3", MW=92.13842, similarity_variable=0.16279853724428964, Tc=591.75, omega=0.257, extrapolation="linear", method="POLY_FIT", poly_fit=(162.0, 570.0, [7.171090290089724e-18, -1.8175720506858e-14, 1.9741936612209287e-11, -1.1980168324612502e-08, 4.438245228007343e-06, -0.0010295403891115538, 0.1475922271028815, -12.06203901868023, 565.3058820511594])),

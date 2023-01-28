@@ -10625,9 +10625,13 @@ class PRSVMIX(PRMIX, PRSV):
             solution = 'g' if (only_g and not only_l) else ('l' if only_l else None)
             self.T = self.solve_T(self.P, self.V, solution=solution)
         else:
-            self.kappa1s = [(0 if (T/Tc > 0.7 and self.kappa1_Tr_limit) else kappa1) for kappa1, Tc in zip(kappa1s, Tcs)]
+            self.kappa1s = [(0.0 if (T/Tc > 0.7 and self.kappa1_Tr_limit) else kappa1) for kappa1, Tc in zip(kappa1s, Tcs)]
+            if not scalar:
+                self.kappa1s = array(self.kappa1s)
 
         self.kappas = [kappa0 + kappa1*(1 + (self.T/Tc)**0.5)*(0.7 - (self.T/Tc)) for kappa0, kappa1, Tc in zip(self.kappa0s, self.kappa1s, self.Tcs)]
+        if not scalar:
+            self.kappas = array(self.kappas)
 
         self.solve(only_l=only_l, only_g=only_g)
         if fugacities:

@@ -1424,6 +1424,7 @@ def test_PRMIXTranslatedConsistent_TV_epsilon_consistency_with_fast():
     recalc = flasher.flash(T=base.T, V=base.phases[0].V_iter(), zs=zs)
     assert_close(base.P, recalc.P, rtol=1e-7)
 
+@pytest.mark.mpmath
 def test_SRKMIXTranslatedConsistent_PV_consistency_issue():
 
     T, P, zs = 1.0001e-3, 1.1e-2, [1.0]

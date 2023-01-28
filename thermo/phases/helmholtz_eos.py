@@ -23,7 +23,7 @@ SOFTWARE.
 '''
 __all__ = ['HelmholtzEOS',]
 
-from chemicals.utils import log
+from chemicals.utils import log, isnan
 from thermo.phases.phase import Phase
 
 class HelmholtzEOS(Phase):
@@ -557,67 +557,100 @@ class HelmholtzEOS(Phase):
 
     def dB_virial_dT(self):
         tau = self.tau
+        do_zero = False
         try:
             f0 = self._d2Ar_ddeltadtau_func(tau, 0.0)
         except:
+            do_zero = True
+        if do_zero or isnan(f0):
             f0 = self._d2Ar_ddeltadtau_func(tau, 1e-20)
         return -tau*tau*f0/(self.rho_red*self.T_red)
 
     def d2B_virial_dT2(self):
         T, T_red, tau = self.T, self.T_red, self.tau
-
+        fail = False
         try:
             f0 = self._d2Ar_ddeltadtau_func(tau, 0.0)
         except:
+            fail = True
+        if fail or isnan(f0):
             f0 = self._d2Ar_ddeltadtau_func(tau, 1e-20)
+        
+        fail = False
         try:
             f1 = self._d3Ar_ddeltadtau2_func(tau, 0.0)
         except:
+            fail = True
+        if fail or isnan(f1):
             f1 = self._d3Ar_ddeltadtau2_func(tau, 1e-20)
         return T_red*(2.0*f0 + tau*f1)/(T*T*T*self.rho_red)
 
     def d3B_virial_dT3(self):
         T, T_red, tau = self.T, self.T_red, self.tau
 
+        fail = False
         try:
             f0 = self._d2Ar_ddeltadtau_func(tau, 0.0)
         except:
+            fail = True
+        if fail or isnan(f0):
             f0 = self._d2Ar_ddeltadtau_func(tau, 1e-20)
+
+        fail = False
         try:
             f1 = self._d3Ar_ddeltadtau2_func(tau, 0.0)
         except:
+            fail = True
+        if fail or isnan(f1):
             f1 = self._d3Ar_ddeltadtau2_func(tau, 1e-20)
+
+        
+        fail = False
         try:
             f2 = self._d4Ar_ddeltadtau3_func(tau, 0.0)
         except:
+            fail = True
+        if fail or isnan(f2):
             f2 = self._d4Ar_ddeltadtau3_func(tau, 1e-20)
         return (-T_red*(6.0*f0 + 6.0*tau*f1 + tau*tau*f2)/(T*T*T*T*self.rho_red))
 
     def C_virial(self):
+        fail = False
         try:
             f0 = self._d2Ar_ddelta2_func(self.tau, 0.0)
         except:
+            fail = True
+        if fail or isnan(f0):
             f0 = self._d2Ar_ddelta2_func(self.tau, 1e-20)
         return f0/(self.rho_red*self.rho_red)
 
     def dC_virial_dT(self):
         tau = self.tau
+        fail = False
         try:
             f0 = self._d3Ar_ddelta2dtau_func(tau, 0.0)
         except:
+            fail = True
+        if fail or isnan(f0):
             f0 = self._d3Ar_ddelta2dtau_func(tau, 1e-20)
         return -tau*tau*f0/(self.rho_red*self.rho_red*self.T_red)
 
     def d2C_virial_dT2(self):
         T, T_red, tau = self.T, self.T_red, self.tau
+        fail = False
         try:
             f0 = self._d3Ar_ddelta2dtau_func(tau, 0.0)
         except:
+            fail = True
+        if fail or isnan(f0):
             f0 = self._d3Ar_ddelta2dtau_func(tau, 1e-20)
 
+        fail = False
         try:
             f1 = self._d4Ar_ddelta2dtau2_func(tau, 0.0)
         except:
+            fail = True
+        if fail or isnan(f1):
             f1 = self._d4Ar_ddelta2dtau2_func(tau, 1e-20)
         return T_red*(2.0*f0 + tau*f1)/(T*T*T*self.rho_red*self.rho_red)
 

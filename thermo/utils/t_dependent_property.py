@@ -3501,12 +3501,12 @@ class TDependentProperty(object):
         elif extrapolation == 'EXP_POLY_LN_TAU2':
             v = self.calculate(T, method=method)
             d0 = self.calculate_derivative(T, method=method, order=1)
-            coefficients = exp_poly_ln_tau_coeffs2(T, self.Tc, v, d0)
+            coefficients = list(exp_poly_ln_tau_coeffs2(T, self.Tc, v, d0))
         elif extrapolation == 'EXP_POLY_LN_TAU3':
             v = self.calculate(T, method=method)
             d0 = self.calculate_derivative(T, method=method, order=1)
             d1 = self.calculate_derivative(T, method=method, order=2)
-            coefficients = exp_poly_ln_tau_coeffs3(T, self.Tc, v, d0, d1)
+            coefficients = list(exp_poly_ln_tau_coeffs3(T, self.Tc, v, d0, d1))
         elif extrapolation == 'DIPPR106_AB':
             v = self.calculate(T, method=method)
             d0 = self.calculate_derivative(T, method=method, order=1)

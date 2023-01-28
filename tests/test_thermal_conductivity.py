@@ -290,7 +290,7 @@ def test_ThermalConductivityGasMixture():
     Tbs = [77.355, 87.302, 90.188]
     CASs = ['7727-37-9', '7440-37-1', '7782-44-7']
     ws=[0.7557, 0.0127, 0.2316]
-    zs = ws_to_zs(ws, MWs=MWs)
+    zs = ws_to_zs(ws, MWs)
     # ['nitrogen', 'argon', 'oxygen']
 
     ViscosityGases = [
@@ -354,7 +354,7 @@ def test_ThermalConductivityLiquidMixture():
     MWs = [46.06844, 88.14818]
     CASs = ['64-17-5', '71-41-0']
     # ['ethanol', 'pentanol']
-    zs = ws_to_zs(ws=ws, MWs=MWs)
+    zs = ws_to_zs(ws, MWs)
     ThermalConductivityLiquids = [
         ThermalConductivityLiquid(CASRN="64-17-5", MW=46.06844, Tm=159.05, Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, Hfus=4931.0, extrapolation="linear", method="DIPPR_PERRY_8E", method_P="DIPPR_9G"),
         ThermalConductivityLiquid(CASRN="71-41-0", MW=88.14818, Tm=194.7, Tb=410.75, Tc=588.1, Pc=3897000.0, omega=0.58, Hfus=10500.0, extrapolation="linear", method="DIPPR_PERRY_8E", method_P="DIPPR_9G")

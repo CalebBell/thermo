@@ -496,7 +496,7 @@ def test_VolumeLiquidMixture():
 #    m = Mixture(['benzene', 'toluene'], zs=[.5, .5], T=298.15, P=101325.)
     T, P, zs = 298.15, 101325.0, [0.5, 0.5]
     MWs = [78.11184, 92.13842]
-    ws = zs_to_ws(zs, MWs=MWs)
+    ws = zs_to_ws(zs, MWs)
 
     VaporPressures = [
         VaporPressure(CASRN="71-43-2", Tb=353.23, Tc=562.05, Pc=4895000.0, omega=0.212, extrapolation="AntoineAB|DIPPR101_ABC", method=EXP_POLY_FIT, exp_poly_fit=(278.68399999999997, 562.01, [4.547344107145341e-20, -1.3312501882259186e-16, 1.6282983902136683e-13, -1.0498233680158312e-10, 3.535838362096064e-08, -3.6181923213017173e-06, -0.001593607608896686, 0.6373679536454406, -64.4285974110459])),
@@ -567,7 +567,7 @@ def test_VolumeLiquidMixture_Laliberte():
         VolumeLiquid(CASRN="7664-93-9", MW=98.07848, Tb=610.15, Tc=924.0, Pc=6400000.0, Vc=0.00017769999999999998, Zc=0.14803392201622453, omega=0.494, dipole=2.72, extrapolation="constant", method="POLY_FIT", poly_fit=(277.2, 831.6, [2.2367522080473987e-26, -8.993118194782151e-23, 1.5610918942741286e-19, -1.5237052699290813e-16, 9.134548476347517e-14, -3.438497628955312e-11, 7.949714844467134e-09, -1.0057972242365927e-06, 0.00010045015725585257]))
     ]
     zs = [0.01, 0.99]
-    ws = zs_to_ws(zs, MWs=MWs)
+    ws = zs_to_ws(zs, MWs)
 
     obj = VolumeLiquidMixture(MWs=MWs, CASs=['7732-18-5', '7664-93-9'], VolumeLiquids=VolumeLiquids)
     Vm = obj.mixture_property(T, P, zs, ws)
