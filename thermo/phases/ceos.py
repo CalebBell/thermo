@@ -607,6 +607,12 @@ class CEOSGas(CEOSPhase):
             return phase
         return 'g'
 
+    def PIP(self):
+        try:
+            return self.eos_mix.PIP_g
+        except AttributeError:
+            return self.eos_mix.PIP_l
+
     def lnphis(self):
         try:
             return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_g)
@@ -887,6 +893,12 @@ class CEOSLiquid(CEOSPhase):
             return phase
         return 'l'
 
+    def PIP(self):
+        try:
+            return self.eos_mix.PIP_l
+        except AttributeError:
+            return self.eos_mix.PIP_g
+    
     def lnphis(self):
         try:
             return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_l)
