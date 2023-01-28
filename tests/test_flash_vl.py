@@ -130,10 +130,10 @@ def test_flash_TP_K_composition_idependent_unhappiness():
 
     # Two cases RR was working on Ks less than 1, and coming up with a made up VF
     # Need to check Ks first
-    res = flashN.flash(T=300.0000, P=900000.0000, zs=[0.5, 0.1, 0.4, 0.0],)
+    res = flashN.flash(T=300.0000, P=900000.0000, zs=[0.5, 0.1, 0.4],)
     assert 1 == res.phase_count
     assert res.gas is None
-    res = flashN.flash(T=300.0000, P=900000.0000, zs=[.5, 0, 0, .5])
+    res = flashN.flash(T=300.0000, P=900000.0000, zs=[.5, 0, .5])
     assert 1 == res.phase_count
     assert res.gas is None
 
