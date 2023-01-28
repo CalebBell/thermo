@@ -169,10 +169,7 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
             Ks = [trunc_exp(lnphis_l[i] - lnphis_g[i]) for i in cmps] # K_value(phi_l=l, phi_g=g)
 
         V_over_F_old = V_over_F
-        try:
-            V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
-        except Exception as e:
-            V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F, check=True)
+        V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
 #            K_low, K_high = False, False
 #            for zi, Ki in zip(zs, Ks):
 #                if zi != 0.0:
@@ -348,11 +345,7 @@ def sequential_substitution_2P_functional(zs, xs_guess, ys_guess,
             Ks[i] = exp(lnphis_l[i] - lnphis_g[i])
 
         V_over_F_old = V_over_F
-        try:
-            V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
-        except:
-            V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F, check=True)
-
+        V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
         for xi in xs_new:
             if xi < 0.0:
                 # Remove negative mole fractions - may help or may still fail
