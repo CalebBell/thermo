@@ -350,7 +350,7 @@ class FlashVLN(FlashVL):
 
         Ks = liquid_phis = self.liquid0.phis_at(T, P, zs)
         try:
-            VF, xs, ys = flash_inner_loop(zs, Ks, check=True)
+            VF, xs, ys = flash_inner_loop(zs, Ks)
         except PhaseCountReducedError:
             K_low, K_high = False, False
             for zi, Ki in zip(zs, Ks):
