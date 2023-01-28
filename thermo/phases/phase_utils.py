@@ -89,6 +89,7 @@ def lnphis_direct(zs, model, T, P, N, *args):
         for i in range(N):
             lnphis[i] = 0.0
         return lnphis
+    # so far only used by the test test_UNIFAC_lnphis_direct
     elif 20000 <= model <= 29999: # numba: delete
         return activity_lnphis(zs, model, T, P, N, *args) # numba: delete
     raise ValueError("Model not implemented")
