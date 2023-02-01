@@ -72,23 +72,23 @@ def activity_lnphis(zs, model, T, P, N, lnPsats, Poyntings, phis_sat, *activity_
 
 
 def lnphis_direct(zs, model, T, P, N, *args):
-    if model == 10200 or model == 10201 or model == 10204 or model == 10205 or model == 10206:
-        return PR_lnphis_fastest(zs, T, P, N, *args)
-    elif model == 10202 or model == 10203 or model == 10207:
-        return PR_translated_lnphis_fastest(zs, T, P, N, *args)
-    elif model == 10100 or model == 10104 or model == 10105:
-        return SRK_lnphis_fastest(zs, T, P, N, *args)
-    elif model == 10101 or model == 10102 or model == 10103:
-        return SRK_translated_lnphis_fastest(zs, T, P, N, *args)
-    elif model == 10002:
-        return RK_lnphis_fastest(zs, T, P, N, *args)
-    elif model == 10001:
-        return VDW_lnphis_fastest(zs, T, P, N, *args)
-    elif model == 0:
+    if model == 0:
         lnphis = args[-1]
         for i in range(N):
             lnphis[i] = 0.0
         return lnphis
+    elif model == 10200 or model == 10201 or model == 10204 or model == 10205 or model == 10206:
+        return PR_lnphis_fastest(zs, T, P, N, *args)
+    elif model == 10100 or model == 10104 or model == 10105:
+        return SRK_lnphis_fastest(zs, T, P, N, *args)
+    elif model == 10002:
+        return RK_lnphis_fastest(zs, T, P, N, *args)
+    elif model == 10001:
+        return VDW_lnphis_fastest(zs, T, P, N, *args)
+    elif model == 11202 or model == 11203 or model == 11207:
+        return PR_translated_lnphis_fastest(zs, T, P, N, *args)
+    elif model == 11101 or model == 11102 or model == 11103:
+        return SRK_translated_lnphis_fastest(zs, T, P, N, *args)
     # so far only used by the test test_UNIFAC_lnphis_direct
     elif 20000 <= model <= 29999: # numba: delete
         return activity_lnphis(zs, model, T, P, N, *args) # numba: delete

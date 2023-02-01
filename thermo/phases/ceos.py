@@ -313,15 +313,15 @@ class CEOSPhase(IdealGasDeparturePhase):
         N = self.N
         eos_mix = self.eos_mix
         if self.scalar:
-            a_alpha_j_rows, vec0 = [0.0]*N, [0.0]*N
+            a_alpha_j_rows, vec0, lnphis = [0.0]*N, [0.0]*N, [0.0]*N
         else:
-            a_alpha_j_rows, vec0 = zeros(N), zeros(N)
+            a_alpha_j_rows, vec0, lnphis = zeros(N), zeros(N), zeros(N)
         if eos_mix.translated:
             return (self.eos_class.model_id, self.T, self.P, self.N, eos_mix.one_minus_kijs, self.is_liquid, self.is_gas,
-                   eos_mix.b0s, eos_mix.bs, eos_mix.cs, eos_mix.a_alphas, eos_mix.a_alpha_roots, a_alpha_j_rows, vec0)
+                   eos_mix.b0s, eos_mix.bs, eos_mix.cs, eos_mix.a_alphas, eos_mix.a_alpha_roots, a_alpha_j_rows, vec0, lnphis)
         else:
             return (self.eos_class.model_id, self.T, self.P, self.N, eos_mix.one_minus_kijs, self.is_liquid, self.is_gas,
-                   eos_mix.bs, eos_mix.a_alphas, eos_mix.a_alpha_roots, a_alpha_j_rows, vec0)
+                   eos_mix.bs, eos_mix.a_alphas, eos_mix.a_alpha_roots, a_alpha_j_rows, vec0, lnphis)
 
     def lnphis_at_zs(self, zs):
         eos_mix = self.eos_mix

@@ -704,17 +704,26 @@ class FlashVL(Flash):
 #        stab_guess_name = self.stab.incipient_guess_name(i)
 
 
+    def sequential_substitution_2P(self, T, P, zs, xs_guess, ys_guess, liquid_phase, gas_phase, V_over_F_guess):
+        V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
+                                                                            zs=zs, xs_guess=xs_guess, ys_guess=ys_guess,
+                                                                            liquid_phase=liquid_phase,
+                                                                            gas_phase=gas_phase, maxiter=self.PT_SS_MAXITER,
+                                                                            tol=self.PT_SS_TOL,
+                                                                            V_over_F_guess=V_over_F_guess)
+        return (V_over_F, xs, ys, l, g, iteration, err)
+
+
     def flash_2P(self, T, P, zs, trial_zs, appearing_zs, min_phase, other_phase, gas, liquid,
                  V_over_F_guess=None, stab_info=None, LL=False):
         if 0:
             self.PT_converge(T=T, P=P, zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs, liquid_phase=min_phase,
                         gas_phase=other_phase, V_over_F_guess=V_over_F_guess)
         try:
-            V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
+            V_over_F, xs, ys, l, g, iteration, err = self.sequential_substitution_2P(T=T, P=P,
                                                                                 zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs,
                                                                                 liquid_phase=min_phase,
-                                                                                gas_phase=other_phase, maxiter=self.PT_SS_MAXITER,
-                                                                                tol=self.PT_SS_TOL,
+                                                                                gas_phase=other_phase,
                                                                                 V_over_F_guess=V_over_F_guess)
         except TrivialSolutionError:
             ls, g = ([liquid], None) if min_phase is liquid else ([], gas)

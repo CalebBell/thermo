@@ -7881,7 +7881,7 @@ class PRMIXTranslated(PRMIX):
     dlnphis_dP = GCEOSMIX.dlnphis_dP
     d_lnphi_dzs = GCEOSMIX.dlnphis_dzs
     P_max_at_V = GCEOSMIX.P_max_at_V
-    model_id = 10202
+    model_id = 11202
 
     # All the b derivatives happen to work out to be the same, and are checked numerically
     solve_T = GCEOS.solve_T
@@ -8288,7 +8288,7 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
     mix_kwargs_to_pure = {'cs': 'c'}
     kwargs_linear = ('cs',)
     kwargs_keys = ('kijs', 'cs')
-    model_id = 10207
+    model_id = 11207
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None,
                  T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
@@ -8456,7 +8456,7 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
     kwargs_linear = ('cs', 'alpha_coeffs')
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     kwargs_keys = ('kijs', 'alpha_coeffs', 'cs')
-    model_id = 10203
+    model_id = 11203
 
     # There is an updated set of correlations - which means a revision flag is needed
     # Analysis of the Combinations of Property Data That Are Suitable for a Safe Estimation of Consistent Twu α-Function Parameters: Updated Parameter Values for the Translated-Consistent tc-PR and tc-RK Cubic Equations of State
@@ -9007,7 +9007,7 @@ class SRKMIXTranslated(SRKMIX):
     d_lnphi_dzs = GCEOSMIX.dlnphis_dzs
     P_max_at_V = GCEOSMIX.P_max_at_V
     solve_T = GCEOS.solve_T
-    model_id = 10101
+    model_id = 11101
 
     eos_pure = SRKTranslated
     translated = True
@@ -9429,7 +9429,7 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     kwargs_linear = ('cs', 'alpha_coeffs')
     kwargs_keys = ('kijs', 'alpha_coeffs', 'cs')
-    model_id = 10102
+    model_id = 11102
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None,
                  alpha_coeffs=None, T=None, P=None, V=None,
@@ -9638,7 +9638,7 @@ class MSRKMIXTranslated(Soave_1979_a_alpha, SRKMIXTranslatedConsistent):
     '''
     kwargs_keys = ('kijs', 'alpha_coeffs', 'cs')
     eos_pure = MSRKTranslated
-    model_id = 10103
+    model_id = 11103
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None,
                  alpha_coeffs=None, T=None, P=None, V=None,
