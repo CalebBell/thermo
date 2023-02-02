@@ -594,12 +594,13 @@ class GibbsExcessLiquid(Phase):
             pass
         return new
     
-    def lnphis_args(self):
-        lnPsats = self.lnPsats()
-        Poyntings = self.Poyntings()
-        phis_sat = self.phis_sat()
-        activity_args = self.GibbsExcessModel.lnphis_args()
-        return (self.model_id, self.T, self.P, self.N, lnPsats, Poyntings, phis_sat) + activity_args
+    supports_lnphis_args = False
+    # def lnphis_args(self):
+    #     lnPsats = self.lnPsats()
+    #     Poyntings = self.Poyntings()
+    #     phis_sat = self.phis_sat()
+    #     activity_args = self.GibbsExcessModel.lnphis_args()
+    #     return (self.model_id, self.T, self.P, self.N, lnPsats, Poyntings, phis_sat) + activity_args
 
 
     def Henry_matrix(self):

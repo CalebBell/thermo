@@ -44,3 +44,4 @@ thermo/Misc/constants dump*
 docs/Examples/.ipynb_checkpoints/*
 *.ipynb_checkpoints*
 .hypothesis
+.vscode

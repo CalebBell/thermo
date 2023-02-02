@@ -121,6 +121,8 @@ class Phase(object):
     composition_independent = False
     scalar  = True
 
+    supports_lnphis_args = False
+
     pure_references = ()
     '''Tuple of attribute names which hold lists of :obj:`thermo.utils.TDependentProperty`
     or :obj:`thermo.utils.TPDependentProperty` instances.'''

@@ -308,8 +308,10 @@ class CEOSPhase(IdealGasDeparturePhase):
         except AttributeError:
             return eos_mix.fugacity_coefficients(eos_mix.Z_l)
 
-
+    supports_lnphis_args = True
+    
     def lnphis_args(self):
+        # VTPR, PSRK, anything with GE not yet supported
         N = self.N
         eos_mix = self.eos_mix
         if self.scalar:
@@ -324,7 +326,7 @@ class CEOSPhase(IdealGasDeparturePhase):
                    eos_mix.bs, eos_mix.a_alphas, eos_mix.a_alpha_roots, a_alpha_j_rows, vec0, lnphis)
 
     def lnphis_at_zs(self, zs):
-        eos_mix = self.eos_mix
+        # eos_mix = self.eos_mix
         # if eos_mix.__class__.__name__ in ('PRMIX', 'VDWMIX', 'SRKMIX', 'RKMIX'):
         return lnphis_direct(zs, *self.lnphis_args())
         # return self.to_TP_zs(self.T, self.P, zs).lnphis()

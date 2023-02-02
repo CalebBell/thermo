@@ -764,6 +764,8 @@ class Flash(object):
             raise ValueError("Can only perform flashes with all phases in a numpy basis or all phases in a pure Python basis")
         self.scalar = scalar_statuses.pop()
 
+        self.supports_lnphis_args = all(p.supports_lnphis_args for p in self.phases)
+
     def debug_grid_flash(self, zs, check0, check1, Ts=None, Ps=None, Vs=None,
                          VFs=None, SFs=None, Hs=None, Ss=None, Us=None,
                          retry=False, verbose=True):
