@@ -126,22 +126,19 @@ TPV_HSGUA_guesses_1P_methods = PH_T_guesses_1P_methods
 
 def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
                                gas_phase, maxiter=1000, tol=1E-13,
-                               trivial_solution_tol=1e-5, V_over_F_guess=None,
-                               check_G=False, check_V=False, dZ_allow=0.1):
+                               trivial_solution_tol=1e-5, V_over_F_guess=0.5):
+                            #    check_G=False, check_V=False, dZ_allow=0.1):
 
     xs, ys = xs_guess, ys_guess
-    if V_over_F_guess is None:
-        V_over_F = 0.5
-    else:
-        V_over_F = V_over_F_guess
+    V_over_F = V_over_F_guess
 
     cmps = range(len(zs))
 
     err, err1, err2, err3 = 0.0, 0.0, 0.0, 0.0
-    G_old = None
-    V_over_F_old = V_over_F
-    restrained = 0
-    restrained_switch_count = 300
+    # G_old = None
+    # V_over_F_old = V_over_F
+    # restrained = 0
+    # restrained_switch_count = 300
     error_increases = 0
 
     # Code for testing phis at zs
@@ -184,101 +181,99 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
 #                                           comp_difference, iteration, err)
 #            else:
 
-        if check_G:
-            V_over_F_G = min(max(V_over_F_old, 0), 1)
-            G = g.G()*V_over_F_G + (1.0 - V_over_F_G)*l.G()
-            # print('new G', G, 'old G', G_old)
-            if G_old is not None:
-                if G > G_old:
-                    step = .5
-                    while G > G_old and step > 1e-4:
-#                        ys_working = normalize([step*xo + (1.0 - step)*xi for xi, xo in zip(xs, xs_old)])
-#                        xs_working = normalize([step*xo + (1.0 - step)*xi for xi, xo in zip(ys, ys_old)])
-#                         ys_working = normalize([step*xo + (1.0 - step)*xi for xo, xi in zip(xs, xs_old)])
-#                         xs_working = normalize([step*xo + (1.0 - step)*xi for xo, xi in zip(ys, ys_old)])
-#                         g = gas_phase.to(ys_working, T=T, P=P, V=V)
-#                         l = liquid_phase.to(xs_working, T=T, P=P, V=V)
-#                         lnphis_g = g.lnphis()
-#                         lnphis_l = l.lnphis()
-#                         try:
-#                             Ks = [exp(lnphis_l[i] - lnphis_g[i]) for i in cmps]
-#                         except OverflowError:
-#                             Ks = [trunc_exp(lnphis_l[i] - lnphis_g[i]) for i in cmps]
-                        Ks_working = [step*xo + (1.0 - step)*xi for xo, xi in zip(Ks_old, Ks)]
+#         if check_G:
+#             V_over_F_G = min(max(V_over_F_old, 0), 1)
+#             G = g.G()*V_over_F_G + (1.0 - V_over_F_G)*l.G()
+#             # print('new G', G, 'old G', G_old)
+#             if G_old is not None:
+#                 if G > G_old:
+#                     step = .5
+#                     while G > G_old and step > 1e-4:
+# #                        ys_working = normalize([step*xo + (1.0 - step)*xi for xi, xo in zip(xs, xs_old)])
+# #                        xs_working = normalize([step*xo + (1.0 - step)*xi for xi, xo in zip(ys, ys_old)])
+# #                         ys_working = normalize([step*xo + (1.0 - step)*xi for xo, xi in zip(xs, xs_old)])
+# #                         xs_working = normalize([step*xo + (1.0 - step)*xi for xo, xi in zip(ys, ys_old)])
+# #                         g = gas_phase.to(ys_working, T=T, P=P, V=V)
+# #                         l = liquid_phase.to(xs_working, T=T, P=P, V=V)
+# #                         lnphis_g = g.lnphis()
+# #                         lnphis_l = l.lnphis()
+# #                         try:
+# #                             Ks = [exp(lnphis_l[i] - lnphis_g[i]) for i in cmps]
+# #                         except OverflowError:
+# #                             Ks = [trunc_exp(lnphis_l[i] - lnphis_g[i]) for i in cmps]
+#                         Ks_working = [step*xo + (1.0 - step)*xi for xo, xi in zip(Ks_old, Ks)]
 
-                        V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks_working, guess=V_over_F)
-#                        V_over_F_G = min(max(V_over_F, 0), 1)
-                        g = gas_phase.to(ys_new, T=T, P=P, V=V)
-                        l = liquid_phase.to(xs_new, T=T, P=P, V=V)
-                        G = g.G()*V_over_F_G + (1.0 - V_over_F_G)*l.G()
-                        # print('step', step, G, V_over_F, Ks)
-                        step *= 0.5
-                    # xs, ys = xs_working, ys_working
+#                         V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks_working, guess=V_over_F)
+# #                        V_over_F_G = min(max(V_over_F, 0), 1)
+#                         g = gas_phase.to(ys_new, T=T, P=P, V=V)
+#                         l = liquid_phase.to(xs_new, T=T, P=P, V=V)
+#                         G = g.G()*V_over_F_G + (1.0 - V_over_F_G)*l.G()
+#                         # print('step', step, G, V_over_F, Ks)
+#                         step *= 0.5
+#                     # xs, ys = xs_working, ys_working
 
 
-#                    print('Gibbs increased', G/G_old)
-            G_old = G
-        if check_V and iteration > 2:
-            big_Z_change = (abs(1.0 - l_old.Z()/l.Z()) > dZ_allow or abs(1.0 - g_old.Z()/g.Z()) > dZ_allow)
-            if restrained <= restrained_switch_count and big_Z_change:
-                limited_Z = True
-                step = .5 #.5
-                while (abs(1.0 - l_old.Z()/l.Z()) > dZ_allow  or abs(1.0 - g_old.Z()/g.Z()) > dZ_allow ) and step > 1e-8:
-                    # Ks_working = [step*xo + (1.0 - step)*xi for xo, xi in zip(Ks, Ks_old)]
-#                     Ks_working = [Ks[i]*(Ks_old[i]/Ks[i])**(1.0 - step) for i in cmps] # step = 0 - all new; step = 1 - all old
-#                     Ks_working = [Ks_old[i]*(exp(lnphis_l[i])/exp(lnphis_g[i])/Ks_old[i])**(1.0 - step) for i in cmps]
-                    ys_new = normalize([step*xo + (1.0 - step)*xi for xo, xi in zip(ys, ys_old)])
-                    xs_new = normalize([step*xo + (1.0 - step)*xi for xo, xi in zip(xs, xs_old)])
-                    # V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks_working, guess=V_over_F)
-                    l = liquid_phase.to(xs_new, T=T, P=P, V=V)
-                    g = gas_phase.to(ys_new, T=T, P=P, V=V)
-                    # lnphis_g = g.lnphis()
-                    # lnphis_l = l.lnphis()
-                    # print('step', step, V_over_F, g.Z())
-                    step *= 0.5
-                xs, ys = xs_new, ys_new
-                lnphis_g = g.lnphis()
-                lnphis_l = l.lnphis()
-                Ks = [exp(lnphis_l[i] - lnphis_g[i]) for i in cmps]
-                V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
-                restrained += 1
-            elif restrained > restrained_switch_count and big_Z_change:
-                restrained = 0
+# #                    print('Gibbs increased', G/G_old)
+#             G_old = G
+#         if check_V and iteration > 2:
+#             big_Z_change = (abs(1.0 - l_old.Z()/l.Z()) > dZ_allow or abs(1.0 - g_old.Z()/g.Z()) > dZ_allow)
+#             if restrained <= restrained_switch_count and big_Z_change:
+#                 limited_Z = True
+#                 step = .5 #.5
+#                 while (abs(1.0 - l_old.Z()/l.Z()) > dZ_allow  or abs(1.0 - g_old.Z()/g.Z()) > dZ_allow ) and step > 1e-8:
+#                     # Ks_working = [step*xo + (1.0 - step)*xi for xo, xi in zip(Ks, Ks_old)]
+# #                     Ks_working = [Ks[i]*(Ks_old[i]/Ks[i])**(1.0 - step) for i in cmps] # step = 0 - all new; step = 1 - all old
+# #                     Ks_working = [Ks_old[i]*(exp(lnphis_l[i])/exp(lnphis_g[i])/Ks_old[i])**(1.0 - step) for i in cmps]
+#                     ys_new = normalize([step*xo + (1.0 - step)*xi for xo, xi in zip(ys, ys_old)])
+#                     xs_new = normalize([step*xo + (1.0 - step)*xi for xo, xi in zip(xs, xs_old)])
+#                     # V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks_working, guess=V_over_F)
+#                     l = liquid_phase.to(xs_new, T=T, P=P, V=V)
+#                     g = gas_phase.to(ys_new, T=T, P=P, V=V)
+#                     # lnphis_g = g.lnphis()
+#                     # lnphis_l = l.lnphis()
+#                     # print('step', step, V_over_F, g.Z())
+#                     step *= 0.5
+#                 xs, ys = xs_new, ys_new
+#                 lnphis_g = g.lnphis()
+#                 lnphis_l = l.lnphis()
+#                 Ks = [exp(lnphis_l[i] - lnphis_g[i]) for i in cmps]
+#                 V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
+#                 restrained += 1
+#             elif restrained > restrained_switch_count and big_Z_change:
+#                 restrained = 0
 
         # Check for negative fractions - normalize only if needed
         for xi in xs_new:
             if xi < 0.0:
-                xs_new_sum_inv = 1.0/sum(abs(i) for i in xs_new)
-                for i in cmps:
+                # Remove negative mole fractions - may help or may still fail
+                xs_new_sum_inv = 0.0
+                for xj in xs_new:
+                    xs_new_sum_inv += abs(xj)
+                xs_new_sum_inv = 1.0/xs_new_sum_inv
+                for i in range(N):
                     xs_new[i] = abs(xs_new[i])*xs_new_sum_inv
                 break
         for yi in ys_new:
             if yi < 0.0:
-                ys_new_sum_inv = 1.0/sum(abs(i) for i in ys_new)
-                for i in cmps:
+                ys_new_sum_inv = 0.0
+                for yj in ys_new:
+                    ys_new_sum_inv += abs(yj)
+                ys_new_sum_inv = 1.0/ys_new_sum_inv
+                for i in range(N):
                     ys_new[i] = abs(ys_new[i])*ys_new_sum_inv
                 break
-
         # Calculate the error using the new Ks and old compositions
         # Claimed error function in CONVENTIONAL AND RAPID FLASH
         # CALCULATIONS FOR THE SOAVE-REDLICH-KWONG AND PENG-ROBINSON EQUATIONS OF STATE
 
         err = 0.0
         # Suggested tolerance 1e-15
-        try:
-            for Ki, xi, yi in zip(Ks, xs, ys):
-                # equivalent of fugacity ratio
-                # Could divide by the old Ks as well.
+        for Ki, xi, yi in zip(Ks, xs, ys):
+            # equivalent of fugacity ratio
+            # Could divide by the old Ks as well.
+            if yi != 0.0:
                 err_i = Ki*xi/yi - 1.0
                 err += err_i*err_i
-        except ZeroDivisionError:
-            err = 0.0
-            for Ki, xi, yi in zip(Ks, xs, ys):
-                try:
-                    err_i = Ki*xi/yi - 1.0
-                    err += err_i*err_i
-                except ZeroDivisionError:
-                    pass
 
         if err > 0.0 and err in (err1, err2, err3) or error_increases > 3:
             raise OscillationError("Converged to cycle in errors, no progress being made")
@@ -288,17 +283,19 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
         #     assert xs == l.zs
         #     assert ys == g.zs
         xs, ys = xs_new, ys_new
-        lnphis_g_old, lnphis_l_old = lnphis_g, lnphis_l
-        l_old, g_old = l, g
+        # lnphis_g_old, lnphis_l_old = lnphis_g, lnphis_l
+        # l_old, g_old = l, g
 
         #print(err, V_over_F, Ks) # xs, ys
 
         # Check for
-        comp_difference = sum([abs(xi - yi) for xi, yi in zip(xs, ys)])
+        comp_difference = 0.0
+        for xi, yi in zip(xs, ys):
+            comp_difference += abs(xi - yi)
         if comp_difference < trivial_solution_tol:
             raise TrivialSolutionError("Converged to trivial condition, compositions of both phases equal",
                                        comp_difference, iteration, err)
-        if err < tol and not limited_Z:
+        if err < tol:# and not limited_Z:
             # Temporary!
             # err_mole_balance = 0.0
             # for i in cmps:
@@ -312,15 +309,14 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
                 g = gas_phase.to(ys_new, T=T, P=P, V=V)
                 l = liquid_phase.to(xs_new, T=T, P=P, V=V)
                 return V_over_F, xs_new, ys_new, l, g, iteration, err
-            else:
-                g = gas_phase.to(ys_old, T=T, P=P, V=V)
-                l = liquid_phase.to(xs_old, T=T, P=P, V=V)
-                return V_over_F_old, xs_old, ys_old, l, g, iteration, err
+            g = gas_phase.to(ys_old, T=T, P=P, V=V)
+            l = liquid_phase.to(xs_old, T=T, P=P, V=V)
+            return V_over_F_old, xs_old, ys_old, l, g, iteration, err
         # elif err < tol and limited_Z:
         #     print(l.fugacities()/np.array(g.fugacities()))
 
         # If we aren't in a cycle but still making no progress
-        if err1 != 0 and abs(err/err1) > 20:
+        if err1 != 0.0 and abs(err/err1) > 20.0:
             error_increases += 1
         err1, err2, err3 = err, err1, err2
     raise UnconvergedError('End of SS without convergence')
@@ -328,13 +324,13 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
 def sequential_substitution_2P_functional(zs, xs_guess, ys_guess,
                                liquid_args, gas_args, maxiter=1000, tol=1E-13,
                                trivial_solution_tol=1e-5, V_over_F_guess=0.5):
-
     xs, ys = xs_guess, ys_guess
-    V_over_F = V_over_F_guess
+    V_over_F = V_over_F_guess   
     N = len(zs)
 
-    err = 0.0
+    err, err1, err2, err3 = 0.0, 0.0, 0.0, 0.0
     V_over_F_old = V_over_F
+    error_increases = 0
     
     Ks = [0.0]*N
     for iteration in range(maxiter):
@@ -342,7 +338,7 @@ def sequential_substitution_2P_functional(zs, xs_guess, ys_guess,
         lnphis_l = lnphis_direct(xs, *liquid_args)
 
         for i in range(N):
-            Ks[i] = exp(lnphis_l[i] - lnphis_g[i])
+            Ks[i] = trunc_exp(lnphis_l[i] - lnphis_g[i])
 
         V_over_F_old = V_over_F
         V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
@@ -370,9 +366,12 @@ def sequential_substitution_2P_functional(zs, xs_guess, ys_guess,
         for Ki, xi, yi in zip(Ks, xs, ys):
             # equivalent of fugacity ratio
             # Could divide by the old Ks as well.
-            err_i = Ki*xi/yi - 1.0
-            err += err_i*err_i
+            if yi != 0.0:
+                err_i = Ki*xi/yi - 1.0
+                err += err_i*err_i
 
+        if err > 0.0 and err in (err1, err2, err3) or error_increases > 3:
+            raise OscillationError("Converged to cycle in errors, no progress being made")
         xs_old, ys_old = xs, ys
         xs, ys = xs_new, ys_new
 
@@ -381,10 +380,17 @@ def sequential_substitution_2P_functional(zs, xs_guess, ys_guess,
             comp_difference += abs(xi - yi)
 
         if comp_difference < trivial_solution_tol:
-            raise ValueError("Converged to trivial condition, compositions of both phases equal")
+            raise TrivialSolutionError("Converged to trivial condition, compositions of both phases equal")
 
         if err < tol:
+            if iteration == 0:
+                # We are composition independent!
+                return V_over_F, xs_new, ys_new, iteration, err
+
             return V_over_F_old, xs_old, ys_old, iteration, err
+        if err1 != 0.0 and abs(err/err1) > 20.0:
+            error_increases += 1
+        err1, err2, err3 = err, err1, err2
     raise ValueError('End of SS without convergence')
 
 
@@ -439,18 +445,10 @@ def sequential_substitution_NP(T, P, zs, compositions_guesses, betas_guesses,
         for i in phase_iter_n1:
             Ks_i = Ks[i]
             ys = compositions_K_order[i]
-            try:
-                for Ki, xi, yi in zip(Ks_i, compositions_ref, ys):
+            for Ki, xi, yi in zip(Ks_i, compositions_ref, ys):
+                if yi != 0.0:
                     err_i = Ki*xi/yi - 1.0
                     err += err_i*err_i
-            except ZeroDivisionError:
-                err = 0.0
-                for Ki, xi, yi in zip(Ks_i, compositions_ref, ys):
-                    try:
-                        err_i = Ki*xi/yi - 1.0
-                        err += err_i*err_i
-                    except ZeroDivisionError:
-                        pass
 #        print(betas, Ks, 'calculated', err)
         # print(err)
 

@@ -312,6 +312,7 @@ class CEOSPhase(IdealGasDeparturePhase):
     
     def lnphis_args(self):
         # VTPR, PSRK, anything with GE not yet supported
+        # Could save time by allowing T, P as an argument, and getting a new eos_mix at that
         N = self.N
         eos_mix = self.eos_mix
         if self.scalar:

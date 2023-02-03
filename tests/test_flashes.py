@@ -778,7 +778,49 @@ def test_sequential_substitution_2P_functional_vs_FlashVL():
     assert_close(VF_calc, VF_expect, rtol=1e-6)
     assert_close1d(xs_calc, xs_expect)
     assert_close1d(ys_calc, ys_expect)
-    
+
+def test_sequential_substitution_2P_functional_trivial_solution():
+    constants = ChemicalConstantsPackage(atomss=[{'C': 1, 'H': 4}, {'H': 2, 'O': 1}, {'C': 10, 'H': 22}], MWs=[16.04246, 18.01528, 142.28168], omegas=[0.008, 0.344, 0.49], Pcs=[4599000.0, 22048320.0, 2110000.0], Tcs=[190.564, 647.14, 611.7], Vcs=[9.86e-05, 5.6e-05, 0.000624])
+    HeatCapacityGases = [HeatCapacityGas(CASRN="74-82-8", MW=16.04246, similarity_variable=0.3116728980468083, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
+    HeatCapacityGas(CASRN="7732-18-5", MW=18.01528, similarity_variable=0.16652530518537598, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+    HeatCapacityGas(CASRN="124-18-5", MW=142.28168, similarity_variable=0.22490597524572384, extrapolation="linear", method="POLY_FIT", poly_fit=(200.0, 1000.0, [-1.702672546011891e-21, 6.6751002084997075e-18, -7.624102919104147e-15, -4.071140876082743e-12, 1.863822577724324e-08, -1.9741705032236747e-05, 0.009781408958916831, -1.6762677829939379, 252.8975930305735]))]
+
+    properties = PropertyCorrelationsPackage(constants=constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+
+    eos_kwargs = {'Pcs': [4599000.0, 22048320.0, 2110000.0],
+    'Tcs': [190.564, 647.14, 611.7],
+    'omegas': [0.008, 0.344, 0.49],
+    'kijs': [[0.0, 0, 0.0411], [0, 0.0, 0], [0.0411, 0, 0.0]]}
+    # test is ran at one condition, so just put the input conditions to the phase objects
+    zs = [1/3, 1/3, 1/3]
+    gas = CEOSGas(PRMIX, zs=zs, T= 600.0, P= 189900.0, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    liquid1 = CEOSLiquid(PRMIX, zs=zs, T= 600.0, P= 189900.0, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    liquid2 = CEOSLiquid(PRMIX, zs=zs, T= 600.0, P= 189900.0, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+
+    SS_args_direct = {'zs': [0.3333333333333333, 0.3333333333333333, 0.3333333333333333],
+    'xs_guess': [0.4282287991132575, 0.41544573161462583, 0.1563254692721166], 
+    'ys_guess': [0.0030316280767594597, 0.04752552416026615, 0.9494428477629744],
+    'liquid_args':liquid1.lnphis_args(),
+    'gas_args':gas.lnphis_args(),
+    'maxiter': 5000, 'tol': 1e-13, 'trivial_solution_tol': 1e-05, 'V_over_F_guess': 0.2231799086259173}
+
+    with pytest.raises(TrivialSolutionError):
+        sequential_substitution_2P_functional(**SS_args_direct)
+
+    SS_args = {'zs': [0.3333333333333333, 0.3333333333333333, 0.3333333333333333],
+    'xs_guess': [0.4282287991132575, 0.41544573161462583, 0.1563254692721166], 
+    'ys_guess': [0.0030316280767594597, 0.04752552416026615, 0.9494428477629744],
+    'liquid_phase':liquid1,
+    'gas_phase':gas,
+    'T': 600.0, 'P': 189900.0, 'V': None,
+    'maxiter': 5000, 'tol': 1e-13, 'trivial_solution_tol': 1e-05, 'V_over_F_guess': 0.2231799086259173}
+
+    with pytest.raises(TrivialSolutionError):
+        sequential_substitution_2P(**SS_args)
+
+
+
+
     
 def test_liquid_ref_volumes_available():
     # Binary water-ethanol

@@ -62,9 +62,9 @@ try:
 except (ImportError, AttributeError):
     pass
 
-def nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas=None, vec0=None, vec1=None):
-    if gammas is None:
-        gammas = [0.0]*N
+def nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas, vec0=None, vec1=None):
+    # if gammas is None:
+    #     gammas = [0.0]*N
     if vec0 is None:
         vec0 = [0.0]*N
     if vec1 is None:
