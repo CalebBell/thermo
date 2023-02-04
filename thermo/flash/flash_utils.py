@@ -278,7 +278,7 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
         if err > 0.0 and err in (err1, err2, err3) or error_increases > 3:
             raise OscillationError("Converged to cycle in errors, no progress being made")
         # Accept the new compositions
-        xs_old, ys_old, Ks_old = xs, ys, Ks
+        xs_old, ys_old = xs, ys
         # if not limited_Z:
         #     assert xs == l.zs
         #     assert ys == g.zs
@@ -290,7 +290,7 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
 
         # Check for
         comp_difference = 0.0
-        for xi, yi in zip(xs, ys):
+        for xi, yi in zip(xs_new, ys_new):
             comp_difference += abs(xi - yi)
         if comp_difference < trivial_solution_tol:
             raise TrivialSolutionError("Converged to trivial condition, compositions of both phases equal",
