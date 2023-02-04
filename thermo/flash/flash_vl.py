@@ -729,7 +729,7 @@ class FlashVL(Flash):
                                                                                 zs=zs, xs_guess=xs_guess, ys_guess=ys_guess,
                                                                                 liquid_phase=liquid_phase,
                                                                                 gas_phase=gas_phase, maxiter=maxiter,
-                                                                                tol=tol,
+                                                                                tol=tol,trivial_solution_tol=self.PT_TRIVIAL_SOLUTION_TOL,
                                                                                 V_over_F_guess=V_over_F_guess)
 
                                                                             
