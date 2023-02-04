@@ -437,7 +437,7 @@ def test_lnphis_direct_and_sequential_substitution_2P_functional():
     VF_expect, xs_expect, ys_expect = res_expect.VF, res_expect.liquid0.zs, res_expect.gas.zs
     
     _, _, VF, xs, ys = chemicals.numba.flash_wilson(zs=zs, Tcs=eos_kwargs['Tcs'], Pcs=eos_kwargs['Pcs'], omegas=eos_kwargs['omegas'], T=T, P=P)
-    VF_calc, xs_calc, ys_calc, niter, err = thermo.numba.sequential_substitution_2P_functional(zs=zs, xs_guess=xs, ys_guess=ys,
+    VF_calc, xs_calc, ys_calc, niter, err = thermo.numba.sequential_substitution_2P_functional(T, P, zs=zs, xs_guess=xs, ys_guess=ys,
                                    liquid_args=liq.lnphis_args(), gas_args=gas.lnphis_args(),
                                           maxiter=1000, tol=1E-20,
                                        trivial_solution_tol=1e-5, V_over_F_guess=0.5)

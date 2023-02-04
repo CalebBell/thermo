@@ -321,7 +321,7 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
         err1, err2, err3 = err, err1, err2
     raise UnconvergedError('End of SS without convergence')
 
-def sequential_substitution_2P_functional(zs, xs_guess, ys_guess,
+def sequential_substitution_2P_functional(T, P, zs, xs_guess, ys_guess,
                                liquid_args, gas_args, maxiter=1000, tol=1E-13,
                                trivial_solution_tol=1e-5, V_over_F_guess=0.5):
     xs, ys = xs_guess, ys_guess
@@ -410,9 +410,19 @@ def sequential_substitution_NP(T, P, zs, compositions_guesses, betas_guesses,
     compositions_K_order = [compositions[i] for i in phases_iter if i != ref_phase]
     compositions_ref = compositions_guesses[ref_phase]
 
+    for i, phase in enumerate(phases):
+        if phase.T != T or phase.P != P:
+            phases[i] = phase.to_TP_zs(T=T, P=P, zs=phase.zs)
+    
+    compositions_old = None
+
     for iteration in range(maxiter):
-        phases = [phases[i].to_TP_zs(T=T, P=P, zs=compositions[i]) for i in phases_iter]
-        lnphis = [phases[i].lnphis() for i in phases_iter]
+        lnphis = [phases[i].lnphis_at_zs(zs=compositions[i]) for i in phases_iter]
+
+
+
+
+        
 
         Ks = []
         lnphis_ref = lnphis[ref_phase]
@@ -452,6 +462,7 @@ def sequential_substitution_NP(T, P, zs, compositions_guesses, betas_guesses,
 #        print(betas, Ks, 'calculated', err)
         # print(err)
 
+        compositions_old = compositions
         compositions = compositions_new
         compositions_K_order = compositions_K_order_new
         compositions_ref = compositions_ref_new
@@ -464,6 +475,7 @@ def sequential_substitution_NP(T, P, zs, compositions_guesses, betas_guesses,
 #        if comp_difference < trivial_solution_tol:
 #            raise ValueError("Converged to trivial condition, compositions of both phases equal")
         if err < tol:
+            phases = [phases[i].to_TP_zs(T=T, P=P, zs=compositions_old[i]) for i in phases_iter]
             return betas, compositions, phases, iteration, err
         # if iteration > 100:
         #     return betas, compositions, phases, iteration, err

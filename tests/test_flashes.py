@@ -735,7 +735,7 @@ def test_sequential_substitution_2P_functional_vs_FlashVL():
         VF_expect, xs_expect, ys_expect = res_expect.VF, res_expect.liquid0.zs, res_expect.gas.zs
         
     
-        VF_calc, xs_calc, ys_calc, niter, err = sequential_substitution_2P_functional(zs=zs, xs_guess=xs, ys_guess=ys,
+        VF_calc, xs_calc, ys_calc, niter, err = sequential_substitution_2P_functional(T, P, zs=zs, xs_guess=xs, ys_guess=ys,
                                        liquid_args=liq.lnphis_args(), gas_args=gas.lnphis_args(),
                                               maxiter=1000, tol=1E-20,
                                            trivial_solution_tol=1e-5, V_over_F_guess=0.5)
@@ -752,7 +752,7 @@ def test_sequential_substitution_2P_functional_vs_FlashVL():
     res_expect = flasher.flash(T=T, P=P, zs=zs)
     VF_expect, xs_expect, ys_expect = res_expect.VF, res_expect.liquid0.zs, res_expect.gas.zs
     
-    VF_calc, xs_calc, ys_calc, niter, err = sequential_substitution_2P_functional(zs=zs, xs_guess=xs, ys_guess=ys,
+    VF_calc, xs_calc, ys_calc, niter, err = sequential_substitution_2P_functional(T, P, zs=zs, xs_guess=xs, ys_guess=ys,
                                    liquid_args=liq.lnphis_args(), gas_args=gas.lnphis_args(),
                                           maxiter=1000, tol=1E-20,
                                        trivial_solution_tol=1e-5, V_over_F_guess=0.5)
@@ -771,7 +771,7 @@ def test_sequential_substitution_2P_functional_vs_FlashVL():
     res_expect = flasher.flash(T=T, P=P, zs=zs)
     VF_expect, xs_expect, ys_expect = res_expect.VF, res_expect.liquid0.zs, res_expect.gas.zs
     
-    VF_calc, xs_calc, ys_calc, niter, err = sequential_substitution_2P_functional(zs=zs, xs_guess=xs, ys_guess=ys,
+    VF_calc, xs_calc, ys_calc, niter, err = sequential_substitution_2P_functional(T, P, zs=zs, xs_guess=xs, ys_guess=ys,
                                    liquid_args=liq.lnphis_args(), gas_args=gas.lnphis_args(),
                                           maxiter=1000, tol=1E-20,
                                        trivial_solution_tol=1e-5, V_over_F_guess=0.5)
@@ -797,7 +797,7 @@ def test_sequential_substitution_2P_functional_trivial_solution():
     liquid1 = CEOSLiquid(PRMIX, zs=zs, T= 600.0, P= 189900.0, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
     liquid2 = CEOSLiquid(PRMIX, zs=zs, T= 600.0, P= 189900.0, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
 
-    SS_args_direct = {'zs': [0.3333333333333333, 0.3333333333333333, 0.3333333333333333],
+    SS_args_direct = {'T': 600.0, 'P': 189900.0,  'zs': [0.3333333333333333, 0.3333333333333333, 0.3333333333333333],
     'xs_guess': [0.4282287991132575, 0.41544573161462583, 0.1563254692721166], 
     'ys_guess': [0.0030316280767594597, 0.04752552416026615, 0.9494428477629744],
     'liquid_args':liquid1.lnphis_args(),

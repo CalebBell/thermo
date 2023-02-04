@@ -717,7 +717,7 @@ class FlashVL(Flash):
             gas_args = gas_phase.lnphis_args()
             # Can save one fugacity call
 
-            V_over_F, xs, ys, iteration, err = sequential_substitution_2P_functional(zs=zs, xs_guess=xs_guess, ys_guess=ys_guess,
+            V_over_F, xs, ys, iteration, err = sequential_substitution_2P_functional(T, P, zs=zs, xs_guess=xs_guess, ys_guess=ys_guess,
                                liquid_args=liquid_args, gas_args=gas_args, maxiter=maxiter, tol=tol,
                                V_over_F_guess=V_over_F_guess)
             l = liquid_phase.to(T=T, P=P, zs=xs)
