@@ -278,11 +278,9 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
         if err > 0.0 and err in (err1, err2, err3) or error_increases > 3:
             raise OscillationError("Converged to cycle in errors, no progress being made")
         # Accept the new compositions
-        xs_old, ys_old = xs, ys
         # if not limited_Z:
         #     assert xs == l.zs
         #     assert ys == g.zs
-        xs, ys = xs_new, ys_new
         # lnphis_g_old, lnphis_l_old = lnphis_g, lnphis_l
         # l_old, g_old = l, g
 
@@ -296,26 +294,19 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
             raise TrivialSolutionError("Converged to trivial condition, compositions of both phases equal",
                                        comp_difference, iteration, err)
         if err < tol:# and not limited_Z:
-            # Temporary!
-            # err_mole_balance = 0.0
-            # for i in cmps:
-            #     err_mole_balance += abs(xs_old[i] * (1.0 - V_over_F_old) + ys_old[i] * V_over_F_old - zs[i])
-            # if err_mole_balance < mole_balance_tol:
-
-                # return V_over_F, xs, ys, l, g, iteration, err
-
             if iteration == 0:
                 # We are composition independent!
                 g = gas_phase.to(ys_new, T=T, P=P, V=V)
                 l = liquid_phase.to(xs_new, T=T, P=P, V=V)
                 return V_over_F, xs_new, ys_new, l, g, iteration, err
-            g = gas_phase.to(ys_old, T=T, P=P, V=V)
-            l = liquid_phase.to(xs_old, T=T, P=P, V=V)
-            return V_over_F_old, xs_old, ys_old, l, g, iteration, err
+            g = gas_phase.to(ys, T=T, P=P, V=V)
+            l = liquid_phase.to(xs, T=T, P=P, V=V)
+            return V_over_F_old, xs, ys, l, g, iteration, err
         # elif err < tol and limited_Z:
         #     print(l.fugacities()/np.array(g.fugacities()))
 
         # If we aren't in a cycle but still making no progress
+        xs, ys = xs_new, ys_new
         if err1 != 0.0 and abs(err/err1) > 20.0:
             error_increases += 1
         err1, err2, err3 = err, err1, err2
@@ -372,8 +363,6 @@ def sequential_substitution_2P_functional(T, P, zs, xs_guess, ys_guess,
 
         if err > 0.0 and err in (err1, err2, err3) or error_increases > 3:
             raise OscillationError("Converged to cycle in errors, no progress being made")
-        xs_old, ys_old = xs, ys
-        xs, ys = xs_new, ys_new
 
         comp_difference = 0.0
         for xi, yi in zip(xs, ys):
@@ -387,9 +376,10 @@ def sequential_substitution_2P_functional(T, P, zs, xs_guess, ys_guess,
                 # We are composition independent!
                 return V_over_F, xs_new, ys_new, iteration, err
 
-            return V_over_F_old, xs_old, ys_old, iteration, err
+            return V_over_F_old, xs, ys, iteration, err
         if err1 != 0.0 and abs(err/err1) > 20.0:
             error_increases += 1
+        xs, ys = xs_new, ys_new
         err1, err2, err3 = err, err1, err2
     raise ValueError('End of SS without convergence')
 
