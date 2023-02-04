@@ -244,6 +244,8 @@ class FlashVL(Flash):
     PT_SS_MAXITER = 5000
     PT_SS_TOL = 1e-13
 
+    PT_TRIVIAL_SOLUTION_TOL = 1e-5
+
     # Settings for near-boundary conditions
     PT_SS_POLISH_TOL = 1e-25
     PT_SS_POLISH = True
@@ -718,7 +720,7 @@ class FlashVL(Flash):
             # Can save one fugacity call
 
             V_over_F, xs, ys, iteration, err = sequential_substitution_2P_functional(T, P, zs=zs, xs_guess=xs_guess, ys_guess=ys_guess,
-                               liquid_args=liquid_args, gas_args=gas_args, maxiter=maxiter, tol=tol,
+                               liquid_args=liquid_args, gas_args=gas_args, maxiter=maxiter, tol=tol, trivial_solution_tol=self.PT_TRIVIAL_SOLUTION_TOL,
                                V_over_F_guess=V_over_F_guess)
             l = liquid_phase.to(T=T, P=P, zs=xs)
             g = gas_phase.to(T=T, P=P, zs=ys)
