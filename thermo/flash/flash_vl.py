@@ -556,6 +556,12 @@ class FlashVL(Flash):
                                  handle_iffy=False, lowest_dG=False,
                                  highest_comp_diff=False, min_comp_diff=None,
                                  all_solutions=False):
+        if min_phase.T != T or min_phase.P != P:
+            min_phase = min_phase.to_TP_zs(T=T, P=P, zs=xs)
+        if other_phase.T != T or other_phase.P != P:
+            other_phase = other_phase.to_TP_zs(T=T, P=P, zs=ys)
+
+
         existing_phases = len(existing_comps) if existing_comps is not None else 0
         gen = self.stab.incipient_guesses(T, P, zs, expect_liquid=expect_liquid,
                                           expect_aqueous=expect_aqueous, existing_phases=existing_phases) #random=10000 has yet to help

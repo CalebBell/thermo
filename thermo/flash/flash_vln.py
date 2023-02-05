@@ -398,6 +398,7 @@ class FlashVLN(FlashVL):
             return self.flash_TP_K_composition_idependent(T, P, zs)
 
         gas, liquids, phases = self.phases_at(T, P, zs, V=V)
+        gas_at_conditions = gas
 #        if self.K_composition_independent and self.K_COMPOSITION_INDEPENDENT_HACK:
 #            # TODO move into new function?
 #            if self.max_phases == 2:
@@ -521,7 +522,7 @@ class FlashVLN(FlashVL):
         # Always want the other phase to be type of one not present.
         min_phase = sln_2P[0] if sln_2P[0] is not None else sln_2P[1][0]
         other_phase_flashed = found_phases[0] if found_phases[0] is not min_phase else found_phases[1]
-        other_phase = self.gas if LL_solved else liquids[1]
+        other_phase = gas_at_conditions if LL_solved else liquids[1]
 
         SWITCH_EXPECT_LIQ_Z = 0.25
         expect_liquid = (True if (other_phase_flashed.Z() > SWITCH_EXPECT_LIQ_Z
