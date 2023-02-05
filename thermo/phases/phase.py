@@ -868,7 +868,7 @@ class Phase(object):
         G_crit = G_crit*R*self.T + self.G_dep()
         return G_crit
 
-    def lnphis_at_zs(self, zs):
+    def lnphis_at_zs(self, zs, most_stable=False):
         r'''Method to directly calculate the log fugacity coefficients at a
         different composition than the current phase.
         This is implemented to allow for the possibility of more direct
@@ -881,9 +881,12 @@ class Phase(object):
         lnphis : list[float]
             Log fugacity coefficients, [-]
         '''
-        return self.to_TP_zs(self.T, self.P, zs).lnphis()
+        obj = self.to_TP_zs(self.T, self.P, zs)
+        if most_stable:
+            return obj.lnphis_lowest_Gibbs()
+        return obj.lnphis()
 
-    def fugacities_at_zs(self, zs):
+    def fugacities_at_zs(self, zs, most_stable=False):
         r'''Method to directly calculate the figacities at a
         different composition than the current phase.
         This is implemented to allow for the possibility of more direct
@@ -897,12 +900,17 @@ class Phase(object):
         fugacities : list[float]
             Fugacities, [Pa]
         '''
-        P = self.P
-        lnphis = self.lnphis_at_zs(zs)
-        if self.scalar:
-            return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(self.N)]
-        else:
-            return P*zs*trunc_exp_numpy(lnphis)
+        obj = self.to_TP_zs(self.T, self.P, zs)
+        if most_stable:
+            return obj.fugacities_lowest_Gibbs()
+        return obj.fugacities()
+        # P = self.P
+        # fugacities_lowest_Gibbs
+        # lnphis = self.lnphis_at_zs(zs, most_stable)
+        # if self.scalar:
+        #     return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(self.N)]
+        # else:
+        #     return P*zs*trunc_exp_numpy(lnphis)
             
     def lnphi(self):
         r'''Method to calculate and return the log of fugacity coefficient of

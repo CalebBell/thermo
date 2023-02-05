@@ -3957,8 +3957,9 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
     dead = False
     for _ in range(maxiter):
 #        test_phase = test_phase.to(T=T, P=P, zs=zs_test)
+        #fugacities_test = test_phase.to(T=T, P=P, zs=zs_test).fugacities_lowest_Gibbs()
+        # fugacities_test = test_phase.fugacities_at_zs(zs_test, most_stable=True)
         fugacities_test = test_phase.to(T=T, P=P, zs=zs_test).fugacities_lowest_Gibbs()
-#        fugacities_test = test_phase.fugacities_at_zs(zs_test)
 
         err = 0.0
         try:

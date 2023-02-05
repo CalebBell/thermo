@@ -310,7 +310,7 @@ class CEOSPhase(IdealGasDeparturePhase):
 
     supports_lnphis_args = True
     
-    def lnphis_args(self):
+    def lnphis_args(self, most_stable=False):
         # VTPR, PSRK, anything with GE not yet supported
         # Could save time by allowing T, P as an argument, and getting a new eos_mix at that
         N = self.N
@@ -319,17 +319,18 @@ class CEOSPhase(IdealGasDeparturePhase):
             a_alpha_j_rows, vec0, lnphis = [0.0]*N, [0.0]*N, [0.0]*N
         else:
             a_alpha_j_rows, vec0, lnphis = zeros(N), zeros(N), zeros(N)
+        l, g = (self.is_liquid, self.is_gas) if not most_stable else (True, True)
         if eos_mix.translated:
-            return (self.eos_class.model_id, self.T, self.P, self.N, eos_mix.one_minus_kijs, self.is_liquid, self.is_gas,
+            return (self.eos_class.model_id, self.T, self.P, self.N, eos_mix.one_minus_kijs, l, g,
                    eos_mix.b0s, eos_mix.bs, eos_mix.cs, eos_mix.a_alphas, eos_mix.a_alpha_roots, a_alpha_j_rows, vec0, lnphis)
         else:
-            return (self.eos_class.model_id, self.T, self.P, self.N, eos_mix.one_minus_kijs, self.is_liquid, self.is_gas,
+            return (self.eos_class.model_id, self.T, self.P, self.N, eos_mix.one_minus_kijs, l, g,
                    eos_mix.bs, eos_mix.a_alphas, eos_mix.a_alpha_roots, a_alpha_j_rows, vec0, lnphis)
 
-    def lnphis_at_zs(self, zs):
+    def lnphis_at_zs(self, zs, most_stable=False):
         # eos_mix = self.eos_mix
         # if eos_mix.__class__.__name__ in ('PRMIX', 'VDWMIX', 'SRKMIX', 'RKMIX'):
-        return lnphis_direct(zs, *self.lnphis_args())
+        return lnphis_direct(zs, *self.lnphis_args(most_stable))
         # return self.to_TP_zs(self.T, self.P, zs).lnphis()
 
     def T_max_at_V(self, V):
