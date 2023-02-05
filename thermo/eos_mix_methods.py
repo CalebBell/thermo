@@ -68,7 +68,7 @@ implemented
 from fluids.constants import R
 from fluids.numerics import numpy as np, catanh
 from math import sqrt, log
-from thermo.eos import eos_lnphi
+from thermo.eos import eos_lnphi, eos_G_dep
 from thermo.eos_volume import volume_solutions_halley, volume_solutions_fast
 
 __all__ = ['a_alpha_aijs_composition_independent',
@@ -833,11 +833,32 @@ def G_dep_lnphi_d_helper(T, P, b, delta, epsilon, a_alpha, N,
         out[i] = diff
     return out
 
-def eos_mix_a_alpha_volume(gas, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None):
+def eos_mix_a_alpha_volume(g, l, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots, a_alpha_j_rows=None, vec0=None):
     a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs, a_alpha_j_rows, vec0)
 
     V0, V1, V2 = volume_solutions_halley(T, P, b, delta, epsilon, a_alpha)
-    if not gas:
+    if l and g:
+        # Use the lowest Gibbs energy root
+        V_low = V0
+        if V1 != 0.0:
+            if V_low > V1 and V1 > b:
+                V_low = V1
+            if V_low > V2 and V2 > b:
+                V_low = V2
+        V_high = V0
+        if V1 != 0.0:
+            if V_high < V1 and V1 > b:
+                V_high = V1
+            if V_high < V2 and V2 > b:
+                V_high = V2
+        if V_low != V_high:
+            # two roots found, see which has the lowest
+            G_V_low = eos_G_dep(T, P, V_low, b, delta, epsilon, a_alpha)
+            G_V_high = eos_G_dep(T, P, V_high, b, delta, epsilon, a_alpha)
+            V0 = V_low if G_V_low < G_V_high else V_high
+
+
+    elif not g:
         # Prefer liquid, ensure V0 is the smalest root
         if V1 != 0.0:
             if V0 > V1 and V1 > b:
@@ -1359,7 +1380,7 @@ def PR_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, bs, a_alphas, a_alpha_r
     delta = 2.0*b
     epsilon = -b*b
     
-    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
+    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, l, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     return PR_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=lnphis)
 
@@ -1372,7 +1393,7 @@ def SRK_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, bs, a_alphas, a_alpha_
     delta = b
     epsilon = 0.0
     
-    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
+    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, l, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     return SRK_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=lnphis)
 
@@ -1385,7 +1406,7 @@ def VDW_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, bs, a_alphas, a_alpha_
     delta = 0.0
     epsilon = 0.0
     
-    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
+    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, l, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     return VDW_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_roots, N, lnphis=lnphis)
 
@@ -1398,7 +1419,7 @@ def RK_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, bs, a_alphas, a_alpha_r
     delta = b
     epsilon = 0.0
     
-    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
+    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, l, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     
     ddelta_dns = db_dns = eos_mix_db_dns(b, bs, N, out=None)
@@ -1421,7 +1442,7 @@ def PR_translated_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, b0s, bs, cs,
     b = b0 - c
     delta = 2.0*(c + b0)
     epsilon = -b0*b0 + c*(c + b0 + b0)
-    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
+    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, l, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     
     db_dns = eos_mix_db_dns(b, bs, N, out=None)
@@ -1445,7 +1466,7 @@ def SRK_translated_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, b0s, bs, cs
     b = b0 - c
     delta =  c + c + b0
     epsilon = c*(b0 + c)
-    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
+    Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, l, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     
     db_dns = eos_mix_db_dns(b, bs, N, out=None)
