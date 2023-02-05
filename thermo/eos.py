@@ -443,6 +443,10 @@ def eos_lnphi(T, P, V, b, delta, epsilon, a_alpha):
     return (P*V*RT_inv + log(RT/(P*(V-b))) - 1.0
             - 2.0*a_alpha*fancy*RT_inv*x0)
 
+def eos_G_dep(T, P, V, b, delta, epsilon, a_alpha):
+    lnphi = eos_lnphi(T, P, V, b, delta, epsilon, a_alpha)
+    return lnphi*R*T
+
 class GCEOS(object):
     r'''Class for solving a generic Pressure-explicit three-parameter cubic
     equation of state. Does not implement any parameters itself; must be
