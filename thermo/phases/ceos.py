@@ -319,7 +319,7 @@ class CEOSPhase(IdealGasDeparturePhase):
             a_alpha_j_rows, vec0, lnphis = [0.0]*N, [0.0]*N, [0.0]*N
         else:
             a_alpha_j_rows, vec0, lnphis = zeros(N), zeros(N), zeros(N)
-        l, g = (self.is_liquid, self.is_gas) if not most_stable else (True, True)
+        l, g = (self.is_liquid, self.is_gas) #if not most_stable else (True, True)
         if eos_mix.translated:
             return (self.eos_class.model_id, self.T, self.P, self.N, eos_mix.one_minus_kijs, l, g,
                    eos_mix.b0s, eos_mix.bs, eos_mix.cs, eos_mix.a_alphas, eos_mix.a_alpha_roots, a_alpha_j_rows, vec0, lnphis)
@@ -332,6 +332,14 @@ class CEOSPhase(IdealGasDeparturePhase):
         # if eos_mix.__class__.__name__ in ('PRMIX', 'VDWMIX', 'SRKMIX', 'RKMIX'):
         return lnphis_direct(zs, *self.lnphis_args(most_stable))
         # return self.to_TP_zs(self.T, self.P, zs).lnphis()
+
+    def fugacities_at_zs(self, zs, most_stable=False):
+        P = self.P
+        lnphis = lnphis_direct(zs, *self.lnphis_args(most_stable))
+        if self.scalar:
+            return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
+        else:
+            return trunc_exp_numpy(lnphis)*P*zs
 
     def T_max_at_V(self, V):
         T_max = self.eos_mix.T_max_at_V(V)
@@ -552,6 +560,9 @@ class CEOSPhase(IdealGasDeparturePhase):
         except:
             pass
         eos_mix = self.eos_mix
+        # A bad bug was discovered where the other root just wasn't solved for
+        # however, more tests work it isn't solved for. Highly odd.
+        # eos_mix.solve_missing_volumes()
         try:
             if eos_mix.G_dep_g < eos_mix.G_dep_l:
                 lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_g)
