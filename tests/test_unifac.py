@@ -1002,11 +1002,13 @@ def test_UNIFAC_one_component():
 
 
 def test_UNIFAC_large():
+    from chemicals.identifiers import dippr_compounds
+
     constants, correlations = ChemicalConstantsPackage.from_IDs(IDs=list(dippr_compounds())[0:200])
     groups, CASs = [], []
 
     for g, c in zip(constants.UNIFAC_groups, constants.CASs):
-        if g is not None:
+        if g:
             groups.append(g)
             CASs.append(c)
 
