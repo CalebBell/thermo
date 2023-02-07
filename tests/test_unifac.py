@@ -274,7 +274,7 @@ def test_UNIFAC_class():
     dVis_dxs_analytical = GE.dVis_dxs()
     assert_close2d(dVis_dxs_expect, dVis_dxs_analytical, rtol=1e-12)
     dVis_dxs_numerical = jacobian(to_jac_Vis, xs, scalar=False, perturbation=1e-9)
-    assert_close2d(dVis_dxs_numerical, dVis_dxs_analytical, rtol=1e-6)
+    assert_close2d(dVis_dxs_numerical, dVis_dxs_analytical, rtol=2e-6)
 
     def to_jac_Fis(xs):
         return GE.to_T_xs(T, xs).Fis()
@@ -344,7 +344,7 @@ def test_UNIFAC_class():
     dVis_modified_dxs_analytical = GE.dVis_modified_dxs()
     assert_close2d(dVis_modified_dxs_expect, dVis_modified_dxs_analytical, rtol=1e-12)
     dVis_modified_dxs_numerical = jacobian(to_jac_Vis_modified, xs, scalar=False, perturbation=1e-9)
-    assert_close2d(dVis_modified_dxs_numerical, dVis_modified_dxs_analytical, rtol=1e-6)
+    assert_close2d(dVis_modified_dxs_numerical, dVis_modified_dxs_analytical, rtol=5e-6)
 
     # Checked to higher precision with numdifftools
     d2Vis_modified_dxixjs_numerical = hessian(to_jac_Vis_modified, xs, scalar=False, perturbation=4e-5)

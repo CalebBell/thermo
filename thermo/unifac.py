@@ -3218,30 +3218,25 @@ def unifac_d2psis_dT2(T, N_groups, version, psi_a, psi_b, psi_c, psis, d2psis_dT
     if d2psis_dT2 is None:
         d2psis_dT2 = [[0.0]*N_groups for _ in range(N_groups)] # numba: delete
 #        d2psis_dT2 = zeros((N_groups, N_groups)) # numba: uncomment
-
-    mT2_inv = -1.0/(T*T)
-    T3_inv_m2 = -2.0/(T*T*T)
-
     if version == 4 or version == 5:
         T0 = 298.15
         T_inv = 1.0/T
         T2_inv = T_inv*T_inv
-        TmT0 = T - T0
         x0 = log(T0/T)
-        B = T*x0 + T - T0
         for i in range(N_groups):
             psis_row, a_row, b_row, c_row = psis[i], psi_a[i], psi_b[i], psi_c[i]
             row = d2psis_dT2[i]
             for j in range(N_groups):
-                # TODO: optimize
                 a1, a2, a3 = a_row[j], b_row[j], c_row[j]
                 tf2 = a1 + a2*(T - T0) + a3*(T*log(T0/T) + T - T0)
-                tf3 = b_row[j] + c_row[j]*x0
+                tf3 = a2 + a3*x0
 
                 x1 = (tf3 - tf2*T_inv)
                 v = T2_inv*psis_row[j]*(a3 + 2.0*tf3 + x1*x1 - 2.0*tf2*T_inv)
                 row[j] = v
     else:
+        mT2_inv = -1.0/(T*T)
+        T3_inv_m2 = -2.0/(T*T*T)
         for i in range(N_groups):
             a_row, c_row, psis_row = psi_a[i], psi_c[i], psis[i]
             d2psis_dT2i = d2psis_dT2[i]
@@ -3257,9 +3252,6 @@ def unifac_d3psis_dT3(T, N_groups, version, psi_a, psi_b, psi_c, psis, d3psis_dT
         d3psis_dT3 = [[0.0]*N_groups for _ in range(N_groups)] # numba: delete
 #        d3psis_dT3 = zeros((N_groups, N_groups)) # numba: uncomment
 
-    nT2_inv = -1.0/(T*T)
-    T3_inv_6 = 6.0/(T*T*T)
-    T4_inv_6 = 6.0/(T*T*T*T)
 
     if version == 4 or version == 5:
         T0 = 298.15
@@ -3274,7 +3266,7 @@ def unifac_d3psis_dT3(T, N_groups, version, psi_a, psi_b, psi_c, psis, d3psis_dT
             for j in range(N_groups):
                 a1, a2, a3 = a_row[j], b_row[j], c_row[j]
                 tf2 = a1 + a2*TmT0 + a3*B
-                tf3 = b_row[j] + c_row[j]*x0
+                tf3 = a2 + a3*x0
                 x6 = tf2*T_inv
                 x5 = (tf3 - x6)
                 v = nT3_inv*psis_row[j]*(4.0*a3 + 6.0*tf3 + x5*x5*x5
@@ -3282,6 +3274,9 @@ def unifac_d3psis_dT3(T, N_groups, version, psi_a, psi_b, psi_c, psis, d3psis_dT
                                     - 6.0*x6)
                 row[j] = v
     else:
+        nT2_inv = -1.0/(T*T)
+        T3_inv_6 = 6.0/(T*T*T)
+        T4_inv_6 = 6.0/(T*T*T*T)
         for i in range(N_groups):
             psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
             row = d3psis_dT3[i]
@@ -4409,7 +4404,7 @@ class UNIFAC(GibbsExcess):
         '''
         return self.version + 500
     
-    def lnphis_args(self):
+    def lnphis_args(self, ):
         try:
             rs_34 = self.rs_34
         except:
