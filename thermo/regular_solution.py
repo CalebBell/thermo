@@ -172,12 +172,11 @@ def regular_solution_d3GE_dxixjxks(Vs, SPs, Hi_sums, dGE_dxs, N, GE, xsVs_sum_in
         for j in range(N):
             dG_row = dG_matrix[j]
             for k in range(N):
-                tot = 0.0
                 thirds = -2.0*Vs[i]*Vs[j]*Vs[k]*GE + 2.0*Vs[j]*Vs[k]*Hi_sums[i]
                 seconds = Vs[i]*(Vs[j]*dGE_dxs[k] + Vs[k]*dGE_dxs[j])
                 seconds -= Vs[i]*Vs[j]*Vs[k]*(
                             SPs[i]*(SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPs[k]*(coeffs[i][k] + coeffs[k][i]))
-                             + (SPs[i]-SPs[j])**2 + (SPs[i] - SPs[k])**2
+                             + (SPs[i]-SPs[j])**2 + (SPs[i] - SPs[k])**2    
                              )
                 firsts = -Vs[i]*d2GE_dxixjs[j][k]
 
