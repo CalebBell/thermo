@@ -919,7 +919,9 @@ class GibbsExcess(object):
         xs = self.xs
         d2GE_dxixjs = self.d2GE_dxixjs()
 
-        dgammas_dns = gibbs_excess_dgammas_dns(xs, gammas, d2GE_dxixjs, N, self.T)
+        dgammas_dns = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N)) 
+
+        dgammas_dns = gibbs_excess_dgammas_dns(xs, gammas, d2GE_dxixjs, N, self.T, dgammas_dns)
 
         if not self.scalar and type(dgammas_dns) is list:
             dgammas_dns = array(dgammas_dns)
