@@ -3901,6 +3901,8 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
     # Can this whole function be switched to the functional approach?
     # Should be possible
     # Note that the trial and test phase have to be at the right conditions
+    # print(trial_phase,trial_phase.zs, zs_test, test_phase, test_phase.zs,
+    #                     maxiter, xtol)
 
 
     if test_phase is None:
@@ -3911,30 +3913,30 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
     N = trial_phase.N
     fugacities_trial = trial_phase.fugacities_lowest_Gibbs()
 
-    # Go through the feed composition - and the trial composition - if we have zeros, need to make them a trace;
-    zs_test2 = [0.0]*N
-    for i in range(N):
-        zs_test2[i] = zs_test[i]
-    zs_test = zs_test2
-    for i in range(N):
-        if zs_test[i] == 0.0:
-            zs_test[i] = 1e-50
-            # break
     has_zero_z_trial = False
-    for i in range(N):
-        if zs[i] == 0.0:
-            zs2 = [0.0]*N
-            for i in range(N):
-                if zs[i] == 0.0:
-                    zs2[i] = 1e-50
-                    has_zero_z_trial = True
-                else:
-                    zs2[i] = zs[i]
-            zs = zs2
-            # Requires another evaluation of the trial phase
-            trial_phase = trial_phase.to(T=T, P=P, zs=zs)
-            fugacities_trial = trial_phase.fugacities_lowest_Gibbs()
-            break
+    # Go through the feed composition - and the trial composition - if we have zeros, need to make them a trace;
+    # zs_test2 = [0.0]*N
+    # for i in range(N):
+    #     zs_test2[i] = zs_test[i]
+    # zs_test = zs_test2
+    # for i in range(N):
+    #     if zs_test[i] == 0.0:
+    #         zs_test[i] = 1e-50
+    #         # break
+    # for i in range(N):
+    #     if zs[i] == 0.0:
+    #         zs2 = [0.0]*N
+    #         for i in range(N):
+    #             if zs[i] == 0.0:
+    #                 zs2[i] = 1e-50
+    #                 has_zero_z_trial = True
+    #             else:
+    #                 zs2[i] = zs[i]
+    #         zs = zs2
+    #         # Requires another evaluation of the trial phase
+    #         trial_phase = trial_phase.to(T=T, P=P, zs=zs)
+    #         fugacities_trial = trial_phase.fugacities_lowest_Gibbs()
+    #         break
     Ks = [0.0]*N
 
     # makes no real difference
@@ -3951,7 +3953,8 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
     # Model converges towards fictional K values which, when evaluated, yield the
     # stationary point composition
     for i in range(N):
-        Ks[i] = zs_test[i]/zs[i]
+        if zs[i] != 0.0:
+            Ks[i] = zs_test[i]/zs[i]
 
     sum_zs_test = sum_zs_test_inv = 1.0
     converged = False
@@ -3969,9 +3972,10 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
         err = 0.0
         try:
             for i in range(N):
-                corrections[i] = ci = fugacities_trial[i]/fugacities_test[i]*sum_zs_test_inv
-                Ks[i] *= ci
-                err += (ci - 1.0)*(ci - 1.0)
+                if fugacities_test[i] != 0.0:
+                    corrections[i] = ci = fugacities_trial[i]/fugacities_test[i]*sum_zs_test_inv
+                    Ks[i] *= ci
+                    err += (ci - 1.0)*(ci - 1.0)
         except:
             # A test fugacity became zero
             # May need special handling for this outside.
@@ -3991,8 +3995,6 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
         sum_zs_test = 0.0
         for i in range(N):
             sum_zs_test += zs_test[i]
-        if sum_zs_test== 0:
-            a = 1
         try:
             sum_zs_test_inv = 1.0/sum_zs_test
         except:
@@ -4011,6 +4013,8 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
     if converged:
         if has_zero_z_trial:
             try:
+                # print('Interesting use above')
+                # 1/0
                 tmp_zs_into = [v for v in trial_zs_orig if v != 0.0]
                 tmp_Ks_into = [K for K, z in zip(Ks, trial_zs_orig) if z != 0.0]
                 V_over_F, trial_zs_unmapped, appearing_zs_unmapped = flash_inner_loop(tmp_zs_into, tmp_Ks_into)
@@ -4046,8 +4050,6 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
                 dG_RT += zs_test[i]*(trunc_log(zs_test[i]) + lnphis_test[i])
             dG_RT *= V_over_F
 #        print(dG_RT)
-
-
         return sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs, dG_RT
     else:
         raise UnconvergedError('End of stability_iteration_Michelsen without convergence')
