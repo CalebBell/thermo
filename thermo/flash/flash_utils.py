@@ -4039,12 +4039,12 @@ def stability_iteration_Michelsen(T, P, zs_trial, fugacities_trial, zs_test, tes
         # else:
         if not isinf(err) and not dead:
             try:
-                V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = flash_inner_loop(zs, Ks)
+                V_over_F, trial_zs, appearing_zs = flash_inner_loop(zs, Ks)
             except:
                 # Converged to trivial solution so closely the math does not work
-                V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = 0.0, zs, zs
+                V_over_F, trial_zs, appearing_zs = 0.0, zs, zs
         else:
-            V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = 0.0, zs, zs
+            V_over_F, trial_zs, appearing_zs = 0.0, zs, zs
 
         # Calculate the dG of the feed
         dG_RT = 0.0
