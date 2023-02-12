@@ -3977,17 +3977,17 @@ def stability_iteration_Michelsen(T, P, zs_trial, fugacities_trial, zs_test, tes
 
 
         err = 0.0
-        try:
-            for i in range(N):
-                if fugacities_test[i] != 0.0:
-                    corrections[i] = ci = fugacities_trial[i]/fugacities_test[i]*sum_zs_test_inv
-                    Ks[i] *= ci
-                    err += (ci - 1.0)*(ci - 1.0)
-        except:
-            # A test fugacity became zero
-            # May need special handling for this outside.
-            converged = True
-            break
+        # try:
+        for i in range(N):
+            if fugacities_test[i] != 0.0:
+                corrections[i] = ci = fugacities_trial[i]/fugacities_test[i]*sum_zs_test_inv
+                Ks[i] *= ci
+                err += (ci - 1.0)*(ci - 1.0)
+        # except:
+        #     # A test fugacity became zero
+        #     # May need special handling for this outside.
+        #     converged = True
+        #     break
 
         if err < xtol:
             converged = True
