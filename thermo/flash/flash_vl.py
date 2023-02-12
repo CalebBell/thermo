@@ -580,12 +580,15 @@ class FlashVL(Flash):
         if all_solutions:
             all_solutions_list = []
         
+        # The composition for the assumed-stable phase comes from the min_phase object
+        # The zs is the true feed.
         fugacities_trial = min_phase.fugacities_lowest_Gibbs()
+        zs_trial = min_phase.zs
 
 
         for i, trial_comp in enumerate(gen):
                 try:
-                    sln = stability_iteration_Michelsen(T=T, P=P, zs_trial=zs, fugacities_trial=fugacities_trial,
+                    sln = stability_iteration_Michelsen(T=T, P=P, zs_trial=zs_trial, fugacities_trial=fugacities_trial,
                                                         zs_test=trial_comp, test_phase=other_phase,
                                                         maxiter=self.PT_STABILITY_MAXITER, xtol=self.PT_STABILITY_XTOL)
                     sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs, dG_RT = sln
