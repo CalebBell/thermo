@@ -4049,12 +4049,6 @@ def stability_iteration_Michelsen(T, P, zs_trial, fugacities_trial, zs_test, tes
         # Calculate the dG of the feed
         dG_RT = 0.0
         if V_over_F != 0.0:
-            # lnphis_test = test_phase.to(T=T, P=P, zs=zs_test).lnphis_lowest_Gibbs()
-            # lnphis_test = test_phase.lnphis_at_zs(zs_test) #test_phase.lnphis()
-            # if functional:
-            #     lnphis_test = lnphis_direct(zs_test, *test_phase)
-            # else:
-            #     lnphis_test = test_phase.lnphis_at_zs(zs_test, most_stable=True)
             for i in range(N):
                 # Sometimes z will converge to literally be zero, so the trunc_log takes care of that
                 dG_RT += zs_test[i]*(trunc_log(zs_test[i]) + lnphis_test[i])
