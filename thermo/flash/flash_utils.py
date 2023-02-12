@@ -3907,13 +3907,14 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
 
     if test_phase is None:
         test_phase = trial_phase
-    T, P, zs = trial_phase.T, trial_phase.P, trial_phase.zs
+    # T, P, zs = trial_phase.T, trial_phase.P, trial_phase.zs
+    zs = trial_phase.zs
     trial_zs_orig = zs
 
     N = trial_phase.N
     fugacities_trial = trial_phase.fugacities_lowest_Gibbs()
 
-    has_zero_z_trial = False
+    # has_zero_z_trial = False
     # Go through the feed composition - and the trial composition - if we have zeros, need to make them a trace;
     # zs_test2 = [0.0]*N
     # for i in range(N):
@@ -4011,40 +4012,40 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
             break
 
     if converged:
-        if has_zero_z_trial:
+        # if has_zero_z_trial:
+        #     try:
+        #         # print('Interesting use above')
+        #         # 1/0
+        #         tmp_zs_into = [v for v in trial_zs_orig if v != 0.0]
+        #         tmp_Ks_into = [K for K, z in zip(Ks, trial_zs_orig) if z != 0.0]
+        #         V_over_F, trial_zs_unmapped, appearing_zs_unmapped = flash_inner_loop(tmp_zs_into, tmp_Ks_into)
+        #         trial_zs = [0.0]*N
+        #         appearing_zs = [0.0]*N
+        #         unmapping_idx = 0
+        #         for i in range(N):
+        #             if trial_zs_orig[i] != 0.0:
+        #                 trial_zs[i] = trial_zs_unmapped[unmapping_idx]
+        #                 appearing_zs[i] = appearing_zs_unmapped[unmapping_idx]
+        #                 unmapping_idx += 1
+        #         V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs
+        #     except:
+        #         # Converged to trivial solution so closely the math does not work
+        #         V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = 0.0, zs, zs
+        # else:
+        if not isinf(err) and not dead:
             try:
-                # print('Interesting use above')
-                # 1/0
-                tmp_zs_into = [v for v in trial_zs_orig if v != 0.0]
-                tmp_Ks_into = [K for K, z in zip(Ks, trial_zs_orig) if z != 0.0]
-                V_over_F, trial_zs_unmapped, appearing_zs_unmapped = flash_inner_loop(tmp_zs_into, tmp_Ks_into)
-                trial_zs = [0.0]*N
-                appearing_zs = [0.0]*N
-                unmapping_idx = 0
-                for i in range(N):
-                    if trial_zs_orig[i] != 0.0:
-                        trial_zs[i] = trial_zs_unmapped[unmapping_idx]
-                        appearing_zs[i] = appearing_zs_unmapped[unmapping_idx]
-                        unmapping_idx += 1
-                V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs
+                V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = flash_inner_loop(zs, Ks)
             except:
                 # Converged to trivial solution so closely the math does not work
                 V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = 0.0, zs, zs
         else:
-            if not isinf(err) and not dead:
-                try:
-                    V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = flash_inner_loop(zs, Ks)
-                except:
-                    # Converged to trivial solution so closely the math does not work
-                    V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = 0.0, zs, zs
-            else:
-                V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = 0.0, zs, zs
+            V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = 0.0, zs, zs
 
         # Calculate the dG of the feed
         dG_RT = 0.0
         if V_over_F != 0.0:
-            lnphis_test = test_phase.to(T=T, P=P, zs=zs_test).lnphis_lowest_Gibbs()
-            #lnphis_test = test_phase.lnphis_at_zs(zs_test) #test_phase.lnphis()
+            # lnphis_test = test_phase.to(T=T, P=P, zs=zs_test).lnphis_lowest_Gibbs()
+            lnphis_test = test_phase.lnphis_at_zs(zs_test) #test_phase.lnphis()
             for i in range(N):
                 # Sometimes z will converge to literally be zero, so the trunc_log takes care of that
                 dG_RT += zs_test[i]*(trunc_log(zs_test[i]) + lnphis_test[i])
