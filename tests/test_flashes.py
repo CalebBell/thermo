@@ -381,7 +381,8 @@ def test_stabiliy_iteration_Michelsen_zero_fraction():
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
     zs_test = [0.0, 0.966916481252204, 0.033083518747796005]
-    kwargs = {'trial_phase': liq, 'zs_test': zs_test,
+    kwargs = {'zs_test': zs_test,
+    'T': liq.T, 'P': liq.P, 'zs_trial': liq.zs, 'fugacities_trial': liq.fugacities(),
            'test_phase': gas, 'maxiter': 500, 'xtol': 5e-09}
     sln_with_zero = stability_iteration_Michelsen(**kwargs)[0:-1]
 
@@ -990,6 +991,7 @@ def test_zero_composition_feed_stability_cleanup():
 
     test_phase = gas.to(T=330.0, P=1e6, zs=[0.8106538417762764, 0.039762693226981956, 0.14958346499674166, 0.0])
 
-    res = stability_iteration_Michelsen(trial_phase=trial_phase, zs_test=zs_test, test_phase=test_phase, maxiter=500, xtol=5e-9)
+    res = stability_iteration_Michelsen(fugacities_trial=trial_phase.fugacities(), T=trial_phase.T, P=trial_phase.P, zs_trial=trial_phase.zs, 
+                                        zs_test=zs_test, test_phase=test_phase, maxiter=500, xtol=5e-9)
     assert_close1d(res[1], [0.02340166124484216, 1295.8490532734518, 7805.784929232898, 0.0])
     assert_close1d(res[2], [1.5560400012132823e-05, 0.04226383223692557, 0.9577206073630623, 0.0])

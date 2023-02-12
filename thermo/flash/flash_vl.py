@@ -557,9 +557,9 @@ class FlashVL(Flash):
                                  highest_comp_diff=False, min_comp_diff=None,
                                  all_solutions=False):
         if min_phase.T != T or min_phase.P != P:
-            min_phase = min_phase.to_TP_zs(T=T, P=P, zs=xs)
+            min_phase = min_phase.to_TP_zs(T=T, P=P, zs=zs)
         if other_phase.T != T or other_phase.P != P:
-            other_phase = other_phase.to_TP_zs(T=T, P=P, zs=ys)
+            other_phase = other_phase.to_TP_zs(T=T, P=P, zs=zs)
 
 
         existing_phases = len(existing_comps) if existing_comps is not None else 0
@@ -579,10 +579,14 @@ class FlashVL(Flash):
 
         if all_solutions:
             all_solutions_list = []
+        
+        fugacities_trial = min_phase.fugacities_lowest_Gibbs()
+
 
         for i, trial_comp in enumerate(gen):
                 try:
-                    sln = stability_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase,
+                    sln = stability_iteration_Michelsen(T=T, P=P, zs_trial=zs, fugacities_trial=fugacities_trial,
+                                                        zs_test=trial_comp, test_phase=other_phase,
                                                         maxiter=self.PT_STABILITY_MAXITER, xtol=self.PT_STABILITY_XTOL)
                     sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs, dG_RT = sln
                     if zs == trial_zs:

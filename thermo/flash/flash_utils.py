@@ -3885,7 +3885,7 @@ def sequential_substitution_2P_double(zs, xs_guess, ys_guess, liquid_phase,
     raise UnconvergedError('End of SS without convergence')
 
 
-def stability_iteration_Michelsen(trial_phase, zs_test, test_phase,
+def stability_iteration_Michelsen(T, P, zs_trial, fugacities_trial, zs_test, test_phase,
                                   maxiter=20, xtol=1E-12):
     # So long as for both trial_phase, and test_phase use the lowest Gibbs energy fugacities, no need to test two phases.
     # Very much no need to converge using acceleration - just keep a low tolerance
@@ -3904,12 +3904,12 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase,
     # print(trial_phase,trial_phase.zs, zs_test, test_phase, test_phase.zs,
     #                     maxiter, xtol)
     # T, P, zs = trial_phase.T, trial_phase.P, trial_phase.zs
-    zs = trial_phase.zs
-    P = trial_phase.P
-    trial_zs_orig = zs
+    zs = zs_trial #trial_phase.zs
+    # P = trial_phase.P
+    # trial_zs_orig = zs
 
-    N = trial_phase.N
-    fugacities_trial = trial_phase.fugacities_lowest_Gibbs()
+    N = len(zs_trial)
+    # fugacities_trial = trial_phase.fugacities_lowest_Gibbs()
 
     # has_zero_z_trial = False
     # Go through the feed composition - and the trial composition - if we have zeros, need to make them a trace;
@@ -4127,7 +4127,8 @@ def assert_stab_success_2P(liq, gas, stab, T, P, zs, guess_name, xs=None,
     else:
         min_phase, other_phase = gas, liq
 
-    _, _, _, V_over_F, trial_zs, appearing_zs, dG_RT = stability_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase, maxiter=100)
+    _, _, _, V_over_F, trial_zs, appearing_zs, dG_RT = stability_iteration_Michelsen(T=min_phase.T, P=min_phase.P, zs_trial=min_phase.zs,
+          fugacities_trial=min_phase.fugacities(), zs_test=trial_comp, test_phase=other_phase, maxiter=100)
 
     V_over_F, xs_calc, ys_calc, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
                                                                         zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs,
