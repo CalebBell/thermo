@@ -3958,7 +3958,7 @@ def stability_iteration_Michelsen(T, P, zs_trial, fugacities_trial, zs_test, tes
     sum_zs_test = sum_zs_test_inv = 1.0
     converged = False
     dead = False
-    for _ in range(maxiter):
+    for iteration in range(maxiter):
 #        test_phase = test_phase.to(T=T, P=P, zs=zs_test)
         #fugacities_test = test_phase.to(T=T, P=P, zs=zs_test).fugacities_lowest_Gibbs()
         # fugacities_test2 = test_phase.to(T=T, P=P, zs=zs_test).fugacities_lowest_Gibbs()
@@ -4010,7 +4010,6 @@ def stability_iteration_Michelsen(T, P, zs_trial, fugacities_trial, zs_test, tes
             break
         for i in range(N):
             zs_test[i] *= sum_zs_test_inv
-        dead = False
         for i in range(N):
             if isnan(zs_test[i]):
                 dead = True
@@ -4052,10 +4051,10 @@ def stability_iteration_Michelsen(T, P, zs_trial, fugacities_trial, zs_test, tes
         if V_over_F != 0.0:
             # lnphis_test = test_phase.to(T=T, P=P, zs=zs_test).lnphis_lowest_Gibbs()
             # lnphis_test = test_phase.lnphis_at_zs(zs_test) #test_phase.lnphis()
-            if functional:
-                lnphis_test = lnphis_direct(zs_test, *test_phase)
-            else:
-                lnphis_test = test_phase.lnphis_at_zs(zs_test, most_stable=True)
+            # if functional:
+            #     lnphis_test = lnphis_direct(zs_test, *test_phase)
+            # else:
+            #     lnphis_test = test_phase.lnphis_at_zs(zs_test, most_stable=True)
             for i in range(N):
                 # Sometimes z will converge to literally be zero, so the trunc_log takes care of that
                 dG_RT += zs_test[i]*(trunc_log(zs_test[i]) + lnphis_test[i])
