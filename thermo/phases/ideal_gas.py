@@ -184,6 +184,7 @@ class IdealGas(Phase):
         return self.zeros1d
 
     lnphis_G_min = lnphis
+    lnphis_lowest_Gibbs = lnphis
 
     def phis(self):
         r'''Method to calculate and return the fugacity coefficients of

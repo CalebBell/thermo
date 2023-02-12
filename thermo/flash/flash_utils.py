@@ -3885,7 +3885,7 @@ def sequential_substitution_2P_double(zs, xs_guess, ys_guess, liquid_phase,
     raise UnconvergedError('End of SS without convergence')
 
 
-def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
+def stability_iteration_Michelsen(trial_phase, zs_test, test_phase,
                                   maxiter=20, xtol=1E-12):
     # So long as for both trial_phase, and test_phase use the lowest Gibbs energy fugacities, no need to test two phases.
     # Very much no need to converge using acceleration - just keep a low tolerance
@@ -3903,12 +3903,9 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
     # Note that the trial and test phase have to be at the right conditions
     # print(trial_phase,trial_phase.zs, zs_test, test_phase, test_phase.zs,
     #                     maxiter, xtol)
-
-
-    if test_phase is None:
-        test_phase = trial_phase
     # T, P, zs = trial_phase.T, trial_phase.P, trial_phase.zs
     zs = trial_phase.zs
+    P = trial_phase.P
     trial_zs_orig = zs
 
     N = trial_phase.N
@@ -3939,7 +3936,6 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
     #         fugacities_trial = trial_phase.fugacities_lowest_Gibbs()
     #         break
     Ks = [0.0]*N
-
     # makes no real difference
     for i in range(N):
         if isinf(fugacities_trial[i]):
@@ -3966,9 +3962,13 @@ def stability_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
         # fugacities_test2 = test_phase.to(T=T, P=P, zs=zs_test).fugacities_lowest_Gibbs()
 
         # TODO is this really necessary to do the most stable check?
-        fugacities_test = test_phase.fugacities_at_zs(zs_test, most_stable=True)
+        # fugacities_test = test_phase.fugacities_at_zs(zs_test, most_stable=True)
         # fugacities_test = fugacities_check
         # print(fugacities_test, zs_test)
+
+        lnphis_test = test_phase.lnphis_at_zs(zs_test, most_stable=True)
+        fugacities_test = [P*zs_test[i]*trunc_exp(lnphis_test[i]) for i in range(N)]
+
 
         err = 0.0
         try:

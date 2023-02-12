@@ -4736,4 +4736,15 @@ def test_CEOS_float_scalar_returns():
             pass
         if type(obj) is np.float64:
             raise ValueError("Type should not have a numpy scalar output")
-            
+
+
+def test_IdealGas_lnphis_low_P_T_almost_pure():
+    obj = IdealGas(HeatCapacityGases=[HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])), HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965]))],
+         T=8.4, P=1e-05, zs=[0.0, 0.9999999999999999])
+
+    assert obj.lnphis() == obj.lnphis_lowest_Gibbs()
+    assert_close1d(obj.lnphis(), [0, 0], atol=0, rtol=0)
+    assert_close1d(obj.lnphis_at_zs(obj.zs), [0, 0], atol=0, rtol=0)
+    
+
+    
