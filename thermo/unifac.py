@@ -4399,7 +4399,7 @@ class UNIFAC(GibbsExcess):
     '''
     
     gammas_from_args = staticmethod(unifac_gammas_from_args)
-    
+
     @property
     def model_id(self):
         '''A unique numerical identifier refering to the thermodynamic model
@@ -4421,7 +4421,7 @@ class UNIFAC(GibbsExcess):
             rs_34 = obj.rs_34
         except:
             rs_34 = obj.rs
-        return (obj.N_groups, obj.vs, obj.rs, obj.qs, obj.Qs, 
+        return (obj.N, obj.N_groups, obj.vs, obj.rs, obj.qs, obj.Qs, 
              obj.psis(), obj.lnGammas_subgroups_pure(),# Depends on T only
              obj.version, rs_34)
 
