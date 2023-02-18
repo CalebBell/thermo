@@ -1214,30 +1214,31 @@ class GCEOS(object):
             # All roots will have some imaginary component; ignore them if > 1E-9 (when using a solver that does not strip them)
         b = self.b
 #        good_roots = [i.real for i in Vs if (i.real ==0 or abs(i.imag/i.real) < 1E-12) and i.real > 0.0]
-        good_roots = [i.real for i in Vs if (i.real > b and 
-                    (i.imag == 0.0 or abs(i.imag/i.real) < 1E-12))]
+        # good_roots = [i.real for i in Vs if (i.real > b and 
+        #             (i.imag == 0.0 or abs(i.imag/i.real) < 1E-12))]
 
-        # Vmin = -1e100
-        # Vmax = 1e100
-        # good_root_count = 0
-        # for V in Vs:
-        #     if V.imag == 0.0 or abs(V.imag/V.real) < 1E-12:
-        #         V = V.real
-        #         if V <= b:
-        #             continue
-        #         good_roots += 1
-        #         if V > Vmin:
-        #             Vmin = V
-        #         if V < Vmax:
-        #             Vmax = V
+        Vmin = 1e100
+        Vmax = -1e100
+        good_root_count = 0
+        for V in Vs:
+            if V.real == 0.0 or V.imag == 0.0 or abs(V.imag/V.real) < 1E-12:
+                V = V.real
+                if V <= b:
+                    continue
+                good_root_count += 1
+                if V < Vmin:
+                    Vmin = V
+                if V > Vmax:
+                    Vmax = V
 
         # Counter for the case of testing volume solutions that don't work
 #        good_roots = [i.real for i in Vs if (i.real > 0.0 and (i.real == 0.0 or abs(i.imag) < 1E-9))]
-        good_root_count = len(good_roots)
+        # good_root_count = len(good_roots)
 
-        if good_root_count == 1 or (good_roots[0] == good_roots[1]):
+        if good_root_count == 1 or Vmin == Vmax:
+            V = Vmin if Vmin != 1e100 else Vmax
             self.phase = self.set_properties_from_solution(self.T, self.P,
-                                                           good_roots[0], b,
+                                                           V, b,
                                                            self.delta, self.epsilon,
                                                            self.a_alpha, self.da_alpha_dT,
                                                            self.d2a_alpha_dT2)
@@ -1249,8 +1250,9 @@ class GCEOS(object):
 
                 force_l = not self.phase == 'l'
                 force_g = not self.phase == 'g'
+                V = Vmin if Vmin != 1e100 else Vmax
                 self.set_properties_from_solution(self.T, self.P,
-                                                  good_roots[0], b,
+                                                  V, b,
                                                   self.delta, self.epsilon,
                                                   self.a_alpha, self.da_alpha_dT,
                                                   self.d2a_alpha_dT2,
@@ -1258,16 +1260,14 @@ class GCEOS(object):
                                                   force_g=force_g)
                 self.phase = 'l/g'
         elif good_root_count > 1:
-            V_l, V_g = min(good_roots), max(good_roots)
-
             if not only_g:
-                self.set_properties_from_solution(self.T, self.P, V_l, b,
+                self.set_properties_from_solution(self.T, self.P, Vmin, b,
                                                    self.delta, self.epsilon,
                                                    self.a_alpha, self.da_alpha_dT,
                                                    self.d2a_alpha_dT2,
                                                    force_l=True)
             if not only_l:
-                self.set_properties_from_solution(self.T, self.P, V_g, b,
+                self.set_properties_from_solution(self.T, self.P, Vmax, b,
                                                    self.delta, self.epsilon,
                                                    self.a_alpha, self.da_alpha_dT,
                                                    self.d2a_alpha_dT2, force_g=True)
