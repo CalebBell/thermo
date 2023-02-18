@@ -1283,7 +1283,7 @@ class GCEOS(object):
 
 
     def set_properties_from_solution(self, T, P, V, b, delta, epsilon, a_alpha,
-                                     da_alpha_dT, d2a_alpha_dT2, quick=True,
+                                     da_alpha_dT, d2a_alpha_dT2,
                                      force_l=False, force_g=False):
         r'''Sets all interesting properties which can be calculated from an
         EOS alone. Determines which phase the fluid is on its own; for details,
@@ -1318,9 +1318,6 @@ class GCEOS(object):
         d2a_alpha_dT2 : float
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K**2]
-        quick : bool, optional
-            Whether to use a SymPy cse-derived expression (3x faster) or
-            individual formulas
 
         Returns
         -------

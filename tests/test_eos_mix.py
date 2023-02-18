@@ -538,7 +538,7 @@ def test_PRMIX_VS_PR():
     # Integration tests
     eos = PRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.00013, T=299)
     fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
     slow_vars = vars(eos)
     [assert_close(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
@@ -658,7 +658,7 @@ def test_SRKMIX_vs_SRK():
     # Integration tests
     eos = SRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299.,V=0.00013)
     fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
     slow_vars = vars(eos)
     [assert_close(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
@@ -947,7 +947,7 @@ def test_TWUPRMIX_vs_TWUPR():
     # Integration tests
     eos = TWUPRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., V=0.00013)
     fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
     slow_vars = vars(eos)
     [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
@@ -1046,7 +1046,7 @@ def test_TWUSRKMIX_vs_TWUSRK():
     # Integration tests
     eos = TWUSRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299.,V=0.00013)
     fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
     slow_vars = vars(eos)
     [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
@@ -1155,7 +1155,7 @@ def test_APISRKMIX_vs_APISRK():
     # Integration tests
     eos = APISRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299.,V=0.00013)
     fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
     slow_vars = vars(eos)
     [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 

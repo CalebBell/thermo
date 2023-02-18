@@ -217,7 +217,7 @@ def test_PR_quick():
     # Integration tests
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299.,V=0.00013)
     fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
     slow_vars = vars(eos)
     [assert_close(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
@@ -774,7 +774,7 @@ def test_RK_quick():
     # Integration tests
     eos = RK(Tc=507.6, Pc=3025000, T=299.,V=0.00013)
     fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
     slow_vars = vars(eos)
     [assert_close(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
@@ -862,7 +862,7 @@ def test_SRK_quick():
     # Integration tests
     eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299.,V=0.00013)
     fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
     slow_vars = vars(eos)
     [assert_close(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
@@ -975,7 +975,7 @@ def test_APISRK_quick():
     # Integration tests
     eos = APISRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299.,V=0.00013)
     fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
     slow_vars = vars(eos)
     [assert_close(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
@@ -1030,7 +1030,7 @@ def test_TWUPR_quick():
     # Integration tests
     eos = TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, T=299.,V=0.00013)
     fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
     slow_vars = vars(eos)
     [assert_close(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
@@ -1088,7 +1088,7 @@ def test_TWUSRK_quick():
     # Integration tests
     eos = TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299.,V=0.00013)
     fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
     slow_vars = vars(eos)
     [assert_close(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
