@@ -1214,7 +1214,7 @@ class GCEOS(object):
             # All roots will have some imaginary component; ignore them if > 1E-9 (when using a solver that does not strip them)
         b = self.b
 #        good_roots = [i.real for i in Vs if (i.real ==0 or abs(i.imag/i.real) < 1E-12) and i.real > 0.0]
-        good_roots = [i.real for i in Vs if (i.real > b and (i.real == 0.0 or abs(i.imag/i.real) < 1E-12))]
+        good_roots = [i.real for i in Vs if (i.real > b and (i.imag == 0.0 or abs(i.imag/i.real) < 1E-12))]
 
         # Counter for the case of testing volume solutions that don't work
 #        good_roots = [i.real for i in Vs if (i.real > 0.0 and (i.real == 0.0 or abs(i.imag) < 1E-9))]
