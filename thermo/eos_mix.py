@@ -1019,7 +1019,7 @@ class GCEOSMIX(GCEOS):
                 self.a_alpha_roots = npsqrt(a_alphas)
         else:
             try:
-                a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s
+                a_alphas, da_alpha_dTs, d2a_alpha_dT2s,  = self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s
             except:
                 if full:
                     a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alpha_and_derivatives_vectorized(T)
@@ -1027,72 +1027,90 @@ class GCEOSMIX(GCEOS):
                 else:
                     self.a_alphas = a_alphas = self.a_alphas_vectorized(T)
                     da_alpha_dTs = d2a_alpha_dT2s = None
-        # if not IS_PYPY and self.N > 2000:
-        #     return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full)
-        return self.a_alpha_and_derivatives_py(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full)
 
-
-
-
-    def a_alpha_and_derivatives_py(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
-        # For 44 components, takes 150 us in PyPy.; 95 in pythran. Much of that is type conversions.
-        # 4 ms pypy for 44*4, 1.3 ms for pythran, 10 ms python with numpy
-        # 2 components 1.89 pypy, pythran 1.75 us, regular python 12.7 us.
-        # 10 components - regular python 148 us, 9.81 us PyPy, 8.37 pythran in PyPy (flags have no effect; 14.3 us in regular python)
-        zs, one_minus_kijs, N = self.zs, self.one_minus_kijs, self.N
-        same_T = T == self.T
-        try:
-            assert same_T
-            a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = self.a_alpha_ijs, self.a_alpha_roots, self.a_alpha_ij_roots_inv
-        except (AttributeError, AssertionError):
-            if self.scalar:
-                a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv =  [[0.0]*N for _ in range(N)], [0.0]*N, [[0.0]*N for _ in range(N)] 
-            else:
-                a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = zeros((N, N)), zeros(N), zeros((N, N))
-            a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs, a_alpha_ijs=a_alpha_ijs, a_alpha_roots=a_alpha_roots, a_alpha_ij_roots_inv=a_alpha_ij_roots_inv)
-            self.a_alpha_ijs, self.a_alpha_roots, self.a_alpha_ij_roots_inv = a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv
-        if full:
-            try:
-                a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs = a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, one_minus_kijs,
-                                                                                                                                    a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv)
-                if not self.scalar:
-                    d2a_alpha_dT2_ijs = array(d2a_alpha_dT2_ijs)
-            except:
-                if self.N == 1:
-                    a_alpha, da_alpha_dT, d2a_alpha_dT2 = a_alphas[0], da_alpha_dTs[0], d2a_alpha_dT2s[0]
-                    d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs = [[d2a_alpha_dT2s[0]]], [[da_alpha_dTs[0]]], [[a_alphas[0]]]
-                    if not self.scalar:
-                        d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs = array(d2a_alpha_dT2_ijs), array(da_alpha_dT_ijs), array(a_alpha_ijs)
-
-            self.d2a_alpha_dT2_ijs, self.da_alpha_dT_ijs, self.a_alpha_ijs = d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs
-            return float(a_alpha), float(da_alpha_dT), float(d2a_alpha_dT2)
-        else:
-            a_alpha, _, a_alpha_ijs = a_alpha_and_derivatives(a_alphas, T, zs, one_minus_kijs, a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv)
-            self.da_alpha_dT_ijs = None
-            self.a_alpha_ijs = a_alpha_ijs
-            return float(a_alpha)
-
-    def a_alpha_and_derivatives_py(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True):
         zs, one_minus_kijs, scalar, N, a_alpha_roots = self.zs, self.one_minus_kijs, self.scalar, self.N, self.a_alpha_roots
         if full:
             if scalar:
                 a_alpha_j_rows, da_alpha_dT_j_rows = [0.0]*N, [0.0]*N
-                a_alpha, da_alpha_dT, d2a_alpha_dT2, self.a_alpha_j_rows, self.da_alpha_dT_j_rows = (
-                        a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots, da_alpha_dTs,
-                                                                d2a_alpha_dT2s, T, zs, one_minus_kijs,
-                                                                a_alpha_j_rows=a_alpha_j_rows, da_alpha_dT_j_rows=da_alpha_dT_j_rows))
             else:
                 a_alpha_j_rows, da_alpha_dT_j_rows = zeros(N), zeros(N)
-                a_alpha, da_alpha_dT, d2a_alpha_dT2, self.a_alpha_j_rows, self.da_alpha_dT_j_rows = (
-                        a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots, da_alpha_dTs,
-                                                                d2a_alpha_dT2s, T, zs, one_minus_kijs,
-                                                                a_alpha_j_rows=a_alpha_j_rows, da_alpha_dT_j_rows=da_alpha_dT_j_rows))
-            return float(a_alpha), float(da_alpha_dT), float(d2a_alpha_dT2)
+            a_alpha, da_alpha_dT, d2a_alpha_dT2, self.a_alpha_j_rows, self.da_alpha_dT_j_rows = (
+                    a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots, da_alpha_dTs,
+                                                            d2a_alpha_dT2s, T, zs, one_minus_kijs,
+                                                            a_alpha_j_rows, da_alpha_dT_j_rows))
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
+        else:
+            a_alpha_j_rows = [0.0]*N if scalar else zeros(N)
+            a_alpha, self.a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs, a_alpha_j_rows)
+            return a_alpha
+
+
+
+        # Goahead and inline the method
+        # if not IS_PYPY and self.N > 2000:
+        #     return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full)
+        # return self.a_alpha_and_derivatives_py(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full)
+
+
+
+
+    # def a_alpha_and_derivatives_py(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True):
+    # Did not work out a_alpha_aijs_composition_independent does not save any time bad idea
+    #     zs, one_minus_kijs, N = self.zs, self.one_minus_kijs, self.N
+    #     same_T = T == self.T
+    #     try:
+    #         assert same_T
+    #         a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = self.a_alpha_ijs, self.a_alpha_roots, self.a_alpha_ij_roots_inv
+    #     except (AttributeError, AssertionError):
+    #         if self.scalar:
+    #             a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv =  [[0.0]*N for _ in range(N)], [0.0]*N, [[0.0]*N for _ in range(N)] 
+    #         else:
+    #             a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = zeros((N, N)), zeros(N), zeros((N, N))
+    #         a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs, a_alpha_ijs=a_alpha_ijs, a_alpha_roots=a_alpha_roots, a_alpha_ij_roots_inv=a_alpha_ij_roots_inv)
+    #         self.a_alpha_ijs, self.a_alpha_roots, self.a_alpha_ij_roots_inv = a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv
+    #     if full:
+    #         try:
+    #             a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs = a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, one_minus_kijs,
+    #                                                                                                                                 a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv)
+    #             if not self.scalar:
+    #                 d2a_alpha_dT2_ijs = array(d2a_alpha_dT2_ijs)
+    #         except:
+    #             if self.N == 1:
+    #                 a_alpha, da_alpha_dT, d2a_alpha_dT2 = a_alphas[0], da_alpha_dTs[0], d2a_alpha_dT2s[0]
+    #                 d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs = [[d2a_alpha_dT2s[0]]], [[da_alpha_dTs[0]]], [[a_alphas[0]]]
+    #                 if not self.scalar:
+    #                     d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs = array(d2a_alpha_dT2_ijs), array(da_alpha_dT_ijs), array(a_alpha_ijs)
+
+    #         self.d2a_alpha_dT2_ijs, self.da_alpha_dT_ijs, self.a_alpha_ijs = d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs
+    #         return float(a_alpha), float(da_alpha_dT), float(d2a_alpha_dT2)
+    #     else:
+    #         a_alpha, _, a_alpha_ijs = a_alpha_and_derivatives(a_alphas, T, zs, one_minus_kijs, a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv)
+    #         self.da_alpha_dT_ijs = None
+    #         self.a_alpha_ijs = a_alpha_ijs
+    #         return float(a_alpha)
+
+    def a_alpha_and_derivatives_py(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True):
+        # For 44 components, takes 150 us in PyPy.; 95 in pythran. Much of that is type conversions.
+        # 4 ms pypy for 44*4, 1.3 ms for pythran, 10 ms python with numpy
+        # 2 components 1.89 pypy, pythran 1.75 us, regular python 12.7 us.
+        # 10 components - regular python 148 us, 9.81 us PyPy, 8.37 pythran in PyPy (flags have no effect; 14.3 us in regular python)
+        zs, one_minus_kijs, scalar, N, a_alpha_roots = self.zs, self.one_minus_kijs, self.scalar, self.N, self.a_alpha_roots
+        if full:
+            if scalar:
+                a_alpha_j_rows, da_alpha_dT_j_rows = [0.0]*N, [0.0]*N
+            else:
+                a_alpha_j_rows, da_alpha_dT_j_rows = zeros(N), zeros(N)
+            a_alpha, da_alpha_dT, d2a_alpha_dT2, self.a_alpha_j_rows, self.da_alpha_dT_j_rows = (
+                    a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots, da_alpha_dTs,
+                                                            d2a_alpha_dT2s, T, zs, one_minus_kijs,
+                                                            a_alpha_j_rows=a_alpha_j_rows, da_alpha_dT_j_rows=da_alpha_dT_j_rows))
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
         else:
             a_alpha_j_rows = [0.0]*N if scalar else zeros(N)
             a_alpha, self.a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs, a_alpha_j_rows=a_alpha_j_rows)
-            return float(a_alpha)
+            return a_alpha
 
 
 

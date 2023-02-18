@@ -522,7 +522,7 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs,
         a_alpha_j_rows[i] += (one_minus_kijs[i][i])*a_alphas[i]*zs[i]
         a_alpha += a_alpha_j_rows[i]*zs[i]
 
-    return a_alpha, a_alpha_j_rows
+    return float(a_alpha), a_alpha_j_rows
     # This is faster in PyPy and can be made even faster optimizing a_alpha!
     '''
     N = len(a_alphas)
@@ -737,7 +737,7 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
     for i in range(N):
         da_alpha_dT_j_rows[i] *= -0.5
 
-    return a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_j_rows, da_alpha_dT_j_rows
+    return float(a_alpha), float(da_alpha_dT), float(d2a_alpha_dT2), a_alpha_j_rows, da_alpha_dT_j_rows
 
 
 
