@@ -3971,7 +3971,8 @@ def stability_iteration_Michelsen(T, P, zs_trial, fugacities_trial, zs_test, tes
         if functional:
             lnphis_test = lnphis_direct(zs_test, *test_phase)
         else:
-            lnphis_test = test_phase.lnphis_at_zs(zs_test, most_stable=True)
+            # lnphis_test = test_phase.lnphis_at_zs(zs_test, most_stable=True)
+            lnphis_test = test_phase(zs_test)
 
         fugacities_test = [P*zs_test[i]*trunc_exp(lnphis_test[i]) for i in range(N)]
 
@@ -4130,8 +4131,10 @@ def assert_stab_success_2P(liq, gas, stab, T, P, zs, guess_name, xs=None,
     else:
         min_phase, other_phase = gas, liq
 
+    test_phase_call = lambda zs: other_phase.lnphis_at_zs(zs, most_stable=True)
+
     _, _, _, V_over_F, trial_zs, appearing_zs, dG_RT = stability_iteration_Michelsen(T=min_phase.T, P=min_phase.P, zs_trial=min_phase.zs,
-          fugacities_trial=min_phase.fugacities(), zs_test=trial_comp, test_phase=other_phase, maxiter=100)
+          fugacities_trial=min_phase.fugacities(), zs_test=trial_comp, test_phase=test_phase_call, maxiter=100)
 
     V_over_F, xs_calc, ys_calc, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
                                                                         zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs,

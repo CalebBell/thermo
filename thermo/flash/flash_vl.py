@@ -600,8 +600,8 @@ class FlashVL(Flash):
             other_phase_arg = other_phase.lnphis_args()
             functional = True
         else:
-            other_phase_arg = other_phase
             functional = False
+            other_phase_arg = lambda zs: other_phase.lnphis_at_zs(zs, most_stable=True)
 
 
         for i, trial_comp in enumerate(gen):
