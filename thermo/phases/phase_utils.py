@@ -38,7 +38,7 @@ from thermo.eos_mix_methods import (PR_lnphis_fastest, PR_translated_lnphis_fast
                                     RK_lnphis_fastest,  VDW_lnphis_fastest)
 from thermo.activity import IdealSolution
 from thermo.wilson import Wilson
-from thermo.unifac import UNIFAC, unifac_gammas_at_T
+from thermo.unifac import UNIFAC, unifac_gammas_from_args
 from thermo.regular_solution import RegularSolution
 from thermo.uniquac import UNIQUAC
 
@@ -61,7 +61,7 @@ def activity_lnphis(zs, model, T, P, N, lnPsats, Poyntings, phis_sat, *activity_
     # It appears that to make numba happy *activity_args will not work
     # and all functions on this level will need to have a fixed number of arguments
     if 20500 <= model <= 20599:
-        gammas = unifac_gammas_at_T(zs, N, *activity_args)
+        gammas = unifac_gammas_from_args(zs, N, *activity_args)
     else:
         raise ValueError("Model not implemented")
     lnphis = [0.0]*N

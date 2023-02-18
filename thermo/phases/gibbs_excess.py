@@ -599,7 +599,7 @@ class GibbsExcessLiquid(Phase):
         lnPsats = self.lnPsats()
         Poyntings = self.Poyntings()
         phis_sat = self.phis_sat()
-        activity_args = self.GibbsExcessModel.lnphis_args()
+        activity_args = self.GibbsExcessModel.gammas_args()
         return (self.model_id, self.T, self.P, self.N, lnPsats, Poyntings, phis_sat) + activity_args
 
 

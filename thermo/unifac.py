@@ -146,7 +146,7 @@ __all__ = ['UNIFAC_gammas','UNIFAC', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', '
             'LUFSG', 'NISTUFSG', 'NISTUFMG',
            'VTPRSG', 'VTPRMG', 'NISTKTUFSG', 'NISTKTUFMG',
            'LUFMG', 'PSRKMG',
-           'unifac_gammas_at_T']
+           'unifac_gammas_from_args']
 import os
 from fluids.constants import R
 from fluids.numerics import numpy as np
@@ -4044,7 +4044,7 @@ def unifac_gammas(N, xs, lngammas_r, lngammas_c, gammas=None):
         gammas[i] = exp(lngammas_r[i] + lngammas_c[i])
     return gammas
 
-def unifac_gammas_at_T(xs, N, N_groups, vs, rs, qs, Qs, 
+def unifac_gammas_from_args(xs, N, N_groups, vs, rs, qs, Qs, 
                          psis, lnGammas_subgroups_pure,# Depends on T only
                          version, rs_34,
                          gammas=None):
@@ -4397,6 +4397,9 @@ class UNIFAC(GibbsExcess):
 
 
     '''
+    
+    gammas_from_args = staticmethod(unifac_gammas_from_args)
+    
     @property
     def model_id(self):
         '''A unique numerical identifier refering to the thermodynamic model
@@ -4404,14 +4407,23 @@ class UNIFAC(GibbsExcess):
         '''
         return self.version + 500
     
-    def lnphis_args(self, ):
+    def gammas_args(self, T=None):
+        r'''Return a tuple of arguments at the specified tempearture 
+        that can be used to efficiently compute gammas at the
+        specified temperature but with varying compositions. This is
+        useful in the context of a TP flash.
+        '''
+        if T is not None:
+            obj = self.to_T_xs(T=T, xs=self.xs)
+        else:
+            obj = self
         try:
-            rs_34 = self.rs_34
+            rs_34 = obj.rs_34
         except:
-            rs_34 = self.rs
-        return (self.N_groups, self.vs, self.rs, self.qs, self.Qs, 
-             self.psis(), self.lnGammas_subgroups_pure(),# Depends on T only
-             self.version, rs_34)
+            rs_34 = obj.rs
+        return (obj.N_groups, obj.vs, obj.rs, obj.qs, obj.Qs, 
+             obj.psis(), obj.lnGammas_subgroups_pure(),# Depends on T only
+             obj.version, rs_34)
 
     @staticmethod
     def from_subgroups(T, xs, chemgroups, subgroups=None,

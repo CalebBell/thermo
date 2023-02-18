@@ -1230,6 +1230,9 @@ class Flash(object):
 #        plt.imshow(dat, interpolation='nearest')
 #        plt.legend(loc='best', fancybox=True, framealpha=0.5)
 #        return fig, ax
+
+        if len(zs) > 4:
+            zs = '...'
         plt.title('PT system flashes, zs=%s' %zs)
         if show:
             plt.show()
