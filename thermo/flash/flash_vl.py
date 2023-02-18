@@ -318,6 +318,8 @@ class FlashVL(Flash):
     supports_VF_flash = True
     supports_SF_flash = False
 
+    ceos_gas_liquid_compatible = False
+
     def __init__(self, constants, correlations, gas, liquid, settings=default_settings):
         self.constants = constants
         self.correlations = correlations
@@ -368,6 +370,7 @@ class FlashVL(Flash):
             h = l.model_hash(True)
             if gas_hash == h:
                 gas_to_unique_liquid = liquids_to_unique_liquids[i]
+                self.ceos_gas_liquid_compatible = True
                 break
 
         self.gas_to_unique_liquid = gas_to_unique_liquid
@@ -382,6 +385,14 @@ class FlashVL(Flash):
         self.T_MIN_FLASH = max(p.T_MIN_FLASH for p in self.phases)
         self.T_MAX_FLASH = min(p.T_MAX_FLASH for p in self.phases)
         self._finish_initialization_base()
+
+    def phases_at_TP_binary(self, T, P, zs, liq, gas):
+        liquid = liq.to(T=T, P=P, zs=zs)
+        if self.ceos_gas_liquid_compatible:
+            gas = gas.to_TP_zs(T, P, zs, other_eos=liquid.eos_mix)
+        else:
+            gas = gas.to(T=T, P=P, zs=zs)
+        return (gas, liquid)
 
     def flash_TVF(self, T, VF, zs, solution=None, hot_start=None):
         return self.flash_TVF_2P(T, VF, zs, self.liquid, self.gas, solution=solution, hot_start=hot_start)
@@ -682,8 +693,10 @@ class FlashVL(Flash):
     def flash_TP_stability_test(self, T, P, zs, liquid, gas, solution=None, LL=False, phases_ready=False):
         # gen = self.stab.incipient_guesses(T, P, zs)
         if not phases_ready:
-            liquid = liquid.to(T=T, P=P, zs=zs)
-            gas = gas.to(T=T, P=P, zs=zs)
+            gas, liquid = self.phases_at_TP_binary(T, P, zs, liquid, gas)
+            # gas, liquid = self.phases_at(T=T, P=P, zs=zs)
+            # liquid = liquid.to(T=T, P=P, zs=zs)
+            # gas = gas.to(T=T, P=P, zs=zs)
         if self.ideal_gas_basis:
             G_liq, G_gas = liquid.G_dep(), gas.G_dep()
         else:
