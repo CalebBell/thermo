@@ -123,6 +123,8 @@ class Phase(object):
 
     supports_lnphis_args = False
 
+    __slots__ = ('__dict__', 'result', 'constants', 'correlations')
+
     pure_references = ()
     '''Tuple of attribute names which hold lists of :obj:`thermo.utils.TDependentProperty`
     or :obj:`thermo.utils.TPDependentProperty` instances.'''

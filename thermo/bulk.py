@@ -79,7 +79,7 @@ from fluids.constants import R, R_inv, atm
 from fluids.two_phase_voidage import (McAdams, Beattie_Whalley, Cicchitti,
                                       Lin_Kwok, Fourar_Bories, Duckler, gas_liquid_viscosity)
 from chemicals.utils import (log, exp, sqrt, phase_identification_parameter,
-                          isothermal_compressibility, isobaric_expansion,
+                          isothermal_compressibility, isobaric_expansion, object_data,
                           Joule_Thomson, speed_of_sound)
 from thermo.phases import Phase
 from thermo.phase_identification import VL_ID_PIP, S_ID_D2P_DVDT
@@ -374,7 +374,9 @@ class BulkSettings(object):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
     
     def as_json(self):
-        return self.__dict__.copy()
+        d = object_data(self)
+        return d
+        # return self.__dict__.copy()
 
     def __init__(self,
                  dP_dT=MOLE_WEIGHTED, dP_dV=MOLE_WEIGHTED,
@@ -527,6 +529,8 @@ class Bulk(Phase):
 
     '''
     bulk_phase_type = True
+
+    __slots__ = ('phases', 'phase_fractions', 'phase_bulk', 'result', 'constants', 'correlations', 'flasher', 'settings')
     
     def __init__(self, T, P, zs, phases, phase_fractions, phase_bulk=None):
         self.T = T
