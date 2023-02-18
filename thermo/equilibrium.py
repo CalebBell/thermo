@@ -215,6 +215,12 @@ class EquilibriumState(object):
 
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
+    __slots__ = ('T', 'P', 'zs', 'N', 'gas_count', 'liquid_count', 'solid_count', 'phase_count', 'gas',
+                 'liquids', 'solids', 'phases', 'betas', 'gas_beta', 'liquids_betas', 'solids_betas', 
+                 'liquid_zs', #'liquid_bulk',
+                  'liquid0', 'liquid1', 'liquid2', 'bulk', 'flash_specs', 'flash_convergence', 
+                 'flasher', 'settings', 'constants', 'correlations', '__dict__')
+
     def __str__(self):
         s = '<EquilibriumState, T=%.4f, P=%.4f, zs=%s, betas=%s, phases=%s>'
         s = s %(self.T, self.P, self.zs, self.betas, str([str(i) for i in self.phases]).replace("'", ''))
