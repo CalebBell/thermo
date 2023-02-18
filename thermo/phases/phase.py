@@ -41,7 +41,7 @@ from chemicals.utils import (log, Cp_minus_Cv, phase_identification_parameter,
                              Joule_Thomson, speed_of_sound, dxs_to_dns, dns_to_dn_partials,
                              hash_any_primitive, isentropic_exponent_TV,
                              isentropic_exponent_PT, isentropic_exponent_PV,
-                             property_molar_to_mass,
+                             property_molar_to_mass, object_data,
                              )
 from chemicals.virial import B_from_Z
 from thermo.utils import POLY_FIT
@@ -184,7 +184,7 @@ class Phase(object):
         >>> new_phase = Phase.from_json(json.loads(json.dumps(phase.as_json())))
         >>> assert phase == new_phase
         '''
-        d = self.__dict__.copy()
+        d = object_data(self)
         if not self.scalar:
             d = arrays_to_lists(d)
         for obj_name in self.obj_references:
@@ -254,7 +254,9 @@ class Phase(object):
         for ref_name, ref_lookup in zip(new.pointer_references, new.pointer_reference_dicts):
             d[ref_name] = ref_lookup[d[ref_name]]
 
-        new.__dict__ = d
+        for k, v in d.items():
+            setattr(new, k, v)
+        # new.__dict__ = d
         return new
 
     def __hash__(self):
@@ -270,7 +272,7 @@ class Phase(object):
         self.model_hash(False)
         self.model_hash(True)
         self.state_hash()
-        d = self.__dict__
+        d = object_data(self)
 
         ans = hash_any_primitive((self.__class__.__name__, d))
         return ans

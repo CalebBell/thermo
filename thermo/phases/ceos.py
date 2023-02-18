@@ -79,9 +79,9 @@ class CEOSPhase(IdealGasDeparturePhase):
     29.2285050
 
     '''
-    # __slots__ = ('eos_class', 'eos_kwargs', 'scalar', 'HeatCapacityGases', 'N', 
-    # 'Hfs', 'Gfs', 'Sfs', 'Cpgs_poly_fit', '_Cpgs_data', 'composition_independent',
-    #  'eos_mix', 'T', 'P', 'zs', '_model_hash_ignore_phase', '_model_hash')
+    __slots__ = ('eos_class', 'eos_kwargs', 'scalar', 'HeatCapacityGases', 'N', 
+    'Hfs', 'Gfs', 'Sfs', 'Cpgs_poly_fit', '_Cpgs_data', 'composition_independent',
+     'eos_mix', 'T', 'P', 'zs', '_model_hash_ignore_phase', '_model_hash')
     ideal_gas_basis = True
 
     pure_references = ('HeatCapacityGases',)
