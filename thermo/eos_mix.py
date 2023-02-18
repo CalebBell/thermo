@@ -435,7 +435,9 @@ class GCEOSMIX(GCEOS):
                 pass
 
         new = eos.__new__(eos)
-        new.__dict__ = d
+        for k, v in d.items():
+            setattr(new, k, v)
+        # new.__dict__ = d
         return new
 
     def to_TP_zs_fast(self, T, P, zs, only_l=False, only_g=False, full_alphas=True):
@@ -6844,6 +6846,19 @@ class PRMIX(GCEOSMIX, PR):
     nonstate_constants_specific = ('kappas', )
     kwargs_keys = ('kijs',)
     model_id = 10200
+
+
+    eos_slots = ('V_l', 'Z_l', 'PIP_l', 'dP_dT_l', 'dP_dV_l', 'dV_dT_l', 'dV_dP_l', 'dT_dV_l', 'dT_dP_l', 
+    'd2P_dT2_l', 'd2P_dV2_l', 'd2P_dTdV_l', 'H_dep_l', 'S_dep_l', 'G_dep_l', 'Cp_dep_l', 'Cv_dep_l',
+    'T', 'P', 'V', 'b', 'delta', 'epsilon', 'a_alpha', 'da_alpha_dT', 'd2a_alpha_dT2', 'raw_volumes',
+      'V_g', 'Z_g', 'PIP_g', 'dP_dT_g', 'dP_dV_g', 'dV_dT_g', 'dV_dP_g', 'dT_dV_g', 'dT_dP_g',
+       'd2P_dT2_g', 'd2P_dV2_g', 'd2P_dTdV_g', 'H_dep_g', 'S_dep_g', 'G_dep_g', 'Cp_dep_g', 'Cv_dep_g', 'phase', 'kwargs',)
+    
+    eos_mix_slots = ('lnphis_l', 'phis_l', 'fugacities_l', 'N', 'Tcs', 'Pcs', 'omegas', 'zs', 'scalar', 'kijs', 'one_minus_kijs', 'bs',
+     'bs', 'ais', 'a_alphas', 'da_alpha_dTs', 'd2a_alpha_dT2s', 'a_alpha_roots', 'a_alpha_j_rows', 'da_alpha_dT_j_rows', 
+   'lnphis_g', 'phis_g', 'fugacities_g')
+
+    __slots__ = ('kappas',) + eos_slots + eos_mix_slots
 
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):

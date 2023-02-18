@@ -281,7 +281,7 @@ from fluids.constants import mmHg, R
 
 from chemicals.utils import (Cp_minus_Cv, isobaric_expansion,
                           isothermal_compressibility,
-                          phase_identification_parameter, hash_any_primitive)
+                          phase_identification_parameter, hash_any_primitive, object_data)
 from chemicals.utils import log, log10, exp, sqrt, copysign
 from chemicals.flash_basic import Wilson_K_value
 
@@ -944,7 +944,7 @@ class GCEOS(object):
         hash : int
             Hash of the object, [-]
         '''
-        d = self.__dict__
+        d = object_data(self)
         ans = hash_any_primitive((self.__class__.__name__, d))
         return ans
 
@@ -1024,7 +1024,7 @@ class GCEOS(object):
         >>> assert eos == MSRKTranslated.from_json(json.loads(json.dumps(eos.as_json())))
         '''
         # vaguely jsonpickle compatible
-        d = self.__dict__.copy()
+        d = object_data(self)
         if not self.scalar:
             d = serialize.arrays_to_lists(d)
         # TODO: delete kwargs and reconstruct it
@@ -1093,7 +1093,9 @@ class GCEOS(object):
                 pass
 
         new = eos.__new__(eos)
-        new.__dict__ = d
+        for k, v in d.items():
+            setattr(new, k, v)
+        # new.__dict__ = d
         return new
 
     def check_sufficient_inputs(self):
