@@ -755,6 +755,17 @@ def test_UNIFAC_class_Lyngby():
     d3lngammas_c_dxixjxks = GE.d3lngammas_c_dxixjxks()
     assert_close4d(d3lngammas_c_dxixjxks_expect, d3lngammas_c_dxixjxks, rtol=1e-13)
 
+    # Direct call for gammas
+    gammas_args = GE.gammas_args()
+    gammas = GE.gammas_from_args(GE.xs, *gammas_args)
+    assert_close1d(gammas, GE.gammas(), rtol=1e-13)
+
+    # gammas at another T
+    T_another = 401.234
+    gammas_args_at_T = GE.gammas_args(T=T_another)
+    gammas_at_T = GE.gammas_from_args(GE.xs, *gammas_args_at_T)
+    assert_close1d(gammas_at_T, GE.to_T_xs(T=T_another, xs=GE.xs).gammas(), rtol=1e-13)
+
 def test_VTPR_GE():
     T = 328.15
     P = 37316.9
@@ -795,6 +806,17 @@ def test_VTPR_GE():
     assert_close2d(GE.dgammas_dxs(), dgammas_dxs_expect, rtol=1e-11)
     assert_close2d(GE.dgammas_dxs(), dgammas_dxs_num, rtol=2e-6)
 
+    # Direct call for gammas
+    gammas_args = GE.gammas_args()
+    gammas = GE.gammas_from_args(GE.xs, *gammas_args)
+    assert_close1d(gammas, GE.gammas(), rtol=1e-13)
+
+    # gammas at another T
+    T_another = 401.234
+    gammas_args_at_T = GE.gammas_args(T=T_another)
+    gammas_at_T = GE.gammas_from_args(GE.xs, *gammas_args_at_T)
+    assert_close1d(gammas_at_T, GE.to_T_xs(T=T_another, xs=GE.xs).gammas(), rtol=1e-13)
+
 def test_NISTUF_2011():
     T = 330.0
     P = 1e5
@@ -809,6 +831,17 @@ def test_NISTUF_2011():
     gammas_expect = [0.9999968672576434, 0.9737803219928437]
     assert_close1d(GE.gammas(), gammas_expect)
     
+    # Direct call for gammas
+    gammas_args = GE.gammas_args()
+    gammas = GE.gammas_from_args(GE.xs, *gammas_args)
+    assert_close1d(gammas, GE.gammas(), rtol=1e-13)
+
+    # gammas at another T
+    T_another = 401.234
+    gammas_args_at_T = GE.gammas_args(T=T_another)
+    gammas_at_T = GE.gammas_from_args(GE.xs, *gammas_args_at_T)
+    assert_close1d(gammas_at_T, GE.to_T_xs(T=T_another, xs=GE.xs).gammas(), rtol=1e-13)
+
 def test_UNIFAC_default_data():
     # TODO: PSRK
     
@@ -859,6 +892,16 @@ def test_UNIFAC_default_data():
     GEd = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=0)
     assert_close1d([GEd.rs, GEd.qs, GEd.Qs, GEd.vs], [GE.rs, GE.qs, GE.Qs, GE.vs])
 
+    # Direct call for gammas
+    gammas_args = GE.gammas_args()
+    gammas = GE.gammas_from_args(GE.xs, *gammas_args)
+    assert_close1d(gammas, GE.gammas(), rtol=1e-13)
+
+    # gammas at another T
+    T_another = 401.234
+    gammas_args_at_T = GE.gammas_args(T=T_another)
+    gammas_at_T = GE.gammas_from_args(GE.xs, *gammas_args_at_T)
+    assert_close1d(gammas_at_T, GE.to_T_xs(T=T_another, xs=GE.xs).gammas(), rtol=1e-13)
 
 def call_all_methods_first_UNIFAC(kwargs):
     cls = UNIFAC
