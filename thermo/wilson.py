@@ -209,6 +209,15 @@ def wilson_gammas(xs, N, lambdas, xj_Lambda_ijs_inv, gammas=None, vec0=None):
 
     return gammas
 
+def wilson_gammas_from_args(xs, N, lambdas, xj_Lambda_ijs=None, vec0=None, gammas=None,):
+    if xj_Lambda_ijs is None:
+        xj_Lambda_ijs = [0.0]*N
+    xj_Lambda_ijs = wilson_xj_Lambda_ijs(xs, lambdas, N, xj_Lambda_ijs)
+    for i in range(N):
+        # Can make this optimization here only
+        xj_Lambda_ijs[i] = 1.0/xj_Lambda_ijs[i]
+    return wilson_gammas(xs, N, lambdas, xj_Lambda_ijs, gammas=gammas, vec0=vec0)
+
 MIN_LAMBDA_WILSON = 1e-20
 
 def wilson_gammas_binaries(xs, lambda12, lambda21, calc=None):
@@ -565,6 +574,22 @@ class Wilson(GibbsExcess):
     '''
     
     model_id = 200
+
+    
+    gammas_from_args = staticmethod(wilson_gammas_from_args)
+    def gammas_args(self, T=None):
+        if T is not None:
+            obj = self.to_T_xs(T=T, xs=self.xs)
+        else:
+            obj = self
+
+        lambdas = obj.lambdas()
+        N = obj.N
+        if self.scalar:
+            xj_Lambda_ijs, vec0 = [0.0]*N, [0.0]*N
+        else:
+            xj_Lambda_ijs, vec0 = zeros(N), zeros(N)
+        return (N, lambdas, xj_Lambda_ijs, vec0)
     
     @staticmethod
     def from_DDBST(Vi, Vj, a, b, c, d=0.0, e=0.0, f=0.0, unit_conversion=True):
