@@ -367,6 +367,16 @@ def test_water_ethanol_methanol_madeup():
     d2GE_dTdxs_numerical = jacobian(to_jac, xs, perturbation=3e-8)
     assert_close1d(d2GE_dTdxs_analytical, d2GE_dTdxs_numerical, rtol=1e-7)
 
+    # Direct call for gammas
+    gammas_args = GE.gammas_args()
+    gammas = GE.gammas_from_args(GE.xs, *gammas_args)
+    assert_close1d(gammas, GE.gammas(), rtol=1e-13)
+
+    # gammas at another T
+    T_another = 401.234
+    gammas_args_at_T = GE.gammas_args(T=T_another)
+    gammas_at_T = GE.gammas_from_args(GE.xs, *gammas_args_at_T)
+    assert_close1d(gammas_at_T, GE.to_T_xs(T=T_another, xs=GE.xs).gammas(), rtol=1e-13)
 
 def test_NRTL_numpy_output():
     alphas = [[[0.0, 2e-05], [0.2937, 7e-05], [0.2999, 0.0001]],

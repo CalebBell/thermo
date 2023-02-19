@@ -62,9 +62,20 @@ try:
 except (ImportError, AttributeError):
     pass
 
+def nrtl_gammas_from_args(xs, N, Gs, taus, xj_Gs_jis=None, xj_Gs_taus_jis=None, vec0=None, vec1=None, gammas=None):
+    if xj_Gs_jis is None:
+        xj_Gs_jis = [0.0]*N
+    if xj_Gs_taus_jis is None:
+        xj_Gs_taus_jis = [0.0]*N
+    nrtl_xj_Gs_jis_and_Gs_taus_jis(N, xs, Gs, taus, xj_Gs_jis, xj_Gs_taus_jis)
+    for i in range(N):
+        # We can reuse the same list instead of making a new one here for xj_Gs_jis_inv
+        xj_Gs_jis[i] = 1.0/xj_Gs_jis[i]
+    return nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis, xj_Gs_taus_jis, gammas, vec0=vec0, vec1=vec1)
+
 def nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas, vec0=None, vec1=None):
-    # if gammas is None:
-    #     gammas = [0.0]*N
+    if gammas is None:
+        gammas = [0.0]*N
     if vec0 is None:
         vec0 = [0.0]*N
     if vec1 is None:
@@ -549,6 +560,30 @@ class NRTL(GibbsExcess):
     _model_attributes = ('tau_as', 'tau_bs', 'tau_es', 'tau_fs',
                          'tau_gs', 'tau_hs', 'alpha_cs', 'alpha_ds')
     model_id = 100
+
+    def gammas_args(self, T=None):
+        if T is not None:
+            obj = self.to_T_xs(T=T, xs=self.xs)
+        else:
+            obj = self
+        try:
+            taus = obj._taus
+        except AttributeError:
+            taus = obj.taus()
+        try:
+            Gs = obj._Gs
+        except AttributeError:
+            Gs = obj.Gs()
+
+        N = obj.N
+        if self.scalar:
+            xj_Gs_jis, xj_Gs_taus_jis, vec0, vec1 = [0.0]*N, [0.0]*N, [0.0]*N, [0.0]*N
+        else:
+            xj_Gs_jis, xj_Gs_taus_jis, vec0, vec1 = zeros(N), zeros(N), zeros(N),  zeros(N)
+
+        return (N, Gs, taus, xj_Gs_jis, xj_Gs_taus_jis, vec0, vec1)
+
+    gammas_from_args = staticmethod(nrtl_gammas_from_args)
     
     def __init__(self, T, xs, tau_coeffs=None, alpha_coeffs=None,
                  ABEFGHCD=None, tau_as=None, tau_bs=None, tau_es=None,
