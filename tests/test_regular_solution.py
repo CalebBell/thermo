@@ -87,7 +87,7 @@ def test_4_components():
 
     # Gamma direct call
     assert_close1d(GE.gammas(), 
-                   regular_solution_gammas(T=T, xs=xs, Vs=Vs, SPs=SPs, lambda_coeffs=lambda_coeffs, N=N), rtol=1e-12)
+                   regular_solution_gammas(xs=xs, T=T, Vs=Vs, SPs=SPs, lambda_coeffs=lambda_coeffs, N=N), rtol=1e-12)
 
 
     # dGE dT
@@ -166,6 +166,17 @@ def test_4_components():
     # Test with some stored results
     GE2 = RegularSolution.from_json(GE.as_json())
     assert GE2.__dict__ == GE.__dict__
+
+    # Direct call for gammas
+    gammas_args = GE.gammas_args()
+    gammas = GE.gammas_from_args(GE.xs, *gammas_args)
+    assert_close1d(gammas, GE.gammas(), rtol=1e-13)
+
+    # gammas at another T
+    T_another = 401.234
+    gammas_args_at_T = GE.gammas_args(T=T_another)
+    gammas_at_T = GE.gammas_from_args(GE.xs, *gammas_args_at_T)
+    assert_close1d(gammas_at_T, GE.to_T_xs(T=T_another, xs=GE.xs).gammas(), rtol=1e-13)
 
 def test_create_many_components_regular_solution():
     # Just create it. This can be used for easy benchmarking.
