@@ -594,7 +594,8 @@ class GibbsExcessLiquid(Phase):
             pass
         return new
     
-    supports_lnphis_args = False
+    supports_lnphis_args = True
+    
     def lnphis_args(self):
         lnPsats = self.lnPsats()
         Poyntings = self.Poyntings()
