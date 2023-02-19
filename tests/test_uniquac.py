@@ -259,6 +259,18 @@ def test_UNIQUAC_madeup_ternary():
     GE2 = UNIQUAC.from_json(GE.as_json())
     assert GE2.__dict__ == GE.__dict__
 
+    # Direct call for gammas
+    gammas_args = GE.gammas_args()
+    gammas = GE.gammas_from_args(GE.xs, *gammas_args)
+    assert_close1d(gammas, GE.gammas(), rtol=1e-13)
+
+    # gammas at another T
+    T_another = 401.234
+    gammas_args_at_T = GE.gammas_args(T=T_another)
+    gammas_at_T = GE.gammas_from_args(GE.xs, *gammas_args_at_T)
+    assert_close1d(gammas_at_T, GE.to_T_xs(T=T_another, xs=GE.xs).gammas(), rtol=1e-13)
+
+
 def test_UNIQUAC_no_parameters():
     xs = [0.7273, 0.0909, 0.1818]
     rs = [.92, 2.1055, 3.1878]

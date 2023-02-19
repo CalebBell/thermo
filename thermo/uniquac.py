@@ -49,7 +49,7 @@ from __future__ import division
 from math import log, exp
 from fluids.numerics import numpy as np, trunc_exp
 from fluids.constants import R
-from thermo.activity import GibbsExcess, interaction_exp, dinteraction_exp_dT, d2interaction_exp_dT2, d3interaction_exp_dT3
+from thermo.activity import GibbsExcess, gibbs_excess_gammas, interaction_exp, dinteraction_exp_dT, d2interaction_exp_dT2, d3interaction_exp_dT3
 
 __all__ = ['UNIQUAC', 'UNIQUAC_gammas', 'UNIQUAC_gammas_binary', 'UNIQUAC_gammas_binaries']
 
@@ -305,6 +305,27 @@ def uniquac_d2GE_dTdxs(N, T, xs, qs, taus, phis, phis_inv, dphis_dxs, thetas, dt
         d2GE_dTdxs[i] = R*(-T*Ttot + tot)
     return d2GE_dTdxs
 
+def uniquac_gammas_from_args(xs, T, N, z, rs, qs, taus):
+    phis, rsxs_sum_inv = uniquac_phis(N, xs, rs, phis=None)
+    phis_inv = [0.0]*N
+    for i in range(N):
+        phis_inv[i] = 1.0/phis[i]
+
+    thetas, qsxs_sum_inv = uniquac_phis(N, xs, qs)
+    thetaj_taus_jis = uniquac_thetaj_taus_jis(N, taus, thetas, thetaj_taus_jis=None)
+
+    GE = uniquac_GE(T, N, z, xs, qs, phis, thetas, thetaj_taus_jis)
+    dphis_dxs = uniquac_dphis_dxs(N, rs, phis, rsxs_sum_inv, dphis_dxs=None)
+    dthetas_dxs = uniquac_dphis_dxs(N, qs, thetas, qsxs_sum_inv, dphis_dxs=None)
+    thetaj_taus_jis_inv = [0.0]*N
+    for i in range(N):
+        thetaj_taus_jis_inv[i] = 1.0/thetaj_taus_jis[i]
+
+    dGE_dxs = uniquac_dGE_dxs(N, T, xs, qs, taus, phis, phis_inv, dphis_dxs, thetas, dthetas_dxs,
+                    thetaj_taus_jis, thetaj_taus_jis_inv, dGE_dxs=None)
+    gammas = gibbs_excess_gammas(xs, dGE_dxs, GE, T, gammas=None)
+    return gammas
+
 class UNIQUAC(GibbsExcess):
     r'''Class for representing an a liquid with excess gibbs energy represented
     by the UNIQUAC equation. This model is capable of representing VL and LL
@@ -499,6 +520,20 @@ class UNIQUAC(GibbsExcess):
     _model_attributes = ('tau_coeffs_A', 'tau_coeffs_B', 'tau_coeffs_C',
                         'tau_coeffs_D', 'tau_coeffs_E', 'tau_coeffs_F',
                         'rs', 'qs')
+
+    def gammas_args(self, T=None):
+        if T is not None:
+            obj = self.to_T_xs(T=T, xs=self.xs)
+        else:
+            obj = self
+        try:
+            taus = obj._taus
+        except AttributeError:
+            taus = obj.taus()
+        N = obj.N
+        return (obj.T, N, obj.z, obj.rs, obj.qs, taus)
+
+    gammas_from_args = staticmethod(uniquac_gammas_from_args)
 
     def __repr__(self):
         s = '%s(T=%s, xs=%s, rs=%s, qs=%s, ABCDEF=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs), repr(self.rs), repr(self.qs),
