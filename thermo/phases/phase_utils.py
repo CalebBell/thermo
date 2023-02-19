@@ -64,15 +64,17 @@ object_lookups.update(eos_full_path_dict)
 def activity_lnphis(zs, model, T, P, N, lnPsats, Poyntings, phis_sat, *activity_args):
     # It appears that to make numba happy *activity_args will not work
     # and all functions on this level will need to have a fixed number of arguments
-    if 20100 <= model <= 20199:
+    if 20000 <= model <= 20099:
+        gammas = [1.0]*N
+    elif 20100 <= model <= 20199:
         gammas = nrtl_gammas_from_args(zs, N, *activity_args)
-    if 20200 <= model <= 20299:
+    elif 20200 <= model <= 20299:
         gammas = wilson_gammas_from_args(zs, N, *activity_args)
-    if 20300 <= model <= 20399:
+    elif 20300 <= model <= 20399:
         gammas = uniquac_gammas_from_args(zs, N, *activity_args)
-    if 20400 <= model <= 20499:
+    elif 20400 <= model <= 20499:
         gammas = regular_solution_gammas(zs, N, *activity_args)
-    if 20500 <= model <= 20599:
+    elif 20500 <= model <= 20599:
         gammas = unifac_gammas_from_args(zs, N, *activity_args)
     else:
         raise ValueError("Model not implemented")

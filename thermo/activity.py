@@ -1061,6 +1061,10 @@ class IdealSolution(GibbsExcess):
     
     model_id = 0
 
+    def gammas_args(self, T=None):
+        N = self.N
+        return (N,)
+
     def __init__(self, T=None, xs=None):
         if T is not None:
             self.T = T
