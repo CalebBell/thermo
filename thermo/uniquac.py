@@ -305,7 +305,7 @@ def uniquac_d2GE_dTdxs(N, T, xs, qs, taus, phis, phis_inv, dphis_dxs, thetas, dt
         d2GE_dTdxs[i] = R*(-T*Ttot + tot)
     return d2GE_dTdxs
 
-def uniquac_gammas_from_args(xs, T, N, z, rs, qs, taus):
+def uniquac_gammas_from_args(xs, N, T, z, rs, qs, taus):
     phis, rsxs_sum_inv = uniquac_phis(N, xs, rs, phis=None)
     phis_inv = [0.0]*N
     for i in range(N):
@@ -531,7 +531,7 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             taus = obj.taus()
         N = obj.N
-        return (obj.T, N, obj.z, obj.rs, obj.qs, taus)
+        return (N, obj.T, obj.z, obj.rs, obj.qs, taus)
 
     gammas_from_args = staticmethod(uniquac_gammas_from_args)
 

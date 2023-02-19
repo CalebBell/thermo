@@ -102,7 +102,7 @@ def regular_solution_dGE_dxs(Vs, Hi_sums, N, xsVs_sum_inv, GE, dGE_dxs=None):
     return dGE_dxs
 
 
-def regular_solution_gammas(xs, T, Vs, SPs, lambda_coeffs, N, 
+def regular_solution_gammas(xs, N, T, Vs, SPs, lambda_coeffs, 
                             xsVs=None, Hi_sums=None, dGE_dxs=None,
                             gammas=None):
     if xsVs is None:
@@ -323,7 +323,7 @@ class RegularSolution(GibbsExcess):
         else:
             xsVs, Hi_sums, dGE_dxs = zeros(N), zeros(N), zeros(N)
 
-        return (obj.T, obj.Vs, obj.SPs, obj.lambda_coeffs, obj.N, xsVs, Hi_sums, dGE_dxs)
+        return (obj.N, obj.T, obj.Vs, obj.SPs, obj.lambda_coeffs, xsVs, Hi_sums, dGE_dxs)
 
     def __init__(self, T, xs, Vs, SPs, lambda_coeffs=None):
         # lambda_coeffs is N*N of zeros for no interaction parameters

@@ -37,10 +37,13 @@ from thermo.eos_mix_methods import (PR_lnphis_fastest, PR_translated_lnphis_fast
                                     SRK_lnphis_fastest, SRK_translated_lnphis_fastest, 
                                     RK_lnphis_fastest,  VDW_lnphis_fastest)
 from thermo.activity import IdealSolution
-from thermo.wilson import Wilson
+from thermo.wilson import Wilson, wilson_gammas_from_args
 from thermo.unifac import UNIFAC, unifac_gammas_from_args
-from thermo.regular_solution import RegularSolution
-from thermo.uniquac import UNIQUAC
+from thermo.regular_solution import RegularSolution, regular_solution_gammas
+from thermo.uniquac import UNIQUAC, uniquac_gammas_from_args
+from thermo.nrtl import NRTL, nrtl_gammas_from_args
+
+  
 
 activity_pointer_reference_dicts = {
     'thermo.activity.IdealSolution': IdealSolution,
@@ -48,6 +51,7 @@ activity_pointer_reference_dicts = {
     'thermo.unifac.UNIFAC': UNIFAC,
     'thermo.regular_solution.RegularSolution': RegularSolution,
     'thermo.uniquac.UNIQUAC': UNIQUAC,
+    'thermo.nrtl.NRTL': NRTL,
 }
 activity_reference_pointer_dicts = {
     v: k for k, v in activity_pointer_reference_dicts.items()
@@ -60,6 +64,14 @@ object_lookups.update(eos_full_path_dict)
 def activity_lnphis(zs, model, T, P, N, lnPsats, Poyntings, phis_sat, *activity_args):
     # It appears that to make numba happy *activity_args will not work
     # and all functions on this level will need to have a fixed number of arguments
+    if 20100 <= model <= 20199:
+        gammas = nrtl_gammas_from_args(zs, N, *activity_args)
+    if 20200 <= model <= 20299:
+        gammas = wilson_gammas_from_args(zs, N, *activity_args)
+    if 20300 <= model <= 20399:
+        gammas = uniquac_gammas_from_args(zs, N, *activity_args)
+    if 20400 <= model <= 20499:
+        gammas = regular_solution_gammas(zs, N, *activity_args)
     if 20500 <= model <= 20599:
         gammas = unifac_gammas_from_args(zs, N, *activity_args)
     else:
