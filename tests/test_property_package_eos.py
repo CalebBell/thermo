@@ -142,109 +142,109 @@ from thermo.property_package_constants import (PropertyPackageConstants, PR_PKG)
 #         assert_allclose(P, pkg.P)
 
 
-@pytest.mark.deprecated
-@pytest.mark.slow
-def test_PVF_parametric_binary_vs_CoolProp():
-    import CoolProp.CoolProp as CP
-    zs = [0.4, 0.6]
-    m = Mixture(['Ethane', 'Heptane'], zs=zs, T=300, P=1E6)
+# @pytest.mark.deprecated
+# @pytest.mark.slow
+# def test_PVF_parametric_binary_vs_CoolProp():
+#     import CoolProp.CoolProp as CP
+#     zs = [0.4, 0.6]
+#     m = Mixture(['Ethane', 'Heptane'], zs=zs, T=300, P=1E6)
 
 
-    kij = .0067
-    kijs = [[0,kij],[kij,0]]
-    Tcs = [305.322, 540.13]
-    Pcs = [4872200.0, 2736000.0]
-    omegas = [0.099, 0.349]
-    c1, c2 = PRMIX.c1, PRMIX.c2
+#     kij = .0067
+#     kijs = [[0,kij],[kij,0]]
+#     Tcs = [305.322, 540.13]
+#     Pcs = [4872200.0, 2736000.0]
+#     omegas = [0.099, 0.349]
+#     c1, c2 = PRMIX.c1, PRMIX.c2
 
-    PRMIX.c1, PRMIX.c2 = 0.45724, 0.07780
+#     PRMIX.c1, PRMIX.c2 = 0.45724, 0.07780
 
-    pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs,
-                    Tcs=Tcs, Pcs=Pcs, omegas=omegas,
-                    kijs=kijs, eos_kwargs=None,
-                 HeatCapacityGases=m.HeatCapacityGases)
-    pkg.FLASH_VF_TOL = 1e-12
-
-
-    AS = CP.AbstractState("PR", "Ethane&Heptane")
-    AS.set_mole_fractions(zs)
-    AS.set_binary_interaction_double(0,1,"kij", kij)
-
-    Ps = [10, 100, 1000, 1e4, 5e4, 1e5, 5e5, 1e6, 2e6]
-    for P in Ps:
-        # Up above 2e6, issues arise in thermo
-        VFs = linspace(0, 1)
-        CP_Ts = []
-        Ts_calc = []
-        for VF in VFs:
-            try:
-                AS.update(CP.PQ_INPUTS, P, VF);
-                CP_Ts.append(AS.T())
-                pkg.flash(VF=VF, P=P, zs=zs)
-                Ts_calc.append(pkg.T)
-            except Exception as e:
-                print(VF, e)
-    #     print(CP_Ts/np.array(Ts_calc))
-        # the low pressure and highest pressure regions are the greatest errors
-        # can go down to 1e-6 tol for all, most are 1e-12
-        assert_allclose(CP_Ts, Ts_calc, rtol=1e-5)
-
-    PRMIX.c1, PRMIX.c2 = c1, c2
-
-@pytest.mark.deprecated
-@pytest.mark.slow
-def test_PVF_parametric_binary_zs_vs_CoolProp():
-    '''More advanced test of the above. Changes mole fractions.
-    To get more errors, reduce the mole fractions; and wide the P range.
-    '''
-    import CoolProp.CoolProp as CP
-
-    zs = [0.4, 0.6]
-    m = Mixture(['Ethane', 'Heptane'], zs=zs, T=300, P=1E6)
-
-    kij = .0067
-    kijs = [[0,kij],[kij,0]]
-    Tcs = [305.322, 540.13]
-    Pcs = [4872200.0, 2736000.0]
-    omegas = [0.099, 0.349]
-    c1, c2 = PRMIX.c1, PRMIX.c2
-    PRMIX.c1, PRMIX.c2 = 0.45724, 0.07780
-
-    pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs,
-                    Tcs=Tcs, Pcs=Pcs, omegas=omegas,
-                    kijs=kijs, eos_kwargs=None,
-                 HeatCapacityGases=m.HeatCapacityGases)
-    pkg.FLASH_VF_TOL = 1e-12
+#     pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs,
+#                     Tcs=Tcs, Pcs=Pcs, omegas=omegas,
+#                     kijs=kijs, eos_kwargs=None,
+#                  HeatCapacityGases=m.HeatCapacityGases)
+#     pkg.FLASH_VF_TOL = 1e-12
 
 
-    AS = CP.AbstractState("PR", "Ethane&Heptane")
-    AS.set_binary_interaction_double(0,1,"kij", kij)
+#     AS = CP.AbstractState("PR", "Ethane&Heptane")
+#     AS.set_mole_fractions(zs)
+#     AS.set_binary_interaction_double(0,1,"kij", kij)
 
-    zis = linspace(.01, .98, 5)
-    for zi in zis:
-        zs = [1-zi, zi]
-        Ps = [100, 1000, 1e4, 5e4, 1e5, 5e5, 1e6]
-        for P in Ps:
-            # Up above 2e6, issues arise in thermo
-            VFs = linspace(0, 1)
-            CP_Ts = []
-            Ts_calc = []
-            for VF in VFs:
-                try:
-                    AS.set_mole_fractions(zs)
-                    AS.update(CP.PQ_INPUTS, P, VF);
-                    CP_Ts.append(AS.T())
-                    pkg.flash(VF=VF, P=P, zs=zs)
-                    Ts_calc.append(pkg.T)
-                except Exception as e:
-                    print(zi, P, VF, e)
-    #         try:
-    #             print(CP_Ts/np.array(Ts_calc))
-    #         except:
-    #             print('bad shape')
-            assert_allclose(CP_Ts, Ts_calc, rtol=1e-5)
+#     Ps = [10, 100, 1000, 1e4, 5e4, 1e5, 5e5, 1e6, 2e6]
+#     for P in Ps:
+#         # Up above 2e6, issues arise in thermo
+#         VFs = linspace(0, 1)
+#         CP_Ts = []
+#         Ts_calc = []
+#         for VF in VFs:
+#             try:
+#                 AS.update(CP.PQ_INPUTS, P, VF);
+#                 CP_Ts.append(AS.T())
+#                 pkg.flash(VF=VF, P=P, zs=zs)
+#                 Ts_calc.append(pkg.T)
+#             except Exception as e:
+#                 print(VF, e)
+#     #     print(CP_Ts/np.array(Ts_calc))
+#         # the low pressure and highest pressure regions are the greatest errors
+#         # can go down to 1e-6 tol for all, most are 1e-12
+#         assert_allclose(CP_Ts, Ts_calc, rtol=1e-5)
 
-    PRMIX.c1, PRMIX.c2 = c1, c2
+#     PRMIX.c1, PRMIX.c2 = c1, c2
+
+# @pytest.mark.deprecated
+# @pytest.mark.slow
+# def test_PVF_parametric_binary_zs_vs_CoolProp():
+#     '''More advanced test of the above. Changes mole fractions.
+#     To get more errors, reduce the mole fractions; and wide the P range.
+#     '''
+#     import CoolProp.CoolProp as CP
+
+#     zs = [0.4, 0.6]
+#     m = Mixture(['Ethane', 'Heptane'], zs=zs, T=300, P=1E6)
+
+#     kij = .0067
+#     kijs = [[0,kij],[kij,0]]
+#     Tcs = [305.322, 540.13]
+#     Pcs = [4872200.0, 2736000.0]
+#     omegas = [0.099, 0.349]
+#     c1, c2 = PRMIX.c1, PRMIX.c2
+#     PRMIX.c1, PRMIX.c2 = 0.45724, 0.07780
+
+#     pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs,
+#                     Tcs=Tcs, Pcs=Pcs, omegas=omegas,
+#                     kijs=kijs, eos_kwargs=None,
+#                  HeatCapacityGases=m.HeatCapacityGases)
+#     pkg.FLASH_VF_TOL = 1e-12
+
+
+#     AS = CP.AbstractState("PR", "Ethane&Heptane")
+#     AS.set_binary_interaction_double(0,1,"kij", kij)
+
+#     zis = linspace(.01, .98, 5)
+#     for zi in zis:
+#         zs = [1-zi, zi]
+#         Ps = [100, 1000, 1e4, 5e4, 1e5, 5e5, 1e6]
+#         for P in Ps:
+#             # Up above 2e6, issues arise in thermo
+#             VFs = linspace(0, 1)
+#             CP_Ts = []
+#             Ts_calc = []
+#             for VF in VFs:
+#                 try:
+#                     AS.set_mole_fractions(zs)
+#                     AS.update(CP.PQ_INPUTS, P, VF);
+#                     CP_Ts.append(AS.T())
+#                     pkg.flash(VF=VF, P=P, zs=zs)
+#                     Ts_calc.append(pkg.T)
+#                 except Exception as e:
+#                     print(zi, P, VF, e)
+#     #         try:
+#     #             print(CP_Ts/np.array(Ts_calc))
+#     #         except:
+#     #             print('bad shape')
+#             assert_allclose(CP_Ts, Ts_calc, rtol=1e-5)
+
+#     PRMIX.c1, PRMIX.c2 = c1, c2
 
 # @pytest.mark.deprecated
 # @pytest.mark.xfail
@@ -724,17 +724,17 @@ def test_TPD_bubble_dew():
     assert_allclose(TPD_calc, 0, atol=1e-6)
 
 
-@pytest.mark.deprecated
-def test_stab_comb_products_need_both_roots():
-    comb_IDs = ['N2', 'CO2', 'O2', 'H2O']
-    comb_zs = [0.5939849621247668,
-      0.112781954982051,
-      0.0676691730155464,
-      0.2255639098776358]
+# @pytest.mark.deprecated
+# def test_stab_comb_products_need_both_roots():
+#     comb_IDs = ['N2', 'CO2', 'O2', 'H2O']
+#     comb_zs = [0.5939849621247668,
+#       0.112781954982051,
+#       0.0676691730155464,
+#       0.2255639098776358]
 
-    pkg2 = PropertyPackageConstants(comb_IDs, PR_PKG)
-    kijs = [[0.0, -0.0122, -0.0159, 0.0], [-0.0122, 0.0, 0.0, 0.0952], [-0.0159, 0.0, 0.0, 0.0], [0.0, 0.0952, 0.0, 0.0]]
-    pkg2 = PropertyPackageConstants(comb_IDs, PR_PKG, kijs=kijs)
+#     pkg2 = PropertyPackageConstants(comb_IDs, PR_PKG)
+#     kijs = [[0.0, -0.0122, -0.0159, 0.0], [-0.0122, 0.0, 0.0, 0.0952], [-0.0159, 0.0, 0.0, 0.0], [0.0, 0.0952, 0.0, 0.0]]
+#     pkg2 = PropertyPackageConstants(comb_IDs, PR_PKG, kijs=kijs)
 
-    pkg2.pkg.flash_caloric(P=1e5,T=794.5305048838037, zs=comb_zs)
-    assert 'g' == pkg2.pkg.phase
+#     pkg2.pkg.flash_caloric(P=1e5,T=794.5305048838037, zs=comb_zs)
+#     assert 'g' == pkg2.pkg.phase

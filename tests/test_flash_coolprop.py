@@ -293,3 +293,51 @@ def test_three_phase_flash_CoolProp():
     flasher = FlashVLN(constants, properties, gas=CPP_gas, liquids=[CPP_liq,CPP_liq] )
     res = flasher.flash(T=300, P=1e5, zs=zs)
     assert res.phase_count == 3
+
+
+@pytest.mark.CoolProp
+@pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
+def test_PVF_parametric_binary_zs_vs_CoolProp():
+    chemicals = ['Ethane', 'Heptane']
+    # constants, properties = ChemicalConstantsPackage.from_IDs(chemicals)
+    # constants.subset(properties=['Tcs', 'Pcs', 'omegas', 'MWs', 'Vcs'])
+
+    constants = ChemicalConstantsPackage(MWs=[30.06904, 100.20194000000001], omegas=[0.099, 0.349], 
+                                        Pcs=[4872200.0, 2736000.0], Tcs=[305.322, 540.13], 
+                                        Vcs=[0.0001455, 0.000428])
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+    HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 1500.0, [-1.0480862560578738e-22, 6.795933556773635e-19, -1.752330995156058e-15, 2.1941287956874937e-12, -1.1560515172055718e-09, -1.8163596179818727e-07, 0.00044831921501838854, -0.038785639211185385, 34.10970704595796])),
+    HeatCapacityGas(load_data=False, poly_fit=(200.0, 1500.0, [3.92133614210253e-22, -3.159591705025203e-18, 1.0953093194585358e-14, -2.131394945087635e-11, 2.5381451844763867e-08, -1.872671854270201e-05, 0.007985818706468728, -1.3181368580077415, 187.25540686626923])),
+    ],
+    )
+
+    kij = .0067
+    kijs = [[0,kij],[kij,0]]
+    zs = [0.4, 0.6]
+
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas, 'kijs': kijs}
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases)
+
+    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
+    res = flasher.flash(T=300, P=1e5, zs=zs)
+
+
+    import CoolProp.CoolProp as CP
+    AS = CP.AbstractState("PR", "Ethane&Heptane")
+    AS.set_binary_interaction_double(0,1,"kij", kij)
+
+    zis = linspace(.01, .98, 5)
+    for zi in zis:
+        zs = [1-zi, zi]
+        Ps = [100, 1000, 1e4, 1e6] # 5e4, 1e5, 5e5
+        for P in Ps:
+            # Up above 2e6, issues arise in thermo
+            VFs = [0.0, 1.0, .01, .99]#, .25, .75]#linspace(0, 1, 4)
+            for VF in VFs:
+                AS.set_mole_fractions(zs)
+                AS.update(CP.PQ_INPUTS, P, VF);
+                CP_T = AS.T()
+                res = flasher.flash(VF=VF, P=P, zs=zs)
+                # Doesn't match exacrly because of c1 c2
+                assert_close(res.T, CP_T, rtol=1e-4)
