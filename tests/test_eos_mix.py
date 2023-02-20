@@ -31,14 +31,10 @@ from fluids.constants import R
 from fluids.numerics import jacobian, hessian, assert_close, assert_close1d, assert_close2d, assert_close3d, derivative
 from scipy.optimize import minimize, newton
 from math import log, exp, sqrt
-from thermo import Mixture
 from thermo.property_package import eos_Z_test_phase_stability, eos_Z_trial_phase_stability
 import numpy as np
 import json, pickle
 from thermo.coolprop import has_CoolProp
-from thermo.property_package_constants import (PropertyPackageConstants,
-                                               NRTL_PKG, IDEAL_PKG, PR_PKG)
-from thermo.eos_mix_methods import a_alpha_and_derivatives_quadratic_terms
 
 
 def test_PRMIX_quick():
