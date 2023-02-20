@@ -180,9 +180,29 @@ def test_bubble_T_PR_VL():
     res = flasher.flash(P=8e6, VF=0, zs=zs)
     assert_close(res.T, 454.420461011768, rtol=1e-4)
 
-    # This one is really slow
+    # This one is really
     res = flasher.flash(P=8e6, VF=1, zs=zs)
     assert_close(res.T, 422.0034892250092, rtol=1e-4)
+
+
+    # TPD Tangent Plane Distance checks
+
+    res = flasher.flash(P=1e6, VF=0, zs=zs)
+    TPD_calc = TPD(res.T, res.liquid0.zs, res.liquid0.lnphis(), res.gas.zs, res.gas.lnphis())
+    assert_close(TPD_calc, 0, atol=1e-6)
+
+    res = flasher.flash(T=200, VF=0, zs=zs)
+    TPD_calc = TPD(res.T, res.liquid0.zs, res.liquid0.lnphis(), res.gas.zs, res.gas.lnphis())
+    assert_close(TPD_calc, 0, atol=1e-6)
+
+    res = flasher.flash(P=1e6, VF=1, zs=zs)
+    TPD_calc = TPD(res.T, res.gas.zs, res.gas.lnphis(), res.liquid0.zs, res.liquid0.lnphis())
+    assert_close(TPD_calc, 0, atol=1e-6)
+
+
+    res = flasher.flash(T=300, VF=1, zs=zs)
+    TPD_calc = TPD(res.T, res.gas.zs, res.gas.lnphis(), res.liquid0.zs, res.liquid0.lnphis())
+    assert_close(TPD_calc, 0, atol=1e-6)
 
 
 def test_PR_four_bubble_dew_cases_VL():
