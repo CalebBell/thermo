@@ -454,50 +454,6 @@ def test_PRMIX_pkg_S():
     S1 - S2
     assert_allclose(S1 - S2, -124.39457107124854, atol=1)
 
-@pytest.mark.deprecated
-def test_PRMIX_pkg_extras():
-    # TODO add more properties as they are added
-    zs = [0.4, 0.6]
-    m = Mixture(['Ethane', 'Heptane'], zs=zs, T=300, P=1E6)
-
-    kij = .0
-    kijs = [[0,kij],[kij,0]]
-    Tcs = [305.322, 540.13]
-    Pcs = [4872200.0, 2736000.0]
-    omegas = [0.099, 0.349]
-
-    pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs,
-                    Tcs=Tcs, Pcs=Pcs, omegas=omegas,
-                    kijs=kijs, eos_kwargs=None,
-                 HeatCapacityGases=m.HeatCapacityGases)
-
-
-    pkg.flash(T=400, P=1e5, zs=m.zs)
-    assert 'g' == pkg.phase
-
-    assert_allclose(pkg.eos_g.H_dep_g, -179.77096245871508, rtol=1e-5)
-    assert_allclose(pkg.eos_g.S_dep_g, -0.2971318950892263, rtol=1e-5)
-    assert_allclose(pkg.Hgm_dep, -179.77096245871508, rtol=5e-5)
-    assert_allclose(pkg.Sgm_dep, -0.2971318950892263, rtol=5e-5)
-
-    assert_allclose(pkg.Cpgm, 153.32126587681677, rtol=1e-3)
-    assert_allclose(pkg.Cvgm, 144.3920626710827, rtol=1e-3) # :)
-    assert_allclose(pkg.Cpgm_dep, 0.7139646058820279, rtol=1e-5)
-    assert_allclose(pkg.Cvgm_dep, 0.09922120014794993, rtol=1e-5) #? maybe issue
-
-    pkg.flash(T=300, P=1e7, zs=m.zs)
-    assert 'l' == pkg.phase
-
-    assert_allclose(pkg.eos_l.H_dep_l, -25490.54123032457, rtol=5e-5)
-    assert_allclose(pkg.eos_l.S_dep_l, -48.47646403887194, rtol=5e-5)
-    assert_allclose(pkg.Hlm_dep, -25490.54123, rtol=1e-4)
-    assert_allclose(pkg.Slm_dep, -48.47646403887194, rtol=1e-4)
-
-    assert_allclose(pkg.Cplm, 160.5756363050434, rtol=1e-3)
-    assert_allclose(pkg.Cvlm, 133.7943922248561, rtol=1e-3) # :)
-    assert_allclose(pkg.Cplm_dep, 39.8813153015303, rtol=5e-5)
-    assert_allclose(pkg.Cvlm_dep, 21.414531021342995, rtol=5e-5) #? maybe issue
-
 
 @pytest.mark.deprecated
 def test_azeotrope_Txy_PR():
@@ -691,37 +647,37 @@ def test_phase_envelope_44_components():
     assert_allclose(Ts_dew_check, Ts_dew_expect, rtol=1e-5)
     assert_allclose(Ts_bubble_check, Ts_bubble_expect, rtol=1e-5)
 
-@pytest.mark.deprecated
-def test_TPD_bubble_dew():
-    IDs = ['ethane', 'n-pentane']
-    pkg = PropertyPackageConstants(IDs, PR_PKG, kijs=[[0, 7.609447e-003], [7.609447e-003, 0]])
-    zs = [0.7058334393128614, 0.2941665606871387] # 50/50 mass basis
-    pkg = pkg.pkg
+# @pytest.mark.deprecated
+# def test_TPD_bubble_dew():
+#     IDs = ['ethane', 'n-pentane']
+#     pkg = PropertyPackageConstants(IDs, PR_PKG, kijs=[[0, 7.609447e-003], [7.609447e-003, 0]])
+#     zs = [0.7058334393128614, 0.2941665606871387] # 50/50 mass basis
+#     pkg = pkg.pkg
 
 
-    pkg.flash(P=1e6, VF=0, zs=zs)
-    pkg.eos_l.fugacities()
-    pkg.eos_g.fugacities()
-    TPD_calc = TPD(pkg.eos_g.T, pkg.eos_l.zs, pkg.eos_l.lnphis_l, pkg.eos_g.zs, pkg.eos_g.lnphis_g,)
-    assert_allclose(TPD_calc, 0, atol=1e-6)
+#     pkg.flash(P=1e6, VF=0, zs=zs)
+#     pkg.eos_l.fugacities()
+#     pkg.eos_g.fugacities()
+#     TPD_calc = TPD(pkg.eos_g.T, pkg.eos_l.zs, pkg.eos_l.lnphis_l, pkg.eos_g.zs, pkg.eos_g.lnphis_g,)
+#     assert_allclose(TPD_calc, 0, atol=1e-6)
 
-    pkg.flash(T=200, VF=0, zs=zs)
-    pkg.eos_l.fugacities()
-    pkg.eos_g.fugacities()
-    TPD_calc = TPD(pkg.eos_g.T, pkg.eos_l.zs, pkg.eos_l.lnphis_l, pkg.eos_g.zs, pkg.eos_g.lnphis_g,)
-    assert_allclose(TPD_calc, 0, atol=1e-6)
+#     pkg.flash(T=200, VF=0, zs=zs)
+#     pkg.eos_l.fugacities()
+#     pkg.eos_g.fugacities()
+#     TPD_calc = TPD(pkg.eos_g.T, pkg.eos_l.zs, pkg.eos_l.lnphis_l, pkg.eos_g.zs, pkg.eos_g.lnphis_g,)
+#     assert_allclose(TPD_calc, 0, atol=1e-6)
 
-    pkg.flash(P=1e6, VF=1, zs=zs)
-    pkg.eos_l.fugacities()
-    pkg.eos_g.fugacities()
-    TPD_calc = TPD(pkg.eos_g.T, pkg.eos_g.zs, pkg.eos_g.lnphis_g, pkg.eos_l.zs, pkg.eos_l.lnphis_l)
-    assert_allclose(TPD_calc, 0, atol=1e-6)
+#     pkg.flash(P=1e6, VF=1, zs=zs)
+#     pkg.eos_l.fugacities()
+#     pkg.eos_g.fugacities()
+#     TPD_calc = TPD(pkg.eos_g.T, pkg.eos_g.zs, pkg.eos_g.lnphis_g, pkg.eos_l.zs, pkg.eos_l.lnphis_l)
+#     assert_allclose(TPD_calc, 0, atol=1e-6)
 
-    pkg.flash(T=300, VF=1, zs=zs)
-    pkg.eos_l.fugacities()
-    pkg.eos_g.fugacities()
-    TPD_calc = TPD(pkg.eos_g.T, pkg.eos_g.zs, pkg.eos_g.lnphis_g, pkg.eos_l.zs, pkg.eos_l.lnphis_l)
-    assert_allclose(TPD_calc, 0, atol=1e-6)
+#     pkg.flash(T=300, VF=1, zs=zs)
+#     pkg.eos_l.fugacities()
+#     pkg.eos_g.fugacities()
+#     TPD_calc = TPD(pkg.eos_g.T, pkg.eos_g.zs, pkg.eos_g.lnphis_g, pkg.eos_l.zs, pkg.eos_l.lnphis_l)
+#     assert_allclose(TPD_calc, 0, atol=1e-6)
 
 
 # @pytest.mark.deprecated
