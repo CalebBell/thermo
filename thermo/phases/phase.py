@@ -41,7 +41,7 @@ from chemicals.utils import (log, Cp_minus_Cv, phase_identification_parameter,
                              Joule_Thomson, speed_of_sound, dxs_to_dns, dns_to_dn_partials,
                              hash_any_primitive, isentropic_exponent_TV,
                              isentropic_exponent_PT, isentropic_exponent_PV,
-                             property_molar_to_mass, object_data,
+                             property_molar_to_mass, object_data, normalize,
                              )
 from chemicals.virial import B_from_Z
 from thermo.utils import POLY_FIT
@@ -2509,6 +2509,45 @@ class Phase(object):
         
         self._gammas = gammas
         return gammas
+
+    _x_infinite_dilution = 0.0
+
+    def gammas_infinite_dilution(self):
+        r'''Calculate and return the infinite dilution activity coefficients
+        of each component.
+
+        Returns
+        -------
+        gammas_infinite : list[float]
+            Infinite dilution activity coefficients, [-]
+
+        Notes
+        -----
+        The algorithm is as follows. For each component, set its composition to
+        zero. Normalize the remaining compositions to 1. Create a new object
+        with that composition, and calculate the activity coefficient of the
+        component whose concentration was set to zero.
+        '''
+        T, P, N = self.T, self.P, self.N
+        zs_base = self.zs
+        x_infinite_dilution = self._x_infinite_dilution
+        # x_infinite_dilution = 1e-7
+        if self.scalar:
+            gammas_inf = [0.0]*N
+            copy_fun = list
+        else:
+            gammas_inf = zeros(N)
+            copy_fun = array
+        phis = self.phis()
+        for i in range(N):
+            zs = copy_fun(zs_base)
+            zs[i] = x_infinite_dilution
+            zs = normalize(zs)
+            # phi = self.to_TP_zs(T=T, P=P, zs=zs).phis()[i]
+            # gammas_inf[i] = phis[i]/phi
+            # No need to double-count
+            gammas_inf[i] = self.to_TP_zs(T=T, P=P, zs=zs).gammas()[i]
+        return gammas_inf
 
     def Cp_Cv_ratio(self):
         r'''Method to calculate and return the Cp/Cv ratio of the phase.

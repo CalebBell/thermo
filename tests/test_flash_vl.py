@@ -520,6 +520,16 @@ def test_UNIFAC_water_ethanol_sample():
             T=T, P=P, zs=zs)
 
 
+        if GE is GE_plain:
+            assert_close1d(liquid.gammas_infinite_dilution(), [7.623846608529782, 2.662771526958551])
+        else:
+            gamma_inf = liquid.to(T=298.15, P=1e5, zs=zs).gammas_infinite_dilution()[1]
+            assert_close(gamma_inf, 2.611252717452456) # 3.28 in ddbst free data
+
+
+            gamma_inf = liquid.to(T=283.15, P=1e5, zs=zs).gammas_infinite_dilution()[0]
+            assert_close(gamma_inf, 4.401784691406401) # 3.28 in ddbst free data
+
         eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
         gas = CEOSGas(IGMIX, HeatCapacityGases=properties.HeatCapacityGases, eos_kwargs=eos_kwargs)
         flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
