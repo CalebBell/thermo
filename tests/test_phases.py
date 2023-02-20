@@ -47,6 +47,7 @@ from thermo.phase_change import *
 from thermo.unifac import UNIFAC, UFSG, UFIP
 from thermo.regular_solution import RegularSolution
 from thermo.uniquac import UNIQUAC
+from thermo.wilson import Wilson
 from thermo.coolprop import PropsSI
 import pickle
 import json
@@ -1492,7 +1493,7 @@ def test_GibbsExcessLiquid_RegularSolution():
     lnphis_from_args = lnphis_direct(xs2, *lnphis_args)
     assert_close1d(lnphis_from_args, liquid.lnphis(), rtol=1e-13)
 
-def test_GibbsExcessLiquid_Wilson():
+def test_GibbsExcessLiquid_UNIQUAC():
     # Totally madeup
     N = 3
     T = 331.42
@@ -1500,7 +1501,6 @@ def test_GibbsExcessLiquid_Wilson():
     rs = [2.5735, 2.87, 1.4311]
     qs = [2.336, 2.41, 1.432]
 
-    # madeup numbers to match Wilson example roughly
     tausA = [[0.0, -1.05e-4, -2.5e-4], [3.9e-4, 0.0, 1.6e-4], [-1.123e-4, 6.5e-4, 0]]
     tausB = [[0.0, 235.0, -169.0], [-160, 0.0, -715.0], [11.2, 144.0, 0.0]]
     tausC = [[0.0, -4.23e-4, 2.9e-4], [6.1e-4, 0.0, 8.2e-5], [-7.8e-4, 1.11e-4, 0]]
@@ -1522,6 +1522,87 @@ def test_GibbsExcessLiquid_Wilson():
 
     xs2 = [.7, .2, .1]
     # Check that the lnphis direct are the same
+    liquid = liquid.to(T=513.994, P=1e4, zs=xs2)
+    lnphis_args = liquid.lnphis_args()
+    lnphis_from_args = lnphis_direct(xs2, *lnphis_args)
+    assert_close1d(lnphis_from_args, liquid.lnphis(), rtol=1e-13)
+
+def test_GibbsExcessLiquid_Wilson():
+    # Totally madeup
+
+    chemicals = ['water', 'ethanol', 'methanol', '1-pentanol', '2-pentanol', '3-pentanol',
+                '1-decanol']
+    constants, properties = ChemicalConstantsPackage.from_IDs(chemicals)
+
+    # Main coefficients with temperature inverse dependency
+    lambdasB = [[0.0, -35.3, 40.0, -139.0, -129.0, -128.0, -242.0],
+    [-557.0, 0.0, -200.0, 83.2, 84.6, 80.2, 140.0],
+    [-280.0, 95.5, 0.0, 88.2, 85.3, 89.1, 119.0],
+    [-1260.0, -128.0, -220.0, 0.0, -94.4, -85.5, 59.7],
+    [-1280.0, -121.0, -236.0, 80.3, 0.0, -88.8, 61.4],
+    [-1370.0, -121.0, -238.0, 75.7, 78.2, 0.0, 63.1],
+    [-2670.0, -304.0, -403.0, -93.4, -91.1, -86.6, 0.0]]
+
+    # Add in some random noise for numerical stuff
+    lambdasA = [[0.0092, 0.00976, 0.00915, 0.00918, 0.00974, 0.00925, 0.00908],
+    [0.00954, 0.00927, 0.00902, 0.00948, 0.00934, 0.009, 0.00995],
+    [0.00955, 0.00921, 0.0098, 0.00926, 0.00952, 0.00912, 0.00995],
+    [0.00924, 0.00938, 0.00941, 0.00992, 0.00935, 0.00996, 0.0092],
+    [0.00992, 0.00946, 0.00935, 0.00917, 0.00998, 0.00903, 0.00924],
+    [0.00937, 0.00973, 0.00924, 0.00991, 0.00997, 0.00968, 0.00975],
+    [0.00983, 0.00934, 0.00921, 0.00977, 0.00944, 0.00902, 0.00916]]
+
+    lambdasC = [[0.000956, 0.000958, 0.000993, 0.000949, 0.000913, 0.000947, 0.000949],
+    [0.000945, 0.000928, 0.000935, 0.000999, 0.000986, 0.000959, 0.000924],
+    [0.000957, 0.000935, 0.00097, 0.000906, 0.00098, 0.000952, 0.000939],
+    [0.000956, 0.000948, 0.0009, 0.000903, 0.000967, 0.000972, 0.000969],
+    [0.000917, 0.000949, 0.000973, 0.000922, 0.000978, 0.000944, 0.000905],
+    [0.000947, 0.000996, 0.000961, 0.00091, 0.00096, 0.000982, 0.000998],
+    [0.000934, 0.000929, 0.000955, 0.000975, 0.000924, 0.000979, 0.001]]
+
+    lambdasD = [[3.78e-05, 3.86e-05, 3.62e-05, 3.83e-05, 3.95e-05, 3.94e-05, 3.92e-05],
+    [3.88e-05, 3.88e-05, 3.75e-05, 3.82e-05, 3.8e-05, 3.76e-05, 3.71e-05],
+    [3.93e-05, 3.67e-05, 4e-05, 4e-05, 3.67e-05, 3.72e-05, 3.82e-05],
+    [3.95e-05, 3.67e-05, 3.64e-05, 3.62e-05, 3.62e-05, 3.63e-05, 3.97e-05],
+    [3.83e-05, 3.68e-05, 3.73e-05, 3.78e-05, 3.9e-05, 3.79e-05, 3.94e-05],
+    [3.67e-05, 3.82e-05, 3.76e-05, 3.61e-05, 3.67e-05, 3.88e-05, 3.64e-05],
+    [3.7e-05, 3.7e-05, 3.82e-05, 3.91e-05, 3.73e-05, 3.93e-05, 3.89e-05]]
+
+    lambdasE = [[493.0, 474.0, 481.0, 468.0, 467.0, 474.0, 460.0],
+    [478.0, 454.0, 460.0, 488.0, 469.0, 479.0, 483.0],
+    [469.0, 493.0, 470.0, 476.0, 466.0, 451.0, 478.0],
+    [481.0, 470.0, 467.0, 455.0, 473.0, 465.0, 465.0],
+    [470.0, 487.0, 472.0, 460.0, 467.0, 468.0, 500.0],
+    [480.0, 464.0, 475.0, 469.0, 462.0, 476.0, 469.0],
+    [492.0, 460.0, 458.0, 494.0, 465.0, 461.0, 496.0]]
+
+    lambdasF = [[8.25e-08, 8.27e-08, 8.78e-08, 8.41e-08, 8.4e-08, 8.93e-08, 8.98e-08],
+    [8.28e-08, 8.35e-08, 8.7e-08, 8.96e-08, 8.15e-08, 8.46e-08, 8.53e-08],
+    [8.51e-08, 8.65e-08, 8.24e-08, 8.89e-08, 8.86e-08, 8.71e-08, 8.21e-08],
+    [8.75e-08, 8.89e-08, 8.6e-08, 8.42e-08, 8.83e-08, 8.52e-08, 8.53e-08],
+    [8.24e-08, 8.27e-08, 8.43e-08, 8.19e-08, 8.74e-08, 8.3e-08, 8.35e-08],
+    [8.79e-08, 8.84e-08, 8.31e-08, 8.15e-08, 8.68e-08, 8.55e-08, 8.2e-08],
+    [8.63e-08, 8.76e-08, 8.52e-08, 8.46e-08, 8.67e-08, 8.9e-08, 8.38e-08]]
+
+
+
+    T = 273.15+70
+    P = 1.124e5
+    xs = [1/7.0]*7
+    GE = Wilson(T=T, xs=xs, ABCDEF=(lambdasA, lambdasB, lambdasC, lambdasD, lambdasE, lambdasF))
+    gammas_expect = [2.4905998292191183, 0.991331256318022, 1.0555263472427001, 1.0079812778292834, 1.0043407951198184, 1.0012531155009263, 1.1316074616971066]
+    assert_close1d(gammas_expect, GE.gammas(), rtol=1e-13)
+
+    liquid = GibbsExcessLiquid(
+        VaporPressures=properties.VaporPressures,
+        HeatCapacityGases=properties.HeatCapacityGases,
+        VolumeLiquids=properties.VolumeLiquids,
+        GibbsExcessModel=GE,
+        equilibrium_basis='Psat', caloric_basis='Psat',
+        T=T, P=P, zs=xs)
+
+
+    xs2 = [.012, .53, .12, .0123, .123, .023, 0.1797]
     liquid = liquid.to(T=513.994, P=1e4, zs=xs2)
     lnphis_args = liquid.lnphis_args()
     lnphis_from_args = lnphis_direct(xs2, *lnphis_args)
