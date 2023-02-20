@@ -35,49 +35,49 @@ from fluids.numerics import linspace, logspace, normalize
 from thermo.property_package_constants import (PropertyPackageConstants, PR_PKG)
 
 
-@pytest.mark.deprecated
-def test_bubble_T_PR():
-    # Copied to VL! Can't get last point to converge.
-    Ps = np.logspace(np.log10(1e3), np.log10(8e6), 100).tolist()
-    # Value working for sure!
-    # A long enough list of points may reveal errors
-    # Need to check for singularities in results!
-    # Lagrange multiplier is needed.
-    T_bubbles_expect = [135.77792634341301, 136.56179975223873, 137.35592304111714, 138.1605125904237, 138.97579118069618, 139.80198815378043, 140.63933971310234, 141.48808915266713, 142.34848716775062, 143.22079210796352, 144.10527026879004, 145.00219623035326, 145.9118531621595, 146.8345331709676, 147.77053765471518, 148.7201776796149, 149.68377437184307, 150.66165932879846, 151.65417505244912, 152.6616753977778, 153.68452605664353, 154.72310505184726, 155.7778032642612, 156.8490249894867, 157.937188514101, 159.04272673536184, 160.16608780166473, 161.30773579673297, 162.46815145564204, 163.64783292476886, 164.84729656230823, 166.06707778415586, 167.30773196086088, 168.56983536585116, 169.8539861804285, 171.16080556094636, 172.49093877035423, 173.84505638241404, 175.22385556194536, 176.6280614293828, 178.058428515323, 179.51574231484207, 181.00082094865053, 182.5145169422077, 184.0577191341151, 185.63135472512306, 187.2363914833706, 188.8738401205766, 190.54475685783353, 192.25024620138348, 193.991463951159, 195.76962046909824, 197.5859842371162, 199.4418857394953, 201.33872170960848, 203.27795978657647, 205.26114363572563, 207.28989859303456, 209.36593790645554, 211.49106965667633, 213.66720445521423, 215.89636403432021, 218.18069086349888, 220.52245895198226, 222.92408602593875, 225.3881473051149, 227.91739114691686, 230.5147568796014, 233.18339521130144, 235.92669168167328, 238.74829372436815, 241.65214202994656, 244.64250705759693, 247.7240317371467, 250.90178165300227, 254.18130431821905, 257.5686995555806, 261.07070353354993, 264.69478970158224, 268.44929079409445, 272.3435473154688, 276.3880896135361, 280.59486299764814, 284.9775086709067, 289.5517180159047, 294.3356847958481, 299.35069043485873, 304.62187400558975, 310.17926492998157, 316.059200210731, 322.3063237832385, 328.97650301847204, 336.14126110695065, 343.8948656757251, 352.36642480869347, 361.7423599546769, 372.31333661508177, 384.5907961800425, 399.6948959805394, 422.0030866468656]
+# @pytest.mark.deprecated
+# def test_bubble_T_PR():
+#     # Copied to VL! Can't get last point to converge.
+#     Ps = np.logspace(np.log10(1e3), np.log10(8e6), 100).tolist()
+#     # Value working for sure!
+#     # A long enough list of points may reveal errors
+#     # Need to check for singularities in results!
+#     # Lagrange multiplier is needed.
+#     T_bubbles_expect = [135.77792634341301, 136.56179975223873, 137.35592304111714, 138.1605125904237, 138.97579118069618, 139.80198815378043, 140.63933971310234, 141.48808915266713, 142.34848716775062, 143.22079210796352, 144.10527026879004, 145.00219623035326, 145.9118531621595, 146.8345331709676, 147.77053765471518, 148.7201776796149, 149.68377437184307, 150.66165932879846, 151.65417505244912, 152.6616753977778, 153.68452605664353, 154.72310505184726, 155.7778032642612, 156.8490249894867, 157.937188514101, 159.04272673536184, 160.16608780166473, 161.30773579673297, 162.46815145564204, 163.64783292476886, 164.84729656230823, 166.06707778415586, 167.30773196086088, 168.56983536585116, 169.8539861804285, 171.16080556094636, 172.49093877035423, 173.84505638241404, 175.22385556194536, 176.6280614293828, 178.058428515323, 179.51574231484207, 181.00082094865053, 182.5145169422077, 184.0577191341151, 185.63135472512306, 187.2363914833706, 188.8738401205766, 190.54475685783353, 192.25024620138348, 193.991463951159, 195.76962046909824, 197.5859842371162, 199.4418857394953, 201.33872170960848, 203.27795978657647, 205.26114363572563, 207.28989859303456, 209.36593790645554, 211.49106965667633, 213.66720445521423, 215.89636403432021, 218.18069086349888, 220.52245895198226, 222.92408602593875, 225.3881473051149, 227.91739114691686, 230.5147568796014, 233.18339521130144, 235.92669168167328, 238.74829372436815, 241.65214202994656, 244.64250705759693, 247.7240317371467, 250.90178165300227, 254.18130431821905, 257.5686995555806, 261.07070353354993, 264.69478970158224, 268.44929079409445, 272.3435473154688, 276.3880896135361, 280.59486299764814, 284.9775086709067, 289.5517180159047, 294.3356847958481, 299.35069043485873, 304.62187400558975, 310.17926492998157, 316.059200210731, 322.3063237832385, 328.97650301847204, 336.14126110695065, 343.8948656757251, 352.36642480869347, 361.7423599546769, 372.31333661508177, 384.5907961800425, 399.6948959805394, 422.0030866468656]
 
-    m = Mixture(['CO2', 'n-hexane'], zs=[.5, .5], T=300, P=1E6)
-    pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs,
-                     Tcs=m.Tcs, Pcs=m.Pcs, omegas=m.omegas, kijs=[[0,0],[0,0]], eos_kwargs=None)
+#     m = Mixture(['CO2', 'n-hexane'], zs=[.5, .5], T=300, P=1E6)
+#     pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs,
+#                      Tcs=m.Tcs, Pcs=m.Pcs, omegas=m.omegas, kijs=[[0,0],[0,0]], eos_kwargs=None)
 
-    bubs = []
+#     bubs = []
 
-    for P in Ps:
-        bubs.append(pkg.bubble_T(P, m.zs, maxiter=20, xtol=1e-10, maxiter_initial=20, xtol_initial=1e-1)[-3])
-    assert_allclose(bubs, T_bubbles_expect, rtol=5e-6)
-
-
-@pytest.mark.deprecated
-def test_PR_four_bubble_dew_cases():
-    m = Mixture(['furfural', 'furfuryl alcohol'], zs=[.5, .5], T=300, P=1E6)
-    pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=[235.9, 250.35], Tbs=[434.65, 441.15],
-                    Tcs=[670.0, 632.0], Pcs=[5510000.0, 5350000.0], omegas=[0.4522, 0.734],
-                    kijs=[[0,0],[0,0]], eos_kwargs=None,
-                 HeatCapacityGases=m.HeatCapacityGases)
-    # Strongly believed to be correct!
-    assert_allclose(pkg.bubble_T(P=1e6, zs=m.zs)[-3], 539.1838522423355, atol=.1)
-    assert_allclose(pkg.dew_T(P=1e6, zs=m.zs)[-3], 540.208169750248, atol=.1)
-    assert_allclose(pkg.dew_P(T=600, zs=m.zs)[-3], 2702616.6490743402, rtol=1e-4)
-    assert_allclose(pkg.bubble_P(T=600, zs=m.zs)[-3], 2766476.7473238516, rtol=1e-4)
+#     for P in Ps:
+#         bubs.append(pkg.bubble_T(P, m.zs, maxiter=20, xtol=1e-10, maxiter_initial=20, xtol_initial=1e-1)[-3])
+#     assert_allclose(bubs, T_bubbles_expect, rtol=5e-6)
 
 
-@pytest.mark.deprecated
-def test_C1_C10_PT_flash():
+# @pytest.mark.deprecated
+# def test_PR_four_bubble_dew_cases():
+#     m = Mixture(['furfural', 'furfuryl alcohol'], zs=[.5, .5], T=300, P=1E6)
+#     pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=[235.9, 250.35], Tbs=[434.65, 441.15],
+#                     Tcs=[670.0, 632.0], Pcs=[5510000.0, 5350000.0], omegas=[0.4522, 0.734],
+#                     kijs=[[0,0],[0,0]], eos_kwargs=None,
+#                  HeatCapacityGases=m.HeatCapacityGases)
+#     # Strongly believed to be correct!
+#     assert_allclose(pkg.bubble_T(P=1e6, zs=m.zs)[-3], 539.1838522423355, atol=.1)
+#     assert_allclose(pkg.dew_T(P=1e6, zs=m.zs)[-3], 540.208169750248, atol=.1)
+#     assert_allclose(pkg.dew_P(T=600, zs=m.zs)[-3], 2702616.6490743402, rtol=1e-4)
+#     assert_allclose(pkg.bubble_P(T=600, zs=m.zs)[-3], 2766476.7473238516, rtol=1e-4)
 
-    m = Mixture(['methane', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10'], zs=[.1]*10, T=300, P=1E6)
-    pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs,
-                     Tcs=m.Tcs, Pcs=m.Pcs, omegas=m.omegas, kijs=None, eos_kwargs=None)
-    pkg.flash(m.zs, T=300, P=1e5)
-    assert_allclose(pkg.V_over_F, 0.3933480636546702, atol=.001)
+
+# @pytest.mark.deprecated
+# def test_C1_C10_PT_flash():
+
+#     m = Mixture(['methane', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10'], zs=[.1]*10, T=300, P=1E6)
+#     pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs,
+#                      Tcs=m.Tcs, Pcs=m.Pcs, omegas=m.omegas, kijs=None, eos_kwargs=None)
+#     pkg.flash(m.zs, T=300, P=1e5)
+#     assert_allclose(pkg.V_over_F, 0.3933480636546702, atol=.001)
 
 @pytest.mark.deprecated
 def test_ternary_4_flashes_2_algorithms():
@@ -246,21 +246,21 @@ def test_PVF_parametric_binary_zs_vs_CoolProp():
 
     PRMIX.c1, PRMIX.c2 = c1, c2
 
-@pytest.mark.deprecated
-@pytest.mark.xfail
-def test_failing_sequential_subs():
-    zs = [0.8168, 0.1501, 0.0331]
-    m = Mixture(['n-pentane', 'n-hexane', 'heptane'], zs=zs, T=300, P=1E6)
-    kijs = [[0, 0.00076, 0.00171], [0.00076, 0, 0.00061], [0.00171, 0.00061, 0]]
-    Tcs = [469.7, 507.6, 540.2]
-    Pcs = [3370000.0, 3025000.0, 2740000.0]
-    omegas = [0.251, 0.2975, 0.3457]
-    pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs,
-                    Tcs=Tcs, Pcs=Pcs, omegas=omegas,
-                    kijs=kijs, eos_kwargs=None,
-                 HeatCapacityGases=m.HeatCapacityGases)
+# @pytest.mark.deprecated
+# @pytest.mark.xfail
+# def test_failing_sequential_subs():
+#     zs = [0.8168, 0.1501, 0.0331]
+#     m = Mixture(['n-pentane', 'n-hexane', 'heptane'], zs=zs, T=300, P=1E6)
+#     kijs = [[0, 0.00076, 0.00171], [0.00076, 0, 0.00061], [0.00171, 0.00061, 0]]
+#     Tcs = [469.7, 507.6, 540.2]
+#     Pcs = [3370000.0, 3025000.0, 2740000.0]
+#     omegas = [0.251, 0.2975, 0.3457]
+#     pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs,
+#                     Tcs=Tcs, Pcs=Pcs, omegas=omegas,
+#                     kijs=kijs, eos_kwargs=None,
+#                  HeatCapacityGases=m.HeatCapacityGases)
 
-    pkg.to_TP_zs(T=180, P=4, zs=zs).sequential_substitution_VL(maxiter=10,xtol=1E-7)
+#     pkg.to_TP_zs(T=180, P=4, zs=zs).sequential_substitution_VL(maxiter=10,xtol=1E-7)
 
 
 

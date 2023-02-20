@@ -601,7 +601,8 @@ class GibbsExcessLiquid(Phase):
         Poyntings = self.Poyntings()
         phis_sat = self.phis_sat()
         activity_args = self.GibbsExcessModel.gammas_args()
-        return (self.model_id, self.T, self.P, self.N, lnPsats, Poyntings, phis_sat) + activity_args
+        lnphis = [0.0]*self.N if self.scalar else ZeroDivisionError(self.N)
+        return (self.model_id, self.T, self.P, self.N, lnPsats, Poyntings, phis_sat) + activity_args +(lnphis,)
 
 
     def Henry_matrix(self):

@@ -254,11 +254,65 @@ def test_C5_C6_C7():
 
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    flashN = FlashVLN(constants, properties, liquids=[liq], gas=gas)
+    flasher = FlashVLN(constants, properties, liquids=[liq], gas=gas)
 
     # Extremely low pressure point - genuinely is a VL point, but G is lower by a tiny amount
-    res = flashN.flash(T=T, P=P, zs=zs)
+    res = flasher.flash(T=T, P=P, zs=zs)
     assert_close1d(res.betas, [0.9973290812443733, 0.00267091875562675])
+
+    # point where the flash was failing to found both sides
+    res = flasher.flash(T=160, VF=1-1e-8, zs=zs)
+    assert_close(res.P, 0.13546634170397667)
+
+
+    # Do some nasty lengthy checks. Leaving for legacy reasons.
+    Ts = linspace(160, 200, 8) + linspace(204, 420, 8)+ linspace(425, 473, 8)
+    P_dews_expect = [0.13546631710512694, 0.3899541879697901, 1.0326385606771222, 2.5367431562236216, 5.823754581354464, 12.576541985263733, 25.695934298398683, 49.92852511524303, 77.336111529878, 1224.2477432039364, 8851.275697515553, 38739.02285212159, 121448.37959695983, 302817.44109532895, 642356.4259573148, 1212555.0457456997, 1332379.263527949, 1511043.452511087, 1707364.218790161, 1922627.5124993164, 2158275.2762631513, 2416007.942794255, 2698050.322554657, 3008161.4940377055]
+    P_bubbles_expect= [1.6235262252797003, 3.7270329355478946, 8.051176710411168, 16.46641490114325, 32.05492139681795, 59.672217732280416, 106.66299735475893, 183.73589515016087, 263.46184653114784, 2681.961688786174, 14942.285482185738, 55694.65563520535, 157351.54737219962, 365368.2524627791, 735848.7931013029, 1333301.7057641603, 1456215.734621984, 1638045.031281808, 1835927.295044813, 2050617.935270042, 2282799.5140801608, 2532987.1229581917, 2801271.5348919635, 3086319.6690727174]
+
+    P_dews = []
+    P_bubbles = []
+    for T in Ts:
+        res = flasher.flash(T=T, VF=0, zs=zs)
+        P_bubbles.append(res.P)
+        res = flasher.flash(T=T, VF=1, zs=zs)
+        P_dews.append(res.P)
+
+    assert_close1d(P_bubbles, P_bubbles_expect, rtol=5e-5)
+    assert_close1d(P_dews, P_dews_expect, rtol=5e-5)
+
+    # For each point, solve it as a T problem.
+    for P, T in zip(P_bubbles, Ts):
+        res = flasher.flash(P=P, VF=0, zs=zs)
+        assert_close(res.T, T, rtol=5e-5)
+    for P, T in zip(P_dews, Ts):
+        res = flasher.flash(P=P, VF=1, zs=zs)
+        assert_close(res.T, T, rtol=5e-5)
+
+    # Test the bubble/dew flashes; 
+    # Skip most of them as redundant
+    idxs = [0, 1, 2, 17, 21, 24]
+    # Could comment these out. 
+    for i, (T, P_bub, P_dew) in enumerate(zip(Ts, P_bubbles_expect, P_dews_expect)):
+        if i not in idxs:
+            continue
+        res = flasher.flash(T=T, VF=0+1e-9, zs=zs)
+        assert_close(P_bub, res.P, rtol=5e-5)
+        res = flasher.flash(T=T, VF=1-1e-9, zs=zs)
+        assert_close(P_dew, res.P, rtol=5e-5)
+
+    for i, (P, T) in enumerate(zip(P_dews_expect, Ts)):
+        if i not in idxs:
+            continue
+        res = flasher.flash(P=P, VF=1-1e-9, zs=zs)
+        assert_close(P, res.P)
+
+    for i, (P, T) in enumerate(zip(P_bubbles_expect, Ts)):
+        if i not in idxs:
+            continue
+        res = flasher.flash(P=P, VF=0+1e-9, zs=zs)
+        assert_close(P, res.P)
+
 
 def test_binary_LLL_specified_still_one_phase():
     T = 167.54

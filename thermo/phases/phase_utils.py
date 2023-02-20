@@ -64,6 +64,7 @@ object_lookups.update(eos_full_path_dict)
 def activity_lnphis(zs, model, T, P, N, lnPsats, Poyntings, phis_sat, *activity_args):
     # It appears that to make numba happy *activity_args will not work
     # and all functions on this level will need to have a fixed number of arguments
+    activity_args, lnphis = tuple(activity_args[0:-1]), activity_args[-1]
     if 20000 <= model <= 20099:
         gammas = [1.0]*N
     elif 20100 <= model <= 20199:
@@ -78,7 +79,7 @@ def activity_lnphis(zs, model, T, P, N, lnPsats, Poyntings, phis_sat, *activity_
         gammas = unifac_gammas_from_args(zs, *activity_args)
     else:
         raise ValueError("Model not implemented")
-    lnphis = [0.0]*N
+    # lnphis = [0.0]*N
     P_inv = 1.0/P
     for i in range(N):
         lnphis[i] = log(gammas[i]*Poyntings[i]*phis_sat[i]*P_inv) + lnPsats[i]

@@ -1710,7 +1710,7 @@ def dew_bubble_bounded_naive(guess, fixed_val, zs, flasher, iter_var='T', fixed_
         check2 = check
         # raise ValueError("Not implemented")
     guesses = [guess, guess*.9, guess*1.1, guess*0.95, guess*1.05,
-               guess*0.8, guess*0.7, guess*1.2, guess*1.3]
+               guess*0.8, guess*0.7, guess*1.2, guess*1.3, guess*.5, guess*.1, guess*.05]
     if hot_start is not None:
         hot_start_guess = hot_start.value(iter_var)
         guesses = [hot_start_guess, hot_start_guess*0.99, hot_start_guess*1.01, hot_start_guess*0.95, hot_start_guess*1.05, hot_start_guess*.9, hot_start_guess*1.1] + guesses

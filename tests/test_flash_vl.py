@@ -161,8 +161,6 @@ def test_flash_combustion_products():
 
 
 def test_bubble_T_PR_VL():
-    # Last point at 8e6 Pa not yet found.
-
     constants = ChemicalConstantsPackage(CASs=['124-38-9', '110-54-3'], MWs=[44.0095, 86.17536], names=['carbon dioxide', 'hexane'], omegas=[0.2252, 0.2975], Pcs=[7376460.0, 3025000.0], Tbs=[194.67, 341.87], Tcs=[304.2, 507.6], Tms=[216.65, 178.075])
     correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
                                                HeatCapacityGases=[HeatCapacityGas(poly_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644])),
@@ -177,6 +175,15 @@ def test_bubble_T_PR_VL():
     flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
     res = flasher.flash(P=7.93e6, VF=0, zs=zs)
     assert_close(res.T, 419.0621213529388, rtol=1e-6)
+
+    # Awesome points! Work well with new solver. Slower than wanted however.
+    res = flasher.flash(P=8e6, VF=0, zs=zs)
+    assert_close(res.T, 454.420461011768, rtol=1e-4)
+
+    # This one is really slow
+    res = flasher.flash(P=8e6, VF=1, zs=zs)
+    assert_close(res.T, 422.0034892250092, rtol=1e-4)
+
 
 def test_PR_four_bubble_dew_cases_VL():
     zs=[.5, .5]
