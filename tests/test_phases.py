@@ -45,6 +45,8 @@ from thermo.thermal_conductivity import *
 from thermo.heat_capacity import *
 from thermo.phase_change import *
 from thermo.unifac import UNIFAC, UFSG, UFIP
+from thermo.regular_solution import RegularSolution
+from thermo.uniquac import UNIQUAC
 from thermo.coolprop import PropsSI
 import pickle
 import json
@@ -1459,6 +1461,72 @@ def test_CEOS_phis():
     assert_close1d(gas_liquid.lnphis_G_min(), [-26.257643489591743, -28.123302577785182, -39.391352729666025], rtol=1e-12)
     assert_close1d(liquid_gas.lnphis_G_min(), [-0.0076796355290965155, -0.008453288415352122, -0.004934801579277686], rtol=1e-12)
     
+def test_GibbsExcessLiquid_RegularSolution():
+    T = 300.0
+    P = 1e5
+    xs = [.4, .3, .2, .1]
+    SPs = [19570.2, 18864.7, 29261.4, 47863.5]
+    Vs = [7.421e-05, 8.068e-05, 4.083e-05, 1.808e-05]
+    N = 4
+    # Made up asymmetric parameters
+    lambda_coeffs = [[0.0, 0.01811, 0.01736, 0.02111],
+    [0.00662, 0.0, 0.00774, 0.01966],
+    [0.01601, 0.01022, 0.0, 0.00698],
+    [0.0152, 0.00544, 0.02579, 0.0]]
+
+    GE = RegularSolution(T, xs, Vs, SPs, lambda_coeffs)
+    chemicals = ['acetone', 'chloroform', 'methanol', 'water']
+    constants, properties = ChemicalConstantsPackage.from_IDs(chemicals)
+    liquid = GibbsExcessLiquid(
+        VaporPressures=properties.VaporPressures,
+        HeatCapacityGases=properties.HeatCapacityGases,
+        VolumeLiquids=properties.VolumeLiquids,
+        GibbsExcessModel=GE,
+        equilibrium_basis='Psat', caloric_basis='Psat',
+        T=T, P=P, zs=xs)
+
+    xs2 = [.1, .2, .3, .4]
+    # Check that the lnphis direct are the same
+    liquid = liquid.to(T=513.994, P=1e4, zs=xs2)
+    lnphis_args = liquid.lnphis_args()
+    lnphis_from_args = lnphis_direct(xs2, *lnphis_args)
+    assert_close1d(lnphis_from_args, liquid.lnphis(), rtol=1e-13)
+
+def test_GibbsExcessLiquid_Wilson():
+    # Totally madeup
+    N = 3
+    T = 331.42
+    xs = [0.229, 0.175, 0.596]
+    rs = [2.5735, 2.87, 1.4311]
+    qs = [2.336, 2.41, 1.432]
+
+    # madeup numbers to match Wilson example roughly
+    tausA = [[0.0, -1.05e-4, -2.5e-4], [3.9e-4, 0.0, 1.6e-4], [-1.123e-4, 6.5e-4, 0]]
+    tausB = [[0.0, 235.0, -169.0], [-160, 0.0, -715.0], [11.2, 144.0, 0.0]]
+    tausC = [[0.0, -4.23e-4, 2.9e-4], [6.1e-4, 0.0, 8.2e-5], [-7.8e-4, 1.11e-4, 0]]
+    tausD = [[0.0, -3.94e-5, 2.22e-5], [8.5e-5, 0.0, 4.4e-5], [-7.9e-5, 3.22e-5, 0]]
+    tausE = [[0.0, -4.2e2, 8.32e2], [2.7e2, 0.0, 6.8e2], [3.7e2, 7.43e2, 0]]
+    tausF = [[0.0, 9.64e-8, 8.94e-8], [1.53e-7, 0.0, 1.11e-7], [7.9e-8, 2.276e-8, 0]]
+    ABCDEF = (tausA, tausB, tausC, tausD, tausE, tausF)
+    GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=ABCDEF)
+
+    chemicals = ['acetone', 'methanol', 'water']
+    constants, properties = ChemicalConstantsPackage.from_IDs(chemicals)
+    liquid = GibbsExcessLiquid(
+        VaporPressures=properties.VaporPressures,
+        HeatCapacityGases=properties.HeatCapacityGases,
+        VolumeLiquids=properties.VolumeLiquids,
+        GibbsExcessModel=GE,
+        equilibrium_basis='Psat', caloric_basis='Psat',
+        T=T, P=1e5, zs=xs)
+
+    xs2 = [.7, .2, .1]
+    # Check that the lnphis direct are the same
+    liquid = liquid.to(T=513.994, P=1e4, zs=xs2)
+    lnphis_args = liquid.lnphis_args()
+    lnphis_from_args = lnphis_direct(xs2, *lnphis_args)
+    assert_close1d(lnphis_from_args, liquid.lnphis(), rtol=1e-13)
+
 
 
 def test_chemical_potential():
