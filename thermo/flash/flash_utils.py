@@ -1693,6 +1693,7 @@ def dew_bubble_bounded_naive(guess, fixed_val, zs, flasher, iter_var='T', fixed_
                              maxiter=200, xtol=1E-10, ytol=None, hot_start=None
                              ):
     # Bound the problem
+    integral = True
     if V_over_F == 1:
         check = VL_dew_boolean_check
         check2 = one_sided_dew_point_err
@@ -1700,15 +1701,21 @@ def dew_bubble_bounded_naive(guess, fixed_val, zs, flasher, iter_var='T', fixed_
         check = VLN_bubble_boolean_check
         check2 = one_sided_bubble_point_err
     else:
-        raise ValueError("Not implemented")
-    check2 = one_sided_sat_point_err
+        integral = False
+        def check(res):
+            # if res.VF > V_over_F:
+            #     return -1
+            return res.VF - V_over_F
+            # return res.VF - V_over_F
+        check2 = check
+        # raise ValueError("Not implemented")
     guesses = [guess, guess*.9, guess*1.1, guess*0.95, guess*1.05,
                guess*0.8, guess*0.7, guess*1.2, guess*1.3]
     if hot_start is not None:
         hot_start_guess = hot_start.value(iter_var)
         guesses = [hot_start_guess, hot_start_guess*0.99, hot_start_guess*1.01, hot_start_guess*0.95, hot_start_guess*1.05, hot_start_guess*.9, hot_start_guess*1.1] + guesses
 
-    non_phase_val, phase_val, non_phase_res, phase_res, res_pert, bounding_iter = generate_phase_boundaries_naive(flasher=flasher, zs=zs, spec_var=fixed_var, spec_val=fixed_val, iter_var=iter_var, check=check,
+    non_phase_val, phase_val, non_phase_res, phase_res, res_pert, bounding_iter = generate_phase_boundaries_naive(flasher=flasher, zs=zs, spec_var=fixed_var, spec_val=fixed_val, iter_var=iter_var, check=check, V_over_F=V_over_F,
                     ignore_der=True, iter_guesses=guesses)
 
     iterations = 0
@@ -1726,6 +1733,15 @@ def dew_bubble_bounded_naive(guess, fixed_val, zs, flasher, iter_var='T', fixed_
         err = check2(point)
         return err
 
+
+    if not integral:
+        guess = secant(to_solve, x0=phase_val,
+                                 x1=non_phase_val,
+                                 f0=check(phase_res), f1=check(non_phase_res), bisection=True,
+                                 xtol=xtol, ytol=ytol, maxiter=maxiter, require_eval=True, require_xtol=False)
+        res = store[-1]
+        check2_val = check2(res)
+        return res.value(iter_var), res.liquids, res.gas, iterations+bounding_iter, check2_val
     # import matplotlib.pyplot as plt
     # pts = linspace(non_phase_val, phase_val, 500)
     # vals = [to_solve(p) for p in pts]
@@ -4562,7 +4578,7 @@ phase_boundaries_U_guesses = phase_boundaries_H_guesses
 
 phase_boundary_perturbation_factors = [1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10]
 
-def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, check, hot_start=None,
+def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, check, V_over_F, hot_start=None,
                                     iter_guesses=None, ignore_der=False):
     '''Attempt to bound the formation of an incipient phase, using a 
     variety of hardcoded options.
@@ -4595,7 +4611,9 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
     # this is a huge hole and bug
 
     non_phase_val = phase_val = check_phase_val = check_phase_derivative = res_pert = None
-
+    non_integral = V_over_F not in (0.0, 1.0,  None)
+    if non_integral:
+        ignore_der = True
 
     non_phase_vals = []
     non_phase_results = []
@@ -4618,14 +4636,14 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
             continue
         check_val = check(res)
         # print(f'{iter_var}={iter_val}, check={check_val}')
-        if check_val == -1.0:
+        if (non_integral and check_val <= 0) or (not non_integral and check_val == -1.0):
             # non_phase_val = iter_val
             # non_phase_res = res
 
             non_phase_vals.append(iter_val)
             non_phase_results.append(res)
             non_phase_checks.append(check_val)
-        elif check_val >= 0:
+        elif (non_integral and check_val > 0.0) or (not non_integral and check_val >= 0):
             # Store all of these. May need to check each of them.
             all_phase_vals.append(iter_val)
             all_phase_ress.append(res)
@@ -4647,7 +4665,7 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
         if non_phase_vals and phase_val is not None:
             # go through the solutions and see if any are right
 
-            if res_pert is None:
+            if res_pert is None and not non_integral:
                 # only recalculate the perturbation if needed
                 # try different factors in case we border onto the flat region
                 for fact in phase_boundary_perturbation_factors:
@@ -4669,7 +4687,7 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
             for non_phase_val, non_phase_res in zip(non_phase_vals, non_phase_results):
                 distance = abs(non_phase_res.value(iter_var) - phase_res.value(iter_var))
 
-                if (not der_dir and non_phase_val > phase_val) or (der_dir and non_phase_val < phase_val) or ignore_der:
+                if ignore_der or (not der_dir and non_phase_val > phase_val) or (der_dir and non_phase_val < phase_val):
                     if distance < best_non_phase_distance:
                         best_non_phase_distance = distance
                         best_non_phase_val = non_phase_val
@@ -4727,7 +4745,7 @@ def flash_phase_boundary_one_sided_secant(flasher, zs, spec_var, spec_val, iter_
                                           ytol=1e-6, xtol=None, maxiter=100, iter_guesses=None):
     
     non_phase_val, phase_val, non_phase_res, phase_res, res_pert, bounding_iter = generate_phase_boundaries_naive(
-        flasher=flasher, zs=zs, spec_var=spec_var, spec_val=spec_val, iter_var=iter_var, 
+        flasher=flasher, zs=zs, spec_var=spec_var, spec_val=spec_val, iter_var=iter_var, V_over_F=None,
         check=check, hot_start=hot_start,
                                     iter_guesses=iter_guesses)
 

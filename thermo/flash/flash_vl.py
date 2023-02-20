@@ -289,7 +289,7 @@ class FlashVL(Flash):
     dew_T_flash_algos = bubble_T_flash_algos = dew_bubble_flash_algos
     dew_P_flash_algos = bubble_P_flash_algos = dew_bubble_flash_algos
 
-    VF_flash_algos = [SS_VF_simultaneous]
+    VF_flash_algos = [dew_bubble_bounded_naive, SS_VF_simultaneous]
 
     DEW_BUBBLE_VF_K_COMPOSITION_INDEPENDENT_XTOL = 1e-14
 
@@ -441,36 +441,35 @@ class FlashVL(Flash):
             integral_VF = False
             algos = self.VF_flash_algos
 
-        if integral_VF:
-            for algo in algos:
-                try:
-                    if algo is dew_bubble_bounded_naive:
-                        if self.unique_liquid_count > 1:
-                            # cannott force flash each liquid easily
-                            continue
-                        sln = dew_bubble_bounded_naive(guess=P, fixed_val=T, zs=zs, flasher=self, iter_var='P', fixed_var='T', V_over_F=VF,
-                                                       maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol)
-                        return sln
-                    else:
-                        sln = algo(P, fixed_val=T, zs=zs, liquid_phase=liquid, gas_phase=gas,
-                                    iter_var='P', fixed_var='T', V_over_F=VF,
-                                    maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol,
-                                    comp_guess=comp_guess)
-                    break
-                except Exception as e:
-                    # print(e)
-                    continue
+        for algo in algos:
+            try:
+                if algo is dew_bubble_bounded_naive:
+                    if self.unique_liquid_count > 1:
+                        # cannott force flash each liquid easily
+                        continue
+                    sln = dew_bubble_bounded_naive(guess=P, fixed_val=T, zs=zs, flasher=self, iter_var='P', fixed_var='T', V_over_F=VF,
+                                                   maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol)
+                    return sln
+                else:
+                    sln = algo(P, fixed_val=T, zs=zs, liquid_phase=liquid, gas_phase=gas,
+                                iter_var='P', fixed_var='T', V_over_F=VF,
+                                maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol,
+                                comp_guess=comp_guess)
+                break
+            except Exception as e:
+                # print(e)
+                continue
 
-            guess, comp_guess, iter_phase, const_phase, iterations, err = sln
-            if dew:
-                l, g = iter_phase, const_phase
-            else:
-                l, g = const_phase, iter_phase
-
-            return guess, l, g, iterations, err
-
+        guess, comp_guess, iter_phase, const_phase, iterations, err = sln
+        if dew:
+            l, g = iter_phase, const_phase
         else:
-            raise NotImplementedError("TODO")
+            l, g = const_phase, iter_phase
+
+        return guess, l, g, iterations, err
+
+        # else:
+        #     raise NotImplementedError("TODO")
 
     def flash_PVF(self, P, VF, zs, solution=None, hot_start=None):
         return self.flash_PVF_2P(P, VF, zs, self.liquid, self.gas, solution=solution, hot_start=hot_start)
@@ -517,49 +516,45 @@ class FlashVL(Flash):
             integral_VF = False
             algos = self.VF_flash_algos
 
-        if integral_VF:
-            for algo in algos:
-                try:
-                    if algo is dew_bubble_bounded_naive:
-                        if self.unique_liquid_count > 1:
-                            # cannot force flash each liquid easily
-                            continue
-                        # This one doesn't like being low tolerance because the PT tolerance isn't there
-                        sln = dew_bubble_bounded_naive(guess=T, fixed_val=P, zs=zs, flasher=self, iter_var='T', fixed_var='P', V_over_F=VF,
-                                                       maxiter=dew_bubble_maxiter, xtol=max(dew_bubble_xtol, 1e-6), hot_start=hot_start)
-                        # This one should never need anything else
-                        # as it has its own stability test
-                        #stable, info = self.stability_test_Michelsen(sln[2].value('T'), sln[2].value('P'), zs, min_phase=sln[1][0], other_phase=sln[2])
-                        #if stable:
-                        #    return sln
-                        #else:
-                        #    continue
-                        return sln
-                    else:
+        for algo in algos:
+            try:
+                if algo is dew_bubble_bounded_naive:
+                    if self.unique_liquid_count > 1:
+                        # cannot force flash each liquid easily
+                        continue
+                    # This one doesn't like being low tolerance because the PT tolerance isn't there
+                    sln = dew_bubble_bounded_naive(guess=T, fixed_val=P, zs=zs, flasher=self, iter_var='T', fixed_var='P', V_over_F=VF,
+                                                   maxiter=dew_bubble_maxiter, xtol=max(dew_bubble_xtol, 1e-6), hot_start=hot_start)
+                    # This one should never need anything else
+                    # as it has its own stability test
+                    #stable, info = self.stability_test_Michelsen(sln[2].value('T'), sln[2].value('P'), zs, min_phase=sln[1][0], other_phase=sln[2])
+                    #if stable:
+                    #    return sln
+                    #else:
+                    #    continue
+                    return sln
+                else:
 
-                        sln = algo(T, fixed_val=P, zs=zs, liquid_phase=liquid, gas_phase=gas,
-                                iter_var='T', fixed_var='P', V_over_F=VF,
-                                maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol,
-                                comp_guess=comp_guess)
+                    sln = algo(T, fixed_val=P, zs=zs, liquid_phase=liquid, gas_phase=gas,
+                            iter_var='T', fixed_var='P', V_over_F=VF,
+                            maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol,
+                            comp_guess=comp_guess)
 
-                    guess, comp_guess, iter_phase, const_phase, iterations, err = sln
+                guess, comp_guess, iter_phase, const_phase, iterations, err = sln
 
-                    stable, info = self.stability_test_Michelsen(iter_phase.T, iter_phase.P, zs, min_phase=iter_phase, other_phase=const_phase)
-                    if stable:
-                        break
-                except Exception as e:
-                    # print(e)
-                    continue
+                stable, info = self.stability_test_Michelsen(iter_phase.T, iter_phase.P, zs, min_phase=iter_phase, other_phase=const_phase)
+                if stable:
+                    break
+            except Exception as e:
+                # print(e)
+                continue
 
-            if dew:
-                l, g = iter_phase, const_phase
-            else:
-                l, g = const_phase, iter_phase
-
-            return guess, l, g, iterations, err
-
+        if dew:
+            l, g = iter_phase, const_phase
         else:
-            raise NotImplementedError("TODO")
+            l, g = const_phase, iter_phase
+
+        return guess, l, g, iterations, err
 
     def stability_test_Michelsen(self, T, P, zs, min_phase, other_phase,
                                  existing_comps=None, skip=None,

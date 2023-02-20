@@ -497,6 +497,7 @@ def test_NRTL_water_ethanol_sample():
     assert_close(flasher.flash(T=T, VF=0, zs=zs).P, 72190.62175687613, rtol=2e-3)
     assert_close(flasher.flash(T=T, VF=1, zs=zs).P, 40542.73708315536, rtol=2e-3)
     assert_close(flasher.flash(T=300, VF=0.5, zs=zs).P,5763.42373196148, atol=20, rtol=1e-4)
+    assert_close(flasher.flash(P=5763.42373196148, VF=0.5, zs=zs).T,300, atol=2, rtol=1e-4)
 
 def test_case_air_Odhran_2022_09_24():
     constants = ChemicalConstantsPackage(atomss=[{'N': 2}, {'O': 2}, {'Ar': 1}], CASs=['7727-37-9', '7782-44-7', '7440-37-1'], Gfgs=[0.0, 0.0, 0.0], Hfgs=[0.0, 0.0, 0.0], MWs=[28.0134, 31.9988, 39.948], names=['nitrogen', 'oxygen', 'argon'], omegas=[0.04, 0.021, -0.004], Pcs=[3394387.5, 5042945.25, 4873732.5], Tbs=[77.355, 90.188, 87.302], Tcs=[126.2, 154.58, 150.8], Tms=[63.15, 54.36, 83.81], Vcs=[8.95e-05, 7.34e-05, 7.49e-05])
