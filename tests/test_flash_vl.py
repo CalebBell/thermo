@@ -31,7 +31,7 @@ import json
 import os
 import numpy as np
 from thermo.phases.phase_utils import lnphis_direct
-from thermo.unifac  import UFIP
+from thermo.unifac  import UFIP, DOUFIP2006
 
 def test_C2_C5_PR():
     T, P = 300, 3e6
@@ -506,36 +506,39 @@ def test_UNIFAC_water_ethanol_sample():
     P=6500
     T=298.15
     constants, properties = ChemicalConstantsPackage.from_IDs(chemicals)
-    GE = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1: 1, 2: 1, 14: 1}, {16: 1}], version=0,
+    GE_plain = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1: 1, 2: 1, 14: 1}, {16: 1}], version=0,
                             interaction_data=UFIP, subgroups=UFSG)
-    liquid = GibbsExcessLiquid(
-        VaporPressures=properties.VaporPressures,
-        HeatCapacityGases=properties.HeatCapacityGases,
-        VolumeLiquids=properties.VolumeLiquids,
-        GibbsExcessModel=GE,
-        equilibrium_basis='Psat', caloric_basis='Psat',
-        T=T, P=P, zs=zs)
+    GE_DO = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1: 1, 2: 1, 14: 1}, {16: 1}], version=1,
+                    interaction_data=DOUFIP2006, subgroups=DOUFSG)
+    for GE in (GE_plain, GE_DO):
+        liquid = GibbsExcessLiquid(
+            VaporPressures=properties.VaporPressures,
+            HeatCapacityGases=properties.HeatCapacityGases,
+            VolumeLiquids=properties.VolumeLiquids,
+            GibbsExcessModel=GE,
+            equilibrium_basis='Psat', caloric_basis='Psat',
+            T=T, P=P, zs=zs)
 
 
-    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
-    gas = CEOSGas(IGMIX, HeatCapacityGases=properties.HeatCapacityGases, eos_kwargs=eos_kwargs)
-    flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
+        eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
+        gas = CEOSGas(IGMIX, HeatCapacityGases=properties.HeatCapacityGases, eos_kwargs=eos_kwargs)
+        flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
 
 
-    base  = flasher.flash(T=T, P=P, zs=zs)
-    assert_close1d(base.gas.fugacities(), base.liquid0.fugacities(), rtol=1e-5)
+        base  = flasher.flash(T=T, P=P, zs=zs)
+        assert_close1d(base.gas.fugacities(), base.liquid0.fugacities(), rtol=1e-5)
 
-    TVF = flasher.flash(T=T, VF=base.VF, zs=zs)
-    assert_close1d(TVF.gas.fugacities(), TVF.liquid0.fugacities(), rtol=1e-5)
-    assert_close1d(base.gas.zs, TVF.gas.zs, rtol=1e-5)
-    assert_close1d(base.liquid0.zs, TVF.liquid0.zs, rtol=1e-5)
-    assert_close(base.VF, TVF.VF, rtol=1e-5)
+        TVF = flasher.flash(T=T, VF=base.VF, zs=zs)
+        assert_close1d(TVF.gas.fugacities(), TVF.liquid0.fugacities(), rtol=1e-5)
+        assert_close1d(base.gas.zs, TVF.gas.zs, rtol=1e-5)
+        assert_close1d(base.liquid0.zs, TVF.liquid0.zs, rtol=1e-5)
+        assert_close(base.VF, TVF.VF, rtol=1e-5)
 
-    PVF = flasher.flash(P=P, VF=base.VF, zs=zs)
-    assert_close1d(PVF.gas.fugacities(), PVF.liquid0.fugacities(), rtol=1e-5)
-    assert_close1d(base.gas.zs, PVF.gas.zs, rtol=1e-5)
-    assert_close1d(base.liquid0.zs, PVF.liquid0.zs, rtol=1e-5)
-    assert_close(base.VF, PVF.VF, rtol=1e-5)
+        PVF = flasher.flash(P=P, VF=base.VF, zs=zs)
+        assert_close1d(PVF.gas.fugacities(), PVF.liquid0.fugacities(), rtol=1e-5)
+        assert_close1d(base.gas.zs, PVF.gas.zs, rtol=1e-5)
+        assert_close1d(base.liquid0.zs, PVF.liquid0.zs, rtol=1e-5)
+        assert_close(base.VF, PVF.VF, rtol=1e-5)
 
 
 
