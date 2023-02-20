@@ -551,6 +551,67 @@ def test_UNIFAC_water_ethanol_sample():
         assert_close(base.VF, PVF.VF, rtol=1e-5)
 
 
+def test_UNIFAC_ternary_basic():
+    chemicals = ['pentane', 'hexane', 'octane']
+    zs=[.1, .4, .5]
+    P=1e5
+    T=298.15
+    constants, properties = ChemicalConstantsPackage.from_IDs(chemicals)
+    GE = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1: 2, 2: 3}, {1: 2, 2: 4}, {1: 2, 2: 6}], version=0,
+                            interaction_data=UFIP, subgroups=UFSG)
+
+    eoss = [PR(Tc=constants.Tcs[i], Pc=constants.Pcs[i], omega=constants.omegas[i], T=T, P=P) for i in range(constants.N)]
+    liquid = GibbsExcessLiquid(
+        VaporPressures=properties.VaporPressures,
+        HeatCapacityGases=properties.HeatCapacityGases,
+        VolumeLiquids=properties.VolumeLiquids,
+        GibbsExcessModel=GE,
+        eos_pure_instances=eoss,
+        equilibrium_basis='Poynting&PhiSat', caloric_basis='Poynting&PhiSat',
+        T=T, P=P, zs=zs)
+
+
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
+    gas = CEOSGas(IGMIX, HeatCapacityGases=properties.HeatCapacityGases, eos_kwargs=eos_kwargs)
+    flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
+
+
+    base  = flasher.flash(T=400, P=1E7, zs=zs)
+    assert base.gas is None
+    base.G()
+    base.G_dep()
+    base.liquid0.GibbsExcessModel.GE()
+
+
+def test_UNIFAC_binary_caloric_basic():
+    # DDBST test question
+    chemicals = ['hexane', '2-Butanone']
+    zs=[.5, .5]
+    P=1e5
+    T=273.15+60
+    constants, properties = ChemicalConstantsPackage.from_IDs(chemicals)
+    GE = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1: 2, 2: 4}, {1: 1, 2: 1, 18: 1}], version=0,
+                            interaction_data=UFIP, subgroups=UFSG)
+
+    eoss = [PR(Tc=constants.Tcs[i], Pc=constants.Pcs[i], omega=constants.omegas[i], T=T, P=P) for i in range(constants.N)]
+    liquid = GibbsExcessLiquid(
+        VaporPressures=properties.VaporPressures,
+        HeatCapacityGases=properties.HeatCapacityGases,
+        VolumeLiquids=properties.VolumeLiquids,
+        GibbsExcessModel=GE,
+        eos_pure_instances=eoss,
+        equilibrium_basis='Psat', caloric_basis='Psat',
+        T=T, P=P, zs=zs)
+
+
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
+    gas = CEOSGas(IGMIX, HeatCapacityGases=properties.HeatCapacityGases, eos_kwargs=eos_kwargs)
+    flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
+    res = flasher.flash(zs=zs, T=273.15 + 60, P=3E5)
+
+    assert_close(res.liquid0.GibbsExcessModel.GE(), 923.6411976689183)
+    assert_close(res.liquid0.GibbsExcessModel.HE(), 854.7719336324379)
+    assert_close(res.liquid0.GibbsExcessModel.CpE(), 1.2662038866442173)
 
 
 def test_case_air_Odhran_2022_09_24():
