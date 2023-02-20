@@ -583,6 +583,15 @@ def test_UNIFAC_ternary_basic():
     base.liquid0.GibbsExcessModel.GE()
 
 
+    res = flasher.flash(zs=zs, T=400, VF=0.5)
+    xs_expect = [0.04428613261665119, 0.28125472768746834, 0.6744591396958806]
+    ys_expect = [0.15571386738334897, 0.518745272312532, 0.32554086030411905]
+    assert res.phase == 'VL'
+    assert_close1d(res.liquid0.zs, xs_expect, rtol=5e-2)
+    assert_close1d(res.gas.zs, ys_expect, rtol=5e-2)
+    assert_close(res.P, 212263.260256, rtol=1e-1)
+
+
 def test_UNIFAC_binary_caloric_basic():
     # DDBST test question
     chemicals = ['hexane', '2-Butanone']

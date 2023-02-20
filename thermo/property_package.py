@@ -34,9 +34,8 @@ SOFTWARE.
 
 from __future__ import division
 
-__all__ = ['PropertyPackage', 'Ideal', 'Unifac', 'GammaPhi',
-           'UnifacDortmund', 'IdealCaloric', 'GammaPhiCaloric',
-           'UnifacCaloric', 'UnifacDortmundCaloric', 
+__all__ = ['PropertyPackage', 'Ideal', 'GammaPhi',
+           'IdealCaloric', 'GammaPhiCaloric',
            'StabilityTester',
            'eos_Z_test_phase_stability', 'eos_Z_trial_phase_stability',
            'Stateva_Tsvetkov_TPDF_eos', 'd_TPD_Michelson_modified_eos',
@@ -2717,101 +2716,6 @@ class GammaPhiCaloric(GammaPhi, IdealCaloric):
 
 
 
-class Unifac(GammaPhi):
-    '''
-    '''
-    # TODO: Calculate derivatives analytically via the derivatives given in the supporting information of
-    # Jäger, Andreas, Ian H. Bell, and Cornelia Breitkopf. "A Theoretically Based Departure Function for Multi-Fluid Mixture Models." Fluid Phase Equilibria 469 (August 15, 2018): 56-69. https://doi.org/10.1016/j.fluid.2018.04.015.
-
-    subgroup_data = UFSG
-
-    def __init__(self, UNIFAC_groups, VaporPressures, Tms=None, Tcs=None, Pcs=None,
-                 omegas=None, VolumeLiquids=None, eos=None, eos_mix=None, **kwargs):
-        self.UNIFAC_groups = UNIFAC_groups
-        self.VaporPressures = VaporPressures
-        self.Tms = Tms
-        self.Tcs = Tcs
-        self.Pcs = Pcs
-        self.VolumeLiquids = VolumeLiquids
-        self.omegas = omegas
-        self.eos = eos
-        self.eos_mix = eos_mix
-        self.N = len(VaporPressures)
-        self.cmps = range(self.N)
-
-        if eos:
-            self.eos_pure_instances = [eos(Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], T=Tcs[i]*0.5, P=Pcs[i]*0.1) for i in self.cmps]
-
-        self.cache_unifac_inputs()
-
-    def cache_unifac_inputs(self):
-        # Pre-calculate some of the inputs UNIFAC uses
-        self.rs = []
-        self.qs = []
-        for groups in self.UNIFAC_groups:
-            ri = 0.
-            qi = 0.
-            for group, count in groups.items():
-                ri += self.subgroup_data[group].R*count
-                qi += self.subgroup_data[group].Q*count
-            self.rs.append(ri)
-            self.qs.append(qi)
-
-
-        self.group_counts = {}
-        for groups in self.UNIFAC_groups:
-            for group, count in groups.items():
-                if group in self.group_counts:
-                    self.group_counts[group] += count
-                else:
-                    self.group_counts[group] = count
-        self.UNIFAC_cached_inputs = (self.rs, self.qs, self.group_counts)
-
-    def gammas(self, T, xs, cached=None):
-        return UNIFAC_gammas(chemgroups=self.UNIFAC_groups, T=T, xs=xs, cached=self.UNIFAC_cached_inputs)
-
-
-
-class UnifacDortmund(Unifac):
-    subgroup_data = DOUFSG
-
-    def gammas(self, T, xs, cached=None):
-        return UNIFAC_gammas(chemgroups=self.UNIFAC_groups, T=T, xs=xs,
-                      cached=self.UNIFAC_cached_inputs,
-                      subgroup_data=DOUFSG, interaction_data=unifac.DOUFIP2006, modified=True)
-
-
-class UnifacCaloric(Unifac, GammaPhiCaloric):
-
-    def __init__(self, VaporPressures, eos=None, **kwargs):
-        self.cmps = range(len(VaporPressures))
-        self.N = len(VaporPressures)
-        self.VaporPressures = VaporPressures
-        self.eos = eos
-        self.__dict__.update(kwargs)
-        self.kwargs = {'VaporPressures': VaporPressures, 'eos': eos}
-        self.kwargs.update(kwargs)
-
-        if eos:
-            self.eos_pure_instances = [eos(Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i], T=self.Tcs[i]*0.5, P=self.Pcs[i]*0.1) for i in self.cmps]
-
-        self.cache_unifac_inputs()
-
-class UnifacDortmundCaloric(UnifacDortmund, GammaPhiCaloric):
-
-    def __init__(self, VaporPressures, eos=None, **kwargs):
-        self.cmps = range(len(VaporPressures))
-        self.N = len(VaporPressures)
-        self.VaporPressures = VaporPressures
-        self.eos = eos
-        self.__dict__.update(kwargs)
-        self.kwargs = {'VaporPressures': VaporPressures, 'eos': eos}
-        self.kwargs.update(kwargs)
-
-        if eos:
-            self.eos_pure_instances = [eos(Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i], T=self.Tcs[i]*0.5, P=self.Pcs[i]*0.1) for i in self.cmps]
-
-        self.cache_unifac_inputs()
 
 def eos_Z_test_phase_stability(eos):
     try:

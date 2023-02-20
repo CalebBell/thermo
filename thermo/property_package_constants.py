@@ -33,8 +33,7 @@ SOFTWARE.
 
 from __future__ import division
 
-__all__ = ['PropertyPackageConstants', 'IDEAL_PKG',  'UNIFAC_PKG',
-           'UNIFAC_DORTMUND_PKG', 'PR_PKG', 'SRK_PKG']
+__all__ = ['PropertyPackageConstants', 'IDEAL_PKG', 'PR_PKG', 'SRK_PKG']
 
 from fluids.numerics import brenth, ridder, derivative, numpy as np
 
@@ -46,20 +45,17 @@ from thermo.eos_mix import PRMIX, SRKMIX
 from thermo.eos import PR, SRK
 from thermo.chemical import Chemical
 from thermo.mixture import Mixture
-from thermo.property_package import (GceosBase, IdealCaloric, UnifacCaloric,
-                                     UnifacDortmundCaloric)
+from thermo.property_package import (GceosBase, IdealCaloric)
 
 
 
 
 IDEAL_PKG = 'Ideal'
-UNIFAC_PKG = 'Unifac'
-UNIFAC_DORTMUND_PKG = 'Unifac Dortmund'
 
 PR_PKG = 'PR'
 SRK_PKG = 'SRK'
 
-property_packages = [IDEAL_PKG, UNIFAC_PKG, UNIFAC_DORTMUND_PKG,
+property_packages = [IDEAL_PKG,
                      PR_PKG, SRK_PKG]
 property_packages_cubic = [PR_PKG, SRK_PKG]
 
@@ -67,8 +63,6 @@ property_package_to_eos = {PR_PKG: PRMIX, SRK_PKG: SRKMIX}
 property_package_to_eos_pures = {PR_PKG: PR, SRK_PKG: SRK}
 
 property_package_names_to_objs = {IDEAL_PKG: IdealCaloric,
-                                  UNIFAC_PKG: UnifacCaloric,
-                                  UNIFAC_DORTMUND_PKG: UnifacDortmundCaloric,
                                   PR_PKG: GceosBase,
                                   SRK_PKG: GceosBase,
                                  }
@@ -124,11 +118,6 @@ class PropertyPackageConstants(object):
                    }
         pkg_args.update(self.kwargs)
 
-        if self.name == UNIFAC_PKG:
-            pkg_args['UNIFAC_groups'] = self.UNIFAC_groups
-        elif self.name == UNIFAC_DORTMUND_PKG:
-            pkg_args['UNIFAC_groups'] = self.UNIFAC_Dortmund_groups
-
         return self.pkg_obj(**pkg_args)
 
     def from_json(self, json):
@@ -138,7 +127,7 @@ class PropertyPackageConstants(object):
 
 
 transfer_methods = ['set_chemical_constants', 'set_Chemical_property_objects',
-                   'set_TP_sources', 'UNIFAC_Dortmund_groups', 'UNIFAC_groups',
+                   'set_TP_sources', 
                    'atomss']
 
 try:

@@ -940,13 +940,6 @@ class Mixture(object):
 
     def flash_caloric(self, T=None, P=None, VF=None, Hm=None, Sm=None,
                       H=None, S=None):
-#        '''
-#        from thermo import *
-#
-#        a = Mixture(['water', 'ethanol'], T=300, zs=[.5, .5])
-#        a.set_property_package(pkg=UnifacCaloric)
-#        a.flash(T=400, Sm=-40.546326368170675)
-#        a.V_over_F'''
         # TODO check if the input values are the same as the current ones
         # The property package works only on a mole-basis, so convert
         # H or S if specified to a mole basis
