@@ -30,6 +30,7 @@ from math import *
 import json
 import os
 import numpy as np
+from thermo.phases.phase_utils import lnphis_direct
 
 
 def test_C2_C5_PR():
@@ -450,6 +451,15 @@ def test_issue106_Michelson_stability_test_log_zero():
     assert res.phase_count == 1
     assert res.liquid0 is not None
     assert isinstance(res.liquid0, GibbsExcessLiquid)
+
+
+    # Also need a test for lnphis direct
+    liquid = liquid.to(T=513.994, P=1e4, zs=zs)
+    lnphis_args = liquid.lnphis_args()
+    lnphis_from_args = lnphis_direct(zs, *lnphis_args)
+    assert_close1d(lnphis_from_args, liquid.lnphis(), rtol=1e-13)
+
+
     
     
 def test_case_air_Odhran_2022_09_24():
