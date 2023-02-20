@@ -31,7 +31,7 @@ import json
 import os
 import numpy as np
 from thermo.phases.phase_utils import lnphis_direct
-
+from thermo.unifac  import UFIP
 
 def test_C2_C5_PR():
     T, P = 300, 3e6
@@ -498,6 +498,47 @@ def test_NRTL_water_ethanol_sample():
     assert_close(flasher.flash(T=T, VF=1, zs=zs).P, 40542.73708315536, rtol=2e-3)
     assert_close(flasher.flash(T=300, VF=0.5, zs=zs).P,5763.42373196148, atol=20, rtol=1e-4)
     assert_close(flasher.flash(P=5763.42373196148, VF=0.5, zs=zs).T,300, atol=2, rtol=1e-4)
+
+def test_UNIFAC_water_ethanol_sample():
+    # As this test loads vapor pressure curves from disk, do not check values just convergence/consistency
+    chemicals = ['water', 'ethanol']
+    zs=[0.5, 0.5]
+    P=6500
+    T=298.15
+    constants, properties = ChemicalConstantsPackage.from_IDs(chemicals)
+    GE = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1: 1, 2: 1, 14: 1}, {16: 1}], version=0,
+                            interaction_data=UFIP, subgroups=UFSG)
+    liquid = GibbsExcessLiquid(
+        VaporPressures=properties.VaporPressures,
+        HeatCapacityGases=properties.HeatCapacityGases,
+        VolumeLiquids=properties.VolumeLiquids,
+        GibbsExcessModel=GE,
+        equilibrium_basis='Psat', caloric_basis='Psat',
+        T=T, P=P, zs=zs)
+
+
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
+    gas = CEOSGas(IGMIX, HeatCapacityGases=properties.HeatCapacityGases, eos_kwargs=eos_kwargs)
+    flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
+
+
+    base  = flasher.flash(T=T, P=P, zs=zs)
+    assert_close1d(base.gas.fugacities(), base.liquid0.fugacities(), rtol=1e-5)
+
+    TVF = flasher.flash(T=T, VF=base.VF, zs=zs)
+    assert_close1d(TVF.gas.fugacities(), TVF.liquid0.fugacities(), rtol=1e-5)
+    assert_close1d(base.gas.zs, TVF.gas.zs, rtol=1e-5)
+    assert_close1d(base.liquid0.zs, TVF.liquid0.zs, rtol=1e-5)
+    assert_close(base.VF, TVF.VF, rtol=1e-5)
+
+    PVF = flasher.flash(P=P, VF=base.VF, zs=zs)
+    assert_close1d(PVF.gas.fugacities(), PVF.liquid0.fugacities(), rtol=1e-5)
+    assert_close1d(base.gas.zs, PVF.gas.zs, rtol=1e-5)
+    assert_close1d(base.liquid0.zs, PVF.liquid0.zs, rtol=1e-5)
+    assert_close(base.VF, PVF.VF, rtol=1e-5)
+
+
+
 
 def test_case_air_Odhran_2022_09_24():
     constants = ChemicalConstantsPackage(atomss=[{'N': 2}, {'O': 2}, {'Ar': 1}], CASs=['7727-37-9', '7782-44-7', '7440-37-1'], Gfgs=[0.0, 0.0, 0.0], Hfgs=[0.0, 0.0, 0.0], MWs=[28.0134, 31.9988, 39.948], names=['nitrogen', 'oxygen', 'argon'], omegas=[0.04, 0.021, -0.004], Pcs=[3394387.5, 5042945.25, 4873732.5], Tbs=[77.355, 90.188, 87.302], Tcs=[126.2, 154.58, 150.8], Tms=[63.15, 54.36, 83.81], Vcs=[8.95e-05, 7.34e-05, 7.49e-05])
