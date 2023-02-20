@@ -460,7 +460,43 @@ def test_issue106_Michelson_stability_test_log_zero():
     assert_close1d(lnphis_from_args, liquid.lnphis(), rtol=1e-13)
 
 
-    
+def test_NRTL_water_ethanol_sample():
+    # 6 coeggicients per row.
+    # Sample parameters from Understanding Distillation Using Column Profile Maps, First Edition.
+    #  Daniel Beneke, Mark Peters, David Glasser, and Diane Hildebrandt.
+    # Nice random example except for the poor prediction ! Dew point is good
+    # But the bubble point is 10 kPa too high.
+    # Still it is a good test of asymmetric values and the required
+    # input form.
+    chemicals = ['water', 'ethanol']
+    T = 273.15+70
+    P = 1e5
+    zs = [1-.252, .252]
+
+    constants, properties = ChemicalConstantsPackage.from_IDs(chemicals)
+    GE = NRTL(T=T, xs=zs, tau_as=[[0.0, 3.458], [-0.801, 0.0]], tau_bs=[[0.0, -586.1], [246.2, 0.0]],
+                        alpha_cs=[[0, 0.0], [0.3, 0]])
+    liquid = GibbsExcessLiquid(
+        VaporPressures=properties.VaporPressures,
+        HeatCapacityGases=properties.HeatCapacityGases,
+        VolumeLiquids=properties.VolumeLiquids,
+        GibbsExcessModel=GE,
+        equilibrium_basis='Psat', caloric_basis='Psat',
+        T=T, P=P, zs=zs)
+
+    assert_close1d(liquid.gammas(), [1.1114056946393671, 2.5391220022675163], rtol=1e-6)
+    assert_close1d(liquid.GibbsExcessModel.alphas(), [[0.0, 0.0], [0.3, 0.0]])
+    assert_close1d(liquid.GibbsExcessModel.taus(), [[0.0, 1.7500005828354948], [-0.08352950604691833, 0.0]])
+
+
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
+    gas = CEOSGas(IGMIX, HeatCapacityGases=properties.HeatCapacityGases, eos_kwargs=eos_kwargs)
+    flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
+
+    # vapor pressure curve not included here so low tolerance
+    assert_close(flasher.flash(T=T, VF=0, zs=zs).P, 72190.62175687613, rtol=2e-3)
+    assert_close(flasher.flash(T=T, VF=1, zs=zs).P, 40542.73708315536, rtol=2e-3)
+
     
 def test_case_air_Odhran_2022_09_24():
     constants = ChemicalConstantsPackage(atomss=[{'N': 2}, {'O': 2}, {'Ar': 1}], CASs=['7727-37-9', '7782-44-7', '7440-37-1'], Gfgs=[0.0, 0.0, 0.0], Hfgs=[0.0, 0.0, 0.0], MWs=[28.0134, 31.9988, 39.948], names=['nitrogen', 'oxygen', 'argon'], omegas=[0.04, 0.021, -0.004], Pcs=[3394387.5, 5042945.25, 4873732.5], Tbs=[77.355, 90.188, 87.302], Tcs=[126.2, 154.58, 150.8], Tms=[63.15, 54.36, 83.81], Vcs=[8.95e-05, 7.34e-05, 7.49e-05])
