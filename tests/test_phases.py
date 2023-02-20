@@ -597,6 +597,12 @@ def test_GibbsExcessLiquid_H_S_settings():
         assert liquid.G_dep_phi_consistency() < 1e-12
         assert liquid.S_phi_consistency() < 1e-12
 
+    for i, liquid in enumerate(liquids):
+        liquid = liquid.to(T=513.994, P=P, zs=zs)
+        lnphis_args = liquid.lnphis_args()
+        lnphis_from_args = lnphis_direct(zs, *lnphis_args)
+        assert_close1d(lnphis_from_args, liquid.lnphis(), rtol=1e-13)
+
 
 def test_GibbsExcessLiquid_HS_from_Hvap():
     # Binary water-ethanol

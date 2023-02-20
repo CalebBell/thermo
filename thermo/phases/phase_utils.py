@@ -67,15 +67,15 @@ def activity_lnphis(zs, model, T, P, N, lnPsats, Poyntings, phis_sat, *activity_
     if 20000 <= model <= 20099:
         gammas = [1.0]*N
     elif 20100 <= model <= 20199:
-        gammas = nrtl_gammas_from_args(zs, N, *activity_args)
+        gammas = nrtl_gammas_from_args(zs, *activity_args)
     elif 20200 <= model <= 20299:
-        gammas = wilson_gammas_from_args(zs, N, *activity_args)
+        gammas = wilson_gammas_from_args(zs, *activity_args)
     elif 20300 <= model <= 20399:
-        gammas = uniquac_gammas_from_args(zs, N, *activity_args)
+        gammas = uniquac_gammas_from_args(zs, *activity_args)
     elif 20400 <= model <= 20499:
-        gammas = regular_solution_gammas(zs, N, *activity_args)
+        gammas = regular_solution_gammas(zs, *activity_args)
     elif 20500 <= model <= 20599:
-        gammas = unifac_gammas_from_args(zs, N, *activity_args)
+        gammas = unifac_gammas_from_args(zs, *activity_args)
     else:
         raise ValueError("Model not implemented")
     lnphis = [0.0]*N
