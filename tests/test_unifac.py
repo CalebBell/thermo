@@ -33,7 +33,7 @@ from thermo.unifac import UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP
 import types
 import pickle, json
 from thermo.test_utils import check_np_output_activity
-
+from chemicals.utils import object_data
 '''
 Test suite currently takes ~0.2 seconds :)
 '''
@@ -962,10 +962,10 @@ def test_UNIFAC_initialization():
     GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups)
 
     # Check the __repr__ is working
-    assert eval(str(GE)).__dict__ == GE.__dict__
+    assert object_data(eval(str(GE))) == object_data(GE)
 
     # Check the json export/import is working
-    assert UNIFAC.from_json(GE.as_json()).__dict__ == GE.__dict__
+    assert object_data(UNIFAC.from_json(GE.as_json())) == object_data(GE)
 
     gammas_expect = [1.4938332119259123, 1.960091090828185, 1.4125828059033487, 1.651847113952877]
     assert_close1d(GE.gammas(), gammas_expect)

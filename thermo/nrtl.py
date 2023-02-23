@@ -561,6 +561,13 @@ class NRTL(GibbsExcess):
                          'tau_gs', 'tau_hs', 'alpha_cs', 'alpha_ds')
     model_id = 100
 
+
+    __slots__ = GibbsExcess.__slots__+('_alphas', '_dGs_dT', 'tau_gs', '_xj_dGs_dT_jis', '_xj_Gs_dtaus_dT_jis',  'tau_bs',  'alpha_ds', 'tau_fs', 'tau_hs',
+                 'alpha_temperature_independent',  '_d2Gs_dT2', '_xj_taus_dGs_dT_jis', '_dtaus_dT', '_Gs', '_d2taus_dT2', 'tau_as',
+                 'tau_coeffs_nonzero', '_taus', 'tau_es', '_xj_Gs_jis_inv', '_xj_Gs_taus_jis', '_xj_Gs_jis', 'zero_coeffs',  'alpha_cs',
+                 '_d3taus_dT3', '_d3Gs_dT3')
+
+
     def gammas_args(self, T=None):
         if T is not None:
             obj = self.to_T_xs(T=T, xs=self.xs)
@@ -594,7 +601,12 @@ class NRTL(GibbsExcess):
         self.scalar = scalar = type(xs) is list
         self.N = N = len(xs)
         
-        multiple_inputs = (tau_as, tau_bs, tau_es, tau_fs, tau_gs, tau_hs, 
+        if self.scalar:
+            self.zero_coeffs = [[0.0]*N for _ in range(N)]
+        else:
+            self.zero_coeffs = zeros((N, N))
+
+        multiple_inputs = (tau_as, tau_bs, tau_es, tau_fs, tau_gs, tau_hs,
                         alpha_cs, alpha_ds)
         
         input_count = ((tau_coeffs is not None or alpha_coeffs is not None) 
@@ -709,20 +721,6 @@ class NRTL(GibbsExcess):
         self.alpha_temperature_independent = alpha_temperature_independent
 
 
-    @property
-    def zero_coeffs(self):
-        '''Method to return a 2D list-of-lists of zeros.
-        '''
-        try:
-            return self._zero_coeffs
-        except AttributeError:
-            pass
-        N = self.N
-        if self.scalar:
-            self._zero_coeffs = [[0.0]*N for _ in range(N)]
-        else:
-            self._zero_coeffs = zeros((N, N))
-        return self._zero_coeffs
 
     def __repr__(self):
         s = '%s(T=%s, xs=%s' %(self.__class__.__name__, repr(self.T), repr(self.xs))
@@ -806,11 +804,7 @@ class NRTL(GibbsExcess):
             except AttributeError:
                 pass
 
-        try:
-            new._zero_coeffs = self.zero_coeffs
-        except AttributeError:
-            pass
-
+        new.zero_coeffs = self.zero_coeffs
         return new
 
     def gammas(self):
@@ -1370,11 +1364,15 @@ class NRTL(GibbsExcess):
             return self._GE
         except AttributeError:
             pass
-        N = self.N
-        xj_Gs_jis_inv, xj_Gs_taus_jis = self.xj_Gs_jis_inv(), self.xj_Gs_taus_jis()
-        T, xs = self.T, self.xs
-
-        self._GE = GE = nrtl_GE(N, T, xs, xj_Gs_taus_jis, xj_Gs_jis_inv)
+        try:
+            xj_Gs_jis_inv = self._xj_Gs_jis_inv
+        except:
+            xj_Gs_jis_inv = self.xj_Gs_jis_inv()
+        try:
+            xj_Gs_taus_jis = self._xj_Gs_taus_jis
+        except:
+            xj_Gs_taus_jis = self.xj_Gs_taus_jis()
+        self._GE = GE = nrtl_GE(self.N, self.T, self.xs, xj_Gs_taus_jis, xj_Gs_jis_inv)
         return GE
 
     def dGE_dT(self):
@@ -1402,9 +1400,15 @@ class NRTL(GibbsExcess):
         except AttributeError:
             pass
         T, xs, N = self.T, self.xs, self.N
+        try:
+            xj_Gs_jis_inv = self._xj_Gs_jis_inv
+        except:
+            xj_Gs_jis_inv = self.xj_Gs_jis_inv() # sum1 inv
+        try:
+            xj_Gs_taus_jis = self._xj_Gs_taus_jis
+        except:
+            xj_Gs_taus_jis = self.xj_Gs_taus_jis() # sum2
 
-        xj_Gs_jis_inv = self.xj_Gs_jis_inv() # sum1 inv
-        xj_Gs_taus_jis = self.xj_Gs_taus_jis() # sum2
         xj_dGs_dT_jis = self.xj_dGs_dT_jis() # sum3
         xj_taus_dGs_dT_jis = self.xj_taus_dGs_dT_jis() # sum4
         xj_Gs_dtaus_dT_jis = self.xj_Gs_dtaus_dT_jis() # sum5

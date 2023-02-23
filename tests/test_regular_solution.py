@@ -29,6 +29,7 @@ import numpy as np
 from fluids.numerics import jacobian, hessian, assert_close, assert_close1d, assert_close2d, assert_close3d
 from random import random
 from chemicals import normalize
+from chemicals.utils import object_data
 from thermo.test_utils import check_np_output_activity
 import pickle
 
@@ -57,7 +58,7 @@ def test_4_components():
     assert eval(str(GE)).GE() == GE.GE()
 
     GE2 = RegularSolution.from_json(GE.as_json())
-    assert GE2.__dict__ == GE.__dict__
+    assert object_data(GE2) == object_data(GE)
 
     
     # Test with no interaction parameters
@@ -66,8 +67,8 @@ def test_4_components():
     assert GE3 == GE4
     assert GE4.GE() == GE3.GE()
     GE5 = RegularSolution.from_json(GE4.as_json())
-    assert GE4.__dict__ == GE3.__dict__
-    assert GE5.__dict__ == GE3.__dict__
+    assert object_data(GE4) == object_data(GE3)
+    assert object_data(GE5) == object_data(GE3)
     assert GE5 == GE3
     assert hash(GE5) == hash(GE3)
     GE6 = eval(str(GE4))
@@ -165,7 +166,7 @@ def test_4_components():
 
     # Test with some stored results
     GE2 = RegularSolution.from_json(GE.as_json())
-    assert GE2.__dict__ == GE.__dict__
+    assert object_data(GE2) == object_data(GE)
 
     # Direct call for gammas
     gammas_args = GE.gammas_args()

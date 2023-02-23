@@ -29,6 +29,7 @@ from thermo.activity import GibbsExcess
 from thermo import *
 import numpy as np
 from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d, assert_close3d, linspace
+from chemicals.utils import object_data
 from thermo.test_utils import check_np_output_activity
 import pickle
 
@@ -114,7 +115,7 @@ def test_DDBST_example():
     assert eval(str(GE)).GE() == GE.GE()
 
     GE2 = Wilson.from_json(GE.as_json())
-    assert GE2.__dict__ == GE.__dict__
+    assert object_data(GE2) == object_data(GE)
 
     gammas_expect = [1.223393433488855, 1.1009459024701462, 1.2052899281172034]
     assert_close1d(GE.gammas(), gammas_expect, rtol=1e-12)
@@ -415,7 +416,7 @@ def test_DDBST_example():
 
     # Test with some results stored
     GE2 = Wilson.from_json(GE.as_json())
-    assert GE2.__dict__ == GE.__dict__
+    assert object_data(GE2) == object_data(GE)
 
     # Direct call for gammas
     gammas_args = GE.gammas_args()

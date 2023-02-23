@@ -25,7 +25,7 @@ import pytest
 import numpy as np
 from fluids.constants import calorie, R
 from chemicals.rachford_rice import *
-from thermo.mixture import Mixture
+from chemicals.utils import object_data
 from thermo.uniquac import UNIQUAC
 from random import random
 from thermo import *
@@ -152,7 +152,7 @@ def test_UNIQUAC_madeup_ternary():
          UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=(tausA, None, None,  [[0.0, 9.64e-8, 8.94e-8], [1.53e-7, 0.0, 1.11e-7]]))
 
     GE2 = UNIQUAC.from_json(GE.as_json())
-    assert GE2.__dict__ == GE.__dict__
+    assert object_data(GE2) == object_data(GE)
 
     # GE
     GE_expect = 415.5805110962149
@@ -257,7 +257,7 @@ def test_UNIQUAC_madeup_ternary():
 
     # Check json storage again, with some results
     GE2 = UNIQUAC.from_json(GE.as_json())
-    assert GE2.__dict__ == GE.__dict__
+    assert object_data(GE2) == object_data(GE)
 
     # Direct call for gammas
     gammas_args = GE.gammas_args()

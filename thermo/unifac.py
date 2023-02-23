@@ -3518,7 +3518,7 @@ def unifac_Theta_pure_Psi_sums(N, N_groups, psis, Thetas_pure, Theta_pure_Psi_su
             row[k] = (tot)
     return Theta_pure_Psi_sums
 
-def unifac_lnGammas_subgroups(N, N_groups, Qs, psis, Thetas, Theta_Psi_sums, Theta_Psi_sum_invs, lnGammas_subgroups=None):
+def unifac_lnGammas_subgroups(N_groups, Qs, psis, Thetas, Theta_Psi_sums, Theta_Psi_sum_invs, lnGammas_subgroups=None):
     if lnGammas_subgroups is None:
         lnGammas_subgroups = [0.0]*N_groups
 
@@ -4057,7 +4057,7 @@ def unifac_gammas_from_args(xs, N, N_groups, vs, rs, qs, Qs,
     Theta_Psi_sum_invs = [0.0]*N_groups
     for i in range(N_groups):
         Theta_Psi_sum_invs[i] = 1.0/Theta_Psi_sums[i]
-    lnGammas_subgroups = unifac_lnGammas_subgroups(N=N, N_groups=N_groups, Qs=Qs, psis=psis, Thetas=Thetas, 
+    lnGammas_subgroups = unifac_lnGammas_subgroups(N_groups=N_groups, Qs=Qs, psis=psis, Thetas=Thetas, 
                                                    Theta_Psi_sums=Theta_Psi_sums, Theta_Psi_sum_invs=Theta_Psi_sum_invs)
     lngammas_r = unifac_lngammas_r(N=N, N_groups=N_groups, lnGammas_subgroups_pure=lnGammas_subgroups_pure,
                                    lnGammas_subgroups=lnGammas_subgroups, vs=vs)
@@ -4400,6 +4400,17 @@ class UNIFAC(GibbsExcess):
     
     gammas_from_args = staticmethod(unifac_gammas_from_args)
 
+    __slots__ = GibbsExcess.__slots__ +('Thetas_sum_inv', 'Hs', '_Thetas_pure', 'Fs_pure', 'Theta_pure_Psi_sum_invs', '_dVis_dxs',
+           '_dVis_modified_dxs', 'rx_sum_inv', '_d2lnGammas_subgroups_dT2', 'VSXS', 'rs', '_d2lngammas_c_dxixjs', 'cmp_group_idx', '_Thetas', '_d3psis_dT3',
+            'N_groups', 'cmp_v_count_inv', 'Fs', 'Ws', '_d2lnGammas_subgroups_dTdxs', '_lngammas_c', 'qx_sum_inv', 'cmp_v_count', 'Gs', 
+            '_dlnGammas_subgroups_dT', '_Vis_modified', 'r34x_sum_inv', '_dlngammas_r_dxs', '_dFis_dxs', '_Xs_pure', '_d2lngammas_r_dT2',
+            'skip_comb', '_d3lngammas_r_dT3', '_lnGammas_subgroups', 'qs', '_d2lngammas_r_dxixjs', '_dgammas_dxs', 'group_cmp_idx', 
+            '_d3lnGammas_subgroups_pure_dT3', '_lnGammas_subgroups_pure', '_Fis', '_d2lngammas_r_dTdxs', '_d2Fis_dxixjs', 'Theta_Psi_sum_invs',
+            '_d3GE_dT3', '_d2Thetas_dxixjs', 'Qs', '_dpsis_dT', '_d2lnGammas_subgroups_dxixjs', 'rs_34', 'psi_b', '_d3lnGammas_subgroups_dT3',
+            '_Xs', 'Xs_sum_inv', '_dlnGammas_subgroups_dxs', '_dlngammas_c_dxs', 'Theta_pure_Psi_sums', '_psis', 'vs', 'Gs_pure', 'psi_a', '_dThetas_dxs', 
+            'Theta_Psi_sums', '_d2Vis_dxixjs', '_dlnGammas_subgroups_pure_dT', '_d2Vis_modified_dxixjs', 'Hs_pure', '_lngammas_r', '_d2lnGammas_subgroups_pure_dT2', 
+            '_d2psis_dT2', '_Vis', 'psi_c', 'version', '_dlngammas_r_dT', '_d3Vis_dxixjxks', '_d3Fis_dxixjxks', '_d3Vis_modified_dxixjxks', '_d3lngammas_c_dxixjxks')
+
     @property
     def model_id(self):
         '''A unique numerical identifier refering to the thermodynamic model
@@ -4580,7 +4591,7 @@ class UNIFAC(GibbsExcess):
 #        debug = (rs, qs, Qs, vs, (psi_a, psi_b, psi_c))
         if scalar:
             return UNIFAC(T=T, xs=xs, rs=rs, qs=qs, Qs=Qs, vs=vs, psi_abc=(psi_a, psi_b, psi_c), version=version)
-        return UNIFAC(T=T, xs=xs, rs=array(rs), qs=array(qs), Qs=array(Qs), vs=array(vs), psi_abc=(array(psi_a), array(psi_b), array(psi_c)), version=version)
+        return UNIFAC(T=T, xs=xs, rs=array(rs), qs=array(qs), Qs=array(Qs), vs=array(vs, dtype=float), psi_abc=(array(psi_a), array(psi_b), array(psi_c)), version=version)
 
     _model_attributes = ('rs', 'qs', 'psi_a', 'psi_b', 'psi_c', 'version')
 
@@ -5670,7 +5681,7 @@ class UNIFAC(GibbsExcess):
             VSXS = self.VSXS
         except AttributeError:
             VSXS = self._VSXS()
-#        # Index [subgroup][component]
+#        # Index [subgroup][component]  
         self._dThetas_dxs = unifac_dThetas_dxs(N_groups, N, Qs, vs, VS, VSXS, F, G, dThetas_dxs)
         return dThetas_dxs
 
@@ -6099,7 +6110,7 @@ class UNIFAC(GibbsExcess):
             lnGammas_subgroups = zeros(N_groups)
 
 
-        self._lnGammas_subgroups = unifac_lnGammas_subgroups(N, N_groups, Qs, psis, Thetas, Theta_Psi_sums, Theta_Psi_sum_invs, lnGammas_subgroups)
+        self._lnGammas_subgroups = unifac_lnGammas_subgroups(N_groups, Qs, psis, Thetas, Theta_Psi_sums, Theta_Psi_sum_invs, lnGammas_subgroups)
         return lnGammas_subgroups
 
     def dlnGammas_subgroups_dxs(self):

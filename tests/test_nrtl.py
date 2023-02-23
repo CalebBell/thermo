@@ -25,6 +25,7 @@ import pytest
 import numpy as np
 from fluids.constants import calorie, R
 from chemicals.rachford_rice import *
+from chemicals.utils import object_data
 from thermo.mixture import Mixture
 from thermo.nrtl import NRTL
 from random import random
@@ -209,7 +210,7 @@ def test_water_ethanol_methanol_madeup():
     GE = NRTL(T, xs, taus, alphas)
     assert eval(str(GE)).GE() == GE.GE()
 
-    assert NRTL.from_json(GE.as_json()).__dict__ == GE.__dict__
+    assert object_data(NRTL.from_json(GE.as_json())) == object_data(GE)
 
     GEnp = NRTL(T, np.array(xs), np.array(taus), np.array(alphas))
     assert_close(GEnp.GE(), GE.GE(), rtol=1e-12)
@@ -402,7 +403,6 @@ def test_NRTL_numpy_output():
     modelnp2 = modelnp.to_T_xs(T=T, xs=np.array(xs))
 
     check_np_output_activity(model, modelnp, modelnp2)
-
     json_string = modelnp.as_json()
     new = NRTL.from_json(json_string)
     assert new == modelnp

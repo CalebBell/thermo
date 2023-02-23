@@ -312,6 +312,8 @@ class RegularSolution(GibbsExcess):
 
     gammas_from_args = staticmethod(regular_solution_gammas)
 
+    __slots__ = GibbsExcess.__slots__ + ('xsVs_sum', '_Hi_sums', 'lambda_coeffs', '_d3GE_dxixjxks', '_lambda_coeffs_zero', 'SPs', 'Vs', 'xsVs_sum_inv', 'xsVs')
+
     def gammas_args(self, T=None):
         if T is not None:
             obj = self.to_T_xs(T=T, xs=self.xs)

@@ -71,7 +71,8 @@ __all__ = ['GibbsExcess', 'IdealSolution']
 from fluids.constants import R, R_inv
 from fluids.numerics import numpy as np, trunc_exp
 from chemicals.utils import exp, log
-from chemicals.utils import normalize, dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, d2xs_to_dxdn_partials, hash_any_primitive
+from chemicals.utils import (normalize, dxs_to_dns, dxs_to_dn_partials, 
+                             dns_to_dn_partials, d2xs_to_dxdn_partials, hash_any_primitive, object_data)
 from thermo import serialize
 from thermo.fitting import fit_customized
 
@@ -287,7 +288,11 @@ class GibbsExcess(object):
     the :obj:`gammas_infinite_dilution` calculation. This is important
     as not all models can mathematically be evaluated at zero mole-fraction.'''
     
-    
+
+    __slots__ = ('T', 'N', 'xs', 'scalar', '_GE', '_dGE_dT', '_SE','_d2GE_dT2', '_d2GE_dTdxs', '_dGE_dxs',
+                  '_gammas', '_dgammas_dns', '_dgammas_dT', '_d2GE_dxixjs',  '_dHE_dxs', '_dSE_dxs', 
+                  '_model_hash')
+
     _point_properties = ('CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns',
                          'd2GE_dTdxs', 'd2GE_dxixjs', 'd2nGE_dTdns', 'd2nGE_dninjs',
                          'dGE_dT', 'dGE_dns', 'dGE_dxs', 'dHE_dT', 'dHE_dns', 'dHE_dxs',
@@ -331,7 +336,7 @@ class GibbsExcess(object):
         hash : int
             Hash of the object, [-]
         '''
-        d = self.__dict__
+        d = object_data(self)
         ans = hash_any_primitive((self.__class__.__name__, d))
         return ans
 
@@ -400,7 +405,7 @@ class GibbsExcess(object):
         >>> assert model_copy == model
         '''
         # vaguely jsonpickle compatible
-        d = self.__dict__.copy()
+        d = object_data(self)
         if not self.scalar:
             d = serialize.arrays_to_lists(d)
         d["py/object"] = self.__full_path__
@@ -452,7 +457,9 @@ class GibbsExcess(object):
         del d["json_version"]
 
         new = cls.__new__(cls)
-        new.__dict__ = d
+        for k, v in d.items():
+            setattr(new, k, v)
+        # new.__dict__ = d
         return new
 
     def HE(self):
@@ -594,7 +601,11 @@ class GibbsExcess(object):
 
 
         '''
-        return (self.HE() - self.GE())/self.T
+        try:
+            return self._SE
+        except:
+            self._SE = (self.HE() - self.GE())/self.T
+        return self._SE
 
     def dSE_dT(self):
         r'''Calculate and return the first temperature derivative of excess
@@ -1060,7 +1071,8 @@ class IdealSolution(GibbsExcess):
     _model_attributes = ()
     
     model_id = 0
-
+    __slots__ = GibbsExcess.__slots__
+    
     def gammas_args(self, T=None):
         N = self.N
         return (N,)

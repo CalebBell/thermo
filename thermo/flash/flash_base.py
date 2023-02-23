@@ -317,6 +317,7 @@ class Flash(object):
 
         if ((T_spec and (P_spec or V_spec)) or (P_spec and V_spec)):
             g, ls, ss, betas, flash_convergence = self.flash_TPV(T=T, P=P, V=V, zs=zs, solution=solution, hot_start=hot_start)
+            # TODO can creating a list here be avoided?
             if g is not None:
                 id_phases = [g] + ls + ss
             else:

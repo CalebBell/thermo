@@ -28,7 +28,7 @@ from fluids.constants import R, R_inv
 from fluids.numerics import (horner_and_der2, derivative,
                              evaluate_linear_fits, evaluate_linear_fits_d,
                              evaluate_linear_fits_d2,
-                             trunc_exp, secant)
+                             trunc_exp, secant, numpy as np)
 from chemicals.utils import log, exp, phase_identification_parameter
 from thermo.activity import IdealSolution
 from thermo.utils import POLY_FIT, PROPERTY_TRANSFORM_LN, PROPERTY_TRANSFORM_DLN, PROPERTY_TRANSFORM_D2LN, PROPERTY_TRANSFORM_D_X, PROPERTY_TRANSFORM_D2_X
@@ -38,6 +38,11 @@ from thermo.vapor_pressure import VaporPressure, SublimationPressure
 from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
 
 from thermo.phases.phase import Phase
+
+try:
+    zeros = np.zeros
+except:
+    pass
 
 class GibbsExcessLiquid(Phase):
     r'''Phase based on combining Raoult's law with a
@@ -188,10 +193,7 @@ class GibbsExcessLiquid(Phase):
     P_DEPENDENT_H_LIQ = True
     PHI_SAT_IDEAL_TR = 0.1
     _Psats_data = None
-    Psats_poly_fit = False
-    Vms_sat_poly_fit = False
     _Vms_sat_data = None
-    Hvap_poly_fit = False
     _Hvap_data = None
 
     use_IG_Cp = True # Deprecated! Remove with S_old and H_old
@@ -216,6 +218,14 @@ class GibbsExcessLiquid(Phase):
                         'henry_data', 'Psat_extrpolation') + pure_references
 
     obj_references = ('GibbsExcessModel', 'eos_pure_instances')
+
+    # Not sure how this will progress
+    __slots__ = ('VaporPressures', 'Psats_poly_fit', 'Psat_extrpolation', 'N', 'HeatCapacityGases', 'Cpgs_poly_fit',
+     '_Cpgs_data', 'HeatCapacityLiquids', 'use_eos_volume', 'VolumeLiquids', 'Vms_sat_poly_fit', 'VolumeSupercriticalLiquids',
+      'Vms_supercritical_poly_fit', 'incompressible', 'use_Tait', 'EnthalpyVaporizations', 'Hvap_poly_fit', 'GibbsExcessModel',
+       'eos_pure_instances', 'equilibrium_basis', 'caloric_basis', 'use_phis_sat', 'use_Poynting', 'use_phis_sat_caloric',
+        'use_Poynting_caloric', 'use_Hvap_caloric', 'has_henry_components', 'henry_components', 'henry_data', 'composition_independent', 
+        'Hfs', 'Gfs', 'Sfs', 'model_id', 'T', 'P', 'zs', '_model_hash_ignore_phase', '_model_hash')
     
     def __repr__(self):
         r'''Method to create a string representation of the phase object, with
@@ -571,6 +581,11 @@ class GibbsExcessLiquid(Phase):
                         new._d2Psats_dT2 = self._d2Psats_dT2
                     except:
                         pass
+                    try:
+                        new._lnPsats = self._lnPsats
+                        new._dPsats_dT_over_Psats = self._dPsats_dT_over_Psats
+                    except:
+                        pass
 
                 try:
                     new._Vms_sat = self._Vms_sat
@@ -597,12 +612,17 @@ class GibbsExcessLiquid(Phase):
     supports_lnphis_args = True
     
     def lnphis_args(self):
+        try:
+            return self._lnphis_args
+        except:
+            pass
         lnPsats = self.lnPsats()
         Poyntings = self.Poyntings()
         phis_sat = self.phis_sat()
         activity_args = self.GibbsExcessModel.gammas_args()
-        lnphis = [0.0]*self.N if self.scalar else ZeroDivisionError(self.N)
-        return (self.model_id, self.T, self.P, self.N, lnPsats, Poyntings, phis_sat) + activity_args +(lnphis,)
+        lnphis = [0.0]*self.N if self.scalar else zeros(self.N)
+        self._lnphis_args = (self.model_id, self.T, self.P, self.N, lnPsats, Poyntings, phis_sat) + activity_args +(lnphis,)
+        return self._lnphis_args
 
 
     def Henry_matrix(self):

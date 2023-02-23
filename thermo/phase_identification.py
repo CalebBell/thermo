@@ -792,44 +792,38 @@ def identity_phase_states(phases, constants, correlations, VL_method=VL_ID_PIP,
     # TODO - optimize
     # Takes a while
 
-    force_phases = [i.force_phase for i in phases]
-    forced = True
-    phases_to_ID = []
-    phases_to_ID_idxs = []
-    for i, s in enumerate(force_phases):
-        if s is None:
-            forced = False
-            # TODO avoid scoring phases with force phase
-            phases_to_ID.append(phases[i])
-            phases_to_ID_idxs.append(i)
-
-    if not forced:
-        VL_scores = score_phases_VL(phases, constants, correlations,
-                                    method=VL_method)
-        if not skip_solids:
-            S_scores = score_phases_S(phases, constants, correlations,
-                                      method=S_method, S_ID_settings=S_ID_settings)
-
     solids = []
     liquids = []
     possible_gases = []
     possible_gas_scores = []
+    unknown_phases = []
+    for p in phases:
+        if p.force_phase is not None:
+            if p.force_phase == 'l':
+                liquids.append(p)
+            elif p.force_phase == 's':
+                solids.append(p)
+            elif p.force_phase == 'g':
+                possible_gases.append(p)
+        else:
+            unknown_phases.append(p)
 
-    for i in range(len(phases)):
-        if force_phases[i] is not None:
-            if force_phases[i] == 'l':
-                liquids.append(phases[i])
-            if force_phases[i] == 's':
-                solids.append(phases[i])
-            if force_phases[i] == 'g':
-                possible_gases.append(phases[i])
-        elif not skip_solids and S_scores[i] >= 0.0:
-            solids.append(phases[i])
+
+    if unknown_phases:
+        VL_scores = score_phases_VL(unknown_phases, constants, correlations,
+                                    method=VL_method)
+        if not skip_solids:
+            S_scores = score_phases_S(unknown_phases, constants, correlations,
+                                      method=S_method, S_ID_settings=S_ID_settings)
+
+    for i in range(len(unknown_phases)):
+        if not skip_solids and S_scores[i] >= 0.0:
+            solids.append(unknown_phases[i])
         elif VL_scores[i] >= 0.0:
-            possible_gases.append(phases[i])
+            possible_gases.append(unknown_phases[i])
             possible_gas_scores.append(VL_scores[i])
         else:
-            liquids.append(phases[i])
+            liquids.append(unknown_phases[i])
 
     # Handle multiple matches as gas
     possible_gas_count = len(possible_gases)
@@ -1039,9 +1033,15 @@ def identify_sort_phases(phases, betas, constants, correlations, settings,
                               S_ID_settings=settings.S_ID_settings,
                               skip_solids=skip_solids)
     if len(betas) == 1:
+        # No need to sort here either
         return gas, liquids, solids, betas
-    if liquids or solids:
+    elif len(liquids) > 1 or len(solids) > 1:
+        # There is no point in sorting if there is no need to sort
         liquids, solids = sort_phases(liquids, solids, constants, settings)
+    elif len(liquids) == 1 and len(phases) == 2 and gas is not None:
+        # Happen to be in the right order, can avoid making a new list
+        if phases[0] is gas:
+            return gas, liquids, solids, betas
     if betas is not None:
         # Probably worth adding a fast path here which avoids index
         new_betas = []
