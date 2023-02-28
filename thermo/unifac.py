@@ -1043,8 +1043,6 @@ DOUFMG[61] = ('SULFIDES', [122, 123, 124])
 DOUFMG[93] = ('DISULFIDES', [201])
 
 
-VTPRSG = {}
-
 #  subgroup = (subgroup, #maingroup, maingroup, R, Q)
 VTPRSG = {}
 VTPRSG[1] = UNIFAC_subgroup(1, 'CH3', 1, 'CH2', None, 1.2958, smarts=DOUFSG[1].smarts)
