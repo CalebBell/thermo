@@ -52,22 +52,22 @@ NRTL Regression Calculations
 from __future__ import division
 from math import log, exp
 from fluids.constants import R
-from fluids.numerics import numpy as np, trunc_exp
+from fluids.numerics import numpy as np, trunc_exp, transpose
 from thermo.activity import GibbsExcess
 
 __all__ = ['NRTL', 'NRTL_gammas', 'NRTL_gammas_binaries', 'NRTL_gammas_binaries_jac']
 
 try:
-    array, zeros, ones, delete, npsum, nplog = np.array, np.zeros, np.ones, np.delete, np.sum, np.log
+    array, zeros, ones, delete, npsum, nplog, nptranspose, ascontiguousarray = np.array, np.zeros, np.ones, np.delete, np.sum, np.log, np.transpose, np.ascontiguousarray
 except (ImportError, AttributeError):
     pass
 
-def nrtl_gammas_from_args(xs, N, Gs, taus, xj_Gs_jis=None, xj_Gs_taus_jis=None, vec0=None, vec1=None, gammas=None):
+def nrtl_gammas_from_args(xs, N, Gs, taus, Gs_transposed, Gs_taus_transposed, Gs_taus, xj_Gs_jis=None, xj_Gs_taus_jis=None, vec0=None, vec1=None, gammas=None):
     if xj_Gs_jis is None:
         xj_Gs_jis = [0.0]*N
     if xj_Gs_taus_jis is None:
         xj_Gs_taus_jis = [0.0]*N
-    nrtl_xj_Gs_jis_and_Gs_taus_jis(N, xs, Gs, taus, xj_Gs_jis, xj_Gs_taus_jis)
+    nrtl_xj_Gs_jis_and_Gs_taus_jis(N, xs, Gs, taus, Gs_transposed, Gs_taus_transposed, xj_Gs_jis, xj_Gs_taus_jis)
     for i in range(N):
         # We can reuse the same list instead of making a new one here for xj_Gs_jis_inv
         xj_Gs_jis[i] = 1.0/xj_Gs_jis[i]
@@ -274,7 +274,7 @@ def nrtl_d3Gs_dT3(N, alphas, dalphas_dT, taus, dtaus_dT, d2taus_dT2, d3taus_dT3,
             d3Gs_dT3i[j] = Gsi[j]*(-x0*d3taus_dT3i[j] - 3.0*x2*x3 - x5*x5*x5 + 3.0*x5*(x0*x3 + 2.0*x2*x4))
     return d3Gs_dT3
 
-def nrtl_xj_Gs_jis_and_Gs_taus_jis(N, xs, Gs, taus, xj_Gs_jis=None, xj_Gs_taus_jis=None):
+def nrtl_xj_Gs_jis_and_Gs_taus_jis(N, xs, Gs, taus, Gs_transposed, Gs_taus_transposed, xj_Gs_jis=None, xj_Gs_taus_jis=None):
     if xj_Gs_jis is None:
         xj_Gs_jis = [0.0]*N
     if xj_Gs_taus_jis is None:
@@ -282,12 +282,17 @@ def nrtl_xj_Gs_jis_and_Gs_taus_jis(N, xs, Gs, taus, xj_Gs_jis=None, xj_Gs_taus_j
 
     for i in range(N):
         tot1 = 0.0
-        tot2 = 0.0
+        Gs_row = Gs_transposed[i]
         for j in range(N):
-            xjGji = xs[j]*Gs[j][i]
+            xjGji = xs[j]*Gs_row[j]
             tot1 += xjGji
-            tot2 += xjGji*taus[j][i]
         xj_Gs_jis[i] = tot1
+
+    for i in range(N):
+        tot2 = 0.0
+        Gs_taus_transposed_row = Gs_taus_transposed[i]
+        for j in range(N):
+            tot2 += xs[j]*Gs_taus_transposed_row[j]
         xj_Gs_taus_jis[i] = tot2
     return xj_Gs_jis, xj_Gs_taus_jis
 
@@ -565,7 +570,7 @@ class NRTL(GibbsExcess):
     __slots__ = GibbsExcess.__slots__+('_alphas', '_dGs_dT', 'tau_gs', '_xj_dGs_dT_jis', '_xj_Gs_dtaus_dT_jis',  'tau_bs',  'alpha_ds', 'tau_fs', 'tau_hs',
                  'alpha_temperature_independent',  '_d2Gs_dT2', '_xj_taus_dGs_dT_jis', '_dtaus_dT', '_Gs', '_d2taus_dT2', 'tau_as',
                  'tau_coeffs_nonzero', '_taus', 'tau_es', '_xj_Gs_jis_inv', '_xj_Gs_taus_jis', '_xj_Gs_jis', 'zero_coeffs',  'alpha_cs',
-                 '_d3taus_dT3', '_d3Gs_dT3')
+                 '_d3taus_dT3', '_d3Gs_dT3', '_Gs_transposed', '_Gs_taus_transposed', '_Gs_taus')
 
 
     def gammas_args(self, T=None):
@@ -581,6 +586,9 @@ class NRTL(GibbsExcess):
             Gs = obj._Gs
         except AttributeError:
             Gs = obj.Gs()
+        Gs_taus_transposed = obj.Gs_taus_transposed()
+        Gs_transposed = obj.Gs_transposed()
+        Gs_taus = obj.Gs_taus()
 
         N = obj.N
         if self.scalar:
@@ -588,7 +596,7 @@ class NRTL(GibbsExcess):
         else:
             xj_Gs_jis, xj_Gs_taus_jis, vec0, vec1 = zeros(N), zeros(N), zeros(N),  zeros(N)
 
-        return (N, Gs, taus, xj_Gs_jis, xj_Gs_taus_jis, vec0, vec1)
+        return (N, Gs, taus, Gs_transposed, Gs_taus_transposed, Gs_taus, xj_Gs_jis, xj_Gs_taus_jis, vec0, vec1)
 
     gammas_from_args = staticmethod(nrtl_gammas_from_args)
     
@@ -1204,7 +1212,56 @@ class NRTL(GibbsExcess):
         self._d3Gs_dT3 = nrtl_d3Gs_dT3(N, alphas, dalphas_dT, taus, dtaus_dT, d2taus_dT2, d3taus_dT3, Gs, d3Gs_dT3)
         return d3Gs_dT3
 
+    def Gs_transposed(self):
+        # For performance
+        try:
+            return self._Gs_transposed
+        except AttributeError:
+            pass
+        if self.scalar:
+            self._Gs_transposed = transpose(self.Gs())
+        else:
+            self._Gs_transposed = ascontiguousarray(nptranspose(self.Gs()))
+        
+        return self._Gs_transposed
 
+    def Gs_taus_transposed(self):
+        # For performance
+        try:
+            return self._Gs_taus_transposed
+        except AttributeError:
+            pass
+        if self.scalar:
+            mat = transpose(self.taus())
+            Gs_transposed = self.Gs_transposed()
+            N = self.N
+            for i in range(N):
+                for j in range(N):
+                    mat[i][j] *= Gs_transposed[i][j]
+            self._Gs_taus_transposed = mat
+        else:
+            self._Gs_taus_transposed = ascontiguousarray(nptranspose(self.taus())*self.Gs_transposed())
+        
+        return self._Gs_taus_transposed
+
+    def Gs_taus(self):
+        # For performance
+        try:
+            return self._Gs_taus
+        except AttributeError:
+            pass
+        if self.scalar:
+            N = self.N
+            Gs_taus = [[0.0]*N for _ in range(N)]
+            taus = self.taus()
+            Gs = self.Gs()
+            for i in range(N):
+                for j in range(N):
+                    Gs_taus[i][j] = taus[i][j]*Gs[i][j]
+            self._Gs_taus = Gs_taus
+        else:
+            self._Gs_taus = self.taus()*self.Gs()
+        return self._Gs_taus
 
     def xj_Gs_jis(self):
         # sum1
@@ -1220,6 +1277,14 @@ class NRTL(GibbsExcess):
             taus = self._taus
         except AttributeError:
             taus = self.taus()
+        try:
+            Gs_transposed = self._Gs_transposed
+        except AttributeError:
+            Gs_transposed = self.Gs_transposed()
+        try:
+            Gs_taus_transposed = self._Gs_taus_transposed
+        except AttributeError:
+            Gs_taus_transposed = self.Gs_taus_transposed()
 
         xs, N = self.xs, self.N
         if self.scalar:
@@ -1229,7 +1294,7 @@ class NRTL(GibbsExcess):
             _xj_Gs_jis = zeros(N)
             _xj_Gs_taus_jis = zeros(N)
 
-        nrtl_xj_Gs_jis_and_Gs_taus_jis(N, xs, Gs, taus, _xj_Gs_jis, _xj_Gs_taus_jis)
+        nrtl_xj_Gs_jis_and_Gs_taus_jis(N, xs, Gs, taus, Gs_transposed, Gs_taus_transposed, _xj_Gs_jis, _xj_Gs_taus_jis)
 
         self._xj_Gs_jis, self._xj_Gs_taus_jis = _xj_Gs_jis, _xj_Gs_taus_jis
         return _xj_Gs_jis
