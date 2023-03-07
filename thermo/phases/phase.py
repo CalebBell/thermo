@@ -5673,6 +5673,31 @@ class Phase(object):
     def H_calc(self):
         return self.H()
 
+    def as_EquilibriumState(self):
+        if not hasattr(self, 'result'):
+            raise ValueError("Phase must have been created into an EquilibriumState already") 
+        from thermo.equilibrium import EquilibriumState
+        flasher = self.result.flasher
+        phase_copy = self.to_TP_zs(T=self.T, P=self.P, zs=self.zs)
+        if self.assigned_phase == 'l':
+            gas, liquids, solids = None, [phase_copy], []
+        elif self.assigned_phase == 'g':
+            gas, liquids, solids = phase_copy, [], []
+        elif self.assigned_phase == 's':
+            gas, liquids, solids = None, [], [phase_copy]
+
+        flash_specs = self.result.flash_specs.copy()
+        flash_specs['phase_as_state'] = True
+
+        return EquilibriumState(T=self.T, P=self.P, zs=self.zs, gas=gas, liquids=liquids, solids=solids, betas=[1],
+            constants=flasher.constants, correlations=flasher.correlations, flasher=flasher, settings=flasher.settings,
+            flash_specs=flash_specs)
+
+    def as_EquilibriumStream(self):
+        state = self.as_EquilibriumState()
+        from thermo.stream import EquilibriumStream
+        return EquilibriumStream(flasher=state.flasher, zs=state.zs, n=self.n,  P=state.P, T=state.T, existing_flash=state)
+
     def concentrations(self):
         r'''Method to return the molar concentrations of each component in the 
         phase in units of mol/m^3. Molarity is a term used in chemistry for a
