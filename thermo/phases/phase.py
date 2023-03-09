@@ -5673,30 +5673,45 @@ class Phase(object):
     def H_calc(self):
         return self.H()
 
-    def as_EquilibriumState(self):
-        if not hasattr(self, 'result'):
-            raise ValueError("Phase must have been created into an EquilibriumState already") 
+    def as_EquilibriumState(self, flasher=None):
+        has_result = hasattr(self, 'result')
+        if not has_result and flasher is None:
+            raise ValueError("Phase must have been created into an EquilibriumState already or be provided with a flasher") 
         from thermo.equilibrium import EquilibriumState
-        flasher = self.result.flasher
+        if has_result:
+            flasher = self.result.flasher
+            state = self.assigned_phase
+        else:
+            if self.is_gas:
+                state = 'g'
+            elif self.is_liquid:
+                state = 'l'
+            elif self.is_solid:
+                state = 's'
         phase_copy = self.to_TP_zs(T=self.T, P=self.P, zs=self.zs)
-        if self.assigned_phase == 'l':
-            gas, liquids, solids = None, [phase_copy], []
-        elif self.assigned_phase == 'g':
-            gas, liquids, solids = phase_copy, [], []
-        elif self.assigned_phase == 's':
-            gas, liquids, solids = None, [], [phase_copy]
+        
 
-        flash_specs = self.result.flash_specs.copy()
+        if state == 'l':
+            gas, liquids, solids = None, [phase_copy], []
+        elif state == 'g':
+            gas, liquids, solids = phase_copy, [], []
+        elif state == 's':
+            gas, liquids, solids = None, [], [phase_copy]
+        if not hasattr(self, 'result'):
+            flash_specs = {'T': self.T, 'P': self.P}
+        else:
+            flash_specs = self.result.flash_specs.copy()
         flash_specs['phase_as_state'] = True
 
         return EquilibriumState(T=self.T, P=self.P, zs=self.zs, gas=gas, liquids=liquids, solids=solids, betas=[1],
             constants=flasher.constants, correlations=flasher.correlations, flasher=flasher, settings=flasher.settings,
             flash_specs=flash_specs)
 
-    def as_EquilibriumStream(self):
-        state = self.as_EquilibriumState()
+    def as_EquilibriumStream(self, flasher=None, n=None):
+        state = self.as_EquilibriumState(flasher)
         from thermo.stream import EquilibriumStream
-        return EquilibriumStream(flasher=state.flasher, zs=state.zs, n=self.n,  P=state.P, T=state.T, existing_flash=state)
+        n = self.n if n is None else n
+        return EquilibriumStream(flasher=state.flasher, zs=state.zs, n=n,  P=state.P, T=state.T, existing_flash=state)
 
     def concentrations(self):
         r'''Method to return the molar concentrations of each component in the 

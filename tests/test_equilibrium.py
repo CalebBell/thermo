@@ -1295,4 +1295,39 @@ def test_equilibrium_ternary_air_PR():
     assert_close(res.gas.humidity_ratio(), 0.009998742813826613)
     assert_close(res.bulk.humidity_ratio(), 0.009998742813826613)
     
-# test_equilibrium_ternary_air_PR()
+def test_Phase_to_EquilibriumState():
+    constants = ChemicalConstantsPackage(atomss=[{'O': 2}, {'N': 2}, {'H': 2, 'O': 1}], CASs=['7782-44-7', '7727-37-9', '7732-18-5'], Gfgs=[0.0, 0.0, -228554.325], Hfgs=[0.0, 0.0, -241822.0], MWs=[31.9988, 28.0134, 18.01528], names=['oxygen', 'nitrogen', 'water'], omegas=[0.021, 0.04, 0.344], Pcs=[5042945.25, 3394387.5, 22048320.0], Sfgs=[0.0, 0.0, -44.499999999999964], Tbs=[90.188, 77.355, 373.124], Tcs=[154.58, 126.2, 647.14], Tms=[54.36, 63.15, 273.15], Vcs=[7.34e-05, 8.95e-05, 5.6e-05])
+    
+    HeatCapacityGases = [HeatCapacityGas(CASRN="7782-44-7", MW=31.9988, similarity_variable=0.06250234383789392, extrapolation="linear", method="TRCIG"),
+     HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="TRCIG"),
+     HeatCapacityGas(CASRN="7732-18-5", MW=18.01528, similarity_variable=0.16652530518537598, extrapolation="linear", method="TRCIG")]
+    
+    properties = PropertyCorrelationsPackage(constants=constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    kijs = [[0.0, -0.0159, 0], [-0.0159, 0.0, 0], [0, 0, 0.0]]
+    
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas, 'kijs': kijs}
+    gas = CEOSGas(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    liquid = CEOSLiquid(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
+
+    gas_state = flasher.flash(T=400, P=1, zs=[.3, .3, .4])
+    liquid_state = flasher.flash(T=40, P=1e6, zs=[.3, .3, .4])
+    assert liquid_state.gas is None
+    assert gas_state.liquid_count == 0
+
+    phases = [gas_state.gas, liquid_state.liquid0, gas, liquid]
+    flashers = [None, None, flasher, flasher]
+    for phase, flasher in zip(phases, flashers):
+        state = phase.as_EquilibriumState(flasher)
+        assert_close1d(state.phis(), phase.phis())
+        assert_close1d(state.lnphis(), phase.lnphis())
+        assert_close1d(state.fugacities(), phase.fugacities())
+        assert_close1d(state.fugacities(), phase.fugacities())
+        assert_close1d(state.dlnphis_dT(), phase.dlnphis_dT())
+        assert_close1d(state.dphis_dT(), phase.dphis_dT())
+        assert_close1d(state.dfugacities_dT(), phase.dfugacities_dT())
+        assert_close1d(state.dlnphis_dP(), phase.dlnphis_dP())
+        assert_close1d(state.dphis_dP(), phase.dphis_dP())
+        assert_close1d(state.dfugacities_dP(), phase.dfugacities_dP())
+        assert_close1d(state.dphis_dzs(), phase.dphis_dzs())
+        assert_close1d(state.dlnphis_dns(), phase.dlnphis_dns())    

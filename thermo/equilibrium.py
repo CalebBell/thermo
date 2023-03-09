@@ -2273,6 +2273,13 @@ class EquilibriumState(object):
         else:
             ws *= m
         return m
+    
+    def phis(self, phase=None):
+        if phase is not None:
+            return phase.phis()
+        if self.phase_count == 1:
+            return self.phases[0].phis()
+        raise ValueError("This property is not defined for EquilibriumStates with more than one phase")
 
     def Ks(self, phase, phase_ref=None):
         r'''Method to calculate and return the K-values of each phase.
@@ -3102,7 +3109,7 @@ def _make_getter_argumentless_EquilibriumState(name):
     def get_EquilibriumState_argumentless(self):
         return getattr(self.result, name)()
     try:
-        get_EquilibriumState.__doc__ = getattr(EquilibriumState, name).__doc__
+        get_EquilibriumState_argumentless.__doc__ = getattr(EquilibriumState, name).__doc__
     except:
         pass
     return get_EquilibriumState_argumentless
@@ -3267,6 +3274,22 @@ try:
     EquilibriumState.__doc__ = EquilibriumState.__doc__ +'\n    ' + '\n    '.join(_add_attrs_doc)
 except:
     pass
+
+def make_getter_one_phase_property(prop_name):
+    def property_one_phase_only(self, phase=None):
+        if phase is not None:
+            return getattr(phase, prop_name)()
+        if self.phase_count == 1:
+            return getattr(self.phases[0], prop_name)()
+        raise ValueError("This property is not defined for EquilibriumStates with more than one phase")
+    return property_one_phase_only
+
+one_phase_properties = ['phis', 'lnphis', 'fugacities', 'fugacities', 'dlnphis_dT', 'dphis_dT', 'dfugacities_dT',
+                         'dlnphis_dP', 'dphis_dP', 'dfugacities_dP', 'dphis_dzs', 'dlnphis_dns']
+for prop in one_phase_properties:
+    getter = make_getter_one_phase_property(prop)
+    setattr(EquilibriumState, prop, getter)
+
 
 def _make_getter_atom_fraction(element_symbol):
     def get_atom_fraction(self):
