@@ -44,7 +44,7 @@ from thermo.interface import *
 from thermo.thermal_conductivity import *
 from thermo.heat_capacity import *
 from thermo.phase_change import *
-from thermo.unifac import UNIFAC, UFSG, UFIP
+from thermo.unifac import UNIFAC, UFSG, UFIP, DOUFIP2016, DOUFSG, PSRKIP, PSRKSG, VTPRSG, VTPRIP
 from thermo.regular_solution import RegularSolution
 from thermo.uniquac import UNIQUAC
 from thermo.wilson import Wilson
@@ -470,6 +470,78 @@ def test_GibbbsExcessLiquid_NoPoyNoGammaNoPhi():
     assert_close(dH_dP, 0, atol=1e-11)
     assert_close(dH_dP, dH_dP_num)
 
+def test_GibbsExcessLiquid_Unifac():
+    # water-ethanol
+    T = 400.0
+    P = 1e6
+    zs = [.4, .6]
+
+    MWs = [18.01528, 46.06844]
+    Tcs = [647.14, 514.0]
+    Pcs = [22048320.0, 6137000.0]
+    Vcs = [5.6e-05, 0.000168]
+    Zcs = [0.22947273972184645, 0.24125043269792068]
+    omegas = [0.344, 0.635]
+
+    eoss = [PR(Tc=Tcs[0], Pc=Pcs[0], omega=omegas[0], T=T, P=P),
+            PR(Tc=Tcs[1], Pc=Pcs[1], omega=omegas[1], T=T, P=P)]
+    VaporPressures = [VaporPressure(extrapolation='DIPPR101_ABC|AntoineAB', exp_poly_fit=(159.11, 514.7, [-2.3617526481119e-19, 7.318686894378096e-16, -9.835941684445551e-13, 7.518263303343784e-10, -3.598426432676194e-07, 0.00011171481063640762, -0.022458952185007635, 2.802615041941912, -166.43524219017118])),
+                      VaporPressure(extrapolation='DIPPR101_ABC|AntoineAB', exp_poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))]
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                       HeatCapacityGas(poly_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965]))]
+    VolumeLiquids = [VolumeLiquid(poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]),
+                                  Psat=VaporPressures[0], Tc=Tcs[0], Pc=Pcs[0], omega=omegas[0]),
+                     VolumeLiquid(poly_fit=(159.11, 504.71000000000004, [5.388587987308587e-23, -1.331077476340645e-19, 1.4083880805283782e-16, -8.327187308842775e-14, 3.006387047487587e-11, -6.781931902982022e-09, 9.331209920256822e-07, -7.153268618320437e-05, 0.0023871634205665524]),
+                                  Psat=VaporPressures[1], Tc=Tcs[1], Pc=Pcs[1], omega=omegas[1])]
+
+    GE = UNIFAC.from_subgroups(T, zs, chemgroups=[{16: 1}, {1: 1, 2: 1, 14: 1}], subgroups=UFSG,
+                           interaction_data=UFIP, version=0)
+    GE1 = UNIFAC.from_subgroups(T, zs, chemgroups=[{16: 1}, {1: 1, 2: 1, 14: 1}], subgroups=DOUFSG,
+                           interaction_data=DOUFIP2016, version=1)
+    GE2 = UNIFAC.from_subgroups(T, zs, chemgroups=[{16: 1}, {1: 1, 2: 1, 14: 1}], subgroups=PSRKSG,
+                           interaction_data=PSRKIP, version=2)
+    GE3 = UNIFAC.from_subgroups(T, zs, chemgroups=[{16: 1}, {1: 1, 2: 1, 14: 1}], subgroups=VTPRSG,
+                           interaction_data=VTPRIP, version=3)
+    # strictly wrong to use the same parameters with the other version but convinient for testing
+    GE4 = UNIFAC.from_subgroups(T, zs, chemgroups=[{16: 1}, {1: 1, 2: 1, 14: 1}], subgroups=UFSG,
+                           interaction_data=UFIP, version=4)
+    GE5 = UNIFAC.from_subgroups(T, zs, chemgroups=[{16: 1}, {1: 1, 2: 1, 14: 1}], subgroups=UFSG,
+                           interaction_data=UFIP, version=5)
+
+    liquid_base = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
+                               VolumeLiquids=VolumeLiquids,
+                               use_Poynting=False,
+                               use_phis_sat=False, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+
+    liquid_poy = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
+                               VolumeLiquids=VolumeLiquids,
+                               use_Poynting=True,
+                               use_phis_sat=False, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+
+    liquid_phi = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
+                               VolumeLiquids=VolumeLiquids,
+                               use_Poynting=False,
+                               use_phis_sat=True, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+
+    liquid_phi_poy = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
+                               VolumeLiquids=VolumeLiquids,
+                               use_Poynting=True,
+                               use_phis_sat=True, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+
+    liquids = [liquid_base, liquid_poy, liquid_phi, liquid_phi_poy]
+    for model in [GE, GE1, GE2, GE3, GE4, GE5]:
+        liquid_phi_poy_gamma = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
+                            VolumeLiquids=VolumeLiquids,
+                            GibbsExcessModel=model,
+                            use_Poynting=True,
+                            use_phis_sat=True, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+        liquids.append(liquid_phi_poy_gamma)
+
+    for i, liquid in enumerate(liquids):
+        liquid = liquid.to(T=513.994, P=P, zs=zs)
+        lnphis_args = liquid.lnphis_args()
+        lnphis_from_args = lnphis_direct(zs, *lnphis_args)
+        assert_close1d(lnphis_from_args, liquid.lnphis(), rtol=1e-13)
 
 def test_GibbsExcessLiquid_H_S_settings():
     # water-ethanol
@@ -599,12 +671,6 @@ def test_GibbsExcessLiquid_H_S_settings():
         assert liquid.H_phi_consistency() < 1e-12
         assert liquid.G_dep_phi_consistency() < 1e-12
         assert liquid.S_phi_consistency() < 1e-12
-
-    for i, liquid in enumerate(liquids):
-        liquid = liquid.to(T=513.994, P=P, zs=zs)
-        lnphis_args = liquid.lnphis_args()
-        lnphis_from_args = lnphis_direct(zs, *lnphis_args)
-        assert_close1d(lnphis_from_args, liquid.lnphis(), rtol=1e-13)
 
 
 def test_GibbsExcessLiquid_HS_from_Hvap():
