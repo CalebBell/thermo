@@ -1432,9 +1432,11 @@ class VirialGas(IdealGasDeparturePhase):
         d2C_dTdP_V=self.d2C_dTdP_V()
         dT_dP_V = self.dT_dP_V()
 
-        dH_dep_dP_V = (-R*(-1 + (V**2 + V*B + C)/V**2)*dT_dP_V - R*(-2*V*dB_dT - dC_dT)*T*dT_dP_V/V**2 
-                           - R*(V*dB_dP_V + dC_dP_V)*T/V**2
-                           - R*(-2*V*d2B_dTdP_V - d2C_dTdP_V)*T**2/(2*V**2))
+        V2 = V*V
+
+        dH_dep_dP_V = (-R*(-1.0 + (V2 + V*B + C)/V2)*dT_dP_V - R*(-2.0*V*dB_dT - dC_dT)*T*dT_dP_V/V2 
+                           - R*(V*dB_dP_V + dC_dP_V)*T/V2
+                           - R*(-2.0*V*d2B_dTdP_V - d2C_dTdP_V)*T*T/(2.0*V2))
         return dH_dep_dP_V
         
     def dS_dep_dP_V(self):
