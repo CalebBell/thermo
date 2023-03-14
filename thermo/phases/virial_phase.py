@@ -1117,22 +1117,20 @@ class VirialGas(IdealGasDeparturePhase):
             dG_dep_dzs = zeros(N)
         for i in range(N):
             x0 = V
-            x1 = x0**2
-            x2 = 1/x1
-            x3 = C
+            x1 = x0*x0
+            x2 = 1.0/x1
             x4 = dC_dzs[i]#Derivative(x3, z1)
-            x5 = B
-            x6 = 2*T
+            x6 = 2.0*T
             x7 = dV_dzs[i]#Derivative(x0, z1)
-            x8 = 2*x7
+            x8 = 2.0*x7
             x9 = T*dB_dT#Derivative(x5, T)
-            x10 = x0*x5 + x1 + x3
+            x10 = x0*B + x1 + C
             x11 = log(x10*x2)
             x12 = x0*x8
-            x13 = 1/x0
+            x13 = 1.0/x0
             dG_dep_dzs[i] = (R*T*x2*(T*d2C_dTdzs[i] + x0*x6*d2B_dTdzs[i]+ x1*(-x0*dB_dzs[i]
-                            + 2*x10*x13*x7 - x12 - x4 - x5*x7)/x10 - x11*x12 - x13*x7*(4*x0*x9 - 2*x1*x11 - x3 + x6*dC_dT)
-                                    - x4/2 + x8*x9))
+                            + 2.0*x10*x13*x7 - x12 - x4 - B*x7)/x10 - x11*x12 - x13*x7*(4.0*x0*x9 - 2.0*x1*x11 - C + x6*dC_dT)
+                                    - x4*0.5 + x8*x9))
         # self._dG_dep_dzs = dG_dep_dzs_virial(B=B, C=C, V=V, dB_dzs=dB_dzs, dC_dzs=dC_dzs, dG_dep_dzs=dG_dep_dzs)
         return dG_dep_dzs
     
