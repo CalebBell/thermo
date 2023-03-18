@@ -323,7 +323,7 @@ class FlashVL(Flash):
     def __init__(self, constants, correlations, gas, liquid, settings=default_settings):
         self.constants = constants
         self.correlations = correlations
-        self.liquid = liquid
+        self.liquid0 = self.liquid = liquid
         self.gas = gas
         self.settings = settings
         self._finish_initialization()

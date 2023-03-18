@@ -541,7 +541,9 @@ class Bulk(Phase):
         self.N = N = len(zs)
         self.phase_bulk = phase_bulk
 
-
+    @property
+    def assigned_phase(self):
+        return self.phase_bulk
 
     @property
     def beta(self):

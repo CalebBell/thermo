@@ -5688,22 +5688,29 @@ class Phase(object):
                 state = 'l'
             elif self.is_solid:
                 state = 's'
-        phase_copy = self.to_TP_zs(T=self.T, P=self.P, zs=self.zs)
-        
 
-        if state == 'l':
-            gas, liquids, solids = None, [phase_copy], []
-        elif state == 'g':
-            gas, liquids, solids = phase_copy, [], []
-        elif state == 's':
-            gas, liquids, solids = None, [], [phase_copy]
+        if self.bulk_phase_type:
+            if self.phase_bulk == 'l':
+                gas, liquids, solids = None, [v.to_TP_zs(T=v.T, P=v.P, zs=v.zs) for v in self.phases], []
+            elif self.phase_bulk == 's':
+                gas, liquids, solids = None, [], [v.to_TP_zs(T=v.T, P=v.P, zs=v.zs) for v in self.phases]
+            betas = self.phase_fractions
+        else:
+            betas = [1]
+            phase_copy = self.to_TP_zs(T=self.T, P=self.P, zs=self.zs)
+            if state == 'l':
+                gas, liquids, solids = None, [phase_copy], []
+            elif state == 'g':
+                gas, liquids, solids = phase_copy, [], []
+            elif state == 's':
+                gas, liquids, solids = None, [], [phase_copy]
         if not hasattr(self, 'result'):
             flash_specs = {'T': self.T, 'P': self.P}
         else:
             flash_specs = self.result.flash_specs.copy()
         flash_specs['phase_as_state'] = True
 
-        return EquilibriumState(T=self.T, P=self.P, zs=self.zs, gas=gas, liquids=liquids, solids=solids, betas=[1],
+        return EquilibriumState(T=self.T, P=self.P, zs=self.zs, gas=gas, liquids=liquids, solids=solids, betas=betas,
             constants=flasher.constants, correlations=flasher.correlations, flasher=flasher, settings=flasher.settings,
             flash_specs=flash_specs)
 
@@ -5711,7 +5718,7 @@ class Phase(object):
         state = self.as_EquilibriumState(flasher)
         from thermo.stream import EquilibriumStream
         n = self.n if n is None else n
-        return EquilibriumStream(flasher=state.flasher, zs=state.zs, n=n,  P=state.P, T=state.T, existing_flash=state)
+        return EquilibriumStream(flasher=state.flasher, zs=self.zs, n=n,  P=self.P, T=self.T, existing_flash=state)
 
     def concentrations(self):
         r'''Method to return the molar concentrations of each component in the 
