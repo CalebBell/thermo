@@ -230,10 +230,6 @@ class FlashVLN(FlashVL):
         self.aqueous_check = (self.SS_STAB_AQUEOUS_CHECK and '7732-18-5' in constants.CASs)
         self.stab = StabilityTester(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas,
                                     aqueous_check=self.aqueous_check, CASs=constants.CASs)
-
-
-        self.T_MIN_FLASH = max(p.T_MIN_FLASH for p in self.phases)
-        self.T_MAX_FLASH = min(p.T_MAX_FLASH for p in self.phases)
         try:
             self._water_index = constants.CASs.index(CAS_H2O)
         except ValueError:

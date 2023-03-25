@@ -382,8 +382,6 @@ class FlashVL(Flash):
         self.unique_phase_count = 1 + self.unique_liquid_count
         self.unique_liquid_hashes = unique_liquid_hashes
         
-        self.T_MIN_FLASH = max(p.T_MIN_FLASH for p in self.phases)
-        self.T_MAX_FLASH = min(p.T_MAX_FLASH for p in self.phases)
         self._finish_initialization_base()
 
     def phases_at_TP_binary(self, T, P, zs, liq, gas):
