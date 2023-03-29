@@ -3285,7 +3285,7 @@ def make_getter_one_phase_property(prop_name):
     return property_one_phase_only
 
 one_phase_properties = ['phis', 'lnphis', 'fugacities', 'fugacities', 'dlnphis_dT', 'dphis_dT', 'dfugacities_dT',
-                         'dlnphis_dP', 'dphis_dP', 'dfugacities_dP', 'dphis_dzs', 'dlnphis_dns']
+                         'dlnphis_dP', 'dphis_dP', 'dfugacities_dP', 'dphis_dzs', 'dlnphis_dns', 'activities']
 for prop in one_phase_properties:
     getter = make_getter_one_phase_property(prop)
     setattr(EquilibriumState, prop, getter)
