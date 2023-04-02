@@ -36,11 +36,12 @@ from thermo.heat_capacity import HeatCapacityGas, HeatCapacityLiquid
 from thermo.volume import VolumeLiquid, VolumeSolid
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
 from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
+from thermo.nrtl import nrtl_taus as ln_henries
 
 from thermo.phases.phase import Phase
 
 try:
-    zeros = np.zeros
+    zeros, array = np.zeros, np.array
 except:
     pass
 
@@ -173,6 +174,20 @@ class GibbsExcessLiquid(Phase):
         'Poynting', 'PhiSat', 'Hvap' [-]
     Psat_extrpolation : str, optional
         One of 'AB' or 'ABC'; configures extrapolation for vapor pressure, [-]
+    henry_abcdef : tuple[list[list[float]], 6], optional
+        Contains the parameters used for henry's law constant, [-]
+    henry_as : list[list[float]], optional
+        `a` parameters used in calculating henry's law constant, [-]
+    henry_bs : list[list[float]], optional
+        `b` parameters used in calculating henry's law constant, [K]
+    henry_cs : list[list[float]], optional
+        `c` parameters used in calculating henry's law constant, [-]
+    henry_ds : list[list[float]], optional
+        `d` paraemeters used in calculating henry's law constant, [1/K]
+    henry_es : list[list[float]], optional
+        `e` parameters used in calculating henry's law constant, [K^2]
+    henry_fs : list[list[float]], optional
+        `f` parameters used in calculating henry's law constant, [1/K^2]
 
 
     use_Hvap_caloric : bool, optional
@@ -215,7 +230,8 @@ class GibbsExcessLiquid(Phase):
     model_attributes = ('Hfs', 'Gfs', 'Sfs', 'GibbsExcessModel',
                         'eos_pure_instances', 'use_Poynting', 'use_phis_sat',
                         'use_Tait', 'use_eos_volume', 'henry_components',
-                        'henry_data', 'Psat_extrpolation') + pure_references
+                        'henry_as', 'henry_bs', 'henry_cs', 'henry_ds', 'henry_es', 'henry_fs',
+                        'Psat_extrpolation') + pure_references
 
     obj_references = ('GibbsExcessModel', 'eos_pure_instances')
 
@@ -224,7 +240,9 @@ class GibbsExcessLiquid(Phase):
      '_Cpgs_data', 'HeatCapacityLiquids', 'use_eos_volume', 'VolumeLiquids', 'Vms_sat_poly_fit', 'VolumeSupercriticalLiquids',
       'Vms_supercritical_poly_fit', 'incompressible', 'use_Tait', 'EnthalpyVaporizations', 'Hvap_poly_fit', 'GibbsExcessModel',
        'eos_pure_instances', 'equilibrium_basis', 'caloric_basis', 'use_phis_sat', 'use_Poynting', 'use_phis_sat_caloric',
-        'use_Poynting_caloric', 'use_Hvap_caloric', 'has_henry_components', 'henry_components', 'henry_data', 'composition_independent', 
+        'use_Poynting_caloric', 'use_Hvap_caloric', 'has_henry_components', 'henry_components',
+        'henry_as', 'henry_bs', 'henry_cs', 'henry_ds', 'henry_es', 'henry_fs',
+         'composition_independent', 
         'Hfs', 'Gfs', 'Sfs', 'model_id', 'T', 'P', 'zs', '_model_hash_ignore_phase', '_model_hash')
     
     def __repr__(self):
@@ -279,7 +297,11 @@ class GibbsExcessLiquid(Phase):
 
                  Hfs=None, Gfs=None, Sfs=None,
 
-                 henry_components=None, henry_data=None,
+                 henry_components=None, 
+                 henry_abcdef=None,
+                 henry_as=None, henry_bs=None, 
+                 henry_cs=None, henry_ds=None, 
+                 henry_es=None, henry_fs=None,
 
                  T=None, P=None, zs=None,
                  Psat_extrpolation='AB',
@@ -328,7 +350,12 @@ class GibbsExcessLiquid(Phase):
             # Other option: raise?
             self._Psats_data = Psats_data
 
-        self.N = len(VaporPressures)
+        self.N = N = len(VaporPressures)
+
+        if self.scalar:
+            zero_coeffs = [[0.0]*N for _ in range(N)]
+        else:
+            zero_coeffs = zeros((N, N))
 
         self.HeatCapacityGases = HeatCapacityGases
         self.Cpgs_poly_fit, self._Cpgs_data = self._setup_Cpigs(HeatCapacityGases)
@@ -457,7 +484,55 @@ class GibbsExcessLiquid(Phase):
             henry_components = [False]*self.N
         self.has_henry_components = any(henry_components)
         self.henry_components = henry_components
-        self.henry_data = henry_data
+
+
+        multiple_henry_inputs = (henry_as, henry_bs, henry_cs, henry_ds, henry_es, henry_fs)
+        input_count_henry = (henry_abcdef is not None) + (any(i is not None for i in multiple_henry_inputs))
+        if input_count_henry > 1:
+            raise ValueError("Input only one of henry_abcdef, or (henry_as...henry_fs)")
+        if henry_abcdef is not None:
+            if self.scalar:
+                self.henry_as = [[i[0] for i in l] for l in henry_abcdef]
+                self.henry_bs = [[i[1] for i in l] for l in henry_abcdef]
+                self.henry_cs = [[i[2] for i in l] for l in henry_abcdef]
+                self.henry_ds = [[i[3] for i in l] for l in henry_abcdef]
+                self.henry_es = [[i[4] for i in l] for l in henry_abcdef]
+                self.henry_fs = [[i[5] for i in l] for l in henry_abcdef]
+            else:
+                self.henry_as = array(henry_abcdef[:,:,0], order='C', copy=True)
+                self.henry_bs = array(henry_abcdef[:,:,1], order='C', copy=True)
+                self.henry_cs = array(henry_abcdef[:,:,2], order='C', copy=True)
+                self.henry_ds = array(henry_abcdef[:,:,3], order='C', copy=True)
+                self.henry_es = array(henry_abcdef[:,:,4], order='C', copy=True)
+                self.henry_fs = array(henry_abcdef[:,:,5], order='C', copy=True)
+        else:
+            if henry_abcdef is None:
+                henry_abcdef = multiple_henry_inputs
+            henry_abcdef_len = 0 if henry_abcdef is None else len(henry_abcdef)
+            if not henry_abcdef_len or henry_abcdef[0] is None:
+                self.henry_as = zero_coeffs
+            else:
+                self.henry_as = henry_abcdef[0]
+            if not henry_abcdef_len or henry_abcdef[1] is None:
+                self.henry_bs = zero_coeffs
+            else:
+                self.henry_bs = henry_abcdef[1]
+            if not henry_abcdef_len or henry_abcdef[2] is None:
+                self.henry_cs = zero_coeffs
+            else:
+                self.henry_cs = henry_abcdef[2]
+            if not henry_abcdef_len or henry_abcdef[3] is None:
+                self.henry_ds = zero_coeffs
+            else:
+                self.henry_ds = henry_abcdef[3]
+            if not henry_abcdef_len or henry_abcdef[4] is None:
+                self.henry_es = zero_coeffs
+            else:
+                self.henry_es = henry_abcdef[4]
+            if not henry_abcdef_len or henry_abcdef[5] is None:
+                self.henry_fs = zero_coeffs
+            else:
+                self.henry_fs = henry_abcdef[5]
 
         self.composition_independent = isinstance(GibbsExcessModel, IdealSolution) and not self.has_henry_components
 
@@ -554,7 +629,12 @@ class GibbsExcessLiquid(Phase):
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
 
-        new.henry_data = self.henry_data
+        new.henry_as = self.henry_as
+        new.henry_bs = self.henry_bs
+        new.henry_cs = self.henry_cs
+        new.henry_ds = self.henry_ds
+        new.henry_es = self.henry_es
+        new.henry_fs = self.henry_fs
         new.henry_components = self.henry_components
         new.has_henry_components = self.has_henry_components
 
@@ -609,7 +689,7 @@ class GibbsExcessLiquid(Phase):
             pass
         return new
     
-    supports_lnphis_args = True
+    supports_lnphis_args = False
     
     def lnphis_args(self):
         try:
@@ -687,7 +767,8 @@ class GibbsExcessLiquid(Phase):
             return self._Psats
         except AttributeError:
             pass
-        T, cmps = self.T, range(self.N)
+        N = self.N
+        T, cmps = self.T, range(N)
         if self.Psats_poly_fit:
             self._Psats = Psats = self._Psats_at_poly_fit(T, self._Psats_data, cmps)
 #            _Psats_data = self._Psats_data
@@ -706,45 +787,34 @@ class GibbsExcessLiquid(Phase):
 #                    for c in coeffs[i]:
 #                        Psat = Psat*T + c
 #                Psats.append(exp(Psat))
-            return Psats
-
-
-        self._Psats = Psats = []
-        for i in self.VaporPressures:
-            Psats.append(i.T_dependent_property(T))
+        else:
+            self._Psats = Psats = []
+            for i in self.VaporPressures:
+                Psats.append(i.T_dependent_property(T))
 
         if self.has_henry_components:
+            scalar = self.scalar
             henry_components = self.henry_components
-            henry_data = self.henry_data
             zs = self.zs
+            if scalar:
+                henry_matrix = [[0.0]*N for _ in range(N)]
+            else:
+                henry_matrix = zeros((N, N))
 
-            for i in range(self.N):
-#                Vcs = [1, 1, 1]
-                Vcs = [5.6000000000000006e-05, 0.000168, 7.340000000000001e-05]
+            henry_matrix = ln_henries(T, N, self.henry_as, self.henry_bs, self.henry_cs, self.henry_ds, self.henry_es, self.henry_fs, henry_matrix)
+
+            solvent_fraction = 0.0
+            lnHis = [0.0]*N if scalar else zeros(N)
+            for i in range(N):
                 if henry_components[i]:
-                    # WORKING - Need a bunch of conversions of data in terms of other values
-                    # into this basis
-                    d = henry_data[i]
-                    z_sum = 0.0
-                    logH = 0.0
-                    for j in cmps:
-                        if d[j]:
-                            r = d[j]
-                            t = T
-#                            t = T - 273.15
-                            log_Hi = (r[0] + r[1]/t + r[2]*log(t) + r[3]*t + r[4]/t**2)
-#                            print(log_Hi)
-                            wi = zs[j]*Vcs[j]**(2.0/3.0)/sum([zs[_]*Vcs[_]**(2.0/3.0) for _ in cmps if d[_]])
-#                            print(wi)
-
-                            logH += wi*log_Hi
-#                            logH += zs[j]*log_Hi
-                            z_sum += zs[j]
-
-#                    print(logH, z_sum)
-                    z_sum = 1
-                    Psats[i] = exp(logH/z_sum)*1e5 # bar to Pa
-
+                    for j in range(N):
+                        lnHis[i] += zs[j]*henry_matrix[i][j]
+                else:
+                    solvent_fraction+= zs[i]
+            solvent_fraction_inv = 1.0/solvent_fraction
+            for i in range(N):
+                if henry_components[i]:
+                    Psats[i] = exp(lnHis[i]*solvent_fraction_inv)
 
         return Psats
 
@@ -3165,7 +3235,8 @@ class GibbsExcessSolid(GibbsExcessLiquid):
     model_attributes = ('Hfs', 'Gfs', 'Sfs','GibbsExcessModel',
                         'eos_pure_instances', 'use_Poynting', 'use_phis_sat',
                         'use_eos_volume', 'henry_components',
-                        'henry_data', 'Psat_extrpolation') + pure_references
+                        'henry_as', 'henry_bs', 'henry_cs', 'henry_ds', 'henry_es', 'henry_fs',
+                         'Psat_extrpolation') + pure_references
 
     def __init__(self, SublimationPressures, VolumeSolids=None,
                  GibbsExcessModel=IdealSolution(),
@@ -3176,7 +3247,6 @@ class GibbsExcessSolid(GibbsExcessLiquid):
                  use_Poynting=False,
                  use_phis_sat=False,
                  Hfs=None, Gfs=None, Sfs=None,
-                 henry_components=None, henry_data=None,
                  T=None, P=None, zs=None,
                  ):
         super(GibbsExcessSolid, self).__init__(VaporPressures=SublimationPressures, VolumeLiquids=VolumeSolids,
