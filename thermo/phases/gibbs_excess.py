@@ -188,7 +188,13 @@ class GibbsExcessLiquid(Phase):
         `e` parameters used in calculating henry's law constant, [K^2]
     henry_fs : list[list[float]], optional
         `f` parameters used in calculating henry's law constant, [1/K^2]
-
+    henry_mode : str
+        The setting for henry's law. 'solvents' to consider all
+        components set not to be henry's law components a solvent (if 
+        parameters are missing this will underestimate solubility);
+        'solvents_with_parameters' to consider only the solvents with
+        parameters (vapor pressures will be used if a component has
+        no solvents whatsoever)
 
     use_Hvap_caloric : bool, optional
         If True, enthalpy and entropy will be calculated using ideal-gas
@@ -230,7 +236,7 @@ class GibbsExcessLiquid(Phase):
     model_attributes = ('Hfs', 'Gfs', 'Sfs', 'GibbsExcessModel',
                         'eos_pure_instances', 'use_Poynting', 'use_phis_sat',
                         'use_Tait', 'use_eos_volume', 'henry_components',
-                        'henry_as', 'henry_bs', 'henry_cs', 'henry_ds', 'henry_es', 'henry_fs',
+                        'henry_as', 'henry_bs', 'henry_cs', 'henry_ds', 'henry_es', 'henry_fs','henry_mode',
                         'Psat_extrpolation') + pure_references
 
     obj_references = ('GibbsExcessModel', 'eos_pure_instances')
@@ -241,7 +247,7 @@ class GibbsExcessLiquid(Phase):
       'Vms_supercritical_poly_fit', 'incompressible', 'use_Tait', 'EnthalpyVaporizations', 'Hvap_poly_fit', 'GibbsExcessModel',
        'eos_pure_instances', 'equilibrium_basis', 'caloric_basis', 'use_phis_sat', 'use_Poynting', 'use_phis_sat_caloric',
         'use_Poynting_caloric', 'use_Hvap_caloric', 'has_henry_components', 'henry_components',
-        'henry_as', 'henry_bs', 'henry_cs', 'henry_ds', 'henry_es', 'henry_fs',
+        'henry_as', 'henry_bs', 'henry_cs', 'henry_ds', 'henry_es', 'henry_fs','henry_mode',
          'composition_independent', 
         'Hfs', 'Gfs', 'Sfs', 'model_id', 'T', 'P', 'zs', '_model_hash_ignore_phase', '_model_hash')
     
@@ -302,6 +308,7 @@ class GibbsExcessLiquid(Phase):
                  henry_as=None, henry_bs=None, 
                  henry_cs=None, henry_ds=None, 
                  henry_es=None, henry_fs=None,
+                 henry_mode='solvents',
 
                  T=None, P=None, zs=None,
                  Psat_extrpolation='AB',
@@ -485,6 +492,10 @@ class GibbsExcessLiquid(Phase):
         self.has_henry_components = any(henry_components)
         self.henry_components = henry_components
 
+        if henry_mode not in ('solvents', 'solvents_with_parameters'):
+            raise ValueError("Henry's law model setting not recognized")
+        self.henry_mode = henry_mode
+
 
         multiple_henry_inputs = (henry_as, henry_bs, henry_cs, henry_ds, henry_es, henry_fs)
         input_count_henry = (henry_abcdef is not None) + (any(i is not None for i in multiple_henry_inputs))
@@ -637,6 +648,7 @@ class GibbsExcessLiquid(Phase):
         new.henry_fs = self.henry_fs
         new.henry_components = self.henry_components
         new.has_henry_components = self.has_henry_components
+        new.henry_mode = self.henry_mode
 
         new.composition_independent = self.composition_independent
         new.model_id = self.model_id
@@ -795,6 +807,10 @@ class GibbsExcessLiquid(Phase):
         if self.has_henry_components:
             scalar = self.scalar
             henry_components = self.henry_components
+            henry_mode = self.henry_mode
+
+            solvents_with_parameters = henry_mode == 'solvents_with_parameters'
+
             zs = self.zs
             if scalar:
                 henry_matrix = [[0.0]*N for _ in range(N)]
@@ -803,18 +819,25 @@ class GibbsExcessLiquid(Phase):
 
             henry_matrix = ln_henries(T, N, self.henry_as, self.henry_bs, self.henry_cs, self.henry_ds, self.henry_es, self.henry_fs, henry_matrix)
 
-            solvent_fraction = 0.0
             lnHis = [0.0]*N if scalar else zeros(N)
             for i in range(N):
+                solvent_fraction = 0.0
+                solvent_fraction_with_parameters = 0.0
                 if henry_components[i]:
                     for j in range(N):
-                        lnHis[i] += zs[j]*henry_matrix[i][j]
-                else:
-                    solvent_fraction+= zs[i]
-            solvent_fraction_inv = 1.0/solvent_fraction
-            for i in range(N):
-                if henry_components[i]:
-                    Psats[i] = exp(lnHis[i]*solvent_fraction_inv)
+                        Hij = henry_matrix[i][j]
+                        if not henry_components[j]:
+                            solvent_fraction += zs[j]
+                            if Hij != 0.0:
+                                solvent_fraction_with_parameters += zs[j]
+                        lnHis[i] += zs[j]*Hij
+                    if solvent_fraction_with_parameters == 0.0:
+                        # keep the Psats
+                        pass
+                    elif solvents_with_parameters:
+                        Psats[i] = exp(lnHis[i]/solvent_fraction_with_parameters)
+                    else:
+                        Psats[i] = exp(lnHis[i]/solvent_fraction)
 
         return Psats
 
