@@ -5026,3 +5026,16 @@ def test_first_henry_pure_solvent_phase_properties():
                             henry_components=[False, True, True],
                             T=T, P=P, zs=zs,
                             )
+
+    assert_close1d(liquid.Psats(), [3536.2200171225227, 4106424071.0938096, 4552937470.331796])
+    assert_close1d(liquid.phis(), [0.03536220017122523, 41064.2407109381, 45529.37470331796])
+    assert_close1d([exp(v) for v in liquid.lnphis()], liquid.phis())
+    assert_close1d(liquid.gammas(), [1.0, 1.0, 1.0])
+    assert_close1d(liquid.Poyntings(), [1.0, 1.0, 1.0])
+    assert_close1d(liquid.phis_sat(), [1.0, 1.0, 1.0])
+
+    dPsats_dT = liquid.dPsats_dT()
+    dPsats_dT_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).Psats(), [T], scalar=False, perturbation=5e-7)
+    dPsats_dT_num = [i[0] for i in dPsats_dT_num]
+    # TODO!
+    # assert_close1d(dPsats_dT, dPsats_dT_num, rtol=2e-7)

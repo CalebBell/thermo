@@ -191,7 +191,7 @@ class GibbsExcessLiquid(Phase):
     henry_mode : str
         The setting for henry's law. 'solvents' to consider all
         components set not to be henry's law components a solvent (if 
-        parameters are missing this will underestimate solubility);
+        any parameters are missing this will not make sense at all);
         'solvents_with_parameters' to consider only the solvents with
         parameters (vapor pressures will be used if a component has
         no solvents whatsoever)
@@ -308,7 +308,7 @@ class GibbsExcessLiquid(Phase):
                  henry_as=None, henry_bs=None, 
                  henry_cs=None, henry_ds=None, 
                  henry_es=None, henry_fs=None,
-                 henry_mode='solvents',
+                 henry_mode='solvents_with_parameters',
 
                  T=None, P=None, zs=None,
                  Psat_extrpolation='AB',
@@ -335,9 +335,14 @@ class GibbsExcessLiquid(Phase):
         allow flashes with different properties from different phases.
         '''
 
+        self.N = N = len(VaporPressures)
+        if henry_components is None:
+            henry_components = [False]*self.N
+        self.has_henry_components = any(henry_components)
+        self.henry_components = henry_components
 
         self.VaporPressures = VaporPressures
-        self.Psats_poly_fit = all(i.method == POLY_FIT for i in VaporPressures) if VaporPressures is not None else False
+        self.Psats_poly_fit = (all(i.method == POLY_FIT for i in VaporPressures) and not self.has_henry_components) if VaporPressures is not None else False
         self.Psat_extrpolation = Psat_extrpolation
         if self.Psats_poly_fit:
             Psats_data = [[i.poly_fit_Tmin for i in VaporPressures],
@@ -357,7 +362,6 @@ class GibbsExcessLiquid(Phase):
             # Other option: raise?
             self._Psats_data = Psats_data
 
-        self.N = N = len(VaporPressures)
 
         if self.scalar:
             zero_coeffs = [[0.0]*N for _ in range(N)]
@@ -487,10 +491,6 @@ class GibbsExcessLiquid(Phase):
 
 
 
-        if henry_components is None:
-            henry_components = [False]*self.N
-        self.has_henry_components = any(henry_components)
-        self.henry_components = henry_components
 
         if henry_mode not in ('solvents', 'solvents_with_parameters'):
             raise ValueError("Henry's law model setting not recognized")
@@ -741,6 +741,8 @@ class GibbsExcessLiquid(Phase):
     def Psats_at(self, T):
         if self.Psats_poly_fit:
             return self._Psats_at_poly_fit(T, self._Psats_data, range(self.N))
+        if self.has_henry_components:
+            return self.to(T=T, P=self.P, zs=self.zs).Psats()
         VaporPressures = self.VaporPressures
         return [VaporPressures[i](T) for i in range(self.N)]
 
@@ -881,6 +883,8 @@ class GibbsExcessLiquid(Phase):
             Psats = self.Psats_at(T)
         if self.Psats_poly_fit:
             return self._dPsats_dT_at_poly_fit(T, self._Psats_data, range(self.N), Psats)
+        if self.has_henry_components:
+            return self.to(T=T, P=self.P, zs=self.zs).dPsats_dT()
         return [VaporPressure.T_dependent_property_derivative(T=T)
                      for VaporPressure in self.VaporPressures]
 
