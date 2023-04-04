@@ -792,10 +792,50 @@ def test_henry_water_ethanol_solvent_only_water_parameters():
                             henry_mode='solvents_with_parameters', # solvents, solvents_with_parameters
                             T=T, P=P, zs=zs,
                             )
+    dT = T*1e-8
     assert_close1d(liquid.Psats(), [3536.2200171225227, 4106424071.0937953, 4552937470.331796, 8753.810784136993])
-    
+    dlnHenry_matrix_dT_numerical = (np.array(liquid.to(T=T+dT, P=P, zs=zs).lnHenry_matrix()) - liquid.lnHenry_matrix())/dT
+    assert_close2d(dlnHenry_matrix_dT_numerical, liquid.dlnHenry_matrix_dT(), rtol=1e-5)
+
+    d2lnHenry_matrix_dT2_numerical = (np.array(liquid.to(T=T+dT, P=P, zs=zs).dlnHenry_matrix_dT()) - liquid.dlnHenry_matrix_dT())/dT
+    assert_close2d(d2lnHenry_matrix_dT2_numerical, liquid.d2lnHenry_matrix_dT2(), rtol=1e-5)
+
+    # First vapor pressure derivative
+    dPsats_dT = liquid.dPsats_dT()
+    dPsats_dT_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).Psats(), [T], scalar=False, perturbation=2e-7)
+    dPsats_dT_num = [i[0] for i in dPsats_dT_num]
+    assert_close1d(dPsats_dT, dPsats_dT_num, rtol=1e-5)
+
+    # Second vapor pressure derivative
+    d2Psats_dT2 = liquid.d2Psats_dT2()
+    d2Psats_dT2_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).dPsats_dT(), [T], scalar=False, perturbation=2e-7)
+    d2Psats_dT2_num = [i[0] for i in d2Psats_dT2_num]
+    assert_close1d(d2Psats_dT2, d2Psats_dT2_num, rtol=1e-5)
+
+    # Vapor pressure in different ways functions
+    assert_close1d(liquid.Psats_T_ref(), liquid.to(T=liquid.T_REF_IG, P=1e5, zs=zs).Psats())
+    assert_close1d(liquid.Psats_at(315.0), liquid.to(T=315.0, P=1e5, zs=zs).Psats())
+    assert_close1d(liquid.dPsats_dT_at(315.0), liquid.to(T=315.0, P=1e5, zs=zs).dPsats_dT())
+    assert_close1d(liquid.lnPsats(), [log(v) for v in liquid.to(T=T, P=P, zs=zs).Psats()])
+    assert_close1d(liquid.dPsats_dT_over_Psats(), np.array(liquid.dPsats_dT())/liquid.Psats(), rtol=1e-12)
+    assert_close1d(liquid.d2Psats_dT2_over_Psats(), np.array(liquid.d2Psats_dT2())/liquid.Psats(), rtol=1e-12)
+
+    # Nasty function to calculate
+    dlnPsats_dT = liquid.dlnPsats_dT()
+    dlnPsats_dT_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).lnPsats(), [T], scalar=False, perturbation=2e-7)
+    dlnPsats_dT_num = [i[0] for i in dlnPsats_dT_num]
+    assert_close1d(dlnPsats_dT, dlnPsats_dT_num, rtol=1e-5)
+
+    # Second derivative of same nasty function
+    d2lnPsats_dT2 = liquid.d2lnPsats_dT2()
+    d2lnPsats_dT2_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).dlnPsats_dT(), [T], scalar=False, perturbation=2e-7)
+    d2lnPsats_dT2_num = [i[0] for i in d2lnPsats_dT2_num]
+    assert_close1d(d2lnPsats_dT2, d2lnPsats_dT2_num, rtol=1e-5)
+
     flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
     PT = flasher.flash(T=T, P=P, zs=zs)
     assert_close(PT.VF, 0.21303456001555365, rtol=1e-12)
     assert_close1d(PT.gas.zs, [0.017803525791727007, 0.7040477725323597, 0.2346846611296595, 0.04346404054625393])
     assert_close1d(PT.liquid0.zs, [0.5034620500286068, 1.7145033253831193e-05, 5.154576856346698e-06, 0.49651565036128303])
+
+

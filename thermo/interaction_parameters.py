@@ -566,7 +566,10 @@ def load_all_interaction_parameters():
                 'ChemSep NRTL': os.path.join(chemsep_db_path, 'nrtl.json'),
                 'ChemSep UNIQUAC': os.path.join(chemsep_db_path, 'uniquac.json'),
                 'ChemSep Wilson': os.path.join(chemsep_db_path, 'wilson.json'),
+                
                 'ChemSep Henry': os.path.join(chemsep_db_path, 'henry.json'),
+                'Sander Const': os.path.join(folder, 'Sander_henry_const.json'),
+                'Sander T dep': os.path.join(folder, 'Sander_henry_T_dep.json'),
                 }
 
 

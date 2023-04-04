@@ -101,7 +101,7 @@ Activity Based Liquids
 ======================
 .. autoclass:: GibbsExcessLiquid
    :show-inheritance:
-   :members: __init__, H, S, Cp, gammas, Poyntings, phis_sat
+   :members: __init__, H, S, Cp, gammas, Poyntings, phis_sat, lnHenry_matrix, dlnHenry_matrix_dT, d2lnHenry_matrix_dT2
    :exclude-members: __init__
 
 

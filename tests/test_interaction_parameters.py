@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 from fluids.constants import calorie, R
 from thermo.interaction_parameters import IPDB
-from fluids.numerics import assert_close, assert_close1d, assert_close2d
+from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d
 
 
 def run_validate_db():
@@ -77,3 +77,15 @@ def test_basic_chemsep_NRTL():
 def test_basic_chemsep_UNIQUAC():
     tausB = IPDB.get_ip_asymmetric_matrix(name='ChemSep UNIQUAC', CASs=['64-17-5', '7732-18-5'], ip='bij')
     assert_close2d(tausB, [[0.0, -87.46005814161899], [-55.288075960115854, 0.0]], rtol=1e-5)
+
+
+def test_henry_Rolf_Sander_2023():
+    CASs = ['7732-18-5', '74-82-8', '7782-44-7', '64-17-5']
+    henry_const_test = [IPDB.get_ip_asymmetric_matrix('Sander Const', CASs, p) for p in ('A', 'B', 'C', 'D', 'E', 'F')]
+
+    henry_const_expect = [[[0.0, 0.0, 0.0, 0.0], [21.975256193524245, 0.0, 0.0, 0.0], [22.191168101425834, 0.0, 0.0, 0.0], [10.575956940357607, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]]
+    assert_close3d(henry_const_expect, henry_const_test, rtol=.05)
+
+    henry_T_dep_test = [IPDB.get_ip_asymmetric_matrix('Sander T dep', CASs, p) for p in ('A', 'B', 'C', 'D', 'E', 'F')]
+    henry_T_dep_expect = [[[0.0, 0.0, 0.0, 0.0], [28.007050169351437, 0.0, 0.0, 0.0], [27.563639475880688, 0.0, 0.0, 0.0], [30.606359873543198, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [-1730.7202544017841, 0.0, 0.0, 0.0], [-1601.8023402937147, 0.0, 0.0, 0.0], [-6045.389393215481, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]]
+    assert_close3d(henry_T_dep_test, henry_T_dep_expect, rtol=.05)

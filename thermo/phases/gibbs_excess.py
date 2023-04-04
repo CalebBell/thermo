@@ -30,13 +30,14 @@ from fluids.numerics import (horner_and_der2, derivative,
                              evaluate_linear_fits_d2,
                              trunc_exp, secant, numpy as np)
 from chemicals.utils import log, exp, phase_identification_parameter
+from chemicals.solubility import Henry_constants, dHenry_constants_dT, d2Henry_constants_dT2
 from thermo.activity import IdealSolution
 from thermo.utils import POLY_FIT, PROPERTY_TRANSFORM_LN, PROPERTY_TRANSFORM_DLN, PROPERTY_TRANSFORM_D2LN, PROPERTY_TRANSFORM_D_X, PROPERTY_TRANSFORM_D2_X
 from thermo.heat_capacity import HeatCapacityGas, HeatCapacityLiquid
 from thermo.volume import VolumeLiquid, VolumeSolid
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
 from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
-from thermo.nrtl import nrtl_taus as ln_henries
+from thermo.nrtl import nrtl_taus as ln_henries, nrtl_dtaus_dT as dln_henries_dT, nrtl_d2taus_dT2 as d2ln_henries_dT2, nrtl_d3taus_dT3 as d3ln_henries_dT3
 
 from thermo.phases.phase import Phase
 
@@ -678,6 +679,13 @@ class GibbsExcessLiquid(Phase):
                         new._dPsats_dT_over_Psats = self._dPsats_dT_over_Psats
                     except:
                         pass
+                else:
+                    try:
+                        new._lnHenry_matrix = self._lnHenry_matrix
+                        new._dlnHenry_matrix_dT = self._dlnHenry_matrix_dT
+                        new._d2lnHenry_matrix_dT2 = self._d2lnHenry_matrix_dT2
+                    except:
+                        pass
 
                 try:
                     new._Vms_sat = self._Vms_sat
@@ -717,25 +725,131 @@ class GibbsExcessLiquid(Phase):
         return self._lnphis_args
 
 
-    def Henry_matrix(self):
-        '''Generate a matrix of all component-solvent Henry's law values
-        Shape N*N; solvent/solvent and gas/gas values are all None, as well
-        as solvent/gas values where the parameters are unavailable.
+    def lnHenry_matrix(self):
+        r'''Method to calculate and return the matrix of log Henry's law constants
+        as required by the traditional mixing rule, [-].
+
+        .. math::
+            \ln \text{H}_{i,j} = A_{ij}+\frac{B_{ij}}{T}+C_{ij}\ln T + D_{ij}T
+            + \frac{E_{ij}}{T^2} + F_{ij}{T^2}
+
+        Returns
+        -------
+        lnHenry_matrix : list[list[float]]
+            Henry's law interaction parameters, [log(Pa)]
+
+        Notes
+        -----
+        Solvent/solvent and gas/gas values are all 0.
         '''
+        try:
+            return self._lnHenry_matrix
+        except:
+            pass
+        N = self.N
+        if self.scalar:
+            lnHenry_matrix = [[0.0]*N for _ in range(N)]
+        else:
+            lnHenry_matrix = zeros((N, N))
+
+        lnHenry_matrix = ln_henries(self.T, N, self.henry_as, self.henry_bs, self.henry_cs, self.henry_ds, self.henry_es, self.henry_fs, lnHenry_matrix)
+        self._lnHenry_matrix = lnHenry_matrix
+        return lnHenry_matrix
+
+    def dlnHenry_matrix_dT(self):
+        r'''Method to calculate and return the first temperature derivative
+        of the matrix of log Henry's law constants
+        as required by the traditional mixing rule, [-].
+
+        Returns
+        -------
+        dlnHenry_matrix_dT : list[list[float]]
+            First temperature derivative of Henry's law interaction 
+            parameters, [log(Pa)/K]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._dlnHenry_matrix_dT
+        except:
+            pass
+        N = self.N
+        if self.scalar:
+            dlnHenry_matrix_dT = [[0.0]*N for _ in range(N)]
+        else:
+            dlnHenry_matrix_dT = zeros((N, N))
+        dlnHenry_matrix_dT = dln_henries_dT(self.T, N, self.henry_bs, self.henry_cs, self.henry_ds, self.henry_es, self.henry_fs, dlnHenry_matrix_dT)
+        self._dlnHenry_matrix_dT = dlnHenry_matrix_dT
+        return dlnHenry_matrix_dT
+
+    def d2lnHenry_matrix_dT2(self):
+        r'''Method to calculate and return the second temperature derivative
+        of the matrix of log Henry's law constants
+        as required by the traditional mixing rule, [-].
+
+        Returns
+        -------
+        d2lnHenry_matrix_dT2 : list[list[float]]
+            Second temperature derivative of Henry's law interaction 
+            parameters, [log(Pa)/K]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._d2lnHenry_matrix_dT2
+        except:
+            pass
+        N = self.N
+        if self.scalar:
+            d2lnHenry_matrix_dT2 = [[0.0]*N for _ in range(N)]
+        else:
+            d2lnHenry_matrix_dT2 = zeros((N, N))
+        d2lnHenry_matrix_dT2 = d2ln_henries_dT2(self.T, N, self.henry_bs, self.henry_cs, self.henry_es, self.henry_fs, d2lnHenry_matrix_dT2)
+        self._d2lnHenry_matrix_dT2 = d2lnHenry_matrix_dT2
+        return d2lnHenry_matrix_dT2
 
     def Henry_constants(self):
-        '''Mix the parameters in `Henry_matrix` into values to take the place
-        in Psats.
-        '''
+        zs, scalar, N, henry_components, henry_mode = self.zs, self.scalar, self.N, self.henry_components, self.henry_mode
+        solvents_with_parameters = henry_mode == 'solvents_with_parameters'
+        lnHenry_matrix = self.lnHenry_matrix()
+        Hs = [0.0]*N if scalar else zeros(N)
+        Henry_constants(lnHenry_matrix, zs, henry_components, solvents_with_parameters, Hs)
+        return Hs
+        dHenry_constants_dT
+
+    def dHenry_constants_dT(self):
+        zs, scalar, N, henry_components, henry_mode = self.zs, self.scalar, self.N, self.henry_components, self.henry_mode
+        solvents_with_parameters = henry_mode == 'solvents_with_parameters'
+        lnHenry_matrix = self.lnHenry_matrix()
+        dlnHenry_matrix_dT = self.dlnHenry_matrix_dT()
+        dHs = [0.0]*N if scalar else zeros(N)
+        dHenry_constants_dT(lnHenry_matrix, dlnHenry_matrix_dT, zs, henry_components, solvents_with_parameters, dHs)
+        return dHs
+        
+    def d2Henry_constants_dT2(self):
+        zs, scalar, N, henry_components, henry_mode = self.zs, self.scalar, self.N, self.henry_components, self.henry_mode
+        solvents_with_parameters = henry_mode == 'solvents_with_parameters'
+        lnHenry_matrix = self.lnHenry_matrix()
+        dlnHenry_matrix_dT = self.dlnHenry_matrix_dT()
+        d2lnHenry_matrix_dT2 = self.d2lnHenry_matrix_dT2()
+        d2Hs = [0.0]*N if scalar else zeros(N)
+        d2Henry_constants_dT2(lnHenry_matrix, dlnHenry_matrix_dT, d2lnHenry_matrix_dT2, zs, henry_components, solvents_with_parameters, d2Hs)
+        return d2Hs
+
 
     def Psats_T_ref(self):
         try:
             return self._Psats_T_ref
         except AttributeError:
             pass
-        VaporPressures, cmps = self.VaporPressures, range(self.N)
+        VaporPressures, N = self.VaporPressures, self.N
         T_REF_IG = self.T_REF_IG
-        self._Psats_T_ref = [VaporPressures[i](T_REF_IG) for i in cmps]
+        if self.has_henry_components:
+            self._Psats_T_ref = self.to(T=T_REF_IG, P=self.P, zs=self.zs).Psats()
+        else:
+            self._Psats_T_ref = [VaporPressures[i](T_REF_IG) for i in range(N)]
         return self._Psats_T_ref
 
     def Psats_at(self, T):
@@ -807,40 +921,10 @@ class GibbsExcessLiquid(Phase):
                 Psats.append(i.T_dependent_property(T))
 
         if self.has_henry_components:
-            scalar = self.scalar
-            henry_components = self.henry_components
-            henry_mode = self.henry_mode
-
-            solvents_with_parameters = henry_mode == 'solvents_with_parameters'
-
-            zs = self.zs
-            if scalar:
-                henry_matrix = [[0.0]*N for _ in range(N)]
-            else:
-                henry_matrix = zeros((N, N))
-
-            henry_matrix = ln_henries(T, N, self.henry_as, self.henry_bs, self.henry_cs, self.henry_ds, self.henry_es, self.henry_fs, henry_matrix)
-
-            lnHis = [0.0]*N if scalar else zeros(N)
+            Hs, henry_components = self.Henry_constants(), self.henry_components
             for i in range(N):
-                solvent_fraction = 0.0
-                solvent_fraction_with_parameters = 0.0
                 if henry_components[i]:
-                    for j in range(N):
-                        Hij = henry_matrix[i][j]
-                        if not henry_components[j]:
-                            solvent_fraction += zs[j]
-                            if Hij != 0.0:
-                                solvent_fraction_with_parameters += zs[j]
-                        lnHis[i] += zs[j]*Hij
-                    if solvent_fraction_with_parameters == 0.0:
-                        # keep the Psats
-                        pass
-                    elif solvents_with_parameters:
-                        Psats[i] = exp(lnHis[i]/solvent_fraction_with_parameters)
-                    else:
-                        Psats[i] = exp(lnHis[i]/solvent_fraction)
-
+                    Psats[i] = Hs[i]
         return Psats
 
     def PIP(self):
@@ -893,7 +977,7 @@ class GibbsExcessLiquid(Phase):
             return self._dPsats_dTT_dependent_property_derivative
         except:
             pass
-        T, cmps = self.T, range(self.N)
+        T, N = self.T, self.N
         # Need to reset the method because for the T bounded solver,
         # will normally get a different than prefered method as it starts
         # at the boundaries
@@ -902,11 +986,16 @@ class GibbsExcessLiquid(Phase):
                 Psats = self._Psats
             except AttributeError:
                 Psats = self.Psats()
-            self._dPsats_dT = dPsats_dT = self._dPsats_dT_at_poly_fit(T, self._Psats_data, cmps, Psats)
+            self._dPsats_dT = dPsats_dT = self._dPsats_dT_at_poly_fit(T, self._Psats_data, range(N), Psats)
             return dPsats_dT
 
         self._dPsats_dT = dPsats_dT = [VaporPressure.T_dependent_property_derivative(T=T)
                      for VaporPressure in self.VaporPressures]
+        if self.has_henry_components:
+            dHs, henry_components = self.dHenry_constants_dT(), self.henry_components
+            for i in range(N):
+                if henry_components[i]:
+                    dPsats_dT[i] = dHs[i]
         return dPsats_dT
 
     def d2Psats_dT2(self):
@@ -922,7 +1011,7 @@ class GibbsExcessLiquid(Phase):
             dPsats_dT = self._dPsats_dT
         except AttributeError:
             dPsats_dT = self.dPsats_dT()
-        T, cmps = self.T, range(self.N)
+        T, N = self.T, self.N
         T_inv = 1.0/T
         T_inv2 = T_inv*T_inv
         # Tinv3 = T_inv*T_inv*T_inv
@@ -931,7 +1020,7 @@ class GibbsExcessLiquid(Phase):
         if self.Psats_poly_fit:
             Psats_data = self._Psats_data
             Tmins, Tmaxes, d2coeffs = Psats_data[0], Psats_data[3], Psats_data[8]
-            for i in cmps:
+            for i in range(N):
                 if T < Tmins[i]:
 #                    A, B = _Psats_data[9][i]
 #                    d2Psat_dT2 = B*Psats[i]*(B*T_inv - 2.0)*Tinv3
@@ -954,6 +1043,11 @@ class GibbsExcessLiquid(Phase):
 
         self._d2Psats_dT2 = d2Psats_dT2 = [VaporPressure.T_dependent_property_derivative(T=T, order=2)
                      for VaporPressure in self.VaporPressures]
+        if self.has_henry_components:
+            d2Hs, henry_components = self.d2Henry_constants_dT2(), self.henry_components
+            for i in range(N):
+                if henry_components[i]:
+                    d2Psats_dT2[i] = d2Hs[i]
         return d2Psats_dT2
 
     def lnPsats(self):
@@ -961,14 +1055,14 @@ class GibbsExcessLiquid(Phase):
             return self._lnPsats
         except AttributeError:
             pass
-        T, cmps = self.T, range(self.N)
+        T, N = self.T, self.N
         T_inv = 1.0/T
         logT = log(T)
         lnPsats = []
         if self.Psats_poly_fit:
             Psats_data = self._Psats_data
             Tmins, Tmaxes, coeffs = Psats_data[0], Psats_data[3], Psats_data[6]
-            for i in cmps:
+            for i in range(N):
                 if T < Tmins[i]:
                     A, B, C = Psats_data[9][i]
                     Psat = (A + B*T_inv + C*logT)
@@ -984,18 +1078,24 @@ class GibbsExcessLiquid(Phase):
             self._lnPsats = lnPsats
             return lnPsats
         
-        self._lnPsats = [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_LN) for VaporPressure in self.VaporPressures]
-        return self._lnPsats
+        self._lnPsats = lnPsats = [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_LN) 
+                                   for VaporPressure in self.VaporPressures]
+        if self.has_henry_components:
+            Hs, henry_components = self.Henry_constants(), self.henry_components
+            for i in range(N):
+                if henry_components[i]:
+                    lnPsats[i] = log(Hs[i])
+        return lnPsats
 
     def dlnPsats_dT(self):
-        T, cmps = self.T, range(self.N)
+        T, N = self.T, self.N
         T_inv = 1.0/T
         Tinv2 = T_inv*T_inv
         if self.Psats_poly_fit:
             Psats_data = self._Psats_data
             Tmins, Tmaxes, dcoeffs = Psats_data[0], Psats_data[3], Psats_data[7]
             dlnPsats_dT = []
-            for i in cmps:
+            for i in range(N):
                 if T < Tmins[i]:
                     A, B, C = Psats_data[9][i]
                     dPsat_dT = (-B*Tinv2 + C*T_inv)
@@ -1009,10 +1109,17 @@ class GibbsExcessLiquid(Phase):
                         dPsat_dT = dPsat_dT*T + c
                 dlnPsats_dT.append(dPsat_dT)
             return dlnPsats_dT
-        return [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_DLN) for VaporPressure in self.VaporPressures]
+        dlnPsats_dT = [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_DLN) for VaporPressure in self.VaporPressures]
+        if self.has_henry_components:
+            Hs, dHs, henry_components = self.Henry_constants(), self.dHenry_constants_dT(), self.henry_components
+            for i in range(N):
+                if henry_components[i]:
+                    dlnPsats_dT[i] = dHs[i]/Hs[i]
+
+        return dlnPsats_dT
     
     def d2lnPsats_dT2(self):
-        T, cmps = self.T, range(self.N)
+        T, N = self.T, self.N
         T_inv = 1.0/T
         T_inv2 = T_inv*T_inv
         # Tinv3 = T_inv*T_inv*T_inv
@@ -1020,7 +1127,7 @@ class GibbsExcessLiquid(Phase):
             Psats_data = self._Psats_data
             Tmins, Tmaxes, d2coeffs = Psats_data[0], Psats_data[3], Psats_data[8]
             d2lnPsats_dT2 = []
-            for i in cmps:
+            for i in range(N):
                 if T < Tmins[i]:
                     A, B, C = Psats_data[9][i]
                     d2lnPsat_dT2 = (2.0*B*T_inv - C)*T_inv2
@@ -1034,21 +1141,28 @@ class GibbsExcessLiquid(Phase):
                         d2lnPsat_dT2 = d2lnPsat_dT2*T + c
                 d2lnPsats_dT2.append(d2lnPsat_dT2)
             return d2lnPsats_dT2
-        return [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D2LN) for VaporPressure in self.VaporPressures]
+        d2lnPsats_dT2 = [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D2LN) for VaporPressure in self.VaporPressures]
+        if self.has_henry_components:
+            Hs, dHs, d2Hs, henry_components = self.Henry_constants(), self.dHenry_constants_dT(), self.d2Henry_constants_dT2(), self.henry_components
+            for i in range(N):
+                if henry_components[i]:
+                    d2lnPsats_dT2[i] = (d2Hs[i] - dHs[i]*dHs[i]/Hs[i])/Hs[i]
+
+        return d2lnPsats_dT2
 
     def dPsats_dT_over_Psats(self):
         try:
             return self._dPsats_dT_over_Psats
         except AttributeError:
             pass
-        T, cmps = self.T, range(self.N)
+        T, N = self.T, self.N
         T_inv = 1.0/T
         Tinv2 = T_inv*T_inv
         if self.Psats_poly_fit:
             dPsat_dT_over_Psats = []
             Psats_data = self._Psats_data
             Tmins, Tmaxes, dcoeffs, low_coeffs, high_coeffs = Psats_data[0], Psats_data[3], Psats_data[7], Psats_data[9], Psats_data[10]
-            for i in cmps:
+            for i in range(N):
                 if T < Tmins[i]:
                     dPsat_dT_over_Psat = (-low_coeffs[i][1]*Tinv2 + low_coeffs[i][2]*T_inv)
                 elif T > Tmaxes[i]:
@@ -1065,6 +1179,12 @@ class GibbsExcessLiquid(Phase):
         # dPsat_dT_over_Psats = [i/j for i, j in zip(self.dPsats_dT(), self.Psats())]
         dPsat_dT_over_Psats = [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D_X) for VaporPressure in self.VaporPressures]
 
+        if self.has_henry_components:
+            Hs, dHenry_constants_dT, henry_components = self.Henry_constants(), self.dHenry_constants_dT(), self.henry_components
+            for i in range(N):
+                if henry_components[i]:
+                    dPsat_dT_over_Psats[i] = dHenry_constants_dT[i]/Hs[i]
+
         self._dPsats_dT_over_Psats = dPsat_dT_over_Psats
         return dPsat_dT_over_Psats
 
@@ -1073,7 +1193,7 @@ class GibbsExcessLiquid(Phase):
             return self._d2Psats_dT2_over_Psats
         except AttributeError:
             pass
-        T, cmps = self.T, range(self.N)
+        T, N = self.T, self.N
         T_inv = 1.0/T
         Tinv2 = T_inv*T_inv
         Tinv4 = Tinv2*Tinv2
@@ -1082,7 +1202,7 @@ class GibbsExcessLiquid(Phase):
             d2Psat_dT2_over_Psats = []
             Psats_data = self._Psats_data
             Tmins, Tmaxes, dcoeffs, low_coeffs, high_coeffs = Psats_data[0], Psats_data[3], Psats_data[7], Psats_data[9], Psats_data[10]
-            for i in cmps:
+            for i in range(N):
                 if T < Tmins[i]:
                     B, C = low_coeffs[i][1], low_coeffs[i][2]
                     x0 = (B - C*T)
@@ -1106,6 +1226,12 @@ class GibbsExcessLiquid(Phase):
 
         # d2Psat_dT2_over_Psats = [i/j for i, j in zip(self.d2Psats_dT2(), self.Psats())]
         d2Psat_dT2_over_Psats = [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D2_X) for VaporPressure in self.VaporPressures]
+        if self.has_henry_components:
+            Hs, d2Henry_constants_dT2, henry_components = self.Henry_constants(), self.d2Henry_constants_dT2(), self.henry_components
+            for i in range(N):
+                if henry_components[i]:
+                    d2Psat_dT2_over_Psats[i] = d2Henry_constants_dT2[i]/Hs[i]
+
         self._d2Psats_dT2_over_Psats = d2Psat_dT2_over_Psats
         return d2Psat_dT2_over_Psats
 
