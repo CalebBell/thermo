@@ -1143,6 +1143,9 @@ class TDependentProperty(object):
                                                  ]}),
 
     }
+    for guess in correlation_models['DIPPR101'][3]['initial_guesses']:
+        correlation_models['DIPPR115'][3]['initial_guesses'].append({
+            'A': guess['A'], 'B': guess['B'], 'C': guess['C'], 'E': 0.0, 'D': 0.0})
 
     # Aliases from the DDBST
     correlation_models['Wagner2,5'] = correlation_models['Wagner']

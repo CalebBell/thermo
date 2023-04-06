@@ -681,6 +681,8 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
         da_alpha_dT_i = da_alpha_dTs[i]
         d2a_alpha_dT2_i = d2a_alpha_dT2s[i]
         workingd1 = workings2 = 0.0
+        if a_alphai == 0.0 or zs[i] == 0.0:
+            continue
 
         for j in range(i):
             # TODO: optimize this, compute a_alpha after
@@ -693,6 +695,8 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
             a_alpha += t200 + t200
 
             a_alphaj = a_alphas[j]
+            if a_alphaj == 0.0:
+                continue
             da_alpha_dT_j = da_alpha_dTs[j]
             zi_zj = zs[i]*zs[j]
 

@@ -5089,3 +5089,4 @@ def test_numpy_properties_all_eos_mix():
                 assert_close2d(eos_np.d2A_dninjs_Vt_another('g'), eos.d2A_dninjs_Vt_another('g'), rtol=1e-11)
                 assert isinstance(eos_np.d2A_dninjs_Vt_another('g'), np.ndarray)
                 assert isinstance(eos.d2A_dninjs_Vt_another('g'), list)
+

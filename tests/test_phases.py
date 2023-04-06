@@ -5087,3 +5087,9 @@ def test_first_henry_pure_solvent_phase_properties():
     d2lnPsats_dT2_num = [i[0] for i in d2lnPsats_dT2_num]
     assert_close1d(d2lnPsats_dT2, d2lnPsats_dT2_num, rtol=1e-5)
     assert_close1d(d2lnPsats_dT2, [-0.0004443784700701469, -0.0004070325925925929, -0.0003401651851851852])
+
+def test_Tr_167_Prtranslated_alpha_function():
+    # One of the alpha terms becomes zero
+    liquid = CEOSLiquid(eos_class=PRMIXTranslatedConsistent, eos_kwargs={"Pcs": [114497.25, 5930000.0], "Tcs": [3.309, 694.2], "omegas": [-0.4715, 0.44], "kijs": [[0.0, 0], [0, 0.0]]}, HeatCapacityGases=[HeatCapacityGas(CASRN="14762-55-1", MW=4.002602, similarity_variable=0.2498374807187924, extrapolation="linear", method="POLING_POLY"), HeatCapacityGas(CASRN="108-95-2", MW=94.11124, similarity_variable=0.13813440349951825, extrapolation="linear", method="TRCIG")], T=298.15, P=101325.0, zs=[0.5, 0.5])
+    new_liquid = liquid.to(zs=[1e-07, 0.9999999], P=851222.128878439,T=553.4386787878783)
+    assert_close(new_liquid.eos_mix.a_alpha, 3.146979305113219)

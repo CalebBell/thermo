@@ -570,6 +570,7 @@ def load_all_interaction_parameters():
                 'ChemSep Henry': os.path.join(chemsep_db_path, 'henry.json'),
                 'Sander Const': os.path.join(folder, 'Sander_henry_const.json'),
                 'Sander T dep': os.path.join(folder, 'Sander_henry_T_dep.json'),
+                'PRTranslated Henry Best': os.path.join(folder, 'PRTranslated_best_henry_T_dep.json'),
                 }
 
 
