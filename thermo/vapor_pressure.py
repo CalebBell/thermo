@@ -367,6 +367,7 @@ class VaporPressure(TDependentProperty):
         to reset the parameters.
         '''
         self.T_limits = T_limits = {}
+        self.all_methods = set()
         methods = []
         if load_data:
             CASRN = self.CASRN
@@ -420,12 +421,9 @@ class VaporPressure(TDependentProperty):
                 T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc)
 
             if CASRN in miscdata.VDI_saturation_dict:
-                methods.append(VDI_TABULAR)
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'P')
-                self.VDI_Tmin = Ts[0]
-                self.VDI_Tmax = Ts[-1]
-                self.tabular_data[VDI_TABULAR] = (Ts, props)
-                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
+                del self._method
             if CASRN in vapor_pressure.Psat_data_Alcock_elements.index:
                 methods.append(ALCOCK_ELEMENTS)
                 A, B, C, D, E, Alcock_Tmin, Alcock_Tmax = vapor_pressure.Psat_values_Alcock_elements[vapor_pressure.Psat_data_Alcock_elements.index.get_loc(self.CASRN)].tolist()
@@ -452,7 +450,7 @@ class VaporPressure(TDependentProperty):
                 methods.append(EOS)
                 T_limits[EOS] = (0.1*self.Tc, self.Tc)
             T_limits[LEE_KESLER_PSAT] = T_limits[AMBROSE_WALTON] = T_limits[SANJARI] = T_limits[EDALAT] = (0.01, self.Tc)
-        self.all_methods = set(methods)
+        self.all_methods.update(methods)
     
     def calculate(self, T, method):
         r'''Method to calculate vapor pressure of a fluid at temperature `T`

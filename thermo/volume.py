@@ -443,6 +443,7 @@ class VolumeLiquid(TPDependentProperty):
         to reset the parameters.
         '''
         self.T_limits = T_limits = {}
+        self.all_methods = set()
         methods = []
         methods_P = []
         if load_data:
@@ -469,12 +470,9 @@ class VolumeLiquid(TPDependentProperty):
                 self.VDI_PPDS_rhoc = rhoc
                 T_limits[VDI_PPDS] = (0.3*self.VDI_PPDS_Tc, self.VDI_PPDS_Tc)
             if self.CASRN in miscdata.VDI_saturation_dict:
-                methods.append(VDI_TABULAR)
                 Ts, props = lookup_VDI_tabular_data(self.CASRN, 'Volume (l)')
-                self.VDI_Tmin = Ts[0]
-                self.VDI_Tmax = Ts[-1]
-                self.tabular_data[VDI_TABULAR] = (Ts, props)
-                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
+                del self._method
             if self.Tc and self.CASRN in volume.rho_data_COSTALD.index:
                 methods.append(HTCOSTALDFIT)
                 self.COSTALD_Vchar = float(volume.rho_data_COSTALD.at[self.CASRN, 'Vchar'])
@@ -522,7 +520,7 @@ class VolumeLiquid(TPDependentProperty):
             if self.eos:
                 methods_P.append(EOS)
 
-        self.all_methods = set(methods)
+        self.all_methods.update(methods)
         self.all_methods_P = set(methods_P)
         for m in self.ranked_methods_P:
             if m in self.all_methods_P:
