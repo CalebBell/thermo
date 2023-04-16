@@ -111,7 +111,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
     if vec:
         conv_fun = numba.vectorize
     else:
-        conv_fun = numba.jit
+        conv_fun = numba.njit
 
     chemicals.numba.iapws # Force the transform to occur
     for name in dir(chemicals.numba):

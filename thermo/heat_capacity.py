@@ -317,6 +317,7 @@ class HeatCapacityGas(TDependentProperty):
         to reset the parameters.
         '''
         methods = []
+        self.all_methods = set()
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
         if load_data and CASRN:
@@ -370,12 +371,9 @@ class HeatCapacityGas(TDependentProperty):
                 # NOTE: VDI data is for the saturation curve, i.e. at increasing
                 # pressure; it is normally substantially higher than the ideal gas
                 # value
-                methods.append(VDI_TABULAR)
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'Cp (g)')
-                self.VDI_Tmin = Ts[0]
-                self.VDI_Tmax = Ts[-1]
-                self.tabular_data[VDI_TABULAR] = (Ts, props)
-                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
+                del self._method
             if has_CoolProp() and CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[CASRN]
@@ -409,7 +407,7 @@ class HeatCapacityGas(TDependentProperty):
             methods.append(LASTOVKA_SHAW)
             T_limits[LASTOVKA_SHAW] = (1e-3, 1e5)
             self.Lastovka_Shaw_term_A = Lastovka_Shaw_term_A(self.similarity_variable, self.iscyclic_aliphatic)
-        self.all_methods = set(methods)
+        self.all_methods.update(methods)
         
     @property
     def T_limits_fitting(self):
@@ -878,6 +876,7 @@ class HeatCapacityLiquid(TDependentProperty):
         to reset the parameters.
         '''
         methods = []
+        self.all_methods = set()
         self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN in heat_capacity.zabransky_dict_const_s:
@@ -925,12 +924,9 @@ class HeatCapacityLiquid(TDependentProperty):
                 # NOTE: VDI data is for the saturation curve, i.e. at increasing
                 # pressure; it is normally substantially higher than the ideal gas
                 # value
-                methods.append(VDI_TABULAR)
                 Ts, props = lookup_VDI_tabular_data(self.CASRN, 'Cp (l)')
-                self.VDI_Tmin = Ts[0]
-                self.VDI_Tmax = Ts[-1]
-                self.tabular_data[VDI_TABULAR] = (Ts, props)
-                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
+                del self._method
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[self.CASRN]
@@ -945,7 +941,7 @@ class HeatCapacityLiquid(TDependentProperty):
         if self.MW and self.similarity_variable:
             methods.append(DADGOSTAR_SHAW)
             T_limits[DADGOSTAR_SHAW] = (1e-3, 10000. if self.Tc is None else self.Tc)
-        self.all_methods = set(methods)
+        self.all_methods.update(methods)
 
     def calculate(self, T, method):
         r'''Method to calculate heat capacity of a liquid at temperature `T`

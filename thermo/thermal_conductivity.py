@@ -341,16 +341,14 @@ class ThermalConductivityLiquid(TPDependentProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
+        self.all_methods = set()
         methods, methods_P = [], []
         self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN in miscdata.VDI_saturation_dict:
-                methods.append(VDI_TABULAR)
                 Ts, props = lookup_VDI_tabular_data(self.CASRN, 'K (l)')
-                self.VDI_Tmin = Ts[0]
-                self.VDI_Tmax = Ts[-1]
-                self.tabular_data[VDI_TABULAR] = (Ts, props)
-                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
+                del self._method
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 CP_f = coolprop_fluids[self.CASRN]
                 if CP_f.has_k:
@@ -397,7 +395,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
             T_limits[NICOLA_ORIGINAL] = (0.01*self.Tc, self.Tc-0.1)
         if all([self.Tc, self.Pc]):
             methods_P.extend([DIPPR_9G, MISSENARD])
-        self.all_methods = set(methods)
+        self.all_methods.update(methods)
         self.all_methods_P = set(methods_P)
         for m in self.ranked_methods_P:
             if m in self.all_methods_P:
@@ -1005,16 +1003,14 @@ class ThermalConductivityGas(TPDependentProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
+        self.all_methods = set()
         methods, methods_P = [], []
         self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN in miscdata.VDI_saturation_dict:
-                methods.append(VDI_TABULAR)
                 Ts, props = lookup_VDI_tabular_data(self.CASRN, 'K (g)')
-                self.VDI_Tmin = Ts[0]
-                self.VDI_Tmax = Ts[-1]
-                self.tabular_data[VDI_TABULAR] = (Ts, props)
-                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
+                del self._method
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 CP_f = coolprop_fluids[self.CASRN]
                 if CP_f.has_k:
@@ -1059,7 +1055,7 @@ class ThermalConductivityGas(TPDependentProperty):
             methods_P.append(CHUNG_DENSE)
         if all([self.MW, self.Tc, self.Pc, self.Vc, self.Zc]):
             methods_P.append(STIEL_THODOS_DENSE)
-        self.all_methods = set(methods)
+        self.all_methods.update(methods)
         self.all_methods_P = set(methods_P)
         for m in self.ranked_methods_P:
             if m in self.all_methods_P:

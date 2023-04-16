@@ -308,6 +308,7 @@ class SurfaceTension(TDependentProperty):
         to reset the parameters.
         '''
         methods = []
+        self.all_methods = set()
         self.T_limits = T_limits = {}
         if load_data:
             if self.CASRN == '7732-18-5':
@@ -329,12 +330,9 @@ class SurfaceTension(TDependentProperty):
                 self.SOMAYAJULU_coeffs = [A, B, C]
                 T_limits[SOMAYAJULU] = (self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc)
             if self.CASRN in miscdata.VDI_saturation_dict:
-                methods.append(VDI_TABULAR)
                 Ts, props = lookup_VDI_tabular_data(self.CASRN, 'sigma')
-                self.VDI_Tmin = Ts[0]
-                self.VDI_Tmax = Ts[-1]
-                self.tabular_data[VDI_TABULAR] = (Ts, props)
-                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
+                del self._method
             if self.CASRN in interface.sigma_data_Jasper_Lange.index:
                 methods.append(JASPER)
                 a, b, self.JASPER_Tmin, self.JASPER_Tmax = interface.sigma_values_Jasper_Lange[interface.sigma_data_Jasper_Lange.index.get_loc(self.CASRN)].tolist()
@@ -376,7 +374,7 @@ class SurfaceTension(TDependentProperty):
                 if self.Tc:
                     Tmax_possible = min(self.Tc, Tmax_possible)
                 T_limits[ALEEM] = (0.0, Tmax_possible)
-        self.all_methods = set(methods)
+        self.all_methods.update(methods)
 
     def calculate(self, T, method):
         r'''Method to calculate surface tension of a liquid at temperature `T`

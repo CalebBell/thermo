@@ -312,19 +312,16 @@ class EnthalpyVaporization(TDependentProperty):
         '''
         methods = []
         self.T_limits = T_limits = {}
+        self.all_methods = set()
         if load_data:
             if has_CoolProp() and self.CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[self.CASRN]
                 T_limits[COOLPROP] = (self.CP_f.Tt, self.CP_f.Tc*.9999)
             if self.CASRN in miscdata.VDI_saturation_dict:
-                methods.append(VDI_TABULAR)
                 Ts, props = lookup_VDI_tabular_data(self.CASRN, 'Hvap')
-                self.VDI_Tmin = Ts[0]
-                self.VDI_Tmax = Ts[-1]
-                self.tabular_data[VDI_TABULAR] = (Ts, props)
-                T_limits[VDI_TABULAR] = (self.VDI_Tmin, self.VDI_Tmax)
-
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
+                del self._method
             if self.CASRN in phase_change.phase_change_data_Alibakhshi_Cs.index and self.Tc is not None:
                 methods.append(ALIBAKHSHI)
                 self.Alibakhshi_C = float(phase_change.phase_change_data_Alibakhshi_Cs.at[self.CASRN, 'C'])
@@ -373,7 +370,7 @@ class EnthalpyVaporization(TDependentProperty):
             methods.extend(self.boiling_methods)
             for m in self.boiling_methods:
                 T_limits[m] = (1e-4, self.Tc)
-        self.all_methods = set(methods)
+        self.all_methods.update(methods)
 
     @staticmethod
     def _method_indexes():
