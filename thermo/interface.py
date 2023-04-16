@@ -331,8 +331,10 @@ class SurfaceTension(TDependentProperty):
                 T_limits[SOMAYAJULU] = (self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc)
             if self.CASRN in miscdata.VDI_saturation_dict:
                 Ts, props = lookup_VDI_tabular_data(self.CASRN, 'sigma')
-                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
-                del self._method
+                # mercury missing values
+                if Ts:
+                    self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
+                    del self._method
             if self.CASRN in interface.sigma_data_Jasper_Lange.index:
                 methods.append(JASPER)
                 a, b, self.JASPER_Tmin, self.JASPER_Tmax = interface.sigma_values_Jasper_Lange[interface.sigma_data_Jasper_Lange.index.get_loc(self.CASRN)].tolist()
