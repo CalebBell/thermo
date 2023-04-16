@@ -42,6 +42,8 @@ from thermo.viscosity import LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, BR
 from thermo.viscosity import (COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                          VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
                          VDI_TABULAR, LETSOU_STIEL, PRZEDZIECKI_SRIDHAR)
+from thermo import VaporPressure, VolumeLiquid
+
 
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
@@ -148,6 +150,22 @@ def test_ViscosityLiquid():
 
     with pytest.raises(Exception):
         EtOH.test_method_validity_P(300, 1E5, 'BADMETHOD')
+
+
+    #PRZEDZIECKI_SRIDHAR was not calculating due to volume liquid failure
+    obj = ViscosityLiquid(CASRN="67-56-1", MW=32.04186, Tm=175.15, Tc=512.5, Pc=8084000.0, Vc=0.000117,
+                        omega=0.559, Psat=VaporPressure(CASRN="67-56-1", Tb=337.65, Tc=512.5, Pc=8084000.0, omega=0.559,
+                                                        extrapolation="AntoineAB|DIPPR101_ABC", method="WAGNER_MCGARRY"),
+                        Vml=VolumeLiquid(CASRN="67-56-1", MW=32.04186, Tb=337.65, Tc=512.5, Pc=8084000.0, Vc=0.000117,
+                                        Zc=0.22196480200068586, omega=0.559, dipole=1.7,
+                                        Psat=VaporPressure(CASRN="67-56-1",
+                                Tb=337.65, Tc=512.5, Pc=8084000.0, omega=0.559, 
+                            extrapolation="AntoineAB|DIPPR101_ABC", method="WAGNER_MCGARRY"),
+                                extrapolation="constant", method="DIPPR_PERRY_8E"), extrapolation="linear")
+    res = obj.calculate(230, PRZEDZIECKI_SRIDHAR)
+
+
+
 
 @pytest.mark.meta_T_dept
 def test_ViscosityLiquid_Joback():

@@ -528,7 +528,12 @@ class ViscosityLiquid(TPDependentProperty):
         elif method == LETSOU_STIEL:
             mu = Letsou_Stiel(T, self.MW, self.Tc, self.Pc, self.omega)
         elif method == PRZEDZIECKI_SRIDHAR:
-            Vml = self.Vml(T) if hasattr(self.Vml, '__call__') else self.Vml
+            if type(self.Vml) is float:
+                Vml = self.Vml
+            elif type(self.Vml) is VolumeLiquid:
+                Vml = self.Vml.T_dependent_property(T)
+            else:
+                Vml = self.Vml(T)
             mu = Przedziecki_Sridhar(T, self.Tm, self.Tc, self.Pc, self.Vc, Vml, self.omega, self.MW)
         elif method == VDI_PPDS:
             return PPDS9(T, *self.VDI_PPDS_coeffs)
