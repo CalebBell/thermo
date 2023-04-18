@@ -110,6 +110,13 @@ def test_EnthalpyVaporization():
 
     assert EnthalpyVaporization.from_json(EtOH.as_json()) == EtOH
 
+
+    # Case was raising a complex
+    obj = EnthalpyVaporization(CASRN="7782-41-4", Tb=85.04, Tc=144.3, Pc=5215197.75, omega=0.0588, similarity_variable=0.05263600258783854, extrapolation="Watson")
+    assert 0 == obj.calculate(144.41400000000002, 'VDI_PPDS')
+
+
+
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
 @pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
