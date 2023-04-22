@@ -374,6 +374,11 @@ class HeatCapacityGas(TDependentProperty):
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'Cp (g)')
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
                 del self._method
+            if self.CASRN in heat_capacity.Cp_dict_JANAF_gas:
+                methods.append(miscdata.JANAF)
+                Ts, props = heat_capacity.Cp_dict_JANAF_gas[self.CASRN]
+                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=True)
+                del self._method
             if has_CoolProp() and CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[CASRN]
@@ -920,6 +925,11 @@ class HeatCapacityLiquid(TDependentProperty):
                 methods.append(ZABRANSKY_QUASIPOLYNOMIAL_SAT)
                 self.Zabransky_quasipolynomial_sat = heat_capacity.zabransky_dict_sat_p[self.CASRN]
                 T_limits[ZABRANSKY_QUASIPOLYNOMIAL_SAT] = (self.Zabransky_quasipolynomial_sat.Tmin, self.Zabransky_quasipolynomial_sat.Tmax)
+            if self.CASRN in heat_capacity.Cp_dict_JANAF_liquid:
+                methods.append(miscdata.JANAF)
+                Ts, props = heat_capacity.Cp_dict_JANAF_liquid[self.CASRN]
+                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=True)
+                del self._method
             if self.CASRN in miscdata.VDI_saturation_dict:
                 # NOTE: VDI data is for the saturation curve, i.e. at increasing
                 # pressure; it is normally substantially higher than the ideal gas
@@ -1297,7 +1307,17 @@ class HeatCapacitySolid(TDependentProperty):
         '''
         methods = []
         self.T_limits = T_limits = {}
+        self.all_methods = set()
         if load_data:
+            if self.CASRN in heat_capacity.WebBook_Shomate_solids:
+                methods.append(WEBBOOK_SHOMATE)
+                self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_solids[self.CASRN]
+                T_limits[WEBBOOK_SHOMATE] = (webbook_shomate.Tmin, webbook_shomate.Tmax)
+            if self.CASRN in heat_capacity.Cp_dict_JANAF_solid:
+                methods.append(miscdata.JANAF)
+                Ts, props = heat_capacity.Cp_dict_JANAF_solid[self.CASRN]
+                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=True)
+                del self._method
             if self.CASRN and self.CASRN in heat_capacity.Cp_dict_PerryI and 'c' in heat_capacity.Cp_dict_PerryI[self.CASRN]:
                 self.PERRY151_Tmin = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Tmin'] if heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Tmin'] else 0
                 self.PERRY151_Tmax = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Tmax'] if heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Tmax'] else 2000
@@ -1311,15 +1331,11 @@ class HeatCapacitySolid(TDependentProperty):
                 self.CRCSTD_Cp = float(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cps'])
                 methods.append(CRCSTD)
                 T_limits[CRCSTD] = (298.15, 298.15)
-            if self.CASRN in heat_capacity.WebBook_Shomate_solids:
-                methods.append(WEBBOOK_SHOMATE)
-                self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_solids[self.CASRN]
-                T_limits[WEBBOOK_SHOMATE] = (webbook_shomate.Tmin, webbook_shomate.Tmax)
         if self.MW and self.similarity_variable:
             methods.append(LASTOVKA_S)
             T_limits[LASTOVKA_S] = (1.0, 1e4)
             # Works above roughly 1 K up to 10K.
-        self.all_methods = set(methods)
+        self.all_methods.update(methods)
 
     def calculate(self, T, method):
         r'''Method to calculate heat capacity of a solid at temperature `T`

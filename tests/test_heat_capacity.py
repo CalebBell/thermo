@@ -296,7 +296,7 @@ def test_HeatCapacitySolid():
         NaCl.method = i
         Cps_calc.append(NaCl.T_dependent_property(298.15))
 
-    Cps_exp = [50.38469032, 50.5, 50.50124702353165, 20.065072074682337]
+    Cps_exp = [20.065072434058802, 50.38469032, 50.5, 50.50124702353165, 50.509]
     assert_close1d(sorted(Cps_calc), sorted(Cps_exp))
 
     NaCl.extrapolation = None
