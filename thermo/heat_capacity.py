@@ -278,7 +278,7 @@ class HeatCapacityGas(TDependentProperty):
     '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
     the critical point, this value can be obscenely high.'''
 
-    ranked_methods = [TRCIG, WEBBOOK_SHOMATE, POLING_POLY, COOLPROP, JOBACK,
+    ranked_methods = [TRCIG, WEBBOOK_SHOMATE, miscdata.JANAF, POLING_POLY, COOLPROP, JOBACK,
                       LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
     '''Default rankings of the available methods.'''
 
@@ -800,7 +800,7 @@ class HeatCapacityLiquid(TDependentProperty):
     ranked_methods = [ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
-                      WEBBOOK_SHOMATE, VDI_TABULAR, COOLPROP, DADGOSTAR_SHAW, ROWLINSON_POLING,
+                      WEBBOOK_SHOMATE, miscdata.JANAF, VDI_TABULAR, COOLPROP, DADGOSTAR_SHAW, ROWLINSON_POLING,
                       ROWLINSON_BONDI,
                       POLING_CONST, CRCSTD]
     '''Default rankings of the available methods.'''
@@ -1259,7 +1259,7 @@ class HeatCapacitySolid(TDependentProperty):
     property_max = 1E4
     '''Maximum value of Heat capacity; arbitrarily set.'''
 
-    ranked_methods = [WEBBOOK_SHOMATE, PERRY151, CRCSTD, LASTOVKA_S]
+    ranked_methods = [WEBBOOK_SHOMATE, miscdata.JANAF, PERRY151, CRCSTD, LASTOVKA_S]
     '''Default rankings of the available methods.'''
 
     _fit_force_n = {}
