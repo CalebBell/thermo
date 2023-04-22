@@ -377,7 +377,7 @@ class HeatCapacityGas(TDependentProperty):
             if self.CASRN in heat_capacity.Cp_dict_JANAF_gas:
                 methods.append(miscdata.JANAF)
                 Ts, props = heat_capacity.Cp_dict_JANAF_gas[self.CASRN]
-                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=True)
+                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False)
                 del self._method
             if has_CoolProp() and CASRN in coolprop_dict:
                 methods.append(COOLPROP)
@@ -928,7 +928,7 @@ class HeatCapacityLiquid(TDependentProperty):
             if self.CASRN in heat_capacity.Cp_dict_JANAF_liquid:
                 methods.append(miscdata.JANAF)
                 Ts, props = heat_capacity.Cp_dict_JANAF_liquid[self.CASRN]
-                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=True)
+                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False)
                 del self._method
             if self.CASRN in miscdata.VDI_saturation_dict:
                 # NOTE: VDI data is for the saturation curve, i.e. at increasing
@@ -1316,7 +1316,7 @@ class HeatCapacitySolid(TDependentProperty):
             if self.CASRN in heat_capacity.Cp_dict_JANAF_solid:
                 methods.append(miscdata.JANAF)
                 Ts, props = heat_capacity.Cp_dict_JANAF_solid[self.CASRN]
-                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=True)
+                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False)
                 del self._method
             if self.CASRN and self.CASRN in heat_capacity.Cp_dict_PerryI and 'c' in heat_capacity.Cp_dict_PerryI[self.CASRN]:
                 self.PERRY151_Tmin = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Tmin'] if heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Tmin'] else 0
