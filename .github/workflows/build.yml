@@ -98,7 +98,7 @@ jobs:
       run: |
         pip install .
     - name: Generate Files
-      if: ${{ matrix.python-version == '3.7' || matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10'  || matrix.python-version == '3.11' }}
+      if: ${{ matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10'  || matrix.python-version == '3.11' }}
       run: |
         python dev/dump_UNIFAC_assignments_to_sqlite.py
     - name: Uninstall thermo
