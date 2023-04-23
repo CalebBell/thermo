@@ -21,6 +21,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import sys
+import os
+import shutil
+import importlib.util
 from datetime import datetime
 import os, sys
 def set_file_modification_time(filename, mtime):
@@ -29,12 +33,29 @@ def set_file_modification_time(filename, mtime):
     
 now = datetime.now()
 
-paths = ['..']
+main_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+
+remove_folders = ('__pycache__', '.mypy_cache', '_build', '.cache', '.ipynb_checkpoints')
+bad_extensions = ('.pyc', '.nbi', '.nbc')
+
+
+paths = [main_dir]
 
 for p in paths:
     for (dirpath, dirnames, filenames) in os.walk(p):
+        for bad_folder in remove_folders:
+            if dirpath.endswith(bad_folder):
+                shutil.rmtree(dirpath)
+                continue
         for filename in filenames:
             full_path = os.path.join(dirpath, filename)
+            if not os.path.exists(full_path):
+                continue
             set_file_modification_time(full_path, now)
+            for bad_extension in bad_extensions:
+                if full_path.endswith(bad_extension):
+                    os.remove(full_path)
 
-
+# import pytest
+# os.chdir(main_dir)
+# pytest.main(["--doctest-glob='*.rst'", "--doctest-modules", "--nbval", "-n", "8", "--dist", "loadscope", "-v"])
