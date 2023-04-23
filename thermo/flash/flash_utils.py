@@ -1897,6 +1897,7 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
                                              xtol=xtol, damping=damping,
                                              solve_func=py_solve,
                                              line_search=True,
+                                             check_numbers=True,
                                              # solve_func=lambda x, y:np.linalg.solve(x, y).tolist(),
                                              # damping_func=damping_maintain_sign
                                              )
