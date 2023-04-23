@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.6', '3.7', '3.8', '3.9', '3.10', 'pypy-3.6'] # pandas won't build c extensions on 'pypy-3.7' right now
+        python-version: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11', 'pypy-3.6'] # pandas won't build c extensions on 'pypy-3.7' right now
         os: [windows-latest, ubuntu-latest, macos-latest]
         architecture: ['x86', 'x64']
         exclude:
@@ -21,15 +21,11 @@ jobs:
           # numpy.distutils.system_info.NotFoundError: No lapack/blas resources found.
           # even 32 bit pypy2 or pypy3 doesn't work
           - os: windows-latest
-            python-version: pypy2
-          - os: windows-latest
             python-version: pypy-3.6
           - os: windows-latest
             python-version: pypy-3.7
           # pypy2 Failure building pandas wheels
           # pypy3  error: library mach has Fortran sources but no Fortran compiler found
-          - os: macos-latest
-            python-version: pypy2
           - os: macos-latest
             python-version: pypy-3.6
           - os: macos-latest
@@ -43,7 +39,18 @@ jobs:
           # scipy dropped 32 bit windows builds 
           - os: windows-latest
             architecture: x86
-            python-version: '3.10'
+            python-version: 3.8
+          - os: windows-latest
+            architecture: x86
+            python-version: 3.9
+          - os: windows-latest
+            architecture: x86
+            python-version: 3.10
+          - os: windows-latest
+            architecture: x86
+            python-version: 3.11
+          - os: ubuntu-latest
+            python-version: 3.6
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }} ${{ matrix.architecture }}

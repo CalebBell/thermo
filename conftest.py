@@ -10,8 +10,10 @@ def pytest_ignore_collect(path):
     # Serious technical debt
     if ((path.endswith('chemical.py') or path.endswith('mixture.py')  or path.endswith('stream.py') ) and not 'test' in path) or path.endswith('README.rst'):
         return True
-    if 'benchmarks' in path:
+    if 'benchmark' in path or 'manual_runner' in path or 'make_test_stubs' in path or 'plot' in path or 'prerelease' in path or 'conf.py' in path:
         return True
+    if 'dev' in path:
+        return True 
     if 'conf.py' in path:
         return True
     if ver_tup < (3, 7) or ver_tup >= (3, 11) or is_pypy:
