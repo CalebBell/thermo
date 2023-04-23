@@ -30,8 +30,8 @@ try:  # pragma: no cover
             os.mkdir(data_dir)
         except FileNotFoundError:
             os.makedirs(data_dir) # Recursive
-except ImportError:  # pragma: no cover
-    data_dir = ''
+except:  # pragma: no cover
+    data_dir = os.path.dirname(__file__)
 
 try:
     source_path = os.path.dirname(__file__) # micropython
