@@ -58,7 +58,6 @@ if not numerics.is_micropython:
     from . import phases
     from . import phase_identification
     from . import property_package
-    from . import property_package_constants
     from chemicals import reaction
     from chemicals import refractivity
     from . import regular_solution
@@ -118,7 +117,6 @@ if not numerics.is_micropython:
     from .phases import *
     from .phase_identification import *
     from .property_package import *
-    from .property_package_constants import *
     from chemicals.reaction import *
     from chemicals.refractivity import *
     from .regular_solution import *
@@ -155,7 +153,7 @@ if not numerics.is_micropython:
      'refractivity', 'safety', 'solubility', 'interface', 'interaction_parameters',
      'thermal_conductivity', 'triple', 'utils',
      'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop',
-     'datasheet', 'dippr', 'unifac', 'stream', 'mixture', 'property_package_constants',
+     'datasheet', 'dippr', 'unifac', 'stream', 'mixture',
      'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution',
      'equilibrium', 'phase_identification', 'temperature', 'fitting',
      'eos_alpha_functions', 'eos_volume', 'bulk', 'eos_mix_methods', 'activity',
@@ -207,7 +205,6 @@ if not numerics.is_micropython:
     __all__.extend(virial.__all__)
     __all__.extend(viscosity.__all__)
     __all__.extend(volume.__all__)
-    __all__.extend(property_package_constants.__all__)
     __all__.extend(chemical_utils.__all__)
     __all__.extend(wilson.__all__)
     __all__.extend(nrtl.__all__)
@@ -234,7 +231,7 @@ if not numerics.is_micropython:
                   electrochem, eos, eos_mix, equilibrium, heat_capacity,
                   identifiers, interaction_parameters, interface, group_contribution.joback, law,
                   mixture, nrtl, permittivity, phase_change, phase_identification,
-                  property_package, property_package_constants, regular_solution, 
+                  property_package, regular_solution, 
                   stream, thermal_conductivity, unifac, uniquac, safety,
                   fitting,functional_groups,
                   utils, vapor_pressure, viscosity, volume, wilson, eos_alpha_functions,

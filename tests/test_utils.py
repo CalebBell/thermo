@@ -25,7 +25,6 @@ import numpy as np
 from chemicals.utils import *
 from thermo.utils import *
 from thermo.stream import Stream
-from thermo import PropertyPackageConstants
 from fluids.numerics import assert_close, assert_close1d, assert_close2d
 
 def test_allclose_variable():
