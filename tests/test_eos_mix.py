@@ -31,10 +31,40 @@ from fluids.constants import R
 from fluids.numerics import jacobian, hessian, assert_close, assert_close1d, assert_close2d, assert_close3d, derivative
 from scipy.optimize import minimize, newton
 from math import log, exp, sqrt
-from thermo.property_package import eos_Z_test_phase_stability, eos_Z_trial_phase_stability
 import numpy as np
 import json, pickle
 from thermo.coolprop import has_CoolProp
+
+def eos_Z_test_phase_stability(eos):
+    try:
+        if eos.G_dep_l < eos.G_dep_g:
+            Z_eos = eos.Z_l
+            prefer, alt = 'Z_g', 'Z_l'
+        else:
+            Z_eos = eos.Z_g
+            prefer, alt =  'Z_l', 'Z_g'
+    except:
+        # Only one root - take it and set the prefered other phase to be a different type
+        Z_eos = eos.Z_g if hasattr(eos, 'Z_g') else eos.Z_l
+        prefer = 'Z_l' if hasattr(eos, 'Z_g') else 'Z_g'
+        alt = 'Z_g' if hasattr(eos, 'Z_g') else 'Z_l'
+    return Z_eos, prefer, alt
+
+
+def eos_Z_trial_phase_stability(eos, prefer, alt):
+    try:
+        if eos.G_dep_l < eos.G_dep_g:
+            Z_trial = eos.Z_l
+        else:
+            Z_trial = eos.Z_g
+    except:
+        # Only one phase, doesn't matter - only that phase will be returned
+        try:
+            Z_trial = getattr(eos, alt)
+        except:
+            Z_trial = getattr(eos, prefer)
+    return Z_trial
+
 
 
 def test_PRMIX_quick():

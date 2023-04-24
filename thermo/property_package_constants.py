@@ -33,7 +33,7 @@ SOFTWARE.
 
 from __future__ import division
 
-__all__ = ['PropertyPackageConstants', 'IDEAL_PKG', 'PR_PKG', 'SRK_PKG']
+__all__ = ['PropertyPackageConstants', 'IDEAL_PKG', 'PR_PKG']
 
 from fluids.numerics import brenth, ridder, derivative, numpy as np
 
@@ -53,18 +53,16 @@ from thermo.property_package import (GceosBase, IdealCaloric)
 IDEAL_PKG = 'Ideal'
 
 PR_PKG = 'PR'
-SRK_PKG = 'SRK'
 
 property_packages = [IDEAL_PKG,
-                     PR_PKG, SRK_PKG]
-property_packages_cubic = [PR_PKG, SRK_PKG]
+                     PR_PKG]
+property_packages_cubic = [PR_PKG]
 
-property_package_to_eos = {PR_PKG: PRMIX, SRK_PKG: SRKMIX}
-property_package_to_eos_pures = {PR_PKG: PR, SRK_PKG: SRK}
+property_package_to_eos = {PR_PKG: PRMIX}
+property_package_to_eos_pures = {PR_PKG: PR}
 
 property_package_names_to_objs = {IDEAL_PKG: IdealCaloric,
                                   PR_PKG: GceosBase,
-                                  SRK_PKG: GceosBase,
                                  }
 
 
@@ -119,11 +117,6 @@ class PropertyPackageConstants(object):
         pkg_args.update(self.kwargs)
 
         return self.pkg_obj(**pkg_args)
-
-    def from_json(self, json):
-        self.__dict__.update(json)
-        self.set_Chemical_property_objects()
-        self.set_TP_sources()
 
 
 transfer_methods = ['set_chemical_constants', 'set_Chemical_property_objects',
