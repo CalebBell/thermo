@@ -31,7 +31,6 @@ from thermo.eos_mix import *
 
 from thermo.chemical import Chemical
 from thermo.mixture import Mixture
-from thermo.property_package_constants import PropertyPackageConstants, PR_PKG, IDEAL_PKG
 
 @pytest.mark.deprecated
 def test_Ideal():
