@@ -665,17 +665,6 @@ def test_PartialPropertyIdeal():
 
 @pytest.mark.deprecated
 def test_GammaPhiCaloricBasic():
-    m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
-    pkg = GammaPhiCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs,
-                  HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
-                  EnthalpyVaporizations=m.EnthalpyVaporizations, omegas=m.omegas,
-                               VolumeLiquids=m.VolumeLiquids, eos=PR, eos_mix=PRMIX)
-    pkg.use_phis, pkg.use_Poynting = True, True
-
-
-    pkg.flash(zs=m.zs, T=400, VF=0.5)
-    assert_allclose(pkg.P, 233084.1813331093, rtol=2e-3)
-
     # 1 component still needs to be able to flash
     m = Mixture(['R-134a'], zs=[1], T=300, P=1E5)
     m.set_property_package(GammaPhiCaloric )

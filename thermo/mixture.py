@@ -550,7 +550,6 @@ class Mixture(object):
     T_default = 298.15
     P_default = 101325.
     autoflash = True # Whether or not to flash on init
-    property_package_constants = None
 
     def __repr__(self):
         txt = '<Mixture, components=%s, mole fractions=%s' % (self.names, [round(i,4) for i in self.zs])
@@ -914,9 +913,6 @@ class Mixture(object):
     def set_property_package(self, pkg=None):
         if pkg is None:
             from thermo.property_package import IdealCaloric as pkg
-        if pkg.__class__.__name__ == 'PropertyPackageConstants':
-            self.property_package = pkg.pkg
-            return True
 
         eos_mix = type(self.eos_in_a_box[0]) if self.eos_in_a_box else PRMIX
 
