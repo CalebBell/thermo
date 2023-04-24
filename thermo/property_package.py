@@ -38,7 +38,6 @@ __all__ = ['PropertyPackage', 'Ideal', 'GammaPhi',
            'IdealCaloric', 'GammaPhiCaloric',
            'StabilityTester',
            'eos_Z_test_phase_stability', 'eos_Z_trial_phase_stability',
-           'Stateva_Tsvetkov_TPDF_eos', 'd_TPD_Michelson_modified_eos',
            'GceosBase']
 
 try:
@@ -257,38 +256,8 @@ random_values = [0.8444218515250481, 0.7579544029403025, 0.420571580830845, 0.25
 ]
 
 
-def Stateva_Tsvetkov_TPDF_eos(eos):
-    Z_eos, prefer, alt = eos_Z_test_phase_stability(eos)
-
-    def obj_func_constrained(zs):
-        # zs is N -1 length
-        zs_trial = [abs(float(i)) for i in zs]
-        if sum(zs_trial) >= 1:
-            zs_trial = normalize(zs_trial)
-
-        # In some cases, 1 - x < 0
-        zs_trial.append(abs(1.0 - sum(zs_trial)))
-
-        eos2 = eos.to_TP_zs(T=eos.T, P=eos.P, zs=zs_trial)
-        Z_trial = eos_Z_trial_phase_stability(eos2, prefer, alt)
-        TPD = eos.Stateva_Tsvetkov_TPDF(Z_eos, Z_trial, eos.zs, zs_trial)
-        return TPD
-    return obj_func_constrained
 
 
-def d_TPD_Michelson_modified_eos(eos):
-    Z_eos, prefer, alt = eos_Z_test_phase_stability(eos)
-
-    def obj_func_unconstrained(alphas):
-        # zs is N -1 length
-        Ys = [(alpha/2.)**2 for alpha in alphas]
-        zs_trial = normalize(Ys)
-
-        eos2 = eos.to_TP_zs(T=eos.T, P=eos.P, zs=zs_trial)
-        Z_trial = eos_Z_trial_phase_stability(eos2, prefer, alt)
-        TPD = eos.d_TPD_Michelson_modified(Z_eos, Z_trial, eos.zs, alphas)
-        return TPD
-    return obj_func_unconstrained
 
 
 class StabilityTester(object):
