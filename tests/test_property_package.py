@@ -632,20 +632,6 @@ def test_IdealCaloric_TS():
             assert_allclose(P_calc['P'], P, rtol=1E-3)
 
 
-@pytest.mark.deprecated
-def test_GammaPhiBasic():
-    # For the base mixture which assumes activity coefficients are one,
-    # Check there is no excess enthalpy or entropy.
-    m = Mixture(['hexane', '2-Butanone'], zs=[.5, .5], T=273.15 + 60)
-    a = GammaPhi(VaporPressures=m.VaporPressures, Tms=m.Tms, Tcs=m.Tcs, Pcs=m.Pcs)
-    ge = a.GE_l( 400., [.5, .5])
-    assert_allclose(ge, 0)
-
-    he = a.HE_l( 400., [.5, .5])
-    assert_allclose(he, 0)
-
-    se = a.SE_l( 400., [.5, .5])
-    assert_allclose(se, 0)
 
 @pytest.mark.deprecated
 def test_PartialPropertyIdeal():
@@ -663,26 +649,3 @@ def test_PartialPropertyIdeal():
     assert_allclose(a, -118882.74138254928, rtol=2e-3)
 
 
-@pytest.mark.deprecated
-def test_GammaPhiCaloricBasic():
-    # 1 component still needs to be able to flash
-    m = Mixture(['R-134a'], zs=[1], T=300, P=1E5)
-    m.set_property_package(GammaPhiCaloric )
-
-    # TVF flashes
-    m.property_package.flash_caloric(T=300, VF=1, zs=[1])
-    assert_allclose(m.property_package.P, m.Psats[0])
-
-    P_300 = m.property_package.P
-    m.property_package.flash_caloric(T=300, VF=0, zs=[1])
-    assert_allclose(m.property_package.P, m.Psats[0])
-    m.property_package.flash_caloric(T=300, VF=0.5, zs=[1])
-    assert_allclose(m.property_package.P, m.Psats[0])
-
-    # PVF flashes
-    m.property_package.flash_caloric(P=P_300, VF=1, zs=[1])
-    assert_allclose(m.property_package.T, 300.)
-    m.property_package.flash_caloric(P=P_300, VF=0, zs=[1])
-    assert_allclose(m.property_package.T, 300.)
-    m.property_package.flash_caloric(P=P_300, VF=0.5, zs=[1])
-    assert_allclose(m.property_package.T, 300.)

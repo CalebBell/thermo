@@ -839,3 +839,124 @@ def test_henry_water_ethanol_solvent_only_water_parameters():
     assert_close1d(PT.liquid0.zs, [0.5034620500286068, 1.7145033253831193e-05, 5.154576856346698e-06, 0.49651565036128303])
 
 
+
+
+def test_PRMIX_basics_H_S():
+    chemicals = ['Ethane', 'Heptane']
+    # constants, properties = ChemicalConstantsPackage.from_IDs(chemicals)
+    # constants.subset(properties=['Tcs', 'Pcs', 'omegas', 'MWs', 'Vcs'])
+
+    constants = ChemicalConstantsPackage(MWs=[30.06904, 100.20194000000001], omegas=[0.099, 0.349], 
+                                        Pcs=[4872200.0, 2736000.0], Tcs=[305.322, 540.13], 
+                                        Vcs=[0.0001455, 0.000428])
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+    HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 1500.0, [-1.0480862560578738e-22, 6.795933556773635e-19, -1.752330995156058e-15, 2.1941287956874937e-12, -1.1560515172055718e-09, -1.8163596179818727e-07, 0.00044831921501838854, -0.038785639211185385, 34.10970704595796])),
+    HeatCapacityGas(load_data=False, poly_fit=(200.0, 1500.0, [3.92133614210253e-22, -3.159591705025203e-18, 1.0953093194585358e-14, -2.131394945087635e-11, 2.5381451844763867e-08, -1.872671854270201e-05, 0.007985818706468728, -1.3181368580077415, 187.25540686626923])),
+    ],
+    )
+
+    kij = 0
+    kijs = [[0,kij],[kij,0]]
+    zs = [0.4, 0.6]
+
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas, 'kijs': kijs}
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases)
+
+    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
+
+    res = flasher.flash(T=450, P=400, zs=zs)
+    H1 = res.H()
+    S1 = res.S()
+    assert res.phase == 'V'
+    res = flasher.flash(T=450, P=1e6, zs=zs)
+    H2 = res.H()
+    S2 = res.S()
+    assert res.phase == 'V'
+    assert_close(H1 - H2, 1638.193586065765, rtol=1e-7)
+    assert_close(S1 - S2, 67.59097448573374, rtol=1e-5)
+
+    # Case gas to VF= = 0 at same T
+    res = flasher.flash(T=350, P=400, zs=zs)
+    assert res.phase == 'V'
+    S1 = res.S()
+    H1 = res.H()
+    res = flasher.flash(T=350, VF=.5, zs=zs)
+    assert res.phase == 'VL'
+    H2 = res.H()
+    S2 = res.S()
+    assert_close(H1 - H2, 16445.148662152467, rtol=1e-6)
+    assert_close(S1 - S2, 96.84962967388968, rtol=1e-5)
+
+    # Higher pressure (gas constant diff probably; gas-liquid difference! No partial phase.)
+    res = flasher.flash(T=450, P=400, zs=zs)
+    assert res.phase == 'V'
+    H1 = res.H()
+    S1 = res.S()
+    res = flasher.flash(T=450, P=1e8, zs=zs)
+    assert res.phase == 'L'
+    H2 = res.H()
+    S2 = res.S()
+    assert_close(H1 - H2, 13815.671299952719, rtol=1e-7)
+    assert_close(S1 - S2, 128.67198457877873, rtol=1e-5)
+
+    # low P fluid to saturation pressure (both gas)
+    res = flasher.flash(T=450, P=400, zs=zs)
+    assert res.phase == 'V'
+    H1 = res.H()
+    S1 = res.S()
+    res = flasher.flash(T=450, VF=1, zs=zs)
+    assert res.phase == 'VL'
+    assert res.gas_beta == 1
+    H2 = res.H()
+    S2 = res.S()
+    assert_close(H1 - H2, 2003.8453690354618, rtol=1e-6)
+    assert_close(S1 - S2, 69.64347719345321, rtol=1e-5)
+
+    # low pressure gas to liquid saturated
+    res = flasher.flash(T=350, P=400, zs=zs)
+    assert res.phase == 'V'
+    H1 = res.H()
+    S1 = res.S()
+    res = flasher.flash(T=350, VF=0, zs=zs)
+    assert res.phase == 'VL'
+    H2 = res.H()
+    S2 = res.S()
+    assert_close(H1 - H2, 23682.354847696974, rtol=1e-6)
+    assert_close(S1 - S2, 124.44424015029476, rtol=1e-6)
+
+    # High pressure liquid to partial evaporation
+    res = flasher.flash(T=350, P=3e6, zs=zs)
+    assert res.phase == 'L'
+    H1 = res.H()
+    S1 = res.S()
+    res = flasher.flash(T=350, VF=.25, zs=zs)
+    assert res.phase == 'VL'
+    H2 = res.H()
+    S2 = res.S()
+    assert_close(H1 - H2, -2328.213423713927, rtol=1e-7)
+    assert_close(S1 - S2, -7.913403132740896, rtol=1e-5)
+
+    # High pressure temperature change
+    res = flasher.flash(T=300, P=3e6, zs=zs)
+    assert res.phase == 'L'
+    S1 = res.S()
+    H1 = res.H()
+    res = flasher.flash(T=400, P=1e7, zs=zs)
+    assert res.phase == 'L'
+    H2 = res.H()
+    S2 = res.S()
+    assert_close(H1 - H2, -18470.021914554898, rtol=1e-5)
+    assert_close(S1 - S2, -50.38009840930218, rtol=1e-5)
+
+    # High pressure temperature change and phase change
+    res = flasher.flash(T=300, P=3e6, zs=zs)
+    assert res.phase == 'L'
+    H1 = res.H()
+    S1 = res.S()
+    res = flasher.flash(T=400, P=1e5, zs=zs)
+    assert res.phase == 'V'
+    H2 = res.H()
+    S2 = res.S()
+    assert_close(H1 - H2, -39430.44410647196, rtol=1e-5)
+    assert_close(S1 - S2, -124.39418852732291, rtol=1e-5)
