@@ -64,7 +64,7 @@ __all__ = ['vapor_pressure_methods', 'VaporPressure', 'SublimationPressure',
 
 import os
 from fluids.constants import R
-from fluids.numerics import polyint_over_x, horner_log, horner, polyint, horner_and_der2, horner_and_der, derivative, newton, linspace, numpy as np
+from fluids.numerics import NoSolutionError, polyint_over_x, horner_log, horner, polyint, horner_and_der2, horner_and_der, derivative, newton, linspace, numpy as np
 
 from math import e, inf
 from chemicals.utils import log, exp, isnan
@@ -504,7 +504,12 @@ class VaporPressure(TDependentProperty):
         elif method == IAPWS:
             Psat = iapws95_Psat(T)
         elif method == EOS:
-            Psat = self.eos[0].Psat(T)
+            try:
+                Psat = self.eos[0].Psat(T)
+            except NoSolutionError as err:
+                if 'is too low for equations' in err.args[0]:
+                    return 0.0
+                raise e
         else:
             return self._base_calculate(T, method)
         return Psat

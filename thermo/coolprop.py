@@ -158,7 +158,7 @@ class CP_fluid(object):
     # Basic object to store constants for a coolprop fluid, much faster than
     # calling coolprop to retrieve the data when needed
     __slots__ = ['Tmin', 'Tmax', 'Pmax', 'has_melting_line', 'Tc', 'Pc', 'Tt',
-                 'omega', 'HEOS', 'CAS']
+                 'omega', 'HEOS', 'CAS', 'Vc', 'Pt', 'Tb']
     @property
     def has_k(self):
         return self.CAS in CoolProp_has_k_CASs and self.CAS not in CoolProp_k_failing_CASs
@@ -180,7 +180,7 @@ class CP_fluid(object):
         return self
 
     def __init__(self, Tmin, Tmax, Pmax, has_melting_line, Tc, Pc, Tt, omega,
-                 HEOS, CAS):
+                 HEOS, CAS, Vc, Pt, Tb):
         self.Tmin = Tmin
         self.Tmax = Tmax
         self.Pmax = Pmax
@@ -191,6 +191,9 @@ class CP_fluid(object):
         self.omega = omega
         self.HEOS = HEOS
         self.CAS = CAS
+        self.Vc = Vc
+        self.Pt = Pt
+        self.Tb = Tb
 
 
 # Store the propoerties in a dict of CP_fluid instances
@@ -212,9 +215,16 @@ def store_coolprop_fluids():
     import json
     for CASRN in coolprop_dict:
         HEOS = AbstractState("HEOS", CASRN)
+        try:
+          Tb = PropsSI("T", "Q", 0, "P", 101325, CASRN)
+        except:
+          Tb = None
         coolprop_fluids[CASRN] = CP_fluid(Tmin=HEOS.Tmin(), Tmax=HEOS.Tmax(), Pmax=HEOS.pmax(),
                        has_melting_line=HEOS.has_melting_line(), Tc=HEOS.T_critical(), Pc=HEOS.p_critical(),
-                       Tt=HEOS.Ttriple(), omega=HEOS.acentric_factor(), HEOS=None, CAS=CASRN)
+                       Tt=HEOS.Ttriple(), omega=HEOS.acentric_factor(), HEOS=None, CAS=CASRN,
+                       Vc=1/HEOS.rhomolar_critical(), Pt=PropsSI('PTRIPLE', CASRN),
+                       Tb=Tb)
+                       
 
     data = {CASRN: coolprop_fluids[CASRN].as_json() for CASRN in coolprop_dict}
     ver = CoolProp.__version__
@@ -223,7 +233,7 @@ def store_coolprop_fluids():
     file.close()
 
 @mark_numba_incompatible
-def load_coolprop_fluids():
+def load_coolprop_fluids(depth=0):
     import json
     import CoolProp
     ver = CoolProp.__version__
@@ -233,12 +243,19 @@ def load_coolprop_fluids():
     except:
         store_coolprop_fluids()
         file = open(pth, 'r')
-    data = json.load(file)
-    for CASRN in coolprop_dict:
-        d = data[CASRN]
-        coolprop_fluids[CASRN] = CP_fluid(Tmin=d['Tmin'], Tmax=d['Tmax'], Pmax=d['Pmax'],
-                       has_melting_line=d['has_melting_line'], Tc=d['Tc'], Pc=d['Pc'],
-                       Tt=d['Tt'], omega=d['omega'], HEOS=None, CAS=CASRN)
+    try:
+      data = json.load(file)
+      for CASRN in coolprop_dict:
+          d = data[CASRN]
+          coolprop_fluids[CASRN] = CP_fluid(Tmin=d['Tmin'], Tmax=d['Tmax'], Pmax=d['Pmax'],
+                        has_melting_line=d['has_melting_line'], Tc=d['Tc'], Pc=d['Pc'],
+                        Tt=d['Tt'], omega=d['omega'], HEOS=None, CAS=CASRN, Vc=d['Vc'], Pt=d['Pt'], Tb=d['Tb'])
+    except Exception as e:
+      if depth == 0:
+        store_coolprop_fluids()
+        load_coolprop_fluids(depth=1)
+      else:
+        raise e
 
 
 
@@ -411,6 +428,14 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
         raise Exception('CoolProp library is not installed')
     if CASRN not in coolprop_dict:
         raise Exception('CASRN not in list of supported fluids')
+    if prop in ('CP0MOLAR', 'Cp0molar'):
+      try:
+        # Some cases due to melting point need a high pressure
+        return PropsSI('Cp0molar', 'T', T,'P', 10132500.0, CASRN)
+      except:
+          # And some cases don't converge at high P
+          return PropsSI('Cp0molar', 'T', T,'P', 101325.0, CASRN)
+
     Tc = coolprop_fluids[CASRN].Tc
     T = float(T) # Do not allow custom objects here
     if phase == 'l':

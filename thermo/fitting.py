@@ -748,11 +748,11 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
         stats = stats_func(Ts, data, calc)
         statistics = {}
         statistics['calc'] = calc
-        statistics['MAE'] = stats[0]
-        statistics['STDEV'] = stats[1]
-        statistics['min_ratio'] = stats[2]
-        statistics['max_ratio'] = stats[3]
-        statistics['pcov'] = pcov
+        statistics['MAE'] = float(stats[0])
+        statistics['STDEV'] = float(stats[1])
+        statistics['min_ratio'] = float(stats[2])
+        statistics['max_ratio'] = float(stats[3])
+        statistics['pcov'] = float(pcov) if pcov is not None else None
         return out_kwargs, statistics
 
 

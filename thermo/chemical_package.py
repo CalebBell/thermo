@@ -63,7 +63,7 @@ __all__ = ['ChemicalConstantsPackage', 'PropertyCorrelationsPackage',
 
 from fluids.constants import R
 
-from thermo.chemical import Chemical, get_chemical_constants
+from thermo.chemical import Chemical, user_chemical_property_lookup
 from chemicals.identifiers import CAS_from_any
 from chemicals import identifiers
 from chemicals.utils import hash_any_primitive
@@ -600,7 +600,7 @@ class ChemicalConstantsPackage(object):
             except:
                 pass
         VaporPressures = [VaporPressure(Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], CASRN=CASs[i],
-                                        exp_poly_fit=get_chemical_constants(CASs[i], 'VaporPressure'))
+                                        **user_chemical_property_lookup(CASs[i], 'VaporPressure'))
                             for i in range(N)]
         Psat_298s = [VaporPressures[i].T_dependent_property(298.15) for i in range(N)]
 
@@ -619,7 +619,7 @@ class ChemicalConstantsPackage(object):
         Hfus_Tms_mass = [Hfus*1000.0/MW if Hfus is not None else None for Hfus, MW in zip(Hfus_Tms, MWs)]
 
         EnthalpyVaporizations = [EnthalpyVaporization(CASRN=CAS, Tb=Tb, Tc=Tc, Pc=Pc, omega=omega, similarity_variable=sv,
-                                                      poly_fit_ln_tau=get_chemical_constants(CAS, 'EnthalpyVaporization'))
+                                                      **user_chemical_property_lookup(CAS, 'EnthalpyVaporization'))
                                  for CAS, Tb, Tc, Pc, sv, omega in zip(CASs, Tbs, Tcs, Pcs, similarity_variables, omegas)]
 
  
@@ -658,7 +658,7 @@ class ChemicalConstantsPackage(object):
         VolumeLiquids = [VolumeLiquid(MW=MWs[i], Tb=Tbs[i], Tc=Tcs[i],
                           Pc=Pcs[i], Vc=Vcs[i], Zc=Zcs[i], omega=omegas[i], dipole=dipoles[i],
                           Psat=VaporPressures[i], CASRN=CASs[i],
-                          eos=enclosed_eoss[i], poly_fit=get_chemical_constants(CASs[i], 'VolumeLiquid'))
+                          eos=enclosed_eoss[i], **user_chemical_property_lookup(CASs[i], 'VolumeLiquid'))
                          for i in range(N)]
 
         Vml_Tbs = [VolumeLiquids[i].T_dependent_property(Tbs[i]) if Tbs[i] is not None else None
@@ -674,7 +674,7 @@ class ChemicalConstantsPackage(object):
         rhol_STPs_mass = [1e-3*MW/V if V is not None else None for V, MW in zip(Vml_STPs, MWs)]
         rhol_60Fs_mass = [1e-3*MW/V if V is not None else None for V, MW in zip(Vml_60Fs, MWs)]
 
-        VolumeSolids = [VolumeSolid(CASRN=CASs[i], MW=MWs[i], Tt=Tts[i], Vml_Tt=Vml_Tms[i], poly_fit=get_chemical_constants(CASs[i], 'VolumeSolid')) for i in range(N)]
+        VolumeSolids = [VolumeSolid(CASRN=CASs[i], MW=MWs[i], Tt=Tts[i], Vml_Tt=Vml_Tms[i], **user_chemical_property_lookup(CASs[i], 'VolumeSolid')) for i in range(N)]
         Vms_Tms = [VolumeSolids[i].T_dependent_property(Tms[i]) if Tms[i] is not None else None for i in range(N)]
         rhos_Tms = [1.0/V if V is not None else None for V in Vms_Tms]
         rhos_Tms_mass = [1e-3*MW/V if V is not None else None for V, MW in zip(Vms_Tms, MWs)]
@@ -736,18 +736,18 @@ class ChemicalConstantsPackage(object):
 
 
         HeatCapacityGases = [HeatCapacityGas(CASRN=CASs[i], MW=MWs[i], similarity_variable=similarity_variables[i],
-                                             poly_fit=get_chemical_constants(CASs[i], 'HeatCapacityGas')) for i in range(N)]
+                                             **user_chemical_property_lookup(CASs[i], 'HeatCapacityGas')) for i in range(N)]
 
         HeatCapacitySolids = [HeatCapacitySolid(CASRN=CASs[i], MW=MWs[i], similarity_variable=similarity_variables[i],
-                                                poly_fit=get_chemical_constants(CASs[i], 'HeatCapacitySolid')) for i in range(N)]
+                                                **user_chemical_property_lookup(CASs[i], 'HeatCapacitySolid')) for i in range(N)]
         HeatCapacityLiquids = [HeatCapacityLiquid(CASRN=CASs[i], MW=MWs[i], similarity_variable=similarity_variables[i], Tc=Tcs[i], omega=omegas[i],
                                                   Cpgm=HeatCapacityGases[i],
-                                                  poly_fit=get_chemical_constants(CASs[i], 'HeatCapacityLiquid')) for i in range(N)]
+                                                  **user_chemical_property_lookup(CASs[i], 'HeatCapacityLiquid')) for i in range(N)]
 
 
         EnthalpySublimations = [EnthalpySublimation(CASRN=CASs[i], Tm=Tms[i], Tt=Tts[i],
                                                        Cpg=HeatCapacityGases[i], Cps=HeatCapacitySolids[i],
-                                                       Hvap=EnthalpyVaporizations[i], poly_fit=get_chemical_constants(CASs[i], 'EnthalpySublimation'))
+                                                       Hvap=EnthalpyVaporizations[i], **user_chemical_property_lookup(CASs[i], 'EnthalpySublimation'))
                                 for i in range(N)]
 
 
@@ -827,7 +827,7 @@ class ChemicalConstantsPackage(object):
 
         SurfaceTensions = [SurfaceTension(CASRN=CASs[i], MW=MWs[i], Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i], Zc=Zcs[i],
                           omega=omegas[i], StielPolar=StielPolars[i], Hvap_Tb=Hvap_Tbs[i], Vml=VolumeLiquids[i],
-                          Cpl=HeatCapacityLiquids[i], exp_poly_fit_ln_tau=get_chemical_constants(CASs[i], 'SurfaceTension'))
+                          Cpl=HeatCapacityLiquids[i], **user_chemical_property_lookup(CASs[i], 'SurfaceTension'))
                                              for i in range(N)]
 
         sigma_STPs = [SurfaceTensions[i].T_dependent_property(298.15) for i in range(N)]
@@ -897,25 +897,25 @@ class ChemicalConstantsPackage(object):
             return constants
 
         SublimationPressures = [SublimationPressure(CASRN=CASs[i], Tt=Tts[i], Pt=Pts[i], Hsub_t=Hsub_Tts[i],
-                                                    exp_poly_fit=get_chemical_constants(CASs[i], 'SublimationPressure'))
+                                                    **user_chemical_property_lookup(CASs[i], 'SublimationPressure'))
                                                     for i in range(N)]
 
-        PermittivityLiquids = [PermittivityLiquid(CASRN=CASs[i], poly_fit=get_chemical_constants(CASs[i], 'PermittivityLiquid')) for i in range(N)]
+        PermittivityLiquids = [PermittivityLiquid(CASRN=CASs[i], **user_chemical_property_lookup(CASs[i], 'PermittivityLiquid')) for i in range(N)]
 
         ViscosityLiquids = [ViscosityLiquid(CASRN=CASs[i], MW=MWs[i], Tm=Tms[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i], omega=omegas[i], Psat=VaporPressures[i],
-                                            Vml=VolumeLiquids[i], exp_poly_fit=get_chemical_constants(CASs[i], 'ViscosityLiquid')) for i in range(N)]
+                                            Vml=VolumeLiquids[i], **user_chemical_property_lookup(CASs[i], 'ViscosityLiquid')) for i in range(N)]
 
         ViscosityGases = [ViscosityGas(CASRN=CASs[i], MW=MWs[i], Tc=Tcs[i], Pc=Pcs[i], Zc=Zcs[i], dipole=dipoles[i],
-                                       Vmg=VolumeGases[i], poly_fit=get_chemical_constants(CASs[i], 'ViscosityGas')) for i in range(N)]
+                                       Vmg=VolumeGases[i], **user_chemical_property_lookup(CASs[i], 'ViscosityGas')) for i in range(N)]
 
         ThermalConductivityLiquids = [ThermalConductivityLiquid(CASRN=CASs[i], MW=MWs[i], Tm=Tms[i], Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i],
-                                                                omega=omegas[i], Hfus=Hfus_Tms[i], poly_fit=get_chemical_constants(CASs[i], 'ThermalConductivityLiquid'))
+                                                                omega=omegas[i], Hfus=Hfus_Tms[i], **user_chemical_property_lookup(CASs[i], 'ThermalConductivityLiquid'))
                                     for i in range(N)]
 
         ThermalConductivityGases =[ThermalConductivityGas(CASRN=CASs[i], MW=MWs[i], Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i],
                                                           Zc=Zcs[i], omega=omegas[i], dipole=dipoles[i], Vmg=VolumeGases[i],
                                                           Cpgm=HeatCapacityGases[i], mug=ViscosityGases[i],
-                                                          poly_fit=get_chemical_constants(CASs[i], 'ThermalConductivityGas'))
+                                                          **user_chemical_property_lookup(CASs[i], 'ThermalConductivityGas'))
                                                           for i in range(N)]
         properties = PropertyCorrelationsPackage(constants, VaporPressures=VaporPressures, SublimationPressures=SublimationPressures,
                                                  VolumeGases=VolumeGases, VolumeLiquids=VolumeLiquids, VolumeSolids=VolumeSolids,
@@ -1671,7 +1671,7 @@ class PropertyCorrelationsPackage(object):
         if VaporPressures is None and not skip_missing:
             VaporPressures = [VaporPressure(Tb=constants.Tbs[i], Tc=constants.Tcs[i], Pc=constants.Pcs[i],
                                             omega=constants.omegas[i], CASRN=constants.CASs[i],
-                                            exp_poly_fit=get_chemical_constants(constants.CASs[i], 'VaporPressure'))
+                                            **user_chemical_property_lookup(constants.CASs[i], 'VaporPressure'))
                               for i in cmps]
 
         if VolumeLiquids is None and not skip_missing:
@@ -1679,7 +1679,7 @@ class PropertyCorrelationsPackage(object):
                               Pc=constants.Pcs[i], Vc=constants.Vcs[i], Zc=constants.Zcs[i], omega=constants.omegas[i],
                               dipole=constants.dipoles[i],
                               Psat=VaporPressures[i],
-                              poly_fit=get_chemical_constants(constants.CASs[i], 'VolumeLiquid'),
+                              **user_chemical_property_lookup(constants.CASs[i], 'VolumeLiquid'),
                               eos=None, CASRN=constants.CASs[i])
                               for i in cmps]
 
@@ -1697,26 +1697,26 @@ class PropertyCorrelationsPackage(object):
         if HeatCapacityGases is None and not skip_missing:
             HeatCapacityGases = [HeatCapacityGas(CASRN=constants.CASs[i], MW=constants.MWs[i],
                                                  similarity_variable=constants.similarity_variables[i],
-                                                 poly_fit=get_chemical_constants(constants.CASs[i], 'HeatCapacityGas'))
+                                                 **user_chemical_property_lookup(constants.CASs[i], 'HeatCapacityGas'))
                               for i in cmps]
 
         if HeatCapacitySolids is None and not skip_missing:
             HeatCapacitySolids = [HeatCapacitySolid(MW=constants.MWs[i], similarity_variable=constants.similarity_variables[i],
-                                                    CASRN=constants.CASs[i], poly_fit=get_chemical_constants(constants.CASs[i], 'HeatCapacitySolid'))
+                                                    CASRN=constants.CASs[i], **user_chemical_property_lookup(constants.CASs[i], 'HeatCapacitySolid'))
                               for i in cmps]
 
         if HeatCapacityLiquids is None and not skip_missing:
             HeatCapacityLiquids = [HeatCapacityLiquid(CASRN=constants.CASs[i], MW=constants.MWs[i],
                                                       similarity_variable=constants.similarity_variables[i],
                                                       Tc=constants.Tcs[i], omega=constants.omegas[i],
-                                                      Cpgm=HeatCapacityGases[i], poly_fit=get_chemical_constants(constants.CASs[i], 'HeatCapacityLiquid'))
+                                                      Cpgm=HeatCapacityGases[i], **user_chemical_property_lookup(constants.CASs[i], 'HeatCapacityLiquid'))
                               for i in cmps]
 
         if EnthalpyVaporizations is None and not skip_missing:
             EnthalpyVaporizations = [EnthalpyVaporization(CASRN=constants.CASs[i], Tb=constants.Tbs[i],
                                                           Tc=constants.Tcs[i], Pc=constants.Pcs[i], omega=constants.omegas[i],
                                                           similarity_variable=constants.similarity_variables[i],
-                                                          poly_fit_ln_tau=get_chemical_constants(constants.CASs[i], 'EnthalpyVaporization'))
+                                                          **user_chemical_property_lookup(constants.CASs[i], 'EnthalpyVaporization'))
                               for i in cmps]
 
         if EnthalpySublimations is None and not skip_missing:

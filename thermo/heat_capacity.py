@@ -464,12 +464,7 @@ class HeatCapacityGas(TDependentProperty):
             if self.CoolProp_A0_args is not None:
                 Cp = Cp_ideal_gas_Helmholtz(T, *self.CoolProp_A0_args)
             else:
-                try:
-                    # Some cases due to melting point need a high pressure
-                    Cp = PropsSI('Cp0molar', 'T', T,'P', 10132500.0, self.CASRN)
-                except:
-                    # And some cases don't converge at high P
-                    Cp = PropsSI('Cp0molar', 'T', T,'P', 101325.0, self.CASRN)
+                return CoolProp_T_dependent_property(T, self.CASRN, 'CP0MOLAR', 'g')
         elif method == POLING_POLY:
             Cp = R*(self.POLING_coefs[0] + self.POLING_coefs[1]*T
             + self.POLING_coefs[2]*T**2 + self.POLING_coefs[3]*T**3
