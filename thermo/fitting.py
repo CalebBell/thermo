@@ -69,11 +69,10 @@ FIT_METHOD_MAP = {FIT_CHEBTOOLS_CHEB: 'chebyshev',
                   FIT_NUMPY_STABLEPOLY: 'stablepolynomial',
                   }
 
-
 def fit_polynomial(func, low, high, n,
                    interpolation_property=None, interpolation_property_inv=None,
                    interpolation_x=lambda x: x, interpolation_x_inv=lambda x: x,
-                   arg_func=None, method=FIT_CHEBTOOLS_POLY):
+                   arg_func=None, method=FIT_CHEBTOOLS_POLY, data=None):
     r'''Fit a function of one variable to a polynomial of degree `n` using the
     Chebyshev approximation technique. Transformations of the base function
     are allowed as lambdas.
@@ -113,6 +112,9 @@ def fit_polynomial(func, low, high, n,
         and that returns arguments to `func`.
     method : str
         Which fitting method to use, [-]
+    data : tuple(list[float], list[float]) or None
+        Optionally, data that can be used instead of random points when
+        using the polyfit code
 
     Returns
     -------
@@ -125,8 +127,6 @@ def fit_polynomial(func, low, high, n,
 
     '''
     global ChebTools
-    if ChebTools is None:
-        import ChebTools
 
     low_orig, high_orig = low, high
     cheb_fun = None
@@ -171,6 +171,8 @@ def fit_polynomial(func, low, high, n,
         return coeffs
     else:
         if method in (FIT_CHEBTOOLS_CHEB, FIT_CHEBTOOLS_POLY, FIT_CHEBTOOLS_STABLEPOLY):
+            if ChebTools is None:
+                import ChebTools
             cheb_fun = ChebTools.generate_Chebyshev_expansion(n-1, func_fun, low, high)
             cheb_coeffs = cheb_fun.coef()
             
@@ -184,8 +186,12 @@ def fit_polynomial(func, low, high, n,
             elif method == FIT_CHEBTOOLS_POLY:
                 return stable_poly_to_unstable(coeffs, low, high)
         elif method in (FIT_NUMPY_POLY, FIT_NUMPY_STABLEPOLY):
-            x = linspace(low, high, 200)
-            y = [func_fun(xi) for xi in x]
+            if data is not None:
+                x = [interpolation_x(T) for T in data[0]] if interpolation_x is not None else data[1]
+                y = [interpolation_property(v) for v in data[1]] if interpolation_property is not None else data[1]
+            else:
+                x = linspace(low, high, 200)
+                y = [func_fun(xi) for xi in x]
             fit = Polynomial.fit(x, y, n)
             coeffs = fit.coef
             coeffs = coeffs[::-1].tolist()
@@ -193,6 +199,7 @@ def fit_polynomial(func, low, high, n,
                 return coeffs
             elif method == FIT_NUMPY_POLY:
                 return stable_poly_to_unstable(coeffs, low, high)
+
 
 def data_fit_statistics(xs, actual_pts, calc_pts):
     pts = len(xs)
@@ -210,7 +217,7 @@ def data_fit_statistics(xs, actual_pts, calc_pts):
 def poly_fit_statistics(func, coeffs, low, high, pts=200,
                         interpolation_property_inv=None,
                         interpolation_x=lambda x: x,
-                        arg_func=None, method='polynomial'):
+                        arg_func=None, method='polynomial', data=None):
     r'''Function to check how accurate a fit function is to a polynomial.
 
     This function uses the asolute relative error definition.
@@ -260,7 +267,11 @@ def poly_fit_statistics(func, coeffs, low, high, pts=200,
     '''
 
     low_orig, high_orig = low, high
-    all_points_orig = linspace(low_orig, high_orig, pts)
+    if data is not None:
+        all_points_orig = data[0]
+        pts = len(data[0])
+    else:
+        all_points_orig = linspace(low_orig, high_orig, pts)
 
     # Get the low, high, and x points in the transformed domain
     low, high = interpolation_x(low_orig), interpolation_x(high_orig)

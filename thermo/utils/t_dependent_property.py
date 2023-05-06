@@ -34,7 +34,7 @@ from math import inf, exp, log
 
 from fluids.numerics import (quad, brenth, secant, linspace, newton,
                              polyint, polyint_over_x, derivative, 
-                             trunc_log, trunc_exp,
+                             trunc_log, trunc_exp, interp,
                              polyder, horner, numpy as np, curve_fit, 
                              differential_evolution, fit_minimization_targets, 
                              leastsq, horner_backwards, exp_horner_backwards,
@@ -1513,7 +1513,25 @@ class TDependentProperty(object):
         max_ratio : float
             Highest ratio of calc/actual in any found points, [-]
         '''
-        # Ready to be documented
+        try:
+            low, high = self.T_limits[method]
+        except KeyError:
+            raise ValueError("Unknown method")
+
+        func = lambda T: self.calculate(T, method)
+
+        return self._generate_polynomial(func=func, low=low, high=high, n=n, start_n=start_n, max_n=max_n,
+                                        eval_pts=eval_pts, fit_form=fit_form, fit_method=fit_method)
+
+    def polynomial_from_data(self, Ts, values, n, fit_form=POLY_FIT, fit_method=None):
+        func = lambda T: interp(T, Ts, values)
+        low = min(Ts)
+        high = max(Ts)
+        return self._generate_polynomial(func=func, low=low, high=high, start_n=None, max_n=None,
+                                n=n, eval_pts=True, fit_form=fit_form, fit_method=fit_method, data=(Ts, values))
+
+    def _generate_polynomial(self, func, low, high, n, start_n, max_n, eval_pts, fit_form, fit_method, data=None):
+        # If data (Ts, values) is given do the stuff on those
         from thermo.fitting import fit_polynomial, poly_fit_statistics, fit_cheb_poly_auto, FIT_CHEBTOOLS_POLY
         interpolation_T = lambda x: x
         interpolation_T_inv = lambda x: x
@@ -1544,13 +1562,6 @@ class TDependentProperty(object):
         else:
             raise ValueError("Not a recognized fir form")
 
-        try:
-            low, high = self.T_limits[method]
-        except KeyError:
-            raise ValueError("Unknown method")
-
-        func = lambda T: self.calculate(T, method)
-        
         if fit_method is None:
             fit_method = FIT_CHEBTOOLS_POLY
 
@@ -1568,11 +1579,13 @@ class TDependentProperty(object):
                                     interpolation_property_inv=interpolation_property_inv,
                                     interpolation_x=interpolation_T,
                                     interpolation_x_inv=interpolation_T_inv, method=fit_method,
+                                    data=data,
                                     )
 
             stats = poly_fit_statistics(func, coeffs=coeffs, low=low, high=high, pts=eval_pts,
                                       interpolation_property_inv=interpolation_property_inv,
                                       interpolation_x=interpolation_T,method=fit_method,
+                                      data=data,
                       )
 
         return coeffs, (low, high), stats
@@ -3982,6 +3995,7 @@ class TDependentProperty(object):
             self._set_exp_poly_fit_ln_tau(exp_poly_fit_ln_tau)
             method = EXP_POLY_FIT_LN_TAU
             self.all_methods.add(EXP_POLY_FIT_LN_TAU)
+
         if stablepoly_fit is not None and len(stablepoly_fit):
             self._set_stablepoly_fit(stablepoly_fit)
             method = STABLEPOLY_FIT
@@ -3998,6 +4012,7 @@ class TDependentProperty(object):
             self._set_exp_stablepoly_fit_ln_tau(exp_stablepoly_fit_ln_tau)
             method = EXP_STABLEPOLY_FIT_LN_TAU
             self.all_methods.add(EXP_STABLEPOLY_FIT_LN_TAU)
+        
         if cheb_fit is not None and len(cheb_fit):
             self._set_cheb_fit(cheb_fit)
             method = CHEB_FIT
