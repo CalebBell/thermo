@@ -1147,6 +1147,14 @@ class TDependentProperty(object):
         correlation_models['DIPPR115'][3]['initial_guesses'].append({
             'A': guess['A'], 'B': guess['B'], 'C': guess['C'], 'E': 0.0, 'D': 0.0})
 
+    
+    # Did not work to transform the model into volume
+    # for guess in list(correlation_models['DIPPR105'][3]['initial_guesses']):
+    #     correlation_models['DIPPR105'][3]['initial_guesses'].append({
+    #         'A': 1.0/guess['A'], 'B': guess['B'], 'C': guess['C'], 'D': guess['D']})
+
+
+
     # Aliases from the DDBST
     correlation_models['Wagner2,5'] = correlation_models['Wagner']
     correlation_models['Wagner3,6'] = correlation_models['Wagner_original']
@@ -1673,6 +1681,7 @@ class TDependentProperty(object):
             fit_func_dict = fluids.numba.numerics.fit_minimization_targets
         else:
             fit_func_dict = fit_minimization_targets
+        pts = len(Ts)
         if len(Ts) != len(data):
             raise ValueError("Length of data and temperatures is not the same")
         if model not in cls.available_correlations:
@@ -1700,9 +1709,13 @@ class TDependentProperty(object):
         use_fit_parameters = []
         for k in fit_parameters:
             if k not in model_kwargs:
-                use_fit_parameters.append(k)
+                if len(use_fit_parameters)< pts or k not in optional_args:
+                    use_fit_parameters.append(k)
         fit_parameters = use_fit_parameters
-            
+        # if len(fit_parameters) > pts:
+        #     for param in optional_args:
+        #         pass
+        #
         param_order = required_args + optional_args
         const_kwargs = {}
         model_function_name = functions['f'].__name__

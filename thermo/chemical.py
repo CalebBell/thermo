@@ -181,6 +181,16 @@ user_prop_to_default_poly = {'SurfaceTension': 'exp_poly_fit_ln_tau',
 
 
 def user_chemical_property_lookup(CAS, key):
+    if loaded_user_dbs:
+        for db in loaded_user_dbs:
+            try:
+                return db[CAS][key]
+            except KeyError:
+                continue
+        return {}
+
+
+    # legacy method
     if not property_lock:
         return {}
     from thermo.database import loaded_chemicals
@@ -191,6 +201,21 @@ def user_chemical_property_lookup(CAS, key):
         return {}
     except KeyError:
         return {}
+
+loaded_user_dbs = []
+loaded_user_db_paths = []
+
+def set_user_chemical_property_databases(paths):
+    import os, json
+    for path in paths:
+        string = open(path)
+        regression_data = json.load(string)
+        string.close()
+        loaded_user_dbs.append(regression_data)
+        loaded_user_db_paths.append(path)
+            
+
+
 
 
 class Chemical(object): # pragma: no cover

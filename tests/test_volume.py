@@ -372,6 +372,17 @@ def test_VolumeSolid_fitting1():
     assert stats['MAE'] < 1e-8
 
 
+    # Case where number of parameters bad, needed to drop a parameter
+    kwargs = {'Ts': [700.0, 750.0, 800.0, 850.0, 900.0, 950.0], 
+    'data': [9.977109720738593e-06, 1.0046097111247695e-05, 1.0114480198019801e-05, 1.0183800623052959e-05, 1.0254077791718946e-05, 1.0325331648768161e-05],
+    'model': 'DIPPR100', 'model_kwargs': {}, 'do_statistics': True, 
+    'use_numba': False, 'multiple_tries': False, 
+    'multiple_tries_max_err': 1e-05, 'fit_method': 'lm'} # lm
+
+    params, res = VolumeSolid.fit_data_to_model(**kwargs)
+    assert res['MAE'] < 1e-6
+
+
 
 
 @pytest.mark.fitting
